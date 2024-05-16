@@ -1,0 +1,192 @@
+#TODO optimize it
+menu "Bk_Wifi"
+
+	config WIFI_ENABLE
+		bool "Enable Wifi Enable"
+		default y
+		help
+			enable wifi
+
+	config WIFI6_CODE_STACK
+		depends on WIFI_ENABLE
+		bool "Enable Wifi6 Code Stack"
+		default n
+		help
+			Use WiFi-6 Code Stack
+
+	config WIFI_BAND_5G
+		depends on WIFI_ENABLE
+		bool "Enable 5G Band"
+		default n
+		help
+			Enable WiFi 5G Band.
+
+	config WIFI_BAND_6G
+		depends on WIFI_ENABLE
+		bool "Enable 6G Band"
+		default n
+		help
+			Enable WiFi 6G Band.
+
+	config WIFI4
+		depends on WIFI_ENABLE
+		bool "Enable Wifi4"
+		default y
+		help
+			Don't disable it when WiFi-6 is enabled.
+
+	config WIFI5
+		bool "Enable Wifi5"
+		depends on WIFI6_CODE_STACK && WIFI_BAND_5G
+		default n
+		help
+			Don't disable it when WiFi-6 is enabled.
+
+	config WIFI6
+		bool "Enable Wifi6"
+		depends on WIFI6_CODE_STACK && WIFI_ENABLE
+		default n
+
+	config WIFI6E
+		bool "Enable Wifi6e"
+		depends on WIFI6_CODE_STACK && WIFI_BAND_6G
+		default n
+		help
+			Don't disable it when WiFi-6 is enabled.
+
+	config WIFI6_IP_DEBUG
+		depends on WIFI6_CODE_STACK
+		bool "Enable Wifi6 Ip Debug"
+		default n
+
+	config MULTI_STA_IN_SAP
+		depends on WIFI_ENABLE
+		bool "Enable Multi STA"
+		default n
+
+	config WIFI_PS_DISABLE
+		bool "Disable WiFi PS"
+		default n
+		help
+			disable wifi ps if need.
+
+	config WIFI_CSI_EN
+		depends on WIFI_ENABLE
+		bool "Wifi CSI"
+		default n
+
+#TODO remove below kconfig
+
+	config MSDU_RESV_HEAD_LENGTH
+		int "Set Msdu Resv Head Length"
+		range 1 1500
+		default 96
+		help
+			MSDU reserved header length
+
+	config MSDU_RESV_TAIL_LENGTH
+		int "Set Msdu Resv Tail Length"
+		range 1 1500
+		default 16
+		help
+			MSDU reserved tail length
+	
+	#TODO may need to remove it
+	config TASK_RECONNECT_PRIO
+		int "Set Task Reconnect Prio"
+		range 1 10
+		default 4
+		help
+			Priority of WiFi reconnect task
+
+	config AP_MONITOR_COEXIST
+		bool "Enable Ap Monitor Coexist"
+		default n
+		help
+			enable AP and monitor coexist
+
+	config CONNECT_THROUGH_PSK_OR_SAE_PASSWORD
+		bool"Enable connect through psk or sae password"
+		default n
+
+	config WIFI_FAST_CONNECT
+		bool "Enable Wifi Fast Connect"
+		default n
+
+	config MINIMUM_SCAN_RESULTS
+		bool "Enable minimum scan results"
+		default n
+
+	config BSSID_CONNECT
+		depends on WIFI_ENABLE
+		bool "Enable Bssid Connect"
+		default n
+		help
+			enable WiFi BSSI connect
+
+	config WFA_CERT
+		bool "Enable Wfa Cert"
+		default n
+		help
+			enable WiFi WFA Certification
+
+	config LESS_MEMERY_IN_RWNX
+		bool "Enable Less Memory In Rwnx"
+		default n
+
+	config AP_PROBEREQ_CB
+		bool "Enable Ap Probereq Cb"
+		default n
+		help
+			enable AP probe request callback
+
+	config STA_PS
+		bool "Enable Sta Ps"
+		default y if !RF_OTA_TEST
+		default n if RF_OTA_TEST
+
+	config MAC_BSSID
+		depends on WIFI_ENABLE
+		bool "Enable Mac Bssid"
+		default n
+
+	config COMPONENTS_STA_VSIE
+		depends on WIFI_ENABLE
+		bool "Enable Components Sta Vsie"
+		default n
+
+	config AP_STATYPE_LIMIT
+		depends on WIFI_ENABLE && COMPONENTS_STA_VSIE
+		bool "Enable Ap mode Sta Type Limit"
+		default n
+	
+	config RECEIVE_BCMC_IN_DTIM10
+		bool "Enable Station to Receive BCMC frame in Dtim10"
+		default n
+
+	config NOT_CHECK_SSID_CHANGE
+		bool "Enable not check beacon ssid changes"
+		default n
+
+	config NET_PARAM
+		bool "Enable Net Param"
+		default y
+
+	config DEAUTH_BEFORE_CONNECT
+		bool "send deauth before connect"
+		default n
+
+	config IMPROVE_HE_TB_ENABLE
+		bool "improve he tb enable"
+		default n
+
+	config CLOSE_COEXIST_CSA
+		bool "Close coexist csa"
+		default n
+
+	config SCAN_SPEED_LEVEL
+		int "set scan speed level"
+		range 1 3
+		default 3
+
+endmenu

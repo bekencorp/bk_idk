@@ -1,0 +1,1 @@
+../bk7286/toolchain-bk7286.cmake

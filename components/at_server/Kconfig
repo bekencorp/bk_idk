@@ -1,0 +1,63 @@
+menu "At_server"
+
+config AT
+	bool "Enable At"
+	default y
+		
+	config WIFI_AT_ENABLE
+		depends on AT 
+		bool "Enable WIFI AT CMDS"
+		default y
+
+	config MISC_AT_ENABLE
+		depends on AT 
+		bool "Enable SYSTEM AT CMDS"
+		default y
+
+	config BT_AT_ENABLE
+		depends on AT 
+		bool "Enable BLUETOOTH AT CMDS"
+		default y
+
+	config BLE_AT_ENABLE
+		depends on AT 
+		bool "Enable BLE AT CMDS"
+		default y
+
+	config NETIF_AT_ENABLE
+		depends on AT 
+		bool "Enable netif AT CMDS"
+		default y
+		
+	config PHY_AT_ENABLE
+		depends on AT 
+		bool "Enable phy AT CMDS"
+		default y
+		
+	config PM_AT_ENABLE
+		depends on AT 
+		bool "Enable pm AT CMDS"
+		default y
+		
+	config HTTPS_CLIENT_AT_ENABLE
+		depends on AT 
+		bool "Enable HTTP AT CMDS"
+		default y
+
+	config WEBSOCKET_CLIENT_AT_ENABLE
+		depends on AT 
+		bool "Enable WEBSOCKET AT CMDS"
+		default y
+	config DEFAULT_AT_PORT
+		depends on AT 
+		int "defualt at_Port"
+		default 1
+		
+	config AT_MAX_PORT_CNT
+		depends on AT 
+		int "defualt AT_CLIENT nums"
+		default 1		
+		
+		
+endmenu
+ 

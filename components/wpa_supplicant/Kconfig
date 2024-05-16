@@ -1,0 +1,59 @@
+menu "Wpa_supplicant"
+	config WPA_SUPPLICANT
+		depends on WIFI_ENABLE
+		bool "Enable WPA_SUPPLICANT"
+		default y
+	config CRYPTO
+		depends on WIFI_ENABLE
+		bool "Enable CRYPTO"
+		default y
+	config WPA3
+		depends on WIFI_ENABLE
+		bool "Enable WPA3"
+		default y
+		help
+			When WPA3 is enabled, the PMF should be enabled also!
+	config USE_MBEDTLS
+		depends on WIFI_ENABLE && MBEDTLS
+		bool "Enable MBEDTLS"
+		default y
+	config WPA_PSK_CACHE
+		bool "Enable WPA PSK CACHE"
+		default y
+
+	config WPA_LOG
+		bool "Enable WPA Log"
+		default n
+
+	config P2P
+		bool "Enable P2P"
+		default n
+
+	config P2P_GO
+		bool "Enable P2P Go"
+		default n
+
+	config WIFI_WPS
+		bool "Enable WiFi WPS"
+		default n
+
+	config WPS
+		bool "Enable WPS"
+		default n
+
+	config WPA2_ENTERPRISE
+		bool "Enable Wpa2 Enterprise"
+		default n
+
+	config WIFI_OWE
+		depends on WPA3 || SOFTAP_WPA3
+		bool "Enable WiFi OWE"
+		default n
+
+	config PMF
+		bool "Enable PMF"
+		default y if WPA3
+		default n if !WPA3
+		help
+			Enable PMF(802.11w)
+endmenu
