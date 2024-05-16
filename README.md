@@ -34,12 +34,9 @@ Beken SoCs released before 2022, such as BK7231N, BK7231U, BK7251 etc, are not s
 The following table shows Armino support of Popular IoT OS where ![alt text][developing] and ![alt text][supported]
 denote developing status and support, respectively.
 
-|OS           |         main           |
+|OS           |         release        |
 |:----------- |:---------------------: |
 |FreeRTOS     | ![alt text][supported] |
-|LiteOS       | ![alt text][supported]|
-|RT-Thread    | ![alt text][developing]|
-|AliOS        | ![alt text][developing]|
 
 [supported]: https://img.shields.io/badge/-supported-green "supported"
 [developing]: https://img.shields.io/badge/-developing-orange "developing"

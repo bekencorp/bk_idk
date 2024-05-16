@@ -23,7 +23,6 @@ bk_idk为Armino生态的基础SDK。
 
 ==Tag说明，release分支Tag为正式版本，请使用正式发布版本，进行开发。==
 
-main分支，格式为vx.x.x.x，例如：v2.0.0.1
 release/xxxx分支，格式为vx.x.x.x，例如：v2.0.1.1
 
 
@@ -31,12 +30,9 @@ release/xxxx分支，格式为vx.x.x.x，例如：v2.0.1.1
 
 下表总结了主流物联网操作系统在 Armino 各版本中的支持状态，其中 ![alt text][支持] 代表已支持，![alt text][开发中] 代表目前处于开发状态。
 
-|OS           |        main           |
+|OS           |        release           |
 |:----------- |:---------------------: |
 |FreeRTOS     | ![alt text][支持]       |
-|LiteOS       | ![alt text][支持]      |
-|RT-Thread    | ![alt text][开发中]      |
-|AliOS        | ![alt text][开发中]      |
 
 [支持]: https://img.shields.io/badge/-supported-green "支持"
 [开发中]: https://img.shields.io/badge/-developing-orange "开发中"
