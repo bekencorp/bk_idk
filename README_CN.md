@@ -40,6 +40,5 @@ release/xxxx分支，格式为vx.x.x.x，例如：v2.0.1.1
 # 更多资源
 
  - 文档: http://docs.bekencorp.com/
- - 代码: https://github.com/bekencorp/armino
  - 博通集成产品: http://www.bekencorp.com/index/goods/product.html
  - 博通集成官网: http://www.bekencorp.com

@@ -46,6 +46,5 @@ denote developing status and support, respectively.
 Here's a quick summary of resources to help you find your way around:
 
  - Documentation: http://docs.bekencorp.com
- - Source Code: https://github.com/bekencorp/armino is the main repository
  - Beken Products: http://www.bekencorp.com/index/goods/product.html to gain overview about different Beken products
  - Beken Home Page: http://www.bekencorp.com to find more resources
