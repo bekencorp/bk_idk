@@ -41,25 +41,11 @@ denote developing status and support, respectively.
 [supported]: https://img.shields.io/badge/-supported-green "supported"
 [developing]: https://img.shields.io/badge/-developing-orange "developing"
 
-# Getting Started
-
-See the [Introduction](TODO_link_to_armino_intro_doc) to Armino for a high-level overview, 
-and the documentation's [Introduction](TODO_link_to_armino_get_started_doc) to start developing.
-
-# Community Support
-
- - Report bug or request new feature on [Github Issue Forum](TODO_link_to_armino_github_forum)  
- - Ask for support or technical discussion on [Cummunity-Forum](TODO_link_to_armino_forum)
-
 # Resource
 
 Here's a quick summary of resources to help you find your way around:
 
  - Documentation: http://docs.bekencorp.com
-
  - Source Code: https://github.com/bekencorp/armino is the main repository
- - Releases: TODO_link_to_release_page
- - Samples and example code: TODO_link_to_doc_sample_and_demo_page
- - Resource download center: TODO_link_to_download_center_page
  - Beken Products: http://www.bekencorp.com/index/goods/product.html to gain overview about different Beken products
  - Beken Home Page: http://www.bekencorp.com to find more resources

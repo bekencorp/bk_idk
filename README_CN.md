@@ -37,22 +37,9 @@ release/xxxx分支，格式为vx.x.x.x，例如：v2.0.1.1
 [支持]: https://img.shields.io/badge/-supported-green "支持"
 [开发中]: https://img.shields.io/badge/-developing-orange "开发中"
 
-# 快速入门
-
-阅读[概述](TODO_link_to_armino_intro_doc）可让您对 Armino 有一个整体认识。 
-阅读[快速入门](TODO_link_to_armino_get_started_doc) 可教您快速上手使用 Armino 进行编译与调试。
-
-# 开发者社区
-
- - 报告问题 [Github Issue Forum](TODO_link_to_armino_github_forum)  
- - 寻求技术支持 [Cummunity-Forum](TODO_link_to_armino_forum)
-
 # 更多资源
 
  - 文档: http://docs.bekencorp.com/
  - 代码: https://github.com/bekencorp/armino
- - 版本: TODO_link_to_release_page
- - 示例: TODO_link_to_doc_sample_and_demo_page
- - 下载中心: TODO_link_to_download_center_page
  - 博通集成产品: http://www.bekencorp.com/index/goods/product.html
  - 博通集成官网: http://www.bekencorp.com
