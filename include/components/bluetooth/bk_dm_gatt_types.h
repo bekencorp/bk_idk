@@ -34,33 +34,35 @@ extern "C" {
  */
 typedef enum
 {
-    BK_GATT_UUID_IMMEDIATE_ALERT_SVC =           0x1802,          ///  Immediate alert Servic
-    BK_GATT_UUID_LINK_LOSS_SVC =                 0x1803,          ///  Link Loss Servic
-    BK_GATT_UUID_TX_POWER_SVC =                  0x1804,          ///  TX Power Servic
-    BK_GATT_UUID_CURRENT_TIME_SVC =              0x1805,          ///  Current Time Service Servic
-    BK_GATT_UUID_REF_TIME_UPDATE_SVC =           0x1806,          ///  Reference Time Update Servic
-    BK_GATT_UUID_NEXT_DST_CHANGE_SVC =           0x1807,          ///  Next DST Change Servic
-    BK_GATT_UUID_GLUCOSE_SVC =                   0x1808,          ///  Glucose Servic
-    BK_GATT_UUID_HEALTH_THERMOM_SVC =            0x1809,          ///  Health Thermometer Servic
-    BK_GATT_UUID_DEVICE_INFO_SVC =               0x180A,          ///  Device Information Servic
-    BK_GATT_UUID_HEART_RATE_SVC =                0x180D,          ///  Heart Rate Servic
-    BK_GATT_UUID_PHONE_ALERT_STATUS_SVC =        0x180E,          /// Phone Alert Status Servic
-    BK_GATT_UUID_BATTERY_SERVICE_SVC =           0x180F,          /// Battery Servic
-    BK_GATT_UUID_BLOOD_PRESSURE_SVC =            0x1810,          /// Blood Pressure Servic
-    BK_GATT_UUID_ALERT_NTF_SVC =                 0x1811,          /// Alert Notification Servic
-    BK_GATT_UUID_HID_SVC =                       0x1812,          /// HID Servic
-    BK_GATT_UUID_SCAN_PARAMETERS_SVC =           0x1813,          /// Scan Parameters Servic
-    BK_GATT_UUID_RUNNING_SPEED_CADENCE_SVC =     0x1814,          /// Running Speed and Cadence Servic
-    BK_GATT_UUID_Automation_IO_SVC =             0x1815,          /// Automation IO Servic
-    BK_GATT_UUID_CYCLING_SPEED_CADENCE_SVC =     0x1816,          /// Cycling Speed and Cadence Servic
-    BK_GATT_UUID_CYCLING_POWER_SVC =             0x1818,          /// Cycling Power Servic
-    BK_GATT_UUID_LOCATION_AND_NAVIGATION_SVC =   0x1819,          /// Location and Navigation Servic
-    BK_GATT_UUID_ENVIRONMENTAL_SENSING_SVC =     0x181A,          /// Environmental Sensing Servic
-    BK_GATT_UUID_BODY_COMPOSITION =              0x181B,          /// Body Composition Servic
-    BK_GATT_UUID_USER_DATA_SVC =                 0x181C,          /// User Data Servic
-    BK_GATT_UUID_WEIGHT_SCALE_SVC =              0x181D,          /// Weight Scale Servic
-    BK_GATT_UUID_BOND_MANAGEMENT_SVC =           0x181E,          /// Bond Management Servic
-    BK_GATT_UUID_CONT_GLUCOSE_MONITOR_SVC =      0x181F,          /// Continuous Glucose Monitoring Servic
+    BK_GATT_UUID_GAP_SVC =                       0x1800,          ///  Generic Access Profile service
+    BK_GATT_UUID_GATT_SVC =                      0x1801,          ///  Generic Attribute Profile service
+    BK_GATT_UUID_IMMEDIATE_ALERT_SVC =           0x1802,          ///  Immediate alert service
+    BK_GATT_UUID_LINK_LOSS_SVC =                 0x1803,          ///  Link Loss service
+    BK_GATT_UUID_TX_POWER_SVC =                  0x1804,          ///  TX Power service
+    BK_GATT_UUID_CURRENT_TIME_SVC =              0x1805,          ///  Current Time Service service
+    BK_GATT_UUID_REF_TIME_UPDATE_SVC =           0x1806,          ///  Reference Time Update service
+    BK_GATT_UUID_NEXT_DST_CHANGE_SVC =           0x1807,          ///  Next DST Change service
+    BK_GATT_UUID_GLUCOSE_SVC =                   0x1808,          ///  Glucose service
+    BK_GATT_UUID_HEALTH_THERMOM_SVC =            0x1809,          ///  Health Thermometer service
+    BK_GATT_UUID_DEVICE_INFO_SVC =               0x180A,          ///  Device Information service
+    BK_GATT_UUID_HEART_RATE_SVC =                0x180D,          ///  Heart Rate service
+    BK_GATT_UUID_PHONE_ALERT_STATUS_SVC =        0x180E,          ///  Phone Alert Status service
+    BK_GATT_UUID_BATTERY_SERVICE_SVC =           0x180F,          ///  Battery service
+    BK_GATT_UUID_BLOOD_PRESSURE_SVC =            0x1810,          ///  Blood Pressure service
+    BK_GATT_UUID_ALERT_NTF_SVC =                 0x1811,          ///  Alert Notification service
+    BK_GATT_UUID_HID_SVC =                       0x1812,          ///  HID service
+    BK_GATT_UUID_SCAN_PARAMETERS_SVC =           0x1813,          ///  Scan Parameters service
+    BK_GATT_UUID_RUNNING_SPEED_CADENCE_SVC =     0x1814,          ///  Running Speed and Cadence service
+    BK_GATT_UUID_Automation_IO_SVC =             0x1815,          ///  Automation IO service
+    BK_GATT_UUID_CYCLING_SPEED_CADENCE_SVC =     0x1816,          ///  Cycling Speed and Cadence service
+    BK_GATT_UUID_CYCLING_POWER_SVC =             0x1818,          ///  Cycling Power service
+    BK_GATT_UUID_LOCATION_AND_NAVIGATION_SVC =   0x1819,          ///  Location and Navigation service
+    BK_GATT_UUID_ENVIRONMENTAL_SENSING_SVC =     0x181A,          ///  Environmental Sensing service
+    BK_GATT_UUID_BODY_COMPOSITION =              0x181B,          ///  Body Composition service
+    BK_GATT_UUID_USER_DATA_SVC =                 0x181C,          ///  User Data service
+    BK_GATT_UUID_WEIGHT_SCALE_SVC =              0x181D,          ///  Weight Scale service
+    BK_GATT_UUID_BOND_MANAGEMENT_SVC =           0x181E,          ///  Bond Management service
+    BK_GATT_UUID_CONT_GLUCOSE_MONITOR_SVC =      0x181F,          ///  Continuous Glucose Monitoring service
 
     /// Declarations
     BK_GATT_UUID_PRI_SERVICE =                   0x2800,

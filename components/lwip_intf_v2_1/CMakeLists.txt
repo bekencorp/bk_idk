@@ -8,6 +8,7 @@ list(APPEND incs
 	lwip-2.1.2/src/include
 	lwip-2.1.2/src/include/netif
 	lwip-2.1.2/src/include/lwip
+	lwip-2.1.2/src/include/lwip/priv
 	)
 
 	list(APPEND srcs
@@ -71,6 +72,13 @@ if (CONFIG_ETH)
 	)
 endif()
 
+if (CONFIG_BRIDGE)
+	list(APPEND srcs
+	lwip-2.1.2/src/netif/bridgeif.c
+	lwip-2.1.2/src/netif/bridgeif_fdb.c
+	)
+endif()
+
 else()
 
 if (CONFIG_SYS_CPU1)
@@ -91,5 +99,5 @@ endif()
 armino_component_register(SRCS "${srcs}"
 	INCLUDE_DIRS "${incs}"
 	REQUIRES driver
-	PRIV_REQUIRES bk_common bk_wifi
+	PRIV_REQUIRES bk_common bk_wifi bk_rtos os_source
 	)

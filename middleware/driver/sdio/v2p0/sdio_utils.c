@@ -341,6 +341,26 @@ uint32_t sdio_list_get_node_count(sdio_list_t *list_p)
 {
 	return list_p->count;
 }
+
+uint32_t sdio_list_compute_total_length(sdio_list_t *list_p)
+{
+	sdio_node_ptr_t cur_p = list_p->head;
+	uint32_t total_length = 0;
+
+	for(uint32_t i = 0; i < list_p->count; i++)
+	{
+		if(cur_p)
+		{
+			total_length += cur_p->len;
+		}
+		cur_p = cur_p->next;
+	}
+
+	return total_length;
+}
+
+
+
 #endif
 // EOF
 

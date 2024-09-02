@@ -5,12 +5,6 @@ if (CONFIG_EASY_FLASH)
 			easy_flash_V4.X/inc
 			easy_flash_V4.X/port
 			)
-	elseif(CONFIG_EASY_FLASH_V3)
-		set(incs
-			.
-			easy_flash_V3.X/inc
-			easy_flash_V3.X/port
-			)
 	endif()
 else()
 	set(incs
@@ -32,17 +26,6 @@ if (CONFIG_EASY_FLASH)
 		easy_flash_V4.X/src/ef_log.c
 		easy_flash_V4.X/src/ef_utils.c
 		easy_flash_V4.X/port/ef_port.c
-		)
-	elseif(CONFIG_EASY_FLASH_V3)
-	list(APPEND srcs
-		bk_ef.c
-		easy_flash_V3.X/src/easyflash.c
-		easy_flash_V3.X/src/ef_env.c
-		easy_flash_V3.X/src/ef_env_wl.c
-		easy_flash_V3.X/src/ef_iap.c
-		easy_flash_V3.X/src/ef_log.c
-		easy_flash_V3.X/src/ef_utils.c
-		easy_flash_V3.X/port/ef_port.c
 		)
 	endif()
 endif()

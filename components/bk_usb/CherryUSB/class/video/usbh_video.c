@@ -165,9 +165,9 @@ int usbh_video_open(struct usbh_video *video_class, uint8_t altsetting)
     uint16_t mps;
     int ret = 0;
 
-    if (video_class->is_opened) {
-        return -EMFILE;
-    }
+//  if (video_class->is_opened) {
+//      return -EMFILE;
+//  }
 
     if (altsetting > (video_class->num_of_intf_altsettings - 1)) {
         return -EINVAL;
@@ -198,7 +198,7 @@ int usbh_video_open(struct usbh_video *video_class, uint8_t altsetting)
     }
 
     mult = (ep_desc->wMaxPacketSize & USB_MAXPACKETSIZE_ADDITIONAL_TRANSCATION_MASK) >> USB_MAXPACKETSIZE_ADDITIONAL_TRANSCATION_SHIFT;
-    mps = ep_desc->wMaxPacketSize & USB_MAXPACKETSIZE_MASK;
+    mps  = ep_desc->wMaxPacketSize & USB_MAXPACKETSIZE_MASK;
     if (ep_desc->bEndpointAddress & 0x80) {
         video_class->isoin_mps = mps * (mult + 1);
         usbh_hport_activate_epx(&video_class->isoin, video_class->hport, ep_desc);
@@ -216,16 +216,7 @@ int usbh_video_close(struct usbh_video *video_class)
     struct usb_setup_packet *setup = &video_class->hport->setup;
     int ret;
 
-    setup->bmRequestType = USB_REQUEST_DIR_OUT | USB_REQUEST_STANDARD | USB_REQUEST_RECIPIENT_INTERFACE;
-    setup->bRequest = USB_REQUEST_SET_INTERFACE;
-    setup->wValue = 0;
-    setup->wIndex = video_class->data_intf;
-    setup->wLength = 0;
 
-    ret = usbh_control_transfer(video_class->hport->ep0, setup, NULL);
-    if (ret < 0) {
-        return ret;
-    }
     if (video_class->isoin) {
         usbh_pipe_free(video_class->isoin);
         //video_class->isoin = NULL;
@@ -238,6 +229,15 @@ int usbh_video_close(struct usbh_video *video_class)
 
     USB_LOG_DBG("Close video device\r\n");
     video_class->is_opened = false;
+
+    setup->bmRequestType = USB_REQUEST_DIR_OUT | USB_REQUEST_STANDARD | USB_REQUEST_RECIPIENT_INTERFACE;
+    setup->bRequest = USB_REQUEST_SET_INTERFACE;
+    setup->wValue = 0;
+    setup->wIndex = video_class->data_intf;
+    setup->wLength = 0;
+
+    ret = usbh_control_transfer(video_class->hport->ep0, setup, NULL);
+
     return ret;
 }
 
@@ -320,6 +320,7 @@ static int usbh_video_ctrl_intf_connect(struct usbh_hubport *hport, uint8_t intf
     ret = usbh_video_close(video_class);
     if (ret < 0) {
         USB_LOG_ERR("Fail to close video device\r\n");
+        usbh_video_devno_free(video_class);
         return ret;
     }
 
@@ -467,11 +468,13 @@ static int usbh_video_ctrl_intf_disconnect(struct usbh_hubport *hport, uint8_t i
         usbh_video_devno_free(video_class);
 
         if (video_class->isoin) {
-            usbh_pipe_free(video_class->isoin);
+            video_class->isoin = NULL;
+            //usbh_pipe_free(video_class->isoin);
         }
 
         if (video_class->isoout) {
-            usbh_pipe_free(video_class->isoout);
+            video_class->isoout = NULL;
+            //usbh_pipe_free(video_class->isoout);
         }
 
         memset(video_class, 0, sizeof(struct usbh_video));
@@ -494,24 +497,32 @@ static int usbh_video_data_intf_disconnect(struct usbh_hubport *hport, uint8_t i
 {
     return 0;
 }
-bool usbh_video_sw_init_flag =0;
+
+
+static uint8_t usbh_video_sw_init_flag = 0;
 void bk_usbh_video_sw_init( struct usbh_hubport *hport, uint8_t interface_num, uint8_t interface_sub_class)
 {
 	if(!hport)
 		return;
-	if(usbh_video_sw_init_flag)
-		return;
-	else
-		usbh_video_sw_init_flag = 1;
-	USB_LOG_DBG("[+]%s\r\n", __func__);
+    if (interface_sub_class == VIDEO_SC_VIDEOCONTROL)
+    {
+    	if(usbh_video_sw_init_flag > 1)
+    		return;
+    	else
+    		usbh_video_sw_init_flag++;
+    	USB_LOG_DBG("[+]%s\r\n", __func__);
+    	int ret = 0;
+    	if(interface_sub_class == VIDEO_SC_VIDEOCONTROL) {
+    		ret = usbh_video_ctrl_intf_connect(hport, interface_num);
+    		if(ret != 0) {
+    			usbh_video_sw_init_flag = 0;
+    			USB_LOG_DBG("[=]%s VIDEO CONTROL ERROR\r\n", __func__);
+    			return;
+    		}
+    	}
 
-	if(interface_sub_class == VIDEO_SC_VIDEOCONTROL)
-		usbh_video_ctrl_intf_connect(hport, interface_num);
-
-	if(interface_sub_class == VIDEO_SC_VIDEOSTREAMING)
-		usbh_video_data_intf_connect(hport, interface_num);
-
-	USB_LOG_DBG("[-]%s\r\n", __func__);
+    	USB_LOG_DBG("[-]%s\r\n", __func__);
+    }
 	return;
 }
 
@@ -519,10 +530,12 @@ void bk_usbh_video_sw_deinit( struct usbh_hubport *hport, uint8_t interface_num,
 {
 	if(!hport)
 		return;
-	if(!usbh_video_sw_init_flag)
+	if(!usbh_video_sw_init_flag) {
 		return;
-	else
-		usbh_video_sw_init_flag = 0;
+    }
+	else {
+		usbh_video_sw_init_flag--;
+    }
 	USB_LOG_DBG("[+]%s\r\n", __func__);
 
 	if(interface_sub_class == VIDEO_SC_VIDEOCONTROL)
@@ -532,6 +545,38 @@ void bk_usbh_video_sw_deinit( struct usbh_hubport *hport, uint8_t interface_num,
 		usbh_video_data_intf_disconnect(hport, interface_num);
 
 	USB_LOG_DBG("[-]%s\r\n", __func__);
+}
+
+void bk_usbh_video_unregister_dev(void)
+{
+    char undevname[CONFIG_USBHOST_DEV_NAMELEN];
+    int devno;
+
+    for (devno = 0; devno < 32; devno++) {
+        uint32_t bitno = 1 << devno;
+        if ((g_devinuse & bitno) != 0) {
+            snprintf(undevname, CONFIG_USBHOST_DEV_NAMELEN, DEV_FORMAT, devno);
+            struct usbh_video *video_class = (struct usbh_video *)usbh_find_class_instance(undevname);
+
+            if(video_class) {
+                usbh_video_devno_free(video_class);
+
+                if (video_class->isoin) {
+                    usbh_pipe_free(video_class->isoin);
+                }
+
+                if (video_class->isoout) {
+                    usbh_pipe_free(video_class->isoout);
+                }
+
+                memset(video_class, 0, sizeof(struct usbh_video));
+                usb_free(video_class);
+
+                USB_LOG_INFO("%s Check Unregister Video Class:%s\r\n", __func__, undevname);
+            }
+        }
+    }
+
 }
 
 #if CONFIG_YUV_TO_RGB

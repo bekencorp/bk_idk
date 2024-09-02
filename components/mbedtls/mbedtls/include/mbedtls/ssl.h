@@ -1464,6 +1464,11 @@ struct mbedtls_ssl_context {
                             *   Possible values are #MBEDTLS_SSL_CID_ENABLED
                             *   and #MBEDTLS_SSL_CID_DISABLED. */
 #endif /* MBEDTLS_SSL_DTLS_CONNECTION_ID */
+
+/* mbedtls ssl input buffer optimization flag */
+/* min_memory_flag : ENABLE(1) : In buffer 4K, out buffer 4K */
+/* min_memory_flag : DISABLE(0) : In buffer 16K, out buffer 4K */
+    int min_memory_flag;
 };
 
 #if defined(MBEDTLS_SSL_HW_RECORD_ACCEL)

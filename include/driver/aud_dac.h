@@ -26,19 +26,6 @@ extern "C" {
 
 
 /**
- * @brief     Get the dac fifo address
- *
- * @param
- *    - dac_fifo_addr: dac fifo address
- *
- * @return
- *    - BK_OK: succeed
- *    - BK_ERR_AUD_NOT_INIT: audio driver is not init
- *    - others: other errors.
- */
-bk_err_t bk_aud_dac_get_fifo_addr(uint32_t *dac_fifo_addr);
-
-/**
  * @brief     Init the dac module of audio
  *
  * This API init the dac module:
@@ -51,6 +38,7 @@ bk_err_t bk_aud_dac_get_fifo_addr(uint32_t *dac_fifo_addr);
  *    - BK_OK: succeed
  *    - BK_ERR_NULL_PARAM: config is NULL
  *    - BK_ERR_AUD_NOT_INIT: audio driver is not init
+ *    - others: other errors.
  */
 bk_err_t bk_aud_dac_init(aud_dac_config_t *dac_config);
 
@@ -65,6 +53,8 @@ bk_err_t bk_aud_dac_init(aud_dac_config_t *dac_config);
  *
  * @return
  *    - BK_OK: succeed
+ *    - BK_ERR_AUD_DAC_NOT_INIT: audio dac is not init
+ *    - others: other errors.
  */
 bk_err_t bk_aud_dac_deinit(void);
 
@@ -78,7 +68,8 @@ bk_err_t bk_aud_dac_deinit(void);
  *
  * @return
  *    - BK_OK: succeed
- *    - BK_ERR_AUD_NOT_INIT: audio driver is not init
+ *    - BK_ERR_AUD_DAC_NOT_INIT: audio dac is not init
+ *    - others: other errors.
  */
 bk_err_t bk_aud_dac_set_samp_rate(uint32_t samp_rate);
 
@@ -89,10 +80,60 @@ bk_err_t bk_aud_dac_set_samp_rate(uint32_t samp_rate);
  *
  * @return
  *    - BK_OK: succeed
- *    - BK_ERR_AUD_NOT_INIT: audio driver is not init
+ *    - BK_ERR_AUD_DAC_NOT_INIT: audio dac is not init
  *    - others: other errors.
  */
 bk_err_t bk_aud_dac_set_gain(uint32_t value);
+
+/**
+ * @brief     Set the dac analog gain
+ *
+ * @param value the gain value, range:0x00 ~ 0x0f
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_AUD_DAC_NOT_INIT: audio dac is not init
+ *    - others: other errors.
+ */
+bk_err_t bk_aud_dac_set_ana_gain(uint8_t value);
+
+/**
+ * @brief     Get the dac analog gain
+ *
+ * @param value the gain value
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_AUD_DAC_NOT_INIT: audio dac is not init
+ *    - others: other errors.
+ */
+bk_err_t bk_aud_dac_get_ana_gain(uint32_t *gain);
+
+/**
+ * @brief     Mute audio dac
+ *
+ * @param
+ *    - none
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_AUD_DAC_NOT_INIT: audio dac is not init
+ *    - others: other errors.
+ */
+bk_err_t bk_aud_dac_mute(void);
+
+/**
+ * @brief     Unmute audio dac
+ *
+ * @param
+ *    - none
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_AUD_DAC_NOT_INIT: audio dac is not init
+ *    - others: other errors.
+ */
+bk_err_t bk_aud_dac_unmute(void);
 
 /**
  * @brief     Set the dac channel
@@ -101,7 +142,7 @@ bk_err_t bk_aud_dac_set_gain(uint32_t value);
  *
  * @return
  *    - BK_OK: succeed
- *    - BK_ERR_AUD_NOT_INIT: audio driver is not init
+ *    - BK_ERR_AUD_DAC_NOT_INIT: audio dac is not init
  *    - others: other errors.
  */
 bk_err_t bk_aud_dac_set_chl(aud_dac_chl_t dac_chl);
@@ -116,7 +157,8 @@ bk_err_t bk_aud_dac_set_chl(aud_dac_chl_t dac_chl);
  *
  * @return
  *    - BK_OK: succeed
- *    - BK_ERR_AUD_NOT_INIT: audio driver is not init
+ *    - BK_ERR_AUD_DAC_NOT_INIT: audio dac is not init
+ *    - others: other errors.
  */
 bk_err_t bk_aud_dac_enable_int(void);
 
@@ -130,15 +172,25 @@ bk_err_t bk_aud_dac_enable_int(void);
  *
  * @return
  *    - BK_OK: succeed
- *    - BK_ERR_AUD_NOT_INIT: audio driver is not init
+ *    - BK_ERR_AUD_DAC_NOT_INIT: audio dac is not init
+ *    - others: other errors.
  */
 bk_err_t bk_aud_dac_disable_int(void);
 
+/**
+ * @brief     Get the audio dac fifo address
+ *
+ * @param
+ *    - dac_fifo_addr: dac fifo address
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: other errors.
+ */
 bk_err_t bk_aud_dac_get_fifo_addr(uint32_t *dac_fifo_addr);
 
-
 /**
-* @brief	   Get the dac status information
+* @brief   Get the dac status information
 *
 * This API get the dac fifo status.
 *
@@ -147,15 +199,8 @@ bk_err_t bk_aud_dac_get_fifo_addr(uint32_t *dac_fifo_addr);
 *
 * @return
 *    - BK_OK: succeed
-*    - BK_ERR_AUD_NOT_INIT: audio driver is not init
-*
-* Usage example:
-*
-*    uint32_t dac_fifo_status = 0;
-*	   bk_aud_get_dac_status(&dac_fifo_status);
-*    if (dac_fifo_status & AUD_DACL_NEAR_EMPTY_MASK) {
-*    }
-*
+*    - BK_ERR_AUD_DAC_NOT_INIT: audio dac is not init
+*    - others: other errors.
 */
 bk_err_t bk_aud_dac_get_status(uint32_t *dac_status);
 
@@ -169,7 +214,8 @@ bk_err_t bk_aud_dac_get_status(uint32_t *dac_status);
  *
  * @return
  *    - BK_OK: succeed
- *    - BK_ERR_AUD_NOT_INIT: audio driver is not init
+ *    - BK_ERR_AUD_DAC_NOT_INIT: audio dac is not init
+ *    - others: other errors.
  */
 bk_err_t bk_aud_dac_start(void);
 
@@ -183,12 +229,25 @@ bk_err_t bk_aud_dac_start(void);
  *
  * @return
  *    - BK_OK: succeed
- *    - BK_ERR_AUD_NOT_INIT: audio driver is not init
+ *    - BK_ERR_AUD_DAC_NOT_INIT: audio dac is not init
+ *    - others: other errors.
  */
 bk_err_t bk_aud_dac_stop(void);
 
+/**
+ * @brief     Write data to dac
+ *
+ * This API write pcm data to audio dac fifo.
+ *
+ * @param
+ *    - pcm_value: audio data
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_AUD_DAC_NOT_INIT: audio dac is not init
+ *    - others: other errors.
+ */
 bk_err_t bk_aud_dac_write(uint32_t pcm_value);
-
 
 /**
  * @brief     Init the eq module of audio
@@ -202,7 +261,8 @@ bk_err_t bk_aud_dac_write(uint32_t pcm_value);
  * @return
  *    - BK_OK: succeed
  *    - BK_ERR_NULL_PARAM: config is NULL
- *    - BK_ERR_AUD_NOT_INIT: audio driver is not init
+ *    - BK_ERR_AUD_DAC_NOT_INIT: audio dac is not init
+ *    - others: other errors.
  */
 bk_err_t bk_aud_dac_eq_config(aud_dac_eq_config_t *config);
 
@@ -213,55 +273,44 @@ bk_err_t bk_aud_dac_eq_config(aud_dac_eq_config_t *config);
  *  - Configure the eq parameters to default value.
  *
  * @param
- *    - eq_config: eq parameter configure
+ *    - none
  *
  * @return
  *    - BK_OK: succeed
- *    - BK_ERR_NULL_PARAM: config is NULL
+ *    - BK_ERR_AUD_DAC_NOT_INIT: audio dac is not init
+ *    - others: other errors.
  */
 bk_err_t bk_aud_dac_eq_deconfig(void);
 
 /**
- * @brief     Register audio isr
+ * @brief     Register audio dac isr
  *
- * This API register audio isr:
- *   - Disable adc if work mode is adc work mode
- *   - Disable dtmf if work mode is dtmf work mode
- *
- * Usage example:
- *
- *     void cli_aud_adcl_isr(void *param)
- *     {
- *         uint32_t adc_data;
- *         uint32_t adc_status;
- *
- *         bk_aud_get_adc_status(&adc_status);
- *         if (adc_status & AUD_ADCL_NEAR_FULL_MASK) {
- *             bk_aud_get_adc_fifo_data(&adc_data);
- *             bk_aud_dac_write(adc_data);
- *         }
- *     }
- *
- *     //register isr
- *     ret = bk_aud_register_aud_isr(AUD_ISR_ADCL, cli_aud_adcl_isr, NULL);
- *     CLI_LOGI("register adc isr successful\n");
- *
- *     //enable audio interrupt
- *     bk_aud_enable_adc_int();
- *     CLI_LOGI("enable adc interrupt successful\n");
- *
- * @param isr_id adc work mode adc/dtmf
+ * @param isr_id AUD_ISR_DACR or AUD_ISR_DACL
  * @param isr audio isr callback
- * @param param audio isr callback parameter
  *
  * @return
  *    - BK_OK: succeed
- *    - BK_ERR_AUD_ADC_MODE: adc work mode is NULL
- *    - BK_ERR_AUD_NOT_INIT: audio driver is not init
+ *    - BK_ERR_AUD_DAC_NOT_INIT: audio dac is not init
  *    - others: other errors.
  */
 bk_err_t bk_aud_dac_register_isr(aud_isr_id_t isr_id, aud_isr_t isr);
 
+/**
+ * @brief     Set bypass audio dac DWA(Device Wire Adapter)
+ *
+ * This API set bypass audio dac DWA:
+ *  - 1: bypass audio dac DWA, audio dac analog not work.
+ *
+ * @param
+ *    - value: 0: audio dac analog not work
+ *             1: audio dac analog work
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_AUD_DAC_NOT_INIT: audio dac is not init
+ *    - others: other errors.
+ */
+bk_err_t bk_aud_dac_set_dwa_bypass(uint8_t value);
 
 /**
  * @}

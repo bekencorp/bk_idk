@@ -92,7 +92,7 @@ static int wsa_init_done = 0;
 #include <sys/time.h>
 #include <unistd.h>
 #include <signal.h>
-#include <fcntl.h>
+//#include <fcntl.h>
 #include <netdb.h>
 #include <errno.h>
 

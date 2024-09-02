@@ -95,6 +95,7 @@ extern "C" {
 #define PM_CHIP_ID_MASK                                  (0xFFFF0000)
 #define PM_CHIP_ID_MPW_V2_3                              (0x22710010)
 #define PM_CHIP_ID_MPW_V4                                (0x22C20010)
+#define PM_CHIP_ID_MP_A                                  (0x23640810)
 
 typedef enum
 {
@@ -377,6 +378,12 @@ typedef enum
 	ANALOG_REG19,
 	ANALOG_REG20,
 	ANALOG_REG21,
+	ANALOG_REG22,
+	ANALOG_REG23,
+	ANALOG_REG24,
+	ANALOG_REG25,
+	ANALOG_REG26,
+	ANALOG_REG27,
 	ANALOG_MAX
 } analog_reg_t;
 

@@ -8,6 +8,7 @@
 #include "platform/include/tfm_platform_system.h"
 #include "cmsis.h"
 #include "soc/soc.h"
+#include "driver/timer.h"
 #include "aon_pmu_hal.h"
 #include "prro_hal.h"
 
@@ -25,9 +26,7 @@ static void tfm_platform_set_reset_reason(uint32_t type)
 
 static void tfm_platform_wdt_reset(void)
 {
-    //TODO fix me, please consider bk_reboot in Armino
-    //
-    printf("wdt reboot\r\n");
+    BK_LOG_RAW("wdt reboot\r\n");
 #if CONFIG_TFM_BK7236_V5
     prro_hal_set_secure(PRRO_DEV_REG, PRRO_SECURE);
 #else
@@ -44,9 +43,6 @@ static void tfm_platform_wdt_reset(void)
 
 void tfm_platform_hal_system_reset(void)
 {
-    /* Reset the system */
-
-    //NVIC_SystemReset();
     tfm_platform_wdt_reset();
 }
 
@@ -55,10 +51,36 @@ enum tfm_platform_err_t tfm_platform_hal_ioctl(tfm_platform_ioctl_req_t request,
                                                psa_invec  *in_vec,
                                                psa_outvec *out_vec)
 {
+    timer_id_t tid;
     (void)request;
     (void)in_vec;
     (void)out_vec;
 
+	if(PLATFOR_INVALID_REQUEST == request){
+		goto ioctrl_exit;
+	}
+
+	if(in_vec){
+		tid = *((timer_id_t *)in_vec->base);
+	}
+	switch(request){
+		case PLT_OP_TIMER_DRV_INIT:
+			bk_timer_driver_init();
+			break;
+		case PLT_OP_START_TIMER:
+			bk_timer_start(tid, 500, (timer_isr_t)NULL);
+			break;
+		case PLT_OP_STOP_TIMER:
+			bk_timer_stop(tid);
+			break;
+		case PLT_OP_CLEAR_TIMER_ISR_STATUS:
+			timer_clear_isr_status();
+			break;
+		default:
+			break;
+	}
+
+ioctrl_exit:
     /* Not needed for this platform */
     return TFM_PLATFORM_ERR_NOT_SUPPORTED;
 }

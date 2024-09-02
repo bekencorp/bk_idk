@@ -61,9 +61,14 @@ static void yuv_buf_deinit_common(void)
 	yuv_buf_hal_reset_config_to_default(&s_yuv_buf.hal);
 	/* 1) power off yuv_buf
 	 * 2) disable yuv_buf system interrupt
+	 * 3) unregister isr
 	 */
 	sys_drv_yuv_buf_pwr_down();
 	sys_drv_int_group2_disable(YUV_BUF_INTERRUPT_CTRL_BIT);
+	for (uint8_t i = 0; i < YUV_BUF_ISR_MAX; i++)
+	{
+		bk_yuv_buf_unregister_isr(i);
+	}
 }
 
 bk_err_t bk_yuv_buf_driver_init(void)
@@ -99,7 +104,7 @@ bk_err_t bk_yuv_buf_init(const yuv_buf_config_t *config)
 	YUV_BUF_RETURN_ON_DRIVER_NOT_INIT();
 
 	// set cpu frequent to 320M
-	bk_pm_module_vote_cpu_freq(PM_DEV_ID_JPEG, PM_CPU_FRQ_320M);
+	bk_pm_module_vote_cpu_freq(PM_DEV_ID_JPEG, PM_CPU_FRQ_480M);
 
 	yuv_buf_init_common();
 

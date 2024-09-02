@@ -21,16 +21,16 @@ target_link_libraries(tfm_partitions
 add_library(tfm_partition_defs INTERFACE)
 
 add_subdirectory(lib/sprt)
-add_subdirectory(audit_logging)
 add_subdirectory(crypto)
-add_subdirectory(initial_attestation)
 add_subdirectory(protected_storage)
 add_subdirectory(internal_trusted_storage)
 add_subdirectory(platform)
-add_subdirectory(psa_proxy)
 add_subdirectory(firmware_update)
 add_subdirectory(ns_agent_tz)
-add_subdirectory(ns_agent_mailbox)
+if (CONFIG_INITIAL_ATTESTATION)
+	add_subdirectory(initial_attestation)
+endif()
+
 #TODO fix me, when enabled system_clock, crash, still not find the root cause.
 # Disable it temporary!
 #add_subdirectory(system_clock)

@@ -8,7 +8,9 @@
 
 .. important::
 
-    *By default, the Armino supports all the AT commands described in this section*
+    *By default, the BK-IDK supports all the AT commands described in this section*
+
+    *Unless specified,otherwise the timeout boundary for Wi-Fi AT is limited to 15s*
 
 
 - :ref:`AT+WLMAC<wifi-mac>` :Get the MAC address of STA identity and SAP identity, you can also configure the MAC address
@@ -19,7 +21,7 @@
 
 - :ref:`AT+WIFISTATUS<wifi-getstatus>` :It is used to view the current mode status of the wifi device or specify parameter information
 
-- :ref:`AT+WIFISCAN<wifi-scan>` :Scan for neighbor AP information
+- :ref:`AT+WIFISCAN<wifi-scan>` :Scan for neighbor AP information,or scan according to specified parameters
 
 - :ref:`AT+SAPSTART<wifi-sapstart>` :Create SoftAP as SAP
 
@@ -28,7 +30,6 @@
 - :ref:`AT+STAPING<wifi-pingstart>` :PING packets with a specified IP address, a specified duration, and a specified packet size
 
 - :ref:`AT+STAPINGSTOP<wifi-pingstop>` :Stop the PING packet that is being pinged
-
 
 .. _wifi-mac:
 
@@ -42,7 +43,7 @@
 **Setup command** ::
 
     AT+WLMAC 
-    AT+WLMAC = mac_addr(Optional)
+    AT+WLMAC=mac_addr(Optional)
 
 **Params** ::
 
@@ -57,11 +58,11 @@
     CMDRSP:ERROR
 
 **Attributes** :
-    +---------------+----------------+---------------------+
-    |  Timeout      |  Time-out time |  Time-out callback  | 
-    +===============+================+=====================+
-    |     None      |     None       |        None         |       
-    +---------------+----------------+---------------------+
+    +---------------+----------------+
+    |  Timeout      |  Time-out time |
+    +===============+================+
+    |     Yes       |     15s        |     
+    +---------------+----------------+
 
 .. _wifi-stastart:
 
@@ -74,7 +75,7 @@
 
 **Setup command** ::
 
-     AT+STASTART = ssid, pwd(Optional)
+     AT+STASTART=ssid, pwd(Optional)
 
 **Params** ::
 
@@ -89,11 +90,11 @@
     CMDRSP:ERROR
 
 **Attributes** :
-    +---------------+----------------+---------------------+
-    |  Timeout      |  Time-out time |  Time-out callback  | 
-    +===============+================+=====================+
-    |     None      |      20s       |        None         |       
-    +---------------+----------------+---------------------+
+    +---------------+----------------+
+    |  Timeout      |  Time-out time |
+    +===============+================+
+    |     Yes       |     20s        |     
+    +---------------+----------------+
 
 **AT Event** ::
 
@@ -130,11 +131,11 @@
     CMDRSP:ERROR
 
 **Attributes** :
-    +---------------+----------------+---------------------+
-    |  Timeout      |  Time-out time |  Time-out callback  | 
-    +===============+================+=====================+
-    |     None      |      None      |        None         |       
-    +---------------+----------------+---------------------+
+    +---------------+----------------+
+    |  Timeout      |  Time-out time |
+    +===============+================+
+    |     Yes       |     15s        |     
+    +---------------+----------------+
 
 **AT Event** ::
 
@@ -156,8 +157,8 @@
 **Setup command** ::
 
    AT+WIFISTATUS
-   AT+WIFISTATUS = STA/AP
-   AT+WIFISTATUS = STA/AP,param
+   AT+WIFISTATUS=STA/AP
+   AT+WIFISTATUS=STA/AP,param
 
 **Params** ::
 
@@ -172,26 +173,28 @@
     CMDRSP:ERROR
 
 **Attributes** :
-    +---------------+----------------+---------------------+
-    |  Timeout      |  Time-out time |  Time-out callback  | 
-    +===============+================+=====================+
-    |     None      |      None      |        None         |       
-    +---------------+----------------+---------------------+
+    +---------------+----------------+
+    |  Timeout      |  Time-out time |
+    +===============+================+
+    |     Yes       |     15s        |     
+    +---------------+----------------+
 
 **AT Event** ::
 
     No Param:
             EVT:'sta: x, ap: x (1:The corresponding identity has been enabled；0:The corresponding identity has not been enabled)
-            [KW:]sta:rssi=xxx,aid=xx,ssid=xxxx,bssid=xx:xx:xx:xx:xx:xx,channel=xx,cipher_type=xxx(STA is started)
+            EVT: sta:rssi=xxx,aid=xx,ssid=xxxx,bssid=xx:xx:xx:xx:xx:xx,channel=xx,cipher_type=xxx(STA is started)
+            EVT: ap_ip=xxx,ap_gate=xxx,ap_mask=xxx,ap_dns=xxx(SAP is started)
+
 
         One Param：
             STA Status：
-            CMDRSP::STA_WIFI_CONNECT
-            CMDRSP::STA_WIFI_DISCONNECT
+            CMDRSP:STA_WIFI_CONNECT
+            CMDRSP:STA_WIFI_DISCONNECT
 
             AP Status：
-            CMDRSP::AP_WIFI_START
-            CMDRSP::AP_WIFI_CLOSE
+            CMDRSP:AP_WIFI_START
+            CMDRSP:AP_WIFI_CLOSE
 
          Two Params：
             STA：
@@ -209,8 +212,8 @@
 
 .. _wifi-scan:
 
-:ref:`AT+WIFISCAN<wifi-at>` **:Scan for neighbor AP information**
-----------------------------------------------------------------------------------------------
+:ref:`AT+WIFISCAN<wifi-at>` **:Scan for neighbor AP information,or scan according to specified parameters**
+--------------------------------------------------------------------------------------------------------------
 
 **Query command** ::    
     
@@ -219,13 +222,29 @@
 **Setup command** ::
 
     AT+WIFISCAN
-    AT+WIFISCAN = param
+    AT+WIFISCAN=param1
+    AT+WIFISCAN=param1<,param2,param3,param4,param5,param6>(param2~param6 are all optional parameters)
+    AT+WIFISCAN=SET_SSID,SSID,TYPE,DURATION,CNT,NUMBER
 
 **Params** ::
 
-    No param：The device scans all surrounding AP information and prints it
+    No Param：The device will scan and dump all surrounding AP information
     
-    param:ssid scan by specified SSID。
+    Only param1:ssid,SCAN will be conducted based on the specified SSID 
+
+    Other situations：
+
+        a) param1:SET_SSID,whether the SCAN is specified by SSID,specified:1; non-specified:0
+
+        b) param2:SSID,if param1 is 1,fill in the target SSID, otherwise,fill in 0
+
+        c) param3:TYPE,SCAN Type，Active: **0**,PASSIVE: **1** [If not specified,fill in 0]
+
+        d) param4:DURATION,duration of single-channel SCAN in ms [If not specified,fill in 0]
+
+        e) param5:CNT,the number of the specified channels [If not specified,fill in 0]
+
+        f) param6:NUMBER,if the specified number of scanning channels in CNT is not 0,fill in the scan channel number [Optional,if CNT is zero,ignored]
 
 **Response** ::
 
@@ -234,15 +253,37 @@
     CMDRSP:ERROR
 
 **Attributes** :
-    +---------------+----------------+---------------------+
-    |  Timeout      |  Time-out time |  Time-out callback  | 
-    +===============+================+=====================+
-    |     None      |      7ms       |        None         |       
-    +---------------+----------------+---------------------+
+    +---------------+----------------+
+    |  Timeout      |  Time-out time |
+    +===============+================+
+    |     Yes       |      5s        |     
+    +---------------+----------------+
 
 **AT Event** ::
 
     EVT:WLAN STA SCAN_DONE
+
+**Examples** ::
+
+    1.AT+WIFISCAN [The device will scan and dump all surrounding AP information using the default settings]
+
+    2.AT+WIFISCAN=aclsemi [Perform a full-channel scan of AP named aclsemi with the specified SSID using the default settings]
+
+    3.AT+WIFISCAN=1,aclsemi,0,0,0 [Scan router named aclsemimreset is using the default settings]
+
+    4.AT+WIFISCAN=0,0,0,0,3,1,6,11 [Scan all APs on CHANNLE 1/6/11,reset is using the default settings]
+    
+    5.AT+WIFISCAN=0,0,1,0,0 [Passive SCAN,reset is using the default settings]
+    
+    6.AT+WIFISCAN=0,0,0,70,0 [Set the specified channel scan duration to 70ms,reset is using the default settings]
+    
+    7.AT+WIFISCAN=1,aclsemi,1,70,3,1,6,11 [Scan router named aclsemi,PASSIVE SCAN,the specified channel scan duration is 70ms,Scan on CHANNLE 1/6/11]
+
+.. note::
+
+    When the configured *duration* time is between 0 and 120ms(120ms is included),it will be considered a failure if the scanning time exceeds 1.6 seconds
+
+    **This condition only takes effect when the duration is configured.**
 
 
 .. _wifi-sapstart:
@@ -284,13 +325,13 @@
     CMDRSP:ERROR
 
 **Attributes** :
-    +---------------+----------------+---------------------+
-    |  Timeout      |  Time-out time |  Time-out callback  | 
-    +===============+================+=====================+
-    |     None      |      None      |        None         |       
-    +---------------+----------------+---------------------+
+    +---------------+----------------+
+    |  Timeout      |  Time-out time |
+    +===============+================+
+    |     Yes       |     15s        |     
+    +---------------+----------------+
 
-**AT消息** ::
+**AT Event** ::
 
     Print when a STA is connected to this SAP
     EVT:WLAN SAP CONNECTED + MAC Address which belongs to STA
@@ -320,11 +361,11 @@
     CMDRSP:ERROR
 
 **Attributes** :
-    +---------------+----------------+---------------------+
-    |  Timeout      |  Time-out time |  Time-out callback  | 
-    +===============+================+=====================+
-    |     None      |      None      |        None         |       
-    +---------------+----------------+---------------------+
+    +---------------+----------------+
+    |  Timeout      |  Time-out time |
+    +===============+================+
+    |     Yes       |     15s        |     
+    +---------------+----------------+
 
 
 .. _wifi-pingstart:
@@ -353,11 +394,11 @@
     CMDRSP:ERROR
 
 **Attributes** :
-    +---------------+----------------+---------------------+
-    |  Timeout      |  Time-out time |  Time-out callback  | 
-    +===============+================+=====================+
-    |     None      |      None      |        None         |       
-    +---------------+----------------+---------------------+
+    +---------------+----------------+
+    |  Timeout      |  Time-out time |
+    +===============+================+
+    |     Yes       |     15s        |     
+    +---------------+----------------+
 
 .. _wifi-pingstop:
 
@@ -383,8 +424,8 @@
     CMDRSP:ERROR
 
 **Attributes** :
-    +---------------+----------------+---------------------+
-    |  Timeout      |  Time-out time |  Time-out callback  | 
-    +===============+================+=====================+
-    |     None      |      None      |        None         |       
-    +---------------+----------------+---------------------+
+    +---------------+----------------+
+    |  Timeout      |  Time-out time |
+    +===============+================+
+    |     Yes       |     15s        |     
+    +---------------+----------------+

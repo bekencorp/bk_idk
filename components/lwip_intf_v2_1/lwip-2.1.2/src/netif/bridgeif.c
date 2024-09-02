@@ -87,6 +87,21 @@
 #include "lwip/snmp.h"
 #include "lwip/timeouts.h"
 #include <string.h>
+#include "lwip/prot/iana.h"
+#include "lwip/prot/dhcp.h"
+#include "bk_list.h"
+#include "bk_wifi_types.h"
+#include "os/os.h"
+#include "os/mem.h"
+
+#include "lwip/udp.h"
+#include "netif/ethernet.h"
+#include "net.h"
+
+/*0:disabled 1:enabled*/
+uint8 bridge_is_enabled = 0;
+extern void *net_get_sta_handle(void);
+extern void *net_get_uap_handle(void);
 
 #if LWIP_NUM_NETIF_CLIENT_DATA
 
@@ -244,6 +259,721 @@ bridgeif_is_local_mac(bridgeif_private_t *br, struct eth_addr *addr)
   return 0;
 }
 
+void exchange_arp_sender(struct netif *netif, struct pbuf *pd)
+{
+  unsigned short protocol;
+  unsigned char *data=NULL;
+
+  data = pd->payload;
+  protocol = *((unsigned short *)(data + 2 * 6));
+
+  if(protocol == lwip_htons(ETHTYPE_ARP)) {
+    struct etharp_hdr *arp = (struct etharp_hdr *)(data + 14);
+    unsigned char *arp_ptr = (unsigned char *)(arp);
+    memcpy(arp_ptr+8, netif->hwaddr, 6);
+  }
+}
+static inline bool netif_is_upstream(struct netif *netif)
+{
+	if (netif == net_get_sta_handle())
+		return 1;
+	return 0;
+}
+
+/**
+ * Send a raw ARP packet (opcode and all addresses can be modified)
+ *
+ * @param netif the lwip network interface on which to send the ARP packet
+ * @param rx_if_idx don't send packet to this interface
+ * @param ethsrc_addr the source MAC address for the ethernet header
+ * @param ethdst_addr the destination MAC address for the ethernet header
+ * @param hwsrc_addr the source MAC address for the ARP protocol header
+ * @param ipsrc_addr the source IP address for the ARP protocol header
+ * @param hwdst_addr the destination MAC address for the ARP protocol header
+ * @param ipdst_addr the destination IP address for the ARP protocol header
+ * @param opcode the type of the ARP packet
+ * @return ERR_OK if the ARP packet has been sent
+ *         ERR_MEM if the ARP packet couldn't be allocated
+ *         any other err_t on failure
+ */
+static err_t etharp_raw2(struct netif *netif, u8_t rx_if_idx,
+				  const struct eth_addr *ethsrc_addr, const struct eth_addr *ethdst_addr,
+				  const struct eth_addr *hwsrc_addr, const ip4_addr_t *ipsrc_addr,
+				  const struct eth_addr *hwdst_addr, const ip4_addr_t *ipdst_addr,
+				  const u16_t opcode,
+				  u8 flag)
+{
+	struct pbuf *p;
+	err_t result = ERR_OK;
+	struct etharp_hdr *hdr;
+
+	LWIP_ASSERT("netif != NULL", netif != NULL);
+
+	/* allocate a pbuf for the outgoing ARP request packet */
+	p = pbuf_alloc(PBUF_LINK, SIZEOF_ETHARP_HDR, PBUF_RAM);
+	/* could allocate a pbuf for an ARP request? */
+	if (p == NULL)
+		return ERR_MEM;
+
+	hdr = (struct etharp_hdr *)p->payload;
+	hdr->opcode = lwip_htons(opcode);
+
+	/* Write the ARP MAC-Addresses */
+	memcpy(&hdr->shwaddr, hwsrc_addr, 6);
+	memcpy(&hdr->dhwaddr, hwdst_addr, 6);
+	/* Copy struct ip4_addr2 to aligned ip4_addr, to support compilers without
+	 * structure packing. */
+	memcpy(&hdr->sipaddr, ipsrc_addr, sizeof(ip4_addr_t));
+	memcpy(&hdr->dipaddr, ipdst_addr, sizeof(ip4_addr_t));
+
+	hdr->hwtype = PP_HTONS(LWIP_IANA_HWTYPE_ETHERNET);
+	hdr->proto = PP_HTONS(ETHTYPE_IP);
+	/* set hwlen and protolen */
+	hdr->hwlen = ETH_HWADDR_LEN;
+	hdr->protolen = sizeof(ip4_addr_t);
+
+	p->if_idx = rx_if_idx;	/* XXX */
+	p->elfags = flag;
+
+	/* send ARP query */
+#if LWIP_AUTOIP
+	/* If we are using Link-Local, all ARP packets that contain a Link-Local
+	 * 'sender IP address' MUST be sent using link-layer broadcast instead of
+	 * link-layer unicast. (See RFC3927 Section 2.5, last paragraph) */
+	if (ip4_addr_islinklocal(ipsrc_addr))
+		ethernet_output(netif, p, ethsrc_addr, &ethbroadcast, ETHTYPE_ARP);
+	else
+#endif /* LWIP_AUTOIP */
+	ethernet_output(netif, p, ethsrc_addr, ethdst_addr, ETHTYPE_ARP);
+
+	//ETHARP_STATS_INC(etharp.xmit);
+	/* free ARP query packet */
+	pbuf_free(p);
+	p = NULL;
+	/* could not allocate pbuf for ARP request */
+
+	return result;
+}
+
+int send_gratuitous_arp_downstream(bridgeif_private_t *br, struct netif *rx_if, struct eth_addr *hwaddr, ip4_addr_t *ipaddr)
+{
+	etharp_raw2(br->netif, netif_get_index(rx_if),
+			   (struct eth_addr *)br->netif->hwaddr, &ethbroadcast,
+			   (struct eth_addr *)hwaddr, ipaddr,
+			   &ethzero, ipaddr,
+			   ARP_REQUEST, 1);
+	/*
+	 * Gratuitous ARP comes in two flavours, request and reply.
+	 * Some operating systems only accept request, some only reply.
+	 * Let's just send both...
+	 */
+	//TODO
+	return 0;
+}
+
+static void arp_request_handle_reply(bridgeif_private_t *br, struct netif *netif, ip4_addr_t *dip, uint8_t *dhwaddr);
+
+extern err_t
+etharp_update_arp_entry(struct netif *netif, const ip4_addr_t *ipaddr, struct eth_addr *ethaddr, u8_t flags);
+/*
+ * return: 1: eaten, 2: dont free 0: continue
+ */
+static int bk_bridge_upstream_if_recv(bridgeif_private_t *br, struct pbuf *p, struct netif *rx_if)
+{
+	struct eth_hdr *ethhdr;
+	u16_t type;
+
+	if (!netif_is_upstream(rx_if))	//sta0
+		return 0;
+
+	if (p->len <= SIZEOF_ETH_HDR)
+		return 0;
+
+	/* etharp_gratuitous, send_gratuitous_arp, etharp_raw2
+	 * ethernet_input */
+	ethhdr = p->payload;
+	type = ethhdr->type;
+
+	if (type == PP_HTONS(ETHTYPE_ARP)) {
+		/*
+		 *  Process ARP packets
+		 *	a: ARP Request
+		 *	  If we found an arp entry in our arp_table, send ARP response with mac=ourmac, ip=node'sip,
+		 *		and send an gratious arp to all nodes in out mesh network.
+		 *	  If not found, build arp request to all nodes in our mesh network.
+		 *	 b: ARP Response
+		 *	  update arp_table, XXX may be optimized(send arp response immediately, or send gratioius arp).
+		 */
+		struct etharp_hdr *arphdr = (struct etharp_hdr *)(ethhdr + 1);
+
+		/* RFC 826 "Packet Reception": */
+		if ((arphdr->hwtype != PP_HTONS(LWIP_IANA_HWTYPE_ETHERNET)) ||
+			(arphdr->hwlen != ETH_HWADDR_LEN) ||
+			(arphdr->protolen != sizeof(ip4_addr_t)) ||
+			(arphdr->proto != PP_HTONS(ETHTYPE_IP)))
+			return 1;
+
+		if (arphdr->opcode == PP_HTONS(ARP_REQUEST)) {
+			const ip4_addr_t *unused_ipaddr;
+			struct eth_addr *unused_ethaddr;
+			u8_t for_us;
+			ip4_addr_t sipaddr, dipaddr;
+
+			/* Copy struct ip4_addr2 to aligned ip4_addr, to support compilers without
+			 * structure packing (not using structure copy which breaks strict-aliasing rules). */
+			memcpy(&sipaddr, &arphdr->sipaddr, sizeof(ip4_addr_t));
+			memcpy(&dipaddr, &arphdr->dipaddr, sizeof(ip4_addr_t));
+
+			/* send gratious ARP, mark the pbuf inport with upstream, so packet will not forward to extAP.*/
+			//send_gratuitous_arp_downstream(br, rx_if, &sipaddr);
+
+			/* this interface is not configured? */
+			if (ip4_addr_isany_val(*netif_ip4_addr(br->netif))) {
+				for_us = 0;
+			} else {
+				/* ARP packet directed to us? */
+				for_us = (u8_t)ip4_addr_cmp(&dipaddr, netif_ip4_addr(br->netif));
+			}
+
+			if (for_us) {
+				/* is this for one of the local ports? */
+				/* yes, send to cpu port only */
+				LWIP_DEBUGF(BRIDGEIF_FW_DEBUG, ("for_us: br -> input(%p) local\n", (void *)p));
+				br->netif->input(p, br->netif);	// lwip arp module will update arptable and send ARP REPLY
+				return 2;
+			}
+
+			/* for other hosts */
+			if (etharp_find_addr(NULL, &dipaddr, &unused_ethaddr, &unused_ipaddr) >= 0) {
+				//build ARP Reply
+				etharp_raw2(rx_if, netif_get_index(rx_if),	// use upstream netif
+						   (struct eth_addr *)rx_if->hwaddr, &arphdr->shwaddr,
+						   (struct eth_addr *)rx_if->hwaddr, &dipaddr,	/* replace with upstream's hwaddr */
+						   &arphdr->shwaddr, &sipaddr,
+						   ARP_REPLY, 0);
+			} else {
+				//resend ARP Request, flood to other bridge ports, FIXME: use bridge to forward???
+				// TODO: when mesh sta arp replies, send arp reply to external STA immediatedly
+				etharp_raw2(br->netif, netif_get_index(rx_if),	// use upstream netif
+						   (struct eth_addr *)br->netif->hwaddr, &ethhdr->dest,
+						   &arphdr->shwaddr, &sipaddr,
+						   &arphdr->dhwaddr, &dipaddr,
+						   ARP_REQUEST, 0);
+			}
+
+			return 1;		// eat this packet
+		} else if (arphdr->opcode == PP_HTONS(ARP_REPLY)) {
+			/* XXX optimize */
+			ip4_addr_t sipaddr;
+
+			br->netif->input(p, br->netif);	// lwip arp module will update arptable and send ARP REPLY
+
+			memcpy(&sipaddr, &arphdr->sipaddr, sizeof(ip4_addr_t));
+			// send_gratuitous_arp_downstream(br, rx_if, &arphdr->shwaddr, &ipaddr);
+			arp_request_handle_reply(br, rx_if, &sipaddr, (uint8_t *)&arphdr->shwaddr);
+
+			return 2;		// eat this packet
+		}
+	} else if (type == PP_HTONS(ETHTYPE_IP)) {
+		/*
+		 * DHCP
+		 */
+		s16_t ip_hdr_offset = SIZEOF_ETH_HDR;	//XXX: VLAN
+		struct ip_hdr *iphdr = (struct ip_hdr *)((u8_t *)p->payload + ip_hdr_offset);
+		u16_t iphdr_hlen;
+		u16_t iphdr_len;
+		s16_t proto;
+		struct udp_hdr *udphdr;
+		u16_t src, dest;
+
+		if (IPH_V(iphdr) != 4)
+			return 0;
+
+		/* obtain IP header length in number of 32-bit words */
+		iphdr_hlen = IPH_HL(iphdr);
+		/* calculate IP header length in bytes */
+		iphdr_hlen *= 4;
+		/* obtain ip length in bytes */
+		iphdr_len = lwip_ntohs(IPH_LEN(iphdr));
+
+		/* Trim pbuf. This is especially required for packets < 60 bytes. */
+
+		/* header length exceeds first pbuf length, or ip length exceeds total pbuf length? */
+		if ((iphdr_hlen > p->len) || (iphdr_len > p->tot_len) || (iphdr_hlen < IP_HLEN)) {
+			if (iphdr_hlen < IP_HLEN) {
+				LWIP_DEBUGF(IP_DEBUG | LWIP_DBG_LEVEL_SERIOUS,
+							("ip4_input: short IP header (%"U16_F" bytes) received, IP packet dropped\n", iphdr_hlen));
+			}
+			if (iphdr_hlen > p->len) {
+				LWIP_DEBUGF(IP_DEBUG | LWIP_DBG_LEVEL_SERIOUS,
+							("IP header (len %"U16_F") does not fit in first pbuf (len %"U16_F"), IP packet dropped.\n",
+							 iphdr_hlen, p->len));
+			}
+			if (iphdr_len > p->tot_len) {
+				LWIP_DEBUGF(IP_DEBUG | LWIP_DBG_LEVEL_SERIOUS,
+							("IP (len %"U16_F") is longer than pbuf (len %"U16_F"), IP packet dropped.\n",
+							 iphdr_len, p->tot_len));
+			}
+
+			return 0;
+		}
+
+		// dmac: root, dip: node
+		// find ip, if this ip not equal to us, set ether hdr src to arp table's mac
+		const ip4_addr_t *unused_ipaddr;
+		struct eth_addr *ethaddr;
+		ip4_addr_t sipaddr, dipaddr;
+		/* Copy struct ip4_addr2 to aligned ip4_addr, to support compilers without
+		 * structure packing (not using structure copy which breaks strict-aliasing rules). */
+		memcpy(&sipaddr, &iphdr->src, sizeof(ip4_addr_t));
+		memcpy(&dipaddr, &iphdr->dest, sizeof(ip4_addr_t));
+
+		ip_addr_t localip;
+		struct netif *brif = net_get_br_handle();
+		localip = brif->ip_addr;
+
+		// parse dhcp message, create arp entry if needed
+		proto = IPH_PROTO(iphdr);
+		if (proto == IP_PROTO_UDP) {
+			/*
+			 * II: DHCP relay (we handle bcast packets from extAP, DHCP Offer, DHCP ACK)
+			 *	 a: DHCP Offer, DHCP ACK: replace extAP's mac with our mac (softap's mac ?), and use bridge flood
+			 *	 b: others, ignore
+			 */
+			udphdr = (struct udp_hdr *)((u8_t *)p->payload + ip_hdr_offset + iphdr_hlen);
+
+			/* convert src and dest ports to host byte order */
+			src = lwip_ntohs(udphdr->src);
+			dest = lwip_ntohs(udphdr->dest);
+
+			if (src == DHCP_SERVER_PORT && dest == DHCP_CLIENT_PORT) {
+#if XXX
+				// parse dhcp message, create arp entry if needed
+				struct dhcp_msg *msg = (struct dhcp_msg *)(udphdr + 1);
+				uint8_t *client_mac = msg->chaddr;
+				memcpy(&youripaddr, &msg->yiaddr, sizeof(ip4_addr_t));
+
+				os_printf("XXX DHCP messages\n");
+				// find register mac address
+				if (memcmp(client_mac, rx_if->hwaddr, ETH_ALEN)) {
+					bk_printf("XXX DHCP not our mac: client %pm, our %pm, yiaddr 0x%x\n", client_mac, rx_if->hwaddr, youripaddr);
+					if (rwm_mgmt_sta_mac2ptr(client_mac)) {
+						// create arp entry
+						LOCK_TCPIP_CORE();
+						etharp_update_arp_entry(rx_if, &youripaddr, (struct eth_addr *)client_mac, 1/*ETHARP_FLAG_TRY_HARD*/);
+						UNLOCK_TCPIP_CORE();
+					}
+				}
+#endif
+			} else if (src == DHCP_CLIENT_PORT && dest == DHCP_SERVER_PORT) {
+				// drop this packet
+				bk_printf("XXX drop dhcp server packet\n");
+				return 1;
+			}
+		}
+		if (dipaddr.addr != IPADDR_BROADCAST && !IP_MULTICAST(htonl(dipaddr.addr)) && localip.u_addr.ip4.addr != dipaddr.addr) {
+			if (etharp_find_addr(NULL, &dipaddr, &ethaddr, &unused_ipaddr) >= 0) {
+				memcpy(&ethhdr->dest, ethaddr, ETH_HWADDR_LEN);
+			} else {
+				// arp query
+				//resend ARP Request, flood to other bridge ports
+				etharp_raw2(br->netif, netif_get_index(rx_if),	// use upstream netif
+						   (struct eth_addr *)br->netif->hwaddr, &ethbroadcast,
+						   (struct eth_addr *)br->netif->hwaddr, netif_ip4_addr(br->netif), /* replace with upstream's hwaddr */
+						   &ethzero, &dipaddr,
+						   ARP_REQUEST, 0);
+			}
+		}
+	}
+
+	return 0;
+}
+
+static struct list_head g_arp_request = LIST_HEAD_INIT(g_arp_request);
+struct arp_req_entry {
+	struct list_head node;  // list node
+	ip4_addr_t dip;		// ARP request's DIP
+	ip4_addr_t sip;		// ARP request's SIP
+	uint8_t  shwaddr[ETH_ALEN];	// ARP request's HW addr
+	uint32_t ctime;		// added/updated time
+};
+
+static struct arp_req_entry *arp_request_find(uint8_t *shwaddr, uint32_t dip)
+{
+	struct arp_req_entry *pos;
+	list_for_each_entry(pos, &g_arp_request, node) {
+		if (pos->dip.addr == dip && !memcmp(pos->shwaddr, shwaddr, ETH_ALEN))
+			return pos;
+	}
+
+	return NULL;
+}
+
+// dip: target IP
+// sip: sender's IP
+// shwaddr: sender's MAC
+static void arp_request_add(uint8_t *shwaddr, uint32_t sip, uint32_t dip)
+{
+	// find first
+	struct arp_req_entry *pos;
+	GLOBAL_INT_DECLARATION();
+
+	GLOBAL_INT_DISABLE();
+	pos = arp_request_find(shwaddr, dip);
+	if (pos) {
+		pos->ctime = rtos_get_time();
+		pos->sip.addr = sip;
+		GLOBAL_INT_RESTORE();
+		os_printf("%s: already added arp request: shwaddr %pm, sip 0x%x, dip 0x%x\n",
+			__func__, shwaddr, sip, dip);
+		return;
+	}
+	GLOBAL_INT_RESTORE();
+
+	// add to list
+	pos = os_malloc(sizeof(*pos));
+	if (pos) {
+		pos->dip.addr = dip;
+		pos->sip.addr = sip;
+		memcpy(pos->shwaddr, shwaddr, ETH_ALEN);
+		pos->ctime = rtos_get_time();
+		GLOBAL_INT_DISABLE();
+		list_add_tail(&pos->node, &g_arp_request);
+		GLOBAL_INT_RESTORE();
+		os_printf("%s: add arp request: shwaddr %pm, sip 0x%x, dip 0x%x\n",
+			__func__, shwaddr, sip, dip);
+	}
+}
+
+// dip: ARP reply's sip
+// dhwaddr: ARP reply's shwaddr
+static void arp_request_handle_reply(bridgeif_private_t *br, struct netif *netif, ip4_addr_t *dip, uint8_t *dhwaddr)
+{
+	// iterate list to find dip request
+	struct list_head reqs;
+	struct arp_req_entry *pos, *tmp;
+	int count = 0;
+	GLOBAL_INT_DECLARATION();
+
+	INIT_LIST_HEAD(&reqs);
+
+	// move arp request whose dip matches our request to list reqs.
+	GLOBAL_INT_DISABLE();
+	list_for_each_entry_safe(pos, tmp, &g_arp_request, node) {
+		if (pos->dip.addr == dip->addr) {
+			list_del(&pos->node);
+			list_add_tail(&pos->node, &reqs);
+			count++;
+		}
+	}
+	GLOBAL_INT_RESTORE();
+
+	if (count) {
+		os_printf("send arp reply to %d STA\n", count);
+	}
+
+	// iterate for all req
+	list_for_each_entry_safe(pos, tmp, &reqs, node) {
+		list_del(&pos->node);
+		// send arp reply
+		os_printf("external ARP reply, send to STA\n");
+		etharp_raw2(br->netif, netif_get_index(netif),
+				   (struct eth_addr *)dhwaddr, (struct eth_addr *)pos->shwaddr, // ethernet hdr
+				   (struct eth_addr *)dhwaddr, dip, // shw, sip
+				   (struct eth_addr *)pos->shwaddr, &pos->sip,  //
+				   ARP_REPLY, 1);
+		os_free(pos);
+	}
+}
+
+#define time_after(a,b)     \
+     ((long)(b) - (long)(a) < 0)
+
+/* flush mesh nodes arp request */
+void arp_request_timeout_handler()
+{
+	struct arp_req_entry *pos, *tmp;
+	uint32_t ctime = rtos_get_time();
+
+	GLOBAL_INT_DECLARATION();
+	GLOBAL_INT_DISABLE();
+	list_for_each_entry_safe(pos, tmp, &g_arp_request, node) {
+		if (time_after(ctime, pos->ctime + (5 * rtos_get_tick_count()/*HZ*/))) {
+			list_del(&pos->node);
+			os_printf("%s: free arp request: shwaddr %pm, sip 0x%x, dip 0x%x\n",
+				__func__, pos->shwaddr, pos->sip.addr, pos->dip.addr);
+			os_free(pos);
+		}
+	}
+	GLOBAL_INT_RESTORE();
+}
+
+#ifndef DHCP_FLAG_BROADCAST
+#define DHCP_FLAG_BROADCAST	(1 << 15)
+#endif
+
+static uint32_t checksum32(uint32_t start_value, uint8_t *data, size_t len)
+{
+    uint32_t checksum32 = start_value;
+    uint16_t data16 = 0;
+    int i;
+
+    for(i = 0; i < (len / 2 * 2); i += 2) {
+        data16 = (data[i] << 8) | data[i + 1];
+        checksum32 += data16;
+    }
+
+    if(len % 2) {
+        data16 = data[len - 1] << 8;
+        checksum32 += data16;
+    }
+
+    return checksum32;
+}
+
+static uint16_t checksum32to16(uint32_t checksum32)
+{
+    uint16_t checksum16 = 0;
+
+    checksum32 = (checksum32 >> 16) + (checksum32 & 0x0000ffff);
+    checksum32 = (checksum32 >> 16) + (checksum32 & 0x0000ffff);
+    checksum16 = (uint16_t) ~(checksum32 & 0xffff);
+
+    return checksum16;
+}
+
+u16_t calculate_chksum_pseudo(uint8_t *payload, struct udp_hdr *uhdr, uint8_t protocol, u16_t ulen,u32_t *src, u32_t *dest)
+{
+    uint32_t udp_checksum32 = 0;
+    uint16_t udp_checksum16 = 0;
+
+    uint8_t *uhdr_data=NULL;
+    // pseudo header
+    uint8_t pseudo_header[12] = {/*srcip*/ 0x00, 0x00, 0x00, 0x00 /*srcip*/, /*dstip*/ 0x00, 0x00, 0x00, 0x00 /*dstip*/, 0x00, /*protocol*/ 0x00 /*protocol*/, /*l4len*/ 0x00, 0x00 /*l4len*/};
+    uhdr_data = (uint8_t *)uhdr;
+    memcpy(&pseudo_header[0], src, 4);
+    memcpy(&pseudo_header[4], dest, 4);
+    pseudo_header[8] = 0x00;
+    pseudo_header[9] = protocol;
+
+    pseudo_header[10] = (uint8_t) (ulen >> 8);
+    pseudo_header[11] = (uint8_t) (ulen & 0xff);
+
+    udp_checksum32 = checksum32(udp_checksum32, pseudo_header, sizeof(pseudo_header));
+    udp_checksum32 = checksum32(udp_checksum32, uhdr_data, sizeof(struct udp_hdr));
+    udp_checksum32 = checksum32(udp_checksum32, payload, (ulen-8));
+    udp_checksum16 = checksum32to16(udp_checksum32);
+    return udp_checksum16;
+}
+
+/*
+ * For BK-MESH-ROOT upstream (sta0).
+ * I: proxy ARP
+ *	  If packet is ARP Request, duplicate pbuf and replace srcmac with sta's mac.
+ *    If packet is ARP Reply, send gratious ARP to extAP.
+ *
+ * II: DHCP relay (DHCP Discover, DHCP Request)
+ *	  a: replace mac addr with our mac (sta's mac or br0's mac).
+ *	  b: change DHCP bootp's flags from unicast to bcast.
+ *	  c: arp_table will automatically be updated.
+ */
+static int bk_bridge_upstream_if_xmit(bridgeif_private_t *br, struct pbuf *p, struct netif *tx_if)
+{
+	struct eth_hdr *ethhdr;
+	u16_t type;
+
+	if (!netif_is_upstream(tx_if))	// sta0
+		return 0;
+	// local node output
+	if (p->if_idx == NETIF_NO_INDEX)
+		return 0;
+	if (p->len <= SIZEOF_ETH_HDR)
+		return 1;
+
+	//etharp_gratuitous, send_gratuitous_arp, etharp_raw
+	//ethernet_input
+	ethhdr = p->payload;
+	type = ethhdr->type;
+
+	if (type == PP_HTONS(ETHTYPE_ARP)) {
+		struct etharp_hdr *hdr = (struct etharp_hdr *)(ethhdr + 1);
+
+		/* RFC 826 "Packet Reception": */
+		if ((hdr->hwtype != PP_HTONS(LWIP_IANA_HWTYPE_ETHERNET)) ||
+			(hdr->hwlen != ETH_HWADDR_LEN) ||
+			(hdr->protolen != sizeof(ip4_addr_t)) ||
+			(hdr->proto != PP_HTONS(ETHTYPE_IP)))
+			return 1;
+
+		if (hdr->opcode == PP_HTONS(ARP_REQUEST)) {
+			struct pbuf *r;
+			const ip4_addr_t *unused_ipaddr;
+			struct eth_addr *dethaddr;
+			ip4_addr_t sipaddr, dipaddr;
+
+			/* Copy struct ip4_addr2 to aligned ip4_addr, to support compilers without
+			 * structure packing (not using structure copy which breaks strict-aliasing rules). */
+			memcpy(&sipaddr, &hdr->sipaddr, sizeof(ip4_addr_t));
+			memcpy(&dipaddr, &hdr->dipaddr, sizeof(ip4_addr_t));
+
+			/* check if we already have arpinfo */
+			if (etharp_find_addr(NULL, &dipaddr, &dethaddr, &unused_ipaddr) >= 0) {
+				//build ARP Reply
+				os_printf("found ARP cache, send ARP rsp to STA\n");
+				etharp_raw2(br->netif, netif_get_index(tx_if),	// use upstream netif
+						   (struct eth_addr *)br->netif->hwaddr, &hdr->shwaddr,  // ethernet hdr
+						   dethaddr, &dipaddr,	/* replace with upstream's hwaddr */
+						   &hdr->shwaddr, &sipaddr,
+						   ARP_REPLY, 1);
+				//return 1;	//eat, continue send arp request to external PC
+			} else {
+				// add to queue
+				os_printf("cannot find ARP for ip 0x%x, add to request\n", dipaddr.addr);
+				arp_request_add((uint8_t *)&hdr->shwaddr, sipaddr.addr, dipaddr.addr);
+			}
+
+			/* Allocate reply and copy */
+			r = pbuf_clone(PBUF_RAW_TX, PBUF_RAM, p);
+			if (r == NULL)
+				return 1;
+
+			ethhdr = (struct eth_hdr *)r->payload;
+			hdr = (struct etharp_hdr *)(ethhdr + 1);
+			MEMCPY(&ethhdr->src, (struct eth_addr *)tx_if->hwaddr, ETH_HWADDR_LEN);
+			MEMCPY(&hdr->shwaddr, (struct eth_addr *)tx_if->hwaddr, ETH_HWADDR_LEN);
+			tx_if->linkoutput(tx_if, r);
+			pbuf_free(r);
+
+			return 1;
+		} else if (hdr->opcode == PP_HTONS(ARP_REPLY)) {
+			/* XXX optimize */
+			struct pbuf *r;
+
+			/* Allocate reply and copy */
+			r = pbuf_clone(PBUF_RAW_TX, PBUF_RAM, p);
+			if (r == NULL)
+				return 1;
+
+			ethhdr = (struct eth_hdr *)r->payload;
+			hdr = (struct etharp_hdr *)(ethhdr + 1);
+			// replace with root's mac addr
+			MEMCPY(&ethhdr->src, (struct eth_addr *)tx_if->hwaddr, ETH_HWADDR_LEN);
+			MEMCPY(&hdr->shwaddr, (struct eth_addr *)tx_if->hwaddr, ETH_HWADDR_LEN);
+			tx_if->linkoutput(tx_if, r);
+			pbuf_free(r);
+
+			return 1;
+		}
+	} else if (type == PP_HTONS(ETHTYPE_IP)) {
+
+		/*
+		 * DHCP
+		 */
+		s16_t ip_hdr_offset = SIZEOF_ETH_HDR;	//XXX: VLAN
+		struct ip_hdr *iphdr = (struct ip_hdr *)((u8_t *)p->payload + ip_hdr_offset);
+		u16_t iphdr_hlen;
+		u16_t iphdr_len;
+		struct udp_hdr *udphdr;
+		u16_t src, dest;
+
+		if (IPH_V(iphdr) != 4)
+			return 1;
+
+		/* obtain IP header length in number of 32-bit words */
+		iphdr_hlen = IPH_HL(iphdr);
+		/* calculate IP header length in bytes */
+		iphdr_hlen *= 4;
+		/* obtain ip length in bytes */
+		iphdr_len = lwip_ntohs(IPH_LEN(iphdr));
+
+		/* Trim pbuf. This is especially required for packets < 60 bytes. */
+
+		/* header length exceeds first pbuf length, or ip length exceeds total pbuf length? */
+		if ((iphdr_hlen > p->len) || (iphdr_len > p->tot_len) || (iphdr_hlen < IP_HLEN)) {
+			if (iphdr_hlen < IP_HLEN) {
+				LWIP_DEBUGF(IP_DEBUG | LWIP_DBG_LEVEL_SERIOUS,
+							("ip4_input: short IP header (%"U16_F" bytes) received, IP packet dropped\n", iphdr_hlen));
+			}
+			if (iphdr_hlen > p->len) {
+				LWIP_DEBUGF(IP_DEBUG | LWIP_DBG_LEVEL_SERIOUS,
+							("IP header (len %"U16_F") does not fit in first pbuf (len %"U16_F"), IP packet dropped.\n",
+							 iphdr_hlen, p->len));
+			}
+			if (iphdr_len > p->tot_len) {
+				LWIP_DEBUGF(IP_DEBUG | LWIP_DBG_LEVEL_SERIOUS,
+							("IP (len %"U16_F") is longer than pbuf (len %"U16_F"), IP packet dropped.\n",
+							 iphdr_len, p->tot_len));
+			}
+			goto recheck;
+		}
+
+		/*
+		 * II: DHCP relay (we handle bcast packets from extAP, DHCP Offer, DHCP ACK)
+		 *	 a: DHCP Offer, DHCP ACK: replace extAP's mac with our mac (softap's mac ?), and use bridge flood
+		 *	 b: others, ignore
+		 */
+		udphdr = (struct udp_hdr *)((u8_t *)p->payload + ip_hdr_offset + iphdr_hlen);
+
+		/* convert src and dest ports to host byte order */
+		src = lwip_ntohs(udphdr->src);
+		dest = lwip_ntohs(udphdr->dest);
+
+		/* DHCP Discover and Request */
+		if (src == DHCP_CLIENT_PORT && dest == DHCP_SERVER_PORT) {
+			struct pbuf *r;
+			struct dhcp_msg *out;
+
+			/* Allocate reply and copy */
+			r = pbuf_clone(PBUF_RAW_TX, PBUF_RAM, p);
+			if (r == NULL)
+				return 1;
+			ethhdr = (struct eth_hdr *)r->payload;
+			udphdr = (struct udp_hdr *)((u8_t *)r->payload + ip_hdr_offset + iphdr_hlen);
+			out = (struct dhcp_msg *)(udphdr + 1);
+
+			if (!out->flags) {
+				uint8_t *udp_data=NULL;
+				u32_t src_addr=0;
+				u32_t dest_addr=0;
+				out->flags |= lwip_htons(DHCP_FLAG_BROADCAST);
+				/* recalc checksum */
+				udphdr->chksum = 0; //lwip_htons(DHCP_FLAG_BROADCAST);	//XXX: double check here
+				udp_data = (uint8_t *)out;
+				src_addr = iphdr->src.addr;
+				dest_addr= iphdr->dest.addr;
+				udphdr->chksum = calculate_chksum_pseudo(udp_data, udphdr, 0x11, lwip_ntohs(udphdr->len), &src_addr, &dest_addr);
+                                                  udphdr->chksum = lwip_htons(udphdr->chksum);
+			}
+
+			/* replace eth hdr address */
+			MEMCPY(&ethhdr->src, (struct eth_addr *)tx_if->hwaddr, ETH_HWADDR_LEN);	// XXX: use downstream iface's mac
+			tx_if->linkoutput(tx_if, r);		// low_level_output
+			pbuf_free(r);
+
+			return 1;	// eaten
+		} else {
+			MEMCPY(&ethhdr->src, (struct eth_addr *)tx_if->hwaddr, ETH_HWADDR_LEN);	// XXX: use downstream iface's mac
+			struct pbuf *r;
+			/* Allocate reply and copy */
+			r = pbuf_clone(PBUF_RAW_TX, PBUF_RAM, p);
+			if (r == NULL)
+				return 1;
+			tx_if->linkoutput(tx_if, r);		// low_level_output
+			pbuf_free(r);
+			return 1;
+			//goto recheck;
+		}
+	}
+
+recheck:
+	if (memcmp(&ethhdr->src, br->netif->hwaddr, 6)) {	// src addr is not routers mac
+		LWIP_DEBUGF(BRIDGEIF_FW_DEBUG, (""); print_hex_dump("GARBAGE: ", p->payload, p->len));  // FIXME: SSDP
+		return 1;	// don't forward to extAP
+	} else {
+		return 0;
+	}
+}
+
 /* Output helper function */
 static err_t
 bridgeif_send_to_port(bridgeif_private_t *br, struct pbuf *p, u8_t dstport_idx)
@@ -256,8 +986,22 @@ bridgeif_send_to_port(bridgeif_private_t *br, struct pbuf *p, u8_t dstport_idx)
         /* prevent sending out to rx port */
         if (netif_get_index(portif) != p->if_idx) {
           if (netif_is_link_up(portif)) {
-            LWIP_DEBUGF(BRIDGEIF_FW_DEBUG, ("br -> flood(%p:%d) -> %d\n", (void *)p, p->if_idx, netif_get_index(portif)));
-            return portif->linkoutput(portif, p);
+			  if ((void *)portif == net_get_sta_handle() && p->elfags == 1) {
+				os_printf("DONT xmit via STA interface\n");
+				return ERR_OK;
+			  }
+			  LWIP_DEBUGF(BRIDGEIF_FW_DEBUG, ("br -> flood(%p:%d) -> %d\n", (void *)p, p->if_idx, netif_get_index(portif)));
+			  if (!bk_bridge_upstream_if_xmit(br, p, portif)) {  // if packet not eat
+				struct pbuf *r;
+				int ret = 0;
+				/* Allocate reply and copy */
+				r = pbuf_clone(PBUF_RAW_TX, PBUF_RAM, p);
+				if (r == NULL)
+					return 1;
+				ret = portif->linkoutput(portif, r);
+				pbuf_free(r);
+				return ret;
+			  }
           }
         }
       }
@@ -350,6 +1094,29 @@ bridgeif_input(struct pbuf *p, struct netif *netif)
     /* update src for all non-group addresses */
     bridgeif_fdb_update_src(br->fdbd, src, port->port_num);
   }
+
+  /*
+	 * If we are act as BK MESH root and this br port (sta0) is upstream, do the following
+	 * I: proxy ARP
+	 *	  a: ARP Request
+	 *	 If we found an arp entry in our arp_table, send ARP response with mac=ourmac, ip=node'sip,
+	 *		   and send an gratious arp to all nodes in out mesh network.
+	 *		 If not found, build arp request to all nodes in our mesh network.
+	 *	  b: ARP Response
+	 *		 update arp_table, XXX may be optimized(send arp response immediately, or send gratioius arp).
+	 * II: DHCP relay (we handle bcast packets from extAP, DHCP Offer, DHCP ACK)
+	 *	  a: DHCP Offer, DHCP ACK: replace extAP's mac with our mac (softap's mac ?), and use bridge flood
+	 *	  b: others, ignore
+	 */
+	 int ret;
+  if ((ret = bk_bridge_upstream_if_recv(br, p, netif)) != 0) {
+		if (ret == 1) {
+			pbuf_free(p);
+		}
+		/* always return ERR_OK here to prevent the caller freeing the pbuf */
+		return ERR_OK;
+  }
+
 
   if (dst->addr[0] & 1) {
     /* group address -> flood + cpu? */
@@ -514,6 +1281,16 @@ bridgeif_init(struct netif *netif)
 #endif /* LWIP_IPV6 && LWIP_IPV6_MLD */
 
   return ERR_OK;
+}
+
+void bridgeif_deinit(struct netif * netif)
+{
+	bridgeif_private_t *br = netif->state;
+
+	mem_free(br->fdbd);
+	br->fdbd = NULL;
+	mem_free(br);
+	br = NULL;
 }
 
 /**

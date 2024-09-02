@@ -246,6 +246,9 @@ void flash_bypass_init(void) {
 	config.wire_mode = SPI_4WIRE_MODE;
 	config.baud_rate = 1000000;
 	config.bit_order = SPI_MSB_FIRST;
+#if (CONFIG_SPI_BYTE_INTERVAL)
+	config.byte_interval = 1;
+#endif
 	bk_spi_driver_init();
 	bk_spi_init(0, &config);
 

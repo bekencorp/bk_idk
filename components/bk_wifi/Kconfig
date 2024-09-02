@@ -7,12 +7,22 @@ menu "Bk_Wifi"
 		help
 			enable wifi
 
+	config WIFI_TX_RAW_ENABLE
+		bool "Enable Wifi TX RAW Enable"
+		default y
+		help
+			enable wifi TX RAW
+
 	config WIFI6_CODE_STACK
 		depends on WIFI_ENABLE
 		bool "Enable Wifi6 Code Stack"
-		default n
+		default y
 		help
 			Use WiFi-6 Code Stack
+
+	config WAPI_SUPPORT
+		bool "Support WAPI nAPI"
+		default n
 
 	config WIFI_BAND_5G
 		depends on WIFI_ENABLE
@@ -75,7 +85,6 @@ menu "Bk_Wifi"
 		bool "Wifi CSI"
 		default n
 
-#TODO remove below kconfig
 
 	config MSDU_RESV_HEAD_LENGTH
 		int "Set Msdu Resv Head Length"
@@ -91,7 +100,6 @@ menu "Bk_Wifi"
 		help
 			MSDU reserved tail length
 	
-	#TODO may need to remove it
 	config TASK_RECONNECT_PRIO
 		int "Set Task Reconnect Prio"
 		range 1 10
@@ -113,9 +121,10 @@ menu "Bk_Wifi"
 		bool "Enable Wifi Fast Connect"
 		default n
 
-	config MINIMUM_SCAN_RESULTS
-		bool "Enable minimum scan results"
-		default n
+	config EASY_FLASH_FAST_CONNECT
+		depends on EASY_FLASH_V4 && WIFI_FAST_CONNECT
+		bool "Enable Wifi Fast Connect with easy flash"
+		default y
 
 	config BSSID_CONNECT
 		depends on WIFI_ENABLE
@@ -133,12 +142,6 @@ menu "Bk_Wifi"
 	config LESS_MEMERY_IN_RWNX
 		bool "Enable Less Memory In Rwnx"
 		default n
-
-	config AP_PROBEREQ_CB
-		bool "Enable Ap Probereq Cb"
-		default n
-		help
-			enable AP probe request callback
 
 	config STA_PS
 		bool "Enable Sta Ps"
@@ -188,5 +191,156 @@ menu "Bk_Wifi"
 		int "set scan speed level"
 		range 1 3
 		default 3
+
+	config NETWORK_FOUND_EVENT_ENABLE
+		bool "Enable network found event"
+		default n
+
+	config POWER_TABLE
+		bool "Enable POWER TABLE"
+		default n
+
+	config PM_V2
+        	bool "Enable PM V2"
+        	default y
+        	help
+            		Enable power manager V2
+
+	config WIFI_KMSG_TASK_PRIO
+		int "Set WiFi Kmsg Task Prio"
+		range 1 10
+		default 3
+		help
+			Priority of WiFi kernel message task
+
+	config WIFI_KMSG_TASK_STACK_SIZE
+		int "Set Wifi Kmsg Task Stack Size"
+		default 4096
+		help
+			Stack size of WiFi kernel message task
+
+	config WIFI_CORE_TASK_PRIO
+		int "Set Wifi Core Task Prio"
+		range 1 10
+		default 2
+		help
+			Priority of WiFi core task
+
+	config WIFI_CORE_TASK_STACK_SIZE
+		int "Set Wifi Core Task Stack Size"
+		default 2048
+		help
+			Stack size of WiFi core task
+
+	config RWNX_QOS_MSDU
+		bool "Enable RWNX Qos MSDU"
+		default y
+		help
+			Enable QoS MSDU
+
+	config WPA_TWT_TEST
+		bool "Enable Wpa Twt Test"
+		default n
+		help
+			TWT TEST
+
+	config RWNX_PROTO_DEBUG
+		bool "Enabel RWNX Proto Debug"
+		default n
+
+	config RWNX_SW_TXQ
+		depends on WIFI6_CODE_STACK
+		bool "Enable RWNX SW TXQ"
+		default y
+		help
+			Enable Software Transmit Queue, recommend to enable this feature
+
+	config RWNX_TD
+		bool "Enable RWNX TD"
+		default y
+
+	config RWNX_MULTIPLE_SSID_STA_MODE
+		depends on WIFI6_CODE_STACK
+		bool "Enable RWNX MULTIPLE SSID STA MODE"
+		default n
+
+	config MINIMUM_SCAN_RESULTS
+		depends on WIFI6_CODE_STACK
+		bool "Enable minimum scan results"
+		default n
+
+	config BK_MEM_DYNA_APPLY_EN
+		bool "Enable BK Mem Dyna Apply En"
+		default y
+		help
+			mem dyna app enable
+
+	# bk_hostapd
+	config BK_HOSTAPD
+		depends on WIFI_ENABLE
+		bool "Enable Bk Hostapd"
+		default y
+		help
+			Enable bk hostapd
+
+	config RWNX_FAST_CONNECT
+		depends on WIFI6_CODE_STACK
+		bool "Enable WiFi Fast Connect"
+		default n
+		help
+			Skip WiFi Join Network procedure to reduct network connection time
+			when supplicant passes beacon ies to Umac.
+
+	config P2P
+		bool "Enable P2P"
+		default n
+
+	config P2P_GO
+	    bool "Enable P2P Go"
+		default n
+
+	config TX_BUFING
+		bool "Enable Tx Bufing"
+		default n
+		help
+			Enable wifi tx bufing
+
+	config AP_PS
+		bool "Enable AP PS"
+		default n
+		help
+			enable use ap ps
+
+	config USE_P2P_PS
+		bool "Enable Use P2P PS"
+		default n
+
+	config AP_PROBEREQ_CB
+		bool "Enable AP Probereq Cb"
+		default n
+		help
+			Enable AP probe request callback
+
+	config SPECIAL_TX_TYPE
+		depends on WIFI6_CODE_STACK
+		bool "Enable Special Tx Type"
+		default y
+		help
+			Enable snd special tx frame
+
+	config MAC_SFRAME_SOFTWARE_RETRY
+		bool "Enable Mac Sframe Software Retry"
+		default y
+		help
+			software retry
+
+	config WIFI_FTM
+		bool "Enable wifi FTM feature"
+		default n
+
+	config WIFI_MAC_SUPPORT_STAS_MAX_NUM
+		int "Set Wifi MAC Support STAs Max Num"
+		range 2 10
+		default 2
 
 endmenu

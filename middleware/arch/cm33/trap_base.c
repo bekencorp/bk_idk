@@ -104,8 +104,13 @@ void rtos_regist_ble_dump_hook(hook_func ble_func)
 
 void rtos_regist_plat_dump_hook(uint32_t mem_base_addr, uint32_t mem_size)
 {
-    if (mem_base_addr >= SOC_SRAM0_DATA_BASE && (mem_base_addr + mem_size) < SOC_SRAM_DATA_END) {
-        BK_DUMP_OUT("rtos_regist_plat_dump_hook memory(0x%x) in sram, need not dump again.\r\n", mem_base_addr);
+    if (mem_base_addr >= SOC_SRAM0_DATA_BASE
+        && (mem_base_addr + mem_size) < SOC_SRAM_DATA_END) {
+#if CONFIG_SPE
+        //BK_DUMP_OUT("rtos_regist_plat_dump_hook memory(0x%x) in sram, need not dump again.\r\n", mem_base_addr);
+#else
+        //UART/Log is not ready yet!
+#endif
         return;
     }
 
@@ -334,10 +339,7 @@ static void dump_context(uint32_t lr, uint32_t msp)
 	regs.sp = stack_pointer + stack_adj;
 
 	rtos_disable_int();
-	
-#if CONFIG_INT_WDT
     bk_wdt_feed();
-#endif
 #if (CONFIG_INT_AON_WDT)
     bk_int_aon_wdt_feed();
 #endif
@@ -356,9 +358,7 @@ static void rtos_dump_system(void)
     BK_DUMP_OUT("***********************************user except handler begin***********************************\r\n");
     BK_DUMP_OUT("***********************************************************************************************\r\n");
 
-#if CONFIG_INT_WDT
     bk_wdt_feed();
-#endif
 #if (CONFIG_INT_AON_WDT)
     bk_int_aon_wdt_feed();
 #endif
@@ -389,7 +389,11 @@ static void rtos_dump_system(void)
 #endif //CONFIG_DEBUG_FIRMWARE || CONFIG_DUMP_ENABLE
 }
 
-static void user_except_handler(uint32_t reset_reason)
+#define CHECK_TASK_WDT_INTERRUPT (0x13)
+
+uint32_t     g_wdt_handler_lr;
+
+static void user_except_handler(uint32_t reset_reason, SAVED_CONTEXT *regs)
 {
     if (0 == g_enter_exception) {
         // Make sure the interrupt is disable
@@ -398,8 +402,43 @@ static void user_except_handler(uint32_t reset_reason)
         /* Handled Trap */
         g_enter_exception = 1;
 
+        // if it is a task WDT assert!
+        if((regs->xpsr & 0x1FF) == CHECK_TASK_WDT_INTERRUPT)  // it can be used for any interrupts if LR is saved at entrance of ISR.
+        {
+            if(g_wdt_handler_lr & (1UL << 2))
+            {
+                uint32_t stack_pointer = __get_PSP();
+                uint32_t stack_adj = 8 * sizeof(uint32_t);
+
+                if((g_wdt_handler_lr & (1UL << 4)) == 0)
+                {
+                    stack_adj += 18 * sizeof(uint32_t);  // 18 FPU regs.
+                }
+
+                regs->r0 = ((uint32_t *)stack_pointer)[0];
+                regs->r1 = ((uint32_t *)stack_pointer)[1];
+                regs->r2 = ((uint32_t *)stack_pointer)[2];
+                regs->r3 = ((uint32_t *)stack_pointer)[3];
+                regs->r12 = ((uint32_t *)stack_pointer)[4];
+                regs->lr = ((uint32_t *)stack_pointer)[5];
+                regs->pc = ((uint32_t *)stack_pointer)[6];
+                regs->xpsr = ((uint32_t *)stack_pointer)[7];
+
+                if(regs->xpsr & (1UL << 9))
+                {
+                    stack_adj += 1 * sizeof(uint32_t);
+                }
+                regs->sp = stack_pointer + stack_adj;
+            }
+        }
+
+        bk_set_printf_sync(true);
+        dump_prologue();
+        arch_dump_cpu_registers(ECAUSE_ASSERT, regs);
+
         rtos_dump_system();
-		dump_epilogue();
+        dump_epilogue();
+
 #if CONFIG_SYS_CPU0
         bk_reboot_ex(reset_reason);
 #endif
@@ -448,58 +487,22 @@ static void store_cpu_regs(uint32_t mcause, SAVED_CONTEXT *regs) {
 }
 
 extern void bk_set_jtag_mode(uint32_t cpu_id, uint32_t group_id);
-extern uint32_t     g_systick_handler_lr;
 extern volatile const uint8_t build_version[];
+
 void bk_system_dump(void) 
 {
     SAVED_CONTEXT regs = {0};
     store_cpu_regs(ECAUSE_ASSERT, &regs);
     uint32_t int_level = rtos_disable_int();
 
-#if CONFIG_INT_WDT
     bk_wdt_feed();
-#endif
 #if (CONFIG_INT_AON_WDT)
     bk_int_aon_wdt_feed();
 #endif
 
-	// if it is a task WDT assert!
-	if((regs.xpsr & 0x1FF) == 0x0F)  // it can be used for any interrupts if LR is saved at entrance of ISR.
-	{
-		if(g_systick_handler_lr & (1UL << 2))
-		{
-			uint32_t stack_pointer = __get_PSP();
-			uint32_t stack_adj = 8 * sizeof(uint32_t);
-			
-			if((g_systick_handler_lr & (1UL << 4)) == 0)
-			{
-				stack_adj += 18 * sizeof(uint32_t);  // 18 FPU regs.
-			}
+    BK_DUMP_OUT("build time => %s !\r\n", build_version);
 
-			regs.r0 = ((uint32_t *)stack_pointer)[0];
-			regs.r1 = ((uint32_t *)stack_pointer)[1];
-			regs.r2 = ((uint32_t *)stack_pointer)[2];
-			regs.r3 = ((uint32_t *)stack_pointer)[3];
-			regs.r12 = ((uint32_t *)stack_pointer)[4];
-			regs.lr = ((uint32_t *)stack_pointer)[5];
-			regs.pc = ((uint32_t *)stack_pointer)[6];
-			regs.xpsr = ((uint32_t *)stack_pointer)[7];
-
-			if(regs.xpsr & (1UL << 9))
-			{
-				stack_adj += 1 * sizeof(uint32_t);
-			}
-			regs.sp = stack_pointer + stack_adj;
-		}
-	}
-
-    bk_set_printf_sync(true);
-	dump_prologue();
-    arch_dump_cpu_registers(ECAUSE_ASSERT, &regs);
-
-	BK_DUMP_OUT("build time => %s !\r\n", build_version); 
-
-    user_except_handler(RESET_SOURCE_CRASH_ASSERT);
+    user_except_handler(RESET_SOURCE_CRASH_ASSERT, &regs);
 
     bk_set_jtag_mode(CPU_ID, 0);
     rtos_enable_int(int_level);
@@ -515,14 +518,15 @@ void user_except_handler_ex(uint32_t reset_reason, uint32_t lr, uint32_t sp)
         /* Handled Trap */
         g_enter_exception = 1;
 
-		BK_DUMP_OUT("build time => %s !\r\n", build_version); 
+        BK_DUMP_OUT("build time => %s !\r\n", build_version); 
 
         rtos_dump_system();
 
 #if CONFIG_CM_BACKTRACE
         cm_backtrace_fault(lr, sp);
 #endif
-		dump_epilogue();
+
+        dump_epilogue();
 
 #if CONFIG_SYS_CPU0
         bk_reboot_ex(reset_reason);

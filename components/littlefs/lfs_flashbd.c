@@ -141,10 +141,15 @@ int lfs_spi_flashbd_init(void) {
 	config.wire_mode = SPI_4WIRE_MODE;
 	config.baud_rate = SPI_BAUD_RATE;
 	config.bit_order = SPI_MSB_FIRST;
+#if (CONFIG_SPI_BYTE_INTERVAL)
+	config.byte_interval = 1;
+#endif
 #if CONFIG_SPI_DMA
 	config.dma_mode = 1;
 	config.spi_tx_dma_chan = bk_dma_alloc(DMA_DEV_DTCM);
 	config.spi_rx_dma_chan = bk_dma_alloc(DMA_DEV_DTCM);
+	config.spi_tx_dma_width = DMA_DATA_WIDTH_8BITS;
+	config.spi_rx_dma_width = DMA_DATA_WIDTH_8BITS;
 #endif
 	ret = bk_spi_init(SPI_ID, &config);
 

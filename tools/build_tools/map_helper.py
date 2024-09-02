@@ -15,10 +15,10 @@ class MapHelper(object):
             print('{0} does not exist'.format(map_file_path))
             exit(1)
         self.flags = {
-            'rodata': ['.rodata.', '.srodata.'],
-            'text': ['.text.', '.stext.', '.itcm_sec_code', '.itcm'],
-            'data': ['.data.', '.sdata.', '.dtcm_sec_data'],
-            'bss': ['.bss.', '.sbss.', '.dtcm_sec_bss'],
+            'rodata': ['.rodata.', '.rodata', '.srodata.', '.vectors','.vectors_itcm'],
+            'text': ['.text.', '.text', '.stext.', '.itcm_sec_code','itcm_section', '.itcm', '.iram', '.interrupt'],
+            'data': ['.data.', '.data', '.sdata.', '.dtcm_sec_data', '.dtcm'],
+            'bss': ['.bss.', '.bss', '.sbss.', '.dtcm_sec_bss','.bt_spec_data','.ble_bss_data','video_spec_data'],
         }
         self.size_pat = re.compile(' +0x([a-fA-F\d]+) +0x([a-fA-F\d]+) +(.*)\((.*)\)')
         self.oneline_size_pat = re.compile(' +.* +0x([a-fA-F\d]+) +0x([a-fA-F\d]+) +(.*)\((.*)\)')
@@ -54,7 +54,8 @@ class MapHelper(object):
                     if tmp_flag is not None:
                         size_m = re.match(self.oneline_size_pat, tmp_line)
                         if size_m:
-                            if size_m.group(1) != '00000000':
+                            tmp_point_v = size_m.group(1)
+                            if tmp_point_v != '0'*len(tmp_point_v):
                                 #print('bbbbb', size_m.group(1), 'aaaa', tmp_line)
                                 self.add_parse_data(tmp_flag, int(size_m.group(2), 16), size_m.group(3), size_m.group(4))
                                 tmp_flag = None
@@ -63,8 +64,9 @@ class MapHelper(object):
                     size_m = re.match(self.size_pat, tmp_line)
                     if size_m:
                         #print(size_m.group(1))
-                        if size_m.group(1) != '00000000':
-                            #print('aaaaa', tmp_line)
+                        tmp_point_v = size_m.group(1)
+                        if tmp_point_v != '0'*len(tmp_point_v):
+                            # print('aaaaa', size_m.group(1))
                             self.add_parse_data(tmp_flag, int(size_m.group(2), 16), size_m.group(3), size_m.group(4))
                     # clear flag content
                     tmp_flag = None

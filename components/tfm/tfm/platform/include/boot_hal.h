@@ -10,6 +10,7 @@
 #define __BOOT_HAL_H__
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "cmsis_compiler.h"
 
 /* Include header section */
@@ -73,6 +74,8 @@ int32_t boot_platform_post_init(void);
  * \param[in] vt  pointer to secure application vector table descriptor
  */
 void boot_platform_quit(struct boot_arm_vector_table *vt) __NO_RETURN;
+
+bool is_secureboot(void);
 
 #ifdef __cplusplus
 }

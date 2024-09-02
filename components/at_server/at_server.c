@@ -47,13 +47,13 @@ void atsvr_notice_ready(void)
 void atsvr_cmd_rsp_ok(void)
 {
 	_atsvr_cmd_rsp_ok(&_at_svr_env);
-	set_atsvr_work_state(ATSVR_WK_DONE);
+	set_atsvr_work_state(ATSVR_WK_IDLE);
 }
 
 void atsvr_cmd_rsp_error(void)
 {
 	_atsvr_cmd_rsp_error(&_at_svr_env);
-	set_atsvr_work_state(ATSVR_WK_DONE);
+	set_atsvr_work_state(ATSVR_WK_IDLE);
 }
 
 #if 0

@@ -28,12 +28,14 @@ uint32_t findFirstZeroBit(uint8_t num)
 	return positition;
 }
 
+extern int hexstr2bin(const char *hex, u8 *buf, size_t len);
 
 static void cli_otp_help(void)
 {
-	CLI_LOGI("otp_test flow_test\r\n");
-	CLI_LOGI("otp_test read_write\r\n");
+	CLI_LOGI("otp_test read [item_id][size] \r\n");
+	CLI_LOGI("otp_test write [item_id][size][data in little endian] \r\n");
 }
+
 static void cli_otp_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
 	extern bk_err_t bk_otp_fully_flow_test();
@@ -47,42 +49,60 @@ static void cli_otp_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
 		return;
 	}
 
-	if (os_strcmp(argv[1], "flow_test") == 0) {
-		bk_otp_init();
-		uint32_t ret = bk_otp_fully_flow_test();
-		CLI_LOGI("flow test ret = %d\r\n",ret);
-	} else if (os_strcmp(argv[1], "read_write") == 0){
-
-		uint8_t* data=(uint8_t*)os_malloc(5*sizeof(uint8_t));
-		if(data == NULL)
-			CLI_LOGE("no memory\r\n");
-
-		uint32_t ret = bk_otp_apb_read(OTP_APB_TEST,data,5);
-		CLI_LOGI("read test ret = %d\r\n",ret);
-		for(int i=0;i<5;i++){
-			CLI_LOGI("data[%d] = 0x%x\r\n",i,data[i]);
+	if (os_strcmp(argv[1], "read") == 0){
+		uint32_t item = os_strtoul(argv[2], NULL, 10);
+		uint32_t size = os_strtoul(argv[3], NULL, 10);
+		uint8_t* data = (uint8_t*)os_malloc(size*sizeof(uint8_t));
+		uint32_t ret = bk_otp_apb_read(item,data,size);
+		BK_RAW_LOGI(NULL, "read ret = %d, data in little endian:\r\n",ret);
+		for(int i = 0;i < size; i++){
+			BK_RAW_LOGI(NULL, "%x ",data[i]);
+			if(i % 8 == 7) BK_RAW_LOGI(NULL,"\r\n");
 		}
-
-		/*find first zero bit*/
-		uint32_t position;
-		for(int i=0;i<5;i++){
-			position = findFirstZeroBit(data[i]);
-			if(data[i] != 0xFF){
-				data[i] |= 1 << position;
-				CLI_LOGI("data[%d] = 0x%x will be written!\r\n",i,data[i]);
-				break;
-			}
+		os_free(data);
+		data = NULL;
+	} else if (os_strcmp(argv[1], "write") == 0){
+		uint32_t item = os_strtoul(argv[2], NULL, 10);
+		uint32_t size = os_strtoul(argv[3], NULL, 10);
+		uint8_t* data = (uint8_t*)os_malloc(size*sizeof(uint8_t));
+		hexstr2bin(argv[4], data, size);
+		uint32_t ret = bk_otp_apb_update(item,data,size);
+		bk_otp_apb_read(item,data,size);
+		BK_RAW_LOGI(NULL, "write ret = %d, after write data:\r\n",ret);
+		for(int i = 0;i < size; i++){
+			BK_RAW_LOGI(NULL, "%x ",data[i]);
+			if(i % 8 == 7) BK_RAW_LOGI(NULL, "\r\n");
 		}
-
-		ret = bk_otp_apb_update(OTP_APB_TEST,data,5);
-		CLI_LOGI("write test ret = %d\r\n",ret);
-		ret = bk_otp_apb_read(OTP_APB_TEST,data,5);
-		CLI_LOGI("after write, read ret = %d\r\n",ret);
-		for(int i=0;i<5;i++){
-			CLI_LOGI("data[%d] = 0x%x\r\n",i,data[i]);
+		os_free(data);
+		data = NULL;
+	}else if (os_strcmp(argv[1], "read2") == 0){
+		uint32_t item = os_strtoul(argv[2], NULL, 10);
+		uint32_t size = os_strtoul(argv[3], NULL, 10);
+		uint8_t* data = (uint8_t*)os_malloc(size*sizeof(uint8_t));
+		uint32_t ret = bk_otp_ahb_read(item,data,size);
+		BK_RAW_LOGI(NULL, "read ret = %d, data in little endian:\r\n",ret);
+		for(int i = 0;i < size; i++){
+			BK_RAW_LOGI(NULL, "%x ",data[i]);
+			if(i % 8 == 7) BK_RAW_LOGI(NULL,"\r\n");
 		}
-	} else if (os_strcmp(argv[1], "init") == 0){
-		bk_otp_init();
+		os_free(data);
+		data = NULL;
+	} else if (os_strcmp(argv[1], "write2") == 0){
+		uint32_t item = os_strtoul(argv[2], NULL, 10);
+		uint32_t size = os_strtoul(argv[3], NULL, 10);
+		uint8_t* data = (uint8_t*)os_malloc(size*sizeof(uint8_t));
+		hexstr2bin(argv[4], data, size);
+		uint32_t ret = bk_otp_ahb_update(item,data,size);
+		bk_otp_ahb_read(item,data,size);
+		BK_RAW_LOGI(NULL, "write ret = %d, after write data:\r\n",ret);
+		for(int i = 0;i < size; i++){
+			BK_RAW_LOGI(NULL, "%x ",data[i]);
+			if(i % 8 == 7) BK_RAW_LOGI(NULL, "\r\n");
+		}
+		os_free(data);
+		data = NULL;
+	} else {
+		cli_otp_help();
 	}
 
 

@@ -147,6 +147,7 @@ int cli_doorbell_init(void);
 int cli_sdio_host_init(void);
 int cli_sdio_slave_init(void);
 int cli_psram_init(void);
+int cli_uid_init(void);
 int cli_qrcodegen_init(void);
 int cli_spe_init(void);
 int cli_usb_init(void);
@@ -166,6 +167,10 @@ int cli_mpc_init(void);
 int cli_int_target_init(void);
 int cli_lin_init(void);
 int cli_scr_init(void);
+
+int cli_jpeg_sw_enc_init(void);
+int cli_psa_crypto_init(void);
+int cli_psa_customization_init();
 
 extern int hexstr2bin_cli(const char *hex, u8 *buf, size_t len);
 extern int hexstr2bin(const char *hex, u8 *buf, size_t len);

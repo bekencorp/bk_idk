@@ -76,6 +76,8 @@ extern "C" {
 /*----SUB POWER DOMAIN PHY--------*/
 #define PM_POWER_SUB_MODULE_NAME_PHY_BT                (POWER_SUB_MODULE_NAME_PHY_BT)
 #define PM_POWER_SUB_MODULE_NAME_PHY_WIFI              (POWER_SUB_MODULE_NAME_PHY_WIFI)
+#define PM_POWER_SUB_MODULE_NAME_PHY_RF                (POWER_SUB_MODULE_NAME_PHY_RF)
+
 /*----SUB POWER DOMAIN AHB--------*/
 #define PM_POWER_SUB_MODULE_NAME_AHBP_CAN              (POWER_SUB_MODULE_NAME_AHBP_CAN)
 #define PM_POWER_SUB_MODULE_NAME_AHBP_QSPI             (POWER_SUB_MODULE_NAME_AHBP_QSPI)
@@ -305,8 +307,12 @@ typedef enum
 	PM_DEV_ID_DECODER, 	// 33
 	PM_DEV_ID_LIN,      // 34
 	PM_DEV_ID_PWM_1,    // 35
+	PM_DEV_ID_OTP_AHB,  // 36
+	PM_DEV_ID_OTP_APB,  // 37
+	PM_DEV_ID_SHANHAI,  // 38
+	PM_DEV_ID_KEY,  // 39
 
-	PM_DEV_ID_DEFAULT,  // 36  it is used by pm module set default cpu frequency
+	PM_DEV_ID_DEFAULT,  // 40  it is used by pm module set default cpu frequency
 
 	PM_DEV_ID_MAX
 }pm_dev_id_e;

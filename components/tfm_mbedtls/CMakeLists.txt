@@ -76,6 +76,8 @@ list(APPEND srcs
 	mbedtls/library/version.c
 	mbedtls/library/constant_time.c
 	mbedtls/library/rsa_alt_helpers.c
+	mbedtls/library/x509write_csr.c
+	mbedtls/library/x509_create.c
 
 	mbedtls_port/accelerator/spe/src/misc.c
 	#mbedtls_port/accelerator/crypto_hw.c
@@ -86,14 +88,7 @@ list(APPEND srcs
 	mbedtls_port/accelerator/dubhe_alt/src/cmac.c
 	mbedtls_port/accelerator/dubhe_alt/src/gcm.c
 	mbedtls_port/accelerator/dubhe_alt/src/otp.c
-	mbedtls_port/accelerator/dubhe_alt/src/sha1.c
 	mbedtls_port/accelerator/dubhe_alt/src/sha256.c
-	mbedtls_port/accelerator/dubhe_alt/src/sm2dsa.c
-	mbedtls_port/accelerator/dubhe_alt/src/sm2kep.c
-	mbedtls_port/accelerator/dubhe_alt/src/sm2pke.c
-	mbedtls_port/accelerator/dubhe_alt/src/sm2_internal.c
-	mbedtls_port/accelerator/dubhe_alt/src/sm3.c
-	mbedtls_port/accelerator/dubhe_alt/src/sm4.c
 
 	mbedtls_port/accelerator/dubhe_driver/src/common/dubhe_driver.c
 	mbedtls_port/accelerator/dubhe_driver/src/common/dubhe_event.c
@@ -160,7 +155,6 @@ armino_component_register(SRCS "${srcs}"
 )
 
 if (CONFIG_MBEDTLS_ACCELERATOR)
-
 target_compile_definitions(${COMPONENT_LIB}
 	PUBLIC
 		MBEDTLS_CONFIG_FILE="${TFM_MBEDTLS_CONFIG_FILE_PATH}"

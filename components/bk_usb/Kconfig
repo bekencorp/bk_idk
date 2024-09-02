@@ -27,6 +27,21 @@ menu "Bk_usb"
 			bool "Enable USB mailbox slave"
 			default n
 
+		config USB_MAILBOX_MASTER_CPU1_TO_CPU2
+			bool "Enable USB mailbox master cpu1 to cpu2"
+			default n
+
+		config USB_MAILBOX_SLAVE_CPU2_TO_CPU1
+			bool "Enable USB mailbox slave cpu2 to cpu1"
+			default n
+
+		config USB_MAILBOX_MASTER_CPU1_TO_CPU0
+			bool "Enable USB mailbox master cpu1 to cpu2"
+			default n
+
+		config USB_MAILBOX_SLAVE_CPU0_TO_CPU1
+			bool "Enable USB mailbox slave cpu1 to cpu2"
+			default n
 	endmenu
 
 	menu "Modify Usb Config"
@@ -80,6 +95,10 @@ menu "Bk_usb"
 			default 7
 			help
 				Priority of USB task
+
+		config USB_DMA_ENABLE
+			bool "Enable usb ip DMA"
+			default n
 
 		config USB_HUB
 			bool "Enable USB hub"
@@ -164,5 +183,18 @@ menu "Bk_usb"
 				set dsp source address
 
 	endmenu
+
+    
+    config STANDARD_DUALSTREAM
+        depends on USB
+        bool "Standard dual stream"
+        default n
+    
+    config UVC_DUAL_DEVICE
+        #depends on STANDARD_DUALSTREAM
+        int "the num for uvc_device"
+        range 1 2
+        default 1 if !STANDARD_DUALSTREAM
+        default 2 if STANDARD_DUALSTREAM
 
 endmenu

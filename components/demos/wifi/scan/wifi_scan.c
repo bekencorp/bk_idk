@@ -62,7 +62,7 @@ void show_scan_ap_result(void)
     char scan_rst_ap_num = 0;       /**< The number of access points found in scanning. */
     int i;
 
-    scan_rst_ap_num = bk_wlan_get_scan_ap_result_numbers_internal();
+    scan_rst_ap_num = bk_wlan_get_scan_ap_result_numbers();
     if(scan_rst_ap_num == 0)
     {
         os_printf("NULL AP\r\n");
@@ -76,7 +76,7 @@ void show_scan_ap_result(void)
         return;
     }
 
-    bk_wlan_get_scan_ap_result_internal(scan_rst_table, scan_rst_ap_num);
+    bk_wlan_get_scan_ap_result(scan_rst_table, scan_rst_ap_num);
 
     os_printf("\r\nscan ap count:%d\r\n", scan_rst_ap_num);
     for( i = 0; i < scan_rst_ap_num; i++ )

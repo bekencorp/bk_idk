@@ -52,6 +52,26 @@ static inline void yuv_buf_ll_disable_yuv_buf_mode(yuv_buf_hw_t *hw)
 	hw->ctrl.yuv_mode = 0;
 }
 
+static inline void yuv_buf_ll_enable_hsync_rev(yuv_buf_hw_t *hw)
+{
+	hw->ctrl.hsync_rev = 1;
+}
+
+static inline void yuv_buf_ll_disable_hsync_rev(yuv_buf_hw_t *hw)
+{
+	hw->ctrl.hsync_rev = 0;
+}
+
+static inline void yuv_buf_ll_enable_vsync_rev(yuv_buf_hw_t *hw)
+{
+	hw->ctrl.vsync_rev = 1;
+}
+
+static inline void yuv_buf_ll_disable_vsync_rev(yuv_buf_hw_t *hw)
+{
+	hw->ctrl.vsync_rev = 0;
+}
+
 static inline void yuv_buf_ll_enable_h264_encode_mode(yuv_buf_hw_t *hw)
 {
 	hw->ctrl.h264_mode = 1;

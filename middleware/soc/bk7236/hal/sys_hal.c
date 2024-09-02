@@ -111,6 +111,12 @@ __IRAM_SEC void sys_hal_module_power_ctrl(power_module_name_t module,power_modul
 {
 	uint32_t value = 0;
 
+#if CONFIG_TZ && !CONFIG_SPE
+	if (((module == POWER_MODULE_NAME_BAKP) || (module == POWER_MODULE_NAME_AHBP)) && (power_state == POWER_MODULE_STATE_OFF)) {
+		//Never power-off bakp/ahbp for security version
+		return;
+	}
+#endif
 	if((module >= POWER_MODULE_NAME_MEM1) && (module <= POWER_MODULE_NAME_ROM_PGEN)) {
 		value = 0;
 		value = sys_ll_get_cpu_power_sleep_wakeup_value();
@@ -160,7 +166,7 @@ __IRAM_SEC void sys_hal_module_power_ctrl(power_module_name_t module,power_modul
 			/*3. power down*/
 			sys_ll_set_cpu2_int_halt_clk_op_cpu2_pwr_dw(power_state);
 		}
-	} 
+	}
 	else if(module == POWER_MODULE_NAME_TCM1_PGEN) {
 		if(power_state == POWER_MODULE_STATE_ON) {
 			/*TODO
@@ -213,6 +219,7 @@ int sys_hal_rosc_calibration(uint32_t rosc_cali_mode, uint32_t cali_interval)
 		sys_ll_set_ana_reg6_spi_trig(1);
 	} else if (rosc_cali_mode == 1) { //Manual
 		sys_ll_set_ana_reg6_manu_cin(cali_interval);
+		sys_ll_set_ana_reg6_calib_interval(cali_interval >> 16);
 		sys_ll_set_ana_reg6_manu_ena(1);
 	} else if (rosc_cali_mode == 2) { //Modify
 		sys_ll_set_ana_reg6_cal_mode(1);
@@ -526,14 +533,19 @@ bk_err_t sys_hal_switch_cpu_bus_freq_high_to_low(pm_cpu_freq_e cpu_bus_freq)
 	{
 		case PM_CPU_FRQ_480M://cpu0:240m;cpu1:480m;cpu2:480m;bus:240m
 			ret = sys_hal_core_bus_clock_ctrl(0x3,0x0,0x0,0x0,0x1);
+#if	CONFIG_DO_MIPS_FUNCTION
+			os_printf("high-to-low \r\n");
+			sys_hal_ctrl_vddd_h_vol(0x7);	// 1.05v
+			sys_hal_ctrl_vdddig_h_vol(0xB);	//0.875V basic_vol:0.6v scale:0.025v
+#else
 			sys_hal_ctrl_vddd_h_vol(0x7);//  1.05v
-			sys_hal_ctrl_vdddig_h_vol(0xD);//0.925V
-
+			sys_hal_ctrl_vdddig_h_vol(0xE);//0.95V
+#endif
 			break;
 		case PM_CPU_FRQ_320M://cpu0:160m;cpu1:320m;cpu2:320m;bus:160m
 		    ret = sys_hal_core_bus_clock_ctrl(0x2,0x0,0x0,0x0,0x1);
-			sys_hal_ctrl_vddd_h_vol(0x6);// 1.0 v
-			sys_hal_ctrl_vdddig_h_vol(0xC);//0.9V
+			sys_hal_ctrl_vddd_h_vol(0x7);// 1.05 v
+			sys_hal_ctrl_vdddig_h_vol(0xD);//0.925V
 
 			break;
 		case PM_CPU_FRQ_240M://cpu0:240m;cpu1:240m;;cpu2:240m;bus:240m
@@ -592,13 +604,19 @@ bk_err_t sys_hal_switch_cpu_bus_freq_low_to_high(pm_cpu_freq_e cpu_bus_freq)
 	switch(cpu_bus_freq)
 	{
 		case PM_CPU_FRQ_480M://cpu0:240m;cpu1:480m;cpu2:480m;bus:240m
+#if	CONFIG_DO_MIPS_FUNCTION
+			os_printf("low-to-high \r\n");
 			sys_hal_ctrl_vddd_h_vol(0x7);// 1.05v
-			sys_hal_ctrl_vdddig_h_vol(0xD);//0.925V
+			sys_hal_ctrl_vdddig_h_vol(0xB);//0.875V  //basic_vol:0.6v scale:0.025v
+#else
+			sys_hal_ctrl_vddd_h_vol(0x7);// 1.05v
+			sys_hal_ctrl_vdddig_h_vol(0xE);//0.95V
+#endif
 			ret = sys_hal_core_bus_clock_ctrl(0x3,0x0,0x0,0x0,0x1);
 			break;
 		case PM_CPU_FRQ_320M://cpu0:160m;cpu1:320m;cpu2:320m;bus:160m
-			sys_hal_ctrl_vddd_h_vol(0x6);// 1.0v
-			sys_hal_ctrl_vdddig_h_vol(0xC);//0.9V
+			sys_hal_ctrl_vddd_h_vol(0x7);// 1.05v
+			sys_hal_ctrl_vdddig_h_vol(0xD);//0.925V
 			ret = sys_hal_core_bus_clock_ctrl(0x2,0x0,0x0,0x0,0x1);
 			break;
 		case PM_CPU_FRQ_240M://cpu0:240m;cpu1:240m;;cpu2:240m;bus:240m
@@ -1893,7 +1911,9 @@ uint32_t sys_hal_get_bgcalm(void)
 
 void sys_hal_set_bgcalm(uint32_t value)
 {
+    sys_ll_set_ana_reg9_spi_latch1v(1);
     sys_ll_set_ana_reg8_bgcal(value);
+    sys_ll_set_ana_reg9_spi_latch1v(0);
 }
 
 void sys_hal_set_audioen(uint32_t value)
@@ -2076,6 +2096,11 @@ void sys_hal_aud_rvcmd_en(uint32_t value)
 void sys_hal_dmic_clk_div_set(uint32_t value)
 {
 	sys_ll_set_cpu_clk_div_mode2_reserved_13_13(value);
+}
+
+void sys_hal_aud_dac_dacmute_en(uint32_t value)
+{
+	//TODO
 }
 
 /**  Audio End  **/
@@ -2430,9 +2455,9 @@ __IRAM_SEC void sys_hal_set_sys2flsh_2wire(uint32_t value)
 
 /** Ethernet start **/
 #ifdef CONFIG_ETH
-void sys_hal_enable_eth_int()
+void sys_hal_enable_eth_int(uint32_t value)
 {
-    sys_ll_set_cpu0_int_32_63_en_cpu0_eth_int_en(1);
+    sys_ll_set_cpu0_int_32_63_en_cpu0_eth_int_en(value);
 }
 #endif
 /** Ethernet End**/
@@ -2557,6 +2582,13 @@ void sys_hal_set_ana_cb_cal_manu_val(uint32_t value)
     sys_ll_set_ana_reg5_vbias(value);
 }
 
+void sys_hal_set_ana_reg11_apfms(uint32_t value) {
+	sys_ll_set_ana_reg11_apfms(value);
+}
+
+void sys_hal_set_ana_reg12_dpfms(uint32_t value) {
+	sys_ll_set_ana_reg12_dpfms(value);
+}
 
 static void sys_hal_delay(volatile uint32_t times)
 {
@@ -2704,10 +2736,12 @@ void sys_hal_early_init(void)
 	uint32_t chip_id = aon_pmu_hal_get_chipid();
 
 	uint32_t val = sys_hal_analog_get(ANALOG_REG5);
+	val &= ~(0x1 << 13); // power up apll then power down to reinit after deep sleep
 	val |= (0x1 << 5) | (0x1 << 3) | (0x1 << 2);
 	sys_hal_analog_set(ANALOG_REG5,val);
 	//donghui20230504: 0:1/7 1:1/5 2:1/3 3:1/1
 	sys_ll_set_ana_reg5_adc_div(1); //tenglong20230627 adc_div=1/5 since volt of GPIO <= 3.3V
+	sys_ll_set_ana_reg5_pwdaudpll(1);
 
 	val = sys_hal_analog_get(ANALOG_REG0);
 	val |= (0x13 << 20) ;
@@ -2741,15 +2775,15 @@ void sys_hal_early_init(void)
 		sys_hal_analog_set(ANALOG_REG13, 0x1F6FB3FF);
 	} else if ((chip_id & PM_CHIP_ID_MASK) == (PM_CHIP_ID_MPW_V4 & PM_CHIP_ID_MASK)) {
 		sys_hal_analog_set(ANALOG_REG10, 0xC35543C7);//tenglong20230417:rosc config for buck in lowpower
-		sys_hal_analog_set(ANALOG_REG11, 0xD77EB9FF);
-		sys_hal_analog_set(ANALOG_REG12, 0xD77ECA4A);
+		sys_hal_analog_set(ANALOG_REG11, 0x977EB9FF);
+		sys_hal_analog_set(ANALOG_REG12, 0x977ECA4A);
 		sys_hal_analog_set(ANALOG_REG13, 0x547AB0F5);
 	} else if ((chip_id & PM_CHIP_ID_MASK) == (PM_CHIP_ID_MP_A & PM_CHIP_ID_MASK)){
 		sys_hal_analog_set(ANALOG_REG10, 0xC35543C7);//tenglong20230417:rosc config for buck in lowpower
 		//default of MP
 		//tenglong20231017: SYS_reg0x4B<3:0>=8,SYS_reg0x4C<3:0>=0,SYS_reg0x4D<4:1>=7 for softstart
-		sys_hal_analog_set(ANALOG_REG11, 0xD07EB878);
-		sys_hal_analog_set(ANALOG_REG12, 0xD07ECA40);
+		sys_hal_analog_set(ANALOG_REG11, 0x907EB878);
+		sys_hal_analog_set(ANALOG_REG12, 0x907ECA40);
 		sys_hal_analog_set(ANALOG_REG13, 0x727070EE);//tenglong20231020 disable psram/update volt for safe
 		sys_hal_analog_set(ANALOG_REG25, 0x961FAA4);
 
@@ -2758,8 +2792,8 @@ void sys_hal_early_init(void)
 		sys_hal_analog_set(ANALOG_REG10, 0xC3D543A7);//tenglong20240123
 		//default of MP
 		//tenglong20231017: SYS_reg0x4B<3:0>=8,SYS_reg0x4C<3:0>=0,SYS_reg0x4D<4:1>=7 for softstart
-		sys_hal_analog_set(ANALOG_REG11, 0xF47E9878);//tenglong20240204
-		sys_hal_analog_set(ANALOG_REG12, 0xF47ECA20);//tenglong20240123
+		sys_hal_analog_set(ANALOG_REG11, 0xB47E99F8);//tenglong20240418
+		sys_hal_analog_set(ANALOG_REG12, 0xB47ECF20);//tenglong20240418
 		sys_hal_analog_set(ANALOG_REG13, 0x727070EE);//tenglong20231020 disable psram/update volt for safe
 		sys_hal_analog_set(ANALOG_REG25, 0x961FAA4);
 

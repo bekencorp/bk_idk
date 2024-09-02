@@ -8,7 +8,6 @@ set(GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/_build)
 armino_build_set_property(PARTITIONS_HDR_DIR ${GEN_DIR})
 set(GEN_FILE ${GEN_DIR}/partitions_gen.h)
 set(CONFIG_FILE_LISTS
-	bl1_control.json
 	../csv/partitions.csv
 	../csv/ota.csv
 	../csv/security.csv

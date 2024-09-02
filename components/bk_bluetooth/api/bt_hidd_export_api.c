@@ -6,10 +6,11 @@
 bk_err_t bk_bt_hid_device_register_callback(bk_hd_cb_t callback)
 {
     BK_BT_HIDD_EN_CHECK();
-    if(callback == NULL)
+    if (callback == NULL)
     {
         return BK_FAIL;
-    }else
+    }
+    else
     {
         bk_bt_hidd_set_internal_callback(callback);
     }
@@ -32,7 +33,7 @@ bk_err_t bk_bt_hid_device_deinit(void)
     return ret;
 }
 
-bk_err_t bk_bt_hid_device_register_app(bk_hidd_app_param_t* app_param)
+bk_err_t bk_bt_hid_device_register_app(bk_hidd_app_param_t *app_param)
 {
     BK_BT_HIDD_EN_CHECK();
     ble_err_t ret = BK_OK;
@@ -64,7 +65,7 @@ bk_err_t bk_bt_hid_device_disconnect(void)
     return ret;
 }
 
-bk_err_t bk_bt_hid_device_send_report(uint16_t len, uint8_t* data)
+bk_err_t bk_bt_hid_device_send_report(uint16_t len, uint8_t *data)
 {
     BK_BT_HIDD_EN_CHECK();
     ble_err_t ret = BK_OK;
@@ -75,7 +76,7 @@ bk_err_t bk_bt_hid_device_send_report(uint16_t len, uint8_t* data)
     return ret;
 }
 
-bk_err_t bk_bt_hid_device_send_response(uint8_t message_type, uint8_t res_status, uint16_t len, uint8_t* data)
+bk_err_t bk_bt_hid_device_send_response(uint8_t message_type, uint8_t res_status, uint16_t len, uint8_t *data)
 {
     BK_BT_HIDD_EN_CHECK();
     ble_err_t ret = BK_OK;

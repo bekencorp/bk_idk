@@ -15,5 +15,10 @@ menu "SARADC"
 		bool "saradc pm support"
 		depends on SARADC
 		default n
+
+	config ADC_BUF_SIZE
+		int "config adc receive buffer size"
+		default 32
+
 endmenu	
 

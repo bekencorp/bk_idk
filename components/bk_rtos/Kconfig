@@ -45,6 +45,16 @@ menu "Bk_rtos"
 			bool "FreeRTOS Trace"
 			default n
 
+		config TASK_STACK_IN_PSRAM
+			depends on FREERTOS_V10
+			bool "Create FreeRTOS Task stack in psram"
+			default n
+		
+		config QUEUE_IN_PSRAM
+			depends on FREERTOS_V10
+			bool "Create FreeRTOS queue in psram"
+			default n
+
 		config FREERTOS_ALLOW_OS_API_IN_IRQ_DISABLED
 			depends on FREERTOS_SMP
 			bool "Allow Call OS API in IRQ disabled"
@@ -74,6 +84,12 @@ menu "Bk_rtos"
             bool "FreeRTOS recursive mutex"
             default n
 
+		config FREERTOS_TICK_RATE_HZ
+			depends on FREERTOS
+			int "Set FreeRTOS tick count per second"
+			default 500
+			help
+				System tick count per second, can be 1-1000
 
 	endmenu
 

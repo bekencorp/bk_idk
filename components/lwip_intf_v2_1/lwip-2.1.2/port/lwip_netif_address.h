@@ -11,6 +11,7 @@ typedef enum _wifi_interface_type
     WIFI_INTERFACE_TYPE_ANY = 0xff,
 } wifi_interface_type;
 
+#define ADDR_TYPE_FAST_DHCP   2
 #define ADDR_TYPE_STATIC 1
 #define ADDR_TYPE_DHCP   0
 

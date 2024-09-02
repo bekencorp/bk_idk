@@ -53,6 +53,7 @@ SECTIONS
         __vectors_start__ = .;
         KEEP(*(.vectors))
         __vectors_end__ = .;
+        *(.fix.reset_entry)
     } > FLASH
 
 #ifndef TFM_MULTI_CORE_TOPOLOGY
@@ -196,21 +197,25 @@ SECTIONS
 #endif
 
 #if TFM_LVL != 1
-    .ARM.extab :
+    .ARM.extab : ALIGN(32)
     {
         *(.ARM.extab* .gnu.linkonce.armextab.*)
+        . = ALIGN(32);
     } > FLASH
 
     __exidx_start = .;
-    .ARM.exidx :
+    .ARM.exidx : ALIGN(32)
     {
         *(.ARM.exidx* .gnu.linkonce.armexidx.*)
+        . = ALIGN(32);
     } > FLASH
     __exidx_end = .;
 
 #endif /* TFM_LVL != 1 */
 
-    .ER_TFM_CODE : ALIGN(4)
+    Image$$ER_TFM_CODE_START$$Base = .;
+
+    .ER_TFM_CODE : ALIGN(32)
     {
         *startup*(.text*)
         *libplatform_s*:*(.text*)
@@ -218,7 +223,9 @@ SECTIONS
 
         *libplatform_s*:*(.rodata*)
         *libtfm_spm*:*(.rodata*)
+        . = ALIGN(32);
     } > FLASH
+    Image$$ER_TFM_CODE_END$$Base = .;
 
     /**** Base address of secure data area */
     .tfm_secure_data_start :
@@ -479,10 +486,10 @@ SECTIONS
         KEEP(*(.ram_vectors))
         __ram_vectors_end__   = .;
     } > RAM
-    .TFM_DATA __ram_vectors_end__ : ALIGN(4)
+    .TFM_DATA __ram_vectors_end__ : ALIGN(32)
 #else
 
-     .TFM_DATA : ALIGN(4)
+     .TFM_DATA : ALIGN(32)
 #endif
     {
         *(.data*)
@@ -509,13 +516,13 @@ SECTIONS
         PROVIDE_HIDDEN (__fini_array_end = .);
 
         KEEP(*(.jcr*))
-        . = ALIGN(4);
+        . = ALIGN(32);
 
     } > RAM AT> FLASH
     Image$$ER_TFM_DATA$$RW$$Base = ADDR(.TFM_DATA);
     Image$$ER_TFM_DATA$$RW$$Limit = ADDR(.TFM_DATA) + SIZEOF(.TFM_DATA);
 
-    .TFM_BSS : ALIGN(4)
+    .TFM_BSS : ALIGN(32)
     {
         __bss_start__ = .;
         __partition_runtime_start__ = .;
@@ -527,7 +534,7 @@ SECTIONS
         __service_runtime_end__ = .;
         *(.bss*)
         *(COMMON)
-        . = ALIGN(4);
+        . = ALIGN(32);
         __bss_end__ = .;
     } > RAM AT> RAM
     Image$$ER_TFM_DATA$$ZI$$Base = ADDR(.TFM_BSS);

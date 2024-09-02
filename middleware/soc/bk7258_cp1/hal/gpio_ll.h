@@ -184,12 +184,18 @@ static inline void gpio_ll_set_output_value(gpio_hw_t *hw, uint32 index, bool va
 	hw->gpio_num[index].cfg.gpio_output = value;
 }
 
+static inline bool gpio_ll_get_output_value(gpio_hw_t *hw, uint32 index)
+{
+	return hw->gpio_num[index].cfg.gpio_output;
+}
+
 static inline bool gpio_ll_get_input_value(gpio_hw_t *hw, uint32 index)
 {
 	return hw->gpio_num[index].cfg.gpio_input;
 }
 
 #define gpio_ll_set_gpio_output_value(hw,index,value) gpio_ll_set_output_value(hw, index, value)
+#define gpio_ll_get_gpio_output_value(hw,index) gpio_ll_get_output_value(hw, index)
 #define gpio_ll_get_gpio_input_value(hw,index) gpio_ll_get_input_value(hw, index)
 
 static inline void gpio_ll_set_interrupt_type(gpio_hw_t *hw, uint32 index, gpio_int_type_t mode)

@@ -72,32 +72,27 @@ ARM_MPU_Region_t mpu_regions[] = {
         shared memory(smem4) 0x2806 0000-----------0x2807 FFFF   0x3806 0000-----------0x3807 FFFF
         shared memory(smem4) 0x2808 0000-----------0x2809 FFFF   0x3808 0000-----------0x3809 FFFF 
      */
-#if CONFIG_LVGL_SRAM_MAPPING
-    #if CONFIG_CACHE_ENABLE
-    { ARM_MPU_RBAR(0x28000000UL, ARM_MPU_SH_NON, 0, 1, 0),
-      ARM_MPU_RLAR(0x2807FFE0UL, 0) },
-    #if CONFIG_LV_ATTRIBUTE_FAST_MEM_L2
-    { ARM_MPU_RBAR(0x28080000UL, ARM_MPU_SH_NON, 1, 1, 0),
-      ARM_MPU_RLAR(0x28080FE0UL, 4) },     
+#if CONFIG_CACHE_ENABLE
+    #if CONFIG_LVGL_SRAM_MAPPING
+        { ARM_MPU_RBAR(0x28000000UL, ARM_MPU_SH_NON, 0, 1, 0),
+          ARM_MPU_RLAR(0x2807FFE0UL, 0) },
+        #if CONFIG_LV_ATTRIBUTE_FAST_MEM_L2
+            { ARM_MPU_RBAR(0x28080000UL, ARM_MPU_SH_NON, 1, 1, 0),
+              ARM_MPU_RLAR(0x28080FE0UL, 4) },     
 
-    { ARM_MPU_RBAR(0x28081000UL, ARM_MPU_SH_INNER, 0, 1, 0),
-      ARM_MPU_RLAR(0x3FFFFFE0UL, 1) },  
+            { ARM_MPU_RBAR(0x28081000UL, ARM_MPU_SH_INNER, 0, 1, 0),
+              ARM_MPU_RLAR(0x3FFFFFE0UL, 1) },  
+        #else
+            { ARM_MPU_RBAR(0x28080000UL, ARM_MPU_SH_INNER, 0, 1, 0),
+              ARM_MPU_RLAR(0x3FFFFFE0UL, 1) },
+        #endif
     #else
-    { ARM_MPU_RBAR(0x28080000UL, ARM_MPU_SH_INNER, 0, 1, 0),
-      ARM_MPU_RLAR(0x3FFFFFE0UL, 1) },
-    #endif
-    #else
-    { ARM_MPU_RBAR(0x28000000UL, ARM_MPU_SH_INNER, 0, 1, 0),
-      ARM_MPU_RLAR(0x3FFFFFE0UL, 1) },
+        { ARM_MPU_RBAR(0x28000000UL, ARM_MPU_SH_NON, 0, 1, 0),
+          ARM_MPU_RLAR(0x3FFFFFE0UL, 0) },
     #endif
 #else
-    #if CONFIG_CACHE_ENABLE
-    { ARM_MPU_RBAR(0x28000000UL, ARM_MPU_SH_NON, 0, 1, 0),
-      ARM_MPU_RLAR(0x3FFFFFE0UL, 0) },
-    #else
     { ARM_MPU_RBAR(0x28000000UL, ARM_MPU_SH_INNER, 0, 1, 0),
       ARM_MPU_RLAR(0x3FFFFFE0UL, 1) },
-    #endif
 #endif
 
     /* MPU region 5 periphral, device memory

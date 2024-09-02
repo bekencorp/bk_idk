@@ -42,7 +42,7 @@ enum
     BLE_ETHERMIND_GAP_API_REQ_SUBMSG_SET_PERIODIC_ADV_PARAMS,
     BLE_ETHERMIND_GAP_API_REQ_SUBMSG_REMOVE_ADV_SET,
     BLE_ETHERMIND_GAP_API_REQ_SUBMSG_CLEAR_ADV_SET,
-    BLE_ETHERMIND_GAP_API_REQ_SUBMSG_CREATE_CONNECTION,
+    BLE_ETHERMIND_GAP_API_REQ_SUBMSG_SET_PREFER_CONNECT_PARAM,
     BLE_ETHERMIND_GAP_API_REQ_SUBMSG_READ_PHY,
     BLE_ETHERMIND_GAP_API_REQ_SUBMSG_SET_PREFERRED_DEFAULT_PHY,
     BLE_ETHERMIND_GAP_API_REQ_SUBMSG_SET_PREFERRED_PHY,
@@ -53,6 +53,10 @@ enum
     BLE_ETHERMIND_GAP_API_REQ_SUBMSG_KEY_REPLY,
     BLE_ETHERMIND_GAP_API_REQ_SUBMSG_CREATE_BOND,
     BLE_ETHERMIND_GAP_API_REQ_SUBMSG_BOND_DEV_LIST_OP,
+    BLE_ETHERMIND_GAP_API_REQ_SUBMSG_CONNECT,
+    BLE_ETHERMIND_GAP_API_REQ_SUBMSG_CONNECT_CANCEL,
+    BLE_ETHERMIND_GAP_API_REQ_SUBMSG_SEC_REQ_RSP,
+    BLE_ETHERMIND_GAP_API_REQ_SUBMSG_GENERATE_RPA,
 };
 
 typedef enum
@@ -142,7 +146,7 @@ typedef struct
 {
     uint8_t    peer_addr_type;
     bd_addr_t  peer_addr;
-    uint8_t    privacy_mode;
+    uint8_t    privacy_enable;
 } ble_gap_privacy_mode_t;
 
 typedef struct
@@ -263,6 +267,33 @@ typedef struct
 
 typedef struct
 {
+    uint16_t opcode;
+
+    uint8_t adv_handle;
+    uint8_t subevent;
+
+    uint8_t initiator_filter_policy;
+    uint8_t local_addr_type;
+    bd_addr_t peer_addr;
+    uint8_t peer_addr_type;
+    uint8_t init_phy;
+
+    struct
+    {
+        uint16_t scan_interval;
+        uint16_t scan_window;
+        uint16_t conn_interval_min;
+        uint16_t conn_interval_max;
+        uint16_t conn_latency;
+        uint16_t supervision_timeout;
+        uint16_t min_ce;
+        uint16_t max_ce;
+    } *param_array;
+
+} ble_gap_create_connect_t;
+
+typedef struct
+{
     bd_addr_t addr;
     uint8_t addr_type;
 } ble_gap_disconnect_t;
@@ -277,6 +308,17 @@ typedef struct
     bk_ble_bond_dev_t info;
     uint8_t action; // 0 add; 1 remove; 2 clean
 } ble_gap_bond_dev_list_t;
+
+typedef struct
+{
+    bd_addr_t peer_addr;
+    uint8_t accept;
+} ble_gap_sec_req_rsp_t;
+
+typedef struct
+{
+    uint8_t irk[16];
+} ble_gap_generate_rpa_t;
 
 enum
 {

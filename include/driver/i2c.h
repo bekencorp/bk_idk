@@ -105,6 +105,24 @@ bk_err_t bk_i2c_deinit(i2c_id_t id);
 bk_err_t bk_i2c_master_write(i2c_id_t id, uint32_t dev_addr, const uint8_t *data, uint32_t size, uint32_t timeout_ms);
 
 /**
+ * @brief     Write data to the I2C port from a given buffer and length without slave address,
+ *            It shall only be called in I2C master mode.
+ *
+ * @param id I2C id
+ * @param data pointer to the buffer
+ * @param size data length to write
+ * @param timeout_ms timeout ms
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_I2C_NOT_INIT: I2C driver not init
+ *    - BK_ERR_I2C_INVALID_ID: I2C id number is invalid
+ *    - BK_ERR_I2C_ID_NOT_INIT: I2C id not init
+ *    - others: other errors.
+ */
+bk_err_t bk_i2c_master_write_noaddr(i2c_id_t id, const uint8_t *data, uint32_t size, uint32_t timeout_ms);
+
+/**
  * @brief     I2C read data from I2C buffer,
  *            It shall only be called in I2C master mode.
  *
@@ -122,6 +140,24 @@ bk_err_t bk_i2c_master_write(i2c_id_t id, uint32_t dev_addr, const uint8_t *data
  *    - others: other errors.
  */
 bk_err_t bk_i2c_master_read(i2c_id_t id, uint32_t dev_addr, uint8_t *data, uint32_t size, uint32_t timeout_ms);
+
+/**
+ * @brief     I2C read data from I2C buffer without slave address,
+ *            It shall only be called in I2C master mode.
+ *
+ * @param id I2C id
+ * @param data pointer to the buffer
+ * @param size data length to read
+ * @param timeout_ms timeout ms
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_I2C_NOT_INIT: I2C driver not init
+ *    - BK_ERR_I2C_INVALID_ID: I2C id number is invalid
+ *    - BK_ERR_I2C_ID_NOT_INIT: I2C id not init
+ *    - others: other errors.
+ */
+bk_err_t bk_i2c_master_read_noaddr(i2c_id_t id, uint8_t *data, uint32_t size, uint32_t timeout_ms);
 
 /**
  * @brief     Write data to the I2C port from a given buffer and length,
@@ -292,6 +328,74 @@ uint8_t bk_i2c_get_busstate ( int id );
  *	  - 0: fail.
  */
 uint8_t bk_i2c_get_transstate ( int id );
+
+/**
+ * @brief     Init the SIM I2C id
+ *
+ * This API init the I2C id:
+ *  - Power up the I2C id
+ *  - Configure the I2C id clock
+ *  - Map the I2C id to dedicated GPIO port
+ *  - Set the I2C parameters
+ *  - Start the I2C id
+ *
+ * @param id I2C id
+ * @param config I2C parameter settings
+
+ * @attention Multifunction GPIO initialization affects other functions
+
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_NULL_PARAM: I2C config paramter is NULL
+ *    - BK_ERR_I2C_NOT_INIT: I2C driver not init
+ *    - others: other errors.
+ */
+bk_err_t bk_i2c_init_v2(i2c_id_t id, const i2c_config_t *cfg);
+
+/**
+ * @brief     Deinit the SIM I2C driver
+ *
+ * This API free all resource related to I2C and disable I2C.
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: other errors.
+ */
+bk_err_t bk_i2c_deinit_v2(i2c_id_t id);
+
+/**
+ * @brief     Write data to the specific memory address from a given buffer and length,
+ *            It shall only be called in SIM I2C master mode.
+ *
+ * @param id I2C id
+ * @param mem_param memory parameter
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_NULL_PARAM: I2C mem_param is NULL
+ *    - BK_ERR_I2C_NOT_INIT: I2C driver not init
+ *    - BK_ERR_I2C_INVALID_ID: I2C id number is invalid
+ *    - BK_ERR_I2C_ID_NOT_INIT: I2C id not init
+ *    - others: other errors.
+ */
+bk_err_t bk_i2c_memory_write_v2(i2c_id_t id, const i2c_mem_param_t *mem_param);
+
+/**
+ * @brief     SIM I2C read data from I2C specific memory address,
+ *            It shall only be called in SIM I2C master mode.
+ *
+ * @param id I2C id
+ * @param mem_param memory parameter
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_NULL_PARAM: I2C mem_param is NULL
+ *    - BK_ERR_I2C_NOT_INIT: I2C driver not init
+ *    - BK_ERR_I2C_INVALID_ID: I2C id number is invalid
+ *    - BK_ERR_I2C_ID_NOT_INIT: I2C id not init
+ *    - others: other errors.
+ */
+bk_err_t bk_i2c_memory_read_v2(i2c_id_t id, const i2c_mem_param_t *mem_param);
 
 #ifdef __cplusplus
 }

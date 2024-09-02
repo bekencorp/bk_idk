@@ -34,6 +34,10 @@
 #ifndef __CC_H__
 #define __CC_H__
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 #include <common/bk_typedef.h>
 #include "bk_uart.h"
 
@@ -107,11 +111,18 @@ typedef uintptr_t mem_ptr_t;
 #ifdef CONFIG_TRNG_SUPPORT
 extern int bk_rand();		/* FIXME: move to right place */
 
+#ifndef LWIP_RAND
 #define LWIP_RAND()        ((uint32_t)bk_rand())
+#endif
 #else
 extern int rand();
+#ifndef LWIP_RAND
 #define LWIP_RAND()        (rand())
 #endif
+#endif
+#endif
+#ifdef __cplusplus
+}
 #endif
 // eof
 

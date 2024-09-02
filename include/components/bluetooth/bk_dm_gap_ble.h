@@ -395,11 +395,28 @@ ble_err_t bk_ble_oob_req_reply(bk_bd_addr_t bd_addr, uint8_t *TK, uint8_t len);
 #endif /* #if (SMP_INCLUDED == TRUE) */
 
 /**
+* @brief           This function is to connect the physical connection of the peer device
+*
+*
+*
+* @param[in]       param : connect param
+*
+* @attention       1. local_addr_type can be BLE_ADDR_TYPE_PUBLIC ~ BLE_ADDR_TYPE_RPA_RANDOM.
+* @attention       2. if local_addr_type is BLE_ADDR_TYPE_PUBLIC, and initiator_filter_policy policy not enable, host will use local public addr/peer_addr/peer_addr_type to connect.
+* @attention       3. if local_addr_type is BLE_ADDR_TYPE_RANDOM, and initiator_filter_policy policy not enable, host will use peer_addr/peer_addr_type, random addr that set in bk_ble_gap_set_adv_rand_addr to connect.
+* @attention       4. if local_addr_type is BLE_ADDR_TYPE_RPA_PUBLIC, host will try search bond list's nominal addr by peer_addr/peer_addr_type, if found and BK_LE_KEY_PID | BK_LE_KEY_LID
+*                     present then host will generate RPA addr to connect peer RPA ADV, otherwise see attention 2.
+* @attention       5. if local_addr_type is BLE_ADDR_TYPE_RPA_RANDOM, host will try search bond list's nominal addr by peer_addr/peer_addr_type, if found and BK_LE_KEY_PID | BK_LE_KEY_LID
+*                     present then host will generate RPA addr to connect peer RPA ADV, otherwise see attention 3.
+*
+* @return            - BK_OK : success
+*                    - other  : failed
+*
+*/
+ble_err_t bk_ble_gap_connect(bk_gap_create_conn_params_t *param);
+
+/**
 * @brief           This function is to disconnect the physical connection of the peer device
-*                  gattc may have multiple virtual GATT server connections when multiple app_id registered.
-*                  bk_ble_gattc_close (bk_gatt_if_t gattc_if, uint16_t conn_id) only close one virtual GATT server connection.
-*                  if there exist other virtual GATT server connections, it does not disconnect the physical connection.
-*                  bk_ble_gap_disconnect(bk_bd_addr_t remote_device) disconnect the physical connection directly.
 *
 *
 *
@@ -410,6 +427,15 @@ ble_err_t bk_ble_oob_req_reply(bk_bd_addr_t bd_addr, uint8_t *TK, uint8_t len);
 *
 */
 ble_err_t bk_ble_gap_disconnect(bk_bd_addr_t remote_device);
+
+/**
+* @brief           This function is to cancel the physical connection that have not connect completed
+*
+* @return            - BK_OK : success
+*                    - other  : failed
+*
+*/
+ble_err_t bk_ble_gap_cancel_connect(void);
 
 /**
 * @brief           This function is called to read the connection
@@ -519,6 +545,15 @@ ble_err_t bk_ble_gap_set_adv_rand_addr(uint8_t instance, bk_bd_addr_t rand_addr)
 *
 * @param[in]       instance : identifies the advertising set whose parameters are being configured.
 * @param[in]       params   : advertising parameters
+*
+* @attention       1. local_addr_type can be BLE_ADDR_TYPE_PUBLIC ~ BLE_ADDR_TYPE_RPA_RANDOM.
+* @attention       2. if local_addr_type is BLE_ADDR_TYPE_PUBLIC, host will use public addr to send adv.
+* @attention       3. if local_addr_type is BLE_ADDR_TYPE_RANDOM, host will use random addr that set in bk_ble_gap_set_adv_rand_addr to send adv.
+* @attention       4. if local_addr_type is BLE_ADDR_TYPE_RPA_PUBLIC, host will try search bond list by peer_addr/peer_addr_type, if found and BK_LE_KEY_PID | BK_LE_KEY_LID
+*                     present then host will generate RPA addr to send ADV, otherwise see attention 2.
+* @attention       5. if local_addr_type is BLE_ADDR_TYPE_RPA_RANDOM, host will try search bond list by peer_addr/peer_addr_type, if found and BK_LE_KEY_PID | BK_LE_KEY_LID
+*                     present then host will generate RPA addr to send ADV, otherwise see attention 3.
+*
 *
 * @return            - BK_OK : success
 *                    - other  : failed
@@ -796,6 +831,7 @@ ble_err_t bk_ble_gap_create_bond(bk_bd_addr_t bd_addr);
 * @brief           This function is used to add, remove or clean bond dev info. BK_BLE_GAP_BOND_DEV_LIST_OPERATEION_COMPLETE_EVT evt will report when completed.
 * @attention       1. Because app layer save bond info, when ble power on, app layer must add bond dev info one by one.
 * @attention       2. When app layer remove bond info from it self storage, app layer should call BK_GAP_BOND_DEV_LIST_OPERATION_REMOVE or BK_GAP_BOND_DEV_LIST_OPERATION_CLEAN after it done.
+* @attention       3. This func can't be call when ble connection/adv/scan is exist.
 
 * @param[in]       op : operation
 * @param[in]       device : device info
@@ -804,6 +840,17 @@ ble_err_t bk_ble_gap_create_bond(bk_bd_addr_t bd_addr);
 *
 */
 ble_err_t bk_ble_gap_bond_dev_list_operation(bk_gap_bond_dev_list_operation_t op, bk_ble_bond_dev_t *device);
+
+/**
+* @brief           This function is used to generate rpa. BK_BLE_GAP_GENERATE_RPA_COMPLETE_EVT evt will report when completed.
+*
+* @param[in]       irk : the key which used to generate rpa, when this argument is NULL, host will use current local irk to generate. If local irk is not exist(suchas ir not set), will return fail.
+*
+* @return            - BK_OK : success
+*                    - other  : failed
+*
+*/
+ble_err_t bk_ble_gap_generate_rpa(uint8_t *irk);
 
 #endif //#if (BLE_50_FEATURE_SUPPORT == TRUE)
 

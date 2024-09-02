@@ -6,13 +6,13 @@ Memory and Performance
 Memory overview
 ----------------------------------------
 
-    The BK7258 chip has 8M(or 16M) psram, 640K sram as a whole, and the three Cortex M33 cores each have independent 16k dtcm and 16k itcm
+    The BK7258 chip has 8M(or 16M) psram, 640K sram as a whole, and CPU0, CPU1, and CPU2 each have independent 16k DTCM and 16k ITCM
 
 
 SRAM Overview
 ---------------------------------------
 
-    - The BK7258 chip is currently a three-core CM33 AMP architecture; it has 640K sram. You can configure the sram sizes of the three CPUs through the following three configuration items::
+    - The BK7258 chip is currently composed of an AMP architecture with CPU0, CPU1 and CPU2; it has 640K sram. You can configure the sram sizes of the three CPUs through the following three configuration items::
 
          CONFIG_CPU0_SPE_RAM_SIZE Configure the size of cpu0 sram
          CONFIG_CPU1_APP_RAM_SIZE Configure the size of cpu1 sram
@@ -148,7 +148,7 @@ PSRAM Overview
     +----------------------------+---------------+-------------------------------------+------------------+
     |  CONFIG_JPEG_FRAME_SIZE    |    153600     | the size of one complete jpeg frame |   [0, 204800]    |
     +----------------------------+---------------+-------------------------------------+------------------+
-    |  CONFIG_H264_FRAME_SIZE    |     65536     | the size of one complete h264 frame |   [0, 102400]    |
+    |  CONFIG_H264_FRAME_SIZE    |     65536     | the size of one complete h264 frame |   [0, 204800]    |
     +----------------------------+---------------+-------------------------------------+------------------+
 
 	The above size needs to be adjusted according to their own needs, such as the need to store 1280X720 JPEG images, 150K space may not be enough,

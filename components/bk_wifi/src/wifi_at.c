@@ -62,12 +62,17 @@ static bk_err_t at_wlan_status_callback(void *arg, event_module_t event_module,
 	wifi_event_sta_connected_t *sta_connected;
 	wifi_event_ap_disconnected_t *ap_disconnected;
 	wifi_event_ap_connected_t *ap_connected;
+	wifi_event_scan_done_t *scan_done;
+    
 	BK_LOGD(TAG,"[AT:WLAN],callback_event(%x)\r\n",event_id);
 	if(!penv->atsvr_mode)
 		return BK_OK;
 	else{
 		switch(event_id){
 		case EVENT_WIFI_SCAN_DONE:
+			scan_done = (wifi_event_scan_done_t*)event_data;
+			at_wlan_stat.scan_time = scan_done->scan_use_time;
+
 			if (at_wlan_cfg.at_wlan_scan_sema)
 			{
 				rtos_set_semaphore(&at_wlan_cfg.at_wlan_scan_sema);
@@ -143,7 +148,7 @@ static bk_err_t at_wlan_netif_event_cb(void *arg, event_module_t event_module,
 
 static void wlan_at_init(void)
 {
-	//bk_wlan_status_register_cb_internal(at_wlan_status_callback);
+	//bk_wlan_status_register_cb(at_wlan_status_callback);
 	BK_LOG_ON_ERR(bk_event_register_cb(EVENT_MOD_WIFI, EVENT_ID_ALL, at_wlan_status_callback, NULL));
 	BK_LOG_ON_ERR(bk_event_register_cb(EVENT_MOD_NETIF, EVENT_ID_ALL, at_wlan_netif_event_cb, NULL));
 	return;
@@ -198,12 +203,15 @@ int at_wlan_event_handler(atsvr_msg_t *msg)
 		snprintf(resultbuf,sizeof(resultbuf),"\r\n"AT_WLAN_EVT_SAP_DISCONNECTED"sta :%02x:%02x:%02x:%02x:%02x:%02x has left AP\r\n\r\n",
 			admsg_param->mac[0],admsg_param->mac[1],admsg_param->mac[2],admsg_param->mac[3],admsg_param->mac[4],admsg_param->mac[5]);
 		ATSVR_SIZEOF_OUTPUT_STRRING(resultbuf);
+		if(at_wlan_stat.hpad_sta_cnt!=0)
+			at_wlan_stat.hpad_sta_cnt--;
 		break;
 	case AT_WLAN_SAP_CONNECTED:
 		acmsg_param = (wifi_event_ap_connected_t*)(msg->msg_param);
 		snprintf(resultbuf,sizeof(resultbuf),"\r\n"AT_WLAN_EVT_SAP_CONNECTED"sta :%02x:%02x:%02x:%02x:%02x:%02x has connected AP\r\n\r\n",
 		acmsg_param->mac[0],acmsg_param->mac[1],acmsg_param->mac[2],acmsg_param->mac[3],acmsg_param->mac[4],acmsg_param->mac[5]);
 		ATSVR_SIZEOF_OUTPUT_STRRING(resultbuf);
+		at_wlan_stat.hpad_sta_cnt++;
 		break;
 	default:
 		ret = ATSVR_ERROR;
@@ -334,92 +342,7 @@ static int at_wlan_get_station_dhcp(void)
 	return ( at_wlan_stat.dhcp != 0 ) ? 1 : 0;
 }
 
-#if 0
-static int at_wlan_start_station_connect(char *my_ssid,char* connect_key)
-{
-	wifi_sta_config_t sta_config = WIFI_DEFAULT_STA_CONFIG();
-	network_InitTypeDef_st wNetConfig;
-	int dhcp_sta;
-	unsigned char *bssid = NULL;
 
-	memset(&wNetConfig, 0x0, sizeof(network_InitTypeDef_st));
-	dhcp_sta = at_wlan_get_station_dhcp();
-
-	memcpy(sta_config.ssid, my_ssid,32);
-	sta_config.ssid[32] = '\0';
-	memcpy(sta_config.password, connect_key,64);
-
-	if(!dhcp_sta){
-		netif_ip4_config_t ip4_config = {0};
-
-		BK_LOGI(TAG,"DHCP Static ip:%s,maks:%s,gate:%s,dns1:%s,dns2:%s\r\n",
-			at_wlan_stat.static_ip,at_wlan_stat.static_maks, at_wlan_stat.static_gate,
-			at_wlan_stat.static_dns1, at_wlan_stat.static_dns2);
-		strncpy(ip4_config.ip, (char *)at_wlan_stat.static_ip,16);
-		strncpy(ip4_config.mask, (char *)at_wlan_stat.static_maks,16);
-		strncpy(ip4_config.gateway, (char *)at_wlan_stat.static_gate,16);
-		strncpy(ip4_config.dns, (char *)at_wlan_stat.static_dns1,16);
-		BK_LOG_ON_ERR(bk_netif_set_ip4_config(NETIF_IF_STA, &ip4_config));
-	}
-
-	if ( bssid != NULL){
-		memcpy(sta_config.bssid, bssid, 6);
-	}
-
-	BK_LOGI(TAG,"atsvr_ssid:%s atsvr_key:%s\r\n", sta_config.ssid, sta_config.password);
-	BK_LOG_ON_ERR(bk_wifi_sta_set_config(&sta_config));
-	BK_LOG_ON_ERR(bk_wifi_sta_start());
-
-	return 0;
-}
-
-
-static int at_wlan_station_start(int sync,int argc, char **argv)
-{
-    if((argc != 1)&&(argc != 2)){
-		atsvr_cmd_rsp_error();
-        return -1;
-    }
-	char *my_ssid;
-	char *connect_key;
-
-	if(argc == 1){
-		my_ssid = argv[0];
-		connect_key = "OPEN";
-	}else if(argc == 2){
-		my_ssid = argv[0];
-		connect_key = argv[1];
-	}else{
-		atsvr_cmd_rsp_error();
-        return -1;
-	}
-	if(at_wlan_cfg.sta_protection == NULL)
-		rtos_init_semaphore(&at_wlan_cfg.sta_protection,1);
-	if(at_wlan_start_station_connect(my_ssid, connect_key) == 0)
-	{
-		if(0 == rtos_get_semaphore(&at_wlan_cfg.sta_protection,AT_WLAN_SCAN_TIMEOUT_MS))
-		{
-			atsvr_cmd_rsp_ok();
-			rtos_deinit_semaphore(&at_wlan_cfg.sta_protection);
-			at_wlan_cfg.sta_protection = NULL;
-		}	
-		else
-		{
-			atsvr_cmd_rsp_error();
-			rtos_deinit_semaphore(&at_wlan_cfg.sta_protection);
-			at_wlan_cfg.sta_protection = NULL;
-		}
-	}
-	else
-	{
-		atsvr_cmd_rsp_error();
-		rtos_deinit_semaphore(&at_wlan_cfg.sta_protection);
-		at_wlan_cfg.sta_protection = NULL;
-	}
-
-    return 0;
-}
-#endif
 
 #include "conv_utf8_pub.h"
 int at_wlan_station_start(int sync, int argc, char **argv)
@@ -663,20 +586,48 @@ static int at_wlan_get_station_status(int sync, int argc, char **argv)
 {
 	int err = kNoErr;
 	char resultbuf[200];
+	char* tag = NULL;
+	if (argc == 0) 
+	{
 
-	if (argc == 0) {
-		err = demo_state_app_init();
-		snprintf(resultbuf,sizeof(resultbuf), "sta: %d, ap: %d, b/g/n\r\n",sta_ip_is_start(),uap_ip_is_start());
-		atsvr_output_msg(resultbuf);		
-		if (err == kNoErr) {
-			atsvr_cmd_rsp_ok();
-			return err;
-		}
-		else {
-			os_printf("get link status fail!\n");
-			err = kGeneralErr;
-			goto error;
-		}
+	wifi_link_status_t link_status = {0};
+	wifi_ap_config_t ap_info = {0};
+	netif_ip4_config_t ap_ip4_info = {0};
+	char ssid[33] = {0};
+#if CONFIG_WIFI4
+	snprintf(resultbuf,sizeof(resultbuf), "sta: %d, ap: %d, b/g/n\r\n",wifi_netif_sta_is_got_ip(),uap_ip_is_start());
+	atsvr_output_msg(resultbuf);	
+#else
+	snprintf(resultbuf,sizeof(resultbuf), "sta: %d, ap: %d, b/g/n\r\n",wifi_netif_sta_is_got_ip(),uap_ip_is_start());
+	atsvr_output_msg(resultbuf);	
+#endif
+	if (sta_ip_is_start()) {
+		os_memset(&link_status, 0x0, sizeof(link_status));
+		BK_RETURN_ON_ERR(bk_wifi_sta_get_link_status(&link_status));
+		os_memcpy(ssid, link_status.ssid, 32);
+		os_memset(resultbuf,0,200);
+		snprintf(resultbuf,sizeof(resultbuf), "EVT:sta:rssi=%d,aid=%d,ssid=%s,bssid=%pm,channel=%d,cipher_type=%s\r\n",
+												link_status.rssi, link_status.aid, ssid, link_status.bssid,
+												link_status.channel, wifi_sec_type_string(link_status.security));
+		atsvr_output_msg(resultbuf);	
+	}
+	if (uap_ip_is_start()) 
+	{
+		os_memset(&ap_info, 0x0, sizeof(ap_info));
+		BK_RETURN_ON_ERR(bk_wifi_ap_get_config(&ap_info));
+		os_memcpy(ssid, ap_info.ssid, 32);
+		BK_LOGI(TAG, "[KW:]softap: ssid=%s, channel=%d, cipher_type=%s\r\n",
+				ssid, ap_info.channel, wifi_sec_type_string(ap_info.security));
+
+		BK_RETURN_ON_ERR(bk_netif_get_ip4_config(NETIF_IF_AP, &ap_ip4_info));
+		os_memset(resultbuf,0,200);
+		//BK_LOGI(TAG, "[KW:]ap_ip=%s,ap_gate=%s,ap_mask=%s,ap_dns=%s\r\n",
+		//		ap_ip4_info.ip, ap_ip4_info.gateway, ap_ip4_info.mask, ap_ip4_info.dns);
+		snprintf(resultbuf,sizeof(resultbuf), "EVT:ap_ip=%s,ap_gate=%s,ap_mask=%s,ap_dns=%s\r\n",
+				ap_ip4_info.ip, ap_ip4_info.gateway, ap_ip4_info.mask, ap_ip4_info.dns);
+		atsvr_output_msg(resultbuf);	
+	}
+		atsvr_cmd_rsp_ok();
 	}
 	else if (argc == 1) {
 		if (os_strcmp(argv[0], "STA") == 0) {
@@ -711,7 +662,7 @@ static int at_wlan_get_station_status(int sync, int argc, char **argv)
 	}
 	else if (argc == 2) {
 		if (os_strcmp(argv[0], "STA") == 0) {
-
+			tag = "sta";
 			if (sta_ip_is_start()) {
 				wifi_link_status_t link_status = {0};
 				os_memset(&link_status, 0x0, sizeof(link_status));
@@ -721,22 +672,22 @@ static int at_wlan_get_station_status(int sync, int argc, char **argv)
 					goto error;
 				}
 				if (os_strcmp(argv[1], "RSSI") == 0) {
-					snprintf(resultbuf,sizeof(resultbuf), "%s:%d\r\n","CMDRSP:",link_status.rssi);
+					snprintf(resultbuf,sizeof(resultbuf), "%s:%s_%s:%d\r\n","CMDRSP",tag,"rssi",link_status.rssi);
 					atsvr_output_msg(resultbuf);
 				}
 
 				else if (os_strcmp(argv[1], "CHANNEL") == 0) {
-					snprintf(resultbuf,sizeof(resultbuf), "%s:%d\r\n","CMDRSP:",link_status.channel);
+					snprintf(resultbuf,sizeof(resultbuf),"%s:%s_%s:%d\r\n","CMDRSP",tag,"chnl",link_status.channel);
 					atsvr_output_msg(resultbuf);
 				}
 
 				else if (os_strcmp(argv[1], "BSSID") == 0) {
-					snprintf(resultbuf,sizeof(resultbuf), "%s:" MACSTR "\r\n","CMDRSP:",MAC2STR(link_status.bssid));
+					snprintf(resultbuf,sizeof(resultbuf), "%s:%s_%s:" MACSTR "\r\n","CMDRSP",tag,"bssid",MAC2STR(link_status.bssid));
 					atsvr_output_msg(resultbuf);
 				}
 
 				else if (os_strcmp(argv[1], "SSID") == 0) {
-					snprintf(resultbuf,sizeof(resultbuf), "%s:%s\r\n","CMDRSP:",link_status.ssid);
+					snprintf(resultbuf,sizeof(resultbuf), "%s:%s_%s::%s\r\n","CMDRSP",tag,"ssid",link_status.ssid);
 					atsvr_output_msg(resultbuf);
 				}
 
@@ -748,7 +699,7 @@ static int at_wlan_get_station_status(int sync, int argc, char **argv)
 						err = kGeneralErr;
 						goto error;
 					}
-					snprintf(resultbuf,sizeof(resultbuf), "%s:IP=%s,GATE=%s,MASK=%s,DNS=%s\r\n","CMDRSP:",sta_ip4_info.ip, sta_ip4_info.gateway, sta_ip4_info.mask, sta_ip4_info.dns);
+					snprintf(resultbuf,sizeof(resultbuf), "%s:STA_IP=%s,GATE=%s,MASK=%s,DNS=%s\r\n","CMDRSP",sta_ip4_info.ip, sta_ip4_info.gateway, sta_ip4_info.mask, sta_ip4_info.dns);
 					atsvr_output_msg(resultbuf);
 				}
 
@@ -760,7 +711,7 @@ static int at_wlan_get_station_status(int sync, int argc, char **argv)
 				atsvr_cmd_rsp_ok();
 			}
 			else {
-				snprintf(resultbuf,sizeof(resultbuf), "%s:%s\r\n","CMDRSP:","STA_WIFI_DISCONNECT");
+				snprintf(resultbuf,sizeof(resultbuf), "%s:%s\r\n","CMDRSP","STA_WIFI_DISCONNECT");
 				atsvr_output_msg(resultbuf);
 				atsvr_cmd_rsp_ok();
 				err = kGeneralErr;
@@ -769,6 +720,7 @@ static int at_wlan_get_station_status(int sync, int argc, char **argv)
 		}
 		else if (os_strcmp(argv[0], "AP") == 0) {
 			if (uap_ip_is_start()) {
+				tag = "ap";
 				wifi_ap_config_t ap_info = {0};
 				os_memset(&ap_info, 0x0, sizeof(ap_info));
 				err = bk_wifi_ap_get_config(&ap_info);
@@ -779,17 +731,17 @@ static int at_wlan_get_station_status(int sync, int argc, char **argv)
 				}
 
 				if (os_strcmp(argv[1], "SSID") == 0) {
-					snprintf(resultbuf,sizeof(resultbuf), "%s:%s\r\n","CMDRSP:",ap_info.ssid);
+					snprintf(resultbuf,sizeof(resultbuf), "%s:%s_%s:%s\r\n","CMDRSP",tag,"ssid",ap_info.ssid);
 					atsvr_output_msg(resultbuf);
 
 				}
 				else if (os_strcmp(argv[1], "CHANNEL") == 0) {
-					snprintf(resultbuf,sizeof(resultbuf), "%s:%d\r\n","CMDRSP:",ap_info.channel);
+					snprintf(resultbuf,sizeof(resultbuf), "%s:%s_%s:%d\r\n","CMDRSP",tag,"chnl",ap_info.channel);
 					atsvr_output_msg(resultbuf);
 
 				}
 				else if (os_strcmp(argv[1], "SECURITY") == 0) {				
-					snprintf(resultbuf,sizeof(resultbuf), "%s:%s\r\n","CMDRSP:",wifi_sec_type_string(ap_info.security));
+					snprintf(resultbuf,sizeof(resultbuf), "%s:%s_%s:%s\r\n","CMDRSP",tag,"security",wifi_sec_type_string(ap_info.security));
 					atsvr_output_msg(resultbuf);
 
 				}
@@ -802,7 +754,7 @@ static int at_wlan_get_station_status(int sync, int argc, char **argv)
 						err = kGeneralErr;
 						goto error;
 					}
-					snprintf(resultbuf,sizeof(resultbuf), "%s:IP=%s,GATE=%s,MASK=%s,DNS=%s\r\n","CMDRSP:",ap_ip4_info.ip, ap_ip4_info.gateway, ap_ip4_info.mask, ap_ip4_info.dns);
+					snprintf(resultbuf,sizeof(resultbuf), "%s:AP_IP=%s,GATE=%s,MASK=%s,DNS=%s\r\n","CMDRSP",ap_ip4_info.ip, ap_ip4_info.gateway, ap_ip4_info.mask, ap_ip4_info.dns);
 					atsvr_output_msg(resultbuf);
 
 				}
@@ -832,7 +784,7 @@ static int at_wlan_get_station_status(int sync, int argc, char **argv)
 		err = kParamErr;
 		goto error;
 	}
-
+	return 0;
 error:
 	atsvr_cmd_rsp_error();
 	return err;
@@ -845,7 +797,7 @@ static int at_wlan_scan_done_handler(void *arg, event_module_t event_module,
 	/* post event */
 	FUNC_1PARAM_PTR fn;
 	wifi_linkstate_reason_t info = {0};
-	fn = (FUNC_1PARAM_PTR)bk_wlan_get_status_cb_internal();
+	fn = (FUNC_1PARAM_PTR)bk_wlan_get_status_cb();
 	if(fn) {
 		info.state = WIFI_LINKSTATE_STA_SCAN_DONE;
 		info.reason_code = 0;
@@ -859,35 +811,37 @@ static int at_wlan_scan_done_handler(void *arg, event_module_t event_module,
 }
 
 
-static int at_wlan_scan_start(char *ssid)
-{
+static int at_wlan_scan_start(wifi_scan_config_t *scan_config,AT_WLAN_SCAN_ATTR_T scan_attr,int notice_val)
+{	
 	int err;
 	wifi_scan_result_t scan_result = {0};
-	wifi_scan_config_t scan_config = {0};
 	if(at_wlan_cfg.at_wlan_scan_sema == NULL ) {
 		err = rtos_init_semaphore(&at_wlan_cfg.at_wlan_scan_sema,1);
 		if(err != kNoErr){
-			return -1;
+			BK_LOGE(TAG,"atsvr scan semaphore init failed!\r\n");
+			goto error;
 		}
 	}
 
-	if(NULL!=ssid)
-	{
-		memcpy(&scan_config.ssid,ssid,WIFI_SSID_STR_LEN);
-	}
-   //bk_event_register_cb(EVENT_MOD_WIFI, EVENT_WIFI_SCAN_DONE,
-   //         at_wlan_scan_done_handler, NULL);
+	if(scan_config)
+		BK_LOGD(TAG,"scan ssid %s,type %d ,dur %d ,cnt %d\r\n",scan_config->ssid,scan_config->scan_type,scan_config->duration,scan_config->chan_cnt);
 
-	BK_LOG_ON_ERR(bk_wifi_scan_start(&scan_config));
+	BK_LOG_ON_ERR(bk_wifi_scan_start(scan_config));
 
 	if(at_wlan_cfg.at_wlan_scan_sema != NULL) {
 		err = rtos_get_semaphore(&at_wlan_cfg.at_wlan_scan_sema, AT_WLAN_SCAN_TIMEOUT_MS);
 		if(err != kNoErr) {
 			BK_LOGE(TAG,"atsvr scan wait semaphore timeout!\r\n");
-			rtos_deinit_semaphore(&at_wlan_cfg.at_wlan_scan_sema);
-			at_wlan_cfg.at_wlan_scan_sema = NULL;
-			return -1;
+			goto error;
 		} else {
+			/*check special scan requirement*/
+			if(AT_WLAN_SCAN_DUR == scan_attr)
+			{
+				if(at_wlan_stat.scan_time > 1600000)//specical requirement
+				{
+					BK_LOGE(TAG,"scan time exceeded!\r\n");
+				}
+			}
 			BK_LOGD(TAG,"atsvr scan get semaphore !\r\n");	
 			bk_wifi_scan_get_result(&scan_result); 
 			BK_LOG_ON_ERR(bk_wifi_scan_dump_result(&scan_result));
@@ -896,12 +850,17 @@ static int at_wlan_scan_start(char *ssid)
 	}
 	else {
 		BK_LOGE(TAG,"atsvr_scan_sema is NULL!!\r\n");
-		return -1;
+		goto error;
 	}
 	atsvr_event_sender("wifi",AT_WLAN_STA_SCAN_DONE,0,NULL,false);
 	rtos_deinit_semaphore(&at_wlan_cfg.at_wlan_scan_sema);
-
 	return 0;
+error:
+	if(at_wlan_cfg.at_wlan_scan_sema != NULL)
+		rtos_deinit_semaphore(&at_wlan_cfg.at_wlan_scan_sema);
+	at_wlan_cfg.at_wlan_scan_sema = NULL;
+	at_wlan_stat.scan_time = 0;
+	return -1;
 }
 
 static int at_wlan_scan_cmd_query(int sync,int argc, char **argv)
@@ -914,93 +873,99 @@ static int at_wlan_scan_cmd_query(int sync,int argc, char **argv)
 
 static int at_wlan_scan_cmd(int sync,int argc, char **argv)
 {
-    if((argc != 0) && (argc != 1)){
-		atsvr_cmd_rsp_error();
-        return -1;
-    }
 	char *ssid = NULL;
+	int i = 0;
+	int set_ssid = 0;
+	int scan_type = 0;
+	int scan_duration = 0;
+	int scan_cnt=0;
+	int chan_nb[WIFI_2BAND_MAX_CHAN_NUM] = {0};
+	wifi_scan_config_t scan_config = {0};
 
-	if(argc == 1){
-		ssid = argv[0];
-	}
-	if(at_wlan_scan_start(ssid) != 0){
-		atsvr_cmd_rsp_error();
-        return -1;
-	}
-	atsvr_cmd_rsp_ok();
-    return 0;
-}
-#if 0
-static int at_wlan_start_softap(char *ap_ssid, char *ap_key)
-{
-	wifi_ap_config_t ap_config = WIFI_DEFAULT_AP_CONFIG();
-	netif_ip4_config_t ip4_config = {0};
-	int len;
-
-    len = strlen(ap_ssid);
-    if(AT_WLAN_MAX_SSID_LEN < len) {
-        BK_LOGE(TAG,"ssid name more than 32 Bytes\r\n");
-        return -1;
-    }
-
-    strncpy(ap_config.ssid, ap_ssid,33);
-    strncpy(ap_config.password, ap_key,64);
-
-    strncpy(ip4_config.ip, (char *)at_wlan_stat.softap_ip,16);
-    strncpy(ip4_config.mask, (char *)at_wlan_stat.softap_mask,16);
-    strncpy(ip4_config.gateway, (char *)at_wlan_stat.softap_gate,16);
-    strncpy(ip4_config.dns, (char *)at_wlan_stat.softap_dns,16);
-
-    BK_LOGI(TAG,"softap-ssid:%s  |  key:%s\r\n", ap_config.ssid, ap_config.password);
-	BK_LOG_ON_ERR(bk_netif_set_ip4_config(NETIF_IF_AP, &ip4_config));
-	BK_LOG_ON_ERR(bk_wifi_ap_set_config(&ap_config));
-	BK_LOG_ON_ERR(bk_wifi_ap_start());
-	return 0;
-}
-
-
-static int at_wlan_softap_start(int sync,int argc, char **argv)
-{
-    if((argc != 1)&&(argc != 2)){
+	///check AT cmd length
+	if((argc > 2) && (argc < 5)) {
 		atsvr_cmd_rsp_error();
 		return -1;
-    }
-	char *my_ssid;
-	char *connect_key;
-	int   pwd_cnt = 0;
-	if(argc == 1){
-		my_ssid = argv[0];
-		connect_key = "OPEN";
-	}else if(argc == 2){
-		my_ssid = argv[0];
-		connect_key = argv[1];
-		char* temp = connect_key;
-		while((*temp)!= '\0')
-		{
-			pwd_cnt++;
-			temp++;
-		}
-		if(pwd_cnt < 8)
-		{
-			atsvr_output_msg("password too short,set it at least 8 chars\r\n");
+	} else if (argc >= 5) {
+		scan_cnt = atoi(argv[4]);
+		if(argc != (scan_cnt + 5)) {
 			atsvr_cmd_rsp_error();
-			 return -1;
+			return -1;
 		}
-	}else{
-		atsvr_cmd_rsp_error();
-        return -1;
 	}
-	
-	if(at_wlan_start_softap(my_ssid, connect_key) == 0){
+
+	if(argc == 1) {
+		ssid = argv[0];
+	} else if (argc > 1) {
+		set_ssid = atoi(argv[0]);
+		if(1 == set_ssid) {
+			ssid = argv[1];
+		}
+
+		if(argc > 4) {
+			scan_type = atoi(argv[2]);
+			scan_duration = atoi(argv[3]);
+			scan_cnt = atoi(argv[4]);
+			for(i = 0;i<scan_cnt ;i++)
+				chan_nb[i] = atoi(argv[5+i]);
+		}
+	}
+
+	scan_config.scan_type = scan_type;
+	scan_config.chan_cnt = scan_cnt;
+	scan_config.duration = scan_duration;
+	for(i = 0;i<scan_cnt ;i++)
+		scan_config.chan_nb[i] = chan_nb[i];
+
+	if(NULL != ssid) {
+		memcpy(&scan_config.ssid,ssid,WIFI_SSID_STR_LEN);
+	}
+
+	if((scan_duration>0) && (scan_duration <= 120)) //unit is ms
+	{
+		if(at_wlan_scan_start(&scan_config,AT_WLAN_SCAN_DUR,scan_duration) != 0){
+			atsvr_cmd_rsp_error();
+			return -1;
+		}
+		else
+		{
+			atsvr_cmd_rsp_ok();
+    		return 0;
+		}
+	}
+	else
+	{
+		if(at_wlan_scan_start(&scan_config,AT_WLAN_SCAN_NO_USE,-1) != 0){
+			atsvr_cmd_rsp_error();
+			return -1;
+		}
+		else
+		{
+			atsvr_cmd_rsp_ok();
+    		return 0;
+		}
+	}
+}
+
+static int at_wlan_get_listen_interval(int sync,int argc, char **argv)
+{
+	u8 listen_interval = 0;
+
+	if(argc != 0){
+		atsvr_cmd_rsp_error();
+		return -1;
+	}
+
+	if(bk_wifi_get_listen_interval(&listen_interval) == BK_OK){
+		BK_LOGI(TAG,"listen interval is %d\r\n",listen_interval);
 		atsvr_cmd_rsp_ok();
 		return 0;
 	}else{
 		atsvr_cmd_rsp_error();
 		return -1;
 	}
-
 }
-#endif
+
 #include "conv_utf8_pub.h"
 static int at_wlan_softap_start(int sync, int argc, char **argv)
 {
@@ -1040,7 +1005,6 @@ static int at_wlan_softap_start(int sync, int argc, char **argv)
 	}
 	if (err == kNoErr) {
 		atsvr_cmd_rsp_ok();
-
 		return err;
 	}
 	else {
@@ -1196,15 +1160,17 @@ error:
 static int at_wlan_wifi_ping_stop_cmd(int sync,int argc, char **argv)
 {
     if(argc!=0)
-		goto error;
+        goto error;
 
-	ping_stop();
+    ping_stop();
 
     atsvr_cmd_rsp_ok();
-
+  
+    return 0;
+  
 error:
     atsvr_cmd_rsp_error();
-	return 0;
+    return -1;
 }
 
 static int at_wlan_wifi_close_coex_csa_cmd(int sync,int argc, char **argv)
@@ -1236,6 +1202,137 @@ error:
 	atsvr_cmd_rsp_error();
 	return err;
 }
+#if CONFIG_SOC_BK723L
+#include "dns.h"
+#include "inet.h"
+static int at_wlan_atw_cmd(int sync,int argc, char **argv)
+{
+	int err = kNoErr;
+	char resultbuf[200];
+	wifi_link_status_t link_status = {0};
+	wifi_ap_config_t ap_info = {0};
+	netif_ip4_config_t sta_ip4_info = {0};
+	netif_ip4_config_t ap_ip4_info = {0};
+	int n = 0;
+	bool bwlan0,bwlan1 = false;
+	uint8_t sta_mac[BK_MAC_ADDR_LEN] = {0};
+	uint8_t ap_mac[BK_MAC_ADDR_LEN] = {0};
+	struct wlan_ip_config sta_addr_info = {0};
+
+#if CONFIG_WIFI4
+
+	bwlan0 = wifi_netif_sta_is_got_ip();
+
+	if(0!= uap_ip_is_start())
+		bwlan1 = true;
+
+	n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "WIFI wlan0 Status : %s\r\n==============================\r\n",(bwlan0==true) ? "Running":"Stopped");
+
+
+	atsvr_output_msg(resultbuf);
+	os_memset(resultbuf,0,200);
+	n = 0;
+	if(bwlan0)
+	{
+		BK_RETURN_ON_ERR(bk_wifi_sta_get_link_status(&link_status));
+		n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "\r\nWIFI wlan0 Setting: \r\n");
+		n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "===================================\r\n\r\n");
+		n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "\r\nMODE=>Station\r\nSSID=>%s\r\nCHANNEL=>%d\r\nSECURITY=>%s\r\n",
+														link_status.ssid,link_status.channel, wifi_sec_type_string(link_status.security));
+		atsvr_output_msg(resultbuf);
+		os_memset(resultbuf,0,200);
+		n = 0;
+		
+		n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "PASSWORD=>%s\r\n",link_status.password);											
+		atsvr_output_msg(resultbuf);
+		os_memset(resultbuf,0,200);
+		n = 0;		
+	
+		bk_wifi_sta_get_mac(sta_mac);	
+		err = bk_netif_get_ip4_config(NETIF_IF_STA, &sta_ip4_info);	
+		if(err != kNoErr) {
+			os_printf("get ip fail!\n");
+			err = kGeneralErr;
+			goto error;
+		}
+
+		const ip_addr_t *tmp;
+
+		tmp = dns_getserver(1);
+		if(!tmp)
+			sta_addr_info.ipv4.dns2 = ip_addr_get_ip4_u32(tmp);
+
+		net_get_if_addr(&sta_addr_info, net_get_sta_handle());
+		n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "\r\nInterface(wlan0): \r\n");
+		n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "===================================\r\n");
+		n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "\r\nMAC=>%02x:%02x:%02x:%02x:%02x:%02x\r\nIP=>%s\r\nGW=>%s\r\nmask=>%s\r\n",
+														BK_MAC_STR(sta_mac),sta_ip4_info.ip, sta_ip4_info.gateway,sta_ip4_info.mask);
+		atsvr_output_msg(resultbuf);
+		os_memset(resultbuf,0,200);
+		n = 0;	
+
+		n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "DNS1=>%s\r\nDNS2=>%s\r\n\r\n",
+														sta_ip4_info.dns,(tmp==NULL)?"0.0.0.0":inet_ntoa(sta_addr_info.ipv4.dns2));
+
+		atsvr_output_msg(resultbuf);
+		os_memset(resultbuf,0,200);
+		n = 0;
+
+	}
+
+	n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "\r\nWIFI wlan1 Status : %s\r\n",(bwlan1==true) ? "Running":"Stopped");
+	n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "==============================\r\n");
+	atsvr_output_msg(resultbuf);
+	os_memset(resultbuf,0,200);
+	n = 0;
+	if(bwlan1)
+	{
+
+		BK_RETURN_ON_ERR(bk_wifi_ap_get_config(&ap_info));
+		n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "\r\nWIFI wlan1 Setting: \r\n");
+		n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "===================================\r\n\r\n");
+		n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "\r\nMODE=>SoftAP\r\nSSID=>%s\r\nCHANNEL=>%d\r\nSECURITY=>%s\r\n",
+														link_status.ssid,link_status.channel, wifi_sec_type_string(link_status.security));
+		atsvr_output_msg(resultbuf);
+		os_memset(resultbuf,0,200);
+		n = 0;	
+	
+		n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "PASSWORD=>%s\r\n",ap_info.password);											
+		atsvr_output_msg(resultbuf);
+		os_memset(resultbuf,0,200);
+		n = 0;		
+
+		bk_wifi_ap_get_mac(ap_mac);	
+		err = bk_netif_get_ip4_config(NETIF_IF_AP, &ap_ip4_info);
+		if(err != kNoErr) {
+			os_printf("get ip fail!\n");
+			err = kGeneralErr;
+			goto error;
+		}
+
+		n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "\r\nInterface(wlan1): \r\n");
+		n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "===================================\r\n");
+		n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "\r\nMAC=>%02x:%02x:%02x:%02x:%02x:%02x\r\nIP=>%s\r\nGW=>%s\r\nmask=>%s\r\n\n\n",
+														BK_MAC_STR(ap_mac),ap_ip4_info.ip, ap_ip4_info.gateway,ap_ip4_info.mask);
+
+		atsvr_output_msg(resultbuf);
+		os_memset(resultbuf,0,200);
+		n = 0;	
+
+		n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "\r\nAssociated Client List: \r\n");
+		n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "======================================================\r\n");
+		n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "\r\nClient Num:%d\r\n\n\n",at_wlan_stat.hpad_sta_cnt);
+		
+		atsvr_output_msg(resultbuf);
+	}
+	atsvr_cmd_rsp_ok();	
+	return 0;
+#endif	
+error:
+	atsvr_cmd_rsp_error();
+	return err;
+}
+#endif
 
 const struct _atsvr_command wifi_cmds_table[] = {
 	/*STA*/
@@ -1250,10 +1347,14 @@ const struct _atsvr_command wifi_cmds_table[] = {
 	//ATSVR_CMD_HADLER("AT+STASTATIC","AT+STASTATIC=ip,mask,gate[,dns]",NULL,at_wlan_station_static_ip,false,0,0,NULL,false),
 	ATSVR_CMD_HADLER("AT+WIFISTATUS","AT+WIFISTATUS",NULL,
 					at_wlan_get_station_status,false,0,0,NULL,false),
-	ATSVR_CMD_HADLER("AT+WIFISCAN","AT+WIFISCAN",at_wlan_scan_cmd_query,at_wlan_scan_cmd,
+	ATSVR_CMD_HADLER("AT+WIFISCAN","AT+WIFISCAN=SET_SSID,SSID,TYPE,DURATION,CNT,NUMBER",at_wlan_scan_cmd_query,at_wlan_scan_cmd,
 					false,AT_WLAN_SCAN_TIMEOUT_MS,true,NULL,false),
-
-
+	ATSVR_CMD_HADLER("AT+GETINTERVAL","AT+GETINTERVAL",NULL,
+					at_wlan_get_listen_interval,false,0,0,NULL,false),
+#if CONFIG_SOC_BK723L
+	ATSVR_CMD_HADLER("ATW?","Get Station and SoftAP info",NULL,
+					at_wlan_atw_cmd,false,0,0,NULL,false),
+#endif
 	/*SAP*/
 	ATSVR_CMD_HADLER("AT+SAPSTART","AT+SAPSTART=SSID,PWD",
 					NULL,at_wlan_softap_start,false,AT_WLAN_SAP_TIMEOUT_MS,true,NULL,true),

@@ -29,5 +29,5 @@
 #define UART1_BASE_S                   SOC_GET_S_ADDR(SOC_UART1_REG_BASE)
 #define UART1_BASE_NS                  SOC_GET_NS_ADDR(SOC_UART1_REG_BASE)
 #define TIMER0_BASE_S                  SOC_GET_S_ADDR(SOC_TIMER0_REG_BASE)
-#define TIMER1_BASE_S                  SOC_GET_NS_ADDR(SOC_TIMER1_REG_BASE)
+#define TIMER0_BASE_NS                 SOC_GET_NS_ADDR(SOC_TIMER0_REG_BASE)
 

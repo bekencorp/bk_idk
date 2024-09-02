@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
-
+#include "_at_server.h"
 #include "_at_svr_opts.h"
 #include "atsvr_core.h"
 #include "at_server.h"

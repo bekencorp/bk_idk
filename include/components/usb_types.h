@@ -198,6 +198,7 @@ typedef struct
 
 typedef struct
 {
+    uint32_t n_uvc_dev;
     uint16_t vendor_id;
     uint16_t product_id;
     uint16_t device_bcd;
@@ -374,6 +375,17 @@ typedef enum {
 	USB_DRV_AUDIO_RXED,
 	USB_DRV_AUDIO_TX,
 	USB_DRV_AUDIO_TXED,
+
+	/* For Dual Stream */
+	USB_DRV_UVC_TRANSFER_DUAL_BUFFER_MALLOC,
+	USB_DRV_UVC_TRANSFER_DUAL_BUFFER_PUSH,
+	USB_DRV_UVC_TRANSFER_DUAL_BUFFER_POP,
+	USB_DRV_UVC_TRANSFER_DUAL_BUFFER_FREE,
+
+    USB_DRV_VIDEO_DUAL_START,
+    USB_DRV_VIDEO_DUAL_STOP,
+    USB_DRV_VIDEO_DUAL_RX,
+    USB_DRV_VIDEO_DUAL_RXED,
 
 } bk_usb_drv_op_t;
 

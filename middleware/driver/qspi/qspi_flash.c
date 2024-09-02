@@ -34,6 +34,9 @@
 #define FLASH_QUAD_WR_CMD          0x32
 #define FLASH_QUAD_RD_CMD          0xeb
 #define FLASH_ERASE_SECTOR_CMD     0x20
+#define FLASH_PAGE_SIZE            0x100
+#define FLASH_PAGE_MASK            (FLASH_PAGE_SIZE - 1)
+#define FLASH_SECTOR_SIZE          0x1000
 
 #define FLASH_STATUS_REG_SIZE      1
 #define FLASH_READ_ID_SIZE         4
@@ -320,13 +323,62 @@ bk_err_t bk_qspi_flash_quad_read(qspi_id_t id, uint32_t addr, void *data, uint32
 
 bk_err_t bk_qspi_flash_write(qspi_id_t id, uint32_t base_addr, const void *data, uint32_t size)
 {
-	BK_LOG_ON_ERR(bk_qspi_flash_quad_page_program(id, base_addr, data, size));
+	uint8_t buf[QSPI_FIFO_LEN_MAX] = {0};
+	uint32_t left_len = size;
+	uint32_t write_len= 0;
+	uint32_t write_addr = 0;
+	uint32_t offset = 0;
+	uint32_t page_write_len = 0;
+
+	if(0 != (base_addr & FLASH_PAGE_MASK)) {
+		write_addr = base_addr & (~FLASH_PAGE_MASK);
+		bk_qspi_flash_quad_read(id, write_addr, buf, QSPI_FIFO_LEN_MAX);
+		page_write_len = (QSPI_FIFO_LEN_MAX - (base_addr & FLASH_PAGE_MASK));
+		write_len = (page_write_len > left_len) ? left_len : page_write_len;
+		os_memcpy(buf + (base_addr & FLASH_PAGE_MASK), data, write_len);
+		bk_qspi_flash_quad_page_program(id, write_addr, buf, QSPI_FIFO_LEN_MAX);
+		offset += write_len;
+		left_len -= write_len;
+		if(left_len == 0) {
+			return BK_OK;
+		}
+	}
+
+	for (write_addr = base_addr + offset; write_addr < ((base_addr + size) & (~FLASH_PAGE_MASK)); write_addr += write_len) {
+		write_len = (left_len > QSPI_FIFO_LEN_MAX) ? QSPI_FIFO_LEN_MAX : left_len;
+		bk_qspi_flash_quad_page_program(id, write_addr, data + offset, write_len);
+		offset += write_len;
+		left_len -= write_len;
+	}
+
+	if(left_len == 0) {
+		return BK_OK;
+	}
+	if(0 != ((base_addr + size) & FLASH_PAGE_MASK)) {
+		bk_qspi_flash_quad_read(id, write_addr, buf, QSPI_FIFO_LEN_MAX);
+		write_len = (base_addr + size) & FLASH_PAGE_MASK;
+		os_memcpy(buf, data + offset, write_len);
+		bk_qspi_flash_quad_page_program(id, write_addr, buf, write_len);
+	}
+
 	return BK_OK;
 }
 
 bk_err_t bk_qspi_flash_read(qspi_id_t id, uint32_t base_addr, void *data, uint32_t size)
 {
-	BK_LOG_ON_ERR(bk_qspi_flash_quad_read(id, base_addr, data, size));
+	uint8_t buf[QSPI_FIFO_LEN_MAX] = {0};
+	uint32_t left_len = size;
+	uint32_t read_len= 0;
+	uint32_t offset = 0;
+
+	for (uint32_t addr = base_addr; addr < (base_addr + size); addr += QSPI_FIFO_LEN_MAX) {
+		offset += read_len;
+		read_len = (left_len >= QSPI_FIFO_LEN_MAX) ? QSPI_FIFO_LEN_MAX : left_len;
+		bk_qspi_flash_quad_read(id, addr, buf, QSPI_FIFO_LEN_MAX);
+		os_memcpy(data + offset, buf, read_len);
+		left_len -= QSPI_FIFO_LEN_MAX;
+	}
+
 	return BK_OK;
 }
 

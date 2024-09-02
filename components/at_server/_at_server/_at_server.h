@@ -29,7 +29,8 @@ typedef enum{
 typedef enum{
 	ATSVR_WK_IDLE = 0,
 	ATSVR_WK_DOING = 1,
-	ATSVR_WK_DONE = 2,
+	ATSVR_WK_DATA_HANDLE = 2,
+	ATSVR_WK_DONE = 3,
 }_atsvr_work_st;
 
 
@@ -67,6 +68,9 @@ typedef struct{
 	atsvr_subtype_e sub_type;
 	char*			evt_type;
 	int 			addition_infor;
+#if CONFIG_AT_DATA_MODE
+	int 			data_module_id;
+#endif
 	unsigned int len;
 	void *msg_param;
 }atsvr_msg_t;

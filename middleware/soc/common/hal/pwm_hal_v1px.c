@@ -2223,22 +2223,22 @@ void pwm_hal_set_init_signal_high(pwm_hal_t *hal, pwm_ch_t hw_ch)
 {
 	switch (hw_ch) {
 	case PWM_CH_0:
-		pwm_ll_set_pwm_ccmr_ch1p(hal->id, 0x01);
+		pwm_ll_set_pwm_ccmr_ch1p(hal->id, 0x03);
 		break;
 	case PWM_CH_1:
-		pwm_ll_set_pwm_ccmr_ch2p(hal->id, 0x01);
+		pwm_ll_set_pwm_ccmr_ch2p(hal->id, 0x03);
 		break;
 	case PWM_CH_2:
-		pwm_ll_set_pwm_ccmr_ch3p(hal->id, 0x01);
+		pwm_ll_set_pwm_ccmr_ch3p(hal->id, 0x03);
 		break;
 	case PWM_CH_3:
-		pwm_ll_set_pwm_ccmr_ch4p(hal->id, 0x01);
+		pwm_ll_set_pwm_ccmr_ch4p(hal->id, 0x03);
 		break;
 	case PWM_CH_4:
-		pwm_ll_set_pwm_ccmr_ch5p(hal->id, 0x01);
+		pwm_ll_set_pwm_ccmr_ch5p(hal->id, 0x03);
 		break;
 	case PWM_CH_5:
-		pwm_ll_set_pwm_ccmr_ch6p(hal->id, 0x01);
+		pwm_ll_set_pwm_ccmr_ch6p(hal->id, 0x03);
 		break;
 	default:
 		break;
@@ -2298,6 +2298,7 @@ void pwm_hal_set_flip_mode(pwm_hal_t *hal, pwm_ch_t hw_ch, uint32_t value)
 {
 	switch (hw_ch) {
 	case 0:
+	case 1:
 		pwm_hal_set_pwm_ccmr_oc1m(hal, value);
 		break;
 	case 2:
@@ -2319,10 +2320,8 @@ uint32_t pwm_hal_get_flip_mode(pwm_hal_t *hal, pwm_ch_t hw_ch)
 
 	switch (hw_ch) {
 	case 0:
-		flip_mode = pwm_hal_get_pwm_ccmr_oc1m(hal);
-		break;
 	case 1:
-		flip_mode = 3;
+		flip_mode = pwm_hal_get_pwm_ccmr_oc1m(hal);
 		break;
 	case 2:
 	case 3:
@@ -2381,10 +2380,8 @@ uint32_t pwm_hal_get_tim_arr(pwm_hal_t *hal, pwm_ch_t hw_ch)
 
 	switch (hw_ch) {
 	case 0:
-		val = pwm_hal_get_tim1_arr_tim1_arr(hal);
-		break;
 	case 1:
-		val = pwm_ll_get_tim4_arr_tim4_arr(hal->id);
+		val = pwm_hal_get_tim1_arr_tim1_arr(hal);
 		break;
 	case 2:
 	case 3:
@@ -2406,10 +2403,8 @@ uint32_t pwm_hal_get_tim_ccr1(pwm_hal_t *hal, pwm_ch_t hw_ch)
 
 	switch (hw_ch) {
 	case 0:
-		val = pwm_hal_get_ccr1_value(hal);
-		break;
 	case 1:
-		val = pwm_ll_get_ccra_value(hal->id);
+		val = pwm_hal_get_ccr1_value(hal);
 		break;
 	case 2:
 	case 3:
@@ -2418,6 +2413,29 @@ uint32_t pwm_hal_get_tim_ccr1(pwm_hal_t *hal, pwm_ch_t hw_ch)
 	case 4:
 	case 5:
 		val = pwm_hal_get_ccr7_value(hal);
+		break;
+	default:
+		break;
+	}
+	return val;
+}
+
+uint32_t pwm_hal_get_tim_ccr2(pwm_hal_t *hal, pwm_ch_t hw_ch)
+{
+	uint32_t val = 0;
+
+	switch (hw_ch) {
+	case 0:
+	case 1:
+		val = pwm_hal_get_ccr2_value(hal);
+		break;
+	case 2:
+	case 3:
+		val = pwm_hal_get_ccr5_value(hal);
+		break;
+	case 4:
+	case 5:
+		val = pwm_hal_get_ccr8_value(hal);
 		break;
 	default:
 		break;

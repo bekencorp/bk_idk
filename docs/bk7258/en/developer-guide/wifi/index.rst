@@ -13,3 +13,6 @@ Wi-Fi
    Wi-Fi STA Low Power Example <bk_wifi_pm>
    Wi-Fi AT Command Guide <bk_wifi_at>
    Wi-Fi Problem Locating Guide <bk_wifi_debug>
+   Armino Wi-Fi BK-RLK User Guide <bk_rlk>
+   Armino Wi-Fi Video and Audio Transmission User Guide <bk_wifi_multimedia>
+

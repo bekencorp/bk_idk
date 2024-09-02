@@ -75,6 +75,7 @@ set(srcs
 	security/hal_aes.c
 	security/hal_sha.c
 	pwr_clk/pwr_clk.c
+	pwr_clk/rosc_32k.c
 	pwr_clk/rosc_ppm.c
 	chip_support/chip_support.c
 	)
@@ -139,6 +140,7 @@ endif()
 if (CONFIG_SIM_I2C)
 	list(APPEND srcs
 		i2c/sim_i2c_driver.c
+		i2c/sim_i2c_driver_v2.c
 	)
 endif()
 endif()  #if (CONFIG_I2C)
@@ -421,11 +423,12 @@ if (CONFIG_SOC_BK7256XX)
 		"otp/otp_driver.c"
 		)
 endif()
-if (CONFIG_SOC_BK7236XX OR CONFIG_SOC_BK7239XX OR CONFIG_SOC_BK7286XX)
+endif()
+
+if (CONFIG_OTP_V1)
 	list(APPEND srcs
 		"otp/otp_driver_v1_1.c"
 		)
-endif()
 endif()
 
 if (NOT CONFIG_FULLY_HOSTED)
@@ -540,6 +543,7 @@ endif()
 if (CONFIG_ETH)
 	list(APPEND incs
 		eth
+		eth/phy
 	)
 
 	# MAC and PHY src
@@ -547,6 +551,11 @@ if (CONFIG_ETH)
 		eth/eth_mac.c
 		eth/eth_mac_ex.c
 		eth/lan8742.c
+		eth/phy/phy.c
+		eth/phy/smsc.c
+		eth/phy/micrel_ksz90x1.c
+		eth/phy/miiphyutil.c
+		eth/phy/realtek.c
 	)
 endif()
 

@@ -104,8 +104,10 @@ void __attribute__ ((interrupt)) ENCP_NSEC_Handler(void)
 	ARCH_ISR_HANDLER(2);
 }
 
+extern uint32_t     g_wdt_handler_lr;
 void __attribute__ ((interrupt)) TIMER0_Handler(void)
 {
+	g_wdt_handler_lr = __get_LR();
 	ARCH_ISR_HANDLER(3);
 }
 

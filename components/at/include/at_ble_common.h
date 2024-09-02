@@ -65,16 +65,6 @@ enum at_init_state
 	AT_INIT_STATE_STOPPING = 6,
 };
 
-/// Own BD address source of the device
-enum gapm_own_addr
-{
-   /// Public or Private Static Address according to device address configuration
-   BLE_STATIC_ADDR,
-   /// Generated resolvable private random address
-   BLE_GEN_RSLV_ADDR,
-   /// Generated non-resolvable private random address
-   BLE_GEN_NON_RSLV_ADDR,
-};
 
 enum le_phy_mask
 {

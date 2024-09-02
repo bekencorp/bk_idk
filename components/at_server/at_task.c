@@ -11,9 +11,13 @@
 #include <modules/pm.h>
 #include <driver/gpio.h>
 
-#include "at_server.h"
-#include "_at_server.h"
-#include "atsvr_port.h"
+#if CONFIG_AT
+#include "atsvr_unite.h"
+#if CONFIG_AT_DATA_MODE
+#include "../../../components/at/inc/at_sal_ex.h"
+#endif
+#endif
+
 #if 0//def CONFIG_SYS_CPU0
 
 const uart_config_t at_config  = 
@@ -64,7 +68,11 @@ const uart_config_t at_config  =
 #define ATSVR_RX_BUF_LEN		4
 #endif
 
+#if CONFIG_AT_DATA_MODE
+#define ATSVR_CMD_BUF_LEN		4096
+#else
 #define ATSVR_CMD_BUF_LEN		200
+#endif
 #define ATSVR_RSP_BUF_LEN		140
 #define ATSVR_IND_BUF_LEN		132
 
@@ -394,7 +402,7 @@ static bool_t cmd_ind_out(u8 * ind_msg, u16 msg_len)
 
 	return bTRUE;
 }
-
+extern int get_data_len(void);
 static void rx_ind_process(void)
 {
 	u16   read_cnt, buf_len;
@@ -403,6 +411,9 @@ static void rx_ind_process(void)
 	u16   echo_len;
 	u16   i = 0;
 	u8    need_backspace = bFALSE;
+	#if CONFIG_AT_DATA_MODE
+	int   at_data_len = 0;
+	#endif
 	#endif
 
 	if(cmd_dev->dev_type == SHELL_DEV_MAILBOX)
@@ -413,6 +424,14 @@ static void rx_ind_process(void)
 	{
 		buf_len = 1;  /* for UART device, read one by one. */
 	}
+
+#if CONFIG_AT_DATA_MODE
+	if(ATSVR_WK_DATA_HANDLE== get_atsvr_work_state())
+	{
+		at_data_len = get_data_len();
+	}
+#endif
+
 
 	while(bTRUE)
 	{
@@ -464,6 +483,22 @@ static void rx_ind_process(void)
 				}
 				else if((rx_temp_buff[i] == '\n') || (rx_temp_buff[i] == '\r'))
 				{
+			#if CONFIG_AT_DATA_MODE
+					if(ATSVR_WK_DATA_HANDLE== get_atsvr_work_state())
+					{
+						if(cmd_line_buf.cmd_data_len < at_data_len)
+						{
+							cmd_line_buf.cmd_buff[cmd_line_buf.cmd_data_len] = rx_temp_buff[i];
+							cmd_line_buf.cmd_data_len++;
+							continue;
+						}	
+						//else
+						//	cmd_line_buf.cmd_buff[cmd_line_buf.cmd_data_len] = 0;  // in case cmd_data_len overflow.
+
+						cmd_rx_done = bTRUE;
+						break;
+					}
+			#endif
 					if(cmd_line_buf.cmd_data_len < sizeof(cmd_line_buf.cmd_buff))
 					{
 						cmd_line_buf.cmd_buff[cmd_line_buf.cmd_data_len] = 0;
@@ -579,7 +614,8 @@ cpu1_handle:
 
 			/* handle command. */
 			if( cmd_line_buf.cmd_data_len > 0 )
-				atsvr_handle_shell_input( (char *)cmd_line_buf.cmd_buff, cmd_line_buf.cmd_data_len, (char *)cmd_line_buf.rsp_buff, ATSVR_RSP_BUF_LEN - 4 );
+				//atsvr_handle_shell_input( (char *)cmd_line_buf.cmd_buff, cmd_line_buf.cmd_data_len, (char *)cmd_line_buf.rsp_buff, ATSVR_RSP_BUF_LEN - 4 );
+				atsvr_msg_get_input((char *)cmd_line_buf.cmd_buff, cmd_line_buf.cmd_data_len, (char *)cmd_line_buf.rsp_buff, ATSVR_RSP_BUF_LEN - 4);
 
 			cmd_line_buf.rsp_buff[ATSVR_RSP_BUF_LEN - 4] = 0;
 
@@ -642,24 +678,6 @@ static void atsvr_rx_wakeup(int gpio_id)
 	if(cmd_dev->dev_type == SHELL_DEV_UART)
 	{
 		bk_gpio_register_isr(gpio_id, NULL);
-	}
-}
-
-static uint32_t uart_id_to_pm_uart_id(uint32_t uart_id)
-{
-	switch (uart_id)
-	{
-		case UART_ID_0:
-			return PM_DEV_ID_UART1;
-
-		case UART_ID_1:
-			return PM_DEV_ID_UART2;
-
-		case UART_ID_2:
-			return PM_DEV_ID_UART3;
-
-		default:
-			return PM_DEV_ID_UART1;
 	}
 }
 

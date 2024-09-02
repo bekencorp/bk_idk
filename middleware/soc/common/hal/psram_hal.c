@@ -208,7 +208,8 @@ static int psram_hal_APS6408L_init(uint32_t *id)
 		psram_hal_set_mode_value(PSRAM_MODE3);
 #else
 	psram_hal_set_mode_value(PSRAM_MODE6);//PSRAM_MODE2
-	psram_hal_set_reg5_value(0x282);
+	//psram_hal_set_reg5_value(0x282);
+	psram_hal_set_reg5_value(0x380);
 #endif
 
 	psram_hal_set_cmd_reset();
@@ -260,6 +261,7 @@ static int psram_hal_W955D8MKY_5J_init(uint32_t *id)
 	psram_hal_set_mode_value(PSRAM_MODE4);// mode 4
 #if (!CONFIG_SOC_BK7256XX)
 	psram_hal_set_reg5_value(0x292);
+	//psram_hal_set_reg5_value(0x380);	//NOTES:APS PSRAM drive stength needs changed.This type PSRAM needs to be verified.
 #endif
 
 	psram_hal_set_cmd_reset();
@@ -297,7 +299,8 @@ static int psram_hal_APS128XXO_OB9_init(uint32_t *id)
 	uint32_t val = 0;
 	psram_hal_set_mode_value(PSRAM_MODE7);
 #if (!CONFIG_SOC_BK7256XX)
-	psram_hal_set_reg5_value(0x292);
+	//psram_hal_set_reg5_value(0x292);
+	psram_hal_set_reg5_value(0x380);
 #endif
 	psram_hal_set_cmd_reset();
 

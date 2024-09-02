@@ -27,6 +27,7 @@ static h264_hal_t s_h264_hal = {
 
 static bk_err_t yuv_buf_hal_set_config_common(yuv_buf_hal_t *hal, const yuv_buf_config_t *config)
 {
+	yuv_buf_hal_set_err_mask(hal);
 	yuv_buf_ll_set_mclk_div(hal->hw, config->mclk_div);
 	yuv_buf_ll_set_x_pixel(hal->hw, config->x_pixel);
 	yuv_buf_ll_set_y_pixel(hal->hw, config->y_pixel);
@@ -36,8 +37,28 @@ static bk_err_t yuv_buf_hal_set_config_common(yuv_buf_hal_t *hal, const yuv_buf_
 	yuv_buf_ll_set_x_pixel_resize(hal->hw, config->x_pixel);
 	yuv_buf_ll_set_y_pixel_resize(hal->hw, config->y_pixel);
 
+	if (config->yuv_mode_cfg.hsync == SYNC_LOW_LEVEL)
+	{
+		yuv_buf_ll_enable_hsync_rev(hal->hw);
+	}
+	else
+	{
+		yuv_buf_ll_disable_hsync_rev(hal->hw);
+	}
+
+	if (config->yuv_mode_cfg.vsync == SYNC_LOW_LEVEL)
+	{
+		yuv_buf_ll_enable_vsync_rev(hal->hw);
+	}
+	else
+	{
+		yuv_buf_ll_disable_vsync_rev(hal->hw);
+	}
+
 	yuv_buf_ll_enable_sync_edge_dect(hal->hw);
 	yuv_buf_ll_set_encode_begin_hsync_posedge(hal->hw);
+	yuv_buf_ll_disable_bps_cis(hal->hw);
+	yuv_buf_ll_disable_memrev(hal->hw);
 	yuv_buf_ll_enable_int(hal->hw);
 
 	return BK_OK;
@@ -181,5 +202,15 @@ bk_err_t yuv_buf_set_frame_resolution(yuv_buf_hal_t *hal, uint32_t width, uint32
 	jpeg_hal_set_x_pixel(&s_jpeg_hal, height >> 3);
 
 	h264_hal_set_img_width(&s_h264_hal, width, height);
+	return BK_OK;
+}
+
+bk_err_t yuv_buf_hal_set_err_mask(yuv_buf_hal_t *hal)
+{
+	yuv_buf_ll_int_vsync_nege_mask(hal->hw, 0);
+	yuv_buf_ll_int_resl_err_mask(hal->hw, 1);
+	yuv_buf_ll_int_sens_full_mask(hal->hw, 1);
+	yuv_buf_ll_int_enc_slow_mask(hal->hw, 1);
+	yuv_buf_ll_int_h264_err_mask(hal->hw, 1);
 	return BK_OK;
 }

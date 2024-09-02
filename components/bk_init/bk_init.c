@@ -22,6 +22,9 @@
 #include <modules/pm.h>
 #include "aon_pmu_driver.h"
 #include <driver/pwr_clk.h>
+#if CONFIG_ROSC_CALIB_SW
+#include <driver/rosc_32k.h>
+#endif
 #if CONFIG_BLUETOOTH
 #include "components/bluetooth/bk_dm_bluetooth.h"
 #include "components/bluetooth/bk_ble.h"
@@ -64,6 +67,7 @@ extern void bk_ota_confirm_update_partition(ota_confirm_flag ota_confirm_val);
 
 #endif
 #if (CONFIG_NTP_SYNC_RTC)
+#include <components/ate.h>
 #include <components/app_time_intf.h>
 #endif
 
@@ -99,7 +103,7 @@ extern void bk_ota_confirm_update_partition(ota_confirm_flag ota_confirm_val);
 #endif
 
 #if (CONFIG_DEBUG_FIRMWARE)
-extern bk_err_t bk_dbg_init_internal(void);
+extern bk_err_t bk_dbg_init(void);
 #endif
 
 #if (CONFIG_SYS_CPU0)
@@ -128,7 +132,7 @@ static int app_wifi_init(void)
 	BK_LOG_ON_ERR(bk_wifi_init(&wifi_config));
 
 #if (CONFIG_DEBUG_FIRMWARE)
-	BK_LOG_ON_ERR(bk_dbg_init_internal());
+	BK_LOG_ON_ERR(bk_dbg_init());
 #endif
 
 #if CONFIG_WIFI_PS_DISABLE
@@ -328,6 +332,10 @@ int bk_init(void)
 	save_mtime_point(CPU_FINISH_WIFI_INIT_TIME);
 #endif
 
+#if CONFIG_ROSC_CALIB_SW
+	bk_rosc_32k_calib();
+#endif
+
 	rtos_user_app_launch_over();
 
 	app_mp3_player_init();
@@ -359,7 +367,10 @@ int bk_init(void)
 
 
 #if (CONFIG_NTP_SYNC_RTC)
-	app_time_rtc_ntp_sync_init();
+    if(ate_is_enabled() == 0)
+    {
+	    app_time_rtc_ntp_sync_init();
+    }
 #endif
 
 

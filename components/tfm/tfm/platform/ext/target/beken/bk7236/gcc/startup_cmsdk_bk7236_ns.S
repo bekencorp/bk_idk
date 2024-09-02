@@ -24,7 +24,7 @@
     .align 2
     .globl    __Vectors
 __Vectors:
-    .long    Image$$ARM_LIB_STACK_MSP$$ZI$$Limit   /* Top of Stack */
+    .long    Image$$ARM_LIB_STACK$$ZI$$Limit /* Top of Stack */
 
     /* Core interrupts */
     .long    Reset_Handler                  /* Reset Handler */
@@ -58,6 +58,8 @@ __Vectors:
     .globl    Reset_Handler
     .type     Reset_Handler, %function
 Reset_Handler:
+    ldr     r0, =Image$$ARM_LIB_STACK$$ZI$$Base
+    MSR     msplim, r0
 /*  Firstly it copies data from read only memory to RAM. There are two schemes
  *  to copy. One can copy more than one sections. Another can only copy
  *  one section.  The former scheme needs more instructions and read-only
@@ -175,18 +177,29 @@ Reset_Handler:
     blt    .L_loop3
 #endif /* __STARTUP_CLEAR_BSS_MULTIPLE || __STARTUP_CLEAR_BSS */
 
+    bl    SystemInit
+
     mrs     r0, control    /* Get control value */
     orr     r0, r0, #2     /* Select switch to PSP */
     msr     control, r0
-    ldr     r0, =Image$$ARM_LIB_STACK$$ZI$$Limit
+    ldr     r0, =Image$$ARM_LIB_PSP$$ZI$$Limit
     msr     psp, r0
 
-    bl    SystemInit
+	/*global psplim will effect the rtx task*/
+#if CONFIG_ENABLE_CONFIG_PSP_LIM
+    ldr     r0, =Image$$ARM_LIB_PSP$$ZI$$Base
+    msr     psplim, r0
+#endif
+	mov     r0, #0
+    msr     control, r0
 
 #ifndef __START
 #define __START _start
 #endif
-    bl    __START
+    /* Entering the routine:_mainCRTSTartup, r13 will be set based on vector;
+     * If switching the spsel, the r13 will be exceptional.
+     */
+     bl    __START
 
     .pool
     .size    Reset_Handler, . - Reset_Handler

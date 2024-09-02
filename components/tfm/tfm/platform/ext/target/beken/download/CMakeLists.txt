@@ -18,6 +18,7 @@ if (BL2_DOWNLOAD)
 		./hal/inc
 		../${TFM_SOC}/cmsis_core
 		${TFM_BEKEN}/retarget
+		${TFM_BEKEN}/partition
 		../armino/include
 		../${TFM_SOC}/armino/config
 		./../../../cmsis/

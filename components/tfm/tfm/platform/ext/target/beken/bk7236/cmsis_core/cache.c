@@ -34,7 +34,17 @@ void flush_dcache(void *va, long size)
     }
 }
 
-void flush_all_dcache1(void)
+void disable_scb_dcache(void)
+{
+    SCB_DisableDCache();
+}
+
+void enable_scb_dcache(void)
+{
+    SCB_EnableDCache();
+}
+
+void flush_invalidate_dcache(void)
 {
     SCB_InvalidateDCache();
 }

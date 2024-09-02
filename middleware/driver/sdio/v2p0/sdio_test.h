@@ -27,6 +27,23 @@
 #define SDIO_TEST_BUFFER_CNT (4)
 #define SDIO_TEST_BUFFER_SIZE (512)
 
+
+#define SDIO_TEST_TP_THREAD_NAME "sdio_tp"
+#define SDIO_TEST_TX_TP_PRIORITY (5)
+#define SDIO_TEST_TX_TP_THREAD_STACK_SIZE (0x2<<10)	//Bytes
+
+#define SDIO_TEST_TX_TP_MSG_QUEUE_NAME "sdio_tx_tp_queue"
+#define SDIO_TEST_TX_TP_MSG_QUEUE_COUNT (4)
+
+#define SDIO_TEST_RX_TP_PRIORITY (5)
+#define SDIO_TEST_RX_TP_THREAD_STACK_SIZE (0x2<<10)	//Bytes
+
+#define SDIO_TEST_RX_TP_MSG_QUEUE_NAME "sdio_chan_x_rx_queue"
+#define SDIO_TEST_RX_TP_MSG_QUEUE_COUNT (4)
+#define SDIO_TEST_TP_MSG_WAIT_TIME (3000)
+
+
+
 typedef struct {
 	uint8_t main_case;
 	uint8_t sub_case;
@@ -36,6 +53,22 @@ typedef struct {
 	uint32_t param3;
 	uint32_t param4;
 } SDIO_TEST_MSG_T;
+
+typedef struct {
+	uint32_t param1;	//chan_id
+	uint32_t param2;	//head_p
+	uint32_t param3;	//tail_p
+	uint32_t param4;	//count
+} sdio_test_tp_msg_t;
+
+typedef struct sdio_tp_statisic
+{
+	uint32_t payload_cnt;
+	uint32_t total_len;
+	uint64_t start_time;
+	uint64_t end_time;
+}sdio_tp_statisic_t;
+
 
 typedef enum
 {
@@ -52,6 +85,10 @@ typedef enum
 	SDIO_TEST_TX_SINGLE_PACKET,
 	SDIO_TEST_TX_MANY_SINGLE_PACKETS,
 	SDIO_TEST_TX_MULTI_PACKETS,
+	SDIO_TEST_TX_TP_INIT,
+	SDIO_TEST_TX_TP_START,
+	SDIO_TEST_TX_TP_STOP,
+	SDIO_TEST_TX_SINGLE_BUF,
 	SDIO_TEST_TX_MAX_SUB_CASE,
 }SDIO_TEST_TX_CASE_ID_T;
 
@@ -61,6 +98,10 @@ typedef enum
 	SDIO_TEST_RX_SINGLE_PACKET,
 	SDIO_TEST_RX_MANY_SINGLE_PACKETS,
 	SDIO_TEST_RX_MULTI_PACKETS,
+	SDIO_TEST_RX_TP_INIT,
+	SDIO_TEST_RX_TP_START,
+	SDIO_TEST_RX_TP_STOP,
+	SDIO_TEST_RX_SINGLE_BUF,
 	SDIO_TEST_RX_MAX_SUB_CASE,
 }SDIO_TEST_RX_CASE_ID_T;
 

@@ -1,4 +1,3 @@
-// Copyright 2022-2023 Beken
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -96,7 +95,6 @@ typedef struct {
     uint32_t pmb_bits;
     uint32_t nal_align_mode;
     uint32_t cons_ipred_mode;
-    uint32_t mb_cfs_bits;
     uint32_t reset_i_state_mode;
 
     uint32_t vui_time_scale_L;

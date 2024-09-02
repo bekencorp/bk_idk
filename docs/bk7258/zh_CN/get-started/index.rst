@@ -52,6 +52,14 @@ Armino SDK 代码下载
     cd ~/armino
     git clone https://gitlab.bekencorp.com/armino/bk_idk.git
 
+
+您也可从 github 上下载 Armino::
+
+	mkdir -p ~/armino
+	cd ~/armino
+	git clone https://github.com/bekencorp/bk_idk.git
+
+
 然后切换到稳定分支Tag节点, 如v2.0.1.12::
 
     git checkout -B your_branch_name v2.0.1.12
@@ -136,14 +144,14 @@ Armino SDK 代码下载
         components/bk_cli/Kconfig
 
 - 模块选择CPUx执行
-	 
-    + 目前BK7258是三核AMP系统架构，CPU0和CPU1,CPU2的软件独立编译，但SDK是一套，所以CPU0和CPU1以及CPU2的部分功能差异需要使用宏区分。
+
+    + 目前BK7258是由CPU0、CPU1、CPU2组成的AMP系统架构，CPU0和CPU1,CPU2的软件独立编译，但SDK是一套，所以CPU0和CPU1以及CPU2的部分功能差异需要使用宏区分。
     + 比如TRNG随机数控制器只有一份，使用多核配置时，应用程序需要互斥配置在哪一个系统(CPU0/CPU1/CPU2)中执行。
     + 模块的功能开关CONFIG_TRNG宏默认关闭, 哪个CPU需要, 就在哪个CPU的芯片配置文件上打开。
       假设CPU0需要使用TRNG，而CPU1不需要使用，则bk7258.defconfig中的CONFIG_TRNG=y。
     + 在软件代码中，使用CONFIG_TRNG宏隔离调用。
       示例如下::
-         
+
         #if CONFIG_TRNG             #使用模块功能开关宏隔离代码
         #include "driver/trng.h"
         #endif

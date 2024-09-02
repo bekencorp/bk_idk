@@ -195,8 +195,7 @@ static void tcp_ext_arg_invoke_callbacks_destroyed(struct tcp_pcb_ext_args *ext_
 #endif
 
 #if BK_LWIP
-extern u32_t bk_recalc_tcp_cwnd_internal(u32_t cwnd, u32_t snd_wnd, u32_t mss);
-extern s16_t bk_recalc_tcp_rto_internal(s16_t rto, u8_t nrtx, s16_t sa, s16_t sv);
+extern u32_t bk_recalc_tcp_cwnd(u32_t cwnd, u32_t snd_wnd, u32_t mss);
 #endif
 
 /**
@@ -1292,10 +1291,6 @@ tcp_slowtmr_start:
               u8_t backoff_idx = LWIP_MIN(pcb->nrtx, sizeof(tcp_backoff) - 1);
               int calc_rto = ((pcb->sa >> 3) + pcb->sv) << tcp_backoff[backoff_idx];
               pcb->rto = (s16_t)LWIP_MIN(calc_rto, 0x7FFF);
-#if BK_LWIP
-              // smart RTO strategy
-              pcb->rto = bk_recalc_tcp_rto_internal(pcb->rto, pcb->nrtx, pcb->sa, pcb->sv);
-#endif
             }
 
             /* Reset the retransmission timer. */
@@ -1310,7 +1305,7 @@ tcp_slowtmr_start:
             pcb->cwnd = pcb->mss;
 #if BK_LWIP
             // smart cwnd strategy
-            pcb->cwnd = bk_recalc_tcp_cwnd_internal(pcb->cwnd, pcb->snd_wnd, pcb->mss);
+            pcb->cwnd = bk_recalc_tcp_cwnd(pcb->cwnd, pcb->snd_wnd, pcb->mss);
 #endif
             LWIP_DEBUGF(TCP_CWND_DEBUG, ("tcp_slowtmr: cwnd %"TCPWNDSIZE_F
                                          " ssthresh %"TCPWNDSIZE_F"\n",

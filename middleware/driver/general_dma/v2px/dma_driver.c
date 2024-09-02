@@ -425,7 +425,7 @@ uint32_t bk_dma_get_enable_status(dma_id_t id)
 }
 
 #define DMA_MAX_BUSY_TIME (10000)  //us
-static uint32_t dma_wait_to_idle(dma_id_t id)
+uint32_t dma_wait_to_idle(dma_id_t id)
 {
 	uint8_t dma_channel,dma_num;
 	dma_id_to_hw_id_ch(id,&dma_num,&dma_channel);

@@ -802,8 +802,10 @@ static void i2s_chl3_rx_dma_finish_isr(void)
 static bk_err_t i2s_dma_config(dma_id_t dma_id, uint32_t *ring_buff_addr, uint32_t ring_buff_size, uint32_t transfer_len, i2s_channel_id_t chl_id, i2s_txrx_type_t type, i2s_data_handle_cb data_handle_cb)
 {
 	bk_err_t ret = BK_OK;
-	dma_config_t dma_config;
+	dma_config_t dma_config = {0};
 	uint32_t i2s_data_addr;
+
+    os_memset(&dma_config, 0, sizeof(dma_config));
 
 	dma_config.mode = DMA_WORK_MODE_REPEAT;
 	dma_config.chan_prio = 1;

@@ -79,8 +79,8 @@ extern "C" {
 #define DBH_OTP_TEST_REGION_SIZE ( 0 * DBH_OTP_WORD_SIZE )
 
 /* User defined region 8 bytes default */
-#define DBH_OTP_USR_NON_SEC_REGION_SIZE ( 32 * DBH_OTP_WORD_SIZE )
-#define DBH_OTP_USR_SEC_REGION_SIZE ( 128 * DBH_OTP_WORD_SIZE )
+#define DBH_OTP_USR_NON_SEC_REGION_SIZE ( 64 * DBH_OTP_WORD_SIZE )
+#define DBH_OTP_USR_SEC_REGION_SIZE ( 96 * DBH_OTP_WORD_SIZE )
 #define DBH_OTP_USR_SEC_REGION_OFFSET                                          \
     ( ( DBH_OTP_USR_NON_SEC_REGION_OFFSET )                                    \
       + ( DBH_OTP_USR_NON_SEC_REGION_SIZE ) )

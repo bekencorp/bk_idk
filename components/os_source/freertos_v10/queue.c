@@ -42,6 +42,8 @@
     #include "croutine.h"
 #endif
 
+#include <os/mem.h>
+
 /* Lint e9021, e961 and e750 are suppressed as a MISRA exception justified
  * because the MPU ports require MPU_WRAPPERS_INCLUDED_FROM_API_FILE to be defined
  * for the header files above, but not in this file, in order to generate the
@@ -453,7 +455,11 @@ BaseType_t xQueueGenericReset( QueueHandle_t xQueue,
              * are greater than or equal to the pointer to char requirements the cast
              * is safe.  In other cases alignment requirements are not strict (one or
              * two bytes). */
+#if CONFIG_QUEUE_IN_PSRAM && CONFIG_PSRAM_AS_SYS_MEMORY
+            pxNewQueue = ( Queue_t * ) psram_malloc( sizeof( Queue_t ) + xQueueSizeInBytes ); /*lint !e9087 !e9079 see comment above. */
+#else
             pxNewQueue = ( Queue_t * ) pvPortMalloc( sizeof( Queue_t ) + xQueueSizeInBytes ); /*lint !e9087 !e9079 see comment above. */
+#endif
 
             if( pxNewQueue != NULL )
             {

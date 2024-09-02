@@ -151,7 +151,7 @@ static inline bool sdio_host_ll_is_cmd_rsp_crc_fail_interrupt_triggered(sdio_hw_
 
 static inline void sdio_host_ll_clear_cmd_rsp_interrupt_status(sdio_hw_t *hw, uint32_t int_status)
 {
-	int_status |= (SDIO_HOST_F_CMD_NO_RSP_END_INT |
+	int_status &= (SDIO_HOST_F_CMD_NO_RSP_END_INT |
 					SDIO_HOST_F_CMD_RSP_END_INT |
 					SDIO_HOST_F_CMD_RSP_TIMEOUT_INT |
 					SDIO_HOST_F_CMD_RSP_CRC_OK |
@@ -333,7 +333,7 @@ static inline bool sdio_host_ll_is_data_recv_overflow_int_triggered(sdio_hw_t *h
 
 static inline void sdio_host_ll_clear_data_interrupt_status(sdio_hw_t *hw, uint32_t int_status)
 {
-	int_status |= (SDIO_HOST_F_DATA_RECV_END_INT |
+	int_status &= (SDIO_HOST_F_DATA_RECV_END_INT |
 					SDIO_HOST_F_DATA_CRC_FAIL |
 					SDIO_HOST_F_DATA_WR_END_INT |
 					SDIO_HOST_F_DATA_TIMEOUT_INT);
@@ -342,7 +342,7 @@ static inline void sdio_host_ll_clear_data_interrupt_status(sdio_hw_t *hw, uint3
 
 static inline void sdio_host_ll_clear_write_data_interrupt_status(sdio_hw_t *hw, uint32_t int_status)
 {
-	int_status |= (SDIO_HOST_F_DATA_WR_END_INT | SDIO_HOST_F_TX_FIFO_NEED_WRITE);
+	int_status &= (SDIO_HOST_F_DATA_WR_END_INT | SDIO_HOST_F_TX_FIFO_NEED_WRITE);
 	REG_WRITE(SDIO_HOST_R_CMD_RSP_INT_SEL, int_status);
 }
 
@@ -353,7 +353,7 @@ static inline void sdio_host_ll_clear_read_data_timeout_interrupt_status(sdio_hw
 
 static inline void sdio_host_ll_clear_read_data_interrupt_status(sdio_hw_t *hw, uint32_t int_status)
 {
-	int_status |= (SDIO_HOST_F_DATA_RECV_END_INT |
+	int_status &= (SDIO_HOST_F_DATA_RECV_END_INT |
 					SDIO_HOST_F_RX_FIFO_NEED_READ |
 					SDIO_HOST_F_DATA_CRC_OK |
 					SDIO_HOST_F_DATA_CRC_FAIL |
@@ -462,6 +462,55 @@ static inline void sdio_host_ll_set_tx_fifo_clock_gate(sdio_hw_t *hw, uint32_t c
 {
 	hw->sd_cmd_rsp_int_mask.tx_fifo_need_write_mask_cg = clk_gate;
 }
+
+static inline void sdio_host_ll_write_blk_en(sdio_hw_t *hw, uint32_t en)
+{
+	if(en)
+		hw->sd_fifo_threshold.host_wr_blk_en = 1;
+	else
+		hw->sd_fifo_threshold.host_wr_blk_en = 0;
+}
+
+static inline void sdio_host_ll_set_fifo_send_cnt(sdio_hw_t *hw, uint32_t cnt)
+{
+	hw->sd_slave_cfg.fifo_send_cnt = cnt&0xff;
+}
+
+#if (CONFIG_SDIO_PM_CB_SUPPORT)
+#define SDIO_PM_BACKUP_REG_NUM    12
+
+static inline void sdio_ll_backup(sdio_hw_t *hw, uint32_t *pm_backup)
+{
+	pm_backup[0] = hw->global_ctrl.v;
+	pm_backup[1] = hw->sd_cmd_ctrl.v;
+	pm_backup[2] = hw->cmd_argument;
+	pm_backup[3] = hw->sd_cmd_timer;
+	pm_backup[4] = hw->sd_data_ctrl.v;
+	pm_backup[5] = hw->sd_data_timer;
+	pm_backup[6] = hw->sd_cmd_rsp_int_mask.v;
+	pm_backup[7] = hw->tx_fifo_din;
+	pm_backup[8] = hw->sd_fifo_threshold.v;
+	pm_backup[9] = hw->sd_slave_cfg.v;
+	pm_backup[10] = hw->sd_slave_rdat_0;
+	pm_backup[11] = hw->sd_slave_rdat_0;
+}
+
+static inline void sdio_ll_restore(sdio_hw_t *hw, uint32_t *pm_backup)
+{
+	hw->global_ctrl.v = pm_backup[0];
+	hw->sd_cmd_ctrl.v = pm_backup[1];
+	hw->cmd_argument = pm_backup[2];
+	hw->sd_cmd_timer = pm_backup[3];
+	hw->sd_data_ctrl.v = pm_backup[4];
+	hw->sd_data_timer = pm_backup[5];
+	hw->sd_cmd_rsp_int_mask.v = pm_backup[6];
+	hw->tx_fifo_din = pm_backup[7];
+	hw->sd_fifo_threshold.v = pm_backup[8];
+	hw->sd_slave_cfg.v = pm_backup[9];
+	hw->sd_slave_rdat_0 = pm_backup[10];
+	hw->sd_slave_rdat_0 = pm_backup[11];
+}
+#endif
 
 #ifdef __cplusplus
 }

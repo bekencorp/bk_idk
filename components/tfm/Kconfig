@@ -14,7 +14,7 @@ menu "Tfm"
 
 		config TFM_BUILD_TYPE
 			string "Define Tfm Build Type"
-			default "debug"
+			default "minsizerel"
 			help
 				build type: debug, release or minsizerel
 
@@ -33,6 +33,18 @@ menu "Tfm"
 			default n
 			help
 				Enable TFM_SYSTEM_CLOCK: ON/OFF
+
+		config TFM_CRYPTO
+			bool "Enable TFM CRYPTO"
+			default n
+			help
+				Enable CRYPTO: ON/OFF
+
+		config TFM_PS
+			bool "Enable TFM PS"
+			default n
+			help
+				Enable PS: ON/OFF
 
 		config TFM_TEST_S
 			string "Define Tfm Test S"
@@ -122,6 +134,18 @@ menu "Tfm"
 				Enable flash API for non-security, for chip verification only.
 				Should be disabled in release version!
 
+		config TFM_DUBHE_KEY_LADDER_NSC
+			bool "Enable dubhe key ladder NSC api"
+			default n
+			help
+				Enable dubhe key ladder API for non-security
+
+		config TFM_OTP_NSC
+			bool "Enable otp NSC api"
+			default n
+			help
+				Enable otp API for non-security
+
 		config TFM_INT_TARGET_NSC
 			bool "Enable interrupt target NSC api"
 			default n
@@ -129,10 +153,69 @@ menu "Tfm"
 				Enable interrupt target API for non-security, for chip verification only.
 				Should be disabled in release version!
 
+		config PM_NSC
+			bool "Enable pm NSC api"
+			default n
+			help
+				Enable PM API for non-security
+
+		config TFM_AES_GCM_NSC
+			bool "Enable do security aes gcm "
+			default n
+			help
+				Enable do security aes gcm encrypt and decrypt.
+				Should be disabled in release version!
+
 		config TFM_MPU
 			bool "Enable TFM official MPU"
 			default n
 			help
 				Enable TFM official MPU
+
+		config TFM_PANIC_DEAD_LOOP
+			bool "TFM panic trigger dead loop"
+			default n
+			help
+				Enable TFM dead loop panic
+
+		config XIP_NO_VERSION
+			bool "xip without security counter and version"
+			default n
+
+		config BL2_SKIP_VALIDATE
+			bool "Bl2 skip validate"
+			default n
+
+		config BL2_VALIDATE_ENABLED_BY_EFUSE
+			bool "BL2 validate is enabled by eFuse"
+			default y
+
+		config BL2_WDT
+			bool "Enable BL2 watchdog"
+			default n
+
+		config TFM_HEAP_SIZE
+			hex "TFM heap size"
+			default 0x1040
+
+		config BL2_WDT_PERIOD
+			hex "BL2 wdt timeout period"
+			default 0x1F40
+
+		config TFM_CRYPTO_IOVEC_BUFFER_SIZE
+			hex "TFM_CRYPTO_IOVEC_BUFFER_SIZE"
+			default 0x2400
+
+		config INITIAL_ATTESTATION
+			bool "Enable compile tfm initial attestation file"
+			default n
+			help
+				Enable compile tfm initial attestation file
 	endmenu
 endmenu
+
+config SECURITY_FIRMWARE
+    bool "enable security firmware / no-security firmware"
+    default n
+    help
+        enable security firmware / no-security firmware

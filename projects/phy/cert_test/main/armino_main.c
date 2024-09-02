@@ -6,8 +6,6 @@
 
 #include "cli.h"
 
-#include "dm_ble_demo.h"
-
 extern void user_app_main(void);
 extern void rtos_set_user_app_entry(beken_thread_function_t entry);
 
@@ -44,13 +42,6 @@ int main(void)
 
 #else
     os_printf("%s CONFIG_A2DP_SINK_DEMO CONFIG_A2DP_SOURCE_DEMO can't both init now !\n", __func__);
-#endif
-
-#if CONFIG_BLE
-    if(0)
-    {
-        //dm_ble_demo_main();
-    }
 #endif
 
     return 0;

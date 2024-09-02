@@ -8,3 +8,4 @@ Bluetooth
 
    Bluetooth Low Energy(BLE) <bk_ble>
    Bluetooth Classic <bk_bt>
+   DUT <dut>

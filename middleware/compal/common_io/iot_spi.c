@@ -53,6 +53,9 @@ static void bk_conver_config_to_internal(IotSPIMasterConfig_t *config, spi_confi
 
     internal->bit_order = config->eSetBitOrder;
     internal->baud_rate = config->ulFreq;
+#if (CONFIG_SPI_BYTE_INTERVAL)
+    internal->byte_interval = 1;
+#endif
     switch (config->eMode) {
     case eSPIMode0:
         internal->polarity = SPI_POLARITY_LOW;

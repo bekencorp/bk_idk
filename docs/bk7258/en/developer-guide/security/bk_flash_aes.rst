@@ -8,7 +8,7 @@ FLASH AES Encryption
      :alt: 8
      :figclass: align-center
 
-As shown in the figure above, BK7236 FLASH provides two access interfaces: data port and command port. In order to ensure the safety of instructions, FLASH instruction port access provides
+As shown in the figure above, BK7258 FLASH provides two access interfaces: data port and command port. In order to ensure the safety of instructions, FLASH instruction port access provides
 AES encryption mechanism. When writing data via the FLASH command port, the FLASH controller will use the AES KEY stored in the OTP to automatically
 The written data is encrypted; when reading data through the FLASH command port, the FLASH controller will use the AES KEY to decrypt the read data.
 
@@ -30,5 +30,5 @@ To use the FLASH AES encryption function, the following configurations are requi
 
 .. important::
 
-  BK7236 does not support automatic generation of random FLASH AES KEY at the moment, users need to manually configure AES KEY, in order to ensure storage in
+  BK7258 does not support automatic generation of random FLASH AES KEY at the moment, users need to manually configure AES KEY, in order to ensure storage in
   The commands in FLASH are safe, so you need to keep your FLASH AES KEY safe.

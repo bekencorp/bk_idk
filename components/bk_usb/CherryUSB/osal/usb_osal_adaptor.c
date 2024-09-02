@@ -27,25 +27,34 @@ int usb_osal_thread_delete(usb_osal_thread_t *thread)
 usb_osal_sem_t usb_osal_sem_create(uint32_t initial_count)
 {
     beken_semaphore_t semaphore = NULL;
-    rtos_init_semaphore(&semaphore, initial_count);
-    return (usb_osal_sem_t)semaphore;
+    uint32_t ret = kNoErr;
+    ret = rtos_init_semaphore(&semaphore, initial_count);
+    if(ret != kNoErr) {
+        return NULL;
+    } else {
+        return (usb_osal_sem_t)semaphore;
+    }
     //return (usb_osal_sem_t)xSemaphoreCreateCounting(1, initial_count);
 }
 
 void usb_osal_sem_delete(usb_osal_sem_t sem)
 {
-    rtos_deinit_semaphore((beken_semaphore_t *)sem);
+    if(sem != NULL) {
+        rtos_deinit_semaphore((beken_semaphore_t *)sem);
+    }
     //vSemaphoreDelete((SemaphoreHandle_t)sem);
 }
 
 int usb_osal_sem_take(usb_osal_sem_t sem, uint32_t timeout)
 {
+    if(sem == NULL) return -EINVAL;
     return (rtos_get_semaphore((beken_semaphore_t *)sem, timeout) == BK_OK) ? 0 : -ETIMEDOUT;
     //return (xSemaphoreTake((SemaphoreHandle_t)sem, pdMS_TO_TICKS(timeout)) == pdPASS) ? 0 : -ETIMEDOUT;
 }
 
 int usb_osal_sem_give(usb_osal_sem_t sem)
 {
+    if(sem == NULL) return -EINVAL;
     return rtos_set_semaphore((beken_semaphore_t *)sem);
 }
 

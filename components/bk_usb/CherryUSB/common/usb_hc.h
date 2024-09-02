@@ -134,6 +134,15 @@ int usbh_submit_urb(struct usbh_urb *urb);
  */
 int usbh_kill_urb(struct usbh_urb *urb);
 
+/**
+ * @brief Software triggers a disconnect event.
+ *
+ * When an exception occurs, the software triggers a disconnect event.
+ *
+ */
+void usbh_musb_trigger_disconnect_by_sw();
+
+
 #ifdef __cplusplus
 }
 #endif

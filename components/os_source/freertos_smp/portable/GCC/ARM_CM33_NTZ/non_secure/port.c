@@ -582,6 +582,9 @@ __attribute__( ( weak ) ) void vPortSetupTimerInterrupt( void ) /* PRIVILEGED_FU
             sys_ll_set_cpu_power_sleep_wakeup_cpu0_ticktimer_32k_enable(1);
         else if (xCoreID == CPU1_CORE_ID)
             sys_ll_set_cpu_power_sleep_wakeup_cpu1_ticktimer_32k_enable(1);
+        else if (xCoreID == CPU2_CORE_ID)
+            sys_ll_set_cpu_power_sleep_wakeup_cpu2_ticktimer_32k_enable(1);
+
     #endif
 
     /* Calculate the constants required to configure the tick interrupt. */
@@ -743,12 +746,10 @@ void vPortYield( void ) /* PRIVILEGED_FUNCTION */
     __asm volatile ( "isb" );
 }
 /*-----------------------------------------------------------*/
-uint32_t     g_systick_handler_lr;
+
 void SysTick_Handler( void ) /* PRIVILEGED_FUNCTION */
 {
     uint32_t ulPreviousMask;
-
-	g_systick_handler_lr = __get_LR();
 
     BaseType_t xCoreID = portGET_CORE_ID();
 
@@ -774,18 +775,6 @@ void SysTick_Handler( void ) /* PRIVILEGED_FUNCTION */
 
     ulPreviousMask = portSET_INTERRUPT_MASK_FROM_ISR();
     {
-        #if (CONFIG_INT_WDT)
-            bk_int_wdt_feed();
-        #endif
-
-        #if (CONFIG_INT_AON_WDT)
-            bk_int_aon_wdt_feed();
-        #endif
-
-        #if (CONFIG_TASK_WDT)
-            bk_task_wdt_timeout_check();
-        #endif
-
         #if ( configUSE_TICKLESS_IDLE >= 1 )
             // TODO: optimize
             /* OS tick aligned with AON timer */

@@ -64,7 +64,7 @@ bk_err_t bk_h264_enc_lcd_dma_cpy(void *out, const void *in, uint32_t len, dma_id
 
 bk_err_t bk_h264_get_h264_base_config(h264_base_config_t *config);
 
-
+bk_err_t bk_h264_updata_encode_fps(uint32 fps);
 
 #ifdef __cplusplus
 }

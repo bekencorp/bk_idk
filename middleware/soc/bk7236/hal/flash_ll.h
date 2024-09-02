@@ -275,6 +275,11 @@ static inline void flash_ll_write_disable(flash_hw_t *hw)
 	while (flash_ll_is_busy(hw));
 }
 
+static inline uint32_t flash_ll_read_offset_enable(flash_hw_t *hw)
+{
+	return hw->flash_ctrl.flash_offset_enable & 0x1;
+}
+
 #ifdef __cplusplus
 }
 #endif

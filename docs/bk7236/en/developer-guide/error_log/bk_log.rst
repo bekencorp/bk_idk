@@ -11,7 +11,15 @@ Here introduces the log output method for Armino platform.
  - To set the log work mode, send the command of 'log' with 1~4 params in the input device.
  - log [1 [3 [0 [0]]]], it is the default setting after reset, the first parameter is the input echo switch(0: disable, 1:enable echo), the 2nd param is the lowest log level that can be output(level 0~5, 5 is the lowest level), the 3rd param controls the log work mode(0:asynchronous,1:synchronous), the 4th param controls 'modlog' work mechnism, the module list is the whitelist or blacklist (0: blacklist, 1: whitelist). This command contains 1~4 params, if the param3 is provided, then param1~2 must be also provided, but param4 can be omitted(so no changes to this setting).
 
+BK7236 Log Work Flow
+------------------------------------------
 
+.. figure:: ../../../_static/log_system.png
+    :align: center
+    :alt: log work flow
+    :figclass: align-center
+
+    log work flow
 
 API desriptions
 -------------------------------------------

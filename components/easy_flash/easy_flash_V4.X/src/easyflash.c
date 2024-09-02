@@ -62,7 +62,12 @@
  *
  * @return result
  */
+static volatile uint32_t s_g_easyflash_init_flag = 0;
 EfErrCode easyflash_init(void) {
+    if(s_g_easyflash_init_flag) {
+        return EF_NO_ERR;
+    }
+
     extern EfErrCode ef_port_init(ef_env const **default_env, size_t *default_env_size);
     extern EfErrCode ef_env_init(ef_env const *default_env, size_t default_env_size);
     extern EfErrCode ef_iap_init(void);
@@ -98,6 +103,8 @@ EfErrCode easyflash_init(void) {
         EF_INFO("EasyFlash V%s is initialize fail.\n", EF_SW_VERSION);
     }
     EF_INFO("You can get the latest version on https://github.com/armink/EasyFlash .\n");
+
+    s_g_easyflash_init_flag = 1;
 
     return result;
 }

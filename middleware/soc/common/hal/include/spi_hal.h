@@ -35,6 +35,8 @@ typedef struct {
 #define spi_hal_set_first_bit(hal, first_bit) spi_ll_set_first_bit((hal)->hw, first_bit)
 #define spi_hal_set_cpol(hal, cpol) spi_ll_set_cpol((hal)->hw, cpol)
 #define spi_hal_set_cpha(hal, cpha) spi_ll_set_cpha((hal)->hw, cpha)
+#define spi_hal_set_role_master(hal) spi_ll_set_role_master((hal)->hw)
+#define spi_hal_set_role_slave(hal) spi_ll_set_role_slave((hal)->hw)
 #define spi_hal_is_master(hal) spi_ll_is_role_master((hal)->hw)
 #define spi_hal_is_slave(hal) spi_ll_is_role_slave((hal)->hw)
 #define spi_hal_get_tx_fifo_int_level(hal) spi_ll_get_tx_fifo_int_level((hal)->hw)
@@ -91,6 +93,7 @@ typedef struct {
 #define SPI_DIS_APLL_VSEL_VAL  0x5
 #define SPI_APLL_98M           98000000
 #define SPI_APLL_120M          120000000
+#define SPI_MAX_LENGTH         0x10000
 
 bk_err_t spi_hal_init(spi_hal_t *hal);
 bk_err_t spi_hal_configure(spi_hal_t *hal, const spi_config_t *config);

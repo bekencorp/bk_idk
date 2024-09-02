@@ -6,7 +6,7 @@ SARADC
 Summary
 ------------------------------------------------------------
 
-	SARADC currently supports up to 14 channels, but only 1-6 channels are currently supported in BK7231N/BK7236/BK7236,
+	SARADC currently supports up to 14 channels, but only 1-6 channels are currently supported in BK7231N/BK7258/BK7258,
 	1-7 channels are supported in BK7231U/BK7251/BK7252/bk7253, and 0-13 channels are supported in BK7271;
 	SARADC precision is 12bit by default,Generally, the accuracy is not dynamically adjusted in the SARADC drive.
 

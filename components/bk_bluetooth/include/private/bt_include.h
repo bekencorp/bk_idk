@@ -31,7 +31,7 @@ union codec_info
         uint32_t sample_rate;
         uint8_t bit_pool;
         uint8_t alloc_mode;
-    }sbc_codec;
+    } sbc_codec;
 
 
     struct a2dp_aac_codec
@@ -39,7 +39,7 @@ union codec_info
         uint8_t codec_type;
         uint8_t channels;
         uint32_t sample_rate;
-    }aac_codec;
+    } aac_codec;
 };
 
 
@@ -119,9 +119,9 @@ bt_err_t bk_bt_read_scan_enable(bt_cmd_cb_t callback);
 
 
 
-bt_err_t bk_bt_spp_init(void* bt_spp_event_notify_cb);
+bt_err_t bk_bt_spp_init(void *bt_spp_event_notify_cb);
 bt_err_t bk_bt_spp_connect(uint8_t *addr, uint8_t server_channel, uint32_t spp_handle, bt_cmd_cb_t callback);
-bt_err_t bk_bt_spp_start(uint32_t* spp_handle, uint8_t *local_server_channel, uint32_t *spp_record_handle);
+bt_err_t bk_bt_spp_start(uint32_t *spp_handle, uint8_t *local_server_channel, uint32_t *spp_record_handle);
 bt_err_t bk_bt_spp_tx(uint32_t spp_handle, char *data, uint16_t len, bt_cmd_cb_t callback);
 bt_err_t bk_bt_sdp(uint16_t conn_handle, uint8_t *peer_addr, bt_cmd_cb_t callback);
 

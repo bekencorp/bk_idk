@@ -46,7 +46,7 @@
 #if CONFIG_GPIO_WAKEUP_SUPPORT
 #include "gpio_driver.h"
 #endif
-#include <driver/ckmn.h>
+#include <driver/rosc_32k.h>
 
 /*=====================DEFINE SECTION START=====================*/
 #define PM_WAKEUP_SOURCE_MARK                           (WAKEUP_SOURCE_MARK)
@@ -66,8 +66,8 @@
 #define PM_SLEEP_TIME_COMPENSATION_ENABLE               (0x0)
 #define SWITCH_32K_WAIT                                 (5000) // 5s
 #define SWITCH_32K_DELAY                                (1000) // 1s
-#define PM_DEBUG_SYS_REG_BASE                           (0x44010000)
-#define PM_DEBUG_PMU_REG_BASE                           (0x44000000)
+#define PM_DEBUG_SYS_REG_BASE                           (SOC_SYSTEM_REG_BASE)
+#define PM_DEBUG_PMU_REG_BASE                           (SOC_AON_PMU_REG_BASE)
 #define PM_SEND_CMD_CP0_RESPONSE_TIME_OUT               (100)  //100ms
 
 /*=====================DEFINE SECTION END=====================*/
@@ -643,7 +643,8 @@ bk_err_t bk_pm_module_vote_power_ctrl(pm_power_module_name_e module, pm_power_mo
 			}
 		}
 		else if ((module == PM_POWER_SUB_MODULE_NAME_PHY_BT)
-			|| (module == PM_POWER_SUB_MODULE_NAME_PHY_WIFI))
+			|| (module == PM_POWER_SUB_MODULE_NAME_PHY_WIFI)
+			|| (module == PM_POWER_SUB_MODULE_NAME_PHY_RF))
 		{
 			GLOBAL_INT_DISABLE();
 			s_pm_phy_pm_state |= 0x1 << (module % (PM_POWER_MODULE_NAME_PHY * PM_MODULE_SUB_POWER_DOMAIN_MAX));
@@ -659,21 +660,29 @@ bk_err_t bk_pm_module_vote_power_ctrl(pm_power_module_name_e module, pm_power_mo
 				sys_drv_module_power_ctrl(PM_POWER_MODULE_NAME_PHY, power_state);
 				if (0x0 == sys_drv_module_power_state_get(PM_POWER_MODULE_NAME_PHY))
 				{
-#if CONFIG_SYSTEM_CTRL
+					if(PM_POWER_SUB_MODULE_NAME_PHY_RF != module)
+					{
 #if CONFIG_WIFI_ENABLE
-					extern void phy_wakeup_reinit();
-					phy_wakeup_reinit();
+						 extern void phy_wakeup_reinit();
+						 phy_wakeup_reinit();
 #else
-					extern void phy_wakeup_for_bluetooth();
-					phy_wakeup_for_bluetooth();
+						 extern void phy_wakeup_for_bluetooth();
+						 phy_wakeup_for_bluetooth();
 #endif
-					s_pm_is_phy_reinit_flag = true;
-#endif
-					GLOBAL_INT_DISABLE();
-					s_pm_phy_calibration_state = 0x1;
-					s_pm_off_modules &= ~(0x1 << PM_POWER_MODULE_NAME_PHY);
-					s_pm_on_modules |= 0x1 << PM_POWER_MODULE_NAME_PHY;
-					GLOBAL_INT_RESTORE();
+						 s_pm_is_phy_reinit_flag = true;
+						 GLOBAL_INT_DISABLE();
+						 s_pm_phy_calibration_state = 0x1;
+						 s_pm_off_modules &= ~(0x1 << PM_POWER_MODULE_NAME_PHY);
+						 s_pm_on_modules |= 0x1 << PM_POWER_MODULE_NAME_PHY;
+						 GLOBAL_INT_RESTORE();
+					} 
+					else
+					{
+						 GLOBAL_INT_DISABLE();
+						 s_pm_off_modules &= ~(0x1 << PM_POWER_MODULE_NAME_PHY);
+						 s_pm_on_modules |= 0x1 << PM_POWER_MODULE_NAME_PHY;
+						 GLOBAL_INT_RESTORE();
+					}
 				}
 				else
 				{
@@ -803,7 +812,8 @@ bk_err_t bk_pm_module_vote_power_ctrl(pm_power_module_name_e module, pm_power_mo
 			GLOBAL_INT_RESTORE();
 		}
 		else if ((module == PM_POWER_SUB_MODULE_NAME_PHY_BT)
-			|| (module == PM_POWER_SUB_MODULE_NAME_PHY_WIFI))
+			|| (module == PM_POWER_SUB_MODULE_NAME_PHY_WIFI)
+			|| (module == PM_POWER_SUB_MODULE_NAME_PHY_RF))
 		{
 			GLOBAL_INT_DISABLE();
 			s_pm_phy_pm_state &= ~(0x1 << (module % (PM_POWER_MODULE_NAME_PHY * PM_MODULE_SUB_POWER_DOMAIN_MAX)));
@@ -1602,7 +1612,7 @@ void pm_low_voltage_bsp_restore(void)
 #endif
 
 #if CONFIG_CKMN
-	bk_ckmn_driver_rc32k_prog(32);
+	bk_rosc_32k_ckest_prog(32);
 #endif
 
 #if CONFIG_INT_WDT
@@ -1707,8 +1717,15 @@ static void pm_deep_sleep_process()
 #if CONFIG_PM_SUPER_DEEP_SLEEP
 static void pm_super_deep_sleep_process()
 {
+	uint64_t skip_io = 0;
+
+#if CONFIG_GPIO_RETENTION_SUPPORT
+	gpio_retention_sync(false);
+	skip_io = gpio_retention_map_get();
+#endif
+
 #if CONFIG_GPIO_WAKEUP_SUPPORT
-	gpio_hal_switch_to_low_power_status(BIT64(16));
+	gpio_hal_switch_to_low_power_status(BIT64(16) | skip_io);
 #endif
 
 	pm_enter_super_deep_sleep();
@@ -1812,7 +1829,12 @@ bk_err_t bk_pm_sleep_register_cb(pm_sleep_mode_e sleep_mode, pm_dev_id_e dev_id,
 		if (enter_config != NULL)
 		{
 			pm_sleep_cb_t cb_item = {dev_id, *enter_config};
-			if ((enter_config->cb != NULL) && (dev_id < PM_DEV_ID_DEFAULT))
+			// use exit_config to indicate the execution priority when entering sleep
+			if ((enter_config->cb != NULL) && (exit_config != NULL) && ((pm_cb_priority_e)exit_config->args < PM_CB_PRIORITY_MAX))
+			{
+				pm_sleep_cb_push_item(s_pm_deepsleep_enter_cb_conf, &s_pm_deepsleep_enter_cb_cnt[(pm_cb_priority_e)exit_config->args], cb_item);
+			}
+			else if ((enter_config->cb != NULL) && (dev_id < PM_DEV_ID_DEFAULT))
 			{
 				pm_sleep_cb_push_item(s_pm_deepsleep_enter_cb_conf, &s_pm_deepsleep_enter_cb_cnt[PM_CB_PRIORITY_0], cb_item);
 			}

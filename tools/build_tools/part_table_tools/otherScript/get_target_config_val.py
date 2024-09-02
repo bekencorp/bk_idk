@@ -11,6 +11,9 @@ import errno
 import re
 
 def get_config_val(config, config_item):
+    if os.path.exists(config) == False:
+        return
+    
     with open(config, 'r') as cfg:
         cfgls = cfg.readlines()
     config_val = 'n'

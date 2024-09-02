@@ -110,10 +110,15 @@ typedef struct {
 	spi_wire_mode_t wire_mode; /**< SPI wire mode */
 	uint32_t baud_rate;        /**< SPI transmit and receive SCK clock */
 	spi_bit_order_t bit_order; /**< SPI bit order, MSB/LSB */
+#if (CONFIG_SPI_BYTE_INTERVAL)
+	uint32_t byte_interval;    /**< SPI byte interval, only for master */
+#endif
 #if (CONFIG_SPI_DMA)
 	spi_dma_mode_t dma_mode;   /**< SPI whether use dma */
 	dma_id_t spi_tx_dma_chan;  /**< SPI tx dma channel */
 	dma_id_t spi_rx_dma_chan;  /**< SPI rx dma channel */
+	dma_data_width_t spi_tx_dma_width;  /**< SPI tx dma destination width */
+	dma_data_width_t spi_rx_dma_width;  /**< SPI rx dma source width */
 #endif
 } spi_config_t;
 

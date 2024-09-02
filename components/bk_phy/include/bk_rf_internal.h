@@ -62,5 +62,7 @@ enum {
 
 UINT32 rf_pll_ctrl(UINT32 cmd, UINT32 param);
 void rf_module_vote_ctrl(uint8_t cmd,uint32_t module);
+void phy_clk_close_handler(uint32_t module);
+void phy_clk_open_handler(uint32_t module);
 
 

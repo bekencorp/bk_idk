@@ -84,7 +84,11 @@
 
 /* Tick */
 #define configCPU_CLOCK_HZ                          CONFIG_CPU_FREQ_HZ
+#if CONFIG_FREERTOS_TICK_RATE_HZ
+#define configTICK_RATE_HZ                          (CONFIG_FREERTOS_TICK_RATE_HZ)
+#else
 #define configTICK_RATE_HZ                          ( ( TickType_t ) 500 )
+#endif
 #define configUSE_16_BIT_TICKS                      0
 #define configUSE_WATCHDOG_TICK                     32000
 
@@ -209,6 +213,7 @@ to exclude the API function. */
 
 #define INCLUDE_vTaskPrioritySet                    1
 #define INCLUDE_uxTaskPriorityGet                   1
+#define INCLUDE_uxTaskGetStackHighWaterMark         1
 #define INCLUDE_vTaskDelete                         1
 #define INCLUDE_vTaskCleanUpResources               0
 #define INCLUDE_vTaskSuspend                        1
@@ -216,6 +221,7 @@ to exclude the API function. */
 #define INCLUDE_vTaskDelay                          1
 #define INCLUDE_xTaskAbortDelay                     1
 #define INCLUDE_xTaskGetCurrentTaskHandle           1
+#define INCLUDE_xTimerPendFunctionCall              1
 
 #if CONFIG_FREERTOS_V10 || CONFIG_FREERTOS_SMP
 #define INCLUDE_xTaskGetHandle                      1
@@ -226,6 +232,8 @@ to exclude the API function. */
 #if CONFIG_FREERTOS_POSIX
 #define INCLUDE_xQueueGetMutexHolder                1
 #endif
+
+#define configNUM_THREAD_LOCAL_STORAGE_POINTERS    3
 
 #define configMAX_SYSCALL_INTERRUPT_PRIORITY        191 /* equivalent to 0xb0, or priority 11. */
 

@@ -11,6 +11,21 @@ menu "Lwip_intf_v2_1"
 		help
 			Enable Fast DHCP(use previous IP)
 
+	config EASY_FLASH_FAST_DHCP
+		depends on EASY_FLASH_V4 && WIFI_FAST_DHCP
+		bool "Enable Wifi Fast DHCP with easy flash"
+		default y
+
+	config LWIP_RESV_TLEN_ENABLE
+		bool "Enable LWIP reserved tail length"
+		default n
+		help
+			Enable LWIP reserved tail length
+
+	config STA_USE_STATIC_IP
+		bool "Enable sta use static ip"
+		default y
+
 	config MQTT_ACK_NOW
 		bool "Enable Mqtt Ack Now"
 		default y
@@ -26,6 +41,22 @@ menu "Lwip_intf_v2_1"
 		bool "Enable LWIP"
 		default y
 
+	config IP_FORWARD
+		bool "Enable IP FORWARD"
+		default n
+
+	config IP_NAPT
+		bool "Enable IP NAPT"
+		default n
+
+	config WIFI_REAPETER
+		bool "Enable WIFI_REAPETER"
+		default n
+
+	config BRIDGE
+                bool "Enable LWIP BRIDGE"
+                default n
+
 	menu "Modify Lwip Config"
 		depends on LWIP
 
@@ -33,7 +64,11 @@ menu "Lwip_intf_v2_1"
 			depends on WIFI_ENABLE
 			bool "Enable DHCP"
 			default y
-		
+
+		config DHCP_ONGOING_OPTIM
+			bool "Enable DHCP_ONGOING_OPTIM"
+			default n
+
 		config AUTOIP
 			bool "Enable AUTOIP"
 			default n

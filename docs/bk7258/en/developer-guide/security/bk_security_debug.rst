@@ -11,7 +11,7 @@ Secure debug provides a reliable mechanism for enabling the debug feature of a d
 Debug is one of the most commonly-used features in the device. With the debug feature, you can access all the device data, 
 including the device firmware and the device root key. 
 
-BK7236 compiles with the following rules on using the debug feature: 
+BK7258 compiles with the following rules on using the debug feature: 
 
  - In the device’s developing stage, always enable the debug feature. 
  - In the device’s manufacturing stage, always disable the debug feature, and re-enable the debug feature for some special usages, such as failure analysis. 

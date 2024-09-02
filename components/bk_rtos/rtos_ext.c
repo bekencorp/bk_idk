@@ -14,8 +14,8 @@
 
 #include "rtos_ext.h"
 
-#define port_enable_int    rtos_enable_int
-#define port_disable_int   rtos_disable_int
+#define port_enter_critical   rtos_enter_critical
+#define port_exit_critical    rtos_exit_critical
 
 bk_err_t rtos_init_event_ex(rtos_event_ext_t * event)
 {
@@ -23,7 +23,14 @@ bk_err_t rtos_init_event_ex(rtos_event_ext_t * event)
 		return BK_OK;
 
 	event->event_flag = 0;
-	rtos_init_semaphore(&event->event_semaphore, 1);
+	
+	bk_err_t  result = rtos_init_semaphore(&event->event_semaphore, 1);
+	
+	if(result != BK_OK)
+	{
+		return result;
+	}
+	
 	event->event_inited = 1;
 
 	return BK_OK;
@@ -40,11 +47,11 @@ bk_err_t rtos_set_event_ex(rtos_event_ext_t * event, u32 event_flag)
 	if(event_flag == 0)
 		return BK_OK;
 
-	int_mask = port_disable_int();
+	int_mask = port_enter_critical();
 
 	event->event_flag |= event_flag;
 
-	port_enable_int(int_mask);
+	port_exit_critical(int_mask);
 
 	rtos_set_semaphore(&event->event_semaphore);
 
@@ -71,7 +78,7 @@ u32 rtos_wait_event_ex(rtos_event_ext_t * event, u32 event_flag, u32 any_event, 
 
 	while(1)
 	{
-		int_mask = port_disable_int();
+		int_mask = port_enter_critical();
 
 		ret_flag = event->event_flag;
 
@@ -93,7 +100,7 @@ u32 rtos_wait_event_ex(rtos_event_ext_t * event, u32 event_flag, u32 any_event, 
 
 		event->event_flag ^= ret_flag;  // clear read events.
 
-		port_enable_int(int_mask);
+		port_exit_critical(int_mask);
 
 		if(ret_flag != 0)
 		{
@@ -151,7 +158,7 @@ static u8 get_hisr_event_id(void)
 	{
 		event_id = 0xFF;
 
-		int_mask = port_disable_int();
+		int_mask = port_enter_critical();
 
 		for(i = 0; i < ARRAY_SIZE(hisr_event_grp); i++)
 		{
@@ -172,7 +179,7 @@ static u8 get_hisr_event_id(void)
 			event_id = (i << 3) + j;
 		}
 		
-		port_enable_int(int_mask);
+		port_exit_critical(int_mask);
 
 		if(event_id < RTOS_HISR_MAX)
 			return event_id;
@@ -215,9 +222,9 @@ bk_err_t rtos_activate_hisr(rtos_hisr_cb_t *hisr_cb)
 		return BK_FAIL;
 	}
 
-	u32 int_mask = port_disable_int();
+	u32 int_mask = port_enter_critical();
 	hisr_event_grp[hisr_cb->event_id >> 3] |= 0x01 << (hisr_cb->event_id & 7);
-	port_enable_int(int_mask);
+	port_exit_critical(int_mask);
 
 	rtos_set_semaphore(&hisr_notify_sema);
 

@@ -20,6 +20,7 @@
 
 #include "bootutil/ignore.h"
 #include <stdio.h>
+#include "driver/efuse.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,21 +45,21 @@ extern "C" {
 
 #if MCUBOOT_LOG_LEVEL >= MCUBOOT_LOG_LEVEL_ERROR
 #define MCUBOOT_LOG_ERR(_fmt, ...)                  \
-    printf("[ERR] " _fmt "\r\n", ##__VA_ARGS__)
+    if (efuse_is_err_log_enabled()) printf("[ERR] " _fmt "\r\n", ##__VA_ARGS__)
 #else
 #define MCUBOOT_LOG_ERR(...) IGNORE(__VA_ARGS__)
 #endif
 
 #if MCUBOOT_LOG_LEVEL >= MCUBOOT_LOG_LEVEL_WARNING
 #define MCUBOOT_LOG_WRN(_fmt, ...)                  \
-    printf("[WRN] " _fmt "\r\n", ##__VA_ARGS__)
+    if (efuse_is_err_log_enabled()) printf("[WRN] " _fmt "\r\n", ##__VA_ARGS__)
 #else
 #define MCUBOOT_LOG_WRN(...) IGNORE(__VA_ARGS__)
 #endif
 
 #if MCUBOOT_LOG_LEVEL >= MCUBOOT_LOG_LEVEL_INFO
 #define MCUBOOT_LOG_INF(_fmt, ...)                  \
-    printf("[INF] " _fmt "\r\n", ##__VA_ARGS__)
+    if (efuse_is_info_log_enabled()) printf("[INF] " _fmt "\r\n", ##__VA_ARGS__)
 #else
 #define MCUBOOT_LOG_INF(...) IGNORE(__VA_ARGS__)
 #endif

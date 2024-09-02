@@ -20,6 +20,7 @@
 #include "bk_sys_ctrl.h"
 #include <driver/efuse.h>
 #include <driver/otp.h>
+#include <driver/otp_types.h>
 #include <os/mem.h>
 #include "bk_phy.h"
 #include <components/system.h>
@@ -143,6 +144,59 @@ static int write_base_mac_to_rf_otp_flash(const uint8_t *mac)
 		return BK_FAIL;
 }
 
+#endif
+
+#if (CONFIG_BASE_MAC_FROM_OTP1)
+static int write_base_mac_to_otp1(const uint8_t *mac)
+{
+#if CONFIG_OTP
+    int ret = BK_FAIL;
+    uint8_t mac_r[] = DEFAULT_MAC_ADDR;
+
+    ret = bk_otp_apb_read(OTP_MAC_ADDRESS, mac_r, BASE_MAC_LEN);
+    if(ret == 0)
+    {
+        for(UINT8 i = 0; i < BASE_MAC_LEN; i++)
+        {
+            if(mac_r[i] == 0x00)
+            {
+               ret += 1;
+            }
+        }
+        if(ret == BASE_MAC_LEN)
+        {
+           ret = bk_otp_apb_update(OTP_MAC_ADDRESS, (uint8_t *)mac, BASE_MAC_LEN);
+           if(ret == 0)
+               return BK_OK;
+           else
+               return BK_FAIL;
+        }
+        else
+        {
+            return BK_FAIL;
+        }
+    }
+    return BK_FAIL;
+#endif
+}
+
+static int read_base_mac_to_otp1(uint8_t *mac)
+{
+#if CONFIG_OTP
+    int ret = BK_FAIL;
+    uint8_t buf[6];
+    ret = bk_otp_apb_read(OTP_MAC_ADDRESS, buf, BASE_MAC_LEN);
+    if ((ret == BK_OK) && ((buf[0] != 0) || (buf[1] != 0) || (buf[2] != 0) || (buf[3] != 0) || (buf[4] != 0) || (buf[5] != 0)))
+    {
+        os_memcpy(mac, buf, sizeof(buf));
+        return ret;
+    }
+#endif
+    if (manual_cal_get_macaddr_from_flash((uint8_t *)mac))
+        return BK_OK;
+    else
+        return BK_FAIL;
+}
 #endif
 
 #if (CONFIG_RANDOM_MAC_ADDR)
@@ -428,6 +482,8 @@ static int mac_init(void)
         ret = sync_mac_record();
 #elif (CONFIG_BASE_MAC_FROM_RF_OTP_FLASH)
         ret = read_base_mac_from_rf_otp_flash(s_base_mac);
+#elif (CONFIG_BASE_MAC_FROM_OTP1)
+        ret = read_base_mac_to_otp1(s_base_mac);
 #endif
 
 #if (CONFIG_RANDOM_MAC_ADDR)
@@ -468,8 +524,10 @@ static int mac_init(void)
 
 bk_err_t bk_get_mac(uint8_t *mac, mac_type_t type)
 {
+#if !CONFIG_CUS_MAC_MASK
 	uint8_t mac_mask = (0xff & (2/*NX_VIRT_DEV_MAX*/ - 1));
 	uint8_t mac_low;
+#endif
 
 	if (s_mac_inited == false) {
 		mac_init();
@@ -482,6 +540,12 @@ bk_err_t bk_get_mac(uint8_t *mac, mac_type_t type)
 		break;
 
 	case MAC_TYPE_AP:
+#if CONFIG_CUS_MAC_MASK
+		os_memcpy(mac, s_base_mac, BK_MAC_ADDR_LEN);
+		for (int i = 0; i < BK_MAC_ADDR_LEN; i++) {
+			mac[BK_MAC_ADDR_LEN-i-1] ^= (CONFIG_CUS_MAC_MASK >> (i*8)) & 0xff;
+		}
+#else
 		mac_mask = (0xff & (2/*NX_VIRT_DEV_MAX*/ - 1));
 
 		os_memcpy(mac, s_base_mac, BK_MAC_ADDR_LEN);
@@ -494,6 +558,7 @@ bk_err_t bk_get_mac(uint8_t *mac, mac_type_t type)
 		mac[5] &= ~mac_mask;
 		mac_low = ((mac_low & mac_mask) ^ mac_mask);
 		mac[5] |= mac_low;
+#endif
 		break;
 
 	case MAC_TYPE_STA:
@@ -540,6 +605,8 @@ bk_err_t bk_set_base_mac(const uint8_t *mac)
 	ret = sync_mac_record();
 #elif (CONFIG_BASE_MAC_FROM_RF_OTP_FLASH)
 	ret = write_base_mac_to_rf_otp_flash(s_base_mac);
+#elif (CONFIG_BASE_MAC_FROM_OTP1)
+	ret = write_base_mac_to_otp1(s_base_mac);
 #endif
 
 	if (ret != BK_OK)

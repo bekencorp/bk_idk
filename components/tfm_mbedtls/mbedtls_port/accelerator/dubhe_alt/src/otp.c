@@ -88,11 +88,5 @@ int mbedtls_otp_puf_quality_check(void)
 {
     return arm_ce_do_puf_quality_check();
 }
-#if 0
-int mbedtls_otp_puf_revoke(void)
-{
-    return arm_ce_revoke_puf();
-}
-#endif
 #endif /* DBH_OTP_PUF_SUPPORT */
 #endif /* ARM_CE_DUBHE_OTP */

@@ -14,8 +14,7 @@ list(APPEND srcs
 	"wolfcrypt/src/sha512.c"
 	"wolfcrypt/src/tfm.c"
 	"wolfcrypt/src/wolfmath.c"
-	"crypto_wolfssl.c"
 	)
 endif()
 armino_component_register(SRCS "${srcs}"
-	INCLUDE_DIRS "${incs}" PRIV_REQUIRES bk_wifi bk_common wpa_supplicant)
+	INCLUDE_DIRS "${incs}" PRIV_REQUIRES bk_wifi wpa_supplicant-2.10)

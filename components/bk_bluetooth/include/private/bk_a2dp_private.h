@@ -32,4 +32,3 @@ bt_err_t bt_a2dp_sink_get_delay_value_internal(void);
 #ifdef __cplusplus
 }
 #endif
-

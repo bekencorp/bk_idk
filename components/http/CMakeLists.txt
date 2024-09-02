@@ -10,7 +10,6 @@ set(srcs
 	utils_net.c
 	utils_timer.c
 	lite-log.c
-	CheckSumUtils.c
 	)
 endif()
 

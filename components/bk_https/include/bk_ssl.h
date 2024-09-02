@@ -1,16 +1,22 @@
-// Copyright 2021-2022 Beken
+// Copyright 2019 Espressif Systems (Shanghai) PTE LTD
+// Copyright 2023 Beken Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//	   http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+/*
+* Change Logs:
+* Date			 Author 	  Notes
+* 2023-05-05	 Beken	  adapter to Beken sdk
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,7 +50,7 @@ typedef enum bk_tls_role {
 	BK_TLS_CLIENT = 0,
 	BK_TLS_SERVER,		   /* not support */
 } bk_tls_role_t;
-	
+
 typedef enum bk_tls_conn_state {
 	BK_TLS_INIT = 0,
 	BK_TLS_CONNECTING,
@@ -94,7 +100,7 @@ typedef enum {
 #define BK_ERR_MBEDTLS_SSL_HANDSHAKE_FAILED 			 (BK_ERR_BK_TLS_BASE + 0x1A)
 #define BK_ERR_MBEDTLS_SSL_CONF_PSK_FAILED				 (BK_ERR_BK_TLS_BASE + 0x1B)
 #define BK_ERR_MBEDTLS_SSL_TICKET_SETUP_FAILED			 (BK_ERR_BK_TLS_BASE + 0x1C)
-
+#define BK_ERR_MBEDTLS_SSL_CONF_MFL_FAILED				 (BK_ERR_BK_TLS_BASE + 0x1D)
 
 typedef struct bk_tls {
 	mbedtls_ssl_context ssl;
@@ -105,7 +111,7 @@ typedef struct bk_tls {
 	mbedtls_x509_crt cacert;
 	mbedtls_x509_crt *cacert_ptr;
 	mbedtls_x509_crt clientcert;
-	mbedtls_pk_context clientkey;																		
+	mbedtls_pk_context clientkey;
 	int sockfd;
 	ssize_t (*read)(struct bk_tls  *tls, char *data, size_t datalen);
 	ssize_t (*write)(struct bk_tls *tls, const char *data, size_t datalen);
@@ -207,8 +213,11 @@ typedef struct transport_bk_tls {
 } transport_bk_tls_t;
 
 int ssl_read(transport_bk_tls_t *ssl, char *buffer, int len, int timeout_ms);
+int ssl_tcp_read(transport_bk_tls_t *ssl, char *buffer, int len, int timeout_ms);
 int ssl_write(transport_bk_tls_t *ssl, const char *buffer, int len, int timeout_ms);
+int ssl_tcp_write(transport_bk_tls_t *ssl, const char *buffer, int len, int timeout_ms);
 int ssl_connect(transport_bk_tls_t *ssl, const char *host, int port, int timeout_ms);
+int ssl_tcp_connect(transport_bk_tls_t *ssl, const char *host, int port, int timeout_ms);
 int ssl_base_close(transport_bk_tls_t *ssl);
 
 void bk_transport_ssl_set_interface_name(transport_bk_tls_t *ssl, struct ifreq *if_name);

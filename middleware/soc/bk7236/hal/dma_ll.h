@@ -64,12 +64,14 @@ static inline uint32_t dma_ll_get_soft_reset_value(dma_hw_t *hw)
 static inline void dma_ll_init_without_channels(dma_hw_t *hw)
 {
 	if(0 == dma_ll_get_soft_reset_value(hw)) {
+#if CONFIG_SPE
 		hw->prio_mode.v = 0;
 		hw->prio_mode.soft_reset = 1;	//reset it before anyother operations
-#if CONFIG_SPE
 		hw->secure_attr.v = 0xFFF;
-#endif	
 		hw->privileged_attr.v = 0xFFF;
+#else
+		BK_LOGE("DMA", "soft reset is 0, check BAKP!");
+#endif	
 	}
 }
 
@@ -471,6 +473,28 @@ static inline void dma_ll_set_src_sec_attr(dma_hw_t *hw, dma_id_t id, uint32_t a
 {
 	hw->config_group[id].req_mux.src_sec_attr = attr & 0x1;
 }
+
+ 
+static inline void dma_ll_set_src_read_interval(dma_hw_t *hw, dma_id_t id, uint32_t interval)
+{
+	hw->config_group[id].req_mux.src_read_interval = interval & 0xf;
+}
+
+static inline uint32_t dma_ll_get_src_read_interval(dma_hw_t *hw, dma_id_t id)
+{
+	return (hw->config_group[id].req_mux.src_read_interval & 0xf);
+}
+
+static inline void dma_ll_set_dest_write_interval(dma_hw_t *hw, dma_id_t id, uint32_t interval)
+{
+	hw->config_group[id].req_mux.dest_write_interval = interval & 0xf;
+}
+
+static inline uint32_t dma_ll_get_dest_write_interval(dma_hw_t *hw, dma_id_t id)
+{
+	return (hw->config_group[id].req_mux.dest_write_interval & 0xf);
+}
+
 
 static inline void dma_ll_flush_src_buffer(dma_hw_t *hw, dma_id_t id)
 {

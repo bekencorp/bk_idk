@@ -118,12 +118,11 @@ if(CONFIG_SECURITYIP)
             bk_mbedtls_alt/bk_hash_alt_common.c
 			)
 endif()
-endif()
 
-if (CONFIG_HTTPS)
-	list(APPEND srcs
-		"port/net_sockets.c"
-		)
+
+list(APPEND srcs
+    "port/net_sockets.c"
+)
 endif()
 
 armino_component_register(SRCS "${srcs}"
@@ -131,7 +130,7 @@ armino_component_register(SRCS "${srcs}"
 	PRIV_REQUIRES bk_common lwip_intf_v2_1
 	)
 
-if (NOT CONFIG_MBEDTLS_ACCELERATOR)
+if (CONFIG_MBEDTLS)
 unset(c_compile_options)
 list(APPEND c_compile_options "-DMBEDTLS_CONFIG_FILE=\"tls_config.h\"")
 armino_build_set_property(C_COMPILE_OPTIONS "${c_compile_options}" APPEND)

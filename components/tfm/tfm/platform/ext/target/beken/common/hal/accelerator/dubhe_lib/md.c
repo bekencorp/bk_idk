@@ -113,7 +113,7 @@ const mbedtls_md_info_t mbedtls_sha512_info = {
 };
 #endif
 
-#if defined(ARM_CE_DUBHE_HASH)
+#if defined(ARM_CE_DUBHE_SM3)
 const mbedtls_md_info_t mbedtls_sm3_info = {
     "SM3",
     MBEDTLS_MD_SM3,
@@ -239,7 +239,7 @@ const mbedtls_md_info_t *mbedtls_md_info_from_type( mbedtls_md_type_t md_type )
         case MBEDTLS_MD_SHA512:
             return( &mbedtls_sha512_info );
 #endif
-#if defined(ARM_CE_DUBHE_HASH)
+#if defined(ARM_CE_DUBHE_SM3)
         case MBEDTLS_MD_SM3:
             return( &mbedtls_sm3_info );
 #endif

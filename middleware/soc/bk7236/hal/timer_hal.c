@@ -19,12 +19,18 @@
 
 __IRAM_SEC static inline uint32_t timer_hal_get_timer0_cnt(void)
 {
+	volatile uint32_t int_level = 0;
+	uint32_t cnt = 0;
+	int_level = rtos_enter_critical();
 	TIMER0_REG_SET(8, 2, 3, 0);
 	TIMER0_REG_SET(8, 0, 0, 1);
 	while (REG_READ((SOC_TIMER0_REG_BASE + (8 << 2))) & BIT(0));
 
-	return REG_READ(SOC_TIMER0_REG_BASE + (9 << 2));
+	cnt = REG_READ(SOC_TIMER0_REG_BASE + (9 << 2));
+	rtos_exit_critical(int_level);
+	return cnt;
 }
+
 
 __IRAM_SEC static inline uint32_t timer_hal_diff(uint32_t begin, uint32_t end)
 {

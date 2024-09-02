@@ -520,10 +520,13 @@ bk_err_t bk_pwm_set_mode_timer(pwm_chan_t chan);
 
 #if CONFIG_PWM_PHASE_SHIFT
 
-bk_err_t bk_pwm_phase_shift_init(pwm_phase_shift_config_t *shift_config);
+bk_err_t bk_pwm_phase_shift_init(const pwm_phase_shift_config_t *shift_config);
 bk_err_t bk_pwm_phase_shift_deinit(void);
 bk_err_t bk_pwm_phase_shift_start(void);
 bk_err_t bk_pwm_phase_shift_stop(void);
+bk_err_t bk_pwm_phase_shift_set_duty_and_update(const pwm_phase_shift_config_t *shift_config);
+bk_err_t bk_pwm_phase_shift_set_duty(pwm_chan_t chan, uint32_t duty_cycle);
+bk_err_t bk_pwm_phase_shift_update_duty(void);
 
 #endif
 

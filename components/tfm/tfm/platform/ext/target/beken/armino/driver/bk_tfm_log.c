@@ -16,6 +16,7 @@
 #include <stdarg.h>
 #include "uart_stdout.h"
 #include "components/log.h"
+#include "driver/efuse.h"
 #include "bk_tfm_log.h"
 #include "sdkconfig.h"
 
@@ -47,6 +48,10 @@ void printf_word_buf_hex(const uint8_t *ptr, size_t buflen)
 	unsigned char *buf = (unsigned char*)ptr;
 	uint32_t *word_buf;
 	int i, j, unalign_cnt = ((uint32_t)buf & 0x3);
+
+	if (!efuse_is_info_log_enabled()) {
+		return;
+	}
 
 	for(i = 0; i < unalign_cnt; i ++)
 	{
@@ -95,6 +100,10 @@ void printf_buf_hex(const uint8_t *ptr, size_t buflen)
 
 void bk_tfm_dump_buf(const char *str, const uint8_t *buf, uint32_t len)
 {
+	if (!efuse_is_info_log_enabled()) {
+		return;
+	}
+
 	printf("%s\r\n", str);
 	for (int i = 0; i < len; i++) {
 		if (i && (i % 32) == 0) {

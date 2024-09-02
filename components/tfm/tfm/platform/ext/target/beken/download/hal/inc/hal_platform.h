@@ -37,7 +37,7 @@ void hal_jtag_disable(void);
 void control_set_to_flash_not_enable_jtag(void);
 
 #define CORTEX_M33_REG_DAUTHCTRL           0xE000EE04
-#define CORTEX_M33_CPU_DEBUG_ENABLE_VALUE  0x0000000F
-#define CORTEX_M33_CPU_DEBUG_DISABLE_VALUE 0x00000005
+#define CORTEX_M33_CPU_DEBUG_ENABLE_VALUE  0x0000000A
+#define CORTEX_M33_CPU_DEBUG_DISABLE_VALUE 0x00000000
 
 #endif /* __HAL_PLATFORM_H__ */

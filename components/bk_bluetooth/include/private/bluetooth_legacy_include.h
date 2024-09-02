@@ -120,8 +120,8 @@ ble_err_t bk_ble_hci_set_phy(
     ble_set_phy_t *le_set_phy,
     ble_cmd_cb_t callback);
 
-ble_err_t bk_ble_set_local_name(     uint8_t *name, uint8_t name_len,  ble_cmd_cb_t callback);
-ble_err_t bk_ble_get_local_name(     ble_cmd_cb_t callback);
+ble_err_t bk_ble_set_local_name(uint8_t *name, uint8_t name_len,  ble_cmd_cb_t callback);
+ble_err_t bk_ble_get_local_name(ble_cmd_cb_t callback);
 
 
 void bk_ble_bt_gatt_db_get_char_val_hndl(GATT_DB_HANDLE *gdbh, ATT_ATTR_HANDLE *attr_handle);

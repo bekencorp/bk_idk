@@ -23,6 +23,7 @@ extern "C" {
 #endif
 
 #define ADC_LL_REG_BASE(_adc_unit_id)    (SOC_SADC_REG_BASE)
+#define ANALOG_CHANNEL 0x0B81
 
 static inline void adc_ll_soft_reset(adc_hw_t *hw)
 {
@@ -231,20 +232,21 @@ static inline bool adc_ll_is_analog_channel(adc_hw_t *hw, int id)
 	//ADC6	GPIO21
 	//ADC7	vtemp
 	//ADC8	tssio
-	//ADC9	vout_td
-	//ADC10	NA
+	//ADC9	touch
+	//ADC10	GPIO8
 	//ADC11	vpeak_lo
-	//ADC12	NA
-	//ADC13	NA
-	//ADC14	gnd
-	//ADC15	vrefp
-	//analog channel map: B11001011 10000001 = 0xCB81
-	return (0xCB81 & (1 << id));
+	//ADC12	GPIO0
+	//ADC13	GPIO1
+	//ADC14	GPIO12
+	//ADC15	GPIO13
+	//analog channel map: B00001011 10000001 = 0x0B81
+	return (ANALOG_CHANNEL & (1 << id));
 }
 
 static inline bool adc_ll_is_digital_channel(adc_hw_t *hw, int id)
 {
-	return ((id >= SOC_ADC_CHAN_MIN) && (id <= SOC_ADC_CHAN_MAX));
+	//digital channel map: B11110100 01111110 = 0x0B81
+	return ((~ANALOG_CHANNEL) & (1 << id));
 }
 
 #define ADC_INIT_SATURATE_MODE  ADC_SATURATE_MODE_1

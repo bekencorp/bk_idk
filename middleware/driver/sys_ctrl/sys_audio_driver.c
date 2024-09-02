@@ -237,6 +237,16 @@ uint32_t sys_drv_aud_dacg_set(uint32_t value)
 	return SYS_DRV_SUCCESS;
 }
 
+uint32_t sys_drv_aud_dacg_get(void)
+{
+	uint32_t ret = 0;
+	uint32_t int_level = sys_drv_enter_critical();
+
+	ret = sys_hal_aud_dacg_get();
+	sys_drv_exit_critical(int_level);
+	return ret;
+}
+
 uint32_t sys_drv_aud_int_en(uint32_t value)
 {
 	uint32_t int_level = sys_drv_enter_critical();
@@ -326,6 +336,24 @@ uint32_t sys_drv_dmic_clk_div_set(uint32_t value)
 	uint32_t int_level = sys_drv_enter_critical();
 
 	sys_hal_dmic_clk_div_set(value);
+	sys_drv_exit_critical(int_level);
+	return SYS_DRV_SUCCESS;
+}
+
+uint32_t sys_drv_aud_dac_bypass_dwa_en(uint32_t value)
+{
+	uint32_t int_level = sys_drv_enter_critical();
+
+	sys_hal_aud_dac_bypass_dwa_en(value);
+	sys_drv_exit_critical(int_level);
+	return SYS_DRV_SUCCESS;
+}
+
+uint32_t sys_drv_aud_dac_dacmute_en(uint32_t value)
+{
+	uint32_t int_level = sys_drv_enter_critical();
+
+	sys_hal_aud_dac_dacmute_en(value);
 	sys_drv_exit_critical(int_level);
 	return SYS_DRV_SUCCESS;
 }

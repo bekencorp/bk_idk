@@ -48,6 +48,9 @@
 typedef struct
 {
     uint8_t is_oneshot;
+    uint32_t ms;
+    void *cb;
+    void *arg;
     uint32_t len;
     uint32_t data[0];
 } bluetooth_timer_t;
@@ -86,33 +89,33 @@ static bk_err_t bluetooth_int_isr_register_wrapper(uint8_t type, void *isr, void
     return bk_int_isr_register(src, (int_group_isr_t)isr, arg);
 }
 
-static bk_err_t init_queue_wrapper(void **queue, const char *name, uint32_t message_size, uint32_t number_of_messages )
+static bk_err_t init_queue_wrapper(void **queue, const char *name, uint32_t message_size, uint32_t number_of_messages)
 {
     return rtos_init_queue(queue, name, message_size, number_of_messages);
 }
 
-static bk_err_t deinit_queue_wrapper( void **queue )
+static bk_err_t deinit_queue_wrapper(void **queue)
 {
     return rtos_deinit_queue(queue);
 }
 
-static bk_err_t pop_from_queue_wrapper( void **queue, void *message, uint32_t timeout_ms )
+static bk_err_t pop_from_queue_wrapper(void **queue, void *message, uint32_t timeout_ms)
 {
     return rtos_pop_from_queue(queue, message, timeout_ms);
 }
 
-static bk_err_t push_to_queue_wrapper( void **queue, void *message, uint32_t timeout_ms )
+static bk_err_t push_to_queue_wrapper(void **queue, void *message, uint32_t timeout_ms)
 {
     return rtos_push_to_queue(queue, message, timeout_ms);
 }
 
-static bk_err_t create_thread_wrapper( void **thread, uint8_t priority, const char *name,
-                                       void *function, uint32_t stack_size, void *arg )
+static bk_err_t create_thread_wrapper(void **thread, uint8_t priority, const char *name,
+                                      void *function, uint32_t stack_size, void *arg)
 {
     return rtos_create_thread(thread, priority, name, function, stack_size, arg);
 }
 
-static bk_err_t delete_thread_wrapper( void **thread )
+static bk_err_t delete_thread_wrapper(void **thread)
 {
     return rtos_delete_thread(thread);
 }
@@ -326,6 +329,12 @@ static void ble_cal_recover_txpwr_wrapper(void)
     ble_cal_recover_txpwr();
 }
 
+static void ble_cal_enter_txpwr_wrapper()
+{
+    extern void ble_cal_enter_txpwr(void);
+    ble_cal_enter_txpwr();
+}
+
 static bk_err_t gpio_dev_unmap_wrapper(uint32_t gpio_id)
 {
     return gpio_dev_unmap(gpio_id);
@@ -370,15 +379,15 @@ static bk_err_t uart_take_rx_isr_wrapper(uint8_t id, void *isr, void *param)
 
 static void ble_vote_rf_ctrl_wrapper(uint8_t cmd)
 {
-    rf_module_vote_ctrl(cmd,RF_BY_BLE_BIT);
+    rf_module_vote_ctrl(cmd, RF_BY_BLE_BIT);
 }
 
 static void ble_ate_vote_rf_ctrl_wrapper(uint8_t cmd)
 {
-    rf_module_vote_ctrl(cmd,RF_BY_ATE_BT_BIT);
+    rf_module_vote_ctrl(cmd, RF_BY_ATE_BT_BIT);
 }
 
-static bk_err_t delay_milliseconds_wrapper( uint32_t num_ms )
+static bk_err_t delay_milliseconds_wrapper(uint32_t num_ms)
 {
     return rtos_delay_milliseconds(num_ms);
 }
@@ -393,7 +402,7 @@ static void enable_int_wrapper(uint32_t int_level)
     rtos_exit_critical(int_level);
 }
 
-static bk_err_t gpio_disable_pull_wrapper(uint32_t gpio_id )
+static bk_err_t gpio_disable_pull_wrapper(uint32_t gpio_id)
 {
     return bk_gpio_disable_pull(gpio_id);
 }
@@ -447,45 +456,45 @@ static void uart_enable_wrapper(uint8_t uart_id, uint8_t enable, uint32_t band)
 
         switch (band)
         {
-        case 115200:
-            config.baud_rate = UART_BAUDRATE_115200;
-            break;
+            case 115200:
+                config.baud_rate = UART_BAUDRATE_115200;
+                break;
 
-        case 921600:
-            config.baud_rate = UART_BAUDRATE_921600;
-            break;
+            case 921600:
+                config.baud_rate = UART_BAUDRATE_921600;
+                break;
 
-        case 3250000:
-            config.baud_rate = UART_BAUDRATE_3250000;
-            break;
+            case 3250000:
+                config.baud_rate = UART_BAUDRATE_3250000;
+                break;
 
-        case 2000000:
-        default:
-            config.baud_rate = UART_BAUDRATE_2000000;
-            break;
+            case 2000000:
+            default:
+                config.baud_rate = UART_BAUDRATE_2000000;
+                break;
         }
 
         switch (uart_id)
         {
-        case UART_ID_0:
-            gpio_dev_unmap(GPIO_10);
-            gpio_dev_unmap(GPIO_11);
-            break;
+            case UART_ID_0:
+                gpio_dev_unmap(GPIO_10);
+                gpio_dev_unmap(GPIO_11);
+                break;
 
-        case UART_ID_1:
-            gpio_dev_unmap(GPIO_0);
-            gpio_dev_unmap(GPIO_1);
-            break;
+            case UART_ID_1:
+                gpio_dev_unmap(GPIO_0);
+                gpio_dev_unmap(GPIO_1);
+                break;
 
-        case UART_ID_2:
-            gpio_dev_unmap(GPIO_40);
-            gpio_dev_unmap(GPIO_41);
-            break;
+            case UART_ID_2:
+                gpio_dev_unmap(GPIO_40);
+                gpio_dev_unmap(GPIO_41);
+                break;
 
-        default:
-            bk_printf("%s uart_id err %d\n", __func__, uart_id);
-            return;
-            break;
+            default:
+                bk_printf("%s uart_id err %d\n", __func__, uart_id);
+                return;
+                break;
         }
 
         ret = bk_uart_init(uart_id, &config);
@@ -623,7 +632,7 @@ static void bluetooth_timer2_handler_cb(void *arg1, void *arg2)
     func(arg2);
 }
 
-static bool is_timer_init_wrapper(void *timer )
+static bool is_timer_init_wrapper(void *timer)
 {
     bluetooth_timer_t *tmp = (typeof(tmp))timer;
 
@@ -668,6 +677,9 @@ static int32_t init_timer_ext_wrapper(void **timer, uint32_t time_ms, void *func
     os_memset(tmp, 0, size);
     tmp->len = size;
     tmp->is_oneshot = oneshot;
+    tmp->cb = function;
+    tmp->arg = arg;
+    tmp->ms = time_ms;
 
     if (oneshot)
     {
@@ -690,7 +702,7 @@ static int32_t init_timer_ext_wrapper(void **timer, uint32_t time_ms, void *func
     return ret;
 }
 
-static int32_t init_timer_wrapper(void **timer, uint32_t time_ms, void *function, void *arg )
+static int32_t init_timer_wrapper(void **timer, uint32_t time_ms, void *function, void *arg)
 {
     return init_timer_ext_wrapper(timer, time_ms, function, arg, 0);
 }
@@ -714,7 +726,7 @@ static int32_t start_timer_wrapper(void *timer)
     }
 }
 
-static bool is_timer_running_wrapper( void *timer)
+static bool is_timer_running_wrapper(void *timer)
 {
     bluetooth_timer_t *tmp = (typeof(tmp))timer;
 
@@ -733,7 +745,7 @@ static bool is_timer_running_wrapper( void *timer)
     }
 }
 
-static int32_t stop_timer_wrapper( void *timer )
+static int32_t stop_timer_wrapper(void *timer)
 {
     bluetooth_timer_t *tmp = (typeof(tmp))timer;
 
@@ -752,7 +764,7 @@ static int32_t stop_timer_wrapper( void *timer )
     }
 }
 
-static int32_t deinit_timer_wrapper( void *timer )
+static int32_t deinit_timer_wrapper(void *timer)
 {
     bk_err_t ret = 0;
     bluetooth_timer_t *tmp = (typeof(tmp))timer;
@@ -776,7 +788,7 @@ static int32_t deinit_timer_wrapper( void *timer )
     return ret;
 }
 
-static int32_t timer_change_period( void *timer, uint32_t time_ms)
+static int32_t timer_change_period(void *timer, uint32_t time_ms)
 {
     bluetooth_timer_t *tmp = (typeof(tmp))timer;
 
@@ -787,12 +799,12 @@ static int32_t timer_change_period( void *timer, uint32_t time_ms)
 
     if (tmp->is_oneshot)
     {
-        //todo: oneshot should use oneshot api, wait impl
-        return rtos_change_period( (beken_timer_t *)tmp->data, time_ms);
+        tmp->ms = time_ms;
+        return rtos_oneshot_reload_timer_ex((beken2_timer_t *)tmp->data, tmp->ms, bluetooth_timer2_handler_cb, tmp->cb, tmp->arg);
     }
     else
     {
-        return rtos_change_period( (beken_timer_t *)tmp->data, time_ms);
+        return rtos_change_period((beken_timer_t *)tmp->data, time_ms);
     }
 }
 
@@ -866,7 +878,7 @@ static void send_uart2(uint8_t uart_id, const char *fmt, ...)
     va_end(args);
 }
 
-static void dump_bytes (uint8_t *buffer, uint16_t length)
+static void dump_bytes(uint8_t *buffer, uint16_t length)
 {
     char hex_stream[49U] = {0};
     uint32_t i;
@@ -886,7 +898,7 @@ static void dump_bytes (uint8_t *buffer, uint16_t length)
 
         offset += 3U;
 
-        if  (offset == 48)
+        if (offset == 48)
         {
             hex_stream[offset] = '\0';
             send_uart2(UART_ID_1, hex_stream);
@@ -925,14 +937,14 @@ static size_t get_sys_debug_config_addr(uint32_t index)
 {
     switch (index)
     {
-    case 0:
-        return SYS_SYS_DEBUG_CONFIG0_ADDR;
-        break;
+        case 0:
+            return SYS_SYS_DEBUG_CONFIG0_ADDR;
+            break;
 
-    default:
-    case 1:
-        return SYS_SYS_DEBUG_CONFIG1_ADDR;
-        break;
+        default:
+        case 1:
+            return SYS_SYS_DEBUG_CONFIG1_ADDR;
+            break;
     }
 }
 
@@ -941,10 +953,10 @@ static uint32_t get_chipid(uint32_t ver)
     switch (ver)
     {
 
-    default:
-    case 4:
-        return PM_CHIP_ID_MPW_V4;
-        break;
+        default:
+        case 4:
+            return PM_CHIP_ID_MPW_V4;
+            break;
     }
 
     return 0;
@@ -1020,12 +1032,12 @@ static int32_t deinit_semaphore(void **semaphore)
 
 static int reg_run_cmd(const char *content, int cnt)
 {
-    #if CONFIG_CLI && CONFIG_BKREG
+#if CONFIG_CLI && CONFIG_BKREG
     extern int bkreg_run_command(const char *cmd, int cnt);
     return bkreg_run_command(content, cnt);
-    #else
+#else
     return 0;
-    #endif
+#endif
 }
 
 static uint32_t manual_calibration_txpwr_table_ready_in_flash()
@@ -1036,27 +1048,29 @@ static uint32_t manual_calibration_txpwr_table_ready_in_flash()
 
 static uint32_t manual_calibration_is_in_cali_mode()
 {
-     extern UINT32 manual_cal_is_in_rftest_mode(void);
-     return manual_cal_is_in_rftest_mode();
+    extern UINT32 manual_cal_is_in_rftest_mode(void);
+    return manual_cal_is_in_rftest_mode();
 }
 
 static double bk_driver_get_rc32k_freq()
 {
-    if(BT_LPO_SRC_X32K == clk_32k_customer_config_get_wrapper() && BT_LPO_SRC_X32K == lpo_src_get_wrapper())
+    if (BT_LPO_SRC_X32K == clk_32k_customer_config_get_wrapper() && BT_LPO_SRC_X32K == lpo_src_get_wrapper())
     {
         return BLUETOOTH_CLK_32768;
-    }else
+    }
+    else
     {
-        if(BT_LPO_SRC_DIVD == lpo_src_get_wrapper())
+        if (BT_LPO_SRC_DIVD == lpo_src_get_wrapper())
         {
             return BLUETOOTH_CLK_32K;
-        }else
+        }
+        else
         {
-            #if CONFIG_CKMN
-                return bk_ckmn_driver_get_rc32k_freq();
-            #else
-                return BLUETOOTH_CLK_32K;
-            #endif
+#if CONFIG_CKMN
+            return bk_ckmn_driver_get_rc32k_freq();
+#else
+            return BLUETOOTH_CLK_32K;
+#endif
         }
     }
 }
@@ -1079,6 +1093,15 @@ static void ble_exit_dut()
 {
     extern void ble_cal_exit_dut();
     ble_cal_exit_dut();
+}
+
+static uint8_t get_bluetooth_power_level()
+{
+#if CONFIG_BLE_USE_HIGH_POWER_LEVEL
+    return 12;
+#else
+    return 6;
+#endif
 }
 
 //warning: bt_osi_funcs must be data section, otherwise a2dp_source_pcm and a2dp_source_decode will trig watchdog !!!!!!!!
@@ -1118,6 +1141,7 @@ static struct bt_osi_funcs_t bt_osi_funcs =
     ._get_ble_pwr_idx = get_ble_pwr_idx_wrapper,
     ._ble_cal_set_txpwr = ble_cal_set_txpwr_wrapper,
     ._ble_cal_recover_txpwr = ble_cal_recover_txpwr_wrapper,
+    ._ble_cal_enter_txpwr = ble_cal_enter_txpwr_wrapper,
     ._gpio_dev_unmap = gpio_dev_unmap_wrapper,
     ._gpio_dev_map = gpio_dev_map_wrapper,
     ._set_printf_enable = set_printf_enable_wrapper,
@@ -1188,6 +1212,7 @@ static struct bt_osi_funcs_t bt_osi_funcs =
     ._flush_dcache = flush_dcache_wrapper,
     ._ble_enter_dut = ble_enter_dut,
     ._ble_exit_dut = ble_exit_dut,
+    ._get_bluetooth_power_level = get_bluetooth_power_level,
 };
 
 int bk_bt_os_adapter_init(void)
@@ -1201,7 +1226,3 @@ int bk_bt_os_adapter_init(void)
 
     return ret;
 }
-
-
-
-

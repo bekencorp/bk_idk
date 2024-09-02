@@ -12,6 +12,8 @@ menu "BK_system"
 				bool "BASE_MAC_FROM_RF_OTP_FLASH"
 			config NEW_MAC_POLICY
 				bool "NEW_MAC_POLICY"
+			config BASE_MAC_FROM_OTP1
+				bool "BASE_MAC_FROM_OTP1"
 		endchoice
 
 		config RANDOM_MAC_ADDR
@@ -21,6 +23,10 @@ menu "BK_system"
 		config BK_MAC_ADDR_CHECK
 			bool "Enable Beken Mac Addr Check"
 			default n
+
+		config CUS_MAC_MASK
+			hex "Set Customize Mac Address Mask"
+			default 0
 	endmenu
 
 	menu "Print Config"
@@ -46,5 +52,10 @@ menu "BK_system"
 		config SMP_SYNC_PRINTF
 			bool "smp sync printf"
 			default n
+
+		config UART_PRINT_BAUD_RATE
+			depends on SYS_PRINT_DEV_UART
+			int "uart print baud rate"
+			default "115200"
 	endmenu
 endmenu

@@ -60,129 +60,310 @@ typedef struct {
 
 #define AUXS_CLK_CIS_ENABLE         1
 
+extern uint32_t g_n_uvc_dev;
+
 static uint8_t list_cnt = 0;
 static camera_packet_t **camera_packet_list = NULL;
+static camera_packet_t ** camera_packet_list_dual = NULL;
 
 bk_err_t bk_video_camera_packet_list_deinit(void)
 {
+	LOGI("%s, %d\r\n", __func__, __LINE__);
 	if (list_cnt == 0)
 	{
 		return BK_OK;
 	}
 
-	for (uint8_t j = 0; j < list_cnt; j++)
-	{
-		if (camera_packet_list[j] == NULL)
-			continue;
+    if(camera_packet_list != NULL)
+    {
+    	for (uint8_t j = 0; j < list_cnt; j++)
+    	{
+    		if (camera_packet_list[j] == NULL)
+    			continue;
 
-		if (camera_packet_list[j]->data_buffer)
-		{
-			os_free(camera_packet_list[j]->data_buffer);
-			camera_packet_list[j]->data_buffer = NULL;
-		}
+    		if (camera_packet_list[j]->data_buffer)
+    		{
+    			os_free(camera_packet_list[j]->data_buffer);
+    			camera_packet_list[j]->data_buffer = NULL;
+    		}
 
-		if (camera_packet_list[j]->state)
-		{
-			os_free(camera_packet_list[j]->state);
-			camera_packet_list[j]->state = NULL;
-		}
+    		if (camera_packet_list[j]->state)
+    		{
+    			os_free(camera_packet_list[j]->state);
+    			camera_packet_list[j]->state = NULL;
+    		}
 
-		if (camera_packet_list[j]->num_byte)
-		{
-			os_free(camera_packet_list[j]->num_byte);
-			camera_packet_list[j]->num_byte = NULL;
-		}
+    		if (camera_packet_list[j]->num_byte)
+    		{
+    			os_free(camera_packet_list[j]->num_byte);
+    			camera_packet_list[j]->num_byte = NULL;
+    		}
 
-		if (camera_packet_list[j]->actual_num_byte)
-		{
-			os_free(camera_packet_list[j]->actual_num_byte);
-			camera_packet_list[j]->actual_num_byte = NULL;
-		}
+    		if (camera_packet_list[j]->actual_num_byte)
+    		{
+    			os_free(camera_packet_list[j]->actual_num_byte);
+    			camera_packet_list[j]->actual_num_byte = NULL;
+    		}
 
-		os_free(camera_packet_list[j]);
-		camera_packet_list[j] = NULL;
-	}
+    		os_free(camera_packet_list[j]);
+    		camera_packet_list[j] = NULL;
+    	}
 
-	os_free(camera_packet_list);
-	camera_packet_list = NULL;
+    	os_free(camera_packet_list);
+    	camera_packet_list = NULL;
+    }
+
+    if(camera_packet_list_dual != NULL)
+    {
+        for (uint8_t j = 0; j < list_cnt; j++)
+        {
+            if (camera_packet_list_dual[j] == NULL)
+                continue;
+
+            if (camera_packet_list_dual[j]->data_buffer)
+            {
+                os_free(camera_packet_list_dual[j]->data_buffer);
+                camera_packet_list_dual[j]->data_buffer = NULL;
+            }
+
+            if (camera_packet_list_dual[j]->state)
+            {
+                os_free(camera_packet_list_dual[j]->state);
+                camera_packet_list_dual[j]->state = NULL;
+            }
+
+            if (camera_packet_list_dual[j]->num_byte)
+            {
+                os_free(camera_packet_list_dual[j]->num_byte);
+                camera_packet_list_dual[j]->num_byte = NULL;
+            }
+
+            if (camera_packet_list_dual[j]->actual_num_byte)
+            {
+                os_free(camera_packet_list_dual[j]->actual_num_byte);
+                camera_packet_list_dual[j]->actual_num_byte = NULL;
+            }
+
+            os_free(camera_packet_list_dual[j]);
+            camera_packet_list_dual[j] = NULL;
+        }
+
+        os_free(camera_packet_list_dual);
+        camera_packet_list_dual = NULL;
+    }
 
 	list_cnt = 0;
-
 	return BK_OK;
 }
 
-bk_err_t bk_video_camera_packet_list_init(mem_location_t locate, uint16_t MaxPacketSize, uint8_t max_packet_cnt, uint8_t cnt)
+bk_err_t bk_video_camera_packet_list_init(mem_location_t locate, uint16_t MaxPacketSize, uint8_t max_packet_cnt, uint8_t cnt, uint32_t idx_uvc)
 {
 	uint8_t i = 0;
+    uint32_t idx = idx_uvc;
 
-	if (camera_packet_list != NULL)
-	{
-		bk_video_camera_packet_list_free();
-		return BK_OK;
-	}
+    if (idx_uvc == 0)
+    {
+    	if (camera_packet_list != NULL)
+    	{
+    		bk_video_camera_packet_list_free();
+    		return BK_OK;
+    	}
 
-	list_cnt = cnt;
+    	list_cnt = cnt;
 
-	camera_packet_list = (camera_packet_t **)os_malloc(sizeof(camera_packet_t *) * cnt);
-	if (camera_packet_list == NULL)
-	{
-		bk_video_camera_packet_list_deinit();
-		return BK_ERR_NO_MEM;
-	}
+    	camera_packet_list = (camera_packet_t **)os_malloc(sizeof(camera_packet_t *) * cnt);
+    	if (camera_packet_list == NULL)
+    	{
+    		bk_video_camera_packet_list_deinit();
+    		return BK_ERR_NO_MEM;
+    	}
 
-	for (i = 0; i < list_cnt; i++)
-	{
-		camera_packet_list[i] = (camera_packet_t *)os_malloc(sizeof(camera_packet_t));
+    	for (i = 0; i < list_cnt; i++)
+    	{
+    		camera_packet_list[i] = (camera_packet_t *)os_malloc(sizeof(camera_packet_t));
+            camera_packet_list[i]->uvc_dev_id = idx;
 
-		if (camera_packet_list[i] == NULL)
-		{
-			bk_video_camera_packet_list_deinit();
-			return BK_ERR_NO_MEM;
-		}
+    		if (camera_packet_list[i] == NULL)
+    		{
+    			bk_video_camera_packet_list_deinit();
+    			return BK_ERR_NO_MEM;
+    		}
 
-		camera_packet_list[i]->locate = locate;
+    		camera_packet_list[i]->locate = locate;
 
-		//camera_packet_list[i]->state = (cam_stream_state_t *)os_malloc(sizeof(cam_stream_state_t) * max_packet_cnt);
-		camera_packet_list[i]->state = (uint8_t *)os_malloc(sizeof(uint8_t) * max_packet_cnt);
-		if (camera_packet_list[i]->state == NULL)
-		{
-			bk_video_camera_packet_list_deinit();
-			return BK_ERR_NO_MEM;
-		}
+    	//  camera_packet_list[i]->state = (cam_stream_state_t *)os_malloc(sizeof(cam_stream_state_t) * max_packet_cnt);
+    		camera_packet_list[i]->state = (uint8_t *)os_malloc(sizeof(uint8_t) * max_packet_cnt);
+    		if (camera_packet_list[i]->state == NULL)
+    		{
+    			bk_video_camera_packet_list_deinit();
+    			return BK_ERR_NO_MEM;
+    		}
 
-		os_memset(camera_packet_list[i]->state, 1, max_packet_cnt);
+    		os_memset(camera_packet_list[i]->state, 1, max_packet_cnt);
 
-		camera_packet_list[i]->num_byte = (uint16_t *)os_malloc(sizeof(uint16_t) * max_packet_cnt);
-		if (camera_packet_list[i]->num_byte == NULL)
-		{
-			bk_video_camera_packet_list_deinit();
-			return BK_ERR_NO_MEM;
-		}
+            if (locate == CAMERA_MEM_IN_PSRAM)
+            {
+                camera_packet_list[i]->num_byte = (uint16_t *)psram_malloc(sizeof(uint16_t) * max_packet_cnt);
+            }
+            else
+            {
+                camera_packet_list[i]->num_byte = (uint16_t *)os_malloc(sizeof(uint16_t) * max_packet_cnt);
+            }
 
-		for (int j = 0; j < max_packet_cnt; j++)
-			camera_packet_list[i]->num_byte[j] = MaxPacketSize;
+    		if (camera_packet_list[i]->num_byte == NULL)
+    		{
+    			bk_video_camera_packet_list_deinit();
+    			return BK_ERR_NO_MEM;
+    		}
 
-		camera_packet_list[i]->actual_num_byte = (uint16_t *)os_malloc(sizeof(uint16_t) * max_packet_cnt);
-		if (camera_packet_list[i]->actual_num_byte == NULL)
-		{
-			bk_video_camera_packet_list_deinit();
-			return BK_ERR_NO_MEM;
-		}
-		os_memset(camera_packet_list[i]->actual_num_byte, 0, sizeof(uint16_t) * max_packet_cnt);
+    		for (int j = 0; j < max_packet_cnt; j++)
+    			camera_packet_list[i]->num_byte[j] = MaxPacketSize;
 
-		camera_packet_list[i]->data_buffer_size = MaxPacketSize * max_packet_cnt;
-		if (locate == CAMERA_MEM_IN_PSRAM)
-			camera_packet_list[i]->data_buffer = (uint8_t *)psram_malloc(camera_packet_list[i]->data_buffer_size);
-		else
-			camera_packet_list[i]->data_buffer = (uint8_t *)os_malloc(camera_packet_list[i]->data_buffer_size);
+            if (locate == CAMERA_MEM_IN_PSRAM)
+            {
+                camera_packet_list[i]->actual_num_byte = (uint16_t *)psram_malloc(sizeof(uint16_t) * max_packet_cnt);
+            }
+            else
+            {
+                camera_packet_list[i]->actual_num_byte = (uint16_t *)os_malloc(sizeof(uint16_t) * max_packet_cnt);
+            }
 
-		LOGD("camera_packet_list[%d]->data_buffer:%p\r\n", i, camera_packet_list[i]->data_buffer);
+    		if (camera_packet_list[i]->actual_num_byte == NULL)
+    		{
+    			bk_video_camera_packet_list_deinit();
+    			return BK_ERR_NO_MEM;
+    		}
+    		os_memset(camera_packet_list[i]->actual_num_byte, 0, sizeof(uint16_t) * max_packet_cnt);
 
-		camera_packet_list[i]->num_packets = max_packet_cnt;
+    		camera_packet_list[i]->data_buffer_size = MaxPacketSize * max_packet_cnt;
 
-		camera_packet_list[i]->packet_state = CAM_STREAM_IDLE;
-	}
+    		if (locate == CAMERA_MEM_IN_PSRAM)
+            {
+                camera_packet_list[i]->data_buffer = (uint8_t *)psram_malloc(camera_packet_list[i]->data_buffer_size);
+            }
+    		else
+            {
+                camera_packet_list[i]->data_buffer = (uint8_t *)os_malloc(camera_packet_list[i]->data_buffer_size);
+            }
 
+    		if (camera_packet_list[i]->data_buffer == NULL)
+    		{
+    			bk_video_camera_packet_list_deinit();
+    			return BK_ERR_NO_MEM;
+    		}
+
+    		LOGD("camera_packet_list[%d]->data_buffer:%p\r\n", i, camera_packet_list[i]->data_buffer);
+
+    		camera_packet_list[i]->num_packets = max_packet_cnt;
+
+    		camera_packet_list[i]->packet_state = CAM_STREAM_IDLE;
+    	}
+    }
+    else if (idx_uvc == 1)
+    {
+    	if (camera_packet_list_dual != NULL)
+    	{
+    		bk_video_camera_packet_list_dual_free();
+    		return BK_OK;
+    	}
+
+    	list_cnt = cnt;
+
+    	camera_packet_list_dual = (camera_packet_t **)os_malloc(sizeof(camera_packet_t *) * cnt);
+        LOGD("size of camera_packet_list_dual pointer : %d\n", (sizeof(camera_packet_t *) * cnt));
+    	if (camera_packet_list_dual == NULL)
+    	{
+    		bk_video_camera_packet_list_deinit();
+    		return BK_ERR_NO_MEM;
+    	}
+
+    	for (i = 0; i < list_cnt; i++)
+    	{
+    		camera_packet_list_dual[i] = (camera_packet_t *)os_malloc(sizeof(camera_packet_t));
+            camera_packet_list_dual[i]->uvc_dev_id = idx;
+
+    		if (camera_packet_list_dual[i] == NULL)
+    		{
+    			bk_video_camera_packet_list_deinit();
+    			return BK_ERR_NO_MEM;
+    		}
+
+    		camera_packet_list_dual[i]->locate = locate;
+
+            if (locate == CAMERA_MEM_IN_PSRAM)
+            {
+                camera_packet_list_dual[i]->state = (uint8_t *)os_malloc(sizeof(uint8_t) * max_packet_cnt);
+            }
+            else
+            {
+                camera_packet_list_dual[i]->state = (uint8_t *)os_malloc(sizeof(uint8_t) * max_packet_cnt);
+            }
+
+    		if (camera_packet_list_dual[i]->state == NULL)
+    		{
+    			bk_video_camera_packet_list_deinit();
+    			return BK_ERR_NO_MEM;
+    		}
+
+    		os_memset(camera_packet_list_dual[i]->state, 1, max_packet_cnt);
+
+            if (locate == CAMERA_MEM_IN_PSRAM)
+            {
+                camera_packet_list_dual[i]->num_byte = (uint16_t *)psram_malloc(sizeof(uint16_t) * max_packet_cnt);
+            }
+            else
+            {
+                camera_packet_list_dual[i]->num_byte = (uint16_t *)os_malloc(sizeof(uint16_t) * max_packet_cnt);
+            }
+
+    		if (camera_packet_list_dual[i]->num_byte == NULL)
+    		{
+    			bk_video_camera_packet_list_deinit();
+    			return BK_ERR_NO_MEM;
+    		}
+
+    		for (int j = 0; j < max_packet_cnt; j++)
+    			camera_packet_list_dual[i]->num_byte[j] = MaxPacketSize;
+
+            if (locate == CAMERA_MEM_IN_PSRAM)
+            {
+                camera_packet_list_dual[i]->actual_num_byte = (uint16_t *)psram_malloc(sizeof(uint16_t) * max_packet_cnt);
+            }
+            else
+            {
+                camera_packet_list_dual[i]->actual_num_byte = (uint16_t *)os_malloc(sizeof(uint16_t) * max_packet_cnt);
+            }
+
+    		if (camera_packet_list_dual[i]->actual_num_byte == NULL)
+    		{
+    			bk_video_camera_packet_list_deinit();
+    			return BK_ERR_NO_MEM;
+    		}
+    		os_memset(camera_packet_list_dual[i]->actual_num_byte, 0, sizeof(uint16_t) * max_packet_cnt);
+
+    		camera_packet_list_dual[i]->data_buffer_size = MaxPacketSize * max_packet_cnt;
+    		if (locate == CAMERA_MEM_IN_PSRAM)
+            {
+                camera_packet_list_dual[i]->data_buffer = (uint8_t *)psram_malloc(camera_packet_list_dual[i]->data_buffer_size);
+            }
+            else
+            {
+                camera_packet_list_dual[i]->data_buffer = (uint8_t *)os_malloc(camera_packet_list_dual[i]->data_buffer_size);
+            }
+
+    		if (camera_packet_list_dual[i]->data_buffer == NULL)
+    		{
+    			bk_video_camera_packet_list_deinit();
+    			return BK_ERR_NO_MEM;
+    		}
+
+    		LOGI("camera_packet_list_dual[%d]->data_buffer:%p\r\n", i, camera_packet_list_dual[i]->data_buffer);
+
+    		camera_packet_list_dual[i]->num_packets = max_packet_cnt;
+
+    		camera_packet_list_dual[i]->packet_state = CAM_STREAM_IDLE;
+    	}
+    }
 	return BK_OK;
 }
 
@@ -197,7 +378,7 @@ bk_err_t bk_video_camera_packet_list_free(void)
 		{
 			camera_packet_list[i]->state[j] = CAM_STREAM_IDLE;
 			camera_packet_list[i]->actual_num_byte[j] = 0;
-			//camera_packet_list[i]->num_byte[j] = 0;
+		//  camera_packet_list[i]->num_byte[j] = 0;
 		}
 
 		camera_packet_list[i]->packet_state = CAM_STREAM_IDLE;
@@ -205,6 +386,29 @@ bk_err_t bk_video_camera_packet_list_free(void)
 
 	return BK_OK;
 }
+
+bk_err_t bk_video_camera_packet_list_dual_free(void)
+{
+    if (camera_packet_list_dual != NULL)
+    {
+    	for (uint8_t i = 0; i < list_cnt; i++)
+    	{
+    		if (camera_packet_list_dual[i]->packet_state == CAM_STREAM_IDLE)
+    			continue;
+
+    		for (uint8_t j = 0; j < camera_packet_list_dual[i]->num_packets; j++)
+    		{
+    			camera_packet_list_dual[i]->state[j] = CAM_STREAM_IDLE;
+    			camera_packet_list_dual[i]->actual_num_byte[j] = 0;
+			//  camera_packet_list_dual[i]->num_byte[j] = 0;
+    		}
+
+    		camera_packet_list_dual[i]->packet_state = CAM_STREAM_IDLE;
+    	}
+    }
+	return BK_OK;
+}
+
 
 camera_packet_t *bk_video_camera_packet_malloc(void)
 {
@@ -254,7 +458,65 @@ camera_packet_t *bk_video_camera_packet_malloc(void)
 	return camera_packet_list[i];
 }
 
+camera_packet_t *bk_video_camera_packet_dual_malloc(void)
+{
+	uint8_t i = 0;
+
+	GLOBAL_INT_DECLARATION();
+
+	for (i = 0; i < list_cnt; i++)
+	{
+		if (camera_packet_list_dual[i]->packet_state == CAM_STREAM_IDLE)
+		{
+			break;
+		}
+	}
+
+	GLOBAL_INT_DISABLE();
+
+	if (i == list_cnt)
+	{
+		for (i = list_cnt; i > 0; i--)
+		{
+			if (camera_packet_list_dual[i - 1]->packet_state == CAM_STREAM_READY)
+			{
+				LOGW("%s, index:%d [%d,%d,%d,%d]\r\n", __func__, i - 1,
+						camera_packet_list_dual[0]->packet_state,
+						camera_packet_list_dual[1]->packet_state,
+						camera_packet_list_dual[2]->packet_state,
+						camera_packet_list_dual[3]->packet_state);
+				camera_packet_list_dual[i - 1]->packet_state = CAM_STREAM_IDLE;
+				i--;
+				break;
+			}
+		}
+	}
+
+	for (uint8_t j = 0; j < camera_packet_list_dual[i]->num_packets; j++)
+	{
+		camera_packet_list_dual[i]->state[j] = CAM_STREAM_IDLE;
+		camera_packet_list_dual[i]->actual_num_byte[j] = 0;
+	//  camera_packet_list_dual[i]->num_byte[j] = 0;
+	}
+
+	camera_packet_list_dual[i]->packet_state = CAM_STREAM_BUSY;
+
+	GLOBAL_INT_RESTORE();
+
+	return camera_packet_list_dual[i];
+}
+
 void bk_video_camera_packet_free(camera_packet_t *camera_packet)
+{
+	if (camera_packet == NULL)
+		return;
+	GLOBAL_INT_DECLARATION();
+	GLOBAL_INT_DISABLE();
+	camera_packet->packet_state = CAM_STREAM_IDLE;
+	GLOBAL_INT_RESTORE();
+}
+
+void bk_video_camera_packet_dual_free(camera_packet_t *camera_packet)
 {
 	if (camera_packet == NULL)
 		return;
@@ -294,7 +556,48 @@ camera_packet_t *bk_video_camera_packet_pop(void)
 	return camera_packet_list[i];
 }
 
+camera_packet_t *bk_video_camera_packet_dual_pop(void)
+{
+	uint8_t count = 10;
+
+	uint8_t i = 0;
+
+	while (1)
+	{
+		for (i = 0; i < list_cnt; i++)
+		{
+			if (camera_packet_list_dual[i]->packet_state == CAM_STREAM_READY)
+			{
+				break;
+			}
+
+			count--;
+			rtos_delay_milliseconds(5);
+			if (count == 0)
+				break;
+		}
+	};
+
+	if (count == 0 && camera_packet_list_dual[i]->packet_state != CAM_STREAM_READY)
+	{
+		return NULL;
+	}
+
+	return camera_packet_list_dual[i];
+}
+
 void bk_video_camera_packet_push(camera_packet_t *camera_packet)
+{
+	if (camera_packet == NULL)
+		return;
+	GLOBAL_INT_DECLARATION();
+
+	GLOBAL_INT_DISABLE();
+	camera_packet->packet_state = CAM_STREAM_READY;
+	GLOBAL_INT_RESTORE();
+}
+
+void bk_video_camera_packet_dual_push(camera_packet_t *camera_packet)
 {
 	if (camera_packet == NULL)
 		return;
@@ -1012,13 +1315,10 @@ uint8_t *dvp_camera_yuv_base_addr_init(frame_resl_t resolution, yuv_mode_t mode)
 	{
 		if (mode == H264_MODE)
 		{
-			if (resolution.width == 1280 && resolution.height == 720)
-				encode_buffer = (uint8_t *)os_malloc(80 * 1024);
-			else
-				encode_buffer = (uint8_t *)os_malloc(40 * 1024);
+			encode_buffer = (uint8_t *)os_malloc(resolution.width * 32 * 2);
 		}
 		else
-			encode_buffer = (uint8_t *)os_malloc(40 * 1024);
+			encode_buffer = (uint8_t *)os_malloc(resolution.width * 16 * 2);
 
 
 		if (encode_buffer == NULL)

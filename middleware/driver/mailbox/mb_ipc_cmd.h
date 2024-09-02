@@ -41,21 +41,11 @@ enum
 	IPC_FREE_DMA_CHNL,                      /* Client -> Server  */
 	IPC_DMA_CHNL_USER,                      /* Client -> Server  */
 
-	IPC_CPU1_STOP_NOTIFICATION,             /* CPU0 -> CPU1  */
-
 	IPC_CPU1_TRAP_HANDLE_BEGIN,             /* CPU1 -> CPU0  */
 	IPC_CPU1_TRAP_HANDLE_END,               /* CPU1 -> CPU0  */
 
 	IPC_CMD_MAX  = 0x7F,  /* cmd id can NOT great than 0x7F. */
 };
-
-enum
-{
-	IPC_ERASE_IDLE = 0,
-	IPC_ERASE_BUSY,
-	IPC_ERASE_ACK,
-};
-
 
 #if (CONFIG_CPU_CNT > 1)
 
@@ -82,12 +72,6 @@ bk_err_t ipc_send_heart_beat(u32 param);              // CPU1 heart beat.
 bk_err_t ipc_send_trap_handle_begin(void);
 bk_err_t ipc_send_trap_handle_end(void);
 #endif  /* !CONFIG_SYS_CPU0 */
-
-#if CONFIG_SYS_CPU0
-u32 ipc_send_stop_cpu1_send_notifications();
-bk_err_t ipc_send_flash_op_prepare(void);                 //CPU0 notify CPU1 before flash operation
-bk_err_t ipc_send_flash_op_finish(void);                  //CPU0 notify CPU1 after flash operation
-#endif
 
 #ifdef AMP_RES_CLIENT
 bk_err_t ipc_send_res_acquire_cnt(u16 resource_id, u16 cpu_id, amp_res_req_cnt_t *cnt_list);

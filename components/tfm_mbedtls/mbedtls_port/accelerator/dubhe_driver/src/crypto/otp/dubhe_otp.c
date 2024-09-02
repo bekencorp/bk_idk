@@ -327,7 +327,6 @@ static bool _is_region_lock(arm_ce_otp_info_t region, size_t offset, size_t len)
     return b_lock;
 }
 
-
 #if defined( DBH_OTP_PUF_SUPPORT )
 #if defined(DUBHE_SECURE)
 static int arm_ce_otp_power_up( void )

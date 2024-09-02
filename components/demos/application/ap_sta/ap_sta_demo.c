@@ -69,7 +69,7 @@ void ap_sta_softap_app_init(char *ap_ssid, char *ap_key)
     os_strcpy((char *)wNetConfig.dnsServer_ip_addr, "192.168.10.1");
 
     bk_printf("SSID:%s , KEY:%s\r\n", wNetConfig.wifi_ssid, wNetConfig.wifi_key);
-    bk_wlan_start_internal(&wNetConfig);
+    bk_wlan_start(&wNetConfig);
 }
 
 void ap_sta_stop_Softap(void)
@@ -97,7 +97,7 @@ int ap_sta_target_wifi_station_connect(const char *ssid, const char *passwd)
     wNetConfig.dhcp_mode = DHCP_CLIENT;
     wNetConfig.wifi_retry_interval = 100;
 
-    bk_wlan_start_internal(&wNetConfig);
+    bk_wlan_start(&wNetConfig);
 
     return 0;
 }

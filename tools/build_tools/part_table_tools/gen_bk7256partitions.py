@@ -27,10 +27,17 @@ import binascii
 import errno
 import json
 import copy
+import shutil
+import subprocess
+import logging
 
 quiet = False
 gen_files_path = "%s/config/gen_files_list.txt"%(sys.path[0])
 JSON_FILENAMES = ['configuration_new.json', 'partition_bk7256_ota_a_new.json', 'partition_bk7256_ota_r_new.json','partition_ota_new.json']
+
+def run_cmd(cmd):
+	p = subprocess.run(["python3",cmd], capture_output=True)
+	return p.returncode
 
 def status(msg):
     """ Print status message to stderr """
@@ -160,6 +167,27 @@ class Bk7256PartTableGenerator:
             files_lines = f.readlines()
             for files_line in files_lines:
                 if os.path.exists(files_line.strip()) and os.path.isfile(files_line.strip()):
+                    file_path = os.path.dirname(files_line.strip())
+                    if 'partitions.csv' == os.path.basename(files_line.strip()):
+                        secure_config_path = os.path.join(file_path,'config')
+                        if os.path.exists(secure_config_path):
+                            with open(secure_config_path, 'r') as config_file:
+                                config_string = config_file.read()
+
+                            config_lines = config_string.strip().split('\n')
+
+                            config_dict = {}
+
+                            for line in config_lines:
+                                if '=' not in line:
+                                    continue
+                                key, value = line.split('=')
+                                config_dict[key.strip()] = value.strip()
+
+                            if config_dict.get('CONFIG_SECURITY_FIRMWARE') == 'y':
+                                file_path_new = file_path + '/.partitions.csv'
+                                shutil.copy(files_line.strip(),file_path_new)
+                
                     self.files_set.add(files_line.strip())
 
 
@@ -1710,6 +1738,7 @@ def main():
     to_src = path_dict.get('to_src', None)
     to_inc = path_dict.get('to_inc', None)
     to_csv = path_dict.get('to_csv', None)
+
 
     if args.to_json is not None:
         to_json = args.to_json

@@ -34,6 +34,13 @@ typedef enum{
 /  1: BIG_ENDIAN
 */
 
+typedef enum{
+	JD_NO_BUFFER_COPY = 0,
+	JD_SINGLE_BUFFER_COPY,
+	JD_DOUBLE_BUFFER_COPY,
+} JD_COPY_TYPE_T;
+
+
 typedef struct{
 	JD_FORMAT_OUTPUT format;
 	JD_BYTE_ORDER byte_order;
@@ -50,6 +57,7 @@ JD_BYTE_ORDER jd_get_byte_order(void);
 media_rotate_t jd_get_rotate(void);
 void jd_set_rotate(media_rotate_t rotate_angle, uint8_t *rotate_buf);
 
+void jd_set_jpg_copy_func(uint8_t *copy_buffer_1, uint8_t *copy_buffer_2, uint32_t copy_buffer_size, void *jpg_copy_func, JD_COPY_TYPE_T type);
 
 #ifdef __cplusplus
 }

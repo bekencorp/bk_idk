@@ -57,6 +57,11 @@ bk_err_t gpio_i2c1_sel(gpio_i2c1_map_mode_t gpio_i2c1_sel_mode);
 bk_err_t gpio_i2s_sel(gpio_i2s_map_mode_t gpio_i2s_sel_mode);
 bk_err_t gpio_jtag_sel(gpio_jtag_map_group_t gpio_jtag_sel_mode);
 
+#if CONFIG_GPIO_RETENTION_SUPPORT
+bk_err_t gpio_retention_map_set(gpio_id_t id, gpio_output_state_e output);
+uint64_t gpio_retention_map_get(void);
+void gpio_retention_sync(bool force_flag);
+#endif
 
 #if CONFIG_GPIO_WAKEUP_SUPPORT
 bk_err_t gpio_enter_low_power(void *param);

@@ -30,7 +30,8 @@
 #include "flash.h"
 #endif
 #include <modules/pm.h>
-#include <driver/ckmn.h>
+#include <driver/rosc_32k.h>
+#include <driver/aon_rtc.h>
 
 #define CFG_USE_TEMPERATURE_DETECT                 1
 #define CFG_SUPPORT_SARADC                         1
@@ -568,7 +569,7 @@ static void tempd_main(beken_thread_arg_t data)
 
 			case TMPD_TIMER_EXPIRED:
 #if CONFIG_CKMN
-				bk_ckmn_driver_rc32k_prog(96);
+				bk_rosc_32k_ckest_prog(96);
 #endif
 				tempd_detect_temperature();
 				break;

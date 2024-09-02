@@ -21,7 +21,7 @@
 extern "C" {
 #endif
 
-bk_err_t bk_video_camera_packet_list_init(mem_location_t locate, uint16_t MaxPacketSize, uint8_t max_packet_cnt, uint8_t cnt);
+bk_err_t bk_video_camera_packet_list_init(mem_location_t locate, uint16_t MaxPacketSize, uint8_t max_packet_cnt, uint8_t cnt, uint32_t idx_uvc);
 
 bk_err_t bk_video_camera_packet_list_deinit(void);
 
@@ -34,6 +34,16 @@ void bk_video_camera_packet_free(camera_packet_t *camera_packet);
 camera_packet_t *bk_video_camera_packet_pop(void);
 
 void bk_video_camera_packet_push(camera_packet_t *camera_packet);
+
+camera_packet_t *bk_video_camera_packet_dual_malloc(void);
+
+camera_packet_t *bk_video_camera_packet_dual_pop(void);
+
+void bk_video_camera_packet_dual_push(camera_packet_t *camera_packet);
+
+void bk_video_camera_packet_dual_free(camera_packet_t *camera_packet);
+
+bk_err_t bk_video_camera_packet_list_dual_free(void);
 
 bk_err_t bk_video_power_on(uint8_t gpio, uint8_t activ_level);
 

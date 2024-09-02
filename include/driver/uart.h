@@ -58,6 +58,17 @@ bk_err_t bk_uart_driver_deinit(void);
 int bk_uart_is_in_used(uart_id_t id);
 
 /**
+ * @brief     Get the UART whether rx dma is enabled
+ *
+ * @param id UART id
+ *
+ * @return
+ *    - 1: rx dma is enabled
+ *    - 0: rx dma is disabled
+ */
+int bk_uart_is_rx_dma_enabled(uart_id_t id);
+
+/**
  * @brief     Init the UART id
  *
  * This API init the UART id:

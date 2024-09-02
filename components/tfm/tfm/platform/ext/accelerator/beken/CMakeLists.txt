@@ -25,6 +25,20 @@ if(BL2)
     )
 endif()
 
+if(TEST_NS)
+    target_compile_definitions(test_ns_crypto_hw
+        PUBLIC
+            CRYPTO_HW_ACCELERATOR
+            CRYPTO_HW_ACCELERATOR_OTP_PROVISIONING
+    )
+
+    target_compile_options(test_ns_crypto_hw
+        PRIVATE
+            $<$<C_COMPILER_ID:GNU>:-Wno-unused-parameter>
+            $<$<C_COMPILER_ID:ARMClang>:-Wno-unused-parameter>
+    )
+endif()
+
 target_link_libraries(crypto_service_mbedcrypto
     PUBLIC
         crypto_service_crypto_hw

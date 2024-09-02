@@ -56,7 +56,13 @@ list(APPEND incs
 endif()
 if(CONFIG_HTTPS_CLIENT_AT_ENABLE)
 list(APPEND incs
-		${components}/bk_https/include
+		${components}/webclient
+
+	)
+endif()
+if(CONFIG_MQTT_CLIENT_AT_ENABLE)
+list(APPEND incs
+		${components}/ali_mqtt/src
 
 	)
 endif()
@@ -70,6 +76,13 @@ if(CONFIG_MISC_AT_ENABLE)
 
 list(APPEND incs
 		${components}/bk_system
+	)
+endif()
+
+if(CONFIG_AT_DATA_MODE)
+set(sdk_components ../../../components)
+list(APPEND incs
+		${components}/at/inc
 	)
 endif()
 

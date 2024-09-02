@@ -13,6 +13,7 @@ set(incs
         ${TFM_BEKEN}/armino/driver/flash
         ${TFM_BEKEN}/armino/driver/spinlock
         ${TFM_BEKEN}/armino/driver/timer
+        ${TFM_BEKEN}/armino/driver/efuse
         driver/hal
         ${TFM_BEKEN}/armino/include/
         ../../../../../../secure_fw/spm/include
@@ -35,6 +36,8 @@ set(srcs
     ${TFM_BEKEN}/armino/driver/flash/flash_driver.c
     ${TFM_BEKEN}/armino/driver/timer/timer_driver.c
     ${TFM_BEKEN}/armino/driver/ppc/prro_driver.c
+    ${TFM_BEKEN}/armino/driver/efuse/efuse_driver.c
+    ${TFM_BEKEN}/armino/driver/bk_efuse.c
     ./driver/hal/prro_hal_v5.c
     ./driver/hal/uart_hal.c
     ./driver/hal/timer_hal.c
@@ -49,7 +52,7 @@ set(srcs
     ./driver/hal/timer_ll.c
     ./driver/hal/gpio_ll.c
     ./driver/hal/flash_ll.c
-    ${TFM_BEKEN}/armino/driver/bk_tfm_swd.c
+    ./driver/hal/efuse_hal.c
 )
 
 set(s_srcs
@@ -83,12 +86,30 @@ if(CONFIG_REG_ACCESS_NSC)
     )
 endif()
 
+if(CONFIG_OTP_NSC)
+    list(APPEND s_srcs "./driver/hal/dubhe_key_ladder_nsc.c")
+
+    target_compile_definitions(platform_s
+        PUBLIC
+        CONFIG_DUBHE_KEY_LADDER_NSC
+    )
+endif()
+
 if(CONFIG_MPC_NSC)
     list(APPEND s_srcs "./driver/hal/mpc_nsc.c")
 
     target_compile_definitions(platform_s
         PUBLIC
         CONFIG_MPC_NSC
+    )
+endif()
+
+if(CONFIG_PM_NSC)
+    list(APPEND s_srcs "./driver/hal/pm_nsc.c")
+
+    target_compile_definitions(platform_s
+        PUBLIC
+        CONFIG_PM_NSC
     )
 endif()
 
@@ -101,6 +122,15 @@ if(CONFIG_FLASH_NSC)
     )
 endif()
 
+if(CONFIG_OTP_NSC)
+    list(APPEND s_srcs "./driver/hal/otp_nsc.c")
+
+    target_compile_definitions(platform_s
+        PUBLIC
+        CONFIG_OTP_NSC
+    )
+endif()
+
 if(CONFIG_INT_TARGET_NSC)
     list(APPEND s_srcs "./driver/hal/target_nsc.c")
 
@@ -108,6 +138,19 @@ if(CONFIG_INT_TARGET_NSC)
         PUBLIC
         CONFIG_INT_TARGET_NSC
     )
+endif()
+
+if(CONFIG_AES_GCM_NSC)
+    list(APPEND s_srcs "./driver/hal/aes_gcm_nsc.c")
+
+    target_compile_definitions(platform_s
+        PUBLIC
+        CONFIG_AES_GCM_NSC
+    )
+endif()
+
+if(CONFIG_TFM_PANIC_DEAD_LOOP)
+    target_compile_definitions(platform_s PUBLIC CONFIG_PANIC_DEAD_LOOP)
 endif()
 
 target_include_directories(platform_s PUBLIC ${incs} ${s_incs})
@@ -165,3 +208,9 @@ if(NS)
     )
 endif()
 
+if(CONFIG_XIP_NO_VERSION)
+    target_compile_definitions(platform_s
+        PUBLIC
+            CONFIG_XIP_NO_VERSION
+    )
+endif()

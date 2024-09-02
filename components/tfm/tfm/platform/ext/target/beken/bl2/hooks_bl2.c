@@ -212,16 +212,16 @@ int flash_area_read_post_hook(const struct flash_area *area, uint32_t off, void 
 	if ((len > 0) && (len < BL2_HOOK_IMG_READ_DEBUG_LEN)) {
 		uint8_t *buf = (uint8_t*)dst;
 
-        	printf("area%d read: flash_off=%x off=%x len=%x\r\n", area->fa_id, area->fa_off, off, len);
+        	BK_LOG_RAW("area%d read: flash_off=%x off=%x len=%x\r\n", area->fa_id, area->fa_off, off, len);
 		for (int i = 0; i < len; i++) {
-			printf("%02x ", buf[i]);
+			BK_LOG_RAW("%02x ", buf[i]);
 
 			if (i && (i % 16 == 0)) {
-				printf("\r\n");
+				BK_LOG_RAW("\r\n");
 			}
 		}
 
-        	printf("\r\n");
+        	BK_LOG_RAW("\r\n");
 	}
 #endif
 

@@ -41,6 +41,17 @@
 #include <os/os.h>
 #include <components/log.h>
 
+#if CONFIG_FREERTOS
+#include "pthread_internal.h"
+#include "FreeRTOS.h"
+#include "semphr.h"
+#include "os/mem.h"
+
+static void sys_thread_sem_free(void* data);
+static pthread_key_t sys_thread_sem_key;
+#endif
+
+
 #define CFG_ENABLE_LWIP_MUTEX      1
 
 #if CFG_ENABLE_LWIP_MUTEX
@@ -341,6 +352,11 @@ void sys_init(void)
 #if CFG_ENABLE_LWIP_MUTEX
 	sys_mutex_new(&sys_arch_mutex);
 #endif
+#if CONFIG_FREERTOS
+extern int pthread_key_create(pthread_key_t *key, pthread_destructor_t destructor);
+	// Create the pthreads key for the per-thread semaphore storage
+	pthread_key_create(&sys_thread_sem_key, sys_thread_sem_free);
+#endif
 }
 
 /*-----------------------------------------------------------------------------------*/
@@ -506,4 +522,62 @@ void sys_arch_msleep(int ms)
 	rtos_delay_milliseconds(ms);
 }
 
+#if CONFIG_FREERTOS
+/*
+ * get per thread semaphore
+ */
+sys_sem_t*
+sys_thread_sem_get(void)
+{
+  sys_sem_t *sem = pthread_getspecific(sys_thread_sem_key);
+
+  if (!sem) {
+      sem = sys_thread_sem_init();
+  }
+  return sem;
+}
+
+static void
+sys_thread_sem_free(void* data) // destructor for TLS semaphore
+{
+  sys_sem_t *sem = (sys_sem_t*)(data);
+
+  if (sem && *sem){
+    vSemaphoreDelete(*sem);
+  }
+
+  if (sem) {
+    os_free(sem);
+  }
+}
+
+sys_sem_t*
+sys_thread_sem_init(void)
+{
+  sys_sem_t *sem = (sys_sem_t*)os_malloc(sizeof(sys_sem_t*));
+
+  if (!sem){
+    return 0;
+  }
+
+  *sem = xSemaphoreCreateBinary();
+  if (!(*sem)){
+    os_free(sem);
+    return 0;
+  }
+
+  pthread_setspecific(sys_thread_sem_key, sem);
+  return sem;
+}
+
+void
+sys_thread_sem_deinit(void)
+{
+  sys_sem_t *sem = pthread_getspecific(sys_thread_sem_key);
+  if (sem != NULL) {
+    sys_thread_sem_free(sem);
+    pthread_setspecific(sys_thread_sem_key, NULL);
+  }
+}
+#endif
 // eof

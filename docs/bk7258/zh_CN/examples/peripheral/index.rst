@@ -10,3 +10,4 @@
    pwm <bk_pwm>
    SDIO <bk_sdio>
    SPI <bk_spi>
+   I2S <bk_i2s>

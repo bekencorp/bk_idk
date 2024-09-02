@@ -179,6 +179,15 @@ typedef enum {
     BK_BT_GAP_DISCOVERY_STARTED,                   /*!< Device discovery started */
 } bk_bt_gap_discovery_state_t;
 
+/// bt sniff config
+typedef struct
+{
+    uint16_t sniff_max_interval;                   /// unit 0.625ms, range: 1.25ms ~ 40.9s
+    uint16_t sniff_min_interval;                   /// unit 0.625ms, range: 1.25ms ~ 40.9s
+    uint16_t sniff_attempt;                        /// unit 1.25ms, range: 1.25ms ~ 40.9s
+    uint16_t sniff_timeout;                        /// unit 1.25ms, range: 0ms ~ 40.9s
+}bk_bt_gap_sniff_config;
+
 /// BT GAP callback events
 typedef enum {
     BK_BT_GAP_DISC_RES_EVT = 0,                    /*!< Device discovery result event */
@@ -201,6 +210,7 @@ typedef enum {
     BK_BT_GAP_ACL_DISCONN_CMPL_STAT_EVT,           /*!< ACL disconnection complete status event */
     BK_BT_GAP_LINK_KEY_NOTIF_EVT,                   /*!< Link Key Notification */
     BK_BT_GAP_LINK_KEY_REQ_EVT,                     /*!< Link Key request */
+    BK_BT_GAP_SET_AUTO_SNIFF_CMPL_EVT,             /// set auto entry sniff req completed event
     BK_BT_GAP_EVT_MAX,
 } bk_gap_bt_cb_event_t;
 
@@ -388,6 +398,15 @@ typedef union {
     struct link_key_req_param {
         bk_bd_addr_t bda;                     /*!< remote bluetooth device address*/
     } link_key_req;                                 /*!< link key request parameter struct */
+
+    /**
+     * @brief BK_BT_GAP_SET_AUTO_SNIFF_CMPL_EVT
+     */
+    struct auto_sniff_cmpl_param
+    {
+        bk_bd_addr_t bda;                    /// peer addr
+        bk_bt_status_t result;
+    } auto_sniff_cmpl;
 } bk_bt_gap_cb_param_t;
 
 /**

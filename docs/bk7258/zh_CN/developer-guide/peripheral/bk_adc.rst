@@ -6,7 +6,7 @@ SARADC
 概述
 ---------------
 
-	SARADC 目前最多支持 14 个 channel,但是目前在 BK7231N/BK7236 只支持1~6 通道，BK7231U/BK7251/BK7252/bk7253/支持1~7 通道，BK7271支持0~13通道；SARADC 精度默认为12bit，
+	SARADC 目前最多支持 14 个 channel,但是目前在 BK7231N/BK7258 只支持1~6 通道，BK7231U/BK7251/BK7252/bk7253/支持1~7 通道，BK7271支持0~13通道；SARADC 精度默认为12bit，
 	一般精度在 SARADC 驱动中不做动态调整。
 
 SARADC 模式类型：

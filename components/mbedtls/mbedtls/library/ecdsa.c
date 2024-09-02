@@ -1067,9 +1067,11 @@ static void dump_pubkey( const char *title, mbedtls_ecdsa_context *key )
     dump_buf( title, buf, len );
 }
 
+#if CONFIG_ARCH_RISCV
 extern u64 riscv_get_mtimer(void);
-extern bk_err_t bk_securityip_trng_def_cfg(void);
-extern bk_err_t bk_securityip_get_trng(uint32_t size, uint8_t * RandNum_p);
+#endif
+extern int bk_securityip_trng_def_cfg(void);
+extern int bk_securityip_get_trng(uint32_t size, uint8_t * RandNum_p);
 static int gen_rand( void *rng_state, unsigned char *output, size_t len )
 {
 	if( rng_state != NULL )

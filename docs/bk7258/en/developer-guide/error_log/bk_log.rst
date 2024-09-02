@@ -3,7 +3,7 @@ log output
 
 :link_to_translation:`zh_CN:[中文]`
 
-Here introduces the log output method for Armino platform, it also works for dual cores SoC.
+Here introduces the log output method for Armino platform, it also works for multi-core SoC.
 
  - log data from CPU0 are output through DL_UART0.(The defualt baudrate of DL_UART0 is 115.2kbps)
  - log data from CPU1 are forwarded to CPU0 via mailbox, and then output to DL_UART0 by CPU0.
@@ -14,7 +14,7 @@ Here introduces the log output method for Armino platform, it also works for dua
  - To set the log work mode, send the command of 'log' with 1~4 params in the input device.
  - log [1 [3 [0 [0]]]], it is the default setting after reset, the first parameter is the input echo switch(0: disable, 1:enable echo), the 2nd param is the lowest log level that can be output(level 0~5, 5 is the lowest level), the 3rd param controls the log work mode(0:asynchronous,1:synchronous), the 4th param controls 'modlog' work mechnism, the module list is the whitelist or blacklist (0: blacklist, 1: whitelist). This command contains 1~4 params, if the param3 is provided, then param1~2 must be also provided, but param4 can be omitted(so no changes to this setting).
 
-log work flow for multi-core system
+BK7258 Multi-CPU Log Work Flow
 ------------------------------------------
 
 .. figure:: ../../../_static/log_system.png

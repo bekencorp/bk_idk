@@ -29,7 +29,7 @@ typedef enum {
 	MPC_DEV_PSRAM = 0, /**< MPC device PSRAM */
 	MPC_DEV_QSPI0,     /**< MPC device QSPI0 */
 	MPC_DEV_QSPI1,     /**< MPC device QSPI1 */
-	MPC_DEV_OTP,       /**< MPC device OTP */
+	MPC_DEV_OTP2,       /**< MPC device OTP2 */
 	MPC_DEV_FLASH,     /**< MPC device FLASH */
 	MPC_DEV_SMEM0,     /**< MPC device SMEM0 */
 	MPC_DEV_SMEM1,     /**< MPC device SMEM1 */

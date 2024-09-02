@@ -139,3 +139,9 @@ uint32_t aon_pmu_hal_bias_cal_get()
 {
 	return aon_pmu_ll_get_r7e_cbcal();
 }
+
+uint32_t aon_pmu_hal_get_reset_reason()
+{
+	uint32_t value = aon_pmu_ll_get_r7a();
+	return ( value >> 24 & 0x7F );
+}

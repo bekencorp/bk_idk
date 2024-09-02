@@ -22,7 +22,7 @@ The figure above shows the UART serial port TTL level hardware connection, where
  - RXD：For receiving data, it should be connected to the TXD pin of the transmitting device
  - GND：Provide the same reference level for both parties
 
-Beken chip usually has two UARTs (UART1 and UART2). BK7236 supports three UARTs (DL_UART0, UART1 and UART2). DL_UART0 is used to print debugging information (configurable in menuconfig, default UART2)
+Beken chip usually has two UARTs (UART1 and UART2). BK7258 supports three UARTs (DL_UART0, UART1 and UART2). DL_UART0 is used to print debugging information (configurable in menuconfig, default UART2)
 
 UART Config
 ----------------------------------------------------

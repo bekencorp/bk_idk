@@ -25,6 +25,8 @@ static void tfm_attest_test_1003(struct test_result_t *ret);
 #endif
 static void tfm_attest_test_1004(struct test_result_t *ret);
 static void tfm_attest_test_1005(struct test_result_t *ret);
+static void tfm_attest_test_1006(struct test_result_t *ret);
+static void tfm_attest_test_1007(struct test_result_t *ret);
 
 static struct test_t attestation_interface_tests[] = {
 #ifdef INCLUDE_TEST_CODE /* Remove them from release build */
@@ -39,6 +41,9 @@ static struct test_t attestation_interface_tests[] = {
      "ECDSA signature test of attest token"},
     {&tfm_attest_test_1005, "TFM_NS_ATTEST_TEST_1005",
      "Negative test cases for initial attestation service"},
+
+    //{&tfm_attest_test_1006, "TFM_NS_ATTEST_TEST_1006", "Caict VT: 20000 times get token/size"},
+    //{&tfm_attest_test_1007, "TFM_NS_ATTEST_TEST_1007", "Caict VT: collect timing data"},
 };
 
 void
@@ -180,4 +185,105 @@ static void tfm_attest_test_1005(struct test_result_t *ret)
     }
 
     ret->val = TEST_PASSED;
+}
+
+static void tfm_attest_test_1006(struct test_result_t *ret)
+{
+    int32_t err;
+
+    uint32_t cnt = 0;
+
+    while(cnt++ < 20000) {
+
+        if ((cnt % 1000) == 0) {
+            TEST_LOG("get_token/size test, cnt: %d\r\n", cnt);
+        }
+    
+        err = minimal_test();
+        if (err != 0) {
+            TEST_LOG("minimal_test() returned: %d\r\n", err);
+            TEST_FAIL("Attest token minimal_test() has failed");
+            return;
+        }
+        err = minimal_get_size_test();
+        if (err != 0) {
+            TEST_LOG("minimal_get_size_test() returned: %d\r\n", err);
+            TEST_FAIL("Attest token minimal_get_size_test() has failed");
+            return;
+        }
+    }
+
+    ret->val = TEST_PASSED;
+}
+
+#define COLLECTIONTIME 400000
+static uint8_t big_token_buffer[PSA_INITIAL_ATTEST_MAX_TOKEN_SIZE];
+static void tfm_attest_test_1007(struct test_result_t *ret)
+{
+	int32_t err;
+	TEST_LOG("########################################################\r\n");	
+	TEST_LOG("########################################################\r\n");	
+	TEST_LOG("We start to collect data for timing attack.\r\n");
+	int32_t         i, num_checks = COLLECTIONTIME;
+    	int32_t     status;
+    	size_t      token_buffer_size, token_size;
+    	
+    	uint8_t     challenge[PSA_INITIAL_ATTEST_CHALLENGE_SIZE_64];
+
+    	
+    	uint64_t starttime = 0;
+    	uint64_t endtime = 0;
+    	uint64_t costtime = 0;
+    	uint32_t costtimelow=0;
+        uint32_t costtimehigh=0;
+        
+	for (i = 0; i < num_checks; i++)
+   	{
+
+        memset(challenge, 0x2a, sizeof(challenge));
+        memset(big_token_buffer, 0, sizeof(big_token_buffer));
+	TEST_LOG("before get size########################################################\r\n");
+        status = psa_initial_attest_get_token_size(PSA_INITIAL_ATTEST_CHALLENGE_SIZE_64, &token_buffer_size);
+	TEST_LOG("after get size########################################################\r\n");                     
+        if (status != PSA_SUCCESS)
+        {
+		TEST_LOG("get token size failed, stop test.\n", 0);
+		return;
+        }
+
+        if (token_buffer_size > PSA_INITIAL_ATTEST_MAX_TOKEN_SIZE)
+        {
+ 		TEST_LOG("Insufficient token buffer size. stop test.\n", 0);
+		return;
+        }
+        
+	starttime = get_32k_timer();
+    	TEST_LOG("before get token########################################################\r\n");
+	status = psa_initial_attest_get_token(challenge, PSA_INITIAL_ATTEST_CHALLENGE_SIZE_64, big_token_buffer, token_buffer_size, &token_size);
+	TEST_LOG("after get token########################################################\r\n");
+
+	endtime = get_32k_timer();
+    
+	costtime = endtime - starttime;
+    
+	costtimelow = costtime & 0xFFFFFFFF;
+	costtimehigh = (costtime>>32) & 0xFFFFFFFF;
+   	TEST_LOG("Verified OK,");
+    	//print r,s
+    	//printfsignature(token_buffer, token_size);
+	//DiagPrintf(",");
+	TEST_LOG(",");
+	//DiagPrintf("100,101,");
+	TEST_LOG("100,%d,", i);
+	//DiagPrintf("%d,\n", costtime);
+	//TEST_LOG("%ld,\r\n", dwTime);
+	TEST_LOG("%ld%ld,\r\n", costtimehigh,costtimelow);
+	if (status != PSA_SUCCESS)
+	{
+		TEST_LOG("Get token failed.\r\n");
+         	return;
+	}
+	}//end of for loop
+	TEST_LOG("Collecting data is completed.\r\n");	
+	TEST_LOG("########################################################\r\n");
 }

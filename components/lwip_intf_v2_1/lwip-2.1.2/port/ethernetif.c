@@ -53,6 +53,10 @@
 #include "lwip/netifapi.h"
 #include "net.h"
 #include "sys_hal.h"
+#include "miiphy.h"
+#include "os/mem.h"
+
+#define ETH_MULTI_PHY_SUPPORT  1
 
 /* Private define ------------------------------------------------------------*/
 /* Stack size of the interface thread */
@@ -67,8 +71,8 @@
 #define ETH_RX_BUFFER_SIZE                     ( 1536 )
 #define ETH_TX_DESCS_PER_TX                    8
 
-/* ASYNC mode */
-#define ETH_TX_CPLT_IN_SEP_TASK                1
+/* MAX RX threshold per process */
+#define ETH_RX_FRAME_PREP_THD                  16
 
 /* Private variables ---------------------------------------------------------*/
 /*
@@ -106,6 +110,58 @@ typedef struct
   uint8_t buff[(ETH_RX_BUFFER_SIZE + 31) & ~31] __ALIGNED(32);
 } RxBuff_t;
 
+
+enum {
+  BMSG_NULL_TYPE = 0,
+  BMSG_RX_TYPE,
+  BMSG_TX_TYPE,
+  BMSG_TX_COMPLETE,
+  BMSG_PS_KEEP_END,
+};
+
+typedef struct bus_message {
+  uint32_t type;
+  uint32_t arg;
+} BUS_MSG_T;
+
+#define ETH_PS_PREVENT_KEEP_TIMER  0x01
+#define ETH_PS_PREVENT_LINK_CHECK  0x02
+#define ETH_PS_PREVENT_DHCP        0x04
+
+// private data
+struct eth_mac_priv {
+  uint8_t mac[6];
+
+  struct mii_dev *mii;
+  struct phy_device *phy;
+
+  // Ethernet event Queue
+  beken_queue_t eventq;
+
+#ifdef CONFIG_ETH_PM_CB_SUPPORT
+  // Ethernet TX counter of Tx path
+  uint32_t tx_count;
+  uint32_t rx_count;
+
+  // HW enters PS ?
+  bool hw_in_doze;
+
+  // current phy speed and duplex
+  uint32_t speed;
+  uint32_t duplex;
+
+  // bitwise flags that prevent Eth enters PS
+  uint32_t ps_prevent;
+
+  // linger timer that prevents Eth enters PS
+  beken2_timer_t timer;
+
+  // skip link check count after exit PS
+  int skip_link_check_count;
+#endif
+};
+
+
 /* Memory Pool Declaration */
 #define ETH_RX_BUFFER_CNT             24U
 LWIP_MEMPOOL_DECLARE(RX_POOL, ETH_RX_BUFFER_CNT, sizeof(RxBuff_t), "Zero-copy RX PBUF pool");
@@ -113,22 +169,16 @@ LWIP_MEMPOOL_DECLARE(RX_POOL, ETH_RX_BUFFER_CNT, sizeof(RxBuff_t), "Zero-copy RX
 /* Variable Definitions */
 static uint8_t RxAllocStatus;
 
-__IO uint32_t TxPkt = 0;
-__IO uint32_t RxPkt = 0;
 
 static ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
 static ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT];   /* Ethernet Tx DMA Descriptors */
 extern u8_t memp_memory_RX_POOL_base[];
 extern int32_t xTaskGetTickCount( void );
-static beken_semaphore_t RxPktSemaphore = NULL;   /* Semaphore to signal incoming packets */
-static beken_semaphore_t TxPktSemaphore = NULL;   /* Semaphore to signal transmit packet complete */
-#if ETH_TX_CPLT_IN_SEP_TASK
-static beken_semaphore_t SyncSemaphore = NULL;
-#endif
+volatile int32_t bmsg_eth_rx_count = 0;
+volatile int32_t bmsg_eth_tx_compl_count = 0;
 
 /* Global Ethernet handle */
 static ETH_HandleTypeDef heth;
-static ETH_TxPacketConfig TxConfig;
 
 /* Private function prototypes -----------------------------------------------*/
 static int32_t ETH_PHY_IO_Init(void);
@@ -137,13 +187,22 @@ static int32_t ETH_PHY_IO_ReadReg(uint32_t DevAddr, uint32_t RegAddr, uint32_t *
 static int32_t ETH_PHY_IO_WriteReg(uint32_t DevAddr, uint32_t RegAddr, uint32_t RegVal);
 static int32_t ETH_PHY_IO_GetTick(void);
 static void ethernetif_tx_cplt(void *argument);
+static void ethernetif_core_thread(void *argument);
+static void bmsg_eth_sender(int type);
+static void bmsg_eth_null_sender();
+static void bmsg_eth_rx_sender(void *arg);
+static void bmsg_eth_tx_compl_sender(void *arg);
+static int bmsg_eth_tx_sender(struct pbuf *p);
+static int __HAL_ETH_Exit_LP();
 
+#if !ETH_MULTI_PHY_SUPPORT
 static lan8742_Object_t LAN8742;
 static lan8742_IOCtx_t  LAN8742_IOCtx = {ETH_PHY_IO_Init,
                                   ETH_PHY_IO_DeInit,
                                   ETH_PHY_IO_WriteReg,
                                   ETH_PHY_IO_ReadReg,
                                   ETH_PHY_IO_GetTick};
+#endif
 
 /* Private functions ---------------------------------------------------------*/
 static void pbuf_free_custom(struct pbuf *p);
@@ -156,7 +215,7 @@ static void ethernetif_input(void* argument);
   */
 void HAL_ETH_RxCpltCallback(ETH_HandleTypeDef *handlerEth)
 {
-  rtos_set_semaphore(&RxPktSemaphore);
+  bmsg_eth_rx_sender(0);
 }
 
 /**
@@ -166,7 +225,7 @@ void HAL_ETH_RxCpltCallback(ETH_HandleTypeDef *handlerEth)
   */
 void HAL_ETH_TxCpltCallback(ETH_HandleTypeDef *handlerEth)
 {
-  rtos_set_semaphore(&TxPktSemaphore);
+  bmsg_eth_tx_compl_sender(0);
 }
 
 /**
@@ -178,7 +237,7 @@ void HAL_ETH_ErrorCallback(ETH_HandleTypeDef *handlerEth)
 {
   if((HAL_ETH_GetDMAError(handlerEth) & ETH_DMACSR_RBU) == ETH_DMACSR_RBU)
   {
-    rtos_set_semaphore(&RxPktSemaphore);
+    bmsg_eth_rx_sender(0);
   }
 }
 
@@ -186,6 +245,66 @@ void ETH_IRQHandler(void)
 {
   //LWIP_LOGI("%s\n", __func__);
   HAL_ETH_IRQHandler(&heth);
+}
+
+#ifdef CONFIG_ETH_PM_CB_SUPPORT
+// Eth keep timer expired, clear PS_KEEP prevent bit
+static void power_save_keep_timer_handler(void *dummy1, void *dummy2)
+{
+  bmsg_eth_sender(BMSG_PS_KEEP_END);
+}
+
+// Eth keep timer
+static void eth_start_keep_timer(uint32_t secs, uint32_t usecs)
+{
+  bk_err_t err;
+  uint32_t clk_time;
+  struct eth_mac_priv *priv = heth.priv;
+
+  clk_time = (secs * 1000 + usecs / 1000);
+
+  if (rtos_is_oneshot_timer_init(&priv->timer)) {
+    rtos_oneshot_reload_timer(&priv->timer);
+  } else {
+    err = rtos_init_oneshot_timer(&priv->timer, clk_time,
+          power_save_keep_timer_handler, NULL, NULL);
+    BK_ASSERT(err == kNoErr);
+
+    err = rtos_start_oneshot_timer(&priv->timer);
+    BK_ASSERT(err == kNoErr);
+  }
+}
+#endif // CONFIG_ETH_PM_CB_SUPPORT
+
+int eqos_mdio_read(struct mii_dev *bus, int addr, int devad, int reg)
+{
+  ETH_HandleTypeDef *heth = bus->priv;
+  uint32_t val;
+  if (HAL_ETH_ReadPHYRegister(heth, addr, reg, &val) == HAL_OK)
+    return val;
+  return -1;
+}
+
+int eqos_mdio_write(struct mii_dev *bus, int addr, int devad, int reg, u16 val)
+{
+  ETH_HandleTypeDef *heth = bus->priv;
+
+  if (HAL_ETH_WritePHYRegister(heth, addr, reg, val) == HAL_OK)
+    return 0;
+  return -1;
+}
+
+int eqos_mdio_reset(struct mii_dev *bus)
+{
+  ETH_HandleTypeDef *heth = bus->priv;
+  /* We assume that MDIO GPIO configuration is already done
+   in the ETH_MspInit() else it should be done here
+  */
+
+  /* Configure the MDIO Clock */
+  HAL_ETH_SetMDIOClockRange(heth);
+
+  return 0;
 }
 
 /*******************************************************************************
@@ -201,25 +320,28 @@ void ETH_IRQHandler(void)
 static bk_err_t low_level_init(struct netif *netif)
 {
   HAL_StatusTypeDef hal_eth_init_status = HAL_OK;
-  uint8_t MACAddr[6] ;
   bk_err_t ret = BK_OK;
+  struct eth_mac_priv *priv;
 
   LWIP_LOGI("ETH %s start XXX\n", __func__);
+
+  // Allocate eth_mac priv data
+  priv = heth.priv = os_zalloc(sizeof(struct eth_mac_priv));
+  if (!heth.priv) {
+    LWIP_LOGE("%s OOM\n", __func__);
+    return BK_FAIL;
+  }
+
   /* Start ETH HAL Init */
   heth.Instance = ETH;
-  bk_get_mac(MACAddr, MAC_TYPE_ETH);
-  heth.Init.MACAddr = &MACAddr[0];
+  bk_get_mac(priv->mac, MAC_TYPE_ETH);
+  heth.Init.MACAddr = priv->mac;
   heth.Init.MediaInterface = HAL_ETH_RMII_MODE;
   heth.Init.TxDesc = DMATxDscrTab;
   heth.Init.RxDesc = DMARxDscrTab;
   heth.Init.RxBuffLen = 1536;
 
   hal_eth_init_status = HAL_ETH_Init(&heth);
-
-  memset(&TxConfig, 0 , sizeof(ETH_TxPacketConfig));
-  TxConfig.Attributes = ETH_TX_PACKETS_FEATURES_CSUM | ETH_TX_PACKETS_FEATURES_CRCPAD;
-  TxConfig.ChecksumCtrl = ETH_CHECKSUM_IPHDR_PAYLOAD_INSERT_PHDR_CALC;
-  TxConfig.CRCPadCtrl = ETH_CRC_PAD_INSERT;
 
   /* Initialize the RX POOL */
   LWIP_MEMPOOL_INIT(RX_POOL);
@@ -243,49 +365,46 @@ static bk_err_t low_level_init(struct netif *netif)
   /* Accept broadcast address and ARP traffic */
   /* don't set NETIF_FLAG_ETHARP if this device is not an ethernet one */
   #if LWIP_ARP
-    netif->flags |= NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP;
+  netif->flags |= NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP;
   #else
-    netif->flags |= NETIF_FLAG_BROADCAST;
+  netif->flags |= NETIF_FLAG_BROADCAST;
   #endif /* LWIP_ARP */
 
-  /* create a binary semaphore used for informing ethernetif of frame reception */
-  ret = rtos_init_semaphore_ex(&RxPktSemaphore, 1, 0);
-  if (ret != BK_OK) {
-    LWIP_LOGE("%s init rx sema failed: %d\n", __func__, ret);
-    return ret;
+#if ETH_MULTI_PHY_SUPPORT
+  if (!priv->mii) {
+    priv->mii = mdio_alloc();
+    if (!priv->mii) {
+      os_printf("mdio_alloc() failed");
+      ret = -1;
+      goto fail;
+    }
+    priv->mii->read = eqos_mdio_read;
+    priv->mii->write = eqos_mdio_write;
+    priv->mii->reset = eqos_mdio_reset;
+    priv->mii->priv = &heth;
+    strncpy(priv->mii->name, netif->name, 2);
+
+    ret = mdio_register(priv->mii);
+    if (ret < 0) {
+      os_printf("mdio_register() failed: %d", ret);
+      goto fail;
+    }
   }
 
-  /* create a binary semaphore used for informing ethernetif of frame transmission */
-  ret = rtos_init_semaphore_ex(&TxPktSemaphore, 1, 0);
-  if (ret != BK_OK) {
-    LWIP_LOGE("%s init tx sema failed: %d\n", __func__, ret);
-    return ret;
-  }
+  if (!priv->phy) {
+    int addr = -1;
 
-  /* create the task that handles the ETH_MAC */
-  ret = rtos_create_thread(NULL, BEKEN_APPLICATION_PRIORITY, /* TBD: ETH priority */
-      "EthIf", ethernetif_input, INTERFACE_THREAD_STACK_SIZE, netif);
-  if (ret != BK_OK) {
-    LWIP_LOGE("%s create EthIf thread failed: %d\n", __func__, ret);
-    return ret;
+    priv->phy = phy_connect(priv->mii, addr, netif, PHY_INTERFACE_MODE_RMII);  // for BK7236, RMII, for BK7286, RGMII
+    if (!priv->phy) {
+      os_printf("phy_connect() failed\n");
+      ret = -1;
+      goto fail;
+    }
+    // phy_set_supported();
+    phy_config(priv->phy);  // genphy_config
+    phy_startup(priv->phy); // genphy_startup
   }
-
-#if ETH_TX_CPLT_IN_SEP_TASK
-  ret = rtos_init_semaphore_ex(&SyncSemaphore, 1, 1);
-  if (ret != BK_OK) {
-    LWIP_LOGE("%s init sync sema failed: %d\n", __func__, ret);
-    return ret;
-  }
-
-  /* create the task that handles the ETH_MAC */
-  ret = rtos_create_thread(NULL, 4 - 1, /* TBD: higher than iperf */
-      "EthIfTxCplt", ethernetif_tx_cplt, INTERFACE_THREAD_STACK_SIZE, netif);
-  if (ret != BK_OK) {
-    LWIP_LOGE("%s create EthIfTxCplt thread failed: %d\n", __func__, ret);
-    return ret;
-  }
-#endif
-
+#else // ETH_MULTI_PHY_SUPPORT
   /* Set PHY IO functions */
   LAN8742_RegisterBusIO(&LAN8742, &LAN8742_IOCtx);
 
@@ -300,15 +419,41 @@ static bk_err_t low_level_init(struct netif *netif)
   {
     LWIP_LOGI("AutoNego disabled\n");
   }
+#endif // ETH_MULTI_PHY_SUPPORT
+
+  // Init event Queue
+  rtos_init_queue(&priv->eventq, "core_queue", sizeof(BUS_MSG_T), 64);
+
+  /* create ethernet main thread */
+  ret = rtos_create_thread(NULL, 1 /* BEKEN_APPLICATION_PRIORITY */, /* TBD: ETH priority */
+      "EthIf", ethernetif_core_thread, 4096, netif);
+  if (ret != BK_OK) {
+    LWIP_LOGE("%s create EthIf thread failed: %d\n", __func__, ret);
+    goto fail;
+  }
 
   if (hal_eth_init_status != HAL_OK)
   {
     LWIP_LOGI("%s: Init ETH failed\n", __func__);
 
     ret = BK_FAIL;
+    goto fail;
   }
 
   LWIP_LOGI("ETH %s end, ret %d\n", __func__, ret);
+
+  return ret;
+
+fail:
+  // FIXME: cleanup
+  if (priv) {
+    if (priv->mii) {
+      mdio_unregister(priv->mii);
+      mdio_free(priv->mii);
+      priv->mii = NULL;
+    }
+    os_free(priv);
+  }
 
   return ret;
 #endif /* LWIP_ARP || LWIP_ETHERNET */
@@ -334,14 +479,32 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p)
   uint32_t i = 0U;
   struct pbuf *q = NULL;
   err_t errval = ERR_OK;
-  ETH_BufferTypeDef Txbuffer[ETH_TX_DESCS_PER_TX];  // ETH_TX_DESC_CNT
+  ETH_BufferTypeDef *Txbuffer;
+  ETH_TxPacketConfig *txconfig;
 
+  txconfig = os_malloc(sizeof(*txconfig) + ETH_TX_DESCS_PER_TX * sizeof(ETH_BufferTypeDef));
+  if (!txconfig) {
+    return ERR_MEM;
+  }
+  Txbuffer = (ETH_BufferTypeDef *)(txconfig + 1);
+
+  txconfig->Length = p->tot_len;
+  txconfig->TxBuffer = Txbuffer;
+  txconfig->pData = p;
+  txconfig->Attributes = ETH_TX_PACKETS_FEATURES_CSUM | ETH_TX_PACKETS_FEATURES_CRCPAD;
+  txconfig->ChecksumCtrl = ETH_CHECKSUM_IPHDR_PAYLOAD_INSERT_PHDR_CALC;
+  txconfig->CRCPadCtrl = ETH_CRC_PAD_INSERT;
+
+  // Fill txl buffer control
   memset(Txbuffer, 0, ETH_TX_DESCS_PER_TX * sizeof(ETH_BufferTypeDef));
 
   for (q = p; q != NULL; q = q->next)
   {
-    if (i >= ETH_TX_DESCS_PER_TX)
+    if (i >= ETH_TX_DESCS_PER_TX) {
+      LWIP_LOGE("%s: txdesc overflow\n", __func__);
+      os_free(txconfig);
       return ERR_IF;
+    }
 
     Txbuffer[i].buffer = q->payload;
     Txbuffer[i].len = q->len;
@@ -359,33 +522,18 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p)
     i++;
   }
 
-  TxConfig.Length = p->tot_len;
-  TxConfig.TxBuffer = Txbuffer;
-  TxConfig.pData = p;
-
-  pbuf_ref(p);
-
-#if ETH_TX_CPLT_IN_SEP_TASK
-    rtos_get_semaphore(&SyncSemaphore, BEKEN_WAIT_FOREVER);
-#endif
-    if (HAL_ETH_Transmit_IT(&heth, &TxConfig))  // FIXME: may failed, revise me
-    {
-      LWIP_LOGE("HAL_ETH_Transmit_IT failed\n");
-      pbuf_free(p);
-      errval = ERR_MEM;
-    }
-#if ETH_TX_CPLT_IN_SEP_TASK
-    rtos_set_semaphore(&SyncSemaphore);
-#endif
-#if !ETH_TX_CPLT_IN_SEP_TASK
-  while(rtos_get_semaphore(&TxPktSemaphore, BEKEN_WAIT_FOREVER) != BK_OK)
-  {
+  // Put txconfig pointer in pbuf
+  errval = pbuf_header(p, sizeof(txconfig));
+  if (errval) {
+    LWIP_LOGE("no headroom for pbuf\n");
+    os_free(txconfig);
+    return errval;
   }
 
-  HAL_ETH_ReleaseTxPacket(&heth);
-#endif
+  os_memcpy(p->payload, &txconfig, sizeof(txconfig));
 
-  return errval;
+  // Send to eth core thread
+  return bmsg_eth_tx_sender(p);
 }
 
 /**
@@ -408,56 +556,305 @@ static struct pbuf * low_level_input(struct netif *netif)
   return p;
 }
 
-/**
- * This function should be called when a packet is ready to be read
- * from the interface. It uses the function low_level_input() that
- * should handle the actual reception of bytes from the network
- * interface. Then the type of the received packet is determined and
- * the appropriate input function is called.
- *
- * @param netif the lwip network interface structure for this ethernetif
- */
-static void ethernetif_input(void* argument)
+// Kick eth core thread run
+static void bmsg_eth_null_sender()
 {
+  bk_err_t ret;
+  BUS_MSG_T msg;
+  struct eth_mac_priv *priv = heth.priv;
+
+  msg.type = BMSG_NULL_TYPE;
+  msg.arg = 0;
+
+  if (!rtos_is_queue_empty(&priv->eventq))
+    return;
+
+  ret = rtos_push_to_queue(&priv->eventq, &msg, BEKEN_NO_WAIT);
+  if (kNoErr != ret)
+    LWIP_LOGE("%s failed, ret=%d\r\n", __func__, ret);
+}
+
+// send bus msg to eth core thread
+static void bmsg_eth_sender(int type)
+{
+  bk_err_t ret;
+  BUS_MSG_T msg;
+  struct eth_mac_priv *priv = heth.priv;
+
+  msg.type = type;
+  msg.arg = 0;
+
+  ret = rtos_push_to_queue(&priv->eventq, &msg, BEKEN_NO_WAIT);
+  if (kNoErr != ret)
+    LWIP_LOGE("%s failed, ret=%d\r\n", __func__, ret);
+}
+
+// send bus msg to eth core thread
+static void bmsg_eth_rx_sender(void *arg)
+{
+  bk_err_t ret;
+  BUS_MSG_T msg;
+  struct eth_mac_priv *priv;
+
+  GLOBAL_INT_DECLARATION();
+
+  msg.type = BMSG_RX_TYPE;
+  msg.arg = (uint32_t)arg;
+
+  GLOBAL_INT_DISABLE();
+  if (bmsg_eth_rx_count >= 2) {
+    GLOBAL_INT_RESTORE();
+    return;
+  }
+
+  bmsg_eth_rx_count += 1;
+  GLOBAL_INT_RESTORE();
+
+  priv = heth.priv;
+  ret = rtos_push_to_queue(&priv->eventq, &msg, BEKEN_NO_WAIT);
+  if (kNoErr != ret)
+    LWIP_LOGE("%s failed, ret=%d\r\n", __func__, ret);
+}
+
+// send bus msg to eth core thread
+static void bmsg_eth_tx_compl_sender(void *arg)
+{
+  bk_err_t ret;
+  BUS_MSG_T msg;
+  struct eth_mac_priv *priv;
+  GLOBAL_INT_DECLARATION();
+
+  msg.type = BMSG_TX_COMPLETE;
+  msg.arg = (uint32_t)arg;
+
+  GLOBAL_INT_DISABLE();
+  if (bmsg_eth_tx_compl_count >= 2) {
+    GLOBAL_INT_RESTORE();
+    return;
+  }
+
+  bmsg_eth_tx_compl_count += 1;
+  GLOBAL_INT_RESTORE();
+
+  priv = heth.priv;
+  ret = rtos_push_to_queue(&priv->eventq, &msg, BEKEN_NO_WAIT);
+  if (kNoErr != ret)
+    LWIP_LOGE("%s failed, ret=%d\r\n", __func__, ret);
+}
+
+// bus msg handler
+static void bmsg_eth_rx_handler(BUS_MSG_T *msg, struct netif *netif)
+{
+  int processed = 0;
   struct pbuf *p = NULL;
-  struct netif *netif = (struct netif *) argument;
+  GLOBAL_INT_DECLARATION();
 
-  LWIP_LOGI("ETH receive task created\n");
-  for( ;; )
-  {
-    if (rtos_get_semaphore(&RxPktSemaphore, BEKEN_WAIT_FOREVER) == BK_OK)
-    {
-      do
-      {
-        p = low_level_input(netif);
-        if (p != NULL)
-        {
-          if (netif->input(p, netif) != ERR_OK )
-          {
-            pbuf_free(p);
-          }
-        }
-      } while(p!=NULL);
+  GLOBAL_INT_DISABLE();
+  if (bmsg_eth_rx_count > 0)
+    bmsg_eth_rx_count -= 1;
+  GLOBAL_INT_RESTORE();
+
+  do {
+    p = low_level_input(netif);
+    if (p != NULL) {
+      if (netif->input(p, netif) != ERR_OK)
+        pbuf_free(p);
+
+      // ....
+      if (++processed > ETH_RX_FRAME_PREP_THD) {
+        bmsg_eth_rx_sender(0);
+        break;
+      }
+    } else {
+      // os_printf("%s: no rx pbuf, RxAllocStatus %d\n", __func__, RxAllocStatus);
     }
-  }
+  } while (p != NULL);
 }
 
-#if ETH_TX_CPLT_IN_SEP_TASK
-static void ethernetif_tx_cplt(void *argument)
+// bus msg handler
+static int bmsg_eth_tx_sender(struct pbuf *p)
 {
+  bk_err_t ret;
+  BUS_MSG_T msg;
+  struct eth_mac_priv *priv;
 
-  LWIP_LOGI("ETH tx complete task created\n");
-  for( ;; )
+  msg.type = BMSG_TX_TYPE;
+  msg.arg = (uint32_t)p;
+
+  pbuf_ref(p);
+  priv = heth.priv;
+  ret = rtos_push_to_queue(&priv->eventq, &msg, 1 * SECONDS);
+  if (kNoErr != ret) {
+    LWIP_LOGE("bmsg_tx_sender failed, ret=%d\r\n", ret);
+    pbuf_free(p);
+  }
+
+  return ret;
+}
+
+// bus msg handler
+static void bmsg_eth_tx_handler(BUS_MSG_T *msg)
+{
+  struct pbuf *p = (struct pbuf *)msg->arg;
+  ETH_TxPacketConfig *txconfig;
+  struct eth_mac_priv *priv __maybe_unused = heth.priv;
+
+  if (!p) {
+    LWIP_LOGE("no pbuf for tx\n");
+    return;
+  }
+
+  // Get txconfig from pbuf
+  os_memcpy(&txconfig, p->payload, sizeof(txconfig));
+  // Remove txconfig from payload
+  pbuf_remove_header(p, sizeof(txconfig));
+
+  if (!txconfig) {
+    LWIP_LOGE("pbuf has no txconfig\n");
+    pbuf_free(p);
+    return;
+  }
+
+  if (HAL_ETH_Transmit_IT(&heth, txconfig))  // FIXME: may failed, revise me
   {
-    if (rtos_get_semaphore(&TxPktSemaphore, BEKEN_WAIT_FOREVER) == BK_OK)
-    {
-      rtos_get_semaphore(&SyncSemaphore, BEKEN_WAIT_FOREVER);
-      HAL_ETH_ReleaseTxPacket(&heth);
-      rtos_set_semaphore(&SyncSemaphore);
+    LWIP_LOGD("HAL_ETH_Transmit_IT failed\n");
+    pbuf_free(p);
+  }
+  else
+  {
+#ifdef CONFIG_ETH_PM_CB_SUPPORT
+     // Increase tx counter for LV
+     priv->tx_count++;
+#endif
+  }
+
+  // Free txconfig previous allocated in low_level_output
+  os_free(txconfig);
+}
+
+#ifdef CONFIG_ETH_PM_CB_SUPPORT
+static void eth_set_ps_prevent(struct eth_mac_priv *priv, uint32_t prevent_bits)
+{
+  GLOBAL_INT_DECLARATION();
+
+  GLOBAL_INT_DISABLE();
+  priv->ps_prevent |= prevent_bits;
+  GLOBAL_INT_RESTORE();
+}
+
+static void eth_clear_ps_prevent(struct eth_mac_priv *priv, uint32_t prevent_bits)
+{
+  GLOBAL_INT_DECLARATION();
+
+  GLOBAL_INT_DISABLE();
+  priv->ps_prevent &= ~prevent_bits;
+  GLOBAL_INT_RESTORE();
+}
+
+static void eth_sleep_check()
+{
+  // check tx, rx, irq pending, EthEvents
+  struct eth_mac_priv *priv = heth.priv;
+
+  // ps prevent
+  if (priv->ps_prevent) {
+    return;
+  }
+
+  // tx packet not completed
+  if (priv->tx_count) {
+    return;
+  }
+
+  // Still has events hot processed
+  if (!rtos_is_queue_empty(&priv->eventq)) {
+    return;
+  }
+
+  // Eth can put into doze mode
+  bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_ENET, 0x1, 0x0);
+}
+
+static void eth_wakeup_check(BUS_MSG_T *msg)
+{
+  struct eth_mac_priv *priv = heth.priv;
+
+  // Eth PS keep timer end
+  if (msg->type == BMSG_PS_KEEP_END) {
+    return;
+  }
+
+  if (priv->hw_in_doze) {
+
+    // If eth in doze mode, Exit from Doze
+    __HAL_ETH_Exit_LP();
+
+    priv->hw_in_doze = false;
+  } else {
+    // Current all msg will wakeup ethernet
+    bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_ENET, 0x0, 0x0);
+  }
+
+  // restart ethernet linger timer
+  eth_start_keep_timer(1, 0);
+  eth_set_ps_prevent(priv, ETH_PS_PREVENT_KEEP_TIMER);
+}
+#endif // CONFIG_ETH_PM_CB_SUPPORT
+
+// core_thread_init / core_thread_main
+static void ethernetif_core_thread(void *argument)
+{
+  struct netif *netif = (struct netif *)argument;
+  bk_err_t ret;
+  BUS_MSG_T msg;
+  struct eth_mac_priv *priv = heth.priv;
+  GLOBAL_INT_DECLARATION();
+
+  for (;;) {
+    ret = rtos_pop_from_queue(&priv->eventq, &msg, BEKEN_WAIT_FOREVER);
+
+    // check ethernet wakeup
+    if (ret != kNoErr) {
+      os_printf("pop queue failed\n");
+      continue;
     }
+
+#ifdef CONFIG_ETH_PM_CB_SUPPORT
+    eth_wakeup_check(&msg);
+#endif
+
+    //os_printf("enter: msg.type %d\n", msg.type);
+    switch (msg.type) {
+    case BMSG_RX_TYPE:
+      bmsg_eth_rx_handler(&msg, netif);
+      break;
+
+    case BMSG_TX_TYPE:
+      bmsg_eth_tx_handler(&msg);
+      break;
+
+    case BMSG_TX_COMPLETE:
+      GLOBAL_INT_DISABLE();
+      if (bmsg_eth_tx_compl_count > 0)
+        bmsg_eth_tx_compl_count -= 1;
+      GLOBAL_INT_RESTORE();
+
+      HAL_ETH_ReleaseTxPacket(&heth);
+      break;
+
+#ifdef CONFIG_ETH_PM_CB_SUPPORT
+    case BMSG_PS_KEEP_END:
+      eth_clear_ps_prevent(priv, ETH_PS_PREVENT_KEEP_TIMER);
+      break;
+#endif
+    }
+
+#ifdef CONFIG_ETH_PM_CB_SUPPORT
+    // Check whether ETH may sleep
+    eth_sleep_check();
+#endif
   }
 }
-#endif
 
 #if !LWIP_ARP
 /**
@@ -529,9 +926,7 @@ err_t ethernetif_init(struct netif *netif)
   netif->linkoutput = low_level_output;
 
   /* initialize the hardware */
-  low_level_init(netif);
-
-  return ERR_OK;
+  return low_level_init(netif);
 }
 
 /**
@@ -550,9 +945,93 @@ static void pbuf_free_custom(struct pbuf *p)
   if (RxAllocStatus == RX_ALLOC_ERROR)
   {
     RxAllocStatus = RX_ALLOC_OK;
-    rtos_set_semaphore(&RxPktSemaphore);
+    bmsg_eth_rx_sender(0);
   }
 }
+
+#ifdef CONFIG_ETH_PM_CB_SUPPORT
+// refer: HAL_ETH_Init
+static int HAL_ETH_Enter_LP(uint64_t sleep_time, void *args)
+{
+  struct eth_mac_priv *priv = heth.priv;
+
+  // already in doze
+  if (priv->hw_in_doze)
+    return 0;
+
+  // Disable ETH IRQ
+  sys_hal_enable_eth_int(0);
+
+  // Stop ETH
+  HAL_ETH_Stop_IT(&heth);
+
+  sys_ll_set_reserver_reg0xd_enet_cken(0);
+
+  SET_BIT(ETH_RESET_CTRL, 0);
+
+  // disable AHB Power Domain
+  bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_AHBP_ENET, PM_POWER_MODULE_STATE_OFF);
+
+  LWIP_LOGD("ETH Enter LP done\n");
+
+  // Eth enters low voltage
+  priv->hw_in_doze = true;
+
+  return 0;
+}
+
+static int HAL_ETH_Exit_LP(uint64_t sleep_time, void *args)
+{
+  LWIP_LOGD("%s\n", __func__);
+
+  struct eth_mac_priv *priv = heth.priv;
+
+  priv->skip_link_check_count = 10;
+
+  // defer to task
+  bmsg_eth_null_sender();
+
+  return 0;
+}
+
+
+// Exits from PS
+static int __HAL_ETH_Exit_LP()
+{
+  ETH_MACConfigTypeDef MACConf = {0};
+  struct eth_mac_priv *priv = heth.priv;
+
+  // Current all msg will wakeup ethernet
+  bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_ENET, 0x0, 0x0);
+
+  // ETH soft reset
+  SET_BIT(ETH_RESET_CTRL, 0x1);
+
+  // ETH bypass clockgate
+  WRITE_REG(ETH_RESET_CTRL, 0x3);
+
+  // ETH CLK enable
+  sys_ll_set_reserver_reg0xd_enet_cken(1);
+
+  // Enable ETH IRQ
+  sys_hal_enable_eth_int(1);
+
+  // eth_restore_registers(&heth);
+  HAL_ETH_ReInit(&heth);
+
+  /* Get MAC Config MAC */
+  HAL_ETH_GetMACConfig(&heth, &MACConf);
+  MACConf.DuplexMode = priv->duplex;
+  MACConf.Speed = priv->speed;
+  HAL_ETH_SetMACConfig(&heth, &MACConf);
+  HAL_ETH_Start_IT(&heth);
+  priv->hw_in_doze = false;
+
+  LWIP_LOGI("ETH exits LP\n");
+
+  return 0;
+}
+#endif // CONFIG_ETH_PM_CB_SUPPORT
 
 void HAL_ETH_MspInit(ETH_HandleTypeDef* ethHandle)
 {
@@ -608,6 +1087,14 @@ void HAL_ETH_MspInit(ETH_HandleTypeDef* ethHandle)
   gpio_dev_map(GPIO_55, GPIO_DEV_ENET_REF_CLK);
 #endif
 
+#ifdef CONFIG_ETH_PM_CB_SUPPORT
+  // Power On AHBP
+  bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_AHBP_ENET, PM_POWER_MODULE_STATE_ON);
+
+  // Don't allow ETH enters PS
+  bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_ENET, 0x0, 0x0);
+#endif
+
   LWIP_LOGI("ETH SoftRest\n");
   // ETH soft reset
   SET_BIT(ETH_RESET_CTRL, 0x1);
@@ -622,7 +1109,20 @@ void HAL_ETH_MspInit(ETH_HandleTypeDef* ethHandle)
   bk_int_isr_register(INT_SRC_ETH, ETH_IRQHandler, NULL);
 
   // Enable ETH IRQ
-  sys_hal_enable_eth_int();
+  sys_hal_enable_eth_int(1);
+
+#ifdef CONFIG_ETH_PM_CB_SUPPORT
+  // Register enters/exit low voltage callback
+  pm_cb_conf_t enter_config;
+  enter_config.cb = (pm_cb)HAL_ETH_Enter_LP;
+  enter_config.args = NULL;
+
+  pm_cb_conf_t exit_config;
+  exit_config.cb = (pm_cb)HAL_ETH_Exit_LP;
+  exit_config.args = NULL;
+
+  bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, PM_DEV_ID_ENET, &enter_config, &exit_config);
+#endif
 }
 
 void HAL_ETH_MspDeInit(ETH_HandleTypeDef* ethHandle)
@@ -658,8 +1158,15 @@ void HAL_ETH_MspDeInit(ETH_HandleTypeDef* ethHandle)
     HAL_NVIC_DisableIRQ(ETH_IRQn);
 #endif
   }
+
+#ifdef CONFIG_ETH_PM_CB_SUPPORT
+  // allow eth sleep, and allow AHBP power off
+  bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_ENET, 0x1, 0x0);
+  bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_AHBP_ENET, PM_POWER_MODULE_STATE_OFF);
+#endif
 }
 
+#if !ETH_MULTI_PHY_SUPPORT
 /*******************************************************************************
                        PHI IO Functions
 *******************************************************************************/
@@ -732,7 +1239,112 @@ static int32_t ETH_PHY_IO_GetTick(void)
 {
   return xTaskGetTickCount();
 }
+#endif
 
+#if ETH_MULTI_PHY_SUPPORT
+/**
+  * @brief  Check the ETH link state then update ETH driver and netif link accordingly.
+  * @param  argument: netif
+  * @retval None
+  */
+void ethernet_link_thread(void *argument)
+{
+  ETH_MACConfigTypeDef MACConf = {0};
+  //int32_t PHYLinkState = 0;
+  uint32_t linkchanged = 0U, speed = 0U, duplex = 0U;
+
+  struct netif *netif = (struct netif *) argument;
+  struct eth_mac_priv *priv __maybe_unused = heth.priv;
+  struct phy_device *phydev = priv->phy;
+
+  /* ETH_CODE: workaround to call LOCK_TCPIP_CORE when accessing netif link functions*/
+  // LOCK_TCPIP_CORE();
+
+  /* ETH link init */
+
+  for(;;)
+  {
+#ifdef CONFIG_ETH_PM_CB_SUPPORT
+    // Don't allow eth enters PS until link up
+    eth_set_ps_prevent(priv, ETH_PS_PREVENT_LINK_CHECK);
+#endif
+
+    genphy_read_status(phydev);
+
+#ifdef CONFIG_ETH_PM_CB_SUPPORT
+    // If link down and skip count remains then try later. Still don't allow eth enter PS
+    if (!phydev->link && priv->skip_link_check_count) {
+      priv->skip_link_check_count--;
+      rtos_delay_milliseconds(200);
+      continue;
+    }
+#endif
+
+    if (netif_is_link_up(netif) && !phydev->link) {
+    LWIP_LOGI("ETH link down\n");
+    HAL_ETH_Stop_IT(&heth);
+
+    // stop dynamic address or static ip address
+    eth_ip_down();  // XXX: netifapi_XXX
+    } else if (!netif_is_link_up(netif) && phydev->link) {
+      linkchanged = 1;
+
+      switch (phydev->duplex) {
+      case DUPLEX_FULL:
+          duplex = ETH_FULLDUPLEX_MODE;
+          break;
+        case DUPLEX_HALF:
+      duplex = ETH_HALFDUPLEX_MODE;
+      break;
+    default:
+        linkchanged = 0;
+      }
+
+      switch (phydev->speed) {
+      case SPEED_1000:
+        break;
+      case SPEED_100:
+        speed = ETH_SPEED_100M;
+        break;
+      case SPEED_10:
+        speed = ETH_SPEED_10M;
+        break;
+    default:
+        linkchanged = 0;
+      }
+
+      if(linkchanged)
+      {
+        LWIP_LOGI("ETH link up, speed %dM, %s-duplex\n", phydev->speed, phydev->duplex ? "Full" : "Half");
+
+        /* Get MAC Config MAC */
+        HAL_ETH_GetMACConfig(&heth, &MACConf);
+        MACConf.DuplexMode = duplex;
+        MACConf.Speed = speed;
+#ifdef CONFIG_ETH_PM_CB_SUPPORT
+        priv->duplex = duplex;
+        priv->speed = speed;
+#endif
+        HAL_ETH_SetMACConfig(&heth, &MACConf);
+        HAL_ETH_Start_IT(&heth);
+        netifapi_netif_set_link_up(netif);
+
+        eth_ip_start();   // netifapi_XXX
+      }
+    }
+
+#ifdef CONFIG_ETH_PM_CB_SUPPORT
+    // allow eth enters PS
+    eth_clear_ps_prevent(priv, ETH_PS_PREVENT_LINK_CHECK);
+#endif
+
+    /* ETH_CODE: workaround to call LOCK_TCPIP_CORE when accessing netif link functions*/
+    // UNLOCK_TCPIP_CORE();
+    rtos_delay_milliseconds(200);
+    // LOCK_TCPIP_CORE();
+  }
+}
+#else
 /**
   * @brief  Check the ETH link state then update ETH driver and netif link accordingly.
   * @param  argument: netif
@@ -745,6 +1357,7 @@ void ethernet_link_thread(void *argument)
   uint32_t linkchanged = 0U, speed = 0U, duplex = 0U;
 
   struct netif *netif = (struct netif *) argument;
+  struct eth_mac_priv *priv __maybe_unused = heth.priv;
 
   /* ETH_CODE: workaround to call LOCK_TCPIP_CORE when accessing netif link functions*/
   // LOCK_TCPIP_CORE();
@@ -753,7 +1366,21 @@ void ethernet_link_thread(void *argument)
 
   for(;;)
   {
+#ifdef CONFIG_ETH_PM_CB_SUPPORT
+    // Don't allow eth enters PS until link up
+    eth_set_ps_prevent(priv, ETH_PS_PREVENT_LINK_CHECK);
+#endif
+
     PHYLinkState = LAN8742_GetLinkState(&LAN8742);
+
+#ifdef CONFIG_ETH_PM_CB_SUPPORT
+    // If link down and skip count remains then try later. Still don't allow eth enter PS
+    if ((PHYLinkState <= LAN8742_STATUS_LINK_DOWN) && priv->skip_link_check_count) {
+      priv->skip_link_check_count--;
+      rtos_delay_milliseconds(200);
+      continue;
+    }
+#endif
 
     if(netif_is_link_up(netif) && (PHYLinkState <= LAN8742_STATUS_LINK_DOWN))
     {
@@ -797,8 +1424,10 @@ void ethernet_link_thread(void *argument)
 
         /* Get MAC Config MAC */
         HAL_ETH_GetMACConfig(&heth, &MACConf);
-        MACConf.DuplexMode = duplex;
-        MACConf.Speed = speed;
+#ifdef CONFIG_ETH_PM_CB_SUPPORT
+        priv->duplex = MACConf.DuplexMode = duplex;
+        priv->speed = MACConf.Speed = speed;
+#endif
         HAL_ETH_SetMACConfig(&heth, &MACConf);
         HAL_ETH_Start_IT(&heth);
         netifapi_netif_set_link_up(netif);
@@ -807,13 +1436,18 @@ void ethernet_link_thread(void *argument)
       }
     }
 
+#ifdef CONFIG_ETH_PM_CB_SUPPORT
+    // allow eth enters PS
+    eth_clear_ps_prevent(priv, ETH_PS_PREVENT_LINK_CHECK);
+#endif
+
     /* ETH_CODE: workaround to call LOCK_TCPIP_CORE when accessing netif link functions*/
     // UNLOCK_TCPIP_CORE();
     rtos_delay_milliseconds(200);
     // LOCK_TCPIP_CORE();
   }
 }
-
+#endif //ETH_MULTI_PHY_SUPPORT
 
 void HAL_ETH_RxAllocateCallback(uint8_t **buff)
 {
@@ -833,6 +1467,12 @@ void HAL_ETH_RxAllocateCallback(uint8_t **buff)
     RxAllocStatus = RX_ALLOC_ERROR;
     *buff = NULL;
   }
+}
+
+void HAL_ETH_Free_Rxbuf(uint8_t *buff)
+{
+  struct pbuf *p = (struct pbuf *)(buff - offsetof(RxBuff_t, buff));
+  pbuf_free(p);
 }
 
 void HAL_ETH_RxLinkCallback(void **pStart, void **pEnd, uint8_t *buff, uint16_t Length)
@@ -866,25 +1506,29 @@ void HAL_ETH_RxLinkCallback(void **pStart, void **pEnd, uint8_t *buff, uint16_t 
   {
     p->tot_len += Length;
   }
-
-  /* Invalidate data cache because Rx DMA's writing to physical memory makes it stale. */
-#if 0
-  SCB_InvalidateDCache_by_Addr((uint32_t *)buff, Length);
-#else
-#if CONFIG_CACHE_ENABLE
-  flush_dcache(buff, Length);
-#endif
-#endif
 }
 
 void HAL_ETH_TxFreeCallback(uint32_t * buff)
 {
+  struct eth_mac_priv *priv __maybe_unused = heth.priv;
+
   pbuf_free((struct pbuf *)buff);
+
+#ifdef CONFIG_ETH_PM_CB_SUPPORT
+  // decrease tx counter of TX path
+  BK_ASSERT(priv->tx_count);
+  priv->tx_count--;
+#endif
 }
 
 void ETH_DumpAllRegisters(void)
 {
   HAL_ETH_DumpAllRegisters(&heth);
+}
+
+char *netif_name(struct netif *netif)
+{
+  return netif->name;
 }
 
 #endif /* CONFIG_ETH */

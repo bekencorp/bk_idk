@@ -28,17 +28,17 @@ The security access rules on BK7236 can be summarized by the following figure:
 Security Access Rules:
 
   - After the AHB Master request passes the AHB Master's own security rule check, it carries the S/NS signal to the AHB bus:
- 
+
    - When the Master is M33, the access address is checked by IDAU/SAU first, and then checked by MPU after passing the check, and finally goes to the bus.
    - When the Master is other devices, if the Master is configured as S by the PPC, then it is S access, otherwise it is NS access.
 
   - S/NS request from AHB Master, then checked by BK7236 security control:
- 
+
    - First is the PPC review, the general rule is that NS can only access peripherals with PPC configured as NS, and S can access S/NS peripherals (or only S peripherals).
    - For block memory access, further review by MPC, the review rule is that S requests can access S/NS blocks, and NS requests can only access NS blocks.
 
   - After passing the PPC/MPC review, the access request comes to the target peripheral:
- 
+
    - If the target peripheral itself does not recognize the S/NS signal, directly access the target peripheral.
    - If the target peripheral itself recognizes the S/NS signal (S/NS Aware peripheral), the target peripheral performs a final security check on the request.
 
@@ -51,7 +51,7 @@ If any of the security checks fails, the access will be terminated and a securit
 M33 Security Access
 ++++++++++++++++++++++
 
-In CM33, the CPU access address will go through the IDAU/SAU security check first, and if the check fails, a security exception will be generated.
+In CM33 ，the CPU access address will go through the IDAU/SAU security check first, and if the check fails, a security exception will be generated.
 If the check is passed, the MPU will perform a security check, and the MPU will carry the S/NS signal to the bus matrix after passing the check.
 
 In BK7236, the IDAU settings are as shown in the figure below:

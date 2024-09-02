@@ -21,7 +21,7 @@
 #include "psram_driver.h"
 #include <driver/psram.h>
 #include <modules/pm.h>
-#if (CONFIG_EASY_FLASH && CONFIG_EASY_FLASH_V4)
+#if (CONFIG_PSRAM_AUTO_DETECT)
 #include "bk_ef.h"
 #endif
 
@@ -31,7 +31,7 @@ typedef struct {
 	uint32_t magic_code;
 } psram_flash_t;
 
-#if (CONFIG_EASY_FLASH && CONFIG_EASY_FLASH_V4)
+#if (CONFIG_PSRAM_AUTO_DETECT)
 static bool s_psram_id_need_write = false;
 static beken_semaphore_t s_psram_sem = NULL;
 static beken_thread_t psram_task = NULL;
@@ -135,7 +135,7 @@ bk_err_t bk_psram_calibrate(void)
 #endif
 }
 
-#if (CONFIG_EASY_FLASH && CONFIG_EASY_FLASH_V4)
+#if (CONFIG_PSRAM_AUTO_DETECT)
 static void psram_id_write(beken_thread_arg_t data)
 {
 	rtos_get_semaphore(&s_psram_sem, BEKEN_WAIT_FOREVER);
@@ -144,6 +144,8 @@ static void psram_id_write(beken_thread_arg_t data)
 	{
 		bk_set_env_enhance(PSRAM_CHIP_ID, (const void *)&s_psram_id, sizeof(psram_flash_t));
 	}
+
+	PSRAM_LOGI("psram id write to flash success\r\n");
 
 	s_psram_id_need_write = false;
 
@@ -157,7 +159,7 @@ static void psram_id_write(beken_thread_arg_t data)
 
 bk_err_t bk_psram_id_auto_detect(void)
 {
-#if (CONFIG_EASY_FLASH && CONFIG_EASY_FLASH_V4)
+#if (CONFIG_PSRAM_AUTO_DETECT)
 	int ret = bk_get_env_enhance(PSRAM_CHIP_ID, (void *)&s_psram_id, sizeof(psram_flash_t));
 
 	if (ret != 8)
@@ -209,7 +211,7 @@ bk_err_t bk_psram_init(void)
 	uint32_t chip_id = 0, actual_id = 0;
 
 	// psram voltage sel
-	bk_psram_set_voltage(PSRAM_OUT_1_90V);
+	bk_psram_set_voltage(PSRAM_OUT_1_95V);
 
 	// power up and clk config
 	psram_hal_power_clk_enable(1);
@@ -239,7 +241,7 @@ bk_err_t bk_psram_init(void)
 	{
 		s_psram_id.psram_id = actual_id;
 		s_psram_id.magic_code = PSRAM_CHECK_FLAG;
-#if (CONFIG_EASY_FLASH && CONFIG_EASY_FLASH_V4)
+#if (CONFIG_PSRAM_AUTO_DETECT)
 		if (s_psram_sem)
 		{
 			s_psram_id_need_write = true;
@@ -250,7 +252,7 @@ bk_err_t bk_psram_init(void)
 	}
 	else
 	{
-#if (CONFIG_EASY_FLASH && CONFIG_EASY_FLASH_V4)
+#if (CONFIG_PSRAM_AUTO_DETECT)
 		if (s_psram_sem)
 		{
 			rtos_set_semaphore(&s_psram_sem);

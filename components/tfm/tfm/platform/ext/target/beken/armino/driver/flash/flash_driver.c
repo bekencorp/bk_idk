@@ -177,13 +177,13 @@ __attribute__((section(".itcm_sec_code"))) void flash_waiting_cb(void)
 	}
 }
 
-static void flash_switch_to_line_mode_two(void)
+void flash_switch_to_line_mode_two(void)
 {
 	if (FLASH_LINE_MODE_FOUR == bk_flash_get_line_mode())
 		bk_flash_set_line_mode(FLASH_LINE_MODE_TWO);
 }
 
-static void flash_restore_line_mode(void)
+void flash_restore_line_mode(void)
 {
 	if (FLASH_LINE_MODE_FOUR == bk_flash_get_line_mode())
 		bk_flash_set_line_mode(FLASH_LINE_MODE_FOUR);
@@ -535,21 +535,10 @@ bk_err_t bk_flash_driver_init(void)
 	#endif
 #endif
 
-#if (CONFIG_SOC_BK7236XX)
-	if((s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_GD) {
-		if((1 != sys_drv_flash_get_clk_sel()) || (1 != sys_drv_flash_get_clk_div())) {
-			sys_drv_flash_set_clk_div(1); // dpll div 6 = 80M
-			sys_drv_flash_cksel(1);
-		}
-	} else {
-		if((1 != sys_drv_flash_get_clk_sel()) || (3 != sys_drv_flash_get_clk_div())) {
-			sys_drv_flash_set_clk_div(3); // dpll div 10 = 48M
-			sys_drv_flash_cksel(1);
-		}
-	}
+
 
 	flash_enable_line_mode_switch(false);
-#endif
+
 
 	flash_init_common();
 	s_flash_is_init = true;
@@ -955,4 +944,39 @@ bk_err_t bk_spec_flash_write_bytes(bk_partition_t partition, const uint8_t *user
 void bk_flash_set_base_addr(uint32_t addr)
 {
 	flash_hal_set_base_addr(&s_flash.hal, addr);
+}
+
+int bk_flash_set_dbus_security_region(uint32_t id, uint32_t start, uint32_t end, bool secure)
+{
+	if (id >= FLASH_DBUS_REGION_MAX) {
+		return BK_ERR_FLASH_DBUS_REGION;
+	}
+
+	if (end <= start) {
+		return BK_ERR_FLASH_ADDR;
+	}
+
+	if (end >= s_flash.flash_cfg->flash_size) {
+		return BK_ERR_FLASH_ADDR_OUT_OF_RANGE;
+	}
+
+	flash_hal_set_dbus_region(&s_flash.hal, id, start, end, secure);
+	return BK_OK;
+}
+
+void flash_set_xip_offset(uint32_t primary_start, uint32_t secondary_start, uint32_t code_size)
+{
+	flash_hal_set_offset_begin(&s_flash.hal,primary_start);
+	flash_hal_set_offset_end(&s_flash.hal,primary_start+code_size);
+	flash_hal_set_addr_offset(&s_flash.hal,secondary_start-primary_start);
+}
+
+void flash_set_excute_enable(int enable)
+{
+	flash_hal_set_offset_enable(&s_flash.hal, enable);
+}
+
+uint32_t flash_get_excute_enable()
+{
+	return flash_hal_read_offset_enable(&s_flash.hal);
 }

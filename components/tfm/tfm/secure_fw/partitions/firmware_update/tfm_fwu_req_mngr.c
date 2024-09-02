@@ -12,7 +12,7 @@
 #include "psa/update.h"
 #include "service_api.h"
 #include "tfm_api.h"
-
+#include "psa/fwu_config.h.in"
 #ifdef TFM_PSA_API
 #include "psa/service.h"
 #include "psa_manifest/tfm_firmware_update.h"

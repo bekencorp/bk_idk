@@ -52,5 +52,10 @@ menu "PSRAM"
 		depends on PSRAM
 		bool "Enable PSRAM calibrate"
 		default n
+
+	config PSRAM_AUTO_DETECT
+		depends on PSRAM && EASY_FLASH && EASY_FLASH_V4
+		bool "Enable PSRAM id auto detect function"
+		default n
 endmenu
 

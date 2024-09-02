@@ -24,9 +24,17 @@
 #include "gpio_driver.h"
 #include <driver/gpio.h>
 #include "bk_misc.h"
-#include "lcd_qspi_driver.h"
 #include <driver/dma.h>
 #include "bk_general_dma.h"
+#include <components/log.h>
+
+
+#define LCD_QSPI_TAG "lcd_qspi"
+
+#define LCD_QSPI_LOGI(...) BK_LOGI(LCD_QSPI_TAG, ##__VA_ARGS__)
+#define LCD_QSPI_LOGW(...) BK_LOGW(LCD_QSPI_TAG, ##__VA_ARGS__)
+#define LCD_QSPI_LOGE(...) BK_LOGE(LCD_QSPI_TAG, ##__VA_ARGS__)
+#define LCD_QSPI_LOGD(...) BK_LOGD(LCD_QSPI_TAG, ##__VA_ARGS__)
 
 
 #if CONFIG_SOC_BK7256XX
@@ -96,7 +104,9 @@ static bk_err_t lcd_qspi_driver_init(qspi_id_t qspi_id, lcd_qspi_clk_t clk)
 {
     qspi_config_t lcd_qspi_config;
     os_memset(&lcd_qspi_config, 0, sizeof(lcd_qspi_config));
-    os_memset(&(s_lcd_qspi[qspi_id]), 0, sizeof(s_lcd_qspi[qspi_id]));
+
+    os_memset(&s_lcd_qspi, 0, sizeof(s_lcd_qspi));
+    s_lcd_qspi[qspi_id].hal.id = qspi_id;
     qspi_hal_init(&s_lcd_qspi[qspi_id].hal);
 
     switch (clk) {
@@ -508,12 +518,19 @@ bk_err_t lcd_qspi_get_dma_repeat_once_len(const lcd_device_t *device)
 {
     uint32_t len = 0;
     uint32_t value = 0;
-    value = 0x10000 / device->qspi->refresh_config.line_len;
-    while ((device->ppi & 0xFFFF) % value) {
-        value = value - 1;
+    uint8_t i = 0;
+
+    for (i = 4; i < 13; i++) {
+        len = device->qspi->frame_len / i;
+        if (len <= 0x10000) {
+            value = device->qspi->frame_len % i;
+            if (!value) {
+                return len;
+            }
+        }
     }
 
-    len = value * device->qspi->refresh_config.line_len;
+    LCD_QSPI_LOGE("%s Error dma length, please check the resolution of qspi lcd\r\n", __func__);
 
     return len;
 }
@@ -523,8 +540,6 @@ bk_err_t lcd_qspi_get_dma_repeat_once_len(const lcd_device_t *device)
 bk_err_t bk_lcd_qspi_init(qspi_id_t qspi_id, const lcd_device_t *device)
 {
     bk_err_t ret = BK_OK;
-
-    bk_pm_module_vote_cpu_freq(PM_DEV_ID_DISP, PM_CPU_FRQ_320M);
 
     if (device == NULL) {
         LCD_QSPI_LOGE("lcd qspi device not found\r\n");
@@ -593,6 +608,18 @@ bk_err_t bk_lcd_qspi_deinit(qspi_id_t qspi_id)
     BK_LOG_ON_ERR(bk_qspi_deinit(qspi_id));
 
     return BK_OK;
+}
+
+static void lcd_qspi_disp_area_config_for_frame_refresh(qspi_id_t qspi_id, const lcd_device_t *device)
+{
+    uint8_t column_value[4] = {0};
+    uint8_t row_value[4] = {0};
+    column_value[2] = (device->ppi >> 24) & 0xFF,
+    column_value[3] = ((device->ppi >> 16) & 0xFF) - 1,
+    row_value[2] = (device->ppi >> 8) & 0xFF;
+    row_value[3] = (device->ppi & 0xFF) - 1;
+    bk_lcd_qspi_send_cmd(qspi_id, device->qspi->reg_write_cmd, 0x2A, column_value, 4);
+    bk_lcd_qspi_send_cmd(qspi_id, device->qspi->reg_write_cmd, 0x2B, row_value, 4);
 }
 
 bk_err_t bk_lcd_qspi_send_data(qspi_id_t qspi_id, const lcd_device_t *device, uint32_t *data, uint32_t data_len)
@@ -688,12 +715,12 @@ bk_err_t bk_lcd_qspi_send_data(qspi_id_t qspi_id, const lcd_device_t *device, ui
         bk_lcd_qspi_quad_write_start(qspi_id, device->qspi->pixel_write_config, 0);
         bk_dma_start(lcd_qspi_dma_id);
 
-        ret = rtos_get_semaphore(&lcd_qspi_semaphore, 5000);
+        ret = rtos_get_semaphore(&lcd_qspi_semaphore, 3000);
         if (ret != kNoErr) {
             LCD_QSPI_LOGE("ret = %d, lcd qspi get semaphore failed!\r\n", ret);
             return BK_FAIL;
         }
-
+        delay_us(5);
         bk_lcd_qspi_quad_write_stop(qspi_id);
 
         for (uint16_t i = 0; i < device->qspi->refresh_config.hbp; i++) {
@@ -701,14 +728,18 @@ bk_err_t bk_lcd_qspi_send_data(qspi_id_t qspi_id, const lcd_device_t *device, ui
             delay_us(40);
         }
     } else if (device->qspi->refresh_method == LCD_QSPI_REFRESH_BY_FRAME) {
+        lcd_qspi_disp_area_config_for_frame_refresh(qspi_id, device);
+
         bk_lcd_qspi_quad_write_start(qspi_id, device->qspi->pixel_write_config, 0);
         bk_dma_start(lcd_qspi_dma_id);
 
-        ret = rtos_get_semaphore(&lcd_qspi_semaphore, 1000);
+        ret = rtos_get_semaphore(&lcd_qspi_semaphore, 3000);
         if (ret != kNoErr) {
             LCD_QSPI_LOGE("ret = %d, lcd qspi get semaphore failed!\r\n", ret);
             return BK_FAIL;
         }
+        delay_us(5);
+        bk_lcd_qspi_quad_write_stop(qspi_id);
     } else {
         LCD_QSPI_LOGE("invalid lcd qspi refresh method\r\n");
         return BK_FAIL;

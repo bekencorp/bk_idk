@@ -605,6 +605,7 @@ typedef struct
   pETH_txFreeCallbackTypeDef      txFreeCallback;       /*!< ETH Tx Free Function         */
   pETH_txPtpCallbackTypeDef       txPtpCallback;  /*!< ETH Tx Handle Ptp Function */
 
+  void *priv;    /*!< ETH private data */
 } ETH_HandleTypeDef;
 /**
   *
@@ -1737,6 +1738,7 @@ typedef struct
   */
 /* Initialization and de initialization functions  **********************************/
 HAL_StatusTypeDef HAL_ETH_Init(ETH_HandleTypeDef *heth);
+HAL_StatusTypeDef HAL_ETH_ReInit(ETH_HandleTypeDef *heth);
 HAL_StatusTypeDef HAL_ETH_DeInit(ETH_HandleTypeDef *heth);
 void              HAL_ETH_MspInit(ETH_HandleTypeDef *heth);
 void              HAL_ETH_MspDeInit(ETH_HandleTypeDef *heth);

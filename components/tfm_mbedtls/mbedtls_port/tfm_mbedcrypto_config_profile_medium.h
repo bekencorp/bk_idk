@@ -588,7 +588,7 @@
  *
  * Enable Xor-encrypt-xor with ciphertext stealing mode (XTS) for AES.
  */
-//#define MBEDTLS_CIPHER_MODE_XTS
+#define MBEDTLS_CIPHER_MODE_XTS
 
 /**
  * \def MBEDTLS_CIPHER_NULL_CIPHER
@@ -747,7 +747,7 @@
  * Disable if you run into name conflicts and want to really remove the
  * mbedtls_strerror()
  */
-#define MBEDTLS_ERROR_STRERROR_DUMMY
+//#define MBEDTLS_ERROR_STRERROR_DUMMY
 
 /**
  * \def MBEDTLS_GENPRIME
@@ -1360,7 +1360,7 @@
  *
  * This module enables mbedtls_strerror().
  */
-#define MBEDTLS_ERROR_C
+//#define MBEDTLS_ERROR_C
 
 /**
  * \def MBEDTLS_GCM_C
@@ -1887,6 +1887,33 @@
 //#define MBEDTLS_XTEA_C
 
 /* \} name SECTION: mbed TLS modules */
+
+/**
+ * \def MBEDTLS_X509_CREATE_C
+ *
+ * Enable X.509 core for creating certificates.
+ *
+ * Module:  library/x509_create.c
+ *
+ * Requires: MBEDTLS_BIGNUM_C, MBEDTLS_OID_C, MBEDTLS_PK_WRITE_C
+ *
+ * This module is the basis for creating X.509 certificates and CSRs.
+ */
+#define MBEDTLS_X509_CREATE_C
+
+/**
+ * \def MBEDTLS_X509_CSR_WRITE_C
+ *
+ * Enable creating X.509 Certificate Signing Requests (CSR).
+ *
+ * Module:  library/x509_csr_write.c
+ *
+ * Requires: MBEDTLS_X509_CREATE_C
+ *
+ * This module is required for X.509 certificate request writing.
+ */
+#define MBEDTLS_X509_CSR_WRITE_C
+
 
 /**
  * \name SECTION: Module configuration options

@@ -34,10 +34,18 @@ bk_err_t bk_usb_uvc_uac_sw_init(void *set_config);
 bk_err_t bk_usb_uvc_uac_sw_deinit();
 
 #if CONFIG_CHERRY_USB
+#define UVC_UAC_TRIGGER_ERROR_COUNT 5
+#define UVC_UAC_TRANSFER_IRQ_ERROR_COUNT 5
+
 void bk_usb_uvc_uac_free_enumerate_resources();
 void bk_usb_updata_video_interface(void *hport, uint8_t bInterfaceNumber, uint8_t interface_sub_class);
+
 void bk_usbh_video_start_handle(struct usbh_video *uvc_device);
+void bk_usbh_video_start_dual_handle(struct usbh_video *uvc_device);
+
 bk_err_t bk_uvc_trigger_video_stream_rx(void *uvc_device);
+bk_err_t bk_uvc_trigger_video_stream_dual_rx(void *uvc_device);
+
 void bk_usbh_video_stop_handle(struct usbh_video *uvc_device);
 
 void bk_usb_updata_audio_interface(void *hport, uint8_t bInterfaceNumber, uint8_t interface_sub_class);

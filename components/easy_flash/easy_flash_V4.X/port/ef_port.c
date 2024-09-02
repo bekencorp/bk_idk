@@ -31,12 +31,8 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#if CONFIG_FLASH_ORIGIN_API
-#include "bk_flash.h"
-#include "flash.h"
-#else
 #include "driver/flash.h"
-#endif
+#include <driver/flash_partition.h>
 
 #include <os/os.h>
 #include "bk_uart.h"
@@ -48,10 +44,33 @@ static const ef_env default_env_set[] = {
 };
 
 static beken_semaphore_t env_cache_lock = NULL;
+uint32_t g_ef_start_addr = 0xFFFFFFFF;
 
 #ifdef PRINT_DEBUG
 static char log_buf[256];
 #endif
+
+
+void ef_check_config(void) {
+	bk_logic_partition_t *partition_info = NULL;
+
+	partition_info = bk_flash_partition_get_info(BK_PARTITION_EASYFLASH);
+	BK_ASSERT(NULL != partition_info);
+
+	g_ef_start_addr = partition_info->partition_start_addr;
+
+	if (partition_info->partition_start_addr == 0) {
+		EF_INFO("[Error]: easy_flash partition start address is invalid.\n");
+		BK_ASSERT(0);
+	}
+
+	if (partition_info->partition_length < ENV_AREA_SIZE) {
+		EF_INFO("[Error]: easy_flash partition size is 0x%08X, but config ENV_AREA_SIZE is 0x%08X.\n",
+				 partition_info->partition_length, ENV_AREA_SIZE);
+		BK_ASSERT(0);
+	}
+}
+
 
 /**
  * Flash port for hardware initialize.
@@ -68,6 +87,8 @@ EfErrCode ef_port_init(ef_env const **default_env, size_t *default_env_size)
 
 	*default_env = default_env_set;
 	*default_env_size = sizeof(default_env_set) / sizeof(default_env_set[0]);
+
+	ef_check_config();
 
 	ret = rtos_init_semaphore_adv(&env_cache_lock, 1, 1);
 	BK_ASSERT(kNoErr == ret); /* ASSERT VERIFIED */
@@ -91,11 +112,7 @@ EfErrCode ef_port_read(uint32_t addr, uint32_t *buf, size_t size)
 
 	//EF_ASSERT(size % 4 == 0);
 
-#if CONFIG_FLASH_ORIGIN_API
-	flash_read((char *)buf, (unsigned long)size, addr);
-#else
 	bk_flash_read_bytes(addr, (uint8_t *)buf, (unsigned long)size);
-#endif
 
 	return result;
 }
@@ -106,40 +123,22 @@ EfErrCode ef_port_read(uint32_t addr, uint32_t *buf, size_t size)
  */
 static int bk_erase(uint32_t addr, size_t size)
 {
-#if CONFIG_FLASH_ORIGIN_API
-	int param;
-	UINT32 status;
-	int protect_type;
-	DD_HANDLE flash_handle;
-#else
 	flash_protect_type_t protect_type;
-#endif
+
 	unsigned int _size = size;
 
-#if CONFIG_FLASH_ORIGIN_API
-	flash_handle = ddev_open(DD_DEV_TYPE_FLASH, &status, 0);
-	ddev_control(flash_handle, CMD_FLASH_GET_PROTECT, (void *)&protect_type);
-
-	if (FLASH_PROTECT_NONE != protect_type) {
-		param = FLASH_PROTECT_NONE;
-		ddev_control(flash_handle, CMD_FLASH_SET_PROTECT, (void *)&param);
-	}
-#else
 	protect_type = bk_flash_get_protect_type();
 	if (FLASH_PROTECT_NONE != protect_type) {
 		bk_flash_set_protect_type(FLASH_PROTECT_NONE);
 	}
-#endif
 
 	/* Calculate the start address of the flash sector(4kbytes) */
 	addr = addr & 0x00FFF000;
 
 	do {
-#if CONFIG_FLASH_ORIGIN_API
-		flash_ctrl(CMD_FLASH_ERASE_SECTOR, &addr);
-#else
+
 		bk_flash_erase_sector(addr);
-#endif
+
 		addr += 4096;
 
 		if (_size < 4096)
@@ -150,12 +149,7 @@ static int bk_erase(uint32_t addr, size_t size)
 	} while (_size);
 
 	if (FLASH_PROTECT_NONE != protect_type) {
-#if CONFIG_FLASH_ORIGIN_API
-		param = protect_type;
-		ddev_control(flash_handle, CMD_FLASH_SET_PROTECT, (void *)&param);
-#else
 		bk_flash_set_protect_type(protect_type);
-#endif
 	}
 
 	return size; // return true erase size
@@ -196,33 +190,11 @@ EfErrCode ef_port_erase(uint32_t addr, size_t size)
  */
 EfErrCode ef_port_write(uint32_t addr, const uint32_t *buf, size_t size)
 {
-#if CONFIG_FLASH_ORIGIN_API
-	int param;
-	UINT32 status;
-	int protect_type;
-	DD_HANDLE flash_handle;
-#else
 	flash_protect_type_t protect_type;
-#endif
 	EfErrCode result = EF_NO_ERR;
 
 	EF_ASSERT(size % 4 == 0);
 
-#if CONFIG_FLASH_ORIGIN_API
-	flash_handle = ddev_open(DD_DEV_TYPE_FLASH, &status, 0);
-	ddev_control(flash_handle, CMD_FLASH_GET_PROTECT, (void *)&protect_type);
-
-	if (FLASH_PROTECT_NONE != protect_type) {
-		param = FLASH_PROTECT_NONE;
-		ddev_control(flash_handle, CMD_FLASH_SET_PROTECT, (void *)&param);
-	}
-
-	flash_write((char *)buf, (unsigned long)size, addr);
-	if (FLASH_PROTECT_NONE != protect_type) {
-		param = protect_type;
-		ddev_control(flash_handle, CMD_FLASH_SET_PROTECT, (void *)&param);
-	}
-#else
 	protect_type = bk_flash_get_protect_type();
 	if (FLASH_PROTECT_NONE != protect_type) {
 		bk_flash_set_protect_type(FLASH_PROTECT_NONE);
@@ -230,7 +202,6 @@ EfErrCode ef_port_write(uint32_t addr, const uint32_t *buf, size_t size)
 
 	bk_flash_write_bytes(addr, (const uint8_t *)buf, size);
 	bk_flash_set_protect_type(protect_type);
-#endif
 
 	return result;
 }
@@ -314,5 +285,6 @@ void ef_print(const char *format, ...)
 	va_end(args);
 #endif
 }
+
 // eof
 

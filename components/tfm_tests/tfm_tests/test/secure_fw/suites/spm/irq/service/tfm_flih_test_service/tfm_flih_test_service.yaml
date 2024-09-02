@@ -24,6 +24,9 @@
       "version_policy": "STRICT"
     }
   ],
+  "dependencies": [
+    "TFM_SP_PLATFORM_IOCTL"
+  ],
   "mmio_regions": [
     {
       "name": "TFM_PERIPHERAL_TIMER0",

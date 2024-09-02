@@ -137,6 +137,8 @@ typedef enum {
     BK_BT_STATUS_LIMIT_REACHED                   = 0x43,
     BK_BT_STATUS_OPERATION_CANCELED_BY_HOST      = 0x44,
     BK_BT_STATUS_PKT_TOO_LONG                    = 0x45,
+    BK_BT_STATUS_TOO_LATE                        = 0x46,
+    BK_BT_STATUS_TOO_EARLY                       = 0x47,
 
     BK_BT_STATUS_UNDEFINED                       = 0xFF,
 } bk_bt_status_t;

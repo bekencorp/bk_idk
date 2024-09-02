@@ -113,6 +113,10 @@
 #include <driver/rott_driver.h>
 #endif
 
+#if CONFIG_GET_UID_ENABLE
+#include <components/bk_uid.h>
+#endif
+
 //TODO only init driver model and necessary drivers
 #if CONFIG_POWER_CLOCK_RF
 #define   MODULES_POWER_OFF_ENABLE (1)
@@ -260,62 +264,6 @@ void power_clk_rf_init()
 
 	/*8.dco calibration*/
 	//clock_dco_cali(0x4);
-}
-#endif
-
-#if (!CONFIG_ATE_TEST)
-int mcheck_section(uint32_t* reg_addr, uint16_t* output, int reg_points_num, int output_points_num, int addr_len, int singe_repair_points)
-{
-    int reg_index;
-    uint32_t reg_value;
-
-    for (reg_index=0; reg_index< reg_points_num; reg_index++)
-    {
-        // keep the low part of register
-        reg_value = reg_addr[reg_index] & 0x0000FFFF;
-
-        // confirm whether the address is valid
-        if ((reg_value >> (addr_len-1)) % 2 == 1)
-        {
-            //printf("MCHECK fail! stop register index:%d\r\n", reg_index);
-            return 1;
-        }
-    }
-
-    return 0;
-}
-
-int mcheck_ate(uint16_t check_res[48])
-{
-    uint32_t* reg_start_addr;
-    int res = -1;
-
-#if (CONFIG_SOC_BK7236XX)
-    reg_start_addr = (uint32_t*)SOC_MEM_CHECK_REG_BASE;
-
-    // SMEM2-5 and h265, overall 20 points, no share
-    res = mcheck_section(reg_start_addr + 8, check_res + 0, 20, 20, 16, 4);
-
-    // SMEM0-1 overall 8 points, share 4 points
-    res += mcheck_section(reg_start_addr + 28, check_res + 20, 8, 4, 15, 4);
-
-   // cpu0_0->cpu2_0 overall 12 points, share 6 points
-    res += mcheck_section(reg_start_addr + 36, check_res + 24, 12, 6, 14, 4);
-
-   // cpu0_1->cpu1_3 overall 16 points, share 8 points
-    res += mcheck_section(reg_start_addr + 48, check_res + 30, 16, 8, 13, 2);
-
-   // cpu2_3->pram overall 14 points, share 8 points
-    res += mcheck_section(reg_start_addr + 64, check_res + 38, 14, 8, 13, 2);
-
-   // usb2->dmad overall 4 points, share 2 points
-    res += mcheck_section(reg_start_addr + 78, check_res + 46, 4, 2, 12, 2);
-#else
-    (void)reg_start_addr;
-    res = 0;
-#endif
-
-    return res;
 }
 #endif
 
@@ -470,55 +418,14 @@ int driver_init(void)
 	dubhe_driver_init(SOC_SHANHAI_BASE);
 #endif
 #if (CONFIG_SOC_BK7236XX || CONFIG_SOC_BK7239XX || CONFIG_SOC_BK7286XX)
-#if CONFIG_OTP && (!CONFIG_SPE || CONFIG_ATE_TEST)
+#if CONFIG_OTP_V1 && (!CONFIG_SPE || CONFIG_ATE_TEST)
 	bk_otp_init();
-#endif
-#if (!CONFIG_ATE_TEST)
-	{
-		uint16_t check_res[48];
-		if (mcheck_ate(check_res)) {
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("Memory Check Exception!!!Please Contact Digital Team!!!\r\n");
-			os_printf("Memory Check Exception!!!Please Contact Digital Team!!!\r\n");
-			os_printf("Memory Check Exception!!!Please Contact Digital Team!!!\r\n");
-			os_printf("Memory Check Exception!!!Please Contact Digital Team!!!\r\n");
-			os_printf("Memory Check Exception!!!Please Contact Digital Team!!!\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-			os_printf("=============================================================================================================\r\n");
-		}
-	}
 #endif
 #endif
 
+#if CONFIG_GET_UID_ENABLE
+	bk_uid_driver_init();
+#endif
 	os_printf("driver_init end\r\n");
 
 	return 0;

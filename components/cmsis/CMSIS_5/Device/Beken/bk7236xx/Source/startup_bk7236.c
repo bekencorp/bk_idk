@@ -28,6 +28,8 @@
 #include "bk_pm_internal_api.h"
 #include <modules/pm.h>
 #include <driver/pwr_clk.h>
+#include "sdkconfig.h"
+
 #if CONFIG_CM_BACKTRACE
 #include "cm_backtrace.h"
 #endif
@@ -46,6 +48,13 @@
 #include "arch_interrupt.h"
 
 #define TAG "arch"
+
+#define SYSTEM_BASE_ADDRESS              SOC_SYS_REG_BASE
+#define OTP_APB_BASE_ADDRESS             SOC_OTP_REG_BASE
+#define MEM_CHECK_BASE_ADDRESS           SOC_MEM_CHECK_REG_BASE
+#define BIT_ID(num)                      (num) 
+#define GET_BIT_VAL(val, bit)            ((val >> bit) & 1)
+#define SET_BIT_VAL(val, bit, new_val)   ((val & (~ (1 << bit)))|(new_val << bit))
 
 /*----------------------------------------------------------------------------
   External References
@@ -73,7 +82,7 @@ void BusFault_Handler       (void) __attribute__ ((weak));
 void UsageFault_Handler     (void) __attribute__ ((weak));
 void SecureFault_Handler    (void) __attribute__ ((weak));
 void SVC_Handler            (void) __attribute__ ((weak, alias("Default_Handler")));
-void DebugMon_Handler       (void) __attribute__ ((weak, alias("Default_Handler")));
+void DebugMon_Handler       (void) __attribute__ ((weak));
 void PendSV_Handler         (void) __attribute__ ((weak, alias("Default_Handler")));
 void SysTick_Handler        (void) __attribute__ ((weak, alias("Default_Handler")));
 
@@ -151,7 +160,6 @@ void MAILBOX_Handler                 (void) __attribute__ ((weak));
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
 #endif
-
 
 const VECTOR_TABLE_Type __VECTOR_TABLE[] __VECTOR_TABLE_ATTRIBUTE = {
   (VECTOR_TABLE_Type)(&__INITIAL_SP),       /*     Initial Stack Pointer */
@@ -333,44 +341,85 @@ const VECTOR_TABLE_Type __VECTOR_TABLE_IRAM[] = {
 #pragma GCC diagnostic pop
 #endif
 
+#if CONFIG_CM_BACKTRACE
 #define FIREWARE_NAME    "app"
 #define HARDWARE_VERSION "V1.0.0"
 #define SOFTWARE_VERSION "V1.0.0"
+#endif
 
+#define ENTRY_SECTION  __attribute__((section(".fix.reset_entry")))
 
-void set_reboot_tag(uint32_t tag) {
+void set_reboot_tag(uint32_t tag)
+{
 	REG_WRITE(REBOOT_TAG_ADDR, tag);
 }
 
-inline uint32_t get_reboot_tag(void) {
+uint32_t sys_get_reboot_tag(void)
+{
 	return REG_READ(REBOOT_TAG_ADDR);
+}
+
+/*
+ * sets mem-repair module use OTP param if it has been set by CP-TEST.
+ */
+static inline void boot_mem_check(void)
+{
+	if(GET_BIT_VAL(REG_READ(SYSTEM_BASE_ADDRESS + 0x10*4), BIT_ID(3)) != 0)
+	{
+		REG_WRITE((SYSTEM_BASE_ADDRESS + 0x10*4), SET_BIT_VAL(REG_READ(SYSTEM_BASE_ADDRESS + 0x10*4), BIT_ID(3), 0));
+	}
+
+	if(GET_BIT_VAL(REG_READ(SYSTEM_BASE_ADDRESS + 0xC*4), BIT_ID(15)) != 1)
+	{
+		REG_WRITE((SYSTEM_BASE_ADDRESS + 0xC*4), SET_BIT_VAL(REG_READ(SYSTEM_BASE_ADDRESS + 0xC*4), BIT_ID(15), 1));
+	}
+
+	if((GET_BIT_VAL(REG_READ(OTP_APB_BASE_ADDRESS + 0xB2*4), BIT_ID(0)) != 1)||(GET_BIT_VAL(REG_READ(OTP_APB_BASE_ADDRESS + 0xB2*4), BIT_ID(1)) != 1))
+	{
+		REG_WRITE((OTP_APB_BASE_ADDRESS + 0xB2*4), SET_BIT_VAL(REG_READ(OTP_APB_BASE_ADDRESS + 0xB2*4), BIT_ID(0), 3));
+	}
+
+	if(GET_BIT_VAL(REG_READ(OTP_APB_BASE_ADDRESS + 0xB1*4), BIT_ID(0)) == 0)
+	{
+		if((REG_READ(OTP_APB_BASE_ADDRESS + 0x7c8) & 0xF ) == 0x7)
+		{
+			REG_WRITE((MEM_CHECK_BASE_ADDRESS + 0x2*4), 0x7);
+		}
+	}
 }
 
 /*----------------------------------------------------------------------------
   Reset Handler called on controller reset
  *----------------------------------------------------------------------------*/
-__NO_RETURN void Reset_Handler(void)
+__NO_RETURN ENTRY_SECTION void Reset_Handler(void)
 {
+	boot_mem_check();
+
+    __set_MSPLIM((uint32_t)(&__STACK_LIMIT));
+
+    /* CMSIS System Initialization */
+    SystemInit();
+
 #if (CONFIG_SYS_CPU0)
-  bk_wdt_force_feed();
+#if (CONFIG_INT_WDT || CONFIG_TASK_WDT)
+    bk_wdt_force_feed();
+#endif
   //clear mannully reboot flag
   set_reboot_tag(0);
-#endif
 
-  __set_MSPLIM((uint32_t)(&__STACK_LIMIT));
-  SystemInit();                             /* CMSIS System Initialization */
-
-#if CONFIG_SYS_CPU0
   sys_drv_early_init();
 #endif
-  __PROGRAM_START();                        /* Enter PreMain (C library entry point) */
+
+    /* Enter PreMain (C library entry point) */
+    __PROGRAM_START();
 }
 
 void _start(void)
 {
 #if CONFIG_MPU
     mpu_enable();
-#endif // #if CONFIG_MPU
+#endif // CONFIG_MPU
+
 #if CONFIG_DCACHE
     if (SCB->CLIDR & SCB_CLIDR_DC_Msk)
       SCB_EnableDCache();
@@ -378,32 +427,29 @@ void _start(void)
     SCB_CleanInvalidateDCache();
 #endif
 
-
 #if CONFIG_CM_BACKTRACE
-  cm_backtrace_init(FIREWARE_NAME, HARDWARE_VERSION, SOFTWARE_VERSION);
+    cm_backtrace_init(FIREWARE_NAME, HARDWARE_VERSION, SOFTWARE_VERSION);
 #endif
 
 #if CONFIG_ATE_TEST && CONFIG_RESET_REASON
-  extern int cmd_do_memcheck(void);
-  cmd_do_memcheck();
+    extern int cmd_do_memcheck(void);
+    cmd_do_memcheck();
 #endif
-  /*power manager init*/
-  pm_hardware_init();
-  #if CONFIG_SYS_CPU0
-  bk_pm_cp1_auto_power_down_state_set(PM_CP1_AUTO_CTRL_DISABLE);
-  bk_pm_mem_auto_power_down_state_set(PM_MEM_AUTO_CTRL_DISABLE);
-  #endif
-  //bk_pm_mailbox_init();
-  entry_main();
-  while(1) {BK_LOGW(TAG, "@\r\n");};
+
+    /*power manager init*/
+    pm_hardware_init();
+
+#if CONFIG_SYS_CPU0
+    bk_pm_cp1_auto_power_down_state_set(PM_CP1_AUTO_CTRL_DISABLE);
+    bk_pm_mem_auto_power_down_state_set(PM_MEM_AUTO_CTRL_DISABLE);
+#endif
+
+    entry_main();
+
+    while(1){
+        BK_LOGW(TAG, "@\r\n");
+    };
 }
-
-
-
-#if defined(__ARMCC_VERSION) && (__ARMCC_VERSION >= 6010050)
-  #pragma clang diagnostic push
-  #pragma clang diagnostic ignored "-Wmissing-noreturn"
-#endif
 
 void user_except_handler_ex(uint32_t reset_reason, uint32_t lr, uint32_t sp);
 
@@ -429,7 +475,6 @@ __STATIC_FORCEINLINE void dump_system_info(uint32_t rr, uint32_t lr, uint32_t sp
 void user_nmi_handler(uint32_t lr, uint32_t sp)
 {
 #if CONFIG_DEBUG_FIRMWARE || CONFIG_DUMP_ENABLE
-
 	if(arch_is_enter_exception())
 	{
 		//For nmi wdt reset
@@ -438,19 +483,15 @@ void user_nmi_handler(uint32_t lr, uint32_t sp)
 		while(1);
 	}
 
-	if(REBOOT_TAG_REQ == get_reboot_tag()) {
+	if(REBOOT_TAG_REQ == sys_get_reboot_tag()) {
 		while(1);
 	}
 
-	#if CONFIG_INT_WDT
-		bk_wdt_feed();
-	#endif
+	bk_wdt_feed();
 
 	dump_system_info(RESET_SOURCE_NMI_WDT, lr, sp);
-
 #else // nmi wdt without system info dump
-
-	if(REBOOT_TAG_REQ != get_reboot_tag()) {
+	if(REBOOT_TAG_REQ != sys_get_reboot_tag()) {
 		bk_misc_set_reset_reason(RESET_SOURCE_NMI_WDT);
 	}
 
@@ -504,6 +545,28 @@ __attribute__((naked)) void SecureFault_Handler(void)
 	dump_fault_info(RESET_SOURCE_SECURE_FAULT);
 }
 
+#if CONFIG_SOC_CORTEX_M_UART_DEBUG
+/* debug_monitor_exception.c*/
+#include "debug_monitor_exception.h"
+
+void debug_monitor_handler_c(CONTEXT_FRAME_T *frame);
+
+__attribute__((naked)) void DebugMon_Handler(void) 
+{
+  __asm volatile(
+      "tst lr, #4 \n"
+      "ite eq \n"
+      "mrseq r0, msp \n"
+      "mrsne r0, psp \n"
+      "b debug_monitor_handler_c \n");
+}
+
+#else
+__attribute__((naked)) void DebugMon_Handler(void)
+{
+	dump_fault_info(RESET_SOURCE_DEBUG_MONITOR_FAULT);
+}
+#endif // CONFIG_SOC_CORTEX_M_UART_DEBUG
 
 /*----------------------------------------------------------------------------
   Default Handler for Exceptions / Interrupts
@@ -512,8 +575,5 @@ __attribute__((naked)) void Default_Handler(void)
 {
 	dump_fault_info(RESET_SOURCE_DEFAULT_EXCEPTION);
 }
-
-#if defined(__ARMCC_VERSION) && (__ARMCC_VERSION >= 6010050)
-  #pragma clang diagnostic pop
-#endif
+// eof
 

@@ -16,4 +16,4 @@ Peripherals
    WDT <bk_wdt>
    I2C <bk_i2c>
    USB <bk_usb>
-
+   I2S <bk_i2s>

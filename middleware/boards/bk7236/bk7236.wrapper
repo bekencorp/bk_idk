@@ -5,6 +5,7 @@ import subprocess
 import sys
 import logging
 import getpass
+import shutil
 
 from argparse import _MutuallyExclusiveGroup
 from genericpath import exists
@@ -26,6 +27,27 @@ nosecurity_pack = "%s/middleware/boards/%s/%s_nosecurity.wrapper"%(armino_path, 
 nosecurity_cpu1_bin = '%s/%s/app1.bin'%(armino_path, project_dir)
 pack_boot_tools = '%s/tools/env_tools/beken_packager'%(armino_path)
 
+project_full_path = f'{armino_path}/{project_dir}/config/{armino_soc}'
+secure_config_path = os.path.join(project_full_path,'config')
+
+if os.path.exists(secure_config_path):
+    with open(secure_config_path, 'r') as config_file:
+        config_string = config_file.read()
+
+    config_lines = config_string.strip().split('\n')
+
+    config_dict = {}
+
+    for line in config_lines:
+        if '=' not in line:
+            continue
+        key, value = line.split('=')
+        config_dict[key.strip()] = value.strip()
+
+    if config_dict.get('CONFIG_SECURITY_FIRMWARE') == 'y':
+		    is_secure_boot = True
+
+
 def run_cmd(cmd):
 	p = subprocess.Popen(cmd, shell=True)
 	ret = p.wait()
@@ -41,35 +63,45 @@ def run_cmd_with_ret(cmd):
 		print(err)
 		exit(1)
 
+def copy_files(postfix, src_dir, dst_dir):
+	logging.debug(f'copy *{postfix} from {src_dir}')
+	logging.debug(f'to {dst_dir}')
+	for f in os.listdir(src_dir):
+		if f.endswith(postfix):
+			shutil.copy(f'{src_dir}/{f}', f'{dst_dir}/{f}')
+
 def install_configs(cfg_dir, install_dir):
 	logging.debug(f'install configs from: {cfg_dir}')
 	logging.debug(f'to: {install_dir}')
 	if os.path.exists(f'{cfg_dir}') == False:
 		return
 
-	run_cmd(f'cp -r {cfg_dir}/*.bin {install_dir} 2>/dev/null || :')
-	run_cmd(f'cp -r {cfg_dir}/*.csv {install_dir} 2>/dev/null || :')
-	run_cmd(f'cp -r {cfg_dir}/*.json {install_dir} 2>/dev/null || :')
-	run_cmd(f'cp -r {cfg_dir}/*.pem {install_dir} 2>/dev/null || :')
+	copy_files('.bin', cfg_dir, install_dir)
+	copy_files('.json', cfg_dir, install_dir)
+	copy_files('.pem', cfg_dir, install_dir)
+	copy_files('.csv', cfg_dir, install_dir)
 
 	if os.path.exists(f'{cfg_dir}/key') == True:
-		run_cmd(f'cp -r {cfg_dir}/key/*.pem {install_dir} 2>/dev/null || :')
+		copy_files('.pem', f'{cfg_dir}/key', install_dir)
 	if os.path.exists(f'{cfg_dir}/csv') == True:
-		run_cmd(f'cp -r {cfg_dir}/csv/*.csv {install_dir} 2>/dev/null || :')
+		copy_files('.csv', f'{cfg_dir}/csv', install_dir)
 	if os.path.exists(f'{cfg_dir}/regs') == True:
-		run_cmd(f'cp -r {cfg_dir}/regs/*.csv {install_dir} 2>/dev/null || :')
+		copy_files('.csv', f'{cfg_dir}/regs', install_dir)
 
 def move_file(bin_name, src_dir, dst_dir):
 	logging.debug(f'move {bin_name} from {src_dir}')
 	logging.debug(f'to {dst_dir}')
 	if os.path.exists(f'{src_dir}/{bin_name}') == True:
-		run_cmd(f'mv {src_dir}/{bin_name} {dst_dir}')
+		if os.path.exists(dst_dir):
+			shutil.copy2(f'{src_dir}/{bin_name}', f'{dst_dir}')
+		else:
+		    shutil.move(f'{src_dir}/{bin_name}', f'{dst_dir}')
 
-def copy_file(bin_name, src_dir, dst_dir):
-	logging.debug(f'copy {bin_name} from {src_dir}')
-	logging.debug(f'to {dst_dir}')
-	if os.path.exists(f'{src_dir}/{bin_name}') == True:
-		run_cmd(f'cp {src_dir}/{bin_name} {dst_dir}')
+def copy_file(src, dst):
+	logging.debug(f'copy {src} to {dst}')
+	logging.debug(f'to {dst}')
+	if os.path.exists(f'{src}') == True:
+		shutil.copy(f'{src}', f'{dst}')
 
 def pack(prebuild):
 
@@ -102,13 +134,12 @@ def pack(prebuild):
 	_BUILD_DIR = f'{bin_dir}/_build'
 
 	logging.debug(f'Create temporary _build')
-	run_cmd(f'mkdir -p {_BUILD_DIR}')
+	os.makedirs(f'{_BUILD_DIR}', exist_ok=True)
 
 	saved_cur_dir = os.getcwd()
 	os.chdir(_BUILD_DIR)
 	logging.debug(f'cd {_BUILD_DIR}')
 
-	run_cmd(f'cp -r {base_cfg_dir}/partitions/bl1_control.json {_BUILD_DIR}/')
 	install_configs(BASE_CFG_DIR, _BUILD_DIR)
 	install_configs(prefered_cfg_dir, _BUILD_DIR)
 	install_configs(f'{prefered_cfg_dir}/common', _BUILD_DIR)
@@ -123,30 +154,30 @@ def pack(prebuild):
 		if (gen_dir == None):
 			logging.error(f'Generated dir should NOT be empty')
 			exit(1)
-		run_cmd(f'{BK_UTILS_TOOL} gen --gencode {debug_option} -t {tools_dir}')
+		run_cmd(f'{BK_UTILS_TOOL} gen all --debug')
 		cwd = os.getcwd()
-		run_cmd(f'cp -r {cwd}/partitions_partition.h {cwd}/partitions_gen.h')
+		copy_file(f'{cwd}/partitions_partition.h', f'{cwd}/partitions_gen.h')
 		return
 
 	logging.debug(f'Copy Armino bin to {_BUILD_DIR}')
 
 	if (os.path.exists(f'{CMAKE_BIN_DIR}/app.bin') == True):
-		run_cmd(f'cp -r {CMAKE_BIN_DIR}/app.bin {_BUILD_DIR}/cpu0_app.bin')
+		copy_file(f'{CMAKE_BIN_DIR}/app.bin', f'{_BUILD_DIR}/cpu0_app.bin')
 	TFM_BIN_DIR = f'{CMAKE_BIN_DIR}/tfm_install/outputs'
 	if (os.path.exists(TFM_BIN_DIR) == True):
 		logging.debug(f'Copy TFM bin to {_BUILD_DIR}')
-		run_cmd(f'cp -r {TFM_BIN_DIR}/*.bin {_BUILD_DIR}')
+		copy_files('.bin', TFM_BIN_DIR, _BUILD_DIR)
 
 	if (os.path.exists(cpu1_bin) == True):
-		run_cmd(f'cp -r {cpu1_bin} {_BUILD_DIR}/cpu1_app.bin')
+		copy_file(cpu1_bin, f'{_BUILD_DIR}/cpu1_app.bin')
 	else:
 		logging.info(f'{cpu1_bin} not exist, could compile: make {soc} PROJECT=cpu1')
 
 	dest_boot_dir = f'{armino_path}/components/bk_libs/{armino_soc}/bootloader/normal_bootloader'
-	run_cmd(f'mkdir -p {dest_boot_dir}')
-	if project_name.startswith('security/') == False:
+	os.makedirs(dest_boot_dir, exist_ok=True)
+	if is_secure_boot == False:
 		if (os.path.exists(bootloader_bin) == True):
-			run_cmd(f'cp -r {bootloader_bin} {dest_boot_dir}/bootloader.bin')
+			copy_file(bootloader_bin, f'{dest_boot_dir}/bootloader.bin')
 			run_cmd('%s/cmake_Gen_image genfile -injsonfile %s/config.json -infile %s/bootloader.bin -outfile %s/bootloader.bin -genjson %s/partition_bootloader.json'%(pack_boot_tools, pack_boot_tools, dest_boot_dir,_BUILD_DIR, pack_boot_tools))
 		elif (os.path.exists(f'{dest_boot_dir}/bootloader.bin') == True):
 			logging.info(f'{bootloader_bin} not exist, could compile:')
@@ -154,26 +185,40 @@ def pack(prebuild):
 		else:
 			pass
 
-	run_cmd(f'{BK_UTILS_TOOL} gen --genbin {debug_option} -t {tools_dir}')
+	run_cmd(f'{BK_UTILS_TOOL} pack all --debug')
 
 	logging.debug(f'copy binaries')
-	run_cmd(f'mkdir -p {CMAKE_INSTALL_DIR}')
-	copy_file('ota.bin', _BUILD_DIR, CMAKE_INSTALL_DIR)
-	copy_file('all-app.bin', _BUILD_DIR, CMAKE_INSTALL_DIR)
-	copy_file('bootloader.bin', _BUILD_DIR, CMAKE_INSTALL_DIR)
-	copy_file('app.elf', CMAKE_BIN_DIR, CMAKE_INSTALL_DIR)
-	copy_file('tfm_s.elf', f'{CMAKE_BIN_DIR}/tfm_install/outputs', CMAKE_INSTALL_DIR)
-	copy_file('bl2.elf', f'{CMAKE_BIN_DIR}/tfm_install/outputs', CMAKE_INSTALL_DIR)
-	copy_file('otp_efuse_config.json', _BUILD_DIR, CMAKE_INSTALL_DIR)
-	copy_file('partitions_layout.txt', f'{CMAKE_BIN_DIR}/armino/partitions/_build', CMAKE_INSTALL_DIR)
-	copy_file('sdkconfig', bin_dir, CMAKE_INSTALL_DIR)
+	os.makedirs(f'{CMAKE_INSTALL_DIR}', exist_ok=True)
+	copy_file(f'{_BUILD_DIR}/ota.bin', f'{CMAKE_INSTALL_DIR}/ota.bin')
+	copy_file(f'{_BUILD_DIR}/all-app.bin', f'{CMAKE_INSTALL_DIR}/all-app.bin')
+	copy_file(f'{_BUILD_DIR}/bootloader.bin', f'{CMAKE_INSTALL_DIR}/bootloader.bin')
+	copy_file(f'{_BUILD_DIR}/provision_pack.bin', f'{CMAKE_INSTALL_DIR}/provision_pack.bin')
+	copy_file(f'{CMAKE_BIN_DIR}/app.elf', f'{CMAKE_INSTALL_DIR}/app.elf')
+	copy_file(f'{CMAKE_BIN_DIR}/tfm_install/outputs/tfm_s.elf', f'{CMAKE_INSTALL_DIR}/tfm_s.elf')
+	copy_file(f'{CMAKE_BIN_DIR}/tfm_install/outputs/bl2.elf', f'{CMAKE_INSTALL_DIR}/bl2.elf')
+	copy_file(f'{_BUILD_DIR}/otp_efuse_config.json', f'{CMAKE_INSTALL_DIR}/otp_efuse_config.json')
+	copy_file(f'{CMAKE_BIN_DIR}/armino/partitions/_build/partitions_layout.txt', f'{CMAKE_INSTALL_DIR}/partitions_layout.txt')
+	copy_file(f'{bin_dir}/sdkconfig', f'{CMAKE_INSTALL_DIR}/sdkconfig')
+
+	if is_secure_boot == True:
+		pack_dir = f'{CMAKE_INSTALL_DIR}/pack'
+		os.makedirs(f'{pack_dir}', exist_ok=True)
+		copy_file(f'{_BUILD_DIR}/cpu0_app.bin', f'{pack_dir}/cpu0_app.bin')
+		copy_file(f'{_BUILD_DIR}/bl2.bin', f'{pack_dir}/bl2.bin')
+		copy_file(f'{_BUILD_DIR}/tfm_s.bin', f'{pack_dir}/tfm_s.bin')
+		copy_file(f'{_BUILD_DIR}/partitions.csv', f'{pack_dir}/partitions.csv')
+		copy_file(f'{_BUILD_DIR}/ota.csv', f'{pack_dir}/ota.csv')
+		copy_file(f'{_BUILD_DIR}/security.csv', f'{pack_dir}/security.csv')
+		copy_file(f'{_BUILD_DIR}/pack.json', f'{pack_dir}/pack.json')
+		copy_file(f'{CMAKE_INSTALL_DIR}/../armino/partitions/_build/ppc_config.bin', f'{pack_dir}/ppc_config.bin')
+		copy_files('.pem', _BUILD_DIR, pack_dir)
 
 	move_file('all-app.bin', _BUILD_DIR, CMAKE_BIN_DIR)
 
 	os.chdir(saved_cur_dir)
 	logging.debug(f'cd {saved_cur_dir}')
 
-	if project_name.startswith('security/') == False:
+	if is_secure_boot == False:
 		run_cmd_with_ret("python3 {}/tools/env_tools/rtt_ota/ota-rbl/ota_packager_python.py -i {} -o {} -g {} -ap {} -pjd {} packager".format(armino_path, f'{CMAKE_INSTALL_DIR}/app.bin', f'{bin_dir}/app_pack.rbl', header_path, armino_path, os.getenv("PROJECT_DIR")))
 
 @click.group()
@@ -185,7 +230,7 @@ def wrapper():
                 cpu1_armino_soc = armino_soc + '_cp1'
                 cpu1_build_path = build_path.replace(armino_soc, cpu1_armino_soc)
                 if os.path.exists(f'{cpu1_build_path}/app.bin'):
-                        if project_name.startswith('security/') == True:
+                        if is_secure_boot == True:
                                 os.system(f'cp {cpu1_build_path}/app.bin {cpu1_bin}')
                         else:
                                 os.system(f'cp {cpu1_build_path}/app.bin {nosecurity_cpu1_bin}')
@@ -194,7 +239,7 @@ def wrapper():
 @click.option("--prebuild/--no-prebuild", default=False, help="Whether it's post-build or pre-build")
 def pack_bin(prebuild):
 	"""Pack armino binaries."""
-	if project_name.startswith('security/') == True or prebuild == True:
+	if is_secure_boot == True or prebuild == True:
 		pack(prebuild)
 	else:
 		run_cmd("python3 %s -n all-app.bin -f app.bin -c %s"%(nosecurity_pack, armino_soc))

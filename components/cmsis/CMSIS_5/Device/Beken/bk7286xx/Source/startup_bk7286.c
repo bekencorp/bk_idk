@@ -479,9 +479,7 @@ void user_nmi_handler(uint32_t lr, uint32_t sp)
 		while(1);
 	}
 
-	#if CONFIG_INT_WDT
-		bk_wdt_feed();
-	#endif
+	bk_wdt_feed();
 
 	dump_system_info(RESET_SOURCE_NMI_WDT, lr, sp);
 

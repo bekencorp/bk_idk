@@ -44,7 +44,6 @@ enum mpu_armv8m_error_t mpu_armv8m_enable(struct mpu_armv8m_dev_t *dev,
     /* Enable MPU before next instruction */
     __DSB();
     __ISB();
-
     return MPU_ARMV8M_OK;
 }
 
@@ -72,6 +71,9 @@ enum mpu_armv8m_error_t mpu_armv8m_region_enable(
     if ((region_cfg->region_base & ~MPU_RBAR_BASE_Msk) != 0) {
         return MPU_ARMV8M_ERROR;
     }
+    if ((region_cfg->region_limit & ~MPU_RBAR_BASE_Msk) != 0) {
+        return MPU_ARMV8M_ERROR;
+    }
     /* region_limit doesn't need to be aligned but the scatter
      * file needs to be setup to ensure that partitions do not overlap.
      */
@@ -90,7 +92,7 @@ enum mpu_armv8m_error_t mpu_armv8m_region_enable(
     mpu->RBAR = base_cfg;
 
     /*This 0s the lower bits of base address but they are treated as 1 */
-    limit_cfg = (region_cfg->region_limit-1) & MPU_RLAR_LIMIT_Msk;
+    limit_cfg = (region_cfg->region_limit) & MPU_RLAR_LIMIT_Msk;
 
     limit_cfg |= (region_cfg->region_attridx << MPU_RLAR_AttrIndx_Pos) &
                  MPU_RLAR_AttrIndx_Msk;
@@ -112,7 +114,6 @@ enum mpu_armv8m_error_t mpu_armv8m_region_enable(
 enum mpu_armv8m_error_t mpu_armv8m_region_disable(struct mpu_armv8m_dev_t *dev,
                                                   uint32_t region_nr)
 {
-
     MPU_Type *mpu = (MPU_Type *)dev->base;
     uint32_t ctrl_before;
 
@@ -128,19 +129,22 @@ enum mpu_armv8m_error_t mpu_armv8m_region_disable(struct mpu_armv8m_dev_t *dev,
 
     /*Restore main MPU control*/
     mpu->CTRL = ctrl_before;
-
     return MPU_ARMV8M_OK;
 }
 
 enum mpu_armv8m_error_t mpu_armv8m_clean(struct mpu_armv8m_dev_t *dev)
 {
+#if CONFIG_ENABLE_MCUBOOT_BL2
+    uint32_t i;
     MPU_Type *mpu = (MPU_Type *)dev->base;
-    uint32_t i = (mpu->TYPE & MPU_TYPE_DREGION_Msk) >> MPU_TYPE_DREGION_Pos;
 
+    mpu->CTRL = 0;
+
+    i = (mpu->TYPE & MPU_TYPE_DREGION_Msk) >> MPU_TYPE_DREGION_Pos;
     while (i > 0) {
         mpu_armv8m_region_disable(dev, i - 1);
-        i--;
+        i --;
     }
-
+#endif
     return MPU_ARMV8M_OK;
 }

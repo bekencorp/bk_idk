@@ -130,7 +130,8 @@ typedef volatile struct {
 			struct {
 				uint32_t flash_sec_start_addr: 24; /**< bit[0:23] flash sec addr start */
 				uint32_t flash_sec_addr_en:     1; /**< bit[24] flash sec addr enable */
-				uint32_t reserved:              7; /**< bit[25:31] */
+				uint32_t flash_sec_addr_sec:    1; /**< bit[25] 0:sec, 1:nsec*/
+				uint32_t reserved:              6; /**< bit[26:31] */
 			};
 			uint32_t v;
 		} sec_addr_start;
@@ -153,6 +154,31 @@ typedef volatile struct {
 		};
 		uint32_t v;
 	} op_cmd;
+
+
+	/* REG_0x16 */
+	uint32_t offset_addr_begin; /**< start addr of imageA */
+
+	/* REG_0x17 */
+	uint32_t offset_addr_end; /**< end addr of imageA */
+
+	/* REG_0x18 */
+	uint32_t flash_addr_offset; /**< imageB offset */
+
+	/* REG_0x19 */
+	union {
+		struct {
+			uint32_t flash_offset_enable:  1; /**< bit[0] 0:ex from imageA 1:ex from imageB */
+			uint32_t rdsta_omit:           1; /**< bit[1] 0:as usaul 1:no read status when wr/erase */
+			uint32_t susres_cmd_sel:       1; /**< bit[2] 0: not select 1:select*/
+			uint32_t susres_cmd_reg:       8; /**< bit[3:10] special command*/
+			uint32_t flash_gate_disable:   1; /**< bit[11] 1:prefetch hclk_en gate disable 0:always on*/
+			uint32_t reserved:             20; /**< bit[12:31] */
+		};
+		uint32_t v;
+	} flash_ctrl;
+
+
 } flash_hw_t;
 
 #ifdef __cplusplus

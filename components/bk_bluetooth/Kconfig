@@ -32,4 +32,8 @@ menu "Bk_ble"
         int "bt/ble/dual link max count, when dual means bt link max count and ble max count. When set 9999, means set as big as possible."
         default 9999
         range 1 9999
+
+    config BLUETOOTH_BLE_DISCOVER_AUTO
+        bool "auto ble discover. Only used when single ble host"
+        default y
 endmenu

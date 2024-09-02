@@ -53,6 +53,9 @@
 #if (CONFIG_PSRAM)
 #include <driver/psram.h>
 #endif
+#if (CONFIG_OTP)
+#include <driver/otp.h>
+#endif
 
 #define TAG "init"
 
@@ -90,6 +93,41 @@ void mem_debug_start_timer(void)
 }
 #endif
 
+int bandgap_init(void)
+{
+#if (CONFIG_SOC_BK7236XX) && (CONFIG_OTP) && (CONFIG_SYS_CPU0)
+	uint8_t device_id[2]; //only check seqNUM
+	uint8_t new_bandgap;
+	uint8_t old_bandgap;
+	bk_err_t result;
+
+	old_bandgap = (uint8_t)sys_drv_get_bgcalm();
+
+	result = bk_otp_apb_read(OTP_VDDDIG_BANDGAP, &new_bandgap, sizeof(new_bandgap));
+	if ((result != BK_OK) || (new_bandgap == 0) || (new_bandgap > 0x3F)) {
+		goto default_bandgap;
+	}
+
+	result = bk_otp_apb_read(OTP_DEVICE_ID, device_id, sizeof(device_id));
+	if ((result != BK_OK) || ((device_id[0] == 0x32) && (device_id[1] == 0x31))) {
+		goto default_bandgap;
+	}
+
+	BK_LOGI(TAG, "bandgap_calm_in_otp=0x%x\r\n", new_bandgap);
+	if (old_bandgap != new_bandgap) {
+		sys_drv_set_bgcalm(new_bandgap);
+	}
+	return BK_OK;
+
+default_bandgap:
+	//tenglong20240717: increase 10mV as default
+	if (old_bandgap > 6) {
+		sys_drv_set_bgcalm(old_bandgap - 6);
+	}
+#endif
+	return BK_OK;
+}
+
 int random_init(void)
 {
 #if ((CONFIG_TRNG_SUPPORT) && (!CONFIG_SOC_BK7236XX))
@@ -106,7 +144,7 @@ __IRAM_SEC int wdt_init(void)
 	BK_LOGD(TAG, "int watchdog enabled, period=%u\r\n", CONFIG_INT_WDT_PERIOD_MS);
 	bk_wdt_start(CONFIG_INT_WDT_PERIOD_MS);
 #else
-#if (CONFIG_SOC_BK7271)
+#if (CONFIG_SOC_BK7271 || CONFIG_SOC_BK7236XX)
 	BK_LOGI(TAG, "watchdog disabled\r\n");
 	bk_wdt_start(CONFIG_INT_WDT_PERIOD_MS);
 	bk_wdt_feed();
@@ -281,13 +319,10 @@ int components_init(void)
 	pm_init_todo();
 
 	show_init_info();
+	bandgap_init();
 	random_init();
 #if (CONFIG_SYS_CPU0)
 	wdt_init();
-#endif
-
-#if CONFIG_MAILBOX
-	ipc_init();
 #endif
 
 	bk_stack_guard_setup();

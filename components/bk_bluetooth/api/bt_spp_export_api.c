@@ -3,10 +3,11 @@
 
 bt_err_t bk_spp_register_callback(bk_spp_cb_t callback)
 {
-    if(callback == NULL)
+    if (callback == NULL)
     {
         return BT_FAIL;
-    }else
+    }
+    else
     {
         bt_spp_register_internall_callback(callback);
     }

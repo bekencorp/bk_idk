@@ -88,10 +88,16 @@ __naked void psa_clear_svc(void)
 }
 #endif /* CONFIG_TFM_DOORBELL_API == 1 */
 
-__naked void psa_panic_svc(void)
+void psa_panic_svc(void)
 {
+#if CONFIG_PANIC_DEAD_LOOP
+        volatile uint32_t panic_loop = 1;
+        printf("psa panic\r\n");
+        while(panic_loop);
+#else
     __asm volatile("svc     "M2S(TFM_SVC_PSA_PANIC)"           \n"
                    "bx      lr                                 \n");
+#endif
 }
 
 __naked uint32_t psa_rot_lifecycle_state_svc(void)

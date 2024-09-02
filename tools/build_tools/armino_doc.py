@@ -48,7 +48,7 @@ def copy_projects_doc(src_path, dst_path):
 
 def build_lan_doc(doc_path, target, lan):
 	lan_dir = f'{doc_path}/{lan}'
-	if (target == 'bk7236'):
+	if (target == 'bk7236' or target == 'bk7258'):
 		copy_projects_doc(f'{lan_dir}/../../../projects', f'{lan_dir}/projects')
 	os.chdir(lan_dir)
 	p = run_cmd('make arminodocs -j32')
@@ -86,7 +86,7 @@ def build_with_target(clean, target):
 		run_cmd(f'rm -rf {DOCS_PATH}/zh_CN/xml_in')
 		run_cmd(f'rm -rf {DOCS_PATH}/zh_CN/man')
 		run_cmd(f'rm -rf {DOCS_PATH}/__pycache__')
-		if (target == 'bk7236'):
+		if (target == 'bk7236' or target == 'bk7258'):
 			run_cmd(f'rm -rf {DOCS_PATH}/en/projects')
 			run_cmd(f'rm -rf {DOCS_PATH}/zh_CN/projects')
 		return;
@@ -115,11 +115,7 @@ def build_doc_internal(clean, target):
 		os.makedirs(armino_path + "/build/armino")
 
 	if (target == "all"):
-		build_with_target(clean, "bk7235")
 		build_with_target(clean, "bk7236")
-		build_with_target(clean, "bk7239")
-		build_with_target(clean, "bk7286")
-		build_with_target(clean, "bk7256")
 		build_with_target(clean, "bk7258")
 	else:
 		build_with_target(clean, target)

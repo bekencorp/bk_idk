@@ -27,6 +27,8 @@ typedef enum
 	SHELL_IO_CTRL_SET_UART_PORT,
 	SHELL_IO_CTRL_GET_UART_PORT,
 	SHELL_IO_CTRL_GET_RX_STATUS,
+	SHELL_IO_CTRL_SET_RX_ISR,
+	SHELL_IO_CTRL_SET_TX_CMPL_ISR,
 } shell_ctrl_cmd_t;
 
 enum
@@ -119,7 +121,6 @@ enum
 	MB_CMD_LOG_OUT_OK,
 	MB_CMD_USER_INPUT,
 	MB_CMD_ASSERT_OUT,
-	MB_CMD_CPU_PAUSE,
 } ;
 
 extern shell_dev_ipc_t		shell_dev_ipc;

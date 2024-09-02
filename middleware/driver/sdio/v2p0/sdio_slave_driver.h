@@ -74,6 +74,12 @@ typedef enum
 #define SDIO_THREAD_NAME "sdio_thread"
 #define SDIO_THREAD_STACK_SIZE (0x4<<10)	//Bytes
 
+#if CONFIG_SDIO_SYNC_TRANS
+#define SDIO_RX_THREAD_PRIORITY (5)
+#define SDIO_RX_THREAD_NAME "sdio_rx_thread"
+#define SDIO_RX_THREAD_STACK_SIZE (0x4<<10)	//Bytes
+#endif
+
 #define SDIO_MSG_QUEUE_NAME "sdio_queue"
 #define SDIO_MSG_QUEUE_COUNT (8)		//Temp value,exact value should be tested out.
 #define SDIO_CHAN_SEMAPHORE_COUNT (8)	//default semaphore count if APP supports buffer
@@ -82,6 +88,8 @@ typedef enum
 #define SDIO_CMD_INDEX_53	(53)
 
 #define SDIO_BLOCK_SIZE (0x200)		//512 bytes per round
+#define SDIO_BUFF_SIZE  (0x800)		//2048 bytes per round
+
 
 //#define SDIO_IS_CHAN_SUPPORT_BUF (0)	//const value, dont change it
 
@@ -160,6 +168,12 @@ typedef union
 }sdio_cmd53_arg_t;
 
 typedef bk_err_t (*sdio_chan_cb_t)(sdio_node_ptr_t head_p, sdio_node_ptr_t tail_p, uint32_t count);
+
+typedef bk_err_t (*sdio_rx_cb_t)(char* buf_p, uint32_t len);
+
+bk_err_t bk_sdio_register_rx_cb(sdio_rx_cb_t cb);
+
+
 
 typedef struct
 {
@@ -244,7 +258,11 @@ typedef struct {
 #define FORBID_SLEEP_TIMEOUT (2000)
 #define WAIT_HOST_ACK_TIMEOUT (100)
 #define GPIO_SDIO_HOST_WAKEUP_SLAVE (GPIO_27)	// == gpio_wk_receive_num
-#define GPIO_SDIO_NOTIFY_HOST (GPIO_24)	// == gpio_wk_send_num
+#if CONFIG_SDIO_RK3568
+#define GPIO_SDIO_NOTIFY_HOST (GPIO_0)	// == gpio_wk_send_num
+#else
+#define GPIO_SDIO_NOTIFY_HOST (GPIO_38)
+#endif
 
 typedef void (*wk_slp_fail_callback)(void);
 
@@ -392,8 +410,11 @@ bk_err_t bk_sdio_deinit_channel(sdio_chan_id_t chan_id, chan_direct_t direct);
  */
 bk_err_t bk_sdio_register_chan_cb(sdio_chan_id_t chan_id, chan_direct_t direct, sdio_chan_cb_t cb);
 
+#if CONFIG_SDIO_SYNC_TRANS
+bk_err_t bk_sdio_slave_sync_read(sdio_chan_id_t chan_id, sdio_node_ptr_t head_p, sdio_node_ptr_t tail_p, uint32_t count, uint32_t timeout);
+#else
 bk_err_t bk_sdio_slave_sync_read(sdio_chan_id_t chan_id, sdio_node_ptr_t head_p, sdio_node_ptr_t tail_p, uint32_t count);
-
+#endif
 /**
  * @brief	  
  *
@@ -422,8 +443,11 @@ bk_err_t sdio_slave_async_read(sdio_chan_id_t chan_id, sdio_node_ptr_t head_p, s
  *	  - BK_OK: succeed
  *	  - others: other errors.
  */
+#if CONFIG_SDIO_SYNC_TRANS
+bk_err_t bk_sdio_slave_sync_write(sdio_chan_id_t chan_id, sdio_node_ptr_t head_p, sdio_node_ptr_t tail_p, uint32_t count, uint32_t timeout);
+#else
 bk_err_t bk_sdio_slave_sync_write(sdio_chan_id_t chan_id, sdio_node_ptr_t head_p, sdio_node_ptr_t tail_p, uint32_t count);
-
+#endif
 
 /**
  * @brief	  
@@ -534,7 +558,7 @@ void bk_sdio_driver_dump_sdio_regs(void);
  *	  - others: other errors.
  */
 bk_err_t sdio_slave_driver_deinit(void);
-
+bk_err_t bk_sdio_slave_tx(char* buf_p, uint32_t len, uint32_t timeout_ms);
 
 #endif // _SDIO_H_
 

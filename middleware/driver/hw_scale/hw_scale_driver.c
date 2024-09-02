@@ -121,12 +121,31 @@ bk_err_t bk_hw_scale_driver_init(scale_id_t id)
 
 		scale1_hal_reset();
 	}
+    s_hw_scale.handle[id].is_config = false;
+    s_hw_scale.handle[id].is_init = false;
 
-	os_memset(&s_hw_scale.handle[id], 0, sizeof(scale_drv_handle_t));
+	//os_memset(&s_hw_scale.handle[id], 0, sizeof(scale_drv_handle_t));
 
-	s_hw_scale.handle[id].config = (scale_drv_config_t*)os_malloc(sizeof(scale_drv_config_t));
+    if (s_hw_scale.handle[id].config == NULL)
+    {
+        s_hw_scale.handle[id].config = (scale_drv_config_t*)os_malloc(sizeof(scale_drv_config_t));
+        if (s_hw_scale.handle[id].config == NULL)
+        {
+            LOGE("%s scale config malloc fail. \n", __func__);
+            return BK_FAIL;
+        }
+    }
 	os_memset(s_hw_scale.handle[id].config, 0, sizeof(scale_drv_config_t));
-	s_hw_scale.handle[id].record = (scale_drv_record_t*)os_malloc(sizeof(scale_drv_record_t));
+
+    if (s_hw_scale.handle[id].record == NULL)
+    {
+        s_hw_scale.handle[id].record = (scale_drv_record_t*)os_malloc(sizeof(scale_drv_record_t));
+        if (s_hw_scale.handle[id].record == NULL)
+        {
+            LOGE("%s scale record malloc fail. \n", __func__);
+            return BK_FAIL;
+        }
+    }
 	os_memset(s_hw_scale.handle[id].record, 0, sizeof(scale_drv_record_t));
 
 	s_hw_scale.handle[id].is_init = true;
@@ -162,16 +181,45 @@ bk_err_t bk_hw_scale_driver_deinit(scale_id_t id)
 		bk_int_isr_unregister(INT_SRC_SCALE1);
 	}
 
-	os_free(s_hw_scale.handle[id].config);
-	os_free(s_hw_scale.handle[id].record);
-	s_hw_scale.handle[id].config = NULL;
+//	os_free(s_hw_scale.handle[id].config);
+//	os_free(s_hw_scale.handle[id].record);
+//	s_hw_scale.handle[id].config = NULL;
+//	s_hw_scale.handle[id].record = NULL;
 
-	os_memset(&s_hw_scale.handle[id], 0, sizeof(scale_drv_handle_t));
+//	os_memset(&s_hw_scale.handle[id], 0, sizeof(scale_drv_handle_t));
 
 	LOGI("%s, deinit. \n", __func__);
 	return BK_OK;
 }
 
+bk_err_t bk_hw_scale_mem_free(scale_id_t id)
+{
+    os_free(s_hw_scale.handle[id].config);
+    os_free(s_hw_scale.handle[id].record);
+    s_hw_scale.handle[id].config = NULL;
+    s_hw_scale.handle[id].record = NULL;
+
+    os_memset(&s_hw_scale.handle[id], 0, sizeof(scale_drv_handle_t));
+	return BK_OK;
+}
+
+bk_err_t bk_hw_scale_stop(scale_id_t id)
+{
+    if(id == HW_SCALE0)
+    {
+        scale0_hal_start(0);
+        scale0_hal_clear_int_status();
+    }
+    else
+    {
+        scale1_hal_start(0);
+        scale1_hal_clear_int_status();
+   }
+	os_memset(s_hw_scale.handle[id].config, 0, sizeof(scale_drv_config_t));
+	os_memset(s_hw_scale.handle[id].record, 0, sizeof(scale_drv_record_t));
+    s_hw_scale.handle[id].is_config = false;
+	return BK_OK;
+}
 
 bk_err_t bk_hw_scale_isr_register(scale_id_t id, hw_scale_isr_t isr, void *param)
 {
@@ -192,6 +240,15 @@ bk_err_t bk_hw_scale_isr_unregister(scale_id_t id)
 	return BK_OK;
 }
 
+bk_err_t bk_hw_scale_int_enable(scale_id_t id, bool en)
+{
+	HW_SCALE_RETURN_ON_NOT_INIT(id);
+    if (id == HW_SCALE0)
+        scale0_hal_int_set(en);
+    else
+        scale1_hal_int_set(en);
+	return BK_OK;
+}
 
 
 /*
@@ -209,6 +266,7 @@ bk_err_t scale_get_row_index_coef_params(scale_id_t id, uint16_t src_height, uin
 	uint16_t *Hloc = NULL;
 	uint16_t *Hcoef = NULL;
 
+#if 0
 	Hloc = (uint16_t *)os_malloc(dst_height * sizeof(uint16_t));
 	if (!Hloc)
 	{
@@ -221,7 +279,10 @@ bk_err_t scale_get_row_index_coef_params(scale_id_t id, uint16_t src_height, uin
 		LOGE("Hcoef os_malloc failed\n");
 		goto out;
 	}
-
+#else
+    Hloc = s_hw_scale.handle[id].record->h_index_coef;
+    Hcoef = s_hw_scale.handle[id].record->s_hloc_scale;
+#endif  
 	for(i = 0; i < dst_height ; i++)
 	{
 		int temp = ( i * (src_height - 1) / dst_height) * 16;
@@ -238,7 +299,8 @@ bk_err_t scale_get_row_index_coef_params(scale_id_t id, uint16_t src_height, uin
 #ifdef SCALE_PARAM_DEBUG
 	bk_mem_dump_ex("0x6 h_index_coef", (uint8_t *)s_hw_scale.handle[id].record->h_index_coef, dst_height);
 #endif
-out:
+#if 0
+    out:
 	if (Hloc)
 	{
 		os_free(Hloc);
@@ -249,6 +311,7 @@ out:
 		os_free(Hcoef);
 		Hcoef = NULL;
 	}
+#endif
 	return BK_OK;
 }
 
@@ -276,7 +339,7 @@ bk_err_t scale_set_row_coef_params(scale_id_t id, uint16_t src_width, uint16_t d
 	uint16_t *Lloc = NULL;
 	uint16_t *Lcoef = NULL;
 	uint16_t *h_index_coef = NULL;
-
+#if 0
 	Lloc = (uint16_t *)os_malloc(dst_width * sizeof(uint16_t));
 	if (!Lloc)
 	{
@@ -289,13 +352,19 @@ bk_err_t scale_set_row_coef_params(scale_id_t id, uint16_t src_width, uint16_t d
 		LOGE("Lcoef os_malloc failed\n");
 		goto out;
 	}
+
 	h_index_coef = (uint16_t *)os_malloc(dst_width * sizeof(uint16_t));
 	if (!h_index_coef)
 	{
 		LOGE("h_index_coef os_malloc failed\n");
 		goto out;
 	}
-
+#else
+    ///the following mem use the global memory, so this config must be the first
+    Lloc = s_hw_scale.handle[id].record->h_index_coef;
+    Lcoef = s_hw_scale.handle[id].record->s_hloc_scale;
+    h_index_coef = Lloc;
+#endif
 	for(i = 0; i < dst_width ; i++)
 	{
 	#if 0
@@ -332,8 +401,8 @@ bk_err_t scale_set_row_coef_params(scale_id_t id, uint16_t src_width, uint16_t d
 		LOGI("%s error: \n", __func__);
 	}
 
-out:
-	if (Lloc)
+#if 0
+    if (Lloc)
 	{
 		os_free(Lloc);
 		Lloc = NULL;
@@ -348,7 +417,7 @@ out:
 		os_free(h_index_coef);
 		h_index_coef = NULL;
 	}
-
+#endif
 	return BK_OK;
 }
 
@@ -426,11 +495,10 @@ static inline void scale_line_operation(scale_id_t id, scale_drv_config_t *drv_c
 	drv_record->src_result.next_frame_line = s_hw_scale.handle[id].record->s_hloc_scale[drv_record->dst_line_count];
 	src_result->next_block_line = (s_hw_scale.handle[id].record->s_hloc_scale[drv_record->dst_line_count] % drv_config->line_cycle);
 
-	if (src_result->next_block_line <= src_result->current_block_line)
+	if (src_result->next_block_line < src_result->current_block_line)
 	{
 		src_result->next_block_line += drv_config->line_cycle;
 	}
-
 
 	src_result->complete_block_count = src_result->current_block_line + 1;
 
@@ -460,44 +528,53 @@ static inline scale_op_t scale_op_wheel(scale_drv_config_t *drv_config, scale_dr
 		goto out;
 	}
 
-	if (src_result->next_block_line == src_block->line_count - 1
-		&& (src_result->next_frame_line != drv_config->src_height - 1))
-	{
-		//LOGI("%s source complete left\n", __func__);
-		scale_op = OP_SROUCE_COMPLETE;
-		src_result->complete_frame_count += src_block->line_count;
-		src_result->complete_block_count = src_block->line_count;
-
-		drv_record->complete_count += src_block->line_count;
-
+        if ((src_result->next_block_line == src_block->line_count - 1)
+            && (src_result->next_frame_line != drv_config->src_height - 1))
+        {
+            drv_record->remain_size = drv_config->src_width * 2;
+            if (src_result->current_block_line != src_block->line_count - 1)
+            {   
+                LOGD("%s %d  [%d %d] %p\n", __func__, __LINE__, src_result->current_block_line, src_result->next_block_line, src_block->data);
+                scale_op = OP_SROUCE_COMPLETE;
+                src_result->complete_frame_count += src_block->line_count;
+                src_result->complete_block_count = src_block->line_count;
+        
+                drv_record->complete_count += src_block->line_count;
 #if 1
-		//TODO
-		drv_record->remain_size = drv_config->src_width * 2;
-		os_memcpy(drv_record->remain_data,
-			src_block->data + src_result->next_block_line * drv_record->remain_size,
-			drv_record->remain_size);
+                    //TODO
+                os_memcpy(drv_record->remain_data,
+                    src_block->data + src_result->next_block_line * drv_record->remain_size,
+                    drv_record->remain_size);
 #endif
-		goto out;
-	}
+    //          goto out;
 
-	if (src_result->current_block_line < src_block->line_count - 1
+            }
+            LOGD("%s %d  [%d %d] %p\n", __func__, __LINE__, src_result->current_block_line, src_result->next_block_line, src_block->data);
+        }
+        else if (src_result->current_block_line < src_block->line_count - 1
 		&& src_result->next_block_line > src_block->line_count - 1)
-	{
-		//LOGI("%s source complete noleft\n", __func__);
-		scale_op = OP_SROUCE_COMPLETE;
-		src_result->complete_frame_count += src_block->line_count;
-		src_result->complete_block_count = src_block->line_count;
+//        if ((src_result->current_block_line !=  src_block->line_count - 1) && (src_result->next_block_line < src_result->current_block_line))
+        {
+            scale_op = OP_SROUCE_COMPLETE;
+            src_result->complete_frame_count += src_block->line_count;
+            src_result->complete_block_count = src_block->line_count;
+        }
+        if ((drv_record->dst_line_count % drv_config->line_cycle) == 0)
+        {
+            if (OP_SROUCE_COMPLETE == scale_op)
+            {      
+                scale_op = OP_SROUCE_COMPLETE;
+//                LOGI("%s %d [%d %d %d %d %d %d]\n", __func__, __LINE__, src_result->current_block_line, src_result->next_block_line, src_result->current_frame_line, drv_record->dst_result.current_frame_line,drv_record->dst_result.current_block_line, drv_record->dst_result.complete_block_count);
+            }
+            else
+            {      
+                scale_op = OP_DEST_COMPLETE;
+            }
+            goto out;
+        }
 
-		goto out;
-	}
-#endif
+        #endif
 
-	if ((drv_record->dst_line_count % drv_config->line_cycle) == 0)
-	{
-		//LOGI("%s dest complete left\n", __func__);
-		scale_op = OP_DEST_COMPLETE;
-		goto out;
-	}
 
 out:
 
@@ -524,11 +601,15 @@ static void scale_line_continue(scale_id_t id, scale_drv_config_t *drv_config, s
 		if (drv_record->remain_size)
 		{
 #if 1
-            block_address = (uint32_t)(drv_record->src_block.data + (s_hw_scale.handle[id].record->s_hloc_scale[line_index + 1] % drv_config->line_cycle) * drv_config->src_width * 2);
+            LOGD("%s %d [%d %d] %p\n", __func__, __LINE__, s_hw_scale.handle[id].record->s_hloc_scale[line_index], drv_record->dst_result.complete_block_count, drv_record->src_block.data);
+//            block_address = (uint32_t)(drv_record->src_block.data + (s_hw_scale.handle[id].record->s_hloc_scale[line_index + 1] % drv_config->line_cycle) * drv_config->src_width * 2);
+            block_address = (uint32_t)drv_record->src_block.data;
+
             if(id == HW_SCALE0)
             {
     			scale0_hal_set_base_addr((uint32_t)drv_record->remain_data);
-    			scale0_hal_set_firstaddr(block_address);
+                scale0_hal_set_firstaddr(block_address);
+
                 scale0_hal_set_dest_addr((uint32_t)(drv_record->dst_block.data + drv_record->dst_result.complete_block_count * drv_config->dst_width * 2));
             }
             else
@@ -598,19 +679,30 @@ static void scale_line_continue(scale_id_t id, scale_drv_config_t *drv_config, s
     	a_addr[line_index] = (uint32_t)(drv_config->src_addr + s_hw_scale.handle[id].record->s_hloc_scale[line_index] * drv_config->src_width * 2);
     	c_addr[line_index] = (uint32_t)(drv_config->dst_addr + line_index * drv_config->dst_width * 2);
 #endif
-
-    	scale0_hal_start(1);
     }
     else
     {
     	scale1_hal_col_coef(s_hw_scale.handle[id].record->h_index_coef[line_index]);
-    	scale1_hal_start(1);
     }
 }
 
+bk_err_t bk_hw_scale_start(scale_id_t id)
+{
+    if(id == HW_SCALE0)
+    {
+        scale0_hal_start(1);
+    }
+    else
+    {
+        scale1_hal_start(1);
+    }
+    return BK_OK;
+}
+
+
 static inline void scale_frame_complete(scale_id_t id, scale_drv_config_t *drv_config, scale_drv_record_t *drv_record)
 {
-	hloc_index = 2;
+	hloc_index = 1;
 
 	if (drv_config->scale_mode == FRAME_SCALE)
 	{
@@ -618,10 +710,13 @@ static inline void scale_frame_complete(scale_id_t id, scale_drv_config_t *drv_c
 	}
 	else
 	{
-		drv_config->frame_complete(&drv_record->src_result,
-			&drv_record->dst_result,
-			&drv_record->src_block,
-			&drv_record->dst_block);
+	    if(drv_config->frame_complete)
+        {
+            drv_config->frame_complete(&drv_record->src_result,
+                                        &drv_record->dst_result,
+                                        &drv_record->src_block,
+                                        &drv_record->dst_block);
+        }
 	}
 
 	os_memset(&drv_record->src_result, 0, sizeof(scale_result_t));
@@ -631,12 +726,11 @@ static inline void scale_frame_complete(scale_id_t id, scale_drv_config_t *drv_c
 	drv_record->complete_count = 0;
 }
 
-
 static inline void scale_src_block_complete(scale_drv_config_t *drv_config, scale_drv_record_t *drv_record)
 {
 	//LOGI("%s, line: %d\n", __func__, drv_record->dst_line_count);
-
-	drv_config->source_block_complete(&drv_record->src_result, &drv_record->src_block);
+    if(drv_config->source_block_complete)
+	    drv_config->source_block_complete(&drv_record->src_result, &drv_record->src_block);
 
 	drv_record->src_result.complete_block_count = 0;
 }
@@ -645,7 +739,8 @@ static inline void scale_dst_block_complete(scale_drv_config_t *drv_config, scal
 {
 	//LOGI("%s, line: %d\n", __func__, drv_record->dst_line_count);
 
-	drv_config->dest_block_complete(&drv_record->dst_result, &drv_record->dst_block);
+    if(drv_config->dest_block_complete)
+	    drv_config->dest_block_complete(&drv_record->dst_result, &drv_record->dst_block);
 
 	drv_record->dst_result.complete_block_count = 0;
 }
@@ -665,7 +760,7 @@ static void scale0_complete_isr(void)
 			return;
 		}
 
-		if (s_hw_scale.scale_isr_handler[HW_SCALE0].isr_handler)
+		if (s_hw_scale.scale_isr_handler[HW_SCALE0].isr_handler || s_hw_scale.handle[HW_SCALE0].config->frame_complete)
 		{
 			scale_line_operation(HW_SCALE0, drv_config, drv_record);
 
@@ -678,6 +773,7 @@ static void scale0_complete_isr(void)
 				else
 				{
 					scale_line_continue(HW_SCALE0, drv_config, drv_record);
+                    bk_hw_scale_start(HW_SCALE0);
 				}
 			}
 			else if (drv_config->scale_mode == BLOCK_SCALE)
@@ -689,6 +785,7 @@ static void scale0_complete_isr(void)
 					case OP_BLOCK_CONTINUE:
 					{
 						scale_line_continue(HW_SCALE0, drv_config, drv_record);
+                        bk_hw_scale_start(HW_SCALE0);
 					}
 					break;
 
@@ -709,8 +806,8 @@ static void scale0_complete_isr(void)
 					case OP_DEST_COMPLETE:
 					{
 						scale_dst_block_complete(drv_config, drv_record);
-					}
-					break;
+                    }
+                    break;
 #else
 					
 					case OP_SROUCE_COMPLETE:
@@ -745,7 +842,7 @@ static void scale1_complete_isr(void)
 			return;
 		}
 
-		if (s_hw_scale.scale_isr_handler[HW_SCALE1].isr_handler)
+		if (s_hw_scale.scale_isr_handler[HW_SCALE1].isr_handler || s_hw_scale.handle[HW_SCALE1].config->frame_complete)
 		{
 			scale_line_operation(HW_SCALE1, drv_config, drv_record);
 
@@ -758,6 +855,7 @@ static void scale1_complete_isr(void)
 				else
 				{
 					scale_line_continue(HW_SCALE1, drv_config, drv_record);
+                    bk_hw_scale_start(HW_SCALE1);
 				}
 			}
 			else if (drv_config->scale_mode == BLOCK_SCALE)
@@ -769,6 +867,7 @@ static void scale1_complete_isr(void)
 					case OP_BLOCK_CONTINUE:
 					{
 						scale_line_continue(HW_SCALE1, drv_config, drv_record);
+                        bk_hw_scale_start(HW_SCALE1);
 					}
 					break;
 
@@ -777,6 +876,7 @@ static void scale1_complete_isr(void)
 						scale_frame_complete(HW_SCALE1, drv_config, drv_record);
 					}
 					break;
+
 
 #if SCALE_BLOCK_MODE
 
@@ -810,6 +910,50 @@ static void scale1_complete_isr(void)
 	}
 }
 
+static bk_err_t scale_set_write_burst(scale_id_t id, uint16_t scale_dst_width)
+{
+	bk_err_t ret = BK_OK;
+    if(id == HW_SCALE0)
+    {
+        if (!(scale_dst_width % 128))
+        {
+            scale0_ll_set_0x10_r_write_threshold(64);
+            LOGD("scale width divisible by 128\n");
+        }
+        else if (!(scale_dst_width % 64))
+        {
+            scale0_ll_set_0x10_r_write_threshold(32);
+            LOGD("scale width divisible by 64\n");
+        }
+        else if (!(scale_dst_width % 32))
+        {
+            scale0_ll_set_0x10_r_write_threshold(16);
+            LOGD("scale width divisible by 32\n");
+        }
+        else if (!(scale_dst_width % 16))
+        {
+            scale0_ll_set_0x10_r_write_threshold(8);
+            LOGD("scale width divisible by 16\n");
+        }
+        else if ((scale_dst_width % 8))
+        {
+            scale0_ll_set_0x10_r_write_threshold(4);
+            LOGD("scale width divisible by 8\n");
+        }
+        else
+        {
+             LOGE("scale width is not support, scale width must divisible by 8/16/32/64/128\n");
+             scale0_ll_set_0x10_r_write_threshold(4);
+             ret = BK_FAIL;
+        }
+    }
+    else
+    {
+        LOGE("scale1 not config, to do\n");
+        ret = BK_FAIL;
+    }
+	return ret;
+}
 
 bk_err_t hw_scale_frame(scale_id_t id, scale_drv_config_t *scale_drv_config)
 {
@@ -833,18 +977,24 @@ bk_err_t hw_scale_frame(scale_id_t id, scale_drv_config_t *scale_drv_config)
 		drv_config->src_height = scale_drv_config->src_height;
 		drv_config->dst_height = scale_drv_config->dst_height;
 
+        scale_set_write_burst(id, drv_config->dst_width);
         if(id == HW_SCALE0)
+        {
 		    scale0_hal_set_pic_width(drv_config->src_width, drv_config->dst_width);
+        }
         else
+        {
             scale1_hal_set_pic_width(drv_config->src_width, drv_config->dst_width);
- 
-		ret = scale_get_row_index_coef_params(id, drv_config->src_height, drv_config->dst_height);
-		if(ret != BK_OK)
-			return ret;
+        }
 
 		ret = scale_set_row_coef_params(id, drv_config->src_width, drv_config->dst_width);
 		if(ret != BK_OK)
 			return ret;
+
+		ret = scale_get_row_index_coef_params(id, drv_config->src_height, drv_config->dst_height);
+		if(ret != BK_OK)
+			return ret;
+
 
 		scale_get_hloc_scale_params(id, drv_config->src_height, drv_config->dst_height);
 		s_hw_scale.handle[id].is_config = true;
@@ -868,7 +1018,6 @@ bk_err_t hw_scale_frame(scale_id_t id, scale_drv_config_t *scale_drv_config)
 		drv_record->dst_line_count = 0;
 		
 		scale0_hal_col_coef(s_hw_scale.handle[id].record->h_index_coef[drv_record->dst_line_count]);
-		scale0_hal_start(1);
 	}
     else
     {
@@ -887,8 +1036,8 @@ bk_err_t hw_scale_frame(scale_id_t id, scale_drv_config_t *scale_drv_config)
         drv_record->dst_line_count = 0;
 
         scale1_hal_col_coef(s_hw_scale.handle[id].record->h_index_coef[drv_record->dst_line_count]);
-        scale1_hal_start(1);
     }
+    bk_hw_scale_start(id);
 	return 0;
 }
 
@@ -904,6 +1053,7 @@ bk_err_t hw_scale_block_config(scale_id_t id, scale_drv_config_t *scale_drv_conf
 		LOGE("%s invalid id: %d\n", __func__, id);
 		return BK_FAIL;
 	}
+
 	drv_config = s_hw_scale.handle[id].config;
 //	drv_record = s_hw_scale.handle[id].record;
 
@@ -914,15 +1064,16 @@ bk_err_t hw_scale_block_config(scale_id_t id, scale_drv_config_t *scale_drv_conf
 		drv_config->src_height = scale_drv_config->src_height;
 		drv_config->dst_height = scale_drv_config->dst_height;
 
-		ret = scale_get_row_index_coef_params(id, drv_config->src_height, drv_config->dst_height);
-		if(ret != BK_OK)
-			return ret;
-
 		ret = scale_set_row_coef_params(id, drv_config->src_width, drv_config->dst_width);
 		if(ret != BK_OK)
 			return ret;
 
+		ret = scale_get_row_index_coef_params(id, drv_config->src_height, drv_config->dst_height);
+		if(ret != BK_OK)
+			return ret;
+
 		scale_get_hloc_scale_params(id, drv_config->src_height, drv_config->dst_height);
+        scale_set_write_burst(id, drv_config->dst_width);
 		s_hw_scale.handle[id].is_config = true;
 
         if(id == HW_SCALE0)
@@ -958,7 +1109,6 @@ bk_err_t hw_scale_block_start(scale_id_t id, scale_block_t *src, scale_block_t *
 		return BK_FAIL;
 	}
 
-
 	drv_config = s_hw_scale.handle[id].config;
 	drv_record = s_hw_scale.handle[id].record;
 
@@ -977,6 +1127,7 @@ bk_err_t hw_scale_block_start(scale_id_t id, scale_block_t *src, scale_block_t *
 #endif
 
 	scale_line_continue(id, drv_config, drv_record);
+    bk_hw_scale_start(id);
 
 	return BK_OK;
 }
@@ -1005,6 +1156,7 @@ bk_err_t hw_scale_dest_block_fill(scale_id_t id, scale_block_t *scale_block)
 	//rtos_delay_milliseconds(50);
 
 	scale_line_continue(id, drv_config, drv_record);
+    bk_hw_scale_start(id);
 
 	return BK_OK;
 }
@@ -1014,11 +1166,11 @@ bk_err_t hw_scale_source_block_fill(scale_id_t id, scale_block_t *scale_block)
 	scale_drv_config_t *drv_config = NULL;
 	scale_drv_record_t *drv_record = NULL;
 
-	if (s_hw_scale.handle[id].is_init == false)
-	{
-		LOGE("%s channel: %d not init\n", __func__, id);
-		return BK_FAIL;
-	}
+    if (s_hw_scale.handle[id].is_init == false)
+    {
+        LOGE("%s channel: %d not init\n", __func__, id);
+        return BK_FAIL;
+    }
 
 	drv_config = s_hw_scale.handle[id].config;
 	drv_record = s_hw_scale.handle[id].record;
@@ -1030,15 +1182,29 @@ bk_err_t hw_scale_source_block_fill(scale_id_t id, scale_block_t *scale_block)
 	drv_record->fill_count += drv_record->src_block.line_count;
 
 	os_memcpy(&drv_record->src_block, scale_block, sizeof(scale_block_t));
+    if(drv_config->scale_block_result == NULL)
+    {
+        LOGW("%s no scale start fill doing\n", __func__);
+        return BK_FAIL;
+    }
 	drv_config->scale_block_result(&drv_record->src_block, &drv_record->dst_block);
 
 	//LOGI("%s %d, %d, %p\n", __func__,
 	//	drv_record->src_block.line_index, drv_record->src_block.line_count, drv_record->src_block.data);
 
 	//rtos_delay_milliseconds(50);
+	
+    scale_line_continue(id, drv_config, drv_record);
 
-	scale_line_continue(id, drv_config, drv_record);
-
+	if (drv_record->dst_result.complete_block_count == drv_config->line_cycle)
+    {
+        LOGD("%s src and dst both complete, wait dst trigger loop\n", __func__);
+        scale_dst_block_complete(drv_config, drv_record);
+    }
+    else
+    {
+        bk_hw_scale_start(id);
+    }
 	return BK_OK;
 }
 

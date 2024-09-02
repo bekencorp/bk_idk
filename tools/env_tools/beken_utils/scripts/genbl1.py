@@ -23,7 +23,7 @@ s_key = {\
     "mnft_sig_cfg": {\
         "pubkey_hash_sch":  "SHA256",\
         "mnft_sig_sch":     "ECDSA_256_SHA256",\
-        "mnft_prvkey":      "bl1_ec256_privkey.pem",\
+        "mnft_prvkey":      "",\
         "mnft_pubkey":      "bl1_ec256_pubkey.pem"\
     },\
 \
@@ -95,16 +95,24 @@ class Genbl1:
     def gen_key(self):
         pwd = os.getcwd()
         logging.debug(f'checking private/public key {self.sig_sch} {self.prvkey} {self.pubkey}')
-        if (os.path.exists(self.prvkey) == True) and (os.path.exists(self.pubkey) == True):
-            logging.debug(f'private/public key exists, skip key generation')
+
+        if (self.prvkey != '') and (os.path.exists(self.prvkey) == True):
+            logging.debug(f'private key exists')
+
+        if (self.pubkey != '') and (os.path.exists(self.pubkey) == True):
+            logging.debug(f'public key exists')
             return
+
         self.run_cmd(f'./gen_key.sh {self.sig_sch} {self.prvkey} {self.pubkey}')
 
-    def __init__(self, sec_boot=True, sig_sch='ec256', prvkey='bl1_ec256_privkey.pem', pubkey='bl1_ec256_pubkey.pem'):
+    def __init__(self, sec_boot=True, sig_sch='ec256', prvkey='', pubkey='bl1_ec256_pubkey.pem'):
         self.is_sec_boot = sec_boot
         self.sig_sch = sig_sch
         self.prvkey = prvkey
         self.pubkey = pubkey
+
+        if (prvkey == ''):
+            logging.debug(f'missing private key')
 
         logging.debug(f'sec_boot={self.is_sec_boot}, sig_sch={self.sig_sch}, prvkey={self.prvkey}, pubkey={self.pubkey}')
 
@@ -133,7 +141,7 @@ class Genbl1:
             s_man['mnft_desc_cfg']['mnft_ver'] = hex_security_counter 
             s_man['mnft_desc_cfg']['sec_boot'] = self.is_sec_boot
             s_man['imgs'][0]['static_addr'] = static_addr
-            #s_man['imgs'][0]['load_addr'] = load_addr
-            #s_man['imgs'][0]['entry'] = load_addr
+            s_man['imgs'][0]['load_addr'] = load_addr
+            s_man['imgs'][0]['entry'] = load_addr
             s_man['imgs'][0]['path'] = bin_name
             json.dump(s_man, f, indent=4, separators=(',', ':'))

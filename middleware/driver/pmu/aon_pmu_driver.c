@@ -95,7 +95,11 @@ void aon_pmu_drv_lpo_src_set(uint32_t lpo_src)
 		bk_rtc_set_clock_freq(AON_RTC_DEFAULT_CLOCK_FREQ);
 	}
 
-    aon_pmu_hal_lpo_src_set(lpo_src);
+#if CONFIG_ROSC_COMPENSATION
+	// get current tick to sync tick value for rosc_rtc_tick_compensation
+	bk_aon_rtc_get_current_tick_with_compensation(AON_RTC_ID_1);
+#endif
+	aon_pmu_hal_lpo_src_set(lpo_src);
 }
 __IRAM_SEC uint32_t aon_pmu_drv_lpo_src_get()
 {

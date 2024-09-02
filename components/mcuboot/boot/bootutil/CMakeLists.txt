@@ -34,3 +34,7 @@ target_sources(bootutil
         src/swap_scratch.c
         src/tlv.c
 )
+
+if(CONFIG_BL2_SKIP_VALIDATE)
+    target_compile_definitions(bootutil PUBLIC CONFIG_BL2_SKIP_VALIDATE)
+endif()

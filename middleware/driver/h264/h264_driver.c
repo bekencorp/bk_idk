@@ -342,8 +342,13 @@ bk_err_t bk_h264_deinit(void)
 
 	h264_int_disable();
 	bk_h264_soft_reset();
+	bk_h264_config_reset();
 	sys_drv_h264_pwr_down();
-	//os_memset(&h264_compress, 0, sizeof(compress_ratio_t));
+	os_memset(&h264_compress, 0, sizeof(compress_ratio_t));
+	for (uint8_t i = 0; i < H264_ISR_MAX; i++)
+	{
+		bk_h264_unregister_isr(i);
+	}
 
 	return BK_OK;
 }
@@ -665,4 +670,12 @@ bk_err_t bk_h264_clk_check(void)
 	REG_WRITE((0x44000000+0x41*4), val);
 
 	return BK_OK;
+}
+
+bk_err_t bk_h264_updata_encode_fps(uint32 fps)
+{
+    H264_RETURN_ON_DRIVER_NOT_INIT();
+    h264_hal_set_vui_fps(&s_h264.hal, fps);
+
+    return BK_OK;
 }

@@ -71,6 +71,14 @@ We can download Armino from gitlab::
     cd ~/armino
     git clone https://gitlab.bekencorp.com/armino/bk_idk.git
 
+
+We also can download Armino from github::
+
+	mkdir -p ~/armino
+	cd ~/armino
+	git clone https://github.com/bekencorp/bk_idk.git
+
+
 Then switch to the stable branch Tag node, such as v2.0.1.12::
 
     git checkout -B your_branch_name v2.0.1.12
@@ -145,7 +153,7 @@ The app project startup:
  - Common pheripheral drivers
  - Armino default Cli
 
-You can build other projects with PROJECT parameter, e.g. run "make bk7236 PROJECT=security/secureboot" 
+You can build other projects with PROJECT parameter, e.g. run "make bk7236 PROJECT=security/secureboot"
 can build projects/security/secureboot etc.
 
 Configuration project

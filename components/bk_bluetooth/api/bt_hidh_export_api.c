@@ -74,7 +74,7 @@ bk_err_t bk_bt_hid_host_set_protocol(bk_bd_addr_t bd_addr, bk_hidh_protocol_mode
 }
 
 bk_err_t bk_bt_hid_host_get_report(bk_bd_addr_t bd_addr, bk_hidh_report_type_t report_type, uint8_t report_id,
-                                     int buffer_size)
+                                   int buffer_size)
 {
     ble_err_t ret = BK_OK;
     hidh_get_report_t get_report = {0};
@@ -87,7 +87,7 @@ bk_err_t bk_bt_hid_host_get_report(bk_bd_addr_t bd_addr, bk_hidh_report_type_t r
 }
 
 bk_err_t bk_bt_hid_host_set_report(bk_bd_addr_t bd_addr, bk_hidh_report_type_t report_type, uint8_t *report,
-                                     size_t len)
+                                   size_t len)
 {
     ble_err_t ret = BK_OK;
     hidh_set_report_t set_report = {0};

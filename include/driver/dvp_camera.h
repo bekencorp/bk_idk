@@ -129,6 +129,18 @@ const dvp_sensor_config_t *bk_dvp_get_sensor_auto_detect(void);
  */
 bk_err_t bk_dvp_camera_free_encode_mem(void);
 
+/**
+ * @brief     regenerate idr frame
+ *
+ * This API called by user, once call this api, will regenerate idr frame
+ *
+ * @attation 1. This api only effect in camera is working, and work in h264 mode or h264&yuv mode,
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: other errors.
+ */
+bk_err_t bk_dvp_camera_h264_regenerate_idr_frame(void);
 
 #ifdef __cplusplus
 }

@@ -47,29 +47,12 @@ list(APPEND bk7256xx_supported_projects
 	"bluetooth/hci"
 	"bluetooth/headset"
 	"bluetooth/mesh"
-	"lvgl/86box"
-	"lvgl/benchmark"
-	"lvgl/camera"
-	"lvgl/keypad_encoder"
-	"lvgl/lcd_qspi_meter"
-	"lvgl/meter"
-	"lvgl/music"
-	"lvgl/psram_4MB"
-	"lvgl/soundbar"
-	"lvgl/stress"
-	"lvgl/widgets"
-	"media/audio_player"
-	"media/av_client"
-	"media/av_server"
 	"media/doorbell"
 	"media/audio_play_sdcard_mp3_music"
 	"media/audio_record_to_sdcard"
-	"media/dual_device_voice_call"
-	"thirdparty/agora"
 	"thirdparty/p2p_client"
 	"thirdparty/p2p_server"
 	"thirdparty/wanson_asr"
-	"lvgl/86box_smart_panel"
 	"wifi/repeater"
 	"at"
 )
@@ -89,6 +72,7 @@ list(APPEND bk7236xx_supported_projects
 	"wifi/repeater"
 	"at"
 	"customization/config_ab"
+	"clip"
 )
 
 
@@ -119,19 +103,17 @@ list(APPEND bk7258xx_supported_projects
 	"media/audio_record_to_sdcard"
 	"media/doorbell"
 	"media/doorviewer_8M"
-	"media/lcd_mcu_8080"
 	"media/media_transfer"
-	"media/dual_device_voice_call"
 	"media/doorbell_720p"
 	"lvgl/86box"
 	"lvgl/86box_smart_panel"
 	"lvgl/stress"
 	"lvgl/benchmark"
 	"lvgl/meter_rgb_16M"
-	"lvgl/soundbar"
 	"lvgl/widgets"
 	"lvgl/camera"
 	"lvgl/meter"
+	"lvgl/meter_spi"
 	"lvgl/music"
 	"lvgl/keypad_encoder"
 	"thirdparty/doorbell_cs2"
@@ -142,6 +124,9 @@ list(APPEND bk7258xx_supported_projects
 	"at"
 	"customization/config_ab"
 	"thirdparty/wanson_asr"
+	"thirdparty/jpeg_sw_enc"
+	"peripheral/lcd_8080"
+	"peripheral/lcd_rgb"
 )
 
 
@@ -254,11 +239,44 @@ list(FILTER supported_slave_targets INCLUDE REGEX "^bk.*_cp[0-9]$")
 # STRING(SUBSTRING ${new_project_dir} ${project_name_start} -1 project_name)
 set(project_name $ENV{PROJECT})
 
-if (NOT cmd_armino_soc IN_LIST supported_main_targets OR
-	NOT target IN_LIST supported_targets OR
-	NOT project_name IN_LIST supported_projects
-	)
-	return()
+STRING(FIND ${target} "_" main_target_len REVERSE)
+STRING(SUBSTRING ${target} 0 ${main_target_len} main_target)
+
+set(check_security_firmware_tool "${armino_path}/tools/build_tools/check_security_firmware.py")
+set(main_target_path "${project_dir}/config/${main_target}")
+set(partitions_path "${project_dir}/config/${main_target}/partitions.csv")
+set(partitions_path_tmp "${project_dir}/config/${main_target}/.partitions.csv")
+
+message(STATUS "check_security_firmware_tool = ${check_security_firmware_tool}")
+message(STATUS "main_target_path = ${main_target_path}")
+
+execute_process(COMMAND
+					"${python}" ${check_security_firmware_tool} ${main_target_path}
+					OUTPUT_VARIABLE output
+					RESULT_VARIABLE result)
+
+if(result STREQUAL 0)
+    file(GLOB PARTITIONS_CSV_FILES ${partitions_path_tmp})
+    if(PARTITIONS_CSV_FILES)
+        file(REMOVE ${partitions_path})
+        
+        foreach(FILE ${PARTITIONS_CSV_FILES})
+            file(RENAME ${FILE} ${partitions_path})
+        endforeach()
+    endif()
+    return()
+else()
+    if (NOT cmd_armino_soc IN_LIST supported_main_targets OR
+    NOT target IN_LIST supported_targets OR
+    NOT project_name IN_LIST supported_projects
+    )
+        return()
+    else()
+        STRING(FIND "${main_target_path}" "security" string_position)
+        if(${string_position} GREATER_EQUAL 0)
+            return()
+        endif()
+    endif()
 endif()
 
 if(sdkconfig_default_soc)
@@ -342,8 +360,7 @@ if(target IN_LIST supported_slave_targets)
 	else()
 		LOGE("smode_inseqs_tool execute failed...")
 	endif()
-	STRING(FIND ${target} "_" main_target_len REVERSE)
-	STRING(SUBSTRING ${target} 0 ${main_target_len} main_target)
+
 	set(main_target_config "${project_dir}/config/${main_target}.config")
 	if(EXISTS "${project_dir}/config/${main_target}/config")
 		set(main_target_config "${project_dir}/config/${main_target}/config")

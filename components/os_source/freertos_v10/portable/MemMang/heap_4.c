@@ -249,6 +249,8 @@ void rtos_regist_plat_dump_hook(uint32_t reg_base_addr, uint32_t reg_size);
 /*-----------------------------------------------------------*/
 #if (CONFIG_LV_ATTRIBUTE_FAST_MEM) && (CONFIG_SOC_BK7258)
 void bk_psram_heap_init(void) {
+#elif CONFIG_SOC_BK7236XX
+__attribute__((section(".iram"))) void bk_psram_heap_init(void) {
 #else
 __attribute__((section(".itcm_sec_code"))) void bk_psram_heap_init(void) {
 #endif
@@ -266,7 +268,7 @@ __attribute__((section(".itcm_sec_code"))) void bk_psram_heap_init(void) {
 	BK_LOGI(TAG, "prvHeapInit-psram start addr:0x%x, size:%d\r\n", psram_ucHeap, xTotalHeapSize);
 
 	os_memset_word((uint32_t *)psram_ucHeap, 0x0, xTotalHeapSize);
-	rtos_regist_plat_dump_hook((uint32_t)psram_ucHeap, xTotalHeapSize);
+	// rtos_regist_plat_dump_hook((uint32_t)psram_ucHeap, xTotalHeapSize);
 
 	/* Ensure the heap starts on a correctly aligned boundary. */
 	uxAddress = ( size_t ) psram_ucHeap;
@@ -526,6 +528,15 @@ void *pvReturn = NULL;
 	return pvReturn;
 }
 
+uint32_t psram_used_area_begin = 0;
+uint32_t psram_used_area_end = 0;
+uint32_t psram_memory_end = 0;
+
+static uint32_t get_memory_end(BlockLink_t *pxLink) {
+	uint32_t mem_end = (uint32_t)pxLink + (pxLink->xBlockSize & ~xBlockAllocatedBit);
+	return mem_end;
+}
+
 #if CONFIG_MALLOC_STATIS || CONFIG_MEM_DEBUG
 void *psram_malloc_cm(const char *call_func_name, int line, size_t xWantedSize, int need_zero )
 #else
@@ -579,6 +590,14 @@ void *psram_malloc( size_t xWantedSize )
  		mem_end = pvReturn + xWantedSize;
  		mem_end_len = (pxLink->xBlockSize & ~xBlockAllocatedBit) - xHeapStructSize - xWantedSize;
  		os_memset_word((uint32_t *)mem_end, MEM_OVERFLOW_WORD_TAG, mem_end_len);
+
+		if(psram_used_area_begin == 0 || (uint32_t)pxLink < psram_used_area_begin) {
+			psram_used_area_begin = (uint32_t)pxLink;
+		}
+		psram_memory_end = get_memory_end(pxLink);
+		if(psram_used_area_end == 0 || psram_memory_end > psram_used_area_end) {
+			psram_used_area_end = psram_memory_end;
+		}
 #endif
 #endif //#if CONFIG_MALLOC_STATIS || CONFIG_MEM_DEBUG
 	}
@@ -649,10 +668,11 @@ static inline void show_mem_info(BlockLink_t *pxLink)
 	bk_task_wdt_feed();
 #endif
 
-#if CONFIG_INT_WDT
 	bk_wdt_feed();
-#endif
 
+#if (CONFIG_INT_AON_WDT)
+	bk_int_aon_wdt_feed();
+#endif
 }
 
 static inline void mem_overflow_check(BlockLink_t *pxLink)
@@ -666,7 +686,9 @@ static inline void mem_overflow_check(BlockLink_t *pxLink)
 			BK_DUMP_OUT("Mem Overflow ......mem_end[%p + %d]=[0x%02x].....\r\n", mem_end, i, mem_end[i]);
 			show_mem_info(pxLink);
 			stack_mem_dump((uint32_t)pxLink - 64, (uint32_t)pxLink + xHeapStructSize + pxLink->wantedSize + 64);
-			configASSERT( false );
+			if (0 == arch_is_enter_exception()) {
+				configASSERT( false );
+			}
 		}
 	}
 }
@@ -1106,6 +1128,10 @@ void bk_psram_heap_get_used_state(void) {
 	list_for_each_entry(pxLink, &xPsramUsed, node) {
 		show_mem_info(pxLink);
 		mem_overflow_check(pxLink);
+	}
+
+	if (arch_is_enter_exception() == 1) {
+		stack_mem_dump(psram_used_area_begin, psram_used_area_end);
 	}
 
 	if (arch_is_enter_exception() == 0) {

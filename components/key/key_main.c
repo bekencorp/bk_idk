@@ -10,14 +10,61 @@
 #include <driver/gpio.h>
 #include <driver/hal/hal_gpio_types.h>
 #include "gpio_driver.h"
-
-
+#if CONFIG_PM_ENABLE
+#include <modules/pm.h>
+#endif
 #if CONFIG_BUTTON
 //#include <drivers/pin.h>
 
 beken_timer_t g_key_timer;
 beken_mutex_t g_key_mutex;
 static bool s_key_init_status_flag = 0;
+
+#if CONFIG_PM_ENABLE
+static void key_enter_low_voltage(void)
+{
+	if(g_key_timer.handle)
+	{
+		bk_err_t ret;
+		ret = rtos_stop_timer(&g_key_timer);
+		if(kNoErr != ret)
+		{
+			KEY_PRT("rtos_stop_timer fail\r\n");
+		}
+	}
+}
+
+static void key_exit_low_voltage(void)
+{
+	if(g_key_timer.handle)
+	{
+		bk_err_t ret;
+		ret = rtos_start_timer(&g_key_timer);
+		if(kNoErr != ret)
+		{
+			KEY_PRT("rtos_start_timer fail\r\n");
+		}
+	}
+}
+
+static void key_register_low_voltage_cb(void)
+{
+    pm_cb_conf_t key_enter_config = {
+            .cb = (pm_cb)key_enter_low_voltage,
+            .args = NULL
+            };
+    pm_cb_conf_t key_exit_config = {
+            .cb = (pm_cb)key_exit_low_voltage,
+            .args = NULL
+            };
+    bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, PM_DEV_ID_KEY, &key_enter_config, &key_exit_config);
+}
+
+static void key_unregister_low_voltage_cb(void)
+{
+    bk_pm_sleep_unregister_cb(PM_MODE_LOW_VOLTAGE, PM_DEV_ID_KEY, true, true);
+}
+#endif
 
 void key_configure(void)
 {
@@ -271,6 +318,11 @@ void key_initialization(void)
 	}
 
 	key_configure();
+
+#if	CONFIG_PM_ENABLE
+	key_register_low_voltage_cb();
+#endif
+
 	s_key_init_status_flag = 1;
 }
 
@@ -282,6 +334,11 @@ void key_uninitialization(void)
 	}
 
 	key_unconfig();
+
+#if	CONFIG_PM_ENABLE
+	key_unregister_low_voltage_cb();
+#endif
+
 	s_key_init_status_flag = 0;
 }
 

@@ -24,8 +24,8 @@
 #define MBEDTLS_LIBRARY_COMMON_H
 
 #include "mbedtls/build_info.h"
-
 #include <stdint.h>
+#include <string.h>
 
 /** Helper to define a function as static except when building invasive tests.
  *

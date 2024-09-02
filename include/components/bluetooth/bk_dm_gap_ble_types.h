@@ -84,12 +84,13 @@ typedef enum
     //BLE_INCLUDED
     BK_BLE_GAP_AUTH_CMPL_EVT = 8,                          /*!< Authentication complete indication, param is bk_ble_sec_t. */
     BK_BLE_GAP_KEY_EVT,                                    /*!< BLE key event for peer device keys, param is bk_ble_sec_t */
-    BK_BLE_GAP_SEC_REQ_EVT,                                /*!< BLE security request */
+    BK_BLE_GAP_SEC_REQ_EVT,                                /*!< BLE security request, param is bk_ble_sec_t. */
     BK_BLE_GAP_PASSKEY_NOTIF_EVT,                          /*!< passkey notification event, param is bk_ble_sec_t*/
     BK_BLE_GAP_PASSKEY_REQ_EVT,                            /*!< passkey request event, param is bk_ble_sec_t */
     BK_BLE_GAP_OOB_REQ_EVT,                                /*!< OOB request event, param is bk_ble_sec_t */
-    BK_BLE_GAP_LOCAL_IR_EVT,                               /*!< BLE local IR (identity Root 128-bit random static value used to generate Long Term Key) event */
-    BK_BLE_GAP_LOCAL_ER_EVT,                               /*!< BLE local ER (Encryption Root vakue used to generate identity resolving key) event */
+    BK_BLE_GAP_LOCAL_IR_EVT,                               /*!< BLE local IR (Encryption Root value used to generate identity resolving key) event */
+    BK_BLE_GAP_LOCAL_ER_EVT,                               /*!< BLE local ER (identity Root 128-bit random static value used to generate Long Term Key) event */
+
     BK_BLE_GAP_NC_REQ_EVT,                                 /*!< Numeric Comparison request event, param is bk_ble_sec_t */
 
 
@@ -150,6 +151,13 @@ typedef enum
     BK_BLE_GAP_PERIODIC_ADV_REPORT_EVT,                         /*!< when periodic report advertising complete, the event comes */
     BK_BLE_GAP_PERIODIC_ADV_SYNC_LOST_EVT,                      /*!< when periodic advertising sync lost complete, the event comes */
     BK_BLE_GAP_PERIODIC_ADV_SYNC_ESTAB_EVT,                     /*!< when periodic advertising sync establish complete, the event comes */
+
+    BK_BLE_GAP_CONNECT_COMPLETE_EVT,                            /*!< when ble connection complete, the event comes */
+    BK_BLE_GAP_DISCONNECT_COMPLETE_EVT,                         /*!< when ble disconnect complete, the event comes */
+    BK_BLE_GAP_CONNECT_CANCEL_EVT,                              /*!< when ble connect cancel complete, the event comes */
+    BK_BLE_GAP_UPDATE_CONN_PARAMS_REQ_EVT,                      /*!< when peer req update param, the event comes */
+    BK_BLE_GAP_SET_SECURITY_PARAMS_COMPLETE_EVT,                /*!< when set security params complete, the event comes */
+    BK_BLE_GAP_GENERATE_RPA_COMPLETE_EVT,                       /*!< when generate rpa complete, the event comes */
 #if 0
     //BLE_INCLUDED
     BK_BLE_GAP_SC_OOB_REQ_EVT,                                  /*!< Secure Connection OOB request event */
@@ -162,6 +170,7 @@ typedef enum
     BK_BLE_GAP_SET_PAST_PARAMS_COMPLETE_EVT,                    /*!< when set periodic advertising sync transfer params complete, the event comes */
     BK_BLE_GAP_PERIODIC_ADV_SYNC_TRANS_RECV_EVT,                /*!< when periodic advertising sync transfer received, the event comes */
 #endif
+
     BK_BLE_GAP_EVT_MAX,                                         /*!< when maximum advertising event complete, the event comes */
 } bk_ble_gap_cb_event_t;
 
@@ -301,6 +310,10 @@ typedef enum
     BK_BLE_SM_ONLY_ACCEPT_SPECIFIED_SEC_AUTH,
     /// Enable/Disable OOB support
     BK_BLE_SM_OOB_SUPPORT,
+    /// set ER, 16 bytes
+    BK_BLE_SM_SET_ER,
+    /// set IR, 16 bytes
+    BK_BLE_SM_SET_IR,
 } bk_ble_sm_param_t;
 
 /// the key distribution mask type
@@ -421,6 +434,26 @@ typedef struct
                                                         advertising reports for each packet received */
 } bk_ble_scan_params_t;
 #endif // #if (BLE_42_FEATURE_SUPPORT == TRUE)
+
+
+
+/// create connection param
+typedef struct
+{
+    uint16_t scan_interval;                 /*!< scan interval, unit in 0.625ms */
+    uint16_t scan_window;                   /*!< scan window, unit in 0.625ms */
+    uint8_t initiator_filter_policy;        /*!< policy that how to use white list. 0 means not used, 1 means only connect device that in white list */
+    bk_ble_addr_type_t local_addr_type;     /*!< local address type */
+    bk_bd_addr_t peer_addr;                 /*!< peer addr */
+    bk_ble_addr_type_t peer_addr_type;      /*!< Peer address type, only BLE_ADDR_TYPE_PUBLIC or BLE_ADDR_TYPE_RANDOM available */
+    uint16_t conn_interval_min;             /*!< conn min interval, unit in 1.25ms, Range: 7.5ms to 4s */
+    uint16_t conn_interval_max;             /*!< conn max interval, unit in 1.25ms, Range: 7.5ms to 4s */
+    uint16_t conn_latency;                  /*!< latency Range: 0x0000 to 0x01F3 */
+    uint16_t supervision_timeout;           /*!< conn timeout, unit in 10ms Range: 100ms to 32s */
+    uint16_t min_ce;                        /*!< minimum length of connection event recommended, unit in 0.625ms Range: 0x0000 to 0xFFFF */
+    uint16_t max_ce;                        /*!< maximum length of connection event recommended, unit in 0.625ms Range: 0x0000 to 0xFFFF */
+} bk_gap_create_conn_params_t;
+
 /// connection parameters information
 typedef struct
 {
@@ -535,6 +568,7 @@ typedef struct
 typedef struct
 {
     bk_bd_addr_t  bd_addr;        /*!< peer address */
+    bk_ble_addr_type_t addr_type;
 } bk_ble_sec_req_t;               /*!< BLE security request type*/
 
 /**
@@ -577,6 +611,15 @@ typedef struct
     bk_ble_bond_key_info_t bond_key;     /*!< the bond key information */
 } bk_ble_bond_dev_t;                     /*!< the ble bond device type */
 
+/**
+* @brief  structure type of the ble local keys value
+*/
+typedef struct
+{
+    bk_bt_octet16_t       ir;                  /*!< the 16 bits of the ir value */
+    bk_bt_octet16_t       er;                 /*!< the 16 bits of the er value */
+    bk_bt_octet16_t       dhk;                 /*!< the 16 bits of the dh key value */
+} bk_ble_local_keys_t;
 
 
 /**
@@ -600,10 +643,10 @@ typedef struct
   */
 typedef union
 {
-    bk_ble_sec_key_notif_t    key_notif;      /*!< passkey notification or number compare notification */
-    bk_ble_sec_req_t          ble_req;        /*!< BLE SMP related request, used in passkey entry */
+    bk_ble_sec_key_notif_t    key_notif;      /*!< passkey notification/req or number compare notification */
+    bk_ble_sec_req_t          ble_req;        /*!< BLE SMP related request*/
     //bk_ble_sec_key_t          ble_key;        /*!< BLE SMP keys used when pairing */
-    //bk_ble_local_id_keys_t    ble_id_keys;    /*!< BLE IR event */
+    bk_ble_local_keys_t    ble_local_keys;    /*!< BLE local event */
     bk_ble_auth_cmpl_t        auth_cmpl;      /*!< Authentication complete indication. */
 } bk_ble_sec_t;                               /*!< BLE security type */
 
@@ -1308,6 +1351,70 @@ typedef union
     {
         bk_ble_gap_periodic_adv_report_t params; /*!< periodic advertising report parameters */
     } period_adv_report;                          /*!< Event parameter of BK_BLE_GAP_PERIODIC_ADV_REPORT_EVT */
+
+    /**
+     * @brief BK_BLE_GAP_CONNECT_COMPLETE_EVT
+     */
+    struct ble_connect_complete_param
+    {
+        bk_bt_status_t status;
+        bk_bd_addr_t remote_bda;       /*!< Remote bluetooth device address */
+        bk_ble_addr_type_t remote_bda_type;
+        uint8_t link_role;              /*!< Link role : master role = 0  ; slave role = 1*/
+        uint16_t conn_intv;
+        uint16_t conn_latency;
+        uint16_t supervision_timeout;
+    } connect_complete;                          /*!< Event parameter of BK_BLE_GAP_CONNECT_COMPLETE_EVT */
+
+    /**
+     * @brief BK_BLE_GAP_DISCONNECT_COMPLETE_EVT
+     */
+    struct ble_disconnect_complete_param
+    {
+        bk_bt_status_t status;
+        bk_bd_addr_t remote_bda;       /*!< Remote bluetooth device address */
+        bk_ble_addr_type_t remote_bda_type;
+        uint8_t reason;
+    } disconnect_complete;                          /*!< Event parameter of BK_BLE_GAP_DISCONNECT_COMPLETE_EVT */
+
+    /**
+     * @brief BK_BLE_GAP_CONNECT_CANCEL_EVT
+     */
+    struct ble_connect_cancel_param
+    {
+        bk_bt_status_t status;
+    } connect_cancel;                          /*!< Event parameter of BK_BLE_GAP_CONNECT_CANCEL_EVT */
+
+    /**
+     * @brief BK_BLE_GAP_UPDATE_CONN_PARAMS_REQ_EVT
+     */
+    struct ble_conntection_update_param_req
+    {
+        uint8_t can_modify;                 /*!< if true, param can be modify before accept*/
+        bk_ble_conn_update_params_t param;
+        uint8_t accept;
+    } update_conn_param_req;                /*!< Event parameter of BK_BLE_GAP_UPDATE_CONN_PARAMS_REQ_EVT */
+
+
+    /**
+     * @brief BK_BLE_GAP_SET_SECURITY_PARAMS_COMPLETE_EVT
+     */
+    struct ble_set_security_params_cmpl
+    {
+        bk_bt_status_t status;
+        bk_ble_sm_param_t param;
+    } set_security_params_cmpl;                /*!< Event parameter of BK_BLE_GAP_SET_SECURITY_PARAMS_COMPLETE_EVT */
+
+    /**
+     * @brief BK_BLE_GAP_GENERATE_RPA_COMPLETE_EVT
+     */
+    struct ble_generate_rpa_cmpl
+    {
+        bk_bt_status_t status;
+        bk_bd_addr_t             addr;
+        bk_ble_addr_type_t       addr_type;
+    } generate_rpa_cmpl;                /*!< Event parameter of BK_BLE_GAP_GENERATE_RPA_COMPLETE_EVT */
+
 #endif // #if (BLE_50_FEATURE_SUPPORT == TRUE)
 } bk_ble_gap_cb_param_t;
 

@@ -40,6 +40,9 @@ static void phy_cca_test(char *pcWriteBuffer, int xWriteBufferLen, int argc, cha
 #if (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX)
 extern void rfconfig_command(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv);
 #endif
+#if (CONFIG_SOC_BK7236XX)
+extern void cmd_rfcfg_test_log(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv);
+#endif
 #define PHY_CMD_CNT (sizeof(s_phy_commands) / sizeof(struct cli_command))
 static const struct cli_command s_phy_commands[] = {
 	{"cca", "cca open\\close\\show", phy_cca_test},
@@ -76,6 +79,10 @@ static const struct cli_command s_phy_commands[] = {
     {"cali", "cali auto_test",                        cmd_cali},
     {"rfconfig", "rfconfig bt_polar|bt_btpll|bt_wifipll|wifi_btpll|wifi_wifipll",rfconfig_command},
     {"la", "la rf_adc_40M/rf_adc[_80M]/fe_adc/rf_dac/fe_dac", cmd_la_sample_test},
+    {"rfcali_flag_in_otp2", "",                       cmd_rfcali_flag_in_otp2},
+    #if (CONFIG_SOC_BK7236XX)
+    {"rfcfg_test_log",  "1:open,0:close",cmd_rfcfg_test_log},
+    #endif
 #elif (CONFIG_SOC_BK7236A)
     {"la", "la rx_adc/rx_dac/tx_dac", cmd_la_sample_test},
 #endif

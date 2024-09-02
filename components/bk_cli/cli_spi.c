@@ -92,10 +92,20 @@ static void cli_spi_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
 		} else {
 			config.bit_order = SPI_MSB_FIRST;
 		}
+#if (CONFIG_SPI_BYTE_INTERVAL)
+		config.byte_interval = 1;
+#endif
 #if CONFIG_SPI_DMA
 		config.dma_mode = os_strtoul(argv[10], NULL, 10);
 		config.spi_tx_dma_chan = bk_dma_alloc(DMA_DEV_GSPI0);
 		config.spi_rx_dma_chan = bk_dma_alloc(DMA_DEV_GSPI0_RX);
+		if (os_strtoul(argv[4], NULL, 10) == 8) {
+			config.spi_tx_dma_width = DMA_DATA_WIDTH_8BITS;
+			config.spi_rx_dma_width = DMA_DATA_WIDTH_8BITS;
+		} else {
+			config.spi_tx_dma_width = DMA_DATA_WIDTH_16BITS;
+			config.spi_rx_dma_width = DMA_DATA_WIDTH_16BITS;
+		}
 #endif
 		BK_LOG_ON_ERR(bk_spi_init(spi_id, &config));
 		CLI_LOGI("spi init, spi_id=%d\n", spi_id);
@@ -389,6 +399,9 @@ static void spi_data_test_spi_config(spi_id_t id, spi_role_t role, uint32_t baud
 	config.wire_mode = SPI_4WIRE_MODE;
 	config.baud_rate = baud_rate;
 	config.bit_order = SPI_MSB_FIRST;
+#if (CONFIG_SPI_BYTE_INTERVAL)
+	config.byte_interval = 1;
+#endif
 
 #if CONFIG_SPI_DMA
 	config.dma_mode = 1;
@@ -396,6 +409,8 @@ static void spi_data_test_spi_config(spi_id_t id, spi_role_t role, uint32_t baud
 	config.spi_tx_dma_chan = s_spi_test.spi_tx_dma_chan;
 	s_spi_test.spi_rx_dma_chan = bk_dma_alloc(DMA_DEV_DTCM);
 	config.spi_rx_dma_chan = s_spi_test.spi_rx_dma_chan;
+	config.spi_tx_dma_width = DMA_DATA_WIDTH_8BITS;
+	config.spi_rx_dma_width = DMA_DATA_WIDTH_8BITS;
 #endif
 
 	if(role == SPI_ROLE_MASTER)

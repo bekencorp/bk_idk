@@ -61,6 +61,27 @@ static void rtos_enable_int_ptr(uint32_t int_level)
 	rtos_enable_int(int_level);
 }
 
+void sys_drv_module_power_ctrl_ptr(unsigned int module, uint32_t power_state)
+{
+	sys_drv_module_power_ctrl(module,power_state);
+}
+
+void sys_drv_set_ana_reg11_apfms_ptr(uint32_t value)
+{
+	sys_drv_set_ana_reg11_apfms(value);
+}
+
+void sys_drv_set_ana_reg12_dpfms_ptr(uint32_t value)
+{
+	sys_drv_set_ana_reg12_dpfms(value);
+}
+
+bk_err_t bk_pm_module_vote_power_ctrl_ptr(unsigned int module, uint32_t power_state)
+{
+	return bk_pm_module_vote_power_ctrl((pm_power_module_name_e)module, (pm_power_module_state_e)power_state);
+}
+
+
 const rf_control_funcs_t g_rf_control_funcs = {
     ._sys_drv_modem_bus_clk_ctrl  = sys_drv_modem_bus_clk_ctrl_ptr,
     ._sys_drv_modem_clk_ctrl  = sys_drv_modem_clk_ctrl_ptr,
@@ -69,12 +90,22 @@ const rf_control_funcs_t g_rf_control_funcs = {
     ._rtos_disable_int = rtos_disable_int_ptr,
     ._rtos_enable_int = rtos_enable_int_ptr,
     ._rwnx_cal_mac_sleep_rc_recover = rwnx_cal_mac_sleep_rc_recover,
+    ._sys_drv_module_power_ctrl = sys_drv_module_power_ctrl_ptr,
+    ._sys_drv_set_ana_reg11_apfms = sys_drv_set_ana_reg11_apfms_ptr,
+    ._sys_drv_set_ana_reg12_dpfms = sys_drv_set_ana_reg12_dpfms_ptr,
+    ._bk_pm_module_vote_power_ctrl = bk_pm_module_vote_power_ctrl_ptr,
 };
 
+const rf_variable_t g_rf_variable = {
+    ._pm_power_module_state_off = PM_POWER_MODULE_STATE_OFF,
+    ._pm_power_module_state_on = PM_POWER_MODULE_STATE_ON,
+    ._pm_power_module_name_phy = PM_POWER_MODULE_NAME_PHY,
+    ._pm_power_module_name_rf = PM_POWER_SUB_MODULE_NAME_PHY_RF,
+};
 
 void bk_rf_adapter_init(void)
 {
-    rf_adapter_init(&g_rf_control_funcs);
+    rf_adapter_init(&g_rf_control_funcs, &g_rf_variable);
     rf_cntrl_init();
 }
 

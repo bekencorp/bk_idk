@@ -7,12 +7,10 @@
 #if CONFIG_NETIF_LWIP
 #include "lwip/inet.h"
 #include "net.h"
+#include "lwip/netif.h"
 #endif
 #include <components/event.h>
 #include "bk_private/bk_wifi.h"
-#if CONFIG_NETIF_IPV6
-#include "netif.h"
-#endif
 
 uint8 sta_static_ip_flag = 0;
 netif_ip4_config_t static_ip = {0};
@@ -120,6 +118,10 @@ bk_err_t bk_netif_get_ip4_config(netif_if_t ifx, netif_ip4_config_t *ip4_config)
 	} else if (ifx == NETIF_IF_ETH) {
 		net_get_if_addr(&addr, net_get_eth_handle());
 #endif
+#if CONFIG_BRIDGE
+	} else if (ifx == NETIF_IF_BRIDGE) {
+		net_get_if_addr(&addr, net_get_br_handle());
+#endif
 	} else {
 		return BK_ERR_NETIF_IF;
 	}
@@ -132,35 +134,24 @@ bk_err_t bk_netif_get_ip4_config(netif_if_t ifx, netif_ip4_config_t *ip4_config)
 	return BK_OK;
 }
 
-#if CONFIG_NETIF_IPV6
-
-struct interface {
-       struct netif netif;
-       ip_addr_t ipaddr;
-       ip_addr_t nmask;
-       ip_addr_t gw;
-};
-
+#if CONFIG_IPV6
 bk_err_t bk_netif_get_ip6_addr_info(netif_if_t ifx)
 {
        int i;
        int num = 0;
        struct netif *netif;
-       struct interface *if_handle;
 
        if (ifx == NETIF_IF_STA) {
-               if_handle = net_get_sta_handle();
+               netif = net_get_sta_handle();
        } else if (ifx == NETIF_IF_AP) {
-               if_handle = net_get_uap_handle();
+               netif = net_get_uap_handle();
        } else {
                return BK_ERR_NETIF_IF;
        }
 
-       netif = &if_handle->netif;
-
        for (i = 0; i < MAX_IPV6_ADDRESSES; i++) {
                        u8 *ipv6_addr;
-                       ipv6_addr = (u8*)ip_2_ip6(&if_handle->netif.ip6_addr[i])->addr;///&addr->ipv6[i].address;
+                       ipv6_addr = (u8*)ip_2_ip6(&netif->ip6_addr[i])->addr;///&addr->ipv6[i].address;
 
                        bk_printf("ipv6_addr[%d] %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x\r\n", i,
                                        ipv6_addr[0], ipv6_addr[1], ipv6_addr[2], ipv6_addr[3],

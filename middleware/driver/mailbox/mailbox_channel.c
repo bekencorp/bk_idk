@@ -30,6 +30,7 @@ typedef struct
 	u8		tx_state;			/* physical channel tx state. */
 	u8		tx_seq;				/* physical channel tx sequence. */
 	u8		tx_log_chnl;		/* logical channel. */ /* bit7~bit4: dst/src CPU_ID, bit3~bit0: log_chnl_idx. */
+	u8		tx_hdr_cmd;
 	u32		rx_fault_cnt;
 	u32		tx_fault_cnt;
 } mb_phy_chnl_cb_t;
@@ -45,6 +46,7 @@ typedef struct
 #define CHNL_CTRL_ACK_BOX		0x01
 
 #define CHNL_CTRL_SYNC_TX		0x02
+#define CHNL_CTRL_RESET			0x04
 
 typedef union
 {
@@ -195,6 +197,8 @@ static u8 mb_phy_chnl_tx_cmd(u8 log_chnl)
 	cmd_ptr->hdr.ctrl  = 0;
 	cmd_ptr->hdr.state = 0;
 
+	phy_chnl_ptr->tx_hdr_cmd = cmd_ptr->hdr.cmd;
+
 	chnl_type = MB_PHY_CMD_CHNL;
 
 	mailbox_endpoint_t    dst_cpu = (mailbox_endpoint_t)(phy_chnl_idx);
@@ -248,6 +252,42 @@ static void mb_phy_chnl_rx_ack_isr(mb_phy_chnl_ack_t *ack_ptr)
 	if(log_chnl_idx >= phy_chnl_log_chnl_num[phy_chnl_idx])
 		return;
 
+#if CONFIG_SYS_CPU0
+	if(ack_ptr->hdr.ctrl & CHNL_CTRL_RESET)
+	{
+		if(phy_chnl_ptr->tx_state == CHNL_STATE_ILDE)
+		{
+			goto try_to_start_tx;
+		//	return;
+		}
+
+		ack_ptr->hdr.data = 0;
+		ack_ptr->hdr.cmd = phy_chnl_ptr->tx_hdr_cmd;
+		ack_ptr->hdr.state = CHNL_STATE_COM_FAIL;
+
+		log_chnl_idx = GET_LOG_CHNL_ID(phy_chnl_ptr->tx_log_chnl);
+
+		if(log_chnl_idx >= phy_chnl_log_chnl_num[phy_chnl_idx])
+			return;
+
+		extern bk_err_t bk_mailbox_ready(mailbox_endpoint_t src, mailbox_endpoint_t dst, uint32_t box_id);
+		if( bk_mailbox_ready(SELF_CPU, phy_chnl_idx, MB_PHY_CMD_CHNL) != BK_OK)
+		{
+			return;
+		}
+
+		log_chnl = phy_chnl_ptr->tx_log_chnl;
+		ack_ptr->hdr.tx_seq = phy_chnl_ptr->tx_seq;
+
+		ack_ptr->hdr.logical_chnl = log_chnl;
+
+		ack_ptr->data1 = log_chnl_cb_x[log_chnl_idx].chnnl_tx_buff.param1;
+		ack_ptr->data2 = log_chnl_cb_x[log_chnl_idx].chnnl_tx_buff.param2;
+		ack_ptr->data3 = log_chnl_cb_x[log_chnl_idx].chnnl_tx_buff.param3;
+	}
+	else
+#endif
+
 	if( (log_chnl != phy_chnl_ptr->tx_log_chnl) ||
 		(ack_ptr->hdr.tx_seq != phy_chnl_ptr->tx_seq) )
 	{
@@ -268,6 +308,10 @@ static void mb_phy_chnl_rx_ack_isr(mb_phy_chnl_ack_t *ack_ptr)
 		log_chnl_cb_x[log_chnl_idx].tx_cmpl_isr(log_chnl_cb_x[log_chnl_idx].isr_param, (mb_chnl_ack_t *)ack_ptr);
 	}
 
+#if CONFIG_SYS_CPU0
+try_to_start_tx:
+#endif
+	
 	for(log_chnl_idx = 0; log_chnl_idx < phy_chnl_log_chnl_num[phy_chnl_idx]; log_chnl_idx++)  /* priority descended search. */
 	{
 		if(log_chnl_cb_x[log_chnl_idx].tx_state != CHNL_STATE_ILDE)
@@ -405,7 +449,6 @@ static void mb_phy_chnl_rx_isr(mailbox_data_t * mb_data)
 
 static void mb_phy_chnl_start_tx(u8 log_chnl)
 {
-	u32  	int_mask;
 	u8		ret_code;
 
 	u8		phy_chnl_idx;
@@ -422,8 +465,6 @@ static void mb_phy_chnl_start_tx(u8 log_chnl)
 
 	phy_chnl_ptr = &phy_chnl_x_cb[phy_chnl_idx];
 
-	int_mask = mb_chnl_enter_critical();
-
 	if(phy_chnl_ptr->tx_state == CHNL_STATE_ILDE)
 	{
 		phy_chnl_ptr->tx_state = CHNL_STATE_BUSY;		/* MUST set channel state to BUSY firstly. */
@@ -437,8 +478,6 @@ static void mb_phy_chnl_start_tx(u8 log_chnl)
 			phy_chnl_ptr->tx_state = CHNL_STATE_ILDE;
 		}
 	}
-
-	mb_chnl_exit_critical(int_mask);
 
 	return;
 }
@@ -513,6 +552,29 @@ static bk_err_t mb_phy_chnl_tx_reset(u8 log_chnl)
 	return BK_OK;
 }
 
+#if (CONFIG_SYS_CPU1)
+static bk_err_t mb_phy_chnl_reset(u8 dst_cpu)
+{
+	u16 				chnl_type;
+	mb_phy_chnl_cmd_t	cmd_buf = {0};
+
+	if(SELF_CPU == dst_cpu)
+	{
+		return BK_OK;
+	}
+
+	chnl_type = MB_PHY_ACK_CHNL;
+
+	cmd_buf.hdr.data = 0;
+	cmd_buf.hdr.ctrl |= (CHNL_CTRL_RESET | CHNL_CTRL_ACK_BOX);
+	cmd_buf.hdr.logical_chnl = CPX_LOG_CHNL_START(dst_cpu, SELF_CPU);
+
+	bk_mailbox_send((mailbox_data_t *)&cmd_buf, SELF_CPU, dst_cpu, (void *)&chnl_type);
+
+	return BK_OK;
+}
+#endif
+
 /* =====================      logical channel APIs      ==================*/
 /*
   * init logical chnanel module.
@@ -562,6 +624,13 @@ bk_err_t mb_chnl_init(void)
 
 		bk_mailbox_recv_callback_register(dst_cpu, SELF_CPU, mb_phy_chnl_rx_isr);
 	}
+
+#if (CONFIG_SYS_CPU1)
+	for(i = 0; i < PHY_CHNL_NUM; i++)
+	{
+		mb_phy_chnl_reset(i);
+	}
+#endif
 
 	mb_chnnl_init_ok = 1;
 
@@ -728,11 +797,9 @@ bk_err_t mb_chnl_write(u8 log_chnl, mb_chnl_cmd_t * cmd_buf)
 	/* set to BUSY means there is data in tx-buff. mb_phy_chnl_rx_ack_isr will get it to send. */
 	log_chnl_cb_x[log_chnl_idx].tx_state = CHNL_STATE_BUSY;   /* MUST set to BUSY after data was copied. */
 
-	mb_chnl_exit_critical(int_mask);
-
 	mb_phy_chnl_start_tx(log_chnl);
 
-	rtos_enable_int(int_mask);
+	mb_chnl_exit_critical(int_mask);
 
 	return BK_OK;
 }

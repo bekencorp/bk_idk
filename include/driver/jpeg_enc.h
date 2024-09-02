@@ -177,7 +177,6 @@ uint32_t bk_jpeg_enc_get_frame_size(void);
  * @param isr isr_func
  * @param param other value(default set NULL)
  *
-.* @attention 1. This API only effect when work yuv mode
  *
  * @return
  *    - BK_OK: succeed
@@ -185,6 +184,19 @@ uint32_t bk_jpeg_enc_get_frame_size(void);
  */
 bk_err_t bk_jpeg_enc_register_isr(jpeg_isr_type_t type_id, jpeg_isr_t isr, void *param);
 
+/**
+ * @brief     unregister frame end isr
+ *
+ * This API will unregister jpeg encode isr function, need user unregister, when deinit jpeg module
+ *
+ * @param type_id the type of the isr
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: other errors.
+ */
+
+bk_err_t bk_jpeg_enc_unregister_isr(jpeg_isr_type_t type_id);
 
 /**
  * @brief     get jpeg enc fifo addr

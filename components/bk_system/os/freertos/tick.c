@@ -93,7 +93,7 @@ uint32_t bk_get_ticks_per_second(void)
 	return configTICK_RATE_HZ;
 }
 
-uint32_t bk_get_ms_per_tick(void)
+ __IRAM_SEC  uint32_t bk_get_ms_per_tick(void)
 {
 	return (1000/configTICK_RATE_HZ);
 }

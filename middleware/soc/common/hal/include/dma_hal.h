@@ -93,6 +93,12 @@ typedef struct {
 #define dma_hal_set_pixel_trans_type(hal, id, type) dma_ll_set_pixel_trans_type((hal)->hw, id, type)
 #define dma_hal_get_pixel_trans_type(hal, id) dma_ll_get_pixel_trans_type((hal)->hw, id)
 
+#define dma_hal_set_src_read_interval(hal, id, interval) dma_ll_set_src_read_interval((hal)->hw, id, interval)
+#define dma_hal_get_src_read_interval(hal, id) dma_ll_get_src_read_interval((hal)->hw, id)
+
+#define dma_hal_set_dest_write_interval(hal, id, interval) dma_ll_set_dest_write_interval((hal)->hw, id, interval)
+#define dma_hal_get_dest_write_interval(hal, id) dma_ll_get_dest_write_interval((hal)->hw, id)
+
 #endif
 
 #if (CONFIG_SPE)

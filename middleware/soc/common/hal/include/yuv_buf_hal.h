@@ -67,7 +67,7 @@ uint32_t yuv_buf_hal_get_em_base_addr(yuv_buf_hal_t *hal);
 bk_err_t yuv_buf_hal_set_resize_mode_config(yuv_buf_hal_t *hal, const yuv_buf_resize_config_t *resize_config);
 uint32_t yuv_buf_hal_get_emr_base_addr(yuv_buf_hal_t *hal);
 bk_err_t yuv_buf_set_frame_resolution(yuv_buf_hal_t *hal, uint32_t width, uint32_t height);
-
+bk_err_t yuv_buf_hal_set_err_mask(yuv_buf_hal_t *hal);
 
 #if CFG_HAL_DEBUG_YUV_BUF
 void yuv_buf_struct_dump(void);

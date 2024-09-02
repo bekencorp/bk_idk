@@ -197,6 +197,34 @@ typedef struct _ARM_DRIVER_FLASH {
   ARM_FLASH_INFO *       (*GetInfo)        (void);                                          ///< Pointer to \ref ARM_Flash_GetInfo : Get Flash information.
 } const ARM_DRIVER_FLASH;
 
+#if CONFIG_CODE_BUS_OPS_FLASH  
+#define FLASH_CBUS_ADDR_FLAG          (1<<31)
+#define FLASH_CLR_CBUS_ADDR_FLAG(x)   (x) &= ~FLASH_CBUS_ADDR_FLAG
+#else
+#define FLASH_CLR_CBUS_ADDR_FLAG(x)
+#endif
+
+#define PPRO_FLASH_REG 6
+#define PPRO_FLASH_BITS (BIT(6))
+
+#define SYS_LOCK_DECLARATION() sys_lock_ctx_t _lock; uint32_t ppro_flash_ns_flag;
+#define SYS_LOCK() do {\
+        sys_drv_disable_int(&_lock);\
+        uint32_t reg;\
+        reg = *((volatile uint32_t *)(0x41040000 + PPRO_FLASH_REG * 4));\
+        ppro_flash_ns_flag = reg & PPRO_FLASH_BITS;\
+        *((volatile uint32_t *)(0x41040000 + PPRO_FLASH_REG * 4)) = reg & (~PPRO_FLASH_BITS);\
+}while(0)
+
+#define SYS_UNLOCK() do {\
+        sys_drv_enable_int(&_lock);\
+        uint32_t reg;\
+        reg = *((volatile uint32_t *)(0x41040000 + PPRO_FLASH_REG * 4));\
+        if(ppro_flash_ns_flag){\
+                *((volatile uint32_t *)(0x41040000 + PPRO_FLASH_REG * 4)) = reg | PPRO_FLASH_BITS;\
+        }\
+}while(0)
+
 #ifdef  __cplusplus
 }
 #endif

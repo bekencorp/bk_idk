@@ -61,6 +61,7 @@ struct usbh_audio {
 extern "C" {
 #endif
 
+int usbh_audio_alloc_pipe(struct usbh_audio *audio_class, const char *name, uint32_t samp_freq);
 int usbh_audio_open(struct usbh_audio *audio_class, const char *name, uint32_t samp_freq);
 int usbh_audio_close(struct usbh_audio *audio_class, const char *name);
 int usbh_audio_set_volume(struct usbh_audio *audio_class, const char *name, uint8_t ch, uint8_t volume);
@@ -71,6 +72,8 @@ void usbh_audio_stop(struct usbh_audio *audio_class);
 
 void bk_usbh_audio_sw_init(struct usbh_hubport *hport, uint8_t interface_num, uint8_t interface_sub_class);
 void bk_usbh_audio_sw_deinit(struct usbh_hubport *hport, uint8_t interface_num, uint8_t interface_sub_class);
+
+void bk_usbh_audio_unregister_dev(void);
 
 #ifdef __cplusplus
 }

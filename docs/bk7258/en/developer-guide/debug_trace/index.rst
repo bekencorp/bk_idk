@@ -205,7 +205,7 @@ Armino platform BK7258 system debugging commands
     rfcali_cfg_rate_dist: b g n40 ble (0-31)
     rfcali_cfg_tssi_b: 0-255
     rfcali_cfg_tssi_g: 0-255
-    rfcali_show_data: 
+    rfcali_show_data:
     rfconfig: rfconfig bt_polar|bt_btpll|bt_wifipll|wifi_btpll|wifi_wifipll
     rxsens: rxsens [-m] [-d] [-c] [-l]
     scan: scan [ssid]
@@ -258,7 +258,7 @@ Armino platform BK7258 system debugging commands
 
 
 - You can manually start cpu1 through the bootcore 1 1 command:
-  
+
    ::
 
      #bootcore 1 1
@@ -313,7 +313,7 @@ Armino platform BK7258 system jtag debugging
        :align: center
        :alt: BK7258 JLink configuration
        :figclass: align-center
-  
+
    .. figure:: ../../../_static/bk7236_jlink_config3.png
      :align: center
      :alt: BK7258 JLink configuration
@@ -335,8 +335,8 @@ Armino platform BK7258 abnormal dump one-click recovery on-site tool
   - BK7258 dump tool FAQ:
 
     + The dump function of Release version is turned off by default and can be turned on through CONFIG_DUMP_ENABLE configuration
-    + BK7258 has three CM33 CPUs, and the dump function can be turned on by modifying the config files of the three CPUs.
-    + The principle of the Dump tool to restore the scene is that the script analyzes the log, parses out the contents of regs, itcm, dtcm, and sram, and then restores these contents to the cm33 qemu virtual machine through gdb
+    + BK7258 has CPU0、CPU1 and CPU2, and the dump function can be turned on by modifying the config files of the three CPUs.
+    + The principle of the Dump tool to restore the scene is that the script analyzes the log, parses out the contents of regs, itcm, dtcm, and sram, and then restores these contents to the qemu virtual machine through gdb
     + Log file suffix supports txt, log, DAT
     + Log file encoding currently only supports utf-8, other encoding formats can be manually converted to utf-8 encoding format through notepad++
     + If there are multiple Logs in the tool directory, or there are multiple Dumps in the Log, the tool will analyze the last Dump. You need to ensure that there is only one Log in the tool directory, and there is only one dump in the Log.
@@ -348,7 +348,7 @@ Armino platform BK7258 abnormal dump one-click recovery on-site tool
     + By default cpu2’s Log and Dump are output through UART2
     + If you encounter two CPUs dumping at the same time during the Dump process, you need to split the Log into two dump files, and use the elf of cpu0 and cpu1 to restore the scene.
     + Each CPU needs the registers of the current CPU, itcm, dtcm, sram plus elf to restore the scene
-   
+
         Register format::
 
          CPU1 Current regs: =========> CPU1 indicates that the current register is the register where cpu1 has an exception.

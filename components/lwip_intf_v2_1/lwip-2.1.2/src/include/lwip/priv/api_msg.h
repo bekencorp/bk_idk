@@ -187,6 +187,11 @@ struct dns_api_msg {
 };
 #endif /* LWIP_DNS */
 
+#if LWIP_NETCONN_SEM_PER_THREAD
+#define LWIP_NETCONN_THREAD_SEM_GET() sys_thread_sem_get()
+#define LWIP_NETCONN_THREAD_SEM_ALLOC() sys_thread_sem_init()
+#define LWIP_NETCONN_THREAD_SEM_FREE() sys_thread_sem_deinit()
+#endif
 #if LWIP_NETCONN_FULLDUPLEX
 int lwip_netconn_is_deallocated_msg(void *msg);
 #endif

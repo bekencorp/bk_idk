@@ -83,6 +83,10 @@ enum tfm_plat_err_t tfm_plat_read_nv_counter(enum tfm_nv_counter_t counter_id,
     }
 
     switch(counter_id) {
+    case (PLAT_NV_COUNTER_PS_0):
+    case (PLAT_NV_COUNTER_PS_1):
+    case (PLAT_NV_COUNTER_PS_2):
+        return TFM_PLAT_ERR_SUCCESS;
     case (PLAT_NV_COUNTER_BL2_0):
         return read_nv_counter_otp(PLAT_OTP_ID_NV_COUNTER_BL2_0, size, val);
     default:
@@ -130,6 +134,10 @@ enum tfm_plat_err_t tfm_plat_set_nv_counter(enum tfm_nv_counter_t counter_id,
 {
     OTP_LOGI("set nv counter: id=%d size=%d\r\n", counter_id, value);
     switch(counter_id) {
+    case (PLAT_NV_COUNTER_PS_0):
+    case (PLAT_NV_COUNTER_PS_1):
+    case (PLAT_NV_COUNTER_PS_2):
+        return TFM_PLAT_ERR_SUCCESS;
     case (PLAT_NV_COUNTER_BL2_0):
         return set_nv_counter_otp(PLAT_OTP_ID_NV_COUNTER_BL2_0, value);
     default:

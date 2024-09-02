@@ -205,7 +205,7 @@ uint32_t ring_buffer_write(RingBufferContext* rb, uint8_t* buffer, uint32_t size
         //dma_channel_src_curr_address_set(rb->dma, (uint32_t)&rb->address[rb->wp]);  //作用是啥？
         //向dma读取的ring buffer写数据，写入一段数据后需要将“写指针wp”指向的地址值写入[dma0_src_pause_addr]
         //这样可以确保DMA读取到该地址时暂停搬运
-        dma_set_src_pause_addr(rb->dma_id, (uint32_t)rb->address[rb->wp]);
+        dma_set_src_pause_addr(rb->dma_id, (uint32_t)&rb->address[rb->wp]);
     }
 
     return write_bytes;

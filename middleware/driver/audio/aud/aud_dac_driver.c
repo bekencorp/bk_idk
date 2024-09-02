@@ -66,7 +66,7 @@ bk_err_t bk_aud_dac_init(aud_dac_config_t *dac_config)
 	/* audio common driver init */
 	if (BK_OK != bk_aud_driver_init()) {
 		LOGE("%s, audio driver init fail, line: %d \n", __func__, __LINE__);
-		ret = BK_FAIL;
+		ret = BK_ERR_AUD_DRV_NOT_INIT;
 		goto fail;
 	}
 
@@ -239,6 +239,20 @@ bk_err_t bk_aud_dac_set_gain(uint32_t value)
 	return BK_OK;
 }
 
+bk_err_t bk_aud_dac_mute(void)
+{
+	AUD_DAC_RETURN_ON_NOT_INIT();
+	sys_drv_aud_dac_dacmute_en(1);
+	return BK_OK;
+}
+
+bk_err_t bk_aud_dac_unmute(void)
+{
+	AUD_DAC_RETURN_ON_NOT_INIT();
+	sys_drv_aud_dac_dacmute_en(0);
+	return BK_OK;
+}
+
 bk_err_t bk_aud_dac_set_chl(aud_dac_chl_t dac_chl)
 {
 	AUD_DAC_RETURN_ON_NOT_INIT();
@@ -386,5 +400,30 @@ bk_err_t bk_aud_dac_register_isr(aud_isr_id_t isr_id, aud_isr_t isr)
 	AUD_DAC_RETURN_ON_NOT_INIT();
 
 	return bk_aud_register_aud_isr(isr_id, isr);
+}
+
+/* set audio dac analog gain */
+bk_err_t bk_aud_dac_set_ana_gain(uint8_t value)
+{
+	AUD_DAC_RETURN_ON_NOT_INIT();
+
+	return sys_drv_aud_dacg_set(value);
+}
+
+/* get audio dac analog gain */
+bk_err_t bk_aud_dac_get_ana_gain(uint32_t *gain)
+{
+	AUD_DAC_RETURN_ON_NOT_INIT();
+
+	*gain = sys_drv_aud_dacg_get();
+	return BK_OK;
+}
+
+/* set bypass audio dac dwa */
+bk_err_t bk_aud_dac_set_dwa_bypass(uint8_t value)
+{
+	AUD_DAC_RETURN_ON_NOT_INIT();
+
+	return sys_drv_aud_dac_bypass_dwa_en(value);
 }
 

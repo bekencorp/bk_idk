@@ -21,7 +21,6 @@
 #include "components/log.h"
 #include "common/bk_err.h"
 #include "bk_tfm_log.h"
-#include "partitions.h"
 #include "sys_driver.h"
 
 #define TAG "cmsis_flash"
@@ -31,6 +30,8 @@
 #define BK_TFM_FLASH_LOGW BK_LOGW
 #define BK_TFM_FLASH_LOGE BK_LOGE
 
+#define KB(x) ((x) << 10)
+
 #ifndef ARG_UNUSED
 #define ARG_UNUSED(arg)  ((void)arg)
 #endif
@@ -38,17 +39,6 @@
 /* Driver version */
 #define ARM_FLASH_DRV_VERSION      ARM_DRIVER_VERSION_MAJOR_MINOR(1, 1)
 #define ARM_FLASH_DRV_ERASE_VALUE  0xFF
-
-#if CONFIG_CODE_BUS_OPS_FLASH  
-#define FLASH_CBUS_ADDR_FLAG          (1<<31)
-#define FLASH_CLR_CBUS_ADDR_FLAG(x)   (x) &= ~FLASH_CBUS_ADDR_FLAG
-#else
-#define FLASH_CLR_CBUS_ADDR_FLAG(x)
-#endif
-
-#define SYS_LOCK_DECLARATION() sys_lock_ctx_t _lock
-#define SYS_LOCK() sys_drv_disable_int(&_lock)
-#define SYS_UNLOCK() sys_drv_enable_int(&_lock)
 
 /**
  * Data width values for ARM_FLASH_CAPABILITIES::data_width
@@ -309,8 +299,11 @@ static int32_t Flash_ProgramData(uint32_t addr, const void *data,
         memcpy((uint8_t*)(FLASH0_DEV->memory_base + addr), (uint8_t*)data, cnt);
     } else {
         SYS_LOCK();
+        uint32_t protect_type = bk_flash_get_protect_type();
+        bk_flash_set_protect_type(FLASH_PROTECT_NONE);
         rc = is_flash_ready_to_write((const uint8_t*)addr, cnt);
         BK_LOG_ON_ERR(bk_flash_write_bytes(addr, data, cnt));
+        bk_flash_set_protect_type(protect_type);
         SYS_UNLOCK();
     }
 
@@ -335,7 +328,10 @@ static int32_t Flash_EraseSector(uint32_t addr)
     }
 
     SYS_LOCK();
+    uint32_t protect_type = bk_flash_get_protect_type();
+    bk_flash_set_protect_type(FLASH_PROTECT_NONE);
     BK_LOG_ON_ERR(bk_flash_erase_sector(offset));
+    bk_flash_set_protect_type(protect_type);
     SYS_UNLOCK();
 
     return ARM_DRIVER_OK;
@@ -351,6 +347,9 @@ static int32_t Flash_EraseChip(void)
     SYS_LOCK_DECLARATION();
     /* Check driver capability erase_chip bit */
     SYS_LOCK();
+    uint32_t protect_type = bk_flash_get_protect_type();
+    bk_flash_set_protect_type(FLASH_PROTECT_NONE);
+
     if (DriverCapabilities.erase_chip == 1) {
         for (i = 0; i < flash_sector_count(); i++) {
                 offset = addr - FLASH0_DEV->memory_base;
@@ -360,6 +359,8 @@ static int32_t Flash_EraseChip(void)
             rc = ARM_DRIVER_OK;
         }
     }
+
+    bk_flash_set_protect_type(protect_type);
     SYS_UNLOCK();
 
     return rc;
@@ -429,3 +430,11 @@ int flash_area_erase_fast(uint32_t erase_off, uint32_t len)
 	return 0;
 }
 
+uint32_t flash_area_read_offset_enable()
+{
+	SYS_LOCK_DECLARATION();
+	SYS_LOCK();
+	uint32_t enable = flash_get_excute_enable();
+	SYS_UNLOCK();
+	return enable;
+}

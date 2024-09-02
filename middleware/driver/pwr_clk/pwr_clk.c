@@ -641,16 +641,19 @@ bk_err_t bk_pm_module_vote_boot_cp1_ctrl(pm_boot_cp1_module_name_e module,pm_pow
     }
     else //power down
     {
-		GLOBAL_INT_DISABLE();
-		s_pm_cp1_ctrl_state &= ~(0x1 << (module));
-		GLOBAL_INT_RESTORE();
-		if(0x0 == s_pm_cp1_ctrl_state)
+    	if(s_pm_cp1_ctrl_state&(0x1 << (module)))
 		{
-			s_pm_cp1_closing = 1;
-			os_printf("%s %d %d close 0x%llx  %d\r\n",__func__, module, power_state,s_pm_cp1_module_recovery_state,s_pm_cp1_boot_ready);
-			pm_cp0_mailbox_send_data(PM_CP1_RECOVERY_CMD,0,0,0);
-			//pm_module_shutdown_cpu1(PM_POWER_MODULE_NAME_CPU1);
-		}
+			GLOBAL_INT_DISABLE();
+			s_pm_cp1_ctrl_state &= ~(0x1 << (module));
+			GLOBAL_INT_RESTORE();
+			if(0x0 == s_pm_cp1_ctrl_state)
+			{
+				s_pm_cp1_closing = 1;
+				os_printf("%s %d %d close 0x%llx  %d\r\n",__func__, module, power_state,s_pm_cp1_module_recovery_state,s_pm_cp1_boot_ready);
+				pm_cp0_mailbox_send_data(PM_CP1_RECOVERY_CMD,0,0,0);
+				//pm_module_shutdown_cpu1(PM_POWER_MODULE_NAME_CPU1);
+			}
+    	}
     }
 
     return BK_OK;

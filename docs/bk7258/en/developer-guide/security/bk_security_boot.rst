@@ -9,14 +9,14 @@ Secure boot is the security foundation of the system.
 Overview
 ----------------------
 
-BK7236 supports legacy download mode and secure boot mode. When EFUSE BIT(3) is 0, it is legacy download mode, when it is 1, it is secure boot mode.
+BK7258 supports legacy download mode and secure boot mode. When EFUSE BIT(3) is 0, it is legacy download mode, when it is 1, it is secure boot mode.
 
 .. figure:: picture/bl1_overview.svg
      :align: center
      :alt: 8
      :figclass: align-center
 
-As shown in the figure above, BK7236 secure boot is divided into two stages. After the system is powered on, BL1 solidified in the chip first verifies the signature of BL2, and jumps to BL2 after the verification is passed;
+As shown in the figure above, BK7258 secure boot is divided into two stages. After the system is powered on, BL1 solidified in the chip first verifies the signature of BL2, and jumps to BL2 after the verification is passed;
 Then BL2 performs signature verification on all other programs.
 
 BL1 Startup
@@ -54,7 +54,7 @@ The figure above describes the process of BL1 verifying the signature of a singl
 BL2 Startup
 ----------------------
 
-BK7236 BL2 is an open source MCUBOOT 1.9.0, so the signature verification process is consistent with the official MCUBOOT. This section only configures special points for BK7236 and
+BK7258 BL2 is an open source MCUBOOT 1.9.0, so the signature verification process is consistent with the official MCUBOOT. This section only configures special points for BK7258 and
 An overview of the MCUBOOT signature verification process, if you want to know the detailed verification process of MCUBOOT, or other functions of MCUBOOT, such as upgrade, anti-backup
 Please refer to `MCUBOOT official website <https://docs.mcuboot.com>`_.
 
@@ -72,7 +72,7 @@ In the FLASH partition, the steps to sign the build system are:
 
 .. note::
 
-  The special feature of BK7236 MCUBOOT signature is that you cannot simply merge two BINs and then add the signature, you must first add padding, and then
+  The special feature of BK7258 MCUBOOT signature is that you cannot simply merge two BINs and then add the signature, you must first add padding, and then
   Merge, this is because the FLASH CRC needs to be considered, and the purpose of adding padding is to ensure that the start address of the BIN falls within the FLASH
   CRC block alignment, and BIN Vector Table 512 byte alignment.
 

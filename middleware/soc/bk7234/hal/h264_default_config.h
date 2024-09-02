@@ -41,7 +41,6 @@ const h264_config_t h264_commom_config =
 	.pmb_bits = 0x23,
 	.nal_align_mode = 0x0,
 	.cons_ipred_mode = 0x0,
-	.mb_cfs_bits = 0x1A4,
 	.reset_i_state_mode = 0x1,
 
 	.vui_time_scale_L = 0xEA60,

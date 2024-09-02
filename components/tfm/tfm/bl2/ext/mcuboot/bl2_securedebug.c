@@ -179,6 +179,11 @@ void bl2_secure_debug(void)
 {
 	/* dummy routine*/
 }
+
+void SysTick_Handler(void)
+{
+	/* dummy routine*/
+}
 #endif
 // eof
 

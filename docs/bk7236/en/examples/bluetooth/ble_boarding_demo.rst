@@ -31,15 +31,15 @@ The design flow chart of the demo project is shown in the following figure:
 	
 3. GATT Service:
 
- 1) Service UUID: 0xFFFF 
- 2) SSID characteristic UUID: 0x9ABC 
- 3) PASSWORD characteristic UUID: 0xDEF0 
+ 1) Service UUID: 0xFA00 
+ 2) SSID characteristic UUID: 0xEA05 
+ 3) PASSWORD characteristic UUID: 0xEA06 
 
 Demo example
 --------------------------
  - For details of the API interface used by the ble boarding demo, please refer to ``/api-reference/bluetooth/ble.html``
 
- - For details of the example code of the ble boarding demo, please refer to ``demo/bluetooth/ble_boarding/ble_boarding_demo.c``
+ - For details of the example code of the ble boarding demo, please refer to ``components/bk_bluetooth/bt/ble_boarding/ble_boarding.c``
 
 Demo workflow
 --------------------------
@@ -54,11 +54,11 @@ Demo workflow
 
 Demo instruction
 --------------------------
- 1) Send ``AT+BLEBOARDING=0201060908373235365f424c45,D`` command through SSCOM software.
+ 1) Send ``AT+BLEBOARDING=0201060908373233365f424c45,D`` command through SSCOM software.
  2) Open the nRF Connect APP on the mobile phone to scan, find the device named 7236_BLE and click the connect button.
- 3) After the device is connected, find the service whose service UUID is 0xFFFF and click it.
- 4) Find the characteristic whose UUID is 0x9ABC under the service, write the hex data of the WIFI SSID required for the ble boarding and click send.
- 5) Find the characteristic whose UUID is 0xDEF0 under the service, write the hex data of the WIFI PASSWORD required for the ble boarding and click send.
+ 3) After the device is connected, find the service whose service UUID is 0xFA00 and click it.
+ 4) Find the characteristic whose UUID is 0xEA05 under the service, write the hex data of the WIFI SSID required for the ble boarding and click send.
+ 5) Find the characteristic whose UUID is 0xEA06 under the service, write the hex data of the WIFI PASSWORD required for the ble boarding and click send.
  6) In the SSCOM window, a log showing that the wifi connection is successful and the IP is obtained will be output.
  7) Input the ``PING 192.xxx.xxx.xxx`` command in SSCOM to ping the IP address of the connected router to check whether the wifi connection is successful.
 

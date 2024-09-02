@@ -12,7 +12,7 @@ Memory overview
 SRAM Overview
 ---------------------------------------
 
-    - The BK7236 chip is currently a single-core CM33 architecture; it has 640K sram.
+    - The BK7236 chip is currently a single-core architecture; it has 640K sram.
 
 PSRAM Overview
 ---------------------------------------
@@ -136,7 +136,7 @@ PSRAM Overview
     +----------------------------+---------------+-------------------------------------+------------------+
     |  CONFIG_JPEG_FRAME_SIZE    |    153600     | the size of one complete jpeg frame |   [0, 204800]    |
     +----------------------------+---------------+-------------------------------------+------------------+
-    |  CONFIG_H264_FRAME_SIZE    |     65536     | the size of one complete h264 frame |   [0, 102400]    |
+    |  CONFIG_H264_FRAME_SIZE    |     65536     | the size of one complete h264 frame |   [0, 204800]    |
     +----------------------------+---------------+-------------------------------------+------------------+
 
 	The above size needs to be adjusted according to their own needs, such as the need to store 1280X720 JPEG images, 150K space may not be enough,

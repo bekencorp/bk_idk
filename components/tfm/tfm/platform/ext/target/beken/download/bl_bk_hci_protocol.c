@@ -17,15 +17,27 @@
 #include "bootloader.h"
 #include "crc32.h"
 #include "bl_config.h"
-#include "partitions.h"
+#include "flash_partition.h"
+#include "partitions_gen.h"
 
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(arr) (sizeof(arr)/sizeof(arr[0]))
+#endif
+
+bool g_cbus_download = false;
+u32 g_start_base = 0x1d000;
+u32 g_virtul_base = 0;
+const PARTITION_STRUCT g_partitions_map[] = PARTITION_MAP;
+u32 g_forbid_dl_partition[] = {0, 1, 3, 4};
+extern uint32_t flash_max_size;
+extern u8 *g_data_buf4k;
+extern unsigned int crc32_table[256];
 u32 rx_time = 0;
 
 u32 write_flash_4k_addr_off = 0;
 u8 hci_cmd_status = 0;
 
 extern u32 g_baud_rate;
-
 
 HCI_COMMAND_PACKET *pHCIrxHeadBuf = (HCI_COMMAND_PACKET *)(&tra_hcit_rx_head_buf_array[0]);
 
@@ -51,10 +63,10 @@ void clear_uart_buffer(void)
     uart_rx_done_state = TRA_HCIT_STATE_RX_NOPAGE;
     rx_time = 0;
     write_flash_4k_addr_off = 0;
-    memset(tra_hcit_rx_head_buf_array,0xff,sizeof(tra_hcit_rx_head_buf_array));
-    memset(Longtrx_pdu_buf, 0xff, 256); /**< Clear the RX buffer */
+    bl_memset(tra_hcit_rx_head_buf_array,0xff,sizeof(tra_hcit_rx_head_buf_array));
+    bl_memset(Longtrx_pdu_buf, 0xff, 256); /**< Clear the RX buffer */
 
-    memset(Shorttrx_pdu_buf, 0xff, sizeof(Shorttrx_pdu_buf)); /**< Clear the TX buffer */
+    bl_memset(Shorttrx_pdu_buf, 0xff, sizeof(Shorttrx_pdu_buf)); /**< Clear the TX buffer */
 
     TRAhci_set_rx_state(TRA_HCIT_STATE_RX_TYPE);
 }
@@ -123,12 +135,35 @@ static bool addr_is_readable(uint32_t addr)
 	}
 }
 
+uint32_t download_phy2virtual(uint32_t phy_addr)
+{
+	return ((phy_addr) - (g_start_base) + (g_virtul_base));
+}
+
+bool flash_partition_is_invalid(uint32_t offset, uint32_t size)
+{
+	PARTITION_STRUCT *p;
+
+
+	for (int i = 0; i < ARRAY_SIZE(g_forbid_dl_partition); i++) {
+		p = &g_partitions_map[g_forbid_dl_partition[i]];
+		if (!((p->partition_offset >= (offset + size)) || ((p->partition_offset + p->partition_size) <= offset))){
+			printf("invalid partition, o=%x, s=%x overlapped with p%d o=%x s=%x\n", offset, size, i, p->partition_offset, p->partition_size);
+			return true;
+		}
+	}
+	if ((offset > flash_max_size) || ((offset + size) > flash_max_size)) {
+		printf("o=%x s=%x exceeds flash size %x\n", offset, size, flash_max_size);
+		return true;
+	}
+	return false;
+}
+
 void TRAhcit_UART_Rx(void)
 {
 
 	u8 status = FLASH_OPERATE_END;
 	static u8 start_flag = 0;
-
 
 	if ((uart_rx_done_state == TRA_HCIT_STATE_RX_NOPAGE) /*|| (uart_rx_done_state == TRA_HCIT_STATE_RX_START)*/|| (uart_rx_index == 0))
 	{
@@ -190,14 +225,14 @@ void TRAhcit_UART_Rx(void)
 
 			pHCITxOperte = (HCI_TX_OPERATE*)(&Shorttrx_pdu_buf[0]);
 
-			memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
+			bl_memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
 
 			pHCITxOperte->param[0] = PACK_PAYLOAD_LACK;//PACK_LEN_ERROR;
 
 			if(uart_rx_index > 3)
 			{
 				pHCITxOperte->param[1] = pHCIrxHeadBuf->total;
-				memcpy(&(pHCITxOperte->param[2]),&(pHCIRxOperte->cmd),uart_rx_index - 4);
+				bl_memcpy(&(pHCITxOperte->param[2]),&(pHCIRxOperte->cmd),uart_rx_index - 4);
 			}
 			HciTxOperteLen = 4 + uart_rx_index - 3;
 			goto tx_op;
@@ -222,8 +257,30 @@ void TRAhcit_UART_Rx(void)
     	pHCITxOperte->code = pHCIrxHeadBuf->code;
     	pHCITxOperte->opcode.ogf = pHCIrxHeadBuf->opcode.ogf;
     	pHCITxOperte->opcode.ocf = pHCIrxHeadBuf->opcode.ocf;
-    	pHCITxOperte->param[0] = pHCIrxHeadBuf->total;
-    	pHCITxOperte->param[1] = pHCIRxOperte->cmd;
+    	pHCITxOperte->param[0] = pHCIRxOperte->cmd + 1; /* dowload the handshake protocol */
+    	pHCITxOperte->param[1] = 0x00;
+    	HciTxOperteLen = 5;
+    	uart_link_check_flag = 1;
+			uart_tx_pin_cfg();
+        break;
+    }
+
+    case BL2_LINK_CHECK_CMD:{		// 01 e0 fc 01 02
+
+
+    	pHCItxHeadBuf->code = TRA_HCIT_EVENT;
+    	pHCItxHeadBuf->event = HCI_COMMAND_COMPLETE_EVENT;
+    	pHCItxHeadBuf->total = uart_rx_index;
+
+    	HciTxHeadLen = HCI_EVENT_HEAD_LENGTH;
+
+    	pHCITxOperte = (HCI_TX_OPERATE*)(&Shorttrx_pdu_buf[0]);
+
+    	pHCITxOperte->code = pHCIrxHeadBuf->code;
+    	pHCITxOperte->opcode.ogf = pHCIrxHeadBuf->opcode.ogf;
+    	pHCITxOperte->opcode.ocf = pHCIrxHeadBuf->opcode.ocf;
+    	pHCITxOperte->param[0] = pHCIRxOperte->cmd + 1;
+    	pHCITxOperte->param[1] = 0x00;
     	HciTxOperteLen = 5;
     	uart_link_check_flag = 1;
 			uart_tx_pin_cfg();
@@ -255,15 +312,15 @@ void TRAhcit_UART_Rx(void)
         {
             XVR_ANALOG_REG_BAK[reg_index] = rx_param->value;
         }
-    #if (CHIP_BK3633)	
+    #if (CHIP_BK3633)
        else if( (reg_index >= 0x1c) && (reg_index <= 0x1f )  )
 			 {
 				  XVR_ANALOG_REG_BAK2[reg_index] = rx_param->value;
-			 }	
-    #endif	
-					
-        memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
-        memcpy(pHCITxOperte->param, pHCIRxOperte, pHCIrxHeadBuf->total);
+			 }
+    #endif
+
+        bl_memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
+        bl_memcpy(pHCITxOperte->param, pHCIRxOperte, pHCIrxHeadBuf->total);
         HciTxOperteLen = pHCIrxHeadBuf->total + 3;
 
        //// bl_printf("reg write cmd\r\n");
@@ -311,7 +368,7 @@ void TRAhcit_UART_Rx(void)
         }
        //  reg_value = Beken_Read_Register(rx_param->addr);
 
-         memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
+         bl_memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
          pHCITxOperte->param[0] = pHCIRxOperte->cmd;
          tx_param->value = reg_value;
          HciTxOperteLen = 0x0c;
@@ -338,7 +395,7 @@ void TRAhcit_UART_Rx(void)
 
 			 pHCITxOperte = (HCI_TX_OPERATE*)(&Shorttrx_pdu_buf[0]);
 
-			 memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
+			 bl_memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
 			 pHCITxOperte->param[0] = pHCIRxOperte->cmd;
 			 pHCITxOperte->param[1] = pHCIRxOperte->param[0];
 			 HciTxOperteLen = 0x05;
@@ -367,7 +424,7 @@ void TRAhcit_UART_Rx(void)
 
     			 pHCITxOperte = (HCI_TX_OPERATE*)(&Shorttrx_pdu_buf[0]);
 
-    			 memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
+    			 bl_memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
     			 pHCITxOperte->param[0] = pHCIRxOperte->cmd;
     			 pHCITxOperte->param[1] = pHCIRxOperte->param[0];
     			 pHCITxOperte->param[2] = pHCIRxOperte->param[1];
@@ -392,7 +449,7 @@ void TRAhcit_UART_Rx(void)
 		 HciTxHeadLen = HCI_EVENT_HEAD_LENGTH;
 
 		 pHCITxOperte = (HCI_TX_OPERATE*)(&Shorttrx_pdu_buf[0]);
-		 memcpy((u8*)&rate,&(pHCIRxOperte->param[0]),4);
+		 bl_memcpy((u8*)&rate,&(pHCIRxOperte->param[0]),4);
 		 if( uart_rx_done_state == TRA_HCIT_STATE_RX_FLASH_DATA_COMMIT)
 		 {
 			 delay_ms = pHCIRxOperte->param[4];
@@ -402,17 +459,17 @@ void TRAhcit_UART_Rx(void)
 			 while(get_1mstime_cnt() <= (delay_ms)){
 				// delay(100);
 			 }
-			 memcpy((&pHCITxOperte->param[1]),&(pHCIRxOperte->param[0]),5);
+			 bl_memcpy((&pHCITxOperte->param[1]),&(pHCIRxOperte->param[0]),5);
 
 		 }else
 		 {
-			 memcpy((&pHCITxOperte->param[1]),(u8*)(&g_baud_rate),4);
+			 bl_memcpy((&pHCITxOperte->param[1]),(u8*)(&g_baud_rate),4);
 			 pHCITxOperte->param[5] = 0;
 		 }
 
 
 
-		 memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
+		 bl_memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
 		 pHCITxOperte->param[0] = pHCIRxOperte->cmd;
 
 		 HciTxOperteLen = 0x09;
@@ -427,6 +484,9 @@ void TRAhcit_UART_Rx(void)
     	u32 start_addr;
     	u32 end_addr;
     	u32 len;
+    	u16 tmp;
+    	u8 *tmp_addr;
+    	u32 v_start_addr;
     	u16  offset;
     	u8 buf[280];
     	uint8_t status1 = 0;
@@ -437,12 +497,18 @@ void TRAhcit_UART_Rx(void)
 
     	pHCITxOperte = (HCI_TX_OPERATE*)(&Shorttrx_pdu_buf[0]);
 
-    	memcpy((u8*)&start_addr,&(pHCIRxOperte->param[0]),4);
-    	memcpy((u8*)&end_addr,&(pHCIRxOperte->param[4]),4);
+    	bl_memcpy((u8*)&start_addr,&(pHCIRxOperte->param[0]),4);
+    	bl_memcpy((u8*)&end_addr,&(pHCIRxOperte->param[4]),4);
 
     	len = end_addr - start_addr + 1;
 
 
+    	if (g_cbus_download) {
+    		v_start_addr = download_phy2virtual(start_addr); // FLASH_PHY2VIRTUAL(ALIGN4K(start_addr, g_start_base));
+    		bl_memset(g_data_buf4k, 0x00, len);
+    		bl_flash_read_cbus(v_start_addr, g_data_buf4k, len);
+    		tmp_addr = g_data_buf4k;
+    	}
     	g_crc  = 0xffffffff;
 
 
@@ -468,9 +534,17 @@ void TRAhcit_UART_Rx(void)
     		}
     		if(status1 == 0)
     		{
-    			status1 = ext_flash_rd_data_for_crc(start_addr,buf,offset);
+    			if (g_cbus_download) {
+    				tmp = offset;
+    				while (tmp--) {	
+    					g_crc = (g_crc >> 8)^(crc32_table[(g_crc^(*tmp_addr++))&0xff]);
+    				}
+    				status1 = STATUS_OK;
+    			} else {
+    				status1 = ext_flash_rd_data_for_crc(start_addr,buf,offset);
 
-    			//g_crc = crc32(g_crc, buf,offset);
+    				//g_crc = crc32(g_crc, buf,offset);
+				}
     		}
     	//	bl_printf("00offset =0x%08x,len=0x%08x,start_addr = 0x%x\r\n",offset, len,start_addr);
 
@@ -489,12 +563,14 @@ void TRAhcit_UART_Rx(void)
 #if GPIO_DEBUG
     	gpio_target(5);
 #endif
-    	// bl_printf("crc_end = 0x%x\r\n",crc);
-    	 memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
+		// if (g_cbus_download) {
+		// 	printf("start_addr=0x%x, crc_end=0x%x\r\n",start_addr, g_crc);
+		// }
+    	 bl_memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
 
     	 pHCITxOperte->param[0] = pHCIRxOperte->cmd;
 
-    	 memcpy(&(pHCITxOperte->param[1]),(u8*)(&g_crc),4);
+    	 bl_memcpy(&(pHCITxOperte->param[1]),(u8*)(&g_crc),4);
     	 HciTxOperteLen = 0x08;
 
 
@@ -524,6 +600,109 @@ void TRAhcit_UART_Rx(void)
         break;
        }
 
+   case FLASH_CBUS_DOWNLOAD:{	// 01 e0 fc 10 11 offset(4 bytes) length(4 bytes) start(4 bytes) crc(4 bytes)
+		//04 0e 05 01 E0 FC 11 00
+		uint8_t status1 = STATUS_OK;
+		u32 partition_start = 0;
+		u32 partition_size = 0;
+
+		u8 *tmp_addr;
+		u32 crc;
+		int i;
+
+		status = FLASH_OPERATE_END;
+		if (g_cbus_download) {
+			goto ret;
+		}
+		pHCItxHeadBuf->code = TRA_HCIT_EVENT;
+		pHCItxHeadBuf->event = HCI_COMMAND_COMPLETE_EVENT;
+		pHCItxHeadBuf->total = 05;
+
+		HciTxHeadLen = HCI_EVENT_HEAD_LENGTH;
+
+		pHCITxOperte = (HCI_TX_OPERATE*)(&Shorttrx_pdu_buf[0]);
+
+		bl_memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
+		pHCITxOperte->param[0] = pHCIRxOperte->cmd;
+		HciTxOperteLen = 5;
+
+		g_cbus_download = true;
+
+		g_crc  = 0xffffffff;
+
+#ifdef  TABLE_CRC
+    	make_crc32_table();
+#endif
+		tmp_addr = (u8 *)&pHCIRxOperte->param[0];
+		for (i = 0; i < 12; i++) {
+			g_crc = (g_crc >> 8)^(crc32_table[(g_crc^(*tmp_addr++))&0xff]);
+		}
+		bl_memcpy((u8 *)&partition_start, (u8 *)&pHCIRxOperte->param[0], 4);
+		bl_memcpy((u8 *)&partition_size, (u8 *)&pHCIRxOperte->param[4], 4);
+		bl_memcpy((u8 *)&g_start_base, (u8 *)&pHCIRxOperte->param[8], 4);
+		bl_memcpy((u8 *)&crc, (u8 *)&pHCIRxOperte->param[12], 4);
+		if (g_crc != crc) {
+			printf("g_crc=0x%x, crc=0x%x\n", g_crc, crc);
+			g_cbus_download = false;
+			pHCITxOperte->param[1] = PACK_PAYLOAD_LACK;
+			break;
+		}
+
+		g_virtul_base = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(g_start_base));
+		printf("partition_start=0x%x, partition_size=0x%x\n", partition_start, partition_size);
+		printf("phy_start_base=0x%x, vir_start_base=0x%x\n", g_start_base, g_virtul_base);
+
+		if(flash_partition_is_invalid(partition_start, partition_size)) {
+			g_cbus_download = false;
+			pHCITxOperte->param[1] = PACK_PAYLOAD_LACK;
+			break;
+		}
+		printf("erase start......\n");
+		i = partition_start;
+		while(i < (partition_start + partition_size)) {
+			// printf("erase start addr=0x%x\n", i);
+			if (!(i & 0xffff) && (i + 0x10000) < (partition_start + partition_size)) {
+				status1 = ext_flash_erase_sector_or_block_size(BLOCK_ERASE_64K_CMD, i);
+				i += 0x10000;
+			} else if (!(i & 0x7fff) && (i + 0x8000) < (partition_start + partition_size)) {
+				status1 = ext_flash_erase_sector_or_block_size(BLOCK_ERASE_32K_CMD, i);
+				i += 0x8000;
+			} else {
+				status1 = ext_flash_erase_sector_or_block_size(SECTOR_ERASE_CMD, i);
+				i += 0x1000;
+			}
+			if (status1 != STATUS_OK) {
+				break;
+			}
+		}
+		printf("erase end\n");
+		pHCITxOperte->param[1] = status1;
+		break;
+	}
+
+
+   case FLASH_CBUS_END:{	// 01 e0 fc 01 12
+		//04 0e 05 01 E0 FC 11 00
+
+		status = FLASH_OPERATE_END;
+		if (g_cbus_download) {
+			g_cbus_download = false;
+		}
+		pHCItxHeadBuf->code = TRA_HCIT_EVENT;
+		pHCItxHeadBuf->event = HCI_COMMAND_COMPLETE_EVENT;
+		pHCItxHeadBuf->total = 05;
+
+		HciTxHeadLen = HCI_EVENT_HEAD_LENGTH;
+
+		pHCITxOperte = (HCI_TX_OPERATE*)(&Shorttrx_pdu_buf[0]);
+
+		bl_memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
+		pHCITxOperte->param[0] = pHCIRxOperte->cmd;
+		HciTxOperteLen = 5;
+
+		pHCITxOperte->param[1] = 0x00;
+		break;
+	}
 
     case FLASH_OPERATE_CMD: // 01 e0 fc FF F4
     {
@@ -542,7 +721,7 @@ void TRAhcit_UART_Rx(void)
     	HciTxHeadLen = HCI_EVENT_HEAD_LENGTH;
 
     	pHCITxOperte = (HCI_TX_OPERATE*)(&Shorttrx_pdu_buf[0]);
-    	memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
+    	bl_memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
     	pHCITxOperte->param[0] = pHCIRxOperte->cmd;; // cmd
     	pHCITxOperte->param[1] = UNKNOW_CMD; // status
     	 HciTxOperteLen = 0x05;
@@ -569,16 +748,6 @@ if(status == FLASH_OPERATE_END)
 
 }
 
-bool flash_address_is_invalid(uint32_t addr)
-{
-	if (addr < CONFIG_PRIMARY_TFM_S_PHY_PARTITION_OFFSET) {
-		printf("invalid addr: %x\r\n", addr);
-		return true;
-	} else {
-		return false;
-	}
-}
-
 //#define  FLASH_PAGE_SIZE  0X100
 
 u8 TRAhcit_Flash_Operate_Cmd(void)
@@ -587,16 +756,10 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 	u8 f_opstatus = FLASH_OPERATE_END;
 	FLASH_OPERATE_REQ_PARAM *rx_param = (FLASH_OPERATE_REQ_PARAM *)pHCIRxOperte->param;
 
-
-	if ((rx_param->operate == FLASH_CHIP_ERRASE_CMD) || (rx_param->operate == FLASH_ADDR_WRITE_CMD) ||
-		(rx_param->operate == FLASH_4K_ERRASE_CMD) || (rx_param->operate == FLASH_SIZE_ERRASE_CMD) ||
-		(rx_param->operate == FLASH_4K_WRITE_CMD) || (rx_param->operate == FLASH_SR_WRITE_CMD)) {
-		u32 addr;
-		memcpy((u8*)&addr,&(rx_param->param[0]),4);
-		if (flash_address_is_invalid(addr)) {
-			return FLASH_OPERATE_END;
-		}
+	if (rx_param->operate == FLASH_CHIP_ERRASE_CMD) {
+		return FLASH_OPERATE_END;
 	}
+
 
 
  //	bl_printf("rx_param->operate = %x,len = %x\r\n",rx_param->operate,rx_param->len);
@@ -632,7 +795,7 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 		}
 
 
-		 memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
+		 bl_memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
 		 pHCITxOperte->param[0] = pHCIRxOperte->cmd;
 		 tx_param->len = 0X03;
 		 tx_param->operate = rx_param->operate;
@@ -651,6 +814,7 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 	 		 // 04 0E FF   01 E0 FC   F4 07 00 06 status 00 00 00 00 size
 	 		u32 addr;
 	 		uint8_t status = 0;
+			u32 v_start_addr;
 	 		f_opstatus = FLASH_OPERATE_END;
 	 		pHCITxOperte = (HCI_TX_OPERATE*)(&Shorttrx_pdu_buf[0]);
 	 	    FLASH_OPERATE_RSP_PARAM *tx_param = (FLASH_OPERATE_RSP_PARAM *)&pHCITxOperte->param[1];
@@ -660,9 +824,7 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 			pHCItxHeadBuf->total = 0XFF;
 			HciTxHeadLen = HCI_EVENT_HEAD_LENGTH;
 
-
-
-			memcpy((u8*)&addr,&(rx_param->param[0]),4);
+			bl_memcpy((u8*)&addr,&(rx_param->param[0]),4);
 //	 		bl_printf("addr =  %x,len = %x\r\n",addr,rx_param->len);
 
 	 	//	uart_send(&uart_rx_done_state,1);
@@ -675,9 +837,18 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 	 		 {
 					if(uart_rx_index == (rx_param->len + 7))
 					{
-						//status = ext_flash_wr_enable(1);
-						status = ext_flash_wr_data(addr,&(rx_param->param[4]),rx_param->len - 5);
-					//	status = ext_flash_wr_enable(0);
+						if (g_cbus_download) {
+							v_start_addr = download_phy2virtual(addr);
+							bl_flash_write_cbus(v_start_addr, &(rx_param->param[4]),rx_param->len - 5);
+							status = STATUS_OK;
+						} else {
+							//status = ext_flash_wr_enable(1);
+							if (flash_partition_is_invalid(addr, rx_param->len - 5)) {
+								return FLASH_OPERATE_INVALID;
+							}
+							status = ext_flash_wr_data(addr,&(rx_param->param[4]),rx_param->len - 5);
+						//	status = ext_flash_wr_enable(0);
+						}
 					}
 
 	 		}else if(uart_rx_done_state == TRA_HCIT_STATE_RX_FLASH_DATA_COMMIT_ERROR)
@@ -695,13 +866,13 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 
 	 		 if(f_opstatus == FLASH_OPERATE_END)
 	 		 {
-					 memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
+					 bl_memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
 					 pHCITxOperte->param[0] = pHCIRxOperte->cmd;
 
 					 tx_param->len = 0X07;
 					 tx_param->operate = rx_param->operate;
 					 tx_param->param[0] = status;
-					 memcpy(&(tx_param->param[1]), rx_param->param, 4);
+					 bl_memcpy(&(tx_param->param[1]), rx_param->param, 4);
 					 if(status == STATUS_OK)
 					 {
 						 tx_param->param[5] = rx_param->len - 5;
@@ -724,6 +895,7 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 		 	 {
 		 		 // 04 0E FF    01 E0 FC F4   0A 00 08   00 00 00 00 AA D0 D1 D2 D3
 		 		 u32 addr;
+				 u32 v_start_addr;
 		 		 u16 size;
 		 		// u16 i;
 		 		uint8_t status;
@@ -737,19 +909,19 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 				HciTxHeadLen = HCI_EVENT_HEAD_LENGTH;
 
 
-				 memcpy((u8*)&addr,&(rx_param->param[0]),4);
-		 		// memcpy((u8*)&size,&(rx_param->param[4]),2);
+				 bl_memcpy((u8*)&addr,&(rx_param->param[0]),4);
+		 		// bl_memcpy((u8*)&size,&(rx_param->param[4]),2);
 
 		 		 size = rx_param->param[4];
 
 
-		 		 memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
+		 		 bl_memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
 		 		 pHCITxOperte->param[0] = pHCIRxOperte->cmd;
 
 
 		 		 tx_param->operate = rx_param->operate;
 
-		 		 memcpy(&(tx_param->param[1]), rx_param->param, 4); // ADDR
+		 		 bl_memcpy(&(tx_param->param[1]), rx_param->param, 4); // ADDR
 
 
 
@@ -758,7 +930,13 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 				{
 		 			if(rx_param->len == 0x06)
 		 			{
-		 				status = ext_flash_rd_data(addr,&(tx_param->param[5]),size);
+						if (g_cbus_download) {
+							v_start_addr = download_phy2virtual(addr);
+							bl_flash_read_cbus(v_start_addr, &(rx_param->param[5]),size);
+							status = STATUS_OK;
+						} else {
+		 					status = ext_flash_rd_data(addr,&(tx_param->param[5]),size);
+						}
 		 			}else
 		 			{
 		 				status = PACK_LEN_ERROR;
@@ -798,9 +976,11 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 			pHCItxHeadBuf->total = 0XFF;
 			HciTxHeadLen = HCI_EVENT_HEAD_LENGTH;
 
-			memcpy((u8*)&addr,&(rx_param->param[0]),4);
+			bl_memcpy((u8*)&addr,&(rx_param->param[0]),4);
 //			bl_printf("addr =  %x,size = %x\r\n",addr);
-
+			if (flash_partition_is_invalid(addr, 0x1000)) {
+				return FLASH_OPERATE_INVALID;
+			}
 
 			if(uart_rx_index == (rx_param->len + 7))
 			{
@@ -817,12 +997,12 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 			}
 
 
-			 memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
+			 bl_memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
 			 pHCITxOperte->param[0] = pHCIRxOperte->cmd;
 			 tx_param->len = 0X06;
 			 tx_param->operate = rx_param->operate;
 			 tx_param->param[0] = status; // status
-			 memcpy(&(tx_param->param[1]), &(rx_param->param[0]), 4); // ADDR
+			 bl_memcpy(&(tx_param->param[1]), &(rx_param->param[0]), 4); // ADDR
 
 
 			 HciTxOperteLen = 0x0C;
@@ -839,6 +1019,7 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 		 	 	 	 u32 addr;
 		 	 	 	 uint8_t size_cmd;
 			 		uint8_t status;
+					int len = 0;
 			 		pHCITxOperte = (HCI_TX_OPERATE*)(&Shorttrx_pdu_buf[0]);
 			 		FLASH_OPERATE_RSP_PARAM *tx_param = (FLASH_OPERATE_RSP_PARAM *)&pHCITxOperte->param[1];
 
@@ -849,14 +1030,31 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 					HciTxHeadLen = HCI_EVENT_HEAD_LENGTH;
 
 					size_cmd = rx_param->param[0];
-					memcpy((u8*)&addr,&(rx_param->param[1]),4);
+					bl_memcpy((u8*)&addr,&(rx_param->param[1]),4);
 //					bl_printf("addr =  %x\r\n",addr);
 
 					if(uart_rx_index == (rx_param->len + 7))
 					{
 						if(rx_param->len == 0x06)
 						{
-							status = ext_flash_erase_sector_or_block_size(size_cmd,addr);
+							if (g_cbus_download) {
+								// printf("erase addr=0x%x,v_addr=0x%x\n", addr, FLASH_PHY2VIRTUAL(ALIGN4K(addr, g_start_base)));
+								status = STATUS_OK;
+							} else {
+								if (size_cmd == SECTOR_ERASE_CMD) {
+									len = 0x1000;
+								} else if (size_cmd == BLOCK_ERASE_32K_CMD) {
+									len = 0x8000;
+								} else if (size_cmd == BLOCK_ERASE_64K_CMD) {
+									len = 0x10000;
+								} else {
+									return FLASH_OPERATE_INVALID;
+								}
+								if (flash_partition_is_invalid(addr, len)) {
+									return FLASH_OPERATE_INVALID;
+								}
+								status = ext_flash_erase_sector_or_block_size(size_cmd,addr);
+							}
 						}else
 						{
 							status = PACK_LEN_ERROR;
@@ -866,16 +1064,13 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 						status = PACK_PAYLOAD_LACK;
 					}
 
-					 status = ext_flash_erase_one_sector(addr);
-
-
-					 memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
+					 bl_memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
 					 pHCITxOperte->param[0] = pHCIRxOperte->cmd;
 					 tx_param->len = 0X07;
 					 tx_param->operate = rx_param->operate;
 					 tx_param->param[0] = status; // status
 					 tx_param->param[1] = size_cmd;
-					 memcpy(&(tx_param->param[2]), &(rx_param->param[1]), 4); // ADDR
+					 bl_memcpy(&(tx_param->param[2]), &(rx_param->param[1]), 4); // ADDR
 
 
 					 HciTxOperteLen = 0x0d;
@@ -889,6 +1084,7 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 	 case FLASH_4K_WRITE_CMD://(01 E0 FC ff F4)  05 10 07   00 00 00 00 D0 D1 D2 ...D4095
 		 	 {
 		 		 // 04 0e ff   01 e0 fc f4  06 00 07  00 00 00 00 AA
+				u32 v_start_addr;
 		 		 u32 addr;
 		 	//	 u8 ch ;
 		 		 static uint8_t status = 0;
@@ -899,10 +1095,12 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 		 		static u8 len_error_flag = 0;
 
 
-
 //write_loop:
 				f_opstatus = FLASH_OPERATE_CONTINUE;
-				memcpy((u8*)&addr,&(rx_param->param[0]),4);
+				bl_memcpy((u8*)&addr,&(rx_param->param[0]),4);
+				if (g_cbus_download) {
+					v_start_addr = download_phy2virtual(addr); //FLASH_PHY2VIRTUAL(ALIGN4K(addr, g_start_base));
+				}
 			//	ch = 0x2;
 			//	uart_send(&ch,1);
 				if(rx_param->len != 0x1005)
@@ -925,13 +1123,28 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 					{
 						state_change_flag = 0;
 						state_change = uart_rx_done_state;
-						addr += (write_flash_4k_addr_off * FLASH_PAGE_SIZE);
+						if (g_cbus_download) {
+							v_start_addr += (write_flash_4k_addr_off * FLASH_PAGE_SIZE);
+						} else {
+							addr += (write_flash_4k_addr_off * FLASH_PAGE_SIZE);
+						}
 
 						if((status == 0) && (uart_rx_done_state != TRA_HCIT_STATE_RX_FLASH_DATA_COMMIT_ERROR))
 						{
 							if(len_error_flag == 0)
 							{
-								status = ext_flash_wr_data_in_page(addr,&(rx_param->param[4 + write_flash_4k_addr_off *FLASH_PAGE_SIZE]),FLASH_PAGE_SIZE);
+								if (g_cbus_download) {
+									bl_flash_write_cbus(v_start_addr , \
+														&(rx_param->param[4 + write_flash_4k_addr_off * FLASH_PAGE_SIZE]), \
+														FLASH_PAGE_SIZE);
+									status = STATUS_OK;
+								} else {
+									if (write_flash_4k_addr_off == 0 &&
+										flash_partition_is_invalid(addr, 0x1000)) {
+										return FLASH_OPERATE_INVALID;
+									}	
+									status = ext_flash_wr_data_in_page(addr,&(rx_param->param[4 + write_flash_4k_addr_off *FLASH_PAGE_SIZE]),FLASH_PAGE_SIZE);
+								}
 							}else
 							{
 								status = PACK_LEN_ERROR;
@@ -994,14 +1207,14 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 
 					pHCITxOperte = (HCI_TX_OPERATE*)(&Shorttrx_pdu_buf[0]);
 					FLASH_OPERATE_RSP_PARAM *tx_param = (FLASH_OPERATE_RSP_PARAM *)&pHCITxOperte->param[1];
-					memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
+					bl_memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
 					pHCITxOperte->param[0] = pHCIRxOperte->cmd;
 					tx_param->len = 0X06;
 					tx_param->operate = rx_param->operate;
 					tx_param->param[0] = status;
 					status = 0;
 					state_change = 0;
-					memcpy(&(tx_param->param[1]), rx_param->param, 4);
+					bl_memcpy(&(tx_param->param[1]), rx_param->param, 4);
 					HciTxOperteLen = 0x0C;
 
 				}
@@ -1013,15 +1226,17 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 
 	 case FLASH_4K_READ_CMD://(01 E0 FC FF F4)   05 00 09   00 00 00 00
 			 	 {
-			 		 // 04 0e ff   01 e0 fc f4  06 10 09  00 00 00 00 AA  D0 D1 D2 D4095
-			 		 u32 start_addr;
-			 		 u32 end_addr;
-			 		 u32 load_addr;
-			 		// u32 i ;
-			 		 uint8_t status = STATUS_OK;
-			 		 uint8_t len_error_flag = STATUS_OK;
+					// 04 0e ff   01 e0 fc f4  06 10 09  00 00 00 00 AA  D0 D1 D2 D4095
+					u32 pre_start_addr;
+					u32 v_start_addr;
+					u32 start_addr;
+					u32 end_addr;
+					u32 load_addr;
+					u32 size ;
+					uint8_t status = STATUS_OK;
+					uint8_t len_error_flag = STATUS_OK;
 
-			 		memcpy(Shorttrx_pdu_buf,Longtrx_pdu_buf,12);
+			 		bl_memcpy(Shorttrx_pdu_buf,Longtrx_pdu_buf,12);
 
 			 		pHCIRxOperte = (HCI_RX_OPERATE*)(&Shorttrx_pdu_buf[0]);
 
@@ -1039,7 +1254,7 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 					 uart_send((unsigned char *)pHCItxHeadBuf,HciTxHeadLen);
 					 HciTxHeadLen = 0;
 
-					 memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
+					 bl_memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
 					 pHCITxOperte->param[0] = FLASH_OPERATE_CMD;
 				//	 bl_printf("pHCITxOperte->param[0] =  %x,pHCIRxOperte->cmd = %x\r\n",pHCITxOperte->param[0],pHCIRxOperte->cmd);
 
@@ -1048,13 +1263,14 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 
 					// bl_printf("tx_param->operate =  %x,rx_param->operate =  %x\r\n",tx_param->operate,rx_param->operate);
 
-					 memcpy(&(tx_param->param[1]), &(rx_param->param[0]), 4); // ADDR
+					 bl_memcpy(&(tx_param->param[1]), &(rx_param->param[0]), 4); // ADDR
 
 
 				//	TRAhcit_Transmit((u_int8 *)pHCITxOperte,HciTxOperteLen,(u_int8 *)pHCItxHeadBuf,HciTxHeadLen);
 
 
-					 memcpy((u8*)&start_addr,&(rx_param->param[0]),4);
+					 bl_memcpy((u8*)&start_addr,&(rx_param->param[0]),4);
+
 				//	 bl_printf("start_addr =  %x\r\n",start_addr);
 					 end_addr = start_addr + 0x1000;
 					 load_addr = 0;
@@ -1079,17 +1295,27 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 					 tx_param->param[0] = status; // status
 					 uart_send((unsigned char *)pHCITxOperte,12);
 
+					if (g_cbus_download) {
+						v_start_addr = download_phy2virtual(start_addr); //FLASH_PHY2VIRTUAL(ALIGN4K(start_addr, g_start_base));
+					}
 					 while((start_addr < end_addr) && (status == 0))
 					 {
 						 if(len_error_flag == 0)
 						 {
-							 status = ext_flash_rd_data(start_addr,&(tx_param->param[5 + load_addr]),0X100 /2);
-
-							 uart_send(&(tx_param->param[5 + load_addr]),0X100 / 2);
+ 							if (g_cbus_download) {
+								// printf("%s:%d read addr=0x%x  =0x%x,virtual=0x%x\n", __func__,  __LINE__, start_addr,  (start_addr), v_start_addr);
+								size = 0x80;
+								bl_flash_read_cbus(v_start_addr, &(tx_param->param[5 + load_addr]), size);
+								v_start_addr += size;
+								status = STATUS_OK;
+							} else {
+								size = 0x100 / 2 ;
+								status = ext_flash_rd_data(start_addr, &(tx_param->param[5 + load_addr]), size);
+							}
+							uart_send(&(tx_param->param[5 + load_addr]),size);
 						 }
-
-						 start_addr+=(0x100 /2);
-						 load_addr+=(0x100 /2);
+						 start_addr+=(size);
+						 load_addr+=(size);
 					 }
 
 					 HciTxOperteLen = 0;
@@ -1115,7 +1341,7 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 //					 bl_printf("reg_addr =  %x,\r\n",reg_addr);
 
 					 status = spi_write_read(&reg_addr,1,&reg_value,1,1);
-					 memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
+					 bl_memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
 					 pHCITxOperte->param[0] = pHCIRxOperte->cmd;
 					 tx_param->len = 0X04;
 					 tx_param->operate = rx_param->operate;
@@ -1146,7 +1372,7 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 	 					//reg_addr = rx_param->param[0];
 	 					//reg_value = rx_param->param[1];
 	 					reg_v_len = rx_param->len - 1;
-	 					memcpy(buf, &(rx_param->param[0]), reg_v_len);
+	 					bl_memcpy(buf, &(rx_param->param[0]), reg_v_len);
 //	 					 bl_printf("reg_addr =  %x\r\n",reg_addr);
 //	 					bl_printf("reg_value =  %x\r\n",reg_value);
 
@@ -1160,12 +1386,12 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 	 					cmd = WR_DISABLE_CMD;
 
 						status = spi_write_read(&cmd,1,NULL,0,0);
-	 					 memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
+	 					 bl_memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
 	 					 pHCITxOperte->param[0] = pHCIRxOperte->cmd;
 	 					 tx_param->len = 0X02 + reg_v_len;
 	 					 tx_param->operate = rx_param->operate;
 	 					 tx_param->param[0] = status; // status
-	 					 memcpy(&(tx_param->param[1]),&(rx_param->param[0]),reg_v_len);
+	 					 bl_memcpy(&(tx_param->param[1]),&(rx_param->param[0]),reg_v_len);
 	 					 HciTxOperteLen = 0x08 + reg_v_len;
 	 					 f_opstatus = FLASH_OPERATE_END;
 	 					 break;
@@ -1184,8 +1410,8 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 							pHCItxHeadBuf->total = 0XFF;
 							HciTxHeadLen = HCI_EVENT_HEAD_LENGTH;
 
-							 memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
-							 pHCITxOperte->param[0] = pHCIRxOperte->cmd;
+							bl_memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
+							pHCITxOperte->param[0] = pHCIRxOperte->cmd;
 							param_len = rx_param->len;
 							p_tx = rx_param->param;
 							 tx_param->len = param_len + 1;
@@ -1211,7 +1437,7 @@ u8 TRAhcit_Flash_Operate_Cmd(void)
 			pHCITxOperte = (HCI_TX_OPERATE*)(&Shorttrx_pdu_buf[0]);
 			FLASH_OPERATE_RSP_PARAM *tx_param = (FLASH_OPERATE_RSP_PARAM *)&pHCITxOperte->param[1];
 
-			 memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
+			bl_memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
 			pHCITxOperte->param[0] = pHCIRxOperte->cmd;
 			tx_param->len= 0x02;
 		    tx_param->operate = rx_param->operate;

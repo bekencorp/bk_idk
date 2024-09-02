@@ -18,6 +18,7 @@
  *    APIs are passed beken test
  * */
 #pragma once
+#include <common/bk_include.h>
 #include <common/bk_err.h>
 #include <modules/wifi.h>
 #include <components/netif.h>
@@ -62,7 +63,7 @@ extern "C" {
  *          In soft ap mode, return kWlanXXXErr
  */
 __bk_deprecated
-bk_err_t bk_wlan_start_internal(network_InitTypeDef_st* inNetworkInitPara);
+bk_err_t bk_wlan_start(network_InitTypeDef_st* inNetworkInitPara);
 
 /**
  * @brief  Get the number of found APs
@@ -72,7 +73,7 @@ bk_err_t bk_wlan_start_internal(network_InitTypeDef_st* inNetworkInitPara);
  * @return return the number of found APs
  */
 __bk_deprecated
-unsigned char bk_wlan_get_scan_ap_result_numbers_internal(void);
+unsigned char bk_wlan_get_scan_ap_result_numbers(void);
 
 /**
  * @brief  Get all APs found by this scan
@@ -85,7 +86,7 @@ unsigned char bk_wlan_get_scan_ap_result_numbers_internal(void);
  * @return return the actual number of returned APs
  */
 __bk_deprecated
-int bk_wlan_get_scan_ap_result_internal(SCAN_RST_ITEM_PTR scan_result_table,unsigned char ap_num);
+int bk_wlan_get_scan_ap_result(SCAN_RST_ITEM_PTR scan_result_table,unsigned char ap_num);
 
 /**
  * @brief Send raw 802.11 frame
@@ -104,7 +105,7 @@ int bk_wlan_get_scan_ap_result_internal(SCAN_RST_ITEM_PTR scan_result_table,unsi
  *    - otherwise: fail
  */
 __bk_deprecated
-int bk_wlan_send_80211_raw_frame_internal(uint8_t *buffer, int len);
+int bk_wlan_send_80211_raw_frame(uint8_t *buffer, int len);
 
 /**
  * @brief check whether the filter_type is set or not
@@ -129,7 +130,7 @@ int bk_wlan_monitor_filter(unsigned char filter_type);
  * @param  channel AP channel
  */
 __bk_deprecated
-void bk_wlan_ap_set_default_channel_internal(uint8_t channel);
+void bk_wlan_ap_set_default_channel(uint8_t channel);
 
 /**
  * @brief  The callback function of 802.11 frame receiving
@@ -162,7 +163,7 @@ typedef void (*monitor_cb_t)(uint8_t *data, int len, wifi_link_info_t *info);
  *      - otherwise: fail
  */
 __bk_deprecated
-int bk_wlan_ps_enable_internal(void );
+int bk_wlan_ps_enable(void );
 
 /**
  * @brief  Disable DTIM power save
@@ -172,7 +173,7 @@ int bk_wlan_ps_enable_internal(void );
  *      - otherwise: fail
  */
 __bk_deprecated
-int bk_wlan_ps_disable_internal(void);
+int bk_wlan_ps_disable(void);
 
 /**
  * @brief  Enable DTIM power save timer
@@ -184,7 +185,7 @@ int bk_wlan_ps_disable_internal(void);
  *      - oterwise: fail
  */
 __bk_deprecated
-int bk_wlan_ps_timer_start_internal(void);
+int bk_wlan_ps_timer_start(void);
 
 /**
  * @brief  Disable DTIM power save timer
@@ -196,7 +197,7 @@ int bk_wlan_ps_timer_start_internal(void);
  *      - otherwise: fail
  */
 __bk_deprecated
-int bk_wlan_ps_timer_pause_internal(void);
+int bk_wlan_ps_timer_pause(void);
 
 /**
  * @brief  Enable MCU power save
@@ -212,7 +213,7 @@ int bk_wlan_ps_timer_pause_internal(void);
  *      - otherwise: fail
  */
 __bk_deprecated
-int bk_wlan_mcu_ps_mode_enable_internal(void);
+int bk_wlan_mcu_ps_mode_enable(void);
 
 /**
  * @brief  Disable MCU power save
@@ -224,7 +225,7 @@ int bk_wlan_mcu_ps_mode_enable_internal(void);
  *      - otherwise: fail
  */
 __bk_deprecated
-int bk_wlan_mcu_ps_mode_disable_internal(void);
+int bk_wlan_mcu_ps_mode_disable(void);
 
 /**
  * @brief  Register WiFi status change callback
@@ -236,7 +237,7 @@ int bk_wlan_mcu_ps_mode_disable_internal(void);
  * @param cb status change callback function
  */
 __bk_deprecated
-void bk_wlan_status_register_cb_internal(FUNC_1PARAM_PTR cb);
+void bk_wlan_status_register_cb(FUNC_1PARAM_PTR cb);
 
 /**
  * @brief  Get WiFi status change callback
@@ -244,7 +245,7 @@ void bk_wlan_status_register_cb_internal(FUNC_1PARAM_PTR cb);
  * @return return status callback
  */
 __bk_deprecated
-FUNC_1PARAM_PTR bk_wlan_get_status_cb_internal(void);
+FUNC_1PARAM_PTR bk_wlan_get_status_cb(void);
 
 /**
  * @brief  AP no password callback
@@ -274,7 +275,7 @@ void bk_ap_no_password_connected_register_cb(bk_ap_no_password_cb_t func);
  *    - others: otherwise
  */
 __bk_deprecated
-bk_err_t bk_wlan_get_bssid_info_internal(apinfo_adv_t *ap, uint8_t **key, int *key_len);
+bk_err_t bk_wlan_get_bssid_info(apinfo_adv_t *ap, uint8_t **key, int *key_len);
 
 #ifdef CONFIG_AOS_MESH
 
@@ -313,7 +314,7 @@ uint8_t *wlan_get_mesh_bssid(void);
  * This function set Wi-Fi state to stop active scan, to ensure
  *	softap video_transfer
  */
-void bk_wifi_set_video_transfer_state_internal(bool enable);
+void bk_wifi_set_video_transfer_state(bool enable);
 
 #if CONFIG_RWNX_PROTO_DEBUG
 /** @brief  enable or diasble proto debug of Wi-Fi driver
@@ -321,7 +322,7 @@ void bk_wifi_set_video_transfer_state_internal(bool enable);
  * @param flag indicate enable or diasble proto debug
  *
  */
-bk_err_t bk_wifi_enable_proto_debug_internal(uint8_t flag);
+bk_err_t bk_wifi_enable_proto_debug(uint8_t flag);
 
 /**
  * @brief  enable or diasble proto debug of Wi-Fi driver
@@ -329,7 +330,7 @@ bk_err_t bk_wifi_enable_proto_debug_internal(uint8_t flag);
  * @param flag indicate enable or diasble proto debug
  *
  */
-bk_err_t bk_wifi_disable_proto_debug_internal(uint8_t flag);
+bk_err_t bk_wifi_disable_proto_debug(uint8_t flag);
 #endif
 
 /**
@@ -339,7 +340,7 @@ bk_err_t bk_wifi_disable_proto_debug_internal(uint8_t flag);
  * 1: started or connect
  * 0: others
  */
-bool wifi_sta_is_started_or_connected_internal(void);
+bool wifi_sta_is_started_or_connected(void);
 
 /* If SSID blacklist is enabled, the SSID is added into the
   * blacklist if the STA fails to connect it; the blacklist will be
@@ -365,21 +366,18 @@ bool wifi_sta_is_started_or_connected_internal(void);
   *
   * The SSID blacklist is enabled by default.
   */
-int wlan_sta_enable_ssid_blacklist_internal(void);
-int wlan_sta_disable_ssid_blacklist_internal(void);
-int wlan_p2p_find_internal(void);
-int wlan_p2p_cancel_internal(void);
-
-#if CONFIG_WIFI6_CODE_STACK
+int wlan_sta_enable_ssid_blacklist(void);
+int wlan_sta_disable_ssid_blacklist(void);
+int wlan_p2p_find(void);
+int wlan_p2p_cancel(void);
 int wlan_dhcp_done_ind(u8 vif_idx);
-#endif
 
 int http_ota_download(const char *uri);
 int bmsg_tx_raw_sender(uint8_t *payload, uint16_t length);
 int bmsg_tx_raw_ex_sender(wifi_raw_tx_info_t *raw_tx, void *cb, void *param);
 int bmsg_tx_raw_cb_sender(uint8_t *buffer, int length, void *cb, void *param);
-void wlan_write_fast_connect_info_internal(struct wlan_fast_connect_info *fci);
-void wlan_read_fast_connect_info_internal(struct wlan_fast_connect_info *fci);
+void wlan_write_fast_connect_info(struct wlan_fast_connect_info *fci);
+void wlan_read_fast_connect_info(struct wlan_fast_connect_info *fci);
 
 int bk_wifi_sta_set_power(int power);
 int bk_wifi_ap_set_power(int power);
@@ -387,11 +385,11 @@ uint32_t bk_wifi_get_mac_time(void);
 int bk_wifi_get_beacon_rssi(void);
 void bk_wifi_dump_ps_regs(void);
 void bk_wifi_udelay(uint32_t us);
-void wlan_hw_reinit_internal(void);
-void wlan_set_multicast_flag_internal(void);
+void wlan_hw_reinit(void);
+void wlan_set_multicast_flag(void);
 
-void bk_wifi_rc_config_internal(uint8_t sta_idx, uint16_t rate_cfg);
-void bk_wifi_ps_config_internal(uint8_t ps_id, uint8_t ps_val, uint8_t ps_val1);
+void bk_wifi_rc_config(uint8_t sta_idx, uint16_t rate_cfg);
+void bk_wifi_ps_config(uint8_t ps_id, uint8_t ps_val, uint8_t ps_val1);
 int bk_wlan_mcu_suppress_and_sleep(UINT32);
 int bk_wlan_is_monitor_mode(void);
 monitor_cb_t bk_wlan_get_monitor_cb(void);
@@ -408,7 +406,7 @@ bk_err_t bk_wifi_set_csa_coexist_mode_flag(bool is_close);
 monitor_cb_t wlan_get_mesh_monitor_cb(void);
 int wlan_is_mesh_monitor_mode(void);
 #endif
-int bk_sta_cipher_type_internal(void);
+int bk_sta_cipher_type(void);
 
 /* bk_wifi_netif */
 // TODO
@@ -442,22 +440,6 @@ void bk_wifi_dump_ps_regs(void);
 void bk_wifi_set_rc_rssi_offset(int8_t rssi_offset);
 uint32_t bk_wifi_get_la_base_address(void);
 uint32_t bk_wifi_get_mac_base_address(void);
-void bk_wifi_set_mpb_frameperburst(uint32_t value);
-uint32_t bk_wifi_get_mpb_frameperburst(void);
-uint32_t bk_wifi_get_mpb_ctrl(void);
-void bk_wifi_set_mpb_ctrl(uint32_t value);
-uint32_t bk_wifi_get_mpb_txv(int reg_idx);
-void bk_wifi_set_mpb_txv(int reg_idx, uint32_t value);
-void bk_wifi_set_mpb_payload(uint32_t value);
-uint32_t bk_wifi_get_mpb_payload(void);
-void bk_wifi_set_mpb_clken(uint32_t value);
-void bk_wifi_set_mpb_interframe_delay(uint32_t value);
-uint32_t bk_wifi_get_mpb_stat_frame_ok(void);
-uint32_t bk_wifi_get_mpb_stat_frame_bad(void);
-uint32_t bk_wifi_get_mpb_stat_rxend(void);
-uint32_t bk_wifi_get_mpb_stat_phyerr(void);
-uint32_t bk_wifi_get_mpb_stat_rxerror(void);
-void bk_wifi_clear_mpb_stat(void);
 uint32_t bk_wifi_get_monotonic_counter_2_lo(void);
 void bk_wifi_debug_port_sel_pack(uint8_t debugportsel2, uint8_t debugportsel1);
 void bk_wifi_phy_wakeup_rf_reinit(void);
@@ -486,6 +468,10 @@ int cmd_wlan_get_ps_status();
 #define WLAN_DEFAULT_IP         "192.168.188.1"
 #define WLAN_DEFAULT_GW         "192.168.188.1"
 #define WLAN_DEFAULT_MASK       "255.255.255.0"
+
+#if CONFIG_BRIDGE
+#define WLAN_ANY_IP         "0.0.0.0"
+#endif
 
 void demo_scan_app_init(void);
 void demo_scan_adv_app_init(uint8_t *oob_ssid);
@@ -518,8 +504,6 @@ UINT32 save_net_info(NET_INFO_ITEM item, UINT8 *ptr0, UINT8 *ptr1, UINT8 *ptr2);
 UINT32 get_net_info(NET_INFO_ITEM item, UINT8 *ptr0, UINT8 *ptr1, UINT8 *ptr2);
 
 /* bk_wifi_debug */
-void MQTTPacket_header_parse(uint32_t buf,uint16_t packet_len);
-extern uint32_t g_per_packet_info_output_bitmap;
 
 /* bk_wifi_frame */
 uint32_t bk_wifi_find_ie(uint32_t addr, uint16_t buflen, uint8_t ie_id);
@@ -546,6 +530,83 @@ void tx_evm_set_chan_ctxt_pop(void *chan_info);
 
 
 
+void bk_wlan_dhcp_timeout(void);
+uint32_t bk_sta_cipher_is_open(void);
+uint8_t bk_wlan_ap_get_channel_config(void);
+VOID bk_wlan_ap_set_channel_config(uint8_t channel);
+uint8_t bk_wlan_has_role(uint8_t role);
+void bk_wlan_reg_csa_cb_coexist_mode(void);
+#ifdef CONFIG_P2P_GO
+uint8_t bk_wlan_ap_get_default_channel(void);
+void app_p2p_rw_event_func(void *new_evt);
+void app_p2p_restart_thread(void);
+#endif
+
+/**
+ * @brief  start the AP
+ *
+ * This function stop the AP first and then start the AP with new configuration.
+ *
+ * @param  inNetworkInitPara the configuration of the AP
+ *
+ * @return
+ *      - kNoErr        : on success.
+ *      - kGeneralErr   : fail
+ */
+__bk_deprecated
+bk_err_t bk_wlan_start_ap(network_InitTypeDef_st *inNetworkInitPara);
+void bk_wlan_ap_init_adv(network_InitTypeDef_ap_st *inNetworkInitParaAP);
+monitor_cb_t bk_wlan_get_bcn_cb(void);
+int bk_wlan_ps_disable_send_msg(void);
+void bk_wlan_sta_init(network_InitTypeDef_st *inNetworkInitPara);
+bk_err_t bk_wlan_start_sta(network_InitTypeDef_st *inNetworkInitPara);
+
+int wlan_sta_set(const uint8_t *ssid, uint8_t ssid_len, const uint8_t *psk);
+int wlan_sta_set_config(wlan_sta_config_t *config);
+int wlan_sta_get_config(wlan_sta_config_t *config);
+int wlan_sta_set_autoreconnect(wlan_auto_reconnect_t *config);
+int wlan_sta_get_bss_size(uint32_t *size);
+int wlan_sta_get_bss(wlan_sta_bss_info_t *bss_get);
+int wlan_sta_set_bss(wlan_sta_bss_info_t *bss_set);
+int wlan_sta_enable(void);
+int wlan_sta_disable(void);
+int wlan_sta_scan_once(void);
+int wlan_sta_scan(wlan_sta_scan_param_t *param);
+int wlan_sta_scan_result(ScanResult_adv *results);
+int wlan_sta_scan_interval(int sec);
+int wlan_sta_bss_max_count(uint8_t count);
+int wlan_sta_bss_flush(int age);
+int wlan_sta_connect(int chan);
+int wlan_sta_disconnect(void);
+int wlan_sta_state(wlan_sta_states_t *state);
+int wlan_sta_twt_setup(uint8_t annouced,
+					   uint16_t wake_interval_mantissa, uint8_t wake_interval_exp,
+					   uint8_t nominal_min_wake_dur, bool wake_dur_unit);
+int wlan_sta_twt_teardown(int flow_id);
+int wlan_sta_ap_info(struct ApListStruct *ap);
+int wlan_sta_gen_psk(wlan_gen_psk_param_t *param);
+int wlan_sta_wps_pbc(void);
+int wlan_sta_wps_pin_get(wlan_sta_wps_pin_t *wps);
+int wlan_sta_wps_pin_set(wlan_sta_wps_pin_t *wps);
+int wlan_sta_set_vendor_ie(wlan_sta_vsie_t *vsie);
+int wlan_ap_set(uint8_t *ssid, uint8_t ssid_len, uint8_t *psk);
+int wlan_ap_set_config(wlan_ap_config_t *config);
+int wlan_ap_get_config(wlan_ap_config_t *config);
+int wlan_ap_enable(void);
+int wlan_ap_reload(void);
+int wlan_ap_disable(void);
+int wlan_ap_sta_num(int *num);
+int wlan_ap_sta_info(wlan_ap_stas_t *stas);
+int wlan_ap_set_beacon_vsie(wlan_ap_vsie_t *vsie);
+int wlan_dhcp_done_ind(u8 vif_idx);
+#if CONFIG_P2P
+int wlan_p2p_listen(void);
+int wlan_p2p_stop_find(void);
+int wlan_p2p_connect(const uint8_t *mac, int method, int intent);
+#endif
+void bk_wifi_prepare_deepsleep(void);
+void bk_trigger_mqttping(void);
+
 
 
 ////for rf use
@@ -568,6 +629,7 @@ void evm_phy_init(UINT32 channel, INT32 band, UINT32 bandwidth);
 void evm_bypass_mac_init(UINT32 frequency, INT32 band, UINT32 bandwidth);
 void evm_clear_ke_evt_mac_bit(void);
 void evm_set_ke_evt_mac_bit(void);
+void manual_cal_set_cc_backoff_flag(UINT8 enable);
 
 
 
@@ -578,6 +640,7 @@ void mdm_set_scramblerctrl(uint32_t value);
 
 //Optimize it
 __attribute__((weak)) uint32_t cfg_ap_is_open_system(void);
+uint8_t bk_wifi_get_ps_status();
 
 #ifdef __cplusplus
 }

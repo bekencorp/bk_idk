@@ -144,6 +144,21 @@ bk_err_t bk_spi_set_baud_rate(spi_id_t id, uint32_t baud_rate);
  */
 bk_err_t bk_spi_set_bit_order(spi_id_t id, spi_bit_order_t bit_order);
 
+
+
+bk_err_t bk_spi_set_role(spi_id_t id, spi_role_t role);
+
+bk_err_t bk_spi_clear_tx_fifo(spi_id_t id);
+
+bk_err_t bk_spi_clear_rx_fifo(spi_id_t id);
+
+bk_err_t bk_spi_clr_tx(spi_id_t id);
+
+bk_err_t bk_spi_clr_rx(spi_id_t id);
+
+
+
+
 /**
  * @brief     Register the RX interrupt service routine for SPI id
  *

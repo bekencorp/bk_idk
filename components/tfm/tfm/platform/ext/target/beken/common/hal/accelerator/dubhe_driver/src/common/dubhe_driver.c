@@ -104,7 +104,9 @@ int dubhe_driver_init( unsigned long dbh_base_addr )
 {
     _g_Dubhe_RegBase = dbh_base_addr;
 
+#if DUBHE_SECURE
     dubhe_dma_disable();
+#endif
 
 #if defined( ARM_CE_DUBHE_ACA )
     dubhe_aca_driver_init( );

@@ -67,6 +67,8 @@ endif()#CONFIG_AT
 		.
         )
 
+    list(APPEND srcs feat_config/bt_feature_config.c)
+
 	if (CONFIG_SOC_BK7256XX)
 		list(APPEND srcs
 			soc/bk7256/bluetooth.c
@@ -95,7 +97,7 @@ endif()
 
 armino_component_register(SRCS "${srcs}"
 	INCLUDE_DIRS "${incs}"
-	PRIV_REQUIRES bk_phy
+	PRIV_REQUIRES bk_phy mbedtls
 	)
 
 if (CONFIG_BLUETOOTH)

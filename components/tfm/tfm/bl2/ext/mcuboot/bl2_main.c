@@ -33,6 +33,9 @@
 #include "tfm_plat_provisioning.h"
 #include "sdkconfig.h"
 #include "partitions_gen.h"
+#include "flash_partition.h"
+#include "aon_pmu_hal.h"
+
 #ifdef TEST_BL2
 #include "mcuboot_suites.h"
 #endif /* TEST_BL2 */
@@ -49,8 +52,12 @@ __asm("  .global __ARM_use_no_argv\n");
 #define BL2_MBEDTLS_MEM_BUF_LEN 0x2000
 #endif
 
+#define HDR_SZ                  0x1000
+
 /* Static buffer to be used by mbedtls for memory allocation */
 static uint8_t mbedtls_mem_buf[BL2_MBEDTLS_MEM_BUF_LEN];
+
+extern void sys_hal_dpll_cpu_flash_time_early_init(void);
 
 static void do_boot(struct boot_rsp *rsp)
 {
@@ -74,20 +81,16 @@ static void do_boot(struct boot_rsp *rsp)
                                          rsp->br_hdr->ih_hdr_size);
     } else {
         /* Using the flash address as not executing in SRAM */
-#if CONFIG_TFM_BL2_CRC
-#if CONFIG_OTA_OVERWRITE
-	vt = (struct boot_arm_vector_table *)(flash_base + 
-					FLASH_PHY2VIRTUAL_CODE_START(rsp->br_image_off +
+#if CONFIG_OTA_OVERWRITE || CONFIG_DIRECT_XIP
+    extern uint32_t get_flash_map_offset(uint32_t index);
+    uint32_t primary_off  = get_flash_map_offset(0);
+    vt = (struct boot_arm_vector_table *)(flash_base + 
+                    FLASH_PHY2VIRTUAL_CODE_START(primary_off +
                                          rsp->br_hdr->ih_hdr_size / 32 * 34));
 #else
-	vt = (struct boot_arm_vector_table *)(flash_base + 
-					FLASH_PHY2VIRTUAL_CODE_START(rsp->br_image_off +
-                                         rsp->br_hdr->ih_hdr_size));
-#endif
-#else 
-	vt = (struct boot_arm_vector_table *)(flash_base + 
-					rsp->br_image_off +
-                                         rsp->br_hdr->ih_hdr_size);
+    vt = (struct boot_arm_vector_table *)(flash_base + 
+                    FLASH_PHY2VIRTUAL_CODE_START(rsp->br_image_off +
+                                                    rsp->br_hdr->ih_hdr_size));
 #endif
     }
 
@@ -103,30 +106,50 @@ static void do_boot(struct boot_rsp *rsp)
     boot_platform_quit(vt);
 }
 
+// Set CONFIG_DOWNLOAD_LOG to 1 to enable printf in download to debug
+#define CONFIG_DOWNLOAD_LOG 0
+
+extern uint32_t sys_is_enable_fast_boot(void);
+extern uint32_t sys_is_running_from_deep_sleep(void);
+
+
+static void deep_sleep_reset(void)
+{
+    struct boot_arm_vector_table *vt;
+
+    if (sys_is_running_from_deep_sleep() && sys_is_enable_fast_boot()) {
+        BOOT_LOG_INF("deep sleep fastboot");
+        extern uint32_t get_flash_map_offset(uint32_t index);
+        uint32_t phy_offset  = get_flash_map_offset(0);
+        uint32_t virtual_off = FLASH_PHY2VIRTUAL(phy_offset);
+        vt = (struct boot_arm_vector_table *)(FLASH_DEVICE_BASE +
+                    FLASH_CEIL_ALIGN(virtual_off + HDR_SZ, CPU_VECTOR_ALIGN_SZ));
+#if CONFIG_DIRECT_XIP
+        uint32_t candidate_slot = 0;
+        uint32_t reg = aon_pmu_ll_get_r7b();
+        aon_pmu_ll_set_r0(reg);
+        candidate_slot = !!(reg & BIT(2));
+        extern void flash_set_excute_enable(int enable);
+        flash_set_excute_enable(candidate_slot);
+#endif
+        boot_platform_quit(vt);
+    }
+}
+
 int main(void)
 {
     struct boot_rsp rsp;
     fih_int fih_rc = FIH_FAILURE;
     enum tfm_plat_err_t plat_err;
 
-#if CONFIG_ENABLE_SWD
-    extern void tfm_enable_swd(void);
-    tfm_enable_swd(); 
+
+    bk_efuse_init();
+#if 1//CONFIG_BL2_SECURE_DEBUG
+    extern void hal_secure_debug(void);
+    hal_secure_debug(); 
 #endif
 
-#if CONFIG_BL2_DOWNLOAD
-    void legacy_boot_main(void);
-    legacy_boot_main();
-#endif
-
-    sys_hal_early_init_tfm();
-
-    /* Initialise the mbedtls static memory allocator so that mbedtls allocates
-     * memory from the provided static buffer instead of from the heap.
-     */
-    mbedtls_memory_buffer_alloc_init(mbedtls_mem_buf, BL2_MBEDTLS_MEM_BUF_LEN);
-
-#if MCUBOOT_LOG_LEVEL > MCUBOOT_LOG_LEVEL_OFF || TEST_BL2
+#if CONFIG_DOWNLOAD_LOG
     stdio_init();
 #endif
 
@@ -136,7 +159,48 @@ int main(void)
         FIH_PANIC;
     }
 
+#if CONFIG_BL2_DOWNLOAD
+    // sys_drv_early_init();
+    sys_hal_dpll_cpu_flash_time_early_init();
+    if (efuse_is_secure_download_enabled()) {
+        flash_switch_to_line_mode_two();
+        bk_flash_cpu_write_enable();
+        enable_dcache(0);
+        void legacy_boot_main(void);
+        legacy_boot_main();
+       enable_dcache(1);
+        bk_flash_cpu_write_disable();
+        flash_restore_line_mode();
+    }
+    sys_hal_flash_set_clk(0x1);
+    sys_hal_flash_set_clk_div(0x0);
+    sys_hal_ctrl_vdddig_h_vol(0xD);
+    sys_hal_switch_freq(0x3, 0x0, 0x0);
+#endif
+
+    close_wdt();
+#if CONFIG_BL2_WDT
+    update_aon_wdt(CONFIG_BL2_WDT_PERIOD);
+#endif
+
+
+    /* Initialise the mbedtls static memory allocator so that mbedtls allocates
+     * memory from the provided static buffer instead of from the heap.
+     */
+    mbedtls_memory_buffer_alloc_init(mbedtls_mem_buf, BL2_MBEDTLS_MEM_BUF_LEN);
+
+#if !CONFIG_DOWNLOAD_LOG
+#if MCUBOOT_LOG_LEVEL > MCUBOOT_LOG_LEVEL_OFF || TEST_BL2
+    stdio_init();
+#endif
+#endif
+    partition_init();
+    flash_map_init();
+    deep_sleep_reset();
     BOOT_LOG_INF("Starting bootloader");
+    dump_partition();
+    dump_efuse();
+
 
     plat_err = tfm_plat_otp_init();
     if (plat_err != TFM_PLAT_ERR_SUCCESS) {

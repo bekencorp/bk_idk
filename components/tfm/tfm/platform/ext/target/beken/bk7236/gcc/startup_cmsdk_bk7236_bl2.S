@@ -23,6 +23,56 @@
     .syntax    unified
     .arch    armv8-m.main
 
+    .section .vectors_iram
+    .align 2
+    .globl    __Vectors_Iram
+__Vectors_Iram:
+    .long    Image$$ARM_LIB_STACK$$ZI$$Limit   /* Top of Stack */
+
+    /* Core interrupts */
+    .long    Reset_Handler                  /* Reset Handler */
+    .long    NMI_Handler                    /* NMI Handler */
+    .long    HardFault_Handler              /* Hard Fault Handler */
+    .long    MemManage_Handler              /* MPU Fault Handler */
+    .long    BusFault_Handler               /* Bus Fault Handler */
+    .long    UsageFault_Handler             /* Usage Fault Handler */
+    .long    SecureFault_Handler            /* Secure Fault Handler */
+    .long    0                              /* Reserved */
+    .long    0                              /* Reserved */
+    .long    0                              /* Reserved */
+    .long    SVC_Handler                    /* SVCall Handler */
+    .long    DebugMon_Handler               /* Debug Monitor Handler */
+    .long    0                              /* Reserved */
+    .long    PendSV_Handler                 /* PendSV Handler */
+    .long    SysTick_Handler                /* SysTick Handler */
+
+    /* External interrupts */
+
+    /*.size    __Vectors_Iram, . - __Vectors_Iram*/
+
+    .long    0                             /* Interrupt 0 */
+    .long    0                             /* Interrupt 1 */
+    .long    0                             /* Interrupt 2 */
+    .long    0                             /* Interrupt 3 */
+    .long    UART_InterruptHandler         /* Interrupt 4 */
+
+    .rept    24                            /* Interrupt 5~28 */
+    .long    0
+    .endr
+
+    .long    0x140                         /* Default Jump BIN offset */
+    .long    0x100                         /* Default Jump BIN length */
+
+    .rept    17
+    .long    0
+    .endr
+
+    .long     0x32374B42                   /* offset 0x100, magic code: BK7236 */
+    .long     0x00003633
+    .rept     14                           /* Reserve 32bytes to protect magic code */
+    .long     0
+    .endr
+
     .section .vectors
     .align 2
     .globl    __Vectors
@@ -76,7 +126,7 @@ __Vectors:
     .rept     0x1000                      /* offset 0x140, Reserve 4K for jump bin */
     .long     0xFFFFFFFF
     .endr
- 
+
     .text
     .thumb
     .thumb_func
@@ -99,8 +149,8 @@ not_the_core_to_run_on:
     bne     not_the_core_to_run_on
 
 set_msp_limit:
-    mov     r0, BL2_MSP_STACK_SIZE
-    MSR msplim, r0
+    ldr     r0, =Image$$ARM_LIB_STACK$$ZI$$Base
+    MSR     msplim, r0
 
 #ifdef __STARTUP_COPY_MULTIPLE
 /*  Multiple sections scheme.
@@ -232,6 +282,7 @@ set_msp_limit:
     \handler_name:
     b        \handler_name
     .endm
+
 
     /* Core interrupts */
     def_irq_handler     NMI_Handler

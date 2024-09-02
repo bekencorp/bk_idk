@@ -33,7 +33,10 @@ static void aon_pmu_dump_r0(void)
 	SOC_LOGI("r0: %-8x\r\n", REG_READ(SOC_AON_PMU_REG_BASE + (0x0 << 2)));
 	SOC_LOGI("	memchk_bps: %-8x\r\n", r->memchk_bps);
 	SOC_LOGI("	fast_boot: %-8x\r\n", r->fast_boot);
-	SOC_LOGI("	reserved_bit_2_30: %-8x\r\n", r->reserved_bit_2_30);
+	SOC_LOGI("	ota_finish: %-8x\r\n", r->ota_finish);
+	SOC_LOGI("	reserved_bit_3_15: %-8x\r\n", r->reserved_bit_3_15);
+	SOC_LOGI("	gpio_retention_bitmap: %-8x\r\n", r->gpio_retention_bitmap);
+	SOC_LOGI("	reserved_bit_24_30: %-8x\r\n", r->reserved_bit_24_30);
 	SOC_LOGI("	gpio_sleep: %-8x\r\n", r->gpio_sleep);
 }
 

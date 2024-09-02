@@ -146,6 +146,26 @@ static void mailbox_write_data(mailbox_data_t *data, mailbox_id_t id, mailbox_bo
 				data->param1, data->param2, data->param3);
 }
 
+bk_err_t bk_mailbox_ready(mailbox_endpoint_t src, mailbox_endpoint_t dst, uint32_t box_id)
+{
+	MAILBOX_RETURN_ON_NOT_INIT();
+
+	mailbox_id_t id;
+	mailbox_box_num_t box = (mailbox_box_num_t)box_id;
+
+	id = mailbox_check_src_dst(src, dst);
+	if (id >= ARRAY_SIZE(mailbox_cfg_map_table))
+		return BK_ERR_MAILBOX_SRC_DST;
+
+	if(mailbox_hal_read_box_ready(&(s_mailbox[id].hal), box) != 0)
+	{
+		return BK_ERR_MAILBOX_TIMEOUT;  // mailbox busy
+	}
+
+	return BK_OK;
+
+}
+
 bk_err_t bk_mailbox_send(mailbox_data_t *data, mailbox_endpoint_t src, mailbox_endpoint_t dst, void *arg)
 {
 	MAILBOX_RETURN_ON_NOT_INIT();

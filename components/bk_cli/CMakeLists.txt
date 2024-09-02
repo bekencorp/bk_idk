@@ -328,6 +328,10 @@ if (CONFIG_PSRAM_TEST)
 	list(APPEND srcs cli_psram.c)
 endif()
 
+if (CONFIG_GET_UID_TEST)
+	list(APPEND srcs cli_uid.c)
+endif()
+
 if (CONFIG_AUDIO_RSP_TEST)
 	list(APPEND srcs cli_aud_rsp.c)
 endif()
@@ -400,11 +404,14 @@ if (CONFIG_SCR)
 	list(APPEND srcs cli_scr.c)
 endif()
 
+if (CONFIG_JPEG_SW_ENCODER_TEST)
+	list(APPEND srcs cli_jpeg_sw_enc.c)
+endif()
 set(PRIV_REQUIRES_LIST bk_common mbedtls bk_netif bk_ps fatfs bk_vfs bk_init bk_libs at bk_wifi compal ota cmsis jrtplib flashdb bk_bluetooth bk_phy tfm)
 
 armino_component_register(SRCS "${srcs}"
 	INCLUDE_DIRS "${incs}"
-	REQUIRES utf8 temp_detect app driver user_driver bk_system iperf fatfs user_driver http adc_key key tfm
+	REQUIRES utf8 temp_detect app driver user_driver bk_system iperf fatfs user_driver http adc_key key
 	#PRIV_REQUIRES airkiss bk_common bk_netif bk_ps
 	PRIV_REQUIRES ${PRIV_REQUIRES_LIST}
 	)

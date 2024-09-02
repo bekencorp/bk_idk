@@ -43,6 +43,9 @@
 #ifdef EXTRA_S_TEST_SUITE
 #include "extra_s_tests.h"
 #endif
+#ifdef TEST_S_VT
+#include "vt_s_tests.h"
+#endif
 
 static struct test_suite_t test_suites[] = {
 #ifdef TEST_S_IPC
@@ -105,6 +108,12 @@ static struct test_suite_t test_suites[] = {
     {&register_testsuite_extra_s_interface, 0, 0, 0},
 #endif
 
+#ifdef TEST_S_VT
+    /* Secure VT test cases */
+    {&register_testsuite_s_psa_vt_interface, 0, 0, 0},
+#endif
+
+
     /* End of test suites */
     {0, 0, 0, 0}
 };
@@ -123,12 +132,21 @@ static void tear_down_integ_test(void)
      */
 }
 
+volatile int g_test_suite_flag = 0;
+uint32_t test_suite_is_testing(void)
+{
+	return g_test_suite_flag;
+}
+
 enum test_suite_err_t start_integ_test(void)
 {
     enum test_suite_err_t retval;
 
+	g_test_suite_flag = 1;
     setup_integ_test();
     retval = integ_test("Secure", test_suites);
     tear_down_integ_test();
+	g_test_suite_flag = 0;
+
     return retval;
 }

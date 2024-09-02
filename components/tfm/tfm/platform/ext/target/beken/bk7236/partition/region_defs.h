@@ -15,18 +15,19 @@
 #pragma once
 
 #include "flash_layout.h"
+#include "armino_config.h"
 
 #define BL2_HEAP_SIZE           (0x0004000)
 #define BL2_MSP_STACK_SIZE      (0x0004800)
 
-#define S_HEAP_SIZE             (0x0001000)
+#define S_HEAP_SIZE             CONFIG_TFM_HEAP_SIZE
 #define S_MSP_STACK_SIZE_INIT   (0x0000400)
 #define S_MSP_STACK_SIZE        (0x0000800)
 #define S_PSP_STACK_SIZE        (0x0000800)
 
 #define NS_HEAP_SIZE            (0x0001000)
 #define NS_MSP_STACK_SIZE       (0x0000800)
-#define NS_PSP_STACK_SIZE       (0x0000800)
+#define NS_PSP_STACK_SIZE       (0x0004000)
 
 /* This size of buffer is big enough to store an attestation
  * token produced by initial attestation service
@@ -55,7 +56,7 @@
 #define S_DATA_START    (S_RAM_ALIAS(0x0))
 
 #if CONFIG_TFM_S_JUMP_TO_CPU0_APP
-#define S_DATA_SIZE     0x10000
+#define S_DATA_SIZE     CONFIG_TFM_RAM_SIZE
 #else
 #define S_DATA_SIZE     0x40000
 #endif
@@ -93,12 +94,8 @@
 
 #ifdef BL2
 /* Bootloader regions */
-#if CONFIG_SECUREBOOT
-#define BL2_CODE_START    (0x28040000)
-#else
-#define BL2_CODE_START    (0x02000000 + CONFIG_PRIMARY_BL2_VIRTUAL_CODE_START)
-#endif
-#define BL2_CODE_SIZE     CONFIG_PRIMARY_BL2_VIRTUAL_CODE_SIZE
+#define BL2_CODE_START    (0x02000000 + CONFIG_BL2_VIRTUAL_CODE_START)
+#define BL2_CODE_SIZE     CONFIG_BL2_VIRTUAL_CODE_SIZE
 #define BL2_CODE_LIMIT    (BL2_CODE_START + BL2_CODE_SIZE - 1)
 
 #define BL2_DATA_START    (S_RAM_ALIAS(0x0))

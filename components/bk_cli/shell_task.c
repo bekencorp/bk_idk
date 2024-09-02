@@ -12,7 +12,10 @@
 #include <driver/gpio.h>
 #include "bk_wdt.h"
 #if CONFIG_AT
-#include "atsvr_port.h"
+#include "atsvr_unite.h"
+#if CONFIG_AT_DATA_MODE
+#include "at_sal_ex.h"
+#endif
 #endif
 
 #define DEV_UART        1
@@ -88,6 +91,7 @@
 /* 1: RSP, 1: reserved(queue empty), 1: cmd ovf, 1: ind). */
 /* MBOX_FWD_PEND_NUM (1 Rsp + 1 Ind) every slave core. */
 #define SHELL_LOG_BUSY_NUM      (8)
+#define SHELL_ASSERT_BUF_LEN	140
 
 #if (CMD_DEV == DEV_MAILBOX)
 #define SHELL_RX_BUF_LEN		140
@@ -96,8 +100,11 @@
 #define SHELL_RX_BUF_LEN		4
 #endif
 
-#define SHELL_ASSERT_BUF_LEN	140
+#if CONFIG_AT_DATA_MODE
+#define SHELL_CMD_BUF_LEN		4096
+#else
 #define SHELL_CMD_BUF_LEN		200
+#endif
 #define SHELL_RSP_BUF_LEN		140
 #define SHELL_IND_BUF_LEN		132
 
@@ -105,13 +112,6 @@
 #define SHELL_FWD_QUEUE_ID      (8)
 #define SHELL_ROM_QUEUE_ID		(9)
 #define SHELL_IND_QUEUE_ID		(10)
-
-#define MAX_TRACE_ARGS      10
-#define MOD_NAME_LEN        4
-
-#define HEX_SYNC_CHAR       0xFE
-#define HEX_MOD_CHAR        0xFF
-#define HEX_ESC_CHAR        0xFD
 
 #define TBL_SIZE(tbl)		(sizeof(tbl) / sizeof(tbl[0]))
 
@@ -155,20 +155,16 @@ typedef struct
 	u8     bkreg_left_byte;
 	/* patch end. */
 
-	u8     assert_buff[SHELL_ASSERT_BUF_LEN];
-
-	u8     log_level;
 	u8     echo_enable;
-	u8     log_flush;
 
 	/* patch for AT cmd handling. */
 	u8     cmd_ind_buff[SHELL_IND_BUF_LEN];
 	beken_semaphore_t   ind_buf_semaphore;
 } cmd_line_t;
 
-#define GET_BLOCK_ID(blocktag)          ((blocktag) & 0xFF)
-#define GET_QUEUE_ID(blocktag)          (((blocktag) & 0x0F00) >> 8)
-#define MAKE_BLOCK_TAG(blk_id, q_id)    (((blk_id) & 0xFF) | (((q_id) & 0x0F) << 8) )
+#define GET_BLOCK_ID(blocktag)          ((blocktag) & 0x7FF)
+#define GET_QUEUE_ID(blocktag)          (((blocktag) & 0xF800) >> 11)
+#define MAKE_BLOCK_TAG(blk_id, q_id)    (((blk_id) & 0x7FF) | (((q_id) & 0x1F) << 11) )
 
 typedef struct
 {
@@ -293,12 +289,16 @@ static u32 shell_ipc_rx_indication(u16 cmd, log_cmd_t *data, u16 cpu_id);
 static const char	 shell_cmd_ovf_str[] = "\r\n!!some CMDs lost!!\r\n";
 static const u16     shell_cmd_ovf_str_len = sizeof(shell_cmd_ovf_str) - 1;
 static const char  * shell_prompt_str[2] = {"\r\n$", "\r\n#"};
+static u8            prompt_str_idx = 0;
+static u8            cmd_rx_init_ok = 0;
 
-static u8     shell_init_ok = bFALSE;
 static u8     fault_hint_print = 0;
 static u32    shell_log_overflow = 0;
 static u32    shell_log_count = 0;
-static u8     prompt_str_idx = 0;
+static u8     shell_log_level = LOG_LEVEL;
+static u8     log_flush_enabled = 1;
+static u8     shell_assert_buff[SHELL_ASSERT_BUF_LEN];
+static u8     log_tx_init_ok = 0;
 
 static u32    shell_pm_wake_time = SHELL_TASK_WAKE_CYCLE;   // wait cycles before enter sleep.
 static u8     shell_pm_wake_flag = 1;
@@ -347,7 +347,7 @@ static bool_t create_shell_event(void)
 }
 
 /* this API may be called from ISR. */
-bool_t set_shell_event(u32 event_flag)
+static bool_t set_shell_event(u32 event_flag)
 {
 	u32  int_mask;
 
@@ -362,7 +362,7 @@ bool_t set_shell_event(u32 event_flag)
 	return bTRUE;
 }
 
-u32 wait_any_event(u32 timeout)
+static u32 wait_any_event(u32 timeout)
 {
 	u32  int_mask;
 	u32  event_flag;
@@ -519,10 +519,80 @@ static bool_t free_log_blk(u16 block_tag)
 	return bTRUE;
 }
 
+static int merge_log_data(u16 blk_tag, u16 data_len)
+{
+	if(pending_queue.list_out_idx == pending_queue.list_in_idx)  /* queue empty! */
+	{
+		return 0;
+	}
+	
+	u8      queue_id = GET_QUEUE_ID(blk_tag);
+	u16     blk_id = GET_BLOCK_ID(blk_tag);
+	if(queue_id >= TBL_SIZE(free_queue))  /* not log buffer */
+	{
+		return 0;
+	}
+
+	free_queue_t *free_q;
+	free_q = &free_queue[queue_id];
+
+	u8		* src_buf = NULL;
+
+	if(blk_id < free_q->blk_num)
+	{
+		src_buf = &free_q->log_buf[blk_id * free_q->blk_len];
+	}
+	else
+		return 0;
+	
+	u16    pre_in_idx;
+
+	if(pending_queue.list_in_idx > 0)
+		pre_in_idx = pending_queue.list_in_idx - 1;
+	else
+		pre_in_idx = SHELL_LOG_PEND_NUM - 1;
+
+	queue_id = GET_QUEUE_ID(pending_queue.packet_list[pre_in_idx].blk_tag);
+	blk_id = GET_BLOCK_ID(pending_queue.packet_list[pre_in_idx].blk_tag);
+	if(queue_id >= TBL_SIZE(free_queue))  /* not log buffer */
+	{
+		return 0;
+	}
+
+	u8		* dst_buf = NULL;
+	u16       buf_len = 0;
+
+	free_q = &free_queue[queue_id];
+
+	if(blk_id < free_q->blk_num)
+	{
+		dst_buf = &free_q->log_buf[blk_id * free_q->blk_len];
+		buf_len = free_q->blk_len;
+	}
+	else
+		return 0;
+
+	u16       cur_len = pending_queue.packet_list[pre_in_idx].packet_len;
+
+	if((cur_len + data_len) > buf_len)  /* can be merged into one buffer? */
+		return 0;
+
+	memcpy(dst_buf + cur_len, src_buf, data_len);
+
+	pending_queue.packet_list[pre_in_idx].packet_len += data_len;
+
+	free_log_blk(blk_tag);  /* merged, free the log buffer. */
+
+	return 1;
+}
+
 /* call this in interrupt !* DISABLED *! context. */
 static void push_pending_queue(u16 blk_tag, u16 data_len)
 {
 	//get_shell_mutex();
+
+	if(merge_log_data(blk_tag, data_len))  /* has been merged? if so, doesn't enqueue the log. */
+		return;
 
 	pending_queue.packet_list[pending_queue.list_in_idx].blk_tag = blk_tag;
 	pending_queue.packet_list[pending_queue.list_in_idx].packet_len = data_len;
@@ -754,38 +824,6 @@ static void shell_rx_indicate(void)
 	return;
 }
 
-static u16 append_link_data_byte(u8 * link_buf, u16 buf_len, u8 * data_ptr, u16 data_len)
-{
-	u16   cnt = 0, i;
-
-	for(i = 0; i < data_len; i++)
-	{
-		if( (*data_ptr == HEX_SYNC_CHAR) ||
-			(*data_ptr == HEX_ESC_CHAR) )
-		{
-			if(cnt < (buf_len - 1))
-			{
-				link_buf[cnt] = HEX_ESC_CHAR;
-				cnt++;
-				link_buf[cnt] = (*data_ptr) ^ HEX_MOD_CHAR;
-				cnt++;
-			}
-		}
-		else
-		{
-			if(cnt < buf_len)
-			{
-				link_buf[cnt] = (*data_ptr);
-				cnt++;
-			}
-		}
-
-		data_ptr++;
-	}
-
-	return cnt;
-}
-
 static bool_t echo_out(u8 * echo_str, u16 len)
 {
 	u16	 wr_cnt;
@@ -800,6 +838,9 @@ static bool_t echo_out(u8 * echo_str, u16 len)
 
 static void cmd_info_out(u8 * msg_buf, u16 msg_len, u16 blk_tag)
 {
+	if(msg_len == 0)
+		return;
+	
 	u32  int_mask = shell_task_enter_critical();
 
 	if(log_dev != cmd_dev)
@@ -1038,15 +1079,14 @@ static void tx_req_process(void)
 	return;
 }
 
-int shell_trace_out( u32 trace_id, ... );
-int shell_spy_out( u16 spy_id, u8 * data_buf, u16 data_len);
-
 static void rx_ind_process(void)
 {
 	u16   read_cnt, buf_len, echo_len;
 	u16   i = 0;
 	u8    cmd_rx_done = bFALSE, need_backspace = bFALSE;
-
+#if CONFIG_AT_DATA_MODE
+	int   at_data_len = 0;
+#endif
 	if(cmd_dev->dev_type == SHELL_DEV_MAILBOX)
 	{
 		buf_len = SHELL_RX_BUF_LEN;
@@ -1055,6 +1095,13 @@ static void rx_ind_process(void)
 	{
 		buf_len = 1;  /* for UART device, read one by one. */
 	}
+
+#if CONFIG_AT_DATA_MODE
+	if(ATSVR_WK_DATA_HANDLE== get_atsvr_work_state())
+	{
+		at_data_len = get_data_len();
+	}
+#endif
 
 	while(bTRUE)
 	{
@@ -1133,14 +1180,33 @@ static void rx_ind_process(void)
 				}
 				else if((rx_temp_buff[i] == '\n') || (rx_temp_buff[i] == '\r'))
 				{
-					if(cmd_line_buf.cmd_data_len < sizeof(cmd_line_buf.cmd_buff))
-					{
-						cmd_line_buf.cmd_buff[cmd_line_buf.cmd_data_len] = 0;
-					}
-					else
-					{
-						cmd_line_buf.cmd_buff[cmd_line_buf.cmd_data_len - 1] = 0;  // in case cmd_data_len overflow.
-					}
+					#if CONFIG_AT_DATA_MODE
+						if(ATSVR_WK_DATA_HANDLE== get_atsvr_work_state())
+						{
+							if(cmd_line_buf.cmd_data_len < at_data_len)
+							{
+								cmd_line_buf.cmd_buff[cmd_line_buf.cmd_data_len] = rx_temp_buff[i];
+								cmd_line_buf.cmd_data_len++;
+								continue;
+							}	
+							//else
+							//	cmd_line_buf.cmd_buff[cmd_line_buf.cmd_data_len] = 0;  // in case cmd_data_len overflow.
+
+							cmd_rx_done = bTRUE;
+							break;
+						}
+
+					#endif
+						if(cmd_line_buf.cmd_data_len < sizeof(cmd_line_buf.cmd_buff))
+						{
+
+							cmd_line_buf.cmd_buff[cmd_line_buf.cmd_data_len] = 0;
+
+						}
+						else
+						{
+							cmd_line_buf.cmd_buff[cmd_line_buf.cmd_data_len - 1] = 0;  // in case cmd_data_len overflow.
+						}
 
 					cmd_rx_done = bTRUE;
 					break;
@@ -1307,6 +1373,8 @@ static void rx_ind_process(void)
 			buf_len += sprintf((char *)&cmd_line_buf.rsp_buff[buf_len], shell_prompt_str[prompt_str_idx]);
 
 			cmd_rsp_out(cmd_line_buf.rsp_buff, buf_len);
+
+			rtos_delay_milliseconds(4); // delay 4 ms, so idle task has time to release resources of delete-pendign task.
 		}
 
 		/* patch for BK_REG tool. */
@@ -1334,31 +1402,58 @@ extern gpio_id_t bk_uart_get_rx_gpio(uart_id_t id);
 
 static void shell_rx_wakeup(int gpio_id);
 
+static void shell_enter_deep_sleep(uint64_t sleep_time, void *args)
+{
+	uart_wait_tx_over();
+
+	if(log_tx_init_ok)
+	{
+		log_dev->dev_drv->io_ctrl(log_dev, SHELL_IO_CTRL_TX_SUSPEND, (void *)(u32)log_flush_enabled);
+	}
+
+	if(cmd_rx_init_ok)
+	{
+		cmd_dev->dev_drv->io_ctrl(cmd_dev, SHELL_IO_CTRL_RX_SUSPEND, NULL);
+	}
+}
+
 static void shell_power_save_enter(void)
 {
-	u32		flush_log = cmd_line_buf.log_flush;
-
-	log_dev->dev_drv->io_ctrl(log_dev, SHELL_IO_CTRL_TX_SUSPEND, (void *)flush_log);
-	cmd_dev->dev_drv->io_ctrl(cmd_dev, SHELL_IO_CTRL_RX_SUSPEND, NULL);
-
-	if(cmd_dev->dev_type == SHELL_DEV_UART)
+	if(log_tx_init_ok)
 	{
-		u8   uart_port = UART_ID_MAX;
+		log_dev->dev_drv->io_ctrl(log_dev, SHELL_IO_CTRL_TX_SUSPEND, (void *)(u32)log_flush_enabled);
+	}
 
-		cmd_dev->dev_drv->io_ctrl(cmd_dev, SHELL_IO_CTRL_GET_UART_PORT, &uart_port);
+	if(cmd_rx_init_ok)
+	{
+		cmd_dev->dev_drv->io_ctrl(cmd_dev, SHELL_IO_CTRL_RX_SUSPEND, NULL);
 
-		bk_uart_pm_backup(uart_port);
+		if(cmd_dev->dev_type == SHELL_DEV_UART)
+		{
+			u8   uart_port = UART_ID_MAX;
 
-		u32  gpio_id = bk_uart_get_rx_gpio(uart_port);
+			cmd_dev->dev_drv->io_ctrl(cmd_dev, SHELL_IO_CTRL_GET_UART_PORT, &uart_port);
 
-		bk_gpio_register_isr(gpio_id, (gpio_isr_t)shell_rx_wakeup);
+			bk_uart_pm_backup(uart_port);
+
+			u32  gpio_id = bk_uart_get_rx_gpio(uart_port);
+
+			bk_gpio_register_isr(gpio_id, (gpio_isr_t)shell_rx_wakeup);
+		}
 	}
 }
 
 static void shell_power_save_exit(void)
 {
-	log_dev->dev_drv->io_ctrl(log_dev, SHELL_IO_CTRL_TX_RESUME, NULL);
-	cmd_dev->dev_drv->io_ctrl(cmd_dev, SHELL_IO_CTRL_RX_RESUME, NULL);
+	if(log_tx_init_ok)
+	{
+		log_dev->dev_drv->io_ctrl(log_dev, SHELL_IO_CTRL_TX_RESUME, NULL);
+	}
+
+	if(cmd_rx_init_ok)
+	{
+		cmd_dev->dev_drv->io_ctrl(cmd_dev, SHELL_IO_CTRL_RX_RESUME, NULL);
+	}
 }
 
 static void wakeup_process(void)
@@ -1381,27 +1476,12 @@ static void shell_rx_wakeup(int gpio_id)
 	}
 }
 
-static uint32_t uart_id_to_pm_uart_id(uint32_t uart_id)
-{
-	switch (uart_id)
-	{
-		case UART_ID_0:
-			return PM_DEV_ID_UART1;
-
-		case UART_ID_1:
-			return PM_DEV_ID_UART2;
-
-		case UART_ID_2:
-			return PM_DEV_ID_UART3;
-
-		default:
-			return PM_DEV_ID_UART1;
-	}
-}
-
-static void shell_task_init(void)
+static void shell_log_tx_init(void)
 {
 	u16		i;
+
+	if(log_tx_init_ok != 0)
+		return;
 
 	for(i = 0; i < SHELL_LOG_BUF1_NUM; i++)
 	{
@@ -1421,39 +1501,15 @@ static void shell_task_init(void)
 
 	log_busy_queue.free_cnt = SHELL_LOG_BUSY_NUM;
 
-	cmd_line_buf.cur_cmd_type = CMD_TYPE_INVALID;
-	cmd_line_buf.cmd_data_len = 0;
-	cmd_line_buf.bkreg_state = BKREG_WAIT_01;
-	cmd_line_buf.log_level = LOG_LEVEL;
-	cmd_line_buf.echo_enable = bTRUE;
-	cmd_line_buf.log_flush = 1;
-	cmd_line_buf.cmd_ovf_hint = 0;
-
-	rtos_init_semaphore_ex(&cmd_line_buf.rsp_buf_semaphore, 1, 1);  // one buffer for cmd_rsp.
-	rtos_init_semaphore_ex(&cmd_line_buf.ind_buf_semaphore, 1, 1);  // one buffer for cmd_ind.
-
-	create_shell_event();
-
-	if(log_dev != cmd_dev)
-	{
-		cmd_dev->dev_drv->init(cmd_dev);
-		cmd_dev->dev_drv->open(cmd_dev, shell_cmd_tx_complete, shell_rx_indicate); // rx cmd, tx rsp.
-
-		log_dev->dev_drv->init(log_dev);
-		log_dev->dev_drv->open(log_dev, shell_log_tx_complete, NULL);  // tx log.
-	}
-	else
-	{
-		cmd_dev->dev_drv->init(cmd_dev);
-		cmd_dev->dev_drv->open(cmd_dev, shell_tx_complete, shell_rx_indicate); // rx cmd, tx (rsp & log).
-	}
+	log_dev->dev_drv->init(log_dev);
+	log_dev->dev_drv->open(log_dev, shell_log_tx_complete, NULL);  // tx log.
 
 	#if defined(FWD_CMD_TO_MBOX) || defined(RECV_CMD_LOG_FROM_MBOX)
 	ipc_dev->dev_drv->init(ipc_dev);
 	ipc_dev->dev_drv->open(ipc_dev, (shell_ipc_rx_t)shell_ipc_rx_indication);   /* register rx-callback to copy log data to buffer. */
 	#endif
 
-	shell_init_ok = bTRUE;
+	log_tx_init_ok = 1;
 
 	{
 		pm_cb_conf_t enter_config;
@@ -1475,12 +1531,82 @@ static void shell_task_init(void)
 		#endif
 
 		u8 uart_port = UART_ID_MAX;
+		log_dev->dev_drv->io_ctrl(log_dev, SHELL_IO_CTRL_GET_UART_PORT, &uart_port);
+
+		u8 pm_uart_port = uart_id_to_pm_uart_id(uart_port);
+		bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, pm_uart_port, &enter_config, &exit_config);
+	}
+
+}
+
+static void shell_task_init(void)
+{
+	if(log_tx_init_ok == 0)
+	{
+		shell_log_tx_init();
+	}
+
+	/*  ================================    cmd channel initialize   ====================================  */
+	cmd_line_buf.cur_cmd_type = CMD_TYPE_INVALID;
+	cmd_line_buf.cmd_data_len = 0;
+	cmd_line_buf.bkreg_state = BKREG_WAIT_01;
+	cmd_line_buf.echo_enable = bTRUE;
+	cmd_line_buf.cmd_ovf_hint = 0;
+
+	rtos_init_semaphore_ex(&cmd_line_buf.rsp_buf_semaphore, 1, 1);  // one buffer for cmd_rsp.
+	rtos_init_semaphore_ex(&cmd_line_buf.ind_buf_semaphore, 1, 1);  // one buffer for cmd_ind.
+
+	create_shell_event();
+
+	if(log_dev != cmd_dev)
+	{
+		cmd_dev->dev_drv->init(cmd_dev);
+		cmd_dev->dev_drv->open(cmd_dev, shell_cmd_tx_complete, shell_rx_indicate); // rx cmd, tx rsp.
+
+		// log_dev->dev_drv->init(log_dev);
+		// log_dev->dev_drv->open(log_dev, shell_log_tx_complete, NULL);  // tx log.
+	}
+	else
+	{
+		u32 int_mask = shell_task_enter_critical();
+		cmd_dev->dev_drv->io_ctrl(cmd_dev, SHELL_IO_CTRL_SET_RX_ISR, shell_rx_indicate); // rx cmd, tx (rsp & log).
+		cmd_dev->dev_drv->io_ctrl(cmd_dev, SHELL_IO_CTRL_SET_TX_CMPL_ISR, shell_tx_complete); // rx cmd, tx (rsp & log).
+		shell_task_exit_critical(int_mask);
+	}
+
+	cmd_rx_init_ok = 1;
+	
+	{
+		pm_cb_conf_t enter_config;
+		enter_config.cb = (pm_cb)shell_power_save_enter;
+		enter_config.args = NULL;
+
+		pm_cb_conf_t exit_config;
+		exit_config.cb = (pm_cb)shell_power_save_exit;
+		exit_config.args = NULL;
+
+		#if 0
+		bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, PM_DEV_ID_UART1, &enter_config, &exit_config);
+
+		u8   uart_port = UART_ID_MAX;
+
+		cmd_dev->dev_drv->io_ctrl(cmd_dev, SHELL_IO_CTRL_GET_UART_PORT, &uart_port);
+
+		shell_rx_wakeup(bk_uart_get_rx_gpio(uart_port));
+		#endif
+
+		uart_id_t uart_port = UART_ID_MAX;
 		cmd_dev->dev_drv->io_ctrl(cmd_dev, SHELL_IO_CTRL_GET_UART_PORT, &uart_port);
 
 		u8 pm_uart_port = uart_id_to_pm_uart_id(uart_port);
 		bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, pm_uart_port, &enter_config, &exit_config);
 
 		shell_rx_wakeup(bk_uart_get_rx_gpio(uart_port));
+
+		enter_config.cb = (pm_cb)shell_enter_deep_sleep;
+		exit_config.args = (void *)PM_CB_PRIORITY_1;
+
+		bk_pm_sleep_register_cb(PM_MODE_DEEP_SLEEP, pm_uart_port, &enter_config, &exit_config);
 	}
 
 	if(ate_is_enabled())
@@ -1592,12 +1718,13 @@ int shell_level_check_valid(int level)
 	if( !shell_cpu_check_valid() )
 		return 0;
 
-	if(level > cmd_line_buf.log_level)
+	if(level > shell_log_level)
 		return 0;
 
 	return 1;
 }
 
+#if 0
 int shell_log_out_sync(int level, char *prefix, const char *format, va_list ap)
 {
 	u32         int_mask;
@@ -1607,8 +1734,8 @@ int shell_log_out_sync(int level, char *prefix, const char *format, va_list ap)
 	if( !shell_level_check_valid(level) )
 		return 0;
 
-	pbuf = (char *)&cmd_line_buf.assert_buff[0];
-	buf_len = sizeof(cmd_line_buf.assert_buff);
+	pbuf = (char *)&shell_assert_buff[0];
+	buf_len = sizeof(shell_assert_buff);
 
 	int_mask = shell_task_enter_critical();
 
@@ -1644,15 +1771,16 @@ int shell_log_out_sync(int level, char *prefix, const char *format, va_list ap)
 
 	return 1;
 }
+#endif
 
 int shell_log_raw_data(const u8 *data, u16 data_len)
 {
 	u8   *packet_buf;
 	u16   free_blk_tag;
 
-	if (!shell_init_ok)
+	if( !log_tx_init_ok )
 	{
-		return 0; // bFALSE;
+		shell_log_tx_init();
 	}
 
 	if( !shell_cpu_check_valid() )
@@ -1686,19 +1814,16 @@ int shell_log_raw_data(const u8 *data, u16 data_len)
 	return 1; // bTRUE;
 }
 
+static void log_out_ex(const char *format, va_list ap,int data_len_tmp);
 void shell_log_out_port(int level, char *prefix, const char *format, va_list ap)
 {
 	u8   * packet_buf;
 	u16    free_blk_tag;
 	u16    log_len = 0, buf_len;
 
-	if( !shell_init_ok )
+	if( !log_tx_init_ok )
 	{
-		cmd_line_buf.log_level = LOG_LEVEL;	// if not intialized, set log_level temporarily here. !!!patch!!!
-
-		shell_log_out_sync(level, prefix, format, ap);
-
-		return ;
+		shell_log_tx_init();
 	}
 
 	if( !shell_level_check_valid(level) )
@@ -1711,11 +1836,18 @@ void shell_log_out_port(int level, char *prefix, const char *format, va_list ap)
 	if(prefix != NULL)
 		buf_len += strlen(prefix);
 
+	if(buf_len == 0)
+		return;
+
 	packet_buf = alloc_log_blk(buf_len, &free_blk_tag);
 
 	if(packet_buf == NULL)
 	{
+		#if !CONFIG_EX_DYNAMIC_LOG_BUFF
 		log_hint_out();
+		#else
+		log_out_ex(format, ap,buf_len);
+		#endif
 		return ;
 	}
 
@@ -1765,8 +1897,8 @@ int shell_assert_out(bool bContinue, char * format, ...)
 	if( !shell_cpu_check_valid() )
 		return 0;
 
-	pbuf = (char *)&cmd_line_buf.assert_buff[0];
-	buf_len = sizeof(cmd_line_buf.assert_buff);
+	pbuf = (char *)&shell_assert_buff[0];
+	buf_len = sizeof(shell_assert_buff);
 
 	/* just disabled interrupts even when dump out in SMP. */
 	/* because other core's dump has been blocked by shell_cpu_check_valid(). */
@@ -1898,17 +2030,23 @@ static u32 shell_ipc_rx_indication(u16 cmd, log_cmd_t *log_cmd, u16 cpu_id)
 
 		if(queue_id == SHELL_RSP_QUEUE_ID)
 		{
-			memcpy(&ipc_fwd_data.rsp_buf, log_cmd, sizeof(ipc_fwd_data.rsp_buf));
-			cmd_rsp_fwd(data, data_len);
+			if(cmd_rx_init_ok)
+			{
+				memcpy(&ipc_fwd_data.rsp_buf, log_cmd, sizeof(ipc_fwd_data.rsp_buf));
+				cmd_rsp_fwd(data, data_len);
 
-			result = ACK_STATE_PENDING;
+				result = ACK_STATE_PENDING;
+			}
 		}
 		else if(queue_id == SHELL_IND_QUEUE_ID)
 		{
-			memcpy(&ipc_fwd_data.ind_buf, log_cmd, sizeof(ipc_fwd_data.ind_buf));
-			cmd_ind_fwd(data, data_len);
+			if(cmd_rx_init_ok)
+			{
+				memcpy(&ipc_fwd_data.ind_buf, log_cmd, sizeof(ipc_fwd_data.ind_buf));
+				cmd_ind_fwd(data, data_len);
 
-			result = ACK_STATE_PENDING;
+				result = ACK_STATE_PENDING;
+			}
 		}
 		else  // no cmd_hint from slave, so must be log from slave.
 		{
@@ -1978,22 +2116,22 @@ int shell_echo_get(void)
 
 void shell_set_log_level(int level)
 {
-	cmd_line_buf.log_level = level;
+	shell_log_level = level;
 }
 
 int shell_get_log_level(void)
 {
-	return cmd_line_buf.log_level;
+	return shell_log_level;
 }
 
 void shell_set_log_flush(int flush_flag)
 {
-	cmd_line_buf.log_flush = flush_flag;
+	log_flush_enabled = flush_flag;
 }
 
 int shell_get_log_flush(void)
 {
-	return cmd_line_buf.log_flush;
+	return log_flush_enabled;
 }
 
 int shell_get_log_statist(u32 * info_list, u32 num)
@@ -2085,6 +2223,9 @@ void shell_cmd_ind_out(const char *format, ...)
 	u16   data_len, buf_len = SHELL_IND_BUF_LEN;
 	va_list  arg_list;
 
+	if(!cmd_rx_init_ok)
+		return;
+
 	rtos_get_semaphore(&cmd_line_buf.ind_buf_semaphore, SHELL_WAIT_OUT_TIME);
 
 	va_start(arg_list, format);
@@ -2112,4 +2253,81 @@ void shell_set_log_cpu(u8 req_cpu)
 	}
 #endif
 }
+
+#if CONFIG_EX_DYNAMIC_LOG_BUFF
+static void log_out_ex(const char *format, va_list ap,int data_len_tmp)
+{
+	int   data_len, buf_len = SHELL_IND_BUF_LEN;
+	
+	if (( !cmd_rx_init_ok ) || (rtos_is_in_interrupt_context()))
+	{
+		log_hint_out();
+		return;
+	}
+
+	rtos_get_semaphore(&cmd_line_buf.ind_buf_semaphore, SHELL_WAIT_OUT_TIME);
+	
+	if(data_len_tmp < buf_len)
+	{
+		data_len = vsnprintf((char *)&cmd_line_buf.cmd_ind_buff[0], buf_len, format, ap);
+		
+		if ( (data_len != 0) && (cmd_line_buf.cmd_ind_buff[data_len - 1] == '\n') )
+		{
+			if (data_len == 1 || cmd_line_buf.cmd_ind_buff[data_len - 2] != '\r')
+			{
+				cmd_line_buf.cmd_ind_buff[data_len] = '\n';
+				cmd_line_buf.cmd_ind_buff[data_len - 1] = '\r';
+				data_len++;
+			}
+		}
+		
+		cmd_ind_out(cmd_line_buf.cmd_ind_buff, data_len);
+	}
+	else
+	{
+		char *   ptr = (char*)os_malloc(data_len_tmp);
+		int      n = 0;
+
+		if (NULL == ptr)
+		{
+			log_hint_out();
+			return;
+		}
+		
+		data_len = vsnprintf(ptr, data_len_tmp, format, ap);
+		
+		if ( (data_len != 0) && (ptr[data_len - 1] == '\n') )
+		{
+			if (data_len == 1 || ptr[data_len - 2] != '\r')
+			{
+				ptr[data_len] = '\n';
+				ptr[data_len - 1] = '\r';
+				data_len++;
+			}
+		}
+
+		int  cpy_len;
+
+		while(data_len > 0)
+		{
+			if(data_len > buf_len)
+				cpy_len = buf_len;
+			else
+				cpy_len = data_len;
+			
+			cmd_ind_out((u8 *)(ptr + n*buf_len), cpy_len);
+			
+			data_len -= cpy_len;
+			n++;
+			
+			rtos_get_semaphore(&cmd_line_buf.ind_buf_semaphore, SHELL_WAIT_OUT_TIME);
+		}
+		
+		rtos_set_semaphore(&cmd_line_buf.ind_buf_semaphore);
+		
+		os_free(ptr);
+		
+    }
+}
+#endif /* CONFIG_EX_DYNAMIC_LOG_BUFF */
 

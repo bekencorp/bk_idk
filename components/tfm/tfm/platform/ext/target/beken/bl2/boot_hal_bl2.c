@@ -12,11 +12,14 @@
 #include "Driver_Flash.h"
 #include "flash_layout.h"
 #include "soc/soc.h"
+#include "flash_partition.h"
 #ifdef CRYPTO_HW_ACCELERATOR
 #include "crypto_hw.h"
 #include "bootutil/fault_injection_hardening.h"
 #endif /* CRYPTO_HW_ACCELERATOR */
+#include "driver/efuse.h"
 
+#define EFUSE_SECURBOOT_ADDR     0
 #define TAG "bl2_boot"
 
 void bl2_secure_debug(void);
@@ -46,6 +49,8 @@ REGION_DECLARE(Image$$, ARM_LIB_STACK, $$ZI$$Base);
 #pragma required = ER_DATA$$Base
 #pragma required = ARM_LIB_HEAP$$Limit
 #endif
+
+uint32_t flash_max_size;
 
 void boot_clear_ram_area(void)
 {
@@ -126,14 +131,27 @@ void boot_platform_enable_fault_interrupt(void)
 	SCB->SHCSR |= SCB_SHCSR_SECUREFAULTENA_Msk;
 }
 
-//TODO use armino wdt api
+void update_wdt(uint32_t val)
+{
+        REG_WRITE(SOC_WDT_REG_BASE + 4 * 2, 0x3); 
+        REG_WRITE(SOC_WDT_REG_BASE + 4 * 4, 0x5A0000 | val);
+        REG_WRITE(SOC_WDT_REG_BASE + 4 * 4, 0xA50000 | val);
+}
+
 void close_wdt(void)
 {
-        REG_WRITE(SOC_AON_WDT_REG_BASE, 0x5A0000);
-        REG_WRITE(SOC_AON_WDT_REG_BASE, 0xA50000);
-        REG_SET(SOC_WDT_REG_BASE + 4 * 2, 1, 1, 1); 
-        REG_WRITE(SOC_WDT_REG_BASE + 4 * 4, 0x5A0000);
-        REG_WRITE(SOC_WDT_REG_BASE + 4 * 4, 0xA50000);
+	update_wdt(0);
+}
+
+void update_aon_wdt(uint32_t val)
+{
+        REG_WRITE(SOC_AON_WDT_REG_BASE, 0x5A0000 | val);
+        REG_WRITE(SOC_AON_WDT_REG_BASE, 0xA50000 | val);
+}
+
+void close_aon_wdt(void)
+{
+	update_aon_wdt(0);
 }
 
 /* bootloader platform-specific hw initialization */
@@ -143,20 +161,15 @@ int32_t boot_platform_init(void)
 
     close_wdt();
 
+#if CONFIG_BL2_WDT
+    update_aon_wdt(0xFFFF);
+#endif
+
 #if CONFIG_BL2_SECURE_DEBUG
     bl2_secure_debug();
 #endif
 
     boot_platform_enable_fault_interrupt();
-#if defined(__ARM_ARCH_8M_MAIN__) || defined(__ARM_ARCH_8M_BASE__) \
- || defined(__ARM_ARCH_8_1M_MAIN__)
-    /* Initialize stack limit register */
-    uint32_t msp_stack_bottom =
-            (uint32_t)&REGION_NAME(Image$$, ARM_LIB_STACK, $$ZI$$Base);
-
-    __set_MSPLIM(msp_stack_bottom);
-#endif /* defined(__ARM_ARCH_8M_MAIN__) || defined(__ARM_ARCH_8M_BASE__) \
-       || defined(__ARM_ARCH_8_1M_MAIN__) */
 
 #ifdef FLASH_DEV_NAME
     result = FLASH_DEV_NAME.Initialize(NULL);
@@ -183,7 +196,8 @@ int32_t boot_platform_init(void)
     }
 #endif /* FLASH_DEV_NAME_SCRATCH */
 
-    load_partition_from_flash();
+    flash_max_size = bk_flash_get_current_total_size();
+
     return 0;
 }
 

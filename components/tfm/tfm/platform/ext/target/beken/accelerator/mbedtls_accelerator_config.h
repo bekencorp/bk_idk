@@ -5,11 +5,11 @@
 #define MBEDTLS_PLATFORM_NO_STD_FUNCTIONS
 #define MBEDTLS_PLATFORM_SNPRINTF_ALT
 #define MBEDTLS_AES_ALT
-#define MBEDTLS_SM4_ALT
+//#define MBEDTLS_SM4_ALT
 #define MBEDTLS_CCM_ALT
 #define MBEDTLS_CMAC_ALT
 #define MBEDTLS_GCM_ALT
-#define MBEDTLS_SHA1_ALT
+//#define MBEDTLS_SHA1_ALT
 #define MBEDTLS_SHA256_ALT
 #define MBEDTLS_ENTROPY_HARDWARE_ALT
 #define MBEDTLS_AES_ROM_TABLES
@@ -33,10 +33,10 @@
  */
 //#define MBEDTLS_SHA1_C
 
-#define MBEDTLS_DHM_C
-#define MBEDTLS_PKCS5_C
-#define MBEDTLS_PKCS12_C
-#define MBEDTLS_SELF_TEST
+//#define MBEDTLS_DHM_C
+//#define MBEDTLS_PKCS5_C
+//#define MBEDTLS_PKCS12_C
+//#define MBEDTLS_SELF_TEST
 
 #if defined(MBEDTLS_AES_ALT)
 #define MBEDTLS_AES_SETKEY_DEC_ALT
@@ -57,14 +57,15 @@
 
 #define MBEDTLS_SSL_MAX_CONTENT_LEN             4096 /**< Maxium fragment length in bytes, determines the size of each of the two internal I/O buffers */
 
-/*add config for Dubhe*/
-#define MBEDTLS_SM2DSA_C
-#define MBEDTLS_SM2KEP_C
-#define MBEDTLS_SM2PKE_C
-#define MBEDTLS_SM2DSA_DETERMINISTIC
-#define MBEDTLS_ECP_DP_SM2P256V1_ENABLED
-#define MBEDTLS_SM3_C
-#define MBEDTLS_SM4_C
+/*add config for Dubhe
+	#define MBEDTLS_SM2DSA_C
+	#define MBEDTLS_SM2KEP_C
+	#define MBEDTLS_SM2PKE_C
+	#define MBEDTLS_SM2DSA_DETERMINISTIC
+	#define MBEDTLS_ECP_DP_SM2P256V1_ENABLED
+	#define MBEDTLS_SM3_C
+	#define MBEDTLS_SM4_C
+*/
 
 #define TEE_M 1
 #define ARM_CE_DUBHE 1

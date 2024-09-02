@@ -134,34 +134,51 @@ __STATIC_FORCEINLINE __NO_RETURN void __cmsis_start(void)
 {
   extern void _start(void) __NO_RETURN;
 
+#ifdef __STARTUP_COPY_MULTIPLE
   typedef struct {
     uint32_t const* src;
     uint32_t* dest;
     uint32_t  wlen;
   } __copy_table_t;
-
-  typedef struct {
-    uint32_t* dest;
-    uint32_t  wlen;
-  } __zero_table_t;
-
   extern const __copy_table_t __copy_table_start__;
   extern const __copy_table_t __copy_table_end__;
-  extern const __zero_table_t __zero_table_start__;
-  extern const __zero_table_t __zero_table_end__;
-
   for (__copy_table_t const* pTable = &__copy_table_start__; pTable < &__copy_table_end__; ++pTable) {
     for(uint32_t i=0u; i<(pTable->wlen/sizeof(pTable->dest)); ++i) {
       pTable->dest[i] = pTable->src[i];
     }
   }
-
+#else
+  extern uint32_t __etext;
+  extern uint32_t __data_start__;
+  extern uint32_t __data_end__;
+  uint32_t *etext = (uint32_t *)&__etext;
+  uint32_t *data_start = (uint32_t *)&__data_start__;
+  uint32_t *data_end = (uint32_t *)&__data_end__;
+  while (data_start < data_end) {
+    *data_start++ = *etext++;
+  }
+#endif /*__STARTUP_COPY_MULTIPLE */
+#ifdef __STARTUP_CLEAR_BSS_MULTIPLE
+  typedef struct {
+    uint32_t* dest;
+    uint32_t  wlen;
+  } __zero_table_t;
+  extern const __zero_table_t __zero_table_start__;
+  extern const __zero_table_t __zero_table_end__;
   for (__zero_table_t const* pTable = &__zero_table_start__; pTable < &__zero_table_end__; ++pTable) {
     for(uint32_t i=0u; i<(pTable->wlen/sizeof(pTable->dest)); ++i) {
       pTable->dest[i] = 0u;
     }
   }
-
+#elif defined (__STARTUP_CLEAR_BSS)
+  extern uint32_t __bss_start__;
+  extern uint32_t __bss_end__;
+	uint32_t *bss_start = (uint32_t*)&__bss_start__;
+  uint32_t *bss_end = (uint32_t*)&__bss_end__;
+	while(bss_start < bss_end) {
+		*bss_start++ = 0;
+	}
+#endif /* __STARTUP_CLEAR_BSS_MULTIPLE || __STARTUP_CLEAR_BSS */
   _start();
 }
 
@@ -183,6 +200,11 @@ __STATIC_FORCEINLINE __NO_RETURN void __cmsis_start(void)
 #ifndef __VECTOR_TABLE_ATTRIBUTE
 #define __VECTOR_TABLE_ATTRIBUTE  __attribute__((used, section(".vectors")))
 #endif
+
+#ifndef __VECTOR_IRAM_ATTRIBUTE
+#define __VECTOR_IRAM_ATTRIBUTE   __attribute__((used, section(".vectors_iram")))
+#endif
+
 
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
 #ifndef __STACK_SEAL

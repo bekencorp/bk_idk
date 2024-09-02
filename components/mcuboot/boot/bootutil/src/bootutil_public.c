@@ -42,6 +42,7 @@
 
 #include "sysflash/sysflash.h"
 #include "flash_map_backend/flash_map_backend.h"
+#include "flash_partition.h"
 
 #include "bootutil/image.h"
 #include "bootutil/bootutil_public.h"
@@ -179,6 +180,27 @@ boot_swap_info_off(const struct flash_area *fap)
     return boot_copy_done_off(fap) - BOOT_MAX_ALIGN;
 }
 
+#if CONFIG_DIRECT_XIP
+static  uint32_t
+boot_xip_magic_off(const struct flash_area *fap)
+{
+    uint32_t phy_offset = CEIL_ALIGN_34(partition_get_phy_offset(fap->fa_id) + 
+                                        partition_get_phy_size(fap->fa_id) - 4096);
+    uint32_t vir_offset = FLASH_PHY2VIRTUAL(phy_offset) -  FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(partition_get_phy_offset(fap->fa_id)));
+    return phy_offset;
+}
+
+boot_xip_copy_done_off(const struct flash_area *fap)
+{
+    return boot_xip_magic_off(fap) + 32;
+}
+
+boot_xip_image_ok_off(const struct flash_area *fap)
+{
+    return boot_xip_magic_off(fap) + 64;
+}
+#endif
+
 /**
  * Determines if a status source table is satisfied by the specified magic
  * code.
@@ -262,6 +284,64 @@ boot_read_copy_done(const struct flash_area *fap, uint8_t *copy_done)
     return boot_read_flag(fap, copy_done, boot_copy_done_off(fap));
 }
 
+#if CONFIG_DIRECT_XIP
+int
+boot_read_xip_status(const struct flash_area *fap, uint32_t type)
+{
+    uint32_t off;
+    switch (type)
+    {
+    case XIP_MAGIC_TYPE:
+        off = boot_xip_magic_off(fap);
+        break;
+    case XIP_COPY_DONE_TYPE:
+        off = boot_xip_copy_done_off(fap);
+        break;
+    case XIP_IMAGE_OK_TYPE:
+        off = boot_xip_image_ok_off(fap);
+        break;
+    default:
+        break;
+    }
+    uint32_t status;
+    bk_flash_read_bytes(off,&status, 4);
+    /*bug,if no read,image validate fa_offset 0x185A38,len 0x20 will fail*/
+    uint8_t temp;
+    extern void bk_flash_read_cbus(uint32_t address, void *user_buf, uint32_t size);
+    bk_flash_read_cbus(0,&temp,1);
+    return status;
+}
+
+void
+boot_write_xip_status(const struct flash_area *fap, uint32_t type, uint32_t status)
+{
+    uint32_t off;
+    switch (type)
+    {
+    case 1:
+        off = boot_xip_magic_off(fap);
+        break;
+    case 2:
+        off = boot_xip_copy_done_off(fap);
+        break;
+    case 3:
+        off = boot_xip_image_ok_off(fap);
+        break;
+    default:
+        break;
+    }
+
+    flash_write_bytes_dbus(off, &status, 4);
+}
+
+void
+boot_erase_xip_status_all(const struct flash_area *fap)
+{
+    uint32_t phy_off = boot_xip_magic_off(fap);
+    phy_off &= ~(0x1000-1);
+    flash_area_erase(fap,phy_off - fap->fa_off,4096);
+}
+#endif
 
 int
 boot_read_swap_state(const struct flash_area *fap,

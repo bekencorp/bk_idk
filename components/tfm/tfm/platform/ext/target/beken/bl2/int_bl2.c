@@ -17,24 +17,28 @@
 #include "cmsis.h"
 #include "boot_hal.h"
 #include <stdio.h>
+#include <components/log.h>
+
+#define TAG "int"
+
 void NMI_Handler(void)
 {
-	printf("CPU Fault: NMI!\r\n");
+	BK_LOGE(TAG, "CPU Fault: NMI!\r\n");
 }
 
 void HardFault_Handler(void)
 {
-	printf("CPU Fault: HardFault!\r\n");
+	BK_LOGE(TAG, "CPU Fault: HardFault!\r\n");
 }
 
 void MemManage_Handler(void)
 {
-	printf("CPU Fault: MemManage!\r\n");
+	BK_LOGE(TAG, "CPU Fault: MemManage!\r\n");
 }
 
 void BusFault_Handler(void)
 {
-	printf("CPU Fault: BusFault!\r\n");
+	BK_LOGE(TAG, "CPU Fault: BusFault!\r\n");
 }
 
 

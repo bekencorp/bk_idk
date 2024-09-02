@@ -128,16 +128,15 @@ struct flash_sector {
 };
 
 #define PARTITION_AMOUNT 50
-struct flash_partition{
 
+struct flash_partition
+{
     char name[24];
 
     uint32_t partition_offset;
-
     uint32_t partition_size;
 
     uint32_t vir_code_offset;
-
     uint32_t vir_code_size;
 };
 

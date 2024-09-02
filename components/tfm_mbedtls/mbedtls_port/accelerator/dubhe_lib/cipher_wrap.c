@@ -702,8 +702,7 @@ static const mbedtls_cipher_info_t aes_256_ccm_star_no_tag_info = {
 
 #endif /* MBEDTLS_AES_C */
 
-#if defined(ARM_CE_DUBHE_SCA)
-
+#if defined(MBEDTLS_SM4_C)
 static int sm4_crypt_ecb_wrap( void *ctx, mbedtls_operation_t operation,
         const unsigned char *input, unsigned char *output )
 {
@@ -2347,7 +2346,7 @@ const mbedtls_cipher_definition_t mbedtls_cipher_definitions[] =
 #endif
 #endif /* MBEDTLS_AES_C */
 
-#if defined(ARM_CE_DUBHE_SCA)
+#if defined(MBEDTLS_SM4_C)
     { MBEDTLS_CIPHER_SM4_ECB,               &sm4_128_ecb_info },
     { MBEDTLS_CIPHER_SM4_CBC,               &sm4_128_cbc_info },
     { MBEDTLS_CIPHER_SM4_CTR,               &sm4_128_ctr_info },

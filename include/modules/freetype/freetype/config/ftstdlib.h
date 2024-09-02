@@ -143,6 +143,7 @@ extern long int ft_fs_tell(void *file);
    *                       memory allocation
    *
    */
+
 extern void *osi_malloc(size_t size);
 extern void osi_free(void *ptr);
 extern void *osi_calloc(size_t num, size_t size);

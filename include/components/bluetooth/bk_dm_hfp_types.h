@@ -245,162 +245,185 @@ typedef enum {
 
 
 /// HFP client callback parameters
-typedef union {
-    /**
-     * @brief  BK_HF_CLIENT_CONNECTION_STATE_EVT
-     */
-    struct hf_client_conn_stat_param {
-        bk_hf_client_connection_state_t state;   /*!< HF connection state */
-        uint32_t peer_feat;                      /*!< AG supported features */
-        uint32_t chld_feat;                      /*!< AG supported features on call hold and multiparty services */
-        uint8_t remote_bda[6];                   /*!< remote bluetooth device address */
-    } conn_state;                                 /*!< HF callback param of BK_HF_CLIENT_CONNECTION_STATE_EVT */
+typedef struct{
+    uint8_t remote_bda[6];                          /*!< remote bluetooth device address */
+    union
+    {
+        /**
+         * @brief  BK_HF_CLIENT_CONNECTION_STATE_EVT
+         */
+        struct hf_client_conn_stat_param
+        {
+            bk_hf_client_connection_state_t state;   /*!< HF connection state */
+            uint32_t peer_feat;                      /*!< AG supported features */
+            uint32_t chld_feat;                      /*!< AG supported features on call hold and multiparty services */
+        } conn_state;                                 /*!< HF callback param of BK_HF_CLIENT_CONNECTION_STATE_EVT */
 
-    /**
-     * @brief BK_HF_CLIENT_AUDIO_STATE_EVT
-     */
-    struct hf_client_audio_stat_param {
-        bk_hf_client_audio_state_t state;        /*!< audio connection state */
-        bk_hf_codec_type_t codec_type;           /*!< cvsd or msbc */
-        uint8_t remote_bda[6];                   /*!< remote bluetooth device address */
-    } audio_state;                                /*!< HF callback param of BK_HF_CLIENT_AUDIO_STATE_EVT */
+        /**
+         * @brief BK_HF_CLIENT_AUDIO_STATE_EVT
+         */
+        struct hf_client_audio_stat_param
+        {
+            bk_hf_client_audio_state_t state;        /*!< audio connection state */
+            bk_hf_codec_type_t codec_type;           /*!< cvsd or msbc */
+        } audio_state;                                /*!< HF callback param of BK_HF_CLIENT_AUDIO_STATE_EVT */
 
-    /**
-     * @brief BK_HF_CLIENT_BVRA_EVT
-     */
-    struct hf_client_bvra_param {
-        bk_hf_vr_state_t value;                 /*!< voice recognition state */
-    } bvra;                                      /*!< HF callback param of BK_HF_CLIENT_BVRA_EVT */
+        /**
+         * @brief BK_HF_CLIENT_BVRA_EVT
+         */
+        struct hf_client_bvra_param
+        {
+            bk_hf_vr_state_t value;                 /*!< voice recognition state */
+        } bvra;                                      /*!< HF callback param of BK_HF_CLIENT_BVRA_EVT */
 
-    /**
-     * @brief BK_HF_CLIENT_CIND_CALL_EVT
-     */
-    struct hf_client_call_ind_param {
-        bk_hf_call_status_t status;             /*!< call status indicator */
-    } call;                                      /*!< HF callback param of BK_HF_CLIENT_CIND_CALL_EVT */
+        /**
+         * @brief BK_HF_CLIENT_CIND_CALL_EVT
+         */
+        struct hf_client_call_ind_param
+        {
+            bk_hf_call_status_t status;             /*!< call status indicator */
+        } call;                                      /*!< HF callback param of BK_HF_CLIENT_CIND_CALL_EVT */
 
-    /**
-     * @brief BK_HF_CLIENT_CIND_CALL_SETUP_EVT
-     */
-    struct hf_client_call_setup_ind_param {
-        bk_hf_call_setup_status_t status;       /*!< call setup status indicator */
-    } call_setup;                                /*!< HF callback param of BK_HF_CLIENT_BVRA_EVT */
+        /**
+         * @brief BK_HF_CLIENT_CIND_CALL_SETUP_EVT
+         */
+        struct hf_client_call_setup_ind_param
+        {
+            bk_hf_call_setup_status_t status;       /*!< call setup status indicator */
+        } call_setup;                                /*!< HF callback param of BK_HF_CLIENT_BVRA_EVT */
 
-    /**
-     * @brief BK_HF_CLIENT_CIND_CALL_HELD_EVT
-     */
-    struct hf_client_call_held_ind_param {
-        bk_hf_call_held_status_t status;        /*!< bluetooth proprietary call hold status indicator */
-    } call_held;                                 /*!< HF callback param of BK_HF_CLIENT_CIND_CALL_HELD_EVT */
+        /**
+         * @brief BK_HF_CLIENT_CIND_CALL_HELD_EVT
+         */
+        struct hf_client_call_held_ind_param
+        {
+            bk_hf_call_held_status_t status;        /*!< bluetooth proprietary call hold status indicator */
+        } call_held;                                 /*!< HF callback param of BK_HF_CLIENT_CIND_CALL_HELD_EVT */
 
-    /**
-     * @brief BK_HF_CLIENT_CIND_SERVICE_AVAILABILITY_EVT
-     */
-    struct hf_client_service_availability_param {
-        bk_hf_network_state_t status;           /*!< service availability status */
-    } service_availability;                      /*!< HF callback param of BK_HF_CLIENT_CIND_SERVICE_AVAILABILITY_EVT */
+        /**
+         * @brief BK_HF_CLIENT_CIND_SERVICE_AVAILABILITY_EVT
+         */
+        struct hf_client_service_availability_param
+        {
+            bk_hf_network_state_t status;           /*!< service availability status */
+        } service_availability;                      /*!< HF callback param of BK_HF_CLIENT_CIND_SERVICE_AVAILABILITY_EVT */
 
 
-    /**
-     * @brief BK_HF_CLIENT_CIND_SIGNAL_STRENGTH_EVT
-     */
-    struct hf_client_signal_strength_ind_param {
-        int value;                               /*!< signal strength value, ranges from 0 to 5 */
-    } signal_strength;                           /*!< HF callback param of BK_HF_CLIENT_CIND_SIGNAL_STRENGTH_EVT */
+        /**
+         * @brief BK_HF_CLIENT_CIND_SIGNAL_STRENGTH_EVT
+         */
+        struct hf_client_signal_strength_ind_param
+        {
+            int value;                               /*!< signal strength value, ranges from 0 to 5 */
+        } signal_strength;                           /*!< HF callback param of BK_HF_CLIENT_CIND_SIGNAL_STRENGTH_EVT */
 
-    /**
-     * @brief BK_HF_CLIENT_CIND_ROAMING_STATUS_EVT
-     */
-    struct hf_client_network_roaming_param {
-        bk_hf_roaming_status_t status;          /*!< roaming status */
-    } roaming;                                   /*!< HF callback param of BK_HF_CLIENT_CIND_ROAMING_STATUS_EVT */
+        /**
+         * @brief BK_HF_CLIENT_CIND_ROAMING_STATUS_EVT
+         */
+        struct hf_client_network_roaming_param
+        {
+            bk_hf_roaming_status_t status;          /*!< roaming status */
+        } roaming;                                   /*!< HF callback param of BK_HF_CLIENT_CIND_ROAMING_STATUS_EVT */
 
-    /**
-     * @brief BK_HF_CLIENT_CIND_BATTERY_LEVEL_EVT
-     */
-    struct hf_client_battery_level_ind_param {
-        int value;                               /*!< battery charge value, ranges from 0 to 5 */
-    } battery_level;                             /*!< HF callback param of BK_HF_CLIENT_CIND_BATTERY_LEVEL_EVT */
+        /**
+         * @brief BK_HF_CLIENT_CIND_BATTERY_LEVEL_EVT
+         */
+        struct hf_client_battery_level_ind_param
+        {
+            int value;                               /*!< battery charge value, ranges from 0 to 5 */
+        } battery_level;                             /*!< HF callback param of BK_HF_CLIENT_CIND_BATTERY_LEVEL_EVT */
 
-    /**
-     * @brief BK_HF_CLIENT_COPS_CURRENT_OPERATOR_EVT
-     */
-    struct hf_client_current_operator_param {
-        const char *name;                        /*!< name of the network operator */
-    } cops;                                      /*!< HF callback param of BK_HF_CLIENT_COPS_CURRENT_OPERATOR_EVT */
+        /**
+         * @brief BK_HF_CLIENT_COPS_CURRENT_OPERATOR_EVT
+         */
+        struct hf_client_current_operator_param
+        {
+            const char *name;                        /*!< name of the network operator */
+        } cops;                                      /*!< HF callback param of BK_HF_CLIENT_COPS_CURRENT_OPERATOR_EVT */
 
-    /**
-     * @brief BK_HF_CLIENT_BTRH_EVT
-     */
-    struct hf_client_btrh_param {
-        bk_hf_btrh_status_t status;             /*!< call hold and response status result code */
-    } btrh;                                      /*!< HF callback param of BK_HF_CLIENT_BRTH_EVT */
+        /**
+         * @brief BK_HF_CLIENT_BTRH_EVT
+         */
+        struct hf_client_btrh_param
+        {
+            bk_hf_btrh_status_t status;             /*!< call hold and response status result code */
+        } btrh;                                      /*!< HF callback param of BK_HF_CLIENT_BRTH_EVT */
 
-    /**
-     * @brief BK_HF_CLIENT_CLIP_EVT
-     */
-    struct hf_client_clip_param {
-        const char *name;                        /*!< name string of the call */
-        const char *number;                      /*!< phone number string of call */
-    } clip;                                      /*!< HF callback param of BK_HF_CLIENT_CLIP_EVT */
+        /**
+         * @brief BK_HF_CLIENT_CLIP_EVT
+         */
+        struct hf_client_clip_param
+        {
+            const char *name;                        /*!< name string of the call */
+            const char *number;                      /*!< phone number string of call */
+        } clip;                                      /*!< HF callback param of BK_HF_CLIENT_CLIP_EVT */
 
-    /**
-     * @brief BK_HF_CLIENT_CCWA_EVT
-     */
-    struct hf_client_ccwa_param {
-        const char *number;                      /*!< phone number string of waiting call */
-    } ccwa;                                      /*!< HF callback param of BK_HF_CLIENT_BVRA_EVT */
+        /**
+         * @brief BK_HF_CLIENT_CCWA_EVT
+         */
+        struct hf_client_ccwa_param
+        {
+            const char *number;                      /*!< phone number string of waiting call */
+            const char *name;                        /*!< name string of waiting call */
+        } ccwa;                                      /*!< HF callback param of BK_HF_CLIENT_BVRA_EVT */
 
-    /**
-     * @brief BK_HF_CLIENT_CLCC_EVT
-     */
-    struct hf_client_clcc_param {
-        int idx;                                 /*!< numbering(starting with 1) of the call */
-        bk_hf_current_call_direction_t dir;     /*!< direction of the call */
-        bk_hf_current_call_status_t status;     /*!< status of the call */
-        bk_hf_current_call_mpty_type_t mpty;    /*!< multi-party flag */
-        char *number;                            /*!< phone number(optional) */
-    } clcc;                                      /*!< HF callback param of BK_HF_CLIENT_CLCC_EVT */
+        /**
+         * @brief BK_HF_CLIENT_CLCC_EVT
+         */
+        struct hf_client_clcc_param
+        {
+            int idx;                                 /*!< numbering(starting with 1) of the call */
+            bk_hf_current_call_direction_t dir;     /*!< direction of the call */
+            bk_hf_current_call_status_t status;     /*!< status of the call */
+            bk_hf_current_call_mpty_type_t mpty;    /*!< multi-party flag */
+            char *number;                            /*!< phone number(optional) */
+        } clcc;                                      /*!< HF callback param of BK_HF_CLIENT_CLCC_EVT */
 
-    /**
-     * @brief BK_HF_CLIENT_VOLUME_CONTROL_EVT
-     */
-    struct hf_client_volume_control_param {
-        bk_hf_volume_control_target_t type;     /*!< volume control target, speaker or microphone */
-        int volume;                              /*!< gain, ranges from 0 to 15 */
-    } volume_control;                            /*!< HF callback param of BK_HF_CLIENT_VOLUME_CONTROL_EVT */
+        /**
+         * @brief BK_HF_CLIENT_VOLUME_CONTROL_EVT
+         */
+        struct hf_client_volume_control_param
+        {
+            bk_hf_volume_control_target_t type;     /*!< volume control target, speaker or microphone */
+            int volume;                              /*!< gain, ranges from 0 to 15 */
+        } volume_control;                            /*!< HF callback param of BK_HF_CLIENT_VOLUME_CONTROL_EVT */
 
-    /**
-     * @brief BK_HF_CLIENT_AT_RESPONSE_EVT
-     */
-    struct hf_client_at_response_param {
-        bk_hf_at_response_code_t code;          /*!< AT response code */
-        bk_hf_cme_err_t cme;                    /*!< Extended Audio Gateway Error Result Code */
-    } at_response;                               /*!< HF callback param of BK_HF_CLIENT_AT_RESPONSE_EVT */
+        /**
+         * @brief BK_HF_CLIENT_AT_RESPONSE_EVT
+         */
+        struct hf_client_at_response_param
+        {
+            bk_hf_at_response_code_t code;          /*!< AT response code */
+            bk_hf_cme_err_t cme;                    /*!< Extended Audio Gateway Error Result Code */
+        } at_response;                               /*!< HF callback param of BK_HF_CLIENT_AT_RESPONSE_EVT */
 
-    /**
-     * @brief BK_HF_CLIENT_CNUM_EVT
-     */
-    struct hf_client_cnum_param {
-        const char *number;                      /*!< phone number string */
-        bk_hf_subscriber_service_type_t type;   /*!< service type that the phone number relates to */
-    } cnum;                                      /*!< HF callback param of BK_HF_CLIENT_CNUM_EVT */
+        /**
+         * @brief BK_HF_CLIENT_CNUM_EVT
+         */
+        struct hf_client_cnum_param
+        {
+            const char *number;                      /*!< phone number string */
+            bk_hf_subscriber_service_type_t type;   /*!< service type that the phone number relates to */
+        } cnum;                                      /*!< HF callback param of BK_HF_CLIENT_CNUM_EVT */
 
-    /**
-     * @brief BK_HF_CLIENT_BSIR_EVT
-     */
-    struct hf_client_bsirparam {
-        bk_hf_client_in_band_ring_state_t state;  /*!< setting state of in-band ring tone */
-    } bsir;                                        /*!< HF callback param of BK_HF_CLIENT_BSIR_EVT */
+        /**
+         * @brief BK_HF_CLIENT_BSIR_EVT
+         */
+        struct hf_client_bsirparam
+        {
+            bk_hf_client_in_band_ring_state_t state;  /*!< setting state of in-band ring tone */
+        } bsir;                                        /*!< HF callback param of BK_HF_CLIENT_BSIR_EVT */
 
-    /**
-     * @brief bk_HF_CLIENT_BINP_EVT
-     */
-    struct hf_client_binp_param {
-        const char *number;                      /*!< phone number corresponding to the last voice tag in the HF */
-    } binp;                                      /*!< HF callback param of BK_HF_CLIENT_BINP_EVT */
+        /**
+         * @brief bk_HF_CLIENT_BINP_EVT
+         */
+        struct hf_client_binp_param
+        {
+            const char *number;                      /*!< phone number corresponding to the last voice tag in the HF */
+        } binp;                                      /*!< HF callback param of BK_HF_CLIENT_BINP_EVT */
 
-} bk_hf_client_cb_param_t;                      /*!< HFP client callback parameters */
+    };
+}bk_hf_client_cb_param_t;                      /*!< HFP client callback parameters */
 
 /**
  * @brief           HFP client callback function type

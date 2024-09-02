@@ -375,7 +375,7 @@ Add corresponding fields in the security data area of config as shown in the fig
 Configuration example
 ++++++++++++++++++++++++++++++++++++
 
-As shown in the figure, add a field in the User_operate area, write 6 bytes BK7236, and parse it in ascii code,
+As shown in the figure, add a field in the User_operate area, write 6 bytes BK7258, and parse it in ascii code,
 
 .. figure:: picture/otp_user_example.png
      :align: center

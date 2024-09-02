@@ -153,6 +153,127 @@ static inline void flash_exit_critical(uint32_t flags)
 	rtos_enable_int(flags);
 }
 
+#if CONFIG_FLASH_MB && (CONFIG_CPU_CNT > 1)
+
+#include <driver/mailbox_channel.h>
+#if CONFIG_CACHE_ENABLE
+#include "cache.h"
+#endif
+
+enum
+{
+	IPC_ERASE_COMPLETE = 0,
+	IPC_ERASE_REQ,
+	IPC_ERASE_ACK,
+};
+
+#if CONFIG_SYS_CPU0
+#include <driver/aon_rtc.h>
+
+static volatile uint32_t flash_erase_ipc_state = IPC_ERASE_COMPLETE;
+#define FLASH_WAIT_ACK_TIMEOUT 5000
+
+static bk_err_t send_pause_cmd(uint8_t log_chnl)
+{
+	mb_chnl_cmd_t  cmd_buf;
+	cmd_buf.hdr.data = 0; /* clear hdr. */
+	cmd_buf.hdr.cmd  = 1;
+	flash_erase_ipc_state = IPC_ERASE_REQ;
+	cmd_buf.param1 = (u32)&flash_erase_ipc_state;
+
+	return mb_chnl_write(log_chnl, &cmd_buf);
+}
+
+static bk_err_t send_flash_op_prepare(void)			//CPU0 notify CPU1 before flash operation
+{
+	uint64_t us_start = 0;
+	uint64_t us_end = 0;
+
+	send_pause_cmd(MB_CHNL_FLASH);
+
+	us_start = bk_aon_rtc_get_us();
+	
+	for(int i = 0; i < 2000; i++)
+	{
+#if CONFIG_CACHE_ENABLE
+		flush_dcache((void *)&flash_erase_ipc_state, 4);
+#endif
+		if(flash_erase_ipc_state == IPC_ERASE_ACK)
+		{
+			break;
+		}
+		
+		us_end = bk_aon_rtc_get_us();
+		//wait ack time should not be more than 5 ms
+		if((us_end - us_start) > FLASH_WAIT_ACK_TIMEOUT)
+		{
+			return BK_FAIL;
+		}
+	}
+
+	return BK_OK;
+}
+
+static bk_err_t send_flash_op_finish(void)			//CPU0 notify CPU1 after flash operation
+{
+	flash_erase_ipc_state = IPC_ERASE_COMPLETE;
+
+	return BK_OK;
+}
+#endif
+
+#if CONFIG_SYS_CPU1
+
+__attribute__((section(".iram"))) static void mb_flash_ipc_rx_isr(void *chn_param, mb_chnl_cmd_t *cmd_buf)
+{
+	volatile uint32_t * stat_addr = (volatile uint32_t *)cmd_buf->param1;
+
+#if CONFIG_CACHE_ENABLE
+	flush_dcache((void *)stat_addr, 4);
+#endif
+
+	//only puase cpu1 when flash erasing
+	if(*(stat_addr) == IPC_ERASE_REQ)
+	{
+		bk_flash_set_operate_status(FLASH_OP_BUSY);
+		*(stat_addr) = IPC_ERASE_ACK;
+		while(*(stat_addr) != IPC_ERASE_COMPLETE)
+		{
+#if CONFIG_CACHE_ENABLE
+			flush_dcache((void *)stat_addr, 4);
+#endif
+		}
+		bk_flash_set_operate_status(FLASH_OP_IDLE);
+	}
+
+	return;
+}
+#endif
+
+static bk_err_t mb_flash_ipc_init(void)
+{
+	bk_err_t ret_code = mb_chnl_open(MB_CHNL_FLASH, NULL);
+
+	if(ret_code != BK_OK)
+	{
+		return ret_code;
+	}
+
+#if CONFIG_SYS_CPU1
+	// call chnl driver to register isr callback;
+	mb_chnl_ctrl(MB_CHNL_FLASH, MB_CHNL_SET_RX_ISR, (void *)mb_flash_ipc_rx_isr);
+#endif
+
+	return ret_code;
+}
+
+static void mb_flash_ipc_deinit(void)
+{
+	mb_chnl_close(MB_CHNL_FLASH);
+}
+
+#endif
+
 bk_err_t bk_flash_register_wait_cb(flash_wait_callback_t wait_cb)
 {
 	uint32_t i = 0;
@@ -373,7 +494,7 @@ static void flash_set_protect_type(flash_protect_type_t type)
 		flash_set_protect_cfg(&status_reg, protect_cfg);
 		flash_set_cmp_cfg(&status_reg, cmp_cfg);
 
-		FLASH_LOGI("write status reg:%x, status_reg_size:%d\r\n", status_reg, s_flash.flash_cfg->status_reg_size);
+		//FLASH_LOGD("write status reg:%x, status_reg_size:%d\r\n", status_reg, s_flash.flash_cfg->status_reg_size);
 		flash_hal_write_status_reg(&s_flash.hal, s_flash.flash_cfg->status_reg_size, status_reg);
 	}
 }
@@ -521,14 +642,19 @@ static bk_err_t flash_write_common(const uint8_t *buffer, uint32_t address, uint
 
 void flash_lock(void)
 {
-	rtos_lock_mutex(&s_flash_mutex);
+	if (s_flash_mutex)
+		rtos_lock_mutex(&s_flash_mutex);
 }
 
 void flash_unlock(void)
 {
-	rtos_unlock_mutex(&s_flash_mutex);
+	if (s_flash_mutex)
+		rtos_unlock_mutex(&s_flash_mutex);
 }
 
+#if defined(CONFIG_SECURITY_OTA) && !defined(CONFIG_TFM_FWU)
+__attribute__((section(".iram")))
+#endif
 bk_err_t bk_flash_set_line_mode(flash_line_mode_t line_mode)
 {
 	flash_hal_clear_qwfr(&s_flash.hal);
@@ -555,6 +681,14 @@ bk_err_t bk_flash_driver_init(void)
 	if (s_flash_is_init) {
 		return BK_OK;
 	}
+
+#if CONFIG_FLASH_MB && (CONFIG_CPU_CNT > 1)
+	bk_err_t ret_code = mb_flash_ipc_init();
+
+	if(ret_code != BK_OK)
+		return ret_code;
+#endif
+	
 #if CONFIG_FLASH_QUAD_ENABLE
 #if CONFIG_FLASH_ORIGIN_API
 	if (FLASH_LINE_MODE_FOUR == flash_get_line_mode())
@@ -610,6 +744,11 @@ bk_err_t bk_flash_driver_deinit(void)
 	if (!s_flash_is_init) {
 		return BK_OK;
 	}
+
+#if CONFIG_FLASH_MB && (CONFIG_CPU_CNT > 1)
+	mb_flash_ipc_deinit();
+#endif
+
 	flash_deinit_common();
 	s_flash_is_init = false;
 
@@ -636,10 +775,10 @@ static bk_err_t flash_erase_block(uint32_t address, int type)
 
 //CPU0 notfify CPU1 when operate flash, to fix LCD display issue while erasing
 #if CONFIG_FLASH_MB && CONFIG_SYS_CPU0 && (CONFIG_CPU_CNT > 1)
-	ret = ipc_send_flash_op_prepare();
+	ret = send_flash_op_prepare();
 	if(ret != BK_OK)
 	{
-		FLASH_LOGD("erase prepare ret = 0x%x\n", ret );
+		FLASH_LOGE("erase req failed, ret = 0x%x\n", ret );
 	}
 #endif
 	uint32_t int_level = flash_enter_critical();
@@ -647,7 +786,7 @@ static bk_err_t flash_erase_block(uint32_t address, int type)
 	flash_exit_critical(int_level);
 
 #if CONFIG_FLASH_MB && CONFIG_SYS_CPU0 && (CONFIG_CPU_CNT > 1)
-	ret = ipc_send_flash_op_finish();
+	ret = send_flash_op_finish();
 	if(ret != BK_OK)
 	{
 		FLASH_LOGD("erase op_finish ret = 0x%x\n", ret );
@@ -659,12 +798,17 @@ static bk_err_t flash_erase_block(uint32_t address, int type)
 	return BK_OK;
 }
 
-__attribute__((section(".itcm_sec_code"))) bk_err_t bk_flash_erase_sector(uint32_t address)
+bk_err_t bk_flash_erase_sector(uint32_t address)
 {
 	return flash_erase_block(address, FLASH_OP_CMD_SE);
 }
 
-__attribute__((section(".itcm_sec_code"))) bk_err_t bk_flash_erase_block(uint32_t address)
+bk_err_t bk_flash_erase_32k(uint32_t address)
+{
+	return flash_erase_block(address, FLASH_OP_CMD_BE1);
+}
+
+bk_err_t bk_flash_erase_block(uint32_t address)
 {
 	return flash_erase_block(address, FLASH_OP_CMD_BE2);
 }
@@ -716,6 +860,9 @@ uint32_t bk_flash_get_id(void)
 	return s_flash.flash_id;
 }
 
+#if defined(CONFIG_SECURITY_OTA) && !defined(CONFIG_TFM_FWU)
+__attribute__((section(".iram")))
+#endif
 flash_line_mode_t bk_flash_get_line_mode(void)
 {
 	return s_flash.flash_cfg->line_mode;
@@ -1006,3 +1153,182 @@ __attribute__((section(".itcm_sec_code"))) flash_op_status_t bk_flash_get_operat
 	return s_flash_op_status;
 }
 
+#if CONFIG_SECURITY_OTA
+uint32_t flash_get_excute_enable()
+{
+	return flash_hal_read_offset_enable(&s_flash.hal);
+}
+#endif
+
+#if defined(CONFIG_SECURITY_OTA) && !defined(CONFIG_TFM_FWU)
+
+#include "partitions.h"
+#include "_ota.h"
+#if CONFIG_CACHE_ENABLE
+#include "cache.h"
+#endif
+#if CONFIG_INT_WDT
+#include <driver/wdt.h>
+#include "bk_wdt.h"
+#endif
+
+static inline bool is_64k_aligned(uint32_t addr)
+{
+	return ((addr & (KB(64) - 1)) == 0);
+}
+
+static inline bool is_32k_aligned(uint32_t addr)
+{
+	return ((addr & (KB(32) - 1)) == 0);
+}
+
+/*make sure wdt is closed!*/
+bk_err_t bk_flash_erase_fast(uint32_t erase_off, uint32_t len)
+{
+	uint32_t erase_size = 0;
+	int erase_remain = len;
+
+	while (erase_remain > 0) {
+		if ((erase_remain >= KB(64)) && is_64k_aligned(erase_off)) {
+			FLASH_LOGD("64k erase: off=%x remain=%x\r\n", erase_off, erase_remain);
+			bk_flash_erase_block(erase_off);
+			erase_size = KB(64);
+		} else if ((erase_remain >= KB(32)) && is_32k_aligned(erase_off)) {
+			FLASH_LOGD("32k erase: off=%x remain=%x\r\n", erase_off, erase_remain);
+			bk_flash_erase_32k(erase_off);
+			erase_size = KB(32);
+		} else {
+			FLASH_LOGD("4k erase: off=%x remain=%x\r\n", erase_off, erase_remain);
+			bk_flash_erase_sector(erase_off);
+			erase_size = KB(4);
+		}
+		erase_off += erase_size;
+		erase_remain -= erase_size;
+	}
+
+	return BK_OK;
+}
+
+void bk_flash_xip_erase(void)
+{
+	uint32_t update_id = flash_get_excute_enable() ^ 1;
+	uint32_t erase_addr;
+	if (update_id  == 0) {
+		erase_addr = CONFIG_PRIMARY_ALL_PHY_PARTITION_OFFSET;
+	} else {
+		erase_addr = CONFIG_SECONDARY_ALL_PHY_PARTITION_OFFSET;
+	}
+	uint32_t erase_size = CONFIG_PRIMARY_ALL_PHY_PARTITION_SIZE;
+#if CONFIG_INT_WDT
+	extern bk_err_t bk_wdt_stop(void);
+	extern bk_err_t bk_wdt_start(uint32_t timeout_ms);
+	bk_wdt_stop();
+#endif
+	bk_flash_erase_fast(erase_addr,erase_size);
+#if CONFIG_INT_WDT
+	bk_wdt_start(CONFIG_INT_WDT_PERIOD_MS);
+#endif
+#if CONFIG_DIRECT_XIP
+	uint32_t magic_offset = CEIL_ALIGN_34(erase_addr + erase_size - 4096);
+	uint32_t status = XIP_SET;
+	const uint8_t * value = (const uint8_t *)&(status);
+	bk_flash_write_bytes(magic_offset,value,sizeof(value));
+#endif
+}
+
+__attribute__((section(".iram")))
+static void *flash_memcpy(void *d, const void *s, size_t n)
+{
+        /* attempt word-sized copying only if buffers have identical alignment */
+
+        unsigned char *d_byte = (unsigned char *)d;
+        const unsigned char *s_byte = (const unsigned char *)s;
+        const uint32_t mask = sizeof(uint32_t) - 1;
+
+        if ((((uint32_t)d ^ (uint32_t)s_byte) & mask) == 0) {
+
+                /* do byte-sized copying until word-aligned or finished */
+
+                while (((uint32_t)d_byte) & mask) {
+                        if (n == 0) {
+                                return d;
+                        }
+                        *(d_byte++) = *(s_byte++);
+                        n--;
+                };
+
+                /* do word-sized copying as long as possible */
+
+                uint32_t *d_word = (uint32_t *)d_byte;
+                const uint32_t *s_word = (const uint32_t *)s_byte;
+
+                while (n >= sizeof(uint32_t)) {
+                        *(d_word++) = *(s_word++);
+                        n -= sizeof(uint32_t);
+                }
+
+                d_byte = (unsigned char *)d_word;
+                s_byte = (unsigned char *)s_word;
+        }
+
+        /* do byte-sized copying until finished */
+
+        while (n > 0) {
+                *(d_byte++) = *(s_byte++);
+                n--;
+        }
+
+        return d;
+}
+
+__attribute__((section(".iram")))
+static void bk_flash_write_cbus(uint32_t address, const uint8_t *user_buf, uint32_t size)
+{
+	flash_hal_enable_cpu_data_wr(&s_flash.hal);
+	flash_memcpy((char*)(0x02000000+address), (const char*)user_buf,size);
+	flash_hal_disable_cpu_data_wr(&s_flash.hal);
+}
+
+__attribute__((section(".iram")))
+void bk_flash_xip_write_cbus(uint32_t off, const void *src, uint32_t len)
+{
+	uint32_t line_mode = bk_flash_get_line_mode();
+	bk_flash_set_line_mode(2);
+	uint32_t fa_off = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(CONFIG_PRIMARY_ALL_PHY_PARTITION_OFFSET));
+	uint32_t int_status =  rtos_disable_int();
+#if CONFIG_CACHE_ENABLE
+    enable_dcache(0);
+#endif
+    uint32_t write_addr = (fa_off+off);
+    write_addr |= 1 << 24;
+    bk_flash_write_cbus(write_addr,src,len);
+#if CONFIG_CACHE_ENABLE
+    enable_dcache(1);
+#endif
+	rtos_enable_int(int_status);
+	bk_flash_set_line_mode(line_mode);
+}
+
+void bk_flash_xip_write_dbus(uint32_t off, const void *src, uint32_t len)
+{
+	uint32_t update_id = (flash_get_excute_enable() ^ 1);
+	uint32_t fa_addr;
+	if (update_id  == 0) {
+		fa_addr = CONFIG_PRIMARY_ALL_PHY_PARTITION_OFFSET;
+	} else {
+		fa_addr = CONFIG_SECONDARY_ALL_PHY_PARTITION_OFFSET;
+	}
+	uint32_t addr = fa_addr + off;
+	bk_flash_write_bytes(addr, src, len);
+}
+
+void bk_flash_xip_update(uint32_t off, const void *src, uint32_t len)
+{
+#if CONFIG_OTA_ENCRYPTED
+	bk_flash_xip_write_dbus(off, src, len);
+#else
+	bk_flash_xip_write_cbus(off, src, len);
+#endif
+}
+
+#endif //  CONFIG_SECURITY_OTA && !CONFIG_TFM_FWU

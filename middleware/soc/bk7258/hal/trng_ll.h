@@ -53,6 +53,7 @@ static inline void trng_ll_init(trng_hw_t *hw)
 
 static inline void trng_ll_enable(trng_hw_t *hw)
 {
+	hw->global_ctrl.soft_reset = 1;
 	hw->global_ctrl.clk_gate_bypass = 1;    //clock gate enable will make trng get same value every first time get
 	hw->ctrl.en = 1;
 }

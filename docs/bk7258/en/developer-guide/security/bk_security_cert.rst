@@ -5,7 +5,7 @@ Security Certification
 
 .. important::
 
-  BK7236 is currently undergoing PSA-L2/SESIP-L2 safety certification...
+  BK7258 is currently undergoing PSA-L2/SESIP-L2 safety certification...
 
 PSA-L2 Certification Overview
 -----------------------------------------

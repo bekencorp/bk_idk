@@ -58,12 +58,12 @@ Partition table are fixed at six columns:
       - bl1_control, manifest - Secure Boot related partitions.
 
   - ``Offset`` - optional. Indicates the physical offset of the partition in FLASH.
- 
+
     - When no offset is configured, ``offset`` takes the value of the end address of the previous partition. When the first partition is not configured, ``offset`` is 0.
     - Holes are allowed between two adjacent partition addresses, but overlapping is not allowed.
     - It is generally not recommended to configure offset, unless you want to place a partition in a specific, discontinuous position, you only need to configure offset.
     - offset alignment requirements:
-   
+
       - Any partition must be 4K aligned.
       - The two partitions adjacent at the S/NS junction must be 68K aligned, otherwise a S/NS block will span two partitions during MPC configuration.
   - ``Size`` - Required. Indicates the partition size, the unit k/K means Kbytes, m/M means Mbytes, and 4K alignment is usually recommended.
@@ -309,7 +309,7 @@ Take ``sys rf` and ``sys net`` as an example:
 
    #define CONFIG_SYS_RF_PHY_PARTITION_OFFSET 0x3fe000
    #define CONFIG_SYS_RF_PHY_PARTITION_SIZE 0x1000
-  
+
    #define CONFIG_SYS_NET_PHY_PARTITION_OFFSET 0x3ff000
    #define CONFIG_SYS_NET_PHY_PARTITION_SIZE 0x1000
 
@@ -342,13 +342,13 @@ Generate macro calculation method:
 
   - ``CONFIG_PRIMARY_BL2_PHY_PARTITION_OFFSET`` - The partition starts at physical address 0x24000, as defined by partitions.
   - ``CONFIG_PRIMARY_BL2_PHY_CODE_START`` - automatically calculated and generated, it is 0x21e80, and CRC will be added.
- 
+
     - The code can be placed at offset 0x24000, but alignment needs to be considered:
 
       - CRC alignment, the physical address after alignment is ((0x24000 + 33)/34)*34 = 0x24002, and the virtual address is 0x21e20.
       - CPU vector alignment, CM33 is 128B alignment, ((0x21e20 + 127)/128)*128 = 0x21e80, the corresponding physical address is: 0x24068.
   - ``CONFIG_PRIMARY_BL2_VIRTUAL_CODE_SIZE`` - Automatically calculated, 0xf060
- 
+
     - Alignment waste space is 0x24068 - 0x24000 = 0x68, remaining: 0x10000 - 0x68 = 0xff98
     - Subtract 34B protection bytes: 0xff98 - 34 = 0xff76
     - Turn virtual length: (0xff76/34)*32 = 0xf060

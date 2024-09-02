@@ -38,6 +38,7 @@ static bool s_usb_power_on_flag = 0;
 static bool s_usb_open_close_flag = 0;
 static bool s_usbh_device_connect_flag = 0;
 static bool s_usbh_control_transfer_init_flag = 0;
+static uint8_t s_usbh_class_using_status = 0;
 
 static bk_err_t usb_driver_sw_deinit();
 
@@ -94,7 +95,7 @@ static bk_err_t usb_driver_sw_deinit();
 	} while(0)
 
 #define USB_RETURN_CLASS_IS_WORKING() do {\
-		if(s_usb_driver_ops->usbh_class_using_status) {\
+		if(s_usbh_class_using_status) {\
 			return BK_ERR_USB_NOT_CLOSE;\
 		}\
 	} while(0)
@@ -149,8 +150,8 @@ bk_err_t bk_usb_power_ops(uint32_t gpio_id, bool ops)
 		USB_DRIVER_LOGD("%s s_usb_power_on_flag:%d\r\n", __func__, s_usb_power_on_flag);
 		USB_RETURN_NOT_POWERED_ON();
 		if(s_usb_driver_ops) {
-			if(s_usb_driver_ops->usbh_class_using_status) {
-				USB_DRIVER_LOGE("%s warking:0x%x!\r\n", __func__, s_usb_driver_ops->usbh_class_using_status);
+			if(s_usbh_class_using_status) {
+				USB_DRIVER_LOGE("%s warking:0x%x!\r\n", __func__, s_usbh_class_using_status);
 				return BK_ERR_USB_NOT_POWER;
 			}
 		}
@@ -209,9 +210,9 @@ static void bk_analog_layer_usb_sys_related_ops(uint32_t usb_mode, bool ops)
 		sys_drv_usb_analog_dp_capability(USB_DP_CAPABILITY_VALUE);
 		sys_drv_usb_analog_dn_capability(USB_DN_CAPABILITY_VALUE);
 		if(!sys_hal_psram_ldo_status()) {
-			sys_hal_psram_ldo_enable(1);
+			sys_drv_psram_ldo_enable(1);
 		}
-		sys_hal_usb_analog_phy_en(1);
+		sys_drv_usb_analog_phy_en(1, NULL);
 
 		if(usb_mode == USB_HOST_MODE) {
 			REG_USB_USR_708 = 0x0;
@@ -275,7 +276,7 @@ static void bk_analog_layer_usb_sys_related_ops(uint32_t usb_mode, bool ops)
 
 		}
 	} else {
-		sys_hal_usb_analog_phy_en(0);
+		sys_drv_usb_analog_phy_en(0, NULL);
 		sys_drv_usb_clock_ctrl(false, NULL);
 	}
 }
@@ -293,6 +294,24 @@ static void bk_usb_phy_register_refresh()
 	if(s_usb_power_on_flag) {
 		bk_gpio_set_output_high(CONFIG_USB_VBAT_CONTROL_GPIO_ID);
 	}
+#endif
+
+}
+
+void bk_usb_enum_fail_all_reg_reset()
+{
+#if CONFIG_USB_HOST
+	sys_drv_int_disable(USB_INTERRUPT_CTRL_BIT);
+	bk_gpio_set_output_low(CONFIG_USB_VBAT_CONTROL_GPIO_ID);
+	rtos_delay_milliseconds(10);
+	bk_analog_layer_usb_sys_related_ops(USB_HOST_MODE, false);
+	rtos_delay_milliseconds(10);
+	bk_analog_layer_usb_sys_related_ops(USB_HOST_MODE, true);
+	rtos_delay_milliseconds(10);
+	extern int usb_hc_mhdrc_register_init(void);
+	usb_hc_mhdrc_register_init();
+	sys_drv_int_enable(USB_INTERRUPT_CTRL_BIT);
+	bk_gpio_set_output_high(CONFIG_USB_VBAT_CONTROL_GPIO_ID);
 #endif
 
 }
@@ -532,16 +551,14 @@ void bk_usb_device_set_using_status(bool use_or_no, E_USB_DEVICE_T dev)
 {
     uint32_t int_level;
 
-	if(!bk_usb_get_device_connect_status()) return;
-
     int_level = rtos_disable_int();
 
     if(use_or_no){
-        s_usb_driver_ops->usbh_class_using_status |= (1 << dev);
-        USB_DRIVER_LOGD("%s device is working %d\r\n", __func__, s_usb_driver_ops->usbh_class_using_status);
+        s_usbh_class_using_status |= (1 << dev);
+        USB_DRIVER_LOGD("%s device is working %d\r\n", __func__, s_usbh_class_using_status);
     } else {
-        s_usb_driver_ops->usbh_class_using_status &= ~(1 << dev);
-        USB_DRIVER_LOGD("%s device is working %d\r\n", __func__, s_usb_driver_ops->usbh_class_using_status);
+        s_usbh_class_using_status &= ~(1 << dev);
+        USB_DRIVER_LOGD("%s device is working %d\r\n", __func__, s_usbh_class_using_status);
     }
 
     rtos_enable_int(int_level);
@@ -655,7 +672,8 @@ static void usb_drv_task_main(beken_thread_arg_t param_data)
 					usb_mailbox_slave_usb_driver_exit();
 #endif
 					s_usb_open_close_flag = 0;
-					
+					s_usbh_device_connect_flag = false;
+					s_usb_driver_ops = NULL;
 #if CONFIG_SYS_CPU0
 					bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_USB_1, 0x1, 100000000);
 #endif
@@ -665,7 +683,9 @@ static void usb_drv_task_main(beken_thread_arg_t param_data)
 				case USB_DRV_PRASE_DESCRIPTOR:
 					USB_DRIVER_LOGI("USB_DRV_PRASE_DESCRIPTOR!\r\n");
 					s_usb_driver_ops = (bk_usb_driver_comprehensive_ops *)msg.param;
+					bk_usb_driver_task_lock_mutex();
 					bk_usb_parse_all_descriptors((bk_usb_driver_comprehensive_ops *)msg.param);
+					bk_usb_driver_task_unlock_mutex();
 					break;
 
 				case USB_DRV_INIT_CONTROL_TRANS:
@@ -678,12 +698,6 @@ static void usb_drv_task_main(beken_thread_arg_t param_data)
 					if(bk_usb_get_device_connect_status()) break;
 					bk_usb_control_transfer_deinit();
 					//reset queue
-					rtos_reset_queue(&s_usb_drv_msg_que);
-#if CONFIG_UVC_UAC_DEMO
-					bk_usb_uvc_uac_free_enumerate_resources();
-#endif
-					bk_usb_phy_register_refresh();
-
 					break;
 				case USB_DRV_CONTROL_TRANSFER:
 					USB_DRIVER_LOGI("USB_DRV_CONTROL_TRANSFER!\r\n");
@@ -692,15 +706,24 @@ static void usb_drv_task_main(beken_thread_arg_t param_data)
 
 				case USB_DRV_CONNECT_HANDLE:
 					USB_DRIVER_LOGI("USB_DRV_CONNECT_HANDLE!\r\n");
+					rtos_reset_queue(&s_usb_drv_msg_que);
 					usb_driver_connect_handle((bk_usb_driver_comprehensive_ops *)msg.param);
 					break;
 				case USB_DRV_DISCONNECT_HANDLE:
 					USB_DRIVER_LOGI("USB_DRV_DISCONNECT_HANDLE!\r\n");
 					if(!bk_usb_get_device_connect_status()) break;
+					bk_usb_driver_task_lock_mutex();
 					usb_driver_disconnect_handle((bk_usb_driver_comprehensive_ops *)msg.param);
+					rtos_reset_queue(&s_usb_drv_msg_que);
+#if CONFIG_UVC_UAC_DEMO
+					bk_usb_uvc_uac_free_enumerate_resources();
+#endif
+					bk_usb_phy_register_refresh();
 					bk_usb_drv_send_msg_front(USB_DRV_DEINIT_CONTROL_TRANS, NULL);
+					bk_usb_driver_task_unlock_mutex();
 					break;
 
+#if CONFIG_UVC_UAC_DEMO
 				case USB_DRV_VIDEO_OPEN_PIPE:
 					USB_DRIVER_LOGI("USB_DRV_VIDEO_OPEN_PIPE!\r\n");
 					break;
@@ -713,6 +736,12 @@ static void usb_drv_task_main(beken_thread_arg_t param_data)
 					if(!bk_usb_get_device_connect_status()) break;
 					bk_usbh_video_start_handle((struct usbh_video *)msg.param);
 					break;
+				case USB_DRV_VIDEO_DUAL_START:
+					USB_DRIVER_LOGI("USB_DRV_VIDEO_DUAL_START!\r\n");
+					if(!bk_usb_get_device_connect_status()) break;
+					bk_usbh_video_start_dual_handle((struct usbh_video *)msg.param);
+					break;
+				case USB_DRV_VIDEO_DUAL_STOP:
 				case USB_DRV_VIDEO_STOP:
 					USB_DRIVER_LOGI("USB_DRV_VIDEO_STOP!\r\n");
 					if(!bk_usb_get_device_connect_status()) break;
@@ -723,6 +752,12 @@ static void usb_drv_task_main(beken_thread_arg_t param_data)
 					USB_DRIVER_LOGD("USB_DRV_VIDEO_RX!\r\n");
 					//malloc_list_buffer
 					bk_uvc_trigger_video_stream_rx(msg.param);
+					break;
+				case USB_DRV_VIDEO_DUAL_RX:
+					if(!bk_usb_get_device_connect_status()) break;
+					USB_DRIVER_LOGD("USB_DRV_VIDEO_DUAL_RX!\r\n");
+					//malloc_list_buffer
+					bk_uvc_trigger_video_stream_dual_rx(msg.param);
 					break;
 				case USB_DRV_VIDEO_RXED:
 					if(!bk_usb_get_device_connect_status()) break;
@@ -780,7 +815,7 @@ static void usb_drv_task_main(beken_thread_arg_t param_data)
 					USB_DRIVER_LOGD("USB_DRV_AUDIO_TXED!\r\n");
 					//push_list_buffer
 					break;
-
+#endif
 				case USB_DRV_USB_OPEN:
 					USB_DRIVER_LOGI("USB_DRV_USB_OPEN!\r\n");
 					if(*((uint32_t *)msg.param) == USB_HOST_MODE) {
@@ -882,14 +917,19 @@ static bk_err_t usb_driver_sw_deinit()
 {
 	USB_DRIVER_LOGD("[+]%s thread_hdl:%x  msg_que:%x\r\n",__func__, s_usb_drv_thread_hdl, s_usb_drv_msg_que);
 
+	beken_mutex_t usb_drv_task_mutex = NULL;
+	beken_queue_t usb_drv_msg_que = NULL;
+
 	if(s_usb_drv_task_mutex) {
-		rtos_deinit_mutex(&s_usb_drv_task_mutex);
+		usb_drv_task_mutex = s_usb_drv_task_mutex;
 		s_usb_drv_task_mutex = NULL;
+		rtos_deinit_mutex(&usb_drv_task_mutex);
 	}
 
 	if(s_usb_drv_msg_que) {
-		rtos_deinit_queue(&s_usb_drv_msg_que);
+		usb_drv_msg_que = s_usb_drv_msg_que;
 		s_usb_drv_msg_que = NULL;
+		rtos_deinit_queue(&usb_drv_msg_que);
 	}
 
 	if (s_usb_drv_thread_hdl) {
@@ -903,6 +943,18 @@ static bk_err_t usb_driver_sw_deinit()
 bk_err_t bk_usb_open(uint32_t usb_mode)
 {
 	USB_DRIVER_LOGD("[+]%s\r\n", __func__);
+#if !CONFIG_USB_MAILBOX
+	bk_pm_module_vote_cpu_freq(PM_DEV_ID_USB_1, PM_CPU_FRQ_480M);
+	if((s_usbh_device_connect_flag != false) && (s_usb_driver_ops != NULL)) {
+		for(E_USB_DEVICE_T dev = USB_UVC_DEVICE; dev < USB_DEVICE_MAX; dev++)
+		{
+			if(s_usb_driver_ops->usbh_connect_cb[dev]) {
+				s_usb_driver_ops->usbh_class_connect_status |= (1 << dev);
+				s_usb_driver_ops->usbh_connect_cb[dev]();
+			}
+		}
+	}
+#endif
 
 #if CONFIG_SYS_CPU0
 	bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_USB_1, 0x0, 0x0);
@@ -940,13 +992,24 @@ bk_err_t bk_usb_close(void)
 	if(s_usb_driver_ops)
 		USB_RETURN_CLASS_IS_WORKING();
 
-	USB_DRIVER_LOGD("[+]%s\r\n", __func__);
+	bk_err_t ret = BK_OK;
+	ret = bk_usb_drv_send_msg(USB_DRV_USB_CLOSE, NULL);
 
-	bk_usb_drv_send_msg(USB_DRV_USB_CLOSE, NULL);
+#if !CONFIG_USB_MAILBOX
+	uint8_t wait_close_finish_count = 0;
+	while(s_usb_open_close_flag) {
+		if(wait_close_finish_count > 10)
+		{
+			USB_DRIVER_LOGE("[=]%s close timeout\r\n", __func__);
+			ret = BK_FAIL;
+			break;
+		}
+		rtos_delay_milliseconds(10);
+		wait_close_finish_count++;
+	}
+#endif
+	return ret;
 
-	USB_DRIVER_LOGD("[-]%s\r\n", __func__);
-
-	return BK_OK;
 }
 
 bk_err_t bk_usb_register_connection_status_notification_callback(bk_usb_driver_comprehensive_ops *usb_driver,

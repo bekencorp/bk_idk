@@ -13,8 +13,16 @@
 #include <components/netif.h>
 #include "bk_wifi.h"
 #include "bk_wifi_types.h"
+#if CONFIG_WIFI_CLI_RAW_LINK_ENABLE
+#include <modules/raw_link.h>
+#endif
 #if CONFIG_WIFI6_CODE_STACK
 #include "bk_wifi.h"
+#endif
+#if CONFIG_BRIDGE
+#include "netif/bridgeif.h"
+#include "lwip/netifapi.h"
+#include "lwip/inet.h"
 #endif
 
 #if CONFIG_ENABLE_WIFI_DEFAULT_CONNECT
@@ -566,7 +574,7 @@ void cli_wifi_set_proto_debug_flag(char *pcWriteBuffer, int xWriteBufferLen, int
 
 	pd_flag = (uint8_t)os_strtoul(argv[1], NULL, 10);
 	if(pd_flag == 1) {
-		ret = bk_wifi_enable_proto_debug_internal(pd_flag);
+		ret = bk_wifi_enable_proto_debug(pd_flag);
 
 		if (!ret) {
 			CLI_LOGI("enable proto debug ok");
@@ -579,7 +587,7 @@ void cli_wifi_set_proto_debug_flag(char *pcWriteBuffer, int xWriteBufferLen, int
 			goto error;
 		}
 	} else if(pd_flag == 0){
-		ret = bk_wifi_disable_proto_debug_internal(pd_flag);
+		ret = bk_wifi_disable_proto_debug(pd_flag);
 		if (!ret) {
 			CLI_LOGI("disable proto debug ok");
 			msg = WIFI_CMD_RSP_SUCCEED;
@@ -601,6 +609,39 @@ error:
 	return;
 }
 #endif
+
+void cli_wifi_set_arp_rate_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	float arp_tx_rate = 0;
+	uint16_t set_arp_tx_rate;
+	int ret = 0;
+	char *msg = NULL;
+
+	if (argc < 2) {
+		CLI_LOGI("invalid argc num");
+		goto error;
+	}
+
+	arp_tx_rate = (float)os_strtoul(argv[1], NULL, 10);
+	set_arp_tx_rate = (uint16_t)(arp_tx_rate * 10);
+	ret = bk_wifi_send_arp_set_rate_req(set_arp_tx_rate);
+
+	if (!ret) {
+		CLI_LOGI("set_arp_tx_rate ok");
+		msg = WIFI_CMD_RSP_SUCCEED;
+		os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+		return;
+	}
+	else {
+		CLI_LOGI("set_arp_tx_rate failed");
+		goto error;
+	}
+
+error:
+	msg = WIFI_CMD_RSP_ERROR;
+	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+	return;
+}
 
 void cli_wifi_set_interval_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
@@ -665,6 +706,106 @@ error:
 	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
 	return;
 }
+
+void cli_wifi_set_bcn_loss_time_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	uint8_t wait_cnt = 0;
+	uint8_t wake_cnt = 0;
+	int ret = 0;
+	char *msg = NULL;
+
+	if (argc < 3) {
+		CLI_LOGI("invalid argc num");
+		goto error;
+	}
+
+	wait_cnt = (uint8_t)os_strtoul(argv[1], NULL, 10);
+	wake_cnt = (uint8_t)os_strtoul(argv[2], NULL, 10);
+	ret = bk_wifi_set_bcn_loss_time(wait_cnt, wake_cnt);
+
+	if (!ret) {
+		CLI_LOGI("set_bcn_loss_time ok");
+		msg = WIFI_CMD_RSP_SUCCEED;
+		os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+		return;
+	}
+	else {
+		CLI_LOGI("set_bcn_loss_time failed");
+		goto error;
+	}
+
+error:
+	msg = WIFI_CMD_RSP_ERROR;
+	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+	return;
+}
+
+void cli_wifi_set_bcn_recv_win_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	uint8_t default_win = 0;
+	uint8_t max_win = 0;
+	uint8_t step = 0;
+	int ret = 0;
+	char *msg = NULL;
+
+	if (argc < 4) {
+		CLI_LOGI("invalid argc num");
+		goto error;
+	}
+
+	default_win = (uint8_t)os_strtoul(argv[1], NULL, 10);
+	max_win = (uint8_t)os_strtoul(argv[2], NULL, 10);
+	step = (uint8_t)os_strtoul(argv[3], NULL, 10);
+	ret = bk_wifi_set_bcn_recv_win(default_win, max_win, step);
+
+	if (!ret) {
+		CLI_LOGI("set_bcn_recv_win ok");
+		msg = WIFI_CMD_RSP_SUCCEED;
+		os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+		return;
+	}
+	else {
+		CLI_LOGI("set_bcn_recv_win failed");
+		goto error;
+	}
+
+error:
+	msg = WIFI_CMD_RSP_ERROR;
+	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+	return;
+}
+
+void cli_wifi_set_bcn_miss_time_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	uint8_t bcnmiss_time = 0;
+	int ret = 0;
+	char *msg = NULL;
+
+	if (argc < 2) {
+		CLI_LOGI("invalid argc num");
+		goto error;
+	}
+
+	bcnmiss_time = (uint8_t)os_strtoul(argv[1], NULL, 10);
+	ret = bk_wifi_set_bcn_miss_time(bcnmiss_time);
+
+	if (!ret) {
+		CLI_LOGI("set_bcn_miss_time ok");
+		msg = WIFI_CMD_RSP_SUCCEED;
+		os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+		return;
+	}
+	else {
+		CLI_LOGI("set_bcn_miss_time failed");
+		goto error;
+	}
+
+error:
+	msg = WIFI_CMD_RSP_ERROR;
+	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+	return;
+}
+
 void cli_monitor_stop(void)
 {
 	if (s_monitor_result) {
@@ -1380,7 +1521,7 @@ static void wifi_raw_tx_thread(void *arg)
 			 tx_param->counter);
 
 	for (uint32_t i = 0; i < tx_param->counter; i++) {
-		ret = bk_wlan_send_80211_raw_frame_internal((unsigned char *)frame, sizeof(frame));
+		ret = bk_wlan_send_80211_raw_frame((unsigned char *)frame, sizeof(frame));
 		if (ret != kNoErr)
 			CLI_LOGI("raw tx error, ret=%d\n", ret);
 
@@ -1507,6 +1648,7 @@ int cli_wifi_event_cb(void *arg, event_module_t event_module,
 	wifi_event_sta_connected_t *sta_connected;
 	wifi_event_ap_disconnected_t *ap_disconnected;
 	wifi_event_ap_connected_t *ap_connected;
+	wifi_event_network_found_t *network_found;
 
 	switch (event_id) {
 	case EVENT_WIFI_STA_CONNECTED:
@@ -1528,6 +1670,11 @@ int cli_wifi_event_cb(void *arg, event_module_t event_module,
 	case EVENT_WIFI_AP_DISCONNECTED:
 		ap_disconnected = (wifi_event_ap_disconnected_t *)event_data;
 		CLI_LOGI(BK_MAC_FORMAT" disconnected from BK AP\n", BK_MAC_STR(ap_disconnected->mac));
+		break;
+
+	case EVENT_WIFI_NETWORK_FOUND:
+		network_found = (wifi_event_network_found_t *)event_data;
+		CLI_LOGI(" target AP: %s, bssid %pm found\n", network_found->ssid, network_found->bssid);
 		break;
 
 	default:
@@ -1649,6 +1796,51 @@ error:
 	return;
 }
 
+#if CONFIG_WIFI_CLI_RAW_LINK_ENABLE
+void cli_rlk_cfg_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	uint32_t rlk_cfg = 0;
+	int ret = 0;
+	char *msg = NULL;
+
+	if (argc <= 2) {
+		CLI_LOGI("invalid RLK command\n");
+		goto error;
+	}
+
+	if(os_strcmp(argv[1], "rate") == 0) {
+		rlk_cfg = os_strtoul(argv[2], NULL, 10) & 0xFFFF;
+		bk_rlk_set_tx_rate(rlk_cfg);
+	}
+	else if(os_strcmp(argv[1], "power") == 0) {
+		rlk_cfg = os_strtoul(argv[2], NULL, 10) & 0xFFFF;
+		bk_rlk_set_tx_power(rlk_cfg);
+	}
+	else if(os_strcmp(argv[1], "ac") == 0) {
+		rlk_cfg = os_strtoul(argv[2], NULL, 10) & 0xFFFF;
+		bk_rlk_set_tx_ac(rlk_cfg);
+	}
+	else if(os_strcmp(argv[1], "timeout") == 0) {
+		rlk_cfg = os_strtoul(argv[2], NULL, 10) & 0xFFFF;
+		bk_rlk_set_tx_timeout_ms(rlk_cfg);
+	}
+	else {
+		CLI_LOGI("invalid RLK paramter\n");
+		goto error;
+	}
+
+	if (!ret) {
+		msg = WIFI_CMD_RSP_SUCCEED;
+		os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+		return;
+	}
+error:
+	msg = WIFI_CMD_RSP_ERROR;
+	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+	return;
+}
+#endif
+
 void cli_wifi_rc_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
 	uint8_t sta_idx = 0;
@@ -1664,7 +1856,7 @@ void cli_wifi_rc_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **
 	if(os_strcmp(argv[1], "set_fixrate") == 0) {
 		sta_idx = os_strtoul(argv[2], NULL, 10) & 0xFFFF;
 		rate_cfg = os_strtoul(argv[3], NULL, 10) & 0xFFFF;
-		bk_wifi_rc_config_internal(sta_idx, rate_cfg);
+		bk_wifi_rc_config(sta_idx, rate_cfg);
 	}
         else if (os_strcmp(argv[1], "rssi_offset") == 0) {
                 CLI_LOGI("rc rssi offset: %d\n",os_strtoul(argv[2], NULL, 10));
@@ -1716,7 +1908,7 @@ void cli_wifi_ps_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **
 		goto error;
 	}
 
-	bk_wifi_ps_config_internal(ps_id, ps_val, ps_val1);
+	bk_wifi_ps_config(ps_id, ps_val, ps_val1);
 
 	if (!ret) {
 		msg = WIFI_CMD_RSP_SUCCEED;
@@ -1966,10 +2158,10 @@ void blacklist_Command(char *pcWriteBuffer, int xWriteBufferLen, int argc, char 
     {
         blacklist_ena = strtoul(argv[1], NULL, 0);
         if (blacklist_ena) {
-            wlan_sta_enable_ssid_blacklist_internal();
+            wlan_sta_enable_ssid_blacklist();
         }
         else {
-            wlan_sta_disable_ssid_blacklist_internal();
+            wlan_sta_disable_ssid_blacklist();
         }
         os_printf("blacklist %s\n", blacklist_ena ? "enabled" : "disabled");
     }
@@ -2030,6 +2222,110 @@ void cli_wifi_close_coex_csa_cmd(char * pcWriteBuffer, int xWriteBufferLen, int 
 
 }
 
+#if CONFIG_BRIDGE
+extern uint8_t bk_wlan_has_role(uint8_t role);
+enum mac_vif_type
+{
+    VIF_STA,
+    VIF_IBSS,
+    VIF_AP,
+    VIF_MESH_POINT,
+    VIF_MONITOR,
+    VIF_UNKNOWN
+};
+
+extern uint8 bridge_is_enabled;
+void bk_bridge_start(char *bridge_ssid, char *ext_ssid, char *key) {
+	uint8_t mac[6] = {0};
+	bridgeif_initdata_t mybr_initdata = {0};
+	wifi_linkstate_reason_t info = {0};
+	netif_ip4_config_t ip4_config = {0};
+	ip4_addr_t my_ip, my_gw, my_mask;
+
+	bridge_is_enabled = 1;
+	demo_sta_app_init(ext_ssid, key);
+	while(1) {
+		bk_wifi_sta_get_linkstate_with_reason(&info);
+		if (info.state != WIFI_LINKSTATE_STA_GOT_IP) {
+			BK_LOGI("br","waiting fot sta getting ip\r\n");
+			rtos_delay_milliseconds(500);
+		} else
+			break;
+	}
+
+	/*confige bridgeif and add sta to bridgeif*/
+	bk_wifi_sta_get_mac(mac);
+	os_memcpy(((struct netif *)net_get_br_handle())->hwaddr, mac, 6);
+	os_memcpy(&mybr_initdata.ethaddr, mac, 6);
+	mybr_initdata.max_fdb_dynamic_entries = 64;
+	mybr_initdata.max_fdb_static_entries = 4;
+	mybr_initdata.max_ports = 16;
+	bk_netif_get_ip4_config(NETIF_IF_STA, &ip4_config);
+	inet_aton((char *)&ip4_config.ip, &my_ip);
+	inet_aton((char *)&ip4_config.gateway, &my_gw);
+	inet_aton((char *)&ip4_config.mask, &my_mask);
+
+	netifapi_netif_add((struct netif *)net_get_br_handle(), &my_ip, &my_mask, &my_gw,
+						&mybr_initdata, bridgeif_init, netif_input);
+	bridgeif_add_port((struct netif *)net_get_br_handle(), (struct netif *)net_get_sta_handle());
+	netif_set_hostname((struct netif *)net_get_sta_handle(), "beken");
+
+	/*start softap and add to bridgeif*/
+	demo_softap_app_init(bridge_ssid, NULL, NULL);
+	bridgeif_add_port((struct netif *)net_get_br_handle(), (struct netif *)net_get_uap_handle());
+	netifapi_netif_set_default(net_get_br_handle());
+	netifapi_netif_set_up((struct netif *)net_get_br_handle());
+
+}
+
+void bk_wifi_bridge_stop() {
+	bridge_ip_stop();
+}
+
+void bk_bridge_stop() {
+	if(bk_wifi_sta_stop())
+		bk_printf("bridge stop sta fail\r\n");
+	if(bk_wifi_ap_stop())
+		bk_printf("bridge stop ap fail\r\n");
+	bk_wifi_bridge_stop();
+}
+
+void cli_wifi_open_bridge_cmd(char * pcWriteBuffer, int xWriteBufferLen, int argc, char * * argv)
+{
+	char *oob_ssid = NULL;
+    char *bridge_ssid = NULL;
+    char *connect_key = NULL;
+
+    os_printf("bridge_Command\r\n");
+
+    if (argc < 2) {
+usage:
+		bk_printf("Usage: \n");
+		bk_printf("  %s open bridge_ssid extap_ssid key\n", argv[0]);
+		bk_printf("  %s close\n", argv[0]);
+		return;
+	}
+
+	if (!strcmp(argv[1], "open")) {
+		if (argc < 4)
+			goto usage;
+
+		bridge_ssid = argv[2];
+		oob_ssid = argv[3];
+
+		if(argc == 5)
+			connect_key = argv[4];
+		else
+			connect_key = "";
+
+		bk_bridge_start(bridge_ssid, oob_ssid, connect_key);
+	} else if (!strcmp(argv[1], "close")) {
+        bk_bridge_stop();
+	} else {
+		goto usage;
+	}
+}
+#endif
 
 #define WIFI_CMD_CNT (sizeof(s_wifi_commands) / sizeof(struct cli_command))
 static const struct cli_command s_wifi_commands[] = {
@@ -2045,7 +2341,11 @@ static const struct cli_command s_wifi_commands[] = {
 	{"set_pd_flag", "set proto flag for enable or disable proto debug {1|0}", cli_wifi_set_proto_debug_flag},
 #endif
 	{"set_interval", "set listen interval}", cli_wifi_set_interval_cmd},
+	{"set_arp_rate", "set arp rate}", cli_wifi_set_arp_rate_cmd},
 	{"bcn_loss_intv", "bcn_loss_intv interval repeat_num}", cli_wifi_bcn_loss_intv_cmd},
+	{"bcn_loss_time", "bcn_loss_time wait_cnt wake_cnt}", cli_wifi_set_bcn_loss_time_cmd},
+	{"bcn_recv_win", "bcn_recv_win default_win max_win step}", cli_wifi_set_bcn_recv_win_cmd},
+	{"bcn_miss_time", "bcn misstime}", cli_wifi_set_bcn_miss_time_cmd},
 	{"monitor", "monitor {1~13|15|99}", cli_wifi_monitor_cmd},
 	{"state", "state - show STA/AP state", cli_wifi_state_cmd},
 	{"channel", "channel {1~13} - set monitor channel", cli_wifi_monitor_channel_cmd},
@@ -2083,7 +2383,13 @@ static const struct cli_command s_wifi_commands[] = {
 #endif
 	{"pkt_dbg", "packet debug config", cli_pkt_debug_cmd},
 	{"wifi_diag", "Wi-Fi HW diagnostics config", cli_wifi_diag_cmd},
+	#if CONFIG_WIFI_CLI_RAW_LINK_ENABLE
+	{"rlk_cfg", "rlk config", cli_rlk_cfg_cmd},
+	#endif
 	{"close_coex_csa","close csa in coexist mode {1|0}", cli_wifi_close_coex_csa_cmd},
+#if CONFIG_BRIDGE
+	{"bridge", "bridge open|close", cli_wifi_open_bridge_cmd},
+#endif
 };
 
 int cli_wifi_init(void)

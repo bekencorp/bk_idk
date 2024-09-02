@@ -241,8 +241,8 @@ bk_err_t bk_timer_start_without_callback(timer_id_t timer_id, uint32_t time_ms)
     timer_chan_enable_interrupt_common(timer_id);
 #endif
 
-    en_status = timer_hal_get_enable_status(&s_timer.hal);
-    if (en_status & BIT(timer_id)) {
+    en_status = timer_hal_get_chan_enable_status(&s_timer.hal, timer_id);
+    if (en_status) {
         TIMER_LOGD("timer(%d) is running, stop it\r\n", timer_id);
         timer_hal_disable(&s_timer.hal, timer_id);
         /* Delay to fix the bug that timer counter becomes bigger than

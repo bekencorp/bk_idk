@@ -137,21 +137,27 @@ bk_err_t prro_hal_set_secure(prro_dev_t dev, prro_secure_type_t secure_type)
 		PRRO_HAL_LOGE(TAG, "invalid dev=%d\r\n", dev);
 		return BK_ERR_PRRO_DEV_ID;
 	}
+	int sec_map_idx = 0;
+	for (sec_map_idx = 0; sec_map_idx < PRRO_SEC_MAP_COUNT; sec_map_idx++) {
+		if (dev == sec_map[sec_map_idx].dev) {
+			break;
+		}
+	}
 
-	if (dev != sec_map[dev].dev) {
-		PRRO_HAL_LOGE(TAG, "secure device=%d not match map index\n", dev);
+	if (sec_map_idx == PRRO_SEC_MAP_COUNT) {
+		PRRO_HAL_LOGE(TAG, "invalid dev=%d\r\n", dev);
 		return BK_ERR_PRRO_MAP_TABLE;
 	}
 
 	PRRO_HAL_LOGD(TAG, "set dev=%d to %s, reg=%x, bit=%d\r\n",
-		dev, secure_type == PRRO_SECURE ? "s" : "ns", sec_map[dev].reg, sec_map[dev].bit);
+		dev, secure_type == PRRO_SECURE ? "s" : "ns", sec_map[sec_map_idx].reg, sec_map[sec_map_idx].bit);
 
-	if (sec_map[dev].reg == PRRO_INVALID_REG) {
-		PRRO_HAL_LOGD(TAG, "skip invalid dev=%d\r\n", dev);
+	if (sec_map[sec_map_idx].reg == PRRO_INVALID_REG) {
+		PRRO_HAL_LOGD(TAG, "skip invalid sec_map_idx=%d\r\n", sec_map_idx);
 		return BK_OK;
 	}
 
-	prro_ll_set_reg_bit(sec_map[dev].reg, sec_map[dev].bit, SEC_TYPE_TO_BITV(secure_type));
+	prro_ll_set_reg_bit(sec_map[sec_map_idx].reg, sec_map[sec_map_idx].bit, SEC_TYPE_TO_BITV(secure_type));
 	return BK_OK;
 
 }

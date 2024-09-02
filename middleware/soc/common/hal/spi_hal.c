@@ -19,6 +19,7 @@
 #include "spi_ll.h"
 #include <driver/hal/hal_spi_types.h>
 #include "sys_hal.h"
+#include "bk_misc.h"
 
 #define CONFIG_SPI_MAX_BAUD_RATE                49000000     //49M
 
@@ -81,6 +82,9 @@ bk_err_t spi_hal_configure(spi_hal_t *hal, const spi_config_t *config)
 	spi_ll_enable_rx_fifo_int(hal->hw);
 
 	spi_hal_set_baud_rate(hal, config->baud_rate);
+#if (CONFIG_SPI_BYTE_INTERVAL)
+	spi_hal_set_byte_interval(hal, config->byte_interval);
+#endif
 
 	spi_ll_set_bit_width(hal->hw, config->bit_width);
 	spi_ll_set_first_bit(hal->hw, config->bit_order);
@@ -154,7 +158,14 @@ bk_err_t spi_hal_set_baud_rate(spi_hal_t *hal, uint32_t baud_rate)
 		sys_hal_ana_reg11_vsel_set(SPI_EN_APLL_VSEL_VAL);
 		src_clk = SPI_APLL_98M;
 #else
-		src_clk = SPI_APLL_120M;
+		sys_hal_apll_en(1);
+		//set apll clock config
+		sys_hal_apll_cal_val_set(0x8973CA6F);
+		sys_hal_apll_config_set(0xC2A0AE86);
+		sys_hal_apll_spi_trigger_set(1);
+		delay(10);
+		sys_hal_apll_spi_trigger_set(0);
+		src_clk = SPI_APLL_98M;
 #endif
 		sys_hal_spi_select_clock(hal->id, SPI_CLK_APLL);
 		clk_div = (src_clk / (2 * spi_clk)) & SPI_F_CLK_DIV_M;

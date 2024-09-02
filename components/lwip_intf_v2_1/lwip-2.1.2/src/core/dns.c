@@ -1354,6 +1354,10 @@ dns_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, 
             return;
           }
 #endif /* LWIP_IPV4 && LWIP_IPV6 */
+          if (hdr.flags1 & DNS_FLAG1_TRUNC) {
+            LWIP_DEBUGF(DNS_DEBUG, ("dns_recv: \"%s\": truncated message\n", entry->name));
+            goto ignore_packet; /* ignore this packet */
+          }
           LWIP_DEBUGF(DNS_DEBUG, ("dns_recv: \"%s\": error in response\n", entry->name));
         }
         /* call callback to indicate error, clean up memory and return */

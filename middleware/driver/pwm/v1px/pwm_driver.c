@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <string.h>
 #include <common/bk_include.h>
 #include <common/bk_compiler.h>
 #include <os/mem.h>
@@ -61,6 +62,7 @@ typedef struct {
 	//Concurrently operation is NOT allowed!!!s_pwm_pin_id_map
 	uint32_t chan_init_bits;
 	uint32_t chan_init_signal_level;
+	volatile uint32_t phase_shift_chan_init_level;
 #if CONFIG_PWM_PM_CB_SUPPORT
 	uint32_t pm_backup[PWM_PM_BACKUP_REG_NUM];
 	uint8_t pm_bakeup_is_valid;
@@ -72,13 +74,22 @@ typedef struct {
 	gpio_dev_t gpio_dev;
 } pwm_gpio_map_t;
 
+typedef enum {
+	PWM_SINGLE_CHAN_MODE = (1 << 0),
+	PWM_GROUP_MODE = (1 << 1),
+	PWM_PHASE_SHIFT_MODE = (1 << 2),
+} pwm_func_mode_t;
+
 static pwm_driver_t s_pwm[SOC_PWM_UNIT_NUM] = {0};
 static pwm_isr_t s_pwm_isr[SOC_PWM_UNIT_NUM][SOC_PWM_CHAN_NUM_PER_UNIT] = {NULL};
 static bool s_pwm_driver_is_init = false;
 static const pwm_gpio_map_t s_pwm_pin_id_map[SOC_PWM_UNIT_NUM][SOC_PWM_CHAN_NUM_PER_UNIT] = GPIO_PWM_MAP_TABLE;
 static pwm_group_info_t s_pwm_groups[PWM_GROUP_NUM];
+static uint8_t s_pwm_mode = 0;
 #if CONFIG_PWM_PHASE_SHIFT
 static pwm_chan_t s_phase_shift_multi_hw_ch[SOC_PWM_UNIT_NUM] = {0};
+static uint32_t s_phase_shift_first_valid_ch = 0;
+static pwm_phase_shift_config_t *s_shift_config = NULL;
 #endif
 
 #define PWM_RETURN_ON_INVALID_CHAN(hw_ch) do {\
@@ -120,6 +131,19 @@ static pwm_chan_t s_phase_shift_multi_hw_ch[SOC_PWM_UNIT_NUM] = {0};
 #define PWM_RETURN_ON_INVALID_CHAN_NUM(shift_config) do {\
 	if (shift_config->chan_num < 2) {\
 		return BK_ERR_PWM_PHASE_SHIFT_CHAN_NUM;\
+	}\
+} while(0)
+
+#define PWM_PHASE_SHIFT_RETURN_ON_INVALID_DUTY(shift_config) do {\
+	for (uint32_t index = 0; index < shift_config->chan_num; index++) {\
+		if ((shift_config->duty_config[index].duty_cycle == 1) ||\
+			(shift_config->duty_config[index].duty_cycle > shift_config->period_cycle)) {\
+			PWM_LOGE("invalid duty cycle, index:%d, period_cycle:%d, duty_cycle:%d\r\n",\
+					index,\
+					shift_config->period_cycle,\
+					shift_config->duty_config[index].duty_cycle);\
+			return BK_ERR_PWM_PERIOD_DUTY;\
+		}\
 	}\
 } while(0)
 
@@ -365,7 +389,7 @@ static void pwm_adjust_init_signal_via_duty(pwm_chan_t sw_ch, uint32_t period,
 static inline bool pwm_driver_duty_is_valid(uint32_t period, uint32_t duty1, uint32_t duty2,
 										uint32_t duty3)
 {
-	if (period <= 1 || duty1 <= 1) {
+	if (period <= 1 || duty1 == 1) {
 		PWM_LOGE("period and duty1 must be more than 1\r\n");
 		return false;
 	}
@@ -504,10 +528,11 @@ static void pwm_set_channel_config(pwm_ch_t sw_ch, const pwm_period_duty_config_
 			pwm_hal_set_pwm_ccmr_ch1e(&s_pwm[id].hal, true);
 			break;
 		case 1:
-			pwm_hal_set_cr3_chae(&s_pwm[id].hal, 1);
-			pwm_hal_set_prescaler2_psc4(&s_pwm[id].hal, config->psc);
-			pwm_hal_set_tim4_arr_tim4_arr(&s_pwm[id].hal, config->period_cycle - 1);
-			pwm_hal_set_ccra_ccra(&s_pwm[id].hal, config->duty_cycle);
+			pwm_hal_set_tim1_arr_tim1_arr(&s_pwm[id].hal, config->period_cycle - 1);
+			pwm_hal_set_ccr1_value(&s_pwm[id].hal, config->duty_cycle);
+			pwm_hal_set_ccr2_value(&s_pwm[id].hal, config->duty2_cycle);
+			pwm_hal_set_ccr3_value(&s_pwm[id].hal, config->duty3_cycle);
+			pwm_hal_set_prescaler_psc1(&s_pwm[id].hal, config->psc);
 			pwm_hal_set_pwm_ccmr_ch2e(&s_pwm[id].hal, true);
 			break;
 		case 2:
@@ -1122,7 +1147,7 @@ bk_err_t bk_pwm_group_init(const pwm_group_init_config_t *config, pwm_group_t *g
 		return ret;
 	}
 
-
+	s_pwm_mode |= PWM_GROUP_MODE;
 	dead_cycle = (config->period_cycle - config->chan1_duty_cycle - config->chan2_duty_cycle) >> 1;
 	pwm_chan_init_common(config->chan1);
 	pwm_chan_init_common(config->chan2);
@@ -1154,6 +1179,7 @@ bk_err_t bk_pwm_group_deinit(pwm_group_t group)
 
 	PWM_LOGI("group(%d) deinit\r\n", group);
 
+	s_pwm_mode &= ~PWM_GROUP_MODE;
 	bk_pm_module_vote_cpu_freq(PM_DEV_ID_PWM_2, PM_CPU_FRQ_DEFAULT);
 	bk_pwm_group_stop(group);
 	pwm_chan_deinit_common(s_pwm_groups[group].chan1);
@@ -1276,80 +1302,304 @@ bk_err_t bk_pwm_set_mode_timer(pwm_chan_t sw_ch)
 
 #if CONFIG_PWM_PHASE_SHIFT
 
-bk_err_t bk_pwm_phase_shift_init(pwm_phase_shift_config_t *shift_config)
+static bk_err_t pwm_init_with_phase(pwm_chan_t sw_ch, const pwm_init_config_t *config)
 {
-	BK_RETURN_ON_NULL(shift_config);
-	PWM_RETURN_ON_INVALID_CHAN_NUM(shift_config);
-
-	for (uint32_t chan = 0; chan < shift_config->chan_num; chan++) {
-		if ((shift_config->duty_config[chan].duty_cycle >= shift_config->period_cycle) ||
-			(shift_config->duty_config[chan].duty_cycle == 0) ||
-			(shift_config->period_cycle <= 1)) {
-			return BK_ERR_PWM_PERIOD_DUTY;
-		}
-	}
+	PWM_RETURN_ON_NOT_INIT();
+	BK_RETURN_ON_NULL(config);
 
 	pwm_id_t id;
 	pwm_ch_t hw_ch;
-	uint32_t ccr1, ccr2, duty_cycle = 0;
-	pwm_period_duty_config_t pwm_config = {0};
+	pwm_period_duty_config_t pwm_config;
 
-	/* init chan0 */
-	os_memset(&s_phase_shift_multi_hw_ch, 0, sizeof(s_phase_shift_multi_hw_ch));
-	ccr1 = 2;
-	ccr2 = ccr1 + shift_config->duty_config[0].duty_cycle;
-	pwm_chan_init_common(shift_config->duty_config[0].chan);
-	pwm_config.period_cycle = shift_config->period_cycle;
-	pwm_config.duty_cycle = ccr1;
-	pwm_config.duty2_cycle = ccr2;
-	pwm_config.duty3_cycle = 0;
-	pwm_config.psc = shift_config->psc;
-	pwm_set_channel_config(shift_config->duty_config[0].chan, &pwm_config);
-	pwm_sw_ch_to_hw_id_ch(shift_config->duty_config[0].chan, &id, &hw_ch);
-	s_phase_shift_multi_hw_ch[id] |= BIT(hw_ch);
-	pwm_hal_set_init_signal_low(&s_pwm[id].hal, hw_ch);
-	pwm_hal_set_flip_mode(&s_pwm[id].hal, hw_ch, 1);
-	pwm_hal_set_chan_enable(&s_pwm[id].hal, hw_ch, true);
+	pwm_sw_ch_to_hw_id_ch(sw_ch, &id, &hw_ch);
+	PWM_RETURN_ON_INVALID_CHAN(hw_ch);
 
-	for (uint32_t index = 1; index < shift_config->chan_num; index++) {
-		os_memset(&pwm_config, 0, sizeof(pwm_config));
-		pwm_chan_init_common(shift_config->duty_config[index].chan);
-		pwm_sw_ch_to_hw_id_ch(shift_config->duty_config[index].chan, &id, &hw_ch);
-		duty_cycle = shift_config->duty_config[index].duty_cycle;
-		s_phase_shift_multi_hw_ch[id] |= BIT(hw_ch);
-		ccr1 = ccr2;
-		if ((ccr2 + duty_cycle) > shift_config->period_cycle) {
-			pwm_hal_set_init_signal_high(&s_pwm[id].hal, hw_ch);
-			ccr2 = ccr2 + shift_config->duty_config[index].duty_cycle - shift_config->period_cycle;
-		} else {
-			pwm_hal_set_init_signal_low(&s_pwm[id].hal, hw_ch);
-			ccr2 = ccr2 + shift_config->duty_config[index].duty_cycle;
-		}
-		pwm_config.period_cycle = shift_config->period_cycle;
-		pwm_config.duty_cycle = ccr1;
-		pwm_config.duty2_cycle = ccr2;
-		pwm_config.duty3_cycle = 0;
-		pwm_config.psc = shift_config->psc;
-		pwm_set_channel_config(shift_config->duty_config[index].chan, &pwm_config);
-		pwm_hal_set_flip_mode(&s_pwm[id].hal, hw_ch, 1);
-		pwm_hal_set_chan_enable(&s_pwm[id].hal, hw_ch, true);
+	if ((config->duty_cycle == 1) ||
+		(config->duty_cycle > config->period_cycle) ||
+		(config->duty2_cycle > config->period_cycle) ||
+		(config->duty3_cycle > config->period_cycle)) {
+		PWM_LOGE("invalid duty cycle!\r\n");
+		return BK_ERR_PWM_PERIOD_DUTY;
 	}
+
+	pwm_chan_init_common(sw_ch);
+	pwm_hal_set_flip_mode(&s_pwm[id].hal, hw_ch, 1);
+
+	/* duty ratio is 0% */
+	if (config->duty_cycle == 0 &&
+		config->duty2_cycle == 0 &&
+		config->duty3_cycle == 0) {
+		pwm_config.period_cycle = config->period_cycle;
+		pwm_config.duty_cycle = 0;
+		pwm_config.duty2_cycle = 0;
+		pwm_config.duty3_cycle = 0;
+		pwm_config.psc = config->psc;
+		pwm_hal_set_init_signal_low(&s_pwm[id].hal, hw_ch);
+		pwm_set_channel_config(sw_ch, &pwm_config);
+		pwm_hal_set_chan_enable(&s_pwm[id].hal, hw_ch, true);
+		return BK_OK;
+	}
+
+	/* duty ratio is 100% */
+	if (config->duty_cycle == config->period_cycle &&
+		config->duty2_cycle == 0 &&
+		config->duty3_cycle == 0) {
+		pwm_config.period_cycle = config->period_cycle;
+		pwm_config.duty_cycle = 0;
+		pwm_config.duty2_cycle = 0;
+		pwm_config.duty3_cycle = 0;
+		pwm_config.psc = config->psc;
+		pwm_hal_set_init_signal_high(&s_pwm[id].hal, hw_ch);
+		pwm_set_channel_config(sw_ch, &pwm_config);
+		pwm_hal_set_chan_enable(&s_pwm[id].hal, hw_ch, true);
+		return BK_OK;
+	}
+
+	pwm_config.period_cycle = config->period_cycle;
+	pwm_config.duty_cycle = config->duty_cycle;
+	pwm_config.duty2_cycle = config->duty2_cycle;
+	pwm_config.duty3_cycle = config->duty3_cycle;;
+	pwm_config.psc = config->psc;
+	pwm_set_channel_config(sw_ch, &pwm_config);
+	pwm_hal_set_chan_enable(&s_pwm[id].hal, hw_ch, true);
 
 	return BK_OK;
 }
 
+static bk_err_t pwm_set_period_duty_with_phase(pwm_chan_t sw_ch, pwm_period_duty_config_t *config)
+{
+	BK_RETURN_ON_NULL(config);
+
+	if ((config->duty_cycle == 1) ||
+		(config->duty_cycle > config->period_cycle) ||
+		(config->duty2_cycle > config->period_cycle) ||
+		(config->duty3_cycle > config->period_cycle)) {
+		PWM_LOGE("invalid duty cycle!\r\n");
+		return BK_ERR_PWM_PERIOD_DUTY;
+	}
+
+	pwm_id_t id;
+	pwm_ch_t hw_ch;
+
+	pwm_sw_ch_to_hw_id_ch(sw_ch, &id, &hw_ch);
+	PWM_RETURN_ON_INVALID_CHAN(hw_ch);
+	pwm_hal_set_flip_mode(&s_pwm[id].hal, hw_ch, 1);
+
+	/* duty ratio is 0% */
+	if (config->duty_cycle == 0 &&
+		config->duty2_cycle == 0 &&
+		config->duty3_cycle == 0) {
+		pwm_set_channel_config(sw_ch, config);
+		pwm_hal_set_init_signal_low(&s_pwm[id].hal, hw_ch);
+		return BK_OK;
+	}
+
+	/* duty ratio is 100% */
+	if (config->duty_cycle == config->period_cycle &&
+		config->duty2_cycle == 0 &&
+		config->duty3_cycle == 0) {
+		config->duty_cycle = 0;
+		config->duty2_cycle = 0;
+		config->duty3_cycle = 0;
+		pwm_set_channel_config(sw_ch, config);
+		pwm_hal_set_init_signal_high(&s_pwm[id].hal, hw_ch);
+		return BK_OK;
+	}
+
+	pwm_set_channel_config(sw_ch, config);
+
+	return BK_OK;
+}
+
+static uint32_t pwm_phase_shift_find_first_valid_index(const pwm_phase_shift_config_t *shift_config)
+{
+	for (uint32_t index = 0; index < shift_config->chan_num; index++) {
+		if ((shift_config->duty_config[index].duty_cycle != 0) &&
+			(shift_config->duty_config[index].duty_cycle != shift_config->period_cycle)) {
+			return index;
+		}
+	}
+	return 0xff;
+}
+
+static void pwm_phase_shift_set_duty(void)
+{
+	if (s_shift_config == NULL) {
+		return;
+	}
+
+	__attribute__((unused)) bk_err_t ret = 0;
+	pwm_id_t id;
+	pwm_ch_t hw_ch;
+	uint32_t ccr1 = 0, ccr2 = 0, duty_cycle = 0;
+	pwm_period_duty_config_t pwm_config = {0};
+
+	uint32_t first_valid_index = pwm_phase_shift_find_first_valid_index(s_shift_config);
+	pwm_sw_ch_to_hw_id_ch(s_shift_config->duty_config[0].chan, &id, &hw_ch);
+	pwm_hal_set_uie(&s_pwm[id].hal, hw_ch, 0);
+
+	for (uint32_t index = 0; index < s_shift_config->chan_num; index++) {
+		pwm_sw_ch_to_hw_id_ch(s_shift_config->duty_config[index].chan, &id, &hw_ch);
+		pwm_hal_set_new_config_way(&s_pwm[id].hal, hw_ch, 1);
+		if (s_shift_config->duty_config[index].duty_cycle == 0) {
+			pwm_config.period_cycle = s_shift_config->period_cycle;
+			pwm_config.duty_cycle = 0;
+			pwm_config.duty2_cycle = 0;
+			pwm_config.duty3_cycle = 0;
+			pwm_config.psc = s_shift_config->psc;
+			ret = pwm_set_period_duty_with_phase(s_shift_config->duty_config[index].chan, &pwm_config);
+			s_pwm[id].phase_shift_chan_init_level &= ~BIT(hw_ch);
+		} else if (s_shift_config->duty_config[index].duty_cycle == s_shift_config->period_cycle) {
+			pwm_config.period_cycle = s_shift_config->period_cycle;
+			pwm_config.duty_cycle = s_shift_config->period_cycle;
+			pwm_config.duty2_cycle = 0;
+			pwm_config.duty3_cycle = 0;
+			pwm_config.psc = s_shift_config->psc;
+			ret = pwm_set_period_duty_with_phase(s_shift_config->duty_config[index].chan, &pwm_config);
+			s_pwm[id].phase_shift_chan_init_level |= BIT(hw_ch);
+		} else if (index == first_valid_index) {
+			ccr1 = 0;
+			ccr2 = ccr1 + s_shift_config->duty_config[index].duty_cycle;
+			if ((s_pwm[id].phase_shift_chan_init_level & BIT(hw_ch)) == 0) {
+				pwm_hal_set_init_signal_high(&s_pwm[id].hal, hw_ch);
+			}
+			pwm_config.period_cycle = s_shift_config->period_cycle;
+			pwm_config.duty_cycle = s_shift_config->period_cycle;
+			pwm_config.duty2_cycle = ccr2;
+			pwm_config.duty3_cycle = 0;
+			pwm_config.psc = s_shift_config->psc;
+			ret = pwm_set_period_duty_with_phase(s_shift_config->duty_config[index].chan, &pwm_config);
+			s_pwm[id].phase_shift_chan_init_level |= BIT(hw_ch);
+		} else {
+			ccr1 = ccr2;
+			duty_cycle = s_shift_config->duty_config[index].duty_cycle;
+			pwm_config.psc = s_shift_config->psc;
+			pwm_config.period_cycle = s_shift_config->period_cycle;
+			if ((ccr2 + duty_cycle) > s_shift_config->period_cycle) {
+				if ((s_pwm[id].phase_shift_chan_init_level & BIT(hw_ch)) == 0) {
+					pwm_hal_set_init_signal_high(&s_pwm[id].hal, hw_ch);
+				}
+				ccr2 = ccr2 + s_shift_config->duty_config[index].duty_cycle - s_shift_config->period_cycle;
+				s_pwm[id].phase_shift_chan_init_level |= BIT(hw_ch);
+			} else {
+				if (s_pwm[id].phase_shift_chan_init_level & BIT(hw_ch)) {
+					pwm_hal_set_init_signal_low(&s_pwm[id].hal, hw_ch);
+				}
+				ccr2 = ccr2 + s_shift_config->duty_config[index].duty_cycle;
+				s_pwm[id].phase_shift_chan_init_level &= ~BIT(hw_ch);
+			}
+			pwm_config.duty_cycle = ccr1;
+			pwm_config.duty2_cycle = ccr2;
+			pwm_config.duty3_cycle = 0;
+			ret = pwm_set_period_duty_with_phase(s_shift_config->duty_config[index].chan, &pwm_config);
+		}
+	}
+}
+
+bk_err_t bk_pwm_phase_shift_init(const pwm_phase_shift_config_t *shift_config)
+{
+	BK_RETURN_ON_NULL(shift_config);
+	PWM_RETURN_ON_INVALID_CHAN_NUM(shift_config);
+	PWM_PHASE_SHIFT_RETURN_ON_INVALID_DUTY(shift_config);
+
+	bk_err_t ret = 0;
+	pwm_id_t id;
+	pwm_ch_t hw_ch;
+	uint32_t ccr1 = 0, ccr2 = 0, duty_cycle = 0;
+	pwm_init_config_t pwm_init_config = {0};
+
+	s_shift_config = (pwm_phase_shift_config_t *)os_malloc(sizeof(pwm_phase_shift_config_t));
+	if (s_shift_config == NULL) {
+		return BK_ERR_NO_MEM;
+	}
+
+	s_pwm_mode |= PWM_PHASE_SHIFT_MODE;
+	os_memset(&s_phase_shift_multi_hw_ch, 0, sizeof(s_phase_shift_multi_hw_ch));
+	memcpy(s_shift_config, shift_config, sizeof(pwm_phase_shift_config_t));
+	uint32_t first_valid_index = pwm_phase_shift_find_first_valid_index(shift_config);
+	s_phase_shift_first_valid_ch = shift_config->duty_config[0].chan;
+
+	for (uint32_t index = 0; index < shift_config->chan_num; index++) {
+		pwm_sw_ch_to_hw_id_ch(shift_config->duty_config[index].chan, &id, &hw_ch);
+		if (shift_config->duty_config[index].duty_cycle == 0) {
+			pwm_init_config.period_cycle = shift_config->period_cycle;
+			pwm_init_config.duty_cycle = 0;
+			pwm_init_config.duty2_cycle = 0;
+			pwm_init_config.duty3_cycle = 0;
+			pwm_init_config.psc = shift_config->psc;
+			ret = pwm_init_with_phase(shift_config->duty_config[index].chan, &pwm_init_config);
+			s_pwm[id].phase_shift_chan_init_level &= ~BIT(hw_ch);
+		} else if (shift_config->duty_config[index].duty_cycle == shift_config->period_cycle) {
+			pwm_init_config.period_cycle = shift_config->period_cycle;
+			pwm_init_config.duty_cycle = shift_config->period_cycle;
+			pwm_init_config.duty2_cycle = 0;
+			pwm_init_config.duty3_cycle = 0;
+			pwm_init_config.psc = shift_config->psc;
+			ret = pwm_init_with_phase(shift_config->duty_config[index].chan, &pwm_init_config);
+			s_pwm[id].phase_shift_chan_init_level |= BIT(hw_ch);
+		} else if (index == first_valid_index) {
+			ccr1 = 0;
+			ccr2 = ccr1 + shift_config->duty_config[index].duty_cycle;
+			pwm_hal_set_init_signal_high(&s_pwm[id].hal, hw_ch);
+			pwm_init_config.period_cycle = shift_config->period_cycle;
+			pwm_init_config.duty_cycle = shift_config->period_cycle;
+			pwm_init_config.duty2_cycle = ccr2;
+			pwm_init_config.duty3_cycle = 0;
+			pwm_init_config.psc = shift_config->psc;
+			ret = pwm_init_with_phase(shift_config->duty_config[index].chan, &pwm_init_config);
+			s_pwm[id].phase_shift_chan_init_level |= BIT(hw_ch);
+		} else {
+			ccr1 = ccr2;
+			duty_cycle = shift_config->duty_config[index].duty_cycle;
+			if ((ccr2 + duty_cycle) > shift_config->period_cycle) {
+				pwm_hal_set_init_signal_high(&s_pwm[id].hal, hw_ch);
+				ccr2 = ccr2 + shift_config->duty_config[index].duty_cycle - shift_config->period_cycle;
+				s_pwm[id].phase_shift_chan_init_level |= BIT(hw_ch);
+			} else {
+				pwm_hal_set_init_signal_low(&s_pwm[id].hal, hw_ch);
+				ccr2 = ccr2 + shift_config->duty_config[index].duty_cycle;
+				s_pwm[id].phase_shift_chan_init_level &= ~BIT(hw_ch);
+			}
+			pwm_init_config.period_cycle = shift_config->period_cycle;
+			pwm_init_config.duty_cycle = ccr1;
+			pwm_init_config.duty2_cycle = ccr2;
+			pwm_init_config.duty3_cycle = 0;
+			pwm_init_config.psc = shift_config->psc;
+			ret = pwm_init_with_phase(shift_config->duty_config[index].chan, &pwm_init_config);
+		}
+		s_phase_shift_multi_hw_ch[id] |= BIT(hw_ch);
+	}
+
+	return ret;
+}
+
 bk_err_t bk_pwm_phase_shift_deinit(void)
 {
-	bk_pwm_phase_shift_stop();
+	if (s_shift_config) {
+		os_free(s_shift_config);
+		s_shift_config = NULL;
+	}
+	s_pwm_mode &= ~PWM_PHASE_SHIFT_MODE;
 	os_memset(&s_phase_shift_multi_hw_ch, 0, sizeof(s_phase_shift_multi_hw_ch));
+	bk_pwm_phase_shift_stop();
+
 	return BK_OK;
 }
 
 bk_err_t bk_pwm_phase_shift_start(void)
 {
-	for (uint32_t id = 0; id < SOC_PWM_UNIT_NUM; id++) {
-		pwm_hal_set_multi_chan_tim_enable(&s_pwm[id].hal, s_phase_shift_multi_hw_ch[id], 1);
+	pwm_id_t id;
+	pwm_ch_t hw_ch;
+
+	pwm_sw_ch_to_hw_id_ch(s_phase_shift_first_valid_ch, &id, &hw_ch);
+	if (id == 1) {
+		pwm_hal_set_multi_chan_tim_enable(&s_pwm[1].hal, s_phase_shift_multi_hw_ch[1], 1);
+		pwm_hal_set_multi_chan_tim_enable(&s_pwm[0].hal, s_phase_shift_multi_hw_ch[0], 1);
+	} else {
+		pwm_hal_set_multi_chan_tim_enable(&s_pwm[0].hal, s_phase_shift_multi_hw_ch[0], 1);
+		pwm_hal_set_multi_chan_tim_enable(&s_pwm[1].hal, s_phase_shift_multi_hw_ch[1], 1);
 	}
+
 	return BK_OK;
 }
 
@@ -1358,6 +1608,60 @@ bk_err_t bk_pwm_phase_shift_stop(void)
 	for (uint32_t id = 0; id < SOC_PWM_UNIT_NUM; id++) {
 		pwm_hal_set_multi_chan_tim_enable(&s_pwm[id].hal, s_phase_shift_multi_hw_ch[id], 0);
 	}
+	return BK_OK;
+}
+
+bk_err_t bk_pwm_phase_shift_set_duty_and_update(const pwm_phase_shift_config_t *shift_config)
+{
+	BK_RETURN_ON_NULL(shift_config);
+	PWM_RETURN_ON_INVALID_CHAN_NUM(shift_config);
+	PWM_PHASE_SHIFT_RETURN_ON_INVALID_DUTY(shift_config);
+
+	bk_err_t ret = 0;
+	pwm_id_t id;
+	pwm_ch_t hw_ch;
+
+	bk_pm_module_vote_cpu_freq(PM_DEV_ID_PWM_2, PM_CPU_FRQ_120M);
+	pwm_sw_ch_to_hw_id_ch(shift_config->duty_config[0].chan, &id, &hw_ch);
+
+	uint32_t int_level = rtos_disable_int();
+	memcpy(s_shift_config, shift_config, sizeof(pwm_phase_shift_config_t));
+	pwm_hal_set_uie(&s_pwm[id].hal, hw_ch, 1);
+	rtos_enable_int(int_level);
+
+	return ret;
+}
+
+bk_err_t bk_pwm_phase_shift_set_duty(pwm_chan_t chan, uint32_t duty_cycle)
+{
+	BK_RETURN_ON_NULL(s_shift_config);
+	if (duty_cycle == 1 || duty_cycle > s_shift_config->period_cycle) {
+		return BK_ERR_PWM_PERIOD_DUTY;
+	}
+
+	for (uint32_t index = 0; index < s_shift_config->chan_num; index++) {
+		if (s_shift_config->duty_config[index].chan == chan) {
+			s_shift_config->duty_config[index].duty_cycle = duty_cycle;
+			return BK_OK;;
+		}
+	}
+
+	return BK_ERR_PWM_CHAN_ID;
+}
+
+bk_err_t bk_pwm_phase_shift_update_duty(void)
+{
+	BK_RETURN_ON_NULL(s_shift_config);
+
+	pwm_id_t id;
+	pwm_ch_t hw_ch;
+
+	bk_pm_module_vote_cpu_freq(PM_DEV_ID_PWM_2, PM_CPU_FRQ_120M);
+	pwm_sw_ch_to_hw_id_ch(s_shift_config->duty_config[0].chan, &id, &hw_ch);
+	uint32_t int_level = rtos_disable_int();
+	pwm_hal_set_uie(&s_pwm[id].hal, hw_ch, 1);
+	rtos_enable_int(int_level);
+
 	return BK_OK;
 }
 
@@ -1547,21 +1851,28 @@ static void pwm_isr_common(pwm_id_t id)
 	int_status = pwm_hal_get_pwm_interrupt_status(hal);
 	pwm_hal_clr_interrupt_status(hal, int_status);
 
-	for (pwm_group_t group = 0; group < PWM_GROUP_NUM; group++) {
-		pwm_sw_ch_to_hw_id_ch(s_pwm_groups[group].chan1, &unit_id, &hw_ch);
-		hal = &s_pwm[unit_id].hal;
-		if (pwm_hal_is_uif_triggered(hal, hw_ch, int_status)) {
-			if (s_pwm_groups[group].is_valid && s_pwm_groups[group].is_param_need_update) {
-				pwm_group_update_config(group);
+#if CONFIG_PWM_PHASE_SHIFT
+	if (s_pwm_mode & PWM_PHASE_SHIFT_MODE) {
+		pwm_phase_shift_set_duty();
+	} else
+#endif
+	{
+		for (pwm_group_t group = 0; group < PWM_GROUP_NUM; group++) {
+			pwm_sw_ch_to_hw_id_ch(s_pwm_groups[group].chan1, &unit_id, &hw_ch);
+			hal = &s_pwm[unit_id].hal;
+			if (pwm_hal_is_uif_triggered(hal, hw_ch, int_status)) {
+				if (s_pwm_groups[group].is_valid && s_pwm_groups[group].is_param_need_update) {
+					pwm_group_update_config(group);
+				}
 			}
 		}
-	}
 
-	hal = &s_pwm[id].hal;
-	for (hw_ch = 0; hw_ch < SOC_PWM_CHAN_NUM_PER_UNIT; hw_ch++) {
-		if (pwm_hal_get_pwm_sr_ccxif(hal, hw_ch)) {
-			if (s_pwm_isr[id][hw_ch])
-				s_pwm_isr[id][hw_ch](hw_ch);
+		hal = &s_pwm[id].hal;
+		for (hw_ch = 0; hw_ch < SOC_PWM_CHAN_NUM_PER_UNIT; hw_ch++) {
+			if (pwm_hal_get_pwm_sr_ccxif(hal, hw_ch)) {
+				if (s_pwm_isr[id][hw_ch])
+					s_pwm_isr[id][hw_ch](hw_ch);
+			}
 		}
 	}
 }

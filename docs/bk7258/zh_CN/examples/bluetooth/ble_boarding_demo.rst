@@ -30,15 +30,15 @@ demo简介
 	
 3、GATT服务:
 
- 1) Service UUID: 0xFFFF 
- 2) SSID characteristic UUID: 0x9ABC 
- 3) PASSWORD characteristic UUID: 0xDEF0 
+ 1) Service UUID: 0xFA00 
+ 2) SSID characteristic UUID: 0xEA05 
+ 3) PASSWORD characteristic UUID: 0xEA06 
 
 demo示例
 --------------------------
  - 蓝牙配网demo使用的API接口详细说明请参考 ``/api-reference/bluetooth/ble.html``
 
- - 蓝牙配网demo具体的示例代码详见 ``demo/bluetooth/ble_boarding/ble_boarding_demo.c``
+ - 蓝牙配网demo具体的示例代码详见 ``components/bk_bluetooth/bt/ble_boarding/ble_boarding.c``
 
 demo工作流程
 --------------------------
@@ -53,11 +53,11 @@ demo工作流程
 
 demo操作说明
 --------------------------
- 1) 通过SSCOM软件发送命令：  ``AT+BLEBOARDING=0201060908373235365f424c45,D`` ;
- 2) 手机打开nRF Connect APP进行scan，找到设备名为7236_BLE的设备并点击连接按钮;
- 3) 设备连接上之后找到service UUID为0xFFFF的服务并点击;
- 4) 在服务下找到UUID为0x9ABC的characteristic，写入配网所需的WIFI SSID的hex数据并点击send;
- 5) 在服务下找到UUID为0xDEF0的characteristic，写入配网所需的WIFI PASSWORD的hex数据并点击send;
+ 1) 通过SSCOM软件发送命令：  ``AT+BLEBOARDING=0201060908373235385f424c45,D`` ;
+ 2) 手机打开nRF Connect APP进行scan，找到设备名为7258_BLE的设备并点击连接按钮;
+ 3) 设备连接上之后找到service UUID为0xFA00的服务并点击;
+ 4) 在服务下找到UUID为0xEA05的characteristic，写入配网所需的WIFI SSID的hex数据并点击send;
+ 5) 在服务下找到UUID为0xEA06的characteristic，写入配网所需的WIFI PASSWORD的hex数据并点击send;
  6) 在SSCOM中会输出显示配网成功并获得IP的log;
  7) 在SSOCM中输入 ``ping 192.xxx.xxx.xxx`` 的命令去ping所连路由器的IP地址检查是否配网成功。
 

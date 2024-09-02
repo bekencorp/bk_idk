@@ -48,11 +48,7 @@
 
 // pin definition.
 #ifndef TP_RST_GPIO_ID
-#if CONFIG_SOC_BK7256
 	#define TP_RST_GPIO_ID (GPIO_9)
-#else //BK7258
-	#define TP_RST_GPIO_ID (GPIO_32)
-#endif
 #endif
 #ifndef TP_INT_GPIO_ID
 	#define TP_INT_GPIO_ID (GPIO_6)
@@ -163,7 +159,11 @@ int tp_i2c_read_uint8(uint8_t addr, uint8_t reg, uint8_t *buff, uint16_t len)
 	mem_param.data_size = len;
 	mem_param.timeout_ms = TP_I2C_TIMEOUT;
 
+#if CONFIG_SIM_I2C_HW_BOARD_V3
+	return bk_i2c_memory_read_v2(TP_I2C_ID, &mem_param);
+#else
 	return bk_i2c_memory_read(TP_I2C_ID, &mem_param);
+#endif
 }
 
 int tp_i2c_write_uint8(uint8_t addr, uint8_t reg, uint8_t *buff, uint16_t len)
@@ -189,7 +189,11 @@ int tp_i2c_write_uint8(uint8_t addr, uint8_t reg, uint8_t *buff, uint16_t len)
 	mem_param.data_size = len;
 	mem_param.timeout_ms = TP_I2C_TIMEOUT;
 
+#if CONFIG_SIM_I2C_HW_BOARD_V3
+	return bk_i2c_memory_write_v2(TP_I2C_ID, &mem_param);
+#else
 	return bk_i2c_memory_write(TP_I2C_ID, &mem_param);
+#endif
 }
 
 int tp_i2c_read_uint16(uint8_t addr, uint16_t reg, uint8_t *buff, uint16_t len)
@@ -215,7 +219,11 @@ int tp_i2c_read_uint16(uint8_t addr, uint16_t reg, uint8_t *buff, uint16_t len)
 	mem_param.data_size = len;
 	mem_param.timeout_ms = TP_I2C_TIMEOUT;
 
+#if CONFIG_SIM_I2C_HW_BOARD_V3
+	return bk_i2c_memory_read_v2(TP_I2C_ID, &mem_param);
+#else
 	return bk_i2c_memory_read(TP_I2C_ID, &mem_param);
+#endif
 }
 
 int tp_i2c_write_uint16(uint8_t addr, uint16_t reg, uint8_t *buff, uint16_t len)
@@ -241,7 +249,11 @@ int tp_i2c_write_uint16(uint8_t addr, uint16_t reg, uint8_t *buff, uint16_t len)
 	mem_param.data_size = len;
 	mem_param.timeout_ms = TP_I2C_TIMEOUT;
 
+#if CONFIG_SIM_I2C_HW_BOARD_V3
+	return bk_i2c_memory_write_v2(TP_I2C_ID, &mem_param);
+#else
 	return bk_i2c_memory_write(TP_I2C_ID, &mem_param);
+#endif
 }
 
 #if (TP_POWER_CTRL_EN > 0)
@@ -328,7 +340,12 @@ bk_err_t bk_tp_i2c_init(const tp_config_t *config)
 
 	i2c_config.baud_rate = I2C_BAUD_RATE_100KHZ;
 	i2c_config.addr_mode = I2C_ADDR_MODE_7BIT;
+
+#if CONFIG_SIM_I2C_HW_BOARD_V3
+	if (BK_OK != bk_i2c_init_v2(TP_I2C_ID, &i2c_config))
+#else
 	if (BK_OK != bk_i2c_init(TP_I2C_ID, &i2c_config))
+#endif
 	{
 		LOGE("%s, I2C%d init fail!\r\n", TP_I2C_ID);
 		return BK_FAIL;

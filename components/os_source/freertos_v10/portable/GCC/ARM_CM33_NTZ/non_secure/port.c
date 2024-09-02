@@ -619,6 +619,20 @@ PRIVILEGED_DATA static volatile uint32_t ulCriticalNesting = 0xaaaaaaaaUL;
 #endif /* configUSE_TICKLESS_IDLE */
 /*-----------------------------------------------------------*/
 
+void vPortEnableTimerInterrupt( void )
+{
+	uint32_t sys_tick = REG_READ(0xE000E010);
+	sys_tick |= (1 << 1);
+	REG_WRITE(0xE000E010,sys_tick);
+}
+
+void vPortDisableTimerInterrupt(void)
+{
+	uint32_t sys_tick = REG_READ(0xE000E010);
+	sys_tick &= ~(1 << 1);
+	REG_WRITE(0xE000E010,sys_tick);
+}
+
 __attribute__( ( weak ) ) void vPortSetupTimerInterrupt( void ) /* PRIVILEGED_FUNCTION */
 {
 #if CONFIG_SYSTICK_32K
@@ -813,12 +827,10 @@ void vPortExitCritical( void ) /* PRIVILEGED_FUNCTION */
     }
 }
 /*-----------------------------------------------------------*/
-uint32_t     g_systick_handler_lr;
+
 void SysTick_Handler( void ) /* PRIVILEGED_FUNCTION */
 {
     uint32_t ulPreviousMask;
-
-	g_systick_handler_lr = __get_LR();
 
     ulPreviousMask = portSET_INTERRUPT_MASK_FROM_ISR();
     {
@@ -829,6 +841,18 @@ void SysTick_Handler( void ) /* PRIVILEGED_FUNCTION */
             portNVIC_INT_CTRL_REG = portNVIC_PENDSVSET_BIT;
         }
     }
+    #if CONFIG_SOC_BK7236XX
+    {
+        #if CONFIG_AON_RTC
+        uint32_t rtos_get_time_diff(void);
+        TickType_t slept_ticks = rtos_get_time_diff();
+
+        if(slept_ticks > 1) {
+            vTaskStepTick(slept_ticks - 1);
+        }
+        #endif // CONFIG_AON_RTC
+    }
+    #endif // CONFIG_SOC_BK7236XX
     portCLEAR_INTERRUPT_MASK_FROM_ISR( ulPreviousMask );
 }
 /*-----------------------------------------------------------*/

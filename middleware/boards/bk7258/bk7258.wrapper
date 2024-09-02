@@ -5,6 +5,9 @@ import subprocess
 import sys
 import logging
 import getpass
+import time
+import shutil
+import csv
 
 from argparse import _MutuallyExclusiveGroup
 from genericpath import exists
@@ -42,29 +45,112 @@ def run_cmd_with_ret(cmd):
 		print(err)
 		exit(1)
 
-def install_configs(cfg_dir, install_dir):
+def move_file(bin_name, src_dir, dst_dir):
+	logging.debug(f'move {bin_name} from {src_dir}')
+	logging.debug(f'to {dst_dir}')
+	if os.path.exists(f'{src_dir}/{bin_name}') == True:
+		shutil.move(f'{src_dir}/{bin_name}', f'{dst_dir}')
+
+def copy_file(src, dst):
+	logging.debug(f'copy {src} to {dst}')
+	logging.debug(f'to {dst}')
+	if os.path.exists(f'{src}') == True:
+		shutil.copy(f'{src}', f'{dst}')
+
+def copy_files(postfix, src_dir, dst_dir):
+	logging.debug(f'copy *{postfix} from {src_dir}')
+	logging.debug(f'to {dst_dir}')
+	for f in os.listdir(src_dir):
+		if f.endswith(postfix):
+			if os.path.isfile(f'{src_dir}/{f}'):
+				shutil.copy(f'{src_dir}/{f}', f'{dst_dir}/{f}')
+
+def partition_csv_is_valid(partition_csv):
+	try:
+		with open(partition_csv, 'r') as f:
+			rows = csv.reader(f)
+			cnt = 0
+			for row in rows:
+				logging.debug(f'{row}')
+				cnt = cnt + 1
+			logging.debug(f'cnt={cnt}')
+			if cnt < 2:
+				return False
+			else:
+				return True
+	except FileNotFoundError:
+		logging.error(f'failed to open {partition_csv}')
+		return False
+	
+def install_configs(cfg_dir, install_dir, is_wait_partitions=False):
 	logging.debug(f'install configs from: {cfg_dir}')
 	logging.debug(f'to: {install_dir}')
 	if os.path.exists(f'{cfg_dir}') == False:
 		return
 
-	run_cmd(f'cp -r {cfg_dir}/*.bin {install_dir} 2>/dev/null || :')
-	run_cmd(f'cp -r {cfg_dir}/*.csv {install_dir} 2>/dev/null || :')
-	run_cmd(f'cp -r {cfg_dir}/*.json {install_dir} 2>/dev/null || :')
-	run_cmd(f'cp -r {cfg_dir}/*.pem {install_dir} 2>/dev/null || :')
+	if os.path.exists(f'{cfg_dir}/partitions.csv') and os.path.exists(f'{install_dir}/partitions.csv'):
+		logging.debug(f'exists {cfg_dir}/partitions.csv')
+		logging.debug(f'remove {install_dir}/partitions.csv')
+		os.remove(f'{install_dir}/partitions.csv')
+
+	if os.path.exists(f'{cfg_dir}/csv/partitions.csv') and os.path.exists(f'{install_dir}/csv/partitions.csv'):
+		logging.debug(f'exists {cfg_dir}/csv/partitions.csv')
+		logging.debug(f'remove {install_dir}/partitions.csv')
+		os.remove(f'{install_dir}/csv/partitions.csv')
+
+	for f in os.listdir(f'{cfg_dir}'):
+		if f.endswith('.csv') or f.endswith('.bin') or f.endswith('.json') or f.endswith('.pem'):
+			if f == 'partitions.csv':
+				continue;
+
+			if os.path.isfile(f'{cfg_dir}/{f}'):
+				shutil.copy(f'{cfg_dir}/{f}', f'{install_dir}/{f}')
 
 	if os.path.exists(f'{cfg_dir}/key') == True:
-		run_cmd(f'cp -r {cfg_dir}/key/*.pem {install_dir} 2>/dev/null || :')
+		copy_files('.pem', f'{cfg_dir}/key', install_dir)
 	if os.path.exists(f'{cfg_dir}/csv') == True:
-		run_cmd(f'cp -r {cfg_dir}/csv/*.csv {install_dir} 2>/dev/null || :')
+		copy_files('.csv', f'{cfg_dir}/csv', install_dir)
 	if os.path.exists(f'{cfg_dir}/regs') == True:
-		run_cmd(f'cp -r {cfg_dir}/regs/*.csv {install_dir} 2>/dev/null || :')
+		copy_files('.csv', f'{cfg_dir}/regs', install_dir)
+
+	if is_wait_partitions:
+		# wait for 1s in case partitions table was outdated.
+		if os.path.isfile(f'{cfg_dir}/partitions.csv'):
+			time.sleep(1)
+		# try 5 sec wait partitions.csv
+		for tmp_cnt in range(5):
+			if os.path.isfile(f'{cfg_dir}/partitions.csv'):
+				try:
+					shutil.copy(f'{cfg_dir}/partitions.csv', f'{install_dir}/partitions.csv')
+
+					is_valid = False
+					for validate_cnt in range(3):
+						if partition_csv_is_valid(f'{install_dir}/partitions.csv'):
+							logging.debug(f'partition is valid')
+							is_valid = True
+							break;
+						else:
+							logging.error(f'partition is invalid, delay 1s')
+							time.sleep(1)
+							continue
+					if is_valid:
+						break
+					else:
+						continue
+				except FileNotFoundError:
+					time.sleep(1)
+					logging.error(f'waiting partitions.csv {tmp_cnt} sec')
+					continue
+			else:
+				time.sleep(1)
+				logging.debug(f'waiting partitions.csv {tmp_cnt} sec')
+
+
 def copy_binary(bin_name, src_dir, dst_dir):
 	logging.debug(f'copy {bin_name} from {src_dir}')
 	logging.debug(f'to {dst_dir}')
 	if os.path.exists(f'{src_dir}/{bin_name}') == True:
-		run_cmd(f'cp -r {src_dir}/{bin_name} {dst_dir}')
-	
+		copy_file(f'{src_dir}/{bin_name}', dst_dir)
 
 def pack(prebuild):
 
@@ -96,17 +182,20 @@ def pack(prebuild):
 	_BUILD_DIR = f'{bin_dir}/_build'
 
 	logging.debug(f'Create temporary _build')
-	run_cmd(f'mkdir -p {_BUILD_DIR}')
+	os.makedirs(_BUILD_DIR, exist_ok=True)
 
 	saved_cur_dir = os.getcwd()
 	os.chdir(_BUILD_DIR)
 	logging.debug(f'cd {_BUILD_DIR}')
 
-	run_cmd(f'cp -r {base_cfg_dir}/partitions/bl1_control.json {_BUILD_DIR}/')
+	copy_file(f'{base_cfg_dir}/partitions/bl1_control.json', f'{_BUILD_DIR}/bl1_control.json')
 	install_configs(BASE_CFG_DIR, _BUILD_DIR)
 	install_configs(prefered_cfg_dir, _BUILD_DIR)
 	install_configs(f'{prefered_cfg_dir}/common', _BUILD_DIR)
-	install_configs(f'{prefered_cfg_dir}/{cpu0_armino_soc}', _BUILD_DIR)
+	install_configs(f'{prefered_cfg_dir}/{cpu0_armino_soc}', _BUILD_DIR, True)
+
+	#delay 100ms
+	time.sleep(0.1)
 
 	debug_option = ''
 	if (debug):
@@ -117,35 +206,35 @@ def pack(prebuild):
 		if (gen_dir == None):
 			logging.error(f'Generated dir should NOT be empty')
 			exit(1)
-		run_cmd(f'{BK_UTILS_TOOL} gen --gencode {debug_option} -t {tools_dir}')
+		run_cmd(f'{BK_UTILS_TOOL} gen all --debug')
 		cwd = os.getcwd()
-		run_cmd(f'cp -r {cwd}/partitions_partition.h {cwd}/partitions_gen.h')
+		copy_file(f'{cwd}/partitions_partition.h', f'{cwd}/partitions_gen.h')
 		return
 
 	logging.debug(f'Copy Armino bin to {_BUILD_DIR}')
 
 	if (os.path.exists(f'{CMAKE_BIN_DIR}/app.bin') == True):
-		run_cmd(f'cp -r {CMAKE_BIN_DIR}/app.bin {_BUILD_DIR}/cpu0_app.bin')
+		copy_file(f'{CMAKE_BIN_DIR}/app.bin', f'{_BUILD_DIR}/cpu0_app.bin')
 
 	TFM_BIN_DIR = f'{CMAKE_BIN_DIR}/tfm_install/outputs'
 	if (os.path.exists(TFM_BIN_DIR) == True):
 		logging.debug(f'Copy TFM bin to {_BUILD_DIR}')
-		run_cmd(f'cp -r {TFM_BIN_DIR}/*.bin {_BUILD_DIR}')
+		copy_files('*.bin', TFM_BIN_DIR, _BUILD_DIR)
 
 	if (os.path.exists(cpu1_bin) == True):
-		run_cmd(f'cp -r {cpu1_bin} {_BUILD_DIR}/cpu1_app.bin')
+		copy_file(cpu1_bin, f'{_BUILD_DIR}/cpu1_app.bin')
 	else:
 		logging.info(f'{cpu1_bin} not exist, could compile: make {soc}_cp1')
 	if (os.path.exists(cpu2_bin) == True):
-		run_cmd(f'cp -r {cpu2_bin} {_BUILD_DIR}/cpu2_app.bin')
+		copy_file(cpu2_bin, f'{_BUILD_DIR}/cpu2_app.bin')
 	else:
 		logging.info(f'{cpu2_bin} not exist, could compile: make {soc}_cp2')
 
 	dest_boot_dir = f'{armino_path}/components/bk_libs/{armino_soc}/bootloader/normal_bootloader'
 
-	run_cmd(f'mkdir -p {dest_boot_dir}')
+	os.makedirs(dest_boot_dir, exist_ok=True)
 	if (os.path.exists(bootloader_bin) == True):
-		run_cmd(f'cp -r {bootloader_bin} {dest_boot_dir}/bootloader.bin')
+		copy_file(bootloader_bin, f'{dest_boot_dir}/bootloader.bin')
 		run_cmd('%s/cmake_Gen_image genfile -injsonfile %s/config.json -infile %s/bootloader.bin -outfile %s/bootloader.bin -genjson %s/partition_bootloader.json'%(pack_boot_tools, pack_boot_tools, dest_boot_dir,_BUILD_DIR, pack_boot_tools))
 	elif (os.path.exists(f'{dest_boot_dir}/bootloader.bin') == True):
 		logging.info(f'{bootloader_bin} not exist, could compile:')
@@ -153,7 +242,7 @@ def pack(prebuild):
 	else:
 		pass
 
-	run_cmd(f'{BK_UTILS_TOOL} gen --genbin {debug_option} -t {tools_dir}')
+	run_cmd(f'{BK_UTILS_TOOL} pack all --debug')
 
 	logging.debug(f'copy binaries')
 	copy_binary('ota.bin', _BUILD_DIR, CMAKE_BIN_DIR)

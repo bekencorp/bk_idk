@@ -23,7 +23,6 @@ OUTPUT_FORMAT("elf32-littlearm", "elf32-bigarm", "elf32-littlearm")
 __MSP_STACK_SIZE = (4 << 10);
 __MIN_HEAP_SIZE  = (90 << 10);
 __MPU_PROTECT_SIZE = 0x0;
-
 __SWAP_SIZE = (0);
 
 #if CONFIG_CPU0_SRAM_BASE
@@ -31,13 +30,13 @@ __CPU0_APP_RAM_BASE = CONFIG_CPU0_SRAM_BASE;
 #elif CONFIG_SPE
 __CPU0_APP_RAM_BASE = SOC_SRAM0_DATA_BASE;
 #else
-__CPU0_APP_RAM_BASE = SOC_SRAM1_DATA_BASE;
+__CPU0_APP_RAM_BASE = SOC_SRAM0_DATA_BASE + CONFIG_CPU0_SPE_RAM_SIZE;
 #endif
 
 #if CONFIG_SPE
 __CPU0_APP_RAM_SIZE = CONFIG_CPU0_SPE_RAM_SIZE;
 #else
-__CPU0_APP_RAM_SIZE = CONFIG_CPU0_NSPE_RAM_SIZE;
+__CPU0_APP_RAM_SIZE = 0xA0000 - CONFIG_CPU0_SPE_RAM_SIZE;
 #endif
 
 
@@ -106,10 +105,9 @@ SECTIONS
 #else
         __vector_table = .;
         KEEP(*(.vectors))
-        . = ALIGN(512);
+        *(.fix.reset_entry)
 #endif
     } > FLASH
-
 
     .gnu.sgstubs ALIGN(32) : ALIGN(32)
     {
@@ -131,6 +129,11 @@ SECTIONS
 		*shell_task.c.obj *shell_uart.c.obj *uart_driver.c.obj *uart_hal.c.obj
 		)
 	*(.text.* *.rodata *.rodata.*)
+#else
+        *(.text)
+        *(.text.*)
+        *(.rodata)
+        *(.rodata.*)
 #endif
         . = ALIGN(4);
         __devconfig_start = .;
@@ -496,7 +499,6 @@ SECTIONS
         *(.sram_nocache*)
         _nocache_end = .;
 #endif
-
         . = ALIGN(4);
         _bss_end = .;
     } > RAM

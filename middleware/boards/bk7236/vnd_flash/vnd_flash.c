@@ -35,6 +35,7 @@
 #include <common/bk_kernel_err.h>
 #include <os/mem.h>
 #include <vnd_flash_partition.h>
+#include "partitions_gen.h"
 
 /* Logic partition on flash devices */
 const bk_logic_partition_t bk_flash_partitions[BK_PARTITION_MAX_USER] = {
@@ -66,15 +67,35 @@ const bk_logic_partition_t bk_flash_partitions[BK_PARTITION_MAX_USER] = {
     {
         .partition_owner = BK_FLASH_EMBEDDED,
         .partition_description = "usr_config",
+#if CONFIG_TZ && !CONFIG_SPE
+        .partition_start_addr = CONFIG_USER_CONFIG_PHY_PARTITION_OFFSET,
+#else
         .partition_start_addr = 0x3da000,
-        .partition_length = 0x24000,
+#endif
+        .partition_length = 0x22000,
+        .partition_options = PAR_OPT_EXECUTE_DIS | PAR_OPT_READ_EN | PAR_OPT_WRITE_DIS,
+    },
+    [BK_PARTITION_EASYFLASH_USER] = 
+    {
+        .partition_owner = BK_FLASH_EMBEDDED,
+        .partition_description = "easyflash",
+#if CONFIG_TZ && !CONFIG_SPE
+        .partition_start_addr = CONFIG_EASYFLASH_PHY_PARTITION_OFFSET,
+#else
+        .partition_start_addr = 0x3fc000,
+#endif
+        .partition_length = 0x2000,
         .partition_options = PAR_OPT_EXECUTE_DIS | PAR_OPT_READ_EN | PAR_OPT_WRITE_DIS,
     },
     [BK_PARTITION_RF_FIRMWARE_USER] = 
     {
         .partition_owner = BK_FLASH_EMBEDDED,
         .partition_description = "rf_firmware",
+#if CONFIG_TZ && !CONFIG_SPE
+        .partition_start_addr = CONFIG_SYS_RF_PHY_PARTITION_OFFSET,
+#else
         .partition_start_addr = 0x3fe000,
+#endif
         .partition_length = 0x1000,
         .partition_options = PAR_OPT_EXECUTE_DIS | PAR_OPT_READ_EN | PAR_OPT_WRITE_DIS,
     },
@@ -82,7 +103,11 @@ const bk_logic_partition_t bk_flash_partitions[BK_PARTITION_MAX_USER] = {
     {
         .partition_owner = BK_FLASH_EMBEDDED,
         .partition_description = "net_param",
+#if CONFIG_TZ && !CONFIG_SPE
+        .partition_start_addr = CONFIG_SYS_NET_PHY_PARTITION_OFFSET,
+#else
         .partition_start_addr = 0x3ff000,
+#endif
         .partition_length = 0x1000,
         .partition_options = PAR_OPT_EXECUTE_DIS | PAR_OPT_READ_EN | PAR_OPT_WRITE_DIS,
     },

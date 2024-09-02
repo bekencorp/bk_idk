@@ -24,8 +24,8 @@
 #ifndef MBEDTLS_CIPHER_WRAP_H
 #define MBEDTLS_CIPHER_WRAP_H
 
+#include MBEDTLS_CONFIG_FILE
 #include "mbedtls/build_info.h"
-
 #include "mbedtls/cipher.h"
 
 #if defined(MBEDTLS_USE_PSA_CRYPTO)

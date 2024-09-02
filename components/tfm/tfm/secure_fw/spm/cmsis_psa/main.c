@@ -44,6 +44,16 @@ static fih_int tfm_core_init(void)
     enum tfm_hal_status_t hal_status = TFM_HAL_ERROR_GENERIC;
 #endif
 
+    plat_err = bk_flash_driver_init();
+    if (plat_err != TFM_PLAT_ERR_SUCCESS) {
+        FIH_RET(fih_int_encode(TFM_HAL_ERROR_GENERIC));
+    }   
+
+    plat_err = partition_init();
+    if (plat_err != TFM_PLAT_ERR_SUCCESS) {
+        FIH_RET(fih_int_encode(TFM_HAL_ERROR_GENERIC));
+    }   
+
     /*
      * Access to any peripheral should be performed after programming
      * the necessary security components such as PPC/SAU.
@@ -121,11 +131,32 @@ static fih_int tfm_core_init(void)
 uint32_t s_loop = 1;
 #endif
 
+void update_wdt(uint32_t val)
+{
+        REG_WRITE(SOC_WDT_REG_BASE + 4 * 2, 0x3);
+        REG_WRITE(SOC_WDT_REG_BASE + 4 * 4, 0x5A0000 | val);
+        REG_WRITE(SOC_WDT_REG_BASE + 4 * 4, 0xA50000 | val);
+}
+void close_wdt(void)
+{
+	update_wdt(0);
+}
+void update_aon_wdt(uint32_t val)
+{
+        REG_WRITE(SOC_AON_WDT_REG_BASE, 0x5A0000 | val);
+        REG_WRITE(SOC_AON_WDT_REG_BASE, 0xA50000 | val);
+}
+
+
 void tfm_enable_swd(void);
 int main(void)
 {
     fih_int fih_rc = FIH_FAILURE;
 
+    close_wdt();
+#if CONFIG_BL2_WDT
+    update_aon_wdt(CONFIG_BL2_WDT_PERIOD);
+#endif
     /* set Main Stack Pointer limit */
     tfm_arch_set_msplim((uint32_t)&REGION_NAME(Image$$, ARM_LIB_STACK, $$ZI$$Base));
 

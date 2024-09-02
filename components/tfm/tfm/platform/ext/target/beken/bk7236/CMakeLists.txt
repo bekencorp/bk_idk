@@ -58,7 +58,7 @@ endif()
 if(BL2)
 	target_sources(bl2
 		PRIVATE
-			$<$<C_COMPILER_ID:GNU>:${CMAKE_CURRENT_SOURCE_DIR}/gcc/startup_cmsdk_bk7236_bl2.S>
+			$<$<C_COMPILER_ID:GNU>:${CMAKE_CURRENT_SOURCE_DIR}/gcc/startup_cmsdk_bk7236_bl2.c>
 	)
 	target_add_scatter_file(bl2
 			$<$<C_COMPILER_ID:GNU>:${CMAKE_CURRENT_SOURCE_DIR}/gcc/bk7236_bl2.ld>
@@ -72,6 +72,7 @@ set(platform_s_inc
 		${TFM_BEKEN}/common
 		${TFM_BEKEN}/cmsis_drivers
 		${TFM_BEKEN}/native_drivers
+		${TFM_BEKEN}/partition
 		partition
 		${ARMINO_MIDDLEWARE_REPO_PATH}/boards/${SOC}/partitions
 		${PARTITION_HDR_DIR}
@@ -85,20 +86,18 @@ set(platform_s_inc
 
 set(platform_s_src
 		${TFM_BEKEN}/bl2/flash_map.c
+		${TFM_BEKEN}/partition/flash_partition.c
 		${TFM_BEKEN}/cmsis_drivers/Driver_Flash.c
 		${TFM_BEKEN}/cmsis_drivers/Driver_USART.c
 		cmsis_core/system_cmsdk_bk7236.c
 		cmsis_core/mpu.c
 		cmsis_core/cache.c
-		${TFM_BEKEN}/native_drivers/mpc_sie200_drv.c
 		${TFM_BEKEN}/native_drivers/mpu_armv8m_drv.c
-		${TFM_BEKEN}/native_drivers/ppc_sse200_drv.c
 		${TFM_BEKEN}/spm_hal.c
 		$<$<BOOL:${TFM_PSA_API}>:${TFM_BEKEN}/tfm_interrupts.c>
 		${TFM_BEKEN}/tfm_hal_isolation.c
 		${TFM_BEKEN}/tfm_hal_platform.c
 		${TFM_BEKEN}/target_cfg.c
-		${TFM_BEKEN}/native_drivers/ppc_sse200_drv.c
 		${TFM_BEKEN}/native_drivers/arm_uart_drv.c
 		${TFM_BEKEN}/nv_otp/rotpk.c
 		${TFM_BEKEN}/nv_otp/otp_flash.c
@@ -141,6 +140,8 @@ target_sources(platform_ns
 		${TFM_BEKEN}/native_drivers/timer_cmsdk/timer_cmsdk.c
 		${TFM_BEKEN}/cmsis_drivers/Driver_USART.c
 		cmsis_core/system_cmsdk_bk7236.c
+		cmsis_core/mpu.c
+		cmsis_core/cache.c
 		$<$<BOOL:${TFM_PARTITION_PLATFORM}>:${TFM_BEKEN}/plat_test.c>
 )
 
@@ -170,6 +171,7 @@ set(platform_bl2_src
 			${TFM_BEKEN}/bl2/int_bl2.c
 			${TFM_BEKEN}/bl2/hooks_bl2.c
 			${TFM_BEKEN}/bl2/flash_map.c
+			${TFM_BEKEN}/partition/flash_partition.c
 			${TFM_BEKEN}/nv_otp/rotpk.c
 			${TFM_BEKEN}/nv_otp/otp_flash.c
 	)
@@ -180,9 +182,15 @@ set(platform_bl2_src
 		-DCRYPTO_HW_ACCELERATOR
 		-DCONFIG_ENABLE_MCUBOOT_BL2=1
 		-DCONFIG_FLASH_FAST_ERASE=1
+		-DCONFIG_BL2_REG_BASE=1
 		__EN_ICACHE
 		__EN_DCACHE
 	)
+
+if (CONFIG_BL2_VALIDATE_ENABLED_BY_EFUSE)
+	target_compile_definitions(platform_bl2 PUBLIC
+		-DCONFIG_BL2_VALIDATE_ENABLED_BY_EFUSE)
+endif()
 
 	set(platform_bl2_inc
 		PUBLIC
@@ -190,6 +198,7 @@ set(platform_bl2_src
 			${ARMINO_MIDDLEWARE_REPO_PATH}/boards/${SOC}/partitions
 			${PARTITION_HDR_DIR}
 			${TFM_BEKEN}
+			${TFM_BEKEN}/partition
 			cmsis_core
 			${TFM_BEKEN}/retarget
 			${TFM_BEKEN}/bl2
@@ -218,14 +227,17 @@ set(platform_bl2_src
 		)
 	endif()
 
-	if(BL2_SECURE_DEBUG)
 		list(APPEND platform_bl2_inc
 			${TFM_BEKEN}/secure_dbg/device_agent/inc/
 			${TFM_BEKEN}/secure_dbg/device_agent/src/
 		)
 
+
 		list(APPEND platform_bl2_src
-			${TFM_BEKEN}/secure_dbg/device_agent/src/hal_jtag.c
+			${TFM_BEKEN}/secure_dbg/device_agent/src/hal_jtag.c)
+
+	if(BL2_SECURE_DEBUG)
+		list(APPEND platform_bl2_src
 			${TFM_BEKEN}/secure_dbg/device_agent/src/hal_comm_adapt.c
 			${TFM_BEKEN}/secure_dbg/device_agent/src/hal_comm_channel.c
 			${TFM_BEKEN}/secure_dbg/device_agent/src/hal_secure_debug.c
@@ -239,6 +251,19 @@ set(platform_bl2_src
 				CONFIG_BL2_SECURE_DEBUG
 		)
 	endif()
+	if(CONFIG_BL2_WDT)
+		target_compile_definitions(platform_bl2
+			PUBLIC
+				CONFIG_BL2_WDT
+		)
+	endif()
+
+	if(CONFIG_BL2_WDT_PERIOD)
+			target_compile_definitions(platform_bl2
+				PUBLIC
+					CONFIG_BL2_WDT_PERIOD
+			)
+		endif()
 
 	if(MCUBOOT_UPGRADE_STRATEGY STREQUAL OVERWRITE_ONLY)
 		list(APPEND platform_bl2_src
@@ -255,6 +280,21 @@ set(platform_bl2_src
 			${TFM_BEKEN}/armino/driver/flash
 		)
 	endif()
+
+	if(CONFIG_XIP_NO_VERSION)
+		target_compile_definitions(platform_bl2
+			PUBLIC
+				CONFIG_XIP_NO_VERSION
+		)
+	endif()
+
+    if(CONFIG_STARTUP_PERFORMANCE)
+    target_compile_definitions(platform_s PUBLIC CONFIG_STARTUP_PERFORMANCE)
+    target_compile_definitions(platform_ns PUBLIC CONFIG_STARTUP_PERFORMANCE)
+    target_compile_definitions(platform_bl2 PUBLIC CONFIG_STARTUP_PERFORMANCE)
+    target_compile_definitions(bootutil PUBLIC CONFIG_STARTUP_PERFORMANCE)
+    endif()
+
 
 	target_include_directories(platform_bl2 PUBLIC ${platform_bl2_inc})
 	target_sources(platform_bl2 PRIVATE ${platform_bl2_src})

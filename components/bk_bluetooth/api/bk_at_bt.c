@@ -77,15 +77,15 @@
 #define SPP_TX_BUFF_SIZE  4096
 #define SPP_TX_BUFF_LIST_NUM 2
 #define BT_DEVICE_ADDR_ONLY_FRMT_SPECIFIER\
-       "ADDR: %02X:%02X:%02X:%02X:%02X:%02X"
+    "ADDR: %02X:%02X:%02X:%02X:%02X:%02X"
 #define BT_DEVICE_ADDR_ONLY_SPACED_FRMT_SPECIFIER\
-       "ADDR: %02X %02X %02X %02X %02X %02X"
+    "ADDR: %02X %02X %02X %02X %02X %02X"
 #define BT_DEVICE_ADDR_ONLY_PRINT_STR(ref)\
-        (ref)[0U],(ref)[1U],(ref)[2U],(ref)[3U],(ref)[4U],(ref)[5U]
+    (ref)[0U],(ref)[1U],(ref)[2U],(ref)[3U],(ref)[4U],(ref)[5U]
 #define BT_DEVICE_ADDR_FRMT_SPECIFIER\
-        "ADDR: %02X:%02X:%02X:%02X:%02X:%02X, TYPE: %02X"
+    "ADDR: %02X:%02X:%02X:%02X:%02X:%02X, TYPE: %02X"
 #define BT_DEVICE_ADDR_SPACED_FRMT_SPECIFIER\
-        "ADDR: %02X %02X %02X %02X %02X %02X, TYPE: %02X"
+    "ADDR: %02X %02X %02X %02X %02X %02X, TYPE: %02X"
 #define BT_IGNORE_UNUSED_PARAM(v) (void)(v)
 
 #define A2DP_SOURCE_SBC_FRAME_COUNT 5
@@ -93,16 +93,18 @@
 #define AT_SYNC_CMD_TIMEOUT_MS          4000
 #define AT_DISCON_CMD_TIMEOUT_MS        6000
 
-typedef enum{
+typedef enum
+{
     STATE_DISCONNECT = 0,
     STATE_CONNECTING,
     STATE_CONNECTED,
     STATE_PROFILE_DISCONNECT,
     STATE_PROFILE_CONNECTED_AS_CLIENT,
     STATE_PROFILE_CONNECTED_AS_SERVER,
-}connect_state_s;
+} connect_state_s;
 
-typedef struct{
+typedef struct
+{
     uint16_t conn_handle;
     uint8_t conn_state;
     bd_addr_t peer_addr;
@@ -121,7 +123,7 @@ typedef struct{
     uint32_t rx_through_len;
     uint64_t rx_time;
     float speed;
-}spp_env_s;
+} spp_env_s;
 
 
 typedef struct
@@ -133,7 +135,7 @@ typedef struct
     uint8_t start_status;
     uint8_t play_status;
     uint32_t mtu;
-}a2dp_env_s;
+} a2dp_env_s;
 
 
 typedef struct
@@ -170,61 +172,61 @@ static uint16_t mic_data_count = 0;
 static char *tx_through_cmd_start = "spp tx throught start";
 static char *tx_through_cmd_end = "spp tx throught end";
 static API_RESULT bt_spp_event_notify_cb
-                   (
-                       /* IN */  SPP_HANDLE    spp_handle,
-                       /* IN */  SPP_EVENTS    spp_event,
-                       /* IN */  API_RESULT    status,
-                       /* IN */  void *        data,
-                       /* IN */  UINT16        data_length
-                   );
-static int bt_start_inquiry_handle(int sync,int argc, char **argv);
-static int bt_create_connection_handle(int sync,int argc, char **argv);
-static int bt_disconnect_handle(int sync,int argc, char **argv);
-static int bt_spp_init_handle(int sync,int argc, char **argv);
-static int bt_spp_connect_handle(int sync,int argc, char **argv);
-static int bt_spp_tx_handle(int sync,int argc, char **argv);
-static int bt_write_scan_enable_handle(int sync,int argc, char **argv);
-static int bt_read_scan_enable_handle(int sync,int argc, char **argv);
-static int bt_a2dp_sink_connect_handle(int sync,int argc, char **argv);
-static int bt_a2dp_sink_disconnect_handle(int sync,int argc, char **argv);
+(
+    /* IN */  SPP_HANDLE    spp_handle,
+    /* IN */  SPP_EVENTS    spp_event,
+    /* IN */  API_RESULT    status,
+    /* IN */  void         *data,
+    /* IN */  UINT16        data_length
+);
+static int bt_start_inquiry_handle(int sync, int argc, char **argv);
+static int bt_create_connection_handle(int sync, int argc, char **argv);
+static int bt_disconnect_handle(int sync, int argc, char **argv);
+static int bt_spp_init_handle(int sync, int argc, char **argv);
+static int bt_spp_connect_handle(int sync, int argc, char **argv);
+static int bt_spp_tx_handle(int sync, int argc, char **argv);
+static int bt_write_scan_enable_handle(int sync, int argc, char **argv);
+static int bt_read_scan_enable_handle(int sync, int argc, char **argv);
+static int bt_a2dp_sink_connect_handle(int sync, int argc, char **argv);
+static int bt_a2dp_sink_disconnect_handle(int sync, int argc, char **argv);
 #ifdef CONFIG_AUD_INTF
-static int bt_enable_a2dp_sink_test_handle(int sync,int argc, char **argv);
-static int bt_enable_hfp_unit_test_handle(int sync,int argc, char **argv);
-static int bt_avrcp_ctrl_handle(int sync,int argc, char **argv);
-static int bt_a2dp_sink_set_delay_value_handle( int sync,int argc, char **argv);
-static int bt_a2dp_sink_get_delay_value_handle( int sync,int argc, char **argv);
+static int bt_enable_a2dp_sink_test_handle(int sync, int argc, char **argv);
+static int bt_enable_hfp_unit_test_handle(int sync, int argc, char **argv);
+static int bt_avrcp_ctrl_handle(int sync, int argc, char **argv);
+static int bt_a2dp_sink_set_delay_value_handle(int sync, int argc, char **argv);
+static int bt_a2dp_sink_get_delay_value_handle(int sync, int argc, char **argv);
 #if CONFIG_A2DP_SOURCE_DEMO
-static int bt_enable_a2dp_source_connect_handle(int sync,int argc, char **argv);
-static int bt_enable_a2dp_source_disconnect_handle(int sync,int argc, char **argv);
+static int bt_enable_a2dp_source_connect_handle(int sync, int argc, char **argv);
+static int bt_enable_a2dp_source_disconnect_handle(int sync, int argc, char **argv);
 
-static int bt_enable_a2dp_source_start_handle(int sync,int argc, char **argv);
-static int bt_enable_a2dp_source_suspend_handle(int sync,int argc, char **argv);
-static int bt_enable_a2dp_source_stop_handle(int sync,int argc, char **argv);
+static int bt_enable_a2dp_source_start_handle(int sync, int argc, char **argv);
+static int bt_enable_a2dp_source_suspend_handle(int sync, int argc, char **argv);
+static int bt_enable_a2dp_source_stop_handle(int sync, int argc, char **argv);
 
-static int bt_enable_a2dp_source_write_test_handle(int sync,int argc, char **argv);
+static int bt_enable_a2dp_source_write_test_handle(int sync, int argc, char **argv);
 //static int bt_enable_a2dp_source_test_handle(int sync,int argc, char **argv);
 //static int bt_enable_a2dp_source_test_stop_handle(int argc, char **argv);
 #endif
 #endif
 
-static int bt_enable_opp_test_handle(int sync,int argc, char **argv);
-static int bt_spp_through_test_handle(int sync,int argc, char **argv);
+static int bt_enable_opp_test_handle(int sync, int argc, char **argv);
+static int bt_spp_through_test_handle(int sync, int argc, char **argv);
 static void bt_spp_through_poll(char *tx_data);
 
 #if DM_L2CAP_CMD_ENABLE
-static int bt_l2cap_init_handle(int sync,int argc, char **argv);
-static int bt_l2cap_connect_handle(int sync,int argc, char **argv);
-static int bt_l2cap_disconnect_handle(int sync,int argc, char **argv);
-static int bt_l2cap_tx_handle(int sync,int argc, char **argv);
-static int bt_l2cap_stop_srv_handle(int sync,int argc, char **argv);
-static int bt_l2cap_deinit_handle(int sync,int argc, char **argv);
+static int bt_l2cap_init_handle(int sync, int argc, char **argv);
+static int bt_l2cap_connect_handle(int sync, int argc, char **argv);
+static int bt_l2cap_disconnect_handle(int sync, int argc, char **argv);
+static int bt_l2cap_tx_handle(int sync, int argc, char **argv);
+static int bt_l2cap_stop_srv_handle(int sync, int argc, char **argv);
+static int bt_l2cap_deinit_handle(int sync, int argc, char **argv);
 #endif
 
-static int bt_start_inquiry_handle_gap(int sync,int argc, char **argv);
-static int bt_create_connection_handle_gap(int sync,int argc, char **argv);
-static int bt_disconnect_handle_gap(int sync,int argc, char **argv);
-static int bt_write_scan_enable_handle_gap(int sync,int argc, char **argv);
-static int bt_read_scan_enable_handle_gap(int sync,int argc, char **argv);
+static int bt_start_inquiry_handle_gap(int sync, int argc, char **argv);
+static int bt_create_connection_handle_gap(int sync, int argc, char **argv);
+static int bt_disconnect_handle_gap(int sync, int argc, char **argv);
+static int bt_write_scan_enable_handle_gap(int sync, int argc, char **argv);
+static int bt_read_scan_enable_handle_gap(int sync, int argc, char **argv);
 
 
 static uint32_t crc_table(uint32_t index);
@@ -233,7 +235,7 @@ static unsigned int make_crc32_table(void);
 static uint32_t calc_crc32(uint32_t crc, const uint8_t *buf, int len);
 static void bt_spp_clear();
 
-static int bt_at_findcmd_is_sync(char* name);
+static int bt_at_findcmd_is_sync(char *name);
 
 extern int bk_rand(void);
 static int sema_value;
@@ -246,7 +248,7 @@ static int bt_get_addr_from_param(bd_addr_t *bdaddr, char *input_param)
     uint8_t j = 1;
     uint8_t k = 0;
 
-    if ( addr_len != (BK_BLE_GAP_BD_ADDR_LEN * 2 + 5))
+    if (addr_len != (BK_BLE_GAP_BD_ADDR_LEN * 2 + 5))
     {
         err = kParamErr;
         return err;
@@ -298,7 +300,7 @@ static void bt_at_sema_set()
     if (bt_at_cmd_sema != NULL)
     {
         sema_value++;
-//        os_printf("-->sem set%d\r\n", sema_value);
+        //        os_printf("-->sem set%d\r\n", sema_value);
         rtos_set_semaphore(&bt_at_cmd_sema);
     }
 }
@@ -311,7 +313,7 @@ static bk_err_t bt_at_sema_get(uint32_t timeout_ms)
         re = rtos_get_semaphore(&bt_at_cmd_sema, timeout_ms);
         sema_value--;
     }
-//    os_printf("-->sem get%d\r\n", sema_value);
+    //    os_printf("-->sem get%d\r\n", sema_value);
     return re;
 }
 
@@ -322,40 +324,40 @@ static uint32_t bt_at_event_cb(bt_event_enum_t event, void *param)
     switch (event)
     {
         case BK_DM_BT_EVENT_INQUIRY_RESULT:
-            {
-                uint8_t *addr = (uint8_t *)param;
-                BK_LOGI(TAG,"BT Inquiryed addr: %x %x %x %x %x %x \r\n",*(addr+5), *(addr+4), *(addr+3), *(addr+2),*(addr+1),*(addr));
-            }
-            break;
+        {
+            uint8_t *addr = (uint8_t *)param;
+            BK_LOGI(TAG, "BT Inquiryed addr: %x %x %x %x %x %x \r\n", *(addr + 5), *(addr + 4), *(addr + 3), *(addr + 2), *(addr + 1), *(addr));
+        }
+        break;
         case BK_DM_BT_EVENT_DISCONNECT:
+        {
+            uint8_t *addr = (uint8_t *)param;
+            BK_LOGI(TAG, "Disconnected from %x %x %x %x %x %x \r\n", addr[5], addr[4], addr[3], addr[2], addr[1], addr[0]);
+            if (!os_memcmp(addr, spp_env.peer_addr.addr, 6))
             {
-                uint8_t *addr = (uint8_t *)param;
-                BK_LOGI(TAG,"Disconnected from %x %x %x %x %x %x \r\n",addr[5],addr[4],addr[3],addr[2],addr[1],addr[0]);
-                if (!os_memcmp(addr, spp_env.peer_addr.addr, 6))
-                {
-                    bt_spp_clear();
-                }
+                bt_spp_clear();
             }
-            break;
+        }
+        break;
 #if 0
         case BK_DM_BT_EVENT_CMD_COMPLETE:
-            {
-                LOGI("BT Event Complete!!! \r\n");
-            }
-            break;
+        {
+            LOGI("BT Event Complete!!! \r\n");
+        }
+        break;
 #endif
         case BK_DM_BT_EVENT_CONNECTION_COMPLETE:
-            {
-                uint8_t *addr = (uint8_t *)param;
-                BK_LOGI(TAG,"Connected to %02x:%02x:%02x:%02x:%02x:%02x\n",addr[5],addr[4],addr[3],addr[2],addr[1],addr[0]);
-            }
-            break;
+        {
+            uint8_t *addr = (uint8_t *)param;
+            BK_LOGI(TAG, "Connected to %02x:%02x:%02x:%02x:%02x:%02x\n", addr[5], addr[4], addr[3], addr[2], addr[1], addr[0]);
+        }
+        break;
 
         case BK_DM_BT_EVENT_LINKKEY_NOTIFY:
         {
             bk_bt_linkkey_storage_t *linkkey = (typeof(linkkey))param;
 
-            BK_LOGI(TAG,"%s recv linkkey %02X:%02X:%02X:%02X:%02X:%02X\n", __func__,
+            BK_LOGI(TAG, "%s recv linkkey %02X:%02X:%02X:%02X:%02X:%02X\n", __func__,
                     linkkey->addr[5],
                     linkkey->addr[4],
                     linkkey->addr[3],
@@ -366,15 +368,15 @@ static uint32_t bt_at_event_cb(bt_event_enum_t event, void *param)
             memcpy(&s_bt_linkkey, linkkey, sizeof(s_bt_linkkey));
 
         }
-            break;
+        break;
 
         case BK_DM_BT_EVENT_LINKKEY_REQ:
         {
             uint8_t *addr = (typeof(addr))param;
 
-            if(!memcmp(addr, s_bt_linkkey.addr, sizeof(s_bt_linkkey.addr)))
+            if (!memcmp(addr, s_bt_linkkey.addr, sizeof(s_bt_linkkey.addr)))
             {
-                BK_LOGI(TAG,"%s found linkkey %02X:%02X:%02X:%02X:%02X:%02X\n", __func__,
+                BK_LOGI(TAG, "%s found linkkey %02X:%02X:%02X:%02X:%02X:%02X\n", __func__,
                         addr[5],
                         addr[4],
                         addr[3],
@@ -388,13 +390,13 @@ static uint32_t bt_at_event_cb(bt_event_enum_t event, void *param)
             {
                 bk_bt_linkkey_storage_t tmp;
 
-                BK_LOGI(TAG,"%s notfound linkkey %02X:%02X:%02X:%02X:%02X:%02X\n", __func__,
-                         addr[5],
-                         addr[4],
-                         addr[3],
-                         addr[2],
-                         addr[1],
-                         addr[0]);
+                BK_LOGI(TAG, "%s notfound linkkey %02X:%02X:%02X:%02X:%02X:%02X\n", __func__,
+                        addr[5],
+                        addr[4],
+                        addr[3],
+                        addr[2],
+                        addr[1],
+                        addr[0]);
 
                 memset(&tmp, 0, sizeof(tmp));
                 memcpy(tmp.addr, addr, sizeof(tmp.addr));
@@ -403,7 +405,7 @@ static uint32_t bt_at_event_cb(bt_event_enum_t event, void *param)
             }
 
         }
-            break;
+        break;
 
         default:
             break;
@@ -415,40 +417,40 @@ static uint32_t bt_at_event_cb(bt_event_enum_t event, void *param)
 static void bt_at_cmd_cb(bt_cmd_t cmd, bt_cmd_param_t *param)
 {
     at_cmd_status = param->status;
-    BK_LOGI(TAG,"%s %d %d\r\n", __func__, cmd, param->status);
+    BK_LOGI(TAG, "%s %d %d\r\n", __func__, cmd, param->status);
     switch (cmd)
     {
         case BT_CMD_CREATE_CONNECT:
-            if(param->status == BK_ERR_BT_SUCCESS)
+            if (param->status == BK_ERR_BT_SUCCESS)
             {
                 conn_handle = *((uint16_t *)(param->param));
             }
             break;
         case BT_CMD_DISCONNECT:
-            if(conn_handle == spp_env.conn_handle)
+            if (conn_handle == spp_env.conn_handle)
             {
-              bt_spp_clear();
+                bt_spp_clear();
             }
             conn_handle = 0xff;
             break;
         case BT_CMD_SDP:
-            if(at_cmd_status)
+            if (at_cmd_status)
             {
                 spp_env.peer_server_channel = *((uint8_t *)param->param);
             }
             break;
         case BT_CMD_READ_SCAN_ENABLE:
+        {
+            uint8_t scan_enable = 0xFF;
+            if (param->status == BK_ERR_BT_SUCCESS)
             {
-                uint8_t scan_enable = 0xFF;
-                if(param->status == BK_ERR_BT_SUCCESS)
-                {
-                    scan_enable = *(uint8_t *)(param->param+4);
-                }
-                BK_LOGI(TAG,"Read scan enable, status:%d, Scan Enable: 0x%x \r\n", param->status, scan_enable);
+                scan_enable = *(uint8_t *)(param->param + 4);
             }
-            break;
+            BK_LOGI(TAG, "Read scan enable, status:%d, Scan Enable: 0x%x \r\n", param->status, scan_enable);
+        }
+        break;
         case BT_CMD_WRITE_SCAN_ENABLE:
-            BK_LOGI(TAG,"Write scan enable, status:%d \r\n", param->status);
+            BK_LOGI(TAG, "Write scan enable, status:%d \r\n", param->status);
             break;
         default:
             break;
@@ -475,190 +477,194 @@ static void bt_spp_clear()
 }
 
 API_RESULT bt_spp_event_notify_cb
-           (
-               /* IN */  SPP_HANDLE spp_handle,
-               /* IN */  SPP_EVENTS spp_event,
-               /* IN */  API_RESULT      status,
-               /* IN */  void          * data,
-               /* IN */  UINT16          data_length
-           )
+(
+    /* IN */  SPP_HANDLE spp_handle,
+    /* IN */  SPP_EVENTS spp_event,
+    /* IN */  API_RESULT      status,
+    /* IN */  void           *data,
+    /* IN */  UINT16          data_length
+)
 {
     UINT32 index;
-    UCHAR * l_data;
-    l_data = (UCHAR*)( data );
+    UCHAR *l_data;
+    l_data = (UCHAR *)(data);
 #if 0
     LOGI("\n"\
-           "SPP HANDLE : %u\n"\
-           "EVENT      : %d\n"\
-           "RESULT     : 0x%04X\n",
-            (unsigned int) spp_handle, spp_event, status);
+         "SPP HANDLE : %u\n"\
+         "EVENT      : %d\n"\
+         "RESULT     : 0x%04X\n",
+         (unsigned int) spp_handle, spp_event, status);
     if (API_SUCCESS != status)
     {
         LOGE("\nSPP Command failure\n");
         return API_FAILURE;
     }
 #endif /* 0 */
-    switch(spp_event)
+    switch (spp_event)
     {
-    case SPP_CONNECT_CNF:
-        BK_LOGI(TAG,"SPP_CONNECT_CNF -> 0x%04X\n", status);
-        BK_LOGI(TAG,"SPP Instance Connected : %u\n",(unsigned int) spp_handle);
-        BK_LOGI(TAG,"Remote device " BT_DEVICE_ADDR_ONLY_FRMT_SPECIFIER " \n",
-        BT_DEVICE_ADDR_ONLY_PRINT_STR (l_data));
-        if (0x00 == status)
-        {
-            spp_env.conn_state = STATE_PROFILE_CONNECTED_AS_CLIENT;
-            bt_at_sema_set();
-        }
-        break;
-    case SPP_CONNECT_IND:
-        BK_LOGI(TAG,"SPP_CONNECT_IND -> 0x%04X\n", status);
-        BK_LOGI(TAG,"SPP Instance Connected : %u\n",(unsigned int) spp_handle);
-        BK_LOGI(TAG,"Remote device " BT_DEVICE_ADDR_ONLY_FRMT_SPECIFIER " \n",
-        BT_DEVICE_ADDR_ONLY_PRINT_STR (l_data));
-
-        /* Set the global handle */
-        /* g_spp_handle = spp_handle; */
-        if(spp_env.conn_state != STATE_PROFILE_CONNECTED_AS_CLIENT || spp_env.conn_state != STATE_PROFILE_CONNECTED_AS_SERVER)
-        {
-            spp_env.conn_state = STATE_PROFILE_CONNECTED_AS_SERVER;
-            uint16_t conn_handle = bk_bt_get_conn_handle(l_data);
-            spp_env.conn_handle = conn_handle;
-            spp_env.server_spp_handle = spp_handle;
-            os_memcpy(&spp_env.peer_addr.addr[0], l_data, 6);
-            BK_LOGI(TAG,"Conn Handle: 0x%02x\n, Server spp handle: 0x%02x\n", conn_handle, spp_env.server_spp_handle);
-        }
-        break;
-    case SPP_DISCONNECT_CNF:
-        BK_LOGI(TAG,"SPP_DISCONNECT_CNF -> Disconnection Successful\n");
-        BK_LOGI(TAG,"Remote device " BT_DEVICE_ADDR_ONLY_FRMT_SPECIFIER " \n",
-        BT_DEVICE_ADDR_ONLY_PRINT_STR (l_data));
-        break;
-    case SPP_DISCONNECT_IND:
-        BK_LOGI(TAG,"SPP_DISCONNECT_IND -> Disconnection Successful\n");
-        BK_LOGI(TAG,"Remote device " BT_DEVICE_ADDR_ONLY_FRMT_SPECIFIER " \n",
-        BT_DEVICE_ADDR_ONLY_PRINT_STR (l_data));
-        if(spp_env.conn_state == STATE_PROFILE_CONNECTED_AS_CLIENT || spp_env.conn_state == STATE_PROFILE_CONNECTED_AS_SERVER)
-        {
-            spp_env.conn_state = STATE_PROFILE_DISCONNECT;
-        }
-        break;
-    case SPP_STOP_CNF:
-        BK_LOGI(TAG,"SPP_STOP_CNF -> Stop Successful\n");
-        break;
-    case SPP_SEND_CNF:
-    {
-        #if 0
-        UCHAR * buffer;
-        API_RESULT retval;
-        #endif
-        BK_LOGI(TAG,"Received spp send cnf\n");
-        BK_LOGI(TAG,"   spp handle = %d\n", spp_handle);
-//            os_printf("    Buffer = %p\n", l_data);
-        BK_LOGI(TAG,"    Actual Data Length = %d\n", data_length);
-        if (0x00 != status)
-        {
-            BK_LOGE(TAG,"status: *** 0x%04X\n", status);
-            break;
-        }
-
-        if(spp_env.tx_confirm)
-        {
-            BK_LOGI(TAG,"\n----------------CHAR DUMP-----------------------\n");
-            for (index = 0U; index < data_length; index++)
+        case SPP_CONNECT_CNF:
+            BK_LOGI(TAG, "SPP_CONNECT_CNF -> 0x%04X\n", status);
+            BK_LOGI(TAG, "SPP Instance Connected : %u\n", (unsigned int) spp_handle);
+            BK_LOGI(TAG, "Remote device " BT_DEVICE_ADDR_ONLY_FRMT_SPECIFIER " \n",
+                    BT_DEVICE_ADDR_ONLY_PRINT_STR(l_data));
+            if (0x00 == status)
             {
-                LOGI("%c ", l_data[index]);
-            }
-            BK_LOGI(TAG,"\n------------------------------------------------\n");
-
-            spp_env.tx_confirm = 0;
-//            os_printf("free buff->%p \r\n", data);
-            os_free(data);
-            bt_at_sema_set();
-            break;
-        }
-
-        if(spp_env.tx_throught_total_len > 0)
-        {
-            spp_env.tx_throught_len += data_length;
-            uint64_t current_time = rtos_get_time();
-            float spend_time = (float)(current_time - spp_env.tx_time)/1000;
-
-            BK_LOGI(TAG,"---->spend time: %f s\r\n", spend_time);
-            float speed = (float)spp_env.tx_throught_len/1024/spend_time;
-            spp_env.crc = calc_crc32(spp_env.crc, (uint8_t *)l_data, data_length);
-            spp_env.speed = speed;
-            BK_LOGI(TAG,"Spp tx length: %d, speed: %.3fKB/s \r\n", spp_env.tx_throught_len, speed);
-            if(spp_env.tx_throught_len < spp_env.tx_throught_total_len)
-            {
-                bt_spp_through_poll(data);
-            }else
-            {
+                spp_env.conn_state = STATE_PROFILE_CONNECTED_AS_CLIENT;
                 bt_at_sema_set();
             }
-        }
-    }
-    break;
-    case SPP_RECVD_DATA_IND:
+            break;
+        case SPP_CONNECT_IND:
+            BK_LOGI(TAG, "SPP_CONNECT_IND -> 0x%04X\n", status);
+            BK_LOGI(TAG, "SPP Instance Connected : %u\n", (unsigned int) spp_handle);
+            BK_LOGI(TAG, "Remote device " BT_DEVICE_ADDR_ONLY_FRMT_SPECIFIER " \n",
+                    BT_DEVICE_ADDR_ONLY_PRINT_STR(l_data));
+
+            /* Set the global handle */
+            /* g_spp_handle = spp_handle; */
+            if (spp_env.conn_state != STATE_PROFILE_CONNECTED_AS_CLIENT && spp_env.conn_state != STATE_PROFILE_CONNECTED_AS_SERVER)
+            {
+                spp_env.conn_state = STATE_PROFILE_CONNECTED_AS_SERVER;
+                uint16_t conn_handle = bk_bt_get_conn_handle(l_data);
+                spp_env.conn_handle = conn_handle;
+                spp_env.server_spp_handle = spp_handle;
+                os_memcpy(&spp_env.peer_addr.addr[0], l_data, 6);
+                BK_LOGI(TAG, "Conn Handle: 0x%02x\n, Server spp handle: 0x%02x\n", conn_handle, spp_env.server_spp_handle);
+            }
+            break;
+        case SPP_DISCONNECT_CNF:
+            BK_LOGI(TAG, "SPP_DISCONNECT_CNF -> Disconnection Successful\n");
+            BK_LOGI(TAG, "Remote device " BT_DEVICE_ADDR_ONLY_FRMT_SPECIFIER " \n",
+                    BT_DEVICE_ADDR_ONLY_PRINT_STR(l_data));
+            break;
+        case SPP_DISCONNECT_IND:
+            BK_LOGI(TAG, "SPP_DISCONNECT_IND -> Disconnection Successful\n");
+            BK_LOGI(TAG, "Remote device " BT_DEVICE_ADDR_ONLY_FRMT_SPECIFIER " \n",
+                    BT_DEVICE_ADDR_ONLY_PRINT_STR(l_data));
+            if (spp_env.conn_state == STATE_PROFILE_CONNECTED_AS_CLIENT || spp_env.conn_state == STATE_PROFILE_CONNECTED_AS_SERVER)
+            {
+                spp_env.conn_state = STATE_PROFILE_DISCONNECT;
+            }
+            break;
+        case SPP_STOP_CNF:
+            BK_LOGI(TAG, "SPP_STOP_CNF -> Stop Successful\n");
+            break;
+        case SPP_SEND_CNF:
         {
-            do{
-                if(!spp_env.rx_through)
+#if 0
+            UCHAR *buffer;
+            API_RESULT retval;
+#endif
+            BK_LOGI(TAG, "Received spp send cnf\n");
+            BK_LOGI(TAG, "   spp handle = %d\n", spp_handle);
+            //            os_printf("    Buffer = %p\n", l_data);
+            BK_LOGI(TAG, "    Actual Data Length = %d\n", data_length);
+            if (0x00 != status)
+            {
+                BK_LOGE(TAG, "status: *** 0x%04X\n", status);
+                break;
+            }
+
+            if (spp_env.tx_confirm)
+            {
+                BK_LOGI(TAG, "\n----------------CHAR DUMP-----------------------\n");
+                for (index = 0U; index < data_length; index++)
                 {
-                    BK_LOGI(TAG,"SPP_RECVD_DATA_IND -> Data received successfully\n");
-                    BK_LOGI(TAG,"\n----------------CHAR DUMP-----------------------\n");
+                    LOGI("%c ", l_data[index]);
+                }
+                BK_LOGI(TAG, "\n------------------------------------------------\n");
+
+                spp_env.tx_confirm = 0;
+                //            os_printf("free buff->%p \r\n", data);
+                os_free(data);
+                bt_at_sema_set();
+                break;
+            }
+
+            if (spp_env.tx_throught_total_len > 0)
+            {
+                spp_env.tx_throught_len += data_length;
+                uint64_t current_time = rtos_get_time();
+                float spend_time = (float)(current_time - spp_env.tx_time) / 1000;
+
+                BK_LOGI(TAG, "---->spend time: %f s\r\n", spend_time);
+                float speed = (float)spp_env.tx_throught_len / 1024 / spend_time;
+                spp_env.crc = calc_crc32(spp_env.crc, (uint8_t *)l_data, data_length);
+                spp_env.speed = speed;
+                BK_LOGI(TAG, "Spp tx length: %d, speed: %.3fKB/s \r\n", spp_env.tx_throught_len, speed);
+                if (spp_env.tx_throught_len < spp_env.tx_throught_total_len)
+                {
+                    bt_spp_through_poll(data);
+                }
+                else
+                {
+                    bt_at_sema_set();
+                }
+            }
+        }
+        break;
+        case SPP_RECVD_DATA_IND:
+        {
+            do
+            {
+                if (!spp_env.rx_through)
+                {
+                    BK_LOGI(TAG, "SPP_RECVD_DATA_IND -> Data received successfully\n");
+                    BK_LOGI(TAG, "\n----------------CHAR DUMP-----------------------\n");
                     for (index = 0U; index < data_length; index++)
                     {
-                        BK_LOGI(TAG,"%c ", l_data[index]);
+                        BK_LOGI(TAG, "%c ", l_data[index]);
                     }
-                    BK_LOGI(TAG,"\n------------------------------------------------\n");
-                    #if 0
+                    BK_LOGI(TAG, "\n------------------------------------------------\n");
+#if 0
                     LOGI("\n----------------HEX DUMP------------------------\n");
                     for (index = 0U; index < data_length; index++)
                     {
                         LOGI("%02X ", l_data[index]);
                     }
                     LOGI("\n------------------------------------------------\n");
-                    #endif
-                }else
+#endif
+                }
+                else
                 {
-                    if(data_length == os_strlen(tx_through_cmd_end) && !os_strncmp((char *)l_data, tx_through_cmd_end, data_length))
+                    if (data_length == os_strlen(tx_through_cmd_end) && !os_strncmp((char *)l_data, tx_through_cmd_end, data_length))
                     {
-                        BK_LOGI(TAG,"\n----------------CHAR DUMP-----------------------\n");
+                        BK_LOGI(TAG, "\n----------------CHAR DUMP-----------------------\n");
                         for (index = 0U; index < data_length; index++)
                         {
-                            BK_LOGI(TAG,"%c ", l_data[index]);
+                            BK_LOGI(TAG, "%c ", l_data[index]);
                         }
-                        BK_LOGI(TAG,"\n------------------------------------------------\n");
+                        BK_LOGI(TAG, "\n------------------------------------------------\n");
                         break;
                     }
-//                    for (index = 0U; index < data_length; index++)
-//                    {
-    //                    os_printf("0x%02x ", l_data[index]);
-//                    }
-                    spp_env.rx_through_len+=data_length;
+                    //                    for (index = 0U; index < data_length; index++)
+                    //                    {
+                    //                    os_printf("0x%02x ", l_data[index]);
+                    //                    }
+                    spp_env.rx_through_len += data_length;
                     spp_env.crc = calc_crc32(spp_env.crc, l_data, data_length);
                     uint64_t current_time = rtos_get_time();
-                    float spend_time = (float)(current_time - spp_env.rx_time)/1000;
+                    float spend_time = (float)(current_time - spp_env.rx_time) / 1000;
 
-                    BK_LOGI(TAG,"-----> spend time: %f s\r\n", spend_time);
-                    float speed = (float)spp_env.rx_through_len/ 1024 / spend_time;
+                    BK_LOGI(TAG, "-----> spend time: %f s\r\n", spend_time);
+                    float speed = (float)spp_env.rx_through_len / 1024 / spend_time;
                     spp_env.speed = speed;
-                    BK_LOGI(TAG,"Spp received data len: %d, speed :%.4fKB/s\r\n", spp_env.rx_through_len, speed);
+                    BK_LOGI(TAG, "Spp received data len: %d, speed :%.4fKB/s\r\n", spp_env.rx_through_len, speed);
                 }
-            }while(0);
-            if(!os_strncmp((char *)l_data, tx_through_cmd_start, data_length))
+            }
+            while (0);
+            if (!os_strncmp((char *)l_data, tx_through_cmd_start, data_length))
             {
-                BK_LOGI(TAG,"Spp received spp tx through start cmd \r\n");
+                BK_LOGI(TAG, "Spp received spp tx through start cmd \r\n");
                 spp_env.crc = 0xffffffff;
                 make_crc32_table();
                 spp_env.rx_through = 1;
                 spp_env.rx_time = rtos_get_time();
 
             }
-            if(!os_strncmp((char *)l_data, tx_through_cmd_end, data_length))
+            if (!os_strncmp((char *)l_data, tx_through_cmd_end, data_length))
             {
-                BK_LOGI(TAG,"Spp received spp tx through end cmd \r\n");
-                BK_LOGI(TAG,"Spp tx through test finish, rx total len: %d, crc value: 0x%x, speed: %.4fKB/s \r\n", spp_env.rx_through_len, spp_env.crc, spp_env.speed);
+                BK_LOGI(TAG, "Spp received spp tx through end cmd \r\n");
+                BK_LOGI(TAG, "Spp tx through test finish, rx total len: %d, crc value: 0x%x, speed: %.4fKB/s \r\n", spp_env.rx_through_len, spp_env.crc, spp_env.speed);
                 spp_env.rx_through = 0;
                 spp_env.crc = 0xffffffff;
                 spp_env.rx_through_len = 0;
@@ -667,9 +673,9 @@ API_RESULT bt_spp_event_notify_cb
             }
         }
         break;
-    default:
-        BK_LOGE(TAG,"\nUnknown command type\n");
-        break;
+        default:
+            BK_LOGE(TAG, "\nUnknown command type\n");
+            break;
     } /* switch */
     BT_IGNORE_UNUSED_PARAM(spp_handle);
     return 0x00;
@@ -683,46 +689,46 @@ static void user_a2dp_connection_change(uint8_t status, uint8_t reason)
     {
         a2dp_env.conn_state = status;
 
-        if(status == BK_A2DP_CONNECTION_STATE_CONNECTED || status == BK_A2DP_CONNECTION_STATE_DISCONNECTED)
+        if (status == BK_A2DP_CONNECTION_STATE_CONNECTED || status == BK_A2DP_CONNECTION_STATE_DISCONNECTED)
         {
             if (bt_at_cmd_sema != NULL)
             {
-                rtos_set_semaphore( &bt_at_cmd_sema );
+                rtos_set_semaphore(&bt_at_cmd_sema);
             }
         }
 
     }
 
-    BK_LOGI(TAG,"%s %d %d\n", __func__, status, reason);
+    BK_LOGI(TAG, "%s %d %d\n", __func__, status, reason);
 }
 
 static void user_a2dp_start_cnf(uint8_t result, uint8_t reason, uint32_t mtu)
 {
-    BK_LOGI(TAG,"%s %d %d\n", __func__, result, reason);
+    BK_LOGI(TAG, "%s %d %d\n", __func__, result, reason);
 
-    if(result == 0 && a2dp_env.start_status == 0 )
+    if (result == 0 && a2dp_env.start_status == 0)
     {
         a2dp_env.start_status = 1;
         a2dp_env.mtu = mtu;
 
         if (bt_at_cmd_sema != NULL)
         {
-            rtos_set_semaphore( &bt_at_cmd_sema );
+            rtos_set_semaphore(&bt_at_cmd_sema);
         }
     }
 }
 
 static void user_a2dp_suspend_cnf(uint8_t result, uint8_t reason)
 {
-    BK_LOGI(TAG,"%s %d %d\n", __func__, result, reason);
+    BK_LOGI(TAG, "%s %d %d\n", __func__, result, reason);
 
-    if(result == 0 && a2dp_env.start_status == 1 )
+    if (result == 0 && a2dp_env.start_status == 1)
     {
         a2dp_env.start_status = 0;
 
         if (bt_at_cmd_sema != NULL)
         {
-            rtos_set_semaphore( &bt_at_cmd_sema );
+            rtos_set_semaphore(&bt_at_cmd_sema);
         }
     }
 }
@@ -746,8 +752,10 @@ static uint8_t get_real_idx(const uint8_t idx)
     uint8_t at_cmd_cnt = bt_at_cmd_cnt();
     uint8_t real_idx;
 
-    for (real_idx = 0; real_idx < at_cmd_cnt; real_idx++) {
-        if (bt_at_cmd_table[real_idx].idx == idx) {
+    for (real_idx = 0; real_idx < at_cmd_cnt; real_idx++)
+    {
+        if (bt_at_cmd_table[real_idx].idx == idx)
+        {
             break;
         }
     }
@@ -762,22 +770,26 @@ static int bt_start_inquiry_handle(int sync, int argc, char **argv)
     if (sync)
     {
         err = rtos_init_semaphore(&bt_at_cmd_sema, 1);
-        if(err != kNoErr){
+        if (err != kNoErr)
+        {
             goto error;
         }
     }
 
-    if(bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
+    if (bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
     {
         bk_bt_gap_set_event_callback(bt_at_event_cb);
         err = bk_bt_inquiry(INQUIRY_LAP, INQUIRY_LEN, 0, bt_at_cmd_cb);
-        if(!err)
+        if (!err)
         {
             atsvr_cmd_rsp_ok();
             if (bt_at_cmd_sema != NULL)
+            {
                 rtos_deinit_semaphore(&bt_at_cmd_sema);
+            }
             return err;
-        }else
+        }
+        else
         {
             goto error;
         }
@@ -785,7 +797,9 @@ static int bt_start_inquiry_handle(int sync, int argc, char **argv)
 error:
     atsvr_cmd_rsp_error();
     if (bt_at_cmd_sema != NULL)
+    {
         rtos_deinit_semaphore(&bt_at_cmd_sema);
+    }
     return err;
 }
 
@@ -796,41 +810,48 @@ static int bt_create_connection_handle(int sync, int argc, char **argv)
     if (sync)
     {
         err = rtos_init_semaphore(&bt_at_cmd_sema, 1);
-        if(err != kNoErr){
+        if (err != kNoErr)
+        {
             goto error;
         }
     }
-    if(argc < 1)
+    if (argc < 1)
     {
         LOGE("Parameters error! \r\n");
         goto error;
     }
 
-    if(bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
+    if (bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
     {
         bk_bt_gap_set_event_callback(bt_at_event_cb);
         bd_addr_t addr;
         uint8_t allow_role_switch = 0;
         err = bt_get_addr_from_param(&addr, argv[0]);
-        if(err) goto error;
-        if(argc == 2)
+        if (err)
+        {
+            goto error;
+        }
+        if (argc == 2)
         {
             allow_role_switch = os_strtoul(argv[1], NULL, 16) & 0xFF;
         }
         err = bk_bt_connect(&(addr.addr[0]),
-                              CONNECTION_PACKET_TYPE,
-                              CONNECTION_PAGE_SCAN_REPETITIOIN_MODE,
-                              0,
-                              CONNECTION_CLOCK_OFFSET,
-                              allow_role_switch,
-                              bt_at_cmd_cb);
-        if(!err)
+                            CONNECTION_PACKET_TYPE,
+                            CONNECTION_PAGE_SCAN_REPETITIOIN_MODE,
+                            0,
+                            CONNECTION_CLOCK_OFFSET,
+                            allow_role_switch,
+                            bt_at_cmd_cb);
+        if (!err)
         {
-			atsvr_cmd_rsp_ok();
+            atsvr_cmd_rsp_ok();
             if (bt_at_cmd_sema != NULL)
+            {
                 rtos_deinit_semaphore(&bt_at_cmd_sema);
+            }
             return err;
-        }else
+        }
+        else
         {
             goto error;
         }
@@ -838,7 +859,9 @@ static int bt_create_connection_handle(int sync, int argc, char **argv)
 error:
     atsvr_cmd_rsp_error();
     if (bt_at_cmd_sema != NULL)
+    {
         rtos_deinit_semaphore(&bt_at_cmd_sema);
+    }
     return err;
 }
 
@@ -849,34 +872,44 @@ static int bt_disconnect_handle(int sync, int argc, char **argv)
     if (sync)
     {
         err = rtos_init_semaphore(&bt_at_cmd_sema, 1);
-        if(err != kNoErr){
+        if (err != kNoErr)
+        {
             goto error;
         }
     }
 
-    if(argc != 1)
+    if (argc != 1)
     {
         LOGE("Parameters error! \r\n");
         goto error;
     }
 
-    if(bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
+    if (bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
     {
         bk_bt_gap_set_event_callback(bt_at_event_cb);
         bd_addr_t addr;
         err = bt_get_addr_from_param(&addr, argv[0]);
-        if(err) goto error;
+        if (err)
+        {
+            goto error;
+        }
 
         err = bk_bt_disconnect(&(addr.addr[0]), DISCONNECT_REASON, bt_at_cmd_cb);
-        if(bt_at_cmd_sema == NULL) goto error;
-        err = bt_at_sema_get(5*1000);
-        if(!err)
+        if (bt_at_cmd_sema == NULL)
+        {
+            goto error;
+        }
+        err = bt_at_sema_get(5 * 1000);
+        if (!err)
         {
             atsvr_cmd_rsp_ok();
             if (bt_at_cmd_sema != NULL)
+            {
                 rtos_deinit_semaphore(&bt_at_cmd_sema);
+            }
             return err;
-        }else
+        }
+        else
         {
             goto error;
         }
@@ -884,7 +917,9 @@ static int bt_disconnect_handle(int sync, int argc, char **argv)
 error:
     atsvr_cmd_rsp_error();
     if (bt_at_cmd_sema != NULL)
+    {
         rtos_deinit_semaphore(&bt_at_cmd_sema);
+    }
     return err;
 }
 
@@ -895,26 +930,30 @@ static int bt_spp_connect_handle(int sync, int argc, char **argv)
     if (sync)
     {
         err = rtos_init_semaphore(&bt_at_cmd_sema, 1);
-        if(err != kNoErr){
+        if (err != kNoErr)
+        {
             goto error;
         }
     }
-    if(argc != 1)
+    if (argc != 1)
     {
         LOGE("Parameters error! \r\n");
         goto error;
     }
-    if(bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
+    if (bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
     {
-        if(spp_env.conn_state == STATE_PROFILE_CONNECTED_AS_CLIENT || spp_env.conn_state == STATE_PROFILE_CONNECTED_AS_SERVER || spp_env.conn_state == STATE_PROFILE_DISCONNECT)
+        if (spp_env.conn_state == STATE_PROFILE_CONNECTED_AS_CLIENT || spp_env.conn_state == STATE_PROFILE_CONNECTED_AS_SERVER || spp_env.conn_state == STATE_PROFILE_DISCONNECT)
         {
             LOGE("Spp exisit one connection now, please disconnect first!!\r\n");
             goto error;
         }
         bk_bt_gap_set_event_callback(bt_at_event_cb);
         err = bt_get_addr_from_param(&spp_env.peer_addr, argv[0]);
-        if(err) goto error;
-        if(!spp_env.spp_init)
+        if (err)
+        {
+            goto error;
+        }
+        if (!spp_env.spp_init)
         {
             bk_bt_spp_init(bt_spp_event_notify_cb);
             spp_env.client_spp_handle = SPP_HANDLE_INVALID;
@@ -922,59 +961,77 @@ static int bt_spp_connect_handle(int sync, int argc, char **argv)
             spp_env.spp_init = 1;
             LOGI("Spp init, spp handle: 0x%02x , record handle: 0x%02x  \r\n", spp_env.client_spp_handle, spp_env.spp_record_handle);
         }
-        if(spp_env.conn_state != STATE_DISCONNECT)
+        if (spp_env.conn_state != STATE_DISCONNECT)
         {
             LOGE("With remote device is connected, please disconnect first \r\n");
             goto error;
         }
         bk_bt_connect(&(spp_env.peer_addr.addr[0]),
-                        CONNECTION_PACKET_TYPE,
-                        CONNECTION_PAGE_SCAN_REPETITIOIN_MODE,
-                        0,
-                        CONNECTION_CLOCK_OFFSET,
-                        1,
-                        bt_at_cmd_cb);
-        if(bt_at_cmd_sema == NULL) goto error;
-        err = bt_at_sema_get(10*1000);
-        if(err != kNoErr) goto error;
-        if(at_cmd_status == 0x00)
+                      CONNECTION_PACKET_TYPE,
+                      CONNECTION_PAGE_SCAN_REPETITIOIN_MODE,
+                      0,
+                      CONNECTION_CLOCK_OFFSET,
+                      1,
+                      bt_at_cmd_cb);
+        if (bt_at_cmd_sema == NULL)
+        {
+            goto error;
+        }
+        err = bt_at_sema_get(10 * 1000);
+        if (err != kNoErr)
+        {
+            goto error;
+        }
+        if (at_cmd_status == 0x00)
         {
             spp_env.conn_state = STATE_CONNECTED;
             spp_env.conn_handle = conn_handle;
-        }else
+        }
+        else
         {
             LOGE("BT Connect fail !!!!!!\r\n");
             goto error;
         }
         bk_bt_sdp(spp_env.conn_handle, &(spp_env.peer_addr.addr[0]), bt_at_cmd_cb);
-        err = bt_at_sema_get(10*1000);
-        if(err != kNoErr) goto error;
-        if(!at_cmd_status) goto error;
+        err = bt_at_sema_get(10 * 1000);
+        if (err != kNoErr)
+        {
+            goto error;
+        }
+        if (!at_cmd_status)
+        {
+            goto error;
+        }
 
         bk_bt_spp_connect(&(spp_env.peer_addr.addr[0]), spp_env.peer_server_channel, (uint32_t)spp_env.client_spp_handle, bt_at_cmd_cb);
-        err = bt_at_sema_get(10*1000);
-        if(!err)
+        err = bt_at_sema_get(10 * 1000);
+        if (!err)
         {
-			atsvr_cmd_rsp_ok();
+            atsvr_cmd_rsp_ok();
             if (bt_at_cmd_sema != NULL)
+            {
                 rtos_deinit_semaphore(&bt_at_cmd_sema);
-//            os_printf("------------>spp connect cnf1 %d\r\n", spp_env.conn_state);
+            }
+            //            os_printf("------------>spp connect cnf1 %d\r\n", spp_env.conn_state);
             return err;
-        }else
+        }
+        else
         {
             goto error;
         }
     }
 error:
-    if(spp_env.conn_state == STATE_CONNECTED)
+    if (spp_env.conn_state == STATE_CONNECTED)
     {
         LOGE("Spp connect fail, disconnect acl link \r\n!!");
         bk_bt_disconnect(&spp_env.peer_addr.addr[0], DISCONNECT_REASON, bt_at_cmd_cb);
     }
-	atsvr_cmd_rsp_error();
+    atsvr_cmd_rsp_error();
     os_memset(&spp_env, 0, sizeof(spp_env_s));
     if (bt_at_cmd_sema != NULL)
+    {
         rtos_deinit_semaphore(&bt_at_cmd_sema);
+    }
     return err;
 }
 
@@ -985,40 +1042,42 @@ static int bt_spp_tx_handle(int sync, int argc, char **argv)
     if (sync)
     {
         err = rtos_init_semaphore(&bt_at_cmd_sema, 1);
-        if(err != kNoErr){
+        if (err != kNoErr)
+        {
             goto error;
         }
     }
-    if(argc != 1)
+    if (argc != 1)
     {
         LOGE("Parameters error! \r\n");
         goto error;
     }
-    if(bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
+    if (bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
     {
         bk_bt_gap_set_event_callback(bt_at_event_cb);
-        if(spp_env.conn_state != STATE_PROFILE_CONNECTED_AS_CLIENT && spp_env.conn_state != STATE_PROFILE_CONNECTED_AS_SERVER)
+        if (spp_env.conn_state != STATE_PROFILE_CONNECTED_AS_CLIENT && spp_env.conn_state != STATE_PROFILE_CONNECTED_AS_SERVER)
         {
             LOGE("Please connet spp first !! \r\n");
             goto error;
         }
         uint16_t tx_len = os_strlen((char *)argv[0]);
-        char * tx_data = (char *)os_malloc(tx_len);
-//        os_printf("alloc buffer->%p\r\n", tx_data);
+        char *tx_data = (char *)os_malloc(tx_len);
+        //        os_printf("alloc buffer->%p\r\n", tx_data);
         os_memcpy(tx_data, argv[0], tx_len);
         LOGI("spp tx data %d: %s \r\n", tx_len,  argv[0]);
-        if(tx_len)
+        if (tx_len)
         {
             spp_env.tx_confirm = 1;
             uint32_t spp_hanle  = ((spp_env.conn_state == STATE_PROFILE_CONNECTED_AS_CLIENT) ? spp_env.client_spp_handle : spp_env.server_spp_handle);
             bk_bt_spp_tx(spp_hanle, tx_data, tx_len, NULL);
             err = rtos_get_semaphore(&bt_at_cmd_sema, AT_SYNC_CMD_TIMEOUT_MS);
-            if(!err)
+            if (!err)
             {
                 return err;
-            }else
+            }
+            else
             {
-                if(tx_data)
+                if (tx_data)
                 {
                     LOGE("spp tx fail, over time !!\r\n");
                     os_free(tx_data);
@@ -1026,25 +1085,28 @@ static int bt_spp_tx_handle(int sync, int argc, char **argv)
                 }
                 goto error;
             }
-        }else
+        }
+        else
         {
             LOGE("Data is null !!\r\n");
             return err;
         }
     }
 error:
-	atsvr_cmd_rsp_error();
+    atsvr_cmd_rsp_error();
     if (bt_at_cmd_sema != NULL)
+    {
         rtos_deinit_semaphore(&bt_at_cmd_sema);
+    }
     return err;
 }
 
 static void bt_spp_through_poll(char *tx_data)
 {
-    if(spp_env.tx_throught_len < spp_env.tx_throught_total_len)
+    if (spp_env.tx_throught_len < spp_env.tx_throught_total_len)
     {
         uint32_t remain_len = spp_env.tx_throught_total_len - spp_env.tx_throught_len;
-        uint32_t tx_len = (remain_len>=SPP_TX_BUFF_SIZE) ? SPP_TX_BUFF_SIZE:remain_len;
+        uint32_t tx_len = (remain_len >= SPP_TX_BUFF_SIZE) ? SPP_TX_BUFF_SIZE : remain_len;
         uint8_t rand = bk_rand() & 0xff;
         os_memset(tx_data, rand, tx_len);
         uint32_t spp_hanle  = ((spp_env.conn_state == STATE_PROFILE_CONNECTED_AS_CLIENT) ? spp_env.client_spp_handle : spp_env.server_spp_handle);
@@ -1059,41 +1121,42 @@ static int bt_spp_through_test_handle(int sync, int argc, char **argv)
     if (sync)
     {
         err = rtos_init_semaphore(&bt_at_cmd_sema, 1);
-        if(err != kNoErr){
+        if (err != kNoErr)
+        {
             goto error;
         }
     }
 
-    if(argc != 1)
+    if (argc != 1)
     {
         LOGE("Parameters error! \r\n");
         goto error;
     }
 
-    if(bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
+    if (bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
     {
-        if(spp_env.conn_state != STATE_PROFILE_CONNECTED_AS_CLIENT && spp_env.conn_state != STATE_PROFILE_CONNECTED_AS_SERVER)
+        if (spp_env.conn_state != STATE_PROFILE_CONNECTED_AS_CLIENT && spp_env.conn_state != STATE_PROFILE_CONNECTED_AS_SERVER)
         {
             LOGE("Please connet spp first !! \r\n");
             goto error;
         }
         uint32_t tx_data_length = os_strtoul(argv[0], NULL, 16) & 0xFFFFFFFF;
         LOGI("spp tx throught test, data len:%d \r\n", tx_data_length);
-        if(tx_data_length == 0)
+        if (tx_data_length == 0)
         {
             tx_data_length = 0xffff;
             LOGE("data len is 0, set to default, data len:%d \r\n", tx_data_length);
         }
         char *tx_buff = (char *)os_malloc(os_strlen(tx_through_cmd_start));
         os_memcpy(tx_buff, tx_through_cmd_start, os_strlen(tx_through_cmd_start));
-//        os_printf("alloc buffer->%p\r\n", tx_buff);
+        //        os_printf("alloc buffer->%p\r\n", tx_buff);
         spp_env.tx_confirm = 1;
         uint32_t spp_hanle  = ((spp_env.conn_state == STATE_PROFILE_CONNECTED_AS_CLIENT) ? spp_env.client_spp_handle : spp_env.server_spp_handle);
         bk_bt_spp_tx(spp_hanle, tx_buff, os_strlen(tx_through_cmd_start), NULL);
         err = bt_at_sema_get(AT_SYNC_CMD_TIMEOUT_MS);
-        if(err)
+        if (err)
         {
-            if(tx_buff)
+            if (tx_buff)
             {
                 LOGE("spp tx through init fail, tx cmd over time !!\r\n");
                 os_free(tx_buff);
@@ -1109,9 +1172,9 @@ static int bt_spp_through_test_handle(int sync, int argc, char **argv)
 
         char *tx_data = (char *)os_malloc(SPP_TX_BUFF_SIZE);
         bt_spp_through_poll(tx_data);
-        err = bt_at_sema_get(AT_SYNC_CMD_TIMEOUT_MS*tx_data_length);
+        err = bt_at_sema_get(AT_SYNC_CMD_TIMEOUT_MS * tx_data_length);
         os_free(tx_data);
-        if(err)
+        if (err)
         {
             LOGE("spp tx through tx fail, tx cmd over time !!\r\n");
             goto error;
@@ -1119,13 +1182,13 @@ static int bt_spp_through_test_handle(int sync, int argc, char **argv)
 
         tx_buff = (char *)os_malloc(os_strlen(tx_through_cmd_end));
         os_memcpy(tx_buff, tx_through_cmd_end, os_strlen(tx_through_cmd_end));
-//        os_printf("alloc buffer->%p\r\n", tx_buff);
+        //        os_printf("alloc buffer->%p\r\n", tx_buff);
         spp_env.tx_confirm = 1;
         bk_bt_spp_tx(spp_hanle, tx_buff, os_strlen(tx_through_cmd_end), NULL);
         err = bt_at_sema_get(AT_SYNC_CMD_TIMEOUT_MS);
-        if(err)
+        if (err)
         {
-            if(tx_buff)
+            if (tx_buff)
             {
                 LOGE("spp tx through end fail, tx cmd over time !!\r\n");
                 os_free(tx_buff);
@@ -1144,9 +1207,11 @@ static int bt_spp_through_test_handle(int sync, int argc, char **argv)
         return err;
     }
 error:
-	atsvr_cmd_rsp_error();
+    atsvr_cmd_rsp_error();
     if (bt_at_cmd_sema != NULL)
+    {
         rtos_deinit_semaphore(&bt_at_cmd_sema);
+    }
     return err;
 }
 
@@ -1154,11 +1219,11 @@ static int bt_spp_init_handle(int sync, int argc, char **argv)
 {
     PRINT_FUNC;
     int err = kNoErr;
-    if(bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
+    if (bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
     {
         //bk_bt_write_scan_enable(3, bt_at_cmd_cb);
         bk_bt_gap_set_visibility(BK_BT_CONNECTABLE, BK_BT_DISCOVERABLE);
-        if(!spp_env.spp_init)
+        if (!spp_env.spp_init)
         {
             bk_bt_gap_set_event_callback(bt_at_event_cb);
             bk_bt_spp_init(bt_spp_event_notify_cb);
@@ -1174,51 +1239,57 @@ static int bt_spp_init_handle(int sync, int argc, char **argv)
 static int bt_write_scan_enable_handle(int sync, int argc, char **argv)
 {
     PRINT_FUNC;
-	int err = kNoErr;
+    int err = kNoErr;
     if (sync)
     {
         err = rtos_init_semaphore(&bt_at_cmd_sema, 1);
-        if(err != kNoErr){
+        if (err != kNoErr)
+        {
             goto error;
         }
     }
 
-    if(argc != 1)
+    if (argc != 1)
     {
         LOGE("Parameters error! \r\n");
         goto error;
     }
 
-    if(bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
+    if (bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
     {
         bk_bt_gap_set_event_callback(bt_at_event_cb);
         uint8_t scan_enable = os_strtoul(argv[0], NULL, 10) & 0xFFFFFFFF;
-        if(scan_enable > 0x03)
+        if (scan_enable > 0x03)
         {
             LOGE("%s para error, scan_enable:%d \r\n", scan_enable);
             goto error;
         }
-//        os_printf("%s, %d \r\n", __func__, scan_enable);
+        //        os_printf("%s, %d \r\n", __func__, scan_enable);
         //serr = bk_bt_write_scan_enable(scan_enable, bt_at_cmd_cb);
         //if(err) goto error;
 
         //err = rtos_get_semaphore(&bt_at_cmd_sema, AT_AT_SYNC_CMD_TIMEOUT_MS);
         err = bk_bt_gap_set_visibility(BK_BT_CONNECTABLE, BK_BT_DISCOVERABLE);
-        if(!err)
+        if (!err)
         {
-			atsvr_cmd_rsp_ok();
+            atsvr_cmd_rsp_ok();
             if (bt_at_cmd_sema != NULL)
+            {
                 rtos_deinit_semaphore(&bt_at_cmd_sema);
+            }
             return err;
-        }else
+        }
+        else
         {
             goto error;
         }
     }
 error:
-	atsvr_cmd_rsp_ok();
+    atsvr_cmd_rsp_ok();
     if (bt_at_cmd_sema != NULL)
+    {
         rtos_deinit_semaphore(&bt_at_cmd_sema);
+    }
     return err;
 }
 
@@ -1229,34 +1300,43 @@ static int bt_read_scan_enable_handle(int sync, int argc, char **argv)
     if (sync)
     {
         err = rtos_init_semaphore(&bt_at_cmd_sema, 1);
-        if(err != kNoErr){
+        if (err != kNoErr)
+        {
             goto error;
         }
     }
 
-    if(bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
+    if (bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
     {
         bk_bt_gap_set_event_callback(bt_at_event_cb);
 
         err = bk_bt_read_scan_enable(bt_at_cmd_cb);
-        if(err) goto error;
+        if (err)
+        {
+            goto error;
+        }
 
         err = rtos_get_semaphore(&bt_at_cmd_sema, AT_SYNC_CMD_TIMEOUT_MS);
-        if(!err)
+        if (!err)
         {
-			atsvr_cmd_rsp_ok();
+            atsvr_cmd_rsp_ok();
             if (bt_at_cmd_sema != NULL)
+            {
                 rtos_deinit_semaphore(&bt_at_cmd_sema);
+            }
             return err;
-        }else
+        }
+        else
         {
             goto error;
         }
     }
 error:
-	atsvr_cmd_rsp_error();
+    atsvr_cmd_rsp_error();
     if (bt_at_cmd_sema != NULL)
+    {
         rtos_deinit_semaphore(&bt_at_cmd_sema);
+    }
     return err;
 }
 
@@ -1299,7 +1379,7 @@ static int bt_enable_a2dp_sink_test_handle(int sync, int argc, char **argv)
 
     if (!err)
     {
-		atsvr_cmd_rsp_ok();
+        atsvr_cmd_rsp_ok();
         return err;
     }
     else
@@ -1308,7 +1388,7 @@ static int bt_enable_a2dp_sink_test_handle(int sync, int argc, char **argv)
     }
 
 error:
-	atsvr_cmd_rsp_error();
+    atsvr_cmd_rsp_error();
     return err;
 }
 
@@ -1359,9 +1439,11 @@ static int bt_enable_hfp_unit_test_handle(int sync, int argc, char **argv)
     }
 
 error:
-	atsvr_cmd_rsp_error();
+    atsvr_cmd_rsp_error();
     if (bt_at_cmd_sema != NULL)
+    {
         rtos_deinit_semaphore(&bt_at_cmd_sema);
+    }
     return err;
 }
 #endif
@@ -1373,7 +1455,10 @@ static int bt_a2dp_sink_connect_handle(int sync, int argc, char **argv)
     bd_addr_t remote_bdaddr;
 
     err = bt_get_addr_from_param(&remote_bdaddr, argv[0]);
-    if (err) goto error;
+    if (err)
+    {
+        goto error;
+    }
 
     err = bk_bt_a2dp_sink_connect(remote_bdaddr.addr);
 
@@ -1389,7 +1474,7 @@ static int bt_a2dp_sink_connect_handle(int sync, int argc, char **argv)
     }
 
 error:
-	atsvr_cmd_rsp_error();
+    atsvr_cmd_rsp_error();
     return err;
 }
 
@@ -1401,11 +1486,14 @@ static int bt_a2dp_sink_disconnect_handle(int sync, int argc, char **argv)
 
     err = bt_get_addr_from_param(&remote_bdaddr, argv[0]);
 
-    if (err) goto error;
+    if (err)
+    {
+        goto error;
+    }
 
     err = bk_bt_a2dp_sink_disconnect(remote_bdaddr.addr);
 
-    if(err)
+    if (err)
     {
         LOGE("%s a2dp sink disconnect err %d\n", __func__, err);
         goto error;
@@ -1416,7 +1504,7 @@ static int bt_a2dp_sink_disconnect_handle(int sync, int argc, char **argv)
         return err;
     }
 
-error: 
+error:
     atsvr_cmd_rsp_error();
     return err;
 }
@@ -1517,12 +1605,12 @@ static int bt_a2dp_sink_set_delay_value_handle(int sync, int argc, char **argv)
     }
     else
     {
-		atsvr_cmd_rsp_ok();
+        atsvr_cmd_rsp_ok();
         return err;
     }
 
 error:
-	atsvr_cmd_rsp_error();
+    atsvr_cmd_rsp_error();
     return err;
 }
 
@@ -1540,12 +1628,12 @@ static int bt_a2dp_sink_get_delay_value_handle(int sync, int argc, char **argv)
     }
     else
     {
-		atsvr_cmd_rsp_ok();
+        atsvr_cmd_rsp_ok();
         return err;
     }
 
 error:
-	atsvr_cmd_rsp_error();
+    atsvr_cmd_rsp_error();
     return err;
 }
 
@@ -1647,13 +1735,14 @@ static int bt_enable_opp_test_handle(int sync, int argc, char **argv)
     }
 
     err = rtos_init_semaphore(&bt_at_cmd_sema, 1);
-    if (err != kNoErr){
+    if (err != kNoErr)
+    {
         goto error;
     }
 
     if (bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
     {
-       err = bk_bt_gap_set_visibility(BK_BT_CONNECTABLE, BK_BT_DISCOVERABLE);
+        err = bk_bt_gap_set_visibility(BK_BT_CONNECTABLE, BK_BT_DISCOVERABLE);
 
         if (!err)
         {
@@ -1671,9 +1760,11 @@ static int bt_enable_opp_test_handle(int sync, int argc, char **argv)
 
             if (!err)
             {
-				atsvr_cmd_rsp_ok();
+                atsvr_cmd_rsp_ok();
                 if (bt_at_cmd_sema != NULL)
+                {
                     rtos_deinit_semaphore(&bt_at_cmd_sema);
+                }
                 return err;
             }
             else
@@ -1688,9 +1779,11 @@ static int bt_enable_opp_test_handle(int sync, int argc, char **argv)
 
     }
 error:
-	atsvr_cmd_rsp_error();
+    atsvr_cmd_rsp_error();
     if (bt_at_cmd_sema != NULL)
+    {
         rtos_deinit_semaphore(&bt_at_cmd_sema);
+    }
     return err;
 }
 
@@ -1728,23 +1821,24 @@ static int bt_enable_a2dp_source_connect_handle(int sync, int argc, char **argv)
     if (sync)
     {
         err = rtos_init_semaphore(&bt_at_cmd_sema, 1);
-        if(err != kNoErr){
+        if (err != kNoErr)
+        {
             LOGE("%s init sem err %d\n", __func__, err);
             goto error;
         }
     }
-    if(bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
+    if (bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
     {
         bk_bt_gap_set_event_callback(bt_at_event_cb);
 
         err = bt_get_addr_from_param(&a2dp_env.peer_addr, argv[0]);
 
-        if(err)
+        if (err)
         {
-          LOGE("%s bt_get_addr_from_param err %d\n", __func__, err);
-          goto error;
+            LOGE("%s bt_get_addr_from_param err %d\n", __func__, err);
+            goto error;
         }
-        if(!a2dp_env.inited)
+        if (!a2dp_env.inited)
         {
             //bk_bt_a2dp_source_init((void *)&bt_a2dp_source_cb);
             (void)bt_a2dp_source_cb;
@@ -1752,53 +1846,53 @@ static int bt_enable_a2dp_source_connect_handle(int sync, int argc, char **argv)
             a2dp_env.inited = 1;
         }
 
-        if(a2dp_env.conn_state != BK_A2DP_CONNECTION_STATE_DISCONNECTED)
+        if (a2dp_env.conn_state != BK_A2DP_CONNECTION_STATE_DISCONNECTED)
         {
             LOGE("With remote device is not idle, please disconnect first\n");
             goto error;
         }
 
-//        a2dp_env.conn_state = STATE_CONNECTING;
+        //        a2dp_env.conn_state = STATE_CONNECTING;
 
         bk_bt_connect(&(a2dp_env.peer_addr.addr[0]),
-                        CONNECTION_PACKET_TYPE,
-                        CONNECTION_PAGE_SCAN_REPETITIOIN_MODE,
-                        0,
-                        CONNECTION_CLOCK_OFFSET,
-                        1,
-                        bt_at_cmd_cb);
+                      CONNECTION_PACKET_TYPE,
+                      CONNECTION_PAGE_SCAN_REPETITIOIN_MODE,
+                      0,
+                      CONNECTION_CLOCK_OFFSET,
+                      1,
+                      bt_at_cmd_cb);
 
-        if(bt_at_cmd_sema == NULL)
-		{
-			LOGE("%s bt_at_cmd_sema null\n", __func__);
-			goto error;
-		}
+        if (bt_at_cmd_sema == NULL)
+        {
+            LOGE("%s bt_at_cmd_sema null\n", __func__);
+            goto error;
+        }
 
         err = rtos_get_semaphore(&bt_at_cmd_sema, 12 * 1000);
 
-        if(err != kNoErr)
-		{
-			LOGE("%s rtos_get_semaphore err %d\n", __func__, err);
-			goto error;
-		}
-
-        if(at_cmd_status == 0x00)
+        if (err != kNoErr)
         {
-//            a2dp_env.conn_state = STATE_CONNECTED;
+            LOGE("%s rtos_get_semaphore err %d\n", __func__, err);
+            goto error;
+        }
+
+        if (at_cmd_status == 0x00)
+        {
+            //            a2dp_env.conn_state = STATE_CONNECTED;
             a2dp_env.conn_handle = conn_handle;
         }
 
-//        bk_bt_sdp(a2dp_env.conn_handle, &(a2dp_env.peer_addr.addr[0]), bt_at_cmd_cb);
-//
-//        err = rtos_get_semaphore(&bt_at_cmd_sema, 60 * 1000);
-//
-//        if(err != kNoErr) goto error;
-//
-//        if(!at_cmd_status) goto error;
+        //        bk_bt_sdp(a2dp_env.conn_handle, &(a2dp_env.peer_addr.addr[0]), bt_at_cmd_cb);
+        //
+        //        err = rtos_get_semaphore(&bt_at_cmd_sema, 60 * 1000);
+        //
+        //        if(err != kNoErr) goto error;
+        //
+        //        if(!at_cmd_status) goto error;
 
         err = bk_bt_a2dp_source_connect(a2dp_env.peer_addr.addr);
 
-        if(err)
+        if (err)
         {
             LOGE("%s connect a2dp err %d\n", __func__, err);
             goto error;
@@ -1806,12 +1900,14 @@ static int bt_enable_a2dp_source_connect_handle(int sync, int argc, char **argv)
 
         err = rtos_get_semaphore(&bt_at_cmd_sema, 6 * 1000);
 
-        if(!err)
+        if (!err)
         {
-//            spp_env.conn_state = STATE_PROFILE_CONNECTED;
-              atsvr_cmd_rsp_ok();
+            //            spp_env.conn_state = STATE_PROFILE_CONNECTED;
+            atsvr_cmd_rsp_ok();
             if (bt_at_cmd_sema != NULL)
+            {
                 rtos_deinit_semaphore(&bt_at_cmd_sema);
+            }
             return err;
         }
         else
@@ -1820,10 +1916,12 @@ static int bt_enable_a2dp_source_connect_handle(int sync, int argc, char **argv)
         }
     }
 error:
-	atsvr_cmd_rsp_error();
-//    os_memset(&spp_env, 0, sizeof(spp_env_s));
+    atsvr_cmd_rsp_error();
+    //    os_memset(&spp_env, 0, sizeof(spp_env_s));
     if (bt_at_cmd_sema != NULL)
+    {
         rtos_deinit_semaphore(&bt_at_cmd_sema);
+    }
     return err;
 }
 
@@ -1834,19 +1932,23 @@ static int bt_enable_a2dp_source_disconnect_handle(int sync, int argc, char **ar
     if (sync)
     {
         err = rtos_init_semaphore(&bt_at_cmd_sema, 1);
-        if(err != kNoErr){
+        if (err != kNoErr)
+        {
             goto error;
         }
     }
-    if(bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
+    if (bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
     {
         bk_bt_gap_set_event_callback(bt_at_event_cb);
 
         err = bt_get_addr_from_param(&a2dp_env.peer_addr, argv[0]);
 
-        if(err) goto error;
+        if (err)
+        {
+            goto error;
+        }
 
-        if(a2dp_env.conn_state != BK_A2DP_CONNECTION_STATE_CONNECTED)
+        if (a2dp_env.conn_state != BK_A2DP_CONNECTION_STATE_CONNECTED)
         {
             LOGE("With remote device is not connected\n");
             goto error;
@@ -1854,7 +1956,7 @@ static int bt_enable_a2dp_source_disconnect_handle(int sync, int argc, char **ar
 
         err = bk_bt_a2dp_source_disconnect(a2dp_env.peer_addr.addr);
 
-        if(err)
+        if (err)
         {
             LOGE("%s disconnect a2dp err %d\n", __func__, err);
             goto error;
@@ -1862,7 +1964,7 @@ static int bt_enable_a2dp_source_disconnect_handle(int sync, int argc, char **ar
 
         err = rtos_get_semaphore(&bt_at_cmd_sema, 6 * 1000);
 
-        if(err)
+        if (err)
         {
             LOGE("%s disconnect a2dp timeout %d\n", __func__, err);
             goto error;
@@ -1870,7 +1972,7 @@ static int bt_enable_a2dp_source_disconnect_handle(int sync, int argc, char **ar
 
         err = bk_bt_disconnect(a2dp_env.peer_addr.addr, DISCONNECT_REASON_REMOTE_USER_TERMINATE, bt_at_cmd_cb);
 
-        if(err)
+        if (err)
         {
             LOGE("%s disconnect link err %d\n", __func__, err);
             goto error;
@@ -1878,15 +1980,17 @@ static int bt_enable_a2dp_source_disconnect_handle(int sync, int argc, char **ar
 
         err = rtos_get_semaphore(&bt_at_cmd_sema, 6 * 1000);
 
-        if(!err)
+        if (!err)
         {
-//            spp_env.conn_state = STATE_PROFILE_CONNECTED;
-			atsvr_cmd_rsp_ok();
+            //            spp_env.conn_state = STATE_PROFILE_CONNECTED;
+            atsvr_cmd_rsp_ok();
 
             os_memset(&a2dp_env, 0, sizeof(a2dp_env));
 
             if (bt_at_cmd_sema != NULL)
+            {
                 rtos_deinit_semaphore(&bt_at_cmd_sema);
+            }
             return err;
         }
         else
@@ -1895,16 +1999,18 @@ static int bt_enable_a2dp_source_disconnect_handle(int sync, int argc, char **ar
         }
     }
 error:
-	atsvr_cmd_rsp_error();
-//    os_memset(&spp_env, 0, sizeof(spp_env_s));
+    atsvr_cmd_rsp_error();
+    //    os_memset(&spp_env, 0, sizeof(spp_env_s));
     if (bt_at_cmd_sema != NULL)
+    {
         rtos_deinit_semaphore(&bt_at_cmd_sema);
+    }
     return err;
 }
 
 static int bt_a2dp_source_mic_data_handler(uint8_t *data, unsigned int len)//640
 {
-//    uint8_t sent_threshold = ((CODEC_VOICE_MSBC == bt_audio_hfp_codec) ? SCO_MSBC_SAMPLES_PER_FRAME * 2 : SCO_CVSD_SAMPLES_PER_FRAME * 2);
+    //    uint8_t sent_threshold = ((CODEC_VOICE_MSBC == bt_audio_hfp_codec) ? SCO_MSBC_SAMPLES_PER_FRAME * 2 : SCO_CVSD_SAMPLES_PER_FRAME * 2);
     uint32_t sent_threshold = s_sbc_software_encoder_ctx.pcm_length * 2; //pcm_length == 128
     uint32_t index = 0;
     int32_t encode_len = 0;
@@ -1912,18 +2018,18 @@ static int bt_a2dp_source_mic_data_handler(uint8_t *data, unsigned int len)//640
 
     static uint32_t last_len = 0;
     //LOGE("[send_mic_data_to_air]  %d \r\n",len);
-    if(((uint32_t)data) % 2)
+    if (((uint32_t)data) % 2)
     {
         LOGE("%s err data is not 2 bytes aligned !!!\n", __func__);
     }
 
-    if(last_len != len)
+    if (last_len != len)
     {
         LOGE("%s len %d\n", __func__, len);
         last_len = len;
     }
 
-    if(len > sizeof(mic_sco_data))
+    if (len > sizeof(mic_sco_data))
     {
         LOGE("%s too long %d !\n", __func__, len);
         return 0;
@@ -1935,7 +2041,7 @@ static int bt_a2dp_source_mic_data_handler(uint8_t *data, unsigned int len)//640
     for (uint32_t i = 0; i < mic_data_count / sent_threshold; ++i)
     {
         encode_len = sbc_encoder_encode(&s_sbc_software_encoder_ctx, (const int16_t *)(mic_sco_data + i * sent_threshold));
-        if(encode_len < 0)
+        if (encode_len < 0)
         {
             LOGE("%s encode err %d\n", __func__, encode_len);
             mic_data_count = 0;
@@ -1944,7 +2050,7 @@ static int bt_a2dp_source_mic_data_handler(uint8_t *data, unsigned int len)//640
 
         ret = bk_bt_a2dp_source_write(&(a2dp_env.peer_addr), 1, s_sbc_software_encoder_ctx.stream, encode_len);
 
-        if(ret)
+        if (ret)
         {
             LOGE("%s bk_bt_a2dp_source_write err %d\n", __func__, ret);
         }
@@ -1960,7 +2066,7 @@ static int bt_a2dp_source_mic_data_handler(uint8_t *data, unsigned int len)//640
     while (mic_data_count >= sent_threshold)
     {
         encode_len = sbc_encoder_encode(&s_sbc_software_encoder_ctx, (const int16_t *)(mic_sco_data + index));
-        if(encode_len < 0)
+        if (encode_len < 0)
         {
             LOGE("%s encode err %d\n", __func__, encode_len);
             mic_data_count = 0;
@@ -1973,7 +2079,7 @@ static int bt_a2dp_source_mic_data_handler(uint8_t *data, unsigned int len)//640
 
         ret = bk_bt_a2dp_source_write(&(a2dp_env.peer_addr), 1, s_sbc_software_encoder_ctx.stream, encode_len);
 
-        if(ret)
+        if (ret)
         {
             LOGE("%s bk_bt_a2dp_source_write err %d\n", __func__, ret);
         }
@@ -2000,14 +2106,14 @@ static int32_t bt_a2dp_source_prepare_sbc_encoder(void)
 
     switch (s_a2dp_cap_info.sbc_codec.alloc_mode)
     {
-    case 2://A2DP_SBC_ALLOCATION_METHOD_SNR:
-        alloc_mode = 1;
-        break;
+        case 2://A2DP_SBC_ALLOCATION_METHOD_SNR:
+            alloc_mode = 1;
+            break;
 
-    default:
-    case 1://A2DP_SBC_ALLOCATION_METHOD_LOUDNESS:
-        alloc_mode = 0;
-        break;
+        default:
+        case 1://A2DP_SBC_ALLOCATION_METHOD_LOUDNESS:
+            alloc_mode = 0;
+            break;
     }
 
     ret = sbc_encoder_ctrl(&s_sbc_software_encoder_ctx, SBC_ENCODER_CTRL_CMD_SET_ALLOCATION_METHOD, alloc_mode); //0:loundness, 1:SNR
@@ -2031,22 +2137,22 @@ static int32_t bt_a2dp_source_prepare_sbc_encoder(void)
 
     switch (s_a2dp_cap_info.sbc_codec.block_len)
     {
-    case 4://A2DP_SBC_BLOCK_LENGTH_4:
-        block_mode = 0;
-        break;
+        case 4://A2DP_SBC_BLOCK_LENGTH_4:
+            block_mode = 0;
+            break;
 
-    case 8://A2DP_SBC_BLOCK_LENGTH_8:
-        block_mode = 1;
-        break;
+        case 8://A2DP_SBC_BLOCK_LENGTH_8:
+            block_mode = 1;
+            break;
 
-    case 12://A2DP_SBC_BLOCK_LENGTH_12:
-        block_mode = 2;
-        break;
+        case 12://A2DP_SBC_BLOCK_LENGTH_12:
+            block_mode = 2;
+            break;
 
-    default:
-    case 16://A2DP_SBC_BLOCK_LENGTH_16:
-        block_mode = 3;
-        break;
+        default:
+        case 16://A2DP_SBC_BLOCK_LENGTH_16:
+            block_mode = 3;
+            break;
     }
 
     ret = sbc_encoder_ctrl(&s_sbc_software_encoder_ctx, SBC_ENCODER_CTRL_CMD_SET_BLOCK_MODE, block_mode); //0:4, 1:8, 2:12, 3:16
@@ -2061,22 +2167,22 @@ static int32_t bt_a2dp_source_prepare_sbc_encoder(void)
 
     switch (s_a2dp_cap_info.sbc_codec.channel_mode)
     {
-    case 8:
-        channle_mode = 0;
-        break;
+        case 8:
+            channle_mode = 0;
+            break;
 
-    case 4:
-        channle_mode = 1;
-        break;
+        case 4:
+            channle_mode = 1;
+            break;
 
-    case 2:
-        channle_mode = 2;
-        break;
+        case 2:
+            channle_mode = 2;
+            break;
 
-    default:
-    case 1:
-        channle_mode = 3;
-        break;
+        default:
+        case 1:
+            channle_mode = 3;
+            break;
     }
 
     ret = sbc_encoder_ctrl(&s_sbc_software_encoder_ctx, SBC_ENCODER_CTRL_CMD_SET_CHANNEL_MODE, channle_mode); //0:MONO, 1:DUAL, 2:STEREO, 3:JOINT STEREO
@@ -2091,22 +2197,22 @@ static int32_t bt_a2dp_source_prepare_sbc_encoder(void)
 
     switch (s_a2dp_cap_info.sbc_codec.sample_rate)
     {
-    case 16000:
-        samp_rate_select = 0;
-        break;
+        case 16000:
+            samp_rate_select = 0;
+            break;
 
-    case 32000:
-        samp_rate_select = 1;
-        break;
+        case 32000:
+            samp_rate_select = 1;
+            break;
 
-    default:
-    case 44100:
-        samp_rate_select = 2;
-        break;
+        default:
+        case 44100:
+            samp_rate_select = 2;
+            break;
 
-    case 48000:
-        samp_rate_select = 3;
-        break;
+        case 48000:
+            samp_rate_select = 3;
+            break;
     }
 
     ret = sbc_encoder_ctrl(&s_sbc_software_encoder_ctx, SBC_ENCODER_CTRL_CMD_SET_SAMPLE_RATE_INDEX, samp_rate_select); //0:16000, 1:32000, 2:44100, 3:48000
@@ -2122,14 +2228,14 @@ static int32_t bt_a2dp_source_prepare_sbc_encoder(void)
 
     switch (s_a2dp_cap_info.sbc_codec.subbands)
     {
-    case 4:
-        subband = 0;
-        break;
+        case 4:
+            subband = 0;
+            break;
 
-    default:
-    case 8:
-        subband = 1;
-        break;
+        default:
+        case 8:
+            subband = 1;
+            break;
     }
 
     ret = sbc_encoder_ctrl(&s_sbc_software_encoder_ctx, SBC_ENCODER_CTRL_CMD_SET_SUBBAND_MODE, subband); //0:4, 1:8
@@ -2232,23 +2338,27 @@ static int bt_enable_a2dp_source_start_handle(int sync, int argc, char **argv)
     if (sync)
     {
         err = rtos_init_semaphore(&bt_at_cmd_sema, 1);
-        if(err != kNoErr){
+        if (err != kNoErr)
+        {
             goto error;
         }
     }
-    if(bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
+    if (bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
     {
         err = bt_get_addr_from_param(&a2dp_env.peer_addr, argv[0]);
 
-        if(err) goto error;
+        if (err)
+        {
+            goto error;
+        }
 
-        if(a2dp_env.conn_state != BK_A2DP_CONNECTION_STATE_CONNECTED)
+        if (a2dp_env.conn_state != BK_A2DP_CONNECTION_STATE_CONNECTED)
         {
             LOGE("With remote device is not connected\n");
             goto error;
         }
 
-        if(a2dp_env.start_status != 0)
+        if (a2dp_env.start_status != 0)
         {
             LOGE("is already start\n");
             goto error;
@@ -2256,19 +2366,21 @@ static int bt_enable_a2dp_source_start_handle(int sync, int argc, char **argv)
 
         err = bk_bt_a2dp_source_start(&(a2dp_env.peer_addr));
 
-        if(err)
+        if (err)
         {
             LOGE("%s start err %d\n", __func__, err);
             goto error;
         }
 
         err = rtos_get_semaphore(&bt_at_cmd_sema, 6 * 1000);
-        if(!err)
+        if (!err)
         {
-//            spp_env.conn_state = STATE_PROFILE_CONNECTED;
-			atsvr_cmd_rsp_ok();
+            //            spp_env.conn_state = STATE_PROFILE_CONNECTED;
+            atsvr_cmd_rsp_ok();
             if (bt_at_cmd_sema != NULL)
+            {
                 rtos_deinit_semaphore(&bt_at_cmd_sema);
+            }
             return err;
         }
         else
@@ -2277,10 +2389,12 @@ static int bt_enable_a2dp_source_start_handle(int sync, int argc, char **argv)
         }
     }
 error:
-	atsvr_cmd_rsp_error();
-//    os_memset(&spp_env, 0, sizeof(spp_env_s));
+    atsvr_cmd_rsp_error();
+    //    os_memset(&spp_env, 0, sizeof(spp_env_s));
     if (bt_at_cmd_sema != NULL)
+    {
         rtos_deinit_semaphore(&bt_at_cmd_sema);
+    }
     return err;
 }
 
@@ -2292,23 +2406,27 @@ static int bt_enable_a2dp_source_suspend_handle(int sync, int argc, char **argv)
     if (sync)
     {
         err = rtos_init_semaphore(&bt_at_cmd_sema, 1);
-        if(err != kNoErr){
+        if (err != kNoErr)
+        {
             goto error;
         }
     }
-    if(bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
+    if (bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
     {
         err = bt_get_addr_from_param(&a2dp_env.peer_addr, argv[0]);
 
-        if(err) goto error;
+        if (err)
+        {
+            goto error;
+        }
 
-        if(a2dp_env.conn_state != BK_A2DP_CONNECTION_STATE_CONNECTED)
+        if (a2dp_env.conn_state != BK_A2DP_CONNECTION_STATE_CONNECTED)
         {
             LOGE("With remote device is not connected\n");
             goto error;
         }
 
-        if(a2dp_env.start_status == 0)
+        if (a2dp_env.start_status == 0)
         {
             LOGE("is already suspend\n");
             goto error;
@@ -2316,18 +2434,20 @@ static int bt_enable_a2dp_source_suspend_handle(int sync, int argc, char **argv)
 
         err = bk_bt_a2dp_source_suspend(&(a2dp_env.peer_addr));
 
-        if(err)
+        if (err)
         {
             LOGE("%s suspend err %d\n", __func__, err);
             goto error;
         }
 
         err = rtos_get_semaphore(&bt_at_cmd_sema, 6 * 1000);
-        if(!err)
+        if (!err)
         {
-			atsvr_cmd_rsp_ok();
+            atsvr_cmd_rsp_ok();
             if (bt_at_cmd_sema != NULL)
+            {
                 rtos_deinit_semaphore(&bt_at_cmd_sema);
+            }
             return err;
         }
         else
@@ -2336,9 +2456,11 @@ static int bt_enable_a2dp_source_suspend_handle(int sync, int argc, char **argv)
         }
     }
 error:
-	atsvr_cmd_rsp_error();
+    atsvr_cmd_rsp_error();
     if (bt_at_cmd_sema != NULL)
+    {
         rtos_deinit_semaphore(&bt_at_cmd_sema);
+    }
     return err;
 }
 
@@ -2357,11 +2479,12 @@ static int bt_enable_a2dp_source_stop_handle(int sync, int argc, char **argv)
     if (sync)
     {
         err = rtos_init_semaphore(&bt_at_cmd_sema, 1);
-        if(err != kNoErr){
+        if (err != kNoErr)
+        {
             goto error;
         }
     }
-    if(bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
+    if (bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
     {
         int rc = -1;
 
@@ -2372,20 +2495,24 @@ static int bt_enable_a2dp_source_stop_handle(int sync, int argc, char **argv)
         rc = rtos_push_to_queue(&bt_a2dp_source_msg_que, &a2dp_msg, BEKEN_NO_WAIT);
         if (kNoErr != rc)
         {
-            LOGE("%s, send queue failed\r\n",__func__);
+            LOGE("%s, send queue failed\r\n", __func__);
             goto error;
         }
 
-		atsvr_cmd_rsp_ok();
+        atsvr_cmd_rsp_ok();
         if (bt_at_cmd_sema != NULL)
+        {
             rtos_deinit_semaphore(&bt_at_cmd_sema);
+        }
         return err;
 
     }
 error:
-	atsvr_cmd_rsp_error();
+    atsvr_cmd_rsp_error();
     if (bt_at_cmd_sema != NULL)
+    {
         rtos_deinit_semaphore(&bt_at_cmd_sema);
+    }
     return err;
 }
 
@@ -2402,12 +2529,12 @@ static void bt_a2dp_source_write_from_file_timer_hdl(void *param)
     uint32_t encode_index = 0;
 
     uint32_t sent_threshold = s_sbc_software_encoder_ctx.pcm_length * 2 *
-            s_sbc_software_encoder_ctx.num_channels; //pcm_length == 128 when 16 block 8 subband 1 channel
+                              s_sbc_software_encoder_ctx.num_channels; //pcm_length == 128 when 16 block 8 subband 1 channel
     //s_sbc_software_encoder_ctx.frame.blocks * s_sbc_software_encoder_ctx.frame.subbands == s_sbc_software_encoder_ctx.pcm_length;
 
     tmp_buf = os_malloc(A2DP_SOURCE_SBC_FRAME_COUNT * 128); //max 128
 
-    if(!tmp_buf)
+    if (!tmp_buf)
     {
         LOGE("%s malloc err\n", __func__);
         return;
@@ -2423,11 +2550,11 @@ static void bt_a2dp_source_write_from_file_timer_hdl(void *param)
             return;
         }
 
-        if(read_len < sent_threshold)
+        if (read_len < sent_threshold)
         {
             LOGE("%s read len %d < %d !!\n", __func__, read_len, sent_threshold);
 
-            if(read_len == 0)
+            if (read_len == 0)
             {
                 LOGE("%s read file end !!\n", __func__, read_len, sent_threshold);
                 os_free(tmp_buf);
@@ -2439,14 +2566,14 @@ static void bt_a2dp_source_write_from_file_timer_hdl(void *param)
         }
 
         encode_len = sbc_encoder_encode(&s_sbc_software_encoder_ctx, (const int16_t *)(mic_sco_data));
-        if(encode_len < 0)
+        if (encode_len < 0)
         {
-           LOGE("%s encode err %d\n", __func__, encode_len);
-           os_free(tmp_buf);
-           return;
+            LOGE("%s encode err %d\n", __func__, encode_len);
+            os_free(tmp_buf);
+            return;
         }
 
-        if(encode_index + encode_len > A2DP_SOURCE_SBC_FRAME_COUNT * 128)
+        if (encode_index + encode_len > A2DP_SOURCE_SBC_FRAME_COUNT * 128)
         {
             LOGE("%s encode data large than malloc !! %d\n", __func__, encode_len);
             os_free(tmp_buf);
@@ -2460,7 +2587,7 @@ static void bt_a2dp_source_write_from_file_timer_hdl(void *param)
 
     ret = bk_bt_a2dp_source_write(&(a2dp_env.peer_addr), A2DP_SOURCE_SBC_FRAME_COUNT, tmp_buf, encode_index);
 
-    if(ret)
+    if (ret)
     {
         LOGE("%s bk_bt_a2dp_source_write err %d\n", __func__, ret);
     }
@@ -2476,14 +2603,16 @@ static void bt_a2dp_source_write_from_file_timer_auto_hdl(void *param)
     int rc = -1;
 
     if (bt_a2dp_source_msg_que == NULL)
+    {
         return;
+    }
 
     msg.len = sizeof(FIL *);
     msg.data = param;
 
     msg.type = BT_A2DP_SOURCE_START_MSG;
 
-    if(a2dp_env.play_status == 1)
+    if (a2dp_env.play_status == 1)
     {
         rc = rtos_push_to_queue(&bt_a2dp_source_msg_que, &msg, BEKEN_NO_WAIT);
         if (kNoErr != rc)
@@ -2514,7 +2643,7 @@ void bt_a2dp_source_write_from_file(FIL *fd)
 
 
     uint32_t will_send_frame_count = 0;
-//    uint32_t sample_count = 0, sample_miss_num = 0;
+    //    uint32_t sample_count = 0, sample_miss_num = 0;
 
 
     //s_sbc_software_encoder_ctx.frame.blocks * s_sbc_software_encoder_ctx.frame.subbands == s_sbc_software_encoder_ctx.pcm_length;
@@ -2543,20 +2672,20 @@ void bt_a2dp_source_write_from_file(FIL *fd)
 
     s_last_get_sample_time = cur_time;
 
-    if(!s_remain_send_sample_count)
+    if (!s_remain_send_sample_count)
     {
         return;
     }
     else if (s_remain_send_sample_count < one_pcm_frame_encode_sample_count_per_channel)
     {
         if (will_send_period_time * s_sbc_software_encoder_ctx.sample_rate / 1000 <
-                send_sbc_frame_count * one_pcm_frame_encode_sample_count_per_channel)
+            send_sbc_frame_count * one_pcm_frame_encode_sample_count_per_channel)
         {
             return;
         }
     }
     else if (s_remain_send_sample_count >= one_pcm_frame_encode_sample_count_per_channel &&
-            s_remain_send_sample_count < one_pcm_frame_encode_sample_count_per_channel * send_sbc_frame_count)
+             s_remain_send_sample_count < one_pcm_frame_encode_sample_count_per_channel * send_sbc_frame_count)
     {
         if (0)//will_send_period_time * s_sbc_software_encoder_ctx.sample_rate / 1000 < send_sbc_frame_count * one_pcm_frame_encode_sample_count_per_channel)
         {
@@ -2566,19 +2695,19 @@ void bt_a2dp_source_write_from_file(FIL *fd)
 
 
     will_send_frame_count = ((s_remain_send_sample_count / one_pcm_frame_encode_sample_count_per_channel > 1) ?
-            (s_remain_send_sample_count / one_pcm_frame_encode_sample_count_per_channel) : 1);
+                             (s_remain_send_sample_count / one_pcm_frame_encode_sample_count_per_channel) : 1);
 
-//    if(will_send_frame_count > A2DP_SOURCE_SBC_FRAME_COUNT)
-//    {
-//        will_send_frame_count = A2DP_SOURCE_SBC_FRAME_COUNT;
-//    }
+    //    if(will_send_frame_count > A2DP_SOURCE_SBC_FRAME_COUNT)
+    //    {
+    //        will_send_frame_count = A2DP_SOURCE_SBC_FRAME_COUNT;
+    //    }
 
-    if(will_send_frame_count > 100)
+    if (will_send_frame_count > 100)
     {
         LOGE("%s\n", __func__);
     }
 
-    if(!will_send_frame_count)
+    if (!will_send_frame_count)
     {
         LOGE("%s 0\n", __func__);
     }
@@ -2587,7 +2716,7 @@ void bt_a2dp_source_write_from_file(FIL *fd)
 
     tmp_buf = os_malloc(will_send_frame_count * 128); //max 128
 
-    if(tmp_buf == NULL)
+    if (tmp_buf == NULL)
     {
         LOGE("%s tmp_buf no buffer malloc\n", __func__);
         bt_a2dp_set_get_sample_clean();
@@ -2595,11 +2724,11 @@ void bt_a2dp_source_write_from_file(FIL *fd)
     }
     do
     {
-//        for (; i < will_send_frame_count; ++i)
-        for(i = 0; ( ignore_max_mtu || encode_index + encode_len <= a2dp_env.mtu) && i + j < will_send_frame_count; ++i)
+        //        for (; i < will_send_frame_count; ++i)
+        for (i = 0; (ignore_max_mtu || encode_index + encode_len <= a2dp_env.mtu) && i + j < will_send_frame_count; ++i)
         {
             fr = f_read(pcm_file_fd, (void *)(mic_sco_data), one_pcm_frame_encode_sample_bytes, &read_len);
-//            read_len = fread((mic_sco_data), 1, one_pcm_frame_encode_sample_bytes, pcm_file_fd);
+            //            read_len = fread((mic_sco_data), 1, one_pcm_frame_encode_sample_bytes, pcm_file_fd);
 
             if (fr != FR_OK)
             {
@@ -2620,14 +2749,14 @@ void bt_a2dp_source_write_from_file(FIL *fd)
                     LOGE("%s read file end %d %d !!\n", __func__, read_len, one_pcm_frame_encode_sample_bytes);
                     os_free(tmp_buf);
 
-//                    fclose(pcm_file_fd);
-//                    *(FILE **)param = NULL;
+                    //                    fclose(pcm_file_fd);
+                    //                    *(FILE **)param = NULL;
                     rtos_stop_timer(&bt_a2dp_source_write_timer);
                     bt_a2dp_set_get_sample_clean();
                     a2dp_env.play_status = 0;
 
 
-                    if(1) //repeat
+                    if (1) //repeat
                     {
                         fr = f_lseek(pcm_file_fd, 0);
                         if (fr != FR_OK)
@@ -2672,7 +2801,7 @@ void bt_a2dp_source_write_from_file(FIL *fd)
             memcpy(tmp_buf + encode_index, s_sbc_software_encoder_ctx.stream, encode_len);
             encode_index += encode_len;
         }
-//        while(encode_index + encode_len <= a2dp_env.mtu && i < will_send_frame_count);
+        //        while(encode_index + encode_len <= a2dp_env.mtu && i < will_send_frame_count);
 
         ret = bk_bt_a2dp_source_write(&(a2dp_env.peer_addr), i, tmp_buf, encode_index);
 
@@ -2690,9 +2819,9 @@ void bt_a2dp_source_write_from_file(FIL *fd)
         encode_index = 0;
         j += i;
     }
-    while(j < will_send_frame_count);
+    while (j < will_send_frame_count);
 
-    if(s_remain_send_sample_count < j * one_pcm_frame_encode_sample_count_per_channel)
+    if (s_remain_send_sample_count < j * one_pcm_frame_encode_sample_count_per_channel)
     {
         s_remain_send_sample_count = 0;
     }
@@ -2708,19 +2837,23 @@ void bt_a2dp_source_write_from_file(FIL *fd)
 
 void bt_a2dp_source_main(void *arg)
 {
-    while (1) {
+    while (1)
+    {
         bk_err_t err;
         bt_a2dp_source_msg_t msg;
 
         err = rtos_pop_from_queue(&bt_a2dp_source_msg_que, &msg, BEKEN_WAIT_FOREVER);
         if (kNoErr == err)
         {
-            switch (msg.type) {
+            switch (msg.type)
+            {
 #if CONFIG_FATFS
                 case BT_A2DP_SOURCE_START_MSG:
                 {
-                    if(a2dp_env.play_status == 1)
+                    if (a2dp_env.play_status == 1)
+                    {
                         bt_a2dp_source_write_from_file((FIL *)msg.data);
+                    }
                 }
                 break;
 
@@ -2753,18 +2886,20 @@ int bt_a2dp_source_task_init(void)
                               "bt_a2dp_source_msg_que",
                               sizeof(bt_audio_demo_msg_t),
                               10);
-        if (ret != kNoErr) {
+        if (ret != kNoErr)
+        {
             LOGE("bt_audio demo msg queue failed \r\n");
             return BK_FAIL;
         }
 
         ret = rtos_create_thread(&bt_a2dp_source_thread_handle,
-                             BEKEN_DEFAULT_WORKER_PRIORITY,
-                             "bt_a2dp_source",
-                             (beken_thread_function_t)bt_a2dp_source_main,
-                             4096,
-                             (beken_thread_arg_t)0);
-        if (ret != kNoErr) {
+                                 BEKEN_DEFAULT_WORKER_PRIORITY,
+                                 "bt_a2dp_source",
+                                 (beken_thread_function_t)bt_a2dp_source_main,
+                                 4096,
+                                 (beken_thread_arg_t)0);
+        if (ret != kNoErr)
+        {
             LOGE("bt_a2dp_source task fail \r\n");
             rtos_deinit_queue(&bt_a2dp_source_msg_que);
             bt_a2dp_source_msg_que = NULL;
@@ -2780,7 +2915,7 @@ int bt_a2dp_source_task_init(void)
 }
 
 #if CONFIG_FATFS
-static int32_t bt_a2dp_source_encode_from_file(uint8_t * path)
+static int32_t bt_a2dp_source_encode_from_file(uint8_t *path)
 {
     FRESULT fr;
     uint32_t inter = (uint32_t)((640 * 1000.0) / (float)s_sbc_software_encoder_ctx.sample_rate);
@@ -2790,7 +2925,7 @@ static int32_t bt_a2dp_source_encode_from_file(uint8_t * path)
     test_mount(1);
 
     //need s16le dual pcm
-//    sprintf((char *)full_path, "%d:/%s", mount_label, path);
+    //    sprintf((char *)full_path, "%d:/%s", mount_label, path);
     sprintf((char *)full_path, "%s", path);
 
 
@@ -2811,14 +2946,14 @@ static int32_t bt_a2dp_source_encode_from_file(uint8_t * path)
 
     if (!rtos_is_timer_init(&bt_a2dp_source_write_timer))
     {
-//        rtos_init_timer(&bt_a2dp_source_write_timer, inter, bt_a2dp_source_write_from_file_timer_hdl, (void *)&pcm_file_fd);
+        //        rtos_init_timer(&bt_a2dp_source_write_timer, inter, bt_a2dp_source_write_from_file_timer_hdl, (void *)&pcm_file_fd);
         rtos_init_timer(&bt_a2dp_source_write_timer, A2DP_SOURCE_WRITE_AUTO_TIMER_MS, bt_a2dp_source_write_from_file_timer_auto_hdl, (void *)&pcm_file_fd);
     }
 
 
     rtos_change_period(&bt_a2dp_source_write_timer, inter);
 
-    if(pcm_file_fd.fs)
+    if (pcm_file_fd.fs)
     {
         f_close(&pcm_file_fd);
     }
@@ -2845,27 +2980,31 @@ static int bt_enable_a2dp_source_write_test_handle(int sync, int argc, char **ar
     if (0)//bt_at_cmd_table[3].is_sync_cmd)
     {
         err = rtos_init_semaphore(&bt_at_cmd_sema, 1);
-        if(err != kNoErr){
+        if (err != kNoErr)
+        {
             goto error;
         }
     }
 
-    if(bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
+    if (bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
     {
         err = bt_get_addr_from_param(&a2dp_env.peer_addr, argv[0]);
-        if(err) goto error;
-
-        if(argc >= 2)
+        if (err)
         {
-            if(strcasecmp(argv[1], "mic") == 0)
+            goto error;
+        }
+
+        if (argc >= 2)
+        {
+            if (strcasecmp(argv[1], "mic") == 0)
             {
                 choise = 0;
             }
-            else if(strcasecmp(argv[1], "file") == 0)
+            else if (strcasecmp(argv[1], "file") == 0)
             {
                 choise = 1;
 
-                if(argc < 3)
+                if (argc < 3)
                 {
                     LOGE("%s please input file path\n", __func__);
                     goto error;
@@ -2880,46 +3019,48 @@ static int bt_enable_a2dp_source_write_test_handle(int sync, int argc, char **ar
         }
 
         err = bt_a2dp_source_prepare_sbc_encoder();
-        if(err)
+        if (err)
         {
             goto error;
         }
 
 #if 1
-        if(a2dp_env.conn_state != BK_A2DP_CONNECTION_STATE_CONNECTED)
+        if (a2dp_env.conn_state != BK_A2DP_CONNECTION_STATE_CONNECTED)
         {
             LOGE("With remote device is not connected\n");
             goto error;
         }
 
-        if(a2dp_env.start_status == 0)
+        if (a2dp_env.start_status == 0)
         {
             LOGE("is suspend\n");
             goto error;
         }
 #endif
 
-        switch(choise)
+        switch (choise)
         {
-        case 0:
-            err = bt_a2dp_source_start_voc();
-            break;
+            case 0:
+                err = bt_a2dp_source_start_voc();
+                break;
 
 #if CONFIG_FATFS
-        case 1:
-            err = bt_a2dp_source_encode_from_file((uint8_t *)argv[2]);
-            break;
+            case 1:
+                err = bt_a2dp_source_encode_from_file((uint8_t *)argv[2]);
+                break;
 #endif
-        default:
-            break;
+            default:
+                break;
         }
 
-//        err = rtos_get_semaphore(&bt_at_cmd_sema, 60 * 1000);
-        if(!err)
+        //        err = rtos_get_semaphore(&bt_at_cmd_sema, 60 * 1000);
+        if (!err)
         {
-			atsvr_cmd_rsp_ok();
+            atsvr_cmd_rsp_ok();
             if (bt_at_cmd_sema != NULL)
+            {
                 rtos_deinit_semaphore(&bt_at_cmd_sema);
+            }
             return err;
         }
         else
@@ -2929,9 +3070,11 @@ static int bt_enable_a2dp_source_write_test_handle(int sync, int argc, char **ar
     }
 
 error:
-	atsvr_cmd_rsp_error();
+    atsvr_cmd_rsp_error();
     if (bt_at_cmd_sema != NULL)
+    {
         rtos_deinit_semaphore(&bt_at_cmd_sema);
+    }
     return err;
 }
 
@@ -2945,21 +3088,25 @@ static int bt_enable_a2dp_source_test_handle(char *pcWriteBuffer, int xWriteBuff
     if (0)//bt_at_cmd_table[3].is_sync_cmd)
     {
         err = rtos_init_semaphore(&bt_at_cmd_sema, 1);
-        if(err != kNoErr){
+        if (err != kNoErr)
+        {
             goto error;
         }
     }
 
-    if(bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
+    if (bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
     {
         err = bt_get_addr_from_param(&a2dp_env.peer_addr, argv[0]);
-        if(err) goto error;
-
-        if(argc >= 2)
+        if (err)
         {
-            if(strcasecmp(argv[1], "file") == 0)
+            goto error;
+        }
+
+        if (argc >= 2)
+        {
+            if (strcasecmp(argv[1], "file") == 0)
             {
-                if(argc < 3)
+                if (argc < 3)
                 {
                     LOGE("%s please input file path\n", __func__);
                     goto error;
@@ -2975,7 +3122,7 @@ static int bt_enable_a2dp_source_test_handle(char *pcWriteBuffer, int xWriteBuff
 
         }
 
-        if(!err)
+        if (!err)
         {
             msg = AT_CMD_RSP_SUCCEED;
             os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
@@ -2997,7 +3144,9 @@ error:
     msg = AT_CMD_RSP_ERROR;
     os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
     if (bt_at_cmd_sema != NULL)
+    {
         rtos_deinit_semaphore(&bt_at_cmd_sema);
+    }
     return err;
 }
 
@@ -3010,16 +3159,17 @@ static int bt_enable_a2dp_source_test_stop_handle(char *pcWriteBuffer, int xWrit
     if (0)//bt_at_cmd_table[3].is_sync_cmd)
     {
         err = rtos_init_semaphore(&bt_at_cmd_sema, 1);
-        if(err != kNoErr){
+        if (err != kNoErr)
+        {
             goto error;
         }
     }
 
-    if(bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
+    if (bk_bt_get_host_stack_type() == BK_BT_HOST_STACK_TYPE_ETHERMIND)
     {
         err = bt_a2dp_source_demo_stop_all();
 
-        if(!err)
+        if (!err)
         {
             msg = AT_CMD_RSP_SUCCEED;
             os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
@@ -3041,7 +3191,9 @@ error:
     msg = AT_CMD_RSP_ERROR;
     os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
     if (bt_at_cmd_sema != NULL)
+    {
         rtos_deinit_semaphore(&bt_at_cmd_sema);
+    }
     return err;
 }
 #endif
@@ -3055,29 +3207,36 @@ error:
 
 static uint32_t crc_table(uint32_t index)
 {
-	uint32_t c = index;
-	uint32_t poly = 0xedb88320L;
-	int k;
+    uint32_t c = index;
+    uint32_t poly = 0xedb88320L;
+    int k;
 
-	for (k = 0; k < 8; k++)
-		c = c & 1 ? poly ^ (c >> 1) : c >> 1;
+    for (k = 0; k < 8; k++)
+    {
+        c = c & 1 ? poly ^ (c >> 1) : c >> 1;
+    }
 
-	return c;
+    return c;
 }
 
 uint32_t crc32(uint32_t crc, const uint8_t *buf, int len)
 {
-    if (buf == NULL) return 0L;
+    if (buf == NULL)
+    {
+        return 0L;
+    }
 
-  //  crc = crc ^ 0xffffffffL;
+    //  crc = crc ^ 0xffffffffL;
     while (len >= 8)
     {
-      DO8(buf);
-      len -= 8;
+        DO8(buf);
+        len -= 8;
     }
-    if (len) do {
-      DO1(buf);
-    } while (--len);
+    if (len) do
+        {
+            DO1(buf);
+        }
+        while (--len);
     return crc;// ^ 0xffffffffL;
 }
 
@@ -3086,41 +3245,41 @@ static unsigned int crc32_table[256];
 
 unsigned int make_crc32_table(void)
 {
-	uint32_t c;
-	int i = 0;
-	int bit = 0;
+    uint32_t c;
+    int i = 0;
+    int bit = 0;
 
-	for(i = 0;i < 256;i++)
-	{
-		c = (unsigned int)i;
+    for (i = 0; i < 256; i++)
+    {
+        c = (unsigned int)i;
 
-		for(bit = 0;bit < 8;bit++)
-		{
-			if(c&1)
-			{
-				c = (c>>1)^(0xEDB88320);
-			}
-			else
-			{
-				c = c >> 1;
-			}
-		}
+        for (bit = 0; bit < 8; bit++)
+        {
+            if (c & 1)
+            {
+                c = (c >> 1) ^ (0xEDB88320);
+            }
+            else
+            {
+                c = c >> 1;
+            }
+        }
 
-		crc32_table[i] = c;
-//		os_printf("crc32_table[%d] = %08x\r\n",i,crc32_table[i]);
-	}
+        crc32_table[i] = c;
+        //      os_printf("crc32_table[%d] = %08x\r\n",i,crc32_table[i]);
+    }
 
-	return 0;
+    return 0;
 }
 
 uint32_t calc_crc32(uint32_t crc, const uint8_t *buf, int len)
 {
-	while(len--)
-	{
-		crc = (crc >> 8)^(crc32_table[(crc^*buf++)&0xff]);
-	}
+    while (len--)
+    {
+        crc = (crc >> 8) ^ (crc32_table[(crc^*buf++) & 0xff]);
+    }
 
-	return crc;
+    return crc;
 }
 
 /********************************************************/
@@ -3134,7 +3293,8 @@ uint32_t calc_crc32(uint32_t crc, const uint8_t *buf, int len)
 #define INVALID_LCID            0xFFFF
 #define L2CAP_START_END         "END"
 
-typedef enum{
+typedef enum
+{
     STATE_ACL_DISCONNECT = 0,
     STATE_ACL_CONNECTING,
     STATE_ACL_CONNECTED,
@@ -3145,7 +3305,7 @@ typedef enum{
     STATE_L2CAP_DISCONNECTED,
     STATE_l2CAP_SRV_DISCONNECTING,
     STATE_l2CAP_SRV_DISCONNECTED,
-}l2cap_connect_state_s;
+} l2cap_connect_state_s;
 
 typedef void (* bt_l2cap_tx_fun)(uint16_t lcid, uint16_t *data_len, uint16_t *tx_len);
 
@@ -3162,19 +3322,20 @@ typedef struct
     bt_l2cap_tx_fun tx_fun[10];
     uint8_t fd_index;
     beken_thread_t l2cap_tx_thread;
-}dm_l2cap_env_t;
+} dm_l2cap_env_t;
 
-typedef struct{
+typedef struct
+{
     beken_thread_t *l2cap_tx_thread;
     uint16_t lcid;
     uint16_t len;
-}l2cap_thread_args_t;
+} l2cap_thread_args_t;
 
 static dm_l2cap_env_t l2cap_env = {0};
 
 static int bt_at_param_analyze(char *str, char *match, void *param, uint8_t array_size)
 {
-//    LOGI("arv--> %s \r\n", str);
+    //    LOGI("arv--> %s \r\n", str);
     char mm[100] = {0};
     char m1[10] = {0};
     char *s1 = "";
@@ -3186,10 +3347,10 @@ static int bt_at_param_analyze(char *str, char *match, void *param, uint8_t arra
     strcat(mm, s2);
     char m2[4] = "%2x";
     char type[3] = "ss";
-//    LOGI("m1: %s \r\n", mm);
+    //    LOGI("m1: %s \r\n", mm);
     int sf = sscanf(str, mm, type);
-//    LOGI("sf:%d, type :%c %c \r\n", sf, type[0], type[1]);
-    if(sf <= 0)
+    //    LOGI("sf:%d, type :%c %c \r\n", sf, type[0], type[1]);
+    if (sf <= 0)
     {
         return sf;
     }
@@ -3208,21 +3369,22 @@ static int bt_at_param_analyze(char *str, char *match, void *param, uint8_t arra
             sprintf(m1, s4, 1, "%s");
             break;
         case 'a':
-            if(type[1] == 'h')
+            if (type[1] == 'h')
             {
                 m2[2] = 'x';
-            }else if(type[1] == 'd')
+            }
+            else if (type[1] == 'd')
             {
                 m2[2] = 'd';
             }
-            for(int i=0;i<array_size;i++)
+            for (int i = 0; i < array_size; i++)
             {
-                sprintf(m1, s4, (i+1)*2, m2);
+                sprintf(m1, s4, (i + 1) * 2, m2);
                 mm[p] = 0;
                 strcat(mm, m1);
-//                LOGI("m2 : %s \r\n", mm);
-                sf = sscanf(str, mm, (uint8_t *)(param+i));
-                if(sf != 1)
+                //                LOGI("m2 : %s \r\n", mm);
+                sf = sscanf(str, mm, (uint8_t *)(param + i));
+                if (sf != 1)
                 {
                     break;
                 }
@@ -3237,7 +3399,7 @@ static int bt_at_param_analyze(char *str, char *match, void *param, uint8_t arra
             break;
     }
     strcat(mm, m1);
-//    LOGI("m2 : %s \r\n", mm);
+    //    LOGI("m2 : %s \r\n", mm);
     sf = sscanf(str, mm, param);
     return sf;
 }
@@ -3245,12 +3407,12 @@ static int bt_at_param_analyze(char *str, char *match, void *param, uint8_t arra
 static int bt_at_params_analyze(int argc, char **argv, char *match, void *param, uint8_t array_size)
 {
     int res = 0;
-    for(int i=0;i<argc;i++)
+    for (int i = 0; i < argc; i++)
     {
-        if(argv[i] !=NULL)
+        if (argv[i] != NULL)
         {
             res = bt_at_param_analyze(argv[i], match, param, array_size);
-            if(res)
+            if (res)
             {
                 break;
             }
@@ -3271,12 +3433,12 @@ static void bt_l2cap_event_callback(bk_bt_l2cap_cb_event_t event, bk_bt_l2cap_cb
             break;
         case BK_BT_L2CAP_OPEN_EVT:
             LOGI("%s open status: %d \r\n", __func__, param->open.status);
-            if(param->open.status == BK_BT_L2CAP_SUCCESS)
+            if (param->open.status == BK_BT_L2CAP_SUCCESS)
             {
                 l2cap_env.conn_state = STATE_L2CAP_CONNECTED;
-                for(int i=0;i<sizeof(l2cap_env.fd)/sizeof(l2cap_env.fd[0]);i++)
+                for (int i = 0; i < sizeof(l2cap_env.fd) / sizeof(l2cap_env.fd[0]); i++)
                 {
-                    if(l2cap_env.fd[i] == INVALID_LCID)
+                    if (l2cap_env.fd[i] == INVALID_LCID)
                     {
                         l2cap_env.fd[i] = (uint16_t)param->open.fd;
                         l2cap_env.fd_index++;
@@ -3284,29 +3446,30 @@ static void bt_l2cap_event_callback(bk_bt_l2cap_cb_event_t event, bk_bt_l2cap_cb
                     }
                 }
                 LOGI("L2cap connection success, remote addr:0x%x,0x%x,0x%x,0x%x,0x%x,0x%x  LCID: 0x%x\r\n",
-                param->open.rem_bda[0],param->open.rem_bda[1],param->open.rem_bda[2],param->open.rem_bda[3],param->open.rem_bda[4],param->open.rem_bda[5],
-                param->open.fd);
+                     param->open.rem_bda[0], param->open.rem_bda[1], param->open.rem_bda[2], param->open.rem_bda[3], param->open.rem_bda[4], param->open.rem_bda[5],
+                     param->open.fd);
             }
             bt_at_sema_set();
             break;
         case BK_BT_L2CAP_CLOSE_EVT:
             LOGI("%s stop status: %d \r\n", __func__, param->close.status);
-            if(l2cap_env.conn_state == STATE_L2CAP_DISCONNECTING)
+            if (l2cap_env.conn_state == STATE_L2CAP_DISCONNECTING)
             {
-                if(param->start.status == BK_BT_L2CAP_SUCCESS)
+                if (param->start.status == BK_BT_L2CAP_SUCCESS)
                 {
                     LOGI("L2cap channle disconnection success, LCID: 0x%x\r\n", param->close.fd);
                     l2cap_env.conn_state = STATE_L2CAP_DISCONNECTED;
                 }
                 bt_at_sema_set();
-            }else if(l2cap_env.conn_state == STATE_l2CAP_SRV_DISCONNECTING)
+            }
+            else if (l2cap_env.conn_state == STATE_l2CAP_SRV_DISCONNECTING)
             {
-                if(param->start.status == BK_BT_L2CAP_SUCCESS)
+                if (param->start.status == BK_BT_L2CAP_SUCCESS)
                 {
                     LOGI("L2cap channle disconnection success, LCID: 0x%x\r\n", param->close.fd);
-                    for(int i=0;i<sizeof(l2cap_env.fd)/sizeof(l2cap_env.fd[0]);i++)
+                    for (int i = 0; i < sizeof(l2cap_env.fd) / sizeof(l2cap_env.fd[0]); i++)
                     {
-                        if(l2cap_env.fd[i] == (uint16_t)param->close.fd)
+                        if (l2cap_env.fd[i] == (uint16_t)param->close.fd)
                         {
                             l2cap_env.fd[i] = INVALID_LCID;
                             l2cap_env.data_len[i] = 0;
@@ -3318,15 +3481,16 @@ static void bt_l2cap_event_callback(bk_bt_l2cap_cb_event_t event, bk_bt_l2cap_cb
                         }
                     }
                 }
-            }else
+            }
+            else
             {
                 //remote disconnect ind
-                if(param->start.status == BK_BT_L2CAP_SUCCESS)
+                if (param->start.status == BK_BT_L2CAP_SUCCESS)
                 {
                     LOGI("L2cap channle disconnection Ind succ, LCID: 0x%x\r\n", param->close.fd);
-                    for(int i=0;i<sizeof(l2cap_env.fd)/sizeof(l2cap_env.fd[0]);i++)
+                    for (int i = 0; i < sizeof(l2cap_env.fd) / sizeof(l2cap_env.fd[0]); i++)
                     {
-                        if(l2cap_env.fd[i] == (uint16_t)param->close.fd)
+                        if (l2cap_env.fd[i] == (uint16_t)param->close.fd)
                         {
                             l2cap_env.fd[i] = INVALID_LCID;
                             l2cap_env.data_len[i] = 0;
@@ -3345,14 +3509,14 @@ static void bt_l2cap_event_callback(bk_bt_l2cap_cb_event_t event, bk_bt_l2cap_cb
             break;
         case BK_BT_L2CAP_CL_INIT_EVT:
             LOGI("%s client conn cnf status: %d \r\n", __func__, param->cl_init.status);
-            if(param->cl_init.status == BK_BT_L2CAP_SUCCESS)
+            if (param->cl_init.status == BK_BT_L2CAP_SUCCESS)
             {
                 l2cap_env.conn_state = STATE_L2CAP_CONNECTED;
             }
             break;
         case BK_BT_L2CAP_SRV_STOP_EVT:
             LOGI("%s stop server status: %d, psm:0x%x \r\n", __func__, param->srv_stop.status, param->srv_stop.psm);
-            if(l2cap_env.conn_state == STATE_l2CAP_SRV_DISCONNECTING)
+            if (l2cap_env.conn_state == STATE_l2CAP_SRV_DISCONNECTING)
             {
                 bt_at_sema_set();
             }
@@ -3365,15 +3529,15 @@ static void bt_l2cap_ind_data_callback(int fd, void *data, uint16_t size)
     uint8_t start = 0;
     char *s = L2CAP_START_END;
     uint16_t t = 0;
-    if(!os_memcmp(data, s, os_strlen(s)))
+    if (!os_memcmp(data, s, os_strlen(s)))
     {
         start = 1;
     }
-    for(int i=0;i<sizeof(l2cap_env.fd)/sizeof(l2cap_env.fd[0]);i++)
+    for (int i = 0; i < sizeof(l2cap_env.fd) / sizeof(l2cap_env.fd[0]); i++)
     {
-        if(l2cap_env.fd[i] == (uint16_t)fd)
+        if (l2cap_env.fd[i] == (uint16_t)fd)
         {
-            if(start)
+            if (start)
             {
                 LOGI("<============================data ind end============================>\r\n");
                 LOGI("lcid:0x%x, total_len:%d \r\n", fd, l2cap_env.rx_len[i]);
@@ -3381,14 +3545,16 @@ static void bt_l2cap_ind_data_callback(int fd, void *data, uint16_t size)
             }
             else
             {
-                l2cap_env.rx_len[i]+=size;
+                l2cap_env.rx_len[i] += size;
             }
             t = l2cap_env.rx_len[i];
             break;
         }
     }
-    if(!start)
+    if (!start)
+    {
         LOGI("lcid:0x%x, data:0x%x, size:%d \r\n", fd, ((uint8_t *)data)[0], t);
+    }
 }
 
 
@@ -3398,13 +3564,13 @@ static int bt_l2cap_init_handle(int sync, int argc, char **argv)
     bk_err_t ert = kNoErr;
     do
     {
-        if(bk_bt_get_host_stack_type() != BK_BT_HOST_STACK_TYPE_ETHERMIND)
+        if (bk_bt_get_host_stack_type() != BK_BT_HOST_STACK_TYPE_ETHERMIND)
         {
             ert = BK_FAIL;
             LOGI("Current stack does not support l2cap \r\n");
             break;
         }
-        if(l2cap_env.init)
+        if (l2cap_env.init)
         {
             LOGI("L2cap has been initated \r\n");
             break;
@@ -3413,7 +3579,7 @@ static int bt_l2cap_init_handle(int sync, int argc, char **argv)
         bk_bt_gap_set_visibility(BK_BT_CONNECTABLE, BK_BT_DISCOVERABLE);
         bk_bt_l2cap_init();
         bk_bt_l2cap_start_srv(BK_BT_L2CAP_SEC_NONE, AT_DM_L2CAP_LOCAL_PSM);
-        bk_bt_l2cap_start_srv(BK_BT_L2CAP_SEC_NONE, AT_DM_L2CAP_LOCAL_PSM+2);
+        bk_bt_l2cap_start_srv(BK_BT_L2CAP_SEC_NONE, AT_DM_L2CAP_LOCAL_PSM + 2);
         bk_bt_l2cap_set_data_callback(bt_l2cap_ind_data_callback);
         bk_bt_l2cap_register_callback(bt_l2cap_event_callback);
         l2cap_env.handle = INVALID_HANDLE;
@@ -3421,7 +3587,7 @@ static int bt_l2cap_init_handle(int sync, int argc, char **argv)
         os_memset(l2cap_env.fd, 0xFF, sizeof(l2cap_env.fd));
     }
     while (0);
-	atsvr_cmd_rsp_ok();
+    atsvr_cmd_rsp_ok();
     return ert;
 }
 
@@ -3431,12 +3597,12 @@ static int bt_l2cap_connect_handle(int sync, int argc, char **argv)
     bk_err_t ert = kNoErr;
     do
     {
-        if(kNoErr != (ert = rtos_init_semaphore(&bt_at_cmd_sema, 1)))
+        if (kNoErr != (ert = rtos_init_semaphore(&bt_at_cmd_sema, 1)))
         {
             LOGE("semaphore init fail \r\n");
             break;
         }
-        if(argc != 2)
+        if (argc != 2)
         {
             ert = kParamErr;
             LOGE("Invalid parameters \r\n");
@@ -3444,47 +3610,48 @@ static int bt_l2cap_connect_handle(int sync, int argc, char **argv)
         }
         uint16_t psm = AT_DM_L2CAP_LOCAL_PSM;
         uint8_t addr[6] = {0xFF};
-        #if 1
-        if(1 != bt_at_params_analyze(argc, argv, "psm", &psm, 0))
+#if 1
+        if (1 != bt_at_params_analyze(argc, argv, "psm", &psm, 0))
         {
             LOGE("Parameters 1 error\r\n");
             ert = kParamErr;
             break;
         }
-        #endif
-        if(6 != bt_at_params_analyze(argc, argv, "addr", addr, 6))
+#endif
+        if (6 != bt_at_params_analyze(argc, argv, "addr", addr, 6))
         {
             LOGE("Parameters 2 error\r\n");
             ert = kParamErr;
             break;
         }
-        for(int i=0;i<6;i++)
+        for (int i = 0; i < 6; i++)
         {
-            l2cap_env.remote_addr[i] = addr[5-i];
+            l2cap_env.remote_addr[i] = addr[5 - i];
         }
         LOGI("Param 1 analyze :0x%x \r\n", psm);
         LOGI("Param 2 analyze :0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x \r\n", addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
-        if(l2cap_env.conn_state == STATE_ACL_DISCONNECT)
+        if (l2cap_env.conn_state == STATE_ACL_DISCONNECT)
         {
             bk_bt_connect(l2cap_env.remote_addr,
-                        CONNECTION_PACKET_TYPE,
-                        CONNECTION_PAGE_SCAN_REPETITIOIN_MODE,
-                        0,
-                        CONNECTION_CLOCK_OFFSET,
-                        1,
-                        bt_at_cmd_cb);
-            ert = bt_at_sema_get(AT_SYNC_CMD_TIMEOUT_MS*3);
-            if(ert)
+                          CONNECTION_PACKET_TYPE,
+                          CONNECTION_PAGE_SCAN_REPETITIOIN_MODE,
+                          0,
+                          CONNECTION_CLOCK_OFFSET,
+                          1,
+                          bt_at_cmd_cb);
+            ert = bt_at_sema_get(AT_SYNC_CMD_TIMEOUT_MS * 3);
+            if (ert)
             {
                 ert = kGeneralErr;
                 LOGE("Connection time out \r\n");
                 break;
             }
-            if(at_cmd_status == BK_ERR_BT_SUCCESS)
+            if (at_cmd_status == BK_ERR_BT_SUCCESS)
             {
                 l2cap_env.conn_state = STATE_ACL_CONNECTED;
                 l2cap_env.handle = conn_handle;
-            }else
+            }
+            else
             {
                 ert = kGeneralErr;
                 LOGE("Connection Fail, status:0x%x \r\n", at_cmd_status);
@@ -3495,14 +3662,14 @@ static int bt_l2cap_connect_handle(int sync, int argc, char **argv)
         uint8_t prev_state = l2cap_env.conn_state;
         l2cap_env.conn_state = STATE_L2CAP_CONNECTING;
         ert = bt_at_sema_get(AT_SYNC_CMD_TIMEOUT_MS);
-        if(ert)
+        if (ert)
         {
             ert = kGeneralErr;
             l2cap_env.conn_state = prev_state;
             LOGE("L2cap connection time out \r\n");
             break;
         }
-        if(l2cap_env.conn_state != STATE_L2CAP_CONNECTED)
+        if (l2cap_env.conn_state != STATE_L2CAP_CONNECTED)
         {
             ert = kGeneralErr;
             l2cap_env.conn_state = prev_state;
@@ -3510,11 +3677,11 @@ static int bt_l2cap_connect_handle(int sync, int argc, char **argv)
         }
     }
     while (0);
-    if(ert!=kNoErr)
+    if (ert != kNoErr)
     {
         atsvr_cmd_rsp_error();
     }
-        atsvr_cmd_rsp_ok();
+    atsvr_cmd_rsp_ok();
     if (bt_at_cmd_sema != NULL)
     {
         rtos_deinit_semaphore(&bt_at_cmd_sema);
@@ -3527,35 +3694,36 @@ static int bt_l2cap_disconnect_handle(int sync, int argc, char **argv)
 {
     PRINT_FUNC;
     bk_err_t ert = kNoErr;
-    do{
-        if(kNoErr != (ert = rtos_init_semaphore(&bt_at_cmd_sema, 1)))
+    do
+    {
+        if (kNoErr != (ert = rtos_init_semaphore(&bt_at_cmd_sema, 1)))
         {
             LOGE("semaphore init fail \r\n");
             break;
         }
-        if(argc != 1)
+        if (argc != 1)
         {
             ert = kParamErr;
             LOGE("Invalid parameters \r\n");
             break;
         }
         uint16_t lcid = 0xFFFF;
-        if(1 != bt_at_params_analyze(argc, argv, "lcid", &lcid, 0))
+        if (1 != bt_at_params_analyze(argc, argv, "lcid", &lcid, 0))
         {
             LOGE("Parameters 1 error\r\n");
             ert = kParamErr;
             break;
         }
         int find = -1;
-        for (int i  = 0; i < sizeof(l2cap_env.fd)/sizeof(l2cap_env.fd[0]); ++i)
+        for (int i  = 0; i < sizeof(l2cap_env.fd) / sizeof(l2cap_env.fd[0]); ++i)
         {
-            if((uint8_t)lcid == l2cap_env.fd[i])
+            if ((uint8_t)lcid == l2cap_env.fd[i])
             {
                 find = i;
                 break;
             }
         }
-        if(find == -1)
+        if (find == -1)
         {
             ert = kGeneralErr;
             LOGE("Invalid lcid, no 0x%x channle connection \r\n", lcid);
@@ -3564,13 +3732,13 @@ static int bt_l2cap_disconnect_handle(int sync, int argc, char **argv)
         bk_bt_l2cap_close(lcid);
         l2cap_env.conn_state = STATE_L2CAP_DISCONNECTING;
         ert = bt_at_sema_get(AT_DISCON_CMD_TIMEOUT_MS);
-        if(ert)
+        if (ert)
         {
             ert = kGeneralErr;
             LOGE("L2cap disconnection time out \r\n");
             break;
         }
-        if(l2cap_env.conn_state == STATE_L2CAP_DISCONNECTED)
+        if (l2cap_env.conn_state == STATE_L2CAP_DISCONNECTED)
         {
             l2cap_env.fd[find] = INVALID_LCID;
             l2cap_env.data_len[find] = 0;
@@ -3579,7 +3747,7 @@ static int bt_l2cap_disconnect_handle(int sync, int argc, char **argv)
             l2cap_env.tx_fun[find] = NULL;
             l2cap_env.fd_index--;
         }
-        if(l2cap_env.fd_index == 0)
+        if (l2cap_env.fd_index == 0)
         {
             l2cap_env.conn_state = STATE_ACL_CONNECTED;
         }
@@ -3587,12 +3755,13 @@ static int bt_l2cap_disconnect_handle(int sync, int argc, char **argv)
         {
             l2cap_env.conn_state = STATE_L2CAP_CONNECTED;
         }
-    }while(0);
-    if(ert!=kNoErr)
+    }
+    while (0);
+    if (ert != kNoErr)
     {
         atsvr_cmd_rsp_error();
     }
-	atsvr_cmd_rsp_ok();
+    atsvr_cmd_rsp_ok();
     if (bt_at_cmd_sema != NULL)
     {
         rtos_deinit_semaphore(&bt_at_cmd_sema);
@@ -3605,20 +3774,21 @@ static int bt_l2cap_stop_srv_handle(int sync, int argc, char **argv)
 {
     PRINT_FUNC;
     bk_err_t ert = kNoErr;
-    do{
+    do
+    {
         uint16_t psm  = AT_DM_L2CAP_LOCAL_PSM;
-        if(kNoErr != (ert = rtos_init_semaphore(&bt_at_cmd_sema, 1)))
+        if (kNoErr != (ert = rtos_init_semaphore(&bt_at_cmd_sema, 1)))
         {
             LOGE("semaphore init fail \r\n");
             break;
         }
-        if(argc !=1)
+        if (argc != 1)
         {
             ert = kParamErr;
             LOGE("Invalid parameters number \r\n");
             break;
         }
-        if(1!=bt_at_params_analyze(argc, argv, "psm", &psm, 0))
+        if (1 != bt_at_params_analyze(argc, argv, "psm", &psm, 0))
         {
             LOGE("Parameters 1 error\r\n");
             ert = kParamErr;
@@ -3626,27 +3796,29 @@ static int bt_l2cap_stop_srv_handle(int sync, int argc, char **argv)
         }
         bk_bt_l2cap_stop_srv(psm);
         l2cap_env.conn_state = STATE_l2CAP_SRV_DISCONNECTING;
-        ert = bt_at_sema_get(AT_DISCON_CMD_TIMEOUT_MS*2);
-        if(ert)
+        ert = bt_at_sema_get(AT_DISCON_CMD_TIMEOUT_MS * 2);
+        if (ert)
         {
             ert = kGeneralErr;
             LOGE("L2cap stop srv time out, psm:0x%x \r\n", psm);
             break;
         }
-        if(l2cap_env.fd_index == 0)
+        if (l2cap_env.fd_index == 0)
         {
             l2cap_env.conn_state = STATE_ACL_CONNECTED;
-        }else
+        }
+        else
         {
             l2cap_env.conn_state = STATE_L2CAP_CONNECTED;
         }
-    }while(0);
-    if(ert!=kNoErr)
+    }
+    while (0);
+    if (ert != kNoErr)
     {
-		atsvr_cmd_rsp_error();
+        atsvr_cmd_rsp_error();
 
     }
-	atsvr_cmd_rsp_ok();
+    atsvr_cmd_rsp_ok();
 
     if (bt_at_cmd_sema != NULL)
     {
@@ -3663,63 +3835,71 @@ static void l2cap_tx_fun(uint16_t lcid, uint16_t *data_len, uint16_t *tx_len)
     tmp_data = (uint8_t *)os_malloc(1024);
     int w = 0;
     uint16_t tt = 0;
-    if(tmp_data == NULL) goto out;
+    if (tmp_data == NULL)
+    {
+        goto out;
+    }
     LOGI("%s, lcid:0x%x, len:%d \r\n", __func__, lcid, *data_len);
-    if(*data_len)
+    if (*data_len)
     {
         uint8_t rand = bk_rand() & 0xff;
         w = 1024;
-        tt = *data_len>w ? w:*data_len;
+        tt = *data_len > w ? w : *data_len;
         os_memset(tmp_data, rand, tt);
         w = bk_bt_l2cap_write((int)lcid, tmp_data, tt);
-        if(w >= 0)
+        if (w >= 0)
         {
-            *data_len -=w;
+            *data_len -= w;
             *tx_len += w;
-//            LOGI("L2cap write, data:0x%x , write_len:%d, total_len:%d \r\n", tmp_data[0], w, ww);
-        }else
+            //            LOGI("L2cap write, data:0x%x , write_len:%d, total_len:%d \r\n", tmp_data[0], w, ww);
+        }
+        else
         {
             LOGE("L2cap write error, lcid:0x%x, write_len:%d \r\n", lcid, *tx_len);
             *data_len = 0;
             *tx_len = 0;
         }
     }
-    if(*data_len == 0)
+    if (*data_len == 0)
     {
         char *start = L2CAP_START_END;
         os_memcpy(tmp_data, start, os_strlen(start));
-        w = bk_bt_l2cap_write((int)lcid, tmp_data , os_strlen(start));
-        if(w<0) goto out;
+        w = bk_bt_l2cap_write((int)lcid, tmp_data, os_strlen(start));
+        if (w < 0)
+        {
+            goto out;
+        }
         LOGI("======================> L2cap write end<====================== \r\n");
         LOGI("---> L2cap write, LCID:0x%x, total_len:%d \r\n", lcid, *tx_len);
         *tx_len = 0;
     }
-    out:
+out:
     os_free(tmp_data);
 }
 
 static void bt_l2cap_tx_thread(void *arg)
 {
     LOGI("%s start \r\n", __func__);
-    while(l2cap_env.init)
+    while (l2cap_env.init)
     {
         uint32_t total_len = 0;
-        for(int i=0;i<sizeof(l2cap_env.fd)/sizeof(l2cap_env.fd[0]);i++)
+        for (int i = 0; i < sizeof(l2cap_env.fd) / sizeof(l2cap_env.fd[0]); i++)
         {
             total_len += l2cap_env.tx_len[i];
-            if(l2cap_env.fd[i] != INVALID_LCID && l2cap_env.tx_fun[i]!=NULL)
+            if (l2cap_env.fd[i] != INVALID_LCID && l2cap_env.tx_fun[i] != NULL)
             {
                 l2cap_env.tx_fun[i](l2cap_env.fd[i], &l2cap_env.data_len[i], &l2cap_env.tx_len[i]);
-                if(l2cap_env.tx_len[i] == 0)
+                if (l2cap_env.tx_len[i] == 0)
                 {
-                    l2cap_env.tx_fun[i]=NULL;
+                    l2cap_env.tx_fun[i] = NULL;
                 }
             }
         }
-        if(l2cap_env.fd_index == 0 || total_len == 0)
+        if (l2cap_env.fd_index == 0 || total_len == 0)
         {
             rtos_delay_milliseconds(1000);
-        }else
+        }
+        else
         {
             rtos_delay_milliseconds(100);
         }
@@ -3733,60 +3913,62 @@ static int bt_l2cap_tx_handle(int sync, int argc, char **argv)
 {
     PRINT_FUNC;
     bk_err_t ert = kNoErr;
-    do{
+    do
+    {
         uint16_t lcid  = INVALID_LCID;
         uint16_t data_len = 0;
-        if(argc !=2)
+        if (argc != 2)
         {
             ert = kParamErr;
             LOGE("Invalid parameters number \r\n");
             break;
         }
-        if(1!=bt_at_params_analyze(argc, argv, "lcid", &lcid, 0))
+        if (1 != bt_at_params_analyze(argc, argv, "lcid", &lcid, 0))
         {
             LOGE("Parameters 1 error\r\n");
             ert = kParamErr;
             break;
         }
-        if(1!=bt_at_params_analyze(argc, argv, "data_length", &data_len, 0))
+        if (1 != bt_at_params_analyze(argc, argv, "data_length", &data_len, 0))
         {
             LOGE("Parameters 2 error\r\n");
             ert = kParamErr;
             break;
         }
-        int i=0;
-        for(;i<sizeof(l2cap_env.fd)/sizeof(l2cap_env.fd[0]);i++)
+        int i = 0;
+        for (; i < sizeof(l2cap_env.fd) / sizeof(l2cap_env.fd[0]); i++)
         {
-            if(l2cap_env.fd[i] == lcid && l2cap_env.tx_len[i] == 0)
+            if (l2cap_env.fd[i] == lcid && l2cap_env.tx_len[i] == 0)
             {
                 l2cap_env.data_len[i] = data_len;
                 l2cap_env.tx_fun[i] = l2cap_tx_fun;
                 break;
             }
         }
-        if(i == sizeof(l2cap_env.fd)/sizeof(l2cap_env.fd[0]))
+        if (i == sizeof(l2cap_env.fd) / sizeof(l2cap_env.fd[0]))
         {
             LOGE("No lcid foud for:0x%x !!!\r\n", lcid);
             ert = kParamErr;
             break;
         }
-        if(l2cap_env.l2cap_tx_thread != NULL)
+        if (l2cap_env.l2cap_tx_thread != NULL)
         {
             break;
         }
         rtos_create_thread(&l2cap_env.l2cap_tx_thread,
-					5,
-					"l2cap_tx_thread",
-					(beken_thread_function_t)bt_l2cap_tx_thread,
-					1024,
-					(beken_thread_arg_t)0);
+                           5,
+                           "l2cap_tx_thread",
+                           (beken_thread_function_t)bt_l2cap_tx_thread,
+                           1024,
+                           (beken_thread_arg_t)0);
 
-    }while(0);
-    if(ert!=kNoErr)
-    {
-		atsvr_cmd_rsp_error();
     }
-	atsvr_cmd_rsp_ok();
+    while (0);
+    if (ert != kNoErr)
+    {
+        atsvr_cmd_rsp_error();
+    }
+    atsvr_cmd_rsp_ok();
     return ert;
 }
 
@@ -3794,10 +3976,10 @@ static int bt_l2cap_deinit_handle(int sync, int argc, char **argv)
 {
     PRINT_FUNC;
     bk_err_t ert = kNoErr;
-    if(l2cap_env.init)
+    if (l2cap_env.init)
     {
         bk_bt_l2cap_stop_srv(AT_DM_L2CAP_LOCAL_PSM);
-        bk_bt_l2cap_stop_srv(AT_DM_L2CAP_LOCAL_PSM+2);
+        bk_bt_l2cap_stop_srv(AT_DM_L2CAP_LOCAL_PSM + 2);
         l2cap_env.init = 0;
     }
     else
@@ -3805,11 +3987,11 @@ static int bt_l2cap_deinit_handle(int sync, int argc, char **argv)
         ert = kParamErr;
         LOGE("L2cap do not init! \r\n");
     }
-    if(ert!=kNoErr)
+    if (ert != kNoErr)
     {
-		atsvr_cmd_rsp_error();
+        atsvr_cmd_rsp_error();
     }
-	atsvr_cmd_rsp_ok();
+    atsvr_cmd_rsp_ok();
     return ert;
 }
 
@@ -3831,10 +4013,10 @@ static int bt_start_inquiry_handle_gap(int sync, int argc, char **argv)
         goto error;
     }
 
-	atsvr_cmd_rsp_ok();
+    atsvr_cmd_rsp_ok();
     return err;
 error:
-	atsvr_cmd_rsp_error();
+    atsvr_cmd_rsp_error();
     return err;
 }
 
@@ -3865,10 +4047,10 @@ static int bt_create_connection_handle_gap(int sync, int argc, char **argv)
     {
         goto error;
     }
-	atsvr_cmd_rsp_ok();
+    atsvr_cmd_rsp_ok();
     return err;
 error:
-	atsvr_cmd_rsp_error();
+    atsvr_cmd_rsp_error();
     return err;
 }
 
@@ -3894,12 +4076,14 @@ static int bt_disconnect_handle_gap(int sync, int argc, char **argv)
         goto error;
     }
 
-	atsvr_cmd_rsp_ok();
+    atsvr_cmd_rsp_ok();
     return err;
 error:
-	atsvr_cmd_rsp_error();
+    atsvr_cmd_rsp_error();
     if (bt_at_cmd_sema != NULL)
+    {
         rtos_deinit_semaphore(&bt_at_cmd_sema);
+    }
     return err;
 }
 
@@ -3927,10 +4111,10 @@ static int bt_write_scan_enable_handle_gap(int sync, int argc, char **argv)
     {
         goto error;
     }
-	atsvr_cmd_rsp_ok();
+    atsvr_cmd_rsp_ok();
     return err;
 error:
-	atsvr_cmd_rsp_error();
+    atsvr_cmd_rsp_error();
     return err;
 }
 
@@ -3946,102 +4130,93 @@ static int bt_read_scan_enable_handle_gap(int sync, int argc, char **argv)
     {
         goto error;
     }
-	atsvr_cmd_rsp_ok();
+    atsvr_cmd_rsp_ok();
     return err;
 error:
-	atsvr_cmd_rsp_error();
+    atsvr_cmd_rsp_error();
     return err;
 }
 
 
-const struct _atsvr_command bt_cmds_table[] = {
-#if 1
-    ATSVR_CMD_HADLER("AT+BTINQUIRY","start inquiry",
-    				 NULL,bt_start_inquiry_handle,false,0,0,NULL,false),
-    ATSVR_CMD_HADLER("AT+BTCONNECT","create connection", 
-    				NULL,bt_create_connection_handle,false,0,0,NULL,false),
-    ATSVR_CMD_HADLER("AT+BTDISCONNECT","disconnect", 
-    				NULL,bt_disconnect_handle,true,5*1000,true,NULL,false),
+const struct _atsvr_command bt_cmds_table[] =
+{
+#if CONFIG_BT
+    ATSVR_CMD_HADLER("AT+BTINQUIRY", "start inquiry",
+                     NULL, bt_start_inquiry_handle, false, 0, 0, NULL, false),
+    ATSVR_CMD_HADLER("AT+BTCONNECT", "create connection",
+                     NULL, bt_create_connection_handle, false, 0, 0, NULL, false),
+    ATSVR_CMD_HADLER("AT+BTDISCONNECT", "disconnect",
+                     NULL, bt_disconnect_handle, true, 5 * 1000, true, NULL, false),
 
-    ATSVR_CMD_HADLER("AT+BTSPPCONNECT","spp connect", 
-    				NULL,bt_spp_connect_handle,true,10*1000,true,NULL,false),
+    ATSVR_CMD_HADLER("AT+BTSPPCONNECT", "spp connect",
+                     NULL, bt_spp_connect_handle, true, 10 * 1000, true, NULL, false),
 
-    ATSVR_CMD_HADLER("AT+BTWRITESCANENABLE","write_scan_enable",
-    				NULL,bt_write_scan_enable_handle,true,0,0,NULL,false),
-    ATSVR_CMD_HADLER("AT+BTREADSCANENABLE","read_scan_enable", 
-    				NULL,bt_read_scan_enable_handle,true,0,true,NULL,false),
+    ATSVR_CMD_HADLER("AT+BTWRITESCANENABLE", "write_scan_enable",
+                     NULL, bt_write_scan_enable_handle, true, 0, 0, NULL, false),
+    ATSVR_CMD_HADLER("AT+BTREADSCANENABLE", "read_scan_enable",
+                     NULL, bt_read_scan_enable_handle, true, 0, true, NULL, false),
 #ifdef CONFIG_AUD_INTF
-    ATSVR_CMD_HADLER("AT+BTA2DPSINKTEST","enable a2dp sink test", 
-    				NULL,bt_enable_a2dp_sink_test_handle,false,0,0,NULL,false),
-    ATSVR_CMD_HADLER("AT+BTHFPUNITTEST","enable hfp unit test", 
-    				NULL,bt_enable_hfp_unit_test_handle,false,0,0,NULL,false),
+    ATSVR_CMD_HADLER("AT+BTA2DPSINKTEST", "enable a2dp sink test",
+                     NULL, bt_enable_a2dp_sink_test_handle, false, 0, 0, NULL, false),
+    ATSVR_CMD_HADLER("AT+BTHFPUNITTEST", "enable hfp unit test",
+                     NULL, bt_enable_hfp_unit_test_handle, false, 0, 0, NULL, false),
 #endif
-    ATSVR_CMD_HADLER("AT+BTOPPTEST","enable opp test", 
-    				NULL,bt_enable_opp_test_handle,false,0,0,NULL,false),
+    ATSVR_CMD_HADLER("AT+BTOPPTEST", "enable opp test",
+                     NULL, bt_enable_opp_test_handle, false, 0, 0, NULL, false),
 
 #if CONFIG_AUD_INTF && CONFIG_A2DP_SOURCE_DEMO
-    ATSVR_CMD_HADLER("AT+BTA2DPSOURCECONNECT","enable a2dp source connect", 
-    				NULL,bt_enable_a2dp_source_connect_handle,true,0,true,NULL,false),
-    ATSVR_CMD_HADLER("AT+BTA2DPSOURCEDISCONNECT","enable a2dp source disconnect", 
-    				NULL,bt_enable_a2dp_source_disconnect_handle,true, 0,true,NULL,false),
+    ATSVR_CMD_HADLER("AT+BTA2DPSOURCECONNECT", "enable a2dp source connect",
+                     NULL, bt_enable_a2dp_source_connect_handle, true, 0, true, NULL, false),
+    ATSVR_CMD_HADLER("AT+BTA2DPSOURCEDISCONNECT", "enable a2dp source disconnect",
+                     NULL, bt_enable_a2dp_source_disconnect_handle, true, 0, true, NULL, false),
     ATSVR_CMD_HADLER("AT+BTA2DPSOURCESTART", "enable a2dp source start",
-    				NULL,bt_enable_a2dp_source_start_handle,true,0,true,NULL,false),
-    ATSVR_CMD_HADLER("AT+BTA2DPSOURCESUSPEND","enable a2dp source suspend", 
-    				NULL,bt_enable_a2dp_source_suspend_handle,true,0,true,NULL,false),
-    ATSVR_CMD_HADLER("AT+BTA2DPSOURCEWRITE_TEST","enable a2dp source write test", 
-    				NULL,bt_enable_a2dp_source_write_test_handle,true,0,0,NULL,false),
-    ATSVR_CMD_HADLER("AT+BTA2DPSOURCESTOP","enable a2dp source stop", 
-    				NULL,bt_enable_a2dp_source_stop_handle,true,0,0,NULL,false),
-//  ATSVR_CMD_HADLER("AT+BT_A2DP_SOURCE_TEST","connect to soundbar and play mp3", bt_enable_a2dp_source_test_handle,false,0,0,NULL,false),
+                     NULL, bt_enable_a2dp_source_start_handle, true, 0, true, NULL, false),
+    ATSVR_CMD_HADLER("AT+BTA2DPSOURCESUSPEND", "enable a2dp source suspend",
+                     NULL, bt_enable_a2dp_source_suspend_handle, true, 0, true, NULL, false),
+    ATSVR_CMD_HADLER("AT+BTA2DPSOURCEWRITE_TEST", "enable a2dp source write test",
+                     NULL, bt_enable_a2dp_source_write_test_handle, true, 0, 0, NULL, false),
+    ATSVR_CMD_HADLER("AT+BTA2DPSOURCESTOP", "enable a2dp source stop",
+                     NULL, bt_enable_a2dp_source_stop_handle, true, 0, 0, NULL, false),
+    //  ATSVR_CMD_HADLER("AT+BT_A2DP_SOURCE_TEST","connect to soundbar and play mp3", bt_enable_a2dp_source_test_handle,false,0,0,NULL,false),
 #endif
-    ATSVR_CMD_HADLER("AT+BTSPPTX","spp_tx", 
-    				NULL,bt_spp_tx_handle,true,AT_SYNC_CMD_TIMEOUT_MS,true,NULL,false),
-    ATSVR_CMD_HADLER("AT+BTSPPINIT","spp_init", 
-    				NULL,bt_spp_init_handle,false,0,0,NULL,false),
-    ATSVR_CMD_HADLER("AT+BTSPPTHROUGHTEST","spp_through_test",
-    				NULL,bt_spp_through_test_handle,true,0,true,NULL,false),
-    ATSVR_CMD_HADLER("AT+BTA2DPSINKCONNECT","a2dp sink connect", 
-    				NULL,bt_a2dp_sink_connect_handle,true,0,0,NULL,false),
-    ATSVR_CMD_HADLER("AT+BTA2DPSINKDISCONNECT","a2dp sink disconnect",
-    				NULL,bt_a2dp_sink_disconnect_handle,true,0,0,NULL,false),
+    ATSVR_CMD_HADLER("AT+BTSPPTX", "spp_tx",
+                     NULL, bt_spp_tx_handle, true, AT_SYNC_CMD_TIMEOUT_MS, true, NULL, false),
+    ATSVR_CMD_HADLER("AT+BTSPPINIT", "spp_init",
+                     NULL, bt_spp_init_handle, false, 0, 0, NULL, false),
+    ATSVR_CMD_HADLER("AT+BTSPPTHROUGHTEST", "spp_through_test",
+                     NULL, bt_spp_through_test_handle, true, 0, true, NULL, false),
+    ATSVR_CMD_HADLER("AT+BTA2DPSINKCONNECT", "a2dp sink connect",
+                     NULL, bt_a2dp_sink_connect_handle, true, 0, 0, NULL, false),
+    ATSVR_CMD_HADLER("AT+BTA2DPSINKDISCONNECT", "a2dp sink disconnect",
+                     NULL, bt_a2dp_sink_disconnect_handle, true, 0, 0, NULL, false),
 #ifdef CONFIG_AUD_INTF
-    ATSVR_CMD_HADLER("AT+BTAVRCPCTRL","avrcp ctrl", 
-    				NULL,bt_avrcp_ctrl_handle,true,0,0,NULL,false),
+    ATSVR_CMD_HADLER("AT+BTAVRCPCTRL", "avrcp ctrl",
+                     NULL, bt_avrcp_ctrl_handle, true, 0, 0, NULL, false),
 #endif
 #if CONFIG_A2DP_SOURCE_DEMO
-//   ATSVR_CMD_HADLER("AT+BTA2DPSOURCETESTSTOP","connect to soundbar and play mp3", bt_enable_a2dp_source_test_stop_handl,false,0,0,NULL,false},
+    //   ATSVR_CMD_HADLER("AT+BTA2DPSOURCETESTSTOP","connect to soundbar and play mp3", bt_enable_a2dp_source_test_stop_handl,false,0,0,NULL,false},
 #endif
 #if DM_L2CAP_CMD_ENABLE
-    ATSVR_CMD_HADLER("AT+BTL2CAPINIT","l2cap init", 
-    				NULL,bt_l2cap_init_handle,true,0,0,NULL,false),
-    ATSVR_CMD_HADLER("AT+BTL2CAPCONNECT","l2cap connect", 
-    				NULL,bt_l2cap_connect_handle,true,AT_SYNC_CMD_TIMEOUT_MS*4,true,NULL,false),
-    ATSVR_CMD_HADLER("AT+BTL2CAPDISCONNECT","l2cap disconnect", 
-    				NULL,bt_l2cap_disconnect_handle,true,AT_DISCON_CMD_TIMEOUT_MS,true,NULL,false),
-    ATSVR_CMD_HADLER("AT+BTL2CAPTX", "l2cap tx", 
-    				NULL,bt_l2cap_tx_handle,true,0,0,NULL,false),
-    ATSVR_CMD_HADLER("AT+BTL2CAPSTOP","l2cap stop", 
-    				NULL,bt_l2cap_stop_srv_handle,true,AT_DISCON_CMD_TIMEOUT_MS*2,true,NULL,false),
-    ATSVR_CMD_HADLER("AT+BTL2CAPDEINIT","l2cap deinit", 
-    				NULL,bt_l2cap_deinit_handle,true,0,0,NULL,false),
+    ATSVR_CMD_HADLER("AT+BTL2CAPINIT", "l2cap init",
+                     NULL, bt_l2cap_init_handle, true, 0, 0, NULL, false),
+    ATSVR_CMD_HADLER("AT+BTL2CAPCONNECT", "l2cap connect",
+                     NULL, bt_l2cap_connect_handle, true, AT_SYNC_CMD_TIMEOUT_MS * 4, true, NULL, false),
+    ATSVR_CMD_HADLER("AT+BTL2CAPDISCONNECT", "l2cap disconnect",
+                     NULL, bt_l2cap_disconnect_handle, true, AT_DISCON_CMD_TIMEOUT_MS, true, NULL, false),
+    ATSVR_CMD_HADLER("AT+BTL2CAPTX", "l2cap tx",
+                     NULL, bt_l2cap_tx_handle, true, 0, 0, NULL, false),
+    ATSVR_CMD_HADLER("AT+BTL2CAPSTOP", "l2cap stop",
+                     NULL, bt_l2cap_stop_srv_handle, true, AT_DISCON_CMD_TIMEOUT_MS * 2, true, NULL, false),
+    ATSVR_CMD_HADLER("AT+BTL2CAPDEINIT", "l2cap deinit",
+                     NULL, bt_l2cap_deinit_handle, true, 0, 0, NULL, false),
 #endif
 #ifdef CONFIG_AUD_INTF
-    ATSVR_CMD_HADLER("AT+BTA2DPSINKDELAYVALUE","set delay reporting value",
-    				bt_a2dp_sink_get_delay_value_handle,bt_a2dp_sink_set_delay_value_handle,true,0,0,NULL,false),
-    ATSVR_CMD_HADLER("AT+BTA2DPSINKDELAY_VALUE?","get delay reporting value",
-    				NULL,bt_a2dp_sink_get_delay_value_handle,true,0,0,NULL,false),
+    ATSVR_CMD_HADLER("AT+BTA2DPSINKDELAYVALUE", "set delay reporting value",
+                     bt_a2dp_sink_get_delay_value_handle, bt_a2dp_sink_set_delay_value_handle, true, 0, 0, NULL, false),
+    ATSVR_CMD_HADLER("AT+BTA2DPSINKDELAY_VALUE?", "get delay reporting value",
+                     NULL, bt_a2dp_sink_get_delay_value_handle, true, 0, 0, NULL, false),
 #endif
-#else
-    ATSVR_CMD_HADLER("AT+BTINQUIRY", "start inquiry", 
-    				NULL,btstart_inquiry_handle_gap,false,0,0,NULL,false),
-    ATSVR_CMD_HADLER("AT+BTCONNECT","create connection", 
-    				NULL,bt_create_connection_handle_gap,false,0,0,NULL,false),
-    ATSVR_CMD_HADLER("AT+BTDISCONNECT","disconnect", 
-    				NULL,bt_disconnect_handle_gap,true,0,0,NULL,false),
-    ATSVR_CMD_HADLER("AT+BTWRITE_SCAN_ENABLE","write_scan_enable", 
-    				NULL,bt_write_scan_enable_handle_gap,true,0,0,NULL,false),
-    ATSVR_CMD_HADLER("AT+BTREAD_SCAN_ENABLE","read_scan_enable", 
-    				NULL,bt_read_scan_enable_handle_gap,true,0,0,NULL,false),
+
 #endif
 };
 
@@ -4049,9 +4224,11 @@ const struct _atsvr_command bt_cmds_table[] = {
 
 void bt_at_cmd_init(void)
 {
-	int ret;
-	ret = atsvr_register_commands(bt_cmds_table, sizeof(bt_cmds_table) / sizeof(bt_cmds_table[0]),"bt",NULL);
-	if(0 == ret)
-		BK_LOGI(TAG,"BT AT cmds init OK\r\n");
+    int ret;
+    ret = atsvr_register_commands(bt_cmds_table, sizeof(bt_cmds_table) / sizeof(bt_cmds_table[0]), "bt", NULL);
+    if (0 == ret)
+    {
+        BK_LOGI(TAG, "BT AT cmds init OK\r\n");
+    }
 }
 

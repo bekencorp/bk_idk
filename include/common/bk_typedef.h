@@ -42,7 +42,9 @@ typedef float         		  FP32;           /* Single precision floating point */
 typedef double         		  FP64;           /* Double precision floating point */
 typedef unsigned int          size_t;
 typedef unsigned char         BOOLEAN;
-typedef unsigned int          BOOL;
+#ifndef BOOL
+typedef unsigned char          BOOL;
+#endif
 
 #define BK_TRUE                   1
 #define BK_FALSE                  0

@@ -278,6 +278,14 @@ bk_err_t bk_gpio_set_output_low(gpio_id_t gpio_id)
 	return gpio_hal_set_output_value(&s_gpio.hal, gpio_id, 0);
 }
 
+bool bk_gpio_get_output(gpio_id_t gpio_id)
+{
+	GPIO_RETURN_ON_INVALID_ID(gpio_id);
+
+	return gpio_hal_get_output(&s_gpio.hal, gpio_id);
+}
+
+
 bool bk_gpio_get_input(gpio_id_t gpio_id)
 {
 	GPIO_RETURN_ON_INVALID_ID(gpio_id);
@@ -728,6 +736,7 @@ static void gpio_record_wakeup_pin_id(void)
 		gpio_hal_get_interrupt_status(hal, &gpio_status);
 		for (gpio_id = GPIO_0; gpio_id < SOC_GPIO_NUM; gpio_id++) {
 			if (gpio_hal_is_interrupt_triggered(hal, gpio_id, &gpio_status)) {
+				gpio_hal_clear_chan_interrupt_status(hal, gpio_id);
 				bk_gpio_set_wakeup_gpio_id(gpio_id);
 				return;
 			}
@@ -956,6 +965,17 @@ bk_err_t bk_gpio_register_lowpower_keep_status(gpio_id_t gpio_id,
 	uint32_t i = 0;
 	GPIO_LOGI("[+]gpio=%d io_mode=%d pull_mode=%d func_mode=%d\r\n",
 		gpio_id, config->io_mode, config->pull_mode, config->func_mode);
+
+#if CONFIG_GPIO_RETENTION_SUPPORT
+	if (config->io_mode == GPIO_OUTPUT_ENABLE && config->pull_mode == GPIO_PULL_UP_EN)
+	{
+		gpio_retention_map_set(gpio_id, GPIO_OUTPUT_STATE_HIGH);
+	}
+	else if (config->io_mode == GPIO_OUTPUT_ENABLE && config->pull_mode == GPIO_PULL_DOWN_EN)
+	{
+		gpio_retention_map_set(gpio_id, GPIO_OUTPUT_STATE_LOW);
+	}
+#endif
 
 	//search the same id and replace it.
 	for(i = 0; i < CONFIG_GPIO_DYNAMIC_KEEP_STATUS_MAX_CNT; i++)

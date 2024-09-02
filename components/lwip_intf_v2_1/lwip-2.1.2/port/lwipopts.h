@@ -45,6 +45,21 @@
 #define LWIP_NETIF_LOOPBACK_MULTITHREADING       1
 #define LWIP_LOOPBACK_MAX_PBUFS         8
 
+/* Define IP_FORWARD to 1 if you wish to have the ability to forward
+   IP packets across network interfaces. If you are going to run lwIP
+   on a device with only one network interface, define this to 0. */
+#ifdef CONFIG_IP_FORWARD
+#define IP_FORWARD                      1
+#else
+#define IP_FORWARD                      0
+#endif
+
+#ifdef CONFIG_IP_NAPT
+#define IP_NAPT                         1
+#else
+#define IP_NAPT                         0
+#endif
+
 #define TCPIP_THREAD_NAME               "tcp/ip"
 #ifdef CONFIG_KEYVALUE
 #define TCPIP_THREAD_STACKSIZE          1024
@@ -198,8 +213,7 @@
 //#endif //MEM_TRX_DYNAMIC_EN
 
 /* NAPT options */
-#if IP_NAPT
-
+#if 0 //IP_NAPT
 static int random_mock = -1;
 /* Mock the esp-random to return 0 for easier result checking */
 uint32_t beken_random(void)
@@ -218,10 +232,6 @@ u32_t beken_random(void);
 #endif /* IP_NAPT */
 
 /* ---------- IP options ---------- */
-/* Define IP_FORWARD to 1 if you wish to have the ability to forward
-   IP packets across network interfaces. If you are going to run lwIP
-   on a device with only one network interface, define this to 0. */
-#define IP_FORWARD              0
 #define BK_DNS			1
 #define LWIP_SIOCOUTQ                  1
 
@@ -322,6 +332,9 @@ u32_t beken_random(void);
  */
 #if CONFIG_WIFI6_CODE_STACK
 #define PBUF_LINK_ENCAPSULATION_HLEN    CONFIG_MSDU_RESV_HEAD_LENGTH
+#if CONFIG_LWIP_RESV_TLEN_ENABLE
+#define PBUF_LINK_ENCAPSULATION_TLEN    CONFIG_MSDU_RESV_TAIL_LENGTH
+#endif
 #define PBUF_POOL_BUFSIZE               (1580 + PBUF_LINK_ENCAPSULATION_HLEN)
 #else
 #define PBUF_POOL_BUFSIZE               1580
@@ -355,8 +368,11 @@ u32_t beken_random(void);
 #define LWIP_NUM_NETIF_CLIENT_DATA      (LWIP_MDNS_RESPONDER)
 #endif
 
-
-
+#if CONFIG_BRIDGE
+#if !defined LWIP_NUM_NETIF_CLIENT_DATA
+#define LWIP_NUM_NETIF_CLIENT_DATA      3
+#endif
+#endif
 
 /*
    ------------------------------------
@@ -577,7 +593,7 @@ The STM32F107 allows computing and verifying the IP, UDP, TCP and ICMP checksums
 
 #define LWIP_COMPAT_MUTEX_ALLOWED       (1)
 
-#define LWIP_DONT_PROVIDE_BYTEORDER_FUNCTIONS
+// #define LWIP_DONT_PROVIDE_BYTEORDER_FUNCTIONS
 
 #define ETHARP_SUPPORT_STATIC_ENTRIES   1
 
@@ -597,6 +613,12 @@ The STM32F107 allows computing and verifying the IP, UDP, TCP and ICMP checksums
 #endif
 #define BK_IP4_ROUTE                    1
 #define BK_DHCPS_DNS                    1
+
+#if CONFIG_FREERTOS
+#define LWIP_NETCONN_SEM_PER_THREAD 1
+#define LWIP_NETCONN_FULLDUPLEX 1
+#define BK_LWIP_DEBUG 1
+#endif
 
 #endif /* __LWIPOPTS_H__ */
 

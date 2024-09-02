@@ -19,7 +19,7 @@
  - ``NP`` - Non-Privilege，表示 M33 运行在非特权级。
  - ``M33`` - ARM Cortex-M33 处理器。
  - ``TZ`` - TrustZone，M33 中引入的安全机制，通过 TZ 将 CPU 核隔离成 S/NS。
- - ``PPC`` - Peripheral Protection Control，BK7236 外设安全属性配置与控制器。
- - ``MPC`` - Memory Protection Control，BK7236 块存储安全属性配置与控制器。
+ - ``PPC`` - Peripheral Protection Control，BK7258 外设安全属性配置与控制器。
+ - ``MPC`` - Memory Protection Control，BK7258 块存储安全属性配置与控制器。
  - ``BL1`` - 特指固化在芯片中的 BootROM。
- - ``BL2`` - Bootloader，在 BK7236 中特指 MCUBOOT。
+ - ``BL2`` - Bootloader，在 BK7258 中特指 MCUBOOT。

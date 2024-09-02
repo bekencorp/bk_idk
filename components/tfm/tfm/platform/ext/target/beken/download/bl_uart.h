@@ -85,6 +85,11 @@ enum
 int bl_printf(const char *fmt, ...);
 int ad_printf(const char *fmt, ...);
 
+void *bl_memcpy(void *d, const void *s, size_t n);
+void *bl_memset(void *s, int c, size_t n);
+void bl_flash_read_cbus(uint32_t address, void *user_buf, uint32_t size);
+void bl_flash_write_cbus(uint32_t address, const uint8_t *user_buf, uint32_t size);
+
 void boot_uart_init(uint32_t baud_rate,uint8_t rx_fifo_thr);
 
 void uart_static_read85(void);

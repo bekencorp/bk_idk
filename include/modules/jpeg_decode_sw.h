@@ -38,16 +38,16 @@ extern "C" {
  *  - config jpeg_dec image resoult, and simple_rate
  *  - malloc buffer for jpeg_dec
  *
- * @param src_buf input image address
- * @param dst_buf output decode image address
+ * @param jd_in inter buffer
+ * @param len buffer length
  *
  * @attention 1. only for software jpeg_dec 
  *
  * @return
- *    - kNoErr: succeed
+ *    - BK_OK: succeed
  *    - other: errors.
  */
-bk_err_t bk_jpeg_dec_sw_init(void);
+bk_err_t bk_jpeg_dec_sw_init(void* jd_in, uint32_t len);
 
 /**
  * @brief     Deinit the jpeg_dec
@@ -59,7 +59,7 @@ bk_err_t bk_jpeg_dec_sw_init(void);
  * @attention 1. only for software jpeg_dec 
  *
  * @return
- *    - kNoErr: succeed
+ *    - BK_OK: succeed
  *    - other: errors.
  */
 bk_err_t bk_jpeg_dec_sw_deinit(void);
@@ -81,7 +81,7 @@ bk_err_t bk_jpeg_dec_sw_deinit(void);
  * @attention 2. outbuf_size only work for decode_type=0, decode by frame, and outbuf size must 2 times for decode 16line
  *
  * @return
- *    - kNoErr: succeed
+ *    - BK_OK: succeed
  *    - other: errors.
  */
 bk_err_t bk_jpeg_dec_sw_start(uint8_t decode_type, uint8_t *src_buf, uint8_t *dst_buf, uint32_t jpeg_size, uint32_t outbuf_size, sw_jpeg_dec_res_t *result);
@@ -105,11 +105,13 @@ bk_err_t bk_jpeg_dec_sw_start_line(void);
  * This API is used to get img width and size
  *
  * @param frame_size input image size
+ * @param src_buf jpeg image address
+ * @param result decode image info
  *
  * @attention 1. only for software jpeg_dec 
  *
  * @return
- *    - kNoErr: succeed
+ *    - BK_OK: succeed
  *    - other: errors.
  */
 bk_err_t bk_jpeg_get_img_info(uint32_t frame_size, uint8_t *src_buf, sw_jpeg_dec_res_t *result);
@@ -142,12 +144,14 @@ void bk_jpeg_dec_sw_register_finish_callback(void *cb);
  * @param scaling of decode image
  * @param format of decode image
  * @param rotate_angle of decode image
+ * @param work_buffer inter workbuffer
+ * @param rotate_buffer rotate need buffer
  *
  * @attention 1. only for software jpeg_dec 
  * @attention 2. outbuf_size only work for decode_type=0, decode by frame, and outbuf size must 2 times for decode 16line
  *
  * @return
- *    - kNoErr: succeed
+ *    - BK_OK: succeed
  *    - other: errors.
  */
 bk_err_t bk_jpeg_dec_sw_start_one_time(

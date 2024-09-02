@@ -28,22 +28,22 @@
 
 
 /************** wrap C library functions **************/
-void *__wrap_malloc(size_t size)
+__attribute__((weak)) void *__wrap_malloc(size_t size)
 {
 	return os_malloc(size);
 }
 
-void *__wrap__malloc_r(void *p, size_t size)
+__attribute__((weak)) void *__wrap__malloc_r(void *p, size_t size)
 {
 	return os_malloc(size);
 }
 
-void __wrap_free(void *pv)
+__attribute__((weak)) void __wrap_free(void *pv)
 {
 	os_free(pv);
 }
 
-void *__wrap_calloc(size_t a, size_t b)
+__attribute__((weak)) void *__wrap_calloc(size_t a, size_t b)
 {
 	void *pvReturn;
 
@@ -56,22 +56,22 @@ void *__wrap_calloc(size_t a, size_t b)
 	return pvReturn;
 }
 
-void *__wrap_realloc(void *pv, size_t size)
+__attribute__((weak)) void *__wrap_realloc(void *pv, size_t size)
 {
 	return os_realloc(pv, size);
 }
 
-void __wrap__free_r(void *p, void *x)
+__attribute__((weak)) void __wrap__free_r(void *p, void *x)
 {
 	__wrap_free(x);
 }
 
-void *__wrap__realloc_r(void *p, void *x, size_t sz)
+__attribute__((weak)) void *__wrap__realloc_r(void *p, void *x, size_t sz)
 {
 	return __wrap_realloc(x, sz);
 }
 
-void *__wrap_zalloc(size_t size)
+__attribute__((weak)) void *__wrap_zalloc(size_t size)
 {
 	return os_zalloc(size);
 }
@@ -103,7 +103,7 @@ int __wrap_strncmp(const char *s1, const char *s2, size_t n)
 
 
 bool printf_is_init(void);
-extern void bk_printf_port_ext(int level, char *tag, const char *fmt, va_list args);
+void shell_log_out_port(int level, char *tag, const char *fmt, va_list args);
 int __wrap_printf(const char *fmt, ...)
 {
 
@@ -112,7 +112,7 @@ int __wrap_printf(const char *fmt, ...)
         return 0;
 
     va_start(args,fmt);
-    bk_printf_port_ext(BK_LOG_ERROR,NULL,fmt,args);
+    shell_log_out_port(BK_LOG_WARN, NULL, fmt, args);
 
     va_end(args);
 
@@ -127,7 +127,7 @@ int __wrap_iprintf(const char *fmt, ...)
         return 0;
 
     va_start(args,fmt);
-    bk_printf_port_ext(BK_LOG_ERROR,NULL,fmt,args);
+    shell_log_out_port(BK_LOG_WARN,NULL,fmt,args);
 
     va_end(args);
 

@@ -6,7 +6,7 @@ BK7258
 开发板简介
 ------------------------
 
- - 为三核 CM33 架构
+ - 三个CPU
  - 支持 FreeRTOS V10
 
 .. figure:: ../../_static/demo_board_7258.png

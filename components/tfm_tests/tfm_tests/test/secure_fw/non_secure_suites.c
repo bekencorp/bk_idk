@@ -65,6 +65,10 @@
 #ifdef EXTRA_NS_TEST_SUITE
 #include "extra_ns_tests.h"
 #endif
+#ifdef TEST_NS_VT
+#include "vt_ns_tests.h"
+#endif
+
 
 static struct test_suite_t test_suites[] = {
     /* List test cases which are compliant with level 1 isolation */
@@ -152,13 +156,69 @@ static struct test_suite_t test_suites[] = {
     {&register_testsuite_ns_fpu_interface, 0, 0, 0},
 #endif
 
+#ifdef TEST_NS_VT
+    /* Non-secure VT test cases */
+    {&register_testsuite_ns_psa_vt_interface, 0, 0, 0},
+#endif
+
+
     /* End of test suites */
     {0, 0, 0, 0}
 };
 
+volatile int g_test_suite_flag = 0;
+
+uint32_t test_suite_is_testing(void)
+{
+	return g_test_suite_flag;
+}
+
+#define REG_GET(a)    *(volatile uint32_t *)(a)
+#define REG_SET(a, v) *(volatile uint32_t *)(a) = (v)
+#define R(i)      (0x54000200 + (i << 2))
+#define B(i)      (1 << (i))
+
+//for caict test
+uint64_t get_32k_timer(void)
+{
+        uint32_t low = REG_GET(R(3));
+        uint32_t high = REG_GET(R(10));
+        return (low + (high << 32));
+}
+
+static void init_time(void)
+{
+        uint32_t v = REG_GET(R(0));
+
+        REG_SET(R(0), B(0));
+        volatile uint32_t cnt = 1000000;
+        while(--cnt);
+
+        REG_SET(R(0), 0);
+
+        v = REG_GET(R(0)); 
+        REG_SET(R(0), (v | B(6)));
+
+        REG_SET(R(1), 0xFFFFFFFF);
+        REG_SET(R(6), 0xFFFFFFFF);
+
+        v = REG_GET(R(0));
+        v &= ~B(1);
+        REG_SET(R(0), v);
+}
+
+extern int dubhe_driver_init(unsigned long dhb_base_addr);
 enum test_suite_err_t start_integ_test(void)
 {
-    return integ_test("Non-secure", test_suites);
+	enum test_suite_err_t ret;
+
+	dubhe_driver_init(0x5b110000);
+
+	g_test_suite_flag = 2;
+    ret = integ_test("Non-secure", test_suites);
+	g_test_suite_flag = 0;
+
+	return ret;
 }
 
 /* Service stand-in for NS tests. To be called from a non-secure context */

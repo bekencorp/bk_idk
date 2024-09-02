@@ -20,10 +20,6 @@
 #include <driver/mb_chnl_buff.h>
 #include "mb_ipc_cmd.h"
 #include "driver/dma.h"
-#include "driver/flash.h"
-#include "shell_drv.h"
-#include <driver/aon_rtc.h>
-
 
 #if CONFIG_CACHE_ENABLE
 #include "cache.h"
@@ -454,6 +450,12 @@ static bk_err_t ipc_send_special_cmd(ipc_chnl_cb_t *chnl_cb, u8 cmd)
 
 static ipc_chnl_cb_t	ipc_chnl_cb; // = { .chnl_id = MB_CHNL_HW_CTRL, .chnl_inited = 0 };
 
+#if CONFIG_SYS_CPU1
+#if CONFIG_MAILBOX_V2_0
+// static ipc_chnl_cb_t	ipc_chnl_cb2;
+#endif
+#endif
+
 typedef struct
 {
 	u16		res_id;
@@ -470,6 +472,11 @@ typedef struct
 extern void shell_set_log_cpu(u8 req_cpu);
 #endif
 
+#if (CONFIG_SYS_CPU0)
+static void mb_ipc_power_on_notify(void);
+static void mb_ipc_heartbeat_notify(void);
+#endif
+
 static u32 ipc_cmd_handler(ipc_chnl_cb_t *chnl_cb, mb_chnl_ack_t *ack_buf)
 {
 	/* must NOT change ack_buf->hdr. */
@@ -483,25 +490,6 @@ static u32 ipc_cmd_handler(ipc_chnl_cb_t *chnl_cb, mb_chnl_ack_t *ack_buf)
 
 	switch(chnl_cb->rx_cmd)
 	{
-		case IPC_TEST_CMD:
-			if(chnl_cb->cmd_len >= sizeof(u32))
-			{
-				ipc_rsp->rsp_data_len = sizeof(u32);
-
-				u32 * p_src = (u32 *)chnl_cb->cmd_buf;
-				u32 * p_dst = (u32 *)ipc_rsp->rsp_buff;
-
-				*p_dst = (*p_src) + 1;
-				
-				result = ACK_STATE_COMPLETE;
-			}
-			else
-			{
-				ipc_rsp->rsp_data_len = 0;
-				result = ACK_STATE_FAIL;
-			}
-			break;
-
 		case IPC_RES_AVAILABLE_INDICATION:
 			if(chnl_cb->cmd_len >= sizeof(u16))
 			{
@@ -517,6 +505,25 @@ static u32 ipc_cmd_handler(ipc_chnl_cb_t *chnl_cb, mb_chnl_ack_t *ack_buf)
 				{
 					result = ACK_STATE_FAIL;
 				}
+			}
+			else
+			{
+				ipc_rsp->rsp_data_len = 0;
+				result = ACK_STATE_FAIL;
+			}
+			break;
+
+		case IPC_TEST_CMD:
+			if(chnl_cb->cmd_len >= sizeof(u32))
+			{
+				ipc_rsp->rsp_data_len = sizeof(u32);
+
+				u32 * p_src = (u32 *)chnl_cb->cmd_buf;
+				u32 * p_dst = (u32 *)ipc_rsp->rsp_buff;
+
+				*p_dst = (*p_src) + 1;
+				
+				result = ACK_STATE_COMPLETE;
 			}
 			else
 			{
@@ -541,12 +548,13 @@ static u32 ipc_cmd_handler(ipc_chnl_cb_t *chnl_cb, mb_chnl_ack_t *ack_buf)
 		#if CONFIG_SYS_CPU0
 		case IPC_CPU1_POWER_UP_INDICATION:		// cpu1 indication, power up successfully.
 			{
+				/* no params. */
+				/* inform modules who care CPU1 state. */
+				mb_ipc_power_on_notify();
+				
+				/* no returns. */
 				ipc_rsp->rsp_data_len = 0;
 				result = ACK_STATE_COMPLETE;
-
-				/* no params, no returns. */
-
-				/* inform modules who care CPU1 state. */
 			}
 			break;
 
@@ -557,13 +565,18 @@ static u32 ipc_cmd_handler(ipc_chnl_cb_t *chnl_cb, mb_chnl_ack_t *ack_buf)
 				//u32 * p_src = (u32 *)chnl_cb->cmd_buf;
 
 				// save the param.
-				//set_cpu1_ps_flag(*p_src);
+				
+				mb_ipc_heartbeat_notify();
+
 			}
 
 			/* succeeded anyway but no returns. */
 			ipc_rsp->rsp_data_len = 0;
 			result = ACK_STATE_COMPLETE;
 			break;
+		#endif
+
+		#if (CONFIG_SYS_CPU0)
 
 		case IPC_CPU1_TRAP_HANDLE_BEGIN:		// cpu1 indication, dump begin.
 			{
@@ -591,7 +604,9 @@ static u32 ipc_cmd_handler(ipc_chnl_cb_t *chnl_cb, mb_chnl_ack_t *ack_buf)
 			}
 			break;
 
-		#else
+		#endif
+
+		#if 0 // (CONFIG_SYS_CPU1)
 		
 		case IPC_SET_CPU1_HEART_RATE:
 			if(chnl_cb->cmd_len >= sizeof(u32))
@@ -755,18 +770,6 @@ static u32 ipc_cmd_handler(ipc_chnl_cb_t *chnl_cb, mb_chnl_ack_t *ack_buf)
 			break;
 		#endif
 
-#if CONFIG_SYS_CPU1
-		case IPC_CPU1_STOP_NOTIFICATION:
-			{
-				/* no params, no returns. */
-				/* inform modules who care CPU1 state. */
-				stop_cpu1_handle_notifications();
-				ipc_rsp->rsp_data_len = 0;
-				result = ACK_STATE_COMPLETE;
-			}
-			break;
-#endif
-
 		default:
 			{
 				ipc_rsp->rsp_data_len = 0;
@@ -778,26 +781,253 @@ static u32 ipc_cmd_handler(ipc_chnl_cb_t *chnl_cb, mb_chnl_ack_t *ack_buf)
 	return result;
 }
 
+#if (CONFIG_SYS_CPU0)
+#include "../../../components/bk_rtos/rtos_ext.h"
+
+#define MB_IPC_START_CORE_FLAG		0x01
+#define MB_IPC_STOP_CORE_FLAG		0x02
+#define MB_IPC_POWER_UP_FLAG		0x04
+#define MB_IPC_HEARTBEAT_FLAG		0x08
+
+#define MB_IPC_ALL_FLAGS			(MB_IPC_START_CORE_FLAG | MB_IPC_STOP_CORE_FLAG | MB_IPC_POWER_UP_FLAG | MB_IPC_HEARTBEAT_FLAG)
+
+enum
+{
+	CORE_POWER_OFF = 0,
+	CORE_STARTING,
+	CORE_POWER_ON,
+};
+
+static rtos_event_ext_t		mb_ipc_heart_event;
+static u32             cpu1_heartbeat_timestamp = 0;
+static volatile u8     cpu1_state = CORE_POWER_OFF;
+
+void start_cpu1_core(void);
+void stop_cpu1_core(void);
+
+void mb_ipc_reset_notify(u32 power_on)
+{
+	if(power_on)
+	{
+		if(cpu1_state != CORE_POWER_ON)
+		{
+			cpu1_state = CORE_STARTING;
+			rtos_set_event_ex(&mb_ipc_heart_event, MB_IPC_START_CORE_FLAG);
+		}
+	}
+	else
+	{
+		cpu1_state = CORE_POWER_OFF;
+		rtos_set_event_ex(&mb_ipc_heart_event, MB_IPC_STOP_CORE_FLAG);
+	}
+}
+
+static void mb_ipc_heartbeat_notify(void)
+{
+	rtos_set_event_ex(&mb_ipc_heart_event, MB_IPC_HEARTBEAT_FLAG);
+}
+
+static void mb_ipc_power_on_notify(void)
+{
+	rtos_set_event_ex(&mb_ipc_heart_event, MB_IPC_POWER_UP_FLAG);
+}
+
+static int mb_ipc_heartbeat_timeout(void)
+{
+	u32   cur_time;
+
+	cur_time = (u32)rtos_get_time();
+
+	if(cpu1_state == CORE_POWER_OFF)
+	{
+		return 0;
+	}
+	if(cpu1_state == CORE_STARTING)
+	{
+		cpu1_heartbeat_timestamp = cur_time;
+		return 0;
+	}
+
+	if(cur_time >= cpu1_heartbeat_timestamp)
+	{
+		cur_time -= cpu1_heartbeat_timestamp;
+	}
+	else
+	{
+		cur_time += (~(cpu1_heartbeat_timestamp)) + 1;  // wrap around. 
+	}
+	
+	if(cur_time < CONFIG_INT_WDT_PERIOD_MS)
+	{
+		cpu1_heartbeat_timestamp = (u32)rtos_get_time();
+		return 0;
+	}
+
+	return 1;
+}
+
+static void mb_ipc_task( void *para )
+{
+	bk_err_t	ret_val;
+	u32    events;
+	u32    check_time = BEKEN_WAIT_FOREVER;
+	
+	ret_val = rtos_init_event_ex(&mb_ipc_heart_event);
+
+	if(ret_val != BK_OK)
+	{
+		rtos_delete_thread(NULL);
+		return;
+	}
+
+	while(1)
+	{
+		events = rtos_wait_event_ex(&mb_ipc_heart_event, MB_IPC_ALL_FLAGS, true, check_time);
+
+		if(events == 0)
+		{
+			// timeout, so check heartbeat.
+			events = MB_IPC_HEARTBEAT_FLAG;
+		}
+
+		if(events & MB_IPC_STOP_CORE_FLAG)  // process this event at first!!!!
+		{
+			if(cpu1_state == CORE_POWER_OFF)
+			{
+				events = 0;  // clear all events.
+			}
+		}
+		
+		if(events & MB_IPC_START_CORE_FLAG)
+		{
+			u8   retry_cnt = 0;
+
+			while(cpu1_state == CORE_STARTING)
+			{
+				mb_ipc_heartbeat_timeout();
+				
+				if(events & MB_IPC_POWER_UP_FLAG)
+				{
+					if(cpu1_state == CORE_STARTING)
+					{
+						cpu1_state = CORE_POWER_ON;
+						break;  // cpu1 power on. 
+					}
+				}
+				else
+				{
+					if(retry_cnt > 0)
+					{
+						BK_LOGE(MOD_TAG, "IPC retry to start core1\r\n");
+						stop_cpu1_core();
+						rtos_delay_milliseconds(6);
+						start_cpu1_core();
+						break;
+					}
+					else
+					{
+						events = rtos_wait_event_ex(&mb_ipc_heart_event, MB_IPC_POWER_UP_FLAG, true, 500);
+					}
+				}
+
+				retry_cnt++;
+			}
+
+			// discard this event when not in CORE_STARTING state.
+		}
+		
+		if(events & MB_IPC_HEARTBEAT_FLAG)
+		{
+			if(mb_ipc_heartbeat_timeout())
+			{
+				BK_LOGE(MOD_TAG, "IPC restart core1\r\n");
+				stop_cpu1_core();
+				rtos_delay_milliseconds(6);
+				start_cpu1_core();
+			}
+		}
+
+		if(cpu1_state == CORE_POWER_OFF)
+		{
+			check_time = BEKEN_WAIT_FOREVER;
+		}
+		else
+		{
+			check_time = CONFIG_INT_WDT_PERIOD_MS;
+		}
+	}
+}
+
+int mb_ipc_cpu_is_power_on(u32 cpu_id)
+{
+	if(cpu1_state == CORE_POWER_ON)
+	{
+		return 1;
+	}
+
+	return 0;
+}
+
+#endif
+
+#if (CONFIG_SYS_CPU1)
+
+#define MB_IPC_HEARTBEAT_TIME		2000
+
+static void mb_ipc_task( void *para )
+{
+	ipc_send_power_up();
+
+	while(1)
+	{
+		rtos_delay_milliseconds(MB_IPC_HEARTBEAT_TIME);
+		ipc_send_heart_beat(0);
+	}
+}
+#endif
+
 bk_err_t ipc_init(void)
 {
-#if CONFIG_SYS_CPU0
-	return ipc_chnl_init(&ipc_chnl_cb, MB_CHNL_HW_CTRL, (ipc_rx_cmd_hdlr_t)ipc_cmd_handler);
-#endif
-
-#if CONFIG_SYS_CPU1
 	bk_err_t	ret_val = BK_FAIL;
 
-	ret_val =  ipc_chnl_init(&ipc_chnl_cb, MB_CHNL_HW_CTRL, (ipc_rx_cmd_hdlr_t)ipc_cmd_handler);
+#if (CONFIG_SYS_CPU0 || CONFIG_SYS_CPU1)
+
+	ret_val = ipc_chnl_init(&ipc_chnl_cb, MB_CHNL_HW_CTRL, (ipc_rx_cmd_hdlr_t)ipc_cmd_handler);
+
+#if CONFIG_SYS_CPU1
 #if CONFIG_MAILBOX_V2_0
-	if(ret_val == BK_OK)
-		ret_val = ipc_chnl_init(&ipc_chnl_cb, CP2_MB_CHNL_CTRL, (ipc_rx_cmd_hdlr_t)ipc_cmd_handler);
+//	if(ret_val == BK_OK)
+//		ret_val = ipc_chnl_init(&ipc_chnl_cb, CP2_MB_CHNL_CTRL, (ipc_rx_cmd_hdlr_t)ipc_cmd_handler);
 #endif
-	return ret_val;
+#endif
+
+	if(ret_val != BK_OK)
+	{
+		BK_LOGE(MOD_TAG, "Ipc failed at %d: %d\r\n", __LINE__, ret_val);
+
+		return ret_val;
+	}
+
+	ret_val = rtos_create_thread(NULL, BEKEN_DEFAULT_WORKER_PRIORITY, "mb_ipc", mb_ipc_task, 1536, 0);
+
 #endif
   
 #if CONFIG_SYS_CPU2
-	return ipc_chnl_init(&ipc_chnl_cb, CP1_MB_CHNL_CTRL, (ipc_rx_cmd_hdlr_t)ipc_cmd_handler);
+	ret_val = ipc_chnl_init(&ipc_chnl_cb, CP1_MB_CHNL_CTRL, (ipc_rx_cmd_hdlr_t)ipc_cmd_handler);
 #endif
+
+	if(ret_val != BK_OK)
+	{
+		BK_LOGE(MOD_TAG, "Ipc failed at %d: %d\r\n", __LINE__, ret_val);
+	}
+
+	return ret_val;
+}
+
+bk_err_t ipc_send_available_ind(u16 resource_id)
+{
+	return ipc_send_cmd(&ipc_chnl_cb, IPC_RES_AVAILABLE_INDICATION, \
+						(u8 *)&resource_id, sizeof(resource_id), NULL, 0);
 }
 
 u32 ipc_send_test_cmd(u32 param)
@@ -805,12 +1035,6 @@ u32 ipc_send_test_cmd(u32 param)
 	ipc_send_cmd(&ipc_chnl_cb, IPC_TEST_CMD, (u8 *)&param, sizeof(param), (u8 *)&param, sizeof(param));
 
 	return param;
-}
-
-bk_err_t ipc_send_available_ind(u16 resource_id)
-{
-	return ipc_send_cmd(&ipc_chnl_cb, IPC_RES_AVAILABLE_INDICATION, \
-						(u8 *)&resource_id, sizeof(resource_id), NULL, 0);
 }
 
 u32 ipc_send_get_ps_flag(void)
@@ -822,7 +1046,7 @@ u32 ipc_send_get_ps_flag(void)
 	return param;
 }
 
-#if CONFIG_SYS_CPU0
+#if 0 // (CONFIG_SYS_CPU0)
 
 u32 ipc_send_get_heart_rate(void)
 {
@@ -837,8 +1061,9 @@ bk_err_t ipc_send_set_heart_rate(u32 param)
 {
 	return ipc_send_cmd(&ipc_chnl_cb, IPC_SET_CPU1_HEART_RATE, (u8 *)&param, sizeof(param), NULL, 0);
 }
+#endif
 
-#else
+#if (CONFIG_SYS_CPU1)
 
 bk_err_t ipc_send_power_up(void)
 {
@@ -850,6 +1075,9 @@ bk_err_t ipc_send_heart_beat(u32 param)
 	return ipc_send_cmd(&ipc_chnl_cb, IPC_CPU1_HEART_BEAT_INDICATION, (u8 *)&param, sizeof(param), NULL, 0);
 }
 
+#endif
+
+#if CONFIG_SYS_CPU1
 bk_err_t ipc_send_trap_handle_begin(void)
 {
 	return ipc_send_special_cmd(&ipc_chnl_cb, IPC_CPU1_TRAP_HANDLE_BEGIN);
@@ -859,7 +1087,6 @@ bk_err_t ipc_send_trap_handle_end(void)
 {
 	return ipc_send_special_cmd(&ipc_chnl_cb, IPC_CPU1_TRAP_HANDLE_END);
 }
-
 #endif
 
 #ifdef AMP_RES_CLIENT
@@ -929,82 +1156,4 @@ u32 ipc_send_dma_chnl_user(u8 chnl_id)
 }
 #endif
 
-
-#if CONFIG_FLASH_MB
-#if CONFIG_SYS_CPU1
-__attribute__((section(".iram"))) bk_err_t cpu1_pause_handle(mb_chnl_cmd_t *cmd_buf)
-{
-	volatile unsigned long * stat_addr = (volatile unsigned long *)cmd_buf->param1;
-	//only puase cpu1 when flash erasing
-	if(*(stat_addr) == IPC_ERASE_BUSY) {
-		bk_flash_set_operate_status(FLASH_OP_BUSY);
-		*(stat_addr) = IPC_ERASE_ACK;
-		while(*(stat_addr))
-		{
-#if CONFIG_CACHE_ENABLE
-			flush_dcache((void *)stat_addr, 4);
 #endif
-			//TODO: timeout when cpu1 pause wait time more than 300ms
-		}
-		bk_flash_set_operate_status(FLASH_OP_IDLE);
-	}
-
-	return BK_OK;
-}
-#endif
-
-#if CONFIG_SYS_CPU0
-u32 ipc_send_stop_cpu1_send_notifications()			//CPU0 stop CPU1
-{
-	return ipc_send_cmd(&ipc_chnl_cb, IPC_CPU1_STOP_NOTIFICATION, NULL, 0, NULL, 0);
-}
-
-static volatile unsigned long flash_busy = IPC_ERASE_IDLE;
-#define FLASH_WAIT_ACK_TIMEOUT 5000
-bk_err_t static send_pause_cmd(uint8_t log_chnl)
-{
-	mb_chnl_cmd_t  cmd_buf;
-	cmd_buf.hdr.data = 0; /* clear hdr. */
-	cmd_buf.hdr.cmd  = MB_CMD_CPU_PAUSE;
-	flash_busy = IPC_ERASE_BUSY;
-	cmd_buf.param1 = (u32)&flash_busy;
-
-	return mb_chnl_write(log_chnl, &cmd_buf);
-}
-
-bk_err_t ipc_send_flash_op_prepare(void)			//CPU0 notify CPU1 before flash operation
-{
-	uint32_t us_start = 0;
-	uint32_t us_end = 0;
-
-	send_pause_cmd(MB_CHNL_LOG);
-
-	us_start = bk_aon_rtc_get_us();
-	for(int i = 0; i < 2000; i++) {
-		if(flash_busy == IPC_ERASE_ACK) {
-			break;
-		}
-#if CONFIG_CACHE_ENABLE
-		flush_dcache((void *)&flash_busy, 4);
-#endif
-		us_end = bk_aon_rtc_get_us();
-		//wait ack time should not be more than 5 ms
-		if((us_end - us_start) > FLASH_WAIT_ACK_TIMEOUT) {
-			return BK_FAIL;
-		}
-	}
-
-	return BK_OK;
-}
-
-bk_err_t ipc_send_flash_op_finish(void)			//CPU0 notify CPU1 after flash operation
-{
-	flash_busy = IPC_ERASE_IDLE;
-
-	return BK_OK;
-}
-#endif
-#endif
-
-#endif
-

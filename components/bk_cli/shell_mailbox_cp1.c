@@ -145,13 +145,6 @@ static void shell_mb_rx_isr(shell_mb_ext_t *mb_ext, mb_chnl_cmd_t *cmd_buf)
 			mb_ext->rx_indicate_callback();
 		}
 	}
-#if CONFIG_FLASH_MB
-	else if(cmd_buf->hdr.cmd == MB_CMD_CPU_PAUSE)
-	{
-		extern __attribute__((section(".itcm_sec_code"))) bk_err_t cpu1_pause_handle(mb_chnl_cmd_t *cmd_buf);
-		cpu1_pause_handle(cmd_buf);
-	}
-#endif
 	else   /* unknown cmd. */
 	{
 		result = ACK_STATE_FAIL;
@@ -227,7 +220,8 @@ static void shell_mb_tx_cmpl_isr2(shell_mb_ext_t *mb_ext, mb_chnl_ack_t *ack_buf
 		/* so notify app to free buffer. */
 		if(mb_ext->tx_complete_callback != NULL)
 		{
-			mb_ext->tx_complete_callback(mb_ext->cur_packet, mb_ext->packet_tag);
+			log_cmd_t * log_cmd = (log_cmd_t *)ack_buf;
+			mb_ext->tx_complete_callback(log_cmd->buf, log_cmd->tag);
 		}
 	}
 }
@@ -317,38 +311,53 @@ static bk_err_t write_sync(shell_mb_ext_t *mb_ext, u8 * p_buf, u16 buf_len)
 	}
 
 	tx_buff = mb_ext->tx_sync_buf;
-	if((buf_len + 1) > mb_ext->tx_sync_len)
+
+	u16				cpy_len;
+	bk_err_t		ret_code = BK_OK;
+	
+	while(buf_len > 0)
 	{
-		buf_len = mb_ext->tx_sync_len - 1;
-	}
-
-	buff_busy = (volatile u8 * )&tx_buff[0];
-	tx_buff[0] = 1;  /* the buffer is busy. */
-	memcpy(&tx_buff[1], p_buf, buf_len);
-
-	mb_chnl_cmd_t	mb_cmd_buf;
-	log_cmd_t * cmd_buf = (log_cmd_t *)&mb_cmd_buf;
-
-	cmd_buf->hdr.data = 0;
-	cmd_buf->hdr.cmd = MB_CMD_ASSERT_OUT;
-	cmd_buf->buf = tx_buff;
-	cmd_buf->len = buf_len + 1;
-	cmd_buf->tag = 0xFFFF;		/* tx_buff is not memory of allocated dynamically. */
-
-	bk_err_t		ret_code;
-
-	ret_code = mb_chnl_ctrl(mb_ext->chnl_id, MB_CHNL_WRITE_SYNC, &mb_cmd_buf);
-
-	if(ret_code == BK_OK)
-	{
-		while(*buff_busy)
+		cpy_len = buf_len;
+		
+		if((buf_len + 1) > mb_ext->tx_sync_len)
 		{
-			// wait buffer to be free.
-			#if CONFIG_CACHE_ENABLE
-			flush_dcache((void *)buff_busy, 1);
-			#endif
+			cpy_len = mb_ext->tx_sync_len - 1;
 		}
-	}
+
+		buff_busy = (volatile u8 * )&tx_buff[0];
+		tx_buff[0] = 1;  /* the buffer is busy. */
+		memcpy(&tx_buff[1], p_buf, cpy_len);
+
+		mb_chnl_cmd_t	mb_cmd_buf;
+		log_cmd_t * cmd_buf = (log_cmd_t *)&mb_cmd_buf;
+
+		cmd_buf->hdr.data = 0;
+		cmd_buf->hdr.cmd = MB_CMD_ASSERT_OUT;
+		cmd_buf->buf = tx_buff;
+		cmd_buf->len =cpy_len + 1;
+		cmd_buf->tag = 0xFFFF;		/* tx_buff is not dynamically allocated memory. */
+
+		ret_code = mb_chnl_ctrl(mb_ext->chnl_id, MB_CHNL_WRITE_SYNC, &mb_cmd_buf);
+
+		if(ret_code == BK_OK)
+		{
+			while(*buff_busy)
+			{
+				/* wait buffer to be free (*buff_busy == 0). */
+				#if CONFIG_CACHE_ENABLE
+				flush_dcache((void *)buff_busy, 1);
+				#endif
+			}
+		}
+		else
+		{
+			break;
+		}
+
+		buf_len -= cpy_len;
+		p_buf += cpy_len;
+
+	};
 
 	return ret_code;
 }
@@ -458,12 +467,7 @@ static bool_t shell_mb_open(shell_dev_t * shell_dev, tx_complete_t tx_callback, 
 	
 	// call chnl driver to register isr callback;
 	mb_chnl_ctrl(mb_ext->chnl_id, MB_CHNL_SET_RX_ISR, (void *)shell_mb_rx_isr);
-	#if 0
-	mb_chnl_ctrl(mb_ext->chnl_id, MB_CHNL_SET_TX_ISR, (void *)shell_mb_tx_isr2);
-	mb_chnl_ctrl(mb_ext->chnl_id, MB_CHNL_SET_TX_CMPL_ISR, (void *)shell_mb_tx_cmpl_isr2);
-	#else
 	mb_chnl_ctrl(mb_ext->chnl_id, MB_CHNL_SET_TX_CMPL_ISR, (void *)shell_mb_tx_cmpl_isr);
-	#endif
 
 	return bTRUE;
 }
@@ -605,7 +609,14 @@ static bool_t shell_mb_ctrl(shell_dev_t * shell_dev, u8 cmd, void *param)
 
 		case SHELL_IO_CTRL_FLUSH:
 			shell_mb_flush(mb_ext);
-			break;			
+			break;
+
+		case SHELL_IO_CTRL_SET_RX_ISR:
+			mb_ext->rx_indicate_callback = (rx_indicate_t)param;
+			break;
+		case SHELL_IO_CTRL_SET_TX_CMPL_ISR:
+			mb_ext->tx_complete_callback = (tx_complete_t)param;
+			break;
 
 		default:
 			return bFALSE;

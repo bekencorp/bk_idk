@@ -510,7 +510,10 @@ static bool_t shell_uart_open(shell_dev_t * shell_dev, tx_complete_t tx_callback
 	bk_uart_register_rx_isr(uart_ext->uart_id, (uart_isr_t)shell_uart_rx_isr, uart_ext);
 	bk_uart_register_tx_isr(uart_ext->uart_id, (uart_isr_t)shell_uart_tx_isr, uart_ext);
 
-	bk_uart_enable_rx_interrupt(uart_ext->uart_id);
+	if(rx_callback != NULL)
+	{
+		bk_uart_enable_rx_interrupt(uart_ext->uart_id);
+	}
 
 	return bTRUE;
 }
@@ -763,6 +766,21 @@ static bool_t shell_uart_ctrl(shell_dev_t * shell_dev, u8 cmd, void *param)
 
 			break;
 
+		case SHELL_IO_CTRL_SET_RX_ISR:
+			uart_ext->rx_indicate_callback = (rx_indicate_t)param;
+			if((rx_indicate_t)param != NULL)
+			{
+				bk_uart_enable_rx_interrupt(uart_ext->uart_id);
+			}
+			else
+			{
+				bk_uart_disable_rx_interrupt(uart_ext->uart_id);
+			}
+			break;
+		case SHELL_IO_CTRL_SET_TX_CMPL_ISR:
+			uart_ext->tx_complete_callback = (tx_complete_t)param;
+			break;
+
 		default:
 			return bFALSE;
 			break;
@@ -779,6 +797,9 @@ static bool_t shell_uart_close(shell_dev_t * shell_dev)
 		return bFALSE;
 
 	uart_ext = (shell_uart_ext_t *)shell_dev->dev_ext;
+
+	bk_uart_disable_rx_interrupt(uart_ext->uart_id);
+//	bk_uart_disable_tx_interrupt(uart_ext->uart_id);
 
 	// call uart driver to register isr callback;
 	bk_uart_register_rx_isr(uart_ext->uart_id, NULL, NULL);

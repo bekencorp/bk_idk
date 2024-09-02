@@ -33,6 +33,7 @@ copy_libs()
 	compute_hash_src_dir=${s_bk_libs_dir}/${s_soc}/libs
 	compute_hash_dest_file=${s_bk_libs_dir}/${s_soc}/hash/libs_hash.txt
 	python3 ${compute_hash_tool} ${compute_hash_src_dir} > ${compute_hash_dest_file}
+	repo manifest -r -o ${s_bk_libs_dir}/${s_soc}/hash/libs_version_manifest.xml
 }
 
 copy_sdkconfig()

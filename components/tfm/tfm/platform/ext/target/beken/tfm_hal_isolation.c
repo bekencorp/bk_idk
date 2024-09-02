@@ -15,6 +15,7 @@
 #include "tfm_hal_isolation.h"
 #include "tfm_peripherals_def.h"
 #include "tfm_core_utils.h"
+
 #ifdef TFM_PSA_API
 #include "load/partition_defs.h"
 #include "load/asset_defs.h"
@@ -22,7 +23,7 @@
 #endif
 
 /* It can be retrieved from the MPU_TYPE register. */
-#define MPU_REGION_NUM                  8
+#define MPU_REGION_NUM                  16
 
 #ifdef CONFIG_TFM_ENABLE_MEMORY_PROTECT
 static uint32_t n_configured_regions = 0;
@@ -83,8 +84,16 @@ REGION_DECLARE(Image$$, TFM_UNPRIV_CODE, $$RO$$Base);
 REGION_DECLARE(Image$$, TFM_UNPRIV_CODE, $$RO$$Limit);
 REGION_DECLARE(Image$$, TFM_APP_CODE_START, $$Base);
 REGION_DECLARE(Image$$, TFM_APP_CODE_END, $$Base);
+REGION_DECLARE(Image$$, ER_TFM_CODE_START, $$Base);
+REGION_DECLARE(Image$$, ER_TFM_CODE_END, $$Base);
 REGION_DECLARE(Image$$, TFM_APP_RW_STACK_START, $$Base);
 REGION_DECLARE(Image$$, TFM_APP_RW_STACK_END, $$Base);
+REGION_DECLARE(Image$$, ARM_LIB_STACK, $$ZI$$Base);
+REGION_DECLARE(Image$$, ARM_LIB_STACK, $$ZI$$Limit);
+REGION_DECLARE(Image$$, ER_TFM_DATA, $$ZI$$Base);
+REGION_DECLARE(Image$$, ER_TFM_DATA, $$ZI$$Limit);
+REGION_DECLARE(Image$$, ER_TFM_DATA, $$RW$$Base);
+REGION_DECLARE(Image$$, ER_TFM_DATA, $$RW$$Limit);
 
 const struct mpu_armv8m_region_cfg_t region_cfg[] = {
     /* Veneer region */
@@ -117,17 +126,51 @@ const struct mpu_armv8m_region_cfg_t region_cfg[] = {
         MPU_ARMV8M_AP_RO_PRIV_UNPRIV,
         MPU_ARMV8M_SH_NONE
     },
-    /* RW, ZI and stack as one region */
+	#if CONFIG_MPU_REGION_UPDATED
+    /* RO region, AROT/unprivilege mode mpu issue */
     {
         0, /* will be updated before using */
-        (uint32_t)&REGION_NAME(Image$$, TFM_APP_RW_STACK_START, $$Base),
+        (uint32_t)&REGION_NAME(Image$$, ER_TFM_CODE_START, $$Base),
+        (uint32_t)&REGION_NAME(Image$$, ER_TFM_CODE_END, $$Base),
+        MPU_ARMV8M_MAIR_ATTR_CODE_IDX,
+        MPU_ARMV8M_XN_EXEC_OK,
+        MPU_ARMV8M_AP_RO_PRIV_UNPRIV,
+        MPU_ARMV8M_SH_NONE
+    },
+	#endif
+    /* RW, ZI and stack as one region ------------------------------------------*/
+    {
+        0, /* will be updated before using */
+        (uint32_t)&REGION_NAME(Image$$, TFM_SP_META_PTR, $$ZI$$Base),
+        //(uint32_t)&REGION_NAME(Image$$, TFM_APP_RW_STACK_START, $$Base),
         (uint32_t)&REGION_NAME(Image$$, TFM_APP_RW_STACK_END, $$Base),
         MPU_ARMV8M_MAIR_ATTR_DATA_IDX,
         MPU_ARMV8M_XN_EXEC_NEVER,
         MPU_ARMV8M_AP_RW_PRIV_UNPRIV,
         MPU_ARMV8M_SH_NONE
     },
-#ifdef CONFIG_TFM_PARTITION_META
+ 
+ 	#if CONFIG_MPU_REGION_UPDATED
+    {
+        0, /* will be updated before using */
+        (uint32_t)&REGION_NAME(Image$$, ARM_LIB_STACK, $$ZI$$Base),
+        (uint32_t)&REGION_NAME(Image$$, ARM_LIB_STACK, $$ZI$$Limit),
+        MPU_ARMV8M_MAIR_ATTR_DATA_IDX,
+        MPU_ARMV8M_XN_EXEC_NEVER,
+        MPU_ARMV8M_AP_RW_PRIV_ONLY,
+        MPU_ARMV8M_SH_INNER
+    },
+    {
+        0, /* will be updated before using  ------------------------------------------*/
+        (uint32_t)&REGION_NAME(Image$$, ER_TFM_DATA, $$RW$$Base),
+        (uint32_t)&REGION_NAME(Image$$, ER_TFM_DATA, $$ZI$$Limit),
+        MPU_ARMV8M_MAIR_ATTR_DATA_IDX,
+        MPU_ARMV8M_XN_EXEC_NEVER,
+        MPU_ARMV8M_AP_RW_PRIV_UNPRIV,
+        MPU_ARMV8M_SH_INNER
+    },
+	#else
+#if 0//def CONFIG_TFM_PARTITION_META
     /* TFM partition metadata pointer region */
     {
         0, /* will be updated before using */
@@ -136,30 +179,36 @@ const struct mpu_armv8m_region_cfg_t region_cfg[] = {
         MPU_ARMV8M_MAIR_ATTR_DATA_IDX,
         MPU_ARMV8M_XN_EXEC_NEVER,
         MPU_ARMV8M_AP_RW_PRIV_UNPRIV,
-        MPU_ARMV8M_SH_NONE
-    }
+        MPU_ARMV8M_SH_INNER
+    },
+#endif
 #endif
 };
 #endif /* TFM_LVL == 3 */
 #endif /* CONFIG_TFM_ENABLE_MEMORY_PROTECT */
 
+void flush_all_dcache(void);
+void disable_scb_dcache(void);
+void enable_scb_dcache(void);
+
 enum tfm_hal_status_t tfm_hal_set_up_static_boundaries(void)
 {
     /* Set up isolation boundaries between SPE and NSPE */
-    sau_and_idau_cfg();
+    sau_and_idau_cfg(); //Never failed
     if (mpc_init_cfg() != ARM_DRIVER_OK) {
         return TFM_HAL_ERROR_GENERIC;
     }
-    ppc_init_cfg();
+    ppc_init_cfg(); //Never failed
 
     /* Set up static isolation boundaries inside SPE */
-	//FIXME berrywang
-#if 0//CONFIG_TFM_MPU
+#if CONFIG_TFM_MPU
 #ifdef CONFIG_TFM_ENABLE_MEMORY_PROTECT
     struct mpu_armv8m_region_cfg_t localcfg;
     int32_t i;
-
-    mpu_armv8m_clean(&dev_mpu_s);
+	
+	flush_all_dcache(); //Never failed
+	disable_scb_dcache(); //Never failed
+    mpu_armv8m_clean(&dev_mpu_s); //Never failed
 
 #if TFM_LVL == 3
     /*
@@ -202,6 +251,7 @@ enum tfm_hal_status_t tfm_hal_set_up_static_boundaries(void)
                           HARDFAULT_NMI_ENABLE) != MPU_ARMV8M_OK) {
         return TFM_HAL_ERROR_GENERIC;
     }
+	enable_scb_dcache(); //Never failed
 #endif /* CONFIG_TFM_ENABLE_MEMORY_PROTECT */
 #endif /* CONFIG_TFM_MPU */
 
@@ -302,7 +352,7 @@ enum tfm_hal_status_t tfm_hal_bind_boundaries(
             localcfg.attr_access = MPU_ARMV8M_AP_RW_PRIV_UNPRIV;
             localcfg.attr_sh = MPU_ARMV8M_SH_NONE;
             localcfg.attr_exec = MPU_ARMV8M_XN_EXEC_NEVER;
-            localcfg.region_nr = n_configured_regions++;
+            localcfg.region_nr = n_configured_regions ++;
 
             if (mpu_armv8m_region_enable(&dev_mpu_s, &localcfg)
                 != MPU_ARMV8M_OK) {

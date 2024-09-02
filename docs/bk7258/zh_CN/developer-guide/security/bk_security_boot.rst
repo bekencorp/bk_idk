@@ -9,14 +9,14 @@
 概述
 ----------------------
 
-BK7236 支持传统下载模式与安全启动模式。当 EFUSE BIT(3) 为 0 时为传统下载模式，为 1 时为安全启动模式。
+BK7258 支持传统下载模式与安全启动模式。当 EFUSE BIT(3) 为 0 时为传统下载模式，为 1 时为安全启动模式。
 
 .. figure:: picture/bl1_overview.svg
     :align: center
     :alt: 8                                                                                           
     :figclass: align-center
 
-如上图所示，BK7236 安全启动分两阶段。系统上电之后，固化在芯片中的 BL1 先对 BL2 验签，验签通过之后跳转到 BL2；
+如上图所示，BK7258 安全启动分两阶段。系统上电之后，固化在芯片中的 BL1 先对 BL2 验签，验签通过之后跳转到 BL2；
 然后 BL2 对其他所有程序进行验签。
 
 BL1 启动流程
@@ -54,7 +54,7 @@ BL1 启动流程
 BL2 启动流程
 ----------------------
 
-BK7236 BL2 为开源 MCUBOOT 1.9.0，因此验签流程保持与官方 MCUBOOT 一致。本节仅对 BK7236 配置特别点及
+BK7258 BL2 为开源 MCUBOOT 1.9.0，因此验签流程保持与官方 MCUBOOT 一致。本节仅对 BK7258 配置特别点及
 MCUBOOT 验签流程做概述，如果想了解 MCUBOOT 详细验签流程，或者 MCUBOOT 其他功能，如升级，防回
 滚等，可参考 `MCUBOOT 官网 <https://docs.mcuboot.com>`_。
 
@@ -72,7 +72,7 @@ FLASH 分区中，构建系统加签步骤为：
 
 .. note::
 
- BK7236 MCUBOOT 加签特别点是不能简单地合并两个 BIN 之后加签，必须先增加 padding，然后再
+ BK7258 MCUBOOT 加签特别点是不能简单地合并两个 BIN 之后加签，必须先增加 padding，然后再
  合并，这是因为需要考虑 FLASH CRC，增加 padding 的目的是确保 BIN 的起始地址落在 FLASH 的
  CRC 块对齐，且 BIN Vector Table 512 字节对齐上。 
 

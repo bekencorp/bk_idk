@@ -18,7 +18,7 @@
 #include "bt_os_adapter.h"
 #include "bluetooth_internal.h"
 #include <modules/pm.h>
-#if (CONFIG_BLE_AT_ENABLE) 
+#if (CONFIG_BLE_AT_ENABLE)
 #include "../include/private/bk_at_ble.h"
 #endif
 
@@ -33,6 +33,8 @@
 static uint8_t bluetooth_already_init = 0;
 
 extern int bk_bt_os_adapter_init(void);
+extern int bk_bt_feature_init(void);
+static beken_mutex_t bluetooth_mutex = NULL;
 
 bk_bluetooth_status_t bk_bluetooth_get_status(void)
 {
@@ -76,6 +78,12 @@ bt_err_t bk_bluetooth_init(void)
         return ret;
     }
 
+    if ((ret = bk_bt_feature_init()) != 0)
+    {
+        LOGE("%s initialize bt feature failed\r\n", __func__);
+        return ret;
+    }
+
     ret = bluetooth_controller_init();
     if (ret)
     {
@@ -98,12 +106,15 @@ bt_err_t bk_bluetooth_init(void)
 #if CONFIG_PM_SUPER_DEEP_SLEEP
     bk_pm_sleep_register_cb(PM_MODE_SUPER_DEEP_SLEEP, PM_DEV_ID_BTDM, &enter_conf_bt, NULL);
 #endif
-#if defined (CONFIG_BLE_AT_ENABLE) && !defined(CONFIG_BTDM_CONTROLLER_ONLY) && defined(CONFIG_BLE) 
-	extern void ble_at_cmd_init(void);
-	 	ble_at_cmd_init();
+#if defined (CONFIG_BLE_AT_ENABLE) && !defined(CONFIG_BTDM_CONTROLLER_ONLY) && defined(CONFIG_BLE)
+    extern void ble_at_cmd_init(void);
+    ble_at_cmd_init();
 #endif
+    if (bluetooth_mutex == NULL)
+    {
+        rtos_init_mutex(&bluetooth_mutex);
+    }
     bluetooth_already_init = 1;
-
     LOGI("%s ok\r\n", __func__);
     return ret;
 }
@@ -111,18 +122,20 @@ bt_err_t bk_bluetooth_init(void)
 bt_err_t bk_bluetooth_deinit(void)
 {
     bt_err_t ret;
-
+    rtos_lock_mutex(&bluetooth_mutex);
     if (!bluetooth_already_init)
     {
         LOGE("%s bluetooth already de-initialised\r\n", __func__);
+        rtos_unlock_mutex(&bluetooth_mutex);
         return 0;
     }
-
+    LOGI("%s start, %d \r\n", __func__, bluetooth_already_init);
 #if !CONFIG_BTDM_CONTROLLER_ONLY
     ret = bluetooth_host_deinit();
     if (ret)
     {
         LOGE("%s deinit host failed\r\n", __func__);
+        rtos_unlock_mutex(&bluetooth_mutex);
         return ret;
     }
 #endif
@@ -131,6 +144,7 @@ bt_err_t bk_bluetooth_deinit(void)
     if (ret)
     {
         LOGE("%s deinit controller failed\r\n", __func__);
+        rtos_unlock_mutex(&bluetooth_mutex);
         return ret;
     }
 
@@ -141,7 +155,8 @@ bt_err_t bk_bluetooth_deinit(void)
 
     bluetooth_already_init = 0;
 
-    LOGI("%s ok\r\n", __func__);
+    LOGI("%s ok, %d \r\n", __func__, bluetooth_already_init);
+    rtos_unlock_mutex(&bluetooth_mutex);
     return ret;
 }
 

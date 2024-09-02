@@ -22,6 +22,7 @@ extern "C" {
 
 #define JPEG_CRC_SIZE     (5)
 #define H264_GOP_FRAME_CNT    (CONFIG_H264_P_FRAME_CNT + 1)
+#define H265_GOP_FRAME_CNT    (H264_GOP_FRAME_CNT)
 
 typedef enum {
 	YUV_FORMAT_YUYV = 0,

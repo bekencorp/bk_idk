@@ -15,24 +15,28 @@ enum
     BT_ETHERMIND_API_REQ_SUBMSG_L2CAP_CLOSE,
 };
 
-typedef struct{
+typedef struct
+{
     uint16_t sec_mask;
     uint16_t remote_psm;
     uint8_t peer_addr[6];
-}bt_ethermind_l2cap_conn_msg_t;
+} bt_ethermind_l2cap_conn_msg_t;
 
-typedef struct{
+typedef struct
+{
     uint16_t sec_mask;
     uint16_t local_psm;
-}bt_ethermind_l2cap_start_srv_msg_t;
+} bt_ethermind_l2cap_start_srv_msg_t;
 
-typedef struct{
+typedef struct
+{
     uint16_t local_psm;
-}bt_ethermind_l2cap_stop_srv_msg_t;
+} bt_ethermind_l2cap_stop_srv_msg_t;
 
-typedef struct{
+typedef struct
+{
     uint16_t lcid;
-}bt_ethermind_l2cap_close_msg_t;
+} bt_ethermind_l2cap_close_msg_t;
 
 #define BT_L2CAP_INVALID_PSM 0x00
 

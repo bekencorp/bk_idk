@@ -372,6 +372,7 @@ uint32_t sys_drv_aud_mic2_gain_set(uint32_t value);
 uint32_t sys_drv_aud_mic1_single_en(uint32_t value);
 uint32_t sys_drv_aud_mic2_single_en(uint32_t value);
 uint32_t sys_drv_aud_dacg_set(uint32_t value);
+uint32_t sys_drv_aud_dacg_get(void);
 uint32_t sys_drv_aud_int_en(uint32_t value);
 uint32_t sys_drv_sbc_int_en(uint32_t value);
 uint32_t sys_drv_aud_power_en(uint32_t value);
@@ -380,6 +381,8 @@ uint32_t sys_drv_aud_adcbias_en(uint32_t value);
 uint32_t sys_drv_aud_micbias_en(uint32_t value);
 uint32_t sys_drv_aud_dac_dcoc_en(uint32_t value);
 uint32_t sys_drv_aud_dac_idac_en(uint32_t value);
+uint32_t sys_drv_aud_dac_bypass_dwa_en(uint32_t value);
+uint32_t sys_drv_aud_dac_dacmute_en(uint32_t value);
 /**  Audio End  **/
 
 /**  FFT Start  **/
@@ -514,6 +517,8 @@ void sys_drv_set_ana_cb_cal_manu(uint32_t value);
 void sys_drv_set_ana_cb_cal_trig(uint32_t value);
 UINT32 sys_drv_get_ana_cb_cal_manu_val(void);
 void sys_drv_set_ana_cb_cal_manu_val(uint32_t value);
+void sys_drv_set_ana_reg11_apfms(uint32_t value);
+void sys_drv_set_ana_reg12_dpfms(uint32_t value);
 void sys_drv_set_ana_vlsel_ldodig(uint32_t value);
 void sys_drv_set_ana_vhsel_ldodig(uint32_t value);
 void sys_drv_set_ana_vctrl_sysldo(uint32_t value);

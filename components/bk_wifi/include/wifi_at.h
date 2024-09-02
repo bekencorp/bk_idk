@@ -88,7 +88,7 @@
 #endif
 
 
-#define AT_WLAN_SCAN_TIMEOUT_MS          (7000)
+#define AT_WLAN_SCAN_TIMEOUT_MS          (5000)
 #define AT_WLAN_STA_TIMEOUT_MS          (20000)
 #define AT_WLAN_SAP_TIMEOUT_MS          (4000)
 
@@ -112,9 +112,21 @@ typedef enum{
 
 }AT_WLAN_EVT_T;
 
+typedef enum {
+	AT_WLAN_SCAN_NO_USE = 0,
+	AT_WLAN_SCAN_DUR = 1,
+	AT_WLAN_SCAN_TYPE,
+	AT_WLAN_SCAN_CNT,
+	AT_WLAN_SCAN_MAX,
+}AT_WLAN_SCAN_ATTR_T;
+
+
+
+
 static inline const char *at_wlan_error_code_string(wifi_err_reason_t type)
 {
 	switch(type){		
+		BK_AT_WLAN_ERROR_CASE(WIFI_REASON_RESERVED);
 		BK_AT_WLAN_ERROR_CASE(WIFI_REASON_UNSPECIFIED);
 		BK_AT_WLAN_ERROR_CASE(WIFI_REASON_PREV_AUTH_NOT_VALID);
 		BK_AT_WLAN_ERROR_CASE(WIFI_REASON_DEAUTH_LEAVING);
@@ -187,6 +199,7 @@ static inline const char *at_wlan_error_code_string(wifi_err_reason_t type)
 }
 
 typedef struct{
+	int  scan_time; //use for 120ms scan
 	unsigned dhcp : 1;
 	unsigned station_status : 1;
 	unsigned reserved1 : 1;
@@ -198,6 +211,7 @@ typedef struct{
 	unsigned reserved4 : 1;
 	int      disconenct_reason;
 	bool     local_generated;
+	int   hpad_sta_cnt;
 	unsigned softap_status : 1;
 	unsigned reserved5 : 1;
 	unsigned reserved6 : 1;
@@ -223,7 +237,8 @@ typedef struct
 	beken_semaphore_t at_wlan_scan_print_sema;
 	beken_semaphore_t at_wlan_scan_sema;
 	beken_semaphore_t sta_protection;//test
-	beken_semaphore_t sap_protection;//test	
+	beken_semaphore_t sap_protection;//test
+
 }at_wlan_cfg_t;
 
 

@@ -34,6 +34,7 @@ void cmd_rfcali_show_data(char *pcWriteBuffer, int xWriteBufferLen, int argc, ch
 void cmd_rfcali_cfg_to_flash(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv);
 void cmd_cali(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv);
 void cmd_auto_pwr_change_by_rssi(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv);
+void cmd_rfcali_flag_in_otp2(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv);
 
 #if CONFIG_PSRAM
 void cmd_psram(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv);

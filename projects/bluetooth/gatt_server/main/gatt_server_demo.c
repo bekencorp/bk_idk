@@ -153,6 +153,7 @@ static void ble_gatt_cmd_cb(ble_cmd_t cmd, ble_cmd_param_t *param)
         case BLE_CONN_READ_PHY:
         case BLE_CONN_SET_PHY:
         case BLE_CONN_UPDATE_MTU:
+        case BLE_SET_ADV_RANDOM_ADDR:
             if (gatt_sema != NULL)
                 rtos_set_semaphore( &gatt_sema );
             break;
@@ -162,6 +163,7 @@ static void ble_gatt_cmd_cb(ble_cmd_t cmd, ble_cmd_param_t *param)
 
 }
 
+static bk_ble_key_t s_ble_enc_key;
 static void ble_gatts_notice_cb(ble_notice_t notice, void *param)
 {
     switch (notice) {
@@ -345,6 +347,9 @@ static void ble_gatts_notice_cb(ble_notice_t notice, void *param)
     }
     case BLE_5_PAIRING_REQ:
         bk_printf("BLE_5_PAIRING_REQ\r\n");
+        ble_smp_ind_t *s_ind = (ble_smp_ind_t *)param;
+        bk_ble_sec_send_auth_mode(s_ind->conn_idx, GAP_AUTH_REQ_NO_MITM_BOND, BK_BLE_GAP_IO_CAP_NO_INPUT_NO_OUTPUT,
+            GAP_SEC1_NOAUTH_PAIR_ENC, GAP_OOB_AUTH_DATA_NOT_PRESENT);
         break;
 
     case BLE_5_PARING_PASSKEY_REQ:
@@ -358,6 +363,56 @@ static void ble_gatts_notice_cb(ble_notice_t notice, void *param)
     case BLE_5_PAIRING_SUCCEED:
         bk_printf("BLE_5_PAIRING_SUCCEED\r\n");
         break;
+
+    case BLE_5_KEY_EVENT:
+    {
+        BLEGATTS_LOGI("BLE_5_KEY_EVENT\r\n");
+        s_ble_enc_key = *((bk_ble_key_t*)param);
+        break;
+    }
+
+    case BLE_5_BOND_INFO_REQ_EVENT:
+    {
+        BLEGATTS_LOGI("BLE_5_BOND_INFO_REQ_EVENT\r\n");
+        bk_ble_bond_info_req_t *bond_info_req = (bk_ble_bond_info_req_t*)param;
+        if ((bond_info_req->key.peer_addr_type == s_ble_enc_key.peer_addr_type)
+            && (!os_memcmp(bond_info_req->key.peer_addr, s_ble_enc_key.peer_addr, 6)))
+        {
+            bond_info_req->key_found = 1;
+            bond_info_req->key = s_ble_enc_key;
+        }
+        break;
+    }
+
+    case BLE_5_GAP_CMD_CMP_EVENT:
+    {
+        ble_cmd_cmp_evt_t *event = (ble_cmd_cmp_evt_t *)param;
+
+        switch(event->cmd) {
+        case BLE_CONN_ENCRYPT:
+            {
+                BLEGATTS_LOGI("BLE_5_GAP_CMD_CMP_EVENT(BLE_CONN_ENCRYPT) , status %x\r\n",event->status);
+                if (event->status)
+                {
+                    os_memset(&s_ble_enc_key, 0 ,sizeof(s_ble_enc_key));
+                    bk_ble_disconnect(event->conn_idx);
+                }
+            }
+            break;
+
+        default:
+            break;
+        }
+
+        break;
+    }
+
+    case BLE_5_PAIRING_FAILED:
+    {
+        BLEGATTS_LOGI("BLE_5_PAIRING_FAILED\r\n");
+        os_memset(&s_ble_enc_key, 0 ,sizeof(s_ble_enc_key));
+        break;
+    }
     default:
         break;
     }
@@ -460,7 +515,13 @@ void gatt_server_demo_init()
 	adv_param.chnl_map = ADV_ALL_CHNLS;
 	adv_param.adv_intv_min = BLE_GATTS_ADV_INTERVAL_MIN;
 	adv_param.adv_intv_max = BLE_GATTS_ADV_INTERVAL_MAX;
-	adv_param.own_addr_type = OWN_ADDR_TYPE_PUBLIC_OR_STATIC_ADDR;
+
+#if 1
+	adv_param.own_addr_type = OWN_ADDR_TYPE_PUBLIC_ADDR;
+#else
+	adv_param.own_addr_type = OWN_ADDR_TYPE_RANDOM_ADDR;
+#endif
+
 	adv_param.adv_type = ADV_TYPE_LEGACY;
 	adv_param.adv_prop = ADV_PROP_CONNECTABLE_BIT | ADV_PROP_SCANNABLE_BIT;
 	adv_param.prim_phy = INIT_PHY_TYPE_LE_1M;
@@ -506,6 +567,29 @@ void gatt_server_demo_init()
 	{
 		BLEGATTS_LOGI("set adv data success\n");
 	}
+
+#if 0
+    const uint8_t tmp_addr[6] = {0, 1, 2, 0x22, 0x11, 0xca};
+    ret = bk_ble_set_adv_random_addr(actv_idx, (uint8_t *)tmp_addr, ble_gatt_cmd_cb);
+
+    if (ret != BK_ERR_BLE_SUCCESS)
+    {
+        BLEGATTS_LOGE("set adv random addr failed %d\n", ret);
+        goto error;
+    }
+
+    ret = rtos_get_semaphore(&gatt_sema, GATT_SYNC_CMD_TIMEOUT_MS);
+
+    if (ret != BK_OK)
+    {
+        BLEGATTS_LOGE("wait adv random addr semaphore failed at %d, %d\n", ret, __LINE__);
+        goto error;
+    }
+    else
+    {
+        BLEGATTS_LOGI("set adv random addr success\n");
+    }
+#endif
 
 	/* sart adv */
 	ret = bk_ble_start_advertising(actv_idx, 0, ble_gatt_cmd_cb);
@@ -594,7 +678,7 @@ void gatt_server_command(char *pcWriteBuffer, int xWriteBufferLen, int argc, cha
             BLEGATTS_LOGE("ble is advertising or create a new ble adv\n");
             goto error;
         }
-        
+
         if (en)
         {
             err = bk_ble_start_advertising(actv_idx, 0, ble_gatt_cmd_cb);
@@ -619,6 +703,16 @@ void gatt_server_command(char *pcWriteBuffer, int xWriteBufferLen, int argc, cha
     	{
     		BLEGATTS_LOGI("sart adv success\n");
     	}
+    }
+    else if(strcmp(argv [ 1 ], "bond") == 0)
+    {
+        if(gatt_conn_ind == INVALID_HANDLE)
+        {
+            BLEGATTS_LOGE("please connect first \n");
+            goto error;
+        }
+        bk_ble_create_bond(gatt_conn_ind, GAP_AUTH_REQ_NO_MITM_BOND, BK_BLE_GAP_IO_CAP_NO_INPUT_NO_OUTPUT,
+                                GAP_SEC1_NOAUTH_PAIR_ENC, GAP_OOB_AUTH_DATA_NOT_PRESENT);;
     }else
     {
         goto error;

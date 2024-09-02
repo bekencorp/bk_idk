@@ -374,6 +374,23 @@ bt_err_t bk_bt_gap_set_page_scan_activity(uint16_t interval, uint16_t window);
  */
 bt_err_t bk_bt_gap_authentication_request(uint8_t *addr);
 
+/**
+ * @brief           Set auto enter sniff policy.
+ *                  bk_bt_gap_cb_t will be called with BK_BT_GAP_SET_AUTO_SNIFF_CMPL_EVT after service discovery ends.
+ *
+ * @param[in]       remote_bda: The remote device's address
+ * @param[in]       sec: How long time (second) enter sniff once no ACL data send or recv. When equal 0, will disable auto enter sniff.
+ * @param[in]       config: Sniff config. when is NULL, last config will be:
+ *                  max_interval: 500 msec
+ *                  min interval: 250 msec
+ *                  attempt: 5 msec
+ *                  timeout: 1.25 msec
+ *
+ * @return
+ *                  - BK_OK : Succeed
+ *                  - BK_FAIL: others
+ */
+bk_err_t bk_bt_gap_set_auto_sniff_policy(bk_bd_addr_t remote_bda, uint32_t sec, bk_bt_gap_sniff_config *config);
 
 /**
  *

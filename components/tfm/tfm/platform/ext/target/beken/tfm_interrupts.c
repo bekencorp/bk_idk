@@ -13,13 +13,16 @@
 #include "tfm_peripherals_def.h"
 #include "ffm/interrupt.h"
 #include "load/interrupt_defs.h"
+#include <components/log.h>
+
+#define TAG "int"
 
 static struct irq_t timer0_irq = {0};
 
 void bfhfnmi_handler(void)
 {
 	uint32_t *psp_ns_pointer = (uint32_t  *)__TZ_get_PSP_NS();
-	printf("\r\n[SPE]psp_ns_pointer:0x%x\r\n", psp_ns_pointer);
+	BK_LOGE(TAG, "\r\n[SPE]psp_ns_pointer:0x%x\r\n", psp_ns_pointer);
 
 	printf_word_buf_hex(psp_ns_pointer, 128);
 	while(1);
@@ -27,49 +30,49 @@ void bfhfnmi_handler(void)
 
 void NMI_Handler(void)
 {
-	printf("NMI\r\n");
+	BK_LOGE(TAG, "NMI\r\n");
 	bfhfnmi_handler();
 }
 
 void HardFault_Handler(void)
 {
-	printf("HF\r\n");
+	BK_LOGE(TAG, "HF\r\n");
 	bfhfnmi_handler();
 }
 
 void MemManage_Handler(void)
 {
-	printf("MM\r\n");
+	BK_LOGE(TAG, "MM\r\n");
 	bfhfnmi_handler();
 }
 
 void BusFault_Handler(void)
 {
-	printf("BF\r\n");
+	BK_LOGE(TAG, "BF\r\n");
 	bfhfnmi_handler();
 }
 
 void UsageFault_Handler(void)
 {
-	printf("UF\r\n");
+	BK_LOGE(TAG, "UF\r\n");
 	bfhfnmi_handler();
 }
 
 void SecureFault_Handler(void)
 {
-	printf("SF\r\n");
+	BK_LOGE(TAG, "SF\r\n");
 	bfhfnmi_handler();
 }
 
 void UART1_Handler(void)
 {
-	printf("UART1 isr\r\n");
+	BK_LOGE(TAG, "UART1 isr\r\n");
 	while(1);
 }
 
 void GPIO_Handler(void)
 {
-	printf("GPIO s isr\r\n");
+	BK_LOGE(TAG, "GPIO s isr\r\n");
 	while(1);
 }
 
@@ -84,6 +87,7 @@ enum tfm_hal_status_t tfm_timer0_irq_init(void *p_pt,
     timer0_irq.p_ildi = p_ildi;
     timer0_irq.p_pt = p_pt;
 
+	NVIC_SetPriority(SVCall_IRQn, 1);
     NVIC_SetPriority(TFM_TIMER0_IRQ, DEFAULT_IRQ_PRIORITY);
     NVIC_ClearTargetState(TFM_TIMER0_IRQ);
     NVIC_DisableIRQ(TFM_TIMER0_IRQ);

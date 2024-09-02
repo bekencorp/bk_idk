@@ -31,6 +31,7 @@ void uart1_isr(void);
 void uart2_isr(void);
 void print_hex_dump(const char *prefix, const void *b, int len);
 uint32_t uart_get_length_in_buffer(uart_id_t id);
+uint32_t uart_id_to_pm_uart_id(uint32_t id);
 bk_err_t uart_write_ready(uart_id_t id);
 bk_err_t uart_write_byte(uart_id_t id, uint8_t data);
 void uart_write_byte_for_ate(uart_id_t id, uint8_t *data, uint8_t cnt);

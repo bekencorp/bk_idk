@@ -113,7 +113,7 @@ typedef struct {
 } pwm_group_config_t;
 
 typedef struct {
-	pwm_chan_t chan;         /**< PWM channel */
+	pwm_chan_t chan;   /**< PWM channel */
 	uint32_t duty_cycle;     /**< PWM period cycle */
 } pwm_chan_duty_config_t;
 

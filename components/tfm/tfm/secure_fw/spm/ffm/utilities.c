@@ -11,6 +11,11 @@
 
 void tfm_core_panic(void)
 {
+#if CONFIG_PANIC_DEAD_LOOP
+	volatile uint32_t panic_loop = 1;
+	printf("core panic\r\n");
+	while(panic_loop);
+#else
     fih_delay();
 
 #ifdef CONFIG_TFM_HALT_ON_CORE_PANIC
@@ -45,4 +50,5 @@ void tfm_core_panic(void)
 #endif
 
 #endif /* CONFIG_TFM_HALT_ON_CORE_PANIC */
+#endif
 }

@@ -73,8 +73,8 @@ ARM_MPU_Region_t mpu_regions[] = {
         shared memory(smem4) 0x2808 0000-----------0x2809 FFFF   0x3808 0000-----------0x3809 FFFF 
      */
     #if CONFIG_CACHE_ENABLE
-    { ARM_MPU_RBAR(0x28000000UL, ARM_MPU_SH_NON, 0, 1, 0),
-      ARM_MPU_RLAR(0x3FFFFFE0UL, 0) },
+        { ARM_MPU_RBAR(0x28000000UL, ARM_MPU_SH_NON, 0, 1, 0),
+          ARM_MPU_RLAR(0x3FFFFFE0UL, 0) },
     #else
     { ARM_MPU_RBAR(0x28000000UL, ARM_MPU_SH_INNER, 0, 1, 0),
       ARM_MPU_RLAR(0x3FFFFFE0UL, 1) },

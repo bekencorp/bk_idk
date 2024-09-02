@@ -79,6 +79,17 @@
 
     向系统中投应用程序的票。
 
+
+GPIO 在进入低压睡眠或软件重启过程中保持状态
+--------------------------------------------------------------
+- 1. 打开WDT 不可屏蔽中断宏定义CONFIG_NMI_WDT_EN(在deconfig文件中配置，CONFIG_NMI_WDT_EN=y)
+
+- 2. 修改文件aon_pm_hal.c,将AON_PMU_REG2_WDT_RST_DEVS 改为0x1F3（约在Line：198）, 关闭GPIO和WDT 寄存器重启功能。
+	reboot 不进行掉电。
+
+- 3. 初始化GPIO驱动也不掉电，增加跳过保持输出的GPIO 代码，修改文件gpio_hal.c 约Line：325
+	例如 GPIO20 保持输出：if(default_map[i].gpio_id == GPIO_20) continue;
+
 备注：
 
  - 1. BT和WIFI的票，BT和WIFI模块内部进入睡眠后自己投上，SDK内部做好，应用程序不用关注

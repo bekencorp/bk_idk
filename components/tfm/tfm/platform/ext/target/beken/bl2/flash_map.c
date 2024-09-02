@@ -9,6 +9,7 @@
 #include "flash_map/flash_map.h"
 #include "target.h"
 #include "Driver_Flash.h"
+#include "flash_partition.h"
 
 /* When undefined FLASH_DEV_NAME_0 or FLASH_DEVICE_ID_0 , default */
 #if !defined(FLASH_DEV_NAME_0) || !defined(FLASH_DEVICE_ID_0)
@@ -53,110 +54,54 @@ extern ARM_DRIVER_FLASH FLASH_DEV_NAME_SCRATCH;
 
 struct flash_area flash_map[];
 
-#define CONFIG_PPRO_OFFSET 1024
-
 uint32_t get_flash_map_offset(uint32_t index)
 {
-    return flash_map[index].fa_off;
+	return flash_map[index].fa_off;
 }
 
 uint32_t get_flash_map_size(uint32_t index)
 {
-    return flash_map[index].fa_size;
+	return flash_map[index].fa_size;
 }
 
-int is_alpha(char c)
+int flash_map_init(void)
 {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
-}
+	uint32_t size, id;
 
-/*piece 4 uint8_t*/
-uint32_t piece_address(uint8_t *array,uint32_t index)
-{
-    return ((uint32_t)(array[index]) << 24 | (uint32_t)(array[index+1])  << 16 | (uint32_t)(array[index+2])  << 8 | (uint32_t)((array[index+3])));
-}
+	size = partition_get_phy_size(PARTITION_PRIMARY_ALL);
+	flash_map[0].fa_off = partition_get_phy_offset(PARTITION_PRIMARY_ALL);
+	flash_map[0].fa_size = FLASH_PHY2VIRTUAL(size);
+	flash_map[0].fa_size &= ~(0xFFF);
 
-void load_partition_from_flash()
-{
-    uint8_t* buf = (uint8_t*)malloc(40*sizeof(uint8_t));
-    if(buf == NULL){
-        printf("memory malloc fails.\r\n");
-        return ;
-    }
-
-    uint32_t i;
-    char name[24];
-
-    uint32_t partition_start = CONFIG_PARTITION_PHY_PARTITION_OFFSET + CONFIG_PPRO_OFFSET; // 1024bytes for ppro
-    for(i=0;i<PARTITION_AMOUNT;++i){
-        bk_flash_read_bytes(partition_start+40*i,buf,40);
-        if(is_alpha(buf[0]) == 0){ // name should start A~Z,a~z
-            break;
-        } 
-
-        int j;
-        for(j=0;j<24;++j){
-            if(buf[j] == 0xFF){
-                break;
-            }
-            name[j] = buf[j];
-        }
-        name[j] = '\0';
-        if(strcmp("primary_all",name) == 0){
-            flash_map[0].fa_off    = piece_address(buf,24);
-            flash_map[0].fa_size   = piece_address(buf,28);
 #if CONFIG_OTA_OVERWRITE
-        }else if(strcmp("ota",name) == 0) {
-            flash_map[1].fa_off    = piece_address(buf,24);
-            flash_map[1].fa_size   = piece_address(buf,28);
-        }
+	id = PARTITION_OTA;
 #else
-        }else if(strcmp("secondary_all",name) == 0) {
-            flash_map[1].fa_off    = piece_address(buf,24);
-            flash_map[1].fa_size   = piece_address(buf,28);
-        }
-#if defined(MCUBOOT_SWAP_USING_SCRATCH)
-        else if(strcmp("scratch",name) == 0) {
-            flash_map[2].fa_off    = piece_address(buf,24);
-            flash_map[2].fa_size   = piece_address(buf,28);
-        }
+	id = PARTITION_SECONDARY_ALL;
 #endif
+	flash_map[1].fa_off = partition_get_phy_offset(id);
+	flash_map[1].fa_size = partition_get_phy_size(id);
+#if CONFIG_DIRECT_XIP
+	size = partition_get_phy_size(PARTITION_SECONDARY_ALL);
+	flash_map[1].fa_size = FLASH_PHY2VIRTUAL(size);
+	flash_map[1].fa_size &= ~(0xFFF);
+	uint32_t primary_vir_start = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(flash_map[0].fa_off));
+	uint32_t secondary_vir_start = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(flash_map[1].fa_off));
+	flash_set_xip_offset(primary_vir_start,secondary_vir_start,flash_map[0].fa_size);
 #endif
-    }
-    free(buf);
+	return 0;
 }
 
 struct flash_area flash_map[] = {
-#if CONFIG_OTA_OVERWRITE
-    {
-        .fa_id = FLASH_AREA_PRIMARY_ALL_ID,
-        .fa_device_id = FLASH_DEVICE_ID,
-        .fa_driver = &FLASH_DEV_NAME,
-    },
-    {
-        .fa_id = FLASH_AREA_SECONDARY_ALL_ID,
-        .fa_device_id = FLASH_DEVICE_ID,
-        .fa_driver = &FLASH_DEV_NAME,
-    },
-#else
-    {
-        .fa_id = FLASH_AREA_PRIMARY_ALL_ID,
-        .fa_device_id = FLASH_DEVICE_ID,
-        .fa_driver = &FLASH_DEV_NAME,
-    },
-    {
-        .fa_id = FLASH_AREA_SECONDARY_ALL_ID,
-        .fa_device_id = FLASH_DEVICE_ID,
-        .fa_driver = &FLASH_DEV_NAME,
-    },
-#endif
-#if defined(MCUBOOT_SWAP_USING_SCRATCH)
-    {
-        .fa_id = FLASH_AREA_SCRATCH_ID,
-        .fa_device_id = FLASH_DEVICE_ID_SCRATCH,
-        .fa_driver = &FLASH_DEV_NAME_SCRATCH,
-    },
-#endif
+	{
+		.fa_id = FLASH_AREA_PRIMARY_ALL_ID,
+		.fa_device_id = FLASH_DEVICE_ID,
+		.fa_driver = &FLASH_DEV_NAME,
+	},
+	{
+		.fa_id = FLASH_AREA_SECONDARY_ALL_ID,
+		.fa_device_id = FLASH_DEVICE_ID,
+		.fa_driver = &FLASH_DEV_NAME,
+	}
 };
 
 const int flash_map_entry_num = ARRAY_SIZE(flash_map);

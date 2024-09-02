@@ -61,7 +61,7 @@ Introduction to SMP
 
   - The Armino platform FreeRTOS SMP architecture uses the kernel code path: components/os_source/freertos_smp
   - Symmetric Multiprocessing (SMP) is a common architecture when it comes to multiprocessor systems.
-  - BK7258 supports CM33 dual-core FreeRTOS SMP architecture
+  - BK7258 supports FreeRTOS SMP architecture
   - The following is a brief introduction to the basic concepts of SMP, the purpose and advantages of implementing SMP in FreeRTOS:
 
 Basic concepts of Symmetric Multiprocessing (SMP):
@@ -113,7 +113,7 @@ Resource synchronization in FreeRTOS SMP architecture:
      SMP architecture shared resource synchronization
 
 1. **Shared resource synchronization between Tasks**:
-   
+
      - Operating system semaphore (Semaphore)
      - Operating system synchronization lock (Mutex)
      - Off scheduling
@@ -195,7 +195,7 @@ In FreeRTOS SMP architecture project configuration:
 
      CONFIG_CPU_CNT=2
      CONFIG_SOC_SMP=y
-     CONFIG_SOC_BK7236_SMP_TEMP=y
+     CONFIG_SOC_BK7258_SMP_TEMP=y
 
      CONFIG_FREERTOS_SMP=y
      CONFIG_FREERTOS_SMP_TEMP=y

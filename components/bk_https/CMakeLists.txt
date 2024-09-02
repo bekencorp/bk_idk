@@ -14,4 +14,5 @@ endif()
 armino_component_register(SRCS "${srcs}"
 	INCLUDE_DIRS "${incs}"
 	REQUIRES mbedtls bk_wifi bk_common lwip_intf_v2_1
+	PRIV_REQUIRES psa_mbedtls
 	)

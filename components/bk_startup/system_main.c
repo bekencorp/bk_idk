@@ -185,6 +185,8 @@ void reset_cpu1_core(uint32 offset, uint32_t start_flag)
 	#endif
 }
 
+extern void mb_ipc_reset_notify(u32 power_on);
+
 void start_cpu1_core(void)
 {
 	uint32  addr = get_partition_addr(1);
@@ -193,18 +195,13 @@ void start_cpu1_core(void)
 #else
 	reset_cpu1_core(addr, 1);
 #endif
+	mb_ipc_reset_notify(1);
 }
 
 void stop_cpu1_core(void)
 {
-#if 0//CONFIG_SYS_CPU0
-	int ret = 0;
-	ret = ipc_send_stop_cpu1_send_notifications();
-	if(ret != BK_OK) {
-		os_printf("ERROR: ipc send stop_cpu1 notifications fail.\r\n");
-	}
-#endif
 	reset_cpu1_core(0, 0);
+	mb_ipc_reset_notify(0);
 }
 
 void reset_cpu2_core(uint32 offset, uint32_t start_flag)
@@ -437,6 +434,10 @@ void entry_main(void)
 	uint32_t trace_size = uiTraceGetTraceBufferSize();
 
 	rtos_regist_plat_dump_hook(trace_addr, trace_size);
+#endif
+
+#if CONFIG_MAILBOX
+	ipc_init();
 #endif
 
 #if CONFIG_SAVE_BOOT_TIME_POINT

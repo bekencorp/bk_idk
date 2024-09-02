@@ -34,11 +34,18 @@ uint32_t rtos_get_time_diff(beken_time_t cur_os_time) {
 		return 0;
 	}
 
-	if (diff_time + base_os_time < cur_os_time) {
-		return 0;
+	if(cur_os_time >= base_os_time) {
+		if (diff_time + base_os_time < cur_os_time) {
+			return 0;
+		}
+		diff_ms = (uint32_t)(diff_time + base_os_time - cur_os_time);
+	} else {
+		uint64_t cur_os_time_64 = (0x100000000U + cur_os_time);
+		if((base_os_time + diff_time) < cur_os_time_64){
+			return 0;
+		}
+		diff_ms = (uint32_t)((base_os_time + diff_time) - cur_os_time_64);
 	}
-
-	diff_ms = (uint32_t)(diff_time + base_os_time - cur_os_time);
 
 	if (diff_ms > 20000) {
 		BK_LOGI(TAG, "aon_rtc diff_ms: %dms.\r\n", diff_ms);

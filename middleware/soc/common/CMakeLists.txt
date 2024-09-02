@@ -172,12 +172,10 @@ if(CONFIG_SDMADC)
 	)
 endif()
 
-if(CONFIG_OTP)
-if (CONFIG_SOC_BK7236XX OR CONFIG_SOC_BK7239XX OR CONFIG_SOC_BK7286XX)
+if(CONFIG_OTP_V1)
 	list(APPEND srcs
 		"hal/otp_hal.c"
 	)
-endif()
 endif()
 
 if(CONFIG_CKMN)
@@ -223,4 +221,4 @@ if(CONFIG_SLCD)
 	)
 endif()
 
-armino_component_register(SRCS "${srcs}" INCLUDE_DIRS "${incs}" REQUIRES ${target} tfm)
+armino_component_register(SRCS "${srcs}" INCLUDE_DIRS "${incs}" REQUIRES ${target} PRIV_REQUIRES tfm)

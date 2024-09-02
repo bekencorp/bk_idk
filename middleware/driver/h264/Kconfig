@@ -13,6 +13,12 @@ menu "H264_CONFIG"
 		default y
 
 	config H264_ADD_SELF_DEFINE_SEI
+		depends on H264
 		bool "Enable function add sei nalu for self define, contain frame information"
-		default n
+		default y
+
+	config H264_P_FRAME_CNT
+		int "config h264 encode one I frame then output H264_P_FRAME_CNT p frame"
+		range 0 30
+		default 5
 endmenu

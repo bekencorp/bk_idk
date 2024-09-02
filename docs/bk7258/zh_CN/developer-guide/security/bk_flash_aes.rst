@@ -8,7 +8,7 @@ FLASH AES 加密
     :alt: 8                                                                                           
     :figclass: align-center
 
-如上图所示，BK7236 FLASH 提供了两中访问接口：数据口与指令口。为确保指令的安全性，FLASH 指令口访问提供了
+如上图所示，BK7258 FLASH 提供了两中访问接口：数据口与指令口。为确保指令的安全性，FLASH 指令口访问提供了
 AES 加密机制。当经由 FLASH 指令口写数据时，FLASH 控制器会使用存放在 OTP 中的 AES KEY 自动对
 写入的数据加密；当通过 FLASH 指令口读取数据时，FLASH 控制器会使用 AES KEY 对读出的数据进行解密。
 
@@ -30,5 +30,5 @@ AES 加密机制。当经由 FLASH 指令口写数据时，FLASH 控制器会使
 
 .. important::
 
- BK7236 暂不支持自动生成随机 FLASH AES KEY，需要用户手动配置 AES KEY，为确保存放在
+ BK7258 暂不支持自动生成随机 FLASH AES KEY，需要用户手动配置 AES KEY，为确保存放在
  FLASH 中指令安全，您需要妥善保管好您的 FLASH AES KEY。

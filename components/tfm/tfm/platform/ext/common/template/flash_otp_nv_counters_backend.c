@@ -16,6 +16,7 @@
 #include "tfm_plat_defs.h"
 #include "Driver_Flash.h"
 #include "flash_layout.h"
+#include "flash_partition.h"
 
 #include <string.h>
 
@@ -73,20 +74,6 @@ static enum tfm_plat_err_t make_backup(void);
 #endif
 
 /* Compilation time checks to be sure the defines are well defined */
-#ifndef TFM_OTP_NV_COUNTERS_AREA_ADDR
-#error "TFM_OTP_NV_COUNTERS_AREA_ADDR must be defined in flash_layout.h"
-#endif
-
-#if defined(OTP_WRITEABLE)
-    #ifndef TFM_OTP_NV_COUNTERS_BACKUP_AREA_ADDR
-    #error "TFM_OTP_NV_COUNTERS_BACKUP_AREA_ADDR must be defined in flash_layout.h"
-    #endif
-#endif
-
-#ifndef TFM_OTP_NV_COUNTERS_AREA_SIZE
-#error "TFM_OTP_NV_COUNTERS_AREA_SIZE must be defined in flash_layout.h"
-#endif
-
 #if defined(OTP_WRITEABLE)
     #ifndef TFM_OTP_NV_COUNTERS_SECTOR_SIZE
     #error "TFM_OTP_NV_COUNTERS_SECTOR_SIZE must be defined in flash_layout.h"
@@ -119,6 +106,22 @@ static enum tfm_plat_err_t make_backup(void);
 
 static uint8_t block[OTP_NV_COUNTERS_WRITE_BLOCK_SIZE];
 
+static uint32_t get_otp_nv_counters_area_addr(void)
+{
+	return partition_get_phy_offset(PARTITION_OTP_NV);
+}
+
+static uint32_t get_otp_nv_counters_backup_area_addr(void)
+{
+	return partition_get_phy_offset(PARTITION_OTP_NV) + partition_get_phy_size(PARTITION_OTP_NV);
+}
+
+static uint32_t get_otp_nv_counters_read_size(void)
+{
+	uint32_t size = partition_get_phy_size(PARTITION_OTP_NV);
+	return (size >> 1);
+}
+
 /* Import the CMSIS flash device driver */
 extern ARM_DRIVER_FLASH OTP_NV_COUNTERS_FLASH_DEV;
 
@@ -140,7 +143,7 @@ enum tfm_plat_err_t read_otp_nv_counters_flash(uint32_t offset, void *data, uint
     read_cnt = 0;
     if (remaining_cnt) {
         err = (enum tfm_plat_err_t)OTP_NV_COUNTERS_FLASH_DEV.ReadData(
-                                        TFM_OTP_NV_COUNTERS_AREA_ADDR + offset,
+                                        get_otp_nv_counters_area_addr() + offset,
                                         data,
                                         cnt / data_width);
         if (err < 0) {
@@ -151,7 +154,7 @@ enum tfm_plat_err_t read_otp_nv_counters_flash(uint32_t offset, void *data, uint
     remaining_cnt -= read_cnt;
     if (remaining_cnt) {
         err = (enum tfm_plat_err_t)OTP_NV_COUNTERS_FLASH_DEV.ReadData(
-                            TFM_OTP_NV_COUNTERS_AREA_ADDR + offset + read_cnt,
+                            get_otp_nv_counters_area_addr() + offset + read_cnt,
                             temp_buffer,
                             1);
         if (err < 0) {
@@ -168,7 +171,7 @@ enum tfm_plat_err_t init_otp_nv_counters_flash(void)
     uint32_t init_value;
     uint32_t is_valid;
 
-    if ((TFM_OTP_NV_COUNTERS_AREA_SIZE) < sizeof(struct flash_otp_nv_counters_region_t)) {
+    if ((get_otp_nv_counters_read_size()) < sizeof(struct flash_otp_nv_counters_region_t)) {
         return TFM_PLAT_ERR_SYSTEM_ERR;
     }
 
@@ -197,7 +200,7 @@ enum tfm_plat_err_t init_otp_nv_counters_flash(void)
     else
     {
         err = read_otp_nv_counters_flash(offsetof(struct flash_otp_nv_counters_region_t, is_valid)
-                + TFM_OTP_NV_COUNTERS_AREA_SIZE,
+                + get_otp_nv_counters_read_size(),
                 &is_valid, sizeof(is_valid));
         if (err != TFM_PLAT_ERR_SUCCESS) {
             return err;
@@ -283,15 +286,15 @@ static enum tfm_plat_err_t make_backup(void)
 {
     enum tfm_plat_err_t err = TFM_PLAT_ERR_SUCCESS;
 
-    err = erase_flash_region(TFM_OTP_NV_COUNTERS_BACKUP_AREA_ADDR,
-                             TFM_OTP_NV_COUNTERS_AREA_SIZE);
+    err = erase_flash_region(get_otp_nv_counters_backup_area_addr(),
+                             get_otp_nv_counters_read_size());
     if (err != TFM_PLAT_ERR_SUCCESS) {
         return err;
     }
 
-    err = copy_flash_region(TFM_OTP_NV_COUNTERS_AREA_ADDR,
-                            TFM_OTP_NV_COUNTERS_BACKUP_AREA_ADDR,
-                            TFM_OTP_NV_COUNTERS_AREA_SIZE);
+    err = copy_flash_region(get_otp_nv_counters_area_addr(),
+                            get_otp_nv_counters_backup_area_addr(),
+                            get_otp_nv_counters_read_size());
 
     return err;
 }
@@ -318,7 +321,7 @@ enum tfm_plat_err_t write_otp_nv_counters_flash(uint32_t offset, const void *dat
      * sector with the is_valid flag.
      */
     if (end < offsetof(struct flash_otp_nv_counters_region_t, is_valid)) {
-        err = erase_flash_region(round_down(TFM_OTP_NV_COUNTERS_AREA_ADDR +
+        err = erase_flash_region(round_down(get_otp_nv_counters_area_addr() +
                                  offsetof(struct flash_otp_nv_counters_region_t, is_valid),
                                  TFM_OTP_NV_COUNTERS_SECTOR_SIZE),
                                  TFM_OTP_NV_COUNTERS_SECTOR_SIZE);
@@ -327,7 +330,7 @@ enum tfm_plat_err_t write_otp_nv_counters_flash(uint32_t offset, const void *dat
         }
     }
 
-    err = erase_flash_region(round_down(TFM_OTP_NV_COUNTERS_AREA_ADDR + offset,
+    err = erase_flash_region(round_down(get_otp_nv_counters_area_addr() + offset,
                                         TFM_OTP_NV_COUNTERS_SECTOR_SIZE),
                              round_up(cnt, TFM_OTP_NV_COUNTERS_SECTOR_SIZE));
     if (err != TFM_PLAT_ERR_SUCCESS) {
@@ -337,7 +340,7 @@ enum tfm_plat_err_t write_otp_nv_counters_flash(uint32_t offset, const void *dat
     for (idx = start; idx < end; idx += copy_size) {
         copy_size = (idx + sizeof(block)) <= end ? sizeof(block) : end - idx;
 
-        err = (enum tfm_plat_err_t)OTP_NV_COUNTERS_FLASH_DEV.ReadData(TFM_OTP_NV_COUNTERS_BACKUP_AREA_ADDR + idx,
+        err = (enum tfm_plat_err_t)OTP_NV_COUNTERS_FLASH_DEV.ReadData(get_otp_nv_counters_backup_area_addr() + idx,
                                                  block,
                                                  copy_size / data_width);
         if (err < 0) {
@@ -357,7 +360,7 @@ enum tfm_plat_err_t write_otp_nv_counters_flash(uint32_t offset, const void *dat
             input_idx += input_copy_size;
         }
 
-        err = (enum tfm_plat_err_t)OTP_NV_COUNTERS_FLASH_DEV.ProgramData(TFM_OTP_NV_COUNTERS_AREA_ADDR + idx,
+        err = (enum tfm_plat_err_t)OTP_NV_COUNTERS_FLASH_DEV.ProgramData(get_otp_nv_counters_area_addr() + idx,
                                                     block,
                                                     copy_size / data_width);
         if (err < 0) {
@@ -371,10 +374,10 @@ enum tfm_plat_err_t write_otp_nv_counters_flash(uint32_t offset, const void *dat
 
     /* Restore the is_valid flag */
     if (end < offsetof(struct flash_otp_nv_counters_region_t, is_valid)) {
-        err = copy_flash_region(round_down(TFM_OTP_NV_COUNTERS_BACKUP_AREA_ADDR +
+        err = copy_flash_region(round_down(get_otp_nv_counters_backup_area_addr() +
                                            offsetof(struct flash_otp_nv_counters_region_t, is_valid),
                                            TFM_OTP_NV_COUNTERS_SECTOR_SIZE),
-                                round_down(TFM_OTP_NV_COUNTERS_AREA_ADDR +
+                                round_down(get_otp_nv_counters_area_addr() +
                                            offsetof(struct flash_otp_nv_counters_region_t, is_valid),
                                            TFM_OTP_NV_COUNTERS_SECTOR_SIZE),
                                 TFM_OTP_NV_COUNTERS_SECTOR_SIZE);
@@ -394,15 +397,15 @@ static enum tfm_plat_err_t restore_backup(void)
 {
     enum tfm_plat_err_t err = TFM_PLAT_ERR_SUCCESS;
 
-    err = erase_flash_region(TFM_OTP_NV_COUNTERS_AREA_ADDR,
-                             TFM_OTP_NV_COUNTERS_AREA_SIZE);
+    err = erase_flash_region(get_otp_nv_counters_area_addr(),
+                             get_otp_nv_counters_read_size());
     if (err != TFM_PLAT_ERR_SUCCESS) {
         return err;
     }
 
-    err = copy_flash_region(TFM_OTP_NV_COUNTERS_BACKUP_AREA_ADDR,
-                            TFM_OTP_NV_COUNTERS_AREA_ADDR,
-                            TFM_OTP_NV_COUNTERS_AREA_SIZE);
+    err = copy_flash_region(get_otp_nv_counters_backup_area_addr(),
+                            get_otp_nv_counters_area_addr(),
+                            get_otp_nv_counters_read_size());
 
     return err;
 }
@@ -424,13 +427,13 @@ static enum tfm_plat_err_t create_or_restore_layout(void)
     data_width = data_width_byte[DriverCapabilities.data_width];
 
     err = read_otp_nv_counters_flash(offsetof(struct flash_otp_nv_counters_region_t, init_value)
-            + TFM_OTP_NV_COUNTERS_AREA_SIZE,
+            + get_otp_nv_counters_read_size(),
             &backup_init_value, sizeof(init_value));
     if (err != TFM_PLAT_ERR_SUCCESS) {
         return err;
     }
     err = read_otp_nv_counters_flash(offsetof(struct flash_otp_nv_counters_region_t, is_valid)
-            + TFM_OTP_NV_COUNTERS_AREA_SIZE,
+            + get_otp_nv_counters_read_size(),
             &backup_is_valid, sizeof(is_valid));
     if (err != TFM_PLAT_ERR_SUCCESS) {
         return err;
@@ -443,18 +446,18 @@ static enum tfm_plat_err_t create_or_restore_layout(void)
             return err;
         }
     } else {
-        err = erase_flash_region(TFM_OTP_NV_COUNTERS_AREA_ADDR,
-                TFM_OTP_NV_COUNTERS_AREA_SIZE);
+        err = erase_flash_region(get_otp_nv_counters_area_addr(),
+                get_otp_nv_counters_read_size());
         if (err != TFM_PLAT_ERR_SUCCESS) {
             return err;
         }
 
         memset(block, 0, sizeof(block));
-        end = TFM_OTP_NV_COUNTERS_AREA_SIZE;
+        end = get_otp_nv_counters_read_size();
         for(idx = 0; idx < end; idx += copy_size) {
             copy_size = (idx + sizeof(block)) <= end ? sizeof(block) : end - idx;
 
-            err = (enum tfm_plat_err_t)OTP_NV_COUNTERS_FLASH_DEV.ProgramData(TFM_OTP_NV_COUNTERS_AREA_ADDR + idx,
+            err = (enum tfm_plat_err_t)OTP_NV_COUNTERS_FLASH_DEV.ProgramData(get_otp_nv_counters_area_addr() + idx,
                     block, copy_size / data_width);
             if (err < 0) {
                 return TFM_PLAT_ERR_SYSTEM_ERR;

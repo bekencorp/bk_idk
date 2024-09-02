@@ -80,7 +80,6 @@ bk_err_t bk_otp_read_bytes_nonsecure(uint8_t *buffer, uint32_t addr, uint32_t le
  *    - others: other errors.
  */
 bk_err_t bk_otp_apb_read(otp_id_t item, uint8_t *buf, uint32_t size);
-
 /**
  * @brief     update OTP write with item type
  *
@@ -96,7 +95,35 @@ bk_err_t bk_otp_apb_read(otp_id_t item, uint8_t *buf, uint32_t size);
  *    - others: other errors.
  */
 bk_err_t bk_otp_apb_update(otp_id_t item, uint8_t* buf, uint32_t size);
-
+/**
+ * @brief     OTP2 read with item type
+ *
+ * @param item the item to read
+ * @param buf point to the buffer that reads the data
+ * @param size length of item to read
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_NO_READ_PERMISSION: wrong permission to read
+ *    - BK_ERR_OTP_ADDR_OUT_OF_RANGE: param size not match item real size
+ *    - others: other errors.
+ */
+bk_err_t bk_otp_ahb_read(otp_id_t item, uint8_t* buf, uint32_t size);
+/**
+ * @brief     update OTP2 write with item type
+ *
+ * @param item the item to update
+ * @param buf point to the buffer that updates the data
+ * @param size length of buffer to update
+ *
+ * @return
+ *    - >0: succeed and return length of buffer wroten
+ *    - BK_ERR_NO_WRITE_PERMISSION: wrong permission to write
+ *    - BK_ERR_OTP_ADDR_OUT_OF_RANGE: param size exceeds item size
+ *    - BK_ERR_OTP_UPDATE_NOT_EQUAL: updated value not match expectation
+ *    - others: other errors.
+ */
+bk_err_t bk_otp_ahb_update(otp_id_t item, uint8_t* buf, uint32_t size);
 /**
  * @brief OTP init operation
  *

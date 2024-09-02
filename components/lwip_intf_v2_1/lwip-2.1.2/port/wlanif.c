@@ -124,7 +124,11 @@ static void low_level_init(struct netif *netif)
     netif->mtu = 1500;
     /* device capabilities */
     /* don't set NETIF_FLAG_ETHARP if this device is not an ethernet one */
+#if !CONFIG_BRIDGE
     netif->flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_LINK_UP;
+#else
+	netif->flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_ETHERNET | NETIF_FLAG_LINK_UP;
+#endif
  #ifdef LWIP_IGMP
     netif->flags |= NETIF_FLAG_IGMP;
  #endif
@@ -247,7 +251,7 @@ ethernetif_input(int iface, struct pbuf *p)
     case ETHTYPE_ARP:
 #ifdef CONFIG_IPV6
     case ETHTYPE_IPV6:
-	wlan_set_multicast_flag_internal();
+	wlan_set_multicast_flag();
 #endif
 #if PPPOE_SUPPORT
         /* PPPoE packet? */
@@ -263,6 +267,9 @@ ethernetif_input(int iface, struct pbuf *p)
         }
         break;
 
+#if CONFIG_WAPI_SUPPORT
+    case ETHTYPE_WAI:
+#endif
     case ETHTYPE_EAPOL:
 	 	ke_l2_packet_tx(p->payload, p->len, iface);
 		pbuf_free(p);

@@ -13,12 +13,12 @@ Hardware Security Architecture
      :alt: 8
      :figclass: align-center
 
-As shown in the picture above, the BK7236 safety is based on the M33. M33 adds a new dimension through the TZ mechanism: secure (S) and non-secure (NS).
-That is, two worlds are isolated on one CPU core: the secure world (S) and the non-secure world (NS). BK7236 through PPC and MPC module will
+As shown in the picture above, the BK7258 safety is based on the M33. M33 adds a new dimension through the TZ mechanism: secure (S) and non-secure (NS).
+That is, two worlds are isolated on one CPU core: the secure world (S) and the non-secure world (NS). BK7258 through PPC and MPC module will
 The concept of S/NS in M33 is extended to the whole SoC system. Among them, PPC is used to configure S/NS and P/NP of devices on the bus; MPC is used to configure
 S/NS attributes of different blocks on the memory device.
 
-The security access rules on BK7236 can be summarized by the following figure:
+The security access rules on BK7258 can be summarized by the following figure:
 
 .. figure:: picture/security_access.svg
      :align: center
@@ -28,17 +28,17 @@ The security access rules on BK7236 can be summarized by the following figure:
 Security Access Rules:
 
   - After the AHB Master request passes the AHB Master's own security rule check, it carries the S/NS signal to the AHB bus:
- 
+
    - When the Master is M33, the access address is checked by IDAU/SAU first, and then checked by MPU after passing the check, and finally goes to the bus.
    - When the Master is other devices, if the Master is configured as S by the PPC, then it is S access, otherwise it is NS access.
 
-  - S/NS request from AHB Master, then checked by BK7236 security control:
- 
+  - S/NS request from AHB Master, then checked by BK7258 security control:
+
    - First is the PPC review, the general rule is that NS can only access peripherals with PPC configured as NS, and S can access S/NS peripherals (or only S peripherals).
    - For block memory access, further review by MPC, the review rule is that S requests can access S/NS blocks, and NS requests can only access NS blocks.
 
   - After passing the PPC/MPC review, the access request comes to the target peripheral:
- 
+
    - If the target peripheral itself does not recognize the S/NS signal, directly access the target peripheral.
    - If the target peripheral itself recognizes the S/NS signal (S/NS Aware peripheral), the target peripheral performs a final security check on the request.
 
@@ -46,15 +46,15 @@ If any of the security checks fails, the access will be terminated and a securit
 
 .. note::
 
-   In BK7236, S/NS Aware peripherals include FLASH, DMA, TE200, etc.
+   In BK7258, S/NS Aware peripherals include FLASH, DMA, TE200, etc.
 
 M33 Security Access
 ++++++++++++++++++++++
 
-In CM33, the CPU access address will go through the IDAU/SAU security check first, and if the check fails, a security exception will be generated.
+In CM33 ，the CPU access address will go through the IDAU/SAU security check first, and if the check fails, a security exception will be generated.
 If the check is passed, the MPU will perform a security check, and the MPU will carry the S/NS signal to the bus matrix after passing the check.
 
-In BK7236, the IDAU settings are as shown in the figure below:
+In BK7258, the IDAU settings are as shown in the figure below:
 
 .. figure:: picture/security_idau.svg
      :align: center
@@ -66,7 +66,7 @@ In BK7236, the IDAU settings are as shown in the figure below:
 PPC Control - Device Security Access
 ++++++++++++++++++++++++++++++++++++++++++
 
-PPC is the BK7236 SoC peripheral security control center, which configures the S/NS and P/NP attributes of the peripheral.
+PPC is the BK7258 SoC peripheral security control center, which configures the S/NS and P/NP attributes of the peripheral.
 
 The implementation overview is as follows:
 
@@ -107,7 +107,7 @@ Each MPC body is divided into multiple blocks, and a table is used to look up th
   - Use a table LUT (lookup table) to perform security mapping/query security mapping relationship for each block.
   - Failure of the gate will make the access operation RAZ/WI (Read-As-Zero/Write-Ignored), or generate a bus fault (BusFault).
 
-BK7236 The following devices can configure their security attributes by block through MPC:
+BK7258 The following devices can configure their security attributes by block through MPC:
 
 +---------+------------+---------+--------------------+------------------+
 | Device  | block_size | blk_max | block0 1st bytes   | block0 last byte |
@@ -151,7 +151,7 @@ For MPC device security attribute configuration, please refer to :ref:`MPC Perip
 AHB Master Access Rules
 ++++++++++++++++++++++++++++++++++++++
 
-There are two types of AHB master devices on the BK7236 AHB bus matrix:
+There are two types of AHB master devices on the BK7258 AHB bus matrix:
 
   - Universal DMA - is the master device of S/NS Aware, please refer to DMA security access for access rules.
   - Other AHB masters - Other AHB masters whose security attributes are determined by the PPC.
@@ -174,7 +174,7 @@ FLASH Security Access
      :alt: 8
      :figclass: align-center
 
-As shown in the figure above, there are two ways for BK7236 to access the on-chip FLASH:
+As shown in the figure above, there are two ways for BK7258 to access the on-chip FLASH:
 
   - Command port - Access FLASH through the FLASH controller, at this time, the FLASH controller will add/remove CRC, and perform encryption/decryption processing.
   - Data port - direct access via internal SPI.
@@ -245,7 +245,7 @@ Software Security Architecture
      :alt: 8
      :figclass: align-center
 
-BK7236 is segregated into secure world (SPE) and non-secure world (NSPE).
+BK7258 is segregated into secure world (SPE) and non-secure world (NSPE).
 
 The security world is divided into two parts: the non-upgradeable part and the upgradable part. The non-upgradeable part includes BL1 and security hardware.
 Such as CM33, OTP, secure storage, secure peripherals, secure engine, etc. The upgradeable part is mainly composed of BL2, TFM and
@@ -256,7 +256,7 @@ The non-secure world includes drivers, OS, and various Armino components and app
 BL1 - BootROM
 ++++++++++++++++++++++++++++++++
 
-BK7236 BL1 is based on the BootROM in the Shanhai security suite of Arm Company, which is a closed-source software.
+BK7258 BL1 is based on the BootROM in the Shanhai security suite of Arm Company, which is a closed-source software.
 
 BL2 - MCUBOOT
 ++++++++++++++++++++++++++++++++

@@ -580,6 +580,8 @@ int8_t ethermind_find_index_by_att_con_id(uint8_t *index, ATT_CON_ID att_id)
 }
 
 static uint16_t s_write_test_ccc_val = 0;
+static bk_ble_key_t s_ble_enc_key;
+static uint8_t s_ble_auth_req = 0;
 static void ble_at_notice_cb(ble_notice_t notice, void *param)
 {
     switch (notice) {
@@ -875,11 +877,12 @@ static void ble_at_notice_cb(ble_notice_t notice, void *param)
     }
     case BLE_5_TX_DONE:
     {
-        uint8_t con_idx = *(uint8_t *)param;
+        bk_ble_gatt_cmp_evt_t *evt = (bk_ble_gatt_cmp_evt_t *)param;
+        uint8_t conn_idx = evt->conn_idx;
         if(s_service_type && s_performance_tx_enable == 1)
         {
             s_performance_tx_bytes += s_test_data_len;
-            ble_test_noti_hdl((void *)((uint32)con_idx));
+            ble_test_noti_hdl((void *)((uint32)conn_idx));
         }
         else
         {
@@ -1101,8 +1104,28 @@ static void ble_at_notice_cb(ble_notice_t notice, void *param)
     {
         LOGI("BLE_5_PAIRING_REQ\r\n");
         ble_smp_ind_t *s_ind = (ble_smp_ind_t *)param;
-        bk_ble_sec_send_auth_mode(s_ind->conn_idx, GAP_AUTH_REQ_NO_MITM_BOND, GAP_IO_CAP_NO_INPUT_NO_OUTPUT,
+        bk_ble_sec_send_auth_mode(s_ind->conn_idx, GAP_AUTH_REQ_NO_MITM_BOND, BK_BLE_GAP_IO_CAP_NO_INPUT_NO_OUTPUT,
             GAP_SEC1_NOAUTH_PAIR_ENC, GAP_OOB_AUTH_DATA_NOT_PRESENT);
+        break;
+    }
+
+    case BLE_5_KEY_EVENT:
+    {
+        LOGI("BLE_5_KEY_EVENT\r\n");
+        s_ble_enc_key = *((bk_ble_key_t*)param);
+        break;
+    }
+
+    case BLE_5_BOND_INFO_REQ_EVENT:
+    {
+        LOGI("BLE_5_BOND_INFO_REQ_EVENT\r\n");
+        bk_ble_bond_info_req_t *bond_info_req = (bk_ble_bond_info_req_t*)param;
+        if ((bond_info_req->key.peer_addr_type == s_ble_enc_key.peer_addr_type)
+            && (!os_memcmp(bond_info_req->key.peer_addr, s_ble_enc_key.peer_addr, 6)))
+        {
+            bond_info_req->key_found = 1;
+            bond_info_req->key = s_ble_enc_key;
+        }
         break;
     }
 
@@ -1112,23 +1135,28 @@ static void ble_at_notice_cb(ble_notice_t notice, void *param)
 
     case BLE_5_ENCRYPT_EVENT:
         LOGI("BLE_5_ENCRYPT_EVENT\r\n");
+        at_cmd_status = 0;
+        if ((ble_at_cmd_sema != NULL) && (s_ble_auth_req))
+            rtos_set_semaphore( &ble_at_cmd_sema);
         break;
 
     case BLE_5_PAIRING_SUCCEED:
         LOGI("BLE_5_PAIRING_SUCCEED\r\n");
         at_cmd_status = 0;
-        if (ble_at_cmd_sema != NULL)
+        if ((ble_at_cmd_sema != NULL) && (s_ble_auth_req))
             rtos_set_semaphore( &ble_at_cmd_sema);
         break;
 
     case BLE_5_PAIRING_FAILED:
+    {
         LOGI("BLE_5_PAIRING_FAILED\r\n");
         ble_smp_ind_t *s_ind = (ble_smp_ind_t *)param;
         at_cmd_status = s_ind->status;
-        if (ble_at_cmd_sema != NULL)
+        os_memset(&s_ble_enc_key, 0 ,sizeof(s_ble_enc_key));
+        if ((ble_at_cmd_sema != NULL) && (s_ble_auth_req))
             rtos_set_semaphore( &ble_at_cmd_sema);
         break;
-
+    }
     case BLE_5_DELETE_SERVICE_DONE:
         {
             if(bk_ble_get_controller_stack_type() == BK_BLE_CONTROLLER_STACK_TYPE_BTDM_5_2)
@@ -1149,6 +1177,12 @@ static void ble_at_notice_cb(ble_notice_t notice, void *param)
 
         switch(event->cmd) {
         case BLE_CONN_DIS_CONN:
+        {
+            if (STATE_DISCONNECTINIG != g_peer_dev.state)
+            {
+                break;
+            }
+        }
         case BLE_CONN_UPDATE_PARAM:
         case BLE_CONN_SET_PHY:
         case BLE_CONN_READ_PHY:
@@ -1160,6 +1194,21 @@ static void ble_at_notice_cb(ble_notice_t notice, void *param)
                 rtos_set_semaphore( &ble_at_cmd_sema );
             break;
         }
+        case BLE_CONN_ENCRYPT:
+        {
+            LOGI("BLE_5_GAP_CMD_CMP_EVENT(BLE_CONN_ENCRYPT) , status %x\r\n",event->status);
+            if (event->status)
+            {
+                os_memset(&s_ble_enc_key, 0 ,sizeof(s_ble_enc_key));
+                if ((ble_at_cmd_sema != NULL) && (s_ble_auth_req))
+                {
+                    at_cmd_status = event->status;
+                    rtos_set_semaphore( &ble_at_cmd_sema);
+                }
+                bk_ble_disconnect(event->conn_idx);
+            }
+        }
+        break;
         default:
             break;
         }
@@ -2087,7 +2136,7 @@ int ble_set_adv_param_handle(char *pcWriteBuffer, int xWriteBufferLen, int argc,
         {
             case 0:
             case 1:
-                adv_param.own_addr_type = OWN_ADDR_TYPE_PUBLIC_OR_STATIC_ADDR;
+                adv_param.own_addr_type = OWN_ADDR_TYPE_PUBLIC_ADDR;
                 break;
             case 2:
                 adv_param.own_addr_type = OWN_ADDR_TYPE_GEN_RSLV_OR_RANDOM_ADDR;
@@ -2456,7 +2505,7 @@ int ble_set_adv_enable_handle(char *pcWriteBuffer, int xWriteBufferLen, int argc
 
     if(bk_ble_get_host_stack_type() != BK_BLE_HOST_STACK_TYPE_ETHERMIND)
     {
-
+        bk_ble_set_notice_cb(ble_at_notice_cb);
         if (enable == 1)
         {
             actv_idx = bk_ble_find_actv_state_idx_handle(AT_ACTV_ADV_CREATED);
@@ -2580,7 +2629,7 @@ int ble_set_scan_param_handle(char *pcWriteBuffer, int xWriteBufferLen, int argc
         {
             case 0:
             case 1:
-                scan_param.own_addr_type = OWN_ADDR_TYPE_PUBLIC_OR_STATIC_ADDR;
+                scan_param.own_addr_type = OWN_ADDR_TYPE_PUBLIC_ADDR;
                 break;
             case 2:
                 scan_param.own_addr_type = OWN_ADDR_TYPE_GEN_RSLV_OR_RANDOM_ADDR;
@@ -3185,6 +3234,7 @@ int ble_disconnect_handle(char *pcWriteBuffer, int xWriteBufferLen, int argc, ch
 
         bk_ble_set_notice_cb(ble_at_notice_cb);
         err = bk_ble_disconnect(conn_idx);
+        g_peer_dev.state = STATE_DISCONNECTINIG;
     }
     else
     {
@@ -3205,6 +3255,7 @@ int ble_disconnect_handle(char *pcWriteBuffer, int xWriteBufferLen, int argc, ch
                 msg = AT_CMD_RSP_SUCCEED;
                 os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
                 rtos_deinit_semaphore(&ble_at_cmd_sema);
+                g_peer_dev.state = STATE_IDLE;
                 return 0;
             }
             else
@@ -3220,6 +3271,7 @@ int ble_disconnect_handle(char *pcWriteBuffer, int xWriteBufferLen, int argc, ch
 error:
     msg = AT_CMD_RSP_ERROR;
     os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+    g_peer_dev.state = STATE_IDLE;
     if (ble_at_cmd_sema != NULL)
         rtos_deinit_semaphore(&ble_at_cmd_sema);
     return err;
@@ -4751,7 +4803,7 @@ int ble_set_max_mtu_handle(char *pcWriteBuffer, int xWriteBufferLen, int argc, c
 	int err = kNoErr;
 	uint16_t att_max_mtu = 0;
 
-	if((bk_ble_get_controller_stack_type() != BK_BLE_CONTROLLER_STACK_TYPE_BTDM_5_2) 
+	if((bk_ble_get_controller_stack_type() != BK_BLE_CONTROLLER_STACK_TYPE_BTDM_5_2)
 		|| (bk_ble_get_host_stack_type() == BK_BLE_HOST_STACK_TYPE_ETHERMIND))
 	{
 		err = kParamErr;
@@ -5280,6 +5332,7 @@ int ble_disconnect_by_name_handle(char *pcWriteBuffer, int xWriteBufferLen, int 
                 msg = AT_CMD_RSP_SUCCEED;
                 os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
                 rtos_deinit_semaphore(&ble_at_cmd_sema);
+                g_peer_dev.state = STATE_IDLE;
                 return 0;
             }
             else
@@ -5293,6 +5346,7 @@ int ble_disconnect_by_name_handle(char *pcWriteBuffer, int xWriteBufferLen, int 
 error:
     msg = AT_CMD_RSP_ERROR;
     os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+    g_peer_dev.state = STATE_IDLE;
     if (ble_at_cmd_sema != NULL)
         rtos_deinit_semaphore(&ble_at_cmd_sema);
     return err;
@@ -7135,8 +7189,9 @@ int ble_create_bond_handle(char *pcWriteBuffer, int xWriteBufferLen, int argc, c
             goto error;
         }
         bk_ble_set_notice_cb(ble_at_notice_cb);
-        err = bk_ble_create_bond(conn_idx, GAP_AUTH_REQ_NO_MITM_BOND, GAP_IO_CAP_NO_INPUT_NO_OUTPUT,
+        err = bk_ble_create_bond(conn_idx, GAP_AUTH_REQ_NO_MITM_BOND, BK_BLE_GAP_IO_CAP_NO_INPUT_NO_OUTPUT,
                                 GAP_SEC1_NOAUTH_PAIR_ENC, GAP_OOB_AUTH_DATA_NOT_PRESENT);
+        s_ble_auth_req = 1;
     }
     else
     {
@@ -7163,6 +7218,7 @@ int ble_create_bond_handle(char *pcWriteBuffer, int xWriteBufferLen, int argc, c
                 msg = AT_CMD_RSP_SUCCEED;
                 os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
                 rtos_deinit_semaphore(&ble_at_cmd_sema);
+                s_ble_auth_req = 0;
                 return err;
             }
             else
@@ -7180,6 +7236,8 @@ error:
     {
         rtos_deinit_semaphore(&ble_at_cmd_sema);
     }
+    s_ble_auth_req = 0;
+    at_cmd_status = 0;
     return err;
 }
 

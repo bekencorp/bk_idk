@@ -20,6 +20,16 @@
 extern "C" {
 #endif
 
+typedef enum {
+	PLT_OP_IDLE = 0,
+	PLT_OP_TIMER_DRV_INIT,
+	PLT_OP_START_TIMER,
+	PLT_OP_STOP_TIMER,
+	PLT_OP_CLEAR_TIMER_ISR_STATUS,
+}platform_op_t;
+
+#define PLATFOR_INVALID_REQUEST 0xffffffff
+
 /**
  * \brief Resets the system.
  *

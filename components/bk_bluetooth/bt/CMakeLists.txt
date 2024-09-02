@@ -30,5 +30,5 @@ endif()
 
 armino_component_register(SRCS "${srcs}"
 	INCLUDE_DIRS "${incs}"
-	PRIV_REQUIRES bk_common at bk_bluetooth
+	PRIV_REQUIRES bk_common at bk_bluetooth mbedtls
 	)

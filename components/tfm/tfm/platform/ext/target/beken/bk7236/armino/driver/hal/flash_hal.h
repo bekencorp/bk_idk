@@ -52,6 +52,13 @@ typedef struct {
 #define flash_hal_write_data(hal, data) flash_ll_write_data((hal)->hw, data)
 #define flash_hal_write_enable(hal) flash_ll_write_enable((hal)->hw)
 #define flash_hal_write_disable(hal) flash_ll_write_disable((hal)->hw)
+#define flash_hal_set_offset_begin(hal, data) flash_ll_set_offset_begin((hal)->hw, data)
+#define flash_hal_set_offset_end(hal, data) flash_ll_set_offset_end((hal)->hw, data)
+#define flash_hal_set_addr_offset(hal, data) flash_ll_set_addr_offset((hal)->hw, data)
+#define flash_hal_set_offset_enable(hal, data) flash_ll_set_offset_enable((hal)->hw, data)
+#define flash_hal_read_offset_enable(hal) flash_ll_read_offset_enable((hal)->hw)
+
+#define flash_hal_set_dbus_region(hal, id, start, end, secure) flash_ll_set_dbus_region((hal)->hw, (id), (start), (end), (secure))
 
 bk_err_t flash_hal_init(flash_hal_t *hal);
 uint16_t flash_hal_get_protect_value(flash_hal_t *hal, uint8_t status_reg_size,	uint8_t protect_post, uint8_t protect_mask, uint8_t cmp_post);

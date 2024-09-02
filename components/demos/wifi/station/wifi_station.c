@@ -102,7 +102,7 @@ int target_wifi_station_connect(IN CONST char *ssid, IN CONST char *passwd)
     wNetConfig.dhcp_mode = DHCP_CLIENT;
     wNetConfig.wifi_retry_interval = 100;
 
-    bk_wlan_start_internal(&wNetConfig);
+    bk_wlan_start(&wNetConfig);
 
     return 0;
 }
@@ -173,7 +173,7 @@ int wifi_station_show_scan_result(unsigned char *ssid)
     char scan_rst_ap_num = 0;       /**< The number of access points found in scanning. */
     int i;
 
-    scan_rst_ap_num = bk_wlan_get_scan_ap_result_numbers_internal();
+    scan_rst_ap_num = bk_wlan_get_scan_ap_result_numbers();
     if(scan_rst_ap_num == 0)
     {
         os_printf("\r\n The ssid(%s) is nothingness!\r\n", ssid);
@@ -187,7 +187,7 @@ int wifi_station_show_scan_result(unsigned char *ssid)
         return 0;
     }
 
-    bk_wlan_get_scan_ap_result_internal(scan_rst_table, scan_rst_ap_num);
+    bk_wlan_get_scan_ap_result(scan_rst_table, scan_rst_ap_num);
 
     os_printf("Assign Scan %d AP:\r\n", scan_rst_ap_num);
     for( i = 0; i < scan_rst_ap_num; i++ )

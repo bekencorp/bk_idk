@@ -175,9 +175,18 @@ typedef struct {
     bk_err_t (*_ble_in_dut_mode)(void);
     uint8_t (*_get_tx_pwr_idx)(void);
     void (*_txpwr_max_set_bt_polar)(void);
+    void (*_ble_tx_testmode_retrig)(void);
 
     int (*_gpio_dev_map_rxen)(uint32_t gpio_id);
 
+    uint8_t (*_bk_phy_get_wifi_media_mode_config)(void);
+    int (*_bk_feature_save_rfcali_to_otp_enable)(void);
+    int (*_bk_otp_ahb_read)(uint32_t item, uint8_t* buf, uint32_t size);
+    int (*_bk_otp_ahb_update)(uint32_t item, uint8_t* buf, uint32_t size);
+    int (*_bk_get_otp_ahb_rfcali_item)(void);
+    void (*_sys_ll_set_ana_reg8_violdosel)(uint32_t value);
+    void (*_sys_ll_set_ana_reg8_iocurlim)(uint32_t value);
+    int(*_bk_feature_phy_log_enable)(void);
 } phy_os_funcs_t;
 
 
@@ -243,7 +252,7 @@ typedef struct {
     uint32_t _cmd_sctrl_set_vdd_value;
 
 
-    uint32_t _param_xtalh_ctune_mask;
+    int32_t  _param_xtalh_ctune_mask;
     uint32_t _param_aud_dac_gain_mask;
 
     uint32_t _pm_power_module_state_on;
@@ -268,7 +277,7 @@ typedef struct {
     uint32_t _OTP_MAC_ADDRESS;
     uint32_t _OTP_VDDDIG_BANDGAP;
     uint32_t _OTP_DIA;
-    uint32_t _OTP_GADC_CALIBRATION;
+    uint32_t _OTP_GADC_TEMPERATURE;
     uint32_t _OTP_SDMADC_CALIBRATION;
 } phy_os_variable_t;
 

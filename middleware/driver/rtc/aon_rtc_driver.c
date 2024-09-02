@@ -155,6 +155,13 @@ uint64_t bk_aon_rtc_get_us(void) {
     return  time_us;
 }
 
+uint64_t bk_aon_rtc_get_ms(void) {
+	uint64_t time_tick = bk_aon_rtc_get_current_tick(AONRTC_GET_SET_TIME_RTC_ID);
+	uint64_t time_diff = (time_tick - s_time_base_tick)/bk_rtc_get_ms_tick_count();
+    uint64_t time_us = s_time_base_us + time_diff;
+    return  time_us;
+}
+
 #if CONFIG_AON_RTC_KEEP_TIME_SUPPORT
 static int32_t s_rtc_keep_tick_offset = 0x0;
 #define AONRTC_DEEPSLEEP_KEEPTIME_EF_KEYNUM 2
@@ -1274,6 +1281,14 @@ uint64_t bk_aon_rtc_get_current_tick(aon_rtc_id_t id)
 
 	return ((s_high_tick[id] << 32) + aon_rtc_hal_get_counter_val(&s_aon_rtc[id].hal));
 }
+
+#if CONFIG_ROSC_COMPENSATION
+uint64_t bk_aon_rtc_get_current_tick_with_compensation(aon_rtc_id_t id)
+{
+	uint64_t tick_val = bk_aon_rtc_get_current_tick(id);
+	return (tick_val + bk_rosc_32k_get_tick_diff(tick_val));
+}
+#endif
 
 #if CONFIG_RTC_ANA_WAKEUP_SUPPORT
 static int ana_wakesource_rtc_enter_cb(uint64_t sleep_time, void *args)

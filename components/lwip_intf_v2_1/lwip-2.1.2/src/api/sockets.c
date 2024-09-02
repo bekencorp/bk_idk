@@ -67,6 +67,7 @@ int errno=0;
 #endif
 
 #include <string.h>
+#include "api_msg.h"
 
 #ifdef LWIP_HOOK_FILENAME
 #include LWIP_HOOK_FILENAME
@@ -216,6 +217,8 @@ union sockaddr_aligned {
   struct sockaddr_in sin;
 #endif /* LWIP_IPV4 */
 };
+
+char * vTaskName();
 
 /* Define the number of IPv4 multicast memberships, default is one per socket */
 #ifndef LWIP_SOCKET_MAX_MEMBERSHIPS
@@ -780,7 +783,7 @@ lwip_close(int s)
   err_t err;
 
   LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_close(%d)\n", s));
-
+  LWIP_LOGI("%s, %s close socked:%d\r\n", __func__,vTaskName(), s);
   sock = get_socket(s);
   if (!sock) {
     return -1;
@@ -1751,6 +1754,7 @@ lwip_socket(int domain, int type, int protocol)
   }
 
   i = alloc_socket(conn, 0);
+  LWIP_LOGI("%s, %s create socked:%d\r\n", __func__, vTaskName(), i);
 
   if (i == -1) {
     netconn_delete(conn);

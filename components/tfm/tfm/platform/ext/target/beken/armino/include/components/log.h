@@ -21,6 +21,7 @@ extern "C" {
 
 #include <os/os.h>
 #include <components/system.h>
+#include <driver/efuse.h>
 #if CONFIG_STDIO_PRINTF
 #include <stdio.h>
 #endif
@@ -82,19 +83,19 @@ extern "C" {
 #define BK_LOG_FORMAT(letter, format)  LOG_COLOR_ ## letter #letter " (%d) %s: " format  LOG_RESET_COLOR
 
 #if (LOG_LEVEL >= BK_LOG_ERROR)
-#define BK_LOGE(tag, format, ...) _OS_PRINTF(BK_LOG_FORMAT(E, format), rtos_get_time(), tag, ## __VA_ARGS__)
+#define BK_LOGE(tag, format, ...) if (efuse_is_err_log_enabled()) _OS_PRINTF(BK_LOG_FORMAT(E, format), rtos_get_time(), tag, ## __VA_ARGS__)
 #else
 #define BK_LOGE(tag, format, ...) do { (void)sizeof(tag, format, ## __VA_ARGS__); } while (0)
 #endif
 
 #if (LOG_LEVEL >= BK_LOG_WARN)
-#define BK_LOGW(tag, format, ...) _OS_PRINTF(BK_LOG_FORMAT(W, format), rtos_get_time(), tag, ## __VA_ARGS__)
+#define BK_LOGW(tag, format, ...) if (efuse_is_err_log_enabled()) _OS_PRINTF(BK_LOG_FORMAT(W, format), rtos_get_time(), tag, ## __VA_ARGS__)
 #else
 #define BK_LOGW(tag, format, ...) do { (void)sizeof(tag, format, ## __VA_ARGS__); } while (0)
 #endif
 
 #if (LOG_LEVEL >= BK_LOG_INFO)
-#define BK_LOGI(tag, format, ...) _OS_PRINTF(BK_LOG_FORMAT(I, format), rtos_get_time(), tag, ## __VA_ARGS__)
+#define BK_LOGI(tag, format, ...) if (efuse_is_info_log_enabled()) _OS_PRINTF(BK_LOG_FORMAT(I, format), rtos_get_time(), tag, ## __VA_ARGS__)
 #else
 #define BK_LOGI(tag, format, ...) do { (void)sizeof(tag, format, ## __VA_ARGS__); } while (0)
 #endif
@@ -113,7 +114,7 @@ extern "C" {
 
 #endif // CFG_LEGACY_LOG
 
-#define BK_LOG_RAW(format, ...) _OS_PRINTF(format, ##__VA_ARGS__)
+#define BK_LOG_RAW(format, ...) if (efuse_is_info_log_enabled()) _OS_PRINTF(format, ##__VA_ARGS__)
 
 #define BK_IP4_FORMAT "%d.%d.%d.%d"
 #define BK_IP4_STR(_ip) ((_ip) & 0xFF), (((_ip) >> 8) & 0xFF), (((_ip) >> 16) & 0xFF), (((_ip) >> 24) & 0xFF)

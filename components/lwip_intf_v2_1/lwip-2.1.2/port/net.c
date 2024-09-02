@@ -16,6 +16,7 @@
 #include "wlanif.h"
 #if CONFIG_ETH
 #include "ethernetif.h"
+#include "miiphy.h"
 #endif
 
 #include <components/system.h>
@@ -34,8 +35,12 @@
 #if IP_NAPT
 #include "lwip/lwip_napt.h"
 #endif
+#if CONFIG_EASY_FLASH_FAST_DHCP
+#include "bk_ef.h"
+#endif
+
 /* forward declaration */
-FUNC_1PARAM_PTR bk_wlan_get_status_cb_internal(void);
+FUNC_1PARAM_PTR bk_wlan_get_status_cb(void);
 
 struct ipv4_config sta_ip_settings = {
 	.addr_type = ADDR_TYPE_DHCP,
@@ -70,11 +75,25 @@ struct ipv4_config eth_ip_settings = {
 };
 #endif
 
+#if CONFIG_BRIDGE
+struct ipv4_config br_ip_settings = {
+	.addr_type = ADDR_TYPE_DHCP,
+	.address = 0,
+	.gw = 0,
+	.netmask = 0,
+	.dns1 = 0,
+	.dns2 = 0,
+};
+#endif
+
 static char up_iface;
 static bool sta_ip_start_flag = false;
 bool uap_ip_start_flag = false;
 #ifdef CONFIG_ETH
 static bool eth_ip_start_flag = false;
+#endif
+#if CONFIG_BRIDGE
+static bool bridge_ip_start_flag = false;
 #endif
 
 #ifdef CONFIG_IPV6
@@ -106,6 +125,9 @@ static struct iface g_uap = {{0}, .name = "ap"};
 #ifdef CONFIG_ETH
 static struct iface g_eth = {{0}, .name = "eth"};
 #endif
+#if CONFIG_BRIDGE
+static struct iface g_br = {{0}, .name = "br"};
+#endif
 net_sta_ipup_cb_fn sta_ipup_cb = NULL;
 
 extern void *net_get_sta_handle(void);
@@ -118,7 +140,7 @@ extern int net_configure_address(struct ipv4_config *addr, void *intrfc_handle);
 extern int dhcp_server_start(void *intrfc_handle);
 extern void dhcp_server_stop(void);
 extern void net_configure_dns(struct iface *, struct wlan_ip_config *ip);
-bk_err_t bk_wifi_get_ip_status_internal(IPStatusTypedef *outNetpara, WiFi_Interface inInterface);
+bk_err_t bk_wifi_get_ip_status(IPStatusTypedef *outNetpara, WiFi_Interface inInterface);
 
 
 #ifdef CONFIG_IPV6
@@ -234,11 +256,13 @@ static void wm_netif_status_static_callback(struct netif *n)
 			if (bk_feature_fast_dhcp_enable()) {
 				/* read stored IP from flash as the static IP */
 				struct wlan_fast_connect_info fci = {0};
-				wlan_read_fast_connect_info_internal(&fci);
-				os_memcpy((char *)&n->ip_addr, (char *)&fci.ip_addr, sizeof(fci.ip_addr));
-				os_memcpy((char *)&n->netmask, (char *)&fci.netmask, sizeof(fci.netmask));
-				os_memcpy((char *)&n->gw, (char *)&fci.gw, sizeof(fci.gw));
-				os_memcpy((char *)&n->dns1, (char *)&fci.dns1, sizeof(fci.dns1));
+#if CONFIG_EASY_FLASH_FAST_DHCP
+				bk_get_env_enhance("fast_connect_id", (void *)&fci, sizeof(struct wlan_fast_connect_info));
+#endif
+				ip_addr_set_ip4_u32(&n->ip_addr, *((u32 *)&fci.ip_addr));
+				ip_addr_set_ip4_u32(&n->netmask, *((u32 *)&fci.netmask));
+				ip_addr_set_ip4_u32(&n->gw, *((u32 *)&fci.gw));
+				os_memcpy((char *)&n->dns1, (char *)&fci.dns1, sizeof(n->dns1));
 				LWIP_LOGI("ip_addr: "BK_IP4_FORMAT" \r\n", BK_IP4_STR(ip_addr_get_ip4_u32(&n->ip_addr)));
 			}
 #if !CONFIG_DISABLE_DEPRECIATED_WIFI_API
@@ -302,9 +326,9 @@ static void wm_netif_status_callback(struct netif *n)
 #if IP_NAPT
 				sta_dns = dns_getserver(0);
 #endif
-
+				if (0) {
 #ifdef CONFIG_WIFI_ENABLE
-				if (n == &g_mlan.netif) {
+				} else if (n == &g_mlan.netif) {
 #if !CONFIG_DISABLE_DEPRECIATED_WIFI_API
 					wifi_netif_call_status_cb_when_sta_got_ip();
 #endif
@@ -316,13 +340,17 @@ static void wm_netif_status_callback(struct netif *n)
 						dns_server = dns_getserver(0);
 						n->dns1 = ip_addr_get_ip4_u32(dns_server);
 						struct wlan_fast_connect_info fci = { 0 };
-						wlan_read_fast_connect_info_internal(&fci);
-						os_memset(&fci.ip_addr, 0, sizeof(ip_addr_t) * 4);
-						os_memcpy((char *)&fci.ip_addr, (char *)&n->ip_addr, sizeof(n->ip_addr));
-						os_memcpy((char *)&fci.netmask, (char *)&n->netmask, sizeof(n->netmask));
-						os_memcpy((char *)&fci.gw, (char *)&n->gw, sizeof(n->gw));
-						os_memcpy((char *)&fci.dns1, (char *)&n->dns1, sizeof(n->dns1));
-						wlan_write_fast_connect_info_internal(&fci);
+#if CONFIG_EASY_FLASH_FAST_DHCP
+						bk_get_env_enhance("fast_connect_id", (void *)&fci, sizeof(struct wlan_fast_connect_info));
+#endif
+						os_memset(&fci.ip_addr, 0, sizeof(fci.ip_addr));
+						os_memcpy((char *)&fci.ip_addr, (char *)ip_2_ip4(&n->ip_addr), sizeof(fci.ip_addr));
+						os_memcpy((char *)&fci.netmask, (char *)ip_2_ip4(&n->netmask), sizeof(fci.netmask));
+						os_memcpy((char *)&fci.gw, (char *)ip_2_ip4(&n->gw), sizeof(fci.gw));
+						os_memcpy((char *)&fci.dns1, (char *)&n->dns1, sizeof(fci.dns1));
+#if CONFIG_EASY_FLASH_FAST_DHCP
+						bk_set_env_enhance("fast_connect_id", (void *)&fci, sizeof(struct wlan_fast_connect_info));
+#endif
 					}
 
 #if !CONFIG_DISABLE_DEPRECIATED_WIFI_API
@@ -334,6 +362,11 @@ static void wm_netif_status_callback(struct netif *n)
 #endif
 				}
 #endif // CONFIG_WIFI_ENABLE
+#ifdef CONFIG_ETH
+			} else if (n == &g_mlan.netif) {
+				// Ethernet DHCP handler, clear ps prevent
+				// TODO: ETH, DHCP, IPv6, RA, DHCPv6 handler
+#endif
 			} else {
 				// dhcp fail
 #ifdef CONFIG_WIFI_ENABLE
@@ -407,6 +440,13 @@ void *net_get_uap_handle(void)
 	return &g_uap.netif;
 }
 
+#if CONFIG_BRIDGE
+void *net_get_br_handle(void)
+{
+	return &g_br.netif;
+}
+#endif
+
 void *net_get_netif_handle(uint8_t iface)
 {
 	return NULL;
@@ -473,6 +513,40 @@ void sta_ip_start(void)
 #endif
 }
 
+#if CONFIG_BRIDGE
+void bridge_ip_start(void)
+{
+
+	if (!bridge_ip_start_flag) {
+		LWIP_LOGD("bridge ip start\r\n");
+		bridge_ip_start_flag = true;
+		net_configure_address(&br_ip_settings, net_get_br_handle());
+		return;
+	}
+}
+void bridge_ip_stop(void)
+{
+	if (bridge_ip_start_flag) {
+			LWIP_LOGI("bridg ip down\r\n");
+			bridge_ip_start_flag = false;
+			netif_set_status_callback(&g_br.netif, NULL);
+			netifapi_dhcp_stop(&g_br.netif);
+			netifapi_netif_set_down(&g_br.netif);
+#if LWIP_IPV6
+			for (u8_t addr_idx = 1; addr_idx < LWIP_IPV6_NUM_ADDRESSES; addr_idx++) {
+				netif_ip6_addr_set(&g_br.netif, addr_idx, (const ip6_addr_t *)IP6_ADDR_ANY);
+				g_br.netif.ip6_addr_state[addr_idx] = IP6_ADDR_INVALID;
+			}
+#endif
+		}
+}
+
+uint32_t bridge_ip_is_start(void)
+{
+	return bridge_ip_start_flag;
+}
+#endif
+
 void sta_set_default_netif(void)
 {
 	netifapi_netif_set_default(net_get_sta_handle());
@@ -485,6 +559,19 @@ void ap_set_default_netif(void)
 	// send those packets, after finish sending, reset default netif
 	// to sat's netif.
 	netifapi_netif_set_default(net_get_uap_handle());
+#ifdef CONFIG_WIFI_REAPETER
+#if (IP_FORWARD && IP_NAPT)
+	if (netif_is_up(&g_mlan.netif))
+		netifapi_netif_set_default(net_get_sta_handle());
+#endif
+#endif
+
+#ifdef CONFIG_ETH
+#if (IP_FORWARD && IP_NAPT)
+	if (netif_is_up(&g_eth.netif) && netif_is_link_up(&g_eth.netif))
+		netifapi_netif_set_default(&g_eth.netif);
+#endif
+#endif
 }
 
 void reset_default_netif(void)
@@ -555,13 +642,17 @@ void ip_address_set(int iface, int dhcp, char *ip, char *mask, char *gw, char *d
 		addr.dns1 = (tmp);
 	}
 
-	if (iface == 1) // Station
-		memcpy(&sta_ip_settings, &addr, sizeof(addr));
-	else
+	if (iface == 0)
 		memcpy(&uap_ip_settings, &addr, sizeof(addr));
+	else if (iface == 1) // Station
+		memcpy(&sta_ip_settings, &addr, sizeof(addr));
+#if CONFIG_BRIDGE
+	else if (iface == 2)
+		memcpy(&br_ip_settings, &addr, sizeof(addr));
+#endif
 }
 
-bk_err_t bk_wifi_get_ip_status_internal(IPStatusTypedef *outNetpara, WiFi_Interface inInterface)
+bk_err_t bk_wifi_get_ip_status(IPStatusTypedef *outNetpara, WiFi_Interface inInterface)
 {
 	bk_err_t ret = kNoErr;
 	struct wlan_ip_config addr;
@@ -599,11 +690,32 @@ void sta_ip_mode_set(int dhcp)
 {
 	if (dhcp == 1) {
 		ip_address_set(1, DHCP_CLIENT, NULL, NULL, NULL, NULL);
+	} else if (dhcp == 2) {
+		uint32_t use_fast_dhcp = 0;
+		#if !CONFIG_STA_USE_STATIC_IP
+		{
+			/* read stored IP from flash as the static IP */
+			struct wlan_fast_connect_info fci = {0};
+			wlan_read_fast_connect_info(&fci);
+			if ((fci.ip_addr[0] != 0) && (fci.ip_addr[0] != 0xFF))
+			{
+				struct ipv4_config* n = &sta_ip_settings;
+				n->addr_type = ADDR_TYPE_FAST_DHCP;
+				os_memcpy((char *)&n->address, (char *)&fci.ip_addr, sizeof(fci.ip_addr));
+				os_memcpy((char *)&n->netmask, (char *)&fci.netmask, sizeof(fci.netmask));
+				os_memcpy((char *)&n->gw, (char *)&fci.gw, sizeof(fci.gw));
+				os_memcpy((char *)&n->dns1, (char *)&fci.dns1, sizeof(fci.dns1));
+				use_fast_dhcp = 1;
+			}
+		}
+		#endif // !CONFIG_STA_USE_STATIC_IP
+		if(use_fast_dhcp == 0)
+			ip_address_set(1, DHCP_CLIENT, NULL, NULL, NULL, NULL);
 	} else {
 		IPStatusTypedef ipStatus;
 		bk_err_t ret = kNoErr;
 		os_memset(&ipStatus, 0x0, sizeof(IPStatusTypedef));
-		ret = bk_wifi_get_ip_status_internal(&ipStatus, BK_STATION);
+		ret = bk_wifi_get_ip_status(&ipStatus, BK_STATION);
 		if (ret == kNoErr)
 			ip_address_set(1, DHCP_DISABLE, ipStatus.ip, ipStatus.mask, ipStatus.gate, ipStatus.dns);
 	}
@@ -627,8 +739,15 @@ int net_configure_address(struct ipv4_config *addr, void *intrfc_handle)
 
 	struct iface *if_handle = (struct iface *)intrfc_handle;
 
-	LWIP_LOGI("configuring iface %s (with %s)\n", if_handle->name,
-		(addr->addr_type == ADDR_TYPE_DHCP) ? "DHCP client" : "Static IP");
+	char *ip_type = NULL;
+	if(addr->addr_type == ADDR_TYPE_DHCP)
+		ip_type = "DHCP client";
+	else if(addr->addr_type == ADDR_TYPE_STATIC)
+		ip_type = "Static IP";
+	else if(addr->addr_type == ADDR_TYPE_FAST_DHCP)
+		ip_type = "Fast DHCP client";
+
+	LWIP_LOGI("configuring iface %s (with %s)\n", if_handle->name, ip_type);
 	netifapi_netif_set_down(&if_handle->netif);
 
 	/* De-register previously registered DHCP Callback for correct
@@ -655,6 +774,10 @@ int net_configure_address(struct ipv4_config *addr, void *intrfc_handle)
 			netifapi_netif_set_up(&if_handle->netif);
 			net_configure_dns(if_handle, (struct wlan_ip_config *)addr);
 #endif
+#if CONFIG_BRIDGE
+		} else if (if_handle == &g_br) {
+			netifapi_netif_set_default(net_get_br_handle());
+#endif
 		} else {
 			/*AP never configure DNS server address!!!*/
 			netifapi_netif_set_up(&if_handle->netif);
@@ -662,6 +785,7 @@ int net_configure_address(struct ipv4_config *addr, void *intrfc_handle)
 		break;
 
 	case ADDR_TYPE_DHCP:
+	case ADDR_TYPE_FAST_DHCP:
 		/* Reset the address since we might be transitioning from static to DHCP */
 		memset(&if_handle->ipaddr, 0, sizeof(ip_addr_t));
 		memset(&if_handle->nmask, 0, sizeof(ip_addr_t));
@@ -701,6 +825,11 @@ int net_configure_address(struct ipv4_config *addr, void *intrfc_handle)
 	}
 
 	return 0;
+}
+
+struct ipv4_config* bk_wifi_get_sta_settings(void)
+{
+	return &sta_ip_settings;
 }
 
 int net_get_if_addr(struct wlan_ip_config *addr, void *intrfc_handle)
@@ -807,7 +936,9 @@ void net_configure_dns(struct iface *if_handle, struct wlan_ip_config *ip)
 			if (if_handle == &g_mlan && bk_feature_fast_dhcp_enable()) {
 #ifdef CONFIG_WIFI_ENABLE
 				struct wlan_fast_connect_info fci = {0};
-				wlan_read_fast_connect_info_internal(&fci);
+#if CONFIG_EASY_FLASH_FAST_DHCP
+				bk_get_env_enhance("fast_connect_id", (void *)&fci, sizeof(struct wlan_fast_connect_info));
+#endif
 				os_memcpy((char *)&ip->ipv4.dns1, (char *)&fci.dns1, sizeof(fci.dns1));
 #endif
 			} else {
@@ -999,7 +1130,12 @@ static void ethernet_link_status_updated(struct netif *netif)
 
 int net_eth_start()
 {
+	int ret;
 	uint8_t mac[BK_MAC_ADDR_LEN];
+
+	miiphy_init();
+
+	ieee8023_phy_init();
 
 	// Init TCP/IP Stack
 	net_ipv4stack_init();
@@ -1008,7 +1144,10 @@ int net_eth_start()
 	bk_get_mac(mac, MAC_TYPE_ETH);
 
 	// Add netif
-	net_eth_add_netif(mac);
+	ret = net_eth_add_netif(mac);
+	if (ret) {
+		return ret;
+	}
 
 	/* Registers the default network iface */
 	netifapi_netif_set_default(&g_eth.netif);

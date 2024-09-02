@@ -34,6 +34,7 @@ typedef struct {
 #define flash_hal_get_mid(hal) flash_ll_get_mid((hal)->hw)
 #define flash_hal_read_status_reg(hal, sr_width) flash_ll_read_status_reg((hal)->hw, sr_width)
 #define flash_hal_write_status_reg(hal, sr_width, sr_data) flash_ll_write_status_reg((hal)->hw, sr_width, sr_data)
+#define flash_hal_enable_cpu_data_wr(hal) flash_ll_enable_cpu_data_wr((hal)->hw)
 #define flash_hal_disable_cpu_data_wr(hal) flash_ll_disable_cpu_data_wr((hal)->hw)
 #define flash_hal_clear_qwfr(hal) flash_ll_clear_qwfr((hal)->hw)
 #define flash_hal_set_mode(hal, mode_sel) flash_ll_set_mode((hal)->hw, mode_sel)
@@ -51,6 +52,7 @@ typedef struct {
 #define flash_hal_write_data(hal, data) flash_ll_write_data((hal)->hw, data)
 #define flash_hal_write_enable(hal) flash_ll_write_enable((hal)->hw)
 #define flash_hal_write_disable(hal) flash_ll_write_disable((hal)->hw)
+#define flash_hal_read_offset_enable(hal) flash_ll_read_offset_enable((hal)->hw)
 
 bk_err_t flash_hal_init(flash_hal_t *hal);
 uint16_t flash_hal_get_protect_value(flash_hal_t *hal, uint8_t status_reg_size,

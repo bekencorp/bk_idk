@@ -162,12 +162,15 @@ bk_err_t rtos_create_psram_thread( beken_thread_t* thread, uint8_t priority, con
 
 bk_err_t rtos_delete_thread( beken_thread_t* thread )
 {
+	extern void pthread_internal_local_storage_destructor_callback(TaskHandle_t handle);
     if ( thread == NULL )
     {
+		pthread_internal_local_storage_destructor_callback(NULL);
         vTaskDelete( NULL );
     }
     else if ( xTaskIsTaskFinished( *thread ) != pdTRUE )
     {
+		pthread_internal_local_storage_destructor_callback(*thread);
         vTaskDelete( *thread );
     }
 
@@ -377,6 +380,19 @@ bk_err_t rtos_lock_mutex( beken_mutex_t* mutex )
 	RTOS_ASSERT_INT_ENABLED_WITH_SCHEDULER();
 
     if ( xSemaphoreTake( *mutex, BEKEN_WAIT_FOREVER ) != pdPASS )
+    {
+        return kGeneralErr;
+    }
+
+    return kNoErr;
+}
+
+bk_err_t rtos_lock_mutex_timeout( beken_mutex_t* mutex, uint32_t timeout_ms)
+{
+	RTOS_ASSERT_TASK_CONTEXT();
+	RTOS_ASSERT_INT_ENABLED_WITH_SCHEDULER();
+
+    if ( xSemaphoreTake( *mutex, timeout_ms) != pdPASS )
     {
         return kGeneralErr;
     }

@@ -49,16 +49,22 @@ void mpu_clear(uint32_t rnr)
 {
     ARM_MPU_Disable();
     ARM_MPU_ClrRegion(rnr);
-    // ARM_MPU_Enable(MPU_CTRL_PRIVDEFENA_Msk | MPU_CTRL_HFNMIENA_Msk);
+#if CONFIG_SPE
     ARM_MPU_Enable(MPU_CTRL_HFNMIENA_Msk);
+#else
+    ARM_MPU_Enable(MPU_CTRL_PRIVDEFENA_Msk | MPU_CTRL_HFNMIENA_Msk);
+#endif
 }
 
 void mpu_cfg(uint32_t rnr, uint32_t rbar, uint32_t rlar)
 {
     ARM_MPU_Disable();
     ARM_MPU_SetRegion(rnr, rbar, rlar);
-    // ARM_MPU_Enable(MPU_CTRL_PRIVDEFENA_Msk | MPU_CTRL_HFNMIENA_Msk);
+#if CONFIG_SPE
     ARM_MPU_Enable(MPU_CTRL_HFNMIENA_Msk);
+#else
+    ARM_MPU_Enable(MPU_CTRL_PRIVDEFENA_Msk | MPU_CTRL_HFNMIENA_Msk);
+#endif
     SCB_CleanInvalidateDCache();
 }
 
@@ -85,8 +91,11 @@ void mpu_enable(void)
         ARM_MPU_SetMemAttr(j, s_mpu_attrs[j]);
     }
 
-    // ARM_MPU_Enable(MPU_CTRL_PRIVDEFENA_Msk | MPU_CTRL_HFNMIENA_Msk);
+#if CONFIG_SPE
     ARM_MPU_Enable(MPU_CTRL_HFNMIENA_Msk);
+#else
+    ARM_MPU_Enable(MPU_CTRL_PRIVDEFENA_Msk | MPU_CTRL_HFNMIENA_Msk);
+#endif
 }
 
 void mpu_disable(void)

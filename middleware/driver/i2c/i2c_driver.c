@@ -718,6 +718,37 @@ bk_err_t bk_i2c_master_write(i2c_id_t id, uint32_t dev_addr, const uint8_t *data
 	return s_i2c[id].err_code;
 }
 
+bk_err_t bk_i2c_master_write_noaddr(i2c_id_t id, const uint8_t *data, uint32_t size, uint32_t timeout_ms)
+{
+	I2C_RETURN_ON_NOT_INIT();
+	I2C_RETURN_ON_ID_NOT_INIT(id);
+	I2C_PM_CHECK_RESTORE(id);
+	BK_RETURN_ON_ERR(i2c_wait_sm_bus_idle(id, timeout_ms));
+	if (timeout_ms != 0xFFFFFFFF){
+		i2ccallback[id].asyncflag = 1;
+	}
+	uint32_t int_level = rtos_enter_critical();
+	s_i2c[id].err_code = BK_OK;
+	s_i2c[id].work_mode = I2C_MASTER_WRITE;
+	s_i2c[id].is_with_mem_addr = false;
+	s_i2c[id].dev_addr = data[0];
+	s_i2c[id].data_ptr = (uint8_t *)data + 1;
+	s_i2c[id].data_size = size - 1;
+	s_i2c[id].data_offset = 0;
+	s_i2c[id].int_status = 0;
+	i2c_master_start(id);
+	// write first byte
+	i2c_hal_write_byte(&s_i2c[id].hal, data[0]);
+	i2c_hal_enable_start(&s_i2c[id].hal);
+	s_i2c[id].master_status = I2C_TX_DATA;
+	i2c_hal_set_write_int_mode(&s_i2c[id].hal, size);
+	rtos_exit_critical(int_level);
+
+	rtos_get_semaphore(&s_i2c[id].tx_sema, timeout_ms);
+
+	return s_i2c[id].err_code;
+}
+
 bk_err_t bk_i2c_master_read(i2c_id_t id, uint32_t dev_addr, uint8_t *data, uint32_t size, uint32_t timeout_ms)
 {
 	I2C_RETURN_ON_NOT_INIT();
@@ -738,6 +769,38 @@ bk_err_t bk_i2c_master_read(i2c_id_t id, uint32_t dev_addr, uint8_t *data, uint3
 	s_i2c[id].int_status = 0;
 	i2c_master_start(id);
 	i2c_master_set_read_dev_addr(id, dev_addr);
+	i2c_hal_set_rx_mode(&s_i2c[id].hal);
+	i2c_hal_set_read_int_mode(&s_i2c[id].hal, size);
+	rtos_exit_critical(int_level);
+
+	rtos_get_semaphore(&s_i2c[id].rx_sema, timeout_ms);
+
+	return s_i2c[id].err_code;
+}
+
+bk_err_t bk_i2c_master_read_noaddr(i2c_id_t id, uint8_t *data, uint32_t size, uint32_t timeout_ms)
+{
+	I2C_RETURN_ON_NOT_INIT();
+	I2C_RETURN_ON_ID_NOT_INIT(id);
+	I2C_PM_CHECK_RESTORE(id);
+	BK_RETURN_ON_ERR(i2c_wait_sm_bus_idle(id, timeout_ms));
+	if (timeout_ms != 0xFFFFFFFF){
+		i2ccallback[id].asyncflag = 1;
+	}
+	uint32_t int_level = rtos_enter_critical();
+	s_i2c[id].err_code = BK_OK;
+	s_i2c[id].work_mode = I2C_MASTER_READ;
+	s_i2c[id].is_with_mem_addr = false;
+	s_i2c[id].dev_addr = data[0];
+	s_i2c[id].data_ptr = data;
+	s_i2c[id].data_size = size;
+	s_i2c[id].data_offset = 0;
+	s_i2c[id].int_status = 0;
+	i2c_master_start(id);
+	// skip read slave address
+	s_i2c[id].master_status = I2C_RX_DATA;
+	i2c_hal_enable_start(&s_i2c[id].hal);
+	s_i2c[id].int_status |= I2C1_F_START;
 	i2c_hal_set_rx_mode(&s_i2c[id].hal);
 	i2c_hal_set_read_int_mode(&s_i2c[id].hal, size);
 	rtos_exit_critical(int_level);

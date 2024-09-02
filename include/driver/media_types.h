@@ -51,8 +51,12 @@ extern "C" {
 #define PIXEL_1080 (1080)
 #define PIXEL_1200 (1200)
 #define PIXEL_1280 (1280)
+#define PIXEL_1296 (1296)
 #define PIXEL_1600 (1600)
 #define PIXEL_1920 (1920)
+#define PIXEL_2304 (2304)
+#define PIXEL_4320 (4320)
+#define PIXEL_7680 (7680)
 
 /**
  * @brief define camera type
@@ -137,6 +141,8 @@ typedef enum
 	PPI_1280X720    = (PIXEL_1280 << 16) | PIXEL_720,
 	PPI_1600X1200   = (PIXEL_1600 << 16) | PIXEL_1200,
 	PPI_1920X1080   = (PIXEL_1920 << 16) | PIXEL_1080,
+	PPI_2304X1296   = (PIXEL_2304 << 16) | PIXEL_1296,
+	PPI_7680X4320   = (PIXEL_7680 << 16) | PIXEL_4320,
 } media_ppi_t;
 
 typedef enum
@@ -268,12 +274,13 @@ typedef enum
 
 typedef struct
 {
+    uint32_t uvc_dev_id;
 	uint8_t *data_buffer;
 	uint8_t  num_packets;
 	mem_location_t locate;
 	uint32_t data_buffer_size;
-	//cam_stream_state_t packet_state;
-	//cam_stream_state_t *state;
+//  cam_stream_state_t packet_state;
+//  cam_stream_state_t *state;
 	uint8_t packet_state;
 	uint8_t *state;
 	uint16_t *num_byte;
@@ -301,11 +308,25 @@ typedef struct
 	frame_fps_t  fps;
 } frame_info_t;
 
+typedef struct
+{
+	yuv_mode_t     mode;
+	pixel_format_t fmt;
+	frame_info_t   info;
+}media_uvc_device_t;
+
 typedef struct {
 	camera_type_t  type;
 	yuv_mode_t     mode;
 	pixel_format_t fmt;
 	frame_info_t   info;
+
+	uint32_t num_uvc_dev;
+    uint16_t dualstream;
+	yuv_mode_t     d_mode;
+	pixel_format_t d_fmt;
+	frame_info_t   d_info;
+    media_uvc_device_t uvc_device[2];
 } media_camera_device_t;
 
 
@@ -365,12 +386,16 @@ typedef struct
 
 typedef struct
 {
-	void              (*init)  (mem_location_t locate, uint16_t MaxPacketSize, uint8_t max_packet_cnt, uint8_t cnt);
+	void              (*init)  (mem_location_t locate, uint16_t MaxPacketSize, uint8_t max_packet_cnt, uint8_t cnt, uint32_t idx_uvc);
 	void              (*deinit)(void);
 	camera_packet_t * (*malloc)(void);
 	void              (*push)  (camera_packet_t *packet);
 	camera_packet_t * (*pop)   (void);
 	void              (*free)  (camera_packet_t *packet);
+	camera_packet_t * (*d_malloc)(void);
+	void              (*d_push)  (camera_packet_t *packet);
+	camera_packet_t * (*d_pop)   (void);
+	void              (*d_free)  (camera_packet_t *packet);
 } camera_packet_control_t;
 
 typedef struct
@@ -468,6 +493,7 @@ typedef struct
 	uint32_t jpeg_length; /**< jpeg frame length */
 	uint32_t h264_length; /**< h264 frame length */
 	uint32_t uvc_error;   /**< error number frame of uvc */
+    uint32_t uvc_h264_error;
 	uint32_t jpeg_kbps;   /**< jpeg data bits stream rate */
 	uint32_t h264_kbps;   /**< h264 data bits stream rate */
 	uint32_t wifi_kbps;   /**< wifi transfer data bits stream rate */
@@ -590,6 +616,16 @@ static inline media_ppi_t get_string_to_ppi(char *string)
 {
 	uint32_t value = PPI_DEFAULT;
 
+	if (strcmp(string, "7680X4320") == 0)
+	{
+		value = PPI_7680X4320;
+	}
+
+	if (strcmp(string, "2304X1296") == 0)
+	{
+		value = PPI_2304X1296;
+	}
+
 	if (strcmp(string, "1920X1080") == 0)
 	{
 		value = PPI_1920X1080;
@@ -666,6 +702,16 @@ static inline media_ppi_t get_string_to_ppi(char *string)
 	if (strcmp(string, "480X480") == 0)
 	{
 		value = PPI_480X480;
+	}
+
+	if (strcmp(string, "400X400") == 0)
+	{
+		value = PPI_400X400;
+	}
+
+	if (strcmp(string, "412X412") == 0)
+	{
+		value = PPI_412X412;
 	}
 
 	if (strcmp(string, "170X320") == 0)
@@ -793,6 +839,13 @@ static inline void h264_encode_sei_init(uint8_t *sei)
 		.info.resolution.width = 640,    \
 		.info.resolution.height = 480,   \
 		.info.fps = FPS25,         \
+		.num_uvc_dev = 1,                \
+		.dualstream = 0,                 \
+		.d_mode = H264_MODE,             \
+		.d_fmt = PIXEL_FMT_JPEG,         \
+        .d_info.resolution.width = 1920, \
+        .d_info.resolution.height = 1080,\
+        .d_info.fps = FPS25,             \
 }
 
 

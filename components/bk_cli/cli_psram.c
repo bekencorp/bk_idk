@@ -27,7 +27,7 @@
 #endif
 #include "temp_detect_pub.h"
 
-#if (CONFIG_EASY_FLASH && CONFIG_EASY_FLASH_V4)
+#if (CONFIG_PSRAM_AUTO_DETECT)
 #include "bk_ef.h"
 #endif
 
@@ -829,7 +829,7 @@ static void cli_psram_cmd_handle_ext(char *pcWriteBuffer, int xWriteBufferLen, i
 	}
 	else if (os_strcmp(argv[1], "delete_flash") == 0)
 	{
-#if (CONFIG_EASY_FLASH && CONFIG_EASY_FLASH_V4)
+#if (CONFIG_PSRAM_AUTO_DETECT)
 		bk_set_env_enhance(PSRAM_CHIP_ID, NULL, 0);
 		msg = CLI_CMD_RSP_SUCCEED;
 #else

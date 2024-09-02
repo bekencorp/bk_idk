@@ -3,6 +3,7 @@ set(srcs)
 list(APPEND srcs
 	src/bk_phy_adapter.c
 	src/bk_rf_adapter.c
+	src/bk_phy_api.c
 )
 armino_component_register(SRCS "${srcs}"
     INCLUDE_DIRS "${incs}"

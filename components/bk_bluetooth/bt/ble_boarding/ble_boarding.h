@@ -24,19 +24,19 @@ int dm_ble_boarding_handle(char *pcWriteBuffer, int xWriteBufferLen, int argc, c
 #endif
 typedef struct
 {
-	char *ssid_value;
-	char *password_value;
-	ble_boarding_op_cb_t cb;
-	uint8_t boarding_notify[2];
-	uint16_t ssid_length;
-	uint16_t password_length;
+    char *ssid_value;
+    char *password_value;
+    ble_boarding_op_cb_t cb;
+    uint8_t boarding_notify[2];
+    uint16_t ssid_length;
+    uint16_t password_length;
 } ble_boarding_info_t;
 
 int ble_boarding_init(ble_boarding_info_t *info);
 int ble_boarding_adv_start(uint8_t *adv_data, uint16_t adv_len);
 int ble_boarding_notify(uint8_t *data, uint16_t length);
 #if CONFIG_AT
-extern int ble_boarding_handle(int sync,int argc, char **argv);
+extern int ble_boarding_handle(int sync, int argc, char **argv);
 #else
-extern int ble_boarding_handle(char *pcWriteBuffer, int xWriteBufferLen, int argc,char **argv);
+extern int ble_boarding_handle(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv);
 #endif

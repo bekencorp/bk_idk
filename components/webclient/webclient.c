@@ -158,7 +158,7 @@ static int webclient_read_line(struct webclient_session *session, char *buffer, 
  * http://[fe80::1]/index.html
  * http://[fe80::1]:80/index.html
  */
-static int webclient_resolve_address(struct webclient_session *session, struct addrinfo **res,
+int webclient_resolve_address(struct webclient_session *session, struct addrinfo **res,
                                      const char *url, const char **request)
 {
     int rc = WEBCLIENT_OK;

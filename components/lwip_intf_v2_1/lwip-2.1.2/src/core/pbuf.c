@@ -262,7 +262,11 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
           /* bail out unsuccessfully */
           return NULL;
         }
+        #if CONFIG_LWIP_RESV_TLEN_ENABLE
+        qlen = LWIP_MIN(rem_len, (u16_t)(PBUF_POOL_BUFSIZE_ALIGNED - LWIP_MEM_ALIGN_SIZE(offset) - LWIP_MEM_ALIGN_SIZE(PBUF_LINK_ENCAPSULATION_TLEN)));
+        #else
         qlen = LWIP_MIN(rem_len, (u16_t)(PBUF_POOL_BUFSIZE_ALIGNED - LWIP_MEM_ALIGN_SIZE(offset)));
+        #endif
         pbuf_init_alloced_pbuf(q, LWIP_MEM_ALIGN((void *)((u8_t *)q + SIZEOF_STRUCT_PBUF + offset)),
                                rem_len, qlen, type, 0);
         LWIP_ASSERT("pbuf_alloc: pbuf q->payload properly aligned",
@@ -286,7 +290,11 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
     case PBUF_RAM_RX:
 #endif
     case PBUF_RAM: {
+      #if CONFIG_LWIP_RESV_TLEN_ENABLE
+      u16_t payload_len = (u16_t)(LWIP_MEM_ALIGN_SIZE(offset) + LWIP_MEM_ALIGN_SIZE(length) + LWIP_MEM_ALIGN_SIZE(PBUF_LINK_ENCAPSULATION_TLEN));
+      #else
       u16_t payload_len = (u16_t)(LWIP_MEM_ALIGN_SIZE(offset) + LWIP_MEM_ALIGN_SIZE(length));
+      #endif
       mem_size_t alloc_len = (mem_size_t)(LWIP_MEM_ALIGN_SIZE(SIZEOF_STRUCT_PBUF) + payload_len);
 
       /* bug #50040: Check for integer overflow when calculating alloc_len */

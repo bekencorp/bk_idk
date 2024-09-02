@@ -164,6 +164,9 @@ void http_wr_to_flash(char *page, UINT32 len);
 void bk_ota_set_flag(uint32_t flag);
 uint32_t bk_ota_get_flag(void);
 void bk_ota_clear_flag(void);
+void security_ota_init(void);
+int security_ota_deinit(void);
+int http_data_process(char *buf, UINT32 len, UINT32 recived, UINT32 total);
 #endif
 
 #ifdef __cplusplus

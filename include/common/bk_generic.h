@@ -148,31 +148,31 @@ typedef void (*FUNC_2PARAM_PTR)(void *arg, uint8_t vif_idx);
 #define BIT64(i)                  (1LL << (i))
 
 #ifndef __bswap16
-static inline __uint16_t __bswap16(__uint16_t _x)
+static inline uint16_t __bswap16(uint16_t _x)
 {
 
-	return ((__uint16_t)((_x >> 8) | ((_x << 8) & 0xff00)));
+	return ((uint16_t)((_x >> 8) | ((_x << 8) & 0xff00)));
 }
 #endif
 
 #ifndef __bswap32
-static inline __uint32_t __bswap32(__uint32_t _x)
+static inline uint32_t __bswap32(uint32_t _x)
 {
 
-	return ((__uint32_t)((_x >> 24) | ((_x >> 8) & 0xff00) |
+	return ((uint32_t)((_x >> 24) | ((_x >> 8) & 0xff00) |
 	    ((_x << 8) & 0xff0000) | ((_x << 24) & 0xff000000)));
 }
 #endif
 
 #ifndef __bswap64
-static inline __uint64_t __bswap64(__uint64_t _x)
+static inline uint64_t __bswap64(uint64_t _x)
 {
 
-	return ((__uint64_t)((_x >> 56) | ((_x >> 40) & 0xff00) |
+	return ((uint64_t)((_x >> 56) | ((_x >> 40) & 0xff00) |
 	    ((_x >> 24) & 0xff0000) | ((_x >> 8) & 0xff000000) |
-	    ((_x << 8) & ((__uint64_t)0xff << 32)) |
-	    ((_x << 24) & ((__uint64_t)0xff << 40)) |
-	    ((_x << 40) & ((__uint64_t)0xff << 48)) | ((_x << 56))));
+	    ((_x << 8) & ((uint64_t)0xff << 32)) |
+	    ((_x << 24) & ((uint64_t)0xff << 40)) |
+	    ((_x << 40) & ((uint64_t)0xff << 48)) | ((_x << 56))));
 }
 #endif
 
@@ -197,10 +197,19 @@ static inline __uint64_t __bswap64(__uint64_t _x)
 #define ___ntohl(x) __be32_to_cpu(x)
 #define ___ntohs(x) __be16_to_cpu(x)
 
-#if (!CONFIG_RTT)
+#ifndef htons
 #define htons(x) __htons(x)
+#endif
+
+#ifndef ntohs
 #define ntohs(x) __ntohs(x)
+#endif
+
+#ifndef htonl
 #define htonl(x) __htonl(x)
+#endif
+
+#ifndef ntohl
 #define ntohl(x) __ntohl(x)
 #endif
 

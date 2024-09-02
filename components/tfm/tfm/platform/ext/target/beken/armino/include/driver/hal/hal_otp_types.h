@@ -28,6 +28,23 @@ extern "C" {
  */
 #define BK_ERR_OTP_READ_BUFFER_NULL   (BK_ERR_OTP_BASE - 1) /**< The pointed buff is NULL */
 #define BK_ERR_OTP_ADDR_OUT_OF_RANGE  (BK_ERR_OTP_BASE - 2) /**< OTP address is out of range */
+#define BK_ERR_NO_READ_PERMISSION     (BK_ERR_OTP_BASE - 3) /**< Not have read privilege  */
+#define BK_ERR_NO_WRITE_PERMISSION    (BK_ERR_OTP_BASE - 4) /**< Not have write privilege */
+#define BK_ERR_OTP_WRITE_WORD         (BK_ERR_OTP_BASE - 5) /**< OTP should write/read with word(4 Byte)*/
+#define BK_ERR_OTP_NOT_EMPTY          (BK_ERR_OTP_BASE - 6) /**< try to write area already has value*/
+#define BK_ERR_OTP_UPDATE_NOT_EQUAL   (BK_ERR_OTP_BASE - 7) /**< after update not equal to expected*/
+
+#define BK_ERR_OTP_OPERATION_ERROR    (BK_ERR_OTP_BASE - 8) /**< otp operation error*/
+#define BK_ERR_OTP_OPERATION_WARNING  (BK_ERR_OTP_BASE - 9) /**< otp operation warning*/
+#define BK_ERR_OTP_OPERATION_WRONG    (BK_ERR_OTP_BASE - 10) /**< otp operation wrong*/
+#define BK_ERR_OTP_OPERATION_FORBID   (BK_ERR_OTP_BASE - 11)/**< otp operation forbid*/
+#define BK_ERR_OTP_OPERATION_FAIL     (BK_ERR_OTP_BASE - 12)/** otp operation other error*/
+#define BK_ERR_OTP_INIT_FAIL          (BK_ERR_OTP_BASE - 13)/** otp init fail*/
+
+#define BK_ERR_OTP_OPERATION_ERROR_MASK         (1 << 16)
+#define BK_ERR_OTP_OPERATION_FAIL_MASK          (1 << 19)
+#define BK_ERR_OTP_INIT_FAIL_MASK               (1 << 20)
+#define BK_ERR_OTP_FULL_ERROR_MASK              (0x1F << 16)
 
 typedef uint8_t otp_unit_t; /**< otp uint id */
 

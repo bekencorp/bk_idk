@@ -64,6 +64,7 @@
 #include "tfm_reg_nsc.h"
 #endif
 
+
 static int hex2num(char c)
 {
 	if (c >= '0' && c <= '9')
@@ -140,7 +141,7 @@ static void cli_reg_write_read_cmd_common(char *pcWriteBuffer, int xWriteBufferL
 		os_memcpy(&optr_tab[optr_len], argv[2], os_strlen(argv[2]));
 
 		cli_hexstr2bin((char *)optr_tab, (u8 *)&reg_addr, 4);
-		reg_addr = ntohl(reg_addr);
+		reg_addr = __ntohl(reg_addr);
 		if (is_secure) {
 			os_printf("regshow R: addr:0x%08x, value:0x%08x\r\n", reg_addr, REG_READ(reg_addr));
 		} else {
@@ -163,7 +164,7 @@ static void cli_reg_write_read_cmd_common(char *pcWriteBuffer, int xWriteBufferL
 		os_memcpy(&optr_tab[optr_len], argv[2], os_strlen(argv[2]));
 
 		cli_hexstr2bin((char *)optr_tab, (u8 *)&reg_addr, 4);
-		reg_addr = ntohl(reg_addr);
+		reg_addr = __ntohl(reg_addr);
 
 
 		os_memset(optr_tab, 0x30, 8);
@@ -175,7 +176,7 @@ static void cli_reg_write_read_cmd_common(char *pcWriteBuffer, int xWriteBufferL
 		optr_len = 8 - optr_len;
 		os_memcpy(&optr_tab[optr_len], argv[3], os_strlen(argv[3]));
 		cli_hexstr2bin((char *)optr_tab, (u8 *)&reg_value, 4);
-		reg_value = ntohl(reg_value);
+		reg_value = __ntohl(reg_value);
 
 		if (is_secure == false) {
 #if CONFIG_TFM_REG_ACCESS_NSC

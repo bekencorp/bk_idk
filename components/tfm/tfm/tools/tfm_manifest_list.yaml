@@ -22,21 +22,6 @@
   "version_minor": 1,
   "manifest_list": [
     {
-      "name": "Non-Secure Mailbox Agent",
-      "short_name": "TFM_NS_AGENT_MAILBOX",
-      "manifest": "${CMAKE_SOURCE_DIR}/secure_fw/partitions/ns_agent_mailbox/ns_agent_mailbox.yaml",
-      "output_path": "secure_fw/partitions/ns_agent_mailbox",
-      "conditional": "@TFM_MULTI_CORE_TOPOLOGY@",
-      "version_major": 0,
-      "version_minor": 1,
-      "pid": 0,
-      "linker_pattern": {
-        "library_list": [
-           "*tfm_*ns_agent_mailbox.*"
-         ],
-      }
-    },
-    {
       "name": "Protected Storage Service",
       "short_name": "TFM_SP_PS",
       "manifest": "${CMAKE_SOURCE_DIR}/secure_fw/partitions/protected_storage/tfm_protected_storage.yaml",
@@ -63,21 +48,6 @@
       "linker_pattern": {
         "library_list": [
            "*tfm_*partition_its.*"
-         ]
-      }
-    },
-    {
-      "name": "TFM Audit Log Service",
-      "short_name": "TFM_SP_AUDIT_LOG",
-      "manifest": "${CMAKE_SOURCE_DIR}/secure_fw/partitions/audit_logging/tfm_audit_logging.yaml",
-      "output_path": "secure_fw/partitions/audit_logging",
-      "conditional": "@TFM_PARTITION_AUDIT_LOG@",
-      "version_major": 0,
-      "version_minor": 1,
-      "pid": 255,
-      "linker_pattern": {
-        "library_list": [
-           "*tfm_*partition_audit.*"
          ]
       }
     },
@@ -123,22 +93,6 @@
       "linker_pattern": {
         "library_list": [
            "*tfm_*partition_attestation.*"
-         ]
-      }
-    },
-    {
-      "name": "TF-M PSA Proxy Service",
-      "short_name": "TFM_SP_PSA_PROXY",
-      "manifest": "${CMAKE_SOURCE_DIR}/secure_fw/partitions/psa_proxy/tfm_psa_proxy.yaml",
-      "output_path": "secure_fw/partitions/psa_proxy",
-      "tfm_extensions": true,
-      "conditional": "@TFM_PARTITION_PSA_PROXY@",
-      "version_major": 0,
-      "version_minor": 1,
-      "pid": 270,
-      "linker_pattern": {
-        "library_list": [
-           "*tfm_*partition_psa_proxy.*"
          ]
       }
     },

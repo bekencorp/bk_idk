@@ -161,9 +161,50 @@ int bk_feature_config_wifi_csi_enable(void);
  *
  */
 int bk_feature_close_coexist_csa(void);
+/**
+ * @brief     Interface for customer to set the MAX number of stations supported by Mac
+ *
+ *
+ * @return
+ *    - the MAX number of stations supported by Mac
+ */
+int bk_feature_get_mac_sup_sta_max_num(void);
+
+/**
+ * @brief     Interface for customer to control network found event report
+ *
+ *
+ * @return
+ *    - 0: disable network found evevnt
+ *    - 1: enable network found event
+ *
+ */
+
+int bk_feature_network_found_event(void);
+
 
 int bk_feature_config_cache_enable(void);
 int bk_feature_ckmn_enable(void);
 int bk_feature_send_deauth_before_connect(void);
 int bk_feature_get_scan_speed_level(void);
+/**
+ * @brief     Interface for customer to save cali data to OTP2
+ *
+ *
+ * @return
+ *    - 0: Disable save cali data to OTP2
+ *    - 1: Enable save cali data to OTP2
+ *
+ */
+int bk_feature_save_rfcali_to_otp_enable(void);
 
+/**
+ * @brief     Interface for customer to close or open phy log
+ *
+ *
+ * @return
+ *    - 0: close phy log
+ *    - 1: open phy log
+ *
+ */
+int bk_feature_phy_log_enable(void);

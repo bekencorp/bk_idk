@@ -338,6 +338,23 @@ ble_err_t bk_ble_set_scan_rsp_data(uint8_t actv_idx, uint8_t* scan_buff, uint8_t
 ble_err_t bk_ble_set_per_adv_data(uint8_t actv_idx, uint8_t* per_adv_buff, uint8_t per_adv_len, ble_cmd_cb_t callback);
 
 /**
+ * @brief     Set the adv random addr
+ *
+ * @param
+ *    - actv_idx: the index of activity
+ *    - addr: random address
+ *    - callback: register a callback for this action, ble_cmd_t: BLE_SET_ADV_RANDOM_ADDR
+ * @attention 1.you must wait callback status, 0 mean success.
+ * @attention 2.must used after bk_ble_create_advertising
+ *
+ *
+ * @return
+ *    - BK_ERR_BLE_SUCCESS: succeed
+ *    - others: other errors.
+ */
+ble_err_t bk_ble_set_adv_random_addr(uint8_t actv_idx, uint8_t* addr, ble_cmd_cb_t callback);
+
+/**
  * @brief     Read the phy of connection device
  *
  * @param
@@ -900,6 +917,24 @@ ble_err_t bk_ble_read_response_value(uint8_t con_idx, uint32_t len, uint8_t *buf
 ble_err_t bk_ble_sec_send_auth_mode(uint8_t con_idx, uint8_t mode, uint8_t iocap, uint8_t sec_req, uint8_t oob);
 
 /**
+ * @brief As master, configure auth mode param
+ *
+ * @param
+ *    - con_idx: the index of connection
+ *    - mode: authentication features
+ *    - iocap: IO Capability Values
+ *    - sec_req: Security Defines
+ *    - oob: OOB Data Present Flag Values
+ *    - initiator_key_distr: init key distr, see gap_key_distr
+ *    - responder_key_distr: resp key distr, see gap_key_distr
+ *
+ * @return
+ * - BK_ERR_BLE_SUCCESS: succeed
+ * - others: fail
+ */
+ble_err_t bk_ble_sec_send_auth_mode_ext(uint8_t con_idx, uint8_t mode, uint8_t iocap, uint8_t sec_req, uint8_t oob, uint8_t initiator_key_distr, uint8_t responder_key_distr);
+
+/**
  * @brief ble init function,this api is deprecated,please use bk_bluetooth_init.
  *
  * @param
@@ -957,14 +992,16 @@ ble_err_t bk_ble_delete_service(struct bk_ble_db_cfg* ble_db_cfg);
 ble_err_t bk_ble_att_read(uint8_t con_idx, uint16_t att_handle);
 
 /**
- * @brief Create Bluetooth Bonding
+ * @brief start authentication the link
  *
  * @param
  *    - con_idx: the index of connection
  *    - auth: authentication features(see enum \ref gap_auth)
- *    - iocap: IO Capability Values(see enum \ref gap_io_cap)
+ *    - iocap: IO Capability Values(see enum \ref bk_ble_gap_io_cap)
  *    - sec_req: Security Defines(see enum \ref gap_sec_req)
  *    - oob: OOB Data Present Flag Values(see enum \ref gap_oob)
+ *
+ * @attention if the link has not been bonded, it will trigger pairing, otherwise it will trigger the link encryption.
  *
  * @return
  * - BK_ERR_BLE_SUCCESS: succeed
@@ -972,6 +1009,290 @@ ble_err_t bk_ble_att_read(uint8_t con_idx, uint16_t att_handle);
  */
 ble_err_t bk_ble_create_bond(uint8_t con_idx, uint8_t auth, uint8_t iocap, uint8_t sec_req, uint8_t oob);
 
+/**
+ * @brief create bond
+ *
+ * @param
+ *    - con_idx: the index of connection
+ *    - auth: authentication features(see enum \ref gap_auth)
+ *    - iocap: IO Capability Values(see enum \ref bk_ble_gap_io_cap)
+ *    - sec_req: Security Defines(see enum \ref gap_sec_req)
+ *    - oob: OOB Data Present Flag Values(see enum \ref gap_oob)
+ *    - initiator_key_distr: init key distr, see gap_key_distr
+ *    - responder_key_distr: resp key distr, see gap_key_distr
+ *
+ * @attention if the link has not been bonded, it will trigger pairing, otherwise it will trigger the link encryption.
+ *
+ * @return
+ * - BK_ERR_BLE_SUCCESS: succeed
+ * - others: fail
+ */
+ble_err_t bk_ble_create_bond_ext(uint8_t con_idx, uint8_t auth, uint8_t iocap, uint8_t sec_req, uint8_t oob, uint8_t initiator_key_distr, uint8_t responder_key_distr);
+
+/**
+ * @brief send passkey when pairing
+ *
+ * @param
+ *    - con_idx: the index of connection
+ *    - accept: accept pair
+ *    - passkey: the num that peer need to input or local need to input
+ *
+ *
+ * @return
+ * - BK_ERR_BLE_SUCCESS: succeed
+ * - others: fail
+ */
+ble_err_t bk_ble_passkey_send(uint8_t con_idx, uint8_t accept, uint32_t passkey);
+
+/**
+ * @brief send number compare accept when pairing
+ *
+ * @param
+ *    - con_idx: the index of connection
+ *    - accept: accept pair
+ *
+ *
+ * @return
+ * - BK_ERR_BLE_SUCCESS: succeed
+ * - others: fail
+ */
+ble_err_t bk_ble_number_compare_send(uint8_t con_idx, uint8_t accept);
+
+/**
+ * @brief     Read the rssi of connection device. The result will report in callback registered through bk_ble_set_notice_cb with evt BLE_5_READ_RSSI_CMPL_EVENT, and param is ble_read_rssi_rsp_t *
+ *
+ * @param
+ *    - conn_idx: the index of connection device
+ * @attention 1.must used after after connected
+ *
+ * User example:
+ * @code
+ *     bk_ble_read_rssi(conn_idx);
+ * @endcode
+ *
+ * @return
+ *    - BK_ERR_BLE_SUCCESS: succeed
+ *    - others: other errors.
+ */
+ble_err_t bk_ble_read_rssi(uint8_t conn_idx);
+
+/**
+ * @brief           set local gap appearance
+ *
+ *
+ * @param[in]       appearance   - External appearance value, these values are defined by the Bluetooth SIG, please refer to
+ *                  https://specificationrefs.bluetooth.com/assigned-values/Appearance%20Values.pdf
+ *
+ * @return
+ *    - BK_ERR_BLE_SUCCESS: succeed
+ *    - others: other errors.
+ */
+ble_err_t bk_ble_config_local_appearance(uint16_t appearance);
+
+
+/**
+ * @brief Discover peer primary service. The result is report in the callback registered through bk_ble_register_app_sdp_common_callback, and evt is MST_TYPE_DISCOVER_PRI_SERVICE_RSP.
+ *        When completed, callback will report MST_TYPE_DISCOVER_COMPLETED with ble_descover_complete_inf and MST_TYPE_DISCOVER_PRI_SERVICE_RSP.
+ *
+ *
+ * @param
+ *    - sh: att start handle
+ *    - eh: att end handle
+ *
+ * @return
+ * - BK_ERR_BLE_SUCCESS: succeed
+ * - others: fail
+ */
+ble_err_t bk_ble_discover_primary_service(uint8_t conn_id, uint16_t sh, uint16_t eh);
+
+/**
+ * @brief Discover peer primary service. The result is report in the callback registered through bk_ble_register_app_sdp_common_callback, and evt is MST_TYPE_DISCOVER_PRI_SERVICE_BY_UUID_RSP.
+ *        When completed, callback will report MST_TYPE_DISCOVER_COMPLETED with ble_descover_complete_inf and MST_TYPE_DISCOVER_PRI_SERVICE_BY_UUID_RSP.
+ *
+ *
+ * @param
+ *    - sh: att start handle
+ *    - eh: att end handle
+ *
+ * @return
+ * - BK_ERR_BLE_SUCCESS: succeed
+ */
+ble_err_t bk_ble_discover_primary_service_by_uuid(uint8_t conn_id, uint16_t sh, uint16_t eh, uint16_t uuid);
+
+/**
+ * @brief Discover peer primary service. The result is report in the callback registered through bk_ble_register_app_sdp_common_callback, and evt is MST_TYPE_DISCOVER_PRI_SERVICE_BY_128_UUID_RSP.
+ *        When completed, callback will report MST_TYPE_DISCOVER_COMPLETED with ble_descover_complete_inf and MST_TYPE_DISCOVER_PRI_SERVICE_BY_128_UUID_RSP.
+ *     bk_ble_read_rssi(conn_idx);
+ * @param
+ *    - conn_id: the index of connection
+ *    - sh: att start handle
+ *    - eh: att end handle
+ *    - uuid: uuid that service need to find in 128bits
+ *
+ * @return
+ * - others: fail
+ */
+ble_err_t bk_ble_discover_primary_service_by_128uuid(uint8_t conn_id, uint16_t sh, uint16_t eh, uint8_t *uuid);
+
+/**
+ * @brief Discover peer characteristic. The result is report in the callback registered through bk_ble_register_app_sdp_common_callback, and evt is MST_TYPE_DISCOVER_CHAR_RSP.
+ *        When completed, callback will report MST_TYPE_DISCOVER_COMPLETED with ble_descover_complete_inf and MST_TYPE_DISCOVER_CHAR_RSP.
+ *
+ *
+ * @param
+ *    - conn_id: the index of connection
+ *    - sh: att start handle
+ *    - eh: att end handle
+ *
+ * @return
+ * - BK_ERR_BLE_SUCCESS: succeed
+ * - others: fail
+ */
+ble_err_t bk_ble_discover_characteristic(uint8_t conn_id, uint16_t sh, uint16_t eh);
+
+/**
+ * @brief Discover peer characteristic. The result is report in the callback registered through bk_ble_register_app_sdp_common_callback, and evt is MST_TYPE_DISCOVER_CHAR_BY_UUID_RSP.
+ *        When completed, callback will report MST_TYPE_DISCOVER_COMPLETED with ble_descover_complete_inf and MST_TYPE_DISCOVER_CHAR_BY_UUID_RSP.
+ *
+ *
+ * @param
+ *    - conn_id: the index of connection
+ *    - sh: att start handle
+ *    - eh: att end handle
+ *
+ * @return
+ * - BK_ERR_BLE_SUCCESS: succeed
+ * - others: fail
+ */
+ble_err_t bk_ble_discover_characteristic_by_uuid(uint8_t conn_id, uint16_t sh, uint16_t eh, uint16_t uuid);
+
+/**
+ * @brief Discover peer characteristic. The result is report in the callback registered through bk_ble_register_app_sdp_common_callback, and evt is MST_TYPE_DISCOVER_CHAR_BY_128_UUID_RSP.
+ *        When completed, callback will report MST_TYPE_DISCOVER_COMPLETED with ble_descover_complete_inf and MST_TYPE_DISCOVER_CHAR_BY_128_UUID_RSP.
+ *
+ * @param
+ *    - conn_id: the index of connection
+ *    - sh: att start handle
+ *    - eh: att end handle
+ *
+ * @return
+ * - others: fail
+ */
+ble_err_t bk_ble_discover_characteristic_by_128uuid(uint8_t conn_id, uint16_t sh, uint16_t eh, uint8_t *uuid);
+
+/**
+ * @brief Discover peer characteristic descriptor. The result is report in the callback registered through bk_ble_register_app_sdp_common_callback, and evt is MST_TYPE_DISCOVER_CHAR_DESC.
+ *        When completed, callback will report MST_TYPE_DISCOVER_COMPLETED with ble_descover_complete_inf and MST_TYPE_DISCOVER_CHAR_DESC.
+ *
+ *
+ * @param
+ *    - conn_id: the index of connection
+ *    - sh: att start handle
+ *    - eh: att end handle
+ *
+ * @return
+ * - BK_ERR_BLE_SUCCESS: succeed
+ * - others: fail
+ */
+ble_err_t bk_ble_discover_characteristic_descriptor(uint8_t conn_id, uint16_t sh, uint16_t eh);
+
+/**
+ * @brief As master, read attribute value, the result is reported in the callback registered through bk_ble_register_app_sdp_charac_callback
+ *
+ * @param
+ *    - con_idx: the index of connection
+ *    - att_handle: the handle of attribute value
+ *    - offset: the offset of attribute value
+ *
+ * @return
+ * - BK_ERR_BLE_SUCCESS: succeed
+ * - others: fail
+ */
+ble_err_t bk_ble_gattc_read(uint8_t con_idx, uint16_t att_handle, uint16_t offset);
+
+/**
+ * @brief As master, read attribute value, the result is reported in the callback registered through bk_ble_register_app_sdp_charac_callback
+ *
+ * @param
+ *    - con_idx: the index of connection
+ *    - sh: the start handle of attribute
+ *    - eh: the end handle of attribute
+ *    - uuid: uuid
+ *    - uuid_len: uuid len, may be 2 or 16
+ *
+ * @return
+ * - BK_ERR_BLE_SUCCESS: succeed
+ * - others: fail
+ */
+ble_err_t bk_ble_gattc_read_by_uuid(uint8_t conn_id, uint16_t sh, uint16_t eh, uint8_t *uuid, uint8_t uuid_len);
+
+/**
+ * @brief As master, write attribute value
+ *
+ * @param
+ *    - con_idx: the index of connection
+ *    - att_handle: the handle of attribute value
+ *    - data: value data
+ *    - len: the length of attribute value
+ *    - is_write_cmd: when true, will trigger write cmd, otherwise write req.
+ *
+ * @return
+ * - BK_ERR_BLE_SUCCESS: succeed
+ * - others: fail
+ */
+ble_err_t bk_ble_gattc_write(uint8_t con_idx, uint16_t att_handle, uint8_t *data, uint16_t len, uint8_t is_write_cmd);
+
+/**
+ * @brief clear the white list.
+ *
+ * @param
+ *
+ * @return
+ * - BK_ERR_BLE_SUCCESS: succeed
+ * - others: fail
+ */
+ble_err_t bk_ble_clear_white_list(void);
+
+/**
+ * @brief Add a device to the while list.
+ *
+ *
+ * @param
+ *    - addr: the address of the device.
+ *    - addr_type: the type of the address, 0 is public address, 1 is random address.
+ *
+ * @return
+ * - BK_ERR_BLE_SUCCESS: succeed
+ * - others: fail
+ */
+ble_err_t bk_ble_add_devices_to_while_list(bd_addr_t *addr, uint8_t addr_type);
+
+/**
+ * @brief Remove a device from the while list.
+ *
+ *
+ * @param
+ *    - addr: the address of the device.
+ *    - addr_type: the type of the address, 0 is public address, 1 is random address.
+ *
+ * @return
+ * - BK_ERR_BLE_SUCCESS: succeed
+ * - others: fail
+ */
+ble_err_t bk_ble_remove_devices_from_while_list(bd_addr_t *addr, uint8_t addr_type);
+
+/**
+ * @brief Set tx power.
+ *
+ *
+ * @param
+ *    - pwr_gain: tx power gain
+ *
+ * @return
+ * - BK_ERR_BLE_SUCCESS: succeed
+ * - others: fail
+ */
+ble_err_t bk_ble_set_tx_powr(uint8_t pwr_gain);
 /*
  * @}
  */

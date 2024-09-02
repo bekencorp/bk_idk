@@ -993,6 +993,7 @@ void pwm_hal_set_uie(pwm_hal_t *hal, pwm_ch_t hw_ch, uint32_t value);
 bool pwm_hal_is_uif_triggered(pwm_hal_t *hal, pwm_ch_t hw_ch, uint32_t int_status);
 uint32_t pwm_hal_get_tim_arr(pwm_hal_t *hal, pwm_ch_t hw_ch);
 uint32_t pwm_hal_get_tim_ccr1(pwm_hal_t *hal, pwm_ch_t hw_ch);
+uint32_t pwm_hal_get_tim_ccr2(pwm_hal_t *hal, pwm_ch_t hw_ch);
 void pwm_hal_set_multi_chan_tim_enable(pwm_hal_t *hal, uint32_t hw_ch, uint32_t value);
 
 #if CONFIG_PWM_PM_CB_SUPPORT

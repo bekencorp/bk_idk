@@ -98,6 +98,7 @@ error_mapping_to_psa_status_t(enum psa_attest_err_t attest_err)
 
 psa_status_t attest_init(void)
 {
+#if (TEST_S || TEST_NS)
     enum psa_attest_err_t res;
 
     res = attest_get_boot_data(TLV_MAJOR_IAS,
@@ -105,6 +106,9 @@ psa_status_t attest_init(void)
                                MAX_BOOT_STATUS);
 
     return error_mapping_to_psa_status_t(res);
+#else
+    return PSA_SUCCESS;
+#endif
 }
 
 /*!

@@ -73,6 +73,9 @@ enum lwip_ieee_eth_type {
   ETHTYPE_PROFINET  = 0x8892U,
   /** Ethernet for control automation technology */
   ETHTYPE_ETHERCAT  = 0x88A4U,
+#if CONFIG_WAPI_SUPPORT
+  ETHTYPE_WAI       = 0x88B4U,
+#endif
   /** Link layer discovery protocol */
   ETHTYPE_LLDP      = 0x88CCU,
   /** Serial real-time communication system */

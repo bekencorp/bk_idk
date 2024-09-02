@@ -826,6 +826,35 @@ float saradc_calculate(UINT16 adc_val)
     return practic_voltage;
 }
 
+float bk_adc_data_calculate(UINT16 adc_val, UINT8 adc_chan)
+{
+    float cali_value = 0;
+
+    if(adc_chan == 0)
+    {
+#if (CONFIG_SOC_BK7256XX)
+        cali_value = saradc_calculate(adc_val);
+        cali_value = cali_value*5/2;
+#elif(CONFIG_SOC_BK7236XX)
+        adc_val = adc_val*5/3;
+        cali_value = saradc_calculate(adc_val);
+#else
+        adc_val = adc_val*5/3;
+        cali_value = saradc_calculate(adc_val);
+#endif
+    }
+    else if(adc_chan == 7 || adc_chan == 8 || adc_chan == 9 || adc_chan == 11)
+    {
+        ADC_LOGI("adc_chan %d has been used\r\n", adc_chan);
+    }
+    else
+    {
+        cali_value = saradc_calculate(adc_val);
+    }
+
+    return cali_value;
+}
+
 UINT32 saradc_set_calibrate_val(uint16_t *value, SARADC_MODE mode)
 {
     uint32_t irq_level = rtos_disable_int();

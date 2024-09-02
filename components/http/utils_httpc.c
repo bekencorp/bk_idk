@@ -11,6 +11,7 @@
 #include <os/mem.h>
 #include <os/str.h>
 #include <driver/wdt.h>
+#include "security_ota.h"
 
 #if HTTP_WR_TO_FLASH
 #if CONFIG_FLASH_ORIGIN_API
@@ -18,13 +19,6 @@
 #else
 #include "driver/flash.h"
 #endif
-#endif
-#if (CONFIG_TFM_FWU)
-#include <driver/flash.h>
-#include "partitions.h"
-#include "CheckSumUtils.h"
-#define OTA_MAGIC_WORD "\x42\x4B\x37\x32\x33\x36\x35\x38"
-#define MANIFEST_SIZE  (4 * 1024)
 #endif
 
 #ifdef CONFIG_HTTP_AB_PARTITION
@@ -60,7 +54,7 @@ extern void flash_protection_op(UINT8 mode, PROTECT_TYPE type);
 HTTP_DATA_ST bk_http = {
 	.http_total = 0,
 	.do_data = 0,
-#if HTTP_WR_TO_FLASH
+#if HTTP_WR_TO_FLASH || CONFIG_DIRECT_XIP || CONFIG_OTA_OVERWRITE
 	.wr_buf = NULL,
 	.wr_last_len = 0,
 	.wr_tmp_buf = NULL,
@@ -72,49 +66,6 @@ static UINT32 ota_wr_block = 0;
 #endif
 #if CONFIG_OTA_POSITION_INDEPENDENT_AB
 static uint32 ota_partition_length = 0;
-#endif
-
-#if (CONFIG_TFM_FWU)
-typedef enum {
-	OTA_PARSE_HEADER = 0,
-	OTA_PARSE_IMG_HEADER,
-	OTA_PARSE_IMG,
-} ota_parse_type;
-
-typedef struct ota_parse_s {
-	ota_parse_type phase;
-	ota_header_t ota_header;
-	ota_image_header_t *ota_image_header;
-	UINT32 offset;
-	UINT32 index;
-	CRC32_Context ota_crc;
-	uint32_t total_rx_len;
-} ota_parse_t;
-
-typedef struct ota_image_info_s {
-	uint32_t partition_offset;
-	uint32_t partition_size;
-	uint8_t fwu_image_id;
-} ota_partition_info_t;
-
-const ota_partition_info_t s_ota_partition_info[] = {
-	{CONFIG_PRIMARY_MANIFEST_PHY_PARTITION_OFFSET,   CONFIG_PRIMARY_MANIFEST_PHY_PARTITION_SIZE,   FWU_IMAGE_TYPE_PRIMARY_MANIFEST},
-	{CONFIG_SECONDARY_MANIFEST_PHY_PARTITION_OFFSET, CONFIG_SECONDARY_MANIFEST_PHY_PARTITION_SIZE, FWU_IMAGE_TYPE_SECONDARY_MANIFEST},
-	{CONFIG_PRIMARY_BL2_PHY_PARTITION_OFFSET,        CONFIG_PRIMARY_BL2_PHY_PARTITION_SIZE,        FWU_IMAGE_TYPE_PRIMARY_BL2},
-	{CONFIG_SECONDARY_BL2_PHY_PARTITION_OFFSET,      CONFIG_SECONDARY_BL2_PHY_PARTITION_SIZE,      FWU_IMAGE_TYPE_SECONDARY_BL2},
-#if CONFIG_OTA_OVERWRITE
-	{CONFIG_OTA_PHY_PARTITION_OFFSET,                CONFIG_OTA_PHY_PARTITION_SIZE,                FWU_IMAGE_TYPE_FULL}
-#else
-	{CONFIG_SECONDARY_ALL_PHY_PARTITION_OFFSET,      CONFIG_SECONDARY_ALL_PHY_PARTITION_SIZE,      FWU_IMAGE_TYPE_FULL}
-#endif
-};
-static ota_parse_t ota_parse = {0};
-
-static int http_ota_parse_header(uint8_t **data, int *len);
-static int http_ota_parse_image_header(uint8_t **data, int *len);
-static int http_ota_parse_data(char *data, int len);
-static void http_ota_init(void);
-static int http_ota_deinit(void);
 #endif
 
 // static int httpclient_parse_host(const char *url, char *host, uint32_t maxhost_len);
@@ -166,6 +117,10 @@ static uint32 http_get_sapp_partition_length(bk_partition_t partition)
 	return ret_length;
 }
 
+uint32_t get_http_flash_wr_buf_max(void)
+{
+	return HTTP_FLASH_WR_BUF_MAX;
+}
 
 int httpclient_conn(httpclient_t *client)
 {
@@ -898,255 +853,6 @@ void http_wr_to_flash(char *page, UINT32 len)
 	}
 }
 #endif
-#if (CONFIG_TFM_FWU)
-static int http_ota_parse_header(uint8_t **data, int *len)
-{
-	uint32_t data_len, offset;
-	uint8_t *tmp;
-
-	if (*len == 0) return 0;
-
-	if (ota_parse.offset == 0) {
-		bk_printf("downloading OTA global header...\r\n");
-	}
-
-	tmp = (uint8_t *)&ota_parse.ota_header;
-	data_len = sizeof(ota_header_t) - ota_parse.offset;
-	if (*len < data_len) {
-		os_memcpy(tmp + ota_parse.offset, *data, *len);
-		ota_parse.offset += *len;
-		return 0;
-	} else {
-		os_memcpy(tmp + ota_parse.offset, *data, data_len);
-		*data += data_len;
-		*len -= data_len;
-
-		//check global header magic code!
-		if(os_memcmp(OTA_MAGIC_WORD,tmp,8) != 0){
-			bk_printf("magic error\r\n");
-			return BK_FAIL;
-		}
-
-		/*calculate global header crc*/
-		offset = sizeof(ota_parse.ota_header.magic) + sizeof(ota_parse.ota_header.crc);
-		tmp += offset;
-		CRC32_Update(&ota_parse.ota_crc, tmp, sizeof(ota_header_t) - offset);
-
-		/*to next parse*/
-		ota_parse.phase = OTA_PARSE_IMG_HEADER;
-		ota_parse.offset = 0;
-		if (ota_parse.ota_image_header) {
-			os_free(ota_parse.ota_image_header);
-		}
-		offset = ota_parse.ota_header.image_num * sizeof(ota_image_header_t);
-		ota_parse.ota_image_header = (ota_image_header_t *)os_malloc(offset);
-		if (!ota_parse.ota_image_header) {
-			bk_printf("ota parse image header: oom\r\n");
-			return BK_FAIL;
-		}
-		bk_printf("crc %x, version %x, header_len %x, image_num %x\r\n",
-			ota_parse.ota_header.crc, ota_parse.ota_header.version, ota_parse.ota_header.header_len, ota_parse.ota_header.image_num);
-	}
-
-	return 0;
-}
-
-static int http_ota_parse_image_header(uint8_t **data, int *len)
-{
-	int i;
-	uint32_t data_len, offset, crc_control;
-	uint8_t *tmp;
-
-	if (*len == 0) return 0;
-
-	if (ota_parse.offset == 0) {
-		bk_printf("downloading OTA image header...\r\n");
-	}
-
-	tmp = (uint8_t *)ota_parse.ota_image_header;
-	data_len = ota_parse.ota_header.image_num * sizeof(ota_image_header_t) - ota_parse.offset;
-	if (*len < data_len) {
-		os_memcpy(tmp + ota_parse.offset, *data, *len);
-		ota_parse.offset += *len;
-		return 0;
-	} else {
-		os_memcpy(tmp + ota_parse.offset, *data, data_len);
-		*data += data_len;
-		*len -= data_len;
-
-		/*calculate header crc*/
-		offset = ota_parse.ota_header.image_num * sizeof(ota_image_header_t);
-		CRC32_Update(&ota_parse.ota_crc, tmp, offset);
-
-		//TODO check image CRC!
-		CRC32_Final(&ota_parse.ota_crc,&crc_control);
-		if(crc_control != ota_parse.ota_header.crc){
-			bk_printf("crc error\r\n");
-			return BK_FAIL;
-		}
-
-		/*to next parse*/
-		ota_parse.phase = OTA_PARSE_IMG;
-		ota_parse.offset = 0;
-		for (i = 0; i < ota_parse.ota_header.image_num; i++) {
-			bk_printf("image[%d], image_len=%x, image_offset=%x, flash_offset=%x\r\n", i,
-				ota_parse.ota_image_header[i].image_len,
-				ota_parse.ota_image_header[i].image_offset,
-				ota_parse.ota_image_header[i].flash_offset);
-		}
-	}
-
-	return 0;
-}
-
-static const ota_partition_info_t* http_ota_get_partition_info(void)
-{
-	uint32_t flash_offset;
-
-	if (ota_parse.phase != OTA_PARSE_IMG
-		|| ota_parse.index >= ota_parse.ota_header.image_num) {
-		return NULL;
-	}
-
-	flash_offset = ota_parse.ota_image_header[ota_parse.index].flash_offset;
-
-	for (uint32_t partition_id = 0; partition_id < sizeof(s_ota_partition_info)/sizeof(ota_partition_info_t); partition_id++) {
-		if (flash_offset == s_ota_partition_info[partition_id].partition_offset) {
-			return &s_ota_partition_info[partition_id];
-		}
-	}
-
-	return NULL;
-}
-
-static uint32_t http_ota_get_fwu_image_id(void)
-{
-	const ota_partition_info_t *partition_info = http_ota_get_partition_info();
-
-	if (!partition_info) {
-		return FWU_IMAGE_TYPE_INVALID;
-	}
-
-	//TODO for BL2, update image_id per boot_flag
-	return partition_info->fwu_image_id;
-}
-
-static psa_image_id_t http_ota_fwu2psa_image_id(uint32_t fwu_image_id)
-{
-	return (psa_image_id_t)FWU_CALCULATE_IMAGE_ID(FWU_IMAGE_ID_SLOT_STAGE, fwu_image_id, 0);
-}
-
-static int http_ota_handle_image(uint8_t **data, int *len)
-{
-	uint32_t image_crc;
-	do {
-		bk_wdt_feed();
-		if (ota_parse.offset == 0) {
-			bk_printf("downloading OTA image%d, expected data len=%x...\r\n", ota_parse.index, ota_parse.ota_image_header[ota_parse.index].image_len);
-			CRC32_Init(&ota_parse.ota_crc);
-		}
-
-		uint32_t fwu_image_id = http_ota_get_fwu_image_id();
-		if (fwu_image_id == FWU_IMAGE_TYPE_INVALID) {
-			if (*len) {
-				bk_printf("Invalid image ID, parse index=%d, parse offset=%x, len=%d, total_rx_len=%x\r\n",
-					ota_parse.index, ota_parse.offset, *len, ota_parse.total_rx_len);
-				return BK_FAIL;
-			}
-			return BK_OK;
-		}
-
-		bk_ota_set_flag(BIT(fwu_image_id));
-		psa_image_id_t psa_image_id = http_ota_fwu2psa_image_id(fwu_image_id);
-
-		uint32_t data_len = ota_parse.ota_image_header[ota_parse.index].image_len - ota_parse.offset;
-		if (*len < data_len) {
-			psa_fwu_write(psa_image_id, ota_parse.offset, (const void *)*data, *len);
-			CRC32_Update(&ota_parse.ota_crc,*data,*len);
-			ota_parse.offset += *len;
-			*len = 0;
-		} else {
-			psa_fwu_write(psa_image_id, ota_parse.offset, (const void *)*data, data_len);
-			CRC32_Update(&ota_parse.ota_crc,*data,data_len);
-			*data += data_len;
-			*len -= data_len;
-
-			bk_printf("downloaded OTA image%d\r\n", ota_parse.index);
-			//check image CRC, then we can abort quickly!
-			CRC32_Final(&ota_parse.ota_crc,&image_crc);
-			if(image_crc !=  ota_parse.ota_image_header[ota_parse.index].checksum){
-				bk_printf("image crc error!\r\n");
-				return BK_FAIL;
-			}
-
-			/*to next image*/
-			bk_printf("\r\n");
-			ota_parse.index++;
-			ota_parse.offset = 0;
-		}
-	} while(*len);
-
-	return BK_OK;
-}
-
-static int http_ota_parse_data(char *data, int len)
-{
-	ota_parse.total_rx_len += len;
-	if (ota_parse.phase == OTA_PARSE_HEADER) {
-		if(http_ota_parse_header((uint8_t **)&data, &len) != 0)
-			return BK_FAIL;
-	}
-
-	if (ota_parse.phase == OTA_PARSE_IMG_HEADER) {
-		if(http_ota_parse_image_header((uint8_t **)&data, &len) != 0)
-			return BK_FAIL;
-	}
-
-	if (ota_parse.phase == OTA_PARSE_IMG) {
-		if (len == 0) return 0;
-
-		if(http_ota_handle_image((uint8_t **)&data, &len) != 0)
-			return BK_FAIL;
-
-	}
-
-	return BK_OK;
-}
-
-static void http_ota_dump_partition_info(void)
-{
-	bk_printf("%8s  %8s  %8s\r\n", "offset", "size", "fwu_id");
-	for (uint32_t partition_id = 0; partition_id < sizeof(s_ota_partition_info)/sizeof(ota_partition_info_t); partition_id++) {
-		const ota_partition_info_t *p = &s_ota_partition_info[partition_id];
-		bk_printf("%8x  %8x  %-6d\r\n", p->partition_offset, p->partition_size, p->fwu_image_id);
-	}
-}
-
-static void http_ota_init(void)
-{
-	if (ota_parse.phase != OTA_PARSE_HEADER) {
-		bk_printf("abort previous OTA\r\n");
-		psa_image_id_t id = http_ota_fwu2psa_image_id(FWU_IMAGE_TYPE_FULL);
-		psa_fwu_abort(id);
-	}
-
-	http_ota_dump_partition_info();
-	os_memset(&ota_parse, 0, sizeof(ota_parse_t));
-	bk_ota_clear_flag();
-	CRC32_Init(&ota_parse.ota_crc);
-	bk_flash_set_protect_type(FLASH_PROTECT_NONE);
-}
-
-static int http_ota_deinit(void)
-{
-	if (ota_parse.ota_image_header) {
-		os_free(ota_parse.ota_image_header);
-		ota_parse.ota_image_header = NULL;
-	}
-
-	return 0;
-}
-#endif
 
 
 #if CONFIG_UVC_OTA_DEMO
@@ -1169,8 +875,8 @@ int http_data_process(char *buf, UINT32 len, UINT32 recived, UINT32 total)
 		http_wr_to_flash(buf, len);
 		os_printf("cyg_recvlen_per:(%.2f)%%\r\n",(((float)(recived))/(total))*100);
 #else
-#if (CONFIG_TFM_FWU)
-	if (http_ota_parse_data(buf, len) !=0){
+#if (CONFIG_SECURITY_OTA)
+	if (security_ota_parse_data(buf, len) !=0){
 		return BK_FAIL;
 	}
 
@@ -1296,9 +1002,9 @@ int httpclient_retrieve_content(httpclient_t *client, char *data, int len, uint3
 		http_flash_init();
 		http_wr_to_flash(data, len);
 #endif
-#if (CONFIG_TFM_FWU)
-		http_ota_init();
-		if(http_ota_parse_data(data, len) != 0){
+#if (CONFIG_SECURITY_OTA)
+		security_ota_init();
+		if(security_ota_parse_data(data, len) != 0){
 			return FAIL_RETURN;
 		}
 
@@ -1378,8 +1084,8 @@ int httpclient_retrieve_content(httpclient_t *client, char *data, int len, uint3
 #endif
 			http_flash_deinit();
 #endif
-#if (CONFIG_TFM_FWU)
-			if (http_ota_deinit() != 0) {
+#if (CONFIG_SECURITY_OTA)
+			if (security_ota_deinit() != 0) {
 				return FAIL_RETURN;
 			}
 #endif

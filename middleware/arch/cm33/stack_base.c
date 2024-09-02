@@ -85,9 +85,7 @@ void stack_mem_dump(uint32_t stack_top, uint32_t stack_bottom)
 #if (CONFIG_TASK_WDT)
 			bk_task_wdt_feed();
 #endif
-#if CONFIG_INT_WDT
 			bk_wdt_feed();
-#endif
 #if (CONFIG_INT_AON_WDT)
 			bk_int_aon_wdt_feed();
 #endif

@@ -50,4 +50,3 @@ bt_err_t bt_hf_client_send_custom_cmd_internal(uint8_t *remote_bda, const char *
 #ifdef __cplusplus
 }
 #endif
-

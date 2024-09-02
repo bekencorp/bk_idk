@@ -8,4 +8,3 @@ bluetooth
 
    ble provisioning <ble_boarding_demo>
    SPP <spp_demo>
-   DUT <dut>

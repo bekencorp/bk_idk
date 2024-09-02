@@ -51,6 +51,14 @@ We can download Armino from gitlab::
     cd ~/armino
     git clone https://gitlab.bekencorp.com/armino/bk_idk.git
 
+
+We also can download Armino from github::
+
+	mkdir -p ~/armino
+	cd ~/armino
+	git clone https://github.com/bekencorp/bk_idk.git
+
+
 Then switch to the stable branch Tag node, such as v2.0.1.12::
 
     git checkout -B your_branch_name v2.0.1.12
@@ -72,7 +80,7 @@ Setup Build Environment
 Tool Chain Installation
 ----------------------------------------------------------------
 
-Click `Donwload <https://dl.bekencorp.com/tools/toolchain/arm/gcc-arm-none-eabi-10.3-2021.10-x86_64-linux.tar.bz2>`_ to download the BK7236 toolchain.
+Click `Donwload <https://dl.bekencorp.com/tools/toolchain/arm/gcc-arm-none-eabi-10.3-2021.10-x86_64-linux.tar.bz2>`_ to download the BK7258 toolchain.
 
 After downloading the tool kit, decompress it to '/opt/'::
 

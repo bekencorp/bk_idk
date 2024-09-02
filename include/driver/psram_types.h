@@ -78,6 +78,7 @@ typedef enum
 	FB_INDEX_DISPLAY,
 	FB_INDEX_JPEG,
 	FB_INDEX_H264,
+	FB_INDEX_H265,
 	FB_INDEX_MAX,
 } fb_type_t;
 

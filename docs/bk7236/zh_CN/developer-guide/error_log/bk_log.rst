@@ -10,15 +10,15 @@
  - 通过串口输入log命令查看当前log配置
  - log 1 3 0 命令第一个参数为echo开关 (0/1)，第二个参数为log级别(0~6)，第三个参数为同步开关(0异步,1同步)
 
-多核log机制(当前BK7236是单核系统)
+BK7236 log机制
 ------------------------------------
 
 .. figure:: ../../../_static/log_system.png
     :align: center
-    :alt: 多核log机制
+    :alt: log机制
     :figclass: align-center
 
-    多核log机制
+    log机制
 
 
 API说明

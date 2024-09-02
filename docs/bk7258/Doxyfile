@@ -28,6 +28,7 @@ INPUT = \
     ## Wi-Fi
     ../../../include/modules/wifi_types.h \
     ../../../include/modules/wifi.h \
+    ../../../include/modules/raw_link.h \
     ## System
     ../../../include/os/os.h \
     ../../../include/components/event.h \

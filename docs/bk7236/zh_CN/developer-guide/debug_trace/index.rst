@@ -202,7 +202,7 @@ Armino平台BK7236系统调试命令
     rfcali_cfg_rate_dist: b g n40 ble (0-31)
     rfcali_cfg_tssi_b: 0-255
     rfcali_cfg_tssi_g: 0-255
-    rfcali_show_data: 
+    rfcali_show_data:
     rfconfig: rfconfig bt_polar|bt_btpll|bt_wifipll|wifi_btpll|wifi_wifipll
     rxsens: rxsens [-m] [-d] [-c] [-l]
     scan: scan [ssid]
@@ -284,7 +284,7 @@ Armino平台BK7236系统jtag调试
       :align: center
       :alt: BK7236 JLink configuration
       :figclass: align-center
-  
+
   .. figure:: ../../../_static/bk7236_jlink_config3.png
     :align: center
     :alt: BK7236 JLink configuration
@@ -306,16 +306,16 @@ Armino平台BK7236/BK7258 异常dump一键恢复现场工具
  - BK7236/BK7258 dump工具常见问题:
 
    + 默认Release版本dump功能是关闭的, 可以通过CONFIG_DUMP_ENABLE配置打开
-   + Dump工具恢复现场的原理是脚本通过分析log,解析出regs,itcm,dtcm,sram内容,然后通过gdb将这些内容恢复到cm33的qemu虚拟机中
+   + Dump工具恢复现场的原理是脚本通过分析log,解析出regs,itcm,dtcm,sram内容,然后通过gdb将这些内容恢复到qemu虚拟机中
    + Log文件的后缀支持txt, log, DAT
    + Log文件的编码当前只支持utf-8, 其他编码格式可用通过notepad++手动转换为utf-8编码格式
    + 如果工具目录下有多份Log, 或者Log中有多次Dump, 工具会分析最后一次Dump, 需要保证工具目录下只有一份Log, 且Log中只有一份dump
    + Dump工具可以自动去掉日志里规则的时间戳: [2024-02-03 14:35:13.375193], 如果遇到不规则的时间戳, 需要手动去除
    + Dump过程中如果出现2次异常, 常见的如检测内存越界时, 遇到Assert, 会多打印一次寄存器, 解析时需要删掉第二次寄存器打印
-   + Dump会将当前cpu的寄存器, itcm, dtcm, 以及640k sram全部dump出来 
+   + Dump会将当前cpu的寄存器, itcm, dtcm, 以及640k sram全部dump出来
    + Dump过程中如果遇到两个cpu同时dump, 需要将Log拆分成两份dump文件,分别用cpu0和cpu1的elf来恢复现场
    + 每个cpu需要当前cpu的寄存器, itcm, dtcm, sram加上elf就可以恢复现场
-   
+
        寄存器格式::
 
         Current regs:
@@ -380,13 +380,13 @@ Armino平台BK7236/BK7258 异常dump一键恢复现场工具
 
    + 当系统打开CONFIG_MEM_DEBUG时, Dump过程会将当前系统正在使用的Heap内存全部打印出来, 并检查是否有内存越界::
 
-      tick       addr         size   line    func                               task            
+      tick       addr         size   line    func                               task
       --------   ----------   ----   -----   --------------------------------   ----------------
-      6976       0x28064b68   80     425     xQueueGenericCreate                media_ui_task   
-      6976       0x28064be0   80     425     xQueueGenericCreate                media_ui_task   
-      6976       0x28064c58   160    425     xQueueGenericCreate                media_ui_task   
-      6976       0x28064d20   1024   863     xTaskCreate_ex                     media_ui_task   
-      6976       0x28065148   104    868     xTaskCreate_ex                     media_ui_task   
+      6976       0x28064b68   80     425     xQueueGenericCreate                media_ui_task
+      6976       0x28064be0   80     425     xQueueGenericCreate                media_ui_task
+      6976       0x28064c58   160    425     xQueueGenericCreate                media_ui_task
+      6976       0x28064d20   1024   863     xTaskCreate_ex                     media_ui_task
+      6976       0x28065148   104    868     xTaskCreate_ex                     media_ui_task
       6976       0x2807d098   80     425     xQueueGenericCreate                transfer_major_task
       6976       0x2807d110   80     425     xQueueGenericCreate                transfer_major_task
 

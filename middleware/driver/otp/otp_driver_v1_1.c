@@ -67,12 +67,17 @@ otp_item_t otp_apb_map[] = {
 	{OTP_GADC_CALIBRATION,           4,         0x3B8,     OTP_READ_WRITE},
 	{OTP_SDMADC_CALIBRATION,         4,         0x3BC,     OTP_READ_WRITE},
 	{OTP_DEVICE_ID,                  8,         0x3C0,     OTP_READ_WRITE},
-	{OTP_APB_TEST,                   5,         0x3C9,     OTP_READ_WRITE},
-	/*reserved 56,0x3C8*/
+	{OTP_MEMORY_CHECK_VDDDIG,        4,         0x3C8,     OTP_READ_WRITE},
+	{OTP_GADC_TEMPERATURE,           2,         0x3CC,     OTP_READ_WRITE},
+	/*reserved 48,0x3D0*/
 };
 
 otp2_item_t otp_ahb_map[] = {
-	{OTP_AHB_TEST,                   5,         0x2,       OTP_READ_WRITE},
+	{OTP_PHY_PWR,                    64,        0x0,       OTP_READ_WRITE},
+	{OTP_RFCALI1,                    256,       0x40,      OTP_READ_WRITE},
+	{OTP_RFCALI2,                    256,       0x140,     OTP_READ_WRITE},
+	{OTP_RFCALI3,                    256,       0x240,     OTP_READ_WRITE},
+	{OTP_RFCALI4,                    256,       0x340,     OTP_READ_WRITE},
 };
 
 static otp_driver_t s_otp = {0};
@@ -253,7 +258,7 @@ bk_err_t bk_otp_apb_write_mask(otp_id_t item, uint32_t mask)
 }
 
 /**
- * obtain APB OTP value with item ID:
+ * obtain APB OTP value in little endian with item ID:
  * 1. allowed start address of item not aligned
  * 2. allowed end address of item not aligned
  */
@@ -309,6 +314,10 @@ bk_err_t bk_otp_apb_read(otp_id_t item, uint8_t* buf, uint32_t size)
 		}
 	}
 
+	if(word_index * 4 == size) {
+		otp_sleep();
+		return BK_OK;
+	}
 	/*read tail word*/
 	value = otp_read_otp(location + word_index);
 	if(value == 0xFFFFFFFF){
@@ -323,7 +332,7 @@ bk_err_t bk_otp_apb_read(otp_id_t item, uint8_t* buf, uint32_t size)
 }
 
 /**
- * update APB OTP value with item ID:
+ * update APB OTP value in little endian with item ID:
  * 1. allowed start address of item not aligned
  * 2. allowed end address of item not aligned
  * 3. check overwritable before write, return BK_ERR_OTP_CANNOT_WRTIE if failed
@@ -403,6 +412,10 @@ bk_err_t bk_otp_apb_update(otp_id_t item, uint8_t* buf, uint32_t size)
 		}
 	}
 
+	if(word_index * 4 == size) {
+		otp_sleep();
+		return BK_OK;
+	}
 	/*update tail word*/
 	value = 0;
 	mask  = 0;
@@ -422,7 +435,7 @@ bk_err_t bk_otp_apb_update(otp_id_t item, uint8_t* buf, uint32_t size)
  * 1. allowed start address of item not aligned
  * 2. allowed end address of item not aligned
  */
-bk_err_t bk_otp_ahb_read(otp_id_t item, uint8_t* buf, uint32_t size)
+bk_err_t bk_otp_ahb_read(otp2_id_t item, uint8_t* buf, uint32_t size)
 {
 	if(otp_ahb_map[item].privilege == OTP_NO_ACCESS){
 		return BK_ERR_NO_READ_PERMISSION;
@@ -470,10 +483,14 @@ bk_err_t bk_otp_ahb_read(otp_id_t item, uint8_t* buf, uint32_t size)
 			return BK_ERR_NO_READ_PERMISSION;
 		}
 		for(byte_index = 0;byte_index < 4;++byte_index){
-			buf[word_index*4+byte_index-start] = (value >> (byte_index*8)) & 0xFF; // low bit in low address
+			buf[word_index*4+byte_index-start] = (value >> (byte_index*8)) & 0xFF;
 		}
 	}
 
+	if(word_index * 4 == size) {
+		otp_sleep();
+		return BK_OK;
+	}
 	/*read tail word*/
 	value = otp2_read_otp(location + word_index);
 	if(value == 0xFFFFFFFF){
@@ -487,7 +504,7 @@ bk_err_t bk_otp_ahb_read(otp_id_t item, uint8_t* buf, uint32_t size)
 	return BK_OK;
 }
 
-bk_err_t bk_otp_ahb_update(otp_id_t item, uint8_t* buf, uint32_t size)
+bk_err_t bk_otp_ahb_update(otp2_id_t item, uint8_t* buf, uint32_t size)
 {
 	if(otp_ahb_map[item].privilege != OTP_READ_WRITE){
 		return BK_ERR_NO_WRITE_PERMISSION;
@@ -561,6 +578,10 @@ bk_err_t bk_otp_ahb_update(otp_id_t item, uint8_t* buf, uint32_t size)
 		}
 	}
 
+	if(word_index * 4 == size) {
+		otp_sleep();
+		return BK_OK;
+	}
 	/*update tail word*/
 	value = 0;
 	mask  = 0;

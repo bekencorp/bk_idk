@@ -358,7 +358,7 @@ uint32_t bk_dma_get_enable_status(dma_id_t id)
 }
 
 #define DMA_MAX_BUSY_TIME (10000)  //us
-static uint32_t dma_wait_to_idle(dma_id_t id)
+uint32_t dma_wait_to_idle(dma_id_t id)
 {
 	if(dma_hal_get_work_mode(&s_dma.hal, id) == DMA_WORK_MODE_SINGLE)
 	{

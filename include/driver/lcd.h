@@ -281,12 +281,12 @@ bk_err_t bk_lcd_8080_send_cmd(uint8_t param_count, uint32_t command, uint32_t *p
  *
  * 8080 Usage example:
  *
- *    #define PARTICAL_XS   101
- *    #define PARTICAL_XE   220
- *    #define PARTICAL_YS   101
- *    #define PARTICAL_YE   380
- *    bk_lcd_set_partical_display(EDGE_PARTICAL_XS, EDGE_PARTICAL_XE, EDGE_PARTICAL_YS, EDGE_PARTICAL_YE);
- *    bk_lcd_8080_send_cmd(2, COMMAND_1, param_command1);
+ *     #define PARTICAL_XS   101
+ *     #define PARTICAL_XE   220
+ *     #define PARTICAL_YS   101
+ *     #define PARTICAL_YE   380
+ *     bk_lcd_set_partical_display(EDGE_PARTICAL_XS, EDGE_PARTICAL_XE, EDGE_PARTICAL_YS, EDGE_PARTICAL_YE);
+ *     bk_lcd_8080_send_cmd(2, COMMAND_1, param_command1);
  *
   * @return
  *     - BK_OK: succeed

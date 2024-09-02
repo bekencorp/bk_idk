@@ -124,36 +124,7 @@ bk_err_t bk_gpio_driver_init(void)
 
 	gpio_hal_disable_jtag_mode(&s_gpio.hal);
 
-	/*
-	 * @NOTES:
-	 * GPIO wakeup system from deepsleep(system will power off at deep sleep status),
-	 * the GPIO interrupt status is still keeped as GPIO is at AON power domain.
-	 * so bake up the specific gpio id which wakeup system, and then clear
-	 * all of the previous GPIO status before init GPIO ID relate function.
-	 */
-#ifdef CONFIG_GPIO_WAKEUP_SUPPORT
-	gpio_record_wakeup_pin_id();
-	gpio_lowpower_keep_status_init();
-#if CONFIG_GPIO_DYNAMIC_WAKEUP_SUPPORT
-	gpio_dynamic_wakeup_source_init();
-#endif
-#endif
-
-#if CONFIG_GPIO_DEFAULT_SET_SUPPORT
-	gpio_hal_default_map_init(&s_gpio.hal);
-#endif
-
 	amp_res_init(AMP_RES_ID_GPIO);
-
-	//Move ISR to last to avoid other resouce doesn't finish but isr has came.
-	//F.E:GPIO wakeup deepsleep.
-	bk_int_isr_register(INT_SRC_GPIO, gpio_isr, NULL);
-	//interrupt to CPU enable
-#if (CONFIG_SYSTEM_CTRL && CONFIG_SYS_CPU0)
-	sys_drv_int_group2_enable(GPIO_INTERRUPT_CTRL_BIT);
-#else
-	icu_enable_gpio_interrupt();
-#endif
 
 	s_gpio_is_init = true;
 	return BK_OK;
@@ -440,7 +411,7 @@ void gpio_get_interrupt_status(uint32_t *h_status, uint32_t *l_status)
 static void gpio_wakeup_default_isr(gpio_id_t gpio_id)
 {
 	//NOTES:to avoid interrupt comes many times if uses level IRQ type
-	//disable IRQ and enable it again in gpio_config_wakeup_function 
+	//disable IRQ and enable it again in gpio_config_wakeup_function
 	bk_gpio_disable_interrupt(gpio_id);
 	bk_gpio_clear_interrupt(gpio_id);
 
@@ -699,7 +670,7 @@ bk_err_t bk_gpio_register_wakeup_source(gpio_id_t gpio_id,
 	GPIO_LOGE("too much(%d) GPIO is setted wake src\r\n", CONFIG_GPIO_DYNAMIC_WAKEUP_SOURCE_MAX_CNT);
 	for(i = 0; i < CONFIG_GPIO_DYNAMIC_WAKEUP_SOURCE_MAX_CNT; i++)
 	{
-		GPIO_LOGE("gpio id:%d is using \r\n", s_gpio_dynamic_wakeup_source_map[i].id);	
+		GPIO_LOGE("gpio id:%d is using \r\n", s_gpio_dynamic_wakeup_source_map[i].id);
 	}
 	return BK_FAIL;
 }
@@ -746,7 +717,7 @@ static void gpio_lowpower_keep_status_init(void)
 
 	for(i = 0; i < sizeof(default_map)/sizeof(gpio_default_map_t); i++)
 	{
-		//uses equal to avoid some guy maybe write other value 
+		//uses equal to avoid some guy maybe write other value
 		if((default_map[i].low_power_io_ctrl == GPIO_LOW_POWER_KEEP_INPUT_STATUS) ||
 			(default_map[i].low_power_io_ctrl == GPIO_LOW_POWER_KEEP_OUTPUT_STATUS))
 		{
@@ -849,7 +820,7 @@ bk_err_t bk_gpio_register_lowpower_keep_status(gpio_id_t gpio_id,
 	GPIO_RETURN_ON_INVALID_PULL_MODE(config->pull_mode);
 
 	uint32_t i = 0;
-	GPIO_LOGI("[+]gpio=%d io_mode=%d pull_mode=%d func_mode=%d\r\n", 
+	GPIO_LOGI("[+]gpio=%d io_mode=%d pull_mode=%d func_mode=%d\r\n",
 		gpio_id, config->io_mode, config->pull_mode, config->func_mode);
 
 	//search the same id and replace it.
@@ -861,7 +832,7 @@ bk_err_t bk_gpio_register_lowpower_keep_status(gpio_id_t gpio_id,
 			s_gpio_lowpower_keep_config[i].config.func_mode = config->func_mode;
 			s_gpio_is_lowpower_keep_status |= ((uint64_t)1 << gpio_id);
 
-			GPIO_LOGD("gpio=%d io_mode=%d pull_mode=%d func_mode=%d\r\n", 
+			GPIO_LOGD("gpio=%d io_mode=%d pull_mode=%d func_mode=%d\r\n",
 				gpio_id, config->io_mode, config->pull_mode, config->func_mode);
 			return BK_OK;
 		}
@@ -877,7 +848,7 @@ bk_err_t bk_gpio_register_lowpower_keep_status(gpio_id_t gpio_id,
 			s_gpio_lowpower_keep_config[i].config.func_mode = config->func_mode;
 			s_gpio_is_lowpower_keep_status |= ((uint64_t)1 << gpio_id);
 
-			GPIO_LOGD("gpio=%d io_mode=%d pull_mode=%d func_mode=%d\r\n", 
+			GPIO_LOGD("gpio=%d io_mode=%d pull_mode=%d func_mode=%d\r\n",
 				gpio_id, config->io_mode, config->pull_mode, config->func_mode);
 
 			return BK_OK;
@@ -887,7 +858,7 @@ bk_err_t bk_gpio_register_lowpower_keep_status(gpio_id_t gpio_id,
 	GPIO_LOGE("too much(%d) GPIO is setted keep status\r\n", CONFIG_GPIO_DYNAMIC_KEEP_STATUS_MAX_CNT);
 	for(i = 0; i < CONFIG_GPIO_DYNAMIC_KEEP_STATUS_MAX_CNT; i++)
 	{
-		GPIO_LOGE("gpio id:%d is using \r\n", s_gpio_lowpower_keep_config[i].gpio_id);	
+		GPIO_LOGE("gpio id:%d is using \r\n", s_gpio_lowpower_keep_config[i].gpio_id);
 	}
 	return BK_FAIL;
 
@@ -977,7 +948,7 @@ bk_err_t gpio_exit_low_power(void *param)
 	gpio_dump_baked_regs(true, true, true);
 
 	gpio_hal_get_interrupt_status(hal, &gpio_status);
-	
+
 #if 1	//TODO:
 	if((uint32_t)param != 0x534b4950)	//just debug:magic value == "SKIP"
 	{

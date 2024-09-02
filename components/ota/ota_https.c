@@ -9,6 +9,11 @@
 #include "modules/wifi.h"
 #include "bk_https.h"
 
+#if CONFIG_PSA_MBEDTLS
+#include "psa/crypto.h"
+#endif
+
+
 #define TAG "HTTPS_OTA"
 
 extern UINT8  ota_flag ;
@@ -67,7 +72,9 @@ bk_http_client_handle_t bk_https_client_flash_init(bk_http_input_t config)
 #if CONFIG_SYSTEM_CTRL
 	bk_wifi_ota_dtim(1);
 #endif
+#if HTTP_WR_TO_FLASH
 	http_flash_init();
+#endif
 	client = bk_http_client_init(&config);
 
 	return client;
@@ -82,7 +89,9 @@ bk_err_t bk_https_client_flash_deinit(bk_http_client_handle_t client)
 #if CONFIG_SYSTEM_CTRL
 	bk_wifi_ota_dtim(0);
 #endif
+#if HTTP_WR_TO_FLASH
 	http_flash_deinit();
+#endif
 	if(!client)
 		err = bk_http_client_cleanup(client);
 	else
@@ -119,11 +128,15 @@ bk_err_t https_ota_event_cb(bk_http_client_event_t *evt)
 	break;
     case HTTP_EVENT_ON_DATA:
 	//do something: evt->data, evt->data_len
+#if HTTP_WR_TO_FLASH
 	http_wr_to_flash((char *)evt->data,evt->data_len);
-	BK_LOGI(TAG, "HTTP_EVENT_ON_DATA, length:%d\r\n", evt->data_len);
+#endif
+	BK_LOGD(TAG, "HTTP_EVENT_ON_DATA, length:%d\r\n", evt->data_len);
 	break;
     case HTTP_EVENT_ON_FINISH:
+#if HTTP_WR_TO_FLASH
 	http_flash_wr(bk_http_ptr->wr_buf, bk_http_ptr->wr_last_len);
+#endif
 	bk_https_client_flash_deinit(evt->client);
 	BK_LOGI(TAG, "HTTPS_EVENT_ON_FINISH\r\n");
 	break;

@@ -43,7 +43,7 @@
 #include "bk_rf_internal.h"
 
 extern bk_err_t uart_write_byte(uart_id_t id, uint8_t data);
-extern void manual_cal_show_txpwr_tab(void);
+extern void manual_cal_show_txpwr_tab_simple(void);
 extern UINT32 manual_cal_fitting_txpwr_tab(void);
 
 #if CONFIG_UART_DEBUG
@@ -460,7 +460,12 @@ static int bkreg_run_command_implement(const char *content, int cnt)
 				break;
 			}
 #endif
-			REG_WRITE(rx_param->addr, rx_param->value);
+
+			if(rx_param->addr)
+				REG_WRITE(rx_param->addr, rx_param->value);
+			else
+				CLI_PRT("ERR add=0x%x,value=%d\n", rx_param->addr, rx_param->value);
+
 		}
 
 		pHCItxBuf->total = uart_rx_index - 1;
@@ -609,7 +614,7 @@ static int bkreg_run_command_implement(const char *content, int cnt)
 
 	case BEKEN_TEST_UDP: {
 #if CONFIG_BKREG_SHOW_CALI
-		manual_cal_show_txpwr_tab();
+		manual_cal_show_txpwr_tab_simple();
 #endif
 	}
 	break;

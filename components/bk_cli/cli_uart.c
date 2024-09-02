@@ -75,8 +75,15 @@ static void cli_uart_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, cha
 		if (argc > 8) {
 			config.src_clk = os_strtoul(argv[8], NULL, 10);
 		}
+		if (argc > 9) {
+			config.rx_dma_en = os_strtoul(argv[9], NULL, 10);
+		}
+		if (argc > 10) {
+			config.tx_dma_en = os_strtoul(argv[10], NULL, 10);
+		}
 
 		BK_LOG_ON_ERR(bk_uart_init(uart_id, &config));
+		BK_LOG_ON_ERR(bk_uart_enable_rx_interrupt(uart_id));
 		CLI_LOGI("uart init, uart_id=%d\n", uart_id);
 	} else if (os_strcmp(argv[2], "deinit") == 0) {
 		BK_LOG_ON_ERR(bk_uart_deinit(uart_id));
@@ -223,9 +230,11 @@ static void cli_uart_int_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
 
 	if (os_strcmp(argv[2], "enable") == 0) {
 		if (os_strcmp(argv[3], "tx") == 0) {
+			bk_uart_set_enable_tx(uart_id, 1);
 			BK_LOG_ON_ERR(bk_uart_enable_tx_interrupt(uart_id));
 			CLI_LOGI("uart id:%d enable tx interrupt\n", uart_id);
 		} else {
+			bk_uart_set_enable_rx(uart_id, 1);
 			BK_LOG_ON_ERR(bk_uart_enable_rx_interrupt(uart_id));
 			CLI_LOGI("uart id:%d enable rx interrupt\n", uart_id);
 		}

@@ -46,6 +46,9 @@
 #include "spinlock.h"
 #endif // CONFIG_FREERTOS_SMP
 
+#if (CONFIG_SOC_BK7258)
+#include <modules/wifi.h>
+#endif
 
 #define PHY_OSI_VERSION              0x00060006
 
@@ -129,6 +132,33 @@ static int bk_otp_apb_update_wrapper(uint32_t item, uint8_t* buf, uint32_t size)
     return BK_FAIL;
 #else
     return bk_otp_apb_update(item, buf, size);
+#endif
+}
+
+static int bk_otp_ahb_read_wrapper(uint32_t item, uint8_t* buf, uint32_t size)
+{
+#if (CONFIG_SOC_BK7256XX) || (!CONFIG_OTP)
+    return BK_FAIL;
+#else
+    return bk_otp_ahb_read(item, buf, size);
+#endif
+}
+
+static int bk_otp_ahb_update_wrapper(uint32_t item, uint8_t* buf, uint32_t size)
+{
+#if (CONFIG_SOC_BK7256XX) || (!CONFIG_OTP)
+    return BK_FAIL;
+#else
+    return bk_otp_ahb_update(item, buf, size);
+#endif
+}
+
+static int bk_get_otp_ahb_rfcali_item_wrapper(void)
+{
+#if (CONFIG_SOC_BK7256XX) || (!CONFIG_OTP)
+    return BK_FAIL;
+#else
+    return OTP_RFCALI1;
 #endif
 }
 
@@ -268,6 +298,13 @@ static bk_err_t ble_in_dut_mode_wrapper()
 #endif
 }
 
+static void ble_rf_test_mode_retirg()
+{
+#if CONFIG_BLUETOOTH
+        bluetooth_rf_test_mode_retrig();
+#endif
+}
+
 static uint8_t get_tx_pwr_idx_wrapper()
 {
 #if CONFIG_BLUETOOTH
@@ -306,7 +343,7 @@ void * crm_reg_api_wrapper(void)
 
 void * riu_reg_api_wrapper(void)
 {
-#if (CONFIG_SOC_BK7256XX && CONFIG_WIFI_ENABLE)
+#if (CONFIG_WIFI_ENABLE)
     return riu_reg_api();
 #else
     return NULL;
@@ -394,6 +431,18 @@ static bk_err_t bk_saradc_stop(uint8_t adc_channel)
 	BK_LOG_ON_ERR(bk_adc_deinit(adc_channel));
 	BK_LOG_ON_ERR(bk_adc_release());
 	return BK_OK;
+#else
+    return 0;
+#endif
+}
+
+static UINT8 bk_phy_get_wifi_media_mode_config_wrapper(void)
+{
+#if (CONFIG_SOC_BK7258)
+    bool flag = 0;
+
+    bk_wifi_get_wifi_media_mode_config(&flag);
+    return flag;
 #else
     return 0;
 #endif
@@ -577,9 +626,23 @@ const phy_os_funcs_t g_phy_os_funcs = {
     ._ble_in_dut_mode        = ble_in_dut_mode_wrapper,
     ._get_tx_pwr_idx         = get_tx_pwr_idx_wrapper,
     ._txpwr_max_set_bt_polar = txpwr_max_set_bt_polar_wrapper,
+    ._ble_tx_testmode_retrig = ble_rf_test_mode_retirg,
 
     ._gpio_dev_map_rxen  = gpio_dev_map_rxen,
 
+    ._bk_phy_get_wifi_media_mode_config = bk_phy_get_wifi_media_mode_config_wrapper,
+    ._bk_feature_save_rfcali_to_otp_enable = bk_feature_save_rfcali_to_otp_enable,
+    ._bk_otp_ahb_read        = bk_otp_ahb_read_wrapper,
+    ._bk_otp_ahb_update      = bk_otp_ahb_update_wrapper,
+    ._bk_get_otp_ahb_rfcali_item = bk_get_otp_ahb_rfcali_item_wrapper,
+#if (CONFIG_SOC_BK7236XX)
+    ._sys_ll_set_ana_reg8_violdosel = sys_ll_set_ana_reg8_violdosel,
+    ._sys_ll_set_ana_reg8_iocurlim = sys_ll_set_ana_reg8_iocurlim,
+#else
+    ._sys_ll_set_ana_reg8_violdosel = NULL,
+    ._sys_ll_set_ana_reg8_iocurlim = NULL,
+#endif
+    ._bk_feature_phy_log_enable = bk_feature_phy_log_enable,
 };
 
 const phy_os_variable_t g_phy_os_variable = {
@@ -672,7 +735,7 @@ const phy_os_variable_t g_phy_os_variable = {
     ._OTP_MAC_ADDRESS        = OTP_MAC_ADDRESS ,
     ._OTP_VDDDIG_BANDGAP     = OTP_VDDDIG_BANDGAP ,
     ._OTP_DIA                = OTP_DIA ,
-    ._OTP_GADC_CALIBRATION   = OTP_GADC_CALIBRATION,
+    ._OTP_GADC_TEMPERATURE   = OTP_GADC_TEMPERATURE,
     ._OTP_SDMADC_CALIBRATION = OTP_SDMADC_CALIBRATION ,
 };
 

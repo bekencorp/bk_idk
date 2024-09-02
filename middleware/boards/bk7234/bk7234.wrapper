@@ -120,7 +120,7 @@ def pack(prebuild):
 		if (gen_dir == None):
 			logging.error(f'Generated dir should NOT be empty')
 			exit(1)
-		run_cmd(f'{BK_UTILS_TOOL} gen --gencode {debug_option} -t {tools_dir}')
+		run_cmd(f'{BK_UTILS_TOOL} gen all --debug')
 		cwd = os.getcwd()
 		run_cmd(f'cp -r {cwd}/partitions_partition.h {cwd}/partitions_gen.h')
 		return
@@ -151,7 +151,7 @@ def pack(prebuild):
 	else:
 		pass
 
-	run_cmd(f'{BK_UTILS_TOOL} gen --genbin {debug_option} -t {tools_dir}')
+	run_cmd(f'{BK_UTILS_TOOL} pack all --debug')
 
 	logging.debug(f'copy binaries')
 	run_cmd(f'mkdir -p {CMAKE_INSTALL_DIR}')

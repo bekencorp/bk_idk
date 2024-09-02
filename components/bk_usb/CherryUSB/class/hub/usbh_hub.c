@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 #include "usbh_hub.h"
+#include <driver/gpio.h>
 
 #define DEV_FORMAT "/dev/hub%d"
 
@@ -361,6 +362,13 @@ static void usbh_roothub_register(void)
     USB_LOG_DBG("[-]%s\r\n", __func__);
 }
 
+static void usbh_hub_enum_fail_reset_power(void)
+{
+	USB_LOG_ERR("%s\r\n", __func__);
+	extern void bk_usb_enum_fail_all_reg_reset();
+	bk_usb_enum_fail_all_reg_reset();
+}
+
 #define USB_HOST_HUB_SOFT_ENABLE 0
 static void usbh_hub_events(struct usbh_hub *hub)
 {
@@ -516,6 +524,10 @@ static void usbh_hub_events(struct usbh_hub *hub)
                         CLASS_DISCONNECT(child, i);
                     }
                 }
+                if (child->raw_config_desc) {
+                     usb_free(child->raw_config_desc);
+                     child->raw_config_desc = NULL;
+                }
 
                 USB_LOG_INFO("Device on Hub %u, Port %u disconnected\r\n", hub->index, port + 1);
                 usbh_device_unmount_done_callback(child);
@@ -598,6 +610,7 @@ static void usbh_hub_events(struct usbh_hub *hub)
 	
 			if (usbh_enumerate(child) < 0) {
 				USB_LOG_ERR("Port %u enumerate fail\r\n", 0 + 1);
+				usbh_hub_enum_fail_reset_power();
 			}
 		} else {
 			USB_LOG_ERR("Failed to enable port %u\r\n", 0 + 1);
@@ -613,7 +626,10 @@ static void usbh_hub_events(struct usbh_hub *hub)
 				CLASS_DISCONNECT(child, i);
 			}
 		}
-	
+		if (child->raw_config_desc) {
+			usb_free(child->raw_config_desc);
+			child->raw_config_desc = NULL;
+		}
 		USB_LOG_INFO("Device on Hub %u, Port %u disconnected\r\n", hub->index, 0 + 1);
 		usbh_device_unmount_done_callback(child);
 		child->config.config_desc.bNumInterfaces = 0;
@@ -716,19 +732,22 @@ int usbh_hub_deinitialize(void)
 {
     USB_LOG_DBG("[+]%s\r\n", __func__);
 
-	GLOBAL_INT_DECLARATION();
-	GLOBAL_INT_DISABLE();
+    GLOBAL_INT_DECLARATION();
+    GLOBAL_INT_DISABLE();
 
-	usb_hc_deinit();
+    usb_hc_deinit();
 
-    if (hub_event_wait) {
-        usb_osal_sem_delete(&hub_event_wait);
-        hub_event_wait = NULL;
+    usb_osal_thread_t hub_thread_deinit = hub_thread;
+    if (hub_thread) {
+        hub_thread = NULL;
+        usb_osal_thread_delete(&hub_thread_deinit);
     }
 
-    if (hub_thread) {
-        usb_osal_thread_delete(&hub_thread);
-        hub_thread = NULL;
+    usb_osal_sem_t hub_event_wait_deinit = hub_event_wait;
+    if (hub_event_wait) {
+        hub_event_wait = NULL;
+        usb_osal_sem_delete(&hub_event_wait_deinit);
+
     }
 
     GLOBAL_INT_RESTORE();

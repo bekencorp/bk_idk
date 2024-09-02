@@ -252,7 +252,7 @@ extern void tls_mbedtls_mem_free(void *ptr);
  *
  * Uncomment to get warnings on using deprecated functions and features.
  */
-#define MBEDTLS_DEPRECATED_WARNING
+// #define MBEDTLS_DEPRECATED_WARNING
 
 /**
  * \def MBEDTLS_DEPRECATED_REMOVED

@@ -82,17 +82,17 @@ const struct memory_region_limits memory_regions = {
 
 struct platform_data_t tfm_peripheral_std_uart = {
         UART0_BASE_NS,
-        UART0_BASE_NS + 0xFFF,
+        UART0_BASE_NS + 0x400,
 };
 
 struct platform_data_t tfm_peripheral_uart1 = {
         UART1_BASE_S,
-        UART1_BASE_S + 0xFFF,
+        UART1_BASE_S + 0x400,
 };
 
 struct platform_data_t tfm_peripheral_timer0 = {
         TIMER0_BASE_S,
-        TIMER1_BASE_S - 1,
+        TIMER0_BASE_NS + 0x400,
 };
 
 #ifdef PSA_API_TEST_IPC
@@ -105,13 +105,13 @@ struct platform_data_t tfm_peripheral_timer0 = {
 struct platform_data_t
     tfm_peripheral_FF_TEST_UART_REGION = {
         UART2_BASE_S,
-        UART2_BASE_S + 0xFFF,
+        UART2_BASE_S + 0x400,
 };
 
 struct platform_data_t
     tfm_peripheral_FF_TEST_WATCHDOG_REGION = {
         APB_WATCHDOG_BASE_S,
-        APB_WATCHDOG_BASE_S + 0xFFF,
+        APB_WATCHDOG_BASE_S + 0x400,
 };
 
 #define FF_TEST_NVMEM_REGION_START            0x102FFC00
@@ -200,7 +200,7 @@ enum tfm_plat_err_t nvic_interrupt_target_state_cfg(void)
     NVIC_ClearTargetState(UARTTX1_IRQn);
     NVIC_ClearTargetState(UART1_IRQn);
 #endif
-    NVIC_ClearTargetState(UART1_IRQn);
+    //NVIC_ClearTargetState(UART1_IRQn);
     NVIC_ClearTargetState(ENCP_S_IRQn);
 
     return TFM_PLAT_ERR_SUCCESS;
@@ -209,8 +209,6 @@ enum tfm_plat_err_t nvic_interrupt_target_state_cfg(void)
 /*----------------- NVIC interrupt enabling for S peripherals ----------------*/
 enum tfm_plat_err_t nvic_interrupt_enable(void)
 {
-    int32_t ret;
-
 #ifdef PSA_FF_TEST_SECURE_UART2
     NVIC_EnableIRQ(FF_TEST_UART_IRQ);
 #endif
@@ -336,7 +334,7 @@ int32_t mpc_init_cfg(void)
 void ppc_init_cfg(void)
 {
 	*((volatile uint32_t *)(0x41040000 + 2 * 4)) = 1;/*soft reset ppro module*/
-	*((volatile uint32_t *)(0x41040000 + 8 * 4)) = 0;
+	*((volatile uint32_t *)(0x41040000 + 8 * 4)) = BIT(16);
 	*((volatile uint32_t *)(0x41040000 + 5 * 4)) = 0;
 	*((volatile uint32_t *)(0x41040000 + 11 * 4)) = 0;
 }

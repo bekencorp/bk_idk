@@ -64,12 +64,18 @@ typedef enum{
     OTP_GADC_CALIBRATION,
     OTP_SDMADC_CALIBRATION,
     OTP_DEVICE_ID,
+    OTP_MEMORY_CHECK_VDDDIG,
+    OTP_GADC_TEMPERATURE,
     OTP_APB_TEST,
 
 } otp_id_t;
 
 typedef enum{
-    OTP_AHB_TEST = 0,
+    OTP_PHY_PWR = 0,
+    OTP_RFCALI1,
+    OTP_RFCALI2,
+    OTP_RFCALI3,
+    OTP_RFCALI4,
 }otp2_id_t;
 
 typedef enum{

@@ -106,6 +106,11 @@ struct etharp_entry {
 };
 
 static struct etharp_entry arp_table[ARP_TABLE_SIZE];
+
+static int arp_timeout = ARP_MAXAGE;
+static int arp_rerequest_used_unicast = ARP_AGE_REREQUEST_USED_UNICAST;
+static int arp_rerequest_used_broadcast = ARP_AGE_REREQUEST_USED_BROADCAST;
+
 static beken2_timer_t arp_conflict_tmr = {0};
 
 #if !LWIP_NETIF_HWADDRHINT
@@ -191,6 +196,25 @@ etharp_free_entry(int i)
 #endif /* LWIP_DEBUG */
 }
 
+int set_etharp_timeout (int timeout)
+{
+    if(timeout < 30) {
+        bk_printf("set_etharp_timeout: warning please set timeout > 30\n");
+        return 0;
+    } else {
+        arp_timeout = timeout;
+        arp_rerequest_used_unicast = arp_timeout - 30;
+        arp_rerequest_used_broadcast = arp_timeout - 15;
+        //printf("set_etharp_timeout: %d\n", arp_timeout);
+        return 1;
+    }
+}
+
+int get_etharp_timeout (void)
+{
+    return arp_timeout;
+}
+
 /**
  * Clears expired entries in the ARP table.
  *
@@ -217,9 +241,9 @@ etharp_tmr(void)
       arp_table[i].ctime++;
 #if CONFIG_WIFI6_CODE_STACK
       if ((etharp_tmr_flag && (arp_table[i].ctime >= 3600)) ||
-          (!etharp_tmr_flag && (arp_table[i].ctime >= ARP_MAXAGE)) ||
+          (!etharp_tmr_flag && (arp_table[i].ctime >= arp_timeout)) ||
 #else
-      if ((arp_table[i].ctime >= ARP_MAXAGE) ||
+      if ((arp_table[i].ctime >= arp_timeout) ||
 #endif
           ((arp_table[i].state == ETHARP_STATE_PENDING)  &&
            (arp_table[i].ctime >= ARP_MAXPENDING))) {
@@ -798,22 +822,22 @@ etharp_input(struct pbuf *p, struct netif *netif)
       dhcp_arp_reply(netif, &sipaddr);
 #endif /* (LWIP_DHCP && DHCP_DOES_ARP_CHECK) */
 
-	 if (ip4_addr_cmp(&sipaddr, netif_ip4_addr(netif))) {
-		bk_printf("ip conflict!!!\r\n");	 //check for conflict
-		if (bk_feature_fast_dhcp_enable()) {
-			if (rtos_is_oneshot_timer_init(&arp_conflict_tmr) == 0) {
-				int clk_time = 1000;
-				rtos_init_oneshot_timer(&arp_conflict_tmr,
-						 clk_time,
-						 (timer_2handler_t)net_restart_dhcp,
-						 NULL,
-						 NULL);
-			}
-			if (rtos_is_oneshot_timer_running(&arp_conflict_tmr) == 0) {
-				rtos_start_oneshot_timer(&arp_conflict_tmr);
-			}
-		}
-	}
+#if (CONFIG_WIFI_FAST_DHCP) && (CONFIG_STA_USE_STATIC_IP)
+      if (ip4_addr_cmp(&sipaddr, netif_ip4_addr(netif))) {
+        bk_printf("ip conflict!!!\r\n");	 //check for conflict
+        if (rtos_is_oneshot_timer_init(&arp_conflict_tmr) == 0) {
+          int clk_time = 1000;
+          rtos_init_oneshot_timer(&arp_conflict_tmr,
+                clk_time,
+                (timer_2handler_t)net_restart_dhcp,
+                NULL,
+                NULL);
+        }
+        if (rtos_is_oneshot_timer_running(&arp_conflict_tmr) == 0) {
+          rtos_start_oneshot_timer(&arp_conflict_tmr);
+        }
+      }
+#endif
 
       break;
     default:
@@ -837,12 +861,12 @@ etharp_output_to_arp_index(struct netif *netif, struct pbuf *q, netif_addr_idx_t
      but only if its state is ETHARP_STATE_STABLE to prevent flooding the
      network with ARP requests if this address is used frequently. */
   if (arp_table[arp_idx].state == ETHARP_STATE_STABLE) {
-    if (arp_table[arp_idx].ctime >= ARP_AGE_REREQUEST_USED_BROADCAST) {
+    if (arp_table[arp_idx].ctime >= arp_rerequest_used_broadcast) {
       /* issue a standard request using broadcast */
       if (etharp_request(netif, &arp_table[arp_idx].ipaddr) == ERR_OK) {
         arp_table[arp_idx].state = ETHARP_STATE_STABLE_REREQUESTING_1;
       }
-    } else if (arp_table[arp_idx].ctime >= ARP_AGE_REREQUEST_USED_UNICAST) {
+    } else if (arp_table[arp_idx].ctime >= arp_rerequest_used_unicast) {
       /* issue a unicast request (for 15 seconds) to prevent unnecessary broadcast */
       if (etharp_request_dst(netif, &arp_table[arp_idx].ipaddr, &arp_table[arp_idx].ethaddr) == ERR_OK) {
         arp_table[arp_idx].state = ETHARP_STATE_STABLE_REREQUESTING_1;

@@ -13,13 +13,13 @@
 enum le_phy_mask
 {
     /// The Host prefers to use the LE 1M transmitter/receiver PHY (possibly among others)
-    PHY_1MBPS_BIT      = (1<<0),
+    PHY_1MBPS_BIT      = (1 << 0),
     PHY_1MBPS_POS      = (0),
     /// The Host prefers to use the LE 2M transmitter/receiver PHY (possibly among others)
-    PHY_2MBPS_BIT      = (1<<1),
+    PHY_2MBPS_BIT      = (1 << 1),
     PHY_2MBPS_POS      = (1),
     /// The Host prefers to use the LE Coded transmitter/receiver PHY (possibly among others)
-    PHY_CODED_BIT      = (1<<2),
+    PHY_CODED_BIT      = (1 << 2),
     PHY_CODED_POS      = (2),
     /// The Host prefers to use the LE Coded transmitter/receiver PHY (possibly among others)
     PHY_ALL        = (PHY_1MBPS_BIT | PHY_2MBPS_BIT | PHY_CODED_BIT),
@@ -141,7 +141,7 @@ ble_err_t bk_ble_gap_set_adv_data_ex(
     tmp.frag_pref = frag_pref;
     tmp.adv_data_len = adv_len;
 
-    if ( adv_buff == NULL || tmp.adv_data_len > ADV_DATA_LEN)
+    if (adv_buff == NULL || tmp.adv_data_len > ADV_DATA_LEN)
     {
         ret = BK_ERR_BLE_ADV_DATA;
         return ret;
@@ -362,19 +362,21 @@ ble_err_t bk_ble_gap_set_pkt_data_len(bk_bd_addr_t remote_device, uint16_t tx_da
 ble_err_t bk_ble_gap_set_rand_addr(bk_bd_addr_t rand_addr)
 {
     bk_err_t ret = BK_ERR_BLE_SUCCESS;
-    ret = ble_ethermind_post_msg(BLE_ETHERMIND_MSG_GAP_API_REQ, BLE_ETHERMIND_GAP_API_REQ_SUBMSG_SET_RANDOM_ADDR, &rand_addr, sizeof(bk_bd_addr_t), NULL);
+    ret = ble_ethermind_post_msg(BLE_ETHERMIND_MSG_GAP_API_REQ, BLE_ETHERMIND_GAP_API_REQ_SUBMSG_SET_RANDOM_ADDR, rand_addr, BK_BD_ADDR_LEN, NULL);
     return ret;
 }
 
 ble_err_t bk_ble_gap_config_local_privacy(bool privacy_enable)
 {
-#if 0
-    set_privacy_mode_t args = {0};
-    args.privacy_mode = privacy_enable;
+    bk_err_t ret = BK_ERR_BLE_SUCCESS;
+
+    ble_gap_privacy_mode_t args = {0};
+
+    args.privacy_enable = privacy_enable;
+
     ret = ble_ethermind_post_msg(BLE_ETHERMIND_MSG_GAP_API_REQ, BLE_ETHERMIND_GAP_API_REQ_SUBMSG_SET_PRIVACY_MODE, &args, sizeof(args), NULL);
-#else
-    return BK_ERR_BLE_SUCCESS;
-#endif
+
+    return ret;
 }
 
 ble_err_t bk_ble_gap_config_local_icon(uint16_t icon)
@@ -442,8 +444,8 @@ ble_err_t bk_ble_gap_get_local_used_addr(bk_bd_addr_t local_used_addr, uint8_t *
     }
     else
     {
-//        extern UCHAR hci_random_address[BT_BD_ADDR_SIZE];
-//        os_memcpy(local_used_addr, hci_random_address, 6);
+        //        extern UCHAR hci_random_address[BT_BD_ADDR_SIZE];
+        //        os_memcpy(local_used_addr, hci_random_address, 6);
     }
     return ret;
 }
@@ -462,11 +464,11 @@ ble_err_t bk_ble_gap_set_security_param(bk_ble_sm_param_t param_type,
                                         void *value, uint8_t len)
 {
     ble_err_t ret = BK_ERR_BLE_SUCCESS;
-//    ret = set_cmd_type(SECURITY_PARAM_CMD, param_type);
-//    if (ret)
-//    {
-//        return BK_ERR_BLE_FAIL;
-//    }
+    //    ret = set_cmd_type(SECURITY_PARAM_CMD, param_type);
+    //    if (ret)
+    //    {
+    //        return BK_ERR_BLE_FAIL;
+    //    }
 
     ble_gap_security_param_t param;
 
@@ -475,7 +477,7 @@ ble_err_t bk_ble_gap_set_security_param(bk_ble_sm_param_t param_type,
     param.len = len;
     param.data = os_malloc(len);
 
-    if(!param.data)
+    if (!param.data)
     {
         os_printf("%s malloc err\n", __func__);
         return -1;
@@ -490,7 +492,17 @@ ble_err_t bk_ble_gap_set_security_param(bk_ble_sm_param_t param_type,
 
 ble_err_t bk_ble_gap_security_rsp(bk_bd_addr_t bd_addr,  bool accept)
 {
-    return BK_ERR_BLE_SUCCESS;
+    ble_err_t ret = BK_ERR_BLE_SUCCESS;
+    ble_gap_sec_req_rsp_t param;
+
+    os_memset(&param, 0, sizeof(param));
+
+    param.accept = accept;
+    os_memcpy(param.peer_addr.addr, bd_addr, sizeof(param.peer_addr.addr));
+
+    ret = ble_ethermind_post_msg(BLE_ETHERMIND_MSG_GAP_API_REQ, BLE_ETHERMIND_GAP_API_REQ_SUBMSG_SEC_REQ_RSP, &param, sizeof(param), NULL);
+
+    return ret;
 }
 
 ble_err_t bk_ble_set_encryption(bk_bd_addr_t bd_addr, bk_ble_sec_act_t sec_act)
@@ -540,7 +552,7 @@ ble_err_t bk_ble_pair_key_reply(bk_bd_addr_t bd_addr, bool accept, bk_ble_key_ty
     param.accept = accept;
     os_memcpy(param.peer_addr.addr, bd_addr, sizeof(param.peer_addr.addr));
 
-    if(data && len)
+    if (data && len)
     {
         os_memcpy(&param.key, data, len);
     }
@@ -564,6 +576,62 @@ ble_err_t bk_ble_get_bond_device_list(int *dev_num, bk_ble_bond_dev_t *dev_list)
     return BK_ERR_BLE_SUCCESS;
 }
 
+ble_err_t bk_ble_gap_connect(bk_gap_create_conn_params_t *param)
+{
+    ble_gap_create_connect_t real;
+    uint8_t phy_count = 0;
+
+    os_memset(&real, 0, sizeof(real));
+
+    real.opcode = 0x2043;
+
+    real.adv_handle = 0;
+    real.subevent = 0;
+    real.initiator_filter_policy    = param->initiator_filter_policy;
+    real.local_addr_type            = param->local_addr_type;
+    real.peer_addr_type             = param->peer_addr_type;
+    os_memcpy(real.peer_addr.addr, param->peer_addr, sizeof(param->peer_addr));
+
+    real.init_phy                   = (1 << 0);
+
+    for (int i = 0; i < 3; ++i)
+    {
+        if (real.init_phy & (1 << i))
+        {
+            phy_count++;
+        }
+    }
+
+    if (!phy_count)
+    {
+        return BK_ERR_BLE_FAIL;
+    }
+
+    real.param_array = os_malloc(phy_count * sizeof(*real.param_array));
+
+    if (!real.param_array)
+    {
+        os_printf("%s alloc err\n", __func__);
+        return BK_ERR_BLE_NO_MEM;
+    }
+
+    os_memset(real.param_array, 0, phy_count * sizeof(*real.param_array));
+
+    for (int i = 0; i < 1; ++i)
+    {
+        real.param_array[i].scan_interval               = param->scan_interval;
+        real.param_array[i].scan_window                 = param->scan_window;
+        real.param_array[i].conn_interval_min           = param->conn_interval_min;
+        real.param_array[i].conn_interval_max           = param->conn_interval_max;
+        real.param_array[i].conn_latency                = param->conn_latency;
+        real.param_array[i].supervision_timeout         = param->supervision_timeout;
+        real.param_array[i].min_ce                      = param->min_ce;
+        real.param_array[i].max_ce                      = param->max_ce;
+    }
+
+    return ble_ethermind_post_msg(BLE_ETHERMIND_MSG_API_REQ, BLE_ETHERMIND_GAP_API_REQ_SUBMSG_CONNECT, &real, sizeof(real), NULL);
+}
+
 ble_err_t bk_ble_gap_disconnect(bk_bd_addr_t remote_device)
 {
     ble_err_t ret = BK_ERR_BLE_SUCCESS;
@@ -571,6 +639,13 @@ ble_err_t bk_ble_gap_disconnect(bk_bd_addr_t remote_device)
     os_memcpy(tmp.addr.addr, remote_device, sizeof(bd_addr_t));
     tmp.addr_type = 1;
     ret = ble_ethermind_post_msg(BLE_ETHERMIND_MSG_GAP_API_REQ, BLE_ETHERMIND_GAP_API_REQ_SUBMSG_DISCONNECT, &tmp, sizeof(tmp), NULL);
+    return ret;
+}
+
+ble_err_t bk_ble_gap_cancel_connect(void)
+{
+    ble_err_t ret = BK_ERR_BLE_SUCCESS;
+    ret = ble_ethermind_post_msg(BLE_ETHERMIND_MSG_GAP_API_REQ, BLE_ETHERMIND_GAP_API_REQ_SUBMSG_CONNECT_CANCEL, NULL, 0, NULL);
     return ret;
 }
 
@@ -872,20 +947,20 @@ ble_err_t bk_ble_gap_set_adv_data(bk_ble_adv_data_t *adv_data)
 
     if (adv_data->set_scan_rsp)
     {
-//        ret = set_cmd_type(SCAN_RSP_DATA_CMD, CMD_TYPE_SCAN_RSP_NORMAL);
-//        if (ret)
-//        {
-//            return BK_ERR_BLE_FAIL;
-//        }
+        //        ret = set_cmd_type(SCAN_RSP_DATA_CMD, CMD_TYPE_SCAN_RSP_NORMAL);
+        //        if (ret)
+        //        {
+        //            return BK_ERR_BLE_FAIL;
+        //        }
         ret = bk_ble_gap_set_scan_rsp_data_ex(advertising_handle, operation, frag_pref, adv_data_buf, adv_data_len, CMD_TYPE_SCAN_RSP_NORMAL);
     }
     else
     {
-//        ret = set_cmd_type(ADV_DATA_CMD, CMD_TYPE_ADV_NORMAL);
-//        if (ret)
-//        {
-//            return BK_ERR_BLE_FAIL;
-//        }
+        //        ret = set_cmd_type(ADV_DATA_CMD, CMD_TYPE_ADV_NORMAL);
+        //        if (ret)
+        //        {
+        //            return BK_ERR_BLE_FAIL;
+        //        }
         ret = bk_ble_gap_set_adv_data_ex(advertising_handle, operation, frag_pref, adv_data_buf, adv_data_len, CMD_TYPE_ADV_NORMAL);
     }
     return ret;
@@ -901,11 +976,11 @@ ble_err_t bk_ble_gap_set_adv_data_raw(uint8_t instance, uint16_t length, const u
     {
         return BK_ERR_NULL_PARAM;
     }
-//    ret = set_cmd_type(ADV_DATA_CMD, 1);
-//    if (ret)
-//    {
-//        return BK_ERR_BLE_FAIL;
-//    }
+    //    ret = set_cmd_type(ADV_DATA_CMD, 1);
+    //    if (ret)
+    //    {
+    //        return BK_ERR_BLE_FAIL;
+    //    }
     ret = bk_ble_gap_set_adv_data_ex(advertising_handle, operation, frag_pref, (uint8_t *)data, length, CMD_TYPE_ADV_RAW);
     return ret;
 }
@@ -921,11 +996,11 @@ ble_err_t bk_ble_gap_set_scan_rsp_data_raw(uint8_t instance, uint16_t length,
     {
         return BK_ERR_NULL_PARAM;
     }
-//    ret = set_cmd_type(SCAN_RSP_DATA_CMD, 1);
-//    if (ret)
-//    {
-//        return BK_ERR_BLE_FAIL;
-//    }
+    //    ret = set_cmd_type(SCAN_RSP_DATA_CMD, 1);
+    //    if (ret)
+    //    {
+    //        return BK_ERR_BLE_FAIL;
+    //    }
     ret = bk_ble_gap_set_scan_rsp_data_ex(advertising_handle, operation, frag_pref, (uint8_t *)scan_rsp_data, length, CMD_TYPE_SCAN_RSP_RAW);
     return ret;
 }
@@ -942,11 +1017,11 @@ ble_err_t bk_ble_gap_adv_start(uint8_t num_adv, const bk_ble_gap_ext_adv_t *ext_
         duration[i] = ext_adv[i].duration;
         max_extd_adv_evts[i] = ext_adv[i].max_events;
     }
-//    ret = set_cmd_type(ADV_ENABLE_CMD, 1);
-//    if (ret)
-//    {
-//        return BK_ERR_BLE_FAIL;
-//    }
+    //    ret = set_cmd_type(ADV_ENABLE_CMD, 1);
+    //    if (ret)
+    //    {
+    //        return BK_ERR_BLE_FAIL;
+    //    }
     return bk_ble_gap_set_adv_enable_ex(1, num_adv, instance, duration, max_extd_adv_evts);
 }
 
@@ -960,11 +1035,11 @@ ble_err_t bk_ble_gap_adv_stop(uint8_t num_adv, const uint8_t *ext_adv_inst)
     {
         instance[i] = ext_adv_inst[i];
     }
-//    ret = set_cmd_type(ADV_ENABLE_CMD, 0);
-//    if (ret)
-//    {
-//        return BK_ERR_BLE_FAIL;
-//    }
+    //    ret = set_cmd_type(ADV_ENABLE_CMD, 0);
+    //    if (ret)
+    //    {
+    //        return BK_ERR_BLE_FAIL;
+    //    }
     return bk_ble_gap_set_adv_enable_ex(0, num_adv, instance, duration, max_extd_adv_evts);
 }
 
@@ -1243,7 +1318,7 @@ ble_err_t bk_ble_gap_prefer_connect_params_set(bk_bd_addr_t addr,
         }
         os_memcpy(&args.phy_coded_conn_params, phy_coded_conn_params, sizeof(bk_ble_gap_conn_params_t));
     }
-    ret = ble_ethermind_post_msg(BLE_ETHERMIND_MSG_GAP_API_REQ, BLE_ETHERMIND_GAP_API_REQ_SUBMSG_CREATE_CONNECTION, &args, sizeof(args), NULL);
+    ret = ble_ethermind_post_msg(BLE_ETHERMIND_MSG_GAP_API_REQ, BLE_ETHERMIND_GAP_API_REQ_SUBMSG_SET_PREFER_CONNECT_PARAM, &args, sizeof(args), NULL);
     return ret;
 }
 
@@ -1269,7 +1344,7 @@ ble_err_t bk_ble_gap_bond_dev_list_operation(bk_gap_bond_dev_list_operation_t op
 
     param.action = op;
 
-    if(device)
+    if (device)
     {
         os_memcpy(&param.info, device, sizeof(*device));
     }
@@ -1277,3 +1352,20 @@ ble_err_t bk_ble_gap_bond_dev_list_operation(bk_gap_bond_dev_list_operation_t op
     ret = ble_ethermind_post_msg(BLE_ETHERMIND_MSG_GAP_API_REQ, BLE_ETHERMIND_GAP_API_REQ_SUBMSG_BOND_DEV_LIST_OP, &param, sizeof(param), NULL);
     return ret;
 }
+
+ble_err_t bk_ble_gap_generate_rpa(uint8_t *irk)
+{
+    ble_err_t ret = BK_ERR_BLE_SUCCESS;
+    ble_gap_generate_rpa_t param;
+
+    os_memset(&param, 0, sizeof(param));
+
+    if (irk)
+    {
+        os_memcpy(&param.irk, irk, sizeof(param.irk));
+    }
+
+    ret = ble_ethermind_post_msg(BLE_ETHERMIND_MSG_GAP_API_REQ, BLE_ETHERMIND_GAP_API_REQ_SUBMSG_GENERATE_RPA, &param, sizeof(param), NULL);
+    return ret;
+}
+

@@ -88,8 +88,6 @@ bt_err_t bk_bt_gap_set_device_class(uint32_t cod);
  */
 bt_err_t bk_bt_gap_set_local_name(uint8_t *name, uint8_t len);
 
-
-
 #ifdef __cplusplus
 }
 #endif

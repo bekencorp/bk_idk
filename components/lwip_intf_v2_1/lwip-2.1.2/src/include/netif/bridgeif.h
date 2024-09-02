@@ -46,6 +46,9 @@
 extern "C" {
 #endif
 
+#define DHCP_SERVER_PORT 67
+#define DHCP_CLIENT_PORT 68
+
 struct netif;
 
 #if (BRIDGEIF_MAX_PORTS < 0) || (BRIDGEIF_MAX_PORTS >= 64)

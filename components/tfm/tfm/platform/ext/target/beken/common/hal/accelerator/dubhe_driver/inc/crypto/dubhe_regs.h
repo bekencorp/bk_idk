@@ -43,6 +43,7 @@
 #define DBH_BASE_TRNG_CTRL DBH_BASE_SECURE_TRNG_CTRL
 #define DBH_BASE_TRNG_POOL DBH_BASE_SECURE_TRNG_POOL
 #else
+#define DBH_BASE_TRNG_CTRL 0 //TODO Fix me
 #define DBH_BASE_ACA DBH_BASE_NORMAL_ACA
 #define DBH_BASE_SCA DBH_BASE_NORMAL_SCA
 #define DBH_BASE_HASH DBH_BASE_NORMAL_HASH
@@ -796,7 +797,8 @@ ACA engine status
 /*the baseaddress will defined in HAL layer*/
 extern uint32_t    _g_Dubhe_RegBase;
 
-#ifdef REG_DEBUG
+//#ifdef REG_DEBUG
+#if 0
 extern const char* reg_array[10][10];
 extern const char* aca_other[20];
 

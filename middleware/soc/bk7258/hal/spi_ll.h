@@ -73,12 +73,24 @@ static inline uint32_t spi_ll_get_byte_interval(spi_hw_t *hw)
 	return hw->ctrl.byte_interval;
 }
 
+//Rx sample edge:  0x0: 1th posedge;  0x1: 1th negedge;  0x2:  2th posedge;  0x3: 2th negedge;
+static inline void spi_ll_set_rx_sample_edge(spi_hw_t *hw, uint32_t val)
+{
+	hw->ctrl.reserved = val;
+}
+
+static inline uint32_t spi_ll_get_rx_sample_edge(spi_hw_t *hw)
+{
+	return hw->ctrl.reserved;
+}
+
 //TODO init more
 static inline void spi_ll_init(spi_hw_t *hw)
 {
 	spi_ll_soft_reset(hw);
 	//notice bk7236 v5 need set byte_interval more than 0, to prevent spi clock issue when reading
 	spi_ll_set_byte_interval(hw, 1);
+	spi_ll_set_rx_sample_edge(hw, 1);
 	hw->ctrl.tx_fifo_int_level = 0;
 	hw->ctrl.rx_fifo_int_level = 0;
 }

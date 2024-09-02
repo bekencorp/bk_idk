@@ -38,21 +38,11 @@ typedef volatile struct {
 #define GPIO_IS_SECURE(gpio_id) ((gpio_id) < 2)
 #endif
 
-static system_gpio_func_mode_hw_t *gpio_system_gpio_func_mode = (system_gpio_func_mode_hw_t *)GPIO_LL_SYSTEM_REG_BASE;
-
-static inline void gpio_ll_clear_chan_interrupt_status(gpio_hw_t *hw, uint32 index)
-{
-	hw->gpio_num[index].cfg.gpio_int_clear = 1;
-}
+static system_gpio_func_mode_hw_t *gpio_system_gpio_func_mode;
 
 static inline void gpio_ll_init(gpio_hw_t *hw)
 {
-        for (int i = 0; i < SOC_GPIO_NUM; i++) {
-                if (GPIO_IS_SECURE(i)) {
-                        continue;
-                }
-                gpio_ll_clear_chan_interrupt_status(hw, i);
-        }
+	gpio_system_gpio_func_mode = (system_gpio_func_mode_hw_t *)GPIO_LL_SYSTEM_REG_BASE;
 }
 
 //some special code re-use a GPIO, it doesn't care the GPIO setting value, just bake/restore value.
@@ -201,12 +191,18 @@ static inline void gpio_ll_set_output_value(gpio_hw_t *hw, uint32 index, bool va
 	hw->gpio_num[index].cfg.gpio_output = value;
 }
 
+static inline bool gpio_ll_get_output_value(gpio_hw_t *hw, uint32 index)
+{
+	return hw->gpio_num[index].cfg.gpio_output;
+}
+
 static inline bool gpio_ll_get_input_value(gpio_hw_t *hw, uint32 index)
 {
 	return hw->gpio_num[index].cfg.gpio_input;
 }
 
 #define gpio_ll_set_gpio_output_value(hw,index,value) gpio_ll_set_output_value(hw, index, value)
+#define gpio_ll_get_gpio_output_value(hw,index) gpio_ll_get_output_value(hw, index)
 #define gpio_ll_get_gpio_input_value(hw,index) gpio_ll_get_input_value(hw, index)
 
 static inline void gpio_ll_set_interrupt_type(gpio_hw_t *hw, uint32 index, gpio_int_type_t mode)
@@ -238,6 +234,11 @@ static inline void gpio_ll_clear_interrupt_status(gpio_hw_t *hw, gpio_interrupt_
 	if (gpio_status->gpio_32_64_int_status) {
 		REG_WRITE(&hw->gpio_32_55_int_st, gpio_status->gpio_32_64_int_status);
 	}
+}
+
+static inline void gpio_ll_clear_chan_interrupt_status(gpio_hw_t *hw, uint32 index)
+{
+	hw->gpio_num[index].cfg.gpio_int_clear = 1;
 }
 
 static inline bool gpio_ll_is_interrupt_triggered(gpio_hw_t *hw, uint32 index, gpio_interrupt_status_t *gpio_status)

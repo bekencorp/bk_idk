@@ -166,10 +166,8 @@ def deal_file_operation():
 #get config json path
 def get_config_json_path():
     json_path = None
-    if os.path.exists('%s/%s/%s/configuration.json'%(armino_path, project_dir, chip)):
-        json_path = '%s/%s/%s/configuration.json'%(armino_path, project_dir, chip)
-    elif os.path.exists('%s/%s/configuration.json'%(armino_path, project_dir)):
-        json_path = '%s/%s/configuration.json'%(armino_path, project_dir)
+    if os.path.exists('%s/%s/config/%s/configuration.json'%(armino_path, project_dir, chip)):
+        json_path = '%s/%s/config/%s/configuration.json'%(armino_path, project_dir, chip)
     else:
         json_path = '%s/middleware/boards/%s/configuration.json'%(armino_path, chip)
     if json_path is None:

@@ -18,7 +18,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <common/bk_err.h>
-#include <bk_wifi_adapter.h>
+#include <common/bk_include.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -161,10 +161,13 @@ typedef enum {
 
 	EVENT_WIFI_AP_CONNECTED,       /**< A STA is connected to the BK AP */
 	EVENT_WIFI_AP_DISCONNECTED,    /**< A STA is disconnected from the BK AP */
+
+	EVENT_WIFI_NETWORK_FOUND,      /**< The BK STA find target AP */
 	EVENT_WIFI_COUNT,              /**< WiFi event count */
 } wifi_event_t;
 
 typedef enum {
+	WIFI_REASON_RESERVED = 0,
 	WIFI_REASON_UNSPECIFIED = 1,
 	WIFI_REASON_PREV_AUTH_NOT_VALID = 2,
 	WIFI_REASON_DEAUTH_LEAVING = 3,
@@ -249,6 +252,9 @@ typedef enum {
 	WIFI_SECURITY_EAP,             /**< EAP */
 	WIFI_SECURITY_OWE,             /**< OWE */
 	WIFI_SECURITY_AUTO,            /**< WiFi automatically detect the security type */
+	WIFI_SECURITY_TYPE_WAPI_PSK,
+	WIFI_SECURITY_TYPE_WAPI_CERT,
+	WIFI_SECURITY_TYPE_WAPI_UNKNOWN,
 } wifi_security_t;
 
 typedef enum {
@@ -278,6 +284,29 @@ typedef enum {
 	WIFI_SECOND_CHANNEL_ABOVE,   /**< Second channel is above the primary channel */
 	WIFI_SECOND_CHANNEL_BELOW,   /**< Second channel is below the primary channel */
 } wifi_second_channel_t;
+
+typedef enum {
+    WIFI_REGU_NULL    = 0,
+    WIFI_REGU_FCC     = 1,
+    WIFI_REGU_ETSI    = 2,
+    WIFI_REGU_MKK     = 3,
+    WIFI_REGU_EXT     = 4,
+}wifi_regulation_t;
+    
+typedef enum {
+    WIFI_RS_NULL =0,
+    WIFI_RS_CCK  =1,
+    WIFI_RS_OFDM =2,
+    WIFI_RS_HT   =3,
+    WIFI_RS_VHT  =4,
+    WIFI_RS_HE   =5,
+}wifi_ratesection_t;
+
+
+typedef enum {
+	WIFI_TX_RAW_DATA,   /**< Wi-Fi tx raw data */
+	WIFI_TX_RAW_SPECIAL_DATTA, /**< Wi-Fi tx raw speacial data */
+} wifi_tx_raw_pkt_t;            /**< wifi_tx_raw_pkt_t */
 
 /**
  * @}
@@ -578,7 +607,13 @@ typedef struct {
 
 typedef struct {
 	uint32_t scan_id; /**< Scan ID */
+	uint32_t scan_use_time;/**< scan time. us */
 } wifi_event_scan_done_t;
+
+typedef struct {
+	char    ssid[WIFI_SSID_STR_LEN];      /**< SSID found to be connected */
+	uint8_t bssid[WIFI_BSSID_LEN];        /**< BSSID found to be connected */
+} wifi_event_network_found_t;
 
 typedef struct {
 	char    ssid[WIFI_SSID_STR_LEN];      /**< SSID of connected AP */
@@ -633,6 +668,7 @@ typedef struct {
 typedef struct {
 	uint8_t* pkt;                   /**< RAW data tx packet address */
 	int      len;                   /**< RAW data tx packet length */
+	int      type;                  /**< Raw data tx packet type length */
 	raw_tx_cntrl_t tx_cntrl;        /**< RAW data tx control information */
 } wifi_raw_tx_info_t;
 
@@ -678,6 +714,52 @@ typedef struct {
 }wifi_csi_info_t;
 
 typedef void (* wifi_csi_cb_t)(wifi_csi_info_t **info,uint8_t flag);
+
+/**
+ * @brief Wi-Fi tx statistics.
+ */
+struct tx_stats_t
+{
+    uint32_t tx_singel_total;           /**< tx single mpdu total count */
+    uint32_t tx_singel_retry;           /**< tx single mpdu retry count */
+    uint32_t tx_agg_total;              /**< tx mpdu of ampdu total count */
+    uint32_t tx_agg_fail;               /**< tx mpdu of ampdu fail count */
+    //uint32_t tx_single_drop;
+};
+
+typedef struct {
+    wifi_regulation_t     regulation; /**< region regulation  0 REGUALTION_NULL 1  REGUALTION_FCC 2 REGUALTION_ETSI 3 REGUALTION_JP 4 REGUALTION_EXT*/
+    wifi_ratesection_t    ratesection; /**< ratesection 0 RATE_NULL 1 RATE_CCK 2 RATE_OFDM 3 RATE_HT 4 RATE_VHT 5 RATE_HE*/
+    uint8_t   channel; /**< channel  range from 1-14*/
+    uint8_t   value; /**< value max tx power*/
+}wifi_tx_pwr_lmt_t;
+
+/**
+ * @brief BC/MC Filter.
+ */
+enum
+{
+    WIFI_BCMC_CLOSE      = 0,
+    WIFI_MC_ON,
+    WIFI_BC_ON,
+    WIFI_BC_MC_ON,
+};
+
+/**
+ * @brief IEEE 802.11 Standards
+ */
+typedef enum
+{
+    WIFI_STANDARD_NONE = 0,
+    WIFI_STANDARD_11A,
+    WIFI_STANDARD_11B,
+    WIFI_STANDARD_11G,
+    WIFI_STANDARD_11N,
+    WIFI_STANDARD_11AC,
+    WIFI_STANDARD_11AX,
+
+    WIFI_STANDARD_MAX
+} wifi_standard;
 
 /**
  * @}

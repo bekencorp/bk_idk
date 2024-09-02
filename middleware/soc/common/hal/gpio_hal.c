@@ -102,6 +102,14 @@ bk_err_t gpio_hal_set_output_value(gpio_hal_t *hal, gpio_id_t gpio_id, uint32 ou
 	return BK_OK;
 }
 
+bk_err_t gpio_hal_get_output(gpio_hal_t *hal, gpio_id_t gpio_id)
+{
+	if(gpio_ll_check_output_enable(hal->hw, gpio_id))
+		return (gpio_ll_get_gpio_output_value(hal->hw, gpio_id));
+	else
+		return BK_ERR_GPIO_NOT_INPUT_MODE;
+}
+
 bk_err_t gpio_hal_get_input(gpio_hal_t *hal, gpio_id_t gpio_id)
 {
 	if(gpio_ll_check_input_enable(hal->hw, gpio_id))

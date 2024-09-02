@@ -377,7 +377,7 @@ Public key hash地址为 0x4B100528~0x4B100548,内容为(low)2af1f2236872981bdf2
 配置示例
 +++++++++++++++++++++++++++++++++++
 
-如图所示，在User_operate区域添加一个字段，写入6个字节BK7236,以ascii码的方式解析，
+如图所示，在User_operate区域添加一个字段，写入6个字节BK7258,以ascii码的方式解析，
 
 .. figure:: picture/otp_user_example.png
     :align: center

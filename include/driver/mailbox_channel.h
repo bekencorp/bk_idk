@@ -73,6 +73,7 @@ enum
 	MB_CHNL_COM,   /* MB_CHNL_COM is default mailbox channel used for audio and video */
 	MB_CHNL_DEC,
 	MB_CHNL_UART,
+	MB_CHNL_FLASH,
 
 	/*                  !!!!!   Note   !!!!!              */
 	/* ===> MB_CHNL_LOG should be the LAST one. LOWEST priority. */
@@ -122,6 +123,7 @@ enum
 	MB_CHNL_COM,   /* MB_CHNL_COM is default mailbox channel used for audio and video */
 	MB_CHNL_DEC,
 	MB_CHNL_UART,
+	MB_CHNL_FLASH,
 
 	/*                  !!!!!   Note   !!!!!              */
 	/* ===> MB_CHNL_LOG should be the LAST one. LOWEST priority. */
@@ -373,6 +375,21 @@ bk_err_t mb_chnl_write(u8 log_chnl, mb_chnl_cmd_t * cmd_buf);
   *
   */
 bk_err_t mb_chnl_ctrl(u8 log_chnl, u8 cmd, void * param);
+
+/* =====================      physical channel APIs      ==================*/
+/*
+  * get communication statistics for target CPU (phy_chnl).
+  * input:
+  *     dst_cpu  : get statistics for this core.
+  * output:
+  *     rx_cnt : if not NULL, return cmds count received by this core.
+  *     tx_cnt : if not NULL, return cmds count sent by this core.
+  * return:
+  *     succeed: BK_OK;
+  *     failed  : fail code.
+  *
+  */
+void mb_chnl_get_statis(u8 dst_cpu, u32 *rx_cnt, u32 * tx_cnt);
 
 
 #ifdef __cplusplus

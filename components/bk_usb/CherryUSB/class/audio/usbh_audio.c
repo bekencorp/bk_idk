@@ -54,6 +54,67 @@ static void usbh_audio_class_free(struct usbh_audio *audio_class)
     memset(audio_class, 0, sizeof(struct usbh_audio));
 }
 
+int usbh_audio_alloc_pipe(struct usbh_audio *audio_class, const char *name, uint32_t samp_freq)
+{
+    struct usb_endpoint_descriptor *ep_desc;
+    uint8_t mult;
+    uint16_t mps;
+    uint8_t intf = 0xff;
+    uint8_t altsetting = 1;
+
+    for (uint8_t i = 0; i < audio_class->module_num; i++) {
+        if (strcmp(name, audio_class->module[i].name) == 0) {
+            for (uint8_t j = 0; j < audio_class->num_of_intf_altsettings; j++) {
+                for (uint8_t k = 0; k < audio_class->module[i].altsetting[0].sampfreq_num; k++) {
+                    if (audio_class->module[i].altsetting[0].sampfreq[k] == samp_freq) {
+                        intf = audio_class->module[i].data_intf;
+                        altsetting = j + 1;
+                        goto freq_found;
+                    }
+                }
+            }
+        }
+    }
+
+    return -ENODEV;
+
+freq_found:
+
+    ep_desc = &audio_class->hport->config.intf[intf].altsetting[altsetting].ep[0].ep_desc;
+    //8k set maxpacketsize 16bytes/ms
+    if(samp_freq == 8000){
+        if(ep_desc->wMaxPacketSize != 0x10) {
+            ep_desc->wMaxPacketSize = 0x10;
+        }
+    } else if(samp_freq == 16000) {
+        if(ep_desc->wMaxPacketSize != 0x20) {
+            ep_desc->wMaxPacketSize = 0x20;
+        }
+    } else if(samp_freq == 44100) {
+        if(ep_desc->wMaxPacketSize != 0x5A) {
+            ep_desc->wMaxPacketSize = 0x5A;
+        }
+    } else if(samp_freq == 48000) {
+        if(ep_desc->wMaxPacketSize != 0x60) {
+            ep_desc->wMaxPacketSize = 0x60;
+        }
+    } else {
+        USB_LOG_INFO("please check samp_freq:%d ?\r\n", samp_freq);
+    }
+
+    mult = (ep_desc->wMaxPacketSize & USB_MAXPACKETSIZE_ADDITIONAL_TRANSCATION_MASK) >> USB_MAXPACKETSIZE_ADDITIONAL_TRANSCATION_SHIFT;
+    mps = ep_desc->wMaxPacketSize & USB_MAXPACKETSIZE_MASK;
+    if (ep_desc->bEndpointAddress & 0x80) {
+        audio_class->isoin_mps = mps * (mult + 1);
+        usbh_hport_activate_epx(&audio_class->isoin, audio_class->hport, ep_desc);
+    } else {
+        audio_class->isoout_mps = mps * (mult + 1);
+        usbh_hport_activate_epx(&audio_class->isoout, audio_class->hport, ep_desc);
+    }
+
+    return 0;
+}
+
 int usbh_audio_open(struct usbh_audio *audio_class, const char *name, uint32_t samp_freq)
 {
     struct usb_setup_packet *setup = &audio_class->hport->setup;
@@ -130,6 +191,28 @@ freq_found:
             return ret;
         }
     }
+
+    //8k set maxpacketsize 16bytes/ms
+    if(samp_freq == 8000){
+        if(ep_desc->wMaxPacketSize != 0x10) {
+            ep_desc->wMaxPacketSize = 0x10;
+        }
+    } else if(samp_freq == 16000) {
+        if(ep_desc->wMaxPacketSize != 0x20) {
+            ep_desc->wMaxPacketSize = 0x20;
+        }
+    } else if(samp_freq == 44100) {
+        if(ep_desc->wMaxPacketSize != 0x5A) {
+            ep_desc->wMaxPacketSize = 0x5A;
+        }
+    } else if(samp_freq == 48000) {
+        if(ep_desc->wMaxPacketSize != 0x60) {
+            ep_desc->wMaxPacketSize = 0x60;
+        }
+    } else {
+        USB_LOG_INFO("please check samp_freq:%d ?\r\n", samp_freq);
+    }
+
     mult = (ep_desc->wMaxPacketSize & USB_MAXPACKETSIZE_ADDITIONAL_TRANSCATION_MASK) >> USB_MAXPACKETSIZE_ADDITIONAL_TRANSCATION_SHIFT;
     mps = ep_desc->wMaxPacketSize & USB_MAXPACKETSIZE_MASK;
     if (ep_desc->bEndpointAddress & 0x80) {
@@ -425,6 +508,7 @@ static int usbh_audio_ctrl_connect(struct usbh_hubport *hport, uint8_t intf)
         ret = usbh_audio_close(audio_class, audio_class->module[i].name);
         if (ret < 0) {
             USB_LOG_ERR("Fail to close audio module :%s\r\n", audio_class->module[i].name);
+            usbh_audio_class_free(audio_class);
             return ret;
         }
     }
@@ -452,11 +536,13 @@ static int usbh_audio_ctrl_disconnect(struct usbh_hubport *hport, uint8_t intf)
 
     if (audio_class) {
         if (audio_class->isoin) {
-            usbh_pipe_free(audio_class->isoin);
+            audio_class->isoin = NULL;
+            //usbh_pipe_free(audio_class->isoin);
         }
 
         if (audio_class->isoout) {
-            usbh_pipe_free(audio_class->isoout);
+            audio_class->isoout = NULL;
+            //usbh_pipe_free(audio_class->isoout);
         }
 
         if (hport->config.intf[intf].devname[0] != '\0') {
@@ -521,6 +607,34 @@ void bk_usbh_audio_sw_deinit(struct usbh_hubport *hport, uint8_t interface_num, 
 
 	USB_LOG_DBG("[-]%s\r\n", __func__);
 
+}
+
+void bk_usbh_audio_unregister_dev(void)
+{
+    char undevname[CONFIG_USBHOST_DEV_NAMELEN];
+    int devno;
+
+    for (devno = 0; devno < CONFIG_USBHOST_MAX_AUDIO_CLASS; devno++) {
+        if ((g_devinuse & (1 << devno)) != 0) {
+
+            snprintf(undevname, CONFIG_USBHOST_DEV_NAMELEN, DEV_FORMAT, devno);
+
+            struct usbh_audio *audio_class = (struct usbh_audio *)usbh_find_class_instance(undevname);
+            if(audio_class != NULL) {
+                if (audio_class->isoin) {
+                    usbh_pipe_free(audio_class->isoin);
+                }
+
+                if (audio_class->isoout) {
+                    usbh_pipe_free(audio_class->isoout);
+                }
+
+                USB_LOG_INFO("%s Check Unregister Audio Class:%s\r\n", __func__, undevname);
+
+                usbh_audio_class_free(audio_class);
+            }
+        }
+    }
 }
 
 #if 0

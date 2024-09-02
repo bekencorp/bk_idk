@@ -294,6 +294,12 @@ bk_err_t bk_flash_cpu_write_disable();
 void flash_read_cbus(uint32_t address, void *user_buf, uint32_t size);
 void flash_write_cbus(uint32_t address, const uint8_t *user_buf, uint32_t size);
 void flash_set_reg_base_addr(uint32_t addr);
+void flash_switch_to_line_mode_two(void);
+void flash_restore_line_mode(void);
+bk_err_t bk_flash_cpu_write_enable(void);
+bk_err_t bk_flash_cpu_write_disable(void);
+
+int bk_flash_set_dbus_security_region(uint32_t id, uint32_t start, uint32_t end, bool secure);
 
 #ifdef __cplusplus
 }

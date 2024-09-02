@@ -12,7 +12,8 @@
 #include <stdint.h>
 
 #include "psa/error.h"
-#include "psa/fwu_config.h"
+//#include "psa/fwu_config.h"
+#include "psa/fwu_config.h.in"
 #include "tfm_fwu_defs.h"
 
 #ifdef __cplusplus

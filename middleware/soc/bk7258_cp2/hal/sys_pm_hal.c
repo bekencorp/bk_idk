@@ -435,7 +435,7 @@ static inline void sys_hal_clear_wakeup_status(void)
 #define PM_LOW_VOL_AON_LDO_SEL                (2)       // 0.7V
 #define PM_LOW_VOL_VIO_LDO_SEL                (0)       // 2.9V
 
-static void sys_hal_gpio_state_switch(bool lock)
+void sys_hal_gpio_state_switch(bool lock)
 {
 	/*pass aon_pmu_r0 to ana*/
 	if (lock) {

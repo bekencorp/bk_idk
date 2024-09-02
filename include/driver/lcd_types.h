@@ -58,6 +58,8 @@ typedef enum {
 	LCD_DEVICE_ST77903_SAT61478M, /**< 400X400 QSPI  */
 	LCD_DEVICE_ST77903_H0165Y008T, /**< 360X480 QSPI  */
 	LCD_DEVICE_SPD2010, /**< 412X412 QSPI  */
+
+	LCD_DEVICE_ST7796U, /**< 320X480 SPI */
 } lcd_device_id_t;
 
 typedef enum {
@@ -65,6 +67,7 @@ typedef enum {
 	LCD_TYPE_RGB565,  /**< lcd device output data hardware interface is RGB565 format */
 	LCD_TYPE_MCU8080, /**< lcd device output data hardware interface is MCU 8BIT format */
 	LCD_TYPE_QSPI,    /**< lcd device hardware interface is QSPI interface */
+	LCD_TYPE_SPI,     /**< lcd device hardware interface is SPI interface */
 } lcd_type_t;
 
 typedef enum {
@@ -108,14 +111,14 @@ typedef enum {
 } lcd_clk_t;
 
 typedef enum {
-    LCD_QSPI_80M,
-    LCD_QSPI_64M,
-    LCD_QSPI_60M,
-    LCD_QSPI_53M, //53.3M
-    LCD_QSPI_48M,
-    LCD_QSPI_40M,
-    LCD_QSPI_32M,
-    LCD_QSPI_30M,
+    LCD_QSPI_80M = 80,
+    LCD_QSPI_64M = 64,
+    LCD_QSPI_60M = 60,
+    LCD_QSPI_53M = 53, //53.3M
+    LCD_QSPI_48M = 48,
+    LCD_QSPI_40M = 40,
+    LCD_QSPI_32M = 32,
+    LCD_QSPI_30M = 30,
 } lcd_qspi_clk_t;
 
 /** rgb data output in clk rising or falling */
@@ -186,7 +189,7 @@ typedef struct
 /** qspi interface config param */
 typedef struct
 {
-    lcd_qspi_clk_t clk;
+	lcd_qspi_clk_t clk;
 	lcd_qspi_refresh_method_t refresh_method;
 	uint8_t reg_write_cmd;
 	uint8_t reg_read_cmd;
@@ -199,6 +202,13 @@ typedef struct
 	uint32_t frame_len;
 } lcd_qspi_t;
 
+/** spi interface config param */
+typedef struct
+{
+	lcd_qspi_clk_t clk;
+	const lcd_qspi_init_cmd_t *init_cmd;
+	uint32_t device_init_cmd_len;
+} lcd_spi_t;
 
 typedef struct
 {
@@ -211,7 +221,8 @@ typedef struct
 	union {
 		const lcd_rgb_t *rgb;  /**< RGB interface lcd device config */
 		const lcd_mcu_t *mcu;  /**< MCU interface lcd device config */
-        const lcd_qspi_t *qspi;/**< QSPI interface lcd device config */
+		const lcd_qspi_t *qspi;/**< QSPI interface lcd device config */
+		const lcd_spi_t *spi;  /**< SPI interface lcd device config */
 	};
 	void (*init)(void);                   /**< lcd device initial function */
 	bk_err_t (*lcd_off)(void);            /**< lcd off */

@@ -11,23 +11,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+#define __must_check
+
 #include <bk_wifi_adapter.h>
 #include <bk_phy_internal.h>
-#ifdef CONFIG_USE_MBEDTLS
-#include <mbedtls/ecdh.h>
-#include <mbedtls/ecp.h>
-#else
-#include <wolfssl/wolfcrypt/integer.h>
-#include <wolfssl/wolfcrypt/ecc.h>
-#endif
-#include <crypto/sha1.h>
-#include <crypto/aes_wrap.h>
-#include <crypto/crypto.h>
-#include <crypto/md5.h>
-#include <crypto/sha1.h>
-#include <crypto/sha256.h>
-#include <crypto/sha384.h>
-#include <crypto/sha512.h>
 #include "lwip/pbuf.h"
 #include "lwip/netif.h"
 #include "lwip/inet.h"
@@ -44,6 +32,7 @@
 #include "bk_feature.h"
 #include "bk_general_dma.h"
 #include "bk_ps_time.h"
+#include <lwip/def.h>
 #include "bk_rf_internal.h"
 #include <components/ate.h>
 #include <driver/aon_rtc.h>
@@ -56,6 +45,9 @@
 #include "stack_base.h"
 #include "command_line.h"
 #include "bk_phy_adapter.h"
+#include "reg_domain.h"
+#include "bk_rw.h"
+
 #if (CONFIG_CKMN)
 #include <driver/ckmn.h>
 #endif
@@ -65,230 +57,6 @@
 #endif
 
 #define TAG "wifi_adapter"
-
-#ifdef CONFIG_USE_MBEDTLS
-struct crypto_ecdh {
-    mbedtls_ecdh_context ctx;
-    size_t length;
-};
-#else
-struct crypto_ec {
-	ecc_key key;
-	mp_int a;
-	mp_int prime;
-	mp_int order;
-	mp_digit mont_b;
-	mp_int b;
-};
-struct crypto_ecdh {
-	struct crypto_ec *ec;
-	WC_RNG rng;
-};
-#endif
-
-static void _crypto_ecdh_deinit_wrapper(void *ecdh) {
-	crypto_ecdh_deinit((struct crypto_ecdh *)ecdh);
-}
-
-static void * _crypto_ecdh_init_wrapper(int group) {
-	return (struct crypto_ecdh *)crypto_ecdh_init(group);
-}
-
-static struct wpabuf * _crypto_ecdh_set_peerkey_wrapper(void *ecdh, int inc_y, const u8 *key, size_t len) {
-	return crypto_ecdh_set_peerkey((struct crypto_ecdh *)ecdh, inc_y, key, len);
-}
-
-static struct wpabuf * _crypto_ecdh_get_pubkey_wrapper(void *ecdh, int inc_y) {
-	return crypto_ecdh_get_pubkey((struct crypto_ecdh *)ecdh, inc_y);
-}
-
-void * _crypto_bignum_init_wrapper(void) {
-	return (struct crypto_bignum *)crypto_bignum_init();
-}
-
-int _crypto_bignum_rand_wrapper(void *r, const void *m) {
-	return crypto_bignum_rand((struct crypto_bignum *)r, (const struct crypto_bignum *)m);
-}
-
-void _crypto_bignum_deinit_wrapper(void *n, int clear) {
-	return crypto_bignum_deinit((struct crypto_bignum *)n, clear);
-}
-
-void * _crypto_bignum_init_set_wrapper(const u8 *buf, size_t len) {
-	return (struct crypto_bignum *)crypto_bignum_init_set(buf, len);
-}
-
-void * _crypto_bignum_init_uint_wrapper(unsigned int val) {
-	return (struct crypto_bignum *)crypto_bignum_init_uint(val);
-}
-
-int _crypto_bignum_to_bin_wrapper(const void *a, u8 *buf, size_t buflen, size_t padlen) {
-	return crypto_bignum_to_bin((struct crypto_bignum *)a, buf, buflen, padlen);
-}
-
-int _crypto_bignum_add_wrapper(const void *a, const void *b, void *c) {
-	return crypto_bignum_add((const struct crypto_bignum *)a,
-					  (const struct crypto_bignum *)b,
-					  (struct crypto_bignum *)c);
-}
-
-int _crypto_bignum_sub_wrapper(const void *a, const void *b, void *c) {
-	return crypto_bignum_sub((const struct crypto_bignum *)a,
-					  (const struct crypto_bignum *)b,
-					  (struct crypto_bignum *)c);
-}
-
-int _crypto_bignum_mod_wrapper(const void *a, const void *b, void *c) {
-	return crypto_bignum_mod((const struct crypto_bignum *)a,
-					  (const struct crypto_bignum *)b,
-					  (struct crypto_bignum *)c);
-}
-
-int _crypto_bignum_cmp_wrapper(const void *a, const void *b) {
-	return crypto_bignum_cmp((const struct crypto_bignum *)a, (const struct crypto_bignum *)b);
-}
-
-int _crypto_bignum_mulmod_wrapper(const void *a, const void *b, const void *c, void *d){
-	return crypto_bignum_mulmod((const struct crypto_bignum *)a,
-					  (const struct crypto_bignum *)b,
-					  (const struct crypto_bignum *)c,
-					  (struct crypto_bignum *)d);
-}
-
-int _crypto_bignum_inverse_wrapper(const void *a, const void *b, void *c){
-	return crypto_bignum_inverse((const struct crypto_bignum *)a,
-					  (const struct crypto_bignum *)b,
-					  (struct crypto_bignum *)c);
-}
-
-int _crypto_bignum_addmod_wrapper(const void *a, const void *b, const void *c, void *d){
-	return crypto_bignum_addmod((const struct crypto_bignum *)a,
-					  (const struct crypto_bignum *)b,
-					  (const struct crypto_bignum *)c,
-					  (struct crypto_bignum *)d);
-}
-
-int _crypto_bignum_sqrmod_wrapper(const void *a, const void *b, void *c){
-	return crypto_bignum_sqrmod((const struct crypto_bignum *)a,
-					  (const struct crypto_bignum *)b,
-					  (struct crypto_bignum *)c);
-}
-
-int _crypto_bignum_exptmod_wrapper(const void *a, const void *b, const void *c, void *d){
-	return crypto_bignum_exptmod((const struct crypto_bignum *)a,
-					  (const struct crypto_bignum *)b,
-					  (const struct crypto_bignum *)c,
-					  (struct crypto_bignum *)d);
-}
-
-int _crypto_bignum_is_zero_wrapper(const void *a) {
-	return crypto_bignum_is_zero((const struct crypto_bignum *)a);
-}
-
-int _crypto_bignum_is_one_wrapper(const void *a) {
-	return crypto_bignum_is_one((const struct crypto_bignum *)a);
-}
-
-int _crypto_bignum_is_odd_wrapper(const void *a) {
-	return crypto_bignum_is_odd((const struct crypto_bignum *)a);
-}
-
-int _crypto_bignum_rshift_wrapper(const void *a, int n, void *r) {
-	return crypto_bignum_rshift((const struct crypto_bignum *)a, n, (struct crypto_bignum *)r);
-}
-
-int _crypto_bignum_legendre_wrapper(const void *a, const void *p) {
-	return crypto_bignum_legendre((const struct crypto_bignum *)a, (const struct crypto_bignum *)p);
-}
-
-#ifdef CONFIG_USE_MBEDTLS
-struct crypto_ec {
-	mbedtls_ecp_group group;
-};
-#endif
-
-static void * _crypto_ec_init_wrapper(int group) {
-	return (struct crypto_ec *)crypto_ec_init(group);
-}
-
-static void _crypto_ec_deinit_wrapper(void *e) {
-	crypto_ec_deinit((struct crypto_ec *)e);
-}
-
-static void * _crypto_ec_point_init_wrapper(void *e) {
-	return (struct crypto_ec_point *)crypto_ec_point_init((struct crypto_ec *)e);
-}
-
-static void _crypto_ec_point_deinit_wrapper(void *p, int clear) {
-	crypto_ec_point_deinit((struct crypto_ec_point *)p, clear);
-}
-
-static size_t _crypto_ec_prime_len_wrapper(void *e) {
-	return crypto_ec_prime_len((struct crypto_ec *)e);
-}
-
-static const void *_crypto_ec_get_prime_wrapper(void *e) {
-	return (const struct crypto_bignum *)crypto_ec_get_prime((struct crypto_ec *)e);
-}
-
-static const void *_crypto_ec_get_order_wrapper(void *e) {
-	return (const struct crypto_bignum *)crypto_ec_get_order((struct crypto_ec *)e);
-}
-
-static size_t _crypto_ec_order_len_wrapper(void *e) {
-	return crypto_ec_order_len((struct crypto_ec *)e);
-}
-
-static int _crypto_ec_point_mul_wrapper(void *e, const void *p, const void *b, void *res) {
-	return crypto_ec_point_mul((struct crypto_ec *)e, (const struct crypto_ec_point *)p,
-		(const struct crypto_bignum *)b, (struct crypto_ec_point *)res);
-}
-
-static int _crypto_ec_point_to_bin_wrapper(void *e, const void *point, u8 *x, u8 *y) {
-	return crypto_ec_point_to_bin((struct crypto_ec *)e, (const struct crypto_ec_point *)point, x, y);
-}
-
-static void * _crypto_ec_point_from_bin_wrapper(void *e, const u8 *val) {
-	return (struct crypto_ec_point *)crypto_ec_point_from_bin((struct crypto_ec *)e, val);
-}
-
-static int _crypto_ec_point_add_wrapper(void *e, const void *a, const void *b, void *c) {
-	return crypto_ec_point_add((struct crypto_ec *)e, (const struct crypto_ec_point *)a,
-		(const struct crypto_ec_point *)b, (struct crypto_ec_point *)c);
-}
-
-static int _crypto_ec_point_invert_wrapper(void *e, void *point) {
-	return crypto_ec_point_invert((struct crypto_ec *)e, (struct crypto_ec_point *)point);
-}
-
-static int _crypto_ec_point_cmp_wrapper(const void *e, const void *a, const void *b) {
-	return crypto_ec_point_cmp((const struct crypto_ec *)e, (const struct crypto_ec_point *)a,
-		(const struct crypto_ec_point *)b);
-}
-
-static const void *_crypto_ec_get_a_wrapper(void *e) {
-	return (const struct crypto_bignum *)crypto_ec_get_a((struct crypto_ec *)e);
-}
-
-static const void *_crypto_ec_get_b_wrapper(void *e) {
-	return (const struct crypto_bignum *)crypto_ec_get_b((struct crypto_ec *)e);
-}
-
-static void *_crypto_ec_point_compute_y_sqr_wrapper(void *e, const void *x) {
-	return (struct crypto_bignum *)crypto_ec_point_compute_y_sqr((struct crypto_ec *)e, (const struct crypto_bignum *)x);
-}
-
-static int _crypto_ec_point_is_at_infinity_wrapper(void *e, void *point) {
-	return crypto_ec_point_is_at_infinity((struct crypto_ec *)e, (struct crypto_ec_point *)point);
-}
-
-static int _crypto_ec_point_is_on_curve_wrapper(void *e, void *point) {
-	return crypto_ec_point_is_on_curve((struct crypto_ec *)e, (struct crypto_ec_point *)point);
-}
-
-static size_t _crypto_ec_prime_len_bits_wrapper(void *e) {
-	return crypto_ec_prime_len_bits((struct crypto_ec *)e);
-}
 
 void *
 bk_pbuf_alloc_wrapper(int layer, uint16_t length, int type)
@@ -599,7 +367,7 @@ static void bk_pm_phy_reinit_flag_clear_wrapper(void)
 	bk_pm_phy_reinit_flag_clear();
 }
 
-static bk_err_t bk_pm_sleep_register_wrapper(void *config_cb)
+bk_err_t bk_pm_sleep_register_wrapper(void *config_cb)
 {
     pm_cb_conf_t enter_config_wifi = {NULL, NULL};
 
@@ -615,7 +383,7 @@ static bk_err_t bk_pm_sleep_register_wrapper(void *config_cb)
 }
 
 
-static bk_err_t bk_pm_low_voltage_register_wrapper(void *config_cb)
+bk_err_t bk_pm_low_voltage_register_wrapper(void *config_cb)
 {
     pm_cb_conf_t wifi_exit_config = {NULL, NULL};
 
@@ -627,6 +395,16 @@ static bk_err_t bk_pm_low_voltage_register_wrapper(void *config_cb)
 static void wifi_vote_rf_ctrl_wrapper(uint8_t cmd)
 {
     rf_module_vote_ctrl(cmd,RF_BY_WIFI_BIT);
+}
+
+static void wifi_phy_clk_open_wrapper(void)
+{
+    phy_clk_open_handler(RF_BY_WIFI_BIT);
+}
+
+static void wifi_phy_clk_close_wrapper(void)
+{
+    phy_clk_close_handler(RF_BY_WIFI_BIT);
 }
 
 static void wifi_mac_phy_power_on_wrapper(void)
@@ -828,12 +606,12 @@ static bk_err_t gpio_dev_unprotect_map_wrapper( uint32_t gpio_id, uint32_t dev)
     return gpio_dev_unprotect_map(gpio_id,dev);
 }
 
-static int ps_need_pre_process_wrapper( UINT32 arg )
+int ps_need_pre_process_wrapper( UINT32 arg )
 {
      return 0;
 }
 
-static bool power_save_rf_sleep_check_wrapper(void)
+bool power_save_rf_sleep_check_wrapper(void)
 {
      return false;
 }
@@ -925,6 +703,16 @@ static int bk_feature_get_scan_speed_level_wrapper(void)
     return bk_feature_get_scan_speed_level();
 }
 
+static int bk_feature_network_found_event_wrapper(void)
+{
+    return bk_feature_network_found_event();
+}
+
+static int bk_feature_get_mac_sup_sta_max_num_wrapper(void)
+{
+    return bk_feature_get_mac_sup_sta_max_num();
+}
+
 static void flush_all_dcache_wrapper(void)
 {
 #if CONFIG_CACHE_ENABLE
@@ -945,7 +733,7 @@ static bk_err_t dma_memcpy_wrapper(void *out, const void *in, uint32_t len)
     return dma_memcpy(out, in, len);
 }
 
-static bk_err_t bk_wifi_interrupt_init_wrapper(void)
+bk_err_t bk_wifi_interrupt_init(void)
 {
 	sys_drv_enable_mac_gen_int();
 	sys_drv_enable_mac_prot_int();
@@ -1438,78 +1226,6 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._manual_get_epa_flag = manual_get_epa_flag,
 	._rxsens_start_flag_get = rxsens_start_flag_get,
 
-	._pbkdf2_sha1 = pbkdf2_sha1,
-	._sha1_prf = sha1_prf,
-	._omac1_aes_128_vector = omac1_aes_128_vector,
-	._aes_wrap = aes_wrap,
-	._rc4_skip = rc4_skip,
-	._hmac_md5 = hmac_md5,
-	._hmac_sha1 = hmac_sha1,
-	._aes_unwrap= aes_unwrap,
-
-//crypto_mbedtls.c
-	.__crypto_ecdh_deinit = _crypto_ecdh_deinit_wrapper,
-	.__crypto_ecdh_init = _crypto_ecdh_init_wrapper,
-	.__crypto_ecdh_set_peerkey = _crypto_ecdh_set_peerkey_wrapper,
-	.__crypto_ecdh_get_pubkey = _crypto_ecdh_get_pubkey_wrapper,
-	._sha256_vector = sha256_vector,
-	._sha384_vector = sha384_vector,
-	._sha512_vector = sha512_vector,
-	._hmac_sha256 = hmac_sha256,
-	._hmac_sha384 = hmac_sha384,
-	._hmac_sha512 = hmac_sha512,
-	._hmac_sha256_kdf = hmac_sha256_kdf,
-	._hmac_sha384_kdf = hmac_sha384_kdf,
-	._hmac_sha512_kdf = hmac_sha512_kdf,
-	.__crypto_bignum_init = _crypto_bignum_init_wrapper,
-	._omac1_aes_128 = omac1_aes_128,
-	._sha256_prf = sha256_prf,
-	._sha384_prf = sha384_prf,
-	._sha512_prf = sha512_prf,
-	._hmac_sha384_vector = hmac_sha384_vector,
-	._hmac_sha256_vector = hmac_sha256_vector,
-	._hmac_sha1_vector = hmac_sha1_vector,
-	._hmac_sha512_vector = hmac_sha512_vector,
-	.__crypto_bignum_rand = _crypto_bignum_rand_wrapper,
-	.__crypto_bignum_deinit = _crypto_bignum_deinit_wrapper,
-	.__crypto_bignum_init_set = _crypto_bignum_init_set_wrapper,
-	.__crypto_bignum_init_uint = _crypto_bignum_init_uint_wrapper,
-	.__crypto_bignum_to_bin = _crypto_bignum_to_bin_wrapper,
-	.__crypto_bignum_add = _crypto_bignum_add_wrapper,
-	.__crypto_bignum_sub = _crypto_bignum_sub_wrapper,
-	.__crypto_bignum_mod = _crypto_bignum_mod_wrapper,
-	.__crypto_bignum_cmp = _crypto_bignum_cmp_wrapper,
-	.__crypto_bignum_mulmod = _crypto_bignum_mulmod_wrapper,
-	.__crypto_bignum_inverse = _crypto_bignum_inverse_wrapper,
-	.__crypto_bignum_addmod = _crypto_bignum_addmod_wrapper,
-	.__crypto_bignum_sqrmod = _crypto_bignum_sqrmod_wrapper,
-	.__crypto_bignum_exptmod = _crypto_bignum_exptmod_wrapper,
-	.__crypto_bignum_is_zero = _crypto_bignum_is_zero_wrapper,
-	.__crypto_bignum_is_one = _crypto_bignum_is_one_wrapper,
-	.__crypto_bignum_is_odd = _crypto_bignum_is_odd_wrapper,
-	.__crypto_bignum_rshift = _crypto_bignum_rshift_wrapper,
-	.__crypto_bignum_legendre = _crypto_bignum_legendre_wrapper,
-	.__crypto_ec_init= _crypto_ec_init_wrapper,
-	.__crypto_ec_deinit = _crypto_ec_deinit_wrapper,
-	._sha256_prf_bits = sha256_prf_bits,
-	.__crypto_ec_point_init = _crypto_ec_point_init_wrapper,
-	.__crypto_ec_point_deinit = _crypto_ec_point_deinit_wrapper,
-	.__crypto_ec_prime_len = _crypto_ec_prime_len_wrapper,
-	.__crypto_ec_get_prime = _crypto_ec_get_prime_wrapper,
-	.__crypto_ec_get_order = _crypto_ec_get_order_wrapper,
-	.__crypto_ec_order_len = _crypto_ec_order_len_wrapper,
-	.__crypto_ec_point_mul = _crypto_ec_point_mul_wrapper,
-	.__crypto_ec_point_to_bin = _crypto_ec_point_to_bin_wrapper,
-	.__crypto_ec_point_from_bin = _crypto_ec_point_from_bin_wrapper,
-	.__crypto_ec_point_add = _crypto_ec_point_add_wrapper,
-	.__crypto_ec_point_invert = _crypto_ec_point_invert_wrapper,
-	.__crypto_ec_point_cmp = _crypto_ec_point_cmp_wrapper,
-	.__crypto_ec_get_a = _crypto_ec_get_a_wrapper,
-	.__crypto_ec_get_b = _crypto_ec_get_b_wrapper,
-	.__crypto_ec_point_compute_y_sqr = _crypto_ec_point_compute_y_sqr_wrapper,
-	.__crypto_ec_point_is_at_infinity = _crypto_ec_point_is_at_infinity_wrapper,
-	.__crypto_ec_point_is_on_curve = _crypto_ec_point_is_on_curve_wrapper,
-	.__crypto_ec_prime_len_bits = _crypto_ec_prime_len_bits_wrapper,
 	._pbuf_alloc = bk_pbuf_alloc_wrapper,
 	._pbuf_free = bk_pbuf_free_wrapper,
 	._pbuf_ref = bk_pbuf_ref_wrapper,
@@ -1562,6 +1278,8 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._bk_pm_sleep_register = bk_pm_sleep_register_wrapper,
 	._bk_pm_low_voltage_register = bk_pm_low_voltage_register_wrapper,
 	._wifi_vote_rf_ctrl = wifi_vote_rf_ctrl_wrapper,
+	._wifi_phy_clk_open = wifi_phy_clk_open_wrapper,
+	._wifi_phy_clk_close = wifi_phy_clk_close_wrapper,
 	._wifi_mac_phy_power_on = wifi_mac_phy_power_on_wrapper,
 	._mac_ps_exc32_cb_notify = mac_ps_exc32_cb_notify_wrapper,
 	._mac_ps_exc32_init = mac_ps_exc32_init_wrapper,
@@ -1579,6 +1297,8 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._mcu_ps_machw_reset = mcu_ps_machw_reset_wrapper,
 	._mcu_ps_machw_init = mcu_ps_machw_init_wrapper,
 	._mcu_ps_bcn_callback = mcu_ps_bcn_callback_wrapper,
+	._wapi_wpi_encrypt = NULL,
+	._wapi_wpi_decrypt = NULL,
 	._bk_feature_config_wifi_csi_enable = bk_feature_config_wifi_csi_enable_wrapper,
 	._bk_feature_receive_bcmc_enable = bk_feature_receive_bcmc_enable_wrapper,
 	._bk_feature_bssid_connect_enable = bk_feature_bssid_connect_enable_wrapper,
@@ -1592,10 +1312,12 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._bk_feature_sta_vsie_enable = bk_feature_sta_vsie_enable_wrapper,
 	._bk_feature_ap_statype_limit_enable = bk_feature_ap_statype_limit_enable_wrapper,
 	._bk_feature_close_coexist_csa = bk_feature_close_coexist_csa_wrapper,
+	._bk_feature_network_found_event = bk_feature_network_found_event_wrapper,
+	._bk_feature_get_mac_sup_sta_max_num = bk_feature_get_mac_sup_sta_max_num_wrapper,
 	._flush_all_dcache = flush_all_dcache_wrapper,
 	._bk_ms_to_ticks = bk_ms_to_ticks_wrapper,
 	._dma_memcpy = dma_memcpy_wrapper,
-	._bk_wifi_interrupt_init = bk_wifi_interrupt_init_wrapper,
+	._bk_wifi_interrupt_init = bk_wifi_interrupt_init,
 	._bk_wifi_stop_rf = bk_wifi_stop_rf_wrapper,
 	._rtos_get_ms_per_tick = rtos_get_ms_per_tick_wrapper,
 	._rtos_disable_int = rtos_disable_int_wrapper,
@@ -1672,6 +1394,16 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._tx_verify_test_call_back = tx_verify_test_call_back_wrapper,
 	._sys_hal_enter_low_analog = sys_hal_enter_low_analog_wrapper,
 	._sys_hal_exit_low_analog = sys_hal_exit_low_analog_wrapper,
+	._rw_msg_send = rw_msg_send,
+	#if(CONFIG_SOC_BK7236XX || CONFIG_SOC_BK7256XX)
+	._tpc_change_pwr_by_media = tpc_change_pwr_by_media,
+	._tpc_set_media_pwr_level = tpc_set_media_pwr_level,
+	._tpc_get_media_pwr_level = tpc_get_media_pwr_level,
+	#else
+	._tpc_change_pwr_by_media = NULL,
+	._tpc_set_media_pwr_level = NULL,
+	._tpc_get_media_pwr_level = NULL,
+	#endif
 };
 
 __attribute__((section(".dtcm_sec_data "))) wifi_os_variable_t g_wifi_os_variable = {
@@ -1741,4 +1473,397 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_variable_t g_wifi_os_variabl
 	#else
 	._improve_he_tb_enable = false,
 	#endif
+	#if (CONFIG_SOC_BK7236XX)
+	._pm_low_voltage_delta_wakeup_delay_in_us = PM_LOW_VOLTAGE_DELTA_WAKEUP_DELAY_IN_US,
+	#endif
 };
+
+Countryregulations country_regulation_table[] = {
+    
+    {"AE", COUNTRY_AE, PW_LMT_REGU_ETSI     },
+    {"AF", COUNTRY_AF, PW_LMT_REGU_ETSI    },
+    {"AI", COUNTRY_AI, PW_LMT_REGU_ETSI    },
+    {"AL", COUNTRY_AL, PW_LMT_REGU_ETSI    },
+    {"AM", COUNTRY_AM, PW_LMT_REGU_ETSI    },
+    {"AN", COUNTRY_AN, PW_LMT_REGU_ETSI    },
+    {"AR", COUNTRY_AR, PW_LMT_REGU_ETSI     },
+    {"AS", COUNTRY_AS, PW_LMT_REGU_FCC     },
+    {"AT", COUNTRY_AT, PW_LMT_REGU_ETSI    },
+    {"AW", COUNTRY_AW, PW_LMT_REGU_ETSI    },
+    {"AZ", COUNTRY_AZ, PW_LMT_REGU_ETSI    },
+    {"BA", COUNTRY_BA, PW_LMT_REGU_ETSI    },
+    {"BB", COUNTRY_BB, PW_LMT_REGU_ETSI     },
+    {"BD", COUNTRY_BD, PW_LMT_REGU_ETSI      },
+    {"BE", COUNTRY_BE, PW_LMT_REGU_ETSI    },
+    {"BF", COUNTRY_BF, PW_LMT_REGU_ETSI     },
+    {"BG", COUNTRY_BG, PW_LMT_REGU_ETSI    },
+    {"BH", COUNTRY_BH, PW_LMT_REGU_ETSI      },
+    {"BL", COUNTRY_BL, PW_LMT_REGU_ETSI    },
+    {"BM", COUNTRY_BM, PW_LMT_REGU_FCC     },
+    {"BN", COUNTRY_BN, PW_LMT_REGU_ETSI      },
+    {"BO", COUNTRY_BO, PW_LMT_REGU_ETSI      },
+    {"BR", COUNTRY_BR, PW_LMT_REGU_ETSI     },
+    {"BS", COUNTRY_BS, PW_LMT_REGU_ETSI     },
+    {"BT", COUNTRY_BT, PW_LMT_REGU_ETSI    },
+    {"BY", COUNTRY_BY, PW_LMT_REGU_ETSI    },
+    {"BZ", COUNTRY_BZ, PW_LMT_REGU_ETSI      },
+    {"CA", COUNTRY_CA, PW_LMT_REGU_FCC     },
+    {"CF", COUNTRY_CF, PW_LMT_REGU_ETSI     },
+    {"CH", COUNTRY_CH, PW_LMT_REGU_ETSI    },
+    {"CI", COUNTRY_CI, PW_LMT_REGU_ETSI     },
+    {"CL", COUNTRY_CL, PW_LMT_REGU_ETSI      },
+    {"CN", COUNTRY_CN, PW_LMT_REGU_ETSI     },
+    {"CO", COUNTRY_CO, PW_LMT_REGU_ETSI     },
+    {"CR", COUNTRY_CR, PW_LMT_REGU_ETSI     },
+    {"CX", COUNTRY_CX, PW_LMT_REGU_ETSI     },
+    {"CY", COUNTRY_CY, PW_LMT_REGU_ETSI    },
+    {"CZ", COUNTRY_CZ, PW_LMT_REGU_ETSI    },
+    {"DE", COUNTRY_DE, PW_LMT_REGU_ETSI    },
+    {"DK", COUNTRY_DK, PW_LMT_REGU_ETSI    },
+    {"DM", COUNTRY_DM, PW_LMT_REGU_FCC     },
+    {"DO", COUNTRY_DO, PW_LMT_REGU_FCC     },
+    {"DZ", COUNTRY_DZ, PW_LMT_REGU_ETSI      },
+    {"EC", COUNTRY_EC, PW_LMT_REGU_ETSI     },
+    {"EE", COUNTRY_EE, PW_LMT_REGU_ETSI    },
+    {"EG", COUNTRY_EG, PW_LMT_REGU_ETSI    },
+    {"ES", COUNTRY_ES, PW_LMT_REGU_ETSI    },
+    {"ET", COUNTRY_ET, PW_LMT_REGU_ETSI    },
+    {"FI", COUNTRY_FI, PW_LMT_REGU_ETSI    },
+    {"FM", COUNTRY_FM, PW_LMT_REGU_FCC     },
+    {"FR", COUNTRY_FR, PW_LMT_REGU_ETSI    },
+    {"GB", COUNTRY_GB, PW_LMT_REGU_ETSI    },
+    {"GD", COUNTRY_GD, PW_LMT_REGU_FCC     },
+    {"GE", COUNTRY_DE, PW_LMT_REGU_ETSI    },
+    {"GF", COUNTRY_GF, PW_LMT_REGU_ETSI    },
+    {"GH", COUNTRY_GH, PW_LMT_REGU_ETSI     },
+    {"GL", COUNTRY_GL, PW_LMT_REGU_ETSI    },
+    {"GP", COUNTRY_GP, PW_LMT_REGU_ETSI    },
+    {"GR", COUNTRY_GR, PW_LMT_REGU_ETSI    },
+    {"GT", COUNTRY_GT, PW_LMT_REGU_FCC     },
+    {"GU", COUNTRY_GU, PW_LMT_REGU_FCC     },
+    {"HN", COUNTRY_HN, PW_LMT_REGU_FCC     },
+    {"HR", COUNTRY_HR, PW_LMT_REGU_ETSI    },
+    {"HT", COUNTRY_HT, PW_LMT_REGU_FCC     },
+    {"HU", COUNTRY_HU, PW_LMT_REGU_ETSI    },
+    {"ID", COUNTRY_ID, PW_LMT_REGU_ETSI      },
+    {"IE", COUNTRY_IE, PW_LMT_REGU_ETSI    },
+    {"IL", COUNTRY_IL, PW_LMT_REGU_ETSI    },
+    {"IN", COUNTRY_IN, PW_LMT_REGU_ETSI      },
+    {"IR", COUNTRY_IR, PW_LMT_REGU_ETSI      },
+    {"IS", COUNTRY_IS, PW_LMT_REGU_ETSI    },
+    {"IT", COUNTRY_IT, PW_LMT_REGU_ETSI    },
+    {"JM", COUNTRY_JM, PW_LMT_REGU_ETSI     },
+    {"JO", COUNTRY_JO, PW_LMT_REGU_ETSI      },
+    {"JP", COUNTRY_JP, PW_LMT_REGU_MKK      },    ////PW_LMT_REGU_JP  
+    {"KE", COUNTRY_KE, PW_LMT_REGU_ETSI      },
+    {"KH", COUNTRY_KH, PW_LMT_REGU_ETSI    },
+    {"KN", COUNTRY_KN, PW_LMT_REGU_ETSI    },
+    {"KP", COUNTRY_KP, PW_LMT_REGU_ETSI      },
+    {"KR", COUNTRY_KR, PW_LMT_REGU_ETSI      },
+    {"KW", COUNTRY_KW, PW_LMT_REGU_ETSI    },
+    {"KY", COUNTRY_KY, PW_LMT_REGU_ETSI     },
+    {"LB", COUNTRY_LB, PW_LMT_REGU_ETSI     },
+    {"LC", COUNTRY_LC, PW_LMT_REGU_ETSI    },
+    {"LI", COUNTRY_LI, PW_LMT_REGU_ETSI    },
+    {"LK", COUNTRY_LK, PW_LMT_REGU_FCC     },
+    {"LS", COUNTRY_LS, PW_LMT_REGU_ETSI    },
+    {"LT", COUNTRY_LT, PW_LMT_REGU_ETSI    },
+    {"LU", COUNTRY_LU, PW_LMT_REGU_ETSI    },
+    {"LV", COUNTRY_LV, PW_LMT_REGU_ETSI    },
+    {"MA", COUNTRY_MA, PW_LMT_REGU_ETSI    },
+    {"MC", COUNTRY_MC, PW_LMT_REGU_ETSI    },
+    {"MD", COUNTRY_MD, PW_LMT_REGU_ETSI    },
+    {"ME", COUNTRY_ME, PW_LMT_REGU_ETSI    },
+    {"MF", COUNTRY_MF, PW_LMT_REGU_ETSI    },
+    {"MH", COUNTRY_MH, PW_LMT_REGU_FCC     },
+    {"MK", COUNTRY_MK, PW_LMT_REGU_ETSI    },
+    {"MN", COUNTRY_MN, PW_LMT_REGU_ETSI     },
+    {"MP", COUNTRY_MP, PW_LMT_REGU_FCC     },
+    {"MQ", COUNTRY_MQ, PW_LMT_REGU_ETSI    },
+    {"MR", COUNTRY_MR, PW_LMT_REGU_ETSI    },
+    {"MT", COUNTRY_MT, PW_LMT_REGU_ETSI    },
+    {"MU", COUNTRY_MU, PW_LMT_REGU_ETSI     },
+    {"MW", COUNTRY_MW, PW_LMT_REGU_ETSI    },
+    {"MX", COUNTRY_MX, PW_LMT_REGU_ETSI     },
+    {"MY", COUNTRY_MY, PW_LMT_REGU_ETSI     },
+    {"NI", COUNTRY_NI,  PW_LMT_REGU_FCC     },
+    {"NL", COUNTRY_NL, PW_LMT_REGU_ETSI    },
+    {"NO", COUNTRY_NO, PW_LMT_REGU_ETSI    },
+    {"NP", COUNTRY_NP, PW_LMT_REGU_ETSI      },
+    {"NZ", COUNTRY_NZ, PW_LMT_REGU_ETSI     },
+    {"OM", COUNTRY_OM, PW_LMT_REGU_ETSI    },
+    {"PA", COUNTRY_PA, PW_LMT_REGU_FCC     },
+    {"PE", COUNTRY_PE, PW_LMT_REGU_ETSI     },
+    {"PF", COUNTRY_PF, PW_LMT_REGU_ETSI    },
+    {"PG", COUNTRY_PG, PW_LMT_REGU_ETSI     },
+    {"PH", COUNTRY_PH, PW_LMT_REGU_ETSI     },
+    {"PK", COUNTRY_PK, PW_LMT_REGU_ETSI      },
+    {"PL", COUNTRY_PL, PW_LMT_REGU_ETSI    },
+    {"PM", COUNTRY_PM, PW_LMT_REGU_ETSI    },
+    {"PR", COUNTRY_PR, PW_LMT_REGU_FCC     },
+    {"PT", COUNTRY_PT, PW_LMT_REGU_ETSI    },
+    {"PW", COUNTRY_PW, PW_LMT_REGU_FCC     },
+    {"PY", COUNTRY_PY, PW_LMT_REGU_FCC     },
+    {"QA", COUNTRY_QA, PW_LMT_REGU_ETSI      },
+    {"RS", COUNTRY_RS, PW_LMT_REGU_ETSI    },
+    {"RU", COUNTRY_RU, PW_LMT_REGU_ETSI    },
+    {"RW", COUNTRY_RW, PW_LMT_REGU_ETSI     },
+    {"SA", COUNTRY_SA, PW_LMT_REGU_ETSI    },
+    {"SE", COUNTRY_SE, PW_LMT_REGU_ETSI    },
+    {"SG", COUNTRY_SG, PW_LMT_REGU_ETSI     },
+    {"SI", COUNTRY_SI, PW_LMT_REGU_ETSI    },
+    {"SK", COUNTRY_SK, PW_LMT_REGU_ETSI    },
+    {"SN", COUNTRY_SN, PW_LMT_REGU_ETSI     },
+    {"SR", COUNTRY_SR, PW_LMT_REGU_ETSI    },
+    {"SV", COUNTRY_SV, PW_LMT_REGU_ETSI     },
+    {"TC", COUNTRY_TC, PW_LMT_REGU_ETSI     },
+    {"TD", COUNTRY_TD, PW_LMT_REGU_ETSI    },
+    {"TG", COUNTRY_TG, PW_LMT_REGU_ETSI    },
+    {"TH", COUNTRY_TH, PW_LMT_REGU_ETSI     },
+    {"TN", COUNTRY_TN, PW_LMT_REGU_ETSI    },
+    {"TR", COUNTRY_TR, PW_LMT_REGU_ETSI    },
+    {"TT", COUNTRY_TT, PW_LMT_REGU_FCC     },
+    {"TW", COUNTRY_TW, PW_LMT_REGU_FCC      },
+    {"UA", COUNTRY_UA, PW_LMT_REGU_ETSI    },
+    {"UG", COUNTRY_UG, PW_LMT_REGU_ETSI     },
+    {"US", COUNTRY_US, PW_LMT_REGU_FCC     },
+    {"UY", COUNTRY_UY, PW_LMT_REGU_ETSI     },
+    {"UZ", COUNTRY_UZ, PW_LMT_REGU_ETSI    },
+    {"VC", COUNTRY_VC, PW_LMT_REGU_ETSI    },
+    {"VE", COUNTRY_VE, PW_LMT_REGU_ETSI     },
+    {"VI", COUNTRY_VI, PW_LMT_REGU_FCC     },
+    {"VN", COUNTRY_VN, PW_LMT_REGU_ETSI     },
+    {"VU", COUNTRY_VU, PW_LMT_REGU_ETSI     },
+    {"WF", COUNTRY_WF, PW_LMT_REGU_ETSI    },
+    {"YT", COUNTRY_YT, PW_LMT_REGU_ETSI    },
+    {"ZA", COUNTRY_ZA, PW_LMT_REGU_ETSI    },
+    {"ZW", COUNTRY_ZW, PW_LMT_REGU_ETSI    },
+
+    
+};
+
+#define TXPWR_LMT_ENTRY_SIZE   7
+#define TXPWR_LMT_REGULATION_NUM   4
+
+uint8_t txpwr_lmt_tbl[] = {
+////regulation, band, bandwidht, ratesection, rfpath, chanl, power_index
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,1, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,1, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,1, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,1, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,2, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,2, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,2, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,2, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,3, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,3, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,3, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,3, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,4, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,4, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,4, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,4, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,5, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,5, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,5, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,5, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,6, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,6, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,6, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,6, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,7, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,7, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,7, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,7, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,8, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,8, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,8, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,8, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,9, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,9, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,9, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,9, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,10, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,10, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,10, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,10, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,11, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,11, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,11, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,11, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,12, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,12, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,12, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,12, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,13, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,13, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,13, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,13, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,14, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,14, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,14, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_CCK, PW_LMT_PH_1T,14, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,1, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,1, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,1, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,1, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,2, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,2, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,2, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,2, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,3, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,3, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,3, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,3, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,4, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,4, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,4, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,4, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,5, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,5, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,5, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,5, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,6, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,6, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,6, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,6, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,7, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,7, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,7, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,7, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,8, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,8, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,8, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,8, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,9, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,9, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,9, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,9, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,10, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,10, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,10, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,10, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,11, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,11, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,11, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,11, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,12, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,12, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,12, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,12, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,13, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,13, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,13, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,13, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,14, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,14, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,14, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_OFDM, PW_LMT_PH_1T,14, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,1, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,1, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,1, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,1, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,2, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,2, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,2, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,2, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,3, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,3, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,3, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,3, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,4, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,4, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,4, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,4, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,5, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,5, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,5, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,5, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,6, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,6, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,6, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,6, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,7, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,7, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,7, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,7, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,8, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,8, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,8, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,8, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,9, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,9, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,9, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,9, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,10, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,10, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,10, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,10, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,11, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,11, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,11, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,11, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,12, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,12, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,12, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,12, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,13, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,13, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,13, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,13, 40,
+    PW_LMT_REGU_FCC, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,14, 54,
+    PW_LMT_REGU_ETSI, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,14, 40,
+    PW_LMT_REGU_MKK, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,14, 40,
+    PW_LMT_REGU_EXT, PW_LMT_BAND_2_4G, PW_LMT_BW_20M, PW_LMT_RS_HT, PW_LMT_PH_1T,14, 40,
+};
+
+
+uint32 bk_get_txpwr_lmt_tbl_size()
+{
+    return sizeof(txpwr_lmt_tbl);
+}
+
+uint32 bk_get_txpwr_lmt_tbl_entry_size()
+{
+    return TXPWR_LMT_ENTRY_SIZE;
+}
+uint32 bk_get_txpwr_lmt_tbl_entry_power(uint32 chan_idx,uint32 regulation)
+{
+    return txpwr_lmt_tbl[(chan_idx-1)*TXPWR_LMT_REGULATION_NUM*TXPWR_LMT_ENTRY_SIZE + (regulation-PW_LMT_REGU_FCC)*TXPWR_LMT_ENTRY_SIZE + (TXPWR_LMT_ENTRY_SIZE-1)];
+}
+
+uint32 bk_get_country_regulation_table_size()
+{
+    return sizeof(country_regulation_table)/sizeof(Countryregulations);
+}
+
+
+int bk_wifi_set_pwr_limit(wifi_tx_pwr_lmt_t *tx_pwr_lmt)
+{
+
+    uint32_t i=0;
+    uint32_t arraylen = sizeof(txpwr_lmt_tbl);
+    uint8 *array = txpwr_lmt_tbl;
+    uint8_t reg,rs,chnl,flag =0;
+    wifi_regulation_t regulation = tx_pwr_lmt->regulation;
+    wifi_ratesection_t ratesection = tx_pwr_lmt->ratesection;
+    uint8 channel = tx_pwr_lmt->channel;
+    uint8_t value = tx_pwr_lmt->value;
+    
+    for(i=0; i< arraylen; i+=TXPWR_LMT_ENTRY_SIZE)
+    {
+        reg = array[i];
+        rs = array[i+3];
+        chnl = array[i+5];
+        if((reg == regulation)&&(rs == ratesection)&&(chnl ==channel))
+        {
+            array[i+6] = value;
+        }
+        flag = 1;
+    }
+    if(!flag)
+    	return -1;
+    return 0;
+
+}
+

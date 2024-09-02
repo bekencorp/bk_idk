@@ -83,8 +83,6 @@ exit:
     return( ret );
 }
 
-#if 1
-
 int te200_sha256_loop_test(uint32_t encrypt_len, uint32_t test_cnt)
 {
     int ret = 0;
@@ -127,4 +125,3 @@ exit:
 
     return ret;
 }
-#endif

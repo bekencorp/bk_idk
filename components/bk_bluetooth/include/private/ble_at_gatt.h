@@ -15,8 +15,12 @@ typedef struct
 {
     bk_gatt_if_t gattc_if;
     bk_gatt_if_t gatts_if;
-    uint16_t conn_handle;
-}ble_at_gatt_ctx_handle_t;
+    uint16_t gatts_conn_handle;
+    uint16_t gattc_conn_handle;
+
+    bk_bd_addr_t gatts_peer_addr;
+    bk_bd_addr_t gattc_peer_addr;
+} ble_at_gatt_ctx_handle_t;
 
 
 ble_at_gatt_ctx_handle_t *ble_at_get_gatt_ctx_handle(void);

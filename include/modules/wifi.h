@@ -36,7 +36,7 @@ extern "C" {
  *
  * Usage example:
  *
- *      wifi_init_config_t init_config = WIFI_DEFAULT_INIT_CONFIG;
+ *      wifi_init_config_t init_config = WIFI_DEFAULT_INIT_CONFIG();
  *      BK_LOG_ON_ERR(bk_wifi_init(&init_config);
  *
  * @attention 1. This API is the 1st API that should be called before any other WiFi API can be called.
@@ -120,7 +120,7 @@ bk_err_t bk_wifi_scan_stop(void);
  *     wifi_sta_config_t sta_config = WIFI_DEFAULT_STA_CONFIG();
  *
  *     os_strncpy(sta_config.ssid, "ssid", WIFI_SSID_STR_LEN);
- *     os_strncpy(sta_config.password, "password");
+ *     os_strncpy(sta_config.password, "password", WIFI_PASSWORD_LEN);
  *     //more initialization here
  *     BK_LOG_ON_ERR(bk_wifi_sta_set_config(&sta_config));
  *
@@ -136,7 +136,7 @@ bk_err_t bk_wifi_scan_stop(void);
  * @param sta_config the STA configuration
  * @return
  *    - BK_OK: succeed
- *    - BK_ERR_STA_NOT_STARTED: the STA is not started, call bk_wifi_sta_start() first.
+ *    - BK_ERR_WIFI_NOT_INIT: the STA is not initialized, call bk_wifi_init() first.
  *    - BK_ERR_NULL_PARAM: parameter config is NULL.
  *    - BK_ERR_WIFI_RESERVED_FIELD: the reserved field of config is not 0.
  *    - others: other errors
@@ -261,7 +261,7 @@ bk_err_t bk_wifi_sta_disconnect(void);
  *
  * @return
  *    - BK_OK: succeed
- *    - BK_ERR_WIFI_STA_NOT_STARTED: the STA is not started, call bk_wifi_sta_start() first.
+ *    - BK_ERR_WIFI_NOT_INIT: the STA is not initialized, call bk_wifi_init() first.
  *    - BK_ERR_WIFI_MONITOR_IP: the API is not allowed because monitor is in-progress.
  *    - others: other failures.
  */
@@ -356,7 +356,7 @@ bk_err_t bk_wifi_sta_del_vendor_ie(uint8_t frame);
  *
  * @return
  *    - BK_OK: succeed
- *    - BK_ERR_WIFI_AP_NOT_CONFIGURED: the WiFi AP is not configured, call bk_wifi_ap_set_config() first.
+ *    - BK_ERR_WIFI_AP_NOT_CONFIG: the WiFi AP is not configured, call bk_wifi_ap_set_config() first.
  *    - others: other errors
  */
 bk_err_t bk_wifi_ap_start(void);
@@ -549,6 +549,25 @@ bk_err_t bk_wifi_monitor_register_cb(const wifi_monitor_cb_t monitor_cb);
 bk_err_t bk_wifi_monitor_set_channel(const wifi_channel_t *chan);
 
 /**
+ * @brief     resume the monitor to wakeup Wi-Fi from sleep mode
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: other errors
+ */
+bk_err_t bk_wifi_monitor_resume(void);
+
+
+/**
+ * @brief     suspend the monitor to allow Wi-Fi can goto sleep mode
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: other errors
+ */
+bk_err_t bk_wifi_monitor_suspend(void);
+
+/**
  * @brief     twt set up
  * @param     setup_type   suggest/demand
  * @param     mantissa   wake_int_mantissa
@@ -739,6 +758,26 @@ bk_err_t bk_wifi_send_raw(uint8_t *buffer, int len);
 bk_err_t bk_wifi_send_raw_ex(wifi_raw_tx_info_t *raw_tx, void *cb, void *param);
 
 /**
+* @brief Send raw 802.11 tx frame
+*
+* @attention 1. This API can be used in WiFi station, softap, or monitor mode.
+* @attention 2. Only support to send non-QoS frame.
+* @attention 3. The frame sequence will be overwritten by WiFi driver.
+* @attention 4. The API doesn't check the correctness of the raw frame, the
+*               caller need to guarantee the correctness of the frame.
+*
+* @param raw_tx raw tx information, refer to struct wifi_raw_tx_info_t
+* @param cb send status call back
+* @param param send status call back paramter
+*
+* @return
+*    - kNoErr: succeed
+*    - otherwise: fail
+*/
+
+bk_err_t bk_wifi_send_tx_raw_ex(wifi_raw_tx_info_t *raw_tx, void *cb, void *param);
+
+/**
  * @brief Update raw 802.11 frame TX rate and power
  *
  * @param rate TX rate control
@@ -923,6 +962,50 @@ bk_err_t bk_wifi_get_tx_raw_timeout(uint16_t *time);
    *	- others: other errors
    */
  bk_err_t bk_wifi_get_tx_max_msdu_cnt(uint16_t *max_cnt);
+
+  /**
+   * @brief Set data frame retry numbers
+   *
+   * @param rty_num: data frame retry numbers
+   *
+   * @return
+   *	- BK_OK: succeed
+   *	- others: other errors
+   */
+ bk_err_t bk_wifi_set_data_rty_num(uint8_t rty_num);
+
+ /**
+   * @brief Get data frame retry numbers
+   *
+   * @param rty_num: data frame retry numbers
+   *
+   * @return
+   *	- BK_OK: succeed
+   *	- others: other errors
+   */
+ bk_err_t bk_wifi_get_data_rty_num(uint32_t* rty_num);
+
+ /**
+   * @brief Set management frame retry numbers
+   *
+   * @param rty_num: management frame retry numbers
+   *
+   * @return
+   *	- BK_OK: succeed
+   *	- others: other errors
+   */
+ bk_err_t bk_wifi_set_mgmt_rty_num(uint8_t rty_num);
+
+ /**
+   * @brief Get management frame retry numbers
+   *
+   * @param rty_num: management frame retry numbers
+   *
+   * @return
+   *	- BK_OK: succeed
+   *	- others: other errors
+   */ 
+ bk_err_t bk_wifi_get_mgmt_rty_num(uint32_t* rty_num);
  
  /**
   * @brief Update Wi-Fi capability configuration
@@ -1066,6 +1149,30 @@ bk_err_t bk_wifi_ap_vif_probe_req_frame_cb_register(void *cb);
 bk_err_t bk_wifi_send_listen_interval_req(uint8_t interval);
 
 /**
+ * @brief  Get listen interval.
+ *
+ * @param  return the configure listen interval
+ *
+ * @return
+ * 	-0: not set listen interval
+ * 	-others:return the configure listen interval value.
+ *
+ */
+bk_err_t bk_wifi_get_listen_interval(uint8_t *listen_interval);
+
+/**
+ * @brief  Set arp tx rate
+ *
+ * @param  any value is acceptable,but 1, 6 is recommended.
+ *
+ * @return
+ * 	-BK_OK: on success
+ * 	-others:real error, used for future.
+ *
+ */
+bk_err_t bk_wifi_send_arp_set_rate_req(uint16_t arp_tx_rate);
+
+/**
  * @brief  When beacon loss occurs,use beacon loss interval.
  *
  * @param interval  any value is acceptable,it is recommended that this value less than listen interval
@@ -1077,6 +1184,52 @@ bk_err_t bk_wifi_send_listen_interval_req(uint8_t interval);
  *
  */
 bk_err_t bk_wifi_send_bcn_loss_int_req(uint8_t interval, uint8_t repeat_num);
+
+/**
+ * @brief  When beacon loss occurs,use bcn loss time.
+ *
+ * @param wait_cnt: failed to receive beacon for wait_cnt consecutive cycles, close ps,wait_cnt corresponds to dtimx(listen_interval)
+ * @param wake_cnt: after ps is turned off,the beacon fails to receive for wake_cnt consecutive cycles, disconnect;wake_cnt corresponds to dtim1
+ *
+ * @usage example:(10s no beacon frame received(normal reception for the first 5s,ps off for the next 5s),disconnect from the router)
+ *		DTIM10:wait_cnt = 5,wake_cnt = 50
+ *		DTIM1 :wait_cnt = 50,wake_cnt = 50
+ *
+ * @return
+ * 	-BK_OK: on success
+ * 	-others:real error, used for future.
+ *
+ */
+bk_err_t bk_wifi_set_bcn_loss_time(uint8_t wait_cnt, uint8_t wake_cnt);
+
+/**
+ * @brief  configure beacon miss time.
+ *
+ * bcnmiss_time: bcnmiss_time not receive the beacon,disconnected from the router;unit: second
+ *
+ * @usage example:(30s no beacon frame received,disconnect from the router)
+ *		bcnmiss_time:30
+ *
+ * @return
+ * 	-BK_OK: on success
+ * 	-others:real error, used for future.
+ *
+ */
+bk_err_t bk_wifi_set_bcn_miss_time(uint8_t bcnmiss_time);
+
+/**
+ * @brief  set beacon receive window.
+ *
+ * @param default_win: default beacon receive window(ms),minimum is 5,less than or equal to max_win.
+ * @param max_win: max beacon receive window(ms),maximum is 20.
+ * @param step: increase the beacon reception time by a step value(ms)
+ *
+ * @return
+ * 	-BK_OK: on success
+ * 	-others:real error, used for future.
+ *
+ */
+bk_err_t bk_wifi_set_bcn_recv_win(uint8_t default_win, uint8_t max_win, uint8_t step);
 
 /**
  * @brief  Get wifi statistic info.
@@ -1195,9 +1348,145 @@ void bk_wifi_ftm_free_result(wifi_ftm_results_t *ftm_results);
 void bk_wifi_set_pkt_trx_dbg_cfg(uint32_t cfg_bit);
 
 /**
- * @}
+ * @brief  Set Wi-Fi Softap Channel
+ *
+ * This API could be used to change softap operation channel.
+ *
+ * @attention This API can only be used when softap is enabled and make sure the
+              internal CSA strategy is disabled by calling API
+              bk_feature_close_coexist_csa.
+ *
+ * @channel The valid channel ID should range from 1-14.
+ *
+ * @return
+ *    - void: always succeed
  */
 
+void bk_wifi_set_ap_channel(uint8_t channel);
+
+/**
+ * @brief  Enable Wi-Fi rx block broadcast and multicast frame.
+ *
+ * This API could enable Wi-Fi rx block broadcast and multicast frame.
+ *
+ * @param config block type.
+ *              0:WIFI_BCMC_CLOSE
+ *              1:WIFI_MC_ON,
+ *              2:WIFI_BC_ON,
+ *              3:WIFI_BC_MC_ON,
+ *
+ * @return
+ *    - void: always succeed
+ */
+bk_err_t bk_wifi_set_block_bcmc_en(uint8_t config);
+
+/**
+ * @brief  Get Wi-Fi rx block broadcast and multicast frame status.
+ *
+ * @param void.
+ *
+ * @return
+ *    - enable status
+ */
+bool bk_wifi_get_block_bcmc_en(void);
+
+/**
+ * @brief  Enable Wi-Fi microwave anti-interference policy.
+ *
+ * This API could enable Wi-Fi microwave anti-interference policy.
+ *
+ * @param enable.
+ *
+ * @return
+ *    - void: always succeed
+ */
+bk_err_t bk_wifi_set_ani_en(bool enable);
+
+/**
+ * @brief  Get Wi-Fi microwave anti-interference policy enable status.
+ *
+ * @param void.
+ *
+ * @return
+ *    - enable status
+ */
+bool bk_wifi_get_ani_en(void);
+
+
+/**
+ * @brief  Set Wi-Fi Power Limit
+ *
+ * This API could be used to change max tx power with regulation,ratesection and channel .
+
+ * @param     tx_pwr_lmt  wifi tx power limit info
+ *
+ * @attention This API can only be used to modify rf max power limit for specific regulation,rate and channel.
+ *    
+ * @return
+ *    - void: always succeed
+ */
+int bk_wifi_set_pwr_limit(wifi_tx_pwr_lmt_t *tx_pwr_lmt);
+
+/**
+ * @brief  Get rf cal 2g information
+ *
+ * This API could be used to check rf 2g calibration .
+ *
+ * @return
+ *    - true:if rf 2g is calibrated, false: if rf 2g is not calibrated
+ */
+bool bk_wifi_get_cal_2g(void);
+
+/**
+ * @brief  Get noise floor
+ * @param  noise_floor  store noise floor
+ * @return
+ *    - void: always succeed
+ */
+void bk_wifi_get_noise_floor(uint8_t *noise_floor);
+
+/**
+ * @brief  Get tx stats. 
+ * 
+ *         PER calculation formula:  per = (tx_agg_fail + tx_singel_retry)/(tx_agg_total + tx_singel_total*SINGLE_RETRY_CNT)
+ *         - tx_agg_fail/tx_singel_retry/tx_agg_total/tx_singel_total: get from struct tx_stats,
+ *         - SINGLE_RETRY_CNT: get from function bk_wifi_get_data_rty_num();
+ * 
+ * @param config mode.
+ *              0:STATION
+ *              1:SOFT AP
+ * @return
+ *    - tx_stats:tx statistics
+ */
+bk_err_t bk_wifi_get_tx_stats(uint8_t mode,struct tx_stats_t* tx_stats);
+
+/**
+ * @brief Fetch 802.11 TX power by standards
+ *
+ * @param standard IEEE 80211 standard
+ * @param power    TX power in dBm
+ *
+ * @return
+ *    - kNoErr: succeed
+ *    - otherwise: fail
+ */
+bk_err_t bk_wifi_get_tx_power(wifi_standard standard, float *powerdBm);
+
+/**
+ * @brief Update 802.11 TX power by standards
+ *
+ * @param standard IEEE 80211 standard
+ * @param power    TX power in dBm
+ *
+ * @return
+ *    - kNoErr: succeed
+ *    - otherwise: fail
+ */
+bk_err_t bk_wifi_set_tx_power(wifi_standard standard, float powerdBm);
+
+/**
+ * @}
+ */
 #ifdef __cplusplus
 }
 #endif

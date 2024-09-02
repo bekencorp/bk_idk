@@ -275,6 +275,43 @@ static inline void flash_ll_write_disable(flash_hw_t *hw)
 	while (flash_ll_is_busy(hw));
 }
 
+static inline void flash_ll_set_dbus_region(flash_hw_t *hw, uint32_t id, uint32_t start, uint32_t end, bool secure)
+{
+	hw->sec_addr[id].sec_addr_start.flash_sec_start_addr = start;
+	hw->sec_addr[id].sec_addr_end.flash_sec_end_addr = end;
+	if (secure) {
+		hw->sec_addr[id].sec_addr_start.flash_sec_addr_sec = 0;
+	} else {
+		hw->sec_addr[id].sec_addr_start.flash_sec_addr_sec = 1;
+	}
+	hw->sec_addr[id].sec_addr_start.flash_sec_addr_en = 1;
+}
+
+static inline void flash_ll_set_offset_begin(flash_hw_t *hw, uint32_t value)
+{
+	hw->offset_addr_begin = value;
+}
+
+static inline void flash_ll_set_offset_end(flash_hw_t *hw, uint32_t value)
+{
+	hw->offset_addr_end = value;
+}
+
+static inline void flash_ll_set_addr_offset(flash_hw_t *hw, uint32_t value)
+{
+	hw->flash_addr_offset = value;
+}
+
+static inline void flash_ll_set_offset_enable(flash_hw_t *hw, bool value)
+{
+	hw->flash_ctrl.flash_offset_enable = value;
+}
+
+static inline uint32_t flash_ll_read_offset_enable(flash_hw_t *hw)
+{
+	return hw->flash_ctrl.flash_offset_enable & 0x1;
+}
+
 #ifdef __cplusplus
 }
 #endif

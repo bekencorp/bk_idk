@@ -41,6 +41,7 @@
 #include "timers.h"
 #include "stack_macros.h"
 #include <os/mem.h>
+#include <modules/pm.h>
 
 /* Lint e9021, e961 and e750 are suppressed as a MISRA exception justified
  * because the MPU ports require MPU_WRAPPERS_INCLUDED_FROM_API_FILE to be defined
@@ -912,6 +913,20 @@ static void prvAddNewTaskToReadyList( TCB_t * pxNewTCB ) PRIVILEGED_FUNCTION;
 
 
     BaseType_t xTaskCreate( TaskFunction_t pxTaskCode,
+                            const char * const pcName, /*lint !e971 Unqualified char types are allowed for strings and single characters only. */
+                            const configSTACK_DEPTH_TYPE usStackDepth,
+                            void * const pvParameters,
+                            UBaseType_t uxPriority,
+                            TaskHandle_t * const pxCreatedTask )
+    {
+#if CONFIG_TASK_STACK_IN_PSRAM && CONFIG_PSRAM_AS_SYS_MEMORY
+        return xTaskCreate_ex(pxTaskCode, pcName, usStackDepth, pvParameters, uxPriority, pxCreatedTask, HEAP_MEM_TYPE_PSRAM);
+#else
+        return xTaskCreate_ex(pxTaskCode, pcName, usStackDepth, pvParameters, uxPriority, pxCreatedTask, HEAP_MEM_TYPE_SRAM);
+#endif
+    }
+
+    BaseType_t xTaskCreateInSram( TaskFunction_t pxTaskCode,
                             const char * const pcName, /*lint !e971 Unqualified char types are allowed for strings and single characters only. */
                             const configSTACK_DEPTH_TYPE usStackDepth,
                             void * const pvParameters,
@@ -2433,7 +2448,14 @@ TickType_t xTaskGetTickCount( void )
     /* Critical section required if running on a 16 bit processor. */
     portTICK_TYPE_ENTER_CRITICAL();
     {
-        xTicks = xTickCount;
+#if configBK_FREERTOS
+        GLOBAL_INT_DECLARATION();
+        GLOBAL_INT_DISABLE();
+#endif
+        xTicks = xTickCount + xPendedTicks;
+#if configBK_FREERTOS
+        GLOBAL_INT_RESTORE();
+#endif
     }
     portTICK_TYPE_EXIT_CRITICAL();
 
@@ -2464,7 +2486,14 @@ TickType_t xTaskGetTickCountFromISR( void )
 
     uxSavedInterruptStatus = portTICK_TYPE_SET_INTERRUPT_MASK_FROM_ISR();
     {
-        xReturn = xTickCount;
+#if configBK_FREERTOS
+        GLOBAL_INT_DECLARATION();
+        GLOBAL_INT_DISABLE();
+#endif
+        xReturn = xTickCount + xPendedTicks;
+#if configBK_FREERTOS
+        GLOBAL_INT_RESTORE();
+#endif
     }
     portTICK_TYPE_CLEAR_INTERRUPT_MASK_FROM_ISR( uxSavedInterruptStatus );
 
@@ -2741,33 +2770,54 @@ void pcTaskSetName( TaskHandle_t xTaskToQuery, char * pcName )
  * implementations require configUSE_TICKLESS_IDLE to be set to a value other than
  * 1. */
 #if ( configUSE_TICKLESS_IDLE != 0 )
-
     void vTaskStepTick( TickType_t xTicksToJump )
     {
-        const TickType_t xConstTickCount = xTickCount;
-        const TickType_t xConstTickNext = xConstTickCount + xTicksToJump;
-        /* Correct the tick count value after a period during which the tick
-         * was suppressed.  Note this does *not* call the tick hook function for
-         * each stepped tick. */
+        if(xTicksToJump <= 0)
+            return;
 
-        if (xConstTickNext > xConstTickCount)
+        #if configBK_FREERTOS
+        GLOBAL_INT_DECLARATION();
+        GLOBAL_INT_DISABLE();
+        #endif
         {
-            if (xConstTickNext > xNextTaskUnblockTime ) {
-                xTickCount = xConstTickNext - 1;
-                xTaskIncrementTick();
-                prvResetNextTaskUnblockTime();
-            } else {
-                xTickCount = xConstTickNext;
-            }
-        }  else {
-            xTickCount = portMAX_DELAY - 1;
-            xNextTaskUnblockTime = 0;
-            xTaskIncrementTick();
-            prvResetNextTaskUnblockTime();
-        }
-        traceINCREASE_TICK_COUNT( xTicksToJump );
-    }
+            if( uxSchedulerSuspended == ( UBaseType_t ) pdFALSE )
+            {
+                const TickType_t xConstTickCount = xTickCount;
+                const TickType_t xConstTickNext = xConstTickCount + xTicksToJump;
 
+                /* Correct the tick count value after a period during which the tick
+                * was suppressed.  Note this does *not* call the tick hook function for
+                * each stepped tick. */
+                if ( xConstTickNext > xConstTickCount )
+                {
+                    if ( xConstTickNext >= xNextTaskUnblockTime )
+                    {
+                        xTickCount = xConstTickNext - 1;
+                        xTaskIncrementTick();
+                    }
+                    else
+                    {
+                        xTickCount = xConstTickNext;
+                        traceTASK_INCREMENT_TICK( xTickCount );
+                    }
+                }
+                else
+                {
+                    xTickCount = portMAX_DELAY - 1;
+                    xTaskIncrementTick();
+                    xTicksToJump = (portMAX_DELAY - 1) - xConstTickCount;
+                }
+            }
+            else
+            {
+                xPendedTicks += xTicksToJump;
+            }
+            traceINCREASE_TICK_COUNT( xTicksToJump );
+        }
+        #if configBK_FREERTOS
+        GLOBAL_INT_RESTORE();
+        #endif
+    }
 #endif /* configUSE_TICKLESS_IDLE */
 /*----------------------------------------------------------*/
 
@@ -3677,23 +3727,27 @@ static portTASK_FUNCTION( prvIdleTask, pvParameters )
                     /* Now the scheduler is suspended, the expected idle
                      * time can be sampled again, and this time its value can
                      * be used. */
-                    configASSERT( xNextTaskUnblockTime >= xTickCount );
-                    xExpectedIdleTime = prvGetExpectedIdleTime();
+                    if(xPendedTicks) {    //xPendedTicks, no needs to enter sleep.(Maybe after vTaskSuspendAll, xTaskCatchUpTicks or vTaskStepTick is called in ISR)
+                        ;
+                    } else {
+                        configASSERT( xNextTaskUnblockTime >= xTickCount );
+                        xExpectedIdleTime = prvGetExpectedIdleTime();
 
-                    /* Define the following macro to set xExpectedIdleTime to 0
-                     * if the application does not want
-                     * portSUPPRESS_TICKS_AND_SLEEP() to be called. */
-                    configPRE_SUPPRESS_TICKS_AND_SLEEP_PROCESSING( xExpectedIdleTime );
+                        /* Define the following macro to set xExpectedIdleTime to 0
+                         * if the application does not want
+                         * portSUPPRESS_TICKS_AND_SLEEP() to be called. */
+                        configPRE_SUPPRESS_TICKS_AND_SLEEP_PROCESSING( xExpectedIdleTime );
 
-                    if( xExpectedIdleTime >= configEXPECTED_IDLE_TIME_BEFORE_SLEEP )
-                    {
-                        traceLOW_POWER_IDLE_BEGIN();
-                        portSUPPRESS_TICKS_AND_SLEEP( xExpectedIdleTime );
-                        traceLOW_POWER_IDLE_END();
-                    }
-                    else
-                    {
-                        mtCOVERAGE_TEST_MARKER();
+                        if( xExpectedIdleTime >= configEXPECTED_IDLE_TIME_BEFORE_SLEEP )
+                        {
+                            traceLOW_POWER_IDLE_BEGIN();
+                            portSUPPRESS_TICKS_AND_SLEEP( xExpectedIdleTime );
+                            traceLOW_POWER_IDLE_END();
+                        }
+                        else
+                        {
+                            mtCOVERAGE_TEST_MARKER();
+                        }
                     }
                 }
                 ( void ) xTaskResumeAll();
@@ -5696,6 +5750,24 @@ void vTaskDumpAllThreadStack(void)
 #if ( INCLUDE_vTaskSuspend == 1 )
 	vTaskDumpThreadListStack(&xSuspendedTaskList);
 #endif
+}
+
+void vTaskGetNameAndPrioList(void (*add_list)(const char* taskName, unsigned long prio))
+{
+        TaskStatus_t *pxTaskStatusArray;
+        UBaseType_t uxArraySize, x;
+        uxArraySize = uxCurrentNumberOfTasks;
+        pxTaskStatusArray = pvPortMalloc( uxCurrentNumberOfTasks * sizeof( TaskStatus_t ) ); /*lint !e9079 All values returned by pvPortMalloc() have at least the alignment required by the MCU's stack and this allocation allocates a struct that has the alignment requirements of a pointer. */
+        if( pxTaskStatusArray != NULL )
+        {
+            uxArraySize = uxTaskGetSystemState( pxTaskStatusArray, uxArraySize, NULL );
+
+            for( x = 0; x < uxArraySize; x++ )
+            {
+                add_list(pxTaskStatusArray[x].pcTaskName, pxTaskStatusArray[x].uxCurrentPriority);
+            }
+        }
+        vPortFree(pxTaskStatusArray);
 }
 
 #endif // configBK_FREERTOS

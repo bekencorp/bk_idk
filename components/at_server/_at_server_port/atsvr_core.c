@@ -86,7 +86,34 @@ void atsvr_event_sender(char* event,int sub_evt_id, int msg_len,void *msg,bool f
 	}
 }
 
+#if CONFIG_AT_DATA_MODE
+void atsvr_socket_event_sender(int module_id,int sub_evt_id, int msg_len,void *msg)
+{
+	atsvr_msg_t sdmsg;
+	int ret;
+	sdmsg.type = ATSVR_MSG_EVENT;
+	sdmsg.evt_type = "at_sal";
+	sdmsg.sub_type = ATSVR_SUBMSG_ATFREE;
+	sdmsg.addition_infor = sub_evt_id;
+	sdmsg.data_module_id = module_id;
+	if(NULL != msg)
+	{
+		sdmsg.len = msg_len;
+		sdmsg.msg_param = at_malloc(msg_len);
+		memcpy((char*)sdmsg.msg_param,(char*)msg,msg_len);
+	}
+	else
+	{
+		sdmsg.len = 0;
+		sdmsg.msg_param = NULL;
+	}	
+	ret = atsvr_send_msg_queue(&sdmsg,0);
+	if( ret != 0 ) {
+		ATSVRLOGE("atsvr socket mode  notice error\r\n");
+	}
+}
 
+#endif
 
 
 

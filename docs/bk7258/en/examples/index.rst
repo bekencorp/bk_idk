@@ -8,3 +8,4 @@ Samples and Demos
 
    bluetooth <bluetooth/index>
    Command Line <cli/index>
+   peripheral <peripheral/index>

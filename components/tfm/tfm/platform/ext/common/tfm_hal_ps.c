@@ -10,16 +10,7 @@
 
 #include "cmsis_compiler.h"
 #include "flash_layout.h"
-
-/* The base address of the dedicated flash area for PS */
-#ifndef TFM_HAL_PS_FLASH_AREA_ADDR
-#error "TFM_HAL_PS_FLASH_AREA_ADDR must be defined by the target in flash_layout.h"
-#endif
-
-/* The size of the dedicated flash area for PS in bytes */
-#ifndef TFM_HAL_PS_FLASH_AREA_SIZE
-#error "TFM_HAL_PS_FLASH_AREA_SIZE must be defined by the target in flash_layout.h"
-#endif
+#include "flash_partition.h"
 
 /* The number of contiguous physical flash erase sectors per logical filesystem
  * erase block. Adjust so that the maximum required asset size will fit in one
@@ -36,8 +27,8 @@ tfm_hal_ps_fs_info(struct tfm_hal_ps_fs_info_t *fs_info)
         return TFM_HAL_ERROR_INVALID_INPUT;
     }
 
-    fs_info->flash_area_addr = TFM_HAL_PS_FLASH_AREA_ADDR;
-    fs_info->flash_area_size = TFM_HAL_PS_FLASH_AREA_SIZE;
+    fs_info->flash_area_addr = partition_get_phy_offset(PARTITION_PS);
+    fs_info->flash_area_size = partition_get_phy_size(PARTITION_PS);
     fs_info->sectors_per_block = TFM_HAL_PS_SECTORS_PER_BLOCK;
 
     return TFM_HAL_SUCCESS;

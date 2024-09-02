@@ -103,6 +103,8 @@ typedef int bk_err_t;
 #define BK_ERR_CKMN_BASE           (-0x4600)
 #define BK_ERR_LIN_BASE            (-0x4700)
 #define BK_ERR_SCR_BASE            (-0x4800)
+#define BK_ERR_CAN_BASE            (-0x4900)
+#define BK_ERR_OTA_BASE            (-0x4A00)
 
 /* -0x1a2c to -0x1a7b is reserved for kXxx error code
  * #define kGenericErrorBase           -6700
@@ -123,6 +125,8 @@ typedef int bk_err_t;
 #define BK_ERR_NOT_SUPPORT         (BK_ERR_COMMON_BASE - 10)
 #define BK_ERR_BUSY                (BK_ERR_COMMON_BASE - 11)
 #define BK_ERR_PATH                (BK_ERR_COMMON_BASE - 12)
+#define BK_ERR_IS_FALL             (BK_ERR_COMMON_BASE - 13)
+#define BK_ERR_IS_EXIST            (BK_ERR_COMMON_BASE - 14)
 
 #define BK_LOG_ON_ERR(_x) do {\
 	bk_err_t _err = (_x);\

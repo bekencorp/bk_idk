@@ -5,5 +5,5 @@ menu "VENDOR CAL CONFIG"
 
 	config BLE_USE_HIGH_POWER_LEVEL
 		bool "Enable high power level"
-		default y
+		default n
 endmenu

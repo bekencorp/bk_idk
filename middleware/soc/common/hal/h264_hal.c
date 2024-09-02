@@ -104,7 +104,7 @@ void h264_hal_mb_config(h264_hal_t *hal,const h264_config_t *config)
 	h264_ll_set_num_pmb_bits(hal->hw,config->pmb_bits);
 	h264_ll_set_nal_align_mode(hal->hw,config->nal_align_mode);
 	h264_ll_set_cons_ipred_mode(hal->hw,config->cons_ipred_mode);
-	h264_ll_set_num_ref_bits(hal->hw,config->mb_cfs_bits);
+	h264_ll_set_num_ref_bits(hal->hw,config->imb_bits * 12 / 10);
 	h264_ll_set_reset_i_state_mode(hal->hw,config->reset_i_state_mode);
 }
 
@@ -170,4 +170,11 @@ void h264_hal_local_info(h264_hal_t *hal)
 void h264_hal_int_config(h264_hal_t *hal,uint32_t int_mode)
 {
 	h264_ll_set_int_mode(hal->hw,int_mode);
+}
+
+void h264_hal_set_vui_fps(h264_hal_t *hal,uint32_t fps)
+{
+    uint32_t default_vui_num_u_tick_L = 0x3E8;
+    uint32_t vui_time_scale_L = default_vui_num_u_tick_L * 2 * fps;
+    h264_ll_set_vui_time_scale_L(hal->hw, vui_time_scale_L);
 }

@@ -4,98 +4,10 @@
 #include <components/system.h>
 #include "driver/flash.h"
 #include "modules/ota.h"
+
 #if CONFIG_OTA_HTTP
 #include "utils_httpc.h"
 #include "modules/wifi.h"
-#endif
-
-#if (CONFIG_TFM_FWU)
-
-#if CONFIG_INT_WDT
-#include <driver/wdt.h>
-#include <bk_wdt.h>
-#endif
-
-#define TAG "ota"
-
-#include "sys_ctrl/sys_driver.h"
-
-void wdt_init(void);//TODO fix me
-static uint32_t ota_image_flag = 0;
-
-static int bk_ota_check(psa_image_id_t ota_image)
-{
-	psa_status_t status;
-	psa_image_id_t dependency_uuid;
-	psa_image_version_t dependency_version;
-	psa_image_info_t info;
-
-#if CONFIG_INT_WDT
-        bk_wdt_stop();
-        bk_task_wdt_stop();
-#endif 
-
-	status = psa_fwu_query(ota_image, &info);
-	if (status != PSA_SUCCESS) {
-		bk_printf("query status %d\r\n", status);
-		goto _ret_fail;
-	}
-	if (info.state != PSA_IMAGE_CANDIDATE) {
-		bk_printf("info state %d\r\n", info.state);
-		goto _ret_fail;
-	}
-
-	status = psa_fwu_install(ota_image, &dependency_uuid, &dependency_version);
-	if (status != PSA_SUCCESS_REBOOT) {
-		bk_printf("install fail %d\r\n", status);
-		goto _ret_fail;
-	}
-
-	status = psa_fwu_query(ota_image, &info);
-	if (status != PSA_SUCCESS) {
-		bk_printf("query fail %d\r\n", status);
-		goto _ret_fail;
-	}
-	if (info.state != PSA_IMAGE_REBOOT_NEEDED) {
-		bk_printf("info fail %d\r\n", info.state);
-		goto _ret_fail;
-	}
-
-#if CONFIG_INT_WDT
-	bk_wdt_start(CONFIG_INT_WDT_PERIOD_MS);
-#endif
-	return 0;
-
-_ret_fail:
-#if CONFIG_INT_WDT
-        wdt_init();
-#endif
-	return -1;
-}
-
-void bk_ota_set_flag(uint32_t flag)
-{
-	ota_image_flag |= flag;
-}
-
-uint32_t bk_ota_get_flag(void)
-{
-	return ota_image_flag;
-}
-
-void bk_ota_clear_flag(void)
-{
-	ota_image_flag = 0;
-}
-
-void bk_ota_accept_image(void)
-{
-	int32_t ns_interface_lock_init(void);
-	psa_image_id_t psa_image_id = (psa_image_id_t)FWU_CALCULATE_IMAGE_ID(FWU_IMAGE_ID_SLOT_ACTIVE, FWU_IMAGE_TYPE_FULL, 0);
-	BK_LOGI(TAG, "accept image\r\n");
-	ns_interface_lock_init();
-	psa_fwu_accept(psa_image_id);
-}
 #endif
 
 #ifdef CONFIG_HTTP_AB_PARTITION
@@ -257,19 +169,6 @@ void bk_ota_confirm_update_partition(ota_confirm_flag ota_confirm_val)
         }
     }
 }
-#if 0
-uint8 custmer_state_cb(uint8 temp_exec_part)
-{
-    uint8 t_exec_part;
-
-    if(temp_exec_part == 0)
-    {
-        t_exec_part = 4;
-    }
-    os_printf("custmer_state_cb :%d\r\n ",t_exec_part);
-    return t_exec_part;
-}
-#endif
 
 static callback_func update_state_cb = NULL;
 void bk_ota_register_temp_partition_callback(callback_func cb)
@@ -289,7 +188,7 @@ uint8 ota_temp_execute_partition(int state_val)
     return temp_exec_flag;
 }
 
-#endif
+#endif // CONFIG_HTTP_AB_PARTITION
 u8  ota_flag =0;
 #if CONFIG_OTA_HTTP
 int bk_http_ota_download(const char *uri)
@@ -397,34 +296,8 @@ int bk_http_ota_download(const char *uri)
 		ota_write_flash(BK_PARTITION_OTA_FINA_EXECUTIVE, exec_temp_part, 4);
 		bk_reboot();
 #else
-#if (CONFIG_TFM_FWU)
-	psa_image_id_t psa_image_id = 0;
-	uint8_t fwu_image_id = 0;
-
-	uint32_t ota_flags = bk_ota_get_flag();
-	while (ota_flags) {
-		if (ota_flags & 1) {
-			bk_printf("checking fwu image%d...\r\n", fwu_image_id);
-			psa_image_id = (psa_image_id_t)FWU_CALCULATE_IMAGE_ID(FWU_IMAGE_ID_SLOT_STAGE, fwu_image_id, 0);
-			ret = bk_ota_check(psa_image_id);
-			if (ret != BK_OK) {
-				bk_printf("check fwu image%d failed\r\n", fwu_image_id);
-				return BK_FAIL;
-			} else {
-				bk_printf("check fwu image%d success\r\n", fwu_image_id);
-			}
-		}
-		ota_flags >>= 1;
-		fwu_image_id++;
-	}
-	
-	bk_printf("reboot\r\n");
-	psa_fwu_request_reboot();
-#else
-        bk_reboot();
-#endif
-#endif
-
+		bk_reboot();
+#endif /*CONFIG_HTTP_AB_PARTITION*/
 	}
 
 	return ret;

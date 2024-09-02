@@ -114,8 +114,11 @@ void control_set_to_flash_not_enable_jtag()
 #endif
 
 #if (CHIP_BK7236)
-	SET_FLASHCTRL_RW_FLASH ;
-	REBOOT ;
+	//SET_FLASHCTRL_RW_FLASH ;
+	//REBOOT;
+	*(volatile uint32_t *)0x44000600 = 0x5A000A;
+	*(volatile uint32_t *)0x44000600 = 0xA5000A;
+	while(1);
 #endif
 }
 
@@ -346,6 +349,7 @@ extern volatile u_int8* tra_hcit_rx_pdu_buf;
 
 extern void dbg_printf_init(void);
 extern void sb_boot(void);
+u8 *g_data_buf4k;
 
 void legacy_boot_main(void) {
 
@@ -370,8 +374,11 @@ void legacy_boot_main(void) {
 #endif
 		spi_initial(SPI_MASTER,SPI_DEFAULT_BAUD);
 		//restart_t = ext_flash_is_empty();
-		restart_t = 0xff;
-
+		restart_t = 0x5;
+		g_data_buf4k = (u8 *)pal_malloc(0x1100 * sizeof(u8));
+		if (g_data_buf4k == NULL) {
+			return;
+		}
 		if(restart_t) // !0: flash is not empty 0: empty ;
 		{
 		//	u8 c = 0xaa;
@@ -409,7 +416,8 @@ void legacy_boot_main(void) {
 #if 1
 			PMU_uninit();
 			BK3000_start_wdt(0xA000);
-			return;
+			goto LEGACY_BOOT_FINISH;
+
 #else
 			//2.go to flash
 			PMU_uninit();
@@ -437,8 +445,9 @@ void legacy_boot_main(void) {
 			    if((delay_time == 1) && (uart_link_check_flag == 0)) {      //once delay_time >0 and no_uart link,  after delay_time enter flash mode
 						PMU_uninit();
 						BK3000_start_wdt(0xA008);
-						control_set_to_flash();
-						while(1);
+						goto LEGACY_BOOT_FINISH;
+						//control_set_to_flash();
+						//while(1);
 				}
 			    while(uart_link_check_flag == 1)  {
 			    	BK3000_start_wdt(0xA006);
@@ -448,6 +457,9 @@ void legacy_boot_main(void) {
 		}
 
 	}
+LEGACY_BOOT_FINISH:
+	free(g_data_buf4k);
+	return;
 }
 
 

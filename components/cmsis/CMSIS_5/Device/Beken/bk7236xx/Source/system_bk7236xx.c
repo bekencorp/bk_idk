@@ -63,6 +63,7 @@ void SystemInit (void)
 #endif
 
 #if CONFIG_SPE
+/*Only spe can configure tcm permission*/
 #if defined (__ITCM_PRESENT) && (__ITCM_PRESENT == 1U)
 	TCM->ITCMCR |= SCB_ITCMCR_EN_Msk;
 #endif
@@ -71,17 +72,20 @@ void SystemInit (void)
 	TCM->DTCMCR |= SCB_DTCMCR_EN_Msk;
 #endif
 
+    /* secureFault enable*/
+	SCB->SHCSR |= SCB_SHCSR_SECUREFAULTENA_Msk;
+#endif
+
 	/* enable system fault exception*/
 	SCB->SHCSR |= SCB_SHCSR_MEMFAULTENA_Msk;
-	SCB->SHCSR |= SCB_SHCSR_SECUREFAULTENA_Msk;
 	SCB->SHCSR |= SCB_SHCSR_USGFAULTENA_Msk;
 	SCB->SHCSR |= SCB_SHCSR_BUSFAULTENA_Msk;
 
 	/* enable div_0_trp*/
 	SCB->CCR |= SCB_CCR_DIV_0_TRP_Msk;
-	/* enable unalign_trp
-	SCB->CCR |= SCB_CCR_UNALIGN_TRP_Msk;*/
-#endif
+
+	/* disable unalign_trp */
+	SCB->CCR &= (~SCB_CCR_UNALIGN_TRP_Msk);
 
 #if (CONFIG_ICACHE)
 	if (SCB->CLIDR & SCB_CLIDR_IC_Msk)

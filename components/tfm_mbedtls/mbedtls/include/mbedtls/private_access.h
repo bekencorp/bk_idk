@@ -19,18 +19,8 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+#pragma once
 
-#ifndef MBEDTLS_PRIVATE_ACCESS_H
-#define MBEDTLS_PRIVATE_ACCESS_H
-
-#if 0
-#ifndef MBEDTLS_ALLOW_PRIVATE_ACCESS
-#define MBEDTLS_PRIVATE(member) private_##member
-#else
 #define MBEDTLS_PRIVATE(member) member
-#endif
-#else
-#define MBEDTLS_PRIVATE(member) member
-#endif
+// eof
 
-#endif /* MBEDTLS_PRIVATE_ACCESS_H */

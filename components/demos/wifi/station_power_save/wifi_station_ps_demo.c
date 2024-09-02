@@ -31,7 +31,7 @@ int wifi_station_ps_scan_result(void)
     char scan_rst_ap_num = 0;       /**< The number of access points found in scanning. */
     int i;
 
-    scan_rst_ap_num = bk_wlan_get_scan_ap_result_numbers_internal();
+    scan_rst_ap_num = bk_wlan_get_scan_ap_result_numbers();
     if(scan_rst_ap_num == 0)
     {
         return -1;
@@ -78,7 +78,7 @@ int wifi_station_ps_connect_wifi(IN CONST char *ssid, IN CONST char *passwd)
     wNetConfig.dhcp_mode = DHCP_CLIENT;
     wNetConfig.wifi_retry_interval = 100;
 
-    bk_wlan_start_internal(&wNetConfig);
+    bk_wlan_start(&wNetConfig);
 
     return 0;
 }

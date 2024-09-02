@@ -14,6 +14,7 @@
 
 #include <components/log.h>
 #include <driver/spi.h>
+#include <driver/dma.h>
 #include <os/mem.h>
 #include <os/os.h>
 #include "sys_rtos.h"
@@ -25,7 +26,6 @@
 #define CONFIG_SPI_EXAM_BUF_LEN    1024
 #define CONFIG_SPI_EXAM_TX_TIMEOUT BEKEN_WAIT_FOREVER
 #define CONFIG_SPI_EXAM_RX_TIMEOUT BEKEN_WAIT_FOREVER
-#define CONFIG_UART_EXAMPLE_UART_ID 1
 
 
 static bk_err_t spi_example_send_data(void)
@@ -61,14 +61,18 @@ static bk_err_t spi_example_dma_send_data(void)
 		.wire_mode = SPI_4WIRE_MODE,
 		.baud_rate = CONFIG_SPI_EXAM_BAUD_RATE,
 		.bit_order = SPI_MSB_FIRST,
+#if CONFIG_SPI_DMA
 		.dma_mode = SPI_DMA_MODE_ENABLE,
+		.spi_tx_dma_chan = bk_dma_alloc(DMA_DEV_GSPI0),
+		.spi_rx_dma_chan = bk_dma_alloc(DMA_DEV_GSPI0_RX),
+#endif
 	};
 	uint8_t send_exam_buf[CONFIG_SPI_EXAM_BUF_LEN] = {0};
 	for (int i = 0; i < CONFIG_SPI_EXAM_BUF_LEN; i++) {
 		send_exam_buf[i] = i & 0xff;
 	}
 
-	BK_LOG_ON_ERR(bk_spi_init(CONFIG_UART_EXAMPLE_UART_ID, &config));
+	BK_LOG_ON_ERR(bk_spi_init(CONFIG_SPI_EXAM_SPI_ID, &config));
 	BK_LOG_ON_ERR(bk_spi_dma_write_bytes(CONFIG_SPI_EXAM_SPI_ID,
 										send_exam_buf,
 										CONFIG_SPI_EXAM_BUF_LEN));
@@ -108,7 +112,11 @@ static bk_err_t spi_example_dma_recv_data(void)
 		.wire_mode = SPI_4WIRE_MODE,
 		.baud_rate = CONFIG_SPI_EXAM_BAUD_RATE,
 		.bit_order = SPI_MSB_FIRST,
+#if CONFIG_SPI_DMA
 		.dma_mode = SPI_DMA_MODE_ENABLE,
+		.spi_tx_dma_chan = bk_dma_alloc(DMA_DEV_GSPI0),
+		.spi_rx_dma_chan = bk_dma_alloc(DMA_DEV_GSPI0_RX),
+#endif
 	};
 	uint8_t recv_exam_buf[CONFIG_SPI_EXAM_BUF_LEN] = {0};
 	BK_LOG_ON_ERR(bk_spi_init(CONFIG_SPI_EXAM_SPI_ID, &config));

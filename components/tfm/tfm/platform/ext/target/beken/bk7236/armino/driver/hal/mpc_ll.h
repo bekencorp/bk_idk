@@ -34,7 +34,7 @@ static inline uint32_t mpc_ll_get_reg_base(mpc_dev_t dev)
 		return SOC_MPC_QSPI0_REG_BASE;
 	case MPC_DEV_QSPI1:
 		return SOC_MPC_QSPI1_REG_BASE;
-	case MPC_DEV_OTP:
+	case MPC_DEV_OTP2:
 		return SOC_MPC_OTP_REG_BASE;
 	case MPC_DEV_FLASH:
 		return SOC_MPC_FLASH_REG_BASE;

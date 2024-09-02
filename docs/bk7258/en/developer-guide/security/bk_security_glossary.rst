@@ -19,8 +19,8 @@ Related predicates and abbreviations:
   - ``NP`` - Non-Privilege, indicates that M33 runs at a non-privileged level.
   - ``M33`` - ARM Cortex-M33 processor.
   - ``TZ`` - TrustZone, a security mechanism introduced in M33, isolates CPU cores into S/NS through TZ.
-  - ``PPC`` - Peripheral Protection Control, BK7236 peripheral security attribute configuration and controller.
-  - ``MPC`` - Memory Protection Control, BK7236 block storage security attribute configuration and controller.
+  - ``PPC`` - Peripheral Protection Control, BK7258 peripheral security attribute configuration and controller.
+  - ``MPC`` - Memory Protection Control, BK7258 block storage security attribute configuration and controller.
   - ``BL1`` - specifically refers to the BootROM solidified in the chip.
-  - ``BL2`` - Bootloader, specifically MCUBOOT in BK7236.
+  - ``BL2`` - Bootloader, specifically MCUBOOT in BK7258.
   - ``LCS`` - Life Cycle State.

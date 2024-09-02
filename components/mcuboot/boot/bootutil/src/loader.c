@@ -46,6 +46,8 @@
 #include "bootutil/fault_injection_hardening.h"
 #include "bootutil/ramload.h"
 #include "bootutil/boot_hooks.h"
+#include "boot_hal.h"
+#include "aon_pmu_hal.h"
 
 #ifdef MCUBOOT_ENC_IMAGES
 #include "bootutil/enc_key.h"
@@ -187,6 +189,22 @@ fill_rsp(struct boot_loader_state *state, struct boot_rsp *rsp)
     active_slot = state->slot_usage[BOOT_CURR_IMG(state)].active_slot;
 #else
     active_slot = BOOT_PRIMARY_SLOT;
+#endif
+
+#if CONFIG_DIRECT_XIP
+    extern void flash_set_excute_enable(int enable);
+    flash_set_excute_enable(state->slot_usage[BOOT_CURR_IMG(state)].active_slot);
+
+    /* use PMU_REG0 bit[2] for deep sleep */
+    uint32_t misc_value = aon_pmu_ll_get_r0();
+    if ((active_slot & 0x1) != !!(misc_value & BIT(2))) {
+        misc_value |=  (active_slot & 0x1) << 2;
+        aon_pmu_ll_set_r0(misc_value);
+
+        /* pass PMU_REGO value to PMU_REG7B*/
+        aon_pmu_ll_set_r25(0x424B55AA);
+        aon_pmu_ll_set_r25(0xBDB4AA55);
+    }
 #endif
 
     rsp->br_flash_dev_id = flash_area_get_device_id(BOOT_IMG_AREA(state, active_slot));
@@ -506,8 +524,15 @@ boot_image_check(struct boot_loader_state *state, struct image_header *hdr,
     }
 #endif
 
+#if CONFIG_XIP_NO_VERSION
+    for(int i = 0;i<3;i++){
+#endif
     FIH_CALL(bootutil_img_validate, fih_rc, BOOT_CURR_ENC(state), image_index,
              hdr, fap, tmpbuf, BOOT_TMPBUF_SZ, NULL, 0, NULL);
+#if CONFIG_XIP_NO_VERSION
+    if (fih_rc == FIH_SUCCESS) break;
+    }
+#endif
 
     FIH_RET(fih_rc);
 }
@@ -2099,10 +2124,14 @@ context_boot_go(struct boot_loader_state *state, struct boot_rsp *rsp)
         }
 
 #ifdef MCUBOOT_VALIDATE_PRIMARY_SLOT
-        FIH_CALL(boot_validate_slot, fih_rc, state, BOOT_PRIMARY_SLOT, NULL);
-        if (fih_not_eq(fih_rc, FIH_SUCCESS)) {
-            goto out;
+#if CONFIG_BL2_VALIDATE_ENABLED_BY_EFUSE
+        if (efuse_is_secureboot_enabled()) {
+            FIH_CALL(boot_validate_slot, fih_rc, state, BOOT_PRIMARY_SLOT, NULL);
+            if (fih_not_eq(fih_rc, FIH_SUCCESS)) {
+                goto out;
+            }
         }
+#endif
 #else
         /* Even if we're not re-validating the primary slot, we could be booting
          * onto an empty flash chip. At least do a basic sanity check that
@@ -2250,6 +2279,21 @@ boot_get_slot_usage(struct boot_loader_state *state)
         }
 
         /* Attempt to read an image header from each slot. */
+#if CONFIG_DIRECT_XIP
+        const struct flash_area *fap;
+        uint32_t copy_done;
+        uint32_t magic;
+        for (slot = 0; slot < BOOT_NUM_SLOTS; slot++) {
+            flash_area_open(slot, &fap);
+            copy_done = boot_read_xip_status(fap,XIP_COPY_DONE_TYPE);
+            magic = boot_read_xip_status(fap,XIP_MAGIC_TYPE);
+            BOOT_LOG_INF("slot %d: copy_done = %#x\r\n",slot,copy_done);
+            if (magic == XIP_SET && copy_done != XIP_SET) {
+                uint32_t erase_size = flash_area_get_size(fap) / 32 * 34;
+                flash_area_erase(fap, 0, erase_size);
+            }
+        }
+#endif
         rc = boot_read_image_headers(state, false, NULL);
         if (rc != 0) {
             BOOT_LOG_WRN("Failed reading image headers.");
@@ -2294,6 +2338,25 @@ find_slot_with_highest_version(struct boot_loader_state *state)
     uint32_t candidate_slot = NO_ACTIVE_SLOT;
     int rc;
 
+#if CONFIG_XIP_NO_VERSION
+    const struct flash_area *fap;
+    uint32_t magic;
+    uint32_t active;
+    uint32_t max_active = 0;
+    for (slot = 0; slot < BOOT_NUM_SLOTS; slot++) {
+        flash_area_open(slot, &fap);
+        magic = boot_read_xip_status(fap,XIP_MAGIC_TYPE);
+        active = boot_read_xip_status(fap,XIP_IMAGE_OK_TYPE);
+        if (magic != XIP_SET) {
+            continue;
+        }
+        if(active >= max_active){
+            max_active = active;
+            candidate_slot = slot;
+        }
+    }
+    return candidate_slot;
+#else
     for (slot = 0; slot < BOOT_NUM_SLOTS; slot++) {
         if (state->slot_usage[BOOT_CURR_IMG(state)].slot_available[slot]) {
             if (candidate_slot == NO_ACTIVE_SLOT) {
@@ -2311,7 +2374,7 @@ find_slot_with_highest_version(struct boot_loader_state *state)
             }
         }
     }
-
+#endif
     return candidate_slot;
 }
 
@@ -2416,6 +2479,34 @@ boot_select_or_erase(struct boot_loader_state *state)
     return rc;
 }
 #endif /* MCUBOOT_DIRECT_XIP && MCUBOOT_DIRECT_XIP_REVERT */
+
+#if CONFIG_DIRECT_XIP
+static int
+boot_select_or_erase(struct boot_loader_state *state)
+{
+    const struct flash_area *fap;
+    uint32_t active_slot;
+    int fa_id;
+    uint32_t magic;
+    uint32_t copy_done;
+    uint32_t image_ok;
+
+    active_slot = state->slot_usage[BOOT_CURR_IMG(state)].active_slot;
+    fa_id = active_slot;
+    flash_area_open(fa_id, &fap);
+    magic = boot_read_xip_status(fap,XIP_MAGIC_TYPE);
+    copy_done = boot_read_xip_status(fap,XIP_COPY_DONE_TYPE);
+
+    if( magic == XIP_SET && copy_done == XIP_SET ) {
+        return 0;
+    } else {
+        printf("xip ota image download aborted,erase image\r\n");
+        uint32_t erase_size = flash_area_get_size(fap) / 32 * 34;
+        flash_area_erase(fap, 0, erase_size);
+        return -1;
+    }
+}
+#endif
 
 #ifdef MCUBOOT_RAM_LOAD
 
@@ -3011,25 +3102,16 @@ boot_load_and_validate_images(struct boot_loader_state *state)
 #endif
 
 #ifdef MCUBOOT_DIRECT_XIP
-            rc = boot_rom_address_check(state);
-            if (rc != 0) {
-                /* The image is placed in an unsuitable slot. */
-                state->slot_usage[BOOT_CURR_IMG(state)].slot_available[active_slot] = false;
-                state->slot_usage[BOOT_CURR_IMG(state)].active_slot = NO_ACTIVE_SLOT;
-                continue;
-            }
-
-#ifdef MCUBOOT_DIRECT_XIP_REVERT
             rc = boot_select_or_erase(state);
-            if (rc != 0) {
+            if (rc == -1) {
                 /* The selected image slot has been erased. */
                 state->slot_usage[BOOT_CURR_IMG(state)].slot_available[active_slot] = false;
                 state->slot_usage[BOOT_CURR_IMG(state)].active_slot = NO_ACTIVE_SLOT;
                 continue;
+            } else if (rc == 1){
+                break;
             }
-#endif /* MCUBOOT_DIRECT_XIP_REVERT */
 #endif /* MCUBOOT_DIRECT_XIP */
-
 #ifdef MCUBOOT_RAM_LOAD
             /* Image is first loaded to RAM and authenticated there in order to
              * prevent TOCTOU attack during image copy. This could be applied

@@ -97,6 +97,10 @@ static void jpeg_deinit_common(void)
 	bk_pm_clock_ctrl(PM_CLK_ID_AUXS, CLK_PWR_CTRL_PWR_DOWN);
 	sys_drv_set_jpeg_disckg(0);
 	sys_drv_int_disable(JPEGENC_INTERRUPT_CTRL_BIT);
+	for (uint8_t i = 0; i < JPEG_ISR_MAX; i++)
+	{
+		bk_jpeg_enc_unregister_isr(i);
+	}
 }
 
 bk_err_t bk_jpeg_enc_driver_init(void)

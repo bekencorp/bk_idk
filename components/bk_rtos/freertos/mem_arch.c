@@ -195,6 +195,17 @@ void *psram_zalloc(size_t size)
     return psram_malloc_debug((const char*)__FUNCTION__,__LINE__,size, 1);
 }
 
+#undef pvPortMalloc
+#undef vPortFree
+
+void *pvPortMalloc(size_t xWantedSize) {
+	return (void *)psram_malloc_debug((const char*)__FUNCTION__, __LINE__, xWantedSize, 0);
+}
+
+void vPortFree(void *pv) {
+	os_free_debug((const char*)__FUNCTION__,__LINE__, pv);
+}
+
 /****************************************************
 *    Build CONFIG_MEM_DEBUG version                 *
 *    Adapt third lib build with release SDK end     *

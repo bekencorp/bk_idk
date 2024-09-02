@@ -73,34 +73,34 @@ static void ble_at_cmd_cb(ble_cmd_t cmd, ble_cmd_param_t *param)
 
     switch (cmd)
     {
-    case BLE_CREATE_ADV:
-    case BLE_SET_ADV_DATA:
-    case BLE_SET_RSP_DATA:
-    case BLE_START_ADV:
-    case BLE_STOP_ADV:
-    case BLE_CREATE_SCAN:
-    case BLE_START_SCAN:
-    case BLE_STOP_SCAN:
-    case BLE_INIT_CREATE:
-    case BLE_INIT_START_CONN:
-    case BLE_INIT_STOP_CONN:
-    case BLE_CONN_DIS_CONN:
-    case BLE_CONN_UPDATE_PARAM:
-    case BLE_DELETE_ADV:
-    case BLE_DELETE_SCAN:
-    case BLE_CONN_READ_PHY:
-    case BLE_CONN_SET_PHY:
-    case BLE_CONN_UPDATE_MTU:
-    case BLE_SET_RANDOM_ADDR:
-        if (ble_boarding_sema != NULL)
-        {
-            rtos_set_semaphore( &ble_boarding_sema );
-        }
+        case BLE_CREATE_ADV:
+        case BLE_SET_ADV_DATA:
+        case BLE_SET_RSP_DATA:
+        case BLE_START_ADV:
+        case BLE_STOP_ADV:
+        case BLE_CREATE_SCAN:
+        case BLE_START_SCAN:
+        case BLE_STOP_SCAN:
+        case BLE_INIT_CREATE:
+        case BLE_INIT_START_CONN:
+        case BLE_INIT_STOP_CONN:
+        case BLE_CONN_DIS_CONN:
+        case BLE_CONN_UPDATE_PARAM:
+        case BLE_DELETE_ADV:
+        case BLE_DELETE_SCAN:
+        case BLE_CONN_READ_PHY:
+        case BLE_CONN_SET_PHY:
+        case BLE_CONN_UPDATE_MTU:
+        case BLE_SET_RANDOM_ADDR:
+            if (ble_boarding_sema != NULL)
+            {
+                rtos_set_semaphore(&ble_boarding_sema);
+            }
 
-        break;
+            break;
 
-    default:
-        break;
+        default:
+            break;
     }
 
 }
@@ -111,54 +111,54 @@ static uint32_t dm_ble_event_cb(ble_event_enum_t notice, void *param)
     switch (notice)
     {
 
-    case BK_DM_BLE_EVENT_MTU_CHANGE:
-    {
-        ble_mtu_change_t *m_ind = (ble_mtu_change_t *)param;
-        os_printf("%s m_ind:conn_idx:%d, mtu_size:%d\r\n", __func__, m_ind->conn_idx, m_ind->mtu_size);
-        break;
-    }
+        case BK_DM_BLE_EVENT_MTU_CHANGE:
+        {
+            ble_mtu_change_t *m_ind = (ble_mtu_change_t *)param;
+            os_printf("%s m_ind:conn_idx:%d, mtu_size:%d\r\n", __func__, m_ind->conn_idx, m_ind->mtu_size);
+            break;
+        }
 
-    case BK_DM_BLE_EVENT_CONNECT:
-    {
-        ble_conn_att_t *ind = (typeof(ind))param;
-        s_conn_ind = ind->conn_handle;
-        break;
-    }
+        case BK_DM_BLE_EVENT_CONNECT:
+        {
+            ble_conn_att_t *ind = (typeof(ind))param;
+            s_conn_ind = ind->conn_handle;
+            break;
+        }
 
-    case BK_DM_BLE_EVENT_DISCONNECT:
-    {
-        ble_conn_att_t *d_ind = (typeof(d_ind))param;
-        os_printf("disconnect :conn_idx:%d,reason:%d\r\n", d_ind->conn_handle, d_ind->event_result);
-        s_conn_ind = ~0;
-        break;
-    }
+        case BK_DM_BLE_EVENT_DISCONNECT:
+        {
+            ble_conn_att_t *d_ind = (typeof(d_ind))param;
+            os_printf("disconnect :conn_idx:%d,reason:%d\r\n", d_ind->conn_handle, d_ind->event_result);
+            s_conn_ind = ~0;
+            break;
+        }
 
-    case BK_DM_BLE_EVENT_CREATE_DB:
-    {
-        os_printf("BK_DM_BLE_EVENT_CREATE_DB OK\n");
+        case BK_DM_BLE_EVENT_CREATE_DB:
+        {
+            os_printf("BK_DM_BLE_EVENT_CREATE_DB OK\n");
 
-        break;
-    }
+            break;
+        }
 
-    case BK_DM_BLE_EVENT_TX_DONE:
-        break;
+        case BK_DM_BLE_EVENT_TX_DONE:
+            break;
 
-    case BK_DM_BLE_EVENT_CONN_UPDATA:
-    {
-        ble_conn_update_param_compl_ind_t *updata_param = (typeof(updata_param))param;
-        os_printf("BK_DM_BLE_EVENT_CONN_UPDATA:conn_interval:0x%04x, con_latency:0x%04x, sup_to:0x%04x\n",
-                  updata_param->conn_interval, updata_param->conn_latency, updata_param->supervision_timeout);
-        break;
-    }
+        case BK_DM_BLE_EVENT_CONN_UPDATA:
+        {
+            ble_conn_update_param_compl_ind_t *updata_param = (typeof(updata_param))param;
+            os_printf("BK_DM_BLE_EVENT_CONN_UPDATA:conn_interval:0x%04x, con_latency:0x%04x, sup_to:0x%04x\n",
+                      updata_param->conn_interval, updata_param->conn_latency, updata_param->supervision_timeout);
+            break;
+        }
 
-    default:
-        break;
+        default:
+            break;
     }
 
     return 0;
 }
 #if CONFIG_AT
-int dm_ble_boarding_handle(int sync,int argc, char **argv)
+int dm_ble_boarding_handle(int sync, int argc, char **argv)
 {
     int retval = kNoErr;
 
@@ -455,14 +455,14 @@ int dm_ble_boarding_handle(int sync,int argc, char **argv)
     }
 
     retval = kNoErr;
-	atsvr_cmd_rsp_ok();
+    atsvr_cmd_rsp_ok();
     return retval;
 
 error:
 
     os_printf("%s failed. \n", __func__);
 
-	atsvr_cmd_rsp_error();
+    atsvr_cmd_rsp_error();
     if (ble_boarding_sema != NULL)
     {
         rtos_deinit_semaphore(&ble_boarding_sema);
@@ -799,82 +799,82 @@ static bk_err_t gatt_db_boarding_gatt_char_handler(uint8_t conn_handle, GATT_DB_
     {
         switch (params->db_op)
         {
-        case GATT_DB_CHAR_PEER_CLI_CNFG_WRITE_REQ:
-        {
-            if (handle->char_id == boarding_env.chara_notify_handle)
+            case GATT_DB_CHAR_PEER_CLI_CNFG_WRITE_REQ:
             {
-                config = (((UINT16)(params->value.val[1])) << 8) | params->value.val[0];
+                if (handle->char_id == boarding_env.chara_notify_handle)
+                {
+                    config = (((UINT16)(params->value.val[1])) << 8) | params->value.val[0];
 
-                if (GATT_CLI_CNFG_NOTIFICATION == config)
-                {
-                    os_printf("client notify config open\r\n");
+                    if (GATT_CLI_CNFG_NOTIFICATION == config)
+                    {
+                        os_printf("client notify config open\r\n");
+                    }
+                    else if (GATT_CLI_CNFG_DEFAULT == config)
+                    {
+                        os_printf("client notify config close\r\n");
+                    }
+                    else
+                    {
+                        //nothing to do
+                    }
                 }
-                else if (GATT_CLI_CNFG_DEFAULT == config)
+            }
+            break;
+
+            case GATT_DB_CHAR_PEER_READ_REQ:
+            {
+                if (handle->char_id == boarding_env.chara_pass_handle)
                 {
-                    os_printf("client notify config close\r\n");
+                    ATT_VALUE param;
+                    bk_ble_gatt_get_char_val(handle, &param);
+                    os_printf("Borading read PASS:%s, %d \r\n", param.val, param.actual_len);
+                }
+                else if (handle->char_id == boarding_env.chara_ssid_handle)
+                {
+                    ATT_VALUE param;
+                    bk_ble_gatt_get_char_val(handle, &param);
+                    os_printf("Borading read SSID:%s, %d \r\n", param.val, param.actual_len);
                 }
                 else
                 {
                     //nothing to do
                 }
             }
-        }
-        break;
-
-        case GATT_DB_CHAR_PEER_READ_REQ:
-        {
-            if (handle->char_id == boarding_env.chara_pass_handle)
-            {
-                ATT_VALUE param;
-                bk_ble_gatt_get_char_val(handle, &param);
-                os_printf("Borading read PASS:%s, %d \r\n", param.val, param.actual_len);
-            }
-            else if (handle->char_id == boarding_env.chara_ssid_handle)
-            {
-                ATT_VALUE param;
-                bk_ble_gatt_get_char_val(handle, &param);
-                os_printf("Borading read SSID:%s, %d \r\n", param.val, param.actual_len);
-            }
-            else
-            {
-                //nothing to do
-            }
-        }
-        break;
-
-        case GATT_DB_CHAR_PEER_WRITE_REQ:
-        {
-            if (handle->char_id == boarding_env.chara_pass_handle)
-            {
-                s_boarding_password_len = 0;
-                os_memset((uint8_t *)s_boarding_password, 0, sizeof(s_boarding_password) / sizeof(s_boarding_password[0]));
-                os_memcpy((uint8_t *)s_boarding_password, params->value.val, params->value.len);
-                s_boarding_password_len = params->value.len;
-                os_printf("Boarding write PASS:%s, %d, %d\r\n", s_boarding_password, s_boarding_password_len, params->value.actual_len);
-#if CONFIG_WIFI_ENABLE
-                demo_sta_app_init((char *)s_boarding_ssid, (char *)s_boarding_password);
-#endif
-            }
-            else if (handle->char_id == boarding_env.chara_ssid_handle)
-            {
-                s_boarding_ssid_len = 0;
-                os_memset((uint8_t *)s_boarding_ssid, 0, sizeof(s_boarding_ssid) / sizeof(s_boarding_ssid[0]));
-                os_memcpy((uint8_t *)s_boarding_ssid, params->value.val, params->value.len);
-                s_boarding_ssid_len = params->value.len;
-                os_printf("Boarding write SSID:%s, %d, %d\r\n", s_boarding_ssid, s_boarding_ssid_len, params->value.actual_len);
-            }
-            else
-            {
-                //nothing to do
-            }
-        }
-        break;
-
-        default:
-            //                os_printf(
-            //                "No Specific Application Handling Required for Operation 0x%02X\n",
-            //                params->db_op);
             break;
+
+            case GATT_DB_CHAR_PEER_WRITE_REQ:
+            {
+                if (handle->char_id == boarding_env.chara_pass_handle)
+                {
+                    s_boarding_password_len = 0;
+                    os_memset((uint8_t *)s_boarding_password, 0, sizeof(s_boarding_password) / sizeof(s_boarding_password[0]));
+                    os_memcpy((uint8_t *)s_boarding_password, params->value.val, params->value.len);
+                    s_boarding_password_len = params->value.len;
+                    os_printf("Boarding write PASS:%s, %d, %d\r\n", s_boarding_password, s_boarding_password_len, params->value.actual_len);
+#if CONFIG_WIFI_ENABLE
+                    demo_sta_app_init((char *)s_boarding_ssid, (char *)s_boarding_password);
+#endif
+                }
+                else if (handle->char_id == boarding_env.chara_ssid_handle)
+                {
+                    s_boarding_ssid_len = 0;
+                    os_memset((uint8_t *)s_boarding_ssid, 0, sizeof(s_boarding_ssid) / sizeof(s_boarding_ssid[0]));
+                    os_memcpy((uint8_t *)s_boarding_ssid, params->value.val, params->value.len);
+                    s_boarding_ssid_len = params->value.len;
+                    os_printf("Boarding write SSID:%s, %d, %d\r\n", s_boarding_ssid, s_boarding_ssid_len, params->value.actual_len);
+                }
+                else
+                {
+                    //nothing to do
+                }
+            }
+            break;
+
+            default:
+                //                os_printf(
+                //                "No Specific Application Handling Required for Operation 0x%02X\n",
+                //                params->db_op);
+                break;
         }
     }
 

@@ -32,7 +32,11 @@ extern "C" {
 #define UART_BAUDRATE_19200          19200
 #define UART_BAUDRATE_9600           9600
 
+#ifndef CONFIG_UART_PRINT_BAUD_RATE
 #define UART_BAUD_RATE               UART_BAUDRATE_115200
+#else
+#define UART_BAUD_RATE               CONFIG_UART_PRINT_BAUD_RATE
+#endif
 
 #define UART_CLOCK_FREQ_10M          10000000
 #define UART_CLOCK_FREQ_48M          48000000
@@ -132,6 +136,7 @@ typedef struct {
 	 * 4. Does not support UART TX DMA,because UART TX data isn't too large and CPU speed is enough.
 	 */
 	uart_dma_enable_t rx_dma_en;
+	uart_dma_enable_t tx_dma_en;
 #endif
 } uart_config_t;
 

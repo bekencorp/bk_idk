@@ -19,6 +19,7 @@
 
 #include <soc/soc.h>
 #include "hal_port.h"
+#include "system_hw.h"
 
 #if CONFIG_TFM_SYS_LL_NSC
 #include "tfm_sys_ll_nsc.h"
@@ -67,7 +68,6 @@ static inline void sys_set_ana_reg_bit(uint32_t reg_addr, uint32_t pos, uint32_t
 }
 
 //reg device_id:
-
 static inline void sys_ll_set_device_id_value(uint32_t v) {
 	sys_device_id_t *r = (sys_device_id_t*)(SOC_SYS_REG_BASE + (0x0 << 2));
 	r->v = v;
@@ -164,6 +164,11 @@ static inline uint32_t sys_ll_get_cpu_current_run_status_core1_halted(void) {
 	return r->core1_halted;
 }
 
+static inline uint32_t sys_ll_get_cpu_current_run_status_core2_halted(void) {
+	sys_cpu_current_run_status_t *r = (sys_cpu_current_run_status_t*)(SOC_SYS_REG_BASE + (0x3 << 2));
+	return r->core2_halted;
+}
+
 static inline uint32_t sys_ll_get_cpu_current_run_status_cpu0_sw_reset(void) {
 	sys_cpu_current_run_status_t *r = (sys_cpu_current_run_status_t*)(SOC_SYS_REG_BASE + (0x3 << 2));
 	return r->cpu0_sw_reset;
@@ -174,6 +179,11 @@ static inline uint32_t sys_ll_get_cpu_current_run_status_cpu1_sw_reset(void) {
 	return r->cpu1_sw_reset;
 }
 
+static inline uint32_t sys_ll_get_cpu_current_run_status_cpu2_sw_reset(void) {
+	sys_cpu_current_run_status_t *r = (sys_cpu_current_run_status_t*)(SOC_SYS_REG_BASE + (0x3 << 2));
+	return r->cpu2_sw_reset;
+}
+
 static inline uint32_t sys_ll_get_cpu_current_run_status_cpu0_pwr_dw_state(void) {
 	sys_cpu_current_run_status_t *r = (sys_cpu_current_run_status_t*)(SOC_SYS_REG_BASE + (0x3 << 2));
 	return r->cpu0_pwr_dw_state;
@@ -182,6 +192,11 @@ static inline uint32_t sys_ll_get_cpu_current_run_status_cpu0_pwr_dw_state(void)
 static inline uint32_t sys_ll_get_cpu_current_run_status_cpu1_pwr_dw_state(void) {
 	sys_cpu_current_run_status_t *r = (sys_cpu_current_run_status_t*)(SOC_SYS_REG_BASE + (0x3 << 2));
 	return r->cpu1_pwr_dw_state;
+}
+
+static inline uint32_t sys_ll_get_cpu_current_run_status_cpu2_pwr_dw_state(void) {
+	sys_cpu_current_run_status_t *r = (sys_cpu_current_run_status_t*)(SOC_SYS_REG_BASE + (0x3 << 2));
+	return r->cpu2_pwr_dw_state;
 }
 
 //reg cpu0_int_halt_clk_op:
@@ -236,14 +251,34 @@ static inline uint32_t sys_ll_get_cpu0_int_halt_clk_op_cpu0_halt(void) {
 	return r->cpu0_halt;
 }
 
-static inline void sys_ll_set_cpu0_int_halt_clk_op_reserved_4_7(uint32_t v) {
+static inline void sys_ll_set_cpu0_int_halt_clk_op_cpu0_speed(uint32_t v) {
 	sys_cpu0_int_halt_clk_op_t *r = (sys_cpu0_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x4 << 2));
-	r->reserved_4_7 = v;
+	r->cpu0_speed = v;
 }
 
-static inline uint32_t sys_ll_get_cpu0_int_halt_clk_op_reserved_4_7(void) {
+static inline uint32_t sys_ll_get_cpu0_int_halt_clk_op_cpu0_speed(void) {
 	sys_cpu0_int_halt_clk_op_t *r = (sys_cpu0_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x4 << 2));
-	return r->reserved_4_7;
+	return r->cpu0_speed;
+}
+
+static inline void sys_ll_set_cpu0_int_halt_clk_op_cpu0_rxevt_sel(uint32_t v) {
+	sys_cpu0_int_halt_clk_op_t *r = (sys_cpu0_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x4 << 2));
+	r->cpu0_rxevt_sel = v;
+}
+
+static inline uint32_t sys_ll_get_cpu0_int_halt_clk_op_cpu0_rxevt_sel(void) {
+	sys_cpu0_int_halt_clk_op_t *r = (sys_cpu0_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x4 << 2));
+	return r->cpu0_rxevt_sel;
+}
+
+static inline void sys_ll_set_cpu0_int_halt_clk_op_reserved_6_7(uint32_t v) {
+	sys_cpu0_int_halt_clk_op_t *r = (sys_cpu0_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x4 << 2));
+	r->reserved_6_7 = v;
+}
+
+static inline uint32_t sys_ll_get_cpu0_int_halt_clk_op_reserved_6_7(void) {
+	sys_cpu0_int_halt_clk_op_t *r = (sys_cpu0_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x4 << 2));
+	return r->reserved_6_7;
 }
 
 static inline uint32_t sys_ll_get_cpu0_int_halt_clk_op_cpu0_offset(void) {
@@ -303,24 +338,34 @@ static inline uint32_t sys_ll_get_cpu1_int_halt_clk_op_cpu1_halt(void) {
 	return r->cpu1_halt;
 }
 
-static inline void sys_ll_set_cpu1_int_halt_clk_op_cpu0_bus_clk_2div(uint32_t v) {
+static inline void sys_ll_set_cpu1_int_halt_clk_op_cpu1_speed (uint32_t v) {
 	sys_cpu1_int_halt_clk_op_t *r = (sys_cpu1_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x5 << 2));
-	r->cpu0_bus_clk_2div = v;
+	r->cpu1_speed  = v;
 }
 
-static inline uint32_t sys_ll_get_cpu1_int_halt_clk_op_cpu0_bus_clk_2div(void) {
+static inline uint32_t sys_ll_get_cpu1_int_halt_clk_op_cpu1_speed (void) {
 	sys_cpu1_int_halt_clk_op_t *r = (sys_cpu1_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x5 << 2));
-	return r->cpu0_bus_clk_2div;
+	return r->cpu1_speed ;
 }
 
-static inline void sys_ll_set_cpu1_int_halt_clk_op_reserved_5_7(uint32_t v) {
+static inline void sys_ll_set_cpu1_int_halt_clk_op_cpu1_rxevt_sel(uint32_t v) {
 	sys_cpu1_int_halt_clk_op_t *r = (sys_cpu1_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x5 << 2));
-	r->reserved_5_7 = v;
+	r->cpu1_rxevt_sel = v;
 }
 
-static inline uint32_t sys_ll_get_cpu1_int_halt_clk_op_reserved_5_7(void) {
+static inline uint32_t sys_ll_get_cpu1_int_halt_clk_op_cpu1_rxevt_sel(void) {
 	sys_cpu1_int_halt_clk_op_t *r = (sys_cpu1_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x5 << 2));
-	return r->reserved_5_7;
+	return r->cpu1_rxevt_sel;
+}
+
+static inline void sys_ll_set_cpu1_int_halt_clk_op_reserved_6_7(uint32_t v) {
+	sys_cpu1_int_halt_clk_op_t *r = (sys_cpu1_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x5 << 2));
+	r->reserved_6_7 = v;
+}
+
+static inline uint32_t sys_ll_get_cpu1_int_halt_clk_op_reserved_6_7(void) {
+	sys_cpu1_int_halt_clk_op_t *r = (sys_cpu1_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x5 << 2));
+	return r->reserved_6_7;
 }
 
 static inline void sys_ll_set_cpu1_int_halt_clk_op_cpu1_offset(uint32_t v) {
@@ -333,25 +378,116 @@ static inline uint32_t sys_ll_get_cpu1_int_halt_clk_op_cpu1_offset(void) {
 	return r->cpu1_offset;
 }
 
-//reg reserved_reg0x6:
+//reg cpu2_int_halt_clk_op:
 
-static inline void sys_ll_set_reserved_reg0x6_value(uint32_t v) {
-	sys_reserved_reg0x6_t *r = (sys_reserved_reg0x6_t*)(SOC_SYS_REG_BASE + (0x6 << 2));
+static inline void sys_ll_set_cpu2_int_halt_clk_op_value(uint32_t v) {
+	sys_cpu2_int_halt_clk_op_t *r = (sys_cpu2_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x6 << 2));
 	r->v = v;
 }
 
-static inline uint32_t sys_ll_get_reserved_reg0x6_value(void) {
-	sys_reserved_reg0x6_t *r = (sys_reserved_reg0x6_t*)(SOC_SYS_REG_BASE + (0x6 << 2));
+static inline uint32_t sys_ll_get_cpu2_int_halt_clk_op_value(void) {
+	sys_cpu2_int_halt_clk_op_t *r = (sys_cpu2_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x6 << 2));
 	return r->v;
 }
 
-static inline void sys_ll_set_reserved_reg0x6_reserved_0_31(uint32_t v) {
-	sys_reserved_reg0x6_t *r = (sys_reserved_reg0x6_t*)(SOC_SYS_REG_BASE + (0x6 << 2));
+static inline void sys_ll_set_cpu2_int_halt_clk_op_cpu2_sw_rst(uint32_t v) {
+	sys_cpu2_int_halt_clk_op_t *r = (sys_cpu2_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x6 << 2));
+	r->cpu2_sw_rst = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_halt_clk_op_cpu2_sw_rst(void) {
+	sys_cpu2_int_halt_clk_op_t *r = (sys_cpu2_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x6 << 2));
+	return r->cpu2_sw_rst;
+}
+
+static inline void sys_ll_set_cpu2_int_halt_clk_op_cpu2_pwr_dw(uint32_t v) {
+	sys_cpu2_int_halt_clk_op_t *r = (sys_cpu2_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x6 << 2));
+	r->cpu2_pwr_dw = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_halt_clk_op_cpu2_pwr_dw(void) {
+	sys_cpu2_int_halt_clk_op_t *r = (sys_cpu2_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x6 << 2));
+	return r->cpu2_pwr_dw;
+}
+
+static inline void sys_ll_set_cpu2_int_halt_clk_op_cpu2_int_mask(uint32_t v) {
+	sys_cpu2_int_halt_clk_op_t *r = (sys_cpu2_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x6 << 2));
+	r->cpu2_int_mask = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_halt_clk_op_cpu2_int_mask(void) {
+	sys_cpu2_int_halt_clk_op_t *r = (sys_cpu2_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x6 << 2));
+	return r->cpu2_int_mask;
+}
+
+static inline void sys_ll_set_cpu2_int_halt_clk_op_cpu2_halt(uint32_t v) {
+	sys_cpu2_int_halt_clk_op_t *r = (sys_cpu2_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x6 << 2));
+	r->cpu2_halt = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_halt_clk_op_cpu2_halt(void) {
+	sys_cpu2_int_halt_clk_op_t *r = (sys_cpu2_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x6 << 2));
+	return r->cpu2_halt;
+}
+
+static inline void sys_ll_set_cpu2_int_halt_clk_op_cpu2_speed (uint32_t v) {
+	sys_cpu2_int_halt_clk_op_t *r = (sys_cpu2_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x6 << 2));
+	r->cpu2_speed  = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_halt_clk_op_cpu2_speed (void) {
+	sys_cpu2_int_halt_clk_op_t *r = (sys_cpu2_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x6 << 2));
+	return r->cpu2_speed ;
+}
+
+static inline void sys_ll_set_cpu2_int_halt_clk_op_cpu2_rxevt_sel(uint32_t v) {
+	sys_cpu2_int_halt_clk_op_t *r = (sys_cpu2_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x6 << 2));
+	r->cpu2_rxevt_sel = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_halt_clk_op_cpu2_rxevt_sel(void) {
+	sys_cpu2_int_halt_clk_op_t *r = (sys_cpu2_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x6 << 2));
+	return r->cpu2_rxevt_sel;
+}
+
+static inline void sys_ll_set_cpu2_int_halt_clk_op_reserved_6_7(uint32_t v) {
+	sys_cpu2_int_halt_clk_op_t *r = (sys_cpu2_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x6 << 2));
+	r->reserved_6_7 = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_halt_clk_op_reserved_6_7(void) {
+	sys_cpu2_int_halt_clk_op_t *r = (sys_cpu2_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x6 << 2));
+	return r->reserved_6_7;
+}
+
+static inline void sys_ll_set_cpu2_int_halt_clk_op_cpu2_offset(uint32_t v) {
+	sys_cpu2_int_halt_clk_op_t *r = (sys_cpu2_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x6 << 2));
+	r->cpu2_offset = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_halt_clk_op_cpu2_offset(void) {
+	sys_cpu2_int_halt_clk_op_t *r = (sys_cpu2_int_halt_clk_op_t*)(SOC_SYS_REG_BASE + (0x6 << 2));
+	return r->cpu2_offset;
+}
+
+//reg reserved_reg0x7:
+static inline void sys_ll_set_reserved_reg0x7_value(uint32_t v) {
+	sys_reserved_reg0x7_t *r = (sys_reserved_reg0x7_t*)(SOC_SYS_REG_BASE + (0x7 << 2));
+	r->v = v;
+}
+
+static inline uint32_t sys_ll_get_reserved_reg0x7_value(void) {
+	sys_reserved_reg0x7_t *r = (sys_reserved_reg0x7_t*)(SOC_SYS_REG_BASE + (0x7 << 2));
+	return r->v;
+}
+
+static inline void sys_ll_set_reserved_reg0x7_reserved_0_31(uint32_t v) {
+	sys_reserved_reg0x7_t *r = (sys_reserved_reg0x7_t*)(SOC_SYS_REG_BASE + (0x7 << 2));
 	r->reserved_0_31 = v;
 }
 
-static inline uint32_t sys_ll_get_reserved_reg0x6_reserved_0_31(void) {
-	sys_reserved_reg0x6_t *r = (sys_reserved_reg0x6_t*)(SOC_SYS_REG_BASE + (0x6 << 2));
+static inline uint32_t sys_ll_get_reserved_reg0x7_reserved_0_31(void) {
+	sys_reserved_reg0x7_t *r = (sys_reserved_reg0x7_t*)(SOC_SYS_REG_BASE + (0x7 << 2));
 	return r->reserved_0_31;
 }
 
@@ -639,14 +775,34 @@ static inline uint32_t sys_ll_get_cpu_clk_div_mode2_cksel_qspi0(void) {
 	return r->cksel_qspi0;
 }
 
-static inline void sys_ll_set_cpu_clk_div_mode2_reserved_11_13(uint32_t v) {
+static inline void sys_ll_set_cpu_clk_div_mode2_cksel_i2s1(uint32_t v) {
 	sys_cpu_clk_div_mode2_t *r = (sys_cpu_clk_div_mode2_t*)(SOC_SYS_REG_BASE + (0x9 << 2));
-	r->reserved_11_13 = v;
+	r->cksel_i2s1 = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_clk_div_mode2_reserved_11_13(void) {
+static inline uint32_t sys_ll_get_cpu_clk_div_mode2_cksel_i2s1(void) {
 	sys_cpu_clk_div_mode2_t *r = (sys_cpu_clk_div_mode2_t*)(SOC_SYS_REG_BASE + (0x9 << 2));
-	return r->reserved_11_13;
+	return r->cksel_i2s1;
+}
+
+static inline void sys_ll_set_cpu_clk_div_mode2_cksel_i2s2(uint32_t v) {
+	sys_cpu_clk_div_mode2_t *r = (sys_cpu_clk_div_mode2_t*)(SOC_SYS_REG_BASE + (0x9 << 2));
+	r->cksel_i2s2 = v;
+}
+
+static inline uint32_t sys_ll_get_cpu_clk_div_mode2_cksel_i2s2(void) {
+	sys_cpu_clk_div_mode2_t *r = (sys_cpu_clk_div_mode2_t*)(SOC_SYS_REG_BASE + (0x9 << 2));
+	return r->cksel_i2s2;
+}
+
+static inline void sys_ll_set_cpu_clk_div_mode2_reserved_13_13(uint32_t v) {
+	sys_cpu_clk_div_mode2_t *r = (sys_cpu_clk_div_mode2_t*)(SOC_SYS_REG_BASE + (0x9 << 2));
+	r->reserved_13_13 = v;
+}
+
+static inline uint32_t sys_ll_get_cpu_clk_div_mode2_reserved_13_13(void) {
+	sys_cpu_clk_div_mode2_t *r = (sys_cpu_clk_div_mode2_t*)(SOC_SYS_REG_BASE + (0x9 << 2));
+	return r->reserved_13_13;
 }
 
 static inline void sys_ll_set_cpu_clk_div_mode2_ckdiv_sdio(uint32_t v) {
@@ -719,6 +875,16 @@ static inline uint32_t sys_ll_get_cpu_clk_div_mode2_ckdiv_i2s0(void) {
 	return r->ckdiv_i2s0;
 }
 
+static inline void sys_ll_set_cpu_clk_div_mode2_clkdiv_auxs(uint32_t v) {
+	sys_cpu_clk_div_mode2_t *r = (sys_cpu_clk_div_mode2_t*)(SOC_SYS_REG_BASE + (0x9 << 2));
+	r->clkdiv_auxs = v;
+}
+
+static inline uint32_t sys_ll_get_cpu_clk_div_mode2_clkdiv_auxs(void) {
+	sys_cpu_clk_div_mode2_t *r = (sys_cpu_clk_div_mode2_t*)(SOC_SYS_REG_BASE + (0x9 << 2));
+	return r->clkdiv_auxs;
+}
+
 //reg cpu_26m_wdt_clk_div:
 
 static inline void sys_ll_set_cpu_26m_wdt_clk_div_value(uint32_t v) {
@@ -771,24 +937,94 @@ static inline uint32_t sys_ll_get_cpu_26m_wdt_clk_div_clksel_spi1(void) {
 	return r->clksel_spi1;
 }
 
-static inline void sys_ll_set_cpu_26m_wdt_clk_div_clksel_qspi1(uint32_t v) {
-	sys_cpu_26m_wdt_clk_div_t *r = (sys_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
-	r->cksel_qspi1 = v;
-}
-
-static inline uint32_t sys_ll_get_cpu_26m_wdt_clk_div_clksel_qspi1(void) {
-	sys_cpu_26m_wdt_clk_div_t *r = (sys_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
-	return r->cksel_qspi1;
-}
-
-static inline void sys_ll_set_cpu_26m_wdt_clk_div_clkdiv_qspi1(uint32_t v) {
+static inline void sys_ll_set_cpu_26m_wdt_clk_div_ckdiv_qspi1(uint32_t v) {
 	sys_cpu_26m_wdt_clk_div_t *r = (sys_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
 	r->ckdiv_qspi1 = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_26m_wdt_clk_div_clkdiv_qspi1(void) {
+static inline uint32_t sys_ll_get_cpu_26m_wdt_clk_div_ckdiv_qspi1(void) {
 	sys_cpu_26m_wdt_clk_div_t *r = (sys_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
 	return r->ckdiv_qspi1;
+}
+
+static inline void sys_ll_set_cpu_26m_wdt_clk_div_cksel_qspi1(uint32_t v) {
+	sys_cpu_26m_wdt_clk_div_t *r = (sys_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	r->cksel_qspi1 = v;
+}
+
+static inline uint32_t sys_ll_get_cpu_26m_wdt_clk_div_cksel_qspi1(void) {
+	sys_cpu_26m_wdt_clk_div_t *r = (sys_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	return r->cksel_qspi1;
+}
+
+static inline void sys_ll_set_cpu_26m_wdt_clk_div_ckdiv_enet(uint32_t v) {
+	sys_cpu_26m_wdt_clk_div_t *r = (sys_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	r->ckdiv_enet = v;
+}
+
+static inline uint32_t sys_ll_get_cpu_26m_wdt_clk_div_ckdiv_enet(void) {
+	sys_cpu_26m_wdt_clk_div_t *r = (sys_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	return r->ckdiv_enet;
+}
+
+static inline void sys_ll_set_cpu_26m_wdt_clk_div_cksel_enet(uint32_t v) {
+	sys_cpu_26m_wdt_clk_div_t *r = (sys_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	r->cksel_enet = v;
+}
+
+static inline uint32_t sys_ll_get_cpu_26m_wdt_clk_div_cksel_enet(void) {
+	sys_cpu_26m_wdt_clk_div_t *r = (sys_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	return r->cksel_enet;
+}
+
+static inline void sys_ll_set_cpu_26m_wdt_clk_div_ckdiv_jpeg(uint32_t v) {
+	sys_cpu_26m_wdt_clk_div_t *r = (sys_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	r->ckdiv_jpeg = v;
+}
+
+static inline uint32_t sys_ll_get_cpu_26m_wdt_clk_div_ckdiv_jpeg(void) {
+	sys_cpu_26m_wdt_clk_div_t *r = (sys_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	return r->ckdiv_jpeg;
+}
+
+static inline void sys_ll_set_cpu_26m_wdt_clk_div_cksel_jpeg(uint32_t v) {
+	sys_cpu_26m_wdt_clk_div_t *r = (sys_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	r->cksel_jpeg = v;
+}
+
+static inline uint32_t sys_ll_get_cpu_26m_wdt_clk_div_cksel_jpeg(void) {
+	sys_cpu_26m_wdt_clk_div_t *r = (sys_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	return r->cksel_jpeg;
+}
+
+static inline void sys_ll_set_cpu_26m_wdt_clk_div_cksel_auxs_cis(uint32_t v) {
+	sys_cpu_26m_wdt_clk_div_t *r = (sys_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	r->cksel_auxs_cis = v;
+}
+
+static inline uint32_t sys_ll_get_cpu_26m_wdt_clk_div_cksel_auxs_cis(void) {
+	sys_cpu_26m_wdt_clk_div_t *r = (sys_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	return r->cksel_auxs_cis;
+}
+
+static inline void sys_ll_set_cpu_26m_wdt_clk_div_ckdiv_auxs_cis(uint32_t v) {
+	sys_cpu_26m_wdt_clk_div_t *r = (sys_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	r->ckdiv_auxs_cis = v;
+}
+
+static inline uint32_t sys_ll_get_cpu_26m_wdt_clk_div_ckdiv_auxs_cis(void) {
+	sys_cpu_26m_wdt_clk_div_t *r = (sys_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	return r->ckdiv_auxs_cis;
+}
+
+static inline void sys_ll_set_cpu_26m_wdt_clk_div_reserved_22_31(uint32_t v) {
+	sys_cpu_26m_wdt_clk_div_t *r = (sys_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	r->reserved_22_31 = v;
+}
+
+static inline uint32_t sys_ll_get_cpu_26m_wdt_clk_div_reserved_22_31(void) {
+	sys_cpu_26m_wdt_clk_div_t *r = (sys_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	return r->reserved_22_31;
 }
 
 //reg cpu_anaspi_freq:
@@ -1207,14 +1443,64 @@ static inline uint32_t sys_ll_get_reserver_reg0xd_slcd_cken(void) {
 	return r->slcd_cken;
 }
 
-static inline void sys_ll_set_reserver_reg0xd_reserved_5_31(uint32_t v) {
+static inline void sys_ll_set_reserver_reg0xd_lin_cken(uint32_t v) {
 	sys_reserver_reg0xd_t *r = (sys_reserver_reg0xd_t*)(SOC_SYS_REG_BASE + (0xd << 2));
-	r->reserved_5_31 = v;
+	r->lin_cken = v;
 }
 
-static inline uint32_t sys_ll_get_reserver_reg0xd_reserved_5_31(void) {
+static inline uint32_t sys_ll_get_reserver_reg0xd_lin_cken(void) {
 	sys_reserver_reg0xd_t *r = (sys_reserver_reg0xd_t*)(SOC_SYS_REG_BASE + (0xd << 2));
-	return r->reserved_5_31;
+	return r->lin_cken;
+}
+
+static inline void sys_ll_set_reserver_reg0xd_scr_cken(uint32_t v) {
+	sys_reserver_reg0xd_t *r = (sys_reserver_reg0xd_t*)(SOC_SYS_REG_BASE + (0xd << 2));
+	r->scr_cken = v;
+}
+
+static inline uint32_t sys_ll_get_reserver_reg0xd_scr_cken(void) {
+	sys_reserver_reg0xd_t *r = (sys_reserver_reg0xd_t*)(SOC_SYS_REG_BASE + (0xd << 2));
+	return r->scr_cken;
+}
+
+static inline void sys_ll_set_reserver_reg0xd_enet_cken(uint32_t v) {
+	sys_reserver_reg0xd_t *r = (sys_reserver_reg0xd_t*)(SOC_SYS_REG_BASE + (0xd << 2));
+	r->enet_cken = v;
+}
+
+static inline uint32_t sys_ll_get_reserver_reg0xd_enet_cken(void) {
+	sys_reserver_reg0xd_t *r = (sys_reserver_reg0xd_t*)(SOC_SYS_REG_BASE + (0xd << 2));
+	return r->enet_cken;
+}
+
+static inline void sys_ll_set_reserver_reg0xd_jpeg_cken(uint32_t v) {
+	sys_reserver_reg0xd_t *r = (sys_reserver_reg0xd_t*)(SOC_SYS_REG_BASE + (0xd << 2));
+	r->jpeg_cken = v;
+}
+
+static inline uint32_t sys_ll_get_reserver_reg0xd_jpeg_cken(void) {
+	sys_reserver_reg0xd_t *r = (sys_reserver_reg0xd_t*)(SOC_SYS_REG_BASE + (0xd << 2));
+	return r->jpeg_cken;
+}
+
+static inline void sys_ll_set_reserver_reg0xd_cis_auxs_cken(uint32_t v) {
+	sys_reserver_reg0xd_t *r = (sys_reserver_reg0xd_t*)(SOC_SYS_REG_BASE + (0xd << 2));
+	r->cis_auxs_cken = v;
+}
+
+static inline uint32_t sys_ll_get_reserver_reg0xd_cis_auxs_cken(void) {
+	sys_reserver_reg0xd_t *r = (sys_reserver_reg0xd_t*)(SOC_SYS_REG_BASE + (0xd << 2));
+	return r->cis_auxs_cken;
+}
+
+static inline void sys_ll_set_reserver_reg0xd_reserved_10_31(uint32_t v) {
+	sys_reserver_reg0xd_t *r = (sys_reserver_reg0xd_t*)(SOC_SYS_REG_BASE + (0xd << 2));
+	r->reserved_10_31 = v;
+}
+
+static inline uint32_t sys_ll_get_reserver_reg0xd_reserved_10_31(void) {
+	sys_reserver_reg0xd_t *r = (sys_reserver_reg0xd_t*)(SOC_SYS_REG_BASE + (0xd << 2));
+	return r->reserved_10_31;
 }
 
 //reg cpu_device_mem_ctrl1:
@@ -1229,324 +1515,324 @@ static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_value(void) {
 	return r->v;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_uart1_mem_sd(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_uart1_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->uart1_mem_sd = v;
+	r->uart1_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_uart1_mem_sd(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_uart1_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->uart1_mem_sd;
+	return r->uart1_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_uart2(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_uart2_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->uart2 = v;
+	r->uart2_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_uart2(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_uart2_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->uart2;
+	return r->uart2_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_spi1(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_spi1_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->spi1 = v;
+	r->spi1_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_spi1(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_spi1_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->spi1;
+	return r->spi1_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_sdio(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_sdio_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->sdio = v;
+	r->sdio_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_sdio(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_sdio_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->sdio;
+	return r->sdio_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_usb(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_usb_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->usb = v;
+	r->usb_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_usb(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_usb_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->usb;
+	return r->usb_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_can(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_can_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->can = v;
+	r->can_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_can(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_can_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->can;
+	return r->can_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_qspi0(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_qspi0_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->qspi0 = v;
+	r->qspi0_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_qspi0(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_qspi0_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->qspi0;
+	return r->qspi0_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_qspi1(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_qspi1_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->qspi1 = v;
+	r->qspi1_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_qspi1(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_qspi1_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->qspi1;
+	return r->qspi1_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_pram(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_pram_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->pram = v;
+	r->pram_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_pram(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_pram_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->pram;
+	return r->pram_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_fft(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_fft_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->fft = v;
+	r->fft_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_fft(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_fft_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->fft;
+	return r->fft_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_abc(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_abc_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->abc = v;
+	r->abc_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_abc(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_abc_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->abc;
+	return r->abc_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_aud(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_aud_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->aud = v;
+	r->aud_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_aud(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_aud_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->aud;
+	return r->aud_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_i2s0(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_i2s0_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->i2s0 = v;
+	r->i2s0_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_i2s0(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_i2s0_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->i2s0;
+	return r->i2s0_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_i2s1(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_i2s1_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->i2s1 = v;
+	r->i2s1_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_i2s1(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_i2s1_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->i2s1;
+	return r->i2s1_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_i2s2(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_i2s2_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->i2s2 = v;
+	r->i2s2_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_i2s2(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_i2s2_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->i2s2;
+	return r->i2s2_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_jpge(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_jpge_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->jpge = v;
+	r->jpge_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_jpge(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_jpge_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->jpge;
+	return r->jpge_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_yuv(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_yuv_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->yuv = v;
+	r->yuv_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_yuv(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_yuv_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->yuv;
+	return r->yuv_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_jpgd(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_jpgd_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->jpgd = v;
+	r->jpgd_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_jpgd(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_jpgd_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->jpgd;
+	return r->jpgd_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_disp(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_disp_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->disp = v;
+	r->disp_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_disp(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_disp_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->disp;
+	return r->disp_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_dmad(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_dmad_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->dmad = v;
+	r->dmad_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_dmad(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_dmad_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->dmad;
+	return r->dmad_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_h26f(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_h26f_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->h26f = v;
+	r->h26f_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_h26f(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_h26f_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->h26f;
+	return r->h26f_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_mac(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_mac_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->mac = v;
+	r->mac_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_mac(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_mac_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->mac;
+	return r->mac_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_phy(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_phy_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->phy = v;
+	r->phy_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_phy(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_phy_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->phy;
+	return r->phy_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_xvr(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_xvr_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->xvr = v;
+	r->xvr_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_xvr(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_xvr_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->xvr;
+	return r->xvr_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_irda(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_irda_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->irda = v;
+	r->irda_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_irda(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_irda_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->irda;
+	return r->irda_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_la(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_la_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->la = v;
+	r->la_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_la(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_la_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->la;
+	return r->la_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_flsh(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_flsh_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->flsh = v;
+	r->flsh_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_flsh(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_flsh_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->flsh;
+	return r->flsh_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_uart(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_uart_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->uart = v;
+	r->uart_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_uart(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_uart_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->uart;
+	return r->uart_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_spi0(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_spi0_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->spi0 = v;
+	r->spi0_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_spi0(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_spi0_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->spi0;
+	return r->spi0_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_enc(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_enc_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->enc = v;
+	r->enc_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_enc(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_enc_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->enc;
+	return r->enc_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_dma0(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_dma0_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->dma0 = v;
+	r->dma0_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_dma0(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_dma0_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->dma0;
+	return r->dma0_sd;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl1_dma1(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl1_dma1_sd(uint32_t v) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	r->dma1 = v;
+	r->dma1_sd = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_dma1(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl1_dma1_sd(void) {
 	sys_cpu_device_mem_ctrl1_t *r = (sys_cpu_device_mem_ctrl1_t*)(SOC_SYS_REG_BASE + (0xe << 2));
-	return r->dma1;
+	return r->dma1_sd;
 }
 
 //reg cpu_device_mem_ctrl2:
@@ -1561,324 +1847,324 @@ static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_value(void) {
 	return r->v;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_uart1_mem_ds(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_uart1_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->uart1_mem_ds = v;
+	r->uart1_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_uart1_mem_ds(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_uart1_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->uart1_mem_ds;
+	return r->uart1_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_uart2(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_uart2_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->uart2 = v;
+	r->uart2_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_uart2(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_uart2_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->uart2;
+	return r->uart2_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_spi1(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_spi1_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->spi1 = v;
+	r->spi1_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_spi1(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_spi1_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->spi1;
+	return r->spi1_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_sdio(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_sdio_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->sdio = v;
+	r->sdio_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_sdio(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_sdio_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->sdio;
+	return r->sdio_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_usb(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_usb_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->usb = v;
+	r->usb_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_usb(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_usb_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->usb;
+	return r->usb_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_can(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_can_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->can = v;
+	r->can_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_can(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_can_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->can;
+	return r->can_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_qspi0(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_qspi0_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->qspi0 = v;
+	r->qspi0_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_qspi0(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_qspi0_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->qspi0;
+	return r->qspi0_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_qspi1(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_qspi1_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->qspi1 = v;
+	r->qspi1_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_qspi1(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_qspi1_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->qspi1;
+	return r->qspi1_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_pram(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_pram_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->pram = v;
+	r->pram_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_pram(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_pram_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->pram;
+	return r->pram_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_fft(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_fft_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->fft = v;
+	r->fft_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_fft(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_fft_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->fft;
+	return r->fft_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_abc(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_abc_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->abc = v;
+	r->abc_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_abc(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_abc_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->abc;
+	return r->abc_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_aud(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_aud_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->aud = v;
+	r->aud_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_aud(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_aud_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->aud;
+	return r->aud_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_i2s0(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_i2s0_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->i2s0 = v;
+	r->i2s0_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_i2s0(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_i2s0_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->i2s0;
+	return r->i2s0_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_i2s1(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_i2s1_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->i2s1 = v;
+	r->i2s1_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_i2s1(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_i2s1_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->i2s1;
+	return r->i2s1_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_i2s2(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_i2s2_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->i2s2 = v;
+	r->i2s2_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_i2s2(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_i2s2_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->i2s2;
+	return r->i2s2_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_jpge(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_jpge_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->jpge = v;
+	r->jpge_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_jpge(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_jpge_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->jpge;
+	return r->jpge_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_yuv(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_yuv_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->yuv = v;
+	r->yuv_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_yuv(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_yuv_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->yuv;
+	return r->yuv_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_jpgd(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_jpgd_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->jpgd = v;
+	r->jpgd_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_jpgd(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_jpgd_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->jpgd;
+	return r->jpgd_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_disp(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_disp_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->disp = v;
+	r->disp_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_disp(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_disp_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->disp;
+	return r->disp_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_dmad(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_dmad_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->dmad = v;
+	r->dmad_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_dmad(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_dmad_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->dmad;
+	return r->dmad_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_h26f(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_h26f_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->h26f = v;
+	r->h26f_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_h26f(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_h26f_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->h26f;
+	return r->h26f_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_mac(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_mac_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->mac = v;
+	r->mac_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_mac(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_mac_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->mac;
+	return r->mac_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_phy(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_phy_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->phy = v;
+	r->phy_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_phy(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_phy_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->phy;
+	return r->phy_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_xvr(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_xvr_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->xvr = v;
+	r->xvr_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_xvr(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_xvr_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->xvr;
+	return r->xvr_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_irda(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_irda_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->irda = v;
+	r->irda_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_irda(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_irda_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->irda;
+	return r->irda_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_la(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_la_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->la = v;
+	r->la_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_la(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_la_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->la;
+	return r->la_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_flsh(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_flsh_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->flsh = v;
+	r->flsh_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_flsh(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_flsh_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->flsh;
+	return r->flsh_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_uart(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_uart_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->uart = v;
+	r->uart_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_uart(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_uart_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->uart;
+	return r->uart_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_spi0(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_spi0_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->spi0 = v;
+	r->spi0_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_spi0(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_spi0_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->spi0;
+	return r->spi0_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_enc(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_enc_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->enc = v;
+	r->enc_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_enc(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_enc_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->enc;
+	return r->enc_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_dma0(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_dma0_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->dma0 = v;
+	r->dma0_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_dma0(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_dma0_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->dma0;
+	return r->dma0_ds;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl2_dma1(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl2_dma1_ds(uint32_t v) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	r->dma1 = v;
+	r->dma1_ds = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_dma1(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl2_dma1_ds(void) {
 	sys_cpu_device_mem_ctrl2_t *r = (sys_cpu_device_mem_ctrl2_t*)(SOC_SYS_REG_BASE + (0xf << 2));
-	return r->dma1;
+	return r->dma1_ds;
 }
 
 //reg cpu_power_sleep_wakeup:
@@ -2033,14 +2319,14 @@ static inline uint32_t sys_ll_get_cpu_power_sleep_wakeup_pwd_ofdm(void) {
 	return r->pwd_ofdm;
 }
 
-static inline void sys_ll_set_cpu_power_sleep_wakeup_tcm0_pgen(uint32_t v) {
+static inline void sys_ll_set_cpu_power_sleep_wakeup_pwd_mem5(uint32_t v) {
 	sys_cpu_power_sleep_wakeup_t *r = (sys_cpu_power_sleep_wakeup_t*)(SOC_SYS_REG_BASE + (0x10 << 2));
-	r->tcm0_pgen = v;
+	r->pwd_mem5 = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_power_sleep_wakeup_tcm0_pgen(void) {
+static inline uint32_t sys_ll_get_cpu_power_sleep_wakeup_pwd_mem5(void) {
 	sys_cpu_power_sleep_wakeup_t *r = (sys_cpu_power_sleep_wakeup_t*)(SOC_SYS_REG_BASE + (0x10 << 2));
-	return r->tcm0_pgen;
+	return r->pwd_mem5;
 }
 
 static inline void sys_ll_set_cpu_power_sleep_wakeup_rom_pgen(uint32_t v) {
@@ -2103,14 +2389,14 @@ static inline uint32_t sys_ll_get_cpu_power_sleep_wakeup_sleep_bus_idle_bypass(v
 	return r->sleep_bus_idle_bypass;
 }
 
-static inline void sys_ll_set_cpu_power_sleep_wakeup_bts_wakeup_platform_en(uint32_t v) {
+static inline void sys_ll_set_cpu_power_sleep_wakeup_sleep_en_need_cpu2_wfi(uint32_t v) {
 	sys_cpu_power_sleep_wakeup_t *r = (sys_cpu_power_sleep_wakeup_t*)(SOC_SYS_REG_BASE + (0x10 << 2));
-	r->bts_wakeup_platform_en = v;
+	r->sleep_en_need_cpu2_wfi = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_power_sleep_wakeup_bts_wakeup_platform_en(void) {
+static inline uint32_t sys_ll_get_cpu_power_sleep_wakeup_sleep_en_need_cpu2_wfi(void) {
 	sys_cpu_power_sleep_wakeup_t *r = (sys_cpu_power_sleep_wakeup_t*)(SOC_SYS_REG_BASE + (0x10 << 2));
-	return r->bts_wakeup_platform_en;
+	return r->sleep_en_need_cpu2_wfi;
 }
 
 static inline void sys_ll_set_cpu_power_sleep_wakeup_bts_soft_wakeup_req(uint32_t v) {
@@ -2143,14 +2429,14 @@ static inline uint32_t sys_ll_get_cpu_power_sleep_wakeup_otp_rd_disable(void) {
 	return r->otp_rd_disable;
 }
 
-static inline void sys_ll_set_cpu_power_sleep_wakeup_tcm1_pgen(uint32_t v) {
+static inline void sys_ll_set_cpu_power_sleep_wakeup_tcm0_pgen(uint32_t v) {
 	sys_cpu_power_sleep_wakeup_t *r = (sys_cpu_power_sleep_wakeup_t*)(SOC_SYS_REG_BASE + (0x10 << 2));
-	r->tcm1_pgen = v;
+	r->tcm0_pgen = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_power_sleep_wakeup_tcm1_pgen(void) {
+static inline uint32_t sys_ll_get_cpu_power_sleep_wakeup_tcm0_pgen(void) {
 	sys_cpu_power_sleep_wakeup_t *r = (sys_cpu_power_sleep_wakeup_t*)(SOC_SYS_REG_BASE + (0x10 << 2));
-	return r->tcm1_pgen;
+	return r->tcm0_pgen;
 }
 
 static inline void sys_ll_set_cpu_power_sleep_wakeup_cpu0_subpwdm_en(uint32_t v) {
@@ -2163,14 +2449,14 @@ static inline uint32_t sys_ll_get_cpu_power_sleep_wakeup_cpu0_subpwdm_en(void) {
 	return r->cpu0_subpwdm_en;
 }
 
-static inline void sys_ll_set_cpu_power_sleep_wakeup_cpu1_subpwdm_en(uint32_t v) {
+static inline void sys_ll_set_cpu_power_sleep_wakeup_cpu2_ticktimer_32k_enable(uint32_t v) {
 	sys_cpu_power_sleep_wakeup_t *r = (sys_cpu_power_sleep_wakeup_t*)(SOC_SYS_REG_BASE + (0x10 << 2));
-	r->cpu1_subpwdm_en = v;
+	r->cpu2_ticktimer_32k_enable = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_power_sleep_wakeup_cpu1_subpwdm_en(void) {
+static inline uint32_t sys_ll_get_cpu_power_sleep_wakeup_cpu2_ticktimer_32k_enable(void) {
 	sys_cpu_power_sleep_wakeup_t *r = (sys_cpu_power_sleep_wakeup_t*)(SOC_SYS_REG_BASE + (0x10 << 2));
-	return r->cpu1_subpwdm_en;
+	return r->cpu2_ticktimer_32k_enable;
 }
 
 static inline void sys_ll_set_cpu_power_sleep_wakeup_share_mem_clkgating_disable(uint32_t v) {
@@ -2203,59 +2489,62 @@ static inline uint32_t sys_ll_get_cpu_power_sleep_wakeup_cpu1_ticktimer_32k_enab
 	return r->cpu1_ticktimer_32k_enable;
 }
 
-//reg reserver_reg0x11:
+static inline uint32_t sys_ll_get_cpu_power_sleep_wakeup_busmatrix_busy(void) {
+	sys_cpu_power_sleep_wakeup_t *r = (sys_cpu_power_sleep_wakeup_t*)(SOC_SYS_REG_BASE + (0x10 << 2));
+	return r->busmatrix_busy;
+}
+
 //reg cpu0_lv_sleep_cfg:
 
 static inline void sys_ll_set_cpu0_lv_sleep_cfg_value(uint32_t v) {
-        sys_cpu0_lv_sleep_cfg_t *r = (sys_cpu0_lv_sleep_cfg_t*)(SOC_SYS_REG_BASE + (0x11 << 2));
-        r->v = v;
+	sys_cpu0_lv_sleep_cfg_t *r = (sys_cpu0_lv_sleep_cfg_t*)(SOC_SYS_REG_BASE + (0x11 << 2));
+	r->v = v;
 }
 
 static inline uint32_t sys_ll_get_cpu0_lv_sleep_cfg_value(void) {
-        sys_cpu0_lv_sleep_cfg_t *r = (sys_cpu0_lv_sleep_cfg_t*)(SOC_SYS_REG_BASE + (0x11 << 2));
-        return r->v;
+	sys_cpu0_lv_sleep_cfg_t *r = (sys_cpu0_lv_sleep_cfg_t*)(SOC_SYS_REG_BASE + (0x11 << 2));
+	return r->v;
 }
 
 static inline void sys_ll_set_cpu0_lv_sleep_cfg_cpu0_cache_ret_en(uint32_t v) {
-        sys_cpu0_lv_sleep_cfg_t *r = (sys_cpu0_lv_sleep_cfg_t*)(SOC_SYS_REG_BASE + (0x11 << 2));
-        r->cpu0_cache_ret_en = v;
+	sys_cpu0_lv_sleep_cfg_t *r = (sys_cpu0_lv_sleep_cfg_t*)(SOC_SYS_REG_BASE + (0x11 << 2));
+	r->cpu0_cache_ret_en = v;
 }
 
 static inline uint32_t sys_ll_get_cpu0_lv_sleep_cfg_cpu0_cache_ret_en(void) {
-        sys_cpu0_lv_sleep_cfg_t *r = (sys_cpu0_lv_sleep_cfg_t*)(SOC_SYS_REG_BASE + (0x11 << 2));
-        return r->cpu0_cache_ret_en;
+	sys_cpu0_lv_sleep_cfg_t *r = (sys_cpu0_lv_sleep_cfg_t*)(SOC_SYS_REG_BASE + (0x11 << 2));
+	return r->cpu0_cache_ret_en;
 }
 
 static inline void sys_ll_set_cpu0_lv_sleep_cfg_cpu0_cache_sleeppwd_en(uint32_t v) {
-        sys_cpu0_lv_sleep_cfg_t *r = (sys_cpu0_lv_sleep_cfg_t*)(SOC_SYS_REG_BASE + (0x11 << 2));
-        r->cpu0_cache_sleeppwd_en = v;
+	sys_cpu0_lv_sleep_cfg_t *r = (sys_cpu0_lv_sleep_cfg_t*)(SOC_SYS_REG_BASE + (0x11 << 2));
+	r->cpu0_cache_sleeppwd_en = v;
 }
 
 static inline uint32_t sys_ll_get_cpu0_lv_sleep_cfg_cpu0_cache_sleeppwd_en(void) {
-        sys_cpu0_lv_sleep_cfg_t *r = (sys_cpu0_lv_sleep_cfg_t*)(SOC_SYS_REG_BASE + (0x11 << 2));
-        return r->cpu0_cache_sleeppwd_en;
+	sys_cpu0_lv_sleep_cfg_t *r = (sys_cpu0_lv_sleep_cfg_t*)(SOC_SYS_REG_BASE + (0x11 << 2));
+	return r->cpu0_cache_sleeppwd_en;
 }
 
 static inline void sys_ll_set_cpu0_lv_sleep_cfg_cpu0_fpu_sleeppwd_en(uint32_t v) {
-        sys_cpu0_lv_sleep_cfg_t *r = (sys_cpu0_lv_sleep_cfg_t*)(SOC_SYS_REG_BASE + (0x11 << 2));
-        r->cpu0_fpu_sleeppwd_en = v;
+	sys_cpu0_lv_sleep_cfg_t *r = (sys_cpu0_lv_sleep_cfg_t*)(SOC_SYS_REG_BASE + (0x11 << 2));
+	r->cpu0_fpu_sleeppwd_en = v;
 }
 
 static inline uint32_t sys_ll_get_cpu0_lv_sleep_cfg_cpu0_fpu_sleeppwd_en(void) {
-        sys_cpu0_lv_sleep_cfg_t *r = (sys_cpu0_lv_sleep_cfg_t*)(SOC_SYS_REG_BASE + (0x11 << 2));
-        return r->cpu0_fpu_sleeppwd_en;
+	sys_cpu0_lv_sleep_cfg_t *r = (sys_cpu0_lv_sleep_cfg_t*)(SOC_SYS_REG_BASE + (0x11 << 2));
+	return r->cpu0_fpu_sleeppwd_en;
 }
 
 static inline void sys_ll_set_sys2flsh_2wire(uint32_t v) {
-        sys_cpu0_lv_sleep_cfg_t *r = (sys_cpu0_lv_sleep_cfg_t*)(SOC_SYS_REG_BASE + (0x11 << 2));
-        r->sys2flsh_2wire = v;
+	sys_cpu0_lv_sleep_cfg_t *r = (sys_cpu0_lv_sleep_cfg_t*)(SOC_SYS_REG_BASE + (0x11 << 2));
+	r->sys2flsh_2wire = v;
 }
 
 static inline uint32_t sys_ll_get_sys2flsh_2wire(void) {
-        sys_cpu0_lv_sleep_cfg_t *r = (sys_cpu0_lv_sleep_cfg_t*)(SOC_SYS_REG_BASE + (0x11 << 2));
-        return r->sys2flsh_2wire;
+	sys_cpu0_lv_sleep_cfg_t *r = (sys_cpu0_lv_sleep_cfg_t*)(SOC_SYS_REG_BASE + (0x11 << 2));
+	return r->sys2flsh_2wire;
 }
-
 
 //reg cpu_device_mem_ctrl3:
 
@@ -2409,24 +2698,24 @@ static inline uint32_t sys_ll_get_cpu_device_mem_ctrl3_rott_deep_sleep(void) {
 	return r->rott_deep_sleep;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl3_reserved0(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl3_scal0_deep_sleep(uint32_t v) {
 	sys_cpu_device_mem_ctrl3_t *r = (sys_cpu_device_mem_ctrl3_t*)(SOC_SYS_REG_BASE + (0x12 << 2));
-	r->reserved0 = v;
+	r->scal0_deep_sleep = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl3_reserved0(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl3_scal0_deep_sleep(void) {
 	sys_cpu_device_mem_ctrl3_t *r = (sys_cpu_device_mem_ctrl3_t*)(SOC_SYS_REG_BASE + (0x12 << 2));
-	return r->reserved0;
+	return r->scal0_deep_sleep;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl3_reserved1(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl3_scal1_deep_sleep(uint32_t v) {
 	sys_cpu_device_mem_ctrl3_t *r = (sys_cpu_device_mem_ctrl3_t*)(SOC_SYS_REG_BASE + (0x12 << 2));
-	r->reserved1 = v;
+	r->scal1_deep_sleep = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl3_reserved1(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl3_scal1_ds(void) {
 	sys_cpu_device_mem_ctrl3_t *r = (sys_cpu_device_mem_ctrl3_t*)(SOC_SYS_REG_BASE + (0x12 << 2));
-	return r->reserved1;
+	return r->scal1_deep_sleep;
 }
 
 static inline void sys_ll_set_cpu_device_mem_ctrl3_ram0_mem_sd_shutdown(uint32_t v) {
@@ -2569,24 +2858,24 @@ static inline uint32_t sys_ll_get_cpu_device_mem_ctrl3_rott_shutdown(void) {
 	return r->rott_shutdown;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl3_reserved2(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl3_scal0_shutdown(uint32_t v) {
 	sys_cpu_device_mem_ctrl3_t *r = (sys_cpu_device_mem_ctrl3_t*)(SOC_SYS_REG_BASE + (0x12 << 2));
-	r->reserved2 = v;
+	r->scal0_shutdown = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl3_reserved2(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl3_scal0_shutdown(void) {
 	sys_cpu_device_mem_ctrl3_t *r = (sys_cpu_device_mem_ctrl3_t*)(SOC_SYS_REG_BASE + (0x12 << 2));
-	return r->reserved2;
+	return r->scal0_shutdown;
 }
 
-static inline void sys_ll_set_cpu_device_mem_ctrl3_reserved3(uint32_t v) {
+static inline void sys_ll_set_cpu_device_mem_ctrl3_scal1_shutdown(uint32_t v) {
 	sys_cpu_device_mem_ctrl3_t *r = (sys_cpu_device_mem_ctrl3_t*)(SOC_SYS_REG_BASE + (0x12 << 2));
-	r->reserved3 = v;
+	r->scal1_shutdown = v;
 }
 
-static inline uint32_t sys_ll_get_cpu_device_mem_ctrl3_reserved3(void) {
+static inline uint32_t sys_ll_get_cpu_device_mem_ctrl3_scal1_shutdown(void) {
 	sys_cpu_device_mem_ctrl3_t *r = (sys_cpu_device_mem_ctrl3_t*)(SOC_SYS_REG_BASE + (0x12 << 2));
-	return r->reserved3;
+	return r->scal1_shutdown;
 }
 
 //reg cpu0_int_0_31_en:
@@ -3098,6 +3387,11 @@ static inline void sys_ll_set_cpu0_int_32_63_en_cpu0_mbox0_int_en(uint32_t v) {
 	r->cpu0_mbox0_int_en = v;
 }
 
+static inline void sys_ll_set_cpu0_int_32_63_en_cpu0_eth_int_en(uint32_t v) {
+	sys_cpu0_int_32_63_en_t *r = (sys_cpu0_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x21 << 2));
+	r->cpu0_eth_int_en = v;
+}
+
 static inline uint32_t sys_ll_get_cpu0_int_32_63_en_cpu0_mbox0_int_en(void) {
 	sys_cpu0_int_32_63_en_t *r = (sys_cpu0_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x21 << 2));
 	return r->cpu0_mbox0_int_en;
@@ -3211,6 +3505,16 @@ static inline void sys_ll_set_cpu0_int_32_63_en_cpu0_rott_int_en(uint32_t v) {
 static inline uint32_t sys_ll_get_cpu0_int_32_63_en_cpu0_rott_int_en(void) {
 	sys_cpu0_int_32_63_en_t *r = (sys_cpu0_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x21 << 2));
 	return r->cpu0_rott_int_en;
+}
+
+static inline void sys_ll_set_cpu0_int_32_63_en_cpu0_7816_int_en(uint32_t v) {
+	sys_cpu0_int_32_63_en_t *r = (sys_cpu0_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x21 << 2));
+	r->cpu0_7816_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu0_int_32_63_en_cpu0_7816_int_en(void) {
+	sys_cpu0_int_32_63_en_t *r = (sys_cpu0_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x21 << 2));
+	return r->cpu0_7816_int_en;
 }
 
 static inline void sys_ll_set_cpu0_int_32_63_en_reserved0(uint32_t v) {
@@ -3847,6 +4151,16 @@ static inline uint32_t sys_ll_get_cpu1_int_32_63_en_cpu1_rott_int_en(void) {
 	return r->cpu1_rott_int_en;
 }
 
+static inline void sys_ll_set_cpu1_int_32_63_en_cpu1_7816_int_en(uint32_t v) {
+	sys_cpu1_int_32_63_en_t *r = (sys_cpu1_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x23 << 2));
+	r->cpu1_7816_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu1_int_32_63_en_cpu1_7816_int_en(void) {
+	sys_cpu1_int_32_63_en_t *r = (sys_cpu1_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x23 << 2));
+	return r->cpu1_7816_int_en;
+}
+
 static inline void sys_ll_set_cpu1_int_32_63_en_reserved0(uint32_t v) {
 	sys_cpu1_int_32_63_en_t *r = (sys_cpu1_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x23 << 2));
 	r->reserved0 = v;
@@ -3854,6 +4168,639 @@ static inline void sys_ll_set_cpu1_int_32_63_en_reserved0(uint32_t v) {
 
 static inline uint32_t sys_ll_get_cpu1_int_32_63_en_reserved0(void) {
 	sys_cpu1_int_32_63_en_t *r = (sys_cpu1_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x23 << 2));
+	return r->reserved0;
+}
+//reg cpu2_int_0_31_en:
+
+static inline void sys_ll_set_cpu2_int_0_31_en_value(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->v = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_value(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->v;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_dma0_nsec_intr_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_dma0_nsec_intr_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_dma0_nsec_intr_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_dma0_nsec_intr_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_encp_sec_intr_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_encp_sec_intr_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_encp_sec_intr_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_encp_sec_intr_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_encp_nsec_intr_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_encp_nsec_intr_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_encp_nsec_intr_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_encp_nsec_intr_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_timer0_int_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_timer0_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_timer0_int_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_timer0_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_uart_int_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_uart_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_uart_int_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_uart_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_pwm0_int_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_pwm0_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_pwm0_int_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_pwm0_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_i2c0_int_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_i2c0_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_i2c0_int_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_i2c0_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_spi0_int_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_spi0_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_spi0_int_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_spi0_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_sadc_int_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_sadc_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_sadc_int_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_sadc_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_irda_int_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_irda_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_irda_int_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_irda_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_sdio_int_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_sdio_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_sdio_int_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_sdio_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_gdma_int_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_gdma_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_gdma_int_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_gdma_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_la_int_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_la_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_la_int_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_la_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_timer1_int_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_timer1_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_timer1_int_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_timer1_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_i2c1_int_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_i2c1_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_i2c1_int_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_i2c1_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_uart1_int_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_uart1_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_uart1_int_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_uart1_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_uart2_int_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_uart2_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_uart2_int_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_uart2_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_spi1_int_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_spi1_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_spi1_int_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_spi1_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_can_int_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_can_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_can_int_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_can_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_usb_int_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_usb_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_usb_int_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_usb_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_qspi0_int_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_qspi0_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_qspi0_int_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_qspi0_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_fft_int_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_fft_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_fft_int_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_fft_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_sbc_int_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_sbc_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_sbc_int_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_sbc_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_aud_int_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_aud_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_aud_int_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_aud_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_i2s0_int_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_i2s0_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_i2s0_int_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_i2s0_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_jpegenc_int_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_jpegenc_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_jpegenc_int_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_jpegenc_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_jpegdec_int_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_jpegdec_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_jpegdec_int_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_jpegdec_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_lcd_display_int_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_lcd_display_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_lcd_display_int_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_lcd_display_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_dma2d_int_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_dma2d_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_dma2d_int_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_dma2d_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_wifi_int_phy_mpb_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_wifi_int_phy_mpb_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_wifi_int_phy_mpb_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_wifi_int_phy_mpb_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_wifi_int_phy_riu_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_wifi_int_phy_riu_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_wifi_int_phy_riu_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_wifi_int_phy_riu_en;
+}
+
+static inline void sys_ll_set_cpu2_int_0_31_en_cpu2_wifi_mac_int_tx_rx_timer_en(uint32_t v) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	r->cpu2_wifi_mac_int_tx_rx_timer_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_en_cpu2_wifi_mac_int_tx_rx_timer_en(void) {
+	sys_cpu2_int_0_31_en_t *r = (sys_cpu2_int_0_31_en_t*)(SOC_SYS_REG_BASE + (0x24 << 2));
+	return r->cpu2_wifi_mac_int_tx_rx_timer_en;
+}
+
+//reg cpu2_int_32_63_en:
+
+static inline void sys_ll_set_cpu2_int_32_63_en_value(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->v = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_value(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->v;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_wifi_mac_int_tx_rx_misc_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_wifi_mac_int_tx_rx_misc_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_wifi_mac_int_tx_rx_misc_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_wifi_mac_int_tx_rx_misc_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_wifi_mac_int_rx_trigger_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_wifi_mac_int_rx_trigger_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_wifi_mac_int_rx_trigger_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_wifi_mac_int_rx_trigger_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_wifi_mac_int_tx_trigger_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_wifi_mac_int_tx_trigger_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_wifi_mac_int_tx_trigger_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_wifi_mac_int_tx_trigger_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_wifi_mac_int_prot_trigger_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_wifi_mac_int_prot_trigger_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_wifi_mac_int_prot_trigger_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_wifi_mac_int_prot_trigger_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_wifi_mac_int_gen_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_wifi_mac_int_gen_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_wifi_mac_int_gen_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_wifi_mac_int_gen_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_wifi_hsu_irq_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_wifi_hsu_irq_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_wifi_hsu_irq_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_wifi_hsu_irq_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_wifi_int_mac_wakeup_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_wifi_int_mac_wakeup_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_wifi_int_mac_wakeup_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_wifi_int_mac_wakeup_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_dm_irq_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_dm_irq_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_dm_irq_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_dm_irq_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_ble_irq_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_ble_irq_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_ble_irq_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_ble_irq_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_bt_irq_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_bt_irq_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_bt_irq_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_bt_irq_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_qspi1_int_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_qspi1_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_qspi1_int_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_qspi1_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_pwm1_int_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_pwm1_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_pwm1_int_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_pwm1_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_i2s1_int_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_i2s1_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_i2s1_int_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_i2s1_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_i2s2_int_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_i2s2_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_i2s2_int_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_i2s2_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_h264_int_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_h264_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_h264_int_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_h264_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_sdmadc_int_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_sdmadc_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_sdmadc_int_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_sdmadc_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_mbox0_int_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_mbox0_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_mbox0_int_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_mbox0_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_mbox1_int_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_mbox1_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_mbox1_int_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_mbox1_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_bmc64_int_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_bmc64_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_bmc64_int_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_bmc64_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_dpll_unlock_int_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_dpll_unlock_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_dpll_unlock_int_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_dpll_unlock_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_touched_int_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_touched_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_touched_int_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_touched_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_usbplug_int_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_usbplug_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_usbplug_int_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_usbplug_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_rtc_int_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_rtc_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_rtc_int_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_rtc_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_gpio_int_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_gpio_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_gpio_int_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_gpio_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_dma1_sec_int_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_dma1_sec_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_dma1_sec_int_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_dma1_sec_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_dma1_nsec_int_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_dma1_nsec_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_dma1_nsec_int_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_dma1_nsec_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_yuvb_int_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_yuvb_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_yuvb_int_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_yuvb_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_cpu2_rott_int_en(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->cpu2_rott_int_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_cpu2_rott_int_en(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	return r->cpu2_rott_int_en;
+}
+
+static inline void sys_ll_set_cpu2_int_32_63_en_reserved0(uint32_t v) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
+	r->reserved0 = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_en_reserved0(void) {
+	sys_cpu2_int_32_63_en_t *r = (sys_cpu2_int_32_63_en_t*)(SOC_SYS_REG_BASE + (0x25 << 2));
 	return r->reserved0;
 }
 
@@ -4179,6 +5126,11 @@ static inline uint32_t sys_ll_get_cpu0_int_32_63_status_cpu0_yuvb_int_st(void) {
 static inline uint32_t sys_ll_get_cpu0_int_32_63_status_cpu0_rott_int_st(void) {
 	sys_cpu0_int_32_63_status_t *r = (sys_cpu0_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x29 << 2));
 	return r->cpu0_rott_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu0_int_32_63_status_cpu0_7816_int_st(void) {
+	sys_cpu0_int_32_63_status_t *r = (sys_cpu0_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x29 << 2));
+	return r->cpu0_7816_int_st;
 }
 
 static inline uint32_t sys_ll_get_cpu0_int_32_63_status_reserved0(void) {
@@ -4510,8 +5462,343 @@ static inline uint32_t sys_ll_get_cpu1_int_32_63_status_cpu1_rott_int_st(void) {
 	return r->cpu1_rott_int_st;
 }
 
+static inline uint32_t sys_ll_get_cpu1_int_32_63_status_cpu1_7816_int_st(void) {
+	sys_cpu1_int_32_63_status_t *r = (sys_cpu1_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2b << 2));
+	return r->cpu1_7816_int_st;
+}
+
 static inline uint32_t sys_ll_get_cpu1_int_32_63_status_reserved0(void) {
 	sys_cpu1_int_32_63_status_t *r = (sys_cpu1_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2b << 2));
+	return r->reserved0;
+}
+
+
+//reg cpu2_int_0_31_status:
+
+static inline void sys_ll_set_cpu2_int_0_31_status_value(uint32_t v) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	r->v = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_value(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_dma0_nsec_intr_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_dma0_nsec_intr_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_encp_sec_intr_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_encp_sec_intr_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_encp_nsec_intr_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_encp_nsec_intr_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_timer0_int_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_timer0_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_uart_int_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_uart_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_pwm0_int_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_pwm0_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_i2c0_int_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_i2c0_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_spi0_int_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_spi0_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_sadc_int_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_sadc_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_irda_int_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_irda_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_sdio_int_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_sdio_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_gdma_int_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_gdma_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_la_int_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_la_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_timer1_int_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_timer1_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_i2c1_int_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_i2c1_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_uart1_int_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_uart1_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_uart2_int_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_uart2_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_spi1_int_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_spi1_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_can_int_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_can_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_usb_int_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_usb_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_qspi0_int_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_qspi0_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_fft_int_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_fft_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_sbc_int_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_sbc_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_aud_int_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_aud_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_i2s0_int_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_i2s0_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_jpegenc_int_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_jpegenc_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_jpegdec_int_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_jpegdec_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_lcd_display_int_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_lcd_display_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_dma2d_int_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_dma2d_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_wifi_int_phy_mpb_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_wifi_int_phy_mpb_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_wifi_int_phy_riu_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_wifi_int_phy_riu_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_0_31_status_cpu2_wifi_mac_int_tx_rx_timer_st(void) {
+	sys_cpu2_int_0_31_status_t *r = (sys_cpu2_int_0_31_status_t*)(SOC_SYS_REG_BASE + (0x2c << 2));
+	return r->cpu2_wifi_mac_int_tx_rx_timer_st;
+}
+
+//reg cpu2_int_32_63_status:
+
+static inline void sys_ll_set_cpu2_int_32_63_status_value(uint32_t v) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	r->v = v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_value(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->v;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_wifi_mac_int_tx_rx_misc_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_wifi_mac_int_tx_rx_misc_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_wifi_mac_int_rx_trigger_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_wifi_mac_int_rx_trigger_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_wifi_mac_int_tx_trigger_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_wifi_mac_int_tx_trigger_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_wifi_mac_int_prot_trigger_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_wifi_mac_int_prot_trigger_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_wifi_mac_int_gen_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_wifi_mac_int_gen_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_wifi_hsu_irq_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_wifi_hsu_irq_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_wifi_int_mac_wakeup_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_wifi_int_mac_wakeup_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_dm_irq_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_dm_irq_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_ble_irq_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_ble_irq_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_bt_irq_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_bt_irq_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_qspi1_int_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_qspi1_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_pwm1_int_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_pwm1_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_i2s1_int_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_i2s1_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_i2s2_int_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_i2s2_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_h264_int_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_h264_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_sdmadc_int_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_sdmadc_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_mbox0_int_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_mbox0_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_mbox1_int_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_mbox1_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_bmc64_int_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_bmc64_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_dpll_unlock_int_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_dpll_unlock_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_touched_int_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_touched_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_usbplug_int_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_usbplug_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_rtc_int_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_rtc_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_gpio_int_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_gpio_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_dma1_sec_int_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_dma1_sec_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_dma1_nsec_int_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_dma1_nsec_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_yuvb_int_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_yuvb_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_cpu2_rott_int_st(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
+	return r->cpu2_rott_int_st;
+}
+
+static inline uint32_t sys_ll_get_cpu2_int_32_63_status_reserved0(void) {
+	sys_cpu2_int_32_63_status_t *r = (sys_cpu2_int_32_63_status_t*)(SOC_SYS_REG_BASE + (0x2d << 2));
 	return r->reserved0;
 }
 
@@ -4645,6 +5932,28 @@ static inline void sys_ll_set_gpio_config5_gpio_config5(uint32_t v) {
 static inline uint32_t sys_ll_get_gpio_config5_gpio_config5(void) {
 	sys_gpio_config5_t *r = (sys_gpio_config5_t*)(SOC_SYS_REG_BASE + (0x35 << 2));
 	return r->gpio_config5;
+}
+
+//reg gpio_config6:
+
+static inline void sys_ll_set_gpio_config6_value(uint32_t v) {
+	sys_gpio_config6_t *r = (sys_gpio_config6_t*)(SOC_SYS_REG_BASE + (0x36 << 2));
+	r->v = v;
+}
+
+static inline uint32_t sys_ll_get_gpio_config6_value(void) {
+	sys_gpio_config6_t *r = (sys_gpio_config6_t*)(SOC_SYS_REG_BASE + (0x36 << 2));
+	return r->v;
+}
+
+static inline void sys_ll_set_gpio_config6_gpio_config6(uint32_t v) {
+	sys_gpio_config6_t *r = (sys_gpio_config6_t*)(SOC_SYS_REG_BASE + (0x36 << 2));
+	r->gpio_config6 = v;
+}
+
+static inline uint32_t sys_ll_get_gpio_config6_gpio_config6(void) {
+	sys_gpio_config6_t *r = (sys_gpio_config6_t*)(SOC_SYS_REG_BASE + (0x36 << 2));
+	return r->gpio_config6;
 }
 
 //reg sys_debug_config0:
@@ -5049,12 +6358,76 @@ static inline uint32_t sys_ll_get_ana_reg3_value(void) {
 	return sys_ll_get_analog_reg_value(SOC_SYS_REG_BASE + (0x43 << 2));
 }
 
-static inline void sys_ll_set_ana_reg3_usbpen(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x43 << 2)), 0, 0xf, v);
+static inline void sys_ll_set_ana_reg3_lbw0v9(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x43 << 2)), 0, 0x1, v);
 }
 
-static inline void sys_ll_set_ana_reg3_usbnen(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x43 << 2)), 4, 0xf, v);
+static inline uint32_t sys_ll_get_ana_reg3_lbw0v9(void) {
+	sys_ana_reg3_t *r = (sys_ana_reg3_t*)(SOC_SYS_REG_BASE + (0x43 << 2));
+	return r->lbw0v9;
+}
+
+static inline void sys_ll_set_ana_reg3_sdclk_sel(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x43 << 2)), 1, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg3_sdclk_sel(void) {
+	sys_ana_reg3_t *r = (sys_ana_reg3_t*)(SOC_SYS_REG_BASE + (0x43 << 2));
+	return r->sdclk_sel;
+}
+
+static inline void sys_ll_set_ana_reg3_sarrlck_rlten(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x43 << 2)), 2, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg3_sarrlck_rlten(void) {
+	sys_ana_reg3_t *r = (sys_ana_reg3_t*)(SOC_SYS_REG_BASE + (0x43 << 2));
+	return r->sarrlck_rlten;
+}
+
+static inline void sys_ll_set_ana_reg3_sarrlck_inv(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x43 << 2)), 3, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg3_sarrlck_inv(void) {
+	sys_ana_reg3_t *r = (sys_ana_reg3_t*)(SOC_SYS_REG_BASE + (0x43 << 2));
+	return r->sarrlck_inv;
+}
+
+static inline void sys_ll_set_ana_reg3_bufdrvtrm0v9(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x43 << 2)), 4, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg3_bufdrvtrm0v9(void) {
+	sys_ana_reg3_t *r = (sys_ana_reg3_t*)(SOC_SYS_REG_BASE + (0x43 << 2));
+	return r->bufdrvtrm0v9;
+}
+
+static inline void sys_ll_set_ana_reg3_nc_5_5(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x43 << 2)), 5, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg3_nc_5_5(void) {
+	sys_ana_reg3_t *r = (sys_ana_reg3_t*)(SOC_SYS_REG_BASE + (0x43 << 2));
+	return r->nc_5_5;
+}
+
+static inline void sys_ll_set_ana_reg3_inbufen0v9(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x43 << 2)), 6, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg3_inbufen0v9(void) {
+	sys_ana_reg3_t *r = (sys_ana_reg3_t*)(SOC_SYS_REG_BASE + (0x43 << 2));
+	return r->inbufen0v9;
+}
+
+static inline void sys_ll_set_ana_reg3_hres_sel0v9(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x43 << 2)), 7, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg3_hres_sel0v9(void) {
+	sys_ana_reg3_t *r = (sys_ana_reg3_t*)(SOC_SYS_REG_BASE + (0x43 << 2));
+	return r->hres_sel0v9;
 }
 
 static inline void sys_ll_set_ana_reg3_hpssren(uint32_t v) {
@@ -5320,13 +6693,13 @@ static inline uint32_t sys_ll_get_ana_reg5_value(void) {
 	return sys_ll_get_analog_reg_value(SOC_SYS_REG_BASE + (0x45 << 2));
 }
 
-static inline void sys_ll_set_ana_reg5_en_usb(uint32_t v) {
+static inline void sys_ll_set_ana_reg5_nc_0_0(uint32_t v) {
 	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x45 << 2)), 0, 0x1, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg5_en_usb(void) {
+static inline uint32_t sys_ll_get_ana_reg5_nc_0_0(void) {
 	sys_ana_reg5_t *r = (sys_ana_reg5_t*)(SOC_SYS_REG_BASE + (0x45 << 2));
-	return r->en_usb;
+	return r->nc_0_0;
 }
 
 static inline void sys_ll_set_ana_reg5_en_xtall(uint32_t v) {
@@ -5347,13 +6720,13 @@ static inline uint32_t sys_ll_get_ana_reg5_en_dco(void) {
 	return r->en_dco;
 }
 
-static inline void sys_ll_set_ana_reg5_en_ram(uint32_t v) {
+static inline void sys_ll_set_ana_reg5_nc_3_3(uint32_t v) {
 	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x45 << 2)), 3, 0x1, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg5_en_ram(void) {
+static inline uint32_t sys_ll_get_ana_reg5_nc_3_3(void) {
 	sys_ana_reg5_t *r = (sys_ana_reg5_t*)(SOC_SYS_REG_BASE + (0x45 << 2));
-	return r->en_ram;
+	return r->nc_3_3;
 }
 
 static inline void sys_ll_set_ana_reg5_en_temp(uint32_t v) {
@@ -5392,13 +6765,13 @@ static inline uint32_t sys_ll_get_ana_reg5_en_lcd(void) {
 	return r->en_lcd;
 }
 
-static inline void sys_ll_set_ana_reg5_trxspi_ctrl(uint32_t v) {
+static inline void sys_ll_set_ana_reg5_nc_8_9(uint32_t v) {
 	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x45 << 2)), 8, 0x3, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg5_trxspi_ctrl(void) {
+static inline uint32_t sys_ll_get_ana_reg5_nc_8_9(void) {
 	sys_ana_reg5_t *r = (sys_ana_reg5_t*)(SOC_SYS_REG_BASE + (0x45 << 2));
-	return r->trxspi_ctrl;
+	return r->nc_8_9;
 }
 
 static inline void sys_ll_set_ana_reg5_adc_div(uint32_t v) {
@@ -5410,40 +6783,40 @@ static inline uint32_t sys_ll_get_ana_reg5_adc_div(void) {
 	return r->adc_div;
 }
 
-static inline void sys_ll_set_ana_reg5_usb_speed(uint32_t v) {
+static inline void sys_ll_set_ana_reg5_rosc_disable(uint32_t v) {
 	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x45 << 2)), 12, 0x1, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg5_usb_speed(void) {
+static inline uint32_t sys_ll_get_ana_reg5_rosc_disable(void) {
 	sys_ana_reg5_t *r = (sys_ana_reg5_t*)(SOC_SYS_REG_BASE + (0x45 << 2));
-	return r->usb_speed;
+	return r->rosc_disable;
 }
 
-static inline void sys_ll_set_ana_reg5_spideepsleep(uint32_t v) {
+static inline void sys_ll_set_ana_reg5_pwdaudpll(uint32_t v) {
 	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x45 << 2)), 13, 0x1, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg5_spideepsleep(void) {
+static inline uint32_t sys_ll_get_ana_reg5_pwdaudpll(void) {
 	sys_ana_reg5_t *r = (sys_ana_reg5_t*)(SOC_SYS_REG_BASE + (0x45 << 2));
-	return r->spideepsleep;
+	return r->pwdaudpll;
 }
 
-static inline void sys_ll_set_ana_reg5_vsel(uint32_t v) {
+static inline void sys_ll_set_ana_reg5_pwd_rosc_spi(uint32_t v) {
 	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x45 << 2)), 14, 0x1, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg5_vsel(void) {
+static inline uint32_t sys_ll_get_ana_reg5_pwd_rosc_spi(void) {
 	sys_ana_reg5_t *r = (sys_ana_reg5_t*)(SOC_SYS_REG_BASE + (0x45 << 2));
-	return r->vsel;
+	return r->pwd_rosc_spi;
 }
 
-static inline void sys_ll_set_ana_reg5_swb(uint32_t v) {
+static inline void sys_ll_set_ana_reg5_nc_15_15(uint32_t v) {
 	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x45 << 2)), 15, 0x1, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg5_swb(void) {
+static inline uint32_t sys_ll_get_ana_reg5_nc_15_15(void) {
 	sys_ana_reg5_t *r = (sys_ana_reg5_t*)(SOC_SYS_REG_BASE + (0x45 << 2));
-	return r->swb;
+	return r->nc_15_15;
 }
 
 static inline void sys_ll_set_ana_reg5_itune_xtall(uint32_t v) {
@@ -5973,13 +7346,22 @@ static inline uint32_t sys_ll_get_ana_reg10_value(void) {
 	return sys_ll_get_analog_reg_value(SOC_SYS_REG_BASE + (0x4a << 2));
 }
 
-static inline void sys_ll_set_ana_reg10_pasoft_st(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4a << 2)), 0, 0xf, v);
+static inline void sys_ll_set_ana_reg10_nc_0_2(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4a << 2)), 0, 0x7, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg10_pasoft_st(void) {
+static inline uint32_t sys_ll_get_ana_reg10_nc_0_2(void) {
 	sys_ana_reg10_t *r = (sys_ana_reg10_t*)(SOC_SYS_REG_BASE + (0x4a << 2));
-	return r->pasoft_st;
+	return r->nc_0_2;
+}
+
+static inline void sys_ll_set_ana_reg10_vbspbuflp1v(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4a << 2)), 3, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg10_vbspbuflp1v(void) {
+	sys_ana_reg10_t *r = (sys_ana_reg10_t*)(SOC_SYS_REG_BASE + (0x4a << 2));
+	return r->vbspbuflp1v;
 }
 
 static inline void sys_ll_set_ana_reg10_azcdcnt_manu(uint32_t v) {
@@ -6000,13 +7382,31 @@ static inline uint32_t sys_ll_get_ana_reg10_timer_sel(void) {
 	return r->timer_sel;
 }
 
-static inline void sys_ll_set_ana_reg10_vpabucksel(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4a << 2)), 11, 0xf, v);
+static inline void sys_ll_set_ana_reg10_vddgpio_sel(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4a << 2)), 11, 0x1, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg10_vpabucksel(void) {
+static inline uint32_t sys_ll_get_ana_reg10_vddgpio_sel(void) {
 	sys_ana_reg10_t *r = (sys_ana_reg10_t*)(SOC_SYS_REG_BASE + (0x4a << 2));
-	return r->vpabucksel;
+	return r->vddgpio_sel;
+}
+
+static inline void sys_ll_set_ana_reg10_en_usbvcc1v8(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4a << 2)), 12, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg10_en_usbvcc1v8(void) {
+	sys_ana_reg10_t *r = (sys_ana_reg10_t*)(SOC_SYS_REG_BASE + (0x4a << 2));
+	return r->en_usbvcc1v8;
+}
+
+static inline void sys_ll_set_ana_reg10_en_usbvcc3v(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4a << 2)), 13, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg10_en_usbvcc3v(void) {
+	sys_ana_reg10_t *r = (sys_ana_reg10_t*)(SOC_SYS_REG_BASE + (0x4a << 2));
+	return r->en_usbvcc3v;
 }
 
 static inline void sys_ll_set_ana_reg10_spi_timerwken(uint32_t v) {
@@ -6018,13 +7418,13 @@ static inline uint32_t sys_ll_get_ana_reg10_spi_timerwken(void) {
 	return r->spi_timerwken;
 }
 
-static inline void sys_ll_set_ana_reg10_nc_16_16(uint32_t v) {
+static inline void sys_ll_set_ana_reg10_spi_byp32pwd(uint32_t v) {
 	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4a << 2)), 16, 0x1, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg10_nc_16_16(void) {
+static inline uint32_t sys_ll_get_ana_reg10_spi_byp32pwd(void) {
 	sys_ana_reg10_t *r = (sys_ana_reg10_t*)(SOC_SYS_REG_BASE + (0x4a << 2));
-	return r->nc_16_16;
+	return r->spi_byp32pwd;
 }
 
 static inline void sys_ll_set_ana_reg10_sd(uint32_t v) {
@@ -6036,13 +7436,13 @@ static inline uint32_t sys_ll_get_ana_reg10_sd(void) {
 	return r->sd;
 }
 
-static inline void sys_ll_set_ana_reg10_ioldosel(uint32_t v) {
+static inline void sys_ll_set_ana_reg10_nc_18_18(uint32_t v) {
 	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4a << 2)), 18, 0x1, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg10_ioldosel(void) {
+static inline uint32_t sys_ll_get_ana_reg10_nc_18_18(void) {
 	sys_ana_reg10_t *r = (sys_ana_reg10_t*)(SOC_SYS_REG_BASE + (0x4a << 2));
-	return r->ioldosel;
+	return r->nc_18_18;
 }
 
 static inline void sys_ll_set_ana_reg10_iobyapssen(uint32_t v) {
@@ -6435,130 +7835,103 @@ static inline uint32_t sys_ll_get_ana_reg13_asoft_stc(void) {
 	return r->asoft_stc;
 }
 
-static inline void sys_ll_set_ana_reg13_volen(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4d << 2)), 5, 0x1, v);
+static inline void sys_ll_set_ana_reg13_dldo_czsel(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4d << 2)), 5, 0x7, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg13_volen(void) {
+static inline uint32_t sys_ll_get_ana_reg13_dldo_czsel(void) {
 	sys_ana_reg13_t *r = (sys_ana_reg13_t*)(SOC_SYS_REG_BASE + (0x4d << 2));
-	return r->volen;
+	return r->dldo_czsel;
 }
 
-static inline void sys_ll_set_ana_reg13_dpfms(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4d << 2)), 6, 0x1f, v);
+static inline void sys_ll_set_ana_reg13_dldo_rzsel(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4d << 2)), 8, 0x3, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg13_dpfms(void) {
+static inline uint32_t sys_ll_get_ana_reg13_dldo_rzsel(void) {
 	sys_ana_reg13_t *r = (sys_ana_reg13_t*)(SOC_SYS_REG_BASE + (0x4d << 2));
-	return r->dpfms;
+	return r->dldo_rzsel;
 }
 
-static inline void sys_ll_set_ana_reg13_dtmpo_sel(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4d << 2)), 11, 0x3, v);
+static inline void sys_ll_set_ana_reg13_nc_10_11(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4d << 2)), 10, 0x3, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg13_dtmpo_sel(void) {
+static inline uint32_t sys_ll_get_ana_reg13_nc_10_11(void) {
 	sys_ana_reg13_t *r = (sys_ana_reg13_t*)(SOC_SYS_REG_BASE + (0x4d << 2));
-	return r->dtmpo_sel;
+	return r->nc_10_11;
 }
 
-static inline void sys_ll_set_ana_reg13_dmpoen(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4d << 2)), 13, 0x1, v);
+static inline void sys_ll_set_ana_reg13_vtrxspisel(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4d << 2)), 12, 0x3, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg13_dmpoen(void) {
+static inline uint32_t sys_ll_get_ana_reg13_vtrxspisel(void) {
 	sys_ana_reg13_t *r = (sys_ana_reg13_t*)(SOC_SYS_REG_BASE + (0x4d << 2));
-	return r->dmpoen;
+	return r->vtrxspisel;
 }
 
-static inline void sys_ll_set_ana_reg13_pavea_sel(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4d << 2)), 14, 0x3, v);
+static inline void sys_ll_set_ana_reg13_nc_14_19(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4d << 2)), 14, 0x3f, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg13_pavea_sel(void) {
+static inline uint32_t sys_ll_get_ana_reg13_nc_14_19(void) {
 	sys_ana_reg13_t *r = (sys_ana_reg13_t*)(SOC_SYS_REG_BASE + (0x4d << 2));
-	return r->pavea_sel;
+	return r->nc_14_19;
 }
 
-static inline void sys_ll_set_ana_reg13_dforcepfm(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4d << 2)), 16, 0x1, v);
+static inline void sys_ll_set_ana_reg13_aldo_czsel(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4d << 2)), 20, 0x7, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg13_dforcepfm(void) {
+static inline uint32_t sys_ll_get_ana_reg13_aldo_czsel(void) {
 	sys_ana_reg13_t *r = (sys_ana_reg13_t*)(SOC_SYS_REG_BASE + (0x4d << 2));
-	return r->dforcepfm;
+	return r->aldo_czsel;
 }
 
-static inline void sys_ll_set_ana_reg13_dcls(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4d << 2)), 17, 0x7, v);
+static inline void sys_ll_set_ana_reg13_aldo_rzsel(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4d << 2)), 23, 0x3, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg13_dcls(void) {
+static inline uint32_t sys_ll_get_ana_reg13_aldo_rzsel(void) {
 	sys_ana_reg13_t *r = (sys_ana_reg13_t*)(SOC_SYS_REG_BASE + (0x4d << 2));
-	return r->dcls;
+	return r->aldo_rzsel;
 }
 
-static inline void sys_ll_set_ana_reg13_dswrsten(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4d << 2)), 20, 0x1, v);
+static inline void sys_ll_set_ana_reg13_nc_25_27(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4d << 2)), 25, 0x7, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg13_dswrsten(void) {
+static inline uint32_t sys_ll_get_ana_reg13_nc_25_27(void) {
 	sys_ana_reg13_t *r = (sys_ana_reg13_t*)(SOC_SYS_REG_BASE + (0x4d << 2));
-	return r->dswrsten;
+	return r->nc_25_27;
 }
 
-static inline void sys_ll_set_ana_reg13_dripc(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4d << 2)), 21, 0x7, v);
-}
-
-static inline uint32_t sys_ll_get_ana_reg13_dripc(void) {
-	sys_ana_reg13_t *r = (sys_ana_reg13_t*)(SOC_SYS_REG_BASE + (0x4d << 2));
-	return r->dripc;
-}
-
-static inline void sys_ll_set_ana_reg13_drampc(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4d << 2)), 24, 0xf, v);
-}
-
-static inline uint32_t sys_ll_get_ana_reg13_drampc(void) {
-	sys_ana_reg13_t *r = (sys_ana_reg13_t*)(SOC_SYS_REG_BASE + (0x4d << 2));
-	return r->drampc;
-}
-
-static inline void sys_ll_set_ana_reg13_drampcen(uint32_t v) {
+static inline void sys_ll_set_ana_reg13_psldo_swb(uint32_t v) {
 	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4d << 2)), 28, 0x1, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg13_drampcen(void) {
+static inline uint32_t sys_ll_get_ana_reg13_psldo_swb(void) {
 	sys_ana_reg13_t *r = (sys_ana_reg13_t*)(SOC_SYS_REG_BASE + (0x4d << 2));
-	return r->drampcen;
+	return r->psldo_swb;
 }
 
-static inline void sys_ll_set_ana_reg13_paenburst(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4d << 2)), 29, 0x1, v);
+static inline void sys_ll_set_ana_reg13_vpsramsel(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4d << 2)), 29, 0x3, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg13_paenburst(void) {
+static inline uint32_t sys_ll_get_ana_reg13_vpsramsel(void) {
 	sys_ana_reg13_t *r = (sys_ana_reg13_t*)(SOC_SYS_REG_BASE + (0x4d << 2));
-	return r->paenburst;
+	return r->vpsramsel;
 }
 
-static inline void sys_ll_set_ana_reg13_papfmen(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4d << 2)), 30, 0x1, v);
-}
-
-static inline uint32_t sys_ll_get_ana_reg13_papfmen(void) {
-	sys_ana_reg13_t *r = (sys_ana_reg13_t*)(SOC_SYS_REG_BASE + (0x4d << 2));
-	return r->papfmen;
-}
-
-static inline void sys_ll_set_ana_reg13_enbuckpa(uint32_t v) {
+static inline void sys_ll_set_ana_reg13_enpsram(uint32_t v) {
 	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4d << 2)), 31, 0x1, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg13_enbuckpa(void) {
+static inline uint32_t sys_ll_get_ana_reg13_enpsram(void) {
 	sys_ana_reg13_t *r = (sys_ana_reg13_t*)(SOC_SYS_REG_BASE + (0x4d << 2));
-	return r->enbuckpa;
+	return r->enpsram;
 }
 
 //reg ana_reg14:
@@ -6571,12 +7944,32 @@ static inline uint32_t sys_ll_get_ana_reg14_value(void) {
 	return sys_ll_get_analog_reg_value(SOC_SYS_REG_BASE + (0x4e << 2));
 }
 
-static inline void sys_ll_set_ana_reg14_chs(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4e << 2)), 0, 0xffff, v);
+static inline void sys_ll_set_ana_reg14_reg(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4e << 2)), 0, 0x3ff, v);
 }
 
-static inline void sys_ll_set_ana_reg14_en_lpmod(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4e << 2)), 16, 0x1, v);
+static inline void sys_ll_set_ana_reg14_en_adcmode(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4e << 2)), 10, 0x1, v);
+}
+
+static inline void sys_ll_set_ana_reg14_en_out_test1v(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4e << 2)), 11, 0x1, v);
+}
+
+static inline void sys_ll_set_ana_reg14_na(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4e << 2)), 12, 0x1, v);
+}
+
+static inline void sys_ll_set_ana_reg14_sel_seri_cap(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4e << 2)), 13, 0x1, v);
+}
+
+static inline void sys_ll_set_ana_reg14_en_seri_cap(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4e << 2)), 14, 0x1, v);
+}
+
+static inline void sys_ll_set_ana_reg14_cal_ctrl(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4e << 2)), 15, 0x3, v);
 }
 
 static inline void sys_ll_set_ana_reg14_cal_vth(uint32_t v) {
@@ -6613,51 +8006,35 @@ static inline uint32_t sys_ll_get_ana_reg15_value(void) {
 	return sys_ll_get_analog_reg_value(SOC_SYS_REG_BASE + (0x4f << 2));
 }
 
-static inline void sys_ll_set_ana_reg15_cal_number1v(uint32_t v) {
+static inline void sys_ll_set_ana_reg15_test_number1v(uint32_t v) {
 	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4f << 2)), 0, 0xf, v);
 }
 
-static inline void sys_ll_set_ana_reg15_cal_period1v(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4f << 2)), 4, 0x1ff, v);
-}
-
-static inline void sys_ll_set_ana_reg15_test_number1v(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4f << 2)), 13, 0xf, v);
-}
-
 static inline void sys_ll_set_ana_reg15_test_period1v(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4f << 2)), 17, 0xf, v);
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4f << 2)), 4, 0xf, v);
 }
 
-static inline void sys_ll_set_ana_reg15_nc_21_21(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4f << 2)), 21, 0x1, v);
+static inline void sys_ll_set_ana_reg15_chs(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4f << 2)), 8, 0xffff, v);
 }
 
 static inline void sys_ll_set_ana_reg15_chs_sel_cal1v(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4f << 2)), 22, 0xf, v);
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4f << 2)), 24, 0xf, v);
 }
 
 static inline void sys_ll_set_ana_reg15_cal_done_clr1v(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4f << 2)), 26, 0x1, v);
-}
-
-static inline void sys_ll_set_ana_reg15_en_cal_force1v(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4f << 2)), 27, 0x1, v);
-}
-
-static inline void sys_ll_set_ana_reg15_en_cal_auto1v(uint32_t v) {
 	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4f << 2)), 28, 0x1, v);
 }
 
-static inline void sys_ll_set_ana_reg15_en_scm(uint32_t v) {
+static inline void sys_ll_set_ana_reg15_en_cal_force1v(uint32_t v) {
 	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4f << 2)), 29, 0x1, v);
 }
 
-static inline void sys_ll_set_ana_reg15_en_adcmod(uint32_t v) {
+static inline void sys_ll_set_ana_reg15_en_cal_auto1v(uint32_t v) {
 	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4f << 2)), 30, 0x1, v);
 }
 
-static inline void sys_ll_set_ana_reg15_enfsr1v(uint32_t v) {
+static inline void sys_ll_set_ana_reg15_en_scan(uint32_t v) {
 	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4f << 2)), 31, 0x1, v);
 }
 
@@ -6672,46 +8049,18 @@ static inline uint32_t sys_ll_get_ana_reg16_value(void) {
 }
 
 static inline void sys_ll_set_ana_reg16_int_en(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x50 << 2)), 0, 0x3ff, v);
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x50 << 2)), 0, 0xffff, v);
 }
 
 static inline void sys_ll_set_ana_reg16_int_en16(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x50 << 2)), 10, 0x1, v);
-}
-
-static inline void sys_ll_set_ana_reg16_nc_11_15(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x50 << 2)), 11, 0x1f, v);
-}
-
-static inline void sys_ll_set_ana_reg16_ckadc_sel(uint32_t v) {
 	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x50 << 2)), 16, 0x1, v);
 }
 
-static inline void sys_ll_set_ana_reg16_int_clr_sel1v(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x50 << 2)), 17, 0x1, v);
+static inline void sys_ll_set_ana_reg16_cal_number1v(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x50 << 2)), 19, 0xf, v);
 }
 
-static inline void sys_ll_set_ana_reg16_ctrl_ck2d(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x50 << 2)), 18, 0x1, v);
-}
-
-static inline void sys_ll_set_ana_reg16_ctrl_seri_cap(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x50 << 2)), 19, 0x1, v);
-}
-
-static inline void sys_ll_set_ana_reg16_en_testcmp1v(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x50 << 2)), 20, 0x1, v);
-}
-
-static inline void sys_ll_set_ana_reg16_en_man_wr1v(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x50 << 2)), 21, 0x1, v);
-}
-
-static inline void sys_ll_set_ana_reg16_en_manmod1v(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x50 << 2)), 22, 0x1, v);
-}
-
-static inline void sys_ll_set_ana_reg16_cap_calspi1v(uint32_t v) {
+static inline void sys_ll_set_ana_reg16_cal_period1v(uint32_t v) {
 	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x50 << 2)), 23, 0x1ff, v);
 }
 
@@ -6726,23 +8075,39 @@ static inline uint32_t sys_ll_get_ana_reg17_value(void) {
 }
 
 static inline void sys_ll_set_ana_reg17_int_clr(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x51 << 2)), 0, 0x3ff, v);
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x51 << 2)), 0, 0xffff, v);
 }
 
 static inline void sys_ll_set_ana_reg17_int_clr16(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x51 << 2)), 10, 0x1, v);
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x51 << 2)), 16, 0x1, v);
 }
 
-static inline void sys_ll_set_ana_reg17_nc_11_11(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x51 << 2)), 11, 0x1, v);
+static inline void sys_ll_set_ana_reg17_ck_adc_sel(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x51 << 2)), 17, 0x1, v);
 }
 
-static inline void sys_ll_set_ana_reg17_int_clr_cal(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x51 << 2)), 12, 0x3ff, v);
+static inline void sys_ll_set_ana_reg17_int_clr_sel(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x51 << 2)), 18, 0x1, v);
 }
 
-static inline void sys_ll_set_ana_reg17_int_en_cal(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x51 << 2)), 22, 0x3ff, v);
+static inline void sys_ll_set_ana_reg17_en_lpmod(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x51 << 2)), 19, 0x1, v);
+}
+
+static inline void sys_ll_set_ana_reg17_en_testcmp1v(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x51 << 2)), 20, 0x1, v);
+}
+
+static inline void sys_ll_set_ana_reg17_en_man_wr1v(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x51 << 2)), 21, 0x1, v);
+}
+
+static inline void sys_ll_set_ana_reg17_en_manmode1v(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x51 << 2)), 22, 0x1, v);
+}
+
+static inline void sys_ll_set_ana_reg17_cap_calspi1v(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x51 << 2)), 23, 0x1ff, v);
 }
 
 //reg ana_reg18:
@@ -6827,13 +8192,13 @@ static inline uint32_t sys_ll_get_ana_reg18_dacfb2st0v9(void) {
 	return r->dacfb2st0v9;
 }
 
-static inline void sys_ll_set_ana_reg18_nc1(uint32_t v) {
+static inline void sys_ll_set_ana_reg18_nc_8_8(uint32_t v) {
 	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x52 << 2)), 8, 0x1, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg18_nc1(void) {
+static inline uint32_t sys_ll_get_ana_reg18_nc_8_8(void) {
 	sys_ana_reg18_t *r = (sys_ana_reg18_t*)(SOC_SYS_REG_BASE + (0x52 << 2));
-	return r->nc1;
+	return r->nc_8_8;
 }
 
 static inline void sys_ll_set_ana_reg18_micbias_trm(uint32_t v) {
@@ -6881,19 +8246,32 @@ static inline uint32_t sys_ll_get_ana_reg18_adref_sel(void) {
 	return r->adref_sel;
 }
 
-static inline void sys_ll_set_ana_reg18_nc0(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x52 << 2)), 24, 0x3, v);
+static inline void sys_ll_set_ana_reg18_nc_24_29(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x52 << 2)), 24, 0x3f, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg18_nc0(void) {
+static inline uint32_t sys_ll_get_ana_reg18_nc_24_29(void) {
 	sys_ana_reg18_t *r = (sys_ana_reg18_t*)(SOC_SYS_REG_BASE + (0x52 << 2));
-	return r->nc0;
+	return r->nc_24_29;
+}
+
+static inline void sys_ll_set_ana_reg18_lchck_sel(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x52 << 2)), 30, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg18_lchck_sel(void) {
+	sys_ana_reg18_t *r = (sys_ana_reg18_t*)(SOC_SYS_REG_BASE + (0x52 << 2));
+	return r->lchck_sel;
 }
 
 static inline void sys_ll_set_ana_reg18_spi_dacckpssel(uint32_t v) {
 	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x52 << 2)), 31, 0x1, v);
 }
 
+static inline uint32_t sys_ll_get_ana_reg18_spi_dacckpssel(void) {
+	sys_ana_reg18_t *r = (sys_ana_reg18_t*)(SOC_SYS_REG_BASE + (0x52 << 2));
+	return r->spi_dacckpssel;
+}
 //reg ana_reg19:
 
 static inline void sys_ll_set_ana_reg19_value(uint32_t v) {
@@ -7166,15 +8544,6 @@ static inline uint32_t sys_ll_get_ana_reg20_endaccal(void) {
 	return r->endaccal;
 }
 
-static inline void sys_ll_set_ana_reg20_nc2(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x54 << 2)), 15, 0x1, v);
-}
-
-static inline uint32_t sys_ll_get_ana_reg20_nc2(void) {
-	sys_ana_reg20_t *r = (sys_ana_reg20_t*)(SOC_SYS_REG_BASE + (0x54 << 2));
-	return r->nc2;
-}
-
 static inline void sys_ll_set_ana_reg20_lendcoc(uint32_t v) {
 	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x54 << 2)), 16, 0x1, v);
 }
@@ -7182,15 +8551,6 @@ static inline void sys_ll_set_ana_reg20_lendcoc(uint32_t v) {
 static inline uint32_t sys_ll_get_ana_reg20_lendcoc(void) {
 	sys_ana_reg20_t *r = (sys_ana_reg20_t*)(SOC_SYS_REG_BASE + (0x54 << 2));
 	return r->lendcoc;
-}
-
-static inline void sys_ll_set_ana_reg20_nc1(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x54 << 2)), 17, 0x1, v);
-}
-
-static inline uint32_t sys_ll_get_ana_reg20_nc1(void) {
-	sys_ana_reg20_t *r = (sys_ana_reg20_t*)(SOC_SYS_REG_BASE + (0x54 << 2));
-	return r->nc1;
 }
 
 static inline void sys_ll_set_ana_reg20_lenvcmd(uint32_t v) {
@@ -7209,15 +8569,6 @@ static inline void sys_ll_set_ana_reg20_dacdrven(uint32_t v) {
 static inline uint32_t sys_ll_get_ana_reg20_dacdrven(void) {
 	sys_ana_reg20_t *r = (sys_ana_reg20_t*)(SOC_SYS_REG_BASE + (0x54 << 2));
 	return r->dacdrven;
-}
-
-static inline void sys_ll_set_ana_reg20_nc0(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x54 << 2)), 20, 0x1, v);
-}
-
-static inline uint32_t sys_ll_get_ana_reg20_nc0(void) {
-	sys_ana_reg20_t *r = (sys_ana_reg20_t*)(SOC_SYS_REG_BASE + (0x54 << 2));
-	return r->nc0;
 }
 
 static inline void sys_ll_set_ana_reg20_daclen(uint32_t v) {
@@ -7284,15 +8635,6 @@ static inline uint32_t sys_ll_get_ana_reg21_lmdcin(void) {
 	return r->lmdcin;
 }
 
-static inline void sys_ll_set_ana_reg21_nc1(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x55 << 2)), 8, 0xff, v);
-}
-
-static inline uint32_t sys_ll_get_ana_reg21_nc1(void) {
-	sys_ana_reg21_t *r = (sys_ana_reg21_t*)(SOC_SYS_REG_BASE + (0x55 << 2));
-	return r->nc1;
-}
-
 static inline void sys_ll_set_ana_reg21_spirst_ovc(uint32_t v) {
 	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x55 << 2)), 16, 0x1, v);
 }
@@ -7300,15 +8642,6 @@ static inline void sys_ll_set_ana_reg21_spirst_ovc(uint32_t v) {
 static inline uint32_t sys_ll_get_ana_reg21_spirst_ovc(void) {
 	sys_ana_reg21_t *r = (sys_ana_reg21_t*)(SOC_SYS_REG_BASE + (0x55 << 2));
 	return r->spirst_ovc;
-}
-
-static inline void sys_ll_set_ana_reg21_nc0(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x55 << 2)), 17, 0x1, v);
-}
-
-static inline uint32_t sys_ll_get_ana_reg21_nc0(void) {
-	sys_ana_reg21_t *r = (sys_ana_reg21_t*)(SOC_SYS_REG_BASE + (0x55 << 2));
-	return r->nc0;
 }
 
 static inline void sys_ll_set_ana_reg21_enidacl(uint32_t v) {
@@ -7429,53 +8762,17 @@ static inline uint32_t sys_ll_get_ana_reg22_value(void) {
 	return sys_ll_get_analog_reg_value(SOC_SYS_REG_BASE + (0x56 << 2));
 }
 
-static inline void sys_ll_set_ana_reg22_ictrl_dsppll(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x56 << 2)), 0, 0xf, v);
+static inline void sys_ll_set_ana_reg22_nc_0_0(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x56 << 2)), 0, 0x1, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg22_ictrl_dsppll(void) {
+static inline uint32_t sys_ll_get_ana_reg22_nc_0_0(void) {
 	sys_ana_reg22_t *r = (sys_ana_reg22_t*)(SOC_SYS_REG_BASE + (0x56 << 2));
-	return r->ictrl_dsppll;
-}
-
-static inline void sys_ll_set_ana_reg22_nc_4_18(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x56 << 2)), 4, 0x7fff, v);
-}
-
-static inline uint32_t sys_ll_get_ana_reg22_nc_4_18(void) {
-	sys_ana_reg22_t *r = (sys_ana_reg22_t*)(SOC_SYS_REG_BASE + (0x56 << 2));
-	return r->nc_4_18;
-}
-
-static inline void sys_ll_set_ana_reg22_mode(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x56 << 2)), 19, 0x1, v);
-}
-
-static inline uint32_t sys_ll_get_ana_reg22_mode(void) {
-	sys_ana_reg22_t *r = (sys_ana_reg22_t*)(SOC_SYS_REG_BASE + (0x56 << 2));
-	return r->mode;
-}
-
-static inline void sys_ll_set_ana_reg22_iamsel(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x56 << 2)), 20, 0x1, v);
-}
-
-static inline uint32_t sys_ll_get_ana_reg22_iamsel(void) {
-	sys_ana_reg22_t *r = (sys_ana_reg22_t*)(SOC_SYS_REG_BASE + (0x56 << 2));
-	return r->iamsel;
-}
-
-static inline void sys_ll_set_ana_reg22_hvref(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x56 << 2)), 21, 0x3, v);
-}
-
-static inline uint32_t sys_ll_get_ana_reg22_hvref(void) {
-	sys_ana_reg22_t *r = (sys_ana_reg22_t*)(SOC_SYS_REG_BASE + (0x56 << 2));
-	return r->hvref;
+	return r->nc_0_0;
 }
 
 static inline void sys_ll_set_ana_reg22_lvref(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x56 << 2)), 23, 0x3, v);
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x56 << 2)), 1, 0x3, v);
 }
 
 static inline uint32_t sys_ll_get_ana_reg22_lvref(void) {
@@ -7483,13 +8780,58 @@ static inline uint32_t sys_ll_get_ana_reg22_lvref(void) {
 	return r->lvref;
 }
 
-static inline void sys_ll_set_ana_reg22_nc_25_31(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x56 << 2)), 25, 0x7f, v);
+static inline void sys_ll_set_ana_reg22_hvref(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x56 << 2)), 3, 0x3, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg22_nc_25_31(void) {
+static inline uint32_t sys_ll_get_ana_reg22_hvref(void) {
 	sys_ana_reg22_t *r = (sys_ana_reg22_t*)(SOC_SYS_REG_BASE + (0x56 << 2));
-	return r->nc_25_31;
+	return r->hvref;
+}
+
+static inline void sys_ll_set_ana_reg22_bandm(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x56 << 2)), 5, 0x7f, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg22_bandm(void) {
+	sys_ana_reg22_t *r = (sys_ana_reg22_t*)(SOC_SYS_REG_BASE + (0x56 << 2));
+	return r->bandm;
+}
+
+static inline void sys_ll_set_ana_reg22_nc_12_23(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x56 << 2)), 12, 0xfff, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg22_nc_12_23(void) {
+	sys_ana_reg22_t *r = (sys_ana_reg22_t*)(SOC_SYS_REG_BASE + (0x56 << 2));
+	return r->nc_12_23;
+}
+
+static inline void sys_ll_set_ana_reg22_n_int(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x56 << 2)), 24, 0x3f, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg22_n_int(void) {
+	sys_ana_reg22_t *r = (sys_ana_reg22_t*)(SOC_SYS_REG_BASE + (0x56 << 2));
+	return r->n_int;
+}
+
+static inline void sys_ll_set_ana_reg22_nc_30_30(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x56 << 2)), 30, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg22_nc_30_30(void) {
+	sys_ana_reg22_t *r = (sys_ana_reg22_t*)(SOC_SYS_REG_BASE + (0x56 << 2));
+	return r->nc_30_30;
+}
+
+static inline void sys_ll_set_ana_reg22_errdet_en(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x56 << 2)), 31, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg22_errdet_en(void) {
+	sys_ana_reg22_t *r = (sys_ana_reg22_t*)(SOC_SYS_REG_BASE + (0x56 << 2));
+	return r->errdet_en;
 }
 
 //reg ana_reg23:
@@ -7502,89 +8844,53 @@ static inline uint32_t sys_ll_get_ana_reg23_value(void) {
 	return sys_ll_get_analog_reg_value(SOC_SYS_REG_BASE + (0x57 << 2));
 }
 
-static inline void sys_ll_set_ana_reg23_camsel(uint32_t v) {
+static inline void sys_ll_set_ana_reg23_int_mod(uint32_t v) {
 	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 0, 0x1, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg23_camsel(void) {
+static inline uint32_t sys_ll_get_ana_reg23_int_mod(void) {
 	sys_ana_reg23_t *r = (sys_ana_reg23_t*)(SOC_SYS_REG_BASE + (0x57 << 2));
-	return r->camsel;
+	return r->int_mod;
 }
 
-static inline void sys_ll_set_ana_reg23_msw(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 1, 0x1ff, v);
+static inline void sys_ll_set_ana_reg23_nsyn(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 1, 0x1, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg23_msw(void) {
+static inline uint32_t sys_ll_get_ana_reg23_nsyn(void) {
 	sys_ana_reg23_t *r = (sys_ana_reg23_t*)(SOC_SYS_REG_BASE + (0x57 << 2));
-	return r->msw;
+	return r->nsyn;
 }
 
-static inline void sys_ll_set_ana_reg23_tstcken_dpll(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 10, 0x1, v);
+static inline void sys_ll_set_ana_reg23_open_enb(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 2, 0x1, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg23_tstcken_dpll(void) {
+static inline uint32_t sys_ll_get_ana_reg23_open_enb(void) {
 	sys_ana_reg23_t *r = (sys_ana_reg23_t*)(SOC_SYS_REG_BASE + (0x57 << 2));
-	return r->tstcken_dpll;
+	return r->open_enb;
 }
 
-static inline void sys_ll_set_ana_reg23_osccal_trig(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 11, 0x1, v);
+static inline void sys_ll_set_ana_reg23_reset(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 3, 0x1, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg23_osccal_trig(void) {
+static inline uint32_t sys_ll_get_ana_reg23_reset(void) {
 	sys_ana_reg23_t *r = (sys_ana_reg23_t*)(SOC_SYS_REG_BASE + (0x57 << 2));
-	return r->osccal_trig;
+	return r->reset;
 }
 
-static inline void sys_ll_set_ana_reg23_cnti(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 12, 0x1ff, v);
+static inline void sys_ll_set_ana_reg23_ioffset(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 4, 0x7, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg23_cnti(void) {
+static inline uint32_t sys_ll_get_ana_reg23_ioffset(void) {
 	sys_ana_reg23_t *r = (sys_ana_reg23_t*)(SOC_SYS_REG_BASE + (0x57 << 2));
-	return r->cnti;
-}
-
-static inline void sys_ll_set_ana_reg23_nc_21_21(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 21, 0x1, v);
-}
-
-static inline uint32_t sys_ll_get_ana_reg23_nc_21_21(void) {
-	sys_ana_reg23_t *r = (sys_ana_reg23_t*)(SOC_SYS_REG_BASE + (0x57 << 2));
-	return r->nc_21_21;
-}
-
-static inline void sys_ll_set_ana_reg23_spi_rst(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 22, 0x1, v);
-}
-
-static inline uint32_t sys_ll_get_ana_reg23_spi_rst(void) {
-	sys_ana_reg23_t *r = (sys_ana_reg23_t*)(SOC_SYS_REG_BASE + (0x57 << 2));
-	return r->spi_rst;
-}
-
-static inline void sys_ll_set_ana_reg23_closeloop_en(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 23, 0x1, v);
-}
-
-static inline uint32_t sys_ll_get_ana_reg23_closeloop_en(void) {
-	sys_ana_reg23_t *r = (sys_ana_reg23_t*)(SOC_SYS_REG_BASE + (0x57 << 2));
-	return r->closeloop_en;
-}
-
-static inline void sys_ll_set_ana_reg23_caltime(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 24, 0x1, v);
-}
-
-static inline uint32_t sys_ll_get_ana_reg23_caltime(void) {
-	sys_ana_reg23_t *r = (sys_ana_reg23_t*)(SOC_SYS_REG_BASE + (0x57 << 2));
-	return r->caltime;
+	return r->ioffset;
 }
 
 static inline void sys_ll_set_ana_reg23_lpfrz(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 25, 0x3, v);
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 7, 0xf, v);
 }
 
 static inline uint32_t sys_ll_get_ana_reg23_lpfrz(void) {
@@ -7592,8 +8898,80 @@ static inline uint32_t sys_ll_get_ana_reg23_lpfrz(void) {
 	return r->lpfrz;
 }
 
+static inline void sys_ll_set_ana_reg23_vsel(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 11, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg23_vsel(void) {
+	sys_ana_reg23_t *r = (sys_ana_reg23_t*)(SOC_SYS_REG_BASE + (0x57 << 2));
+	return r->vsel;
+}
+
+static inline void sys_ll_set_ana_reg23_nc_12_14(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 12, 0x7, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg23_nc_12_14(void) {
+	sys_ana_reg23_t *r = (sys_ana_reg23_t*)(SOC_SYS_REG_BASE + (0x57 << 2));
+	return r->nc_12_14;
+}
+
+static inline void sys_ll_set_ana_reg23_pwd_lockdet(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 15, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg23_pwd_lockdet(void) {
+	sys_ana_reg23_t *r = (sys_ana_reg23_t*)(SOC_SYS_REG_BASE + (0x57 << 2));
+	return r->pwd_lockdet;
+}
+
+static inline void sys_ll_set_ana_reg23_nc_16_17(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 16, 0x3, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg23_nc_16_17(void) {
+	sys_ana_reg23_t *r = (sys_ana_reg23_t*)(SOC_SYS_REG_BASE + (0x57 << 2));
+	return r->nc_16_17;
+}
+
+static inline void sys_ll_set_ana_reg23_spi_trigger(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 18, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg23_spi_trigger(void) {
+	sys_ana_reg23_t *r = (sys_ana_reg23_t*)(SOC_SYS_REG_BASE + (0x57 << 2));
+	return r->spi_trigger;
+}
+
+static inline void sys_ll_set_ana_reg23_manual(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 19, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg23_manual(void) {
+	sys_ana_reg23_t *r = (sys_ana_reg23_t*)(SOC_SYS_REG_BASE + (0x57 << 2));
+	return r->manual;
+}
+
+static inline void sys_ll_set_ana_reg23_test_en(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 20, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg23_test_en(void) {
+	sys_ana_reg23_t *r = (sys_ana_reg23_t*)(SOC_SYS_REG_BASE + (0x57 << 2));
+	return r->test_en;
+}
+
+static inline void sys_ll_set_ana_reg23_nc_21_22(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 21, 0x3, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg23_nc_21_22(void) {
+	sys_ana_reg23_t *r = (sys_ana_reg23_t*)(SOC_SYS_REG_BASE + (0x57 << 2));
+	return r->nc_21_22;
+}
+
 static inline void sys_ll_set_ana_reg23_icp(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 27, 0xf, v);
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 23, 0x3, v);
 }
 
 static inline uint32_t sys_ll_get_ana_reg23_icp(void) {
@@ -7601,15 +8979,485 @@ static inline uint32_t sys_ll_get_ana_reg23_icp(void) {
 	return r->icp;
 }
 
-static inline void sys_ll_set_ana_reg23_cp2ctrl(uint32_t v) {
+static inline void sys_ll_set_ana_reg23_nc_25_27(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 25, 0x7, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg23_nc_25_27(void) {
+	sys_ana_reg23_t *r = (sys_ana_reg23_t*)(SOC_SYS_REG_BASE + (0x57 << 2));
+	return r->nc_25_27;
+}
+
+static inline void sys_ll_set_ana_reg23_errdet_spien(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 28, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg23_errdet_spien(void) {
+	sys_ana_reg23_t *r = (sys_ana_reg23_t*)(SOC_SYS_REG_BASE + (0x57 << 2));
+	return r->errdet_spien;
+}
+
+static inline void sys_ll_set_ana_reg23_dlysel(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 29, 0x3, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg23_dlysel(void) {
+	sys_ana_reg23_t *r = (sys_ana_reg23_t*)(SOC_SYS_REG_BASE + (0x57 << 2));
+	return r->dlysel;
+}
+
+static inline void sys_ll_set_ana_reg23_audioen(uint32_t v) {
 	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x57 << 2)), 31, 0x1, v);
 }
 
-static inline uint32_t sys_ll_get_ana_reg23_cp2ctrl(void) {
+static inline uint32_t sys_ll_get_ana_reg23_audioen(void) {
 	sys_ana_reg23_t *r = (sys_ana_reg23_t*)(SOC_SYS_REG_BASE + (0x57 << 2));
-	return r->cp2ctrl;
+	return r->audioen;
 }
 
+//reg ana_reg24:
+
+static inline void sys_ll_set_ana_reg24_value(uint32_t v) {
+	sys_ll_set_analog_reg_value((SOC_SYS_REG_BASE + (0x58 << 2)), v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg24_value(void) {
+	return sys_ll_get_analog_reg_value(SOC_SYS_REG_BASE + (0x58 << 2));
+}
+
+static inline void sys_ll_set_ana_reg24_int_clr_cal(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x58 << 2)), 0, 0xffff, v);
+}
+
+static inline void sys_ll_set_ana_reg24_int_en_cal(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x58 << 2)), 16, 0xffff, v);
+}
+
+//reg ana_reg25:
+
+static inline void sys_ll_set_ana_reg25_value(uint32_t v) {
+	sys_ll_set_analog_reg_value((SOC_SYS_REG_BASE + (0x59 << 2)), v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg25_value(void) {
+	return sys_ll_get_analog_reg_value(SOC_SYS_REG_BASE + (0x59 << 2));
+}
+
+static inline void sys_ll_set_ana_reg25_int_mod(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x59 << 2)), 0, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg25_int_mod(void) {
+	sys_ana_reg25_t *r = (sys_ana_reg25_t*)(SOC_SYS_REG_BASE + (0x59 << 2));
+	return r->int_mod;
+}
+
+static inline void sys_ll_set_ana_reg25_nsyn(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x59 << 2)), 1, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg25_nsyn(void) {
+	sys_ana_reg25_t *r = (sys_ana_reg25_t*)(SOC_SYS_REG_BASE + (0x59 << 2));
+	return r->nsyn;
+}
+
+static inline void sys_ll_set_ana_reg25_open_enb(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x59 << 2)), 2, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg25_open_enb(void) {
+	sys_ana_reg25_t *r = (sys_ana_reg25_t*)(SOC_SYS_REG_BASE + (0x59 << 2));
+	return r->open_enb;
+}
+
+static inline void sys_ll_set_ana_reg25_reset(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x59 << 2)), 3, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg25_reset(void) {
+	sys_ana_reg25_t *r = (sys_ana_reg25_t*)(SOC_SYS_REG_BASE + (0x59 << 2));
+	return r->reset;
+}
+
+static inline void sys_ll_set_ana_reg25_ioffsetl(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x59 << 2)), 4, 0x7, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg25_ioffsetl(void) {
+	sys_ana_reg25_t *r = (sys_ana_reg25_t*)(SOC_SYS_REG_BASE + (0x59 << 2));
+	return r->ioffsetl;
+}
+
+static inline void sys_ll_set_ana_reg25_lpfrz(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x59 << 2)), 7, 0xf, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg25_lpfrz(void) {
+	sys_ana_reg25_t *r = (sys_ana_reg25_t*)(SOC_SYS_REG_BASE + (0x59 << 2));
+	return r->lpfrz;
+}
+
+static inline void sys_ll_set_ana_reg25_vsel(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x59 << 2)), 11, 0x7, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg25_vsel(void) {
+	sys_ana_reg25_t *r = (sys_ana_reg25_t*)(SOC_SYS_REG_BASE + (0x59 << 2));
+	return r->vsel;
+}
+
+static inline void sys_ll_set_ana_reg25_vsel_cal(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x59 << 2)), 14, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg25_vsel_cal(void) {
+	sys_ana_reg25_t *r = (sys_ana_reg25_t*)(SOC_SYS_REG_BASE + (0x59 << 2));
+	return r->vsel_cal;
+}
+
+static inline void sys_ll_set_ana_reg25_pwd_lockdet(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x59 << 2)), 15, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg25_pwd_lockdet(void) {
+	sys_ana_reg25_t *r = (sys_ana_reg25_t*)(SOC_SYS_REG_BASE + (0x59 << 2));
+	return r->pwd_lockdet;
+}
+
+static inline void sys_ll_set_ana_reg25_lockdet_bypass(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x59 << 2)), 16, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg25_lockdet_bypass(void) {
+	sys_ana_reg25_t *r = (sys_ana_reg25_t*)(SOC_SYS_REG_BASE + (0x59 << 2));
+	return r->lockdet_bypass;
+}
+
+static inline void sys_ll_set_ana_reg25_ckref_loop_sel(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x59 << 2)), 17, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg25_ckref_loop_sel(void) {
+	sys_ana_reg25_t *r = (sys_ana_reg25_t*)(SOC_SYS_REG_BASE + (0x59 << 2));
+	return r->ckref_loop_sel;
+}
+
+static inline void sys_ll_set_ana_reg25_spi_trigger(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x59 << 2)), 18, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg25_spi_trigger(void) {
+	sys_ana_reg25_t *r = (sys_ana_reg25_t*)(SOC_SYS_REG_BASE + (0x59 << 2));
+	return r->spi_trigger;
+}
+
+static inline void sys_ll_set_ana_reg25_manual(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x59 << 2)), 19, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg25_manual(void) {
+	sys_ana_reg25_t *r = (sys_ana_reg25_t*)(SOC_SYS_REG_BASE + (0x59 << 2));
+	return r->manual;
+}
+
+static inline void sys_ll_set_ana_reg25_test_ckaudio_en(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x59 << 2)), 20, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg25_test_ckaudio_en(void) {
+	sys_ana_reg25_t *r = (sys_ana_reg25_t*)(SOC_SYS_REG_BASE + (0x59 << 2));
+	return r->test_ckaudio_en;
+}
+
+static inline void sys_ll_set_ana_reg25_ck2xen(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x59 << 2)), 21, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg25_ck2xen(void) {
+	sys_ana_reg25_t *r = (sys_ana_reg25_t*)(SOC_SYS_REG_BASE + (0x59 << 2));
+	return r->ck2xen;
+}
+
+static inline void sys_ll_set_ana_reg25_icp(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x59 << 2)), 22, 0x3, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg25_icp(void) {
+	sys_ana_reg25_t *r = (sys_ana_reg25_t*)(SOC_SYS_REG_BASE + (0x59 << 2));
+	return r->icp;
+}
+
+static inline void sys_ll_set_ana_reg25_cktst_sel(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x59 << 2)), 24, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg25_cktst_sel(void) {
+	sys_ana_reg25_t *r = (sys_ana_reg25_t*)(SOC_SYS_REG_BASE + (0x59 << 2));
+	return r->cktst_sel;
+}
+
+static inline void sys_ll_set_ana_reg25_edgesel_nck(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x59 << 2)), 25, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg25_edgesel_nck(void) {
+	sys_ana_reg25_t *r = (sys_ana_reg25_t*)(SOC_SYS_REG_BASE + (0x59 << 2));
+	return r->edgesel_nck;
+}
+
+static inline void sys_ll_set_ana_reg25_nloaddlyen(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x59 << 2)), 26, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg25_nloaddlyen(void) {
+	sys_ana_reg25_t *r = (sys_ana_reg25_t*)(SOC_SYS_REG_BASE + (0x59 << 2));
+	return r->nloaddlyen;
+}
+
+static inline void sys_ll_set_ana_reg25_bypass_caldone_auto(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x59 << 2)), 27, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg25_bypass_caldone_auto(void) {
+	sys_ana_reg25_t *r = (sys_ana_reg25_t*)(SOC_SYS_REG_BASE + (0x59 << 2));
+	return r->bypass_caldone_auto;
+}
+
+static inline void sys_ll_set_ana_reg25_cal_res_spi(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x59 << 2)), 28, 0x7, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg25_cal_res_spi(void) {
+	sys_ana_reg25_t *r = (sys_ana_reg25_t*)(SOC_SYS_REG_BASE + (0x59 << 2));
+	return r->cal_res_spi;
+}
+
+static inline void sys_ll_set_ana_reg25_audioen(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x59 << 2)), 31, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg25_audioen(void) {
+	sys_ana_reg25_t *r = (sys_ana_reg25_t*)(SOC_SYS_REG_BASE + (0x59 << 2));
+	return r->audioen;
+}
+
+//reg ana_reg26:
+
+static inline void sys_ll_set_ana_reg26_value(uint32_t v) {
+	sys_ll_set_analog_reg_value((SOC_SYS_REG_BASE + (0x5a << 2)), v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg26_value(void) {
+	return sys_ll_get_analog_reg_value(SOC_SYS_REG_BASE + (0x5a << 2));
+}
+
+static inline void sys_ll_set_ana_reg26_n(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x5a << 2)), 0, 0x3fffffff, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg26_n(void) {
+	sys_ana_reg26_t *r = (sys_ana_reg26_t*)(SOC_SYS_REG_BASE + (0x5a << 2));
+	return r->n;
+}
+
+static inline void sys_ll_set_ana_reg26_calres_spien(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x5a << 2)), 30, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg26_calres_spien(void) {
+	sys_ana_reg26_t *r = (sys_ana_reg26_t*)(SOC_SYS_REG_BASE + (0x5a << 2));
+	return r->calres_spien;
+}
+
+static inline void sys_ll_set_ana_reg26_calrefen(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x5a << 2)), 31, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg26_calrefen(void) {
+	sys_ana_reg26_t *r = (sys_ana_reg26_t*)(SOC_SYS_REG_BASE + (0x5a << 2));
+	return r->calrefen;
+}
+
+//reg ana_reg27:
+
+static inline void sys_ll_set_ana_reg27_value(uint32_t v) {
+	sys_ll_set_analog_reg_value((SOC_SYS_REG_BASE + (0x5b << 2)), v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg27_value(void) {
+	return sys_ll_get_analog_reg_value(SOC_SYS_REG_BASE + (0x5b << 2));
+}
+
+static inline void sys_ll_set_ana_reg27_isel(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x5b << 2)), 0, 0x3, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg27_isel(void) {
+	sys_ana_reg27_t *r = (sys_ana_reg27_t*)(SOC_SYS_REG_BASE + (0x5b << 2));
+	return r->isel;
+}
+
+static inline void sys_ll_set_ana_reg27_micirsel1(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x5b << 2)), 2, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg27_micirsel1(void) {
+	sys_ana_reg27_t *r = (sys_ana_reg27_t*)(SOC_SYS_REG_BASE + (0x5b << 2));
+	return r->micirsel1;
+}
+
+static inline void sys_ll_set_ana_reg27_micdacit(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x5b << 2)), 3, 0x3, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg27_micdacit(void) {
+	sys_ana_reg27_t *r = (sys_ana_reg27_t*)(SOC_SYS_REG_BASE + (0x5b << 2));
+	return r->micdacit;
+}
+
+static inline void sys_ll_set_ana_reg27_micdacih(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x5b << 2)), 5, 0xff, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg27_micdacih(void) {
+	sys_ana_reg27_t *r = (sys_ana_reg27_t*)(SOC_SYS_REG_BASE + (0x5b << 2));
+	return r->micdacih;
+}
+
+static inline void sys_ll_set_ana_reg27_micsingleen(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x5b << 2)), 13, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg27_micsingleen(void) {
+	sys_ana_reg27_t *r = (sys_ana_reg27_t*)(SOC_SYS_REG_BASE + (0x5b << 2));
+	return r->micsingleen;
+}
+
+static inline void sys_ll_set_ana_reg27_dccompen(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x5b << 2)), 14, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg27_dccompen(void) {
+	sys_ana_reg27_t *r = (sys_ana_reg27_t*)(SOC_SYS_REG_BASE + (0x5b << 2));
+	return r->dccompen;
+}
+
+static inline void sys_ll_set_ana_reg27_micgain(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x5b << 2)), 15, 0xf, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg27_micgain(void) {
+	sys_ana_reg27_t *r = (sys_ana_reg27_t*)(SOC_SYS_REG_BASE + (0x5b << 2));
+	return r->micgain;
+}
+
+static inline void sys_ll_set_ana_reg27_micdacen(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x5b << 2)), 19, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg27_micdacen(void) {
+	sys_ana_reg27_t *r = (sys_ana_reg27_t*)(SOC_SYS_REG_BASE + (0x5b << 2));
+	return r->micdacen;
+}
+
+static inline void sys_ll_set_ana_reg27_stg2lsen1v(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x5b << 2)), 20, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg27_stg2lsen1v(void) {
+	sys_ana_reg27_t *r = (sys_ana_reg27_t*)(SOC_SYS_REG_BASE + (0x5b << 2));
+	return r->stg2lsen1v;
+}
+
+static inline void sys_ll_set_ana_reg27_openloopcal1v(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x5b << 2)), 21, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg27_openloopcal1v(void) {
+	sys_ana_reg27_t *r = (sys_ana_reg27_t*)(SOC_SYS_REG_BASE + (0x5b << 2));
+	return r->openloopcal1v;
+}
+
+static inline void sys_ll_set_ana_reg27_callatch(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x5b << 2)), 22, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg27_callatch(void) {
+	sys_ana_reg27_t *r = (sys_ana_reg27_t*)(SOC_SYS_REG_BASE + (0x5b << 2));
+	return r->callatch;
+}
+
+static inline void sys_ll_set_ana_reg27_vcmsel(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x5b << 2)), 23, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg27_vcmsel(void) {
+	sys_ana_reg27_t *r = (sys_ana_reg27_t*)(SOC_SYS_REG_BASE + (0x5b << 2));
+	return r->vcmsel;
+}
+
+static inline void sys_ll_set_ana_reg27_dwamode(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x5b << 2)), 24, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg27_dwamode(void) {
+	sys_ana_reg27_t *r = (sys_ana_reg27_t*)(SOC_SYS_REG_BASE + (0x5b << 2));
+	return r->dwamode;
+}
+
+static inline void sys_ll_set_ana_reg27_r2ren(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x5b << 2)), 25, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg27_r2ren(void) {
+	sys_ana_reg27_t *r = (sys_ana_reg27_t*)(SOC_SYS_REG_BASE + (0x5b << 2));
+	return r->r2ren;
+}
+
+static inline void sys_ll_set_ana_reg27_nc_26_27(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x5b << 2)), 26, 0x3, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg27_nc_26_27(void) {
+	sys_ana_reg27_t *r = (sys_ana_reg27_t*)(SOC_SYS_REG_BASE + (0x5b << 2));
+	return r->nc_26_27;
+}
+
+static inline void sys_ll_set_ana_reg27_micen(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x5b << 2)), 28, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg27_micen(void) {
+	sys_ana_reg27_t *r = (sys_ana_reg27_t*)(SOC_SYS_REG_BASE + (0x5b << 2));
+	return r->micen;
+}
+
+static inline void sys_ll_set_ana_reg27_rst(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x5b << 2)), 29, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg27_rst(void) {
+	sys_ana_reg27_t *r = (sys_ana_reg27_t*)(SOC_SYS_REG_BASE + (0x5b << 2));
+	return r->rst;
+}
+
+static inline void sys_ll_set_ana_reg27_bpdwa1v(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x5b << 2)), 30, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg27_bpdwa1v(void) {
+	sys_ana_reg27_t *r = (sys_ana_reg27_t*)(SOC_SYS_REG_BASE + (0x5b << 2));
+	return r->bpdwa1v;
+}
+
+static inline void sys_ll_set_ana_reg27_hcen1stg(uint32_t v) {
+	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x5b << 2)), 31, 0x1, v);
+}
+
+static inline uint32_t sys_ll_get_ana_reg27_hcen1stg(void) {
+	sys_ana_reg27_t *r = (sys_ana_reg27_t*)(SOC_SYS_REG_BASE + (0x5b << 2));
+	return r->hcen1stg;
+}
 #ifdef __cplusplus
 }
 #endif

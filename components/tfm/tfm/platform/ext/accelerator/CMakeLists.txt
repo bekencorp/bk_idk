@@ -10,9 +10,15 @@ cmake_policy(SET CMP0079 NEW)
 if(BL1 AND PLATFORM_DEFAULT_BL1)
     add_library(bl1_crypto_hw STATIC)
 endif()
+
 if(BL2)
     add_library(bl2_crypto_hw STATIC)
 endif()
+
+if(TEST_NS)
+    add_library(test_ns_crypto_hw STATIC)
+endif()
+
 add_library(crypto_service_crypto_hw STATIC)
 
 add_subdirectory(${CRYPTO_HW_ACCELERATOR_TYPE})

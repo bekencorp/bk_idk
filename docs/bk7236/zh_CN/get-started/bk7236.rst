@@ -6,7 +6,6 @@ BK7236
 开发板简介
 ------------------------
 
- - 为单核 CM33 架构；
  - 支持 FreeRTOS V10.4；
 
 .. figure:: ../../_static/demo_board_7236.png

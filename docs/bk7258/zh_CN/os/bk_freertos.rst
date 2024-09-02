@@ -59,7 +59,7 @@ SMP简介
 
  - Armino平台FreeRTOS SMP架构使用的是内核代码路径: components/os_source/freertos_smp
  - 当涉及到多处理器系统（Multiprocessor Systems）时，Symmetric Multiprocessing（SMP）是一种常见的架构。
- - BK7258 支持CM33双核FreeRTOS SMP架构
+ - BK7258 支持FreeRTOS SMP架构
  - 以下是对SMP的基本概念、在FreeRTOS中实现SMP的目的和优势的简要介绍：
 
 Symmetric Multiprocessing（SMP）的基本概念：
@@ -110,7 +110,7 @@ Symmetric Multiprocessing（SMP）的基本概念：
     SMP 架构共享资源同步
 
 1. **Task间共享资源同步**：
-   
+
     - 操作系统的信号量(Semaphore)
     - 操作系统的同步锁(Mutex)
     - 关调度
@@ -188,11 +188,11 @@ Symmetric Multiprocessing（SMP）的基本概念：
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
  - BK7258 默认app工程是AMP架构
- - BK7258 smp工程是双核FreeRTOS SMP架构, 工程配置如下::
+ - BK7258 smp工程是FreeRTOS SMP架构, 工程配置如下::
 
     CONFIG_CPU_CNT=2
     CONFIG_SOC_SMP=y
-    CONFIG_SOC_BK7236_SMP_TEMP=y
+    CONFIG_SOC_BK7258_SMP_TEMP=y
 
     CONFIG_FREERTOS_SMP=y
     CONFIG_FREERTOS_SMP_TEMP=y

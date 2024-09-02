@@ -5,8 +5,8 @@
 
 #if CONFIG_EASY_FLASH
 
-#if !CONFIG_EASY_FLASH_V4 && !CONFIG_EASY_FLASH_V3
-#error "you shold config CONFIG_EASY_FLASH_V4 or CONFIG_EASY_FLASH_V3"
+#if !CONFIG_EASY_FLASH_V4
+#error "you shold config CONFIG_EASY_FLASH_V4"
 #endif
 
 #if CONFIG_EASY_FLASH_V4

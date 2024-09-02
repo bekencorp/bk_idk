@@ -11,12 +11,24 @@
 *                      Function Declarations
 *******************************************************************************/
 #if CONFIG_USB_MAILBOX_SLAVE
+#if CONFIG_USB_MAILBOX_SLAVE_CPU0_TO_CPU1
+#define USB_MAILBOX_CHNL MB_CHNL_USB
+#elif CONFIG_USB_MAILBOX_SLAVE_CPU2_TO_CPU1
+#define USB_MAILBOX_CHNL CP1_MB_CHNL_USB
+#else
+#define USB_MAILBOX_CHNL MB_CHNL_USB
+#endif
 
 static beken_thread_t  s_usb_mailbox_slave_thread_hdl = NULL;
 static beken_queue_t s_usb_mailbox_slave_msg_que = NULL;
 static beken_queue_t s_usb_mailbox_slave_packet_msg_que = NULL;
+
 static beken_queue_t s_usb_mailbox_slave_uvc_packet_msg_que = NULL;
+static beken_queue_t s_usb_mailbox_slave_uvc_packet_dual_msg_que = NULL;
+
 static beken_semaphore_t s_usb_mailbox_slave_uvc_push_sem = NULL;
+static beken_semaphore_t s_usb_mailbox_slave_uvc_push_dual_sem = NULL;
+
 static beken_semaphore_t s_usb_mailbox_slave_disconnect_sem = NULL;
 static beken_semaphore_t s_usb_mailbox_slave_connect_sem = NULL;
 
@@ -24,6 +36,7 @@ static beken_semaphore_t s_usb_mailbox_slave_connect_sem = NULL;
 
 #define USB_MAILBOX_SLAVE_PACKET_QITEM_COUNT 1
 #define USB_MAILBOX_SLAVE_UVC_PACKET_QITEM_COUNT 1
+#define USB_MAILBOX_SLAVE_UVC_PACKET_DUAL_QITEM_COUNT 1
 
 #define USB_MAILBOX_SLAVE_QITEM_COUNT 10
 #define USB_MAILBOX_SLAVE_TASK_PRIO 2
@@ -85,7 +98,7 @@ camera_packet_t *bk_usb_mailbox_video_camera_packet_malloc(void)
 	mb_cmd.param3 = 0;
 
 	bk_err_t ret_m = BK_OK;
-	ret_m = task_mb_chnl_write(MB_CHNL_USB, &mb_cmd);
+	ret_m = task_mb_chnl_write(USB_MAILBOX_CHNL, &mb_cmd);
 	if(BK_OK != ret_m) {
 		LOGE("%s:line=%d:ret_m=%d\r\n", __func__, __LINE__, ret_m);
 		return NULL;
@@ -120,7 +133,7 @@ void bk_usb_mailbox_video_camera_packet_free(camera_packet_t *camera_packet)
 	mb_cmd.param1 = (uint32_t)((uint32_t *)camera_packet);
 	mb_cmd.param2 = 0;
 	mb_cmd.param3 = 0;
-	task_mb_chnl_write(MB_CHNL_USB, &mb_cmd);
+	task_mb_chnl_write(USB_MAILBOX_CHNL, &mb_cmd);
 
 #if 0
 	bk_err_t ret = kNoErr;
@@ -157,7 +170,7 @@ void bk_usb_mailbox_video_camera_packet_push(camera_packet_t *camera_packet)
 	mb_cmd.param2 = 0;
 	mb_cmd.param3 = 0;
 
-	task_mb_chnl_write(MB_CHNL_USB, &mb_cmd);
+	task_mb_chnl_write(USB_MAILBOX_CHNL, &mb_cmd);
 
 #if 1
 	bk_err_t ret = kNoErr;
@@ -186,6 +199,120 @@ void bk_usb_mailbox_video_camera_packet_push(camera_packet_t *camera_packet)
 
 }
 
+camera_packet_t *bk_usb_mailbox_video_camera_packet_dual_malloc(void)
+{
+    LOGD("a_malloc\n");
+	mb_chnl_cmd_t mb_cmd;
+
+	mb_cmd.hdr.cmd = USB_DRV_UVC_TRANSFER_DUAL_BUFFER_MALLOC;
+
+	mb_cmd.param1 = 0;
+	mb_cmd.param2 = 0;//uvc_id;
+	mb_cmd.param3 = 0;
+
+	bk_err_t ret_m = BK_OK;
+	ret_m = task_mb_chnl_write(USB_MAILBOX_CHNL, &mb_cmd);
+	if(BK_OK != ret_m) {
+		LOGE("%s:line=%d:ret_m=%d\r\n", __func__, __LINE__, ret_m);
+		return NULL;
+	}
+
+	bk_err_t ret = kNoErr;
+	bk_usb_mailbox_msg_t msg;
+	camera_packet_t *packet = NULL;
+
+	ret = rtos_pop_from_queue(&s_usb_mailbox_slave_uvc_packet_dual_msg_que, &msg, USB_MAILBOOX_SLAVE_PACKET_WAIT_MS);
+	if (kNoErr == ret) {
+		switch (msg.op) {
+			case USB_DRV_UVC_TRANSFER_DUAL_BUFFER_MALLOC:
+				packet = (camera_packet_t *)(msg.param.param1);
+				break;
+			default:
+				LOGE("[=]%s other op:%d\r\n",__func__, msg.op);
+				break;
+			}
+	} else {
+		LOGE("[=]%s WAIT TIMEOUT \r\n",__func__);
+	}
+
+	return packet;
+}
+
+void bk_usb_mailbox_video_camera_packet_dual_free(camera_packet_t *camera_packet)
+{
+	static mb_chnl_cmd_t mb_cmd;
+
+	mb_cmd.hdr.cmd = USB_DRV_UVC_TRANSFER_DUAL_BUFFER_FREE;
+	mb_cmd.param1 = (uint32_t)((uint32_t *)camera_packet);
+	mb_cmd.param2 = 0;
+	mb_cmd.param3 = 0;
+	task_mb_chnl_write(USB_MAILBOX_CHNL, &mb_cmd);
+
+#if 0
+	bk_err_t ret = kNoErr;
+	bk_usb_mailbox_msg_t msg;
+
+	LOGI("[=]%s wait free callback\r\n", __func__);
+	ret = rtos_pop_from_queue(&s_usb_mailbox_slave_packet_msg_que, &msg, BEKEN_WAIT_FOREVER);
+	if (kNoErr == ret) {
+		switch (msg.op) {
+			case USB_DRV_UVC_TRANSFER_BUFFER_FREE:
+				break;
+			default:
+				break;
+			}
+	}
+#endif
+}
+
+camera_packet_t *bk_usb_mailbox_video_camera_packet_dual_pop(void)
+{
+	return NULL;
+}
+
+void bk_usb_mailbox_video_camera_packet_dual_push(camera_packet_t *camera_packet)
+{
+	static mb_chnl_cmd_t mb_cmd;
+
+#if CONFIG_CACHE_ENABLE
+	flush_all_dcache();
+#endif
+
+	mb_cmd.hdr.cmd = USB_DRV_UVC_TRANSFER_DUAL_BUFFER_PUSH;
+	mb_cmd.param1 = (uint32_t)((uint32_t *)camera_packet);
+	mb_cmd.param2 = 0;
+	mb_cmd.param3 = 0;
+
+	task_mb_chnl_write(USB_MAILBOX_CHNL, &mb_cmd);
+
+#if 1
+	bk_err_t ret = kNoErr;
+	//LOGI("[=]%s wait push callback\r\n", __func__);
+
+	ret = usb_mailbox_slave_get_semaphore(&s_usb_mailbox_slave_uvc_push_dual_sem, USB_MAILBOOX_SLAVE_PACKET_WAIT_MS);
+	if(kNoErr != ret) {
+		LOGE("[=]%s WAIT TIMEOUT \r\n",__func__);
+	}
+
+/*
+	bk_usb_mailbox_msg_t msg;
+	ret = rtos_pop_from_queue(&s_usb_mailbox_slave_uvc_packet_dual_msg_que, &msg, USB_MAILBOOX_SLAVE_PACKET_WAIT_MS * 2);
+	if(kNoErr == ret) {
+		switch (msg.op) {
+			case USB_DRV_UVC_TRANSFER_BUFFER_PUSH:
+				break;
+			default:
+				break;
+			}
+	}	else {
+		LOGE("[=]%s WAIT TIMEOUT \r\n",__func__);
+	}
+*/
+#endif
+
+}
+
+
 const camera_packet_control_t usb_mailbox_video_camera_packet_ops = 
 {
 	.init   = NULL,
@@ -194,8 +321,12 @@ const camera_packet_control_t usb_mailbox_video_camera_packet_ops =
 	.push   = bk_usb_mailbox_video_camera_packet_push,
 	.pop    = bk_usb_mailbox_video_camera_packet_pop,
 	.free   = bk_usb_mailbox_video_camera_packet_free,
-
+	.d_malloc = bk_usb_mailbox_video_camera_packet_dual_malloc,
+	.d_push   = bk_usb_mailbox_video_camera_packet_dual_push,
+	.d_pop    = bk_usb_mailbox_video_camera_packet_dual_pop,
+	.d_free   = bk_usb_mailbox_video_camera_packet_dual_free,
 };
+
 static bk_err_t usb_mailbox_slave_packet_ops_msg(int op, void *param)
 {
 	bk_err_t ret;
@@ -235,6 +366,25 @@ static bk_err_t usb_mailbox_slave_uvc_packet_ops_msg(int op, void *param)
 	}
 	return BK_OK;
 }
+static bk_err_t usb_mailbox_slave_uvc_packet_ops_msg_dual(int op, void *param)
+{
+	bk_err_t ret;
+	bk_usb_mailbox_msg_t msg;
+
+	msg.op = op;
+	if(param)
+		msg.param = *(mb_chnl_cmd_t *)param;
+	if (s_usb_mailbox_slave_uvc_packet_dual_msg_que) {
+		ret = rtos_push_to_queue(&s_usb_mailbox_slave_uvc_packet_dual_msg_que, &msg, BEKEN_NO_WAIT);
+		if (kNoErr != ret) {
+			LOGE("%s fail ret:%d op:%d\r\n", __func__, ret, op);
+			return BK_FAIL;
+		}
+
+		return ret;
+	}
+	return BK_OK;
+}
 
 static audio_packet_t *bk_usb_mailbox_uac_packet_malloc(uint32_t dev)
 {
@@ -245,7 +395,7 @@ static audio_packet_t *bk_usb_mailbox_uac_packet_malloc(uint32_t dev)
 	mb_cmd.param1 = 0;
 	mb_cmd.param2 = dev;
 	mb_cmd.param3 = 0;
-	task_mb_chnl_write(MB_CHNL_USB, &mb_cmd);
+	task_mb_chnl_write(USB_MAILBOX_CHNL, &mb_cmd);
 
 	bk_err_t ret = kNoErr;
 	bk_usb_mailbox_msg_t msg;
@@ -279,7 +429,7 @@ static void bk_usb_mailbox_uac_packet_push(audio_packet_t *packet)
 	mb_cmd.param1 = (uint32_t)((uint32_t *)packet);
 	mb_cmd.param2 = 0;
 	mb_cmd.param3 = 0;
-	task_mb_chnl_write(MB_CHNL_USB, &mb_cmd);
+	task_mb_chnl_write(USB_MAILBOX_CHNL, &mb_cmd);
 
 #if 1
 	bk_err_t ret = kNoErr;
@@ -309,7 +459,7 @@ static void bk_usb_mailbox_uac_packet_free(audio_packet_t *packet)
 	mb_cmd.param1 = (uint32_t)((uint32_t *)packet);
 	mb_cmd.param2 = 0;
 	mb_cmd.param3 = 0;
-	task_mb_chnl_write(MB_CHNL_USB, &mb_cmd);
+	task_mb_chnl_write(USB_MAILBOX_CHNL, &mb_cmd);
 
 
 #if 1
@@ -348,7 +498,7 @@ static void usb_mailbox_disconnect_callback(void)
 	mb_cmd.param1 = 0;
 	mb_cmd.param2 = 0;
 	mb_cmd.param3 = 0;
-	task_mb_chnl_write(MB_CHNL_USB, &mb_cmd);
+	task_mb_chnl_write(USB_MAILBOX_CHNL, &mb_cmd);
 
 	bk_err_t ret = kNoErr;
 	ret = usb_mailbox_slave_get_semaphore(&s_usb_mailbox_slave_disconnect_sem, USB_MAILBOOX_SLAVE_PACKET_WAIT_MS);
@@ -366,7 +516,7 @@ static void usb_mailbox_connect_callback(void)
 	mb_cmd.param1 = 0;
 	mb_cmd.param2 = 0;
 	mb_cmd.param3 = 0;
-	task_mb_chnl_write(MB_CHNL_USB, &mb_cmd);
+	task_mb_chnl_write(USB_MAILBOX_CHNL, &mb_cmd);
 
 	bk_err_t ret = kNoErr;
 	ret = usb_mailbox_slave_get_semaphore(&s_usb_mailbox_slave_connect_sem, USB_MAILBOOX_SLAVE_PACKET_WAIT_MS);
@@ -476,6 +626,13 @@ static void _mailbox_tx_cmpl_isr(void *param, mb_chnl_ack_t *ack_buf)
 			//usb_mailbox_slave_uvc_packet_ops_msg(ack_buf->hdr.cmd, ack_buf);
 			usb_mailbox_slave_set_semaphore(&s_usb_mailbox_slave_uvc_push_sem);
 			break;
+		case USB_DRV_UVC_TRANSFER_DUAL_BUFFER_MALLOC:
+			usb_mailbox_slave_uvc_packet_ops_msg_dual(ack_buf->hdr.cmd, ack_buf);
+			break;
+		case USB_DRV_UVC_TRANSFER_DUAL_BUFFER_PUSH:
+			//usb_mailbox_slave_uvc_packet_ops_msg(ack_buf->hdr.cmd, ack_buf);
+			usb_mailbox_slave_set_semaphore(&s_usb_mailbox_slave_uvc_push_dual_sem);
+			break;
 
 		case USB_DRV_UAC_TRANSFER_BUFFER_MALLOC:
 			usb_mailbox_slave_packet_ops_msg(ack_buf->hdr.cmd, ack_buf);
@@ -506,7 +663,7 @@ static void usb_mailbox_slave_task(beken_thread_arg_t param_data)
 				case USB_DRV_EXIT:
 					LOGI("USB_MB_SLAVE_USB_DRV_EXIT!\r\n");
 					callback_mb_cmd.hdr.cmd = USB_DRV_EXIT;
-					task_mb_chnl_write(MB_CHNL_USB, &callback_mb_cmd);
+					task_mb_chnl_write(USB_MAILBOX_CHNL, &callback_mb_cmd);
 					rtos_reset_queue(&s_usb_mailbox_slave_msg_que);
 					//goto usb_mailbox_slave_task_exit;
 					break;
@@ -519,7 +676,7 @@ static void usb_mailbox_slave_task(beken_thread_arg_t param_data)
 					mb_cmd = (mb_chnl_cmd_t *)(&msg.param);
 					bk_usb_power_ops(mb_cmd->param1, mb_cmd->param2);
 					callback_mb_cmd.hdr.cmd = USB_POWER_OPS;
-					task_mb_chnl_write(MB_CHNL_USB, &callback_mb_cmd);
+					task_mb_chnl_write(USB_MAILBOX_CHNL, &callback_mb_cmd);
 					break;
 				case USB_DRV_USB_OPEN:
 					//mb_cmd = (mb_chnl_cmd_t *)(&msg.param);
@@ -527,7 +684,7 @@ static void usb_mailbox_slave_task(beken_thread_arg_t param_data)
 					bk_usb_uvc_register_disconnect_callback(usb_mailbox_disconnect_callback);
 					bk_usb_open(0);
 					callback_mb_cmd.hdr.cmd = USB_DRV_USB_OPEN;
-					task_mb_chnl_write(MB_CHNL_USB, &callback_mb_cmd);
+					task_mb_chnl_write(USB_MAILBOX_CHNL, &callback_mb_cmd);
 					break;
 				case USB_DRV_USB_CLOSE:
 					break;
@@ -537,14 +694,14 @@ static void usb_mailbox_slave_task(beken_thread_arg_t param_data)
 					mb_cmd = (mb_chnl_cmd_t *)(&msg.param);
 					mb_cmd->hdr.cmd = USB_DRV_GET_DEV_CONNECT_STATUS;
 					mb_cmd->param1 = bk_usb_get_device_connect_status();
-					task_mb_chnl_write(MB_CHNL_USB, mb_cmd);
+					task_mb_chnl_write(USB_MAILBOX_CHNL, mb_cmd);
 					break;
 				case USB_DRV_CHECK_DEV_SUPPORT:
 					mb_cmd = (mb_chnl_cmd_t *)(&msg.param);
 					mb_cmd->hdr.cmd = USB_DRV_CHECK_DEV_SUPPORT;
 					mb_cmd->param2 = mb_cmd->param1;
 					mb_cmd->param1 = bk_usb_check_device_supported(mb_cmd->param2);
-					task_mb_chnl_write(MB_CHNL_USB, mb_cmd);
+					task_mb_chnl_write(USB_MAILBOX_CHNL, mb_cmd);
 					break;
 				case USB_DRV_UVC_REGISTER_CONNECT_CB:
 					break;
@@ -554,7 +711,7 @@ static void usb_mailbox_slave_task(beken_thread_arg_t param_data)
 					mb_cmd = (mb_chnl_cmd_t *)(&msg.param);
 					mb_cmd->hdr.cmd = USB_DRV_UVC_GET_PARAM;
 					mb_cmd->param2 = bk_usb_uvc_get_param((bk_uvc_device_brief_info_t *)mb_cmd->param1);
-					task_mb_chnl_write(MB_CHNL_USB, mb_cmd);
+					task_mb_chnl_write(USB_MAILBOX_CHNL, mb_cmd);
 					break;
 				case USB_DRV_UVC_SET_PARAM:
 					break;
@@ -570,10 +727,21 @@ static void usb_mailbox_slave_task(beken_thread_arg_t param_data)
 					break;
 				case USB_DRV_UVC_TRANSFER_BUFFER_FREE:
 					break;
-
-				case USB_DRV_VIDEO_START:
-					bk_uvc_start();
+				case USB_DRV_UVC_TRANSFER_DUAL_BUFFER_MALLOC:
 					break;
+				case USB_DRV_UVC_TRANSFER_DUAL_BUFFER_PUSH:
+					break;
+				case USB_DRV_UVC_TRANSFER_DUAL_BUFFER_POP:
+					break;
+				case USB_DRV_UVC_TRANSFER_DUAL_BUFFER_FREE:
+					break;
+                case USB_DRV_VIDEO_START:
+                    bk_uvc_start();
+					break;
+				case USB_DRV_VIDEO_DUAL_START:
+                    bk_uvc_dual_start();
+					break;
+				case USB_DRV_VIDEO_DUAL_STOP:
 				case USB_DRV_VIDEO_STOP:
 					bk_uvc_stop();
 					break;
@@ -586,13 +754,13 @@ static void usb_mailbox_slave_task(beken_thread_arg_t param_data)
 					mb_cmd = (mb_chnl_cmd_t *)(&msg.param);
 					mb_cmd->hdr.cmd = USB_DRV_UAC_GET_PARAM;
 					mb_cmd->param2 = bk_usb_uac_get_param((bk_uac_device_brief_info_t *)mb_cmd->param1);
-					task_mb_chnl_write(MB_CHNL_USB, mb_cmd);
+					task_mb_chnl_write(USB_MAILBOX_CHNL, mb_cmd);
 					break;
 				case USB_DRV_UAC_SET_PARAM:
 					mb_cmd = (mb_chnl_cmd_t *)(&msg.param);
 					bk_usb_uac_set_param((bk_uac_config_t *)(mb_cmd->param1));
 					mb_cmd->hdr.cmd = USB_DRV_UAC_SET_PARAM;
-					task_mb_chnl_write(MB_CHNL_USB, mb_cmd);
+					task_mb_chnl_write(USB_MAILBOX_CHNL, mb_cmd);
 					break;
 				case USB_DRV_UAC_REGISTER_TRANSFER_OPS:
 					bk_usb_uac_register_transfer_buffer_ops((void *)&usb_mailbox_uac_buffer_ops_funcs);
@@ -659,14 +827,27 @@ void bk_usb_mailbox_sw_slave_init(void)
 					break;
 				}
 			}
-
+			if(!s_usb_mailbox_slave_uvc_packet_dual_msg_que) {
+				ret = rtos_init_queue(&s_usb_mailbox_slave_uvc_packet_dual_msg_que,
+									  "usb_mb_slave_uvc_packet_q_dual",
+									  sizeof(bk_usb_mailbox_msg_t),
+									  USB_MAILBOX_SLAVE_UVC_PACKET_DUAL_QITEM_COUNT);
+				if(ret != kNoErr) {
+					break;
+				}
+			}
 			if(!s_usb_mailbox_slave_uvc_push_sem) {
 				ret = rtos_init_semaphore(&s_usb_mailbox_slave_uvc_push_sem, 1);
 				if(ret != kNoErr) {
 					break;
 				}
 			}
-
+			if(!s_usb_mailbox_slave_uvc_push_dual_sem) {
+				ret = rtos_init_semaphore(&s_usb_mailbox_slave_uvc_push_dual_sem, 1);
+				if(ret != kNoErr) {
+					break;
+				}
+			}
 			if(!s_usb_mailbox_slave_disconnect_sem) {
 				ret = rtos_init_semaphore(&s_usb_mailbox_slave_disconnect_sem, 1);
 				if(ret != kNoErr) {
@@ -712,10 +893,17 @@ void bk_usb_mailbox_sw_slave_init(void)
 				rtos_deinit_queue(&s_usb_mailbox_slave_uvc_packet_msg_que);
 				s_usb_mailbox_slave_uvc_packet_msg_que = NULL;
 			}
-
+			if(s_usb_mailbox_slave_uvc_packet_dual_msg_que) {
+				rtos_deinit_queue(&s_usb_mailbox_slave_uvc_packet_dual_msg_que);
+				s_usb_mailbox_slave_uvc_packet_dual_msg_que = NULL;
+			}
 			if(s_usb_mailbox_slave_uvc_push_sem) {
 				rtos_deinit_semaphore(&s_usb_mailbox_slave_uvc_push_sem);
 				s_usb_mailbox_slave_uvc_push_sem = NULL;
+			}			
+			if(s_usb_mailbox_slave_uvc_push_dual_sem) {
+				rtos_deinit_semaphore(&s_usb_mailbox_slave_uvc_push_dual_sem);
+				s_usb_mailbox_slave_uvc_push_dual_sem = NULL;
 			}
 
 			if(s_usb_mailbox_slave_disconnect_sem) {
@@ -740,15 +928,22 @@ void bk_usb_mailbox_sw_slave_init(void)
 			return;
 		}
 
-		if(mb_chnl_open(MB_CHNL_USB, NULL) != BK_OK) {
+		if(mb_chnl_open(USB_MAILBOX_CHNL, NULL) != BK_OK) {
 			LOGE("usb mailbox slave mb_chnl_open open fail \r\n");
 			return;
 		}
 
-		mb_chnl_ctrl(MB_CHNL_USB, MB_CHNL_SET_RX_ISR, _mailbox_rx_isr);
-		mb_chnl_ctrl(MB_CHNL_USB, MB_CHNL_SET_TX_ISR, _mailbox_tx_isr);
-		mb_chnl_ctrl(MB_CHNL_USB, MB_CHNL_SET_TX_CMPL_ISR, _mailbox_tx_cmpl_isr);
+		mb_chnl_ctrl(USB_MAILBOX_CHNL, MB_CHNL_SET_RX_ISR, _mailbox_rx_isr);
+		mb_chnl_ctrl(USB_MAILBOX_CHNL, MB_CHNL_SET_TX_ISR, _mailbox_tx_isr);
+		mb_chnl_ctrl(USB_MAILBOX_CHNL, MB_CHNL_SET_TX_CMPL_ISR, _mailbox_tx_cmpl_isr);
 		LOGD("create usb mailbox master task complete \r\n");
+
+#if CONFIG_USB_MAILBOX_SLAVE_CPU2_TO_CPU1
+		mb_chnl_cmd_t callback_mb_cmd;
+		callback_mb_cmd.hdr.cmd = USB_POWER_OPS;
+		bk_usb_power_ops(CONFIG_USB_VBAT_CONTROL_GPIO_ID, 1);
+		task_mb_chnl_write(USB_MAILBOX_CHNL, &callback_mb_cmd);
+#endif
 
 	} else {
 		return;
@@ -757,34 +952,52 @@ void bk_usb_mailbox_sw_slave_init(void)
 
 void bk_usb_mailbox_sw_slave_deinit(void)
 {
+	beken_queue_t usb_mailbox_slave_msg_que_deinit = s_usb_mailbox_slave_packet_msg_que;
+	beken_queue_t usb_mailbox_slave_packet_msg_que_deinit = s_usb_mailbox_slave_msg_que;
+	beken_queue_t usb_mailbox_slave_uvc_packet_msg_que_deinit = s_usb_mailbox_slave_uvc_packet_msg_que;
+	beken_queue_t usb_mailbox_slave_uvc_packet_msg_que_dual_deinit = s_usb_mailbox_slave_uvc_packet_dual_msg_que;
+
+	beken_semaphore_t usb_mailbox_slave_uvc_push_sem = s_usb_mailbox_slave_uvc_push_sem;
+	beken_semaphore_t usb_mailbox_slave_uvc_push_sem_dual = s_usb_mailbox_slave_uvc_push_dual_sem;
+	beken_semaphore_t usb_mailbox_slave_disconnect_sem = s_usb_mailbox_slave_disconnect_sem;
+	beken_semaphore_t usb_mailbox_slave_connect_sem = s_usb_mailbox_slave_connect_sem;
+
 	if(s_usb_mailbox_slave_packet_msg_que) {
-		rtos_deinit_queue(&s_usb_mailbox_slave_packet_msg_que);
 		s_usb_mailbox_slave_packet_msg_que = NULL;
+		rtos_deinit_queue(&usb_mailbox_slave_msg_que_deinit);
 	}
 
 	if(s_usb_mailbox_slave_uvc_packet_msg_que) {
-		rtos_deinit_queue(&s_usb_mailbox_slave_uvc_packet_msg_que);
 		s_usb_mailbox_slave_uvc_packet_msg_que = NULL;
+		rtos_deinit_queue(&usb_mailbox_slave_uvc_packet_msg_que_deinit);
+	}
+	if(s_usb_mailbox_slave_uvc_packet_msg_que) {
+		s_usb_mailbox_slave_uvc_packet_dual_msg_que = NULL;
+		rtos_deinit_queue(&usb_mailbox_slave_uvc_packet_msg_que_dual_deinit);
 	}
 
 	if(s_usb_mailbox_slave_uvc_push_sem) {
-		rtos_deinit_semaphore(&s_usb_mailbox_slave_uvc_push_sem);
 		s_usb_mailbox_slave_uvc_push_sem = NULL;
+		rtos_deinit_semaphore(&usb_mailbox_slave_uvc_push_sem);
+	}	
+    if(s_usb_mailbox_slave_uvc_push_dual_sem) {
+		s_usb_mailbox_slave_uvc_push_dual_sem = NULL;
+		rtos_deinit_semaphore(&usb_mailbox_slave_uvc_push_sem_dual);
 	}
 
 	if(s_usb_mailbox_slave_disconnect_sem) {
-		rtos_deinit_semaphore(&s_usb_mailbox_slave_disconnect_sem);
 		s_usb_mailbox_slave_disconnect_sem = NULL;
+		rtos_deinit_semaphore(&usb_mailbox_slave_disconnect_sem);
 	}
 
 	if(s_usb_mailbox_slave_connect_sem) {
-		rtos_deinit_semaphore(&s_usb_mailbox_slave_connect_sem);
 		s_usb_mailbox_slave_connect_sem = NULL;
+		rtos_deinit_semaphore(&usb_mailbox_slave_connect_sem);
 	}
 
 	if(s_usb_mailbox_slave_msg_que) {
-		rtos_deinit_queue(&s_usb_mailbox_slave_msg_que);
 		s_usb_mailbox_slave_msg_que = NULL;
+		rtos_deinit_queue(&usb_mailbox_slave_packet_msg_que_deinit);
 	}
 
 	if (s_usb_mailbox_slave_thread_hdl) {

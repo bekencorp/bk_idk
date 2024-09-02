@@ -26,6 +26,10 @@ psa_status_t psa_crypto_init(void)
     /* Service init is performed during TFM boot up,
      * so application level initialisation is empty
      */
+#if CONFIG_PM_NSC
+    //TODO
+    // bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_ENCP_SHANHAI, PM_POWER_MODULE_STATE_ON);
+#endif
     return PSA_SUCCESS;
 }
 

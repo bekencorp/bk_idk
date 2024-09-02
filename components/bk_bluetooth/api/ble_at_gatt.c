@@ -170,7 +170,7 @@ static void ble_at_timer_send_mode_timer_callback(void *param)
     os_memset(tmp_buff, 0, s_service_test_send_size);
     tmp_buff[0] = tmp_payload++;
 
-    retval = bk_ble_gatts_send_indicate(s_dm_gatt_api.gatts_if, s_dm_gatt_api.conn_handle, s_char_attr_handle, s_service_test_send_size, tmp_buff, 1);
+    retval = bk_ble_gatts_send_indicate(s_dm_gatt_api.gatts_if, s_dm_gatt_api.gatts_conn_handle, s_char_attr_handle, s_service_test_send_size, tmp_buff, 1);
 
     os_free(tmp_buff);
 
@@ -184,211 +184,212 @@ static void ble_at_timer_send_mode_timer_callback(void *param)
     }
 }
 
-static int32_t bk_gatts_at_cb (bk_gatts_cb_event_t event, bk_gatt_if_t gatts_if, bk_ble_gatts_cb_param_t *comm_param)
+static int32_t bk_gatts_at_cb(bk_gatts_cb_event_t event, bk_gatt_if_t gatts_if, bk_ble_gatts_cb_param_t *comm_param)
 {
     switch (event)
     {
-    case BK_GATTS_REG_EVT:
-    {
-        struct gatts_reg_evt_param *param = (typeof(param))comm_param;
-
-        bt_at_logi("BK_GATTS_REG_EVT %d %d", param->status, param->gatt_if);
-        s_dm_gatt_api.gatts_if = param->gatt_if;
-
-        if (*ble_at_get_sema_handle() != NULL)
+        case BK_GATTS_REG_EVT:
         {
-            rtos_set_semaphore( ble_at_get_sema_handle() );
-        }
-    }
-    break;
+            struct gatts_reg_evt_param *param = (typeof(param))comm_param;
 
-    case BK_GATTS_CREAT_ATTR_TAB_EVT:
-    {
-        struct gatts_add_attr_tab_evt_param *param = (typeof(param))comm_param;
+            bt_at_logi("BK_GATTS_REG_EVT %d %d", param->status, param->gatt_if);
+            s_dm_gatt_api.gatts_if = param->gatt_if;
 
-        bt_at_logi("BK_GATTS_CREAT_ATTR_TAB_EVT %d %d", param->status, param->num_handle);
-
-        for (int i = 0; i < param->num_handle; ++i)
-        {
-            *s_attr_handle_list[i] = param->handles[i];
-
-            if (i) //service handle cant get buff
+            if (*ble_at_get_sema_handle() != NULL)
             {
-                uint16_t tmp_len = 0;
-                uint8_t *tmp_buff = NULL;
-                ble_err_t g_status = 0;
-
-                g_status = bk_ble_gatts_get_attr_value(param->handles[i], &tmp_len, &tmp_buff);
-
-                if (g_status)
-                {
-                    bt_at_loge("get attr value err %d", g_status);
-                }
-
-
-                if (tmp_len != s_gatts_attr_db_service_performance_test[i].att_desc.value.attr_len ||
-                        tmp_buff != s_gatts_attr_db_service_performance_test[i].att_desc.value.attr_value)
-                {
-                    bt_at_loge("get attr value not match create attr handle %d i %d %d %d %p %p!!!!",
-                              param->handles[i], i,
-                              tmp_len, s_gatts_attr_db_service_performance_test[i].att_desc.value.attr_len,
-                              tmp_buff, s_gatts_attr_db_service_performance_test[i].att_desc.value.attr_value);
-                }
-//                else
-//                {
-//                    bt_at_logi("handle %d i %d len %d value %p", param->handles[i], i, tmp_len, tmp_buff);
-//                }
-//
-//                if(i == 6)
-//                {
-//                    memcpy(tmp_buff, "asdasd", 6);
-//                    bt_at_logi("write after handle %d i %d len %d value %s", param->handles[i], i, tmp_len, tmp_buff);
-//                }
+                rtos_set_semaphore(ble_at_get_sema_handle());
             }
         }
+        break;
 
-        if (*ble_at_get_sema_handle() != NULL)
+        case BK_GATTS_CREAT_ATTR_TAB_EVT:
         {
-            rtos_set_semaphore( ble_at_get_sema_handle() );
-        }
-    }
-    break;
+            struct gatts_add_attr_tab_evt_param *param = (typeof(param))comm_param;
 
-    case BK_GATTS_WRITE_EVT:
-    {
-        struct gatts_write_evt_param *param = (typeof(param))comm_param;
+            bt_at_logi("BK_GATTS_CREAT_ATTR_TAB_EVT %d %d", param->status, param->num_handle);
 
-        if (param->handle == s_char_desc_attr_handle)
-        {
-            uint16_t cli_config = 0;
-            os_memcpy(&cli_config, param->value, sizeof(cli_config));
-
-            if ((cli_config & 1) || (cli_config & 2))
+            for (int i = 0; i < param->num_handle; ++i)
             {
-                if (s_service_type == DB_TYPE_TIMER_SEND)
-                {
-                    rtos_init_timer(&s_service_timer_send_mode_timer_handle, s_service_test_send_inter, ble_at_timer_send_mode_timer_callback, NULL);
-                    rtos_start_timer(&s_service_timer_send_mode_timer_handle);
-                }
-                else if (s_service_type == DB_TYPE_PERFORMANCE)
-                {
+                *s_attr_handle_list[i] = param->handles[i];
 
-                }
-            }
-            else if (!cli_config)
-            {
-                if (s_service_type == DB_TYPE_TIMER_SEND && rtos_is_timer_init(&s_service_timer_send_mode_timer_handle))
+                if (i) //service handle cant get buff
                 {
-                    if (rtos_is_timer_running(&s_service_timer_send_mode_timer_handle))
+                    uint16_t tmp_len = 0;
+                    uint8_t *tmp_buff = NULL;
+                    ble_err_t g_status = 0;
+
+                    g_status = bk_ble_gatts_get_attr_value(param->handles[i], &tmp_len, &tmp_buff);
+
+                    if (g_status)
                     {
-                        rtos_stop_timer(&s_service_timer_send_mode_timer_handle);
+                        bt_at_loge("get attr value err %d", g_status);
                     }
 
-                    rtos_deinit_timer(&s_service_timer_send_mode_timer_handle);
+
+                    if (tmp_len != s_gatts_attr_db_service_performance_test[i].att_desc.value.attr_len ||
+                        tmp_buff != s_gatts_attr_db_service_performance_test[i].att_desc.value.attr_value)
+                    {
+                        bt_at_loge("get attr value not match create attr handle %d i %d %d %d %p %p!!!!",
+                                   param->handles[i], i,
+                                   tmp_len, s_gatts_attr_db_service_performance_test[i].att_desc.value.attr_len,
+                                   tmp_buff, s_gatts_attr_db_service_performance_test[i].att_desc.value.attr_value);
+                    }
+                    //                else
+                    //                {
+                    //                    bt_at_logi("handle %d i %d len %d value %p", param->handles[i], i, tmp_len, tmp_buff);
+                    //                }
+                    //
+                    //                if(i == 6)
+                    //                {
+                    //                    memcpy(tmp_buff, "asdasd", 6);
+                    //                    bt_at_logi("write after handle %d i %d len %d value %s", param->handles[i], i, tmp_len, tmp_buff);
+                    //                }
                 }
             }
+
+            if (*ble_at_get_sema_handle() != NULL)
+            {
+                rtos_set_semaphore(ble_at_get_sema_handle());
+            }
         }
-        else if(param->handle == s_char2_attr_handle)
-        {
-
-        }
-        else if(param->handle == s_char3_attr_handle)
-        {
-
-        }
-    }
-    break;
-
-    case BK_GATTS_RESPONSE_EVT:
-    {
-        struct gatts_rsp_evt_param *param = (typeof(param))comm_param;
-
-        bt_at_logi("BK_GATTS_RESPONSE_EVT %d %d", param->status, param->handle);
-
-        if (s_service_type == DB_TYPE_PERFORMANCE)
-        {
-            ble_at_timer_send_mode_timer_callback(NULL);
-        }
-    }
-    break;
-
-    case BK_GATTS_CONNECT_EVT:
-    {
-        struct gatts_connect_evt_param *param = (typeof(param))comm_param;
-
-        bt_at_logi("BK_GATTS_CONNECT_EVT %d %02X:%02X:%02X:%02X:%02X:%02X", param->link_role,
-                   param->remote_bda[5],
-                   param->remote_bda[4],
-                   param->remote_bda[3],
-                   param->remote_bda[2],
-                   param->remote_bda[1],
-                   param->remote_bda[0]);
-
-        s_dm_gatt_api.conn_handle = param->conn_id;
-    }
-    break;
-
-    case BK_GATTS_DISCONNECT_EVT:
-    {
-        struct gatts_disconnect_evt_param *param = (typeof(param))comm_param;
-
-        bt_at_logi("BK_GATTS_DISCONNECT_EVT %02X:%02X:%02X:%02X:%02X:%02X",
-                   param->remote_bda[5],
-                   param->remote_bda[4],
-                   param->remote_bda[3],
-                   param->remote_bda[2],
-                   param->remote_bda[1],
-                   param->remote_bda[0]);
-
-
-        s_dm_gatt_api.conn_handle = 0xff;
-
-        //        if (rtos_is_timer_init(&s_char_notify_timer))
-        //        {
-        //            if (rtos_is_timer_running(&s_char_notify_timer))
-        //            {
-        //                rtos_stop_timer(&s_char_notify_timer);
-        //            }
-        //
-        //            rtos_deinit_timer(&s_char_notify_timer);
-        //        }
-
-        //        bk_bd_addr_t addr;
-        //        uint8_t addr_type = 0;
-        //        const bk_ble_gap_ext_adv_t ext_adv =
-        //        {
-        //            .instance = 0,
-        //            .duration = 0,
-        //            .max_events = 0,
-        //        };
-        //
-        //        if (0)//dm_gat_get_authen_status(addr, &addr_type))
-        //        {
-        //            bk_ble_gap_ext_adv_params_t adv_param =
-        //            {
-        //                .type = BK_BLE
-    }
-    break;
-
-
-
-    case BK_GATTS_MTU_EVT:
-    {
-        struct gatts_mtu_evt_param *param = (typeof(param))comm_param;
-
-        bt_at_logi("BK_GATTS_MTU_EVT %d %d", param->conn_id, param->mtu);
-    }
-    break;
-
-    default:
         break;
+
+        case BK_GATTS_WRITE_EVT:
+        {
+            struct gatts_write_evt_param *param = (typeof(param))comm_param;
+
+            if (param->handle == s_char_desc_attr_handle)
+            {
+                uint16_t cli_config = 0;
+                os_memcpy(&cli_config, param->value, sizeof(cli_config));
+
+                if ((cli_config & 1) || (cli_config & 2))
+                {
+                    if (s_service_type == DB_TYPE_TIMER_SEND)
+                    {
+                        rtos_init_timer(&s_service_timer_send_mode_timer_handle, s_service_test_send_inter, ble_at_timer_send_mode_timer_callback, NULL);
+                        rtos_start_timer(&s_service_timer_send_mode_timer_handle);
+                    }
+                    else if (s_service_type == DB_TYPE_PERFORMANCE)
+                    {
+
+                    }
+                }
+                else if (!cli_config)
+                {
+                    if (s_service_type == DB_TYPE_TIMER_SEND && rtos_is_timer_init(&s_service_timer_send_mode_timer_handle))
+                    {
+                        if (rtos_is_timer_running(&s_service_timer_send_mode_timer_handle))
+                        {
+                            rtos_stop_timer(&s_service_timer_send_mode_timer_handle);
+                        }
+
+                        rtos_deinit_timer(&s_service_timer_send_mode_timer_handle);
+                    }
+                }
+            }
+            else if (param->handle == s_char2_attr_handle)
+            {
+
+            }
+            else if (param->handle == s_char3_attr_handle)
+            {
+
+            }
+        }
+        break;
+
+        case BK_GATTS_RESPONSE_EVT:
+        {
+            struct gatts_rsp_evt_param *param = (typeof(param))comm_param;
+
+            bt_at_logi("BK_GATTS_RESPONSE_EVT %d %d", param->status, param->handle);
+
+            if (s_service_type == DB_TYPE_PERFORMANCE)
+            {
+                ble_at_timer_send_mode_timer_callback(NULL);
+            }
+        }
+        break;
+
+        case BK_GATTS_CONNECT_EVT:
+        {
+            struct gatts_connect_evt_param *param = (typeof(param))comm_param;
+
+            bt_at_logi("BK_GATTS_CONNECT_EVT %d %02X:%02X:%02X:%02X:%02X:%02X", param->link_role,
+                       param->remote_bda[5],
+                       param->remote_bda[4],
+                       param->remote_bda[3],
+                       param->remote_bda[2],
+                       param->remote_bda[1],
+                       param->remote_bda[0]);
+
+            s_dm_gatt_api.gatts_conn_handle = param->conn_id;
+            os_memcpy(s_dm_gatt_api.gatts_peer_addr, param->remote_bda, sizeof(param->remote_bda));
+        }
+        break;
+
+        case BK_GATTS_DISCONNECT_EVT:
+        {
+            struct gatts_disconnect_evt_param *param = (typeof(param))comm_param;
+
+            bt_at_logi("BK_GATTS_DISCONNECT_EVT %02X:%02X:%02X:%02X:%02X:%02X",
+                       param->remote_bda[5],
+                       param->remote_bda[4],
+                       param->remote_bda[3],
+                       param->remote_bda[2],
+                       param->remote_bda[1],
+                       param->remote_bda[0]);
+
+
+            s_dm_gatt_api.gatts_conn_handle = 0xff;
+
+            //        if (rtos_is_timer_init(&s_char_notify_timer))
+            //        {
+            //            if (rtos_is_timer_running(&s_char_notify_timer))
+            //            {
+            //                rtos_stop_timer(&s_char_notify_timer);
+            //            }
+            //
+            //            rtos_deinit_timer(&s_char_notify_timer);
+            //        }
+
+            //        bk_bd_addr_t addr;
+            //        uint8_t addr_type = 0;
+            //        const bk_ble_gap_ext_adv_t ext_adv =
+            //        {
+            //            .instance = 0,
+            //            .duration = 0,
+            //            .max_events = 0,
+            //        };
+            //
+            //        if (0)//dm_gat_get_authen_status(addr, &addr_type))
+            //        {
+            //            bk_ble_gap_ext_adv_params_t adv_param =
+            //            {
+            //                .type = BK_BLE
+        }
+        break;
+
+
+
+        case BK_GATTS_MTU_EVT:
+        {
+            struct gatts_mtu_evt_param *param = (typeof(param))comm_param;
+
+            bt_at_logi("BK_GATTS_MTU_EVT %d %d", param->conn_id, param->mtu);
+        }
+        break;
+
+        default:
+            break;
     }
 
     return 0;
 }
 
 
-static int32_t bk_gattc_at_cb (bk_gattc_cb_event_t event, bk_gatt_if_t gattc_if, bk_ble_gattc_cb_param_t *comm_param)
+static int32_t bk_gattc_at_cb(bk_gattc_cb_event_t event, bk_gatt_if_t gattc_if, bk_ble_gattc_cb_param_t *comm_param)
 {
     ble_err_t ret = 0;
     //bk_gatt_auth_req_t auth_req = BK_GATT_AUTH_REQ_NONE;
@@ -397,244 +398,245 @@ static int32_t bk_gattc_at_cb (bk_gattc_cb_event_t event, bk_gatt_if_t gattc_if,
 
     switch (event)
     {
-    case BK_GATTC_REG_EVT:
-    {
-        struct gattc_reg_evt_param *param = (typeof(param))comm_param;
-
-        s_dm_gatt_api.gattc_if = param->gatt_if;
-        bt_at_logi("reg ret gatt_if %d", s_dm_gatt_api.gattc_if);
-
-        if (*ble_at_get_sema_handle() != NULL)
+        case BK_GATTC_REG_EVT:
         {
-            rtos_set_semaphore( ble_at_get_sema_handle() );
-        }
-    }
+            struct gattc_reg_evt_param *param = (typeof(param))comm_param;
 
-    break;
+            s_dm_gatt_api.gattc_if = param->gatt_if;
+            bt_at_logi("reg ret gatt_if %d", s_dm_gatt_api.gattc_if);
 
-    case BK_GATTC_DIS_SRVC_CMPL_EVT:
-    {
-        struct gattc_dis_srvc_cmpl_evt_param *param = (typeof(param))comm_param;
-
-        //bk_bt_uuid_t uuid = {BK_UUID_LEN_16, {BK_GATT_UUID_CHAR_DECLARE}};
-
-        bt_at_logi("BK_GATTC_DIS_SRVC_CMPL_EVT %d %d", param->status, param->conn_id);
-    }
-    break;
-
-    case BK_GATTC_DIS_RES_SERVICE_EVT:
-    {
-        struct gattc_dis_res_service_evt_param *param = (typeof(param))comm_param;
-        bt_at_logi("BK_GATTC_DIS_RES_SERVICE_EVT count %d", param->count);
-
-        for (int i = 0; i < param->count; ++i)
-        {
-            switch (param->array[i].srvc_id.uuid.len)
+            if (*ble_at_get_sema_handle() != NULL)
             {
-            case BK_UUID_LEN_16:
-            {
-                bt_at_logi("0x%04x %d~%d", param->array[i].srvc_id.uuid.uuid.uuid16, param->array[i].start_handle, param->array[i].end_handle);
-            }
-            break;
-
-            case BK_UUID_LEN_128:
-            {
-                uint16_t short_uuid = 0;
-
-                memcpy(&short_uuid, &param->array[i].srvc_id.uuid.uuid.uuid128[BK_UUID_LEN_128 - 4], sizeof(short_uuid));
-                bt_at_logi("0x%04x %d~%d", short_uuid, param->array[i].start_handle, param->array[i].end_handle);
-            }
-            break;
+                rtos_set_semaphore(ble_at_get_sema_handle());
             }
         }
-    }
-    break;
 
-    case BK_GATTC_DIS_RES_CHAR_EVT:
-    {
-        struct gattc_dis_res_char_evt_param *param = (typeof(param))comm_param;
-
-        bt_at_logi("BK_GATTC_DIS_RES_CHAR_EVT count %d", param->count);
-
-        for (int i = 0; i < param->count; ++i)
-        {
-            switch (param->array[i].uuid.uuid.len)
-            {
-            case BK_UUID_LEN_16:
-            {
-                bt_at_logi("0x%04x %d~%d %d", param->array[i].uuid.uuid.uuid.uuid16,
-                           param->array[i].start_handle, param->array[i].end_handle, param->array[i].char_value_handle);
-            }
-            break;
-
-            case BK_UUID_LEN_128:
-            {
-                uint16_t short_uuid = 0;
-
-                memcpy(&short_uuid, &param->array[i].uuid.uuid.uuid.uuid128[BK_UUID_LEN_128 - 4], sizeof(short_uuid));
-                bt_at_logi("0x%04x %d~%d", short_uuid, param->array[i].start_handle, param->array[i].end_handle);
-            }
-            break;
-            }
-        }
-    }
-    break;
-
-    case BK_GATTC_DIS_RES_CHAR_DESC_EVT:
-    {
-        struct gattc_dis_res_char_desc_evt_param *param = (typeof(param))comm_param;
-        bt_at_logi("BK_GATTC_DIS_RES_CHAR_DESC_EVT count %d", param->count);
-
-        for (int i = 0; i < param->count; ++i)
-        {
-            switch (param->array[i].uuid.uuid.len)
-            {
-            case BK_UUID_LEN_16:
-            {
-                bt_at_logi("0x%04x char_handle %d desc_handle %d", param->array[i].uuid.uuid.uuid.uuid16, param->array[i].char_handle, param->array[i].desc_handle);
-            }
-            break;
-
-            case BK_UUID_LEN_128:
-            {
-                uint16_t short_uuid = 0;
-
-                memcpy(&short_uuid, &param->array[i].uuid.uuid.uuid.uuid128[BK_UUID_LEN_128 - 4], sizeof(short_uuid));
-                bt_at_logi("0x%04x char_handle %d desc_handle %d", short_uuid, param->array[i].char_handle, param->array[i].desc_handle);
-            }
-            break;
-
-            default:
-                bt_at_loge("unknow uuid len %d", param->array[i].uuid.uuid.len);
-                break;
-            }
-        }
-    }
-    break;
-
-    case BK_GATTC_READ_CHAR_EVT:
-    {
-        struct gattc_read_char_evt_param *param = (typeof(param))comm_param;
-
-        bt_at_logi("BK_GATTC_READ_CHAR_EVT 0x%x %d %d", param->status, param->handle, param->value_len);
-    }
-    break;
-
-    case BK_GATTC_READ_DESCR_EVT:
-    {
-        struct gattc_read_char_evt_param *param = (typeof(param))comm_param;
-
-        bt_at_logi("BK_GATTC_READ_DESCR_EVT %x %d %d", param->status, param->handle, param->value_len);
-    }
-    break;
-
-    case BK_GATTC_READ_BY_TYPE_EVT:
-    {
-        struct gattc_read_by_type_evt_param *param = (typeof(param))comm_param;
-
-        bt_at_logi("BK_GATTC_READ_BY_TYPE_EVT %d %d %d", param->status, param->conn_id, param->elem_count);
-    }
-    break;
-
-    case BK_GATTC_READ_MULTIPLE_EVT:
-    {
-        struct gattc_read_char_evt_param *param = (typeof(param))comm_param;
-
-        bt_at_logi("BK_GATTC_READ_MULTIPLE_EVT %x %d %d", param->status, param->handle, param->value_len);
-    }
-    break;
-
-    case BK_GATTC_WRITE_CHAR_EVT:
-    {
-        struct gattc_write_evt_param *param = (typeof(param))comm_param;
-
-        bt_at_logi("BK_GATTC_WRITE_CHAR_EVT %d %d %d %d", param->status, param->conn_id, param->handle, param->offset);
-    }
-    break;
-
-    case BK_GATTC_WRITE_DESCR_EVT:
-    {
-        struct gattc_write_evt_param *param = (typeof(param))comm_param;
-
-        bt_at_logi("BK_GATTC_WRITE_DESCR_EVT %d %d %d %d", param->status, param->conn_id, param->handle, param->offset);
-    }
-    break;
-
-    case BK_GATTC_PREP_WRITE_EVT:
-    {
-        struct gattc_write_evt_param *param = (typeof(param))comm_param;
-
-        bt_at_logi("BK_GATTC_PREP_WRITE_EVT %d %d %d %d", param->status, param->conn_id, param->handle, param->offset);
-    }
-    break;
-
-    case BK_GATTC_EXEC_EVT:
-    {
-        struct gattc_exec_cmpl_evt_param *param = (typeof(param))comm_param;
-
-        bt_at_logi("BK_GATTC_EXEC_EVT %d %d", param->status, param->conn_id);
-    }
-    break;
-
-    case BK_GATTC_NOTIFY_EVT:
-    {
-        struct gattc_notify_evt_param *param = (typeof(param))comm_param;
-        //static uint8_t recv_count = 0;
-
-        bt_at_logi("BK_GATTC_NOTIFY_EVT %d %d handle %d vallen %d %02X:%02X:%02X:%02X:%02X:%02X", param->conn_id,
-                   param->is_notify,
-                   param->handle,
-                   param->value_len,
-                   param->remote_bda[5],
-                   param->remote_bda[4],
-                   param->remote_bda[3],
-                   param->remote_bda[2],
-                   param->remote_bda[1],
-                   param->remote_bda[0]);
-
-        s_service_performance_rx_all_bytes += param->value_len;
-
-        if (s_service_type == DB_TYPE_PERFORMANCE)
-        {
-
-        }
-    }
-    break;
-
-    case BK_GATTC_CONNECT_EVT:
-    {
-        struct gattc_connect_evt_param *param = (typeof(param))comm_param;
-
-        bt_at_logi("BK_GATTC_CONNECT_EVT %d %02X:%02X:%02X:%02X:%02X:%02X", param->link_role,
-                   param->remote_bda[5],
-                   param->remote_bda[4],
-                   param->remote_bda[3],
-                   param->remote_bda[2],
-                   param->remote_bda[1],
-                   param->remote_bda[0]);
-
-        //s_conn_id = param->conn_id;
-    }
-    break;
-
-    case BK_GATTC_DISCONNECT_EVT:
-    {
-        struct gattc_disconnect_evt_param *param = (typeof(param))comm_param;
-
-        bt_at_logi("BK_GATTC_DISCONNECT_EVT %02X:%02X:%02X:%02X:%02X:%02X",
-                   param->remote_bda[5],
-                   param->remote_bda[4],
-                   param->remote_bda[3],
-                   param->remote_bda[2],
-                   param->remote_bda[1],
-                   param->remote_bda[0]);
-
-        //        s_conn_id = 0xff;
-    }
-    break;
-
-    default:
         break;
+
+        case BK_GATTC_DIS_SRVC_CMPL_EVT:
+        {
+            struct gattc_dis_srvc_cmpl_evt_param *param = (typeof(param))comm_param;
+
+            //bk_bt_uuid_t uuid = {BK_UUID_LEN_16, {BK_GATT_UUID_CHAR_DECLARE}};
+
+            bt_at_logi("BK_GATTC_DIS_SRVC_CMPL_EVT %d %d", param->status, param->conn_id);
+        }
+        break;
+
+        case BK_GATTC_DIS_RES_SERVICE_EVT:
+        {
+            struct gattc_dis_res_service_evt_param *param = (typeof(param))comm_param;
+            bt_at_logi("BK_GATTC_DIS_RES_SERVICE_EVT count %d", param->count);
+
+            for (int i = 0; i < param->count; ++i)
+            {
+                switch (param->array[i].srvc_id.uuid.len)
+                {
+                    case BK_UUID_LEN_16:
+                    {
+                        bt_at_logi("0x%04x %d~%d", param->array[i].srvc_id.uuid.uuid.uuid16, param->array[i].start_handle, param->array[i].end_handle);
+                    }
+                    break;
+
+                    case BK_UUID_LEN_128:
+                    {
+                        uint16_t short_uuid = 0;
+
+                        memcpy(&short_uuid, &param->array[i].srvc_id.uuid.uuid.uuid128[BK_UUID_LEN_128 - 4], sizeof(short_uuid));
+                        bt_at_logi("0x%04x %d~%d", short_uuid, param->array[i].start_handle, param->array[i].end_handle);
+                    }
+                    break;
+                }
+            }
+        }
+        break;
+
+        case BK_GATTC_DIS_RES_CHAR_EVT:
+        {
+            struct gattc_dis_res_char_evt_param *param = (typeof(param))comm_param;
+
+            bt_at_logi("BK_GATTC_DIS_RES_CHAR_EVT count %d", param->count);
+
+            for (int i = 0; i < param->count; ++i)
+            {
+                switch (param->array[i].uuid.uuid.len)
+                {
+                    case BK_UUID_LEN_16:
+                    {
+                        bt_at_logi("0x%04x %d~%d %d", param->array[i].uuid.uuid.uuid.uuid16,
+                                   param->array[i].start_handle, param->array[i].end_handle, param->array[i].char_value_handle);
+                    }
+                    break;
+
+                    case BK_UUID_LEN_128:
+                    {
+                        uint16_t short_uuid = 0;
+
+                        memcpy(&short_uuid, &param->array[i].uuid.uuid.uuid.uuid128[BK_UUID_LEN_128 - 4], sizeof(short_uuid));
+                        bt_at_logi("0x%04x %d~%d", short_uuid, param->array[i].start_handle, param->array[i].end_handle);
+                    }
+                    break;
+                }
+            }
+        }
+        break;
+
+        case BK_GATTC_DIS_RES_CHAR_DESC_EVT:
+        {
+            struct gattc_dis_res_char_desc_evt_param *param = (typeof(param))comm_param;
+            bt_at_logi("BK_GATTC_DIS_RES_CHAR_DESC_EVT count %d", param->count);
+
+            for (int i = 0; i < param->count; ++i)
+            {
+                switch (param->array[i].uuid.uuid.len)
+                {
+                    case BK_UUID_LEN_16:
+                    {
+                        bt_at_logi("0x%04x char_handle %d desc_handle %d", param->array[i].uuid.uuid.uuid.uuid16, param->array[i].char_handle, param->array[i].desc_handle);
+                    }
+                    break;
+
+                    case BK_UUID_LEN_128:
+                    {
+                        uint16_t short_uuid = 0;
+
+                        memcpy(&short_uuid, &param->array[i].uuid.uuid.uuid.uuid128[BK_UUID_LEN_128 - 4], sizeof(short_uuid));
+                        bt_at_logi("0x%04x char_handle %d desc_handle %d", short_uuid, param->array[i].char_handle, param->array[i].desc_handle);
+                    }
+                    break;
+
+                    default:
+                        bt_at_loge("unknow uuid len %d", param->array[i].uuid.uuid.len);
+                        break;
+                }
+            }
+        }
+        break;
+
+        case BK_GATTC_READ_CHAR_EVT:
+        {
+            struct gattc_read_char_evt_param *param = (typeof(param))comm_param;
+
+            bt_at_logi("BK_GATTC_READ_CHAR_EVT 0x%x %d %d", param->status, param->handle, param->value_len);
+        }
+        break;
+
+        case BK_GATTC_READ_DESCR_EVT:
+        {
+            struct gattc_read_char_evt_param *param = (typeof(param))comm_param;
+
+            bt_at_logi("BK_GATTC_READ_DESCR_EVT %x %d %d", param->status, param->handle, param->value_len);
+        }
+        break;
+
+        case BK_GATTC_READ_BY_TYPE_EVT:
+        {
+            struct gattc_read_by_type_evt_param *param = (typeof(param))comm_param;
+
+            bt_at_logi("BK_GATTC_READ_BY_TYPE_EVT %d %d %d", param->status, param->conn_id, param->elem_count);
+        }
+        break;
+
+        case BK_GATTC_READ_MULTIPLE_EVT:
+        {
+            struct gattc_read_char_evt_param *param = (typeof(param))comm_param;
+
+            bt_at_logi("BK_GATTC_READ_MULTIPLE_EVT %x %d %d", param->status, param->handle, param->value_len);
+        }
+        break;
+
+        case BK_GATTC_WRITE_CHAR_EVT:
+        {
+            struct gattc_write_evt_param *param = (typeof(param))comm_param;
+
+            bt_at_logi("BK_GATTC_WRITE_CHAR_EVT %d %d %d %d", param->status, param->conn_id, param->handle, param->offset);
+        }
+        break;
+
+        case BK_GATTC_WRITE_DESCR_EVT:
+        {
+            struct gattc_write_evt_param *param = (typeof(param))comm_param;
+
+            bt_at_logi("BK_GATTC_WRITE_DESCR_EVT %d %d %d %d", param->status, param->conn_id, param->handle, param->offset);
+        }
+        break;
+
+        case BK_GATTC_PREP_WRITE_EVT:
+        {
+            struct gattc_write_evt_param *param = (typeof(param))comm_param;
+
+            bt_at_logi("BK_GATTC_PREP_WRITE_EVT %d %d %d %d", param->status, param->conn_id, param->handle, param->offset);
+        }
+        break;
+
+        case BK_GATTC_EXEC_EVT:
+        {
+            struct gattc_exec_cmpl_evt_param *param = (typeof(param))comm_param;
+
+            bt_at_logi("BK_GATTC_EXEC_EVT %d %d", param->status, param->conn_id);
+        }
+        break;
+
+        case BK_GATTC_NOTIFY_EVT:
+        {
+            struct gattc_notify_evt_param *param = (typeof(param))comm_param;
+            //static uint8_t recv_count = 0;
+
+            bt_at_logi("BK_GATTC_NOTIFY_EVT %d %d handle %d vallen %d %02X:%02X:%02X:%02X:%02X:%02X", param->conn_id,
+                       param->is_notify,
+                       param->handle,
+                       param->value_len,
+                       param->remote_bda[5],
+                       param->remote_bda[4],
+                       param->remote_bda[3],
+                       param->remote_bda[2],
+                       param->remote_bda[1],
+                       param->remote_bda[0]);
+
+            s_service_performance_rx_all_bytes += param->value_len;
+
+            if (s_service_type == DB_TYPE_PERFORMANCE)
+            {
+
+            }
+        }
+        break;
+
+        case BK_GATTC_CONNECT_EVT:
+        {
+            struct gattc_connect_evt_param *param = (typeof(param))comm_param;
+
+            bt_at_logi("BK_GATTC_CONNECT_EVT %d %02X:%02X:%02X:%02X:%02X:%02X", param->link_role,
+                       param->remote_bda[5],
+                       param->remote_bda[4],
+                       param->remote_bda[3],
+                       param->remote_bda[2],
+                       param->remote_bda[1],
+                       param->remote_bda[0]);
+
+            os_memcpy(s_dm_gatt_api.gattc_peer_addr, param->remote_bda, sizeof(param->remote_bda));
+            //s_conn_id = param->conn_id;
+        }
+        break;
+
+        case BK_GATTC_DISCONNECT_EVT:
+        {
+            struct gattc_disconnect_evt_param *param = (typeof(param))comm_param;
+
+            bt_at_logi("BK_GATTC_DISCONNECT_EVT %02X:%02X:%02X:%02X:%02X:%02X",
+                       param->remote_bda[5],
+                       param->remote_bda[4],
+                       param->remote_bda[3],
+                       param->remote_bda[2],
+                       param->remote_bda[1],
+                       param->remote_bda[0]);
+
+            //        s_conn_id = 0xff;
+        }
+        break;
+
+        default:
+            break;
     }
 
     return ret;
@@ -696,7 +698,7 @@ int32_t ble_at_gattc_reg(void)
 {
     ble_err_t ret = 0;
 
-    if(s_dm_gatt_api.gattc_if)
+    if (s_dm_gatt_api.gattc_if)
     {
         return 0;
     }
@@ -737,7 +739,7 @@ int32_t ble_at_gatts_reg(void)
 {
     ble_err_t ret = 0;
 
-    if(s_dm_gatt_api.gatts_if)
+    if (s_dm_gatt_api.gatts_if)
     {
         return 0;
     }

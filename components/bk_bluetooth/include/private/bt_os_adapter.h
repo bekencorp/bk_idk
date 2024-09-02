@@ -62,13 +62,13 @@ struct bt_osi_funcs_t
     uint32_t _version;
     uint32_t size;
 
-    int (*_init_queue)(void **queue, const char *name, uint32_t message_size, uint32_t number_of_messages );
-    int (*_deinit_queue)( void **queue );
-    int (*_pop_from_queue)( void **queue, void *message, uint32_t timeout_ms );
-    int (*_push_to_queue)( void **queue, void *message, uint32_t timeout_ms );
-    int (*_create_thread)( void **thread, uint8_t priority, const char *name,
-                           void *function, uint32_t stack_size, void *arg );
-    int (*_delete_thread)( void **thread );
+    int (*_init_queue)(void **queue, const char *name, uint32_t message_size, uint32_t number_of_messages);
+    int (*_deinit_queue)(void **queue);
+    int (*_pop_from_queue)(void **queue, void *message, uint32_t timeout_ms);
+    int (*_push_to_queue)(void **queue, void *message, uint32_t timeout_ms);
+    int (*_create_thread)(void **thread, uint8_t priority, const char *name,
+                          void *function, uint32_t stack_size, void *arg);
+    int (*_delete_thread)(void **thread);
     int (*_thread_join)(void **thread);
 
     int32_t (*_init_mutex)(void **mutex);
@@ -81,19 +81,19 @@ struct bt_osi_funcs_t
     int32_t (*_get_semaphore)(void **semaphore, uint32_t timeout_ms);
     int32_t (*_deinit_semaphore)(void **semaphore);
 
-    int32_t (*_init_timer)( void **timer, uint32_t time_ms, void *function, void *arg);
-    int32_t (*_init_timer_ext)( void **timer, uint32_t time_ms, void *function, void *arg, bool oneshot);
-    int32_t (*_deinit_timer)( void *timer);
-    int32_t (*_stop_timer)( void *timer);
+    int32_t (*_init_timer)(void **timer, uint32_t time_ms, void *function, void *arg);
+    int32_t (*_init_timer_ext)(void **timer, uint32_t time_ms, void *function, void *arg, bool oneshot);
+    int32_t (*_deinit_timer)(void *timer);
+    int32_t (*_stop_timer)(void *timer);
 
-    int32_t (*_timer_change_period)( void *timer, uint32_t time_ms);
-    bool (*_is_timer_init)(void *timer );
+    int32_t (*_timer_change_period)(void *timer, uint32_t time_ms);
+    bool (*_is_timer_init)(void *timer);
     int32_t (*_start_timer)(void *timer);
-    bool (*_is_timer_running)( void *timer);
+    bool (*_is_timer_running)(void *timer);
 
     void (*_log)(int level, char *tag, const char *fmt, ...);
     uint32_t (*_get_time)(void);
-    int (*_delay_milliseconds)( uint32_t num_ms );
+    int (*_delay_milliseconds)(uint32_t num_ms);
 
     void *(*_malloc)(unsigned int size);
     void (*_free)(void *p);
@@ -124,6 +124,7 @@ struct bt_osi_funcs_t
     uint8_t (*_get_ble_pwr_idx)(uint8_t channel);
     void (*_ble_cal_set_txpwr)(uint8_t idx);
     void (*_ble_cal_recover_txpwr)(void);
+    void (*_ble_cal_enter_txpwr)(void);
     int (*_gpio_dev_unmap)(uint32_t gpio_id);
     int (*_gpio_dev_map)(uint32_t gpio_id, uint32_t func);
     void (*_set_printf_enable)(uint8_t enable);
@@ -137,7 +138,7 @@ struct bt_osi_funcs_t
 
     uint32_t (*_disable_int)(void);
     void (*_enable_int)(uint32_t int_level);
-    int (*_gpio_disable_pull)(uint32_t gpio_id );
+    int (*_gpio_disable_pull)(uint32_t gpio_id);
     int (*_gpio_enable_output)(uint32_t gpio_id);
     int (*_gpio_set_output_high)(uint32_t gpio_id);
     int (*_gpio_set_output_low)(uint32_t gpio_id);
@@ -176,6 +177,7 @@ struct bt_osi_funcs_t
 
     void (*_ble_enter_dut)(void);
     void (*_ble_exit_dut)(void);
+    uint8_t (*_get_bluetooth_power_level)(void);
 };
 
 int bt_os_adapter_init(void *osi_funcs);

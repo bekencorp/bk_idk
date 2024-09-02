@@ -92,7 +92,7 @@ __Vectors:
 
     .size    __Vectors, . - __Vectors
 
-    .text
+    .section .fix.reset_entry,"ax"
     .thumb
     .thumb_func
     .align    2
@@ -101,8 +101,8 @@ __Vectors:
 Reset_Handler:
 
 set_msp_limit:
-    mov     r0, __Vectors
-    MSR msplim, r0
+    ldr     r0, =Image$$ARM_LIB_STACK$$ZI$$Base
+    MSR     msplim, r0
 
 /*  Firstly it copies data from read only memory to RAM. There are two schemes
  *  to copy. One can copy more than one sections. Another can only copy

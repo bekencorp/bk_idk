@@ -152,6 +152,7 @@ bk_err_t bk_usb_uvc_register_transfer_buffer_ops(void *ops);
  */
 bk_err_t bk_uvc_start(void);
 
+bk_err_t bk_uvc_dual_start(void);
 /**
  * @brief     Stop UVC stream transmission
  *
@@ -166,6 +167,8 @@ bk_err_t bk_uvc_start(void);
  *    - others: other errors.
  */
 bk_err_t bk_uvc_stop(void);
+
+bk_err_t bk_uvc_dual_stop(void);
 
 /**
  * @brief     Check whether the attribute configuration is supported

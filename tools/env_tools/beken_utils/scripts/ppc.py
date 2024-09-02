@@ -40,7 +40,7 @@ class PPC(list):
                 #exit(1)
 
     def __getitem__(self, key):
-        return self.csv.dic[key];
+        return self.csv.dic[key]
 
     def gen_ppc_bin(self):
         ppro = [0] * 12
@@ -93,7 +93,7 @@ class PPC(list):
                         ppro[reg_sec] |= 1 << bit_sec
                     break
 
-        with open("partition.bin",'wb') as file:
+        with open("ppc_config.bin",'wb') as file:
             for item in ppro:
                 data = struct.pack('>I',item)
                 file.write(data)

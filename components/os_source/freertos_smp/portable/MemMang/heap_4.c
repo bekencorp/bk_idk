@@ -646,10 +646,11 @@ static inline void show_mem_info(BlockLink_t *pxLink)
 	bk_task_wdt_feed();
 #endif
 
-#if CONFIG_INT_WDT
 	bk_wdt_feed();
-#endif
 
+#if (CONFIG_INT_AON_WDT)
+	bk_int_aon_wdt_feed();
+#endif
 }
 
 static inline void mem_overflow_check(BlockLink_t *pxLink)
@@ -663,7 +664,9 @@ static inline void mem_overflow_check(BlockLink_t *pxLink)
 			BK_DUMP_OUT("Mem Overflow ......mem_end[%p + %d]=[0x%02x].....\r\n", mem_end, i, mem_end[i]);
 			show_mem_info(pxLink);
 			stack_mem_dump((uint32_t)pxLink - 64, (uint32_t)pxLink + xHeapStructSize + pxLink->wantedSize + 64);
-			configASSERT( false );
+			if (0 == arch_is_enter_exception()) {
+				configASSERT( false );
+			}
 		}
 	}
 }

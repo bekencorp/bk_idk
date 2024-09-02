@@ -40,15 +40,16 @@ boot_copy_region(struct boot_loader_state *state,
 		BL2_DECOMPRESS_LOGE(TAG, "memory malloc fail\r\n");
 		return -1;
 	}
+	flash_protect_type_t protect = bk_flash_get_protect_type();
 	bk_flash_set_protect_type(FLASH_PROTECT_NONE);
 
 	bytes_copied = BL2_HEADER_SIZE;
-	flash_area_read(fap_src, off_src + bytes_copied, block_list, 2 * (block_num + 2));
+	flash_area_read_dbus(fap_src, off_src + bytes_copied, block_list, 2 * (block_num + 2));
 
 	bytes_copied += 2 * (block_num + 2);
 	uint32_t erase_size = ALIGN_4096(TOPHY(primary_all_vir_size));
 	flash_area_erase_fast(primary_all_phy_offset,erase_size);
-	
+
 	int rate_process = block_num / 5;
 	uint32_t vir_primary_all_start_address = TOVIRTURE(ALIGN_34(CONFIG_PRIMARY_ALL_PHY_PARTITION_OFFSET));
 
@@ -81,12 +82,15 @@ boot_copy_region(struct boot_loader_state *state,
 	bk_flash_write_cbus(vir_primary_all_start_address+COMPRESS_BLOCK_SIZE*i,(decode_buf),write_size);
 
 	free(decode_buf);
-
+	decode_buf = NULL;
 	free(buf);
+	buf = NULL;
 
 	uint32_t ota_phy_size = get_flash_map_size(1);
 	uint32_t ota_phy_offset = get_flash_map_offset(1);
 	flash_area_erase_fast(ota_phy_offset,ota_phy_size);
+
+	bk_flash_set_protect_type(protect);
 
 	return 0;
 }

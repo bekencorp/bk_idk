@@ -334,10 +334,12 @@ static void cli_i2s_deconfig(void)
 static dma_id_t cli_aud_i2s_dma_config(uint32_t state)
 {
 	bk_err_t ret = BK_OK;
-	dma_config_t dma_config;
+	dma_config_t dma_config = {0};
 	uint32_t i2s_data_addr;
 	uint32_t aud_adc_data_addr;
 	uint32_t aud_dac_data_addr;
+
+    os_memset(&dma_config, 0, sizeof(dma_config));
 
 	/* init dma driver */
 	ret = bk_dma_driver_init();

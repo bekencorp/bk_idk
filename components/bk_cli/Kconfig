@@ -67,6 +67,11 @@ menu "Bk_cli"
 			bool "Enable Wifi Raw Tx Test"
 			default n
 
+		config WIFI_CLI_RAW_LINK_ENABLE
+			depends on CLI
+			bool "Enable Wifi CLI Raw Link enable"
+			default n
+
 		config CONNECT_THROUGH_PSK_OR_SAE_PASSWORD
 			depends on CLI
 			bool "Enable connect through psk or sae password"

@@ -67,6 +67,10 @@ if(CONFIG_FREERTOS)
 		)
 	endif()
 
+	list(APPEND srcs
+		freertos/posix/freertos_impl/source/pthread_local_storage.c
+	)
+
 	if(CONFIG_FREERTOS_TRACE)
 		list(APPEND incs
 					freertos/trace/include

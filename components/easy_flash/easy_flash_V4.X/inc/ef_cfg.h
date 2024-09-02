@@ -81,15 +81,12 @@
  *   If you want use it please using the V3.X version.
  */
 
+extern uint32_t g_ef_start_addr;
 /* backup area start address */
-#ifndef CONFIG_EF_START_ADDR
-#define EF_START_ADDR     (0x1FE000)
-#else
-#define EF_START_ADDR     CONFIG_EF_START_ADDR
-#endif
+#define EF_START_ADDR     (g_ef_start_addr)
 
 /* ENV area size. It's at least one empty sector for GC. So it's definition must more then or equal 2 flash sector size. */
-#define ENV_AREA_SIZE          (2 * EF_ERASE_MIN_SIZE)      /* 8K */
+#define ENV_AREA_SIZE     (2 * EF_ERASE_MIN_SIZE)      /* 8K */
 
 /* saved log area size */
 #define LOG_AREA_SIZE             (254 * EF_ERASE_MIN_SIZE)      /* 1016K */

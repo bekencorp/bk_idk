@@ -1817,6 +1817,11 @@ void sys_hal_aud_dacg_set(uint32_t value)
 	sys_ll_set_ana_reg20_dacg(value);
 }
 
+uint32_t sys_hal_aud_dacg_get(void)
+{
+	return sys_ll_get_ana_reg20_dacg();
+}
+
 void sys_hal_aud_aud_en(uint32_t value)
 {
 	//not support
@@ -1830,6 +1835,16 @@ void sys_hal_aud_rvcmd_en(uint32_t value)
 void sys_hal_dmic_clk_div_set(uint32_t value)
 {
 	sys_ll_set_cpu_clk_div_mode2_reserved_13_13(value);
+}
+
+void sys_hal_aud_dac_bypass_dwa_en(uint32_t value)
+{
+	sys_ll_set_ana_reg21_bpdwa0v9(value);
+}
+
+void sys_hal_aud_dac_dacmute_en(uint32_t value)
+{
+	sys_ll_set_ana_reg20_dacmute(value);
 }
 
 /**  Audio End  **/
@@ -2184,9 +2199,9 @@ void sys_hal_set_sys2flsh_2wire(uint32_t value)
 
 /** Ethernet start **/
 #ifdef CONFIG_ETH
-void sys_hal_enable_eth_int()
+void sys_hal_enable_eth_int(uint32_t value)
 {
-    sys_ll_set_cpu0_int_32_63_en_cpu0_eth_int_en(1);
+    sys_ll_set_cpu0_int_32_63_en_cpu0_eth_int_en(value);
 }
 #endif
 /** Ethernet End**/
@@ -2333,7 +2348,13 @@ void sys_hal_set_ana_cb_cal_manu_val(uint32_t value)
 	sys_ll_set_ana_reg5_vbias(value);
 }
 
+void sys_hal_set_ana_reg11_apfms(uint32_t value) {
+	sys_ll_set_ana_reg11_apfms(value);
+}
 
+void sys_hal_set_ana_reg12_dpfms(uint32_t value) {
+	sys_ll_set_ana_reg12_dpfms(value);
+}
 
 void sys_hal_set_rott_int_en(uint32_t value)
 {
@@ -2433,14 +2454,14 @@ void sys_hal_early_init(void)
 		sys_hal_analog_set(ANALOG_REG12, 0x9F03EF6F);
 		sys_hal_analog_set(ANALOG_REG13, 0x1F6FB3FF);
 	} else if ((chip_id & PM_CHIP_ID_MASK) == (PM_CHIP_ID_MPW_V4 & PM_CHIP_ID_MASK)) {
-		sys_hal_analog_set(ANALOG_REG11, 0xD77EB9FF);
-		sys_hal_analog_set(ANALOG_REG12, 0xD77ECA4A);
+		sys_hal_analog_set(ANALOG_REG11, 0x977EB9FF);
+		sys_hal_analog_set(ANALOG_REG12, 0x977ECA4A);
 		sys_hal_analog_set(ANALOG_REG13, 0x547AB0F5);
 	} else {
 		//default of MP
 		//tenglong20231017: SYS_reg0x4B<3:0>=8,SYS_reg0x4C<3:0>=0,SYS_reg0x4D<4:1>=7 for softstart
-		sys_hal_analog_set(ANALOG_REG11, 0xD07EB878);
-		sys_hal_analog_set(ANALOG_REG12, 0xD07ECA40);
+		sys_hal_analog_set(ANALOG_REG11, 0x907EB878);
+		sys_hal_analog_set(ANALOG_REG12, 0x907ECA40);
 		sys_hal_analog_set(ANALOG_REG13, 0x727070EE);//tenglong20231020 disable psram/update volt for safe
 		sys_hal_analog_set(ANALOG_REG25, 0x961FAA4);
 

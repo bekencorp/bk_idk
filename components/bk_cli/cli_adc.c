@@ -42,7 +42,61 @@ static void cli_adc_driver_cmd(char *pcWriteBuffer, int xWriteBufferLen, int arg
 	}
 }
 
-static float cli_adc_read(UINT8 adc_chan)
+static float cli_adc_read_multi_chan(void)
+{
+    uint16_t value   = 0;
+    float cali_value = 0;
+    UINT8 adc_chan_buff[12] = {0,1,2,3,4,5,6,10,12,13,14,15};
+    UINT32 loop_num = 10;
+    adc_config_t config = {0};
+
+    if(flag == 1)
+    {
+        CLI_LOGI("adc_read is running\r\n");
+        return 0;
+    }
+
+    config.chan = 0;
+    config.adc_mode = 3;
+    config.src_clk = 1;
+    config.clk = 0x30e035;
+    config.saturate_mode = 4;
+    config.steady_ctrl= 7;
+    config.adc_filter = 0;
+    if(config.adc_mode == ADC_CONTINUOUS_MODE) {
+        config.sample_rate = 0;
+    }
+
+    flag = 1;
+
+    BK_LOG_ON_ERR(bk_adc_acquire());
+    sys_drv_set_ana_pwd_gadc_buf(1);
+    for(UINT8 i = 0; i < (sizeof(adc_chan_buff)/sizeof(UINT8)); i++)
+    {
+        config.chan = adc_chan_buff[i];
+        BK_LOG_ON_ERR(bk_adc_init(config.chan));
+
+        BK_LOG_ON_ERR(bk_adc_set_config(&config));
+        BK_LOG_ON_ERR(bk_adc_enable_bypass_clalibration());
+        BK_LOG_ON_ERR(bk_adc_start());
+        for(UINT8 j = 0; j < loop_num; j++)
+        {
+            BK_LOG_ON_ERR(bk_adc_read(&value, ADC_READ_SEMAPHORE_WAIT_TIME));
+
+            cali_value = bk_adc_data_calculate(value, config.chan);
+            CLI_LOGI("volt:%d mv,chan=%d\n",(uint32_t)(cali_value*1000),config.chan);
+        }
+
+        bk_adc_stop();
+        bk_adc_deinit(config.chan);
+    }
+    sys_drv_set_ana_pwd_gadc_buf(0);
+    bk_adc_release();
+    flag = 0;
+    return cali_value;
+}
+
+static float cli_adc_read_single_chan(UINT8 adc_chan)
 {
     uint16_t value   = 0;
     float cali_value = 0;
@@ -75,19 +129,7 @@ static float cli_adc_read(UINT8 adc_chan)
     BK_LOG_ON_ERR(bk_adc_start());
     BK_LOG_ON_ERR(bk_adc_read(&value, ADC_READ_SEMAPHORE_WAIT_TIME));
 
-    if(adc_chan == 0)
-    {
-        cali_value = saradc_calculate(value);
-        cali_value = cali_value*5/2;
-    }
-    else if(adc_chan == 7 || adc_chan == 8 || adc_chan == 9)
-    {
-        CLI_LOGI("adc_chan %d has been used\r\n", adc_chan);
-    }
-    else
-    {
-        cali_value = saradc_calculate(value);
-    }
+    cali_value = bk_adc_data_calculate(value, adc_chan);
 
     bk_adc_stop();
     sys_drv_set_ana_pwd_gadc_buf(0);
@@ -284,9 +326,13 @@ static void cli_adc_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
         os_printf("mode:[%s] value:[%d]\r\n", (saradc_cal_mode ? "high" : "low"), sample_value);
         //BK_LOG_ON_ERR(bk_adc_stop());
     }
-    else if(os_strcmp(argv[2], "adc_example") == 0)
+    else if(os_strcmp(argv[2], "single_adc_example") == 0)
     {
-        cli_adc_read(adc_chan);
+        cli_adc_read_single_chan(adc_chan);
+    }
+    else if(os_strcmp(argv[2], "multi_adc_example") == 0)
+    {
+        cli_adc_read_multi_chan();
     }
     else
     {

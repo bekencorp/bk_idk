@@ -21,6 +21,18 @@ extern "C" {
 #endif
 
 /**
+ * \brief this ID used for distinguish the information storage in the PS partition
+ *
+ */
+
+enum psa_storage_uid_e {
+	PS_ID_KEY_INFO = 1,            // PS_ID_KEY_INFO is used to store the attribute info of the key
+	PS_ID_SSL_CERTIFICATE_INFO,    // PS_ID_SSL_CERTIFICATE_INFO is used to store the SSL certificate
+	PS_ID_INDEX_MAX,
+};
+
+
+/**
  * \brief PSA_PS_API_VERSION version
  *
  * Major and minor PSA_PS_API_VERSION numbers

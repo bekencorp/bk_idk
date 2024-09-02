@@ -66,7 +66,7 @@ bk_err_t bk_aud_adc_init(aud_adc_config_t *adc_config)
 	/* audio common driver init */
 	if (BK_OK != bk_aud_driver_init()) {
 		LOGE("%s, audio driver init fail, line: %d \n", __func__, __LINE__);
-		return BK_FAIL;
+		return BK_ERR_AUD_DRV_NOT_INIT;
 	}
 
 	/* select audio clock */

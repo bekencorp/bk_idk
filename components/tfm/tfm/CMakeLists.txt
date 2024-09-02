@@ -53,6 +53,9 @@ endif()
 include(${TFM_TOOLCHAIN_FILE})
 set(CMAKE_PROJECT_INCLUDE_BEFORE ${CMAKE_SOURCE_DIR}/cmake/disable_compiler_detection.cmake)
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config/armino_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config/armino_config.h @ONLY)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/config)
+
 project("Trusted Firmware M" VERSION ${TFM_VERSION} LANGUAGES C ASM)
 tfm_toolchain_reload_compiler()
 

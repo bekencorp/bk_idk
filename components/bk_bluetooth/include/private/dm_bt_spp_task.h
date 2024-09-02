@@ -19,33 +19,39 @@ enum
 
 typedef union
 {
-    struct sart_discovery_param{
+    struct sart_discovery_param
+    {
         uint8_t remote_addr[6];
-    }start_disc;
-    struct connect_param{
+    } start_disc;
+    struct connect_param
+    {
         uint8_t sec_mask;
         uint8_t role;
         uint8_t remote_scn;
         uint8_t remote_addr[6];
-    }conn;
-    struct disconnect_param{
+    } conn;
+    struct disconnect_param
+    {
         uint32_t handle;
-    }disconn;
-    struct start_server_param{
+    } disconn;
+    struct start_server_param
+    {
         uint8_t sec_mask;
         uint8_t role;
         uint8_t local_scn;
         const char *name;
-    }start_srv;
-    struct stop_srv_scn_param{
+    } start_srv;
+    struct stop_srv_scn_param
+    {
         uint8_t scn;
-    }stop_srv_scn;
-    struct write_param{
+    } stop_srv_scn;
+    struct write_param
+    {
         uint32_t handle;
         uint16_t len;
         uint8_t *p_data;
-    }write;
-}bt_ethermind_spp_msg_t;
+    } write;
+} bt_ethermind_spp_msg_t;
 
 void bt_spp_register_internall_callback(bk_spp_cb_t cb);
 

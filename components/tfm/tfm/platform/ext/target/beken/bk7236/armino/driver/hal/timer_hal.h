@@ -31,6 +31,7 @@ typedef struct {
 #define timer_hal_enable(hal, chan) timer_ll_enable((hal)->hw, chan)
 #define timer_hal_disable(hal, chan) timer_ll_disable((hal)->hw, chan)
 #define timer_hal_get_enable_status(hal) timer_ll_get_enable_status((hal)->hw)
+#define timer_hal_get_chan_enable_status(hal, chan) timer_ll_get_chan_enable_status((hal)->hw, chan)
 #define timer_hal_enable_interrupt(hal, chan) timer_ll_enable_interrupt((hal)->hw, chan)
 #define timer_hal_disable_interrupt(hal, chan) timer_ll_disable_interrupt((hal)->hw, chan)
 #define timer_hal_get_interrupt_status(hal) timer_ll_get_interrupt_status((hal)->hw)

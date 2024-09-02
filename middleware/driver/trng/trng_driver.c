@@ -108,10 +108,9 @@ bk_err_t bk_trng_stop(void)
 int bk_rand(void)
 {
 	int i = 0, number = 0;
-#if CONFIG_SOC_BK7236XX
 	bk_trng_start();
 	delay_us(50);  //add delay to make trng disckg take effect
-#endif
+
 	/*Different board , same time point, the trng generate random number maybe same*/
 	for(i = 0; i < TRNG_READ_COUNT; i++) {
 		trng_get_random_number();
@@ -119,9 +118,8 @@ int bk_rand(void)
 
 	number = (int)trng_get_random_number();
 
-#if CONFIG_SOC_BK7236XX
-	bk_trng_stop();
-#endif
+	bk_trng_stop();  //close it after finish for power save
+
 	return (number & RAND_MAX);
 }
 

@@ -3,7 +3,7 @@
 
 :link_to_translation:`en:[English]`
 
-本文档主要介绍Armino平台BK7258三核log机制
+本文档主要介绍Armino平台BK7258多CPU log机制
 
  - BK7258 CPU0的log通过串口DL_UART0输出(默认波特率为115200)
  - BK7258 CPU1的log通过mailbox转发到CPU0串口DL_UART0输出
@@ -13,7 +13,7 @@
  - 通过串口输入log命令查看当前log配置
  - log 1 3 0 命令第一个参数为echo开关 (0/1)，第二个参数为log级别(0~6)，第三个参数为同步开关(0异步,1同步)
 
-BK7258 多核log机制
+BK7258 多CPU log机制
 ------------------------
 
 .. figure:: ../../../_static/log_system.png

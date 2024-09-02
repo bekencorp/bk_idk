@@ -61,7 +61,7 @@ FLASH 分区表为 CSV 文件,下面为一个配置示例:
    - 允许相邻两个分区地址之间存在空洞,但不允许出现重叠。
    - 一般不建议配置 offset,除非要在特定的,不连续的位置放置一个分区时,才需要配置 offset。
    - offset 对齐需求:
-   
+
      - 任何分区必须 4K 对齐。
      - S/NS 交界处相邻的两个分区必须 68K 对齐,否则 MPC 配置时会出现一个 S/NS block 横跨两个分区现象。
  - ``Size`` - 必选项。表示分区大小,单位 k/K 表示 Kbytes,m/M 表示 Mbytes,通常建议 4K 对齐。
@@ -302,7 +302,7 @@ Armino 构建时,构建系统会依据分区表生成 partitions_gen.h,本节介
 
   #define CONFIG_SYS_RF_PHY_PARTITION_OFFSET            0x3fe000
   #define CONFIG_SYS_RF_PHY_PARTITION_SIZE              0x1000
-  
+
   #define CONFIG_SYS_NET_PHY_PARTITION_OFFSET           0x3ff000
   #define CONFIG_SYS_NET_PHY_PARTITION_SIZE             0x1000
 
@@ -327,7 +327,7 @@ BL2 分区图示如下:
 
 .. figure:: picture/one_partition.png
     :align: center
-    :alt: 8                                                                                           
+    :alt: 8
     :figclass: align-center
 
 
@@ -335,13 +335,13 @@ BL2 分区图示如下:
 
  - ``CONFIG_PRIMARY_BL2_PHY_PARTITION_OFFSET`` - 分区的起始物理地址为 0x24000,由 partitions 定义。
  - ``CONFIG_PRIMARY_BL2_PHY_CODE_START`` - 自动计算生成,为 0x21e80,会加 CRC。
- 
+
    - 偏移 0x24000 处即可放置代码,但需要考虑对齐:
 
      - CRC 对齐,对齐后物理地址为 ((0x24000 + 33)/34)*34 = 0x24002, 虚拟地址为 0x21e20。
      - CPU 向量对齐,CM33 为 128B 对齐, ((0x21e20 + 127)/128)*128 = 0x21e80,相应的物理地址为: 0x24068。
  - ``CONFIG_PRIMARY_BL2_VIRTUAL_CODE_SIZE`` - 自动计算生成,为 0xf060
- 
+
    - 对齐浪费空间为 0x24068 - 0x24000 = 0x68,剩余: 0x10000 - 0x68 = 0xff98
    - 再减 34B 保护字节: 0xff98 - 34 = 0xff76
    - 转虚拟长度: (0xff76/34)*32 = 0xf060
@@ -350,6 +350,6 @@ BL2 分区图示如下:
 
   从上述计算可知,并非整个代码分区都能用来放置代码,因为要考虑 CRC 与 CPU vector 对齐。对于使用 BL2
   进行验签的分区还要去掉头尾各 4K 空间（用于放置加签信息）。如果编译了同来的 bin 大小为 bin_size,
-  建议 partition size 至少要配置: (bin_size/32)x34 + hdr_size + tail_size + 128 + 34 + unused_size。 
+  建议 partition size 至少要配置: (bin_size/32)x34 + hdr_size + tail_size + 128 + 34 + unused_size。
   其中 unused_size 为预留给未来 bin 增长的空间。在这个基础之后再做 4K 对齐。
 

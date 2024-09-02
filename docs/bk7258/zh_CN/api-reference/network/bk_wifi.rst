@@ -15,6 +15,7 @@ The BK WiFi Driver supports following logical WiFi interfaces:
  - BK STA interface
  - BK AP interface
  - BK Monitor interface
+ - BK RLK(Raw Link) interface
 
 Each interface can be operated independently, so theretically all interfaces can be started independently. However because of performance and interference consideration, we limit the coexisting of some interfaces.
 
@@ -34,6 +35,9 @@ Most of WiFi APIs can be categoried as:
  - Module specific APIs
 
    The API name are prefixed with bk_wifi_module, the module can be scan or filter etc, e.g. bk_wifi_scan_start() etc. The API has no direct relationship with the interface, or the API caller don't nedto care about on which interface the API is operated. E.g. the scan API can be based on STA interface, it can also based on AP interface, but the caller don't care about it.
+ - BK-RLK APIs
+
+   The BK-RLK APIs are prefixed with bk_rlk, the APIs is only common for BK-RLK functional modules. bk_rlk_init() etc.
 
 Common WiFi APIs:
  - :cpp:func:`bk_wifi_init` - init WiFi
@@ -80,6 +84,29 @@ Module Specific WiFi APIs:
  - :cpp:func:`bk_wifi_filter_set_config` - set filter configuration
  - :cpp:func:`bk_wifi_filter_register_cb` - register the filter callback function
 
+BK-RLK APIs:
+ - :cpp:func:`bk_rlk_init` - init BK-RLK
+ - :cpp:func:`bk_rlk_deinit` - deinit BK-RLK
+ - :cpp:func:`bk_rlk_register_recv_cb` - register BK-RLK receive callback function
+ - :cpp:func:`bk_rlk_ungister_recv_cb` - unregister BK-RLK receive callback function
+ - :cpp:func:`bk_rlk_register_send_cb` - register BK-RLK send callback function
+ - :cpp:func:`bk_rlk_unregister_send_cb` - unregister BK-RLK send callback function
+ - :cpp:func:`bk_rlk_set_channel` - set the channel of BK-RLK
+ - :cpp:func:`bk_rlk_send` - send BK-RLK frame
+ - :cpp:func:`bk_rlk_send_ex` - send BK-RLK frame
+ - :cpp:func:`bk_rlk_add_peer` - add a peer info to peer list
+ - :cpp:func:`bk_rlk_del_peer` - delete a peer info from peer list
+ - :cpp:func:`bk_rlk_get_peer` - get a peer info from peer list
+ - :cpp:func:`bk_rlk_is_peer_exist` - check if a peer info or not exist peer list
+ - :cpp:func:`bk_rlk_get_peer_num` - get the peers num connected to BK-RLK
+ - :cpp:func:`bk_rlk_set_tx_ac` - set the BK-RLK TX AC
+ - :cpp:func:`bk_rlk_set_tx_timeout_ms` - set the BK-RLK TX timeout
+ - :cpp:func:`bk_rlk_set_tx_power` - set the BK-RLK TX power
+ - :cpp:func:`bk_rlk_set_tx_rate` - set the BK-RLK TX rate
+ - :cpp:func:`bk_rlk_set_tx_retry_cnt` - set the BK-RLK TX retry count
+ - :cpp:func:`bk_rlk_sleep` - enable BK-RLK power management
+ - :cpp:func:`bk_rlk_wakeup` - disable BK-RLK power management
+
 **Compitability and Extension**
 -------------------------------------
 
@@ -105,6 +132,7 @@ Similar as most popular WiFi driver, the Beken WiFi driver is implemented as eve
 -----------------------
 
 .. include:: ../../_build/inc/wifi.inc
+.. include:: ../../_build/inc/raw_link.inc
 
 **API Typedefs**
 --------------------

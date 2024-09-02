@@ -95,7 +95,7 @@ int target_wifi_ap_start(IN CONST struct demo_AP_cfg *cfg)
     os_strcpy((char *)wNetConfig.dnsServer_ip_addr, "192.168.10.1");
 
     os_printf("ssid:%s	key:%s\r\n", wNetConfig.wifi_ssid, wNetConfig.wifi_key);
-    bk_wlan_start_ap_internal(&wNetConfig);
+    bk_wlan_start_ap(&wNetConfig);
 
     return ret;
 }

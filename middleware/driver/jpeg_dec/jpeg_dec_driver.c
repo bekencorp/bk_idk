@@ -58,6 +58,7 @@ static bool s_jpegdec_driver_is_init = false;
 uint32_t image_ppi = 0;
 uint8_t *jpeg_address = NULL;
 uint32_t jpeg_size = 0;
+uint32_t dec_mode = 0;
 
 #define JPEG_TAIL_SIZE (2)
 #define JPEG_DEC_STRIP
@@ -110,8 +111,30 @@ bk_err_t jpeg_dec_set_dst_addr(unsigned char * output_buf)
 	return BK_OK;
 }
 
+bk_err_t bk_jpec_dec_int_en(jpeg_dec_isr_type_t isr_id, bool en)
+{
+    if (isr_id == DEC_END_OF_FRAME)
+    {
+        jpeg_dec_auto_frame_end_int_en(en);
+    }
+    else if (isr_id == DEC_EVERY_LINE_INT)
+    {
+        jpeg_dec_auto_line_num_int_en(en);
+//        bk_jpeg_dec_line_num_set(LINE_16);
+    }
+    else if (isr_id == DEC_ERR)
+    {
+#if CONFIG_SOC_BK7236XX
+        jpeg_dec_ll_set_reg0x5e_dec_huf_err_int(en);
+#endif
+    }
+    else
+    {
+        LOGW("%s error. \n", __func__);
+    }
 
-
+	return BK_OK;
+}
 
 bk_err_t bk_jpeg_dec_hw_start(uint32_t length, unsigned char *input_buf, unsigned char * output_buf)
 {
@@ -121,7 +144,8 @@ bk_err_t bk_jpeg_dec_hw_start(uint32_t length, unsigned char *input_buf, unsigne
 	jpeg_address = input_buf;
 	jpeg_size = length;
 //    jpeg_dec_ll_set_reg0x56_value(0x04040404);
-
+    result.ok = true;
+    bk_jpec_dec_int_en(dec_mode, 1);
 	ret = JpegdecInit(length, input_buf, output_buf, &image_ppi);
 	if(ret != JDR_OK)
 	{
@@ -154,10 +178,11 @@ bool bk_jpeg_dec_by_line_is_last_line_complete(void)
 
 bk_err_t bk_jpeg_dec_stop(void)
 {
+    bk_jpec_dec_int_en(dec_mode, 0);
 	jpeg_dec_hal_set_mcu_x(0);
 	jpeg_dec_hal_set_mcu_y(0);
 	jpeg_dec_hal_set_dec_cmd(JPEGDEC_DC_CLEAR);
-	jpeg_dec_hal_set_int_status_value(0x1ff);
+	jpeg_dec_hal_set_int_status_value(0xFFFF);
 	jpeg_dec_hal_set_uv_vld_value(0);
 	jpeg_dec_hal_set_jpeg_dec_en(0);
 	return BK_OK;
@@ -199,12 +224,14 @@ bk_err_t bk_jpeg_dec_isr_register(jpeg_dec_isr_type_t isr_id, jpeg_dec_isr_cb_t 
 	{
 		jpeg_dec_auto_frame_end_int_en(1);
 		s_jpeg_dec_isr[DEC_END_OF_FRAME] = cb_isr;
+        dec_mode = DEC_END_OF_FRAME;
 	}
 	else if (isr_id == DEC_EVERY_LINE_INT)
 	{
 		jpeg_dec_auto_line_num_int_en(1);
 		//jpeg_dec_set_line_num(0);   //default by every 8 line decode once 
 		s_jpeg_dec_isr[DEC_EVERY_LINE_INT] = cb_isr;
+        dec_mode = DEC_EVERY_LINE_INT;
 	}
 	else
 	{
@@ -259,7 +286,7 @@ bool jpeg_dec_comp_status(uint8_t *src, uint32_t src_size, uint32_t dec_size)
 	}
 	else
 	{
-		LOGD("decoder error, %u, %u, %u, %u\n", src_size, dec_size, strip, max);
+		LOGD("decoder_error, %u, %u, %u, %u\n", src_size, dec_size, strip, max);
     }
 	return ok;
 }
@@ -267,23 +294,28 @@ bool jpeg_dec_comp_status(uint8_t *src, uint32_t src_size, uint32_t dec_size)
 
 static void jpeg_decoder_isr(void)
 {
-#if CONFIG_SOC_BK7236XX  //enable huf err int
-	if(jpeg_dec_ll_get_reg0x5f_dec_huf_err_int_clr())
-	{
-        jpeg_dec_ll_set_reg0x5f_dec_huf_err_int_clr(1);
-		if (s_jpeg_dec_isr[DEC_ERR]) 
-			s_jpeg_dec_isr[DEC_ERR](&result);
-
-        if (!jpeg_dec_hal_get_jpeg_dec_linen())
-        {
-            bk_jpeg_dec_stop();
-            return;
-        }
-	}
-#endif
     result.pixel_x = image_ppi >> 16;
     result.pixel_y = image_ppi & 0xFFFF;
 
+#if CONFIG_SOC_BK7236XX  //enable huf err int
+	if(jpeg_dec_ll_get_reg0x5f_dec_huf_err_int_clr())
+	{
+        LOGI("%s int status = %x \r\n", __func__, jpeg_dec_hal_get_int_status_value());
+        bk_jpeg_dec_stop();
+        jpeg_dec_ll_set_reg0x5f_dec_huf_err_int_clr(1);
+        jpeg_dec_ll_set_reg0x56_value(0xFFFFFFFF);
+
+        if (result.ok)
+        {
+    		if (s_jpeg_dec_isr[DEC_ERR])
+            {
+    			s_jpeg_dec_isr[DEC_ERR](&result);
+            }
+        }
+        result.ok = false;
+        return;
+	}
+#endif
 
 	if (jpeg_dec_ll_get_reg0x5f_dec_frame_int_clr()) 
     {
@@ -333,10 +365,9 @@ static void jpeg_decoder_isr(void)
                 result.ok = jpeg_dec_comp_status(jpeg_address, jpeg_size, result.size);
 #endif
                 bk_jpeg_dec_stop();
-
                 if (s_jpeg_dec_isr[DEC_EVERY_LINE_INT]) 
                     s_jpeg_dec_isr[DEC_EVERY_LINE_INT](&result);
-
+                
             }
             else
 			{
@@ -364,6 +395,7 @@ static void jpeg_decoder_isr(void)
 				if (s_jpeg_dec_isr[DEC_EVERY_LINE_INT]) 
 					s_jpeg_dec_isr[DEC_EVERY_LINE_INT](&result);
 				//jpeg_dec_hal_set_dec_cmd(JPEGDEC_START);
+				
 			}
 			//jpeg_dec_hal_set_dec_frame_int_clr(1);
 		}
@@ -385,6 +417,11 @@ static void jpeg_decoder_isr(void)
 #endif
 		}
 	} 
+    else
+    {
+        LOGE("%s %d %x\n", __func__, __LINE__, jpeg_dec_hal_get_int_status_value());
+        jpeg_dec_hal_set_int_status_value(0xFFFF);
+    }
 }
 
 

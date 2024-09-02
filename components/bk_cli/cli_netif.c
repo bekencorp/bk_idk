@@ -10,7 +10,7 @@
 extern void make_tcp_server_command(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv);
 
 static const char *ifname[NETIF_IF_COUNT] = {
-	"sta", "ap", "eth",
+	"sta", "ap", "bridge", "eth",
 };
 
 static inline const char *if_idx_name(netif_if_t ifx)
@@ -32,7 +32,7 @@ static void ip_cmd_show_ip(int ifx)
 {
 	netif_ip4_config_t config;
 
-	if (ifx == NETIF_IF_STA || ifx == NETIF_IF_AP || ifx == NETIF_IF_ETH) {
+	if (ifx == NETIF_IF_STA || ifx == NETIF_IF_AP || ifx == NETIF_IF_ETH || ifx == NETIF_IF_BRIDGE) {
 		BK_LOG_ON_ERR(bk_netif_get_ip4_config(ifx, &config));
 		CLI_DUMP_IP(" ", ifx, &config);
 	} else {
@@ -43,6 +43,10 @@ static void ip_cmd_show_ip(int ifx)
 #ifdef CONFIG_ETH
 		BK_LOG_ON_ERR(bk_netif_get_ip4_config(NETIF_IF_ETH, &config));
 		CLI_DUMP_IP(" ", NETIF_IF_ETH, &config);
+#endif
+#if CONFIG_BRIDGE
+		BK_LOG_ON_ERR(bk_netif_get_ip4_config(NETIF_IF_BRIDGE, &config));
+		CLI_DUMP_IP(" ", NETIF_IF_BRIDGE, &config);
 #endif
 	}
 }
@@ -62,6 +66,10 @@ void cli_ip_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 #ifdef CONFIG_ETH
 		} else if (os_strcmp("eth", argv[1]) == 0) {
 			ifx = NETIF_IF_ETH;
+#endif
+#if CONFIG_BRIDGE
+		} else if (os_strcmp("br", argv[1]) == 0) {
+			ifx = NETIF_IF_BRIDGE;
 #endif
 		} else {
 			CLI_LOGE("invalid netif name\n");
@@ -98,7 +106,7 @@ error:
 }
 
 
-#if CONFIG_IPV6
+#if 0// CONFIG_IPV6
 static void ip6_cmd_show_ip(int ifx)
 {
 	if (ifx == NETIF_IF_STA || ifx == NETIF_IF_AP) {
@@ -321,7 +329,7 @@ static const struct cli_command s_netif_commands[] = {
 	{"ipconfig", "ipconfig [sta|ap][{ip}{mask}{gate}{dns}]", cli_ip_cmd},
 	{"dhcpc", "dhcpc", cli_dhcpc_cmd},
 	{"ping", "ping <ip>", cli_ping_cmd},
-#ifdef CONFIG_IPV6
+#if 0//def CONFIG_IPV6
 	{"ping6", "ping6 xxx", cli_ping_cmd},
 	{"ip6", "ip6 [sta|ap][{ip}{state}]", cli_ip6_cmd},
 #endif

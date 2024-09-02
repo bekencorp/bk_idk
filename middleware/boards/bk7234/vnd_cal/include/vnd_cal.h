@@ -62,4 +62,6 @@ extern void vnd_cal_set_ble_pwr_level(uint8 level);
 extern void vnd_cal_set_auto_pwr_flag(uint8 flag);
 extern void vnd_cal_set_auto_pwr_thred(AUTO_PWR_CALI_CONTEXT auto_pwr);
 extern void vnd_cal_set_epa_config(UINT8 epa_flag, UINT16 rx_gpio, UINT16 tx_gpio, UINT32 gainbase_b, UINT32 gainbase_g);
+extern void vnd_cal_version_log(char *version);
+extern void vnd_cal_set_cca_level(UINT8 offset);
 #endif

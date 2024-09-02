@@ -132,3 +132,34 @@ int bk_feature_get_scan_speed_level(void) {
 	return CONFIG_SCAN_SPEED_LEVEL;
 }
 
+int bk_feature_get_mac_sup_sta_max_num(void) {
+#if CONFIG_WIFI_MAC_SUPPORT_STAS_MAX_NUM
+    return CONFIG_WIFI_MAC_SUPPORT_STAS_MAX_NUM;
+#else
+    return 2;
+#endif
+}
+
+int bk_feature_network_found_event(void) {
+#if CONFIG_NETWORK_FOUND_EVENT_ENABLE
+	return 1;
+#else
+	return 0;
+#endif
+}
+
+int bk_feature_save_rfcali_to_otp_enable(void) {
+#if (CONFIG_OTP && CONFIG_PHY_RFCALI_TO_OTP)
+    return 1;
+#else
+    return 0;
+#endif
+}
+
+int bk_feature_phy_log_enable(void) {
+#if CONFIG_PHY_LOG_ENABLE
+	return 1;
+#else
+	return 0;
+#endif
+}

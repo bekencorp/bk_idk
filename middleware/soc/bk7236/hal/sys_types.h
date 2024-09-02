@@ -102,10 +102,32 @@ extern "C" {
 #define LOW_POWER_RESTORE_DELAY_TIME_HARDWARE            (0.65) //0.6ms,cpu 60M 0.51ms
 #define LOW_POWER_XTAL_DPLL_STABILITY_DELAY_TIME  ((LOW_POWER_DPLL_STABILITY_DELAY_TIME+LOW_POWER_RESTORE_DELAY_TIME_HARDWARE)*1000)
 
-#define LOW_POWER_26M_STABILITY_DELAY_TIME_HARDWARE      (1000)
+#define LOW_POWER_26M_STABILITY_DELAY_TIME_HARDWARE      (1300)
 #define LOW_POWER_DELAY_TIME_HARDWARE                    (500)
 
 #define PM_POWER_ON_ROSC_STABILITY_TIME                  (26000*2)//about 2ms,when cpu run 26M
+
+/*unit:32k clk cycles
+  first delay version is base on following configration*/
+#define PM_DEFAULT_LOW_VOLTAGE_WAKEUP1_DELAY 3
+#define PM_DEFAULT_LOW_VOLTAGE_WAKEUP2_DELAY 3
+#define PM_DEFAULT_LOW_VOLTAGE_WAKEUP3_DELAY 3
+
+/*current used wakeup delay*/
+#define PM_CURRENT_LOW_VOLTAGE_WAKEUP1_DELAY 8
+#define PM_CURRENT_LOW_VOLTAGE_WAKEUP2_DELAY 8
+#define PM_CURRENT_LOW_VOLTAGE_WAKEUP3_DELAY 3
+
+/*delta between default and current,need to add to wifi wakeup delay*/
+#define PM_LOW_VOLTAGE_DELTA_WAKEUP_DELAY (int32_t)(PM_CURRENT_LOW_VOLTAGE_WAKEUP1_DELAY +\
+                                                    PM_CURRENT_LOW_VOLTAGE_WAKEUP2_DELAY +\
+                                                    PM_CURRENT_LOW_VOLTAGE_WAKEUP3_DELAY -\
+                                                    PM_DEFAULT_LOW_VOLTAGE_WAKEUP1_DELAY -\
+                                                    PM_DEFAULT_LOW_VOLTAGE_WAKEUP2_DELAY -\
+                                                    PM_DEFAULT_LOW_VOLTAGE_WAKEUP3_DELAY)
+
+//ceil()                                        
+#define PM_LOW_VOLTAGE_DELTA_WAKEUP_DELAY_IN_US ((PM_LOW_VOLTAGE_DELTA_WAKEUP_DELAY*1000000+RTC_CLOCK_FREQ-1)/RTC_CLOCK_FREQ)
 
 #define PM_CHIP_ID_HIGH_POS                              (16)
 #define PM_CHIP_ID_MASK                                  (0xFFFF0000)
@@ -364,6 +386,7 @@ typedef enum
 {
     POWER_SUB_MODULE_NAME_PHY_BT = POWER_MODULE_NAME_WIFI_PHY*PM_MODULE_SUB_POWER_DOMAIN_MAX ,       
 	POWER_SUB_MODULE_NAME_PHY_WIFI , 
+	POWER_SUB_MODULE_NAME_PHY_RF , 
 	POWER_SUB_MODULE_NAME_PHY_NONE
 }power_sub_module_name_phy_e;
 

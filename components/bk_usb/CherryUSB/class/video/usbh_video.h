@@ -39,6 +39,7 @@ struct usbh_videostreaming {
 };
 
 struct usbh_video {
+    uint32_t idx_uvc;
     struct usbh_hubport *hport;
 
     uint8_t ctrl_intf; /* interface number */
@@ -78,6 +79,7 @@ void usbh_videostreaming_parse_yuyv2rgb565(struct usbh_urb *urb, struct usbh_vid
 void bk_usbh_video_sw_init(struct usbh_hubport *hport, uint8_t interface_num, uint8_t interface_sub_class);
 void bk_usbh_video_sw_deinit( struct usbh_hubport *hport, uint8_t interface_num, uint8_t interface_sub_class);
 
+void bk_usbh_video_unregister_dev(void);
 
 #ifdef __cplusplus
 }

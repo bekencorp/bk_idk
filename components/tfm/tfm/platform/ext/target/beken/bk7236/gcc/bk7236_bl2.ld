@@ -26,9 +26,8 @@ MEMORY
 {
   FLASH (rx)  : ORIGIN = BL2_CODE_START, LENGTH = BL2_CODE_SIZE
   RAM   (rwx) : ORIGIN = BL2_DATA_START, LENGTH = BL2_DATA_SIZE
-#if !CONFIG_SECUREBOOT
-  IRAM (rwx)  : ORIGIN = 0x28030000, LENGTH = 0x8000
-#endif
+  IRAM (rwx)  : ORIGIN = 0x28030000, LENGTH = 0xa000
+
 }
 
 __heap_size__  = BL2_HEAP_SIZE;
@@ -48,6 +47,12 @@ SECTIONS
         __Vectors_End = .;
         __Vectors_Size = __Vectors_End - __Vectors;
         __end__ = .;
+        *(.fix.reset_entry)
+        
+        EXCLUDE_FILE
+            (
+            crc32.o system.o bl_tra_hcit.o bootloader.o bl_extflash.o bl_uart.o bl_spi.o bl_bk_hci_protocol.o
+            )
 
         *(.text*)
 
@@ -102,11 +107,13 @@ SECTIONS
         LONG (ADDR(.data))
         LONG (SIZEOF(.data))
 
-#if !CONFIG_SECUREBOOT
+        LONG (LOADADDR(.vectors_iram))
+        LONG (ADDR(.vectors_iram))
+        LONG (SIZEOF(.vectors_iram))
+
         LONG (LOADADDR(.iram))
         LONG (ADDR(.iram))
         LONG (SIZEOF(.iram))
-#endif
         __copy_table_end__ = .;
     } > FLASH
 
@@ -137,7 +144,22 @@ SECTIONS
     } > RAM AT > FLASH
 #endif
 
-#if !CONFIG_SECUREBOOT
+    .vectors_iram :
+    {
+        . = ALIGN(512);
+        __vector_iram_table = .;
+        KEEP(*(.vectors_iram))
+        . = ALIGN(4);
+        *crc32.o(.text.* *.rodata *.rodata.*)
+        *system.o(.text.* *.rodata *.rodata.*)
+        *bl_tra_hcit.o(.text.* *.rodata *.rodata.*)
+        *bootloader.o(.text.* *.rodata *.rodata.*)
+        *bl_extflash.o(.text.* *.rodata *.rodata.*)
+        *bl_uart.o(.text.* *.rodata *.rodata.*)
+        *bl_spi.o(.text.* *.rodata *.rodata.*)
+        *bl_bk_hci_protocol.o(.text.* *.rodata *.rodata.*)
+    } > IRAM AT > FLASH
+
     .iram :
     {
         . = ALIGN(4);
@@ -147,7 +169,7 @@ SECTIONS
         . = ALIGN(4);
         __iram_end__ = .;
     } > IRAM AT > FLASH
-#endif
+
 
 
     .tfm_bl2_shared_data :
@@ -213,6 +235,7 @@ SECTIONS
         __HeapLimit = .;
         __heap_limit = .; /* Add for _sbrk */
     } > RAM
+    Image$$ARM_LIB_HEAP$$ZI$$Base = ADDR(.heap);
     Image$$ARM_LIB_HEAP$$ZI$$Limit = ADDR(.heap) + SIZEOF(.heap);
 
     PROVIDE(__stack = Image$$ARM_LIB_STACK$$ZI$$Limit);

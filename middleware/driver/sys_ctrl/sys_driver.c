@@ -211,6 +211,22 @@ void sys_drv_set_ana_cb_cal_manu_val(uint32_t value)
     sys_drv_exit_critical(int_level);
 }
 
+void sys_drv_set_ana_reg11_apfms(uint32_t value)
+{
+    uint32_t int_level = sys_drv_enter_critical();
+
+    sys_hal_set_ana_reg11_apfms(value);
+    sys_drv_exit_critical(int_level);
+}
+
+void sys_drv_set_ana_reg12_dpfms(uint32_t value)
+{
+    uint32_t int_level = sys_drv_enter_critical();
+
+    sys_hal_set_ana_reg12_dpfms(value);
+    sys_drv_exit_critical(int_level);
+}
+
 void sys_drv_set_ana_vlsel_ldodig(uint32_t value)
 {
     uint32_t int_level = sys_drv_enter_critical();

@@ -41,66 +41,86 @@ typedef volatile union {
 typedef volatile union {
 	struct {
 		uint32_t boot_mode                        :  1; /**<bit[0 : 0] */
-		uint32_t reserved_bit_1_7                 :  7; /**<bit[1 : 7] */
-		uint32_t jtag_core_sel                    :  1; /**<bit[8 : 8] */
+		uint32_t reserved_bit_1_6                 :  6; /**<bit[1 : 6] */
+		uint32_t jtag_core_sel                    :  2; /**<bit[7 : 8] */
 		uint32_t flash_sel                        :  1; /**<bit[9 : 9] */
 		uint32_t reserved_bit_10_31               : 22; /**<bit[10 : 31] */
 	};
 	uint32_t v;
 } sys_cpu_storage_connect_op_select_t;
 
-
+/*reg0x03*/
 typedef volatile union {
 	struct {
 		uint32_t core0_halted                     :  1; /**<bit[0 : 0] */
 		uint32_t core1_halted                     :  1; /**<bit[1 : 1] */
-		uint32_t reserved_bit_2_3                 :  2; /**<bit[2 : 3] */
+		uint32_t core2_halted                     :  1; /**<bit[2 : 2] */
+		uint32_t reserved_bit_3_3                 :  1; /**<bit[3 : 3] */
 		uint32_t cpu0_sw_reset                    :  1; /**<bit[4 : 4] */
 		uint32_t cpu1_sw_reset                    :  1; /**<bit[5 : 5] */
-		uint32_t reserved_bit_6_7                 :  2; /**<bit[6 : 7] */
+		uint32_t cpu2_sw_reset                    :  1; /**<bit[6 : 6] */
+		uint32_t reserved_bit_7_7                 :  1; /**<bit[7 : 7] */
 		uint32_t cpu0_pwr_dw_state                :  1; /**<bit[8 : 8] */
 		uint32_t cpu1_pwr_dw_state                :  1; /**<bit[9 : 9] */
-		uint32_t reserved_bit_10_31               : 22; /**<bit[10 : 31] */
+		uint32_t cpu2_pwr_dw_state                :  1; /**<bit[10 : 10] */
+		uint32_t reserved_bit_11_31               : 21; /**<bit[11 : 31] */
 	};
 	uint32_t v;
 } sys_cpu_current_run_status_t;
 
-
+/*reg0x04*/
 typedef volatile union {
 	struct {
 		uint32_t cpu0_sw_rst                      :  1; /**<bit[0 : 0] */
 		uint32_t cpu0_pwr_dw                      :  1; /**<bit[1 : 1] */
 		uint32_t cpu0_int_mask                    :  1; /**<bit[2 : 2] */
 		uint32_t cpu0_halt                        :  1; /**<bit[3 : 3] */
-		uint32_t reserved_4_7                     :  4; /**<bit[4 : 7] */
+		uint32_t cpu0_speed                       :  1; /**<bit[4 : 4] */
+		uint32_t cpu0_rxevt_sel                   :  1; /**<bit[5 : 5] */
+		uint32_t reserved_6_7                     :  2; /**<bit[6 : 7] */
 		uint32_t cpu0_offset                      : 24; /**<bit[8 : 31] */
 	};
 	uint32_t v;
 } sys_cpu0_int_halt_clk_op_t;
 
-
+/*reg0x05*/
 typedef volatile union {
 	struct {
 		uint32_t cpu1_sw_rst                      :  1; /**<bit[0 : 0] */
 		uint32_t cpu1_pwr_dw                      :  1; /**<bit[1 : 1] */
 		uint32_t cpu1_int_mask                    :  1; /**<bit[2 : 2] */
 		uint32_t cpu1_halt                        :  1; /**<bit[3 : 3] */
-		uint32_t cpu0_bus_clk_2div                :  1; /**<bit[4 : 4] */
-		uint32_t reserved_5_7                     :  3; /**<bit[5 : 7] */
+		uint32_t cpu1_speed                       :  1; /**<bit[4 : 4] */
+		uint32_t cpu1_rxevt_sel                   :  1; /**<bit[5 : 5] */
+		uint32_t reserved_6_7                     :  2; /**<bit[6 : 7] */
 		uint32_t cpu1_offset                      : 24; /**<bit[8 : 31] */
 	};
 	uint32_t v;
 } sys_cpu1_int_halt_clk_op_t;
+/*reg0x06*/
+typedef volatile union {
+	struct {
+		uint32_t cpu2_sw_rst                      :  1; /**<bit[0 : 0] */
+		uint32_t cpu2_pwr_dw                      :  1; /**<bit[1 : 1] */
+		uint32_t cpu2_int_mask                    :  1; /**<bit[2 : 2] */
+		uint32_t cpu2_halt                        :  1; /**<bit[3 : 3] */
+		uint32_t cpu2_speed                       :  1; /**<bit[4 : 4] */
+		uint32_t cpu2_rxevt_sel                   :  1; /**<bit[5 : 5] */
+		uint32_t reserved_6_7                     :  2; /**<bit[6 : 7] */
+		uint32_t cpu2_offset                      : 24; /**<bit[8 : 31] */
+	};
+	uint32_t v;
+} sys_cpu2_int_halt_clk_op_t;
 
-
+/*reg0x07*/
 typedef volatile union {
 	struct {
 		uint32_t reserved_0_31                    : 32; /**<bit[0 : 31] */
 	};
 	uint32_t v;
-} sys_reserved_reg0x6_t;
+} sys_reserved_reg0x7_t;
 
-
+/*reg0x08*/
 typedef volatile union {
 	struct {
 		uint32_t clkdiv_core                      :  4; /**<bit[0 : 3] */
@@ -129,7 +149,7 @@ typedef volatile union {
 	uint32_t v;
 } sys_cpu_clk_div_mode1_t;
 
-
+/*reg0x09*/
 typedef volatile union {
 	struct {
 		uint32_t clkdiv_disp_h                    :  3; /**<bit[0 : 2] */
@@ -138,7 +158,9 @@ typedef volatile union {
 		uint32_t cksel_psram                      :  1; /**<bit[5 : 5] */
 		uint32_t ckdiv_qspi0                      :  4; /**<bit[6 : 9] */
 		uint32_t cksel_qspi0                      :  1; /**<bit[10 : 10] */
-		uint32_t reserved_11_13                   :  3; /**<bit[11 : 13] */
+		uint32_t cksel_i2s1                       :  1; /**<bit[11 : 11] */
+		uint32_t cksel_i2s2                       :  1; /**<bit[12 : 12] */
+		uint32_t reserved_13_13                   :  1; /**<bit[13 : 13] */
 		uint32_t ckdiv_sdio                       :  3; /**<bit[14 : 16] */
 		uint32_t cksel_sdio                       :  1; /**<bit[17 : 17] */
 		uint32_t ckdiv_auxs                       :  4; /**<bit[18 : 21] */
@@ -146,12 +168,12 @@ typedef volatile union {
 		uint32_t cksel_flash                      :  2; /**<bit[24 : 25] */
 		uint32_t ckdiv_flash                      :  2; /**<bit[26 : 27] */
 		uint32_t ckdiv_i2s0                       :  3; /**<bit[28 : 30] */
-		uint32_t reserved_bit_31_31               :  1; /**<bit[31 : 31] */
+		uint32_t clkdiv_auxs                      :  1; /**<bit[31 : 31] */
 	};
 	uint32_t v;
 } sys_cpu_clk_div_mode2_t;
 
-
+/*reg0x0a*/
 typedef volatile union {
 	struct {
 		uint32_t ckdiv_26m                        :  2; /**<bit[0 : 1] */
@@ -160,12 +182,18 @@ typedef volatile union {
 		uint32_t clksel_spi1                      :  1; /**<bit[5 : 5] */
 		uint32_t ckdiv_qspi1                      :  4; /**<bit[6 : 9] */
 		uint32_t cksel_qspi1                      :  1; /**<bit[10 : 10] */
-		uint32_t reserved_bit_11_31               : 21; /**<bit[11 : 31] */
+		uint32_t ckdiv_enet                       :  1; /**<bit[11 : 11] */
+		uint32_t cksel_enet                       :  1; /**<bit[12 : 12] */
+		uint32_t ckdiv_jpeg                       :  1; /**<bit[13 : 13] */
+		uint32_t cksel_jpeg                       :  1; /**<bit[14 : 14] */
+		uint32_t cksel_auxs_cis                   :  2; /**<bit[15 : 16] */
+		uint32_t ckdiv_auxs_cis                   :  5; /**<bit[17 : 21] */
+		uint32_t reserved_22_31                   : 10; /**<bit[22 : 31] */
 	};
 	uint32_t v;
 } sys_cpu_26m_wdt_clk_div_t;
 
-
+/*reg0x0b*/
 typedef volatile union {
 	struct {
 		uint32_t anaspi_freq                      :  6; /**<bit[0 : 5] */
@@ -174,7 +202,7 @@ typedef volatile union {
 	uint32_t v;
 } sys_cpu_anaspi_freq_t;
 
-
+/*reg0x0c*/
 typedef volatile union {
 	struct {
 		uint32_t i2c0_cken                        :  1; /**<bit[0 : 0] */
@@ -213,7 +241,7 @@ typedef volatile union {
 	uint32_t v;
 } sys_cpu_device_clk_enable_t;
 
-
+/*reg0x0d*/
 typedef volatile union {
 	struct {
 		uint32_t h264_cken                        :  1; /**<bit[0 : 0] */
@@ -221,85 +249,90 @@ typedef volatile union {
 		uint32_t i2s2_cken                        :  1; /**<bit[2 : 2] */
 		uint32_t yuv_cken                         :  1; /**<bit[3 : 3] */
 		uint32_t slcd_cken                        :  1; /**<bit[4 : 4] */
-		uint32_t reserved_5_31                    : 27; /**<bit[5 : 31] */
+		uint32_t lin_cken                         :  1; /**<bit[5 : 5] */
+		uint32_t scr_cken                         :  1; /**<bit[6 : 6] */
+		uint32_t enet_cken                        :  1; /**<bit[7 : 7] */
+		uint32_t jpeg_cken                        :  1; /**<bit[8 : 8] */
+		uint32_t cis_auxs_cken                    :  1; /**<bit[9 : 9] */
+		uint32_t reserved_10_31                   : 22; /**<bit[10 : 31] */
 	};
 	uint32_t v;
 } sys_reserver_reg0xd_t;
 
-
+/*reg0x0e, sd:shutdown*/
 typedef volatile union {
 	struct {
-		uint32_t uart1_mem_sd                     :  1; /**<bit[0 : 0] */
-		uint32_t uart2                            :  1; /**<bit[1 : 1] */
-		uint32_t spi1                             :  1; /**<bit[2 : 2] */
-		uint32_t sdio                             :  1; /**<bit[3 : 3] */
-		uint32_t usb                              :  1; /**<bit[4 : 4] */
-		uint32_t can                              :  1; /**<bit[5 : 5] */
-		uint32_t qspi0                            :  1; /**<bit[6 : 6] */
-		uint32_t qspi1                            :  1; /**<bit[7 : 7] */
-		uint32_t pram                             :  1; /**<bit[8 : 8] */
-		uint32_t fft                              :  1; /**<bit[9 : 9] */
-		uint32_t abc                              :  1; /**<bit[10 : 10] */
-		uint32_t aud                              :  1; /**<bit[11 : 11] */
-		uint32_t i2s0                             :  1; /**<bit[12 : 12] */
-		uint32_t i2s1                             :  1; /**<bit[13 : 13] */
-		uint32_t i2s2                             :  1; /**<bit[14 : 14] */
-		uint32_t jpge                             :  1; /**<bit[15 : 15] */
-		uint32_t yuv                              :  1; /**<bit[16 : 16] */
-		uint32_t jpgd                             :  1; /**<bit[17 : 17] */
-		uint32_t disp                             :  1; /**<bit[18 : 18] */
-		uint32_t dmad                             :  1; /**<bit[19 : 19] */
-		uint32_t h26f                             :  1; /**<bit[20 : 20] */
-		uint32_t mac                              :  1; /**<bit[21 : 21] */
-		uint32_t phy                              :  1; /**<bit[22 : 22] */
-		uint32_t xvr                              :  1; /**<bit[23 : 23] */
-		uint32_t irda                             :  1; /**<bit[24 : 24] */
-		uint32_t la                               :  1; /**<bit[25 : 25] */
-		uint32_t flsh                             :  1; /**<bit[26 : 26] */
-		uint32_t uart                             :  1; /**<bit[27 : 27] */
-		uint32_t spi0                             :  1; /**<bit[28 : 28] */
-		uint32_t enc                              :  1; /**<bit[29 : 29] */
-		uint32_t dma0                             :  1; /**<bit[30 : 30] */
-		uint32_t dma1                             :  1; /**<bit[31 : 31] */
+		uint32_t uart1_sd                         :  1; /**<bit[0 : 0] */
+		uint32_t uart2_sd                         :  1; /**<bit[1 : 1] */
+		uint32_t spi1_sd                          :  1; /**<bit[2 : 2] */
+		uint32_t sdio_sd                          :  1; /**<bit[3 : 3] */
+		uint32_t usb_sd                           :  1; /**<bit[4 : 4] */
+		uint32_t can_sd                           :  1; /**<bit[5 : 5] */
+		uint32_t qspi0_sd                         :  1; /**<bit[6 : 6] */
+		uint32_t qspi1_sd                         :  1; /**<bit[7 : 7] */
+		uint32_t pram_sd                          :  1; /**<bit[8 : 8] */
+		uint32_t fft_sd                           :  1; /**<bit[9 : 9] */
+		uint32_t abc_sd                           :  1; /**<bit[10 : 10] */
+		uint32_t aud_sd                           :  1; /**<bit[11 : 11] */
+		uint32_t i2s0_sd                          :  1; /**<bit[12 : 12] */
+		uint32_t i2s1_sd                          :  1; /**<bit[13 : 13] */
+		uint32_t i2s2_sd                          :  1; /**<bit[14 : 14] */
+		uint32_t jpge_sd                          :  1; /**<bit[15 : 15] */
+		uint32_t yuv_sd                           :  1; /**<bit[16 : 16] */
+		uint32_t jpgd_sd                          :  1; /**<bit[17 : 17] */
+		uint32_t disp_sd                          :  1; /**<bit[18 : 18] */
+		uint32_t dmad_sd                          :  1; /**<bit[19 : 19] */
+		uint32_t h26f_sd                          :  1; /**<bit[20 : 20] */
+		uint32_t mac_sd                           :  1; /**<bit[21 : 21] */
+		uint32_t phy_sd                           :  1; /**<bit[22 : 22] */
+		uint32_t xvr_sd                           :  1; /**<bit[23 : 23] */
+		uint32_t irda_sd                          :  1; /**<bit[24 : 24] */
+		uint32_t la_sd                            :  1; /**<bit[25 : 25] */
+		uint32_t flsh_sd                          :  1; /**<bit[26 : 26] */
+		uint32_t uart_sd                          :  1; /**<bit[27 : 27] */
+		uint32_t spi0_sd                          :  1; /**<bit[28 : 28] */
+		uint32_t enc_sd                           :  1; /**<bit[29 : 29] */
+		uint32_t dma0_sd                          :  1; /**<bit[30 : 30] */
+		uint32_t dma1_sd                          :  1; /**<bit[31 : 31] */
 	};
 	uint32_t v;
 } sys_cpu_device_mem_ctrl1_t;
 
-
+/*reg0x0f*/
 typedef volatile union {
 	struct {
-		uint32_t uart1_mem_ds                     :  1; /**<bit[0 : 0] */
-		uint32_t uart2                            :  1; /**<bit[1 : 1] */
-		uint32_t spi1                             :  1; /**<bit[2 : 2] */
-		uint32_t sdio                             :  1; /**<bit[3 : 3] */
-		uint32_t usb                              :  1; /**<bit[4 : 4] */
-		uint32_t can                              :  1; /**<bit[5 : 5] */
-		uint32_t qspi0                            :  1; /**<bit[6 : 6] */
-		uint32_t qspi1                            :  1; /**<bit[7 : 7] */
-		uint32_t pram                             :  1; /**<bit[8 : 8] */
-		uint32_t fft                              :  1; /**<bit[9 : 9] */
-		uint32_t abc                              :  1; /**<bit[10 : 10] */
-		uint32_t aud                              :  1; /**<bit[11 : 11] */
-		uint32_t i2s0                             :  1; /**<bit[12 : 12] */
-		uint32_t i2s1                             :  1; /**<bit[13 : 13] */
-		uint32_t i2s2                             :  1; /**<bit[14 : 14] */
-		uint32_t jpge                             :  1; /**<bit[15 : 15] */
-		uint32_t yuv                              :  1; /**<bit[16 : 16] */
-		uint32_t jpgd                             :  1; /**<bit[17 : 17] */
-		uint32_t disp                             :  1; /**<bit[18 : 18] */
-		uint32_t dmad                             :  1; /**<bit[19 : 19] */
-		uint32_t h26f                             :  1; /**<bit[20 : 20] */
-		uint32_t mac                              :  1; /**<bit[21 : 21] */
-		uint32_t phy                              :  1; /**<bit[22 : 22] */
-		uint32_t xvr                              :  1; /**<bit[23 : 23] */
-		uint32_t irda                             :  1; /**<bit[24 : 24] */
-		uint32_t la                               :  1; /**<bit[25 : 25] */
-		uint32_t flsh                             :  1; /**<bit[26 : 26] */
-		uint32_t uart                             :  1; /**<bit[27 : 27] */
-		uint32_t spi0                             :  1; /**<bit[28 : 28] */
-		uint32_t enc                              :  1; /**<bit[29 : 29] */
-		uint32_t dma0                             :  1; /**<bit[30 : 30] */
-		uint32_t dma1                             :  1; /**<bit[31 : 31] */
+		uint32_t uart1_ds                         :  1; /**<bit[0 : 0] */
+		uint32_t uart2_ds                         :  1; /**<bit[1 : 1] */
+		uint32_t spi1_ds                          :  1; /**<bit[2 : 2] */
+		uint32_t sdio_ds                          :  1; /**<bit[3 : 3] */
+		uint32_t usb_ds                           :  1; /**<bit[4 : 4] */
+		uint32_t can_ds                           :  1; /**<bit[5 : 5] */
+		uint32_t qspi0_ds                         :  1; /**<bit[6 : 6] */
+		uint32_t qspi1_ds                         :  1; /**<bit[7 : 7] */
+		uint32_t pram_ds                          :  1; /**<bit[8 : 8] */
+		uint32_t fft_ds                           :  1; /**<bit[9 : 9] */
+		uint32_t abc_ds                           :  1; /**<bit[10 : 10] */
+		uint32_t aud_ds                           :  1; /**<bit[11 : 11] */
+		uint32_t i2s0_ds                          :  1; /**<bit[12 : 12] */
+		uint32_t i2s1_ds                          :  1; /**<bit[13 : 13] */
+		uint32_t i2s2_ds                          :  1; /**<bit[14 : 14] */
+		uint32_t jpge_ds                          :  1; /**<bit[15 : 15] */
+		uint32_t yuv_ds                           :  1; /**<bit[16 : 16] */
+		uint32_t jpgd_ds                          :  1; /**<bit[17 : 17] */
+		uint32_t disp_ds                          :  1; /**<bit[18 : 18] */
+		uint32_t dmad_ds                          :  1; /**<bit[19 : 19] */
+		uint32_t h26f_ds                          :  1; /**<bit[20 : 20] */
+		uint32_t mac_ds                           :  1; /**<bit[21 : 21] */
+		uint32_t phy_ds                           :  1; /**<bit[22 : 22] */
+		uint32_t xvr_ds                           :  1; /**<bit[23 : 23] */
+		uint32_t irda_ds                          :  1; /**<bit[24 : 24] */
+		uint32_t la_ds                            :  1; /**<bit[25 : 25] */
+		uint32_t flsh_ds                          :  1; /**<bit[26 : 26] */
+		uint32_t uart_ds                          :  1; /**<bit[27 : 27] */
+		uint32_t spi0_ds                          :  1; /**<bit[28 : 28] */
+		uint32_t enc_ds                           :  1; /**<bit[29 : 29] */
+		uint32_t dma0_ds                          :  1; /**<bit[30 : 30] */
+		uint32_t dma1_ds                          :  1; /**<bit[31 : 31] */
 	};
 	uint32_t v;
 } sys_cpu_device_mem_ctrl2_t;
@@ -321,40 +354,41 @@ typedef volatile union {
 		uint32_t pwd_mem0                         :  1; /**<bit[11 : 11] */
 		uint32_t pwd_mem4                         :  1; /**<bit[12 : 12] */
 		uint32_t pwd_ofdm                         :  1; /**<bit[13 : 13] */
-		uint32_t tcm0_pgen                        :  1; /**<bit[14 : 14] */
+		uint32_t pwd_mem5                         :  1; /**<bit[14 : 14] */
 		uint32_t rom_pgen                         :  1; /**<bit[15 : 15] */
 		uint32_t sleep_en_need_flash_idle         :  1; /**<bit[16 : 16] */
 		uint32_t sleep_en_need_cpu1_wfi           :  1; /**<bit[17 : 17] */
 		uint32_t sleep_en_need_cpu0_wfi           :  1; /**<bit[18 : 18] */
 		uint32_t sleep_en_global                  :  1; /**<bit[19 : 19] */
 		uint32_t sleep_bus_idle_bypass            :  1; /**<bit[20 : 20] */
-		uint32_t bts_wakeup_platform_en           :  1; /**<bit[21 : 21] */
+		uint32_t sleep_en_need_cpu2_wfi           :  1; /**<bit[21 : 21] */
 		uint32_t bts_soft_wakeup_req              :  1; /**<bit[22 : 22] */
 		uint32_t rom_rd_disable                   :  1; /**<bit[23 : 23] */
 		uint32_t otp_rd_disable                   :  1; /**<bit[24 : 24] */
-		uint32_t tcm1_pgen                        :  1; /**<bit[25 : 25] */
+		uint32_t tcm0_pgen                        :  1; /**<bit[25 : 25] */
 		uint32_t cpu0_subpwdm_en                  :  1; /**<bit[26 : 26] */
-		uint32_t cpu1_subpwdm_en                  :  1; /**<bit[27 : 27] */
+		uint32_t cpu2_ticktimer_32k_enable        :  1; /**<bit[27 : 27] */
 		uint32_t share_mem_clkgating_disable      :  1; /**<bit[28 : 28] */
 		uint32_t cpu0_ticktimer_32k_enable        :  1; /**<bit[29 : 29] */
 		uint32_t cpu1_ticktimer_32k_enable        :  1; /**<bit[30 : 30] */
-		uint32_t reserved_bit_31_31               :  1; /**<bit[31 : 31] */
+		uint32_t busmatrix_busy                   :  1; /**<bit[31 : 31] */
 	};
 	uint32_t v;
 } sys_cpu_power_sleep_wakeup_t;
 
 
 typedef volatile union {
-        struct {
-                uint32_t cpu0_cache_ret_en                :  1; /**<bit[0 : 0] */
-                uint32_t cpu0_cache_sleeppwd_en           :  1; /**<bit[1 : 1] */
-                uint32_t cpu0_fpu_sleeppwd_en             :  1; /**<bit[2 : 2] */
-                uint32_t reserved_3_6                     :  4; /**<bit[3 : 6] */
-                uint32_t sys2flsh_2wire                   :  1; /**<bit[7 : 7] */
-                uint32_t reserved_8_31                    : 14; /**<bit[8 : 31]*/
-        };
-        uint32_t v;
+	struct {
+		uint32_t cpu0_cache_ret_en                :  1; /**<bit[0 : 0] */
+		uint32_t cpu0_cache_sleeppwd_en           :  1; /**<bit[1 : 1] */
+		uint32_t cpu0_fpu_sleeppwd_en             :  1; /**<bit[2 : 2] */
+		uint32_t reserved_3_6                     :  4; /**<bit[3 : 6] */
+		uint32_t sys2flsh_2wire                   :  1; /**<bit[7 : 7] */
+		uint32_t reserved_8_31                    : 14; /**<bit[8 : 31]*/
+	};
+	uint32_t v;
 } sys_cpu0_lv_sleep_cfg_t;
+
 
 typedef volatile union {
 	struct {
@@ -372,8 +406,8 @@ typedef volatile union {
 		uint32_t cpu1_itcm_deep_sleep             :  1; /**<bit[11 : 11] */
 		uint32_t cpu1_dtcm_deep_sleep             :  1; /**<bit[12 : 12] */
 		uint32_t rott_deep_sleep                  :  1; /**<bit[13 : 13] */
-		uint32_t reserved0                        :  1; /**<bit[14 : 14] */
-		uint32_t reserved1                        :  1; /**<bit[15 : 15] */
+		uint32_t scal0_deep_sleep                 :  1; /**<bit[14 : 14] */
+		uint32_t scal1_deep_sleep                 :  1; /**<bit[15 : 15] */
 		uint32_t ram0_mem_sd_shutdown             :  1; /**<bit[16 : 16] */
 		uint32_t ram1_shutdown                    :  1; /**<bit[17 : 17] */
 		uint32_t ram2_shutdown                    :  1; /**<bit[18 : 18] */
@@ -388,8 +422,8 @@ typedef volatile union {
 		uint32_t cpu1_itcm_shutdown               :  1; /**<bit[27 : 27] */
 		uint32_t cpu1_dtcm_shutdown               :  1; /**<bit[28 : 28] */
 		uint32_t rott_shutdown                    :  1; /**<bit[29 : 29] */
-		uint32_t reserved2                        :  1; /**<bit[30 : 30] */
-		uint32_t reserved3                        :  1; /**<bit[31 : 31] */
+		uint32_t scal0_shutdown                   :  1; /**<bit[30 : 30] */
+		uint32_t scal1_shutdown                   :  1; /**<bit[31 : 31] */
 	};
 	uint32_t v;
 } sys_cpu_device_mem_ctrl3_t;
@@ -453,6 +487,7 @@ typedef volatile union {
 		uint32_t cpu0_h264_int_en                 :  1; /**<bit[14 : 14] */
 		uint32_t cpu0_sdmadc_int_en               :  1; /**<bit[15 : 15] */
 		uint32_t cpu0_mbox0_int_en                :  1; /**<bit[16 : 16] */
+		#define cpu0_eth_int_en  cpu0_mbox0_int_en
 		uint32_t cpu0_mbox1_int_en                :  1; /**<bit[17 : 17] */
 		uint32_t cpu0_bmc64_int_en                :  1; /**<bit[18 : 18] */
 		uint32_t cpu0_dpll_unlock_int_en          :  1; /**<bit[19 : 19] */
@@ -464,7 +499,8 @@ typedef volatile union {
 		uint32_t cpu0_dma1_nsec_int_en            :  1; /**<bit[25 : 25] */
 		uint32_t cpu0_yuvb_int_en                 :  1; /**<bit[26 : 26] */
 		uint32_t cpu0_rott_int_en                 :  1; /**<bit[27 : 27] */
-		uint32_t reserved0                        :  4; /**<bit[28 : 31] */
+		uint32_t cpu0_7816_int_en                 :  1; /**<bit[28 : 28] */
+		uint32_t reserved0                        :  3; /**<bit[29 : 31] */
 	};
 	uint32_t v;
 } sys_cpu0_int_32_63_en_t;
@@ -539,11 +575,87 @@ typedef volatile union {
 		uint32_t cpu1_dma1_nsec_int_en            :  1; /**<bit[25 : 25] */
 		uint32_t cpu1_yuvb_int_en                 :  1; /**<bit[26 : 26] */
 		uint32_t cpu1_rott_int_en                 :  1; /**<bit[27 : 27] */
-		uint32_t reserved0                        :  4; /**<bit[28 : 31] */
+		uint32_t cpu1_7816_int_en                 :  1; /**<bit[28 : 28] */
+		uint32_t reserved0                        :  3; /**<bit[29 : 31] */
 	};
 	uint32_t v;
 } sys_cpu1_int_32_63_en_t;
 
+
+
+typedef volatile union {
+	struct {
+		uint32_t cpu2_dma0_nsec_intr_en           :  1; /**<bit[0 : 0] */
+		uint32_t cpu2_encp_sec_intr_en            :  1; /**<bit[1 : 1] */
+		uint32_t cpu2_encp_nsec_intr_en           :  1; /**<bit[2 : 2] */
+		uint32_t cpu2_timer0_int_en               :  1; /**<bit[3 : 3] */
+		uint32_t cpu2_uart_int_en                 :  1; /**<bit[4 : 4] */
+		uint32_t cpu2_pwm0_int_en                 :  1; /**<bit[5 : 5] */
+		uint32_t cpu2_i2c0_int_en                 :  1; /**<bit[6 : 6] */
+		uint32_t cpu2_spi0_int_en                 :  1; /**<bit[7 : 7] */
+		uint32_t cpu2_sadc_int_en                 :  1; /**<bit[8 : 8] */
+		uint32_t cpu2_irda_int_en                 :  1; /**<bit[9 : 9] */
+		uint32_t cpu2_sdio_int_en                 :  1; /**<bit[10 : 10] */
+		uint32_t cpu2_gdma_int_en                 :  1; /**<bit[11 : 11] */
+		uint32_t cpu2_la_int_en                   :  1; /**<bit[12 : 12] */
+		uint32_t cpu2_timer1_int_en               :  1; /**<bit[13 : 13] */
+		uint32_t cpu2_i2c1_int_en                 :  1; /**<bit[14 : 14] */
+		uint32_t cpu2_uart1_int_en                :  1; /**<bit[15 : 15] */
+		uint32_t cpu2_uart2_int_en                :  1; /**<bit[16 : 16] */
+		uint32_t cpu2_spi1_int_en                 :  1; /**<bit[17 : 17] */
+		uint32_t cpu2_can_int_en                  :  1; /**<bit[18 : 18] */
+		uint32_t cpu2_usb_int_en                  :  1; /**<bit[19 : 19] */
+		uint32_t cpu2_qspi0_int_en                :  1; /**<bit[20 : 20] */
+		uint32_t cpu2_fft_int_en                  :  1; /**<bit[21 : 21] */
+		uint32_t cpu2_sbc_int_en                  :  1; /**<bit[22 : 22] */
+		uint32_t cpu2_aud_int_en                  :  1; /**<bit[23 : 23] */
+		uint32_t cpu2_i2s0_int_en                 :  1; /**<bit[24 : 24] */
+		uint32_t cpu2_jpegenc_int_en              :  1; /**<bit[25 : 25] */
+		uint32_t cpu2_jpegdec_int_en              :  1; /**<bit[26 : 26] */
+		uint32_t cpu2_lcd_display_int_en          :  1; /**<bit[27 : 27] */
+		uint32_t cpu2_dma2d_int_en                :  1; /**<bit[28 : 28] */
+		uint32_t cpu2_wifi_int_phy_mpb_en         :  1; /**<bit[29 : 29] */
+		uint32_t cpu2_wifi_int_phy_riu_en         :  1; /**<bit[30 : 30] */
+		uint32_t cpu2_wifi_mac_int_tx_rx_timer_en :  1; /**<bit[31 : 31] */
+	};
+	uint32_t v;
+} sys_cpu2_int_0_31_en_t;
+
+
+typedef volatile union {
+	struct {
+		uint32_t cpu2_wifi_mac_int_tx_rx_misc_en  :  1; /**<bit[0 : 0] */
+		uint32_t cpu2_wifi_mac_int_rx_trigger_en  :  1; /**<bit[1 : 1] */
+		uint32_t cpu2_wifi_mac_int_tx_trigger_en  :  1; /**<bit[2 : 2] */
+		uint32_t cpu2_wifi_mac_int_prot_trigger_en :  1; /**<bit[3 : 3] */
+		uint32_t cpu2_wifi_mac_int_gen_en         :  1; /**<bit[4 : 4] */
+		uint32_t cpu2_wifi_hsu_irq_en             :  1; /**<bit[5 : 5] */
+		uint32_t cpu2_wifi_int_mac_wakeup_en      :  1; /**<bit[6 : 6] */
+		uint32_t cpu2_dm_irq_en                   :  1; /**<bit[7 : 7] */
+		uint32_t cpu2_ble_irq_en                  :  1; /**<bit[8 : 8] */
+		uint32_t cpu2_bt_irq_en                   :  1; /**<bit[9 : 9] */
+		uint32_t cpu2_qspi1_int_en                :  1; /**<bit[10 : 10] */
+		uint32_t cpu2_pwm1_int_en                 :  1; /**<bit[11 : 11] */
+		uint32_t cpu2_i2s1_int_en                 :  1; /**<bit[12 : 12] */
+		uint32_t cpu2_i2s2_int_en                 :  1; /**<bit[13 : 13] */
+		uint32_t cpu2_h264_int_en                 :  1; /**<bit[14 : 14] */
+		uint32_t cpu2_sdmadc_int_en               :  1; /**<bit[15 : 15] */
+		uint32_t cpu2_mbox0_int_en                :  1; /**<bit[16 : 16] */
+		uint32_t cpu2_mbox1_int_en                :  1; /**<bit[17 : 17] */
+		uint32_t cpu2_bmc64_int_en                :  1; /**<bit[18 : 18] */
+		uint32_t cpu2_dpll_unlock_int_en          :  1; /**<bit[19 : 19] */
+		uint32_t cpu2_touched_int_en              :  1; /**<bit[20 : 20] */
+		uint32_t cpu2_usbplug_int_en              :  1; /**<bit[21 : 21] */
+		uint32_t cpu2_rtc_int_en                  :  1; /**<bit[22 : 22] */
+		uint32_t cpu2_gpio_int_en                 :  1; /**<bit[23 : 23] */
+		uint32_t cpu2_dma1_sec_int_en             :  1; /**<bit[24 : 24] */
+		uint32_t cpu2_dma1_nsec_int_en            :  1; /**<bit[25 : 25] */
+		uint32_t cpu2_yuvb_int_en                 :  1; /**<bit[26 : 26] */
+		uint32_t cpu2_rott_int_en                 :  1; /**<bit[27 : 27] */
+		uint32_t reserved0                        :  4; /**<bit[28 : 31] */
+	};
+	uint32_t v;
+} sys_cpu2_int_32_63_en_t;
 
 typedef volatile union {
 	struct {
@@ -614,7 +726,8 @@ typedef volatile union {
 		uint32_t cpu0_dma1_nsec_int_st            :  1; /**<bit[25 : 25] */
 		uint32_t cpu0_yuvb_int_st                 :  1; /**<bit[26 : 26] */
 		uint32_t cpu0_rott_int_st                 :  1; /**<bit[27 : 27] */
-		uint32_t reserved0                        :  4; /**<bit[28 : 31] */
+		uint32_t cpu0_7816_int_st                 :  1; /**<bit[28 : 28] */
+		uint32_t reserved0                        :  3; /**<bit[29 : 31] */
 	};
 	uint32_t v;
 } sys_cpu0_int_32_63_status_t;
@@ -689,10 +802,86 @@ typedef volatile union {
 		uint32_t cpu1_dma1_nsec_int_st            :  1; /**<bit[25 : 25] */
 		uint32_t cpu1_yuvb_int_st                 :  1; /**<bit[26 : 26] */
 		uint32_t cpu1_rott_int_st                 :  1; /**<bit[27 : 27] */
-		uint32_t reserved0                        :  4; /**<bit[28 : 31] */
+		uint32_t cpu1_7816_int_st                 :  1; /**<bit[28 : 28] */
+		uint32_t reserved0                        :  3; /**<bit[29 : 31] */
 	};
 	uint32_t v;
 } sys_cpu1_int_32_63_status_t;
+
+
+typedef volatile union {
+	struct {
+		uint32_t cpu2_dma0_nsec_intr_st           :  1; /**<bit[0 : 0] */
+		uint32_t cpu2_encp_sec_intr_st            :  1; /**<bit[1 : 1] */
+		uint32_t cpu2_encp_nsec_intr_st           :  1; /**<bit[2 : 2] */
+		uint32_t cpu2_timer0_int_st               :  1; /**<bit[3 : 3] */
+		uint32_t cpu2_uart_int_st                 :  1; /**<bit[4 : 4] */
+		uint32_t cpu2_pwm0_int_st                 :  1; /**<bit[5 : 5] */
+		uint32_t cpu2_i2c0_int_st                 :  1; /**<bit[6 : 6] */
+		uint32_t cpu2_spi0_int_st                 :  1; /**<bit[7 : 7] */
+		uint32_t cpu2_sadc_int_st                 :  1; /**<bit[8 : 8] */
+		uint32_t cpu2_irda_int_st                 :  1; /**<bit[9 : 9] */
+		uint32_t cpu2_sdio_int_st                 :  1; /**<bit[10 : 10] */
+		uint32_t cpu2_gdma_int_st                 :  1; /**<bit[11 : 11] */
+		uint32_t cpu2_la_int_st                   :  1; /**<bit[12 : 12] */
+		uint32_t cpu2_timer1_int_st               :  1; /**<bit[13 : 13] */
+		uint32_t cpu2_i2c1_int_st                 :  1; /**<bit[14 : 14] */
+		uint32_t cpu2_uart1_int_st                :  1; /**<bit[15 : 15] */
+		uint32_t cpu2_uart2_int_st                :  1; /**<bit[16 : 16] */
+		uint32_t cpu2_spi1_int_st                 :  1; /**<bit[17 : 17] */
+		uint32_t cpu2_can_int_st                  :  1; /**<bit[18 : 18] */
+		uint32_t cpu2_usb_int_st                  :  1; /**<bit[19 : 19] */
+		uint32_t cpu2_qspi0_int_st                :  1; /**<bit[20 : 20] */
+		uint32_t cpu2_fft_int_st                  :  1; /**<bit[21 : 21] */
+		uint32_t cpu2_sbc_int_st                  :  1; /**<bit[22 : 22] */
+		uint32_t cpu2_aud_int_st                  :  1; /**<bit[23 : 23] */
+		uint32_t cpu2_i2s0_int_st                 :  1; /**<bit[24 : 24] */
+		uint32_t cpu2_jpegenc_int_st              :  1; /**<bit[25 : 25] */
+		uint32_t cpu2_jpegdec_int_st              :  1; /**<bit[26 : 26] */
+		uint32_t cpu2_lcd_display_int_st          :  1; /**<bit[27 : 27] */
+		uint32_t cpu2_dma2d_int_st                :  1; /**<bit[28 : 28] */
+		uint32_t cpu2_wifi_int_phy_mpb_st         :  1; /**<bit[29 : 29] */
+		uint32_t cpu2_wifi_int_phy_riu_st         :  1; /**<bit[30 : 30] */
+		uint32_t cpu2_wifi_mac_int_tx_rx_timer_st :  1; /**<bit[31 : 31] */
+	};
+	uint32_t v;
+} sys_cpu2_int_0_31_status_t;
+
+
+typedef volatile union {
+	struct {
+		uint32_t cpu2_wifi_mac_int_tx_rx_misc_st  :  1; /**<bit[0 : 0] */
+		uint32_t cpu2_wifi_mac_int_rx_trigger_st  :  1; /**<bit[1 : 1] */
+		uint32_t cpu2_wifi_mac_int_tx_trigger_st  :  1; /**<bit[2 : 2] */
+		uint32_t cpu2_wifi_mac_int_prot_trigger_st :  1; /**<bit[3 : 3] */
+		uint32_t cpu2_wifi_mac_int_gen_st         :  1; /**<bit[4 : 4] */
+		uint32_t cpu2_wifi_hsu_irq_st             :  1; /**<bit[5 : 5] */
+		uint32_t cpu2_wifi_int_mac_wakeup_st      :  1; /**<bit[6 : 6] */
+		uint32_t cpu2_dm_irq_st                   :  1; /**<bit[7 : 7] */
+		uint32_t cpu2_ble_irq_st                  :  1; /**<bit[8 : 8] */
+		uint32_t cpu2_bt_irq_st                   :  1; /**<bit[9 : 9] */
+		uint32_t cpu2_qspi1_int_st                :  1; /**<bit[10 : 10] */
+		uint32_t cpu2_pwm1_int_st                 :  1; /**<bit[11 : 11] */
+		uint32_t cpu2_i2s1_int_st                 :  1; /**<bit[12 : 12] */
+		uint32_t cpu2_i2s2_int_st                 :  1; /**<bit[13 : 13] */
+		uint32_t cpu2_h264_int_st                 :  1; /**<bit[14 : 14] */
+		uint32_t cpu2_sdmadc_int_st               :  1; /**<bit[15 : 15] */
+		uint32_t cpu2_mbox0_int_st                :  1; /**<bit[16 : 16] */
+		uint32_t cpu2_mbox1_int_st                :  1; /**<bit[17 : 17] */
+		uint32_t cpu2_bmc64_int_st                :  1; /**<bit[18 : 18] */
+		uint32_t cpu2_dpll_unlock_int_st          :  1; /**<bit[19 : 19] */
+		uint32_t cpu2_touched_int_st              :  1; /**<bit[20 : 20] */
+		uint32_t cpu2_usbplug_int_st              :  1; /**<bit[21 : 21] */
+		uint32_t cpu2_rtc_int_st                  :  1; /**<bit[22 : 22] */
+		uint32_t cpu2_gpio_int_st                 :  1; /**<bit[23 : 23] */
+		uint32_t cpu2_dma1_sec_int_st             :  1; /**<bit[24 : 24] */
+		uint32_t cpu2_dma1_nsec_int_st            :  1; /**<bit[25 : 25] */
+		uint32_t cpu2_yuvb_int_st                 :  1; /**<bit[26 : 26] */
+		uint32_t cpu2_rott_int_st                 :  1; /**<bit[27 : 27] */
+		uint32_t reserved0                        :  4; /**<bit[28 : 31] */
+	};
+	uint32_t v;
+} sys_cpu2_int_32_63_status_t;
 
 
 typedef volatile union {
@@ -745,6 +934,14 @@ typedef volatile union {
 
 typedef volatile union {
 	struct {
+		uint32_t gpio_config6                     : 32; /**<bit[0 : 31] */
+	};
+	uint32_t v;
+} sys_gpio_config6_t;
+
+
+typedef volatile union {
+	struct {
 		uint32_t dbug_config0                     : 32; /**<bit[0 : 31] */
 	};
 	uint32_t v;
@@ -758,6 +955,13 @@ typedef volatile union {
 	uint32_t v;
 } sys_sys_debug_config1_t;
 
+
+typedef volatile union {
+	struct {
+		uint32_t anareg_stat                      : 32; /**<bit[0 : 31] */
+	};
+	uint32_t v;
+} sys_anareg_stat_t;
 
 typedef volatile union {
 	struct {
@@ -787,8 +991,8 @@ typedef volatile union {
 
 typedef volatile union {
 	struct {
-		uint32_t nc3                              :  1; /**<bit[0 : 0] */
-		uint32_t nc2                              :  1; /**<bit[1 : 1] */
+		uint32_t nc_0_0                           :  1; /**<bit[0 : 0] */
+		uint32_t nc_1_1                           :  1; /**<bit[1 : 1] */
 		uint32_t msw                              :  9; /**<bit[2 : 10] */
 		uint32_t ictrl                            :  3; /**<bit[11 : 13] */
 		uint32_t osc_trig                         :  1; /**<bit[14 : 14] */
@@ -797,8 +1001,8 @@ typedef volatile union {
 		uint32_t spi_rst                          :  1; /**<bit[25 : 25] */
 		uint32_t amsel                            :  1; /**<bit[26 : 26] */
 		uint32_t divctrl                          :  3; /**<bit[27 : 29] */
-		uint32_t nc1                              :  1; /**<bit[30 : 30] */
-		uint32_t nc0                              :  1; /**<bit[31 : 31] */
+		uint32_t nc_30_30                         :  1; /**<bit[30 : 30] */
+		uint32_t nc_31_31                         :  1; /**<bit[31 : 31] */
 	};
 	uint32_t v;
 } sys_ana_reg1_t;
@@ -824,8 +1028,14 @@ typedef volatile union {
 
 typedef volatile union {
 	struct {
-		uint32_t usbpen                           :  4; /**<bit[0 : 3] */
-		uint32_t usbnen                           :  4; /**<bit[4 : 7] */
+		uint32_t lbw0v9                           :  1; /**<bit[0 : 0] */
+		uint32_t sdclk_sel                        :  1; /**<bit[1 : 1] */
+		uint32_t sarrlck_rlten                    :  1; /**<bit[2 : 2] */
+		uint32_t sarrlck_inv                      :  1; /**<bit[3 : 3] */
+		uint32_t bufdrvtrm0v9                     :  1; /**<bit[4 : 4] */
+		uint32_t nc_5_5                           :  1; /**<bit[5 : 5] */
+		uint32_t inbufen0v9                       :  1; /**<bit[6 : 6] */
+		uint32_t hres_sel0v9                      :  1; /**<bit[7 : 7] */
 		uint32_t hpssren                          :  1; /**<bit[8 : 8] */
 		uint32_t ck_sel                           :  1; /**<bit[9 : 9] */
 		uint32_t anabuf_sel_rx                    :  1; /**<bit[10 : 10] */
@@ -867,20 +1077,20 @@ typedef volatile union {
 
 typedef volatile union {
 	struct {
-		uint32_t en_usb                           :  1; /**<bit[0 : 0] */
+		uint32_t nc_0_0                           :  1; /**<bit[0 : 0] */
 		uint32_t en_xtall                         :  1; /**<bit[1 : 1] */
 		uint32_t en_dco                           :  1; /**<bit[2 : 2] */
-		uint32_t en_ram                           :  1; /**<bit[3 : 3] */
+		uint32_t nc_3_3                           :  1; /**<bit[3 : 3] */
 		uint32_t en_temp                          :  1; /**<bit[4 : 4] */
 		uint32_t en_dpll                          :  1; /**<bit[5 : 5] */
 		uint32_t en_cb                            :  1; /**<bit[6 : 6] */
 		uint32_t en_lcd                           :  1; /**<bit[7 : 7] */
-		uint32_t trxspi_ctrl                      :  2; /**<bit[8 : 9] */
+		uint32_t nc_8_9                           :  2; /**<bit[8 : 9] */
 		uint32_t adc_div                          :  2; /**<bit[10 : 11] */
-		uint32_t usb_speed                        :  1; /**<bit[12 : 12] */
-		uint32_t spideepsleep                     :  1; /**<bit[13 : 13] */
-		uint32_t vsel                             :  1; /**<bit[14 : 14] */
-		uint32_t swb                              :  1; /**<bit[15 : 15] */
+		uint32_t rosc_disable                     :  1; /**<bit[12 : 12] */
+		uint32_t pwdaudpll                        :  1; /**<bit[13 : 13] */
+		uint32_t pwd_rosc_spi                     :  1; /**<bit[14 : 14] */
+		uint32_t nc_15_15                         :  1; /**<bit[15 : 15] */
 		uint32_t itune_xtall                      :  4; /**<bit[16 : 19] */
 		uint32_t xtall_ten                        :  1; /**<bit[20 : 20] */
 		uint32_t rosc_tsten                       :  1; /**<bit[21 : 21] */
@@ -969,14 +1179,18 @@ typedef volatile union {
 
 typedef volatile union {
 	struct {
-		uint32_t pasoft_st                        :  4; /**<bit[0 : 3] */
+		uint32_t nc_0_2                           :  3; /**<bit[0 : 2] */
+		uint32_t vbspbuflp1v                      :  1; /**<bit[3 : 3] */
 		uint32_t azcdcnt_manu                     :  3; /**<bit[4 : 6] */
 		uint32_t timer_sel                        :  4; /**<bit[7 : 10] */
-		uint32_t vpabucksel                       :  4; /**<bit[11 : 14] */
+		uint32_t vddgpio_sel                      :  1; /**<bit[11 : 11] */
+		uint32_t en_usbvcc1v8                     :  1; /**<bit[12 : 12] */
+		uint32_t en_usbvcc3v                      :  1; /**<bit[13 : 13] */
+		uint32_t nc_14_14                         :  1; /**<bit[14 : 14] */
 		uint32_t spi_timerwken                    :  1; /**<bit[15 : 15] */
-		uint32_t nc_16_16                         :  1; /**<bit[16 : 16] */
+		uint32_t spi_byp32pwd                     :  1; /**<bit[16 : 16] */
 		uint32_t sd                               :  1; /**<bit[17 : 17] */
-		uint32_t ioldosel                         :  1; /**<bit[18 : 18] */
+		uint32_t nc_18_18                         :  1; /**<bit[18 : 18] */
 		uint32_t iobyapssen                       :  1; /**<bit[19 : 19] */
 		uint32_t ckfs                             :  2; /**<bit[20 : 21] */
 		uint32_t ckintsel                         :  1; /**<bit[22 : 22] */
@@ -1038,20 +1252,17 @@ typedef volatile union {
 	struct {
 		uint32_t pwdovp1v                         :  1; /**<bit[0 : 0] */
 		uint32_t asoft_stc                        :  4; /**<bit[1 : 4] */
-		uint32_t volen                            :  1; /**<bit[5 : 5] */
-		uint32_t dpfms                            :  5; /**<bit[6 : 10] */
-		uint32_t dtmpo_sel                        :  2; /**<bit[11 : 12] */
-		uint32_t dmpoen                           :  1; /**<bit[13 : 13] */
-		uint32_t pavea_sel                        :  2; /**<bit[14 : 15] */
-		uint32_t dforcepfm                        :  1; /**<bit[16 : 16] */
-		uint32_t dcls                             :  3; /**<bit[17 : 19] */
-		uint32_t dswrsten                         :  1; /**<bit[20 : 20] */
-		uint32_t dripc                            :  3; /**<bit[21 : 23] */
-		uint32_t drampc                           :  4; /**<bit[24 : 27] */
-		uint32_t drampcen                         :  1; /**<bit[28 : 28] */
-		uint32_t paenburst                        :  1; /**<bit[29 : 29] */
-		uint32_t papfmen                          :  1; /**<bit[30 : 30] */
-		uint32_t enbuckpa                         :  1; /**<bit[31 : 31] */
+		uint32_t dldo_czsel                       :  3; /**<bit[5 : 7] */
+		uint32_t dldo_rzsel                       :  2; /**<bit[8 : 9] */
+		uint32_t nc_10_11                         :  2; /**<bit[10 : 11] */
+		uint32_t vtrxspisel                       :  2; /**<bit[12 : 13] */
+		uint32_t nc_14_19                         :  6; /**<bit[14 : 19] */
+		uint32_t aldo_czsel                       :  3; /**<bit[20 : 22] */
+		uint32_t aldo_rzsel                       :  2; /**<bit[23 : 24] */
+		uint32_t nc_25_27                         :  3; /**<bit[25 : 27] */
+		uint32_t psldo_swb                        :  1; /**<bit[28 : 28] */
+		uint32_t vpsramsel                        :  2; /**<bit[29 : 30] */
+		uint32_t enpsram                          :  1; /**<bit[31 : 31] */
 	};
 	uint32_t v;
 } sys_ana_reg13_t;
@@ -1059,8 +1270,13 @@ typedef volatile union {
 
 typedef volatile union {
 	struct {
-		uint32_t chs                              : 16; /**<bit[0 : 15] */
-		uint32_t en_lpmod                         :  1; /**<bit[16 : 16] */
+		uint32_t reg                              : 10; /**<bit[0 : 9] */
+		uint32_t en_adcmode                       :  1; /**<bit[10 : 10] */
+		uint32_t en_out_test1v                    :  1; /**<bit[11 : 11] */
+		uint32_t nc_12_12                         :  1; /**<bit[12 : 12] */
+		uint32_t sel_seri_cap                     :  1; /**<bit[13 : 13] */
+		uint32_t en_seri_cap                      :  1; /**<bit[14 : 14] */
+		uint32_t cal_ctrl                         :  2; /**<bit[15 : 16] */
 		uint32_t cal_vth                          :  3; /**<bit[17 : 19] */
 		uint32_t crg                              :  2; /**<bit[20 : 21] */
 		uint32_t vrefs                            :  4; /**<bit[22 : 25] */
@@ -1074,18 +1290,14 @@ typedef volatile union {
 
 typedef volatile union {
 	struct {
-		uint32_t cal_number1v                     :  4; /**<bit[0 : 3] */
-		uint32_t cal_period1v                     :  9; /**<bit[4 : 12] */
-		uint32_t test_number1v                    :  4; /**<bit[13 : 16] */
-		uint32_t test_period1v                    :  4; /**<bit[17 : 20] */
-		uint32_t nc_21_21                         :  1; /**<bit[21 : 21] */
-		uint32_t chs_sel_cal1v                    :  4; /**<bit[22 : 25] */
-		uint32_t cal_done_clr1v                   :  1; /**<bit[26 : 26] */
-		uint32_t en_cal_force1v                   :  1; /**<bit[27 : 27] */
-		uint32_t en_cal_auto1v                    :  1; /**<bit[28 : 28] */
-		uint32_t en_scm                           :  1; /**<bit[29 : 29] */
-		uint32_t en_adcmod                        :  1; /**<bit[30 : 30] */
-		uint32_t enfsr1v                          :  1; /**<bit[31 : 31] */
+		uint32_t test_number1v                    :  4; /**<bit[0 : 3] */
+		uint32_t test_period1v                    :  4; /**<bit[4 : 7] */
+		uint32_t chs                              : 16; /**<bit[8 : 23] */
+		uint32_t chs_sel_cal1v                    :  4; /**<bit[24 : 27] */
+		uint32_t cal_done_clr1v                   :  1; /**<bit[28 : 28] */
+		uint32_t en_cal_force1v                   :  1; /**<bit[29 : 29] */
+		uint32_t en_cal_auto1v                    :  1; /**<bit[30 : 30] */
+		uint32_t en_scan                          :  1; /**<bit[31 : 31] */
 	};
 	uint32_t v;
 } sys_ana_reg15_t;
@@ -1093,17 +1305,12 @@ typedef volatile union {
 
 typedef volatile union {
 	struct {
-		uint32_t int_en                           : 10; /**<bit[0 : 9] */
-		uint32_t int_en16                         :  1; /**<bit[10 : 10] */
-		uint32_t nc_11_15                         :  5; /**<bit[11 : 15] */
-		uint32_t ckadc_sel                        :  1; /**<bit[16 : 16] */
-		uint32_t int_clr_sel1v                    :  1; /**<bit[17 : 17] */
-		uint32_t ctrl_ck2d                        :  1; /**<bit[18 : 18] */
-		uint32_t ctrl_seri_cap                    :  1; /**<bit[19 : 19] */
-		uint32_t en_testcmp1v                     :  1; /**<bit[20 : 20] */
-		uint32_t en_man_wr1v                      :  1; /**<bit[21 : 21] */
-		uint32_t en_manmod1v                      :  1; /**<bit[22 : 22] */
-		uint32_t cap_calspi1v                     :  9; /**<bit[23 : 31] */
+		uint32_t int_en                           : 16; /**<bit[0 : 15] */
+		uint32_t int_en16                         :  1; /**<bit[16 : 16] */
+		uint32_t nc_17_17                         :  1; /**<bit[17 : 17] */
+		uint32_t nc_18_18                         :  1; /**<bit[18 : 18] */
+		uint32_t cal_number1v                     :  4; /**<bit[19 : 22] */
+		uint32_t cal_period1v                     :  9; /**<bit[23 : 31] */
 	};
 	uint32_t v;
 } sys_ana_reg16_t;
@@ -1111,11 +1318,15 @@ typedef volatile union {
 
 typedef volatile union {
 	struct {
-		uint32_t int_clr                          : 10; /**<bit[0 : 9] */
-		uint32_t int_clr16                        :  1; /**<bit[10 : 10] */
-		uint32_t nc_11_11                         :  1; /**<bit[11 : 11] */
-		uint32_t int_clr_cal                      : 10; /**<bit[12 : 21] */
-		uint32_t int_en_cal                       : 10; /**<bit[22 : 31] */
+		uint32_t int_clr                          : 16; /**<bit[0 : 15] */
+		uint32_t int_clr16                          :  1; /**<bit[16 : 16] */
+		uint32_t ck_adc_sel                       :  1; /**<bit[17 : 17] */
+		uint32_t int_clr_sel                      :  1; /**<bit[18 : 18] */
+		uint32_t en_lpmod                         :  1; /**<bit[19 : 19] */
+		uint32_t en_testcmp1v                     :  1; /**<bit[20 : 20] */
+		uint32_t en_man_wr1v                      :  1; /**<bit[21 : 21] */
+		uint32_t en_manmod1v                      :  1; /**<bit[22 : 22] */
+		uint32_t cap_calspi1v                     :  9; /**<bit[23 : 31] */
 	};
 	uint32_t v;
 } sys_ana_reg17_t;
@@ -1131,14 +1342,14 @@ typedef volatile union {
 		uint32_t enmicbias                        :  1; /**<bit[5 : 5] */
 		uint32_t adcckinven1v                     :  1; /**<bit[6 : 6] */
 		uint32_t dacfb2st0v9                      :  1; /**<bit[7 : 7] */
-		uint32_t nc1                              :  1; /**<bit[8 : 8] */
+		uint32_t nc_8_8                           :  1; /**<bit[8 : 8] */
 		uint32_t micbias_trm                      :  2; /**<bit[9 : 10] */
 		uint32_t micbias_voc                      :  5; /**<bit[11 : 15] */
 		uint32_t vrefsel1v                        :  1; /**<bit[16 : 16] */
 		uint32_t capswspi                         :  5; /**<bit[17 : 21] */
 		uint32_t adref_sel                        :  2; /**<bit[22 : 23] */
-		uint32_t nc0                              :  2; /**<bit[24 : 25] */
-		uint32_t reserved_bit_26_30               :  5; /**<bit[26 : 30] */
+		uint32_t nc_24_29                         :  6; /**<bit[24 : 29] */
+		uint32_t lchck_sel                        :  1; /**<bit[30 : 30] */
 		uint32_t spi_dacckpssel                   :  1; /**<bit[31 : 31] */
 	};
 	uint32_t v;
@@ -1182,12 +1393,12 @@ typedef volatile union {
 		uint32_t dcochg                           :  2; /**<bit[11 : 12] */
 		uint32_t diffen                           :  1; /**<bit[13 : 13] */
 		uint32_t endaccal                         :  1; /**<bit[14 : 14] */
-		uint32_t nc2                              :  1; /**<bit[15 : 15] */
+		uint32_t nc_15_15                         :  1; /**<bit[15 : 15] */
 		uint32_t lendcoc                          :  1; /**<bit[16 : 16] */
-		uint32_t nc1                              :  1; /**<bit[17 : 17] */
+		uint32_t nc_17_17                         :  1; /**<bit[17 : 17] */
 		uint32_t lenvcmd                          :  1; /**<bit[18 : 18] */
 		uint32_t dacdrven                         :  1; /**<bit[19 : 19] */
-		uint32_t nc0                              :  1; /**<bit[20 : 20] */
+		uint32_t nc_20_20                         :  1; /**<bit[20 : 20] */
 		uint32_t daclen                           :  1; /**<bit[21 : 21] */
 		uint32_t dacg                             :  4; /**<bit[22 : 25] */
 		uint32_t dacmute                          :  1; /**<bit[26 : 26] */
@@ -1201,9 +1412,9 @@ typedef volatile union {
 typedef volatile union {
 	struct {
 		uint32_t lmdcin                           :  8; /**<bit[0 : 7] */
-		uint32_t nc1                              :  8; /**<bit[8 : 15] */
+		uint32_t nc_8_15                          :  8; /**<bit[8 : 15] */
 		uint32_t spirst_ovc                       :  1; /**<bit[16 : 16] */
-		uint32_t nc0                              :  1; /**<bit[17 : 17] */
+		uint32_t nc_17_17                         :  1; /**<bit[17 : 17] */
 		uint32_t enidacl                          :  1; /**<bit[18 : 18] */
 		uint32_t dac3rdhc0v9                      :  1; /**<bit[19 : 19] */
 		uint32_t hc2s                             :  1; /**<bit[20 : 20] */
@@ -1220,46 +1431,130 @@ typedef volatile union {
 	uint32_t v;
 } sys_ana_reg21_t;
 
+
 typedef volatile union {
 	struct {
-		uint32_t ictrl_dsppll                     :  4; /**<bit[0 : 3] */
-		uint32_t nc_4_18                          : 15; /**<bit[4 : 18] */
-		uint32_t mode                             :  1; /**<bit[19 : 19] */
-		uint32_t iamsel                           :  1; /**<bit[20 : 20] */
-		uint32_t hvref                            :  2; /**<bit[21 : 22] */
-		uint32_t lvref                            :  2; /**<bit[23 : 24] */
-		uint32_t nc_25_31                         :  7; /**<bit[25 : 31] */
+		uint32_t nc_0_0                   :  1; /**<bit[0 : 0] */
+		uint32_t lvref                    :  2; /**<bit[1 : 2] */
+		uint32_t hvref                    :  2; /**<bit[3 : 4] */
+		uint32_t bandm                    :  7; /**<bit[5 : 11] */
+		uint32_t nc_12_23                 : 12; /**<bit[12 : 23] */
+		uint32_t n_int                    :  6; /**<bit[24 : 29] */
+		uint32_t nc_30_30                 :  1; /**<bit[30 : 30] */
+		uint32_t errdet_en                :  1; /**<bit[31 : 31] */
 	};
 	uint32_t v;
 } sys_ana_reg22_t;
 
+
 typedef volatile union {
 	struct {
-		uint32_t camsel                           :  1; /**<bit[0 : 0] */
-		uint32_t msw                              :  9; /**<bit[1 : 9] */
-		uint32_t tstcken_dpll                     :  1; /**<bit[10 : 10] */
-		uint32_t osccal_trig                      :  1; /**<bit[11 : 11] */
-		uint32_t cnti                             :  9; /**<bit[12 : 20] */
-		uint32_t nc_21_21                         :  1; /**<bit[21 : 21] */
-		uint32_t spi_rst                          :  1; /**<bit[22 : 22] */
-		uint32_t closeloop_en                     :  1; /**<bit[23 : 23] */
-		uint32_t caltime                          :  1; /**<bit[24 : 24] */
-		uint32_t lpfrz                            :  2; /**<bit[25 : 26] */
-		uint32_t icp                              :  4; /**<bit[27 : 30] */
-		uint32_t cp2ctrl                          :  1; /**<bit[31 : 31] */
+		uint32_t int_mod                  :  1; /**<bit[0 : 0] */
+		uint32_t nsyn                     :  1; /**<bit[1 : 1] */
+		uint32_t open_enb                 :  1; /**<bit[2 : 2] */
+		uint32_t reset                    :  1; /**<bit[3 : 3] */
+		uint32_t ioffset                  :  3; /**<bit[4 : 6] */
+		uint32_t lpfrz                    :  4; /**<bit[7 : 10] */
+		uint32_t vsel                     :  1; /**<bit[11 : 11] */
+		uint32_t nc_12_14                 :  3; /**<bit[12 : 14] */
+		uint32_t pwd_lockdet              :  1; /**<bit[15 : 15] */
+		uint32_t nc_16_17                 :  2; /**<bit[16 : 17] */
+		uint32_t spi_trigger              :  1; /**<bit[18 : 18] */
+		uint32_t manual                   :  1; /**<bit[19 : 19] */
+		uint32_t test_en                  :  1; /**<bit[20 : 20] */
+		uint32_t nc_21_22                 :  2; /**<bit[21 : 22] */
+		uint32_t icp                      :  2; /**<bit[23 : 24] */
+		uint32_t nc_25_27                 :  3; /**<bit[25 : 27] */
+		uint32_t errdet_spien             :  1; /**<bit[28 : 28] */
+		uint32_t dlysel                   :  2; /**<bit[29 : 30] */
+		uint32_t audioen                  :  1; /**<bit[31 : 31] */
 	};
 	uint32_t v;
 } sys_ana_reg23_t;
 
+
+typedef volatile union {
+	struct {
+		uint32_t int_clr_cal              : 16; /**<bit[0 : 15] */
+		uint32_t int_en_cal               : 16; /**<bit[16 : 31] */
+	};
+	uint32_t v;
+} sys_ana_reg24_t;
+
+
+typedef volatile union {
+	struct {
+		uint32_t int_mod                  :  1; /**<bit[0 : 0] */
+		uint32_t nsyn                     :  1; /**<bit[1 : 1] */
+		uint32_t open_enb                 :  1; /**<bit[2 : 2] */
+		uint32_t reset                    :  1; /**<bit[3 : 3] */
+		uint32_t ioffsetl                 :  3; /**<bit[4 : 6] */
+		uint32_t lpfrz                    :  4; /**<bit[7 : 10] */
+		uint32_t vsel                     :  3; /**<bit[11 : 13] */
+		uint32_t vsel_cal                 :  1; /**<bit[14 : 14] */
+		uint32_t pwd_lockdet              :  1; /**<bit[15 : 15] */
+		uint32_t lockdet_bypass           :  1; /**<bit[16 : 16] */
+		uint32_t ckref_loop_sel           :  1; /**<bit[17 : 17] */
+		uint32_t spi_trigger              :  1; /**<bit[18 : 18] */
+		uint32_t manual                   :  1; /**<bit[19 : 19] */
+		uint32_t test_ckaudio_en          :  1; /**<bit[20 : 20] */
+		uint32_t ck2xen                   :  1; /**<bit[21 : 21] */
+		uint32_t icp                      :  2; /**<bit[22 : 23] */
+		uint32_t cktst_sel                :  1; /**<bit[24 : 24] */
+		uint32_t edgesel_nck              :  1; /**<bit[25 : 25] */
+		uint32_t nloaddlyen               :  1; /**<bit[26 : 26] */
+		uint32_t bypass_caldone_auto      :  1; /**<bit[27 : 27] */
+		uint32_t cal_res_spi              :  3; /**<bit[28 : 30] */
+		uint32_t audioen                  :  1; /**<bit[31 : 31] */
+	};
+	uint32_t v;
+} sys_ana_reg25_t;
+
+
+typedef volatile union {
+	struct {
+		uint32_t n                        : 30; /**<bit[0 : 29] */
+		uint32_t calres_spien             :  1; /**<bit[30 : 30] */
+		uint32_t calrefen                 :  1; /**<bit[31 : 31] */
+	};
+	uint32_t v;
+} sys_ana_reg26_t;
+
+
+typedef volatile union {
+	struct {
+		uint32_t isel                     :  2; /**<bit[0 : 1] */
+		uint32_t micirsel1                :  1; /**<bit[2 : 2] */
+		uint32_t micdacit                 :  2; /**<bit[3 : 4] */
+		uint32_t micdacih                 :  8; /**<bit[5 : 12] */
+		uint32_t micsingleen              :  1; /**<bit[13 : 13] */
+		uint32_t dccompen                 :  1; /**<bit[14 : 14] */
+		uint32_t micgain                  :  4; /**<bit[15 : 18] */
+		uint32_t micdacen                 :  1; /**<bit[19 : 19] */
+		uint32_t stg2lsen1v               :  1; /**<bit[20 : 20] */
+		uint32_t openloopcal1v            :  1; /**<bit[21 : 21] */
+		uint32_t callatch                 :  1; /**<bit[22 : 22] */
+		uint32_t vcmsel                   :  1; /**<bit[23 : 23] */
+		uint32_t dwamode                  :  1; /**<bit[24 : 24] */
+		uint32_t r2ren                    :  1; /**<bit[25 : 25] */
+		uint32_t nc_26_27                 :  2; /**<bit[26 : 27] */
+		uint32_t micen                    :  1; /**<bit[28 : 28] */
+		uint32_t rst                      :  1; /**<bit[29 : 29] */
+		uint32_t bpdwa1v                  :  1; /**<bit[30 : 30] */
+		uint32_t hcen1stg                 :  1; /**<bit[31 : 31] */
+	};
+	uint32_t v;
+} sys_ana_reg27_t;
+
 typedef volatile struct {
 	volatile sys_device_id_t device_id;
 	volatile sys_version_id_t version_id;
-	volatile sys_cpu_storage_connect_op_select_t cpu_storage_connect_op_select;
 	volatile sys_cpu_current_run_status_t cpu_current_run_status;
+	volatile sys_cpu_storage_connect_op_select_t cpu_storage_connect_op_select;
 	volatile sys_cpu0_int_halt_clk_op_t cpu0_int_halt_clk_op;
 	volatile sys_cpu1_int_halt_clk_op_t cpu1_int_halt_clk_op;
-	volatile sys_reserved_reg0x6_t reserved_reg0x6;
-	volatile uint32_t rsv_7_7[1];
+	volatile sys_cpu2_int_halt_clk_op_t cpu2_int_halt_clk_op;
+	volatile sys_reserved_reg0x7_t reserved_reg0x7;
 	volatile sys_cpu_clk_div_mode1_t cpu_clk_div_mode1;
 	volatile sys_cpu_clk_div_mode2_t cpu_clk_div_mode2;
 	volatile sys_cpu_26m_wdt_clk_div_t cpu_26m_wdt_clk_div;
@@ -1276,22 +1571,32 @@ typedef volatile struct {
 	volatile sys_cpu0_int_32_63_en_t cpu0_int_32_63_en;
 	volatile sys_cpu1_int_0_31_en_t cpu1_int_0_31_en;
 	volatile sys_cpu1_int_32_63_en_t cpu1_int_32_63_en;
-	volatile uint32_t rsv_24_27[4];
+	volatile sys_cpu2_int_0_31_en_t cpu2_int_0_31_en;
+	volatile sys_cpu2_int_32_63_en_t cpu2_int_32_63_en;
+	volatile uint32_t rsv_26_27[2];
 	volatile sys_cpu0_int_0_31_status_t cpu0_int_0_31_status;
 	volatile sys_cpu0_int_32_63_status_t cpu0_int_32_63_status;
 	volatile sys_cpu1_int_0_31_status_t cpu1_int_0_31_status;
 	volatile sys_cpu1_int_32_63_status_t cpu1_int_32_63_status;
-	volatile uint32_t rsv_2c_2f[4];
+	volatile sys_cpu2_int_0_31_status_t cpu2_int_0_31_status;
+	volatile sys_cpu2_int_32_63_status_t cpu2_int_32_63_status;
+	volatile uint32_t rsv_2e_2f[2];
 	volatile sys_gpio_config0_t gpio_config0;
 	volatile sys_gpio_config1_t gpio_config1;
 	volatile sys_gpio_config2_t gpio_config2;
 	volatile sys_gpio_config3_t gpio_config3;
 	volatile sys_gpio_config4_t gpio_config4;
 	volatile sys_gpio_config5_t gpio_config5;
-	volatile uint32_t rsv_36_37[2];
+	volatile sys_gpio_config6_t gpio_config6;
+	volatile uint32_t rsv_37_37[1];
 	volatile sys_sys_debug_config0_t sys_debug_config0;
 	volatile sys_sys_debug_config1_t sys_debug_config1;
-	volatile uint32_t rsv_3a_3f[6];
+	volatile sys_anareg_stat_t anareg_stat;
+
+	/* address gap/reserve*/
+	volatile uint32_t rsv_3a_3f[5];
+
+	/* analog registers*/
 	volatile sys_ana_reg0_t ana_reg0;
 	volatile sys_ana_reg1_t ana_reg1;
 	volatile sys_ana_reg2_t ana_reg2;
@@ -1316,6 +1621,10 @@ typedef volatile struct {
 	volatile sys_ana_reg21_t ana_reg21;
 	volatile sys_ana_reg22_t ana_reg22;
 	volatile sys_ana_reg23_t ana_reg23;
+	volatile sys_ana_reg24_t ana_reg24;
+	volatile sys_ana_reg25_t ana_reg25;
+	volatile sys_ana_reg26_t ana_reg26;
+	volatile sys_ana_reg27_t ana_reg27;
 } sys_hw_t;
 
 #ifdef __cplusplus

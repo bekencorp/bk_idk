@@ -25,6 +25,9 @@ int calibration_init(void);
 unsigned int rwnx_sys_is_enable_hw_tpc(void);
 UINT32 rwnx_is_enable_pwr_change_by_rssi(void);
 void tpc_auto_change_pwr_by_rssi(INT8 rssi, UINT8 rate, UINT8 *pwr_idx);
+void tpc_change_pwr_by_media(UINT8 rate, UINT8 *pwr_idx, UINT8 level);
+void tpc_set_media_pwr_level(UINT8 level);
+UINT8 tpc_get_media_pwr_level(void);
 void evm_via_mac_continue(void);
 void evm_via_mac_evt(int dummy);
 

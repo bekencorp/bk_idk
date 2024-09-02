@@ -118,7 +118,11 @@ int _atsvr_register_commands(_atsvr_env_t *env,const struct _atsvr_command *comm
 void _atsvr_notice_ready(void)
 {
 #if (CONFIG_UART_PRINT_PORT == AT_UART_PORT_CFG)
+#if CONFIG_SHELL_ASYNCLOG
 	shell_cmd_ind_out(ATSVR_READY_MSG);
+#else
+	os_printf(ATSVR_READY_MSG);
+#endif
 #else
 	atsvr_cmd_ind_out(ATSVR_READY_MSG);
 #endif
@@ -129,7 +133,11 @@ void _atsvr_notice_ready(void)
 void _atsvr_cmd_analysis_notice_error(void)
 {
 #if (CONFIG_UART_PRINT_PORT == AT_UART_PORT_CFG)
+#if CONFIG_SHELL_ASYNCLOG
 	shell_cmd_ind_out(ATSVR_CMDMSG_ERROR_RSP);
+#else
+	os_printf(ATSVR_CMDMSG_ERROR_RSP);
+#endif
 #else
 	atsvr_cmd_ind_out(ATSVR_CMDMSG_ERROR_RSP);
 #endif
@@ -145,7 +153,11 @@ void _atsvr_cmd_rsp_ok(_atsvr_env_t *env)
 		env->setup_done = true;
 		env->setup_status = _ATSVR_SETUP_DONE;
 		#if (CONFIG_UART_PRINT_PORT == AT_UART_PORT_CFG)
-		shell_cmd_ind_out(ATSVR_CMD_RSP_SUCCEED);
+		#if CONFIG_SHELL_ASYNCLOG
+			shell_cmd_ind_out(ATSVR_CMD_RSP_SUCCEED);
+		#else
+			os_printf(ATSVR_CMD_RSP_SUCCEED);
+		#endif
 		#else
 		atsvr_cmd_ind_out(ATSVR_CMD_RSP_SUCCEED);
 		#endif
@@ -161,7 +173,11 @@ void _atsvr_cmd_rsp_error(_atsvr_env_t *env)
 		env->setup_done = true;
 		env->setup_status = _ATSVR_SETUP_ERROR;
 		#if (CONFIG_UART_PRINT_PORT == AT_UART_PORT_CFG)
+		#if CONFIG_SHELL_ASYNCLOG
 			shell_cmd_ind_out(ATSVR_CMDMSG_ERROR_RSP);
+		#else
+			os_printf(ATSVR_CMDMSG_ERROR_RSP);
+		#endif
 		#else
 			atsvr_cmd_ind_out(ATSVR_CMDMSG_ERROR_RSP);
 		#endif
@@ -175,7 +191,11 @@ void _atsvr_cmd_rsp_timeout(_atsvr_env_t *env)
 	env->setup_status = _ATSVR_SETUP_TIMEOUT;
 
 	#if (CONFIG_UART_PRINT_PORT == AT_UART_PORT_CFG)
+	#if CONFIG_SHELL_ASYNCLOG
 		shell_cmd_ind_out(ATSVR_CMDMSG_TIMEOUT);
+	#else
+		os_printf(ATSVR_CMDMSG_TIMEOUT);
+	#endif
 	#else
 		atsvr_cmd_ind_out(ATSVR_CMDMSG_TIMEOUT);
 	#endif
@@ -184,7 +204,11 @@ void _atsvr_cmd_rsp_timeout(_atsvr_env_t *env)
 void _atsvr_output_help(const char *msg)
 {
 #if (CONFIG_UART_PRINT_PORT == AT_UART_PORT_CFG)
+#if CONFIG_SHELL_ASYNCLOG
 	shell_cmd_ind_out(msg);
+#else
+	os_printf(msg);
+#endif
 #else
 	atsvr_cmd_ind_out(msg);
 #endif
@@ -194,9 +218,13 @@ void _atsvr_output_help(const char *msg)
 void _atsvr_output_msg(char *msg)
 {
 #if (CONFIG_UART_PRINT_PORT == AT_UART_PORT_CFG)
-	shell_cmd_ind_out(msg);
+#if CONFIG_SHELL_ASYNCLOG
+	shell_cmd_ind_out("%s",msg);
 #else
-	atsvr_cmd_ind_out(msg);
+	os_printf("%s",msg);
+#endif
+#else
+	atsvr_cmd_ind_out("%s",msg);
 #endif
 
 }
@@ -306,7 +334,11 @@ int _atsvc_command_handle(_atsvr_env_t *env,char argc,char **argv,int len)
 	if((strcmp("AT+BLE",argv[0]) == 0) || (strcmp("AT+WIFI",argv[0]) == 0) || (strcmp("AT+BT",argv[0]) == 0)  || (strcmp("AT+MAC",argv[0]) == 0))
 	{
 	#if (CONFIG_UART_PRINT_PORT == AT_UART_PORT_CFG)
+	#if CONFIG_SHELL_ASYNCLOG
 		shell_cmd_ind_out(ATSVR_CMD_NEW_VERSION_NOTIFY);
+	#else
+		os_printf(ATSVR_CMD_NEW_VERSION_NOTIFY);
+	#endif
 	#else
 		atsvr_cmd_ind_out(ATSVR_CMD_NEW_VERSION_NOTIFY);
 	#endif
@@ -324,7 +356,11 @@ int _atsvc_command_handle(_atsvr_env_t *env,char argc,char **argv,int len)
 			env->priority_cpu = _ATSVR_CPU0;
 			env->core_sel_model = false;
 		#if (CONFIG_UART_PRINT_PORT == AT_UART_PORT_CFG)
+		#if CONFIG_SHELL_ASYNCLOG
 			shell_cmd_ind_out(ATSVR_CMD_RSP_SUCCEED);
+		#else
+			os_printf(ATSVR_CMD_RSP_SUCCEED);
+		#endif
 		#else
 			atsvr_cmd_ind_out(ATSVR_CMD_RSP_SUCCEED);
 		#endif
@@ -335,7 +371,11 @@ int _atsvc_command_handle(_atsvr_env_t *env,char argc,char **argv,int len)
 			env->priority_cpu = _ATSVR_CPU1;
 			env->core_sel_model = true;
 		#if (CONFIG_UART_PRINT_PORT == AT_UART_PORT_CFG)
+		#if CONFIG_SHELL_ASYNCLOG
 			shell_cmd_ind_out(ATSVR_CMD_RSP_SUCCEED);
+		#else
+			os_printf(ATSVR_CMD_RSP_SUCCEED);
+		#endif
 		#else
 			atsvr_cmd_ind_out(ATSVR_CMD_RSP_SUCCEED);
 		#endif

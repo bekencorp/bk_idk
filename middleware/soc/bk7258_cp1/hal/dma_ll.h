@@ -474,6 +474,28 @@ static inline void dma_ll_set_src_sec_attr(dma_hw_t *hw, dma_id_t id, uint32_t a
 	hw->config_group[id].req_mux.src_sec_attr = attr & 0x1;
 }
 
+ 
+static inline void dma_ll_set_src_read_interval(dma_hw_t *hw, dma_id_t id, uint32_t interval)
+{
+	hw->config_group[id].req_mux.src_read_interval = interval & 0xf;
+}
+
+static inline uint32_t dma_ll_get_src_read_interval(dma_hw_t *hw, dma_id_t id)
+{
+	return (hw->config_group[id].req_mux.src_read_interval & 0xf);
+}
+
+static inline void dma_ll_set_dest_write_interval(dma_hw_t *hw, dma_id_t id, uint32_t interval)
+{
+	hw->config_group[id].req_mux.dest_write_interval = interval & 0xf;
+}
+
+static inline uint32_t dma_ll_get_dest_write_interval(dma_hw_t *hw, dma_id_t id)
+{
+	return (hw->config_group[id].req_mux.dest_write_interval & 0xf);
+}
+
+
 static inline void dma_ll_flush_src_buffer(dma_hw_t *hw, dma_id_t id)
 {
 	hw->config_group[id].status.flush_src_buff = 1;

@@ -479,6 +479,9 @@ static const mbedtls_cipher_base_t xts_aes_info = {
 #endif
     xts_aes_setkey_enc_wrap,
     xts_aes_setkey_dec_wrap,
+#if defined(ARM_CE_DUBHE_SCA)
+    NULL,
+#endif
     xts_aes_ctx_alloc,
     xts_aes_ctx_free
 };

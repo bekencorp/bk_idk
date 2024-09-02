@@ -1,3 +1,4 @@
 Field,Value
-strategy,SWAP
+strategy,OVERWRITE
 app_security_counter,1
+encrypt,FALSE

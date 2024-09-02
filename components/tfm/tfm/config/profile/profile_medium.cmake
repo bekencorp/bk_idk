@@ -14,7 +14,7 @@ set(ITS_BUF_SIZE                        32          CACHE STRING    "Size of the
 set(CRYPTO_ENGINE_BUF_SIZE              0x4000      CACHE STRING    "Heap size for the crypto backend")
 set(PS_CRYPTO_AEAD_ALG                  PSA_ALG_CCM CACHE STRING    "The AEAD algorithm to use for authenticated encryption in protected storage")
 
-set(CRYPTO_ASYM_ENCRYPT_MODULE_DISABLED ON          CACHE BOOL      "Disable PSA Crypto asymmetric key encryption module")
+set(CRYPTO_ASYM_ENCRYPT_MODULE_DISABLED OFF          CACHE BOOL      "Disable PSA Crypto asymmetric key encryption module")
 
 set(TFM_PARTITION_AUDIT_LOG             OFF         CACHE BOOL      "Enable Audit Log partition")
 

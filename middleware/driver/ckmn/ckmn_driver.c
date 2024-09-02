@@ -20,11 +20,7 @@
 #include "ckmn_driver.h"
 #include "ckmn_hal.h"
 #include "sys_driver.h"
-
-#define CKMN_CLK_26M     (26000000LL)
-#define CKMN_CLK_32K     (32000)
-#define CKMN_RC32K_PPM   (600)
-#define CKMN_CKEST_MEASURE_TIME_THRESHOLD (64)
+#include <driver/rosc_32k.h>
 
 typedef struct {
 	ckmn_hal_t hal;
@@ -52,8 +48,6 @@ typedef struct {
 static ckmn_driver_t s_ckmn = {0};
 static ckmn_isr_t s_ckmn_isr[CKMN_INT_MAX] = {NULL};
 static bool s_ckmn_driver_is_init = false;
-static double s_rc32k_freq_hz = CKMN_CLK_32K;
-static int32_t s_rc32k_ppm = CKMN_RC32K_PPM;
 
 bk_err_t bk_ckmn_register_isr(ckmn_int_type_t int_type, ckmn_isr_t int_isr)
 {
@@ -311,46 +305,17 @@ bk_err_t bk_ckmn_get_cor32k_intr_status(void)
 
 double bk_ckmn_driver_get_rc32k_freq(void)
 {
-	CKMN_RETURN_ON_NOT_INIT();
-	return s_rc32k_freq_hz;
+	return bk_rosc_32k_get_freq();
 }
 
 bk_err_t bk_ckmn_driver_get_rc32k_ppm(void)
 {
-	CKMN_RETURN_ON_NOT_INIT();
-	return s_rc32k_ppm;
-}
-
-static void ckmn_rc32k_isr(void)
-{
-	// GPIO_UP(16); // 1us
-	uint32_t cnt_32k = bk_ckmn_get_rc32k_count();
-	uint32_t cnt_26m = bk_ckmn_get_rc26m_count();
-	double theta, freq;
-	// GPIO_DOWN(16); // 25us 17us
-	freq = CKMN_CLK_26M * cnt_32k / (double)cnt_26m;
-	if (cnt_32k <= CKMN_CKEST_MEASURE_TIME_THRESHOLD)
-	{
-		s_rc32k_freq_hz = (freq * 2 + s_rc32k_freq_hz) / 3;
-	} else {
-		s_rc32k_freq_hz = freq;
-	}
-	// GPIO_UP(16); // 17us
-	theta = s_rc32k_freq_hz / CKMN_CLK_32K;
-	s_rc32k_ppm = (int32_t)(1e6 * (1 - theta) + CKMN_RC32K_PPM * theta);
-	// GPIO_DOWN(16);
-	// CKMN_LOGI("ckmn_rc32k_isr rc32k_freq:%7.2f\r\n", s_rc32k_freq_hz);
-	bk_ckmn_ckest_disable();
+	return bk_rosc_32k_get_ppm();
 }
 
 bk_err_t bk_ckmn_driver_rc32k_prog(uint32_t count)
 {
-	CKMN_RETURN_ON_CKEST_BUSY();
-	BK_LOG_ON_ERR(bk_ckmn_set_rc32k_count(count));
-	BK_LOG_ON_ERR(bk_ckmn_register_isr(CKMN_INT_CKEST, ckmn_rc32k_isr));
-	BK_LOG_ON_ERR(bk_ckmn_ckest_enable());
-
-	return BK_OK;
+	return bk_rosc_32k_ckest_prog(count);
 }
 
 bk_err_t bk_ckmn_soft_reset(void)

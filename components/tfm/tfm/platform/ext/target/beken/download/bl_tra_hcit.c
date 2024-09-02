@@ -505,7 +505,7 @@ void TRAhcit_Rx_Char(uint8_t ch,uint8_t uart_status)
     		uart_rx_done_state = TRA_HCIT_STATE_RX_START;
 
 
-					 memcpy(Longtrx_pdu_buf,(uint8_t *)&(tra_hcit_rx_head_buf[4]),3);
+		    bl_memcpy(Longtrx_pdu_buf,(uint8_t *)&(tra_hcit_rx_head_buf[4]),3);
            tra_hcit_rx_pdu_buf = (volatile uint8_t*)&(Longtrx_pdu_buf[3]);
 
 

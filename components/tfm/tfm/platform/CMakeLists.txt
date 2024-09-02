@@ -50,6 +50,9 @@ target_include_directories(platform_s
         $<$<BOOL:${CRYPTO_HW_ACCELERATOR}>:${CMAKE_CURRENT_SOURCE_DIR}/ext/accelerator/interface>
 )
 
+get_filename_component(PROJECT_ROOT_DIR ${CMAKE_BINARY_DIR} DIRECTORY)
+get_filename_component(BUILD_GEN_DIR "${PROJECT_ROOT_DIR}/../armino/partitions/_build" ABSOLUTE)
+
 target_sources(platform_s
     PRIVATE
         $<$<BOOL:${TFM_PARTITION_PROTECTED_STORAGE}>:${CMAKE_CURRENT_SOURCE_DIR}/ext/common/tfm_hal_ps.c>
@@ -67,8 +70,11 @@ target_sources(platform_s
         $<$<BOOL:${PLATFORM_DEFAULT_NV_SEED}>:ext/common/template/crypto_nv_seed.c>
         $<$<AND:$<NOT:$<BOOL:${SYMMETRIC_INITIAL_ATTESTATION}>>,$<BOOL:${TEST_S_ATTESTATION}>>:ext/common/template/tfm_initial_attest_pub_key.c>
         $<$<OR:$<BOOL:${PLATFORM_DEFAULT_NV_COUNTERS}>,$<BOOL:${PLATFORM_DEFAULT_OTP}>>:ext/common/template/flash_otp_nv_counters_backend.c>
+        $<$<NOT:$<BOOL:${PLATFORM_DEFAULT_NV_COUNTERS}>>:ext/target/beken/nv_otp/otp_flash.c>
+        $<$<NOT:$<BOOL:${PLATFORM_DEFAULT_NV_COUNTERS}>>:ext/target/beken/nv_otp/nv_counters.c>
         $<$<BOOL:${PLATFORM_DEFAULT_OTP}>:ext/common/template/otp_flash.c>
         $<$<BOOL:${PLATFORM_DEFAULT_PROVISIONING}>:ext/common/provisioning.c>
+        ${BUILD_GEN_DIR}/_otp.c
 )
 
 target_link_libraries(platform_s
@@ -125,6 +131,7 @@ target_link_libraries(platform_ns
         platform_common_interface
         platform_region_defs
         tfm_ns_interface
+        test_ns_crypto_hw
 )
 
 target_compile_definitions(platform_ns
@@ -154,6 +161,8 @@ if(BL2)
             ext/common/boot_hal_bl2.c
             $<$<BOOL:${PLATFORM_DEFAULT_UART_STDOUT}>:${CMAKE_CURRENT_SOURCE_DIR}/ext/common/uart_stdout.c>
             $<$<BOOL:${PLATFORM_DEFAULT_NV_COUNTERS}>:ext/common/template/nv_counters.c>
+            $<$<NOT:$<BOOL:${PLATFORM_DEFAULT_NV_COUNTERS}>>:ext/target/beken/nv_otp/otp_flash.c>
+            $<$<NOT:$<BOOL:${PLATFORM_DEFAULT_NV_COUNTERS}>>:ext/target/beken/nv_otp/nv_counters.c>
             $<$<BOOL:${PLATFORM_DEFAULT_ROTPK}>:ext/common/template/tfm_rotpk.c>
             $<$<OR:$<BOOL:${PLATFORM_DEFAULT_NV_COUNTERS}>,$<BOOL:${PLATFORM_DEFAULT_OTP}>>:ext/common/template/flash_otp_nv_counters_backend.c>
             $<$<BOOL:${PLATFORM_DEFAULT_OTP}>:ext/common/template/otp_flash.c>
@@ -232,6 +241,8 @@ if(BL1 AND PLATFORM_DEFAULT_BL1)
             ./ext/common/boot_hal_bl1.c
             ./ext/common/uart_stdout.c
             $<$<BOOL:${PLATFORM_DEFAULT_NV_COUNTERS}>:ext/common/template/nv_counters.c>
+            $<$<NOT:$<BOOL:${PLATFORM_DEFAULT_NV_COUNTERS}>>:ext/target/beken/nv_otp/otp_flash.c>
+            $<$<NOT:$<BOOL:${PLATFORM_DEFAULT_NV_COUNTERS}>>:ext/target/beken/nv_otp/nv_counters.c>
             $<$<OR:$<BOOL:${PLATFORM_DEFAULT_NV_COUNTERS}>,$<BOOL:${PLATFORM_DEFAULT_OTP}>>:ext/common/template/flash_otp_nv_counters_backend.c>
             $<$<BOOL:${PLATFORM_DEFAULT_OTP}>:ext/common/template/otp_flash.c>
     )

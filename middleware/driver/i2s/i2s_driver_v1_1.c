@@ -28,6 +28,10 @@
 #include <driver/audio_ring_buff.h>
 #include "bk_general_dma.h"
 
+
+#define DMA_CARRY_I2S_RINGBUF_SAFE_INTERVAL    (8)
+
+
 #define I2S_RETURN_ON_NOT_INIT() do {\
 		if (!s_i2s_driver_is_init) {\
 			return BK_ERR_I2S_NOT_INIT;\
@@ -218,6 +222,9 @@ bk_err_t bk_i2s_init(i2s_gpio_group_id_t id, const i2s_config_t *config)
 			s_i2s_driver_is_init = true;
 			if (i2s_drv_info == NULL) {
 				i2s_drv_info = (i2s_drv_info_t *)os_malloc(sizeof(i2s_drv_info_t));
+                if (!i2s_drv_info) {
+                    return BK_FAIL;
+                }
 				i2s_drv_info->chl1_cfg = NULL;
 				i2s_drv_info->chl2_cfg = NULL;
 				i2s_drv_info->chl3_cfg = NULL;
@@ -239,6 +246,9 @@ bk_err_t bk_i2s_init(i2s_gpio_group_id_t id, const i2s_config_t *config)
 			s_i2s1_driver_is_init = true;
 			if (i2s1_drv_info == NULL) {
 				i2s1_drv_info = (i2s_drv_info_t *)os_malloc(sizeof(i2s_drv_info_t));
+                if (!i2s1_drv_info) {
+                    return BK_FAIL;
+                }
 				i2s1_drv_info->chl1_cfg = NULL;
 				i2s1_drv_info->chl2_cfg = NULL;
 				i2s1_drv_info->chl3_cfg = NULL;
@@ -260,6 +270,9 @@ bk_err_t bk_i2s_init(i2s_gpio_group_id_t id, const i2s_config_t *config)
 			s_i2s2_driver_is_init = true;
 			if (i2s2_drv_info == NULL) {
 				i2s2_drv_info = (i2s_drv_info_t *)os_malloc(sizeof(i2s_drv_info_t));
+                if (!i2s2_drv_info) {
+                    return BK_FAIL;
+                }
 				i2s2_drv_info->chl1_cfg = NULL;
 				i2s2_drv_info->chl2_cfg = NULL;
 				i2s2_drv_info->chl3_cfg = NULL;
@@ -346,12 +359,15 @@ bk_err_t bk_i2s_deinit(void)
 	if (i2s_index == 0) {
 		I2S_RETURN_ON_NOT_INIT();
 		drv_info = i2s_drv_info;
+        i2s_drv_info = NULL;
 	} else if (i2s_index == 1) {
 		I2S1_RETURN_ON_NOT_INIT();
 		drv_info = i2s1_drv_info;
+        i2s1_drv_info = NULL;
 	} else if (i2s_index == 2) {
 		I2S2_RETURN_ON_NOT_INIT();
 		drv_info = i2s2_drv_info;
+        i2s2_drv_info = NULL;
 	} else {
 		return BK_FAIL;
 	}
@@ -1203,9 +1219,11 @@ static void i2s_chl3_rx_dma_finish_isr(void)
 static bk_err_t i2s_dma_config(dma_id_t dma_id, uint32_t *ring_buff_addr, uint32_t ring_buff_size, uint32_t transfer_len, i2s_channel_id_t chl_id, i2s_txrx_type_t type, i2s_data_handle_cb data_handle_cb)
 {
 	bk_err_t ret = BK_OK;
-	dma_config_t dma_config;
+	dma_config_t dma_config = {0};
 	uint32_t i2s_data_addr;
 	uint8_t i2s_index = i2s_hal_get_cfg_index();
+
+    os_memset(&dma_config, 0, sizeof(dma_config));
 
 	dma_config.mode = DMA_WORK_MODE_REPEAT;
 	dma_config.chan_prio = 1;
@@ -1388,7 +1406,7 @@ bk_err_t bk_i2s_chl_init(i2s_channel_id_t chl, i2s_txrx_type_t type, uint32_t bu
 						drv_info->chl1_cfg->tx_cfg->data_handle_cb = NULL;
 					}
 					drv_info->chl1_cfg->tx_cfg->buff_size = buff_size;
-					drv_info->chl1_cfg->tx_cfg->buff_addr = (uint8_t *)os_malloc(buff_size);
+					drv_info->chl1_cfg->tx_cfg->buff_addr = (uint8_t *)os_malloc(buff_size + DMA_CARRY_I2S_RINGBUF_SAFE_INTERVAL);
 					if (drv_info->chl1_cfg->tx_cfg->buff_addr == NULL) {
 						I2S_LOGE("malloc buff_addr fail \n");
 						err = BK_FAIL;
@@ -1418,13 +1436,13 @@ bk_err_t bk_i2s_chl_init(i2s_channel_id_t chl, i2s_txrx_type_t type, uint32_t bu
 						return err;
 					}
 
-					ret = i2s_dma_config(drv_info->chl1_cfg->tx_cfg->dma_id, (uint32_t *)drv_info->chl1_cfg->tx_cfg->buff_addr, buff_size, buff_size/2, chl, type, data_handle_cb);
+					ret = i2s_dma_config(drv_info->chl1_cfg->tx_cfg->dma_id, (uint32_t *)drv_info->chl1_cfg->tx_cfg->buff_addr, buff_size + DMA_CARRY_I2S_RINGBUF_SAFE_INTERVAL, buff_size/2, chl, type, data_handle_cb);
 					if (ret != BK_OK) {
 						I2S_LOGE("dma config fail \r\n");
 						err = BK_FAIL;
 						return err;
 					}
-					ring_buffer_init(drv_info->chl1_cfg->tx_cfg->rb, drv_info->chl1_cfg->tx_cfg->buff_addr, buff_size, drv_info->chl1_cfg->tx_cfg->dma_id, RB_DMA_TYPE_READ);
+					ring_buffer_init(drv_info->chl1_cfg->tx_cfg->rb, drv_info->chl1_cfg->tx_cfg->buff_addr, buff_size + DMA_CARRY_I2S_RINGBUF_SAFE_INTERVAL, drv_info->chl1_cfg->tx_cfg->dma_id, RB_DMA_TYPE_READ);
 					drv_info->chl1_cfg->tx_cfg->data_handle_cb = data_handle_cb;
 					drv_info->chl1_cfg->tx_cfg->state = I2S_TXRX_STATE_IDLE;
 				} else {
@@ -1513,7 +1531,7 @@ bk_err_t bk_i2s_chl_init(i2s_channel_id_t chl, i2s_txrx_type_t type, uint32_t bu
 					}
 
 					drv_info->chl2_cfg->tx_cfg->buff_size = buff_size;
-					drv_info->chl2_cfg->tx_cfg->buff_addr = (uint8_t *)os_malloc(buff_size);
+					drv_info->chl2_cfg->tx_cfg->buff_addr = (uint8_t *)os_malloc(buff_size + DMA_CARRY_I2S_RINGBUF_SAFE_INTERVAL);
 					if (drv_info->chl2_cfg->tx_cfg->buff_addr == NULL) {
 						I2S_LOGE("malloc buff_addr fail \n");
 						err = BK_FAIL;
@@ -1543,14 +1561,14 @@ bk_err_t bk_i2s_chl_init(i2s_channel_id_t chl, i2s_txrx_type_t type, uint32_t bu
 						return err;
 					}
 
-					ret = i2s_dma_config(drv_info->chl2_cfg->tx_cfg->dma_id, (uint32_t *)drv_info->chl2_cfg->tx_cfg->buff_addr, buff_size, buff_size/2, chl, type, data_handle_cb);
+					ret = i2s_dma_config(drv_info->chl2_cfg->tx_cfg->dma_id, (uint32_t *)drv_info->chl2_cfg->tx_cfg->buff_addr, buff_size + DMA_CARRY_I2S_RINGBUF_SAFE_INTERVAL, buff_size/2, chl, type, data_handle_cb);
 					if (ret != BK_OK) {
 						I2S_LOGE("dma config fail \r\n");
 						err = BK_FAIL;
 						return err;
 					}
 
-					ring_buffer_init(drv_info->chl2_cfg->tx_cfg->rb, drv_info->chl2_cfg->tx_cfg->buff_addr, buff_size, drv_info->chl2_cfg->tx_cfg->dma_id, RB_DMA_TYPE_READ);
+					ring_buffer_init(drv_info->chl2_cfg->tx_cfg->rb, drv_info->chl2_cfg->tx_cfg->buff_addr, buff_size + DMA_CARRY_I2S_RINGBUF_SAFE_INTERVAL, drv_info->chl2_cfg->tx_cfg->dma_id, RB_DMA_TYPE_READ);
 					drv_info->chl2_cfg->tx_cfg->data_handle_cb = data_handle_cb;
 					drv_info->chl2_cfg->tx_cfg->state = I2S_TXRX_STATE_IDLE;
 				} else {
@@ -1569,7 +1587,7 @@ bk_err_t bk_i2s_chl_init(i2s_channel_id_t chl, i2s_txrx_type_t type, uint32_t bu
 					}
 
 					drv_info->chl2_cfg->rx_cfg->buff_size = buff_size;
-					drv_info->chl2_cfg->rx_cfg->buff_addr = (uint8_t *)os_malloc(buff_size);
+					drv_info->chl2_cfg->rx_cfg->buff_addr = (uint8_t *)os_malloc(buff_size + DMA_CARRY_I2S_RINGBUF_SAFE_INTERVAL);
 					if (drv_info->chl2_cfg->rx_cfg->buff_addr == NULL) {
 						I2S_LOGE("malloc buff_addr fail \n");
 						err = BK_FAIL;
@@ -1599,14 +1617,14 @@ bk_err_t bk_i2s_chl_init(i2s_channel_id_t chl, i2s_txrx_type_t type, uint32_t bu
 						return err;
 					}
 
-					ret = i2s_dma_config(drv_info->chl2_cfg->rx_cfg->dma_id, (uint32_t *)drv_info->chl2_cfg->rx_cfg->buff_addr, buff_size, buff_size/2, chl, type, data_handle_cb);
+					ret = i2s_dma_config(drv_info->chl2_cfg->rx_cfg->dma_id, (uint32_t *)drv_info->chl2_cfg->rx_cfg->buff_addr, buff_size + DMA_CARRY_I2S_RINGBUF_SAFE_INTERVAL, buff_size/2, chl, type, data_handle_cb);
 					if (ret != BK_OK) {
 						I2S_LOGE("dma config fail \r\n");
 						err = BK_FAIL;
 						return err;
 					}
 
-					ring_buffer_init(drv_info->chl2_cfg->rx_cfg->rb, drv_info->chl2_cfg->rx_cfg->buff_addr, buff_size, drv_info->chl2_cfg->rx_cfg->dma_id, RB_DMA_TYPE_WRITE);
+					ring_buffer_init(drv_info->chl2_cfg->rx_cfg->rb, drv_info->chl2_cfg->rx_cfg->buff_addr, buff_size + DMA_CARRY_I2S_RINGBUF_SAFE_INTERVAL, drv_info->chl2_cfg->rx_cfg->dma_id, RB_DMA_TYPE_WRITE);
 					drv_info->chl2_cfg->rx_cfg->data_handle_cb = data_handle_cb;
 					drv_info->chl2_cfg->rx_cfg->state = I2S_TXRX_STATE_IDLE;
 				}
@@ -1639,7 +1657,7 @@ bk_err_t bk_i2s_chl_init(i2s_channel_id_t chl, i2s_txrx_type_t type, uint32_t bu
 					}
 
 					drv_info->chl3_cfg->tx_cfg->buff_size = buff_size;
-					drv_info->chl3_cfg->tx_cfg->buff_addr = (uint8_t *)os_malloc(buff_size);
+					drv_info->chl3_cfg->tx_cfg->buff_addr = (uint8_t *)os_malloc(buff_size + DMA_CARRY_I2S_RINGBUF_SAFE_INTERVAL);
 					if (drv_info->chl3_cfg->tx_cfg->buff_addr == NULL) {
 						I2S_LOGE("malloc buff_addr fail \n");
 						err = BK_FAIL;
@@ -1669,14 +1687,14 @@ bk_err_t bk_i2s_chl_init(i2s_channel_id_t chl, i2s_txrx_type_t type, uint32_t bu
 						return err;
 					}
 
-					ret = i2s_dma_config(drv_info->chl3_cfg->tx_cfg->dma_id, (uint32_t *)drv_info->chl3_cfg->tx_cfg->buff_addr, buff_size, buff_size/2, chl, type, data_handle_cb);
+					ret = i2s_dma_config(drv_info->chl3_cfg->tx_cfg->dma_id, (uint32_t *)drv_info->chl3_cfg->tx_cfg->buff_addr, buff_size + DMA_CARRY_I2S_RINGBUF_SAFE_INTERVAL, buff_size/2, chl, type, data_handle_cb);
 					if (ret != BK_OK) {
 						I2S_LOGE("dma config fail \r\n");
 						err = BK_FAIL;
 						return err;
 					}
 
-					ring_buffer_init(drv_info->chl3_cfg->tx_cfg->rb, drv_info->chl3_cfg->tx_cfg->buff_addr, buff_size, drv_info->chl3_cfg->tx_cfg->dma_id, RB_DMA_TYPE_READ);
+					ring_buffer_init(drv_info->chl3_cfg->tx_cfg->rb, drv_info->chl3_cfg->tx_cfg->buff_addr, buff_size + DMA_CARRY_I2S_RINGBUF_SAFE_INTERVAL, drv_info->chl3_cfg->tx_cfg->dma_id, RB_DMA_TYPE_READ);
 					drv_info->chl3_cfg->tx_cfg->data_handle_cb = data_handle_cb;
 					drv_info->chl3_cfg->tx_cfg->state = I2S_TXRX_STATE_IDLE;
 				} else {
@@ -1695,7 +1713,7 @@ bk_err_t bk_i2s_chl_init(i2s_channel_id_t chl, i2s_txrx_type_t type, uint32_t bu
 					}
 
 					drv_info->chl3_cfg->rx_cfg->buff_size = buff_size;
-					drv_info->chl3_cfg->rx_cfg->buff_addr = (uint8_t *)os_malloc(buff_size);
+					drv_info->chl3_cfg->rx_cfg->buff_addr = (uint8_t *)os_malloc(buff_size + DMA_CARRY_I2S_RINGBUF_SAFE_INTERVAL);
 					if (drv_info->chl3_cfg->rx_cfg->buff_addr == NULL) {
 						I2S_LOGE("malloc buff_addr fail \n");
 						err = BK_FAIL;
@@ -1725,14 +1743,14 @@ bk_err_t bk_i2s_chl_init(i2s_channel_id_t chl, i2s_txrx_type_t type, uint32_t bu
 						return err;
 					}
 
-					ret = i2s_dma_config(drv_info->chl3_cfg->rx_cfg->dma_id, (uint32_t *)drv_info->chl3_cfg->rx_cfg->buff_addr, buff_size, buff_size/2, chl, type, data_handle_cb);
+					ret = i2s_dma_config(drv_info->chl3_cfg->rx_cfg->dma_id, (uint32_t *)drv_info->chl3_cfg->rx_cfg->buff_addr, buff_size + DMA_CARRY_I2S_RINGBUF_SAFE_INTERVAL, buff_size/2, chl, type, data_handle_cb);
 					if (ret != BK_OK) {
 						I2S_LOGE("dma config fail \r\n");
 						err = BK_FAIL;
 						return err;
 					}
 
-					ring_buffer_init(drv_info->chl3_cfg->rx_cfg->rb, drv_info->chl3_cfg->rx_cfg->buff_addr, buff_size, drv_info->chl3_cfg->rx_cfg->dma_id, RB_DMA_TYPE_WRITE);
+					ring_buffer_init(drv_info->chl3_cfg->rx_cfg->rb, drv_info->chl3_cfg->rx_cfg->buff_addr, buff_size + DMA_CARRY_I2S_RINGBUF_SAFE_INTERVAL, drv_info->chl3_cfg->rx_cfg->dma_id, RB_DMA_TYPE_WRITE);
 					drv_info->chl3_cfg->rx_cfg->data_handle_cb = data_handle_cb;
 					drv_info->chl3_cfg->rx_cfg->state = I2S_TXRX_STATE_IDLE;
 				}

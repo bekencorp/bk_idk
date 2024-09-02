@@ -25,5 +25,5 @@ int bluetooth_controller_deinit(void);
 int bluetooth_host_init(void);
 int bluetooth_host_deinit(void);
 int bluetooth_get_mac(uint8_t *mac);
-
+void bluetooth_rf_test_mode_retrig();
 

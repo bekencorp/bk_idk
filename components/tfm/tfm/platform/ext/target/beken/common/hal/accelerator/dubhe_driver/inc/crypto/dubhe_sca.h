@@ -172,7 +172,7 @@ typedef struct arm_ce_sca_context {
                               * the context need to be finished. */
     uint8_t retry_count;     /*in case of hardware exception and hang need to re
                                 init engine to recover*/
-    void *private;           /* Used to point to the relative
+    void *private_ptr;           /* Used to point to the relative
                               * mbedtls_aes_context for testing or
                               * other condition*/
 } arm_ce_sca_context_t;

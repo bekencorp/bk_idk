@@ -6,9 +6,7 @@
 下面是更多与 Armino 相关资源与链接：
 
  - 文档: http://docs.bekencorp.com/
- - 代码: https://github.com/bekencorp/armino
- - 稳定版本: https://github.com/bekencorp/armino/tags
- - 版本问题支持: https://github.com/bekencorp/armino/issues
+ - 代码: https://github.com/bekencorp/bk_idk
  - 技术论坛: https://armino.bekencorp.com/
  - 下载中心: http://dl.bekencorp.com/
  - 尊贵客户支持：https://support.bekencorp.com/

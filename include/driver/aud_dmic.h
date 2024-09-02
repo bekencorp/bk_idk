@@ -31,81 +31,200 @@ extern "C" {
  */
 
 /**
- * @brief     Init the adc module of audio
+ * @brief     Init the dmic module of audio
  *
  * This API init the adc module:
- *  - Set adc work mode: adc/dtmf
- *  - Configure the adc/dtmf parameters
- *  - disable adc/dtmf
- *  - disable adc/dtmf interrupts
+ *  - Init audio driver
+ *  - Set audio adc sample rate, work mode...
+ *  - Configure dmic
  *
- * @param adc_work_mode adc work mode adc/dtmf
- * @param adc_config adc configure of adc work mode
- * @param dtmf_config dtmf configure of dtmf work mode
+ * @param dmic_config audio dmic config
  *
  * @return
  *    - BK_OK: succeed
- *    - BK_ERR_AUD_ADC_MODE: adc work mode is error
  *    - BK_ERR_NULL_PARAM: config is NULL
- *    - BK_ERR_AUD_NOT_INIT: audio driver is not init
+ *    - BK_ERR_AUD_DRV_NOT_INIT: audio driver is not init
  *    - others: other errors.
  */
 bk_err_t bk_aud_dmic_init(aud_dmic_config_t *dmic_config);
 
 /**
- * @brief     Deinit adc module
+ * @brief     Deinit dmic module of audio
  *
- * This API deinit the adc module of audio:
- *   - Disable adc and dtmf
+ * This API deinit the dmic module:
+ *   - Configure the dmic parameters to default value.
+ *
+ * @param
+ *    - None
  *
  * @return
  *    - BK_OK: succeed
+ *    - BK_ERR_AUD_DMIC_NOT_INIT: audio dmic is not init
  *    - others: other errors.
  */
 bk_err_t bk_aud_dmic_deinit(void);
 
 /**
- * @brief     Set the sample rate in adc work mode
+ * @brief     Set the dmic sample rate
  *
- * @param samp_rate adc sample rate of adc work mode
+ * This API set the dmic sample rate value.
+ *
+ * @param
+ *    - samp_rate: dmic sample rate
  *
  * @return
  *    - BK_OK: succeed
- *    - BK_ERR_AUD_NOT_INIT: audio driver is not init
+ *    - BK_ERR_AUD_DMIC_NOT_INIT: audio dmic is not init
  *    - others: other errors.
  */
 bk_err_t bk_aud_dmic_set_samp_rate(uint32_t samp_rate);
 
+/**
+ * @brief     Get the audio dmic fifo address
+ *
+ * @param
+ *    - dmic_fifo_addr: dmic fifo address
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: other errors.
+ */
 bk_err_t bk_aud_dmic_get_fifo_addr(uint32_t *dmic_fifo_addr);
 
-/* get dtmf fifo data */
+/**
+ * @brief     Get dmic data
+ *
+ * This API get dmic fifo data
+ *
+ * @param dmic_data save audio dmic fifo data
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_AUD_DMIC_NOT_INIT: audio dmic is not init
+ *    - others: other errors.
+ */
 bk_err_t bk_aud_dmic_get_fifo_data(uint32_t *dmic_data);
 
-/* get audio adc fifo and agc status */
+/**
+ * @brief   Get the dmic status information
+ *
+ * This API get the dmic fifo status.
+ *
+ * @param
+ *    - dmic_status: dmic fifo status
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_AUD_DMIC_NOT_INIT: audio dmic is not init
+ *    - others: other errors.
+ */
 bk_err_t bk_aud_dmic_get_status(uint32_t *dmic_status);
 
-/* start adc to dac test */
+/**
+ * @brief     Enable audio dmic loop test
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_AUD_DMIC_NOT_INIT: audio dmic is not init
+ *    - others: other errors.
+ */
 bk_err_t bk_aud_dmic_start_loop_test(void);
 
-/* stop adc to dac test */
+/**
+ * @brief     Disable audio dmic loop test
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_AUD_DMIC_NOT_INIT: audio dmic is not init
+ *    - others: other errors.
+ */
 bk_err_t bk_aud_dmic_stop_loop_test(void);
 
-/* enable adc interrupt */
+/**
+ * @brief     Enable dmic interrupt
+ *
+ * This API enable dmic interrupt:
+ *
+ * @param
+ *    - None
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_AUD_DMIC_NOT_INIT: audio dmic is not init
+ *    - others: other errors.
+ */
 bk_err_t bk_aud_dmic_enable_int(void);
 
-/* disable adc interrupt */
+/**
+ * @brief     Disable dmic interrupt
+ *
+ * This API disable dmic interrupt:
+ *
+ * @param
+ *    - None
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_AUD_DMIC_NOT_INIT: audio dmic is not init
+ *    - others: other errors.
+ */
 bk_err_t bk_aud_dmic_disable_int(void);
 
-/* enable adc and adc start work */
+/**
+ * @brief     Start dmic
+ *
+ * This API start dmic function.
+ *
+ * @param
+ *    - None
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_AUD_DMIC_NOT_INIT: audio dmic is not init
+ *    - others: other errors.
+ */
 bk_err_t bk_aud_dmic_start(void);
 
-/* disable adc and adc stop work */
+/**
+ * @brief     Stop dmic
+ *
+ * This API stop dmic function.
+ *
+ * @param
+ *    - None
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_AUD_DMIC_NOT_INIT: audio dmic is not init
+ *    - others: other errors.
+ */
 bk_err_t bk_aud_dmic_stop(void);
 
-/* set adcl_wr_threshold */
+/**
+ * @brief     Set audio dmic data write threshold
+ *
+ * This API set audio dmic data write threshold:
+ *          - audio dmic interrupt will trigger when the amount of data in FIFO reaches the threshold
+ *
+ * @param value the value of write threshold
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_AUD_DMIC_NOT_INIT: audio dmic is not init
+ *    - others: other errors.
+ */
 bk_err_t bk_aud_dmic_set_dmic_wr_threshold(uint32_t value);
 
-/* register audio interrupt */
+/**
+ * @brief     Register audio dmic isr
+ *
+ * @param isr audio isr callback
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_AUD_DMIC_NOT_INIT: audio dmic is not init
+ *    - others: other errors.
+ */
 bk_err_t bk_aud_dmic_register_isr(aud_isr_t isr);
 
 

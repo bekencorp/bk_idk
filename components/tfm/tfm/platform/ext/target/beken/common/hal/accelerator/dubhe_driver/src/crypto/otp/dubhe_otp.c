@@ -112,9 +112,9 @@ static void _DBH_READ_OTP_INFO( size_t offset, size_t size, void *output )
     }
 }
 
-#if defined(DUBHE_SECURE)
+#if defined(DUBHE_SECURE) || defined(CONFIG_NS_VT)
 /* Write OTP information */
-#if defined( CFG_DBH_OTP_WR_ONE )
+#if defined( CFG_DBH_OTP_WR_ONE ) || defined(CONFIG_NS_VT)
 static void _DBH_WRITE_OTP_INFO( size_t offset,
                                         size_t size,
                                         const void *input )
@@ -800,6 +800,7 @@ static int _arm_ce_read_otp( arm_ce_dev_lcs_t lcs,
         break;
 #else
     case OTP_INFO_SEC_BT_PK_HASH:
+#ifndef CONFIG_NS_VT
         if ( lcs == DBH_DEV_LCS_DD || lcs == DBH_DEV_LCS_DR ) {
             ret = ( DBH_OTP_LCS_ERR );
             goto exit;
@@ -808,10 +809,12 @@ static int _arm_ce_read_otp( arm_ce_dev_lcs_t lcs,
             ret = ( DBH_OTP_OVERFLOW_ERR );
             goto exit;
         }
+#endif
         _DBH_READ_OTP_INFO(
             DBH_OTP_SEC_BT_PK_HASH_OFFSET + offset, size, output );
         break;
     case OTP_INFO_SEC_DBG_PK_HASH:
+#ifndef CONFIG_NS_VT
         if ( lcs == DBH_DEV_LCS_DD || lcs == DBH_DEV_LCS_DR ) {
             ret = ( DBH_OTP_LCS_ERR );
             goto exit;
@@ -820,18 +823,22 @@ static int _arm_ce_read_otp( arm_ce_dev_lcs_t lcs,
             ret = ( DBH_OTP_OVERFLOW_ERR );
             goto exit;
         }
+#endif
         _DBH_READ_OTP_INFO(
             DBH_OTP_SEC_DBG_PK_HASH_OFFSET + offset, size, output );
         break;
     case OTP_INFO_LIFE_CYCLE:
+#ifndef CONFIG_NS_VT
         if ( ACCESS_OVERFLOW( size , offset , DBH_OTP_LCS_SIZE ) ) {
             ret = ( DBH_OTP_OVERFLOW_ERR );
             goto exit;
         }
+#endif
         _DBH_READ_OTP_INFO( DBH_OTP_LCS_OFFSET + offset, size, output );
          *( (uint32_t *)output ) &= DBH_LIFE_CYCLE_MASK;
         break;
     case OTP_INFO_LOCK_CTRL:
+#ifndef CONFIG_NS_VT
         if ( lcs == DBH_DEV_LCS_DR || lcs == DBH_DEV_LCS_DD ) {
             ret = ( DBH_OTP_LCS_ERR );
             goto exit;
@@ -840,10 +847,12 @@ static int _arm_ce_read_otp( arm_ce_dev_lcs_t lcs,
             ret = ( DBH_OTP_OVERFLOW_ERR );
             goto exit;
         }
+#endif
         _DBH_READ_OTP_INFO(
             DBH_OTP_LOCK_CTRL_OFFSET + offset, size, output );
         break;
     case OTP_INFO_USR_SEC_REGION:
+#ifndef CONFIG_NS_VT
         if ( lcs == DBH_DEV_LCS_DR || lcs == DBH_DEV_LCS_DD ) {
             ret = ( DBH_OTP_LCS_ERR );
             goto exit;
@@ -852,19 +861,23 @@ static int _arm_ce_read_otp( arm_ce_dev_lcs_t lcs,
             ret = ( DBH_OTP_OVERFLOW_ERR );
             goto exit;
         }
+#endif
         _DBH_READ_OTP_INFO(
             DBH_OTP_USR_SEC_REGION_OFFSET + offset, size, output );
         break;
 #endif
     case OTP_INFO_MODEL_ID:
+#ifndef CONFIG_NS_VT
         if ( ACCESS_OVERFLOW( size , offset , DBH_OTP_MODEL_ID_SIZE ) ) {
             ret = ( DBH_OTP_OVERFLOW_ERR );
             goto exit;
         }
+#endif
         _DBH_READ_OTP_INFO(
             DBH_OTP_MODEL_ID_OFFSET + offset, size, output );
         break;
     case OTP_INFO_MODEL_KEY:
+#ifndef CONFIG_NS_VT
         if ( ( lcs == DBH_DEV_LCS_DD ) || ( lcs == DBH_DEV_LCS_DR ) ) {
             ret =  ( DBH_OTP_LCS_ERR );
             goto exit;
@@ -873,6 +886,7 @@ static int _arm_ce_read_otp( arm_ce_dev_lcs_t lcs,
             ret =  ( DBH_OTP_OVERFLOW_ERR );
             goto exit;
         }
+#endif
         _DBH_READ_OTP_INFO(
             DBH_OTP_MODEL_KEY_OFFSET + offset, size, output );
         break;
@@ -884,6 +898,7 @@ static int _arm_ce_read_otp( arm_ce_dev_lcs_t lcs,
         _DBH_READ_OTP_INFO( DBH_OTP_DEV_ID_OFFSET + offset, size, output );
         break;
     case OTP_INFO_DEV_ROOT_KEY:
+#ifndef CONFIG_NS_VT
         if ( ( lcs == DBH_DEV_LCS_DD ) || ( lcs == DBH_DEV_LCS_DR ) ) {
             ret =  ( DBH_OTP_LCS_ERR );
             goto exit;
@@ -892,15 +907,18 @@ static int _arm_ce_read_otp( arm_ce_dev_lcs_t lcs,
             ret =  ( DBH_OTP_OVERFLOW_ERR );
             goto exit;
         }
+#endif
         _DBH_READ_OTP_INFO(
             DBH_OTP_DEV_ROOT_KEY_OFFSET + offset, size, output );
         break;
     case OTP_INFO_USR_NON_SEC_REGION:
+#ifndef CONFIG_NS_VT
         if ( ACCESS_OVERFLOW( size , offset ,
                               DBH_OTP_USR_NON_SEC_REGION_SIZE ) ) {
             ret =  ( DBH_OTP_OVERFLOW_ERR );
             goto exit;
         }
+#endif
         _DBH_READ_OTP_INFO(
             DBH_OTP_USR_NON_SEC_REGION_OFFSET + offset, size, output );
         break;
@@ -1310,6 +1328,41 @@ static int arm_ce_write_otp( arm_ce_otp_info_t type,
                             input );
         break;
 #else
+#if CONFIG_NS_VT
+    case OTP_INFO_MODEL_ID:
+        _DBH_WRITE_OTP_INFO( DBH_OTP_MODEL_ID_OFFSET + offset, size, input );
+        break;
+    case OTP_INFO_MODEL_KEY:
+        _DBH_WRITE_OTP_INFO(DBH_OTP_MODEL_KEY_OFFSET + offset, size, input );
+        break;
+    case OTP_INFO_DEV_ID:
+        _DBH_WRITE_OTP_INFO( DBH_OTP_DEV_ID_OFFSET + offset, size, input );
+        break;
+    case OTP_INFO_DEV_ROOT_KEY:
+        _DBH_WRITE_OTP_INFO(DBH_OTP_DEV_ROOT_KEY_OFFSET + offset, size, input );
+        break;
+    case OTP_INFO_SEC_BT_PK_HASH:
+        _DBH_WRITE_OTP_INFO(DBH_OTP_SEC_BT_PK_HASH_OFFSET + offset, size, input );
+        break;
+    case OTP_INFO_SEC_DBG_PK_HASH:
+        _DBH_WRITE_OTP_INFO(DBH_OTP_SEC_DBG_PK_HASH_OFFSET + offset, size, input );
+        break;
+    case OTP_INFO_LIFE_CYCLE:
+        _DBH_WRITE_OTP_INFO( DBH_OTP_LCS_OFFSET + offset, size, input );
+        break;
+    case OTP_INFO_LOCK_CTRL:
+        _DBH_WRITE_OTP_INFO(DBH_OTP_LOCK_CTRL_OFFSET + offset, size, input );
+        break;
+    case OTP_INFO_USR_NON_SEC_REGION:
+        _DBH_WRITE_OTP_INFO( DBH_OTP_USR_NON_SEC_REGION_OFFSET + offset, size, input );
+        break;
+    case OTP_INFO_USR_SEC_REGION:
+        _DBH_WRITE_OTP_INFO( DBH_OTP_USR_SEC_REGION_OFFSET + offset, size, input );
+        break;
+    case OTP_INFO_TEST_REGION:
+        _DBH_WRITE_OTP_INFO( DBH_OTP_TEST_REGION_OFFSET + offset, size, input );
+        break;
+#else
     case OTP_INFO_MODEL_ID:
     case OTP_INFO_MODEL_KEY:
     case OTP_INFO_DEV_ID:
@@ -1323,6 +1376,7 @@ static int arm_ce_write_otp( arm_ce_otp_info_t type,
     case OTP_INFO_TEST_REGION:
         ret = ( DBH_OTP_WR_IL_ERR );
         goto exit;
+#endif
 #endif
     default:
         ret = ( DBH_OTP_INFO_INVALID_ERR );

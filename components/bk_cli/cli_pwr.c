@@ -17,7 +17,7 @@
 #include <driver/timer.h>
 #include <driver/trng.h>
 #include <driver/pwr_clk.h>
-#include <driver/ckmn.h>
+#include <driver/rosc_32k.h>
 #include <driver/rosc_ppm.h>
 
 #if CONFIG_SYS_CPU0
@@ -757,8 +757,8 @@ static void cli_pm_timer_isr(timer_id_t chan)
 	INT32 current_delta = 0;
 
 #if CONFIG_CKMN
-	current_freq = bk_ckmn_driver_get_rc32k_freq();
-	current_ppm = bk_ckmn_driver_get_rc32k_ppm();
+	current_freq = bk_rosc_32k_get_freq();
+	current_ppm = bk_rosc_32k_get_ppm();
 #endif
 	current_tick = bk_aon_rtc_get_current_tick(AON_RTC_ID_1);
 	current_delta = current_tick - s_pre_tick;
@@ -772,9 +772,9 @@ static void cli_pm_timer_isr(timer_id_t chan)
 }
 #if CONFIG_CKMN
 static uint32_t prog_intval = 32;
-static void cli_pm_ckmn_timer_isr(timer_id_t chan)
+static void cli_pm_rosc_timer_isr(timer_id_t chan)
 {
-	bk_ckmn_driver_rc32k_prog(prog_intval);
+	bk_rosc_32k_ckest_prog(prog_intval);
 }
 #endif
 #endif
@@ -809,7 +809,7 @@ static void cli_pm_rosc_cali(char *pcWriteBuffer, int xWriteBufferLen, int argc,
 	if (cali_mode == 4) {
 #if CONFIG_CKMN
 		prog_intval = os_strtoul(argv[3], NULL, 10);
-		bk_timer_start(1, cali_interval, cli_pm_ckmn_timer_isr);
+		bk_timer_start(1, cali_interval, cli_pm_rosc_timer_isr);
 #endif
 	} else {
 		bk_pm_rosc_calibration(cali_mode, cali_interval);
@@ -1063,9 +1063,9 @@ static void cli_ps_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char 
 	if (0 == os_strcmp(argv[1], "mcudtim")) {
 		UINT32 dtim = os_strtoul(argv[2], NULL, 10);
 		if (dtim == 1)
-			bk_wlan_mcu_ps_mode_enable_internal();
+			bk_wlan_mcu_ps_mode_enable();
 		else if (dtim == 0)
-			bk_wlan_mcu_ps_mode_disable_internal();
+			bk_wlan_mcu_ps_mode_disable();
 		else
 			goto _invalid_ps_arg;
 	}
@@ -1075,10 +1075,10 @@ static void cli_ps_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char 
 	else if (0 == os_strcmp(argv[1], "rfdtim")) {
 		UINT32 dtim = os_strtoul(argv[2], NULL, 10);
 		if (dtim == 1) {
-			if (bk_wlan_ps_enable_internal())
+			if (bk_wlan_ps_enable())
 				os_printf("dtim enable failed\r\n");
 		} else if (dtim == 0) {
-			if (bk_wlan_ps_disable_internal())
+			if (bk_wlan_ps_disable())
 				os_printf("dtim disable failed\r\n");
 		} else
 			goto _invalid_ps_arg;
@@ -1088,11 +1088,11 @@ static void cli_ps_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char 
 		UINT32 dtim = os_strtoul(argv[2], NULL, 10);
 
 		if (dtim == 1) {
-			extern int bk_wlan_ps_timer_start_internal(void);
-			bk_wlan_ps_timer_start_internal();
+			extern int bk_wlan_ps_timer_start(void);
+			bk_wlan_ps_timer_start();
 		} else  if (dtim == 0) {
-			extern int bk_wlan_ps_timer_pause_internal(void);
-			bk_wlan_ps_timer_pause_internal();
+			extern int bk_wlan_ps_timer_pause(void);
+			bk_wlan_ps_timer_pause();
 		} else
 			goto _invalid_ps_arg;
 	}

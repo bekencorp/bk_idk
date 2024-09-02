@@ -64,7 +64,11 @@ struct flash_area;
  * Indicates that ih_load_addr stores information on flash/ROM address the
  * image has been built for.
  */
-#define IMAGE_F_ROM_FIXED                0x00000100
+#if CONFIG_DIRECT_XIP
+    #define IMAGE_F_ROM_FIXED                0x00000000
+#else 
+    #define IMAGE_F_ROM_FIXED                0x00000100
+#endif
 
 /*
  * ECSDA224 is with NIST P-224

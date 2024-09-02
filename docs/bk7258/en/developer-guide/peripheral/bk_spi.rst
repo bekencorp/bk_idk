@@ -23,7 +23,7 @@ The above figure shows SPI hardware connection, where：
  - MISO：Master Input, Slave Output
  - CSN： The master selects the corresponding slave to transmit data, which is valid at low level
 
-Beken chip usually has 1 SPI controller, and BK7236 supports SPI (SPI1, SPI2).
+Beken chip usually has 1 SPI controller, and BK7258 supports SPI (SPI1, SPI2).
 
 SPI Mode
 ---------------------------------------------------

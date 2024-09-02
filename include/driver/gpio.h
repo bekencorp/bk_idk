@@ -487,6 +487,19 @@ bk_err_t bk_gpio_ana_register_wakeup_source(gpio_id_t gpio_id, gpio_int_type_t i
 bk_err_t bk_gpio_wakeup_config_set(gpio_id_t id, gpio_int_type_t type);
 #endif
 
+#if CONFIG_GPIO_RETENTION_SUPPORT
+/**
+ * @brief Set GPIO retention config
+ *
+ * This API set GPIO retention index and output_state.
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_FAIL: the input gpio index not supported by GPIO_RETENTION_MAP and you should modify that at first
+ */
+bk_err_t bk_gpio_retention_set(gpio_id_t gpio_id, gpio_output_state_e gpio_output_state);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

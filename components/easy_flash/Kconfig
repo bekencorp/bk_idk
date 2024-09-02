@@ -2,17 +2,10 @@ menu "Easy_flash"
 	config EASY_FLASH
 		depends on FLASH
 		bool "Enable Easy Flash"
-		default n
+		default y
 
 	menu "Modify Easy Flash Config"
 		depends on EASY_FLASH
-
-		config EF_START_ADDR
-			hex "Set EF Start Addr"
-			range 0x0 0xFFFFFFFF
-			default 0xFFFFFFFF
-			help
-				Easy_flash indicates the start address
 
 		choice EASY_FLASH_VER
 			prompt "Select Easy Flash Version"
@@ -22,10 +15,6 @@ menu "Easy_flash"
 				bool "EASY_FLASH_V4"
 				help
 					EASY_FLASH v4.1.0
-			config EASY_FLASH_V3
-				bool "EASY_FLASH_V3"
-				help
-					EASY_FLASH v3.0.4
 		endchoice
 	endmenu
 endmenu

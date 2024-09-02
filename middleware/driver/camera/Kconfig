@@ -27,6 +27,10 @@ menu "CAMERA"
 		bool "Enable encode buffer dynamic malloc"
 		default n
 
+	config ENCODE_BUF_NOT_FREE
+		bool "encode buffer when repeate malloc and free, cannot malloc success, so not free, until close all vidoe function"
+		default n
+
 	config DVP_PCLK_72M
 		bool "current ip support 72M pclk"
 		default y if SOC_BK7236XX
@@ -39,8 +43,8 @@ menu "CAMERA"
 
 	config UVC_MAX_PACKET_CNT
 		int "one packet include eight packet, use to save uvc raw data"
-		range 0 8
-		default 4
+		range 0 64
+		default 16
 
 	config JPEG_FRAME_SIZE
 		int "config a jpeg frame size unit(byte), range 0-200k, default 150k"
@@ -48,13 +52,8 @@ menu "CAMERA"
 		default 153600
 
 	config H264_FRAME_SIZE
-		int "config a h264 NALU size unit(byte), range 0-100k, default 64k"
-		range 0 102400
+		int "config a h264 NALU size unit(byte), range 0-200k, default 64k"
+		range 0 204800
 		default 65536
-
-	config H264_P_FRAME_CNT
-		int "config h264 encode one I frame then output H264_P_FRAME_CNT p frame"
-		range 0 30
-		default 5
 
 endmenu

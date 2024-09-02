@@ -56,7 +56,7 @@ endif
 
 ifeq ("$(ARMINO_SOC)", "")
 ifeq ("$(ARMINO_SOC_LIB)", "")
-	ARMINO_SOC := bk7256
+	ARMINO_SOC := bk7236
 	ARMINO_TARGET := $(MAKECMDGOALS)
 endif
 else

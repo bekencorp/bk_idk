@@ -70,6 +70,14 @@ Armino SDK 代码下载
     cd ~/armino
     git clone https://gitlab.bekencorp.com/armino/bk_idk.git
 
+
+您也可从 github 上下载 Armino::
+
+	mkdir -p ~/armino
+	cd ~/armino
+	git clone https://github.com/bekencorp/bk_idk.git
+
+
 然后切换到稳定分支Tag节点, 如v2.0.1.12::
 
     git checkout -B your_branch_name v2.0.1.12

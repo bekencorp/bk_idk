@@ -60,7 +60,6 @@
 #include "trng.h"
 #include "uac.h"
 #include "uart.h"
-#include "uvc_camera.h"
 #include "wdt.h"
 #include "yuv_buf.h"
 #include "vault.h"

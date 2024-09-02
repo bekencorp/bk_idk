@@ -237,12 +237,12 @@ void bk_task_wdt_timeout_check(void)
 	}
 }
 
+#endif
+
 bool bk_wdt_is_driver_inited()
 {
 	return s_wdt_driver_is_init;
 }
-
-#endif
 
 void bk_wdt_feed_handle(void)
 {
@@ -274,6 +274,9 @@ void bk_wdt_force_reboot(void)
 	GLOBAL_INT_DECLARATION();
 	GLOBAL_INT_DISABLE();
 	wdt_hal_force_reboot();
+#if CONFIG_GPIO_RETENTION_SUPPORT
+	sys_hal_gpio_state_switch(true);
+#endif
 	while(1);
 	GLOBAL_INT_RESTORE();
 }

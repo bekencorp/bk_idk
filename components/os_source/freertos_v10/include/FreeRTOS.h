@@ -130,9 +130,6 @@
     #endif
 #endif /* if ( ( configUSE_NEWLIB_REENTRANT == 0 ) && ( configUSE_C_RUNTIME_TLS_SUPPORT == 1 ) ) */
 
-#ifndef __cplusplus
-#include <modules/pm.h>
-#endif
 
 /*
  * Check all the required application specific macros have been defined.

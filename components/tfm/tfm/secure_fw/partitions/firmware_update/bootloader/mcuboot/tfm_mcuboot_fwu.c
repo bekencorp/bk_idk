@@ -27,6 +27,9 @@
                                       SHARED_DATA_ENTRY_HEADER_SIZE)
 #endif
 #define TFM_MCUBOOT_FWU_INVALID_IMAGE_ID    0xFF
+
+uint32_t tfm_hal_is_ignore_data_shared(void);
+
 /*
  * \struct fwu_image_info_data
  *
@@ -51,7 +54,6 @@ typedef struct tfm_fwu_mcuboot_ctx_s {
 
 static tfm_fwu_mcuboot_ctx_t mcuboot_ctx[TFM_FWU_MAX_IMAGES];
 static fwu_image_info_data_t boot_shared_data;
-static uint32_t fwu_erase_offset;
 
 static inline bool is_64k_aligned(uint32_t addr)
 {
@@ -67,15 +69,7 @@ static int convert_id_from_bl_to_mcuboot(bl_image_id_t bl_image_id,
                                          uint8_t *mcuboot_image_id)
 {
 #if (MCUBOOT_IMAGE_NUMBER == 1)
-	if (bl_image_id == FWU_IMAGE_TYPE_PRIMARY_MANIFEST) {
-		*mcuboot_image_id = FLASH_IMAGE_PRIMARY_MANIFEST_ID;
-	} else if (bl_image_id == FWU_IMAGE_TYPE_SECONDARY_MANIFEST) {
-		*mcuboot_image_id = FLASH_IMAGE_SECONDARY_MANIFEST_ID;
-	} else if (bl_image_id == FWU_IMAGE_TYPE_PRIMARY_BL2) {
-		*mcuboot_image_id = FLASH_IMAGE_PRIMARY_BL2_ID;
-	} else if (bl_image_id == FWU_IMAGE_TYPE_SECONDARY_BL2) {
-		*mcuboot_image_id = FLASH_IMAGE_SECONDARY_BL2_ID;
-	} else if (bl_image_id == FWU_IMAGE_TYPE_FULL) {
+	if (bl_image_id == FWU_IMAGE_TYPE_FULL) {
 		*mcuboot_image_id = FLASH_IMAGE_ALL_ID;
 	} else {
 		LOG_ERRFMT("TFM FWU: invalid image_type: %d", bl_image_id);
@@ -150,6 +144,14 @@ static bool get_next_free_index(uint8_t *index)
 
 static int fwu_bootloader_get_shared_data(void)
 {
+    uint8_t temp_data[] = {0x16, 0x20, 0x10, 0x00, 0x00, 0x20, 0x80, 0x00, 0x00, 0x00,
+                            0x01, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+    if(tfm_hal_is_ignore_data_shared()){
+        memcpy(&boot_shared_data, temp_data, sizeof(temp_data));
+        return PSA_SUCCESS;
+    }
+
     return tfm_core_get_boot_data(TLV_MAJOR_FWU,
                                   (struct tfm_boot_data *)&boot_shared_data,
                                   sizeof(boot_shared_data));
@@ -200,6 +202,26 @@ psa_status_t fwu_bootloader_init(void)
     return PSA_SUCCESS;
 }
 
+#define REG_WRITE(_r, _v) ({\
+		(*(volatile uint32_t *)(_r)) = (_v);\
+	})
+
+#define REG_SET(r, l, h, v) do { \
+	uint32_t reg_v = *(volatile uint32_t*)(r);\
+	reg_v &= ~((( 1 << ((h) + 1)) - 1) & (~( (1 << (l)) - 1)));\
+	reg_v |= ((v) << (l));\
+	*(volatile uint32_t*)(r) = reg_v;\
+} while(0)
+static void wdt_close()
+{
+    REG_WRITE(0x54000600, 0x5A0000);
+    REG_WRITE(0x54000600, 0xA50000);
+    REG_SET(0x54800000 + 4 * 2, 1, 1, 1);
+    REG_WRITE(0x54800000 + 4 * 4, 0x5A0000);
+    REG_WRITE(0x54800000 + 4 * 4, 0xA50000);
+}
+
+
 psa_status_t fwu_bootloader_staging_area_init(bl_image_id_t bootloader_image_id)
 {
     uint8_t mcuboot_image_id = 0;
@@ -228,13 +250,21 @@ psa_status_t fwu_bootloader_staging_area_init(bl_image_id_t bootloader_image_id)
         return PSA_ERROR_INSUFFICIENT_MEMORY;
     }
 
-    fwu_erase_offset = 0;
-    #if 0 //will earse flash in next pahse write flash
+
+#if CONFIG_DIRECT_XIP
+    uint32_t update_id = (flash_area_read_offset_enable() ^ 1);
+    flash_area_open(update_id,&fap);
+    uint32_t erase_size = (fap->fa_size / 32 *34);
+    wdt_close();
+    flash_area_erase(fap, 0, erase_size);
+    boot_write_xip_status(fap,XIP_MAGIC_TYPE,XIP_SET);
+    flash_area_close(fap);
+#else
     if (flash_area_erase(fap, 0, fap->fa_size) != 0) {
         LOG_ERRFMT("TFM FWU: erasing flash failed.\r\n");
         return PSA_ERROR_GENERIC_ERROR;
     }
-    #endif
+#endif
 
     return PSA_SUCCESS;
 }
@@ -247,8 +277,6 @@ psa_status_t fwu_bootloader_load_image(bl_image_id_t bootloader_image_id,
     uint8_t mcuboot_image_id = 0;
     uint8_t index;
     const struct flash_area *fap;
-    uint32_t offset;
-    uint32_t len;
 
     if (block == NULL) {
         return PSA_ERROR_INVALID_ARGUMENT;
@@ -265,29 +293,17 @@ psa_status_t fwu_bootloader_load_image(bl_image_id_t bootloader_image_id,
     } else {
         return PSA_ERROR_INVALID_ARGUMENT;
     }
-#ifndef CONFIG_OTA_OVERWRITE
-    if ((fwu_erase_offset < fap->fa_size)
-        && ((block_offset + block_size) > fwu_erase_offset)) {
-        offset = fap->fa_off + fwu_erase_offset;
-        len = fap->fa_size - offset;
-        if ((len >= KB(64)) && is_64k_aligned(offset)) {
-            len = KB(64);
-        } else if ((len >= KB(32)) && is_32k_aligned(offset)) {
-            len = KB(32);
-        } else {
-            len = KB(4);
-        }
-        if (flash_area_erase(fap, fwu_erase_offset, len) != 0) {
-            LOG_ERRFMT("TFM FWU: erasing flash failed.\r\n");
-            return PSA_ERROR_GENERIC_ERROR;
-        }
-        fwu_erase_offset += len;
+#if CONFIG_OTA_OVERWRITE || CONFIG_OTA_ENCRYPTED
+    if (flash_area_update_dbus(fap, block_offset, block, block_size) != 0) {
+        LOG_ERRFMT("TFM FWU: write flash failed.\r\n");
+        return PSA_ERROR_GENERIC_ERROR;
     }
-#endif
+#else
     if (flash_area_write(fap, block_offset, block, block_size) != 0) {
         LOG_ERRFMT("TFM FWU: write flash failed.\r\n");
         return PSA_ERROR_GENERIC_ERROR;
     }
+#endif
 
     /* The overflow check has been done in flash_area_write. */
     mcuboot_ctx[index].loaded_size += block_size;
@@ -412,56 +428,59 @@ psa_status_t fwu_bootloader_install_image(bl_image_id_t bootloader_image_id,
          * dependency check pass.
          */
         /* Check the dependency image in the primary slot. */
-        if (get_running_image_version(dep.image_id,
-                                      &image_ver) != PSA_SUCCESS) {
-            return PSA_ERROR_GENERIC_ERROR;
-        }
-
-        /* Check whether the version of the running image can meet the
-         * dependency requirement.
-         */
-        if (is_version_greater_or_equal(&image_ver,
-                                        &dep.image_min_version)) {
-            check_pass = true;
-        } else {
-            /* The running image cannot meet the dependency requirement. Check
-             * the dependency image in the secondary slot.
-             */
-            if ((flash_area_open(FLASH_AREA_IMAGE_SECONDARY(dep.image_id),
-                                 &fap_secondary)) != 0) {
+        if(0 == tfm_hal_is_ignore_data_shared()){
+            if (get_running_image_version(dep.image_id,
+                                          &image_ver) != PSA_SUCCESS) {
                 return PSA_ERROR_GENERIC_ERROR;
             }
-            if (flash_area_read(fap_secondary,
-                                0,
-                                &hdr_secondary,
-                                sizeof(hdr_secondary)) != 0) {
-                flash_area_close(fap_secondary);
-                return PSA_ERROR_GENERIC_ERROR;
-            }
-
-            /* Check the version of the dependency image in the secondary slot
-             * only if the image header, as well as the boot magic, is good.
+            
+            /* Check whether the version of the running image can meet the
+             * dependency requirement.
              */
-            if (hdr_secondary.ih_magic == IMAGE_MAGIC) {
-                /* Check the boot magic. */
+            if (is_version_greater_or_equal(&image_ver,
+                                            &dep.image_min_version)) {
+                check_pass = true;
+            } else {
+                /* The running image cannot meet the dependency requirement. Check
+                 * the dependency image in the secondary slot.
+                 */
+                if ((flash_area_open(FLASH_AREA_IMAGE_SECONDARY(dep.image_id),
+                                     &fap_secondary)) != 0) {
+                    return PSA_ERROR_GENERIC_ERROR;
+                }
                 if (flash_area_read(fap_secondary,
-                                    fap_secondary->fa_size - BOOT_MAGIC_SZ,
-                                    boot_magic,
-                                    BOOT_MAGIC_SZ) != 0) {
+                                    0,
+                                    &hdr_secondary,
+                                    sizeof(hdr_secondary)) != 0) {
                     flash_area_close(fap_secondary);
                     return PSA_ERROR_GENERIC_ERROR;
                 }
-                if ((memcmp(boot_magic, &boot_img_magic, BOOT_MAGIC_SZ) == 0) &&
-                    (is_version_greater_or_equal(&hdr_secondary.ih_ver,
-                                                 &dep.image_min_version))) {
-                    /* The dependency image in the secondary slot meet the
-                     * dependency requirement.
-                     */
-                    check_pass = true;
+            
+                /* Check the version of the dependency image in the secondary slot
+                 * only if the image header, as well as the boot magic, is good.
+                 */
+                if (hdr_secondary.ih_magic == IMAGE_MAGIC) {
+                    /* Check the boot magic. */
+                    if (flash_area_read(fap_secondary,
+                                        fap_secondary->fa_size - BOOT_MAGIC_SZ,
+                                        boot_magic,
+                                        BOOT_MAGIC_SZ) != 0) {
+                        flash_area_close(fap_secondary);
+                        return PSA_ERROR_GENERIC_ERROR;
+                    }
+                    if ((memcmp(boot_magic, &boot_img_magic, BOOT_MAGIC_SZ) == 0) &&
+                        (is_version_greater_or_equal(&hdr_secondary.ih_ver,
+                                                     &dep.image_min_version))) {
+                        /* The dependency image in the secondary slot meet the
+                         * dependency requirement.
+                         */
+                        check_pass = true;
+                    }
                 }
+                flash_area_close(fap_secondary);
             }
-            flash_area_close(fap_secondary);
         }
+
         if (!check_pass) {
             if (convert_id_from_mcuboot_to_bl(dep.image_id,
                                               dependency) != 0) {
@@ -523,6 +542,19 @@ psa_status_t fwu_bootloader_mark_image_accepted(
 #else
     (void)bootloader_image_id;
 #endif
+
+#if (defined(CONFIG_DIRECT_XIP) && defined(CONFIG_XIP_NO_VERSION))
+    const struct flash_area *fap;
+    uint32_t update_id = (flash_area_read_offset_enable());
+    flash_area_open(update_id,&fap);
+    boot_write_xip_status(fap,XIP_IMAGE_OK_TYPE,XIP_ACTIVE);
+    flash_area_close(fap);
+    update_id ^= 1;
+    flash_area_open(update_id,&fap);
+    boot_write_xip_status(fap,XIP_IMAGE_OK_TYPE,XIP_BACK);
+    flash_area_close(fap);
+
+#endif
     return PSA_SUCCESS;
 }
 
@@ -543,7 +575,7 @@ psa_status_t fwu_bootloader_abort(bl_image_id_t bootloader_image_id)
     } else {
         return PSA_ERROR_INVALID_ARGUMENT;
     }
-
+    wdt_close();
     flash_area_erase(fap, 0, fap->fa_size);
     flash_area_close(fap);
     mcuboot_ctx[index].fap = NULL;
@@ -577,7 +609,7 @@ static psa_status_t util_img_hash(const struct flash_area *fap,
             blk_sz = tmp_buf_sz;
         }
 
-        if (flash_area_read(fap, off, tmpbuf, blk_sz)) {
+        if (flash_area_read_dbus(fap, off, tmpbuf, blk_sz)) {
             return PSA_ERROR_GENERIC_ERROR;
         }
         status = psa_hash_update(&handle, tmpbuf, blk_sz);
@@ -612,7 +644,7 @@ static psa_status_t get_secondary_image_info(uint8_t image_id,
         return PSA_ERROR_GENERIC_ERROR;
     }
 
-    if (flash_area_read(fap, 0, &hdr, sizeof(hdr)) != 0) {
+    if (flash_area_read_dbus(fap, 0, &hdr, sizeof(hdr)) != 0) {
         flash_area_close(fap);
         LOG_ERRFMT("TFM FWU: reading flash failed.\r\n");
         return PSA_ERROR_GENERIC_ERROR;

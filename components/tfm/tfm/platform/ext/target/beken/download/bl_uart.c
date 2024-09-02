@@ -2,6 +2,7 @@
 #include "bl_config.h"
 #include "bl_tra_hcit.h"
 #include "bl_uart.h"
+#include "cmsis_gcc.h"
 #define TX_FIFO_THRD                0x40
 #define RX_FIFO_THRD                0x40
 
@@ -117,6 +118,73 @@ int ad_printf(const char *fmt, ...)
     return rc;
 }
 
+void *bl_memcpy(void *d, const void *s, size_t n)
+{
+        /* attempt word-sized copying only if buffers have identical alignment */
+
+        unsigned char *d_byte = (unsigned char *)d;
+        const unsigned char *s_byte = (const unsigned char *)s;
+        const uint32_t mask = sizeof(uint32_t) - 1;
+
+        if ((((uint32_t)d ^ (uint32_t)s_byte) & mask) == 0) {
+
+                /* do byte-sized copying until word-aligned or finished */
+
+                while (((uint32_t)d_byte) & mask) {
+                        if (n == 0) {
+                                return d;
+                        }
+                        *(d_byte++) = *(s_byte++);
+                        n--;
+                };
+
+                /* do word-sized copying as long as possible */
+
+                uint32_t *d_word = (uint32_t *)d_byte;
+                const uint32_t *s_word = (const uint32_t *)s_byte;
+
+                while (n >= sizeof(uint32_t)) {
+                        *(d_word++) = *(s_word++);
+                        n -= sizeof(uint32_t);
+                }
+
+                d_byte = (unsigned char *)d_word;
+                s_byte = (unsigned char *)s_word;
+        }
+
+        /* do byte-sized copying until finished */
+
+        while (n > 0) {
+                *(d_byte++) = *(s_byte++);
+                n--;
+        }
+
+        return d;
+}
+
+
+void *bl_memset(void *s, int c, size_t n)
+{
+    unsigned char *ss = s;
+    while (n--) {
+        *ss++ = c;
+    }
+    return s;
+}
+
+void bl_flash_read_cbus(uint32_t address, void *user_buf, uint32_t size)
+{
+	// uint32_t int_level = bl_disable_irq();
+	bl_memcpy((char*)user_buf, (const char*)(0x02000000+address),size);
+	// bl_enable_irq(int_level);
+}
+
+void bl_flash_write_cbus(uint32_t address, const uint8_t *user_buf, uint32_t size)
+{
+	// uint32_t int_level = bl_disable_irq();
+	bl_memcpy((char*)(0x02000000+address), (const char*)user_buf,size);
+	// bl_enable_irq(int_level);
+}
 
 void uart_send(unsigned char *buff, int len)
 {

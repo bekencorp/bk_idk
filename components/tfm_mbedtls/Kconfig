@@ -6,4 +6,9 @@ menu "TFM Mbedtls"
 	config TE200_TEST
 		bool "Enable TE200 test"
 		default n
+
+	config TE200_ENTROPY
+		bool "Enable TE200 entropy"
+		default n
+
 endmenu

@@ -25,7 +25,7 @@ set(FPGA                             OFF        CACHE BOOL      "Build for FPGA"
 if(TEST_S)
 set(TFM_PARTITION_FIRMWARE_UPDATE    OFF        CACHE BOOL      "Enable firmware update partition")
 set(MCUBOOT_DATA_SHARING             OFF        CACHE BOOL      "Enable Data Sharing")
-set(MCUBOOT_MEASURED_BOOT            OFF        CACHE BOOL      "Add boot measurement values to boot status. Used for initial attestation token")
+set(MCUBOOT_MEASURED_BOOT            ON         CACHE BOOL      "Add boot measurement values to boot status. Used for initial attestation token")
 else()
 set(TFM_PARTITION_FIRMWARE_UPDATE    ON         CACHE BOOL      "Enable firmware update partition")
 set(MCUBOOT_DATA_SHARING             ON         CACHE BOOL      "Enable Data Sharing")
@@ -46,9 +46,17 @@ set(MCUBOOT_MEASURED_BOOT            OFF          CACHE BOOL      "Add boot meas
 endif()
 
 set(PLATFORM_DEFAULT_ROTPK           OFF        CACHE BOOL      "Use default root of trust public key.")
+
+set(PLATFORM_DEFAULT_NV_COUNTERS     OFF          CACHE BOOL      "Use default nv counter implementation.")
+
 set(PLATFORM_DEFAULT_OTP             OFF        CACHE BOOL      "Use trusted on-chip flash to implement OTP memory")
 set(PLATFORM_DEFAULT_OTP_WRITEABLE   ON         CACHE BOOL      "Use OTP memory with write support")
 set(TFM_DUMMY_PROVISIONING           OFF        CACHE BOOL      "Provision with dummy values. NOT to be used in production")
+set(PS_NUM_ASSETS                    "20"      CACHE STRING    "The maximum number of assets to be stored in the Protected Storage area")
+set(PS_MAX_ASSET_SIZE                "1036"      CACHE STRING    "The maximum asset size to be stored in the Protected Storage area")
+set(ITS_MAX_ASSET_SIZE               512       CACHE STRING    "The maximum asset size to be stored in the Internal Trusted Storage area")
+set(ITS_BUF_SIZE                     1024      CACHE STRING    "Size of the ITS internal data transfer buffer (defaults to ITS_MAX_ASSET_SIZE if not set)")
+set(ITS_NUM_ASSETS                   "20"        CACHE STRING    "The maximum number of assets to be stored in the Internal Trusted Storage area")
 
 if(BL2)
     #At least 1 flash sector for header/trailer

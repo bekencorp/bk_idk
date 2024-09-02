@@ -89,6 +89,14 @@ bk_err_t bk_efuse_write_byte(uint8_t addr, uint8_t data);
  */
 bk_err_t bk_efuse_read_byte(uint8_t addr, uint8_t *data);
 
+bool efuse_is_secureboot_enabled(void);
+bool efuse_is_spe_debug_enabled(void);
+bool efuse_is_info_log_enabled(void);
+bool efuse_is_err_log_enabled(void);
+bool efuse_is_secure_download_enabled(void);
+int bk_efuse_init(void);
+void dump_efuse(void);
+
 /**
  * @}
  */

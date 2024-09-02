@@ -31,7 +31,7 @@ typedef enum
     BK_BLE_CONTROLLER_STACK_TYPE_BLE_4,
     BK_BLE_CONTROLLER_STACK_TYPE_BLE_5_X,
     BK_BLE_CONTROLLER_STACK_TYPE_BTDM_5_2,
-}BK_BLE_CONTROLLER_STACK_TYPE;
+} BK_BLE_CONTROLLER_STACK_TYPE;
 
 
 typedef enum
@@ -40,7 +40,7 @@ typedef enum
     BK_BLE_HOST_STACK_TYPE_RW_5_X,
     BK_BLE_HOST_STACK_TYPE_RW_5_2,
     BK_BLE_HOST_STACK_TYPE_ETHERMIND,
-}BK_BLE_HOST_STACK_TYPE;
+} BK_BLE_HOST_STACK_TYPE;
 
 /**
  * @brief hci type enum
@@ -51,7 +51,7 @@ typedef enum
     BK_BLE_HCI_TYPE_ACL = 2,
     BK_BLE_HCI_TYPE_SCO = 3,
     BK_BLE_HCI_TYPE_EVT = 4,
-}BK_BLE_HCI_TYPE;
+} BK_BLE_HCI_TYPE;
 
 
 /**
@@ -119,24 +119,23 @@ typedef bk_err_t ble_err_t;
  * @brief normal perm, for BK_BLE_PERM_SET
  * @attention you cant use this direct, use BK_BLE_PERM_SET(RD, ENABLE) instead
  * @brief
- *   15   14   13   12   11   10    9    8    7    6    5    4    3    2    1    0
- * +----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+
- * |EXT | WS | I  | N  | WR | WC | RD | B  |    NP   |    IP   |   WP    |    RP   |
- * +----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+
+ *   15 | 14 | 13 | 12 | 11 | 10 |  9 | 8  |  7 - 6  |  5 - 4  |  3 - 2  |  1 - 0  
+ * -----|----|----|----|----|----|----|----|---------|---------|---------|---------
+ *  EXT | WS | I  | N  | WR | WC | RD | B  |    NP   |    IP   |   WP    |    RP   
  *
- * Bit [0-1]  : Read Permission         (0 = NO_AUTH, 1 = UNAUTH, 2 = AUTH, 3 = SEC_CON)
- * Bit [2-3]  : Write Permission        (0 = NO_AUTH, 1 = UNAUTH, 2 = AUTH, 3 = SEC_CON)
- * Bit [4-5]  : Indication Permission   (0 = NO_AUTH, 1 = UNAUTH, 2 = AUTH, 3 = SEC_CON)
- * Bit [6-7]  : Notification Permission (0 = NO_AUTH, 1 = UNAUTH, 2 = AUTH, 3 = SEC_CON)
+ * Bit [0-1]  : Read Permission         (0 = NO_AUTH, 1 = UNAUTH, 2 = AUTH, 3 = SEC_CON) \n
+ * Bit [2-3]  : Write Permission        (0 = NO_AUTH, 1 = UNAUTH, 2 = AUTH, 3 = SEC_CON) \n
+ * Bit [4-5]  : Indication Permission   (0 = NO_AUTH, 1 = UNAUTH, 2 = AUTH, 3 = SEC_CON) \n
+ * Bit [6-7]  : Notification Permission (0 = NO_AUTH, 1 = UNAUTH, 2 = AUTH, 3 = SEC_CON) \n
  *
- * Bit [8]    : Broadcast permission
- * Bit [9]    : Read Command accepted
- * Bit [10]   : Write Command accepted
- * Bit [11]   : Write Request accepted
- * Bit [12]   : Send Notification
- * Bit [13]   : Send Indication
- * Bit [14]   : Write Signed accepted
- * Bit [15]   : Extended properties present
+ * Bit [8]    : Broadcast permission   \n
+ * Bit [9]    : Read Command accepted  \n
+ * Bit [10]   : Write Command accepted \n
+ * Bit [11]   : Write Request accepted \n
+ * Bit [12]   : Send Notification \n
+ * Bit [13]   : Send Indication \n
+ * Bit [14]   : Write Signed accepted \n
+ * Bit [15]   : Extended properties present \n
  */
 
 typedef enum
@@ -187,18 +186,21 @@ typedef enum
  *
  * Extended Value permission bit field
  *
- *   15   14   13   12   11   10    9    8    7    6    5    4    3    2    1    0
- * +----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+
- * | RI |UUID_LEN |EKS |                       Reserved                            |
- * +----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+
+ *   15  |  14 - 13  |  12  |  11  |  10 - 0  
+ * ------|-----------|------|------|----------
+ *   RI  |  UUID_LEN |  EKS | INCL |  Reserved  
  *
- * Bit [0-11] : Reserved
- * Bit [12]   : Encryption key Size must be 16 bytes
- * Bit [13-14]: UUID Length             (0 = 16 bits, 1 = 32 bits, 2 = 128 bits, 3 = RFU)
- * Bit [15]   : Trigger Read Indication (0 = Value present in Database, 1 = Value not present in Database)
+ * Bit [0-10] : Reserved \n
+ * Bit [11]   : Attribute Value is included(Value present in Database) \n
+ * Bit [12]   : Encryption key Size must be 16 bytes \n
+ * Bit [13-14]: UUID Length             (0 = 16 bits, 1 = 32 bits, 2 = 128 bits, 3 = RFU) \n
+ * Bit [15]   : Trigger Read Indication (0 = Value present in Database, 1 = Value not present in Database) \n
  */
 typedef enum
 {
+    /// Attribute Value is included
+    BK_BLE_VALUE_INCL_MASK  = 0x800,
+    BK_BLE_VALUE_INCL_POS   = 11,
     /// Check Encryption key size Mask
     BK_BLE_EKS_MASK         = 0x1000,
     BK_BLE_EKS_POS          = 12,
@@ -216,17 +218,16 @@ typedef enum
  * @attention you cant use this direct, use BK_BLE_PERM_SET(SVC_UUID_LEN, UUID_16) instead
  * @brief
  *
- *    7    6    5    4    3    2    1    0
- * +----+----+----+----+----+----+----+----+
- * |SEC |UUID_LEN |DIS |  AUTH   |EKS | MI |
- * +----+----+----+----+----+----+----+----+
+ *  7  |  6 - 5   |  4  | 3 - 2  |  1  |  0  
+ * ----|----------|-----|--------|-----|-----
+ * SEC | UUID_LEN | DIS |  AUTH  | EKS | MI  
  *
- * Bit [0]  : Task that manage service is multi-instantiated (Connection index is conveyed)
- * Bit [1]  : Encryption key Size must be 16 bytes
- * Bit [2-3]: Service Permission      (0 = NO_AUTH, 1 = UNAUTH, 2 = AUTH, 3 = Secure Connect)
- * Bit [4]  : Disable the service
- * Bit [5-6]: UUID Length             (0 = 16 bits, 1 = 32 bits, 2 = 128 bits, 3 = RFU)
- * Bit [7]  : Secondary Service       (0 = Primary Service, 1 = Secondary Service)
+ * Bit [0]  : Task that manage service is multi-instantiated (Connection index is conveyed) \n
+ * Bit [1]  : Encryption key Size must be 16 bytes \n
+ * Bit [2-3]: Service Permission      (0 = NO_AUTH, 1 = UNAUTH, 2 = AUTH, 3 = Secure Connect) \n
+ * Bit [4]  : Disable the service \n
+ * Bit [5-6]: UUID Length             (0 = 16 bits, 1 = 32 bits, 2 = 128 bits, 3 = RFU) \n
+ * Bit [7]  : Secondary Service       (0 = Primary Service, 1 = Secondary Service) \n
  */
 typedef enum
 {
@@ -330,6 +331,7 @@ typedef enum
     BLE_CONN_DIS_CONN,
     BLE_CONN_READ_PHY,
     BLE_CONN_SET_PHY,
+    BLE_CONN_ENCRYPT,
 
     /// init
     BLE_INIT_CREATE,
@@ -353,6 +355,11 @@ typedef enum
     BLE_READ_LOCAL_ADDR,
 
     BLE_SET_RANDOM_ADDR,
+    BLE_SET_ADV_RANDOM_ADDR,
+
+    BLE_ADD_WHITE_LIST,
+    BLE_RMV_WHITE_LIST,
+    BLE_CLE_WHITE_LIST,
     BLE_CMD_MAX,
 } ble_cmd_t;
 
@@ -418,18 +425,29 @@ typedef enum
 
     // GAP command complete(including connection param update, mtu exchange, disconnection, phy update...)
     BLE_5_GAP_CMD_CMP_EVENT,
+
+    BLE_5_ADV_STOPPED_EVENT,
+    BLE_5_READ_RSSI_CMPL_EVENT,
+    BLE_5_KEY_EVENT,
+    BLE_5_BOND_INFO_REQ_EVENT,
+    BLE_5_READ_BLOB_EVENT,
+    BLE_5_PAIRING_SECURITY_REQ_EVENT,
+    BLE_5_PARING_NUMBER_COMPARE_REQ_EVENT,
+	
+    BLE_5_SCAN_STOPPED_EVENT,
 } ble_notice_t;
 
-typedef enum{
+typedef enum
+{
     CHARAC_NOTIFY,
     CHARAC_INDICATE,
     CHARAC_READ,
     CHARAC_READ_DONE,
     CHARAC_WRITE_DONE,
-}CHAR_TYPE;
+} CHAR_TYPE;
 
-typedef void (*app_sdp_callback)(unsigned char conidx,uint16_t chars_val_hdl,unsigned char uuid_len,unsigned char *uuid);
-typedef void (*app_sdp_charac_callback)(CHAR_TYPE type,uint8 conidx,uint16_t hdl,uint16_t len,uint8 *data);
+typedef void (*app_sdp_callback)(unsigned char conidx, uint16_t chars_val_hdl, unsigned char uuid_len, unsigned char *uuid);
+typedef void (*app_sdp_charac_callback)(CHAR_TYPE type, uint8 conidx, uint16_t hdl, uint16_t len, uint8 *data);
 
 struct ble_sdp_svc_ind
 {
@@ -463,7 +481,7 @@ struct ble_sdp_char_inf
 /// characteristic description
 struct ble_sdp_char_desc_inf
 {
-     /// UUID length
+    /// UUID length
     uint8_t uuid_len;
     /// UUID
     uint8_t uuid[16];
@@ -473,48 +491,66 @@ struct ble_sdp_char_desc_inf
     uint16_t desc_hdl;
 };
 
+/// discover completed evt param, see MST_TYPE_DISCOVER_COMPLETED
+struct ble_descover_complete_inf
+{
+    uint32_t action_id; // such as MST_TYPE_DISCOVER_PRI_SERVICE_RSP
+};
+
 typedef struct
 {
     uint8_t conn_idx;
-	uint8_t status;
+    uint8_t status;
+    uint32_t num;
 } ble_smp_ind_t;
 
 
-typedef enum{
-	MST_TYPE_SVR_UUID = 0,
-	MST_TYPE_ATT_UUID,
-	MST_TYPE_ATT_DESC,
-	MST_TYPE_SDP_END,
+typedef enum
+{
+    MST_TYPE_SVR_UUID = 0,
+    MST_TYPE_ATT_UUID,
+    MST_TYPE_ATT_DESC,
+    MST_TYPE_SDP_END,
 
-	MST_TYPE_ATTC_SVR_UUID,  ///Service the UUID
-	MST_TYPE_ATTC_ATT_UUID,  ///ATT of a service
-	MST_TYPE_ATTC_ATT_DESC,  ///ATT DESC of a service
-	MST_TYPS_ATTC_PARAM_ERR,  ///The delivered parameter is abnormal or unknown
-	MST_TYPE_ATTC_ERR,	 ///if appm_get_init_attc_info return is ok && ble is disconnect,so update the event
-	MST_TYPE_ATTC_END,	 ///End of the operation
-	MST_TYPE_ATTC_WRITE_RSP,
-	MST_TYPE_ATTC_WRITE_NO_RESPONSE,
-	MST_TYPE_ATTC_CHARAC_READ_DONE,
+    MST_TYPE_ATTC_SVR_UUID,  ///Service the UUID
+    MST_TYPE_ATTC_ATT_UUID,  ///ATT of a service
+    MST_TYPE_ATTC_ATT_DESC,  ///ATT DESC of a service
+    MST_TYPS_ATTC_PARAM_ERR,  ///The delivered parameter is abnormal or unknown
+    MST_TYPE_ATTC_ERR,   ///if appm_get_init_attc_info return is ok && ble is disconnect,so update the event
+    MST_TYPE_ATTC_END,   ///End of the operation
+    MST_TYPE_ATTC_WRITE_RSP,
+    MST_TYPE_ATTC_WRITE_NO_RESPONSE,
+    MST_TYPE_ATTC_CHARAC_READ_DONE,
 
-	MST_TYPE_MTU_EXC = 0x10,
-	MST_TYPE_MTU_EXC_DONE,
+    MST_TYPE_MTU_EXC = 0x10,
+    MST_TYPE_MTU_EXC_DONE,
 
-	MST_TYPE_UPP_ASK = 0x20,   ///Ask if you agree to update the parameter
-	MST_TYPE_UPDATA_STATUS,    ////updata param status
+    MST_TYPE_UPP_ASK = 0x20,   ///Ask if you agree to update the parameter
+    MST_TYPE_UPDATA_STATUS,    ////updata param status
+
+    MST_TYPE_DISCOVER_PRI_SERVICE_RSP,
+    MST_TYPE_DISCOVER_PRI_SERVICE_BY_UUID_RSP,
+    MST_TYPE_DISCOVER_PRI_SERVICE_BY_128_UUID_RSP,
+    MST_TYPE_DISCOVER_CHAR_RSP,
+    MST_TYPE_DISCOVER_CHAR_BY_UUID_RSP,
+    MST_TYPE_DISCOVER_CHAR_BY_128_UUID_RSP,
+    MST_TYPE_DISCOVER_CHAR_DESC,
+    MST_TYPE_DISCOVER_COMPLETED,
 
 
-}MASTER_COMMON_TYPE;
-typedef void (*app_sdp_comm_callback)(MASTER_COMMON_TYPE type,uint8 conidx,void *param);
+} MASTER_COMMON_TYPE;
+typedef void (*app_sdp_comm_callback)(MASTER_COMMON_TYPE type, uint8 conidx, void *param);
 
-enum msg_attc{
-	MST_ATTC_ALL = 0,
-	MST_ATTC_GET_SVR_UUID_ALL,  ////Gets all the services for this connection
-	MST_ATTC_GET_SVR_UUID_BY_SVR_UUID,
-	MST_ATTC_GET_ATT_UUID_ALL,  ////Gets all the ATT's for this connection
-	MST_ATTC_GET_ATT_DESC_UUID_ALL,  ////Gets all the ATT-DESC's for this connection
-	MST_ATTC_SVR_ATT_BY_SVR_UUID, ////Gets all ATT's for this SVR-UUID for this connection
-	MST_ATTC_SVR_ATT_DESC_BY_SVR_UUID, ///Gets all ATT-DESC's for this SVR-UUID for this connection
-	MST_ATTC_SVR_ATT_AND_DESC_BY_SVR_UUID, ///Gets all ATT and ATT-DESC's for this SVR-UUID for this connection
+enum msg_attc
+{
+    MST_ATTC_ALL = 0,
+    MST_ATTC_GET_SVR_UUID_ALL,  ////Gets all the services for this connection
+    MST_ATTC_GET_SVR_UUID_BY_SVR_UUID,
+    MST_ATTC_GET_ATT_UUID_ALL,  ////Gets all the ATT's for this connection
+    MST_ATTC_GET_ATT_DESC_UUID_ALL,  ////Gets all the ATT-DESC's for this connection
+    MST_ATTC_SVR_ATT_BY_SVR_UUID, ////Gets all ATT's for this SVR-UUID for this connection
+    MST_ATTC_SVR_ATT_DESC_BY_SVR_UUID, ///Gets all ATT-DESC's for this SVR-UUID for this connection
+    MST_ATTC_SVR_ATT_AND_DESC_BY_SVR_UUID, ///Gets all ATT and ATT-DESC's for this SVR-UUID for this connection
 };
 
 struct ble_attc_wr_rd_op
@@ -619,7 +655,7 @@ typedef struct
     uint8_t adv_addr[6];  /**<Advertising address value */
     uint8_t data_len;     /**< Data length in advertising packet */
     uint8_t *data;        /**< Data of advertising packet */
-    uint8_t rssi;         /**< RSSI value for advertising packet (in dBm, between -127 and +20 dBm) */
+    int8_t rssi;         /**< RSSI value for advertising packet (in dBm, between -127 and +20 dBm) */
 } ble_recv_adv_t;
 
 typedef struct
@@ -658,6 +694,7 @@ typedef struct
 {
     uint8_t status;      /**< The status for creating db */
     uint8_t prf_id;      /**< The id of the profile */
+    uint16_t start_hdl;
 } ble_create_db_t;
 
 typedef struct
@@ -672,6 +709,10 @@ typedef struct
     /// note: for characteristic declaration contains handle offset
     /// note: for included service, contains target service handle
     uint16_t max_size;
+
+    uint16_t value_len;
+    ///pointer to value if BK_BLE_PERM_SET(RI, ENABLE) not set and BK_BLE_PERM_SET(VALUE_INCL, ENABLE) set
+    void *p_value_context;
 } ble_attm_desc_t;
 
 struct bk_ble_db_cfg
@@ -738,31 +779,31 @@ enum adv_prop_bf
 {
     /// Indicate that advertising is connectable, reception of CONNECT_REQ or AUX_CONNECT_REQ
     /// PDUs is accepted. Not applicable for periodic advertising.
-    ADV_PROP_CONNECTABLE_BIT     = (1UL<<(0)),
+    ADV_PROP_CONNECTABLE_BIT     = (1UL << (0)),
 
     /// Indicate that advertising is scannable, reception of SCAN_REQ or AUX_SCAN_REQ PDUs is
     /// accepted
-    ADV_PROP_SCANNABLE_BIT       = (1UL<<(1)),
+    ADV_PROP_SCANNABLE_BIT       = (1UL << (1)),
 
     /// Indicate that advertising targets a specific device. Only apply in following cases:
     ///   - Legacy advertising: if connectable
     ///   - Extended advertising: connectable or (non connectable and non discoverable)
-    ADV_PROP_DIRECTED_BIT        = (1UL<<(2)),
+    ADV_PROP_DIRECTED_BIT        = (1UL << (2)),
 
     /// Indicate that High Duty Cycle has to be used for advertising on primary channel
     /// Apply only if created advertising is not an extended advertising
-    ADV_PROP_HDC_BIT             = (1UL<<(3)),
+    ADV_PROP_HDC_BIT             = (1UL << (3)),
 
     /// Use legacy advertising PDUs
-    ADV_PROP_PROP_LEGACY_BIT     = (1UL<<(4)),
+    ADV_PROP_PROP_LEGACY_BIT     = (1UL << (4)),
 
     /// Enable anonymous mode. Device address won't appear in send PDUs
     /// Valid only if created advertising is an extended advertising
-    ADV_PROP_ANONYMOUS_BIT       = (1UL<<(5)),
+    ADV_PROP_ANONYMOUS_BIT       = (1UL << (5)),
 
     /// Include TX Power in the extended header of the advertising PDU.
     /// Valid only if created advertising is not a legacy advertising
-    ADV_PROP_TX_PWR_BIT          = (1UL<<(6)),
+    ADV_PROP_TX_PWR_BIT          = (1UL << (6)),
 };
 
 ///Advertising channels enables
@@ -793,11 +834,11 @@ enum phy_type_le
 enum initiating_phy_type_le
 {
     /// LE 1M
-    INIT_PHY_TYPE_LE_1M = (1UL<<(0)),
+    INIT_PHY_TYPE_LE_1M = (1UL << (0)),
     /// LE 2M
-    INIT_PHY_TYPE_LE_2M = (1UL<<(1)),
+    INIT_PHY_TYPE_LE_2M = (1UL << (1)),
     /// LE Coded
-    INIT_PHY_TYPE_LE_CODED = (1UL<<(2)),
+    INIT_PHY_TYPE_LE_CODED = (1UL << (2)),
 };
 
 /// Own addr type
@@ -805,7 +846,8 @@ enum ble_own_addr_type
 {
     /// Public or Private Static Address according to device address configuration
     /// Attention: Private Static Address is not used now, so set will be public
-    OWN_ADDR_TYPE_PUBLIC_OR_STATIC_ADDR,
+    /// Attention: this enum is derecated, use OWN_ADDR_TYPE_PUBLIC_ADDR instead.
+    OWN_ADDR_TYPE_PUBLIC_OR_STATIC_ADDR __attribute__((deprecated("use OWN_ADDR_TYPE_PUBLIC_ADDR instead"))),
 
     /// Generated resolvable private random or random address, will auto refresh periodic
     /// Attention: RPA is not used now, so set will be random
@@ -814,6 +856,12 @@ enum ble_own_addr_type
     /// Generated non-resolvable private random or random address, will auto refresh periodic
     /// Attention: NRPA is not used now, so set will be random
     OWN_ADDR_TYPE_GEN_NON_RSLV_OR_RANDOM_ADDR,
+
+    /// public addr
+    OWN_ADDR_TYPE_PUBLIC_ADDR,
+
+    ///use bk_ble_set_adv_random_addr addr
+    OWN_ADDR_TYPE_RANDOM_ADDR,
 };
 
 /// Scan type
@@ -825,6 +873,20 @@ enum ble_scan_type
     /// Active scanning. Scanning PDUs may be sent
     ACTIVE_SCANNING,
 };
+
+/// Scan filter policy
+enum ble_scan_filter_policy
+{
+    ///Basic unfiltered scanning filter policy
+    BASIC_UNFILTER_SCAN_POLICY            = 0x00,
+    ///Basic filtered scanning filter policy
+    BASIC_FILTER_SCAN_POLICY,
+    ///Extended unfiltered scanning filter policy
+    EXTENED_UNFILER_SCAN_POLICY,
+    ///Extended filtered scanning filter policy
+    EXTENED_FILER_SCAN_POLICY,
+};
+
 typedef struct
 {
     /// Own address type: see enum \ref ble_own_addr_type
@@ -844,6 +906,10 @@ typedef struct
     uint8_t prim_phy;
     /// Indicate on which PHY secondary advertising has to be performed (see enum \ref phy_type_le)
     uint8_t second_phy;
+    /// Peer address type: 0=public/1=private random, used for directed adv
+    uint8_t peer_addr_type;
+    /// Peer address, used for directed adv
+    bd_addr_t peer_addr;
 } ble_adv_param_t;
 
 typedef struct
@@ -858,6 +924,8 @@ typedef struct
     uint16_t scan_wd;
     /// Scan type: see enum \ref ble_scan_type
     uint8_t scan_type;
+    /// Scan type: see enum \ref ble_scan_filter_policy
+    uint8_t scan_filter;
 } ble_scan_param_t;
 
 typedef struct
@@ -872,6 +940,8 @@ typedef struct
     uint16_t sup_to;
     /// on which the advertising packets should be received on the primary advertising physical channel (see enum \ref phy_type_le)
     uint8_t init_phys;
+    /// The index of connection
+    uint8_t conn_idx;
 } ble_conn_param_t;
 
 
@@ -956,6 +1026,92 @@ struct mst_comm_updata_para
     uint16_t time_out;
 };
 
+typedef struct
+{
+    /// The index of adv
+    uint8_t adv_idx;
+    /// the stopped reason,0:adv is stopped by user stop or link establishment;1:adv is stopped by timeout
+    uint8_t reason;
+} ble_adv_stopped_ind_t;
+
+typedef struct
+{
+    /// The index of scan
+    uint8_t scan_idx;
+    /// the stopped reason,0:scan is stopped by user stop;1:scan is stopped by timeout
+    uint8_t reason;
+} ble_scan_stopped_ind_t;
+
+/**
+ * @brief BLE_5_READ_RSSI_CMPL_EVENT data
+ */
+typedef struct
+{
+    /// The index of connection
+    uint8_t conn_idx;
+    ///RSSI value
+    int8_t rssi;
+} ble_read_rssi_rsp_t;
+
+/**
+* @brief BLE encryption keys
+*/
+typedef struct
+{
+    uint8_t ltk[16];          /*!< The long term key*/
+    uint8_t rand[8];         /*!< The random number*/
+    uint16_t ediv;         /*!< The ediv value*/
+    uint8_t  key_size;     /*!< The key size(7~16) of the security link*/
+} bk_ble_enc_keys_t;
+
+/**
+* @brief  BLE irk info
+*/
+typedef struct
+{
+    uint8_t irk[16];           /*!< The irk value */
+    uint8_t addr_type;     /*!< The address type */
+    uint8_t id_addr[6];   /*!< The Identity address */
+} bk_ble_irk_info_t;
+
+typedef struct
+{
+    /// Peer address type
+    uint8_t peer_addr_type;
+    /// Peer address
+    uint8_t peer_addr[6];
+    ///Authentication level
+    uint8_t auth;
+    ///received peer encryption key
+    bk_ble_enc_keys_t penc;
+    ///local encryption key
+    bk_ble_enc_keys_t lenc;
+    ///peer Identity Resolving Key information
+    bk_ble_irk_info_t pirk;
+} bk_ble_key_t;
+
+typedef struct
+{
+    /// check whether key is found
+    uint8_t key_found;
+    //ble bonding key
+    bk_ble_key_t key;
+} bk_ble_bond_info_req_t;
+
+typedef struct
+{
+    /// GATT request type
+    uint8_t operation;
+    /// Status of the request
+    uint8_t status;
+    /// service id
+    uint16_t prf_id;
+    /// attribute id
+    uint16_t att_id;
+    /// connection index
+    uint8_t conn_idx;
+} bk_ble_gatt_cmp_evt_t;
+
 /**
  * @brief for sync ble api call return
  *
@@ -1033,19 +1189,19 @@ enum gap_auth
 };
 
 /// IO Capability Values
-enum gap_io_cap
+enum bk_ble_gap_io_cap
 {
     /// Display Only
-    GAP_IO_CAP_DISPLAY_ONLY = 0x00,
+    BK_BLE_GAP_IO_CAP_DISPLAY_ONLY = 0x00,
     /// Display Yes No
-    GAP_IO_CAP_DISPLAY_YES_NO,
+    BK_BLE_GAP_IO_CAP_DISPLAY_YES_NO,
     /// Keyboard Only
-    GAP_IO_CAP_KB_ONLY,
+    BK_BLE_GAP_IO_CAP_KB_ONLY,
     /// No Input No Output
-    GAP_IO_CAP_NO_INPUT_NO_OUTPUT,
+    BK_BLE_GAP_IO_CAP_NO_INPUT_NO_OUTPUT,
     /// Keyboard Display
-    GAP_IO_CAP_KB_DISPLAY,
-    GAP_IO_CAP_LAST
+    BK_BLE_GAP_IO_CAP_KB_DISPLAY,
+    BK_BLE_GAP_IO_CAP_LAST
 };
 
 /// Security Defines
@@ -1075,7 +1231,22 @@ enum gap_oob
     GAP_OOB_AUTH_DATA_LAST
 };
 
+/// key distr
+enum gap_key_distr
+{
+    /// No Keys to distribute
+    BK_BLE_GAP_KDIST_NONE = 0x00,
+    /// Encryption key in distribution
+    BK_BLE_GAP_KDIST_ENCKEY = (1 << 0),
+    /// IRK (ID key)in distribution
+    BK_BLE_GAP_KDIST_IDKEY  = (1 << 1),
+    /// CSRK(Signature key) in distribution
+    BK_BLE_GAP_KDIST_SIGNKEY = (1 << 2),
+    /// LTK in distribution
+    BK_BLE_GAP_KDIST_LINKKEY = (1 << 3),
 
+    BK_BLE_GAP_KDIST_LAST = (1 << 4),
+};
 /**
  * @}
  */

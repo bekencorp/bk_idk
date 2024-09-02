@@ -23,6 +23,17 @@ extern "C" {
 #include "dubhe_sca.h"
 typedef arm_ce_sca_context_t mbedtls_aes_context;
 
+#ifndef MBEDTLS_PRIVATE
+#define MBEDTLS_PRIVATE(member) member
+#endif
+
+typedef struct mbedtls_aes_xts_context
+{
+    mbedtls_aes_context MBEDTLS_PRIVATE(crypt); /*!< The AES context to use for AES block
+                                        encryption or decryption. */
+    mbedtls_aes_context MBEDTLS_PRIVATE(tweak); /*!< The AES context used for tweak
+                                        computation. */
+} mbedtls_aes_xts_context;
 
 #define MBEDTLS_ERR_AES_INVALID_PARAM                -0x002F
 #define MBEDTLS_ERR_AES_GENERIC                      -0x0030
@@ -53,6 +64,22 @@ int dubhe_aes_crypt_ctr( mbedtls_aes_context *ctx,
 						 const unsigned char *input,
 						 unsigned char *output );
 
+#if defined(MBEDTLS_CIPHER_MODE_XTS)
+void dubhe_aes_xts_init( mbedtls_aes_xts_context *ctx );
+int dubhe_aes_xts_setkey_enc( mbedtls_aes_xts_context *ctx,
+                                const unsigned char *key,
+                                unsigned int keybits);
+int dubhe_aes_xts_setkey_dec( mbedtls_aes_xts_context *ctx,
+                                const unsigned char *key,
+                                unsigned int keybits);
+int dubhe_aes_crypt_xts( mbedtls_aes_xts_context *ctx,
+                           int mode,
+                           size_t length,
+                           const unsigned char data_unit[16],
+                           const unsigned char *input,
+                           unsigned char *output);
+#endif
+
 #define mbedtls_aes_init                dubhe_aes_init
 #define mbedtls_aes_free                dubhe_aes_free
 #define mbedtls_aes_setkey_enc          dubhe_aes_setkey_enc
@@ -67,6 +94,13 @@ int dubhe_aes_crypt_ctr( mbedtls_aes_context *ctx,
 #define mbedtls_internal_aes_encrypt    dubhe_internal_aes_encrypt
 #define mbedtls_internal_aes_decrypt    dubhe_internal_aes_decrypt
 
+#if defined(MBEDTLS_CIPHER_MODE_XTS)
+#define mbedtls_aes_xts_setkey_enc      dubhe_aes_xts_setkey_enc
+#define mbedtls_aes_xts_setkey_dec      dubhe_aes_xts_setkey_dec
+#define mbedtls_aes_crypt_xts           dubhe_aes_crypt_xts
+#define mbedtls_aes_xts_init            dubhe_aes_xts_init
+#define mbedtls_aes_xts_free            dubhe_aes_xts_free
+#endif // MBEDTLS_CIPHER_MODE_XTS
 #endif /*end MBEDTLS_AES_ALT */
 #ifdef __cplusplus
 }

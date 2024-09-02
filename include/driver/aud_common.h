@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Beken
+// Copyright 2023-2024 Beken
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,9 @@
 extern "C" {
 #endif
 
+#define BK_ERR_AUD_DRV_BASE             BK_ERR_AUD_BASE
+#define BK_ERR_AUD_DRV_NOT_INIT         (BK_ERR_AUD_BASE - 1) /**< AUD driver not init */
+
 
 typedef struct {
 	bool adc_is_init;
@@ -28,26 +31,26 @@ typedef struct {
 } aud_module_init_sta_t;
 
 typedef enum {
-	AUD_MODULE_ADC = 0, /**< ADC */
+	AUD_MODULE_ADC = 0,     /**< ADC */
 	AUD_MODULE_DMIC = 1,    /**< DMIC */
 	AUD_MODULE_DTMF = 2,    /**< DTMF */
 	AUD_MODULE_DAC = 3,     /**< DAC */
-	AUD_MODULE_MAX      /**< AUD module id max */
+	AUD_MODULE_MAX          /**< AUD module id max */
 } aud_module_id_t;
 
 typedef enum {
 #if CONFIG_AUDIO_ADC
-	AUD_ISR_ADCL = 0, /**< adcl_int_en */
+	AUD_ISR_ADCL = 0,    /**< adcl_int_en */
 #endif
 #if CONFIG_AUDIO_DMIC
-	AUD_ISR_DMIC = 2,
+	AUD_ISR_DMIC = 2,    /**< dmic_int_en */
 #endif
 #if CONFIG_AUDIO_DTMF
-	AUD_ISR_DTMF = 3,     /**< dtmf_int_en */
+	AUD_ISR_DTMF = 3,    /**< dtmf_int_en */
 #endif
 #if CONFIG_AUDIO_DAC
-	AUD_ISR_DACL = 4,     /**< dacl_int_en */
-	AUD_ISR_DACR = 5,     /**< dacr_int_en */
+	AUD_ISR_DACL = 4,    /**< dacl_int_en */
+	AUD_ISR_DACR = 5,    /**< dacr_int_en */
 #endif
 	AUD_ISR_MAX
 } aud_isr_id_t;
@@ -73,8 +76,8 @@ typedef struct
 
 
 typedef enum {
-	AUD_CLK_XTAL = 0, /**< XTAL: 26MHz */
-	AUD_CLK_APLL,     /**< APLL: 24.576MHz*/
+	AUD_CLK_XTAL = 0,    /**< XTAL: 26MHz */
+	AUD_CLK_APLL,        /**< APLL: 24.576MHz*/
 	AUD_CLK_MAX
 } aud_clk_t;
 
@@ -116,13 +119,47 @@ bk_err_t bk_aud_driver_init(void);
  */
 bk_err_t bk_aud_driver_deinit(void);
 
+/**
+ * @brief     Set the audio module initialization status
+ *
+ * @param id audio module id
+ * @param val audio module initialization status
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: other errors.
+ */
 bk_err_t bk_aud_set_module_init_sta(aud_module_id_t id, bool val);
 
-
+/**
+ * @brief     Get the audio module initialization status
+ *
+ * @param id audio module id
+ *
+ * @return
+ *    - true: audio module already has been initialized
+ *    - false: audio module has not been initialized.
+ */
 bool bk_aud_get_module_init_sta(aud_module_id_t id);
 
+/**
+ * @brief     Config audio clock
+ *
+ * @param clk audio clock source
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: other errors.
+ */
 bk_err_t bk_aud_clk_config(aud_clk_t clk);
 
+/**
+ * @brief     Deconfig audio clock
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: other errors.
+ */
 bk_err_t bk_aud_clk_deconfig(void);
 
 
@@ -136,8 +173,6 @@ bk_err_t bk_aud_clk_deconfig(void);
  *
  * @return
  *    - BK_OK: succeed
- *    - BK_ERR_AUD_ADC_MODE: adc work mode is NULL
- *    - BK_ERR_AUD_NOT_INIT: audio driver is not init
  *    - others: other errors.
  */
 bk_err_t bk_aud_register_aud_isr(aud_isr_id_t isr_id, aud_isr_t isr);

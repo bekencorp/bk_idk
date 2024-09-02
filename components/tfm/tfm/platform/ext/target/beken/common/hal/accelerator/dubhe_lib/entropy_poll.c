@@ -241,10 +241,15 @@ int mbedtls_nv_seed_poll( void *data,
 int mbedtls_hardware_poll( void *data,
                     unsigned char *output, size_t len, size_t *olen )
 {
+#if CONFIG_TE200_ENTROPY
     (void)data;
-
     if( arm_ce_seed_read( output, len ) < 0 )
         return( -1 );
+#else
+    extern int bk_puf_get_random_number( void *data, unsigned char *output, size_t len);
+    if( bk_puf_get_random_number( data, output, len ) < 0 )
+        return( -1 );
+#endif
 
     *olen = len;
 

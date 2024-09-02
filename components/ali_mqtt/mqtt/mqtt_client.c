@@ -2050,11 +2050,11 @@ static int MQTTPubInfoProc(iotx_mc_client_t *pClient)
 }
 
 typedef void (*mqtt_pingreq_timeout_t)(void);
-extern void bk_net_arp_register_cb_internal(mqtt_pingreq_timeout_t mqtt_timeout);
-extern void bk_net_mqtt_update_cb_internal(bool send_pingreq, uint32_t period_s);
+extern void bk_net_arp_register_cb(mqtt_pingreq_timeout_t mqtt_timeout);
+extern void bk_net_mqtt_update_cb(bool send_pingreq, uint32_t period_s);
 void mqtt_ping_time_cb(bool send_pingreq, uint32_t period_s)
 {
-    bk_net_mqtt_update_cb_internal(send_pingreq, period_s);
+    bk_net_mqtt_update_cb(send_pingreq, period_s);
 }
 
 /// TODO:
@@ -2064,7 +2064,7 @@ static void cb_recv_timeout(void *arg)
     if (IOTX_MC_KEEPALIVE_PROBE_MAX < pClient->keepalive_probes) {
         iotx_mc_set_client_state(pClient, IOTX_MC_STATE_DISCONNECTED);
         pClient->keepalive_probes = 0;
-        bk_net_arp_register_cb_internal(NULL);
+        bk_net_arp_register_cb(NULL);
         mqtt_ping_time_cb(false, pClient->connect_data.keepAliveInterval);
         log_err("keepalive_probes more than %u, disconnected.\n",
                 IOTX_MC_KEEPALIVE_PROBE_MAX);
@@ -2120,7 +2120,7 @@ static void mqtt_recv_thread( void *arg )
             if (ret) {
                 log_err("IOT_MQTT_Yield: ret(%d).\n", ret);
                 iotx_mc_set_client_state(pClient, IOTX_MC_STATE_DISCONNECTED);
-                bk_net_arp_register_cb_internal(NULL);
+                bk_net_arp_register_cb(NULL);
                 mqtt_ping_time_cb(false, pClient->connect_data.keepAliveInterval);
             }
         } else {
@@ -2143,7 +2143,7 @@ static void stop_mqtt_recv_thread(void)
 static void start_mqtt_recv_thread(void *arg)
 {
     int ret = 0;
-    bk_net_arp_register_cb_internal(mqtt_pingreq_timeout);
+    bk_net_arp_register_cb(mqtt_pingreq_timeout);
     os_printf("start mqtt recv thread.\r\n");
     if(NULL != s_mqtt_recv_thread) {
         os_printf("start mqtt recv thread already started.\r\n");
@@ -2157,7 +2157,7 @@ static void start_mqtt_recv_thread(void *arg)
                     MQTT_RECV_TASK_STACK_SIZE,
                     (beken_thread_arg_t)arg);
     if (kNoErr != ret) {
-        bk_net_arp_register_cb_internal(NULL);
+        bk_net_arp_register_cb(NULL);
         os_printf("creat recv thread failed, ret(%d).\r\n", ret);
     }
 }

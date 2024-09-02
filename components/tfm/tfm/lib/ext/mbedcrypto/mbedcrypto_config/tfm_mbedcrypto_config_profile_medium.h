@@ -560,7 +560,7 @@
  *
  * Enable Cipher Block Chaining mode (CBC) for symmetric ciphers.
  */
-//#define MBEDTLS_CIPHER_MODE_CBC
+#define MBEDTLS_CIPHER_MODE_CBC
 
 /**
  * \def MBEDTLS_CIPHER_MODE_CFB
@@ -1759,7 +1759,7 @@
  *            on it, and considering stronger message digests instead.
  *
  */
-//#define MBEDTLS_SHA1_C
+#define MBEDTLS_SHA1_C
 
 /**
  * \def MBEDTLS_SHA224_C
@@ -1805,7 +1805,8 @@
  *
  * Comment to disable SHA-384
  */
-//#define MBEDTLS_SHA384_C
+#define MBEDTLS_SHA384_C
+#define MBEDTLS_PSA_BUILTIN_ALG_SHA_384 1
 
 /**
  * \def MBEDTLS_SHA512_C
@@ -1818,7 +1819,7 @@
  *
  * This module adds support for SHA-384 and SHA-512.
  */
-//#define MBEDTLS_SHA512_C
+#define MBEDTLS_SHA512_C
 
 /**
  * \def MBEDTLS_THREADING_C

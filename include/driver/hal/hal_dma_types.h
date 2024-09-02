@@ -196,6 +196,8 @@ typedef struct {
     dma_port_config_t src;         /**< DMA source configuration */
     dma_port_config_t dst;         /**< DMA dest configuration */
     dma_pixel_trans_type_t trans_type; /**< DMA TRANS TYPE */
+    uint32_t dest_wr_intlv; /**< DMA Destination Write operate interval.unit is cycle */
+    uint32_t src_rd_intlv; /**< DMA Source Read operate interval.unit is cycle */
 } dma_config_t;
 
 /**

@@ -12,7 +12,11 @@
 #include "bootutil_priv.h"
 #include "bootutil/bootutil_log.h"
 #include "Driver_Flash.h"
+#include "sys_driver.h"
+#include "bk_tfm_mpc.h"
+#include <components/log.h>
 
+#define TAG "flash_map"
 #define FLASH_PROGRAM_UNIT    TFM_HAL_FLASH_PROGRAM_UNIT
 
 /**
@@ -94,20 +98,55 @@ void flash_area_close(const struct flash_area *area)
  * `off` and `len` can be any alignment.
  * Return 0 on success, other value on failure.
  */
-#define ALIGN_34(addr) (((addr + 34 - 1) / 34) * 34)
+int flash_area_read_dbus(const struct flash_area *area, uint32_t off, void *dst,
+                    uint32_t len)
+{
+    SYS_LOCK_DECLARATION();
+    SYS_LOCK();
+
+    bk_flash_read_bytes(area->fa_off + off, dst, len);
+
+    SYS_UNLOCK();
+    return 0;
+}
+
 int flash_area_read(const struct flash_area *area, uint32_t off, void *dst,
                     uint32_t len)
 {
 #if CONFIG_OTA_OVERWRITE
     uint32_t fa_off = area->fa_off;
     if(area->fa_id == 0){
-        fa_off = ALIGN_34(fa_off);
-        fa_off = ((fa_off)%34+(fa_off/34*32));
+        fa_off = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(fa_off));
         bk_flash_read_cbus(fa_off + off,dst,len);
         return 0;
     }
-
 #endif
+
+#if CONFIG_DIRECT_XIP
+    uint32_t fa_off = area->fa_off;
+    uint32_t fa_size = (FLASH_PHY2VIRTUAL(partition_get_phy_size(PARTITION_PRIMARY_ALL)))/4096*4096;
+    if(off > fa_size){
+        BK_LOGE(TAG, "cbus read offset 0x%x error\r\n",off);
+        return -1;
+    }
+
+    if(area->fa_id == 0){
+        fa_off = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(fa_off));
+        bk_flash_read_cbus(fa_off + off,dst,len);
+        return 0;
+    } else if(area->fa_id == 1){
+        fa_off =FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(partition_get_phy_offset(PARTITION_PRIMARY_ALL)));
+        enable_dcache(0);
+        uint32_t enable = flash_get_excute_enable();
+        bk_flash_read_cbus(0,dst,1);
+        flash_set_excute_enable(1);
+        bk_flash_read_cbus(fa_off + off,dst,len);
+        flash_set_excute_enable(enable);
+        enable_dcache(1);
+        return 0;
+    }
+#endif
+
     uint32_t remaining_len, read_length;
     uint32_t aligned_off;
     uint32_t item_number;
@@ -196,12 +235,67 @@ int flash_area_read(const struct flash_area *area, uint32_t off, void *dst,
     }
 }
 
+#if CONFIG_DIRECT_XIP
+uint32_t flash_write_bytes_dbus(uint32_t address, const uint8_t *user_buf, uint32_t size)
+{
+    SYS_LOCK_DECLARATION();
+    SYS_LOCK();
+
+    uint32_t protect_type = bk_flash_get_protect_type();
+    bk_flash_set_protect_type(0);
+    bk_flash_write_bytes(address, user_buf, size);
+    bk_flash_set_protect_type(protect_type);
+    SYS_UNLOCK();
+    return 0;
+}
+#endif
+
+uint32_t flash_area_update_dbus(const struct flash_area *area, uint32_t off,
+                                const void *src, uint32_t len)
+{
+    SYS_LOCK_DECLARATION();
+    SYS_LOCK();
+#if CONFIG_DIRECT_XIP
+    uint32_t update_id = (flash_area_read_offset_enable() ^ 1);
+    uint32_t fa_off = CEIL_ALIGN_34((partition_get_phy_offset(update_id)));
+    uint32_t phy_addr = off + fa_off;
+    bk_flash_write_bytes(phy_addr, src, len);
+#endif
+#if CONFIG_OTA_OVERWRITE
+    bk_flash_write_bytes(area->fa_off + off, src, len);
+#endif
+    SYS_UNLOCK();
+    return 0;
+}
+
 /* Writes `len` bytes of flash memory at `off` from the buffer at `src`.
  * `off` and `len` can be any alignment.
  */
 int flash_area_write(const struct flash_area *area, uint32_t off,
                      const void *src, uint32_t len)
 {
+#if CONFIG_DIRECT_XIP
+    SYS_LOCK_DECLARATION();
+    SYS_LOCK();
+
+    uint32_t fa_off = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(partition_get_phy_offset(PARTITION_PRIMARY_ALL)));
+    uint32_t boundary = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(partition_get_phy_offset(PARTITION_NSPE)));
+    uint32_t block_num = (FLASH_PHY2VIRTUAL(partition_get_phy_size(PARTITION_NSPE))) / (64*1024);
+    uint32_t write_addr;
+    uint32_t sec_off,nsec_off;
+
+    bk_mpc_set_secure_attribute(MPC_DEV_FLASH,boundary,block_num,0); // turn NSPE to S,and resume
+    enable_dcache(0);
+    write_addr = (fa_off+off);
+    write_addr |= 1 << 24;
+    bk_flash_write_cbus(write_addr,src,len);
+    enable_dcache(1);
+    bk_mpc_set_secure_attribute(MPC_DEV_FLASH,boundary,block_num,1);
+
+	SYS_UNLOCK();
+
+    return 0;
+#endif
     uint8_t add_padding[FLASH_PROGRAM_UNIT];
 #if (FLASH_PROGRAM_UNIT == 1)
     uint8_t len_padding[FLASH_PROGRAM_UNIT]; /* zero sized arrayas are illegal C */

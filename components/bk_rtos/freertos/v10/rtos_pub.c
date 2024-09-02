@@ -40,10 +40,17 @@
 	BK_ASSERT(0 == platform_local_irq_disabled());    \
 } while(0)
 
-#define _xTaskCreate( pvTaskCode, pcName, usStackDepth, pvParameters, uxPriority, pxCreatedTask ) xTaskCreate( pvTaskCode, pcName, usStackDepth, pvParameters, uxPriority, pxCreatedTask )
+#define _xTaskCreate( pvTaskCode, pcName, usStackDepth, pvParameters, uxPriority, pxCreatedTask ) xTaskCreateInSram( pvTaskCode, pcName, usStackDepth, pvParameters, uxPriority, pxCreatedTask )
 #define _xTimerCreate( pcTimerName, xTimerPeriodInTicks, uxAutoReload, pvTimerID, pxCallbackFunction ) xTimerCreate( pcTimerName, xTimerPeriodInTicks, uxAutoReload, pvTimerID, pxCallbackFunction )
 
 BaseType_t xTaskCreateInPsram( TaskFunction_t pxTaskCode,
+                        const char * const pcName, /*lint !e971 Unqualified char types are allowed for strings and single characters only. */
+                        const configSTACK_DEPTH_TYPE usStackDepth,
+                        void * const pvParameters,
+                        UBaseType_t uxPriority,
+                        TaskHandle_t * const pxCreatedTask );
+
+BaseType_t xTaskCreateInSram( TaskFunction_t pxTaskCode,
                         const char * const pcName, /*lint !e971 Unqualified char types are allowed for strings and single characters only. */
                         const configSTACK_DEPTH_TYPE usStackDepth,
                         void * const pvParameters,
@@ -144,14 +151,16 @@ bk_err_t rtos_create_psram_thread( beken_thread_t* thread, uint8_t priority, con
 
 bk_err_t rtos_delete_thread( beken_thread_t* thread )
 {
+extern void pthread_internal_local_storage_destructor_callback(TaskHandle_t handle);
 	if ( thread == NULL )
     {
 		RTOS_ASSERT_INT_ENABLED_WITH_SCHEDULER();
-		
+        pthread_internal_local_storage_destructor_callback(NULL);
         vTaskDelete( NULL );
     }
     else if ( xTaskIsTaskFinished( *thread ) != pdTRUE )
     {
+        pthread_internal_local_storage_destructor_callback(*thread);
         vTaskDelete( *thread );
     }
     return kNoErr;
@@ -350,6 +359,19 @@ bk_err_t rtos_lock_mutex( beken_mutex_t* mutex )
 	RTOS_ASSERT_INT_ENABLED_WITH_SCHEDULER();
 
     if ( xSemaphoreTake( *mutex, BEKEN_WAIT_FOREVER ) != pdPASS )
+    {
+        return kGeneralErr;
+    }
+
+    return kNoErr;
+}
+
+bk_err_t rtos_lock_mutex_timeout( beken_mutex_t* mutex, uint32_t timeout_ms)
+{
+	RTOS_ASSERT_TASK_CONTEXT();
+	RTOS_ASSERT_INT_ENABLED_WITH_SCHEDULER();
+
+    if ( xSemaphoreTake( *mutex, timeout_ms) != pdPASS )
     {
         return kGeneralErr;
     }
@@ -1129,6 +1151,37 @@ size_t rtos_get_psram_minimum_free_heap_size(void)
 	return xPortGetPsramMinimumFreeHeapSize();
 }
 
+#if ((defined CONFIG_SOC_BK7236XX) && (!defined CONFIG_FREERTOS_SMP))
+/*
+ * Freertos tasks API uses vPortEnterCritical and vPortExitCritical.
+ * APP calls rtos_enter_critical->rtos_disable_int and then come port_disable_interrupts_flag.
+ * If APP call rtos_enter_critical, and then call freertos system API(vPortEnterCritical,vPortExitCritical), and rtos_exit_critical.
+ * The system API will enable IRQ in vPortExitCritical, then cause APP call rtos_enter_critical out of work.
+ * So modify rtos_disable_int like this:
+ *    in interrupt context:
+ *    in task context:
+ * NOTES:After APP disable int, we'd better not call FreeRTOS OS API which contains vPortExitCritical in malloc/free/Queue...
+ */
+uint32_t rtos_disable_int(void)
+{
+	if(platform_is_in_interrupt_context())
+	    return port_disable_interrupts_flag();
+	else
+	{
+		uint32_t is_disabled = platform_local_irq_disabled();
+		vPortEnterCritical();
+		return is_disabled;
+	}
+}
+
+void rtos_enable_int(uint32_t int_level)
+{
+	if(platform_is_in_interrupt_context())
+		port_enable_interrupts_flag(int_level);
+	else
+		vPortExitCritical();
+}
+#else
 uint32_t rtos_disable_int(void)
 {
     return port_disable_interrupts_flag();
@@ -1138,6 +1191,8 @@ void rtos_enable_int(uint32_t int_level)
 {
 	port_enable_interrupts_flag(int_level);
 }
+
+#endif
 
 uint32_t rtos_before_sleep(void)
 {
@@ -1181,8 +1236,13 @@ void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer, StackTy
 /* If the buffers to be provided to the Idle task are declared inside this
 function then they must be declared static - otherwise they will be allocated on
 the stack and so not exists after this function exits. */
+#if CONFIG_SOFTWARE_DECODE_SRAM_MAPPING
+static StaticTask_t xIdleTaskTCB;
+static StackType_t uxIdleTaskStack[ configMINIMAL_STACK_SIZE ];
+#else
 static __attribute__((section(".dtcm_sec_data "))) StaticTask_t xIdleTaskTCB;
 static __attribute__((section(".dtcm_sec_data "))) StackType_t uxIdleTaskStack[ configMINIMAL_STACK_SIZE ];
+#endif
 
     /* Pass out a pointer to the StaticTask_t structure in which the Idle task's
     state will be stored. */
@@ -1209,8 +1269,13 @@ void vApplicationGetTimerTaskMemory( StaticTask_t **ppxTimerTaskTCBBuffer, Stack
 /* If the buffers to be provided to the Timer task are declared inside this
 function then they must be declared static - otherwise they will be allocated on
 the stack and so not exists after this function exits. */
+#if CONFIG_SOFTWARE_DECODE_SRAM_MAPPING
+static StaticTask_t xTimerTaskTCB;
+static StackType_t uxTimerTaskStack[ configTIMER_TASK_STACK_DEPTH ];
+#else
 static __attribute__((section(".dtcm_sec_data "))) StaticTask_t xTimerTaskTCB;
 static __attribute__((section(".dtcm_sec_data "))) StackType_t uxTimerTaskStack[ configTIMER_TASK_STACK_DEPTH ];
+#endif
 
     /* Pass out a pointer to the StaticTask_t structure in which the Timer
     task's state will be stored. */

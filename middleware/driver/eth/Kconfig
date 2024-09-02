@@ -56,5 +56,21 @@ menu "ETH"
 		bool "ETH use dhcp or static"
 		default y
 
+	config ETH_PM_CB_SUPPORT
+		bool "enable PM module enter/exit low voltage callback support"
+		default n
+
+	config PHY_SMSC
+		bool "SMSC 100M PHY support"
+		default y
+
+	config PHY_MICREL_KSZ90X1
+		bool "SMSC 1000M PHY support"
+		default n
+
+	config PHY_REALTEK
+		bool "Realtek PHY Support"
+		default n
+
 endmenu
 

@@ -647,27 +647,7 @@ typedef struct UdpHdr {
     uint16_t  len;                /* len */
     uint16_t  sum;                /* checksum */
 } UdpHdr;
-#define TX_PER_PACKET_INFO_OUTPUT (1<<0)
-#define TX_PAYLOAD_PARSE (1<<1)
-#define TX_MQTT_PACKET_HEADER_PARSE (1<<2)
-#define TX_DISCARD_PACKET_INFO_OUTPUT (1<<6)
 
-#define RX_PER_PACKET_INFO_OUTPUT (1<<3)
-#define RX_PAYLOAD_PARSE (1<<4)
-#define RX_MQTT_PACKET_HEADER_PARSE (1<<5)
-
-#define PACKET_TYPE_BASE (8)
-
-#define PACKET_TYPE_MGT (1<<PACKET_TYPE_BASE)
-#define PACKET_TYPE_CTRL (1<<(PACKET_TYPE_BASE+1))
-#define PACKET_TYPE_DATA (1<<(PACKET_TYPE_BASE+2))
-
-#define PACKET_AC_BASE (12)
-
-#define PACKET_AC_BK (1<<PACKET_AC_BASE)
-#define PACKET_AC_BE (1<<(PACKET_AC_BASE+1))
-#define PACKET_AC_VI (1<<(PACKET_AC_BASE+2))
-#define PACKET_AC_VO (1<<(PACKET_AC_BASE+3))  
 
 #define RAW_TX_AC                   AC_VO
 #define RAW_TX_AC_TIMEOUT_MS        50
@@ -1463,6 +1443,13 @@ typedef struct ieee802_11_probe_rsp {
     UINT16 seq_ctrl;
     struct probe_rsp rsp;
 } __attribute__ ((packed)) IEEE802_11_PROBE_RSP_T, *IEEE802_11_PROBE_RSP_PTR;
+
+typedef struct {
+	uint32_t sta_start_tick;		/**< sta start connect tick */
+	uint32_t sta_assoc_tick;		/**< sta complete assoc tick */
+	uint32_t sta_eapol_tick;		/**< sta complete eapol tick */
+	uint32_t sta_ip_tick;		/**< sta got ip tick */
+} wifi_connect_tick_t;
 
 void sa_station_init(void);
 void sa_station_uninit(void);

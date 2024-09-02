@@ -9,9 +9,4 @@ menu "Bk_netif"
 		depends on BK_NETIF
 		bool "Netif use LWIP"
 		default y
-
-	config NETIF_IPV6
-		depends on BK_NETIF
-		bool "Netif enable IPv6"
-		default n
 endmenu

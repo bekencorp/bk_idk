@@ -511,6 +511,19 @@ bk_err_t rtos_trylock_mutex(beken_mutex_t *mutex);
   */
 bk_err_t rtos_lock_mutex(beken_mutex_t *mutex);
 
+/** @brief    Obtains the lock on a mutex
+  *
+  * @Details  Attempts to obtain the lock on a mutex. If the lock is already held
+  *           by another thead, the calling thread will be suspended until the mutex
+  *           lock is released by the other thread or timeout.
+  *
+  * @param    mutex : a pointer to the mutex handle to be locked
+  * @param    timeout_ms : timeout for get lock
+  *
+  * @return   kNoErr        : on success.
+  * @return   kGeneralErr   : if an error occurred
+  */
+bk_err_t rtos_lock_mutex_timeout( beken_mutex_t* mutex, uint32_t timeout_ms);
 
 /** @brief    Releases the lock on a mutex
   *

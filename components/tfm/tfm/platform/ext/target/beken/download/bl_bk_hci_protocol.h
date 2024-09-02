@@ -30,7 +30,8 @@ typedef enum        // by gwf
 enum
 {
 	FLASH_OPERATE_CONTINUE,
-	FLASH_OPERATE_END
+	FLASH_OPERATE_END,
+	FLASH_OPERATE_INVALID
 };
 
 
@@ -58,6 +59,7 @@ enum {
 enum {
     LINK_CHECK_CMD              = 0x00,
     REGISTER_WRITE_CMD          = 0x01,
+    BL2_LINK_CHECK_CMD          = 0x02,
     REGISTER_READ_CMD           = 0x03,
 
     CMD_ERROR_EVENT				= 0X04,
@@ -66,6 +68,9 @@ enum {
     CHANGE_UART_SAMPRATE_CMD      = 0X0F,
 
     FLASH_IMAGE_CEC_CHECK		 = 0x10,
+
+    FLASH_CBUS_DOWNLOAD         = 0x11,
+    FLASH_CBUS_END              = 0x12,
 
     SYS_RESET_CMD		 = 0x70,
     // Bluetooth Tx/Rx Test
@@ -213,6 +218,12 @@ typedef struct {
     u8 param[];
 } __PACKED_POST__ FLASH_OPERATE_ADDR_WRITE_RSP_PARAM;
 
+
+typedef struct {
+    char *partition_name;
+    u32 partition_offset;
+    u32 partition_size;
+} __PACKED_POST__ PARTITION_STRUCT;
 
 void TRAhcit_UART_Rx(void);
 

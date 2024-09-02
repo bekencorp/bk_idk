@@ -10,7 +10,7 @@
 
 .. figure:: picture/security_hw_arch.svg
     :align: center
-    :alt: 8                                                                                           
+    :alt: 8
     :figclass: align-center
 
 如上图所示，BK7236 安全以 M33 为基础。M33 通过 TZ 机制新增了一个维度：安全（S）与非安全（NS）。
@@ -22,23 +22,23 @@ BK7236 上安全访问规则可以通过下图来概述：
 
 .. figure:: picture/security_access.svg
     :align: center
-    :alt: 8                                                                                           
+    :alt: 8
     :figclass: align-center
 
 安全访问规则：
 
  - AHB Master 请求在通过 AHB Master 自身安全规则检查之后，携带 S/NS 信号来到 AHB 总线上：
- 
+
   - Master 为 M33 时，访问地址先经过 IDAU/SAU 审查，审查通过之后再经 MPU 审查，最后才去到总线上。
   - Master 为其他设备时，如果 Master 被 PPC 配置成 S，则为 S 访问，否则为 NS 访问。
 
  - 从 AHB Master 上过来 S/NS 请求，接下来由 BK7236 安全控制审查：
- 
+
   - 首先是 PPC 审查，一般规则是，NS 仅能访问 PPC 配置为 NS 的外设，S 能访问 S/NS 外设（或者仅能访问 S 外设）。
   - 对于块内存访问，由 MPC 进一步审查，审查规则是，S 请求能访问 S/NS 块，NS 请求仅能访问 NS 块。
 
  - 通过 PPC/MPC 审查后，访问请求才来到目标外设上：
- 
+
   - 如果目标外设自身体无法识别 S/NS 信号，则直接访问目标外设。
   - 如果目标外设自身能识别 S/NS 信号（S/NS Aware 外设），则目标外设对请求进行最后的安全审查。
 
@@ -58,7 +58,7 @@ M33 安全访问
 
 .. figure:: picture/security_idau.svg
     :align: center
-    :alt: 8                                                                                           
+    :alt: 8
     :figclass: align-center
 
 .. _bk_security_overview_ppc:
@@ -171,7 +171,7 @@ FLASH 安全访问
 
 .. figure:: picture/security_flash.svg
     :align: center
-    :alt: 8                                                                                           
+    :alt: 8
     :figclass: align-center
 
 如上图所示，BK7236 访问片上 FLASH 有两种方式：
@@ -237,7 +237,7 @@ DMA 安全属性配置请参考 :ref:`DMA 安全配置 <bk_config_security_mpc>`
 
 .. figure:: picture/security_sw_arch.svg
     :align: center
-    :alt: 8                                                                                           
+    :alt: 8
     :figclass: align-center
 
 BK7236 被隔离成安全世界（SPE）与非安全世界（NSPE）。

@@ -29,7 +29,24 @@ uint32 sys_hal_get_int_group2_status(void);
 /**  Platform Start **/
 //Platform
 
+#if !CONFIG_BL2_REG_BASE
+#if CONFIG_SPE
 uint32_t SOC_SYS_REG_BASE = 0x44010000;
+#else
+uint32_t SOC_SYS_REG_BASE = 0x54010000;
+#endif
+#endif
+
+#define PM_CLKSEL_CORE_320M                 (2)
+#define PM_CLKSEL_CORE_480M                 (3)
+#define PM_CLKSEL_FLASH_480M                (0x1)
+#define PM_CLKDIV_CORE_0                    (0)
+#define PM_CLKDIV_CORE_1                    (1)
+#define PM_VDDD_H_VOL_1V                    (0x6)
+#define PM_VDDDIG_H_VOL_0v9                 (0xC)
+#define PM_CLKDV_CPU1_1                     (0x1)
+#define PM_CLKDV_CPU0_0                     (0x0)
+#define SYS_SWITCH_VDDDIG_VOL_DELAY_TIME    (2600)
 
 /** Platform Misc Start **/
 bk_err_t sys_hal_init()
@@ -325,35 +342,38 @@ uint32_t sys_hal_all_modules_clk_div_get(clk_div_reg_e reg)
 
 	return REG_READ(clk_div_reg_address);
 }
+
 void sys_hal_cpu_clk_div_set(uint32_t core_index, uint32_t value)
 {
-	if(core_index == 0)
+	if(core_index == 0)//cpu0
 	{
-		//sys_ll_set_cpu0_int_halt_clk_op_cpu0_clk_div(value);
+		sys_ll_set_cpu0_int_halt_clk_op_cpu0_speed(value);
 	}
-	else
+	else if(core_index == 1)//cpu1
 	{
-		sys_ll_set_cpu1_int_halt_clk_op_cpu0_bus_clk_2div(value);
+		sys_ll_set_cpu1_int_halt_clk_op_cpu1_speed(value);
+	}
+	else if(core_index == 2)//cpu2
+	{
+		sys_ll_set_cpu2_int_halt_clk_op_cpu2_speed(value);
 	}
 }
 uint32_t sys_hal_cpu_clk_div_get(uint32_t core_index)
 {
-	if(core_index == 0)
+	uint32_t value = 2;
+	if(core_index == 0)//cpu0
 	{
-		//return sys_ll_get_cpu0_int_halt_clk_op_cpu0_clk_div();
-		uint32_t reg_value;
-    	reg_value = REG_READ(0x44010000+0x4*4);
-    	reg_value = ((reg_value >> 4) & 0xf);
-    	return reg_value;
+		value = sys_ll_get_cpu0_int_halt_clk_op_cpu0_speed();
 	}
-	else
+	else if(core_index == 1)//cpu1
 	{
-		//return sys_ll_get_cpu1_int_halt_clk_op_cpu0_bus_clk_2div();
-		uint32_t reg_value;
-    	reg_value = REG_READ(0x44010000+0x5*4);
-    	reg_value = ((reg_value >> 4) & 0xf);
-    	return reg_value;
+		value = sys_ll_get_cpu1_int_halt_clk_op_cpu1_speed();
 	}
+	else if(core_index == 2)//cpu2
+	{
+		value = sys_ll_get_cpu2_int_halt_clk_op_cpu2_speed();
+	}
+	return value;
 }
 int32 sys_hal_lp_vol_set(uint32_t value)
 {
@@ -2299,7 +2319,7 @@ static void sys_hal_delay(volatile uint32_t times)
 {
         while(times--);
 }
-
+#if 0
 //TODO the module owner can put the sys init to better place
 void sys_hal_early_init(void)
 {
@@ -2359,6 +2379,254 @@ void sys_hal_early_init(void)
 
 	timer_hal_us_init();
 }
+#else
+
+bk_err_t sys_hal_ctrl_vdddig_h_vol(uint32_t vol_value)
+{
+	if(sys_ll_get_ana_reg9_vcorehsel() != vol_value)
+	{
+		sys_ll_set_ana_reg9_spi_latch1v(1);
+		sys_ll_set_ana_reg9_vcorehsel(vol_value);
+		sys_ll_set_ana_reg9_spi_latch1v(0);
+		sys_hal_delay(SYS_SWITCH_VDDDIG_VOL_DELAY_TIME);//when cpu0 max freq 240m ,it delay 10uS for voltage stability
+	}
+
+	return BK_OK;
+}
+
+uint32_t sys_hal_cali_dpll(uint32_t param)
+{
+    sys_hal_cali_dpll_spi_trig_disable();
+
+    if (!param)
+    {
+        sys_hal_delay(120);
+    }
+    else
+    {
+        sys_hal_delay(60);
+    }
+
+    sys_hal_cali_dpll_spi_trig_enable();
+    sys_hal_cali_dpll_spi_detect_disable();
+
+    if (!param)
+    {
+        sys_hal_delay(3400);
+    }
+    else
+    {
+        sys_hal_delay(340);
+    }
+
+	sys_hal_cali_dpll_spi_detect_enable();
+
+    if (!param)
+    {
+        sys_hal_delay(3400);
+    }
+    else
+    {
+        sys_hal_delay(340);
+    }
+
+    return BK_OK;
+}
+
+void sys_hal_switch_freq(uint32_t cksel_core, uint32_t ckdiv_core, uint32_t ckdiv_cpu0)
+{
+
+	uint32_t clk_param  = 0;
+	clk_param = sys_hal_all_modules_clk_div_get(CLK_DIV_REG0);
+	if(((clk_param >> 0x4)&0x3) > cksel_core)//when it from the higher frequency to lower frequency
+	{
+		/*1.core clk select*/
+		clk_param = 0;
+		clk_param = sys_hal_all_modules_clk_div_get(CLK_DIV_REG0);
+		clk_param &=  ~(0x3 << 4);
+		clk_param |=  cksel_core << 4;
+		sys_hal_all_modules_clk_div_set(CLK_DIV_REG0,clk_param);
+
+		/*2.config bus and core clk div*/
+		clk_param = 0;
+		clk_param = sys_hal_all_modules_clk_div_get(CLK_DIV_REG0);
+		clk_param &=  ~(0xF << 0);
+		clk_param |=  ckdiv_core << 0;
+		sys_hal_all_modules_clk_div_set(CLK_DIV_REG0,clk_param);
+
+		/*3.config cpu clk div*/
+		sys_hal_cpu_clk_div_set(0,ckdiv_cpu0);
+
+	}
+	else//when it from the lower frequency to higher frequency
+	{
+		/*1.config bus and core clk div*/
+		if(ckdiv_core == 0)
+		{
+			sys_hal_cpu_clk_div_set(0,ckdiv_cpu0);//avoid the bus freq > 240m
+		}
+
+		clk_param = 0;
+		clk_param = sys_hal_all_modules_clk_div_get(CLK_DIV_REG0);
+		clk_param &=  ~(0xF << 0);
+		clk_param |=  ckdiv_core << 0;
+		sys_hal_all_modules_clk_div_set(CLK_DIV_REG0,clk_param);
+
+		/*2.config cpu clk div*/
+		if(ckdiv_core != 0)
+		{
+			sys_hal_cpu_clk_div_set(0,ckdiv_cpu0);
+		}
+
+		/*3.core clk select*/
+
+		clk_param = 0;
+		clk_param = sys_hal_all_modules_clk_div_get(CLK_DIV_REG0);
+		clk_param &=  ~(0x3 << 4);
+		clk_param |=  cksel_core << 4;
+		sys_hal_all_modules_clk_div_set(CLK_DIV_REG0,clk_param);
+	}
+
+}
+
+void sys_hal_dpll_cpu_flash_time_early_init(void)
+{
+	uint32_t coresel = 0;
+	uint32_t corediv = 0;
+	//zhangheng20231018: calibrate dpll before use
+	/*0x2:320M, 0X3:480M*/
+	uint32_t chip_id = aon_pmu_hal_get_chipid();
+	coresel = sys_ll_get_cpu_clk_div_mode1_cksel_core();
+	corediv = sys_ll_get_cpu_clk_div_mode1_clkdiv_core();
+	if((coresel != PM_CLKSEL_CORE_320M) || (coresel != PM_CLKSEL_CORE_480M))
+	{
+		sys_hal_cali_dpll(0);
+	}
+
+	if (((chip_id & PM_CHIP_ID_MASK) == (PM_CHIP_ID_MPW_V2_3 & PM_CHIP_ID_MASK))
+	|| ((chip_id & PM_CHIP_ID_MASK) == (PM_CHIP_ID_MPW_V4 & PM_CHIP_ID_MASK))) {
+		sys_hal_flash_set_clk(0x2);
+	} else {
+		/*default of MP flash 80M = 480/6*/
+		if(sys_ll_get_cpu_clk_div_mode2_cksel_flash() != PM_CLKSEL_FLASH_480M)
+		{
+			if(sys_ll_get_cpu_clk_div_mode2_ckdiv_flash() != 0x1)// 480/6
+			{
+				sys_ll_set_cpu_clk_div_mode2_ckdiv_flash(0x1);
+			}
+			sys_hal_flash_set_clk(PM_CLKSEL_FLASH_480M);
+		}
+	}
+
+	/* clk_divd 120MHz,
+	 * 1, the core clock is depended on CONFIG_CPU_FREQ_HZ and configSYSTICK_CLOCK_HZ.
+	 *    Pay attention to bk_pm_module_vote_cpu_freq,and the routine will switch core
+	 *    clock;
+	 * 2, sysTick module's clock source is processor clock now;
+	 */
+	if((coresel != PM_CLKSEL_CORE_320M) && (corediv != 0x1))//160M
+	{
+		#if 0
+		// sys_hal_mclk_div_set(480000000/CONFIG_CPU_FREQ_HZ - 1);
+		sys_hal_mclk_div_set(7);
+		sys_hal_delay(10000);
+
+		// sys_hal_mclk_mux_set(0x3);/*clock source: DPLL, 480M*/
+		sys_hal_mclk_mux_set(0x2);
+		#else
+		sys_hal_switch_freq(2, 7, 1);
+		// sys_hal_ctrl_vdddig_h_vol(0xc);
+		#endif
+	}
+	// timer_hal_us_init();
+
+	/*increase the anaspi_freq, current it only use for lpo: external 32k, 26m/32k*/
+	//if(bk_clk_32k_customer_config_get() != PM_LPO_SRC_ROSC)
+	{
+		sys_ll_set_cpu_anaspi_freq_anaspi_freq(0x2);//ana_sck = bus_clk/((divd+1)*2))
+	}
+
+}
+
+void sys_hal_early_init(void)
+{
+	/*power down rosc, temp modify*/
+	// sys_hal_pwd_rosc();
+
+	uint32_t chip_id = aon_pmu_hal_get_chipid();
+
+	uint32_t val = sys_hal_analog_get(ANALOG_REG5);
+	val |= (0x1 << 5) | (0x1 << 3) | (0x1 << 2);
+
+	sys_hal_analog_set(ANALOG_REG5,val);
+
+	//donghui20230504: 0:1/7 1:1/5 2:1/3 3:1/1
+	sys_ll_set_ana_reg5_adc_div(1); //tenglong20230627 adc_div=1/5 since volt of GPIO <= 3.3V
+
+	val = sys_hal_analog_get(ANALOG_REG0);
+	val |= (0x13 << 20) ;
+	sys_hal_analog_set(ANALOG_REG0,val);
+
+	sys_hal_analog_set(ANALOG_REG0, 0xF1305B56);  //zhangheng20231020 <0>=0 pdll test disalbe for safe
+	sys_ll_set_ana_reg0_dsptrig(1);
+	sys_ll_set_ana_reg0_dsptrig(0);
+
+	sys_hal_analog_set(ANALOG_REG2, 0x7E003450); //wangjian20221110 xtal=0x50
+	//sys_ll_set_cpu_device_clk_enable_value(0x0c008084);
+	sys_hal_analog_set(ANALOG_REG3, 0xC5F00B88);
+
+	/**
+	 * attention:
+	 * SPI latch must be enable before ana_reg[8~13] modification
+	 * and don't forget disable it after that.
+	 */
+	sys_ll_set_ana_reg9_spi_latch1v(1);
+	if ((chip_id & PM_CHIP_ID_MASK) == (PM_CHIP_ID_MPW_V2_3 & PM_CHIP_ID_MASK)) {
+		sys_hal_analog_set(ANALOG_REG8, 0x57E62FFE);
+	} else {
+		sys_hal_analog_set(ANALOG_REG8, 0x57E62F26);//shuguang20230414[8:3]7->4: for evm
+	}
+	//tenglong20231113: <8:5>=5 <3:0>=4 keep GPIO5/4 pullup when powerup
+	sys_hal_analog_set(ANALOG_REG9, 0x787BC8A4); //tenglong20231017: revert <15> to 1 for softstart, should not change it
+	if ((chip_id & PM_CHIP_ID_MASK) == (PM_CHIP_ID_MPW_V2_3 & PM_CHIP_ID_MASK)) {
+		sys_hal_analog_set(ANALOG_REG10, 0xC35543C7);//tenglong20230417:rosc config for buck in lowpower
+		sys_hal_analog_set(ANALOG_REG11, 0x9FEF31F7);
+		sys_hal_analog_set(ANALOG_REG12, 0x9F03EF6F);
+		sys_hal_analog_set(ANALOG_REG13, 0x1F6FB3FF);
+	} else if ((chip_id & PM_CHIP_ID_MASK) == (PM_CHIP_ID_MPW_V4 & PM_CHIP_ID_MASK)) {
+		sys_hal_analog_set(ANALOG_REG10, 0xC35543C7);//tenglong20230417:rosc config for buck in lowpower
+		sys_hal_analog_set(ANALOG_REG11, 0x977EB9FF);
+		sys_hal_analog_set(ANALOG_REG12, 0x977ECA4A);
+		sys_hal_analog_set(ANALOG_REG13, 0x547AB0F5);
+	} else if ((chip_id & PM_CHIP_ID_MASK) == (PM_CHIP_ID_MP_A & PM_CHIP_ID_MASK)){
+		sys_hal_analog_set(ANALOG_REG10, 0xC35543C7);//tenglong20230417:rosc config for buck in lowpower
+		//default of MP
+		//tenglong20231017: SYS_reg0x4B<3:0>=8,SYS_reg0x4C<3:0>=0,SYS_reg0x4D<4:1>=7 for softstart
+		sys_hal_analog_set(ANALOG_REG11, 0x907EB878);
+		sys_hal_analog_set(ANALOG_REG12, 0x907ECA40);
+		sys_hal_analog_set(ANALOG_REG13, 0x727070EE);//tenglong20231020 disable psram/update volt for safe
+		sys_hal_analog_set(ANALOG_REG25, 0x961FAA4);
+
+		sys_ll_set_ana_reg3_inbufen0v9(1);
+	} else {
+		sys_hal_analog_set(ANALOG_REG10, 0xC3D543A7);//tenglong20240123
+		//default of MP
+		//tenglong20231017: SYS_reg0x4B<3:0>=8,SYS_reg0x4C<3:0>=0,SYS_reg0x4D<4:1>=7 for softstart
+		sys_hal_analog_set(ANALOG_REG11, 0xB47E99F8);//tenglong20240418
+		sys_hal_analog_set(ANALOG_REG12, 0xB47ECF20);//tenglong20240418
+		sys_hal_analog_set(ANALOG_REG13, 0x727070EE);//tenglong20231020 disable psram/update volt for safe
+		sys_hal_analog_set(ANALOG_REG25, 0x961FAA4);
+
+		sys_ll_set_ana_reg3_inbufen0v9(1);
+
+	}
+
+	sys_ll_set_ana_reg9_spi_latch1v(0);
+
+	/*early init cpu flash time*/
+	// sys_hal_dpll_cpu_flash_time_early_init(chip_id);
+}
+#endif
 
 void sys_hal_early_init_tfm(void)
 {
@@ -2404,6 +2672,8 @@ void sys_hal_disable_int(uint32_t *int0, uint32_t *int1)
 void sys_hal_set_base_addr(uint32_t addr)
 {
 	s_sys_hal.hw = (sys_hw_t *)addr;
+#if !CONFIG_BL2_REG_BASE
 	SOC_SYS_REG_BASE = addr;
+#endif
 	return BK_OK;
 }

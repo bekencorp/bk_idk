@@ -75,7 +75,7 @@ target_compile_definitions(tfm_psa_rot_partition_crypto
     PRIVATE
         $<$<BOOL:${CRYPTO_ENGINE_BUF_SIZE}>:TFM_CRYPTO_ENGINE_BUF_SIZE=${CRYPTO_ENGINE_BUF_SIZE}>
         $<$<BOOL:${CRYPTO_CONC_OPER_NUM}>:TFM_CRYPTO_CONC_OPER_NUM=${CRYPTO_CONC_OPER_NUM}>
-        $<$<AND:$<BOOL:${TFM_PSA_API}>,$<BOOL:${CRYPTO_IOVEC_BUFFER_SIZE}>>:TFM_CRYPTO_IOVEC_BUFFER_SIZE=${CRYPTO_IOVEC_BUFFER_SIZE}>
+        $<$<AND:$<BOOL:${TFM_PSA_API}>,$<BOOL:${CONFIG_TFM_CRYPTO_IOVEC_BUFFER_SIZE}>>:TFM_CRYPTO_IOVEC_BUFFER_SIZE=${CONFIG_TFM_CRYPTO_IOVEC_BUFFER_SIZE}>
 )
 
 ################ Display the configuration being applied #######################
@@ -94,7 +94,7 @@ if (NOT CONFIG_TFM_PARTITION_QUIET)
     message(STATUS "CRYPTO_ENGINE_BUF_SIZE is set to ${CRYPTO_ENGINE_BUF_SIZE}")
     message(STATUS "CRYPTO_CONC_OPER_NUM is set to ${CRYPTO_CONC_OPER_NUM}")
     if (${TFM_PSA_API})
-        message(STATUS "CRYPTO_IOVEC_BUFFER_SIZE is set to ${CRYPTO_IOVEC_BUFFER_SIZE}")
+        message(STATUS "CONFIG_TFM_CRYPTO_IOVEC_BUFFER_SIZE is set to ${CONFIG_TFM_CRYPTO_IOVEC_BUFFER_SIZE}")
     endif()
     message(STATUS "---------- Display crypto configuration - stop ---------------")
 endif()

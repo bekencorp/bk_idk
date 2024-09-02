@@ -22,5 +22,9 @@ menu "I2C"
 		bool "i2c pm support"
 		depends on I2C
 		default n
+
+	config SIM_I2C_HW_BOARD_V3
+		bool "sim i2c with bk7258 hardware board v3"
+		default y
 endmenu
 
