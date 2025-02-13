@@ -18,7 +18,8 @@ SoC is already supported.
 |Branch\Chip   |    [BK7235]           |       [BK7256]        |        [BK7236]        |      [BK7258]          |      Comment            |
 |:------------ |:--------------------: |:--------------------: |:---------------------: |:---------------------: |:----------------------: |
 |main          |                       |                       |                        |                        |                         |
-|release/v2.0.1|![alt text][supported] |![alt text][supported] |![alt text][developing] |![alt text][developing] |sdk 2.0 Develop Branch   |
+|release/v2.0.1| | |[stable] |[stable] |stable, bug fix          |
+|release/v2.0.1|                       |                       |[developing]            |[developing]            |new feature developing   |
 
 
 [supported]: https://img.shields.io/badge/-supported-green "supported"
