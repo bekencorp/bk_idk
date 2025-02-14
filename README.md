@@ -19,7 +19,7 @@ SoC is already supported.
 |:------------ |:--------------------: |:--------------------: |:---------------------: |:---------------------: |:----------------------: |
 |main          |                       |                       |                        |                        |                         |
 |release/v2.0.1| | |[stable] |[stable] |stable, bug fix          |
-|release/v2.0.1|                       |                       |[developing]            |[developing]            |new feature developing   |
+|release/v2.0.2|                       |                       |[developing]            |[developing]            |new feature developing   |
 
 
 [supported]: https://img.shields.io/badge/-supported-green "supported"
