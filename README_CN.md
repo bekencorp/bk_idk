@@ -2,6 +2,9 @@
 
 * [English Version](./README.md)
 
+**release/v2.0.1 分支进入维护阶段，不再添加新功能**
+**release/v2.0.2 分支目前处于新功能开发阶段**
+
 欢迎使用 Armino!
 Armino 是**博通集成**推出的物联网开发框架，旨在支持**博通集成** 2022 年之后推出的各种物联网芯片，
 同时兼容各种主流物联网操作系统，如 RT-Thread，AliOS，HarmoneyOS 等，Armino 默认支持 FreeRTOS。
