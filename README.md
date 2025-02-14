@@ -1,3 +1,5 @@
+# branch release/v2.0.1 is now in bug fix phase。For new feature please go to branch release/v2.0.2
+
 # ARMINO Development Framework
 
 * [中文版](./README_CN.md)
