@@ -35,6 +35,13 @@ release Branch Tag is official release, the format is vx.x.x.x，for example: v2
 
 Beken SoCs released before 2022, such as BK7231N, BK7231U, BK7251 etc, are not supported by ARMINO.
 
+
+==commit node==
+
+[DAILY] node commit has been tested with basic function test, but suggess you fetch TAG verison to do batch production
+[SINGLE] node commit, compile or function test is not guaranteed
+
+
 # ARMINO Release and OS
 
 The following table shows Armino support of Popular IoT OS where ![alt text][developing] and ![alt text][supported]
