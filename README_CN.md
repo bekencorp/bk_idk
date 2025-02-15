@@ -25,15 +25,19 @@ bk_idk为Armino生态的基础SDK。
 [支持]: https://img.shields.io/badge/-supported-green "支持"
 [开发中]: https://img.shields.io/badge/-developing-orange "开发中"
 
-==Tag说明，release分支Tag为正式版本，请使用正式发布版本，进行开发。==
+## Tag说明
+
+release分支Tag为正式版本，请使用正式发布版本，进行开发
 
 main分支，格式为vx.x.x.x，例如：v2.0.0.1
+
 release/xxxx分支，格式为vx.x.x.x，例如：v2.0.1.1
 
 
-==commit节点说明==
+## commit节点说明
 
 [DAILY] 标签的合入节点经过内部自动化基本功能测试，有一定的质量保证，但不建议作为量产节点
+
 [SINGLE] 标签的合入节点未经过测试，不作编译或功能保证
 
 # ARMINO 版本与其他物联网操作系统
