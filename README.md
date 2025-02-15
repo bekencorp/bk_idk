@@ -27,7 +27,9 @@ SoC is already supported.
 [supported]: https://img.shields.io/badge/-supported-green "supported"
 [developing]: https://img.shields.io/badge/-developing-orange "developing"
 
-==Tag version , please use the official release version for development.==
+## Tag version
+
+please use the official release version for development
 
 main branch Tag is not official release, the format is vx.x.x.x, for example:v2.0.0.1 
 
@@ -36,9 +38,10 @@ release Branch Tag is official release, the format is vx.x.x.x，for example: v2
 Beken SoCs released before 2022, such as BK7231N, BK7231U, BK7251 etc, are not supported by ARMINO.
 
 
-==commit node==
+## commit node
 
 [DAILY] node commit has been tested with basic function test, but suggess you fetch TAG verison to do batch production
+
 [SINGLE] node commit, compile or function test is not guaranteed
 
 
