@@ -2075,6 +2075,12 @@ pm_cpu_freq_e bk_pm_module_current_cpu_freq_get(pm_dev_id_e module)
 
 bk_err_t bk_pm_module_vote_cpu_freq(pm_dev_id_e module, pm_cpu_freq_e cpu_freq)
 {
+#if CONFIG_CLK_FORCE_MAX_CPU_FREQ_320M
+	if(PM_CPU_FRQ_480M == cpu_freq)
+	{
+		cpu_freq = PM_CPU_FRQ_320M;
+	}
+#endif
 #if CONFIG_SYS_CPU1
 #if CONFIG_MAILBOX
 	uint64_t previous_tick  = 0;
