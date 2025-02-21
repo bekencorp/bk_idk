@@ -1285,8 +1285,9 @@ static int sys_hal_enable_buck()
 	sys_hal_enable_spi_latch();
 	#if (!CONFIG_BUCK_ANALOG_DISABLE)
 		sys_ll_set_ana_reg11_aldosel(0);
+		delay_us(1000);
 	#endif
-		sys_ll_set_ana_reg12_dldosel(0);
+	sys_ll_set_ana_reg12_dldosel(0);
 	delay_us(1);
 	/*let the ioldo low power mode*/
 	sys_ll_set_ana_reg8_ioldo_lp(1);

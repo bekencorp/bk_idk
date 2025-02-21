@@ -1289,7 +1289,10 @@ static int sys_hal_enable_buck()
 	sys_hal_backup_set_core_26m(&cksel_core, &clkdiv_core, &clkdiv_bus);//let the cpu frequency to 26m, in order to be successfully switch voltage provide from ldo to buck
 
 	sys_hal_enable_spi_latch();
-	sys_ll_set_ana_reg11_aldosel(0);
+	#if (!CONFIG_BUCK_ANALOG_DISABLE)
+		sys_ll_set_ana_reg11_aldosel(0);
+		delay_us(1000);
+	#endif
 	sys_ll_set_ana_reg12_dldosel(0);
 	delay_us(1);
 	/*let the ioldo low power mode*/
