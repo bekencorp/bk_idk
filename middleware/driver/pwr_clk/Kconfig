@@ -68,5 +68,8 @@ menu "PWR_CLK"
 	config DIGLDO_LOW_VOLTAGE_ENABLE
 		 bool "enable dig ldo low voltage "
 		default y
+	config CLK_FORCE_MAX_CPU_FREQ_320M
+		 bool "force max cpu frequency 320M"
+		default n
 endmenu
 
