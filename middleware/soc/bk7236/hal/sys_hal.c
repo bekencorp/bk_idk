@@ -2788,6 +2788,16 @@ void sys_hal_early_init(void)
 		sys_hal_analog_set(ANALOG_REG25, 0x961FAA4);
 
 		sys_ll_set_ana_reg3_inbufen0v9(1);
+	} else if ((chip_id & PM_CHIP_ID_MASK) == (PM_CHIP_ID_MP_I & PM_CHIP_ID_MASK)) {
+		sys_hal_analog_set(ANALOG_REG10, 0xC3D543E7);//tenglong20240123
+		//default of MP
+		//tenglong20231017: SYS_reg0x4B<3:0>=8,SYS_reg0x4C<3:0>=0,SYS_reg0x4D<4:1>=7 for softstart
+		sys_hal_analog_set(ANALOG_REG11, 0xB47E99F8);//tenglong20240418
+		sys_hal_analog_set(ANALOG_REG12, 0xB47ECF20);//tenglong20240418
+		sys_hal_analog_set(ANALOG_REG13, 0x727070EE);//tenglong20231020 disable psram/update volt for safe
+		sys_hal_analog_set(ANALOG_REG25, 0x961FAA4);
+
+		sys_ll_set_ana_reg3_inbufen0v9(1);
 	} else {
 		sys_hal_analog_set(ANALOG_REG10, 0xC3D543A7);//tenglong20240123
 		//default of MP
