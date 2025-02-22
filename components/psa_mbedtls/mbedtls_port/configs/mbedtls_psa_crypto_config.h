@@ -12,9 +12,14 @@
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
 
+#ifndef MBEDTLS_PSA_CRYPTO_CONFIG_H
+#define MBEDTLS_PSA_CRYPTO_CONFIG_H
+
 #include <os/os.h>
 #include <os/mem.h>
 #include "sdkconfig.h"
+
+#if CONFIG_FULL_MBEDTLS
 
 /**
  * This is an optional version symbol that enables compatibility handling of
@@ -53,7 +58,7 @@
  *
  * Comment to disable the use of assembly code.
  */
-//#define MBEDTLS_HAVE_ASM
+#define MBEDTLS_HAVE_ASM
 
 /**
  * \def MBEDTLS_NO_UDBL_DIVISION
@@ -2002,7 +2007,7 @@
  *
  * Requires: MBEDTLS_SSL_MAX_FRAGMENT_LENGTH
  */
-#define MBEDTLS_SSL_VARIABLE_BUFFER_LENGTH
+//#define MBEDTLS_SSL_VARIABLE_BUFFER_LENGTH
 
 /**
  * \def MBEDTLS_TEST_CONSTANT_FLOW_MEMSAN
@@ -2069,7 +2074,7 @@
  *
  * Uncomment this to allow your own alternate threading implementation.
  */
-//#define MBEDTLS_THREADING_ALT
+#define MBEDTLS_THREADING_ALT
 
 /**
  * \def MBEDTLS_THREADING_PTHREAD
@@ -2110,8 +2115,9 @@
  *
  * Uncomment this to enable internal use of PSA Crypto and new associated APIs.
  */
+#if CONFIG_MBEDTLS_USE_PSA_CRYPTO
 #define MBEDTLS_USE_PSA_CRYPTO
-
+#endif
 /**
  * \def MBEDTLS_PSA_CRYPTO_CONFIG
  *
@@ -2527,7 +2533,7 @@
  *
  * Module:  library/chacha20.c
  */
-//#define MBEDTLS_CHACHA20_C
+// #define MBEDTLS_CHACHA20_C
 
 /**
  * \def MBEDTLS_CHACHAPOLY_C
@@ -2538,7 +2544,7 @@
  *
  * This module requires: MBEDTLS_CHACHA20_C, MBEDTLS_POLY1305_C
  */
-//#define MBEDTLS_CHACHAPOLY_C
+// #define MBEDTLS_CHACHAPOLY_C
 
 /**
  * \def MBEDTLS_CIPHER_C
@@ -3517,7 +3523,7 @@
  *
  * Enable this layer to allow use of mutexes within Mbed TLS
  */
-//#define MBEDTLS_THREADING_C
+#define MBEDTLS_THREADING_C
 
 /**
  * \def MBEDTLS_TIMING_C
@@ -3871,7 +3877,10 @@
 //#define MBEDTLS_PLATFORM_STD_FPRINTF      fprintf /**< Default fprintf to use, can be undefined */
 //#define MBEDTLS_PLATFORM_STD_PRINTF        printf /**< Default printf to use, can be undefined */
 /* Note: your snprintf must correctly zero-terminate the buffer! */
-//#define MBEDTLS_PLATFORM_STD_SNPRINTF    snprintf /**< Default snprintf to use, can be undefined */
+#ifndef MBEDTLS_PLATFORM_SNPRINTF_ALT
+#define MBEDTLS_PLATFORM_SNPRINTF_ALT
+#endif
+#define MBEDTLS_PLATFORM_STD_SNPRINTF    snprintf /**< Default snprintf to use, can be undefined */
 //#define MBEDTLS_PLATFORM_STD_EXIT_SUCCESS       0 /**< Default exit value to use, can be undefined */
 //#define MBEDTLS_PLATFORM_STD_EXIT_FAILURE       1 /**< Default exit value to use, can be undefined */
 //#define MBEDTLS_PLATFORM_STD_NV_SEED_READ   mbedtls_platform_std_nv_seed_read /**< Default nv_seed_read function to use, can be undefined */
@@ -3881,8 +3890,8 @@
 #define os_calloc(nmemb,size)   ((size) && (nmemb) > (~( unsigned int) 0)/(size))?0:os_zalloc((nmemb)*(size))
 /* To use the following function macros, MBEDTLS_PLATFORM_C must be enabled. */
 /* MBEDTLS_PLATFORM_XXX_MACRO and MBEDTLS_PLATFORM_XXX_ALT cannot both be defined */
-//#define MBEDTLS_PLATFORM_CALLOC_MACRO        os_calloc /**< Default allocator macro to use, can be undefined. See MBEDTLS_PLATFORM_STD_CALLOC for requirements. */
-//#define MBEDTLS_PLATFORM_FREE_MACRO            os_free /**< Default free macro to use, can be undefined. See MBEDTLS_PLATFORM_STD_FREE for requirements. */
+#define MBEDTLS_PLATFORM_CALLOC_MACRO        os_calloc /**< Default allocator macro to use, can be undefined. See MBEDTLS_PLATFORM_STD_CALLOC for requirements. */
+#define MBEDTLS_PLATFORM_FREE_MACRO            os_free /**< Default free macro to use, can be undefined. See MBEDTLS_PLATFORM_STD_FREE for requirements. */
 //#define MBEDTLS_PLATFORM_EXIT_MACRO            exit /**< Default exit macro to use, can be undefined */
 //#define MBEDTLS_PLATFORM_SETBUF_MACRO      setbuf /**< Default setbuf macro to use, can be undefined */
 //#define MBEDTLS_PLATFORM_TIME_MACRO            time /**< Default time macro to use, can be undefined. MBEDTLS_HAVE_TIME must be enabled */
@@ -3890,7 +3899,7 @@
 //#define MBEDTLS_PLATFORM_FPRINTF_MACRO      fprintf /**< Default fprintf macro to use, can be undefined */
 #define MBEDTLS_PLATFORM_PRINTF_MACRO        os_printf /**< Default printf macro to use, can be undefined */
 /* Note: your snprintf must correctly zero-terminate the buffer! */
-//#define MBEDTLS_PLATFORM_SNPRINTF_MACRO    snprintf /**< Default snprintf macro to use, can be undefined */
+// #define MBEDTLS_PLATFORM_SNPRINTF_MACRO    snprintf /**< Default snprintf macro to use, can be undefined */
 //#define MBEDTLS_PLATFORM_VSNPRINTF_MACRO    vsnprintf /**< Default vsnprintf macro to use, can be undefined */
 //#define MBEDTLS_PLATFORM_NV_SEED_READ_MACRO   mbedtls_platform_std_nv_seed_read /**< Default nv_seed_read function to use, can be undefined */
 //#define MBEDTLS_PLATFORM_NV_SEED_WRITE_MACRO  mbedtls_platform_std_nv_seed_write /**< Default nv_seed_write function to use, can be undefined */
@@ -4119,11 +4128,101 @@
 //#define MBEDTLS_X509_MAX_FILE_PATH_LEN     512 /**< Maximum length of a path/filename string in bytes including the null terminator character ('\0'). */
 
 /** \} name SECTION: Module configuration options */
-/** Allow library to access its structs' private members.
- *
- * Although structs defined in header files are publicly available,
- * their members are private and should not be accessed by the user.
- */
-#define MBEDTLS_ALLOW_PRIVATE_ACCESS
 
-#define MBEDTLS_ECP_HAVE_SECP256R1
+#else //CONFIG_FULL_MBEDTLS
+
+#define MBEDTLS_HAVE_ASM
+#define MBEDTLS_ENTROPY_HARDWARE_ALT
+#define MBEDTLS_AES_ROM_TABLES
+#define MBEDTLS_AES_FEWER_TABLES
+#define MBEDTLS_CIPHER_MODE_CBC
+#define MBEDTLS_CIPHER_MODE_CTR
+#define MBEDTLS_CIPHER_PADDING_PKCS7
+#define MBEDTLS_CIPHER_PADDING_ONE_AND_ZEROS
+#define MBEDTLS_CIPHER_PADDING_ZEROS_AND_LEN
+#define MBEDTLS_CIPHER_PADDING_ZEROS
+#define MBEDTLS_ECP_DP_SECP256R1_ENABLED
+#define MBEDTLS_ECP_DP_SECP384R1_ENABLED
+#define MBEDTLS_ECP_NIST_OPTIM
+#define MBEDTLS_ECDH_LEGACY_CONTEXT
+#define MBEDTLS_KEY_EXCHANGE_ECDHE_RSA_ENABLED
+#define MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA_ENABLED
+#define MBEDTLS_ERROR_STRERROR_DUMMY
+#define MBEDTLS_NO_PLATFORM_ENTROPY
+#define MBEDTLS_PKCS1_V15
+
+#define MBEDTLS_SSL_ALL_ALERT_MESSAGES
+#define MBEDTLS_SSL_MAX_FRAGMENT_LENGTH
+#define MBEDTLS_SSL_PROTO_TLS1_2
+#define MBEDTLS_SSL_PROTO_DTLS
+#define MBEDTLS_SSL_SERVER_NAME_INDICATION
+#define MBEDTLS_AES_C
+#define MBEDTLS_ASN1_PARSE_C
+#define MBEDTLS_ASN1_WRITE_C
+#define MBEDTLS_BASE64_C
+#define MBEDTLS_BIGNUM_C
+#define MBEDTLS_CCM_C
+#define MBEDTLS_GCM_C
+#define MBEDTLS_NIST_KW_C
+#define MBEDTLS_CIPHER_C
+#define MBEDTLS_CMAC_C
+#define MBEDTLS_CTR_DRBG_C
+#define MBEDTLS_DEBUG_C
+#define MBEDTLS_ECDH_C
+#define MBEDTLS_ECDSA_C
+#define MBEDTLS_ECP_C
+#define MBEDTLS_ENTROPY_C
+#define MBEDTLS_ECP_FIXED_POINT_OPTIM 0
+#define MBEDTLS_HKDF_C
+#define MBEDTLS_OID_C
+#define MBEDTLS_PEM_PARSE_C
+#define MBEDTLS_PK_C
+#define MBEDTLS_PK_PARSE_C
+#define MBEDTLS_PK_WRITE_C
+#define MBEDTLS_PKCS5_C
+#define MBEDTLS_PLATFORM_C
+#define MBEDTLS_RSA_C
+#define MBEDTLS_SHA1_C
+#define MBEDTLS_SHA256_C
+#define MBEDTLS_SHA512_C
+#define MBEDTLS_SSL_CLI_C
+#define MBEDTLS_SSL_TLS_C
+#define MBEDTLS_X509_USE_C
+#define MBEDTLS_X509_CRT_PARSE_C
+#define MBEDTLS_NET_C
+#define MBEDTLS_SSL_OUT_CONTENT_LEN             8192
+#define MBEDTLS_SSL_DTLS_MAX_BUFFERING          16384
+
+#ifndef MBEDTLS_PLATFORM_SNPRINTF_ALT
+#define MBEDTLS_PLATFORM_SNPRINTF_ALT
+#endif
+#define MBEDTLS_PLATFORM_MEMORY
+#define os_calloc(nmemb,size)   ((size) && (nmemb) > (~( unsigned int) 0)/(size))?0:os_zalloc((nmemb)*(size))
+#define MBEDTLS_PLATFORM_CALLOC_MACRO        os_calloc /**< Default allocator macro to use, can be undefined. See MBEDTLS_PLATFORM_STD_CALLOC for requirements. */
+#define MBEDTLS_PLATFORM_FREE_MACRO            os_free /**< Default free macro to use, can be undefined. See MBEDTLS_PLATFORM_STD_FREE for requirements. */
+#define MBEDTLS_PLATFORM_PRINTF_MACRO        os_printf /**< Default printf macro to use, can be undefined */
+
+#endif //CONFIG_FULL_MBEDTLS
+
+#ifdef CRYPTO_NV_SEED
+#include "tfm_mbedcrypto_config_extra_nv_seed.h"
+#endif /* CRYPTO_NV_SEED */
+
+#if defined(CRYPTO_HW_ACCELERATOR) && !defined(CONFIG_TFM_CRYPTO)
+#include "mbedtls_accelerator_config_ns.h"
+#elif defined(MBEDTLS_ENTROPY_NV_SEED)
+#include "mbedtls_entropy_nv_seed_config.h"
+#endif
+
+/* Target and application specific configurations
+ *
+ * Allow user to override any previous default.
+ *
+ */
+#if defined(MBEDTLS_USER_CONFIG_FILE)
+#include MBEDTLS_USER_CONFIG_FILE
+#endif
+
+// #include "mbedtls/check_config.h"
+
+#endif /* MBEDTLS_PSA_CRYPTO_CONFIG_H */

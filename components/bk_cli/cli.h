@@ -113,14 +113,7 @@ int cli_dma_init(void);
 int cli_exception_init(void);
 int cli_icu_init(void);
 int cli_at_init(void);
-#if CONFIG_SECURITYIP
-int cli_securityip_init(void);
-#endif
-#if CONFIG_MBEDTLS
-#if CONFIG_MBEDTLS_TEST
 int cli_mbedtls_init(void);
-#endif
-#endif
 int cli_otp_init(void);
 int cli_aud_init(void);
 int cli_aud_ate_init(void);

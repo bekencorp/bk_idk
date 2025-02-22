@@ -210,7 +210,7 @@ int handle_shell_input(char *inbuf, int in_buf_size, char * outbuf, int out_buf_
 	                                4,
 	                                "shell_handle",
 	                                (beken_thread_function_t)handle_shell_input_proxy,
-	                                1024*6,
+	                                1024*7,
 	                                (beken_thread_arg_t)(&cmd_par));
 	}
 	else
@@ -219,7 +219,7 @@ int handle_shell_input(char *inbuf, int in_buf_size, char * outbuf, int out_buf_
                                 4,
                                 "shell_handle",
                                 (beken_thread_function_t)handle_shell_input_proxy,
-                                1024*6,
+                                1024*7,
                                 (beken_thread_arg_t)(&cmd_par));
 	if (ret != kNoErr)
 	{
@@ -1710,17 +1710,6 @@ int bk_cli_init(void)
 	cli_touch_init();
 #endif
 
-#if CONFIG_VAULT_SUPPORT
-#if (CLI_CFG_SECURITYIP == 1)
-	cli_securityip_init();
-#endif
-#endif
-
-#if CONFIG_MBEDTLS
-#if CONFIG_MBEDTLS_TEST
-	cli_mbedtls_init();
-#endif
-#endif
 
 #if (CLI_CFG_CALENDAR == 1)
 	cli_calendar_init();
@@ -1807,6 +1796,10 @@ int bk_cli_init(void)
 
 #if (CONFIG_PSA_MBEDTLS_TEST)
 	cli_psa_crypto_init();
+#endif
+
+#if (CONFIG_TRUSTENGINE_TEST && CONFIG_PSA_MBEDTLS)
+	cli_mbedtls_init();
 #endif
 
 #if (CONFIG_PSA_CUSTOMIZATION_TEST)

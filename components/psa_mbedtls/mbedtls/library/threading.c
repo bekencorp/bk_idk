@@ -114,6 +114,7 @@ int (*mbedtls_mutex_unlock)(mbedtls_threading_mutex_t *) = threading_mutex_unloc
 #endif /* MBEDTLS_THREADING_PTHREAD */
 
 #if defined(MBEDTLS_THREADING_ALT)
+
 static int threading_mutex_fail(mbedtls_threading_mutex_t *mutex)
 {
     ((void) mutex);
