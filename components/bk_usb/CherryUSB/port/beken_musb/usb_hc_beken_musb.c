@@ -1597,7 +1597,7 @@ static void usbh_rx_irq_handler(uint8_t ep_idx, struct musb_pipe *pipe, struct u
                     {
                         HWREGB(USB_BASE + MUSB_IND_RXCSRL_OFFSET) &= ~USB_RXCSRL1_RXRDY;
 
-                        if ((size < pipe->ep_mps) || (urb->transfer_buffer_length == 0)) {
+                        if ((size < pipe->ep_mps && size != 0) || (urb->transfer_buffer_length == 0)) {
                             urb->errorcode = 0;
                             musb_pipe_waitup(pipe);
                             if(urb->transfer_buffer_length > 0) {

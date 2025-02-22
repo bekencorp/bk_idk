@@ -712,11 +712,11 @@ bk_err_t bk_usbh_hub_port_check_device(E_USB_HUB_PORT_INDEX port_index, E_USB_DE
 
 	bk_usbh_hub_class_dev_info *usb_hub_class_dev = &s_usb_hub_class_dev;
 
-	USB_HUB_MD_LOGI("%s connect_device_flag:0x%x\r\n", __func__, usb_hub_class_dev->usbh_hub_connect_class_device_flag[port_index]);
+	USB_HUB_MD_LOGD("%s connect_device_flag:0x%x\r\n", __func__, usb_hub_class_dev->usbh_hub_connect_class_device_flag[port_index]);
 	if(usb_hub_class_dev->usbh_hub_connect_class_device_flag[port_index] & (0x1 << device_index)) {
 
 		*port_dev_info = (bk_usb_hub_port_info *)&usb_hub_class_dev->usbh_hub_port_info[port_index][device_index];
-		USB_HUB_MD_LOGI("%s port_dev_info:0x%x port_index:%d dev_index:%d\r\n", __func__, port_dev_info, port_index, device_index);
+		USB_HUB_MD_LOGD("%s port_dev_info:0x%x port_index:%d dev_index:%d\r\n", __func__, port_dev_info, port_index, device_index);
 		return BK_OK;
 	} else {
 		USB_HUB_MD_LOGE("%s NULL port_index:%d dev_index:%d\r\n", __func__, port_index, device_index);
