@@ -201,7 +201,6 @@ menu "Bk_usb"
 
     
     config STANDARD_DUALSTREAM
-        depends on USB
         bool "Standard dual stream"
         default n
     

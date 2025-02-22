@@ -242,7 +242,7 @@ bk_err_t bk_usbh_hub_multiple_devices_power_down(E_USB_MODE mode, E_USB_HUB_PORT
 			}
 			port_i++;
 		}
-		USB_HUB_MD_LOGI("%s need_power_down_flag:%d\r\n", __func__, need_power_down_flag);
+		USB_HUB_MD_LOGD("%s need_power_down_flag:%d\r\n", __func__, need_power_down_flag);
 		if(need_power_down_flag) {
 			ret = bk_usb_close();
 			if(ret == BK_OK) {
@@ -719,7 +719,7 @@ bk_err_t bk_usbh_hub_port_check_device(E_USB_HUB_PORT_INDEX port_index, E_USB_DE
 		USB_HUB_MD_LOGD("%s port_dev_info:0x%x port_index:%d dev_index:%d\r\n", __func__, port_dev_info, port_index, device_index);
 		return BK_OK;
 	} else {
-		USB_HUB_MD_LOGE("%s NULL port_index:%d dev_index:%d\r\n", __func__, port_index, device_index);
+		USB_HUB_MD_LOGD("%s NULL port_index:%d dev_index:%d\r\n", __func__, port_index, device_index);
 		return BK_ERR_USB_OPERATION_NULL_POINTER;
 	}
 
