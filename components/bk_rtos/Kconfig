@@ -5,6 +5,13 @@ menu "Bk_rtos"
 		default 163840
 		help
 			customize heap size, default 160k
+    
+	config PSRAM_HEAP_INIT_SET_ZERO
+		bool "Set psram content zero"
+		default n
+		help
+			when initialising psram memory,its contents are 
+			automatically zeroed.
 
 	menu "Modify FreeRTOS Config"
 		config FREERTOS

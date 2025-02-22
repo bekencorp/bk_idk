@@ -274,7 +274,9 @@ __attribute__((section(".itcm_sec_code"))) void bk_psram_heap_init(void) {
 
 	MEM_STATIC_LOGI(TAG, "psram:0x%x,size:%d\r\n", psram_ucHeap, xTotalHeapSize);
 
+#if CONFIG_PSRAM_HEAP_INIT_SET_ZERO
 	os_memset_word((uint32_t *)psram_ucHeap, 0x0, xTotalHeapSize);
+#endif
 	// rtos_regist_plat_dump_hook((uint32_t)psram_ucHeap, xTotalHeapSize);
 
 	/* Ensure the heap starts on a correctly aligned boundary. */
