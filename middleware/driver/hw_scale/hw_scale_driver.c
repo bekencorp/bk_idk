@@ -105,6 +105,7 @@ bk_err_t bk_hw_scale_driver_init(scale_id_t id)
 
 	if (id == HW_SCALE0)
 	{
+    	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_VIDP_SCAL0, PM_POWER_MODULE_STATE_ON);
 		sys_drv_int_group2_enable(SCALE0_INTERRUPT_CTRL_BIT);
 		scale0_ll_set_0x10_r_write_threshold(16);
 
@@ -114,6 +115,7 @@ bk_err_t bk_hw_scale_driver_init(scale_id_t id)
 	}
 	else if (id == HW_SCALE1)
 	{
+        bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_VIDP_SCAL1, PM_POWER_MODULE_STATE_ON);
 		sys_drv_int_group2_enable(SCALE1_INTERRUPT_CTRL_BIT);
 		scale1_ll_set_0x10_r_write_threshold(16);
 		scale1_hal_set_clkgate_bypass(1);
@@ -176,12 +178,14 @@ bk_err_t bk_hw_scale_driver_deinit(scale_id_t id)
 		sys_drv_int_disable(SCALE0_INTERRUPT_CTRL_BIT);
 		bk_int_isr_unregister(INT_SRC_SCALE0);
 		scale0_hal_set_clkgate_bypass(0);
+    	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_VIDP_SCAL0, PM_POWER_MODULE_STATE_OFF);
 	}
 	else if (id == HW_SCALE1)
 	{
 		sys_drv_int_disable(SCALE1_INTERRUPT_CTRL_BIT);
 		bk_int_isr_unregister(INT_SRC_SCALE1);
 		scale1_hal_set_clkgate_bypass(0);
+    	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_VIDP_SCAL1, PM_POWER_MODULE_STATE_OFF);
 	}
 
 
