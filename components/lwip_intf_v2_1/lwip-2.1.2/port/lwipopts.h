@@ -591,6 +591,24 @@ The STM32F107 allows computing and verifying the IP, UDP, TCP and ICMP checksums
 //#define DEFAULT_UDP_RECVMBOX_SIZE       16 //each udp socket max buffer 16 packets.
 //#endif
 
+ /**
+  * TCP_SYNMAXRTX: Maximum number of retransmissions of SYN segments.
+  */
+#define TCP_SYNMAXRTX                   CONFIG_LWIP_TCP_SYNMAXRTX
+
+/**
+ * LWIP_TCP_RTO_TIMEOUT: tcp rto time.
+ * Default is 3 second.
+ */
+#define LWIP_TCP_RTO_TIMEOUT            CONFIG_LWIP_TCP_RTO_TIMEOUT
+
+/**
+ * TCP_QUEUE_OOSEQ==1: TCP will queue segments that arrive out of order.
+ * Define to 0 if your device is low on memory.
+ */
+
+#define TCP_QUEUE_OOSEQ                 CONFIG_LWIP_TCP_QUEUE_OOSEQ
+
 #define TCP_MSL (TCP_TMR_INTERVAL)
 
 #define LWIP_COMPAT_MUTEX_ALLOWED       (1)
