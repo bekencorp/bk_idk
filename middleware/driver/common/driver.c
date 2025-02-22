@@ -422,7 +422,7 @@ int driver_init(void)
 	bk_lin_driver_init();
 #endif
 
-#if CONFIG_MBEDTLS_ACCELERATOR
+#if (CONFIG_MBEDTLS_ACCELERATOR || CONFIG_TRUSTENGINE)
 	extern int dubhe_driver_init( unsigned long dbh_base_addr );
 	dubhe_driver_init(SOC_SHANHAI_BASE);
 #endif
