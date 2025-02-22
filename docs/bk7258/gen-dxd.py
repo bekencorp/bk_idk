@@ -81,7 +81,7 @@ def get_doxyfile_input():
         if line.find("#") == -1:
             for prefix in header_file_path_prefix_list:
                 # extract header file path inside components folder
-                m = re.search(prefix + "(.*\.h)", line)
+                m = re.search(prefix + r"(.*\.h)", line)
                 if m:
                     header_file_path = m.group(1)
                     doxyfile_INPUT += header_file_path + "\n"

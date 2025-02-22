@@ -22,14 +22,11 @@ PROJECT_NAME = "Beken Armino IDK Framework"
 ## and used to include in API reference documentation
 
 INPUT = \
-    ## BLE
     ../../../include/components/bluetooth/bk_ble_types.h \
     ../../../include/components/bluetooth/bk_ble.h \
-    ## Wi-Fi
     ../../../include/modules/wifi_types.h \
     ../../../include/modules/wifi.h \
     ../../../include/modules/raw_link.h \
-    ## System
     ../../../include/os/os.h \
     ../../../include/components/event.h \
     ../../../include/posix/unistd.h \
@@ -42,10 +39,8 @@ INPUT = \
     ../../../include/posix/sched.h \
     ../../../include/posix/semaphore.h \
     ../../../include/posix/time.h \
-    ## Network
     ../../../include/components/netif.h \
     ../../../include/components/netif_types.h \
-    ## Peripheral
     ../../../include/driver/pwm_types.h \
     ../../../include/driver/pwm.h \
     ../../../include/driver/hal/hal_pwm_types.h \
@@ -94,7 +89,6 @@ INPUT = \
     ../../../include/driver/flash_types.h \
     ../../../include/driver/hal/hal_flash_types.h \
     ../../../include/driver/flash_partition.h \
-    ## Multi-Media
     ../../../include/driver/aud_adc.h \
     ../../../include/driver/aud_adc_types.h \
     ../../../include/driver/aud_dac.h \
@@ -134,8 +128,7 @@ INPUT = \
     ../../../include/modules/mp3dec.h \
     ../../../include/driver/rott_driver.h \
     ../../../include/driver/rott_types.h \
-    ## PM
-    ../../../include/modules/pm.h 
+    ../../../include/modules/pm.h
 
 ## Get warnings for functions that have no documentation for their parameters or return value
 ##

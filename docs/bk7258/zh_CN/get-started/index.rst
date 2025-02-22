@@ -5,8 +5,8 @@
 
 本文档以 BK7258 开发板为例，通过一个简单的示例项目向您展示:
 
- - 代码，工具链下载；
- - 编译环境搭建；
+ - 代码下载；
+ - 环境部署及编译；
  - 工程配置；
  - 固件编译与烧录；
 
@@ -15,32 +15,9 @@
 
 硬件：
 
- - BK7258 开发板；
+ - BK7258 开发板( :ref:`开发板简介 <bk7258>` ， `购买链接 <https://item.taobao.com/item.htm?spm=a1z10.1-c.w4004-25005897050.4.ffd61d55Y0Kdbv&id=795814346530&skuId=5429467124246&addressId=18607518338>`_ )；
  - 串口烧录工具；
- - 电脑（Windows 与 Ubuntu）；
-
-.. note::
-
-  Armino 支持在 Linux 平台编译，也支持在 Windows 平台的 Linux 虚拟机上编译;
-  Armino 支持在 Windows/Linux 平台进行固件烧录(参考烧录工具中指导文档)。
-
-软件：
-
- - ARM GCC 工具链，用于编译 BK7258 版本；
- - 构建工具，包含 CMake；
- - Armino 源代码；
- - 串口烧录软件；
-
-
-开发板简介
-------------------------
-
-点击下列链接了解 Armino 支持的开发板详细信息：
-
-.. toctree::
-    :maxdepth: 1
-
-        BK7258 <bk7258>
+ - PC；
 
 
 Armino SDK 代码下载
@@ -52,83 +29,58 @@ Armino SDK 代码下载
     cd ~/armino
     git clone https://gitlab.bekencorp.com/armino/bk_idk.git
 
-
+	
 您也可从 github 上下载 Armino::
 
 	mkdir -p ~/armino
 	cd ~/armino
 	git clone https://github.com/bekencorp/bk_idk.git
 
+ 
+然后切换到稳定分支Tag节点, 如v2.0.2.1::
 
-然后切换到稳定分支Tag节点, 如v2.0.1.12::
-
-    git checkout -B your_branch_name v2.0.1.12
-
-.. note::
-
-    从官网的gitlab下载的为最近的SDK代码，相关账号找项目上审核申请。
+    git checkout -B your_branch_name v2.0.2.1
 
 
-构建编译环境
-------------------------------------
+.. warning::
 
-.. note::
+ Windows下通过git clone拉取代码，存在软链接失效及换行符的问题，会导致编译失败，请按照以下方式解决:
 
-    Armino 编译环境要求Ubuntu 20.04 LTS 版本及以上，本章节将以 Ubuntu 20.04 LTS 版本为例，介绍整个编译环境的搭建。
+ - 软链接失效问题:
 
+   1. 下载代码前先配置git环境变量::
+      
+        git config --global core.symlinks true
 
-工具链下载与安装
-------------------------------------
+   2. 在管理员权限下执行git clone命令
 
-点击 `下载 <https://dl.bekencorp.com/tools/toolchain/arm/gcc-arm-none-eabi-10.3-2021.10-x86_64-linux.tar.bz2>`_ 下载 BK7258 工具链。
+ - 换行符问题:
 
-工具包下载后，通过如下操作命令解压至 /opt/ 目录下::
+   1.下载代码前先配置git环境变量::
 
-    $ sudo tar -xvjf gcc-arm-none-eabi-10.3-2021.10-x86_64-linux.tar.bz2 -C /opt/
+        git config --global core.autocrlf false
 
 
 .. note::
 
-    工具链默认路径在 middleware/soc/bk7258/bk7258.defconfig 文件中定义，您也可以在项目配置文件中更改工具链路径::
-
-        CONFIG_TOOLCHAIN_PATH="/opt/gcc-arm-none-eabi-10.3-2021.10/bin"
-
-程序编译依赖库安装
-------------------------------------
-
-在终端输入下述命令安装 python3，CMake，Ninja，Crypto以及依赖库::
-
-    sudo dpkg --add-architecture i386
-    sudo apt-get update
-    sudo apt-get install build-essential cmake python3 python3-pip doxygen ninja-build libc6:i386 libstdc++6:i386 libncurses5-dev lib32z1 -y
-    sudo pip3 install pycryptodome click future click_option_group cryptography
+    github代码相对于gitlab有滞后性，如果您想获取最新的SDK代码，请从gitlab拉取，相关账号找项目上审核申请。
 
 
-.. note::
+环境部署及编译
+------------------------
 
-    如果Ubuntu版本在23.04以上，python的三方库会使用外部环境管理，使用pip安装三方库时需要传入--break-system-packages。
+我们提供了一种基于Docker容器的环境部署与编译方案，支持在Linux、macOS及Windows系统上高效完成编译工作。
+借助Docker容器化技术，您无需手动安装编译所需的各类库文件及工具链，从而显著简化了部署与编译流程。
+该方案适用于熟悉Docker环境并了解其基本使用方法的用户，可帮助您快速实现环境的部署与编译。
 
-
-文档编译依赖库安装
-------------------------------------
-
-点击进入 `文档 <https://docs.bekencorp.com/arminodoc/bk_idk/bk7258/zh_CN/v2.0.1/index.html>`_ 您就可以查看 Armino 最近或者最新的文档，因此，
-通常您不需要自己编译 Armino 文档。但如果您希望自己生成 Armino 文档，则需要安装下述 Python 依赖::
-
-    sudo pip3 install sphinx_rtd_theme future breathe blockdiag sphinxcontrib-seqdiag sphinxcontrib-actdiag sphinxcontrib-nwdiag sphinxcontrib.blockdiag
-
-如果您的 Python 默认为 Python2，请使用下述命令更改成 Python3::
-
-    sudo ln -s /usr/bin/python3 /usr/bin/python
+对于不熟悉Docker技术或因网络条件限制无法使用Docker环境的用户，我们也提供了基于脚本命令的本地编译部署方案。本地部署方案目前仅支持Linux系统下的编译。
 
 
-编译工程
-------------------------------------
+.. toctree::
+    :maxdepth: 1
 
-在终端下输入下述命令编译 Armino 默认工程，PROJECT为可选参数，默认为app，默认工程为启动 WiFi，BLE，初始化常见驱动，并启动 Armino 默认 Cli 程序::
-
-    cd ~/armino/bk_idk
-    make bk7258
+        本地部署 <env-manual>
+        Docker部署 <env-docker>
 
 
 
@@ -150,14 +102,14 @@ Armino SDK 代码下载
         components/bk_cli/Kconfig
 
 - 模块选择CPUx执行
-
-    + 目前BK7258是由CPU0、CPU1、CPU2组成的AMP系统架构，CPU0和CPU1,CPU2的软件独立编译，但SDK是一套，所以CPU0和CPU1以及CPU2的部分功能差异需要使用宏区分。
+	 
+    + 目前BK7258是三核AMP系统架构，CPU0和CPU1,CPU2的软件独立编译，但SDK是一套，所以CPU0和CPU1以及CPU2的部分功能差异需要使用宏区分。
     + 比如TRNG随机数控制器只有一份，使用多核配置时，应用程序需要互斥配置在哪一个系统(CPU0/CPU1/CPU2)中执行。
     + 模块的功能开关CONFIG_TRNG宏默认关闭, 哪个CPU需要, 就在哪个CPU的芯片配置文件上打开。
       假设CPU0需要使用TRNG，而CPU1不需要使用，则bk7258.defconfig中的CONFIG_TRNG=y。
     + 在软件代码中，使用CONFIG_TRNG宏隔离调用。
       示例如下::
-
+         
         #if CONFIG_TRNG             #使用模块功能开关宏隔离代码
         #include "driver/trng.h"
         #endif
@@ -177,6 +129,7 @@ Armino SDK 代码下载
 
 Armino 支持在 Windows/Linux 平台进行固件烧录, 烧录方法参考烧录工具中指导文档。
 以Windows 平台为例， Armino 目前支持 UART 烧录。
+app工程在编译完成后，在build/app/bk7258目录下生成all-app.bin，使用此bin文件烧录即可。安全工程首次烧录时，需要先烧录bootloader.bin，再烧录all-app.bin。
 
 
 

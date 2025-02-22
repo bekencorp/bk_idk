@@ -5,8 +5,8 @@ Quick Start Guide
 
 This article demonstrates:
 
- - Armino code and toolchain download
- - Setup software development environment
+ - Code download
+ - Environment deployment and compilation
  - How to configure Armino project
  - How to build the project and flash the bin to board
 
@@ -35,32 +35,10 @@ Preparation
 
 Hardware：
 
- - BK7236 Demo board
- - BKFIL.exe
- - PC（Windows & Ubuntu）
+ - BK7236 Demo board( :ref:`Introduction to Development Board <bk7236>` )
+ - Serial port burning tool
+ - PC
 
-.. note::
-
-  Armino supports compilation on the Linux platform and also supports compilation on the Linux virtual machine on the Windows platform;
-  Armino supports firmware burning on Windows/Linux platforms (refer to the guidance document in the burning tool).
-
-Software：
-
- - GCC ARM tool chain, used to compile BK7236
- - Build tools, including CMake
- - Armino source code
- - BKFIL.exe
-
-
-Introduction to Development Board
---------------------------------------------------------
-
-Click the following link to learn more about the development boards supported by Armino:
-
-.. toctree::
-    :maxdepth: 1
-
-        BK7236 <bk7236>
 
 Armino SDK Code download
 --------------------------------------------------------------------
@@ -79,88 +57,49 @@ We also can download Armino from github::
 	git clone https://github.com/bekencorp/bk_idk.git
 
 
-Then switch to the stable branch Tag node, such as v2.0.1.12::
+Then switch to the stable branch Tag node, such as v2.0.2.1::
 
-    git checkout -B your_branch_name v2.0.1.12
+    git checkout -B your_branch_name v2.0.2.1
 
-.. note::
+.. warning::
 
-    The gitlab always has the latest Armino code, only authorised account can download the code. Please contact the your BK7236 project owner to get relevant accounts.
+    When using git clone to download the code on Windows, there may be issues with symbolic link failure and line ending problems, which can lead to compilation failure. Please solve them as follows:
+
+    - Symbolic link failure issue:
+
+    1. Configure the Git environment variable before downloading the code::
+      
+        git config --global core.symlinks true
+
+    2. Execute the git clone command with administrator privileges.
 
 
+    - Line ending issue:
 
-Setup Build Environment
---------------------------------------------------------------------
+    1.Configure the Git environment variable before downloading the code::
 
-.. note::
-
-      The Armino compilation environment requires Ubuntu 20.04 LTS version and above. This chapter will take Ubuntu 20.04 LTS version as an example to introduce the construction of the entire compilation environment.
-
-
-Tool Chain Installation
-----------------------------------------------------------------
-
-Click `Donwload <https://dl.bekencorp.com/tools/toolchain/arm/gcc-arm-none-eabi-10.3-2021.10-x86_64-linux.tar.bz2>`_ to download the BK7236 toolchain.
-
-After downloading the tool kit, decompress it to '/opt/'::
-
-    $ sudo tar -xvjf gcc-arm-none-eabi-10.3-2021.10-x86_64-linux.tar.bz2 -C /opt/
+        git config --global core.autocrlf false
 
 
 .. note::
 
-    Tool chain the default path is configured in the middleware/soc/bk7236/bk7236.defconfig, you can modify ``CONFIG_TOOLCHAIN_PATH`` to set to your owner toolchain path:
-
-    CONFIG_TOOLCHAIN_PATH="/opt/gcc-arm-none-eabi-10.3-2021.10/bin"
+    The GitHub code is relatively lagging behind the GitLab code. If you want to obtain the latest SDK code, please download it from GitLab. Please contact the your BK7236 project owner to get relevant accounts.
 
 
-Depended libraries installation
------------------------------------------------------------------
+Environment Deployment and Compilation
+------------------------------------------------
 
-Enter the following command in the terminal to install python\CMake\Ninja::
-
-    sudo dpkg --add-architecture i386
-    sudo apt-get update
-    sudo apt-get install build-essential cmake python3 python3-pip doxygen ninja-build libc6:i386 libstdc++6:i386 libncurses5-dev lib32z1 -y
-    sudo pip3 install pycryptodome click future click_option_group cryptography
+We provide an environment deployment and compilation solution based on Docker containers, which supports efficient compilation work on Linux, macOS, and Windows systems. With Docker containerization technology, you do not need to manually install various libraries and toolchains required for compilation, which significantly simplifies the deployment and compilation process. This solution is suitable for users who are familiar with the Docker environment and understand its basic usage, helping you quickly deploy and compile the environment.
 
 
-.. note::
-
-    If Ubuntu version is 23.04 or above, Python's third-party libraries will use external environment management. When installing third-party libraries using pip, you need to pass in --break-system-packages.
+For users who are not familiar with Docker technology or cannot use the Docker environment due to network restrictions, we also provide a local compilation deployment solution based on script commands. The local deployment solution currently only supports compilation on the Linux system.
 
 
-Document Compilation Dependent Library Installation
-------------------------------------------------------------------------------
+.. toctree::
+    :maxdepth: 1
 
-Click `Doc <https://docs.bekencorp.com/arminodoc/bk_idk/bk7236/zh_CN/v2.0.1/index.html>`_ you can get the latest Armino documents. So you don't need to build the document youself.
-
-If you really need to build the documents, following python3 packages are required::
-
-    sudo pip3 install sphinx_rtd_theme future breathe blockdiag sphinxcontrib-seqdiag sphinxcontrib-actdiag sphinxcontrib-nwdiag sphinxcontrib.blockdiag
-
-
-If you default Python is Python2, please set it to Python3::
-
-    sudo ln -s /usr/bin/python3 /usr/bin/python
-
-
-Build The Project
-------------------------------------
-
-Run following commands to build BK7236 app project::
-
-    cd ~/armino/bk_idk
-    make bk7236
-
-The app project startup:
-
- - WiFi/BLE
- - Common pheripheral drivers
- - Armino default Cli
-
-You can build other projects with PROJECT parameter, e.g. run "make bk7236 PROJECT=security/secureboot"
-can build projects/security/secureboot etc.
+        Local Deployment <env-manual>
+        Docker Deployment <env-docker>
 
 Configuration project
 ------------------------------------
@@ -189,6 +128,7 @@ Burn Code
 ------------------------------------
 
 On the Windows platform, Armino currently supports UART burning.
+After the app project is compiled, generate all-app.bin in the build/app/bk7236 directory and burn it using this bin file. When burning the security project for the first time, it is necessary to first burn bootloader.bin, and then burn all-app.bin.
 
 
 
