@@ -21,7 +21,7 @@
 #include <driver/psram_types.h>
 #include <driver/hal/hal_h264_types.h>
 #include <driver/aon_rtc.h>
-
+#include <bk_list.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -66,6 +66,7 @@ extern "C" {
 #define MEDIA_DEBUG_TIMER_ENABLE      (0)
 #endif
 #define CAMERA_MAX_NUM                 (4)
+#define CAMERA_MAX_STREAM              (2)
 
 /**
  * @brief define camera type
@@ -300,31 +301,20 @@ typedef void *camera_handle_t;
 
 typedef struct
 {
+	LIST_HEADER_T list;
+	camera_handle_t cam_handle;
+	uint16_t id;
+	uint16_t format;
+} media_camera_node_t;
+
+typedef struct
+{
 	media_audio_state_t   aud_state;
-	camera_handle_t       cam_handle[CAMERA_MAX_NUM];
+	LIST_HEADER_T         cam_list;
 	media_lcd_state_t     lcd_state;
 	media_storage_state_t stor_state;
 	media_trs_state_t     trs_state;
 } media_modules_state_t;
-
-typedef struct
-{
-	uint16_t width;
-	uint16_t height;
-} frame_resl_t;
-
-typedef struct
-{
-	frame_resl_t resolution;
-	frame_fps_t  fps;
-} frame_info_t;
-
-typedef struct
-{
-	yuv_mode_t     mode;
-	pixel_format_t fmt;
-	frame_info_t   info;
-}media_uvc_device_t;
 
 /**
  * @brief define camera config
@@ -343,17 +333,12 @@ typedef struct
 
 typedef struct {
 	camera_type_t  type;
-	yuv_mode_t     mode;
-	pixel_format_t fmt;
-	frame_info_t   info;
+	uint16_t port;
+	uint16_t format;
+	uint16_t width;
+	uint16_t height;
+	uint32_t fps;
 	media_rotate_t rotate;
-	uint8_t port;
-	uint32_t num_uvc_dev;
-	uint16_t dualstream;
-	yuv_mode_t     d_mode;
-	pixel_format_t d_fmt;
-	frame_info_t   d_info;
-	media_uvc_device_t uvc_device[2];
 } media_camera_device_t;
 
 typedef struct frame_buffer_t frame_buffer_t;
@@ -670,6 +655,11 @@ static inline media_ppi_t get_string_to_ppi(char *string)
 		value = PPI_864X480;
 	}
 
+	if (strcmp(string, "854X480") == 0)
+	{
+		value = PPI_854X480;
+	}
+
 	if (strcmp(string, "480X480") == 0)
 	{
 		value = PPI_480X480;
@@ -689,6 +679,7 @@ static inline media_ppi_t get_string_to_ppi(char *string)
 	{
 		value = PPI_170X320;
 	}
+
 	if (strcmp(string, "960X480") == 0)
 	{
 		value = PPI_960X480;
@@ -768,21 +759,14 @@ static inline uint32_t media_get_current_timer(void)
 	}
 
 #define DEFAULT_CAMERA_CONFIG() {        \
-		.type = DVP_CAMERA,     \
-		.mode = JPEG_MODE,               \
-		.fmt = PIXEL_FMT_JPEG,           \
-		.info.resolution.width = 640,    \
-		.info.resolution.height = 480,   \
-		.info.fps = FPS25,         \
-		.num_uvc_dev = 1,                \
-		.dualstream = 0,                 \
-		.d_mode = H264_MODE,             \
-		.d_fmt = PIXEL_FMT_JPEG,         \
-        .d_info.resolution.width = 1920, \
-        .d_info.resolution.height = 1080,\
-        .d_info.fps = FPS25,             \
+		.type = DVP_CAMERA,    \
+		.port = 0,             \
+		.format = IMAGE_MJPEG, \
+		.width = PIXEL_640,    \
+		.height = PIXEL_480,   \
+		.fps = FPS25,          \
+		.rotate = ROTATE_NONE, \
 }
-
 
 /*
  * @}

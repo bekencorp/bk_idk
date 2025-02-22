@@ -31,7 +31,7 @@ extern "C" {
  *    - BK_OK: succeed
  *    - others: other errors.
  */
-bk_err_t bk_uvc_power_on(uint32_t trigger);
+bk_err_t bk_uvc_power_on(uint32_t format, uint32_t timeout);
 
 /**
  * @brief     uvc power on
@@ -80,25 +80,40 @@ bk_err_t bk_uvc_deinit(camera_handle_t *handle);
  * This API called by user, get port info
  *
  * @param port The port user want to know
+ * @param format The image format you want to know(image_format_t)
  *
  * @return
  *    - PTR: succeed
  *    - NULL: other errors.
  */
-bk_usb_hub_port_info *bk_uvc_get_enum_info(uint8_t port);
+bk_usb_hub_port_info *bk_uvc_get_enum_info(uint8_t port, uint16_t format);
 
 /**
  * @brief     Set uvc config
  *
- * This API called by user, Set uvc support fps and resolutions
+ * This API called by user, Set uvc support fps and resolutions and start stream
  *
+ * @param handle the uvc init device handle
  * @param config the uvc need support param the user set
  *
  * @return
  *    - BK_OK: succeed
  *    - others: other errors.
  */
-bk_err_t bk_uvc_set_param(uvc_config_t *config);
+bk_err_t bk_uvc_set_start(camera_handle_t *handle, uvc_config_t *config);
+
+/**
+ * @brief     Set uvc config
+ *
+ * This API called by user, Set stop uvc stream output
+ *
+ * @param handle the uvc init device handle
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: other errors.
+ */
+bk_err_t bk_uvc_set_stop(camera_handle_t *handle);
 
 /**
  * @brief     register uvc packet analyse callback

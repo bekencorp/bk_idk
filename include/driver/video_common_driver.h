@@ -35,14 +35,6 @@ bk_err_t bk_video_gpio_init(dvp_gpio_mode_t mode);
 
 bk_err_t bk_video_gpio_deinit(dvp_gpio_mode_t mode);
 
-bk_err_t bk_video_yuv_encode_init(media_camera_device_t *device);
-
-bk_err_t bk_video_yuv_encode_deinit(void);
-
-bk_err_t bk_video_yuv_encode_start(frame_buffer_t *src_frame, frame_buffer_t *dst_frame);
-
-uint8_t *dvp_camera_yuv_base_addr_init(frame_resl_t resolution, yuv_mode_t mode);
-
 #ifdef __cplusplus
 }
 #endif
