@@ -217,4 +217,9 @@ menu "Bk_usb"
             This macro needs to be opened on cp0 and cp1 when USB in cp1.
         default n
 
+    config USBHOST_MAX_CDC_ACM_CLASS
+    	depends on USB_CDC
+        int "the num for CDC"
+        default 1
+
 endmenu

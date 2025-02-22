@@ -29,19 +29,22 @@ extern "C" {
 #define USB_CDC_LOGE(...) BK_LOGE(USB_CDC_TAG, ##__VA_ARGS__)
 #define USB_CDC_LOGD(...) BK_LOGD(USB_CDC_TAG, ##__VA_ARGS__)
 
+
+
+
 typedef struct {
 	uint8_t  type;
 	uint32_t data;
 }acm_msg_t;
 
 typedef enum {
-	ACM_START_IND,
+	ACM_START_IND = 0,
 	ACM_BULKIN_IND,
 	ACM_BULKOUT_IND,
 	ACM_UPLOAD_IND,
 	ACM_UPDATE_STATE_IND,
-	ACM_EXIT_IND,
 	ACM_STOP_IND,
+	ACM_EXIT_IND,
 
 	ACM_UNKNOW,
 }acm_msg_type_t;
@@ -52,14 +55,15 @@ void bk_usb_update_cdc_interface(void *hport, uint8_t bInterfaceNumber, uint8_t 
 void bk_usb_cdc_free_enumerate_resources(void);
 void bk_usb_cdc_exit(void);
 
-
+void bk_usb_cdc_start(void);
 
 void bk_usb_cdc_open(IPC_CDC_DATA_t * p_cdc);
 void bk_usb_cdc_close(void);
+void bk_usb_cdc_stop(void);
 
 void bk_cdc_acm_bulkout(IPC_CDC_DATA_t * p_cdc_data);
 
-void bk_usb_cdc_param_init(IPC_CDC_DATA_t *p_cdc_data);
+void bk_usb_cdc_init(IPC_CDC_DATA_t *p_cdc_data);
 
 
 #ifdef __cplusplus

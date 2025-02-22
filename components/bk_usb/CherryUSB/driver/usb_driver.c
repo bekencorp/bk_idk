@@ -390,7 +390,7 @@ static void bk_usb_updata_interface(bk_usb_driver_comprehensive_ops *usb_driver,
 
 #if CONFIG_USB_CDC_ACM_DEMO
 		case USB_DEVICE_CLASS_CDC:
-			bk_usb_update_cdc_interface(usb_driver->hport, bInterfaceNumber, interface_sub_class);
+			//bk_usb_update_cdc_interface(usb_driver->hport, bInterfaceNumber, interface_sub_class);
 			break;
 #endif
 		default:

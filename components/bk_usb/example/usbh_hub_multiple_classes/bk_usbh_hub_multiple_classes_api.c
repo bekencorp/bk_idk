@@ -540,6 +540,29 @@ static uint32_t bk_usbh_hub_uvc_parse_param(struct usbh_hubport *hport, uint8_t 
 	return device_index;
 }
 
+#if (CONFIG_USB_CDC)
+static void bk_usbh_hub_cdc_parse_param(struct usbh_hubport *hport, uint8_t interface_num, void *cdc_class)
+{
+	USB_HUB_MD_LOGI("[+]%s, %d\r\n", __func__, hport->port);
+	bk_usbh_hub_class_dev_info *usb_hub_class_dev = &s_usb_hub_class_dev;
+	bk_usb_hub_port_info *usbh_hub_port_info = NULL; __maybe_unused_var(usbh_hub_port_info);
+	struct usbh_cdc_acm *cdc_device = (struct usbh_cdc_acm *)cdc_class; __maybe_unused_var(cdc_device);
+
+	usbh_hub_port_info = &usb_hub_class_dev->usbh_hub_port_info[hport->port][USB_CDC_DEVICE];
+
+	usbh_hub_port_info->hport         = hport;
+	usbh_hub_port_info->port_index    = hport->port;
+	usbh_hub_port_info->usb_device    = cdc_class;
+	usbh_hub_port_info->interface_num = interface_num;
+	usbh_hub_port_info->device_index  = USB_CDC_DEVICE;
+
+	usbh_hub_port_info->usb_device_param		= NULL;
+	usbh_hub_port_info->usb_device_param_config = NULL;
+	usb_hub_class_dev->usbh_hub_connect_class_device_flag[hport->port] |= (0x1 << USB_CDC_DEVICE);
+	USB_HUB_MD_LOGD("[-]%s, %d %x\r\n", __func__, hport->port, usb_hub_class_dev->usbh_hub_connect_class_device_flag[hport->port]);
+}
+#endif
+
 void bk_usbh_hub_class_connect_notification(struct usbh_hubport *hport, uint8_t intf, uint32_t class)
 {
 	bk_usbh_hub_class_dev_info *usb_hub_class_dev = &s_usb_hub_class_dev;
@@ -595,6 +618,26 @@ void bk_usbh_hub_class_connect_notification(struct usbh_hubport *hport, uint8_t 
 			}
 			break;
 #endif
+
+#if CONFIG_USB_CDC
+		case USB_DEVICE_CLASS_CDC:
+			{
+				usb_device = usbh_find_class_instance(hport->config.intf[intf].devname);
+				if (usb_device) {
+					bk_usbh_hub_cdc_parse_param(hport, intf, usb_device);
+				}
+				usbh_hub_port_info = &usb_hub_class_dev->usbh_hub_port_info[hport->port][USB_CDC_DEVICE];
+				USB_HUB_MD_LOGI("%s, %s, connect_device_flag : 0x%x\r\n", __func__, hport->config.intf[intf].devname, usb_hub_class_dev->usbh_hub_connect_class_device_flag[hport->port]);
+				if ((usb_hub_class_dev->usbh_hub_connect_class_device_flag[hport->port] & (0x1 << USB_CDC_DEVICE))
+					&& usb_hub_class_dev->usbh_hub_connect_cb[hport->port][USB_CDC_DEVICE])
+				{
+					connect_cb_arg = (usb_hub_class_dev->usbh_hub_connect_class_device_flag + hport->port);
+					usb_hub_class_dev->usbh_hub_connect_cb[hport->port][USB_CDC_DEVICE](usbh_hub_port_info, connect_cb_arg);
+				}
+			}
+			break;
+#endif
+
 		default:
 			USB_HUB_MD_LOGW("%s dev:%x info:%x arg:%x usb_device:%x\r\n", __func__,
 							usb_hub_class_dev,
@@ -682,6 +725,32 @@ void bk_usbh_hub_class_disconnect_notification(struct usbh_hubport *hport, uint8
 			}
 			if(usb_device_param_config) {
 				os_free(usb_device_param_config);
+			}
+			break;
+#endif
+
+#if CONFIG_USB_CDC
+		case USB_DEVICE_CLASS_CDC:
+			{
+				usbh_hub_port_info = &usb_hub_class_dev->usbh_hub_port_info[hport->port][USB_CDC_DEVICE];
+				if ((usb_hub_class_dev->usbh_hub_connect_class_device_flag[hport->port] & (0x1 << USB_CDC_DEVICE))
+					&& usb_hub_class_dev->usbh_hub_disconnect_cb[hport->port][USB_CDC_DEVICE])
+				{
+					disconnect_cb_arg = (usb_hub_class_dev->usbh_hub_connect_class_device_flag + hport->port);
+					usb_hub_class_dev->usbh_hub_disconnect_cb[hport->port][USB_CDC_DEVICE](usbh_hub_port_info, disconnect_cb_arg);
+				}
+				usb_hub_class_dev->usbh_hub_connect_class_device_flag[hport->port] &= ~(0x1 << USB_CDC_DEVICE);
+				//free param & param config
+				usb_device_param        = usbh_hub_port_info->usb_device_param;
+				usb_device_param_config = usbh_hub_port_info->usb_device_param_config;
+				usbh_hub_port_info->usb_device_param        = NULL;
+				usbh_hub_port_info->usb_device_param_config = NULL;
+				if (usb_device_param) {
+					os_free(usb_device_param);
+				}
+				if (usb_device_param_config) {
+					os_free(usb_device_param_config);
+				}
 			}
 			break;
 #endif

@@ -38,7 +38,6 @@ extern "C" {
 
 #endif
 
-
 typedef struct {
 	uint8_t  type;
 	uint32_t data;
@@ -46,6 +45,8 @@ typedef struct {
 
 typedef struct
 {
+	uint32_t port_idx;
+
 	uint32_t tx_len;
 	uint32_t tx_data;
 
@@ -61,13 +62,24 @@ typedef struct
 
 typedef enum
 {
-	CDC_STATUS_CLOSE = 0,
-	CDC_STATUS_OPEN,
-	CDC_STATUS_INIT,
-	CDC_STATUS_ABNORMAL,
-	CDC_STATUS_IDLE,
+	CDC_STATUS_IDLE,       //0
+	CDC_STATUS_OPEN,       //1
+	CDC_STATUS_INIT,       //2
+	CDC_STATUS_OUT,        //3
+	CDC_STATUS_STOP,       //4
+	CDC_STATUS_REOPEN,     //5
+	CDC_STATUS_CLOSE,      //6
+	CDC_STATUS_ABNORMAL,   //7
+	CDC_STATUS_EXIT,
 } E_CDC_STATUS_T;
 
+
+typedef struct {
+
+	uint32_t port_idx;
+	uint32_t port_status;
+
+}bk_cdc_hub_status;
 
 
 

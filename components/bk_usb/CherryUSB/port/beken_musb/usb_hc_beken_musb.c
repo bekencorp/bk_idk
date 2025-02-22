@@ -176,13 +176,13 @@ void USBH_IRQHandler(void);//#define USBH_IRQHandler USB_INT_Handler
  * 1024bytes & 512bytes:
  */
 #define SZ_512_TO_1024_EP_BASE_INDEX 1
-#define SZ_512_TO_1024_EP_MAX_INDEX USBEPToIndex(USB_EP_4)
+#define SZ_512_TO_1024_EP_MAX_INDEX USBEPToIndex(USB_EP_7)
 #define SZ_512_TO_1024_E_OFFSET 1024
 
 /*
  * 64bytes:
  */
-#define SZ_8_TO_64_EP_BASE_INDEX USBEPToIndex(USB_EP_4)
+#define SZ_8_TO_64_EP_BASE_INDEX USBEPToIndex(USB_EP_7)
 #define SZ_8_TO_64_EP_MAX_INDEX CONIFG_USB_MUSB_PIPE_NUM
 #define SZ_8_TO_64_E_OFFSET 64
 
@@ -882,7 +882,6 @@ static uint8_t usbh_get_ep_local_index(uint8_t ep_base_idx, uint8_t max_ep_idx)
             return ep_local_index;
         }
     }
-
     return ep_local_index;
 }
 
@@ -928,7 +927,6 @@ static void usbh_pipe_free_ep_local_index(usbh_pipe_t pipe)
 int usbh_pipe_alloc(usbh_pipe_t *pipe, const struct usbh_endpoint_cfg *ep_cfg)
 {
     USB_LOG_DBG("[+]%s\r\n", __func__);
-
     struct musb_pipe *ppipe;
     struct musb_pipe mpipe;
     uint8_t old_ep_index;

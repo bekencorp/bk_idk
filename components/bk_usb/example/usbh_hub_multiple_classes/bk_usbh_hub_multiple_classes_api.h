@@ -10,6 +10,10 @@
 #include "usbh_video.h"
 #include "usb_driver.h"
 
+#if (CONFIG_USB_CDC)
+#include "usbh_cdc_acm.h"
+#endif
+
 #include "os/os.h"
 #include "os/mem.h"
 
