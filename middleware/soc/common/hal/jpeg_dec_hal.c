@@ -108,7 +108,7 @@ int jpg_decoder_init(void)
 #if CONFIG_JPEGDEC_HW_SUPPORT_DRI
 	jpeg_dec_ll_set_reg0x50_dri_bps(0);
 #else
-    jpeg_dec_ll_set_reg0x50_dri_bps(1);
+	jpeg_dec_ll_set_reg0x50_dri_bps(1);
 #endif
 #endif
 

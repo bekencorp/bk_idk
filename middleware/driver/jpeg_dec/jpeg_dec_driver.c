@@ -291,6 +291,10 @@ bool jpeg_dec_comp_status(uint8_t *src, uint32_t src_size, uint32_t dec_size)
 	{
 		ok = true;
 	}
+	/*else if (max > 0 && src_size - dec_size == 3 && src[src_size - 3] == 0x00)
+	{
+		ok = true;
+	}*/
 	else
 	{
 		LOGD("decoder_error, %u, %u, %u, %u\n", src_size, dec_size, strip, max);
