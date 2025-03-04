@@ -364,21 +364,37 @@ def get_ab_pos_independent_value(ab_input_file):
         output_value = 'True'
     else :
         output_value = 'False'
-    
+
     return output_value
 
 #get ab position independent csv status {TRUE :need position independent,FALSE :not need position independent }
 def get_ab_position_independent_csv_status():
     if os.path.exists('%s/%s/config/%s/ab_position_independent.csv'%(armino_path, project_dir, chip)):
         ab_pos_independent_file = "%s/%s/config/%s/ab_position_independent.csv"%(armino_path, project_dir, chip)
-        pos_independent_status = get_ab_pos_independent_value(ab_pos_independent_file) 
+        pos_independent_status = get_ab_pos_independent_value(ab_pos_independent_file)
     elif os.path.exists('%s/middleware/boards/%s/ab_position_independent.csv'%(armino_path, chip)):
         ab_pos_independent_file = "%s/middleware/boards/%s/ab_position_independent.csv"%(armino_path, chip)
-        pos_independent_status = get_ab_pos_independent_value(ab_pos_independent_file) 
+        pos_independent_status = get_ab_pos_independent_value(ab_pos_independent_file)
     else:
         pos_independent_status = 'False'
     #print(' >>>>>>>>>>>>pos_independent_status: %s '%pos_independent_status)
     return pos_independent_status
+
+# add ota head note into the all_app_crc.bin
+def add_ota_head_into_all_app_image(dest_file, src_file):
+    global write_data
+    try :
+        with open(dest_file , 'r+b') as dest_f:
+            dest_f.seek(0x11000)
+            try:
+                with open(src_file,'rb') as src_f:
+                    write_data = src_f.read()
+            except FileNotFound:
+                print(f'src_file not found {src_file}')
+            dest_f.write(write_data)
+    #os.remove('app_ab_crc.bin')
+    except FileNotFound:
+        print(f'dest_file not found {dest_file}')
 
 #update the firmware version
 #get firmware version from version_anti_rollback.csv
@@ -625,6 +641,9 @@ def package_json_ab_rebuild():
     app_ab = '%s/app_ab.bin'%(build_path)
     if os.path.isfile(app_ab):
         app_ab_crc = crc_from_config_json(config_json, 'app_ab')
+        #register_file_operation('%s/encrypt/app_ab_crc.bin'%(build_path), '%s/app_ab_crc.bin'%(build_path), 'copy')
+        add_ota_head_into_all_app_image(src, 'app_ab_crc.bin')
+        #os.remove('app_ab_crc.bin')
 
 #generate otp_efuse_config.json file for burn
 def generate_otp_efuse_config_json():
@@ -797,6 +816,7 @@ def main():
         deal_file_operation()
     else:
         if get_ab_position_independent_csv_status() == 'True':
+            print('<<<<<<<<<<<<<<<<<<<<<<do_ab>>>>>>>>>>>>>>>>>>>')
             package_json_ab_rebuild()
             #show_gen_file_list()
             move_gen_files('encrypt')
