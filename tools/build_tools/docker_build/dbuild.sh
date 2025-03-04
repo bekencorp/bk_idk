@@ -48,6 +48,41 @@ function check_docker_run() {
     docker --version
 }
 
+function compare_versions() {
+    version1=$1
+    version2=$2
+
+    major1=$(echo $version1 | cut -d. -f1)
+    minor1=$(echo $version1 | cut -d. -f2)
+    major2=$(echo $version2 | cut -d. -f1)
+    minor2=$(echo $version2 | cut -d. -f2)
+
+    if [ $major1 -gt $major2 ]; then
+        echo 1
+    elif [ $major1 -lt $major2 ]; then
+        echo -1
+    else
+        if [ $minor1 -gt $minor2 ]; then
+            echo 1
+        elif [ $minor1 -lt $minor2 ]; then
+            echo -1
+        else
+            echo 0
+        fi
+    fi
+}
+
+function find_max_version() {
+    max_version=$1
+    for version in "$@"; do
+        result=$(compare_versions $max_version $version)
+        if [ $result -eq -1 ]; then
+            max_version=$version
+        fi
+    done
+    echo $max_version
+}
+
 function check_image_exist() {
     images_info=`docker images --format "{{.Repository}} {{.Tag}}" | grep ${DOCKER_IMAGE} | awk '{print $2}'`
     if [ ! -n "$images_info" ]; then
@@ -55,7 +90,8 @@ function check_image_exist() {
         exit 1
     fi
 
-    max_version=$(echo $images_info | awk '{max=$1; for(i=1; i<=NF; i++) if ($i > max) max=$i; print max}')
+    images_info_arr=($images_info)
+    max_version=$(find_max_version "${images_info_arr[@]}")
 
     if (( $(echo "$max_version >= $DOCKER_IMAGE_LOWEST_VERSION" | bc -l) ));then
         DOCKER_IMAGE_VERSION=$max_version

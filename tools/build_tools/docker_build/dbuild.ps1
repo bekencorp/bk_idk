@@ -25,6 +25,59 @@ function Check-DockerRunning {
     }
 }
 
+function Compare-Versions {
+    param (
+        [string]$version1,
+        [string]$version2
+    )
+
+    $ver1Main, $ver1Sub = $version1 -split '\.'
+    $ver2Main, $ver2Sub = $version2 -split '\.'
+
+    $ver1Main = [int]$ver1Main
+    $ver1Sub = [int]$ver1Sub
+    $ver2Main = [int]$ver2Main
+    $ver2Sub = [int]$ver2Sub
+
+    if ($ver1Main -gt $ver2Main) {
+        return 1
+    } elseif ($ver1Main -lt $ver2Main) {
+        return -1
+    } else {
+        if ($ver1Sub -gt $ver2Sub) {
+            return 1
+        } elseif ($ver1Sub -lt $ver2Sub) {
+            return -1
+        } else {
+            return 0
+        }
+    }
+}
+
+function Get-MaxVersion {
+    param (
+        [string[]]$versions
+    )
+
+    if ($versions.Length -eq 0) {
+        return $null
+    }
+
+    $maxVersion = $versions[0]
+
+    for ($i = 1; $i -lt $versions.Length; $i++) {
+        $currentVersion = $versions[$i]
+        $comparisonResult = Compare-Versions -version1 $maxVersion -version2 $currentVersion
+
+        if ($comparisonResult -lt 0) {
+            $maxVersion = $currentVersion
+        }
+    }
+
+    return $maxVersion
+}
+
+
 function Check-ImageExist {
     $images_info = docker images --format "{{.Repository}} {{.Tag}}" | Select-String $DOCKER_IMAGE | ForEach-Object { $_.Line.Split(" ")[1] }
     if (-not $images_info) {
@@ -32,10 +85,10 @@ function Check-ImageExist {
         exit 1
     }
 
-    $max_version = $images_info -split " " | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum
-
-    if ([double]$max_version -ge [double]$DOCKER_IMAGE_LOWEST_VERSION) {
-        $global:DOCKER_IMAGE_VERSION = $max_version
+    $max_version = Get-MaxVersion -versions $images_info
+    $result = Compare-Versions -version1 $max_version -version2 $DOCKER_IMAGE_LOWEST_VERSION
+    if ($result -ge 0) {
+        $global:DOCKER_IMAGE_VERSION = $max_version.ToString("F1")
     } else {
         Write-Host "Docker image version is outdated. The minimum version is $DOCKER_IMAGE_LOWEST_VERSION"
         exit 1
