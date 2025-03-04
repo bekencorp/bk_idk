@@ -74,7 +74,7 @@ def parse_int(v):
     for letter, multiplier in [("k", 1024), ("m", 1024 * 1024)]:
         if v.lower().endswith(letter):
             return parse_int(v[:-1]) * multiplier
-        return int(v, 0)
+    return int(v, 0)
 
 #Size format conversion  int->string
 def size_format(size, include_size):
