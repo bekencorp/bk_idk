@@ -14,8 +14,19 @@
 #include <string.h>
 #include "bk_posix.h"
 
-#define flash_start 0x253000
-#define flash_size 	0x187000
+#include "driver/flash_partition.h"
+
+#if defined(CONFIG_OVERRIDE_FLASH_PARTITION) && defined(BK_PARTITION_LITTLEFS_USER)
+#include "vendor_flash_partition.h"
+#define BK_PARTITION_FS_ID BK_PARTITION_LITTLEFS_USER
+#else
+#define BK_PARTITION_FS_ID BK_PARTITION_USR_CONFIG
+#endif
+
+extern const bk_logic_partition_t bk_flash_partitions[BK_PARTITION_MAX];
+
+#define FLASH_START   bk_flash_partitions[BK_PARTITION_FS_ID].partition_start_addr
+#define FLASH_SIZE    bk_flash_partitions[BK_PARTITION_FS_ID].partition_length
 
 static int test_format_lfs(void) {
 	struct bk_little_fs_partition partition;
@@ -25,8 +36,8 @@ static int test_format_lfs(void) {
 
 	fs_name = "littlefs";
 	partition.part_type = LFS_FLASH;
-	partition.part_flash.start_addr = flash_start;
-	partition.part_flash.size = flash_size;
+	partition.part_flash.start_addr = FLASH_START;
+	partition.part_flash.size = FLASH_SIZE;
 
 	ret = mkfs("PART_NONE", fs_name, &partition);
 	
@@ -41,8 +52,8 @@ static int test_mount_lfs(char *mount_point) {
 
 	fs_name = "littlefs";
 	partition.part_type = LFS_FLASH;
-	partition.part_flash.start_addr = flash_start;
-	partition.part_flash.size = flash_size;
+	partition.part_flash.start_addr = FLASH_START;
+	partition.part_flash.size = FLASH_SIZE;
 	partition.mount_path = mount_point;
 
 	ret = mount("SOURCE_NONE", partition.mount_path, fs_name, 0, &partition);
