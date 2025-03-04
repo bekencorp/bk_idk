@@ -353,6 +353,26 @@ typedef enum {
 	WIFI_CAPA_ID_11B_ONLY_EN,   /**< Update Wi-Fi 11b support capability */
 	WIFI_CAPA_ID_MAX,
 }wifi_capability_t;
+
+/**
+ * enum wifi legacy rate support - Legacy rate support definitions
+ */
+typedef enum
+{
+    WIFI_LEGACY_RATE_1MBPS = 0,
+    WIFI_LEGACY_RATE_2MBPS,
+    WIFI_LEGACY_RATE_5_5MBPS,
+    WIFI_LEGACY_RATE_11MBPS,
+    WIFI_LEGACY_RATE_6MBPS,
+    WIFI_LEGACY_RATE_9MBPS,
+    WIFI_LEGACY_RATE_12MBPS,
+    WIFI_LEGACY_RATE_18MBPS,
+    WIFI_LEGACY_RATE_24MBPS,
+    WIFI_LEGACY_RATE_36MBPS,
+    WIFI_LEGACY_RATE_48MBPS,
+    WIFI_LEGACY_RATE_54MBPS
+}wifi_legacy_rate_support_t;
+
 /**
  * enum wifi_vht_mcs_support_t - VHT MCS support definitions
  * @WIFI_VHT_MCS_SUPPORT_0_7: MCSes 0-7 are supported for the number of streams

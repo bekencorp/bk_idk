@@ -13,8 +13,15 @@ extern "C" {
 
 typedef enum {
     WIFI_IF_STA = 0,
-    WIFI_IF_MAX
+    WIFI_IF_MAX,
 } bk_rlk_wifi_if_t;
+
+typedef enum {
+    WIFI_MAC_HDR_TYPE_ASSOCREQ = 0x00,
+    WIFI_MAC_HDR_TYPE_ASSOCRES = 0x10,
+    WIFI_MAC_HDR_TYPE_AUTH     = 0xB0,
+    WIFI_MAC_HDR_TYPE_ACTION   = 0xD0,
+} bk_rlk_mac_hdr_type_t;
 
 /**
  * \brief          BK Raw Link(RLK) peer list context structure
@@ -41,7 +48,7 @@ typedef void (*bk_rlk_send_ex_cb_t)(void *args, bool status);
 typedef struct bk_rlk_config_info {
     uint16_t len;               /**< Rx length of BK RLK packet */
     uint8_t *data;              /**< Rx data address of BK RLK packet */
-    bk_rlk_send_ex_cb_t cb;    /**<  callback of TX,cb has two arguments, first is args, second is tx success flag  */
+    void *cb;                   /**<  callback of TX,cb has two arguments, first is args, second is tx success flag  */
     void *args;                 /**< callback arguments */
     uint32_t tx_rate;           /**<  TX rate information */
     uint32_t tx_power;          /**<  TX power information */
@@ -63,8 +70,8 @@ typedef struct bk_rlk_recv_info {
  * @brief Status of sending BK Raw Link data .
  */
 typedef enum {
-    BK_RLK_SEND_SUCCESS = 0,       /**< Send BK Raw Link data successfully */
-    BK_RLK_SEND_FAIL,              /**< Send BK Raw Link data fail */
+    BK_RLK_SEND_FAIL = 0,              /**< Send BK Raw Link data fail */
+    BK_RLK_SEND_SUCCESS,       /**< Send BK Raw Link data successfully */
 } bk_rlk_send_status_t;
 
 /**
@@ -373,6 +380,20 @@ bk_err_t bk_rlk_add_white_list(uint8_t mac_type, uint8_t *oui);
  *          - others : Failed to delete white list
  */
 bk_err_t bk_rlk_del_white_list(uint8_t mac_type, uint8_t *oui);
+
+/**
+ * @brief     Raw Link set MAC header type
+ *
+ * @attention 1. This API is only valid if it is called after bk_rlk_init()
+ *
+ * @param     type  The frame type used in 802.11 protocol
+ *            BK-RLK support configurable types as shown in bk_rlk_mac_hdr_type_t
+ *
+ * @return
+ *          - BK_OK : succeed
+ *          - others : Failed to set mac header type
+ */
+bk_err_t bk_rlk_set_mac_hdr_type(uint16_t type);
 
 #ifdef __cplusplus
 }
