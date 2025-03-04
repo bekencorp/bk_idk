@@ -679,6 +679,68 @@ def generate_otp_efuse_config_json():
     file.close()
     gen_file_list.add(outfile)
 
+def mklittlefs_img():
+
+    def make_img(img_size):
+        mk_tool_path = "{}/components/littlefs/mkimg/mklittlefs".format(armino_path)
+        preset_folder = "{}/littlefs".format(build_path)
+        
+        if not os.path.exists(preset_folder):
+            os.makedirs(preset_folder)
+
+        run_cmd_with_ret(f"{mk_tool_path} -c {preset_folder} -b 4096 -p 256 -s {img_size} {img_path}")
+
+    def check_littlefs_enable():
+        sdk_header_path = "{}/config/sdkconfig.h".format(build_path)
+        with open(sdk_header_path, 'r', encoding='utf-8') as file:
+            content = file.read()
+        if "#define CONFIG_LITTLEFS 1" not in content:
+            raise RuntimeError("CONFIG_LITTLEFS is not enable")
+
+    def make_pack_bin_with_fs(img_offset):
+        shutil.copy(all_app_bin_path, pack_bin_with_fs_path)
+        with open(pack_bin_with_fs_path, 'r+b') as file:
+            file.seek(0, os.SEEK_END)
+            current_size = file.tell()
+            # print(f"{current_size =}")
+            
+            if current_size < img_offset:
+                bytes_to_fill = img_offset - current_size
+                # print(f"{bytes_to_fill =}")
+                fill_data = bytes([0xff] * bytes_to_fill)
+                file.write(fill_data)
+
+            with open(img_path, 'rb') as f2:
+                fs_img_content = f2.read()
+
+            file.write(fs_img_content)
+
+    partition_csv_path = "{}/armino/partitions/_build/partitions.csv".format(build_path)
+    img_path = "{}/littlefs.bin".format(build_path)
+    all_app_bin_path = "{}/all-app.bin".format(build_path)
+    pack_bin_with_fs_path = "{}/app_all_plus_filesys.bin".format(build_path)
+
+    addr = 0
+    size = 0
+    found = 0
+
+    with open(partition_csv_path, 'r', newline='', encoding='utf-8') as csvfile:
+        dict_reader = csv.DictReader(csvfile)
+        for row in dict_reader:
+            if row['Name'] == 'littlefs':
+                found = 1
+                addr = int(row['Offset'], 16)
+                size = parse_int(row['Size'])
+                break
+
+    if found == 0:
+        print("not found littlefs partition in patitions.csv")
+        return
+    
+    check_littlefs_enable()
+    make_img(size)
+    make_pack_bin_with_fs(addr)
+
 def main():
     global chip
     global firmware
@@ -713,6 +775,8 @@ def main():
             #show_gen_file_list()
             move_gen_files('encrypt')
             deal_file_operation()
+
+    mklittlefs_img()
 
 
 if __name__ == '__main__':
