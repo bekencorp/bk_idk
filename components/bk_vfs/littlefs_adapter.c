@@ -160,12 +160,12 @@ static int setup_lfs_config(struct lfs_config *config, const struct bk_little_fs
 		return -1;
 	}
 
-	config->read_size = 16;
-	config->prog_size = 16;
+	config->read_size = 512;
+	config->prog_size = 512;
 	config->block_size = 4096;
 	config->block_count = part->part_flash.size / config->block_size;
-	config->cache_size = 16;
-	config->lookahead_size = 16;
+	config->cache_size = 512;
+	config->lookahead_size = 512;
 	config->block_cycles = 500;
 
 	ret = lfs_flashbd_createcfg(config, &defaults);
