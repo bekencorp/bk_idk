@@ -68,16 +68,19 @@ static int code_addr_is_valid(uint32_t addr)
     if (addr % 2 == 0) {
         return false;
     }
-    if (addr_is_in_flash_txt(addr) || addr_is_in_itcm_txt(addr) || addr_is_in_iram_txt(addr)) {
-        addr -= 1;
-        #if CONFIG_CM_BACKTRACE
-        if (!disassembly_ins_is_bl_blx(addr - sizeof(size_t))) {
-            return false;
-        }
-        #endif
-        return true;
-    }
-    return false;
+
+    return (addr_is_in_flash_txt(addr) || addr_is_in_itcm_txt(addr) || addr_is_in_iram_txt(addr));
+
+    // if (addr_is_in_flash_txt(addr) || addr_is_in_itcm_txt(addr) || addr_is_in_iram_txt(addr)) {
+    //     addr -= 1;
+    //     #if CONFIG_CM_BACKTRACE
+    //     if (!disassembly_ins_is_bl_blx(addr - sizeof(size_t))) {
+    //         return false;
+    //     }
+    //     #endif
+    //     return true;
+    // }
+    // return false;
 }
 
 void stack_mem_dump(uint32_t stack_top, uint32_t stack_bottom)
@@ -87,6 +90,10 @@ void stack_mem_dump(uint32_t stack_top, uint32_t stack_bottom)
 	uint32_t cnt = 0;
 	uint32_t sp = stack_top;
 	uint32_t fp = stack_bottom;
+
+    if (stack_bottom <= stack_top) {
+        return;
+    }
 
 	BK_DUMP_OUT(">>>>stack mem dump begin, stack_top=%08x, stack end=%08x\r\n", stack_top, stack_bottom);
 	for (;  sp < fp; sp += sizeof(size_t)) {
