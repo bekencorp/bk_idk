@@ -731,7 +731,7 @@ int ble_boarding_adv_start(uint8_t *adv_data, uint16_t adv_len)
         LOGI("set adv data success\n");
     }
 
-    /* sart adv */
+    /* start adv */
     ret = bk_ble_start_advertising(actv_idx, 0, ble_at_cmd_cb);
 
     if (ret != BK_ERR_BLE_SUCCESS)
@@ -749,7 +749,7 @@ int ble_boarding_adv_start(uint8_t *adv_data, uint16_t adv_len)
     }
     else
     {
-        LOGI("sart adv success\n");
+        LOGI("start adv success\n");
     }
 
     return ret;

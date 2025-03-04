@@ -609,7 +609,7 @@ void gatt_server_demo_init()
 	}
 	else
 	{
-		BLEGATTS_LOGI("sart adv success\n");
+		BLEGATTS_LOGI("start adv success\n");
 	}
 
     BLEGATTS_LOGI("%s success\n", __func__);
@@ -701,7 +701,7 @@ void gatt_server_command(char *pcWriteBuffer, int xWriteBufferLen, int argc, cha
     	}
     	else
     	{
-    		BLEGATTS_LOGI("sart adv success\n");
+    		BLEGATTS_LOGI("start or stop adv success\n");
     	}
     }
     else if(strcmp(argv [ 1 ], "bond") == 0)
