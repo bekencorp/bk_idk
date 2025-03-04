@@ -367,6 +367,7 @@ static void sdio_host_deinit_common(void)
 	power_sdio_pwr_down();
 	icu_disable_sdio_interrupt();
 #endif
+	sys_drv_int_disable(SDIO_INTERRUPT_CTRL_BIT);
 }
 
 #if (CONFIG_SDIO_PM_CB_SUPPORT)
