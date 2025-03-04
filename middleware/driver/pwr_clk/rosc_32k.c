@@ -80,10 +80,12 @@ static void rosc_ckmn_isr(void)
 	// GPIO_DOWN(16);
 	// CKMN_LOGI("ckmn_rosc_isr rosc_freq:%7.2f\r\n", s_rosc_freq_hz);
 	bk_ckmn_ckest_disable();
+	bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_ROSC_PROG,1,0);
 }
 
 bk_err_t bk_rosc_32k_ckest_prog(uint32_t count)
 {
+	bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_ROSC_PROG,0,0);
 #if CONFIG_ROSC_COMPENSATION
 	bk_aon_rtc_get_current_tick_with_compensation(AON_RTC_ID_1); // trig tick compensation
 #endif
