@@ -81,7 +81,7 @@ Armino SDK 代码下载
 
 .. note::
 
-    github代码相对于gitlab有滞后性，如果您想获取最新的SDK代码，请从gitlab拉取，相关账号找项目上审核申请。
+    github代码相对于gitlab有滞后性 。gitlab只针对企业用户开放，请找对应接口人申请。
 
 
 环境部署及编译

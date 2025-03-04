@@ -83,7 +83,7 @@ Then switch to the stable branch Tag node, such as v2.0.2.1::
 
 .. note::
 
-    The GitHub code is relatively lagging behind the GitLab code. If you want to obtain the latest SDK code, please download it from GitLab. Please contact the your BK7236 project owner to get relevant accounts.
+    The code on GitHub lags behind that on GitLab. GitLab is only open to corporate users. Please contact the corresponding person to apply. 
 
 
 Environment Deployment and Compilation
