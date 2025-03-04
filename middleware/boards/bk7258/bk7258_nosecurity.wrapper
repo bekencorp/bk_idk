@@ -690,23 +690,47 @@ def mklittlefs_img():
 
         run_cmd_with_ret(f"{mk_tool_path} -c {preset_folder} -b 4096 -p 256 -s {img_size} {img_path}")
 
-    def check_littlefs_enable():
-        sdk_header_path = "{}/config/sdkconfig.h".format(build_path)
-        with open(sdk_header_path, 'r', encoding='utf-8') as file:
-            content = file.read()
-        if "#define CONFIG_LITTLEFS 1" not in content:
-            raise RuntimeError("CONFIG_LITTLEFS is not enable")
+    def find_files(folder_path, file_name):
+        file_paths = []
+        for dirpath, _, files in os.walk(folder_path):
+            for file in files:
+                if file == file_name:
+                    file_path = os.path.join(dirpath, file)
+                    file_paths.append(file_path)
+        return file_paths
+
+    def check_littlefs_enable(config_file_paths):
+        littlefs_enabled = 0
+        for config_file in config_file_paths:
+            with open(config_file, 'r', encoding='utf-8') as file:
+                content = file.read()
+            if "#define CONFIG_LITTLEFS 1" in content:
+                littlefs_enabled = 1
+                break
+
+        if littlefs_enabled == 0:
+            return False
+        
+        return True
+
+    def get_littlefs_partitions_name(config_file_paths):
+        for config_file in config_file_paths:
+            with open(config_file, 'r', encoding='utf-8') as file:
+                content = file.read()
+            if "#define CONFIG_LITTLEFS_USE_LITTLEFS_PARTITION 1" in content:
+                return "littlefs"
+            elif "#define CONFIG_LITTLEFS_USE_USR_CONFIG_PARTITION 1" in content:
+                return "usr_config"
+        return ""
 
     def make_pack_bin_with_fs(img_offset):
         shutil.copy(all_app_bin_path, pack_bin_with_fs_path)
         with open(pack_bin_with_fs_path, 'r+b') as file:
             file.seek(0, os.SEEK_END)
             current_size = file.tell()
-            # print(f"{current_size =}")
             
             if current_size < img_offset:
                 bytes_to_fill = img_offset - current_size
-                # print(f"{bytes_to_fill =}")
                 fill_data = bytes([0xff] * bytes_to_fill)
                 file.write(fill_data)
 
@@ -719,6 +743,15 @@ def mklittlefs_img():
     img_path = "{}/littlefs.bin".format(build_path)
     all_app_bin_path = "{}/all-app.bin".format(build_path)
     pack_bin_with_fs_path = "{}/app_all_plus_filesys.bin".format(build_path)
+    project_build_dir = os.path.abspath(f"{build_path}/..")
+    config_file_paths = find_files(project_build_dir, "sdkconfig.h")
+
+    if not check_littlefs_enable(config_file_paths):
+        return
+    littlefs_partition_name = get_littlefs_partitions_name(config_file_paths)
+
+    if not littlefs_partition_name:
+        return
 
     addr = 0
     size = 0
@@ -727,7 +760,7 @@ def mklittlefs_img():
     with open(partition_csv_path, 'r', newline='', encoding='utf-8') as csvfile:
         dict_reader = csv.DictReader(csvfile)
         for row in dict_reader:
-            if row['Name'] == 'littlefs':
+            if row['Name'] == littlefs_partition_name:
                 found = 1
                 addr = int(row['Offset'], 16)
                 size = parse_int(row['Size'])
@@ -737,7 +770,6 @@ def mklittlefs_img():
         print("not found littlefs partition in patitions.csv")
         return
     
-    check_littlefs_enable()
     make_img(size)
     make_pack_bin_with_fs(addr)
 
