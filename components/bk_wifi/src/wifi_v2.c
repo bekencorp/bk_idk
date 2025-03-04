@@ -4236,35 +4236,37 @@ void bk_wifi_ftm_free_result(wifi_ftm_results_t *ftm_results)
 #endif //CONFIG_WIFI_FTM
 
 #if CONFIG_WIFI_CSI_EN
-wifi_csi_cb_t g_wifi_csi_info_handler = NULL;
-bool g_wifi_csi_info_enable = false;
-uint8_t g_wifi_csi_config = 0;
+bk_err_t bk_wifi_csi_alg_config(uint16_t rate1,uint16_t rate2,uint16_t rate3,uint16_t thres1,uint16_t thres2,
+					uint16_t thres3,uint32_t static_update,uint32_t hold_time)
+{
+	return rw_msg_send_csi_alg_config_ind(rate1,rate2,rate3,thres1,thres2,thres3,static_update,hold_time);
+}
 
+bk_err_t bk_wifi_csi_start_req(uint8_t tx_type,uint8_t rx_mode,uint8_t out_abs,uint8_t format,uint8_t mode,uint8_t type,uint8_t gap_num,
+					uint32_t interval,uint32_t gap,uint32_t data_cnt,uint32_t delay,uint8_t filter_mac_num,uint8_t *mac)
+{
+	return rw_msg_send_csi_start_req(tx_type,rx_mode,out_abs,format,mode,type,gap_num,interval,gap,data_cnt,delay,filter_mac_num,mac);
+}
 
-void bk_wifi_csi_info_cb_register(wifi_csi_cb_t cb)
+bk_err_t bk_wifi_csi_stop_req(void)
 {
-	g_wifi_csi_info_handler = cb;
+	uint8_t vif_idx = 0;
+	vif_idx = wifi_netif_mac_to_vifid((uint8_t*)&g_sta_param_ptr->own_mac);
+
+#if NX_P2P
+	VIF_INF_PTR vif = rwm_mgmt_vif_idx2ptr(vif_idx);
+	if (vif->p2p)
+		return BK_FAIL;
+#endif
+
+	return rw_msg_send_csi_stop_req(vif_idx);
 }
-wifi_csi_cb_t bk_wifi_csi_info_cb(void)
+
+bk_err_t bk_wifi_csi_static_param_reset_req(void)
 {
-	return g_wifi_csi_info_handler;
+	return rw_msg_send_csi_static_param_reset_req();
 }
-void bk_wifi_csi_info_set(bool enable)
-{
-	g_wifi_csi_info_enable = enable;
-}
-bool bk_wifi_csi_info_enable(void)
-{
-	return g_wifi_csi_info_enable;
-}
-void bk_wifi_set_csi_config(uint8_t config)
-{
-	g_wifi_csi_config = config;
-}
-uint8_t bk_wifi_get_csi_config(void)
-{
-	return g_wifi_csi_config;
-}
+
 #endif //CONFIG_WIFI_CSI_EN
 bk_err_t bk_wifi_get_tx_stats(uint8_t mode,struct tx_stats_t* tx_stats)
 {

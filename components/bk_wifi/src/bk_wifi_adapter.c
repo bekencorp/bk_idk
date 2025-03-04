@@ -703,10 +703,6 @@ static int bk_feature_ckmn_enable_wrapper(void)
 {
     return bk_feature_ckmn_enable();
 }
-static int bk_feature_config_wifi_csi_enable_wrapper(void)
-{
-    return bk_feature_config_wifi_csi_enable();
-}
 
 static int bk_feature_close_coexist_csa_wrapper(void)
 {
@@ -1328,7 +1324,6 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._mcu_ps_bcn_callback = mcu_ps_bcn_callback_wrapper,
 	._wapi_wpi_encrypt = NULL,
 	._wapi_wpi_decrypt = NULL,
-	._bk_feature_config_wifi_csi_enable = bk_feature_config_wifi_csi_enable_wrapper,
 	._bk_feature_receive_bcmc_enable = bk_feature_receive_bcmc_enable_wrapper,
 	._bk_feature_bssid_connect_enable = bk_feature_bssid_connect_enable_wrapper,
 	._bk_feature_fast_connect_enable = bk_feature_fast_connect_enable_wrapper,

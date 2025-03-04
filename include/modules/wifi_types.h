@@ -155,6 +155,8 @@ typedef enum {
  */
 typedef enum {
 	EVENT_WIFI_SCAN_DONE = 0,      /**< WiFi scan done event */
+	EVENT_WIFI_CSI_DATA_IND,
+	EVENT_WIFI_CSI_ALG_IND,
 
 	EVENT_WIFI_STA_CONNECTED,      /**< The BK STA is connected */
 	EVENT_WIFI_STA_DISCONNECTED,   /**< The BK STA is disconnected */
@@ -582,6 +584,7 @@ typedef struct {
 
 typedef struct {
 	int rssi;                         /**< RSSI of the received frame in monitor mode */
+	void *extra;                      /**< extra info of this frame */
 } wifi_frame_info_t;
 
 /**
@@ -719,21 +722,35 @@ typedef struct {
 /**
  * @brief Wi-Fi Channel State Information configuration and results.
  */
-typedef struct {
-    /// TSF High
-    uint32_t tsfhi;
-    /// TSF Low
-    uint32_t tsflo;
-}wifi_pkt_rx_ctrl_t;
+struct wifi_rx_pkt_t{
+	int8_t rssi;		 /**< Received Signal Strength Indicator(RSSI) of packet. unit: dBm */
+	uint8_t rate;		 /**< PHY rate encoding of the packet. Only valid for non HT(11bg) packet */
+	uint8_t foramat;	 /**< 0x0:non HT(11g) packet; 0x2:HT(11n)packet;0x4:VHT(11ac)packet;0x5:HE(11ax)packet */
+	uint8_t mcs;		 /**< Modulation Coding Scheme.*/
+	uint8_t cwb;		 /**< Channel Bandwidth of the packet. 0: 20MHz; 1: 40MHz */
+	uint8_t aggregation; /**< Aggregation. 0: MPDU packet; 1: AMPDU packet */
+	uint8_t stbc;		 /**< Space Time Block Code(STBC). 0: non STBC packet; 1: STBC packet */
+	uint8_t fec_coding;  /**< Forward Error Correction(FEC). Flag is set for 11n packets which are LDPC */
+	uint8_t sgi;		 /**< Short Guide Interval(SGI). 0: Long GI; 1: Short GI */
+	uint8_t channel;	 /**< primary channel on which this packet is received */
+	uint8_t secondary_channel; /**< secondary channel on which this packet is received. 0: none; 1: above; 2: below */
+	uint8_t sig_len;	 /**< length of packet including Frame Check Sequence(FCS) */
+	uint32_t timestamp;  /**< timestamp. The local time when this packet is received. unit: microsecond */
+};
 
-typedef struct {
-	wifi_pkt_rx_ctrl_t rx_ctrl;         /**< rx packet ctrl  */ 
-	uint8_t mac[WIFI_MAC_LEN];          /**< MAC Address of the CSI info receive */
-	uint16_t len;                       /**< The length of CSI info */
-	uint32_t buf[240];                  /**< CSI info */
-}wifi_csi_info_t;
+struct wifi_csi_info_t{
+	struct wifi_rx_pkt_t rx_ctrl;		/**< rx packet ctrl  */
+	uint8_t mac[WIFI_MAC_LEN];			/**< MAC Address of the CSI info receive */
+	uint16_t len;						/**< The length of CSI info */
+	uint32_t buf[52];				   /**< CSI info */
+};
 
-typedef void (* wifi_csi_cb_t)(wifi_csi_info_t **info,uint8_t flag);
+struct wifi_csi_alg_ind
+{
+	uint8_t v1;
+	uint8_t v2;
+};
+
 
 /**
  * @brief Wi-Fi tx statistics.

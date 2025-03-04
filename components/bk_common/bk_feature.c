@@ -112,14 +112,6 @@ int bk_feature_send_deauth_before_connect(void) {
 #endif
 }
 
-int bk_feature_config_wifi_csi_enable(void) {
-#if CONFIG_WIFI_CSI_EN
-	return 1;
-#else
-	return 0;
-#endif
-}
-
 int bk_feature_close_coexist_csa(void) {
 #if CONFIG_CLOSE_COEXIST_CSA
 	return 1;

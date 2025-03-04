@@ -1677,6 +1677,12 @@ int cli_wifi_event_cb(void *arg, event_module_t event_module,
 		CLI_LOGI(" target AP: %s, bssid %pm found\n", network_found->ssid, network_found->bssid);
 		break;
 
+	#if CONFIG_WIFI_CSI_EN
+	case EVENT_WIFI_CSI_DATA_IND:
+	case EVENT_WIFI_CSI_ALG_IND:
+		break;
+	#endif
+
 	default:
 		CLI_LOGI("rx event <%d %d>\n", event_module, event_id);
 		break;
@@ -2327,6 +2333,154 @@ usage:
 }
 #endif
 
+#if CONFIG_WIFI_CSI_EN
+
+void cli_wifi_csi_alg_config_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	uint16_t rate1 ;
+	uint16_t rate2;
+	uint16_t rate3;
+	uint16_t thres1;
+	uint16_t thres2;
+	uint16_t thres3;
+	uint32_t static_update;
+	uint32_t hold_time;
+
+	int ret = 0;
+
+	if (argc == 9)
+	{
+		rate1 = (uint16_t)os_strtoul(argv[1], NULL, 10);
+		rate2 = (uint16_t)os_strtoul(argv[2], NULL, 10);
+		rate3 = (uint16_t)os_strtoul(argv[3], NULL, 10);
+		thres1 = (uint16_t)os_strtoul(argv[4], NULL, 10);
+		thres2 = (uint16_t)os_strtoul(argv[5], NULL, 10);
+		thres3 = (uint16_t)os_strtoul(argv[6], NULL, 10);
+		static_update = (uint32_t)os_strtoul(argv[7], NULL, 10);
+		hold_time = (uint32_t)os_strtoul(argv[8], NULL, 10);
+		ret = bk_wifi_csi_alg_config(rate1,rate2,rate3,thres1,thres2,thres3,static_update,hold_time);
+
+		if (ret)
+			CLI_LOGI("bad state\r\n");
+	}
+	else
+	{
+		CLI_LOGI("invalid cli_wifi_csi_start_cmd %d\n",argc);
+		return;
+	}
+
+}
+extern int hexstr2bin(const char *hex, u8 *buf, size_t len);
+bool cli_wifi_csi_read_addr(char *mac_str,uint8_t *base_mac)
+{
+	char mac[12];
+	int cnt = 0;
+	for(int i=0;i<17;i++)
+	{
+		if((i%3)==2)
+		{
+			if(mac_str[i] != ':')
+			{
+				CLI_LOGI("Input mac error,need ':'\r\n");
+				return false;
+			}
+		}
+		else
+		{
+			if((mac_str[i] >='0' && mac_str[i] <='9') ||
+				(mac_str[i] >='a' && mac_str[i] <='f')||
+				(mac_str[i] >='A' && mac_str[i] <='F'))
+			{
+				mac[cnt] = mac_str[i];
+				cnt++;
+			}
+			else
+			{
+				CLI_LOGI("Input mac info error!\r\n");
+				return false;
+			}
+		}
+	}
+
+	hexstr2bin(mac, base_mac, BK_MAC_ADDR_LEN);
+	return true;
+}
+void cli_wifi_csi_start_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	uint8_t tx_type = 1;
+	uint8_t rx_mode = 2;
+	uint8_t mode = 0x2;
+	uint8_t type = 0x2;
+	uint8_t gap_num = 0;
+	uint32_t interval = 20;
+	uint32_t gap = 0;
+	uint32_t data_cnt = 1000;
+	uint32_t delay = 1000;
+	int ret = 0;
+	uint8_t format = 0x3;
+	uint8_t out_abs = 0;
+	uint8_t mac_num = 0;
+	uint8_t mac[6*4];
+	uint8_t base_mac[BK_MAC_ADDR_LEN] = {0};
+
+	if (argc >= 12)
+	{
+		mode = (uint8_t)os_strtoul(argv[1], NULL, 16);
+		type = (uint8_t)os_strtoul(argv[2], NULL, 16);
+		interval = (uint32_t)os_strtoul(argv[3], NULL, 10);
+		gap_num = (uint8_t)os_strtoul(argv[4], NULL, 10);
+		gap = (uint32_t)os_strtoul(argv[5], NULL, 10);
+		data_cnt = (uint32_t)os_strtoul(argv[6], NULL, 10);
+		delay = (uint32_t)os_strtoul(argv[7], NULL, 10);
+		tx_type = (uint8_t)os_strtoul(argv[8], NULL, 10);
+		rx_mode = (uint8_t)os_strtoul(argv[9], NULL, 10);
+		format = (uint8_t)os_strtoul(argv[10], NULL, 16);
+		out_abs = (uint8_t)os_strtoul(argv[11], NULL, 16);
+		if(argc > 12)
+			mac_num = (uint32_t)os_strtoul(argv[12], NULL, 10);
+		if((mac_num > 0)&&(mac_num < 5))
+		{
+			for(uint8_t i=0;i<mac_num;i++)
+			{
+				if((i<mac_num)&&(argc > (13+i)))
+				{
+					if(cli_wifi_csi_read_addr(argv[13+i],base_mac))
+						os_memcpy((mac+i*6),base_mac,6);
+					else
+					{
+						CLI_LOGI("err param\r\n");
+						return;
+					}
+				}
+				else
+				{
+					CLI_LOGI("err param\r\n");
+					return;
+				}
+			}
+		}
+
+		ret = bk_wifi_csi_start_req(tx_type,rx_mode,out_abs,format,mode,type,gap_num,interval,gap,data_cnt,delay,mac_num,mac);
+
+		if (ret)
+			CLI_LOGI("bad state\r\n");
+	}
+	else
+	{
+		CLI_LOGI("invalid cli_wifi_csi_start_cmd %d\n",argc);
+		return;
+	}
+}
+void cli_wifi_csi_stop_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	bk_wifi_csi_stop_req();
+}
+void cli_wifi_csi_config_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	bk_wifi_csi_static_param_reset_req();
+}
+#endif
+
 #define WIFI_CMD_CNT (sizeof(s_wifi_commands) / sizeof(struct cli_command))
 static const struct cli_command s_wifi_commands[] = {
 	{"scan", "scan [ssid]", cli_wifi_scan_cmd},
@@ -2389,6 +2543,12 @@ static const struct cli_command s_wifi_commands[] = {
 	{"close_coex_csa","close csa in coexist mode {1|0}", cli_wifi_close_coex_csa_cmd},
 #if CONFIG_BRIDGE
 	{"bridge", "bridge open|close", cli_wifi_open_bridge_cmd},
+#endif
+#if CONFIG_WIFI_CSI_EN
+	{"csi_alg_config","csi_alg_config 64,32,1,2,0", cli_wifi_csi_alg_config_cmd},
+	{"csi_start","csi_start csi_work_mode,0,15,0", cli_wifi_csi_start_cmd},
+	{"csi_stop","csi_stop", cli_wifi_csi_stop_cmd},
+	{"csi_config","csi_stop", cli_wifi_csi_config_cmd},
 #endif
 };
 

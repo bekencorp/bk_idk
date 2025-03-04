@@ -15,6 +15,8 @@ enum
     /// SCAN task
     TASK_SCAN,
     /// TDLS task
+    /// CSI task
+    TASK_CSI,
     TASK_TDLS,
 
     #if (NX_UMAC_PRESENT)
@@ -612,6 +614,137 @@ void ke_msg_forward_and_change_id(void const *param_ptr,
                                   ke_task_id_t const src_id);
 
 void ke_msg_free(struct ke_msg const *param);
+
+#include <modules/wifi_types.h>
+
+/// Messages that are logically related to the task.
+enum csi_msg_tag
+{
+    /// Request to start the CSI
+    CSI_START_REQ = KE_FIRST_MSG(TASK_CSI),
+    /// Confirmation of the CSI start.
+    CSI_START_CFM,
+    /// Request to stop the CSI
+    CSI_STOP_REQ,
+    /// Confirmation of the CSI stop.
+    CSI_STOP_CFM,
+    /// IND CSI has station is connecting
+    CSI_STA_CONNECT_IND,
+    /// CSI DATA IND
+    CSI_DATA_IND,
+    /// CSI algorithm result ind
+    CSI_ALGO_IND,
+    /// CSI_DHCP_DONE_IND
+    CSI_DHCP_DONE_IND,
+    /// CSI_RESET_ALGO_STATIC_IND
+    CSI_RESET_ALGO_STATIC_IND,
+    /// CSI_RESET_ALGO_STATIC_IND
+    CSI_ALG_CONFIG_IND,
+    
+    CSI_MESSAGE_MAX
+};
+
+struct csi_alg_config
+{
+    //#define CSI_SMOOTH_RATE_1  (1/64)
+    uint16_t csi_smooth_rate1;
+    //#define CSI_SMOOTH_RATE_2  (1/32)
+    uint16_t csi_smooth_rate2;
+    //#define CSI_SMOOTH_RATE_2  (1/32)
+    uint16_t csi_smooth_rate3;
+    //#define CSI_THRES_1        (2)
+    uint16_t csi_thres1;
+    //#define CSI_THRES_2        (1)
+    uint16_t csi_thres2;
+    uint16_t csi_thres3;
+    uint32_t csi_static_update;
+    uint32_t csi_hold_time;
+};
+
+/// Structure containing the parameters of the @ref CSI_START_REQ and messages
+struct csi_start_req
+{
+    // value 1 -- NULL frame;
+    // value 2 -- ; 
+    uint8_t csi_tx_type;
+    // value 1 -- csi data get opportunity at frame ACK, type 1;
+    // value 2 -- csi data get opportunity at rx frame, type 2;
+    uint8_t csi_rx_mode;
+    // frame format : NON_HT 0x01;HT_MM 0x02;HE_SU 0x04
+    uint8_t csi_work_format;
+    // csi out result , 0: alg result; 1: abs
+    uint8_t csi_out_abs;
+    // bit 01-- support STA csi; bit 10 -- support AP csi
+    uint8_t csi_work_type;
+    // bit 01--data capture for host; bit 10 -- data capture to uart; bit 100 -- algorithm
+    uint8_t csi_work_mode;
+    // count of get csi continuous
+    uint8_t csi_gap_num;
+    // csi get time interval
+    uint32_t csi_interval_time;
+    // csi get continuous time interval
+    uint32_t csi_gap_time;
+    // csi send frame cnt
+    uint32_t csi_data_cnt;
+    // csi start delay time
+    uint32_t csi_delay_time;
+    // csi filter mac
+    uint8_t filter_mac_num;
+    uint8_t mac[MAC_ADDR_LEN * 4];
+};
+
+/// Structure containing the parameters of the @ref CSI_STOT_REQ and messages
+struct csi_start_cfm
+{
+    uint8_t vif_idx;
+};
+
+/// Structure containing the parameters of the @ref CSI_STOT_REQ and messages
+struct csi_stop_req
+{
+    uint8_t vif_idx;
+};
+
+/// Structure containing the parameters of the @ref CSI_STOT_REQ and messages
+struct csi_stop_cfm
+{
+    uint8_t vif_idx;
+};
+
+/// Structure containing the parameters of the @ref CSI_STA_CONNECT_IND and messages
+struct csi_sta_connect_ind
+{
+    uint8_t is_connecting;
+};
+
+
+/// Structure containing the parameters of the @ref CSI_DHCP_DONE_IND and messages
+struct csi_dhcp_done_ind 
+{
+    uint8_t vif_idx;
+    uint8_t mac[MAC_ADDR_LEN];
+};
+
+/// Structure containing the parameters of the @ref CSI_DHCP_DONE_IND and messages
+struct csi_data_ind 
+{
+    uint8_t vif_idx;
+    struct wifi_csi_info_t csi_data_info;
+};
+
+/// Structure containing the parameters of the @ref CSI_DHCP_DONE_IND and messages
+struct csi_alg_ind 
+{
+    uint8_t v1;
+    uint8_t v2;
+};
+
+
+/// Structure containing the parameters of the @ref CSI_RESET_ALGO_STATIC_IND and messages
+struct csi_static_reset_ind 
+{
+    uint8_t vif_idx;
+};
 
 #if NX_MON_DATA
 /// MAC header backup descriptor

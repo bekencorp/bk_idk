@@ -1520,6 +1520,15 @@ bk_err_t bk_wifi_set_tx_power(wifi_standard standard, float powerdBm);
  *		oui_len 3
  */
 bk_err_t bk_wifi_get_vendor_ie_cb(void* vsie_cb, uint32_t vendor_type, uint8_t oui_len);
+#if CONFIG_WIFI_CSI_EN
+bk_err_t bk_wifi_csi_alg_config(uint16_t rate1,uint16_t rate2,uint16_t rate3,uint16_t thres1,uint16_t thres2,
+					uint16_t thres3,uint32_t static_update,uint32_t hold_time);
+
+bk_err_t bk_wifi_csi_start_req(uint8_t tx_type,uint8_t rx_mode,uint8_t out_abs,uint8_t format,uint8_t mode,uint8_t type,uint8_t gap_num,
+					uint32_t interval,uint32_t gap,uint32_t data_cnt,uint32_t delay,uint8_t filter_mac_num,uint8_t *mac);
+bk_err_t bk_wifi_csi_stop_req(void);
+bk_err_t bk_wifi_csi_static_param_reset_req(void);
+#endif
 
 #ifdef __cplusplus
 }

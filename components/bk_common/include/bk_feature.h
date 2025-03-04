@@ -142,16 +142,6 @@ int bk_feature_receive_bcmc_enable(void);
 int bk_feature_not_check_ssid_enable(void);
 
 /**
- * @brief     Interface for customer to Enable/Disable station to get WIFI CSI
- *
- *
- * @return
- *    - 0: Disable station to get WIFI CSI
- *    - 1: Enable station to get WIFI CSI
- *
- */
-int bk_feature_config_wifi_csi_enable(void);
-/**
  * @brief     Interface for customer to close ap csa in coexist mode
  *
  *

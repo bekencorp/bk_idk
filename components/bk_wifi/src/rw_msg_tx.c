@@ -723,6 +723,20 @@ int rw_msg_dhcp_done_ind(u8 vif_idx)
 	return rw_msg_send(ind, 0, 0, NULL);
 }
 
+int rw_msg_ap_dhcp_done_ind(uint8_t *hdr)
+{
+	struct csi_dhcp_done_ind *ind = ke_msg_alloc(CSI_DHCP_DONE_IND, TASK_CSI, TASK_API,
+					sizeof(struct csi_dhcp_done_ind));
+
+	if (!ind)
+		return BK_ERR_NO_MEM;
+
+	ind->vif_idx = 0xFF;
+	os_memcpy(ind->mac,hdr,MAC_ADDR_LEN);
+
+	return rw_msg_send(ind, 0, 0, NULL);
+}
+
 // #if CONFIG_WIFI_MFP_CONNECT_DEAUTH
 int rw_msg_mfp_connect_deauth(u8 vif_idx,u8 *bssid,bool encrypt,
 											u8 *pn,u16 seq,struct mac_sec_key *key, bool is_first_connect)
@@ -1768,5 +1782,88 @@ int rw_msg_send_ftm_start_req(uint8_t vif_idx, uint8_t ftm_per_burst, uint8_t nb
 	/* Send the FTM_START_REQ message to LMAC FW */
 	return rw_msg_send(req, 1, FTM_DONE_IND, ind);
 }
+#endif
+#if CONFIG_WIFI_CSI_EN
+int rw_msg_send_csi_alg_config_ind(uint16_t rate1,uint16_t rate2,uint16_t rate3,uint16_t thres1,uint16_t thres2,uint16_t thres3,uint32_t static_update,uint32_t hold_time)
+{
+	struct csi_alg_config *ind = ke_msg_alloc(CSI_ALG_CONFIG_IND, TASK_CSI, TASK_API,
+						sizeof(struct csi_alg_config));
+	if (!ind)
+		return BK_ERR_NO_MEM;
+
+	ind->csi_smooth_rate1 = rate1;
+	ind->csi_smooth_rate2 = rate2;
+	ind->csi_smooth_rate3 = rate3;
+	ind->csi_thres1 = thres1;
+	ind->csi_thres2 = thres2;
+	ind->csi_thres3 = thres3;
+	ind->csi_static_update = static_update;
+	ind->csi_hold_time = hold_time;
+
+	return rw_msg_send(ind, 0, 0, NULL);
+}
+
+int rw_msg_send_csi_start_req(uint8_t tx_type,uint8_t rx_mode,uint8_t out_abs,uint8_t format,uint8_t mode,uint8_t type,uint8_t gap_num,
+                    uint32_t interval,uint32_t gap,uint32_t data_cnt,uint32_t delay,uint8_t filter_mac_num,uint8_t *mac)
+{
+	struct csi_start_req *req;
+
+	/* Build the SM_CONNECT_REQ message */
+	req = ke_msg_alloc(CSI_START_REQ, TASK_CSI, TASK_API,
+						sizeof(struct csi_start_req));
+	if (!req)
+		return BK_ERR_NO_MEM;
+
+	req->csi_tx_type = tx_type;
+	req->csi_rx_mode = rx_mode;
+	req->csi_work_format = format;
+	req->csi_out_abs = out_abs;
+	req->csi_work_type = type;
+	req->csi_work_mode = mode;
+	req->csi_gap_num = gap_num;
+	req->csi_interval_time = interval;
+	req->csi_gap_time = gap;
+	req->csi_data_cnt = data_cnt;
+	req->csi_delay_time = delay;
+	req->filter_mac_num = filter_mac_num;
+	if(filter_mac_num > 0)
+		os_memcpy(req->mac,mac,MAC_ADDR_LEN*4);
+
+	/* Send the SM_CONNECT_REQ message to LMAC FW */
+	return rw_msg_send(req, 1, CSI_START_CFM, NULL);
+}
+
+int rw_msg_send_csi_stop_req(uint8_t vif_idx)
+{
+	struct csi_stop_req *req;
+
+	/* Build the SM_CONNECT_REQ message */
+	req = ke_msg_alloc(CSI_STOP_REQ, TASK_CSI, TASK_API,
+					   sizeof(struct csi_stop_req));
+	if (!req)
+		return BK_ERR_NO_MEM;
+
+	req->vif_idx = vif_idx;
+
+	/* Send the SM_CONNECT_REQ message to LMAC FW */
+	return rw_msg_send(req, 1, CSI_STOP_CFM, NULL);
+}
+
+int rw_msg_send_csi_static_param_reset_req(void)
+{
+    struct csi_static_reset_ind *req;
+
+    /* Build the SM_CONNECT_REQ message */
+    req = ke_msg_alloc(CSI_RESET_ALGO_STATIC_IND, TASK_CSI, TASK_API,
+                       sizeof(struct csi_static_reset_ind));
+    if (!req)
+        return BK_ERR_NO_MEM;
+
+    req->vif_idx = 0xff;
+
+    /* Send the SM_CONNECT_REQ message to LMAC FW */
+    return rw_msg_send(req, 0, 0, NULL);
+}
+
 #endif
 

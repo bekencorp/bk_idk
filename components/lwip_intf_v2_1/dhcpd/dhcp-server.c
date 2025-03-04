@@ -512,7 +512,14 @@ static int process_dhcp_message(char *msg, int len)
         }
         
 		if (response_type == DHCP_MESSAGE_ACK)
+		{
 			send_gratuitous_arp(dhcps.my_ip);
+			#if CONFIG_WIFI_CSI_EN
+			// send msg to mac to mind dhcp done
+			extern int rw_msg_ap_dhcp_done_ind(uint8_t *hdr);
+			rw_msg_ap_dhcp_done_ind(hdr->chaddr);
+			#endif
+		}
 		return 0;
 	}
 

@@ -84,7 +84,11 @@ menu "Bk_Wifi"
 		depends on WIFI_ENABLE
 		bool "Wifi CSI"
 		default n
-
+	
+	config WIFI_CSI_MEMORY_OPTIMIZATION
+		depends on WIFI_CSI_EN
+		bool "Wifi CSI MEMORY_OPTIMIZATION"
+		default n
 
 	config MSDU_RESV_HEAD_LENGTH
 		int "Set Msdu Resv Head Length"

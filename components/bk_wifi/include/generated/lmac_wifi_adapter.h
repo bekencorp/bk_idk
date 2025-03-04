@@ -159,7 +159,6 @@ typedef struct {
 	void (*_mcu_ps_bcn_callback)(uint8_t *data, int len);
 	int (*_wapi_wpi_encrypt)(uint8_t *data, uint32_t data_len, uint32_t info);
 	int (*_wapi_wpi_decrypt)(uint8_t *data, uint32_t data_len, uint32_t info);
-	int (*_bk_feature_config_wifi_csi_enable)(void);
 	int (*_bk_feature_receive_bcmc_enable)(void);
 	int (*_bk_feature_bssid_connect_enable)(void);
 	int (*_bk_feature_fast_connect_enable)(void);

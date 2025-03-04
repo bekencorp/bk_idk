@@ -1560,6 +1560,21 @@ void rwnx_handle_recv_msg(struct ke_msg *rx_msg)
 #endif
 		break;
 
+#if CONFIG_WIFI_CSI_EN
+	case CSI_DATA_IND:{
+		struct ke_msg *msg_ptr = (struct ke_msg *)rx_msg;
+		struct csi_data_ind *data_ind = (struct csi_data_ind *)msg_ptr->param;
+		bk_event_post(EVENT_MOD_WIFI, EVENT_WIFI_CSI_DATA_IND, &data_ind->csi_data_info,
+				sizeof(struct csi_data_ind), BEKEN_NEVER_TIMEOUT);
+		}break;
+	case CSI_ALGO_IND:{
+		struct ke_msg *msg_ptr = (struct ke_msg *)rx_msg;
+		struct csi_alg_ind *alg_ind = (struct csi_alg_ind *)msg_ptr->param;
+		bk_event_post(EVENT_MOD_WIFI, EVENT_WIFI_CSI_ALG_IND, alg_ind,
+			sizeof(struct csi_alg_ind), BEKEN_NEVER_TIMEOUT);
+		}break;
+#endif
+
 	default:
 		//RWNX_LOGI("unknown msg 0x%x\n", rx_msg->id);
 		break;
