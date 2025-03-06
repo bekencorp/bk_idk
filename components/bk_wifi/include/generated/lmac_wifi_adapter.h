@@ -173,6 +173,7 @@ typedef struct {
 	int (*_bk_feature_close_coexist_csa)(void);
 	int (*_bk_feature_network_found_event)(void);
 	int (*_bk_feature_get_mac_sup_sta_max_num)(void);
+	void (*_bk_feature_csi_out_cb)(void *data);
 	bk_err_t (*_bk_wifi_get_vendor_ie_cb_internal)(void* vendor_ie, uint32_t vendor_type, uint16_t len, uint8_t frame_type);
 	uint32_t (*_bk_wifi_get_vendor_ie_type)(void);
 	uint8_t (*_bk_wifi_get_vendor_ie_oui_len)(void);

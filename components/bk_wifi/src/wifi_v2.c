@@ -4242,10 +4242,10 @@ bk_err_t bk_wifi_csi_alg_config(uint16_t rate1,uint16_t rate2,uint16_t rate3,uin
 	return rw_msg_send_csi_alg_config_ind(rate1,rate2,rate3,thres1,thres2,thres3,static_update,hold_time);
 }
 
-bk_err_t bk_wifi_csi_start_req(uint8_t tx_type,uint8_t rx_mode,uint8_t out_abs,uint8_t format,uint8_t mode,uint8_t type,uint8_t gap_num,
+bk_err_t bk_wifi_csi_start_req(uint8_t tx_type,uint8_t rx_mode,uint8_t format,uint8_t is_resp_null,uint8_t mode,uint8_t type,uint8_t gap_num,
 					uint32_t interval,uint32_t gap,uint32_t data_cnt,uint32_t delay,uint8_t filter_mac_num,uint8_t *mac)
 {
-	return rw_msg_send_csi_start_req(tx_type,rx_mode,out_abs,format,mode,type,gap_num,interval,gap,data_cnt,delay,filter_mac_num,mac);
+	return rw_msg_send_csi_start_req(tx_type,rx_mode,format,is_resp_null,mode,type,gap_num,interval,gap,data_cnt,delay,filter_mac_num,mac);
 }
 
 bk_err_t bk_wifi_csi_stop_req(void)
@@ -4266,8 +4266,19 @@ bk_err_t bk_wifi_csi_static_param_reset_req(void)
 {
 	return rw_msg_send_csi_static_param_reset_req();
 }
-
 #endif //CONFIG_WIFI_CSI_EN
+
+wifi_csi_cb_t g_wifi_csi_info_handler = NULL;
+void bk_wifi_csi_info_cb_register(wifi_csi_cb_t cb)
+{
+	g_wifi_csi_info_handler = cb;
+}
+void bk_wifi_csi_info_cb(void * data)
+{
+	if(g_wifi_csi_info_handler)
+		g_wifi_csi_info_handler((struct wifi_csi_info_t *)data);
+}
+
 bk_err_t bk_wifi_get_tx_stats(uint8_t mode,struct tx_stats_t* tx_stats)
 {
 	struct tx_stats_t* tx_stats_tmp;

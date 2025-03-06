@@ -1803,7 +1803,7 @@ int rw_msg_send_csi_alg_config_ind(uint16_t rate1,uint16_t rate2,uint16_t rate3,
 	return rw_msg_send(ind, 0, 0, NULL);
 }
 
-int rw_msg_send_csi_start_req(uint8_t tx_type,uint8_t rx_mode,uint8_t out_abs,uint8_t format,uint8_t mode,uint8_t type,uint8_t gap_num,
+int rw_msg_send_csi_start_req(uint8_t tx_type,uint8_t rx_mode,uint8_t format,uint8_t is_resp_null,uint8_t mode,uint8_t type,uint8_t gap_num,
                     uint32_t interval,uint32_t gap,uint32_t data_cnt,uint32_t delay,uint8_t filter_mac_num,uint8_t *mac)
 {
 	struct csi_start_req *req;
@@ -1817,7 +1817,7 @@ int rw_msg_send_csi_start_req(uint8_t tx_type,uint8_t rx_mode,uint8_t out_abs,ui
 	req->csi_tx_type = tx_type;
 	req->csi_rx_mode = rx_mode;
 	req->csi_work_format = format;
-	req->csi_out_abs = out_abs;
+	req->is_response_null = is_resp_null;
 	req->csi_work_type = type;
 	req->csi_work_mode = mode;
 	req->csi_gap_num = gap_num;

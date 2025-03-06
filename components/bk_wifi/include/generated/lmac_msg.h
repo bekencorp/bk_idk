@@ -630,8 +630,6 @@ enum csi_msg_tag
     CSI_STOP_CFM,
     /// IND CSI has station is connecting
     CSI_STA_CONNECT_IND,
-    /// CSI DATA IND
-    CSI_DATA_IND,
     /// CSI algorithm result ind
     CSI_ALGO_IND,
     /// CSI_DHCP_DONE_IND
@@ -672,8 +670,8 @@ struct csi_start_req
     uint8_t csi_rx_mode;
     // frame format : NON_HT 0x01;HT_MM 0x02;HE_SU 0x04
     uint8_t csi_work_format;
-    // csi out result , 0: alg result; 1: abs
-    uint8_t csi_out_abs;
+    // is ap response null frame null
+    uint8_t is_response_null;
     // bit 01-- support STA csi; bit 10 -- support AP csi
     uint8_t csi_work_type;
     // bit 01--data capture for host; bit 10 -- data capture to uart; bit 100 -- algorithm

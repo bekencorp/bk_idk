@@ -742,7 +742,12 @@ struct wifi_csi_info_t{
 	struct wifi_rx_pkt_t rx_ctrl;		/**< rx packet ctrl  */
 	uint8_t mac[WIFI_MAC_LEN];			/**< MAC Address of the CSI info receive */
 	uint16_t len;						/**< The length of CSI info */
-	uint32_t buf[52];				   /**< CSI info */
+	uint16_t data_type;					/**< out data type 0: buf, 1:abs*/
+	union
+	{
+		uint32_t buf[52];				/**< CSI info */
+		double abs[52];					/**< CSI info abs */
+	}data;
 };
 
 struct wifi_csi_alg_ind
@@ -750,6 +755,8 @@ struct wifi_csi_alg_ind
 	uint8_t v1;
 	uint8_t v2;
 };
+
+typedef void (* wifi_csi_cb_t)(struct wifi_csi_info_t *info);
 
 
 /**

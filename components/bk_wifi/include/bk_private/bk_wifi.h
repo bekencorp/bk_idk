@@ -626,8 +626,8 @@ void evm_bypass_mac_init(UINT32 frequency, INT32 band, UINT32 bandwidth);
 void evm_clear_ke_evt_mac_bit(void);
 void evm_set_ke_evt_mac_bit(void);
 void manual_cal_set_cc_backoff_flag(UINT8 enable);
-
-
+void bk_wifi_csi_info_cb_register(wifi_csi_cb_t cb);
+void bk_wifi_csi_info_cb(void * data);
 
 uint32_t evm_req_tx_for_ate(uint32_t frame_len);
 uint32_t hal_machw_frame_duration_ate(uint8_t bw, uint8_t modf, uint8_t rate, uint8_t long_preamble, uint8_t short_gi, uint16_t len);

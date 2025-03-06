@@ -1678,7 +1678,6 @@ int cli_wifi_event_cb(void *arg, event_module_t event_module,
 		break;
 
 	#if CONFIG_WIFI_CSI_EN
-	case EVENT_WIFI_CSI_DATA_IND:
 	case EVENT_WIFI_CSI_ALG_IND:
 		break;
 	#endif
@@ -2418,7 +2417,7 @@ void cli_wifi_csi_start_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
 	uint32_t delay = 1000;
 	int ret = 0;
 	uint8_t format = 0x3;
-	uint8_t out_abs = 0;
+	uint8_t is_resp_null = 0;
 	uint8_t mac_num = 0;
 	uint8_t mac[6*4];
 	uint8_t base_mac[BK_MAC_ADDR_LEN] = {0};
@@ -2435,7 +2434,7 @@ void cli_wifi_csi_start_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
 		tx_type = (uint8_t)os_strtoul(argv[8], NULL, 10);
 		rx_mode = (uint8_t)os_strtoul(argv[9], NULL, 10);
 		format = (uint8_t)os_strtoul(argv[10], NULL, 16);
-		out_abs = (uint8_t)os_strtoul(argv[11], NULL, 16);
+		is_resp_null = (uint8_t)os_strtoul(argv[11], NULL, 10);
 		if(argc > 12)
 			mac_num = (uint32_t)os_strtoul(argv[12], NULL, 10);
 		if((mac_num > 0)&&(mac_num < 5))
@@ -2460,7 +2459,7 @@ void cli_wifi_csi_start_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
 			}
 		}
 
-		ret = bk_wifi_csi_start_req(tx_type,rx_mode,out_abs,format,mode,type,gap_num,interval,gap,data_cnt,delay,mac_num,mac);
+		ret = bk_wifi_csi_start_req(tx_type,rx_mode,format,is_resp_null,mode,type,gap_num,interval,gap,data_cnt,delay,mac_num,mac);
 
 		if (ret)
 			CLI_LOGI("bad state\r\n");
