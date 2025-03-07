@@ -112,5 +112,5 @@
     <linkfile src="build_files/Makefile" dest="Makefile"/>
     <linkfile src="build_files/requirements.txt" dest="requirements.txt"/>
   </project>
-  <project name="iot/wcn/tools/env_tools" path="tools/env_tools" revision="546022a3813ffc205078f5bad416b94b59bf5f66" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
+  <project name="iot/wcn/tools/env_tools" path="tools/env_tools" revision="163d099c0f3bb9bff14d0a6de0b9698e16fa5290" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
 </manifest>
