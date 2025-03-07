@@ -429,6 +429,30 @@ function setup_soc_depandency(){
     fi
 }
 
+function check_software_setup(){
+    if type $1 > /dev/null 2>&1;then
+        echo 1
+    else
+        echo 0
+    fi
+}
+
+function check_dependency(){
+    dependecy_tools=(cmake make git ninja python3 doxygen)
+    install_fail_tools=()
+    for item in "${dependecy_tools[@]}"; do
+        if [ $(check_software_setup $item) -ne 1 ];then
+            install_fail_tools+=($item)
+        fi
+    done
+
+    if [ ${#install_fail_tools[@]} -ne 0 ];then
+        echo ${install_fail_tools[@]} "not installed, please check software source and retry intall software."
+    else
+        echo "armino build environment installed successfully."
+    fi
+}
+
 function main(){
     check_linux_version
     check_srcipt_options $@
@@ -437,7 +461,7 @@ function main(){
     fi
     setup_armino_build_env
 
-    echo "armino build environment installed successfully."
+    check_dependency
 }
 
 main $@
