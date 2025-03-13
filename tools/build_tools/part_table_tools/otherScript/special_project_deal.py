@@ -252,7 +252,7 @@ def main():
         "bk7256_configa": project_bk7256_configa_deal,
         "bk7256_configb": project_bk7256_configb_deal,
         "config_ab": project_config_ab_deal,
-        "doorbell_cs2_ab_4M": project_config_ab_deal,
+        "doorbell_ab_4M": project_config_ab_deal,
     }
 
     parser = argparse.ArgumentParser(description='Deal with special json files from special project')
