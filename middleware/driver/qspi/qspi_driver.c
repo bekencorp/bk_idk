@@ -138,7 +138,7 @@ static void qspi_interrupt_enable(qspi_id_t id)
 			break;
 #if (SOC_QSPI_UNIT_NUM > 1)
 		case QSPI_ID_1:
-			sys_drv_int_enable(QSPI1_INTERRUPT_CTRL_BIT);
+			sys_drv_int_group2_enable(QSPI1_INTERRUPT_CTRL_BIT);
 			break;
 #endif
 		default:
@@ -155,7 +155,7 @@ static void qspi_interrupt_disable(qspi_id_t id)
 			break;
 #if (SOC_QSPI_UNIT_NUM > 1)
 		case QSPI_ID_1:
-			sys_drv_int_disable(QSPI1_INTERRUPT_CTRL_BIT);
+			sys_drv_int_group2_disable(QSPI1_INTERRUPT_CTRL_BIT);
 			break;
 #endif
 		default:
