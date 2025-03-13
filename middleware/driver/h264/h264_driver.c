@@ -596,7 +596,7 @@ bk_err_t bk_h264_config_reset(void)
 	ratio.qp.p_max_qp = s_h264.hal.hw->pframe_qp_boudary.v & 0x3F;
 	ratio.imb_bits = s_h264.hal.hw->iframe_bit_ctrl.v & 0xFFF;
 	ratio.pmb_bits = s_h264.hal.hw->num_pmb_bits & 0xFFFF;
-	fps = s_h264.hal.hw->vui_time_scale_L & 0xFFFF;
+	fps = (s_h264.hal.hw->vui_time_scale_L & 0xFFFF) / (2 * config->vui_num_u_tick_L);
 	h264_hal_reset(&s_h264.hal);
 
 	/* h264 global ctrl set */
