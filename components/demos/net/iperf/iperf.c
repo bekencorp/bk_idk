@@ -244,21 +244,18 @@ static void iperf_process_udpServerHdr(uint32_t *buffer, uint32_t len)
 	}
 }
 
-static void iperf_report_recv_bandwidth(uint64_t pkt_len)
+static void iperf_report_avg_bandwidth(uint64_t pkt_len)
 {
-	if(s_param.state == IPERF_STATE_STOPPING)
+	if (pkt_len > 0)
 	{
-		if (pkt_len > 0) 
-		{
-			uint64_t total_f;
-			total_f = pkt_len * 8;
-	
-			total_f /= 1000;
-			os_printf("[%d-%d] sec bandwidth: %llu Kbits/sec.\r\n",
-									0, s_tick_delta , total_f);
-		}
+		double total_f;
+		total_f = (double)pkt_len * 8;
+		total_f /= (double)(IPERF_MILLION_UNIT * s_tick_delta);
+		os_printf("[%d-%d] sec bandwidth: %.2f  Mbits/sec.\r\n",
+				0, s_tick_delta , total_f);
 	}
 }
+
 
 #ifndef CONFIG_IPV6
 extern err_t
@@ -302,9 +299,8 @@ static void iperf_report_task_handler(void *arg)
 	s_tick_delta = 0;
 	s_pkt_delta = 0;
 	uint32_t tick_now = 0;
-	uint32_t average = 0;
-	int k = 1;
 	uint32_t count = 0;
+	uint64_t total_len = 0;
 
 	while (s_param.state == IPERF_STATE_STARTED)
 	{
@@ -317,10 +313,6 @@ static void iperf_report_task_handler(void *arg)
 		if (++count >= IPERF_REPORT_INTERVAL * 5)  /* 5: schedule every 200ms */
 		{
 			count = 0;
-			if (s_param.state != IPERF_STATE_STARTED)
-			{
-				break;
-			}
 
 			if (s_pkt_delta >= 0)
 			{
@@ -329,24 +321,24 @@ static void iperf_report_task_handler(void *arg)
 			}
 			s_tick_delta = s_tick_delta + IPERF_REPORT_INTERVAL;
 
-			average = ((average * (k - 1) / k) + (f / k));
-			k++;
+			total_len += s_pkt_delta;
 			s_tick_last = tick_now;
 			s_pkt_delta = 0;
 		}
-
-		if (s_param.mode == IPERF_MODE_TCP_CLIENT || s_param.mode == IPERF_MODE_UDP_CLIENT)
+		
+		if (s_tick_delta >= s_time)
 		{
-			if (s_tick_delta >= s_time)
-			{
-				os_printf("[%d-%d] sec bandwidth: %d Kbits/sec.\r\n",
-						  0, s_time, average);
-				break;
-			}
+			break;
 		}
 	}
 
-	s_param.state = IPERF_STATE_STOPPING;
+	iperf_report_avg_bandwidth(total_len);
+	total_len = 0 ;
+
+	if (s_param.state == IPERF_STATE_STARTED)
+	{
+		s_param.state = IPERF_STATE_STOPPING;
+	}
 	rtos_delete_thread(NULL);
 }
 
@@ -485,7 +477,6 @@ void iperf_server(void *thread_param)
 	int sock = -1, connected, bytes_received;
 	struct sockaddr_in server_addr, client_addr;
 	uint32_t retry_cnt = 0;
-	uint64_t s_total_len_rcv = 0;
 
 	recv_data = (uint8_t *) os_malloc(iperf_size);
 	if (recv_data == NULL) {
@@ -555,17 +546,16 @@ _rx_retry:
 				break;
 			}else{
 				s_pkt_delta += bytes_received;
-				s_total_len_rcv +=bytes_received;
 			}
 
 		}
 
-		iperf_report_recv_bandwidth(s_total_len_rcv);
 
 		if (connected >= 0)
 			closesocket(connected);
 		connected = -1;
 	}
+
 
 __exit:
 	if (sock >= 0)
@@ -748,7 +738,7 @@ static void iperf_udp_server(void *thread_param)
 	struct sockaddr_in sender;
 	int sender_len, r_size;
 	uint32_t pcount = 0, last_pcount = 0;
-	uint64_t s_total_len = 0;
+	uint64_t s_total_recv_len = 0;
 	uint32_t lost, total;
 	uint64_t tick1, tick2;
 	struct timeval timeout;
@@ -817,7 +807,7 @@ static void iperf_udp_server(void *thread_param)
 				last_pcount = pcount;
 
 				s_pkt_delta +=r_size;
-				s_total_len +=r_size;
+				s_total_recv_len +=r_size;
 
 
 				if ((int32_t)(pcount) < 0) {
@@ -835,10 +825,9 @@ static void iperf_udp_server(void *thread_param)
 		end = ntohl(buffer[1]) ;
 
 		if (s_param.state == IPERF_STATE_STOPPING){
-			iperf_send_ack_toFin(sock, buffer,s_total_len,start,end);
+			iperf_send_ack_toFin(sock, buffer,s_total_recv_len,start,end);
 		}
 
-		iperf_report_recv_bandwidth(s_total_len);
 	}
 
 userver_exit:
