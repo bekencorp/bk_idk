@@ -30,6 +30,8 @@
 #include "modules/pm.h"
 #include <driver/pwr_clk.h>
 #include "driver/flash.h"
+#include "bk_pm_internal_api.h"
+
 #if CONFIG_INT_WDT
 #include <driver/wdt.h>
 #include <bk_wdt.h>
@@ -937,6 +939,13 @@ __attribute__((section(".itcm_sec_code"))) void sys_hal_enter_low_voltage(void)
 	{
 		sys_hal_power_on_and_select_rosc(lpo_src);
 	}
+	#if CONFIG_PM_LV_TIME_COST_DEBUG
+	{
+		pm_lv_rtc_tick_set(PM_LV_ENTER_STEP_2, pm_rtc_cur_tick_get());
+		pm_wakeup_lv_rtc_tick_clear();
+	}
+	#endif
+
 	/*vio voltage*/
 	// violdosel = sys_ll_get_ana_reg8_violdosel();
 	// sys_ll_set_ana_reg8_violdosel(PM_LOW_VOL_VIO_LDO_SEL); //0x0:2.9V vio voltage
@@ -959,6 +968,11 @@ __attribute__((section(".itcm_sec_code"))) void sys_hal_enter_low_voltage(void)
 /*--------------------wake up---------------------*/
 
 /*-----------restore voltage  start----------------*/
+	#if CONFIG_PM_LV_TIME_COST_DEBUG
+	{
+		pm_lv_rtc_tick_set(PM_LV_WAKEUP_STEP_0,pm_rtc_cur_tick_get());
+	}
+	#endif
 	sys_hal_enable_spi_latch();
 	/*aon voltage*/
 	for(ustep = PM_LOW_VOL_AON_LDO_SEL+1; ustep <= valoldosel; ustep++)
