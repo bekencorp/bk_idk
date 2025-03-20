@@ -16,3 +16,4 @@ Bootloader (TBC)
    AB分区位置无关的相关接口介绍 <bk_upgrade_api_introduction>
    AB分区位置无关的hash功能验证流程介绍 <bk_hash_process_introduction>
    AB的bootloader镜像更新介绍 <bk_ab_bootloader_imag_update_introduction>
+   增加AB分区功能或建立AB工程的介绍<bk_introduce_ab_functionality_or_establishing_ab_project>

@@ -16,3 +16,4 @@ Bootloader (TBC)
    ab_position_independent_upgrade_api_introduction <bk_upgrade_api_introduction>
    ab_position_independent_hash_process_introduction <bk_hash_process_introduction>
    ab_bootloader_imag_update_introduction <bk_ab_bootloader_imag_update_introduction>
+   introduce_ab_functionality_or_establishing_ab_project<bk_introduce_ab_functionality_or_establishing_ab_project>
