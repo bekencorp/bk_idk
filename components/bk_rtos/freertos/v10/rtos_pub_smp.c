@@ -417,8 +417,6 @@ bk_err_t rtos_deinit_mutex( beken_mutex_t* mutex )
     return kNoErr;
 }
 
-#if CONFIG_FREERTOS_USE_RECURSIVE_MUTEXES
-
 bk_err_t rtos_init_recursive_mutex( beken_mutex_t* mutex )
 {
     *mutex = xSemaphoreCreateRecursiveMutex();
@@ -458,7 +456,6 @@ bk_err_t rtos_deinit_recursive_mutex( beken_mutex_t* mutex )
     return rtos_deinit_mutex(mutex);
 }
 
-#endif
 
 bk_err_t rtos_init_queue( beken_queue_t* queue, const char* name, uint32_t message_size, uint32_t number_of_messages )
 {

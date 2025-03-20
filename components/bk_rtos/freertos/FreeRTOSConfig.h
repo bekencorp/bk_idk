@@ -177,9 +177,7 @@
 #if (CONFIG_FREERTOS_USE_QUEUE_SETS)
 #define configUSE_QUEUE_SETS                        1
 #endif
-#if CONFIG_FREERTOS_POSIX || CONFIG_FREERTOS_USE_RECURSIVE_MUTEXES
 #define configUSE_RECURSIVE_MUTEXES                  1
-#endif
 
 
 /* Utilities */

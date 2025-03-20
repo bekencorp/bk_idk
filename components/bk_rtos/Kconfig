@@ -87,10 +87,6 @@ menu "Bk_rtos"
 			help
 				Use tickless idle, can be 0/1/2
 
-        config FREERTOS_USE_RECURSIVE_MUTEXES
-            bool "FreeRTOS recursive mutex"
-            default n
-
 		config FREERTOS_TICK_RATE_HZ
 			depends on FREERTOS
 			int "Set FreeRTOS tick count per second"

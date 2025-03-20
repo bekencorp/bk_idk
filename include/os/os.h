@@ -548,6 +548,53 @@ bk_err_t rtos_unlock_mutex(beken_mutex_t *mutex);
   * @return   kGeneralErr   : if an error occurred
   */
 bk_err_t rtos_deinit_mutex(beken_mutex_t *mutex);
+
+/** @brief    Creates a new recursive mutex type semaphore instance
+  *
+  * @param    mutex : a pointer to the new recursive mutex handle
+  *
+  * @return   kNoErr        : on success.
+  * @return   kGeneralErr   : if an error occurred
+  */
+bk_err_t rtos_init_recursive_mutex( beken_mutex_t* mutex );
+
+/** @brief    Obtains the lock on a recursive mutex (A mutex 
+  *           used recursively can be 'taken' repeatedly by the owner)
+  * 
+  * @note     do not call this API when interrupts are disabled (may cause the 
+  *           system to enter a deadlock or abnormal status)
+  *
+  * @param    mutex : a pointer to the new recursive mutex handle
+  *
+  * @return   kNoErr        : on success.
+  * @return   kGeneralErr   : if an error occurred
+  */
+bk_err_t rtos_lock_recursive_mutex( beken_mutex_t* mutex );
+
+/** @brief    Releases the lock on a recursive mutex (A mutex 
+  *           used recursively can be 'taken' repeatedly by the owner)
+  * 
+  * @note     do not call this API when interrupts are disabled (may cause the 
+  *           system to enter a deadlock or abnormal status)
+  *
+  * @param    mutex : a pointer to the new recursive mutex handle
+  *
+  * @return   kNoErr        : on success.
+  * @return   kGeneralErr   : if an error occurred
+  */
+bk_err_t rtos_unlock_recursive_mutex( beken_mutex_t* mutex );
+
+/** @brief    De-initialise a recursive mutex
+  *
+  * @Details  Deletes a mutex created with @ref rtos_init_recursive_mutex
+  *
+  * @param    mutex : a pointer to the recursive mutex handle
+  *
+  * @return   kNoErr        : on success.
+  * @return   kGeneralErr   : if an error occurred
+  */
+bk_err_t rtos_deinit_recursive_mutex( beken_mutex_t* mutex );
+
 /**
   * @}
   */
@@ -852,12 +899,6 @@ bool rtos_local_irq_disabled(void);
 bool rtos_is_scheduler_suspended(void);
 void rtos_wait_for_interrupt(void);
 void rtos_shutdown(void);
-
-bk_err_t rtos_init_recursive_mutex( beken_mutex_t* mutex );
-bk_err_t rtos_lock_recursive_mutex( beken_mutex_t* mutex );
-bk_err_t rtos_unlock_recursive_mutex( beken_mutex_t* mutex );
-bk_err_t rtos_deinit_recursive_mutex( beken_mutex_t* mutex );
-
 
 #if (CONFIG_FREERTOS_SMP_TEMP)
 /*TODO: Enhanced implementation of cohesion*/
