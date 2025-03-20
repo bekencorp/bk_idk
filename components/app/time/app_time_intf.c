@@ -77,7 +77,7 @@ int app_time_rtc_ntp_sync_init(void)
 	                         5,
 	                         "ntp_sync_task",
 	                         (beken_thread_function_t)ntp_sync_thread_enrty,
-	                         4 * 1024,
+	                         1.5 * 1024,
 	                         NULL);
 	if (ret)
 	{
