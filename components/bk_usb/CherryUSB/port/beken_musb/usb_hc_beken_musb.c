@@ -176,13 +176,13 @@ void USBH_IRQHandler(void);//#define USBH_IRQHandler USB_INT_Handler
  * 1024bytes & 512bytes:
  */
 #define SZ_512_TO_1024_EP_BASE_INDEX 1
-#define SZ_512_TO_1024_EP_MAX_INDEX USBEPToIndex(USB_EP_7)
+#define SZ_512_TO_1024_EP_MAX_INDEX USBEPToIndex(USB_EP_4)
 #define SZ_512_TO_1024_E_OFFSET 1024
 
 /*
  * 64bytes:
  */
-#define SZ_8_TO_64_EP_BASE_INDEX USBEPToIndex(USB_EP_7)
+#define SZ_8_TO_64_EP_BASE_INDEX USBEPToIndex(USB_EP_4)
 #define SZ_8_TO_64_EP_MAX_INDEX CONIFG_USB_MUSB_PIPE_NUM
 #define SZ_8_TO_64_E_OFFSET 64
 
