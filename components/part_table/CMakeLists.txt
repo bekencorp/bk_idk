@@ -91,6 +91,7 @@ list(APPEND bk7258xx_supported_targets
 set(bk7258xx_supported_projects)
 list(APPEND bk7258xx_supported_projects
 	"app"
+	"app_psram_4mb"
 	"smp"
 	"bluetooth/central"
 	"bluetooth/headset"

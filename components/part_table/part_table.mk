@@ -45,6 +45,7 @@ bk7258xx_supported_projects := $(bk7258xx_supported_projects) thirdparty/agora t
 bk7258xx_supported_projects := $(bk7258xx_supported_projects) phy/cert_test
 bk7258xx_supported_projects := $(bk7258xx_supported_projects) wifi/repeater
 bk7258xx_supported_projects := $(bk7258xx_supported_projects) at
+bk7258xx_supported_projects := $(bk7258xx_supported_projects) app_psram_4mb
 bk7258xx_supported_projects := $(bk7258xx_supported_projects) customization/config_ab
 bk7258xx_supported_projects := $(bk7258xx_supported_projects) matter
 bk7258xx_supported_projects := $(bk7258xx_supported_projects) agora_ai agora_wanson_ai
