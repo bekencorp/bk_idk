@@ -504,6 +504,18 @@ bk_err_t bk_pwm_capture_stop(pwm_chan_t chan);
 uint32_t bk_pwm_capture_get_value(pwm_chan_t chan);
 
 /**
+ * @brief     Get the capture period and duty cycle
+ *
+ * @attention The caller need to make sure the parameter chan is correct!
+ *
+ * @param chan PWM channel
+ * @param timeout_ms timeout ms
+ *
+ * @return period and duty cycle
+ */
+uint32_t bk_pwm_capture_get_period_duty_cycle(pwm_chan_t chan, uint32_t timeout_ms);
+
+/**
  * @brief     Set pwm channel as timer mode
  *
  * @attention The caller need to make sure the parameter chan is correct!

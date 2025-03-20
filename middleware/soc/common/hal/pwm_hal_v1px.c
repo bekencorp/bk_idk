@@ -42,6 +42,8 @@
 #include "pwm_hal_v1px.h"
 #include "pwm_ll.h"
 
+static const uint8_t s_ccxif_positions[6] = {0, 1, 3, 4, 6, 7};
+
 bk_err_t pwm_hal_init(pwm_hal_t *hal)
 {
 	hal->hw = (pwm_hw_t *)PWM_LL_REG_BASE(hal->id);
@@ -943,9 +945,14 @@ void pwm_hal_clr_pwm_sr_ccxif(pwm_hal_t *hal, uint32_t ccx)
 	pwm_ll_clr_pwm_sr_ccxif(hal->id, ccx);
 }
 
-uint32_t pwm_hal_get_pwm_sr_ccxif(pwm_hal_t *hal, uint32_t ccx)
+uint32_t pwm_hal_get_pwm_sr_ccxif(pwm_hal_t *hal, uint32_t hw_ch, uint32_t int_status)
 {
-	return pwm_ll_get_pwm_sr_ccxif(hal->id, ccx);
+	if (hw_ch > 5) {
+		return 0;
+	}
+
+	uint8_t ccxif_bit_position = s_ccxif_positions[hw_ch];
+	return (int_status & BIT(ccxif_bit_position) ? 1 : 0);
 }
 
 void pwm_hal_clr_pwm_sr_multi_ccxif(pwm_hal_t *hal, uint32_t multi)
@@ -2397,6 +2404,32 @@ uint32_t pwm_hal_get_tim_arr(pwm_hal_t *hal, pwm_ch_t hw_ch)
 	return val;
 }
 
+void pwm_hal_set_cc1ie(pwm_hal_t *hal, pwm_chan_t hw_ch, uint32_t value)
+{
+	switch (hw_ch) {
+	case 0:
+		pwm_ll_set_pwm_dier_cc1ie(hal->id, value);
+		break;
+	case 1:
+		pwm_ll_set_pwm_dier_cc2ie(hal->id, value);
+		break;
+	case 2:
+		pwm_ll_set_pwm_dier_cc4ie(hal->id, value);
+		break;
+	case 3:
+		pwm_ll_set_pwm_dier_cc5ie(hal->id, value);
+		break;
+	case 4:
+		pwm_ll_set_pwm_dier_cc7ie(hal->id, value);
+		break;
+	case 5:
+		pwm_ll_set_pwm_dier_cc8ie(hal->id, value);
+		break;
+	default:
+		break;
+	}
+}
+
 uint32_t pwm_hal_get_tim_ccr1(pwm_hal_t *hal, pwm_ch_t hw_ch)
 {
 	uint32_t val = 0;
@@ -2443,3 +2476,186 @@ uint32_t pwm_hal_get_tim_ccr2(pwm_hal_t *hal, pwm_ch_t hw_ch)
 	return val;
 }
 
+uint32_t pwm_hal_get_ccr1_shadow(pwm_hal_t *hal, pwm_chan_t hw_ch)
+{
+	switch (hw_ch) {
+	case 0:
+		return pwm_ll_get_ccr1_shad_ccr1_shad(hal->id);
+	case 1:
+		return pwm_ll_get_ccr2_shad_ccr2_shad(hal->id);
+	case 2:
+		return pwm_ll_get_ccr4_shad_ccr4_shad(hal->id);
+	case 3:
+		return pwm_ll_get_ccr5_shad_ccr5_shad(hal->id);
+	case 4:
+		return pwm_ll_get_ccr7_shad_ccr7_shad(hal->id);
+	case 5:
+		return pwm_ll_get_ccr8_shad_ccr8_shad(hal->id);
+	default:
+		return 0;
+	}
+
+	return 0;
+}
+
+uint32_t pwm_hal_get_ccmr_chan_polarity(pwm_hal_t *hal, pwm_chan_t hw_ch)
+{
+	switch(hw_ch) {
+	case 0:
+		return pwm_hal_get_pwm_ccmr_ch1p(hal);
+	case 1:
+		return pwm_hal_get_pwm_ccmr_ch2p(hal);
+	case 2:
+		return pwm_hal_get_pwm_ccmr_ch3p(hal);
+	case 3:
+		return pwm_hal_get_pwm_ccmr_ch4p(hal);
+	case 4:
+		return pwm_hal_get_pwm_ccmr_ch5p(hal);
+	case 5:
+		return pwm_hal_get_pwm_ccmr_ch6p(hal);
+	default:
+		return 0;
+	}
+}
+
+void pwm_hal_set_tim_trios(pwm_hal_t *hal, pwm_chan_t hw_ch, uint32_t trios_val)
+{
+	switch(hw_ch) {
+	case 0:
+	case 1:
+		pwm_ll_set_pwm_cr2_trios1(hal->id, trios_val);
+		break;
+	case 2:
+	case 3:
+		pwm_ll_set_pwm_cr2_trios2(hal->id, trios_val);
+		break;
+	case 4:
+	case 5:
+		pwm_ll_set_pwm_cr2_trios3(hal->id, trios_val);
+		break;
+	default:
+		break;
+	}
+}
+
+void pwm_hal_set_tim_sms(pwm_hal_t *hal, pwm_chan_t hw_ch, uint32_t sms_val)
+{
+	switch(hw_ch) {
+	case 0:
+	case 1:
+		pwm_ll_set_smcr_sms1(hal->id, sms_val);
+		break;
+	case 2:
+	case 3:
+		pwm_ll_set_smcr_sms2(hal->id, sms_val);
+		break;
+	case 4:
+	case 5:
+		pwm_ll_set_smcr_sms3(hal->id, sms_val);
+		break;
+	default:
+		break;
+	}
+}
+
+void pwm_hal_set_tim_trigger_source(pwm_hal_t *hal, pwm_chan_t hw_ch, uint32_t ts_val)
+{
+	switch(hw_ch) {
+	case 0:
+	case 1:
+		pwm_ll_set_smcr_ts1(hal->id, ts_val);
+		break;
+	case 2:
+	case 3:
+		pwm_ll_set_smcr_ts2(hal->id, ts_val);
+		break;
+	case 4:
+	case 5:
+		pwm_ll_set_smcr_ts3(hal->id, ts_val);
+		break;
+	default:
+		break;
+	}
+}
+
+bk_err_t pwm_hal_init_capture(pwm_chan_t chan, pwm_capture_edge_t edge)
+{
+	uint32_t input_polarity = 0;
+	uint32_t unit_id = chan / SOC_PWM_CHAN_NUM_PER_UNIT;
+	uint32_t hw_ch = chan % SOC_PWM_CHAN_NUM_PER_UNIT;
+
+	if (edge == PWM_CAPTURE_POS) {
+		input_polarity = 0;
+	} else if (edge == PWM_CAPTURE_NEG) {
+		input_polarity = 1;
+	} else {
+		input_polarity = 2;
+	}
+
+	switch(hw_ch) {
+	case 0:
+		pwm_ll_set_prescaler_psc1(unit_id, 0x0);
+		pwm_ll_set_tim1_arr_value(unit_id, 0xffffffff);
+		pwm_ll_set_pwm_cr1_urs1(unit_id, 1);
+		pwm_ll_set_pwm_ccmr_ch1p(unit_id, input_polarity);
+		pwm_ll_set_pwm_ccmr_ch1e(unit_id, 1);
+		pwm_ll_set_pwm_ccmr_tim1ccm(unit_id, 1); // CAPTURE mode
+		pwm_ll_set_smcr_sms1(unit_id, 0x5);      // clear timer every capture
+		pwm_ll_set_smcr_ts1(unit_id, 0x0);       // select pwm_i[0]
+		break;
+	case 1:
+		pwm_ll_set_prescaler_psc1(unit_id, 0x0);
+		pwm_ll_set_tim1_arr_value(unit_id, 0xffffffff);
+		pwm_ll_set_pwm_cr1_urs1(unit_id, 1);
+		pwm_ll_set_pwm_ccmr_ch2p(unit_id, input_polarity);
+		pwm_ll_set_pwm_ccmr_ch2e(unit_id, 1);
+		pwm_ll_set_pwm_ccmr_tim1ccm(unit_id, 1); // CAPTURE mode
+		pwm_ll_set_smcr_sms1(unit_id, 0x5);      // clear timer every capture
+		pwm_ll_set_smcr_ts1(unit_id, 0x1);       // select pwm_i[1]
+		break;
+	case 2:
+		pwm_ll_set_prescaler_psc2(unit_id, 0x0);
+		pwm_ll_set_tim2_arr_value(unit_id, 0xffffffff);
+		pwm_ll_set_pwm_cr1_urs2(unit_id, 1);
+		pwm_ll_set_pwm_ccmr_ch3p(unit_id, input_polarity);
+		pwm_ll_set_pwm_ccmr_ch3e(unit_id, 1);
+		pwm_ll_set_pwm_ccmr_tim2ccm(unit_id, 1); // CAPTURE mode
+		pwm_ll_set_smcr_sms2(unit_id, 0x5);      // clear timer every capture
+		pwm_ll_set_smcr_ts2(unit_id, 0x0);       // select pwm_i[0]
+		break;
+	case 3:
+		pwm_ll_set_prescaler_psc2(unit_id, 0x0);
+		pwm_ll_set_tim2_arr_value(unit_id, 0xffffffff);
+		pwm_ll_set_pwm_cr1_urs2(unit_id, 1);
+		pwm_ll_set_pwm_ccmr_ch4p(unit_id, input_polarity);
+		pwm_ll_set_pwm_ccmr_ch4e(unit_id, 1);
+		pwm_ll_set_pwm_ccmr_tim2ccm(unit_id, 1); // CAPTURE mode
+		pwm_ll_set_smcr_sms2(unit_id, 0x5);      // clear timer every capture
+		pwm_ll_set_smcr_ts2(unit_id, 0x1);       // select pwm_i[1]
+		break;
+	case 4:
+		pwm_ll_set_prescaler_psc3(unit_id, 0x0);
+		pwm_ll_set_tim3_arr_value(unit_id, 0xffffffff);
+		pwm_ll_set_pwm_cr1_urs3(unit_id, 1);
+		pwm_ll_set_pwm_ccmr_ch5p(unit_id, input_polarity);
+		pwm_ll_set_pwm_ccmr_ch5e(unit_id, 1);
+		pwm_ll_set_pwm_ccmr_tim3ccm(unit_id, 1); // CAPTURE mode
+		pwm_ll_set_smcr_sms3(unit_id, 0x5);      // clear timer every capture
+		pwm_ll_set_smcr_ts3(unit_id, 0x0);       // select pwm_i[0]
+		break;
+	case 5:
+		pwm_ll_set_prescaler_psc3(unit_id, 0x0);
+		pwm_ll_set_tim3_arr_value(unit_id, 0xffffffff);
+		pwm_ll_set_pwm_cr1_urs3(unit_id, 1);
+		pwm_ll_set_pwm_ccmr_ch6p(unit_id, input_polarity);
+		pwm_ll_set_pwm_ccmr_ch6e(unit_id, 1);
+		pwm_ll_set_pwm_ccmr_tim3ccm(unit_id, 1); // CAPTURE mode
+		pwm_ll_set_smcr_sms3(unit_id, 0x5);      // clear timer every capture
+		pwm_ll_set_smcr_ts3(unit_id, 0x1);       // select pwm_i[1]
+		break;
+	default:
+		break;
+	}
+
+	return BK_OK;
+}

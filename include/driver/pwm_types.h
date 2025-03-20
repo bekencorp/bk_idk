@@ -104,12 +104,14 @@ typedef struct {
 	uint32_t period_cycle;     /**< PWM Group period cycle */
 	uint32_t chan1_duty_cycle; /**< Duty cycle of chan1 */
 	uint32_t chan2_duty_cycle; /**< Duty cycle of chan2 */
+	uint32_t psc;              /**< Specifies the prescaler value used to divide the TIM clock */
 } pwm_group_init_config_t;
 
 typedef struct {
 	uint32_t period_cycle;     /**< PWM Group period cycle */
 	uint32_t chan1_duty_cycle; /**< Duty cycle of channel 1 */
 	uint32_t chan2_duty_cycle; /**< Duty cycle of channel 2 */
+	uint32_t psc;              /**< Specifies the prescaler value used to divide the TIM clock */
 } pwm_group_config_t;
 
 typedef struct {

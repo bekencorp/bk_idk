@@ -422,7 +422,7 @@ void pwm_hal_set_pwm_sr_cc8if(pwm_hal_t *hal, uint32_t value);
 /* REG_0x08:pwm_sr->CC9IF:0x8[8],见CC1IF,0x0,W1C*/
 void pwm_hal_set_pwm_sr_cc9if(pwm_hal_t *hal, uint32_t value);
 void pwm_hal_clr_pwm_sr_ccxif(pwm_hal_t *hal, uint32_t ccx);
-uint32_t pwm_hal_get_pwm_sr_ccxif(pwm_hal_t *hal, uint32_t ccx);
+uint32_t pwm_hal_get_pwm_sr_ccxif(pwm_hal_t *hal, uint32_t hw_ch, uint32_t int_status);
 void pwm_hal_clr_pwm_sr_multi_ccxif(pwm_hal_t *hal, uint32_t multi);
 uint32_t pwm_hal_get_pwm_interrupt_status(pwm_hal_t *hal);
 void pwm_hal_clr_interrupt_status(pwm_hal_t *hal, uint32_t int_sts);
@@ -990,11 +990,18 @@ void pwm_hal_set_new_config_way(pwm_hal_t *hal, pwm_ch_t hw_ch, uint32_t value);
 void pwm_hal_set_flip_mode(pwm_hal_t *hal, pwm_ch_t hw_ch, uint32_t value);
 uint32_t pwm_hal_get_flip_mode(pwm_hal_t *hal, pwm_ch_t hw_ch);
 void pwm_hal_set_uie(pwm_hal_t *hal, pwm_ch_t hw_ch, uint32_t value);
+void pwm_hal_set_cc1ie(pwm_hal_t *hal, pwm_chan_t hw_ch, uint32_t value);
 bool pwm_hal_is_uif_triggered(pwm_hal_t *hal, pwm_ch_t hw_ch, uint32_t int_status);
 uint32_t pwm_hal_get_tim_arr(pwm_hal_t *hal, pwm_ch_t hw_ch);
 uint32_t pwm_hal_get_tim_ccr1(pwm_hal_t *hal, pwm_ch_t hw_ch);
 uint32_t pwm_hal_get_tim_ccr2(pwm_hal_t *hal, pwm_ch_t hw_ch);
 void pwm_hal_set_multi_chan_tim_enable(pwm_hal_t *hal, uint32_t hw_ch, uint32_t value);
+void pwm_hal_set_tim_trios(pwm_hal_t *hal, pwm_chan_t hw_ch, uint32_t trios_val);
+bk_err_t pwm_hal_init_capture(pwm_chan_t chan, pwm_capture_edge_t edge);
+uint32_t pwm_hal_get_ccr1_shadow(pwm_hal_t *hal, pwm_chan_t hw_ch);
+uint32_t pwm_hal_get_ccmr_chan_polarity(pwm_hal_t *hal, pwm_chan_t hw_ch);
+void pwm_hal_set_tim_sms(pwm_hal_t *hal, pwm_chan_t hw_ch, uint32_t sms_val);
+void pwm_hal_set_tim_trigger_source(pwm_hal_t *hal, pwm_chan_t hw_ch, uint32_t ts_val);
 
 #if CONFIG_PWM_PM_CB_SUPPORT
 #define pwm_hal_pm_backup(hal, pm_backup) pwm_ll_pm_backup((hal)->id, pm_backup)
