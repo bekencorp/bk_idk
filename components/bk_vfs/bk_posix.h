@@ -7,10 +7,15 @@
 #include "bk_filesystem.h"
 
 #ifdef BK_VFS_COMPAT
+#undef open
 #define open		bk_vfs_open
+#undef close
 #define close		bk_vfs_close
+#undef read
 #define read		bk_vfs_read
+#undef write
 #define write		bk_vfs_write
+#undef lseek
 #define lseek		bk_vfs_lseek
 
 #define unlink		bk_vfs_unlink
@@ -18,9 +23,12 @@
 #define fstat		bk_vfs_fstat
 #define rename		bk_vfs_rename
 
+#undef fsync
 #define fsync		bk_vfs_fsync
 #define ftruncate	bk_vfs_ftruncate
+#ifndef fcntl
 #define fcntl		bk_vfs_fcntl
+#endif
 
 #define mkdir		bk_vfs_mkdir
 #define rmdir		bk_vfs_rmdir

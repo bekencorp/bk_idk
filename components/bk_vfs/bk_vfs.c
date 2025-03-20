@@ -1,3 +1,6 @@
+#include "os/os.h"
+#include "os/str.h"
+#include "os/mem.h"
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
@@ -78,20 +81,29 @@ int bk_vfs_open(const char *path, int oflag) {
 	file->size = 0;
 	file->pos = 0;
 
-	if (file->f_ops && file->f_ops->open) {
-		ret = file->f_ops->open(file, file->path, oflag);
-		if (ret == 0)
-			fd = bk_file_to_fd(file);
-		else
-			bk_file_put(file);
-	} else {
-		bk_set_errno(ENOTSUP);
-		bk_file_put(file);
-	}
+    if (file->f_ops && file->f_ops->open) {
+        ret = file->f_ops->open(file, file->path, oflag);
+        if (ret == 0) {
+            fd = bk_file_to_fd(file);
+        } else {
+            goto cleanup_file;
+        }
+    } else {
+        bk_set_errno(ENOTSUP);
+        goto cleanup_file;
+    }
 
-out : 
+    goto out;
+
+cleanup_file:
+    if (file->path) {
+        os_free(file->path);
+    }
+    bk_file_put(file);
+
+out :
 	if (full_path)
-		free(full_path);
+		os_free(full_path);
 	bk_vfs_unlock();
 
 	return fd;
@@ -113,7 +125,7 @@ int bk_vfs_close(int fd) {
 	}
 
 	if (file->path) {
-		free(file->path);
+		os_free(file->path);
 		file->path = NULL;
 	}
 
@@ -210,7 +222,7 @@ int bk_vfs_unlink(const char *pathname) {
 
 out:
 	if (full_path)
-		free(full_path);
+		os_free(full_path);
 	bk_vfs_unlock();
 
 	return ret;
@@ -243,7 +255,7 @@ int bk_vfs_stat(const char *pathname, struct stat *statbuf) {
 
 out:
 	if (full_path)
-		free(full_path);
+		os_free(full_path);
 	bk_vfs_unlock();
 
 	return ret;
@@ -299,9 +311,9 @@ int bk_vfs_rename(const char *oldpath, const char *newpath) {
 
 out:
 	if (full_path_old)
-		free(full_path_old);
+		os_free(full_path_old);
 	if (full_path_new)
-		free(full_path_new);
+		os_free(full_path_new);
 	bk_vfs_unlock();
 
 	return ret;
@@ -394,7 +406,7 @@ int bk_vfs_mkdir(const char *pathname, mode_t mode) {
 
 out:
 	if (full_path)
-		free(full_path);
+		os_free(full_path);
 	bk_vfs_unlock();
 
 	return ret;
@@ -427,7 +439,7 @@ int bk_vfs_rmdir(const char *pathname) {
 
 out:
 	if (full_path)
-		free(full_path);
+		os_free(full_path);
 	bk_vfs_unlock();
 
 	return ret;
@@ -455,14 +467,14 @@ DIR *bk_vfs_opendir(const char *name) {
 	}
 
 	if (fs->f_ops && fs->f_ops->opendir) {
-		dirp = (bk_dir *)malloc(sizeof(bk_dir));
+		dirp = (bk_dir *)os_malloc(sizeof(bk_dir));
 		if (!dirp) {
 			goto out;
 		}
 		dirp->filesystem = fs;
 		ret = fs->f_ops->opendir(dirp, bk_sub_path(fs->mount_point, full_path));
 		if (ret) {
-			free(dirp);
+			os_free(dirp);
 			dirp = NULL;
 		}
 	} else {
@@ -471,7 +483,7 @@ DIR *bk_vfs_opendir(const char *name) {
 
 out:
 	if (full_path)
-		free(full_path);
+		os_free(full_path);
 	bk_vfs_unlock();
 
 	return (DIR *)dirp;
@@ -496,7 +508,7 @@ int bk_vfs_closedir(DIR *dirp_) {
 		bk_set_errno(ENOTSUP);
 	}
 
-	free(dirp);
+	os_free(dirp);
 	bk_vfs_unlock();
 
 	return ret;
@@ -555,7 +567,7 @@ int bk_vfs_chdir(const char *path) {
 		return -1;
 
 	strcpy(working_directory, full_path);
-	free(full_path);
+	os_free(full_path);
 
 	return 0;
 }

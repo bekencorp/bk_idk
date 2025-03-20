@@ -1,3 +1,6 @@
+#include "os/os.h"
+#include "os/str.h"
+#include "os/mem.h"
 #include <common/bk_include.h>
 
 #if CONFIG_FATFS
@@ -52,10 +55,13 @@ static int _bk_fatfs_mount(struct bk_filesystem *fs, unsigned long mount_flags, 
 	if (idx < 0)
 		return -1;
 
-	bk_ffs = (BK_FATFS *)malloc(sizeof(BK_FATFS));
+	bk_ffs = (BK_FATFS *)os_malloc(sizeof(BK_FATFS) + sizeof(struct bk_fatfs_partition));
 	if (!bk_ffs)
 		return -1;
 	ffs = (FATFS *)bk_ffs;
+
+	struct bk_fatfs_partition *config_backup = (struct bk_fatfs_partition *)((uint32_t)bk_ffs + sizeof(BK_FATFS));
+	memcpy(config_backup, data, sizeof(struct bk_fatfs_partition));
 
 	bk_ffs->vol_str[0] = idx + '0';
 	bk_ffs->vol_str[1] = ':';
@@ -63,7 +69,7 @@ static int _bk_fatfs_mount(struct bk_filesystem *fs, unsigned long mount_flags, 
 
 	ret = f_mount(ffs, bk_ffs->vol_str, 1);
 	if (ret) {
-		free(bk_ffs);
+		os_free(bk_ffs);
 		return -1;
 	}
 
@@ -79,7 +85,7 @@ static int _bk_fatfs_unmount(struct bk_filesystem *fs) {
 	//ret = f_unmount(bk_ffs->vol_str);	// TODO : FR_NOT_ENABLED
 	ret = f_unmount(1, bk_ffs->vol_str, 0);
 
-	free(bk_ffs);
+	os_free(bk_ffs);
 	fs->fs_data = NULL;
 
 	return ret;
@@ -103,7 +109,7 @@ static int _bk_fatfs_mkfs(const char *partition_name, const void *data) {
 	if (idx < 0)
 		return -1;
 
-	temp = malloc(TEMP_SIZE);
+	temp = os_malloc(TEMP_SIZE);
 	if (!temp)
 		return -1;
 
@@ -114,7 +120,7 @@ static int _bk_fatfs_mkfs(const char *partition_name, const void *data) {
 	//ret = f_mkfs(vol_str, NULL, temp, TEMP_SIZE);
 	ret = f_mkfs(vol_str, FM_ANY, 65536, temp, TEMP_SIZE);
 
-	free(temp);
+	os_free(temp);
 	return ret;
 }
 
@@ -142,10 +148,50 @@ static int _bk_fatfs_statfs(struct bk_filesystem *fs, struct statfs *buf) {
 	return 0;
 }
 
+static int _fatfs_compare_config(const struct bk_fatfs_partition *mounted_fs, const struct bk_fatfs_partition *cur_fs)
+{
+	if (mounted_fs->part_type != cur_fs->part_type) {
+		BK_LOGE("vfs", "fatfs mounted type: %d, cur type: %d\r\n", mounted_fs->part_type, cur_fs->part_type);
+		return 1;
+	}
+
+	if (mounted_fs->part_type == FATFS_RAM) {
+		if (mounted_fs->part_ram.start_addr != cur_fs->part_ram.start_addr ||
+			mounted_fs->part_ram.size != cur_fs->part_ram.size) {
+			BK_LOGE("vfs", "fatfs mounted fs info: addr %p, size: %x\r\n", mounted_fs->part_ram.start_addr,
+							mounted_fs->part_ram.size);
+			BK_LOGE("vfs", "fatfs cur fs info: addr %p, size: %x\r\n", cur_fs->part_ram.start_addr,
+							cur_fs->part_ram.size);
+			return 1;
+		}
+	} else if (mounted_fs->part_type == FATFS_DEVICE || mounted_fs->part_type == FATFS_FILE) {
+		if (strcmp(mounted_fs->part_dev.device_name, cur_fs->part_dev.device_name) != 0) {
+			BK_LOGE("vfs", "fatfs mounted fs dev: %s, cur fs dev: %s\r\n", mounted_fs->part_dev.device_name,
+							cur_fs->part_dev.device_name);
+			return 1;
+		}
+	}
+	return 0;
+}
+
+static int _bk_fatfs_check_repeat_mount(struct bk_filesystem *fs, const void *data)
+{
+	struct bk_fatfs_partition *mounted_fs = (struct bk_fatfs_partition *)((uint32_t)(fs->fs_data) + sizeof(BK_FATFS));
+	struct bk_fatfs_partition *cur_fs = (struct bk_fatfs_partition *)data;
+	if (strcmp(mounted_fs->mount_path, cur_fs->mount_path)) {
+		return VFS_DIFFERENT_MOUNT;
+	}
+	if (_fatfs_compare_config(mounted_fs, cur_fs) != 0) {
+		return VFS_EXCEPTION_MOUNT;
+	}
+	return VFS_REPEAT_MOUNT;
+}
+
 static struct bk_filesystem_ops g_fatfs_fs_ops = {
 	.mount = _bk_fatfs_mount,
 	.unmount = _bk_fatfs_unmount,
 	.unmount2 = _bk_fatfs_unmount2,
+	.check_repeat_mount = _bk_fatfs_check_repeat_mount,
 	.mkfs = _bk_fatfs_mkfs,
 	.statfs = _bk_fatfs_statfs,
 };
@@ -188,7 +234,7 @@ static char *get_full_name(struct bk_filesystem *fs, const char *path) {
 
 	bk_ffs = (BK_FATFS *)fs->fs_data;
 
-	full_path = malloc(strlen(path) + 2 + 1);	// 2 for "x:", 1 for '\0'
+	full_path = os_malloc(strlen(path) + 2 + 1);	// 2 for "x:", 1 for '\0'
 	if (!full_path)
 		return NULL;
 
@@ -202,7 +248,7 @@ static int _bk_fatfs_open(struct bk_file *file, const char *path, int oflag) {
 	int ret;
 	char *full_name;
 
-	fil = (FIL *)malloc(sizeof(FIL));
+	fil = (FIL *)os_malloc(sizeof(FIL));
 	if (!fil)
 		return -1;
 
@@ -212,10 +258,10 @@ static int _bk_fatfs_open(struct bk_file *file, const char *path, int oflag) {
 
 	oflag = file_flags_to_fatfs(oflag);
 	ret = f_open(fil, full_name, oflag);
-	free(full_name);
+	os_free(full_name);
 
 	if (ret) {
-		free(fil);
+		os_free(fil);
 		return -1;
 	}
 
@@ -231,7 +277,7 @@ static int _bk_fatfs_close(struct bk_file *file) {
 
 	ret = f_close(fil);
 
-	free(file->f_data);
+	os_free(file->f_data);
 	file->f_data = NULL;
 
 	return ret;
@@ -299,7 +345,7 @@ static int _bk_fatfs_unlink(struct bk_filesystem *fs, const char *pathname) {
 		return -1;
 
 	ret = f_unlink(full_name);
-	free(full_name);
+	os_free(full_name);
 
 	return ret;
 }
@@ -314,7 +360,7 @@ static int _bk_fatfs_stat(struct bk_filesystem *fs, const char *pathname, struct
 		return -1;
 
 	ret = f_stat(full_name, &file_info);
-	free(full_name);
+	os_free(full_name);
 
 	if (ret == 0) {
 		statbuf->st_size = file_info.fsize;
@@ -338,13 +384,13 @@ static int _bk_fatfs_rename(struct bk_filesystem *fs, const char *oldpath, const
 
 	full_name_new = get_full_name(fs, newpath);
 	if (!full_name_new) {
-		free(full_name_old);
+		os_free(full_name_old);
 		return -1;
 	}
 
 	ret = f_rename(full_name_old, full_name_new);
-	free(full_name_old);
-	free(full_name_new);
+	os_free(full_name_old);
+	os_free(full_name_new);
 
 	return ret;
 }
@@ -400,15 +446,15 @@ static int _bk_fatfs_opendir(bk_dir *dir, const char *pathname) {
 	if (!full_name)
 		return -1;
 
-	dp = (DIR *)malloc(sizeof(DIR));
+	dp = (DIR *)os_malloc(sizeof(DIR));
 	if (!dp)
 		return -1;
 
 	ret = f_opendir(dp, full_name);
-	free(full_name);
+	os_free(full_name);
 
 	if (ret) {
-		free(dp);
+		os_free(dp);
 		return -1;
 	}
 
@@ -450,7 +496,7 @@ static int _bk_fatfs_closedir(bk_dir *dir) {
 	dp = (DIR *)dir->dir_data;
 	ret = f_closedir(dp);
 
-	free(dp);
+	os_free(dp);
 	dir->dir_data = NULL;
 
 	return ret;
@@ -465,7 +511,7 @@ static int _bk_fatfs_mkdir(struct bk_filesystem *fs, const char *pathname) {
 		return -1;
 
 	ret = f_mkdir(full_name);
-	free(full_name);
+	os_free(full_name);
 
 	return ret;
 }
@@ -479,7 +525,7 @@ static int _bk_fatfs_rmdir(struct bk_filesystem *fs, const char *pathname) {
 		return -1;
 
 	ret = f_rmdir(full_name);
-	free(full_name);
+	os_free(full_name);
 
 	return ret;
 }

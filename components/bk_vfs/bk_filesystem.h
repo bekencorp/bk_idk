@@ -9,6 +9,10 @@
 
 #include "bk_std_header.h"	//for struct statfs, DIR, dirent
 
+#define VFS_DIFFERENT_MOUNT 0
+#define VFS_REPEAT_MOUNT    1
+#define VFS_EXCEPTION_MOUNT 2
+
 struct bk_filesystem;
 struct bk_file;
 
@@ -24,6 +28,7 @@ struct bk_filesystem_ops {
 	int (*mount)	(struct bk_filesystem *fs, unsigned long mount_flags, const void *data);
 	int (*unmount)	(struct bk_filesystem *fs);
 	int (*unmount2)	(struct bk_filesystem *fs, int flag);
+	int (*check_repeat_mount)(struct bk_filesystem *fs, const void *data);
 
 	int (*mkfs)		(const char *partition_name, const void *data);
 	int (*statfs)	(struct bk_filesystem *fs, struct statfs *buf);
@@ -33,7 +38,7 @@ struct bk_filesystem {
 	char *mount_point;
 	const struct bk_filesystem_ops *fs_ops;
 	struct bk_file_ops *f_ops;
-
+	uint32_t extra_ref_count;
 	void *fs_data;
 };
 

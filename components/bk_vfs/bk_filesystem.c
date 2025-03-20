@@ -1,6 +1,10 @@
+#include "os/os.h"
+#include "os/str.h"
+#include "os/mem.h"
 #include <stdlib.h>
 #include <string.h>
 
+#include "os/os.h"
 #include "bk_filesystem.h"
 #include "bk_fdtable.h"
 #include "bk_file_utils.h"
@@ -35,7 +39,7 @@ int bk_register_filesystem(const char *fs_type, struct bk_filesystem_ops *fs_ops
 
 	for (i = 0; i < MAX_FS_TYPES; i++) {
 		if (g_filesystem_impls[i].fs_type == NULL) {
-			g_filesystem_impls[i].fs_type = strdup(fs_type);
+			g_filesystem_impls[i].fs_type = os_strdup(fs_type);
 			g_filesystem_impls[i].fs_ops = fs_ops;
 			g_filesystem_impls[i].f_ops = f_ops;
 			return 0;
@@ -62,6 +66,32 @@ static struct filesystem_proto *bk_find_filesystem_impl(const char *fs_type) {
 	return NULL;
 }
 
+static int bk_vfs_check_repeat_mount(const char *target, const char *fs_type, struct filesystem_proto *target_impl, const void *data)
+{
+	for (size_t i = 0; i < MAX_FS_MOUNTS; i++) {
+		if (g_filesystem_table[i].mount_point == NULL) {
+			continue;
+		}
+		if (strcmp(target, g_filesystem_table[i].mount_point)) {
+			continue;
+		}
+		// if mount points are same, but fs type not same, trigger assert.
+		if (g_filesystem_table[i].f_ops != target_impl->f_ops) {
+			BK_ASSERT_EX(0, "current file system of mount point %s already mounted, now wants to mount %s fs.\r\n",
+							target, fs_type);
+		}
+
+		if (g_filesystem_table[i].fs_ops->check_repeat_mount != NULL) {
+			if (g_filesystem_table[i].fs_ops->check_repeat_mount(&g_filesystem_table[i], data) == VFS_EXCEPTION_MOUNT) {
+				BK_ASSERT(0);
+			}
+		}
+		g_filesystem_table[i].extra_ref_count++;
+		return VFS_REPEAT_MOUNT;
+	}
+	return VFS_DIFFERENT_MOUNT;
+}
+
 int bk_vfs_mount(const char *source, const char *target,
                  const char *fs_type, unsigned long mount_flags,
                  const void *data) {
@@ -82,6 +112,13 @@ int bk_vfs_mount(const char *source, const char *target,
 	if (!impl->fs_ops->mount) {
 		return -1;
 	}
+	bk_vfs_lock();
+	ret = bk_vfs_check_repeat_mount(target, fs_type, impl, data);
+	if (ret == VFS_REPEAT_MOUNT) {
+		BK_LOGI("vfs", "fs extra count +1\r\n");
+		bk_vfs_unlock();
+		return 0;
+	}
 
 	for (i = 0; i < MAX_FS_MOUNTS; i++) {
 		if (g_filesystem_table[i].mount_point == NULL) {
@@ -91,19 +128,22 @@ int bk_vfs_mount(const char *source, const char *target,
 	}
 
 	if (!fs) {
+		bk_vfs_unlock();
 		return -1;
 	}
 
-	fs->mount_point = strdup(target);
+	fs->mount_point = os_strdup(target);
 	fs->fs_ops = impl->fs_ops;
 	fs->f_ops = impl->f_ops;
 
 	ret = fs->fs_ops->mount(fs, mount_flags, data);
 	if (ret) {
-		free(fs->mount_point);
+		os_free(fs->mount_point);
 		fs->mount_point = NULL;
+		bk_vfs_unlock();
 		return -1;
 	} else {
+		bk_vfs_unlock();
 		return 0;
 	}
 }
@@ -112,7 +152,7 @@ int bk_vfs_umount(const char *target) {
 	struct bk_filesystem *fs = NULL;
 	int ret = -1;
 	int i;
-
+	bk_vfs_lock();
 	for (i = 0; i < MAX_FS_MOUNTS; i++) {
 		if (g_filesystem_table[i].mount_point != NULL) {
 			if (strcmp(g_filesystem_table[i].mount_point, target) == 0) {
@@ -123,16 +163,24 @@ int bk_vfs_umount(const char *target) {
 	}
 
 	if (!fs) {
+		bk_vfs_unlock();
 		return -1;
+	}
+
+	if (fs->extra_ref_count) {
+		fs->extra_ref_count--;
+		BK_LOGI("vfs", "fs extra count -1\r\n");
+		bk_vfs_unlock();
+		return 0;
 	}
 
 	if (fs->fs_ops->unmount) {
 		ret = fs->fs_ops->unmount(fs);
 	}
 	
-	free(fs->mount_point);
+	os_free(fs->mount_point);
 	fs->mount_point = NULL;
-
+	bk_vfs_unlock();
 	return ret;
 }
 
@@ -140,7 +188,7 @@ int bk_vfs_umount2(const char *target, int flags) {
 	struct bk_filesystem *fs = NULL;
 	int ret = -1;
 	int i;
-
+	bk_vfs_lock();
 	for (i = 0; i < MAX_FS_MOUNTS; i++) {
 		if (g_filesystem_table[i].mount_point != NULL) {
 			if (strcmp(g_filesystem_table[i].mount_point, target) == 0) {
@@ -151,16 +199,24 @@ int bk_vfs_umount2(const char *target, int flags) {
 	}
 
 	if (!fs) {
+		bk_vfs_unlock();
 		return -1;
+	}
+
+	if (fs->extra_ref_count) {
+		BK_LOGI("vfs", "fs extra count -1\r\n");
+		fs->extra_ref_count--;
+		bk_vfs_unlock();
+		return 0;
 	}
 
 	if (fs->fs_ops->unmount2) {
 		ret = fs->fs_ops->unmount2(fs, flags);
 	}
 	
-	free(fs->mount_point);
+	os_free(fs->mount_point);
 	fs->mount_point = NULL;
-
+	bk_vfs_unlock();
 	return ret;
 }
 
