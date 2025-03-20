@@ -722,6 +722,31 @@ void cli_usb_cdc_acm_demo_ops(char *pcWriteBuffer, int xWriteBufferLen, int argc
 
 #endif
 
+#if CONFIG_USB_DEVICE && CONFIG_USB_HID
+extern void bk_usbd_hid_mouse_init(void);
+extern void bk_usbd_hid_mouse_deinit(void);
+extern void bk_usbd_hid_mouse_cps_check_test(uint8_t c_button);
+
+void cli_usbd_hid_ops(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	if (os_strcmp(argv[1], "mouse_init") == 0) {
+		bk_usbd_hid_mouse_init();
+	} else if (os_strcmp(argv[1], "mouse_deinit") == 0) {
+		bk_usbd_hid_mouse_deinit();
+	} else if (os_strcmp(argv[1], "mouse_left_test") == 0) {
+		bk_usbd_hid_mouse_cps_check_test(0x1 << 0);
+	} else if (os_strcmp(argv[1], "mouse_right_test") == 0) {
+		bk_usbd_hid_mouse_cps_check_test(0x1 << 1);
+	} else if (os_strcmp(argv[1], "mouse_middle_test") == 0) {
+		bk_usbd_hid_mouse_cps_check_test(0x1 << 2);
+	} else {
+		cli_usb_help();
+		return;
+	}
+
+}
+#endif
+
 void cli_usb_base_ops(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
 	if (argc < 2) {
@@ -789,6 +814,10 @@ const struct cli_command usb_host_clis[] = {
 
 #if CONFIG_USB_CDC_ACM_DEMO
 	{"usb_cdc", "usb_cdc_acm_demo ", cli_usb_cdc_acm_demo_ops},
+#endif
+
+#if CONFIG_USB_DEVICE && CONFIG_USB_HID
+	{"usbd_hid", "usbd_hid mouse_init|mouse_deinit|mouse_test", cli_usbd_hid_ops},
 #endif
 
 	{"usb", "usb driver_init|driver_deinit|power[gpio_id ops]|open_host|open_dev|close", cli_usb_base_ops},
