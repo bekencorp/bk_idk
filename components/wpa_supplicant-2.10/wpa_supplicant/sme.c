@@ -31,6 +31,8 @@
 #include "sme.h"
 #include "hs20_supplicant.h"
 #include "wpa_psk_cache.h"
+#include <modules/wifi_types.h>
+#include "bk_wifi.h"
 
 #define SME_AUTH_TIMEOUT 5
 #define SME_ASSOC_TIMEOUT 5
@@ -1340,6 +1342,11 @@ void sme_external_auth_mgmt_rx(struct wpa_supplicant *wpa_s,
 			header->u.auth.variable,
 			len - auth_length, 1, header->sa);
 		if (res < 0) {
+			wifi_linkstate_reason_t state = mhdr_get_station_status();
+			state.state = WIFI_LINKSTATE_STA_DISCONNECTED;
+			state.reason_code = WIFI_REASON_WRONG_PASSWORD;
+
+			mhdr_set_station_status(state);
 			/* Notify failure to the driver */
 			sme_send_external_auth_status(
 				wpa_s, WLAN_STATUS_UNSPECIFIED_FAILURE);
