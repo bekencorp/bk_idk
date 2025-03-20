@@ -148,9 +148,16 @@ typedef struct
 static pm_cb_module_cfg_t s_pm_cb_module_cfg;
 static beken_semaphore_t s_sync_sema = NULL;
 
-#if 1
+
 uint32_t pm_wake_int_flag2;
-#endif
+
+static uint32_t s_before_low_vol_pd     =  0;
+static uint32_t s_before_low_vol_lpo    =  0;
+static uint32_t s_before_low_vol_psram  =  0;
+
+static uint32_t s_after_low_vol_pd      =  0;
+static uint32_t s_after_low_vol_lpo     =  0;
+static uint32_t s_after_low_vol_psram   =  0;
 /*=====================VARIABLE SECTION END=================*/
 
 /*================FUNCTION DECLARATION SECTION START========*/
@@ -999,15 +1006,14 @@ bk_err_t bk_pm_module_vote_sleep_ctrl(pm_sleep_module_name_e module, uint32_t sl
 			s_bt_system_wakeup_param.wifi_bt_wakeup = BT_WAKEUP;
 			s_pm_wakeup_source |= 0x1 << PM_WAKEUP_SOURCE_INT_SYSTEM_WAKE;
 			s_bt_system_wakeup_param.sleep_time = ((sleep_time * bk_rtc_get_ms_tick_count()) / 1000) + 1; // bt provide sleep time convent to 32k tick;+1:protect the precision miss
-#if CONFIG_AON_RTC
+			#if CONFIG_AON_RTC
 			s_bt_need_wakeup_time = bk_aon_rtc_get_current_tick(AON_RTC_ID_1) + s_bt_system_wakeup_param.sleep_time;
-#endif
+			#endif
 			/*set bt wakeup source*/
 			sys_drv_enable_bt_wakeup_source();
 		}
 		else if (module == PM_SLEEP_MODULE_NAME_WIFIP_MAC)
 		{
-			// s_wifi_system_wakeup_param.wifi_bt_wakeup = WIFI_WAKEUP;
 			s_pm_wakeup_source |= 0x1 << PM_WAKEUP_SOURCE_INT_SYSTEM_WAKE;
 			sys_drv_enable_mac_wakeup_source();
 		}
@@ -1026,7 +1032,6 @@ bk_err_t bk_pm_module_vote_sleep_ctrl(pm_sleep_module_name_e module, uint32_t sl
 			s_bt_need_wakeup_time = 0;
 			/*disable bt wakeup source*/
 			aon_pmu_drv_clear_wakeup_source(WAKEUP_SOURCE_INT_BT);
-			// os_printf("bt exit sleep\r\n");
 		}
 		else if (module == PM_SLEEP_MODULE_NAME_WIFIP_MAC)
 		{
@@ -1626,7 +1631,9 @@ void pm_low_voltage_bsp_restore(void)
 static void pm_low_voltage_resource_restore()
 {
 	pm_dev_id_e dev_id = 0;
-
+	#if CONFIG_PM_LV_TIME_COST_DEBUG
+	pm_lv_rtc_tick_set(PM_LV_WAKEUP_STEP_1,pm_rtc_cur_tick_get());
+	#endif
 #if CONFIG_BAKP_POWER_DOMAIN_PM_CONTROL
 	bk_pm_module_vote_power_ctrl(POWER_SUB_MODULE_NAME_BAKP_PM, PM_POWER_MODULE_STATE_ON);
 #endif
@@ -1660,6 +1667,10 @@ static void pm_low_voltage_resource_restore()
 			}
 		}
 	}
+	#if CONFIG_PM_LV_TIME_COST_DEBUG
+	pm_lv_rtc_tick_set(PM_LV_WAKEUP_STEP_2,pm_rtc_cur_tick_get());
+	#endif
+
 }
 
 static uint32_t pm_low_voltage_process()
@@ -1674,17 +1685,39 @@ static uint32_t pm_low_voltage_process()
 #if CONFIG_AON_RTC
 	entry_tick = bk_aon_rtc_get_current_tick(AON_RTC_ID_1);
 #endif
+
+	#if CONFIG_PM_LV_TIME_COST_DEBUG
+	pm_enter_lv_rtc_tick_clear();
+	pm_lv_rtc_tick_set(PM_LV_ENTER_STEP_0,pm_rtc_cur_tick_get());
+	#endif
+
 	pm_low_voltage_resource_set();
+
+	#if CONFIG_PM_LV_TIME_COST_DEBUG
+	pm_lv_rtc_tick_set(PM_LV_ENTER_STEP_1,pm_rtc_cur_tick_get());
+	#endif
+	/*Debug pd,lpo,psram start*/
+	s_before_low_vol_pd  = REG_READ(PM_DEBUG_SYS_REG_BASE+0x10*4);
+	s_before_low_vol_lpo = REG_READ(PM_DEBUG_PMU_REG_BASE+0x41*4);
+	s_before_low_vol_psram = REG_READ(PM_DEBUG_SYS_REG_BASE+0x4d*4);
+	/*Debug pd,lpo,psram end*/
 
 	pm_enter_low_voltage();
 
+	/*Debug pd,lpo,psram start*/
+	s_after_low_vol_pd  = REG_READ(PM_DEBUG_SYS_REG_BASE+0x10*4);
+	s_after_low_vol_lpo = REG_READ(PM_DEBUG_PMU_REG_BASE+0x41*4);
+	s_after_low_vol_psram = REG_READ(PM_DEBUG_SYS_REG_BASE+0x4d*4);
+	/*Debug pd,lpo,psram end*/
 	pm_low_voltage_resource_restore();
 	if (s_debug_en & 0x2)
 		os_printf("low voltage int open before\r\n");
 
+
 #if CONFIG_AON_RTC
 	exit_tick = bk_aon_rtc_get_current_tick(AON_RTC_ID_1);
 	sleep_tick = exit_tick - entry_tick;
+
 #endif
 	rtos_exit_critical(int_level);
 
@@ -2432,8 +2465,15 @@ void pm_debug_ctrl(uint32_t debug_en)
 		os_printf("pm ahpb,bakp:0x%x 0x%x\r\n",s_pm_ahpb_pm_state,s_pm_bakp_pm_state);
 		os_printf("pm low vol[module:0x%llx] [need module:0x%llx]\r\n",s_pm_sleeped_modules,s_pm_enter_low_vol_modules);
 		os_printf("pm deepsleep[module:0x%x][need module:0x%x]\r\n",s_pm_off_modules,s_pm_enter_deep_sleep_modules);
-		os_printf("pm power,pmu[0x%x][0x%x]\r\n",REG_READ(PM_DEBUG_SYS_REG_BASE+0x10*4),REG_READ(PM_DEBUG_PMU_REG_BASE+0x41*4));
-
+		os_printf("pm power,pmu[0x%x][0x%x][%d],[0x%x][0x%x][0x%x],[0x%x][0x%x][0x%x]\r\n",REG_READ(PM_DEBUG_SYS_REG_BASE+0x10*4),REG_READ(PM_DEBUG_PMU_REG_BASE+0x41*4),s_pm_exit_low_vol_wakeup_source,
+																	s_before_low_vol_pd,s_before_low_vol_lpo,s_before_low_vol_psram,
+																	s_after_low_vol_pd,s_after_low_vol_lpo,s_after_low_vol_psram);
+		#if CONFIG_PM_LV_TIME_COST_DEBUG
+		os_printf("pm lv time[%lld][%lld][%lld][%lld]\r\n"	,pm_lv_rtc_interval_get(PM_LV_WAKEUP_STEP_1)
+			                                                ,pm_lv_rtc_interval_get(PM_LV_WAKEUP_STEP_2)
+			                                                ,pm_lv_rtc_interval_get(PM_LV_ENTER_STEP_1)
+			                                                ,pm_lv_rtc_interval_get(PM_LV_ENTER_STEP_2));
+		#endif
 		if(s_pm_ahpb_pm_state > 0)
 		{
 			os_printf("Ahbp not PD[module:0x%x]\r\n",s_pm_ahpb_pm_state);
