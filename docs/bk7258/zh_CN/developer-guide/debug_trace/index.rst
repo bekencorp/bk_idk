@@ -16,6 +16,8 @@ Armino平台BK7258系统调试命令
  - CPU1 log带cpu1标签（异常log除外）
  - 由于内存缓冲区的限制，每条log数据的字节数，要小于128字节。超过这个大小的log都会被shell 模块丢弃，并输出一条 !!some LOGs discarded!! 如果log数量太多，来不及输出导致log堆积，缓冲区用完，也会输出这条提示字符串。
  - 通过串口输入log命令查看当前log配置
+ - 宏CONFIG_UART_ATE_PORT表示使用哪一个PIN管脚检测ATE模式；宏CONFIG_UART_PRINT_PORT表示默认初始化时，LOG的UART口；CONFIG_UART_ATE_PRINT_PORT表示ATE检测时，将LOG的UART口做一次切换（但此时LOG口还没有初始化,初始化时，根据CONFIG_UART_ATE_PRINT_PORT选择）
+   示例：ate识别用uart1的tx，正常应用的日志用uart1，进ate模式后，log及命令行用uart0，配置如下：CONFIG_UART_ATE_PORT=1，CONFIG_UART_PRINT_PORT=1，CONFIG_UART_ATE_PRINT_PORT=0
  - 通过串口输入help命令查看当前支持的调试命令：
 
   ::

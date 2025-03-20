@@ -17,6 +17,8 @@ Armino platform BK7258 system debugging commands
   - CPU1 log has cpu1 label (except exception log)
   - Due to memory buffer limitations, the number of bytes of each log data must be less than 128 bytes. Logs exceeding this size will be discarded by the shell module and a message !!some LOGs discarded!! will be output. If there are too many logs and there is no time to output them, causing log accumulation and the buffer is used up, this prompt string will also be output.
   - Enter the log command through the serial port to view the current log configuration
+  - The macro CONFIG_UART_ATE_PORT indicates which pin to use for detecting the ATE (Automated Test Equipment) mode; the macro CONFIG_UART_PRINT_PORT represents the default UART port for initializing the LOG; CONFIG_UART_ATE_PRINT_PORT signifies that during ATE detection, the LOG UART port should be switched once (but at this point, the LOG port has not been initialized yet; during initialization, the choice for the LOG port is made based on CONFIG_UART_ATE_PRINT_PORT).
+    Example: For ATE identification, use UART1's TX pin, and for normal application logs, use UART1. After entering the ATE mode, the log and command line should use UART0. Configuration is as follows: CONFIG_UART_ATE_PORT=1, CONFIG_UART_PRINT_PORT=1, and CONFIG_UART_ATE_PRINT_PORT=0.
   - Enter the help command through the serial port to view the currently supported debugging commands:
 
   ::
