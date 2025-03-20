@@ -14,6 +14,7 @@ Here introduces the log output method for Armino platform, it also works for mul
  - To check the log settings in the Armino, send the command of 'log' with no params in the input device.
  - To set the log work mode, send the command of 'log' with 1~4 params in the input device.
  - log [1 [3 [0 [0]]]], it is the default setting after reset, the first parameter is the input echo switch(0: disable, 1:enable echo), the 2nd param is the lowest log level that can be output(level 0~5, 5 is the lowest level), the 3rd param controls the log work mode(0:asynchronous,1:synchronous), the 4th param controls 'modlog' work mechnism, the module list is the whitelist or blacklist (0: blacklist, 1: whitelist). This command contains 1~4 params, if the param3 is provided, then param1~2 must be also provided, but param4 can be omitted(so no changes to this setting).
+ - Both disabling the ``CONFIG_SHELL_ASYNCLOG`` macro and using the log cli command can switch to synchronous log. Synchronous log does not use caching mechanism and directly outputs log content to the serial port, which may cause interrupts or critical area execution time to be too long, affecting real-time scheduling. Therefore, it is strongly not recommended to switch to synchronous log
 
 BK7258 Multi-CPU Log Work Flow
 ------------------------------------------

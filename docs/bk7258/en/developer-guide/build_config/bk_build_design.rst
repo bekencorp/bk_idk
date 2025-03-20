@@ -64,12 +64,18 @@ Generate component list
 
     - Find public and private dependencies for each component. Create a subprocess to **execute each component's CMakeLists.txt in script mode.**
       The values of the ``armino_component_register`` REQUIRES and PRIV_REQUIRES parameters are returned to the parent process.
-      This is the component dependency extension (or early extension). **In this step define the variable ``CMAKE_BUILD_EARLY_EXPANSION``**.
+      This is the component dependency extension (or early extension). **In this step define the variable CMAKE_BUILD_EARLY_EXPANSION**.
     - Recursively import individual components based on public and private dependencies.
 
-.. note:
+.. note::
 
-    Each CMakeLists.txt in the component will be executed twice,the first time occurs in the _<generate component list> stage, the purpose is to expand the component dependencies with ``armino_component_register()``, At this point Kconfig is not loaded, so it is not possible to determine whether a component should be loaded or not by the CONFIG_XXX values in Kconfig. TODO. . .
+    Each CMakeLists.txt in the component will be executed twice,the first time occurs in the _<generate component list> stage, the purpose is to expand the component dependencies with ``armino_component_register()``, At this point Kconfig is not loaded, so it is not possible to determine whether a component should be loaded or not by the CONFIG_XXX values in Kconfig.
+    If it is necessary to add component dependencies to the CPU during the generation of the component list stage, the following method can be referred to::
+        
+        armino_build_get_property(target ARMINO_SOC)
+        if ("${target}" STREQUAL "bk7258")
+            list(APPEND depenency_component)
+        endif()
 
 component handling
 ******************
@@ -77,7 +83,7 @@ component handling
   This stage handles components in the build and is the second half of ``armino_build_process()``.
 
   - Load the project configuration from the sdkconfig file and generate the sdkconfig.cmake and sdkconfig.h header files. These two files define configuration variables/macros that can be accessed from build scripts and C/C++ source/header files, respectively.
-  - **Import ``project_include.cmake``for each component.**
+  - **Import project_include.cmake for each component.**
   - Add each component as a subdirectory, processing its CMakeLists.txt. The component CMakeLists.txt calls the registration command ``armino_component_register`` to add source files, import directories, create component libraries, link dependencies, etc.
 
 Finish

@@ -28,7 +28,7 @@ ARMINO 构建系统的列表文件位于 :armino:`/tools/build_tools/cmake` 中�
  除了这些文件，还有两个重要的 CMake 脚本在 :armino:`/tools/build_tools/cmake` 中：
 
     - armino.cmake - 设置构建参数并导入上面列出的核心模块。
-    - project.cmake - 导入 ``armino.cmake``，并提供了一个自定义的``project()``命令，该命令负责处理建立可执行文件时所有的繁重工作。
+    - project.cmake - 导入 ``armino.cmake``，并提供了一个自定义的 ``project()`` 命令，该命令负责处理建立可执行文件时所有的繁重工作。
       包含在标准 ARMINO 项目的顶层 CMakeLists.txt 中。
 
 :armino:`/tools/build_tools/cmake` 中的其它文件都是构建过程中的支持性文件或第三方脚本。
@@ -51,7 +51,7 @@ ARMINO 构建系统的列表文件位于 :armino:`/tools/build_tools/cmake` 中�
         - 设置全局构建参数，即编译选项、编译定义、包括所有组件的 include 目录。
         - 将 :armino:`components` 与 :armino:`middleware` 中的组件添加到构建中。
     - 自定义 ``project()`` 命令的初始部分执行以下步骤：
-        - 在环境变量或 CMake 缓存中设置 ``ARMINO_TARGET`` 以及设置相应要使用的``CMAKE_TOOLCHAIN_FILE``。
+        - 在环境变量或 CMake 缓存中设置 ``ARMINO_TARGET`` 以及设置相应要使用的 ``CMAKE_TOOLCHAIN_FILE`` 。
         - 添加 ``EXTRA_COMPONENTS_DIRS`` 中的组件至构建中
         - 从 ``COMPONENTS``/``EXCLUDE_COMPONENTS``、``SDKCONFIG``、``SDKCONFIG_DEFAULTS`` 等变量中为调用命令 ``armino_build_process()`` 准备参数。
 
@@ -64,13 +64,19 @@ ARMINO 构建系统的列表文件位于 :armino:`/tools/build_tools/cmake` 中�
 
     - 查找每个组件的公共和私有依赖。创建一个子进程，**以脚本模式执行每个组件的 CMakeLists.txt。**
       ``armino_component_register`` REQUIRES 和 PRIV_REQUIRES 参数的值会返回给父进程。
-      这就是组件依赖扩充（或者称早期扩展）。**在这一步中定义变量 ``CMAKE_BUILD_EARLY_EXPANSION``**。
+      这就是组件依赖扩充（或者称早期扩展）。**在这一步中定义变量 CMAKE_BUILD_EARLY_EXPANSION**。
     - 根据公共和私有的依赖关系，递归地导入各个组件。
 
-.. note:
+.. note::
 
     组件中每个 CMakeLists.txt 会被执行两遍，第一遍发生在_<生成组件列表>阶段，的目的是 ``armino_component_register()`` 扩充组件依赖，
-    此时 Kconfig 还未加载，因此，不能通过 Kconfig 中的 CONFIG_XXX 值决定一个组件是否应该加载。 TODO。。。
+    此时 Kconfig 还未加载，因此，不能通过 Kconfig 中的 CONFIG_XXX 值决定一个组件是否应该加载。如果需要在生成组件列表阶段更加cpu添加组件依赖，
+    可以参考如下方式::
+        
+        armino_build_get_property(target ARMINO_SOC)
+        if ("${target}" STREQUAL "bk7236")
+            list(APPEND depenency_component)
+        endif()
 
 组件处理
 ******************
@@ -78,7 +84,7 @@ ARMINO 构建系统的列表文件位于 :armino:`/tools/build_tools/cmake` 中�
   该阶段处理构建中的组件，是 ``armino_build_process()`` 的后半部分。
 
   - 从 sdkconfig 文件中加载项目配置，并生成 sdkconfig.cmake 和 sdkconfig.h 头文件。这两个文件分别定义了可以从构建脚本和 C/C++ 源文件/头文件中访问的配置变量/宏。
-  - **导入各组件的 ``project_include.cmake``**。
+  - **导入各组件的 project_include.cmake**。
   - 将每个组件添加为一个子目录，处理其 CMakeLists.txt。组件 CMakeLists.txt 调用注册命令 ``armino_component_register`` 添加源文件、导入目录、创建组件库、链接依赖关系等。
 
 完成
