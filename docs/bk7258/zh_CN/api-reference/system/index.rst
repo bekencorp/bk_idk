@@ -9,3 +9,4 @@
     操作系统 <os>
     事件机制 <bk_event>
     POSIX <posix/index>
+    多核mailbox <logic_mailbox>

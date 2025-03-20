@@ -9,3 +9,4 @@ SYSTEM
     OS <os>
     EVENT <bk_event>
     POSIX <posix/index>
+    Logic mailbox <logic_mailbox>

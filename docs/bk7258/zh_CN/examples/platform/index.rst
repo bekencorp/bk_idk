@@ -9,3 +9,4 @@
    os <bk_os>
    log_set <bk_log_set>
    power manager <bk_pwr>
+   multi-core mailbox <bk_logic_mailbox>

@@ -79,6 +79,7 @@ INPUT = \
     ../../../include/driver/qspi_psram.h \
     ../../../include/driver/mailbox.h \
     ../../../include/driver/mailbox_types.h \
+	../../../include/driver/mailbox_channel.h \
     ../../../include/driver/hal/hal_mailbox_types.h \
     ../../../include/driver/i2c.h \
     ../../../include/driver/i2c_types.h \
