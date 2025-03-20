@@ -19,8 +19,32 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <modules/pm.h>
-#define PM_DEBUG_CTRL_STATE                    (8)
+#include "modules/pm.h"
+typedef enum
+{
+	PM_LV_WAKEUP_STEP_0 = 0,
+	PM_LV_WAKEUP_STEP_1,
+	PM_LV_WAKEUP_STEP_2,
+	PM_LV_WAKEUP_STEP_3,
+	PM_LV_WAKEUP_STEP_4,
+	PM_LV_WAKEUP_STEP_5,
+	PM_LV_ENTER_STEP_0,
+	PM_LV_ENTER_STEP_1,
+	PM_LV_ENTER_STEP_2,
+	PM_LV_ENTER_STEP_3,
+	PM_LV_ENTER_STEP_4,
+	PM_LV_ENTER_STEP_5,
+	PM_LV_STEP_MAX
+}pm_lv_step_e;
+
+typedef enum
+{
+	PM_LV_MODE_ENTER = 0,
+	PM_LV_MODE_WAKEUP,
+	PM_LV_MODE_MAX
+}pm_lv_mode_e;
+
+#define PM_DEBUG_CTRL_STATE                  (8)
 
 void pm_hardware_init();
 
@@ -50,6 +74,14 @@ void pm_printf_current_temperature(void);
 
 uint64_t pm_cp1_aon_rtc_counter_get();
 
+#if CONFIG_PM_LV_TIME_COST_DEBUG
+__attribute__((section(".iram")))  uint64_t pm_lv_rtc_interval_get(pm_lv_step_e step);
+__attribute__((section(".iram")))  uint64_t pm_lv_rtc_tick_get(pm_lv_step_e step);
+__attribute__((section(".itcm_sec_code")))  bk_err_t pm_lv_rtc_tick_set(pm_lv_step_e step,uint64_t tick);
+__attribute__((section(".iram")))  bk_err_t pm_enter_lv_rtc_tick_clear();
+__attribute__((section(".iram")))  bk_err_t pm_wakeup_lv_rtc_tick_clear();
+__attribute__((section(".iram")))  uint64_t pm_rtc_cur_tick_get();
+#endif
 #ifdef __cplusplus
 }
 #endif
