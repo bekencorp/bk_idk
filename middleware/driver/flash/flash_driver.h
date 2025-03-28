@@ -44,6 +44,7 @@
 #define FLASH_DPLL_DIV_VALUE_SIX         1
 #define FLASH_ManuFacID_POSI             (16)
 #define FLASH_ManuFacID_GD               (0xC8)
+#define FLASH_ManuFacID_TH               (0xCD)
 
 #define FLASH_BLOCK32_SIZE               (0x8000)
 #define FLASH_BLOCK_SIZE                 (0x10000)

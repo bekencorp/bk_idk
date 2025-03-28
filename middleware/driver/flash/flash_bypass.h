@@ -38,6 +38,7 @@ extern "C" {
 #define SPI_STATUS_RXFIFO_RD_READY      (BIT(2))
 
 #define FLASH_ID_GD25Q32C               (0xC84016)
+#define FLASH_ID_TH25Q64                (0xCD6017)
 #define QE_RETRY_TIMES                  (10)
 
 #if CONFIG_SOC_BK7236XX

@@ -13,6 +13,7 @@
 #include <common/bk_assert.h>
 
 #define  TICK_PER_US    26
+#define  PRINT_CNT     100
 beken_thread_t idle_read_flash_handle = NULL;
 beken_thread_t idle_read_psram_handle = NULL;
 
@@ -116,15 +117,13 @@ static bk_err_t test_flash_read_time(volatile uint32_t start_addr, uint32_t len)
 }
 
 #if (CONFIG_SOC_BK7256XX)
-static bk_err_t test_flash_count_time(volatile uint32_t start_addr, uint32_t len, uint32_t test_times, uint32_t mode)
-{
+static bk_err_t test_flash_count_time(volatile uint32_t start_addr, uint32_t len, uint32_t test_times, uint32_t mode,uint32_t print_cnt){
 	uint32_t tmp;
 	u8 buf[256];
 	uint32_t addr = start_addr;
 	uint32_t length = len;
 	extern u64 riscv_get_mtimer(void);
 	uint64_t start_tick, end_tick, tick_cnt = 0;
-	uint32_t print_cnt = 100;
 	uint32_t int_level = 0;
 
 #if CONFIG_WDT_EN
@@ -233,23 +232,16 @@ for(int i = 0; i <= test_times; i++) {
 	return kNoErr;
 }
 #else
-static bk_err_t test_flash_count_time(volatile uint32_t start_addr, uint32_t len, uint32_t test_times, uint32_t mode)
+static bk_err_t test_flash_count_time(volatile uint32_t start_addr, uint32_t len, uint32_t test_times, uint32_t mode,uint32_t print_cnt)
 {
 	uint32_t tmp;
 	u8 buf[256];
 	uint32_t addr = start_addr;
 	uint32_t length = len;
 	int32_t tick_cnt = 0;
-	uint32_t print_cnt = 100;
 	struct timeval rtc_start_time = {0, 0};
 	struct timeval rtc_end_time = {0, 0};
 
-#if CONFIG_WDT_EN
-	bk_wdt_stop();
-#endif
-#if (CONFIG_TASK_WDT)
-	bk_task_wdt_stop();
-#endif
 	tmp = addr + length;
 	bk_flash_set_protect_type(FLASH_PROTECT_NONE);
 
@@ -282,17 +274,20 @@ static bk_err_t test_flash_count_time(volatile uint32_t start_addr, uint32_t len
 		tick_cnt = 1000000 * (rtc_end_time.tv_sec - rtc_start_time.tv_sec) + rtc_end_time.tv_usec - rtc_start_time.tv_usec;
 		if(i % print_cnt == 0)
 			BK_DUMP_OUT("[read %d time] >>>>> cost time: %d us.\r\n", i, tick_cnt);
-	
-	
+
+
 		bk_rtc_gettimeofday(&rtc_start_time, 0);
-		for (addr = start_addr; addr < tmp; addr += 0x1000) {
-			bk_flash_erase_sector(addr);
+		// for (addr = start_addr; addr < tmp; addr += 0x1000) {
+		// 	bk_flash_erase_sector(addr);
+		// }
+		for (addr = start_addr; addr < tmp; addr += 0x10000) {//64K
+			bk_flash_erase_block(addr);
 		}
 		bk_rtc_gettimeofday(&rtc_end_time, 0);
 		tick_cnt = 1000000 * (rtc_end_time.tv_sec - rtc_start_time.tv_sec) + rtc_end_time.tv_usec - rtc_start_time.tv_usec;
 		if(i % print_cnt == 0)
 			BK_DUMP_OUT("[erase %d time] >>>>> cost time: %d us.\r\n", i, tick_cnt);
-	
+
 		//check erase data valid
 		if(i % print_cnt == 0) {
 			for (addr = start_addr; addr < tmp; addr += 256) {
@@ -304,11 +299,11 @@ static bk_err_t test_flash_count_time(volatile uint32_t start_addr, uint32_t len
 				}
 			}
 		}
-	
-	
+
+
 		for (int j = 0; j < 256; j++)
 			buf[j] = j;
-	
+
 		bk_rtc_gettimeofday(&rtc_start_time, 0);
 		for (addr = start_addr; addr < tmp; addr += 256) {
 			bk_flash_write_bytes(addr, (uint8_t *)buf, 256);
@@ -317,7 +312,7 @@ static bk_err_t test_flash_count_time(volatile uint32_t start_addr, uint32_t len
 		tick_cnt = 1000000 * (rtc_end_time.tv_sec - rtc_start_time.tv_sec) + rtc_end_time.tv_usec - rtc_start_time.tv_usec;
 		if(i % print_cnt == 0)
 			BK_DUMP_OUT("[write %d time] >>>>> cost time: %d us.\r\n", i, tick_cnt);
-	
+
 		//check write data valid
 		if(i % print_cnt == 0) {
 			for (addr = start_addr; addr < tmp; addr += 256) {
@@ -329,7 +324,7 @@ static bk_err_t test_flash_count_time(volatile uint32_t start_addr, uint32_t len
 				}
 			}
 		}
-	
+
 		if(mode) {
 			// mode!=0: need protect none, read, earse, write, protect all in each loop
 			// mode=0: need read, earse, write in each loop, not protect
@@ -348,6 +343,12 @@ static bk_err_t test_flash_count_time(volatile uint32_t start_addr, uint32_t len
 				BK_DUMP_OUT("===============================\r\n");
 			}
 		}
+		#if (CONFIG_WDT_EN)
+			bk_wdt_feed();
+		#endif
+		#if (CONFIG_TASK_WDT)
+			bk_task_wdt_feed();
+		#endif
 	}
 
 	bk_rtc_gettimeofday(&rtc_start_time, 0);
@@ -543,7 +544,7 @@ static void flash_command_test(char *pcWriteBuffer, int xWriteBufferLen, int arg
 			rtos_delete_thread(&idle_read_flash_handle);
 			idle_read_flash_handle = NULL;
 			BK_DUMP_OUT("idle_read_flash task stop\n");
-		} 
+		}
 		return;
 	}
 
@@ -597,7 +598,10 @@ static void flash_command_test(char *pcWriteBuffer, int xWriteBufferLen, int arg
 		uint32_t mode = 0;
 		if(argc >= 6)
 			mode = os_strtoul(argv[5], NULL, 16);
-		test_flash_count_time(addr, len, test_times, mode);
+		uint32_t print_cnt = PRINT_CNT;
+		if(argc >= 7)
+			print_cnt = os_strtoul(argv[6], NULL, 10);
+		test_flash_count_time(addr, len, test_times, mode, print_cnt);
 		return;
 	}
 

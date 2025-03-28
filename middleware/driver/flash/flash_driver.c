@@ -90,6 +90,7 @@ static const flash_config_t flash_config[] = {
 	{0xC22315,   FLASH_SIZE_2M,   1,             FLASH_LINE_MODE_FOUR,   0,        2,            0x0F,         0x0F,        0x00,         0x00E,                6,            1,           0xA5,                         }, //mx_25v16b
 	{0xEB6015,   FLASH_SIZE_2M,   2,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x101,                9,            1,           0xA0,                         }, //zg_th25q16b
 	{0xC86517,	 FLASH_SIZE_8M,   2,             FLASH_LINE_MODE_FOUR,   14,	   2,            0x1F,         0x1F,        0x00,         0x00E,                9,            1,           0xA0,                         }, //gd_25Q32E
+	{0xCD6017,   FLASH_SIZE_8M,   3,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x00E,                9,            1,           0xA0,                         }, //th_25q64ha
 	{0x000000,   FLASH_SIZE_4M,   2,             FLASH_LINE_MODE_TWO,    0,        2,            0x1F,         0x00,        0x00,         0x000,                0,            0,           0x00,                         }, //default
 };
 
@@ -175,9 +176,9 @@ static void flash_unlock(void)
 	}
 
 	mb_flash_op_finish();
-	
+
 	xTaskResumeAll();
-	
+
 #ifdef CONFIG_FREERTOS_SMP
 	rtos_unlock_mutex(&s_flash_mutex);
 #endif
@@ -220,7 +221,7 @@ static void flash_write_status_reg(uint32_t status_reg_val)
 {
 	uint32_t int_level = flash_enter_critical();
 	s_flash.flash_status_reg_val = status_reg_val;
-	
+
 	flash_hal_write_status_reg(&s_flash.hal, s_flash.flash_cfg->status_reg_size, status_reg_val);
 	flash_exit_critical(int_level);
 }
@@ -308,7 +309,7 @@ static flash_protect_type_t flash_get_protect_type(uint32_t sr_value)
 	else if (protect_value == s_flash.flash_cfg->unprotect_last_block)
 		type = FLASH_UNPROTECT_LAST_BLOCK;
 	else
-		type = FLASH_PROTECT_ALL;  // FLASH_UNPROTECT_LAST_BLOCK ??? 
+		type = FLASH_PROTECT_ALL;  // FLASH_UNPROTECT_LAST_BLOCK ???
 
 	return type;
 }
@@ -332,7 +333,7 @@ static void flash_set_protect_type(flash_protect_type_t type)
 
 	if (flash_is_need_update_status_reg(protect_cfg, cmp_cfg, status_reg)) {
 		flash_set_protect_cfg(&status_reg, protect_cfg);
-		flash_set_cmp_cfg(&status_reg, cmp_cfg);		
+		flash_set_cmp_cfg(&status_reg, cmp_cfg);
 
 		//FLASH_LOGD("write status reg:%x, status_reg_size:%d\r\n", status_reg, s_flash.flash_cfg->status_reg_size);
 		flash_write_status_reg(status_reg);
@@ -343,7 +344,7 @@ static void flash_set_qe(void)
 {
 	uint32_t status_reg = s_flash.flash_status_reg_val;
 
-	#if CONFIG_FLASH_SUPPORT_MULTI_PE	
+	#if CONFIG_FLASH_SUPPORT_MULTI_PE
 	status_reg = flash_read_status_reg();
 	#endif
 	if (((status_reg >> s_flash.flash_cfg->quad_en_post) & 0x01) == s_flash.flash_cfg->quad_en_val) {
@@ -460,7 +461,7 @@ static bk_err_t flash_erase_block(uint32_t address, int type)
 	uint32_t int_level = flash_enter_critical();
 
 	flash_hal_erase_block(&s_flash.hal, address, type);
-	
+
 	flash_exit_critical(int_level);
 
 	return BK_OK;
@@ -490,9 +491,9 @@ static flash_line_mode_t flash_set_line_mode(flash_line_mode_t line_mode)
 		flash_exit_critical(int_level);
 		return old_line_mode;
 	}
-	
+
 	flash_hal_clear_qwfr(&s_flash.hal);   // cmd CRMR (coutinuous_read_mode reset), quit QPI mode.
-	
+
 #if CONFIG_SOC_BK7236XX
 	sys_drv_set_sys2flsh_2wire(0);
 #endif
@@ -507,7 +508,7 @@ static flash_line_mode_t flash_set_line_mode(flash_line_mode_t line_mode)
 	{
 		flash_hal_set_mode(&s_flash.hal, FLASH_MODE_DUAL);
 	}
-	
+
 	s_flash.flash_line_mode = new_line_mode;
 
 #if CONFIG_SOC_BK7236XX
@@ -554,7 +555,7 @@ bk_err_t bk_flash_driver_init(void)
 	os_memset(&s_flash, 0, sizeof(s_flash));
 
 	flash_hal_init(&s_flash.hal);
-	
+
 #if (0 == CONFIG_JTAG)
 	flash_hal_disable_cpu_data_wr(&s_flash.hal);
 #endif
@@ -562,23 +563,22 @@ bk_err_t bk_flash_driver_init(void)
 	// s_flash.flash_line_mode = 0;
 
 	flash_set_line_mode(FLASH_LINE_MODE_TWO);
-	
+
 	s_flash.flash_id = flash_get_id();
-	
+
 	FLASH_LOGI("id=0x%x\r\n", s_flash.flash_id);
-	
+
 	flash_get_current_config();
 
 	flash_hal_set_quad_m_value(&s_flash.hal, s_flash.flash_cfg->coutinuous_read_mode_bits_val);
-	
+
 	s_flash.flash_status_reg_val = flash_read_status_reg();
-	
+
 	flash_set_protect_type(FLASH_UNPROTECT_LAST_BLOCK);
-	
+
 	flash_set_line_mode(s_flash.flash_cfg->line_mode);
 
 	flash_hal_set_default_clk(&s_flash.hal);
-
 #if (CONFIG_SOC_BK7256XX)
 	#if CONFIG_ATE_TEST
 	bk_flash_clk_switch(FLASH_SPEED_LOW, 0);
@@ -589,7 +589,7 @@ bk_err_t bk_flash_driver_init(void)
 
 #if (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX)
 	#if (CONFIG_SOC_BK7236N) || (CONFIG_SOC_BK7239XX)
-	if((s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_GD) {
+	if((s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_GD || (s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_TH) {
 		if((2 != sys_drv_flash_get_clk_sel()) || (0 != sys_drv_flash_get_clk_div())) {
 			sys_drv_flash_set_clk_div(0); // 80M div 1 = 80M
 			sys_drv_flash_cksel(2);
@@ -601,12 +601,18 @@ bk_err_t bk_flash_driver_init(void)
 		}
 	}
 	#else
-	if((s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_GD) {
+	if((s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_GD || (s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_TH) {
 		if((1 != sys_drv_flash_get_clk_sel()) || (1 != sys_drv_flash_get_clk_div())) {
+			#if (CONFIG_FLASH_CLK_120M)
+			sys_drv_flash_set_clk_div(0); // dpll div 4 = 120M
+			#else
 			sys_drv_flash_set_clk_div(1); // dpll div 6 = 80M
+			#endif
 			sys_drv_flash_cksel(1);
 		}
-	} else {
+	}
+	else
+	{
 		if((1 != sys_drv_flash_get_clk_sel()) || (3 != sys_drv_flash_get_clk_div())) {
 			sys_drv_flash_set_clk_div(3); // dpll div 10 = 48M
 			sys_drv_flash_cksel(1);
@@ -664,7 +670,7 @@ static bk_err_t flash_erase_no_lock(uint32_t address, int cmd)
 		erase_size = FLASH_BLOCK_SIZE;
 	else
 		return BK_FAIL;
-	
+
 	uint32_t erase_addr = address & (~(erase_size - 1));
 
 	bk_err_t    ret_val = BK_FAIL;
@@ -672,10 +678,10 @@ static bk_err_t flash_erase_no_lock(uint32_t address, int cmd)
 	flash_line_mode_t old_line_mode = flash_set_line_mode(FLASH_LINE_MODE_TWO);
 
 	uint32_t  status_reg = s_flash.flash_status_reg_val;
-	#if CONFIG_FLASH_SUPPORT_MULTI_PE	
+	#if CONFIG_FLASH_SUPPORT_MULTI_PE
 	status_reg = flash_read_status_reg();
 	#endif
-	
+
     flash_protect_type_t partition_type = flash_get_protect_type(status_reg);
 
 	if(bk_flash_partition_write_perm_check_by_addr(erase_addr, erase_size, FLASH_API_MAGIC_CODE) == BK_OK)
@@ -698,7 +704,7 @@ bk_err_t bk_flash_erase_sector(uint32_t address)
 		FLASH_LOGW("erase error:invalid address 0x%x\r\n", address);
 		return BK_ERR_FLASH_ADDR_OUT_OF_RANGE;
 	}
-	
+
 	flash_lock();
 
 	bk_err_t ret_val = flash_erase_no_lock(address, FLASH_OP_CMD_SE);
@@ -716,7 +722,7 @@ bk_err_t bk_flash_erase_32k(uint32_t address)
 	}
 
 	flash_lock();
-	
+
 	bk_err_t  ret_val = flash_erase_no_lock(address, FLASH_OP_CMD_BE1);
 
 	flash_unlock();
@@ -772,12 +778,12 @@ static bk_err_t flash_write_no_lock(uint32_t address, const uint8_t *user_buf, u
 	bk_err_t    ret_val = BK_FAIL;
 
 	flash_line_mode_t old_line_mode = flash_set_line_mode(FLASH_LINE_MODE_TWO);
-	
+
 	uint32_t  status_reg = s_flash.flash_status_reg_val;
-	#if CONFIG_FLASH_SUPPORT_MULTI_PE	
+	#if CONFIG_FLASH_SUPPORT_MULTI_PE
 	status_reg = flash_read_status_reg();
 	#endif
-	
+
     flash_protect_type_t partition_type = flash_get_protect_type(status_reg);
 
 	if(bk_flash_partition_write_perm_check_by_addr(address, size, FLASH_API_MAGIC_CODE) == BK_OK)
@@ -802,7 +808,7 @@ bk_err_t bk_flash_write_bytes(uint32_t address, const uint8_t *user_buf, uint32_
 	}
 
 	flash_lock();
-	
+
 	bk_err_t    ret_val = flash_write_no_lock(address, user_buf, size);
 
 	flash_unlock();
@@ -965,9 +971,8 @@ bk_err_t bk_flash_register_ps_resume_callback(flash_ps_callback_t ps_resume_cb)
 bk_err_t bk_flash_power_saving_enter(void)
 {
 	// save flash ctrl setting to flash_ctrl_context;
-	
 	flash_set_line_mode(FLASH_LINE_MODE_TWO);
-	
+
 	return BK_OK;
 }
 
@@ -976,10 +981,10 @@ bk_err_t bk_flash_power_saving_exit(void)
 	// restore flash ctrl setting from flash_ctrl_context;
 	// the restore API must run in SRAM/ITCM.
 	// don't access flash before restoring setting, especially for A/B image project.
-	
+
 	s_flash.flash_line_mode = 0;
 	flash_set_line_mode(s_flash.flash_cfg->line_mode);
-	
+
 	return BK_OK;
 }
 

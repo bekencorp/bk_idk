@@ -25,7 +25,7 @@ menu "FLASH"
 		depends on FLASH
 		bool "Enable flash test"
 		default y
-		
+
 	config PARTITION_TEST
 		depends on FLASH
 		bool "Enable pattition test"
@@ -43,6 +43,11 @@ menu "FLASH"
 	config FLASH_PARTITION_CHECK_VALID
 		depends on FLASH
 		bool "Enable flash driver check write permission and address range"
+		default n
+
+	config FLASH_CLK_120M
+		depends on FLASH
+		bool "Enable flash clk using 120M"
 		default n
 endmenu
 
