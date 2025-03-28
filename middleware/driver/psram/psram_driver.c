@@ -233,7 +233,7 @@ bk_err_t bk_psram_init(void)
 	}
 
 	// set psram clk
-	bk_psram_set_clk(PSRAM_160M);
+	bk_psram_set_clk(PSRAM_120M);
 
 	PSRAM_LOGI("%s, %x-%x\r\n", __func__, actual_id, chip_id);
 
