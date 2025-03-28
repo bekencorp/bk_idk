@@ -17,6 +17,7 @@
 #include <os/mem.h>
 #include "otp_driver.h"
 #include "otp_hal.h"
+#include "_otp.c"
 #if CONFIG_TFM_OTP_NSC
 #include "tfm_otp_nsc.h"
 #endif
@@ -30,57 +31,6 @@ typedef struct {
 /*    otp1        4 Byte            256 Byte             32 Byte       */
 /*    otp2        128 Byte           NA                  128 Byte      */
 /*    puf         4   Byte           32 Byte             32 Byte       */
-
-
-static const otp_item_t otp_apb_map[] = {
-	/* otp_id_t name,          allocated_size, offset,      privilege*/
-
-	{OTP_MEMORY_CHECK_MARK,          96,        0x0,       OTP_READ_WRITE},
-	{OTP_AES_KEY,                    32,        0x60,      OTP_READ_WRITE},
-	/*reserved 128,0x80*/
-	{OTP_MODEL_ID,                   4,         0x100,     OTP_READ_WRITE},
-	{OTP_MODEL_KEY,                  16,        0x104,     OTP_READ_WRITE},
-	{OTP_ARM_DEVICE_ID,              4,         0x114,     OTP_READ_WRITE},
-	{OTP_DEVICE_ROOT_KEY,            16,        0x118,     OTP_READ_WRITE},
-	{OTP_BL1_BOOT_PUBLIC_KEY_HASH,   32,        0x128,     OTP_READ_WRITE},
-	{OTP_BL2_BOOT_PUBLIC_KEY_HASH,   32,        0x148,     OTP_READ_WRITE},
-	{OTP_ARM_LCS,                    4,         0x168,     OTP_READ_WRITE},
-	{OTP_LOCK_CONTROL,               4,         0x16C,     OTP_READ_WRITE},
-	/*reserved 16,0x180*/
-	{OTP_BL1_SECURITY_COUNTER,       4,         0x188,     OTP_READ_WRITE},
-	/*reserved 116,0x18C*/
-	{OTP_BL2_SECURITY_COUNTER,       64,        0x280,     OTP_READ_WRITE},
-	{OTP_HUK,                        32,        0x240,     OTP_READ_WRITE},
-	{OTP_IAK,                        32,        0x260,     OTP_READ_WRITE},
-	{OTP_IAK_LEN,                    4,         0x280,     OTP_READ_WRITE},
-	{OTP_IAK_TYPE,                   4,         0x284,     OTP_READ_WRITE},
-	{OTP_IAK_ID,                     32,        0x288,     OTP_READ_WRITE},
-	{OTP_BOOT_SEED,                  32,        0x2A8,     OTP_READ_WRITE},
-	{OTP_LCS,                        4,         0x2C8,     OTP_READ_WRITE},
-	{OTP_IMPLEMENTATION_ID,          32,        0x2CC,     OTP_READ_WRITE},
-	{OTP_HW_VERSION,                 32,        0x2EC,     OTP_READ_WRITE},
-	{OTP_VERIFICATION_SERVICE_URL,   32,        0x30C,     OTP_READ_WRITE},
-	{OTP_PROFILE_DEFINITION,         32,        0x32C,     OTP_READ_WRITE},
-	{OTP_ENTROPY_SEED,               64,        0x34C,     OTP_READ_WRITE},
-	{OTP_SECURE_DEBUG_PK,            2,         0x38C,     OTP_READ_WRITE},
-	{OTP_MAC_ADDRESS,                8,         0x3AC,     OTP_READ_WRITE},
-	{OTP_VDDDIG_BANDGAP,             2,         0x3B4,     OTP_READ_WRITE},
-	{OTP_DIA,                        2,         0x3B6,     OTP_READ_WRITE},
-	{OTP_GADC_CALIBRATION,           4,         0x3B8,     OTP_READ_WRITE},
-	{OTP_SDMADC_CALIBRATION,         4,         0x3BC,     OTP_READ_WRITE},
-	{OTP_DEVICE_ID,                  8,         0x3C0,     OTP_READ_WRITE},
-	{OTP_MEMORY_CHECK_VDDDIG,        4,         0x3C8,     OTP_READ_WRITE},
-	{OTP_GADC_TEMPERATURE,           2,         0x3CC,     OTP_READ_WRITE},
-	/*reserved 48,0x3D0*/
-};
-
-static const otp2_item_t otp_ahb_map[] = {
-	{OTP_PHY_PWR,                    64,        0x0,       OTP_READ_WRITE},
-	{OTP_RFCALI1,                    256,       0x40,      OTP_READ_WRITE},
-	{OTP_RFCALI2,                    256,       0x140,     OTP_READ_WRITE},
-	{OTP_RFCALI3,                    256,       0x240,     OTP_READ_WRITE},
-	{OTP_RFCALI4,                    256,       0x340,     OTP_READ_WRITE},
-};
 
 static otp_driver_t s_otp = {0};
 static bool s_otp_driver_is_init = false;
@@ -123,17 +73,41 @@ static int otp_active()
 	return otp_hal_init(&s_otp.hal);
 #endif
 }
+static int switch_map(uint8_t map_id)
+{
+	if(otp_map == NULL){
+		if (map_id == 1) {
+			otp_map = otp_map_1;
+		} else if (map_id == 2) {
+			otp_map = otp_map_2;
+		} else {
+			return -1;
+		}
+	} else {
+		return -1;
+	}
+	return 0;
+}
 
-#define OTP_ACTIVE() \
+#define OTP_ACTIVE(map_id) \
 	do { \
-		int ret = otp_active(); \
+		int ret = switch_map(map_id); \
+		if(ret != 0) { \
+			return ret;\
+		} \
+		ret = otp_active(); \
 		if(ret != 0) { \
 			otp_sleep(); \
+			otp_map = NULL; \
 			return -1;\
 		} \
 	} while(0);
 
-#define OTP_SLEEP() otp_sleep();
+#define OTP_SLEEP() \
+	do { \
+		otp_sleep(); \
+		otp_map = NULL; \
+	} while(0);
 
 static uint32_t otp_read_otp(uint32_t location)
 {
@@ -190,10 +164,10 @@ static uint32_t otp_get_otp_zeroized_flag(uint32_t location)
 	return otp_hal_read_otp_zeroized_flag(&s_otp.hal,location);
 }
 
-otp_privilege_t bk_otp_apb_read_permission(otp_id_t item)
+otp_privilege_t bk_otp_apb_read_permission(otp1_id_t item)
 {
-	OTP_ACTIVE()
-	uint32_t location = otp_apb_map[item].offset / 4;
+	OTP_ACTIVE(1)
+	uint32_t location = otp_map[item].offset / 4;
 	otp_privilege_t permission = otp_hal_read_otp_permission(&s_otp.hal,location);
 	otp_privilege_t mask = otp_hal_read_otp_mask(&s_otp.hal,location);
 	otp_privilege_t ret_permission = max(permission, mask);
@@ -204,8 +178,8 @@ otp_privilege_t bk_otp_apb_read_permission(otp_id_t item)
 
 otp_privilege_t bk_otp_ahb_read_permission(otp2_id_t item)
 {
-	OTP_ACTIVE()
-	uint32_t location = otp_ahb_map[item].offset / 4;
+	OTP_ACTIVE(2)
+	uint32_t location = otp_map[item].offset / 4;
 	otp_privilege_t permission = otp_hal_read_otp2_permission(&s_otp.hal,location);
 	otp_privilege_t mask = otp_hal_read_otp2_mask(&s_otp.hal,location);
 	otp_privilege_t ret_permission = max(permission, mask);
@@ -217,15 +191,15 @@ otp_privilege_t bk_otp_ahb_read_permission(otp2_id_t item)
 
 bk_err_t bk_otp_ahb_write_permission(otp2_id_t item, otp_privilege_t permission)
 {
-	if (item >= ARRAY_SIZE(otp_ahb_map)) {
+	if (item >= OTP2_MAX_ID) {
 		return BK_ERR_OTP_INDEX_WRONG;
 	}
 	if(permission != OTP_READ_ONLY) {
 		return BK_ERR_OTP_PERMISSION_WRONG;
 	}
-	OTP_ACTIVE()
-	uint32_t location = otp_ahb_map[item].offset / 4;
-	int32_t size = otp_ahb_map[item].allocated_size;
+	OTP_ACTIVE(2)
+	uint32_t location = otp_map[item].offset / 4;
+	int32_t size = otp_map[item].allocated_size;
 	while(size > 0) {
 		otp_hal_write_otp2_permission(&s_otp.hal, location, permission);
 		location++;
@@ -235,17 +209,17 @@ bk_err_t bk_otp_ahb_write_permission(otp2_id_t item, otp_privilege_t permission)
 	return BK_OK;
 }
 
-bk_err_t bk_otp_apb_write_permission(otp_id_t item, otp_privilege_t permission)
+bk_err_t bk_otp_apb_write_permission(otp1_id_t item, otp_privilege_t permission)
 {
-	if (item >= ARRAY_SIZE(otp_apb_map)) {
+	if (item >= OTP1_MAX_ID) {
 		return BK_ERR_OTP_INDEX_WRONG;
 	}
 	if(permission != OTP_READ_ONLY && permission != OTP_NO_ACCESS){
 		return BK_ERR_OTP_PERMISSION_WRONG;
 	}
-	OTP_ACTIVE()
-	uint32_t location = otp_apb_map[item].offset / 4;
-	int32_t size = otp_apb_map[item].allocated_size;
+	OTP_ACTIVE(1)
+	uint32_t location = otp_map[item].offset / 4;
+	int32_t size = otp_map[item].allocated_size;
 	while(size > 0) {
 		otp_hal_write_otp_permission(&s_otp.hal, location, permission);
 		location++;
@@ -255,23 +229,23 @@ bk_err_t bk_otp_apb_write_permission(otp_id_t item, otp_privilege_t permission)
 	return BK_OK;
 }
 
-otp_privilege_t bk_otp_apb_read_mask(otp_id_t item)
+otp_privilege_t bk_otp_apb_read_mask(otp1_id_t item)
 {
-	OTP_ACTIVE()
-	uint32_t location = otp_apb_map[item].offset / 4;
+	OTP_ACTIVE(1)
+	uint32_t location = otp_map[item].offset / 4;
 	otp_privilege_t mask = otp_hal_read_otp_mask(&s_otp.hal,location);
 	OTP_SLEEP()
 	return mask;
 }
 
-bk_err_t bk_otp_apb_write_mask(otp_id_t item, uint32_t mask)
+bk_err_t bk_otp_apb_write_mask(otp1_id_t item, uint32_t mask)
 {
-	if (item >= ARRAY_SIZE(otp_apb_map)) {
+	if (item >= OTP1_MAX_ID) {
 		return BK_ERR_OTP_INDEX_WRONG;
 	}
-	OTP_ACTIVE()
-	uint32_t location = otp_apb_map[item].offset / 4;
-	int32_t size = otp_apb_map[item].allocated_size;
+	OTP_ACTIVE(1)
+	uint32_t location = otp_map[item].offset / 4;
+	int32_t size = otp_map[item].allocated_size;
 	while(size > 0) {
 		otp_hal_write_otp_mask(&s_otp.hal, location, mask);
 		location++;
@@ -283,8 +257,8 @@ bk_err_t bk_otp_apb_write_mask(otp_id_t item, uint32_t mask)
 
 otp_privilege_t bk_otp_ahb_read_mask(otp2_id_t item)
 {
-	OTP_ACTIVE()
-	uint32_t location = otp_ahb_map[item].offset / 4;
+	OTP_ACTIVE(2)
+	uint32_t location = otp_map[item].offset / 4;
 	otp_privilege_t mask = otp_hal_read_otp2_mask(&s_otp.hal,location);
 	OTP_SLEEP()
 	return mask;
@@ -292,12 +266,12 @@ otp_privilege_t bk_otp_ahb_read_mask(otp2_id_t item)
 
 bk_err_t bk_otp_ahb_write_mask(otp2_id_t item, uint32_t mask)
 {
-	if (item >= ARRAY_SIZE(otp_ahb_map)) {
+	if (item >= OTP2_MAX_ID) {
 		return BK_ERR_OTP_INDEX_WRONG;
 	}
-	OTP_ACTIVE()
-	uint32_t location = otp_ahb_map[item].offset / 4;
-	int32_t size = otp_ahb_map[item].allocated_size;
+	OTP_ACTIVE(2)
+	uint32_t location = otp_map[item].offset / 4;
+	int32_t size = otp_map[item].allocated_size;
 	while(size > 0) {
 		otp_hal_write_otp2_mask(&s_otp.hal, location, mask);
 		location++;
@@ -312,20 +286,22 @@ bk_err_t bk_otp_ahb_write_mask(otp2_id_t item, uint32_t mask)
  * 1. allowed start address of item not aligned
  * 2. allowed end address of item not aligned
  */
-bk_err_t bk_otp_apb_read(otp_id_t item, uint8_t* buf, uint32_t size)
+bk_err_t bk_otp_apb_read(otp1_id_t item, uint8_t* buf, uint32_t size)
 {
-	if (item >= ARRAY_SIZE(otp_apb_map)) {
+	if (item >= OTP1_MAX_ID) {
 		return BK_ERR_OTP_INDEX_WRONG;
 	}
+
 	if( bk_otp_apb_read_permission(item) > OTP_READ_ONLY ) {
 		return BK_ERR_NO_READ_PERMISSION;
 	}
-	if(size > otp_apb_map[item].allocated_size){
+	OTP_ACTIVE(1)
+	if(size > otp_map[item].allocated_size){
+		OTP_SLEEP()
 		return BK_ERR_OTP_ADDR_OUT_OF_RANGE;
 	}
-	OTP_ACTIVE()
-	uint32_t location = otp_apb_map[item].offset / 4;
-	uint32_t start = otp_apb_map[item].offset % 4;
+	uint32_t location = otp_map[item].offset / 4;
+	uint32_t start = otp_map[item].offset % 4;
 	uint32_t value;
 
 	while(size > 0) {
@@ -364,21 +340,23 @@ bk_err_t bk_otp_apb_read(otp_id_t item, uint8_t* buf, uint32_t size)
  * 3. check overwritable before write, return BK_ERR_OTP_CANNOT_WRTIE if failed
  * 4. verify value after write, return BK_ERR_OTP_UPDATE_NOT_EQUAL if failed
  */
-bk_err_t bk_otp_apb_update(otp_id_t item, uint8_t* buf, uint32_t size)
+bk_err_t bk_otp_apb_update(otp1_id_t item, uint8_t* buf, uint32_t size)
 {
-	if (item >= ARRAY_SIZE(otp_apb_map)) {
+	if (item >= OTP1_MAX_ID) {
 		return BK_ERR_OTP_INDEX_WRONG;
 	}
 	if( bk_otp_apb_read_permission(item) != OTP_READ_WRITE ) {
 		return BK_ERR_NO_WRITE_PERMISSION;
 	}
-	if(size > otp_apb_map[item].allocated_size){
+	OTP_ACTIVE(1)
+	if(size > otp_map[item].allocated_size){
+		OTP_SLEEP()
 		return BK_ERR_OTP_ADDR_OUT_OF_RANGE;
 	}
-	OTP_ACTIVE()
-	uint32_t location = otp_apb_map[item].offset / 4;
-	uint32_t start = otp_apb_map[item].offset % 4;
+	uint32_t location = otp_map[item].offset / 4;
+	uint32_t start = otp_map[item].offset % 4;
 	uint32_t value = 0;
+	uint32_t check_value = 0;
 
 	uint8_t * dst_data;
 	uint8_t * back_buf = buf;
@@ -422,13 +400,13 @@ bk_err_t bk_otp_apb_update(otp_id_t item, uint8_t* buf, uint32_t size)
 	}
 
 	if(size > 0) {
-		otp_sleep();
+		OTP_SLEEP()
 		return BK_ERR_OTP_UPDATE_NOT_EQUAL;  // BK_ERR_OTP_CANNOT_WRTIE; ???
 	}
 
 	/* restore all variables. */
-	location = otp_apb_map[item].offset / 4;
-	start = otp_apb_map[item].offset % 4;
+	location = otp_map[item].offset / 4;
+	start = otp_map[item].offset % 4;
 	size = back_size;
 	buf = back_buf;
 
@@ -451,6 +429,10 @@ bk_err_t bk_otp_apb_update(otp_id_t item, uint8_t* buf, uint32_t size)
 		}
 
 		otp_write_otp(location, value);
+		check_value = otp_read_otp(location);
+		if (check_value != value) {
+			return BK_ERR_OTP_UPDATE_NOT_EQUAL;
+		}
 
 		size -= cpy_cnt;
 		location++;
@@ -468,18 +450,19 @@ bk_err_t bk_otp_apb_update(otp_id_t item, uint8_t* buf, uint32_t size)
  */
 bk_err_t bk_otp_ahb_read(otp2_id_t item, uint8_t* buf, uint32_t size)
 {
-	if (item >= ARRAY_SIZE(otp_ahb_map)) {
+	if (item >= OTP2_MAX_ID) {
 		return BK_ERR_OTP_INDEX_WRONG;
 	}
 	if( bk_otp_ahb_read_permission(item) > OTP_READ_ONLY ) {
 		return BK_ERR_NO_READ_PERMISSION;
 	}
-	if(size > otp_ahb_map[item].allocated_size){
+	OTP_ACTIVE(2)
+	if(size > otp_map[item].allocated_size){
+		OTP_SLEEP()
 		return BK_ERR_OTP_ADDR_OUT_OF_RANGE;
 	}
-	OTP_ACTIVE()
-	uint32_t location = otp_ahb_map[item].offset / 4;
-	uint32_t start = otp_ahb_map[item].offset % 4;
+	uint32_t location = otp_map[item].offset / 4;
+	uint32_t start = otp_map[item].offset % 4;
 	uint32_t value;
 
 	while(size > 0) {
@@ -513,19 +496,21 @@ bk_err_t bk_otp_ahb_read(otp2_id_t item, uint8_t* buf, uint32_t size)
 
 bk_err_t bk_otp_ahb_update(otp2_id_t item, uint8_t* buf, uint32_t size)
 {
-	if (item >= ARRAY_SIZE(otp_ahb_map)) {
+	if (item >= OTP2_MAX_ID) {
 		return BK_ERR_OTP_INDEX_WRONG;
 	}
 	if( bk_otp_ahb_read_permission(item) != OTP_READ_WRITE ) {
 		return BK_ERR_NO_WRITE_PERMISSION;
 	}
-	if(size > otp_ahb_map[item].allocated_size){
+	OTP_ACTIVE(2)
+	if(size > otp_map[item].allocated_size){
+		OTP_SLEEP()
 		return BK_ERR_OTP_ADDR_OUT_OF_RANGE;
 	}
-	OTP_ACTIVE()
-	uint32_t location = otp_ahb_map[item].offset / 4;
-	uint32_t start = otp_ahb_map[item].offset % 4;
+	uint32_t location = otp_map[item].offset / 4;
+	uint32_t start = otp_map[item].offset % 4;
 	uint32_t value = 0;
+	uint32_t check_value = 0;
 
 	uint8_t * dst_data;
 	uint8_t * back_buf = buf;
@@ -569,13 +554,13 @@ bk_err_t bk_otp_ahb_update(otp2_id_t item, uint8_t* buf, uint32_t size)
 	}
 	
 	if(size > 0) {
-		otp_sleep();
+		OTP_SLEEP()
 		return BK_ERR_OTP_UPDATE_NOT_EQUAL;  // BK_ERR_OTP_CANNOT_WRTIE; ???
 	}
 
 	/* restore all variables. */
-	location = otp_ahb_map[item].offset / 4;
-	start = otp_ahb_map[item].offset % 4;
+	location = otp_map[item].offset / 4;
+	start = otp_map[item].offset % 4;
 	size = back_size;
 	buf = back_buf;
 	
@@ -598,20 +583,24 @@ bk_err_t bk_otp_ahb_update(otp2_id_t item, uint8_t* buf, uint32_t size)
 		}
 
 		otp2_write_otp(location, value);
+		check_value = otp2_read_otp(location);
+		if (check_value != value) {
+			return BK_ERR_OTP_UPDATE_NOT_EQUAL;
+		}
 
 		size -= cpy_cnt;
 		location++;
 		start = 0;
 	}
 
-	otp_sleep();
+	OTP_SLEEP()
 
 	return BK_OK;
 }
 
 bk_err_t bk_otp_read_random_number(uint32_t* value, uint32_t size)
 {
-	OTP_ACTIVE()
+	OTP_ACTIVE(1)
 	for(int i = 0; i < size; ++i){
 		value[i] = otp_hal_read_random_number(&s_otp.hal);
 	}
@@ -620,8 +609,7 @@ bk_err_t bk_otp_read_random_number(uint32_t* value, uint32_t size)
 }
 
 /*Initial Phase,done at factory*/
-
-
+#if CONFIG_ATE_TEST
 static bk_err_t bk_otp_init_puf()
 {
 	if(otp_hal_read_enroll(&s_otp.hal) == 0xF){
@@ -896,7 +884,7 @@ static bk_err_t bk_otp_enable_test_mode_lock_function()
 
 uint32_t bk_otp_fully_flow_test()
 {
-	OTP_ACTIVE()
+	OTP_ACTIVE(1)
 	uint32_t ret;
 	uint32_t retry_count = 10;
 	uint32_t fail_code = 0;
@@ -1018,3 +1006,4 @@ exit:
 	}
 	return fail_code;
 }
+#endif /*CONFIG_ATE_TEST*/

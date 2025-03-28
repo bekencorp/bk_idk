@@ -99,9 +99,12 @@ psa_status_t psa_read_randomkey_from_otp2(uint8_t item_id)
 	
 	OTP_ACTIVE();
 
-	size = otp_map[1][item_id].allocated_size;
+	otp_map = otp_map_2;
+	size = otp_map[item_id].allocated_size;
 
 	ret = otp_read(2,item_id,s_aes_gcm_key_val,size);
+
+	otp_map = NULL;
 
 	otp_sleep();
 

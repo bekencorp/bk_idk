@@ -79,8 +79,8 @@ bk_err_t bk_otp_read_bytes_nonsecure(uint8_t *buffer, uint32_t addr, uint32_t le
  *    - BK_ERR_OTP_ADDR_OUT_OF_RANGE: param size not match item real size
  *    - others: other errors.
  */
-
-bk_err_t bk_otp_apb_read(otp_id_t item, uint8_t *buf, uint32_t size);
+#if CONFIG_OTP_V1
+bk_err_t bk_otp_apb_read(otp1_id_t item, uint8_t *buf, uint32_t size);
 /**
  * @brief     update OTP write with item type
  *
@@ -95,7 +95,7 @@ bk_err_t bk_otp_apb_read(otp_id_t item, uint8_t *buf, uint32_t size);
  *    - BK_ERR_OTP_UPDATE_NOT_EQUAL: updated value not match expectation 
  *    - others: other errors.
  */
-bk_err_t bk_otp_apb_update(otp_id_t item, uint8_t* buf, uint32_t size);
+bk_err_t bk_otp_apb_update(otp1_id_t item, uint8_t* buf, uint32_t size);
 /**
  * @brief     OTP2 read with item type
  *
@@ -109,7 +109,7 @@ bk_err_t bk_otp_apb_update(otp_id_t item, uint8_t* buf, uint32_t size);
  *    - BK_ERR_OTP_ADDR_OUT_OF_RANGE: param size not match item real size
  *    - others: other errors.
  */
-bk_err_t bk_otp_ahb_read(otp_id_t item, uint8_t* buf, uint32_t size);
+bk_err_t bk_otp_ahb_read(otp2_id_t item, uint8_t* buf, uint32_t size);
 /**
  * @brief     update OTP2 write with item type
  *
@@ -124,7 +124,7 @@ bk_err_t bk_otp_ahb_read(otp_id_t item, uint8_t* buf, uint32_t size);
  *    - BK_ERR_OTP_UPDATE_NOT_EQUAL: updated value not match expectation
  *    - others: other errors.
  */
-bk_err_t bk_otp_ahb_update(otp_id_t item, uint8_t* buf, uint32_t size);
+bk_err_t bk_otp_ahb_update(otp2_id_t item, uint8_t* buf, uint32_t size);
 
 /**
  * @brief     read OTP1 permission
@@ -137,7 +137,7 @@ bk_err_t bk_otp_ahb_update(otp_id_t item, uint8_t* buf, uint32_t size);
  *    - OTP_READ_WRITE: Read Write permission
  *    - BK_FAIL: error
  */
-otp_privilege_t bk_otp_apb_read_permission(otp_id_t item);
+otp_privilege_t bk_otp_apb_read_permission(otp1_id_t item);
 
 /**
  * @brief     write OTP1 permission
@@ -149,7 +149,7 @@ otp_privilege_t bk_otp_apb_read_permission(otp_id_t item);
  *    - BK_OK: succeed
  *    - BK_FAIL: error
  */
-bk_err_t bk_otp_apb_write_permission(otp_id_t item, otp_privilege_t permission);
+bk_err_t bk_otp_apb_write_permission(otp1_id_t item, otp_privilege_t permission);
 
 /**
  * @brief     read OTP1 mask
@@ -161,7 +161,7 @@ bk_err_t bk_otp_apb_write_permission(otp_id_t item, otp_privilege_t permission);
  *    - OTP_READ_WRITE: Read Write permission
  *    - BK_FAIL: error
  */
-otp_privilege_t bk_otp_apb_read_mask(otp_id_t item);
+otp_privilege_t bk_otp_apb_read_mask(otp1_id_t item);
 
 /**
  * @brief     write OTP1 permission
@@ -173,7 +173,7 @@ otp_privilege_t bk_otp_apb_read_mask(otp_id_t item);
  *    - BK_OK: succeed
  *    - BK_FAIL: error
  */
-bk_err_t bk_otp_apb_write_mask(otp_id_t item, otp_privilege_t permission);
+bk_err_t bk_otp_apb_write_mask(otp1_id_t item, otp_privilege_t permission);
 
 /**
  * @brief     read random number
@@ -186,7 +186,7 @@ bk_err_t bk_otp_apb_write_mask(otp_id_t item, otp_privilege_t permission);
  *    - BK_FAIL: error
 */
 bk_err_t bk_otp_read_random_number(uint32_t* buf, uint32_t size);
-
+#endif
 /**
  * @}
  */

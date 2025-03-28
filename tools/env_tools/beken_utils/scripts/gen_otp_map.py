@@ -60,25 +60,25 @@ def gen_otp_map_file():
     f.write("\ntypedef struct\n")
     f.write("{\n")
     f.write("    uint32_t  name;\n")
-    f.write("    uint32_t  allocated_size;\n")
-    f.write("    uint32_t  offset;\n")
+    f.write("    uint16_t  allocated_size;\n")
+    f.write("    uint16_t  offset;\n")
     f.write("    otp_privilege_t privilege;\n")
     f.write("    otp_security_t  security;\n")
     f.write("} otp_item_t;\n")
 
-    max_row = 0
+    max_row = []
     for otp in otp_instance:
         f.write("\ntypedef enum{\n")
-        if(len(otp.data) > max_row):
-            max_row = len(otp.data)
+        max_row.append(len(otp.data))
         for id,item in otp.data.items():
             f.write('    ' + item['name'] + ','+ '\n')
         f.write('    ' + 'OTP' + otp.index + '_MAX_ID' + ','+ '\n')
         f.write(f"}} otp{otp.index}_id_t;\n")
+        f.write(f"\nextern const otp_item_t otp_map_{otp.index}[{len(otp.data)}];\n")
+        f.write(f"\nuint32_t otp_map_{otp.index}_row(void);\n")
+        f.write(f"\nuint32_t otp_map_{otp.index}_col(void);\n")
 
-    f.write(f"\nextern const otp_item_t otp_map[][{max_row}];\n")
-    f.write(f"\nuint32_t otp_map_row(void);\n")
-    f.write(f"\nuint32_t otp_map_col(void);\n")
+    f.write(f"\nextern const otp_item_t *otp_map;\n")
 
     f.close()
 
@@ -87,23 +87,21 @@ def gen_otp_map_file():
     logging.debug(f'Create _otp.c')
     f.write(get_license())
     f.write('\n#include "_otp.h"\n')
-
-    f.write(f"\nconst otp_item_t otp_map[][{max_row}] = {{\n")
+    f.write('\n#include <stddef.h>\n')
 
     for otp in otp_instance:
-        f.write("{\n")
+        f.write(f"\nconst otp_item_t otp_map_{otp.index}[{max_row[int(otp.index)-1]}] = {{\n")
         max_len = max(len(item['name']) for id,item in otp.data.items())
         for id,item in otp.data.items():
             line = f'    {{%{-max_len-4}s %10d,    0x%x,    %s,    %s}},\n' \
               %((item['name']+','), item['size'], item['offset'],item['privilege'],item['security'])
             f.write(line)
-        f.write("},\n")
-    f.write("};\n")
+        f.write("};\n")
+        f.write(f"\nuint32_t otp_map_{otp.index}_row(void)\n{{\n")
+        f.write(f"    return sizeof(otp_map_{otp.index}) / sizeof(otp_map_{otp.index}[0]);\n}}\n")
+        f.write(f"\nuint32_t otp_map_{otp.index}_col(void)\n{{\n")
+        f.write(f"    return sizeof(otp_map_{otp.index}) / sizeof(otp_map_{otp.index}[0]);\n}}\n")
 
-    f.write(f"\nuint32_t otp_map_row(void)\n{{\n")
-    f.write(f"    return sizeof(otp_map) / sizeof(otp_map[0]);\n}}\n")
-    f.write(f"\nuint32_t otp_map_col(void)\n{{\n")
-    f.write(f"    return sizeof(otp_map[0]) / sizeof(otp_map[0][0]);\n}}\n")
-
+    f.write(f"\nconst otp_item_t *otp_map = NULL;\n")
 
     f.close()

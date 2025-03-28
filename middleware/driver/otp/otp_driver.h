@@ -21,21 +21,3 @@
 #define OTP_LOGW(...) BK_LOGW(OTP_TAG, ##__VA_ARGS__)
 #define OTP_LOGE(...) BK_LOGE(OTP_TAG, ##__VA_ARGS__)
 #define OTP_LOGD(...) BK_LOGD(OTP_TAG, ##__VA_ARGS__)
-
-typedef struct
-{
-    const otp_id_t name;
-    const uint32_t allocated_size;
-    const uint32_t offset;
-    otp_privilege_t privilege;
-    //bool security;/*TODO*/
-} otp_item_t;
-
-typedef struct
-{
-    const otp2_id_t name;
-    const uint32_t allocated_size;
-    const uint32_t offset;
-    otp_privilege_t privilege;
-    //bool security;/*TODO*/
-} otp2_item_t;

@@ -72,10 +72,12 @@ static void cli_otp_apb_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
 		cli_otp_help();
 		return;
 	}
-
 	if (os_strcmp(argv[1], "self_test") == 0){
+#if CONFIG_ATE_TEST
 		uint32_t ret = bk_otp_fully_flow_test();
 		BK_RAW_LOGI(NULL, "ret = %u\r\n",ret);
+#endif
+		BK_RAW_LOGI(NULL,"Enable ATE_TEST\r\n");
 	} else if (os_strcmp(argv[1], "read") == 0){
 		uint32_t item = os_strtoul(argv[2], NULL, 10);
 		uint32_t size = os_strtoul(argv[3], NULL, 10);

@@ -765,11 +765,13 @@ const phy_os_variable_t g_phy_os_variable = {
     ._ieee80211_band_60ghz  = IEEE80211_BAND_60GHZ,
     ._ieee80211_num_bands   = IEEE80211_NUM_BANDS ,
 
+#if CONFIG_OTP_V1
     ._OTP_MAC_ADDRESS        = OTP_MAC_ADDRESS ,
     ._OTP_VDDDIG_BANDGAP     = OTP_VDDDIG_BANDGAP ,
     ._OTP_DIA                = OTP_DIA ,
     ._OTP_GADC_TEMPERATURE   = OTP_GADC_TEMPERATURE,
     ._OTP_SDMADC_CALIBRATION = OTP_SDMADC_CALIBRATION ,
+#endif
 };
 
 extern void phy_adapter_init(const void * phy_funcs, const void * phy_vars);
