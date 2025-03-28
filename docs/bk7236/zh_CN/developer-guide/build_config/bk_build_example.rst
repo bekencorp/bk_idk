@@ -475,25 +475,10 @@ armino 加载 Kconfig 的顺序如下，对于同一配置项，后加载的值�
 
     armino_component_register(SRCS ${src} INCLUDE_DIRS ${inc})
 
-注意，下面是错误的禁用组件方法。因为 armino 构建系统在生成组件列表阶段（即早期扩充阶段）依赖 ``armino_component_register()``
-来生成该组件，而只有先生成该组件才会在组件处理阶段加载组件的 Kconfig 配置::
-
-    if (CONFIG_C1)
-        armino_component_register(SRCS ${src} INCLUDE_DIRS ${inc})
-    endif()
-
-下述写法也可能带来问题，当组件（TODO）::
-
-    if (CONFIG_C1)
-        armino_component_register(SRCS ${src} INCLUDE_DIRS ${inc} REQUIRES c2 c3 c4)
-    else()
-        armino_component_register()
-    endif()
-
 其他禁用组件的方法是：
 
- - 通过 ARMINO_SOC 来禁用 (TODO)
- - 通过 EXCLUDE_COMPONENTS 来禁用 (TODO)
+ - 通过 ARMINO_SOC 来禁用
+ - 通过 EXCLUDE_COMPONENTS 来禁用
 
 - 示例代码路径:`<projects/examples/build_system/207_disable_components>`
 

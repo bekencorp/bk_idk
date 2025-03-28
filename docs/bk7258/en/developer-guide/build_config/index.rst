@@ -10,5 +10,6 @@ Build and configure
    Example <bk_build_example>
    Functions and properties <bk_build_api>
    Accomplish <bk_build_design>
+   FAQ <bk_build_faq>
 
 
