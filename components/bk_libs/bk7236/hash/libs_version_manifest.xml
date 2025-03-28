@@ -15,7 +15,7 @@
   <project name="iot/wcn/components/bk_airkiss" path="components/bk_airkiss" revision="72fe95833e71be635cd500f820b4c848bcb9429e" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="wifi-host"/>
   <project name="iot/wcn/components/bk_ate" path="components/bk_ate" revision="bdf9c5370c1c67989ffece0c2b57d9c45597fe32" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/bk_batt_monitor" path="components/bk_batt_monitor" revision="99be761ce802ee9da227788e467c0b65fc0811db" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
-  <project name="iot/wcn/components/bk_cli" path="components/bk_cli" revision="01e96c861c0179aebb64ac8c58951800ec63dbbd" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
+  <project name="iot/wcn/components/bk_cli" path="components/bk_cli" revision="4a91d7b2bcbc843ce5335451a2a299a3027c1e2b" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/bk_common" path="components/bk_common" revision="dd4e4e1c5d9e7d38b4ba215331323dc99695c4fe" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/bk_event" path="components/bk_event" revision="982ce07a3382aa5673fc2c2f12f3a6a9a6fb63c5" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/bk_httpc" path="components/bk_httpc" revision="c5624f2ae30886b5d24907cdeedb23c2bc717088" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
@@ -24,7 +24,7 @@
   <project name="iot/wcn/components/bk_libs_v1" path="components/bk_libs" revision="a7dab0e44bd6086100f3db5c66fe531fe8fab445" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/bk_log" path="components/bk_log" revision="90661587fea0cf2ba0081449943f5c5b280644ca" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/bk_netif" path="components/bk_netif" revision="9a195e7e65050a6bfb61e1366a8e71313c210c8e" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="wifi-host"/>
-  <project name="iot/wcn/components/bk_phy" path="components/bk_phy" revision="854a70e141571897cbfea2bb7736ba6f241590ea" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="wifi"/>
+  <project name="iot/wcn/components/bk_phy" path="components/bk_phy" revision="c51e9548eb7b4fc10c78efdc2b891e5c496f2fd1" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="wifi"/>
   <project name="iot/wcn/components/bk_pm" path="components/bk_pm" revision="5f256fe9684e9795f9c3fb0b53e9e36548d19ed6" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/bk_ps" path="components/bk_ps" revision="eca1a0ba6146df48d05f860990196f2744235b34" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/bk_rtos" path="components/bk_rtos" revision="6ab9e5a6b1b24e97df89562a8e9c299b7a419b71" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
@@ -35,18 +35,18 @@
   <project name="iot/wcn/components/bk_usb" path="components/bk_usb" revision="4bcd7c0bbdafc283c2623dce23b4ef69f45224fb" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/bk_vfs" path="components/bk_vfs" revision="fa188f8936a609bcc03fdf9ec86ceb366dd86031" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/bk_websocket" path="components/bk_websocket" revision="636c89024c4daa81f198290d9b4e939ee3d27c88" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="wifi-host"/>
-  <project name="iot/wcn/components/bk_wifi" path="components/bk_wifi" revision="ad15a90b3e51686476db9e9c663048d590ddf80d" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="wifi-host"/>
+  <project name="iot/wcn/components/bk_wifi" path="components/bk_wifi" revision="38ecff55ee4d2abe9f08da5fe3fce056b962aac7" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="wifi-host"/>
   <project name="iot/wcn/components/bluetooth" path="components/bk_bluetooth" revision="47dd29c6006a444e85fdf03c311e580c156dc57f" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="bt"/>
   <project name="iot/wcn/components/cmsis" path="components/cmsis" revision="4c549ef606ab69d6f7a9ce5aea8f927e160148b7" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/compress" path="components/compress" revision="95956bb1ecc1c6c09d89b8f1ab7263fa90e3129c" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/coredump" path="components/coredump" revision="e8f522914d6209028019805b30849939753c4c27" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
-  <project name="iot/wcn/components/demos" path="components/demos" revision="c6b27a586b6305f20ca8d4005200f60c2839e7f1" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="app"/>
+  <project name="iot/wcn/components/demos" path="components/demos" revision="8ac51efe03c189c6e4579e271ab72ab75785952c" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="app"/>
   <project name="iot/wcn/components/easy_flash" path="components/easy_flash" revision="dee1b30d60d1940e167b5286281e9c762022daa5" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/embeded_gcov" path="components/embeded_gcov" revision="0257b4d7005a385323513432a697f1e8074af4b4" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/fatfs" path="components/fatfs" revision="b749fd39afd39f65dc397b55025b173b5a7662a4" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/flashdb" path="components/flashdb" revision="9e176089f84a284c02f96518f7cfb3927ce28b35" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/hmac_sha_256" path="components/hmac_sha_256" revision="841c4ebf2ffd904fda9a4f4811a9e1e309405f01" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
-  <project name="iot/wcn/components/http" path="components/http" revision="386331714338658a0c448f1a2b1d7227f1d25e81" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="wifi-host"/>
+  <project name="iot/wcn/components/http" path="components/http" revision="284641e6d15e60fbfa311831e3b65c7b904338ae" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="wifi-host"/>
   <project name="iot/wcn/components/jrtplib" path="components/jrtplib" revision="aeaa1fcd47a95dc1bba95ee1286672e3681f842e" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="wifi-host"/>
   <project name="iot/wcn/components/json" path="components/json" revision="989b24427d1f82f7d40579c2653243fdb38d977d" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/key" path="components/key" revision="994d5442d52383bf424ece605a433b10f250761e" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
@@ -56,8 +56,8 @@
   <project name="iot/wcn/components/mbedtls" path="components/mbedtls" revision="749ef592df1e7b9e192866f3db84273e807ec595" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/micropython" path="components/micropython" revision="3c4436c860b58be3c8d0e351bbc163c16c78e4d9" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/openssl" path="components/openssl" revision="0ccb7361a52b0960abc67de9a975326d64a0b5be" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="wifi-host"/>
-  <project name="iot/wcn/components/os_source" path="components/os_source" revision="4858f2b8cfb5ca12d384aab4d476e802e9d6df8d" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
-  <project name="iot/wcn/components/ota" path="components/ota" revision="a433f73d23de36f444fd23b14f335134f3b664ad" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
+  <project name="iot/wcn/components/os_source" path="components/os_source" revision="9d07e87f49e643d780e081b98d3a47d191c1e589" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
+  <project name="iot/wcn/components/ota" path="components/ota" revision="70944e64d8f6ba608f0b741176d091ce8eb3d8b5" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/part_table" path="components/part_table" revision="c5d0a5f2584d5caed604e4a13617481a8ecc05cd" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/psa_mbedtls" path="components/psa_mbedtls" revision="0fbeca7eafb6684f437f8b96234cebe5d3c04aa4" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/qcbor" path="components/qcbor" revision="6a6a33b7ba6f61029f0cf8ad111bf1801ca1dd05" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
@@ -66,7 +66,7 @@
   <project name="iot/wcn/components/secure_calibration" path="components/secure_calibration" revision="1c7f57cfa0573c969e8fbd580593c0a1c5112618" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/security" path="components/security" revision="a404d19c1c90673074057e832132eef38af9a8e5" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/temp_detect" path="components/temp_detect" revision="8cf2a1acc22b6a1e86da933705744c6b12d4efd1" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
-  <project name="iot/wcn/components/tfm" path="components/tfm" revision="dcc91e0112ac64a3231e38d4959e6c2a708bb160" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
+  <project name="iot/wcn/components/tfm" path="components/tfm" revision="122a7aaf5e91d00f1117c2278203a28d38454ce3" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/tfm_mbedtls" path="components/tfm_mbedtls" revision="2357beea58534d78b6f2f4cde63fde9f89c4cb67" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/tfm_tests" path="components/tfm_tests" revision="a00d64dd63099d36e159abbad2760b2bd24d7529" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/unity" path="components/unity" revision="c044d6f59cdccc62d0133adaae2bed7efc15c835" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
@@ -75,10 +75,10 @@
   <project name="iot/wcn/components/webclient" path="components/webclient" revision="0345d7afba0c3a91832f2e8f5d93fedaee42e9bc" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/wolfssl" path="components/wolfssl" revision="eccbfe4164f03feec1be34b91bbde7edae26bc18" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="wifi"/>
   <project name="iot/wcn/components/wpa_supplicant-2.10" path="components/wpa_supplicant-2.10" revision="af5c821d1be381e35df28cad9c912efc0a0c3bd6" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="wifi"/>
-  <project name="iot/wcn/docs" path="docs" revision="62f13976990546a5119fe04c7cffc9b23aa543e6" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
-  <project name="iot/wcn/include" path="include" revision="ac193fafddcdb9c2f1d15a327f90559a3c556ae4" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
-  <project name="iot/wcn/middleware" path="middleware" revision="ed11a702b35ea3c95c1440d7a8cb99dcc556e80b" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
-  <project name="iot/wcn/projects" path="projects" revision="6fad5f36ca9207e5a9e03b4b80f29095c2e5aee7" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
+  <project name="iot/wcn/docs" path="docs" revision="f89622f56dade2d1733c84a3c05ee24ac08d74a3" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
+  <project name="iot/wcn/include" path="include" revision="3cb2df493b44dddef5995e8c53b297200cb117fd" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
+  <project name="iot/wcn/middleware" path="middleware" revision="886022d178fb9d7a6c959e4a9cc73f76d08b81f5" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
+  <project name="iot/wcn/projects" path="projects" revision="2c2f20ab5fb4ee0280a06aa83888fc4688423dc3" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/properties" path="properties" revision="5712de73ce7b37871f7cb2d3e68dbad107780d5f" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/properties/arch" path="properties/arch" revision="7fefd63005fee1e3717425cd644ce13c7bd4e476" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/properties/modules/bk_cal" path="properties/modules/bk_phy/bk_cal" revision="43439f2c6f97e8ea94c81a185cbb96fea37f3b17" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="wifi"/>
@@ -90,27 +90,27 @@
   <project name="iot/wcn/properties/modules/bootloader" path="properties/modules/bootloader" revision="68856bc9b32a2749c7290aa6a55a0626d50a755c" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/properties/modules/bootloader/aboot" path="properties/modules/bootloader/aboot" revision="dac754696b967ec59670070c54f5dd259be00298" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/properties/modules/ft_test" path="properties/modules/ft_test" revision="57912dd722eda773fa70705a7f2398bb0d82219d" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
-  <project name="iot/wcn/properties/modules/ip_ax" path="properties/modules/wifi/ip_ax" revision="bc98ee11ac7040a68f3f7f1ef9999e321a8ba0e5" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="wifi"/>
+  <project name="iot/wcn/properties/modules/ip_ax" path="properties/modules/wifi/ip_ax" revision="10c6eac70dfb678c2865276db1afe0cd3dbf2601" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="wifi"/>
   <project name="iot/wcn/properties/modules/macphy_bypass" path="properties/modules/bk_phy/macphy_bypass" revision="dd09f6669c394ca54d8910a1a09021cbbee03f2b" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/properties/modules/raw_link" path="properties/modules/wifi/raw_link" revision="5b25b16abd77193403955aed091f5bf8b7f2e5a8" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="wifi"/>
   <project name="iot/wcn/properties/modules/rf_test" path="properties/modules/bk_phy/rf_test" revision="e148cc34cde4d4ede0edd3fdc6d83eb4b0152fda" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="wifi"/>
   <project name="iot/wcn/properties/modules/rw_common" path="properties/modules/rw_common" revision="0dc69438aa853b0c09440bda51009fe5d468b80c" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/properties/modules/securityip" path="properties/modules/securityip" revision="988a9f59cf5925e3ed2511cf792ce378555c8323" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="security"/>
   <project name="iot/wcn/properties/modules/sensor" path="properties/modules/sensor" revision="17acc1dbcc4edee9bf25505a260cfd5732ccc2e9" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
-  <project name="iot/wcn/properties/modules/uid" path="properties/modules/uid" revision="6bd2c5f01bd2df8610ca2a2cfdd97f179fc774b0" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
+  <project name="iot/wcn/properties/modules/uid" path="properties/modules/uid" revision="e220119ce08fc62b4ace97253a9c0baa4e5024a6" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/properties/modules/usb" path="properties/modules/usb" revision="820344872d6165d63dc3d32053d729aa8693518d" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/properties/modules/wifi" path="properties/modules/wifi" revision="c68563af94ffcbaa9a0862d2d8336d765e52e7cc" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="wifi"/>
   <project name="iot/wcn/properties/projects" path="properties/projects" revision="519c543a5ab7d26fff62d73e43d4df8e93c0ef88" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/properties/soc" path="properties/soc" revision="9632af2e12c4713f0335bb674187b6aef47bc320" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/tools/build_tools" path="tools/build_tools" revision="0b839c64b3369a94acdd1567e41281ba985bca11" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform">
+    <copyfile src="docker_build/dbuild.ps1" dest="dbuild.ps1"/>
+    <copyfile src="docker_build/dbuild.sh" dest="dbuild.sh"/>
+    <copyfile src="build_files/CMakeLists.txt" dest="CMakeLists.txt"/>
+    <copyfile src="build_files/Kconfig" dest="Kconfig"/>
+    <copyfile src="build_files/Makefile" dest="Makefile"/>
+    <copyfile src="build_files/requirements.txt" dest="requirements.txt"/>
     <copyfile src="build_files/README.md" dest="README.md"/>
     <copyfile src="build_files/README_CN.md" dest="README_CN.md"/>
-    <linkfile src="docker_build/dbuild.ps1" dest="dbuild.ps1"/>
-    <linkfile src="docker_build/dbuild.sh" dest="dbuild.sh"/>
-    <linkfile src="build_files/CMakeLists.txt" dest="CMakeLists.txt"/>
-    <linkfile src="build_files/Kconfig" dest="Kconfig"/>
-    <linkfile src="build_files/Makefile" dest="Makefile"/>
-    <linkfile src="build_files/requirements.txt" dest="requirements.txt"/>
   </project>
-  <project name="iot/wcn/tools/env_tools" path="tools/env_tools" revision="163d099c0f3bb9bff14d0a6de0b9698e16fa5290" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
+  <project name="iot/wcn/tools/env_tools" path="tools/env_tools" revision="b31e02ca464a4963e171130eb1c87e1cb747048d" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
 </manifest>
