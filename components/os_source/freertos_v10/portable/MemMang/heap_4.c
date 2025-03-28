@@ -573,7 +573,12 @@ void *psram_malloc( size_t xWantedSize )
 		/* 4 Byte alignment required for psram. */
 		xWantedSize += ( 0x4 - ( xWantedSize & 0x3 ) );
 	}
-
+    #if CONFIG_SYS_CPU0
+	if( psram_pxEnd == NULL || !bk_psram_heap_init_flag_get())
+	{
+		bk_pm_module_vote_psram_ctrl(PM_POWER_PSRAM_MODULE_NAME_AS_MEM,PM_POWER_MODULE_STATE_ON);
+	}
+    #endif
 	vTaskSuspendAll();
 	pvReturn = psram_malloc_without_lock(xWantedSize  + MEM_CHECK_TAG_LEN);
 	if(pvReturn)
