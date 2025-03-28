@@ -71,5 +71,10 @@ menu "PWR_CLK"
 	config CLK_FORCE_MAX_CPU_FREQ_320M
 		 bool "force max cpu frequency 320M"
 		default n
+	config PM_26M_STABILITY_DELAY_TIME_HARDWARE
+		 int "26M CRYSTAL HARDWARE STABILITY DELAY TIME"
+		default 1300
+		help
+			config the 26M crystal hardware stability time
 endmenu
 
