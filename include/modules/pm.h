@@ -308,12 +308,13 @@ typedef enum
 	PM_DEV_ID_DECODER,  // 33
 	PM_DEV_ID_LIN,      // 34
 	PM_DEV_ID_PWM_1,    // 35
-	PM_DEV_ID_SECURE_WORLD,  // 36
-	PM_DEV_ID_KEY,      // 39
+	PM_DEV_ID_SECURE_WORLD,// 36
+	PM_DEV_ID_KEY,      // 37
+	PM_DEV_ID_CPU1,     // 38
 
-	PM_DEV_ID_DEFAULT,  // 40  it is used by pm module set default cpu frequency
+	PM_DEV_ID_DEFAULT,  // 39  it is used by pm module set default cpu frequency
 
-	PM_DEV_ID_MAX
+	PM_DEV_ID_MAX       //attention:max 63
 }pm_dev_id_e;
 typedef enum
 {
