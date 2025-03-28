@@ -579,9 +579,6 @@ static void iperf_udp_client(void *thread_param)
 	uint32_t tick, packet_count = 0;
 	uint32_t retry_cnt;
 	int send_size;
-#if (CONFIG_SOC_BK7236XX || CONFIG_SOC_BK7239XX || CONFIG_SOC_BK7286XX) && !CONFIG_FREERTOS_SMP
-	int cycle = 7;
-#endif
 	int period_us = 0;
 	int fdelay_us = 0;
 	int64_t prev_time = 0;
@@ -671,11 +668,6 @@ tx_retry:
 			#if (CONFIG_TASK_WDT)
 			bk_task_wdt_feed();
 			#endif
-
-#if (CONFIG_SOC_BK7236XX || CONFIG_SOC_BK7239XX || CONFIG_SOC_BK7286XX) && !CONFIG_FREERTOS_SMP
-			if (packet_count % cycle == 0)
-				rtos_delay_milliseconds(1);
-#endif
 		}
 
 		if(s_param.state == IPERF_STATE_STOPPING){
