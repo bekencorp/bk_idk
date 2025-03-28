@@ -714,6 +714,8 @@ static bool_t shell_uart_ctrl(shell_dev_t * shell_dev, u8 cmd, void *param)
 			uart_ext->tx_stopped = 1;  /* suspend, tx stopped after fifo empty.*/
 
 			extern bool bk_uart_is_tx_over(uart_id_t id);
+			extern void bk_uart_wait_tx_over(uart_id_t id);
+			bk_uart_wait_tx_over(uart_ext->uart_id);
 
 			while((bk_uart_is_tx_over(uart_ext->uart_id) == 0) && (param != 0))
 			{

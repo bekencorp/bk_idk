@@ -1569,6 +1569,21 @@ bool bk_uart_is_tx_over(uart_id_t id)
 	return uart_hal_is_tx_fifo_empty(&s_uart[id].hal, id);
 }
 
+void bk_uart_wait_tx_over(uart_id_t id)
+{
+	uint32_t uart_wait_us;
+	uint32_t baudrate;
+	uint32_t tx_fifo_count;
+	uart_hw_t *hw = (uart_hw_t *)UART_LL_REG_BASE(id);
+	extern void delay_us(UINT32 us);
+
+	tx_fifo_count = hw->fifo_status.tx_fifo_count + 1;
+	baudrate = UART_CLOCK / (hw->config.clk_div + 1);
+	uart_wait_us = 1000000 * tx_fifo_count * 10 / baudrate;
+
+	delay_us(uart_wait_us);
+}
+
 uint32_t uart_wait_tx_over(void)
 {
 	return uart_hal_wait_tx_over();

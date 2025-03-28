@@ -439,6 +439,17 @@ bool bk_uart_is_tx_over(uart_id_t id);
  */
 bk_err_t bk_uart_pm_backup(uart_id_t id);
 
+bk_err_t bk_uart_pm_restore(uart_id_t id);
+/**
+ * @brief     Wait uart tx over
+ *
+ * @param id UART id
+ *
+ * @return
+ *    - void
+ */
+void bk_uart_wait_tx_over(uart_id_t id);
+
 #ifdef __cplusplus
 }
 #endif
