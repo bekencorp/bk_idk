@@ -189,3 +189,31 @@ PSRAM Overview
 
 	When used by customers, it is recommended to use the system interface to apply for and release psram memory (psram_malloc\psram_free),
 	and it is not recommended to use the above multimedia module defined interface to apply for and release psram memory.
+
+7、Application layer configuration psram cacheable
+-----------------------------------------------------
+
+    If the application layer application wants to configure psram to pass the cache to improve performance,you can refer to following method.
+    Below is the default configuration of psram：
+    
+    { ARM_MPU_RBAR(0x60000000UL, ARM_MPU_SH_NON, 0, 1, 0),
+      ARM_MPU_RLAR(0x63FFFFE0UL, 1) },
+    
+    If the application layer needs to configure part of the psram as cacheable,the code needs to be modified to the following,the part of the code is located in mpu_cfg.c:
+    
+    { ARM_MPU_RBAR(0x60000000UL, ARM_MPU_SH_INNER, 0, 1, 0),
+      ARM_MPU_RLAR(0x62FFFFE0UL, 1) },  //noncacheable
+
+    { ARM_MPU_RBAR(0x62FFFFE0UL, ARM_MPU_SH_NON, 0, 1, 0),
+      ARM_MPU_RLAR(0x63FFFFE0UL, 0) },  //cacheable
+
+.. note::
+
+	1.Do not configure all psram as cacheable,but configure it in segments.Because the psram used by the system is not cacheable by default.
+
+    2.The cacheable psram part configured by the application layer needs to ensure data consistency by the upper layer.
+
+    
+
+
+

@@ -16,7 +16,8 @@ OS 抽象层介绍
 .. note::
 
  - 在使用FreeRTOS的posix功能的时候，在引用posix相关头文件之前，需要先引用FreeRTOS_POSIX.h头文件；
- - 可以在components/bk_rtos/freertos/posix/freertos_impl/include/portable/bk/FreeRTOS_POSIX_portable.h中自定义相关配置。
+ - 可以在components/bk_rtos/freertos/posix/freertos_impl/include/portable/bk/FreeRTOS_POSIX_portable.h中自定义相关配置，比如某些功能或者数据结构想使用自定义或者编译器自带的，可以在该文件中屏蔽掉posix相关功能。
+ - 在移植posix时，如果遇到与编译器自带的头文件有冲突的情况，请优先检查以上两条。
 
 OS API详细信息
 ------------------------

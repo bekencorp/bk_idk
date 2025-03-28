@@ -176,3 +176,29 @@ PSRAM概述
 .. note::
 
 	客户使用时，建议使用系统的接口去申请和释放psram内存(psram_malloc\psram_free)，不建议使用上面多媒体模块自定义的申请和释放psram内存接口
+
+7、应用层配置psram过cache
+--------------------------
+
+    如果上层应用想要配置psram过cache来的提升速度，可以参考下述方法。
+    下面是默认的psram配置：
+    
+    { ARM_MPU_RBAR(0x60000000UL, ARM_MPU_SH_NON, 0, 1, 0),
+      ARM_MPU_RLAR(0x63FFFFE0UL, 1) },
+    
+    假如现在上层需要将部分psram配置为cacheable，需要将代码修改为以下,这部分代码位于mpu_cfg.c中：
+
+    { ARM_MPU_RBAR(0x60000000UL, ARM_MPU_SH_INNER, 0, 1, 0),
+      ARM_MPU_RLAR(0x62FFFFE0UL, 1) },  //noncacheable
+
+    { ARM_MPU_RBAR(0x62FFFFE0UL, ARM_MPU_SH_NON, 0, 1, 0),
+      ARM_MPU_RLAR(0x63FFFFE0UL, 0) },  //cacheable
+
+.. note::
+
+    1.不要将所有psram都配置为cacheable,而应该分段配置。因为被系统部分使用的psram默认是不开启cache的。
+    
+    2.客户上层配置的cacheable的pasrm部分，需要由上层保证数据的一致性。
+
+
+
