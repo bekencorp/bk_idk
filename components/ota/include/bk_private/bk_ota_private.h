@@ -84,8 +84,9 @@ struct ota_rbl_head
     uint32_t info_crc32;
 };
 
-int32_t ota_get_rbl_head(const bk_logic_partition_t *bk_ptr, struct ota_rbl_head *hdr);
+int32_t ota_get_rbl_head(const bk_logic_partition_t *bk_ptr, struct ota_rbl_head *hdr, uint32_t partition_len);
 int32_t ota_hash_verify(const bk_logic_partition_t *part, const struct ota_rbl_head *hdr);
+int32_t ota_do_hash_check(void);
 #endif
 
 

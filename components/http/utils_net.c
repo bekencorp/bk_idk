@@ -21,10 +21,6 @@ extern part_flag update_part_flag;
 #include "bk_wdt.h"
 #endif
 
-#ifdef CONFIG_OTA_HASH_FUNCTION
-#include "bk_private/bk_ota_private.h"
-#include "vendor_flash_partition.h"
-#endif
 uintptr_t HAL_TCP_Establish(const char *host, uint16_t port)
 {
 	struct addrinfo hints;
@@ -246,56 +242,6 @@ int32_t HAL_TCP_Read(uintptr_t fd, char *buf, uint32_t len, uint32_t timeout_ms)
 
     
 	} while ((bk_http_ptr->do_data == 1 && len_recv < bk_http_ptr->http_total) || ((len_recv < len) && (0 == data_over)));
-#ifdef CONFIG_HTTP_AB_PARTITION
-    if(((((float)(len_recv))/((float)(bk_http_ptr->http_total)))*100 == 100) &&((((float)(len_recv))/((float)(bk_http_ptr->http_total)))*100> 90))
-    {
-        uint8_t cust_confirm_flag = 0x1;  //represent do ota.
-        
-        ota_write_flash(BK_PARTITION_OTA_FINA_EXECUTIVE, cust_confirm_flag, 8);
-        if(update_part_flag == UPDATE_B_PART)
-        {
-            exec_flag ota_exec_flag = EXEC_B_PART;           
-            ota_write_flash( BK_PARTITION_OTA_FINA_EXECUTIVE, ota_exec_flag, 0);
-        }
-        else
-        {
-            exec_flag ota_exec_flag = EXEX_A_PART;         
-            ota_write_flash( BK_PARTITION_OTA_FINA_EXECUTIVE, ota_exec_flag, 0);
-        }
-#if CONFIG_OTA_EVADE_METHOD        
-		uint8_t download_status_flag = DOWNLOAD_SUCCESS_FLAG;
-        
-        ota_write_flash(BK_PARTITION_OTA_FINA_EXECUTIVE, download_status_flag, 12);
-#endif
-
-#ifdef CONFIG_OTA_HASH_FUNCTION
-
-		struct ota_rbl_head  rbl_hdr;
-		const bk_logic_partition_t *bk_ptr = NULL;
-
-		ret = BK_FAIL;
-
-		bk_ptr = bk_flash_partition_get_info(BK_PARTITION_S_APP_USER);   //note: when update_partition is B, arg: BK_PARTITION_APPLICATION1,update_partition is A£»arg: BK_PARTITION_APPLICATION
-
-		if((bk_ptr == NULL))
-		{
-			OTA_LOGE(" get %s fail \r\n",bk_ptr->partition_owner);
-			return BK_FAIL; 
-		}
-		
-		ota_get_rbl_head(bk_ptr, &rbl_hdr);
-		
-		ret = ota_hash_verify(bk_ptr, &rbl_hdr);
-		if(ret == BK_OK)
-		{
-			OTA_LOGI("hash sucess!!!! \r\n");
-		}
-}
-#endif
-
-    }
-#endif
-
 	//priority to return data bytes if any data be received from TCP connection.
 	//It will get error code on next calling
 	return (err_code == 0 && 0 != len_recv) ? len_recv : err_code;
