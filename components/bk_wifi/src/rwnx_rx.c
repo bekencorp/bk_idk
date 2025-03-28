@@ -511,7 +511,7 @@ void rwnx_upload_amsdu(struct fhost_rx_header *rxhdr)
 	// upload the other sub-MSDUs of A-MSDU
 	q = (struct pbuf *)(amsdu_hostids[i]);
 
-	while (q && i < NX_MAX_MSDU_PER_RX_AMSDU) {
+	while (q) {
 		#if NX_VERSION > NX_VERSION_PACK(6, 22, 0, 0)
 		/* preprocess for pbuf */
 		rwnx_rx_preprocess(iface, q);
@@ -520,7 +520,11 @@ void rwnx_upload_amsdu(struct fhost_rx_header *rxhdr)
 		ethernetif_input(iface, q);
 
 		/* get the next sub-MSDU */
-		q = (struct pbuf *)(amsdu_hostids[++i]);
+		i++;
+		if(i < NX_MAX_MSDU_PER_RX_AMSDU)
+			q = (struct pbuf *)(amsdu_hostids[i]);
+		else
+			break;
 	}
 }
 
