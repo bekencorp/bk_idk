@@ -92,5 +92,6 @@ Finish
 
   - Create an executable and link it into the component library.
   - Generate project metadata files such as project_description.json and display relevant information such as the built project.
+  - The execution steps of the compilation process are saved in the ``buildninja`` file corresponding to the project SOC in the build directory. If you need to view the specific compilation tree, you can check the ``armino`` folder in the same directory, which stores the ``.c.obj`` and ``. a`` files during the compilation process.
 
 Please refer to :armino_file:`/tools/build_tools/cmake/project.cmake` for more information.

@@ -56,6 +56,10 @@ These files can be grouped into two categories:
    All the items defined in Kconfig.projbuild will be show in the top menu of menuconfig. BK7258 does not support menuconfig, so Kconfig.projbuild
    works same as Kconfig.
 
+.. note::
+
+   The configuration item names defined in the Kconfig file need to be prefixed with ``CONFIG_`` when used in config, defconfig, and C code.
+
 In the Armino project, the priority of Kconfig configuration is::
 
  bk7258.config >  bk7258.defconfig > configuration definition files

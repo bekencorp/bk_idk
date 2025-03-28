@@ -161,7 +161,7 @@ The snapshot of BKFILL.exe downloading.
 
 
 Burn the serial port DL_UART0, click ``Download`` to burn the image, and then power down and restart the device after burning.
-
+If the burning process cannot obtain the device and gets stuck on the ``Getting Bus``. You can press the restart button once to restore the CPU state.
 
 Serial port Log and Command Line
 ------------------------------------

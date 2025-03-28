@@ -63,6 +63,10 @@ Armino Kconfig 组织如下图所示：
   会在 menuconfig 顶层菜单中显示该配置项。BK7236 不支持 menuconfig，因此 Kconfig.projbuild
   与 Kconfig 作用相同。
 
+.. note::
+
+  在Kconfig文件中定义的配置项名称，在config、defconfig和C代码中使用需要加上 ``CONFIG_`` 前缀。
+
 在 Armino 工程中，Kconfig 配置优先级为:
 
   my_projects/config/bk7236/config > my_projects/config/common/config > bk7236.defconfig > 配置定义文件

@@ -93,5 +93,6 @@ ARMINO 构建系统的列表文件位于 :armino:`/tools/build_tools/cmake` 中�
   
   - 创建可执行文件并将其链接到组件库中。
   - 生成 project_description.json 等项目元数据文件并且显示所建项目等相关信息。
+  - 编译过程的执行步骤都保存在build目录下对应工程soc的 ``build.ninja`` 文件中，如果需要查看具体的编译树可以查看同目录下的 ``armino`` 文件夹，该目录下，保存了编译过程中的 ``.c.obj`` 和 ``.a`` 文件。
 
 请参考 :armino_file:`/tools/build_tools/cmake/project.cmake` 获取更多信息。

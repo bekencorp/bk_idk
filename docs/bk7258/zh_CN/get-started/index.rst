@@ -164,6 +164,7 @@ BKFIL.exe 界面及相关配置如下图所示：
     BKFIL GUI
 
 选择烧录串口 DL_UART0，点击 ``烧录`` 进行版本烧录, 烧录完成之后掉电重启设备。
+如果烧录过程无法获取设备，卡在 ``Getting Bus...`` 时，可以按一下重启键，恢复cpu状态。
 
 点击 :ref:`BKFIL <bk_tool_bkfil>` 进一步了解 Armino 烧录工具。
 
