@@ -325,6 +325,8 @@ bk_err_t bk_gpio_register_isr(gpio_id_t gpio_id, gpio_isr_t isr)
 bk_err_t bk_gpio_enable_interrupt(gpio_id_t gpio_id)
 {
 	GPIO_RETURN_ON_INVALID_ID(gpio_id);
+	//Before enable the interrupt,wait for the internal stability of the chip
+	for (volatile int i = 0; i < 1000; i++);    
 
 	return gpio_hal_enable_interrupt(&s_gpio.hal, gpio_id);
 }
@@ -393,8 +395,8 @@ static void gpio_isr(void)
 			if (s_gpio_isr[gpio_id]) {
 				GPIO_LOGD("gpio int: index:%d \r\n",gpio_id);
 				s_gpio_isr[gpio_id](gpio_id);
-				bk_gpio_clear_interrupt(gpio_id);
 			}
+			bk_gpio_clear_interrupt(gpio_id);
 		}
 	}
 
