@@ -136,7 +136,7 @@ extern uint32_t calc_crc32(uint32_t crc, const uint8_t *buf, int len); */
 static void flash_error_handler(u32 handle, u8 user_cmd)
 {
 	flash_cmd_t   cmd_buff;
-	
+
 	memset(&cmd_buff, 0, sizeof(cmd_buff));
 	cmd_buff.ret_status = BK_FAIL;
 	mb_ipc_send(handle, user_cmd, (u8 *)&cmd_buff, sizeof(cmd_buff), FLASH_SVR_WAIT_TIME);
@@ -147,6 +147,18 @@ static void flash_erase_handler(u32 handle, flash_cmd_t *cmd_buff)
 	cmd_buff->ret_status = bk_flash_erase_sector(cmd_buff->addr);
 
 	int ret_val = mb_ipc_send(handle, FLASH_CMD_ERASE_SECTOR, (u8 *)cmd_buff, sizeof(flash_cmd_t), FLASH_SVR_WAIT_TIME);
+
+	if(ret_val != 0)
+		TRACE_E(TAG, "0x%x, erase-0x%x : %d, %d.\r\n", handle, cmd_buff->addr, cmd_buff->ret_status, ret_val);
+
+	(void)ret_val;
+}
+
+static void flash_fast_erase_handler(u32 handle, flash_cmd_t *cmd_buff)
+{
+	cmd_buff->ret_status = bk_flash_erase_fast(cmd_buff->addr,cmd_buff->len);
+
+	int ret_val = mb_ipc_send(handle, FLASH_CMD_FAST_ERASE, (u8 *)cmd_buff, sizeof(flash_cmd_t), FLASH_SVR_WAIT_TIME);
 
 	if(ret_val != 0)
 		TRACE_E(TAG, "0x%x, erase-0x%x : %d, %d.\r\n", handle, cmd_buff->addr, cmd_buff->ret_status, ret_val);
@@ -171,7 +183,7 @@ static void flash_read_handler(u32 handle, flash_cmd_t *cmd_buff, u8 connect_id)
 	}
 	#else
 	u8     * read_buff = flash_buff;
-	
+
 	if(cmd_buff->len > sizeof(flash_buff))
 	{
 		flash_error_handler(handle, FLASH_CMD_READ);
@@ -243,13 +255,13 @@ static void flash_read_handler(u32 handle, flash_cmd_t *cmd_buff, u8 connect_id)
 	}
 
 	(*read_buff) ^= 0x01;   // make crc not match
-	
+
 	#ifdef  DYNAMIC_FLASH_BUFFER
 	os_free(read_buff);
 	#endif
 
 	TRACE_I(TAG, "0x%x read done %d.\r\n", handle, user_cmd);
-		
+
 	return;
 }
 
@@ -291,7 +303,7 @@ static void flash_write_handler(u32 handle, flash_cmd_t *cmd_buff)
 			line_num = __LINE__;
 			break;
 		}
-		
+
 		write_status = bk_flash_write_bytes(cmd_buff->addr + write_len, (u8 *)write_buff, cpy_len);
 
 		if(write_status != BK_OK)
@@ -299,10 +311,10 @@ static void flash_write_handler(u32 handle, flash_cmd_t *cmd_buff)
 			line_num = __LINE__;
 			break;
 		}
-		
+
 		write_len += cpy_len;
 	}
-	
+
 	cmd_buff->ret_status = write_status;
 
 	int ret_val = mb_ipc_send(handle, FLASH_CMD_WRITE, (u8 *)cmd_buff, sizeof(flash_cmd_t), FLASH_SVR_WAIT_TIME);
@@ -323,7 +335,7 @@ static void flash_write_handler(u32 handle, flash_cmd_t *cmd_buff)
 static void flash_cmd_handler(u32 handle, u8 connect_id)
 {
 	int   recv_len = mb_ipc_get_recv_data_len(handle);
-	
+
 	flash_cmd_t   cmd_buff;
 	u8            user_cmd = INVALID_USER_CMD_ID;
 
@@ -359,19 +371,23 @@ static void flash_cmd_handler(u32 handle, u8 connect_id)
 
 	switch(user_cmd)
 	{
-		// flash driver cmds.  
+		// flash driver cmds.
 		// these flash driver cmds should be turned off when all APPs have been updated to use flash partition APIs.
 		#if 1
 		case FLASH_CMD_ERASE_SECTOR:
 			flash_erase_handler(handle, &cmd_buff);
 			break;
-			
+
 		case FLASH_CMD_READ:
 			flash_read_handler(handle, &cmd_buff, connect_id);
 			break;
-			
+
 		case FLASH_CMD_WRITE:
 			flash_write_handler(handle, &cmd_buff);
+			break;
+
+		case FLASH_CMD_FAST_ERASE:
+			flash_fast_erase_handler(handle, &cmd_buff);
 			break;
 		#endif
 
@@ -401,7 +417,7 @@ static u32 flash_svr_rx_callback(u32 handle, u32 connect_id)
 
 	rtos_set_event_ex(&flash_svr_event, connect_flag);
 
-	return 0;	
+	return 0;
 }
 
 static void flash_svr_connect_handler(u32 handle, u8 connect_id)
@@ -409,7 +425,7 @@ static void flash_svr_connect_handler(u32 handle, u8 connect_id)
 	u32  cmd_id;
 
 	int ret_val = mb_ipc_get_recv_event(handle, &cmd_id);
-	
+
 	if(ret_val != 0)  // failed
 	{
 		TRACE_E(TAG, "get evt fail %x %d.\r\n", handle, ret_val);
@@ -421,7 +437,7 @@ static void flash_svr_connect_handler(u32 handle, u8 connect_id)
 		TRACE_E(TAG, "cmd-id error %d.\r\n", cmd_id);
 		return;
 	}
-	
+
 	u8  src =0, dst = 0;
 
 	extern int mb_ipc_get_connection(u32 handle, u8 *src, u8 * dst);
@@ -453,7 +469,7 @@ static void flash_server_task(void * param)
 {
 	u32  handle;
 	u32  connect_handle;
-	
+
 	if(rtos_init_event_ex(&flash_svr_event) != BK_OK)
 	{
 		rtos_delete_thread(NULL);
@@ -468,7 +484,7 @@ static void flash_server_task(void * param)
 
 		rtos_deinit_event_ex(&flash_svr_event);
 		rtos_delete_thread(NULL);
-		
+
 		return ;
 	}
 
@@ -482,7 +498,7 @@ static void flash_server_task(void * param)
 		{
 			continue;
 		}
-		
+
 		if(event & FLASH_SVR_QUIT_EVENT)
 		{
 			break;
@@ -499,11 +515,11 @@ static void flash_server_task(void * param)
 	}
 
 	mb_ipc_server_close(handle, FLASH_SVR_WAIT_TIME);
-	
+
 	rtos_deinit_event_ex(&flash_svr_event);
 
 	s_flash_svr_init = 0;
-	
+
 	rtos_delete_thread(NULL);
 }
 
@@ -513,18 +529,18 @@ bk_err_t bk_flash_svr_init(void)
 		return BK_OK;
 
 	s_flash_svr_init = 1;
-	
+
 	#if CONFIG_SYS_CPU0
-	
+
 	#if IPC_GET_ID_CPU(FLASH_SERVER) != 0   // != CPU0.
 	#error server cpu configuration error!
 	#endif
 
 	int ret_val;
-	
-	ret_val = rtos_create_thread(NULL, FLASH_SVR_PRIORITY, "flash_svr", 
+
+	ret_val = rtos_create_thread(NULL, FLASH_SVR_PRIORITY, "flash_svr",
 					flash_server_task, FLASH_SVR_STACK_SIZE, NULL);
-	
+
 	return ret_val;
 
 	#endif

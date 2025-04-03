@@ -128,7 +128,7 @@ bk_err_t bk_flash_driver_init(void)
 	extern bk_err_t    mb_flash_ipc_init(void);
 
 	static u8   flash_mb_init = 0;
-	
+
 	if(flash_mb_init == 0)
 	{
 		bk_err_t ret_code = mb_flash_ipc_init();
@@ -155,10 +155,10 @@ bk_err_t bk_flash_driver_init(void)
 		#if LOCAL_TRACE
 		BK_LOGE(TAG, "flash-drv-client create socket failed\r\n");
 		#endif
-		
+
 		goto init_fail_exit;
 	}
-	
+
 	ret = mb_ipc_connect(flash_socket_handle, IPC_GET_ID_CPU(FLASH_SERVER), IPC_GET_ID_PORT(FLASH_SERVER), 500);
 
 	if(ret != 0)
@@ -166,7 +166,7 @@ bk_err_t bk_flash_driver_init(void)
 		#if LOCAL_TRACE
 		BK_LOGE(TAG, "flash-drv-client connect failed %d\r\n", ret);
 		#endif
-		
+
 		goto init_fail_exit;
 	}
 
@@ -178,7 +178,7 @@ bk_err_t bk_flash_driver_init(void)
 #endif
 
 	return BK_OK;
-	
+
 init_fail_exit:
 
 	if(flash_socket_handle != 0)
@@ -186,7 +186,7 @@ init_fail_exit:
 		mb_ipc_close(flash_socket_handle, FLASH_OPERATE_TIMEOUT);
 		flash_socket_handle = 0;
 	}
-	
+
 	rtos_deinit_mutex(&flash_mutex);
 	flash_mutex = NULL;
 
@@ -197,13 +197,13 @@ bk_err_t bk_flash_driver_deinit(void)
 {
 	if(!s_flash_client_init)
 		return BK_OK;
-	
+
 	if(flash_socket_handle != 0)
 	{
 		mb_ipc_close(flash_socket_handle, FLASH_OPERATE_TIMEOUT);
 		flash_socket_handle = 0;
 	}
-	
+
 	rtos_deinit_mutex(&flash_mutex);
 	flash_mutex = NULL;
 
@@ -216,7 +216,7 @@ bk_err_t bk_flash_erase_sector(uint32_t address)
 {
 	int  ret_val = BK_FAIL;
 	int  line_num;
-	
+
 	if(bk_flash_driver_init() != BK_OK)
 		return BK_FAIL;
 
@@ -228,7 +228,7 @@ bk_err_t bk_flash_erase_sector(uint32_t address)
 
 	rtos_lock_mutex(&flash_mutex);
 
-	int ret = mb_ipc_send(flash_socket_handle, FLASH_CMD_ERASE_SECTOR, 
+	int ret = mb_ipc_send(flash_socket_handle, FLASH_CMD_ERASE_SECTOR,
 		(u8 *)&cmd_buff, sizeof(cmd_buff), FLASH_OPERATE_TIMEOUT);
 
 	if(ret != 0)
@@ -238,10 +238,10 @@ bk_err_t bk_flash_erase_sector(uint32_t address)
 	}
 
 	u8   user_cmd = INVALID_USER_CMD_ID;
-	
+
 	memset(&cmd_buff, 0, sizeof(cmd_buff));
 
-	ret = mb_ipc_recv(flash_socket_handle, &user_cmd, (u8 *)&cmd_buff, 
+	ret = mb_ipc_recv(flash_socket_handle, &user_cmd, (u8 *)&cmd_buff,
 		sizeof(cmd_buff), FLASH_OPERATE_TIMEOUT);
 
 	if(ret != sizeof(cmd_buff))
@@ -293,7 +293,7 @@ static bk_err_t flash_read_bytes(uint32_t address, uint8_t *user_buf, uint32_t s
 {
 	int  ret_val = BK_FAIL;
 	int  line_num;
-	
+
 	if(size > 0xFFFF)
 		return BK_FAIL;
 
@@ -306,7 +306,7 @@ static bk_err_t flash_read_bytes(uint32_t address, uint8_t *user_buf, uint32_t s
 
 	rtos_lock_mutex(&flash_mutex);
 
-	int ret = mb_ipc_send(flash_socket_handle, FLASH_CMD_READ, 
+	int ret = mb_ipc_send(flash_socket_handle, FLASH_CMD_READ,
 			(u8 *)&cmd_buff, sizeof(cmd_buff), FLASH_OPERATE_TIMEOUT);
 
 	if(ret != 0)
@@ -316,10 +316,10 @@ static bk_err_t flash_read_bytes(uint32_t address, uint8_t *user_buf, uint32_t s
 	}
 
 	u8   user_cmd = INVALID_USER_CMD_ID;
-	
+
 	memset(&cmd_buff, 0, sizeof(cmd_buff));
 
-	ret = mb_ipc_recv(flash_socket_handle, &user_cmd, (u8 *)&cmd_buff, 
+	ret = mb_ipc_recv(flash_socket_handle, &user_cmd, (u8 *)&cmd_buff,
 			sizeof(cmd_buff), FLASH_OPERATE_TIMEOUT);
 
 	if(ret != sizeof(cmd_buff))
@@ -366,7 +366,7 @@ static bk_err_t flash_read_bytes(uint32_t address, uint8_t *user_buf, uint32_t s
 		goto read_exit;
 	}
 
-	ret = mb_ipc_send(flash_socket_handle, FLASH_CMD_READ_DONE, 
+	ret = mb_ipc_send(flash_socket_handle, FLASH_CMD_READ_DONE,
 			(u8 *)&cmd_buff, sizeof(cmd_buff), FLASH_OPERATE_TIMEOUT);
 
 	if(ret != 0)
@@ -379,7 +379,7 @@ static bk_err_t flash_read_bytes(uint32_t address, uint8_t *user_buf, uint32_t s
 
 	// memset(&cmd_buff, 0, sizeof(cmd_buff));
 
-	ret = mb_ipc_recv(flash_socket_handle, &user_cmd, (u8 *)&cmd_buff, 
+	ret = mb_ipc_recv(flash_socket_handle, &user_cmd, (u8 *)&cmd_buff,
 			sizeof(cmd_buff), FLASH_OPERATE_TIMEOUT);  // it is just a handshake. every send cmd to server must have a recv.
 
 #if LOCAL_TRACE
@@ -405,7 +405,7 @@ bk_err_t bk_flash_read_bytes(uint32_t address, uint8_t *user_buf, uint32_t size)
 {
 	int  ret_val = BK_OK;
 	u32  rd_len = 0;
-	
+
 	if(bk_flash_driver_init() != BK_OK)
 		return BK_FAIL;
 
@@ -429,7 +429,7 @@ static bk_err_t flash_write_bytes(uint32_t address, const uint8_t *user_buf, uin
 {
 	int  ret_val = BK_FAIL;
 	int  line_num;
-	
+
 	if(size > 0xFFFF)
 		return BK_FAIL;
 
@@ -444,7 +444,7 @@ static bk_err_t flash_write_bytes(uint32_t address, const uint8_t *user_buf, uin
 
 	rtos_lock_mutex(&flash_mutex);
 
-	int ret = mb_ipc_send(flash_socket_handle, FLASH_CMD_WRITE, 
+	int ret = mb_ipc_send(flash_socket_handle, FLASH_CMD_WRITE,
 		(u8 *)&cmd_buff, sizeof(cmd_buff), FLASH_OPERATE_TIMEOUT + size / 200);  // flash write speed: write done 200 bytes in 1ms.
 
 	if(ret != 0)
@@ -454,10 +454,10 @@ static bk_err_t flash_write_bytes(uint32_t address, const uint8_t *user_buf, uin
 	}
 
 	u8   user_cmd = INVALID_USER_CMD_ID;
-	
+
 	memset(&cmd_buff, 0, sizeof(cmd_buff));
 
-	ret = mb_ipc_recv(flash_socket_handle, &user_cmd, (u8 *)&cmd_buff, 
+	ret = mb_ipc_recv(flash_socket_handle, &user_cmd, (u8 *)&cmd_buff,
 		sizeof(cmd_buff), FLASH_OPERATE_TIMEOUT);
 
 	if(ret != sizeof(cmd_buff))
@@ -509,7 +509,7 @@ bk_err_t bk_flash_write_bytes(uint32_t address, const uint8_t *user_buf, uint32_
 {
 	int  ret_val = BK_OK;
 	u32  wr_len = 0;
-	
+
 	if(bk_flash_driver_init() != BK_OK)
 		return BK_FAIL;
 
@@ -554,4 +554,70 @@ bool bk_flash_is_driver_inited()
 	return s_flash_client_init;
 }
 
+bk_err_t bk_flash_erase_fast(uint32_t erase_off, uint32_t len)
+{
+	int  ret_val = BK_FAIL;
+	int  line_num;
 
+	if(bk_flash_driver_init() != BK_OK)
+		return BK_FAIL;
+
+	flash_cmd_t   cmd_buff;
+
+	memset(&cmd_buff, 0, sizeof(cmd_buff));
+
+	cmd_buff.addr = erase_off;
+	cmd_buff.len  = len;
+
+	rtos_lock_mutex(&flash_mutex);
+
+	int ret = mb_ipc_send(flash_socket_handle, FLASH_CMD_FAST_ERASE,
+		(u8 *)&cmd_buff, sizeof(cmd_buff), FLASH_OPERATE_TIMEOUT);
+
+	if(ret != 0)
+	{
+		line_num = __LINE__;
+		goto erase_fast_exit;
+	}
+
+	u8   user_cmd = INVALID_USER_CMD_ID;
+
+	memset(&cmd_buff, 0, sizeof(cmd_buff));
+
+	ret = mb_ipc_recv(flash_socket_handle, &user_cmd, (u8 *)&cmd_buff,
+		sizeof(cmd_buff), FLASH_OPERATE_TIMEOUT);
+
+	if(ret != sizeof(cmd_buff))
+	{
+		line_num = __LINE__;
+		goto erase_fast_exit;
+	}
+
+	if(user_cmd != FLASH_CMD_FAST_ERASE)
+	{
+		line_num = __LINE__;
+		ret = user_cmd;
+		goto erase_fast_exit;
+	}
+
+	if(cmd_buff.ret_status != BK_OK)
+	{
+		line_num = __LINE__;
+		ret = cmd_buff.ret_status;
+
+		goto erase_fast_exit;
+	}
+
+	ret_val = BK_OK;
+
+erase_fast_exit:
+
+	rtos_unlock_mutex(&flash_mutex);
+
+#if LOCAL_TRACE
+	if(ret_val != BK_OK)
+		BK_LOGE(TAG, "%s @%d, data=%d.\r\n", __FUNCTION__, line_num, ret);
+#endif
+
+	return ret_val;
+}

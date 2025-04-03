@@ -11,6 +11,7 @@ enum
 	FLASH_CMD_READ,
 	FLASH_CMD_READ_DONE,
 	FLASH_CMD_WRITE,
+	FLASH_CMD_FAST_ERASE,
 } ;
 
 typedef struct

@@ -29,6 +29,10 @@
 #include "partitions_gen.h"
 #endif
 
+extern bk_err_t bk_flash_erase_sector(uint32_t address);
+extern bk_err_t bk_flash_erase_32k(uint32_t address);
+extern bk_err_t bk_flash_erase_block(uint32_t address);
+
 #define FLASH_OPERATE_SIZE_AND_OFFSET    (4096)
 bk_err_t bk_spec_flash_write_bytes(bk_partition_t partition, const uint8_t *user_buf, uint32_t size,uint32_t offset)
 {
@@ -68,7 +72,7 @@ void * __attribute__((optimize("-O3"))) bk_memcpy_4w(void *dst, const void *src,
 {
 	unsigned char *dst_ptr = (unsigned char *)dst;
 	const unsigned char *src_ptr = (const unsigned char *)src;
-	
+
 	unsigned int temp1, temp2, temp3, temp4;
 
 	if((((unsigned int)src_ptr ^ (unsigned int)dst_ptr) & (sizeof(unsigned int) - 1)) == 0)
@@ -91,7 +95,7 @@ void * __attribute__((optimize("-O3"))) bk_memcpy_4w(void *dst, const void *src,
 			temp2 = src_wptr[1];
 			temp3 = src_wptr[2];
 			temp4 = src_wptr[3];
-	
+
 			dst_wptr[0] = temp1;
 			dst_wptr[1] = temp2;
 			dst_wptr[2] = temp3;
@@ -120,26 +124,6 @@ void * __attribute__((optimize("-O3"))) bk_memcpy_4w(void *dst, const void *src,
 
 	return dst;
 }
-
-#if defined(CONFIG_SECURITY_OTA) && !defined(CONFIG_TFM_FWU)
-
-#include "partitions.h"
-#include "_ota.h"
-#if CONFIG_CACHE_ENABLE
-#include "cache.h"
-#endif
-#if CONFIG_INT_WDT
-#include <driver/wdt.h>
-#include "bk_wdt.h"
-#endif
-
-#define CEIL_ALIGN_34(addr)           (((addr) + 34 - 1) / 34 * 34)
-
-extern bk_err_t bk_flash_erase_sector(uint32_t address);
-extern bk_err_t bk_flash_erase_32k(uint32_t address);
-extern bk_err_t bk_flash_erase_block(uint32_t address);
-extern void     bk_flash_enable_cpu_data_wr(void);
-extern void     bk_flash_disable_cpu_data_wr(void);
 
 static inline bool is_64k_aligned(uint32_t addr)
 {
@@ -178,6 +162,23 @@ bk_err_t bk_flash_erase_fast(uint32_t erase_off, uint32_t len)
 	return BK_OK;
 }
 
+#if defined(CONFIG_SECURITY_OTA) && !defined(CONFIG_TFM_FWU)
+
+#include "partitions.h"
+#include "_ota.h"
+#if CONFIG_CACHE_ENABLE
+#include "cache.h"
+#endif
+#if CONFIG_INT_WDT
+#include <driver/wdt.h>
+#include "bk_wdt.h"
+#endif
+
+#define CEIL_ALIGN_34(addr)           (((addr) + 34 - 1) / 34 * 34)
+
+extern void     bk_flash_enable_cpu_data_wr(void);
+extern void     bk_flash_disable_cpu_data_wr(void);
+
 __attribute__((section(".iram")))
 static void *flash_memcpy(void *d, const void *s, size_t n)
 {
@@ -190,7 +191,7 @@ static void bk_flash_write_cbus_flush(uint32_t address, const uint8_t *user_buf,
 	volatile uint8_t * temp1;
 	volatile uint8_t * temp2;
 	uint8_t            temp_data;
-	
+
 	if(size > 64)
 	{
 		temp1 = (volatile uint8_t *)(0x02000000 + address);
@@ -258,7 +259,7 @@ static void bk_flash_xip_write_cbus(uint32_t off, const void *src, uint32_t len)
 
 	if((fa_off+off) & 0x31)  // MUST aligh with 32-byte.
 		return;
-	
+
 	uint32_t int_status =  rtos_disable_int();
 #if CONFIG_CACHE_ENABLE
     enable_dcache(0);
