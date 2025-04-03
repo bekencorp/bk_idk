@@ -189,7 +189,7 @@ menu "Lwip_intf_v2_1"
 
 	config LWIP_TCP_SND_BUF
 		int "Default send buffer size"
-		default 29200 # 20 * default MSS
+		default 21900 # 20 * default MSS
 		range 2440 65535
 		help
 			Set default send buffer size for new TCP sockets.
@@ -205,7 +205,7 @@ menu "Lwip_intf_v2_1"
 
 	config LWIP_TCP_WND
 		int "Default receive window size"
-		default 29200 # 20 * default MSS
+		default 21900 # 20 * default MSS
 		range 2440 65535
 		help
 			Set default TCP receive window size for new TCP sockets.
