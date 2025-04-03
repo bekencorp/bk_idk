@@ -88,7 +88,7 @@ function Check-ImageExist {
     $max_version = Get-MaxVersion -versions $images_info
     $result = Compare-Versions -version1 $max_version -version2 $DOCKER_IMAGE_LOWEST_VERSION
     if ($result -ge 0) {
-        $global:DOCKER_IMAGE_VERSION = $max_version.ToString("F1")
+        $global:DOCKER_IMAGE_VERSION = $max_version
     } else {
         Write-Host "Docker image version is outdated. The minimum version is $DOCKER_IMAGE_LOWEST_VERSION"
         exit 1
