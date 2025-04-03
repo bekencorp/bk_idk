@@ -28,6 +28,9 @@ static bk_err_t test_flash_write(volatile uint32_t start_addr, uint32_t len)
 		buf[i] = i;
 
 	for (; addr < tmp; addr += 256) {
+		#if (CONFIG_TASK_WDT)
+    		bk_task_wdt_feed();
+		#endif
 		int int_level = rtos_enter_critical();
 		BK_DUMP_OUT("write addr(size:256):%d\r\n", addr);
 		rtos_exit_critical(int_level);
@@ -39,17 +42,21 @@ static bk_err_t test_flash_write(volatile uint32_t start_addr, uint32_t len)
 
 static bk_err_t test_flash_erase(volatile uint32_t start_addr, uint32_t len)
 {
-	uint32_t addr = start_addr;
-	uint32_t length = len;
-	uint32_t tmp = addr + length;
+	bk_err_t err = BK_OK;
+    uint32_t addr = start_addr;
+    uint32_t length = len;
 
-	for (; addr < tmp; addr += 0x1000) {
-		int int_level = rtos_enter_critical();
-		BK_DUMP_OUT("erase addr:%d\r\n", addr);
-		rtos_exit_critical(int_level);
-		bk_flash_erase_sector(addr);
+#if (CONFIG_TASK_WDT)
+    bk_task_wdt_feed();
+#endif
+
+	BK_DUMP_OUT("erase addr: 0x%08X\r\n", addr);
+	if((err = bk_flash_erase_fast(start_addr,length))!=0)
+	{
+		BK_DUMP_OUT("erase addr failed!\r\n");
 	}
-	return kNoErr;
+
+    return err;
 }
 
 static bk_err_t test_flash_read(volatile uint32_t start_addr, uint32_t len)
@@ -261,8 +268,8 @@ static bk_err_t test_flash_count_time(volatile uint32_t start_addr, uint32_t len
 		tick_cnt = 1000000 * (rtc_end_time.tv_sec - rtc_start_time.tv_sec) + rtc_end_time.tv_usec - rtc_start_time.tv_usec;
 		if(i % print_cnt == 0)
 			BK_DUMP_OUT("[read %d time] >>>>> cost time: %d us.\r\n", i, tick_cnt);
-	
-	
+
+
 		bk_rtc_gettimeofday(&rtc_start_time, 0);
 		for (addr = start_addr; addr < tmp; addr += 0x1000) {
 			bk_flash_erase_sector(addr);
@@ -271,7 +278,7 @@ static bk_err_t test_flash_count_time(volatile uint32_t start_addr, uint32_t len
 		tick_cnt = 1000000 * (rtc_end_time.tv_sec - rtc_start_time.tv_sec) + rtc_end_time.tv_usec - rtc_start_time.tv_usec;
 		if(i % print_cnt == 0)
 			BK_DUMP_OUT("[erase %d time] >>>>> cost time: %d us.\r\n", i, tick_cnt);
-	
+
 		//check erase data valid
 		if(i % print_cnt == 0) {
 			for (addr = start_addr; addr < tmp; addr += 256) {
@@ -283,11 +290,11 @@ static bk_err_t test_flash_count_time(volatile uint32_t start_addr, uint32_t len
 				}
 			}
 		}
-	
-	
+
+
 		for (int j = 0; j < 256; j++)
 			buf[j] = j;
-	
+
 		bk_rtc_gettimeofday(&rtc_start_time, 0);
 		for (addr = start_addr; addr < tmp; addr += 256) {
 			bk_flash_write_bytes(addr, (uint8_t *)buf, 256);
@@ -296,7 +303,7 @@ static bk_err_t test_flash_count_time(volatile uint32_t start_addr, uint32_t len
 		tick_cnt = 1000000 * (rtc_end_time.tv_sec - rtc_start_time.tv_sec) + rtc_end_time.tv_usec - rtc_start_time.tv_usec;
 		if(i % print_cnt == 0)
 			BK_DUMP_OUT("[write %d time] >>>>> cost time: %d us.\r\n", i, tick_cnt);
-	
+
 		//check write data valid
 		if(i % print_cnt == 0) {
 			for (addr = start_addr; addr < tmp; addr += 256) {
@@ -308,8 +315,8 @@ static bk_err_t test_flash_count_time(volatile uint32_t start_addr, uint32_t len
 				}
 			}
 		}
-	
-	
+
+
 		bk_rtc_gettimeofday(&rtc_start_time, 0);
 		bk_flash_set_protect_type(FLASH_PROTECT_NONE);
 		bk_rtc_gettimeofday(&rtc_end_time, 0);
@@ -513,7 +520,7 @@ static void flash_command_test(char *pcWriteBuffer, int xWriteBufferLen, int arg
 			rtos_delete_thread(&idle_read_flash_handle);
 			idle_read_flash_handle = NULL;
 			BK_DUMP_OUT("idle_read_flash task stop\n");
-		} 
+		}
 		return;
 	}
 
