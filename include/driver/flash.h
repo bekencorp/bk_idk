@@ -186,6 +186,22 @@ __attribute__((section(".iram"))) bk_err_t bk_flash_enter_deep_sleep(void);
 __attribute__((section(".iram"))) bk_err_t bk_flash_exit_deep_sleep(void);
 
 /**
+ * @brief Erases a specified range of flash memory.
+ *
+ * This function performs flash erase operations from the specified offset
+ * for the given length. Internally, it will choose the appropriate erase
+ * granularity (4K, 32K, or 64K) based on alignment and size.
+ *
+ * @param erase_off The starting offset (in bytes) within the flash.
+ * @param len       The total length (in bytes) of the flash to erase.
+ *
+ * @return
+ *    - BK_OK on success.
+ *    - Other error codes on failure.
+ */
+bk_err_t bk_flash_erase_fast(uint32_t erase_off, uint32_t len);
+
+/**
  * @brief     Write data to flash
  *
  * @param address address to write
