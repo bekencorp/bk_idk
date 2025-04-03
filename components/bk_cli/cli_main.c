@@ -65,6 +65,9 @@ extern int video_demo_register_cmd(void);
 
 #define SHELL_TASK_PRIORITY               4
 
+#define SHELL_CHECK_MINI_REMAIN_STACK    (8 * 1024)
+#define SHELL_TASK_CHECK_CNT             (200)
+
 
 /* Find the command 'name' in the cli commands table.
 * If len is 0 then full match will be performed else upto len bytes.
@@ -173,6 +176,7 @@ int handle_shell_input(char *inbuf, int in_buf_size, char * outbuf, int out_buf_
 	int 	err = kNoErr;
 
 	struct cmd_parameter cmd_par;
+    volatile uint8_t shell_wait_cnt = 0;
 
 	while((in_buf_size > 0) && (*inbuf == ' '))
 	{
@@ -215,6 +219,19 @@ int handle_shell_input(char *inbuf, int in_buf_size, char * outbuf, int out_buf_
 	}
 	else
 	#endif
+
+    /* If you send  cli commands too quickly,it may cause memory exhaustion.
+    Here we wait for enough memory before responding to command */
+    while (rtos_get_free_heap_size() <= SHELL_CHECK_MINI_REMAIN_STACK)
+    {
+        rtos_delay_milliseconds(20);
+        shell_wait_cnt++;
+        if(shell_wait_cnt >= SHELL_TASK_CHECK_CNT) {
+            shell_wait_cnt = 0;
+            BK_ASSERT(0);
+        }
+    }
+    
     ret = rtos_create_thread(&shell_handle_thread_handle,
                                 4,
                                 "shell_handle",
