@@ -92,8 +92,8 @@ function check_image_exist() {
 
     images_info_arr=($images_info)
     max_version=$(find_max_version "${images_info_arr[@]}")
-
-    if (( $(echo "$max_version >= $DOCKER_IMAGE_LOWEST_VERSION" | bc -l) ));then
+    result=$(compare_versions $max_version $DOCKER_IMAGE_LOWEST_VERSION)
+    if [ $result -ge 0 ];then
         DOCKER_IMAGE_VERSION=$max_version
     else
         echo "Docker image version is outdated. The minimum version is $DOCKER_IMAGE_LOWEST_VERSION"
