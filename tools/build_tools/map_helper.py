@@ -73,14 +73,18 @@ class MapHelper(object):
                         continue
 
     def format_title_line(self):
-        return '{0}	{1}	{2}	{3}	{4}	{5}	{6}	{7}\n'.format('text'.rjust(7), 'code'.rjust(7), 'rodata'.rjust(7), 'data'.rjust(7), 'bss'.rjust(7), 'dec'.rjust(7), 'hex'.rjust(7), 'filename')    
+        return '{0}	{1}	{2}	{3}	{4}	{5}	{6}	{7}	{8}	{9}\n'.format('flash'.rjust(7), 'ram'.rjust(7), 'text'.rjust(7), 'code'.rjust(7), 'rodata'.rjust(7), 'data'.rjust(7), 'bss'.rjust(7), 'dec'.rjust(7), 'hex'.rjust(7), 'filename')    
 
     def format_size_line(self, code_size, rodata_size, data_size, bss_size, filename, obj_name):
+        flash_size = code_size + rodata_size + data_size
+        ram_size = data_size + bss_size
         text_size = code_size + rodata_size
         dec_size = text_size + data_size + bss_size
         hex_size = hex(dec_size)[2:]
-        return ([text_size, code_size, rodata_size, data_size, bss_size, dec_size, '`'+str(hex_size), obj_name + ' (ex ' + filename + ')', filename], 
-            '{0}	{1}	{2}	{3}	{4}	{5}	{6}	{7}\n'.format(
+        return ([flash_size, ram_size, text_size, code_size, rodata_size, data_size, bss_size, dec_size, '`'+str(hex_size), obj_name + ' (ex ' + filename + ')', filename], 
+            '{0}	{1}	{2}	{3}	{4}	{5}	{6}	{7}	{8}	{9}\n'.format(
+            str(flash_size).rjust(7), 
+            str(ram_size).rjust(7), 
             str(text_size).rjust(7), 
             str(code_size).rjust(7), 
             str(rodata_size).rjust(7), 
@@ -92,11 +96,15 @@ class MapHelper(object):
         ))
     
     def format_total_size_line(self, code_size, rodata_size, data_size, bss_size, filename):
+        flash_size = code_size + rodata_size + data_size
+        ram_size = data_size + bss_size
         text_size = code_size + rodata_size
         dec_size = text_size + data_size + bss_size
         hex_size = hex(dec_size)[2:]
-        return ( [text_size, code_size, rodata_size, data_size, bss_size, dec_size, '`'+str(hex_size), filename] ,
-            '{0}	{1}	{2}	{3}	{4}	{5}	{6}	{7}\n'.format(
+        return ( [flash_size, ram_size, text_size, code_size, rodata_size, data_size, bss_size, dec_size, '`'+str(hex_size), filename] ,
+            '{0}	{1}	{2}	{3}	{4}	{5}	{6}	{7}	{8}	{9}\n'.format(
+            str(flash_size).rjust(7), 
+            str(ram_size).rjust(7), 
             str(text_size).rjust(7), 
             str(code_size).rjust(7), 
             str(rodata_size).rjust(7), 
@@ -111,10 +119,10 @@ class MapHelper(object):
         with open(os.path.join(os.path.dirname(self.map_file_path), 'size_map.txt'), 'w') as f:
             with open(os.path.join(os.path.dirname(self.map_file_path), 'size_map_total.csv'), 'w', newline='') as f_csv:
                 csv_writer = csv.writer(f_csv)
-                csv_writer.writerow(['text', 'code', 'rodata', 'data', 'bss', 'dec', 'hex', 'filename'])
+                csv_writer.writerow(['flash', 'ram', 'text', 'code', 'rodata', 'data', 'bss', 'dec', 'hex', 'filename'])
                 with open(os.path.join(os.path.dirname(self.map_file_path), 'size_map_detail.csv'), 'w', newline='') as f_csv_detail:
                     csv_detail_writer = csv.writer(f_csv_detail)
-                    csv_detail_writer.writerow(['text', 'code', 'rodata', 'data', 'bss', 'dec', 'hex', 'filename', 'filename'])
+                    csv_detail_writer.writerow(['flash', 'ram', 'text', 'code', 'rodata', 'data', 'bss', 'dec', 'hex', 'filename', 'filename'])
                     for tmp_file in self.parsed_data.keys():
                         tmp_total = {
                             'text': 0,
