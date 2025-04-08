@@ -21,7 +21,7 @@ class MapHelper(object):
             'bss': ['.bss.', '.bss', '.sbss.', '.dtcm_sec_bss','.bt_spec_data','.ble_bss_data','video_spec_data'],
         }
         self.size_pat = re.compile(' +0x([a-fA-F\d]+) +0x([a-fA-F\d]+) +(.*)\((.*)\)')
-        self.oneline_size_pat = re.compile(' +.* +0x([a-fA-F\d]+) +0x([a-fA-F\d]+) +(.*)\((.*)\)')
+        self.oneline_size_pat = re.compile(' +[^ ]+ +0x([a-fA-F\d]+) +0x([a-fA-F\d]+) +(.*)\((.*)\)')
         #                0x00000000        0x8 armino/bk_rtos/libbk_rtos.a(rtos_pub.c.obj)
         self.parsed_data = OrderedDict()
 
@@ -49,27 +49,28 @@ class MapHelper(object):
         with open(self.map_file_path, 'r') as f:
             tmp_flag = None
             for tmp_line in f.readlines():
+                cur_line_flag = self.parse_flag(tmp_line)
+                if cur_line_flag is not None:
+                    tmp_flag = cur_line_flag
                 if tmp_flag is None:
-                    tmp_flag = self.parse_flag(tmp_line)
-                    if tmp_flag is not None:
-                        size_m = re.match(self.oneline_size_pat, tmp_line)
-                        if size_m:
-                            tmp_point_v = size_m.group(1)
-                            if tmp_point_v != '0'*len(tmp_point_v):
-                                #print('bbbbb', size_m.group(1), 'aaaa', tmp_line)
-                                self.add_parse_data(tmp_flag, int(size_m.group(2), 16), size_m.group(3), size_m.group(4))
-                                tmp_flag = None
+                    continue
                 else:
-                    # parse size
+                    size_oneline_m = re.match(self.oneline_size_pat, tmp_line)
+                    if size_oneline_m:
+                        tmp_point_v = size_oneline_m.group(1)
+                        if tmp_point_v != '0'*len(tmp_point_v):
+                            self.add_parse_data(tmp_flag, int(size_oneline_m.group(2), 16), size_oneline_m.group(3), size_oneline_m.group(4))
+                       
+                        tmp_flag = None
+                        continue
                     size_m = re.match(self.size_pat, tmp_line)
                     if size_m:
-                        #print(size_m.group(1))
                         tmp_point_v = size_m.group(1)
                         if tmp_point_v != '0'*len(tmp_point_v):
-                            # print('aaaaa', size_m.group(1))
                             self.add_parse_data(tmp_flag, int(size_m.group(2), 16), size_m.group(3), size_m.group(4))
-                    # clear flag content
-                    tmp_flag = None
+                        # clear flag content
+                        tmp_flag = None
+                        continue
 
     def format_title_line(self):
         return '{0}	{1}	{2}	{3}	{4}	{5}	{6}	{7}\n'.format('text'.rjust(7), 'code'.rjust(7), 'rodata'.rjust(7), 'data'.rjust(7), 'bss'.rjust(7), 'dec'.rjust(7), 'hex'.rjust(7), 'filename')    
