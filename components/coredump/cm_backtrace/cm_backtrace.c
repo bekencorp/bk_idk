@@ -630,8 +630,9 @@ static uint32_t statck_del_fpu_regs(uint32_t fault_handler_lr, uint32_t sp) {
  */
 void cm_backtrace_fault(uint32_t fault_handler_lr, uint32_t fault_handler_sp) {
 
-    uint32_t stack_pointer = fault_handler_sp, saved_regs_addr = stack_pointer;
-    const char *regs_name[] = { "R0 ", "R1 ", "R2 ", "R3 ", "R12", "LR ", "PC ", "PSR" };
+    uint32_t stack_pointer = fault_handler_sp;
+   // saved_regs_addr = stack_pointer;
+   // const char *regs_name[] = { "R0 ", "R1 ", "R2 ", "R3 ", "R12", "LR ", "PC ", "PSR" };
     int core = cm_backtrace_get_core();
 #if CONFIG_FREERTOS_SMP
     uint32_t flags;
@@ -661,8 +662,8 @@ void cm_backtrace_fault(uint32_t fault_handler_lr, uint32_t fault_handler_sp) {
     /* check which stack was used before (MSP or PSP) */
     if (on_thread_before_fault[core]) {
         cmb_println(print_info[PRINT_FAULT_ON_THREAD], get_cur_thread_name() != NULL ? get_cur_thread_name() : "NO_NAME");
-        saved_regs_addr = stack_pointer = cmb_get_psp();
-
+       // saved_regs_addr = stack_pointer = cmb_get_psp();
+       stack_pointer = cmb_get_psp();      
 #ifdef CMB_USING_DUMP_STACK_INFO
         get_cur_thread_stack_info(stack_pointer, &stack_start_addr, &stack_size);
 #endif /* CMB_USING_DUMP_STACK_INFO */
@@ -692,6 +693,7 @@ void cm_backtrace_fault(uint32_t fault_handler_lr, uint32_t fault_handler_sp) {
     dump_stack(stack_start_addr, stack_size, (uint32_t *) stack_pointer);
 #endif /* CMB_USING_DUMP_STACK_INFO */
 
+#if 0   /* cpu registers already print in coredump! */
     /* the stack frame may be get failed when it is overflow  */
     if (!stack_is_overflow[core]) {
         /* dump register */
@@ -716,7 +718,7 @@ void cm_backtrace_fault(uint32_t fault_handler_lr, uint32_t fault_handler_sp) {
                                                                 regs_name[7], regs[core].saved.psr.value);
         cmb_println("==============================================================");
     }
-
+#endif
     /* the Cortex-M0 is not support fault diagnosis */
 #if (CMB_CPU_PLATFORM_TYPE != CMB_CPU_ARM_CORTEX_M0)
     regs[core].syshndctrl.value = CMB_SYSHND_CTRL;  // System Handler Control and State Register

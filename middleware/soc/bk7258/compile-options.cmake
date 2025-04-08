@@ -3,6 +3,16 @@ set(OVERRIDE_COMPILE_OPTIONS
     "-mfpu=fpv5-sp-d16"
     "-mfloat-abi=hard"
     "-mcmse"
-	"-fstack-protector"
+    "-fstack-protector"
+    "--specs=nano.specs"
+    "--specs=nosys.specs"
+    "-ffunction-sections"
+    "-fdata-sections"
 )
 
+set(OVERRIDE_LINK_OPTIONS
+    "-Os"
+    "--specs=nano.specs"
+    "--specs=nosys.specs"
+
+)
