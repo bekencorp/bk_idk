@@ -84,7 +84,12 @@ menu "Bk_Wifi"
 		depends on WIFI_ENABLE
 		bool "Wifi CSI"
 		default n
-	
+		
+	config WIFI_CSI_DEMO
+		depends on WIFI_CSI_EN
+		bool "Wifi CSI Demo"
+		default n
+		
 	config WIFI_CSI_MEMORY_OPTIMIZATION
 		depends on WIFI_CSI_EN
 		bool "Wifi CSI MEMORY_OPTIMIZATION"

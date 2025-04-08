@@ -746,7 +746,11 @@ struct wifi_csi_info_t{
 	union
 	{
 		uint32_t buf[52];				/**< CSI info */
-		double abs[52];					/**< CSI info abs */
+		//double abs[52];				/**< CSI info abs */
+		struct{							/**< CSI info iq */
+			double real;
+			double imag;
+		}iq[52];
 	}data;
 };
 

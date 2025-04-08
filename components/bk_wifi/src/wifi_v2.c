@@ -66,6 +66,9 @@
 #include "bk_ef.h"
 #endif
 #endif
+#if (CONFIG_WIFI_CSI_EN && CONFIG_WIFI_CSI_DEMO)
+#include "bk_csi_demo.h"
+#endif /* CONFIG_WIFI_CSI_EN && CONFIG_WIFI_CSI_DEMO */
 
 __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t *g_wifi_funcs = NULL;
 __attribute__((section(".dtcm_sec_data "))) wifi_os_variable_t *g_wifi_vars = NULL;
@@ -4278,6 +4281,25 @@ void bk_wifi_csi_info_cb(void * data)
 	if(g_wifi_csi_info_handler)
 		g_wifi_csi_info_handler((struct wifi_csi_info_t *)data);
 }
+#if CONFIG_WIFI_CSI_DEMO
+extern beken_queue_t bk_csi_demo_queue;
+bk_err_t bk_wifi_csi_demo_turn_on_light(uint8_t color, bool flicker) {
+	bk_csi_demo_event_t event;
+	event.id      = BK_CSI_DEMO_TURN_ON_LIGHT_EVENT;
+	event.color   = color;
+	event.flicker = flicker;
+
+	if (bk_csi_demo_queue != NULL) {
+		if (rtos_push_to_queue(&bk_csi_demo_queue, &event, BEKEN_NO_WAIT) != kNoErr) {
+			os_printf("Push turn_on_light event into queue fail\n");
+			return BK_ERR_BUSY;
+		}
+	} else {
+		return BK_ERR_NOT_FOUND;
+	}
+	return BK_OK;
+}
+#endif
 
 bk_err_t bk_wifi_get_tx_stats(uint8_t mode,struct tx_stats_t* tx_stats)
 {

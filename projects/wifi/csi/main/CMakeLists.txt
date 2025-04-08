@@ -3,6 +3,7 @@ set(incs .
     )
 set(srcs
     armino_main.c
+    bk_csi_demo.c
     )
 
 

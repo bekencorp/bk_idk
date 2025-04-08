@@ -8,7 +8,7 @@
 #include "bk_private/bk_init.h"
 #include "bk_private/bk_wifi.h"
 #include "modules/wifi_types.h"
-//#include "bk_csi_demo.h"
+#include "bk_csi_demo.h"
 
 #if (CONFIG_SYS_CPU0)
 int csi_wifi_event_alg_cb(void *arg, event_module_t event_module,
@@ -17,7 +17,11 @@ int csi_wifi_event_alg_cb(void *arg, event_module_t event_module,
 	struct wifi_csi_alg_ind *csi_data_info = (struct wifi_csi_alg_ind *)event_data;
 	// TODO data handle
 	BK_LOG_RAW("--------------out test v1=%d v2=%d\r\n",csi_data_info->v1,csi_data_info->v2);
-	
+	#if CONFIG_WIFI_CSI_DEMO
+	uint8_t color = csi_data_info->v1;
+	bool flicker = (csi_data_info->v2==1);
+	bk_wifi_csi_demo_turn_on_light(color, flicker);
+	#endif
 	return BK_OK;
 }
 
@@ -51,10 +55,10 @@ void wifi_csi_rx_cb_demo(struct wifi_csi_info_t *info)
 		}
 		else if(info->data_type == 1)//abs
 		{
-			BK_LOG_RAW("SPCSIINFO ABS:%d,[",info->len);
+			BK_LOG_RAW("SPCSIINFO iq:%d,[",info->len);
 			for(int i=0;i<info->len;i++)
 			{
-				BK_LOG_RAW("%f,",info->data.abs[i]);
+				BK_LOG_RAW("%f + %f i,",info->data.iq[i].real,info->data.iq[i].imag);
 			}
 			BK_LOG_RAW("]\r\n");
 		}
@@ -101,6 +105,7 @@ int main(void)
 	bk_wifi_capa_config(WIFI_CAPA_ID_RX_AMPDU_EN, 0);
 	// csi init
 	wifi_csi_init();
+	bk_csi_demo_main();
 	#endif
 
 	return 0;

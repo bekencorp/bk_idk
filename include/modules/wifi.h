@@ -1521,13 +1521,76 @@ bk_err_t bk_wifi_set_tx_power(wifi_standard standard, float powerdBm);
  */
 bk_err_t bk_wifi_get_vendor_ie_cb(void* vsie_cb, uint32_t vendor_type, uint8_t oui_len);
 #if CONFIG_WIFI_CSI_EN
+/**
+ * @brief config csi algorithm param
+ *
+ * @param rate1    smooth rate1(default 8), not recommended for modification
+ * @param rate2    smooth rate2(default 16), not recommended for modification
+ * @param rate3    smooth rate3(default 8), not recommended for modification
+ * @param thres1    detection threshold1(default 5),the larger the value,the less sensitive it is for motion detection.
+ * @param thres2    detection threshold2(default 3),the thres2 must smaller than thres1
+ * @param thres3    detection threshold3(default 8),the larger the value,the less sensitive it is for change detection.
+ * @param static_update    static update calibration param time with csi data cnt(default 15000)
+ * @param hold_time    move state keep time with csi data cnt(default 50)
+ *
+ * @return
+ *    - kNoErr: succeed
+ *    - otherwise: fail
+ */
 bk_err_t bk_wifi_csi_alg_config(uint16_t rate1,uint16_t rate2,uint16_t rate3,uint16_t thres1,uint16_t thres2,
 					uint16_t thres3,uint32_t static_update,uint32_t hold_time);
-
+/**
+ * @brief start csi
+ *
+ * @param tx_type    value 1 -- use NULL frame to get csi;
+ * @param rx_mode    value 1 -- csi data get opportunity at frame send;value 2 -- csi data get opportunity at rx frame;
+ * @param format    frame format : NON_HT 0x01;HT_MM 0x02;HE_SU 0x04(now algorithm only support NON_HT)
+ * @param is_resp_null    is ap response null frame null
+ * @param mode    bit 01--data capture for host; bit 10 -- data capture to uart; bit 100 -- algorithm; bit 1000 -- csi abs
+ * @param type    bit 01-- support STA csi; bit 10 -- support AP csi
+ * @param gap_num    gap number(for algorithm debgging)
+ * @param interval    csi data get interval(ms)
+ * @param gap    gap length(for algorithm debgging)
+ * @param data_cnt    the total number csi data get ,and 0 means get csi data all the time.
+ * @param delay    delay time for getting csi data
+ * @param filter_mac_num    filtering address number
+ * @param mac    filtering address list
+ *
+ * @return
+ *    - kNoErr: succeed
+ *    - otherwise: fail
+ */
 bk_err_t bk_wifi_csi_start_req(uint8_t tx_type,uint8_t rx_mode,uint8_t format,uint8_t is_resp_null,uint8_t mode,uint8_t type,uint8_t gap_num,
 					uint32_t interval,uint32_t gap,uint32_t data_cnt,uint32_t delay,uint8_t filter_mac_num,uint8_t *mac);
+/**
+ * @brief stop csi
+ *
+ * @return
+ *    - kNoErr: succeed
+ *    - otherwise: fail
+ */
 bk_err_t bk_wifi_csi_stop_req(void);
+/**
+ * @brief clear csi static param to recalibration, only for old algorithm
+ *
+ * @return
+ *    - kNoErr: succeed
+ *    - otherwise: fail
+ */
 bk_err_t bk_wifi_csi_static_param_reset_req(void);
+#if CONFIG_WIFI_CSI_DEMO
+/**
+ * @brief csi demo light control
+ *
+ * @param color    the color of the light
+ * @param flicker    the light is flicker
+ *
+ * @return
+ *    - kNoErr: succeed
+ *    - otherwise: fail
+ */
+bk_err_t bk_wifi_csi_demo_turn_on_light(uint8_t color, bool flicker);
+#endif
 #endif
 
 #ifdef __cplusplus
