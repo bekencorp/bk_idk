@@ -25,10 +25,13 @@ menu "SOC_CONFIG"
 		config SOC_BK7231N
 			bool "BK7231N"
 		config SOC_BK7236
+			select SOC_BK7236XX
 			bool "BK7236"
 		config SOC_BK7234
+			select SOC_BK7236XX
 			bool "BK7234"
 		config SOC_BK7236_CP1
+			select SOC_BK7236XX
 			bool "BK7236_CP1"
 		config SOC_BK723L
 			bool "BK723L"
@@ -41,10 +44,13 @@ menu "SOC_CONFIG"
 		config SOC_BK7286_CP1
 			bool "BK7286_CP1"
 		config SOC_BK7258
+			select SOC_BK7236XX
 			bool "BK7258"
 		config SOC_BK7258_CP1
+			select SOC_BK7236XX
 			bool "BK7258_CP1"
 		config SOC_BK7258_CP2
+			select SOC_BK7236XX
 			bool "BK7258_CP2"
 		config SOC_BK7256
 			bool "BK7256"
