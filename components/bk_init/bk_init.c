@@ -42,6 +42,10 @@
 #include <components/usb.h>
 #endif
 
+#if CONFIG_CAN
+#include <driver/can.h>
+#endif
+
 #if (CONFIG_OTA_UPDATE_DEFAULT_PARTITION && CONFIG_HTTP_AB_PARTITION)
 #include <modules/ota.h>
 extern void bk_ota_confirm_update_partition(ota_confirm_flag ota_confirm_val);
@@ -420,6 +424,10 @@ extern int mp_do_startup(int heap_len);
 #endif
 #if CONFIG_USB //&& CONFIG_MENTOR_USB
 	bk_usb_driver_init();
+#endif
+
+#if CONFIG_CAN
+	bk_can_driver_init();
 #endif
 
 #if (CONFIG_PSRAM)

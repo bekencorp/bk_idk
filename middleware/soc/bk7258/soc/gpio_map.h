@@ -238,6 +238,12 @@ struct {\
 	gpio_dev_t devs[DEV_NUM];\
 } table[MODE_NUM]
 
+#define GPIO_CAN_MAP_TABLE \
+{ \
+    {{GPIO_44, GPIO_DEV_CAN_TX}, {GPIO_45, GPIO_DEV_CAN_RX}, {GPIO_46, GPIO_DEV_CAN_STANDBY}}, \
+}
+#define GPIO_CAN_USED_GPIO_NUM 1
+
 #define GPIO_I2C1_MAP_TABLE \
 {\
 	{BIT(0)|BIT(1), {GPIO_DEV_I2C1_SCL, GPIO_DEV_I2C1_SDA}},\

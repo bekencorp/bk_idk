@@ -215,6 +215,12 @@ if(CONFIG_LIN)
 	)
 endif()
 
+if(CONFIG_CAN) 
+	list(APPEND srcs 
+		"hal/can_hal.c" 
+	)
+endif()
+
 if(CONFIG_SLCD)
 	list(APPEND srcs
 		"hal/slcd_hal.c"

@@ -53,4 +53,5 @@ menu "Driver"
 	source "${ARMINO_PATH}/middleware/driver/scr/Kconfig"
 	source "${ARMINO_PATH}/middleware/driver/jpeg_dec/Kconfig"
 	source "${ARMINO_PATH}/middleware/driver/slcd/Kconfig"
+	source "${ARMINO_PATH}/middleware/driver/can/Kconfig"
 endmenu
