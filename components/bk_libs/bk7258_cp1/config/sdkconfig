@@ -621,6 +621,12 @@ CONFIG_PHY_SMSC=y
 #
 # CONFIG_SLCD is not set
 # end of SLCD
+
+#
+# CAN
+#
+# CONFIG_CAN is not set
+# end of CAN
 # end of Driver
 
 #
