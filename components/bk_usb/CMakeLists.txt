@@ -106,7 +106,15 @@ if (CONFIG_CHERRY_USB)
 				CherryUSB/class/cdc/usbh_cdc_acm.c
 			)
 		endif() # CONFIG_USB_CDC
-
+		if (CONFIG_USBH_SERIAL_CH340)
+			list(APPEND incs
+				bk_usbh_simulate_uart/
+			)
+			list(APPEND srcs
+				bk_usbh_simulate_uart/usbh_ch34x.c
+				bk_usbh_simulate_uart/bk_usbh_simulate_uart_api.c
+			)
+		endif() # CONFIG_USBH_SIMULATE_SERIAL_CH340
     endif() # CONFIG_USB_HOST
 endif() # CONFIG_CHERRY_USB
 

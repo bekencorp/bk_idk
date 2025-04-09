@@ -125,7 +125,8 @@ static const struct usbh_class_driver *usbh_find_class_driver(uint8_t class, uin
                 usbh_find_driver_printf_info(3, index->class, 0, 0, index->vid == vid, index->pid);
                 return index->class_driver;
             }
-        } else if (index->match_flags & (USB_CLASS_MATCH_INTF_CLASS | USB_CLASS_MATCH_INTF_SUBCLASS)) {
+        } else if ((index->match_flags & (USB_CLASS_MATCH_INTF_CLASS | USB_CLASS_MATCH_INTF_SUBCLASS)) == 
+                   (USB_CLASS_MATCH_INTF_CLASS | USB_CLASS_MATCH_INTF_SUBCLASS)) {
             if (index->class == class && index->subclass == subclass) {
                 usbh_find_driver_printf_info(4, index->class, index->subclass, 0, 0, 0);
                 return index->class_driver;

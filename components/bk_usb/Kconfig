@@ -173,6 +173,9 @@ menu "Bk_usb"
 			bool "Enable Usb Charge"
 			default n
 
+		config USBH_SERIAL_CH340
+			bool "Enable Usbh simulate serial ch340"
+			default n
 	endmenu
 
 	menu "Modify USB Demo Config"

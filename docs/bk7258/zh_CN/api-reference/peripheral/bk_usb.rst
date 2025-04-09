@@ -8,6 +8,7 @@ USB
    :maxdepth: 1
 
    USB Host UVC+UAC <usb/bk_usbh_uvc_uac>
+   USB Host Serial CH340 <usb/bk_usbh_serial_ch340>
    USB Host MSD <usb/bk_usbh_msd>
    USB Device MSC <usb/bk_usbd_msc>
 

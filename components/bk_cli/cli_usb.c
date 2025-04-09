@@ -747,6 +747,390 @@ void cli_usbd_hid_ops(char *pcWriteBuffer, int xWriteBufferLen, int argc, char *
 }
 #endif
 
+#if CONFIG_USBH_SERIAL_CH340
+#include <driver/trng.h>
+#include <components/usbh_simulate_uart_api.h>
+
+void cli_usbh_to_uart_rx_cb(usb_simulate_uart_id_t id, void *argv)
+{
+	CLI_LOGI("%s id %d\r\n", __func__, id);
+}
+
+void cli_usbh_to_uart_tx_cb(usb_simulate_uart_id_t id, void *argv)
+{
+	CLI_LOGI("%s id %d\r\n", __func__, id);
+}
+
+void cli_usbh_to_uart_connect_cb(usb_simulate_uart_id_t id, void *argv)
+{
+	CLI_LOGI("%s id %d\r\n", __func__, id);
+}
+
+void cli_usbh_to_uart_disconnect_cb(usb_simulate_uart_id_t id, void *argv)
+{
+	CLI_LOGI("%s id %d\r\n", __func__, id);
+}
+
+void cli_usbh_to_uart_ops(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	if (argc < 2) {
+		cli_usb_help();
+		return;
+	}
+
+	uint32_t id = 0xFF;
+	uint32_t cnt = 0;
+	uint32_t timeout = 0;
+	bk_err_t ret = 0;
+
+	id = os_strtoul(argv[2], NULL, 10);
+
+	if (os_strcmp(argv[1], "driver_init") == 0) {
+		extern bk_err_t bk_usbh_to_uart_simulate_driver_init(usb_simulate_uart_id_t id);
+		bk_usbh_to_uart_simulate_driver_init(id);
+	} else if (os_strcmp(argv[1], "driver_deinit") == 0) {
+		extern bk_err_t bk_usbh_to_uart_simulate_driver_deinit(usb_simulate_uart_id_t id);
+		bk_usbh_to_uart_simulate_driver_deinit(id);
+	} else if (os_strcmp(argv[1], "reg_cb") == 0) {
+		usb_simulate_uart_callback cb;
+		cb.rx_cb = cli_usbh_to_uart_rx_cb;
+		cb.rx_arg = NULL;
+		cb.tx_cb = cli_usbh_to_uart_tx_cb;
+		cb.tx_arg = NULL;
+		cb.connect_cb = cli_usbh_to_uart_connect_cb;
+		cb.connect_arg = NULL;
+		cb.disconnect_cb = cli_usbh_to_uart_disconnect_cb;
+		cb.disconnect_arg = NULL;
+
+		bk_usbh_to_uart_simulate_register_callback(id, &cb);
+	} else if (os_strcmp(argv[1], "unreg_cb") == 0) {
+		usb_simulate_uart_callback cb;
+		cb.rx_cb = NULL;
+		cb.rx_arg = NULL;
+		cb.tx_cb = NULL;
+		cb.tx_arg = NULL;
+		cb.connect_cb = NULL;
+		cb.connect_arg = NULL;
+		cb.disconnect_cb = NULL;
+		cb.disconnect_arg = NULL;
+
+		bk_usbh_to_uart_simulate_register_callback(id, &cb);
+	} else if (os_strcmp(argv[1], "read") == 0) {
+		cnt = os_strtoul(argv[3], NULL, 10);
+		timeout = os_strtoul(argv[4], NULL, 10);
+		uint8_t *data = os_malloc(cnt);
+		if(!data) {
+			CLI_LOGI("write malloc fail\r\n");
+			return;
+		}
+		memset(data, 0, cnt);
+		ret = bk_usbh_to_uart_simulate_read(id, data, cnt, timeout);
+		CLI_LOGI("ret: %d\r\n", ret);
+		if(ret > 0) {
+			for(uint32_t i = 0; i < ret; i++)
+			{
+				os_printf("data[%d]:%x\r\n",i, data[i]);
+			}
+		}
+		CLI_LOGI("\r\n");
+
+		os_free(data);
+	} else if (os_strcmp(argv[1], "write") == 0) {
+		cnt = os_strtoul(argv[3], NULL, 10);
+		timeout = os_strtoul(argv[4], NULL, 10);
+		uint32_t random_1 = 0;
+		uint8_t *data = os_malloc(cnt);
+		if(!data) {
+			CLI_LOGI("write malloc fail\r\n");
+			return;
+		}
+
+		for(uint32_t index = 0; index < cnt; (index += 4)) {
+			random_1 = bk_rand();
+			data[index] = (random_1 >> 0) & 0xFF;
+			data[index + 1] = (random_1 >> 8) & 0xFF;
+			data[index + 2] = (random_1 >> 16) & 0xFF;
+			data[index + 3] = (random_1 >> 24) & 0xFF;
+		}
+
+		ret = bk_usbh_to_uart_simulate_write(id, data, cnt, timeout);
+		CLI_LOGI("ret: %d\r\n", ret);
+
+		os_free(data);
+	} else if(os_strcmp(argv[1], "init") == 0) {
+
+		uart_config_t config;
+
+		config.data_bits = UART_DATA_8_BITS;    /**< UART data bits */
+		config.parity = UART_PARITY_NONE;          /**< UART parity */
+		config.stop_bits = UART_STOP_BITS_1;    /**< UART stop bits */
+		config.flow_ctrl = UART_FLOWCTRL_CTS_RTS; /**< UART flow control  */
+		config.src_clk = UART_SCLK_DCO;        /**< UART source clock */
+		config.rx_dma_en = 0;
+		config.tx_dma_en = 0;
+		ret = bk_usbh_to_uart_simulate_init(id, &config);
+		CLI_LOGI("ret: %d\r\n", ret);
+	} else if(os_strcmp(argv[1], "deinit") == 0) {
+		ret = bk_usbh_to_uart_simulate_deinit(id);
+		CLI_LOGI("ret: %d\r\n", ret);
+	} else if(os_strcmp(argv[1], "set_b") == 0) {
+		cnt = os_strtoul(argv[3], NULL, 10);
+		bk_usbh_to_uart_simulate_set_baud_rate(id, cnt);
+	} else if(os_strcmp(argv[1], "check") == 0) {
+		ret = bk_usbh_to_uart_simulate_check_device(id);
+		CLI_LOGI("ret: %d\r\n", ret);
+	} else {
+		cli_usb_help();
+		return;
+	}
+
+}
+
+#define SIMUALTE_UART_DEMO_SEND 1
+#define SIMUALTE_UART_DEMO_RECEIVE 2
+typedef struct {
+	int op;
+	void *param;
+} simulate_uart_demo_msg_t;
+
+typedef struct {
+	usb_simulate_uart_id_t id;
+	uint8_t *data;
+	uint32_t cnt;
+	uint32_t timeout;
+} simulate_uart_demo_data_ops;
+
+static 	beken_thread_t s_simulate_uart_demo_thread;
+static beken_queue_t s_simulate_uart_demo_msg_que;
+static simulate_uart_demo_data_ops s_tx_data;
+static simulate_uart_demo_data_ops s_rx_data;
+static bool connect_flag = 0;
+static bk_err_t simulate_uart_demo_send_msg(int op, void *param)
+{
+	bk_err_t ret;
+	simulate_uart_demo_msg_t msg;
+
+	msg.op = op;
+	msg.param = param;
+
+	if (s_simulate_uart_demo_msg_que) {
+		ret = rtos_push_to_queue(&s_simulate_uart_demo_msg_que, &msg, BEKEN_NO_WAIT);
+		if (kNoErr != ret) {
+			return BK_FAIL;
+		}
+
+		return ret;
+	}
+	return BK_OK;
+}
+
+void cli_simulate_uart_demo_rx_cb(usb_simulate_uart_id_t id, void *argv)
+{
+	CLI_LOGD("%s id %d\r\n", __func__, id);
+}
+
+void cli_simulate_uart_demo_tx_cb(usb_simulate_uart_id_t id, void *argv)
+{
+	CLI_LOGD("%s id %d\r\n", __func__, id);
+}
+
+void cli_simulate_uart_demo_connect_cb(usb_simulate_uart_id_t id, void *argv)
+{
+	CLI_LOGI("%s id %d\r\n", __func__, id);
+	connect_flag = 1;
+	simulate_uart_demo_send_msg(SIMUALTE_UART_DEMO_SEND, NULL);
+}
+
+void cli_simulate_uart_demo_disconnect_cb(usb_simulate_uart_id_t id, void *argv)
+{
+	CLI_LOGI("%s id %d\r\n", __func__, id);
+	connect_flag = 0;
+}
+static void simulate_uart_demo_send()
+{
+	uint32_t random_1 = 0;
+	usb_simulate_uart_id_t id = s_tx_data.id;
+	uint32_t cnt = s_tx_data.cnt;
+	uint32_t timeout = s_tx_data.timeout;
+	uint8_t *data = s_tx_data.data;
+	int ret = 0;
+
+	if(!data) {
+		CLI_LOGI("write buffer fail\r\n");
+		return;
+	}
+
+	for(uint32_t index = 0; index < cnt; (index += 4)) {
+		random_1 = bk_rand();
+		data[index] = (random_1 >> 0) & 0xFF;
+		data[index + 1] = (random_1 >> 8) & 0xFF;
+		data[index + 2] = (random_1 >> 16) & 0xFF;
+		data[index + 3] = (random_1 >> 24) & 0xFF;
+	}
+
+	ret = bk_usbh_to_uart_simulate_write(id, data, cnt, timeout);
+	CLI_LOGD("%s ret: %d\r\n", __func__, ret);
+}
+
+static void simulate_uart_demo_check_data(uint32_t cnt)
+{
+	uint8_t *txdata = s_tx_data.data;
+	uint8_t *rxdata = s_rx_data.data;
+
+	for(uint32_t i = 0; i < cnt; i++)
+	{
+		if(txdata[i] != rxdata[i]) {
+			CLI_LOGI("txdata[%d]:%x rxdata[%d]:%x\r\n", i, txdata[i], i, rxdata[i]);
+		}
+	}
+}
+
+static void simulate_uart_demo_receive()
+{
+	usb_simulate_uart_id_t id = s_rx_data.id;
+	uint32_t cnt = s_rx_data.cnt;
+	uint32_t timeout = s_rx_data.timeout;
+	uint8_t *data = s_rx_data.data;
+	int ret = 0;
+
+	if(!data) {
+		CLI_LOGI("read buffer fail\r\n");
+		return;
+	}
+
+	memset(data, 0, cnt);
+	ret = bk_usbh_to_uart_simulate_read(id, data, cnt, timeout);
+	CLI_LOGD("%s ret: %d\r\n", __func__, ret);
+	if(ret > 0) {
+		simulate_uart_demo_check_data(ret);
+	}
+}
+
+static void simulate_uart_demo_msg_handler(void *param)
+{
+	bk_err_t ret;
+
+	while (1) {
+		simulate_uart_demo_msg_t msg;
+		ret = rtos_pop_from_queue(&s_simulate_uart_demo_msg_que, &msg, BEKEN_WAIT_FOREVER);
+		if (kNoErr == ret) {
+			switch (msg.op) {
+				case SIMUALTE_UART_DEMO_SEND:
+					if(!connect_flag) break;
+					CLI_LOGI("%s SIMUALTE_UART_DEMO_SEND\r\n", __func__);
+					simulate_uart_demo_send();
+					simulate_uart_demo_send_msg(SIMUALTE_UART_DEMO_RECEIVE, NULL);
+					break;
+				case SIMUALTE_UART_DEMO_RECEIVE:
+					if(!connect_flag) break;	
+					CLI_LOGI("%s SIMUALTE_UART_DEMO_RECEIVE\r\n", __func__);
+					simulate_uart_demo_receive();
+					simulate_uart_demo_send_msg(SIMUALTE_UART_DEMO_SEND, NULL);
+					break;
+				default:
+					break;
+			}
+		}
+	}
+}
+void cli_simulate_uart_demo(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	if (argc < 2) {
+		cli_usb_help();
+		return;
+	}
+
+	bk_err_t ret = 0;
+
+	if (os_strcmp(argv[1], "init") == 0) {
+		CLI_LOGI("cli_simulate_uart_demo init \r\n");
+		/* setup 0  prepare parameters */
+		s_tx_data.id = os_strtoul(argv[2], NULL, 10);
+		s_tx_data.cnt = os_strtoul(argv[3], NULL, 10);
+		s_tx_data.timeout = os_strtoul(argv[4], NULL, 10);
+		s_tx_data.data = os_malloc(s_tx_data.cnt);
+		if(!s_tx_data.data) {
+			CLI_LOGI("write malloc fail\r\n");
+			return;
+		}
+
+		s_rx_data.id = os_strtoul(argv[2], NULL, 10);
+		s_rx_data.cnt = os_strtoul(argv[3], NULL, 10);
+		s_rx_data.timeout = os_strtoul(argv[4], NULL, 10);
+		s_rx_data.data = os_malloc(s_rx_data.cnt);
+		if(!s_rx_data.data) {
+			CLI_LOGI("read malloc fail\r\n");
+			return;
+		}
+		/* setup 1 register callback */
+		usb_simulate_uart_callback cb;
+		cb.rx_cb = cli_simulate_uart_demo_rx_cb;
+		cb.rx_arg = NULL;
+		cb.tx_cb = cli_simulate_uart_demo_tx_cb;
+		cb.tx_arg = NULL;
+		cb.connect_cb = cli_simulate_uart_demo_connect_cb;
+		cb.connect_arg = NULL;
+		cb.disconnect_cb = cli_simulate_uart_demo_disconnect_cb;
+		cb.disconnect_arg = NULL;
+		bk_usbh_to_uart_simulate_register_callback(s_tx_data.id, &cb);
+
+		/* setup 2 init */
+		uart_config_t config;
+		config.data_bits = UART_DATA_8_BITS;    /**< UART data bits */
+		config.parity = UART_PARITY_NONE;          /**< UART parity */
+		config.stop_bits = UART_STOP_BITS_1;    /**< UART stop bits */
+		config.flow_ctrl = UART_FLOWCTRL_CTS_RTS; /**< UART flow control  */
+		config.src_clk = UART_SCLK_DCO;        /**< UART source clock */
+		config.rx_dma_en = 0;
+		config.tx_dma_en = 0;
+		ret = bk_usbh_to_uart_simulate_init(s_tx_data.id, &config);
+
+		/* setup 3  application processing thread */
+		ret = rtos_create_thread(&s_simulate_uart_demo_thread, 4, "usb_t_ser_d", simulate_uart_demo_msg_handler, 1024, NULL);
+		if (ret != kNoErr) {
+			CLI_LOGI("rtos_create_thread failed!!!\r\n");
+			return;
+		}
+
+		ret = rtos_init_queue(&s_simulate_uart_demo_msg_que, "usb_t_ser_q", sizeof(simulate_uart_demo_msg_t), 10);
+		if (ret != kNoErr) {
+			CLI_LOGI("create demo message queue fail \r\n");
+			return;
+		}
+
+		CLI_LOGI("cli_simulate_uart_demo inited \r\n");
+	} else if (os_strcmp(argv[1], "deinit") == 0) {
+		if(s_simulate_uart_demo_thread)
+		{
+			rtos_delete_thread(&s_simulate_uart_demo_thread);
+		}
+		if(s_simulate_uart_demo_msg_que) {
+			rtos_deinit_queue(&s_simulate_uart_demo_msg_que);
+			s_simulate_uart_demo_msg_que = NULL;
+		}
+		ret = bk_usbh_to_uart_simulate_deinit(s_tx_data.id);
+		CLI_LOGI("ret: %d\r\n", ret);
+		if(s_tx_data.data) {
+			os_free(s_tx_data.data);
+		}
+		if(s_rx_data.data) {
+			os_free(s_rx_data.data);
+		}
+
+		s_tx_data.id = os_strtoul(argv[2], NULL, 10);
+		s_tx_data.cnt = os_strtoul(argv[3], NULL, 10);
+		s_tx_data.timeout = os_strtoul(argv[4], NULL, 10);
+		s_tx_data.data = NULL;
+		s_rx_data.id = os_strtoul(argv[2], NULL, 10);
+		s_rx_data.cnt = os_strtoul(argv[3], NULL, 10);
+		s_rx_data.timeout = os_strtoul(argv[4], NULL, 10);
+		s_rx_data.data = NULL;
+	} else{
+
+	}
+}
+#endif
+
 void cli_usb_base_ops(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
 	if (argc < 2) {
@@ -819,7 +1203,10 @@ const struct cli_command usb_host_clis[] = {
 #if CONFIG_USB_DEVICE && CONFIG_USB_HID
 	{"usbd_hid", "usbd_hid mouse_init|mouse_deinit|mouse_test", cli_usbd_hid_ops},
 #endif
-
+#if CONFIG_USBH_SERIAL_CH340
+	{"usbh_to_uart", "usbh_to_uart driver_init|driver_deinit|", cli_usbh_to_uart_ops},
+	{"simulate_uart_auto", "simulate_uart_auto init|deinit|", cli_simulate_uart_demo},
+#endif
 	{"usb", "usb driver_init|driver_deinit|power[gpio_id ops]|open_host|open_dev|close", cli_usb_base_ops},
 };
 
