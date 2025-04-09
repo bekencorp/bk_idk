@@ -13,6 +13,19 @@ set(armino_nm ${toolchain_path}/arm-none-eabi-nm)
 set(armino_objdump ${toolchain_path}/arm-none-eabi-objdump)
 set(armino_toolchain_size ${toolchain_path}/arm-none-eabi-size)
 
+if (WIN32)
+set(CMAKE_AR ${CMAKE_AR}.exe)
+set(CMAKE_C_COMPILER ${CMAKE_C_COMPILER}.exe)
+set(CMAKE_CXX_COMPILER ${CMAKE_CXX_COMPILER}.exe)
+set(CMAKE_ASM_COMPILER ${CMAKE_ASM_COMPILER}.exe)
+
+set(armino_objcopy ${armino_objcopy}.exe)
+set(armino_readelf ${armino_readelf}.exe)
+set(armino_nm ${armino_nm}.exe)
+set(armino_objdump ${armino_objdump}.exe)
+set(armino_toolchain_size ${armino_toolchain_size}.exe)
+endif ()
+
 #add the libs in toolchain
 link_libraries(libm.a) #contian sin() cos() ...
 link_libraries(libgcc.a) #contian __riscv_restore_2  __riscv_save_3 ...

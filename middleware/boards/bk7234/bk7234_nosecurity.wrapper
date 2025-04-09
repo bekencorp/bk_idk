@@ -13,6 +13,7 @@ import re
 import csv
 import subprocess
 import logging
+import platform
 
 armino_path = os.getenv("ARMINO_PATH")
 project_dir = os.getenv("PROJECT_DIR")
@@ -207,7 +208,7 @@ def get_bootloader_path(armino_path, chip):
         print('project %s/%s not in automatic_project list'%(project_name, armino_soc))
         get_bootloader_json_for_inserting()
 
-    os.system('%s/cmake_Gen_image genfile -injsonfile %s/config.json -infile %s/bootloader.bin -outfile %s/bootloader.bin -genjson %s/partition_bootloader.json'%(pack_boot_tools,pack_boot_tools, bootloader_no_insert_part_path,build_path, pack_boot_tools))
+    os.system('%s genfile -injsonfile %s/config.json -infile %s/bootloader.bin -outfile %s/bootloader.bin -genjson %s/partition_bootloader.json'%(get_pack_tool_exe(),pack_boot_tools, bootloader_no_insert_part_path,build_path, pack_boot_tools))
 
     bootloader_dest_path = '%s/bootloader.bin'%(build_path)
 
@@ -333,9 +334,22 @@ def get_security_status():
         security_ctrl_file = "%s/middleware/boards/%s/security_ctrl.csv"%(armino_path, chip)
         return (read_csv_data(security_ctrl_file).get('security'))
     return False
+
+def get_pack_tool_exe():
+    system = platform.system()
+    pack_tool_dir = '%s/tools/env_tools/beken_packager'%(armino_path)
+    if system == "Windows":
+        return os.path.join(pack_tool_dir, 'cmake_Gen_image.exe')
+    elif system == "Linux":
+        return os.path.join(pack_tool_dir, 'cmake_Gen_image')
+    elif system == "Darwin":
+        raise RuntimeError("not support macos")
+    else:
+        raise RuntimeError("unknown system type")
+
 #Package according to json file
 def pack_from_config_json(cfg_json, nm):
-    pack_tool = '%s/tools/env_tools/beken_packager/cmake_Gen_image'%(armino_path)
+    pack_tool = get_pack_tool_exe()
     json_file = './cfg_temp.json'
     infiles = ''
     nm_suffix = 'pack'
@@ -362,9 +376,21 @@ def pack_from_config_json(cfg_json, nm):
 
     return outfile
 
+def get_crc_tool_exe():
+    system = platform.system()
+    crc_tool_dir = '%s/tools/env_tools/beken_packager'%(armino_path)
+    if system == "Windows":
+        return os.path.join(crc_tool_dir, 'cmake_encrypt_crc.exe')
+    elif system == "Linux":
+        return os.path.join(crc_tool_dir, 'cmake_encrypt_crc')
+    elif system == "Darwin":
+        raise RuntimeError("not support macos")
+    else:
+        raise RuntimeError("unknown system type")
+
 #add crc
 def crc_from_config_json(cfg_json, nm):
-    crc_tool = '%s/tools/env_tools/beken_packager/cmake_encrypt_crc'%(armino_path)
+    crc_tool = get_crc_tool_exe()
     nm_suffix = 'crc'
     outfile = os.path.join(build_path, '%s_%s'%(nm, nm_suffix))
     if os.path.exists(crc_tool.strip()) and os.path.isfile(crc_tool.strip()):

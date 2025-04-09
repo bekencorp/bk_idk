@@ -8,6 +8,7 @@ import getpass
 import time
 import shutil
 import csv
+import platform
 
 from argparse import _MutuallyExclusiveGroup
 from genericpath import exists
@@ -64,6 +65,18 @@ def copy_files(postfix, src_dir, dst_dir):
 		if f.endswith(postfix):
 			if os.path.isfile(f'{src_dir}/{f}'):
 				shutil.copy(f'{src_dir}/{f}', f'{dst_dir}/{f}')
+
+def get_pack_tool_exe():
+    system = platform.system()
+    pack_tool_dir = '%s/tools/env_tools/beken_packager'%(armino_path)
+    if system == "Windows":
+        return os.path.join(pack_tool_dir, 'cmake_Gen_image.exe')
+    elif system == "Linux":
+        return os.path.join(pack_tool_dir, 'cmake_Gen_image')
+    elif system == "Darwin":
+        raise RuntimeError("not support macos")
+    else:
+        raise RuntimeError("unknown system type")
 
 def partition_csv_is_valid(partition_csv):
 	try:
@@ -206,7 +219,7 @@ def pack(prebuild):
 		if (gen_dir == None):
 			logging.error(f'Generated dir should NOT be empty')
 			exit(1)
-		run_cmd(f'{BK_UTILS_TOOL} gen all --debug')
+		run_cmd(f'python3 {BK_UTILS_TOOL} gen all --debug')
 		cwd = os.getcwd()
 		copy_file(f'{cwd}/partitions_partition.h', f'{cwd}/partitions_gen.h')
 		return
@@ -235,14 +248,14 @@ def pack(prebuild):
 	os.makedirs(dest_boot_dir, exist_ok=True)
 	if (os.path.exists(bootloader_bin) == True):
 		copy_file(bootloader_bin, f'{dest_boot_dir}/bootloader.bin')
-		run_cmd('%s/cmake_Gen_image genfile -injsonfile %s/config.json -infile %s/bootloader.bin -outfile %s/bootloader.bin -genjson %s/partition_bootloader.json'%(pack_boot_tools, pack_boot_tools, dest_boot_dir,_BUILD_DIR, pack_boot_tools))
+		run_cmd('%s genfile -injsonfile %s/config.json -infile %s/bootloader.bin -outfile %s/bootloader.bin -genjson %s/partition_bootloader.json'%(get_pack_tool_exe(), pack_boot_tools, dest_boot_dir,_BUILD_DIR, pack_boot_tools))
 	elif (os.path.exists(f'{dest_boot_dir}/bootloader.bin') == True):
 		logging.info(f'{bootloader_bin} not exist, could compile:')
-		run_cmd('%s/cmake_Gen_image genfile -injsonfile %s/config.json -infile %s/bootloader.bin -outfile %s/bootloader.bin -genjson %s/partition_bootloader.json'%(pack_boot_tools, pack_boot_tools, dest_boot_dir,_BUILD_DIR, pack_boot_tools))
+		run_cmd('%s genfile -injsonfile %s/config.json -infile %s/bootloader.bin -outfile %s/bootloader.bin -genjson %s/partition_bootloader.json'%(get_pack_tool_exe(), pack_boot_tools, dest_boot_dir,_BUILD_DIR, pack_boot_tools))
 	else:
 		pass
 
-	run_cmd(f'{BK_UTILS_TOOL} pack all --debug')
+	run_cmd(f'python3 {BK_UTILS_TOOL} pack all --debug')
 
 	logging.debug(f'copy binaries')
 	copy_binary('ota.bin', _BUILD_DIR, CMAKE_BIN_DIR)

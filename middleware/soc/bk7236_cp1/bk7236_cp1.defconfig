@@ -41,10 +41,6 @@ CONFIG_CACHE_ENABLE=y
 CONFIG_MPU=y
 
 #
-# Compile/Build
-#
-CONFIG_TOOLCHAIN_PATH="/opt/gcc-arm-none-eabi-10.3-2021.10/bin"
-#
 # Debug
 #
 CONFIG_ASSERT_REBOOT=y
