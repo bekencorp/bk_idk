@@ -122,6 +122,9 @@ INPUT = \
     ../../../include/components/video_types.h \
 	../../../include/components/usb.h \
 	../../../include/components/usb_types.h \
+    ../../../include/driver/can.h \
+	../../../include/driver/can_types.h \
+    ../../../include/driver/hal/hal_can_types.h \
 	../../../include/components/uvc_uac_api_common.h \
     ../../../include/modules/jpeg_decode_sw.h \
     ../../../include/modules/aec.h \

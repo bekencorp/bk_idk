@@ -25,4 +25,4 @@
    FLASH <bk_flash>
    FLASH_PARTITION <bk_flash_partition>
    I2S <bk_i2s>
-
+   CAN <bk_can>
