@@ -85,7 +85,7 @@ static void cli_can_send(void *param)
 	for (i = 0; i < ex_size; i++) {
 		demo_send_buf[i] = 0xbb;
 	}
-	frame.tag.fdf = CAN_PROTO_FD;
+	frame.tag.fdf = CAN_PROTO_20;
 	frame.tag.id = cli_can_id;
 	frame.tag.rtr = 0;
 	frame.tag.ide = 1;
@@ -192,15 +192,7 @@ static void cli_can_speed_cfg(char *pcWriteBuffer, int xWriteBufferLen, int argc
 
 	s_speed = os_strtoul(argv[1], NULL, 10);
 	f_speed = os_strtoul(argv[2], NULL, 10);
-
-	if (s_speed < CAN_BR_250K || s_speed > CAN_BR_5M || f_speed < CAN_BR_250K || f_speed > CAN_BR_5M) {
-		CLI_LOGI("beyond configurable range!!!\r\n");
-		return;
-	}
-	can_hal_set_reset(1);
-	can_hal_bit_rate_config(s_speed, f_speed);
-	can_hal_set_reset(0);
-
+	can_driver_bit_rate_config(s_speed, f_speed);
 }
 
 static void cli_can_statis(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)

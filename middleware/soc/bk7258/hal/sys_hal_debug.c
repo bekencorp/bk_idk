@@ -139,7 +139,7 @@ static void sys_dump_cpu_clk_div_mode1(void)
 	SOC_LOGI("	cksel_tim0: %8x\r\n", r->cksel_tim0);
 	SOC_LOGI("	cksel_tim1: %8x\r\n", r->cksel_tim1);
 	SOC_LOGI("	cksel_tim2: %8x\r\n", r->cksel_tim2);
-	SOC_LOGI("	reserved_bit_23_23: %8x\r\n", r->reserved_bit_23_23);
+	SOC_LOGI("	cksel_can: %8x\r\n", r->cksel_can);
 	SOC_LOGI("	cksel_i2s: %8x\r\n", r->cksel_i2s);
 	SOC_LOGI("	cksel_aud: %8x\r\n", r->cksel_aud);
 	SOC_LOGI("	clkdiv_jpeg: %8x\r\n", r->clkdiv_jpeg);

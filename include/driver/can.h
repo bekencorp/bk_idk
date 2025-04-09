@@ -128,6 +128,18 @@ void bk_can_register_isr_callback(can_callback_des_t *rx_cb, can_callback_des_t 
  */
 void bk_can_register_err_callback(can_callback_des_t *err_cb);
 
+/**
+ * @brief   Adjusting the Baud Rate
+ *
+ * @note    Berfore sending data, the baud rate can be adjusted
+ *          Pay attention to the protocol used to prevent speed mismatch.
+ *
+ * @param[in]   s_speed       CAN2.0 Baud rate
+ * @param[in]   f_speed       CAN FD Baud rate
+ *
+ */
+bk_err_t can_driver_bit_rate_config(can_bit_rate_e s_speed, can_bit_rate_e f_speed);
+
 #ifdef __cplusplus
 }
 #endif

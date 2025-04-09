@@ -43,6 +43,12 @@ void sys_hal_usb_charge_get_cal();
 
 /** Platform USB End **/
 
+/** Platform CAN Start **/
+void sys_hal_can_set_sel_clk(uint32_t v);
+uint32_t sys_hal_can_get_sel_clk(void);
+
+/** Platform CAN End **/
+
 /** Platform PWM Start **/
 void sys_hal_pwm_set_clock(uint32_t mode, uint32_t param);
 /** Platform PWM End **/

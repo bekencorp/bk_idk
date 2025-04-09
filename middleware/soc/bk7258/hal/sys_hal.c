@@ -78,6 +78,16 @@ void sys_hal_usb_analog_phy_en(bool en)
 	}
 }
 
+/* CAN select clock **/
+void sys_hal_can_set_sel_clk(uint32_t v)
+{
+	sys_ll_set_cpu_clk_div_mode1_cksel_can(v);
+}
+
+uint32_t sys_hal_can_get_sel_clk(void)
+{
+	return sys_ll_get_cpu_clk_div_mode1_cksel_can();
+}
 /** Platform PWM Start **/
 
 /** Platform PWM End **/

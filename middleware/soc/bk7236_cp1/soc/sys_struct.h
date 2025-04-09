@@ -139,7 +139,7 @@ typedef volatile union {
 		uint32_t cksel_tim0                       :  1; /**<bit[20 : 20] */
 		uint32_t cksel_tim1                       :  1; /**<bit[21 : 21] */
 		uint32_t cksel_tim2                       :  1; /**<bit[22 : 22] */
-		uint32_t reserved_bit_23_23               :  1; /**<bit[23 : 23] */
+		uint32_t cksel_can                        :  1; /**<bit[23 : 23] */
 		uint32_t cksel_i2s                        :  1; /**<bit[24 : 24] */
 		uint32_t cksel_aud                        :  1; /**<bit[25 : 25] */
 		uint32_t clkdiv_jpeg                      :  4; /**<bit[26 : 29] */

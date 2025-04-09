@@ -74,6 +74,7 @@ typedef enum {
 } can_channel_t;
 
 typedef enum {
+    CAN_BR_125K,	//81%
 	CAN_BR_250K,	//81%
 	CAN_BR_500K,	//81%
 	CAN_BR_800K,	//80%

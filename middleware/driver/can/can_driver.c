@@ -84,6 +84,7 @@ bk_err_t bk_can_gpio_deinit(can_channel_t chn)
 
 bk_err_t bk_can_clock_enable(void)
 {
+    sys_hal_can_set_sel_clk(1);
 	sys_drv_dev_clk_pwr_up(CLK_PWR_ID_CAN, CLK_PWR_CTRL_PWR_UP);
 
 	return BK_OK;
@@ -503,6 +504,19 @@ void can_isr(void)
     }
 
 	can_hal_set_ie_value(intc_stat);
+}
+
+bk_err_t can_driver_bit_rate_config(can_bit_rate_e s_speed, can_bit_rate_e f_speed)
+{
+    if (s_speed < CAN_BR_125K || s_speed > CAN_BR_5M || f_speed < CAN_BR_250K || f_speed > CAN_BR_5M) {
+        CAN_LOGE("beyond configurable range!!!\r\n");
+        return BK_ERR_PARAM;
+    }
+    can_hal_set_reset(1);
+    can_hal_bit_rate_config(s_speed, f_speed);
+    can_hal_set_reset(0);
+
+    return BK_OK;
 }
 
 bk_err_t bk_can_init(can_dev_t *can)

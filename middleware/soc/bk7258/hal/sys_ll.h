@@ -653,6 +653,16 @@ static inline uint32_t sys_ll_get_cpu_clk_div_mode1_cksel_tim2(void) {
 	return r->cksel_tim2;
 }
 
+static inline void sys_ll_set_cpu_clk_div_mode1_cksel_can(uint32_t v) {
+	sys_cpu_clk_div_mode1_t *r = (sys_cpu_clk_div_mode1_t*)(SOC_SYS_REG_BASE + (0x8 << 2));
+	r->cksel_can = v;
+}
+
+static inline uint32_t sys_ll_get_cpu_clk_div_mode1_cksel_can(void) {
+	sys_cpu_clk_div_mode1_t *r = (sys_cpu_clk_div_mode1_t*)(SOC_SYS_REG_BASE + (0x8 << 2));
+	return r->cksel_can;
+}
+
 static inline void sys_ll_set_cpu_clk_div_mode1_cksel_i2s(uint32_t v) {
 	sys_cpu_clk_div_mode1_t *r = (sys_cpu_clk_div_mode1_t*)(SOC_SYS_REG_BASE + (0x8 << 2));
 	r->cksel_i2s = v;
