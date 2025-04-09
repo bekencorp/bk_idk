@@ -8,85 +8,85 @@ function(__kconfig_init)
     endif()
 
     armino_build_get_property(armino_path ARMINO_PATH)
-    if(CMAKE_HOST_WIN32 AND DEFINED ENV{MSYSTEM})
-        # Prefer a prebuilt mconf-armino on Windows
-        find_program(WINPTY winpty)
-        unset(MCONF CACHE)  # needed when MSYS and CMD is intermixed (cache could contain an incompatible path)
-        find_program(MCONF mconf-armino)
+    # if(CMAKE_HOST_WIN32 AND DEFINED ENV{MSYSTEM})
+    #     # Prefer a prebuilt mconf-armino on Windows
+    #     find_program(WINPTY winpty)
+    #     unset(MCONF CACHE)  # needed when MSYS and CMD is intermixed (cache could contain an incompatible path)
+    #     find_program(MCONF mconf-armino)
 
-        # Fall back to the old binary which was called 'mconf' not 'mconf-armino'
-        if(NOT MCONF)
-            find_program(MCONF mconf)
-            if(MCONF)
-                LOGW("Falling back to mconf binary '${MCONF}' not mconf-armino. "
-                    "This is probably because an old version of ARMINO mconf is installed and this is fine. "
-                    "However if there are config problems please check the Getting Started guide for your platform.")
-            endif()
-        endif()
+    #     # Fall back to the old binary which was called 'mconf' not 'mconf-armino'
+    #     if(NOT MCONF)
+    #         find_program(MCONF mconf)
+    #         if(MCONF)
+    #             LOGW("Falling back to mconf binary '${MCONF}' not mconf-armino. "
+    #                 "This is probably because an old version of ARMINO mconf is installed and this is fine. "
+    #                 "However if there are config problems please check the Getting Started guide for your platform.")
+    #         endif()
+    #     endif()
 
-        if(NOT MCONF)
-            find_program(NATIVE_GCC gcc)
-            if(NOT NATIVE_GCC)
-                    LOGIW(
-                    "Windows requires an MSYS2 version of gcc on the PATH to build mconf-armino. "
-                    "Consult the setup docs for BEKEN-ARMINO on Windows.")
-            else()
-                # Use the existing Makefile to build mconf (out of tree) when needed
-                #
-                set(MCONF ${CMAKE_BINARY_DIR}/kconfig_bin/mconf-armino)
-                set(src_path ${armino_path}/tools/build_tools/kconfig)
+    #     if(NOT MCONF)
+    #         find_program(NATIVE_GCC gcc)
+    #         if(NOT NATIVE_GCC)
+    #                 LOGIW(
+    #                 "Windows requires an MSYS2 version of gcc on the PATH to build mconf-armino. "
+    #                 "Consult the setup docs for BEKEN-ARMINO on Windows.")
+    #         else()
+    #             # Use the existing Makefile to build mconf (out of tree) when needed
+    #             #
+    #             set(MCONF ${CMAKE_BINARY_DIR}/kconfig_bin/mconf-armino)
+    #             set(src_path ${armino_path}/tools/build_tools/kconfig)
 
-                # note: we preemptively remove any build files from the src dir
-                # as we're building out of tree, but don't want build system to
-                # #include any from there that were previously build with/for make
-                externalproject_add(mconf-armino
-                    SOURCE_DIR ${src_path}
-                    CONFIGURE_COMMAND ""
-                    BINARY_DIR "${CMAKE_BINARY_DIR}/kconfig_bin"
-                    BUILD_COMMAND rm -f ${src_path}/zconf.lex.c ${src_path}/zconf.hash.c
-                    COMMAND ${MAKE_COMMMAND} -f ${src_path}/Makefile mconf-armino
-                    BUILD_BYPRODUCTS ${MCONF}
-                    INSTALL_COMMAND ""
-                    EXCLUDE_FROM_ALL 1
-                    )
+    #             # note: we preemptively remove any build files from the src dir
+    #             # as we're building out of tree, but don't want build system to
+    #             # #include any from there that were previously build with/for make
+    #             externalproject_add(mconf-armino
+    #                 SOURCE_DIR ${src_path}
+    #                 CONFIGURE_COMMAND ""
+    #                 BINARY_DIR "${CMAKE_BINARY_DIR}/kconfig_bin"
+    #                 BUILD_COMMAND rm -f ${src_path}/zconf.lex.c ${src_path}/zconf.hash.c
+    #                 COMMAND ${MAKE_COMMMAND} -f ${src_path}/Makefile mconf-armino
+    #                 BUILD_BYPRODUCTS ${MCONF}
+    #                 INSTALL_COMMAND ""
+    #                 EXCLUDE_FROM_ALL 1
+    #                 )
 
-                file(GLOB mconf_srcfiles ${src_path}/*.c)
-                list(REMOVE_ITEM mconf_srcfiles "${src_path}/zconf.lex.c" "${src_path}/zconf.hash.c")
-                externalproject_add_stepdependencies(mconf-armino build
-                    ${mconf_srcfiles}
-                    ${src_path}/Makefile
-                    ${CMAKE_CURRENT_LIST_FILE})
-                unset(mconf_srcfiles)
-                unset(src_path)
+    #             file(GLOB mconf_srcfiles ${src_path}/*.c)
+    #             list(REMOVE_ITEM mconf_srcfiles "${src_path}/zconf.lex.c" "${src_path}/zconf.hash.c")
+    #             externalproject_add_stepdependencies(mconf-armino build
+    #                 ${mconf_srcfiles}
+    #                 ${src_path}/Makefile
+    #                 ${CMAKE_CURRENT_LIST_FILE})
+    #             unset(mconf_srcfiles)
+    #             unset(src_path)
 
-                set(menuconfig_depends DEPENDS mconf-armino)
-            endif()
-        else()
-            execute_process(COMMAND "${MCONF}" -v
-                RESULT_VARIABLE mconf_res
-                OUTPUT_VARIABLE mconf_out
-                ERROR_VARIABLE mconf_err)
-            if(${mconf_res})
-                LOGW("Failed to detect version of mconf-armino. Return code was ${mconf_res}.")
-            else()
-                string(STRIP "${mconf_out}" mconf_out)
-                set(mconf_expected_ver "mconf-v4.6.0.0-armino-20190628-win32")
-                if(NOT ${mconf_out} STREQUAL "mconf-armino version ${mconf_expected_ver}")
-                    LOGW("Unexpected ${mconf_out}. Expected ${mconf_expected_ver}. "
-                                    "Please check the BEKEN-ARMINO Getting Started guide for version "
-                                    "${ARMINO_VERSION_MAJOR}.${ARMINO_VERSION_MINOR}.${ARMINO_VERSION_PATCH} "
-                                    "to correct this issue")
-                else()
-                    LOGI("${mconf_out}")   # prints: mconf-armino version ....
-                endif()
-            endif()
-            if(WINPTY)
-                set(MCONF "\"${WINPTY}\" \"${MCONF}\"")
-            endif()
-        endif()
-        armino_build_set_property(__MCONF ${MCONF})
-        armino_build_set_property(__MENUCONFIG_DEPENDS "${menuconfig_depends}")
-    endif()
+    #             set(menuconfig_depends DEPENDS mconf-armino)
+    #         endif()
+    #     else()
+    #         execute_process(COMMAND "${MCONF}" -v
+    #             RESULT_VARIABLE mconf_res
+    #             OUTPUT_VARIABLE mconf_out
+    #             ERROR_VARIABLE mconf_err)
+    #         if(${mconf_res})
+    #             LOGW("Failed to detect version of mconf-armino. Return code was ${mconf_res}.")
+    #         else()
+    #             string(STRIP "${mconf_out}" mconf_out)
+    #             set(mconf_expected_ver "mconf-v4.6.0.0-armino-20190628-win32")
+    #             if(NOT ${mconf_out} STREQUAL "mconf-armino version ${mconf_expected_ver}")
+    #                 LOGW("Unexpected ${mconf_out}. Expected ${mconf_expected_ver}. "
+    #                                 "Please check the BEKEN-ARMINO Getting Started guide for version "
+    #                                 "${ARMINO_VERSION_MAJOR}.${ARMINO_VERSION_MINOR}.${ARMINO_VERSION_PATCH} "
+    #                                 "to correct this issue")
+    #             else()
+    #                 LOGI("${mconf_out}")   # prints: mconf-armino version ....
+    #             endif()
+    #         endif()
+    #         if(WINPTY)
+    #             set(MCONF "\"${WINPTY}\" \"${MCONF}\"")
+    #         endif()
+    #     endif()
+    #     armino_build_set_property(__MCONF ${MCONF})
+    #     armino_build_set_property(__MENUCONFIG_DEPENDS "${menuconfig_depends}")
+    # endif()
 
     armino_build_get_property(armino_path ARMINO_PATH)
     armino_build_set_property(__ROOT_KCONFIG ${armino_path}/Kconfig)

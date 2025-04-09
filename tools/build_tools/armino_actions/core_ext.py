@@ -3,6 +3,7 @@ import os
 import shutil
 import subprocess
 import sys
+import platform
 
 import click
 from armino_actions.constants import GENERATORS, PREVIEW_TARGETS, SUPPORTED_TARGETS
@@ -194,6 +195,9 @@ def action_extensions(base_actions, project_path):
 	def validate_root_options(ctx, args, tasks):
 		cur_dir = os.getcwd()
 		armino_path = os.environ['ARMINO_PATH']
+		if platform.system() == 'Windows':
+			cur_dir = cur_dir.lower()
+			armino_path = armino_path.lower()
 		armino_project_dir = os.environ.get('ARMINO_PROJECT_PATH')
 
 		if cur_dir != armino_path:

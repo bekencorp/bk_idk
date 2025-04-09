@@ -20,24 +20,24 @@ gpio_keys = [
 def gen_ppc_const(ppc, f):
     for dict in ppc.csv.dic_list:
         if dict["Secure"] == "TRUE":
-            line = f'#define GEN_SECURITY_DEV_%s_IS_SECURE    %s' %(dict["Device"], "1\r\n")
+            line = f'#define GEN_SECURITY_DEV_%s_IS_SECURE    %s' %(dict["Device"], "1\n")
         else:
-            line = f'#define GEN_SECURITY_DEV_%s_IS_SECURE    %s' %(dict["Device"], "0\r\n")
+            line = f'#define GEN_SECURITY_DEV_%s_IS_SECURE    %s' %(dict["Device"], "0\n")
         f.write(line)
         if dict["Privilege"] == "TRUE":
-            line = f'#define GEN_SECURITY_DEV_%s_IS_PRIVILEGE    %s' %(dict["Device"], "1\r\n")
+            line = f'#define GEN_SECURITY_DEV_%s_IS_PRIVILEGE    %s' %(dict["Device"], "1\n")
         else:
-            line = f'#define GEN_SECURITY_DEV_%s_IS_PRIVILEGE    %s' %(dict["Device"], "0\r\n")
+            line = f'#define GEN_SECURITY_DEV_%s_IS_PRIVILEGE    %s' %(dict["Device"], "0\n")
         f.write(line)
 
     empty_line(f)
-    line = f'#define DEV_IS_SECURE(dev)    GEN_SECURITY_DEV_##dev##_IS_SECURE\r\n'
+    line = f'#define DEV_IS_SECURE(dev)    GEN_SECURITY_DEV_##dev##_IS_SECURE\n'
     f.write(line)
-    line = f'#define DEV_ID_IS_SECURE(dev,id)    GEN_SECURITY_DEV_##dev##id##_IS_SECURE\r\n'
+    line = f'#define DEV_ID_IS_SECURE(dev,id)    GEN_SECURITY_DEV_##dev##id##_IS_SECURE\n'
     f.write(line)
-    line = f'#define DEV_IS_PRIVILEGE(dev)    GEN_SECURITY_DEV_##dev##_IS_PRIVILEGE\r\n'
+    line = f'#define DEV_IS_PRIVILEGE(dev)    GEN_SECURITY_DEV_##dev##_IS_PRIVILEGE\n'
     f.write(line)
-    line = f'#define DEV_ID_IS_PRIVILEGE(dev, id)    GEN_SECURITY_DEV_##dev##id##_IS_PRIVILEGE\r\n'
+    line = f'#define DEV_ID_IS_PRIVILEGE(dev, id)    GEN_SECURITY_DEV_##dev##id##_IS_PRIVILEGE\n'
     f.write(line)
 
 def gen_ppc_init_file(ppc):
@@ -47,18 +47,18 @@ def gen_ppc_init_file(ppc):
     logging.debug(f'Create {ppc_init_file_name}')
     f.write(get_license())
 
-    line = f'static inline void tfm_hal_ppc_init(void)\r\n'
+    line = f'static inline void tfm_hal_ppc_init(void)\n'
     f.write(line)
-    line = f'{{\r\n'
+    line = f'{{\n'
     f.write(line)
 
     for dict in ppc.csv.dic_list:
         if dict["Secure"] == "TRUE":
-            line = f'    bk_prro_set_secure(PRRO_DEV_%s, PRRO_SECURE);\r\n' %(dict["Device"])
+            line = f'    bk_prro_set_secure(PRRO_DEV_%s, PRRO_SECURE);\n' %(dict["Device"])
             f.write(line)
 
         if dict["Privilege"] == "FALSE":
-            line = f'    bk_prro_set_privilege(PRRO_DEV_%s, PRRO_NON_PRIVILEGED);\r\n' %(dict["Device"])
+            line = f'    bk_prro_set_privilege(PRRO_DEV_%s, PRRO_NON_PRIVILEGED);\n' %(dict["Device"])
             f.write(line)
 
     line = f'}}'

@@ -6,7 +6,7 @@ from .gen_license import get_license
 from .common import *
 
 def empty_line(f):
-    line = f'\r\n'
+    line = f'\n'
     f.write(line)
 
 def gen_mpc(device, block_size, f, sector_num, mpc):
@@ -21,11 +21,11 @@ def gen_mpc(device, block_size, f, sector_num, mpc):
         if dict["Device"] == device:
             start = int(dict["Offset"],16)
             if(start % block_size != 0):
-                logging.error("address not aligned!\r\n")
-                exit("check mpc.csv\r\n")
+                logging.error("address not aligned!\n")
+                exit("check mpc.csv\n")
             if (start < end):
-                logging.error("address overlapped!\r\n")
-                exit("check mpc.csv\r\n")
+                logging.error("address overlapped!\n")
+                exit("check mpc.csv\n")
             end = int(dict["Offset"],16)+ size2int(dict["Size"])
             size = size2int(dict["Size"])
             if(dict["Secure"] == "TRUE"):
@@ -35,7 +35,7 @@ def gen_mpc(device, block_size, f, sector_num, mpc):
             line = f'{{0x%x,%d,%d}},' %(start , size / block_size, sec)
             f.write(line)
             i+=1
-    line = f'}};\r\n'
+    line = f'}};\n'
     f.write(line)
 
 def gen_mpc_config_file(mpc_csv='mpc.csv', outfile='_mpc.h'):
@@ -62,24 +62,24 @@ def gen_mpc_config_file(mpc_csv='mpc.csv', outfile='_mpc.h'):
     gen_mpc("mem5", 4*1024, f, sector_num, mpc)
 
     empty_line(f)
-    line = f'typedef struct {{\r\n'
+    line = f'typedef struct {{\n'
     f.write(line)
-    line = f'    int dev_num;\r\n'
+    line = f'    int dev_num;\n'
     f.write(line)
-    line = f'    const int* pointer;\r\n'
+    line = f'    const int* pointer;\n'
     f.write(line)
-    line = f'    int sector_num;\r\n'
+    line = f'    int sector_num;\n'
     f.write(line)
-    line = f'}} dev_security_t;\r\n'
+    line = f'}} dev_security_t;\n'
     f.write(line)
     empty_line(f)
 
     list = ["psram","qspi0","qspi1","otp2","flash","mem0","mem1","mem2","mem3","mem4","mem5"]
-    line = f'const static dev_security_t mpc_security_table[11] = {{\r\n'
+    line = f'const static dev_security_t mpc_security_table[11] = {{\n'
     f.write(line)
     for i in range(11):
-        line = f'    {{%d, *%s, %d}},\r\n'%(i,list[i],sector_num[i])
+        line = f'    {{%d, *%s, %d}},\n'%(i,list[i],sector_num[i])
         f.write(line)
-    line = f'}};\r\n'
+    line = f'}};\n'
     f.write(line)
     f.close()

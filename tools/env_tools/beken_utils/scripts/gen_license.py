@@ -1,25 +1,25 @@
 #!/usr/bin/env python3
 
 s_license = "\
-// Copyright 2022-2024 Beken\r\n\
-//\r\n\
-// Licensed under the Apache License, Version 2.0 (the \"License\");\r\n\
-// you may not use this file except in compliance with the License.\r\n\
-// You may obtain a copy of the License at\r\n\
-//\r\n\
-//     http://www.apache.org/licenses/LICENSE-2.0\r\n\
-//\r\n\
-// Unless required by applicable law or agreed to in writing, software\r\n\
-// distributed under the License is distributed on an \"AS IS\" BASIS,\r\n\
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\r\n\
-// See the License for the specific language governing permissions and\r\n\
-// limitations under the License.\r\n\
-\r\n\
-//This is a generated file, don't modify it!\r\n\
-\r\n\
-#pragma once\r\n\
-\r\n\
-\r\n\
+// Copyright 2022-2024 Beken\n\
+//\n\
+// Licensed under the Apache License, Version 2.0 (the \"License\");\n\
+// you may not use this file except in compliance with the License.\n\
+// You may obtain a copy of the License at\n\
+//\n\
+//     http://www.apache.org/licenses/LICENSE-2.0\n\
+//\n\
+// Unless required by applicable law or agreed to in writing, software\n\
+// distributed under the License is distributed on an \"AS IS\" BASIS,\n\
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n\
+// See the License for the specific language governing permissions and\n\
+// limitations under the License.\n\
+\n\
+//This is a generated file, don't modify it!\n\
+\n\
+#pragma once\n\
+\n\
+\n\
 "
 
 def get_license():

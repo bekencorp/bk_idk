@@ -53,7 +53,7 @@ armino_build_get_property(partition_hdr_dir PARTITIONS_HDR_DIR)
 set(armino_dir ${COMPONENT_DIR}/../..)
 set(tfm_dir ${COMPONENT_DIR}/tfm)
 set(tfm_platform beken/${target})
-set(tfm_toolchain_path ${CONFIG_TOOLCHAIN_PATH})
+set(tfm_toolchain_path $ENV{COMPILER_TOOLCHAIN_PATH})
 set(tfm_build_dir ${CMAKE_BINARY_DIR}/armino/tfm)
 set(tfm_install_dir ${CMAKE_BINARY_DIR}/tfm_install)
 

@@ -673,7 +673,7 @@ def packager(args):
     filename = args.infile
     with open (filename,"rb") as f:
         bytes_obj = f.read()
-        print("length before compress and encrypt：",len(bytes_obj))
+        print("length before compress and encrypt: ",len(bytes_obj))
         ### gizp 压缩
         dest_obj = bytes_obj
         if compress == "1":
@@ -695,7 +695,7 @@ def packager(args):
         my_head = gethead(args,filename,bytes_obj,dest_obj, compress, aes)
         #print(binascii.hexlify(my_head).decode())
         #print (my_head)
-        print("length after compress and encrypt：",len(dest_obj))
+        print("length after compress and encrypt: ",len(dest_obj))
 
     with open(args.outfile,"wb") as f:
         if b_new_chip == 1:
@@ -707,10 +707,10 @@ def packager(args):
                 if "section" in json_dict:
                     section = json_dict["section"]
                     size = section[1]["size"]
-                    #print("============size：>>>>",size)
+                    #print("============size: >>>>",size)
                     iSize = (size2int(size))
-                    #print("============iSize：>>>>",iSize)
-                    #print("============dest_obj：>>>>",len(dest_obj)) 
+                    #print("============iSize: >>>>",iSize)
+                    #print("============dest_obj: >>>>",len(dest_obj)) 
             padding_len = iSize - len(dest_obj) 
             print(f'padding_len:: {padding_len}')
             if padding_len > 4096:

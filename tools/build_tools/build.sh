@@ -9,7 +9,7 @@ PROJECT_DIR=$2
 BUILD_DIR=$3
 BUILD_TARGET=$4
 
-ARMINO_TOOL=${ARMINO_DIR}/tools/build_tools/armino
+ARMINO_TOOL="python3 ${ARMINO_DIR}/tools/build_tools/armino"
 BUILD_TARGET_PREFIX=${BUILD_TARGET:0:5}
 
 need_build_properties_lib=0
@@ -51,7 +51,7 @@ else
 	ARMINO_SOC=${BUILD_TARGET}
 	BUILD_DIR=${BUILD_DIR}/${ARMINO_SOC}
 	need_build_soc=1
-	has_properties_lib_src=$(${ARMINO_DIR}/tools/build_tools/detect_internal_lib_src.py)
+	has_properties_lib_src=$(python3 ${ARMINO_DIR}/tools/build_tools/detect_internal_lib_src.py)
 	if [ ${has_properties_lib_src} == "1" ]; then
 		echo "build armino properties lib first, then ${ARMINO_SOC}"
 		need_build_properties_lib=1

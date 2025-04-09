@@ -6,9 +6,9 @@ import re
 import sys
 
 try:
-    import pkg_resources
+    import importlib.metadata
 except Exception:
-    print('pkg_resources cannot be imported probably because the pip package is not installed and/or using a '
+    print('importlib.metadata cannot be imported probably because the pip package is not installed and/or using a '
           'legacy Python interpreter. Please refer to the Get Started section of the BEKEN-ARMINO Programming Guide for '
           'setting up the required packages.')
     sys.exit(1)
@@ -37,14 +37,14 @@ if __name__ == "__main__":
     with open(args.requirements) as f:
         for line in f:
             line = line.strip()
-            # pkg_resources.require() cannot handle the full requirements file syntax so we need to make
+            # importlib.metadata.version() cannot handle the full requirements file syntax so we need to make
             # adjustments for options which we use.
             if line.startswith('file://'):
                 line = os.path.basename(line)
             if line.startswith('-e') and '#egg=' in line:  # version control URLs, take the egg= part at the end only
                 line = re.search(r'#egg=([^\s]+)', line).group(1)
             try:
-                pkg_resources.require(line)
+                importlib.metadata.version(line)
             except Exception:
                 not_satisfied.append(line)
 

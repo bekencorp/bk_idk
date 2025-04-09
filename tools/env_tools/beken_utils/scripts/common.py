@@ -126,7 +126,7 @@ def copy_files(src_directory, dest_directory):
             shutil.copy(src_file, dest_directory)
 
 def empty_line(f):
-    line = f'\r\n'
+    line = f'\n'
     f.write(line)
 
 def get_script_dir():
