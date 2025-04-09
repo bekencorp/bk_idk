@@ -1,1 +1,1 @@
-tools/build_tools/build_files/CMakeLists.txt
+include(tools/build_tools/build_files/build_main.cmake)

@@ -10,8 +10,6 @@
 #define CONFIG_SOC_STR "bk7258"
 #define CONFIG_SOC_ARCH "cm33"
 #define CONFIG_SOC_BK7236XX 1
-#define CONFIG_TOOLCHAIN_PATH "/opt/gcc-arm-none-eabi-10.3-2021.10/bin"
-#define CONFIG_TOOLCHAIN_PREFIX "arm-none-eabi-"
 #define CONFIG_OBJDUMP 1
 #define CONFIG_ASSERT_IGNORE 1
 #define CONFIG_LWIP 1
