@@ -1,19 +1,19 @@
-BLE APIs
+Single BLE APIs
 ================
 
 :link_to_translation:`en:[English]`
 
 .. important::
 
-   The BLE API v1.0 is the lastest stable BLE APIs. All new applications should use BLE API v1.0.
+   The Single BLE API v1.0 is the lastest stable Single BLE APIs. All new applications should use Single BLE API v1.0.
 
 
-BLE API Categories
+Single BLE API Categories
 ----------------------------
 
-Most of BLE APIs can be categoried as:
+Most of Single BLE APIs can be categoried as:
 
-Interface specific BLE APIs:
+Interface specific Single BLE APIs:
  - BLE common interface
  - BLE scan interface
  - BLE ADV interface
@@ -22,13 +22,13 @@ Interface specific BLE APIs:
 Compatibility and Extension
 ----------------------------------------
 
-The BLE APIs are flexible, easy to be extended and backward compatible. For most of the BLE configurations, we put some reserved fields in the config struct for future extendence. The API users need to make sure the reserved fields are initialized to 0, otherwise the compatibility may be broken as more fields are added.
+The Single BLE APIs are flexible, easy to be extended and backward compatible. For most of the Single BLE configurations, we put some reserved fields in the config struct for future extendence. The API users need to make sure the reserved fields are initialized to 0, otherwise the compatibility may be broken as more fields are added.
 
 Programing Principle
 ----------------------------------------
 
 .. important::
-  Here is some general principle for BLE API users:
+  Here is some general principle for Single BLE API users:
    - Always init the reserved fields of config stuct to 0
    - Use BK_ERR_CHECK to check the return value of the BLE API
    - If you are not sure how to use BLE APIs, study the BLE example code first
@@ -76,7 +76,7 @@ User Guide
 
 	struct bk_ble_db_cfg ble_db_cfg;
 	const uint16_t service_uuid = 0xffff;
-	
+
 	ble_db_cfg.att_db = (ble_attm_desc_t *)test_service_db;
 	ble_db_cfg.att_db_nb = TEST_IDX_NB;
 	ble_db_cfg.prf_task_id = g_test_prf_task_id;

@@ -6,5 +6,6 @@ Bluetooth
 .. toctree::
     :maxdepth: 1
 
-    BLE <ble>
-    BT <bt>
+    单模BLE <single_ble>
+    双模BLE <dual_ble>
+    双模BT <dual_bt>

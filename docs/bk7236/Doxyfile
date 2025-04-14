@@ -24,6 +24,26 @@ PROJECT_NAME = "Beken Armino IDK Framework"
 INPUT = \
     ../../../include/components/bluetooth/bk_ble_types.h \
     ../../../include/components/bluetooth/bk_ble.h \
+    ../../../include/components/bluetooth/bk_dm_bluetooth.h \
+    ../../../include/components/bluetooth/bk_dm_bluetooth_types.h \
+    ../../../include/components/bluetooth/bk_dm_gap_ble.h \
+    ../../../include/components/bluetooth/bk_dm_gap_ble_types.h \
+    ../../../include/components/bluetooth/bk_dm_gatt_common.h \
+    ../../../include/components/bluetooth/bk_dm_gatt_types.h \
+    ../../../include/components/bluetooth/bk_dm_gattc.h \
+    ../../../include/components/bluetooth/bk_dm_gatts.h \
+    ../../../include/components/bluetooth/bk_dm_a2dp.h \
+    ../../../include/components/bluetooth/bk_dm_a2dp_types.h \
+    ../../../include/components/bluetooth/bk_dm_avrcp.h \
+    ../../../include/components/bluetooth/bk_dm_avrcp_types.h \
+    ../../../include/components/bluetooth/bk_dm_gap_bt.h \
+    ../../../include/components/bluetooth/bk_dm_gap_bt_types.h \
+    ../../../include/components/bluetooth/bk_dm_hfp.h \
+    ../../../include/components/bluetooth/bk_dm_hfp_types.h \
+    ../../../include/components/bluetooth/bk_dm_hidd.h \
+    ../../../include/components/bluetooth/bk_dm_hidh.h \
+    ../../../include/components/bluetooth/bk_dm_l2cap.h \
+    ../../../include/components/bluetooth/bk_dm_spp.h \
     ../../../include/modules/wifi_types.h \
     ../../../include/modules/wifi.h \
     ../../../include/os/os.h \
