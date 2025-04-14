@@ -419,19 +419,20 @@ bk_err_t bk_gpio_ctrl_external_ldo(gpio_ctrl_ldo_module_e module,gpio_id_t gpio_
 			{
 				if(gpio_id == s_gpio_ctrl_ldo_output[i].gpio_id)
 				{
+					if (s_gpio_ctrl_ldo_output[i].ldo_state == 0) {
+						/*gpio dev unmap*/
+						BK_LOG_ON_ERR(bk_gpio_disable_output(s_gpio_ctrl_ldo_output[i].gpio_id));
+						BK_LOG_ON_ERR(bk_gpio_disable_input(s_gpio_ctrl_ldo_output[i].gpio_id));
+						BK_LOG_ON_ERR(bk_gpio_disable_pull(gpio_id));
+						BK_LOG_ON_ERR(bk_gpio_disable_interrupt(gpio_id));
+						gpio_hal_func_unmap(&s_gpio.hal, gpio_id);
+
+						BK_LOG_ON_ERR(bk_gpio_set_capacity(s_gpio_ctrl_ldo_output[i].gpio_id, 0));
+						BK_LOG_ON_ERR(bk_gpio_disable_input(s_gpio_ctrl_ldo_output[i].gpio_id));
+						BK_LOG_ON_ERR(bk_gpio_enable_output(s_gpio_ctrl_ldo_output[i].gpio_id));
+						BK_LOG_ON_ERR(bk_gpio_set_output_high(s_gpio_ctrl_ldo_output[i].gpio_id));
+					}
 					s_gpio_ctrl_ldo_output[i].ldo_state |= (0x1 << module);
-
-					/*gpio dev unmap*/
-					BK_LOG_ON_ERR(bk_gpio_disable_output(s_gpio_ctrl_ldo_output[i].gpio_id));
-					BK_LOG_ON_ERR(bk_gpio_disable_input(s_gpio_ctrl_ldo_output[i].gpio_id));
-					BK_LOG_ON_ERR(bk_gpio_disable_pull(gpio_id));
-					BK_LOG_ON_ERR(bk_gpio_disable_interrupt(gpio_id));
-					gpio_hal_func_unmap(&s_gpio.hal, gpio_id);
-
-					BK_LOG_ON_ERR(bk_gpio_set_capacity(s_gpio_ctrl_ldo_output[i].gpio_id, 0));
-					BK_LOG_ON_ERR(bk_gpio_disable_input(s_gpio_ctrl_ldo_output[i].gpio_id));
-					BK_LOG_ON_ERR(bk_gpio_enable_output(s_gpio_ctrl_ldo_output[i].gpio_id));
-					BK_LOG_ON_ERR(bk_gpio_set_output_high(s_gpio_ctrl_ldo_output[i].gpio_id));
 				}
 			}
 		}
