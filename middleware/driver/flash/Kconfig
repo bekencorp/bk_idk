@@ -49,5 +49,9 @@ menu "FLASH"
 		depends on FLASH
 		bool "Enable flash clk using 120M"
 		default n
+
+	config FLASH_BYPASS_OTP_OPERATION
+		bool "Bypass flash to operate otp in flash"
+		default n
 endmenu
 
