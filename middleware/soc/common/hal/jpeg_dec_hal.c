@@ -102,7 +102,7 @@ int jpg_decoder_init(void)
 {
 #if CONFIG_SOC_BK7236XX
 	jpeg_dec_ll_set_reg0x2_soft_reset(0);
-	delay_us(10);
+	bk_delay_us(10);
 	jpeg_dec_ll_set_reg0x2_soft_reset(1);
 	jpeg_dec_ll_set_reg0x2_clk_gate(1);
 #if CONFIG_JPEGDEC_HW_SUPPORT_DRI

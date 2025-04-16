@@ -144,7 +144,7 @@ static bool sdcard_check_inserted(void)
 	gpio_config.pull_mode = GPIO_PULL_UP_EN;
 	gpio_config.func_mode = GPIO_SECOND_FUNC_DISABLE;
 	bk_gpio_set_config(sd_data0, &gpio_config);
-	delay_us(125);	//confirm the gpio switch to input mode finish.
+	bk_delay_us(125);	//confirm the gpio switch to input mode finish.
 	while (!bk_gpio_get_input(sd_data0))
 	{
 		i++;

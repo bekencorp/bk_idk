@@ -24,7 +24,7 @@ void delay(INT32 num);
 void delay_ms(UINT32 ms_count);
 void delay_sec(UINT32 ms_count);
 void delay_tick(UINT32 tick_count);
-void delay_us(UINT32 us);
+void bk_delay_us(UINT32 us);
 
 
 #ifdef __cplusplus

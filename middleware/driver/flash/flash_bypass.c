@@ -467,7 +467,7 @@ wr_exceptional:
 	return exceptional_flag;
 }
 
-extern void delay_us(uint32 num);
+extern void bk_delay_us(uint32 num);
 bool flash_bypass_op_read_buf_can_be_zero_flag = 0;
 bool flash_bypass_otp_test_flag = 0;
 static bool flash_bypass_otp_test_is_flag(void)
@@ -499,9 +499,9 @@ static bk_err_t flash_bypass_op_read_and_check(uint8_t *tx_buf, uint32_t tx_len,
 	// read retry 3 times(default), until the read result consecutively twice are the same
 	for (uint8_t i = 0; i < FLASH_BYPASS_OTP_READ_RETRY_MAX; i++) {
 		ret1 = flash_bypass_op_read(tx_buf, tx_len, rx_buf1, rx_len);
-		delay_us(1000);
+		bk_delay_us(1000);
 		ret2 = flash_bypass_op_read(tx_buf, tx_len, rx_buf2, rx_len);
-		delay_us(1000);
+		bk_delay_us(1000);
 
 		// if flash_bypass_op_read ok, it will return ret >= 0
 		if ((ret1 < 0) || (ret2 < 0)) {
@@ -584,12 +584,12 @@ static void flash_bypass_wait_work_in_progress_end(void)
 
 	do {
 		flash_bypass_status_read(&flash_bypass_sta_reg_val);
-		delay_us(5000);
+		bk_delay_us(5000);
 
 		FLASH_BYPASS_LOGD("flash_bypass_sta_reg_val = 0x%x\n", flash_bypass_sta_reg_val);
 
 		if (flash_bypass_sta_reg_val & FLASH_STA_REG_WIP_BIT) {
-			delay_us(5000);
+			bk_delay_us(5000);
 		} else {
 			break;
 		}

@@ -8,7 +8,7 @@
 
 extern UINT32 device_id;
 
-extern void delay_us(UINT32 us);
+extern void bk_delay_us(UINT32 us);
 extern void ate_time_delay(volatile uint32_t times);
 void rwnx_cal_dia_start();
 void rwnx_cal_dia_stop();

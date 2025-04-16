@@ -29,7 +29,7 @@ extern "C" {
 
 #define OTP_LL_REG_BASE(_otp_unit_id)    (SOC_OTP_APB_BASE)
 #define OTP2_LL_REG_BASE(_otp_unit_id)    (SOC_OTP_AHB_BASE)
-extern void delay_us(UINT32 us);
+extern void bk_delay_us(UINT32 us);
 
 static inline uint32_t otp_ll_check_busy(otp_hw_t *hw)
 {
@@ -55,9 +55,9 @@ static inline int otp_check_busy(otp_hw_t *hw)
 static inline int otp_ll_init(otp_hw_t *hw)
 {
 	sys_ll_set_cpu_device_clk_enable_otp_cken(1);
-	delay_us(10);
+	bk_delay_us(10);
 	sys_ll_set_cpu_power_sleep_wakeup_pwd_encp(0);
-	delay_us(10);
+	bk_delay_us(10);
 	return otp_check_busy(hw);
 }
 

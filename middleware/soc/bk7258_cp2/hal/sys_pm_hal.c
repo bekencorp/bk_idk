@@ -31,7 +31,7 @@
 #if CONFIG_CACHE_ENABLE
 #include "cache.h"
 #endif
-extern void delay_us(UINT32 us);
+extern void bk_delay_us(UINT32 us);
 static inline bool is_lpo_src_26m32k(void)
 {
 	return (aon_pmu_ll_get_r41_lpo_config() == SYS_LPO_SRC_26M32K);
@@ -880,7 +880,7 @@ void sys_hal_low_power_hardware_init()
 	sys_hal_enable_spi_latch();
 	sys_ll_set_ana_reg11_aldosel(0);
 	sys_ll_set_ana_reg12_dldosel(0);
-	delay_us(1);
+	bk_delay_us(1);
 	/*let the ioldo low power mode*/
 	sys_ll_set_ana_reg8_ioldo_lp(1);
 	sys_hal_disable_spi_latch();

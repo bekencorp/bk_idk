@@ -12,7 +12,7 @@ void delay(int num) {
 	}
 }
 
-void delay_us(uint32 num) {
+void bk_delay_us(uint32 num) {
 
 	volatile uint32 i, j, us_count;
 	us_count = 4;

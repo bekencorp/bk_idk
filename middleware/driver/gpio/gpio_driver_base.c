@@ -654,7 +654,7 @@ static void gpio_config_wakeup_function(void)
 	 * so enable gpio input irq, should wait enough time.
 	 */
 #if 0
-	delay_us(125);	//125 == ((3+1)/32) * 1000 us
+	bk_delay_us(125);	//125 == ((3+1)/32) * 1000 us
 
 	//Move the enable interrupt after dealy 125 us.
 	for(i = 0; i < GPIO_NUM_MAX; i++)
@@ -1174,7 +1174,7 @@ void gpio_simulate_uart_write(unsigned char *buff, uint32_t len, gpio_id_t gpio_
 	BK_LOG_ON_ERR(bk_gpio_enable_output(gpio_id));
 
 	bk_gpio_set_output_high(gpio_id);
-	delay_us(div_cnt);
+	bk_delay_us(div_cnt);
 
 	while (len--) {
 		//in while loop, to avoid disable IRQ too much time, release it if finish one byte.
@@ -1183,7 +1183,7 @@ void gpio_simulate_uart_write(unsigned char *buff, uint32_t len, gpio_id_t gpio_
 
 		//UART start bit
 		bk_gpio_set_output_low(gpio_id);
-		delay_us(div_cnt);
+		bk_delay_us(div_cnt);
 
 		//char value
 		c = *buff++;
@@ -1196,13 +1196,13 @@ void gpio_simulate_uart_write(unsigned char *buff, uint32_t len, gpio_id_t gpio_
 				bk_gpio_set_output_low(gpio_id);
 			}
 
-			delay_us(div_cnt);
+			bk_delay_us(div_cnt);
 			c >>= 1;
 		}
 
 		//UART stop bit
 		bk_gpio_set_output_high(gpio_id);
-		delay_us(div_cnt);
+		bk_delay_us(div_cnt);
 
 		GLOBAL_INT_RESTORE();
 	}

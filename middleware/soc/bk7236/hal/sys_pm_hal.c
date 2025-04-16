@@ -78,7 +78,7 @@ typedef struct
 
 #endif
 
-extern void delay_us(UINT32 us);
+extern void bk_delay_us(UINT32 us);
 static inline bool is_lpo_src_26m32k(void)
 {
 	return (aon_pmu_ll_get_r41_lpo_config() == SYS_LPO_SRC_26M32K);
@@ -1305,10 +1305,10 @@ static int sys_hal_enable_buck()
 	sys_hal_enable_spi_latch();
 	#if (!CONFIG_BUCK_ANALOG_DISABLE)
 		sys_ll_set_ana_reg11_aldosel(0);
-		delay_us(1000);
+		bk_delay_us(1000);
 	#endif
 	sys_ll_set_ana_reg12_dldosel(0);
-	delay_us(1);
+	bk_delay_us(1);
 	/*let the ioldo low power mode*/
 	sys_ll_set_ana_reg8_ioldo_lp(1);
 	sys_hal_disable_spi_latch();

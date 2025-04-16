@@ -806,7 +806,7 @@ static u32 cmd_set_br_handler(u8 * cmd_param, u16 param_len)
 	boot_uart_init(rate,85);
 	
 	//sys_delay_ms(delay_ms);
-	delay_us(delay_ms);
+	bk_delay_us(delay_ms);
 	tx_rsp_for_common_cmd(COMMON_CMD_SET_BAUDRATE, cmd_param, param_len);
 
 	return 0;
@@ -867,7 +867,7 @@ static u32 cmd_jump_handler(u8 * cmd_param, u16 param_len)
 	tx_rsp_for_common_cmd(EXT_CMD_JUMP, NULL, 0);
 
 	//sys_delay_ms(3);
-	delay_us(3000);
+	bk_delay_us(3000);
 	uart0_disable();
 
 	jump_addr();

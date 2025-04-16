@@ -286,8 +286,8 @@ static inline void qspi_ll_wait_cmd_done(qspi_hw_t *hw)
 		if(i == 10000) {
 			os_printf("ERROR: qspi_ll_wait_cmd_done timeout \n");
 		}
-		extern void delay_us(UINT32 us);
-		delay_us(1);
+		extern void bk_delay_us(UINT32 us);
+		bk_delay_us(1);
 	}
 	hw->status_clr.clr_cmd_start_done = 1;
 	hw->status_clr.clr_cmd_start_done = 0;

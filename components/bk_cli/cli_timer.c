@@ -33,7 +33,7 @@ static void cli_delay_us(int argc, char **argv)
 
 	us = os_strtoul(argv[2], NULL, 10);
 	uint32_t level = rtos_enter_critical();
-	delay_us(us);
+	bk_delay_us(us);
 	rtos_exit_critical(level);
 	CLI_LOGI("delayed %u us\r\n", us);
 }

@@ -432,7 +432,7 @@ _tx_retry:
 			if (ret > 0) {
 				s_pkt_delta +=ret;
 				if (fdelay_us > 0) {
-					delay_us(fdelay_us);
+					bk_delay_us(fdelay_us);
 				}
 			}
 			else {
@@ -649,7 +649,7 @@ tx_retry:
 					s_pkt_delta +=ret;
 				}
 				if (fdelay_us > 0) {
-					delay_us(fdelay_us);
+					bk_delay_us(fdelay_us);
 				}
 			}
 			else {

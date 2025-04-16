@@ -760,7 +760,7 @@ static uint32_t m_rts_pin[] = {
     #endif
 };
 
-static void delay_us(volatile unsigned int us) {
+static void ra_sci_delay_us(volatile unsigned int us) {
     us *= 48;
     while (us-- > 0) {
         ;
@@ -1189,7 +1189,7 @@ void ra_sci_init_with_flow(uint32_t ch, uint32_t tx_pin, uint32_t rx_pin, uint32
     sci_reg->SCMR = scmr;
     sci_reg->SEMR = (uint8_t)0xc0;
     ra_sci_set_baud(ch, baud);
-    delay_us(10);
+    ra_sci_delay_us(10);
     sci_reg->SCR = (uint8_t)0x50;
     ra_sci_irq_enable(ch);
     ra_enable_irq(state);

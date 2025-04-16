@@ -15,7 +15,7 @@ void delay(int num) {
 	}
 }
 
-void delay_us(uint32 num) {
+void bk_delay_us(uint32 num) {
 
 	volatile uint32 i, j, us_count;
 	us_count = 4;
@@ -112,7 +112,7 @@ void sys_error_handle()
 	UART_WRITE_BYTE(0xfc);
 	UART_WRITE_BYTE(SYS_ERROR_RSP);
 
-	delay_us(5000);
+	bk_delay_us(5000);
 	BK3000_start_wdt(1000);
 	while(1)
 	{

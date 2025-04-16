@@ -32,9 +32,9 @@
 void scale0_hal_reset(void)
 {
 	scale0_ll_set_0x02_soft_reset(0);
-	delay_us(10);
+	bk_delay_us(10);
 	scale0_ll_set_0x02_soft_reset(1);
-	delay_us(10);
+	bk_delay_us(10);
 }
 
 #if 0

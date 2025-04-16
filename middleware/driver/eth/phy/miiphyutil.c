@@ -368,7 +368,7 @@ int miiphy_reset(const char *devname, unsigned char addr)
 			os_printf("PHY status read failed\n");
 			return -1;
 		}
-		delay_us(1000);
+		bk_delay_us(1000);
 	}
 	if ((reg & 0x8000) == 0) {
 		return 0;

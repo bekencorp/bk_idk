@@ -29,13 +29,13 @@ static void SPI_SendData(uint8_t data)
 			bk_gpio_set_output_low(LCD_SPI_SDA_GPIO);
 		}
 
-		delay_us(LCD_SPI_DELAY);
+		bk_delay_us(LCD_SPI_DELAY);
 		data <<= 1;
 
 		bk_gpio_set_output_low(LCD_SPI_CLK_GPIO);
-		delay_us(LCD_SPI_DELAY);
+		bk_delay_us(LCD_SPI_DELAY);
 		bk_gpio_set_output_high(LCD_SPI_CLK_GPIO);
-		delay_us(LCD_SPI_DELAY);
+		bk_delay_us(LCD_SPI_DELAY);
 
 	}
 	GLOBAL_INT_RESTORE();
@@ -44,42 +44,42 @@ static void SPI_SendData(uint8_t data)
 void lcd_spi_write_cmd(uint8_t cmd)
 {
 	bk_gpio_set_output_low(LCD_SPI_CSX_GPIO);
-	delay_us(LCD_SPI_DELAY);
+	bk_delay_us(LCD_SPI_DELAY);
 	bk_gpio_set_output_low(LCD_SPI_SDA_GPIO);
-	delay_us(LCD_SPI_DELAY);
+	bk_delay_us(LCD_SPI_DELAY);
 
 	bk_gpio_set_output_low(LCD_SPI_CLK_GPIO);
-	delay_us(LCD_SPI_DELAY);
+	bk_delay_us(LCD_SPI_DELAY);
 	bk_gpio_set_output_high(LCD_SPI_CLK_GPIO);
-	delay_us(LCD_SPI_DELAY);
+	bk_delay_us(LCD_SPI_DELAY);
 
 	SPI_SendData(cmd);
 
 	bk_gpio_set_output_high(LCD_SPI_CSX_GPIO);
-	delay_us(LCD_SPI_DELAY);
+	bk_delay_us(LCD_SPI_DELAY);
 }
 void lcd_spi_write_data(uint8_t data)
 {
 	bk_gpio_set_output_low(LCD_SPI_CSX_GPIO);
-	delay_us(LCD_SPI_DELAY);
+	bk_delay_us(LCD_SPI_DELAY);
 	bk_gpio_set_output_high(LCD_SPI_SDA_GPIO);
-	delay_us(LCD_SPI_DELAY);
+	bk_delay_us(LCD_SPI_DELAY);
 
 	bk_gpio_set_output_low(LCD_SPI_CLK_GPIO);
-	delay_us(LCD_SPI_DELAY);
+	bk_delay_us(LCD_SPI_DELAY);
 	bk_gpio_set_output_high(LCD_SPI_CLK_GPIO);
-	delay_us(LCD_SPI_DELAY);
+	bk_delay_us(LCD_SPI_DELAY);
 
 	SPI_SendData(data);
 
 	bk_gpio_set_output_high(LCD_SPI_CSX_GPIO);
-	delay_us(LCD_SPI_DELAY);
+	bk_delay_us(LCD_SPI_DELAY);
 }
 
 void lcd_spi_write_hf_word_data(unsigned int data)
 {
 	bk_gpio_set_output_low(LCD_SPI_CSX_GPIO);
-	delay_us(LCD_SPI_DELAY);
+	bk_delay_us(LCD_SPI_DELAY);
 
 
 	SPI_SendData(0x40);
@@ -87,12 +87,12 @@ void lcd_spi_write_hf_word_data(unsigned int data)
 
 
 	bk_gpio_set_output_high(LCD_SPI_CSX_GPIO);
-	delay_us(LCD_SPI_DELAY);
+	bk_delay_us(LCD_SPI_DELAY);
 }
 void lcd_spi_write_hf_word_cmd(unsigned int cmd)
 {
 	bk_gpio_set_output_low(LCD_SPI_CSX_GPIO);
-	delay_us(LCD_SPI_DELAY);
+	bk_delay_us(LCD_SPI_DELAY);
 
 	SPI_SendData(0x20);
 	SPI_SendData(cmd >> 8); //high 8bit
@@ -101,7 +101,7 @@ void lcd_spi_write_hf_word_cmd(unsigned int cmd)
 	SPI_SendData(cmd);
 
 	bk_gpio_set_output_high(LCD_SPI_CSX_GPIO);
-	delay_us(LCD_SPI_DELAY);
+	bk_delay_us(LCD_SPI_DELAY);
 }
 
 void lcd_spi_init_gpio(void)
@@ -128,7 +128,7 @@ void lcd_spi_init_gpio(void)
 
 	bk_gpio_set_output_high(LCD_SPI_CLK_GPIO);
 	bk_gpio_set_output_high(LCD_SPI_CSX_GPIO);
-	delay_us(200);
+	bk_delay_us(200);
 }
 
 

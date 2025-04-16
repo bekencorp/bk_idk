@@ -22,9 +22,9 @@
 void slcd_hal_soft_reset(void)
 {
 	slcd_ll_set_clk_control_soft_reset(0);
-	delay_us(10);
+	bk_delay_us(10);
 	slcd_ll_set_clk_control_soft_reset(1);
-	delay_us(10);
+	bk_delay_us(10);
 }
 
 void slcd_hal_lcd_on(void)

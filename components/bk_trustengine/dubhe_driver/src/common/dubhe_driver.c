@@ -137,7 +137,7 @@ static int do_dubhe_driver_init( unsigned long dbh_base_addr )
 
     if (sys_ll_get_cpu_power_sleep_wakeup_pwd_encp() != 0) {
         sys_ll_set_cpu_power_sleep_wakeup_pwd_encp(0);
-        delay_us(100);
+        bk_delay_us(100);
     }
 
     _g_Dubhe_RegBase = dbh_base_addr;
@@ -189,7 +189,7 @@ int dubhe_driver_init( unsigned long dbh_base_addr )
     	dubhe_lv_init();
         if (sys_ll_get_cpu_power_sleep_wakeup_pwd_encp() != 0) {
             sys_ll_set_cpu_power_sleep_wakeup_pwd_encp(0);
-            delay_us(500); //for power-on init, bk7239n need more delay before dubhe can work correctly
+            bk_delay_us(500); //for power-on init, bk7239n need more delay before dubhe can work correctly
         }
     }
 
@@ -215,7 +215,7 @@ void dubhe_driver_cleanup( void )
 #endif
 
     dubhe_event_cleanup( );
-    delay_us(100);
+    bk_delay_us(100);
 }
 
 /*************************** The End Of File*****************************/

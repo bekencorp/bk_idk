@@ -56,8 +56,8 @@ static uint32_t trng_get_random_number(void)
 
 #if (CONFIG_SOC_BK7256XX)
 	sys_drv_trng_disckg_set(1);
-	extern void delay_us(UINT32 us);
-	delay_us(1);    //wait disckg take effect
+	extern void bk_delay_us(UINT32 us);
+	bk_delay_us(1);    //wait disckg take effect
 #endif
 	number = trng_hal_get_random_number(&s_trng.hal);
 #if (CONFIG_SOC_BK7256XX)
@@ -109,7 +109,7 @@ int bk_rand(void)
 {
 	int i = 0, number = 0;
 	bk_trng_start();
-	delay_us(50);  //add delay to make trng disckg take effect
+	bk_delay_us(50);  //add delay to make trng disckg take effect
 
 	/*Different board , same time point, the trng generate random number maybe same*/
 	for(i = 0; i < TRNG_READ_COUNT; i++) {

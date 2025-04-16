@@ -365,7 +365,7 @@ uint32_t dma_wait_to_idle(dma_id_t id)
 		uint32_t i = 0;
 		while(dma_hal_get_enable_status(&s_dma.hal, id))
 		{
-			delay_us(1);
+			bk_delay_us(1);
 
 			i++;
 			if(i > DMA_MAX_BUSY_TIME)

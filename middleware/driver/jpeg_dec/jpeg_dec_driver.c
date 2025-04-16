@@ -95,7 +95,7 @@ bk_err_t bk_jpeg_dec_driver_deinit(void)
 	}
 	bk_jpeg_dec_stop();
 	jpeg_dec_ll_set_reg0x2_soft_reset(0);
-	delay_us(10);
+	bk_delay_us(10);
 	jpeg_dec_ll_set_reg0x2_soft_reset(1);
 
 	sys_drv_set_jpeg_dec_disckg(0);

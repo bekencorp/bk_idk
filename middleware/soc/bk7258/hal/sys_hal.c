@@ -1944,10 +1944,10 @@ uint32_t sys_hal_cali_bgcalm(void)
     sys_ll_set_ana_reg8_vbgcalmode(0);
     sys_ll_set_ana_reg8_vbgcalstart(0);
     sys_ll_set_ana_reg8_vbgcalstart(1);
-    delay_us(100); //100us
+    bk_delay_us(100); //100us
     sys_ll_set_ana_reg8_vbgcalstart(0);
 
-    delay_us(2000); //2ms to avoid consistency issue
+    bk_delay_us(2000); //2ms to avoid consistency issue
 
     bandgap = aon_pmu_ll_get_r7d_bgcal();
 

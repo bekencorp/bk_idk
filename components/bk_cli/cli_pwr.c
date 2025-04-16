@@ -685,7 +685,7 @@ typedef struct{
 }
 #endif
 #define DVFS_AUTO_TEST_COUNT (2)
-extern void delay_us(uint32 num);
+extern void bk_delay_us(uint32 num);
 static void cli_dvfs_auto_test_timer_isr(timer_id_t chan)
 {
 	uint8_t rand_num;
@@ -694,7 +694,7 @@ static void cli_dvfs_auto_test_timer_isr(timer_id_t chan)
 	{
 		rand_num = (uint32_t)bk_rand()%PM_CPU_FRQ_DEFAULT;
 		//os_printf("dvfs random %d \r\n",rand_num);
-		delay_us(5);
+		bk_delay_us(5);
 		sys_drv_switch_cpu_bus_freq(rand_num);
 	}
 }
@@ -712,7 +712,7 @@ static void cli_dvfs_auto_test_all_timer_isr(timer_id_t chan)
 		//os_printf("dvfs random %d \r\n",rand_num);
 		//os_printf("[cksel:%d] [ckdiv_core:%d] [ckdiv_bus:%d] [ckdiv_cpu0:%d] [ckdiv_cpu1:%d]\r\n",
 			//core_bus_clock[rand_num].cksel_core, core_bus_clock[rand_num].ckdiv_core, core_bus_clock[rand_num].ckdiv_bus, core_bus_clock[rand_num].ckdiv_cpu0, core_bus_clock[rand_num].ckdiv_cpu1);
-		delay_us(5);
+		bk_delay_us(5);
 		pm_core_bus_clock_ctrl(core_bus_clock[rand_num].cksel_core, core_bus_clock[rand_num].ckdiv_core, core_bus_clock[rand_num].ckdiv_bus, core_bus_clock[rand_num].ckdiv_cpu0, core_bus_clock[rand_num].ckdiv_cpu1);
 	}
 #endif

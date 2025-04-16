@@ -103,9 +103,9 @@ static uint32_t s_wkup_time_period = 0;
  */
 static void aon_rtc_delay_to_grantee_ops_safe()
 {
-	extern void delay_us(UINT32 us);
+	extern void bk_delay_us(UINT32 us);
 
-	delay_us(AON_RTC_OPS_SAFE_DELAY_US);
+	bk_delay_us(AON_RTC_OPS_SAFE_DELAY_US);
 }
 
 #ifdef CONFIG_EXTERN_32K

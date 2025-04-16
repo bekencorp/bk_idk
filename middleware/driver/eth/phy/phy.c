@@ -766,7 +766,7 @@ int phy_reset(struct phy_device *phydev)
 			os_printf("PHY status read failed\n");
 			return -1;
 		}
-		delay_us(1000);
+		bk_delay_us(1000);
 	}
 
 	if (reg & BMCR_RESET) {

@@ -31,9 +31,9 @@
 void scale1_hal_reset(void)
 {
 	scale1_ll_set_0x02_soft_reset(1);
-	delay_us(10);
+	bk_delay_us(10);
 	scale1_ll_set_0x02_soft_reset(1);
-	delay_us(10);
+	bk_delay_us(10);
 }
 
 #if 0

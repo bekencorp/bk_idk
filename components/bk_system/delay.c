@@ -20,7 +20,7 @@ void delay(INT32 num)
 	}
 }
 
-__IRAM_SEC void delay_us(UINT32 us)
+__IRAM_SEC void bk_delay_us(UINT32 us)
 {
 #if CONFIG_TIMER_US
 	bk_timer_delay_us(us);

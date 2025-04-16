@@ -25,7 +25,7 @@ bk_err_t dma2d_hal_soft_reset(void)
 {
 #if CONFIG_SOC_BK7236XX
 	dma2d_ll_set_module_control_soft_reset(1);
-	delay_us(10);
+	bk_delay_us(10);
 	dma2d_ll_set_module_control_soft_reset(0);
 #endif
 	return BK_OK;
@@ -403,7 +403,8 @@ bk_err_t dma2d_hal_line_Watermar_cfg(uint32_t Line)
 		return BK_FAIL;
 	}
 	else {
-		dma2d_ll_set_dma2d_line_watermark_line_watermark(Line);	}
+		dma2d_ll_set_dma2d_line_watermark_line_watermark(Line);
+	}
 	return BK_OK;
 }
 

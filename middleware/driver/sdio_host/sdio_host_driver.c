@@ -1125,7 +1125,7 @@ bk_err_t bk_sdio_host_read_fifo(uint32_t *save_v_p)
 	while (!sdio_host_hal_is_rx_fifo_read_ready(&s_sdio_host.hal))
 	{
 		i++;
-		delay_us(1);
+		bk_delay_us(1);
 		if(i == SDIO_READ_FIFO_TIMEOUT) {
 			SDIO_HOST_LOGE("FIFO read fail,the return data is invalid\r\n");
 			return BK_ERR_SDIO_HOST_READ_DATA_FAIL;

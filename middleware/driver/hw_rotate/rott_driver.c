@@ -157,9 +157,9 @@ bk_err_t bk_rott_int_status_clear(rott_int_type_t int_type)
 bk_err_t bk_rott_soft_reset(void)
 {
 	rott_ll_set_module_contol_soft_reset(0);
-	delay_us(10);
+	bk_delay_us(10);
 	rott_ll_set_module_contol_soft_reset(1);
-	delay_us(10);
+	bk_delay_us(10);
 	return BK_OK;
 }
 

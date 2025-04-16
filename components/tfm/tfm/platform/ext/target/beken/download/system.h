@@ -29,7 +29,7 @@ void SYSirq_Interrupts_Restore_Flags(UINT32 flags);
 #endif //CHIP_BK3266
 
 void delay(int num);
-void delay_us(uint32 num);
+void bk_delay_us(uint32 num);
 
 uint32_t get_5mstime_cnt(void);
 void set_5mstime_cnt(uint32_t cnt) ;

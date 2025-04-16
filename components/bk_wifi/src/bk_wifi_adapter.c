@@ -224,7 +224,7 @@ static void delay_wrapper(INT32 num)
 
 static void delay_us_wrapper(UINT32 us)
 {
-	delay_us(us);
+	bk_delay_us(us);
 }
 
 static uint32_t sys_drv_modem_bus_clk_ctrl_wrapper(bool clk_en)

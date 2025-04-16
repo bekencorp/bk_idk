@@ -24,7 +24,7 @@
 #else
 #define MINOOR_ITCM
 #endif
-//extern void delay_us(UINT32 us);
+//extern void bk_delay_us(UINT32 us);
 
 /******************************************8080 API********************************************/
 void lcd_hal_8080_cmd_send(uint8_t param_count, uint32_t command, uint32_t *param)
@@ -42,7 +42,7 @@ void lcd_hal_8080_cmd_send(uint8_t param_count, uint32_t command, uint32_t *para
 	{
 		lcd_disp_ll_set_i8080_dat_fifo_value ((uint32_t)(*(param + i)));
 	}
-	delay_us(1);
+	bk_delay_us(1);
 	while((lcd_disp_ll_get_disp_status_value() & 0x0000800) == 0);
 }
 
@@ -61,7 +61,7 @@ void lcd_hal_8080_data_send(uint32_t command, uint16_t *data, uint32_t len)
 		lcd_disp_ll_set_i8080_dat_fifo_i8080_dat_fifo((*(pixel + i)) >> 8);
 		lcd_disp_ll_set_i8080_dat_fifo_i8080_dat_fifo((*(pixel + i)) & 0xff);
 	}
-	delay_us(1);
+	bk_delay_us(1);
 	while((lcd_disp_ll_get_disp_status_value() & 0x0000800) == 0);
 }
 
@@ -258,7 +258,7 @@ __attribute__((section(".itcm_sec_code")))bk_err_t lcd_hal_int_status_clear(lcd_
 void lcd_hal_soft_reset(void)
 {
 	lcd_disp_ll_set_module_control_soft_reset(0);
-	delay_us(10); 
+	bk_delay_us(10); 
 	lcd_disp_ll_set_module_control_soft_reset(1);
 }
 

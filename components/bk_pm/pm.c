@@ -181,7 +181,7 @@ static void pm_super_deep_sleep_process();
 #if CONFIG_INT_WDT
 extern int wdt_init(void);
 #endif
-extern void delay_us(UINT32 us);
+extern void bk_delay_us(UINT32 us);
 /*================FUNCTION DECLARATION SECTION END========*/
 
 /**

@@ -1002,10 +1002,10 @@ bk_err_t bk_spi_dma_write_bytes(spi_id_t id, const void *data, uint32_t size)
 		//wait spi last fifo data transfer finish
 		spi_hal_enable_tx_fifo_int(&s_spi[id].hal);
 		for (int i = 0; i <= 500; i++) {
-			delay_us(1);
+			bk_delay_us(1);
 			SPI_LOGD("index = %d, id=%d, tx_fifo_int_status = %d\n", i, id, spi_hal_is_tx_fifo_int_triggered(&s_spi[id].hal));
 			if(spi_hal_is_tx_fifo_int_triggered(&s_spi[id].hal)) {
-				delay_us(1);
+				bk_delay_us(1);
 				break;
 			}
 			if(i == 500)

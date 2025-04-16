@@ -630,12 +630,12 @@ bk_err_t bk_lcd_qspi_send_data(qspi_id_t qspi_id, const lcd_device_t *device, ui
     if (device->qspi->refresh_method == LCD_QSPI_REFRESH_BY_LINE) {
         for (uint16_t i = 0; i < device->qspi->refresh_config.vsw; i++) {
             bk_lcd_qspi_send_cmd(qspi_id, device->qspi->reg_write_cmd, device->qspi->refresh_config.vsync_cmd, NULL, 0);
-            delay_us(40);
+            bk_delay_us(40);
         }
 
         for (uint16_t i = 0; i < device->qspi->refresh_config.hfp; i++) {
             bk_lcd_qspi_send_cmd(qspi_id, device->qspi->reg_write_cmd, device->qspi->refresh_config.hsync_cmd, NULL, 0);
-            delay_us(40);
+            bk_delay_us(40);
         }
 
         for (uint16_t i = 0; i < (device->ppi & 0xFFFF); i++) {
@@ -665,7 +665,7 @@ bk_err_t bk_lcd_qspi_send_data(qspi_id_t qspi_id, const lcd_device_t *device, ui
 
         for (uint16_t i = 0; i < device->qspi->refresh_config.hbp; i++) {
             bk_lcd_qspi_send_cmd(qspi_id, device->qspi->reg_write_cmd, device->qspi->refresh_config.hsync_cmd, NULL, 0);
-            delay_us(40);
+            bk_delay_us(40);
         }
     } else if (device->qspi->refresh_method == LCD_QSPI_REFRESH_BY_FRAME) {
         bk_lcd_qspi_quad_write_start(qspi_id, device->qspi->pixel_write_config, 1);
@@ -702,12 +702,12 @@ bk_err_t bk_lcd_qspi_send_data(qspi_id_t qspi_id, const lcd_device_t *device, ui
     if (device->qspi->refresh_method == LCD_QSPI_REFRESH_BY_LINE) {
         for (uint16_t i = 0; i < device->qspi->refresh_config.vsw; i++) {
             bk_lcd_qspi_send_cmd(qspi_id, device->qspi->reg_write_cmd, device->qspi->refresh_config.vsync_cmd, NULL, 0);
-            delay_us(40);
+            bk_delay_us(40);
         }
 
         for (uint16_t i = 0; i < device->qspi->refresh_config.hfp; i++) {
             bk_lcd_qspi_send_cmd(qspi_id, device->qspi->reg_write_cmd, device->qspi->refresh_config.hsync_cmd, NULL, 0);
-            delay_us(40);
+            bk_delay_us(40);
         }
 
         qspi_hal_clear_lcd_head(&s_lcd_qspi[qspi_id].hal, 1);
@@ -720,12 +720,12 @@ bk_err_t bk_lcd_qspi_send_data(qspi_id_t qspi_id, const lcd_device_t *device, ui
             LCD_QSPI_LOGE("ret = %d, lcd qspi get semaphore failed!\r\n", ret);
             return BK_FAIL;
         }
-        delay_us(5);
+        bk_delay_us(5);
         bk_lcd_qspi_quad_write_stop(qspi_id);
 
         for (uint16_t i = 0; i < device->qspi->refresh_config.hbp; i++) {
             bk_lcd_qspi_send_cmd(qspi_id, device->qspi->reg_write_cmd, device->qspi->refresh_config.hsync_cmd, NULL, 0);
-            delay_us(40);
+            bk_delay_us(40);
         }
     } else if (device->qspi->refresh_method == LCD_QSPI_REFRESH_BY_FRAME) {
         lcd_qspi_disp_area_config_for_frame_refresh(qspi_id, device);
@@ -738,7 +738,7 @@ bk_err_t bk_lcd_qspi_send_data(qspi_id_t qspi_id, const lcd_device_t *device, ui
             LCD_QSPI_LOGE("ret = %d, lcd qspi get semaphore failed!\r\n", ret);
             return BK_FAIL;
         }
-        delay_us(5);
+        bk_delay_us(5);
         bk_lcd_qspi_quad_write_stop(qspi_id);
     } else {
         LCD_QSPI_LOGE("invalid lcd qspi refresh method\r\n");
