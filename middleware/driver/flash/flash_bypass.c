@@ -9,6 +9,8 @@
 #include "driver/flash.h"
 #include <os/mem.h>
 #include <soc/bk7236/soc_debug.h>
+#include "flash_driver.h"
+#include "flash_hal.h"
 
 #if CONFIG_SOC_BK7236XX
 #define SPI_R_0X2(_id)  (SPI_R_BASE(_id) + 2 * 0x04)
@@ -919,6 +921,69 @@ otp_write_exit:
 	return ret;
 }
 
+typedef struct {
+	flash_hal_t            hal;
+	uint32_t               flash_id;
+	uint32_t               flash_status_reg_val;
+	uint32_t               flash_line_mode;
+} flash_driver_t;
+
+static flash_driver_t s_flash = {0};
+static bool s_flash_is_init = false;
+
+static flash_line_mode_t flash_bypass_set_line_mode(flash_line_mode_t line_mode)
+{
+	if (!s_flash_is_init) {
+		os_memset(&s_flash, 0, sizeof(s_flash));
+		flash_hal_init(&s_flash.hal);
+		s_flash_is_init = true;
+	}
+
+	flash_line_mode_t  new_line_mode;
+	flash_line_mode_t  old_line_mode = s_flash.flash_line_mode;
+
+#if CONFIG_FLASH_QUAD_ENABLE
+	if ( (FLASH_LINE_MODE_FOUR == line_mode)
+		&& (FLASH_LINE_MODE_FOUR == bk_flash_get_line_mode()) )
+	{
+		new_line_mode = FLASH_LINE_MODE_FOUR;
+	}
+	else
+#endif
+	{
+		new_line_mode = FLASH_LINE_MODE_TWO;
+	}
+
+	if(new_line_mode == old_line_mode)
+	{
+		return old_line_mode;
+	}
+
+	flash_hal_clear_qwfr(&s_flash.hal);   // cmd CRMR (coutinuous_read_mode reset), quit QPI mode.
+
+#if CONFIG_SOC_BK7236XX
+	sys_drv_set_sys2flsh_2wire(0);
+#endif
+
+	if (FLASH_LINE_MODE_FOUR == new_line_mode)
+	{
+		flash_hal_set_quad_m_value(&s_flash.hal, bk_flash_get_coutinuous_read_mode());
+		flash_hal_set_mode(&s_flash.hal, FLASH_MODE_QUAD);  // enter QPI mode.
+	}
+	else
+	{
+		flash_hal_set_mode(&s_flash.hal, FLASH_MODE_DUAL);
+	}
+
+	s_flash.flash_line_mode = new_line_mode;
+
+#if CONFIG_SOC_BK7236XX
+	sys_drv_set_sys2flsh_2wire(1);
+#endif
+
+	return old_line_mode;
+}
+
 bk_err_t flash_bypass_otp_operation(flash_bypass_otp_cmd_t cmd, flash_bypass_otp_ctrl_t *param)
 {
 	bk_err_t ret = BK_OK;
@@ -934,7 +999,7 @@ bk_err_t flash_bypass_otp_operation(flash_bypass_otp_cmd_t cmd, flash_bypass_otp
 	// flash need to change 2 line when do flash operate except read
 	// need to recover 4 line, please do it manually
 	if (FLASH_LINE_MODE_FOUR == bk_flash_get_line_mode())
-		bk_flash_set_line_mode(2);
+		flash_bypass_set_line_mode(FLASH_LINE_MODE_TWO);
 
 	switch(cmd) {
 		case FLASH_BYPASS_OTP_READ:
@@ -957,6 +1022,10 @@ bk_err_t flash_bypass_otp_operation(flash_bypass_otp_cmd_t cmd, flash_bypass_otp
 	if (ret != BK_OK) {
 		FLASH_BYPASS_LOGW("%s fail\r\n", __func__);
 	}
+
+	if (FLASH_LINE_MODE_FOUR == bk_flash_get_line_mode())
+		flash_bypass_set_line_mode(FLASH_LINE_MODE_FOUR);
+
 	return ret;
 }
 #endif

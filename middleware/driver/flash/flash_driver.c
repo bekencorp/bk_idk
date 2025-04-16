@@ -526,6 +526,11 @@ flash_line_mode_t bk_flash_get_line_mode(void)
 	return s_flash.flash_cfg->line_mode;
 }
 
+uint8_t bk_flash_get_coutinuous_read_mode(void)
+{
+	return s_flash.flash_cfg->coutinuous_read_mode_bits_val;
+}
+
 bk_err_t bk_flash_set_line_mode(flash_line_mode_t line_mode)
 {
 	return BK_OK;

@@ -58,6 +58,13 @@ bk_err_t bk_flash_driver_deinit(void);
 bk_err_t bk_flash_set_line_mode(flash_line_mode_t line_mode);
 
 /**
+ * @brief     Get flash coutinuous read mode
+ *
+ * @return flash coutinuous read mode
+ */
+uint8_t bk_flash_get_coutinuous_read_mode(void);
+
+/**
  * @brief     Get flash line mode
  *
  * @return flash line mode
