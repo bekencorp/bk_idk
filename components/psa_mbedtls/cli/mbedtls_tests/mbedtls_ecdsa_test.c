@@ -50,7 +50,7 @@ static const uint8_t Vector_P384_Message[] =
     0x0A, 0x5D, 0x57, 0xBB, 0x70, 0x5F, 0x3B, 0xF6, 0xEC, 0x08, 0x47, 0x95, 0x11, 0xD4, 0xB4, 0xA3,
     0x21, 0x1F, 0x61, 0x64, 0x9A, 0xD6, 0x27, 0x43, 0x14, 0xBF, 0x0D, 0x43, 0x8A, 0x81, 0xE0, 0x60
 };
-
+extern int bk_rand(void);
 static int puf_gen_rand( void *rng_state, unsigned char *output, size_t len )
 {
     if( rng_state != NULL )
@@ -59,7 +59,7 @@ static int puf_gen_rand( void *rng_state, unsigned char *output, size_t len )
     uint32_t rand_num = 0;
     for (int i = 0; i < len; i++) {
         if ((i % 4) == 0) {
-            rand_num = REG_READ(SOC_OTP_APB_BASE + 0x02a0);
+            rand_num = bk_rand();
         }
         output[i] = (rand_num >> (8 * (i % 4))) & 0xff;
     }

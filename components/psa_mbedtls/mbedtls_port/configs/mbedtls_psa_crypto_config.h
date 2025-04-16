@@ -4196,7 +4196,11 @@
 #ifndef MBEDTLS_PLATFORM_SNPRINTF_ALT
 #define MBEDTLS_PLATFORM_SNPRINTF_ALT
 #endif
+
+#define MBEDTLS_THREADING_ALT
+#define MBEDTLS_THREADING_C
 #define MBEDTLS_PLATFORM_MEMORY
+#define MBEDTLS_PLATFORM_STD_SNPRINTF        snprintf
 #define os_calloc(nmemb,size)   ((size) && (nmemb) > (~( unsigned int) 0)/(size))?0:os_zalloc((nmemb)*(size))
 #define MBEDTLS_PLATFORM_CALLOC_MACRO        os_calloc /**< Default allocator macro to use, can be undefined. See MBEDTLS_PLATFORM_STD_CALLOC for requirements. */
 #define MBEDTLS_PLATFORM_FREE_MACRO            os_free /**< Default free macro to use, can be undefined. See MBEDTLS_PLATFORM_STD_FREE for requirements. */
