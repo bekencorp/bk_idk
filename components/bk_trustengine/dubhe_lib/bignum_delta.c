@@ -276,7 +276,7 @@ int mbedtls_mpi_random( mbedtls_mpi *X,
     do
     {
         MBEDTLS_MPI_CHK( mbedtls_mpi_fill_random( X, n_bytes, f_rng, p_rng ) );
-        MBEDTLS_MPI_CHK( mbedtls_mpi_shift_r( X, 8 * n_bytes - n_bytes ) );
+        MBEDTLS_MPI_CHK( mbedtls_mpi_shift_r( X, 8 * n_bytes - n_bits ) );
 
         /*
          * Each try has at worst a probability 1/2 of failing (the msb has

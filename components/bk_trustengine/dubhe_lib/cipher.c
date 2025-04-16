@@ -230,19 +230,20 @@ void mbedtls_cipher_free(mbedtls_cipher_context_t *ctx)
 
 #if defined(MBEDTLS_CMAC_C)
     if (ctx->cmac_ctx) {
+#if defined(MBEDTLS_CMAC_ALT)
+        mbedtls_cmac_free(ctx->cmac_ctx);
+#else
         mbedtls_zeroize_and_free(ctx->cmac_ctx,
                                  sizeof(mbedtls_cmac_context_t));
+#endif
     }
 #endif
 
     if (ctx->cipher_ctx) {
         mbedtls_cipher_get_base(ctx->cipher_info)->ctx_free_func(ctx->cipher_ctx);
     }
-#if defined(MBEDTLS_CMAC_ALT)
-    mbedtls_cmac_free(ctx->cmac_ctx);
-#else
+
     mbedtls_platform_zeroize(ctx, sizeof(mbedtls_cipher_context_t));
-#endif
 }
 
 int mbedtls_cipher_setup(mbedtls_cipher_context_t *ctx,

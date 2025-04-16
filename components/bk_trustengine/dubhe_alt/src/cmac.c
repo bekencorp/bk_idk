@@ -245,6 +245,7 @@ int sw_mbedtls_cmac_starts( mbedtls_cipher_context_t *ctx,
         return( MBEDTLS_ERR_CIPHER_ALLOC_FAILED );
 
     ctx->cmac_ctx = cmac_ctx;
+    ctx->cmac_ctx->magic = MBEDTLS_CMAC_MAGIC;
 
     mbedtls_platform_zeroize( cmac_ctx->state, sizeof( cmac_ctx->state ) );
 
@@ -649,14 +650,19 @@ int dubhe_cmac_finish( mbedtls_cipher_context_t *ctx,
 
 void dubhe_cmac_free( mbedtls_cmac_context_t *ctx )
 {
-    if ( ( ctx == NULL ) || ( ctx->magic != MBEDTLS_CMAC_MAGIC ) ||
-         ( ctx->cmac == NULL ) ) {
+    if ( ( ctx == NULL ) || ( ctx->magic != MBEDTLS_CMAC_MAGIC ) ) {
         return;
     }
 
-    arm_ce_cmac_free( ctx->cmac );
-    mbedtls_platform_zeroize( ctx->cmac, sizeof( *ctx->cmac ) );
+    if ( ctx->cmac != NULL )
+    {
+        mbedtls_platform_zeroize( ctx->cmac, sizeof( *ctx->cmac ) );
+        arm_ce_cmac_free( ctx->cmac );
+        ctx->cmac = NULL;
+    }
+
     mbedtls_platform_zeroize( ctx, sizeof( *ctx ) );
+    mbedtls_free(ctx);
 }
 
 int dubhe_cmac_reset( mbedtls_cipher_context_t *ctx )
