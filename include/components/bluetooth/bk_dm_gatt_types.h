@@ -283,14 +283,14 @@ typedef uint16_t bk_gatt_perm_t;
 /// definition of characteristic properties
 typedef enum
 {
-    BK_GATT_CHAR_PROP_BIT_BROADCAST =    (1 << 0),       /* 0x01 */
-    BK_GATT_CHAR_PROP_BIT_READ =         (1 << 1),       /* 0x02 */
-    BK_GATT_CHAR_PROP_BIT_WRITE_NR =     (1 << 2),       /* 0x04 */
-    BK_GATT_CHAR_PROP_BIT_WRITE =        (1 << 3),       /* 0x08 */
-    BK_GATT_CHAR_PROP_BIT_NOTIFY =       (1 << 4),       /* 0x10 */
-    BK_GATT_CHAR_PROP_BIT_INDICATE =     (1 << 5),       /* 0x20 */
-    BK_GATT_CHAR_PROP_BIT_AUTH =         (1 << 6),       /* 0x40 */
-    BK_GATT_CHAR_PROP_BIT_EXT_PROP =     (1 << 7),       /* 0x80 */
+    BK_GATT_CHAR_PROP_BIT_BROADCAST =         (1 << 0),       /* 0x01 */
+    BK_GATT_CHAR_PROP_BIT_READ =              (1 << 1),       /* 0x02 */
+    BK_GATT_CHAR_PROP_BIT_WRITE_NR =          (1 << 2),       /* 0x04 */
+    BK_GATT_CHAR_PROP_BIT_WRITE =             (1 << 3),       /* 0x08 */
+    BK_GATT_CHAR_PROP_BIT_NOTIFY =            (1 << 4),       /* 0x10 */
+    BK_GATT_CHAR_PROP_BIT_INDICATE =          (1 << 5),       /* 0x20 */
+    BK_GATT_CHAR_PROP_BIT_AUTH_SIGNED_WRITE = (1 << 6),       /* 0x40 */
+    BK_GATT_CHAR_PROP_BIT_EXT_PROP =          (1 << 7),       /* 0x80 */
 } bk_gatt_char_prop_enum_t;
 
 /// see bk_gatt_char_prop_enum_t
