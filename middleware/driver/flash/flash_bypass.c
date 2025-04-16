@@ -486,10 +486,10 @@ static bk_err_t flash_bypass_op_read_and_check(uint8_t *tx_buf, uint32_t tx_len,
 	uint8_t *rx_buf1 = (uint8_t *)os_malloc(rx_len);
 	uint8_t *rx_buf2 = (uint8_t *)os_malloc(rx_len);
 	uint8_t *err_buf = (uint8_t *)os_malloc(rx_len);
-	if ((rx_buf1 == NULL) || (rx_buf2 == NULL) || (err_buf == NULL)) {
+	if (!rx_buf1 || !rx_buf2 || !err_buf) {
 		FLASH_BYPASS_LOGW("%s malloc err\r\n", __func__);
 		ret = BK_FAIL;
-		goto double_check_exit;
+		goto read_check_exit;
 	}
 
 	os_memset(err_buf, 0x00, rx_len);
@@ -499,6 +499,7 @@ static bk_err_t flash_bypass_op_read_and_check(uint8_t *tx_buf, uint32_t tx_len,
 		ret1 = flash_bypass_op_read(tx_buf, tx_len, rx_buf1, rx_len);
 		delay_us(1000);
 		ret2 = flash_bypass_op_read(tx_buf, tx_len, rx_buf2, rx_len);
+		delay_us(1000);
 
 		// if flash_bypass_op_read ok, it will return ret >= 0
 		if ((ret1 < 0) || (ret2 < 0)) {
@@ -517,29 +518,29 @@ static bk_err_t flash_bypass_op_read_and_check(uint8_t *tx_buf, uint32_t tx_len,
 
 	if ((!flash_bypass_op_read_buf_can_be_zero_flag) &&
 		((os_memcmp(rx_buf1, err_buf, rx_len) == 0) || (os_memcmp(rx_buf2, err_buf, rx_len) == 0))) {
-			FLASH_BYPASS_LOGW("%s fail\r\n", __func__);
-			ret = BK_FAIL;
-			goto double_check_exit;
+		FLASH_BYPASS_LOGW("%s fail\r\n", __func__);
+		ret = BK_FAIL;
+		goto read_check_exit;
 	}
 
 	if (os_memcmp(rx_buf1, rx_buf2, rx_len) != 0) {
 		FLASH_BYPASS_LOGW("%s fail\r\n", __func__);
 		ret = BK_FAIL;
-		goto double_check_exit;
+		goto read_check_exit;
 	}
 
 	ret = BK_OK;
 
 	os_memcpy(rx_buf, rx_buf2, rx_len);
 
-double_check_exit:
-	if (rx_buf1 != NULL) {
+read_check_exit:
+	if (rx_buf1) {
 		os_free(rx_buf1);
 	}
-	if (rx_buf2 != NULL) {
+	if (rx_buf2) {
 		os_free(rx_buf2);
 	}
-	if (err_buf != NULL) {
+	if (err_buf) {
 		os_free(err_buf);
 	}
 	return ret;
@@ -547,7 +548,7 @@ double_check_exit:
 
 static bk_err_t flash_bypass_status_read(uint32_t *sta_val)
 {
-	int ret = BK_OK;
+	int ret;
 
 	uint8_t sta_reg_read_cmd[FLASH_STA_REG_MAX] = {
 		CMD_FLASH_STA_REG_1_READ,
@@ -557,7 +558,7 @@ static bk_err_t flash_bypass_status_read(uint32_t *sta_val)
 	uint8_t tx_buf[CMD_FLASH_STA_REG_READ_TASK_LEN] = {0};
 	uint8_t tx_len = CMD_FLASH_STA_REG_READ_TASK_LEN;
 	uint8_t rx_buf = 0;
-	uint8_t rx_len = sizeof(rx_buf);
+	uint8_t rx_len = CMD_FLASH_STA_REG_READ_TASK_LEN;
 
 	uint32_t sta_reg_val = 0;
 	for (uint8_t i = 0; i < FLASH_STA_REG_MAX; i++) {
@@ -581,6 +582,7 @@ static void flash_bypass_wait_work_in_progress_end(void)
 
 	do {
 		flash_bypass_status_read(&flash_bypass_sta_reg_val);
+		delay_us(5000);
 
 		FLASH_BYPASS_LOGD("flash_bypass_sta_reg_val = 0x%x\n", flash_bypass_sta_reg_val);
 
@@ -760,7 +762,7 @@ static bk_err_t flash_bypass_otp_earse_and_check(flash_bypass_otp_ctrl_t *otp_cf
 	otp_op.read_len  = FLASH_BYPASS_OTP_BLOCK_LENGTH;
 	otp_op.read_buf  = (uint8_t *)os_malloc(otp_op.read_len);
 	uint8_t *dft_buf = (uint8_t *)os_malloc(otp_op.read_len);
-	if ((otp_op.read_buf == NULL) || (dft_buf == NULL)) {
+	if (!otp_op.read_buf || !dft_buf) {
 		FLASH_BYPASS_LOGW("%s malloc err\r\n", __func__);
 		ret = BK_FAIL;
 		goto earse_and_read_check;
@@ -768,27 +770,29 @@ static bk_err_t flash_bypass_otp_earse_and_check(flash_bypass_otp_ctrl_t *otp_cf
 
 	os_memset(dft_buf, 0xff, otp_op.read_len);
 
-	int ret1, ret2;
+	int ret1 = BK_OK, ret2 = BK_OK;
 
 	for (uint8_t i = 0; i < FLASH_BYPASS_OTP_EARSE_RETRY_MAX; i++) {
 		ret1 = flash_bypass_otp_earse(&otp_op);
 		ret2 = flash_bypass_otp_read(&otp_op , 0);
-		if ((ret1 != BK_OK)
-		|| (ret2 != BK_OK)
+		if ((ret1 != BK_OK) || (ret2 != BK_OK)
 		|| (os_memcmp(otp_op.read_buf, dft_buf, otp_op.read_len) != 0)) {
 			continue;
+		} else {
+			break;
 		}
 	}
 
-	if (os_memcmp(otp_op.read_buf, dft_buf, otp_op.read_len) != 0) {
+	if ((ret1 != BK_OK) || (ret2 != BK_OK)
+	|| (os_memcmp(otp_op.read_buf, dft_buf, otp_op.read_len) != 0)) {
 		ret = BK_FAIL;
 	}
 
 earse_and_read_check:
-	if (otp_op.read_buf != NULL) {
+	if (otp_op.read_buf) {
 		os_free(otp_op.read_buf);
 	}
-	if (dft_buf != NULL) {
+	if (dft_buf) {
 		os_free(dft_buf);
 	}
 	return ret;
@@ -804,9 +808,10 @@ static bk_err_t flash_bypass_otp_write_without_read(flash_bypass_otp_ctrl_t *otp
 	flash_bypass_otp_test_flag = 1;
 
 	uint8_t  *tx_buf = (uint8_t *)os_malloc(CMD_FLASH_BYPASS_OTP_WRITE_TASK_LEN);
-	if(tx_buf == NULL) {
+	if(!tx_buf) {
 		FLASH_BYPASS_LOGW("%s malloc err\r\n", __func__);
-		return BK_FAIL;
+		ret = BK_FAIL;
+		goto write_exit;
 	}
 
 	uint8_t  op_code = CMD_FLASH_BYPASS_WR_EN;
@@ -822,15 +827,17 @@ static bk_err_t flash_bypass_otp_write_without_read(flash_bypass_otp_ctrl_t *otp
 	ret = flash_bypass_op_write(&op_code, tx_buf, tx_len);
 	if (ret != 0) {
 		FLASH_BYPASS_LOGW("%s fail\r\n", __func__);
-		os_free(tx_buf);
-		flash_bypass_otp_test_flag = 0;
-		return BK_FAIL;
+		ret = BK_FAIL;
+		goto write_exit;
 	}
 	flash_bypass_wait_work_in_progress_end();
 
-	os_free(tx_buf);
+write_exit:
+	if (tx_buf) {
+		os_free(tx_buf);
+	}
 	flash_bypass_otp_test_flag = 0;
-	return BK_OK;
+	return ret;
 }
 
 static bk_err_t flash_bypass_otp_write(flash_bypass_otp_ctrl_t *otp_cfg)
@@ -845,7 +852,7 @@ static bk_err_t flash_bypass_otp_write(flash_bypass_otp_ctrl_t *otp_cfg)
 	otp_read_cfg->addr_offset = FLASH_BYPASS_OTP_BLOCK_START_OFFSET;
 	otp_read_cfg->read_len    = FLASH_BYPASS_OTP_BLOCK_LENGTH;
 	otp_read_cfg->read_buf    = (uint8_t *)os_malloc(otp_read_cfg->read_len);
-	if(otp_read_cfg->read_buf == NULL) {
+	if(!otp_read_cfg->read_buf) {
 		FLASH_BYPASS_LOGW("%s malloc err\r\n", __func__);
 		return BK_FAIL;
 	}
@@ -869,7 +876,7 @@ static bk_err_t flash_bypass_otp_write(flash_bypass_otp_ctrl_t *otp_cfg)
 	flash_bypass_otp_ctrl_t *otp_temp_cfg = otp_read_cfg;
 	otp_temp_cfg->write_len    = FLASH_BYPASS_OTP_BLOCK_LENGTH;
 	otp_temp_cfg->write_buf    = (uint8_t *)os_malloc(otp_temp_cfg->write_len);
-	if(otp_temp_cfg->write_buf == NULL) {
+	if(!otp_temp_cfg->write_buf) {
 		FLASH_BYPASS_LOGW("%s malloc err\r\n", __func__);
 		ret = BK_FAIL;
 		goto otp_write_exit;
@@ -882,7 +889,7 @@ static bk_err_t flash_bypass_otp_write(flash_bypass_otp_ctrl_t *otp_cfg)
 	otp_write_cfg.otp_idx   = otp_temp_cfg->otp_idx;
 	otp_write_cfg.write_len = FLASH_BYPASS_OTP_PAGE_LENGTH;
 	otp_write_cfg.write_buf = (uint8_t *)os_malloc(otp_write_cfg.write_len);
-	if(otp_write_cfg.write_buf == NULL) {
+	if(!otp_write_cfg.write_buf) {
 		FLASH_BYPASS_LOGW("%s malloc err\r\n", __func__);
 		ret = BK_FAIL;
 		goto otp_write_exit;
@@ -900,13 +907,13 @@ static bk_err_t flash_bypass_otp_write(flash_bypass_otp_ctrl_t *otp_cfg)
 	}
 
 otp_write_exit:
-	if (otp_read_cfg->read_buf != NULL) {
+	if (otp_read_cfg->read_buf) {
 		os_free(otp_read_cfg->read_buf);
 	}
-	if (otp_temp_cfg->write_buf != NULL) {
+	if (otp_temp_cfg->write_buf) {
 		os_free(otp_temp_cfg->write_buf);
 	}
-	if (otp_write_cfg.write_buf != NULL) {
+	if (otp_write_cfg.write_buf) {
 		os_free(otp_write_cfg.write_buf);
 	}
 	return ret;
@@ -918,8 +925,8 @@ bk_err_t flash_bypass_otp_operation(flash_bypass_otp_cmd_t cmd, flash_bypass_otp
 	flash_bypass_otp_ctrl_t *otp_cfg = (flash_bypass_otp_ctrl_t *)param;
 
 	if ((otp_cfg->otp_idx >= FLASH_BYPASS_OTP_IDX_MAX)
-		|| (otp_cfg->addr_offset + otp_cfg->read_len > FLASH_BYPASS_OTP_BLOCK_LENGTH)
-		|| (otp_cfg->addr_offset + otp_cfg->write_len > FLASH_BYPASS_OTP_BLOCK_LENGTH)) {
+	|| (otp_cfg->addr_offset + otp_cfg->read_len > FLASH_BYPASS_OTP_BLOCK_LENGTH)
+	|| (otp_cfg->addr_offset + otp_cfg->write_len > FLASH_BYPASS_OTP_BLOCK_LENGTH)) {
 		FLASH_BYPASS_LOGW("%s out of range\r\n", __func__);
 		return BK_FAIL;
 	}
