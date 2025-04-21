@@ -90,6 +90,15 @@ if(CONFIG_COMPILER_DUMP_RTL_FILES)
     list(APPEND compile_options "-fdump-rtl-expand")
 endif()
 
+armino_build_get_property(build_dir BUILD_DIR)
+set(config_dir ${build_dir}/config)
+
+MESSAGE(STATUS "${config_dir}")
+
+list(APPEND compile_options "-I${config_dir}")
+list(APPEND compile_options "-include;sdkconfig.h")
+
+
 list(APPEND link_options "-fno-lto")
 
 # When defined USE_LIBS_DETERMINED_MODE, pre_compile libs will use determined mod, same code output same libraries.
