@@ -521,7 +521,7 @@ void ble_sleep_cb(uint8_t is_sleeping, uint32_t slp_period)
     GLOBAL_INT_RESTORE();
 }
 
-static int ble_callback_deal_handler(uint32_t deal_flash_time)
+int ble_callback_deal_handler(uint32_t deal_flash_time)
 {
     uint32_t  cur_time =0;
     uint32_t  temp_time = 0;

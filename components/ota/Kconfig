@@ -39,4 +39,8 @@ menu "Ota"
 		default n
 		help
 			enable ota position independent update
+
+	config BLE_OTA_WAIT_TIMEOUT
+		int "ble ota wait time(ms)"
+		default 3000
 endmenu

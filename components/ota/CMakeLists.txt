@@ -5,10 +5,10 @@ if (CONFIG_OTA_HASH_FUNCTION)
 	list(APPEND srcs ota_hash.c)
 endif()
 
+list(APPEND srcs CheckSumUtils.c)
 
 if (CONFIG_SECURITY_OTA)
 list(APPEND srcs security_ota.c)
-list(APPEND srcs CheckSumUtils.c)
 	if (CONFIG_OTA_HTTPS)
 		list(APPEND srcs security_ota_https.c)
 	endif()
@@ -22,7 +22,9 @@ else()
 	endif()
 
 	if (CONFIG_OTA_HTTP)
-		list(APPEND srcs ota.c)
+		list(APPEND srcs
+			ota.c
+			ota_base_drv.c)
 	endif()
 endif()
 
