@@ -126,16 +126,16 @@ bk_err_t rlk_ping_send(void)
     app_ptr->subtype = RLK_APP_ECHO_REQ;
     app_ptr->len = rlk_ping_env.size;
     app_ptr->seq = rlk_ping_env.seq;
-    rlk_ping_add_peer(rlk_ping_env.mac_addr);
+    //rlk_ping_add_peer(rlk_ping_env.mac_addr);
 
     ret = bk_rlk_send(rlk_ping_env.mac_addr,app_ptr,rlk_ping_env.size);
 
-    if (ret != BK_OK)
+    if (ret <= 0)
     {
         RLK_LOGI("rlk_ping_send failed ret:%d\n", ret);
-
-        os_free(app_ptr);
     }
+    os_free(app_ptr);
+
     return ret;
 }
 

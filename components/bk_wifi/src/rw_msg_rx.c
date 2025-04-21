@@ -46,6 +46,8 @@
 #include "bk_wifi_prop_private.h"
 #include "net.h"
 #include "fhost_msg.h"
+//#include <modules/raw_link.h>
+#include <modules/wifi_types.h>
 
 uint32_t resultful_scan_cfm = 0;
 uint8_t *ind_buf_ptr = 0;
@@ -61,7 +63,7 @@ rw_event_handler rw_event_handlers[WIFI_LINKSTATE_MAX] = {0};
 beken_mutex_t sr_mutex;
 uint32_t mac_ie_he_capa_find(uint32_t buffer, uint16_t buflen, uint8_t *ie_len);
 
-
+wifi_rlk_base_info_t wifi_rlk_info = {0};
 /**
  ****************************************************************************************
  * Test whether the specified capability is supported locally
@@ -186,8 +188,9 @@ void *sr_get_scan_results(void)
 	return ptr;
 }
 
-void sr_flush_scan_results(SCAN_RST_UPLOAD_PTR ptr)
+void sr_flush_scan_results(void *rst_ptr)
 {
+	SCAN_RST_UPLOAD_PTR ptr = (SCAN_RST_UPLOAD_PTR)rst_ptr;
 	//GLOBAL_INT_DECLARATION();
 
 	//GLOBAL_INT_DISABLE();
@@ -1292,6 +1295,74 @@ void rwm_msdu_twt_ps_change_ind_handler(void *msg)
 
 }
 
+void *rwnx_get_rlk_info_results(void)
+{
+	void *ptr;
+
+	ptr = &wifi_rlk_info;
+
+	return ptr;
+}
+
+void rwnx_flush_rlk_info_results(void)
+{
+	uint32_t rlk_start = wifi_rlk_info.wifi_rlk_start;
+
+	os_memset(&wifi_rlk_info, 0x0, sizeof(wifi_rlk_base_info_t));
+	wifi_rlk_info.wifi_rlk_start = rlk_start;
+}
+
+void rwnx_chan_survey_ind_handler(void *msg)
+{
+	struct ke_msg *msg_ptr = (struct ke_msg *)msg;
+	struct mm_channel_survey_ind *ind;
+	int8_t chan_idx = 0xFF;
+
+	if(!msg_ptr || !msg_ptr->param)
+		return;
+
+	ind = (struct mm_channel_survey_ind *)msg_ptr->param;
+
+	RWNX_LOGD("chan_survey busy %d ms time %d ms noise %d freq %d\r\n",
+			 ind->chan_time_busy_ms,ind->chan_time_ms,ind->noise_dbm,ind->freq);
+
+	if(ind->freq < 2412)
+	{
+		return;
+	}
+
+	chan_idx = (ind->freq - 2412) / 5;
+	RWNX_LOGD("%s chan_idx %d\r\n",__func__,chan_idx);
+
+	if(chan_idx != 0xFF)
+	{
+		wifi_rlk_info.chan[chan_idx].freq = ind->freq;
+		wifi_rlk_info.chan[chan_idx].noise_dbm = ind->noise_dbm;
+		wifi_rlk_info.chan[chan_idx].chan_time_ms = ind->chan_time_ms;
+		wifi_rlk_info.chan[chan_idx].chan_time_busy_ms = ind->chan_time_busy_ms;
+	}
+}
+
+void rwnx_set_wifi_rlk_start(uint32_t start)
+{
+	wifi_rlk_info.wifi_rlk_start = start;
+	RWNX_LOGD("%s start %d\r\n",__func__,wifi_rlk_info.wifi_rlk_start);
+}
+
+uint32_t rwnx_get_wifi_rlk_start(void)
+{
+	RWNX_LOGD("%s start %d\r\n",__func__,wifi_rlk_info.wifi_rlk_start);
+	return wifi_rlk_info.wifi_rlk_start;
+}
+
+void rwnx_wifi_rlk_trigger_scan_process(void)
+{
+	wifi_rlk_scan_cfm_cb_t cfm_cb = wifi_rlk_scan_get_register_cfm_cb();
+
+	if (cfm_cb)
+		cfm_cb();
+}
+
 //TODO remove old event handler
 void rwnx_handle_recv_msg(struct ke_msg *rx_msg)
 {
@@ -1313,7 +1384,14 @@ void rwnx_handle_recv_msg(struct ke_msg *rx_msg)
 		}
 
 		sort_scan_result(scan_rst_set_ptr);
+
+		if (rwnx_get_wifi_rlk_start())
+		{
+			rwnx_wifi_rlk_trigger_scan_process();
+		}
+		else {
 			wpa_ctrl_event(WPA_CTRL_EVENT_SCAN_RESULTS, NULL);
+		}
 
 		break;
 
@@ -1486,6 +1564,7 @@ void rwnx_handle_recv_msg(struct ke_msg *rx_msg)
 	case MM_CSA_TRAFFIC_IND:
 		break;
 	case MM_CHANNEL_SURVEY_IND:
+		rwnx_chan_survey_ind_handler(rx_msg);
 		break;
 	case MM_P2P_NOA_UPD_IND:
 		break;

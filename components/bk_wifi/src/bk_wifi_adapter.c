@@ -47,6 +47,7 @@
 #include "bk_phy_adapter.h"
 #include "reg_domain.h"
 #include "bk_rw.h"
+#include "bk_wifi_adapter.h"
 
 #if (CONFIG_CKMN)
 #include <driver/ckmn.h>
@@ -1438,6 +1439,13 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._tpc_set_media_pwr_level = NULL,
 	._tpc_get_media_pwr_level = NULL,
 	#endif
+	._rw_ieee80211_init_scan_chan = rw_ieee80211_init_scan_chan,
+	._rwnx_set_bk_rlk_start = rwnx_set_wifi_rlk_start,
+	._sr_get_scan_number = sr_get_scan_number,
+	._sr_get_scan_results = sr_get_scan_results,
+	._sr_flush_scan_results = sr_flush_scan_results,
+	._rwnx_get_rlk_info_results = rwnx_get_rlk_info_results,
+	._rwnx_flush_rlk_info_results = rwnx_flush_rlk_info_results,
 };
 
 __attribute__((section(".dtcm_sec_data "))) wifi_os_variable_t g_wifi_os_variable = {

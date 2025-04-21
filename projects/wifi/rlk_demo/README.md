@@ -16,8 +16,7 @@
 ## Special Macro Configuration Description：
 
 ## Complie Command:
-1、make bk7256 PROJECT=wifi/rlk_demo
-
+1、make bk7258 PROJECT=wifi/rlk_demo
 ## CPU:
 1、bk7256: cpu0+cpu1
 

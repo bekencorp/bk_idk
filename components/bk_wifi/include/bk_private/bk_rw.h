@@ -282,8 +282,14 @@ extern void mhdr_connect_user_cb(FUNC_2PARAM_PTR ind_cb, void *ctxt);
 extern UINT32 rw_ieee80211_init(void);
 extern UINT32 rw_ieee80211_get_centre_frequency(UINT32 chan_id);
 extern UINT8 rw_ieee80211_get_chan_id(UINT32 freq);
+extern void rwnx_set_wifi_rlk_start(uint32_t start);
+extern uint32_t rwnx_get_wifi_rlk_start(void);
+extern uint32_t sr_get_scan_number(void);
 extern void *sr_get_scan_results(void);
+extern void sr_flush_scan_results(void *rst_ptr);
 extern void sr_release_scan_results(SCAN_RST_UPLOAD_PTR ptr);
+extern void *rwnx_get_rlk_info_results(void);
+extern void rwnx_flush_rlk_info_results(void);
 extern void *rwm_transfer_pre(UINT8 vif_idx, UINT8 *buf, UINT32 len);
 extern UINT32 rwm_uploaded_data_handle(UINT8 *upper_buf, UINT32 len);
 extern UINT32 rwm_get_rx_valid_node_len(void);
@@ -412,7 +418,7 @@ __INLINE void *rwm_mgmt_next(VIF_INF_PTR vif_entry)
 
 extern UINT8 beacon[149];
 
-UINT8 rw_ieee80211_init_scan_chan(struct scanu_start_req *req);
+UINT8 rw_ieee80211_init_scan_chan(void *req);
 UINT8 rw_ieee80211_is_scan_rst_in_countrycode(UINT8 freq);
 #if CONFIG_WIFI4
 void rw_ieee80211_set_ht_cap(UINT8 ht_supp);

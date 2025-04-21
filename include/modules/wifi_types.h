@@ -584,6 +584,15 @@ typedef struct {
 
 typedef struct {
 	int rssi;                         /**< RSSI of the received frame in monitor mode */
+	uint32_t len;                     /** Total length for the MPDU transfer */
+	uint32_t tsf_lo;                  /** TSF Low */
+	uint32_t tsf_hi;                  /** TSF High */
+	uint32_t recvec1a;                /** Receive Vector 1 */
+	uint32_t recvec1b;                /** Receive Vector 1 */
+	uint32_t recvec1c;                /** Receive Vector 1 */
+	uint32_t recvec1d;                /** Receive Vector 1 */
+	uint32_t recvec2a;                /** Receive Vector 2 */
+	uint32_t recvec2b;                /** Receive Vector 2 */
 	void *extra;                      /**< extra info of this frame */
 } wifi_frame_info_t;
 
@@ -598,6 +607,27 @@ typedef struct {
  *               WiFi.
  **/
 typedef bk_err_t (*wifi_monitor_cb_t)(const uint8_t *frame, uint32_t len, const wifi_frame_info_t *frame_info);
+
+typedef struct wifi_rlk_chan_info {
+    uint8_t chan;
+    /// Frequency of the channel
+    uint16_t freq;
+    /// Noise in dbm
+    uint8_t noise_dbm;
+    /// Amount of time spent of the channel (in ms)
+    uint32_t chan_time_ms; //scan duration
+    /// Amount of time the primary channel was sensed busy
+    uint32_t chan_time_busy_ms; //cca busy time
+} wifi_rlk_chan_info_t;
+
+typedef struct wifi_rlk_base_info {
+    uint32_t wifi_rlk_start;
+    wifi_rlk_chan_info_t chan[14];
+} wifi_rlk_base_info_t;
+
+typedef bk_err_t (*wifi_rlk_scan_cfm_cb_t)(void);
+
+wifi_rlk_scan_cfm_cb_t wifi_rlk_scan_get_register_cfm_cb(void);
 
 typedef struct {
 	uint32_t rx_all_default_mgmt: 1;  /**< Set the bit to enable the callback to receive all management frame recived by WiFi driver */

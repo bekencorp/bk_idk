@@ -683,6 +683,15 @@ UINT32 rwm_rx_monitor(void *host_id, uint32_t frame_len)
 
 		rssi = macif_rx_monitor_get_rssi(rxhdr->hwvect.recvec1b,rx_rssi);
 		frame_info.rssi = rssi;
+		frame_info.len = rxhdr->hwvect.len;
+		frame_info.tsf_hi = rxhdr->hwvect.tsf_hi;
+		frame_info.tsf_lo = rxhdr->hwvect.tsf_lo;
+		frame_info.recvec1a = rxhdr->hwvect.recvec1a;
+		frame_info.recvec1b = rxhdr->hwvect.recvec1b;
+		frame_info.recvec1c = rxhdr->hwvect.recvec1c;
+		frame_info.recvec1d = rxhdr->hwvect.recvec1d;
+		frame_info.recvec2a = rxhdr->hwvect.recvec2a;
+		frame_info.recvec2b = rxhdr->hwvect.recvec2b;
 
 		/*
 		 * payload is 802.3 format if original 802.11 is Data format, see

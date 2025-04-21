@@ -258,6 +258,13 @@ typedef struct {
 	void(*_tpc_change_pwr_by_media)(UINT8 rate, UINT8 *pwr_idx, UINT8 level);
 	void(*_tpc_set_media_pwr_level)(UINT8 level);
 	UINT8(*_tpc_get_media_pwr_level)(void);
+	UINT8 (*_rw_ieee80211_init_scan_chan)(void *req);
+	void (*_rwnx_set_bk_rlk_start)(uint32_t rlk_start);
+	uint32_t (*_sr_get_scan_number)(void);
+	void *(*_sr_get_scan_results)(void);
+	void (*_sr_flush_scan_results)(void *rst_ptr);
+	void *(*_rwnx_get_rlk_info_results)(void);
+	void (*_rwnx_flush_rlk_info_results)(void);
 } wifi_os_funcs_t;
 extern wifi_os_funcs_t g_wifi_os_funcs;
 

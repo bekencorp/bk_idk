@@ -804,9 +804,12 @@ void rwnx_txq_vif_start(VIF_INF_PTR rwnx_vif, u16 reason)
 
 	spin_lock_bh(&g_rwnx_hw.tx_lock);
 
-	//Reject if monitor interface
-	if (mac_vif_mgmt_get_type(rwnx_vif) == VIF_MONITOR)
-		goto end;
+	if (!rwnx_get_wifi_rlk_start())
+	{
+		//Reject if monitor interface
+		if (mac_vif_mgmt_get_type(rwnx_vif) == VIF_MONITOR)
+			goto end;
+	}
 
 	rwnx_txq_vif_for_each_sta(rwnx_vif, rwnx_txq_sta_start, reason);
 
@@ -841,10 +844,12 @@ void rwnx_txq_vif_stop(VIF_INF_PTR rwnx_vif, u16 reason)
 	// trace_txq_vif_stop(vif_info_tag->vif_index);
 	spin_lock_bh(&g_rwnx_hw.tx_lock);
 
-	//Reject if monitor interface
-	if (mac_vif_mgmt_get_type(rwnx_vif) == VIF_MONITOR)
-		goto end;
-
+	if (!rwnx_get_wifi_rlk_start())
+	{
+		//Reject if monitor interface
+		if (mac_vif_mgmt_get_type(rwnx_vif) == VIF_MONITOR)
+			goto end;
+	}
 	rwnx_txq_vif_for_each_sta(rwnx_vif, rwnx_txq_sta_stop, reason);
 
 	txq = rwnx_txq_vif_get(rwnx_vif, NX_BCMC_TXQ_TYPE);

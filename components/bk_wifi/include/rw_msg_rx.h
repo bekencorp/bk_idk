@@ -29,7 +29,6 @@ extern void mhdr_scanu_reg_cb(FUNC_2PARAM_PTR ind_cb, void *ctxt);
 extern void mhdr_deauth_evt_cb(FUNC_2PARAM_PTR ind_cb, void *ctxt);
 extern void mhdr_deassoc_evt_cb(FUNC_2PARAM_PTR ind_cb, void *ctxt);
 extern void mhdr_scanu_reg_cb_for_wpa(FUNC_2PARAM_PTR ind_cb, void *ctxt);
-extern uint32_t sr_get_scan_number(void);
 #if CONFIG_AP_PROBEREQ_CB
 extern void ap_vif_probe_req_frame_cb_hander(unsigned char *data, unsigned int length);
 extern void ap_vif_probe_req_frame_cb_register(apvif_probereq_frame_t cb);

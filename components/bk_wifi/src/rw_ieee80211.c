@@ -624,9 +624,10 @@ int* rw_select_5g_channels_by_regulatory_domain(int *selected_channels_size)
 }
 #endif
 
-UINT8 rw_ieee80211_init_scan_chan(struct scanu_start_req *req)
+UINT8 rw_ieee80211_init_scan_chan(void *request)
 {
 	UINT32 i, start_chan, num_chan_2g, num_chan_5g = 0, num_chan_6g = 0;  // FIXME: bk7239 6E
+	struct scanu_start_req * req = (struct scanu_start_req*)request;
 
 	BK_ASSERT(g_country_code.init); /* ASSERT VERIFIED */
 
