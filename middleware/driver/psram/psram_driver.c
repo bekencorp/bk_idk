@@ -37,6 +37,7 @@ static beken_semaphore_t s_psram_sem = NULL;
 static beken_thread_t psram_task = NULL;
 #endif
 
+extern void bk_delay_us(uint32_t us);
 static bool s_psram_server_is_init = false;
 static bool s_psram_heap_is_init = false;
 static uint8_t s_psram_channelmap = 0;
@@ -232,6 +233,7 @@ bk_err_t bk_psram_init(void)
 		return BK_FAIL;
 	}
 
+	bk_delay_us(1000);
 	// set psram clk
 	bk_psram_set_clk(PSRAM_120M);
 

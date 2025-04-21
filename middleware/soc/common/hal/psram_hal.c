@@ -18,6 +18,8 @@
 #include <driver/psram.h>
 #include <modules/chip_support.h>
 
+extern void bk_delay_us(uint32_t us);
+
 static void psram_delay(volatile uint32_t times)
 {
 	while(times--);
@@ -411,7 +413,7 @@ void psram_hal_power_clk_enable(uint8_t enable)
 		psram_delay(500);
 
 		sys_drv_psram_ldo_enable(1);
-		psram_delay(500);
+		bk_delay_us(1000);
 
 		bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_AHBP_PSRAM, PM_POWER_MODULE_STATE_ON);
 
