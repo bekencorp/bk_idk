@@ -46,11 +46,6 @@ static const ef_env default_env_set[] = {
 static beken_semaphore_t env_cache_lock = NULL;
 uint32_t g_ef_start_addr = 0xFFFFFFFF;
 
-#ifdef PRINT_DEBUG
-static char log_buf[256];
-#endif
-
-
 void ef_check_config(void) {
 	bk_logic_partition_t *partition_info = NULL;
 
@@ -238,10 +233,8 @@ void ef_log_debug(const char *file, const long line, const char *format, ...)
 
 	/* args point to the first variable parameter */
 	va_start(args, format);
-	ef_print("[Flash](%s:%ld) ", file, line);
 	/* must use vprintf to print */
-	vsprintf(log_buf, format, args);
-	ef_print("%s", log_buf);
+	bk_vprintf_ext(BK_LOG_INFO, "ef", format, args);
 	va_end(args);
 #endif
 }
@@ -259,10 +252,8 @@ void ef_log_info(const char *format, ...)
 
 	/* args point to the first variable parameter */
 	va_start(args, format);
-	ef_print("[Flash]");
 	/* must use vprintf to print */
-	vsprintf(log_buf, format, args);
-	ef_print("%s", log_buf);
+	bk_vprintf_ext(BK_LOG_INFO, "ef", format, args);
 	va_end(args);
 #endif
 }
@@ -280,8 +271,7 @@ void ef_print(const char *format, ...)
 	/* args point to the first variable parameter */
 	va_start(args, format);
 	/* must use vprintf to print */
-	vsprintf(log_buf, format, args);
-	os_printf("%s", log_buf);
+	bk_vprintf_ext(BK_LOG_NONE, "ef", format, args);
 	va_end(args);
 #endif
 }
