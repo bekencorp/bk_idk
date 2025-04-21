@@ -42,7 +42,7 @@ Beken SoCs released before 2022, such as BK7231N, BK7231U, BK7251 etc, are not s
 
 [DAILY] node commit has been tested with basic function test, but suggess you fetch TAG verison to do batch production
 
-[SINGLE] node commit, compile or function test is not guaranteed
+[CI] node commit, compile or function test is not guaranteed
 
 
 # ARMINO Release and OS
