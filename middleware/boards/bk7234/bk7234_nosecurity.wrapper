@@ -349,31 +349,40 @@ def get_pack_tool_exe():
 
 #Package according to json file
 def pack_from_config_json(cfg_json, nm):
-    pack_tool = get_pack_tool_exe()
-    json_file = './cfg_temp.json'
-    infiles = ''
-    nm_suffix = 'pack'
-    outfile = os.path.join(build_path, '%s_%s'%(nm, nm_suffix))
-    if cfg_json['count'] == 1:
-        shutil.move(cfg_json['section'][0]['firmware'], '%s.bin'%(outfile))
-    else:
-        start_addr = cfg_json['section'][0]['start_addr']
+    import bk_packager
+    def check_dependency_exists():
         for sec in cfg_json['section']:
-            infiles += '%s '%(sec['firmware'])
-            start_addr = start_addr if parse_int(start_addr) <= parse_int(sec['start_addr']) else sec['start_addr']
-        cfg_json_temp = copy.deepcopy(cfg_json)
-        for sec in cfg_json_temp['section']:
-            sec['start_addr'] = size_format(parse_int(sec['start_addr']) - parse_int(start_addr), False)
-        cfg_json_temp = json.dumps(cfg_json_temp, sort_keys=False, indent=4)
-        with open(json_file, 'w') as f:
-            f.write(cfg_json_temp)
-        if os.path.exists(pack_tool.strip()) and os.path.isfile(pack_tool.strip()):
-            os.system('%s genfile -injsonfile %s -infile %s -outfile %s.bin'%(pack_tool, json_file, infiles, outfile))
-        else:
-            raise 'pack_tool path error!'
-        os.remove(json_file)
-    #gen_file_list.add('%s.bin'%(outfile))
+            if not os.path.exists(sec['firmware']):
+                raise RuntimeError(f"{sec['firmware']} not found")
 
+    def binary_align_32_byte(bin_path):
+        if not os.path.exists(bin_path):
+            raise RuntimeError(f"{bin_path} no exist.")
+        bin_size = os.path.getsize(outfile_path)
+        padding_size = (32 - bin_size % 32) % 32
+        with open(bin_path, 'ab') as f:
+            f.write(bytes([0xff] * padding_size))
+
+    if 'pack' in nm:
+        outfile = os.path.join(build_path, '%s'%nm)
+    else:
+        nm_suffix = 'pack'
+        outfile = os.path.join(build_path, '%s_%s'%(nm, nm_suffix))
+
+    check_dependency_exists()
+    workdir = os.path.abspath(".")
+    outfile_path = os.path.abspath(f"{outfile}.bin")
+    cfg_json_temp = "./pack_config_tmp.json"
+    with open(cfg_json_temp, 'w') as file:
+        json.dump(cfg_json, file, indent=4)
+    packager = bk_packager.bk_packager_linear(workdir, cfg_json_temp, outfile_path)
+    packager.pack()
+
+    # cmake_Gen_img 32byte align, so do same here.
+    binary_align_32_byte(outfile_path)
+
+    gen_file_list.add('%s.bin'%(outfile))
+    os.remove(cfg_json_temp)
     return outfile
 
 def get_crc_tool_exe():
