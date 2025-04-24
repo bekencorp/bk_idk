@@ -75,7 +75,7 @@
   <project name="iot/wcn/components/webclient" path="components/webclient" revision="0345d7afba0c3a91832f2e8f5d93fedaee42e9bc" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/components/wolfssl" path="components/wolfssl" revision="eccbfe4164f03feec1be34b91bbde7edae26bc18" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="wifi"/>
   <project name="iot/wcn/components/wpa_supplicant-2.10" path="components/wpa_supplicant-2.10" revision="af5c821d1be381e35df28cad9c912efc0a0c3bd6" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="wifi"/>
-  <project name="iot/wcn/docs" path="docs" revision="612ad6cd73884593ab0dd5b6611f2e588a71a210" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
+  <project name="iot/wcn/docs" path="docs" revision="2547d5d7c92e8108d4d3a2c89c6f10bb52d6a18c" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/include" path="include" revision="abaf0821388cdceee16e6a0e2990c94868a145ec" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/middleware" path="middleware" revision="8b79410396f2a8a19223373aa52ac9ae4471d37c" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
   <project name="iot/wcn/projects" path="projects" revision="18d99230d05e35f29155434aab2b80afb2893222" upstream="bk_idk_release_2.0.2" dest-branch="bk_idk_release_2.0.2" groups="platform"/>
