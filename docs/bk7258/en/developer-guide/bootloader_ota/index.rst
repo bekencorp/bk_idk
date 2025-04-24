@@ -9,4 +9,5 @@ upgrade
    bk_bootloader_and_ota upgrade <bootloader_and_ota/index>
    bk_position_independent_ota upgrade <ab_position_independent_ota/index>
    security upgrade <bk_security_ota>
+   ble_ota <ble_ota/index>
 
