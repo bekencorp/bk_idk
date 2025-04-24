@@ -294,9 +294,9 @@ typedef enum
     BK_BLE_SM_AUTHEN_REQ_MODE,
     /// The IO capability of local device, see bk_io_cap_enum_t
     BK_BLE_SM_IOCAP_MODE,
-    /// Initiator Key Distribution/Generation
+    /// Initiator Key Distribution/Generation, use BK_BLE_SM_SET_LOCAL_REMOTE_KEY instead !!!
     BK_BLE_SM_SET_INIT_KEY,
-    /// Responder Key Distribution/Generation
+    /// Responder Key Distribution/Generation, use BK_BLE_SM_SET_LOCAL_REMOTE_KEY instead !!!
     BK_BLE_SM_SET_RSP_KEY,
     /// Maximum Encryption key size to support
     BK_BLE_SM_MAX_KEY_SIZE,
@@ -314,6 +314,8 @@ typedef enum
     BK_BLE_SM_SET_ER,
     /// set IR, 16 bytes
     BK_BLE_SM_SET_IR,
+    /// local and remote init key, first 4 bits means local, last 4 bits means remote
+    BK_BLE_SM_SET_LOCAL_REMOTE_KEY,
 } bk_ble_sm_param_t;
 
 /// the key distribution mask type
@@ -697,6 +699,7 @@ typedef enum
 {
     BK_BLE_WHITELIST_REMOVE     = 0X00,    /*!< remove mac from whitelist */
     BK_BLE_WHITELIST_ADD        = 0X01,    /*!< add address to whitelist */
+    BK_BLE_WHITELIST_CLEAN,                /*!< clean whitelist */
 } bk_ble_wl_operation_t;
 
 #if (BLE_50_FEATURE_SUPPORT == TRUE)
