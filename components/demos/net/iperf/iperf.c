@@ -99,7 +99,7 @@ static uint32_t s_tick_last = 0;
 static uint32_t s_tick_delta = 0;
 static uint32_t s_pkt_delta = 0;
 static uint32_t s_time = IPERF_DEFAULT_TIME;
-
+static beken_mutex_t iperf_mutex;
 //modifiable iperf parameters
 //priority of iperf task
 static uint32_t iperf_priority = THREAD_PROIRITY;
@@ -307,9 +307,9 @@ static void iperf_report_task_handler(void *arg)
 		beken_time_get_time(&tick_now);
 		rtos_delay_milliseconds(delay_interval / 5);
 
+		rtos_lock_mutex(&iperf_mutex);
 		int f;
 		f = s_pkt_delta / IPERF_KILO_UNIT * 8;
-
 		if (++count >= IPERF_REPORT_INTERVAL * 5)  /* 5: schedule every 200ms */
 		{
 			count = 0;
@@ -325,7 +325,8 @@ static void iperf_report_task_handler(void *arg)
 			s_tick_last = tick_now;
 			s_pkt_delta = 0;
 		}
-		
+		rtos_unlock_mutex(&iperf_mutex);
+
 		if (s_tick_delta >= s_time)
 		{
 			break;
@@ -340,6 +341,7 @@ static void iperf_report_task_handler(void *arg)
 		s_param.state = IPERF_STATE_STOPPING;
 	}
 	rtos_delete_thread(NULL);
+	rtos_deinit_mutex(&iperf_mutex);
 }
 
 static err_t iperf_report_task_start(void)
@@ -545,7 +547,9 @@ _rx_retry:
 				s_param.state = IPERF_STATE_STOPPING;
 				break;
 			}else{
+				rtos_lock_mutex(&iperf_mutex);
 				s_pkt_delta += bytes_received;
+				rtos_unlock_mutex(&iperf_mutex);
 			}
 
 		}
@@ -798,7 +802,9 @@ static void iperf_udp_server(void *thread_param)
 					last_pcount = pcount;
 				last_pcount = pcount;
 
+				rtos_lock_mutex(&iperf_mutex);
 				s_pkt_delta +=r_size;
+				rtos_unlock_mutex(&iperf_mutex);
 				s_total_recv_len +=r_size;
 
 
@@ -1108,7 +1114,7 @@ void iperf(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 			}
 		}
 	}
-
+	rtos_init_mutex(&iperf_mutex);
 	iperf_start(mode, host, port);
 
 	return;
