@@ -93,6 +93,7 @@ typedef struct {
 
 static sdio_host_driver_t s_sdio_host = {0};
 static bool s_sdio_host_driver_is_init = false;
+static bool s_sdio_host_data_crc_error = false;
 
 static void sdio_host_isr(void);
 void bk_sdio_clock_en(uint32_t enable);
@@ -1013,6 +1014,14 @@ bk_err_t bk_sdio_host_wait_receive_data(void)
 		SDIO_HOST_LOGI("rx fail\r\n");
 	}
 
+	if(s_sdio_host_data_crc_error == true) {
+		error_state = BK_ERR_SDIO_HOST_DATA_CRC_FAIL;
+		s_sdio_host_data_crc_error = false;
+		SDIO_HOST_LOGI("func %s, line %d, return crc error.\r\n", __func__, __LINE__);
+	}
+
+
+
 	return error_state;
 }
 #else
@@ -1178,10 +1187,11 @@ static bk_err_t sdio_host_cpu_read_blks_fifo(uint8_t *data, uint32_t blk_cnt)
 	if (index != data_size)
 	{
 		error_state = BK_ERR_SDIO_HOST_DATA_CRC_FAIL;
-		SDIO_HOST_LOGE("read data fail,rx real cnt=%d,request cnt=%d\r\n", index, data_size);
+		SDIO_HOST_LOGE("func %s, read data fail,rx real cnt=%d,request cnt=%d, error_state=%d\r\n", __func__, index, data_size, error_state);
+
 	}
 
-	return BK_OK;
+	return error_state;
 }
 
 bk_err_t bk_sdio_host_read_blks_fifo(uint8_t *read_data, uint32_t blk_cnt)
@@ -1355,10 +1365,12 @@ static void sdio_host_isr(void)
 
 			//TODO:If the data is really CRC fail, should notify APP the data received is error.
 			SDIO_HOST_LOGE("TODO:read data crc error!!!\r\n");
-#if 0	//just not set sema cause rx data timeout, which cause rx fail.
+#if 1	//just not set sema cause rx data timeout, which cause rx fail.
+			s_sdio_host_data_crc_error = true;
 			rtos_set_semaphore(&s_sdio_host.rx_sema);
+
 #endif
-			sdio_host_hal_clear_read_data_interrupt_status(hal, int_status);
+			//sdio_host_hal_clear_read_data_interrupt_status(hal, int_status);
 		}
 		else if(sdio_host_hal_is_data_timeout_int_triggered(hal, int_status))	//timeout
 		{

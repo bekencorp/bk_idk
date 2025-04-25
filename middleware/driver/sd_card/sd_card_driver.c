@@ -1609,7 +1609,7 @@ bk_err_t bk_sd_card_read_blocks(uint8_t *data, uint32_t block_addr, uint32_t blo
 		data_config.data_len = SD_BLOCK_SIZE * block_num;
 
 	//read data from SDIO to buffer
-	bk_sdio_host_read_blks_fifo(data, block_num);
+	error_state = bk_sdio_host_read_blks_fifo(data, block_num);
 
 #if CONFIG_SDCARD_OPS_TRACE_EN
 	s_sdcard_sw_status.read = 4;
@@ -1829,4 +1829,37 @@ sd_card_state_t bk_sd_card_get_card_state(void)
 
 	return card_state;
 }
+
+#if (CONFIG_USBD_MSC && CONFIG_USB_DEVICE)
+static uint32_t s_sd_card_owner = 0;
+bk_err_t bk_sd_card_vote_owner(sd_card_owner_t owner)
+{
+	uint32_t int_level = 0;
+
+	if(s_sd_card_owner)
+	{
+		SD_CARD_LOGE("it's owned by %x\r\n", s_sd_card_owner);
+		return BK_FAIL;
+	}
+
+	int_level = rtos_disable_int();
+	s_sd_card_owner |= 1 << owner;
+	rtos_enable_int(int_level);
+
+	return BK_OK;
+}
+
+void bk_sd_card_clear_owner(sd_card_owner_t owner)
+{
+	uint32_t int_level = 0;
+	int_level = rtos_disable_int();
+	s_sd_card_owner &= ~(1 << owner);
+	rtos_enable_int(int_level);
+}
+
+uint32_t bk_sd_card_get_owner()
+{
+	return s_sd_card_owner;
+}
+#endif
 
