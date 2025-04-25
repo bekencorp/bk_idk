@@ -29,7 +29,7 @@
 #if CONFIG_SDCARD_POWER_GPIO_CTRL
 #include <driver/gpio.h>
 #include "gpio_map.h"
-
+#include "driver/pwr_clk.h"
 #define SDCARD_LDO_POWER_CONTROL_WAIT_TIME_MS  10000
 
 #if CONFIG_SDCARD_POWER_GPIO_CTRL_AUTO_POWERDOWN_WHEN_IDLE
@@ -40,15 +40,18 @@ static bool s_disk_io_sdcard_init_flag = 0;
 static bool s_disk_io_sdcard_ldo_power_flag = 0;
 #endif
 
+#define SDCARD_READ_FAIL_RETRY_CNT (3)
+#define SDCARD_WRITE_FAIL_RETRY_CNT (3)
+
 #if (CONFIG_SDCARD)
 static bk_err_t sdcard_ldo_power_enable(uint8_t enable)
 {
 #if (CONFIG_SDCARD_POWER_GPIO_CTRL)
 	if (enable) {
-		bk_gpio_ctrl_external_ldo(GPIO_CTRL_LDO_MODULE_SDIO, SDCARD_LDO_CTRL_GPIO, GPIO_OUTPUT_STATE_HIGH);
+		bk_pm_module_vote_ctrl_external_ldo(GPIO_CTRL_LDO_MODULE_SDIO, SDCARD_LDO_CTRL_GPIO, GPIO_OUTPUT_STATE_HIGH);
 		s_disk_io_sdcard_ldo_power_flag = 1;
 	} else {
-		bk_gpio_ctrl_external_ldo(GPIO_CTRL_LDO_MODULE_SDIO, SDCARD_LDO_CTRL_GPIO, GPIO_OUTPUT_STATE_LOW);
+		bk_pm_module_vote_ctrl_external_ldo(GPIO_CTRL_LDO_MODULE_SDIO, SDCARD_LDO_CTRL_GPIO, GPIO_OUTPUT_STATE_LOW);
 		s_disk_io_sdcard_ldo_power_flag = 0;
 	}
 #endif
@@ -173,15 +176,19 @@ DSTATUS disk_initialize (
 		return stat;
 
 	case DEV_SD :
+	{
 #if (CONFIG_SDCARD)
+		int result = BK_OK;
 		sdcard_ldo_power_enable(1);
-		stat = bk_sd_card_init();
+		result = bk_sd_card_init();
 #if CONFIG_SDCARD_POWER_GPIO_CTRL_AUTO_POWERDOWN_WHEN_IDLE
 		sdcard_operation_timing_initialize_start();
 #endif
-
+		if(result == BK_OK)
+			stat = 0;
 #endif
 		return stat;
+	}
 
 	case DEV_USB :
 #if (CONFIG_USB_HOST && CONFIG_USB_MSD)
@@ -226,15 +233,29 @@ DRESULT disk_read (
 		return res;
 
 	case DEV_SD :
+	{
 #if (CONFIG_SDCARD)
 		sdcard_operation_timing_reload();
-		res = bk_sd_card_read_blocks((uint8_t *)buff, sector, count);
-		if(res != RES_OK) {
-			FATFS_LOGI("%s ERROR res:%d\r\n", __func__, res);
-			sdcard_operation_err_reset();
+
+		result = bk_sd_card_read_blocks((uint8_t *)buff, sector, count);
+		if(result != BK_OK) {
+			FATFS_LOGE("func %s line %d,  bk_sd_card_read_blocks result:%d, do reset\r\n", __func__, __LINE__, result);
+			for(uint32_t i = 0; i < SDCARD_READ_FAIL_RETRY_CNT; i++) {
+				FATFS_LOGE("%s retry count:%d\r\n", __func__, i);
+				sdcard_operation_err_reset();
+				result = bk_sd_card_read_blocks((uint8_t *)buff, sector, count);
+				if(result != RES_OK) {
+					FATFS_LOGE("%s ERROR result:%d\r\n", __func__, result);
+				}
+				else
+					break;
+			}
 		}
+		if(result == BK_OK)
+			res = RES_OK;
 #endif
 		return res;
+	}
 
 	case DEV_USB :
 #if (CONFIG_USB_HOST && CONFIG_USB_MSD)
@@ -302,16 +323,31 @@ DRESULT disk_write (
 		return res;
 
 	case DEV_SD :
+	{
 #if (CONFIG_SDCARD)
+		int result;
 		sdcard_operation_timing_reload();
-		res = bk_sd_card_write_blocks((uint8_t *)buff, sector, count);
-		if(res != RES_OK) {
-			FATFS_LOGI("Check the remaining space!\r\n");
-			FATFS_LOGI("Get the value of the remaining space. res: %d\r\n", sd_disk_check_space_size());
-			sdcard_operation_err_reset();
+
+		result = bk_sd_card_write_blocks((uint8_t *)buff, sector, count);
+		if(result != BK_OK) {
+			for(uint32_t i = 0; i < SDCARD_WRITE_FAIL_RETRY_CNT; i++) {
+				sdcard_operation_err_reset();
+
+				result = bk_sd_card_write_blocks((uint8_t *)buff, sector, count);
+				if(result != RES_OK) {
+					FATFS_LOGI("Check the remaining space!\r\n");
+					FATFS_LOGI("Get the value of the remaining space. res: %d\r\n", sd_disk_check_space_size());
+				}
+				else
+					break;
+			}
 		}
+		if(result == BK_OK)
+			res = RES_OK;
 #endif
+
 		return res;
+	}
 
 	case DEV_USB :
 #if (CONFIG_USB_HOST && CONFIG_USB_MSD)
@@ -453,11 +489,12 @@ DRESULT disk_ioctl (
 DSTATUS disk_uninitialize ( BYTE pdrv/* Physical drive nmuber to identify the drive */
 )
 {
-	DSTATUS stat;
+	DSTATUS stat = RES_ERROR;
 	UINT32 result = RES_ERROR;
+
 	switch (pdrv) {
 	case DEV_RAM:
-		return result;
+		return stat;
 
 	case DEV_SD :
 #if (CONFIG_SDCARD)
