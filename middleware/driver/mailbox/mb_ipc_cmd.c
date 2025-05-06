@@ -21,6 +21,7 @@
 #include "mb_ipc_cmd.h"
 #include "driver/dma.h"
 #include "driver/flash.h"
+#include "sys_driver.h"
 
 #if CONFIG_CACHE_ENABLE
 #include "cache.h"
@@ -656,6 +657,10 @@ static u32 ipc_cmd_handler(ipc_chnl_cb_t *chnl_cb, mb_chnl_ack_t *ack_buf)
 
 		case IPC_CPU1_TRAP_HANDLE_BEGIN:		// cpu1 indication, dump begin.
 			{
+                /* if cpu1 dump ,then cpu0 shoule disable its most interruptions */
+                sys_drv_int_disable(0xFFFE7FE7);
+                sys_drv_int_group2_disable(0x7FFFFFFF);
+
 				ipc_rsp->rsp_data_len = 0;
 				result = ACK_STATE_COMPLETE;
 
