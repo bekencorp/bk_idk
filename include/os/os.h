@@ -211,13 +211,20 @@ bk_err_t beken_time_get_time(beken_time_t *time_ptr);
  */
 
 
-/** @brief Creates and starts a new thread
+/** @brief Creates and starts a new thread,the task will be dynamically created in sram
+  * 
+  * @note  Do not call this API when interrupts are disabled (may cause the system
+  *        to enter a deadlock or abnormal status)
   *
   * @param thread     : Pointer to variable that will receive the thread handle (can be null)
-  * @param priority   : A priority number.
+  * @param priority   : A priority number. The adaptation layer uniformly managers priorities.
+  *                     For the application layer,the lower the configured number,the higher 
+  *                     the task priority.Currently supports ten priority levels from 0 to 9.
+  *                     recommended that the application layer use priorities from 6 to 8.                     
   * @param name       : a text name for the thread (can be null)
   * @param function   : the main thread function
-  * @param stack_size : stack size for this thread
+  * @param stack_size : stack size for this thread,size is in bytes,for example if the stack_size
+  *                     is  defined as 2048,then 2048bytes will be allocated for stack storage.
   * @param arg        : argument which will be passed to thread function
   *
   * @return    kNoErr          : on success.
@@ -227,11 +234,18 @@ bk_err_t rtos_create_sram_thread(beken_thread_t *thread, uint8_t priority, const
 
 /** @brief Creates and starts a new thread on psram
   *
+  * @note  Do not call this API when interrupts are disabled (may cause the system
+  *        to enter a deadlock or abnormal status)
+  * 
   * @param thread     : Pointer to variable that will receive the thread handle (can be null)
-  * @param priority   : A priority number.
+  * @param priority   : A priority number.he adaptation layer uniformly managers priorities.
+  *                     For the application layer,the lower the configured number,the higher 
+  *                     the task priority.Currently supports ten priority levels from 0 to 9.
+  *                     recommended that the application layer use priorities from 6 to 8.   
   * @param name       : a text name for the thread (can be null)
   * @param function   : the main thread function
-  * @param stack_size : stack size for this thread
+  * @param stack_size : stack size for this thread,size is in bytes,for example if the stack_size
+  *                     is  defined as 2048,then 2048bytes will be allocated for stack storage.
   * @param arg        : argument which will be passed to thread function
   *
   * @return    kNoErr          : on success.
@@ -264,6 +278,9 @@ bk_err_t rtos_create_thread(beken_thread_t *thread, uint8_t priority, const char
 
 /** @brief   Deletes a terminated thread
   *
+  * @note    If you want to delete the task itself,do not call this API when the interrupts
+  *          is disables(may cause the system to enter a deadlock or abnormal status))
+  * 
   * @param   thread     : the handle of the thread to delete, , NULL is the current thread
   *
   * @return  kNoErr        : on success.
@@ -271,34 +288,10 @@ bk_err_t rtos_create_thread(beken_thread_t *thread, uint8_t priority, const char
   */
 bk_err_t rtos_delete_thread(beken_thread_t *thread);
 
-/** @brief   Creates a worker thread
- *
- * Creates a worker thread
- * A worker thread is a thread in whose context timed and asynchronous events
- * execute.
- *
- * @param worker_thread    : a pointer to the worker thread to be created
- * @param priority         : thread priority
- * @param stack_size       : thread's stack size in number of bytes
- * @param event_queue_size : number of events can be pushed into the queue
- *
- * @return    kNoErr        : on success.
- * @return    kGeneralErr   : if an error occurred
- */
-bk_err_t rtos_create_worker_thread(beken_worker_thread_t *worker_thread, uint8_t priority, uint32_t stack_size, uint32_t event_queue_size);
-
-
-/** @brief   Deletes a worker thread
- *
- * @param worker_thread : a pointer to the worker thread to be created
- *
- * @return    kNoErr : on success.
- * @return    kGeneralErr   : if an error occurred
- */
-bk_err_t rtos_delete_worker_thread(beken_worker_thread_t *worker_thread);
-
-
 /** @brief    Suspend a thread
+  * 
+  * @note     If you want to suspend the task itself,do not call this API when interrupts 
+  *           are disabled (may cause the system to enter a deadlock or abnormal status)
   *
   * @param    thread     : the handle of the thread to suspend, NULL is the current thread
   *
@@ -319,6 +312,9 @@ void rtos_suspend_all_thread(void);
 
 
 /** @brief    resume a thread
+  * 
+  * @note     If you want to resume the task not itself,do not call this API when interrupts 
+  *           are disabled (may cause the system to enter a deadlock or abnormal status)
   *
   * @param    thread     : the handle of the thread to resume, NULL is the current thread
   *
@@ -333,11 +329,14 @@ void rtos_resume_thread(beken_thread_t* thread);
   *
   * @return   none
   */
-long rtos_resume_all_thread(void);
+void rtos_resume_all_thread(void);
 
 
 /** @brief    Sleeps until another thread has terminated
   *
+  * @note     do not call this API when interrupts are disabled (may cause the 
+  *           system to enter a deadlock or abnormal status)
+  * 
   * @Details  Causes the current thread to sleep until the specified other thread
   *           has terminated. If the processor is heavily loaded with higher priority
   *           tasks, this thread may not wake until significantly after the thread termination.
@@ -351,12 +350,16 @@ bk_err_t rtos_thread_join(beken_thread_t *thread);
 
 
 /** @brief    Forcibly wakes another thread
+  * 
+  * @note     do not call this API when interrupts are disabled (may cause the 
+  *           system to enter a deadlock or abnormal status)
   *
   * @Details  Causes the specified thread to wake from suspension. This will usually
   *           cause an error or timeout in that thread, since the task it was waiting on
   *           is not complete.
   *
-  * @param    thread : the handle of the other thread which will be woken
+  * @param    thread : the handle of the other thread which will be removed from the 
+  *                    block state.
   *
   * @return   kNoErr        : on success.
   * @return   kGeneralErr   : if an error occurred
@@ -383,6 +386,9 @@ bool rtos_is_current_thread(beken_thread_t *thread);
 beken_thread_t *rtos_get_current_thread(void);
 
 /** @brief    Suspend current thread for a specific time
+  * 
+  * @note     do not call this API when interrupts are disabled (may cause the 
+  *           system to enter a deadlock or abnormal status)
   *
   * @param    seconds : A time interval (Unit: seconds)
   *
@@ -391,6 +397,9 @@ beken_thread_t *rtos_get_current_thread(void);
 void rtos_thread_sleep(uint32_t seconds);
 
 /** @brief    Suspend current thread for a specific time
+ * 
+ * @note      do not call this API when interrupts are disabled (may cause the 
+  *           system to enter a deadlock or abnormal status)
  *
  * @param     milliseconds : A time interval (Unit: millisecond)
  *
@@ -399,6 +408,9 @@ void rtos_thread_sleep(uint32_t seconds);
 void rtos_thread_msleep(uint32_t milliseconds);
 
 /** @brief    Suspend current thread for a specific time
+ * 
+ * @note      do not call this API when interrupts are disabled (may cause the 
+  *           system to enter a deadlock or abnormal status)
  *
  * @param     num_ms : A time interval (Unit: millisecond)
  *
@@ -406,15 +418,6 @@ void rtos_thread_msleep(uint32_t milliseconds);
  */
 bk_err_t rtos_delay_milliseconds(uint32_t num_ms);
 
-
-/** @brief    Print Thread status into buffer
-  *
-  * @param    buffer, point to buffer to store thread status
-  * @param    length, length of the buffer
-  *
-  * @return   none
-  */
-bk_err_t rtos_print_thread_status(char *buffer, int length);
 
 /**
   * @}
@@ -448,6 +451,8 @@ bk_err_t rtos_init_semaphore_ex(beken_semaphore_t *semaphore, int max_count, int
 
 
 /** @brief    Set (post/put/increment) a semaphore
+  * 
+  * @note     This API can be called in task context and interrupt context.
   *
   * @param    semaphore : a pointer to the semaphore handle to be set
   *
@@ -458,6 +463,9 @@ bk_err_t rtos_set_semaphore(beken_semaphore_t *semaphore);
 
 
 /** @brief    Get (wait/decrement) a semaphore
+  * 
+  * @note     Do not call this API when interrupts are disabled (may cause the system
+  *           to enter a deadlock or abnormal status)
   *
   * @Details  Attempts to get (wait/decrement) a semaphore. If semaphore is at zero already,
   *           then the calling thread will be suspended until another thread sets the
@@ -471,7 +479,12 @@ bk_err_t rtos_set_semaphore(beken_semaphore_t *semaphore);
   */
 bk_err_t rtos_get_semaphore(beken_semaphore_t *semaphore, uint32_t timeout_ms);
 
-
+/** @brief    get current semaphore count 
+  * 
+  * @param    semaphore : a pointer to the semaphore handle to be set
+  *
+  * @return   kNoErr    : current semaphore count
+  */
 int rtos_get_semaphore_count(beken_semaphore_t *semaphore);
 
 
@@ -485,6 +498,8 @@ int rtos_get_semaphore_count(beken_semaphore_t *semaphore);
   * @return   kGeneralErr   : if an error occurred
   */
 bk_err_t rtos_deinit_semaphore(beken_semaphore_t *semaphore);
+
+
 /**
   * @}
   */
@@ -522,6 +537,9 @@ bk_err_t rtos_trylock_mutex(beken_mutex_t *mutex);
 
 /** @brief    Obtains the lock on a mutex
   *
+  * @note     do not call this API when interrupts are disabled (may cause the 
+  *           system to enter a deadlock or abnormal status)
+  * 
   * @Details  Attempts to obtain the lock on a mutex. If the lock is already held
   *           by another thead, the calling thread will be suspended until the mutex
   *           lock is released by the other thread.
@@ -533,21 +551,10 @@ bk_err_t rtos_trylock_mutex(beken_mutex_t *mutex);
   */
 bk_err_t rtos_lock_mutex(beken_mutex_t *mutex);
 
-/** @brief    Obtains the lock on a mutex
-  *
-  * @Details  Attempts to obtain the lock on a mutex. If the lock is already held
-  *           by another thead, the calling thread will be suspended until the mutex
-  *           lock is released by the other thread or timeout.
-  *
-  * @param    mutex : a pointer to the mutex handle to be locked
-  * @param    timeout_ms : timeout for get lock
-  *
-  * @return   kNoErr        : on success.
-  * @return   kGeneralErr   : if an error occurred
-  */
-bk_err_t rtos_lock_mutex_timeout( beken_mutex_t* mutex, uint32_t timeout_ms);
-
 /** @brief    Releases the lock on a mutex
+  * 
+  * @note     do not call this API when interrupts are disabled (may cause the 
+  *           system to enter a deadlock or abnormal status)
   *
   * @Details  Releases a currently held lock on a mutex. If another thread
   *           is waiting on the mutex lock, then it will be resumed.
@@ -638,8 +645,12 @@ bk_err_t rtos_deinit_recursive_mutex( beken_mutex_t* mutex );
   */
 bk_err_t rtos_init_queue(beken_queue_t *queue, const char *name, uint32_t message_size, uint32_t number_of_messages);
 
-
-/** @brief    Pushes an object onto a queue
+/** @brief    Post an item to the back of a queue.  The item is queued by copy, not by
+*             reference
+  * 
+  * @note     This API can be called in task context and interrupt context. However when
+  *           calling this API in task context,the interrupt cannot be turned off(may cause 
+  *           the system to enter a deadlock or abnormal status)
   *
   * @param    queue : a pointer to the queue handle
   * @param    message : the object to be added to the queue. Size is assumed to be
@@ -651,7 +662,12 @@ bk_err_t rtos_init_queue(beken_queue_t *queue, const char *name, uint32_t messag
   */
 bk_err_t rtos_push_to_queue(beken_queue_t *queue, void *message, uint32_t timeout_ms);
 
-/** @brief    Pushes an object to front of the queue
+/** @brief    Post an item to the front of a queue.  The item is queued by copy, not by
+  *           reference.
+  * 
+  * @note     This API can be called in task context and interrupt context. However when
+  *           calling this API in task context,the interrupt cannot be turned off(may cause 
+  *           the system to enter a deadlock or abnormal status)
   *
   * @param    queue : a pointer to the queue handle
   * @param    message : the object to be added to the queue. Size is assumed to be
@@ -665,6 +681,9 @@ bk_err_t rtos_push_to_queue_front(beken_queue_t *queue, void *message, uint32_t 
 
 
 /** @brief    Pops an object off a queue
+  * 
+  * @note     do not call this API when interrupts are disabled (may cause the 
+  *           system to enter a deadlock or abnormal status)
   *
   * @param    queue : a pointer to the queue handle
   * @param    message : pointer to a buffer that will receive the object being
@@ -724,50 +743,109 @@ bool rtos_reset_queue(beken_queue_t *queue);
   * @{
   */
 
-/**
-  * @brief    Sends an asynchronous event to the associated worker thread
-  *
-  * @param worker_thread :the worker thread in which context the callback should execute from
-  * @param function      : the callback function to be called from the worker thread
-  * @param arg           : the argument to be passed to the callback function
-  *
-  * @return    kNoErr        : on success.
-  * @return    kGeneralErr   : if an error occurred
-  */
-bk_err_t rtos_send_asynchronous_event(beken_worker_thread_t *worker_thread, event_handler_t function, void *arg);
-
-/** Requests a function be called at a regular interval
+/** Create a new event group
  *
- * This function registers a function that will be called at a regular
- * interval. Since this is based on the RTOS time-slice scheduling, the
- * accuracy is not high, and is affected by processor load.
- *
- * @param event_object  : pointer to a event handle which will be initialised
- * @param worker_thread : pointer to the worker thread in whose context the
- *                        callback function runs on
- * @param function      : the callback function that is to be called regularly
- * @param time_ms       : the time period between function calls in milliseconds
- * @param arg           : an argument that will be supplied to the function when
- *                        it is called
+ * @param event_flags : pointer to a event handle which will be initialised
  *
  * @return    kNoErr        : on success.
  * @return    kGeneralErr   : if an error occurred
  */
-bk_err_t rtos_register_timed_event(beken_timed_event_t *event_object, beken_worker_thread_t *worker_thread, event_handler_t function, uint32_t time_ms, void *arg);
+bk_err_t rtos_init_event_flags( beken_event_t* event_flags );
 
+/** block to wait for one or more bits to be set within a
+ * previously created event group.
+ *
+ * @note     do not call this API when interrupts are disabled (may cause the 
+ *           system to enter a deadlock or abnormal status)
+ *
+ * @param event_flags       : pointer to a event handle which will be initialised
+ * @param flags_to_wait_for : A bitwise value that indicates the bit or bits to test
+ *                            inside the event group.  For example, to wait for bit 0 
+ *                            and/or bit 2 set flags_to_wait_for to 0x05.  To wait for 
+ *                            bits 0 and/or bit 1 and/or bit 2 set flags_to_wait_for to 0x07.  Etc.
+ * @param clear_set_flags   : If clear_set_flags is set to pdTRUE then any bits within
+ *                            flags_to_wait_for that are set within the event group will 
+ *                            be cleared before returns 
+ * @param wait_option       : If it is set to WAIT_FOR_ALL_EVENTS then will return when 
+ *                            either all the bits in flags_to_wait_for are set or the 
+ *                            specified block time expires. If it is set to WAIT_FOR_ANY_EVENT 
+ *                            then  will return when any one of the bits set in flags_to_wait_for 
+ *                            is set or the specified block time expires.  The block time is specified 
+ *                            by the timeout_ms parameter.
+ * @param timeout_ms        : the time period between function calls in milliseconds
+ *
+ * @return   The value of the event group at the time either the bits being waited
+ * for became set, or the block time expired.
+ */
+beken_event_flags_t rtos_wait_for_event_flags( beken_event_t* event_flags, 
+                                    uint32_t flags_to_wait_for, 
+                                    beken_bool_t clear_set_flags, 
+                                    beken_event_flags_wait_option_t wait_option, 
+                                    uint32_t timeout_ms );
 
-/** Removes a request for a regular function execution
+/** Set bits within an event group.
+ * 
+ * @note     This API can be called in task context and interrupt context.
  *
- * This function de-registers a function that has previously been set-up
- * with @ref rtos_register_timed_event.
+ * @param event_flags       : pointer to a event handle which will be initialised
+ * @param flags_to_set      : A bitwise value that indicates the bit or bits to set.
+ *                            For example, to set bit 3 only, set flags_to_set to 0x08.  
+ *                            To set bit 3 and bit 0 set flags_to_set to 0x09.
  *
- * @param event_object : the event handle used with @ref rtos_register_timed_event
+ */
+void rtos_set_event_flags( beken_event_t* event_flags, uint32_t flags_to_set );
+
+/** Clear bits within an event group.
+ * 
+ * @note     This API can be called in task context and interrupt context.
+ *
+ * @param event_flags       : pointer to a event handle which will be initialised
+ * @param flags_to_clear    :A bitwise value that indicates the bit or bits to clear
+ *                           in the event group.  For example, to clear bit 3 only,
+ *                           set flags_to_clear to 0x08.  To clear bit 3 and bit 0 set 
+ *                           flags_to_clear to 0x09.
+ *
+ * @return    The value of the event group before the specified bits were cleared
+ * 
+ */
+beken_event_flags_t rtos_clear_event_flags( beken_event_t* event_flags, uint32_t flags_to_clear );
+
+/** Atomically set bits within an event group, then wait for a combination of
+ * bits to be set within the same event group.  This functionality is typically
+ * used to synchronise multiple tasks, where each task has to wait for the other
+ * tasks to reach a synchronisation point before proceeding.
+ *
+ * @note     do not call this API when interrupts are disabled (may cause the 
+ *           system to enter a deadlock or abnormal status)
+ * 
+ * @param event_flags       : pointer to a event handle which will be initialised
+ * @param flags_to_set      : The bits to set in the event group before determining
+ *                            if, and possibly waiting for, all the bits specified by 
+ *                            the timeout_ms parameter are set.
+ * @param flags_to_wait_for : A bitwise value that indicates the bit or bits to test
+ *                            inside the event group.  For example, to wait for bit 0 and bit 2 
+ *                            flags_to_wait_for to 0x05.  To wait for bits 0 and bit 1 and bit 2 set
+ *                            flags_to_wait_for to 0x07.  Etc.
+ * @param timeout_ms        : the time period between function calls in milliseconds
+ *
+ * @return    The value of the event group at the time either the bits being waited
+ *            for became set, or the block time expired.
+ */
+beken_event_flags_t rtos_sync_event_flags( beken_event_t* event_flags, 
+                                uint32_t flags_to_set, 
+                                uint32_t flags_to_wait_for,
+                                uint32_t timeout_ms);
+
+/** Delete an event group that was previously created by a call to
+ * rtos_init_event_flags().  Tasks that are blocked on the event group will be
+ * unblocked and obtain 0 as the event group's value.
+ *
+ * @param event_flags : pointer to a event handle which will be initialised
  *
  * @return    kNoErr        : on success.
- * @return    kGeneralErr   : if an error occurred
- */
-bk_err_t rtos_deregister_timed_event(beken_timed_event_t *event_object);
-
+ * @return    kParamErr     : if an error occurred
+ */                               
+bk_err_t rtos_deinit_event_flags( beken_event_t* event_flags );
 
 
 /** @defgroup BEKEN_RTOS_TIMER _BK_ RTOS Timer Functions
@@ -799,9 +877,10 @@ uint32_t rtos_get_time(void);
 uint32_t beken_ms_per_tick(void);
 
 /**
-  * @brief     Initialize a RTOS timer
+  * @brief     Initialize a RTOS periodic timer
   *
   * @note      Timer does not start running until @ref beken_start_timer is called
+  *            and the timer will execute periodically
   *
   * @param     timer    : a pointer to the timer handle to be initialised
   * @param     time_ms  : Timer period in milliseconds
@@ -813,27 +892,13 @@ uint32_t beken_ms_per_tick(void);
   * @return    kGeneralErr   : if an error occurred
   */
 bk_err_t rtos_init_timer(beken_timer_t *timer, uint32_t time_ms, timer_handler_t function, void *arg);
-bk_err_t rtos_init_oneshot_timer(beken2_timer_t *timer,
-								 uint32_t time_ms,
-								 timer_2handler_t function,
-								 void *larg,
-								 void *rarg);
-bk_err_t rtos_deinit_oneshot_timer(beken2_timer_t *timer);
-bk_err_t rtos_stop_oneshot_timer(beken2_timer_t *timer);
-bool rtos_is_oneshot_timer_running(beken2_timer_t *timer);
-bk_err_t rtos_start_oneshot_timer(beken2_timer_t *timer);
-bool rtos_is_oneshot_timer_init(beken2_timer_t *timer);
-bk_err_t rtos_oneshot_reload_timer(beken2_timer_t *timer);
-bk_err_t rtos_change_period(beken_timer_t *timer, uint32_t time_ms);
-bk_err_t rtos_oneshot_reload_timer_ex(beken2_timer_t *timer,
-									  uint32_t time_ms,
-									  timer_2handler_t function,
-									  void *larg,
-									  void *rarg);
 
-/** @brief    Starts a RTOS timer running
+/** @brief    Starts a RTOS periodic timer 
   *
   * @note     Timer must have been previously initialised with @ref rtos_init_timer
+  *           This API can be called in task context and interrupt context. However when
+  *           calling this API in task context,the interrupt cannot be turned off(may cause 
+  *           the system to enter a deadlock or abnormal status)
   *
   * @param    timer    : a pointer to the timer handle to start
   *
@@ -842,11 +907,13 @@ bk_err_t rtos_oneshot_reload_timer_ex(beken2_timer_t *timer,
   */
 bk_err_t rtos_start_timer(beken_timer_t *timer);
 
-
-/** @brief    Stops a running RTOS timer
+/** @brief    Stops a running RTOS periodic timer
   *
-  * @note     Timer must have been previously started with @ref rtos_init_timer
-  *
+  * @note     Timer must have been previously started with @ref rtos_init_timer.
+  *           This API can be called in task context and interrupt context. However when
+  *           calling this API in task context,the interrupt cannot be turned off(may cause 
+  *           the system to enter a deadlock or abnormal status)
+  *           
   * @param    timer    : a pointer to the timer handle to stop
   *
   * @return   kNoErr        : on success.
@@ -854,11 +921,13 @@ bk_err_t rtos_start_timer(beken_timer_t *timer);
   */
 bk_err_t rtos_stop_timer(beken_timer_t *timer);
 
-
-/** @brief    Reloads a RTOS timer that has expired
+/** @brief    Reloads a RTOS periodic timer that has expired
   *
   * @note     This is usually called in the timer callback handler, to
   *           reschedule the timer for the next period.
+  *           This API can be called in task context and interrupt context. However when
+  *           calling this API in task context,the interrupt cannot be turned off(may cause 
+  *           the system to enter a deadlock or abnormal status)
   *
   * @param    timer    : a pointer to the timer handle to reload
   *
@@ -867,10 +936,11 @@ bk_err_t rtos_stop_timer(beken_timer_t *timer);
   */
 bk_err_t rtos_reload_timer(beken_timer_t *timer);
 
-
-/** @brief    De-initialise a RTOS timer
+/** @brief    De-initialise a RTOS periodic timer
   *
-  * @note     Deletes a RTOS timer created with @ref rtos_init_timer
+  * @note     Deletes a RTOS timer created with @ref rtos_init_timer.
+  *           do not call this API when interrupts are disabled (may cause the 
+  *           system to enter a deadlock or abnormal status)
   *
   * @param    timer : a pointer to the RTOS timer handle
   *
@@ -879,7 +949,7 @@ bk_err_t rtos_reload_timer(beken_timer_t *timer);
   */
 bk_err_t rtos_deinit_timer(beken_timer_t *timer);
 
-/** @brief    Check if an RTOS timer is init
+/** @brief    Check if an RTOS periodic timer is init
   *
   * @param    timer : a pointer to the RTOS timer handle
   *
@@ -888,7 +958,7 @@ bk_err_t rtos_deinit_timer(beken_timer_t *timer);
   */
 bool rtos_is_timer_init(beken_timer_t *timer);
 
-/** @brief    Check if an RTOS timer is running
+/** @brief    Check if an RTOS periodic timer is running
   *
   * @param    timer : a pointer to the RTOS timer handle
   *
@@ -897,30 +967,282 @@ bool rtos_is_timer_init(beken_timer_t *timer);
   */
 bool rtos_is_timer_running(beken_timer_t *timer);
 
+/**
+  * @brief     Initialize a RTOS oneshot timer
+  *
+  * @note      Timer does not start running until @ref rtos_start_oneshot_timer is called
+  *            and the timer will only execute once
+  *
+  * @param     timer    : a pointer to the timer handle to be initialised
+  * @param     time_ms  : Timer period in milliseconds
+  * @param     function : the callback handler function that is called each time the
+  *                       timer expires
+  * @param     larg      : an argument that will be passed to the callback function
+  * @param     rarg      : an argument that will be passed to the callback function
+  *
+  * @return    kNoErr        : on success.
+  * @return    kGeneralErr   : if an error occurred
+  */
+bk_err_t rtos_init_oneshot_timer(beken2_timer_t *timer,
+								 uint32_t time_ms,
+								 timer_2handler_t function,
+								 void *larg,
+								 void *rarg);
+
+/** @brief    De-initialise a RTOS rtos_init_oneshot_timer timer
+  *
+  * @note     Deletes a RTOS timer created with @ref rtos_init_oneshot_timer.
+  *           do not call this API when interrupts are disabled (may cause the 
+  *           system to enter a deadlock or abnormal status)
+  *
+  * @param    timer : a pointer to the RTOS timer handle
+  *
+  * @return   kNoErr        : on success.
+  * @return   kGeneralErr   : if an error occurred
+  */                                 
+bk_err_t rtos_deinit_oneshot_timer(beken2_timer_t *timer);
+
+/** @brief    start a RTOS oneshot timer
+  *
+  * @note     Timer must have been previously started with @ref rtos_init_oneshot_timer.
+  *           This API can be called in task context and interrupt context. However when
+  *           calling this API in task context,the interrupt cannot be turned off(may cause 
+  *           the system to enter a deadlock or abnormal status)
+  *
+  * @param    timer : a pointer to the RTOS timer handle
+  *
+  * @return   kNoErr        : on success.
+  * @return   kGeneralErr   : if an error occurred
+  */
+bk_err_t rtos_start_oneshot_timer(beken2_timer_t *timer);
+
+/** @brief    stop a RTOS oneshot timer
+  *
+  * @note     Timer must have been previously started with @ref rtos_init_oneshot_timer.
+  *           This API can be called in task context and interrupt context. However when
+  *           calling this API in task context,the interrupt cannot be turned off(may cause 
+  *           the system to enter a deadlock or abnormal status)
+  *
+  * @param    timer : a pointer to the RTOS timer handle
+  *
+  * @return   kNoErr        : on success.
+  * @return   kGeneralErr   : if an error occurred
+  */
+bk_err_t rtos_stop_oneshot_timer(beken2_timer_t *timer);
+
+/** @brief    Check if an RTOS oneshot timer is running
+  *
+  * @param    timer : a pointer to the RTOS timer handle
+  *
+  * @return   true        : if running.
+  * @return   false       : if not running
+  */
+bool rtos_is_oneshot_timer_running(beken2_timer_t *timer);
+
+/** @brief    Check if an RTOS oneshot timer is initialised
+  *
+  * @param    timer : a pointer to the RTOS timer handle
+  *
+  * @return   true        : if initialised
+  * @return   false       : if not initialised
+  */
+bool rtos_is_oneshot_timer_init(beken2_timer_t *timer);
+
+/** @brief    re-starts a oneshot timer 
+  * 
+  * @note     Timer must have been previously started with @ref rtos_init_oneshot_timer.
+  *           This API can be called in task context and interrupt context. However when
+  *           calling this API in task context,the interrupt cannot be turned off(may cause 
+  *           the system to enter a deadlock or abnormal status)
+  *
+  * @param    timer : a pointer to the RTOS timer handle
+  *
+  * @return   kNoErr        : on success.
+  * @return   kGeneralErr   : if an error occurred
+  */
+bk_err_t rtos_oneshot_reload_timer(beken2_timer_t *timer);
+
+/** @brief    changes the period of a oneshot timer 
+  * 
+  * @note     Timer must have been previously started with @ref rtos_init_oneshot_timer.
+  *           This API can be called in task context and interrupt context. However when
+  *           calling this API in task context,the interrupt cannot be turned off(may cause 
+  *           the system to enter a deadlock or abnormal status)
+  *
+  * @param    timer : a pointer to the RTOS timer handle
+  *
+  * @return   kNoErr        : on success.
+  * @return   kGeneralErr   : if an error occurred
+  */
+bk_err_t rtos_change_period(beken_timer_t *timer, uint32_t time_ms);
+
+/** @brief    changes the period of a oneshot timer then re-start it
+  * 
+  * @note     Timer must have been previously started with @ref rtos_init_oneshot_timer.
+  *           This API can be called in task context and interrupt context. However when
+  *           calling this API in task context,the interrupt cannot be turned off(may cause 
+  *           the system to enter a deadlock or abnormal status)
+  *
+  * @param    timer : a pointer to the RTOS timer handle
+  * @param    time_ms  : Timer period in milliseconds
+  * @param    function : the callback handler function that is called each time the
+  *                       timer expires
+  * @param    larg      : an argument that will be passed to the callback function
+  * @param    rarg      : an argument that will be passed to the callback function
+  *
+  * @return   kNoErr        : on success.
+  * @return   kGeneralErr   : if an error occurred
+  */
+bk_err_t rtos_oneshot_reload_timer_ex(beken2_timer_t *timer,
+									  uint32_t time_ms,
+									  timer_2handler_t function,
+									  void *larg,
+									  void *rarg);
+
+/** @brief    Returns the time in ticks at which the timer will expire
+  *
+  * @param    timer : a pointer to the RTOS timer handle
+  *
+  * @return   If the timer is running then the time in ticks at which the timer
+  * will next expire is returned.  If the timer is not running then the return
+  * value is undefined.
+  */
 uint32_t rtos_get_timer_expiry_time(beken_timer_t *timer);
-uint32_t rtos_get_next_expire_time();
-uint32_t rtos_get_current_timer_count(void);
+
+
+/** @defgroup BEKEN_RTOS_SYSTEM _BK_ RTOS system Functions
+  * @brief Provide management APIs for system  such as memory interrupt etc.
+  * @{
+  */
+
+/** @brief    Starts the real time kernel tick processing.  After calling the kernel
+  * has control over which tasks are executed and when.
+  */
 void rtos_start_scheduler(void);
+
+/** @brief    check if the rtos scheduler is running or not
+  * 
+  */
 bool rtos_is_scheduler_started(void);
-uint32_t rtos_get_cpsr(void);
+
+/** @brief    get the name of the currently used OS
+  * 
+  */
 char *rtos_get_name(void);
+
+/** @brief    get the version of the currently used OS
+  * 
+  */
 char *rtos_get_version(void);
+
+/** @brief    get the total heap size 
+  * 
+  * @return   the amount of total heap space available on the system
+  */
 size_t rtos_get_total_heap_size(void);
+
+/** @brief    get the free heap size 
+  * 
+  * @return   the amount of left heap space available on the system
+  */
 size_t rtos_get_free_heap_size(void);
+
+/** @brief    get the minimum heap size 
+  * 
+  * @return   the minimum value remaining during the system heap
+  *           space usage
+  */
 size_t rtos_get_minimum_free_heap_size(void);
+
+/** @brief    get the total heap size in psram 
+  * 
+  * @return   the amount of total heap space in psram
+  */
 size_t rtos_get_psram_total_heap_size(void);
+
+/** @brief    get the free heap size 
+  * 
+  * @return   the amount of left heap space in psram
+  */
 size_t rtos_get_psram_free_heap_size(void);
+
+/** @brief    get the minimum heap size in psram 
+  * 
+  * @return   the minimum value remaining  in psram during 
+  *           the system heap space usage
+  */
 size_t rtos_get_psram_minimum_free_heap_size(void);
+
+/** @brief    get the os tick count
+  * 
+  * @return   The count of ticks since vTaskStartScheduler was called.
+  */
 uint32_t rtos_get_tick_count(void);
+
+/** @brief    disable interrupts and return the current interrupt status
+  * 
+  * @note     disable interrupt support nesting
+  * 
+  * @return   the current interrupt status
+  */
 uint32_t rtos_disable_int(void);
+
+/** @brief    enable previously disabled interrupts 
+  * 
+  * @note     this API needs to be used with @ref rtos_disable_int
+  * 
+  * @param    int_level : saved interrupt status
+  * 
+  * @return   the current interrupt status
+  */
 void rtos_enable_int(uint32_t int_level);
+
+/** @brief    disable interrupts and return the current interrupt status
+  * 
+  * @note     disable interrupt support nesting.
+  *           This API has the same functionality as @ref rtos_disable_int
+  * 
+  * @return   the current interrupt status
+  */
 uint32_t rtos_before_sleep(void);
+
+/** @brief    enable previously disabled interrupts 
+  * 
+  * @note     This API has the same functionality as @ref rtos_enable_int
+  * 
+  * @param    int_level : saved interrupt status
+  * 
+  * @return   the current interrupt status
+  */
 void rtos_after_sleep(uint32_t int_level);
+
+/** @brief    Check if system in interrupt context
+  *
+  * @return   true        : if in interrupt context
+  * @return   false       : if not in interrupt context
+  */
 bool rtos_is_in_interrupt_context(void);
+
+/** @brief    Check if local irq is disabled
+  *
+  * @return   true        : if irq is disabled
+  * @return   false       : if irq is not disabled
+  */
 bool rtos_local_irq_disabled(void);
+
+/** @brief    Check if the current scheduler is in suspended state
+  *
+  * @return   true        : the scheduler is in suspended state
+  * @return   false       : the scheduler is not in suspended state
+  */
 bool rtos_is_scheduler_suspended(void);
-void rtos_wait_for_interrupt(void);
+
+
+/** @brief    disable interrupts and the run in an infinite loop
+  *
+  */
 void rtos_shutdown(void);
+
 
 #if (CONFIG_FREERTOS_SMP_TEMP)
 /*TODO: Enhanced implementation of cohesion*/
