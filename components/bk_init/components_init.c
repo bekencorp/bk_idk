@@ -171,7 +171,7 @@ int memory_debug_todo(void)
 	return BK_OK;
 }
 
-__attribute__((unused)) static int pm_init_todo(void)
+__attribute__((unused)) static int pm_init(void)
 {
 #if CONFIG_SOC_BK7256XX
 
@@ -303,30 +303,50 @@ void __stack_chk_fail (void)
     BK_ASSERT(0);
 }
 
-int components_init(void)
+
+int components_early_init(void)
 {
 #if CONFIG_RESET_REASON
 	reset_reason_init();
 #endif
-    app_phy_init();
+	app_phy_init();
 
+	if(driver_early_init())
+		return BK_FAIL;
+
+	pm_init();
+
+	bandgap_init();
+	random_init();
+
+	bk_stack_guard_setup();
+
+	return BK_OK;
+}
+
+__attribute__((weak)) void bk_module_init(void) {
+
+}
+
+// Run in task environment
+int components_init(void)
+{
 	if(driver_init())
 		return BK_FAIL;
 
-#if (CONFIG_TEMP_DETECT || CONFIG_VOLT_DETECT)
-	bk_sensor_init();
-#endif
-
-	pm_init_todo();
-
-	show_init_info();
-	bandgap_init();
-	random_init();
 #if (CONFIG_SYS_CPU0)
 	wdt_init();
 #endif
 
-	bk_stack_guard_setup();
+
+
+#if (CONFIG_TEMP_DETECT || CONFIG_VOLT_DETECT) && (CONFIG_SYS_CPU0)
+	bk_sensor_init();
+#endif
+
+	bk_module_init();
+
+	show_init_info();
 
 	return BK_OK;
 }

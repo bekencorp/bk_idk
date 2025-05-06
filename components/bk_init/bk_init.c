@@ -266,6 +266,8 @@ static int app_eth_init(void)
 extern void demo_wifi_fast_connect(void);
 #endif
 
+int components_init(void);
+
 int bk_init(void)
 {
 	BK_LOGI(TAG, "armino app init: %s\n", build_version);
@@ -273,6 +275,8 @@ int bk_init(void)
 #ifdef APP_VERSION
 	BK_LOGI(TAG, "APP Version: %s\n", APP_VERSION);
 #endif
+
+	components_init();
 
 #if CONFIG_SYS_CPU0
 	bk_pm_module_vote_cpu_freq(PM_DEV_ID_DEFAULT,PM_CPU_FRQ_120M);

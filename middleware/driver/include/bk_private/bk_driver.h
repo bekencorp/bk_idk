@@ -19,6 +19,7 @@ extern "C" {
 #endif
 
 int driver_init(void);
+int driver_early_init(void);
 
 #ifdef __cplusplus
 }

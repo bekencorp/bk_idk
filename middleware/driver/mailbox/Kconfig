@@ -10,4 +10,9 @@ menu "MAILBOX"
 	config MAILBOX_IPC
 		bool "Enable mailbox socket ipc driver"
 		default y
+    
+    config SLAVE_HEART_BEAT
+		depends on MAILBOX
+		bool "Enable heartbeat mechanism when dual core communication"
+		default n
 endmenu

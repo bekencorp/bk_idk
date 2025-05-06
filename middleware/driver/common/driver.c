@@ -267,20 +267,9 @@ void power_clk_rf_init()
 }
 #endif
 
-int driver_init(void)
+int driver_early_init(void)
 {
 	interrupt_init();
-
-#if CONFIG_MAILBOX
-	extern bk_err_t ipc_init(void);
-	extern bk_err_t mb_ipc_init(void);
-	ipc_init();
-#if CONFIG_MAILBOX_IPC
-	mb_ipc_init();
-#endif
-#endif
-
-	sys_drv_init();
 
 #if CONFIG_AON_PMU
 	aon_pmu_drv_init();
@@ -289,6 +278,20 @@ int driver_init(void)
 #if CONFIG_POWER_CLOCK_RF
 	power_clk_rf_init();
 #endif
+
+#if CONFIG_TRNG_SUPPORT
+	bk_trng_driver_init();
+#endif
+
+#if CONFIG_EFUSE
+	bk_efuse_driver_init();
+#endif
+
+	return 0;
+}
+
+int driver_init(void) {
+	sys_drv_init();
 
 	bk_gpio_driver_init();
 
@@ -311,10 +314,34 @@ int driver_init(void)
 	}
 #endif
 
-	os_show_memory_config_info(); //TODO - remove it after bk_early_printf() is supported.
 	drv_model_init();
 
 	g_dd_init();
+
+#if CONFIG_TIMER
+	bk_timer_driver_init();
+#endif
+
+#if CONFIG_GENERAL_DMA
+	bk_dma_driver_init();
+#endif
+
+	bk_wdt_driver_init();
+
+#if CONFIG_AON_WDT && !CONFIG_INT_AON_WDT
+	bk_aon_wdt_stop();
+#endif
+
+#if CONFIG_MAILBOX
+	extern bk_err_t ipc_init(void);
+	extern bk_err_t mb_ipc_init(void);
+	ipc_init();
+#if CONFIG_MAILBOX_IPC
+	mb_ipc_init();
+#endif
+#endif
+
+	os_show_memory_config_info();
 
 #if CONFIG_FLASH
 	bk_flash_driver_init();
@@ -334,28 +361,6 @@ int driver_init(void)
 
 #if CONFIG_PWM
 	bk_pwm_driver_init();
-#endif
-
-#if CONFIG_TIMER
-	bk_timer_driver_init();
-#endif
-
-#if CONFIG_GENERAL_DMA
-	bk_dma_driver_init();
-#endif
-
-	bk_wdt_driver_init();
-
-#if CONFIG_AON_WDT && !CONFIG_INT_AON_WDT
-	bk_aon_wdt_stop();
-#endif
-
-#if CONFIG_TRNG_SUPPORT
-	bk_trng_driver_init();
-#endif
-
-#if CONFIG_EFUSE
-	bk_efuse_driver_init();
 #endif
 
 #if CONFIG_SARADC

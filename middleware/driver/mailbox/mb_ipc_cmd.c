@@ -780,6 +780,7 @@ static u32 ipc_cmd_handler(ipc_chnl_cb_t *chnl_cb, mb_chnl_ack_t *ack_buf)
 			}
 			break;
 
+#if CONFIG_GENERAL_DMA
 		case IPC_ALLOC_DMA_CHNL:
 			if(chnl_cb->cmd_len >= sizeof(u32))
 			{
@@ -846,6 +847,8 @@ static u32 ipc_cmd_handler(ipc_chnl_cb_t *chnl_cb, mb_chnl_ack_t *ack_buf)
 				result = ACK_STATE_FAIL;
 			}
 			break;
+#endif
+
 		#endif
 
 		default:
@@ -1200,6 +1203,8 @@ bk_err_t ipc_send_res_release_cnt(u16 resource_id, u16 cpu_id, amp_res_req_cnt_t
 						(u8 *)&res_req, sizeof(res_req), (u8 *)cnt_list, sizeof(amp_res_req_cnt_t));
 }
 
+
+#if CONFIG_GENERAL_DMA
 u8 ipc_send_alloc_dma_chnl(u32 user_id)
 {
 	bk_err_t	ret_val = BK_FAIL;
@@ -1242,6 +1247,8 @@ u32 ipc_send_dma_chnl_user(u8 chnl_id)
 
 	return user_id;
 }
+#endif
+
 
 #endif
 

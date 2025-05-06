@@ -213,12 +213,12 @@ static void mb_ipc_task( void *para )
 					if(retry_cnt > 0)
 					{
 						BK_LOGE(MOD_TAG, "IPC retry to start core%d\r\n", cpu_x_id);
-						restart_cpu_x();
+						// restart_cpu_x();
 						break;
 					}
 					else
 					{
-						events = rtos_wait_event_ex(&mb_ipc_heart_event, MB_IPC_POWER_UP_FLAG, true, 500);
+						events = rtos_wait_event_ex(&mb_ipc_heart_event, MB_IPC_POWER_UP_FLAG, true, 2000);
 					}
 				}
 
@@ -232,8 +232,10 @@ static void mb_ipc_task( void *para )
 		{
 			if(ipc_heartbeat_timeout())
 			{
-				BK_LOGE(MOD_TAG, "IPC restart core%d\r\n", cpu_x_id);
-				restart_cpu_x();
+				BK_LOGE(MOD_TAG, "IPC heartbeat timeout%d\r\n", cpu_x_id);
+				/*when cpu1 heatbeat timerout, then system reboot*/
+				BK_ASSERT(false);
+				// restart_cpu_x();
 			}
 		}
 
