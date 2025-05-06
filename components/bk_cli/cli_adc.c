@@ -110,6 +110,7 @@ static float cli_adc_read_single_chan(UINT8 adc_chan)
     flag = 1;
     BK_LOG_ON_ERR(bk_adc_acquire());
     sys_drv_set_ana_pwd_gadc_buf(1);
+    sys_drv_set_ana_hres_sel0v9();
     BK_LOG_ON_ERR(bk_adc_init(adc_chan));
     adc_config_t config = {0};
 

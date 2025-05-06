@@ -528,6 +528,7 @@ void sys_drv_set_ana_vhsel_ldodig(uint32_t value);
 void sys_drv_set_ana_vctrl_sysldo(uint32_t value);
 void sys_drv_set_ana_vtempsel(uint32_t value);
 void sys_drv_set_ana_ioldo_lp(uint32_t value);
+void sys_drv_set_ana_hres_sel0v9(void);
 
 uint32_t sys_drv_get_cpu_storage_connect_op_select_flash_sel(void);
 void sys_drv_set_cpu_storage_connect_op_select_flash_sel(uint32_t value);

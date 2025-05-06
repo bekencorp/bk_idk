@@ -3275,6 +3275,7 @@ void sys_hal_set_ana_scal_en(uint32_t value);
 void sys_hal_set_ana_gadc_buf_ictrl(uint32_t value);
 void sys_hal_set_ana_gadc_cmp_ictrl(uint32_t value);
 void sys_hal_set_ana_pwd_gadc_buf(uint32_t value);
+void sys_hal_set_ana_hres_sel0v9(uint32_t value);
 void sys_hal_set_ana_vref_sel(uint32_t value);
 void sys_hal_set_ana_cb_cal_manu(uint32_t value);
 void sys_hal_set_ana_cb_cal_trig(uint32_t value);

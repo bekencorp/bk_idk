@@ -2621,6 +2621,11 @@ void sys_hal_set_ana_vctrl_sysldo(uint32_t value)
     //sys_ll_set_ana_reg5_vctrl_sysldo(value);
 }
 
+void sys_hal_set_ana_hres_sel0v9(uint32_t value)
+{
+    sys_ll_set_ana_reg3_hres_sel0v9(value);
+}
+
 void sys_hal_set_yuv_buf_clock_en(uint32_t value)
 {
 	sys_ll_set_reserver_reg0xd_yuv_cken(value);

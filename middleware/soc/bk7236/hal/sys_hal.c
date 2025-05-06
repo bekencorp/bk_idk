@@ -2493,6 +2493,11 @@ void sys_hal_set_ana_pwd_gadc_buf(uint32_t value)
 	//sys_ll_set_ana_reg6_pwd_gadc_buf(value);
 }
 
+void sys_hal_set_ana_hres_sel0v9(uint32_t value)
+{
+    sys_ll_set_ana_reg3_hres_sel0v9(value);
+}
+
 void sys_hal_set_ana_vref_sel(uint32_t value)
 {
 	//sys_ll_set_ana_reg7_vref_sel(value);
