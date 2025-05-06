@@ -348,7 +348,7 @@ static void user_app_thread( void *arg )
 static void start_user_app_thread(void)
 {
 	os_printf("start user app thread.\r\n");
-	rtos_create_thread(NULL,
+	rtos_create_sram_thread(NULL,
 					BEKEN_APPLICATION_PRIORITY,
 					"app",
 					(beken_thread_function_t)user_app_thread,
@@ -406,7 +406,7 @@ static void app_main_thread(void *arg)
 
 void start_app_main_thread(void)
 {
-	rtos_create_thread(NULL, CONFIG_APP_MAIN_TASK_PRIO,
+	rtos_create_sram_thread(NULL, CONFIG_APP_MAIN_TASK_PRIO,
 		"main",
 		(beken_thread_function_t)app_main_thread,
 		CONFIG_APP_MAIN_TASK_STACK_SIZE,
