@@ -2,6 +2,7 @@
 
 extern int manual_cal_get_tx_power(wifi_standard standard, float *powerdBm);
 extern int manual_cal_set_tx_power(wifi_standard standard, float powerdBm);
+extern UINT32 manual_cal_get_cali_xtal(void);
 
 bk_err_t bk_ble_get_tx_power(float *powerdBm)
 {
@@ -38,4 +39,9 @@ bk_err_t bk_wifi_set_tx_power(wifi_standard standard, float powerdBm)
 	}
 
 	return manual_cal_set_tx_power(standard, powerdBm);
+}
+
+UINT32 bk_wifi_get_xtal(void)
+{
+	return manual_cal_get_cali_xtal();
 }
