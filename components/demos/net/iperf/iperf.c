@@ -327,9 +327,11 @@ static void iperf_report_task_handler(void *arg)
 		}
 		rtos_unlock_mutex(&iperf_mutex);
 
-		if (s_tick_delta >= s_time)
-		{
-			break;
+		if (s_param.mode == IPERF_MODE_TCP_CLIENT || s_param.mode == IPERF_MODE_UDP_CLIENT){
+			if (s_tick_delta >= s_time)
+			{
+				break;
+			}
 		}
 	}
 
