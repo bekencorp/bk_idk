@@ -651,33 +651,31 @@ struct csi_alg_config
     //#define CSI_SMOOTH_RATE_2  (1/32)
     uint16_t csi_smooth_rate3;
     //#define CSI_THRES_1        (2)
-    uint16_t csi_thres1;
+    double csi_thres1;
     //#define CSI_THRES_2        (1)
-    uint16_t csi_thres2;
-    uint16_t csi_thres3;
-    uint32_t csi_static_update;
-    uint32_t csi_hold_time;
+    double csi_thres2;
+    //double csi_thres3;
 };
 
 /// Structure containing the parameters of the @ref CSI_START_REQ and messages
 struct csi_start_req
 {
+    // work type. 0: single mode group method, 1: dual mode group method
+    uint8_t csi_work_type;
+    // bit 01-- support STA csi; bit 10 -- support AP csi
+    uint8_t csi_work_identity;
+    // bit 01--data capture for host; bit 10 -- data capture to uart; bit 100 -- algorithm
+    uint8_t csi_work_mode;
+    // frame format : NON_HT 0x01;HT_MM 0x02;HE_SU 0x04
+    uint8_t csi_work_format;
+    // count of get csi continuous
+    uint8_t csi_gap_num;
     // value 1 -- NULL frame;
     // value 2 -- ; 
     uint8_t csi_tx_type;
     // value 1 -- csi data get opportunity at frame ACK, type 1;
     // value 2 -- csi data get opportunity at rx frame, type 2;
     uint8_t csi_rx_mode;
-    // frame format : NON_HT 0x01;HT_MM 0x02;HE_SU 0x04
-    uint8_t csi_work_format;
-    // is ap response null frame null
-    uint8_t is_response_null;
-    // bit 01-- support STA csi; bit 10 -- support AP csi
-    uint8_t csi_work_type;
-    // bit 01--data capture for host; bit 10 -- data capture to uart; bit 100 -- algorithm
-    uint8_t csi_work_mode;
-    // count of get csi continuous
-    uint8_t csi_gap_num;
     // csi get time interval
     uint32_t csi_interval_time;
     // csi get continuous time interval
@@ -723,18 +721,11 @@ struct csi_dhcp_done_ind
     uint8_t mac[MAC_ADDR_LEN];
 };
 
-/// Structure containing the parameters of the @ref CSI_DHCP_DONE_IND and messages
-struct csi_data_ind 
-{
-    uint8_t vif_idx;
-    struct wifi_csi_info_t csi_data_info;
-};
-
-/// Structure containing the parameters of the @ref CSI_DHCP_DONE_IND and messages
+/// Structure containing the parameters of the @ref CSI_ALGO_IND and messages
 struct csi_alg_ind 
 {
-    uint8_t v1;
-    uint8_t v2;
+    double move_change_rate;
+    double state_change_rate;
 };
 
 
@@ -742,6 +733,8 @@ struct csi_alg_ind
 struct csi_static_reset_ind 
 {
     uint8_t vif_idx;
+    uint8_t cali_mode;
+    uint32_t cali_cnt;
 };
 
 #if NX_MON_DATA

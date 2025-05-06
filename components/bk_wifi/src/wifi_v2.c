@@ -4239,16 +4239,44 @@ void bk_wifi_ftm_free_result(wifi_ftm_results_t *ftm_results)
 #endif //CONFIG_WIFI_FTM
 
 #if CONFIG_WIFI_CSI_EN
-bk_err_t bk_wifi_csi_alg_config(uint16_t rate1,uint16_t rate2,uint16_t rate3,uint16_t thres1,uint16_t thres2,
-					uint16_t thres3,uint32_t static_update,uint32_t hold_time)
+
+bk_err_t bk_wifi_csi_alg_config_internal(double thres1,struct wifi_csi_cfg_dbg debug_param)
 {
-	return rw_msg_send_csi_alg_config_ind(rate1,rate2,rate3,thres1,thres2,thres3,static_update,hold_time);
+	//WIFI_LOGI("bk_wifi_csi_alg_config_internal\n");
+	return rw_msg_send_csi_alg_config_ind(debug_param.rate1,debug_param.rate2,debug_param.rate3,thres1,debug_param.thres2);
 }
 
-bk_err_t bk_wifi_csi_start_req(uint8_t tx_type,uint8_t rx_mode,uint8_t format,uint8_t is_resp_null,uint8_t mode,uint8_t type,uint8_t gap_num,
-					uint32_t interval,uint32_t gap,uint32_t data_cnt,uint32_t delay,uint8_t filter_mac_num,uint8_t *mac)
+bk_err_t bk_wifi_csi_alg_config(double thres1)
 {
-	return rw_msg_send_csi_start_req(tx_type,rx_mode,format,is_resp_null,mode,type,gap_num,interval,gap,data_cnt,delay,filter_mac_num,mac);
+	struct wifi_csi_cfg_dbg debug_param;
+	debug_param.rate1 = 0;
+	debug_param.rate2 = 0;
+	debug_param.rate3 = 0;
+	debug_param.thres2 = 0;
+	return bk_wifi_csi_alg_config_internal(thres1,debug_param);
+}
+
+bk_err_t bk_wifi_csi_start_req_internal(uint8_t csi_work_type,uint8_t csi_work_mode,uint8_t csi_work_identity,uint8_t csi_data_format,
+					uint32_t csi_data_interval,uint32_t delay,struct wifi_csi_start_dbg debug_param)
+{
+	return rw_msg_send_csi_start_req(csi_work_type,csi_work_mode,csi_work_identity,csi_data_format,csi_data_interval,delay,
+		debug_param.tx_type,debug_param.rx_mode,debug_param.gap_num,debug_param.gap,debug_param.data_cnt,
+		debug_param.filter_mac_num,debug_param.mac);
+}
+
+bk_err_t bk_wifi_csi_start_req(uint8_t csi_work_type,uint8_t csi_work_mode,uint8_t csi_work_identity,uint8_t csi_data_format,
+					uint32_t csi_data_interval,uint32_t delay)
+{
+	struct wifi_csi_start_dbg debug_param;
+	debug_param.tx_type = 1;
+	debug_param.rx_mode = 1;
+	debug_param.gap_num = 0;
+	debug_param.gap = 0;
+	debug_param.data_cnt = 0;
+	debug_param.filter_mac_num = 0;
+	debug_param.mac = NULL;
+	return bk_wifi_csi_start_req_internal(csi_work_type,csi_work_mode,csi_work_identity,
+		csi_data_format,csi_data_interval,delay,debug_param);
 }
 
 bk_err_t bk_wifi_csi_stop_req(void)
@@ -4265,21 +4293,10 @@ bk_err_t bk_wifi_csi_stop_req(void)
 	return rw_msg_send_csi_stop_req(vif_idx);
 }
 
-bk_err_t bk_wifi_csi_static_param_reset_req(void)
+bk_err_t bk_wifi_csi_static_param_reset_req(uint8_t update_cali_mode,uint32_t cali_cnt)
 {
-	return rw_msg_send_csi_static_param_reset_req();
-}
-#endif //CONFIG_WIFI_CSI_EN
-
-wifi_csi_cb_t g_wifi_csi_info_handler = NULL;
-void bk_wifi_csi_info_cb_register(wifi_csi_cb_t cb)
-{
-	g_wifi_csi_info_handler = cb;
-}
-void bk_wifi_csi_info_cb(void * data)
-{
-	if(g_wifi_csi_info_handler)
-		g_wifi_csi_info_handler((struct wifi_csi_info_t *)data);
+	os_printf("bk_wifi_csi_static_param_reset_req cali_cnt %d\n",cali_cnt);
+	return rw_msg_send_csi_static_param_reset_req(update_cali_mode,cali_cnt);
 }
 #if CONFIG_WIFI_CSI_DEMO
 extern beken_queue_t bk_csi_demo_queue;
@@ -4300,6 +4317,19 @@ bk_err_t bk_wifi_csi_demo_turn_on_light(uint8_t color, bool flicker) {
 	return BK_OK;
 }
 #endif
+#endif //CONFIG_WIFI_CSI_EN
+
+wifi_csi_cb_t g_wifi_csi_info_handler = NULL;
+void bk_wifi_csi_info_cb_register(wifi_csi_cb_t cb)
+{
+	g_wifi_csi_info_handler = cb;
+}
+void bk_wifi_csi_info_cb(void * data)
+{
+	if(g_wifi_csi_info_handler)
+		g_wifi_csi_info_handler((struct wifi_csi_info_t *)data);
+}
+
 
 bk_err_t bk_wifi_get_tx_stats(uint8_t mode,struct tx_stats_t* tx_stats)
 {

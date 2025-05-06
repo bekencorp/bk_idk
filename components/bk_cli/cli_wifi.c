@@ -2336,28 +2336,46 @@ usage:
 
 void cli_wifi_csi_alg_config_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
-	uint16_t rate1 ;
+	uint16_t rate1;
 	uint16_t rate2;
 	uint16_t rate3;
 	uint16_t thres1;
 	uint16_t thres2;
+	#if CONFIG_WIFI_CSI_DEMO
 	uint16_t thres3;
 	uint32_t static_update;
 	uint32_t hold_time;
-
+	uint32_t calibration_cnt = 0;
+	#endif
 	int ret = 0;
 
-	if (argc == 9)
+	if (argc >= 9)
 	{
 		rate1 = (uint16_t)os_strtoul(argv[1], NULL, 10);
 		rate2 = (uint16_t)os_strtoul(argv[2], NULL, 10);
 		rate3 = (uint16_t)os_strtoul(argv[3], NULL, 10);
 		thres1 = (uint16_t)os_strtoul(argv[4], NULL, 10);
 		thres2 = (uint16_t)os_strtoul(argv[5], NULL, 10);
+		#if CONFIG_WIFI_CSI_DEMO
 		thres3 = (uint16_t)os_strtoul(argv[6], NULL, 10);
 		static_update = (uint32_t)os_strtoul(argv[7], NULL, 10);
 		hold_time = (uint32_t)os_strtoul(argv[8], NULL, 10);
-		ret = bk_wifi_csi_alg_config(rate1,rate2,rate3,thres1,thres2,thres3,static_update,hold_time);
+		if(argc >= 10)
+			calibration_cnt = (uint32_t)os_strtoul(argv[9], NULL, 10);
+		#endif
+
+		struct wifi_csi_cfg_dbg debug_param;
+		debug_param.rate1 = rate1;
+		debug_param.rate2 = rate2;
+		debug_param.rate3 = rate3;
+		debug_param.thres2 = thres2;
+		extern bk_err_t bk_wifi_csi_alg_config_internal(double thres1,struct wifi_csi_cfg_dbg debug_param);
+		ret = bk_wifi_csi_alg_config_internal(thres1,debug_param);
+
+		#if CONFIG_WIFI_CSI_DEMO
+		extern void csi_wifi_demo_param_set(double thres1,double thres3,uint32_t static_update,uint32_t hold_time,uint32_t calibration_cnt);
+		csi_wifi_demo_param_set(thres1,thres3,static_update,hold_time,calibration_cnt);
+		#endif
 
 		if (ret)
 			CLI_LOGI("bad state\r\n");
@@ -2406,35 +2424,40 @@ bool cli_wifi_csi_read_addr(char *mac_str,uint8_t *base_mac)
 }
 void cli_wifi_csi_start_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
-	uint8_t tx_type = 1;
-	uint8_t rx_mode = 2;
+	uint8_t work_type = 0;
 	uint8_t mode = 0x2;
-	uint8_t type = 0x2;
+	uint8_t work_identity = 0x1;
+	uint8_t format = 0x3;
+	uint32_t interval = 40;
+	uint32_t delay = 1000;
+	uint8_t tx_type = 1;
+	uint8_t rx_mode = 1;
 	uint8_t gap_num = 0;
-	uint32_t interval = 20;
 	uint32_t gap = 0;
 	uint32_t data_cnt = 1000;
-	uint32_t delay = 1000;
-	int ret = 0;
-	uint8_t format = 0x3;
-	uint8_t is_resp_null = 0;
 	uint8_t mac_num = 0;
 	uint8_t mac[6*4];
 	uint8_t base_mac[BK_MAC_ADDR_LEN] = {0};
+	int ret = 0;
 
-	if (argc >= 12)
+	if (argc >= 7)
 	{
-		mode = (uint8_t)os_strtoul(argv[1], NULL, 16);
-		type = (uint8_t)os_strtoul(argv[2], NULL, 16);
-		interval = (uint32_t)os_strtoul(argv[3], NULL, 10);
-		gap_num = (uint8_t)os_strtoul(argv[4], NULL, 10);
-		gap = (uint32_t)os_strtoul(argv[5], NULL, 10);
-		data_cnt = (uint32_t)os_strtoul(argv[6], NULL, 10);
-		delay = (uint32_t)os_strtoul(argv[7], NULL, 10);
-		tx_type = (uint8_t)os_strtoul(argv[8], NULL, 10);
-		rx_mode = (uint8_t)os_strtoul(argv[9], NULL, 10);
-		format = (uint8_t)os_strtoul(argv[10], NULL, 16);
-		is_resp_null = (uint8_t)os_strtoul(argv[11], NULL, 10);
+		work_type = (uint8_t)os_strtoul(argv[1], NULL, 10);
+		mode = (uint8_t)os_strtoul(argv[2], NULL, 16);
+		work_identity = (uint8_t)os_strtoul(argv[3], NULL, 16);
+		format = (uint8_t)os_strtoul(argv[4], NULL, 16);
+		interval = (uint32_t)os_strtoul(argv[5], NULL, 10);
+		delay = (uint32_t)os_strtoul(argv[6], NULL, 10);
+		if (argc >= 8)
+			gap_num = (uint8_t)os_strtoul(argv[7], NULL, 10);
+		if (argc >= 9)
+			gap = (uint32_t)os_strtoul(argv[8], NULL, 10);
+		if (argc >= 10)
+			data_cnt = (uint32_t)os_strtoul(argv[9], NULL, 10);
+		if (argc >= 11)
+			tx_type = (uint8_t)os_strtoul(argv[10], NULL, 10);
+		if (argc >= 12)
+			rx_mode = (uint8_t)os_strtoul(argv[11], NULL, 10);
 		if(argc > 12)
 			mac_num = (uint32_t)os_strtoul(argv[12], NULL, 10);
 		if((mac_num > 0)&&(mac_num < 5))
@@ -2458,8 +2481,18 @@ void cli_wifi_csi_start_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
 				}
 			}
 		}
-
-		ret = bk_wifi_csi_start_req(tx_type,rx_mode,format,is_resp_null,mode,type,gap_num,interval,gap,data_cnt,delay,mac_num,mac);
+		struct wifi_csi_start_dbg debug_param;
+		debug_param.tx_type = tx_type;
+		debug_param.rx_mode = rx_mode;
+		debug_param.gap_num = gap_num;
+		debug_param.gap = gap;
+		debug_param.data_cnt = data_cnt;
+		debug_param.filter_mac_num = mac_num;
+		debug_param.mac = mac;
+		extern bk_err_t bk_wifi_csi_start_req_internal(uint8_t csi_work_type,uint8_t csi_work_mode,
+								uint8_t csi_work_identity,uint8_t csi_data_format,uint32_t csi_data_interval,
+								uint32_t delay,struct wifi_csi_start_dbg debug_param);
+		ret = bk_wifi_csi_start_req_internal(work_type,mode,work_identity,format,interval,delay,debug_param);
 
 		if (ret)
 			CLI_LOGI("bad state\r\n");
@@ -2476,10 +2509,44 @@ void cli_wifi_csi_stop_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, c
 }
 void cli_wifi_csi_config_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
-	bk_wifi_csi_static_param_reset_req();
+	uint32_t cnt = 200;
+	uint8_t update_cali_mode = 0;
+	
+	if (argc == 3)
+	{
+		cnt = (uint32_t)os_strtoul(argv[1], NULL, 10);
+		update_cali_mode = (uint8_t)os_strtoul(argv[2], NULL, 10);
+		bk_wifi_csi_static_param_reset_req(update_cali_mode,cnt);
+	}
+	else
+	{
+		CLI_LOGI("invalid cli_wifi_csi_start_cmd %d\n",argc);
+	}
+}
+
+#if CONFIG_WIFI_CSI_DEMO
+void cli_wifi_csi_demo_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	int ret       = 0;
+	uint8_t color = 0;
+	bool flicker  = false;
+	char *msg     = NULL;
+
+	color   = os_strtoul(argv[1], NULL, 10) & 0xFFFF;
+	flicker = (os_strtoul(argv[2], NULL, 10) & 0xFFFF) == 1 ? true : false;
+	ret     = bk_wifi_csi_demo_turn_on_light(color, flicker);
+
+	if (!ret) {
+		msg = WIFI_CMD_RSP_SUCCEED;
+	} else {
+		msg = WIFI_CMD_RSP_ERROR;
+	}
+	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+	return;
 }
 #endif
 
+#endif
 #define WIFI_CMD_CNT (sizeof(s_wifi_commands) / sizeof(struct cli_command))
 static const struct cli_command s_wifi_commands[] = {
 	{"scan", "scan [ssid]", cli_wifi_scan_cmd},
@@ -2544,10 +2611,14 @@ static const struct cli_command s_wifi_commands[] = {
 	{"bridge", "bridge open|close", cli_wifi_open_bridge_cmd},
 #endif
 #if CONFIG_WIFI_CSI_EN
-	{"csi_alg_config","csi_alg_config 64,32,1,2,0", cli_wifi_csi_alg_config_cmd},
-	{"csi_start","csi_start csi_work_mode,0,15,0", cli_wifi_csi_start_cmd},
+	
+	{"csi_alg_config","csi_alg_config 8 16 8 5 3 8 15000 100", cli_wifi_csi_alg_config_cmd},
+	{"csi_start","csi_start 0 0x8 0x1 1 200 5", cli_wifi_csi_start_cmd},
 	{"csi_stop","csi_stop", cli_wifi_csi_stop_cmd},
-	{"csi_config","csi_stop", cli_wifi_csi_config_cmd},
+	{"csi_cali_reset","csi_cali_reset 200 1", cli_wifi_csi_config_cmd},
+	#if CONFIG_WIFI_CSI_DEMO
+	{"csi_test", "csi_test", cli_wifi_csi_demo_test_cmd},
+	#endif
 #endif
 };
 

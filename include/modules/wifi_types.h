@@ -786,11 +786,30 @@ struct wifi_csi_info_t{
 
 struct wifi_csi_alg_ind
 {
-	uint8_t v1;
-	uint8_t v2;
+	double move_change_rate;
+	double state_change_rate;
 };
 
 typedef void (* wifi_csi_cb_t)(struct wifi_csi_info_t *info);
+
+struct wifi_csi_cfg_dbg
+{
+	uint16_t rate1;
+	uint16_t rate2;
+	uint16_t rate3;
+	double thres2;
+};
+
+struct wifi_csi_start_dbg
+{
+	uint8_t tx_type;
+	uint8_t rx_mode;
+	uint8_t gap_num;
+	uint32_t gap;
+	uint32_t data_cnt;
+	uint8_t filter_mac_num;
+	uint8_t *mac;
+};
 
 
 /**

@@ -457,6 +457,18 @@ static void ble_at_legacy_notice_cb(ble_notice_t notice, void *param)
             ble_discon_ind_t *d_ind = (ble_discon_ind_t *)param;
             os_printf("d_ind:conn_idx:%d,reason:%d\r\n", d_ind->conn_idx, d_ind->reason);
             s_conn_ind = ~0;
+            #if CONFIG_WIFI_CSI_EN
+            extern beken_semaphore_t bk_csi_ble_provisioning_sema;
+            extern uint8_t bk_csi_ble_send_flag;
+            extern void bk_wifi_csi_ble_disconnect_ind(void);
+            LOGI("BLE_5_DISCONNECT1\r\n");
+            if (bk_csi_ble_send_flag && (rtos_get_semaphore_count(&bk_csi_ble_provisioning_sema) == 0))
+            {
+                LOGI("BLE_5_DISCONNECT2\r\n");
+                rtos_set_semaphore(&bk_csi_ble_provisioning_sema);
+            }
+            bk_wifi_csi_ble_disconnect_ind();
+            #endif
             break;
         }
         case BLE_5_ATT_INFO_REQ:
@@ -503,7 +515,19 @@ static void ble_at_legacy_notice_cb(ble_notice_t notice, void *param)
             break;
         }
         case BLE_5_TX_DONE:
+        {
+            #if CONFIG_WIFI_CSI_EN
+            extern beken_semaphore_t bk_csi_ble_provisioning_sema;
+            extern uint8_t bk_csi_ble_send_flag;
+            LOGI("BLE_5_TX_DONE1\r\n");
+            if (bk_csi_ble_send_flag && (rtos_get_semaphore_count(&bk_csi_ble_provisioning_sema) == 0))
+            {
+                LOGI("BLE_5_TX_DONE2\r\n");
+                rtos_set_semaphore(&bk_csi_ble_provisioning_sema);
+            }
+            #endif
             break;
+        }
         case BLE_5_CONN_UPDATA_EVENT:
         {
             ble_conn_param_t *updata_param = (ble_conn_param_t *)param;
@@ -673,6 +697,37 @@ error:
 #if CONFIG_AT
 #include "at_server.h"
 #endif
+#if CONFIG_WIFI_CSI_EN
+int ble_boarding_adv_only_start_csi(void)
+{
+    bt_err_t ret = BK_FAIL;
+    /* sart adv */
+    ret = bk_ble_start_advertising(0, 0, ble_at_cmd_cb);
+
+    if (ret != BK_ERR_BLE_SUCCESS)
+    {
+        LOGE("start adv failed %d\n", ret);
+        goto error;
+    }
+
+    ret = rtos_get_semaphore(&ble_boarding_sema, AT_SYNC_CMD_TIMEOUT_MS);
+
+    if (ret != BK_OK)
+    {
+        LOGE("wait semaphore failed at %d, %d\n", ret, __LINE__);
+        goto error;
+    }
+    else
+    {
+        LOGI("sart adv success\n");
+    }
+
+    return ret;
+
+error:
+    return BK_FAIL;
+}
+#endif
 int ble_boarding_adv_start(uint8_t *adv_data, uint16_t adv_len)
 {
     ble_adv_param_t adv_param;
@@ -682,8 +737,13 @@ int ble_boarding_adv_start(uint8_t *adv_data, uint16_t adv_len)
     /* set adv paramters */
     os_memset(&adv_param, 0, sizeof(ble_adv_param_t));
     adv_param.chnl_map = 7;
+    #if CONFIG_WIFI_CSI_EN
+    adv_param.adv_intv_min = 120*2;
+    adv_param.adv_intv_max = 160*2;
+    #else
     adv_param.adv_intv_min = 120;
     adv_param.adv_intv_max = 160;
+    #endif
     adv_param.own_addr_type = OWN_ADDR_TYPE_PUBLIC_ADDR;
     adv_param.adv_type = 0;
     adv_param.adv_prop = 3;
