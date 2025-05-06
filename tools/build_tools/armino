@@ -783,7 +783,7 @@ if __name__ == '__main__':
             else:
                 os.environ[WINPTY_VAR] = '1'  # the value is of no interest to us
                 # armino calls itself with "winpty" and WINPTY global variable set
-                ret = subprocess.call([WINPTY_EXE, sys.executable] + sys.argv, env=os.environ)
+                ret = subprocess.call([sys.executable] + sys.argv, env=os.environ)
                 if ret:
                     raise SystemExit(ret)
 
