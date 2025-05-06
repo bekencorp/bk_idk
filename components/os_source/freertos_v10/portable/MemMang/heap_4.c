@@ -267,8 +267,6 @@ __attribute__((section(".itcm_sec_code"))) void bk_psram_heap_init(void) {
 	size_t uxAddress;
 	size_t xTotalHeapSize;
 
-	bk_pm_module_vote_psram_ctrl(PM_POWER_PSRAM_MODULE_NAME_AS_MEM,PM_POWER_MODULE_STATE_ON);
-
 	xTotalHeapSize = PSRAM_HEAP_SIZE;
 	psram_ucHeap = PSRAM_START_ADDRESS;
 
@@ -1588,14 +1586,6 @@ extern unsigned char __iram_start__;
 
 extern unsigned char __iram_end__;
 #define IRAM_END_ADDRESS ((uint32_t)&__iram_end__)
-
-#if CONFIG_CACHE_ENABLE
-extern unsigned char _nocache_start;
-#define NOCACHE_START_ADDRESS ((uint32_t)&_nocache_start)
-
-extern unsigned char _nocache_end;
-#define NOCACHE_END_ADDRESS ((uint32_t)&_nocache_end)
-#endif //#if CONFIG_CACHE_ENABLE
 #endif //#if CONFIG_SYS_CPU0
 
 void pvShowMemoryConfigInfo(void)
@@ -1613,9 +1603,6 @@ void pvShowMemoryConfigInfo(void)
 #endif //#if CONFIG_SYS_CPU0
 	BK_LOGI(TAG, "%-8s 0x%-6x 0x%-6x %-8d\r\n", "data", DATA_START_ADDRESS, DATA_END_ADDRESS, (DATA_END_ADDRESS - DATA_START_ADDRESS));
 	BK_LOGI(TAG, "%-8s 0x%-6x 0x%-6x %-8d\r\n", "bss", BSS_START_ADDRESS, BSS_END_ADDRESS, (BSS_END_ADDRESS - BSS_START_ADDRESS));
-#if CONFIG_SYS_CPU0 && CONFIG_CACHE_ENABLE
-	BK_LOGI(TAG, "%-8s 0x%-6x 0x%-6x %-8d\r\n", "non_cache", NOCACHE_START_ADDRESS, NOCACHE_END_ADDRESS, (NOCACHE_END_ADDRESS - NOCACHE_START_ADDRESS));
-#endif// #if CONFIG_SYS_CPU0 && CONFIG_CACHE_ENABLE
 	BK_LOGI(TAG, "%-8s 0x%-6x 0x%-6x %-8d\r\n", "heap", HEAP_START_ADDRESS, HEAP_END_ADDRESS, (HEAP_END_ADDRESS - HEAP_START_ADDRESS));
 #if (CONFIG_PSRAM_AS_SYS_MEMORY)
 	BK_LOGI(TAG, "%-8s 0x%-6x 0x%-6x %-8d\r\n", "psram", PSRAM_START_ADDRESS, (PSRAM_START_ADDRESS + PSRAM_HEAP_SIZE), PSRAM_HEAP_SIZE);
