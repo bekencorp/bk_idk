@@ -223,7 +223,7 @@ bk_err_t beken_time_get_time(beken_time_t *time_ptr);
   * @return    kNoErr          : on success.
   * @return    kGeneralErr     : if an error occurred
   */
-bk_err_t rtos_create_thread(beken_thread_t *thread, uint8_t priority, const char *name, beken_thread_function_t function, uint32_t stack_size, beken_thread_arg_t arg);
+bk_err_t rtos_create_sram_thread(beken_thread_t *thread, uint8_t priority, const char *name, beken_thread_function_t function, uint32_t stack_size, beken_thread_arg_t arg);
 
 /** @brief Creates and starts a new thread on psram
   *
@@ -238,6 +238,28 @@ bk_err_t rtos_create_thread(beken_thread_t *thread, uint8_t priority, const char
   * @return    kGeneralErr     : if an error occurred
   */
 bk_err_t rtos_create_psram_thread(beken_thread_t *thread, uint8_t priority, const char *name, beken_thread_function_t function, uint32_t stack_size, beken_thread_arg_t arg);
+
+
+/** @brief Creates and starts a new thread,the task will be dynamically created in sram(default)
+  *         
+  * @note  Do not call this API when interrupts are disabled (may cause the system
+  *        to enter a deadlock or abnormal status)
+  *
+  * @param thread     : Pointer to variable that will receive the thread handle (can be null)
+  * @param priority   : A priority number. The adaptation layer uniformly managers priorities.
+  *                     For the application layer,the lower the configured number,the higher 
+  *                     the task priority.Currently supports ten priority levels from 0 to 9.
+  *                     recommended that the application layer use priorities from 6 to 8.                     
+  * @param name       : a text name for the thread (can be null)
+  * @param function   : the main thread function
+  * @param stack_size : stack size for this thread,size is in bytes,for example if the stack_size
+  *                     is  defined as 2048,then 2048bytes will be allocated for stack storage.
+  * @param arg        : argument which will be passed to thread function
+  *
+  * @return    kNoErr          : on success.
+  * @return    kGeneralErr     : if an error occurred
+  */
+bk_err_t rtos_create_thread(beken_thread_t *thread, uint8_t priority, const char *name, beken_thread_function_t function, uint32_t stack_size, beken_thread_arg_t arg);
 
 
 /** @brief   Deletes a terminated thread
