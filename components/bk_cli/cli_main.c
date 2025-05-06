@@ -65,7 +65,7 @@ extern int video_demo_register_cmd(void);
 
 #define SHELL_TASK_PRIORITY               4
 
-#define SHELL_CHECK_MINI_REMAIN_STACK    (8 * 1024)
+#define SHELL_CHECK_MINI_REMAIN_STACK    (10 * 1024)
 #define SHELL_TASK_CHECK_CNT             (200)
 
 
