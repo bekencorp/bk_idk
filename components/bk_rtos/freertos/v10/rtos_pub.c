@@ -40,7 +40,7 @@
 	BK_ASSERT(0 == platform_local_irq_disabled());    \
 } while(0)
 
-#define _xTaskCreate( pvTaskCode, pcName, usStackDepth, pvParameters, uxPriority, pxCreatedTask ) xTaskCreateInSram( pvTaskCode, pcName, usStackDepth, pvParameters, uxPriority, pxCreatedTask )
+#define _xTaskCreate( pvTaskCode, pcName, usStackDepth, pvParameters, uxPriority, pxCreatedTask ) xTaskCreate( pvTaskCode, pcName, usStackDepth, pvParameters, uxPriority, pxCreatedTask )
 #define _xTimerCreate( pcTimerName, xTimerPeriodInTicks, uxAutoReload, pvTimerID, pxCallbackFunction ) xTimerCreate( pcTimerName, xTimerPeriodInTicks, uxAutoReload, pvTimerID, pxCallbackFunction )
 
 BaseType_t xTaskCreateInPsram( TaskFunction_t pxTaskCode,
@@ -101,7 +101,7 @@ static bool s_is_started_scheduler = false;
 /******************************************************
  *               Function Definitions
  ******************************************************/
-bk_err_t rtos_create_thread( beken_thread_t* thread, uint8_t priority, const char* name, 
+bk_err_t rtos_create_sram_thread( beken_thread_t* thread, uint8_t priority, const char* name, 
                         beken_thread_function_t function, uint32_t stack_size, beken_thread_arg_t arg )
 {
 	RTOS_ASSERT_INT_ENABLED_WITH_SCHEDULER();
@@ -112,7 +112,7 @@ bk_err_t rtos_create_thread( beken_thread_t* thread, uint8_t priority, const cha
         priority = RTOS_HIGHEST_PRIORITY;
     }
 
-    if( pdPASS == _xTaskCreate( (native_thread_t)function, name, 
+    if( pdPASS == xTaskCreateInSram( (native_thread_t)function, name, 
             (unsigned short) (stack_size/sizeof( portSTACK_TYPE )), 
             (void *)arg, BK_PRIORITY_TO_NATIVE_PRIORITY(priority), 
             (TaskHandle_t *)thread ) )
@@ -147,6 +147,16 @@ bk_err_t rtos_create_psram_thread( beken_thread_t* thread, uint8_t priority, con
     {
         return kGeneralErr;
     }
+}
+
+bk_err_t rtos_create_thread( beken_thread_t* thread, uint8_t priority, const char* name, 
+                        beken_thread_function_t function, uint32_t stack_size, beken_thread_arg_t arg )
+{
+#if CONFIG_TASK_STACK_IN_PSRAM && CONFIG_PSRAM_AS_SYS_MEMORY
+        return rtos_create_psram_thread(thread, priority, name, function, stack_size, arg);
+#else
+        return rtos_create_sram_thread(thread, priority, name, function, stack_size, arg);
+#endif
 }
 
 bk_err_t rtos_delete_thread( beken_thread_t* thread )
