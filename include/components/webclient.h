@@ -30,7 +30,11 @@
 #define WEBCLIENT_USING_MBED_TLS
 #endif
 #if defined(WEBCLIENT_USING_MBED_TLS) || defined(WEBCLIENT_USING_SAL_TLS)
+#if CONFIG_MBEDTLS
 #include <tls_client.h>
+#elif CONFIG_PSA_MBEDTLS
+#include <tls_connect.h>
+#endif
 #endif
 
 #ifdef __cplusplus
