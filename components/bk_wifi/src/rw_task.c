@@ -1029,7 +1029,7 @@ int core_thread_init(void)
 		goto _core_thread_init_fail;
 	}
 
-	os_ret = rtos_create_thread(&g_wifi_core.handle,
+	os_ret = rtos_create_sram_thread(&g_wifi_core.handle,
 								CONFIG_WIFI_CORE_TASK_PRIO,
 								"core_thread",
 								(beken_thread_function_t)core_thread_main,
@@ -1078,7 +1078,7 @@ int rwnx_intf_init(void)
 	}
 
 #if !CONFIG_FULLY_HOSTED
-	os_ret = rtos_create_thread(&app_thread_handle,
+	os_ret = rtos_create_sram_thread(&app_thread_handle,
 								CONFIG_WIFI_KMSG_TASK_PRIO,
 								"kmsgbk",
 								(beken_thread_function_t)kmsg_bk_thread_main,
