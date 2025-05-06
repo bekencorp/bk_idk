@@ -429,7 +429,7 @@ void entry_main(void)
 	bk_set_printf_enable(0);
 #endif
 
-	if(components_init())
+	if(components_early_init())
 		return;
 
 #if (CONFIG_FREERTOS_TRACE)
@@ -458,6 +458,11 @@ void entry_main(void)
 
 #if CONFIG_SAVE_BOOT_TIME_POINT
 	save_mtime_point(CPU_START_SCHE_TIME);
+#endif
+
+#if CONFIG_SLAVE_HEART_BEAT
+	extern bk_err_t mb_ipc_heartbeat_init(void);
+	mb_ipc_heartbeat_init();
 #endif
 
 	rtos_start_scheduler();
