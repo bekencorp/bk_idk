@@ -14,6 +14,10 @@
 	设置RTC作为唤醒源，系统进入深度睡眠和低压睡眠说明 <bk_rtc_sleep>
 	设置TOUCH作为唤醒源，系统进入深度睡眠和低压睡眠说明 <bk_touch_sleep>
 	设置32K时钟源说明 <bk_32k_source>
+	使用外部32K时钟源 <bk_use_extern32K>
 	设置WIFI低压保活说明 <bk_wifi_alive>
-	低功耗问题分析<bk_Lowpower_problem_analysis>
+	如何动态切换CPU主频 <bk_cpu_vote_freq>
+	关闭多媒体模块接口参考 <bk_close_multimedia>
+	低功耗问题分析 <bk_Lowpower_problem_analysis>
+	低功耗问题分析checklist <bk_lowpower_checklist>
 

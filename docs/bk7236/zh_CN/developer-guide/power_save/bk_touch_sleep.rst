@@ -2,13 +2,13 @@
 =======================================================
 
 
-设置touch作为唤醒源，系统进入深度睡眠调用函数和调用顺序说明
------------------------------------------------------------------
+系统进入深度睡眠调用函数和调用顺序说明
+--------------------------------------------
 - 1. 使用touch使用唤醒源时，首先需要touch模块初始化后才能使用，可以在代码中调用初始化代码，也可以通过cli command命令来测试。
 
 touch初始化的cli command例如：
 
-- 1.1. Cli command: "touch_single_channel_calib_mode_test 2 1" 
+- 1.1. Cli command: "touch_single_channel_calib_mode_test 2 1"
 
 使用touch的channel 2作为唤醒的触发channel,设置的值为1
 
@@ -25,22 +25,22 @@ touch初始化的cli command例如：
    设置睡眠模式，进入深度睡眠
 
 
-设置touch作为唤醒源，系统进入低压睡眠调用函数说明
-------------------------------------------------------------
+系统进入低压睡眠调用函数说明
+--------------------------------------------
 - 1. 使用touch使用唤醒源时，首先需要touch模块初始化后才能使用，可以在代码中调用初始化代码，也可以通过cli command命令来测试。
 
 touch初始化的cli command例如：
 
-- 1.1. Cli command: "touch_single_channel_calib_mode_test 2 1" 
+- 1.1. Cli command: "touch_single_channel_calib_mode_test 2 1"
 
 以上cli command 命令的含义：使用touch的channel 2作为唤醒的触发channel,设置的值为1
 
 
 - 2. 调用pm模块接口进入低压睡眠
 
-- 2.1 配置TOUCH唤醒源的参数 
+- 2.1 配置TOUCH唤醒源的参数
        touch_wakeup_param_t    touch_wakeup_param  = {0};
-       touch_wakeup_param.touch_channel = 2;  
+       touch_wakeup_param.touch_channel = 2;
        bk_pm_wakeup_source_set(PM_WAKEUP_SOURCE_INT_TOUCHED, &touch_wakeup_param);
 
 - 2.2 bk_pm_sleep_mode_set(PM_MODE_LOW_VOLTAGE);
@@ -56,7 +56,7 @@ touch初始化的cli command例如：
 
  - 2. 当系统中BT或WIFI模块没有上电时，系统会自动给这两个模块投上sleep的票。
 
- - 3. 最求最优功耗时，当系统开启音频，视频，LCD，CPU1，CPU2后，进入低压睡眠前需要把音频，视频，LCD，CPU1,CPU2先关闭，再进入睡眠。
+ - 3. 追求最优功耗时，当系统开启音频，视频，LCD，CPU1，CPU2后，进入低压睡眠前需要把音频，视频，LCD，CPU1,CPU2先关闭，再进入睡眠。
 
 :link_to_translation:`en:[English]`
 

@@ -176,16 +176,16 @@ Bit7为VIDEO，则表示以上两个模块的票没有投上。
 
    ::
 
-    pm video and audio state:0x0 0x0
-    pm ahpb and bakp state:0x0 0x10001
-    pm low vol[module:0xffbfffff] [need module:0xffffffff]
-    pm deepsleep[module:0x5e0][need module:0x3c0]
-    pm power and pmu state[0x202a25e8][0x7d000271]
-    Attention the bakp not power down[modulue:0x10001]
-    pm_psram_ctrl_state:0x0 0x0
-    pm_cp1_ctrl_state:0x0
-    pm_cp1_boot_ready:0x0
-    pm_module_lv_sleep_state:0xffffffffffffffff
+    1)pm video and audio state:0x0 0x0
+    2)pm ahpb and bakp state:0x0 0x10001
+    3)pm low vol[module:0xffbfffff] [need module:0xffffffff]
+    4)pm deepsleep[module:0x5e0][need module:0x3c0]
+    5)pm power and pmu state[0x202a25e8][0x7d000271]
+    6)Attention the bakp not power down[modulue:0x10001]
+    7)pm_psram_ctrl_state:0x0 0x0
+    8)pm_cp1_ctrl_state:0x0
+    9)pm_cp1_boot_ready:0x0
+    10)pm_module_lv_sleep_state:0xffffffffffffffff
 
   - pm video and audio state:0x0 0x0 ： 记录video和audio电源域下的模块状态
   - pm ahpb and bakp state:0x0 0x10001 : 记录ahpb和bakp电源域下的模块状态
@@ -197,6 +197,166 @@ Bit7为VIDEO，则表示以上两个模块的票没有投上。
   - pm_cp1_ctrl_state:0x0 ： 记录启动cpu1的子模块
   - pm_cp1_boot_ready:0x0 ： 记录cpu1的启动状态
   - pm_module_lv_sleep_state:0xffffffffffffffff ： 记录退出低压时需要恢复的模块状态
+
+  1）pm video and audio state:0x0 0x0
+  记录video和audio电源域下的模块状态。
+  红色部分0x0记录video投票上电后，是否有投下电的票。
+  黑色部分0x0记录audio投票上电后，是否有投下电的票。
+
+  2）pm ahpb and bakp state:0x0 0x10001
+  记录ahpb和bakp电源域下的模块状态。
+
+  3）pm low vol[module:0xffbfffff] [need module:0xffffffff]
+  记录进入低压需要投票的模块和已经投票的模块
+  当系统无法进入低压时，确认该项：
+  need module:0xffffffff  表示进入低压需要32张票都投1，则表示都进入睡眠状态。
+  module:0xffbfffff  其中为1的bit位，表示已经进入了睡眠的模块；其中为0的bit位，表示还没有进入睡眠的模块。
+  各个bit为对应的模块，请参考pm_sleep_module_name_e中定义的票。
+
+  4）pm deepsleep[module:0x5e0][need module:0x3c0]
+  记录进入deepsleep需要投票的模块和已经投票的模块
+  need module:0x3c0 表示进入深度睡眠，以下模块需要关闭状态。值为1表示该模块已经关闭了。
+  当前进入deepsleep，需要投以下票后，才能进入deepsleep.
+
+  module:0x5e0 表示当前投票进入deepsleep的模块。
+  其中bit6,bit7为1了，则表示AUDP,VIDP模块已经关闭了。
+  Bit8为1了，则表示BTSP模块进入睡眠了。
+  Bit9为0， 则表示WIFI_MAC还没有进入睡眠。
+  以上值不满足进入deepsleep的条件。
+
+  #define PM_ENTER_DEEP_SLEEP_MODULES_CONFIG \
+    {\
+    PM_POWER_MODULE_NAME_BTSP,\       // bit8
+    PM_POWER_MODULE_NAME_WIFIP_MAC,\  //bit9
+    PM_POWER_MODULE_NAME_AUDP,\       //bit6
+    PM_POWER_MODULE_NAME_VIDP,\       //bit7
+    }
+
+
+  5）pm power and pmu state[0x202a25e8][0x7d000271]
+  输出所有电源域的状态和lpo时钟源选择状态。
+  红色第一项表示电源关闭状态,关注bit[0]到bit[15],各个bit位代表的含义如下图。
+  其中值为1, 表示该电源域关闭，值为0，表示该电源域开启。
+
+  例如:
+  a)0x202a25e8(进入低功耗预期以下模块都关闭了)
+  其中8:表示pwd_encp模块电源关闭了。
+  e:表示pwd_vidp,pwd,audp,pwd_ ahbp模块的电源关闭了
+  5:表示pwd_wifip_phy,pwd,btsp关闭了
+  2:表示pwd_ofdm关闭了。
+
+  以下为每bit对应的电源(0:表示开; 1:表示关闭)：
+  bit0:mem1
+  bit1:mem2
+  bit2:mem3
+  bit3:encp
+  bit4:bakp
+  bit5:ahbp
+  bit6:audp
+  bit7:vidp
+  bit8:btsp
+  bit9:wifi_mac
+  bit10:wifi_phy
+  bit11:mem0
+  bit12:mem4
+  bit13:ofdm
+  bit14:mem5
+  bit15:rom
+
+  b)0x7d000271
+  以上值的最后2bit表示32K时钟源,
+  0:表示26M时钟分下来的32k; 1:表示外部32k时钟; 2:表示内部的ROSC时钟
+
+  6）Attention the bakp not power down[modulue:0x10001]
+  输出bakp电源域下的模块状态。
+  Bakp模块比较特殊，底层SDK做好适配。当前的方案是进入低压前备份相关的寄存器的值，低压唤醒后恢复备份的值。
+
+  7）pm_psram_ctrl_state:0x0 0x0
+  记录使用psram的子模块和psram作为内存使用的初始化完成标志。
+  a)第一个红色参数表示投票开启PSRAM的模块是否都关闭.
+  0x0：表示投票开启PSRAM的模块都关闭了
+  如果非0，例如0x4，则表示bit2对应的模块（PM_POWER_PSRAM_MODULE_NAME_AUDP_AUDIO），
+  没有投关闭PSRAM的票。
+
+    typedef enum
+    {
+    PM_POWER_PSRAM_MODULE_NAME_FFT       = 0,
+    PM_POWER_PSRAM_MODULE_NAME_AUDP_SBC     ,// 1
+    PM_POWER_PSRAM_MODULE_NAME_AUDP_AUDIO   ,// 2
+    PM_POWER_PSRAM_MODULE_NAME_AUDP_I2S     ,// 3
+    PM_POWER_PSRAM_MODULE_NAME_VIDP_JPEG_EN ,// 4
+    PM_POWER_PSRAM_MODULE_NAME_VIDP_H264_EN ,// 5
+    PM_POWER_PSRAM_MODULE_NAME_VIDP_JPEG_DE ,// 6
+    PM_POWER_PSRAM_MODULE_NAME_VIDP_DMA2D   ,// 7
+    PM_POWER_PSRAM_MODULE_NAME_VIDP_LCD     ,// 8
+    PM_POWER_PSRAM_MODULE_NAME_APP          ,// 9
+    PM_POWER_PSRAM_MODULE_NAME_AS_MEM       ,// 10
+    PM_POWER_PSRAM_MODULE_NAME_CPU1         ,// 11
+    PM_POWER_PSRAM_MODULE_NAME_MEDIA        ,// 12
+    PM_POWER_PSRAM_MODULE_NAME_LVGL_CODE_RUN,// 13
+    PM_POWER_PSRAM_MODULE_NAME_MAX          ,// attention: MAX value can not exceed 31.
+    }pm_power_psram_module_name_e;
+
+
+  b)当应用程序没有把malloc psram作为SRAM用，进入电压前没有是否，pm_debug 8命令后，会打印以下log，并会告诉哪个地方没有释放：
+  ”Attention the CPU1 psram malloc count”
+
+  c)如果PSRAM不关闭，能够进入低压，但是低压的底电流会变高。
+
+  8）pm_cp1_ctrl_state:0x0
+  记录启动cpu1的子模块。
+  当值为0x0时，表示投CPU1启动的模块，都关闭了。
+
+  当值不为0x0时，表示投CPU1启动的模块，还有没有关闭的。
+  例如当值为0x4时，表示PM_BOOT_CP1_MODULE_NAME_AUDP_AUDIO模块没有投关闭CPU1的票。
+
+  各个bit 位对应的模块，如下:
+
+    typedef enum
+    {
+    PM_BOOT_CP1_MODULE_NAME_FFT          = 0,
+    PM_BOOT_CP1_MODULE_NAME_AUDP_SBC        ,// 1
+    PM_BOOT_CP1_MODULE_NAME_AUDP_AUDIO      ,// 2
+    PM_BOOT_CP1_MODULE_NAME_AUDP_I2S        ,// 3
+    PM_BOOT_CP1_MODULE_NAME_VIDP_JPEG_EN    ,// 4
+    PM_BOOT_CP1_MODULE_NAME_VIDP_JPEG_DE    ,// 5
+    PM_BOOT_CP1_MODULE_NAME_VIDP_DMA2D      ,// 6
+    PM_BOOT_CP1_MODULE_NAME_VIDP_LCD        ,// 7
+    PM_BOOT_CP1_MODULE_NAME_MULTIMEDIA      ,// 8
+    PM_BOOT_CP1_MODULE_NAME_APP             ,// 9
+    PM_BOOT_CP1_MODULE_NAME_VIDP_ROTATE     ,// 10
+    PM_BOOT_CP1_MODULE_NAME_VIDP_SCALE      ,// 11
+    PM_BOOT_CP1_MODULE_NAME_GET_MEDIA_MSG   ,// 12
+    PM_BOOT_CP1_MODULE_NAME_LVGL            ,// 13
+    PM_BOOT_CP1_MODULE_NAME_MAX             ,// attention: MAX value can not exceed 31.
+    }pm_boot_cp1_module_name_e;
+
+
+
+  9）pm_cp1_boot_ready:0x0
+
+  记录cpu1的启动状态。
+  确认CPU1是否关闭。
+  当值为0x0时，表示CPU1已经关闭了
+  当值为0x1时，表示CPU1启动了，还没有关闭。
+
+  10）pm_module_lv_sleep_state:0xffffffffffffffff
+  记录退出低压时需要恢复的模块状态。
+
+  该state主要是给SDK内部的bakp模块使用。
+
+四、低功耗问题问答
+--------------------------------------------------------------
+
+
+  1)进入深度睡眠后功耗偏高问题确认
+  进入深度睡眠成功后，VDDDIG的电压为0v.电流在20uA左右.
+  如果VDDDIG的电压为0v, 电流超过了25Ua则需要确认是否外围电路漏电。
+
+  2)进入低压后功耗偏高问题确认
+  a)通过pm_debug 8确认该关闭的模块都关闭了，功耗还偏高，则确认外围电路是否由漏电。通过万用表确认各个GPIO是否有高电平。
+  b)确认测试环境，温度高低压功耗也会变高。
+  c)WIFI保活功耗高，则首先确认底电流是否符合预期，然后确认WIFI开窗时长是否符合预期，WIFI接收电流是否符合预期。WIFI发包周期是否频繁，DTIM的值是否符合预期。
 
 :link_to_translation:`en:[English]`
 
