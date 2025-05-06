@@ -165,6 +165,7 @@ typedef enum{
 	CPU2_USER_USB = 0,
 	CPU2_USER_JPEG_SW_DEC,
 	CPU2_USER_SW_ROTATE,
+	CPU2_USER_AUD_ASR,
 	CPU2_USER_MAX = 31,	//if the user id > 31, please help care about s_mutex_cpu2_users
 }cpu2_user_id_t;
 

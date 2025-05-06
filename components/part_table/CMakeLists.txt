@@ -104,6 +104,7 @@ list(APPEND bk7258xx_supported_projects
 	"media/audio_record_to_sdcard"
 	"media/doorbell"
 	"media/doorbell_8M"
+	"media/doorbell_8M_asr"
 	"media/doorbell_4M"
 	"media/doorbell_ab_4M"
 	"media/doorbell_720p"
