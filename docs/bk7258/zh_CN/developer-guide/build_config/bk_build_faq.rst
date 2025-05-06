@@ -28,6 +28,8 @@
 
     armino_component_register(SRCS "${srcs}" INCLUDE_DIRS "${incs}" PRIV_REQUIRES dependency_component)
 
+003 - 编译工具链和编译参数查看
+-------------------------------------------------------------
 
-
-
+在编译目录下相应工程目录里面中compile_commands.json文件，其中包含所有源文件的编译命令，可以查看每个源文件编译工具链和编译参数。
+如bk7258的app工程，在build/app/bk7258/compile_commands.json中可以查看相应的编译命令。

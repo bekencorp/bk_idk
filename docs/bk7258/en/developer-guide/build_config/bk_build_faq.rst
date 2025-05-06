@@ -27,6 +27,8 @@ In the source files under the main directory of the project, if a function or ma
 
     armino_component_register(SRCS "${srcs}" INCLUDE_DIRS "${incs}" PRIV_REQUIRES dependency_component)
 
+003 - Compile toolchain and compile parameter viewing
+-------------------------------------------------------------
 
-
-
+In the corresponding project directory under the compilation directory, there is the compile_commands.json file, which contains the compilation commands for all source files. You can view the compilation toolchain and parameters for each source file.
+For the app project of bk7258, the corresponding compilation commands can be viewed in build/app/bk7258/compile_commands.json.
