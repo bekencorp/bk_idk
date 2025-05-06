@@ -112,7 +112,7 @@ static bk_err_t push_to_queue_wrapper(void **queue, void *message, uint32_t time
 static bk_err_t create_thread_wrapper(void **thread, uint8_t priority, const char *name,
                                       void *function, uint32_t stack_size, void *arg)
 {
-    return rtos_create_thread(thread, priority, name, function, stack_size, arg);
+    return rtos_create_sram_thread(thread, priority, name, function, stack_size, arg);
 }
 
 static bk_err_t delete_thread_wrapper(void **thread)
