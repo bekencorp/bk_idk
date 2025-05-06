@@ -219,7 +219,7 @@ void wpas_thread_start(void)
 	}
 
 	if (NULL == wpas_thread_handle) {
-		ret = rtos_create_thread(&wpas_thread_handle,
+		ret = rtos_create_sram_thread(&wpas_thread_handle,
 								 CONFIG_TASK_WPAS_PRIO,
 								 "wpas_thread",
 								 (beken_thread_function_t)wpas_thread_main,
