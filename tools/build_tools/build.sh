@@ -14,7 +14,7 @@ if [ `python3 -c "$python_isabs_cmd"` == "False" ];then
 	BUILD_DIR=${ARMINO_DIR}/${BUILD_DIR}
 fi
 
-SDK_BUILD_DIR=${BUILD_DIR}
+SDK_BUILD_DIR=`dirname ${BUILD_DIR}`
 
 ARMINO_TOOL=${ARMINO_DIR}/tools/build_tools/armino
 BUILD_TARGET_PREFIX=${BUILD_TARGET:0:5}
