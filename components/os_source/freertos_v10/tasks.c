@@ -3237,6 +3237,29 @@ BaseType_t xTaskIncrementTick( void )
 
 #endif /* configUSE_APPLICATION_TASK_TAG */
 /*-----------------------------------------------------------*/
+#if CONFIG_FREERTOS_TASK_RECORDER
+typedef struct  task_list_recorder
+{
+    uint32_t tick;        /*os tick */
+
+    uint32_t time;        /*aon tick */
+
+    uint32_t TCB_ptr;     /*task TCB pointer*/
+
+    uint32_t stack_top;   /*top of tas kstack*/
+
+    uint32_t stack_bottom; /*bottom of task stack */
+
+    uint32_t stack_size;   /*size of task stack*/
+
+}task_list_recorder_t;
+
+__attribute__((__used__)) static volatile  uint32_t s_task_cnt = 0;
+
+ __attribute__((__used__)) static volatile  task_list_recorder_t  s_task_recorder[CONFIG_FREERTOS_TASK_RECORDER_CNT];
+
+ #define GET_AON_RTC_TIME    (REG_READ(SOC_AON_RTC_REG_BASE + (0x3 << 2)))
+#endif
 
 void vTaskSwitchContext( void )
 {
@@ -3286,6 +3309,12 @@ void vTaskSwitchContext( void )
 
         /* Check for stack overflow, if configured. */
         taskCHECK_FOR_STACK_OVERFLOW();
+    	{
+        #if CONFIG_MEM_DEBUG_OVERFLOW
+    		extern void CheckFreeList(void);
+			CheckFreeList();
+        #endif
+    	}
 
         /* Before the currently running task is switched out, save its errno. */
         #if ( configUSE_POSIX_ERRNO == 1 )
@@ -3298,7 +3327,18 @@ void vTaskSwitchContext( void )
          * optimised asm code. */
         taskSELECT_HIGHEST_PRIORITY_TASK(); /*lint !e9079 void * is used as this macro is used with timers and co-routines too.  Alignment is known to be fine as the type of the pointer stored and retrieved is the same. */
         traceTASK_SWITCHED_IN();
-
+#if CONFIG_FREERTOS_TASK_RECORDER
+        {  
+            s_task_recorder[s_task_cnt].tick = xTickCount;
+            s_task_recorder[s_task_cnt].time = GET_AON_RTC_TIME;  
+            s_task_recorder[s_task_cnt].TCB_ptr = (uint32_t) pxCurrentTCB;           
+            s_task_recorder[s_task_cnt].stack_top = (uint32_t) pxCurrentTCB->pxTopOfStack;
+            s_task_recorder[s_task_cnt].stack_bottom = (uint32_t)(pxCurrentTCB->pxStack + pxCurrentTCB->ulStackSize);    
+            s_task_recorder[s_task_cnt].stack_size   = pxCurrentTCB->ulStackSize;              
+            s_task_cnt++;
+            s_task_cnt = s_task_cnt % CONFIG_FREERTOS_TASK_RECORDER_CNT;
+        }
+#endif
         /* After the new task is switched in, update the global errno. */
         #if ( configUSE_POSIX_ERRNO == 1 )
         {
