@@ -218,6 +218,8 @@ void vPortSuppressTicksAndSleep( TickType_t xExpectedIdleTime )
 	uint32_t ulReloadValue;
 	TickType_t xModifiableIdleTime;
 #if CONFIG_SYS_CPU0
+	bk_pm_check_enter_lv_time_out();
+
   #if (CONFIG_CPU_CNT > 1)
 	uint32_t cp1_psram_malloc_count_state       = 0;
 	if(bk_pm_low_vol_vote_state_get())
