@@ -1066,7 +1066,7 @@ bk_err_t bk_uart_init(uart_id_t id, const uart_config_t *config)
 		bk_pm_module_lv_sleep_state_clear(PM_DEV_ID_UART3);
 	}
 #endif
-
+	#if CONFIG_SYS_CPU0
 	pm_cb_conf_t enter_config = {
 		.cb = (pm_cb)uart_enter_deep_sleep,
 		.args = (void *)id
@@ -1078,7 +1078,7 @@ bk_err_t bk_uart_init(uart_id_t id, const uart_config_t *config)
 	u8 pm_uart_port = uart_id_to_pm_uart_id(id);
 
 	bk_pm_sleep_register_cb(PM_MODE_DEEP_SLEEP, pm_uart_port, &enter_config, &exit_config);
-
+	#endif
 #if CONFIG_SOC_BK7236XX || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX)
 	uart_isr_register_functions(id);
 	s_uart[id].hal.id = id;
