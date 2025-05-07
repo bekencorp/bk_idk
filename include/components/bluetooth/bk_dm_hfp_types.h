@@ -84,6 +84,7 @@ typedef enum {
     BK_HF_CLIENT_BSIR_EVT,                          /*!< setting of in-band ring tone */
     BK_HF_CLIENT_BINP_EVT,                          /*!< requested number of last voice tag from AG */
     BK_HF_CLIENT_RING_IND_EVT,                      /*!< ring indication event */
+    BK_HF_CLIENT_UNKNOWN_DATA_IND_EVT,              /*!< unknown data from AG */
 } bk_hf_client_cb_event_t;
 
 /// Codec Type
@@ -422,6 +423,15 @@ typedef struct{
         {
             const char *number;                      /*!< phone number corresponding to the last voice tag in the HF */
         } binp;                                      /*!< HF callback param of BK_HF_CLIENT_BINP_EVT */
+
+        /**
+         * @brief BK_HF_CLIENT_UNKNOWN_DATA_IND_EVT
+         */
+        struct hf_client_unknown_data_param
+        {
+            const char *data;                      /*!< unknown data */
+            uint16_t data_len;                     /*!< the length of unknown data*/
+        } unknown_data;                                    /*!< HF callback param of BK_HF_CLIENT_UNKNOWN_DATA_IND_EVT */
 
     };
 }bk_hf_client_cb_param_t;                      /*!< HFP client callback parameters */
