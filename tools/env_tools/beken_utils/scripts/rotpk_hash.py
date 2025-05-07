@@ -43,7 +43,7 @@ class Rotpk_hash:
         logging.debug(f'generate {hash_json_file}')
 
     def gen_bl1_rotpk_hash(self):
-        sh_sec_tools = f'{self.tools_dir}/tools/sh_sec_tools/secure_boot_tool'
+        sh_sec_tools = get_secure_boot_tool_exe()
         cmd = f'{sh_sec_tools} rotpk_hash -k {self.pubkey_file}'
         run_cmd(cmd)
         if (os.path.exists(f'bl1_rotpk_digest.txt') == True):

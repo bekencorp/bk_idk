@@ -52,7 +52,7 @@ class Sign:
         self.bl2_sign()
 
     def bl1_sign(self):
-        sh_sec_tools = f'{self.tools_dir}/tools/sh_sec_tools/secure_boot_tool'
+        sh_sec_tools = get_secure_boot_tool_exe()
         digest_file = '_bl1_manifest_digest.txt'
         with open(digest_file, 'w') as f:
             f.write(self.bl1_manifest_digest)
@@ -69,7 +69,7 @@ class Sign:
         pass
 
     def bl2_sign(self):
-        bl2_signing_tool_dir = f'{self.tools_dir}/tools/mcuboot_tools/imgtool.py'
+        bl2_signing_tool_dir = f'python3 {self.tools_dir}/tools/mcuboot_tools/imgtool.py'
         cmd = f'{bl2_signing_tool_dir} ecdsa-sign -k {self.prvkey_file} -d {self.digest_file} -o {self.sig_file}'
         run_cmd(cmd)
         pass

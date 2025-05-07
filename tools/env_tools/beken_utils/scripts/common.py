@@ -3,6 +3,7 @@ import re
 import logging
 import subprocess
 import os
+import platform
 import shutil
 
 s_base_addr = 0
@@ -133,3 +134,42 @@ def get_script_dir():
     script_dir = os.path.abspath(__file__)
     script_dir = os.path.dirname(script_dir)
     return script_dir
+
+def get_secure_boot_tool_exe():
+    system = platform.system()
+    script_dir = get_script_dir()
+    sh_sec_tools = os.path.abspath(f'{script_dir}/../tools/sh_sec_tools/secure_boot_tool')
+    if system == "Windows":
+        return sh_sec_tools + '.exe'
+    elif system == "Linux":
+        return sh_sec_tools
+    elif system == "Darwin":
+        raise RuntimeError("not support macos")
+    else:
+        raise RuntimeError("unknown system type")
+    
+def get_aes_tool_exe():
+    system = platform.system()
+    script_dir = get_script_dir()
+    aes_tool = os.path.abspath(f'{script_dir}/../../beken_packager/beken_aes')
+    if system == "Windows":
+        return aes_tool + '.exe'
+    elif system == "Linux":
+        return aes_tool
+    elif system == "Darwin":
+        raise RuntimeError("not support macos")
+    else:
+        raise RuntimeError("unknown system type")
+
+def get_compress_tool_exe():
+    system = platform.system()
+    script_dir = get_script_dir()
+    compress_tool = os.path.abspath(f'{script_dir}/../tools/packager_tools/lzma')
+    if system == "Windows":
+        return compress_tool + '.exe'
+    elif system == "Linux":
+        return compress_tool
+    elif system == "Darwin":
+        raise RuntimeError("not support macos")
+    else:
+        raise RuntimeError("unknown system type")

@@ -17,10 +17,7 @@ def compress_bin(infile, outfile):
         logging.debug(f'block num = {offset //2 - 1}')
         dst.seek(offset)
         sum = 0
-        file_in = open(compress_temp_in,"wb+")
-        file_out = open(compress_temp_out,"wb+")
         src.seek(0)
-        idx = 0
         while True:
             uncompress_block_size = bytes()
             chunk = bytes() # clear chunk
@@ -29,15 +26,18 @@ def compress_bin(infile, outfile):
                 uncompress_block_size = struct.pack("H",len(chunk))
             if not chunk:
                 break
+            file_in = open(compress_temp_in,"wb+")
             file_in.seek(0)
             file_in.write(chunk)
-            script_dir = get_script_dir()
-            compress_tool = f'{script_dir}/../tools/packager_tools/lzma'
+            file_in.close()
+            compress_tool = get_compress_tool_exe()
             cmd =f'{compress_tool} e {compress_temp_in} {compress_temp_out}'
             run_cmd(cmd)
             chunk = bytes() # clear chunk
+            file_out = open(compress_temp_out,"wb+")
             file_out.seek(0)
             chunk = file_out.read()
+            file_out.close()
             compress_chunk_size = len(chunk)
             logging.debug(f'block after size:{compress_chunk_size}')
             compress_chunk_size = struct.pack("H",compress_chunk_size)
@@ -45,8 +45,6 @@ def compress_bin(infile, outfile):
             compress_size_list.append(compress_size)
             dst.write(chunk)
             sum += len(chunk)
-        file_in.close()
-        file_out.close()
         offset = 0
         dst.seek(offset)
         for num in compress_size_list:

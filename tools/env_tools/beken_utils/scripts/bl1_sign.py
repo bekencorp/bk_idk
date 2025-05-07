@@ -7,8 +7,7 @@ from .common import *
 from .genbl1 import *
 
 def bl1_sign_hash(privkey_pem_file, manifest_hash, outfile):
-    script_dir = get_script_dir()
-    sh_sec_tools = f'{script_dir}/../tools/sh_sec_tools/secure_boot_tool'
+    sh_sec_tools = get_secure_boot_tool_exe()
 
     digest_file = '_bl1_manifest_digest.txt'
     with open(digest_file, 'w') as f:
@@ -30,8 +29,7 @@ def bl1_sign_hash(privkey_pem_file, manifest_hash, outfile):
         json.dump(signature_dict, f, indent=4)
 
 def gen_manifest_bin(action_type, manifest_json_file, outfile):
-    script_dir = get_script_dir()
-    sh_sec_tools = f'{script_dir}/../tools/sh_sec_tools/secure_boot_tool'
+    sh_sec_tools = get_secure_boot_tool_exe()
     pwd = os.getcwd()
     logging.debug(f'generate manifest.bin')
 

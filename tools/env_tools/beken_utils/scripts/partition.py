@@ -494,7 +494,7 @@ class Partition:
         else:
             if aes_type == 'FIXED':
                 self.aes_bin_name = f'{self.file_name_prefix}_code_aes.bin'
-                aes_tool = f'{self.tools_dir}/packager_tools/beken_aes'
+                aes_tool = get_aes_tool_exe()
                 if self.is_all_partition:
                     start_address = hex(phy2virtual(self.phy_partition_offset))
                 else:
@@ -667,7 +667,7 @@ class Partitions:
             if aes_type == 'FIXED':
                 aes_infile = f'partition_raw.bin'
                 aes_bin_name = f'partition_aes.bin'
-                aes_tool = f'{self.tools_dir}/packager_tools/beken_aes'
+                aes_tool = get_aes_tool_exe()
                 start_address = hex(phy2virtual(phy_partition_offset))
                 cmd = f'{aes_tool} encrypt -infile {aes_infile} -keywords {aes_key} -outfile {aes_bin_name} -startaddress {start_address}'
                 run_cmd_not_check_ret(cmd)
@@ -1153,7 +1153,7 @@ class Partitions:
         if ota_aes_en:
             aes_bin_name = "ota_aes.bin"
 
-            aes_tool = f'{self.tools_dir}/../tools/packager_tools/beken_aes'
+            aes_tool = get_aes_tool_exe()
             start_address = hex(phy2virtual(ota_partition.phy_partition_offset))
             cmd = f'{aes_tool} encrypt -infile {ota_sign_bin} -keywords {aes_key} -outfile {aes_bin_name} -startaddress {start_address}'
             run_cmd_not_check_ret(cmd)
