@@ -363,11 +363,11 @@ void lcd_hal_mcu_set_in_out_format(pixel_format_t in_fmt, pixel_format_t out_fmt
 			case PIXEL_FMT_RGB666:
 				lcd_disp_ll_set_rgb_cfg_out_fmt_sel(1);
 				break;
-			case PIXEL_FMT_RGB888:
-				lcd_disp_ll_set_rgb_cfg_out_fmt_sel(3);
-				break;
-			case PIXEL_FMT_BGR888:
+			case PIXEL_FMT_RGB888_16BIT:   //MCU data 16 line (D0-D15), per write 16 bits 
 				lcd_disp_ll_set_rgb_cfg_out_fmt_sel(7);
+				break;
+			case PIXEL_FMT_RGB888:         //MCU data 8 line (D0-D7), per write 8 bits 
+				lcd_disp_ll_set_rgb_cfg_out_fmt_sel(3);
 				break;
 			default:
 				lcd_disp_ll_set_rgb_cfg_out_fmt_sel(0);
@@ -385,10 +385,10 @@ void lcd_hal_mcu_set_in_out_format(pixel_format_t in_fmt, pixel_format_t out_fmt
 			case PIXEL_FMT_RGB666:
 				lcd_disp_ll_set_rgb_cfg_out_fmt_sel(5);
 				break;
-			case PIXEL_FMT_RGB888:
+			case PIXEL_FMT_RGB888_16BIT: //MCU data 16 line (D0-D15), per write 16 bits 
 				lcd_disp_ll_set_rgb_cfg_out_fmt_sel(2);
 				break;
-			case PIXEL_FMT_BGR888:
+			case PIXEL_FMT_RGB888:      //MCU data 8 line (D0-D7), per write 8 bits 
 				lcd_disp_ll_set_rgb_cfg_out_fmt_sel(6);
 				break;
 			default:
