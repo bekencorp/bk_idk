@@ -437,8 +437,10 @@ void _start(void)
     cmd_do_memcheck();
 #endif
 
+#if CONFIG_SYS_CPU0
     /*power manager init*/
     pm_hardware_init();
+#endif
 
 #if CONFIG_SYS_CPU0
     bk_pm_cp1_auto_power_down_state_set(PM_CP1_AUTO_CTRL_DISABLE);

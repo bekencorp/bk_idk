@@ -51,6 +51,12 @@
 #endif
 #include <driver/rosc_32k.h>
 
+
+static uint8_t  s_debug_en               = 0;
+bk_err_t pm_management(uint32_t sleep_ticks);
+
+//============================CPU0/CPU1 CODE START===============================================================
+#if CONFIG_SYS_CPU1 || CONFIG_SYS_CPU0
 /*=====================DEFINE SECTION START=====================*/
 #define PM_WAKEUP_SOURCE_MARK                           (WAKEUP_SOURCE_MARK)
 
@@ -76,7 +82,7 @@
 /*=====================DEFINE SECTION END=====================*/
 
 /*=====================VARIABLE SECTION START=================*/
-static uint8_t  s_debug_en                    = 0;
+
 static uint32_t s_module_wakeup_time_ms       = DEFAULT_WAKEUP_TIME;
 
 static pm_sleep_mode_e s_pm_sleep_mode        = PM_MODE_DEFAULT;
@@ -418,74 +424,6 @@ uint32_t pm_state_machine()
 	return missed_ticks;
 }
 
-bk_err_t pm_management(uint32_t sleep_ticks)
-{
-#if CONFIG_MCU_PS
-#if CONFIG_PM_LIGHT_SLEEP
-	uint64_t previous_tick = 0;
-	uint64_t current_tick = 0;
-	uint64_t missed_ticks = 0;
-	int ret = 0;
-	if (s_pm_mcu_pm_state)
-	{
-		return BK_OK;
-	}
-
-	if ((s_pm_light_sleep_enter_cb_conf.cb == NULL) || (s_pm_light_sleep_exit_cb_conf.cb == NULL))
-	{
-
-		return BK_FAIL;
-	}
-	ret = s_pm_light_sleep_enter_cb_conf.cb(sleep_ticks * rtos_get_ms_per_tick(), s_pm_light_sleep_enter_cb_conf.args);
-	if (ret)
-	{
-		return BK_FAIL;
-	}
-	previous_tick = bk_aon_rtc_get_current_tick(AON_RTC_ID_1);
-	current_tick = previous_tick;
-	while (((current_tick - previous_tick)) < (sleep_ticks * rtos_get_ms_per_tick() * bk_rtc_get_ms_tick_count()))
-	{
-		current_tick = bk_aon_rtc_get_current_tick(AON_RTC_ID_1);
-	}
-
-	// os_printf("idle task after:%d \r\n",sleep_ticks);
-	missed_ticks = pm_state_machine();
-	missed_ticks = sleep_ticks;
-	// bk_update_tick(missed_ticks);
-
-	s_pm_light_sleep_exit_cb_conf.cb(sleep_ticks * rtos_get_ms_per_tick(), s_pm_light_sleep_exit_cb_conf.args);
-#else
-	uint32_t missed_ticks = 0;
-	if (s_pm_mcu_pm_state)
-	{
-		return BK_OK;
-	}
-	missed_ticks = pm_state_machine();
-	if (missed_ticks != 0)
-	{
-		// bk_update_tick(missed_ticks);
-	}
-#endif
-#else
-#if CONFIG_SYS_CPU1
-
-	if (bk_pm_cp1_ctrl_state_get() == 0x0)
-	{
-		bk_pm_cp1_ctrl_state_set(PM_MAILBOX_COMMUNICATION_FINISH);
-		pm_cp1_mailbox_response(PM_CPU1_BOOT_READY_CMD, 0x1);
-		// os_printf("cpu1 already\r\n");
-	}
-
-	pm_enter_normal_sleep();
-#endif
-#endif
-	return BK_OK;
-}
-
-bk_err_t bk_pm_suppress_ticks_and_sleep(uint32_t sleep_ticks)
-{
-	return pm_management(sleep_ticks);
-}
 /*=========================SLEEP STATE MACHINE END========================*/
 
 /*=========================COMMON PM API START========================*/
@@ -2457,6 +2395,82 @@ bk_err_t pm_clk_32k_source_switch(pm_lpo_src_e lpo_src)
 	return BK_OK;
 }
 /*=========================CLK/FREQ CTRL END========================*/
+
+#endif //#if CONFIG_SYS_CPU1 || CONFIG_SYS_CPU0
+/*============================CPU0/CPU1 CODE END=========================*/
+
+bk_err_t pm_management(uint32_t sleep_ticks)
+{
+#if CONFIG_MCU_PS
+#if CONFIG_PM_LIGHT_SLEEP
+	uint64_t previous_tick = 0;
+	uint64_t current_tick = 0;
+	uint64_t missed_ticks = 0;
+	int ret = 0;
+	if (s_pm_mcu_pm_state)
+	{
+		return BK_OK;
+	}
+
+	if ((s_pm_light_sleep_enter_cb_conf.cb == NULL) || (s_pm_light_sleep_exit_cb_conf.cb == NULL))
+	{
+
+		return BK_FAIL;
+	}
+	ret = s_pm_light_sleep_enter_cb_conf.cb(sleep_ticks * rtos_get_ms_per_tick(), s_pm_light_sleep_enter_cb_conf.args);
+	if (ret)
+	{
+		return BK_FAIL;
+	}
+	previous_tick = bk_aon_rtc_get_current_tick(AON_RTC_ID_1);
+	current_tick = previous_tick;
+	while (((current_tick - previous_tick)) < (sleep_ticks * rtos_get_ms_per_tick() * bk_rtc_get_ms_tick_count()))
+	{
+		current_tick = bk_aon_rtc_get_current_tick(AON_RTC_ID_1);
+	}
+
+	// os_printf("idle task after:%d \r\n",sleep_ticks);
+	missed_ticks = pm_state_machine();
+	missed_ticks = sleep_ticks;
+	// bk_update_tick(missed_ticks);
+
+	s_pm_light_sleep_exit_cb_conf.cb(sleep_ticks * rtos_get_ms_per_tick(), s_pm_light_sleep_exit_cb_conf.args);
+#else//CONFIG_PM_LIGHT_SLEEP
+	uint32_t missed_ticks = 0;
+	if (s_pm_mcu_pm_state)
+	{
+		return BK_OK;
+	}
+	missed_ticks = pm_state_machine();
+	if (missed_ticks != 0)
+	{
+		// bk_update_tick(missed_ticks);
+	}
+#endif//CONFIG_PM_LIGHT_SLEEP
+#else //CONFIG_MCU_PS
+#if CONFIG_SYS_CPU1
+
+	if (bk_pm_cp1_ctrl_state_get() == 0x0)
+	{
+		bk_pm_cp1_ctrl_state_set(PM_MAILBOX_COMMUNICATION_FINISH);
+		pm_cp1_mailbox_response(PM_CPU1_BOOT_READY_CMD, 0x1);
+		// os_printf("cpu1 already\r\n");
+	}
+
+	pm_enter_normal_sleep();
+#endif//CONFIG_SYS_CPU1
+
+#if CONFIG_SYS_CPU2
+	sys_drv_enter_normal_sleep(0);
+#endif//CONFIG_SYS_CPU2
+
+#endif//CONFIG_MCU_PS
+	return BK_OK;
+}
+bk_err_t bk_pm_suppress_ticks_and_sleep(uint32_t sleep_ticks)
+{
+	return pm_management(sleep_ticks);
+}
 
 /*=========================DEBUG/TEST CTRL START========================*/
 #if PM_DEBUG

@@ -1550,7 +1550,9 @@ static void shell_power_save_exit(void)
 
 static void wakeup_process(void)
 {
+	#if CONFIG_SYS_CPU0
 	bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_LOG, 0, 0);
+	#endif
 	shell_pm_wake_flag = 1;
 	shell_pm_wake_time = SHELL_TASK_WAKE_CYCLE;
 }
@@ -1620,13 +1622,6 @@ static void shell_log_tx_init(void)
 	log_tx_init_ok = 1;
 
 	{
-		pm_cb_conf_t enter_config;
-		enter_config.cb = (pm_cb)shell_power_save_enter;
-		enter_config.args = NULL;
-
-		pm_cb_conf_t exit_config;
-		exit_config.cb = (pm_cb)shell_power_save_exit;
-		exit_config.args = NULL;
 
 		#if 0
 		bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, PM_DEV_ID_UART1, &enter_config, &exit_config);
@@ -1641,8 +1636,19 @@ static void shell_log_tx_init(void)
 		u8 uart_port = UART_ID_MAX;
 		log_dev->dev_drv->io_ctrl(log_dev, SHELL_IO_CTRL_GET_UART_PORT, &uart_port);
 
+		#if CONFIG_SYS_CPU0
+		pm_cb_conf_t enter_config;
+		enter_config.cb = (pm_cb)shell_power_save_enter;
+		enter_config.args = NULL;
+
+		pm_cb_conf_t exit_config;
+		exit_config.cb = (pm_cb)shell_power_save_exit;
+		exit_config.args = NULL;
+
 		u8 pm_uart_port = uart_id_to_pm_uart_id(uart_port);
+
 		bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, pm_uart_port, &enter_config, &exit_config);
+		#endif
 	}
 
 	dynamic_log_init();
@@ -1718,13 +1724,6 @@ static void shell_task_init(void)
 	cmd_rx_init_ok = 1;
 	
 	{
-		pm_cb_conf_t enter_config;
-		enter_config.cb = (pm_cb)shell_power_save_enter;
-		enter_config.args = NULL;
-
-		pm_cb_conf_t exit_config;
-		exit_config.cb = (pm_cb)shell_power_save_exit;
-		exit_config.args = NULL;
 
 		#if 0
 		bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, PM_DEV_ID_UART1, &enter_config, &exit_config);
@@ -1739,15 +1738,24 @@ static void shell_task_init(void)
 		uart_id_t uart_port = UART_ID_MAX;
 		cmd_dev->dev_drv->io_ctrl(cmd_dev, SHELL_IO_CTRL_GET_UART_PORT, &uart_port);
 
+
+		#if CONFIG_SYS_CPU0
+		pm_cb_conf_t enter_config;
+		enter_config.cb = (pm_cb)shell_power_save_enter;
+		enter_config.args = NULL;
+
+		pm_cb_conf_t exit_config;
+		exit_config.cb = (pm_cb)shell_power_save_exit;
+		exit_config.args = NULL;
 		u8 pm_uart_port = uart_id_to_pm_uart_id(uart_port);
 		bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, pm_uart_port, &enter_config, &exit_config);
-
-		shell_rx_wakeup(bk_uart_get_rx_gpio(uart_port));
-
+      
 		enter_config.cb = (pm_cb)shell_enter_deep_sleep;
 		exit_config.args = (void *)PM_CB_PRIORITY_1;
 
 		bk_pm_sleep_register_cb(PM_MODE_DEEP_SLEEP, pm_uart_port, &enter_config, &exit_config);
+		#endif
+		shell_rx_wakeup(bk_uart_get_rx_gpio(uart_port));
 	}
 
 	if(ate_is_enabled())
@@ -1889,7 +1897,9 @@ void shell_task( void *para )
 				if(shell_pm_wake_flag != 0)
 				{
 					shell_pm_wake_flag = 0;
+					#if CONFIG_SYS_CPU0
 					bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_LOG, 1, 0);
+					#endif
 					//shell_log_raw_data((const u8*)"sleep\r\n", sizeof("sleep\r\n") - 1);
 				}
 			}

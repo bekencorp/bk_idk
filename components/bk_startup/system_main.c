@@ -305,9 +305,9 @@ void bk_set_jtag_mode(uint32_t cpu_id, uint32_t group_id) {
 		os_printf("Unsupported cpu id(%d).\r\n", cpu_id);
 		return;
 	}
-
+	#if CONFIG_SYS_CPU0
 	bk_pm_module_vote_cpu_freq(PM_DEV_ID_DEFAULT,PM_CPU_FRQ_120M);
-
+	#endif
 	/*close watchdog*/
 #if CONFIG_INT_WDT
 	bk_wdt_stop();
