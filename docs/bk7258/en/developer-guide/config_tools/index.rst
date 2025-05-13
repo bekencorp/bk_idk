@@ -8,7 +8,7 @@ Configuration and Tools
 
     Overview <bk_config_overview>
     Kconfig configuration <bk_config_kconfig>
-    Partition Configuration <bk_config_partitions>
+    Security Partition Configuration <bk_security_config_partitions>
     Automated Partition Configuration <bk_config_auto_partitions>
     Security Configuration <bk_config_security>
     OTA configuration <bk_config_ota>

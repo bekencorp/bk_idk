@@ -25,3 +25,4 @@ User and Developer Guide
    Bootloader and Ota <bootloader_ota/index>
    Write Examples <examples/index>
    Documentation <documentation/index>
+   create_new_project_rule<create_new_project_rule/index>

@@ -25,3 +25,4 @@ User and Developer Guide
    Bootloader与Ota <bootloader_ota/index>
    用例编写 <examples/index>
    文档系统 <documentation/index>
+   新建工程介绍<create_new_project_rule/index>
