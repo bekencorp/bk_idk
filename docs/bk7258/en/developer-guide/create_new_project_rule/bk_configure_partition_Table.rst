@@ -10,7 +10,7 @@ Partition Table Configuration
 -------------------------------
 The partition table configuration is a CSV file. For example, the partition table configuration file for the bk7258 platform engineering is bk7258_partitions.csv. The format is as follows:
 
-  .. figure:: ../../../_static/partition_layout.png
+  .. figure:: ../../../../common/_static/partition_layout.png
     :align: center
     :alt: partition_layout
     :figclass: align-center

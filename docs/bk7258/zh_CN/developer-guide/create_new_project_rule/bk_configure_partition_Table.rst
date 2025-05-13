@@ -10,7 +10,7 @@
 ------------------------
 分区表的配置为CSV文件，以bk7258的platform工程为例，bk7258_partitions.csv其格式如下：
 
-  .. figure:: ../../../_static/partition_layout.png
+  .. figure:: ../../../../common/_static/partition_layout.png
     :align: center
     :alt: partition_layout
     :figclass: align-center

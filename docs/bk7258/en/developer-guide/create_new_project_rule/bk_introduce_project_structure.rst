@@ -8,7 +8,7 @@ Creating a New Project Directory Structure
 
 The directory structure for a new project is as follows: Taking the bk7258 platform project as an example:
 
-  .. figure:: ../../../_static/project.png
+  .. figure:: ../../../../common/_static/project.png
     :align: center
     :alt: project
     :figclass: align-center
@@ -17,7 +17,7 @@ The directory structure for a new project is as follows: Taking the bk7258 platf
 
   - In the config/bk7258/config file, you need to set CONFIG_OVERRIDE_FLASH_PARTITION=y;
 
-  .. figure:: ../../../_static/config.png
+  .. figure:: ../../../../common/_static/config.png
     :align: center
     :alt: config
     :figclass: align-center
@@ -26,7 +26,7 @@ The directory structure for a new project is as follows: Taking the bk7258 platf
 
   - The basic content of projects/platform/main/CMakeLists.txt should include the following:
 
-  .. figure:: ../../../_static/cmakelist.png
+  .. figure:: ../../../../common/_static/cmakelist.png
     :align: center
     :alt: cmakelist
     :figclass: align-center

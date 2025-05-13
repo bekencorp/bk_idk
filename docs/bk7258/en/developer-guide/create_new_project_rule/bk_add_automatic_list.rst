@@ -9,7 +9,7 @@ To add a newly created project named "platform" to the automated list, modify th
 
   - Modify components/part_table/CMakeLists.txt as follows:
 
-  .. figure:: ../../../_static/part_table1.png
+  .. figure:: ../../../../common/_static/part_table1.png
     :align: center
     :alt: part_table1
     :figclass: align-center
@@ -18,7 +18,7 @@ To add a newly created project named "platform" to the automated list, modify th
 
   - Modify components/part_table/part_table.mk as follows:
 
-  .. figure:: ../../../_static/part_table2.png
+  .. figure:: ../../../../common/_static/part_table2.png
     :align: center
     :alt: part_table2
     :figclass: align-center

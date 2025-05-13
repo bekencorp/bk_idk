@@ -8,7 +8,7 @@
 
 新建工程的目录结构如下：以bk7258的platform工程为例;
 
-  .. figure:: ../../../_static/project.png
+  .. figure:: ../../../../common/_static/project.png
     :align: center
     :alt: project
     :figclass: align-center
@@ -17,7 +17,7 @@
 
   - 在config/bk7258/config文件中需配CONFIG_OVERRIDE_FLASH_PARTITION=y；
 
-  .. figure:: ../../../_static/config.png
+  .. figure:: ../../../../common/_static/config.png
     :align: center
     :alt: config
     :figclass: align-center
@@ -26,7 +26,7 @@
 
   - projects/platform/main/CMakeLists.txt的basic内容需包含如下：
 
-  .. figure:: ../../../_static/cmakelist.png
+  .. figure:: ../../../../common/_static/cmakelist.png
     :align: center
     :alt: cmakelist
     :figclass: align-center

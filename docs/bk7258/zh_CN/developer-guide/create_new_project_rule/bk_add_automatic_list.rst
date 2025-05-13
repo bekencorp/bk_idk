@@ -9,7 +9,7 @@
 
   - components/part_table/CMakeLists.txt文件修改如下：
 
-  .. figure:: ../../../_static/part_table1.png
+  .. figure:: ../../../../common/_static/part_table1.png
     :align: center
     :alt: part_table1
     :figclass: align-center
@@ -18,7 +18,7 @@
 
   - components/part_table/part_table.mk文件修改如下：
 
-  .. figure:: ../../../_static/part_table2.png
+  .. figure:: ../../../../common/_static/part_table2.png
     :align: center
     :alt: part_table2
     :figclass: align-center
