@@ -527,90 +527,6 @@ int usb_hc_mhdrc_register_init(void)
 
     for (uint8_t i = 1; i < CONIFG_USB_MUSB_PIPE_NUM; i++) {
         musb_set_active_ep(i);
-        HWREGB(USB_BASE + MUSB_TXFIFOSZ_OFFSET) = USB_TXFIFOSZ_SIZE_512;
-        HWREGH(USB_BASE + MUSB_TXFIFOADD_OFFSET) = fifo_offset;
-        HWREGB(USB_BASE + MUSB_RXFIFOSZ_OFFSET) = USB_TXFIFOSZ_SIZE_512;
-        HWREGH(USB_BASE + MUSB_RXFIFOADD_OFFSET) = fifo_offset;
-        fifo_offset += 512;
-    }
-
-    /* Enable USB interrupts */
-    uint8_t regval = USB_IE_RESET | USB_IE_CONN | USB_IE_DISCON |
-             USB_IE_RESUME | USB_IE_SUSPND |
-             USB_IE_BABBLE | USB_IE_SESREQ | USB_IE_VBUSERR;
-
-    HWREGB(USB_BASE + MUSB_IE_OFFSET) = regval;
-    HWREGB(USB_BASE + MUSB_TXIE_OFFSET) = regval;//USB_TXIE_EP0;
-    HWREGB(USB_BASE + MUSB_TXIEH_OFFSET) = regval;
-    HWREGB(USB_BASE + MUSB_RXIE_OFFSET) = regval;//0;
-    HWREGB(USB_BASE + MUSB_RXIEH_OFFSET) = regval;
-
-    HWREGB(USB_BASE + MUSB_POWER_OFFSET) |= USB_POWER_HSENAB;
-
-    HWREGB(USB_BASE + MUSB_DEVCTL_OFFSET) |= USB_DEVCTL_SESSION;
-
-    musb_set_active_ep(0);
-
-    USB_LOG_DBG("[-]%s\r\n", __func__);
-
-    return 0;
-
-
-}
-
-void usb_hc_mhdrc_set_testmode_register(uint8_t value)
-{
-    HWREGB(USB_BASE + MUSB_TESTMODE_OFFSET) = value;
-}
-
-uint8_t usb_hc_mhdrc_get_testmode_register(void)
-{
-    return HWREGB(USB_BASE + MUSB_TESTMODE_OFFSET);
-}
-
-struct musb_pipe_waitsem {
-    usb_osal_sem_t pipe_tx_waitsem;//0
-    usb_osal_sem_t pipe_rx_waitsem;//1
-};
-
-int usb_hc_init(void)
-{
-    uint8_t regval;
-
-    USB_LOG_DBG("[+]%s\r\n", __func__);
-    memset(&g_musb_hcd, 0, sizeof(struct musb_hcd));
-
-    for (uint8_t i = 0; i < CONFIG_USBHOST_PIPE_NUM; i++) {
-        g_musb_hcd.pipe_pool[i][0].waitsem = usb_osal_sem_create(1);
-        if(g_musb_hcd.pipe_pool[i][0].waitsem == NULL) {
-            USB_LOG_INFO("[=]%s pipe_pool[%d][0] create sem FAIL\r\n", __func__, i);
-            goto hc_init_fail;
-        }
-        g_musb_hcd.pipe_pool[i][0].ep_local_index = CONFIG_USBHOST_PIPE_NUM;
-
-        g_musb_hcd.pipe_pool[i][1].waitsem = usb_osal_sem_create(1);
-        if(g_musb_hcd.pipe_pool[i][1].waitsem == NULL) {
-            USB_LOG_INFO("[=]%s pipe_pool[%d][1] create sem FAIL\r\n", __func__, i);
-            goto hc_init_fail;
-        }
-        g_musb_hcd.pipe_pool[i][1].ep_local_index = CONFIG_USBHOST_PIPE_NUM;
-    }
-
-    usb_hc_low_level_init();
-
-    uint32_t fifo_offset = 0;
-    USB_LOG_DBG("[=]%s CONFIG_MUSB_MHDRC USB_BASE:0x%x\r\n", __func__, USB_BASE);
-    musb_set_active_ep(0);
-    HWREGB(USB_BASE + MUSB_IND_TXINTERVAL_OFFSET) = 0;
-    HWREGB(USB_BASE + MUSB_TXFIFOSZ_OFFSET) = USB_TXFIFOSZ_SIZE_64;
-    HWREGH(USB_BASE + MUSB_TXFIFOADD_OFFSET) = 0;
-    HWREGB(USB_BASE + MUSB_RXFIFOSZ_OFFSET) = USB_TXFIFOSZ_SIZE_64;
-    HWREGH(USB_BASE + MUSB_RXFIFOADD_OFFSET) = 0;
-    fifo_offset += 128;
-    g_musb_hcd.fifo_size_offset = fifo_offset;
-
-    for (uint8_t i = 1; i < CONIFG_USB_MUSB_PIPE_NUM; i++) {
-        musb_set_active_ep(i);
 #if ALLOC_FIX_EP_LOCAL_IDX_ENABLE
         if(i < SZ_512_TO_1024_EP_MAX_INDEX) {
             fifo_offset += 128;
@@ -642,7 +558,7 @@ int usb_hc_init(void)
         fifo_offset += 512;
 #endif
     }
-
+    uint8_t regval;
     /* Enable USB interrupts */
     regval = USB_IE_RESET | USB_IE_CONN | USB_IE_DISCON |
              USB_IE_RESUME | USB_IE_SUSPND |
@@ -661,6 +577,50 @@ int usb_hc_init(void)
     musb_set_active_ep(0);
 
     USB_LOG_DBG("[-]%s\r\n", __func__);
+
+    return 0;
+}
+
+void usb_hc_mhdrc_set_testmode_register(uint8_t value)
+{
+    HWREGB(USB_BASE + MUSB_TESTMODE_OFFSET) = value;
+}
+
+uint8_t usb_hc_mhdrc_get_testmode_register(void)
+{
+    return HWREGB(USB_BASE + MUSB_TESTMODE_OFFSET);
+}
+
+struct musb_pipe_waitsem {
+    usb_osal_sem_t pipe_tx_waitsem;//0
+    usb_osal_sem_t pipe_rx_waitsem;//1
+};
+
+int usb_hc_init(void)
+{
+    USB_LOG_DBG("[+]%s\r\n", __func__);
+    memset(&g_musb_hcd, 0, sizeof(struct musb_hcd));
+
+    for (uint8_t i = 0; i < CONFIG_USBHOST_PIPE_NUM; i++) {
+        g_musb_hcd.pipe_pool[i][0].waitsem = usb_osal_sem_create(1);
+        if(g_musb_hcd.pipe_pool[i][0].waitsem == NULL) {
+            USB_LOG_INFO("[=]%s pipe_pool[%d][0] create sem FAIL\r\n", __func__, i);
+            goto hc_init_fail;
+        }
+        g_musb_hcd.pipe_pool[i][0].ep_local_index = CONFIG_USBHOST_PIPE_NUM;
+
+        g_musb_hcd.pipe_pool[i][1].waitsem = usb_osal_sem_create(1);
+        if(g_musb_hcd.pipe_pool[i][1].waitsem == NULL) {
+            USB_LOG_INFO("[=]%s pipe_pool[%d][1] create sem FAIL\r\n", __func__, i);
+            goto hc_init_fail;
+        }
+        g_musb_hcd.pipe_pool[i][1].ep_local_index = CONFIG_USBHOST_PIPE_NUM;
+    }
+
+    usb_hc_low_level_init();
+    usb_hc_mhdrc_register_init();
+
+    USB_LOG_DBG("[-]%s\r\n", __func__);
     return 0;
 
 hc_init_fail:
@@ -668,7 +628,6 @@ hc_init_fail:
     usb_hc_deinit();
     USB_LOG_ERR("%s hc_init_fail\r\n", __func__);
     return -EINVAL;
-
 }
 
 __WEAK void usb_hc_low_level_deinit(void)
@@ -924,18 +883,236 @@ static void usbh_pipe_free_ep_local_index(usbh_pipe_t pipe)
 }
 #endif
 
+static void usbh_pipe_alloc_rx_set_reg(uint16_t bVal,
+                                        uint16_t wSize,
+                                        uint8_t ep_idx,
+                                        uint16_t musb_bInterval,
+                                        struct musb_pipe *ppipe)
+{
+    uint8_t old_ep_index;
+    uint8_t ep_local_idx = ppipe->ep_local_index;
+    GLOBAL_INT_DECLARATION();
+    GLOBAL_INT_DISABLE();
+    old_ep_index = musb_get_active_ep();
+    musb_set_active_ep(ep_local_idx);
+
+    HWREGB(USB_BASE + MUSB_RXFIFOSZ_OFFSET) = bVal;
+#if (!ALLOC_FIX_EP_LOCAL_IDX_ENABLE)
+    HWREGH(USB_BASE + MUSB_RXFIFOADD_OFFSET) = g_musb_hcd.fifo_size_offset;
+#endif
+    HWREGH(USB_BASE + MUSB_IND_RXMAP_OFFSET) = wSize;
+    HWREGB(USB_BASE + MUSB_RXIE_OFFSET) |= ((1 << ep_local_idx) & 0x00FF);
+    HWREGB(USB_BASE + MUSB_RXIEH_OFFSET) |= (((1 << ep_local_idx) & 0xFF00) >> 8);
+
+    HWREGB(USB_RXADDR_BASE(ppipe->ep_local_index)) = ppipe->dev_addr;
+    if(!ppipe->hport->parent->is_roothub) {
+        HWREGB(USB_RXHUBADDR_BASE(ppipe->ep_local_index)) = ppipe->hport->parent->hub_addr;
+        HWREGB(USB_RXHUBPORT_BASE(ppipe->ep_local_index)) = ppipe->hport->port;
+    } else {
+        HWREGB(USB_RXHUBADDR_BASE(ppipe->ep_local_index)) = 0;
+        HWREGB(USB_RXHUBPORT_BASE(ppipe->ep_local_index)) = 0;
+    }
+    switch (ppipe->ep_type) {
+        case USB_ENDPOINT_TYPE_BULK:
+            HWREGB(USB_BASE + MUSB_IND_RXTYPE_OFFSET) = ep_idx | ppipe->speed | USB_RXTYPE1_PROTO_BULK;
+            if(musb_bInterval <= 2) {
+                HWREGB(USB_BASE + MUSB_IND_RXINTERVAL_OFFSET) = 0x0;//register set 2^(m-1), m = 2~16
+            } else {
+                HWREGB(USB_BASE + MUSB_IND_RXINTERVAL_OFFSET) = musb_bInterval + 0x1;//register set 2^(m-1), m = 2~16
+            }
+            break;
+        case USB_ENDPOINT_TYPE_INTERRUPT:
+            HWREGB(USB_BASE + MUSB_IND_RXTYPE_OFFSET) = ep_idx | ppipe->speed | USB_RXTYPE1_PROTO_INT;
+            if(musb_bInterval <= 1) {
+                HWREGB(USB_BASE + MUSB_IND_RXINTERVAL_OFFSET) = 0x0;//register set 2^(m-1), m = 1~16
+            } else{
+                HWREGB(USB_BASE + MUSB_IND_RXINTERVAL_OFFSET) = musb_bInterval + 0x1;//register set 2^(m-1), m = 1~16
+            }
+            break;
+        case USB_ENDPOINT_TYPE_ISOCHRONOUS:
+            HWREGB(USB_BASE + MUSB_IND_RXTYPE_OFFSET) = ep_idx | ppipe->speed | USB_RXTYPE1_PROTO_ISOC;
+            if(musb_bInterval <= 1) {
+                HWREGB(USB_BASE + MUSB_IND_RXINTERVAL_OFFSET) = 0x1;//register set 2^(m-1), m = 1~16
+            } else{
+                HWREGB(USB_BASE + MUSB_IND_RXINTERVAL_OFFSET) = musb_bInterval + 0x1;//register set 2^(m-1), m = 1~16
+            }
+            break;
+        default:
+            break;
+    }
+    musb_set_active_ep(old_ep_index);
+    GLOBAL_INT_RESTORE();
+}
+
+static void usbh_pipe_alloc_tx_set_reg(uint16_t bVal,
+                                        uint16_t wSize,
+                                        uint8_t ep_idx,
+                                        uint16_t musb_bInterval,
+                                        struct musb_pipe *ppipe)
+{
+    uint8_t old_ep_index;
+    uint8_t ep_local_idx = ppipe->ep_local_index;
+    GLOBAL_INT_DECLARATION();
+    GLOBAL_INT_DISABLE();
+    old_ep_index = musb_get_active_ep();
+    musb_set_active_ep(ep_local_idx);
+
+    HWREGB(USB_BASE + MUSB_TXFIFOSZ_OFFSET) = bVal;
+#if (!ALLOC_FIX_EP_LOCAL_IDX_ENABLE)
+    HWREGH(USB_BASE + MUSB_TXFIFOADD_OFFSET) = g_musb_hcd.fifo_size_offset;
+#endif
+    HWREGH(USB_BASE + MUSB_IND_TXMAP_OFFSET) = wSize;
+    HWREGB(USB_BASE + MUSB_TXIE_OFFSET) |= ((1 << ep_local_idx) & 0x00FF);
+    HWREGB(USB_BASE + MUSB_TXIEH_OFFSET) |= (((1 << ep_local_idx) & 0xFF00) >> 8);
+
+    HWREGB(USB_TXADDR_BASE(ppipe->ep_local_index)) = ppipe->dev_addr;
+    if(!ppipe->hport->parent->is_roothub) {
+        HWREGB(USB_TXHUBADDR_BASE(ppipe->ep_local_index)) = ppipe->hport->parent->hub_addr;
+        HWREGB(USB_TXHUBPORT_BASE(ppipe->ep_local_index)) = ppipe->hport->port;
+    } else {
+        HWREGB(USB_TXHUBADDR_BASE(ppipe->ep_local_index)) = 0;
+        HWREGB(USB_TXHUBPORT_BASE(ppipe->ep_local_index)) = 0;
+    }
+
+    switch (ppipe->ep_type) {
+        case USB_ENDPOINT_TYPE_BULK:
+            HWREGB(USB_BASE + MUSB_IND_TXTYPE_OFFSET) = ep_idx | ppipe->speed | USB_RXTYPE1_PROTO_BULK;
+            if(musb_bInterval <= 2) {
+                HWREGB(USB_BASE + MUSB_IND_TXINTERVAL_OFFSET) = 0x0;//register set 2^(m-1), m = 2~16
+            } else {
+                HWREGB(USB_BASE + MUSB_IND_TXINTERVAL_OFFSET) = musb_bInterval + 0x1;//register set 2^(m-1), m = 2~16
+            }
+            break;
+        case USB_ENDPOINT_TYPE_INTERRUPT:
+            HWREGB(USB_BASE + MUSB_IND_TXTYPE_OFFSET) = ep_idx | ppipe->speed | USB_RXTYPE1_PROTO_INT;
+            if(musb_bInterval <= 1) {
+                HWREGB(USB_BASE + MUSB_IND_TXINTERVAL_OFFSET) = 0x0;//register set 2^(m-1), m = 1~16
+            } else{
+                HWREGB(USB_BASE + MUSB_IND_TXINTERVAL_OFFSET) = musb_bInterval + 0x1;//register set 2^(m-1), m = 1~16
+            }
+            break;
+        case USB_ENDPOINT_TYPE_ISOCHRONOUS:
+            HWREGB(USB_BASE + MUSB_IND_TXTYPE_OFFSET) = ep_idx | ppipe->speed | USB_RXTYPE1_PROTO_ISOC;
+            if(musb_bInterval <= 1) {
+                HWREGB(USB_BASE + MUSB_IND_TXINTERVAL_OFFSET) = 0x1;//register set 2^(m-1), m = 1~16
+            } else{
+                HWREGB(USB_BASE + MUSB_IND_TXINTERVAL_OFFSET) = musb_bInterval + 0x1;//register set 2^(m-1), m = 1~16
+            }
+            break;
+        default:
+            break;
+    }
+
+    HWREGB(USB_BASE + MUSB_IND_TXCSRH_OFFSET) |= (USB_TXCSRH1_AUTOSET);
+    musb_set_active_ep(old_ep_index);
+    GLOBAL_INT_RESTORE();
+}
+
+static struct musb_pipe *usbh_pipe_alloc_ep0(struct musb_pipe *ppipe, const struct usbh_endpoint_cfg *ep_cfg)
+{
+    usb_osal_sem_t waitsem = NULL;
+    struct musb_pipe *ep0_ppipe = NULL;
+
+    if (ep_cfg->ep_addr & 0x80) {
+        waitsem = g_musb_hcd.pipe_pool[0][1].waitsem;
+        memcpy(&g_musb_hcd.pipe_pool[0][1], ppipe, sizeof(struct musb_pipe));
+        ep0_ppipe = &g_musb_hcd.pipe_pool[0][1];
+    } else {
+        waitsem = g_musb_hcd.pipe_pool[0][0].waitsem;
+        memcpy(&g_musb_hcd.pipe_pool[0][0], ppipe, sizeof(struct musb_pipe));
+        ep0_ppipe = &g_musb_hcd.pipe_pool[0][0];
+    }
+    /* restore variable */
+    ep0_ppipe->ep_local_index = 0;
+    ep0_ppipe->inuse = true;
+    ep0_ppipe->waitsem = waitsem;
+
+    return ep0_ppipe;
+}
+
+static void usbh_epx_maxpacketsize_to_musbip_reg_def(uint16_t *p_wSize, uint16_t *p_bVal, const struct usbh_endpoint_cfg *ep_cfg)
+{
+    uint16_t musb_dynamic_fifo_size[] = {8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096};
+
+    uint16_t wSize;
+    uint16_t bVal;
+
+    wSize = ep_cfg->ep_mps;
+    bVal = USB_TXFIFOSZ_SIZE_8;
+    while (wSize > 1)
+    {
+        bVal++;
+        wSize >>= 1;
+    }
+    if (bVal >= 3){
+        bVal -= 3;
+    } else {
+        bVal = 0;
+    }
+    wSize = musb_dynamic_fifo_size[bVal];
+    if(ep_cfg->ep_mps > wSize) {
+        bVal += 1;
+        wSize = musb_dynamic_fifo_size[bVal];
+    }
+
+    *p_wSize = wSize;
+    *p_bVal = bVal;
+}
+
+static struct musb_pipe *usbh_pipe_alloc_epx(uint16_t bVal,
+                                            uint16_t wSize,
+                                            struct musb_pipe *ppipe,
+                                            const struct usbh_endpoint_cfg *ep_cfg)
+{
+    
+    usb_osal_sem_t waitsem = NULL;
+    struct musb_pipe *epx_ppipe = NULL;
+    uint8_t ep_local_idx = ppipe->ep_local_index;
+    uint8_t ep_idx = ep_cfg->ep_addr & 0x7f;
+    uint16_t musb_bInterval = 0;
+    uint32_t ep_interval = ppipe->ep_interval;
+    while (ep_interval >= 1)
+    {
+        musb_bInterval++;
+        ep_interval >>= 1;
+    }
+
+    if (ep_cfg->ep_addr & 0x80) {
+        waitsem = g_musb_hcd.pipe_pool[ep_local_idx][1].waitsem;
+        memcpy(&g_musb_hcd.pipe_pool[ep_local_idx][1], ppipe, sizeof(struct musb_pipe));
+        epx_ppipe = &g_musb_hcd.pipe_pool[ep_local_idx][1];
+        
+        usbh_pipe_alloc_rx_set_reg(bVal, wSize, ep_idx, musb_bInterval, epx_ppipe);
+        USB_LOG_INFO("%s RX ppipe:%x index:%d\r\n", __func__,epx_ppipe, epx_ppipe->ep_local_index);
+    } else {
+        waitsem = g_musb_hcd.pipe_pool[ep_local_idx][0].waitsem;
+        memcpy(&g_musb_hcd.pipe_pool[ep_local_idx][0], ppipe, sizeof(struct musb_pipe));
+        epx_ppipe = &g_musb_hcd.pipe_pool[ep_local_idx][0];
+
+        usbh_pipe_alloc_tx_set_reg(bVal, wSize, ep_idx, musb_bInterval, epx_ppipe);
+        USB_LOG_INFO("%s TX ppipe:%x index:%d\r\n", __func__,epx_ppipe, epx_ppipe->ep_local_index);
+    }
+#if (!ALLOC_FIX_EP_LOCAL_IDX_ENABLE)
+    g_musb_hcd.fifo_size_offset += (wSize+128);
+#endif
+    /* restore variable */
+    epx_ppipe->inuse = true;
+    epx_ppipe->waitsem = waitsem;
+
+    return epx_ppipe;
+}
+
 int usbh_pipe_alloc(usbh_pipe_t *pipe, const struct usbh_endpoint_cfg *ep_cfg)
 {
     USB_LOG_DBG("[+]%s\r\n", __func__);
     struct musb_pipe *ppipe;
     struct musb_pipe mpipe;
-    uint8_t old_ep_index;
     uint8_t ep_idx;
-    usb_osal_sem_t waitsem = NULL;
 
     ep_idx = ep_cfg->ep_addr & 0x7f;
 
     if (ep_idx > CONIFG_USB_MUSB_PIPE_NUM) {
+        USB_LOG_INFO("%s Please check Endpoint index ep_idx:%d PIPE_NUM:%d\r\n", __func__, ep_idx, CONIFG_USB_MUSB_PIPE_NUM);
         return -ENOMEM;
     }
 
@@ -960,47 +1137,15 @@ int usbh_pipe_alloc(usbh_pipe_t *pipe, const struct usbh_endpoint_cfg *ep_cfg)
     }
 
     if (ep_cfg->ep_type == USB_ENDPOINT_TYPE_CONTROL) {
-        ppipe->ep_local_index = 0;
-        if (ep_cfg->ep_addr & 0x80) {
-            waitsem = g_musb_hcd.pipe_pool[0][1].waitsem;
-            memcpy(&g_musb_hcd.pipe_pool[0][1], ppipe, sizeof(struct musb_pipe));
-            ppipe = &g_musb_hcd.pipe_pool[0][1];
-        } else {
-            waitsem = g_musb_hcd.pipe_pool[0][0].waitsem;
-            memcpy(&g_musb_hcd.pipe_pool[0][0], ppipe, sizeof(struct musb_pipe));
-            ppipe = &g_musb_hcd.pipe_pool[0][0];
-        }
-
+        ppipe = usbh_pipe_alloc_ep0(ppipe, ep_cfg);
     } else {
-        uint16_t musb_dynamic_fifo_size[] = {8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096};
-
-        uint16_t wSize;
-        uint16_t bVal;
-        uint16_t musb_bInterval;
-        uint32_t ep_interval;
-        uint8_t ep_local_idx;
-
-        wSize = ep_cfg->ep_mps;
-        bVal = USB_TXFIFOSZ_SIZE_8;
-        while (wSize > 1)
-        {
-            bVal++;
-            wSize >>= 1;
-        }
-        if (bVal >= 3){
-            bVal -= 3;
-        } else {
-            bVal = 0;
-        }
-        wSize = musb_dynamic_fifo_size[bVal];
-        if(ep_cfg->ep_mps > wSize) {
-            bVal += 1;
-            wSize = musb_dynamic_fifo_size[bVal];
-        }
-
+        uint16_t wSize = 0;
+        uint16_t bVal = 0;
+        usbh_epx_maxpacketsize_to_musbip_reg_def(&wSize, &bVal, ep_cfg);
         if(ppipe->ep_mps != wSize) {
             ppipe->ep_mps = wSize;
         }
+        uint8_t ep_local_idx;
 #if ALLOC_FIX_EP_LOCAL_IDX_ENABLE 
         if(*pipe) if(((struct musb_pipe *)*pipe)->ep_local_index != CONFIG_USBHOST_PIPE_NUM) {
             return 0;
@@ -1032,148 +1177,8 @@ int usbh_pipe_alloc(usbh_pipe_t *pipe, const struct usbh_endpoint_cfg *ep_cfg)
 #endif
 
         ppipe->ep_local_index = ep_local_idx;
-        if (ep_cfg->ep_addr & 0x80) {
-
-            waitsem = g_musb_hcd.pipe_pool[ep_local_idx][1].waitsem;
-            memcpy(&g_musb_hcd.pipe_pool[ep_local_idx][1], ppipe, sizeof(struct musb_pipe));
-            ppipe = &g_musb_hcd.pipe_pool[ep_local_idx][1];
-            musb_bInterval = 0;
-            ep_interval = ppipe->ep_interval;
-            while (ep_interval >= 1)
-            {
-                musb_bInterval++;
-                ep_interval >>= 1;
-            }
-
-            GLOBAL_INT_DECLARATION();
-            GLOBAL_INT_DISABLE();
-            old_ep_index = musb_get_active_ep();
-            musb_set_active_ep(ep_local_idx);
-
-            HWREGB(USB_BASE + MUSB_RXFIFOSZ_OFFSET) = bVal;
-#if (!ALLOC_FIX_EP_LOCAL_IDX_ENABLE)
-            HWREGH(USB_BASE + MUSB_RXFIFOADD_OFFSET) = g_musb_hcd.fifo_size_offset;
-#endif
-            HWREGH(USB_BASE + MUSB_IND_RXMAP_OFFSET) = wSize;
-            HWREGB(USB_BASE + MUSB_RXIE_OFFSET) |= ((1 << ep_local_idx) & 0x00FF);
-            HWREGB(USB_BASE + MUSB_RXIEH_OFFSET) |= (((1 << ep_local_idx) & 0xFF00) >> 8);
-
-            HWREGB(USB_RXADDR_BASE(ppipe->ep_local_index)) = ppipe->dev_addr;
-            if(!ppipe->hport->parent->is_roothub) {
-                HWREGB(USB_RXHUBADDR_BASE(ppipe->ep_local_index)) = ppipe->hport->parent->hub_addr;
-                HWREGB(USB_RXHUBPORT_BASE(ppipe->ep_local_index)) = ppipe->hport->port;
-            } else {
-                HWREGB(USB_RXHUBADDR_BASE(ppipe->ep_local_index)) = 0;
-                HWREGB(USB_RXHUBPORT_BASE(ppipe->ep_local_index)) = 0;
-            }
-            switch (ppipe->ep_type) {
-                case USB_ENDPOINT_TYPE_BULK:
-                    HWREGB(USB_BASE + MUSB_IND_RXTYPE_OFFSET) = ep_idx | ppipe->speed | USB_RXTYPE1_PROTO_BULK;
-                    if(musb_bInterval <= 2) {
-                        HWREGB(USB_BASE + MUSB_IND_RXINTERVAL_OFFSET) = 0x0;//register set 2^(m-1), m = 2~16
-                    } else {
-                        HWREGB(USB_BASE + MUSB_IND_RXINTERVAL_OFFSET) = musb_bInterval + 0x1;//register set 2^(m-1), m = 2~16
-                    }
-                    break;
-                case USB_ENDPOINT_TYPE_INTERRUPT:
-                    HWREGB(USB_BASE + MUSB_IND_RXTYPE_OFFSET) = ep_idx | ppipe->speed | USB_RXTYPE1_PROTO_INT;
-                    if(musb_bInterval <= 1) {
-                        HWREGB(USB_BASE + MUSB_IND_RXINTERVAL_OFFSET) = 0x0;//register set 2^(m-1), m = 1~16
-                    } else{
-                        HWREGB(USB_BASE + MUSB_IND_RXINTERVAL_OFFSET) = musb_bInterval + 0x1;//register set 2^(m-1), m = 1~16
-                    }
-                    break;
-                case USB_ENDPOINT_TYPE_ISOCHRONOUS:
-                    HWREGB(USB_BASE + MUSB_IND_RXTYPE_OFFSET) = ep_idx | ppipe->speed | USB_RXTYPE1_PROTO_ISOC;
-                    if(musb_bInterval <= 1) {
-                        HWREGB(USB_BASE + MUSB_IND_RXINTERVAL_OFFSET) = 0x1;//register set 2^(m-1), m = 1~16
-                    } else{
-                        HWREGB(USB_BASE + MUSB_IND_RXINTERVAL_OFFSET) = musb_bInterval + 0x1;//register set 2^(m-1), m = 1~16
-                    }
-                    break;
-                default:
-                    break;
-            }
-            musb_set_active_ep(old_ep_index);
-            GLOBAL_INT_RESTORE();
-
-            USB_LOG_INFO("%s RX ppipe:%x index:%d\r\n", __func__,ppipe, ppipe->ep_local_index);
-        } else {
-            waitsem = g_musb_hcd.pipe_pool[ep_local_idx][0].waitsem;
-            memcpy(&g_musb_hcd.pipe_pool[ep_local_idx][0], ppipe, sizeof(struct musb_pipe));
-            ppipe = &g_musb_hcd.pipe_pool[ep_local_idx][0];
-
-            musb_bInterval = 0;
-            ep_interval = ppipe->ep_interval;
-            while (ep_interval >= 1)
-            {
-                musb_bInterval++;
-                ep_interval >>= 1;
-            }
-
-            GLOBAL_INT_DECLARATION();
-            GLOBAL_INT_DISABLE();
-            old_ep_index = musb_get_active_ep();
-            musb_set_active_ep(ep_local_idx);
-
-            HWREGB(USB_BASE + MUSB_TXFIFOSZ_OFFSET) = bVal;
-            HWREGH(USB_BASE + MUSB_TXFIFOADD_OFFSET) = g_musb_hcd.fifo_size_offset;
-            HWREGH(USB_BASE + MUSB_IND_TXMAP_OFFSET) = wSize;
-            HWREGB(USB_BASE + MUSB_TXIE_OFFSET) |= ((1 << ep_local_idx) & 0x00FF);
-            HWREGB(USB_BASE + MUSB_TXIEH_OFFSET) |= (((1 << ep_local_idx) & 0xFF00) >> 8);
-
-            HWREGB(USB_TXADDR_BASE(ppipe->ep_local_index)) = ppipe->dev_addr;
-            if(!ppipe->hport->parent->is_roothub) {
-                HWREGB(USB_TXHUBADDR_BASE(ppipe->ep_local_index)) = ppipe->hport->parent->hub_addr;
-                HWREGB(USB_TXHUBPORT_BASE(ppipe->ep_local_index)) = ppipe->hport->port;
-            } else {
-                HWREGB(USB_TXHUBADDR_BASE(ppipe->ep_local_index)) = 0;
-                HWREGB(USB_TXHUBPORT_BASE(ppipe->ep_local_index)) = 0;
-            }
-
-            switch (ppipe->ep_type) {
-                case USB_ENDPOINT_TYPE_BULK:
-                    HWREGB(USB_BASE + MUSB_IND_TXTYPE_OFFSET) = ep_idx | ppipe->speed | USB_RXTYPE1_PROTO_BULK;
-                    if(musb_bInterval <= 2) {
-                        HWREGB(USB_BASE + MUSB_IND_TXINTERVAL_OFFSET) = 0x0;//register set 2^(m-1), m = 2~16
-                    } else {
-                        HWREGB(USB_BASE + MUSB_IND_TXINTERVAL_OFFSET) = musb_bInterval + 0x1;//register set 2^(m-1), m = 2~16
-                    }
-                    break;
-                case USB_ENDPOINT_TYPE_INTERRUPT:
-                    HWREGB(USB_BASE + MUSB_IND_TXTYPE_OFFSET) = ep_idx | ppipe->speed | USB_RXTYPE1_PROTO_INT;
-                    if(musb_bInterval <= 1) {
-                        HWREGB(USB_BASE + MUSB_IND_TXINTERVAL_OFFSET) = 0x0;//register set 2^(m-1), m = 1~16
-                    } else{
-                        HWREGB(USB_BASE + MUSB_IND_TXINTERVAL_OFFSET) = musb_bInterval + 0x1;//register set 2^(m-1), m = 1~16
-                    }
-                    break;
-                case USB_ENDPOINT_TYPE_ISOCHRONOUS:
-                    HWREGB(USB_BASE + MUSB_IND_TXTYPE_OFFSET) = ep_idx | ppipe->speed | USB_RXTYPE1_PROTO_ISOC;
-                    if(musb_bInterval <= 1) {
-                        HWREGB(USB_BASE + MUSB_IND_TXINTERVAL_OFFSET) = 0x1;//register set 2^(m-1), m = 1~16
-                    } else{
-                        HWREGB(USB_BASE + MUSB_IND_TXINTERVAL_OFFSET) = musb_bInterval + 0x1;//register set 2^(m-1), m = 1~16
-                    }
-                    break;
-                default:
-                    break;
-            }
-
-            HWREGB(USB_BASE + MUSB_IND_TXCSRH_OFFSET) |= (USB_TXCSRH1_AUTOSET);
-            musb_set_active_ep(old_ep_index);
-            GLOBAL_INT_RESTORE();
-
-            USB_LOG_INFO("%s TX ppipe:%x index:%d\r\n", __func__,ppipe, ppipe->ep_local_index);
-        }
-#if (!ALLOC_FIX_EP_LOCAL_IDX_ENABLE)
-        g_musb_hcd.fifo_size_offset += (wSize+128);
-#endif
-
+        ppipe = usbh_pipe_alloc_epx(bVal, wSize, ppipe, ep_cfg);
     }
-    /* restore variable */
-    ppipe->inuse = true;
-    ppipe->waitsem = waitsem;
 
     *pipe = (usbh_pipe_t)ppipe;
 
