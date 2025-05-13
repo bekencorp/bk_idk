@@ -50,3 +50,5 @@ The app project startup:
  - WiFi/BLE
  - Common pheripheral driver
  - Armino default Cli
+
+For more compilation related commands, please refer to :ref:`link <bk_build_overview>`

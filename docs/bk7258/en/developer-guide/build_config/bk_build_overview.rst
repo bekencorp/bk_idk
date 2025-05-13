@@ -1,3 +1,5 @@
+.. _bk_build_overview:
+
 Build overview
 ==============
 
@@ -58,4 +60,7 @@ Run make in the armino root directory. The most commonly used make commands are 
 The make build is to indirectly call the armino tool through armino/Makefile to build, which saves the trouble of setting environment variables when building with the armino tool.
 It is recommended that you build in this way.
 
+You can also execute the make command in the project directory without specifying a project:
 
+ - ``make bkxxx`` - Build target, the project is the current project
+ - ``make clean`` - Clean up the build directory

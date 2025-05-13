@@ -51,3 +51,5 @@
 
 您可以通过 PROJECT 参数来编译 projects 下其他工程，如 make bk7236 PROJECT=security/secureboot
 可以编译 projects/security/secureboot 工程。
+
+更多编译相关命令请参考 :ref:`链接 <bk_build_overview>`

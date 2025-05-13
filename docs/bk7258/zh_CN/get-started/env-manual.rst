@@ -46,3 +46,5 @@
 
     cd ~/armino/bk_idk
     make bk7258
+
+更多编译相关命令请参考 :ref:`链接 <bk_build_overview>`

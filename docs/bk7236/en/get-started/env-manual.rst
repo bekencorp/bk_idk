@@ -51,3 +51,5 @@ The app project startup:
 
 You can build other projects with PROJECT parameter, e.g. run "make bk7236 PROJECT=security/secureboot" 
 can build projects/security/secureboot etc.
+
+For more compilation related commands, please refer to :ref:`link <bk_build_overview>`
