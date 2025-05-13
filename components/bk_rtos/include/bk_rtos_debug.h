@@ -19,12 +19,19 @@ extern "C" {
 #endif
 #include <os/os.h>
 
+/* In debug version, the corresponding debugging function is enabled by default */
+#if CONFIG_DEBUG_FIRMWARE
+
+#define FREERTOS_TASK_RECORDER 1
+#define FREERTOS_TASK_RECORDER_CNT 10
+
+#endif
+
 void rtos_dump_task_list(void);
 void rtos_dump_stack_memory_usage(void);
 void rtos_dump_task_runtime_stats(void);
 void rtos_dump_task_backtrace(beken_thread_t *thread);
 void rtos_dump_backtrace(void);
-
 
 #ifdef __cplusplus
 }

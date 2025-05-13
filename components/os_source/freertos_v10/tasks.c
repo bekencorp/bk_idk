@@ -3237,7 +3237,8 @@ BaseType_t xTaskIncrementTick( void )
 
 #endif /* configUSE_APPLICATION_TASK_TAG */
 /*-----------------------------------------------------------*/
-#if CONFIG_FREERTOS_TASK_RECORDER
+#if FREERTOS_TASK_RECORDER
+
 typedef struct  task_list_recorder
 {
     uint32_t tick;        /*os tick */
@@ -3256,7 +3257,7 @@ typedef struct  task_list_recorder
 
 __attribute__((__used__)) static volatile  uint32_t s_task_cnt = 0;
 
- __attribute__((__used__)) static volatile  task_list_recorder_t  s_task_recorder[CONFIG_FREERTOS_TASK_RECORDER_CNT];
+ __attribute__((__used__)) static volatile  task_list_recorder_t  s_task_recorder[FREERTOS_TASK_RECORDER_CNT];
 
  #define GET_AON_RTC_TIME    (REG_READ(SOC_AON_RTC_REG_BASE + (0x3 << 2)))
 #endif
@@ -3336,7 +3337,7 @@ void vTaskSwitchContext( void )
             s_task_recorder[s_task_cnt].stack_bottom = (uint32_t)(pxCurrentTCB->pxStack + pxCurrentTCB->ulStackSize);    
             s_task_recorder[s_task_cnt].stack_size   = pxCurrentTCB->ulStackSize;              
             s_task_cnt++;
-            s_task_cnt = s_task_cnt % CONFIG_FREERTOS_TASK_RECORDER_CNT;
+            s_task_cnt = s_task_cnt % FREERTOS_TASK_RECORDER_CNT;
         }
 #endif
         /* After the new task is switched in, update the global errno. */

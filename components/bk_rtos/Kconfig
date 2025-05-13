@@ -94,15 +94,6 @@ menu "Bk_rtos"
 			help
 				System tick count per second, can be 1-1000
         
-        config FREERTOS_TASK_RECORDER
-			bool "Enable freertos task recorder"
-			default n
-        
-		config FREERTOS_TASK_RECORDER_CNT
-			depends on FREERTOS_TASK_RECORDER
-			int "Set freertos task recorder len"
-			default 10
-
 	endmenu
 
 	menu "Modify LITEOS_M Config"
