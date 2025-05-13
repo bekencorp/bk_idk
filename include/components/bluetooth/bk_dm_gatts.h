@@ -232,6 +232,8 @@ typedef union
     {
         bk_gatt_status_t status;       /*!< Operation status */
         uint16_t handle;                /*!< Attribute handle which send response */
+        uint16_t conn_id;               /*!< Connection id */
+        bk_bd_addr_t remote_bda;       /*!< Remote bluetooth device address */
     } rsp;                              /*!< Gatt server callback param of BK_GATTS_RESPONSE_EVT */
 
     /**
