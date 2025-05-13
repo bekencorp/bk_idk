@@ -80,7 +80,7 @@ Following figure shows the main window of the BK Flash Image Loader Tool. On the
 Function introduction
 ********************************
 
-.. figure:: ../../../_static/bkfil_ui_main_introduction.png
+.. figure:: ../../../../common/_static/bkfil_ui_main_introduction.png
      :align: center
      :alt: 8
      :figclass: align-center

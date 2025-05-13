@@ -10,7 +10,7 @@ Touch User Guide
 Touch module have three different types of working modes, which are automatic calibrattion mode, manul calibration mode and scan mode. The scan mode must work based on the automatic calibration mode or manul mode.
 When the touch channel has been calibrated, then set multi channels that neet to scan and enable the scan mode. The automatic calibration mode and manul calibration mode are used as follows:
 
-.. figure:: ../../../_static/touch_user_guide_flow.png
+.. figure:: ../../../../common/_static/touch_user_guide_flow.png
     :align: center
     :alt: Touch User Guide Flow
     :figclass: align-center

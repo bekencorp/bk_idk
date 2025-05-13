@@ -7,7 +7,7 @@ Armino支持Wi-Fi6标准中定义的TWT省电模式与协议中定义的其他�
 省电流程
 ++++++++++++++++++++++++++++++++++++++++++++
 
-.. figure:: ../../../_static/Based_on_DTIM.png
+.. figure:: ../../../../common/_static/Based_on_DTIM.png
     :align: center
     :alt: Based on DTIM
     :figclass: align-center
@@ -32,7 +32,7 @@ STA定期睡眠和唤醒, 在睡眠状态下, RF、MAC和MODEM理论上处于关
 
 从 `省电流程`_ 可以看到, 在休眠模式下, STA每个DTIM周期都必须醒来, 这在某些场景下可能成为耗电的主要原因, 特别是当DTIM值很小时(如DTIM为1时)为降低STA醒来频率, Armino提供了一种机制: 仅在listen interval间隔醒来.流程如下:
 
-.. figure:: ../../../_static/Based_on_Listen_Interval.png
+.. figure:: ../../../../common/_static/Based_on_Listen_Interval.png
     :align: center
     :alt: Based on Listen Interval
     :figclass: align-center

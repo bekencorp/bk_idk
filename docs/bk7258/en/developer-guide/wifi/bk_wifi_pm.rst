@@ -8,7 +8,7 @@ Traditional Power Saving Mode
 Power Save Process
 ++++++++++++++++++++++++++++++++++++++++++++
 
-.. figure:: ../../../_static/Based_on_DTIM_EN.png
+.. figure:: ../../../../common/_static/Based_on_DTIM_EN.png
     :align: center
     :alt: Based on DTIM
     :figclass: align-center
@@ -32,7 +32,7 @@ Further Power Reduction
 ++++++++++++++++++++++++++++++++++++++++++
 From `Power Save Process`_ , as you can see, in sleep mode, STA must wake up every DTIM cycle, which can be a major cause of power consumption in some scenarios, especially when DTIM is very small (like 1). To reduce the frequency of STAs waking up, Armino provides a mechanism to wake up only during listen interval. The process is as follows:
 
-.. figure:: ../../../_static/Based_on_Listen_Interval_EN.png
+.. figure:: ../../../../common/_static/Based_on_Listen_Interval_EN.png
     :align: center
     :alt: Based on Listen Interval
     :figclass: align-center

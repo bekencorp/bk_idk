@@ -32,7 +32,7 @@ Serial ch340 主机驱动CLI测试示例
 	usbh_to_uart reg_cb 0 注册回调函数
 	usbh_to_uart unreg_cb 0 注销回调函数
 
-.. figure:: ../../../../_static/usb/usbh_serial_ch340_callback_init_deinit.png
+.. figure:: ../../../../../common/_static/usb/usbh_serial_ch340_callback_init_deinit.png
     :align: center
     :alt: cb init deinit
     :figclass: align-center
@@ -43,7 +43,7 @@ Serial ch340 主机驱动CLI测试示例
 	输入命令：
 	usbh_to_uart init 0
 
-.. figure:: ../../../../_static/usb/usbh_serial_ch340_enumeration.png
+.. figure:: ../../../../../common/_static/usb/usbh_serial_ch340_enumeration.png
     :align: center
     :alt: open USB for enumeration 
     :figclass: align-center
@@ -53,7 +53,7 @@ Serial ch340 主机驱动CLI测试示例
 关闭CH340的驱动，先触发断开中断，然后再关闭USB驱动:
 	usbh_to_uart deinit 0
 
-.. figure:: ../../../../_static/usb/usbh_serial_ch340_deinit.png
+.. figure:: ../../../../../common/_static/usb/usbh_serial_ch340_deinit.png
     :align: center
     :alt: mount_udisk
     :figclass: align-center
@@ -65,7 +65,7 @@ Serial ch340 主机驱动CLI测试示例
 
     id:0     cnt:128 bytes    timeout_ms:100ms
 
-.. figure:: ../../../../_static/usb/usbh_serial_ch340_send.png
+.. figure:: ../../../../../common/_static/usb/usbh_serial_ch340_send.png
     :align: center
     :alt: send data
     :figclass: align-center
@@ -77,7 +77,7 @@ Serial ch340 主机驱动CLI测试示例
 
     id:0     cnt:32 bytes    timeout_ms:1000ms
 
-.. figure:: ../../../../_static/usb/usbh_serial_ch340_receive.png
+.. figure:: ../../../../../common/_static/usb/usbh_serial_ch340_receive.png
     :align: center
     :alt: receive data
     :figclass: align-center
@@ -88,7 +88,7 @@ Serial ch340 主机驱动CLI测试示例
 基本API 调用流程图
 ------------------------------------------------------------------------------------
 
-.. figure:: ../../../../_static/usb/usbh_serial_ch340_flow.png
+.. figure:: ../../../../../common/_static/usb/usbh_serial_ch340_flow.png
     :align: center
     :alt: flow
     :figclass: align-center

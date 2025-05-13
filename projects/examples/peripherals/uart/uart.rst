@@ -14,7 +14,7 @@ UART (Universal Asynchronous Receiver and Transmitter), It is used to realize fu
 Hardware Requirements
 ----------------------------
 
-.. figure:: ../../../../../_static/uart.png
+.. figure:: ../../../../../../common/_static/uart.png
     :align: center
     :alt: UART Connection
     :figclass: align-center

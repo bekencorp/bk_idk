@@ -34,7 +34,7 @@
     
     - 1.5）对aopp分区数据进行hash校验，若hash校验通过，则将download分区数据擦除，并进行reboot；若hash校验失败，则reboot操作，重复进行上述流程。
 
-.. figure:: ../../../../_static/bootloader_app_process.png
+.. figure:: ../../../../../common/_static/bootloader_app_process.png
     :align: center
     :alt: bootloader_process
     :figclass: align-center

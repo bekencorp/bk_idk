@@ -18,7 +18,7 @@
 BK7258 多CPU log机制
 ------------------------
 
-.. figure:: ../../../_static/log_system.png
+.. figure:: ../../../../common/_static/log_system.png
     :align: center
     :alt: 多核log机制
     :figclass: align-center

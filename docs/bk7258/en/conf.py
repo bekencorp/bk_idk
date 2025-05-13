@@ -26,9 +26,9 @@ copyright = u'2020 - {} Beken Corporation. Last updated: {} '.format(build_year,
 language = 'en'
 
 # Set up font for blockdiag, nwdiag, rackdiag and packetdiag
-blockdiag_fontpath = '../_static/DejaVuSans.ttf'
-seqdiag_fontpath = '../_static/DejaVuSans.ttf'
-actdiag_fontpath = '../_static/DejaVuSans.ttf'
-nwdiag_fontpath = '../_static/DejaVuSans.ttf'
-rackdiag_fontpath = '../_static/DejaVuSans.ttf'
-packetdiag_fontpath = '../_static/DejaVuSans.ttf'
+blockdiag_fontpath = '../../common/_static/DejaVuSans.ttf'
+seqdiag_fontpath = '../../common/_static/DejaVuSans.ttf'
+actdiag_fontpath = '../../common/_static/DejaVuSans.ttf'
+nwdiag_fontpath = '../../common/_static/DejaVuSans.ttf'
+rackdiag_fontpath = '../../common/_static/DejaVuSans.ttf'
+packetdiag_fontpath = '../../common/_static/DejaVuSans.ttf'

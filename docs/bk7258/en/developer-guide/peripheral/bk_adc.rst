@@ -49,7 +49,7 @@ SARADC Data acquisition process：
 
 	SARADC Data conversion in continuous mode is shown in the figure below.
 
-.. figure:: ../../../_static/saradc_new.png
+.. figure:: ../../../../common/_static/saradc_new.png
     :align: center
     :alt: saradc Overview
     :figclass: align-center

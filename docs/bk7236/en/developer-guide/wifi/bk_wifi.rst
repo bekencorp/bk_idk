@@ -14,7 +14,7 @@ Armino Wi-Fi Feature List
 
 Armino Wi-Fi Programming Model
 -------------------------------------------------------
-.. image:: ../../../_static/program.png
+.. image:: ../../../../common/_static/program.png
 
 Wi-Fi Driver is an isolated component from upper-layer code(such as TCP/IP、Applicant Task..etc). Usually, Customer applicantion program is responsible for Wi-Fi initialization and necessary configuration. Wi-Fi Driver accepts and processes data requested by API, and nofitys the application to process related events.
 
@@ -34,7 +34,7 @@ Wi-Fi_STA_DISCONNECTED event usually indicates the disconection from AP. The Cli
 
 Armino Wi-Fi Station Connect Scenario
 -------------------------------------------------------
-.. image:: ../../../_static/connect_procedure_en.png
+.. image:: ../../../../common/_static/connect_procedure_en.png
 
 Wi-Fi Initialization
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -76,7 +76,7 @@ Wi-Fi Station Connect Example
 
 Armino Wi-Fi Station Disconnect Example
 -------------------------------------------------------
-.. image:: ../../../_static/sta_disconnect_en.png
+.. image:: ../../../../common/_static/sta_disconnect_en.png
 
 - Application could call function ``bk_wifi_sta_disconnect`` to deactivate from currently connected router
 - When Wi-Fi connection is disconnected due to active disconnection, offline router, or weak RSSI signal, the Wi-Fi event callback function will send ``EVENT_WIFI_STA_DISCONNECTED``
@@ -93,7 +93,7 @@ The usage of BEKEN SoftAP mode could read ``bk_wifi_ap_start`` from API develop 
 
 Armino Wi-Fi Failure Reason Code
 -------------------------------------------------------
-.. image:: ../../../_static/reason_codes.png
+.. image:: ../../../../common/_static/reason_codes.png
 
 Armino Wi-Fi MAC Address Configuration
 -------------------------------------------------------

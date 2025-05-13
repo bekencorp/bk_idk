@@ -36,7 +36,7 @@ SPP
 ----------------------------------
  spp work flow chart:
 
- .. figure:: ../../../../_static/bt_spp_flow_chart.png
+ .. figure:: ../../../../../common/_static/bt_spp_flow_chart.png
     :align: center
     :alt: bt spp demo work flow chart
     :figclass: align-center

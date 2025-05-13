@@ -44,7 +44,7 @@ callback的调用栈不能太深。
  - Register gatt database information callback: ``bk_ble_register_app_sdp_common_callback``
 
 
-.. figure:: ../../../_static/ble_init.png
+.. figure:: ../../../../common/_static/ble_init.png
     :align: center
     :alt: ble init flow
     :figclass: align-center
@@ -64,7 +64,7 @@ ble通过ATT数据库作为双端的操作实体，所有的读写通知等操�
 
 通过接口 ``bk_ble_create_db`` 创建gatt database，建立连接后，client，server可分别对database中定义的characteristic进行read write，notify indicate操作。
 
-.. figure:: ../../../_static/ble_gatts_op.png
+.. figure:: ../../../../common/_static/ble_gatts_op.png
     :align: center
     :alt: ble gatts op flow
     :figclass: align-center
@@ -194,7 +194,7 @@ ble通过ATT数据库作为双端的操作实体，所有的读写通知等操�
 设定好数据库后，需要开启广播以让对端扫描到我们。
 
 
-.. figure:: ../../../_static/ble_adv.png
+.. figure:: ../../../../common/_static/ble_adv.png
     :align: center
     :alt: ble adv flow
     :figclass: align-center
@@ -253,7 +253,7 @@ ble通过ATT数据库作为双端的操作实体，所有的读写通知等操�
 	//
 
 广播格式如下图:
-    .. figure:: ../../../_static/adv_data.png
+    .. figure:: ../../../../common/_static/adv_data.png
         :align: center
         :alt: menuconfig gui
         :figclass: align-center
@@ -266,7 +266,7 @@ AD Type定义在 `Assigned Numbers <https://www.bluetooth.com/specifications/ass
 对端广播开启后，master可通过scan进行扫描连接。
 
 
-.. figure:: ../../../_static/ble_scan_conn.png
+.. figure:: ../../../../common/_static/ble_scan_conn.png
     :align: center
     :alt: ble scan&conn flow
     :figclass: align-center
@@ -350,7 +350,7 @@ master进行读写操作
 建立连接后，master可获取到对端database service信息，并对characteristic进行读写操作。
 
 
-.. figure:: ../../../_static/ble_gattc_op.png
+.. figure:: ../../../../common/_static/ble_gattc_op.png
     :align: center
     :alt: ble gattc op flow
     :figclass: align-center

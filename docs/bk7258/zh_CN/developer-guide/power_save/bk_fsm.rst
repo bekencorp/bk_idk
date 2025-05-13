@@ -4,7 +4,7 @@
 :link_to_translation:`en:[English]`
 
 
-.. image:: ../../../_static/pm_pcm2.png
+.. image:: ../../../../common/_static/pm_pcm2.png
 
 
 

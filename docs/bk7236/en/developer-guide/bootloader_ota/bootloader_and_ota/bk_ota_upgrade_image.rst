@@ -4,7 +4,7 @@
 - 2.Upgrade firmware path as follows: in the build/app/bk7236/encrypt/app_pack RBL.
 - 3.Open Everything-1.4.1.935.x64-Setup.exe, Tools -> Options ->The HTTP server,  then binding the local ip address. Use a browser to open the local ip address, locate the local upgrade file \*.rbl,and copy the url to use in the cli command.
 
- .. figure:: ../../../../_static/bootlaoder_everthing.png
+ .. figure:: ../../../../../common/_static/bootlaoder_everthing.png
     :align: center
     :alt: bootlaoder_everthing
     :figclass: align-center

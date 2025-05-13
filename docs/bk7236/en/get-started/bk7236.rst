@@ -15,7 +15,7 @@ Introduction to Development Board
  - BK7236 supports FreeRTOS V10
 
 
-.. figure:: ../../_static/demo_board_7236.png
+.. figure:: ../../../common/_static/demo_board_7236.png
     :align: center
     :alt: BK7236 Demo Board
     :figclass: align-center
@@ -23,7 +23,7 @@ Introduction to Development Board
     BK7236 Demo Board
 
 
-.. figure:: ../../_static/demo_board_7236_02.png
+.. figure:: ../../../common/_static/demo_board_7236_02.png
     :align: center
     :alt: BK7236 Demo Board Back Side
     :figclass: align-center

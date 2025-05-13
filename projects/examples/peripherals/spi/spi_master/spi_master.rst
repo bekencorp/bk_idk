@@ -27,7 +27,7 @@ Hardware Requirements
 
 - BK7236 SPI project need 2 boards at least, and all of them need to support SPI function.And they connection is shown as Figure **SPI Connection** below.
 
-.. figure:: ../../../../../../_static/spi_connection.png
+.. figure:: ../../../../../../../common/_static/spi_connection.png
    :align: center
    :alt: SPI Connection
    :figclass: align-center

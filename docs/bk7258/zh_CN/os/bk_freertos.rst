@@ -14,7 +14,7 @@ FreeRTOS简介
 FreeRTOS通用架构
 ------------------------
 
-.. figure:: ../../_static/freertos_arch.png
+.. figure:: ../../../common/_static/freertos_arch.png
     :align: center
     :alt: FreeRTOS Architecture
     :figclass: align-center
@@ -96,13 +96,13 @@ Symmetric Multiprocessing（SMP）的基本概念：
 
 在FreeRTOS SMP架构中资源同步：
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-.. figure:: ../../_static/smp_resource.png
+.. figure:: ../../../common/_static/smp_resource.png
     :align: center
     :alt: SMP Architecture Resource
     :figclass: align-center
 
 
-.. figure:: ../../_static/smp_resource_sync.png
+.. figure:: ../../../common/_static/smp_resource_sync.png
     :align: center
     :alt: SMP Architecture Resource Synchronization
     :figclass: align-center

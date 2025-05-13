@@ -14,7 +14,7 @@ Introduction to FreeRTOS
 FreeRTOS general architecture
 ---------------------------------
 
-.. figure:: ../../_static/freertos_arch.png
+.. figure:: ../../../common/_static/freertos_arch.png
      :align: center
      :alt: FreeRTOS Architecture
      :figclass: align-center
@@ -99,13 +99,13 @@ Implementing SMP in FreeRTOS requires consideration of challenges in inter-proce
 Resource synchronization in FreeRTOS SMP architecture:
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-.. figure:: ../../_static/smp_resource.png
+.. figure:: ../../../common/_static/smp_resource.png
      :align: center
      :alt: SMP Architecture Resource
      :figclass: align-center
 
 
-.. figure:: ../../_static/smp_resource_sync.png
+.. figure:: ../../../common/_static/smp_resource_sync.png
      :align: center
      :alt: SMP Architecture Resource Synchronization
      :figclass: align-center

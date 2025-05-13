@@ -15,7 +15,7 @@
 BK7236 log机制
 ------------------------------------
 
-.. figure:: ../../../_static/log_system.png
+.. figure:: ../../../../common/_static/log_system.png
     :align: center
     :alt: log机制
     :figclass: align-center

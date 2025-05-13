@@ -8,7 +8,7 @@ DMA 使用指南
 
 DMA 传输将数据从一个地址空间复制到另一个地址空间，提供在外设和存储器之间或者存储器与存储器之间的高速数据传输。一个典型的 DMA 实现通常如下图所示。
 
-.. figure:: ../../../_static/dma.png
+.. figure:: ../../../../common/_static/dma.png
     :align: center
     :alt: DMA Overview
     :figclass: align-center
@@ -57,7 +57,7 @@ DMA 传输次数可通过传输模式来设置， DMA 有两种传输模式：
 
 单次模式如下图所示，从 start 传输到 start + len 结束， 通常 len 设置成 end - start， 即整个块的长度。
 
-.. figure:: ../../../_static/dma_single.png
+.. figure:: ../../../../common/_static/dma_single.png
     :align: center
     :alt: DMA Single Mode
     :figclass: align-center
@@ -70,7 +70,7 @@ DMA 传输次数可通过传输模式来设置， DMA 有两种传输模式：
 循环模式如下图所示，DMA 从 start 传输到 end 后会再次从 start 传输到 end, 一直重复直到 DMA 被 stop。
 当 SRC or DST 设备为单地址时，在 Repeat 模式下每次均传输 Start 所指向的地址，直到 DMA 被 stop。
 
-.. figure:: ../../../_static/dma_repeat.png
+.. figure:: ../../../../common/_static/dma_repeat.png
     :align: center
     :alt: DMA Repeat Mode
     :figclass: align-center
@@ -97,7 +97,7 @@ DMA 地址配置基本原则：
 单地址到单地址传输
 ***************************
 
-.. figure:: ../../../_static/dma_s3.png
+.. figure:: ../../../../common/_static/dma_s3.png
     :align: center
     :alt: DMA case1
     :figclass: align-center
@@ -109,7 +109,7 @@ DMA 地址配置基本原则：
 单地址到块地址传输
 ***************************
 
-.. figure:: ../../../_static/dma_s2.png
+.. figure:: ../../../../common/_static/dma_s2.png
     :align: center
     :alt: DMA case2
     :figclass: align-center
@@ -121,7 +121,7 @@ DMA 地址配置基本原则：
 块地址到块地址传输
 ***************************
 
-.. figure:: ../../../_static/dma_s1.png
+.. figure:: ../../../../common/_static/dma_s1.png
     :align: center
     :alt: DMA case3
     :figclass: align-center

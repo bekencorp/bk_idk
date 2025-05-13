@@ -26,7 +26,7 @@ Bootloader分为l_bootloader和up_bootloader两个模块，l_bootloader实现uar
 
 - 1.Bootloader的两个模块的逻辑地址分布如图1所示：
 
-.. figure:: ../../../../_static/bootloader_logic_adress.png
+.. figure:: ../../../../../common/_static/bootloader_logic_adress.png
     :align: center
     :alt: bootloader_logic_adress
     :figclass: align-center
@@ -35,7 +35,7 @@ Bootloader分为l_bootloader和up_bootloader两个模块，l_bootloader实现uar
 
 - 2.Bootloader的执行流程如图2所示：
 
-.. figure:: ../../../../_static/bootloader_process_execution.png
+.. figure:: ../../../../../common/_static/bootloader_process_execution.png
     :align: center
     :alt: bootloader_process_execution
     :figclass: align-center

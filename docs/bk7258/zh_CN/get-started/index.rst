@@ -142,7 +142,7 @@ app工程在编译完成后，在build/app/bk7258目录下生成all-app.bin，�
 
 串口烧录工具如下图所示:
 
-.. figure:: ../../_static/download_tool_uart.png
+.. figure:: ../../../common/_static/download_tool_uart.png
     :align: center
     :alt: Uart
     :figclass: align-center
@@ -156,7 +156,7 @@ app工程在编译完成后，在build/app/bk7258目录下生成all-app.bin，�
 
 BKFIL.exe 界面及相关配置如下图所示：
 
-.. figure:: ../../_static/download_uart_bk7236.png
+.. figure:: ../../../common/_static/download_uart_bk7236.png
     :align: center
     :alt: BKFIL GUI
     :figclass: align-center

@@ -16,7 +16,7 @@ Here introduces the log output method for Armino platform.
 BK7236 Log Work Flow
 ------------------------------------------
 
-.. figure:: ../../../_static/log_system.png
+.. figure:: ../../../../common/_static/log_system.png
     :align: center
     :alt: log work flow
     :figclass: align-center

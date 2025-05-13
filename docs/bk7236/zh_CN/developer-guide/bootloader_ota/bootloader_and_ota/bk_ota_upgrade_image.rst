@@ -16,7 +16,7 @@
 
 - 3.打开Everything-1.4.1.935.x64-Setup.exe，工具->选项->HTTP服务器，绑定本机ip。使用浏览器打开本机的ip地址，找到本地的升级文件 \*.rbl，拷贝url出来，用于cli命令。
 
- .. figure:: ../../../../_static/bootlaoder_everthing.png
+ .. figure:: ../../../../../common/_static/bootlaoder_everthing.png
     :align: center
     :alt: bootlaoder_everthing
     :figclass: align-center

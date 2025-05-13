@@ -14,7 +14,7 @@ OmniPeek 被誉为世界上功能最强大的网络协议分析器，原属于�
 **1.1 OmniPeek 面板**
 ++++++++++++++++++++++++++++++
 
-.. figure:: ../../../_static/omni_panel.png
+.. figure:: ../../../../common/_static/omni_panel.png
    :align: center
 
    Omnipeek 界面
@@ -29,7 +29,7 @@ OmniPeek 提供了多种维度的分析方法和图表供使用，上图展示�
 **1.3 OmniPeek 统计分析**
 +++++++++++++++++++++++++++++++
 
-.. figure:: ../../../_static/omni_graphs.png
+.. figure:: ../../../../common/_static/omni_graphs.png
    :align: center
 
    Omnipeek 图表界面
@@ -61,21 +61,21 @@ OmniPeek 是功能强大的网络分析工具，对于初学者也能轻松上�
 
 - **扫描阶段**
 
-.. figure:: ../../../_static/scan.png
+.. figure:: ../../../../common/_static/scan.png
    :align: center
 
    扫描阶段
 
 - **认证阶段**
 
-.. figure:: ../../../_static/auth.png
+.. figure:: ../../../../common/_static/auth.png
    :align: center
 
    认证阶段
 
 - **四次握手阶段**
 
-.. figure:: ../../../_static/eapol.png
+.. figure:: ../../../../common/_static/eapol.png
    :align: center
 
    四次握手阶段
@@ -84,7 +84,7 @@ OmniPeek 是功能强大的网络分析工具，对于初学者也能轻松上�
 
 若能抓到上述完整的认证过程，可以通过 ``Tools-Decrypt WLAN Packets`` 输入 SSID 和密码进行解密。
 
-.. figure:: ../../../_static/decrypt.png
+.. figure:: ../../../../common/_static/decrypt.png
    :align: center
 
    解密加密包

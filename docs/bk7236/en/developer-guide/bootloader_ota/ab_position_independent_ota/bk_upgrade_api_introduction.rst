@@ -29,7 +29,7 @@ AB partition location independent of upgrade interface
 
 - After the app successfully downloads the image, the customer needs to return to the partition that needs to be temporarily executed; See Figure 1 below.
 
-.. figure:: ../../../../_static/ab_position_indes_api_introduction.png
+.. figure:: ../../../../../common/_static/ab_position_indes_api_introduction.png
     :align: center
     :alt: ab_position_indes_api_introduction
     :figclass: align-center
@@ -38,7 +38,7 @@ AB partition location independent of upgrade interface
 
 - After the app image is successfully upgraded, the customer needs to confirm that the current upgrade partition is ok in the app and call bk_ota_double_check_for_execution. (See Figure 2 below for reference components/bk_init)
 
-.. figure:: ../../../../_static/ab_position_indes_api_introduction2.png
+.. figure:: ../../../../../common/_static/ab_position_indes_api_introduction2.png
     :align: center
     :alt: ab_position_indes_api_introduction2
     :figclass: align-center

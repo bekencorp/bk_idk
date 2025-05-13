@@ -33,7 +33,7 @@ The three flags used in the ab partition upgrade process are described as follow
 
 Figure 2 shows the process for downloading the upgrade image of the AB partition:
 
-  .. figure:: ../../../../_static/ab_app_en.png
+  .. figure:: ../../../../../common/_static/ab_app_en.png
      :align: center
      :alt: ab_app_en
      :figclass: align-center
@@ -45,7 +45,7 @@ Figure 2 shows the process for downloading the upgrade image of the AB partition
 
 The jump process of AB partition is shown in Figure 3.
 
-  .. figure:: ../../../../_static/ab_bootloader_en.png
+  .. figure:: ../../../../../common/_static/ab_bootloader_en.png
      :align: center
      :alt: ab_bootloader_en
      :figclass: align-center

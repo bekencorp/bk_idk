@@ -10,7 +10,7 @@ I2C 是一种串行同步半双工通信协议，总线上可以同时挂载多�
 
 I2C 具有简单且制造成本低廉等优点，主要用于低速外围设备的短距离通信（一英尺以内）。
 
-.. figure:: ../../../_static/i2c_connection.png
+.. figure:: ../../../../common/_static/i2c_connection.png
     :align: center
     :alt: I2C Connection
     :figclass: align-center
@@ -40,14 +40,14 @@ I2C 主机模式下通信
 调用 bk_i2c_master_write() 写入数据到从设备，bk_i2c_master_read() 读取数据。
 针对 eeprom 这类内存设备，Beken 提供 bk_i2c_memory_write()/bk_i2c_memory_read() 接口，可以指定到从设备内部的地址去执行读写操作。
 
-.. figure:: ../../../_static/i2c_memory_write.png
+.. figure:: ../../../../common/_static/i2c_memory_write.png
     :align: center
     :alt: I2C memory write
     :figclass: align-center
 
     I2C memory write
 	
-.. figure:: ../../../_static/i2c_memory_read.png
+.. figure:: ../../../../common/_static/i2c_memory_read.png
     :align: center
     :alt: I2C memory read
     :figclass: align-center

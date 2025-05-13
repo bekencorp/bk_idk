@@ -43,7 +43,7 @@ Custom's application need to register the following callback fucntion in the ini
  - Register gatt notification/indication/read/write result event callback: ``bk_ble_register_app_sdp_charac_callback``
  - Register gatt database information callback: ``bk_ble_register_app_sdp_common_callback``
 
-.. figure:: ../../../_static/ble_init.png
+.. figure:: ../../../../common/_static/ble_init.png
     :align: center
     :alt: ble init flow
     :figclass: align-center
@@ -62,7 +62,7 @@ In order to build a standards-compliant database, you need to understand the con
 
 Slvae role can make up a service database through the interface ``bk_ble_create_db``, gatt read,write and notify,indicate operation could be performed respectively by client and server after ble connection created.
 
-.. figure:: ../../../_static/ble_gatts_op.png
+.. figure:: ../../../../common/_static/ble_gatts_op.png
     :align: center
     :alt: ble gatts op flow
     :figclass: align-center
@@ -190,7 +190,7 @@ Enable Advertising
 
 After setting the database, you need to enable Advertising to allow the peer to discover us
 
-.. figure:: ../../../_static/ble_adv.png
+.. figure:: ../../../../common/_static/ble_adv.png
     :align: center
     :alt: ble adv flow
     :figclass: align-center
@@ -249,7 +249,7 @@ After setting the database, you need to enable Advertising to allow the peer to 
 
 
 The broadcast format is shown in the following figure:
-    .. figure:: ../../../_static/adv_data.png
+    .. figure:: ../../../../common/_static/adv_data.png
         :align: center
         :alt: menuconfig gui
         :figclass: align-center
@@ -261,7 +261,7 @@ Enable Scan and create connection,disconnect
 
 Master role can scan and create a connection after remote device start a advertising.
 
-.. figure:: ../../../_static/ble_scan_conn.png
+.. figure:: ../../../../common/_static/ble_scan_conn.png
     :align: center
     :alt: ble scan&conn flow
     :figclass: align-center
@@ -344,7 +344,7 @@ master read and write operation
 
 Master role can do read,write opertaion after remote service database information obtained in ble connected state.
 
-.. figure:: ../../../_static/ble_gattc_op.png
+.. figure:: ../../../../common/_static/ble_gattc_op.png
     :align: center
     :alt: ble gattc op flow
     :figclass: align-center

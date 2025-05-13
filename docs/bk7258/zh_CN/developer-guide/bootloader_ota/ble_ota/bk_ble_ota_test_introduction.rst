@@ -27,7 +27,7 @@
       app_boar:W(300638):boarding_message_handle:ota success !
       sys:I(300638):bk_reboot
 
- .. figure:: ../../../../_static/ble_ota_test.png
+ .. figure:: ../../../../../common/_static/ble_ota_test.png
     :align: center
     :alt: ble_ota_test
     :figclass: align-center
@@ -37,7 +37,7 @@
 3.2.BekenTool APK获取方式
 ----------------------------
 
- .. figure:: ../../../../_static/Beken_tool.png
+ .. figure:: ../../../../../common/_static/Beken_tool.png
     :align: center
     :alt: Beken_tool
     :figclass: align-center
@@ -66,7 +66,7 @@
 
 
 差分包制作步骤图
-  .. figure:: ../../../../_static/diff_ota_make1.png
+  .. figure:: ../../../../../common/_static/diff_ota_make1.png
      :align: center
      :alt: diff_ota
      :figclass: align-center
@@ -79,7 +79,7 @@
  
   - 4、bootloader中还原成功之后，会重新启动，然后进入app中运行新的固件，可查看version 看是否升成功；
 
-  .. figure:: ../../../../_static/diff_ota_result.png
+  .. figure:: ../../../../../common/_static/diff_ota_result.png
      :align: center
      :alt: diff_Reduction
      :figclass: align-center

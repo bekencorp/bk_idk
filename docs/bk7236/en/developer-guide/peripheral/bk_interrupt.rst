@@ -7,7 +7,7 @@ Interruption Management
 Summary
 -------------------------------------------------------
 
-.. figure:: ../../../_static/interrupt.png
+.. figure:: ../../../../common/_static/interrupt.png
     :align: center
     :alt: Interrupt Overview
     :figclass: align-center

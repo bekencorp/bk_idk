@@ -69,7 +69,7 @@ Armino Wi-Fi 都有定义好的返回值，即错误代码。这些错误代码�
 **Armino Wi-Fi 编程模型**
 -----------------------------
 
-.. figure:: ../../../_static/program.png
+.. figure:: ../../../../common/_static/program.png
    :align: center
 
    Armino Wi-Fi 编程模型
@@ -156,7 +156,7 @@ DHCP 客户端启动后，会默认开始一个定时器，当在定时器（20s
 
 下图为 Armino Wi-Fi station 模式下宏观场景，包含了初始化、配置、连接&断开连接等各阶段的具体描述：
 
-.. figure:: ../../../_static/connect_procedure.png
+.. figure:: ../../../../common/_static/connect_procedure.png
    :align: center
 
    Armino Wi-Fi station 模式示例
@@ -216,7 +216,7 @@ Wi-Fi 驱动程序初始化完成后，可以进入到配置阶段。该场景�
 下图为 AP 模式下的宏观场景，各阶段与 station 模式类似，不再赘述，详细流程参考下图：
 
 
-.. figure:: ../../../_static/ap_procedure.png
+.. figure:: ../../../../common/_static/ap_procedure.png
    :align: center
 
    Armino Wi-Fi AP 模式示例
@@ -314,7 +314,7 @@ Beken Wi-Fi 驱动程序支持在任意模式下进行扫描
 
 扫描过程可以分为三个阶段：扫描配置、Wi-Fi 驱动程序内部扫描、扫描完成事件处理，可以通过下图展示：
 
-.. figure:: ../../../_static/all_ch_scan.jpg
+.. figure:: ../../../../common/_static/all_ch_scan.jpg
    :align: center
 
    Armino 全信道主动扫描流程
@@ -340,7 +340,7 @@ Armino Wi-Fi 驱动程序顺序执行扫描，依次从信道 1 切换到信道 
 
 该场景仅针对在扫描阶段只找到一个目标 AP 的情况，**应用程序不用关注该连接过程，供感兴趣客户了解**
 
-.. figure:: ../../../_static/sta_connect_procedure.png
+.. figure:: ../../../../common/_static/sta_connect_procedure.png
    :align: center
 
    Armion Wi-Fi Station 连接场景示例
@@ -702,7 +702,7 @@ LwIP/Wi-Fi 缓冲区内存配置的重要性
 Armino 数据流与内存使用模式
 --------------------------------
 
-.. figure:: ../../../_static/wifi_data_flow.png
+.. figure:: ../../../../common/_static/wifi_data_flow.png
     :align: center
     :alt: wifi_data_flow
     :figclass: align-center
@@ -805,14 +805,14 @@ Armino SDK 支持 menuconfig 配置功能编译选项，您也可以直接修改
 
 Armino Wi-Fi 省电模式的基本原理是通过减少监听时间来降低耗能。当 station 通知 AP 进入休眠模式后，AP 会缓存该 station 的包，并在接下来的 Beacon 帧中，携带通知信息（TIM IE），TIM IE 中 bitmap 字段会指示 AP 缓存的单播包，DTIM 字段指示缓存广播包（该字段是周期性生效）。对 station 来说，TIM 非必听，但是 DTIM 为必听。因此，station 可以选择只在每个 DTIM 帧前醒来监听，从而降低功耗。station 省电模式模型图可以参考下图所示：
 
-.. figure:: ../../../_static/station_ps_mode.png
+.. figure:: ../../../../common/_static/station_ps_mode.png
    :align: center
 
    station 省电模式示意图
 
 减少监听降低 Wi-Fi 功耗是目前主流的降低功耗手段，除此之外，还有几部分影响整体功耗：
 
-.. figure:: ../../../_static/station_wakeup_current.png
+.. figure:: ../../../../common/_static/station_wakeup_current.png
    :align: center
 
    station 唤醒电流示例
@@ -835,12 +835,12 @@ Modem sleep 模式主要工作原理基于 DTIM 机制，周期性的醒来处�
 
 modem sleep 模式默认打开，也可以通过调用 API 关闭或者再次打开，其工作流程十分简单。由于 modem sleep 主要针对 Wi-Fi 资源域进行控制和管理，其开启/关闭流程耗时较短，具体流程如下图所示：
 
-.. figure:: ../../../_static/modem_sleep_procedure.png
+.. figure:: ../../../../common/_static/modem_sleep_procedure.png
    :align: center
 
    modem sleep 流程
 
-.. figure:: ../../../_static/modem_sleep_current.png
+.. figure:: ../../../../common/_static/modem_sleep_current.png
    :align: center
 
    modem sleep 电流设想

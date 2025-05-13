@@ -27,7 +27,7 @@
       app_boar:W(300638):boarding_message_handle:ota success !
       sys:I(300638):bk_reboot
 
- .. figure:: ../../../../_static/ble_ota_test.png
+ .. figure:: ../../../../../common/_static/ble_ota_test.png
     :align: center
     :alt: ble_ota_test
     :figclass: align-center
@@ -37,7 +37,7 @@
 3.2.BekenTool APK Acquisition Method
 ---------------------------------------
 
- .. figure:: ../../../../_static/Beken_tool.png
+ .. figure:: ../../../../../common/_static/Beken_tool.png
     :align: center
     :alt: Beken_tool
     :figclass: align-center
@@ -66,7 +66,7 @@
 
 
 Differential Package Creation Steps Diagram
-  .. figure:: ../../../../_static/diff_ota_make1.png
+  .. figure:: ../../../../../common/_static/diff_ota_make1.png
      :align: center
      :alt: diff_ota
      :figclass: align-center
@@ -79,7 +79,7 @@ Differential Package Creation Steps Diagram
  
   - 4、After successful restoration in the bootloader, it will restart and enter the app to run the new firmware, can check the version to see if the upgrade was successful;
 
-  .. figure:: ../../../../_static/diff_ota_result.png
+  .. figure:: ../../../../../common/_static/diff_ota_result.png
      :align: center
      :alt: diff_Reduction
      :figclass: align-center

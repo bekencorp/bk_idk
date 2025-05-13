@@ -8,7 +8,7 @@ SPI 使用指南
 
 SPI (Serial Peripheral Interface, 串行外设接口) 是一种高速、全双工、同步的通信总线，被广泛应用在ADC、Flash等与MCU的通信过程中。
 
-.. figure:: ../../../_static/spi_connection.png
+.. figure:: ../../../../common/_static/spi_connection.png
     :align: center
     :alt: SPI Connection
     :figclass: align-center
@@ -48,7 +48,7 @@ Beken SPI 支持 SPI 的四种模式，时钟极性、相位可通过 bk_spi_set
 SPI时序
 ------------------
 
-.. figure:: ../../../_static/spi_timing.png
+.. figure:: ../../../../common/_static/spi_timing.png
     :align: center
     :alt: SPI Timing
     :figclass: align-center

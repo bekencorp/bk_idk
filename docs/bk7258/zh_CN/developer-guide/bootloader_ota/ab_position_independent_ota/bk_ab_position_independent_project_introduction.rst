@@ -12,7 +12,7 @@ avdk根目录下的projects/customization/config_ab 为所提供的拥有AB位�
 　以avdk工程为例：customization/config_ab这个工程为avdk的project目录下的工程，此工程已经适配好多媒体功能，如下图1所示；  而非bk_idk的roject/customization/config_ab工程。
 
 
-.. figure:: ../../../../_static/ab_position_indes_project.png
+.. figure:: ../../../../../common/_static/ab_position_indes_project.png
     :align: center
     :alt: ab_position_indes_project
     :figclass: align-center

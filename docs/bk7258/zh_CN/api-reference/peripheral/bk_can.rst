@@ -65,7 +65,7 @@ CAN FD 是 CAN 2.0 的协议扩展。主要区别是：
 
 CAN 2.0 和 CAN FD 的所有类型的帧如下图所示。
 
-.. figure:: ../../../_static/CAN_20_and_CAN_FD.png
+.. figure:: ../../../../common/_static/CAN_20_and_CAN_FD.png
     :align: center
     :alt: 2.0 and fd
     :figclass: align-center

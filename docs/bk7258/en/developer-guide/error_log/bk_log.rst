@@ -19,7 +19,7 @@ Here introduces the log output method for Armino platform, it also works for mul
 BK7258 Multi-CPU Log Work Flow
 ------------------------------------------
 
-.. figure:: ../../../_static/log_system.png
+.. figure:: ../../../../common/_static/log_system.png
     :align: center
     :alt: log work flow for multi-core system
     :figclass: align-center

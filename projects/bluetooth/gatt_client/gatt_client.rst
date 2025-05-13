@@ -51,7 +51,7 @@ Bluetooth gatt client
 ----------------------------------
  gatt client demo work flow chart:
 
-.. figure:: ../../../../_static/gatt_client_flow_chart.png
+.. figure:: ../../../../../common/_static/gatt_client_flow_chart.png
     :align: center
     :alt: gatt client demo work flow chart
     :figclass: align-center

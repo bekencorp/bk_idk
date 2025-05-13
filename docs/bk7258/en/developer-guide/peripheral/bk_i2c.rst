@@ -11,7 +11,7 @@ I2C bus is composed of serial data line (SDA) and serial clock line (SCL). These
 
 I2C has the advantages of simplicity and low manufacturing cost, and is mainly used for short distance communication of low-speed peripheral devices (within one foot)
 
-.. figure:: ../../../_static/i2c_connection.png
+.. figure:: ../../../../common/_static/i2c_connection.png
     :align: center
     :alt: I2C Connection
     :figclass: align-center
@@ -46,14 +46,14 @@ address of the slave device to perform read and write operations.For memory devi
 Beken provides a 'bk_i2c_memory_write()/bk_i2c_memory_read()' interface that can be assigned to the 
 internal address of the slave device to perform read and write operations.
 
-.. figure:: ../../../_static/i2c_memory_write.png
+.. figure:: ../../../../common/_static/i2c_memory_write.png
     :align: center
     :alt: I2C memory write
     :figclass: align-center
 
     I2C memory write
 	
-.. figure:: ../../../_static/i2c_memory_read.png
+.. figure:: ../../../../common/_static/i2c_memory_read.png
     :align: center
     :alt: I2C memory read
     :figclass: align-center

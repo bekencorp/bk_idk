@@ -8,7 +8,7 @@
 2.1.BLE_OTA的升级流程图介绍
 ----------------------------
 
- .. figure:: ../../../../_static/ble_ota_process.png
+ .. figure:: ../../../../../common/_static/ble_ota_process.png
     :align: center
     :alt: ble_ota_process
     :figclass: align-center
@@ -28,7 +28,7 @@ BLE_OTA的数据交互，主要体现在APK到板端以及板端到APK端的数�
 
 1、	APK到板端的数据格式：
 
- .. figure:: ../../../../_static/apk_board.png
+ .. figure:: ../../../../../common/_static/apk_board.png
     :align: center
     :alt: apk_board
     :figclass: align-center
@@ -39,7 +39,7 @@ BLE_OTA的数据交互，主要体现在APK到板端以及板端到APK端的数�
 
 其中，staus: 0代表成功；其他值，代表失败.（2.3节有介绍，各值含义）；
 
- .. figure:: ../../../../_static/board_apk.png
+ .. figure:: ../../../../../common/_static/board_apk.png
     :align: center
     :alt: board_apk
     :figclass: align-center

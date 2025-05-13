@@ -8,7 +8,7 @@ OmniPeek被誉为世界上功能最强大的网络协议分析器,原属于世�
 
 OmniPeek面板
 +++++++++++++++++++++++++++++++++++++++++++++++++++
-.. image:: ../../../_static/omni_panel.png
+.. image:: ../../../../common/_static/omni_panel.png
 
 OmniPeek提供了多种维度的分析方法和图表供使用,上图展示了指南针面板,该面板是一个交互式的取证的仪表板,显示网络随时间的利用率,包括事件、协议、流、节点、信道、VLAN、数据速率、应用程序和国家统计信息.这些统计信息显示在可选的数据源窗口小部件中,可以从实时捕获或从单个捕获文件中查看.
 
@@ -18,7 +18,7 @@ OmniPeek应用程序分析
 
 OmniPeek统计分析
 +++++++++++++++++++++++++++++++++++++++++++++++++++
-.. image:: ../../../_static/omni_graphs.png
+.. image:: ../../../../common/_static/omni_graphs.png
 
 OmniPeek和捕获引擎实时计算各种关键统计数据,并以直观的图形显示形式呈现这些统计数据.您可以采用多种格式保存、复制、打印或自动生成有关这些统计信息的定期报告.
 
@@ -42,21 +42,21 @@ OmniPeek抓包示例
 +++++++++++++++++++++++++++++++++++++++++++++++++++
 - 扫描阶段
 
-.. image:: ../../../_static/scan.png
+.. image:: ../../../../common/_static/scan.png
 
 - 认证阶段
 
-.. image:: ../../../_static/auth.png
+.. image:: ../../../../common/_static/auth.png
 
 - 四次握手阶段
 
-.. image:: ../../../_static/eapol.png
+.. image:: ../../../../common/_static/eapol.png
 
 - 解密
 
 若能抓到上述完整的认证过程,可以通过 ``Tools-Decrypt WLAN Packets`` 输入SSID和密码进行解密.
 
-.. image:: ../../../_static/decrypt.png
+.. image:: ../../../../common/_static/decrypt.png
 
 
 :link_to_translation:`en:[English]`

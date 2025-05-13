@@ -15,7 +15,7 @@ Armino Wi-Fi功能列表
 
 Armino Wi-Fi编程模型
 -------------------------------------------------------
-.. image:: ../../../_static/program.png
+.. image:: ../../../../common/_static/program.png
 
 Wi-Fi驱动程序作为和上层代码(如TCP/IP协议栈、Application Task等)的隔离组件,通常由用户应用程序代码负责调用Wi-Fi初始化及进行必要的配置,Wi-Fi驱动程序接收并处理API请求的数据,并将相关事件通知到应用程序处理.
 
@@ -35,7 +35,7 @@ STA与AP断开事件,接收到此事件后,一般需要通知针对基于套接�
 
 Armino Wi-Fi station模式正常连接场景示例
 -------------------------------------------------------
-.. image:: ../../../_static/connect_procedure.png
+.. image:: ../../../../common/_static/connect_procedure.png
 
 Wi-Fi初始化阶段
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -77,7 +77,7 @@ Wi-Fi Station连接命令示范
 
 Armino Wi-Fi station模式断开连接场景示例
 -------------------------------------------------------
-.. image:: ../../../_static/sta_disconnect.png
+.. image:: ../../../../common/_static/sta_disconnect.png
 
 - Wi-Fi Station已成功连接至AP的情况下,应用程序调用 ``bk_wifi_sta_disconnect`` 主动断开连接.
 - 当Wi-Fi因为主动断开、AP离线、RSSI弱等原因断开连接,Wi-Fi事件回调函数引发 ``EVENT_WIFI_STA_DISCONNECTED``
@@ -94,7 +94,7 @@ BEKEN SoftAP应用场景可以参考API开发指导中的 ``bk_wifi_ap_start`` ,
 
 Armino Wi-Fi失败代码原因
 -------------------------------------------------------
-.. image:: ../../../_static/reason_codes.png
+.. image:: ../../../../common/_static/reason_codes.png
 
 Armino Wi-Fi MAC地址配置
 -------------------------------------------------------

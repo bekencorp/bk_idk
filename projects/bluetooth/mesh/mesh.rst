@@ -77,7 +77,7 @@ Mesh
 4 模块图
 -------------------------------------
 
-.. figure:: ../../../../_static/bluetooth_mesh_arch.png
+.. figure:: ../../../../../common/_static/bluetooth_mesh_arch.png
     :align: center
     :alt: module architecture Overview
     :figclass: align-center

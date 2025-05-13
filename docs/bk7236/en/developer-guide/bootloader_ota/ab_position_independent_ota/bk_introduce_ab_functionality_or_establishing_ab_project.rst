@@ -23,14 +23,14 @@ Add AB Partition Function or Create AB Project
           - The ota_fina_executive partition stores the flag for AB partition upgrades.
       - 4) Copy the macro configurations from the config file to the corresponding configuration files.
 
-  .. figure:: ../../../../_static/ab_config.png
+  .. figure:: ../../../../../common/_static/ab_config.png
      :align: center
      :alt: ab_config
      :figclass: align-center
 
      Figure 1: AB Partition Configuration
 
-  .. figure:: ../../../../_static/ab_partition.png
+  .. figure:: ../../../../../common/_static/ab_partition.png
      :align: center
      :alt: ab_partition
      :figclass: align-center
@@ -45,7 +45,7 @@ Add AB Partition Function or Create AB Project
     - 1) Add customization/config_ab to the bk7258xx_supported_projects list in part_table/CMakeLists.txt.
     - 2) Add customization/config_ab to the bk7258xx_supported_projects list in part_table/part_table.mk.
 
-  .. figure:: ../../../../_static/add_into_autolist.png
+  .. figure:: ../../../../../common/_static/add_into_autolist.png
      :align: center
      :alt: add_into_autolist
      :figclass: align-center
@@ -54,7 +54,7 @@ Add AB Partition Function or Create AB Project
 
 - 3、Adding the AB Project to special_project_deal.py Script Handling,Location: bk_idk/tools/build_tools/part_table_tools/otherScript
 
-  .. figure:: ../../../../_static/special_deal.png
+  .. figure:: ../../../../../common/_static/special_deal.png
      :align: center
      :alt: special_deal
      :figclass: align-center
@@ -63,7 +63,7 @@ Add AB Partition Function or Create AB Project
 
 - 4、Configuring pj_config.mk (Path: bk_idk/projects/customization/config_ab),Set the boot loader path and parameters required for automation.
 
-  .. figure:: ../../../../_static/project_config.png
+  .. figure:: ../../../../../common/_static/project_config.png
      :align: center
      :alt: project_config
      :figclass: align-center

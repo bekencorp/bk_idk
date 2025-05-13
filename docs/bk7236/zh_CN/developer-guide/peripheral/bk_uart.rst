@@ -8,7 +8,7 @@ UART 使用指南
 
 UART (Universal Asynchronous Receiver and Transmitter) 通用异步接收器/发送器，用来实现不同设备之间的全双工或半双工数据交换。
 
-.. figure:: ../../../_static/uart.png
+.. figure:: ../../../../common/_static/uart.png
     :align: center
     :alt: UART Connection
     :figclass: align-center
@@ -42,7 +42,7 @@ UART配置
 UART时序
 ------------------
 
-.. figure:: ../../../_static/uart_data.png
+.. figure:: ../../../../common/_static/uart_data.png
     :align: center
     :alt: UART Timing
     :figclass: align-center
@@ -74,7 +74,7 @@ UART 发包通路
 UART 收包通路
 ------------------
 
-.. figure:: ../../../_static/uart_recv.png
+.. figure:: ../../../../common/_static/uart_recv.png
     :align: center
     :alt: UART Receive Data
     :figclass: align-center

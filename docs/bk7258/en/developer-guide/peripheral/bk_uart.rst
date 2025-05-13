@@ -8,7 +8,7 @@ Summary
 
 UART (Universal Asynchronous Receiver and Transmitter), It is used to realize full duplex or half duplex data exchange between different devices.
 
-.. figure:: ../../../_static/uart.png
+.. figure:: ../../../../common/_static/uart.png
     :align: center
     :alt: UART Connection
     :figclass: align-center
@@ -38,7 +38,7 @@ In order to use UART for data transmission, the following parameters need to be 
 UART Sequential
 --------------------------------------------------------------
 
-.. figure:: ../../../_static/uart_data.png
+.. figure:: ../../../../common/_static/uart_data.png
     :align: center
     :alt: UART Timing
     :figclass: align-center
@@ -70,7 +70,7 @@ Send Packet Channel：
 UART Packet Receiving Channel
 --------------------------------------------------------------
 
-.. figure:: ../../../_static/uart_recv.png
+.. figure:: ../../../../common/_static/uart_recv.png
     :align: center
     :alt: UART Receive Data
     :figclass: align-center

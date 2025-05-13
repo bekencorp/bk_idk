@@ -22,14 +22,14 @@
           - c)所需ota_fina_executive分区，该分区为存储AB分区升级时的flag；
       - 4）将该config文件中的配置宏，拷贝到对应过程中的配置文件中；
 
-  .. figure:: ../../../../_static/ab_config.png
+  .. figure:: ../../../../../common/_static/ab_config.png
      :align: center
      :alt: ab_config
      :figclass: align-center
 
      图1 AB分区config配置
 
-  .. figure:: ../../../../_static/ab_partition.png
+  .. figure:: ../../../../../common/_static/ab_partition.png
      :align: center
      :alt: ab_partition
      :figclass: align-center
@@ -44,7 +44,7 @@
     - 1）在 part_table/cmakelists中 bk7258xx_supported_projects例表中，增加 customization/config_ab；
     - 2）在 part_table/part_table.mk中 bk7258xx_supported_projects 中，增加 customization/config_ab；
 
-  .. figure:: ../../../../_static/add_into_autolist.png
+  .. figure:: ../../../../../common/_static/add_into_autolist.png
      :align: center
      :alt: add_into_autolist
      :figclass: align-center
@@ -53,7 +53,7 @@
 
 - 3、将AB工程加入到special_project_deal.py脚本处理中，路径：bk_idk/tools/build_tools/part_table_tools/otherScript
 
-  .. figure:: ../../../../_static/special_deal.png
+  .. figure:: ../../../../../common/_static/special_deal.png
      :align: center
      :alt: special_deal
      :figclass: align-center
@@ -62,7 +62,7 @@
 
 - 4、需要pj_config.mk(路径是：bk_idk/projects/customization/config_ab) 配置所需的bootloaer路径，以及自动化例表所需的参数
 
-  .. figure:: ../../../../_static/project_config.png
+  .. figure:: ../../../../../common/_static/project_config.png
      :align: center
      :alt: project_config
      :figclass: align-center

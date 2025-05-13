@@ -34,7 +34,7 @@ ab分区升级流程用到的三个标志位具体解释如下：
 
 AB分区的升级镜像的下载流程如图二所示：
 
-  .. figure:: ../../../../_static/ab_app.png
+  .. figure:: ../../../../../common/_static/ab_app.png
      :align: center
      :alt: ab_app
      :figclass: align-center
@@ -46,7 +46,7 @@ AB分区的升级镜像的下载流程如图二所示：
 
 AB分区的跳转流程如图三所示。
 
-  .. figure:: ../../../../_static/ab_bootloader.png
+  .. figure:: ../../../../../common/_static/ab_bootloader.png
      :align: center
      :alt: ab_bootloader
      :figclass: align-center

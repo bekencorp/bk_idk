@@ -14,7 +14,7 @@ Summary
 
 
 
-.. figure:: ../../../_static/armino_architecture.png
+.. figure:: ../../../../common/_static/armino_architecture.png
     :align: center
     :alt: Architecture Overview
     :figclass: align-center
@@ -38,14 +38,14 @@ Software Architecture
 	mature product software architecture.
 
 
-.. figure:: ../../../_static/armino_os_solution.png
+.. figure:: ../../../../common/_static/armino_os_solution.png
     :align: center
     :alt: Armino OS solution
     :figclass: align-center
 
     Armino OS solution
 
-.. figure:: ../../../_static/armino_custiomer_solution.png
+.. figure:: ../../../../common/_static/armino_custiomer_solution.png
     :align: center
     :alt: Armino customer solution
     :figclass: align-center
@@ -64,7 +64,7 @@ Middleware Layer
     Middleware layer, namely the middle layer, is an abstract layer for the underlying hardware and 
 	upper components. Through the M-server, we can seamlessly switch between different solutions.
 
-.. figure:: ../../../_static/armino_middleware.png
+.. figure:: ../../../../common/_static/armino_middleware.png
     :align: center
     :alt: Armino middleware
     :figclass: align-center

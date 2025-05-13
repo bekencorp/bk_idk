@@ -4,7 +4,7 @@ System state machine specification
 :link_to_translation:`zh_CN:[中文]`
 
 
-.. image:: ../../../_static/pm_pcm2.png
+.. image:: ../../../../common/_static/pm_pcm2.png
 
 
 

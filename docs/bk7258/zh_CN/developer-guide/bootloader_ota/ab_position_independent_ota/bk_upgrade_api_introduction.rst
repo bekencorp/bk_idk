@@ -29,7 +29,7 @@ AB分区位置无关的升级性格接口介绍
 
 - app下载镜像成功之后，需要客户返回需要临时执行的分区；见下图1
 
-.. figure:: ../../../../_static/ab_position_indes_api_introduction.png
+.. figure:: ../../../../../common/_static/ab_position_indes_api_introduction.png
     :align: center
     :alt: ab_position_indes_api_introduction
     :figclass: align-center
@@ -38,7 +38,7 @@ AB分区位置无关的升级性格接口介绍
 
 - app升级镜像成功之后，需要客户在app中确认当前升级分区ok，调用bk_ota_double_check_for_execution；（参考components/bk_init见下图2）
 
-.. figure:: ../../../../_static/ab_position_indes_api_introduction2.png
+.. figure:: ../../../../../common/_static/ab_position_indes_api_introduction2.png
     :align: center
     :alt: ab_position_indes_api_introduction2
     :figclass: align-center

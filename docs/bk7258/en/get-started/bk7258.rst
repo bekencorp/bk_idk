@@ -15,7 +15,7 @@ Introduction to Development Board
  - BK7258 supports FreeRTOS V10
 
 
-.. figure:: ../../_static/demo_board_7258.png
+.. figure:: ../../../common/_static/demo_board_7258.png
     :align: center
     :alt: BK7258 Demo Board
     :figclass: align-center

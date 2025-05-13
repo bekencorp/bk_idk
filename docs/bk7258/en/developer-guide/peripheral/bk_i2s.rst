@@ -13,7 +13,7 @@ The BK I2S Driver supports following work modes:
 I2S (Philips)
 	In this working mode, the sequence diagram is shown in the sequence transmission as shown in ``Figure 1`` :
 
-.. figure:: ../../../_static/i2s_Philips.png
+.. figure:: ../../../../common/_static/i2s_Philips.png
     :align: center
     :alt: Philips_mode_time_sequence_diagram
     :figclass: align-center
@@ -23,7 +23,7 @@ I2S (Philips)
 Left Justified
 	In this working mode, the sequence diagram is shown in the sequence transmission as shown in ``Figure 2`` :
 
-.. figure:: ../../../_static/i2s_Left_Justified.png
+.. figure:: ../../../../common/_static/i2s_Left_Justified.png
     :align: center
     :alt: Left Justified mode time sequence diagram
     :figclass: align-center
@@ -33,7 +33,7 @@ Left Justified
 Right Justified
 	In this working mode, the sequence diagram is shown in the sequence transmission as shown in ``Figure 3`` :
 
-.. figure:: ../../../_static/i2s_RightJustified.png
+.. figure:: ../../../../common/_static/i2s_RightJustified.png
     :align: center
     :alt: Right Justified mode time sequence diagram
     :figclass: align-center
@@ -43,7 +43,7 @@ Right Justified
 Short Frame Sync
 	In this working mode, the sequence diagram is shown in the sequence transmission as shown in ``Figure 4`` :
 
-.. figure:: ../../../_static/i2s_ShortSyncFrame.png
+.. figure:: ../../../../common/_static/i2s_ShortSyncFrame.png
     :align: center
     :alt: Short Frame Sync mode time sequence diagram
     :figclass: align-center
@@ -53,7 +53,7 @@ Short Frame Sync
 Long Frame Sync
 	In this working mode, the sequence diagram is shown in the sequence transmission as shown in ``Figure 5`` :
 
-.. figure:: ../../../_static/i2s_LongSyncFrame.png
+.. figure:: ../../../../common/_static/i2s_LongSyncFrame.png
     :align: center
     :alt: Long Frame Sync mode time sequence diagram
     :figclass: align-center
@@ -63,14 +63,14 @@ Long Frame Sync
 Normal 2B+D
 	In this working mode, the sequence diagram is shown in the sequence transmission as shown in ``Figure 6 and Figure 7`` :
 
-.. figure:: ../../../_static/i2s_Normal2BD_D0.png
+.. figure:: ../../../../common/_static/i2s_Normal2BD_D0.png
     :align: center
     :alt: Normal 2B+D mode time sequence diagram
     :figclass: align-center
 
     Figure 6. Normal 2B+D mode time sequence diagram
 
-.. figure:: ../../../_static/i2s_Normal2BD_Dx.png
+.. figure:: ../../../../common/_static/i2s_Normal2BD_Dx.png
     :align: center
     :alt: Normal 2B+D mode time sequence diagram
     :figclass: align-center
@@ -80,14 +80,14 @@ Normal 2B+D
 Delay 2B+D
 	In this working mode, the sequence diagram is shown in the sequence transmission as shown in ``Figure 8 and Figure 9`` :
 
-.. figure:: ../../../_static/i2s_Delay2BD_D0.png
+.. figure:: ../../../../common/_static/i2s_Delay2BD_D0.png
     :align: center
     :alt: Delay 2B+D mode time sequence diagram
     :figclass: align-center
 
     Figure 8. Delay 2B+D mode time sequence diagram
 
-.. figure:: ../../../_static/i2s_Delay2BD_Dx.png
+.. figure:: ../../../../common/_static/i2s_Delay2BD_Dx.png
     :align: center
     :alt: Delay 2B+D mode time sequence diagram
     :figclass: align-center

@@ -275,17 +275,17 @@ Armino平台BK7236系统jtag调试
 
  - Eclipse工程配置
 
-  .. figure:: ../../../_static/bk7236_jlink_config.png
+  .. figure:: ../../../../common/_static/bk7236_jlink_config.png
       :align: center
       :alt: BK7236 JLink configuration
       :figclass: align-center
 
-  .. figure:: ../../../_static/bk7236_jlink_config2.png
+  .. figure:: ../../../../common/_static/bk7236_jlink_config2.png
       :align: center
       :alt: BK7236 JLink configuration
       :figclass: align-center
 
-  .. figure:: ../../../_static/bk7236_jlink_config3.png
+  .. figure:: ../../../../common/_static/bk7236_jlink_config3.png
     :align: center
     :alt: BK7236 JLink configuration
     :figclass: align-center

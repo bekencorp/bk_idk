@@ -41,7 +41,7 @@ bk7236 共有两组 PWM 控制器，PWM0 与 PWM1，每个PWM控制器下有3个
 功能框图
 ===========
 
-.. figure:: ../../../_static/pwm_block_diagram.png
+.. figure:: ../../../../common/_static/pwm_block_diagram.png
     :align: center
     :alt: PWM block diagram
     :figclass: align-center

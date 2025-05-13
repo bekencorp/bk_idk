@@ -83,7 +83,7 @@ Bluetooth gatt server
 ----------------------------------
  gatt server demo work flow chart:
 
-.. figure:: ../../../../_static/gatt_server_flow_chart.png
+.. figure:: ../../../../../common/_static/gatt_server_flow_chart.png
     :align: center
     :alt: gatt server demo work flow chart
     :figclass: align-center

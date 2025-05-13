@@ -40,7 +40,7 @@ SARADC 获取数据流程：
 
 	SARADC 在连续模式下转换数据如下图所示。
 
-.. figure:: ../../../_static/saradc_new.png
+.. figure:: ../../../../common/_static/saradc_new.png
     :align: center
     :alt: saradc Overview
     :figclass: align-center

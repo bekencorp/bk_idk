@@ -77,7 +77,7 @@ The supported CMDs are as follows:
 		|           |  Range: 0x00 to 0x1F                                                   |
 		+-----------+------------------------------------------------------------------------+
 
-		.. figure:: ../../../../_static/adv_data_format.png
+		.. figure:: ../../../../../common/_static/adv_data_format.png
 			:align: center
 			:alt: adv_data_format
 			:figclass: align-center

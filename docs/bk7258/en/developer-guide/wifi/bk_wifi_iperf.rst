@@ -87,7 +87,7 @@ iPerf Tool Introduction
 +++++++++++++++++++++++++++++++++++++++++++++++++
 - iPerf Tool Download: `Download <https://iperf.fr/>`_ . ``iPerf user docs`` could find the presentation
 
-.. image:: ../../../_static/iperf.png
+.. image:: ../../../../common/_static/iperf.png
 
 - It is recommended to use iPerf 2.0.x version
 

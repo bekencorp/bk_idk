@@ -38,7 +38,7 @@ WiFi provisioning over BLE
 
 	provisioning process is shown in the figure below：
 
-.. figure:: ../../../../_static/wifi_provisioning_over_ble_workflow.png
+.. figure:: ../../../../../common/_static/wifi_provisioning_over_ble_workflow.png
     :align: center
     :alt: wifi provisioning over ble workflow
     :figclass: align-center
@@ -57,7 +57,7 @@ WiFi provisioning over BLE
  
 	the specific instructions are shown in the figure below：
 
-.. figure:: ../../../../_static/ble_prov_instruction.png
+.. figure:: ../../../../../common/_static/ble_prov_instruction.png
     :align: center
     :alt: wifi provisioning over ble instruction
     :figclass: align-center

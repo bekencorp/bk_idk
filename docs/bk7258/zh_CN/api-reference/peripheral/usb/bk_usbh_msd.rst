@@ -31,7 +31,7 @@ MSD 主机驱动CLI测试示例
 	usb power 1c 1 打开USB Vbus供电
 	usb power 1c 0 关闭USB Vbus供电
 
-.. figure:: ../../../../_static/usb/poweron_powerdown.png
+.. figure:: ../../../../../common/_static/usb/poweron_powerdown.png
     :align: center
     :alt: powneron_powner_down
     :figclass: align-center
@@ -42,7 +42,7 @@ MSD 主机驱动CLI测试示例
 	输入命令：
 	usb open_host
 
-.. figure:: ../../../../_static/usb/open_usb_enum.png
+.. figure:: ../../../../../common/_static/usb/open_usb_enum.png
     :align: center
     :alt: open USB for enumeration 
     :figclass: align-center
@@ -52,7 +52,7 @@ MSD 主机驱动CLI测试示例
 调用cli_fatfs的测试命令进行U盘的操作:
 	输入命令：fatfstest M 2
 
-.. figure:: ../../../../_static/usb/mount_udisk.png
+.. figure:: ../../../../../common/_static/usb/mount_udisk.png
     :align: center
     :alt: mount_udisk
     :figclass: align-center
@@ -61,7 +61,7 @@ MSD 主机驱动CLI测试示例
 
 	输入命令：fatfstest S 2
 
-.. figure:: ../../../../_static/usb/scan_udisk.png
+.. figure:: ../../../../../common/_static/usb/scan_udisk.png
     :align: center
     :alt: scan udisk
     :figclass: align-center
@@ -70,7 +70,7 @@ MSD 主机驱动CLI测试示例
 
 	输入命令：fatfstest U 2
 
-.. figure:: ../../../../_static/usb/umount_udisk.png
+.. figure:: ../../../../../common/_static/usb/umount_udisk.png
     :align: center
     :alt: umount udisk
     :figclass: align-center
@@ -79,7 +79,7 @@ MSD 主机驱动CLI测试示例
 
 	输入命令：fatfstest R 2 abc.txt 100
 
-.. figure:: ../../../../_static/usb/read_file.png
+.. figure:: ../../../../../common/_static/usb/read_file.png
     :align: center
     :alt: read file
     :figclass: align-center
@@ -88,7 +88,7 @@ MSD 主机驱动CLI测试示例
 
     输入命令：fatfstest W 2 abc.txt ABCDEFG
 
-.. figure:: ../../../../_static/usb/write_file.png
+.. figure:: ../../../../../common/_static/usb/write_file.png
     :align: center
     :alt: write file
     :figclass: align-center

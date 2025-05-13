@@ -309,17 +309,17 @@ Armino platform BK7258 system jtag debugging
 
   - Eclipse project configuration
 
-   .. figure:: ../../../_static/bk7236_jlink_config.png
+   .. figure:: ../../../../common/_static/bk7236_jlink_config.png
        :align: center
        :alt: BK7258 JLink configuration
        :figclass: align-center
 
-   .. figure:: ../../../_static/bk7236_jlink_config2.png
+   .. figure:: ../../../../common/_static/bk7236_jlink_config2.png
        :align: center
        :alt: BK7258 JLink configuration
        :figclass: align-center
 
-   .. figure:: ../../../_static/bk7236_jlink_config3.png
+   .. figure:: ../../../../common/_static/bk7236_jlink_config3.png
      :align: center
      :alt: BK7258 JLink configuration
      :figclass: align-center

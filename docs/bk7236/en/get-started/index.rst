@@ -141,7 +141,7 @@ Burn through serial port
 
 Serial port burning tool is shown in the figure below:
 
-.. figure:: ../../_static/download_tool_uart.png
+.. figure:: ../../../common/_static/download_tool_uart.png
     :align: center
     :alt: Uart
     :figclass: align-center
@@ -155,7 +155,7 @@ Download burning tools (BKFILL.exe)：
 
 The snapshot of BKFILL.exe downloading.
 
-.. figure:: ../../_static/download_uart_bk7236_en.png
+.. figure:: ../../../common/_static/download_uart_bk7236_en.png
     :align: center
     :alt: BKFIL GUI
     :figclass: align-center

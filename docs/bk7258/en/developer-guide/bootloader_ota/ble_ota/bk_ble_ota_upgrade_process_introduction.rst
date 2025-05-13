@@ -8,7 +8,7 @@ Place the differential upgrade firmware (considering the slower BLE download spe
 2.1.BLE_OTA Upgrade Process Introduction
 ------------------------------------------
 
- .. figure:: ../../../../_static/ble_ota_process.png
+ .. figure:: ../../../../../common/_static/ble_ota_process.png
     :align: center
     :alt: ble_ota_process
     :figclass: align-center
@@ -28,7 +28,7 @@ The data interaction mainly occurs between the APK and the board end, as well as
 
 1、	APK to Board End Data Format:
 
- .. figure:: ../../../../_static/apk_board.png
+ .. figure:: ../../../../../common/_static/apk_board.png
     :align: center
     :alt: apk_board
     :figclass: align-center
@@ -39,7 +39,7 @@ The data interaction mainly occurs between the APK and the board end, as well as
 
 In the figures, status represents the result of the operation;0 represents success;Other values represent failure (explained in section 2.3)
 
- .. figure:: ../../../../_static/board_apk.png
+ .. figure:: ../../../../../common/_static/board_apk.png
     :align: center
     :alt: board_apk
     :figclass: align-center

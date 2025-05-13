@@ -24,7 +24,7 @@ USB IF（USB Implementers Forum）是 USB 标准的制定者，它制定了 USB 
 USB 基本使用
 ------------------
 
-.. figure:: ../../../_static/usb/usb_open_close.png
+.. figure:: ../../../../common/_static/usb/usb_open_close.png
     :align: center
     :alt: usb open close 
     :figclass: align-center
@@ -40,7 +40,7 @@ USB 测试示例
 
 1、在默认串口输入 bootcore 2 1 启动CPU2 ，log如下
 
-.. figure:: ../../../_static/usb/cli_boot_cpu2.png
+.. figure:: ../../../../common/_static/usb/cli_boot_cpu2.png
     :align: center
     :alt: usb open close 
     :figclass: align-center
@@ -49,7 +49,7 @@ USB 测试示例
 
 2、uart2 串口输入usb power 1c 1，log如下
 
-.. figure:: ../../../_static/usb/cli_usb_power_on.png
+.. figure:: ../../../../common/_static/usb/cli_usb_power_on.png
     :align: center
     :alt: usb power on 
     :figclass: align-center
@@ -58,7 +58,7 @@ USB 测试示例
 
 3、uart2 串口输入usb open_host，枚举成功log如下
 
-.. figure:: ../../../_static/usb/cli_usb_open_host.png
+.. figure:: ../../../../common/_static/usb/cli_usb_open_host.png
     :align: center
     :alt: usb open_host
     :figclass: align-center
@@ -67,7 +67,7 @@ USB 测试示例
 
 4、uart2 串口输入usb check_dev 0(是否支持video)/usb check_dev 1(是否支持mic)/usb check_dev 2(是否支持speaker)，支持需要的类设备log如下
 
-.. figure:: ../../../_static/usb/cli_usb_check_support_dev.png
+.. figure:: ../../../../common/_static/usb/cli_usb_check_support_dev.png
     :align: center
     :alt: usb open_host
     :figclass: align-center
@@ -76,7 +76,7 @@ USB 测试示例
 
 5、uart2 串口输入usb close,log如下
 
-.. figure:: ../../../_static/usb/cli_usb_close.png
+.. figure:: ../../../../common/_static/usb/cli_usb_close.png
     :align: center
     :alt: usb open_host
     :figclass: align-center
@@ -85,7 +85,7 @@ USB 测试示例
 
 6、uart2 串口输入usb power 1c 0,log如下
 
-.. figure:: ../../../_static/usb/cli_usb_power_down.png
+.. figure:: ../../../../common/_static/usb/cli_usb_power_down.png
     :align: center
     :alt: usb open_host
     :figclass: align-center

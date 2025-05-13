@@ -8,7 +8,7 @@ Known as the world's most powerful network protocol analyzer, omnipeek is a prod
 
 OmniPeek Panel
 +++++++++++++++++++++++++++++++++++++++++++++++++++
-.. image:: ../../../_static/omni_panel.png
+.. image:: ../../../../common/_static/omni_panel.png
 
 Omnipeek provides multiple dimensions of analysis methods and chart to use. The figure above shows the Compass panel, an interactive forensic dashboard that displays network utilization over time, including events、protocols、flows、nodes、channels、VLAN、data rates、applications and national statistics. These statistics are displayed in the optional data source widget and can be viewed from live capture or a single capture file.
 
@@ -18,7 +18,7 @@ OmniPeek Application Analysis
 
 OmniPeek Statistical Analysis
 +++++++++++++++++++++++++++++++++++++++++++++++++++
-.. image:: ../../../_static/omni_graphs.png
+.. image:: ../../../../common/_static/omni_graphs.png
 
 Omnipeek and the capture engine compute various key statistics in real time and present these in an intuitive graphical display. You can save、copy、print or automatically genertate periodic reports on these statistics in variety of formats.
 
@@ -44,21 +44,21 @@ OmniPeek Capture Example
 +++++++++++++++++++++++++++++++++++++++++++++++++++
 - Scan
 
-.. image:: ../../../_static/scan.png
+.. image:: ../../../../common/_static/scan.png
 
 - Authentication
 
-.. image:: ../../../_static/auth.png
+.. image:: ../../../../common/_static/auth.png
 
 - Four handshake
 
-.. image:: ../../../_static/eapol.png
+.. image:: ../../../../common/_static/eapol.png
 
 - Decryption
 
 If user can catch all above complete authentication process, you can enter SSID and password for decryption through ``Tools-Decrypt WLAN Packets`` .
 
-.. image:: ../../../_static/decrypt.png
+.. image:: ../../../../common/_static/decrypt.png
 
 
 

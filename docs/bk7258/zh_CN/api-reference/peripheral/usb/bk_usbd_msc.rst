@@ -28,7 +28,7 @@ MSD 主机驱动CLI测试示例
 打开USB U盘驱动，被PC识别到：
 	输入命令：usbd msc_init 初始化U盘驱动
 
-.. figure:: ../../../../_static/usb/usbd_msc_init.png
+.. figure:: ../../../../../common/_static/usb/usbd_msc_init.png
     :align: center
     :alt: USBD msc init
     :figclass: align-center
@@ -37,7 +37,7 @@ MSD 主机驱动CLI测试示例
 
 	输入命令：usbd msc_deinit 卸载U盘驱动
 
-.. figure:: ../../../../_static/usb/usbd_msc_uninit.png
+.. figure:: ../../../../../common/_static/usb/usbd_msc_uninit.png
     :align: center
     :alt: USBD msc uninit 
     :figclass: align-center

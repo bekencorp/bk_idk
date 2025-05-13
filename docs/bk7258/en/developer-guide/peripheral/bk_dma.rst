@@ -9,7 +9,7 @@ Summary
 DMA Transmission copies data from one address space to another address space, providing high-speed data transmission between peripherals and memory or between memory and memory. 
 A typical DMA implementation is usually shown in the figure below.
 
-.. figure:: ../../../_static/dma.png
+.. figure:: ../../../../common/_static/dma.png
     :align: center
     :alt: DMA Overview
     :figclass: align-center
@@ -59,7 +59,7 @@ Single Mode
 
 The single mode is shown in the figure below. The transfer from 'start' to ''start'+'len'' ends. Generally, len is set to ''end'-'start'', that is, the length of the whole block.
 
-.. figure:: ../../../_static/dma_single.png
+.. figure:: ../../../../common/_static/dma_single.png
     :align: center
     :alt: DMA Single Mode
     :figclass: align-center
@@ -72,7 +72,7 @@ Cycle Mode
 The loop mode is shown in the figure below. After DMA is transferred from start to end, it will be transferred from start to end again, and it will be repeated until DMA is stopped.
 When the SRC or DST device has a single address, the address pointed to by Start is transmitted each time in Repeat mode until the DMA is stopped.
 
-.. figure:: ../../../_static/dma_repeat.png
+.. figure:: ../../../../common/_static/dma_repeat.png
     :align: center
     :alt: DMA Repeat Mode
     :figclass: align-center
@@ -103,7 +103,7 @@ Specific applications can be divided into the following three scenarios：
 Single address to single address transmission
 *******************************************************************
 
-.. figure:: ../../../_static/dma_s3.png
+.. figure:: ../../../../common/_static/dma_s3.png
     :align: center
     :alt: DMA case1
     :figclass: align-center
@@ -115,7 +115,7 @@ As shown in the figure above, SRC/DST devices only need to configure the start a
 Single address to block address transfer
 *********************************************************************
 
-.. figure:: ../../../_static/dma_s2.png
+.. figure:: ../../../../common/_static/dma_s2.png
     :align: center
     :alt: DMA case2
     :figclass: align-center
@@ -129,7 +129,7 @@ and end devices need to configure the start/end address.
 Block address to block address transfer
 *********************************************************************
 
-.. figure:: ../../../_static/dma_s1.png
+.. figure:: ../../../../common/_static/dma_s1.png
     :align: center
     :alt: DMA case3
     :figclass: align-center

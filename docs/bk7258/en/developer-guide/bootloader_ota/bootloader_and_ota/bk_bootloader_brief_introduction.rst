@@ -26,7 +26,7 @@ The Bootloader is divided into two modules: l_bootloader and up_bootloader. l_bo
 
 - 1.The distribution of logical addresses of the two modules of Bootloader is shown in Figure 1:
 
-.. figure:: ../../../../_static/bootloader_logic_adress.png
+.. figure:: ../../../../../common/_static/bootloader_logic_adress.png
     :align: center
     :alt: bootloader_logic_adress
     :figclass: align-center
@@ -35,7 +35,7 @@ The Bootloader is divided into two modules: l_bootloader and up_bootloader. l_bo
 
 - 2.The execution process of Bootloader is shown in Figure 2:
 
-.. figure:: ../../../../_static/bootloader_process_execution_e.png
+.. figure:: ../../../../../common/_static/bootloader_process_execution_e.png
     :align: center
     :alt: bootloader_process_execution_e
     :figclass: align-center

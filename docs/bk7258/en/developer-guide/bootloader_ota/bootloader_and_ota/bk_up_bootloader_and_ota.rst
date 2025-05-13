@@ -30,7 +30,7 @@
 
     - 5）Perform hash verification on the aopp partition data. If the hash verification passes, erase the download partition data and perform reboot; If the hash verification fails, reboot and repeat the preceding steps.
 
-.. figure:: ../../../../_static/bootloader_app_process_e.png
+.. figure:: ../../../../../common/_static/bootloader_app_process_e.png
     :align: center
     :alt: bootloader_app_process_e
     :figclass: align-center

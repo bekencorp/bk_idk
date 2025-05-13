@@ -11,7 +11,7 @@
 	通过这种货架化设计和丰富的SDK API，使SDK开发者能更高效的进行设计和开发。
 
 
-.. figure:: ../../../_static/armino_architecture.png
+.. figure:: ../../../../common/_static/armino_architecture.png
     :align: center
     :alt: Architecture Overview
     :figclass: align-center
@@ -32,14 +32,14 @@
 	Armino SDK能兼容多种软件生态系统，方便开发者把Armino芯片解决方案集成到自有成熟产品软件架构中。
 
 
-.. figure:: ../../../_static/armino_os_solution.png
+.. figure:: ../../../../common/_static/armino_os_solution.png
     :align: center
     :alt: Armino OS solution
     :figclass: align-center
 
     Armino OS solution
 
-.. figure:: ../../../_static/armino_custiomer_solution.png
+.. figure:: ../../../../common/_static/armino_custiomer_solution.png
     :align: center
     :alt: Armino customer solution
     :figclass: align-center
@@ -57,7 +57,7 @@
 
     Middleware层，即中间层，它是针对底层硬件及上层组件的一类抽象层。通过中间层，我们在不同的解决方案中，无缝切换。
 
-.. figure:: ../../../_static/armino_middleware.png
+.. figure:: ../../../../common/_static/armino_middleware.png
     :align: center
     :alt: Armino middleware
     :figclass: align-center

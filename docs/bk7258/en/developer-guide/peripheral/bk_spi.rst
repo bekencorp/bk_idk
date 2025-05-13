@@ -8,7 +8,7 @@ Summary
 
 SPI (Serial Peripheral Interface) It is a high-speed, full duplex, synchronous communication bus, which is widely used in the communication between ADC, Flash and MCU.
 
-.. figure:: ../../../_static/spi_connection.png
+.. figure:: ../../../../common/_static/spi_connection.png
     :align: center
     :alt: SPI Connection
     :figclass: align-center
@@ -48,7 +48,7 @@ Beken SPI Four modes of SPI are supported, and clock polarity and phase can be s
 SPI Sequential
 ---------------------------------------------------
 
-.. figure:: ../../../_static/spi_timing.png
+.. figure:: ../../../../common/_static/spi_timing.png
     :align: center
     :alt: SPI Timing
     :figclass: align-center

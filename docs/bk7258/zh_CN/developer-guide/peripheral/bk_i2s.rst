@@ -13,7 +13,7 @@ I2S/PCM总线接口是一个双向的4线接口，主要用于音频数据的传
 I2S (Philips)
 	在此工作模式下信号传输时序图如 ``图1`` 所示:
 
-.. figure:: ../../../_static/i2s_Philips.png
+.. figure:: ../../../../common/_static/i2s_Philips.png
     :align: center
     :alt: Philips_mode_time_sequence_diagram
     :figclass: align-center
@@ -23,7 +23,7 @@ I2S (Philips)
 Left Justified
 	在此工作模式下信号传输时序图如 ``图2`` 所示:
 
-.. figure:: ../../../_static/i2s_Left_Justified.png
+.. figure:: ../../../../common/_static/i2s_Left_Justified.png
     :align: center
     :alt: Left Justified mode time sequence diagram
     :figclass: align-center
@@ -33,7 +33,7 @@ Left Justified
 Right Justified
 	在此工作模式下信号传输时序图如 ``图3`` 所示:
 
-.. figure:: ../../../_static/i2s_RightJustified.png
+.. figure:: ../../../../common/_static/i2s_RightJustified.png
     :align: center
     :alt: Right Justified mode time sequence diagram
     :figclass: align-center
@@ -43,7 +43,7 @@ Right Justified
 Short Frame Sync
 	在此工作模式下信号传输时序图如 ``图4`` 所示:
 
-.. figure:: ../../../_static/i2s_ShortSyncFrame.png
+.. figure:: ../../../../common/_static/i2s_ShortSyncFrame.png
     :align: center
     :alt: Short Frame Sync mode time sequence diagram
     :figclass: align-center
@@ -53,7 +53,7 @@ Short Frame Sync
 Long Frame Sync
 	在此工作模式下信号传输时序图如 ``图5`` 所示:
 
-.. figure:: ../../../_static/i2s_LongSyncFrame.png
+.. figure:: ../../../../common/_static/i2s_LongSyncFrame.png
     :align: center
     :alt: Long Frame Sync mode time sequence diagram
     :figclass: align-center
@@ -63,14 +63,14 @@ Long Frame Sync
 Normal 2B+D
 	在此工作模式下信号传输时序图如 ``图6和图7`` 所示:
 
-.. figure:: ../../../_static/i2s_Normal2BD_D0.png
+.. figure:: ../../../../common/_static/i2s_Normal2BD_D0.png
     :align: center
     :alt: Normal 2B+D mode time sequence diagram
     :figclass: align-center
 
     Figure 6. Normal 2B+D mode time sequence diagram
 
-.. figure:: ../../../_static/i2s_Normal2BD_Dx.png
+.. figure:: ../../../../common/_static/i2s_Normal2BD_Dx.png
     :align: center
     :alt: Normal 2B+D mode time sequence diagram
     :figclass: align-center
@@ -80,14 +80,14 @@ Normal 2B+D
 Delay 2B+D
 	在此工作模式下信号传输时序图如 ``图8和图9`` 所示:
 
-.. figure:: ../../../_static/i2s_Delay2BD_D0.png
+.. figure:: ../../../../common/_static/i2s_Delay2BD_D0.png
     :align: center
     :alt: Delay 2B+D mode time sequence diagram
     :figclass: align-center
 
     Figure 8. Delay 2B+D mode time sequence diagram
 
-.. figure:: ../../../_static/i2s_Delay2BD_Dx.png
+.. figure:: ../../../../common/_static/i2s_Delay2BD_Dx.png
     :align: center
     :alt: Delay 2B+D mode time sequence diagram
     :figclass: align-center
