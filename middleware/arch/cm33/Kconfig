@@ -55,6 +55,18 @@ menu "Arch::Cm33"
 			default y
 			help
 				Dump all memory when exception happen
+        
+         config INTERRUPT_DEBUG_RECORDER
+			bool "Enable interrupt debug"
+			default n
+			help
+				interrupt debug
+        
+        config INTERRUPT_RECORDER_CNT
+            int "Set recorder interrupt count"
+			default 40
+			help
+				interrupt recorder count
 
 	endmenu
 endmenu

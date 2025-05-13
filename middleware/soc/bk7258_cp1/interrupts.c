@@ -22,6 +22,11 @@
 #include "trcRecorder.h"
 #endif
 
+#if CONFIG_INTERRUPT_DEBUG_RECORDER
+#include "interrupt_debug.h"
+#include <string.h>
+#endif
+
 int_group_isr_t arch_interrupt_get_handler(arch_int_src_t int_number);
 
 #if CONFIG_ARCH_INT_STATIS
@@ -40,17 +45,38 @@ static uint32_t s_int_statis[InterruptMAX_IRQn] = {0};
 #endif
 
 
-#define ARCH_ISR_HANDLER(irq)  \
-{\
-	INT_INC_STATIS(irq);\
-	IRQ_TRACE_BEGIN(irq);\
-	int_group_isr_t isr_cb;\
-	isr_cb = arch_interrupt_get_handler(irq);\
-	if (isr_cb != NULL) {\
-		(*(isr_cb))();\
-	}\
-	IRQ_TRACE_END();\
+#if CONFIG_INTERRUPT_DEBUG_RECORDER
+__attribute__((__used__)) static volatile interrupt_recorder_t  s_interrupt_flag[CONFIG_INTERRUPT_RECORDER_CNT] ;
+__attribute__((__used__)) static volatile uint32_t s_int_cnt = 0;
+
+#define ARCH_ISR_HANDLER(irq)                                   \
+{                                                               \
+	INT_INC_STATIS(irq);                                        \
+	IRQ_TRACE_BEGIN(irq);                                       \
+	int_group_isr_t isr_cb;                                     \
+	isr_cb = arch_interrupt_get_handler(irq);                   \
+    s_interrupt_flag[s_int_cnt % CONFIG_INTERRUPT_RECORDER_CNT ].int_flag = irq;           \
+    s_interrupt_flag[s_int_cnt % CONFIG_INTERRUPT_RECORDER_CNT].current_cnt = s_int_cnt;   \
+	if (isr_cb != NULL) {                                       \
+		(*(isr_cb))();                                          \
+	}                                                           \
+    s_interrupt_flag[s_int_cnt % CONFIG_INTERRUPT_RECORDER_CNT].int_flag |= 0xf0000000;    \
+    s_int_cnt ++;                                               \
+	IRQ_TRACE_END();                                            \
 }
+#else
+#define ARCH_ISR_HANDLER(irq)                                   \
+{                                                               \
+	INT_INC_STATIS(irq);                                        \
+	IRQ_TRACE_BEGIN(irq);                                       \
+	int_group_isr_t isr_cb;                                     \
+	isr_cb = arch_interrupt_get_handler(irq);                   \
+	if (isr_cb != NULL) {                                       \
+		(*(isr_cb))();                                          \
+	}                                                           \
+	IRQ_TRACE_END();                                            \
+}
+#endif
 
 //We need to make sure beken irq has same map to cmsis irq,
 //otherwise we need to make map table.
@@ -436,6 +462,9 @@ void __attribute__ ((interrupt)) MAILBOX_Handler(void)
 
 bk_err_t arch_isr_entry_init(void)
 {
+#if CONFIG_INTERRUPT_DEBUG_RECORDER
+    memset((void *)s_interrupt_flag, 0, sizeof(interrupt_recorder_t) * CONFIG_INTERRUPT_RECORDER_CNT);
+#endif
 	/* group priority is depends on macro:__NVIC_PRIO_BITS.
 	   please refer to: www.freertos.org/zh-cn-cmn-s/RTOS-Cortex-M3-M4.html*/
 	NVIC_SetPriorityGrouping(PRI_GOURP_BITS_7_5);
