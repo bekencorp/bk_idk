@@ -268,7 +268,7 @@ void user_app_main(void){
 int main(void)
 {
 #if (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7236)
-	// STARTUP_PERF(14);
+	//STARTUP_PERF(14);
 #endif
 #if (CONFIG_SYS_CPU0)
 	rtos_set_user_app_entry((beken_thread_function_t)user_app_main);

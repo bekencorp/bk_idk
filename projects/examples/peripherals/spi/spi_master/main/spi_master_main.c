@@ -19,7 +19,7 @@
 #include <os/os.h>
 #include "sys_rtos.h"
 #include <common/sys_config.h>
-
+#include "bk_private/bk_init.h"
 #define TAG "spi_exam"
 #define CONFIG_SPI_EXAM_SPI_ID     SPI_ID_0
 #define CONFIG_SPI_EXAM_BAUD_RATE  10000000
@@ -131,12 +131,14 @@ static bk_err_t spi_example_dma_recv_data(void)
 
 int main(void)
 {
+#if (CONFIG_SYS_CPU0)
+	bk_init();
 	BK_LOG_ON_ERR(bk_spi_driver_init());
 	BK_LOG_ON_ERR(spi_example_send_data());
 	BK_LOG_ON_ERR(spi_example_dma_send_data());
 	BK_LOG_ON_ERR(spi_example_recv_data());
 	BK_LOG_ON_ERR(spi_example_dma_recv_data());
-
+#endif
 	return 0;
 }
 

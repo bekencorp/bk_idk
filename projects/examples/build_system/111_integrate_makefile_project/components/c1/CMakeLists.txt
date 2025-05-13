@@ -10,8 +10,8 @@ ExternalProject_Add(foo_project
 	#BINARY_DIR ${FOO_BUILD_DIR}
 	CONFIGURE_COMMAND "" # Since foo_project is a Makefile project, we need to set CONFIGURE_COMMMAND to empty string
 	BUILD_IN_SOURCE 1
-	BUILD_COMMAND make CC=${CMAKE_C_COMPILER} libfoo.a
-	BUILD_BYPRODUCTS ${FOO_LIB_DIR}/libfoo.a
+	BUILD_COMMAND make CC=${CMAKE_C_COMPILER} libbk_foo.a
+	BUILD_BYPRODUCTS ${FOO_LIB_DIR}/libbk_foo.a
 	BUILD_ALWAYS 1       # This make sure the foo_project is re-builded when any source code of foo_project is changed!
 	INSTALL_COMMAND ""
 	)
@@ -19,8 +19,6 @@ ExternalProject_Add(foo_project
 # Add dependency between armino and foo_project
 add_library(foo STATIC IMPORTED GLOBAL)
 add_dependencies(foo foo_project)
-set_target_properties(foo PROPERTIES IMPORTED_LOCATION ${FOO_LIB_DIR}/libfoo.a)
+set_target_properties(foo PROPERTIES IMPORTED_LOCATION ${FOO_LIB_DIR}/libbk_foo.a)
 set_target_properties(foo PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${COMPONENT_DIR}/foo/include)
 target_link_libraries(${COMPONENT_LIB} PUBLIC foo)
-
-.. _ExternalProject_Add: https://cmake.org/cmake/help/latest/module/ExternalProject.html

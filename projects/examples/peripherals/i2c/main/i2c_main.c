@@ -14,7 +14,7 @@
 
 #include <components/log.h>
 #include <driver/i2c.h>
-
+#include "bk_private/bk_init.h"
 #define TAG "i2c_example"
 #define I2C_EXAMPLE_ID         I2C_ID_1
 #define I2C_EXAMPLE_BUF_LEN    10
@@ -67,7 +67,8 @@ static bk_err_t i2c_example_eeprom_read(void)
 int main(void)
 {
 	BK_LOG_ON_ERR(bk_i2c_driver_init());
-
+	
+	bk_init();
 	i2c_config_t i2c_cfg = {0};
 	i2c_cfg.baud_rate = I2C_DEFAULT_BAUD_RATE;
 	i2c_cfg.addr_mode = I2C_ADDR_MODE_7BIT;

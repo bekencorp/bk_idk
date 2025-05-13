@@ -15,7 +15,7 @@
 #include <components/log.h>
 #include <driver/pwm.h>
 #include <os/os.h>
-
+#include "bk_private/bk_init.h"
 #define TAG "PWM_EXAM"
 
 #define PWM_CLOCK_SOURCE (26000000)
@@ -65,6 +65,8 @@ void pwm_update_duty(pwm_chan_t channel, uint32_t duty)
 
 int main(void)
 {
+#if (CONFIG_SYS_CPU0)
+	bk_init();
 	bk_pwm_driver_init();
 
 	pwm_init(PWM_CH_0);
@@ -96,6 +98,6 @@ int main(void)
 		}
 		rtos_delay_milliseconds(1000);
 	}
-
+#endif
 	return 0;
 }

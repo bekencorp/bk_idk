@@ -16,7 +16,7 @@
 #include <components/log.h>
 #include <os/mem.h>
 #include <driver/uart.h>
-
+#include "bk_private/bk_init.h"
 #define TAG "uart_example"
 #define UART_EXAMPLE_BUF_LEN       128
 #define UART_EXAMPLE_RX_TIMEOUT    BEKEN_WAIT_FOREVER
@@ -89,7 +89,7 @@ static bk_err_t uart_example_send_data(void)
 int main(void)
 {
 	BK_LOG_ON_ERR(bk_uart_driver_init());
-
+	bk_init();
 	BK_LOG_ON_ERR(uart_example_send_data());
 	BK_LOG_ON_ERR(uart_example_recv_data());
 

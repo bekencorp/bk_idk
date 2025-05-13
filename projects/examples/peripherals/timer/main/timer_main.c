@@ -17,7 +17,7 @@
 #include <os/mem.h>
 #include <driver/timer.h>
 #include "sys_driver.h"
-
+#include "bk_private/bk_init.h"
 #define TAG "timer_example"
 
 static timer_id_t timer_id = TIMER_ID0;
@@ -58,6 +58,7 @@ static void timer0_examples_isr(timer_id_t timer_id)
 
 int main(void)
 {	
+	bk_init();
 	BK_LOG_ON_ERR(bk_timer_driver_init());
 	BK_LOG_ON_ERR(bk_timer_start(timer_id, timer_ms, timer0_examples_isr));
 

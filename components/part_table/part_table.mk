@@ -1,6 +1,6 @@
 export CMD_ARMINO_SOC := $(findstring $(MAKECMDGOALS), $(soc_targets))
 
-
+EXAMPLE_PERIPH := examples/peripherals
 ############################################################
 #        Create supported projects list for bk7235         #
 ############################################################
@@ -49,6 +49,8 @@ bk7258xx_supported_projects := $(bk7258xx_supported_projects) app_psram_4mb
 bk7258xx_supported_projects := $(bk7258xx_supported_projects) customization/config_ab
 bk7258xx_supported_projects := $(bk7258xx_supported_projects) matter
 bk7258xx_supported_projects := $(bk7258xx_supported_projects) agora_ai agora_wanson_ai
+bk7258xx_supported_projects := $(bk7258xx_supported_projects) $(EXAMPLE_PERIPH)/dma $(EXAMPLE_PERIPH)/i2c $(EXAMPLE_PERIPH)/mailbox $(EXAMPLE_PERIPH)/pwm/complementary_outputs $(EXAMPLE_PERIPH)/pwm/phase_shift $(EXAMPLE_PERIPH)/pwm/pwm_set_period_duty \
+$(EXAMPLE_PERIPH)/spi/spi_master $(EXAMPLE_PERIPH)/spi/spi_slave $(EXAMPLE_PERIPH)/timer $(EXAMPLE_PERIPH)/uart
 ############################################################
 #        Create supported projects list for bk7234         #
 ############################################################

@@ -1,5 +1,12 @@
-set(srcs "spi_master_main.c"
+set(incs .)
+set(srcs
+    spi_master_main.c
     )
 
-armino_component_register(SRCS ${srcs}
-                       INCLUDE_DIRS "")
+if (CONFIG_OVERRIDE_FLASH_PARTITION)
+    list(APPEND srcs
+        vendor_flash.c
+    )
+endif()
+
+armino_component_register(SRCS "${srcs}" INCLUDE_DIRS "${incs}")    

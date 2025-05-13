@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "bk_private/bk_init.h"
 #include <stdio.h>
 #include <os/os.h>
 #include <driver/pwm.h>
@@ -82,9 +83,11 @@ static void pwm_group_update_duty(pwm_group_t group, uint32_t chan1_duty, uint32
 
 int main(void)
 {
+#if (CONFIG_SYS_CPU0)
 	pwm_group_t group1 = 0;
 	pwm_group_t group2 = 0;
 
+	bk_init();
 	BK_LOG_ON_ERR(bk_pwm_driver_init());
 
 	group1 = pwm_group_init_without_dead_time();
@@ -115,6 +118,6 @@ int main(void)
 
 	pwm_group_update_duty(group2, 0, s_period);
 	rtos_delay_milliseconds(1000);
-
+#endif
 	return 0;
 }

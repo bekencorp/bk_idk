@@ -136,6 +136,16 @@ list(APPEND bk7258xx_supported_projects
 	"peripheral/lcd_rgb888"
 	"peripheral/lcd_rgb666"
 	"matter"
+	"examples/peripherals/dma"
+	"examples/peripherals/i2c"
+	"examples/peripherals/mailbox"
+	"examples/peripherals/pwm/complementary_outputs"
+	"examples/peripherals/pwm/phase_shift"
+	"examples/peripherals/pwm/pwm_set_period_duty"
+	"examples/peripherals/spi/spi_master"
+	"examples/peripherals/spi/spi_slave"
+	"examples/peripherals/timer"
+	"examples/peripherals/uart"
 )
 
 

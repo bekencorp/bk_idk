@@ -15,7 +15,7 @@
 #include <components/log.h>
 #include <driver/pwm.h>
 #include <os/os.h>
-
+#include "bk_private/bk_init.h"
 #define TAG "PWM_EXAM"
 
 #define PWM_CLOCK_SOURCE (26000000)
@@ -26,7 +26,7 @@
 #define PWM_CH_2        PWM_ID_4
 #define PWM_CH_3        PWM_ID_6
 #define PWM_CH_4        PWM_ID_8
-
+#if (CONFIG_SYS_CPU0)
 static uint32_t s_period = PWM_CLOCK_SOURCE / PWM_FREQ;
 
 #define PHASE_SHIFT_CONFIG { \
@@ -59,10 +59,13 @@ static uint32_t s_period = PWM_CLOCK_SOURCE / PWM_FREQ;
 	}, \
 } \
 
+#endif
 int main(void)
 {
+#if (CONFIG_SYS_CPU0)
 	pwm_phase_shift_config_t config = PHASE_SHIFT_CONFIG;
 
+	bk_init();
 	BK_LOG_ON_ERR(bk_pwm_driver_init());
 	BK_LOG_ON_ERR(bk_pwm_phase_shift_init(&config));
 	BK_LOG_ON_ERR(bk_pwm_phase_shift_start());
@@ -84,7 +87,6 @@ int main(void)
 		BK_LOG_ON_ERR(bk_pwm_phase_shift_update_duty());
 		rtos_delay_milliseconds(10);
 	}
-
+#endif
 	return 0;
 }
-

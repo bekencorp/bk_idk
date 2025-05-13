@@ -3,7 +3,7 @@ CC ?= gcc
 CFLAGS = -g -O2 -Wall -fpic
 ARFLAGS = -rc
 
-LIB = libfoo.a
+LIB = libbk_foo.a
 OBJ = foo.o
 
 %.o : %.c

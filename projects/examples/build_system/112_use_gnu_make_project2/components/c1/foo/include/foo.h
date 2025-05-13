@@ -1,1 +1,1 @@
-int foo(void);
+int bk_foo(void);

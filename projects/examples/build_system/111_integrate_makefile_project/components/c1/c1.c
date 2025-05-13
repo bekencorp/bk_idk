@@ -3,7 +3,7 @@
 
 int c1(void)
 {
-	foo();
+	bk_foo();
 	printf("hello component c1\n");
 	return 0;
 }
