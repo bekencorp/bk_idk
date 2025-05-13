@@ -10,33 +10,40 @@
 
 以下为常用到的一些接口说明，如果遇到具体问题，可以提单给我们，我们多媒体同事会一起处理。
 
-	1)打开/关闭摄像头
-	media_app_camera_open(media_camera_device_t *device)*
-	media_app_camera_close(camera_type_t type)
+	- 1.打开/关闭摄像头::
 
-	2)使能/关闭获取图像
-	media_app_register_read_frame_callback(pixel_format_t fmt, frame_cb_t cb)
-	media_app_unregister_read_frame_callback(void)
+            打开：media_app_camera_open(media_camera_device_t *device)*
+            关闭：media_app_camera_close(camera_type_t type)
 
-	3)打开/关闭h264编码功能
-	media_app_h264_pipeline_open(void)
-	media_app_h264_pipeline_close(void)
+	- 2.使能/关闭获取图像::
 
-	4)打开/关闭图像旋转和解码功能
-	media_app_lcd_pipeline_jdec_open(void)
-	media_app_lcd_pipeline_jdec_close(void)
+            打开：media_app_register_read_frame_callback(pixel_format_t fmt, frame_cb_t cb)
+            关闭：media_app_unregister_read_frame_callback(void)
 
-	5)打开/关闭图像缩放功能
-	media_app_lcd_pipline_scale_open(void *config)*
-	media_app_lcd_pipline_scale_close(void)
+	- 3.打开/关闭h264编码功能::
 
-	6)打开/关闭LCD功能
-	media_app_lcd_pipeline_open(void *config)*
-	media_app_lcd_pipeline_close(void)
+            打开：media_app_h264_pipeline_open(void)
+            关闭：media_app_h264_pipeline_close(void)
 
-	7)打开/关闭LVGL功能（具体实现需要参考86box工程）
-	media_app_lvgl_open(void *lcd_open)*
-	media_app_lvgl_close(void)
+	- 4.打开/关闭图像旋转和解码功能::
+
+            打开：media_app_lcd_pipeline_jdec_open(void)
+            关闭：media_app_lcd_pipeline_jdec_close(void)
+
+	- 5.打开/关闭图像缩放功能::
+
+            打开：media_app_lcd_pipline_scale_open(void *config)*
+            关闭：media_app_lcd_pipline_scale_close(void)
+
+	- 6.打开/关闭LCD功能::
+
+            打开：media_app_lcd_pipeline_open(void *config)*
+            关闭：media_app_lcd_pipeline_close(void)
+
+	- 7.打开/关闭LVGL功能（具体实现需要参考86box工程)::
+
+            打开：media_app_lvgl_open(void *lcd_open)*
+            关闭：media_app_lvgl_close(void)
 
 
 :link_to_translation:`en:[English]`

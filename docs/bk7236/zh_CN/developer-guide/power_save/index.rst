@@ -17,6 +17,7 @@
 	使用外部32K时钟源 <bk_use_extern32K>
 	设置WIFI低压保活说明 <bk_wifi_alive>
 	如何动态切换CPU主频 <bk_cpu_vote_freq>
+	如何启动和关闭CPU1<bk_vote_boot_cp1>
 	关闭多媒体模块接口参考 <bk_close_multimedia>
 	低功耗问题分析 <bk_Lowpower_problem_analysis>
 	低功耗问题分析checklist <bk_lowpower_checklist>
