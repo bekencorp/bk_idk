@@ -114,4 +114,4 @@ BK-RLK 参考链接
 
     `API参考: <../../api-reference/network/bk_wifi.html>`_ 介绍了BK-RLK API接口
 
-    `BK-RLK工程: <../../projects_work/wifi/bk_rlk_media.html>`_ 介绍了BK-RLK相关工程
+    `BK-RLK工程: <https://docs.bekencorp.com/arminodoc/bk_avdk/bk7258/zh_CN/v2.0.1/projects/wifi/bk_rlk_media.html>`_ 介绍了BK-RLK相关工程
