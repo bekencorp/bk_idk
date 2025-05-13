@@ -1080,6 +1080,8 @@ bk_err_t bk_uart_init(uart_id_t id, const uart_config_t *config)
 	bk_pm_sleep_register_cb(PM_MODE_DEEP_SLEEP, pm_uart_port, &enter_config, &exit_config);
 	#endif
 #if CONFIG_SOC_BK7236XX || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX)
+	uart_hal_disable_tx_interrupt(&s_uart[id].hal, id);
+	uart_hal_clear_id_tx_interrupt_status(&s_uart[id].hal, id);
 	uart_isr_register_functions(id);
 	s_uart[id].hal.id = id;
 	uart_hal_init(&s_uart[id].hal);
@@ -1719,6 +1721,9 @@ static void uart_isr_common(uart_id_t id)
 		if (s_uart_tx_isr[id].callback)
 		{
 			s_uart_tx_isr[id].callback(id, s_uart_tx_isr[id].param);
+		} else {
+			uart_hal_disable_tx_interrupt(&s_uart[id].hal, id);
+			uart_hal_clear_id_tx_interrupt_status(&s_uart[id].hal, id);
 		}
 	}
 }
