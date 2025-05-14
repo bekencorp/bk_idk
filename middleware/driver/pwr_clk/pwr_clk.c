@@ -619,10 +619,14 @@ static void pm_module_shutdown_cpu1(pm_power_module_name_e module)
 			s_pm_cp1_closing = 0;
 			s_pm_cp1_boot_try_count = 0;
 			GLOBAL_INT_RESTORE();
-			ret = rtos_set_semaphore(&s_sync_cp1_open_sema);
+			if(s_sync_cp1_open_sema != NULL)
+			{
+				ret = rtos_set_semaphore(&s_sync_cp1_open_sema);
+			}
+
 			if(s_pm_cp1_sema_count == 0)
 			{
-				rtos_deinit_semaphore(&s_sync_cp1_open_sema);
+				//rtos_deinit_semaphore(&s_sync_cp1_open_sema);
 			}
 
 			bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_CPU1, 1, 0);
