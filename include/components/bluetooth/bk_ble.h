@@ -1293,6 +1293,27 @@ ble_err_t bk_ble_remove_devices_from_while_list(bd_addr_t *addr, uint8_t addr_ty
  * - others: fail
  */
 ble_err_t bk_ble_tx_power_set(float pwr_gain);
+
+/**
+ * @brief As slaver, respond to a read/write user authorization request.If the attribute is configured with authorization flag
+ *                   (see enum \ref bk_ble_authorization_flag),the BLE_5_AUTHOR_READ_EVENT/BLE_5_AUTHOR_WRITE_EVENT will be reported,
+ *                   then this api can be used to reply
+ *
+ * @param
+ *    - con_idx: the index of connection
+ *    - prf_id: The id of the profile
+ *    - att_idx: The index of the attribute
+ *    - type: 0: read respond ;1: write respond;
+ *    - accept: 1: permit to read/write; 0: reject to read/write
+ *    - len: the length of attribute's value(valid for read respond)
+ *    - buf: attribute's value(valid for read respond)
+ *
+ * @return
+ * - BK_ERR_BLE_SUCCESS: succeed
+ * - others: fail
+ */
+ble_err_t bk_ble_authorization_reply(uint8_t con_idx, uint16_t prf_id, uint16_t att_idx, uint8_t type, uint8_t accept, uint32_t len, uint8_t *buf);
+
 /*
  * @}
  */

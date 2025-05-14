@@ -55,6 +55,7 @@
 
 #define GATTS_CHARA_N2_UUID 				(0xEA05)
 #define GATTS_CHARA_N3_UUID 			(0xEA06)
+#define GATTS_CHARA_N4_UUID 			(0xEA07)
 
 #define DECL_PRIMARY_SERVICE_128     {0x00,0x28,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
 #define DECL_CHARACTERISTIC_128      {0x03,0x28,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
@@ -81,6 +82,11 @@ static char *p_v = 0;
 static uint8_t p_len = 0;
 uint8_t notify_v[2];
 
+//N4
+static char *author_test_v = 0;
+static uint8_t author_test_len = 0;
+static uint8_t bAuthorized = 0;
+
 static int gatts_demo_cli_init(void);
 
 enum
@@ -103,6 +109,9 @@ enum {
 
 	GATTS_IDX_CHAR_N3_DECL,
 	GATTS_IDX_CHAR_N3_VALUE,
+
+	GATTS_IDX_CHAR_N4_DECL,
+	GATTS_IDX_CHAR_N4_VALUE,
 
 	GATTS_IDX_NB,
 };
@@ -128,6 +137,10 @@ static ble_attm_desc_t gatts_service_db[GATTS_IDX_NB] = {
     //p_v
     [GATTS_IDX_CHAR_N3_DECL]    = {DECL_CHARACTERISTIC_128, BK_BLE_PERM_SET(RD, ENABLE), 0, 0},
     [GATTS_IDX_CHAR_N3_VALUE]   = {{GATTS_CHARA_N3_UUID & 0xFF, GATTS_CHARA_N3_UUID >> 8, 0}, BK_BLE_PERM_SET(WRITE_REQ, ENABLE) | BK_BLE_PERM_SET(RD, ENABLE), BK_BLE_PERM_SET(RI, ENABLE) | BK_BLE_PERM_SET(UUID_LEN, UUID_16), 128},
+
+    //author_test_v
+    [GATTS_IDX_CHAR_N4_DECL]    = {DECL_CHARACTERISTIC_128, BK_BLE_PERM_SET(RD, ENABLE), 0, 0},
+    [GATTS_IDX_CHAR_N4_VALUE]   = {{GATTS_CHARA_N4_UUID & 0xFF, GATTS_CHARA_N4_UUID >> 8, 0}, BK_BLE_PERM_SET(WRITE_REQ, ENABLE) | BK_BLE_PERM_SET(RD, ENABLE), BK_BLE_PERM_SET(RI, ENABLE) | BK_BLE_PERM_SET(UUID_LEN, UUID_16), 128, 0,0, BK_GATT_VALUE_READ_AUTHOR_FLAG|BK_GATT_VALUE_WRITE_AUTHOR_FLAG},
 };
 
 static void ble_gatt_cmd_cb(ble_cmd_t cmd, ble_cmd_param_t *param)
@@ -161,6 +174,11 @@ static void ble_gatt_cmd_cb(ble_cmd_t cmd, ble_cmd_param_t *param)
             break;
     }
 
+}
+
+static void ble_gatts_authorize(uint8_t authorized)
+{
+    bAuthorized = authorized;
 }
 
 static bk_ble_key_t s_ble_enc_key;
@@ -271,6 +289,67 @@ static void ble_gatts_notice_cb(ble_notice_t notice, void *param)
                 case GATTS_IDX_CHAR_N3_VALUE:
                     bk_ble_read_response_value(r_req->conn_idx, p_len, (uint8_t*)p_v, r_req->prf_id, r_req->att_idx);
 					BLEGATTS_LOGI("read N3: %s, length: %d\n", p_v, p_len);
+                    break;
+
+                default:
+                    break;
+            }
+        }
+        break;
+    }
+    case BLE_5_AUTHOR_WRITE_EVENT: {
+        ble_write_req_t *w_req = (ble_write_req_t *)param;
+        BLEGATTS_LOGI("author write:conn_idx:%d, prf_id:%d, att_idx:%d, len:%d, data[0]:0x%02x\r\n",
+                w_req->conn_idx, w_req->prf_id, w_req->att_idx, w_req->len, w_req->value[0]);
+
+        if (w_req->prf_id == PRF_TASK_ID_GATTS) {
+            switch(w_req->att_idx)
+            {
+            case GATTS_IDX_CHAR_N4_VALUE:
+                {
+                    bk_ble_authorization_reply(w_req->conn_idx, w_req->prf_id, w_req->att_idx, 1, bAuthorized, 0, NULL);
+                    if (bAuthorized)
+                    {
+                        if (author_test_v != NULL)
+                        {
+                            os_free(author_test_v);
+                            author_test_v = NULL;
+                        }
+
+                        author_test_len = w_req->len;
+                        author_test_v= os_malloc(author_test_len + 1);
+
+                        os_memset((uint8_t *)author_test_v, 0, author_test_len + 1);
+                        os_memcpy((uint8_t *)author_test_v, w_req->value, author_test_len);
+
+                        BLEGATTS_LOGI("write N4: %s, length: %d\n", author_test_v, author_test_len);
+                    }
+                }
+                break;
+
+            default:
+                break;
+            }
+        }
+        break;
+    }
+    case BLE_5_AUTHOR_READ_EVENT: {
+        ble_read_req_t *r_req = (ble_read_req_t *)param;
+        BLEGATTS_LOGI("author read:conn_idx:%d, prf_id:%d, att_idx:%d\r\n",
+                r_req->conn_idx, r_req->prf_id, r_req->att_idx);
+
+        if (r_req->prf_id == PRF_TASK_ID_GATTS) {
+            switch(r_req->att_idx)
+            {
+                case GATTS_IDX_CHAR_N4_VALUE:
+                    if (bAuthorized)
+                    {
+                        bk_ble_authorization_reply(r_req->conn_idx, r_req->prf_id, r_req->att_idx, 0, bAuthorized, author_test_len, (uint8_t*)author_test_v);
+                    }
+                    else
+                    {
+                        bk_ble_authorization_reply(r_req->conn_idx, r_req->prf_id, r_req->att_idx, 0, bAuthorized, 0, NULL);
+                    }
                     break;
 
                 default:
@@ -713,6 +792,11 @@ void gatt_server_command(char *pcWriteBuffer, int xWriteBufferLen, int argc, cha
         }
         bk_ble_create_bond(gatt_conn_ind, GAP_AUTH_REQ_NO_MITM_BOND, BK_BLE_GAP_IO_CAP_NO_INPUT_NO_OUTPUT,
                                 GAP_SEC1_NOAUTH_PAIR_ENC, GAP_OOB_AUTH_DATA_NOT_PRESENT);;
+    }
+    else if(strcmp(argv [ 1 ], "author") == 0)
+    {
+        uint8_t author = os_strtoul(argv[2], NULL, 10);
+        ble_gatts_authorize(author);
     }else
     {
         goto error;

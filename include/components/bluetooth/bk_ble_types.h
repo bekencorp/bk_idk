@@ -301,6 +301,13 @@ enum
     BK_BLE_PERM_RIGHT_UUID_RFU        = 3,
 };
 
+typedef enum {
+    /// read needs to be authorized by user
+    BK_GATT_VALUE_READ_AUTHOR_FLAG = (1 << 0),
+    /// write needs to be authorized by user
+    BK_GATT_VALUE_WRITE_AUTHOR_FLAG = (1 << 1),
+}bk_ble_authorization_flag;
+
 /*
  * @brief for ble api async call result in ble_at_cmd_cb's cmd
  */
@@ -383,6 +390,7 @@ typedef enum
     BLE_5_CONNECT_EVENT,
     /// recv disconnect event, param ble_discon_ind_t
     BLE_5_DISCONNECT_EVENT,
+    /// PREPARE_WRITE_REQ indicate
     BLE_5_ATT_INFO_REQ,
     /// create db event, param ble_create_db_t
     BLE_5_CREATE_DB,
@@ -435,6 +443,10 @@ typedef enum
     BLE_5_PARING_NUMBER_COMPARE_REQ_EVENT,
 	
     BLE_5_SCAN_STOPPED_EVENT,
+    ///This event corresponds to BLE_5_WRITE_EVENT, and is applicable after configuring the BK_GATT_VALUE_WRITE_AUTHOR_FLAG
+    BLE_5_AUTHOR_WRITE_EVENT,
+    ///This event corresponds to BLE_5_READ_EVENT, and is applicable after configuring the BK_GATT_VALUE_READ_AUTHOR_FLAG
+    BLE_5_AUTHOR_READ_EVENT,
 } ble_notice_t;
 
 typedef enum
@@ -713,6 +725,8 @@ typedef struct
     uint16_t value_len;
     ///pointer to value if BK_BLE_PERM_SET(RI, ENABLE) not set and BK_BLE_PERM_SET(VALUE_INCL, ENABLE) set
     void *p_value_context;
+    /// read/write Authorization permission flag (see enum \ref bk_ble_authorization_flag)
+    uint8_t author_flag;
 } ble_attm_desc_t;
 
 struct bk_ble_db_cfg
