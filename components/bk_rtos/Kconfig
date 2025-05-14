@@ -94,6 +94,13 @@ menu "Bk_rtos"
 			help
 				System tick count per second, can be 1-1000
         
+        config BK_OS_TIMER_DEBUG
+            bool "Enable OS timer Debug"
+            default y
+            help
+				when turn on the marco,the current task TCB information
+				will be added every time the software timer command is sent
+        
 	endmenu
 
 	menu "Modify LITEOS_M Config"

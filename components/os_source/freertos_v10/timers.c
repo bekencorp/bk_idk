@@ -98,6 +98,9 @@
     {
         TickType_t xMessageValue; /*<< An optional value used by a subset of commands, for example, when changing the period of a timer. */
         Timer_t * pxTimer;        /*<< The timer to which the command will be applied. */
+    #if  CONFIG_BK_OS_TIMER_DEBUG
+        uint32_t TCB_ptr;
+    #endif
     } TimerParameter_t;
 
 
@@ -402,6 +405,9 @@
             xMessage.xMessageID = xCommandID;
             xMessage.u.xTimerParameters.xMessageValue = xOptionalValue;
             xMessage.u.xTimerParameters.pxTimer = xTimer;
+        #if CONFIG_BK_OS_TIMER_DEBUG
+            xMessage.u.xTimerParameters.TCB_ptr = (uint32_t)xTaskGetCurrentTaskHandle();
+        #endif
 
             if( xCommandID < tmrFIRST_FROM_ISR_COMMAND )
             {
