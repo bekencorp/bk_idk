@@ -23,32 +23,26 @@
 
 #define HWREGB_SET_ACTIVE_EP(ep, regx, value) \
 { \
-    uint32_t int_level = rtos_disable_int(); \
     uint32_t old_ep = musb_get_active_ep(); \
     musb_set_active_ep(ep); \
     (*((volatile uint8_t *)(regx))) = value; \
     musb_set_active_ep(old_ep); \
-	rtos_enable_int(int_level); \
 }
 
 #define HWREGB_CLEAR_ACTIVE_EP(ep, regx, value) \
 { \
-    uint32_t int_level = rtos_disable_int(); \
     uint32_t old_ep = musb_get_active_ep(); \
     musb_set_active_ep(ep); \
     (*((volatile uint8_t *)(regx))) &= ~value; \
     musb_set_active_ep(old_ep); \
-	rtos_enable_int(int_level); \
 }
 
 #define HWREGB_OR_ACTIVE_EP(ep, regx, value) \
 { \
-    uint32_t int_level = rtos_disable_int(); \
     uint32_t old_ep = musb_get_active_ep(); \
     musb_set_active_ep(ep); \
     (*((volatile uint8_t *)(regx))) |= value; \
     musb_set_active_ep(old_ep); \
-	rtos_enable_int(int_level); \
 }
 
 #ifndef USBH_IRQHandler
@@ -363,9 +357,6 @@ static void musb_read_packet(uint8_t ep_idx, uint8_t *buffer, uint16_t len)
 void musb_control_pipe_init(struct musb_pipe *pipe, struct usb_setup_packet *setup, uint8_t *buffer, uint32_t buflen)
 {
     USB_LOG_DBG("[+]%s\r\n", __func__);
-    GLOBAL_INT_DECLARATION();
-    GLOBAL_INT_DISABLE();
-
     HWREGB(USB_TXADDR_BASE(0)) = pipe->dev_addr;
     HWREGB_SET_ACTIVE_EP(0, (USB_BASE + MUSB_IND_TXTYPE_OFFSET), pipe->speed);
 
@@ -379,8 +370,6 @@ void musb_control_pipe_init(struct musb_pipe *pipe, struct usb_setup_packet *set
 
     musb_write_packet(0, (uint8_t *)setup, 8);
     HWREGB_SET_ACTIVE_EP(0, (USB_BASE + MUSB_IND_TXCSRL_OFFSET), USB_CSRL0_TXRDY | USB_CSRL0_SETUP);
-
-    GLOBAL_INT_RESTORE();
 
     USB_LOG_DBG("[-]%s\r\n", __func__);
 
@@ -405,8 +394,6 @@ void musb_intr_pipe_init(struct musb_pipe *pipe, uint8_t *buffer, uint32_t bufle
 {
     uint8_t ep_idx;
     uint8_t old_ep_index;
-    GLOBAL_INT_DECLARATION();
-    GLOBAL_INT_DISABLE();
 
     ep_idx = pipe->ep_addr & 0x7f;
     old_ep_index = musb_get_active_ep();
@@ -426,16 +413,11 @@ void musb_intr_pipe_init(struct musb_pipe *pipe, uint8_t *buffer, uint32_t bufle
         HWREGB(USB_BASE + MUSB_IND_TXCSRL_OFFSET) = USB_TXCSRL1_TXRDY;
     }
     musb_set_active_ep(old_ep_index);
-
-    GLOBAL_INT_RESTORE();
 }
 
 void musb_isoc_pipe_init(struct musb_pipe *pipe, uint8_t *buffer, uint32_t buflen)
 {
     uint8_t old_ep_index;
-
-    GLOBAL_INT_DECLARATION();
-    GLOBAL_INT_DISABLE();
 
     old_ep_index = musb_get_active_ep();
     USB_LOG_DBG("[+]%s\r\n", __func__);
@@ -458,7 +440,6 @@ void musb_isoc_pipe_init(struct musb_pipe *pipe, uint8_t *buffer, uint32_t bufle
         HWREGB(USB_BASE + MUSB_IND_TXCSRL_OFFSET) |= USB_TXCSRL1_TXRDY;
     }
     musb_set_active_ep(old_ep_index);
-    GLOBAL_INT_RESTORE();
     USB_LOG_DBG("[-]%s\r\n", __func__);
 
 }
@@ -891,8 +872,6 @@ static void usbh_pipe_alloc_rx_set_reg(uint16_t bVal,
 {
     uint8_t old_ep_index;
     uint8_t ep_local_idx = ppipe->ep_local_index;
-    GLOBAL_INT_DECLARATION();
-    GLOBAL_INT_DISABLE();
     old_ep_index = musb_get_active_ep();
     musb_set_active_ep(ep_local_idx);
 
@@ -941,7 +920,6 @@ static void usbh_pipe_alloc_rx_set_reg(uint16_t bVal,
             break;
     }
     musb_set_active_ep(old_ep_index);
-    GLOBAL_INT_RESTORE();
 }
 
 static void usbh_pipe_alloc_tx_set_reg(uint16_t bVal,
@@ -952,8 +930,7 @@ static void usbh_pipe_alloc_tx_set_reg(uint16_t bVal,
 {
     uint8_t old_ep_index;
     uint8_t ep_local_idx = ppipe->ep_local_index;
-    GLOBAL_INT_DECLARATION();
-    GLOBAL_INT_DISABLE();
+
     old_ep_index = musb_get_active_ep();
     musb_set_active_ep(ep_local_idx);
 
@@ -1005,7 +982,6 @@ static void usbh_pipe_alloc_tx_set_reg(uint16_t bVal,
 
     HWREGB(USB_BASE + MUSB_IND_TXCSRH_OFFSET) |= (USB_TXCSRH1_AUTOSET);
     musb_set_active_ep(old_ep_index);
-    GLOBAL_INT_RESTORE();
 }
 
 static struct musb_pipe *usbh_pipe_alloc_ep0(struct musb_pipe *ppipe, const struct usbh_endpoint_cfg *ep_cfg)
@@ -1233,16 +1209,12 @@ int usbh_submit_urb(struct usbh_urb *urb)
     }
 
     flags = usb_osal_enter_critical_section();
-    GLOBAL_INT_DECLARATION();
-    GLOBAL_INT_DISABLE();
 
     if (!pipe->hport->connected) {
-        GLOBAL_INT_RESTORE();
         return -ENODEV;
     }
 
     if (pipe->urb) {
-        GLOBAL_INT_RESTORE();
         return -EBUSY;
     }
 
@@ -1255,7 +1227,6 @@ int usbh_submit_urb(struct usbh_urb *urb)
     if (urb->timeout > 0) {
         pipe->waiter = true;
     }
-    GLOBAL_INT_RESTORE();
     usb_osal_leave_critical_section(flags);
 
     switch (pipe->ep_type) {
@@ -1357,8 +1328,7 @@ void handle_ep0(void)
     if (urb == NULL) {
         return;
     }
-    GLOBAL_INT_DECLARATION();
-    GLOBAL_INT_DISABLE();
+
     old_ep_idx = musb_get_active_ep();
 
     musb_set_active_ep(0);
@@ -1367,7 +1337,6 @@ void handle_ep0(void)
     if (ep0_status & USB_CSRL0_STALLED) {
         HWREGB(USB_BASE + MUSB_IND_TXCSRL_OFFSET) &= ~USB_CSRL0_STALLED;
         usb_ep0_state = USB_EP0_STATE_SETUP;
-        GLOBAL_INT_RESTORE();
         urb->errorcode = -EPERM;
         musb_pipe_waitup(pipe);
         musb_set_active_ep(old_ep_idx);
@@ -1377,7 +1346,6 @@ void handle_ep0(void)
         HWREGB(USB_BASE + MUSB_IND_TXCSRL_OFFSET) &= ~USB_CSRL0_ERROR;
         musb_fifo_flush(0);
         usb_ep0_state = USB_EP0_STATE_SETUP;
-        GLOBAL_INT_RESTORE();
         urb->errorcode = -EIO;
         musb_pipe_waitup(pipe);
         musb_set_active_ep(old_ep_idx);
@@ -1386,7 +1354,6 @@ void handle_ep0(void)
     if (ep0_status & USB_CSRL0_STALL) {
         HWREGB(USB_BASE + MUSB_IND_TXCSRL_OFFSET) &= ~USB_CSRL0_STALL;
         usb_ep0_state = USB_EP0_STATE_SETUP;
-        GLOBAL_INT_RESTORE();
         urb->errorcode = -EPERM;
         musb_pipe_waitup(pipe);
         musb_set_active_ep(old_ep_idx);
@@ -1472,7 +1439,6 @@ void handle_ep0(void)
             break;
     }
     musb_set_active_ep(old_ep_idx);
-    GLOBAL_INT_RESTORE();
 }
 
 void usbh_musb_disconnect_set_status()
@@ -1496,29 +1462,7 @@ void usbh_musb_disconnect_set_status()
 }
 void usbh_musb_trigger_disconnect_by_sw()
 {
-#if CONFIG_USB_HUB_MULTIPLE_DEVICES
-     usbh_roothub_thread_send_queue(1, (void *)usbh_musb_disconnect_set_status);
-#else
-    g_musb_hcd.port_csc = 1;
-    g_musb_hcd.port_pec = 1;
-    g_musb_hcd.port_pe = 0;
-    g_musb_hcd.ep_local_index_record = 0;
-    g_musb_hcd.fifo_size_offset = 128;
-    for (uint8_t index = 0; index < CONFIG_USBHOST_PIPE_NUM; index++) {
-        for (uint8_t j = 0; j < 2; j++) {
-            struct musb_pipe *pipe = &g_musb_hcd.pipe_pool[index][j];
-            struct usbh_urb *urb = pipe->urb;
-            if (pipe->waiter) {
-                pipe->waiter = false;
-                urb->errorcode = -ESHUTDOWN;
-                usb_osal_sem_give(pipe->waitsem);
-            }
-        }
-    }
-    usbh_roothub_thread_wakeup(1);
-#endif
-
-
+    usbh_roothub_thread_send_queue(1, (void *)usbh_musb_disconnect_set_status);
 	USB_LOG_DBG("[-]%s\r\n", __func__);
 }
 
@@ -1773,38 +1717,11 @@ void USBH_IRQHandler(void)
     USB_LOG_DBG("%s is: 0x%x txis: 0x%x rxis:0x%x dmais:0x%x\r\n", __func__, is, txis, rxis, dmais);
 
     if ((is & USB_IS_DISCON) || (is & USB_IS_BABBLE)) {
-#if CONFIG_USB_HUB_MULTIPLE_DEVICES
         usbh_roothub_thread_send_queue(1, (void *)usbh_musb_disconnect_set_status);
-#else
-        g_musb_hcd.port_csc = 1;
-        g_musb_hcd.port_pec = 1;
-        g_musb_hcd.port_pe = 0;
-        g_musb_hcd.ep_local_index_record = 0;
-        g_musb_hcd.fifo_size_offset = 128;
-        for (uint8_t index = 0; index < CONFIG_USBHOST_PIPE_NUM; index++) {
-            for (uint8_t j = 0; j < 2; j++) {
-                struct musb_pipe *pipe = &g_musb_hcd.pipe_pool[index][j];
-                struct usbh_urb *urb = pipe->urb;
-                if (pipe->waiter) {
-                    pipe->waiter = false;
-                    urb->errorcode = -ESHUTDOWN;
-                    usb_osal_sem_give(pipe->waitsem);
-                }
-            }
-        }
-        usbh_roothub_thread_wakeup(1);
-#endif
         musb_set_active_ep(old_ep_idx);
         return;
     } else if (is & USB_IS_CONN) {
-#if CONFIG_USB_HUB_MULTIPLE_DEVICES
         usbh_roothub_thread_send_queue(1, (void *)usbh_musb_connect_set_status);
-#else
-        g_musb_hcd.port_csc = 1;
-        g_musb_hcd.port_pec = 1;
-        g_musb_hcd.port_pe = 1;
-        usbh_roothub_thread_wakeup(1);
-#endif
         musb_set_active_ep(old_ep_idx);
         return;
     }

@@ -92,10 +92,6 @@ static void bk_usb_init_all_device_driver_sw(void)
 #if CONFIG_USB_HUB
 	extern void usbh_hub_class_register();
 	usbh_hub_class_register();
-
-#if CONFIG_USB_HUB_MULTIPLE_DEVICES
-
-#endif
 #endif
 
 #if CONFIG_USB_UVC
