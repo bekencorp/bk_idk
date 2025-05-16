@@ -1239,6 +1239,8 @@ bk_err_t bk_alarm_unregister(aon_rtc_id_t id, uint8_t *name_p)
 		}
 		else	//has no nodes now
 		{
+			//If the ISR at enable status, and the previous set tick time come, it will produce an Interrupt and maybe wakeup system.
+			aon_rtc_hal_disable_tick_int(&s_aon_rtc[id].hal);
 			// aon_rtc_set_tick(&s_aon_rtc[id].hal, AON_RTC_ROUND_TICK);
 			// AON_RTC_LOGD("no alarm:cur_tick=0x%x\r\n", bk_aon_rtc_get_current_tick(id));
 		}
