@@ -600,6 +600,11 @@ void *psram_malloc( size_t xWantedSize )
 #if CONFIG_MEM_DEBUG
 	uint8_t *mem_end = NULL;
 	uint32_t mem_end_len = 0;
+
+	if (platform_is_in_interrupt_context() && (arch_is_enter_exception() == 0)) {
+		os_printf("malloc_risk\r\n");
+		BK_ASSERT(false);
+	}
 #endif
 
 	if (xWantedSize == 0)
@@ -971,6 +976,12 @@ void * bk_wrap_sram_malloc(size_t xWantedSize)
 #if CONFIG_MEM_DEBUG_OVERFLOW
 	uint32_t lr = __get_LR();
 #endif
+#if CONFIG_MEM_DEBUG
+	if (platform_is_in_interrupt_context() && (arch_is_enter_exception() == 0)) {
+		os_printf("malloc_risk\r\n");
+		BK_ASSERT(false);
+	}
+#endif
 
 	if (xWantedSize == 0)
 		xWantedSize = 4;
@@ -1096,6 +1107,13 @@ void vPortFree( void *pv )
 
 #if CONFIG_MEM_DEBUG_OVERFLOW
 	uint32_t lr = __get_LR();
+#endif
+
+#if CONFIG_MEM_DEBUG
+	if (platform_is_in_interrupt_context() && (arch_is_enter_exception() == 0)) {
+		os_printf("free_risk\r\n");
+		BK_ASSERT(false);
+	}
 #endif
 
 	if( pv != NULL )
