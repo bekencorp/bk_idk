@@ -290,7 +290,7 @@ $$$$$$$$$$$$$$$
 命令行使用手册
 +++++++++++++++++++++++++++
 
-命令行需要使用 bk_loader.exe 程序； 在命令行窗口，输入”--help”，可以查看所有的命令集，
+命令行需要使用 bk_loader.exe 程序； 在命令行窗口，输入”-\-help”，可以查看所有的命令集，
 每条指令均有使用说明，对于非法指令，会自动弹出相应的报错，见下图：
 
 .. figure:: picture/bkfil_manual.png
@@ -329,7 +329,7 @@ $$$$$$$$$$$$$$$
  - bk_loader download –p 7 –i all.bin 常规默认值烧录
  - bk_loader download –p 7 –b 2000000 –i all.bin 设置串口波特率为2M，默认为1.5M
  - bk_loader download –p 7 –i all.bin –s 11000 设置起始地址从0x11000 开始烧录
- - bk_loader download –p 7 --mainBin-multi all_2M.1220.bin@0x0-0x1000, all_2M.1220-4k.bin@0x132000-0x1000 多文件烧录，使用--mainBin-multi 参数，按照格式，输入路径名 + @ + “起始地址” + “文件长度”
+ - bk_loader download –p 7 -\-mainBin-multi all_2M.1220.bin@0x0-0x1000, all_2M.1220-4k.bin@0x132000-0x1000 多文件烧录，使用-\-mainBin-multi 参数，按照格式，输入路径名 + @ + “起始地址” + “文件长度”
  - bk_loader–h	其他客户数据写入，请看BKFIL –h ，了解更多信息写入
 
 读取:

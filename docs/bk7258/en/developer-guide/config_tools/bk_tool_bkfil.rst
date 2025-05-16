@@ -298,7 +298,7 @@ Instruction manual
 
 Command line need to use bk_loader. exe program；
 
-In the command line window, input "--help" to view all command sets. Each command has instructions. For illegal commands, an error message will be displayed, as shown in the following figure：
+In the command line window, input "-\-help" to view all command sets. Each command has instructions. For illegal commands, an error message will be displayed, as shown in the following figure：
 
 Help manual:
 
@@ -338,7 +338,7 @@ Download:
  - bk_loader download –p 7 –i all.bin	General default download
  - bk_loader download –p 7 –b 2000000 –i all.bin	Set the baud rate of the serial port to 2M (1.5M by default)
  - bk_loader download –p 7 –i all.bin –s 11000	Set the start address to start downloading from 0x11000
- - bk_loader download –p 7 --mainBin-multi all_2M.1220.bin@0x0-0x1000, all_2M.1220-4k.bin@0x132000-0x1000	Multi-file downloading, using the --mainBin-multi parameter, according to the format, enter the path name + @ + "start address" + "file length"
+ - bk_loader download –p 7 -\-mainBin-multi all_2M.1220.bin@0x0-0x1000, all_2M.1220-4k.bin@0x132000-0x1000	Multi-file downloading, using the -\-mainBin-multi parameter, according to the format, enter the path name + @ + "start address" + "file length"
  - bk_loader –h	For other customer data writes, see BKFIL -h for more information on writing
 
 Read:
