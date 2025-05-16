@@ -270,13 +270,14 @@ int components_init(void);
 
 int bk_init(void)
 {
+	components_init();
+
 	BK_LOGI(TAG, "armino app init: %s\n", build_version);
+	BK_LOGI(TAG, "verify id: %s\n", BK_VERIFY_ID);
 
 #ifdef APP_VERSION
 	BK_LOGI(TAG, "APP Version: %s\n", APP_VERSION);
 #endif
-
-	components_init();
 
 #if CONFIG_SYS_CPU0
 	bk_pm_module_vote_cpu_freq(PM_DEV_ID_DEFAULT,PM_CPU_FRQ_120M);
