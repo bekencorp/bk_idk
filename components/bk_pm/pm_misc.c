@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 #include<components/sensor.h>
 #include "sys_driver.h"
 
@@ -21,7 +20,24 @@
 
 /*=====================DEFINE  SECTION  START=====================*/
 
+#define TAG "pm"
+
+#define LOGI(...) BK_LOGI(TAG, ##__VA_ARGS__)
+#define LOGW(...) BK_LOGW(TAG, ##__VA_ARGS__)
+#define LOGE(...) BK_LOGE(TAG, ##__VA_ARGS__)
+#define LOGD(...) BK_LOGD(TAG, ##__VA_ARGS__)
+
+#define PM_SOC_SYS_REG_BASE                  (SOC_SYS_REG_BASE)
+#define PM_SYS_REG_0x8                       (SOC_SYS_REG_BASE + 0x8*4)
+#define PM_SYS_REG_0x4                       (SOC_SYS_REG_BASE + 0x4*4)
+#define PM_SYS_REG_0x5                       (SOC_SYS_REG_BASE + 0x5*4)
+#define PM_CPU_SRC_480M                      (3)
+#define PM_CPU_SRC_320M                      (2)
+#define PM_CPU_SRC_POS                       (4)
+#define PM_CPU_SRC_MASK                      (0x3)
+
 #define PM_CP1_SOC_AON_RTC_REG_BASE          (SOC_AON_RTC_REG_BASE)
+
 #define PM_AON_RTC_CNT_VAL_L_OFFSET          (0x3*4)
 #define PM_AON_RTC_CNT_VAL_H_OFFSET          (0xa*4)
 
@@ -70,12 +86,54 @@ void pm_printf_current_temperature(void)
 {
 #if CONFIG_TEMP_DETECT
 	float temp;
-
 	bk_sensor_get_current_temperature(&temp);
 	os_printf("current chip temperature about %.2f\r\n",temp);
 #endif
 }
 
+bk_err_t bk_pm_cpu_freq_dump()
+{
+	uint32_t value_8 = 0;
+	uint32_t value_4 = 0;
+	uint32_t value_5 = 0;
+	uint32_t cp0_div = 0;
+	uint32_t cp1_div = 0;
+	value_8 = REG_READ(PM_SYS_REG_0x8);
+	value_4 = REG_READ(PM_SYS_REG_0x4);
+	value_5 = REG_READ(PM_SYS_REG_0x5);
+
+	if(((value_4>>4)&0x1) == 0x1)
+	{
+		cp0_div = (value_8&0xF)+1;
+	}
+	else
+	{
+		cp0_div = ((value_8&0xF)+1)*2;
+	}
+
+	if(((value_5>>4)&0x1) == 0x1)
+	{
+		cp1_div = (value_8&0xF)+1;
+	}
+	else
+	{
+		cp1_div = ((value_8&0xF)+1)*2;
+	}
+
+	switch((value_8 >> PM_CPU_SRC_POS)&PM_CPU_SRC_MASK)
+	{
+		case PM_CPU_SRC_480M:
+			LOGI("Cur freq: CPU0:(480/%d)M,CPU1/CPU2:(480/%d)M\r\n",cp0_div,cp1_div);
+			break;
+		case PM_CPU_SRC_320M:
+			LOGI("Cur freq: CP0:(320/%d)M,CP1/CP2:(320/%d)M\r\n",cp0_div,cp1_div);
+			break;
+		default:
+			break;
+	}
+	LOGI("freq_reg:0x%x,0x%x,0x%x\r\n",value_8,value_4,value_5);
+	return BK_OK;
+}
 
 /*Why redefine the function:*/
 /*The low-voltage code needs to be placed in the ITCM and cannot be in the flash. The existing interface code is large in ITCM,
