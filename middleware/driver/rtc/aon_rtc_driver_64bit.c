@@ -307,6 +307,7 @@ static void aon_rtc_get_timeofday(struct timeval *time_p)
 
 }
 
+#if 0
 bk_err_t aon_rtc_enter_reboot(void)
 {
 	struct timeval rtc_keep_time = {0, 0};
@@ -325,15 +326,18 @@ bk_err_t aon_rtc_enter_reboot(void)
 
 	return BK_OK;
 }
-
+#endif
 
 static void aon_rtc_compute_boot_timeofday(void)
 {
-	struct timeval time = {0, 0};
 
 	AON_RTC_LOGD("%s[+]\r\n", __func__);
+	
+#if (CONFIG_AON_RTC_KEEP_TIME_SUPPORT)
+	struct timeval time = {0, 0};
 	aon_rtc_get_timeofday(&time);
 	s_boot_time_us = ((uint64_t)time.tv_sec)*1000000LL+time.tv_usec;
+#endif
 	//deepsleep boot
 	if(bk_rtc_get_aon_pmu_deepsleep_flag())
 	{
@@ -345,6 +349,7 @@ static void aon_rtc_compute_boot_timeofday(void)
 	}
 	else	//cold boot,power on
 	{
+		s_boot_time_us = 0;
 		AON_RTC_LOGD("power on s_boot_time_us:%lld\r\n",s_boot_time_us);
 	}
 }

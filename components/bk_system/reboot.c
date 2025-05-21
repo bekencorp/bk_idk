@@ -56,19 +56,6 @@ void bk_reboot_ex(uint32_t reset_reason)
 		BK_LOGI(TAG, "bk_reboot\r\n");
 		delay_ms(100); //add delay for bk_writer BEKEN_DO_REBOOT cmd
 		bk_pm_module_vote_cpu_freq(PM_DEV_ID_DEFAULT,PM_CPU_FRQ_60M);
-#if CONFIG_AON_RTC_KEEP_TIME_SUPPORT
-		{
-			/* 
-			 * NOTES:special requirements
-			 * Some customers system reboot, needs to reserve the network time,
-			 * maybe after reboot, the network can't work at once.
-			 * so before reboot, save the network time to flash.
-			 */
-			extern bk_err_t aon_rtc_enter_reboot(void);
-			aon_rtc_enter_reboot();
-		}
-#endif
-
 		BK_LOGI(TAG, "wdt reboot\r\n");
 		rtos_disable_int();
 		if (reset_reason < RESET_SOURCE_UNKNOWN) {
