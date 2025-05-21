@@ -834,6 +834,18 @@ bk_err_t bk_wifi_set_tx_raw_timeout(uint16_t timeout_ms);
 bk_err_t bk_wifi_set_wifi_media_mode(bool flag);
 
 /**
+  * @brief     get wifi media mode configuration
+  *
+  * @param     flag store configuration of wifi media mode
+  *
+  * @return
+  *    - BK_OK: succeed
+  *    - BK_ERR_NULL_PARAM: the parameter config is NULL
+  *    - others: other errors
+  */
+bk_err_t bk_wifi_get_wifi_media_mode_config(bool *flag);
+
+/**
  * @brief     Configure video quality when the video is running.
  *
  * This API is used to configure video quality.There are three mode to choose:
@@ -879,16 +891,30 @@ bk_err_t bk_wifi_set_video_quality(uint8_t quality);
 bk_err_t bk_wifi_get_video_quality_config(uint8_t *quality);
 
 /**
-  * @brief     get wifi media mode configuration
+ * @brief     Configure defalut AC
+ *
+ * This API is used to configure default AC,rang in [0 3]
+ *
+ * @param ac set default AC rang in [0 3]
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: other errors
+ */
+bk_err_t bk_wifi_set_default_ac(uint32_t ac);
+
+/**
+  * @brief     get default AC
   *
-  * @param     flag store configuration of wifi media mode
+  * @param     ac store default AC
   *
   * @return
   *    - BK_OK: succeed
   *    - BK_ERR_NULL_PARAM: the parameter config is NULL
   *    - others: other errors
   */
-bk_err_t bk_wifi_get_wifi_media_mode_config(bool *flag);
+bk_err_t bk_wifi_get_default_ac(uint32_t *ac);
+
 
 /**
   * @brief     get tx raw ac info

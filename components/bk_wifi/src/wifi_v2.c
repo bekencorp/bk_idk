@@ -3579,6 +3579,16 @@ bk_err_t bk_wifi_set_wifi_media_mode(bool flag)
 	return BK_OK;
 }
 
+bk_err_t bk_wifi_get_wifi_media_mode_config(bool *flag)
+{
+	if (!flag)
+		return BK_ERR_NULL_PARAM;
+
+	*flag = g_wifi_mac_config.media_flag;
+
+	return BK_OK;
+}
+
 bk_err_t bk_wifi_set_video_quality(uint8_t quality)
 {
 	g_wifi_mac_config.media_quality = quality;
@@ -3596,12 +3606,21 @@ bk_err_t bk_wifi_get_video_quality_config(uint8_t *quality)
 	return BK_OK;
 }
 
-bk_err_t bk_wifi_get_wifi_media_mode_config(bool *flag)
+bk_err_t bk_wifi_set_default_ac(uint32_t ac)
 {
-	if (!flag)
+	g_wifi_mac_config.def_ac = ac;
+
+	WIFI_LOGI("default ac %x\r\n",g_wifi_mac_config.def_ac);
+
+	return rw_msg_set_default_ac(g_wifi_mac_config.def_ac);
+}
+
+bk_err_t bk_wifi_get_default_ac(uint32_t *ac)
+{
+	if (!ac)
 		return BK_ERR_NULL_PARAM;
 
-	*flag = g_wifi_mac_config.media_flag;
+	*ac = g_wifi_mac_config.def_ac;
 
 	return BK_OK;
 }

@@ -36,6 +36,7 @@ wifi_mac_config_t g_wifi_mac_config = {
 	WIFI_CFG_DATA_RTY_NUM,
 	false,
 	false,
+	WIFI_CFG_DEFAULT_AC,
 };
 
 //TODO config it via menuconfig

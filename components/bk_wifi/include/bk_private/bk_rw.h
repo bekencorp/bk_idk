@@ -307,6 +307,7 @@ extern int rwnx_monitor_open();
 extern int rwnx_monitor_close();
 extern int rwnx_msg_send_twt_setup(uint8_t setup_type, uint16_t mantissa, uint8_t min_twt);
 extern int rwnx_msg_send_twt_teardown();
+extern int rw_msg_set_default_ac(uint32_t ac);
 extern void rwnx_udpate_capability(uint32_t capa_id, uint32_t capa_val);
 extern UINT32 rwm_transfer(UINT8 vif_idx, struct pbuf *p, UINT8 *buf, UINT32 len, void *cb, void *arg
 #if CONFIG_SPECIAL_TX_TYPE

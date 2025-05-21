@@ -1182,6 +1182,10 @@ enum mm_msg_tag
     MM_GET_SUPPORT_CAPA_MODE_REQ,
     ///get support capa mode Confirmation.  msgid:133
     MM_GET_SUPPORT_CAPA_MODE_CFM,
+    ///set default AC Request.  msgid:134
+    MM_SET_DEFAULT_AC_REQ,
+    ///set default AC Confirmation.  msgid:135
+    MM_SET_DEFAULT_AC_CFM,
     #endif
 
     /*
@@ -1300,6 +1304,13 @@ struct mm_set_filter_req
 {
     /// RX filter to be put into rxCntrlReg HW register
     uint32_t filter;
+};
+
+/// Structure containing the parameters of the @ref MM_SET_DEFAULT_AC_REQ message
+struct mm_set_def_ac_req
+{
+    /// AC parameters
+    uint32_t ac_param;
 };
 
 struct mm_set_machw_ack_cntrl_req

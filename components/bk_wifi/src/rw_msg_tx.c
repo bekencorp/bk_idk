@@ -604,6 +604,15 @@ int rw_msg_send_twt_teardown(uint8_t vif_idx, uint8_t flow_id)
 }
 #endif
 
+int rw_msg_set_default_ac(uint32_t ac)
+{
+	struct mm_set_def_ac_req *cfg_ac = ke_msg_alloc(MM_SET_DEFAULT_AC_REQ, TASK_MM, TASK_ME, sizeof(struct mm_set_def_ac_req));
+
+	cfg_ac->ac_param = ac;
+
+	return rw_msg_send(cfg_ac, 0, 0, NULL);
+}
+
 int rw_msg_get_machw_mib_req(uint32_t mib_bit, void *cfm)
 {
 	struct mm_get_machw_mib_req *req;

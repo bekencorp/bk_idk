@@ -27,6 +27,8 @@ extern "C" {
 #define WIFI_CFG_DATA_RTY_NUM					0xF0F0
 // default mgmt retry value
 #define WIFI_CFG_MGMT_RTY_NUM					0x0704
+// default AC
+#define WIFI_CFG_DEFAULT_AC					0x0
 
 typedef struct wifi_mac_config {
 	// raw tx interface AC
@@ -49,6 +51,8 @@ typedef struct wifi_mac_config {
 	uint8_t block_bcmc_en;
 	//Microwave anti-interference policy enable
 	bool ani_en;
+	//default ac
+	uint32_t def_ac;
 } wifi_mac_config_t;
 
 extern wifi_mac_config_t g_wifi_mac_config;
