@@ -834,6 +834,7 @@ CONFIG_USB_OS=y
 # Shared Configs with Public components
 #
 CONFIG_WIFI_ENABLE=y
+CONFIG_BK_RC_ENABLE=y
 CONFIG_RAW_LINK_ENABLE=y
 
 #
