@@ -1,6 +1,12 @@
+#@ Enable Override Flash Partition
 CONFIG_OVERRIDE_FLASH_PARTITION=y
+#@ Enable FreeRTOS Posix
 CONFIG_FREERTOS_POSIX=y
+#@ PWM phase shift Support
 CONFIG_PWM_PHASE_SHIFT=y
+#@ "ASIC PWM IP Version V1P1:BK7236XX...,the chips MP after 2023-04"
 CONFIG_PWM_V1PX=y
+#@ Enable pwm
 CONFIG_PWM=y
+#@ Cpu1 core offset address default 0x2e0000
 CONFIG_SYS_CPU1_OFFSET=0x21b0000

@@ -1,2 +1,4 @@
+#@ psram power domain disable
 CONFIG_PSRAM_POWER_DOMAIN_LV_DISABLE=y
+#@ ahbp power domain disable
 CONFIG_AHBP_POWER_DOMAIN_LV_DISABLE=y

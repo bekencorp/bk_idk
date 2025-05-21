@@ -1,23 +1,40 @@
 # Set CONFIG_TFM=y to rebuild bl2.bin and tfm_s.bin
+#@ Enable TFM
 CONFIG_TFM=y
 
+#@ psa level:0(profile_small) 1(profile_medium) 2(profile_large)
 CONFIG_TFM_PROFILE="profile_medium"
+#@ build type: debug, release or minsizerel
 CONFIG_TFM_BUILD_TYPE="minsizerel"
+#@ Enable FPGA: ON/OFF
 CONFIG_TFM_FPGA="OFF"
+#@ Enable FWU: ON/OFF
 CONFIG_TFM_FWU=y
+#@ Enable CRYPTO: ON/OFF
 CONFIG_TFM_CRYPTO=y
+#@ Enable to TFM secure bin test: ON/OFF
 CONFIG_TFM_TEST_S="OFF"
+#@ Enable to TFM non-secure bin test: ON/OFF
 CONFIG_TFM_TEST_NS="OFF"
+#@ Set BL2 log level: OFF/ERROR/WARNING/INFO/DEBUG
 CONFIG_TFM_BL2_LOG_LEVEL="INFO"
+#@ Enable BL2: ON/OFF
 CONFIG_TFM_BL2="ON"
+#@ Enable OTP/NV counter RAM emulation: ON/OFF
 CONFIG_OTP_NV_COUNTERS_RAM_EMULATION="OFF"
+#@ Enable platform default OTP writable: ON/OFF
 CONFIG_PLATFORM_DEFAULT_OTP_WRITEABLE="ON"
+#@ The MCUBOOT upgrade strategy can be:
 CONFIG_BL2_UPGRADE_STRATEGY="OVERWRITE_ONLY"
 
+#@ Enable SPE
 CONFIG_SPE=0
+#@ CPU0 RAM size for SPE
 CONFIG_CPU0_SPE_RAM_SIZE=0x20000
+#@ CPU0 RAM size for NSPE
 CONFIG_CPU0_NSPE_RAM_SIZE=0x70000
 
+#@ Enable Flash Size 4M
 CONFIG_FLASH_SIZE_4M=y
 
 #CONFIG_INT_WDT=n
@@ -31,15 +48,27 @@ CONFIG_FLASH_SIZE_4M=y
 #CONFIG_TFM_INT_TARGET_NSC=y
 
 CONFIG_LV_FLASH_ENTER_LP_ENABLE=n
+#@ enable security firmware / no-security firmware
 CONFIG_SECURITY_FIRMWARE=y
+#@ Enable Mbedtls
 CONFIG_MBEDTLS=n
+#@ Enable HTTPS
 CONFIG_HTTPS=y
+#@ enable https ota
 CONFIG_OTA_HTTPS=y
+#@ Enable mbedtls v3.5.2
 CONFIG_PSA_MBEDTLS=y
+#@ Enable use PSA crypto
 CONFIG_MBEDTLS_USE_PSA_CRYPTO=y
+#@ Enable psa mbedtls test
 CONFIG_PSA_MBEDTLS_TEST=y
+#@ Enable security engine cli
 CONFIG_TRUSTENGINE_TEST=n
+#@ Enable Seucirty Ota API
 CONFIG_SECURITY_OTA=y
+#@ Enable PM API for non-security
 CONFIG_PM_NSC=y
+#@ Enable CAN
 CONFIG_CAN=n
+#@ Enable hardware crypto engine
 CONFIG_TRUSTENGINE=n

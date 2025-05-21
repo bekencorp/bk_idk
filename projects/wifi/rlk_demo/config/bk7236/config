@@ -1,2 +1,3 @@
 CONFIG_RAW_LINK_WIFI_ENABLE=y
+#@ Enable Override Flash Partition
 CONFIG_OVERRIDE_FLASH_PARTITION=y

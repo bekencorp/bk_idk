@@ -1,2 +1,4 @@
+#@ Enable LWIP reserved tail length
 CONFIG_LWIP_RESV_TLEN_ENABLE=y
+#@ Support WAPI nAPI
 CONFIG_WAPI_SUPPORT=y

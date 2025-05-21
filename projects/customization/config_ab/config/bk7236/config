@@ -6,11 +6,16 @@
 #
 # Ota
 #
+#@ Enable Ota Http
 CONFIG_OTA_HTTP=y
 CONFIG_OTA=y
+#@ enable http update ab partition
 CONFIG_HTTP_AB_PARTITION=y
+#@ enable ota update default partition
 CONFIG_OTA_UPDATE_DEFAULT_PARTITION=y
+#@ enable ota evade method
 CONFIG_OTA_EVADE_METHOD=y
+#@ enable ota position independent update
 CONFIG_OTA_POSITION_INDEPENDENT_AB=y
 # end of Ota
 
@@ -18,8 +23,8 @@ CONFIG_OTA_POSITION_INDEPENDENT_AB=y
 # Boards::Bk7256::Vnd_flash
 #
 
+#@ Enable Override Flash Partition
 CONFIG_OVERRIDE_FLASH_PARTITION=y
 
 # end of Boards::Bk7256::Vnd_flash
 # end of Middleware Configuration
-

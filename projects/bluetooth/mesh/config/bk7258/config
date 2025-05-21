@@ -1,43 +1,79 @@
+#@ CPU0 system
 CONFIG_SYS_CPU0=y
+#@ Enable Override Flash Partition
 CONFIG_OVERRIDE_FLASH_PARTITION=y
+#@ Enable Shell and Async log optimize
 CONFIG_SHELL_ASYNCLOG=y
+#@ Enable Memory Protect Unit Feature
 CONFIG_MPU=y
+#@ Enable Cache
 CONFIG_CACHE_ENABLE=y
+#@ When this option is enable, more memory will be consumed because
 CONFIG_MEM_DEBUG=y
+#@ Enable Flash Size 4M
 CONFIG_FLASH_SIZE_4M=y
+#@ Enable psram_malloc API
 CONFIG_PSRAM_AS_SYS_MEMORY=y
 CONFIG_AON_MPU_REG_DUMP=y
 CONFIG_SYS_PS_REG_DUMP=y
+#@ Enable Default Cmsis Start
 CONFIG_DEFAULT_CMSIS_START=n
+#@ Enable TFM
 CONFIG_TFM=n
+#@ Enable At Cmd
 CONFIG_AT_CMD=y
+#@ support deep sleep
 CONFIG_DEEP_PS=n
+#@ Enable SPE
 CONFIG_SPE=1
+#@ Enable pwm
 CONFIG_PWM=y
+#@ Enable CALENDAR
 CONFIG_CALENDAR=n
+#@ support mcu sleep
 CONFIG_MCU_PS=y
+#@ Enable rf power clock
 CONFIG_POWER_CLOCK_RF=n
 CONFIG_SPE_TEST=y
 CONFIG_MPC_TEST=y
 CONFIG_PRRO_TEST=y
+#@ Enable Interrupt Test
 CONFIG_INTERRUPT_TEST=y
+#@ Enable Aon Pmu Test
 CONFIG_AON_PMU_TEST=y
 CONFIG_SPE_START=n
+#@ Enable interrupt statis
 CONFIG_ARCH_INT_STATIS=n
+#@ Enable I2S
 CONFIG_I2S=n
+#@ Enable I2S Test
 CONFIG_I2S_TEST=n
+#@ Enable vendor cal
 CONFIG_VND_CAL=y
+#@ Write analog register polls sys reg0xb
 CONFIG_ANA_REG_WRITE_POLL_REG_B=n
+#@ Enable LDO self low power mode
 CONFIG_LDO_SELF_LOW_POWER_MODE_ENA=y
+#@ Enable CPU0 sub-power dowmain
 CONFIG_CPU0_SUB_POWER_DOMAIN_ENA=n
+#@ Enable TOUCH
 CONFIG_TOUCH=n
+#@ Enable touch demos
 CONFIG_TOUCH_TEST=n
+#@ Enable USB
 CONFIG_USB=n
+#@ CHERRY_USB
 CONFIG_CHERRY_USB=n
+#@ Enable USB Device Mode
 CONFIG_USB_DEVICE=n
+#@ whether Objdump -d elf to lst or not
 CONFIG_OBJDUMP=n
+#@ enable wifi
 CONFIG_WIFI_ENABLE=y
+#@ Enable Bluetooth
 CONFIG_BLUETOOTH=y
+#@ BLE Mesh Zephyr
 CONFIG_BLE_MESH_ZEPHYR=y
+#@ Cpu1 core offset address default 0x2e0000
 CONFIG_SYS_CPU1_OFFSET=0x21e0000
 CONFIG_FREERTOS_USE_RECURSIVE_MUTEXES=y

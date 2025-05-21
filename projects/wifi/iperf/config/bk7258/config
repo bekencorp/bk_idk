@@ -1,12 +1,20 @@
+#@ Enable Wifi Cli Enable
 CONFIG_WIFI_CLI_ENABLE=y
+#@ Enable Bluetooth
 CONFIG_BLUETOOTH=n
+#@ Enable Iperf Test
 CONFIG_IPERF_TEST=y
+#@ Enable Cli
 CONFIG_CLI=y
 
+#@ When this option is enable, more memory will be consumed because
 CONFIG_MEM_DEBUG=n
+#@ FreeRTOS Trace
 CONFIG_FREERTOS_TRACE=n
+#@ Enable Cache
 CONFIG_CACHE_ENABLE=n
 
+#@ Set maximum segment size for TCP transmission.
 CONFIG_LWIP_TCP_MSS=1460
 ////default config
 //CONFIG_LWIP_TCP_SND_BUF=29200
@@ -21,83 +29,114 @@ CONFIG_LWIP_TCP_MSS=1460
 //CONFIG_LWIP_MEM_SIZE=51200
 //CONFIG_LWIP_MEM_MAX_RX_SIZE=38400
 //CONFIG_LWIP_MEM_MAX_TX_SIZE=42666
+#@ Set UDP receive mail box size. The recommended value is 24.
 CONFIG_LWIP_UDP_RECVMBOX_SIZE=64
+#@ Set the size of the heap memory. The recommended value is 51200 .
 CONFIG_LWIP_MEM_SIZE=92160
+#@ Set the size of the max memory rx used. The recommended value is
 CONFIG_LWIP_MEM_MAX_RX_SIZE=76800
+#@ Set the size of the max memory tx used. The recommended value is
 CONFIG_LWIP_MEM_MAX_TX_SIZE=81920
+#@ Set the number of struct netbufs.
 CONFIG_LWIP_MEMP_NUM_NETBUF=128
+#@ Set the size of each pbuf in the pbuf pool. The default is
 CONFIG_LWIP_PBUF_POOL_SIZE=10
+#@ Set TCP sender buffer space (pbufs).
 CONFIG_LWIP_TCP_SND_QUEUELEN=60
+#@ Set the number of simultaneously queued TCP segments.
 CONFIG_LWIP_MEMP_NUM_TCP_SEG=80
+#@ Set default send buffer size for new TCP sockets.
 CONFIG_LWIP_TCP_SND_BUF=43800
+#@ Set default TCP receive window size for new TCP sockets.
 CONFIG_LWIP_TCP_WND=43800
 
 #
 # Bk_cli
 #
+#@ Enable Audio
 CONFIG_AUDIO=n
+#@ Enable Psram Test
 CONFIG_PSRAM_TEST=n
 # end of Bk_cli
 
 #
 # Https
 #
+#@ Enable HTTPS
 CONFIG_HTTPS=y
 # end of Https
 
 #
 # Mac Config
 #
+#@ BASE_MAC_FROM_RF_OTP_FLASH
 CONFIG_BASE_MAC_FROM_RF_OTP_FLASH=y
+#@ NEW_MAC_POLICY
 CONFIG_NEW_MAC_POLICY=n
+#@ Enable Beken Mac Addr Check
 CONFIG_BK_MAC_ADDR_CHECK=n
 # end of Mac Config
 
 #
 # bk_uid
 #
+#@ Enable get UID
 CONFIG_GET_UID_ENABLE=n
+#@ Enable get UID test
 CONFIG_GET_UID_TEST=n
-# end of bk_uid 
+# end of bk_uid
 
 #
 # Bk_usb
 #
+#@ Enable USB
 CONFIG_USB=n
 # end of Bk_usb
 
 #
 # Modify USB Mailbox
 #
+#@ Enable Multi-core operation USB
 CONFIG_USB_MAILBOX=n
+#@ Enable USB mailbox slave
 CONFIG_USB_MAILBOX_SLAVE=n
 # end of Modify USB Mailbox
 
 # Modify Usb Config
 #
 # CONFIG_MUSB_FDRC is not set
+#@ MUSBMHDRC
 CONFIG_MUSB_MHDRC=n
 # CONFIG_SYNOPSYS_DWC2_USB_IP is not set
 # CONFIG_MENTOR_USB is not set
+#@ CHERRY_USB
 CONFIG_CHERRY_USB=n
+#@ Enable USB Host Mode
 CONFIG_USB_HOST=n
 # CONFIG_USB_DEVICE is not set
 # CONFIG_USB1_PORT is not set
+#@ USB2_PORT
 CONFIG_USB2_PORT=n
 #CONFIG_TASK_USB_PRIO=2
 # CONFIG_USB_DMA_ENABLE is not set
+#@ Enable USB hub
 CONFIG_USB_HUB=n
+#@ Enable Usb Msd
 CONFIG_USB_MSD=n
 # CONFIG_USB_UPC is not set
 # CONFIG_USB_HID is not set
 # CONFIG_USB_CCD is not set
+#@ Enable Usb Uvc
 CONFIG_USB_UVC=n
+#@ Enable Usb Uac
 CONFIG_USB_UAC=n
 
 #
 # Modify Usb Uac Config
 #
+#@ Enable Usb Uac Mic
 CONFIG_USB_UAC_MIC=n
+#@ Enable Usb Uac Speaker
 CONFIG_USB_UAC_SPEAKER=n
 # end of Modify Usb Uac Config
 
@@ -120,19 +159,23 @@ CONFIG_UVC_UAC_DEMO_DEBUG=n
 #
 # decompress
 #
+#@ Enable LZMA1900
 CONFIG_LZMA1900=y
 # end of decompress
 
 #
 # Modify Lwip Config
 #
+#@ use system libc malloc
 CONFIG_LWIP_MEM_LIBC_MALLOC=n
+#@ memp_alloc() use mem_malloc/mem_free instead of the lwip pool allocator
 CONFIG_LWIP_MEMP_MEM_MALLOC=n
 # end of Modify Lwip Config
 
 #
 # Ota
 #
+#@ enable https ota
 CONFIG_OTA_HTTPS=y
 # end of Ota
 
@@ -147,125 +190,162 @@ CONFIG_OTA_HTTPS=y
 #
 # UART
 #
+#@ Enable UART2
 CONFIG_UART2=n
+#@ Enable UART3
 CONFIG_UART3=n
+#@ Enable UART enter low voltage callback support
 CONFIG_UART_PM_CB_SUPPORT=n
 # end of UART
 
 #
 # SDIO_HOST
 #
+#@ Enable sdio host
 CONFIG_SDIO_HOST=y
+#@ SDIO Host default clock freq
 CONFIG_SDIO_HOST_DEFAULT_CLOCK_FREQ=7
 # end of SDIO_HOST
 
 #
 # SDCARD
 #
+#@ Enable SDcard power gpio ctrl
 CONFIG_SDCARD_POWER_GPIO_CTRL=n
+#@ Enable SDcard auto powerdown when idle
 CONFIG_SDCARD_POWER_GPIO_CTRL_AUTO_POWERDOWN_WHEN_IDLE=n
 # end of SDCARD
 
 #
 # FATFS
 #
+#@ Support FATFS
 CONFIG_FATFS=n
+#@ Support SDCARD FATFS
 CONFIG_FATFS_SDCARD=n
 # end of FATFS
 
 #
 # SDIO
 #
+#@ Enable SDIO
 CONFIG_SDIO=n
+#@ SDIO transfer data whether enable GDMA
 CONFIG_SDIO_GDMA_EN=n
 # end of SDIO
 
 #
 # SPI
 #
+#@ Enable SPI DMA
 CONFIG_SPI_DMA=n
+#@ SPI ENABLE
 CONFIG_SPI=n
+#@ SPI byte interval
 CONFIG_SPI_BYTE_INTERVAL=y
 # end of SPI
 
 #
 # AON_RTC
 #
+#@ Enable rtc keep time when enter deepsleep,set data on flash
 CONFIG_AON_RTC_KEEP_TIME_SUPPORT=n
 # end of AON_RTC
 
 #
 # GPIO
 #
+#@ If not open, gpio could not keep state when the always on power domain is off
 CONFIG_GPIO_RETENTION_SUPPORT=y
 # end of GPIO
 
 #
 # GENERAL_DMA
 #
+#@ 4
 CONFIG_DMA_LOGIC_CHAN_CNT=16
+#@ 0
 CONFIG_DMA_LOGIC_CHAN_ID_MIN=0
 # end of GENERAL_DMA
 
 #
 # PSRAM
 #
+#@ Enable PSRAM
 CONFIG_PSRAM=n
+#@ Enable psram_malloc API
 CONFIG_PSRAM_AS_SYS_MEMORY=n
 # CONFIG_USE_PSRAM_HEAP_AT_SRAM_OOM is not set
+#@ Enable PSRAM write through
 CONFIG_PSRAM_WRITE_THROUGH=n
+#@ Enable PSRAM calibrate
 CONFIG_PSRAM_CALIBRATE=n
+#@ Enable PSRAM id auto detect function
 CONFIG_PSRAM_AUTO_DETECT=n
 # end of PSRAM
 
 #
 # I2C
 #
+#@ Enable I2C
 CONFIG_I2C=n
 # end of I2C
 
 #
 # AUDIO
 #
+#@ Enable audio adc driver
 CONFIG_AUDIO_ADC=n
 # CONFIG_AUDIO_DMIC is not set
 # CONFIG_AUDIO_DTMF is not set
+#@ Enable audio dac driver
 CONFIG_AUDIO_DAC=n
 # end of AUDIO
 
 #
 # PWM
 #
+#@ Enable pwm
 CONFIG_PWM=y
+#@ PWM PM Support
 CONFIG_PWM_PM_CB_SUPPORT=n
 # end of PWM
 
 #
 # TIMER
 #
+#@ 0 indicates that all IDs are supported by default, no configuration required
 CONFIG_TIMER_SUPPORT_ID_BITS=63
+#@ Enable TIMER enter low voltage callback support
 CONFIG_TIMER_PM_CB_SUPPORT=n
 # end of TIMER
 
 #
 # FLASH
 #
+#@ Enable flash mailbox channel
 CONFIG_FLASH_MB=n
 # end of FLASH
 
 #
 # PWR_CLK
 #
+#@ ahbp power domain disable
 CONFIG_AHBP_POWER_DOMAIN_LV_DISABLE=y
+#@ psram power domain disable
 CONFIG_PSRAM_POWER_DOMAIN_LV_DISABLE=y
+#@ MP_A force use the external 32k
 CONFIG_LPO_MP_A_FORCE_USE_EXT32K=n
+#@ enable rosc compensation for rtc tick
 CONFIG_ROSC_COMPENSATION=y
+#@ enable dig ldo low voltage
 CONFIG_DIGLDO_LOW_VOLTAGE_ENABLE=y
 # end of PWR_CLK
 
 #
 # HW_ROTATE
 #
+#@ Enable hw rotate and pixel convert module
 CONFIG_HW_ROTATE_PFC=y
 # end of HW_ROTATE
 
@@ -278,15 +358,19 @@ CONFIG_UVC_CHECK_BULK_JPEG_HEADER=n
 #
 # SCR
 #
+#@ Enable smart_card_reader
 CONFIG_SCR=n
 # end of SCR
 
 #
 # bk7258
 #
+#@ CPU0 RAM size for SPE
 CONFIG_CPU0_SPE_RAM_SIZE=0xA0000
+#@ CPU0 RAM size for NSPE
 CONFIG_CPU0_NSPE_RAM_SIZE=0x40000
+#@ CPU1 app RAM size
 CONFIG_CPU1_APP_RAM_SIZE=0x00000
+#@ CPU1 app RAM size
 CONFIG_CPU1_APP_RAM_SIZE=0x00000
 # end of bk7258
-

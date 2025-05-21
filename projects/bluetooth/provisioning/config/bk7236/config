@@ -1,4 +1,8 @@
+#@ Enable At
 CONFIG_AT=y
+#@ Enable BLE AT CMDS
 CONFIG_BLE_AT_ENABLE=y
+#@ Enable Bluetooth
 CONFIG_BLUETOOTH=y
+#@ Enable At Cmd
 CONFIG_AT_CMD=n

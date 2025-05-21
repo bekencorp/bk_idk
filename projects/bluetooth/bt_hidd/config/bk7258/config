@@ -1,5 +1,10 @@
+#@ Enable Override Flash Partition
 CONFIG_OVERRIDE_FLASH_PARTITION=y
+#@ CPU0 RAM size for SPE
 CONFIG_CPU0_SPE_RAM_SIZE=0x70000
+#@ Enable Bt
 CONFIG_BT=y
+#@ System CPU count: 1: single core, 2: dual core, etc.
 CONFIG_CPU_CNT=1
+#@ Enable mail_box
 CONFIG_MAILBOX=n

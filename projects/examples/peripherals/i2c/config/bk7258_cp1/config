@@ -1,1 +1,2 @@
-CONFIG_I2C=y 
+#@ Enable I2C
+CONFIG_I2C=y
