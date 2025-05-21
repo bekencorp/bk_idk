@@ -74,6 +74,8 @@ void pm_printf_current_temperature(void);
 
 uint64_t pm_cp1_aon_rtc_counter_get();
 
+bk_err_t bk_pm_cpu_freq_dump();
+
 #if CONFIG_PM_LV_TIME_COST_DEBUG
 __attribute__((section(".iram")))  uint64_t pm_lv_rtc_interval_get(pm_lv_step_e step);
 __attribute__((section(".iram")))  uint64_t pm_lv_rtc_tick_get(pm_lv_step_e step);
