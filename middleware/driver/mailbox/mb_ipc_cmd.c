@@ -23,6 +23,10 @@
 #include "driver/flash.h"
 #include "sys_driver.h"
 
+#if CONFIG_WDT_EN
+#include <wdt_driver.h>
+#endif
+
 #if CONFIG_CACHE_ENABLE
 #include "cache.h"
 #endif
@@ -687,6 +691,16 @@ static u32 ipc_cmd_handler(ipc_chnl_cb_t *chnl_cb, mb_chnl_ack_t *ack_buf)
 			}
 			break;
 
+         case IPC_CPU1_TRAP_NEED_REBOOT:
+            {
+                ipc_rsp->rsp_data_len = 0;
+				result = ACK_STATE_COMPLETE;
+            #if CONFIG_WDT_EN
+                bk_wdt_force_reboot();
+            #endif
+            }
+            break;
+
 		#endif
 
 		#if 0 // (CONFIG_SYS_CPU1)
@@ -1182,6 +1196,11 @@ bk_err_t ipc_send_trap_handle_begin(void)
 bk_err_t ipc_send_trap_handle_end(void)
 {
 	return ipc_send_special_cmd(&ipc_chnl_cb, IPC_CPU1_TRAP_HANDLE_END);
+}
+
+bk_err_t ipc_send_cpu1_trap_need_reboot(void)
+{
+	return ipc_send_special_cmd(&ipc_chnl_cb, IPC_CPU1_TRAP_NEED_REBOOT);
 }
 #endif
 

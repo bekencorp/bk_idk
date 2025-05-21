@@ -44,6 +44,8 @@ enum
 	IPC_CPU1_TRAP_HANDLE_BEGIN,             /* CPU1 -> CPU0  */
 	IPC_CPU1_TRAP_HANDLE_END,               /* CPU1 -> CPU0  */
 
+    IPC_CPU1_TRAP_NEED_REBOOT,               /* CPU1 -> CPU0  */
+
 	IPC_CPU0_START_USB_CDC,
 	IPC_CPU0_OPEN_USB_CDC,
 	IPC_CPU0_CLOSE_USB_CDC,
@@ -83,6 +85,7 @@ bk_err_t ipc_send_power_up(void);                     // CPU1 power up indicatio
 bk_err_t ipc_send_heart_beat(u32 param);              // CPU1 heart beat.
 bk_err_t ipc_send_trap_handle_begin(void);
 bk_err_t ipc_send_trap_handle_end(void);
+bk_err_t ipc_send_cpu1_trap_need_reboot(void);
 #endif  /* !CONFIG_SYS_CPU0 */
 
 #ifdef AMP_RES_CLIENT

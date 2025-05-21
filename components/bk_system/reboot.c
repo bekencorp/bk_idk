@@ -25,6 +25,7 @@
 #include "aon_pmu_driver.h"
 #include "wdt_driver.h"
 #include <modules/pm.h>
+#include "mb_ipc_cmd.h"
 
 #define TAG "sys"
 
@@ -65,6 +66,17 @@ void bk_reboot_ex(uint32_t reset_reason)
 
 	bk_wdt_force_reboot();
 #endif //#if CONFIG_SYS_CPU0
+
+#if CONFIG_SYS_CPU1
+	BK_LOGI(TAG, "cpu1 reboot\r\n");
+	
+	if (reset_reason < RESET_SOURCE_UNKNOWN) {
+		bk_misc_set_reset_reason(reset_reason);
+	}
+    ipc_send_cpu1_trap_need_reboot();
+
+#endif //#if CONFIG_SYS_CPU1
+
 }
 
 void bk_reboot(void)
