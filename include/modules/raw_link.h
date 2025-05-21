@@ -483,6 +483,18 @@ bk_err_t bk_rlk_del_white_list(uint8_t mac_type, uint8_t *oui);
 bk_err_t bk_rlk_set_mac_hdr_type(uint16_t type);
 
 /**
+  * @brief     BK-RLK MAC header reinit
+  *
+  * @param     void
+  *
+  * @return
+  *          - BK_OK : succeed
+  *          - BK_ERR_NOT_INIT : Raw Link is not initialized
+  *          - others : Failed to reinit mac header
+  */
+bk_err_t bk_rlk_mac_hdr_reinit(void);
+
+/**
  * @brief     Raw Link Auto Channel Select (ACS) funtion
  *
  * @attention 1. This API is only valid if it is called after bk_rlk_init()
@@ -568,6 +580,7 @@ bk_err_t bk_rlk_set_role(bk_rlk_role_t role, bk_rlk_extra_ies_info_t *ies_info);
   *          - BK_ERR_NOT_INIT : Raw Link is not initialized
   */
 bk_err_t bk_rlk_slave_app_init(char *ssid);
+
 /**
   * @brief     Start BK Raw Link slave device and connection master device
   *
@@ -581,7 +594,6 @@ bk_err_t bk_rlk_slave_app_init(char *ssid);
   *          - BK_ERR_NOT_INIT : Raw Link is not initialized
   */
 bk_err_t bk_rlk_slave_bssid_app_init(uint8_t *bssid);
-
 
 #ifdef __cplusplus
 }
