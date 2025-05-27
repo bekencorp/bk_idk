@@ -618,7 +618,11 @@ static void bk_uvc_video_stream_rxed_callback(void *pCompleteParam, int nbytes)
 
 	if(nbytes >= 0) {
 		if((uvc_uac_device->uvc_config[0]->ep_desc->bmAttributes & 0x3) == USB_ENDPOINT_ISOCH_TRANSFER) {//ISOCH
+#if !CONFIG_USB_MAILBOX
+			bk_uvc_trigger_video_stream_rx(uvc_device);
+#else
 			bk_usb_drv_send_msg(USB_DRV_VIDEO_RX, (void *)uvc_device);
+#endif
 		} else if((uvc_uac_device->uvc_config[0]->ep_desc->bmAttributes & 0x3) == USB_ENDPOINT_BULK_TRANSFER) {//BULK
 			video_urb->iso_packet[uvc_uac_device->uvc_bulk_count[0]].actual_length = video_urb->actual_length;
 			video_urb->iso_packet[uvc_uac_device->uvc_bulk_count[0]].errorcode = 0;
@@ -626,8 +630,12 @@ static void bk_uvc_video_stream_rxed_callback(void *pCompleteParam, int nbytes)
 				uvc_uac_device->uvc_bulk_count[0]++;
 			}
 			if(uvc_uac_device->uvc_bulk_count[0] >= packet->num_packets) {
+#if !CONFIG_USB_MAILBOX
+				bk_uvc_trigger_video_stream_rx(uvc_device);
+#else
 				bk_usb_drv_send_msg(USB_DRV_VIDEO_RX, (void *)uvc_device);
 				video_urb->transfer_buffer_length = 0;
+#endif
 			} else {
 				video_urb->transfer_buffer = video_urb->iso_packet[uvc_uac_device->uvc_bulk_count[0]].transfer_buffer;
 				video_urb->transfer_buffer_length = uvc_uac_device->uvc_config[0]->ep_desc->wMaxPacketSize;
@@ -673,7 +681,11 @@ static void bk_uvc_video_stream_dual_rxed_callback(void *pCompleteParam, int nby
 
 	if(nbytes >= 0) {
 		if((uvc_uac_device->uvc_config[1]->ep_desc->bmAttributes & 0x3) == USB_ENDPOINT_ISOCH_TRANSFER) {//ISOCH
+#if !CONFIG_USB_MAILBOX
+			bk_uvc_trigger_video_stream_dual_rx(uvc_device);
+#else
 			bk_usb_drv_send_msg(USB_DRV_VIDEO_DUAL_RX, (void *)uvc_device);
+#endif
 		} else if((uvc_uac_device->uvc_config[1]->ep_desc->bmAttributes & 0x3) == USB_ENDPOINT_BULK_TRANSFER) {//BULK
 			video_urb->iso_packet[uvc_uac_device->uvc_bulk_count[1]].actual_length = video_urb->actual_length;
 			video_urb->iso_packet[uvc_uac_device->uvc_bulk_count[1]].errorcode = 0;
@@ -681,8 +693,12 @@ static void bk_uvc_video_stream_dual_rxed_callback(void *pCompleteParam, int nby
 				uvc_uac_device->uvc_bulk_count[1]++;
 			}
 			if(uvc_uac_device->uvc_bulk_count[1] >= packet->num_packets) {
+#if !CONFIG_USB_MAILBOX
+				bk_uvc_trigger_video_stream_dual_rx(uvc_device);
+#else
 				bk_usb_drv_send_msg(USB_DRV_VIDEO_DUAL_RX, (void *)uvc_device);
 				video_urb->transfer_buffer_length = 0;
+#endif
 			} else {
 				video_urb->transfer_buffer = video_urb->iso_packet[uvc_uac_device->uvc_bulk_count[1]].transfer_buffer;
 				video_urb->transfer_buffer_length = uvc_uac_device->uvc_config[1]->ep_desc->wMaxPacketSize;
@@ -840,12 +856,18 @@ bk_err_t bk_uvc_start(void)
 	}
 
 	uvc_uac_device->usb_driver->usbh_class_start_status |= (0x1 << USB_UVC_DEVICE);
-    uint32_t idx_uvc = 0;
-    {
-    	struct usbh_video *uvc_device = uvc_uac_device->uvc_dev[idx_uvc];
-	    bk_usb_drv_send_msg(USB_DRV_VIDEO_START, (void *)uvc_device);
-    //  bk_usb_drv_send_msg(USB_DRV_VIDEO_RX, (void *)uvc_device);
-    }
+	uint32_t idx_uvc = 0;
+	{
+		struct usbh_video *uvc_device = uvc_uac_device->uvc_dev[idx_uvc];
+#if 0 //!CONFIG_USB_MAILBOX
+		bk_usb_driver_task_lock_mutex();
+		bk_usbh_video_start_handle(uvc_device);
+		bk_usb_driver_task_unlock_mutex();
+#else
+		bk_usb_drv_send_msg(USB_DRV_VIDEO_START, (void *)uvc_device);
+#endif
+	//  bk_usb_drv_send_msg(USB_DRV_VIDEO_RX, (void *)uvc_device);
+	}
 
 	USB_DRIVER_LOGD("[-]%s\r\n",__func__);
 
@@ -879,7 +901,14 @@ bk_err_t bk_uvc_dual_start(void)
 	uvc_uac_device->usb_driver->usbh_class_start_status |= (0x1 << USB_UVC_DEVICE);
     uint32_t idx_uvc = (n_uvc_dev - 1);
 	struct usbh_video *uvc_device = uvc_uac_device->uvc_dev[idx_uvc];
+	//bk_usb_drv_send_msg(USB_DRV_VIDEO_DUAL_START, (void *)uvc_device);
+#if 0 //!CONFIG_USB_MAILBOX
+	bk_usb_driver_task_lock_mutex();
+	bk_usbh_video_start_dual_handle(uvc_device);
+	bk_usb_driver_task_unlock_mutex();
+#else
 	bk_usb_drv_send_msg(USB_DRV_VIDEO_DUAL_START, (void *)uvc_device);
+#endif
 
 	USB_DRIVER_LOGD("[-]%s\r\n",__func__);
 	return BK_OK;
@@ -947,18 +976,21 @@ void bk_usbh_video_start_handle(struct usbh_video *p_uvc_device)
 		}
 
 		ret = usbh_video_open(uvc_device, altsettings); /* select ep mps from altsettings ,just for reference now */
-		if(ret < 0) {
-			USB_DRIVER_LOGE("%s usbh_video_open:%d\r\n", __func__, ret);
-			ret = usbh_video_open(uvc_device, altsettings);
-			if(ret < 0) {
-				USB_DRIVER_LOGE("%s Software trigger disconnect\n", __func__);
+		if (ret < 0) {
+			if(uvc_uac_device->check_usb_error_irq_count > UVC_UAC_TRANSFER_IRQ_ERROR_COUNT) {
+				USB_DRIVER_LOGE("%s Software trigger disconnect ret:%d\n", __func__, ret);
 				usbh_musb_trigger_disconnect_by_sw();
-				return;
+			} else {
+				bk_usb_drv_send_msg(USB_DRV_VIDEO_START, (void *)uvc_device);
+				uvc_uac_device->check_usb_error_irq_count++;
 			}
+			return;
+		} else {
+			uvc_uac_device->check_usb_error_irq_count = 0;
 		}
 
-    	bk_uvc_video_clear(uvc_uac_device);
-    	bk_usb_drv_send_msg(USB_DRV_VIDEO_RX, (void *)uvc_uac_device->uvc_dev[idx_uvc]);
+		bk_uvc_video_clear(uvc_uac_device);
+		bk_usb_drv_send_msg(USB_DRV_VIDEO_RX, (void *)uvc_uac_device->uvc_dev[idx_uvc]);
     }
 }
 void bk_usbh_video_start_dual_handle(struct usbh_video *p_uvc_device)
@@ -1009,15 +1041,19 @@ void bk_usbh_video_start_dual_handle(struct usbh_video *p_uvc_device)
 		}
 
 		ret = usbh_video_open(uvc_device, altsettings); /* select ep mps from altsettings ,just for reference now */
-		if(ret < 0) {
-			USB_DRIVER_LOGE("%s usbh_video_open:%d\r\n", __func__, ret);
-			ret = usbh_video_open(uvc_device, altsettings);
-			if(ret < 0) {
-				USB_DRIVER_LOGE("%s Software trigger disconnect\n", __func__);
+		if (ret < 0) {
+			if(uvc_uac_device->check_usb_error_irq_count > UVC_UAC_TRANSFER_IRQ_ERROR_COUNT) {
+				USB_DRIVER_LOGE("%s Software trigger disconnect ret:%d\n", __func__, ret);
 				usbh_musb_trigger_disconnect_by_sw();
-				return;
+			} else {
+				bk_usb_drv_send_msg(USB_DRV_VIDEO_DUAL_START, (void *)uvc_device);
+				uvc_uac_device->check_usb_error_irq_count++;
 			}
-    	}
+			return;
+		} else {
+			uvc_uac_device->check_usb_error_irq_count = 0;
+		}
+
 
     	bk_uvc_video_clear(uvc_uac_device);
         bk_usb_drv_send_msg(USB_DRV_VIDEO_DUAL_RX, (void *)uvc_uac_device->uvc_dev[idx_uvc]);
@@ -1243,16 +1279,26 @@ bk_err_t bk_uvc_stop(void)
 	}
 	uvc_uac_device->usb_driver->usbh_class_start_status &= ~(0x1 << USB_UVC_DEVICE);
 
+#if 0
+	for (uint32_t i = 0; i < s_uvc_uac_device->n_uvc_dev; i++)
+	{
+		struct usbh_video *uvc_device = uvc_uac_device->uvc_dev[i];
+		if (i == 0)
+			bk_usb_drv_send_msg(USB_DRV_VIDEO_STOP, (void *)uvc_device);
+		else if (i == 1) {
+			bk_usb_drv_send_msg(USB_DRV_VIDEO_DUAL_STOP, (void *)uvc_device);
+		}
+	}
+#endif
 
-    for (uint32_t i = 0; i < s_uvc_uac_device->n_uvc_dev; i++)
-    {
-    	struct usbh_video *uvc_device = uvc_uac_device->uvc_dev[i];
-        if (i == 0)
-    	    bk_usb_drv_send_msg(USB_DRV_VIDEO_STOP, (void *)uvc_device);
-        else if (i == 1) {
-            bk_usb_drv_send_msg(USB_DRV_VIDEO_DUAL_STOP, (void *)uvc_device);
-        }
-    }
+	struct usbh_video *uvc_device = uvc_uac_device->uvc_dev[0];
+#if !CONFIG_USB_MAILBOX
+	bk_usb_driver_task_lock_mutex();
+	bk_usbh_video_stop_handle(uvc_device);
+	bk_usb_driver_task_unlock_mutex();
+#else
+	bk_usb_drv_send_msg(USB_DRV_VIDEO_STOP, (void *)uvc_device);
+#endif
 
 	USB_DRIVER_LOGD("[-]%s\r\n",__func__);
 	return BK_OK;
@@ -1277,7 +1323,14 @@ bk_err_t bk_uvc_dual_stop(void)
 	uvc_uac_device->usb_driver->usbh_class_start_status &= ~(0x1 << USB_UVC_DEVICE);
 
 	struct usbh_video *uvc_device = uvc_uac_device->uvc_dev[1];
+	//bk_usb_drv_send_msg(USB_DRV_VIDEO_DUAL_STOP, (void *)uvc_device);
+#if !CONFIG_USB_MAILBOX
+	bk_usb_driver_task_lock_mutex();
+	bk_usbh_video_stop_handle(uvc_device);
+	bk_usb_driver_task_unlock_mutex();
+#else
 	bk_usb_drv_send_msg(USB_DRV_VIDEO_DUAL_STOP, (void *)uvc_device);
+#endif
 
 	USB_DRIVER_LOGD("[-]%s\r\n",__func__);
 	return BK_OK;
@@ -1287,13 +1340,23 @@ void bk_usbh_video_stop_handle(struct usbh_video *uvc_device)
 {
 	if(!uvc_device)
 		return;
-
 	USB_DRIVER_LOGD("[+]%s\r\n",__func__);
+
+	uint32_t idx_uvc = 0;
 	bk_uvc_uac_fusion_device *uvc_uac_device = s_uvc_uac_device;
-	usbh_video_close(uvc_device);
+	for (idx_uvc = 0; idx_uvc < (uvc_uac_device->n_uvc_dev); idx_uvc++)
+	{
+		struct usbh_video *uvc_device = uvc_uac_device->uvc_dev[idx_uvc];
+		usbh_video_close(uvc_device);
+	}
+
 	bk_uvc_video_clear(uvc_uac_device);
 
 	USB_DRIVER_LOGD("[-]%s\r\n",__func__);
+#if CONFIG_USB_MAILBOX_SLAVE
+	extern void usb_mailbox_uvc_stop_handle_finish(void);
+	usb_mailbox_uvc_stop_handle_finish();
+#endif
 }
 
 bk_err_t bk_usb_uac_register_disconnect_callback(void *param)
@@ -1362,8 +1425,6 @@ static void bk_usbh_audio_stream_rxed_callback(void *pCompleteParam, int nbytes)
 
 	if(!(uvc_uac_device->usb_driver->usbh_class_start_status & (0x1 << USB_UAC_MIC_DEVICE))) {
 		uvc_uac_device->uac_mic_urb->transfer_buffer_length = 0;
-		os_free(uvc_uac_device->mic_ring_buffer);
-		uvc_uac_device->mic_ring_buffer = NULL;
 		return;
 	} else {
 		mic_urb->transfer_buffer = uvc_uac_device->mic_ring_buffer;
@@ -1376,9 +1437,13 @@ static void bk_usbh_audio_stream_rxed_callback(void *pCompleteParam, int nbytes)
 		ring_buffer_write(uvc_uac_device->audio_mic_rb, uvc_uac_device->uac_mic_urb->transfer_buffer, uvc_uac_device->uac_config->mic_ep_desc->wMaxPacketSize);
 		if(ring_buffer_get_free_size(uvc_uac_device->audio_mic_rb) < (uvc_uac_device->audio_mic_rb->capacity / 2))
 		{
+#if !CONFIG_USB_MAILBOX
+			bk_uac_trigger_audio_stream_rx(uac_device);
+#else
 			if(uvc_uac_device->uac_mic_rx_msg_send_flag) return;
 			bk_usb_drv_send_msg(USB_DRV_AUDIO_RX, (void *)uac_device);
 			uvc_uac_device->uac_mic_rx_msg_send_flag = true;
+#endif
 		}
 		uvc_uac_device->check_usb_error_irq_count = 0;
 	} else {
@@ -1468,9 +1533,14 @@ bk_err_t bk_uac_start_mic()
 	struct usbh_audio *uac_device = uvc_uac_device->uac_dev;
 
 	uvc_uac_device->usb_driver->usbh_class_start_status |= (0x1 << USB_UAC_MIC_DEVICE);
-	bk_usb_drv_send_msg(USB_DRV_AUDIO_MIC_START, (void *)uac_device);
 	//bk_usb_drv_send_msg(USB_DRV_AUDIO_RX, (void *)uac_device);
-
+#if !CONFIG_USB_MAILBOX
+	bk_usb_driver_task_lock_mutex();
+	bk_uac_start_mic_handle(uac_device);
+	bk_usb_driver_task_unlock_mutex();
+#else
+	bk_usb_drv_send_msg(USB_DRV_AUDIO_MIC_START, (void *)uac_device);
+#endif
 	USB_DRIVER_LOGD("[-]%s\r\n",__func__);
 
 	return BK_OK;
@@ -1541,10 +1611,18 @@ void bk_uac_start_mic_handle(struct usbh_audio *uac_device)
 
 	ret = usbh_audio_open(uac_device, "mic", uac_config->mic_samples_frequence);
 	if (ret < 0) {
-		USB_DRIVER_LOGE("%s Software trigger disconnect ret:%d\n", __func__, ret);
-		usbh_musb_trigger_disconnect_by_sw();
+		if(uvc_uac_device->check_usb_error_irq_count > UVC_UAC_TRANSFER_IRQ_ERROR_COUNT) {
+			USB_DRIVER_LOGE("%s Software trigger disconnect ret:%d\n", __func__, ret);
+			usbh_musb_trigger_disconnect_by_sw();
+		} else {
+			bk_usb_drv_send_msg(USB_DRV_AUDIO_MIC_START, (void *)uac_device);
+			uvc_uac_device->check_usb_error_irq_count++;
+		}
 		return;
+	} else {
+		uvc_uac_device->check_usb_error_irq_count = 0;
 	}
+
 
 	bk_uvc_uac_updata_audio_stream_rx_buffer(uvc_uac_device);
 
@@ -1586,7 +1664,13 @@ bk_err_t bk_uac_stop_mic()
 	if(uvc_uac_device->uac_mic_urb)
 		uvc_uac_device->uac_mic_urb->transfer_buffer_length = 0;
 
+#if !CONFIG_USB_MAILBOX
+	bk_usb_driver_task_lock_mutex();
+	bk_uac_stop_mic_handle(uvc_uac_device->uac_dev);
+	bk_usb_driver_task_unlock_mutex();
+#else
 	bk_usb_drv_send_msg(USB_DRV_AUDIO_MIC_STOP, (void *)uvc_uac_device->uac_dev);
+#endif
 	USB_DRIVER_LOGD("[-]%s\r\n",__func__);
 
 	return BK_OK;
@@ -1612,8 +1696,6 @@ static void bk_usbh_audio_stream_txed_callback(void *pCompleteParam, int nbytes)
 
 	if(!(uvc_uac_device->usb_driver->usbh_class_start_status & (0x1 << USB_UAC_SPEAKER_DEVICE))) {
 		uvc_uac_device->uac_spk_urb->transfer_buffer_length = 0;
-		os_free(uvc_uac_device->spk_ring_buffer);
-		uvc_uac_device->spk_ring_buffer = NULL;
 		return;
 	} else {
 		spk_urb->transfer_buffer = uvc_uac_device->spk_ring_buffer;
@@ -1627,9 +1709,13 @@ static void bk_usbh_audio_stream_txed_callback(void *pCompleteParam, int nbytes)
 
 		if(ring_buffer_get_free_size(uvc_uac_device->audio_spk_rb) > (uvc_uac_device->audio_spk_rb->capacity / 2))
 		{
+#if !CONFIG_USB_MAILBOX
+			bk_uac_trigger_audio_stream_tx(uac_device);
+#else
 			if(uvc_uac_device->uac_spk_tx_msg_send_flag) return;
 			bk_usb_drv_send_msg(USB_DRV_AUDIO_TX, (void *)uac_device);
 			uvc_uac_device->uac_spk_tx_msg_send_flag = true;
+#endif
 		}
 	} else {
 		if(uvc_uac_device->check_usb_error_irq_count > UVC_UAC_TRANSFER_IRQ_ERROR_COUNT) {
@@ -1725,8 +1811,14 @@ bk_err_t bk_uac_start_speaker(void)
 	}
 
 	uvc_uac_device->usb_driver->usbh_class_start_status |= (0x1 << USB_UAC_SPEAKER_DEVICE);
-	bk_usb_drv_send_msg(USB_DRV_AUDIO_SPK_START, (void *)uac_device);
 	//bk_usb_drv_send_msg(USB_DRV_AUDIO_TX, (void *)uac_device);
+#if !CONFIG_USB_MAILBOX
+	bk_usb_driver_task_lock_mutex();
+	bk_uac_start_speaker_handle(uac_device);
+	bk_usb_driver_task_unlock_mutex();
+#else
+	bk_usb_drv_send_msg(USB_DRV_AUDIO_SPK_START, (void *)uac_device);
+#endif
 	USB_DRIVER_LOGD("[-]%s\r\n",__func__);
 
 	return BK_OK;
@@ -1797,10 +1889,18 @@ void bk_uac_start_speaker_handle(struct usbh_audio *uac_device)
 
 	ret = usbh_audio_open(uac_device, "speaker", uac_config->spk_samples_frequence);
 	if (ret < 0) {
-		USB_DRIVER_LOGE("%s Software trigger disconnect ret:%d\n", __func__, ret);
-		usbh_musb_trigger_disconnect_by_sw();
+		if(uvc_uac_device->check_usb_error_irq_count > UVC_UAC_TRANSFER_IRQ_ERROR_COUNT) {
+			USB_DRIVER_LOGE("%s Software trigger disconnect ret:%d\n", __func__, ret);
+			usbh_musb_trigger_disconnect_by_sw();
+		} else {
+			bk_usb_drv_send_msg(USB_DRV_AUDIO_SPK_START, (void *)uac_device);
+			uvc_uac_device->check_usb_error_irq_count++;
+		}
 		return;
+	} else {
+		uvc_uac_device->check_usb_error_irq_count = 0;
 	}
+
 
 	bk_uvc_uac_updata_audio_stream_tx_buffer(uvc_uac_device);
 
@@ -1840,7 +1940,13 @@ bk_err_t bk_uac_stop_speaker(void)
 	if(uvc_uac_device->uac_spk_urb)
 		uvc_uac_device->uac_spk_urb->transfer_buffer_length = 0;
 
+#if !CONFIG_USB_MAILBOX
+	bk_usb_driver_task_lock_mutex();
+	bk_uac_stop_speaker_handle(uvc_uac_device->uac_dev);
+	bk_usb_driver_task_unlock_mutex();
+#else
 	bk_usb_drv_send_msg(USB_DRV_AUDIO_SPK_STOP, (void *)uvc_uac_device->uac_dev);
+#endif
 	USB_DRIVER_LOGD("[-]%s\r\n",__func__);
 	return BK_OK;
 

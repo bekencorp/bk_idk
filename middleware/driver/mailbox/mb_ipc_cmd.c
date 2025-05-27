@@ -20,12 +20,18 @@
 #include <driver/mb_chnl_buff.h>
 #include "mb_ipc_cmd.h"
 #include "driver/dma.h"
+#include "driver/flash.h"
 
 #if CONFIG_CACHE_ENABLE
 #include "cache.h"
 #endif
 
+#if (CONFIG_USB_CDC_ACM_DEMO)
+#include "bk_cherry_usb_cdc_acm_api.h"
+#endif
+
 #define MOD_TAG		"IPC"
+
 
 #if (CONFIG_CPU_CNT > 1)
 
@@ -475,6 +481,7 @@ extern void shell_set_log_cpu(u8 req_cpu);
 #if (CONFIG_SYS_CPU0)
 static void mb_ipc_power_on_notify(void);
 static void mb_ipc_heartbeat_notify(void);
+static void mb_ipc_dump_notify(u32 dump);
 #endif
 
 static u32 ipc_cmd_handler(ipc_chnl_cb_t *chnl_cb, mb_chnl_ack_t *ack_buf)
@@ -545,6 +552,58 @@ static u32 ipc_cmd_handler(ipc_chnl_cb_t *chnl_cb, mb_chnl_ack_t *ack_buf)
 			}
 			break;
 
+#if (USB_CDC_CP1_IPC)
+		case IPC_CPU0_OPEN_USB_CDC:
+			{
+				IPC_CDC_DATA_t *ipc_cdc = (IPC_CDC_DATA_t *)chnl_cb->cmd_buf;
+				bk_usb_cdc_open(ipc_cdc);
+				result = ACK_STATE_COMPLETE;
+			}
+			break;
+		case IPC_CPU0_CLOSE_USB_CDC:
+			{
+				bk_usb_cdc_close();
+				result = ACK_STATE_COMPLETE;
+			}
+			break;
+
+		case IPC_CPU0_INIT_USB_CDC_PARAM:
+			{
+				IPC_CDC_DATA_t *p_cdc_data = (IPC_CDC_DATA_t *)chnl_cb->cmd_buf;
+				bk_usb_cdc_param_init(p_cdc_data);
+				result = ACK_STATE_COMPLETE;
+			}
+			break;
+
+		case IPC_CPU0_SET_USB_CDC_CMD:
+			{
+				IPC_CDC_DATA_t *p_cdc_data = (IPC_CDC_DATA_t *)chnl_cb->cmd_buf;
+				bk_cdc_acm_bulkout(p_cdc_data);
+				result = ACK_STATE_COMPLETE;
+			}
+			break;
+#endif
+
+#if (USB_CDC_CP0_IPC)
+		case IPC_CPU1_UPLOAD_USB_CDC_DATA:
+			{
+				IPC_CDC_DATA_t *p_cdc_data = (IPC_CDC_DATA_t *)chnl_cb->cmd_buf;
+				p_cdc_data->bk_cdc_acm_bulkin_cb();
+				result = ACK_STATE_COMPLETE;
+			}
+			break;
+		case IPC_CPU1_UPDATE_USB_CDC_STATE:
+			{
+				extern void (*usb_cdc_state_cb)(uint32_t);
+				uint8_t cdc_state = *((u8 *)chnl_cb->cmd_buf);
+				if(usb_cdc_state_cb != NULL)
+					usb_cdc_state_cb(cdc_state);
+				result = ACK_STATE_COMPLETE;
+			}
+			break;
+#endif
+
+
 		#if CONFIG_SYS_CPU0
 		case IPC_CPU1_POWER_UP_INDICATION:		// cpu1 indication, power up successfully.
 			{
@@ -583,6 +642,7 @@ static u32 ipc_cmd_handler(ipc_chnl_cb_t *chnl_cb, mb_chnl_ack_t *ack_buf)
 				ipc_rsp->rsp_data_len = 0;
 				result = ACK_STATE_COMPLETE;
 
+				mb_ipc_dump_notify(1);
 				/* no params, no returns. */
 				#if (CONFIG_SHELL_ASYNCLOG)
 				shell_set_log_cpu(MAILBOX_CPU1);
@@ -595,6 +655,7 @@ static u32 ipc_cmd_handler(ipc_chnl_cb_t *chnl_cb, mb_chnl_ack_t *ack_buf)
 				ipc_rsp->rsp_data_len = 0;
 				result = ACK_STATE_COMPLETE;
 
+				mb_ipc_dump_notify(0);
 				/* no params, no returns. */
 				#if (CONFIG_SHELL_ASYNCLOG)
 				shell_set_log_cpu(CONFIG_CPU_CNT);
@@ -702,6 +763,7 @@ static u32 ipc_cmd_handler(ipc_chnl_cb_t *chnl_cb, mb_chnl_ack_t *ack_buf)
 			}
 			break;
 
+#if CONFIG_GENERAL_DMA
 		case IPC_ALLOC_DMA_CHNL:
 			if(chnl_cb->cmd_len >= sizeof(u32))
 			{
@@ -768,6 +830,8 @@ static u32 ipc_cmd_handler(ipc_chnl_cb_t *chnl_cb, mb_chnl_ack_t *ack_buf)
 				result = ACK_STATE_FAIL;
 			}
 			break;
+#endif
+
 		#endif
 
 		default:
@@ -801,10 +865,12 @@ enum
 static rtos_event_ext_t		mb_ipc_heart_event;
 static u32             cpu1_heartbeat_timestamp = 0;
 static volatile u8     cpu1_state = CORE_POWER_OFF;
+static volatile u8     cpu1_dump = 0;
 
 void start_cpu1_core(void);
 void stop_cpu1_core(void);
 
+#if 0
 void mb_ipc_reset_notify(u32 power_on)
 {
 	if(power_on)
@@ -821,6 +887,7 @@ void mb_ipc_reset_notify(u32 power_on)
 		rtos_set_event_ex(&mb_ipc_heart_event, MB_IPC_STOP_CORE_FLAG);
 	}
 }
+#endif
 
 static void mb_ipc_heartbeat_notify(void)
 {
@@ -830,6 +897,11 @@ static void mb_ipc_heartbeat_notify(void)
 static void mb_ipc_power_on_notify(void)
 {
 	rtos_set_event_ex(&mb_ipc_heart_event, MB_IPC_POWER_UP_FLAG);
+}
+
+static void mb_ipc_dump_notify(u32 dump)
+{
+	cpu1_dump = (dump != 0);
 }
 
 static int mb_ipc_heartbeat_timeout(void)
@@ -842,7 +914,7 @@ static int mb_ipc_heartbeat_timeout(void)
 	{
 		return 0;
 	}
-	if(cpu1_state == CORE_STARTING)
+	if((cpu1_state == CORE_STARTING) || (cpu1_dump != 0))
 	{
 		cpu1_heartbeat_timestamp = cur_time;
 		return 0;
@@ -926,7 +998,7 @@ static void mb_ipc_task( void *para )
 					}
 					else
 					{
-						events = rtos_wait_event_ex(&mb_ipc_heart_event, MB_IPC_POWER_UP_FLAG, true, 500);
+						events = rtos_wait_event_ex(&mb_ipc_heart_event, MB_IPC_POWER_UP_FLAG, true, 2000);// 2s
 					}
 				}
 
@@ -958,6 +1030,7 @@ static void mb_ipc_task( void *para )
 	}
 }
 
+#if 0
 int mb_ipc_cpu_is_power_on(u32 cpu_id)
 {
 	if(cpu1_state == CORE_POWER_ON)
@@ -967,6 +1040,7 @@ int mb_ipc_cpu_is_power_on(u32 cpu_id)
 
 	return 0;
 }
+#endif
 
 #endif
 
@@ -1112,6 +1186,8 @@ bk_err_t ipc_send_res_release_cnt(u16 resource_id, u16 cpu_id, amp_res_req_cnt_t
 						(u8 *)&res_req, sizeof(res_req), (u8 *)cnt_list, sizeof(amp_res_req_cnt_t));
 }
 
+
+#if CONFIG_GENERAL_DMA
 u8 ipc_send_alloc_dma_chnl(u32 user_id)
 {
 	bk_err_t	ret_val = BK_FAIL;
@@ -1155,5 +1231,14 @@ u32 ipc_send_dma_chnl_user(u8 chnl_id)
 	return user_id;
 }
 #endif
+
+
+#endif
+
+
+void ipc_cdc_send_cmd(u8 cmd, u8 *cmd_buf, u16 cmd_len, u8 * rsp_buf, u16 rsp_buf_len)
+{
+	ipc_send_cmd(&ipc_chnl_cb, cmd, (uint8_t *)cmd_buf, cmd_len, (uint8_t *)rsp_buf, rsp_buf_len);
+}
 
 #endif

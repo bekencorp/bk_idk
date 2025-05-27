@@ -47,6 +47,9 @@ extern "C" {
 #define BK_ERR_USB_UAC_NOSUPPORT_ATTRIBUTE    (BK_ERR_USB_BASE - 19) /**< UAC The attribute configuration is not supported */
 
 
+
+
+
 typedef enum
 {
     USB_HOST_MODE   = 0,
@@ -78,6 +81,7 @@ typedef enum
     USB_MSD_DEVICE = 3,
     USB_OTA_DEVICE = 4,
     USB_USER_CHECK_DEVICE = 5,
+    USB_CDC_DEVICE=6,
     USB_DEVICE_MAX,
 } E_USB_DEVICE_T;
 

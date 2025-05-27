@@ -432,7 +432,7 @@ void security_ota_init(void)
 	bk_ota_clear_flag();
 #else
 	extern void bk_flash_xip_erase(void);
-	bk_flash_xip_erase();
+//	bk_flash_xip_erase();
 #endif
 	os_memset(&ota_parse, 0, sizeof(ota_parse_t));
 	CRC32_Init(&ota_parse.ota_crc);

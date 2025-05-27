@@ -134,6 +134,9 @@ extern "C" {
 #define PM_CHIP_ID_MPW_V2_3                              (0x22710010)
 #define PM_CHIP_ID_MPW_V4                                (0x22C20010)
 #define PM_CHIP_ID_MP_A                                  (0x23640810)
+#define PM_CHIP_ID_MP_C                                  (0x23A40910)
+#define PM_CHIP_ID_MP_I                                  (0x24940610)
+#define PM_CHIP_ID_MP_J                                  (0x24940611)
 
 #define PM_FREQUNCY_DIV_MAX                              (15)
 #define PM_FREQUNCY_DIV_BUS_MAX                          (1)
@@ -456,8 +459,8 @@ typedef enum
 	WAKEUP_SOURCE_INT_RTC ,
 	WAKEUP_SOURCE_INT_WIFI ,
 	WAKEUP_SOURCE_INT_BT ,
+	WAKEUP_SOURCE_INT_USBPLUG ,// 4
 	WAKEUP_SOURCE_INT_TOUCHED ,
-	WAKEUP_SOURCE_INT_USBPLUG ,
 	WAKEUP_SOURCE_INT_NONE ,
 }wakeup_source_t;
 

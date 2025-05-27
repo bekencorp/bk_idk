@@ -69,8 +69,11 @@ int cli_ble_init(void);
 int cli_netif_init(void);
 int cli_misc_init(void);
 int cli_mem_init(void);
+int cli_fpb_init(void);
+int cli_dwt_init(void);
 int cli_airkiss_init(void);
 int cli_phy_init(void);
+
 #if CONFIG_LWIP
 int cli_lwip_init(void);
 #endif
@@ -172,8 +175,10 @@ int cli_jpeg_sw_enc_init(void);
 int cli_psa_crypto_init(void);
 int cli_psa_customization_init();
 
+int cli_h264_sw_dec_init(void);
+int cli_jpeg_sw_enc_init(void);
+
 extern int hexstr2bin_cli(const char *hex, u8 *buf, size_t len);
-extern int hexstr2bin(const char *hex, u8 *buf, size_t len);
 #if (CONFIG_BUTTON || CONFIG_ADC_KEY)
 int cli_key_demo_init();
 #endif

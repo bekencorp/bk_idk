@@ -30,6 +30,13 @@ list(APPEND srcs
 	cli_exception.c
 	)
 
+if (CONFIG_SOC_BK7236XX)
+	list(APPEND srcs
+    	cli_fpb.c
+    	cli_dwt.c
+	)
+endif()
+
 if (CONFIG_BUTTON OR CONFIG_ADC_KEY)
 	list(APPEND srcs
 		cli_key.c
@@ -175,13 +182,13 @@ if (CONFIG_VAULT_SUPPORT)
 		list(APPEND srcs "cli_securityip.c")
 	endif()
 
-	if (CONFIG_OTP)
+	if (CONFIG_OTP AND CONFIG_OTP_TEST) 
 		list(APPEND srcs "cli_otp.c")
 	endif()
 ENDIF()
 
 if (CONFIG_SOC_BK7236XX)
-	if (CONFIG_OTP)
+	if (CONFIG_OTP_V1 AND CONFIG_OTP_TEST)
 		list(APPEND srcs "cli_otp.c")
 	endif()
 endif()
@@ -404,14 +411,11 @@ if (CONFIG_SCR)
 	list(APPEND srcs cli_scr.c)
 endif()
 
-if (CONFIG_JPEG_SW_ENCODER_TEST)
-	list(APPEND srcs cli_jpeg_sw_enc.c)
-endif()
 set(PRIV_REQUIRES_LIST bk_common mbedtls bk_netif bk_ps fatfs bk_vfs bk_init bk_libs at bk_wifi compal ota cmsis jrtplib flashdb bk_bluetooth bk_phy tfm)
 
 armino_component_register(SRCS "${srcs}"
 	INCLUDE_DIRS "${incs}"
-	REQUIRES utf8 temp_detect app driver user_driver bk_system iperf fatfs user_driver http adc_key key
+	REQUIRES utf8 temp_detect app driver user_driver bk_system iperf fatfs user_driver http adc_key key bk_websocket cm33
 	#PRIV_REQUIRES airkiss bk_common bk_netif bk_ps
 	PRIV_REQUIRES ${PRIV_REQUIRES_LIST}
 	)

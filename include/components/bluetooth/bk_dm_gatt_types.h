@@ -89,6 +89,10 @@ typedef enum
     BK_GATT_UUID_BR_EDR_TRANS_BLOCK_DATA =       0x290F,          ///  Complete BRT-EDR Transport BLock Data
     BK_GATT_UUID_OBSERVATION_SCHEDULE =          0x2910,          ///  Observation Schedule
     BK_GATT_UUID_VALID_RANGE_ACCURACY =          0x2911,          ///  Valid Range and Accuracy
+    BK_GATT_UUID_MEASUREMENT_DESCRIPTION =       0x2912,
+    BK_GATT_UUID_MANUFACTURER_LIMITS =           0x2913,
+    BK_GATT_UUID_PROCESS_TOLERANCES =            0x2914,
+    BK_GATT_UUID_IMD_TRIGGER_SETTING =           0x2915,
 
     /// GAP Profile Attributes
     BK_GATT_UUID_GAP_DEVICE_NAME =               0x2A00,

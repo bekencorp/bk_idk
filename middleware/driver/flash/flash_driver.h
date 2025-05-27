@@ -44,21 +44,25 @@
 #define FLASH_DPLL_DIV_VALUE_SIX         1
 #define FLASH_ManuFacID_POSI             (16)
 #define FLASH_ManuFacID_GD               (0xC8)
+#define FLASH_ManuFacID_TH               (0xCD)
+
+#define FLASH_BLOCK32_SIZE               (0x8000)
+#define FLASH_BLOCK_SIZE                 (0x10000)
+#define FLASH_MAX_SIZE                   (FLASH_SIZE_16M)
+#define FLASH_API_MAGIC_CODE             (0x12345678)
 
 typedef struct {
 	uint32_t flash_id;
-	uint8_t status_reg_size; /**< the byte count of status register */
 	uint32_t flash_size;
+	uint8_t status_reg_size; /**< the byte count of status register */
 	flash_line_mode_t line_mode;
 	uint8_t cmp_post; /**< CMP bit position in status register */
 	uint8_t protect_post; /**< block protect bits position in status register */
 	uint8_t protect_mask; /**< block protect bits mask value in status register */
 	uint16_t protect_all;
 	uint16_t protect_none;
-	uint16_t protect_half;
 	uint16_t unprotect_last_block;
 	uint8_t quad_en_post; /**< quad enable bit position in status register */
 	uint8_t quad_en_val; /**< When the QE pin is set to quad_en_val(1 or 0), the Quad IO2 and IO3 pins are enabled */
 	uint8_t coutinuous_read_mode_bits_val;
-	uint8_t mode_sel;
 } flash_config_t;

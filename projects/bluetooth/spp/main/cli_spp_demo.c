@@ -178,6 +178,7 @@ typedef struct{
     uint32_t rate_tx_len;
     uint32_t rate_tx_time;
     uint32_t rate_crc;
+    float speed;
     uint8_t *rate_buf;
 }cli_spp_dev_t;
 
@@ -330,6 +331,7 @@ static int bt_spp_rate_poll(cli_spp_dev_t *dev, uint16_t len)
     {
         dev->pending &=~CLI_SPP_W4_RATE_START;
         dev->rate_crc = 0xFFFFFFFF;
+        dev->speed = 0;
         make_crc32_table();
         dev->rate_tx_time = rtos_get_time();
         dev->pending|=CLI_SPP_W4_RATE_TX;
@@ -337,14 +339,13 @@ static int bt_spp_rate_poll(cli_spp_dev_t *dev, uint16_t len)
     }else if(dev->pending&CLI_SPP_W4_RATE_TX)
     {
         dev->rate_tx_len += len;
-        uint64_t current_time = rtos_get_time();
-        float spend_time = (float)(current_time - dev->rate_tx_time)/1000;
-        CLI_LOGI("---->spend time: %f s\r\n", spend_time);
-        float speed = (float)dev->rate_tx_len/1024/spend_time;
         dev->rate_crc = calc_crc32(dev->rate_crc, dev->rate_buf, len);
-        CLI_LOGI("spp tx length: %d, speed: %.3fKB/s \r\n", dev->rate_tx_len, speed);
     }else if(dev->pending&CLI_SPP_W4_RATE_END)
     {
+        uint64_t current_time = rtos_get_time();
+        float spend_time = (float)(current_time - dev->rate_tx_time)/1000;
+        dev->speed = (float)dev->rate_tx_len/1024/spend_time;
+        CLI_LOGI("spp tx length: %d, speed: %.3fKB/s \r\n", dev->rate_tx_len, dev->speed);
         CLI_LOGI("========spp tx finish tx_length: %d, crc:0x%x ========\r\n", dev->rate_tx_len, dev->rate_crc);
         if(dev->rate_buf)
         {
@@ -508,6 +509,7 @@ void bk_cli_bt_spp_callback(bk_spp_cb_event_t event, bk_spp_cb_param_t *param)
                     dev->pending |= CLI_SPP_W4_RATE_RX;
                     dev->rate_crc = 0xFFFFFFFF;
                     dev->rate_tx_len = 0;
+                    speed = 0;
                     make_crc32_table();
                     dev->rate_tx_time = rtos_get_time();
                 }else if(!os_strncmp((char *)param->data_ind.data, tx_through_cmd_end, param->data_ind.len))
@@ -521,10 +523,8 @@ void bk_cli_bt_spp_callback(bk_spp_cb_event_t event, bk_spp_cb_param_t *param)
                         dev->rate_tx_len += param->data_ind.len;
                         uint64_t current_time = rtos_get_time();
                         float spend_time = (float)(current_time - dev->rate_tx_time)/1000;
-                        CLI_LOGI("---->spend time: %f s\r\n", spend_time);
                         speed = (float)dev->rate_tx_len/1024/spend_time;
                         dev->rate_crc = calc_crc32(dev->rate_crc, param->data_ind.data, param->data_ind.len);
-                        CLI_LOGI("spp rx length: %d, speed: %.3fKB/s \r\n", dev->rate_tx_len, speed);
                     }else
                     {
                         CLI_LOGI("===========DATA IND===========\r\n");
@@ -704,7 +704,7 @@ void spp_command(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv
         }else if(chnl == 0)
         {
             bk_spp_stop_srv();
-        }
+        }else
         {
             CLI_LOGI("spp stop srv, not find chnnl:%d dev\r\n", chnl);
         }

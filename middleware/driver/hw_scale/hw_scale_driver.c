@@ -169,17 +169,21 @@ bk_err_t bk_hw_scale_driver_deinit(scale_id_t id)
 	}
 
 	s_hw_scale.handle[id].is_init = false;
-
+    	scale0_hal_reset();
+    	scale1_hal_reset();
 	if (id == HW_SCALE0)
 	{
 		sys_drv_int_disable(SCALE0_INTERRUPT_CTRL_BIT);
 		bk_int_isr_unregister(INT_SRC_SCALE0);
+		scale0_hal_set_clkgate_bypass(0);
 	}
 	else if (id == HW_SCALE1)
 	{
 		sys_drv_int_disable(SCALE1_INTERRUPT_CTRL_BIT);
 		bk_int_isr_unregister(INT_SRC_SCALE1);
+		scale1_hal_set_clkgate_bypass(0);
 	}
+
 
 //	os_free(s_hw_scale.handle[id].config);
 //	os_free(s_hw_scale.handle[id].record);
@@ -207,11 +211,13 @@ bk_err_t bk_hw_scale_stop(scale_id_t id)
 {
     if(id == HW_SCALE0)
     {
+        scale0_hal_reset();
         scale0_hal_start(0);
         scale0_hal_clear_int_status();
     }
     else
     {
+        scale1_hal_reset();
         scale1_hal_start(0);
         scale1_hal_clear_int_status();
    }

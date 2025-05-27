@@ -255,15 +255,13 @@ void bk_psram_heap_init(void) {
 	size_t uxAddress;
 	size_t xTotalHeapSize;
 
-	bk_pm_module_vote_psram_ctrl(PM_POWER_PSRAM_MODULE_NAME_AS_MEM,PM_POWER_MODULE_STATE_ON);
-
 	xTotalHeapSize = PSRAM_HEAP_SIZE;
 	psram_ucHeap = PSRAM_START_ADDRESS;
 
 	BK_LOGI(TAG, "prvHeapInit-psram start addr:0x%x, size:%d\r\n", psram_ucHeap, xTotalHeapSize);
 
 	os_memset_word((uint32_t *)psram_ucHeap, 0x0, xTotalHeapSize);
-	rtos_regist_plat_dump_hook((uint32_t)psram_ucHeap, xTotalHeapSize);
+	// rtos_regist_plat_dump_hook((uint32_t)psram_ucHeap, xTotalHeapSize);
 
 	/* Ensure the heap starts on a correctly aligned boundary. */
 	uxAddress = ( size_t ) psram_ucHeap;
@@ -394,19 +392,26 @@ void *pvReturn = NULL;
 		kernel, so it must be free. */
 		if( ( xWantedSize & xBlockAllocatedBit ) == 0 )
 		{
-			/* The wanted size is increased so it can contain a BlockLink_t
-			structure in addition to the requested amount of bytes. */
-			if( xWantedSize > 0 )
+			/* The wanted size must be increased so it can contain a BlockLink_t
+			* structure in addition to the requested amount of bytes. */
+			if( ( xWantedSize > 0 ) &&
+			( ( xWantedSize + xHeapStructSize ) >  xWantedSize ) ) /* Overflow check */
 			{
 				xWantedSize += xHeapStructSize;
 
-				/* Ensure that blocks are always aligned to the required number
-				of bytes. */
+				/* Ensure that blocks are always aligned. */
 				if( ( xWantedSize & portBYTE_ALIGNMENT_MASK ) != 0x00 )
 				{
-					/* Byte alignment required. */
-					xWantedSize += ( portBYTE_ALIGNMENT - ( xWantedSize & portBYTE_ALIGNMENT_MASK ) );
-					configASSERT( ( xWantedSize & portBYTE_ALIGNMENT_MASK ) == 0 );
+					/* Byte alignment required. Check for overflow. */
+					if( ( xWantedSize + ( portBYTE_ALIGNMENT - ( xWantedSize & portBYTE_ALIGNMENT_MASK ) ) ) > xWantedSize )
+					{
+						xWantedSize += ( portBYTE_ALIGNMENT - ( xWantedSize & portBYTE_ALIGNMENT_MASK ) );
+						configASSERT( ( xWantedSize & portBYTE_ALIGNMENT_MASK ) == 0 );
+					}
+					else
+					{
+						xWantedSize = 0;
+					}
 				}
 				else
 				{
@@ -415,7 +420,7 @@ void *pvReturn = NULL;
 			}
 			else
 			{
-				mtCOVERAGE_TEST_MARKER();
+				xWantedSize = 0;
 			}
 
 			if( ( xWantedSize > 0 ) && ( xWantedSize <= psram_xFreeBytesRemaining ) )
@@ -523,6 +528,15 @@ void *pvReturn = NULL;
 	return pvReturn;
 }
 
+uint32_t psram_used_area_begin = 0;
+uint32_t psram_used_area_end = 0;
+uint32_t psram_memory_end = 0;
+
+static uint32_t get_memory_end(BlockLink_t *pxLink) {
+	uint32_t mem_end = (uint32_t)pxLink + (pxLink->xBlockSize & ~xBlockAllocatedBit);
+	return mem_end;
+}
+
 #if CONFIG_MALLOC_STATIS || CONFIG_MEM_DEBUG
 void *psram_malloc_cm(const char *call_func_name, int line, size_t xWantedSize, int need_zero )
 #else
@@ -543,7 +557,10 @@ void *psram_malloc( size_t xWantedSize )
 		/* 4 Byte alignment required for psram. */
 		xWantedSize += ( 0x4 - ( xWantedSize & 0x3 ) );
 	}
-
+	if( psram_pxEnd == NULL || !bk_psram_heap_init_flag_get())
+	{
+		bk_pm_module_vote_psram_ctrl(PM_POWER_PSRAM_MODULE_NAME_AS_MEM,PM_POWER_MODULE_STATE_ON);
+	}
 	vTaskSuspendAll();
 	pvReturn = psram_malloc_without_lock(xWantedSize  + MEM_CHECK_TAG_LEN);
 	if(pvReturn)
@@ -576,6 +593,14 @@ void *psram_malloc( size_t xWantedSize )
  		mem_end = pvReturn + xWantedSize;
  		mem_end_len = (pxLink->xBlockSize & ~xBlockAllocatedBit) - xHeapStructSize - xWantedSize;
  		os_memset_word((uint32_t *)mem_end, MEM_OVERFLOW_WORD_TAG, mem_end_len);
+
+		if(psram_used_area_begin == 0 || (uint32_t)pxLink < psram_used_area_begin) {
+			psram_used_area_begin = (uint32_t)pxLink;
+		}
+		psram_memory_end = get_memory_end(pxLink);
+		if(psram_used_area_end == 0 || psram_memory_end > psram_used_area_end) {
+			psram_used_area_end = psram_memory_end;
+		}
 #endif
 #endif //#if CONFIG_MALLOC_STATIS || CONFIG_MEM_DEBUG
 	}
@@ -667,6 +692,7 @@ static inline void mem_overflow_check(BlockLink_t *pxLink)
 			if (0 == arch_is_enter_exception()) {
 				configASSERT( false );
 			}
+			break;
 		}
 	}
 }
@@ -1114,6 +1140,13 @@ void bk_psram_heap_get_used_state(void) {
 
 #endif //#if CONFIG_MALLOC_STATIS || CONFIG_MEM_DEBUG
 #endif //#if CONFIG_PSRAM_AS_SYS_MEMORY
+}
+
+void bk_psram_heap_dump_data(void)
+{
+#if CONFIG_PSRAM_AS_SYS_MEMORY
+	stack_mem_dump(psram_used_area_begin, psram_used_area_end);
+#endif
 }
 
 /*-----------------------------------------------------------*/

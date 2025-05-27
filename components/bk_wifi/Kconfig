@@ -122,7 +122,7 @@ menu "Bk_Wifi"
 		default n
 
 	config EASY_FLASH_FAST_CONNECT
-		depends on EASY_FLASH_V4 && WIFI_FAST_CONNECT
+		depends on EASY_FLASH_V4 && (WIFI_FAST_CONNECT || CONNECT_WITH_MFP_DEAUTH)
 		bool "Enable Wifi Fast Connect with easy flash"
 		default y
 

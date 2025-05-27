@@ -100,6 +100,7 @@ void cli_pm_gpio_callback(gpio_id_t gpio_id)
 #define PM_MANUAL_LOW_VOL_VOTE_ENABLE    (0)
 #define PM_DEEPSLEEP_RTC_THRESHOLD       (500)
 #define PM_SHUTDOWN_RTC_THRESHOLD        (4)        //=500ms
+#define PM_OLD_TOUCH_WAKE_SOURCE         (4)
 extern void stop_cpu1_core(void);
 
 static void cli_pm_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
@@ -234,7 +235,8 @@ static void cli_pm_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char 
 
 		bk_pm_wakeup_source_set(PM_WAKEUP_SOURCE_INT_SYSTEM_WAKE, &system_wakeup_param);
 	}
-	else if(pm_wake_source == PM_WAKEUP_SOURCE_INT_TOUCHED)
+	else if((pm_wake_source == PM_WAKEUP_SOURCE_INT_TOUCHED)
+		||(pm_wake_source == PM_OLD_TOUCH_WAKE_SOURCE))//bk7256 touch wakeup source value is 4,in order to adapt new project for old cmd
 	{
 		#if CONFIG_TOUCH
 		touch_wakeup_param.touch_channel = pm_param1;

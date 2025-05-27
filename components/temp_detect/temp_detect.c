@@ -569,7 +569,11 @@ static void tempd_main(beken_thread_arg_t data)
 
 			case TMPD_TIMER_EXPIRED:
 #if CONFIG_CKMN
-				bk_rosc_32k_ckest_prog(96);
+				// App is active
+				if ((bk_pm_module_sleep_state_get(PM_SLEEP_MODULE_NAME_APP) == 0x0) &&
+					(bk_pm_module_sleep_state_get(PM_SLEEP_MODULE_NAME_ROSC) == 0x1)) {
+					bk_rosc_32k_ckest_prog(96);
+				}
 #endif
 				tempd_detect_temperature();
 				break;

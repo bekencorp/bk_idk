@@ -5,53 +5,53 @@ extern "C" {
 #endif
 
 typedef struct {
-	long pos;
-	long len;
-	long tot;
+    long pos;
+    long len;
+    long tot;
 } video_index_entry;
 
 typedef struct {
-	long pos;
-	long len;
-	long tot;
+    long pos;
+    long len;
+    long tot;
 } audio_index_entry;
 
 typedef struct {
-	void    *fdes;             /* File descriptor of AVI file */
-	long   mode;              /* 0 for reading, 1 for writing */
+    void   *fdes;             /* File descriptor of AVI file */
+    long   mode;              /* 0 for reading, 1 for writing */
 
-	long   width;             /* Width  of a video frame */
-	long   height;            /* Height of a video frame */
-	double fps;               /* Frames per second */
-	char   compressor[8];     /* Type of compressor, 4 bytes + padding for 0 byte */
-	long   video_strn;        /* Video stream number */
-	long   video_frames;      /* Number of video frames */
-	char   video_tag[4];      /* Tag of video data */
-	long   video_pos;         /* Number of next frame to be read
+    long   width;             /* Width  of a video frame */
+    long   height;            /* Height of a video frame */
+    double fps;               /* Frames per second */
+    char   compressor[8];     /* Type of compressor, 4 bytes + padding for 0 byte */
+    long   video_strn;        /* Video stream number */
+    long   video_frames;      /* Number of video frames */
+    char   video_tag[4];      /* Tag of video data */
+    long   video_pos;         /* Number of next frame to be read
                                 (if index present) */
-	long   video_posb;        /* video position: byte within chunk */
+    long   video_posb;        /* video position: byte within chunk */
 
-	long   a_fmt;             /* Audio format, see #defines below */
-	long   a_chans;           /* Audio channels, 0 for no audio */
-	long   a_rate;            /* Rate in Hz */
-	long   a_bits;            /* bits per audio sample */
-	long   audio_strn;        /* Audio stream number */
-	long   audio_bytes;       /* Total number of bytes of audio data */
-	long   audio_chunks;      /* Chunks of audio data in the file */
-	char   audio_tag[4];      /* Tag of audio data */
-	long   audio_posc;        /* Audio position: chunk */
-	long   audio_posb;        /* Audio position: byte within chunk */
+    long   a_fmt;             /* Audio format, see #defines below */
+    long   a_chans;           /* Audio channels, 0 for no audio */
+    long   a_rate;            /* Rate in Hz */
+    long   a_bits;            /* bits per audio sample */
+    long   audio_strn;        /* Audio stream number */
+    long   audio_bytes;       /* Total number of bytes of audio data */
+    long   audio_chunks;      /* Chunks of audio data in the file */
+    char   audio_tag[4];      /* Tag of audio data */
+    long   audio_posc;        /* Audio position: chunk */
+    long   audio_posb;        /* Audio position: byte within chunk */
 
-	long   pos;               /* position in file */
-	long   n_idx;             /* number of index entries actually filled */
-	long   max_idx;           /* number of index entries actually allocated */
-	unsigned char (*idx)[16]; /* index entries (AVI idx1 tag) */
-	video_index_entry *video_index;
-	audio_index_entry *audio_index;
-	long   last_pos;          /* Position of last frame written */
-	long   last_len;          /* Length of last frame written */
-	int    must_use_index;    /* Flag if frames are duplicated */
-	long   movi_start;
+    long   pos;               /* position in file */
+    long   n_idx;             /* number of index entries actually filled */
+    long   max_idx;           /* number of index entries actually allocated */
+    unsigned char (*idx)[16]; /* index entries (AVI idx1 tag) */
+    video_index_entry *video_index;
+    audio_index_entry *audio_index;
+    long   last_pos;          /* Position of last frame written */
+    long   last_len;          /* Length of last frame written */
+    int    must_use_index;    /* Flag if frames are duplicated */
+    long   movi_start;
 } avi_t;
 
 #define AVI_MODE_WRITE  0

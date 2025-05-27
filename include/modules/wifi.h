@@ -1232,6 +1232,41 @@ bk_err_t bk_wifi_set_bcn_miss_time(uint8_t bcnmiss_time);
 bk_err_t bk_wifi_set_bcn_recv_win(uint8_t default_win, uint8_t max_win, uint8_t step);
 
 /**
+ * @brief  Get wifi support mode.
+ *
+ * @param get wifi support info
+ *
+ * @return
+ * 	-2: support wifi6(HE)
+ * 	-1: support wifi4(HT)
+ * 	-0: support others(11n/g)
+ */
+bk_err_t bk_wifi_get_support_wifi_mode(uint8_t* support_mode);
+
+/**
+ * @brief  configure arp reply.
+ *
+ * flag: indicates whether to send arp reply actively,but not respond to arp request,or use default value
+ * * * * 0:use default value(when dtim10 is configured,enable active arp_reply and arp_period is 30s);
+ * * * * 1:enable active arp_reply and set arp_reply period;
+ * * * * 2:disable active arp_reply
+ *arp_period:period for sending arp reply,unit: second
+ *
+ * @usage example:
+ *		flag:1  (an arp reply is activelt send every 30s)
+ *		arp_period:30
+
+ *		flag:2  (disable active arp_reply)
+ *		arp_period:0
+ *
+ * @return
+ * 	-BK_OK: on success
+ * 	-others:real error, used for future.
+ *
+ */
+bk_err_t bk_wifi_set_arp_reply_config(uint8_t flag, uint8_t arp_period);
+
+/**
  * @brief  Get wifi statistic info.
  *
  * @param get wifi info from fw
@@ -1487,6 +1522,28 @@ bk_err_t bk_wifi_set_tx_power(wifi_standard standard, float powerdBm);
 /**
  * @}
  */
+
+/**
+ * @brief get probe response and assoc response vendor IE
+ *
+ * @param void* vsie_cb
+ * @param vendor_type:OUI, Big_Endian mode
+ * @param oui_len:3 or 4 byte
+ *
+ * @return
+ *    - kNoErr: succeed
+ *    - otherwise: fail
+
+ * @example1:
+ *		vendor_type 0x506f9a23
+ *		oui_len 4
+
+ * @example2:
+ *		vendor_type 0xc8478c00
+ *		oui_len 3
+ */
+bk_err_t bk_wifi_get_vendor_ie_cb(void* vsie_cb, uint32_t vendor_type, uint8_t oui_len);
+
 #ifdef __cplusplus
 }
 #endif

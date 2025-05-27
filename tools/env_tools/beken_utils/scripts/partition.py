@@ -517,8 +517,12 @@ class Partition:
                 with open(all_bin_pack,'rb+') as f:
                     xip_status_phy_offset = ceil_align((self.partition_offset + self.partition_size - 4096),34)
                     phy_bin_offset = xip_status_phy_offset - self.phy_partition_offset
-                    f.seek(phy_bin_offset)
-                    f.truncate()
+                    f.seek(0, os.SEEK_END)  # set file pointer to the end of file.
+                    end_pos = f.tell()      # get postion of end of file
+                    offset = phy_bin_offset - end_pos
+                    if offset < 0:
+                        raise RuntimeError(f"file {self.file_name_prefix} don't have enough space.")
+                    f.write(bytes([0xff]) * offset) # padding 0xff
                     f.write(b'\xEF\xBE\xAD\xDE')
                     f.seek(phy_bin_offset + 32)
                     f.write(b'\xEF\xBE\xAD\xDE')

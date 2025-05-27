@@ -31,13 +31,23 @@
 #include "bk_pm_internal_api.h"
 #include <common/bk_kernel_err.h>
 #include "aon_pmu_hal.h"
+#include "wdt_driver.h"
 
 /*=====================DEFINE  SECTION  START=====================*/
 #define PM_SEND_CMD_CP1_RESPONSE_TIEM        (100)  //100ms
-#define PM_BOOT_CP1_WAITING_TIEM             (2000) // 2s
+#define PM_BOOT_CP1_WAITING_TIEM             (500) // 0.5s
 #define PM_CP1_RECOVERY_DEFAULT_VALUE        (0xFFFFFFFFFFFFFFFF)
 #define PM_OPEN_CP1_TIMEOUT                  (20000) //20s
 #define PM_SEMA_WAIT_FOREVER                 (0xFFFFFFFF)    /*Wait Forever*/
+
+#define PM_BOOT_CP1_TRY_COUNT                (3)
+
+#define PWR_TAG "PWR"
+#define PWR_LOGI(...) BK_LOGI(SOC_TAG, ##__VA_ARGS__)
+#define PWR_LOGW(...) BK_LOGW(SOC_TAG, ##__VA_ARGS__)
+#define PWR_LOGE(...) BK_LOGE(SOC_TAG, ##__VA_ARGS__)
+#define PWR_LOGD(...) BK_LOGD(SOC_TAG, ##__VA_ARGS__)
+
 /*=====================DEFINE  SECTION  END=====================*/
 
 /*=====================VARIABLE  SECTION  START=================*/
@@ -62,6 +72,7 @@ static volatile  uint32_t                         s_pm_cp1_sema_count           
 #else
 static volatile  pm_mailbox_communication_state_e s_pm_cp1_boot_ready            = 0;
 #endif
+static volatile  uint32_t                         s_pm_cp1_boot_try_count        = 0;
 
 /*=====================VARIABLE  SECTION  END=================*/
 
@@ -227,7 +238,7 @@ static void pm_cp1_mailbox_send_data(uint32_t cmd, uint32_t param1,uint32_t para
 	mb_cmd.param3 = param3;
 	ret = mb_chnl_write(MB_CHNL_PWC, &mb_cmd);
 	GLOBAL_INT_RESTORE();
-	os_printf("%s %d\r\n",__func__, ret);
+	os_printf("cp1 send data %d\r\n",ret);
 }
 bk_err_t pm_cp1_mailbox_response(uint32_t cmd, int ret)
 {
@@ -332,13 +343,13 @@ static void pm_cp1_mailbox_rx_isr(int *pm_mb, mb_chnl_cmd_t *cmd_buf)
 
 	if(ret != BK_OK)
 	{
-		os_printf("cp1 response: cp0 handle msg error\r\n");
+		os_printf("cp1 resps:cp0 rev msg error\r\n");
 	}
 	//if(pm_debug_mode()&0x2)
 	{
       if(cmd_buf->hdr.cmd != PM_CP1_PSRAM_MALLOC_STATE_CMD)
       {
-		os_printf("enter cp1_mailbox_rx_isr %d %d %d \r\n",cmd_buf->hdr.cmd,cmd_buf->param1,cmd_buf->param2);
+		os_printf("cp1_mb_rx_isr %d %d %d\r\n",cmd_buf->hdr.cmd,cmd_buf->param1,cmd_buf->param2);
       }
 	}
 }
@@ -460,7 +471,7 @@ static void pm_cp0_mailbox_rx_isr(int *pm_mb, mb_chnl_cmd_t *cmd_buf)
 			break;
 		case PM_CP1_RECOVERY_CMD:
 			bk_pm_cp1_recovery_module_state_ctrl(cmd_buf->param1,cmd_buf->param2);
-			os_printf("%s PM_CP1_RECOVERY_CMD\r\n",__func__);
+			//os_printf("pm_cp0_mb_rx_isr CP1_RECOV_CMD\r\n");
 			break;
 		default:
 			break;
@@ -475,7 +486,7 @@ static void pm_cp0_mailbox_rx_isr(int *pm_mb, mb_chnl_cmd_t *cmd_buf)
 	{
 		if(cmd_buf->hdr.cmd != PM_CP1_PSRAM_MALLOC_STATE_CMD)
 		{
-			os_printf("enter cp0_mailbox_rx_isr %d %d %d %d %d\r\n",cmd_buf->hdr.cmd,cmd_buf->param1,cmd_buf->param2,cmd_buf->param3,ret);
+			os_printf("cp0_mb_rx_isr %d %d %d %d %d\r\n",cmd_buf->hdr.cmd,cmd_buf->param1,cmd_buf->param2,cmd_buf->param3,ret);
 		}
 	}
 
@@ -512,7 +523,7 @@ bk_err_t bk_pm_cp1_recovery_module_state_ctrl(pm_cp1_prepare_close_module_name_e
 	{
 		s_pm_cp1_module_recovery_state |= (0x1ULL << module);
 	}
-	os_printf("%s 0x%llx %d %d %d\r\n",__func__,s_pm_cp1_module_recovery_state,bk_pm_cp1_work_state_get(),bk_pm_cp1_recovery_all_state_get(),s_pm_cp1_ctrl_state);
+	os_printf("cp1 rev 0x%llx %d %d %d\r\n",s_pm_cp1_module_recovery_state,bk_pm_cp1_work_state_get(),bk_pm_cp1_recovery_all_state_get(),s_pm_cp1_ctrl_state);
 	if(bk_pm_cp1_recovery_all_state_get())
 	{
 		bk_pm_module_check_cp1_shutdown();
@@ -538,8 +549,16 @@ static void pm_module_bootup_cpu1(pm_power_module_name_e module)
 	{
 		if(module == PM_POWER_MODULE_NAME_CPU1)
 		{
+boot_cp1:
 			bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_CPU1, 0, 0);
             bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_CPU1, PM_POWER_MODULE_STATE_ON);
+
+			#if defined(RECV_CMD_LOG_FROM_MBOX)
+			void reset_forward_log_status(void);
+			// reset cpu1's log transfer status on cpu0.
+			reset_forward_log_status();
+			#endif
+
             start_cpu1_core();
 
 			previous_tick = bk_aon_rtc_get_current_tick(AON_RTC_ID_1);
@@ -555,7 +574,21 @@ static void pm_module_bootup_cpu1(pm_power_module_name_e module)
 
 			if(!bk_pm_cp1_work_state_get())
 			{
-				os_printf("cp0 boot cp1 time out, boot cp1 fail!!!\r\n");
+				os_printf("cp0 boot cp1[%d] time out, boot cp1 fail!!!\r\n",s_pm_cp1_boot_try_count);
+
+				/*Reset psram*/
+				bk_pm_module_vote_psram_ctrl(PM_POWER_PSRAM_MODULE_NAME_MEDIA, PM_POWER_MODULE_STATE_OFF);
+				bk_pm_module_vote_psram_ctrl(PM_POWER_PSRAM_MODULE_NAME_MEDIA, PM_POWER_MODULE_STATE_ON);
+
+				s_pm_cp1_boot_try_count++;
+				if(s_pm_cp1_boot_try_count < PM_BOOT_CP1_TRY_COUNT)
+				{
+					goto boot_cp1;
+				}
+				if(s_pm_cp1_boot_try_count == PM_BOOT_CP1_TRY_COUNT)
+				{
+					bk_wdt_force_reboot();//try 3 times, if fail ,reboot.
+				}
 			}
 		}
 	}
@@ -576,12 +609,15 @@ static void pm_module_shutdown_cpu1(pm_power_module_name_e module)
 	{
 		if(module == PM_POWER_MODULE_NAME_CPU1)
 		{
-            stop_cpu1_core();
-		    bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_CPU1, PM_POWER_MODULE_STATE_OFF);
+			stop_cpu1_core();
+			bk_pm_module_vote_psram_ctrl(PM_POWER_PSRAM_MODULE_NAME_MEDIA, PM_POWER_MODULE_STATE_OFF);
+			bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_CPU1, PM_POWER_MODULE_STATE_OFF);
+			bk_pm_module_vote_cpu_freq(PM_DEV_ID_CPU1,PM_CPU_FRQ_DEFAULT);
 
 			GLOBAL_INT_DISABLE();
 			s_pm_cp1_boot_ready = 0;
 			s_pm_cp1_closing = 0;
+			s_pm_cp1_boot_try_count = 0;
 			GLOBAL_INT_RESTORE();
 			ret = rtos_set_semaphore(&s_sync_cp1_open_sema);
 			if(s_pm_cp1_sema_count == 0)
@@ -590,7 +626,7 @@ static void pm_module_shutdown_cpu1(pm_power_module_name_e module)
 			}
 
 			bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_CPU1, 1, 0);
-			os_printf("%s [%d][%d][%d]\r\n",__func__,s_pm_cp1_closing,ret,s_pm_cp1_sema_count);
+			os_printf("Shutdown_cp1[%d][%d][%d]\r\n",s_pm_cp1_closing,ret,s_pm_cp1_sema_count);
 		}
 	}
 }
@@ -600,7 +636,7 @@ bk_err_t bk_pm_module_vote_boot_cp1_ctrl(pm_boot_cp1_module_name_e module,pm_pow
 	bk_err_t ret = BK_OK;
 	GLOBAL_INT_DECLARATION();
 
-	os_printf("%s %d %d 0x%x [%d][0x%x]enter 1\r\n",__func__, module, power_state,s_pm_cp1_ctrl_state,s_pm_cp1_closing,&s_sync_cp1_open_sema);
+	os_printf("boot_cp1 %d %d 0x%x [%d][0x%x]E_1\r\n",module, power_state,s_pm_cp1_ctrl_state,s_pm_cp1_closing,&s_sync_cp1_open_sema);
 	if (NULL == s_sync_cp1_open_sema)
 	{
 		rtos_init_semaphore(&s_sync_cp1_open_sema, 1);
@@ -610,7 +646,7 @@ bk_err_t bk_pm_module_vote_boot_cp1_ctrl(pm_boot_cp1_module_name_e module,pm_pow
 		GLOBAL_INT_DISABLE();
 		s_pm_cp1_sema_count++;
 		GLOBAL_INT_RESTORE();
-		os_printf("%s get semaphore[%d][0x%x]\r\n",__func__,s_pm_cp1_sema_count,&s_sync_cp1_open_sema);
+		os_printf("boot_cp1 get sema[%d][0x%x]\r\n",s_pm_cp1_sema_count,&s_sync_cp1_open_sema);
 
 		/*add protect:init again when the s_sync_cp1_open_sema free*/
 		if (NULL == s_sync_cp1_open_sema)
@@ -624,24 +660,26 @@ bk_err_t bk_pm_module_vote_boot_cp1_ctrl(pm_boot_cp1_module_name_e module,pm_pow
 		GLOBAL_INT_RESTORE();
 		if(ret == kTimeoutErr)
 		{
-			os_printf("%s [%d]0x%llx %d %d %d\r\n",__func__,ret,s_pm_cp1_module_recovery_state,bk_pm_cp1_work_state_get(),bk_pm_cp1_recovery_all_state_get(),s_pm_cp1_ctrl_state);
+			os_printf("boot_cp1[%d]0x%llx %d %d %d\r\n",ret,s_pm_cp1_module_recovery_state,bk_pm_cp1_work_state_get(),bk_pm_cp1_recovery_all_state_get(),s_pm_cp1_ctrl_state);
 			if(bk_pm_cp1_recovery_all_state_get())
 			{
 				bk_pm_module_check_cp1_shutdown();
 			}
 		}
 	}
-	os_printf("%s %d %d 0x%x [%d]enter 2\r\n",__func__, module, power_state,s_pm_cp1_ctrl_state,ret);
+	os_printf("boot_cp1 %d %d 0x%x [%d]E_2\r\n",module, power_state,s_pm_cp1_ctrl_state,ret);
     if(power_state == PM_POWER_MODULE_STATE_ON)//power on
     {
-        GLOBAL_INT_DISABLE();
-        s_pm_cp1_ctrl_state |= 0x1 << (module);
-        GLOBAL_INT_RESTORE();
-        pm_module_bootup_cpu1(PM_POWER_MODULE_NAME_CPU1);
+		bk_pm_module_vote_cpu_freq(PM_DEV_ID_CPU1,PM_CPU_FRQ_480M);
+		bk_pm_module_vote_psram_ctrl(PM_POWER_PSRAM_MODULE_NAME_MEDIA, PM_POWER_MODULE_STATE_ON);
+		GLOBAL_INT_DISABLE();
+		s_pm_cp1_ctrl_state |= 0x1 << (module);
+		GLOBAL_INT_RESTORE();
+		pm_module_bootup_cpu1(PM_POWER_MODULE_NAME_CPU1);
     }
     else //power down
     {
-    	if(s_pm_cp1_ctrl_state&(0x1 << (module)))
+		if(s_pm_cp1_ctrl_state&(0x1 << (module)))
 		{
 			GLOBAL_INT_DISABLE();
 			s_pm_cp1_ctrl_state &= ~(0x1 << (module));
@@ -649,11 +687,11 @@ bk_err_t bk_pm_module_vote_boot_cp1_ctrl(pm_boot_cp1_module_name_e module,pm_pow
 			if(0x0 == s_pm_cp1_ctrl_state)
 			{
 				s_pm_cp1_closing = 1;
-				os_printf("%s %d %d close 0x%llx  %d\r\n",__func__, module, power_state,s_pm_cp1_module_recovery_state,s_pm_cp1_boot_ready);
+				os_printf("boot_cp1 %d %d close 0x%llx %d\r\n",module, power_state,s_pm_cp1_module_recovery_state,s_pm_cp1_boot_ready);
 				pm_cp0_mailbox_send_data(PM_CP1_RECOVERY_CMD,0,0,0);
 				//pm_module_shutdown_cpu1(PM_POWER_MODULE_NAME_CPU1);
 			}
-    	}
+		}
     }
 
     return BK_OK;
@@ -769,6 +807,7 @@ static uint32_t s_pm_psram_ctrl_state     = 0;
 static bk_err_t pm_psram_power_ctrl(pm_power_psram_module_name_e module,pm_power_module_state_e power_state)
 {
 #if CONFIG_PSRAM
+	bk_err_t ret = BK_OK;
 	GLOBAL_INT_DECLARATION();
 	//os_printf("%s %d %d 0x%x\r\n",__func__, module, power_state,s_pm_psram_ctrl_state);
     if(power_state == PM_POWER_MODULE_STATE_ON)//power on
@@ -776,19 +815,38 @@ static bk_err_t pm_psram_power_ctrl(pm_power_psram_module_name_e module,pm_power
         GLOBAL_INT_DISABLE();
         s_pm_psram_ctrl_state |= 0x1 << (module);
         GLOBAL_INT_RESTORE();
-
-		bk_psram_init();
-    }
+		ret = bk_psram_init();
+		if(ret != BK_OK)
+		{
+			PWR_LOGE("Psram_I err0:%d",ret);
+			bk_psram_deinit();
+			ret = bk_psram_init();
+			if(ret != BK_OK)
+			{
+				PWR_LOGE("Psram_I err1:%d",ret);
+				bk_psram_deinit();
+				ret = bk_psram_init();
+				if(ret != BK_OK)
+				{
+					PWR_LOGE("Psram_I err2:%d",ret);
+					bk_wdt_force_reboot();//try 3 times, if fail ,reboot.
+				}
+			}
+		}
+	}
     else //power down
     {
-		GLOBAL_INT_DISABLE();
-		s_pm_psram_ctrl_state &= ~(0x1 << (module));
-		GLOBAL_INT_RESTORE();
-		if(0x0 == s_pm_psram_ctrl_state)
+		if(s_pm_psram_ctrl_state&(0x1 << (module)))
 		{
-			bk_psram_deinit();
+			GLOBAL_INT_DISABLE();
+			s_pm_psram_ctrl_state &= ~(0x1 << (module));
+			GLOBAL_INT_RESTORE();
+			if(0x0 == s_pm_psram_ctrl_state)
+			{
+				bk_psram_deinit();
+			}
 		}
-    }
+	}
 #endif
  	return BK_OK;
 }
@@ -797,10 +855,10 @@ bk_err_t pm_debug_pwr_clk_state()
 {
 #if CONFIG_SYS_CPU0
 #if CONFIG_PSRAM
-	os_printf("pm_psram_ctrl_state:0x%x 0x%x\r\n",s_pm_psram_ctrl_state,bk_psram_heap_init_flag_get());
+	os_printf("pm_psram:0x%x 0x%x\r\n",s_pm_psram_ctrl_state,bk_psram_heap_init_flag_get());
 #endif
 #if (CONFIG_CPU_CNT > 1)
-	os_printf("pm_cp1_ctrl_state:0x%x \r\n",s_pm_cp1_ctrl_state);
+	os_printf("pm_cp1_ctr:0x%x \r\n",s_pm_cp1_ctrl_state);
 #endif
 	os_printf("pm_cp1_boot_ready:0x%x 0x%x\r\n",s_pm_cp1_boot_ready,s_pm_cp1_module_recovery_state);
 #endif
@@ -825,7 +883,7 @@ bk_err_t bk_pm_module_vote_psram_ctrl(pm_power_psram_module_name_e module,pm_pow
 	mb_cmd.param2 = power_state;
 	ret = mb_chnl_write(MB_CHNL_PWC, &mb_cmd);
 	GLOBAL_INT_RESTORE();
-	os_printf("cpu1 vote psram power ctrl enter %d\r\n",ret);
+	os_printf("cp1 vote psram_P B:%d\r\n",ret);
 	while(ret != BK_OK)
 	{
 		ret = mb_chnl_write(MB_CHNL_PWC, &mb_cmd);
@@ -845,10 +903,10 @@ bk_err_t bk_pm_module_vote_psram_ctrl(pm_power_psram_module_name_e module,pm_pow
 
 	if(!bk_pm_cp1_psram_power_state_get())
 	{
-	    os_printf("cp1 get psram state time out\r\n");
+	    os_printf("cp1 get psram sta timeout\r\n");
 	}
 
-	os_printf("cpu1 vote psram power ctrl \r\n");
+	os_printf("cp1 vote psram_P E\r\n");
 #endif
 	return BK_OK;
 #elif CONFIG_SYS_CPU0
@@ -890,10 +948,10 @@ bk_err_t bk_pm_module_vote_ctrl_external_ldo(gpio_ctrl_ldo_module_e module,gpio_
 
 	if(!bk_pm_cp1_external_ldo_ctrl_state_get())
 	{
-	    os_printf("cp1 ctrl external ldo time out\r\n");
+	    os_printf("cp1 ctr extLdo timeout\r\n");
 	}
 
-	os_printf("cpu1 vote ctrl_external_ldo \r\n");
+	os_printf("cp1 vote ctr_extLdo\r\n");
 #endif
 	return BK_OK;
 #elif CONFIG_SYS_CPU0

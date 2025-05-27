@@ -36,18 +36,8 @@ ARMINO 构建系统的列表文件位于 :armino:`/tools/build_tools/cmake` 中�
 构建过程
 -------------
 
-构建过程可以大致分为四个阶段：
+构建过程可以大致分为四个阶段：初始化、生成组件列表、生成组件列表和完成。
 
-.. blockdiag::
-    :scale: 100%
-    :caption: ARMINO Build System Process
-    :align: center
-    
-    blockdiag armino-build-system-process {
-        初始化 -> 生成组件列表
-        生成组件列表 -> 组件处理
-        组件处理 -> 完成
-    }
 
 初始化 
 ******************

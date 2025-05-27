@@ -7,15 +7,17 @@ set(incs
 	mbedtls-port/inc
 	mbedtls/include
 	mbedtls/include/mbedtls
+	mbedtls_ui
 	)
 
 set(srcs
-	#mbedtls-port/src/timing_alt.c
-	#mbedtls-port/src/tls_certificate.c
-	#mbedtls-port/src/tls_client.c
+	mbedtls-port/src/timing_alt.c
+	mbedtls-port/src/tls_certificate.c
+	mbedtls-port/src/tls_client.c
 	mbedtls-port/src/tls_hardware.c
 	mbedtls-port/src/tls_mem.c
 	#mbedtls-port/src/tls_net.c
+	#mbedtls_ui/sl_tls.c
 	mbedtls/library/aes.c
 	mbedtls/library/aesni.c
 	mbedtls/library/arc4.c
@@ -54,7 +56,7 @@ set(srcs
 	mbedtls/library/md4.c
 	mbedtls/library/md5.c
 	mbedtls/library/memory_buffer_alloc.c
-	#mbedtls/library/net_sockets.c
+	mbedtls/library/net_sockets.c
 	mbedtls/library/nist_kw.c
 	mbedtls/library/oid.c
 	mbedtls/library/padlock.c
@@ -89,7 +91,7 @@ set(srcs
 	mbedtls/library/ssl_ticket.c
 	mbedtls/library/ssl_tls.c
 	mbedtls/library/threading.c
-	#mbedtls/library/timing.c
+	mbedtls/library/timing.c
 	mbedtls/library/version.c
 	mbedtls/library/version_features.c
 	mbedtls/library/x509.c
@@ -97,7 +99,7 @@ set(srcs
 	mbedtls/library/x509_crl.c
 	mbedtls/library/x509_crt.c
 	mbedtls/library/x509_csr.c
-	#mbedtls/library/x509write_crt.c
+	mbedtls/library/x509write_crt.c
 	mbedtls/library/x509write_csr.c
 	mbedtls/library/xtea.c
 	mbedtls/library/constant_time.c
@@ -119,10 +121,14 @@ if(CONFIG_SECURITYIP)
 			)
 endif()
 
+if(CONFIG_LWIP)
+	list(APPEND srcs
+			mbedtls-port/src/tls_net.c
+			mbedtls_ui/sl_tls.c
+			port/net_sockets.c
+			)
+endif()
 
-list(APPEND srcs
-    "port/net_sockets.c"
-)
 endif()
 
 armino_component_register(SRCS "${srcs}"

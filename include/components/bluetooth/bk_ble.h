@@ -1292,7 +1292,7 @@ ble_err_t bk_ble_remove_devices_from_while_list(bd_addr_t *addr, uint8_t addr_ty
  * - BK_ERR_BLE_SUCCESS: succeed
  * - others: fail
  */
-ble_err_t bk_ble_set_tx_powr(uint8_t pwr_gain);
+ble_err_t bk_ble_tx_power_set(float pwr_gain);
 /*
  * @}
  */

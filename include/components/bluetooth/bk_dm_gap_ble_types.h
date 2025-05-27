@@ -1364,6 +1364,7 @@ typedef union
         uint16_t conn_intv;
         uint16_t conn_latency;
         uint16_t supervision_timeout;
+        uint16_t hci_handle;            /// hci handle, valid only when status == 0
     } connect_complete;                          /*!< Event parameter of BK_BLE_GAP_CONNECT_COMPLETE_EVT */
 
     /**
@@ -1375,6 +1376,7 @@ typedef union
         bk_bd_addr_t remote_bda;       /*!< Remote bluetooth device address */
         bk_ble_addr_type_t remote_bda_type;
         uint8_t reason;
+        uint16_t hci_handle;
     } disconnect_complete;                          /*!< Event parameter of BK_BLE_GAP_DISCONNECT_COMPLETE_EVT */
 
     /**

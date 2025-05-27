@@ -364,6 +364,39 @@ static uint32_t bk_misc_get_reset_reason_wrapper(void)
     return bk_misc_get_reset_reason();
 }
 
+static void sys_ll_set_ana_reg10_iobyapssen_wrapper(uint32_t v) {
+#if (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX)
+#if (CONFIG_SOC_BK7236N) || (CONFIG_SOC_BK7239XX)
+	//TODO: fix me when bk7236n bring up
+#else
+	sys_ll_set_ana_reg9_spi_latch1v(1);
+	if (v) {
+		sys_ll_set_ana_reg10_iobyapssen(1);
+	} else {
+		//shuguang20240718: use default current limit
+		sys_ll_set_ana_reg10_iobyapssen(0);
+	}
+	sys_ll_set_ana_reg9_spi_latch1v(0);
+#endif
+#endif
+}
+
+static void sys_ll_set_ana_reg8_violdosel_wrapper(uint32_t flag) {
+#if (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX)
+#if (CONFIG_SOC_BK7236N) || (CONFIG_SOC_BK7239XX)
+	//TODO: fix me when bk7236n bring up
+#else
+	sys_ll_set_ana_reg9_spi_latch1v(1);
+	if (flag) {
+		sys_ll_set_ana_reg8_violdosel(2);
+	} else {
+		//shuguang20240718: use default current limit
+		sys_ll_set_ana_reg8_violdosel(4);
+	}
+	sys_ll_set_ana_reg9_spi_latch1v(0);
+#endif
+#endif
+}
 static bk_err_t bk_cal_saradc_start(int32_t adc_channel, int32_t adc_clk, int32_t steady_time)
 {
 	adc_config_t config = {0};
@@ -438,7 +471,7 @@ static bk_err_t bk_saradc_stop(uint8_t adc_channel)
 
 static UINT8 bk_phy_get_wifi_media_mode_config_wrapper(void)
 {
-#if (CONFIG_SOC_BK7258)
+#if (CONFIG_SOC_BK7258 && CONFIG_WIFI_ENABLE)
     bool flag = 0;
 
     bk_wifi_get_wifi_media_mode_config(&flag);
@@ -476,6 +509,8 @@ const phy_os_funcs_t g_phy_os_funcs = {
 
     ._save_info_item = save_info_item,
     ._get_info_item  = get_info_item ,
+#else
+    ._nv_phy_reg_set_hook = NULL,
 #endif
 
     ////
@@ -510,7 +545,7 @@ const phy_os_funcs_t g_phy_os_funcs = {
     ._sys_ll_set_ana_reg8_ioldo_lp    = sys_ll_set_ana_reg8_ioldo_lp,
     ._sys_ll_set_ana_reg9_vcorehsel   = sys_ll_set_ana_reg9_vcorehsel,
     ._sys_ll_set_ana_reg9_spi_latch1v = sys_ll_set_ana_reg9_spi_latch1v,
-    ._sys_ll_set_ana_reg10_iobyapssen = sys_ll_set_ana_reg10_iobyapssen,
+    ._sys_ll_set_ana_reg10_iobyapssen = sys_ll_set_ana_reg10_iobyapssen_wrapper,
     ._sys_ll_set_ana_reg11_aldosel    = sys_ll_set_ana_reg11_aldosel,
     ._sys_ll_set_ana_reg12_dldosel    = sys_ll_set_ana_reg12_dldosel,
 
@@ -636,7 +671,7 @@ const phy_os_funcs_t g_phy_os_funcs = {
     ._bk_otp_ahb_update      = bk_otp_ahb_update_wrapper,
     ._bk_get_otp_ahb_rfcali_item = bk_get_otp_ahb_rfcali_item_wrapper,
 #if (CONFIG_SOC_BK7236XX)
-    ._sys_ll_set_ana_reg8_violdosel = sys_ll_set_ana_reg8_violdosel,
+    ._sys_ll_set_ana_reg8_violdosel = sys_ll_set_ana_reg8_violdosel_wrapper,
     ._sys_ll_set_ana_reg8_iocurlim = sys_ll_set_ana_reg8_iocurlim,
 #else
     ._sys_ll_set_ana_reg8_violdosel = NULL,
@@ -732,11 +767,13 @@ const phy_os_variable_t g_phy_os_variable = {
     ._ieee80211_band_60ghz  = IEEE80211_BAND_60GHZ,
     ._ieee80211_num_bands   = IEEE80211_NUM_BANDS ,
 
+#if CONFIG_OTP_V1
     ._OTP_MAC_ADDRESS        = OTP_MAC_ADDRESS ,
     ._OTP_VDDDIG_BANDGAP     = OTP_VDDDIG_BANDGAP ,
     ._OTP_DIA                = OTP_DIA ,
     ._OTP_GADC_TEMPERATURE   = OTP_GADC_TEMPERATURE,
     ._OTP_SDMADC_CALIBRATION = OTP_SDMADC_CALIBRATION ,
+#endif
 };
 
 extern void phy_adapter_init(const void * phy_funcs, const void * phy_vars);

@@ -365,6 +365,18 @@ bk_err_t bk_uart_set_enable_rx(uart_id_t id, bool enable);
 bk_err_t bk_uart_set_enable_tx(uart_id_t id, bool enable);
 
 /**
+ * @brief     Set UART interrupt priority.
+ *
+ * @param id UART id
+ * @param int_priority interrupt priority
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: other errors.
+ */
+bk_err_t bk_uart_isr_set_priority(uart_id_t id, uint32_t int_priority);
+
+/**
  * @brief     Enable UART software fifo
  *
  * @param id UART id

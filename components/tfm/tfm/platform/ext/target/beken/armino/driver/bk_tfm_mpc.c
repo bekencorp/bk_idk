@@ -56,27 +56,28 @@ static void flash_mpc_cfg(void)
 
 static void otp2_mpc_cfg()
 {
+    otp_map = otp_map_2;
     uint32_t block_sz = bk_mpc_get_block_size(MPC_DEV_OTP2); // 256 Bytes
     uint32_t block_num;
-    uint32_t rows = otp_map_row();
-    uint32_t cols = otp_map_col();
-    uint32_t size = otp_map[1][0].allocated_size;
-    uint32_t offset = otp_map[1][0].offset;
-    uint32_t security = otp_map[1][0].security;
+    uint32_t rows = otp_map_2_row();
+    uint32_t cols = otp_map_2_col();
+    uint32_t size = otp_map[0].allocated_size;
+    uint32_t offset = otp_map[0].offset;
+    uint32_t security = otp_map[0].security;
     uint8_t i;
     for(i = 1; i < cols; ++i) {
-        if (security && otp_map[1][i].security) { 
-            size += otp_map[1][i].allocated_size;
+        if (security && otp_map[i].security) { 
+            size += otp_map[i].allocated_size;
         } else {
             block_num = size / block_sz; //TODO: ensure size % block_sz == 0 && size / block_sz > 0 in python
-            bk_mpc_set_secure_attribute(MPC_DEV_OTP2, offset, block_num, otp_map[1][i-1].security);
-            offset = otp_map[1][i].offset; //TODO: ensure offset % block_sz == 0 in python
-            size = otp_map[1][i].allocated_size;
-            security = otp_map[1][i].security;
+            bk_mpc_set_secure_attribute(MPC_DEV_OTP2, offset, block_num, otp_map[i-1].security);
+            offset = otp_map[i].offset; //TODO: ensure offset % block_sz == 0 in python
+            size = otp_map[i].allocated_size;
+            security = otp_map[i].security;
         }
     }
     block_num = size / block_sz;
-    bk_mpc_set_secure_attribute(MPC_DEV_OTP2, offset, block_num, otp_map[1][i-1].security);
+    bk_mpc_set_secure_attribute(MPC_DEV_OTP2, offset, block_num, otp_map[i-1].security);
 }
 
 static void ram_mpc_cfg(void)

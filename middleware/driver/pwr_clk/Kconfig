@@ -20,6 +20,10 @@ menu "PWR_CLK"
 	config BUCK_ENABLE
 		bool "buck enable"
 		default n
+	config BUCK_ANALOG_DISABLE
+		depends on BUCK_ENABLE
+		bool "buck disable analog"
+		default n
 	config BAKP_POWER_DOMAIN_DISABLE
 		 bool "bakp power domain disable"
 		default n
@@ -64,5 +68,8 @@ menu "PWR_CLK"
 	config DIGLDO_LOW_VOLTAGE_ENABLE
 		 bool "enable dig ldo low voltage "
 		default y
+	config CLK_FORCE_MAX_CPU_FREQ_320M
+		 bool "force max cpu frequency 320M"
+		default n
 endmenu
 

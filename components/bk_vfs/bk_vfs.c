@@ -1,3 +1,6 @@
+#include "os/os.h"
+#include "os/str.h"
+#include "os/mem.h"
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
@@ -39,7 +42,68 @@ static void put_file(struct bk_file *file) {
 	bk_vfs_unlock();
 }
 
+#if CONFIG_STARBURST_AIDIALOG_SDK
+int bk_vfs_open(const char *path, int oflag) {
+	struct bk_file *file;
+	char *full_path = NULL;
+	struct bk_filesystem *fs;
+	int ret = -1;
+	int fd = -1;
 
+	if (bk_vfs_lock() != 0) {
+		return -1;
+	}
+
+	full_path = bk_normalize_path(path);
+	if (!full_path)
+		goto out;
+
+	fs = bk_vfs_lookup(full_path);
+	if (!fs) {
+		goto out;
+	}
+
+	file = bk_file_get();	//acquire file
+	if (!file) {
+		bk_set_errno(ENFILE);
+		goto out;
+	}
+
+	file->path = os_strdup(bk_sub_path(fs->mount_point, full_path));
+	if (!file->path) {
+		bk_set_errno(ENOMEM);
+		goto out;
+	}
+
+	file->filesystem = fs;
+	file->f_ops = fs->f_ops;
+	file->flags = oflag;
+	file->size = 0;
+	file->pos = 0;
+
+	if (file->f_ops && file->f_ops->open) {
+		ret = file->f_ops->open(file, file->path, oflag);
+		if (ret == 0)
+			fd = bk_file_to_fd(file);
+		else
+			bk_file_put(file);
+	} else {
+		bk_set_errno(ENOTSUP);
+		bk_file_put(file);
+	}
+	if( -1 == fd && file->path){
+	    os_free(file->path);
+	    file->path=NULL;
+    }	
+out :
+        
+	if (full_path)
+		os_free(full_path);
+	bk_vfs_unlock();
+
+	return fd;
+}
+#else
 int bk_vfs_open(const char *path, int oflag) {
 	struct bk_file *file;
 	char *full_path = NULL;
@@ -69,7 +133,7 @@ int bk_vfs_open(const char *path, int oflag) {
 	file->path = strdup(bk_sub_path(fs->mount_point, full_path));
 	if (!file->path) {
 		bk_set_errno(ENOMEM);
-		goto out;
+		goto cleanup_file;
 	}
 
 	file->filesystem = fs;
@@ -78,24 +142,35 @@ int bk_vfs_open(const char *path, int oflag) {
 	file->size = 0;
 	file->pos = 0;
 
-	if (file->f_ops && file->f_ops->open) {
-		ret = file->f_ops->open(file, file->path, oflag);
-		if (ret == 0)
-			fd = bk_file_to_fd(file);
-		else
-			bk_file_put(file);
-	} else {
-		bk_set_errno(ENOTSUP);
-		bk_file_put(file);
-	}
+    if (file->f_ops && file->f_ops->open) {
+        ret = file->f_ops->open(file, file->path, oflag);
+        if (ret == 0) {
+            fd = bk_file_to_fd(file);
+        } else {
+            goto cleanup_file;
+        }
+    } else {
+        bk_set_errno(ENOTSUP);
+        goto cleanup_file;
+    }
 
-out : 
+    goto out;
+
+cleanup_file:
+    if (file->path) {
+        os_free(file->path);
+    }
+    bk_file_put(file);
+
+out :
 	if (full_path)
-		free(full_path);
+		os_free(full_path);
 	bk_vfs_unlock();
 
 	return fd;
 }
+#endif
+
 
 int bk_vfs_close(int fd) {
 	struct bk_file *file;
@@ -113,7 +188,7 @@ int bk_vfs_close(int fd) {
 	}
 
 	if (file->path) {
-		free(file->path);
+		os_free(file->path);
 		file->path = NULL;
 	}
 
@@ -210,7 +285,7 @@ int bk_vfs_unlink(const char *pathname) {
 
 out:
 	if (full_path)
-		free(full_path);
+		os_free(full_path);
 	bk_vfs_unlock();
 
 	return ret;
@@ -243,7 +318,7 @@ int bk_vfs_stat(const char *pathname, struct stat *statbuf) {
 
 out:
 	if (full_path)
-		free(full_path);
+		os_free(full_path);
 	bk_vfs_unlock();
 
 	return ret;
@@ -290,7 +365,7 @@ int bk_vfs_rename(const char *oldpath, const char *newpath) {
 	}
 
 	if (fs_old == fs_new) {
-		ret = fs_old->f_ops->rename(fs_old, 
+		ret = fs_old->f_ops->rename(fs_old,
 				bk_sub_path(fs_old->mount_point, full_path_old),
 				bk_sub_path(fs_new->mount_point, full_path_new));
 	} else {
@@ -299,9 +374,9 @@ int bk_vfs_rename(const char *oldpath, const char *newpath) {
 
 out:
 	if (full_path_old)
-		free(full_path_old);
+		os_free(full_path_old);
 	if (full_path_new)
-		free(full_path_new);
+		os_free(full_path_new);
 	bk_vfs_unlock();
 
 	return ret;
@@ -394,7 +469,7 @@ int bk_vfs_mkdir(const char *pathname, mode_t mode) {
 
 out:
 	if (full_path)
-		free(full_path);
+		os_free(full_path);
 	bk_vfs_unlock();
 
 	return ret;
@@ -427,7 +502,7 @@ int bk_vfs_rmdir(const char *pathname) {
 
 out:
 	if (full_path)
-		free(full_path);
+		os_free(full_path);
 	bk_vfs_unlock();
 
 	return ret;
@@ -455,14 +530,14 @@ DIR *bk_vfs_opendir(const char *name) {
 	}
 
 	if (fs->f_ops && fs->f_ops->opendir) {
-		dirp = (bk_dir *)malloc(sizeof(bk_dir));
+		dirp = (bk_dir *)os_malloc(sizeof(bk_dir));
 		if (!dirp) {
 			goto out;
 		}
 		dirp->filesystem = fs;
 		ret = fs->f_ops->opendir(dirp, bk_sub_path(fs->mount_point, full_path));
 		if (ret) {
-			free(dirp);
+			os_free(dirp);
 			dirp = NULL;
 		}
 	} else {
@@ -471,7 +546,7 @@ DIR *bk_vfs_opendir(const char *name) {
 
 out:
 	if (full_path)
-		free(full_path);
+		os_free(full_path);
 	bk_vfs_unlock();
 
 	return (DIR *)dirp;
@@ -496,7 +571,7 @@ int bk_vfs_closedir(DIR *dirp_) {
 		bk_set_errno(ENOTSUP);
 	}
 
-	free(dirp);
+	os_free(dirp);
 	bk_vfs_unlock();
 
 	return ret;
@@ -555,7 +630,7 @@ int bk_vfs_chdir(const char *path) {
 		return -1;
 
 	strcpy(working_directory, full_path);
-	free(full_path);
+	os_free(full_path);
 
 	return 0;
 }
@@ -571,4 +646,46 @@ char *bk_vfs_getcwd(char *buf, size_t size) {
 char *bk_vfs_refer_cwd(void) {
 	return working_directory;
 }
+
+#if CONFIG_STARBURST_AIDIALOG_SDK
+off_t bk_vfs_ftell(int fd) {
+	struct bk_file *file;
+	off_t ret = -1;
+
+	file = get_file(fd);
+	if (!file) {
+		return -1;
+	}
+
+	if (file->f_ops && file->f_ops->ftell) {
+		ret = file->f_ops->ftell(file);
+	} else {
+		bk_set_errno(ENOTSUP);
+	}
+
+	put_file(file);
+
+	return ret;
+}
+
+int bk_vfs_feof(int fd) {
+	struct bk_file *file;
+	off_t ret = -1;
+
+	file = get_file(fd);
+	if (!file) {
+		return -1;
+	}
+
+	if (file->f_ops && file->f_ops->feof) {
+		ret = file->f_ops->feof(file);
+	} else {
+		bk_set_errno(ENOTSUP);
+	}
+
+	put_file(file);
+
+	return ret;
+}
+#endif
 

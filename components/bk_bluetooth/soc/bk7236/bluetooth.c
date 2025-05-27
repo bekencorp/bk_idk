@@ -464,6 +464,10 @@ static void uart_enable_wrapper(uint8_t uart_id, uint8_t enable, uint32_t band)
                 config.baud_rate = UART_BAUDRATE_921600;
                 break;
 
+            case 1000000:
+                config.baud_rate = 1000000;
+                break;
+
             case 3250000:
                 config.baud_rate = UART_BAUDRATE_3250000;
                 break;
@@ -913,21 +917,42 @@ static void dump_bytes(uint8_t *buffer, uint16_t length)
     send_uart2(UART_ID_1, hex_stream);
 }
 
-static void btsnoop_wrapper(uint8_t uart_id, uint8_t pkt_type, uint8_t is_rxed, uint8_t *pkt, uint16_t pkt_len)
+static void btsnoop_wrapper(uint8_t uart_id, uint8_t pkt_type, uint8_t is_rxed, uint8_t *pkt, uint16_t pkt_len, uint8_t method)
 {
-    if (is_rxed)
+    switch(method)
     {
-        send_uart2(uart_id, "\r\n<- %02x ", pkt_type);
-        dump_bytes(pkt, pkt_len);
-        send_uart2(uart_id, "\r\n");
-    }
-    else
-    {
-        send_uart2(uart_id, "\r\n-> %02x ", pkt_type);
-        dump_bytes(pkt, pkt_len);
-        send_uart2(uart_id, "\r\n");
+    case 0:
+    default:
+        if (is_rxed)
+        {
+            send_uart2(uart_id, "\r\n<- %02x ", pkt_type);
+            dump_bytes(pkt, pkt_len);
+            send_uart2(uart_id, "\r\n");
+        }
+        else
+        {
+            send_uart2(uart_id, "\r\n-> %02x ", pkt_type);
+            dump_bytes(pkt, pkt_len);
+            send_uart2(uart_id, "\r\n");
+        }
+        break;
+
+    case 1:
+        if(is_rxed)
+        {
+            pkt_type |= 0b10000000;
+        }
+
+        uart_write_byte(uart_id, pkt_type);
+
+        for (uint32_t i = 0; i < pkt_len; ++i)
+        {
+            uart_write_byte(uart_id, pkt[i]);
+        }
+        break;
     }
 }
+
 static uint32_t get_chipid_mask(void)
 {
     return PM_CHIP_ID_MASK;
@@ -1095,13 +1120,19 @@ static void ble_exit_dut()
     ble_cal_exit_dut();
 }
 
-static uint8_t get_bluetooth_power_level()
+static uint8_t set_bluetooth_power_level(float pwr_gain)
 {
-#if CONFIG_BLE_USE_HIGH_POWER_LEVEL
-    return 12;
-#else
-    return 6;
-#endif
+    extern bk_err_t bk_ble_set_tx_power(float powerdBm);
+    extern uint8_t manual_cal_get_ble_pwr_idx(uint8_t channel);
+    extern uint8_t get_ble_txpwr_table_size(void);
+    extern void ble_cal_set_txpwr(uint8_t idx);
+
+    bk_ble_set_tx_power(pwr_gain);
+    uint8_t pwr_index = manual_cal_get_ble_pwr_idx(19);
+    uint8_t max_pwr_index = get_ble_txpwr_table_size() - 1;
+    uint8_t new_pwr_index = pwr_index > max_pwr_index ? max_pwr_index : pwr_index;
+    ble_cal_set_txpwr(pwr_index);
+    return new_pwr_index;
 }
 
 //warning: bt_osi_funcs must be data section, otherwise a2dp_source_pcm and a2dp_source_decode will trig watchdog !!!!!!!!
@@ -1212,7 +1243,7 @@ static struct bt_osi_funcs_t bt_osi_funcs =
     ._flush_dcache = flush_dcache_wrapper,
     ._ble_enter_dut = ble_enter_dut,
     ._ble_exit_dut = ble_exit_dut,
-    ._get_bluetooth_power_level = get_bluetooth_power_level,
+    ._set_bluetooth_power_level = set_bluetooth_power_level,
 };
 
 int bk_bt_os_adapter_init(void)

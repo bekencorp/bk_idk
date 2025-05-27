@@ -17,6 +17,7 @@ User and Developer Guide
    事件机制 <event/index>
    出错与日志 <error_log/index>
    系统调试 <debug_trace/index>
+   稳定性问题调试<debug_stability/index>
    Wi-Fi <wifi/index>
    Bluetooth <bluetooth/index>
    HTTP <http/index>

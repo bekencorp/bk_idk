@@ -19,5 +19,6 @@
     工程与示例 <projects/projects>
     样例 CLI 演示 <examples/index>
     开发与贡献代码流程 <process/index>
+    文档中心 <https://docs.bekencorp.com/>
 
 * :ref:`genindex`

@@ -3426,6 +3426,11 @@ extern void tls_mbedtls_mem_free(void *ptr);
 #if defined(MBEDTLS_USER_CONFIG_FILE)
 #include MBEDTLS_USER_CONFIG_FILE
 #endif
+#if defined(CONFIG_AWS_IOT)
+#define MBEDTLS_THREADING_ALT
+#define MBEDTLS_THREADING_C
+#undef MBEDTLS_DEBUG_C
+#endif
 
 #include "mbedtls/check_config.h"
 
@@ -3470,7 +3475,11 @@ extern void tls_mbedtls_mem_free(void *ptr);
 #if CONFIG_MBEDTLS_TEST
 #define MBEDTLS_SELF_TEST
 #endif
-
+#if defined(CONFIG_AGORA_IOT_SDK)
+#define MBEDTLS_CHACHA20_C
+#define MBEDTLS_CHACHAPOLY_C
+#define MBEDTLS_POLY1305_C
+#endif
 #define MBEDTLS_SSL_ALL_ALERT_MESSAGES
 #define MBEDTLS_SSL_MAX_FRAGMENT_LENGTH
 #define MBEDTLS_SSL_PROTO_TLS1_2

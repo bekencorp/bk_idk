@@ -256,7 +256,7 @@ int bk_http_ota_download(const char *uri)
         }
 	else
         {
-	    CLI_LOGI("sucess.\r\n");
+	    CLI_LOGI("success.\r\n");
 #ifdef CONFIG_HTTP_AB_PARTITION
 	#ifdef CONFIG_OTA_UPDATE_DEFAULT_PARTITION
 		#if CONFIG_OTA_POSITION_INDEPENDENT_AB

@@ -783,6 +783,15 @@ enum mm_remain_on_channel_op
     MM_ROC_OP_MAX,
 };
 
+/// Remain on channel operation codes
+enum mm_arp_reply_flag
+{
+    MM_ARP_REPLY_DEFAULT = 0,
+    MM_ARP_REPLY_ENABLE,
+    MM_ARP_REPLY_DISABLE,
+    MM_ARP_REPLY_MAX,
+};
+
 /// List of messages related to the task.
 enum mm_msg_tag
 {
@@ -1050,13 +1059,19 @@ enum mm_msg_tag
     MM_SET_MACHW_ACK_CNTRL_REQ,
     ///MAC cntrl configuration confirmation.  msgid:129
     MM_SET_MACHW_ACK_CNTRL_CFM,
-    ///Configiguration arp tx rate uint Mbps
+    ///Configiguration arp tx rate uint Mbps.  msgid:130
     MM_SET_ARP_TX_RATE_REQ,
-    ///confirmation of arp tx rate
+    ///confirmation of arp tx rate.  msgid:131
     MM_SET_ARP_TX_RATE_CFM,
-    #endif //BK_MAC, MM API messages please defined here
-
-    // TODO: MM API messages please define above !
+    ///get support capa mode Request.  msgid:132
+    MM_GET_SUPPORT_CAPA_MODE_REQ,
+    ///get support capa mode Confirmation.  msgid:133
+    MM_GET_SUPPORT_CAPA_MODE_CFM,
+    ///set arp reply Configuration Request.  msgid:134
+    MM_SET_ARP_REPLY_CONFIG_REQ,
+    ///set arp reply Configuration Confirmation.  msgid:135
+    MM_SET_ARP_REPLY_CONFIG_CFM,
+#endif
 
     /*
      * Section of internal MM messages. No MM API messages should be defined below this point
@@ -1993,6 +2008,20 @@ struct mm_set_bcn_miss_time_req
     uint8_t bcnmiss_time;
 };
 
+/// Structure containing the parameters of the @ref MM_SET_ARP_CONFIG_REQ message.
+struct mm_set_arp_reply_config_req
+{
+    /// Index of the VIF
+    uint8_t vif_index;
+    /// indicates whether to send arp reply actively,but not respond to arp request
+    ///0:use default value(when dtim10 is configured,enable active arp_reply and arp_period is 30s);
+    ///1:enable active arp_reply and set arp_reply period;
+    ///2:disable active arp_reply
+    uint8_t flag;
+    ///period for sending arp reply,unit: second
+    uint8_t arp_period;
+};
+
 /// Structure containing the parameters of the @ref MM_SET_PSDEBUG_INTERVAL_REQ message.
 struct mm_set_psdebug_interval_req
 {
@@ -2018,8 +2047,20 @@ struct mm_get_machw_mib_cfm
     uint32_t crc_error_count;
 };
 
-#endif
+/// Structure containing the parameters of the @ref MM_GET_SUPPORT_CAPA_MODE_REQ message.
+struct mm_get_support_mode_req
+{
+    /// Index of the VIF
+    uint8_t vif_index;
+};
 
+/// Structure containing the parameters of the @ref MM_GET_SUPPORT_CAPA_MODE_CFM message.
+struct mm_get_support_mode_cfm
+{
+    /// confirm support mode,0:11n/g; 1:wifi4; 2:wifi6
+    uint8_t support_mode;
+};
+#endif
 void ps_set_prevent(UINT32 bit);
 void ps_clear_prevent(UINT32 bit);
 bool power_save_check(void);

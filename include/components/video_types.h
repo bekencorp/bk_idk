@@ -110,9 +110,9 @@ typedef struct {
 	uint8_t id;
 	/// the flag of end frame, 1 for end
 	uint8_t is_eof;
-	/// the packet count of one frame
+	/// the packet index of one frame
 	uint8_t pkt_cnt;
-	/// the packet header's count of one frame
+	/// the total packets of one frame
 	uint8_t pkt_seq;
 } video_header_t;
 

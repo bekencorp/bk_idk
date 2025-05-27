@@ -126,6 +126,7 @@ bk_err_t gpio_hal_set_int_type(gpio_hal_t *hal, gpio_id_t gpio_id, gpio_int_type
 	return BK_OK;
 }
 
+//Beken internal use
 bk_err_t gpio_hal_enable_interrupt(gpio_hal_t *hal, gpio_id_t gpio_id)
 {
 	if(gpio_ll_check_input_enable(hal->hw, gpio_id)) {
@@ -326,9 +327,22 @@ bk_err_t gpio_hal_wakeup_interrupt_clear()
 #endif
 
 #if CONFIG_GPIO_DEFAULT_SET_SUPPORT
-bk_err_t gpio_hal_default_map_init(gpio_hal_t *hal)
+
+static inline bool is_gpio_for_current_cpu(int gpio_id){
+	const gpio_default_map_t default_map[] = GPIO_DEFAULT_DEV_CONFIG;
+	for(int i = 0; i < sizeof(default_map)/sizeof(gpio_default_map_t); i++){
+		if (gpio_id == default_map[i].gpio_id){
+			return true;
+		}
+	}
+	return false;
+}
+
+static void gpio_hal_map_init(gpio_hal_t *hal)
 {
+#if CONFIG_SOC_BK7256XX
 	gpio_interrupt_status_t gpio_status;
+#endif
 	const gpio_default_map_t default_map[] = GPIO_DEFAULT_DEV_CONFIG;
 
 	for(int i = 0; i < sizeof(default_map)/sizeof(gpio_default_map_t); i++)
@@ -370,9 +384,9 @@ bk_err_t gpio_hal_default_map_init(gpio_hal_t *hal)
 				gpio_hal_input_enable(hal, default_map[i].gpio_id, 0);
 				//NOTES:special combine use it with pull mode
 				if(default_map[i].pull_mode == GPIO_PULL_DOWN_EN)
-					gpio_hal_set_output_value(hal, i, 0);
+					gpio_hal_set_output_value(hal, default_map[i].gpio_id, 0);
 				if(default_map[i].pull_mode == GPIO_PULL_UP_EN)
-					gpio_hal_set_output_value(hal, i, 1);
+					gpio_hal_set_output_value(hal, default_map[i].gpio_id, 1);
 				break;
 			case GPIO_INPUT_ENABLE:
 				gpio_hal_output_enable(hal, default_map[i].gpio_id, 0);
@@ -404,10 +418,16 @@ bk_err_t gpio_hal_default_map_init(gpio_hal_t *hal)
 		if(default_map[i].int_en) {
 			gpio_hal_disable_interrupt(hal, default_map[i].gpio_id);	//disable it first to avoid enable IRQ and comes an interrupt at once.
 			gpio_hal_set_int_type(hal, default_map[i].gpio_id, default_map[i].int_type);
+
+			for (volatile int i = 0; i < 1000; i++);    //Before enable the interrupt,wait for the internal stability of the chip
 			gpio_hal_enable_interrupt(hal, default_map[i].gpio_id);
 		} else
 			gpio_hal_disable_interrupt(hal, default_map[i].gpio_id);
-
+			
+/*BK7258 and BK7256 are different, macros are used to isolate them.*/
+#if CONFIG_SOC_BK7236XX
+		gpio_hal_clear_chan_interrupt_status(hal,default_map[i].gpio_id);
+#endif
 		//driver_capacity
 		gpio_hal_set_capacity(hal, default_map[i].gpio_id, default_map[i].driver_capacity);
 	}
@@ -415,9 +435,31 @@ bk_err_t gpio_hal_default_map_init(gpio_hal_t *hal)
 	/* After disable interrupt,and then clear int status, to avoid level-interrupt comes again
 	 * if clear interrupt status before disable interrupt.
 	 */
+#if CONFIG_SOC_BK7256XX
 	gpio_hal_get_interrupt_status(hal, &gpio_status);
 	gpio_hal_clear_interrupt_status(hal, &gpio_status);
+#endif
 
-	return BK_OK;
+}
+
+bk_err_t gpio_hal_default_map_init(gpio_hal_t *hal){
+
+	gpio_hal_map_init(hal);
+	/*CPU0 clear all GPIOs isr flag, followed by each CPU initializing its own GPIOs. 
+And the security world uses GPIO0 and GPIO1, so use macro CONFIG_CPU_CNT to isolated.*/
+#if (CONFIG_SYS_CPU0) && (CONFIG_CPU_CNT > 1) 
+	for(int i = 0; i < SOC_GPIO_NUM; i++)
+	{
+		if(!is_gpio_for_current_cpu(i))
+		{
+			gpio_hal_disable_interrupt(hal, i);
+		}
+
+		gpio_hal_clear_chan_interrupt_status(hal,i);
+	}
+#endif
+
+	return BK_OK;	
 }
 #endif
+

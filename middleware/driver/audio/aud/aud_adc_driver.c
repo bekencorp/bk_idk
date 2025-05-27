@@ -138,7 +138,6 @@ bk_err_t bk_aud_adc_deinit(void)
 	//disable audio adc power
 	sys_drv_aud_aud_en(0);
 	//disable audio adc power
-	sys_drv_aud_audbias_en(0);
 	sys_drv_aud_adcbias_en(0);
 	sys_drv_aud_micbias_en(0);
 

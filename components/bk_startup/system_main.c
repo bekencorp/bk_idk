@@ -41,7 +41,6 @@
 #endif
 
 #include "soc/soc.h"
-#include "mb_ipc_cmd.h"
 
 static beken_thread_function_t s_user_app_entry = NULL;
 beken_semaphore_t user_app_sema = NULL;
@@ -81,6 +80,11 @@ void rtos_user_app_waiting_for_launch(void)
 #if CONFIG_SAVE_BOOT_TIME_POINT
 	save_mtime_point(CPU_APP_ENTRY_TIME);
 #endif
+}
+
+
+__attribute__((weak)) void bk_module_init(void) {
+	
 }
 
 #if (CONFIG_CPU_CNT > 1)
@@ -436,13 +440,11 @@ void entry_main(void)
 	rtos_regist_plat_dump_hook(trace_addr, trace_size);
 #endif
 
-#if CONFIG_MAILBOX
-	ipc_init();
-#endif
-
 #if CONFIG_SAVE_BOOT_TIME_POINT
 	save_mtime_point(CPU_INIT_DRIVER_TIME);
 #endif
+
+    bk_module_init();
 
 	start_app_main_thread();
 #if (CONFIG_SYS_CPU0)
@@ -456,6 +458,11 @@ void entry_main(void)
 
 #if CONFIG_SAVE_BOOT_TIME_POINT
 	save_mtime_point(CPU_START_SCHE_TIME);
+#endif
+
+#if CONFIG_SLAVE_HEART_BEAT
+	extern bk_err_t mb_ipc_heartbeat_init(void);
+	mb_ipc_heartbeat_init();
 #endif
 
 	rtos_start_scheduler();

@@ -26,6 +26,7 @@ set(bk7235xx_supported_projects)
 list(APPEND bk7235xx_supported_projects
 	"app"
 	"at"
+	"matter"
 )
 
 
@@ -55,6 +56,7 @@ list(APPEND bk7256xx_supported_projects
 	"thirdparty/wanson_asr"
 	"wifi/repeater"
 	"at"
+	"matter"
 )
 
 
@@ -72,7 +74,9 @@ list(APPEND bk7236xx_supported_projects
 	"wifi/repeater"
 	"at"
 	"customization/config_ab"
+	"thirdparty/doorbell_cs2_ab_4M"
 	"clip"
+	"matter"
 )
 
 
@@ -88,6 +92,7 @@ list(APPEND bk7258xx_supported_targets
 set(bk7258xx_supported_projects)
 list(APPEND bk7258xx_supported_projects
 	"app"
+	"app_psram_4mb"
 	"smp"
 	"bluetooth/central"
 	"bluetooth/headset"
@@ -97,6 +102,7 @@ list(APPEND bk7258xx_supported_projects
     "bluetooth/gatt_server"
     "bluetooth/gatt_client"
 	"media/audio_play_sdcard_mp3_music"
+	"media/doorbell_4M"
 	"media/doorbell_8M"
 	"media/doorviewer"
 	"media/doorbell_pro"
@@ -107,26 +113,40 @@ list(APPEND bk7258xx_supported_projects
 	"media/doorbell_720p"
 	"lvgl/86box"
 	"lvgl/86box_smart_panel"
+	"lvgl/avi_player"
 	"lvgl/stress"
 	"lvgl/benchmark"
 	"lvgl/meter_rgb_16M"
 	"lvgl/widgets"
 	"lvgl/camera"
+	"lvgl/img_decode"
 	"lvgl/meter"
 	"lvgl/meter_spi"
 	"lvgl/music"
 	"lvgl/keypad_encoder"
 	"thirdparty/doorbell_cs2"
+    "thirdparty/doorbell_cs2_4M"
 	"thirdparty/doorbell_cs2_8M"
     "thirdparty/doorbell_cs2_720p"
+	"thirdparty/agora"
+	"agora_ai"
+	"agora_wanson_ai"
+	"agora_wenwen_ai"
+	"beken_genie"
+	"ai_dialog_free"
 	"phy/cert_test"
 	"wifi/repeater"
 	"at"
 	"customization/config_ab"
+	"thirdparty/doorbell_cs2_ab_4M"
 	"thirdparty/wanson_asr"
+	"thirdparty/wenwen_asr"
 	"thirdparty/jpeg_sw_enc"
 	"peripheral/lcd_8080"
-	"peripheral/lcd_rgb"
+	"peripheral/lcd_rgb565"
+	"peripheral/lcd_rgb888"
+	"peripheral/lcd_rgb666"
+	"matter"
 )
 
 
@@ -259,7 +279,7 @@ if(result STREQUAL 0)
     file(GLOB PARTITIONS_CSV_FILES ${partitions_path_tmp})
     if(PARTITIONS_CSV_FILES)
         file(REMOVE ${partitions_path})
-        
+
         foreach(FILE ${PARTITIONS_CSV_FILES})
             file(RENAME ${FILE} ${partitions_path})
         endforeach()
@@ -433,7 +453,7 @@ else()
 	message(SEND_ERROR "target is not supported!!!")
 endif()
 
-# isolate the partition action between developer and customer 
+# isolate the partition action between developer and customer
 # by macro argument CONFIG_FLASH_PARTITION_USER
 # if CONFIG_FLASH_PARTITION_USER set, assume the partition action come from customer,
 # then *.csv file and all other files generated from part_table_tool located in dir: project/...
@@ -505,7 +525,7 @@ set(add_gen_files_tool "${armino_path}/tools/build_tools/part_table_tools/otherS
 
 # ${target}'s ld file take part in linking process
 # 1: Ensure ${target}'s add_subdirectory(...) has processed
-# 2: Only when ${target}'s add_subdirectory(...) has processed, 
+# 2: Only when ${target}'s add_subdirectory(...) has processed,
 #    then ${target}'s get_target_property(...) will success
 # 3: finally read ${target}'s PROPERTIES: INTERFACE_LINK_LIBRARIES
 #    and only modify the args of INTERFACE_LINK_LIBRARIES: -L, -T
@@ -762,7 +782,7 @@ else()
 			pt_verbose_main_targets()
 		endif()
 	else()
-	
+
 	endif()
 	message(SEND_ERROR "${part_csv_file} is not exist!!!")
 endif()

@@ -1,16 +1,16 @@
-// Copyright 2020-2021 Beken 
-// 
-// Licensed under the Apache License, Version 2.0 (the "License");           
-// you may not use this file except in compliance with the License.            
-// You may obtain a copy of the License at                                     
-//                                                                             
-//     http://www.apache.org/licenses/LICENSE-2.0                              
-//                                                                             
-// Unless required by applicable law or agreed to in writing, software         
-// distributed under the License is distributed on an "AS IS" BASIS,         
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    
-// See the License for the specific language governing permissions and         
-// limitations under the License.                                              
+// Copyright 2020-2021 Beken
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #pragma once
 
@@ -32,11 +32,17 @@ typedef enum
 	PSRAM_MODE5 = 0x100b4045,
 	PSRAM_MODE6 = 0xD8054041,
 	PSRAM_MODE7 = 0xd8054049,
+	PSRAM_MODE8 = 0xB0054045,
 	PSRAM_MODE_INVAL,
 } psram_mode_t;
 
 #define PSRAM_APS6408L_ID         (0x8d09)
-#define PSRAM_W955D8MKY_5J_ID     (0x1f8f)
+#if (CONFIG_SOC_BK7256XX)
+	#define PSRAM_W955D8MKY_5J_ID     (0x1f8f)
+#else
+	#define PSRAM_W955D8MKY_5J_ID     (0x1c8f)
+
+#endif
 #define PSRAM_APS128XXO_OB9_ID    (0x8d08)
 
 /* REG_0x00 */

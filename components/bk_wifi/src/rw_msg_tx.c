@@ -1548,6 +1548,41 @@ int rw_msg_send_bcn_miss_time_req(uint8_t vif_idx, uint8_t bcnmiss_time)
 	return rw_msg_send(req, 1, MM_SET_BCN_MISS_TIME_CFM, NULL);
 }
 
+int rw_msg_get_support_mode_req(uint8_t vif_idx, void *cfm)
+{
+	struct mm_get_support_mode_req *req;
+	/* Build the MM_GET_SUPPORT_CAPA_MODE_REQ message */
+	req = ke_msg_alloc(MM_GET_SUPPORT_CAPA_MODE_REQ, TASK_MM, TASK_API,
+						sizeof(struct mm_get_support_mode_req));
+	if (!req)
+		return -ENOMEM;
+
+	/* Set parameters */
+	req->vif_index = vif_idx;
+
+	/* Send the MM_GET_SUPPORT_CAPA_MODE_CFM message to FW */
+	return rw_msg_send(req, 1, MM_GET_SUPPORT_CAPA_MODE_CFM, cfm);
+}
+
+int rw_msg_send_arp_reply_config_req(uint8_t vif_idx, uint8_t flag, uint8_t arp_period)
+{
+	struct mm_set_arp_reply_config_req *req;
+	/* Build the MM_SET_ARP_REPLY_CONFIG_REQ message */
+	req = ke_msg_alloc(MM_SET_ARP_REPLY_CONFIG_REQ, TASK_MM, TASK_API,
+                          sizeof(struct mm_set_arp_reply_config_req));
+	if (!req)
+		return -ENOMEM;
+
+	/* Set parameters */
+	req->vif_index = vif_idx;
+	req->flag = flag;
+	req->arp_period = arp_period;
+
+
+	/* Send the MM_SET_ARP_REPLY_CONFIG_REQ message to LMAC FW */
+	return rw_msg_send(req, 1, MM_SET_ARP_REPLY_CONFIG_CFM, NULL);
+}
+
 int rw_msg_send_psdebug_interval_req(uint8_t interval)
 {
     struct mm_set_psdebug_interval_req *req;

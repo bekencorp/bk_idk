@@ -113,7 +113,7 @@ static const char * level_format[] =
 	"V(%d):",
 };
 
-void bk_printf_port_ext(int level, char *tag, const char *fmt, va_list args)
+static void bk_printf_port_ext_internel(int block_mode, int level, char *tag, const char *fmt, va_list args)
 {
 #define CPU_STR_LEN		4
 #define MAX_TAG_LEN		8
@@ -156,7 +156,7 @@ void bk_printf_port_ext(int level, char *tag, const char *fmt, va_list args)
 
 	if(s_printf_sync == 0)
 	{
-		shell_log_out_port(level, prefix_str, fmt, args);
+		shell_log_out_port(block_mode, level, prefix_str, fmt, args);
 	}
 	else
 	{
@@ -168,13 +168,18 @@ void bk_printf_port_ext(int level, char *tag, const char *fmt, va_list args)
 #endif // #if CONFIG_SHELL_ASYNCLOG
 }
 
-static void bk_printf_raw_port(int level, const char *fmt, va_list args)
+static void bk_printf_port_ext(int level, char *tag, const char *fmt, va_list args)
+{
+	bk_printf_port_ext_internel(LOG_COMMON_MODE, level, tag, fmt, args);
+}
+
+static void bk_printf_raw_port(int block_mode, int level, const char *fmt, va_list args)
 {
 #if CONFIG_SHELL_ASYNCLOG
 
 	if(s_printf_sync == 0)
 	{
-		shell_log_out_port(level, NULL, fmt, args);
+		shell_log_out_port(block_mode, level, NULL, fmt, args);
 	}
 	else
 	{
@@ -185,6 +190,30 @@ static void bk_printf_raw_port(int level, const char *fmt, va_list args)
 	bk_printf_raw_sync(fmt, args);
 #endif // #if CONFIG_SHELL_ASYNCLOG
 }
+
+#if CONFIG_STARBURST_AIDIALOG_SDK
+void bk_printf_port_doubao(const char *fmt, va_list args)
+{
+    int level = 0; // BK_LOG_INFO;
+
+    if(!printf_is_init())
+        return;
+
+    if(!s_printf_enable)
+        return;
+
+#if CONFIG_SHELL_ASYNCLOG
+	if( !shell_level_check_valid(level) )  /* check here instead of in shell_log_out to reduce API instructions. */
+        return;
+#endif
+
+    MULTI_CORE_PRINTF_LOCK();
+    bk_printf_port_ext(level, NULL, fmt, args);
+    MULTI_CORE_PRINTF_UNLOCK();
+
+	return;
+}
+#endif
 
 void bk_printf(const char *fmt, ...)
 {
@@ -283,40 +312,8 @@ void bk_printf_ex(int level, char *tag, const char *fmt, ...)   /* Obsoleted  AP
 #endif
 }
 
-void bk_printf_ext(int level, char *tag, const char *fmt, ...)
+static void bk_printf_ext_internel(int block_mode, int level, char *tag, const char *fmt, va_list args)
 {
-	va_list args;
-
-	if(!printf_is_init())
-		return;
-
-        if(!s_printf_enable)
-                return;
-
-#if CONFIG_SHELL_ASYNCLOG
-	if( !shell_level_check_valid(level) )  /* check here instead of in shell_log_out to reduce API instructions. */
-		return;
-
-	if(tag != NULL)
-	{
-		if(bk_mod_printf_disbled(tag) ^ whitelist_enabled)
-			return;
-	}
-#endif
-
-	va_start(args, fmt);
-
-	bk_printf_port_ext(level, tag, fmt, args);
-
-	va_end(args);
-
-	return;
-}
-
-void bk_printf_raw(int level, char *tag, const char *fmt, ...)
-{
-	va_list args;
-
 	if(!printf_is_init())
 		return;
 
@@ -334,13 +331,91 @@ void bk_printf_raw(int level, char *tag, const char *fmt, ...)
 	}
 #endif
 
-	va_start(args, fmt);
-
-	bk_printf_raw_port(level, fmt, args);
-
-	va_end(args);
+	bk_printf_port_ext_internel(block_mode, level, tag, fmt, args);
 
 	return;
+}
+
+void bk_printf_ext(int level, char *tag, const char *fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	bk_printf_ext_internel(LOG_COMMON_MODE, level, tag, fmt, args);
+	va_end(args);
+}
+
+void bk_printf_nonblock(int level, char *tag, const char *fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	bk_printf_ext_internel(LOG_NONBLOCK_MODE, level, tag, fmt, args);
+	va_end(args);
+}
+
+void bk_printf_static_nonblock(int level, char *tag, const char *fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	bk_printf_ext_internel(LOG_STAIC_NONBLOCK_MODE, level, tag, fmt, args);
+	va_end(args);
+}
+
+void bk_printf_static_block(int level, char *tag, const char *fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	bk_printf_ext_internel(LOG_STATIC_BLOCK_MODE, level, tag, fmt, args);
+	va_end(args);
+}
+
+void bk_vprintf_ext(int level, char *tag, const char *fmt, va_list args)
+{
+	bk_printf_ext_internel(LOG_COMMON_MODE, level, tag, fmt, args);
+}
+
+static void bk_printf_raw_internel(int block_mode, int level, char *tag, const char *fmt, va_list args)
+{
+	if(!printf_is_init())
+		return;
+
+	if(!s_printf_enable)
+		return;
+
+#if CONFIG_SHELL_ASYNCLOG
+	if( !shell_level_check_valid(level) )  /* check here instead of in shell_log_out to reduce API instructions. */
+		return;
+
+	if(tag != NULL)
+	{
+		if(bk_mod_printf_disbled(tag) ^ whitelist_enabled)
+			return;
+	}
+#endif
+
+	bk_printf_raw_port(block_mode, level, fmt, args);
+
+	return;
+}
+
+void bk_printf_raw(int level, char *tag, const char *fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	bk_printf_raw_internel(LOG_COMMON_MODE, level, tag, fmt, args);
+	va_end(args);
+}
+
+void bk_printf_raw_nonblock(int level, char *tag, const char *fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	bk_printf_raw_internel(LOG_NONBLOCK_MODE, level, tag, fmt, args);
+	va_end(args);
+}
+
+void bk_vprintf_raw(int level, char *tag, const char *fmt, va_list args)
+{
+	bk_printf_raw_internel(LOG_COMMON_MODE, level, tag, fmt, args);
 }
 
 void bk_set_printf_enable(uint8_t enable)

@@ -44,6 +44,16 @@ enum
 	IPC_CPU1_TRAP_HANDLE_BEGIN,             /* CPU1 -> CPU0  */
 	IPC_CPU1_TRAP_HANDLE_END,               /* CPU1 -> CPU0  */
 
+	IPC_CPU0_OPEN_USB_CDC,
+	IPC_CPU0_CLOSE_USB_CDC,
+
+	IPC_CPU0_SET_USB_CDC_CMD,
+	IPC_CPU0_GET_USB_CDC_DATA,
+	IPC_CPU0_INIT_USB_CDC_PARAM,
+
+	IPC_CPU1_UPDATE_USB_CDC_STATE,
+	IPC_CPU1_UPLOAD_USB_CDC_DATA,
+
 	IPC_CMD_MAX  = 0x7F,  /* cmd id can NOT great than 0x7F. */
 };
 
@@ -79,6 +89,7 @@ bk_err_t ipc_send_res_release_cnt(u16 resource_id, u16 cpu_id, amp_res_req_cnt_t
 u8       ipc_send_alloc_dma_chnl(u32 user_id);
 bk_err_t ipc_send_free_dma_chnl(u32 user_id, u8 chnl_id);
 u32      ipc_send_dma_chnl_user(u8 chnl_id);
+
 #endif
 
 #else  /* (CONFIG_CPU_CNT > 1) */

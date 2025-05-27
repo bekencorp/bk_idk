@@ -44,6 +44,8 @@ extern "C" {
 
 #define CLI_CFG_MISC        1
 #define CLI_CFG_MEM         1
+#define CLI_CFG_DWT         1
+#define CLI_CFG_FPB         1
 
 #if (CONFIG_WIFI_CLI_ENABLE &&(CONFIG_SYS_CPU0))
 #define CLI_CFG_PHY         1
@@ -124,7 +126,7 @@ extern "C" {
 #define CLI_CFG_PWM         0
 #endif
 
-#if(CONFIG_FLASH) && (CONFIG_SYS_CPU0)
+#if(CONFIG_FLASH)
 #define CLI_CFG_FLASH       1
 #else
 #define CLI_CFG_FLASH       0

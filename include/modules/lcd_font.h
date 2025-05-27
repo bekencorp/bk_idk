@@ -64,8 +64,8 @@ typedef struct
 
 
 typedef enum {
-	FONT_WHITE = 0,
-	FONT_BLACK,
+	FONT_WHITE = 0xFFFF,
+	FONT_BLACK = 0,
 
 }font_colot_t;
 
@@ -74,7 +74,7 @@ typedef struct
 	ui_display_info_struct info;
 	const gui_font_digit_struct *digit_info;
 	const char * s;
-	font_colot_t font_color;
+	uint32_t font_color;
 	font_format_t font_fmt;
 	int width;
 	int height;

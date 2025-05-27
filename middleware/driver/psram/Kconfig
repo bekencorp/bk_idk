@@ -57,5 +57,21 @@ menu "PSRAM"
 		depends on PSRAM && EASY_FLASH && EASY_FLASH_V4
 		bool "Enable PSRAM id auto detect function"
 		default n
+
+	config PSRAM_APS6408L_O
+		depends on PSRAM
+		bool "Select Psram PSRAM_APS6408L_O"
+		default n
+
+	config PSRAM_W955D8MKY_5J
+		depends on PSRAM
+		bool "Select Psram PSRAM_W955D8MKY_5J"
+		default n
+
+	config PSRAM_APS128XXO_OB9
+		depends on PSRAM
+		bool "Select Psram PSRAM_APS128XXO_OB9"
+		default n
+
 endmenu
 

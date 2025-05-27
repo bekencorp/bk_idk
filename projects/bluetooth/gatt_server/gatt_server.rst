@@ -1,7 +1,7 @@
 Bluetooth gatt server
 =======================================
 
-Project Overview
+1. Project Overview
 --------------------------
 
     This project is used for demonstrating bluetooth gatt server, show you the following operation:
@@ -9,20 +9,20 @@ Project Overview
     - how to config ble advertising pararmeters and datas, how to start the advertising.
     - how to make up a gatt service database and process the att read write request.
 
-Hardware Requirements
+2. Hardware Requirements
 ----------------------------
 
     Beken development board.
 
 
-Build
+3. Build
 ----------------------------
 
     Enter the following command in the Armino root directory to compile:
 
     > make bk72xx PROJECT=bluetooth/gatt_server
 
-Connect UART
+4. Connect UART
 ----------------------------
 
     UART0 is used for:
@@ -30,16 +30,16 @@ Connect UART
     - BKFIL to download images
     - Logging and Cli commands
 
-Flash all-app.bin
+5. Flash all-app.bin
 ----------------------------
 
     Flash Armino/build/gatt_server/bk72xx/all-app.bin to the board by the tool BKFIL.
 
-Play and Output
+6. Play and Output
 ----------------------------------
     Restart the board, the gatt_server will advertise automatically with the name ``doorbell_xxxxxx``, then you can use another board falshed with project gatt_client or other ble tools to connect with this board.
  
-Initiate Log
+6.1 Initiate Log
 ***********************************
 ::
 
@@ -60,7 +60,7 @@ Initiate Log
     BLE-GATT:I(842):sart adv success
     BLE-GATT:I(842):gatt_server_demo_init success
 
-Connected Log
+6.2 Connected Log
 ***********************************
 
 ::
@@ -79,9 +79,9 @@ Connected Log
     ble:I(44510):1max_tx_octets = 251
     ble:I(44510):1max_tx_time = 2120
 
-Work flow chart
+7. Work flow chart
 ----------------------------------
-1. gatt server demo work flow chart:
+ gatt server demo work flow chart:
 
 .. figure:: ../../../../_static/gatt_server_flow_chart.png
     :align: center
@@ -90,7 +90,7 @@ Work flow chart
 
     Figure 1. gatt server demo work flow
 
-Cli Command
+8. Cli Command
 ----------------------------------
     | The project gatt_server supports the following commands through uart0:
     | ``ble_gatts help`` : get the list of commands.
@@ -98,7 +98,7 @@ Cli Command
     | ``ble_gatts adv_en 1`` : start the advertising, the advertising will stop once connected by other device.
     | ``ble_gatts adv_en 0`` : stop the advertising.
 
-Command Log
+8.1 Command Log
 ***********************************
 - ble_gatts notify
 
@@ -134,7 +134,7 @@ Command Log
     BLE GATTS RSP:OK
 
 
-Advertising and gatt service API
+9. Advertising and gatt service API
 ----------------------------------------
     please refer to the souce code in the flie ``/projects/bluetooth/gatt_server/main/gatt_server_demo.c``.
 

@@ -36,18 +36,8 @@ The other files in :armino:`/tools/build_tools/cmake` are support files or third
 build process
 -------------
 
-The build process can be roughly divided into four stages:
+The build process can be roughly divided into four stages: initialization, Generate-component-list, component-handling and Finish.
 
-.. blockdiag::
-    :scale: 100%
-    :caption: ARMINO Build System Process
-    :align: center
-
-    blockdiag armino-build-system-process {
-        initialization -> Generate-component-list
-        Generate-component-list -> component-handling
-        component-handling -> Finish
-    }
 
 initialization
 **************

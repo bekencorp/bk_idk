@@ -178,6 +178,7 @@ void *pvPortRealloc( void *pv, size_t size ) PRIVILEGED_FUNCTION;		/* bk */
 #endif
 #if CONFIG_MALLOC_STATIS || CONFIG_MEM_DEBUG
 void *pvPortMalloc_cm(const char *call_func_name, int line, size_t xWantedSize, int need_zero) PRIVILEGED_FUNCTION;
+void * bk_wrap_sram_malloc_cm(const char *call_func_name, int line, size_t xWantedSize, int need_zero ) PRIVILEGED_FUNCTION;
 void *vPortFree_cm(const char *call_func_name, int line, void *pv ) PRIVILEGED_FUNCTION;
 #define pvPortMalloc(size)    pvPortMalloc_cm((const char*)__FUNCTION__,__LINE__,size, 1)
 #define vPortFree(p)       vPortFree_cm((const char*)__FUNCTION__,__LINE__,p)
@@ -185,6 +186,7 @@ void *vPortFree_cm(const char *call_func_name, int line, void *pv ) PRIVILEGED_F
 void * pvPortMalloc( size_t xSize ) PRIVILEGED_FUNCTION;
 void * pvPortCalloc( size_t xNum,
                      size_t xSize ) PRIVILEGED_FUNCTION;
+void * bk_wrap_sram_malloc(size_t xWantedSize) PRIVILEGED_FUNCTION;
 void vPortFree( void * pv ) PRIVILEGED_FUNCTION;
 #endif
 void vPortInitialiseBlocks( void ) PRIVILEGED_FUNCTION;

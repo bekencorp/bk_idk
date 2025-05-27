@@ -264,10 +264,31 @@ if (CONFIG_TRNG_SUPPORT)
 endif() #if (CONFIG_TRNG_SUPPORT)
 
 if (CONFIG_FLASH)
+	list(APPEND incs flash)
 	list(APPEND srcs
-		"flash/flash_driver.c"
-		"flash/flash_partition.c"
-		)
+		flash/flash_partition.c
+		flash/flash_bypass.c
+		flash/flash_notify.c
+	)
+	if (CONFIG_SYS_CPU0)
+		list(APPEND srcs flash/flash_driver.c flash/flash_driver_ext.c)
+		if ((CONFIG_CPU_CNT GREATER 1))
+			list(APPEND srcs flash/flash_server.c)
+		endif()
+	endif()
+	if (NOT CONFIG_SYS_CPU0)
+		list(APPEND srcs flash/flash_client.c)
+	endif()
+	if (CONFIG_SYS_CPU1)
+		list(APPEND srcs flash/flash_client.c flash/flash_notify.c)
+	endif()	
+	if (CONFIG_FLASH_TEST)
+		list(APPEND srcs flash/flash_svr_test.c)
+	endif()
+
+	if(CONFIG_FLASH_API_TEST)
+		list(APPEND srcs flash/cli_flash_api.c)
+	endif()
 endif() #if (CONFIG_FLASH)
 
 if (CONFIG_QSPI)
@@ -476,6 +497,12 @@ if (CONFIG_MAILBOX)
 			spinlock/amp_res_lock.c
 			spinlock/spinlock.c
 		)
+		if (CONFIG_MAILBOX_IPC)
+		list(APPEND srcs
+			mailbox/mb_ipc.c
+			mailbox/mb_ipc_heartbeat.c
+		)
+		endif()
 		if (NOT CONFIG_SYS_CPU2)
 		list(APPEND srcs
 			mailbox/mb_uart_driver.c
@@ -579,5 +606,5 @@ endif()
 armino_component_register(SRCS "${srcs}"
 	INCLUDE_DIRS "${incs}"
 	REQUIRES arm9 riscv cm33
-	PRIV_REQUIRES bk_log bk_ate easy_flash tfm cmsis os_source
+	PRIV_REQUIRES bk_log bk_ate easy_flash tfm cmsis os_source bk_usb
 )

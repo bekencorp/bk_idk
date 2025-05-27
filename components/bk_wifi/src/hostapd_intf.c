@@ -734,6 +734,14 @@ int wpa_get_scan_rst(struct prism2_hostapd_param *param, int len)
 			}
 		}
 #endif
+
+		extern uint32_t g_wifi_get_vsie_type;
+		const u8 *vendor_ie_elmt = get_vendor_ie((const u8 *)(scan_rst_ptr + 1), scan_rst_ptr->ie_len, g_wifi_get_vsie_type);
+		if(vendor_ie_elmt) {
+			void * vendor_ie = os_zalloc(scan_rst_ptr->ie_len);
+			os_memcpy(vendor_ie, vendor_ie_elmt, vendor_ie_elmt[1]+2);
+			bk_wifi_get_vendor_ie_cb_internal(vendor_ie, g_wifi_get_vsie_type, vendor_ie_elmt[1]+2, 1);
+		}
 	}
 
 	if (reduce_ie && !reduce_scan_result && ies)

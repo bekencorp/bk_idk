@@ -103,6 +103,7 @@ class ValidationError(InputError):
         "application2": "app2",      
         "rf_firmware": "sys_rf",
         "net_param": "sys_net",
+        "littlefs": "fs",
         "bootloader": "primary_bootloader",
         "application": "primary_cpu0_app",
         "application1": "primary_cpu1_app",
@@ -1226,6 +1227,7 @@ class PartitionDefinition(object):
         "primary_cpu0_app": "application",
         "primary_cpu1_app": "application1",
         "primary_cpu2_app": "application2",
+        "fs": "littlefs",
         "sys_rf": "rf_firmware",
         "sys_net": "net_param",
     }

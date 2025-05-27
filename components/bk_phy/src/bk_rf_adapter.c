@@ -27,7 +27,9 @@ uint32_t sys_drv_modem_clk_ctrl_ptr(bool clk_en)
 void phy_exit_dsss_only_ptr(void)
 {
 #if (CONFIG_SOC_BK7236XX || CONFIG_SOC_BK7239XX || CONFIG_SOC_BK7286XX)
+#if CONFIG_WIFI_ENABLE
 	phy_exit_dsss_only();
+#endif
 #else
 #endif
 
@@ -36,7 +38,9 @@ void phy_exit_dsss_only_ptr(void)
 void phy_enter_dsss_only_ptr(void)
 {
 #if (CONFIG_SOC_BK7236XX || CONFIG_SOC_BK7239XX || CONFIG_SOC_BK7286XX)
+#if CONFIG_WIFI_ENABLE
 	phy_enter_dsss_only();
+#endif
 #else
 #endif
 }

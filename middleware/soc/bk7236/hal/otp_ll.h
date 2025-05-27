@@ -29,17 +29,16 @@ extern "C" {
 
 #define OTP_LL_REG_BASE(_otp_unit_id)    (SOC_OTP_APB_BASE)
 #define OTP2_LL_REG_BASE(_otp_unit_id)    (SOC_OTP_AHB_BASE)
+extern void delay_us(UINT32 us);
 
 static inline uint32_t otp_ll_check_busy(otp_hw_t *hw)
 {
 	return hw->status.busy;
 }
 
-static inline int otp_check_init(otp_hw_t *hw)
+static inline int otp_check_busy(otp_hw_t *hw)
 {
-	volatile int delay = 100 * 100;
-	while(delay--);
-	int retry_count = 1000;
+	int retry_count = 10000;
 	while(retry_count--){
 		if(otp_ll_check_busy(hw) == 0){
 			return 0;
@@ -56,8 +55,10 @@ static inline int otp_check_init(otp_hw_t *hw)
 static inline int otp_ll_init(otp_hw_t *hw)
 {
 	sys_ll_set_cpu_device_clk_enable_otp_cken(1);
+	delay_us(10);
 	sys_ll_set_cpu_power_sleep_wakeup_pwd_encp(0);
-	return otp_check_init(hw);
+	delay_us(10);
+	return otp_check_busy(hw);
 }
 
 static inline void otp_ll_deinit(otp_hw_t *hw)
@@ -106,26 +107,29 @@ static inline uint32_t otp_ll_read_enroll(otp_hw_t *hw)
 static inline void otp_ll_write_otp_security(otp_hw_t *hw, uint32_t location)
 {
 	hw->sectrl.v |= (0x7 << (location / 64 * 3));
+	otp_check_busy(hw);
 }
 
 static inline uint32_t otp_ll_read_otp_security(otp_hw_t *hw, uint32_t location)
 {
-	return hw->sectrl.v << (location / 64 * 3) & 0x7;
+	return hw->sectrl.v >> (location / 64 * 3) & 0x7;
 }
 
 static inline void otp_ll_write_puf_security(otp_hw_t *hw, uint32_t location)
 {
 	hw->sectrl.v |= (0x7 << (location / 8 * 3 + 12));
+	otp_check_busy(hw);
 }
 
 static inline uint32_t otp_ll_read_puf_security(otp_hw_t *hw, uint32_t location)
 {
-	return hw->sectrl.v << (location / 8 * 3 + 12) & 0x7;
+	return hw->sectrl.v >> (location / 8 * 3 + 12) & 0x7;
 }
 
 static inline void otp_ll_enable_security_protection(otp_hw_t *hw)
 {
 	hw->sectrl.secr_prot_en = 0xF;
+	otp_check_busy(hw);
 }
 
 static inline uint32_t otp_ll_read_security_protection(otp_hw_t *hw)
@@ -140,37 +144,40 @@ static inline uint32_t otp_ll_read_puf_zeroized_flag(otp_hw_t *hw, uint32_t loca
 
 static inline uint32_t otp_ll_read_otp_zeroized_flag(otp_hw_t *hw, uint32_t location)
 {
-	return hw->zeroized_otp[location / 128].v << (location % 128 / 8 * 2) & 0x3;
+	return hw->zeroized_otp[location / 128].v >> (location % 128 / 8 * 2) & 0x3;
 }
 
 static inline void otp_ll_write_otp2_permission(otp_hw_t *hw, uint32_t location, uint32_t value)
 {
 	hw->rolck[location / 256].v |= (value << (location % 256 / 32) * 4);
+	otp_check_busy(hw);
 }
 
 static inline uint32_t otp_ll_read_otp2_permission(otp_hw_t *hw, uint32_t location)
 {
-	return (hw->rolck[location / 256].v << (location % 256 / 32) * 4) & 0xF;
+	return (hw->rolck[location / 256].v >> (location % 256 / 32) * 4) & 0xF;
 }
 
 static inline void otp_ll_write_puf_permission(otp_hw_t *hw, uint32_t location)
 {
 	hw->puf_lckwd[location / 8].v |= (0xF << (location % 8) * 4);
+	otp_check_busy(hw);
 }
 
 static inline uint32_t otp_ll_read_puf_permission(otp_hw_t *hw, uint32_t location)
 {
-	return hw->puf_lckwd[location / 8].v << ((location % 8) * 4) & 0xF;
+	return hw->puf_lckwd[location / 8].v >> ((location % 8) * 4) & 0xF;
 }
 
 static inline void otp_ll_write_otp_permission(otp_hw_t *hw, uint32_t location, uint32_t value)
 {
 	hw->otp_lckwd[location / 8].v |= (value << (location % 8) * 4);
+	otp_check_busy(hw);
 }
 
 static inline uint32_t otp_ll_read_otp_permission(otp_hw_t *hw, uint32_t location)
 {
-	return hw->otp_lckwd[location / 8].v << (location % 8 * 4) & 0xF;
+	return (hw->otp_lckwd[location / 8].v >> (location % 8 * 4)) & 0xF;
 }
 
 static inline uint32_t otp_ll_read_random_number(otp_hw_t *hw)
@@ -196,31 +203,33 @@ static inline uint32_t otp_ll_read_intrpt_enable(otp_hw_t *hw)
 static inline void otp_ll_write_otp2_mask(otp_hw_t *hw, uint32_t location, uint32_t mask)
 {
 	hw->cde_mask[location / 512].v |= mask << (location % 512 / 32 * 2);
+	otp_check_busy(hw);
 }
 
 static inline uint32_t otp_ll_read_otp2_mask(otp_hw_t *hw, uint32_t location)
 {
-	return hw->cde_mask[location / 512].v << (location % 512 / 32 * 2) & 0x3;
+	return hw->cde_mask[location / 512].v >> (location % 512 / 32 * 2) & 0x3;
 }
 
 static inline void otp_ll_write_otp_mask(otp_hw_t *hw, uint32_t location, uint32_t mask)
 {
 	hw->otp_mask[location / 128].v |= mask << (location % 128 / 8 * 2);
+	otp_check_busy(hw);
 }
 
 static inline uint32_t otp_ll_read_otp_mask(otp_hw_t *hw, uint32_t location)
 {
-	return hw->otp_mask[location / 128].v << (location % 128 / 8 * 2) & 0x3;
+	return hw->otp_mask[location / 128].v >> (location % 128 / 8 * 2) & 0x3;
 }
 
 static inline void otp_ll_write_puf_mask(otp_hw_t *hw, uint32_t location)
 {
 	hw->puf_mask.v |= 0x3 << (location / 8 * 2);
-}
+	}
 
 static inline uint32_t otp_ll_read_puf_mask(otp_hw_t *hw, uint32_t location)
 {
-	return hw->puf_mask.v << (location / 8 * 2) & 0x3;
+	return hw->puf_mask.v >> (location / 8 * 2) & 0x3;
 }
 
 static inline void otp_ll_enable_mask_lck(otp_hw_t *hw)
@@ -404,6 +413,7 @@ static inline uint32_t otp_ll_read_otp(otp_hw_t *hw, uint32_t location)
 static inline void otp_ll_write_otp(otp_hw_t *hw, uint32_t location, uint32_t value)
 {
 	hw->otp[location].v = value;
+	otp_check_busy(hw);
 }
 
 static inline void otp_ll_enable_pdstb(otp_hw_t *hw)
@@ -423,6 +433,7 @@ static inline void otp_ll_set_fre_cont(otp_hw_t *hw, uint32_t value)
 
 static inline void otp_ll_sleep(otp_hw_t *hw)
 {
+	otp_check_busy(hw);
 	hw->hardware.pdstb = 0;
 	hw->hardware.clkosc_en = 0;
 }
@@ -431,7 +442,7 @@ static inline int otp_ll_active(otp_hw_t *hw)
 {
 	hw->hardware.pdstb = 1;
 	hw->hardware.clkosc_en = 1;
-	return otp_check_init(hw);
+	return otp_check_busy(hw);
 }
 
 static inline void otp_ll_set_time_to_active(otp_hw_t *hw, uint32_t value)

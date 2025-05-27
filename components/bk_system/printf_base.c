@@ -74,6 +74,7 @@ bk_err_t bk_printf_init(void)
 			bk_printf_deinit();
 			return ret;
         }
+        bk_uart_isr_set_priority(s_print_port, BK_PRINT_UART_ISR_DEFAULT_PRIORITY);
 
 #endif
 

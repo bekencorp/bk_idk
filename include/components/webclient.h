@@ -26,8 +26,9 @@
 #include <os/mem.h>
 #include <os/str.h>
 #include <os/os.h>
-
-
+#if CONFIG_WEBCLIENT_TLS && !(CONFIG_HTTPS_CLIENT_AT_ENABLE)
+#define WEBCLIENT_USING_MBED_TLS
+#endif
 #if defined(WEBCLIENT_USING_MBED_TLS) || defined(WEBCLIENT_USING_SAL_TLS)
 #include <tls_client.h>
 #endif
@@ -111,6 +112,40 @@ struct webclient_session
     MbedTLSSession *tls_session;        /* mbedtls connect session */
 #endif
 };
+
+typedef enum {
+	HTTP_EVENT_ERROR = 0,
+	HTTP_EVENT_ON_CONNECTED,
+	HTTP_EVENT_HEADERS_SENT,
+	HTTP_EVENT_ON_HEADER,
+	HTTP_EVENT_ON_DATA,
+	HTTP_EVENT_ON_FINISH,
+	HTTP_EVENT_DISCONNECTED,
+} bk_webclient_event_id_t;
+
+typedef struct {
+	bk_webclient_event_id_t event_id;
+	void *data;
+	int data_len;
+	void *user_data;
+	char *header_key;
+	char *header_value;
+} bk_webclient_event_t;
+typedef bk_err_t (*http_event_handle_cb)(bk_webclient_event_t *evt);
+
+typedef struct {
+	const char					*url;
+	const char					*cert_pem;
+	int 						header_size;
+	int 						rx_buffer_size;
+	int 						timeout_ms;
+	char						*post_data;
+	http_event_handle_cb		event_handler;
+	bk_webclient_event_t	    event;
+} bk_webclient_input_t;
+int bk_webclient_ota_get_comm(bk_webclient_input_t *input);
+int bk_webclient_get(bk_webclient_input_t *input);
+int bk_webclient_post(bk_webclient_input_t *input);
 
 /* create webclient session and set header response size */
 struct webclient_session *webclient_session_create(size_t header_sz);

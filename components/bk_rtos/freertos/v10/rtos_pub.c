@@ -6,11 +6,11 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "semphr.h"
+#include "event_groups.h"
 
 #include "timers.h"
 #include <os/os.h>
 #include <common/bk_generic.h>
-#include "bk_fake_clock.h"
 #include <os/mem.h>
 #include "bk_uart.h"
 #include "bk_arch.h"
@@ -26,16 +26,26 @@
 #endif
 #define TIMER_QUEUE_LENGTH           5
 
+/* some kernel APIs have blocking mechanisms that can only be 
+used in task context and not in interrupt context, otherwise
+the system status will be abnormal */
 #define RTOS_ASSERT_TASK_CONTEXT() do {                    \
 	BK_ASSERT(0 == platform_is_in_interrupt_context());    \
 } while(0)
 
+/* when the scheduler is turned on,APIs that can trigger task 
+switching(such as creating a new task or delete a task) cannot
+be called in the critical section,because this will cause the system
+to enter a deadlock or abnormal status */
 #define RTOS_ASSERT_INT_ENABLED_WITH_SCHEDULER() do {    \
 	if(s_is_started_scheduler){                       \
 		BK_ASSERT(0 == platform_local_irq_disabled());\
 	}                                                 \
 } while(0)
 
+/* Turning off interrupts is equivalent to entering a critical section. At 
+  this time,you cannot call any API that may cause system scheduling, otherwise
+  it may cause a system exception */
 #define RTOS_ASSERT_INT_ENABLED() do {    \
 	BK_ASSERT(0 == platform_local_irq_disabled());    \
 } while(0)
@@ -151,16 +161,16 @@ bk_err_t rtos_create_psram_thread( beken_thread_t* thread, uint8_t priority, con
 
 bk_err_t rtos_delete_thread( beken_thread_t* thread )
 {
-extern void pthread_internal_local_storage_destructor_callback(TaskHandle_t handle);
+// extern void pthread_internal_local_storage_destructor_callback(TaskHandle_t handle);
 	if ( thread == NULL )
     {
 		RTOS_ASSERT_INT_ENABLED_WITH_SCHEDULER();
-        pthread_internal_local_storage_destructor_callback(NULL);
+        // pthread_internal_local_storage_destructor_callback(NULL);
         vTaskDelete( NULL );
     }
     else if ( xTaskIsTaskFinished( *thread ) != pdTRUE )
     {
-        pthread_internal_local_storage_destructor_callback(*thread);
+        // pthread_internal_local_storage_destructor_callback(*thread);
         vTaskDelete( *thread );
     }
     return kNoErr;
@@ -228,6 +238,13 @@ void rtos_thread_sleep(uint32_t seconds)
 	RTOS_ASSERT_INT_ENABLED();
 	
     rtos_delay_milliseconds(seconds * 1000);
+}
+
+void rtos_thread_msleep(uint32_t milliseconds)
+{
+    RTOS_ASSERT_INT_ENABLED();
+	
+    rtos_delay_milliseconds(milliseconds);
 }
 
 bk_err_t beken_time_get_time(beken_time_t* time_ptr)
@@ -304,7 +321,6 @@ int rtos_set_semaphore( beken_semaphore_t* semaphore )
     }
     else
     {
-		RTOS_ASSERT_INT_ENABLED_WITH_SCHEDULER();
         result = xSemaphoreGive( *semaphore );
     }
 
@@ -414,6 +430,9 @@ bk_err_t rtos_init_recursive_mutex( beken_mutex_t* mutex )
 
 bk_err_t rtos_lock_recursive_mutex( beken_mutex_t* mutex )
 {
+	RTOS_ASSERT_TASK_CONTEXT();
+	RTOS_ASSERT_INT_ENABLED_WITH_SCHEDULER();
+
     if ( xSemaphoreTakeRecursive( *mutex, BEKEN_WAIT_FOREVER ) != pdPASS)
     {
         return kGeneralErr;
@@ -424,6 +443,9 @@ bk_err_t rtos_lock_recursive_mutex( beken_mutex_t* mutex )
 
 bk_err_t rtos_unlock_recursive_mutex( beken_mutex_t* mutex )
 {
+	RTOS_ASSERT_TASK_CONTEXT();
+	RTOS_ASSERT_INT_ENABLED_WITH_SCHEDULER();
+
     if ( xSemaphoreGiveRecursive(*mutex ) != pdPASS)
     {
         return kGeneralErr;
@@ -589,10 +611,10 @@ static void timer_callback2( xTimerHandle handle )
 {
     beken2_timer_t *timer = (beken2_timer_t*) pvTimerGetTimerID( handle );
 
-	if(BEKEN_MAGIC_WORD != timer->beken_magic)
-	{
-		return;
-	}
+    if(BEKEN_MAGIC_WORD != timer->beken_magic)
+    {
+        return;
+    }
     if ( timer->function )
     {
         timer->function( timer->left_arg, timer->right_arg );
@@ -603,6 +625,7 @@ static void timer_callback1( xTimerHandle handle )
 {
     beken_timer_t *timer = (beken_timer_t*) pvTimerGetTimerID( handle );
 
+    rtos_reload_timer(timer);
     if ( timer->function )
     {
         timer->function( timer->arg);
@@ -614,17 +637,17 @@ bk_err_t rtos_start_oneshot_timer( beken2_timer_t* timer )
     signed portBASE_TYPE result;
 
     if ( platform_is_in_interrupt_context() != 0 )
-	{
+    {
         signed portBASE_TYPE xHigherPriorityTaskWoken = 0;
         result = xTimerStartFromISR(timer->handle, &xHigherPriorityTaskWoken );
         portEND_SWITCHING_ISR( xHigherPriorityTaskWoken );
     } 
-	else
-	{
-		RTOS_ASSERT_INT_ENABLED_WITH_SCHEDULER();
+    else
+    {
+        RTOS_ASSERT_INT_ENABLED_WITH_SCHEDULER();
 
         result = xTimerStart( timer->handle, BEKEN_WAIT_FOREVER );
-	}
+    }
 
     if ( result != pdPASS )
     {
@@ -790,9 +813,9 @@ bk_err_t rtos_init_oneshot_timer( beken2_timer_t *timer,
 }
 
 bk_err_t rtos_init_timer( beken_timer_t *timer, 
-									uint32_t time_ms, 
-									timer_handler_t function, 
-									void* arg )
+						  uint32_t time_ms, 
+						  timer_handler_t function, 
+						   void* arg )
 {
 	bk_err_t ret = kNoErr;
 	
@@ -804,7 +827,7 @@ bk_err_t rtos_init_timer( beken_timer_t *timer,
 	
     timer->handle = _xTimerCreate("", 
 								(portTickType)( time_ms / bk_get_ms_per_tick() ), 
-								pdTRUE, 
+								pdFALSE, // pdTRUE, // the restart is initiated by timer_callback1, instead of the kernel.
 								timer, 
 								(native_timer_handler_t) timer_callback1 );
     if ( timer->handle == NULL )
@@ -962,38 +985,110 @@ bool rtos_is_timer_running( beken_timer_t* timer )
     return ( xTimerIsTimerActive( timer->handle ) != 0 ) ? true : false;
 }
 
-bk_err_t rtos_init_event_flags( beken_event_flags_t* event_flags )
+bk_err_t rtos_init_event_flags( beken_event_t* event_flags )
 {
-    __maybe_unused_var( event_flags );
-	
-    return kUnsupportedErr;
+    *event_flags = xEventGroupCreate();
+
+    return ( *event_flags != NULL ) ? kNoErr : kGeneralErr;	
 }
 
-bk_err_t rtos_wait_for_event_flags( beken_event_flags_t* event_flags, uint32_t flags_to_wait_for, uint32_t* flags_set, beken_bool_t clear_set_flags, beken_event_flags_wait_option_t wait_option, uint32_t timeout_ms )
+beken_event_flags_t rtos_wait_for_event_flags( beken_event_t* event_flags, 
+                                    uint32_t flags_to_wait_for, 
+                                    beken_bool_t clear_set_flags, 
+                                    beken_event_flags_wait_option_t wait_option, 
+                                    uint32_t timeout_ms )
 {
-    __maybe_unused_var( event_flags );
-    __maybe_unused_var( flags_to_wait_for );
-    __maybe_unused_var( flags_set );
-    __maybe_unused_var( clear_set_flags );
-    __maybe_unused_var( wait_option );
-    __maybe_unused_var( timeout_ms );
+    uint32_t time;
+    BaseType_t xWaitForAllBits;
+    beken_event_flags_t  uxBits;
 
-    return kUnsupportedErr;
+    if (timeout_ms == BEKEN_WAIT_FOREVER)
+        time = portMAX_DELAY;
+    else
+        time = timeout_ms / bk_get_ms_per_tick();
+
+    if (time != 0)
+    {
+        RTOS_ASSERT_INT_ENABLED_WITH_SCHEDULER();
+        RTOS_ASSERT_TASK_CONTEXT();
+    }
+
+    xWaitForAllBits = (wait_option == WAIT_FOR_ALL_EVENTS) ? pdTRUE : pdFALSE; 
+        
+    uxBits = xEventGroupWaitBits( *event_flags, flags_to_wait_for, clear_set_flags, xWaitForAllBits, time);
+
+    return uxBits;
 }
 
-bk_err_t rtos_set_event_flags( beken_event_flags_t* event_flags, uint32_t flags_to_set )
+void rtos_set_event_flags( beken_event_t* event_flags, uint32_t flags_to_set )
 {
-    __maybe_unused_var( event_flags );
-    __maybe_unused_var( flags_to_set );
-	
-    return kUnsupportedErr;
+    if ( platform_is_in_interrupt_context() != 0 ) /* set event in interruption context */
+    {
+        signed portBASE_TYPE xHigherPriorityTaskWoken = 0;
+        
+        xEventGroupSetBitsFromISR( *event_flags, flags_to_set, &xHigherPriorityTaskWoken );
+
+        /* calling this function  will result in a message being sent to the timer daemon task.  
+           If the priority of the timer daemon task is higher than the priority of the
+           currently running task (the task the interrupt interrupted) then *pxHigherPriorityTaskWoken 
+           will be set to pdTRUE by xEventGroupSetBitsFromISR(), indicating that a context 
+           switch should be requested before the interrupt exits.
+         */
+        portEND_SWITCHING_ISR( xHigherPriorityTaskWoken );
+    }
+    else /* set event in task context */
+    {
+        xEventGroupSetBits(*event_flags, flags_to_set);
+    }	
 }
 
-bk_err_t rtos_deinit_event_flags( beken_event_flags_t* event_flags )
+beken_event_flags_t rtos_clear_event_flags( beken_event_t* event_flags, uint32_t flags_to_clear )
 {
-    __maybe_unused_var( event_flags );
-	
-    return kUnsupportedErr;
+    beken_event_flags_t  uxBits;
+
+    if ( platform_is_in_interrupt_context() != 0 ) /* clear event bit in interruption context */
+    {
+        uxBits = xEventGroupClearBitsFromISR(*event_flags, flags_to_clear);
+    }
+    else  /* clear event bit in task context */
+    {
+        uxBits = xEventGroupClearBits(*event_flags, flags_to_clear);
+    }
+    return uxBits;
+}
+
+beken_event_flags_t rtos_sync_event_flags( beken_event_t* event_flags, 
+                                uint32_t flags_to_set, 
+                                uint32_t flags_to_wait_for,
+                                uint32_t timeout_ms)
+{
+    uint32_t time;
+    beken_event_flags_t  uxBits;
+
+    if(timeout_ms == BEKEN_WAIT_FOREVER)
+        time = portMAX_DELAY;
+    else
+        time = timeout_ms / bk_get_ms_per_tick();
+
+    RTOS_ASSERT_INT_ENABLED_WITH_SCHEDULER();
+    RTOS_ASSERT_TASK_CONTEXT();
+      
+    uxBits = xEventGroupSync( *event_flags, flags_to_set, flags_to_wait_for, time);
+
+    return uxBits;
+}
+
+bk_err_t rtos_deinit_event_flags( beken_event_t* event_flags )
+{
+    if (event_flags == NULL) 
+    {
+        return kParamErr;
+    }
+    
+    vEventGroupDelete( *event_flags );
+    *event_flags = NULL;
+    
+    return kNoErr;
 }
 
 void rtos_suspend_thread(beken_thread_t* thread)
@@ -1020,9 +1115,24 @@ void rtos_resume_thread(beken_thread_t* thread)
     }
 }
 
+void rtos_suspend_all_thread(void)
+{
+    vTaskSuspendAll();
+}
+
+void rtos_resume_all_thread(void)
+{
+    xTaskResumeAll();
+}
+
 uint32_t beken_ms_per_tick(void)
 {
 	return bk_get_ms_per_tick();
+}
+
+uint32_t rtos_get_tick_count(void)
+{
+    return (uint32_t)xTaskGetTickCount();
 }
 
 /**
@@ -1217,6 +1327,16 @@ void rtos_start_int(void)
 bool rtos_is_in_interrupt_context(void)
 {
 	return platform_is_in_interrupt_context();
+}
+
+bool rtos_local_irq_disabled(void)
+{
+    return platform_local_irq_disabled();
+}
+
+bool rtos_is_scheduler_suspended(void)
+{
+	return xTaskGetSchedulerState() == taskSCHEDULER_SUSPENDED;
 }
 
 void rtos_wait_for_interrupt(void)

@@ -47,13 +47,15 @@ menu "CAMERA"
 		default 16
 
 	config JPEG_FRAME_SIZE
-		int "config a jpeg frame size unit(byte), range 0-200k, default 150k"
-		range 0 204800
+		int "config a jpeg frame size unit(byte), default 150k"
 		default 153600
 
 	config H264_FRAME_SIZE
-		int "config a h264 NALU size unit(byte), range 0-200k, default 64k"
-		range 0 204800
+		int "config a h264 NALU size unit(byte), default 64k"
 		default 65536
+
+	config JPEG_FRAME_CHECK_LENGTH
+		int "check jpeg frame effective length, check from frame end, until find 0xffd9"
+		default 1024
 
 endmenu

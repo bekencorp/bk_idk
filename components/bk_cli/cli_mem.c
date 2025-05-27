@@ -637,12 +637,12 @@ static void cli_memory_dump_cmd(char *pcWriteBuffer, int xWriteBufferLen, int ar
 static const struct cli_command s_mem_commands[] = {
     {"memstack", "show stack memory usage", cli_memory_stack_cmd},
     {"memshow", "show free heap", cli_memory_free_cmd},
+    {"memdump", "<addr> <length>", cli_memory_dump_cmd},
+    {"memset", "<addr> <value 1> [<value 2> ... <value n>]", cli_memory_set_cmd},
 #if CONFIG_MEM_DEBUG && CONFIG_FREERTOS
     {"memleak", "[show memleak", cli_memory_leak_cmd},
 #endif
-#if CONFIG_DEBUG_FIRMWARE
-    {"memdump", "<addr> <length>", cli_memory_dump_cmd},
-    {"memset", "<addr> <value 1> [<value 2> ... <value n>]", cli_memory_set_cmd},
+#if CONFIG_DEBUG_FIRMWARE    
     {"memtest", "<addr> <length>", cli_mem_test},
     {"memtest_r", "<src> <dest> <size>", cli_memread_test},
     {"memtest_wr", "<addr> <count>", cli_memtest_wr_cmd},

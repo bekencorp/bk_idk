@@ -74,7 +74,7 @@ def parse_int(v):
     for letter, multiplier in [("k", 1024), ("m", 1024 * 1024)]:
         if v.lower().endswith(letter):
             return parse_int(v[:-1]) * multiplier
-        return int(v, 0)
+    return int(v, 0)
 
 #Size format conversion  int->string
 def size_format(size, include_size):
@@ -162,6 +162,7 @@ def get_config_json_path():
         json_path = '%s/middleware/boards/%s/configuration.json'%(armino_path, chip)
     if json_path is None:
         raise 'config_json get failed!!!'
+    register_file_operation('%s'%(json_path), "%s/encrypt/pack/configuration.json"%(build_path), 'copy')
     return json_path
 
 #get partition csv path
@@ -236,6 +237,7 @@ def get_firmware_path(firmware):
             print('firmware  exsit')
 
     firmware_path = '%s/%s'%(build_path, firmware)
+    register_file_operation('%s'%(firmware_path), "%s/encrypt/pack/%s"%(build_path, firmware), 'copy')
     return firmware_path
 
 #copy bootloader.bin to components/bk_libs
@@ -362,21 +364,37 @@ def get_ab_pos_independent_value(ab_input_file):
         output_value = 'True'
     else :
         output_value = 'False'
-    
+
     return output_value
 
 #get ab position independent csv status {TRUE :need position independent,FALSE :not need position independent }
 def get_ab_position_independent_csv_status():
     if os.path.exists('%s/%s/config/%s/ab_position_independent.csv'%(armino_path, project_dir, chip)):
         ab_pos_independent_file = "%s/%s/config/%s/ab_position_independent.csv"%(armino_path, project_dir, chip)
-        pos_independent_status = get_ab_pos_independent_value(ab_pos_independent_file) 
+        pos_independent_status = get_ab_pos_independent_value(ab_pos_independent_file)
     elif os.path.exists('%s/middleware/boards/%s/ab_position_independent.csv'%(armino_path, chip)):
         ab_pos_independent_file = "%s/middleware/boards/%s/ab_position_independent.csv"%(armino_path, chip)
-        pos_independent_status = get_ab_pos_independent_value(ab_pos_independent_file) 
+        pos_independent_status = get_ab_pos_independent_value(ab_pos_independent_file)
     else:
         pos_independent_status = 'False'
     #print(' >>>>>>>>>>>>pos_independent_status: %s '%pos_independent_status)
     return pos_independent_status
+
+# add ota head note into the all_app_crc.bin
+def add_ota_head_into_all_app_image(dest_file, src_file):
+    global write_data
+    try :
+        with open(dest_file , 'r+b') as dest_f:
+            dest_f.seek(0x11000)
+            try:
+                with open(src_file,'rb') as src_f:
+                    write_data = src_f.read()
+            except FileNotFound:
+                print(f'src_file not found {src_file}')
+            dest_f.write(write_data)
+    #os.remove('app_ab_crc.bin')
+    except FileNotFound:
+        print(f'dest_file not found {dest_file}')
 
 #update the firmware version
 #get firmware version from version_anti_rollback.csv
@@ -407,6 +425,8 @@ def find_file_by_name(file_name):
         file = '%s/%s/%s/%s'%(armino_path, project_dir, chip, file_name)             #file from project/chip
     elif os.path.exists('%s/middleware/boards/%s/%s'%(armino_path, chip, file_name)):
         file = '%s/middleware/boards/%s/%s'%(armino_path, chip, file_name)           #file from middleware/board/chip
+    elif os.path.exists('%s/middleware/boards/%s/csv/%s'%(armino_path, chip, file_name)):
+        file = '%s/middleware/boards/%s/csv/%s'%(armino_path, chip, file_name)           #file from middleware/board/chip/csv
     else:
         file = None       #The default file used for test
 
@@ -471,24 +491,53 @@ def get_aes_key_iv_for_ota():
                 aes_iv = item["data"]
     return aes_key, aes_iv
 
+#obtain the aes key for flash encrypt
+def get_aes_key_from_csv_for_flash_encrypt():
+    name = 'security.csv'
+
+    data = read_csv_data(find_file_by_name(name))
+    aes_key = data.get('flash_aes_key')
+    #print(">>>>>> debug flash encrypt key:",aes_key)
+    if aes_key == None or aes_key == '':
+        aes_key = '73c7bf397f2ad6bf4e7403a7b965dc5ce0645df039c2d69c814ffb403183fb18'
+        print("the key for flash encryption not config in security.csv, use default key ",aes_key)
+
+    return aes_key
+
 #encrypt image
 def enc_from_config_json(cfg_json, nm):
     enc_tool = '%s/tools/env_tools/beken_packager/beken_aes'%(armino_path)
     nm_suffix = 'enc'
 
-    key_file = get_aes_key_for_flash_encrypt()
+    #key_file = get_aes_key_for_flash_encrypt()
+    aes_key = get_aes_key_from_csv_for_flash_encrypt()
     start_addr = cfg_json['section'][0]['start_addr']
     for sec in cfg_json['section']:
         start_addr = start_addr if parse_int(start_addr) <= parse_int(sec['start_addr']) else sec['start_addr']
 
     outfile = os.path.join(build_path, '%s_%s'%(nm, nm_suffix))
     if os.path.exists(enc_tool.strip()) and os.path.isfile(enc_tool.strip()):
-        os.system("%s encrypt -infile %s.bin -startaddress %s -keyfile %s -outfile %s.bin"%(enc_tool, nm, start_addr, key_file, outfile))
+        os.system("%s encrypt -infile %s.bin -startaddress %s -keywords %s -outfile %s.bin"%(enc_tool, nm, start_addr, aes_key, outfile))
+        #os.system("%s encrypt -infile %s.bin -startaddress %s -keyfile  %s -outfile %s.bin"%(enc_tool, nm, start_addr, key_file, outfile))
     else:
         raise 'enc_tool path error!'
     gen_file_list.add('%s.bin'%(outfile))
     gen_file_list.add('%s_crc.bin'%(outfile))
     return outfile
+
+# add 0xff padding to binary file
+def add_padding_to_binary(binary_file):
+    with open(binary_file , 'ab')as f:
+        f.write(bytes([0xff] * 34))  # 34 bytes align
+
+def check_and_padding_binary(app_pack_secs, app_crc_name):
+    last_firmware = app_pack_secs[-1]['firmware']
+    last_firmware_size = os.path.getsize(last_firmware)
+    last_partition_raw_size = parse_int(app_pack_secs[-1]['size'])
+    last_firmware_aligned_size = (((last_firmware_size + 32 - 1) // 32) * 32) # 32 bytes align
+    app_crc_name += '.bin'
+    if last_firmware_aligned_size < last_partition_raw_size:
+        add_padding_to_binary(app_crc_name) # if the last firmware not fill up the partition, add padding value.
 
 #generate all app
 def package_json_rebuild():
@@ -508,6 +557,7 @@ def package_json_rebuild():
     #gen all_app_pack.bin
     app_pack_name = pack_from_config_json(config_json, 'all_app')
     app_crc_name = crc_from_config_json(config_json, app_pack_name)
+    check_and_padding_binary(app_pack_secs, app_crc_name)
     register_file_operation('%s.bin'%(app_pack_name), build_path, 'rm') #delete intermediate file
     
     src = '%s.bin'%(app_crc_name)
@@ -541,6 +591,7 @@ def package_json_enc_rebuild():
     #gen all_app_pack.bin
     all_app_pack_name = pack_from_config_json(config_json, 'all_app')
     all_app_crc_name  = crc_from_config_json(config_json, all_app_pack_name)
+    check_and_padding_binary(app_pack_secs, all_app_crc_name)
     all_app_enc_name  = enc_from_config_json(config_json, all_app_pack_name)
     #all_app_crc_name = crc_from_config_json(config_json, all_app_enc_name)
     create_only_support_enc('%s.bin'%(all_app_crc_name), '%s_crc.bin'%(all_app_enc_name), 0x110, 34)
@@ -554,7 +605,6 @@ def package_json_enc_rebuild():
     app_pack_name = pack_from_config_json(config_json, 'app')
     app_enc_name = enc_from_config_json(config_json, app_pack_name)
     os.system('python3 %s -i %s.bin -o %s -g %s -ap %s -pjd %s packager'%(ota_tool, app_pack_name, 'app_pack.rbl', header_path, armino_path, project_dir))
-
     gen_file_list.add('%s/app_pack.rbl'%(build_path))
 
 #generate all ab app
@@ -576,6 +626,7 @@ def package_json_ab_rebuild():
     #gen all_app_ab_crc.bin
     app_pack_name = pack_from_config_json(config_json, 'all_app')
     app_crc_name = crc_from_config_json(config_json, app_pack_name)
+    check_and_padding_binary(app_pack_secs, app_crc_name)
     register_file_operation('%s.bin'%(app_pack_name), build_path, 'rm') #delete intermediate file
 
     src = '%s.bin'%(app_crc_name)
@@ -590,6 +641,124 @@ def package_json_ab_rebuild():
     app_ab = '%s/app_ab.bin'%(build_path)
     if os.path.isfile(app_ab):
         app_ab_crc = crc_from_config_json(config_json, 'app_ab')
+        #register_file_operation('%s/encrypt/app_ab_crc.bin'%(build_path), '%s/app_ab_crc.bin'%(build_path), 'copy')
+        add_ota_head_into_all_app_image(src, 'app_ab_crc.bin')
+        #os.remove('app_ab_crc.bin')
+
+#generate otp_efuse_config.json file for burn
+def generate_otp_efuse_config_json():
+    outfile =  os.path.join(build_path, 'otp_efuse_config.json')
+
+    flash_aes_key = get_aes_key_from_csv_for_flash_encrypt()
+    f = open(outfile, 'w+')
+    otp_efuse_config = {
+        "User_Operate_Enable":  "false",
+        "Security_Ctrl_Enable": "true",
+        "Security_Data_Enable": "true",
+
+        "User_Operate":[],
+
+        "Security_Ctrl":[{
+            "secure_boot_enable":           "0,0,0",
+            "secure_boot_debug_disable":    "0,1,0",
+            "fast_boot_disable":            "0,2,0",
+            "boot_mode":                    "0,3,0",
+            "secure_boot_clock_select":     "0,4,0",
+            "random_delay_enable":          "0,5,0",
+            "direct_jump_enable":           "0,6,0",
+            "boot_critical_error": "0,7,0",
+            "attack_nmi_enable":            "2,4,0",
+            "spi_to_ahb_disable":           "2,5,0",
+            "auto_reset_enable[0]":         "2,6,0",
+            "auto_reset_enable[1]":         "2,7,0",
+            "flash_aes_enable":             "3,5,0",
+            "spi_download_disable":         "3,6,0",
+            "swd_disable":                  "3,7,0"
+        }],
+
+        "Security_Data":[]
+    }
+    data = {}
+
+    otp_efuse_config["Security_Ctrl"][0].update({"flash_aes_enable":"3,5,1"})
+    data["name"] = "flash_aes_key"
+    data["mode"] = "write"
+    data["permission"] = "WR" #TODO change to NA
+    data["start_addr"] = "0x4B100460"
+    data["last_valid_addr"] = "0x4B100480"
+    data["byte_len"] = "0x20"
+    data["data"] = flash_aes_key
+    data["data_type"] = "hex"
+    data["status"] = "true"
+    otp_efuse_config["Security_Data"].append(data)
+
+    json_str = json.dumps(otp_efuse_config, indent=4)
+    with open('otp_efuse_config.json', 'w',newline="\n") as file:
+        file.write(json_str)
+    file.close()
+    gen_file_list.add(outfile)
+
+def mklittlefs_img():
+
+    def make_img(img_size):
+        mk_tool_path = "{}/components/littlefs/mkimg/mklittlefs".format(armino_path)
+        preset_folder = "{}/littlefs".format(build_path)
+        
+        if not os.path.exists(preset_folder):
+            os.makedirs(preset_folder)
+
+        run_cmd_with_ret(f"{mk_tool_path} -c {preset_folder} -b 4096 -p 256 -s {img_size} {img_path}")
+
+    def check_littlefs_enable():
+        sdk_header_path = "{}/config/sdkconfig.h".format(build_path)
+        with open(sdk_header_path, 'r', encoding='utf-8') as file:
+            content = file.read()
+        if "#define CONFIG_LITTLEFS 1" not in content:
+            raise RuntimeError("CONFIG_LITTLEFS is not enable")
+
+    def make_pack_bin_with_fs(img_offset):
+        shutil.copy(all_app_bin_path, pack_bin_with_fs_path)
+        with open(pack_bin_with_fs_path, 'r+b') as file:
+            file.seek(0, os.SEEK_END)
+            current_size = file.tell()
+            # print(f"{current_size =}")
+            
+            if current_size < img_offset:
+                bytes_to_fill = img_offset - current_size
+                # print(f"{bytes_to_fill =}")
+                fill_data = bytes([0xff] * bytes_to_fill)
+                file.write(fill_data)
+
+            with open(img_path, 'rb') as f2:
+                fs_img_content = f2.read()
+
+            file.write(fs_img_content)
+
+    partition_csv_path = "{}/armino/partitions/_build/partitions.csv".format(build_path)
+    img_path = "{}/littlefs.bin".format(build_path)
+    all_app_bin_path = "{}/all-app.bin".format(build_path)
+    pack_bin_with_fs_path = "{}/app_all_plus_filesys.bin".format(build_path)
+
+    addr = 0
+    size = 0
+    found = 0
+
+    with open(partition_csv_path, 'r', newline='', encoding='utf-8') as csvfile:
+        dict_reader = csv.DictReader(csvfile)
+        for row in dict_reader:
+            if row['Name'] == 'littlefs':
+                found = 1
+                addr = int(row['Offset'], 16)
+                size = parse_int(row['Size'])
+                break
+
+    if found == 0:
+        print("not found littlefs partition in patitions.csv")
+        return
+    
+    check_littlefs_enable()
+    make_img(size)
+    make_pack_bin_with_fs(addr)
 
 def main():
     global chip
@@ -608,12 +777,14 @@ def main():
     copy_bootloader_to_relevant_dir()
 
     if get_security_status() == True :
+        generate_otp_efuse_config_json()
         package_json_enc_rebuild()
         #show_gen_file_list()
         move_gen_files('encrypt')
         deal_file_operation()
     else:
         if get_ab_position_independent_csv_status() == 'True':
+            print('<<<<<<<<<<<<<<<<<<<<<<do_ab>>>>>>>>>>>>>>>>>>>')
             package_json_ab_rebuild()
             #show_gen_file_list()
             move_gen_files('encrypt')
@@ -624,6 +795,8 @@ def main():
             #show_gen_file_list()
             move_gen_files('encrypt')
             deal_file_operation()
+
+    mklittlefs_img()
 
 
 if __name__ == '__main__':

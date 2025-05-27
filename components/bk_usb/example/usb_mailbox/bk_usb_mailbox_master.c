@@ -26,7 +26,9 @@ static beken_queue_t s_usb_mailbox_master_rx_msg_que = NULL;
 static beken_semaphore_t s_usb_mailbox_master_sem = NULL;
 static beken_semaphore_t s_usb_mailbox_master_usb_driver_exit_sem = NULL;
 static camera_packet_control_t *usb_mailbox_video_packet_ops = NULL;
+static beken_semaphore_t s_usb_mailbox_video_stop_sem = NULL;
 static struct audio_packet_control_t *usb_mailbox_audio_packet_ops = NULL;
+
 
 static bool s_usb_power_on_flag = 0;
 static bool s_usb_open_flag = 0;
@@ -300,6 +302,9 @@ static void _mailbox_rx_isr(void *param, mb_chnl_cmd_t *cmd_buf)
 		case USB_DRV_UVC_REGISTER_DISCONNECT_CB:
 			usb_mailbox_master_set_semaphore(&s_usb_mailbox_master_sem);
 			break;
+		case USB_DRV_VIDEO_STOP:
+			usb_mailbox_master_set_semaphore(&s_usb_mailbox_video_stop_sem);
+			break;
 		default:
 			mb_cmd.param1 = cmd_buf->param1;
 			mb_cmd.param2 = cmd_buf->param2;
@@ -487,6 +492,12 @@ void bk_usb_mailbox_sw_master_init(void)
 					break;
 			}
 
+			if(!s_usb_mailbox_video_stop_sem) {
+				ret = rtos_init_semaphore(&s_usb_mailbox_video_stop_sem, 1);
+				if(ret != kNoErr)
+					break;
+			}
+
 			if(!s_usb_mailbox_master_rx_msg_que) {
 				ret = rtos_init_queue(&s_usb_mailbox_master_rx_msg_que,
 									  "usb_mb_master_rx_q",
@@ -536,6 +547,11 @@ void bk_usb_mailbox_sw_master_init(void)
 				s_usb_mailbox_master_msg_que = NULL;
 			}
 
+			if(s_usb_mailbox_video_stop_sem) {
+				rtos_deinit_semaphore(&s_usb_mailbox_video_stop_sem);
+				s_usb_mailbox_video_stop_sem = NULL;
+			}
+
 			if (s_usb_mailbox_master_thread_hdl) {
 			rtos_delete_thread(&s_usb_mailbox_master_thread_hdl);
 			s_usb_mailbox_master_thread_hdl = NULL;
@@ -565,6 +581,7 @@ void bk_usb_mailbox_sw_master_deinit(void)
 	beken_queue_t usb_mailbox_master_rx_msg_que_deinit = s_usb_mailbox_master_rx_msg_que;
 	beken_semaphore_t usb_mailbox_master_sem_deinit = s_usb_mailbox_master_sem;
 	beken_semaphore_t usb_mailbox_master_usb_driver_exit_sem_deinit = s_usb_mailbox_master_usb_driver_exit_sem;
+	beken_semaphore_t usb_mailbox_video_stop_semdeinit = s_usb_mailbox_video_stop_sem;
 
 	if(s_usb_mailbox_master_sem) {
 		s_usb_mailbox_master_sem = NULL;
@@ -574,6 +591,11 @@ void bk_usb_mailbox_sw_master_deinit(void)
 	if(s_usb_mailbox_master_usb_driver_exit_sem) {
 		s_usb_mailbox_master_usb_driver_exit_sem = NULL;
 		rtos_deinit_semaphore(&usb_mailbox_master_usb_driver_exit_sem_deinit);
+	}
+
+	if(s_usb_mailbox_video_stop_sem) {
+		s_usb_mailbox_video_stop_sem = NULL;
+		rtos_deinit_semaphore(&usb_mailbox_video_stop_semdeinit);
 	}
 
 	if(s_usb_mailbox_master_rx_msg_que) {
@@ -954,9 +976,12 @@ bk_err_t bk_uvc_stop(void)
 	USB_RETURN_NOT_OPEN();
 
 	usb_mailbox_master_send_msg(USB_DRV_VIDEO_STOP, NULL);
-	rtos_delay_milliseconds(10);
+	uint32_t ret = usb_mailbox_master_get_semaphore(&s_usb_mailbox_video_stop_sem, 1000);
+	if(ret != BK_OK) {
+		LOGE("[=]%s WAIT TIMEOUT\r\n",__func__);
+	} 
 
-	return 0;
+	return ret;
 }
 
 bk_err_t bk_usb_uvc_check_support_attribute(uint32_t attribute)

@@ -52,8 +52,18 @@ void sys_hal_usb_enable_clk(bool en)
 
 void sys_hal_usb_analog_phy_en(bool en)
 {
-	sys_ll_set_ana_reg10_en_usbvcc1v8(en);
-	sys_ll_set_ana_reg10_en_usbvcc3v(en);
+	extern void delay(INT32 num);
+
+	if(en) {
+		sys_ll_set_ana_reg10_en_usbvcc1v8(en);
+		delay(320);
+		sys_ll_set_ana_reg10_en_usbvcc3v(en);
+	}
+	else {
+		sys_ll_set_ana_reg10_en_usbvcc3v(en);
+		delay(320);
+		sys_ll_set_ana_reg10_en_usbvcc1v8(en);
+	}
 }
 
 /** Platform PWM Start **/

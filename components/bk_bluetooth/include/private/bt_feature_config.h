@@ -15,4 +15,5 @@ typedef struct
     uint8_t _stop_smp_when_pair_err;
     uint8_t _enable_smp_sec_req_evt;
 
+    uint8_t _support_lpo_rosc;
 } bt_feature_struct_t;

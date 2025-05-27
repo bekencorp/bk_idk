@@ -224,7 +224,7 @@ struct cdc_header_descriptor {
     uint8_t bDescriptorType;    /* CS_INTERFACE descriptor type */
     uint8_t bDescriptorSubtype; /* Header functional descriptor subtype */
     uint16_t bcdCDC;            /* USB CDC specification release version */
-} __PACKED;
+} ; //__PACKED;
 
 /* Call management functional descriptor */
 /* (usbcdc11.pdf, 5.2.3.2) */
@@ -235,7 +235,7 @@ struct cdc_call_management_descriptor {
     uint8_t bDescriptorSubtype; /* call management functional descriptor subtype */
     uint8_t bmCapabilities;     /* capabilities that this configuration supports */
     uint8_t bDataInterface;     /* interface number of the data class interface used for call management (optional) */
-} __PACKED;
+} ; //__PACKED;
 
 /* Abstract control management functional descriptor */
 /* (usbcdc11.pdf, 5.2.3.3) */
@@ -245,7 +245,7 @@ struct cdc_abstract_control_management_descriptor {
     uint8_t bDescriptorType;    /* CS_INTERFACE descriptor type */
     uint8_t bDescriptorSubtype; /* abstract control management functional descriptor subtype */
     uint8_t bmCapabilities;     /* capabilities supported by this configuration */
-} __PACKED;
+} ; //__PACKED;
 
 /* Union functional descriptors */
 /* (usbcdc11.pdf, 5.2.3.8) */
@@ -255,7 +255,7 @@ struct cdc_union_descriptor {
     uint8_t bDescriptorType;    /* CS_INTERFACE descriptor type */
     uint8_t bDescriptorSubtype; /* union functional descriptor subtype */
     uint8_t bMasterInterface;   /* interface number designated as master */
-} __PACKED;
+} ; //__PACKED;
 
 /* Union functional descriptors with one slave interface */
 /* (usbcdc11.pdf, 5.2.3.8) */
@@ -265,7 +265,7 @@ struct cdc_union_1slave_descriptor {
     uint8_t bDescriptorSubtype;
     uint8_t bControlInterface;
     uint8_t bSubordinateInterface0;
-} __PACKED;
+} ; //__PACKED;
 
 /* Line coding structure for GET_LINE_CODING / SET_LINE_CODING class requests*/
 /* Format of the data returned when a GetLineCoding request is received */
@@ -275,7 +275,7 @@ struct cdc_line_coding {
     uint8_t bCharFormat; /* Number of stop bits */
     uint8_t bParityType; /* Parity bit type */
     uint8_t bDataBits;   /* Number of data bits */
-} __PACKED;
+} ; //__PACKED;
 
 /** Data structure for the notification about SerialState */
 struct cdc_acm_notification {
@@ -285,7 +285,7 @@ struct cdc_acm_notification {
     uint16_t wIndex;
     uint16_t wLength;
     uint16_t data;
-} __PACKED;
+} ; //__PACKED;
 
 /** Ethernet Networking Functional Descriptor */
 struct cdc_ecm_descriptor {
@@ -297,7 +297,7 @@ struct cdc_ecm_descriptor {
     uint16_t wMaxSegmentSize;
     uint16_t wNumberMCFilters;
     uint8_t bNumberPowerFilters;
-} __PACKED;
+} ; //__PACKED;
 
 /*Length of template descriptor: 66 bytes*/
 #define CDC_ACM_DESCRIPTOR_LEN (8 + 9 + 5 + 5 + 4 + 5 + 7 + 9 + 7 + 7)

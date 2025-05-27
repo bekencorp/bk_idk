@@ -307,7 +307,7 @@ static void dump_stack(uint32_t stack_start_addr, size_t stack_size, uint32_t *s
 #endif /* CMB_USING_DUMP_STACK_INFO */
 
 /* check the disassembly instruction is 'BL' or 'BLX' */
-static bool disassembly_ins_is_bl_blx(uint32_t addr) {
+bool disassembly_ins_is_bl_blx(uint32_t addr) {
     uint16_t ins1 = *((uint16_t *)addr);
     uint16_t ins2 = *((uint16_t *)(addr + 2));
 

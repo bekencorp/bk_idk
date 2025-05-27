@@ -106,13 +106,13 @@ PWM Channel and GPIO Map
 +-------------------+---------+
 | Channel Number    | BK7258  |
 +===================+=========+
-| 0                 | 18      |
+| 0                 | 6/18    |
 +-------------------+---------+
-| 1                 | 19      |
+| 1                 | 7/19    |
 +-------------------+---------+
-| 2                 | 22      |
+| 2                 | 8/22    |
 +-------------------+---------+
-| 3                 | 23      |
+| 3                 | 9/23    |
 +-------------------+---------+
 | 4                 | 24      |
 +-------------------+---------+
@@ -131,8 +131,8 @@ PWM Channel and GPIO Map
 | 11                | 37      |
 +-------------------+---------+
 
-If the channel has more than one GPIO to map, the channel init API will choose the smallest GPIO port as the default
-value.
+If the channel has more than one GPIO to map. Please refer to the <gpio_map.h> file for the default GPIO port <GPIO_PWM_MAP_TABLE>. 
+
 
 PWM API Reference
 ---------------------

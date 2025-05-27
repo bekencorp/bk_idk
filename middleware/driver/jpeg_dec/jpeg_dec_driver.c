@@ -35,6 +35,7 @@
 #include "bk_general_dma.h"
 #include <soc/mapping.h>
 #include <driver/media_types.h>
+#include "bk_misc.h"
 
 #define JPEGDEC_TAG "jpeg hw_decode"
 #define LOGI(...) BK_LOGI(JPEGDEC_TAG, ##__VA_ARGS__)
@@ -92,6 +93,9 @@ bk_err_t bk_jpeg_dec_driver_deinit(void)
 		LOGW("%s, jpegdec already deinit. \n", __func__);
 		return BK_OK;
 	}
+	jpeg_dec_ll_set_reg0x2_soft_reset(0);
+	delay_us(10);
+	jpeg_dec_ll_set_reg0x2_soft_reset(1);
 
 	sys_drv_set_jpeg_dec_disckg(0);
 	sys_drv_int_disable(JPEGDEC_INTERRUPT_CTRL_BIT);
@@ -99,6 +103,7 @@ bk_err_t bk_jpeg_dec_driver_deinit(void)
 	bk_int_isr_unregister(INT_SRC_JPEG_DEC);
 	jpg_decoder_deinit();
 	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_VIDP_JPEG_DE, PM_POWER_MODULE_STATE_OFF);
+
 	s_jpegdec_driver_is_init = false;
 
 	LOGW("%s, hw jpegdec deinit. \n", __func__);

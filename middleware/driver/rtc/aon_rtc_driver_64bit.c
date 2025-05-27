@@ -320,6 +320,9 @@ bk_err_t aon_rtc_enter_reboot(void)
 	s_boot_time_us = ((uint64_t)rtc_keep_time.tv_sec)*1000000LL+rtc_keep_time.tv_usec;
 	aon_rtc_bake_timeofday();
 
+	aon_rtc_hal_reset_counter(&s_aon_rtc[AONRTC_GET_SET_TIME_RTC_ID].hal);
+	aon_rtc_hal_clear_reset_counter(&s_aon_rtc[AONRTC_GET_SET_TIME_RTC_ID].hal);
+
 	return BK_OK;
 }
 

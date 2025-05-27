@@ -1065,9 +1065,10 @@ void cli_log_statist(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **
 	{
 		os_printf("Buffer[%d] run out count: %d.\r\n", i - 2, log_statist[i]);
 	}
+	
+	print_dynamic_log_info();
 
 	return;
-
 }
 
 static void cli_log_disable(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
@@ -1564,18 +1565,41 @@ int bk_cli_init(void)
 #if (CLI_CFG_UID)
 	cli_uid_init();
 #endif
+
+#if (CONFIG_H264_SW_DECODER_TEST)
+    cli_h264_sw_dec_init();
+#endif
+
+#if (CONFIG_JPEG_SW_ENCODER_TEST)
+    cli_jpeg_sw_enc_init();
+#endif
+
 /*--------------BT&MultMedia cli command init end------------------*/
 
 
 
 /*----------------platform cli command init begin------------------*/
+#if !CONFIG_CLI_CODE_SIZE_OPTIMIZE_ENABLE
+#if (CLI_CFG_MEM == 1) //memory related cli commands can also be used in release mode
+	cli_mem_init();
+#endif
+#endif
+
 #if CONFIG_DEBUG_FIRMWARE
 #if !CONFIG_CLI_CODE_SIZE_OPTIMIZE_ENABLE
 
-#if (CLI_CFG_MEM == 1)
-	cli_mem_init();
+#if (CLI_CFG_FLASH == 1)
+	cli_flash_init();
 #endif
 
+#if ((CONFIG_SOC_BK7236XX) && (CLI_CFG_FPB == 1))
+	cli_fpb_init();
+#endif
+
+#if ((CONFIG_SOC_BK7236XX) && (CLI_CFG_DWT == 1))
+	cli_dwt_init();
+#endif
+    
 #if (CLI_CFG_TIMER == 1)
 	cli_timer_init();
 #endif
@@ -1602,10 +1626,6 @@ int bk_cli_init(void)
 
 #if (CLI_CFG_OS == 1)
 	cli_os_init();
-#endif
-
-#if (CLI_CFG_FLASH == 1)
-	cli_flash_init();
 #endif
 
 #if (CLI_CFG_FLASH == 1)
@@ -1720,13 +1740,13 @@ int bk_cli_init(void)
 #endif
 
 #if CONFIG_VAULT_SUPPORT
-	#if CONFIG_OTP
+	#if CONFIG_OTP && CONFIG_OTP_TEST
 		cli_otp_init();
 	#endif
 #endif
 
 #if CONFIG_SOC_BK7236XX
-	#if CONFIG_OTP
+	#if CONFIG_OTP_V1 && CONFIG_OTP_TEST
 		cli_otp_init();
 	#endif
 #endif
@@ -1772,6 +1792,13 @@ int bk_cli_init(void)
 #endif
 #if CONFIG_LIN
 	cli_lin_init();
+#endif
+
+#if CONFIG_TRAP_TEST
+	{
+		extern int cli_trap_test_init(void); 
+		cli_trap_test_init();
+	}
 #endif
 
 #endif// CONFIG_CODE_SIZE_OPTIMIZE
@@ -1849,6 +1876,9 @@ int bk_cli_init(void)
 				  ret);
 		goto init_general_err;
 	}
+
+	/* create log handle task */
+	create_log_handle_task();
 
 #if CONFIG_CLI
 

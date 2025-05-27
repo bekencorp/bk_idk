@@ -509,7 +509,7 @@ __ITCM_N int rwnx_start_xmit(uint8_t vif_idx, struct pbuf *p, BUS_MSG_T *msg)
 	struct txdesc *txdesc;
 	ETH_HDR_PTR eth_hdr_ptr;
 	struct rwnx_txq *txq;
-	struct sk_buff *skb;
+	struct sk_buff *skb = NULL;
 	int ret = 0;
 	bool more_pbuf = !!(rwnx_hw_mm_features() & (1ULL << MM_FEAT_MORE_TBD_BIT));
 	uint32_t p_cnt = 0;
@@ -521,6 +521,30 @@ __ITCM_N int rwnx_start_xmit(uint8_t vif_idx, struct pbuf *p, BUS_MSG_T *msg)
 
 	//os_printf("%s: sizeof(fhost_tx_desc_tag)=%d, sizeof(txdesc)=%d, more_pbuf %d\n", __func__,
 	//	sizeof(*fhost_txdesc), sizeof(*txdesc), more_pbuf);
+#if CONFIG_WAPI_SUPPORT
+	struct pbuf *q;
+	err_t err;
+
+	q = pbuf_alloc(PBUF_RAW_TX, p->tot_len, PBUF_RAM);
+
+	if (q) {
+		if ((err = pbuf_copy(q, p)) != ERR_OK) {
+			RWNX_LOGD("copy p failed\r\n");
+			pbuf_free(q);
+			goto exit;
+		}
+		else
+		{
+			pbuf_free(p);
+			p = q;
+		}
+	}
+	else
+	{
+		RWNX_LOGD("alloc p failed\r\n");
+		goto exit;
+	}
+#endif
 
 	skb = alloc_skb_with_pbuf(p);
 	if (!skb) {
@@ -562,7 +586,7 @@ __ITCM_N int rwnx_start_xmit(uint8_t vif_idx, struct pbuf *p, BUS_MSG_T *msg)
 		p_cnt = rwnx_tx_get_pbuf_chain_cnt(p);
 
 	// alloc tx desc
-	fhost_txdesc = (struct fhost_tx_desc_tag *)os_zalloc(sizeof(struct fhost_tx_desc_tag) + fhost_txdesc_extra_size() + p_cnt * sizeof(struct tx_pbd));
+	fhost_txdesc = (struct fhost_tx_desc_tag *)os_sram_zalloc(sizeof(struct fhost_tx_desc_tag) + fhost_txdesc_extra_size() + p_cnt * sizeof(struct tx_pbd));
 
 	if (!fhost_txdesc)
 		goto exit;
@@ -668,7 +692,7 @@ void rwnx_start_xmit_mgmt(struct sk_buff *skb)
 	if (more_pbuf)
 		p_cnt  = MGMT_FRAME_MAX_TX_PBD_CNT;
 
-	fhost_txdesc = (struct fhost_tx_desc_tag *)os_zalloc(sizeof(struct fhost_tx_desc_tag) + fhost_txdesc_extra_size() + p_cnt * sizeof(struct tx_pbd));
+	fhost_txdesc = (struct fhost_tx_desc_tag *)os_sram_zalloc(sizeof(struct fhost_tx_desc_tag) + fhost_txdesc_extra_size() + p_cnt * sizeof(struct tx_pbd));
 
 	if (!fhost_txdesc)
 		goto tx_exit;
@@ -762,7 +786,7 @@ void rwnx_start_xmit_raw_ex(struct sk_buff *skb, raw_tx_cntrl_t *raw_tx_cntrl)
 	if (more_pbuf)
 		p_cnt = MGMT_FRAME_MAX_TX_PBD_CNT;
 
-	fhost_txdesc = (struct fhost_tx_desc_tag *)os_zalloc(sizeof(struct fhost_tx_desc_tag) + fhost_txdesc_extra_size() + p_cnt * sizeof(struct tx_pbd));
+	fhost_txdesc = (struct fhost_tx_desc_tag *)os_sram_zalloc(sizeof(struct fhost_tx_desc_tag) + fhost_txdesc_extra_size() + p_cnt * sizeof(struct tx_pbd));
 
 	if (!fhost_txdesc)
 		goto tx_exit;

@@ -1,3 +1,6 @@
+#include "os/os.h"
+#include "os/str.h"
+#include "os/mem.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -35,7 +38,7 @@ int bk_register_filesystem(const char *fs_type, struct bk_filesystem_ops *fs_ops
 
 	for (i = 0; i < MAX_FS_TYPES; i++) {
 		if (g_filesystem_impls[i].fs_type == NULL) {
-			g_filesystem_impls[i].fs_type = strdup(fs_type);
+			g_filesystem_impls[i].fs_type = os_strdup(fs_type);
 			g_filesystem_impls[i].fs_ops = fs_ops;
 			g_filesystem_impls[i].f_ops = f_ops;
 			return 0;
@@ -94,13 +97,13 @@ int bk_vfs_mount(const char *source, const char *target,
 		return -1;
 	}
 
-	fs->mount_point = strdup(target);
+	fs->mount_point = os_strdup(target);
 	fs->fs_ops = impl->fs_ops;
 	fs->f_ops = impl->f_ops;
 
 	ret = fs->fs_ops->mount(fs, mount_flags, data);
 	if (ret) {
-		free(fs->mount_point);
+		os_free(fs->mount_point);
 		fs->mount_point = NULL;
 		return -1;
 	} else {
@@ -130,7 +133,7 @@ int bk_vfs_umount(const char *target) {
 		ret = fs->fs_ops->unmount(fs);
 	}
 	
-	free(fs->mount_point);
+	os_free(fs->mount_point);
 	fs->mount_point = NULL;
 
 	return ret;
@@ -158,7 +161,7 @@ int bk_vfs_umount2(const char *target, int flags) {
 		ret = fs->fs_ops->unmount2(fs, flags);
 	}
 	
-	free(fs->mount_point);
+	os_free(fs->mount_point);
 	fs->mount_point = NULL;
 
 	return ret;

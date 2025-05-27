@@ -148,6 +148,8 @@ int jpg_decoder_deinit(void)
 		jpg_dec_st.workbuf = NULL;
 	}
 	os_memset(&jpg_dec_st, 0, sizeof(jpg_dec_st));
+
+	jpeg_dec_ll_set_reg0x2_clk_gate(0);
 	return kNoErr;
 }
 

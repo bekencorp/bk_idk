@@ -112,8 +112,9 @@ int mbedtls_client_close(MbedTLSSession *session)
 int mbedtls_client_context(MbedTLSSession *session)
 {
     int ret = 0;
-	unsigned char mfl_code; 	/* code for maximum fragment length 		*/
-
+    #if defined(MBEDTLS_SSL_MAX_FRAGMENT_LENGTH)
+    unsigned char mfl_code; 	/* code for maximum fragment length 		*/
+    #endif
     tls_printf("Loading the CA root certificate success...\r\n");
 #if CFG_USE_CA_CERTIFICATE
     ret = mbedtls_x509_crt_parse(&session->cacert, (const unsigned char *)mbedtls_root_certificate,
@@ -142,7 +143,7 @@ int mbedtls_client_context(MbedTLSSession *session)
     }
 
 #if defined(MBEDTLS_SSL_MAX_FRAGMENT_LENGTH)
-	mfl_code = MBEDTLS_SSL_MAX_FRAG_LEN_1024;///MBEDTLS_SSL_MAX_FRAG_LEN_512;
+	mfl_code = MBEDTLS_SSL_MAX_FRAG_LEN_NONE;///MBEDTLS_SSL_MAX_FRAG_LEN_512;
 	if( ( ret = mbedtls_ssl_conf_max_frag_len( &session->conf, mfl_code ) ) != 0 )
 	{
 		tls_printf( "[AM]failed\n  ! mbedtls_ssl_conf_max_frag_len returned %d\n\n", ret );
@@ -185,8 +186,7 @@ int mbedtls_client_connect(MbedTLSSession *session)
 
     tls_printf("Connected %s:%s success...\r\n", session->host, session->port);
 
-    mbedtls_ssl_set_bio(&session->ssl, &session->server_fd, mbedtls_net_send, mbedtls_net_recv, NULL);
-
+    mbedtls_ssl_set_bio(&session->ssl, &session->server_fd, mbedtls_net_send, mbedtls_net_recv, mbedtls_net_recv_timeout);
     while ((ret = mbedtls_ssl_handshake(&session->ssl)) != 0)
     {
         if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE)

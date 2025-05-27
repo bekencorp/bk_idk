@@ -77,6 +77,7 @@ bk_err_t dma2d_hal_deinit(void)
 	dma2d_ll_set_dma2d_bg_address_value(0);
 	dma2d_ll_set_dma2d_fg_pfc_ctrl_value(0);
 	dma2d_ll_set_dma2d_fg_pfc_ctrl_value(0);
+	dma2d_ll_set_module_control_clk_gate(0);
 
 	return BK_OK;
 }

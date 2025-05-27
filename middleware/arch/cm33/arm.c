@@ -64,27 +64,5 @@ void arch_atomic_clear(volatile uint32_t *lk)
 void arch_fence(void)
 {
 }
-
-void arch_dwt_trap_write(uint32_t addr, uint32_t data)
-{
-	DCB->DEMCR &= ~(DCB_DEMCR_TRCENA_Msk | DCB_DEMCR_MON_EN_Msk);
-
-	DWT->COMP2 = addr;
-	DWT->FUNCTION2 = 0x815;
-	DWT->COMP3 = data;
-	DWT->FUNCTION3 = 0x81b;
-
-	DCB->DEMCR |= (DCB_DEMCR_TRCENA_Msk | DCB_DEMCR_MON_EN_Msk);
-}
-
-void arch_dwt_trap_disable(void)
-{
-	DCB->DEMCR &= ~(DCB_DEMCR_TRCENA_Msk | DCB_DEMCR_MON_EN_Msk);
-	DWT->FUNCTION0 = 0;
-	DWT->FUNCTION1 = 0;
-	DWT->FUNCTION2 = 0;
-	DWT->FUNCTION3 = 0;
-}
-
 // eof
 

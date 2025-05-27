@@ -154,6 +154,7 @@ struct rwnx_hw {
 	struct rwnx_txq *txq;//[NX_NB_TXQ];
 	struct rwnx_hwq hwq[NX_TXQ_CNT];
 	beken2_timer_t txq_cleanup;
+	bool txq_cleanup_timer_running;
 	uint8_t cur_chanctx;
 #endif
 

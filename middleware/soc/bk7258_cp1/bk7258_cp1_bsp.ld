@@ -167,7 +167,7 @@ SECTIONS
         _bt_data_start = .;
         KEEP(*(.bt_spec_data ))
         KEEP(*(.ble_bss_data ))
-
+        . = ALIGN(4);
         _bt_data_end = .;
     } > SRAM_BT AT > FLASH
 #endif
@@ -184,6 +184,7 @@ SECTIONS
         *(.itcm_section*)
         *(.itcm_sec_code*)
         *(.interrupt)
+        . = ALIGN(4);
         __itcm_end__ = .;
     } > ITCM AT > FLASH
 
@@ -195,6 +196,7 @@ SECTIONS
 
         *(.dtcm)
         *(.dtcm_sec_data*)
+        . = ALIGN(4);
 
         __dtcm_end__ = .;
     } > DTCM AT > FLASH
@@ -213,7 +215,7 @@ SECTIONS
 
 
         *(.iram)
-
+        . = ALIGN(4);
         __iram_end__ = .;
 
         . = ALIGN(4);
@@ -224,6 +226,7 @@ SECTIONS
         *(.sdata)
 
         *(.gnu.linkonce.d*)
+        . = ALIGN(4);
         __data_end__ = .;
     } > RAM AT > FLASH
 
@@ -292,6 +295,7 @@ SECTIONS
 
         * (.swap_data)
         * (.swap_data*)
+        . = ALIGN(4);
         _swap_end = .;
     } > SWAP AT > FLASH
 

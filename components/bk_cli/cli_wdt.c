@@ -16,6 +16,7 @@
 #include "cli.h"
 #include <driver/wdt.h>
 #include <bk_wdt.h>
+#include "wdt_driver.h"
 
 static void cli_wdt_help(void)
 {
@@ -43,6 +44,32 @@ static void cli_wdt_driver_cmd(char *pcWriteBuffer, int xWriteBufferLen, int arg
 		cli_wdt_help();
 		return;
 	}
+}
+
+static beken_thread_t wdt_task1_handle = NULL;
+static beken_thread_t wdt_task2_handle = NULL;
+void delay_ms(uint32_t ms);
+
+static void test_task_wdt_1(void *arg)
+{
+	uint32_t test_count = 0;
+	while (test_count < 6) {
+		test_count++;
+		bk_printf("test task wdt 1=%d\n", test_count);
+		delay_ms(1000);
+	}
+	rtos_delete_thread(NULL);
+}
+
+static void test_task_wdt_2(void *arg) 
+{
+	uint32_t test_count = 0;
+	while (test_count < 100) {
+		test_count++;
+		bk_printf("test task wdt 2=%d\n", test_count);
+		delay_ms(1000);
+	}
+	rtos_delete_thread(NULL);
 }
 
 static void cli_wdt_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
@@ -81,7 +108,29 @@ static void cli_wdt_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
 		CLI_LOGI("wdt enter while1\n");
 		while(1);
 		GLOBAL_INT_RESTORE();
-	} else {
+	} else if (os_strcmp(argv[1], "reboot") == 0) {
+		bk_wdt_force_reboot();
+	} 
+    else if (os_strcmp(argv[1], "single_task") == 0) {
+		rtos_create_thread(&wdt_task1_handle, 5,
+			"test_task_wdt_1",
+			(beken_thread_function_t) test_task_wdt_1,
+			CONFIG_APP_MAIN_TASK_STACK_SIZE,
+			(beken_thread_arg_t)0);
+
+	}else if (os_strcmp(argv[1], "multi_task") == 0) {
+		rtos_create_thread(&wdt_task2_handle, 6,
+			"test_task_wdt_2",
+			(beken_thread_function_t) test_task_wdt_2,
+			CONFIG_APP_MAIN_TASK_STACK_SIZE,
+			(beken_thread_arg_t)0);
+
+		rtos_create_thread(&wdt_task1_handle, 5,
+			"test_task_wdt_1",
+			(beken_thread_function_t) test_task_wdt_1,
+			CONFIG_APP_MAIN_TASK_STACK_SIZE,
+			(beken_thread_arg_t)0);
+    } else {
 		cli_wdt_help();
 		return;
 	}
@@ -98,4 +147,3 @@ int cli_wdt_init(void)
 	BK_LOG_ON_ERR(bk_wdt_driver_init());
 	return cli_register_commands(s_wdt_commands, WDT_CMD_CNT);
 }
-

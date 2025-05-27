@@ -7,6 +7,7 @@ export CMD_ARMINO_SOC := $(findstring $(MAKECMDGOALS), $(soc_targets))
 bk7235xx_supported_targets := bk7235
 bk7235xx_supported_projects := app
 bk7235xx_supported_projects := $(bk7235xx_supported_projects)at
+bk7235xx_supported_projects := $(bk7235xx_supported_projects) matter
 
 
 ############################################################
@@ -20,6 +21,7 @@ bk7256xx_supported_projects := $(bk7256xx_supported_projects) media/doorbell med
 bk7256xx_supported_projects := $(bk7256xx_supported_projects) thirdparty/p2p_client thirdparty/p2p_server thirdparty/wanson_asr
 bk7256xx_supported_projects := $(bk7256xx_supported_projects) wifi/repeater
 bk7256xx_supported_projects := $(bk7256xx_supported_projects) at
+bk7256xx_supported_projects := $(bk7256xx_supported_projects) matter
 
 ############################################################
 #        Create supported projects list for bk7236         #
@@ -29,23 +31,25 @@ bk7236xx_supported_projects := app clip
 bk7236xx_supported_projects := $(bk7236xx_supported_projects) wifi/repeater
 bk7236xx_supported_projects := $(bk7236xx_supported_projects) at
 bk7236xx_supported_projects := $(bk7236xx_supported_projects) customization/config_ab
-
+bk7236xx_supported_projects := $(bk7236xx_supported_projects) matter
 ############################################################
 #        Create supported projects list for bk7258         #
 ############################################################
 bk7258xx_supported_targets := bk7258
 bk7258xx_supported_projects := app smp
 bk7258xx_supported_projects := $(bk7258xx_supported_projects) bluetooth/central bluetooth/headset bluetooth/spp bluetooth/mesh bluetooth/bt_hidd bluetooth/bt_hidh bluetooth/gatt_server bluetooth/gatt_client
-bk7258xx_supported_projects := $(bk7258xx_supported_projects) media/audio_play_sdcard_mp3_music media/doorbell_8M media/doorviewer media/doorbell_pro media/audio_record_to_sdcard 
+bk7258xx_supported_projects := $(bk7258xx_supported_projects) media/audio_play_sdcard_mp3_music media/doorbell_4M media/doorbell_8M media/doorviewer media/doorbell_pro media/audio_record_to_sdcard
 
-bk7258xx_supported_projects := $(bk7258xx_supported_projects) media/doorbell media/doorviewer_8M peripheral/lcd_8080 peripheral/lcd_rgb media/media_transfer media/dual_device_voice_call media/doorbell_720p
-bk7258xx_supported_projects := $(bk7258xx_supported_projects) lvgl/86box lvgl/86box_smart_panel lvgl/stress lvgl/benchmark lvgl/meter_rgb_16M lvgl/soundbar lvgl/widgets lvgl/camera lvgl/meter lvgl/meter_spi lvgl/music lvgl/keypad_encoder
-bk7258xx_supported_projects := $(bk7258xx_supported_projects) thirdparty/doorbell_cs2 thirdparty/doorbell_cs2_8M thirdparty/wanson_asr thirdparty/doorbell_cs2_720p thirdparty/jpeg_sw_enc
+bk7258xx_supported_projects := $(bk7258xx_supported_projects) media/doorbell media/doorviewer_8M peripheral/lcd_8080 peripheral/lcd_rgb888 peripheral/lcd_rgb565 peripheral/lcd_rgb666 media/media_transfer media/dual_device_voice_call media/doorbell_720p
+bk7258xx_supported_projects := $(bk7258xx_supported_projects) lvgl/86box lvgl/86box_smart_panel lvgl/avi_player lvgl/stress lvgl/benchmark lvgl/meter_rgb_16M lvgl/img_decode lvgl/widgets lvgl/camera lvgl/meter lvgl/meter_spi lvgl/music lvgl/keypad_encoder
+bk7258xx_supported_projects := $(bk7258xx_supported_projects) thirdparty/doorbell_cs2 thirdparty/doorbell_cs2_8M thirdparty/wanson_asr thirdparty/doorbell_cs2_720p thirdparty/jpeg_sw_enc thirdparty/wenwen_asr
 bk7258xx_supported_projects := $(bk7258xx_supported_projects) phy/cert_test
 bk7258xx_supported_projects := $(bk7258xx_supported_projects) wifi/repeater
 bk7258xx_supported_projects := $(bk7258xx_supported_projects) at
-bk7258xx_supported_projects := $(bk7258xx_supported_projects) customization/config_ab
-
+bk7258xx_supported_projects := $(bk7258xx_supported_projects) app_psram_4mb
+bk7258xx_supported_projects := $(bk7258xx_supported_projects) customization/config_ab thirdparty/doorbell_cs2_ab_4M
+bk7258xx_supported_projects := $(bk7258xx_supported_projects) matter
+bk7258xx_supported_projects := $(bk7258xx_supported_projects) thirdparty/agora agora_ai agora_wanson_ai beken_genie agora_wenwen_ai ai_dialog_free
 ############################################################
 #        Create supported projects list for bk7234         #
 ############################################################

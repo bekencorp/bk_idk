@@ -275,7 +275,7 @@ def action_extensions(base_actions, project_path):
 				'names': ['-T', '--toolchain-dir'],
 				'help': 'Toolchain directory.',
 				'type': click.Path(),
-				'default': '/opt/gcc-arm-none-eabi-5_4-2016q3/bin',
+				'default': '/opt/gcc-arm-none-eabi-10.3-2021.10/bin',
 			},
 			{
 				'names': ['-w/-n', '--cmake-warn-uninitialized/--no-warnings'],

@@ -202,6 +202,12 @@ SECTIONS
         LONG (__dtcm_start__)
         LONG ((__dtcm_end__ - __dtcm_start__) / 4)
 #endif
+
+#if CONFIG_SPINLOCK_SECTION
+        LONG (__spinlock_begin)
+        LONG (_spinlock_start)
+        LONG ((_spinlock_end - _spinlock_start) / 4)
+#endif
         __copy_table_end__ = .;
     } > FLASH
 
@@ -243,7 +249,7 @@ SECTIONS
         *sch_prog.c.obj(*.bss *.bss.*)
         *sch_slice.c.obj(*.bss *.bss.*)
         *llm.c.obj(*.bss *.bss.*)
-
+        . = ALIGN(4);
         _bt_data_end = .;
     } > SRAM_BT AT > FLASH
 #endif
@@ -305,6 +311,7 @@ SECTIONS
         PROVIDE(__dtcm_cpu0_content = LOADADDR(.dtcm_cpu0));
         __dtcm_cpu0_start__ = .;
         *(.dtcm_cpu0)
+        . = ALIGN(4);
         __dtcm_cpu0_end__ = .;
     } > DTCM0 AT > FLASH
 
@@ -328,6 +335,7 @@ SECTIONS
         PROVIDE(__dtcm_cpu1_content = LOADADDR(.dtcm_cpu1));
         __dtcm_cpu1_start__ = .;
         *(.dtcm_cpu1)
+        . = ALIGN(4);
         __dtcm_cpu1_end__ = .;
     } > DTCM1 AT > FLASH
 
@@ -351,6 +359,7 @@ SECTIONS
         PROVIDE(__dtcm_cpu2_content = LOADADDR(.dtcm_cpu2));
         __dtcm_cpu2_start__ = .;
         *(.dtcm_cpu2)
+        . = ALIGN(4);
         __dtcm_cpu2_end__ = .;
     } > DTCM2 AT > FLASH
 #else
@@ -379,7 +388,7 @@ SECTIONS
         *(.dtcm)
         *(.dtcm_section*)
         *(.dtcm_sec_data*)
-
+        . = ALIGN(4);
         __dtcm_end__ = .;
     } > DTCM AT > FLASH
 #endif
@@ -399,7 +408,7 @@ SECTIONS
         *(.iram)
         *(.interrupt)
 
-
+        . = ALIGN(4);
         __iram_end__ = .;
 
     } > IRAM AT > FLASH
@@ -438,6 +447,7 @@ SECTIONS
 
         *(.video_spec_data*)
         *(.gnu.linkonce.d*)
+        . = ALIGN(4);
         __data_end__ = .;
     } > RAM AT > FLASH
 
@@ -571,6 +581,7 @@ SECTIONS
 
         * (.swap_data)
         * (.swap_data*)
+        . = ALIGN(4);
         _swap_end = .;
     } > SWAP AT > FLASH
 

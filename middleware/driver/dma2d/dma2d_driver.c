@@ -87,7 +87,7 @@ bk_err_t bk_dma2d_driver_init(void)
 #if (USE_HAL_DMA2D_REGISTER_CALLBACKS == 1)
 	os_memset(&s_dma2d_isr, 0, sizeof(s_dma2d_isr));
 	bk_int_isr_register(INT_SRC_DMA2D, dma2d_isr, NULL);
-	
+
 	if(sys_drv_dma2d_set(0) != 0) {
 		DMA2D_LOGE("dma2d sys clk config error \r\n");
 		return BK_FAIL;
@@ -120,12 +120,15 @@ bk_err_t bk_dma2d_driver_deinit(void)
 		return BK_OK;
 	}
 
+	dma2d_hal_soft_reset();
 	bk_int_isr_unregister(INT_SRC_DMA2D);
+
 	dma2d_hal_deinit();
+
 	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_VIDP_DMA2D, PM_POWER_MODULE_STATE_OFF);
 	s_dma2d_driver_is_init = false;
 	
-	DMA2D_LOGI("%s deinit \n", __func__);
+	DMA2D_LOGI("%s complete\n", __func__);
 	return BK_OK;
 }
 

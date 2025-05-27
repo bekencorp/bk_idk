@@ -287,6 +287,12 @@
 #define     __OM     volatile            /*! Defines 'write only' structure member permissions */
 #define     __IOM    volatile            /*! Defines 'read / write' structure member permissions */
 
+/* Generic memory-mapped I/O accessor functions */
+#define MMIO8(addr)         (*(volatile uint8_t *)(addr))
+#define MMIO16(addr)        (*(volatile uint16_t *)(addr))
+#define MMIO32(addr)        (*(volatile uint32_t *)(addr))
+#define MMIO64(addr)        (*(volatile uint64_t *)(addr))
+
 /*@} end of group Cortex_STAR */
 
 
@@ -1280,6 +1286,29 @@ typedef struct
   __IM  uint32_t DEVARCH;                /*!< Offset: 0xFBC (R/ )  Device Architecture Register */
 } DWT_Type;
 
+#define DWT_COMPARATOR_CNT     (4U)
+
+typedef struct
+{
+    __IOM uint32_t COMP;
+          uint32_t RESV0;
+    __IOM uint32_t FUNCTION;
+          uint32_t RESV1;
+}DWT_COMP_Type;
+
+typedef struct
+{
+  __IOM uint32_t CTRL;                   /*!< Offset: 0x000 (R/W)  Control Register */
+  __IOM uint32_t CYCCNT;                 /*!< Offset: 0x004 (R/W)  Cycle Count Register */
+  __IOM uint32_t CPICNT;                 /*!< Offset: 0x008 (R/W)  CPI Count Register */
+  __IOM uint32_t EXCCNT;                 /*!< Offset: 0x00C (R/W)  Exception Overhead Count Register */
+  __IOM uint32_t SLEEPCNT;               /*!< Offset: 0x010 (R/W)  Sleep Count Register */
+  __IOM uint32_t LSUCNT;                 /*!< Offset: 0x014 (R/W)  LSU Count Register */
+  __IOM uint32_t FOLDCNT;                /*!< Offset: 0x018 (R/W)  Folded-instruction Count Register */
+  __IM  uint32_t PCSR;                   /*!< Offset: 0x01C (R/ )  Program Counter Sample Register */
+  DWT_COMP_Type COMPARATOR[DWT_COMPARATOR_CNT];
+} DWT_Ex_Type;
+
 /* DWT Control Register Definitions */
 #define DWT_CTRL_NUMCOMP_Pos               28U                                         /*!< DWT CTRL: NUMCOMP Position */
 #define DWT_CTRL_NUMCOMP_Msk               (0xFUL << DWT_CTRL_NUMCOMP_Pos)             /*!< DWT CTRL: NUMCOMP Mask */
@@ -1374,7 +1403,135 @@ typedef struct
 #define DWT_FUNCTION_MATCH_Pos              0U                                         /*!< DWT FUNCTION: MATCH Position */
 #define DWT_FUNCTION_MATCH_Msk             (0xFUL /*<< DWT_FUNCTION_MATCH_Pos*/)       /*!< DWT FUNCTION: MATCH Mask */
 
+enum
+{
+    DWT_MATCH_DISABLE = 0x0,
+    DWT_MATCH_CYCLE_COUNTER_MATCH,
+    DWT_MATCH_INSTRUCTION_ADDR,
+    DWT_MATCH_INSTRUCTION_ADDR_LIMIT,
+    DWT_MATCH_DATA_ADDR,
+    DWT_MATCH_DATA_ADDR_WR = 0x5,
+    DWT_MATCH_DATA_ADDR_RD,
+    DWT_MATCH_DATA_ADDR_LIMIT,
+    DWT_MATCH_DATA_VAL,
+    DWT_MATCH_DATA_VAL_WR,
+    DWT_MATCH_DATA_VAL_RD = 0xA,
+    DWT_MATCH_DATA_VAL_LINKED,
+    DWT_MATCH_DATA_ADDR_WITH_VAL,
+    DWT_MATCH_DATA_ADDR_WITH_VAL_WR_ONLY,
+    DWT_MATCH_DATA_ADDR_WITH_VAL_RD_ONLY
+};
+
+typedef enum
+{
+    ACCESS_TYPE_WHATEVER = 0,
+    ACCESS_TYPE_WRITE,
+    ACCESS_TYPE_READ
+}ACCESS_T;
+
+enum
+{
+    DWT_ACTION_TRIGGER_ONLY = 0x0,
+    DWT_ACTION_DEBUG_EVENT,
+    DWT_ACTION_DATA_TRACE_MATCH_PKT,
+    DWT_ACTION_DATA_ADDR_PKT
+};
+
+enum
+{
+    COMP_ID_0 = 0,
+    COMP_ID_1 = 1,
+    COMP_ID_2 = 2,
+    COMP_ID_3 = 3,
+    COMP_ID_MAX
+};
+
+enum
+{
+    FUNC_ID_8 = 0x08,
+    FUNC_ID_9 = 0x09,
+    FUNC_ID_10 = 0x0A,
+    FUNC_ID_11 = 0x0B,
+    FUNC_ID_24 = 0x18,
+    FUNC_ID_26 = 0x1A,
+    FUNC_ID_28 = 0x1C,
+    FUNC_ID_30 = 0x1E,
+};
+
+typedef struct _id_cap_
+{
+    uint32_t id;
+    uint32_t cap;
+}ID_CAP_T;
+
+#define ID_MAX_CNT    (8)
+
+#define ID_CAP_TABLE \
+{\
+    {FUNC_ID_8, 0x03},\
+    {FUNC_ID_9, 0x83},\
+    {FUNC_ID_10, 0x23},\
+    {FUNC_ID_11, 0x93},\
+    {FUNC_ID_24, 0x07},\
+    {FUNC_ID_26, 0x67},\
+    {FUNC_ID_28, 0x1f},\
+    {FUNC_ID_30, 0x7f},\
+}
+
+#define CAP_MAX_CNT    (8)
+
+#define STR_CAP_TABLE \
+{\
+    {(1 << 0), "data address"},\
+    {(1 << 1), "data address with value"},\
+    {(1 << 2), "data address limit"},\
+    {(1 << 3), "data value"},\
+    {(1 << 4), "linked data value"},\
+    {(1 << 5), "instruction address"},\
+    {(1 << 6), "instruction address limit"},\
+    {(1 << 7), "cycle counter"},\
+}
+
+enum
+{
+    FUNC_DATA_SIZE_NONE = 0,
+    FUNC_DATA_SIZE_BYTE = 0,
+    FUNC_DATA_SIZE_HALF_WORD = 1,
+    FUNC_DATA_SIZE_WORD = 2,
+};
+
 /*@}*/ /* end of group CMSIS_DWT */
+
+/**
+  \brief  Structure type to access the Flash Patch Interface Register (FPB).
+ */
+#define FP_COMPARATOR_CNT              (8U)
+typedef struct
+{
+  __IOM  uint32_t FP_CTRL;                   /*!< Offset: 0x000 (R/ )  Flash Patch Control Register */
+  __IM   uint32_t FP_REMAP;                  /*!< Offset: 0x004 (R/W)  Not Used in Armv8-M  */
+  __IOM  uint32_t FP_COMP[FP_COMPARATOR_CNT];
+  __IM   uint32_t RESV0[997u];
+  __IM   uint32_t FP_DEVARCH;
+  __IM   uint32_t RESV1[3u];
+  __IM   uint32_t FP_DEVTYPE;
+} FPB_Type;
+
+/* --- FPB_CTRL values ----------------------------------------------------- */
+/* Bits [31:15]: Reserved, read as zero, writes ignored */
+#define FPB_CTRL_NUM_CODE2_MASK      (0x7 << 12)
+#define FPB_CTRL_NUM_LIT_MASK        (0xf << 8)
+#define FPB_CTRL_NUM_CODE1_MASK      (0xf << 4)
+
+/* Bits [3:2]: Reserved */
+#define FPB_CTRL_KEY                 (1 << 1)
+#define FPB_CTRL_ENABLE              (1 << 0)
+
+/* --- FPB_COMPx values ---------------------------------------------------- */
+#define FPB_COMP_BP_ADDR             (0x7fffffff << 1)
+
+/* Bit 1: Reserved */
+#define FPB_COMP_ENABLE              (1 << 0)
 
 
 /**
@@ -1930,6 +2087,7 @@ typedef struct
 } DCB_Type;
 
 /* DHCSR, Debug Halting Control and Status Register Definitions */
+#define DHCSR_KEY                          (0xA05F)
 #define DCB_DHCSR_DBGKEY_Pos               16U                                            /*!< DCB DHCSR: Debug key Position */
 #define DCB_DHCSR_DBGKEY_Msk               (0xFFFFUL << DCB_DHCSR_DBGKEY_Pos)             /*!< DCB DHCSR: Debug key Mask */
 
@@ -2175,6 +2333,7 @@ typedef struct
 #define SCS_BASE            (0xE000E000UL)                             /*!< System Control Space Base Address */
 #define ITM_BASE            (0xE0000000UL)                             /*!< ITM Base Address */
 #define DWT_BASE            (0xE0001000UL)                             /*!< DWT Base Address */
+#define FPB_BASE            (0xE0002000UL)                             /*!< FPB Base Address */
 #define TPI_BASE            (0xE0040000UL)                             /*!< TPI Base Address */
 #define DCB_BASE            (0xE000EDF0UL)                             /*!< DCB Base Address */
 #define DIB_BASE            (0xE000EFB0UL)                             /*!< DIB Base Address */
@@ -2193,6 +2352,8 @@ typedef struct
 #define NVIC                ((NVIC_Type      *)     NVIC_BASE        ) /*!< NVIC configuration struct */
 #define ITM                 ((ITM_Type       *)     ITM_BASE         ) /*!< ITM configuration struct */
 #define DWT                 ((DWT_Type       *)     DWT_BASE         ) /*!< DWT configuration struct */
+#define DWT_Ex              ((DWT_Ex_Type    *)     DWT_BASE         ) /*!< DWT configuration struct */
+#define FPB                 ((FPB_Type       *)     FPB_BASE         ) /*!< FPB configuration struct */
 #define TPI                 ((TPI_Type       *)     TPI_BASE         ) /*!< TPI configuration struct */
 #define DCB                 ((DCB_Type       *)     DCB_BASE         ) /*!< DCB configuration struct */
 #define DIB                 ((DIB_Type       *)     DIB_BASE         ) /*!< DIB configuration struct */

@@ -362,7 +362,7 @@ static void evm_test(UINT32 rate, UINT32 channel, UINT32 bandwidth, UINT32 modul
 	    modul_format = 2;
     }
 
-    packet_len = evm_get_auto_tx_len(rate, modul_format, bandwidth);
+    packet_len = evm_get_auto_tx_len(rate, modul_format, bandwidth, 0);
     evm_bypass_mac_set_tx_data_length(modul_format, packet_len, rate, bandwidth, 1);
 
     evm_bypass_mac_set_rate_mformat(rate, modul_format);
@@ -442,7 +442,7 @@ static void evm_single_test(UINT32 rate, UINT32 channel, UINT32 bandwidth)
         modul_format = 2;
     }
 
-    packet_len = evm_get_auto_tx_len(rate, modul_format, bandwidth);
+    packet_len = evm_get_auto_tx_len(rate, modul_format, bandwidth, 0);
     evm_bypass_mac_set_tx_data_length_for_ate(modul_format, packet_len, rate, bandwidth, 1);
 
     evm_bypass_mac_set_rate_mformat_for_ate(rate, modul_format);

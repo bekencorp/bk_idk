@@ -275,7 +275,9 @@ int bk_init(void)
 #endif
 
 #ifdef CONFIG_VND_CAL
+#if CONFIG_WIFI_ENABLE || CONFIG_BLUETOOTH
 	vnd_cal_overlay();
+#endif
 #endif
 
 	bk_pm_mailbox_init();
@@ -413,10 +415,10 @@ extern int mp_do_startup(int heap_len);
 #endif
 #endif
 #if CONFIG_SYS_CPU1
-	bk_pm_cp1_boot_ok_response_set();
+#if CONFIG_PSRAM
+	REG_READ(SOC_PSRAM_DATA_BASE);//check psram whether valid
 #endif
-#if (CONFIG_SYS_CPU1)
-	bk_pm_module_vote_psram_ctrl(PM_POWER_PSRAM_MODULE_NAME_MEDIA, PM_POWER_MODULE_STATE_ON);
+	bk_pm_cp1_boot_ok_response_set();
 #endif
 #if CONFIG_USB //&& CONFIG_MENTOR_USB
 	bk_usb_driver_init();

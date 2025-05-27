@@ -26,7 +26,11 @@ if (CONFIG_CHERRY_USB)
 		list(APPEND srcs
 			CherryUSB/core/usbd_core.c
 		)
-
+		if (CONFIG_USBD_MSC)
+			list(APPEND srcs
+				CherryUSB/class/msc/usbd_msc.c
+			)
+		endif() 	
 		if (CONFIG_MUSB_MHDRC)
 			list(APPEND srcs
 				CherryUSB/port/beken_musb/usb_dc_beken_musb_mhdrc.c
@@ -100,7 +104,14 @@ if (CONFIG_CHERRY_USB)
 				CherryUSB/class/msc/usbh_msc.c
 			)
 		endif() # CONFIG_USB_MSD
-	endif() # CONFIG_USB_HOST
+
+		if (CONFIG_USB_CDC)
+			list(APPEND srcs
+				CherryUSB/class/cdc/usbh_cdc_acm.c
+			)
+		endif() # CONFIG_USB_CDC
+
+    endif() # CONFIG_USB_HOST
 endif() # CONFIG_CHERRY_USB
 
 if (CONFIG_MENTOR_USB)
@@ -161,7 +172,17 @@ if (CONFIG_UVC_UAC_DEMO)
 	endif() # CONFIG_MENTOR_USB
 
 endif() # CONFIG_UVC_UAC_DEMO
-endif()
+
+if (CONFIG_USB_CDC_ACM_DEMO)
+    list (APPEND incs
+        example/usb_cdc_acm
+    )
+    list (APPEND srcs
+        example/usb_cdc_acm/bk_cherry_usb_cdc_acm_api.c
+    )
+endif() # CONFIG_USB_CDC_ACM_DEMO
+
+endif() # CONFIG_USB
 
 if (CONFIG_USB_MAILBOX)
 	list(APPEND incs
@@ -191,6 +212,19 @@ if (CONFIG_ATE_TEST)
 		example/ate_test/ate_test.c
 		)
 endif() # CONFIG_ATE
+
+if (CONFIG_SYS_CPU0)
+if (CONFIG_USB_CDC_ACM_DEMO)
+    list (APPEND incs
+        example/usb_cdc_acm
+    )
+    list (APPEND srcs
+        example/usb_cdc_acm/bk_usb_cdc_demo.c
+    )
+endif() # CONFIG_USB_CDC_ACM_DEMO
+endif() # CONFIG_SYS_CPU0
+
+
 
 armino_component_register(SRCS "${srcs}" INCLUDE_DIRS "${incs}" PRIV_REQUIRES bk_common driver)
 

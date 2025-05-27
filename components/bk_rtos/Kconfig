@@ -5,6 +5,13 @@ menu "Bk_rtos"
 		default 163840
 		help
 			customize heap size, default 160k
+    
+	config PSRAM_HEAP_INIT_SET_ZERO
+		bool "Set psram content zero"
+		default n
+		help
+			when initialising psram memory,its contents are 
+			automatically zeroed.
 
 	menu "Modify FreeRTOS Config"
 		config FREERTOS
@@ -90,6 +97,15 @@ menu "Bk_rtos"
 			default 500
 			help
 				System tick count per second, can be 1-1000
+        
+        config FREERTOS_TASK_RECORDER
+			bool "Enable freertos task recorder"
+			default n
+        
+		config FREERTOS_TASK_RECORDER_CNT
+			depends on FREERTOS_TASK_RECORDER
+			int "Set freertos task recorder len"
+			default 10
 
 	endmenu
 
@@ -163,6 +179,25 @@ menu "Bk_rtos"
 			default 8
 			help
 				set memory debug task name length
+
+		config MEM_DEBUG_OVERFLOW
+			bool "Enable memory overflow debug"
+			default n
+        
+		config MEM_OVERFLOW_FREE_RECORD_MAX
+			depends on MEM_DEBUG_OVERFLOW
+			int "Set memory overflow free record len"
+			default 512
+        
+        config MEM_OVERFLOW_MALLOC_RECORD_MAX
+			depends on MEM_DEBUG_OVERFLOW
+			int "Set memory overflow malloc record len"
+			default 256
+        
+        config MEM_OVERFLOW_FREELIST_RECORD_MAX
+			depends on MEM_DEBUG_OVERFLOW
+			int "Set memory overflow freelist record len"
+			default 128
 
 	endmenu
 

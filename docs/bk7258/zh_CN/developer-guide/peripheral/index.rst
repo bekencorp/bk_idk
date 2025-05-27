@@ -8,7 +8,7 @@
 
    DMA <bk_dma>
    ICU <bk_interrupt>
-   PMW <bk_pwm>
+   PWM <bk_pwm>
    TRNG <bk_trng>
    SARADC <bk_adc>
    SPI <bk_spi>

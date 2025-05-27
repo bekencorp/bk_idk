@@ -10,9 +10,14 @@
 #include "usb_osal.h"
 #endif
 
+#include <driver/gpio.h>
+#include "gpio_map.h"
+
 #define MSC_THREAD_OP_READ_MEM   1
 #define MSC_THREAD_OP_WRITE_MEM  2
 #define MSC_THREAD_OP_WRITE_DONE 3
+#define MSC_THREAD_OP_RESET      4
+
 
 #define MSD_OUT_EP_IDX 0
 #define MSD_IN_EP_IDX  1
@@ -30,7 +35,8 @@ enum Stage {
 };
 
 /* Device data structure */
-USB_NOCACHE_RAM_SECTION struct usbd_msc_cfg_priv {
+/*USB_NOCACHE_RAM_SECTION*/ 
+struct usbd_msc_cfg_priv {
     /* state of the bulk-only state machine */
     enum Stage stage;
     USB_MEM_ALIGNX struct CBW cbw;
@@ -52,9 +58,134 @@ USB_NOCACHE_RAM_SECTION struct usbd_msc_cfg_priv {
 #ifdef CONFIG_USBDEV_MSC_THREAD
 static volatile uint8_t thread_op;
 static usb_osal_sem_t msc_sem;
-static usb_osal_thread_t msc_thread;
+static usb_osal_thread_t msc_thread = NULL;
 static volatile uint32_t current_byte_read;
 #endif
+
+static uint32_t s_msc_storage_init = 0;
+
+#define MSC_IN_EP  0x81
+#define MSC_OUT_EP 0x02
+
+#define USBD_VID           0x0000
+#define USBD_PID           0x0000
+#define USBD_MAX_POWER     100
+#define USBD_LANGID_STRING 1033
+
+#define USB_CONFIG_SIZE (9 + MSC_DESCRIPTOR_LEN)
+
+#ifdef CONFIG_USB_HS
+#define MSC_MAX_MPS 512
+#else
+#define MSC_MAX_MPS 64
+#endif
+
+#define UI_SECTORS (64*1024*2) //64M
+#define UI_USE_BEGIN_SECTOR 0
+//volatile static uint8_t gs_ui_sector_display_enable = 0;
+volatile static uint8_t gs_status = 0;
+static void usbd_set_status(uint8_t status);
+
+const uint8_t msc_storage_descriptor[] = {
+    USB_DEVICE_DESCRIPTOR_INIT(USB_2_1, 0x00, 0x00, 0x00, USBD_VID, USBD_PID, 0x0200, 0x01),
+    USB_CONFIG_DESCRIPTOR_INIT(USB_CONFIG_SIZE, 0x01, 0x01, USB_CONFIG_BUS_POWERED, USBD_MAX_POWER),
+    MSC_DESCRIPTOR_INIT(0x00, MSC_OUT_EP, MSC_IN_EP, 0x02),
+    ///////////////////////////////////////
+    /// string0 descriptor
+    ///////////////////////////////////////
+    USB_LANGID_INIT(USBD_LANGID_STRING),
+    ///////////////////////////////////////
+    /// string1 descriptor
+    ///////////////////////////////////////
+    0x14,                       /* bLength */
+    USB_DESCRIPTOR_TYPE_STRING, /* bDescriptorType */
+    'B', 0x00,                  /* wcChar0 */
+    'e', 0x00,                  /* wcChar1 */
+    'k', 0x00,                  /* wcChar2 */
+    'e', 0x00,                  /* wcChar3 */
+    'n', 0x00,                  /* wcChar4 */
+    '-', 0x00,                  /* wcChar5 */
+    'U', 0x00,                  /* wcChar6 */
+    'S', 0x00,                  /* wcChar7 */
+    'B', 0x00,                  /* wcChar8 */
+    ///////////////////////////////////////
+    /// string2 descriptor
+    ///////////////////////////////////////
+    0x26,                       /* bLength */
+    USB_DESCRIPTOR_TYPE_STRING, /* bDescriptorType */
+    'B', 0x00,                  /* wcChar0 */
+    'e', 0x00,                  /* wcChar1 */
+    'k', 0x00,                  /* wcChar2 */
+    'e', 0x00,                  /* wcChar3 */
+    'n', 0x00,                  /* wcChar4 */
+    '-', 0x00,                  /* wcChar5 */
+    'U', 0x00,                  /* wcChar6 */
+    'S', 0x00,                  /* wcChar7 */
+    'B', 0x00,                  /* wcChar8 */
+    ' ', 0x00,                  /* wcChar9 */
+    'M', 0x00,                  /* wcChar10 */
+    'S', 0x00,                  /* wcChar11 */
+    'C', 0x00,                  /* wcChar12 */
+    ' ', 0x00,                  /* wcChar13 */
+    'D', 0x00,                  /* wcChar14 */
+    'E', 0x00,                  /* wcChar15 */
+    'M', 0x00,                  /* wcChar16 */
+    'O', 0x00,                  /* wcChar17 */
+    ///////////////////////////////////////
+    /// string3 descriptor
+    ///////////////////////////////////////
+    0x16,                       /* bLength */
+    USB_DESCRIPTOR_TYPE_STRING, /* bDescriptorType */
+    '2', 0x00,                  /* wcChar0 */
+    '0', 0x00,                  /* wcChar1 */
+    '2', 0x00,                  /* wcChar2 */
+    '2', 0x00,                  /* wcChar3 */
+    '1', 0x00,                  /* wcChar4 */
+    '2', 0x00,                  /* wcChar5 */
+    '3', 0x00,                  /* wcChar6 */
+    '4', 0x00,                  /* wcChar7 */
+    '5', 0x00,                  /* wcChar8 */
+    '6', 0x00,                  /* wcChar9 */
+#ifdef CONFIG_USB_HS
+    ///////////////////////////////////////
+    /// device qualifier descriptor
+    ///////////////////////////////////////
+    0x0a,
+    USB_DESCRIPTOR_TYPE_DEVICE_QUALIFIER,
+    0x00,
+    0x02,
+    0x00,
+    0x00,
+    0x00,
+    0x40,
+    0x01,
+    0x00,
+#endif
+    0x00
+};
+
+static const uint8_t msc_storage_bos_desc[] = {
+    0x05,
+    USB_DESCRIPTOR_TYPE_BINARY_OBJECT_STORE,
+    0x0c & 0xff,
+    (0x0c & 0xff00) >> 8,
+    0x01,
+    ///////////////////////////////////////
+    /// USB 2.0 Extension Descriptor
+    ///////////////////////////////////////
+    0x07,
+    USB_DESCRIPTOR_TYPE_DEVICE_CAPABILITY,
+    0x02,
+    0x06, 0x00, 0x00, 0x00,
+};
+
+static struct usb_bos_descriptor msc_storage_bos_descriptor = {
+    .string = (uint8_t *)msc_storage_bos_desc,
+    .string_len = 0xc,
+};
+
+static struct usbd_interface gs_intf0;
+
 
 static void usbd_msc_reset(void)
 {
@@ -70,6 +201,7 @@ static int msc_storage_class_interface_request_handler(struct usb_setup_packet *
 
     switch (setup->bRequest) {
         case MSC_REQUEST_RESET:
+            USB_LOG_INFO("%s ,line:%d,MSC_REQUEST_RESET\r\n",__FILE__,__LINE__);
             usbd_msc_reset();
             break;
 
@@ -79,7 +211,7 @@ static int msc_storage_class_interface_request_handler(struct usb_setup_packet *
             break;
 
         default:
-            USB_LOG_WRN("Unhandled MSC Class bRequest 0x%02x\r\n", setup->bRequest);
+            USB_LOG_INFO("Unhandled MSC Class bRequest 0x%02x\r\n", setup->bRequest);
             return -1;
     }
 
@@ -90,7 +222,10 @@ void msc_storage_notify_handler(uint8_t event, void *arg)
 {
     switch (event) {
         case USBD_EVENT_RESET:
+            USB_LOG_INFO("%s ,line:%d,USBD_EVENT_RESET\r\n",__FILE__,__LINE__);
             usbd_msc_reset();
+            thread_op = MSC_THREAD_OP_RESET;
+            usb_osal_sem_give(msc_sem);
             break;
         case USBD_EVENT_CONFIGURED:
             USB_LOG_DBG("Start reading cbw\r\n");
@@ -805,7 +940,7 @@ static bool SCSI_CBWDecode(uint32_t nbytes)
 
             default:
                 SCSI_SetSenseData(SCSI_KCQIR_INVALIDCOMMAND);
-                USB_LOG_WRN("unsupported cmd:0x%02x\r\n", usbd_msc_cfg.cbw.CB[0]);
+                USB_LOG_INFO("unsupported cmd:0x%02x\r\n", usbd_msc_cfg.cbw.CB[0]);
                 ret = false;
                 break;
         }
@@ -905,6 +1040,10 @@ static void usbd_msc_thread(void *argument)
                 }
                 usbd_msc_thread_memory_write_done();
                 break;
+            case MSC_THREAD_OP_RESET:
+                usbd_set_status(1);
+                usbd_msc_get_cap(0, &usbd_msc_cfg.scsi_blk_nbr, &usbd_msc_cfg.scsi_blk_size);
+                break;
             default:
                 break;
         }
@@ -936,11 +1075,14 @@ struct usbd_interface *usbd_msc_init_intf(struct usbd_interface *intf, const uin
         return NULL;
     }
 #ifdef CONFIG_USBDEV_MSC_THREAD
-    msc_sem = usb_osal_sem_create(1);
-    msc_thread = usb_osal_thread_create("usbd_msc", CONFIG_USBDEV_MSC_STACKSIZE, CONFIG_USBDEV_MSC_PRIO, usbd_msc_thread, NULL);
-    if (msc_thread == NULL) {
-        USB_LOG_ERR("no enough memory to alloc msc thread\r\n");
-        return NULL;
+    if(msc_thread == NULL)
+    {
+        msc_sem = usb_osal_sem_create(1);
+        msc_thread = usb_osal_thread_create("usbd_msc", CONFIG_USBDEV_MSC_STACKSIZE, CONFIG_USBDEV_MSC_PRIO, usbd_msc_thread, NULL);
+        if (msc_thread == NULL) {
+            USB_LOG_ERR("no enough memory to alloc msc thread\r\n");
+            return NULL;
+        }
     }
 #endif
 
@@ -952,7 +1094,85 @@ void usbd_msc_set_readonly(bool readonly)
     usbd_msc_cfg.readonly = readonly;
 }
 
-int usbd_ms_media_get_status()
+int usbd_ms_media_get_status(void)
 {
-	return 1;
+	return gs_status;
 }
+
+static void usbd_set_status(uint8_t status)
+{
+   gs_status = status;
+}
+
+void usbd_msc_get_cap(uint8_t lun, uint32_t *block_num, uint16_t *block_size)
+{
+#if CONFIG_SDIO_HOST
+    extern uint32_t bk_sd_card_get_card_size(void);
+    *block_num = bk_sd_card_get_card_size();
+    *block_size = 512;
+#endif
+    USB_LOG_INFO("%s ,line:%d,block_num:%d,block_size:%x\r\n",__FILE__,__LINE__,*block_num,*block_size);
+}
+
+int usbd_msc_sector_read(uint32_t sector, uint8_t *buffer, uint32_t length)
+{
+#if CONFIG_SDIO_HOST
+    extern bk_err_t bk_sd_card_read_blocks(uint8_t *data, uint32_t block_addr, uint32_t block_num);
+    return bk_sd_card_read_blocks(buffer, sector, length/512);
+#else
+    return -ENOENT;
+#endif
+}
+
+int usbd_msc_sector_write(uint32_t sector, uint8_t *buffer, uint32_t length)
+{
+#if CONFIG_SDIO_HOST
+    extern bk_err_t bk_sd_card_write_blocks(const uint8_t *data, uint32_t block_addr, uint32_t block_num);
+    return bk_sd_card_write_blocks(buffer, sector, length/512);
+#else
+    return -ENOENT;
+#endif
+}
+
+void msc_storage_init(void)
+{
+    if(!s_msc_storage_init)
+    {
+        usbd_desc_register(msc_storage_descriptor);
+        usbd_bos_desc_register(&msc_storage_bos_descriptor);
+        usbd_add_interface(usbd_msc_init_intf(&gs_intf0, MSC_OUT_EP, MSC_IN_EP));
+        usbd_initialize();
+        s_msc_storage_init = 1;
+    }
+    else
+    {
+        USB_LOG_INFO(" errr, %s ,line:%d, inited\r\n",__FILE__,__LINE__);
+        return ;
+    }
+#if CONFIG_SDIO_HOST
+    bk_gpio_ctrl_external_ldo(GPIO_CTRL_LDO_MODULE_SDIO, SDCARD_LDO_CTRL_GPIO, GPIO_OUTPUT_STATE_HIGH);
+    extern bk_err_t bk_sd_card_init(void);
+    bk_sd_card_init();
+#endif
+}
+void msc_storage_deinit(void)
+{
+    if(s_msc_storage_init)
+    {     
+        usbd_deinitialize();
+        usbd_set_status(0);
+        s_msc_storage_init = 0;
+    }
+    else
+    {
+        USB_LOG_INFO(" errr, %s ,line:%d, uninited\r\n",__FILE__,__LINE__);
+        return ;
+    }
+#if CONFIG_SDIO_HOST
+    extern bk_err_t bk_sd_card_deinit(void);
+    bk_sd_card_deinit();
+    bk_gpio_ctrl_external_ldo(GPIO_CTRL_LDO_MODULE_SDIO, SDCARD_LDO_CTRL_GPIO, GPIO_OUTPUT_STATE_LOW);
+#endif
+}
+
+

@@ -6,11 +6,16 @@
 #include <os/mem.h>
 #include "ff.h"
 
+#if (CONFIG_INT_WDT || CONFIG_TASK_WDT)
+#include <driver/wdt.h>
+#include <bk_wdt.h>
+#endif
+
 #define WR_RD_BUF_SIZE          1024
 #define TEST_MP3_FILE_NAME      "/Panama_Matteo.mp3"
 #define TEST_TXT_FILE_NAME      "/test1.txt"
 #define TEST_DUMP_FILE_NAME      "/dump1.txt"
-#define TEST_TXT_FILE_NAME1     "/中文名字可以有多长？想多长就多长，不信你咬我，信我请我吃饭.txt"
+#define TEST_TXT_FILE_NAME1     "/脰脨脦脛脙没脳脰驴脡脪脭脫脨露脿鲁陇拢驴脧毛露脿鲁陇戮脥露脿鲁陇拢卢虏禄脨脜脛茫脪搂脦脪拢卢脨脜脦脪脟毛脦脪鲁脭路鹿.txt"
 
 void bk_mem_dump_ex(const char *title, unsigned char *data, uint32_t data_len);
 
@@ -74,7 +79,7 @@ FRESULT scan_files
     }
     else
     {
-        FATFS_LOGI("f_opendir failed\r\n");
+        FATFS_LOGI("f_opendir failed:fr=%d\r\n", fr);
     }
 
     return fr;
@@ -117,7 +122,7 @@ void test_unmount(DISK_NUMBER number)
     FRESULT fr;
     char cFileName[FF_MAX_LFN];
     sprintf(cFileName, "%d:", number);
-    fr = f_unmount(DISK_NUMBER_SDIO_SD, cFileName, 1);
+    fr = f_unmount(number, cFileName, 1);
     if (fr != FR_OK)
     {
         os_printf("f_unmount failed:%d\r\n", fr);
@@ -602,7 +607,7 @@ void test_fatfs_auto_test(DISK_NUMBER number, char *filename, uint32_t len, uint
 		fr = f_close(&file);
 		if (fr != FR_OK)
 		{
-			FATFS_LOGE("f_read last packet fail 1 fr = %d\r\n", fr);
+			FATFS_LOGE("f_close fail 1 fr = %d\r\n", fr);
 			goto exit;
 		}
 
@@ -651,6 +656,181 @@ void test_fatfs_format(DISK_NUMBER number)
 		ucRdTemp = 0;
 	}
 }
+
+#if 1
+#define FATFS_TEST_CONCURRENCY_TASK_MAX_CNT (8)
+static beken_thread_t s_fatfs_test_task_handle[FATFS_TEST_CONCURRENCY_TASK_MAX_CNT];
+
+#define FATFS_TEST_CONCURRENCY_MEM_LEN (1024)
+#define FATFS_TEST_CONCURRENCY_FILE_LEN (FATFS_TEST_CONCURRENCY_MEM_LEN * 128)	//default:128k bytes
+#define FATFS_TEST_CONCURRENCY_FILE_LEN_MAX (FATFS_TEST_CONCURRENCY_MEM_LEN * 1024 * 128)	//MAX:128M bytes
+
+static uint32_t *s_fatfs_test_src_p[FATFS_TEST_CONCURRENCY_TASK_MAX_CNT];
+static uint32_t *s_fatfs_test_tar_p[FATFS_TEST_CONCURRENCY_TASK_MAX_CNT];
+#define PSRAM_TEST_BYTES_LEN (8<<20)
+//arg: ((DISK_NUMBER << 16) | task_id)
+static void fatfs_test_concurrency_task(beken_thread_arg_t arg)
+{
+	uint32_t task_id = ((uint32_t)arg & 0xffff)%FATFS_TEST_CONCURRENCY_TASK_MAX_CNT;
+	uint32_t path_id = ((uint32_t)arg >> 16) % DISK_NUMBER_COUNT;
+	char cFileName[FF_MAX_LFN];
+	FIL file;
+	FRESULT fr;
+	uint64_t left_len = 0;
+	unsigned int uiTemp = 0;
+	uint32_t i;
+
+	FATFS_LOGI("path_id=%d,taskid=%d\r\n", path_id, task_id);
+	sprintf(cFileName, "%u:/fatfs_test_task_%u.txt", path_id, task_id);
+	while (1) {
+		//init mem value
+		for(i = 0; i < FATFS_TEST_CONCURRENCY_MEM_LEN/4; i++)
+			*(s_fatfs_test_src_p[task_id] + i) = (uint32_t)(s_fatfs_test_src_p[task_id] + i);
+
+		//open file
+		FATFS_LOGI("f_open \"%s\"\r\n", cFileName);
+		fr = f_open(&file, cFileName, FA_OPEN_APPEND | FA_WRITE);
+		if (fr != FR_OK)
+		{
+			FATFS_LOGE("f_open failed fr = %d\r\n", fr);
+			continue;
+		}
+
+		//write to SDCARD
+		left_len = FATFS_TEST_CONCURRENCY_FILE_LEN;
+        do
+        {
+            fr = f_write(&file, s_fatfs_test_src_p[task_id], FATFS_TEST_CONCURRENCY_MEM_LEN, &uiTemp);
+            if ((fr == FR_OK) /*&& (uiTemp == FATFS_TEST_CONCURRENCY_MEM_LEN)*/)
+            {
+                left_len -= FATFS_TEST_CONCURRENCY_MEM_LEN;
+            }
+            else
+            {
+                FATFS_LOGE("f_write failed fr = %d,uiTemp=%d,left_len=%d\r\n", fr, uiTemp, left_len);
+                continue;
+            }
+        }
+        while (left_len);
+
+        fr = f_close(&file);
+		if (fr != FR_OK)
+		{
+			FATFS_LOGE("f_close fail 1 fr = %d\r\n", fr);
+			continue;
+		}
+
+#if CONFIG_WDT
+		bk_wdt_feed();
+#if CONFIG_TASK_WDT
+		bk_task_wdt_feed();
+#endif
+#endif
+
+		//read from SDCARD and compare
+		FATFS_LOGI("f_open \"%s\"\r\n", cFileName);
+		fr = f_open(&file, cFileName, FA_OPEN_EXISTING | FA_READ);
+		if (fr != FR_OK)
+		{
+			FATFS_LOGE("f_open failed fr = %d\r\n", fr);
+			continue;
+		}
+
+		left_len = FATFS_TEST_CONCURRENCY_FILE_LEN;
+		do
+		{
+			fr = f_read(&file, s_fatfs_test_tar_p[task_id], FATFS_TEST_CONCURRENCY_MEM_LEN, &uiTemp);
+			if (fr == FR_OK)
+			{
+				left_len -= FATFS_TEST_CONCURRENCY_MEM_LEN;
+			}
+			else
+			{
+				FATFS_LOGE("f_read failed fr = %d,uiTemp=%d,left_len=%d\r\n", fr, uiTemp, left_len);
+				continue;
+			}
+
+			//compare
+			for(uint32_t i = 0; i < FATFS_TEST_CONCURRENCY_MEM_LEN/4; i++)
+			{
+				if(*(s_fatfs_test_src_p[task_id] + i) != *(s_fatfs_test_tar_p[task_id] + i))
+				{
+					FATFS_LOGE("compare failed src = 0x%x,tar=0x%x,i=%d\r\n", *(s_fatfs_test_src_p[task_id] + i), *(s_fatfs_test_tar_p[task_id] + i), i);
+				}
+			}
+		}
+		while (left_len);
+
+        fr = f_close(&file);
+        if (fr != FR_OK)
+        {
+            FATFS_LOGI("f_close failed 1 fr = %d\r\n", fr);
+            continue;
+        }
+
+#if CONFIG_WDT
+		bk_wdt_feed();
+#if CONFIG_TASK_WDT
+		bk_task_wdt_feed();
+#endif
+#endif
+
+		rtos_delay_milliseconds(20);
+	}
+
+	s_fatfs_test_task_handle[task_id] = NULL;
+	rtos_delete_thread(NULL);
+
+	if(s_fatfs_test_src_p[task_id])
+	{
+		os_free(s_fatfs_test_src_p[task_id]);
+		s_fatfs_test_src_p[task_id] = NULL;
+	}
+
+	if(s_fatfs_test_tar_p[task_id])
+	{
+		os_free(s_fatfs_test_tar_p[task_id]);
+		s_fatfs_test_tar_p[task_id] = NULL;
+	}
+}
+
+void test_fatfs_concurrency(DISK_NUMBER number, uint32_t task_count, uint32_t file_size)
+{
+	bk_err_t ret = BK_OK;
+	if(task_count > FATFS_TEST_CONCURRENCY_TASK_MAX_CNT)
+		task_count = FATFS_TEST_CONCURRENCY_TASK_MAX_CNT;	//max is 8
+
+	for(uint32_t i = 0; i  < task_count; i++)
+	{
+		if (!s_fatfs_test_task_handle[i])
+		{
+			ret = rtos_create_thread(&s_fatfs_test_task_handle[i],
+									 4,
+									 "fatfs_test",
+									 (beken_thread_function_t)fatfs_test_concurrency_task,
+									 4 * 1024,
+									 (beken_thread_arg_t)((number << 16) | i));		//arg: ((DISK_NUMBER << 16) | task_id)
+			if (ret != BK_OK)
+			{
+				s_fatfs_test_task_handle[i] = NULL;
+				FATFS_LOGE("Failed to create fatfs test task: %d\r\n", ret);
+				return;
+			}
+
+			if(s_fatfs_test_src_p[i] == NULL)
+				s_fatfs_test_src_p[i] = (uint32_t *)os_malloc(FATFS_TEST_CONCURRENCY_MEM_LEN);
+			BK_ASSERT(s_fatfs_test_src_p[i]);
+
+			if(s_fatfs_test_tar_p[i] == NULL)
+				s_fatfs_test_tar_p[i] = (uint32_t *)os_malloc(FATFS_TEST_CONCURRENCY_MEM_LEN);
+			BK_ASSERT(s_fatfs_test_tar_p[i]);
+
+			FATFS_LOGI("s_fatfs_test_src_p[%d]=0x%x,tar=0x%x\r\n", i, s_fatfs_test_src_p[i], s_fatfs_test_tar_p[i]);
+		}
+	}
+}
+#endif
+
 #endif
 
 // eof

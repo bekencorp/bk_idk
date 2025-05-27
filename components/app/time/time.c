@@ -246,6 +246,30 @@ int datetime_get(struct tm *t)
     return 0;
 } 
 
+int datetime_timestamp_to_localtime(struct tm *t, uint64_t timestamp)
+{
+    if(NULL == t)
+    {
+        return -1;
+    }
+
+    struct tm *tmp = NULL;
+    struct tm r_time = {0};
+
+    tmp = gmtime_r((const time_t *)&timestamp,&r_time);
+    t->tm_year = tmp->tm_year;
+    t->tm_mon = tmp->tm_mon;
+    t->tm_mday = tmp->tm_mday;
+    t->tm_hour = tmp->tm_hour;
+    t->tm_min = tmp->tm_min;
+    t->tm_sec = tmp->tm_sec;
+    t->tm_wday = tmp->tm_wday;
+
+    return 0;
+}
+
+
+
 time_t timestamp_get(void)
 {
     struct tm get_time = {0};

@@ -74,18 +74,28 @@ static int dubhe_aes_setkey_id( arm_ce_sca_context_t *ctx, uint32_t item )
 
 	//read ek1/2/3 from OTP
 	OTP_ACTIVE();
-	size = otp_map[1][OTP_EK_3].allocated_size;
+	otp_map = otp_map_2;
+	size = otp_map[OTP_EK_3].allocated_size;
 	ret = otp_read(2, OTP_EK_3, ek3, size);
-	if(ret < 0)
+	if(ret < 0) {
+		otp_map = NULL;
+		otp_sleep();
 		return ret;
-	size = otp_map[1][OTP_EK_2].allocated_size;
+	}
+	size = otp_map[OTP_EK_2].allocated_size;
 	ret = otp_read(2, OTP_EK_2, ek2, size);
-	if(ret < 0)
+	if(ret < 0) {
+		otp_map = NULL;
+		otp_sleep();
 		return ret;
-	size = otp_map[1][item].allocated_size;
+	}
+	size = otp_map[item].allocated_size;
 	ret = otp_read(2, item, ek1, size);
-	if(ret < 0)
+	if(ret < 0) {
+		otp_map = NULL;
+		otp_sleep();
 		return ret;
+	}
 
 	otp_sleep();
 

@@ -368,7 +368,9 @@ bk_err_t bk_aud_driver_deinit(void)
 	sys_hal_set_ana_reg21_value(0);
 
 	sys_drv_aud_audbias_en(0);
-	aud_hal_set_clk_control_soft_reset(0);
+    aud_hal_set_clk_control_soft_reset(0);
+	aud_hal_set_clk_control_soft_reset(1);
+    aud_hal_set_clk_control_soft_reset(0);
 #endif
 
 #if CONFIG_SOC_BK7256XX

@@ -691,6 +691,31 @@ static void uart_isr_register_functions(uart_id_t id)
 	}
 }
 
+bk_err_t bk_uart_isr_set_priority(uart_id_t id, uint32_t int_priority)
+{
+	icu_int_src_t int_src = INT_SRC_NONE;
+	switch(id)
+	{
+		case UART_ID_0:
+			int_src = INT_SRC_UART0;
+			break;
+		case UART_ID_1:
+			int_src = INT_SRC_UART1;
+			break;
+		case UART_ID_2:
+			int_src = INT_SRC_UART2;
+			break;
+#if (SOC_UART_ID_NUM_PER_UNIT >= 4)
+		case UART_ID_3:
+			int_src = INT_SRC_UART3;
+			break;
+#endif
+		default:
+			return BK_FAIL;
+	}
+	return bk_int_set_priority(int_src, int_priority);
+}
+
 uint32_t uart_id_to_pm_uart_id(uint32_t uart_id)
 {
 	switch (uart_id)

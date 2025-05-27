@@ -158,7 +158,7 @@ struct bt_osi_funcs_t
     int (*_bt_vote_sleep_ctrl)(uint32_t sleep_state, uint32_t sleep_time);
     void (*_coexist_check_large_signal)(uint8_t switch2bt);
     void (*_bt_ext_wakeup_ctrl)(uint8_t enable);
-    void (*_btsnoop)(uint8_t uart_id, uint8_t pkt_type, uint8_t is_rxed, uint8_t *pkt, uint16_t pkt_len);
+    void (*_btsnoop)(uint8_t uart_id, uint8_t pkt_type, uint8_t is_rxed, uint8_t *pkt, uint16_t pkt_len, uint8_t method);
 
     size_t (*_get_sys_debug_config_addr)(uint32_t index);
     uint32_t (*_get_chipid_mask)(void);
@@ -177,7 +177,7 @@ struct bt_osi_funcs_t
 
     void (*_ble_enter_dut)(void);
     void (*_ble_exit_dut)(void);
-    uint8_t (*_get_bluetooth_power_level)(void);
+    uint8_t (*_set_bluetooth_power_level)(float pwr_gain);
 };
 
 int bt_os_adapter_init(void *osi_funcs);

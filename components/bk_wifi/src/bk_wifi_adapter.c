@@ -397,14 +397,29 @@ static void wifi_vote_rf_ctrl_wrapper(uint8_t cmd)
     rf_module_vote_ctrl(cmd,RF_BY_WIFI_BIT);
 }
 
-static void wifi_phy_clk_open_wrapper(void)
+static void wifi_phy_clk_open_wrapper(uint8_t is_wifi)
 {
-    phy_clk_open_handler(RF_BY_WIFI_BIT);
+    if(is_wifi)
+    {
+        phy_clk_open_handler(RF_BY_WIFI_BIT);
+    }
+    else
+    {
+        phy_clk_open_handler(RF_BY_BLE_BIT);
+    }
+    
 }
 
-static void wifi_phy_clk_close_wrapper(void)
+static void wifi_phy_clk_close_wrapper(uint8_t is_wifi)
 {
-    phy_clk_close_handler(RF_BY_WIFI_BIT);
+    if(is_wifi)
+    {
+        phy_clk_close_handler(RF_BY_WIFI_BIT);
+    }
+    else
+    {
+        phy_clk_close_handler(RF_BY_BLE_BIT);
+    }
 }
 
 static void wifi_mac_phy_power_on_wrapper(void)
@@ -711,6 +726,20 @@ static int bk_feature_network_found_event_wrapper(void)
 static int bk_feature_get_mac_sup_sta_max_num_wrapper(void)
 {
     return bk_feature_get_mac_sup_sta_max_num();
+}
+static bk_err_t bk_wifi_get_vendor_ie_cb_internal_wrapper(void* vendor_ie, uint32_t vendor_type, uint16_t len, uint8_t frame_type)
+{
+    return bk_wifi_get_vendor_ie_cb_internal(vendor_ie, vendor_type, len, frame_type);
+}
+
+static uint32_t bk_wifi_get_vendor_ie_type_wrapper(void)
+{
+    return bk_wifi_get_vendor_ie_type();
+}
+
+static uint8_t bk_wifi_get_vendor_ie_oui_len_wrapper(void)
+{
+    return bk_wifi_get_vendor_ie_oui_len();
 }
 
 static void flush_all_dcache_wrapper(void)
@@ -1314,6 +1343,9 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._bk_feature_close_coexist_csa = bk_feature_close_coexist_csa_wrapper,
 	._bk_feature_network_found_event = bk_feature_network_found_event_wrapper,
 	._bk_feature_get_mac_sup_sta_max_num = bk_feature_get_mac_sup_sta_max_num_wrapper,
+	._bk_wifi_get_vendor_ie_cb_internal = bk_wifi_get_vendor_ie_cb_internal_wrapper,
+	._bk_wifi_get_vendor_ie_type = bk_wifi_get_vendor_ie_type_wrapper,
+	._bk_wifi_get_vendor_ie_oui_len = bk_wifi_get_vendor_ie_oui_len_wrapper,
 	._flush_all_dcache = flush_all_dcache_wrapper,
 	._bk_ms_to_ticks = bk_ms_to_ticks_wrapper,
 	._dma_memcpy = dma_memcpy_wrapper,

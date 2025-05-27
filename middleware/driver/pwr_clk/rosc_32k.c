@@ -24,6 +24,8 @@
 
 #define ROSC_CLK_26M                     (26 * 1000 * 1000)
 #define ROSC_CLK_32K                     (32 * 1000)
+#define ROSC_FREQ_MAX                    (100 * 1000)
+#define ROSC_FREQ_INVLID_COUNT           (2)
 
 #define ROSC_CKMN_PPM                    (600)
 #define ROSC_CKMN_MEASURE_TIME_THRESHOLD (64)
@@ -128,7 +130,7 @@ static void rosc_calib_ckmn_isr(void)
 static void rosc_calib_thread(void *args)
 {
 	bk_err_t ret;
-	uint8_t progress_count = 0;
+	uint8_t progress_count = 0, invalid_count = 0;
 	uint32_t cin0 = ROSC_CALIB_CIN0_DEFAULT;
 	uint32_t cin1 = ROSC_CALIB_CIN1_DEFAULT;
 	float loss, _loss = 0.0;
@@ -136,6 +138,8 @@ static void rosc_calib_thread(void *args)
 	// init
 	ROSC_LOGI("ckmn calib rosc thread start\r\n");
 	sys_drv_rosc_calibration(ROSC_CALIB_MANUAL_MODE, cin0 + (cin1 << 16)); // manual mode
+	// prevent sleep first and release it after finished
+	bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_ROSC, 0x0, 0x0);
 	// calibration progress
 	while (1)
 	{
@@ -147,17 +151,36 @@ static void rosc_calib_thread(void *args)
 		// wait for ckmn isr
 		ret = rtos_get_semaphore(&s_rosc_calib_sema, 100);
 		if(kNoErr == ret) {
-			// loss check
-			loss = s_freq_32k - ROSC_CLK_32K;
+			// freq invalid check
+			if (s_freq_32k > ROSC_FREQ_MAX) {
+				ROSC_LOGW("rosc freq measured got error %d %d %d %.2f\r\n",
+				                                        progress_count,
+				                                        cin0, cin1,s_freq_32k);
+				// current freq is invalid
+				invalid_count++;
+				if (invalid_count < ROSC_FREQ_INVLID_COUNT) {
+					// reprog current freq measure
+					continue;
+				} else {
+					// skip current freq measure
+					loss = _loss;
+				}
+			} else {
+				// current freq is valid so get loss
+				loss = s_freq_32k - ROSC_CLK_32K;
+			}
+			invalid_count = 0;
 #if ROSC_CALIB_DEBUG
 			rosc_calib_record_t record = {progress_count, cin0, cin1, loss};
 			rosc_calib_records_insert(&record);
 #endif
-			if (loss == 0) {
+			// current freq equal to dest freq. return it
+			if (loss == 0)
 				break;
-			}
+			// check goto next progress
 			if (loss * _loss < 0) {
 				if ((loss < 0) ? (-loss < _loss) : (loss < -_loss)) {
+					// rosc calib finished
 					if (progress_count++ == 3)
 						break;
 				}
@@ -198,6 +221,13 @@ static void rosc_calib_thread(void *args)
 			}
 		}
 	}
+
+	bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_ROSC, 0x1, 0x0);
+
+	// update rosc freq
+	s_rosc_freq_hz = s_freq_32k;
+	float theta = s_rosc_freq_hz / ROSC_CLK_32K;
+	s_rosc_ppm = (int32_t)(1e6 * (1 - theta) + ROSC_CKMN_PPM * theta);
 
 	// complete
 	if (ret) {

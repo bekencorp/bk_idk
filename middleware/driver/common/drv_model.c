@@ -8,7 +8,7 @@
 #include <os/os.h>
 
 
-static __attribute__((section(".dtcm_sec_data "))) DRV_DEV_S drv_dev_tbl[DD_MAX_DEV] = {
+static DRV_DEV_S drv_dev_tbl[DD_MAX_DEV] = {
 	{0},
 };
 

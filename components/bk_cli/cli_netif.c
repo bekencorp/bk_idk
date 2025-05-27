@@ -7,6 +7,7 @@
 #include <components/netif.h>
 #include "cli.h"
 
+
 extern void make_tcp_server_command(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv);
 
 static const char *ifname[NETIF_IF_COUNT] = {
@@ -21,7 +22,7 @@ static inline const char *if_idx_name(netif_if_t ifx)
 }
 
 #define CLI_DUMP_IP(_prompt, _ifx, _cfg) do {\
-	CLI_LOGI("%s netif(%s) ip4=%s mask=%s gate=%s dns=%s\n", (_prompt),\
+	CLI_LOGW("%s netif(%s) ip4=%s mask=%s gate=%s dns=%s\n", (_prompt),\
 			if_idx_name(_ifx),\
 			(_cfg)->ip, (_cfg)->mask, (_cfg)->gateway, (_cfg)->dns);\
 } while(0)
@@ -298,6 +299,147 @@ error:
 }
 #endif
 
+#ifdef CONFIG_WEBSOCKET
+#include <bk_websocket_client.h>
+void cli_websocket_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	if (argc == 2) {
+		if (os_strcmp("--stop", argv[1]) == 0) {
+			websocket_stop();
+			return;
+		}
+		else {
+			//CLI_LOGI("%s, uri:%s\r\n", __func__, argv[1]);
+			websocket_client_input_t websocket_cfg = {0};
+			websocket_cfg.uri = argv[1];
+			websocket_send_ping_pong(&websocket_cfg);
+		}
+	} else if (argc <2) {
+		CLI_LOGE("usage: websocket url\n");
+	} else if (argc == 3) {
+		websocket_client_input_t websocket_cfg = {0};
+		if (os_strcmp("connect", argv[1]) == 0) {
+			//CLI_LOGI("%s, connect uri:%s\r\n", __func__, argv[2]);
+			websocket_cfg.uri = argv[2];
+			websocket_start(&websocket_cfg);
+		}
+		if (os_strcmp("text", argv[1]) == 0) {
+			CLI_LOGI("%s, text:%s\r\n", __func__, argv[2]);
+			websocket_cfg.user_context = argv[2];
+			websocket_send_text(&websocket_cfg);
+		}
+		if (os_strcmp("ping", argv[1]) == 0 && os_strcmp("one", argv[2]) == 0 ) {
+			websocket_send_ping();
+		}
+	} else {
+		CLI_LOGE("usage: websocket.\n");
+	}
+}
+#endif
+
+#if CONFIG_WEBCLIENT
+#include <components/webclient.h>
+int demo_webclient_get(char *url)
+{
+	int err;
+
+	if(!url)
+	{
+		err = BK_FAIL;
+		CLI_LOGI( "url is NULL\r\n");
+
+		return err;
+	}
+	bk_webclient_input_t config = {
+	    .url = url,
+	    .header_size = 1024*2,
+	    .rx_buffer_size = 1024*4
+	};
+
+	err = bk_webclient_get(&config);
+	if(err == BK_OK){
+		CLI_LOGI("bk_webclient_get ok\r\n");
+	}
+	else{
+		CLI_LOGI("bk_webclient_get fail, err:%x\r\n", err);
+	}
+
+	return err;
+}
+
+int demo_webclient_post(char *url, char *post_data)
+{
+	int err;
+
+	if(!url)
+	{
+		err = BK_FAIL;
+		CLI_LOGI( "url is NULL\r\n");
+
+		return err;
+	}
+	if (post_data==NULL)
+	{
+		err = BK_FAIL;
+		CLI_LOGI( "post_data is NULL\r\n");
+
+		return err;
+	}
+
+	bk_webclient_input_t config = {
+	    .url = url,
+	    .header_size = 1024*2,
+	    .rx_buffer_size = 1024*4,
+	    .post_data = post_data
+	};
+
+	err = bk_webclient_post(&config);
+	if(err == BK_OK){
+		CLI_LOGI("bk_webclient_post ok\r\n");
+	}
+	else{
+		CLI_LOGI("bk_webclient_post fail, err:%x\r\n", err);
+	}
+
+	return err;
+}
+
+void cli_webclient_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	int ret = 0;
+	char *msg = NULL;
+
+	if (argc == 3) {
+		if (strncmp(argv[1], "get", 3) == 0) {
+			CLI_LOGI("starting http(s) get url:%s\n", argv[2]);
+			demo_webclient_get(argv[2]);
+		} else {
+			CLI_LOGE("usage: webclient [get/post].\n");
+			goto error;
+		}
+	}
+	else if ((argc == 4) && (strncmp(argv[1], "post", 4) == 0)) {
+		CLI_LOGI("starting http(s) post url:%s\n", argv[2]);
+		demo_webclient_post(argv[2], argv[3]);
+	}
+	else {
+		CLI_LOGE("usage: webclient [url].\n");
+		goto error;
+	}
+
+	if (!ret) {
+		msg = WIFI_CMD_RSP_SUCCEED;
+		os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+		return;
+	}
+
+error:
+	msg = WIFI_CMD_RSP_ERROR;
+	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+	return;
+
+}
+#endif
 __attribute__((weak)) void set_output_bitmap(uint32 output_bitmap);
 
 void set_per_packet_info_output_bitmap(const char *bitmap)
@@ -348,7 +490,12 @@ static const struct cli_command s_netif_commands[] = {
 	{"httplog", "httplog [1|0].", cli_http_debug_cmd},
 #endif
 	{"per_packet_info", "per_packet_info [per_packet_info_output_bitmap(base 16)]", cli_per_packet_info_output_cmd},
-
+#if CONFIG_WEBCLIENT
+	{"webclient", "webclient [ota|get|post] [url] [postdata]", cli_webclient_cmd},
+#endif
+#if CONFIG_WEBSOCKET
+	{"websocket", "websocket [connect|text|ping] [url]", cli_websocket_cmd},
+#endif
 };
 
 int cli_netif_init(void)

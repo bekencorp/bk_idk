@@ -36,7 +36,7 @@ typedef struct _jpeg_sw_encoder
     uint16_t height;
     uint16_t header_len;
     int enc_size;
-    int (*open)(void **codec, uint16_t width, uint16_t height, uint8_t *input, uint8_t *output, uint16_t *header_len);
+    int (*open)(void **codec, uint16_t width, uint16_t height, uint8_t *input, uint8_t *output, uint16_t *header_len, uint8_t quality_factor);
     int (*reset)(void *codec);
     int (*enc)(void *codec, uint8_t* output, int remaining_size, int *enc_size);                                       
     int (*deinit)(void **codec);    

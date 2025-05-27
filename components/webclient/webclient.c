@@ -34,6 +34,7 @@
 #include <os/mem.h>
 #include <os/mem.h>
 #define RT_NULL NULL
+#define RT_TRUE BK_TRUE
 
 #define os_calloc(nmemb,size)   ((size) && (nmemb) > (~( unsigned int) 0)/(size))?0:os_zalloc((nmemb)*(size))
 
@@ -41,6 +42,15 @@
 
 /* default receive or send timeout */
 #define WEBCLIENT_DEFAULT_TIMEO        30
+#define POST_DATA_LEN 2*1024
+
+static void bk_webclient_hex_dump(const char *s, int length)
+{
+		BK_RAW_LOGI(NULL, "begin print data:");
+		for (int i = 0; i < length; i++)
+			BK_RAW_LOGI(NULL, "%c", *(u8 *)(s+i));
+		BK_RAW_LOGI(NULL, "\r\n");
+}
 
 extern long int strtol(const char *nptr, char **endptr, int base);
 
@@ -639,7 +649,7 @@ int webclient_send_header(struct webclient_session *session, int method)
             return -WEBCLIENT_NOMEM;
         if (webclient_header_fields_add(session, "Host: %s\r\n", session->host) < 0)
             return -WEBCLIENT_NOMEM;
-        if (webclient_header_fields_add(session, "User-Agent: RT-Thread HTTP Agent\r\n\r\n") < 0)
+        if (webclient_header_fields_add(session, "User-Agent: BEKEN HTTP Agent\r\n\r\n") < 0)
             return -WEBCLIENT_NOMEM;
 
         webclient_write(session, (unsigned char *) session->header->buffer, session->header->length);
@@ -1087,11 +1097,11 @@ int webclient_post(struct webclient_session *session, const char *URI, const voi
     if (post_data && (data_len > 0))
     {
         webclient_write(session, post_data, data_len);
-
-        /* resolve response data, get http status code */
-        resp_status = webclient_handle_response(session);
-        BK_LOGI(TAG,"post handle response(%d).\r\n", resp_status);
     }
+
+    /* resolve response data, get http status code */
+    resp_status = webclient_handle_response(session);
+    BK_LOGI(TAG,"post handle response(%d).\r\n", resp_status);
 
     return resp_status;
 }
@@ -1484,7 +1494,7 @@ int webclient_close(struct webclient_session *session)
         web_free(session->header);
         session->header=NULL;
     }
-    
+
     if (session)
     {
         web_free(session);
@@ -1778,10 +1788,390 @@ __exit:
     return totle_length;
 }
 
+static bk_err_t bk_webclient_dispatch_event(bk_webclient_input_t *client, bk_webclient_event_id_t event_id, void *data, int len)
+{
+	bk_webclient_event_t *event = &client->event;
 
+	if (client->event_handler) {
+		event->event_id = event_id;
+		event->data = data;
+		event->data_len = len;
+		return client->event_handler(event);
+	}
+	return BK_OK;
+}
+
+/**************************HTTP GET/POST INTERFACE***************************************/
+int bk_webclient_get(bk_webclient_input_t *input) {
+    int ret = 0;
+	struct webclient_session* session = RT_NULL;
+	unsigned char *buffer = RT_NULL;
+	int bytes_read, resp_status;
+	int content_length = -1;
+	char *url = RT_NULL;
+
+	url = web_strdup(input->url);
+	if(url == RT_NULL)
+	{
+		BK_LOGE(TAG,"no memory for create get request uri buffer.\n");
+		return BK_ERR_NO_MEM;
+	}
+
+	buffer = (unsigned char *) web_malloc(input->rx_buffer_size);
+	if (buffer == RT_NULL)
+	{
+		BK_LOGE(TAG,"no memory for receive buffer.\n");
+		ret = BK_ERR_NO_MEM;
+		goto __exit;
+
+	}
+
+	/* create webclient session and set header response size */
+	session = webclient_session_create(input->header_size);
+	if (session == RT_NULL)
+	{
+		ret = BK_ERR_NO_MEM;
+		goto __exit;
+	}
+
+	/* send GET request by default header */
+	if ((resp_status = webclient_get(session, url)) != 200)
+	{
+		BK_LOGE(TAG,"webclient GET request failed, response(%d) error.\n", resp_status);
+		ret = BK_ERR_STATE;
+		goto __exit;
+	}
+
+	BK_LOGI(TAG,"webclient get response data: \n");
+
+	content_length = webclient_content_length_get(session);
+	if (content_length < 0)
+	{
+		BK_LOGI(TAG,"webclient GET request type is chunked.\n");
+		do
+		{
+			bytes_read = webclient_read(session, (void *)buffer, input->rx_buffer_size);
+			if (bytes_read <= 0)
+			{
+				break;
+			}
+
+		} while (1);
+
+		BK_LOGI(TAG,"\n");
+	}
+	else
+	{
+		int content_pos = 0;
+
+		do
+		{
+			bytes_read = webclient_read(session, (void *)buffer,
+					content_length - content_pos > input->rx_buffer_size ?
+							input->rx_buffer_size : content_length - content_pos);
+			if (bytes_read <= 0)
+			{
+				break;
+			}
+			content_pos += bytes_read;
+			BK_LOGI(TAG,"%s bytes_read:%d content_pos:%d\n", __func__, bytes_read, content_pos);
+		} while (content_pos < content_length);
+
+		if (content_pos != content_length) {
+			BK_LOGI(TAG,"%s error! recv:%d content_length:%d\n", __func__, content_pos, content_length);
+			ret = BK_ERR_STATE;
+		}
+	}
+
+__exit:
+	if (session)
+	{
+		webclient_close(session);
+	}
+
+	if (buffer)
+	{
+		web_free(buffer);
+	}
+
+	if (url)
+	{
+		web_free(url);
+	}
+
+	return ret;
+}
+
+int bk_webclient_post(bk_webclient_input_t *input) {
+    int ret = 0;
+	int rx_buffer_size = input->rx_buffer_size;
+	int header_size = input->header_size;
+	char *uri = os_strdup(input->url);
+	char *post_data = NULL;
+	size_t data_len = 0;
+	struct webclient_session* session = RT_NULL;
+	unsigned char *buffer = RT_NULL;
+	int bytes_read, resp_status;
+
+	if (input->post_data) {
+		post_data = os_strdup(input->post_data);
+		data_len = strlen(post_data);
+	}
+	char *rep_data = ( char *) os_zalloc(POST_DATA_LEN);
+	if (rep_data == RT_NULL)
+	{
+		BK_LOGE(TAG,"no memory for receive response buffer.\n");
+		ret = -5;
+		goto __exit;
+	}
+
+	buffer = (unsigned char *) web_malloc(rx_buffer_size);
+	if (buffer == RT_NULL)
+	{
+		BK_LOGE(TAG,"no memory for receive response buffer.\n");
+		ret = -5;
+		goto __exit;
+	}
+
+	/* create webclient session and set header response size */
+	session = webclient_session_create(header_size);
+	if (session == RT_NULL)
+	{
+		ret = -5;
+		goto __exit;
+	}
+	char version_buf[32] ="7256000";
+
+	/* build header for upload */
+	webclient_header_fields_add(session, "Content-Length: %d\r\n", strlen(post_data));
+	webclient_header_fields_add(session, "Content-Type: application/x-www-form-urlencoded\r\n");
+	webclient_header_fields_add(session, "%s\r\n",version_buf);
+
+	/* send POST request by default header */
+	if (post_data && ((resp_status = webclient_post(session, uri, post_data, data_len)) != 200))
+	{
+		BK_LOGE(TAG,"webclient POST request failed, response(%d) error.\n", resp_status);
+		ret = -1;
+		goto __exit;
+	}
+
+	BK_LOGI(TAG,"webclient post response data: \n");
+	do
+	{
+		bytes_read = webclient_read(session, buffer, rx_buffer_size);
+		if (bytes_read <= 0)
+		{
+			break;
+		}
+		strncat(rep_data,(char*)buffer,bytes_read);
+	} while (1);
+
+	BK_LOGI(TAG,"%s.\n", rep_data);
+
+__exit:
+	if (session)
+	{
+		webclient_close(session);
+	}
+
+	if (buffer)
+	{
+		web_free(buffer);
+	}
+
+	if (uri)
+	{
+		web_free(uri);
+	}
+	if (post_data)
+	{
+		web_free(post_data);
+	}
+	if (rep_data)
+	{
+		web_free(rep_data);
+	}
+
+	return ret;
+
+    BK_LOGI(TAG,"demo_webclient post case result(%d).\n", ret);
+    return ret;
+}
+
+/**************************HTTP OTA INTERFACE***************************************/
+int bk_webclient_ota_get_comm(bk_webclient_input_t *input)
+{
+    struct webclient_session* session = RT_NULL;
+    unsigned char *buffer = RT_NULL;
+    int ret = 0;
+    int bytes_read, resp_status;
+    int content_length = -1;
+	char *url = RT_NULL;
+
+	url = web_strdup(input->url);
+	if(url == RT_NULL)
+	{
+		BK_LOGE(TAG,"no memory for create get request uri buffer.\n");
+		return BK_ERR_NO_MEM;
+	}
+
+    buffer = (unsigned char *) web_malloc(input->rx_buffer_size);
+    if (buffer == RT_NULL)
+    {
+        BK_LOGE(TAG,"no memory for receive buffer.\n");
+        ret = BK_ERR_NO_MEM;
+        goto __exit;
+
+    }
+
+    /* create webclient session and set header response size */
+    session = webclient_session_create(input->header_size);
+    if (session == RT_NULL)
+    {
+        ret = BK_ERR_NO_MEM;
+        goto __exit;
+    }
+
+    /* send GET request by default header */
+    if ((resp_status = webclient_get(session, url)) != 200)
+    {
+        BK_LOGE(TAG,"webclient GET request failed, response(%d) error.\n", resp_status);
+        ret = BK_ERR_STATE;
+        goto __exit;
+    }
+
+    BK_LOGI(TAG,"webclient get response data: \n");
+
+    content_length = webclient_content_length_get(session);
+    if (content_length < 0)
+    {
+        BK_LOGI(TAG,"webclient GET request type is chunked.\n");
+        do
+        {
+            bytes_read = webclient_read(session, (void *)buffer, input->rx_buffer_size);
+            if (bytes_read <= 0)
+            {
+                break;
+            }
+
+        } while (1);
+
+        BK_LOGI(TAG,"\n");
+    }
+    else
+    {
+        int content_pos = 0;
+
+        do
+        {
+            bytes_read = webclient_read(session, (void *)buffer,
+                    content_length - content_pos > input->rx_buffer_size ?
+                            input->rx_buffer_size : content_length - content_pos);
+            if (bytes_read <= 0)
+            {
+                break;
+            }
+          	bk_webclient_dispatch_event(input, HTTP_EVENT_ON_DATA, buffer, bytes_read);
+            content_pos += bytes_read;
+			BK_LOGI(TAG,"%s bytes_read:%d content_pos:%d\n", __func__, bytes_read, content_pos);
+        } while (content_pos < content_length);
+
+		if (content_pos != content_length) {
+			BK_LOGI(TAG,"%s error! recv:%d content_length:%d\n", __func__, content_pos, content_length);
+			bk_webclient_dispatch_event(input, HTTP_EVENT_ERROR, NULL, 0);
+		 	ret = BK_ERR_STATE;
+		}
+		else
+			bk_webclient_dispatch_event(input, HTTP_EVENT_ON_FINISH, NULL, 0);
+    }
+
+__exit:
+    if (session)
+    {
+        webclient_close(session);
+    }
+
+    if (buffer)
+    {
+        web_free(buffer);
+    }
+
+    if (url)
+    {
+        web_free(url);
+    }
+
+    return ret;
+}
+
+/**************************OTA DEMO***************************************/
+bk_err_t demo_webclient_ota_event_cb(bk_webclient_event_t *evt)
+{
+    if(!evt)
+    {
+        return BK_FAIL;
+    }
+
+    switch (evt->event_id) {
+    case HTTP_EVENT_ERROR:
+	BK_LOGD(TAG, "HTTPS_EVENT_ERROR\r\n");
+	break;
+    case HTTP_EVENT_ON_CONNECTED:
+	BK_LOGD(TAG, "HTTPS_EVENT_ON_CONNECTED\r\n");
+	break;
+    case HTTP_EVENT_HEADERS_SENT:
+	BK_LOGD(TAG, "HTTPS_EVENT_HEADER_SENT\r\n");
+	break;
+    case HTTP_EVENT_ON_HEADER:
+	BK_LOGD(TAG, "HTTPS_EVENT_ON_HEADER\r\n");
+	break;
+    case HTTP_EVENT_ON_DATA:
+	//do something: evt->data, evt->data_len
+	BK_LOGD(TAG, "HTTP_EVENT_ON_DATA, length:%d\r\n", evt->data_len);
+	break;
+    case HTTP_EVENT_ON_FINISH:
+	BK_LOGD(TAG, "HTTPS_EVENT_ON_FINISH\r\n");
+	break;
+    case HTTP_EVENT_DISCONNECTED:
+	BK_LOGD(TAG, "HTTPS_EVENT_DISCONNECTED\r\n");
+	break;
+
+    }
+    return BK_OK;
+}
+
+int demo_webclient_ota_get(char *webclient_url)
+{
+	int err;
+
+	if(!webclient_url)
+	{
+		err = BK_FAIL;
+		BK_LOGD(TAG, "url is NULL\r\n");
+
+		return err;
+	}
+	bk_webclient_input_t config = {
+	    .url = webclient_url,
+	    .event_handler = demo_webclient_ota_event_cb,
+	    .header_size = 1024*2,
+	    .rx_buffer_size = 1024*4
+	};
+
+	err = bk_webclient_ota_get_comm(&config);
+	if(err == BK_OK){
+		BK_LOGD(TAG, "webclient_ota_get_comm ok\r\n");
+        bk_reboot();
+	}
+	else{
+		BK_LOGD(TAG, "webclient_ota_get_comm fail, err:%x\r\n", err);
+	}
+
+	return err;
+}
 
 #if 1
-#define RCV_BUF_SIZE                1024*2
+#define RCV_BUF_SIZE                1024*3
 #define SEND_HEADER_SIZE              1024
 int test_http_post_case1(void)
 {

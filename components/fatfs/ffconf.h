@@ -2,6 +2,15 @@
 /  FatFs - Configuration file
 /---------------------------------------------------------------------------*/
 
+#include "sdkconfig.h"
+#if CONFIG_FREERTOS
+#include "FreeRTOSConfig.h"
+#include "FreeRTOS.h"
+#include "queue.h"
+#include "semphr.h"
+#endif
+
+
 #define FFCONF_DEF 87030	/* Revision ID */
 /*---------------------------------------------------------------------------/
 / Function Configurations
@@ -233,7 +242,7 @@ This option is used for beken file scan
 /  These options have no effect at read-only configuration (FF_FS_READONLY = 1). */
 
 
-#define FF_FS_LOCK		0
+#define FF_FS_LOCK		8
 /* The option FF_FS_LOCK switches file lock function to control duplicated file open
 /  and illegal operation to open objects. This option must be 0 when FF_FS_READONLY
 /  is 1.
@@ -245,9 +254,13 @@ This option is used for beken file scan
 /      lock control is independent of re-entrancy. */
 
 
-#define FF_FS_REENTRANT	0
+#define FF_FS_REENTRANT	1
 #define FF_FS_TIMEOUT	1000
+#if FF_FS_REENTRANT
+#define FF_SYNC_t		SemaphoreHandle_t
+#else
 #define FF_SYNC_t		HANDLE
+#endif
 /* The option FF_FS_REENTRANT switches the re-entrancy (thread safe) of the FatFs
 /  module itself. Note that regardless of this option, file access to different
 /  volume is always re-entrant and volume control functions, f_mount(), f_mkfs()

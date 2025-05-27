@@ -1,3 +1,6 @@
+#include "os/os.h"
+#include "os/str.h"
+#include "os/mem.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -65,11 +68,11 @@ char *bk_normalize_path(const char *path) {
 		return NULL;
 
 	if (path[0] == '/') {
-		new_path = strdup(path);
+		new_path = os_strdup(path);
 	} else {
 		char *cwd = bk_vfs_refer_cwd();
 		len = strlen(cwd) + strlen(path) + 2;
-		new_path = malloc(len);
+		new_path = os_malloc(len);
 		if (!new_path)
 			return NULL;
 
@@ -77,7 +80,7 @@ char *bk_normalize_path(const char *path) {
 	}
 
 	len = strlen(new_path);
-	if (new_path[len - 1] == '/')	//remove tailing '/'
+	if (len > 1 && new_path[len - 1] == '/')	//remove tailing '/'
 		new_path[len - 1] = '\0';
 
 	return new_path;

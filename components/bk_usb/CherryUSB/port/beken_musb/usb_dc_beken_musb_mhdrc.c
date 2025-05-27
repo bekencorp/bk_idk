@@ -210,8 +210,13 @@ __WEAK void usb_dc_low_level_init(void)
     sys_drv_usb_clock_ctrl(true, NULL);
     sys_drv_int_enable(USB_INTERRUPT_CTRL_BIT);
 
+    sys_drv_psram_ldo_enable(1);
+    sys_drv_usb_analog_phy_en(1, NULL);
     bk_int_isr_register(INT_SRC_USB, USBD_IRQHandler, NULL);
     bk_int_set_priority(INT_SRC_USB, 2);
+
+    REG_USB_USR_708 = 0x0;
+    REG_USB_USR_710 = 0x0;
 
     REG_USB_USR_710 |= (0x1<<15);
     REG_USB_USR_710 |= (0x1<<14);
@@ -233,6 +238,10 @@ __WEAK void usb_dc_low_level_init(void)
 
 __WEAK void usb_dc_low_level_deinit(void)
 {
+    REG_USB_USR_708 = 0x0;
+    REG_USB_USR_710 = 0x0;
+    REG_USB_USR_708 = 0x1;
+
     bk_pm_module_vote_cpu_freq(PM_DEV_ID_USB_1, PM_CPU_FRQ_DEFAULT);
     bk_int_isr_unregister(INT_SRC_USB);
     sys_hal_usb_analog_phy_en(false);
@@ -242,6 +251,9 @@ __WEAK void usb_dc_low_level_deinit(void)
 
 int usb_dc_init(void)
 {
+#if CONFIG_SYS_CPU0
+    bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_USB_1, 0x0, 0x0);
+#endif
     usb_dc_low_level_init();
 
 #ifdef CONFIG_USB_HS
@@ -272,6 +284,9 @@ int usb_dc_init(void)
 int usb_dc_deinit(void)
 {
     usb_dc_low_level_deinit();
+#if CONFIG_SYS_CPU0
+    bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_USB_1, 0x1, 100000000);
+#endif
     return 0;
 }
 

@@ -412,6 +412,7 @@ static int usbh_msc_disconnect(struct usbh_hubport *hport, uint8_t intf)
         memset(msc_class, 0, sizeof(struct usbh_msc));
         usb_free(msc_class);
 
+        media_ready = false;
         if (hport->config.intf[intf].devname[0] != '\0')
             USB_LOG_INFO("Unregister MSC Class:%s\r\n", hport->config.intf[intf].devname);
     }

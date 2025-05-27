@@ -726,7 +726,7 @@ int wpa_supplicant_ctrl_iface_set_network(struct wpa_supplicant *wpa_s, wlan_sta
 		//WPA_LOGI("psk: |%s|\n", config->u.psk);
 		if (config->u.psk[0] != '\0') {
 #if CONFIG_WAPI_SUPPORT
-			if (ssid->key_mgmt==WPA_KEY_MGMT_WAPI_PSK) {
+			if (ssid->key_mgmt && WPA_KEY_MGMT_WAPI_PSK) {
 				if (wpa_s->wapi && wpa_s->wapi->wapi_set_hex_psk) {
 					wpa_s->wapi->wapi_set_hex_psk((const char *)config->u.psk, os_strlen(config->u.psk));
 				}
@@ -773,8 +773,8 @@ int wpa_supplicant_ctrl_iface_set_network(struct wpa_supplicant *wpa_s, wlan_sta
 		//WPA_LOGI("key_mgmt: %d\n", __func__, config->u.key_mgmt);
 		ssid->key_mgmt = config->u.key_mgmt;
 #if CONFIG_WAPI_SUPPORT
-		if (ssid->key_mgmt==WPA_KEY_MGMT_WAPI_PSK
-			|| ssid->key_mgmt==WPA_KEY_MGMT_WAPI_CERT) {
+		if ((ssid->key_mgmt && WPA_KEY_MGMT_WAPI_PSK)
+			|| (ssid->key_mgmt && WPA_KEY_MGMT_WAPI_CERT)) {
 			ssid->proto = WPA_PROTO_WAPI;
 			ssid->pairwise_cipher = WPA_CIPHER_SMS4;
 			ssid->group_cipher = WPA_CIPHER_SMS4;

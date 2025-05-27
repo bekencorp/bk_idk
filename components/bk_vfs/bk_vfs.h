@@ -41,4 +41,9 @@ char *bk_vfs_getcwd(char *buf, size_t size);
 
 char *bk_vfs_refer_cwd(void);	//extra
 
+#if CONFIG_STARBURST_AIDIALOG_SDK
+off_t bk_vfs_ftell(int fd);
+int bk_vfs_feof(int fd);
+#endif
+
 #endif

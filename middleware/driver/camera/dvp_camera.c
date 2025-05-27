@@ -770,12 +770,15 @@ static bk_err_t dvp_camera_deinit(void)
 	bk_i2c_deinit(CONFIG_DVP_CAMERA_I2C_ID);
 
 	// step 3: deinit hardware
+	if (current_sensor)
+	{
 #if (CONFIG_YUV_BUF)
-	bk_yuv_buf_deinit();
-	bk_h264_encode_disable();
-	bk_h264_deinit();
+		bk_yuv_buf_deinit();
+		bk_h264_encode_disable();
+		bk_h264_deinit();
 #endif
-	bk_jpeg_enc_deinit();
+		bk_jpeg_enc_deinit();
+	}
 
 	bk_video_dvp_mclk_disable();
 
@@ -896,10 +899,16 @@ static void dvp_camera_reset_hardware_modules_handler(void)
 
 	if (dvp_camera_config->device->mode == H264_MODE || dvp_camera_config->device->mode == H264_YUV_MODE)
 	{
-		bk_h264_soft_reset();
+		bk_h264_config_reset();
+		bk_video_encode_start(H264_MODE);
 	}
 
 	bk_yuv_buf_soft_reset();
+
+	if (encode_yuv_config)
+	{
+		encode_yuv_config->yuv_data_offset = 0;
+	}
 
 	if (dvp_camera_dma_channel < DMA_ID_MAX)
 	{
@@ -1092,6 +1101,7 @@ static void dvp_camera_jpeg_eof_handler(jpeg_unit_t id, void *param)
 	{
 		curr_encode_frame->length = 0;
 		bk_dma_stop(dvp_camera_dma_channel);
+		dvp_camera_drv->dma_length = 0;
 		bk_dma_start(dvp_camera_dma_channel);
 		DVP_JPEG_EOF_OUT();
 		return;
@@ -1308,9 +1318,9 @@ static void dvp_camera_h264_eof_handler(h264_unit_t id, void *param)
 	if (dvp_camera_drv->dma_length != real_length)
 	{
 		uint32_t left_length = real_length - dvp_camera_drv->dma_length;
-		LOGW("%s size no match:%d-%d=%d\r\n", __func__, real_length, dvp_camera_drv->dma_length, left_length);
 		if (left_length != FRAME_BUFFER_CACHE)
 		{
+			LOGW("%s size no match:%d-%d=%d\r\n", __func__, real_length, dvp_camera_drv->dma_length, left_length);
 			dvp_camera_drv->error = true;
 		}
 	}
@@ -1323,10 +1333,6 @@ static void dvp_camera_h264_eof_handler(h264_unit_t id, void *param)
 		dvp_camera_drv->sps_pps_flag = false;
 		dvp_camera_drv->sequence = 0;
 		dvp_camera_drv->offset = 0;
-		if (dvp_camera_config->device->mode == H264_YUV_MODE)
-		{
-			encode_yuv_config->yuv_data_offset = 0;
-		}
 		DVP_H264_EOF_OUT();
 		return;
 	}
@@ -1414,11 +1420,11 @@ static void dvp_camera_h264_eof_handler(h264_unit_t id, void *param)
 #ifdef CONFIG_H264_ADD_SELF_DEFINE_SEI
 		curr_encode_frame->crc = hnd_crc8(curr_encode_frame->frame, curr_encode_frame->length, 0xFF);
 		curr_encode_frame->length += H264_SELF_DEFINE_SEI_SIZE;
-		os_memcpy(&dvp_camera_drv->sei[23], (uint8_t *)curr_encode_frame->frame, sizeof(frame_buffer_t));
+		os_memcpy(&dvp_camera_drv->sei[23], (uint8_t *)curr_encode_frame, sizeof(frame_buffer_t));
 		os_memcpy(&curr_encode_frame->frame[curr_encode_frame->length - H264_SELF_DEFINE_SEI_SIZE], &dvp_camera_drv->sei[0], H264_SELF_DEFINE_SEI_SIZE);
 #endif
 
-		LOGD("%s, I:%d, p:%d\r\n", __func__, (curr_encode_frame->h264_type & 0x1000020) > 0 ? 1 : 0, (curr_encode_frame->h264_type >> 23) & 0x1);
+		LOGD("%d, I:%d, p:%d\r\n", curr_encode_frame->length, (curr_encode_frame->h264_type & 0x1000020) > 0 ? 1 : 0, (curr_encode_frame->h264_type >> 23) & 0x1);
 
 		new_frame = dvp_camera_config->fb_malloc(FB_INDEX_H264, CONFIG_H264_FRAME_SIZE);
 		if (new_frame)
@@ -1435,6 +1441,7 @@ static void dvp_camera_h264_eof_handler(h264_unit_t id, void *param)
 		curr_encode_frame->length = 0;
 		curr_encode_frame->fmt = dvp_camera_config->device->fmt;
 		curr_encode_frame->type = dvp_camera_config->device->type;
+		curr_encode_frame->h264_type = 0;
 		dvp_camera_drv->offset = 0;
 
 

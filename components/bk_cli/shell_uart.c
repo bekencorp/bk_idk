@@ -482,6 +482,7 @@ static bool_t shell_uart_init(shell_dev_t * shell_dev)
 	if(CONFIG_UART_PRINT_PORT != uart_id)
 	{
 		bk_uart_init(uart_id, &config);
+		bk_uart_isr_set_priority(uart_id, BK_PRINT_UART_ISR_DEFAULT_PRIORITY);
 	}
 	else
 	{

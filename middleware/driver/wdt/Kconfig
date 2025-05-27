@@ -18,5 +18,15 @@ menu "Watchdog"
 	config NMI_WDT_EN
 		bool "Enable NMI Watchdog"
 		default n
+
+	config WDT_TEST
+		depends on INT_WDT && DRIVER_TEST
+		bool "Enable watchdog test"
+		default n
+
+	config WDT_API_TEST
+		depends on INT_WDT && DRIVER_TEST
+		bool "Enable watchdog api test"
+		default n
 endmenu
 

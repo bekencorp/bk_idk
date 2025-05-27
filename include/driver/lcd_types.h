@@ -60,6 +60,7 @@ typedef enum {
 	LCD_DEVICE_SPD2010, /**< 412X412 QSPI  */
 
 	LCD_DEVICE_ST7796U, /**< 320X480 SPI */
+	LCD_DEVICE_GC9D01, /**< 160X160 SPI */
 } lcd_device_id_t;
 
 typedef enum {

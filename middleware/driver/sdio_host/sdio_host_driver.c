@@ -367,6 +367,7 @@ static void sdio_host_deinit_common(void)
 	power_sdio_pwr_down();
 	icu_disable_sdio_interrupt();
 #endif
+	sys_drv_int_disable(SDIO_INTERRUPT_CTRL_BIT);
 }
 
 #if (CONFIG_SDIO_PM_CB_SUPPORT)
@@ -905,6 +906,7 @@ static bk_err_t sdio_host_cpu_write_fifo(const uint8_t *write_data, uint32_t dat
 	uint32_t i = 0;
 
 	while ((index < data_size)) {
+		i = 0;
 		//confirm can write data to fifo(fifo isn't at busy/full status)
 		while((sdio_host_hal_is_tx_fifo_write_ready(hal)) == 0)
 		{
@@ -913,12 +915,15 @@ static bk_err_t sdio_host_cpu_write_fifo(const uint8_t *write_data, uint32_t dat
 				SDIO_HOST_LOGE("FIFO can't write i=0x%08x", i);
 
 			//avoid dead in while
-			if(i == 0x1000000 * 8) {
+			if(i % 0x1000000 == 0) {
 				SDIO_HOST_LOGE("FIFO write fail,the write data is invalid");
 				error_state = BK_ERR_SDIO_HOST_DATA_TIMEOUT;
 				break;
 			}
 		}
+
+		if(error_state)
+			break;
 
 //NOTES:SDIO V1P0:write data should be reverted sequence by software, and read data should revert by ASIC of "SD_BYTE_SEL"
 //or the endian isn't match with windows system.
@@ -967,6 +972,7 @@ static bk_err_t sdio_host_cpu_write_fifo(const uint8_t *write_data, uint32_t dat
 			{
 				s_sdio_host.is_tx_blocked = false;
 				SDIO_HOST_LOGE("TODO:sdio tx data fail:index=%d!\r\n", index);
+				break;
 			}
 		}
 	}

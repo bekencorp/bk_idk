@@ -98,14 +98,32 @@ int mbox0_drv_init(void)
 	}
 
 	mbox0_drv_cfg_fifo(fifo_cfg[SELF_CHNL].start, fifo_cfg[SELF_CHNL].len);
+  
+	/* clear/empty RX FIFO. */
+	while(1)
+	{
+		mbox0_message_t message;
+
+		uint32_t fifo_status = mbox0_dev.chn_drv[SELF_CHNL]->chn_get_rx_fifo_stat(&mbox0_dev.hal);
+		
+		if(fifo_status & RX_FIFO_STAT_NOT_EMPTY)
+		{
+			mbox0_drv_recieve_message(&message);
+		}
+		else
+		{
+			break;
+		}
+	}
 
 	int int_src = INT_SRC_MAILBOX;
 	
 	bk_int_isr_register(int_src, mbox0_drv_isr_handler, NULL);
-
-	mbox0_dev.chn_drv[SELF_CHNL]->chn_int_enable(&mbox0_dev.hal, 1);
 	
+	mbox0_dev.chn_drv[SELF_CHNL]->chn_int_enable(&mbox0_dev.hal, 1);
+  
 	sys_drv_int_group2_enable(1 << (int_src - 32));
+
 
 	mbox0_init = 1;
 

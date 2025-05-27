@@ -966,6 +966,49 @@ static int at_wlan_get_listen_interval(int sync,int argc, char **argv)
 	}
 }
 
+static int at_wlan_get_support_mode(int sync,int argc, char **argv)
+{
+	u8 support_mode = 0;
+
+	if(argc != 0){
+		atsvr_cmd_rsp_error();
+		return -1;
+	}
+
+	if(bk_wifi_get_support_wifi_mode(&support_mode) == BK_OK){
+		BK_LOGI(TAG,"support mode is %d\r\n",support_mode);
+		atsvr_cmd_rsp_ok();
+		return 0;
+	}else{
+		atsvr_cmd_rsp_error();
+		return -1;
+	}
+
+}
+
+static int at_wlan_set_arp_config(int sync,int argc, char **argv)
+{
+	u8 flag = 0;
+	u8 arp_period = 0;
+
+	if(argc == 2){
+		flag = atoi(argv[0]);
+		arp_period = atoi(argv[1]);
+	} else{
+		atsvr_cmd_rsp_error();
+		return -1;
+	}
+
+	if(bk_wifi_set_arp_reply_config(flag, arp_period) == BK_OK){
+		BK_LOGD(TAG,"arp reply config is %d,period %d\r\n",flag,arp_period);
+		atsvr_cmd_rsp_ok();
+		return 0;
+	}else{
+		atsvr_cmd_rsp_error();
+		return -1;
+	}
+}
+
 #include "conv_utf8_pub.h"
 static int at_wlan_softap_start(int sync, int argc, char **argv)
 {
@@ -1351,6 +1394,10 @@ const struct _atsvr_command wifi_cmds_table[] = {
 					false,AT_WLAN_SCAN_TIMEOUT_MS,true,NULL,false),
 	ATSVR_CMD_HADLER("AT+GETINTERVAL","AT+GETINTERVAL",NULL,
 					at_wlan_get_listen_interval,false,0,0,NULL,false),
+	ATSVR_CMD_HADLER("AT+GETMODE","AT+GETMODE",NULL,
+					at_wlan_get_support_mode,false,0,0,NULL,false),
+	ATSVR_CMD_HADLER("AT+SETARP","AT+SETARP=FLAG,PERIOD",NULL,
+					at_wlan_set_arp_config,false,0,0,NULL,false),
 #if CONFIG_SOC_BK723L
 	ATSVR_CMD_HADLER("ATW?","Get Station and SoftAP info",NULL,
 					at_wlan_atw_cmd,false,0,0,NULL,false),

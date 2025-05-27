@@ -13,7 +13,7 @@ mainmenu "Beken Development Configuration"
 				# or modify it in per-project bkxxx.config
 				config TOOLCHAIN_PATH
 				string "Toolchain absolute path"
-				default "/opt/gcc-arm-none-eabi-5_4-2016q3/bin"
+				default "/opt/gcc-arm-none-eabi-10.3-2021.10/bin"
 
 				config TOOLCHAIN_PREFIX
 				string "Toolchain prefix"

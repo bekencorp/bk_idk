@@ -72,7 +72,7 @@ static void fatfs_operate(char *pcWriteBuffer, int xWriteBufferLen, int argc, ch
 			uint32_t start_addr = 0;
 			if(argc >= 5)
 			{
-				start_addr = os_strtoul(argv[4], NULL, 10);
+				start_addr = os_strtoul(argv[4], NULL, 16);
 			}
 			if(argc >= 6)
 			{
@@ -103,6 +103,23 @@ static void fatfs_operate(char *pcWriteBuffer, int xWriteBufferLen, int argc, ch
 			test_fatfs_auto_test(drv_num, file_name, content_len, test_cnt, start_addr);
 			break;
 		}
+
+#if 1
+		//concurrency torage_mem_
+		case 'C':
+		{
+			if(argc < 4)
+			{
+				os_printf("Concurrency Fatfs argc < 4! Please input correctly\r\n");
+				return;
+			}
+
+			test_cnt = os_strtoul(argv[3], NULL, 10);
+			test_fatfs_concurrency(drv_num, test_cnt, 64<<10);
+			break;
+		}
+#endif
+
 		case 'F':
 			test_fatfs_format(drv_num);
 			os_printf("format :%d\r\n", drv_num);

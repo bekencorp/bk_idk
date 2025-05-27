@@ -325,6 +325,35 @@ bk_err_t bk_flash_set_operate_status(flash_op_status_t status);
  */
 __attribute__((section(".itcm_sec_code"))) flash_op_status_t bk_flash_get_operate_status(void);
 
+/**
+ * @brief  register a callback to be called when flash is busy waiting.
+ * @param wait_cb:If flash is writing/erasing, it will block all of other applications.
+ *                But maybe the application can't be blocked when flash is writing/erasing.
+ *                So the application should register this wait_cb to flash.
+ *                When flash is writing/erasing, it will call this wait_cb
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: registered too many(>4) wait_cb to flash.
+ */
+bk_err_t mb_flash_register_op_notify(void * notify_cb);
+
+/**
+ * @brief  unregister the wait_cb from flash waiting.
+ *
+ * @param wait_cb:If flash is writing/erasing, it will block all of other applications.
+ *                But maybe the application can't be blocked when flash is writing/erasing.
+ *                So the application should register this wait_cb to flash.
+ *                When flash is writing/erasing, it will call this wait_cb
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: The wait_cb isn't registered to flash.
+ */
+bk_err_t mb_flash_unregister_op_notify(void * notify_cb);
+
+
+uint32_t flash_get_excute_enable();
 
 #ifdef __cplusplus
 }

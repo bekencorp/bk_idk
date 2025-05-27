@@ -19,7 +19,7 @@ void evm_stop_bypass_mac(void);
 void evm_init_bypass_mac(void);
 
 void rwnx_no_use_tpc_set_pwr(void);
-UINT32 evm_get_auto_tx_len(UINT32 rate, UINT32 modul_format,  UINT32 bandwidth);
+UINT32 evm_get_auto_tx_len(UINT32 rate, UINT32 modul_format, UINT32 bandwidth, UINT32 test_mode);
 
 UINT32 evm_bypass_mac_set_tx_data_length(UINT32 modul_format, UINT32 len, UINT32 rate, UINT32 bandwidth, UINT32 need_change);
 UINT32 evm_bypass_mac_set_rate_mformat(UINT32 ppdu_rate, UINT32 m_format);

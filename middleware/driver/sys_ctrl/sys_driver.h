@@ -440,26 +440,30 @@ uint32_t sys_drv_touch_adc_mode_enable(uint32_t enable);
 
 /**  Touch End **/
 
-/**  jPEG Start **/
-uint32_t sys_drv_mclk_mux_set(uint32_t value);
+/** auxs Start **/
+uint32_t sys_drv_set_auxs_cis(uint32_t cksel, uint32_t ckdiv);
+uint32_t sys_drv_set_cis_auxs_clk_en(uint32_t enable);
+/** auxs End **/
+
+/**  jpeg Start **/
+uint32_t sys_drv_jpeg_power_en(uint32_t enable);
 uint32_t sys_drv_set_jpeg_clk_sel(uint32_t value);
 uint32_t sys_drv_set_clk_div_mode1_clkdiv_jpeg(uint32_t value);
 uint32_t sys_drv_set_jpeg_disckg(uint32_t value);
-uint32_t sys_drv_set_cpu_clk_div_mode1_clkdiv_bus(uint32_t value);
-uint32_t sys_drv_video_power_en(uint32_t value);
-uint32_t sys_drv_set_auxs_cis(uint32_t cksel, uint32_t ckdiv);
 uint32_t sys_drv_set_jpeg_clk_en(uint32_t enable);
-uint32_t sys_drv_set_cis_auxs_clk_en(uint32_t enable);
-
-/**  jPEG End **/
+/**  jpeg End **/
 
 /**  H264 Start **/
+uint32_t sys_drv_h264_power_en(uint32_t enable);
 uint32_t sys_drv_set_h264_clk_sel(uint32_t value);
 uint32_t sys_drv_set_clk_div_mode1_clkdiv_h264(uint32_t value);
-uint32_t sys_drv_set_h264_clk_en();
-uint32_t sys_drv_h264_set_mclk_div(uint32_t value);
-
+uint32_t sys_drv_set_h264_clk_en(uint32_t enable);
 /**  H264 End **/
+
+/**  yuv_buf Start **/
+uint32_t sys_drv_yuv_buf_power_en(uint32_t enable);
+uint32_t sys_drv_set_yuv_buf_clk_en(uint32_t enable);
+/**  yuv_buf End **/
 
 /**  psram Start **/
 uint32_t sys_drv_psram_volstage_sel(uint32_t value);

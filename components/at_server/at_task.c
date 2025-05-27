@@ -700,7 +700,7 @@ static void atsvr_task_init(void)
 
 	#if defined(FWD_CMD_TO_SLAVE) || defined(RECV_CMD_LOG_FROM_SLAVE)
 	ipc_dev->dev_drv->init(ipc_dev);
-	ipc_dev->dev_drv->open(ipc_dev, (shell_ipc_rx_t)atsvr_ipc_rx_indication);   /* register rx-callback to copy log data to buffer. */
+	ipc_dev->dev_drv->open(ipc_dev, (shell_ipc_rx_t)atsvr_ipc_rx_indication, NULL);   /* register rx-callback to copy log data to buffer. */
 	#endif
 
 	atsvr_init_ok = bTRUE;

@@ -1631,10 +1631,10 @@ int cli_netif_event_cb(void *arg, event_module_t event_module,
 			rtos_set_semaphore(&wifi_cmd_sema);
 		}
 		got_ip = (netif_event_got_ip4_t *)event_data;
-		CLI_LOGI("%s got ip\n", got_ip->netif_if == NETIF_IF_STA ? "BK STA" : "unknown netif");
+		CLI_LOGW("%s got ip\n", got_ip->netif_if == NETIF_IF_STA ? "BK STA" : "unknown netif");
 		break;
 	default:
-		CLI_LOGI("rx event <%d %d>\n", event_module, event_id);
+		CLI_LOGW("rx event <%d %d>\n", event_module, event_id);
 		break;
 	}
 
@@ -1653,23 +1653,23 @@ int cli_wifi_event_cb(void *arg, event_module_t event_module,
 	switch (event_id) {
 	case EVENT_WIFI_STA_CONNECTED:
 		sta_connected = (wifi_event_sta_connected_t *)event_data;
-		CLI_LOGI("BK STA connected %s\n", sta_connected->ssid);
+		CLI_LOGW("BK STA connected %s\n", sta_connected->ssid);
 		break;
 
 	case EVENT_WIFI_STA_DISCONNECTED:
 		sta_disconnected = (wifi_event_sta_disconnected_t *)event_data;
-		CLI_LOGI("BK STA disconnected, reason(%d)%s\n", sta_disconnected->disconnect_reason,
+		CLI_LOGW("BK STA disconnected, reason(%d)%s\n", sta_disconnected->disconnect_reason,
 			sta_disconnected->local_generated ? ", local_generated" : "");
 		break;
 
 	case EVENT_WIFI_AP_CONNECTED:
 		ap_connected = (wifi_event_ap_connected_t *)event_data;
-		CLI_LOGI(BK_MAC_FORMAT" connected to BK AP\n", BK_MAC_STR(ap_connected->mac));
+		CLI_LOGW(BK_MAC_FORMAT" connected to BK AP\n", BK_MAC_STR(ap_connected->mac));
 		break;
 
 	case EVENT_WIFI_AP_DISCONNECTED:
 		ap_disconnected = (wifi_event_ap_disconnected_t *)event_data;
-		CLI_LOGI(BK_MAC_FORMAT" disconnected from BK AP\n", BK_MAC_STR(ap_disconnected->mac));
+		CLI_LOGW(BK_MAC_FORMAT" disconnected from BK AP\n", BK_MAC_STR(ap_disconnected->mac));
 		break;
 
 	case EVENT_WIFI_NETWORK_FOUND:
@@ -1678,7 +1678,7 @@ int cli_wifi_event_cb(void *arg, event_module_t event_module,
 		break;
 
 	default:
-		CLI_LOGI("rx event <%d %d>\n", event_module, event_id);
+		CLI_LOGW("rx event <%d %d>\n", event_module, event_id);
 		break;
 	}
 

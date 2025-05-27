@@ -215,6 +215,7 @@ bk_err_t bk_qspi_driver_deinit(void)
 	for (int id = QSPI_ID_0; id < QSPI_ID_MAX; id++) {
 		qspi_id_deinit_common(id);
 	}
+
 	s_qspi_driver_is_init = false;
 
 	return BK_OK;
@@ -224,6 +225,14 @@ bk_err_t bk_qspi_init(qspi_id_t id, const qspi_config_t *config)
 {
 	BK_RETURN_ON_NULL(config);
 	QSPI_RETURN_ON_NOT_INIT();
+
+	if (id == QSPI_ID_0) {
+		bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_AHBP_QSPI, PM_POWER_MODULE_STATE_ON);
+#if (SOC_QSPI_UNIT_NUM > 1)
+	} else if (id == QSPI_ID_1) {
+		bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_AHBP_QSPI1, PM_POWER_MODULE_STATE_ON);
+#endif
+	}
 
 	qspi_id_init_common(id);
 	switch (config->src_clk) {
@@ -247,6 +256,15 @@ bk_err_t bk_qspi_deinit(qspi_id_t id)
 {
 	qspi_id_deinit_common(id);
 	s_qspi[id].id_init_bits &= ~BIT(0);
+
+	if (id == QSPI_ID_0) {
+		bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_AHBP_QSPI, PM_POWER_MODULE_STATE_OFF);
+#if (SOC_QSPI_UNIT_NUM > 1)
+	} else if (id == QSPI_ID_1) {
+		bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_AHBP_QSPI1, PM_POWER_MODULE_STATE_OFF);
+#endif
+	}
+
 	return BK_OK;
 }
 

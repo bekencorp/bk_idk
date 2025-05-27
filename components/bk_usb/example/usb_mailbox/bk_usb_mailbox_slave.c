@@ -801,6 +801,17 @@ usb_mailbox_slave_task_exit:
 
 }
 
+void usb_mailbox_uvc_stop_handle_finish(void)
+{
+	mb_chnl_cmd_t mb_cmd;
+
+	mb_cmd.hdr.cmd = USB_DRV_VIDEO_STOP;
+	mb_cmd.param1 = 0;
+	mb_cmd.param2 = 0;
+	mb_cmd.param3 = 0;
+	task_mb_chnl_write(USB_MAILBOX_CHNL, &mb_cmd);
+}
+
 void bk_usb_mailbox_sw_slave_init(void)
 {
 	uint32_t ret = 0;

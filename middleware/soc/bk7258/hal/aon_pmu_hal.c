@@ -117,13 +117,12 @@ uint32_t aon_pmu_hal_reg_get(pmu_reg_e reg)
 	return REG_READ(pmu_reg_addr);
 }
 
-#define AON_PMU_REG2_WDT_RST_DEVS (0x1FE)
 void aon_pmu_hal_wdt_rst_dev_enable()
 {
 	uint32_t aon_pmu_r2 = 0;
 	aon_pmu_r2 = aon_pmu_ll_get_r2();
-	aon_pmu_r2 &= ~0x1ff;
-	aon_pmu_r2 |= AON_PMU_REG2_WDT_RST_DEVS;
+	aon_pmu_r2 &= ~0x3f;
+	aon_pmu_r2 |= 0x26;
 
 	aon_pmu_ll_set_r2(aon_pmu_r2);
 }

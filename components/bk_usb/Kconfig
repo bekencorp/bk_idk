@@ -107,8 +107,16 @@ menu "Bk_usb"
 		config USB_MSD
 			bool "Enable Usb Msd"
 			default n
+			help
+				Udisk Host specific macro switch,unable to coexist with Device
 
-        config USB_UPC
+		config USBD_MSC
+			bool "Enable USBD MSC"
+			default n
+			help
+				Udisk Device specific macro switch,unable to coexist with Host
+
+		config USB_UPC
             bool "Enable Usb Upc"
             default n
 
@@ -116,8 +124,8 @@ menu "Bk_usb"
 			bool "Enable Usb Hid"
 			default n
 
-		config USB_CCD
-			bool "Enable Usb Ccd"
+		config USB_CDC
+			bool "Enable Usb Cdc"
 			default n
 
 		config USB_UVC
@@ -196,5 +204,11 @@ menu "Bk_usb"
         range 1 2
         default 1 if !STANDARD_DUALSTREAM
         default 2 if STANDARD_DUALSTREAM
+
+    config USB_CDC_ACM_DEMO
+        bool "Enable device usb cdc demo"
+        help
+            This macro needs to be opened on cp0 and cp1 when USB in cp1.
+        default n
 
 endmenu

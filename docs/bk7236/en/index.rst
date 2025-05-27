@@ -19,5 +19,6 @@ This is the documentation for Beken Armino IDK(IoT Development Kit) Framework.
     Projects and Examples <projects/projects>
     Demos via CLI <examples/index>
     Development and Contribution Process <process/index>
+    Document Center <https://docs.bekencorp.com/>
 
 * :ref:`genindex`

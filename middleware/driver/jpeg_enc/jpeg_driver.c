@@ -62,41 +62,43 @@ static void jpeg_isr(void);
 
 static void jpeg_init_common(const jpeg_config_t *config)
 {
-	/*
-	* 1) set jpeg_clk, mclk and bus clk always on for bk7256
-	* 2) enable power of jpeg
-	* 3) enable jpeg ststem interrupt
-	* 4) enable dvp io of clk(mclk/pclk, may be use auxs_clk as mclk, need attenation)
-	*/
-	bk_pm_clock_ctrl(PM_CLK_ID_JPEG, CLK_PWR_CTRL_PWR_UP); // clk enable
+	// jpeg power enable
+	//sys_drv_jpeg_power_en(1);
+	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_VIDP_JPEG_EN, PM_POWER_MODULE_STATE_ON);
+	// jpeg clk enable
+	sys_drv_set_jpeg_clk_en(1);
+	// jpeg_sys_int enable
 	sys_drv_int_enable(JPEGENC_INTERRUPT_CTRL_BIT); // jpeg_sys_int enable
 	// bus clk always on
 	sys_drv_set_jpeg_disckg(1);
-
+	// init jpeg
 	jpeg_hal_set_global_ctrl(&s_jpeg.hal);
 }
 
 static void jpeg_deinit_common(void)
 {
-	/*
-	* 1) stop jpeg encode mode
-	* 2) stop jpeg yuv mode only for bk7256
-	* 3) close all jpeg enable interrupt
-	* 4) power off jpeg clk
-	* 5) power off auxs clk if mclk from auxs
-	* 6) bus clk enable on module of jpeg enable only for bk7256
-	* 7) close jpeg interrupt of system
-	* 8) unmap all dvp io
-	*/
+	// jpeg stop
 	jpeg_hal_stop_common(&s_jpeg.hal, JPEG_MODE);
 #if (!CONFIG_SOC_BK7236XX)
 	jpeg_hal_stop_common(&s_jpeg.hal, YUV_MODE);
 #endif
+
+	// jpeg soft_reset
+	jpeg_hal_soft_reset(&s_jpeg.hal);
+	// jpeg int clear
 	jpeg_hal_reset_config_to_default(&s_jpeg.hal);
-	bk_pm_clock_ctrl(PM_CLK_ID_JPEG, CLK_PWR_CTRL_PWR_DOWN);
-	bk_pm_clock_ctrl(PM_CLK_ID_AUXS, CLK_PWR_CTRL_PWR_DOWN);
+	// jpeg clk diable
+	sys_drv_set_jpeg_clk_en(0);
+	// auxs clk disable
+	sys_drv_set_cis_auxs_clk_en(0);
+	// bus clk disable
 	sys_drv_set_jpeg_disckg(0);
+	// jpeg_sys_int disable
 	sys_drv_int_disable(JPEGENC_INTERRUPT_CTRL_BIT);
+	// jpeg power disable
+	//sys_drv_jpeg_power_en(0);
+	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_VIDP_JPEG_EN, PM_POWER_MODULE_STATE_OFF);
+	// unregister isr
 	for (uint8_t i = 0; i < JPEG_ISR_MAX; i++)
 	{
 		bk_jpeg_enc_unregister_isr(i);
@@ -138,8 +140,6 @@ bk_err_t bk_jpeg_enc_init(const jpeg_config_t *config)
 
 	// set cpu frequent to 320M
 	bk_pm_module_vote_cpu_freq(PM_DEV_ID_JPEG, PM_CPU_FRQ_320M);
-	//power on
-	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_VIDP_JPEG_EN, PM_POWER_MODULE_STATE_ON);
 
 	jpeg_init_common(config);
 
@@ -156,8 +156,6 @@ bk_err_t bk_jpeg_enc_deinit(void)
 
 	// set cpu frequent to default value
 	bk_pm_module_vote_cpu_freq(PM_DEV_ID_JPEG, PM_CPU_FRQ_DEFAULT);
-	// power off
-	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_VIDP_JPEG_EN, PM_POWER_MODULE_STATE_OFF);
 
 	return BK_OK;
 }

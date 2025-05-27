@@ -1,0 +1,4 @@
+Field,Value
+secureboot_en,FALSE
+flash_aes_type,FIXED
+flash_aes_key,73c7bf397f2ad6bf4e7403a7b965dc5ce0645df039c2d69c814ffb403183fb18

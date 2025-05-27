@@ -600,13 +600,17 @@ bk_err_t bk_set_base_mac(const uint8_t *mac)
 
 #if (CONFIG_BASE_MAC_FROM_EFUSE)
 	ret = write_base_mac_to_efuse(mac);
+	ret = read_base_mac_from_efuse(s_base_mac);
 #elif (CONFIG_NEW_MAC_POLICY)
 	ret = save_net_info(WIFI_MAC_ITEM, s_base_mac, NULL, NULL);
 	ret = sync_mac_record();
+	ret = get_net_info(WIFI_MAC_ITEM, s_base_mac, NULL, NULL);
 #elif (CONFIG_BASE_MAC_FROM_RF_OTP_FLASH)
 	ret = write_base_mac_to_rf_otp_flash(s_base_mac);
+	ret = read_base_mac_from_rf_otp_flash(s_base_mac);
 #elif (CONFIG_BASE_MAC_FROM_OTP1)
 	ret = write_base_mac_to_otp1(s_base_mac);
+	ret = read_base_mac_to_otp1(s_base_mac);
 #endif
 
 	if (ret != BK_OK)

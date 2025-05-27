@@ -29,6 +29,10 @@ else()
 	endif()
 endif()
 
+if (EXISTS ${ARMINO_PATH}/components/bk_libs/${ARMINO_SOC}/libs/libbk_phy_info.a)
+set(phy_elem ${phy_elem} libbk_phy_info.a)
+endif()
+
 foreach(lib_name ${phy_elem})
 	add_prebuilt_library(${lib_name} "${ARMINO_PATH}/components/bk_libs/${ARMINO_SOC}/libs/${lib_name}")
 	target_link_libraries(${COMPONENT_LIB} INTERFACE ${lib_name})

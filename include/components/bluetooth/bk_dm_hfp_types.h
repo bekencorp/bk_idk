@@ -395,6 +395,7 @@ typedef struct{
         {
             bk_hf_at_response_code_t code;          /*!< AT response code */
             bk_hf_cme_err_t cme;                    /*!< Extended Audio Gateway Error Result Code */
+            uint16_t asso_cmd;
         } at_response;                               /*!< HF callback param of BK_HF_CLIENT_AT_RESPONSE_EVT */
 
         /**

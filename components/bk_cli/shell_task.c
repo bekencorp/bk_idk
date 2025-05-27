@@ -6,6 +6,7 @@
 #include "cli.h"
 #include <os/os.h>
 #include <common/bk_compiler.h>
+#include <components/shell_task.h>
 #include "shell_drv.h"
 #include <components/ate.h>
 #include <modules/pm.h>
@@ -42,11 +43,15 @@
 #if defined(FWD_CMD_TO_MBOX)
 #define MBOX_RSP_BLK_ID			0
 #define MBOX_IND_BLK_ID			1
+#define MBOX_COMMON_BLK_ID		2
 
 #define MBOX_FWD_PEND_NUM		2    /* (1 Rsp + 1 Ind) */
 #else
 #define MBOX_FWD_PEND_NUM		0
 #endif
+
+#define SHELL_LOG_BLOCK_TIME  (10)
+#define SHELL_LOG_FWD_WAIT_TIME  (1)
 
 #define SHELL_WAIT_OUT_TIME		(2000) 		// 2s.
 
@@ -56,6 +61,9 @@
 #define SHELL_EVENT_TX_REQ  	0x01
 #define SHELL_EVENT_RX_IND  	0x02
 #define SHELL_EVENT_WAKEUP      0x04
+#define SHELL_EVENT_DYM_FREE    0x08
+#define SHELL_EVENT_MB_LOG      0x10
+#define SHELL_EVENT_MB_FWD      0x20
 
 #define SHELL_LOG_BUF1_LEN      136
 #define SHELL_LOG_BUF2_LEN      80
@@ -65,6 +73,7 @@
 #define SHELL_LOG_BUF1_NUM      2
 #define SHELL_LOG_BUF2_NUM      4
 #define SHELL_LOG_BUF3_NUM      8
+#define SHELL_DYM_LOG_NUM_MAX   50
 #endif   //  (LOG_DEV == DEV_MAILBOX)
 
 #if (LOG_DEV == DEV_UART)
@@ -72,21 +81,24 @@
 #define SHELL_LOG_BUF1_NUM      4
 #define SHELL_LOG_BUF2_NUM      16
 #define SHELL_LOG_BUF3_NUM      32
+#define SHELL_DYM_LOG_NUM_MAX   50
 #else
 #if !CONFIG_UART_RING_BUFF
 #define SHELL_LOG_BUF1_NUM      8
 #define SHELL_LOG_BUF2_NUM      40
 #define SHELL_LOG_BUF3_NUM      60
+#define SHELL_DYM_LOG_NUM_MAX   100
 #else
 #define SHELL_LOG_BUF1_NUM      8
 #define SHELL_LOG_BUF2_NUM      30
 #define SHELL_LOG_BUF3_NUM      50
+#define SHELL_DYM_LOG_NUM_MAX   100
 #endif
 #endif
 #endif   // (LOG_DEV == DEV_UART)
 
 #define SHELL_LOG_BUF_NUM       (SHELL_LOG_BUF1_NUM + SHELL_LOG_BUF2_NUM + SHELL_LOG_BUF3_NUM)
-#define SHELL_LOG_PEND_NUM      (SHELL_LOG_BUF_NUM * 2 + 4 + MBOX_FWD_PEND_NUM)
+#define SHELL_LOG_PEND_NUM      (SHELL_LOG_BUF_NUM * 2 + 4 + MBOX_FWD_PEND_NUM + SHELL_DYM_LOG_NUM_MAX)
 /* the worst case may be (one log + one hint) in pending queue, so twice the log_num for pending queue.*/
 /* 1: RSP, 1: reserved(queue empty), 1: cmd ovf, 1: ind). */
 /* MBOX_FWD_PEND_NUM (1 Rsp + 1 Ind) every slave core. */
@@ -112,8 +124,12 @@
 #define SHELL_FWD_QUEUE_ID      (8)
 #define SHELL_ROM_QUEUE_ID		(9)
 #define SHELL_IND_QUEUE_ID		(10)
+#define SHELL_DYM_QUEUE_ID		(11)
 
 #define TBL_SIZE(tbl)		(sizeof(tbl) / sizeof(tbl[0]))
+
+#define LOG_BLOCK_MASK    LOG_STATIC_BLOCK_MODE
+#define LOG_MALLOC_MASK   LOG_NONBLOCK_MODE
 
 typedef struct
 {
@@ -160,6 +176,11 @@ typedef struct
 	/* patch for AT cmd handling. */
 	u8     cmd_ind_buff[SHELL_IND_BUF_LEN];
 	beken_semaphore_t   ind_buf_semaphore;
+
+	/* cmd FWD */
+    #if defined(FWD_CMD_TO_MBOX)
+    beken_semaphore_t   cmd_fwd_semaphore;
+    #endif
 } cmd_line_t;
 
 #define GET_BLOCK_ID(blocktag)          ((blocktag) & 0x7FF)
@@ -199,6 +220,31 @@ typedef struct
 	u32     ovf_cnt;
 } free_queue_t;
 
+typedef struct dynamic_log_node_t dynamic_log_node;
+struct dynamic_log_node_t
+{
+	dynamic_log_node *next;
+	u32 len;
+	u8 ptr[0];
+};
+
+#define LOG_MALLOC os_malloc
+#define LOG_FREE os_free
+
+static dynamic_log_node s_dynamic_header = {NULL};
+static dynamic_log_node *s_to_free_list = NULL;
+static dynamic_log_node *s_curr_node = NULL;
+static dynamic_log_node *s_dym_tail_node = &s_dynamic_header;
+
+static int s_block_mode = LOG_COMMON_MODE;
+
+static u16 s_dynamic_log_num = 0;   // dynamic log in send queue
+static u16 s_dynamic_log_total_len = 0;  // total consumption of dynamic log memory
+static u16 s_dynamic_log_num_in_mem = 0;  // number of dynamic log in memory, including no free log.
+static u16 s_dynamic_log_mem_max = 0;  // maximum of consumption
+
+#define DYM_NODE_SIZE (sizeof(dynamic_log_node))
+
 #if (CONFIG_CACHE_ENABLE) && (CONFIG_LV_USE_DEMO_METER)
 #define  SHELL_DECLARE_MEMORY_ATTR __attribute__((section(".sram_cache")))
 #elif CONFIG_SOC_BK7258 && CONFIG_SYS_PRINT_DEV_UART
@@ -207,6 +253,7 @@ typedef struct
 #define  SHELL_DECLARE_MEMORY_ATTR 
 #endif
 
+beken_semaphore_t   log_buf_semaphore = NULL;
 
 static SHELL_DECLARE_MEMORY_ATTR u8    shell_log_buff1[SHELL_LOG_BUF1_NUM * SHELL_LOG_BUF1_LEN];
 static SHELL_DECLARE_MEMORY_ATTR u8    shell_log_buff2[SHELL_LOG_BUF2_NUM * SHELL_LOG_BUF2_LEN];
@@ -275,15 +322,21 @@ typedef struct
 {
 	log_cmd_t	rsp_buf;
 	log_cmd_t   ind_buf;
+	log_cmd_t   common_log_buf;
 } fwd_slave_data_t;
 
+static u8 s_fwd_status = 0;
+
 static fwd_slave_data_t  ipc_fwd_data;
+
+mb_chnl_cmd_t	s_mb_cmd_buf;
 
 static shell_dev_ipc_t * ipc_dev = &shell_dev_ipc;
 
 static int result_fwd(int blk_id);
 static u32 shell_ipc_rx_indication(u16 cmd, log_cmd_t *data, u16 cpu_id);
-
+static void shell_ipc_tx_complete(u16 cmd);
+static void set_fwd_state(int blk_id);
 #endif
 
 static const char	 shell_cmd_ovf_str[] = "\r\n!!some CMDs lost!!\r\n";
@@ -291,6 +344,7 @@ static const u16     shell_cmd_ovf_str_len = sizeof(shell_cmd_ovf_str) - 1;
 static const char  * shell_prompt_str[2] = {"\r\n$", "\r\n#"};
 static u8            prompt_str_idx = 0;
 static u8            cmd_rx_init_ok = 0;
+static u8            log_handle_init_ok = 0;
 
 static u8     fault_hint_print = 0;
 static u32    shell_log_overflow = 0;
@@ -313,6 +367,20 @@ static u8     shell_log_req_cpu = 0;
 #include "spinlock.h"
 static volatile spinlock_t shell_spin_lock = SPIN_LOCK_INIT;
 #endif // CONFIG_FREERTOS_SMP
+
+
+static dynamic_log_node *dynamic_list_pop_front(void);
+static void free_list_push_front(dynamic_log_node *dym_node);
+static void check_and_free_dynamic_node(void);
+static u8 *alloc_dynamic_log_blk(u16 log_len, u16 *blk_tag);
+static void dynamic_list_push_back(dynamic_log_node *dym_node);
+static u8 * alloc_buffer(int block_mode, u16 *blk_tag, u16 buf_len);
+static inline void dynamic_list_push_back_by_buffer(u8 *packet_buf);
+static int shell_log_raw_data_internel(bool hint, const u8 *data, u16 data_len);
+static void output_insert_log(u16 buf_len, char *prefix, const char *format, va_list ap);
+static void output_insert_data(const u8 *data, u16 data_len);
+static dynamic_log_node *dynamic_list_switch(void);
+static void log_handle_task( void *para );
 
 static inline uint32_t shell_task_enter_critical()
 {
@@ -337,6 +405,7 @@ static inline void shell_task_exit_critical(uint32_t flags)
 #if 1
 
 static os_ext_event_t   shell_task_event;
+static os_ext_event_t   shell_log_event;
 
 static bool_t create_shell_event(void)
 {
@@ -347,23 +416,25 @@ static bool_t create_shell_event(void)
 }
 
 /* this API may be called from ISR. */
-static bool_t set_shell_event(u32 event_flag)
+static bool_t set_shell_event(os_ext_event_t *ext_event, u32 event_flag)
 {
+	BK_ASSERT(ext_event != NULL);
 	u32  int_mask;
 
 	int_mask = shell_task_enter_critical();
 
-	shell_task_event.event_flag |= event_flag;
+	ext_event->event_flag |= event_flag;
 
 	shell_task_exit_critical(int_mask);
 
-	rtos_set_semaphore(&shell_task_event.event_semaphore);
+	rtos_set_semaphore(&ext_event->event_semaphore);
 
 	return bTRUE;
 }
 
-static u32 wait_any_event(u32 timeout)
+static u32 wait_any_event(os_ext_event_t *ext_event, u32 timeout)
 {
+	BK_ASSERT(ext_event != NULL);
 	u32  int_mask;
 	u32  event_flag;
 
@@ -373,8 +444,8 @@ static u32 wait_any_event(u32 timeout)
 	{
 		int_mask = shell_task_enter_critical();
 
-		event_flag = shell_task_event.event_flag;
-		shell_task_event.event_flag = 0;
+		event_flag = ext_event->event_flag;
+		ext_event->event_flag = 0;
 
 		shell_task_exit_critical(int_mask);
 
@@ -384,7 +455,7 @@ static u32 wait_any_event(u32 timeout)
 		}
 		else
 		{
-			result = rtos_get_semaphore(&shell_task_event.event_semaphore, timeout);
+			result = rtos_get_semaphore(&ext_event->event_semaphore, timeout);
 
 			if(result == kTimeoutErr)
 				return 0;
@@ -684,8 +755,12 @@ static int cmd_tx_complete(u8 *pbuf, u16 buf_tag)
 
 	if( queue_id == SHELL_FWD_QUEUE_ID )    /* slave buffer. */
 	{
-		#if defined(FWD_CMD_TO_MBOX)
-		result_fwd(blk_id);
+		#if defined(RECV_CMD_LOG_FROM_MBOX)
+		if (log_handle_init_ok) {
+			set_fwd_state(blk_id);
+		} else {
+			result_fwd(blk_id);
+		}
 		return 1;
 		#endif
 	}
@@ -761,9 +836,20 @@ static int log_tx_complete(u8 *pbuf, u16 buf_tag)
 		/* free buffer to queue. */
 		free_log_blk(block_tag);
 
+		if (log_buf_semaphore != NULL) {
+			rtos_set_semaphore(&log_buf_semaphore);
+		}
+
 		return 1;
 	}
 
+	if (queue_id == SHELL_DYM_QUEUE_ID) {
+		dynamic_log_node *node = dynamic_list_pop_front();
+		free_list_push_front(node);
+		if (log_buf_semaphore != NULL)
+			set_shell_event(&shell_log_event, SHELL_EVENT_DYM_FREE);
+		return 1;
+	}
 	return 0;
 }
 
@@ -819,7 +905,7 @@ static void shell_tx_complete(u8 *pbuf, u16 buf_tag)
 /* call from RX ISR. */
 static void shell_rx_indicate(void)
 {
-	set_shell_event(SHELL_EVENT_RX_IND);
+	set_shell_event(&shell_task_event, SHELL_EVENT_RX_IND);
 
 	return;
 }
@@ -1024,6 +1110,11 @@ static void tx_req_process(void)
 				/*		  FAULT !!!!	  */
 				shell_assert_out(bTRUE, "xFATAL: in Tx_req id=%x\r\n", blk_id);
 		}
+	}
+	else if (queue_id == SHELL_DYM_QUEUE_ID) 
+	{
+		dynamic_log_node *node = dynamic_list_switch();
+		packet_buf = node->ptr;
 	}
 	#if defined(FWD_CMD_TO_MBOX)
 	else if(queue_id == SHELL_FWD_QUEUE_ID)
@@ -1331,7 +1422,7 @@ static void rx_ind_process(void)
 	}
 	else  /* cmd pends in buffer, handle it in new loop cycle. */
 	{
-		set_shell_event(SHELL_EVENT_RX_IND);
+		set_shell_event(&shell_task_event, SHELL_EVENT_RX_IND);
 	}
 
 	/* can re-use *buf_len*. */
@@ -1402,21 +1493,6 @@ extern gpio_id_t bk_uart_get_rx_gpio(uart_id_t id);
 
 static void shell_rx_wakeup(int gpio_id);
 
-static void shell_enter_deep_sleep(uint64_t sleep_time, void *args)
-{
-	uart_wait_tx_over();
-
-	if(log_tx_init_ok)
-	{
-		log_dev->dev_drv->io_ctrl(log_dev, SHELL_IO_CTRL_TX_SUSPEND, (void *)(u32)log_flush_enabled);
-	}
-
-	if(cmd_rx_init_ok)
-	{
-		cmd_dev->dev_drv->io_ctrl(cmd_dev, SHELL_IO_CTRL_RX_SUSPEND, NULL);
-	}
-}
-
 static void shell_power_save_enter(void)
 {
 	if(log_tx_init_ok)
@@ -1466,7 +1542,7 @@ static void wakeup_process(void)
 static void shell_rx_wakeup(int gpio_id)
 {
 	wakeup_process();
-	set_shell_event(SHELL_EVENT_WAKEUP);
+	set_shell_event(&shell_task_event, SHELL_EVENT_WAKEUP);
 
 	shell_log_raw_data((const u8*)"wakeup\r\n", sizeof("wakeup\r\n") - 1);
 
@@ -1474,6 +1550,22 @@ static void shell_rx_wakeup(int gpio_id)
 	{
 		bk_gpio_register_isr(gpio_id, NULL);
 	}
+}
+
+// if use psram as dynamic log memory, first malloc will init psram.
+// in the process of psram-initialization, will output some logs.
+// in the case, logs psram-init can not use dynamic logs.
+// so, initialization psram in advace will prevent logs discard at startup.
+static void dynamic_log_init(void)
+{
+#if CONFIG_PSRAM_AS_SYS_MEMORY
+	bool bk_psram_heap_init_flag_get();
+	if (bk_psram_heap_init_flag_get() == bFALSE) {
+		void *ptr = LOG_MALLOC(0);
+		if (ptr != NULL)
+			LOG_FREE(ptr);
+	}
+#endif
 }
 
 static void shell_log_tx_init(void)
@@ -1506,7 +1598,7 @@ static void shell_log_tx_init(void)
 
 	#if defined(FWD_CMD_TO_MBOX) || defined(RECV_CMD_LOG_FROM_MBOX)
 	ipc_dev->dev_drv->init(ipc_dev);
-	ipc_dev->dev_drv->open(ipc_dev, (shell_ipc_rx_t)shell_ipc_rx_indication);   /* register rx-callback to copy log data to buffer. */
+	ipc_dev->dev_drv->open(ipc_dev, (shell_ipc_rx_t)shell_ipc_rx_indication, (shell_ipc_tx_complete_t)shell_ipc_tx_complete);   /* register rx-callback to copy log data to buffer. */
 	#endif
 
 	log_tx_init_ok = 1;
@@ -1537,7 +1629,35 @@ static void shell_log_tx_init(void)
 		bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, pm_uart_port, &enter_config, &exit_config);
 	}
 
+	dynamic_log_init();
 }
+
+#define LOG_HANDLE_TASK_STACK 0x200
+beken_thread_t log_thread_handle = NULL;
+void create_log_handle_task(void)
+{
+	int ret;
+	shell_log_event.event_flag = 0;
+
+	check_and_free_dynamic_node();
+
+	rtos_init_semaphore(&shell_log_event.event_semaphore, 1);
+
+	rtos_init_semaphore_ex(&log_buf_semaphore, 1, 1);               // semaphore for log block mode.
+
+	ret = rtos_create_thread(&log_thread_handle,
+							 4,
+							 "log_hanlder",
+							 (beken_thread_function_t)log_handle_task,
+							 LOG_HANDLE_TASK_STACK,
+							 0);
+	if (ret != 0) {
+		os_printf("create log handler task fail!\r\n");
+		return;
+	}
+	log_handle_init_ok = 1;
+}
+
 
 static void shell_task_init(void)
 {
@@ -1555,6 +1675,11 @@ static void shell_task_init(void)
 
 	rtos_init_semaphore_ex(&cmd_line_buf.rsp_buf_semaphore, 1, 1);  // one buffer for cmd_rsp.
 	rtos_init_semaphore_ex(&cmd_line_buf.ind_buf_semaphore, 1, 1);  // one buffer for cmd_ind.
+
+	/* cmd fwd */
+	#if defined(FWD_CMD_TO_MBOX)
+    rtos_init_semaphore_ex(&cmd_line_buf.cmd_fwd_semaphore, 1, 0);  // fwd to CPUx
+    #endif
 
 	create_shell_event();
 
@@ -1602,11 +1727,6 @@ static void shell_task_init(void)
 		bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, pm_uart_port, &enter_config, &exit_config);
 
 		shell_rx_wakeup(bk_uart_get_rx_gpio(uart_port));
-
-		enter_config.cb = (pm_cb)shell_enter_deep_sleep;
-		exit_config.args = (void *)PM_CB_PRIORITY_1;
-
-		bk_pm_sleep_register_cb(PM_MODE_DEEP_SLEEP, pm_uart_port, &enter_config, &exit_config);
 	}
 
 	if(ate_is_enabled())
@@ -1614,6 +1734,98 @@ static void shell_task_init(void)
 	else
 		prompt_str_idx = 0;
 
+}
+
+#if defined(RECV_CMD_LOG_FROM_MBOX)
+static void set_fwd_state(int blk_id)
+{
+	u32  int_mask = shell_task_enter_critical();
+	s_fwd_status |= 1 << blk_id;
+	shell_task_exit_critical(int_mask);
+	set_shell_event(&shell_log_event, SHELL_EVENT_MB_FWD);
+}
+
+static int get_fwd_blk_id(void)
+{
+	int blk_id = -1;
+	u32  int_mask = shell_task_enter_critical();
+	for (int i = 0; i < 3; i++) {
+		if (s_fwd_status & (1 << i)) {
+			int mask = ~(1 << i);
+			s_fwd_status &= mask;
+			blk_id = i;
+			break;
+		}
+	}
+	shell_task_exit_critical(int_mask);
+	return blk_id;
+}
+
+#define FORWARD_TRY_COUNT 10
+static void fwd_mb_log_state(void)
+{
+	int ret = 0;
+	int blk_id = get_fwd_blk_id();
+	if (blk_id < 0) {
+		return;
+	}
+	int try_cnt = FORWARD_TRY_COUNT;
+	do {
+		ret = result_fwd(blk_id);
+		try_cnt--;
+		if (ret) {
+			break;
+		}
+		if (try_cnt == 0) {
+			shell_assert_out(1, "Error: forward mb log state fail! blk: %x\r\n", blk_id);
+			break;
+		}
+		rtos_delay_milliseconds(SHELL_LOG_FWD_WAIT_TIME);
+	} while (1);
+}
+
+static void output_mb_log_ex(void)
+{
+	// it will not hint log discarded from cpu1.
+	shell_log_raw_data_internel(1, ipc_fwd_data.common_log_buf.buf, ipc_fwd_data.common_log_buf.len);
+	set_fwd_state(MBOX_COMMON_BLK_ID);
+}
+
+#define INVALID_LOG_TAG 0xFFFF
+void reset_forward_log_status(void)
+{
+	u32  int_mask = shell_task_enter_critical();
+
+	ipc_fwd_data.rsp_buf.tag = INVALID_LOG_TAG;
+	ipc_fwd_data.ind_buf.tag = INVALID_LOG_TAG;
+	ipc_fwd_data.common_log_buf.tag = INVALID_LOG_TAG;
+	
+	shell_task_exit_critical(int_mask);
+}
+#endif
+
+static void log_handle_task( void *para )
+{
+	u32    Events;
+	while(bTRUE)
+	{
+		Events = wait_any_event(&shell_log_event, BEKEN_WAIT_FOREVER);
+		
+		if(Events & SHELL_EVENT_DYM_FREE)
+		{
+			check_and_free_dynamic_node();
+		}
+	#if defined(RECV_CMD_LOG_FROM_MBOX)
+		if(Events & SHELL_EVENT_MB_LOG)
+		{
+			output_mb_log_ex();
+		}
+		if(Events & SHELL_EVENT_MB_FWD)
+		{
+			fwd_mb_log_state();
+		}
+	#endif
+	}
 }
 
 void shell_task( void *para )
@@ -1627,7 +1839,7 @@ void shell_task( void *para )
 
 	while(bTRUE)
 	{
-		Events = wait_any_event(timeout);  // WAIT_EVENT;
+		Events = wait_any_event(&shell_task_event, timeout);  // WAIT_EVENT;
 
 		if(Events & SHELL_EVENT_TX_REQ)
 		{
@@ -1773,10 +1985,10 @@ int shell_log_out_sync(int level, char *prefix, const char *format, va_list ap)
 }
 #endif
 
-int shell_log_raw_data(const u8 *data, u16 data_len)
+static int shell_log_raw_data_internel(bool hint, const u8 *data, u16 data_len)
 {
 	u8   *packet_buf;
-	u16   free_blk_tag;
+	u16   blk_tag;
 
 	if( !log_tx_init_ok )
 	{
@@ -1791,11 +2003,19 @@ int shell_log_raw_data(const u8 *data, u16 data_len)
 		return 0; // bFALSE;
 	}
 
-	packet_buf = alloc_log_blk(data_len, &free_blk_tag);
+	packet_buf = alloc_buffer(s_block_mode, &blk_tag, data_len);
 
 	if (NULL == packet_buf)
 	{
-		log_hint_out();
+		if (hint == 0) 
+			return 0;
+
+		if (s_block_mode & LOG_BLOCK_MASK) {
+			output_insert_data(data, data_len);
+			return 1;
+		}
+		else
+			log_hint_out();
 		return 0; // bFALSE;
 	}
 
@@ -1803,8 +2023,12 @@ int shell_log_raw_data(const u8 *data, u16 data_len)
 
 	u32 int_mask = shell_task_enter_critical();
 
+	if ( GET_QUEUE_ID(blk_tag) == SHELL_DYM_QUEUE_ID ) {
+		dynamic_list_push_back_by_buffer(packet_buf);
+	}
+
 	// push to pending queue.
-	push_pending_queue(free_blk_tag, data_len);
+	push_pending_queue(blk_tag, data_len);
 
 	// notify shell task to process the log tx.
 	tx_req_process();
@@ -1814,11 +2038,96 @@ int shell_log_raw_data(const u8 *data, u16 data_len)
 	return 1; // bTRUE;
 }
 
-static void log_out_ex(const char *format, va_list ap,int data_len_tmp);
-void shell_log_out_port(int level, char *prefix, const char *format, va_list ap)
+int shell_log_raw_data(const u8 *data, u16 data_len)
+{
+	return shell_log_raw_data_internel(1, data, data_len);
+}
+
+static int check_block_mode(int block_mode)
+{
+	block_mode &= s_block_mode;
+	if (rtos_local_irq_disabled() || rtos_is_in_interrupt_context() ||
+		log_buf_semaphore == NULL || rtos_is_scheduler_suspended()) {
+		block_mode &= LOG_NONBLOCK_MODE;
+	}
+	return block_mode & LOG_BLOCK_MASK;
+}
+
+static inline int transfer_line_end(int data_len, char * ptr)
+{
+	if ( (data_len != 0) && (ptr[data_len - 1] == '\n') )
+	{
+		if (data_len == 1 || ptr[data_len - 2] != '\r')
+		{
+			ptr[data_len] = '\n';
+			ptr[data_len - 1] = '\r';
+			(data_len)++;
+		}
+	}
+	return data_len;
+}
+
+static int combine_log_with_prefix(const char *prefix, char *pbuf, int buf_len, const char *format, va_list ap)
+{
+	int log_len = 0;
+	if (prefix != NULL) {
+		strcpy(pbuf, prefix);
+		log_len = strlen(prefix);
+	}
+	log_len += vsnprintf(&pbuf[log_len], buf_len - log_len, format, ap);
+	BK_ASSERT(log_len <= buf_len);
+	if (log_len == buf_len) {
+		log_len = buf_len - 1;
+	}
+	log_len = transfer_line_end(log_len, pbuf);
+	return log_len;
+}
+
+// check whether dynamic log available.
+static inline bool get_dynamic_log_status(int block_mode, u16 buf_len)
+{
+	block_mode &= s_block_mode;
+	return (s_dynamic_log_num < SHELL_DYM_LOG_NUM_MAX) &&
+		   (block_mode & LOG_MALLOC_MASK) &&
+		   (buf_len + s_dynamic_log_total_len <= CONFIG_DYM_LOG_MEM_MAX);
+}
+
+#define LOG_TRY_ALLOC_COUNT 5
+/* alloc log buffer from static memory or dynamic memory */
+static u8 * alloc_buffer(int block_mode, u16 *blk_tag, u16 buf_len)
+{
+	u8 *packet_buf = NULL;
+	int try_cnt = LOG_TRY_ALLOC_COUNT;
+	do {
+		if (buf_len <= SHELL_LOG_BUF1_LEN) {
+			packet_buf = alloc_log_blk(buf_len, blk_tag);
+			if (packet_buf != NULL) {
+				break;
+			}
+		} else {
+			/* while long log is more than static block maximum buffer and cannot use dynamic log, drop it.  */
+			if ((block_mode & LOG_MALLOC_MASK) == 0) {
+				break;
+			}
+		}
+		if (get_dynamic_log_status(block_mode, buf_len)) {
+			packet_buf = alloc_dynamic_log_blk(buf_len, blk_tag);
+			if (packet_buf != NULL) {
+				break;
+			}
+		}
+		if (check_block_mode(block_mode) == 0) {
+			break;
+		}
+		rtos_get_semaphore(&log_buf_semaphore, SHELL_LOG_BLOCK_TIME);
+	} while (try_cnt--);
+	return packet_buf;
+}
+
+void shell_log_out_port(int block_mode, int level, char *prefix, const char *format, va_list ap)
 {
 	u8   * packet_buf;
-	u16    free_blk_tag;
+	u16    blk_tag;
 	u16    log_len = 0, buf_len;
 
 	if( !log_tx_init_ok )
@@ -1839,45 +2148,27 @@ void shell_log_out_port(int level, char *prefix, const char *format, va_list ap)
 	if(buf_len == 0)
 		return;
 
-	packet_buf = alloc_log_blk(buf_len, &free_blk_tag);
+	packet_buf = alloc_buffer(block_mode, &blk_tag, buf_len);
 
 	if(packet_buf == NULL)
 	{
-		#if !CONFIG_EX_DYNAMIC_LOG_BUFF
-		log_hint_out();
-		#else
-		log_out_ex(format, ap,buf_len);
-		#endif
-		return ;
+		if (block_mode & s_block_mode & LOG_BLOCK_MASK)
+			output_insert_log(buf_len, prefix, format, ap);
+		else
+			log_hint_out();
+		return;
 	}
 
-	log_len = 0;
-
-	if(prefix != NULL)
-	{
-		strcpy((char *)&packet_buf[0], prefix);
-		log_len = strlen((char *)packet_buf);
-	}
-
-	log_len += vsnprintf( (char *)&packet_buf[log_len], buf_len - log_len, format, ap );
-
-	if(log_len >= buf_len)
-		log_len = buf_len - 1;
-
-	if ( (log_len != 0) && (packet_buf[log_len - 1] == '\n') )
-	{
-		if ((log_len == 1) || (packet_buf[log_len - 2] != '\r'))
-		{
-			packet_buf[log_len] = '\n';     /* '\n\0' replaced with '\r\n', may not end with '\0'. */
-			packet_buf[log_len - 1] = '\r';
-			log_len++;
-		}
-	}
+	log_len = combine_log_with_prefix(prefix, (char *)&packet_buf[0], buf_len, format, ap);
 
 	u32  int_mask = shell_task_enter_critical();
 
+	if ( GET_QUEUE_ID(blk_tag) == SHELL_DYM_QUEUE_ID ) {
+		dynamic_list_push_back_by_buffer(packet_buf);
+	}
+
 	// push to pending queue.
-	push_pending_queue(free_blk_tag, log_len);
+	push_pending_queue(blk_tag, log_len);
 
 	//set_shell_event(SHELL_EVENT_TX_REQ);  // notify shell task to process the log tx.
 	tx_req_process();
@@ -1887,12 +2178,11 @@ void shell_log_out_port(int level, char *prefix, const char *format, va_list ap)
 	return ;
 }
 
-int shell_assert_out(bool bContinue, char * format, ...)
+static int shell_assert_out_va(bool bContinue, const char * format, va_list arg_list)
 {
 	u32         int_mask;
 	char       *pbuf;
 	u16         data_len, buf_len;
-	va_list     arg_list;
 
 	if( !shell_cpu_check_valid() )
 		return 0;
@@ -1908,11 +2198,7 @@ int shell_assert_out(bool bContinue, char * format, ...)
 	// int_mask = shell_task_enter_critical();
 	int_mask = rtos_disable_int();
 
-	va_start( arg_list, format );
-
 	data_len = vsnprintf( pbuf, buf_len, format, arg_list );
-
-	va_end( arg_list );
 
 	if(data_len >= buf_len)
 		data_len = buf_len - 1;
@@ -1933,6 +2219,16 @@ int shell_assert_out(bool bContinue, char * format, ...)
 
 	return 1;//bTRUE;;
 
+}
+
+int shell_assert_out(bool bContinue, char * format, ...)
+{
+	int ret;
+	va_list     arg_list;
+	va_start( arg_list, format );
+	ret = shell_assert_out_va(bContinue, format, arg_list);
+	va_end( arg_list );
+	return ret;
 }
 
 int shell_assert_raw(bool bContinue, char * data_buff, u16 data_len)
@@ -1990,7 +2286,7 @@ static int cmd_ind_fwd(u8 * ind_msg, u16 msg_len)
 static int result_fwd(int blk_id)
 {
 	log_cmd_t   * log_cmd;
-
+	u32  cmd = MB_CMD_LOG_OUT_OK;
 	if(blk_id == MBOX_RSP_BLK_ID)
 	{
 		log_cmd = &ipc_fwd_data.rsp_buf;
@@ -1999,15 +2295,37 @@ static int result_fwd(int blk_id)
 	{
 		log_cmd = &ipc_fwd_data.ind_buf;
 	}
+	else if(blk_id == MBOX_COMMON_BLK_ID)
+	{
+		log_cmd = &ipc_fwd_data.common_log_buf;
+		cmd = MB_CMD_LOG_UNBLOCK;
+	}
 	else
 	{
 		return 0;
 	}
 
 	log_cmd->hdr.data = 0;
-	log_cmd->hdr.cmd = MB_CMD_LOG_OUT_OK;
+	log_cmd->hdr.cmd = cmd;
+	u32  int_mask = shell_task_enter_critical();
+	if (log_cmd->tag == INVALID_LOG_TAG) {
+		shell_task_exit_critical(int_mask);
+		return 0;
+	}
+	int ret = ipc_dev->dev_drv->write_cmd(ipc_dev, (mb_chnl_cmd_t *)log_cmd);
+	shell_task_exit_critical(int_mask);
+	return ret;
+}
 
-	return ipc_dev->dev_drv->write_cmd(ipc_dev, (mb_chnl_cmd_t *)log_cmd);
+static void shell_ipc_tx_complete(u16 cmd)
+{
+	if (cmd == MB_CMD_LOG_OUT_OK || cmd == MB_CMD_LOG_UNBLOCK) {
+		set_shell_event(&shell_log_event, SHELL_EVENT_MB_FWD);
+	}
+
+	if(cmd == MB_CMD_USER_INPUT) {
+		rtos_set_semaphore(&cmd_line_buf.cmd_fwd_semaphore);
+	}
 }
 
 static u32 shell_ipc_rx_indication(u16 cmd, log_cmd_t *log_cmd, u16 cpu_id)
@@ -2050,10 +2368,18 @@ static u32 shell_ipc_rx_indication(u16 cmd, log_cmd_t *log_cmd, u16 cpu_id)
 		}
 		else  // no cmd_hint from slave, so must be log from slave.
 		{
-			result = shell_log_raw_data(data, data_len);
+			result = shell_log_raw_data_internel(0, data, data_len);
 
-			if(result == 0)
-				result = ACK_STATE_FAIL;
+			if(result == 0) {
+				if (log_handle_init_ok) {
+					// tansfer log output to shell task
+					memcpy(&ipc_fwd_data.common_log_buf, log_cmd, sizeof(ipc_fwd_data.common_log_buf));
+					set_shell_event(&shell_log_event, SHELL_EVENT_MB_LOG);
+					result = ACK_STATE_PENDING | ACK_STATE_BLOCK;
+				} else {
+					result = ACK_STATE_FAIL;
+				}
+			}
 			else
 				result = ACK_STATE_COMPLETE;
 		}
@@ -2082,18 +2408,30 @@ int shell_cmd_forward(char *cmd, u16 cmd_len)
 {
 	mb_chnl_cmd_t	mb_cmd_buf;
 	user_cmd_t * user_cmd = (user_cmd_t *)&mb_cmd_buf;
-
 	user_cmd->hdr.data = 0;
 	user_cmd->hdr.cmd = MB_CMD_USER_INPUT;
 	user_cmd->buf = (u8 *)cmd;
 	user_cmd->len = cmd_len;
-
-	u32  int_mask = shell_task_enter_critical();
-
-	int ret_code = ipc_dev->dev_drv->write_cmd(ipc_dev, &mb_cmd_buf);
-
-	shell_task_exit_critical(int_mask);
-
+	int ret_code = 0;
+	int try_cnt = 0;
+    while(1)
+    {
+	    u32  int_mask = shell_task_enter_critical();
+	    ret_code = ipc_dev->dev_drv->write_cmd(ipc_dev, &mb_cmd_buf);
+	    shell_task_exit_critical(int_mask);
+	    
+	    if(ret_code != 0)
+	        break;
+	        
+	    rtos_delay_milliseconds(10);
+	    try_cnt++;
+	    if(try_cnt < 4)
+	        continue;
+	    else
+	        return 0;
+	}
+	
+	rtos_get_semaphore(&cmd_line_buf.cmd_fwd_semaphore, SHELL_WAIT_OUT_TIME);
 	return ret_code;
 }
 #endif
@@ -2254,80 +2592,137 @@ void shell_set_log_cpu(u8 req_cpu)
 #endif
 }
 
-#if CONFIG_EX_DYNAMIC_LOG_BUFF
-static void log_out_ex(const char *format, va_list ap,int data_len_tmp)
+static void free_list_push_front(dynamic_log_node *dym_node)
 {
-	int   data_len, buf_len = SHELL_IND_BUF_LEN;
-	
-	if (( !cmd_rx_init_ok ) || (rtos_is_in_interrupt_context()))
-	{
-		log_hint_out();
+	if (dym_node == NULL) {
+		BK_ASSERT(0);
 		return;
 	}
-
-	rtos_get_semaphore(&cmd_line_buf.ind_buf_semaphore, SHELL_WAIT_OUT_TIME);
-	
-	if(data_len_tmp < buf_len)
-	{
-		data_len = vsnprintf((char *)&cmd_line_buf.cmd_ind_buff[0], buf_len, format, ap);
-		
-		if ( (data_len != 0) && (cmd_line_buf.cmd_ind_buff[data_len - 1] == '\n') )
-		{
-			if (data_len == 1 || cmd_line_buf.cmd_ind_buff[data_len - 2] != '\r')
-			{
-				cmd_line_buf.cmd_ind_buff[data_len] = '\n';
-				cmd_line_buf.cmd_ind_buff[data_len - 1] = '\r';
-				data_len++;
-			}
-		}
-		
-		cmd_ind_out(cmd_line_buf.cmd_ind_buff, data_len);
-	}
-	else
-	{
-		char *   ptr = (char*)os_malloc(data_len_tmp);
-		int      n = 0;
-
-		if (NULL == ptr)
-		{
-			log_hint_out();
-			return;
-		}
-		
-		data_len = vsnprintf(ptr, data_len_tmp, format, ap);
-		
-		if ( (data_len != 0) && (ptr[data_len - 1] == '\n') )
-		{
-			if (data_len == 1 || ptr[data_len - 2] != '\r')
-			{
-				ptr[data_len] = '\n';
-				ptr[data_len - 1] = '\r';
-				data_len++;
-			}
-		}
-
-		int  cpy_len;
-
-		while(data_len > 0)
-		{
-			if(data_len > buf_len)
-				cpy_len = buf_len;
-			else
-				cpy_len = data_len;
-			
-			cmd_ind_out((u8 *)(ptr + n*buf_len), cpy_len);
-			
-			data_len -= cpy_len;
-			n++;
-			
-			rtos_get_semaphore(&cmd_line_buf.ind_buf_semaphore, SHELL_WAIT_OUT_TIME);
-		}
-		
-		rtos_set_semaphore(&cmd_line_buf.ind_buf_semaphore);
-		
-		os_free(ptr);
-		
-    }
+	dym_node->next = s_to_free_list;
+	s_to_free_list = dym_node;
 }
-#endif /* CONFIG_EX_DYNAMIC_LOG_BUFF */
 
+static void dynamic_list_push_back(dynamic_log_node *dym_node)
+{
+	if (s_curr_node == NULL) {
+		s_curr_node = dym_node;
+	}
+	s_dym_tail_node->next = dym_node;
+	s_dym_tail_node = dym_node;
+
+	s_dynamic_log_total_len += dym_node->len;
+	if (s_dynamic_log_total_len > s_dynamic_log_mem_max) {
+		s_dynamic_log_mem_max = s_dynamic_log_total_len;
+	}
+	s_dynamic_log_num++;
+}
+
+static dynamic_log_node *dynamic_list_pop_front(void)
+{
+	dynamic_log_node *node = s_dynamic_header.next;
+	if (node == NULL) {
+		BK_ASSERT(0);
+		return NULL;
+	}
+	BK_ASSERT(s_dynamic_header.next != s_curr_node);
+	s_dynamic_header.next = node->next;
+	s_dynamic_log_num--;
+	node->next = NULL;
+	if (node == s_dym_tail_node) {
+		s_dym_tail_node = &s_dynamic_header;
+		BK_ASSERT(s_curr_node == NULL);
+	}
+	return node;
+}
+
+static void dynamic_node_gc(void)
+{
+	dynamic_log_node *node;
+	dynamic_log_node *temp_node;
+	dynamic_log_node *free_list = NULL;
+	u32  int_mask = shell_task_enter_critical();
+	if (s_to_free_list != NULL) {
+		free_list = s_to_free_list;
+		s_to_free_list = NULL;
+	}
+	shell_task_exit_critical(int_mask);
+	node = free_list;
+	while (node != NULL) {
+		temp_node = node;
+		s_dynamic_log_total_len -= node->len;
+		node = node->next;
+		LOG_FREE(temp_node);
+		s_dynamic_log_num_in_mem--;
+	}
+}
+
+static void check_and_free_dynamic_node(void)
+{
+	if (s_to_free_list != NULL) {
+		dynamic_node_gc();
+	}
+}
+
+static u8 *alloc_dynamic_log_blk(u16 log_len, u16 *blk_tag)
+{
+	if (rtos_is_in_interrupt_context()) {
+		return NULL;
+	}
+	int total_len = log_len + DYM_NODE_SIZE;
+	dynamic_log_node *node = (dynamic_log_node *)LOG_MALLOC(total_len);
+	if (node == NULL) {
+		return NULL;
+	}
+	node->len = total_len;
+	node->next = NULL;
+	*blk_tag = MAKE_BLOCK_TAG(0, SHELL_DYM_QUEUE_ID);
+	s_dynamic_log_num_in_mem++;
+	return &node->ptr[0];
+}
+
+static dynamic_log_node *dynamic_list_switch(void)
+{
+	dynamic_log_node *node;
+	node = s_curr_node;
+	s_curr_node = s_curr_node->next;
+	return node;
+}
+
+static inline void dynamic_list_push_back_by_buffer(u8 *packet_buf)
+{
+	dynamic_log_node *node = (dynamic_log_node *)&packet_buf[-DYM_NODE_SIZE];
+	dynamic_list_push_back(node);
+}
+
+static void shell_insert_data( const u8 *data, u16 data_len )
+{
+	u32         int_mask;
+	if( !shell_cpu_check_valid() )
+		return;
+
+	int_mask = rtos_disable_int();
+
+	log_dev->dev_drv->write_sync(log_dev, (u8 *)data, data_len);
+
+	rtos_enable_int(int_mask);
+}
+
+static void output_insert_data(const u8 *data, u16 data_len)
+{
+	shell_assert_out(bTRUE, "\r\nINSRT:");
+	shell_insert_data(data, data_len);
+}
+
+static void output_insert_log(u16 buf_len, char *prefix, const char *format, va_list ap)
+{
+	shell_assert_out(bTRUE, "\r\nINSRT:%s", prefix);
+	shell_assert_out_va(bTRUE, format, ap);
+}
+
+void print_dynamic_log_info(void)
+{
+	os_printf("dynamic log info:\n");
+	os_printf("mem_queue:%d, mem_comsume:%d\r\n",
+				s_dynamic_log_num_in_mem, s_dynamic_log_total_len);
+	os_printf("dynamic log mem max: %d\r\n",s_dynamic_log_mem_max);
+}

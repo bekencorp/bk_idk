@@ -9,7 +9,8 @@
  - BK7258 CPU1的log通过mailbox转发到CPU0串口DL_UART0输出
  - BK7258 CPU2的log通过串口UART2输出(默认波特率为115200)
  - CPU1 log带cpu1标签（异常log除外）
- - 由于内存缓冲区的限制，每条log数据的字节数，要小于128字节。超过这个大小的log都会被shell 模块丢弃，并输出一条 !!some LOGs discarded!! 如果log数量太多，来不及输出导致log堆积，缓冲区用完，也会输出这条提示字符串。
+ - Armino平台默认采用异步Log输出机制，缓存缓存分为静态缓存和动态缓存，输出Log时优先使用静态缓存，当静态缓存不足时，使用动态缓存。
+ - 当静态缓存和动态缓存均耗尽时，采用阻塞机制，若处于不可阻塞状态下，缓存耗尽时，将使Log直接输出至串口，此时Log带有前缀"INSRT:"，此Log会插入在其他Log中间，并影响此Log输出时序。
  - 通过串口输入log命令查看当前log配置
  - log 1 3 0 命令第一个参数为echo开关 (0/1)，第二个参数为log级别(0~6)，第三个参数为同步开关(0异步,1同步)
 
@@ -63,3 +64,16 @@ API 中支持log等级，模块名字等参数。
     BK_DUMP_OUT(format, ... );         // 关中断下，用format格式的方式输出相关信息。
     BK_DUMP_RAW_OUT(buf, len);         // 关中断下，输出buf 中len长度的数据。
 
+
+Log缓存大小配置
+------------------------
+当前Log采用异步Log机制，为了防止Log丢失并加入阻塞机制和动态缓存机制。静态缓存和动态缓存的大小均可配置。配置方法如下：
+
+    静态Log缓存配置
+        静态Log缓存有40、80和136字节三种缓存。cpu0和cpu2在release模式下，三种静态缓存数量分别为4、16、32，在debug模式下分别为8、40、60。cpu1的三种静态缓存分别为2、4、8。
+        静态Log缓存数量可在 ``shell_task.c`` 中配置，分别通过宏定义 ``SHELL_LOG_BUF3_NUM`` 、``SHELL_LOG_BUF2_NUM`` 和 ``SHELL_LOG_BUF1_NUM`` 进行配置。
+        
+    动态Log缓存配置
+        可配置Log动态缓存内存大小限制和数量上限。
+        可在当前project下相应soc目录下的config文件中添加配置 ``CONFIG_DYM_LOG_MEM_MAX`` ，来修改相应的Log动态内存使用上限，如 ``CONFIG_DYM_LOG_MEM_MAX=0x4000`` 设置Log动态内存上限设置为16K。
+        动态Log缓存数量可在 ``shell_task.c`` 中配置，通过宏定义 ``SHELL_DYM_LOG_NUM_MAX`` 进行配置动态Log使用上限。

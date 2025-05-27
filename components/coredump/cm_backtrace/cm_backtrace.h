@@ -29,6 +29,7 @@
 #ifndef _CORTEXM_BACKTRACE_H_
 #define _CORTEXM_BACKTRACE_H_
 
+#include <stdbool.h>
 #include "cmb_def.h"
 
 #ifdef __cplusplus
@@ -40,6 +41,7 @@ void cm_backtrace_firmware_info(void);
 size_t cm_backtrace_call_stack(uint32_t *buffer, size_t size, uint32_t sp);
 void cm_backtrace_assert(uint32_t sp);
 void cm_backtrace_fault(uint32_t fault_handler_lr, uint32_t fault_handler_sp);
+bool disassembly_ins_is_bl_blx(uint32_t addr);
 
 #ifdef __cplusplus
 }

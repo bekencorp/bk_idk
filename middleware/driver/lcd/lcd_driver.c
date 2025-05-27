@@ -31,6 +31,7 @@
 #include <driver/lcd_spi.h>
 #include <driver/pwm.h>
 #include <driver/gpio.h>
+#include <driver/flash.h>
 #include "driver/lcd.h"
 #include "driver/pwr_clk.h"
 
@@ -576,6 +577,8 @@ bk_err_t bk_lcd_driver_deinit(void)
 		LOGE("%s, lcd already deinit. \n", __func__);
 		return BK_OK;
 	}
+
+	lcd_hal_soft_reset();
 	bk_int_isr_unregister(INT_SRC_LCD);
 	if (sys_drv_lcd_close() != 0)
 	{
@@ -850,7 +853,12 @@ bk_err_t bk_lcd_set_partical_display(bool en, uint16_t partial_clum_l, uint16_t 
 	return BK_OK;
 }
 
-
+#if CONFIG_FLASH
+void lcd_flash_disable_int(uint32_t enable)
+{
+	lcd_hal_rgb_int_enable(0, enable);
+}
+#endif
 
 bk_err_t bk_lcd_rgb_init(const lcd_device_t *device)
 {
@@ -864,7 +872,9 @@ bk_err_t bk_lcd_rgb_init(const lcd_device_t *device)
 	lcd_hal_rgb_display_sel(1);  //RGB display enable, and select rgb module
 	lcd_hal_set_sync_low(rgb->hsync_pulse_width, rgb->vsync_pulse_width);
 	lcd_hal_rgb_int_enable(0, 1);
-
+#if CONFIG_FLASH
+	mb_flash_register_op_notify(lcd_flash_disable_int);
+#endif
 	lcd_hal_rgb_sync_config(rgb->hsync_back_porch,
 	                        rgb->hsync_front_porch,
 	                        rgb->vsync_back_porch,
@@ -1185,7 +1195,7 @@ bk_err_t lcd_driver_deinit(void)
 
 	out:
 	bk_lcd_driver_deinit();
-    bk_lcd_rgb_io_deinit();
+	bk_lcd_rgb_io_deinit();
 	bk_pm_clock_ctrl(PM_CLK_ID_DISP, CLK_PWR_CTRL_PWR_DOWN);
 	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_VIDP_LCD, PM_POWER_MODULE_STATE_OFF);
 	bk_pm_module_vote_cpu_freq(PM_DEV_ID_DISP, PM_CPU_FRQ_DEFAULT);

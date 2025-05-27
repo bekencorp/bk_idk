@@ -102,7 +102,8 @@ def crosslink(pattern):
         (language, link_text) = text.split(':')
         docname = inliner.document.settings.env.docname
         doc_path = inliner.document.settings.env.doc2path(docname, None)
-        return_path = '../' * doc_path.count('/')
+        doc_path_str = os.fspath(doc_path)
+        return_path = '../' * doc_path_str.count('/')
         url = pattern % (return_path, language, docname)
         node = nodes.reference(rawtext, link_text, refuri=url, **options)
         return [node], []

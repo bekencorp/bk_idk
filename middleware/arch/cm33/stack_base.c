@@ -27,6 +27,10 @@
 #include "bk_aon_wdt.h"
 #include "partitions.h"
 #include "bk_wdt.h"
+#include "stack_base.h"
+#if CONFIG_CM_BACKTRACE
+#include "cm_backtrace.h"
+#endif
 
 #define STACK_CALLBACK_BUF_SIZE 32
 #define SOC_ITCM_CODE_SIZE      (0x4000)
@@ -41,27 +45,42 @@ extern char __etext;
 
 static inline int addr_is_in_flash_txt(uint32_t addr)
 {
-	return ((addr > (uint32_t)(SOC_FLASH_DATA_BASE + CONFIG_PRIMARY_CPU0_APP_VIRTUAL_CODE_START)) && (addr < (uint32_t)&__etext));
+    return ((addr > (uint32_t)(SOC_FLASH_DATA_BASE + CONFIG_PRIMARY_CPU0_APP_VIRTUAL_CODE_START)) && (addr < (uint32_t)&__etext));
 }
 
 static inline int addr_is_in_itcm_txt(uint32_t addr)
 {
-	return ((addr > (uint32_t)SOC_ITCM_DATA_BASE) && (addr < (uint32_t)(SOC_ITCM_DATA_BASE + SOC_ITCM_CODE_SIZE)));
+    return ((addr > (uint32_t)SOC_ITCM_DATA_BASE) && (addr < (uint32_t)(SOC_ITCM_DATA_BASE + SOC_ITCM_CODE_SIZE)));
 }
 
 static inline int addr_is_in_iram_txt(uint32_t addr)
 {
 #if CONFIG_SYS_CPU0
-	if ((addr > (uint32_t)&__iram_start__) && (addr < (uint32_t)&__iram_end__)) {
-		return 1;
-	}
+    if ((addr > (uint32_t)&__iram_start__) && (addr < (uint32_t)&__iram_end__)) {
+        return 1;
+    }
 #endif
-	return 0;
+    return 0;
 }
 
 static int code_addr_is_valid(uint32_t addr)
 {
-	return (addr_is_in_flash_txt(addr) || addr_is_in_itcm_txt(addr) || addr_is_in_iram_txt(addr));
+    if (addr % 2 == 0) {
+        return false;
+    }
+
+    return (addr_is_in_flash_txt(addr) || addr_is_in_itcm_txt(addr) || addr_is_in_iram_txt(addr));
+
+    // if (addr_is_in_flash_txt(addr) || addr_is_in_itcm_txt(addr) || addr_is_in_iram_txt(addr)) {
+    //     addr -= 1;
+    //     #if CONFIG_CM_BACKTRACE
+    //     if (!disassembly_ins_is_bl_blx(addr - sizeof(size_t))) {
+    //         return false;
+    //     }
+    //     #endif
+    //     return true;
+    // }
+    // return false;
 }
 
 void stack_mem_dump(uint32_t stack_top, uint32_t stack_bottom)
@@ -71,6 +90,10 @@ void stack_mem_dump(uint32_t stack_top, uint32_t stack_bottom)
 	uint32_t cnt = 0;
 	uint32_t sp = stack_top;
 	uint32_t fp = stack_bottom;
+
+    if (stack_bottom <= stack_top) {
+        return;
+    }
 
 	BK_DUMP_OUT(">>>>stack mem dump begin, stack_top=%08x, stack end=%08x\r\n", stack_top, stack_bottom);
 	for (;  sp < fp; sp += sizeof(size_t)) {
@@ -110,39 +133,39 @@ void stack_mem_dump(uint32_t stack_top, uint32_t stack_bottom)
  *
  * */
 void arch_parse_stack_backtrace(const char *str_type, uint32_t stack_top, uint32_t stack_bottom,
-						   uint32_t stack_size, bool thumb_mode)
+                           uint32_t stack_size, bool thumb_mode)
 {
-	uint32_t call_stack_buf[STACK_CALLBACK_BUF_SIZE] = {0};
-	uint32_t stack_minimum = stack_bottom - stack_size;
-	uint32_t pc;
-	int call_stack_index = 0;
-	uint32_t init_stack_top = stack_top;
+    uint32_t call_stack_buf[STACK_CALLBACK_BUF_SIZE] = {0};
+    uint32_t stack_minimum = stack_bottom - stack_size;
+    uint32_t pc;
+    int call_stack_index = 0;
+    uint32_t init_stack_top = stack_top;
 
-	for (; stack_top < stack_bottom && (call_stack_index < STACK_CALLBACK_BUF_SIZE); stack_top += sizeof(size_t)) {
-		pc = *((uint32_t *) stack_top);
+    for (; stack_top < stack_bottom && (call_stack_index < STACK_CALLBACK_BUF_SIZE); stack_top += sizeof(size_t)) {
+        pc = *((uint32_t *) stack_top);
 
-		if (code_addr_is_valid(pc)) {
-			if (pc & 1)
-				pc = pc - 1;
+        if (code_addr_is_valid(pc)) {
+            if (pc & 1)
+                pc = pc - 1;
 
-			call_stack_buf[call_stack_index] = pc;
-			call_stack_index++;
-		}
-	}
+            call_stack_buf[call_stack_index] = pc;
+            call_stack_index++;
+        }
+    }
 
-	if (call_stack_index > 0) {
-		int index;
+    if (call_stack_index > 0) {
+        int index;
 
-		BK_DUMP_OUT("%-16s   [0x%-6x ~ 0x%-6x]   0x%-6x   %-4d   %-8d",
-				  str_type, stack_minimum, stack_bottom, init_stack_top, stack_size, init_stack_top < stack_minimum);
+        BK_DUMP_OUT("%-16s   [0x%-6x ~ 0x%-6x]   0x%-6x   %-4d   %-8d",
+                  str_type, stack_minimum, stack_bottom, init_stack_top, stack_size, init_stack_top < stack_minimum);
 
-		for (index = 0; index < call_stack_index; index++)
-			BK_DUMP_OUT("%lx ", call_stack_buf[index]);
-		BK_DUMP_OUT("\r\n");
-	} else if (init_stack_top < stack_minimum) {
-		BK_DUMP_OUT("%-16s   [0x%-6x ~ 0x%-6x]   0x%-6x   %-4d   %-8d   ",
-				  str_type, stack_minimum, stack_bottom, init_stack_top, stack_size, init_stack_top < stack_minimum);
-	}
+        for (index = 0; index < call_stack_index; index++)
+            BK_DUMP_OUT("%lx ", call_stack_buf[index]);
+        BK_DUMP_OUT("\r\n");
+    } else if (init_stack_top < stack_minimum) {
+        BK_DUMP_OUT("%-16s   [0x%-6x ~ 0x%-6x]   0x%-6x   %-4d   %-8d   ",
+                  str_type, stack_minimum, stack_bottom, init_stack_top, stack_size, init_stack_top < stack_minimum);
+    }
 }
 
 

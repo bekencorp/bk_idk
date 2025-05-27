@@ -1,7 +1,7 @@
 Bluetooth gatt client
 =======================================
 
-Project Overview
+1. Project Overview
 --------------------------
 
     This project is used for demonstrating bluetooth gatt client, show you the following operation:
@@ -9,20 +9,20 @@ Project Overview
     -  how to config ble scan pararmeters and start or stop it, how to connect to a advertising device.
     -  how to launch att read write request to remote gatt service.
 
-Hardware Requirements
+2. Hardware Requirements
 ----------------------------
 
     Beken development board.
 
 
-Build
+3. Build
 ----------------------------
 
     Enter the following command in the Armino root directory to compile:
 
     > make bk72xx PROJECT=bluetooth/gatt_client
 
-Connect UART
+4. Connect UART
 ----------------------------
 
     UART0 is used for:
@@ -30,15 +30,15 @@ Connect UART
     - BKFIL to download images
     - Logging and Cli commands
 
-Flash all-app.bin
+5. Flash all-app.bin
 ----------------------------
 
     Flash Armino/build/gatt_server/bk72xx/all-app.bin to the board by the tool BKFIL.
 
-Play and Output
+6. Play and Output
 ----------------------------------
 
-Initiate Log
+6.1 Initiate Log
 ***********************************
 
 ::
@@ -47,9 +47,9 @@ Initiate Log
     ble:I(826):[gapm_cmp_evt_handler]actv_idx:0 conidx:0,operation:0xa1,status:0x0
     BLE-GATT:I(826):gatt_client_demo_init success
 
-Work flow chart
+7. Work flow chart
 ----------------------------------
-1. gatt client demo work flow chart:
+ gatt client demo work flow chart:
 
 .. figure:: ../../../../_static/gatt_client_flow_chart.png
     :align: center
@@ -59,7 +59,7 @@ Work flow chart
     Figure 1. gatt client demo work flow
 
 
-Cli Command
+8. Cli Command
 ----------------------------------
 
     | The project gatt_server supports the following commands through uart0:
@@ -74,7 +74,7 @@ Cli Command
     | ``ble_gattc read [val_handle]`` : att read request, the parameter [val_handle] is the characteristic value handle.
 
 
-Command Log
+8.1 Command Log
 ***********************************
 
 - ble_gattc scan 1
@@ -331,7 +331,7 @@ Command Log
     BLE-GATT:I(3471872):
 
 
-Scan and Connect Disconnect API
+9. Scan and Connect Disconnect API
 ----------------------------------------
     The source code is in the file ``/projects/bluetooth/gatt_client/main/gatt_client_demo.c``
 

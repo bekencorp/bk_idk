@@ -19,7 +19,6 @@
 #include <os/mem.h>
 #include <os/str.h>
 #include <components/log.h>
-#include <lwip/sockets.h>
 #include <os/os.h>
 #ifdef CONFIG_WEBSOCKET
 #include <bk_websocket_client.h>

@@ -6,7 +6,8 @@ log output
 Here introduces the log output method for Armino platform.
 
  - log data are output through DL_UART0.(The defualt baudrate of DL_UART0 is 115.2kbps)
- - because of the buffer size constraints, each log should not exceed 128 bytes in size, otherwise the log will be discarded, and replaced with a message of "!!some LOGs discarded!!". This message will also be output when log buffers were exhausted because of too many pending logs.
+ - The Armino platform adopts an asynchronous log output mechanism by default, and buffer is divided into static buffer and dynamic buffer. When outputting logs, static buffer is prioritized, and when static buffer is insufficient, dynamic buffer is used.
+ - When both static and dynamic caches are exhausted, a blocking mechanism is used. If it is in an non blocking state and the buffer is exhausted, the log will be directly output to the serial port. At this time, the log will be prefixed with "INSRT:" and inserted between other logs, affecting the output timing of this log.
  - To check the log settings in the Armino, send the command of 'log' with no params in the input device.
  - To set the log work mode, send the command of 'log' with 1~4 params in the input device.
  - log [1 [3 [0 [0]]]], it is the default setting after reset, the first parameter is the input echo switch(0: disable, 1:enable echo), the 2nd param is the lowest log level that can be output(level 0~5, 5 is the lowest level), the 3rd param controls the log work mode(0:asynchronous,1:synchronous), the 4th param controls 'modlog' work mechnism, the module list is the whitelist or blacklist (0: blacklist, 1: whitelist). This command contains 1~4 params, if the param3 is provided, then param1~2 must be also provided, but param4 can be omitted(so no changes to this setting).
@@ -60,3 +61,16 @@ Following is the Log APIs: the suffix of the API implies the level of this log.
     BK_DUMP_OUT(format, ... );         // format the log data, then output log data with interrupt disabled.
     BK_DUMP_RAW_OUT(buf, len);         // output buf data in 'len' bytes after interrupt disabled.
 
+
+Log buffer size configuration
+-------------------------------------------
+The current Log adopts asynchronous Log mechanism, and in order to prevent log loss, blocking mechanism and dynamic caching mechanism are added. The size of both static buffer and dynamic buffer can be configured. The configuration method is as follows:
+
+    Static Log buffer configuration
+        There are three types of static log buffer: 40 byte, 80 byte, and 136 byte. CPU0 and CPU2 have three types of static buffer sizes of 4, 16, and 32 in release mode, and 8, 40, and 60 in debug mode, respectively. The three static caches of CPU1 are 2, 4, and 8, respectively.
+        The number of static log caches can be configured in ``shell_task.c`` , which can be configured through macro definitions of ``SHELL_LOG_BUF3_NUM`` , ``SHELL_LOG_BUF2_NUM`` and ``SHELL_LOG_BUF1_NUM`` .
+
+    Dynamic Log buffer configuration
+        Configurable Log dynamic buffer memory size limit and quantity limit.
+        You can add the configuration ``CONFIG_DYM_LOG_MEM_MAX`` to the config file in the corresponding SOC directory under the current project to modify the corresponding Log dynamic memory usage limit, such as ``CONFIG_DYM_LOG_MEM_MAX=0x4000`` setting the Log dynamic memory limit to 16K.
+        The number of dynamic log caches can be configured in ``shell_task.c``, and the upper limit of dynamic log usage can be configured through the macro definition ``SHELL_DYM_LOG_NUM_MAX`` .

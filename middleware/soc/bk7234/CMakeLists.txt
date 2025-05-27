@@ -10,8 +10,15 @@ set(incs
 	./
 	)
 set(srcs "stub.c")
+
+if(CONFIG_SPE)
+list(APPEND srcs	"mpu_cfg.c")
+else()
+list(APPEND srcs	"mpu_cfg_s.c")
+endif()
+
 list(APPEND srcs
-	"mpu_cfg.c"
+#	"mpu_cfg.c"
 	"interrupts.c"
 	"hal/psram_ll.c"
 	"hal/pwm_hal_debug.c"

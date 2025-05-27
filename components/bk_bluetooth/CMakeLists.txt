@@ -50,8 +50,8 @@ endif()#CONFIG_AT
             api/bk_a2dp_api.c
             api/bt_spp_export_api.c
             api/bt_hidd_export_api.c
-            api/bk_hfp_api.c
             api/bt_hidh_export_api.c
+            api/bk_hfp_api.c
         )
     endif()
 
@@ -129,9 +129,14 @@ if (CONFIG_BLUETOOTH)
         set(bt_controller_basename ${bt_controller_basename}_dual)
     endif()
 
-    if(CONFIG_BLUETOOTH_LINK_MAX_COUNT EQUAL 9999)
+    if(CONFIG_BLUETOOTH_RELEASE_CODESIZE AND CONFIG_BLE AND NOT CONFIG_BT)
+        set(bt_controller_basename ${bt_controller_basename}_reduce)
+        set(bt_host_basename ${bt_host_ble}_reduce)
     else()
-        set(bt_controller_basename ${bt_controller_basename}_${CONFIG_BLUETOOTH_LINK_MAX_COUNT}link)
+        if(CONFIG_BLUETOOTH_BLE_SLAVE_ONLY)
+            set(bt_controller_basename ${bt_controller_basename}_slave_only)
+            set(bt_host_basename ${bt_host_ble}_slave_only)
+        endif()
     endif()
 
     if (CONFIG_TZ AND NOT CONFIG_SPE)

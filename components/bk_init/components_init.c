@@ -18,6 +18,7 @@
 
 #include <common/bk_include.h>
 #include "bk_sys_ctrl.h"
+#include "stdlib.h"
 #include "bk_drv_model.h"
 #include <components/ate.h>
 #include <driver/wdt.h>
@@ -130,9 +131,9 @@ default_bandgap:
 
 int random_init(void)
 {
-#if ((CONFIG_TRNG_SUPPORT) && (!CONFIG_SOC_BK7236XX))
-	BK_LOGI(TAG, "trng enable\r\n");
-	bk_trng_start();
+#if (CONFIG_TRNG_SUPPORT)
+	BK_LOGD(TAG, "create srand seed\r\n");
+	srand(bk_rand());
 #endif
 	return BK_OK;
 }

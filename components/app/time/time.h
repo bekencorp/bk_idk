@@ -18,6 +18,7 @@ int datetime_set(time_t       sec);
 int datetime_set_nano(time_t      sec, uint32_t frag_val);
 int datetime_get(struct tm *t);
 int datetime_get_with_zone(struct tm *t, int zone);
+int datetime_timestamp_to_localtime(struct tm *t, uint64_t timestamp);
 
 time_t timestamp_get(void);
 

@@ -37,6 +37,8 @@ uint8 udisk_init(void)
 	FATFS_LOGI("udisk_init\r\n");
 
 #if CONFIG_USB_HOST
+	bk_usb_device_set_using_status(1, USB_MSD_DEVICE);
+	bk_usb_power_ops(CONFIG_USB_VBAT_CONTROL_GPIO_ID, 1);
 	if (usbh_ms_media_get_status()) {
 		ret = USB_RET_OK;
 	}
@@ -106,5 +108,18 @@ uint32 udisk_get_size(void)
     return 0;//driver_udisk.total_block;
 }
 
+void udisk_uninit(void)
+{
+	FATFS_LOGI("udisk_uninit\r\n");
+
+#if CONFIG_USB_HOST
+	bk_usb_device_set_using_status(0, USB_MSD_DEVICE);
+	bk_usb_power_ops(CONFIG_USB_VBAT_CONTROL_GPIO_ID, 0);
+
+#elif CONFIG_USB_DEVICE
+
+#endif
+
+}
 #endif
 

@@ -553,18 +553,30 @@ static void flash_command_test(char *pcWriteBuffer, int xWriteBufferLen, int arg
 		bk_flash_set_protect_type(FLASH_UNPROTECT_LAST_BLOCK);
 		return;
 	} else if (os_strcmp(argv[1], "RSR") == 0) {
+#if (CONFIG_SYS_CPU0)
 		uint16_t sts_val = bk_flash_read_status_reg();
 		BK_DUMP_OUT("read sts_val = 0x%x\n", sts_val);
+#else
+		BK_DUMP_OUT("notice: this is cpu0 cmd only\n");
+#endif
 		return;
 	} else if (os_strcmp(argv[1], "WSR") == 0) {
+#if (CONFIG_SYS_CPU0)
 		uint16_t sts_val = os_strtoul(argv[2], NULL, 16);
 		bk_flash_write_status_reg(sts_val);
+#else
+		BK_DUMP_OUT("notice: this is cpu0 cmd only\n");
+#endif
 		return;
 	} else if (os_strcmp(argv[1], "C") == 0) {
+#if (CONFIG_SYS_CPU0)
 		addr = os_strtoul(argv[2], NULL, 16);
 		len = os_strtoul(argv[3], NULL, 16);
 		uint32_t test_times = os_strtoul(argv[4], NULL, 10);
 		test_flash_count_time(addr, len, test_times);
+#else
+		BK_DUMP_OUT("notice: this is cpu0 cmd only\n");
+#endif
 		return;
 	}
 

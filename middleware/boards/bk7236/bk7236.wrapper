@@ -16,6 +16,8 @@ armino_path = os.getenv("ARMINO_PATH")
 project_dir = os.getenv("PROJECT_DIR")
 project_name = os.getenv("PROJECT")
 armino_soc = os.getenv("ARMINO_SOC")
+modules_dir = os.getenv("MODULE_DIR")
+
 build_path=os.path.realpath('.')
 header_path = "{}/tools/env_tools/rtt_ota/ota-rbl/".format(armino_path)
 is_secure_boot = False
@@ -111,6 +113,7 @@ def pack(prebuild):
 	cpu0_armino_soc = armino_soc.replace('_cp1', '')
 	base_cfg_dir = f'{armino_path}/middleware/boards/{cpu0_armino_soc}' #CPU1 share the same config with CPU0
 	prefered_cfg_dir = f'{armino_path}/{project_dir}/config'
+	moudle_cfg_dir = f'{modules_dir}/{armino_soc}'
 	gen_dir = f'{build_path}/generated'
 	debug = True
 
@@ -121,6 +124,7 @@ def pack(prebuild):
 	logging.debug(f'tools_dir={tools_dir}')
 	logging.debug(f'base_cfg_dir={base_cfg_dir}')
 	logging.debug(f'prefered_cfg_dir={prefered_cfg_dir}')
+	logging.debug(f'moudle_cfg_dir={moudle_cfg_dir}')
 	logging.debug(f'soc={soc}')
 	logging.debug(f'pack={pack}')
 
@@ -141,6 +145,7 @@ def pack(prebuild):
 	logging.debug(f'cd {_BUILD_DIR}')
 
 	install_configs(BASE_CFG_DIR, _BUILD_DIR)
+	install_configs(moudle_cfg_dir, _BUILD_DIR)
 	install_configs(prefered_cfg_dir, _BUILD_DIR)
 	install_configs(f'{prefered_cfg_dir}/common', _BUILD_DIR)
 	install_configs(f'{prefered_cfg_dir}/{cpu0_armino_soc}', _BUILD_DIR)

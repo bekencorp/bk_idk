@@ -440,7 +440,11 @@ struct {\
 /*
 * AUDIO PA GPIO MAP
 */
+#ifdef CONFIG_AUD_DAC_PA_CTRL_GPIO
+#define AUD_DAC_PA_CTRL_GPIO CONFIG_AUD_DAC_PA_CTRL_GPIO
+#else
 #define AUD_DAC_PA_CTRL_GPIO		(GPIO_5)
+#endif
 #define AUD_DAC_PA_ENABLE_LEVEL		(1)
 
 /*

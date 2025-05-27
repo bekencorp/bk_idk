@@ -56,7 +56,7 @@ typedef struct {
 	void (*_rc_drv_set_agc_manual_en)(uint32_t value);
 	void (*_rc_drv_set_rx_mode_enrxsw)(uint32_t value);
 	uint32_t (*_rc_drv_get_rx_mode_enrxsw)();
-	UINT32 (*_rwnx_tpc_get_pwridx_by_rate)(UINT32 rate, UINT32 print_log);
+	UINT32 (*_rwnx_tpc_get_pwridx_by_rate)(UINT32 rate, UINT32 format, UINT32 print_log);
 	UINT32 (*_rwnx_is_enable_pwr_change_by_rssi)(void);
 	void (*_tpc_auto_change_pwr_by_rssi)(INT8 rssi, UINT8 rate, UINT8 *pwr_idx);
 	void (*_bk7011_max_rxsens_setting)(void);
@@ -138,8 +138,8 @@ typedef struct {
 	bk_err_t (*_bk_pm_sleep_register)(void *config_cb);
 	bk_err_t (*_bk_pm_low_voltage_register)(void *config_cb);
 	void (* _wifi_vote_rf_ctrl)(uint8_t cmd);
-	void (* _wifi_phy_clk_open)(void);
-	void (* _wifi_phy_clk_close)(void);
+	void (* _wifi_phy_clk_open)(uint8_t is_wifi);
+	void (* _wifi_phy_clk_close)(uint8_t is_wifi);
 	void (*_wifi_mac_phy_power_on)(void);
 	void (*_mac_ps_exc32_cb_notify)(void);
 	void (*_mac_ps_exc32_init)(void *cb);
@@ -174,6 +174,9 @@ typedef struct {
 	int (*_bk_feature_close_coexist_csa)(void);
 	int (*_bk_feature_network_found_event)(void);
 	int (*_bk_feature_get_mac_sup_sta_max_num)(void);
+	bk_err_t (*_bk_wifi_get_vendor_ie_cb_internal)(void* vendor_ie, uint32_t vendor_type, uint16_t len, uint8_t frame_type);
+	uint32_t (*_bk_wifi_get_vendor_ie_type)(void);
+	uint8_t (*_bk_wifi_get_vendor_ie_oui_len)(void);
 	void (*_flush_all_dcache)(void);
 	unsigned long (*_bk_ms_to_ticks)(unsigned long ms);
 	bk_err_t (*_dma_memcpy)(void *out, const void *in, uint32_t len);

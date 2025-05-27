@@ -28,6 +28,7 @@ typedef struct {
 extern void delay(int num);
 
 static gpio_scr_map_group_t g_scr_chan = 0;
+static int hexstr2bin(const char *hex, u8 *buf, size_t len);
 
 static int volatile g_scr_ATR_flag = 0;
 static int volatile g_scr_c2c_flag = 0;
@@ -301,3 +302,43 @@ int cli_scr_init(void)
 	return cli_register_commands(s_scr_commands, SCR_CMD_CNT);
 }
 
+static int hex2num(char c)
+{
+    if (c >= '0' && c <= '9')
+        return c - '0';
+    if (c >= 'a' && c <= 'f')
+        return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F')
+        return c - 'A' + 10;
+    return -1;
+}
+
+
+static int hex2byte(const char *hex)
+{
+    int a, b;
+    a = hex2num(*hex++);
+    if (a < 0)
+        return -1;
+    b = hex2num(*hex++);
+    if (b < 0)
+        return -1;
+    return (a << 4) | b;
+}
+
+static int hexstr2bin(const char *hex, u8 *buf, size_t len)
+{
+    size_t i;
+    int a;
+    const char *ipos = hex;
+    u8 *opos = buf;
+
+    for (i = 0; i < len; i++) {
+        a = hex2byte(ipos);
+        if (a < 0)
+            return -1;
+        *opos++ = a;
+        ipos += 2;
+    }
+    return 0;
+}

@@ -42,7 +42,7 @@ typedef enum
     BK_GATTS_WRITE_EVT               = 2,       /*!< When gatt client request write operation, the event comes */
     BK_GATTS_EXEC_WRITE_EVT          = 3,       /*!< When gatt client request execute write, the event comes */
     BK_GATTS_MTU_EVT                 = 4,       /*!< When set mtu complete, the event comes */
-    BK_GATTS_CONF_EVT                = 5,       /*!< When receive confirm, the event comes */
+    BK_GATTS_CONF_EVT                = 5,       /*!< When receive confirm after send notify or indicate, the event comes */
     BK_GATTS_UNREG_EVT               = 6,       /*!< When unregister gatt_if, the event comes */
     BK_GATTS_CREATE_EVT              = 7,       /*!< When create service complete, the event comes */
 
@@ -55,11 +55,18 @@ typedef enum
     BK_GATTS_DISCONNECT_EVT          = 15,      /*!< When gatt client disconnect, the event comes */
 
     /* following is extra event */
-    BK_GATTS_RESPONSE_EVT            = 21,      /*!< When gatt send response complete, the event comes */
+    BK_GATTS_RESPONSE_EVT            = 21,      /*!< When gatt send write/read/error response complete, the event comes */
     BK_GATTS_CREAT_ATTR_TAB_EVT      = 22,      /*!< When gatt create table complete, the event comes */
     BK_GATTS_SET_ATTR_VAL_EVT        = 23,      /*!< When gatt set attr value complete, the event comes */
     BK_GATTS_SEND_SERVICE_CHANGE_EVT = 24,      /*!< When gatt send service change indication complete, the event comes */
 } bk_gatts_cb_event_t;
+
+
+typedef enum
+{
+    BK_GATTS_CHAR_PROPERTY_BIT_MASK_OP_GET,
+    BK_GATTS_CHAR_PROPERTY_BIT_MASK_OP_SET,
+} bk_gatts_char_property_bit_mask_op_t;
 
 /**
  * @brief Gatt server callback parameters union
@@ -507,6 +514,19 @@ ble_err_t bk_ble_gatts_get_attr_value(uint16_t attr_handle, uint16_t *length, ui
  */
 ble_err_t bk_ble_gatts_send_service_change_indicate(bk_gatt_if_t gatts_if, uint16_t conn_id, uint8_t all_connected);
 
+/**
+ * @brief           Get or set characteristic property.
+ *
+ * @param[in]       op: GATT get or set.
+ * @param[in]       attr_handle: char value attr handle.
+ * @param[in|out]   io: input when set and output when set
+ *
+ * @return
+ *                  - BK_ERR_BLE_SUCCESS : success
+ *                  - other  : failed
+ *
+ */
+ble_err_t bk_ble_gatts_char_property_operation(bk_gatts_char_property_bit_mask_op_t op, uint16_t attr_handle, uint16_t *io);
 
 ///@}
 

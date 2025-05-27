@@ -1,3 +1,6 @@
+#include "os/os.h"
+#include "os/str.h"
+#include "os/mem.h"
 #include <common/bk_include.h>
 
 #if CONFIG_LITTLEFS
@@ -29,7 +32,7 @@ static int setup_lfs_config(struct lfs_config *config, const struct bk_little_fs
 	};
 	int ret;
 
-	config->context = malloc(sizeof(lfs_rambd_t));
+	config->context = os_malloc(sizeof(lfs_rambd_t));
 	if (!config->context)
 		return -1;
 
@@ -60,7 +63,7 @@ static void teardown_lfs_config(struct lfs_config *config) {
 	lfs_rambd_destroy(config);
 
 	if (config->context) {
-		free(config->context);
+		os_free(config->context);
 		config->context = NULL;
 	}
 }
@@ -80,7 +83,7 @@ static int setup_lfs_config(struct lfs_config *config, const struct bk_little_fs
 		return -1;
 	}
 
-	config->context = malloc(sizeof(lfs_filebd_t));
+	config->context = os_malloc(sizeof(lfs_filebd_t));
 	if (!config->context)
 		return -1;
 
@@ -111,7 +114,7 @@ static void teardown_lfs_config(struct lfs_config *config) {
 	lfs_filebd_destroy(config);
 
 	if (config->context) {
-		free(config->context);
+		os_free(config->context);
 		config->context = NULL;
 	}
 }
@@ -132,7 +135,7 @@ static int setup_lfs_config(struct lfs_config *config, const struct bk_little_fs
 		return -1;
 	}
 
-	config->context = malloc(sizeof(lfs_flashbd_t));
+	config->context = os_malloc(sizeof(lfs_flashbd_t));
 	if (!config->context)
 		return -1;
 
@@ -148,7 +151,7 @@ static int setup_lfs_config(struct lfs_config *config, const struct bk_little_fs
 	} else if (part->part_type == LFS_SPI_FLASH) {
 		ret = lfs_spi_flashbd_init();
 		if (ret) {
-			free(config->context);
+			os_free(config->context);
 			return -1;
 		}
 		config->read = lfs_spi_flashbd_read;
@@ -156,7 +159,7 @@ static int setup_lfs_config(struct lfs_config *config, const struct bk_little_fs
 		config->erase = lfs_spi_flashbd_erase;
 		config->sync = lfs_spi_flashbd_sync;
 	} else {
-		free(config->context);
+		os_free(config->context);
 		return -1;
 	}
 
@@ -182,7 +185,7 @@ static void teardown_lfs_config(struct lfs_config *config) {
 	lfs_flashbd_destroy(config);
 
 	if (config->context) {
-		free(config->context);
+		os_free(config->context);
 		config->context = NULL;
 	}
 }
@@ -221,7 +224,7 @@ static int _bk_lfs_mount(struct bk_filesystem *fs, unsigned long mount_flags, co
 	int ret;
 
 	part = (const struct bk_little_fs_partition *)data;
-	lfs = (lfs_t *)malloc(sizeof(lfs_t) + 8 + sizeof(struct lfs_config));
+	lfs = (lfs_t *)os_malloc(sizeof(lfs_t) + 8 + sizeof(struct lfs_config));
 	if (!lfs)
 		return -1;
 
@@ -231,14 +234,14 @@ static int _bk_lfs_mount(struct bk_filesystem *fs, unsigned long mount_flags, co
 
 	ret = setup_lfs_config(config, part);
 	if (ret) {
-		free(lfs);
+		os_free(lfs);
 		return -1;
 	}
 
 	ret = lfs_mount(lfs, config);
 	if (ret) {
 		teardown_lfs_config(config);
-		free(lfs);
+		os_free(lfs);
 		return -1;
 	}
 
@@ -257,7 +260,7 @@ static int _bk_lfs_unmount(struct bk_filesystem *fs) {
 		teardown_lfs_config((struct lfs_config *)lfs->cfg);
 	}
 
-	free(lfs);
+	os_free(lfs);
 	fs->fs_data = NULL;
 
 	return ret;
@@ -332,7 +335,7 @@ static int _bk_lfs_open(struct bk_file *file, const char *path, int oflag) {
 
 	lfs = (lfs_t *)file->filesystem->fs_data;
 
-	lfs_file = (lfs_file_t *)malloc(sizeof(lfs_file_t));
+	lfs_file = (lfs_file_t *)os_malloc(sizeof(lfs_file_t));
 	if (!lfs_file)
 		return -1;
 
@@ -341,7 +344,7 @@ static int _bk_lfs_open(struct bk_file *file, const char *path, int oflag) {
 	oflag = file_flags_to_lfs(oflag);
 	ret = lfs_file_open(lfs, lfs_file, file->path, oflag);
 	if (ret) {
-		free(lfs_file);
+		os_free(lfs_file);
 		return -1;
 	}
 
@@ -359,7 +362,7 @@ static int _bk_lfs_close(struct bk_file *file) {
 
 	ret = lfs_file_close(lfs, lfs_file);
 
-	free(file->f_data);
+	os_free(file->f_data);
 	file->f_data = NULL;
 
 	return ret;	
@@ -403,6 +406,29 @@ static off_t _bk_lfs_lseek(struct bk_file *file, off_t offset, int whence) {
 
 	return ret;
 }
+
+#if CONFIG_STARBURST_AIDIALOG_SDK
+static off_t _bk_lfs_ftell(struct bk_file *file) {
+	lfs_t *lfs;
+	lfs_file_t *lfs_file;
+
+	lfs = (lfs_t *)file->filesystem->fs_data;
+	lfs_file = (lfs_file_t *)file->f_data;
+
+	return lfs_file_tell(lfs, lfs_file);
+}
+
+static int _bk_lfs_feof(struct bk_file *file) {
+	lfs_t *lfs;
+	lfs_file_t *lfs_file;
+
+	lfs = (lfs_t *)file->filesystem->fs_data;
+	lfs_file = (lfs_file_t *)file->f_data;
+
+	//bk_printf("[%s][%d]size:%d, pos:%d\r\n", __FILE__, __LINE__, lfs_file_size(lfs, lfs_file), lfs_file_tell(lfs, lfs_file));
+	return lfs_file_size(lfs, lfs_file)<=lfs_file_tell(lfs, lfs_file);
+}
+#endif
 
 static int _bk_lfs_unlink(struct bk_filesystem *fs, const char *pathname) {
 	lfs_t *lfs;
@@ -479,14 +505,14 @@ static int _bk_lfs_opendir(bk_dir *dir, const char *pathname) {
 
 	lfs = (lfs_t *)dir->filesystem->fs_data;
 
-	lfs_dir = (lfs_dir_t *)malloc(sizeof(lfs_dir_t));
+	lfs_dir = (lfs_dir_t *)os_malloc(sizeof(lfs_dir_t));
 	if (!lfs_dir)
 		return -1;
 	memset(lfs_dir, 0, sizeof(lfs_dir_t));
 
 	ret = lfs_dir_open(lfs, lfs_dir, pathname);
 	if (ret) {
-		free(lfs_dir);
+		os_free(lfs_dir);
 		return -1;
 	}
 
@@ -536,7 +562,7 @@ static int _bk_lfs_closedir(bk_dir *dir) {
 
 	ret = lfs_dir_close(lfs, lfs_dir);
 
-	free(lfs_dir);
+	os_free(lfs_dir);
 	dir->dir_data = NULL;
 
 	return ret;
@@ -580,6 +606,10 @@ static struct bk_file_ops g_lfs_file_ops = {
 	.closedir = _bk_lfs_closedir,
 	.mkdir = _bk_lfs_mkdir,
 	.rmdir = _bk_lfs_rmdir,
+#if CONFIG_STARBURST_AIDIALOG_SDK
+	.ftell = _bk_lfs_ftell,
+	.feof = _bk_lfs_feof,
+#endif
 };
 
 int bk_lfs_init(void) {

@@ -103,6 +103,12 @@ task.h is included from an application file. */
 #include <driver/pwr_clk.h>
 #include "stack_base.h"
 
+#if CONFIG_MEM_DEBUG_OVERFLOW
+// #include "dwt.h"
+#include "driver/aon_rtc.h"
+#include "cmsis_gcc.h"
+#endif
+
 #undef MPU_WRAPPERS_INCLUDED_FROM_API_FILE
 
 #define TAG "os"
@@ -119,6 +125,8 @@ task.h is included from an application file. */
 
 #define MEM_OVERFLOW_TAG        0xcd
 #define MEM_OVERFLOW_WORD_TAG   0xcdcdcdcd
+
+#define MEM_HEAD_WORD_TAG       0
 
 #if CONFIG_MEM_DEBUG
 #define MEM_CHECK_TAG_LEN      0x4
@@ -149,12 +157,22 @@ uint8_t *ucHeap;
 #define CONFIG_MEM_DEBUG_TASK_NAME_LEN 8
 #endif
 
+/* Due to the dynamic memory allocation operations in the log output mechanism, 
+ * it is not recommended to add logs during the initialization, allocation, and free processes of dynamic memory management. 
+ * If logging is necessary during this process for debugg, it is advisable to use MEM_STATIC_LOGI.
+ * Using other logging API may lead to unstable situations.
+ */
+#define MEM_STATIC_LOGI( tag, format, ... ) bk_printf_static_block(BK_LOG_INFO, tag, format, ##__VA_ARGS__)
+
 typedef void * (*CALLOC_PTR)(size_t num, size_t size);
 
 /* Define the linked list structure.  This is used to link free blocks in order
 of their memory address. */
 typedef struct A_BLOCK_LINK
 {
+#if CONFIG_MEM_DEBUG_OVERFLOW
+	uint32_t head_magic_num;
+#endif
 	struct A_BLOCK_LINK *pxNextFreeBlock;	/*<< The next free block in the list. */
 	size_t xBlockSize;						/*<< The size of the free block. */
 #if CONFIG_MEM_DEBUG
@@ -193,6 +211,27 @@ static void prvInsertBlockIntoFreeList( BlockLink_t *pxBlockToInsert );
  * pvPortMalloc() is called.
  */
 static void prvHeapInit( void );
+
+#if CONFIG_MEM_DEBUG_OVERFLOW
+#define GET_AON_RTC_TICK (REG_READ(SOC_AON_RTC_REG_BASE + (0x3 << 2)))
+#define FREE_RECORD_MAX  CONFIG_MEM_OVERFLOW_FREE_RECORD_MAX
+static volatile uint32_t s_free_record_index = 0;
+typedef struct {
+	char *name;
+	uint32_t line;
+	uint32_t lr;
+	char *free_ptr;
+	uint32_t time;
+}free_record_type;
+static __attribute__((__used__)) free_record_type volatile s_free_records[FREE_RECORD_MAX];
+#define MALLOC_RECORD_MAX  CONFIG_MEM_OVERFLOW_MALLOC_RECORD_MAX
+static volatile uint32_t s_malloc_record_index = 0;
+static volatile uint32_t s_sram_malloc_record_index = 0;
+static __attribute__((__used__)) free_record_type volatile s_malloc_records[MALLOC_RECORD_MAX];
+static __attribute__((__used__)) free_record_type volatile s_sram_malloc_records[MALLOC_RECORD_MAX];
+
+__attribute__((section(".iram")))void CheckFreeList(void);
+#endif
 
 /*-----------------------------------------------------------*/
 
@@ -260,14 +299,14 @@ __attribute__((section(".itcm_sec_code"))) void bk_psram_heap_init(void) {
 	size_t uxAddress;
 	size_t xTotalHeapSize;
 
-	bk_pm_module_vote_psram_ctrl(PM_POWER_PSRAM_MODULE_NAME_AS_MEM,PM_POWER_MODULE_STATE_ON);
-
 	xTotalHeapSize = PSRAM_HEAP_SIZE;
 	psram_ucHeap = PSRAM_START_ADDRESS;
 
-	BK_LOGI(TAG, "prvHeapInit-psram start addr:0x%x, size:%d\r\n", psram_ucHeap, xTotalHeapSize);
+	MEM_STATIC_LOGI(TAG, "psram:0x%x,size:%d\r\n", psram_ucHeap, xTotalHeapSize);
 
+#if CONFIG_PSRAM_HEAP_INIT_SET_ZERO
 	os_memset_word((uint32_t *)psram_ucHeap, 0x0, xTotalHeapSize);
+#endif
 	// rtos_regist_plat_dump_hook((uint32_t)psram_ucHeap, xTotalHeapSize);
 
 	/* Ensure the heap starts on a correctly aligned boundary. */
@@ -285,6 +324,10 @@ __attribute__((section(".itcm_sec_code"))) void bk_psram_heap_init(void) {
 	/* psram_xStart is used to hold a pointer to the first item in the list of free
 	blocks.  The void cast is used to prevent compiler warnings. */
 	psram_xStart.pxNextFreeBlock = ( void * ) pucAlignedHeap;
+#if CONFIG_MEM_DEBUG_OVERFLOW
+	psram_xStart.head_magic_num = MEM_HEAD_WORD_TAG;
+    psram_xStart.pxNextFreeBlock->head_magic_num = MEM_HEAD_WORD_TAG;
+#endif
 	psram_xStart.xBlockSize = ( size_t ) 0;
 
 	/* psram_pxEnd is used to mark the end of the list of free blocks and is inserted
@@ -399,19 +442,26 @@ void *pvReturn = NULL;
 		kernel, so it must be free. */
 		if( ( xWantedSize & xBlockAllocatedBit ) == 0 )
 		{
-			/* The wanted size is increased so it can contain a BlockLink_t
-			structure in addition to the requested amount of bytes. */
-			if( xWantedSize > 0 )
+			/* The wanted size must be increased so it can contain a BlockLink_t
+			* structure in addition to the requested amount of bytes. */
+			if( ( xWantedSize > 0 ) &&
+			( ( xWantedSize + xHeapStructSize ) >  xWantedSize ) ) /* Overflow check */
 			{
 				xWantedSize += xHeapStructSize;
 
-				/* Ensure that blocks are always aligned to the required number
-				of bytes. */
+				/* Ensure that blocks are always aligned. */
 				if( ( xWantedSize & portBYTE_ALIGNMENT_MASK ) != 0x00 )
 				{
-					/* Byte alignment required. */
-					xWantedSize += ( portBYTE_ALIGNMENT - ( xWantedSize & portBYTE_ALIGNMENT_MASK ) );
-					configASSERT( ( xWantedSize & portBYTE_ALIGNMENT_MASK ) == 0 );
+					/* Byte alignment required. Check for overflow. */
+					if( ( xWantedSize + ( portBYTE_ALIGNMENT - ( xWantedSize & portBYTE_ALIGNMENT_MASK ) ) ) > xWantedSize )
+					{
+						xWantedSize += ( portBYTE_ALIGNMENT - ( xWantedSize & portBYTE_ALIGNMENT_MASK ) );
+						configASSERT( ( xWantedSize & portBYTE_ALIGNMENT_MASK ) == 0 );
+					}
+					else
+					{
+						xWantedSize = 0;
+					}
 				}
 				else
 				{
@@ -420,7 +470,7 @@ void *pvReturn = NULL;
 			}
 			else
 			{
-				mtCOVERAGE_TEST_MARKER();
+				xWantedSize = 0;
 			}
 
 			if( ( xWantedSize > 0 ) && ( xWantedSize <= psram_xFreeBytesRemaining ) )
@@ -464,6 +514,9 @@ void *pvReturn = NULL;
 						pxBlock->xBlockSize = xWantedSize;
 
 						/* Insert the new block into the list of free blocks. */
+                    #if CONFIG_MEM_DEBUG_OVERFLOW
+						pxNewBlockLink->head_magic_num = MEM_HEAD_WORD_TAG;
+                    #endif
 						psram_prvInsertBlockIntoFreeList( pxNewBlockLink );
 					}
 					else
@@ -557,7 +610,10 @@ void *psram_malloc( size_t xWantedSize )
 		/* 4 Byte alignment required for psram. */
 		xWantedSize += ( 0x4 - ( xWantedSize & 0x3 ) );
 	}
-
+	if( psram_pxEnd == NULL || !bk_psram_heap_init_flag_get())
+	{
+		bk_pm_module_vote_psram_ctrl(PM_POWER_PSRAM_MODULE_NAME_AS_MEM,PM_POWER_MODULE_STATE_ON);
+	}
 	vTaskSuspendAll();
 	pvReturn = psram_malloc_without_lock(xWantedSize  + MEM_CHECK_TAG_LEN);
 	if(pvReturn)
@@ -567,7 +623,7 @@ void *psram_malloc( size_t xWantedSize )
 		BlockLink_t *pxLink = (BlockLink_t *)((u8*)pvReturn - xHeapStructSize);
 		if(pvReturn && call_func_name) {
 #if CONFIG_MALLOC_STATIS
-			BK_LOGI(TAG, "m:%p,%d|%s,%d\r\n", pxLink, (pxLink->xBlockSize & ~xBlockAllocatedBit), call_func_name, line);
+			MEM_STATIC_LOGI(TAG, "m:%p,%d|%s,%d\r\n", pxLink, (pxLink->xBlockSize & ~xBlockAllocatedBit), call_func_name, line);
 #endif
 		}
 #if CONFIG_MEM_DEBUG
@@ -590,6 +646,9 @@ void *psram_malloc( size_t xWantedSize )
  		mem_end = pvReturn + xWantedSize;
  		mem_end_len = (pxLink->xBlockSize & ~xBlockAllocatedBit) - xHeapStructSize - xWantedSize;
  		os_memset_word((uint32_t *)mem_end, MEM_OVERFLOW_WORD_TAG, mem_end_len);
+    #if CONFIG_MEM_DEBUG_OVERFLOW
+		pxLink->head_magic_num = MEM_HEAD_WORD_TAG;
+    #endif
 
 		if(psram_used_area_begin == 0 || (uint32_t)pxLink < psram_used_area_begin) {
 			psram_used_area_begin = (uint32_t)pxLink;
@@ -601,6 +660,9 @@ void *psram_malloc( size_t xWantedSize )
 #endif
 #endif //#if CONFIG_MALLOC_STATIS || CONFIG_MEM_DEBUG
 	}
+#if CONFIG_MEM_DEBUG_OVERFLOW
+	CheckFreeList();
+#endif
 
 	( void ) xTaskResumeAll();
 
@@ -643,6 +705,38 @@ void * psram_calloc(size_t num, size_t size)
 
 #endif //#if CONFIG_PSRAM_AS_SYS_MEMORY
 
+#if CONFIG_MEM_DEBUG_OVERFLOW
+#define FREE_LIST_RECORD_MAX  CONFIG_MEM_OVERFLOW_FREELIST_RECORD_MAX
+// static volatile uint32_t s_malloc_freelist_index = 0;
+static __attribute__((__used__)) uint32_t volatile s_freelist_records[FREE_LIST_RECORD_MAX];
+__attribute__((section(".iram")))void CheckFreeList(void)
+{
+	BlockLink_t *pxIterator;
+	uint32_t i = 0;
+	uint32_t int_level = rtos_disable_int();
+	
+	for( pxIterator = &xStart; (pxIterator->pxNextFreeBlock != pxEnd) && (i < FREE_LIST_RECORD_MAX); pxIterator = pxIterator->pxNextFreeBlock )
+	{
+        i++;
+		/* Nothing to do here, just iterate to the right position. */
+		if(pxIterator && (pxIterator->pxNextFreeBlock) && ( MEM_HEAD_WORD_TAG != (uint32_t)pxIterator->pxNextFreeBlock->head_magic_num))
+			BK_ASSERT(0);
+	}
+#if (CONFIG_PSRAM_AS_SYS_MEMORY)
+
+	i = 0;
+	for( pxIterator = &psram_xStart; (pxIterator->pxNextFreeBlock != psram_pxEnd) && (i < 1024); pxIterator = pxIterator->pxNextFreeBlock )
+	{
+        i++;
+		/* Nothing to do here, just iterate to the right position. */
+		if(pxIterator && (pxIterator->pxNextFreeBlock) && ( MEM_HEAD_WORD_TAG != (uint32_t)pxIterator->pxNextFreeBlock->head_magic_num))
+			BK_ASSERT(0);
+	}
+#endif
+	rtos_enable_int(int_level);
+}
+#endif
+
 #if CONFIG_MEM_DEBUG
 static inline void show_mem_info(BlockLink_t *pxLink)
 {
@@ -664,6 +758,7 @@ static inline void show_mem_info(BlockLink_t *pxLink)
 		pxLink->line);
 #endif
 
+#if CONFIG_WDT_EN
 #if (CONFIG_TASK_WDT)
 	bk_task_wdt_feed();
 #endif
@@ -673,6 +768,8 @@ static inline void show_mem_info(BlockLink_t *pxLink)
 #if (CONFIG_INT_AON_WDT)
 	bk_int_aon_wdt_feed();
 #endif
+
+#endif //CONFIG_WDT_EN
 }
 
 static inline void mem_overflow_check(BlockLink_t *pxLink)
@@ -682,6 +779,12 @@ static inline void mem_overflow_check(BlockLink_t *pxLink)
 
 	for ( int i = 0; i < mem_end_len; i++) {
 		if (MEM_OVERFLOW_TAG != mem_end[i])
+#if CONFIG_MEM_DEBUG_OVERFLOW
+		if ((MEM_OVERFLOW_TAG != mem_end[i]) ||
+			((pxLink->head_magic_num != MEM_HEAD_WORD_TAG) && (i == 0)))
+#else   
+        if (MEM_OVERFLOW_TAG != mem_end[i])
+#endif
 		{
 			BK_DUMP_OUT("Mem Overflow ......mem_end[%p + %d]=[0x%02x].....\r\n", mem_end, i, mem_end[i]);
 			show_mem_info(pxLink);
@@ -689,6 +792,7 @@ static inline void mem_overflow_check(BlockLink_t *pxLink)
 			if (0 == arch_is_enter_exception()) {
 				configASSERT( false );
 			}
+			break;
 		}
 	}
 }
@@ -784,6 +888,9 @@ static void *malloc_without_lock( size_t xWantedSize )
 						pxBlock->xBlockSize = xWantedSize;
 
 						/* Insert the new block into the list of free blocks. */
+                    #if CONFIG_MEM_DEBUG_OVERFLOW
+						pxNewBlockLink->head_magic_num = MEM_HEAD_WORD_TAG;
+                    #endif
 						prvInsertBlockIntoFreeList( pxNewBlockLink );
 					}
 					else
@@ -849,15 +956,18 @@ static void *malloc_without_lock( size_t xWantedSize )
 }
 
 #if CONFIG_MALLOC_STATIS || CONFIG_MEM_DEBUG
-void *pvPortMalloc_cm(const char *call_func_name, int line, size_t xWantedSize, int need_zero )
+void * bk_wrap_sram_malloc_cm(const char *call_func_name, int line, size_t xWantedSize, int need_zero )
 #else
-void *pvPortMalloc( size_t xWantedSize )
+void * bk_wrap_sram_malloc(size_t xWantedSize)
 #endif
 {
 	void *pvReturn = NULL;
 #if CONFIG_MEM_DEBUG
 	uint8_t *mem_end = NULL;
 	uint32_t mem_end_len = 0;
+#endif
+#if CONFIG_MEM_DEBUG_OVERFLOW
+	uint32_t lr = __get_LR();
 #endif
 
 	if (xWantedSize == 0)
@@ -871,7 +981,7 @@ void *pvPortMalloc( size_t xWantedSize )
 		BlockLink_t *pxLink = (BlockLink_t *)((u8*)pvReturn - xHeapStructSize);
 		if(pvReturn && call_func_name) {
 #if CONFIG_MALLOC_STATIS
-			BK_LOGI(TAG, "m:%p,%d|%s,%d\r\n", pxLink, (pxLink->xBlockSize & ~xBlockAllocatedBit), call_func_name, line);
+			MEM_STATIC_LOGI(TAG, "m:%p,%d|%s,%d\r\n", pxLink, (pxLink->xBlockSize & ~xBlockAllocatedBit), call_func_name, line);
 #endif
 		}
 #if CONFIG_MEM_DEBUG
@@ -892,14 +1002,79 @@ void *pvPortMalloc( size_t xWantedSize )
  		mem_end = pvReturn + xWantedSize;
  		mem_end_len = (pxLink->xBlockSize & ~xBlockAllocatedBit) - xHeapStructSize - xWantedSize;
  		os_memset(mem_end, MEM_OVERFLOW_TAG, mem_end_len);
+
+    #if CONFIG_MEM_DEBUG_OVERFLOW
+		pxLink->head_magic_num = MEM_HEAD_WORD_TAG;
+    #endif
 #endif
 	}
-	#endif
+    #endif
+
+#if CONFIG_MEM_DEBUG_OVERFLOW
+	{
+		s_sram_malloc_records[s_sram_malloc_record_index%MALLOC_RECORD_MAX].free_ptr = pvReturn;
+		s_sram_malloc_records[s_sram_malloc_record_index%MALLOC_RECORD_MAX].time = GET_AON_RTC_TICK; 
+		s_sram_malloc_records[s_sram_malloc_record_index%MALLOC_RECORD_MAX].lr = lr;
+#if CONFIG_MALLOC_STATIS || CONFIG_MEM_DEBUG
+		s_sram_malloc_records[s_sram_malloc_record_index%MALLOC_RECORD_MAX].name = (char *)call_func_name;
+		s_sram_malloc_records[s_sram_malloc_record_index%MALLOC_RECORD_MAX].line = line;
+#endif
+		s_sram_malloc_record_index++;
+	}
+
+	CheckFreeList();
+#endif
+
 	( void ) xTaskResumeAll();
+
+    #if CONFIG_MALLOC_STATIS || CONFIG_MEM_DEBUG
+	if(pvReturn && need_zero)
+		os_memset(pvReturn, 0, xWantedSize);
+	#endif
+
+    return pvReturn;
+}
+
+#if CONFIG_MALLOC_STATIS || CONFIG_MEM_DEBUG
+void *pvPortMalloc_cm(const char *call_func_name, int line, size_t xWantedSize, int need_zero )
+#else
+void *pvPortMalloc( size_t xWantedSize )
+#endif
+{	
+    void *pvReturn = NULL;
+    
+#if CONFIG_MEM_DEBUG_OVERFLOW
+	uint32_t lr = __get_LR();
+#endif
+
+    #if CONFIG_MALLOC_STATIS || CONFIG_MEM_DEBUG
+    pvReturn = bk_wrap_sram_malloc_cm(call_func_name, line, xWantedSize, need_zero);
+    #else
+    pvReturn = bk_wrap_sram_malloc(xWantedSize);
+    #endif
+
+ #if CONFIG_MEM_DEBUG_OVERFLOW
+	{
+		s_malloc_records[s_malloc_record_index%MALLOC_RECORD_MAX].free_ptr = pvReturn;
+		s_malloc_records[s_malloc_record_index%MALLOC_RECORD_MAX].time = GET_AON_RTC_TICK;
+		s_malloc_records[s_malloc_record_index%MALLOC_RECORD_MAX].lr = lr;
+#if CONFIG_MALLOC_STATIS || CONFIG_MEM_DEBUG
+		s_malloc_records[s_malloc_record_index%MALLOC_RECORD_MAX].name = (char *)call_func_name;
+		s_malloc_records[s_malloc_record_index%MALLOC_RECORD_MAX].line = line;
+#endif
+		s_malloc_record_index++;
+	}
+
+	CheckFreeList();
+#endif
 
 #if (CONFIG_USE_PSRAM_HEAP_AT_SRAM_OOM)
 	if (NULL == pvReturn) {
+		#if (CONFIG_MALLOC_STATIS || CONFIG_MEM_DEBUG)
+		pvReturn = psram_malloc_debug((const char*)call_func_name,line,xWantedSize, 0);
+		#else
 		pvReturn = psram_malloc(xWantedSize);
+		#endif
 	}
 #endif
 
@@ -920,6 +1095,10 @@ void vPortFree( void *pv )
 {
 	uint8_t *puc = ( uint8_t * ) pv;
 	BlockLink_t *pxLink;
+
+#if CONFIG_MEM_DEBUG_OVERFLOW
+	uint32_t lr = __get_LR();
+#endif
 
 	if( pv != NULL )
 	{
@@ -946,10 +1125,23 @@ void vPortFree( void *pv )
 				pxLink->xBlockSize &= ~xBlockAllocatedBit;
 
 				vTaskSuspendAll();
+#if CONFIG_MEM_DEBUG_OVERFLOW
+				{
+					s_free_records[s_free_record_index%FREE_RECORD_MAX].free_ptr = pv;
+					s_free_records[s_free_record_index%FREE_RECORD_MAX].time = GET_AON_RTC_TICK;
+#if CONFIG_MALLOC_STATIS || CONFIG_MEM_DEBUG
+					s_free_records[s_free_record_index%FREE_RECORD_MAX].name = (char *)call_func_name;
+					s_free_records[s_free_record_index%FREE_RECORD_MAX].lr = lr;
+					s_free_records[s_free_record_index%FREE_RECORD_MAX].line = line;
+#endif
+					s_free_record_index++;
+				}
+#endif
+				
 #if CONFIG_MALLOC_STATIS
                 if (call_func_name)
                 {
-                    BK_LOGI(TAG, "f:%p,%d|%s,%d\r\n", pxLink, pxLink->xBlockSize, call_func_name, line);
+                    MEM_STATIC_LOGI(TAG, "f:%p,%d|%s,%d\r\n", pxLink, pxLink->xBlockSize, call_func_name, line);
                 }
 #endif
 #if CONFIG_MEM_DEBUG
@@ -980,6 +1172,10 @@ void vPortFree( void *pv )
 					traceFREE( pv, pxLink->xBlockSize );
 					prvInsertBlockIntoFreeList( ( ( BlockLink_t * ) pxLink ) );
 				}
+            #if CONFIG_MEM_DEBUG_OVERFLOW
+				CheckFreeList();
+            #endif
+
 				( void ) xTaskResumeAll();
 			}
 			else
@@ -1142,6 +1338,13 @@ void bk_psram_heap_get_used_state(void) {
 #endif //#if CONFIG_PSRAM_AS_SYS_MEMORY
 }
 
+void bk_psram_heap_dump_data(void)
+{
+#if CONFIG_PSRAM_AS_SYS_MEMORY
+	stack_mem_dump(psram_used_area_begin, psram_used_area_end);
+#endif
+}
+
 /*-----------------------------------------------------------*/
 size_t xPortGetFreeHeapSize( void )
 {
@@ -1193,7 +1396,7 @@ void vPortInitialiseBlocks( void )
 #if (CONFIG_ARCH_RISCV)
 extern unsigned char _end;  //the end of bss section in sram
 #define HEAP_START_ADDRESS    (void*)(&_end)
-#elif (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX)
+#elif (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX)
 extern unsigned char _heap_start, _heap_end;
 #define HEAP_START_ADDRESS    (void*)&_heap_start
 #else
@@ -1207,7 +1410,7 @@ extern unsigned char _empty_ram;
 #define HEAP_END_ADDRESS      (void*)(0x00400000 + 192 * 1024)
 #elif (CONFIG_SOC_BK7271)
 #define HEAP_END_ADDRESS      (void*)(0x00400000 + 512 * 1024)
-#elif (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX)
+#elif (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX)
 
 #if CONFIG_SPE
 #define HEAP_END_ADDRESS      (void*)&_heap_end
@@ -1280,7 +1483,7 @@ static void prvHeapInit( void )
 	xTotalHeapSize = configTOTAL_HEAP_SIZE;
 	#endif
 
-	BK_LOGI(TAG, "prvHeapInit-start addr:0x%x, size:%d\r\n", ucHeap, xTotalHeapSize);
+	MEM_STATIC_LOGI(TAG, "prvHeapInit-start addr:0x%x, size:%d\r\n", ucHeap, xTotalHeapSize);
 
 	/* Ensure the heap starts on a correctly aligned boundary. */
 	uxAddress = ( size_t ) ucHeap;
@@ -1297,6 +1500,10 @@ static void prvHeapInit( void )
 	/* xStart is used to hold a pointer to the first item in the list of free
 	blocks.  The void cast is used to prevent compiler warnings. */
 	xStart.pxNextFreeBlock = ( void * ) pucAlignedHeap;
+#if CONFIG_MEM_DEBUG_OVERFLOW
+	xStart.head_magic_num = MEM_HEAD_WORD_TAG;
+	xStart.pxNextFreeBlock->head_magic_num = MEM_HEAD_WORD_TAG;
+#endif
 	xStart.xBlockSize = ( size_t ) 0;
 
 	/* pxEnd is used to mark the end of the list of free blocks and is inserted
@@ -1390,6 +1597,19 @@ uint8_t *puc;
 	{
 		mtCOVERAGE_TEST_MARKER();
 	}
+
+#if CONFIG_MEM_DEBUG_OVERFLOW
+   
+	uint32_t i = 0;
+	uint32_t int_level = rtos_disable_int();
+
+	for( pxIterator = &xStart; (pxIterator->pxNextFreeBlock != pxEnd) && i < FREE_LIST_RECORD_MAX; pxIterator = pxIterator->pxNextFreeBlock )
+	{
+		/* bak all free nodes to list */
+		s_freelist_records[i++] = (uint32_t)pxIterator->pxNextFreeBlock;
+	}
+	rtos_enable_int(int_level);
+#endif
 }
 
 /**
@@ -1525,7 +1745,7 @@ void *pvPortRealloc( void *pv, size_t size )
 //
 // TODO - after we support bk_eary_printf() API, we can remove this API.
 //
-#if CONFIG_SOC_BK7236XX || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX)
+#if CONFIG_SOC_BK7236XX || (CONFIG_SOC_BK7239XX)
 extern unsigned char _data_ram_begin;
 #define RAM_START_ADDRESS  ((uint32_t)&_data_ram_begin)
 
@@ -1541,6 +1761,7 @@ extern unsigned char _bss_start;
 extern unsigned char _bss_end;
 #define BSS_END_ADDRESS ((uint32_t)&_bss_end)
 
+#if (!(CONFIG_SOC_BK7236N) && !(CONFIG_SOC_BK7239XX))
 extern unsigned char __dtcm_start__;
 #define DTCM_START_ADDRESS ((uint32_t)&__dtcm_start__)
 
@@ -1552,6 +1773,7 @@ extern unsigned char __itcm_start__;
 
 extern unsigned char __itcm_end__;
 #define ITCM_END_ADDRESS ((uint32_t)&__itcm_end__)
+#endif
 
 #if CONFIG_SYS_CPU0
 extern unsigned char __iram_start__;
@@ -1559,14 +1781,6 @@ extern unsigned char __iram_start__;
 
 extern unsigned char __iram_end__;
 #define IRAM_END_ADDRESS ((uint32_t)&__iram_end__)
-
-#if CONFIG_CACHE_ENABLE
-extern unsigned char _nocache_start;
-#define NOCACHE_START_ADDRESS ((uint32_t)&_nocache_start)
-
-extern unsigned char _nocache_end;
-#define NOCACHE_END_ADDRESS ((uint32_t)&_nocache_end)
-#endif //#if CONFIG_CACHE_ENABLE
 #endif //#if CONFIG_SYS_CPU0
 
 void pvShowMemoryConfigInfo(void)
@@ -1575,8 +1789,11 @@ void pvShowMemoryConfigInfo(void)
 	BK_LOGI(TAG, "\n");
 	BK_LOGI(TAG, "%-8s %-8s %-8s %-8s\n", "mem_type", "start", "end", "size");
 	BK_LOGI(TAG, "%-8s %-8s %-8s %-8s\n", "--------", "--------", "--------", "--------");
+
+#if (!(CONFIG_SOC_BK7236N) && !(CONFIG_SOC_BK7239XX))
 	BK_LOGI(TAG, "%-8s 0x%-6x 0x%-6x %-8d\r\n", "itcm", ITCM_START_ADDRESS, ITCM_END_ADDRESS, (ITCM_END_ADDRESS - ITCM_START_ADDRESS));
 	BK_LOGI(TAG, "%-8s 0x%-6x 0x%-6x %-8d\r\n", "dtcm", DTCM_START_ADDRESS, DTCM_END_ADDRESS, (DTCM_END_ADDRESS - DTCM_START_ADDRESS));
+#endif
 	BK_LOGI(TAG, "%-8s 0x%-6x 0x%-6x %-8d\r\n", "ram", RAM_START_ADDRESS, HEAP_END_ADDRESS, (HEAP_END_ADDRESS - RAM_START_ADDRESS));
 	BK_LOGI(TAG, "%-8s 0x%-6x 0x%-6x %-8d\r\n", "non_heap", RAM_START_ADDRESS, HEAP_START_ADDRESS, (HEAP_START_ADDRESS - RAM_START_ADDRESS));
 #if CONFIG_SYS_CPU0
@@ -1584,9 +1801,6 @@ void pvShowMemoryConfigInfo(void)
 #endif //#if CONFIG_SYS_CPU0
 	BK_LOGI(TAG, "%-8s 0x%-6x 0x%-6x %-8d\r\n", "data", DATA_START_ADDRESS, DATA_END_ADDRESS, (DATA_END_ADDRESS - DATA_START_ADDRESS));
 	BK_LOGI(TAG, "%-8s 0x%-6x 0x%-6x %-8d\r\n", "bss", BSS_START_ADDRESS, BSS_END_ADDRESS, (BSS_END_ADDRESS - BSS_START_ADDRESS));
-#if CONFIG_SYS_CPU0 && CONFIG_CACHE_ENABLE
-	BK_LOGI(TAG, "%-8s 0x%-6x 0x%-6x %-8d\r\n", "non_cache", NOCACHE_START_ADDRESS, NOCACHE_END_ADDRESS, (NOCACHE_END_ADDRESS - NOCACHE_START_ADDRESS));
-#endif// #if CONFIG_SYS_CPU0 && CONFIG_CACHE_ENABLE
 	BK_LOGI(TAG, "%-8s 0x%-6x 0x%-6x %-8d\r\n", "heap", HEAP_START_ADDRESS, HEAP_END_ADDRESS, (HEAP_END_ADDRESS - HEAP_START_ADDRESS));
 #if (CONFIG_PSRAM_AS_SYS_MEMORY)
 	BK_LOGI(TAG, "%-8s 0x%-6x 0x%-6x %-8d\r\n", "psram", PSRAM_START_ADDRESS, (PSRAM_START_ADDRESS + PSRAM_HEAP_SIZE), PSRAM_HEAP_SIZE);

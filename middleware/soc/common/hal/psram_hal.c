@@ -18,6 +18,8 @@
 #include <driver/psram.h>
 #include <modules/chip_support.h>
 
+extern void delay_us(uint32_t us);
+
 static void psram_delay(volatile uint32_t times)
 {
 	while(times--);
@@ -258,7 +260,11 @@ static int psram_hal_W955D8MKY_5J_init(uint32_t *id)
 {
 	uint32_t val = 0;
 	uint32_t io_drv = 0; /*range [0, 3]*/
-	psram_hal_set_mode_value(PSRAM_MODE4);// mode 4
+	#if (CONFIG_SOC_BK7256XX)
+		psram_hal_set_mode_value(PSRAM_MODE4);// mode 4
+	#elif (CONFIG_SOC_BK7236XX)
+		psram_hal_set_mode_value(PSRAM_MODE8);// mode 8
+	#endif
 #if (!CONFIG_SOC_BK7256XX)
 	psram_hal_set_reg5_value(0x292);
 	//psram_hal_set_reg5_value(0x380);	//NOTES:APS PSRAM drive stength needs changed.This type PSRAM needs to be verified.
@@ -268,27 +274,25 @@ static int psram_hal_W955D8MKY_5J_init(uint32_t *id)
 	psram_delay(500);
 
 	val = psram_hal_cmd_read(0x01000000);
+	(VOID *)val;
 #if (CONFIG_SOC_BK7256XX)
 	// 8 line
 	val = ((val >> 8) & 0xFF) | ((val & 0xFF) << 8);
 #endif
 
-	if (val == 0 || val != *id)
-	{
-		return -1;
-	}
-	else
-	{
-		*id = val;
-	}
 
 #if (CONFIG_SOC_BK7256XX)
 	val = 0x8F1C | (io_drv << 12);
 #else
 	val = 0x1C8F | (io_drv << 4);
 #endif
-	psram_hal_cmd_write(0x01000000, val);
 
+
+#if (CONFIG_SOC_BK7256XX)
+	psram_hal_cmd_write(0x01000000, val);
+#elif (CONFIG_SOC_BK7236XX)
+	psram_hal_cmd_write(0x01000000, 0x1c8f);
+#endif
 	psram_hal_cmd_read(0x01000000);
 
 	return 0;
@@ -359,43 +363,46 @@ uint32_t psram_hal_config_init(uint32_t id)
 	val |= (0x1 << 1);
 	psram_hal_set_reg2_value(val);
 
-	if (id == PSRAM_APS6408L_ID)
+	if (id != 0)
 	{
-		psram_hal_APS6408L_init(&type);
+		if (id == PSRAM_APS6408L_ID)
+		{
+			psram_hal_APS6408L_init(&type);
+			return type;
+		}
+		else if (id == PSRAM_APS128XXO_OB9_ID)
+		{
+			psram_hal_APS128XXO_OB9_init(&type);
+			return type;
+		}
+		else //id == PSRAM_W955D8MKY_5J_ID
+		{
+			psram_hal_W955D8MKY_5J_init(&type);
+			return type;
+		}
+	}
+	else
+	{
+		type = PSRAM_APS6408L_ID;
+		ret = psram_hal_APS6408L_init(&type);
+		if (ret == 0)
+		{
+			return type;
+		}
+
+		type = PSRAM_APS128XXO_OB9_ID;
+		ret = psram_hal_APS128XXO_OB9_init(&type);
+		if (ret == 0)
+		{
+			return type;
+		}
+
+		type = PSRAM_W955D8MKY_5J_ID;
+		ret = psram_hal_W955D8MKY_5J_init(&type);
+
 		return type;
 	}
 
-	if (id == PSRAM_W955D8MKY_5J_ID)
-	{
-		psram_hal_W955D8MKY_5J_init(&type);
-		return type;
-	}
-
-	if (id == PSRAM_APS128XXO_OB9_ID)
-	{
-		psram_hal_APS128XXO_OB9_init(&type);
-		return type;
-	}
-
-	type = PSRAM_APS6408L_ID;
-	ret = psram_hal_APS6408L_init(&type);
-	if (ret == 0)
-	{
-		return type;
-	}
-
-	type = PSRAM_W955D8MKY_5J_ID;
-
-	ret = psram_hal_W955D8MKY_5J_init(&type);
-	if (ret == 0)
-	{
-		return type;
-	}
-
-	type = PSRAM_APS128XXO_OB9_ID;
-	ret = psram_hal_APS128XXO_OB9_init(&type);
-
-	return type;
 }
 
 // config 1: psram power and clk config, need wait clk stable
@@ -406,11 +413,9 @@ void psram_hal_power_clk_enable(uint8_t enable)
 		psram_delay(500);
 
 		sys_drv_psram_ldo_enable(1);
-		psram_delay(500);
-		if(bk_pm_module_power_state_get(PM_POWER_SUB_MODULE_NAME_AHBP_PSRAM) != 0)
-		{
-			bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_AHBP_PSRAM, PM_POWER_MODULE_STATE_ON);
-		}
+		delay_us(1000);
+
+		bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_AHBP_PSRAM, PM_POWER_MODULE_STATE_ON);
 
 		// psram bus clk always open
 		sys_drv_psram_psram_disckg(1);

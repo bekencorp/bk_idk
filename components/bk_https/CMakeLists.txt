@@ -1,3 +1,5 @@
+if(CONFIG_LWIP)
+
 set(incs include)
 set(srcs)
 
@@ -11,6 +13,9 @@ if(CONFIG_HTTPS)
 		bk_ssl.c
 	)
 endif()
+
+endif()
+
 armino_component_register(SRCS "${srcs}"
 	INCLUDE_DIRS "${incs}"
 	REQUIRES mbedtls bk_wifi bk_common lwip_intf_v2_1

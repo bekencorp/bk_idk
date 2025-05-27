@@ -257,8 +257,7 @@ static void mb_phy_chnl_rx_ack_isr(mb_phy_chnl_ack_t *ack_ptr)
 	{
 		if(phy_chnl_ptr->tx_state == CHNL_STATE_ILDE)
 		{
-			goto try_to_start_tx;
-		//	return;
+			return;
 		}
 
 		ack_ptr->hdr.data = 0;
@@ -307,10 +306,6 @@ static void mb_phy_chnl_rx_ack_isr(mb_phy_chnl_ack_t *ack_ptr)
 
 		log_chnl_cb_x[log_chnl_idx].tx_cmpl_isr(log_chnl_cb_x[log_chnl_idx].isr_param, (mb_chnl_ack_t *)ack_ptr);
 	}
-
-#if CONFIG_SYS_CPU0
-try_to_start_tx:
-#endif
 	
 	for(log_chnl_idx = 0; log_chnl_idx < phy_chnl_log_chnl_num[phy_chnl_idx]; log_chnl_idx++)  /* priority descended search. */
 	{

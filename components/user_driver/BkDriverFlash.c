@@ -123,7 +123,7 @@ static void BkFlashPartitionAssert(bk_partition_t inPartition)
 
 static uint32_t BkFlashPartitionIsValid(bk_partition_t inPartition)
 {
-	if ((inPartition >= BK_PARTITION_BOOTLOADER) && (inPartition < BK_PARTITION_MAX))
+	if (inPartition >= BK_PARTITION_BOOTLOADER)
 		return 1;
 	else
 		return 0;

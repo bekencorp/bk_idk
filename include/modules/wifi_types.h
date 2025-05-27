@@ -765,6 +765,13 @@ typedef enum
  * @}
  */
 
+ /**
+ * @brief wifi get vsie cb interface
+ * @param void* vendor_ie
+ * @param frame type 1: probe response(or beacon)  2: assoc response
+ */
+typedef bk_err_t (* wifi_get_vsie_cb_t)(void* vendor_ie, uint8_t frame_type);
+
 #ifdef __cplusplus
 }
 #endif

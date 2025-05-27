@@ -253,4 +253,41 @@ menu "Lwip_intf_v2_1"
 			(requires the LWIP_TCP option)
 			as much as (2 * LWIP_TCP_SND_QUEUELEN) for things to work.
 	endmenu #Memory Config
+
+	menu "Tcp Config"
+	config LWIP_TCP_RTO_TIMEOUT
+		int "Default TCP rto timeout"
+		default 3000 if !LWIP_TCP_FAST_RETRANSMISSION
+		default 1500 if LWIP_TCP_FAST_RETRANSMISSION
+		help
+			Configure a reasonable default TCP PCB RTO (Recovery Time Objective) time
+			as the initial RTO time. In different network environments,
+			the RTO timeout can be configured according to the quality
+			of the network environment,The default parameter value is 3000.
+
+	config LWIP_TCP_FAST_RETRANSMISSION
+		bool "TCP Fast Retransmissions"
+		default n
+		help
+			The configuration can enable TCP fast retransmission, 
+			with macro configuration set to default as enabled. 
+			If disabled, the default SYN retransmission count is set to 6 times, 
+			and the TCP initial pcb_rto time is set to default as 3000 milliseconds (3 seconds).
+
+	config LWIP_TCP_SYNMAXRTX
+		int "Maximum number of retransmissions of SYN segments"
+		default 6 if !LWIP_TCP_FAST_RETRANSMISSION
+		default 12 if LWIP_TCP_FAST_RETRANSMISSION
+		range 3 12
+		help
+			Set maximum number of retransmissions of SYN segments.
+
+	config LWIP_TCP_QUEUE_OOSEQ
+		bool "Stands for Out-of-Order Sequence Queue"
+		default y
+		help
+			It a term related to the TCP (Transmission Control Protocol) 
+			implementation in networking. TCP will queue segments that arrive out of order.
+			Define to 0 if your device is low on memory.
+	endmenu #Tcp Config
 endmenu

@@ -20,6 +20,7 @@ menu "Ota"
 		help
 			enable ota evade method
 	config OTA_HTTPS
+		depends on LWIP
 		bool "Enable Https ota"
 		default n
 		help

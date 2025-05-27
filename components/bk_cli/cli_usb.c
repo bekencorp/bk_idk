@@ -749,6 +749,32 @@ void cli_usb_ota_ops(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **
 }
 #endif
 
+#if CONFIG_USB_CDC_ACM_DEMO
+
+void cli_usb_cdc_acm_demo_ops(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	if (argc < 2) {
+		CLI_LOGD("%s Please Check the number of paramter.\r\n", __func__);
+		cli_usb_help();
+		return;
+	}
+	/* Firstly */
+	if (os_strcmp(argv[1], "demo") == 0) {
+          #if (CONFIG_SYS_CPU0)
+		extern void bk_usb_cdc_demo(void);
+		bk_usb_cdc_demo();
+          #endif
+	}
+	/* Secondly */
+	else if (os_strcmp(argv[1], "open") == 0) {
+		bk_usb_power_ops(CONFIG_USB_VBAT_CONTROL_GPIO_ID, 1);
+		bk_usb_open(USB_HOST_MODE);
+	}
+}
+
+#endif
+
+
 #if CONFIG_UVC_UAC_DEMO_DEBUG
 static bk_uvc_device_brief_info_t uvc_dev_info;
 static bk_uvc_config_t uvc_config;
@@ -1278,6 +1304,22 @@ void cli_usb_base_ops(char *pcWriteBuffer, int xWriteBufferLen, int argc, char *
 
 }
 
+void cli_usbd_msc_ops(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	if (os_strcmp(argv[1], "msc_init") == 0) {
+		extern void msc_storage_init(void);
+		msc_storage_init();
+		CLI_LOGI("%s msc_storage_init \r\n",__func__);
+	} else if (os_strcmp(argv[1], "driver_deinit") == 0) {
+		extern void msc_storage_deinit(void);
+		msc_storage_deinit();
+		CLI_LOGI("%s msc_storage_deinit\r\n",__func__);
+	} else {
+		cli_usb_help();
+		return;
+	}
+
+}
 const struct cli_command usb_host_clis[] = {
 
 #if CONFIG_USB_MSD
@@ -1307,6 +1349,14 @@ const struct cli_command usb_host_clis[] = {
 #if CONFIG_USB_MAILBOX
 	{"usb_mb", "usb_mb init|deinit", cli_usb_mailbox_ops},
 #endif //CONFIG_USB_MAILBOX
+
+#if CONFIG_USB_CDC_ACM_DEMO
+	{"usb_cdc", "usb_cdc_acm_demo ", cli_usb_cdc_acm_demo_ops},
+#endif
+
+#if CONFIG_USBD_MSC
+	{"usbd", "usbd msc_init|msc_deinit", cli_usbd_msc_ops},
+#endif //CONFIG_USBD_MSC
 
 	{"usb", "usb driver_init|driver_deinit|power[gpio_id ops]|open_host|open_dev|close", cli_usb_base_ops},
 };

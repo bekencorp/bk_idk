@@ -461,8 +461,9 @@ static void event_task(beken_thread_arg_t arg)
 static int event_send_msg_to_event_task(event_msg_t *pmsg, uint32_t timeout)
 {
 	int rtos_ret;
+	bool is_sync_msg = pmsg->is_sync_msg;
 
-	if (pmsg->is_sync_msg) {
+	if (is_sync_msg) {
 		rtos_ret = rtos_init_semaphore(&pmsg->sync_msg_sem, 1);
 		if (rtos_ret != kNoErr)
 			return BK_ERR_EVENT_INIT_SEM;
@@ -470,13 +471,13 @@ static int event_send_msg_to_event_task(event_msg_t *pmsg, uint32_t timeout)
 
 	rtos_ret = rtos_push_to_queue(&s_event_queue, &pmsg, timeout);
 	if (rtos_ret != kNoErr) {
-		if (pmsg->is_sync_msg)
+		if (is_sync_msg)
 			rtos_deinit_semaphore(&pmsg->sync_msg_sem);
 
 		return BK_ERR_EVENT_POST_QUEUE;
 	}
 
-	if (pmsg->is_sync_msg) {
+	if (is_sync_msg) {
 		rtos_get_semaphore(&pmsg->sync_msg_sem, BEKEN_NEVER_TIMEOUT);
 		rtos_deinit_semaphore(&pmsg->sync_msg_sem);
 		return pmsg->sync_msg_ret;

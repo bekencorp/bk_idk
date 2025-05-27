@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "bk7236xx.h"
+#include "armstar.h"
 #include "os/os.h"
 #include "common/bk_assert.h"
 #include "sdkconfig.h"
@@ -50,12 +50,15 @@ ARM_MPU_Region_t mpu_regions[] = {
     { ARM_MPU_RBAR(0x02000000UL, ARM_MPU_SH_NON, 1, 1, 0),
       ARM_MPU_RLAR(0x02FFFFE0UL, 4) },                     /* Flash, for RO-code/RO-data. WT-RA */
 
+    { ARM_MPU_RBAR(0x03000000UL, ARM_MPU_SH_NON, 0, 1, 0),
+      ARM_MPU_RLAR(0x03FFFFE0UL, 1) },                     /* Flash, for XIP WRITE, nocacheable */
+
     /* MPU region 2
     	iram_s:  0x0800 0000-----------0x0809 FFFF
     	iram_ns: 0x1800 0000-----------0x1809 FFFF
      */
     { ARM_MPU_RBAR(0x08000000UL, ARM_MPU_SH_NON, 1, 1, 0),
-      ARM_MPU_RLAR(0x0809FFE0UL, 4) },                     /* SRAM, for RO-code/RO-data. WT-RA */
+      ARM_MPU_RLAR(0x1FFFFFE0UL, 1) },                     /* SRAM, for RO-code/RO-data. WT-RA */
 
     /* MPU region 3
     	dtcm_s:  0x2000 0000-----------0x2000 3FFF
@@ -88,7 +91,7 @@ ARM_MPU_Region_t mpu_regions[] = {
       ARM_MPU_RLAR(0x5FFFFFE0UL, 2) },
 
     /* MPU region 6 psram */
-    { ARM_MPU_RBAR(0x60000000UL, ARM_MPU_SH_NON, 0, 1, 1),
+    { ARM_MPU_RBAR(0x60000000UL, ARM_MPU_SH_NON, 0, 1, 0),
       ARM_MPU_RLAR(0x63FFFFE0UL, 1) },
 
     /* MPU region 7 qspi0 */
@@ -101,7 +104,15 @@ ARM_MPU_Region_t mpu_regions[] = {
 
      /* MPU region 9 ppb and other */
      { ARM_MPU_RBAR(0x6C000000UL, ARM_MPU_SH_NON, 0, 1, 1),
-       ARM_MPU_RLAR(0xEFFFFFE0UL, 2) }
+       ARM_MPU_RLAR(0x6FFFFFE0UL, 3) },
+
+      /* MPU region 10 non-secure psram and non-secure qspi */
+      { ARM_MPU_RBAR(0x70000000UL, ARM_MPU_SH_NON, 0, 1, 1),
+        ARM_MPU_RLAR(0x7FFFFFE0UL, 1) },
+
+      /* MPU region 11 ppb and other */
+      { ARM_MPU_RBAR(0x80000000UL, ARM_MPU_SH_NON, 0, 1, 1),
+        ARM_MPU_RLAR(0xEFFFFFE0UL, 2) }
 };
 
 /*

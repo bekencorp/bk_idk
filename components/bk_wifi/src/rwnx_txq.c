@@ -513,6 +513,9 @@ void rwnx_txq_cleanup_timer_cb(void *dummy)
 
 static void __rwnx_txq_cleanup_timer_cb(void *dummy0,void *dummy1)
 {
+	struct rwnx_hw *rwnx_hw = &g_rwnx_hw;
+
+	rwnx_hw->txq_cleanup_timer_running = false;
 	bmsg_tx_drop_traffic_sender(0);
 }
 
@@ -525,9 +528,17 @@ void rwnx_txq_start_cleanup_timer(STA_INF_PTR sta)
 {
 	struct rwnx_hw *rwnx_hw = &g_rwnx_hw;
 
-	if (sta && !is_multicast_sta(mac_sta_mgmt_get_staid(sta)) &&
-		!rtos_is_oneshot_timer_running(&rwnx_hw->txq_cleanup))
-		rtos_oneshot_reload_timer(&rwnx_hw->txq_cleanup);
+	if (!sta)
+		return;
+
+	if (is_multicast_sta(mac_sta_mgmt_get_staid(sta)))
+		return;
+
+	if (rwnx_hw->txq_cleanup_timer_running)
+		return;
+
+	rtos_oneshot_reload_timer(&rwnx_hw->txq_cleanup);
+	rwnx_hw->txq_cleanup_timer_running = true;
 }
 
 
@@ -589,6 +600,7 @@ void rwnx_txq_prepare()
 
 	rtos_init_oneshot_timer(&g_rwnx_hw.txq_cleanup, RWNX_TXQ_CLEANUP_INTERVAL,
 					__rwnx_txq_cleanup_timer_cb, 0, NULL);
+	g_rwnx_hw.txq_cleanup_timer_running = false;
 }
 
 /******************************************************************************

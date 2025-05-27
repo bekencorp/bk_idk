@@ -1080,6 +1080,7 @@ bk_err_t bk_dma_stateless_judgment_configuration(void *out, const void *in, uint
     flush_dcache((void *)dma_config.src.start_addr, dma_config.src.end_addr - dma_config.src.start_addr);
     flush_dcache((void *)dma_config.dst.start_addr, dma_config.dst.end_addr - dma_config.dst.start_addr);
 #endif
+    dma_hal_init_without_channels(&s_dma[dma_num].hal);	//TODO:special codes for DMA init after enter low voltage
     dma_hal_init_dma(&s_dma[dma_num].hal, dma_channel, &dma_config);
 
     /* register isr */

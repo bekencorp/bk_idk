@@ -83,6 +83,39 @@ static void rtos_dump_plat_memory(void) {
     stack_mem_dump((uint32_t)SOC_SRAM2_DATA_BASE, (uint32_t)SOC_SRAM3_DATA_BASE);
 }
 
+static void dump_peri_regs(void) {
+#if CONFIG_SOC_BK7236XX
+    stack_mem_dump((uint32_t)SOC_SYS_REG_BASE, (uint32_t)SOC_SYS_REG_BASE + (0x5c*4));
+    stack_mem_dump((uint32_t)SOC_FLASH_REG_BASE, (uint32_t)SOC_FLASH_REG_BASE + (0x20*4));
+    stack_mem_dump((uint32_t)SOC_AON_PMU_REG_BASE, (uint32_t)SOC_AON_PMU_REG_BASE + (0x7f*4));
+#if (GEN_SECURITY_DEV_UART1_IS_SECURE && !CONFIG_SPE) // if UART1 is used for TFM debug, NSPE cannot access gpio0/1 reg
+    stack_mem_dump((uint32_t)SOC_AON_GPIO_REG_BASE+ (0x2*4), (uint32_t)SOC_AON_GPIO_REG_BASE + (0x30*4));
+#else
+    stack_mem_dump((uint32_t)SOC_AON_GPIO_REG_BASE, (uint32_t)SOC_AON_GPIO_REG_BASE + (0x30*4));
+#endif
+
+#if CONFIG_GENERAL_DMA
+    stack_mem_dump((uint32_t)SOC_GENER_DMA_REG_BASE, (uint32_t)SOC_GENER_DMA_REG_BASE + (0x44*4));
+#if (SOC_DMA_UNIT_NUM > 1)
+    stack_mem_dump((uint32_t)SOC_GENER_DMA1_REG_BASE, (uint32_t)SOC_GENER_DMA1_REG_BASE + (0x44*4));
+#endif
+#endif
+#if CONFIG_MAILBOX
+    stack_mem_dump((uint32_t)SOC_MBOX0_REG_BASE, (uint32_t)SOC_MBOX0_REG_BASE + (0x38*4));
+    stack_mem_dump((uint32_t)SOC_MBOX1_REG_BASE, (uint32_t)SOC_MBOX1_REG_BASE + (0x38*4));
+#endif
+#if CONFIG_AON_RTC
+    stack_mem_dump((uint32_t)SOC_AON_RTC_REG_BASE, (uint32_t)SOC_AON_RTC_REG_BASE + (0x0a*4));
+#endif
+#if CONFIG_PSRAM
+    stack_mem_dump((uint32_t)SOC_PSRAM_REG_BASE, (uint32_t)SOC_PSRAM_REG_BASE + (0x17*4));
+#endif
+#endif
+    /*dmup psram memory*/
+    stack_mem_dump((uint32_t)0x60000000, (uint32_t)(0x60000000+2048));
+
+}
+
 
 unsigned int arch_is_enter_exception(void) {
     return g_enter_exception;
@@ -373,6 +406,8 @@ static void rtos_dump_system(void)
 
     rtos_dump_plat_sys_mems();
 
+    bk_psram_heap_dump_data();
+	
 #if CONFIG_FREERTOS && CONFIG_MEM_DEBUG
     os_dump_memory_stats(0, 0, NULL);
 #endif
@@ -386,6 +421,8 @@ static void rtos_dump_system(void)
     BK_DUMP_OUT("***********************************************************************************************\r\n");
     BK_DUMP_OUT("************************************user except handler end************************************\r\n");
     BK_DUMP_OUT("***********************************************************************************************\r\n");
+
+     dump_peri_regs();
 #endif //CONFIG_DEBUG_FIRMWARE || CONFIG_DUMP_ENABLE
 }
 
@@ -508,9 +545,17 @@ void bk_system_dump(void)
     rtos_enable_int(int_level);
 }
 
+/*when a cpu hangs,use this variable to judge whether the cpu has entered an exception*/
+#if CONFIG_INTERRUPT_DEBUG_RECORDER
+__attribute__((__used__)) static volatile uint32_t CPUx_crash_recorder = 0;
+#endif
 void user_except_handler_ex(uint32_t reset_reason, uint32_t lr, uint32_t sp)
 {
+
     if (0 == g_enter_exception) {
+#if CONFIG_INTERRUPT_DEBUG_RECORDER
+        CPUx_crash_recorder = sp;
+#endif
         dump_context(lr, sp);
         // Make sure the interrupt is disable
         uint32_t int_level = rtos_disable_int();
@@ -535,6 +580,9 @@ void user_except_handler_ex(uint32_t reset_reason, uint32_t lr, uint32_t sp)
 
         rtos_enable_int(int_level);
     } else {
+#if CONFIG_INTERRUPT_DEBUG_RECORDER
+        CPUx_crash_recorder = 0;
+#endif
 		dump_epilogue();
 #if CONFIG_SYS_CPU0
         bk_misc_set_reset_reason(reset_reason);

@@ -59,6 +59,7 @@ bk_err_t gpio_jtag_sel(gpio_jtag_map_group_t gpio_jtag_sel_mode);
 
 #if CONFIG_GPIO_RETENTION_SUPPORT
 bk_err_t gpio_retention_map_set(gpio_id_t id, gpio_output_state_e output);
+bk_err_t gpio_retention_map_clr(gpio_id_t id);
 uint64_t gpio_retention_map_get(void);
 void gpio_retention_sync(bool force_flag);
 #endif

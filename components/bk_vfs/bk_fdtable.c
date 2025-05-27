@@ -1,4 +1,6 @@
 #include "os/os.h"
+#include "os/str.h"
+#include "os/mem.h"
 #include "bk_fdtable.h"
 #include "bk_filesystem.h"
 
@@ -9,7 +11,7 @@ static struct bk_file files[MAX_BK_FILE_NUMBER];
 int bk_fdtable_init(void) {
 
 	int i;
-	
+
 	for (i = 0; i < MAX_BK_FILE_NUMBER; i++) {
 		files[i].magic = 0;
 	}
@@ -37,6 +39,9 @@ void bk_file_put(struct bk_file *file) {
 	file->filesystem = NULL;
 	file->f_ops = NULL;
 	file->f_data = NULL;
+#if CONFIG_STARBURST_AIDIALOG_SDK
+    file->path = NULL;
+#endif
 }
 
 struct bk_file *bk_fd_to_file(int fd) {
@@ -46,7 +51,7 @@ struct bk_file *bk_fd_to_file(int fd) {
 	if (files[fd].magic != BK_FILE_MAGIC)
 		return NULL;
 
-	return &files[fd];	
+	return &files[fd];
 }
 
 int bk_file_to_fd(struct bk_file *file) {

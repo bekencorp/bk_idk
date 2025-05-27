@@ -710,14 +710,16 @@ def packager(args):
                     #print("============size：>>>>",size)
                     iSize = (size2int(size))
                     #print("============iSize：>>>>",iSize)
-                    #print("============dest_obj：>>>>",len(dest_obj))                    
-                    for i in range(iSize - len(dest_obj) - 4096):
-                        a = struct.pack('B',255)
-                        f.write(a)
-            f.write(my_head)
-            for i in range(4000):
-                a = struct.pack('B',255)
-                f.write(a)
+                    #print("============dest_obj：>>>>",len(dest_obj)) 
+            padding_len = iSize - len(dest_obj) 
+            print(f'padding_len:: {padding_len}')
+            if padding_len > 4096:
+                padding = bytes([0xFF]*padding_len)
+                f.write(padding)
+                f.seek(iSize - 4096)
+                f.write(my_head)
+            else:
+                raise RuntimeError(f'the image size is oveflow partiiton should remaining 4k size')
         else:
             f.write(my_head)
             f.write(dest_obj)

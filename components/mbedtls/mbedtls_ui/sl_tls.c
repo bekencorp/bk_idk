@@ -3,6 +3,8 @@
 #include "lwip/sockets.h"
 #include "lwip/ip_addr.h"
 #include "lwip/inet.h"
+#include <os/str.h>
+#include <string.h>
 
 extern void bk_printf(const char *fmt, ...);
 
@@ -55,7 +57,6 @@ __exit:
 
 MbedTLSSession * ssl_create(char *url,char *port)
 {
-	int ret;
 	MbedTLSSession *tls_session = NULL;
 
 	if(!url && !port)
@@ -66,7 +67,7 @@ MbedTLSSession * ssl_create(char *url,char *port)
 	if(tls_session == NULL)
 	{
 		bk_printf("[SSL]%s %d error\r\n",__FUNCTION__,__LINE__);
-		return -1;
+		return NULL;
 	}
 
 	tls_session->host = os_strdup(url);  ///os_strdup(DEFAULT_MBEDTLS_WEB_SERVER);
@@ -116,9 +117,9 @@ err_exit:
 		tls_session = NULL;
 	}
 	goto error;
-	return 0;
+	return NULL;
 error:
-	return 0;
+	return NULL;
 }
 
 int ssl_txdat_sender(MbedTLSSession *tls_session,int len,char *data)
@@ -272,6 +273,6 @@ int ssl_read_data(MbedTLSSession *session,unsigned char *msg,unsigned int mlen,u
 
 int ssl_close(MbedTLSSession *session)
 {
-	mbedtls_client_close(session);
+	return mbedtls_client_close(session);
 }
 

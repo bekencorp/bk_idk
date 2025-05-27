@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include <stdarg.h>
 #include <common/bk_err.h>
 
 #ifdef __cplusplus
@@ -69,6 +70,8 @@ typedef enum {
 #define BK_ERR_INVALID_MAC        (BK_ERR_MAC_BASE - 3)
 
 #define BK_MAC_ADDR_LEN           6
+
+#define BK_PRINT_UART_ISR_DEFAULT_PRIORITY       7
 
 #define BK_IS_ZERO_MAC(m) (((m)[0] == 0) && ((m)[1] == 0) && ((m)[2] == 0) && ((m)[3] == 0)\
 	&& ((m)[4] == 0) && ((m)[5] == 0))
@@ -135,7 +138,13 @@ void bk_buf_printf_sync(char *buf, int buf_len);  /* Obsoleted  API */
 void bk_printf_ex(int level, char * tag, const char *fmt, ...);  /* Obsoleted  API */
 
 void bk_printf_ext(int level, char * tag, const char *fmt, ...);
+void bk_printf_nonblock(int level, char * tag, const char *fmt, ...);
+void bk_printf_static_nonblock(int level, char *tag, const char *fmt, ...);
+void bk_printf_static_block(int level, char *tag, const char *fmt, ...);
+void bk_vprintf_ext(int level, char *tag, const char *fmt, va_list args);
 void bk_printf_raw(int level, char * tag, const char *fmt, ...);
+void bk_printf_raw_nonblock(int level, char * tag, const char *fmt, ...);
+void bk_vprintf_raw(int level, char *tag, const char *fmt, va_list args);
 
 void bk_disable_mod_printf(char *mod_name, uint8_t disable);
 char * bk_get_disable_mod(int * idx);

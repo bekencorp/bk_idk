@@ -135,6 +135,12 @@ const char *wifi_sec_type_string(wifi_security_t security)
 		return "OWE";
 	case WIFI_SECURITY_AUTO:
 		return "AUTO";
+#ifdef CONFIG_WAPI_SUPPORT
+	case WIFI_SECURITY_TYPE_WAPI_PSK:
+		return "WAPI_PSK";
+	case WIFI_SECURITY_TYPE_WAPI_CERT:
+		return "WAPI_CERT";
+#endif
 	default:
 		return "UNKNOWN";
 	}
@@ -938,12 +944,18 @@ int wlan_sta_set(const uint8_t *ssid, uint8_t ssid_len, const uint8_t *psk)
 #ifdef CONFIG_OWE
 		config.u.key_mgmt |= WPA_KEY_MGMT_OWE;
 #endif
+#ifdef CONFIG_WAPI_SUPPORT
+		config.u.key_mgmt |= WPA_KEY_MGMT_WAPI_PSK;
+#endif
 
 		BK_RETURN_ON_ERR(wpa_ctrl_request(WPA_CTRL_CMD_STA_SET, &config));
 
 		/* proto: WPA | RSN */
 		config.field = WLAN_STA_FIELD_PROTO;
 		config.u.proto = WPA_PROTO_WPA | WPA_PROTO_RSN;
+#ifdef CONFIG_WAPI_SUPPORT
+		config.u.proto |= WPA_PROTO_WAPI;
+#endif
 		BK_RETURN_ON_ERR(wpa_ctrl_request(WPA_CTRL_CMD_STA_SET, &config));
 
 		/* pairwise: CCMP | TKIP */
@@ -1605,9 +1617,12 @@ static int wifi_deepsleep_enter_cb(uint64_t expected_time_ms, void *args)
 	return 0;
 }
 
+
 static int wifi_lowvol_exit_cb(uint64_t expected_time_ms, void *args)
 {
+
 	bk_wifi_media_dtim();
+
 	return 0;
 }
 
@@ -1950,6 +1965,50 @@ void bk_wlan_ap_init_adv(network_InitTypeDef_ap_st *inNetworkInitParaAP)
 	}
 
 	sa_ap_init();
+}
+
+static wifi_get_vsie_cb_t g_wifi_get_vsie_cb = NULL;
+uint32_t g_wifi_get_vsie_type = 0;
+uint8_t g_wifi_get_vsie_oui_len = 0;
+bk_err_t bk_wifi_get_vendor_ie_cb(void* vsie_cb, uint32_t vendor_type, uint8_t oui_len)
+{
+	WIFI_LOGI("bk_wifi_get_vendor_ie_cb type 0x%x\n",vendor_type);
+
+	g_wifi_get_vsie_cb = vsie_cb;
+	g_wifi_get_vsie_type = vendor_type;
+	g_wifi_get_vsie_oui_len = oui_len;
+	return BK_OK;
+}
+
+/**
+ * @brief get probe response and assoc response vendor IE,internal interface
+ *
+ * @param void* vendor_ie
+ * @param vendor_type OUI type
+ * @param len vendor ie length
+ * @param frame type 1: probe response(or beacon)  2: assoc response
+ *
+ */
+bk_err_t bk_wifi_get_vendor_ie_cb_internal(void* vendor_ie, uint32_t vendor_type, uint16_t len, uint8_t frame_type)
+{
+	WIFI_LOGD("bk_wifi_get_vendor_ie_cb_internal vsie 0x%x,type 0x%x,len %d,type %d\n",vendor_ie,vendor_type,len,frame_type);
+
+	if ((vendor_type == g_wifi_get_vsie_type) && (g_wifi_get_vsie_cb))
+		g_wifi_get_vsie_cb(vendor_ie, frame_type);
+
+	if(vendor_ie)
+		os_free(vendor_ie);
+	return BK_OK;
+}
+
+uint32_t bk_wifi_get_vendor_ie_type(void)
+{
+	return g_wifi_get_vsie_type;
+}
+
+uint8_t bk_wifi_get_vendor_ie_oui_len(void)
+{
+	return g_wifi_get_vsie_oui_len;
 }
 
 wifi_connect_tick_t sta_tick = {0};
@@ -3804,6 +3863,40 @@ bk_err_t bk_wifi_set_bcn_miss_time(uint8_t bcnmiss_time) {
 	WIFI_LOGI("bcn_miss_time %d\r\n",bcnmiss_time);
 
 	return rw_msg_send_bcn_miss_time_req(vif_idx, bcnmiss_time);
+}
+
+bk_err_t bk_wifi_get_support_wifi_mode(uint8_t* support_mode)
+{
+	int ret;
+	uint8_t vif_idx = 0;
+	vif_idx = wifi_netif_mac_to_vifid((uint8_t*)&g_sta_param_ptr->own_mac);
+
+#if NX_P2P
+	VIF_INF_PTR vif = rwm_mgmt_vif_idx2ptr(vif_idx);
+	if (vif->p2p)
+		return BK_FAIL;
+#endif
+
+	struct mm_get_support_mode_cfm get_mode_cfm = {0};
+	ret = rw_msg_get_support_mode_req(vif_idx, &get_mode_cfm);
+	if(!ret)
+		*support_mode = get_mode_cfm.support_mode;
+	return ret;
+}
+
+bk_err_t bk_wifi_set_arp_reply_config(uint8_t flag, uint8_t arp_period) {
+
+	uint8_t vif_idx = 0;
+	vif_idx = wifi_netif_mac_to_vifid((uint8_t*)&g_sta_param_ptr->own_mac);
+
+#if NX_P2P
+	VIF_INF_PTR vif = rwm_mgmt_vif_idx2ptr(vif_idx);
+	if (vif->p2p)
+		return BK_FAIL;
+#endif
+	WIFI_LOGD("bk_wifi_set_arp_config flag %d,period %d\r\n",flag,arp_period);
+
+	return rw_msg_send_arp_reply_config_req(vif_idx, flag, arp_period);
 }
 
 bk_err_t bk_wifi_get_rx_crc_error(uint32_t *ulRxCRCErrorCount)

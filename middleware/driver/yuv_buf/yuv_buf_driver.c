@@ -48,23 +48,33 @@ static void yuv_buf_isr(void);
 
 static void yuv_buf_init_common(void)
 {
-	/* 1) power on yuv_buf
-	 * 2) enable yuv_buf system interrupt
-	 */
-	sys_drv_yuv_buf_pwr_up();
+	// enable yuv_buf power
+	//sys_drv_yuv_buf_power_en(1);
+	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_VIDP_YUVBUF, PM_POWER_MODULE_STATE_ON);
+	// enable yuv_buf clk
+	sys_drv_set_h264_clk_en(1);
+	sys_drv_set_yuv_buf_clk_en(1);
+	// enable yuv_buf system interrupt
 	sys_drv_int_group2_enable(YUV_BUF_INTERRUPT_CTRL_BIT);
+	// init yuv_buf
 	yuv_buf_hal_set_global_ctrl(&s_yuv_buf.hal);
 }
 
 static void yuv_buf_deinit_common(void)
 {
-	yuv_buf_hal_reset_config_to_default(&s_yuv_buf.hal);
-	/* 1) power off yuv_buf
-	 * 2) disable yuv_buf system interrupt
-	 * 3) unregister isr
-	 */
-	sys_drv_yuv_buf_pwr_down();
+	// yuv_buf stop
+	yuv_buf_hal_stop_yuv_mode(&s_yuv_buf.hal);
+	yuv_buf_hal_stop_h264_mode(&s_yuv_buf.hal);
+	// yuv_buf reset
+	yuv_buf_hal_soft_reset(&s_yuv_buf.hal);
+	// yuv_buf clk disable
+	sys_drv_set_yuv_buf_clk_en(0);
+	// yuv_buf system isr disable
 	sys_drv_int_group2_disable(YUV_BUF_INTERRUPT_CTRL_BIT);
+	// yuv_buf power disable
+	//sys_drv_yuv_buf_power_en(0);
+	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_VIDP_YUVBUF, PM_POWER_MODULE_STATE_OFF);
+	// yuv_buf isr unregister
 	for (uint8_t i = 0; i < YUV_BUF_ISR_MAX; i++)
 	{
 		bk_yuv_buf_unregister_isr(i);

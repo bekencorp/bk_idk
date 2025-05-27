@@ -154,7 +154,7 @@ int demo_sta_app_init(char *oob_ssid, char *connect_key)
 	os_strcpy(sta_config.ssid, oob_ssid);
 	os_strcpy(sta_config.password, connect_key);
 
-	BK_LOGI(TAG, "ssid:%s key:%s\r\n", sta_config.ssid, sta_config.password);
+	BK_LOGW(TAG, "ssid:%s key:%s\r\n", sta_config.ssid, sta_config.password);
 	BK_LOG_ON_ERR(bk_wifi_sta_set_config(&sta_config));
 	BK_LOG_ON_ERR(bk_wifi_sta_start());
 	return BK_OK;
@@ -179,7 +179,7 @@ void demo_sta_adv_app_init(char *oob_ssid, char *connect_key)
 	sta_config.security = BK_SECURITY_TYPE_WPA2_MIXED;
 	sta_config.channel = 11;
 
-	BK_LOGI(TAG, "ssid:%s  key:%s\r\n", sta_config.ssid, sta_config.password);
+	BK_LOGW(TAG, "ssid:%s  key:%s\r\n", sta_config.ssid, sta_config.password);
 	BK_LOG_ON_ERR(bk_wifi_sta_set_config(&sta_config));
 	BK_LOG_ON_ERR(bk_wifi_sta_start());
 }
@@ -219,15 +219,15 @@ int demo_state_app_init(void)
 	char ssid[33] = {0};
 #if CONFIG_WIFI4
 #if CONFIG_BRIDGE
-	BK_LOGI(TAG, "[KW:]sta: %d, ap: %d, bridge: %d b/g/n\r\n", wifi_netif_sta_is_got_ip(), uap_ip_is_start(), bridge_ip_is_start());
+	BK_LOGW(TAG, "[KW:]sta: %d, ap: %d, bridge: %d b/g/n\r\n", wifi_netif_sta_is_got_ip(), uap_ip_is_start(), bridge_ip_is_start());
 #else
-	BK_LOGI(TAG, "[KW:]sta: %d, ap: %d, b/g/n\r\n", wifi_netif_sta_is_got_ip(), uap_ip_is_start());
+	BK_LOGW(TAG, "[KW:]sta: %d, ap: %d, b/g/n\r\n", wifi_netif_sta_is_got_ip(), uap_ip_is_start());
 #endif
 #else
 #if CONFIG_BRIDGE
-	BK_LOGI(TAG, "[KW:]sta: %d, ap: %d, bridge: %d b/g/n\r\n", wifi_netif_sta_is_got_ip(), uap_ip_is_start(), bridge_ip_is_start());
+	BK_LOGW(TAG, "[KW:]sta: %d, ap: %d, bridge: %d b/g/n\r\n", wifi_netif_sta_is_got_ip(), uap_ip_is_start(), bridge_ip_is_start());
 #else
-	BK_LOGI(TAG, "[KW:]sta: %d, ap: %d, b/g\r\n", wifi_netif_sta_is_got_ip(), uap_ip_is_start());
+	BK_LOGWTAG, "[KW:]sta: %d, ap: %d, b/g\r\n", wifi_netif_sta_is_got_ip(), uap_ip_is_start());
 #endif
 #endif
 
@@ -236,7 +236,7 @@ int demo_state_app_init(void)
 		BK_RETURN_ON_ERR(bk_wifi_sta_get_link_status(&link_status));
 		os_memcpy(ssid, link_status.ssid, 32);
 
-		BK_LOGI(TAG, "[KW:]sta:rssi=%d,aid=%d,ssid=%s,bssid=%pm,channel=%d,cipher_type=%s\r\n",
+		BK_LOGW(TAG, "[KW:]sta:rssi=%d,aid=%d,ssid=%s,bssid=%pm,channel=%d,cipher_type=%s\r\n",
 				   link_status.rssi, link_status.aid, ssid, link_status.bssid,
 				   link_status.channel, wifi_sec_type_string(link_status.security));
 	}
@@ -246,14 +246,14 @@ int demo_state_app_init(void)
 		BK_RETURN_ON_ERR(bk_wifi_ap_get_config(&ap_info));
 		os_memcpy(ssid, ap_info.ssid, 32);
 #if CONFIG_BRIDGE
-		BK_LOGI(TAG, "[KW:]bridge: ssid=%s, channel=%d, cipher_type=%s\r\n",
+		BK_LOGW(TAG, "[KW:]bridge: ssid=%s, channel=%d, cipher_type=%s\r\n",
 				   ssid, ap_info.channel, wifi_sec_type_string(ap_info.security));
 #else
-		BK_LOGI(TAG, "[KW:]softap: ssid=%s, channel=%d, cipher_type=%s\r\n",
+		BK_LOGW(TAG, "[KW:]softap: ssid=%s, channel=%d, cipher_type=%s\r\n",
 				   ssid, ap_info.channel, wifi_sec_type_string(ap_info.security));
 
 		BK_RETURN_ON_ERR(bk_netif_get_ip4_config(NETIF_IF_AP, &ap_ip4_info));
-		BK_LOGI(TAG, "[KW:]ip=%s,gate=%s,mask=%s,dns=%s\r\n",
+		BK_LOGW(TAG, "[KW:]ip=%s,gate=%s,mask=%s,dns=%s\r\n",
 				   ap_ip4_info.ip, ap_ip4_info.gateway, ap_ip4_info.mask, ap_ip4_info.dns);
 #endif
 	}

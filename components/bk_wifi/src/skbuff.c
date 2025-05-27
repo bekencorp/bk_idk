@@ -101,7 +101,7 @@ struct sk_buff *alloc_skb(UINT32 len, int layer)
 	struct pbuf *p;
 
 	/* no payload here */
-	skb = (struct sk_buff *)os_zalloc(sizeof(struct sk_buff));
+	skb = (struct sk_buff *)os_sram_zalloc(sizeof(struct sk_buff));
 
 	if (!skb)
 		goto alloc_exit;
@@ -128,12 +128,12 @@ struct sk_buff *alloc_skb_for_tx_mgmt(UINT32 len)
 	unsigned char *payload = 0;
 
 	/* no payload here */
-	skb = (struct sk_buff *)os_zalloc(sizeof(struct sk_buff));
+	skb = (struct sk_buff *)os_sram_zalloc(sizeof(struct sk_buff));
 
 	if (!skb)
 		goto alloc_exit;
 
-	payload = (unsigned char *)os_zalloc(len);
+	payload = (unsigned char *)os_sram_zalloc(len);
 	if (!payload) {
 		os_free(skb);
 		skb = 0;
@@ -153,7 +153,7 @@ struct sk_buff *alloc_skb_with_pbuf(struct pbuf *p)
 {
 	struct sk_buff *skb = 0;
 
-	skb = (struct sk_buff *)os_zalloc(sizeof(struct sk_buff));
+	skb = (struct sk_buff *)os_sram_zalloc(sizeof(struct sk_buff));
 
 	if (!skb)
 		goto alloc_exit;

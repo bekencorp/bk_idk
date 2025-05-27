@@ -52,7 +52,7 @@ const uint16_t TABLE_ROTT_BLOCK[][6] = {
 	{864, 480, 54, 80, 96, 48},
 	{960, 480, 40, 40, 288, 144},
 	{480, 320, 60, 80, 32, 16},
-	{1280, 720, 40, 60, 380, 95},
+	{1280, 720, 40, 60, 384, 95},
 	{320, 480, 80, 60, 32, 16},
 	{640, 16, 640, 4, 4, 2},
 	{864, 16, 864, 4, 4, 2},
@@ -180,6 +180,8 @@ bk_err_t bk_rott_driver_init(void)
 		LOGE("%s already init. \n", __func__);
 		return BK_OK;
 	}
+
+	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_VIDP_ROTT, PM_POWER_MODULE_STATE_ON);
 	bk_rott_soft_reset();
 	rott_ll_set_module_contol_clk_gate(1);
 
@@ -201,8 +203,12 @@ bk_err_t bk_rott_driver_deinit(void)
 		LOGE("%s, already deinit. \n", __func__);
 		return BK_OK;
 	}
+	rott_ll_set_rotate_ctrl_rotate_ena(0);
+	bk_rott_soft_reset();
 	sys_hal_set_rott_int_en(0);
 	bk_int_isr_unregister(INT_SRC_ROTT);
+	rott_ll_set_module_contol_clk_gate(0);
+	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_VIDP_ROTT, PM_POWER_MODULE_STATE_OFF);
 
 	s_rott_driver_is_init = false;
 	return BK_OK;
@@ -419,7 +425,7 @@ bk_err_t rott_config(rott_config_t *rott)
 
 	bk_rott_mode_config(rott->rot_mode);
 	bk_rott_input_data_format(rott->input_fmt);
-	bk_rott_data_reverse(rott->input_flow, rott->output_flow);
+//	bk_rott_data_reverse(rott->input_flow, rott->output_flow);
 
 	if ((rott->block_xpixel == 0) || (rott->block_ypixel == 0) || (rott->block_cnt == 0))
 	{

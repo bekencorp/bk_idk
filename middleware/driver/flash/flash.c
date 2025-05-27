@@ -41,6 +41,11 @@ static const flash_config_t flash_config[] = {
 	{0x204016, 2, 0x400000, 2, 14, 2, 0x1F, 0x1F, 0x00, 0x0E, 0x101, 9, 1, 0xA0, 0x01}, //xmc_25qh32b
 	{0xC22315, 1, 0x200000, 2,  0, 2, 0x0F, 0x0F, 0x00, 0x0A, 0x00E, 6, 1, 0xA5, 0x01}, //mx_25v16b
 	{0xEB6015, 2, 0x200000, 2, 14, 2, 0x1F, 0x1F, 0x00, 0x0D, 0x101, 9, 1, 0xA0, 0x01}, //zg_th25q16b
+#if CONFIG_FLASH_QUAD_ENABLE
+	{0xCD6017, 2, 0x800000, 4, 14, 2, 0x1F, 0x1F, 0x00, 0x0E, 0x00E, 9, 1, 0xA0, 0x02}, //gd_25q32c
+#else
+	{0xCD6017, 1, 0x800000, 2,  0, 2, 0x1F, 0x1F, 0x00, 0x0E, 0x00E, 0, 0, 0xA0, 0x01}, //gd_25q32c
+#endif
 	{0x000000, 2, 0x400000, 2,  0, 2, 0x1F, 0x00, 0x00, 0x00, 0x000, 0, 0, 0x00, 0x01}, //default
 };
 
@@ -214,7 +219,7 @@ static void flash_write_sr(UINT8 sr_width,  UINT16 val)
 		value = (FLASH_OPCODE_WRSR << OP_TYPE_SW_POSI) | OP_SW | WP_VALUE;
 		REG_WRITE(REG_FLASH_OPERATE_SW, value);
 	} else if (sr_width == 2) {
-		if (FLASH_ID_GD25Q32C == flash_id) {
+		if (FLASH_ID_GD25Q32C == flash_id || FLASH_ID_TH25Q64 == flash_id) {
 			//write sr lower 8 bit
 			UINT32 cmd_l = (FLASH_OPCODE_WRSR << OP_TYPE_SW_POSI) | OP_SW | WP_VALUE;
 			REG_WRITE(REG_FLASH_OPERATE_SW, cmd_l);
@@ -286,7 +291,7 @@ static void flash_set_qe(void)
 		value = (value & (ADDR_SW_REG_MASK << ADDR_SW_REG_POSI))
 				| (FLASH_OPCODE_WRSR << OP_TYPE_SW_POSI) | OP_SW | WP_VALUE;
 	} else {
-		if (FLASH_ID_GD25Q32C == flash_id) {
+		if (FLASH_ID_GD25Q32C == flash_id || FLASH_ID_TH25Q64 == flash_id) {
 			//write sr lower 8 bit
 			value = (value & (ADDR_SW_REG_MASK << ADDR_SW_REG_POSI))
 					| (FLASH_OPCODE_WRSR << OP_TYPE_SW_POSI) | OP_SW | WP_VALUE;

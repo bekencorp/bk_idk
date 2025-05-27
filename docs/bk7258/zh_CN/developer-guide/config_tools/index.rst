@@ -13,4 +13,5 @@
    安全配置 <bk_config_security>
    OTA 配置 <bk_config_ota>
    OTP/Efuse 配置 <bk_config_otp_efuse>
+   非安全版本OTP使用介绍 <bk_nosecure_version_of_otp_usage_instructions>
    烧录工具 BKFIL <bk_tool_bkfil>

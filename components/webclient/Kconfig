@@ -2,4 +2,8 @@ menu "Webclient"
 	config WEBCLIENT
 		bool "Enable Webclient"
 		default n
+	config WEBCLIENT_TLS
+		depends on WEBCLIENT && (MBEDTLS || PSA_MBEDTLS)
+		bool "Enable Webclient"
+		default n
 endmenu

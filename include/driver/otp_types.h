@@ -16,73 +16,13 @@
 
 #include <common/bk_include.h>
 #include <driver/hal/hal_otp_types.h>
+#if CONFIG_OTP_V1
+#include "_otp.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#ifdef __cplusplus
-}
-#endif
-
-typedef enum{
-    /*Hardware*/
-    OTP_MEMORY_CHECK_MARK = 0,
-    OTP_AES_KEY,
-
-    /*ARM*/
-    OTP_MODEL_ID,
-    OTP_MODEL_KEY,
-    OTP_ARM_DEVICE_ID,/*repeated*/
-    OTP_DEVICE_ROOT_KEY,
-    OTP_BL1_BOOT_PUBLIC_KEY_HASH,
-    OTP_BL2_BOOT_PUBLIC_KEY_HASH,
-    OTP_ARM_LCS,/*repeated*/
-    OTP_LOCK_CONTROL,
-
-    /**/
-    OTP_BL1_SECURITY_COUNTER,
-    OTP_BL2_SECURITY_COUNTER,
-    OTP_HUK,
-    OTP_IAK,
-    OTP_IAK_LEN,
-    OTP_IAK_TYPE,
-    OTP_IAK_ID,
-    OTP_BOOT_SEED,
-    OTP_LCS,
-    OTP_IMPLEMENTATION_ID,
-    OTP_HW_VERSION,
-    OTP_VERIFICATION_SERVICE_URL,
-    OTP_PROFILE_DEFINITION,
-    OTP_ENTROPY_SEED,
-    OTP_SECURE_DEBUG_PK,
-
-    /**/
-    OTP_MAC_ADDRESS,
-    OTP_VDDDIG_BANDGAP,
-    OTP_DIA,
-    OTP_GADC_CALIBRATION,
-    OTP_SDMADC_CALIBRATION,
-    OTP_DEVICE_ID,
-    OTP_MEMORY_CHECK_VDDDIG,
-    OTP_GADC_TEMPERATURE,
-    OTP_APB_TEST,
-
-} otp_id_t;
-
-typedef enum{
-    OTP_PHY_PWR = 0,
-    OTP_RFCALI1,
-    OTP_RFCALI2,
-    OTP_RFCALI3,
-    OTP_RFCALI4,
-}otp2_id_t;
-
-typedef enum{
-    OTP_READ_WRITE = 0,
-    OTP_READ_ONLY,
-    OTP_NO_ACCESS,
-} otp_privilege_t;
 
 typedef enum{
     OTP_BUSY = 0x1,
@@ -91,3 +31,7 @@ typedef enum{
     OTP_WRONG = 0x8,
     OTP_FORBID = 0x10,
 } otp_status_t;
+
+#ifdef __cplusplus
+}
+#endif
