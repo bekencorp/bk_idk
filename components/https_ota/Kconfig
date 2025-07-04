@@ -1,0 +1,13 @@
+menu "Https_ota"
+	config OTA_TEST
+		bool "Enable ota test"
+		default n
+
+	config OTA_UPDATE_PUBKEY
+		bool "use public key in flash"
+		default n
+
+	config VALIDATE_DURING_DOWNLOADING
+		bool "mcuboot validate before reboot"
+		default n
+endmenu

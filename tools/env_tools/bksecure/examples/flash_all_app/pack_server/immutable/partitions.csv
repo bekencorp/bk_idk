@@ -1,0 +1,12 @@
+Name,               Type, SubType, Offset,      Size,   Flags
+bl2,                app,  ,        ,            72k,
+partition,          data, ,        ,            4k,
+primary_cpu0_app,   app,  ,        ,            2408k,
+ota,                app,  ota,     ,            1404k,
+user_mfr,            data, factory, 0x3CC000,    4k,     encrypted
+ota_control,        data, ,        0x3CD000,    8k,
+public_key,         data, ,        0x3CF000,    4k, flash_encrypted
+sys_net,            data, ,        0x3D0000,    4k,
+user_File,           data, ,        0x3D1000,    56k,flash_encrypted
+nvs_key,            data, nvs_key, 0x3DF000,    4k,	flash_encrypted
+nvs,                data, nvs,     0x3E0000,    128k,    

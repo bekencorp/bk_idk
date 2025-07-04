@@ -1,0 +1,75 @@
+cmake_minimum_required(VERSION 3.15)
+cmake_policy(SET CMP0076 NEW)
+cmake_policy(SET CMP0079 NEW)
+
+add_library(platform_region_defs INTERFACE)
+add_library(platform_common_interface INTERFACE)
+
+add_library(platform_bl2 STATIC)
+add_subdirectory(soc/${SOC})
+
+target_include_directories(platform_common_interface
+	INTERFACE
+		${BL2_COMPONENTS_PATH}/cmsis
+		${BL2_COMPONENTS_PATH}/common
+		${BL2_COMPONENTS_PATH}/platform_include
+		${ARCH_PATH}/include
+		${TINYSOC_PATH}/driver/cmsis_drivers/include
+		${TINYSOC_PATH}/driver/native_drivers
+		{SOC_PATH}/cmsis_core
+)
+
+target_sources(platform_bl2
+	PRIVATE
+		${ARCH_PATH}/mpu.c
+		${ARCH_PATH}/cache.c
+)
+
+target_link_libraries(platform_bl2
+	PUBLIC
+		platform_common_interface
+		platform_region_defs
+)
+
+target_compile_definitions(platform_bl2
+	PUBLIC
+		BL2
+		MCUBOOT_${MCUBOOT_UPGRADE_STRATEGY}
+		$<$<BOOL:${MCUBOOT_DIRECT_XIP_REVERT}>:MCUBOOT_DIRECT_XIP_REVERT>
+		$<$<BOOL:${SYMMETRIC_INITIAL_ATTESTATION}>:SYMMETRIC_INITIAL_ATTESTATION>
+		$<$<BOOL:${MCUBOOT_HW_KEY}>:MCUBOOT_HW_KEY>
+		MCUBOOT_FIH_PROFILE_${MCUBOOT_FIH_PROFILE}
+		$<$<BOOL:${PLATFORM_DEFAULT_OTP}>:PLATFORM_DEFAULT_OTP>
+		$<$<BOOL:${OTP_NV_COUNTERS_RAM_EMULATION}>:OTP_NV_COUNTERS_RAM_EMULATION>
+		$<$<BOOL:${TFM_DUMMY_PROVISIONING}>:TFM_DUMMY_PROVISIONING>
+		$<$<BOOL:${ATTEST_INCLUDE_COSE_KEY_ID}>:ATTEST_INCLUDE_COSE_KEY_ID>
+		$<$<BOOL:${PLATFORM_DEFAULT_NV_COUNTERS}>:PLATFORM_DEFAULT_NV_COUNTERS>
+		$<$<BOOL:${PLATFORM_DEFAULT_OTP_WRITEABLE}>:OTP_WRITEABLE>
+		$<$<BOOL:${CONFIG_MPU}>:CONFIG_MPU>
+)
+
+target_compile_definitions(platform_region_defs
+	INTERFACE
+		$<$<BOOL:${BL2}>:BL2>
+		BL2_HEADER_SIZE=${BL2_HEADER_SIZE}
+		BL2_TRAILER_SIZE=${BL2_TRAILER_SIZE}
+		BL1_HEADER_SIZE=${BL1_HEADER_SIZE}
+		BL1_TRAILER_SIZE=${BL1_TRAILER_SIZE}
+		$<$<BOOL:${PLATFORM_DEFAULT_BL1}>:PLATFORM_DEFAULT_BL1>
+		$<$<BOOL:${SECURE_UART1}>:SECURE_UART1>
+		DAUTH_${DEBUG_AUTHENTICATION}
+		$<$<BOOL:${MCUBOOT_IMAGE_NUMBER}>:MCUBOOT_IMAGE_NUMBER=${MCUBOOT_IMAGE_NUMBER}>
+		$<$<STREQUAL:${MCUBOOT_SIGNATURE_TYPE},RSA>:MCUBOOT_SIGN_RSA>
+		$<$<STREQUAL:${MCUBOOT_SIGNATURE_TYPE},RSA>:MCUBOOT_SIGN_RSA_LEN=${MCUBOOT_SIGNATURE_KEY_LEN}>
+		$<$<STREQUAL:${MCUBOOT_EXECUTION_SLOT},2>:LINK_TO_SECONDARY_PARTITION>
+		$<$<BOOL:${TEST_PSA_API}>:PSA_API_TEST_${TEST_PSA_API}>
+		$<$<BOOL:${FORWARD_PROT_MSG}>:FORWARD_PROT_MSG=${FORWARD_PROT_MSG}>
+		$<$<BOOL:${TFM_CODE_SHARING}>:CODE_SHARING>
+)
+
+target_include_directories(platform_region_defs
+        INTERFACE
+                ${TINYSOC_PATH}/driver/flash
+                ${SOC_PATH}/flash_layout
+                ${PARTITION_HDR_DIR}
+)

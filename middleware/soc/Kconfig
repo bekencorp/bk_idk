@@ -1,0 +1,111 @@
+menu "SOC_CONFIG"
+
+	choice SOC
+		prompt "ARMINO SoC"
+		default SOC_BK7236 if "$ARMINO_SOC" = "bk7236"
+		default SOC_BK7236_CP1 if "$ARMINO_SOC" = "bk7236_cp1"
+		default SOC_BK7236N if "$ARMINO_SOC" = "bk7236n"
+		default SOC_BK723L if "$ARMINO_SOC" = "bk723L"
+		default SOC_BK7234 if "$ARMINO_SOC" = "bk7234"
+		default SOC_BK7239 if "$ARMINO_SOC" = "bk7239"
+		default SOC_BK7258 if "$ARMINO_SOC" = "bk7258"
+		default SOC_BK7258_CP1 if "$ARMINO_SOC" = "bk7258_cp1"
+		default SOC_BK7258_CP2 if "$ARMINO_SOC" = "bk7258_cp2"
+
+		config SOC_BK7236
+			select SOC_BK7236XX
+			bool "BK7236"
+		config SOC_BK7234
+			select SOC_BK7236XX
+			bool "BK7234"
+		config SOC_BK7236_CP1
+			select SOC_BK7236XX
+			bool "BK7236_CP1"
+		config SOC_BK7236N
+			select SOC_BK7236XX
+			bool "BK7236N"
+		config SOC_BK723L
+			bool "BK723L"
+		config SOC_BK7239
+			bool "BK7239"
+		config SOC_BK7258
+			select SOC_BK7236XX
+			bool "BK7258"
+		config SOC_BK7258_CP1
+			select SOC_BK7236XX
+			bool "BK7258_CP1"
+		config SOC_BK7258_CP2
+			select SOC_BK7236XX
+			bool "BK7258_CP2"
+	endchoice
+
+	choice System
+		prompt "System"
+		default SYS_CPU1 if "$ARMINO_SOC" = "bk7234_cp1"
+		default SYS_CPU1 if "$ARMINO_SOC" = "bk7235_cp1"
+		default SYS_CPU1 if "$ARMINO_SOC" = "bk7236_cp1"
+		default SYS_CPU1 if "$ARMINO_SOC" = "bk723L_cp1"
+		default SYS_CPU1 if "$ARMINO_SOC" = "bk7239_cp1"
+		default SYS_CPU1 if "$ARMINO_SOC" = "bk7286_cp1"
+		default SYS_CPU1 if "$ARMINO_SOC" = "bk7258_cp1"
+		default SYS_CPU2 if "$ARMINO_SOC" = "bk7258_cp2"
+		default SYS_CPU0
+
+		config SYS_CPU0
+			bool "CPU0 system"
+
+		config SYS_CPU1
+			bool "CPU1 system"
+
+		config SYS_CPU2
+			bool "CPU2 system"
+	endchoice
+
+	config CPU_CNT
+			int "System CPU count: 1: single core, 2: dual core, etc."
+			default 1
+
+	config SYS_CPU1_OFFSET
+		depends on SYS_CPU0
+		hex "Set cpu1 core offset"
+		default 0x2e0000
+		help
+			Cpu1 core offset address default 0x2e0000
+
+	config SOC_STR
+		string "SoC string"
+		default "bk7236"  if SOC_BK7236
+		default "bk7236_cp1"  if SOC_BK7236_CP1
+		default "bk7236n" if SOC_BK7236N
+		default "bk723L"  if SOC_BK723L
+		default "bk7234"  if SOC_BK7234
+		default "bk7239"  if SOC_BK7239
+		default "bk7258"  if SOC_BK7258
+		default "bk7258_cp1"  if SOC_BK7258_CP1
+		default "bk7258_cp2"  if SOC_BK7258_CP2
+		default "$ARMINO_SOC"
+
+	config SOC_ARCH
+		string "Soc arch"
+		default "unknown"
+
+	config SOC_BK7236XX
+		bool "For bk7236 series chipset"
+		default n
+
+	config SOC_SMP
+		bool "For soc smp feature"
+		default n
+
+	config SOC_BK7236_SMP
+		bool "For bk7236 smp"
+		default n
+
+	config SOC_BK7236_SMP_TEMP
+		bool "For bk7236 smp temp"
+		default n
+
+	config SOC_BK7239XX
+		bool "For bk7239 series chipset"
+		default n
+endmenu

@@ -1,0 +1,100 @@
+menu "BL2"
+	config BL2
+		bool "Enable BL2(MCUBOOT)"
+		default n
+
+	config MIXED_OTA
+		bool "both overwrite and xip"
+		default n
+
+	menu "Modify BL2 Info"
+		depends on BL2
+
+		config BL2_BUILD_TYPE
+			string "Define BL2 Build Type"
+			default "minsizerel"
+			help
+				build type: debug, release or minsizerel
+
+		config TFM_BL2_LOG_LEVEL
+			string "Define Tfm Bl2 Log Level"
+			default "INFO"
+			help
+				Set BL2 log level: OFF/ERROR/WARNING/INFO/DEBUG
+
+		config TFM_BL2_DOWNLOAD
+			bool "Enable BL2 download"
+			default y
+			help
+				Enable BL2 Download
+
+		config TFM_SECURE_DEBUG
+			bool "Enable Secure Debug"
+			default n
+			help
+				Enable Secure Debug
+
+		config OTP_NV_COUNTERS_RAM_EMULATION
+			string "Define Otp Nv Counters Ram Emulation"
+			default "OFF"
+			help
+				Enable OTP/NV counter RAM emulation: ON/OFF
+
+		config PLATFORM_DEFAULT_OTP_WRITEABLE
+			string "Define Platform Default Otp Writeable"
+			default "ON"
+			help
+				Enable platform default OTP writable: ON/OFF
+
+		config BL2_UPGRADE_STRATEGY
+			string "Define mcuboot upgrade strategy"
+			default "SWAP_USING_SCRATCH"
+			help
+				The MCUBOOT upgrade strategy can be:
+				OVERWRITE_ONLY, SWAP_USING_SCRATCH, SWAP_USING_MOVE.
+
+		config TFM_BK7236_V5
+			bool "Use BK7236 v5"
+			default y
+
+		config ANTI_ROLLBACK
+			bool "Enable OTA anti-rollback"
+			default n
+
+		config BL2_SKIP_VALIDATE
+			bool "Bl2 skip validate"
+			default n
+
+		config BL2_VALIDATE_ENABLED_BY_EFUSE
+			bool "BL2 validate is enabled by eFuse"
+			default y
+
+		config BL2_WDT
+			bool "Enable BL2 watchdog"
+			default n
+
+		config TFM_HEAP_SIZE
+			hex "TFM heap size"
+			default 0x1040
+
+		config BL2_WDT_PERIOD
+			hex "BL2 wdt timeout period"
+			default 0x1F40
+
+		config BL2_UPDATE_WITH_PC
+			bool "update BL2 with pc"
+			default n
+			help
+				update BL2 with pc
+
+		config RANDOM_AES_UPGRADE_BL2
+			bool "upgrade bl2 for random aes key"
+			default n
+			help
+				upgrade bl2 for random aes key
+
+		config OTA_CONFIRM_UPDATE
+			bool "confirm update after ota download"
+			default n
+	endmenu
+endmenu

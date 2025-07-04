@@ -1,0 +1,26 @@
+bk_dm_hfp_types.inc:line: WARNING: Duplicate C++ declaration, also defined at api-reference/bluetooth/dual_bt:line.
+Declaration is '.. cpp:member:: bk_hf_client_audio_state_t state'.
+bk_dm_hfp_types.inc:line: WARNING: Duplicate C++ declaration, also defined at api-reference/bluetooth/dual_bt:line.
+Declaration is '.. cpp:member:: bk_hf_call_setup_status_t status'.
+bk_dm_hfp_types.inc:line: WARNING: Duplicate C++ declaration, also defined at api-reference/bluetooth/dual_bt:line.
+Declaration is '.. cpp:member:: bk_hf_call_held_status_t status'.
+bk_dm_hfp_types.inc:line: WARNING: Duplicate C++ declaration, also defined at api-reference/bluetooth/dual_bt:line.
+Declaration is '.. cpp:member:: bk_hf_network_state_t status'.
+bk_dm_hfp_types.inc:line: WARNING: Duplicate C++ declaration, also defined at api-reference/bluetooth/dual_bt:line.
+Declaration is '.. cpp:member:: int value'.
+bk_dm_hfp_types.inc:line: WARNING: Duplicate C++ declaration, also defined at api-reference/bluetooth/dual_bt:line.
+Declaration is '.. cpp:member:: bk_hf_roaming_status_t status'.
+bk_dm_hfp_types.inc:line: WARNING: Duplicate C++ declaration, also defined at api-reference/bluetooth/dual_bt:line.
+Declaration is '.. cpp:member:: bk_hf_btrh_status_t status'.
+bk_dm_hfp_types.inc:line: WARNING: Duplicate C++ declaration, also defined at api-reference/bluetooth/dual_bt:line.
+Declaration is '.. cpp:member:: bk_hf_current_call_status_t status'.
+bk_dm_hfp_types.inc:line: WARNING: Duplicate C++ declaration, also defined at api-reference/bluetooth/dual_bt:line.
+Declaration is '.. cpp:member:: char * number'.
+bk_dm_hfp_types.inc:line: WARNING: Duplicate C++ declaration, also defined at api-reference/bluetooth/dual_bt:line.
+Declaration is '.. cpp:member:: bk_hf_subscriber_service_type_t type'.
+bk_dm_hfp_types.inc:line: WARNING: Duplicate C++ declaration, also defined at api-reference/bluetooth/dual_bt:line.
+Declaration is '.. cpp:member:: bk_hf_client_in_band_ring_state_t state'.
+bk_ble_types.inc:line: WARNING: Duplicate C++ declaration, also defined at api-reference/bluetooth/dual_ble:line.
+Declaration is '.. cpp:type:: bk_err_t ble_err_t'.
+dual_ble.rst:line: WARNING: Duplicate C++ declaration, also defined at api-reference/bluetooth/single_ble:line.
+Declaration is '.. cpp:type:: bk_err_t ble_err_t'.

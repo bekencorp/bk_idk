@@ -1,0 +1,3 @@
+config DRIVER_TEST
+	bool "Enable Peripheral Test"
+	default y

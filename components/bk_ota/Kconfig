@@ -1,0 +1,14 @@
+menu "OTA"
+	config BK_OTA
+		bool "Enable new OTA"
+		default n
+		help
+			enable new OTA
+
+	#TODO fix me, delete this config after OTA refactor completed
+	config BK_OTA_NEW_PACK_TOOL
+		bool "Enable new pack tool"
+		default n
+		help
+			enable new pack tool
+endmenu

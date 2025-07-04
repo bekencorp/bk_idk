@@ -1,0 +1,122 @@
+menu "PSA Mbedtls"
+	config PSA_MBEDTLS
+		bool "Enable mbedtls v3.5.2"
+		default n
+
+	menu "PSA Mbedtls Options"
+		depends on PSA_MBEDTLS
+
+		config PSA_MBEDTLS_TEST
+			bool "Enable psa mbedtls test"
+			default n
+	
+		config PSA_CUSTOMIZATION_TZ_L
+			bool "Enable adapt customization interface"
+			default n
+	
+		config PSA_CUSTOMIZATION_TEST
+			bool "Enable psa customization test"
+			default n
+	
+		config MBEDTLS_SSL_IN_CONTENT_LEN
+			int "Config MBEDTLS_SSL_IN_CONTENT_LEN"
+			default 4096
+	
+		config MBEDTLS_SSL_OUT_CONTENT_LEN
+			int "Config MBEDTLS_SSL_OUT_CONTENT_LEN"
+			default 4096
+	
+		config TE200_ENTROPY
+			bool "Enable TE200 entropy"
+			default n
+	
+		config TRUSTENGINE_TEST
+			bool "Enable security engine cli"
+			default n
+
+		config TRUSTENGINE
+			bool "Enable hardware crypto engine"
+			default n
+
+		config SW_CRYPTO
+			bool "Enable software crypto"
+			default n
+
+		config MBEDTLS_USE_PSA_CRYPTO
+			bool "Enable use PSA crypto"
+			default n
+
+		config FULL_MBEDTLS
+			bool "Enable Full Mbedtls"
+			default n
+
+		config MBEDTLS_LOG_LEVEL
+			string "Set Mbedtls Log Level"
+			default "INFO"
+			help
+				Set mbedtls log level: OFF/ERROR/WARNING/INFO/DEBUG
+	endmenu
+
+endmenu
+
+menu "Certificate Bundle"
+
+	config MBEDTLS_CERTIFICATE_BUNDLE
+		bool "Enable trusted root certificate bundle"
+		default n
+		help
+			Enable support for large number of default root certificates
+
+			When enabled this option allows user to store default as well
+			as customer specific root certificates in compressed format rather
+			than storing full certificate. For the root certificates the public key and the subject name
+			will be stored.
+
+	choice MBEDTLS_DEFAULT_CERTIFICATE_BUNDLE
+		bool "Default certificate bundle options"
+		depends on MBEDTLS_CERTIFICATE_BUNDLE
+		default MBEDTLS_CERTIFICATE_BUNDLE_DEFAULT_FULL
+
+		config MBEDTLS_CERTIFICATE_BUNDLE_DEFAULT_FULL
+			bool "Use the full default certificate bundle"
+		config MBEDTLS_CERTIFICATE_BUNDLE_DEFAULT_CMN
+			bool "Use only the most common certificates from the default bundles"
+			help
+				Use only the most common certificates from the default bundles, reducing the size with 50%,
+				while still having around 99% coverage.
+		config MBEDTLS_CERTIFICATE_BUNDLE_DEFAULT_NONE
+			bool "Do not use the default certificate bundle"
+	endchoice
+
+	config MBEDTLS_CUSTOM_CERTIFICATE_BUNDLE
+		depends on MBEDTLS_CERTIFICATE_BUNDLE
+		default n
+		bool "Add custom certificates to the default bundle"
+	config MBEDTLS_CUSTOM_CERTIFICATE_BUNDLE_PATH
+		depends on MBEDTLS_CUSTOM_CERTIFICATE_BUNDLE
+		string "Custom certificate bundle path"
+		help
+			Name of the custom certificate directory or file. This path is evaluated
+			relative to the project root directory.
+
+	config MBEDTLS_CERTIFICATE_BUNDLE_DEPRECATED_LIST
+		bool "Add deprecated root certificates"
+		depends on MBEDTLS_CERTIFICATE_BUNDLE && !MBEDTLS_CERTIFICATE_BUNDLE_DEFAULT_NONE
+		help
+			Include the deprecated list of root certificates in the bundle.
+			This list gets updated when a certificate is removed from the Mozilla's
+			NSS root certificate store. This config can be enabled if you would like
+			to ensure that none of the certificates that were deployed in the product
+			are affected because of the update to bundle. In turn, enabling this
+			config keeps expired, retracted certificates in the bundle and it may
+			pose a security risk.
+
+			- Deprecated cert list may grow based based on sync with upstream bundle
+			- Deprecated certs would be be removed in ESP-IDF (next) major release
+
+	config MBEDTLS_CERTIFICATE_BUNDLE_MAX_CERTS
+		int "Maximum no of certificates allowed in certificate bundle"
+		default 200
+		depends on MBEDTLS_CERTIFICATE_BUNDLE
+
+endmenu

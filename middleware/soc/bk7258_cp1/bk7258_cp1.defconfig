@@ -1,0 +1,797 @@
+#The value config in bk7258.defconfig will over write the Kconfig's default value.
+#If the default value in Kconfig satisfy your needs, then you needn't to config again here.
+
+#@ Soc arch
+CONFIG_SOC_ARCH="cm33"
+#@ For bk7236 series chipset
+CONFIG_SOC_BK7236XX=y
+#@ For bk7236_V5
+CONFIG_SOC_BK7236_V5=y
+
+#@ BK7258
+CONFIG_SOC_BK7258=y
+#@ SoC string
+CONFIG_SOC_STR="bk7258_cp1"
+#@ Enable Cortex-M33
+CONFIG_ARCH_CM33=y
+#@ Enable Cmsis
+CONFIG_CMSIS=y
+#@ Enable Default Cmsis Start
+CONFIG_DEFAULT_CMSIS_START=n
+#@ CPU1 system
+CONFIG_SYS_CPU1=y
+#@ System CPU count: 1: single core, 2: dual core, etc.
+CONFIG_CPU_CNT=3
+#@ Enable mail_box
+CONFIG_MAILBOX=y
+#@ Use mailbox v2.0 driver
+CONFIG_MAILBOX_V2_0=y
+
+
+
+#
+# Test Configuration
+#
+#@ Enable Interrupt Test
+CONFIG_INTERRUPT_TEST=y
+#@ Enable Aon Pmu Test
+CONFIG_AON_PMU_TEST=y
+
+
+
+#Enable for FPGA board
+#@ Enable SPE
+CONFIG_SPE=1
+CONFIG_SPE_TEST=y
+
+#
+# ARMINO Configuration
+#
+
+#
+# Common Configuration
+#
+#@ Enable Cache
+CONFIG_CACHE_ENABLE=n
+#@ Enable Memory Protect Unit Feature
+CONFIG_MPU=y
+
+#
+# Debug
+#
+#@ Assert reboots the system
+CONFIG_ASSERT_REBOOT=y
+# CONFIG_ASSERT_HALT is not set
+# CONFIG_ASSERT_REBOOT is not set
+# CONFIG_JTAG is not set
+# end of Debug
+# end of Common Configuration
+
+#
+# Features Configuration
+#
+#CONFIG_LWIP_V2_0 is not set
+#@ LWIP 2.1.2
+CONFIG_LWIP_V2_1=n
+#@ Disable Hosted
+CONFIG_NO_HOSTED=y
+# CONFIG_SEMI_HOSTED is not set
+# CONFIG_FULLY_HOSTED is not set
+# CONFIG_WIFI_SENSOR is not set
+#@ Write analog register polls sys reg0xb
+CONFIG_ANA_REG_WRITE_POLL_REG_B=n
+# end of Features Configuration
+
+
+
+#
+# Components Configuration
+#
+
+#
+# Application
+#
+# CONFIG_DEMO_TEST is not set
+# CONFIG_FTPD_UPGRADE is not set
+#@ Enable Ali Mqtt
+CONFIG_ALI_MQTT=n
+# CONFIG_OTA_HTTP is not set
+# CONFIG_OTA_TFTP is not set
+#@ Enable Iperf Test
+CONFIG_IPERF_TEST=n
+# end of Application
+
+#@ Enable At
+CONFIG_AT=n
+#@ Enable At Cmd
+CONFIG_AT_CMD=n
+
+#
+# Audio
+#
+#@ Enable Audio
+CONFIG_AUDIO=y
+#@ Enable audio adc driver
+CONFIG_AUDIO_ADC=y
+#@ Enable audio dac driver
+CONFIG_AUDIO_DAC=y
+#@ Enable Audio driver test
+CONFIG_AUDIO_TEST=y
+# end of Audio
+
+#
+# Calibration
+#
+#@ Enable Calibration
+CONFIG_CALI=y
+#@ Enable Calibration
+CONFIG_MANUAL_CALI=y
+#@ Enable TCP PA map
+CONFIG_TPC_PA_MAP=y
+# end of Calibration
+
+#
+# ATE
+#
+#@ Enable ATE
+CONFIG_ATE=n
+#@ Enable ATE Test
+CONFIG_ATE_TEST=n
+# end of ATE
+
+#
+# BLE
+#
+#@ Enable Ble
+CONFIG_BLE=n
+#@ BLE 5.X
+CONFIG_BLE_5_X=n
+#@ BTDM 5.2
+CONFIG_BTDM_5_2=n
+CONFIG_BTDM_5_T_MINDTREE=n
+#@ Enable Bt
+CONFIG_BT=n
+#@ Enable Bluetooth
+CONFIG_BLUETOOTH=n
+# CONFIG_BLE_4_2 is not set
+# end of BLE
+
+#
+# Cli
+#
+#@ Enable Cli
+CONFIG_CLI=y
+#@ Enable Shell and Async log optimize
+CONFIG_SHELL_ASYNCLOG=y
+#@ Dynamic Log Memory Maximum
+CONFIG_DYM_LOG_MEM_MAX=0x2000
+#@ MAX number of commands is configured by default
+CONFIG_MAX_COMMANDS=128
+#@ Enable BK Reg read/write
+CONFIG_BKREG=n
+# CONFIG_TCP_SERVER_TEST is not set
+# CONFIG_AIRKISS_TEST is not set
+# CONFIG_WIFI_RAW_TX_TEST is not set
+# CONFIG_I2C1_TEST is not set
+# CONFIG_I2C2_TEST is not set
+# CONFIG_UART_TEST is not set
+# CONFIG_SPI_TEST is not set
+# CONFIG_PERI_TEST is not set
+# CONFIG_RF_OTA_TEST is not set
+# end of Cli
+
+#
+# RF
+#
+CONFIG_RF_POLICY_BLE_REQ=y
+# CONFIG_RF_POLICY_WIFI_REQ is not set
+# CONFIG_RF_POLICY_CO_REQ is not set
+# end of RF
+
+#
+# Internal Kconfig
+#
+CONFIG_CHECK_MISMATCH=y
+#@ support mcu sleep
+CONFIG_MCU_PS=n
+#@ support deep sleep
+CONFIG_DEEP_PS=n
+#@ support tick time calibration
+CONFIG_TICK_CALI=y
+#@ Enable Sta Ps
+CONFIG_STA_PS=n
+# end of Internal Kconfig
+
+#
+# FreeRTOS
+#
+#@ Enable FreeRTOS
+CONFIG_FREERTOS=y
+# CONFIG_LITEOS_M is not set
+#@ FreeRTOS v9.0.0
+CONFIG_FREERTOS_V9=n
+#@ FreeRTOS v10
+CONFIG_FREERTOS_V10=y
+#@ FreeRTOS Trace
+CONFIG_FREERTOS_TRACE=n
+
+#
+# Memory Debug
+#
+# CONFIG_MALLOC_STATIS is not set
+#@ When this option is enable, more memory will be consumed because
+CONFIG_MEM_DEBUG=y
+# end of Memory Debug
+# end of FreeRTOS
+#@ Enable Cm Backtrace
+CONFIG_CM_BACKTRACE=y
+
+#
+# Startup
+#
+#@ priority of application main task
+CONFIG_APP_MAIN_TASK_PRIO=4
+#@ stack size of application main task
+CONFIG_APP_MAIN_TASK_STACK_SIZE=4096
+# end of Startup
+
+#
+# System
+#
+#@ Enable Flash Size 4M
+CONFIG_FLASH_SIZE_4M=y
+#@ Enable flash
+CONFIG_FLASH=y
+#@ Enable flash mailbox channel
+CONFIG_FLASH_MB=y
+# CONFIG_BASE_MAC_FROM_EFUSE is not set
+# CONFIG_BASE_MAC_FROM_RF_OTP_FLASH is not set
+#@ NEW_MAC_POLICY
+CONFIG_NEW_MAC_POLICY=y
+#@ Enable Beken Mac Addr Check
+CONFIG_BK_MAC_ADDR_CHECK=y
+#@ Enable reset reason
+CONFIG_RESET_REASON=n
+# end of System
+
+#
+# USB configuration
+#
+#@ Enable USB
+CONFIG_USB=n
+# end of USB configuration
+
+#
+# WiFi
+#
+#@ enable wifi
+CONFIG_WIFI_ENABLE=n
+#@ Use WiFi-6 Code Stack
+CONFIG_WIFI6_CODE_STACK=n
+#@ Enable Wifi6
+CONFIG_WIFI6=n
+#@ Don't disable it when WiFi-6 is enabled.
+CONFIG_WIFI4=n
+#@ MSDU reserved header length
+CONFIG_MSDU_RESV_HEAD_LENGTH=96
+#@ MSDU reserved tail length
+CONFIG_MSDU_RESV_TAIL_LENGTH=16
+#@ Priority of WiFi reconnect task
+CONFIG_TASK_RECONNECT_PRIO=4
+#@ Define Wifi Mac Version
+CONFIG_WIFI_MAC_VERSION="V22"
+#@ Define Wifi Mdm Version
+CONFIG_WIFI_MDM_VERSION="v32"
+#@ Define Wifi Plf Version
+CONFIG_WIFI_PLF_VERSION="v32"
+#@ Set listen interval value for PS, The value can be set for WIFI PS test or use and no need to change code
+CONFIG_MM_PS_SET_LISTEN_INTERVAL_VALUE=30
+#@ Statistics mobile connect sap time
+CONFIG_MOBILE_CONNECT_SAP_STATISTICS=y
+# CONFIG_AP_MONITOR_COEXIST is not set
+# CONFIG_WIFI_FAST_CONNECT is not set
+# CONFIG_BSSID_CONNECT is not set
+# CONFIG_WFA_CERT is not set
+# CONFIG_LESS_MEMERY_IN_RWNX is not set
+# CONFIG_AP_PROBEREQ_CB is not set
+# CONFIG_MM_PS_BASED_ON_LISTEN_INTERVAL is not set
+#@ Enable Wifi6 Ip Debug
+CONFIG_WIFI6_IP_DEBUG=y
+# end of WiFi
+
+#@ Enable BLE Sleep
+CONFIG_BLE_PS=n
+
+#
+# BLE 5.x
+#
+# CONFIG_BLE_HOST_NONE is not set
+#@ BLE Host RW
+CONFIG_BLE_HOST_RW=n
+# CONFIG_BLE_HOST_ZEPHYR is not set
+#@ BLE Mesh None
+CONFIG_BLE_MESH_NONE=n
+# CONFIG_BLE_MESH_RW is not set
+#@ BLE ADV number
+CONFIG_BLE_ADV_NUM=1
+#@ BLE Scan number
+CONFIG_BLE_SCAN_NUM=1
+#@ "0 indicates not support BLE master"
+CONFIG_BLE_INIT_NUM=1
+#@ BLE Scan number
+CONFIG_BLE_CONN_NUM=1
+# end of BLE 5.x
+
+#
+# Driver
+#
+
+#
+# AON_RTC
+#
+#@ Enable AON_RTC
+CONFIG_AON_RTC=n
+#@ Enable AON_RTC support many users
+CONFIG_AON_RTC_MANY_USERS=y
+#@ Enable AON_RTC Debug
+CONFIG_AON_RTC_DEBUG=n
+# end of AON_RTC
+
+
+#@ Enable AON_RTC Test,F.E:Command line test
+CONFIG_AON_RTC_TEST=n
+#@ Enable system_ctrl
+CONFIG_SYSTEM_CTRL=y
+#@ system_ctrl debug
+CONFIG_HAL_DEBUG_SYS=y
+#@ Enable AON_PMU
+CONFIG_AON_PMU=y
+
+#
+# Watchdog
+#
+#@ Enable Interrupt Watchdog
+CONFIG_INT_WDT=n
+#@ Interrupt Watchdog Period(ms)
+CONFIG_INT_WDT_PERIOD_MS=1000
+#@ Enable Task Watchdog
+CONFIG_TASK_WDT=n
+#@ Task Watchdog Period(ms)
+CONFIG_TASK_WDT_PERIOD_MS=60000
+#@ Enable NMI Watchdog
+CONFIG_NMI_WDT_EN=n
+#@ Enable AON Watchdog
+CONFIG_AON_WDT=n
+#@ Enable Interrupt AON Watchdog
+CONFIG_INT_AON_WDT=n
+# end of Watchdog
+
+# I2C
+#
+#
+#@ Enable I2C
+CONFIG_I2C=y
+#@ The value should be changed if need to change i2c id
+CONFIG_I2C_SUPPORT_ID_BITS=2
+#@ Enable FM I2C
+CONFIG_FM_I2C=n
+#@ Enable GPIO Simulate I2C
+CONFIG_SIM_I2C=y
+# end of I2C
+
+#
+# UART
+#
+#@ Enable UART1
+CONFIG_UART1=y
+#@ Enable UART2
+CONFIG_UART2=y
+#@ Enable UART3
+CONFIG_UART3=y
+#@ Default 1 mean use UART2
+CONFIG_UART_ATE_PORT=0
+
+#@ System print by mailbox
+CONFIG_SYS_PRINT_DEV_MAILBOX=y
+#@ System print by uart
+CONFIG_SYS_PRINT_DEV_UART=n
+#@ Default 0 mean use UART1
+CONFIG_UART_PRINT_PORT=1
+#@ The value should be changed if print size is more than 128
+CONFIG_PRINTF_BUF_SIZE=256
+# CONFIG_BACKGROUND_PRINT is not set
+#@ This will set kfifo size when software uses kfifo to cache data receiving.
+CONFIG_KFIFO_SIZE=128
+#@ Enable UART support error interrupt
+CONFIG_UART_ERR_INTERRUPT=y
+# CONFIG_UART_STATIS is not set
+# end of UART
+
+#
+# TRNG
+#
+#@ Support hardware TRNG
+CONFIG_TRNG_SUPPORT=n
+# end of TRNG
+
+#depends on CONFIG_TRNG_SUPPORT
+#@ Enable Random Mac Addr
+CONFIG_RANDOM_MAC_ADDR=y
+
+#
+# SDCARD
+#
+#@ Enable SDCARD
+CONFIG_SDCARD=n
+#@ sd card default clock freq
+CONFIG_SDCARD_DEFAULT_CLOCK_FREQ=11
+#@ Support SDCARD 4 Data Wires
+CONFIG_SDCARD_BUSWIDTH_4LINE=n
+#@ Enable SDcard power gpio ctrl
+CONFIG_SDCARD_POWER_GPIO_CTRL=y
+# end of SDCARD
+
+#
+# FATFS
+#
+#@ Support FATFS
+CONFIG_FATFS=n
+#@ Support SDCARD FATFS
+CONFIG_FATFS_SDCARD=n
+# end of FATFS
+
+#@ Enable MAC/PHY by pass mode
+CONFIG_MAC_PHY_BYPASS=y
+
+#
+# SDIO
+#
+#@ Enable SDIO
+CONFIG_SDIO=n
+#@ SDIO Version V1P0
+CONFIG_SDIO_V1P0=n
+#@ SDIO Version V2P0
+CONFIG_SDIO_V2P0=y
+#@ Enable sdio host
+CONFIG_SDIO_HOST=n
+#@ Enable SDIO Slave Device, BEKEN Chip Is A SDIO Slave Device
+CONFIG_SDIO_SLAVE=n
+#@ Enable SDIO channel
+CONFIG_SDIO_CHANNEL_EN=n
+#@ Enable SDIO two derect channel
+CONFIG_SDIO_BIDIRECT_CHANNEL_EN=n
+#@ SDIO transfer data whether enable GDMA
+CONFIG_SDIO_GDMA_EN=n
+#@ Host Wake BK7256
+CONFIG_GPIO_NOTIFY_TRANSACTION_EN=n
+#@ SDIO Uses 4 Lines Transfer Data
+CONFIG_SDIO_4LINES_EN=n
+#@ SDIO Test Program Enable
+CONFIG_SDIO_TEST_EN=n
+#@ SDIO Debug Program Enable
+CONFIG_SDIO_DEBUG_EN=n
+#@ SDIO Host default clock freq
+CONFIG_SDIO_HOST_DEFAULT_CLOCK_FREQ=7
+#@ SDIO CLEAR WRITE INT NEED WAIT
+CONFIG_SDIO_HOST_CLR_WRITE_INT=y
+# end of SDIO
+
+#
+# SPI
+#
+# CONFIG_SPI_DMA=y
+# CONFIG_SPI_SLAVE is not set
+# CONFIG_SPI_MASTER is not set
+#@ SPI ENABLE
+CONFIG_SPI=y
+#@ Enable SPI Statis
+CONFIG_SPI_STATIS=y
+#@ Support TX FIFO Write Ready
+CONFIG_SPI_SUPPORT_TX_FIFO_WR_READY=y
+# CONFIG_HSLAVE_SPI is not set
+#@ Enable QSPI
+CONFIG_QSPI=y
+#@ Enable GD Flash
+CONFIG_QSPI_FLASH_GD=y
+# CONFIG_SPI_MST_FLASH is not set
+# CONFIG_SPI_MST_PSRAM is not set
+# end of SPI
+
+#
+# GENERAL_DMA
+#
+#@ Enable General DMA
+CONFIG_GENERAL_DMA=y
+#@ GDMA HW version v2px in ASIC
+CONFIG_GDMA_HW_V2PX=y
+#@ 4
+CONFIG_DMA_LOGIC_CHAN_CNT=10
+#@ 0
+CONFIG_DMA_LOGIC_CHAN_ID_MIN=2
+# end of GENERAL_DMA
+
+#
+# PSRAM
+#
+#@ Enable PSRAM
+CONFIG_PSRAM=y
+#@ Enable psram_malloc API
+CONFIG_PSRAM_AS_SYS_MEMORY=y
+#@ Create FreeRTOS Task stack in psram
+CONFIG_TASK_STACK_IN_PSRAM=y
+#@ The psram address is from 0x60000000 to 0x60800000 for psram aps6408l_o
+CONFIG_PSRAM_HEAP_BASE=0x60780000
+#@ psram aps6408l-o
+CONFIG_PSRAM_HEAP_SIZE=0x80000
+# end of PSRAM
+
+#
+# Video
+#
+CONFIG_MEDIA=y
+CONFIG_MEDIA_APP=n
+CONFIG_MEDIA_MAJOR=y
+#@ Enable LCD
+CONFIG_LCD=y
+
+CONFIG_LCD_GC9503V=n
+CONFIG_LCD_H050IWV=y
+CONFIG_LCD_HX8282=y
+CONFIG_LCD_MD0430R=y
+CONFIG_LCD_MD0700R=y
+CONFIG_LCD_NT35512=n
+CONFIG_LCD_NT35510=n
+CONFIG_LCD_NT35510_MCU=y
+CONFIG_LCD_ST7282=y
+CONFIG_LCD_ST7796S=y
+CONFIG_LCD_ST7701S_LY=y
+CONFIG_LCD_ST7701S=y
+CONFIG_LCD_ST7701SN=y
+CONFIG_LCD_AML01=y
+
+#
+# lcd function macro
+#
+CONFIG_LCD_MEDIA=y
+CONFIG_LCD_ROTATE=y
+CONFIG_LCD_HW_PFC=y
+CONFIG_LCD_HW_DECODE=y
+CONFIG_LCD_SW_DECODE=y
+
+# end of lcd function macro
+#@ Enable DMA2D
+CONFIG_DMA2D=y
+
+#@ Enable yuv_buf
+CONFIG_YUV_BUF=y
+#@ Enable HardWare JPEG ENCODE
+CONFIG_JPEGENC_HW=y
+#@ Enable JPEGDEC Display
+CONFIG_JPEGDEC_HW=y
+CONFIG_JPEGDEC_SW=y
+#@ Enable hw scale module
+CONFIG_HW_SCALE=y
+#@ Enable h264
+CONFIG_H264=y
+CONFIG_WIFI_TRANSFER=y
+CONFIG_IMAGE_STORAGE=y
+CONFIG_USB_TRANSFER=y
+
+# end of Video
+
+#
+# CALENDAR
+#
+#@ Enable CALENDAR
+CONFIG_CALENDAR=n
+# end of CALENDAR
+
+#
+# System control
+#
+# CONFIG_SYS_REDUCE_NORMAL_POWER is not set
+#@ Enable power manager V2
+CONFIG_PM_V2=y
+# CONFIG_XTAL_FREQ_40M is not set
+#@ XTAL frequency 26M
+CONFIG_XTAL_FREQ_26M=y
+#@ 26000000
+CONFIG_XTAL_FREQ=26000000
+#@ DCO frequency
+CONFIG_DCO_FREQ=120000000
+#@ Enable system clock
+CONFIG_SYSTEM_CLOCK=y
+# end of System control
+
+#
+# PHY
+#
+# CONFIG_PTA is not set
+# end of PHY
+
+#
+# I2S
+#
+#@ Enable I2S
+CONFIG_I2S=y
+#@ Enable I2S Test
+CONFIG_I2S_TEST=y
+# end of I2S
+
+#
+# pwm
+#
+#@ Enable pwm
+CONFIG_PWM=n
+#@ "ASIC PWM IP Version V1P1:BK7236XX...,the chips MP after 2023-04"
+CONFIG_PWM_V1PX=y
+# end of pwm
+
+# CONFIG_SUPPORT_IRDA is not set
+
+#
+# efuse
+#
+#@ Enable efuse
+CONFIG_EFUSE=n
+
+# end of Driver
+
+# CONFIG_EASY_FLASH is not set
+#@ Enable Easy Flash
+CONFIG_EASY_FLASH=n
+
+#@ EASY_FLASH v4.1.0
+CONFIG_EASY_FLASH_V4=n
+
+#
+# LwIP 2.0.2
+#
+#@ Enable LWIP
+CONFIG_LWIP=n
+#@ Enable DHCP
+CONFIG_DHCP=n
+#@ Priority of LwIP task
+CONFIG_TASK_LWIP_PRIO=4
+# CONFIG_LWIP_MEM_DEFAULT is not set
+#@ Reduced Memory Policy
+CONFIG_LWIP_MEM_REDUCE=y
+# end of LwIP 2.0.2
+
+#
+# LwIP 2.1.2
+#
+# end of LwIP 2.1.2
+
+# CONFIG_MP3PLAYER is not set
+# CONFIG_PCM_RESAMPLER is not set
+
+#
+# Power Save
+#
+# CONFIG_AP_IDLE is not set
+# CONFIG_FAKE_RTC_PS is not set
+# CONFIG_PM_MODEM_PWD is not set
+# CONFIG_PM_STANDALONE is not set
+#@ Enable power manager V2
+CONFIG_PM_V2=y
+# end of Power Save
+
+#
+# RF Test
+#
+#@ Enable TX EVM Test
+CONFIG_TX_EVM_TEST=y
+#@ Enable RX Sensitivity Test
+CONFIG_RX_SENSE_TEST=y
+# end of RF Test
+
+#
+# WiFi RWNX Interface
+#
+#@ Priority of WiFi kernel message task
+CONFIG_WIFI_KMSG_TASK_PRIO=3
+#@ Stack size of WiFi kernel message task
+CONFIG_WIFI_KMSG_TASK_STACK_SIZE=4096
+#@ Priority of WiFi core task
+CONFIG_WIFI_CORE_TASK_PRIO=2
+#@ Stack size of WiFi core task
+CONFIG_WIFI_CORE_TASK_STACK_SIZE=2048
+#@ Enable QoS MSDU
+CONFIG_RWNX_QOS_MSDU=y
+#@ Enable Software Transmit Queue, recommend to enable this feature
+CONFIG_RWNX_SW_TXQ=n
+#@ Skip WiFi Join Network procedure to reduct network connection time
+CONFIG_RWNX_FAST_CONNECT=y
+# end of WiFi RWNX Interface
+
+#@ Enable saradc
+CONFIG_SARADC=n
+# CONFIG_SARADC_CALI=y
+# CONFIG_SPIDMA is not set
+#@ Enable temperature detect
+CONFIG_TEMP_DETECT=n
+#@ SARADC whether need flush data
+CONFIG_SARADC_NEED_FLUSH=n
+#@ Enable saradc measure range divide
+CONFIG_SARADC_RANGE_DIVIDE=y
+# CONFIG_UART_DEBUG is not set
+# CONFIG_UDISK_MP3 is not set
+# CONFIG_WFA_CA is not set
+
+#
+# Supplicant
+#
+#@ Priority of WPAS task
+CONFIG_TASK_WPAS_PRIO=5
+#@ When WPA3 is enabled, the PMF should be enabled also!
+CONFIG_WPA3=y
+#@ Enable PMF(802.11w)
+CONFIG_PMF=y
+CONFIG_WPA_CTRL_IFACE=y
+#@ Enable AP HT IE
+CONFIG_AP_HT_IE=y
+#@ Enable AP VHT
+CONFIG_AP_VHT=y
+#@ Enable AP HE
+CONFIG_AP_HE=y
+# CONFIG_WPA_TWT_TEST is not set
+#@ Enable STA auto reconnect feature.
+CONFIG_STA_AUTO_RECONNECT=y
+# CONFIG_WPA_LOG is not set
+# end of Supplicant
+# end of Components Configuration
+# end of ARMINO Configuration
+
+#
+# DEMOS_CONFIG
+#
+#@ Enable fft
+CONFIG_FFT=n
+# end of DEMOS_CONFIG
+
+#@ Enable TFM
+CONFIG_TFM=n
+#@ Enable sdmadc
+CONFIG_SDMADC=y
+#@ Enable Sdmadc Test
+CONFIG_SDMADC_TEST=y
+
+#@ Enable hw rotate and pixel convert module
+CONFIG_HW_ROTATE_PFC=y
+CONFIG_HW_ROTT_TEST=n
+#
+# CONFIG_FREERTOS_USE_TICKLESS_IDLE
+#
+#@ Use tickless idle, can be 0/1/2
+CONFIG_FREERTOS_USE_TICKLESS_IDLE=0
+#
+# CONFIG_SYSTICK_32K
+#
+#@ Systick use external 32K clock
+CONFIG_SYSTICK_32K=y
+
+#@ Enable timer0 as microsecond timer
+CONFIG_TIMER_US=y
+#@ 0 indicates that all IDs are supported by default, no configuration required
+CONFIG_TIMER_SUPPORT_ID_BITS=56
+
+#@ Enable UART support low power
+CONFIG_UART_LOW_VOLTAGE_SUPPORT=y
+#
+#GPIO for Power Save: WANIING: modify it should check properties/soc/bk7256/bk7256.defconfig also
+#
+#@ Enable GPIO WAKEUP system if at low voltage status
+CONFIG_GPIO_WAKEUP_SUPPORT=n
+#@ Enable GPIO dynamic config to wake system if at low volatage status
+CONFIG_GPIO_DYNAMIC_WAKEUP_SUPPORT=n
+#@ The value should be changed if need more then 4 gpio
+CONFIG_GPIO_DYNAMIC_WAKEUP_SOURCE_MAX_CNT=4
+#@ Enable GPIO wakeup module debug code
+CONFIG_GPIO_WAKEUP_DEBUG=n
+CONFIG_DEBUG_FIRMWARE=n
+#@ Enable GPIO default set devs
+CONFIG_GPIO_DEFAULT_SET_SUPPORT=n
+CONFIG_ENCODE_BUF_DYNAMIC=y
+#@ Enable OTP
+CONFIG_OTP=n

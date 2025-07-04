@@ -1,0 +1,3 @@
+Name,Type,Partition,Version,Security_counter
+bl2.bin,BL2, bl2, 1.0.0, 1
+cpu0_app.bin,CPU0_APP, primary_cpu0_app, 1.0.0, 1

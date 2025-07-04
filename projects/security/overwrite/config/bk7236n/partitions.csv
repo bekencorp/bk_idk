@@ -1,0 +1,12 @@
+Name,               Type, SubType,        Offset, Size, Flags
+bl2,                app,  ,               ,       96k,
+partition,          data, partition,      ,       4k,
+primary_cpu0_app,   app,  ow_active,      ,       1792k,
+ota,                app,  ow_ota,         ,       1024k,
+ow_ota_control,     data, ow_ota_control, ,       4k,
+ow_ota_resume,      data, ,               ,       4k,
+user_config,        data, ,               ,       136k,
+easyflash,          data, ,               ,       8k,
+public_key,         data, ,               ,       4k,
+sys_rf,             data, ,               ,       4k,
+sys_net,            data, ,               ,       4k,

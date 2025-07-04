@@ -1,0 +1,181 @@
+export CMD_ARMINO_SOC := $(findstring $(MAKECMDGOALS), $(soc_targets))
+
+EXAMPLE_PERIPH := examples/peripherals
+############################################################
+#        Create supported projects list for bk7235         #
+############################################################
+bk7235xx_supported_targets := bk7235
+bk7235xx_supported_projects := app
+bk7235xx_supported_projects := $(bk7235xx_supported_projects)at
+bk7235xx_supported_projects := $(bk7235xx_supported_projects) matter
+
+
+############################################################
+#        Create supported projects list for bk7256         #
+############################################################
+bk7256xx_supported_targets := bk7256
+bk7256xx_supported_projects := app
+bk7256xx_supported_projects := $(bk7256xx_supported_projects) ate_mini_code
+bk7256xx_supported_projects := $(bk7256xx_supported_projects) bluetooth/central bluetooth/hci bluetooth/headset bluetooth/mesh
+bk7256xx_supported_projects := $(bk7256xx_supported_projects) media/doorbell media/audio_play_sdcard_mp3_music media/audio_record_to_sdcard
+bk7256xx_supported_projects := $(bk7256xx_supported_projects) wifi/repeater
+bk7256xx_supported_projects := $(bk7256xx_supported_projects) at
+bk7256xx_supported_projects := $(bk7256xx_supported_projects) matter
+
+############################################################
+#        Create supported projects list for bk7236         #
+############################################################
+bk7236xx_supported_targets := bk7236
+bk7236xx_supported_targets := $(bk7236xx_supported_targets) bk7236n
+bk7236xx_supported_projects := app clip
+bk7236xx_supported_projects := $(bk7236xx_supported_projects) wifi/repeater
+bk7236xx_supported_projects := $(bk7236xx_supported_projects) at
+bk7236xx_supported_projects := $(bk7236xx_supported_projects) customization/config_ab
+bk7236xx_supported_projects := $(bk7236xx_supported_projects) matter
+############################################################
+#        Create supported projects list for bk7258         #
+############################################################
+bk7258xx_supported_targets := bk7258
+bk7258xx_supported_projects := app smp
+bk7258xx_supported_projects := $(bk7258xx_supported_projects) bluetooth/central bluetooth/headset bluetooth/spp bluetooth/mesh bluetooth/bt_hidd bluetooth/bt_hidh bluetooth/gatt_server bluetooth/gatt_client
+bk7258xx_supported_projects := $(bk7258xx_supported_projects) media/audio_play_sdcard_mp3_music media/audio_record_to_sdcard
+bk7258xx_supported_projects := $(bk7258xx_supported_projects) media/doorbell media/doorbell_8M media/doorbell_4M media/doorbell_ab_4M media/doorbell_720p media/doorbell_dualStream media/doorbell_720p_dualStream media/doorbell_8M_asr
+bk7258xx_supported_projects := $(bk7258xx_supported_projects) lvgl/86box lvgl/86box_smart_panel lvgl/stress lvgl/benchmark lvgl/meter_rgb_16M lvgl/img_decode lvgl/widgets lvgl/camera lvgl/meter lvgl/meter_spi lvgl/music lvgl/keypad_encoder
+bk7258xx_supported_projects := $(bk7258xx_supported_projects) peripheral/lcd_8080 peripheral/lcd_rgb888 peripheral/lcd_rgb565 peripheral/lcd_rgb666
+bk7258xx_supported_projects := $(bk7258xx_supported_projects) thirdparty/agora thirdparty/wanson_asr thirdparty/wenwen_asr
+bk7258xx_supported_projects := $(bk7258xx_supported_projects) phy/cert_test
+bk7258xx_supported_projects := $(bk7258xx_supported_projects) wifi/repeater
+bk7258xx_supported_projects := $(bk7258xx_supported_projects) at
+bk7258xx_supported_projects := $(bk7258xx_supported_projects) app_psram_4mb
+bk7258xx_supported_projects := $(bk7258xx_supported_projects) customization/config_ab
+bk7258xx_supported_projects := $(bk7258xx_supported_projects) matter
+bk7258xx_supported_projects := $(bk7258xx_supported_projects) agora_ai agora_wanson_ai
+bk7258xx_supported_projects := $(bk7258xx_supported_projects) $(EXAMPLE_PERIPH)/dma $(EXAMPLE_PERIPH)/i2c $(EXAMPLE_PERIPH)/mailbox $(EXAMPLE_PERIPH)/pwm/complementary_outputs $(EXAMPLE_PERIPH)/pwm/phase_shift $(EXAMPLE_PERIPH)/pwm/pwm_set_period_duty \
+$(EXAMPLE_PERIPH)/spi/spi_master $(EXAMPLE_PERIPH)/spi/spi_slave $(EXAMPLE_PERIPH)/timer $(EXAMPLE_PERIPH)/uart
+############################################################
+#        Create supported projects list for bk7234         #
+############################################################
+bk7234xx_supported_targets := bk7234
+bk7234xx_supported_projects := app
+bk7234xx_supported_projects := $(bk7234xx_supported_projects) customization/config_ab
+
+############################################################
+#        Create supported projects list for bk7239         #
+############################################################
+bk7239xx_supported_targets := bk7239
+bk7239xx_supported_projects := app
+
+
+############################################################
+#        Create supported projects list for bk723L         #
+############################################################
+bk723Lxx_supported_targets := bk723L
+bk723Lxx_supported_projects := app
+bk723Lxx_supported_projects := $(bk723Lxx_supported_projects) customization/config_ab
+
+PART_TABLE_SUPPORTED_TARGETS := $(bk7235xx_supported_targets) $(bk7256xx_supported_targets) $(bk7236xx_supported_targets) $(bk7258xx_supported_targets) $(bk7234xx_supported_targets) $(bk7239xx_supported_targets) $(bk723Lxx_supported_targets)
+PART_TABLE_SUPPORTED_PROJECTS := app
+ifneq ($(findstring $(ARMINO_SOC), $(bk7235xx_supported_targets)),)
+	PART_TABLE_SUPPORTED_PROJECTS := $(bk7235xx_supported_projects)
+endif
+ifneq ($(findstring $(ARMINO_SOC), $(bk7256xx_supported_targets)),)
+	PART_TABLE_SUPPORTED_PROJECTS := $(bk7256xx_supported_projects)
+endif
+ifneq ($(findstring $(ARMINO_SOC), $(bk7236xx_supported_targets)),)
+	PART_TABLE_SUPPORTED_PROJECTS := $(bk7236xx_supported_projects)
+endif
+ifneq ($(findstring $(ARMINO_SOC), $(bk7258xx_supported_targets)),)
+	PART_TABLE_SUPPORTED_PROJECTS := $(bk7258xx_supported_projects)
+endif
+ifneq ($(findstring $(ARMINO_SOC), $(bk7234xx_supported_targets)),)
+	PART_TABLE_SUPPORTED_PROJECTS := $(bk7234xx_supported_projects)
+endif
+ifneq ($(findstring $(ARMINO_SOC), $(bk7239xx_supported_targets)),)
+	PART_TABLE_SUPPORTED_PROJECTS := $(bk7239xx_supported_projects)
+endif
+ifneq ($(findstring $(ARMINO_SOC), $(bk723Lxx_supported_targets)),)
+	PART_TABLE_SUPPORTED_PROJECTS := $(bk723Lxx_supported_projects)
+endif
+
+ARMINO_TOOL_PART_TABLE := $(ARMINO_DIR)/tools/build_tools/part_table_tools/gen_bk7256partitions.py
+PARTITIONS_ARGS := --flash-size=16MB --smode
+BOOTLOADER_JSON_INSEQ := --smode-inseq=1,1,2,0,0,0
+BOOTLOADER_JSON := $(ARMINO_DIR)/tools/build_tools/part_table_tools/tempFiles/partition_bk7256_ota_a_new.json
+BOOTLOADER_JSON_OLD := $(ARMINO_BOOTLOADER)tools/partition_bk7256_ota_a.json
+BOOTLOADER_JSON_PACK := $(ARMINO_DIR)/tools/env_tools/beken_packager/partition_bootloader.json
+ifeq ("$(ARMINO_SOC)", "bk7258")
+	BOOTLOADER_JSON_OLD := $(ARMINO_BOOTLOADER)/tools/partition_ota.json
+endif
+ifeq ("$(ARMINO_SOC)", "bk7236")
+	BOOTLOADER_JSON_OLD := $(ARMINO_BOOTLOADER)/tools/partition_ota.json
+endif
+ifeq ("$(ARMINO_SOC)", "bk7236n")
+	BOOTLOADER_JSON_OLD := $(ARMINO_BOOTLOADER)/tools/partition_ota.json
+endif
+ifeq ("$(ARMINO_SOC)", "bk7234")
+	BOOTLOADER_JSON_OLD := $(ARMINO_BOOTLOADER)/tools/partition_ota.json
+endif
+ifeq ("$(ARMINO_SOC)", "bk7239")
+	BOOTLOADER_JSON_OLD := $(ARMINO_BOOTLOADER)/tools/partition_ota.json
+endif
+ifeq ("$(ARMINO_SOC)", "bk723L")
+	BOOTLOADER_JSON_OLD := $(ARMINO_BOOTLOADER)/tools/partition_ota.json
+endif
+CLEAN_ALLFILE_INSEQ := --smode-inseq=3,0
+SHOW_APPS_INSEQ := --smode-inseq=4,0
+DEFAULT_CSV_FILE := $(ARMINO_DIR)/tools/build_tools/part_table_tools/bk7256Partitions.csv
+
+ifneq ($(findstring $(ARMINO_SOC), $(PART_TABLE_SUPPORTED_TARGETS)),)
+ifneq ($(findstring $(PROJECT), $(PART_TABLE_SUPPORTED_PROJECTS)),)
+	main_target_config := $(ARMINO_DIR)/$(PROJECT_DIR)/config/$(ARMINO_SOC).config
+	ifneq ($(wildcard $(ARMINO_DIR)/$(PROJECT_DIR)/config/$(ARMINO_SOC)/config),)
+		main_target_config := $(ARMINO_DIR)/$(PROJECT_DIR)/config/$(ARMINO_SOC)/config
+	endif
+	target_config_tool := $(ARMINO_DIR)/tools/build_tools/part_table_tools/otherScript/get_target_config_val.py
+	target_config_tool_args := --config=$(main_target_config)
+	config_value := $(shell python3 $(target_config_tool) $(target_config_tool_args))
+	ifeq ("$(config_value)", "y")
+		PARTITIONS_CSV_FILE := $(ARMINO_DIR)/$(PROJECT_DIR)/csv/$(ARMINO_SOC).csv
+		ifneq ($(wildcard $(ARMINO_DIR)/$(PROJECT_DIR)/config/$(ARMINO_SOC)/$(ARMINO_SOC)_partitions.csv),)
+			PARTITIONS_CSV_FILE := $(ARMINO_DIR)/$(PROJECT_DIR)/config/$(ARMINO_SOC)/$(ARMINO_SOC)_partitions.csv
+		endif
+	else
+		PARTITIONS_CSV_FILE := $(ARMINO_DIR)/middleware/boards/$(ARMINO_SOC)/partitions.csv
+	endif
+
+	app_names := $(shell python3 $(ARMINO_TOOL_PART_TABLE) $(PARTITIONS_CSV_FILE) $(PARTITIONS_ARGS) $(SHOW_APPS_INSEQ))
+	app1_search := app1
+	ifneq ($(findstring $(app1_search), $(app_names)),)
+		SUPPORT_DUAL_CORE := true
+	else
+		SUPPORT_DUAL_CORE := false
+	endif
+else
+	PARTITIONS_CSV_FILE := $(DEFAULT_CSV_FILE)
+endif
+else
+	PARTITIONS_CSV_FILE := $(DEFAULT_CSV_FILE)
+endif
+
+PART_TABLE_SUPPORTED_PROJECTS :=$(PART_TABLE_SUPPORTED_PROJECTS) customization/bk7256_configa customization/bk7256_configb
+
+PT_VERBOSE ?= 0
+ifeq ("$(PT_VERBOSE)", "1")
+	export PT_VERBOSE := 1
+else
+	export PT_VERBOSE := 0
+endif
+ifeq ("$(PT_VERBOSE)", "1")
+$(info "<========================part_table_tools info start========================>")
+$(info "PT_VERBOSE: $(PT_VERBOSE)")
+$(info "CMD_ARMINO_SOC: $(CMD_ARMINO_SOC)")
+$(info "CONFIG_OVERRIDE_FLASH_PARTITION: $(config_value)")
+$(info "PARTITIONS_CSV_FILE: $(PARTITIONS_CSV_FILE)")
+$(info "BOOTLOADER_JSON: $(BOOTLOADER_JSON)")
+$(info "BOOTLOADER_JSON_INSEQ: $(BOOTLOADER_JSON_INSEQ)")
+$(info "SHOW_APPS_INSEQ: $(SHOW_APPS_INSEQ)")
+$(info "app_names: $(app_names)")
+$(info "SUPPORT_DUAL_CORE: $(SUPPORT_DUAL_CORE)")
+$(info "PROJECT: $(PROJECT)")
+$(info "<========================part_table_tools info stop ========================>")
+endif

@@ -1,0 +1,6 @@
+Field,Value
+strategy,NONE
+encrypt,FALSE
+app_security_counter,1
+anti_rollback,FALSE
+app_version,0.0.1
