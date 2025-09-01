@@ -1,0 +1,12 @@
+# Overwrite ARMINO Configuration here
+#@ Enable Override Flash Partition
+CONFIG_OVERRIDE_FLASH_PARTITION=y
+#@ Enable OTP Test
+CONFIG_OTP_TEST=y
+
+CONFIG_INT_WDT=n
+#@ Enable Task Watchdog
+CONFIG_TASK_WDT=n
+#@ Enable NMI Watchdog
+CONFIG_NMI_WDT_EN=n
+CONFIG_GPIO_DEFAULT_SET_SUPPORT=n
