@@ -273,6 +273,13 @@ static void rwnx_cal_set_channel_wrapper(UINT32 freq)
 	#endif
 }
 
+static void bk7011_cal_dpd_wrapper(uint32_t freq)
+{
+#if CONFIG_DPD_CALI
+    bk7011_cal_dpd(freq);
+#endif
+}
+
 static void bk7011_update_by_rx_wrapper(int8_t rssi, int8_t freq_offset)
 {
 	#if (CONFIG_SOC_BK7236XX)
@@ -1262,6 +1269,7 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._rwnx_cal_recover_rcbeken_reg_val = rwnx_cal_recover_rcbeken_reg_val,
 	._rwnx_cal_recover_trx_reg_val = rwnx_cal_recover_trx_reg_val,
 	._rwnx_cal_set_channel = rwnx_cal_set_channel_wrapper,
+	._bk7011_cal_dpd = bk7011_cal_dpd_wrapper,
 	._bk7011_cal_pll = bk7011_cal_pll,
 	._bk7011_update_by_rx = bk7011_update_by_rx_wrapper,
 	._rwnx_cal_load_trx_rcbekn_reg_val = rwnx_cal_load_trx_rcbekn_reg_val,
