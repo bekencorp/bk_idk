@@ -25,7 +25,6 @@
 
 #if (CONFIG_SYS_CPU0)
 #include <modules/pm.h>
-#include <modules/ota.h>
 #endif
 #include <driver/flash_partition.h>
 
@@ -375,9 +374,6 @@ static void app_main_thread(void *arg)
 	//if nessary ,close the main() function.
 #endif
 
-#if CONFIG_TFM_FWU
-	bk_ota_accept_image();
-#endif
 	main();
 
 #if CONFIG_MATTER_START
