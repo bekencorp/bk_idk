@@ -258,9 +258,9 @@ static bk_err_t adc_set_default_cali_val(struct sadc_data *data)
     const uint16_t cali_val[SARADC_CALIBRATE_MAX] = {
         #if (CONFIG_SOC_BK7236N || CONFIG_SOC_BK7236Q)
         /*TODO Fixme: wangzhilei*/
-        0, 0x1272, 0x23d8, ADC_TEMP_CODE_DFT_25DEGREE, ADC_TMEP_LSB_PER_10DEGREE /* 1Volt, 2Volt, 25Degree, 10Step*/
+        0, 0x11AA, 0x2382, ADC_TEMP_CODE_DFT_25DEGREE, ADC_TMEP_LSB_PER_10DEGREE /* 1Volt, 2Volt, 25Degree, 10Step*/
         #elif (CONFIG_SOC_BK7239XX)
-        0, 0x1272, 0x23d8, ADC_TEMP_CODE_DFT_25DEGREE, ADC_TMEP_LSB_PER_10DEGREE /* 1Volt, 2Volt, 25Degree, 10Step*/
+        0, 0x1194, 0x23ea, ADC_TEMP_CODE_DFT_25DEGREE, ADC_TMEP_LSB_PER_10DEGREE /* 1Volt, 2Volt, 25Degree, 10Step*/
         #elif (CONFIG_SOC_BK7259)
         0, 0x1481, 0x279d, ADC_TEMP_CODE_DFT_25DEGREE, ADC_TMEP_LSB_PER_10DEGREE /* 1Volt, 2Volt, 25Degree, 10Step*/
         #elif (CONFIG_SOC_BK7236XX)
