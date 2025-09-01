@@ -1585,7 +1585,7 @@ CONFIG_DMA2D=n
 # RX_OPTIMIZE
 #
 #@ Optimize rx current
-CONFIG_RX_OPTIMIZE=n
+CONFIG_RX_OPTIMIZE=y
 # end of RX_OPTIMIZE
 
 #
