@@ -1144,6 +1144,9 @@ mem_malloc_adjust_lfree:
           lfree = cur;
           LWIP_ASSERT("mem_malloc: !lfree->used", ((lfree == ram_end) || (!lfree->used)));
         }
+#if BK_LWIP
+        MEM_SANITY();
+#endif
         LWIP_MEM_ALLOC_UNPROTECT();
         sys_mutex_unlock(&mem_mutex);
         LWIP_ASSERT("mem_malloc: allocated memory not above ram_end.",
@@ -1156,7 +1159,9 @@ mem_malloc_adjust_lfree:
 #if MEM_OVERFLOW_CHECK
         mem_overflow_init_element(mem, size_in);
 #endif
+#if !BK_LWIP
         MEM_SANITY();
+#endif
 #if MEM_TRX_DYNAMIC_EN
         mem->type = type;
 #endif
