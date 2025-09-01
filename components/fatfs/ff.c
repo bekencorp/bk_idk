@@ -21,6 +21,7 @@
 #include "diskio.h"		/* Declarations of device I/O functions */
 #include "bk_uart.h"
 #include <os/os.h>
+#include <time/time.h>
 /*--------------------------------------------------------------------------
 
    Module Private Definitions
@@ -6331,5 +6332,15 @@ void beken_mem_set(void* dst, int val, UINT cnt)
 
 DWORD get_fattime (void)
 {
-	return ((DWORD)(FF_NORTC_YEAR - 1980) << 25 | (DWORD)FF_NORTC_MON << 21 | (DWORD)FF_NORTC_MDAY << 16);
+	uint32_t year = FF_NORTC_YEAR;
+	uint32_t month = FF_NORTC_MON;
+	uint32_t day = FF_NORTC_MDAY;
+#if CONFIG_NTP_SYNC_RTC
+	struct tm t = {0};
+	datetime_get(&t);
+	year = t.tm_year + 1900;
+	month = t.tm_mon + 1;
+	day = t.tm_mday;
+#endif
+	return ((DWORD)(year - 1980) << 25 | (DWORD)month << 21 | (DWORD)day << 16);
 }
