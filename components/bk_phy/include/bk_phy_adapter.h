@@ -70,6 +70,8 @@ typedef struct {
     void (*_sys_drv_set_iobyapssen)(uint32_t value);
     void (*_sys_ll_set_ana_reg11_aldosel)(uint32_t value);
 
+    void (*_sys_drv_optim_dpd_tx)(uint32_t vbias);
+
     uint32_t (*_sys_drv_cali_bias)(uint32_t update);
     uint32_t (*_sys_drv_cali_dpll)(uint32_t param);
     void (*_sys_drv_set_ana_ioldo_lp)(uint32_t value);

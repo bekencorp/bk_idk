@@ -536,6 +536,16 @@ static void sys_drv_rf_ctrl(uint8_t type)
     sys_hal_rf_ctrl(type);
 }
 
+static void sys_drv_optim_dpd_tx(uint32_t vbias)
+{
+#if (CONFIG_SOC_BK7236N)
+    sys_hal_set_ana_reg_spi_latch1v(1);
+    sys_hal_set_analdo_sel(1);
+    sys_hal_set_analdo_volt(0xF);
+    sys_hal_set_ana_cb_cal_manu_val(vbias);
+#endif
+}
+
 static int bk_wdt_stop_wrapper(void) {
 #if (CONFIG_TASK_WDT)
 	bk_task_wdt_stop();
@@ -788,6 +798,7 @@ const phy_os_funcs_t g_phy_os_funcs = {
 
     ._sys_drv_set_iobyapssen          = sys_drv_set_iobyapssen,
     ._sys_drv_set_ana_ioldo_lp        = sys_drv_set_ana_ioldo_lp,
+    ._sys_drv_optim_dpd_tx            = sys_drv_optim_dpd_tx,
 #endif
 
     ._sys_drv_cali_bias               = sys_drv_cali_bias,

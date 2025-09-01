@@ -34,4 +34,8 @@ menu "bk7239"
 	config RELEASE_IRAM
 		bool "release iram"
 		default n
+
+	config DPD_CALI
+		bool "Enable DPD Cali"
+		default n
 endmenu

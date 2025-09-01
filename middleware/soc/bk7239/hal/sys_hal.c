@@ -79,6 +79,11 @@ void sys_hal_set_analdo_volt(uint32_t v)
 	sys_ana_ll_set_ana_reg7_vanaldosel(v);
 }
 
+void sys_hal_set_analdo_sel(uint32_t v)
+{
+	sys_ana_ll_set_ana_reg10_aldosel(v);
+}
+
 void sys_hal_flash_set_dco(void)
 {
 	sys_ll_set_cpu_clk_div_mode2_cksel_flash(FLASH_CLK_DPLL);

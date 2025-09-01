@@ -547,6 +547,7 @@ void sys_hal_set_ana_reg_spi_latch1v(uint32_t v);
 void sys_hal_set_ioldo_bypass(uint32_t v);
 void sys_hal_set_ioldo_volt(uint32_t v);
 void sys_hal_set_analdo_volt(uint32_t v);
+void sys_hal_set_analdo_sel(uint32_t v);
 void sys_hal_set_ana_trxt_tst_enable(uint32_t value);
 void sys_hal_set_ana_scal_en(uint32_t value);
 void sys_hal_set_ana_gadc_buf_ictrl(uint32_t value);
