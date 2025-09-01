@@ -496,6 +496,7 @@ u32_t beken_random(void);
 #endif
 //#define LWIP_SNMP 1
 
+#define LWIP_SUPPORT_CUSTOM_PBUF        1
 
 /*
    ------------------------------------------------

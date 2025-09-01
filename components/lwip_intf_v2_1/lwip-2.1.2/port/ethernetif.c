@@ -74,6 +74,8 @@
 /* MAX RX threshold per process */
 #define ETH_RX_FRAME_PREP_THD                  16
 
+#define TAG  "eth"
+
 /* Private variables ---------------------------------------------------------*/
 /*
 @Note: This interface is implemented to operate in zero-copy mode only:
@@ -117,6 +119,7 @@ enum {
   BMSG_TX_TYPE,
   BMSG_TX_COMPLETE,
   BMSG_PS_KEEP_END,
+  BMSG_LINK_CHANGE,
 };
 
 typedef struct bus_message {
@@ -642,6 +645,21 @@ static void bmsg_eth_tx_compl_sender(void *arg)
     LWIP_LOGE("%s failed, ret=%d\r\n", __func__, ret);
 }
 
+static void bmsg_eth_link_change_sender(void *arg)
+{
+  bk_err_t ret;
+  BUS_MSG_T msg;
+  struct eth_mac_priv *priv;
+
+  msg.type = BMSG_LINK_CHANGE;
+  msg.arg = (uint32_t)arg;
+
+  priv = heth.priv;
+  ret = rtos_push_to_queue(&priv->eventq, &msg, BEKEN_WAIT_FOREVER);
+  if (kNoErr != ret)
+    LWIP_LOGE("%s failed, ret=%d\r\n", __func__, ret);
+}
+
 // bus msg handler
 static void bmsg_eth_rx_handler(BUS_MSG_T *msg, struct netif *netif)
 {
@@ -841,6 +859,59 @@ static void ethernetif_core_thread(void *argument)
 
       HAL_ETH_ReleaseTxPacket(&heth);
       break;
+
+    case BMSG_LINK_CHANGE: {
+      if (msg.arg == 0) {
+        LWIP_LOGI("ETH link down\n");
+        // Link down
+        HAL_ETH_Stop_IT(&heth);
+
+        // stop dynamic address or static ip address
+        eth_ip_down();
+      } else {
+        // Link up
+        int phydev_duplex = msg.arg  >> 31;
+        int phydev_speed = msg.arg & 0xFFFF;
+        uint32_t speed = 0U, duplex = 0U;
+        ETH_MACConfigTypeDef MACConf;
+
+        switch (phydev_duplex) {
+        case DUPLEX_FULL:
+          duplex = ETH_FULLDUPLEX_MODE;
+          break;
+        case DUPLEX_HALF:
+          duplex = ETH_HALFDUPLEX_MODE;
+          break;
+        }
+
+        switch (phydev_speed) {
+        case SPEED_1000:
+          break;
+        case SPEED_100:
+          speed = ETH_SPEED_100M;
+          break;
+        case SPEED_10:
+          speed = ETH_SPEED_10M;
+          break;
+        }
+
+        LWIP_LOGI("ETH link up, speed %dM, %s-duplex\n", phydev_speed, phydev_duplex ? "Full" : "Half");
+
+        /* Get MAC Config MAC */
+        HAL_ETH_GetMACConfig(&heth, &MACConf);
+        MACConf.DuplexMode = duplex;
+        MACConf.Speed = speed;
+#ifdef CONFIG_ETH_PM_CB_SUPPORT
+        priv->duplex = duplex;
+        priv->speed = speed;
+#endif
+        HAL_ETH_SetMACConfig(&heth, &MACConf);
+        HAL_ETH_Start_IT(&heth);
+        netifapi_netif_set_link_up(netif);
+
+        eth_ip_start();
+      }
+    }  break;
 
 #ifdef CONFIG_ETH_PM_CB_SUPPORT
     case BMSG_PS_KEEP_END:
@@ -1249,9 +1320,8 @@ static int32_t ETH_PHY_IO_GetTick(void)
   */
 void ethernet_link_thread(void *argument)
 {
-  ETH_MACConfigTypeDef MACConf = {0};
   //int32_t PHYLinkState = 0;
-  uint32_t linkchanged = 0U, speed = 0U, duplex = 0U;
+  uint32_t linkchanged = 0U;
 
   struct netif *netif = (struct netif *) argument;
   struct eth_mac_priv *priv __maybe_unused = heth.priv;
@@ -1281,22 +1351,19 @@ void ethernet_link_thread(void *argument)
 #endif
 
     if (netif_is_link_up(netif) && !phydev->link) {
-    LWIP_LOGI("ETH link down\n");
-    HAL_ETH_Stop_IT(&heth);
 
-    // stop dynamic address or static ip address
-    eth_ip_down();  // XXX: netifapi_XXX
+      // send link change event to corethread
+      bmsg_eth_link_change_sender(0);
+
     } else if (!netif_is_link_up(netif) && phydev->link) {
       linkchanged = 1;
 
       switch (phydev->duplex) {
       case DUPLEX_FULL:
-          duplex = ETH_FULLDUPLEX_MODE;
-          break;
-        case DUPLEX_HALF:
-      duplex = ETH_HALFDUPLEX_MODE;
-      break;
-    default:
+        break;
+      case DUPLEX_HALF:
+        break;
+      default:
         linkchanged = 0;
       }
 
@@ -1304,32 +1371,17 @@ void ethernet_link_thread(void *argument)
       case SPEED_1000:
         break;
       case SPEED_100:
-        speed = ETH_SPEED_100M;
         break;
       case SPEED_10:
-        speed = ETH_SPEED_10M;
         break;
-    default:
+      default:
         linkchanged = 0;
       }
 
       if(linkchanged)
       {
-        LWIP_LOGI("ETH link up, speed %dM, %s-duplex\n", phydev->speed, phydev->duplex ? "Full" : "Half");
-
-        /* Get MAC Config MAC */
-        HAL_ETH_GetMACConfig(&heth, &MACConf);
-        MACConf.DuplexMode = duplex;
-        MACConf.Speed = speed;
-#ifdef CONFIG_ETH_PM_CB_SUPPORT
-        priv->duplex = duplex;
-        priv->speed = speed;
-#endif
-        HAL_ETH_SetMACConfig(&heth, &MACConf);
-        HAL_ETH_Start_IT(&heth);
-        netifapi_netif_set_link_up(netif);
-
-        eth_ip_start();   // netifapi_XXX
+        uint32_t link_val = phydev->duplex << 31 | phydev->speed;
+        bmsg_eth_link_change_sender((void *)link_val);
       }
     }
 
