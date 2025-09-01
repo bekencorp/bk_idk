@@ -159,8 +159,8 @@ typedef struct {
 
 	void (*_mac_printf_encode)(char *txt, size_t maxlen, const u8 *data, size_t len);
 	void (*_dbg_enable_debug_gpio)(void);
-	bk_err_t (*_gpio_dev_unprotect_unmap)(uint32_t gpio_id);
-	bk_err_t (*_gpio_dev_unprotect_map)(uint32_t gpio_id, uint32_t dev);
+	void (*_dbg_enable_debug_mac)(void);
+	void (*_dbg_enable_debug_phy)(void);
 	UINT32 (*_mcu_ps_machw_cal)(void);
 	UINT32 (*_mcu_ps_machw_reset)(void);
 	UINT32 (*_mcu_ps_machw_init)(void);
@@ -285,7 +285,6 @@ extern wifi_os_funcs_t g_wifi_os_funcs;
 
 typedef struct {
 	uint32_t _sys_drv_clk_on;
-	uint32_t _sys_sys_debug_config1_addr;
 	uint32_t _ps_unallow;
 	uint32_t _ps_allow;
 	uint32_t _ps_event_key;
