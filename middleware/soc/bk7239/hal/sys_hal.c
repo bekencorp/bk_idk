@@ -23,6 +23,7 @@
 #include <driver/hal/hal_qspi_types.h>
 #include "timer_hal.h"
 #include <driver/pwr_clk.h>
+#include <gpio_driver.h>
 #include "bk_misc.h"
 
 #if CONFIG_SOC_BK7239_SMP_TEMP
@@ -1467,6 +1468,62 @@ void sys_hal_disable_hsu_int(void)
 	sys_ll_set_cpu0_int_0_31_en_cpu0_hsu_irq_int_en(0);
 }
 
+void sys_hal_set_debug_mux(int type)
+{
+	sys_ll_set_dbug_config0_dbug_mux(type);
+}
+
+// Set debug port to mac
+void sys_hal_diag_debug_mac()
+{
+	sys_ll_set_dbug_config0_dbug_mux(DIAG_DEBUG_MAC);
+}
+
+// Set debug port to phy
+void sys_hal_diag_debug_phy()
+{
+	sys_ll_set_dbug_config0_dbug_mux(DIAG_DEBUG_PHY);
+}
+
+// Set GPIO Mux for Debug Purpose.
+void dbg_enable_debug_gpio(void)
+{
+	// 2 -> 9
+	gpio_dev_unmap(GPIO_2);
+	gpio_dev_map(GPIO_2, GPIO_DEV_DEBUG0);
+	gpio_dev_unmap(GPIO_3);
+	gpio_dev_map(GPIO_3, GPIO_DEV_DEBUG1);
+	gpio_dev_unmap(GPIO_4);
+	gpio_dev_map(GPIO_4, GPIO_DEV_DEBUG2);
+	gpio_dev_unmap(GPIO_5);
+	gpio_dev_map(GPIO_5, GPIO_DEV_DEBUG3);
+	gpio_dev_unmap(GPIO_6);
+	gpio_dev_map(GPIO_6, GPIO_DEV_DEBUG4);
+	gpio_dev_unmap(GPIO_7);
+	gpio_dev_map(GPIO_7, GPIO_DEV_DEBUG5);
+	gpio_dev_unmap(GPIO_8);
+	gpio_dev_map(GPIO_8, GPIO_DEV_DEBUG6);
+	gpio_dev_unmap(GPIO_9);
+	gpio_dev_map(GPIO_9, GPIO_DEV_DEBUG7);
+
+	// 12 -> 19
+	gpio_dev_unmap(GPIO_12);
+	gpio_dev_map((GPIO_12), GPIO_DEV_DEBUG8);
+	gpio_dev_unmap(GPIO_13);
+	gpio_dev_map(GPIO_13, GPIO_DEV_DEBUG9);
+	gpio_dev_unmap(GPIO_14);
+	gpio_dev_map((GPIO_14), GPIO_DEV_DEBUG10);
+	gpio_dev_unmap(GPIO_15);
+	gpio_dev_map(GPIO_15, GPIO_DEV_DEBUG11);
+	gpio_dev_unmap(GPIO_16);
+	gpio_dev_map((GPIO_16), GPIO_DEV_DEBUG12);
+	gpio_dev_unmap(GPIO_17);
+	gpio_dev_map(GPIO_17, GPIO_DEV_DEBUG13);
+	gpio_dev_unmap(GPIO_18);
+	gpio_dev_map(GPIO_18, GPIO_DEV_DEBUG14);
+	gpio_dev_unmap(GPIO_19);
+	gpio_dev_map(GPIO_19, GPIO_DEV_DEBUG15);
+}
 //Yantao Add End
 
 void sys_hal_cali_dpll_spi_trig_disable(void)

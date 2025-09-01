@@ -615,6 +615,20 @@ typedef enum _dco_speed
 	DCO_CALIB_SPEED_320M,
 	DCO_CALIB_SPEED_480M,
 }dco_cali_speed_e;
+
+typedef enum
+{
+	DIAG_DEBUG_BTS0 = 0, // diag_bts[0+:16]={ble_dbg2,ble_dbg3}
+	DIAG_DEBUG_BTS1,     // diag_bts[16+:16]={ble_dbg0,ble_dbg1}
+	DIAG_DEBUG_BTS2,     // {8'd0,diag_bts[32+:8]}={8'd0,agc_test[7:0]}
+	DIAG_DEBUG_MAC,      // diag_mac[0+:16]
+	DIAG_DEBUG_MAC1,     // diag_mac[16:16]
+	DIAG_DEBUG_PHY,      // diag_mod[0+:16]
+	DIAG_DEBUG_PHY1,     // diag_mod[16+:16]
+	DIAG_DEBUG_THREAD,   // diag_thread_mux[0+:16]
+	DIAG_DEBUG_THREAD1,  // diag_thread_mux[16+:16]
+} diag_debug_mux_t;
+
 #ifdef __cplusplus
 }
 #endif

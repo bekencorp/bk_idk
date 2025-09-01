@@ -358,6 +358,10 @@ void sys_hal_enable_mac_txrx_timer_int(void);
 void sys_hal_enable_modem_int(void);
 void sys_hal_enable_modem_rc_int(void);
 void sys_hal_enable_hsu_int(void);
+void sys_hal_set_debug_mux(int type);
+void sys_hal_diag_debug_mac(void);
+void sys_hal_diag_debug_phy(void);
+void dbg_enable_debug_gpio(void);
 //Yantao Add End
 
 void sys_hal_set_ana_vtempsel(uint32_t value);
