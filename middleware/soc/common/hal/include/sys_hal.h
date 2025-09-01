@@ -573,6 +573,7 @@ void sys_hal_set_ana_reg8_spi_latch1v(uint32_t value);
 void sys_hal_set_ana_reg5_adc_div(uint32_t value);
 void sys_hal_set_ana_reg5_rosc_disable(uint32_t value);
 void sys_hal_set_ana_reg7_timer_wkrstn(uint32_t value);
+void sys_hal_set_ana_reg7_clk_sel(uint32_t value);
 void sys_hal_set_ana_reg8_spi_latch1v(uint32_t value);
 void sys_hal_set_ana_reg8_rst_wks1v(uint32_t value);
 void sys_hal_set_ana_reg8_lvsleep_wkrst(uint32_t value);

@@ -63,6 +63,12 @@ static void aon_rtc_interrupt_disable(aon_rtc_id_t id);
 #define ANA_RTC_CURRENT_TICK        bk_aon_rtc_get_current_tick(ANA_RTC_GET_SET_TIME_RTC_ID)
 static int64_t s_boot_time_us       = 0; // timeofday value
 
+#ifdef CONFIG_EXTERN_32K
+static uint32_t s_aon_rtc_clock_freq = AON_RTC_EXTERN_32K_CLOCK_FREQ;
+#else
+static uint32_t s_aon_rtc_clock_freq = AON_RTC_DEFAULT_CLOCK_FREQ;
+#endif
+
 #define ANA_RTC_OPS_SAFE_DELAY_US (125)
 static uint64_t s_ana_rtc_base_tick = 0; // use for rtc reset
 #if CONFIG_ROSC_COMPENSATION
@@ -78,12 +84,12 @@ static bool s_rtc_updated           = true;
 
 __IRAM_SEC float bk_rtc_get_ms_tick_count(void)
 {
-	return (float)AON_RTC_DEFAULT_CLOCK_FREQ / 1000;
+	return (float)s_aon_rtc_clock_freq / 1000;
 }
 
 uint32_t bk_rtc_get_clock_freq(void)
 {
-	return AON_RTC_DEFAULT_CLOCK_FREQ;
+	return s_aon_rtc_clock_freq;
 }
 
 void bk_rtc_update_base_time(void)
@@ -732,14 +738,24 @@ static void ana_rtc_hw_init(void)
 	uint32_t tick_l = (uint32_t)AON_RTC_ROUND_TICK;
 
 	// rebase tick value
+#if !CONFIG_AON_RTC_KEEP_TIME_SUPPORT
 	s_ana_rtc_base_tick = aon_pmu_hal_rtc_tick_l_get();
+#endif
 	s_low_tick = 0;
 
 	sys_hal_set_ana_reg8_spi_latch1v(1);
+#if !CONFIG_AON_RTC_KEEP_TIME_SUPPORT
 	sys_hal_set_ana_reg9_spi_timerwken(0);
+#endif
 	sys_hal_set_ana_reg5_pwd_rosc_spi(0);
 	sys_hal_set_ana_reg5_rosc_disable(0);
 	sys_hal_set_ana_reg9_spi_byp32pwd(1);
+
+#ifdef CONFIG_EXTERN_32K
+	sys_hal_set_ana_reg7_clk_sel(1);
+#else
+	sys_hal_set_ana_reg7_clk_sel(0);
+#endif
 
 	// set upper tick value
 	sys_hal_set_ana_reg11_timersel(tick_h);
@@ -753,10 +769,13 @@ static void ana_rtc_hw_init(void)
 	aon_pmu_hal_rtc_samp_sel(0);
 
 	// rtc tick start
+#if !CONFIG_AON_RTC_KEEP_TIME_SUPPORT
 	sys_hal_set_ana_reg9_spi_timerwken(1);
+#endif
 	sys_hal_set_ana_reg8_spi_latch1v(0);
 
 	// wait until rtc tick reset ok, will cost about 32us
+#if !CONFIG_AON_RTC_KEEP_TIME_SUPPORT
 	while (1)
 	{
 		if (aon_pmu_hal_rtc_tick_l_get() < s_ana_rtc_base_tick)
@@ -764,6 +783,7 @@ static void ana_rtc_hw_init(void)
 			break;
 		}
 	}
+#endif
 
 	bk_int_isr_register(INT_SRC_ANA_RTC, ana_rtc1_isr_handler, NULL);
 

@@ -2314,6 +2314,11 @@ void sys_hal_set_ana_reg9_spi_timerwken(uint32_t value)
 	sys_ll_set_ana_reg9_spi_timerwken(value);
 }
 
+void sys_hal_set_ana_reg7_clk_sel(uint32_t value)
+{
+	sys_ll_set_ana_reg7_clk_sel(value);
+}
+
 void sys_hal_set_ana_reg9_spi_byp32pwd(uint32_t value)
 {
 	sys_ll_set_ana_reg9_spi_byp32pwd(value);
@@ -2566,7 +2571,12 @@ void sys_hal_early_init(void)
 	 * and don't forget disable it after that.
 	 */
 	sys_ll_set_ana_reg8_spi_latch1v(1);
+
+#if CONFIG_AON_RTC_KEEP_TIME_SUPPORT
+	sys_hal_analog_set(ANALOG_REG9, 0xB755B327);//tenglong20240805:2M buck for EVM
+#else
 	sys_hal_analog_set(ANALOG_REG9, 0xB7553327);//tenglong20240805:2M buck for EVM
+#endif
 	sys_hal_analog_set(ANALOG_REG10, 0xF7EEB89A);
 	sys_hal_analog_set(ANALOG_REG11, 0x00000000);
 	sys_hal_analog_set(ANALOG_REG12, 0x00100000);
