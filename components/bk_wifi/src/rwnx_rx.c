@@ -157,7 +157,7 @@ static bool rwm_block_bcmc(struct ethhdr *eth_hdr_ptr,uint8_t type)
 
 		default:
 			break;
-		
+
 	}
 	return false;
 }
@@ -577,7 +577,11 @@ UINT32 rwm_upload_data(void *host_id, uint32_t frame_len)
 		q = p;
 	}
 
-	q->len = frame_len + macif_get_rxl_payload_offset();
+	// q->len = frame_len + macif_get_rxl_payload_offset();
+	// Don't update pbuf len/tot_len here, because frame len is
+	// the whole length of AMSDU packet instead of first MSDU of AMSDU.
+	// Else pbuf_clone will assert because pbuf->len is larger than
+	// pbuf->tot_len. (AMY-697).
 	rxhdr = (struct fhost_rx_header *)q->payload;
 
 	pbuf_header(q, -(s16)macif_get_rxl_payload_offset());
