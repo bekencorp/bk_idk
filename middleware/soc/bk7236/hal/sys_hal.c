@@ -1580,8 +1580,6 @@ void sys_hal_lcd_disp_clk_en(uint8_t clk_src_sel, uint8_t clk_div_l, uint8_t clk
 	sys_ll_set_cpu_clk_div_mode1_clkdiv_disp_l(clk_div_l);
 	sys_ll_set_cpu_clk_div_mode2_clkdiv_disp_h(clk_div_h);
 	sys_ll_set_cpu_clk_div_mode2_cksel_disp( clk_src_sel);
-//	sys_ll_set_cpu1_int_0_31_en_cpu1_lcd_display_int_en( 1);
-//	sys_ll_set_cpu0_int_0_31_en_cpu0_lcd_display_int_en(int_en);
 	sys_ll_set_cpu_device_clk_enable_disp_cken(1);
 }
 

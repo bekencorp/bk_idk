@@ -420,43 +420,5 @@ bk_err_t arch_isr_entry_init2(void)
 	return BK_OK;
 }
 #endif
-
-void dump_state(void)
-{
-	uint32_t bits = 0;
-
-	for (IRQn_Type irq_type = 0; irq_type < InterruptMAX_IRQn; irq_type++) {
-		if (irq_type == 32) {
-			BK_LOGI("int", "bits=%x\r\n", bits);
-			bits = 0;
-		}
-
-		if (NVIC_GetTargetState(irq_type)) {
-			uint32_t bit = irq_type % 32;
-			bits |= BIT(bit);
-		}
-	}
-
-	BK_LOGI("int", "high bits=%x\r\n", bits);
-}
-
-void arch_int_set_target_state_all(void)
-{
-	dump_state();
-	for (IRQn_Type irq_type = 0; irq_type < InterruptMAX_IRQn; irq_type++) {
-		NVIC_SetTargetState(irq_type);
-	}
-	dump_state();
-}
-
-void arch_int_dump_statis(void)
-{
-#if CONFIG_ARCH_INT_STATIS
-	for (IRQn_Type irq_type = 0; irq_type < InterruptMAX_IRQn; irq_type++) {
-		BK_LOGI(TAG, "[%d] = %u\r\n", irq_type, s_int_statis[irq_type]);
-	}
-#endif
-}
-
 // eof
 

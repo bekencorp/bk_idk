@@ -142,6 +142,25 @@ static inline uint32_t sys_ll_get_cpu_storage_connect_op_select_flash_sel(void) 
 	return r->flash_sel;
 }
 
+static inline void sys_ll_set_cpu_storage_connect_op_select_rf_switch_en(uint32_t v) {
+	sys_cpu_storage_connect_op_select_t *r = (sys_cpu_storage_connect_op_select_t*)(SOC_SYS_REG_BASE + (0x2 << 2));
+	r->rf_switch_en = v;
+}
+
+static inline uint32_t sys_ll_get_cpu_storage_connect_op_select_rf_switch_en(void) {
+	sys_cpu_storage_connect_op_select_t *r = (sys_cpu_storage_connect_op_select_t*)(SOC_SYS_REG_BASE + (0x2 << 2));
+	return r->rf_switch_en;
+}
+
+static inline void sys_ll_set_cpu_storage_connect_op_select_rf_for_wifiorbt(uint32_t v) {
+	sys_cpu_storage_connect_op_select_t *r = (sys_cpu_storage_connect_op_select_t*)(SOC_SYS_REG_BASE + (0x2 << 2));
+	r->rf_for_wifiorbt = v;
+}
+
+static inline uint32_t sys_ll_get_cpu_storage_connect_op_select_rf_for_wifiorbt(void) {
+	sys_cpu_storage_connect_op_select_t *r = (sys_cpu_storage_connect_op_select_t*)(SOC_SYS_REG_BASE + (0x2 << 2));
+	return r->rf_for_wifiorbt;
+}
 //reg cpu_current_run_status:
 
 static inline void sys_ll_set_cpu_current_run_status_value(uint32_t v) {
@@ -651,6 +670,16 @@ static inline void sys_ll_set_cpu_clk_div_mode1_cksel_tim2(uint32_t v) {
 static inline uint32_t sys_ll_get_cpu_clk_div_mode1_cksel_tim2(void) {
 	sys_cpu_clk_div_mode1_t *r = (sys_cpu_clk_div_mode1_t*)(SOC_SYS_REG_BASE + (0x8 << 2));
 	return r->cksel_tim2;
+}
+
+static inline void sys_ll_set_cpu_clk_div_mode1_cksel_can(uint32_t v) {
+	sys_cpu_clk_div_mode1_t *r = (sys_cpu_clk_div_mode1_t*)(SOC_SYS_REG_BASE + (0x8 << 2));
+	r->cksel_can = v;
+}
+
+static inline uint32_t sys_ll_get_cpu_clk_div_mode1_cksel_can(void) {
+	sys_cpu_clk_div_mode1_t *r = (sys_cpu_clk_div_mode1_t*)(SOC_SYS_REG_BASE + (0x8 << 2));
+	return r->cksel_can;
 }
 
 static inline void sys_ll_set_cpu_clk_div_mode1_cksel_i2s(uint32_t v) {

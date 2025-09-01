@@ -41,7 +41,10 @@ typedef volatile union {
 typedef volatile union {
 	struct {
 		uint32_t boot_mode                        :  1; /**<bit[0 : 0] */
-		uint32_t reserved_bit_1_6                 :  6; /**<bit[1 : 6] */
+		uint32_t reserved_bit_1_3                 :  3; /**<bit[1 : 3] */
+		uint32_t rf_switch_en                     :  1; /**<bit[4 : 4] */
+		uint32_t rf_for_wifiorbt                  :  1; /**<bit[5 : 5] */
+		uint32_t reserved_bit_6                   :  1; /**<bit[6 : 6] */
 		uint32_t jtag_core_sel                    :  2; /**<bit[7 : 8] */
 		uint32_t flash_sel                        :  1; /**<bit[9 : 9] */
 		uint32_t reserved_bit_10_31               : 22; /**<bit[10 : 31] */
@@ -499,7 +502,8 @@ typedef volatile union {
 		uint32_t cpu0_dma1_nsec_int_en            :  1; /**<bit[25 : 25] */
 		uint32_t cpu0_yuvb_int_en                 :  1; /**<bit[26 : 26] */
 		uint32_t cpu0_rott_int_en                 :  1; /**<bit[27 : 27] */
-		uint32_t reserved0                        :  4; /**<bit[28 : 31] */
+		uint32_t cpu0_7816_int_en                 :  1; /**<bit[28 : 28] */
+		uint32_t reserved0                        :  3; /**<bit[29 : 31] */
 	};
 	uint32_t v;
 } sys_cpu0_int_32_63_en_t;
@@ -574,7 +578,8 @@ typedef volatile union {
 		uint32_t cpu1_dma1_nsec_int_en            :  1; /**<bit[25 : 25] */
 		uint32_t cpu1_yuvb_int_en                 :  1; /**<bit[26 : 26] */
 		uint32_t cpu1_rott_int_en                 :  1; /**<bit[27 : 27] */
-		uint32_t reserved0                        :  4; /**<bit[28 : 31] */
+		uint32_t cpu1_7816_int_en                 :  1; /**<bit[28 : 28] */
+		uint32_t reserved0                        :  3; /**<bit[29 : 31] */
 	};
 	uint32_t v;
 } sys_cpu1_int_32_63_en_t;
@@ -724,7 +729,8 @@ typedef volatile union {
 		uint32_t cpu0_dma1_nsec_int_st            :  1; /**<bit[25 : 25] */
 		uint32_t cpu0_yuvb_int_st                 :  1; /**<bit[26 : 26] */
 		uint32_t cpu0_rott_int_st                 :  1; /**<bit[27 : 27] */
-		uint32_t reserved0                        :  4; /**<bit[28 : 31] */
+		uint32_t cpu0_7816_int_st                 :  1; /**<bit[28 : 28] */
+		uint32_t reserved0                        :  3; /**<bit[29 : 31] */
 	};
 	uint32_t v;
 } sys_cpu0_int_32_63_status_t;
@@ -799,7 +805,8 @@ typedef volatile union {
 		uint32_t cpu1_dma1_nsec_int_st            :  1; /**<bit[25 : 25] */
 		uint32_t cpu1_yuvb_int_st                 :  1; /**<bit[26 : 26] */
 		uint32_t cpu1_rott_int_st                 :  1; /**<bit[27 : 27] */
-		uint32_t reserved0                        :  4; /**<bit[28 : 31] */
+		uint32_t cpu1_7816_int_st                 :  1; /**<bit[28 : 28] */
+		uint32_t reserved0                        :  3; /**<bit[29 : 31] */
 	};
 	uint32_t v;
 } sys_cpu1_int_32_63_status_t;

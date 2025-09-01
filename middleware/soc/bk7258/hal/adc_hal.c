@@ -123,8 +123,9 @@ bk_err_t adc_hal_stop_commom(adc_hal_t *hal)
 
 uint16_t adc_hal_get_single_step_adc_data(adc_hal_t *hal)
 {
-	uint16_t value = 0;
-	uint32_t mode = 0;
+	uint16_t value;
+	uint32_t mode;
+  
 	mode  = adc_hal_get_mode(hal);
 
 	while(mode){

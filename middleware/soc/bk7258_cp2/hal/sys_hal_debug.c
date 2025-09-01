@@ -43,7 +43,9 @@ static void sys_dump_cpu_storage_connect_op_select(void)
 
 	SOC_LOGI("cpu_storage_connect_op_select: %8x\r\n", REG_READ(SOC_SYS_REG_BASE + (0x2 << 2)));
 	SOC_LOGI("	boot_mode: %8x\r\n", r->boot_mode);
-	SOC_LOGI("	reserved_bit_1_6: %8x\r\n", r->reserved_bit_1_6);
+	SOC_LOGI("	reserved_bit_1_3: %8x\r\n", r->reserved_bit_1_3);
+	SOC_LOGI("	rf_switch_en: %8x\r\n", r->rf_switch_en);
+	SOC_LOGI("	rf_switch_en: %8x\r\n", r->rf_for_wifiorbt);
 	SOC_LOGI("	jtag_core_sel: %8x\r\n", r->jtag_core_sel);
 	SOC_LOGI("	flash_sel: %8x\r\n", r->flash_sel);
 	SOC_LOGI("	reserved_bit_10_31: %8x\r\n", r->reserved_bit_10_31);

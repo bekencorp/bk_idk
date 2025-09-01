@@ -1210,13 +1210,22 @@ void sys_hal_bt_interrupt_ctrl(bool en)
 
 void sys_hal_bt_rf_ctrl(bool en)
 {
-    if (en)
-    {
-        //todo
-    }
-    else
-    {
-        //todo
+}
+
+void sys_hal_rf_ctrl(uint8_t type)
+{
+    if (type == RF_CTRL_PTA) {
+        // rf ctrl by PTA
+        sys_ll_set_cpu_storage_connect_op_select_rf_switch_en(0);
+        sys_ll_set_cpu_storage_connect_op_select_rf_for_wifiorbt(0);
+    } else if (type == RF_CTRL_WIFI) {
+        // rf ctrl by Wi-Fi
+        sys_ll_set_cpu_storage_connect_op_select_rf_for_wifiorbt(0);
+        sys_ll_set_cpu_storage_connect_op_select_rf_switch_en(1);
+    } else {
+        // rf ctrl by BT
+        sys_ll_set_cpu_storage_connect_op_select_rf_for_wifiorbt(1);
+        sys_ll_set_cpu_storage_connect_op_select_rf_switch_en(1);
     }
 }
 

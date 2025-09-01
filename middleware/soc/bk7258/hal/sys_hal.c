@@ -1502,14 +1502,38 @@ void sys_hal_bt_interrupt_ctrl(bool en)
 
 void sys_hal_bt_rf_ctrl(bool en)
 {
-    if (en)
-    {
-        //todo
+}
+
+void sys_hal_rf_ctrl(uint8_t type)
+{
+    if (type == RF_CTRL_PTA) {
+        // rf ctrl by PTA
+        sys_ll_set_cpu_storage_connect_op_select_rf_switch_en(0);
+        sys_ll_set_cpu_storage_connect_op_select_rf_for_wifiorbt(0);
+    } else if (type == RF_CTRL_WIFI) {
+        // rf ctrl by Wi-Fi
+        sys_ll_set_cpu_storage_connect_op_select_rf_for_wifiorbt(0);
+        sys_ll_set_cpu_storage_connect_op_select_rf_switch_en(1);
+    } else {
+        // rf ctrl by BT
+        sys_ll_set_cpu_storage_connect_op_select_rf_for_wifiorbt(1);
+        sys_ll_set_cpu_storage_connect_op_select_rf_switch_en(1);
     }
-    else
-    {
-        //todo
+}
+
+uint8_t sys_hal_rf_ctrl_type_get(void)
+{
+    uint8_t type = 0;
+    if (sys_ll_get_cpu_storage_connect_op_select_rf_switch_en()) {
+        if (sys_ll_get_cpu_storage_connect_op_select_rf_for_wifiorbt()) {
+            type = RF_CTRL_BT;
+        } else {
+            type = RF_CTRL_WIFI;
+        }
+    } else {
+        type = RF_CTRL_PTA;
     }
+    return type;
 }
 
 uint32_t sys_hal_bt_rf_status_get(void)
@@ -1566,9 +1590,6 @@ void sys_hal_lcd_disp_clk_en(uint8_t clk_src_sel, uint8_t clk_div_l, uint8_t clk
 	sys_ll_set_cpu_clk_div_mode2_cksel_disp( clk_src_sel);
 	sys_ll_set_cpu_clk_div_mode1_clkdiv_disp_l(clk_div_l);
 	sys_ll_set_cpu_clk_div_mode2_clkdiv_disp_h(clk_div_h);
-//	sys_ll_set_cpu1_int_0_31_en_cpu1_lcd_display_int_en( 1);
-//	sys_ll_set_cpu0_int_0_31_en_cpu0_lcd_display_int_en( int_en);
-//	sys_ll_set_cpu_device_clk_enable_disp_cken(1);
 }
 
 /**
@@ -2186,7 +2207,6 @@ void sys_hal_cpu_fft_int_en(uint32_t value)
 /**  I2S Start  **/
 void sys_hal_i2s_select_clock(uint32_t value)
 {
-//	sys_ll_set_cpu_clk_div_mode1_cksel_i2s(value);
 	sys_ll_set_cpu_clk_div_mode1_cksel_i2s(value);
 	sys_ll_set_cpu_clk_div_mode2_cksel_i2s1(value);
 	sys_ll_set_cpu_clk_div_mode2_cksel_i2s2(value);

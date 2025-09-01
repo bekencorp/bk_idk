@@ -581,6 +581,12 @@ typedef enum
 	QSPI_CLK_480M,
 } sys_qspi_clk_src_t;
 
+typedef enum
+{
+	RF_CTRL_PTA = 0,
+	RF_CTRL_WIFI,
+	RF_CTRL_BT,
+}rf_ctrl_t;
 #ifdef __cplusplus
 }
 #endif

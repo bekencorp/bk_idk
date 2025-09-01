@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Beken
+// Copyright 2020-2025 Beken
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -137,22 +137,6 @@ bk_err_t arch_isr_entry_init(void)
 	return BK_OK;
 }
 
-#if CONFIG_SOC_BK7236_SMP_TEMP || CONFIG_SOC_BK7239_SMP_TEMP
-/*TODO: the object about the corresponding core shall has the action*/
-bk_err_t arch_isr_entry_init2(void)
-{
-	/* group priority is depends on macro:__NVIC_PRIO_BITS.
-	   please refer to: www.freertos.org/zh-cn-cmn-s/RTOS-Cortex-M3-M4.html*/
-	NVIC_SetPriorityGrouping(PRI_GOURP_BITS_7_5);
-	for (uint32_t irq_type = 0; irq_type < INT_NUMBER_MAX; irq_type++) {
-		NVIC_SetPriority(irq_type, IRQ_DEFAULT_PRIORITY);
-		NVIC_EnableIRQ(irq_type);
-	}
-
-	return BK_OK;
-}
-#endif
-
 void dump_state(void)
 {
 	uint32_t bits = 0;
@@ -189,6 +173,5 @@ void arch_int_dump_statis(void)
 	}
 #endif
 }
-
 // eof
 
