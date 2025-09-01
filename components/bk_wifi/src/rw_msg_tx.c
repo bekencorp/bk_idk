@@ -797,23 +797,32 @@ int rw_msg_send_apm_start_req(u8 vif_index, u8 channel,
 	if (!req)
 		return -1;
 
-	req->basic_rates.length = 4;
-	req->basic_rates.array[0] = 130;
-	req->basic_rates.array[1] = 132;
-	req->basic_rates.array[2] = 139;
-	req->basic_rates.array[3] = 150;
 
 	req->chan.band = 0;
 	req->chan.flags = 0;
 	req->chan.prim20_freq = req->chan.center1_freq = rw_ieee80211_get_centre_frequency(channel);
 	req->chan.center2_freq = 0;
 
+#define MAC_BASIC_RATE                  0x80
 	// FIXME: BK7239 6E channel starts with channel 1
 	if (channel <= 14) {
 		req->chan.band = PHY_BAND_2G4;
+
+		// 2.4G Basic rate
+		req->basic_rates.length = 4;
+		req->basic_rates.array[0] = 2 | MAC_BASIC_RATE; // 1M
+		req->basic_rates.array[1] = 4 | MAC_BASIC_RATE; // 2M
+		req->basic_rates.array[2] = 11 | MAC_BASIC_RATE; // 5.5M
+		req->basic_rates.array[3] = 22 | MAC_BASIC_RATE; // 11M
 	} else {
+		// 5G basic rate
+		req->basic_rates.length = 3;
+		req->basic_rates.array[0] = 12 | MAC_BASIC_RATE;  // 6M
+		req->basic_rates.array[1] = 24 | MAC_BASIC_RATE;  // 12M
+		req->basic_rates.array[2] = 48 | MAC_BASIC_RATE;  // 24M
 		req->chan.band = PHY_BAND_5G;
 	}
+#undef MAC_BASIC_RATE
 
 	req->chan.type = PHY_CHNL_BW_20;
 
@@ -1813,7 +1822,7 @@ int rw_msg_send_csi_alg_config_ind(uint16_t rate1,uint16_t rate2,uint16_t rate3,
 	ind->csi_smooth_rate3 = rate3;
 	ind->csi_thres1 = thres1;
 	ind->csi_thres2 = thres2;
-	ind->interval = interval;    
+	ind->interval = interval;
 
 	return rw_msg_send(ind, 0, 0, NULL);
 }
