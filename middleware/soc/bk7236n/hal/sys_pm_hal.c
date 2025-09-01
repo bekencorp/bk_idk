@@ -631,6 +631,7 @@ static inline void sys_hal_set_low_voltage(volatile uint32_t *ana_r0, volatile u
 #if !CONFIG_DEEP_LV
 	sys_ll_set_ana_reg3_en_xtalh_sleep(1);
 #endif
+	sys_ll_set_ana_reg7_vporsel(1);
 	sys_ll_set_ana_reg7_vbspbuf_lp(1);//bit4
 	sys_ll_set_ana_reg7_envrefh1v(0);//bit12
 	sys_ll_set_ana_reg7_vanaldosel(0);//bit[9:6]
