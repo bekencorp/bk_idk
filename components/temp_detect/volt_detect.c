@@ -136,7 +136,7 @@ static int _volt_detect_get_adc_data(adc_chan_t adc_chan, uint16_t *adc_buf)
 
 #if CONFIG_SARADC_V1P2
 	config.src_clk = ADC_SCLK_XTAL;
-#elif SARADC_VER1_0
+#elif CONFIG_SARADC_V1P1
 	config.src_clk = ADC_SCLK_XTAL_26M;
 #endif
 
@@ -307,9 +307,10 @@ void volt_daemon_polling_handler(void)
 		result = _volt_detect_get_adc_data(ADC_VOLT_SENSER_CHANNEL, s_raw_voltage_data);
 	}
 	if (BK_OK != result) {
-		TEMPD_LOGW("detect failed(%d), retry\n", result);
+		TEMPD_LOGW("vdetect failed(%d), retry\n", result);
 		volt_daemon_restart();
         bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_SARADC, 1,0);
+
 		return; //TODO is that correct?
 	}
 

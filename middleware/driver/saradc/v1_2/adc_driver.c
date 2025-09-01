@@ -1007,7 +1007,6 @@ float temprature_calculate(UINT16 adc_val)
     return practic_temprature;
 }
 
-#if CONFIG_SARADC_V1P2
 float bk_adc_data_calculate(UINT16 adc_val, UINT8 adc_chan)
 {
     float cali_value = 0;
@@ -1028,73 +1027,7 @@ float bk_adc_data_calculate(UINT16 adc_val, UINT8 adc_chan)
 
     return cali_value;
 }
-#else
-float bk_adc_data_calculate(UINT16 adc_val, UINT8 adc_chan)
-{
-    BK_RETURN_ON_NULL(saradc_dev_ptr);
 
-    float cali_value = 0;
-    struct sadc_device *dev;
-    adc_config_t *channel_config_ptr;
-    adc_vol_div_t adc_vol_div;
-
-    dev = saradc_dev_ptr;
-    channel_config_ptr = dev->channel_cfg[adc_chan];
-
-    if (NULL == channel_config_ptr) {
-        adc_vol_div = ADC_VOL_DIV_NONE;
-    } else {
-        adc_vol_div = channel_config_ptr->vol_div;
-    }
-
-    if (adc_chan == ADC_7) {
-        return temprature_calculate(adc_val);
-    }
-
-    if (adc_chan == ADC_8 || adc_chan == ADC_9 || adc_chan == ADC_11) {
-        ADC_LOGI("adc_chan %d has been used\r\n", adc_chan);
-        return BK_ERR_ADC_BUSY;
-    }
-
-    // CHx: 0:1/4 1:1/3 2:1/2 3:1/1
-    // CH0: 0:1/7 1:1/5 2:1/3 3:1/2
-    if (adc_chan == ADC_0) {
-        switch (adc_vol_div) {
-            case ADC_VOL_DIV_7:
-                adc_val = adc_val * 7 / 3;
-                break;
-            case ADC_VOL_DIV_3:
-                break;
-            case ADC_VOL_DIV_2:
-                adc_val = adc_val * 2 / 3;
-                break;
-            case ADC_VOL_DIV_5:
-            default:
-                adc_val = adc_val * 5 / 3;
-                break;
-        }
-    } else {
-        switch (adc_vol_div) {
-            case ADC_VOL_DIV_4:
-                adc_val = adc_val * 4 / 3;
-                break;
-            case ADC_VOL_DIV_2:
-                adc_val = adc_val * 2 / 3;
-                break;
-            case ADC_VOL_DIV_1:
-                adc_val = adc_val * 1 / 3;
-                break;
-            case ADC_VOL_DIV_3:
-            default:
-                break;
-        }
-    }
-
-    cali_value = saradc_calculate(adc_val);
-
-    return cali_value;
-}
-#endif // CONFIG_SARADC_V1P2
 UINT32 saradc_get_calibrate_val(uint16_t *value, SARADC_MODE mode)
 {
     uint32_t irq_level;

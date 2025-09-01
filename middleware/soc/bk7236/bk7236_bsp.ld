@@ -1,22 +1,20 @@
-/*
- * Copyright (C), 2018-2019, Arm Technology (China) Co., Ltd.
- * All rights reserved
- *
- * The content of this file or document is CONFIDENTIAL and PROPRIETARY
- * to Arm Technology (China) Co., Ltd. It is subject to the terms of a
- * License Agreement between Licensee and Arm Technology (China) Co., Ltd
- * restricting among other things, the use, reproduction, distribution
- * and transfer.  Each of the embodiments, including this information and,,
- * any derivative work shall retain this copyright notice.
- */
+// Copyright 2020-2025 Beken
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include "soc/bk7236/reg_base.h"
 #include "partitions.h"
 #include "sdkconfig.h"
-
-#if (CONFIG_SOC_SMP)
-#include "cpu_id.h"
-#endif
 
 OUTPUT_FORMAT("elf32-littlearm", "elf32-bigarm", "elf32-littlearm")
 
@@ -38,7 +36,6 @@ __CPU0_APP_RAM_SIZE = CONFIG_CPU0_SPE_RAM_SIZE;
 #else
 __CPU0_APP_RAM_SIZE = 0xA0000 - CONFIG_CPU0_SPE_RAM_SIZE;
 #endif
-
 
 /*****************************************************************************
 The follow four shared memory address area mapping to the same physical memory 
@@ -62,51 +59,21 @@ MEMORY
   RAM (rwx)             : ORIGIN = __CPU0_APP_RAM_BASE, LENGTH = __CPU0_APP_RAM_SIZE - __SWAP_SIZE
   SWAP (rwx)            : ORIGIN = __CPU0_APP_RAM_BASE + __CPU0_APP_RAM_SIZE - __SWAP_SIZE, LENGTH = __SWAP_SIZE
 
-#if (CONFIG_SOC_SMP)
-  ITCM0 (rwx)           : ORIGIN = SOC_ITCM_DATA_BASE + __MPU_PROTECT_SIZE, LENGTH = CONFIG_ITCM_SIZE - __MPU_PROTECT_SIZE
-  DTCM0 (rwx)           : ORIGIN = SOC_DTCM_DATA_BASE + CPU_ID_SPACE_SIZE, LENGTH = CONFIG_DTCM_SIZE - CPU_ID_SPACE_SIZE
-
-  ITCM1 (rwx)           : ORIGIN = SOC_ITCM_DATA_BASE + __MPU_PROTECT_SIZE, LENGTH = CONFIG_ITCM_SIZE - __MPU_PROTECT_SIZE
-  DTCM1 (rwx)           : ORIGIN = SOC_DTCM_DATA_BASE + CPU_ID_SPACE_SIZE, LENGTH = CONFIG_DTCM_SIZE - CPU_ID_SPACE_SIZE
-
-  ITCM2 (rwx)           : ORIGIN = SOC_ITCM_DATA_BASE + __MPU_PROTECT_SIZE, LENGTH = CONFIG_ITCM_SIZE - __MPU_PROTECT_SIZE
-  DTCM2 (rwx)           : ORIGIN = SOC_DTCM_DATA_BASE + CPU_ID_SPACE_SIZE, LENGTH = CONFIG_DTCM_SIZE - CPU_ID_SPACE_SIZE
-#else
   ITCM (rwx)            : ORIGIN = SOC_ITCM_DATA_BASE + __MPU_PROTECT_SIZE, LENGTH = CONFIG_ITCM_SIZE - __MPU_PROTECT_SIZE
   DTCM (rwx)            : ORIGIN = SOC_DTCM_DATA_BASE + 0, LENGTH = CONFIG_DTCM_SIZE
-#endif
-
   PSRAM (rwx)           : ORIGIN = SOC_PSRAM_DATA_BASE, LENGTH = 0x4000000
 }
 
-#if (CONFIG_SOC_SMP)
-ENTRY(Reset_Handler_Cpu0)
-#else
 ENTRY(Reset_Handler)
-#endif
 
 SECTIONS
 {
     ASSERT((. == ALIGN(512)), "vector table address align fault.")
     .vectors :
     {
-#if (CONFIG_SOC_SMP)
-        __vector_core0_table = .;
-        KEEP(*(.vectors_core0))
-        . = ALIGN(512);
-
-        __vector_core1_table = .;
-        KEEP(*(.vectors_core1))
-        . = ALIGN(512);
-
-        __vector_core2_table = .;
-        KEEP(*(.vectors_core2))
-        . = ALIGN(512);
-#else
         __vector_table = .;
         KEEP(*(.vectors))
         *(.fix.reset_entry)
-#endif
     } > FLASH
 
     .gnu.sgstubs ALIGN(32) : ALIGN(32)
@@ -229,115 +196,6 @@ SECTIONS
         __zero_table_end__ = .;
     } > FLASH
 
-#if (CONFIG_SOC_SMP)
-    .tcm.copy.table :
-    {
-        . = ALIGN(4);
-        __tcm_copy_table_start__ = .;
-        LONG (tcm_cpu0_core_id)
-        LONG (__itcm_cpu0_text)
-        LONG (__itcm_cpu0_start__)
-        LONG ((__itcm_cpu0_end__ - __itcm_cpu0_start__) / 4)
-
-        LONG (tcm_cpu0_core_id)
-        LONG (__dtcm_cpu0_content)
-        LONG (__dtcm_cpu0_start__)
-        LONG ((__dtcm_cpu0_end__ - __dtcm_cpu0_start__) / 4)
-
-        LONG (tcm_cpu1_core_id)
-        LONG (__itcm_cpu1_text)
-        LONG (__itcm_cpu1_start__)
-        LONG ((__itcm_cpu1_end__ - __itcm_cpu1_start__) / 4)
-
-        LONG (tcm_cpu1_core_id)
-        LONG (__dtcm_cpu1_content)
-        LONG (__dtcm_cpu1_start__)
-        LONG ((__dtcm_cpu1_end__ - __dtcm_cpu1_start__) / 4)
-
-        LONG (tcm_cpu2_core_id)
-        LONG (__itcm_cpu2_text)
-        LONG (__itcm_cpu2_start__)
-        LONG ((__itcm_cpu2_end__ - __itcm_cpu2_start__) / 4)
-
-        LONG (tcm_cpu2_core_id)
-        LONG (__dtcm_cpu2_content)
-        LONG (__dtcm_cpu2_start__)
-        LONG ((__dtcm_cpu2_end__ - __dtcm_cpu2_start__) / 4)
-        __tcm_copy_table_end__ = .;
-    } > FLASH
-
-	tcm_cpu0_core_id = CPU0_CORE_ID;
-    .itcm_cpu0 :
-    {
-        . = ALIGN(4);
-        PROVIDE(__itcm_cpu0_text = LOADADDR(.itcm_cpu0));
-        __itcm_cpu0_start__ = .;
-        KEEP(*(.null_trap_handler))
-        *(.itcm_cpu0)
-        . = ALIGN(4);
-
-        __itcm_cpu0_end__ = .;
-    } > ITCM0 AT > FLASH
-
-    .dtcm_cpu0 :
-    {
-        . = ALIGN(4);
-
-        PROVIDE(__dtcm_cpu0_content = LOADADDR(.dtcm_cpu0));
-        __dtcm_cpu0_start__ = .;
-        *(.dtcm_cpu0)
-        . = ALIGN(4);
-        __dtcm_cpu0_end__ = .;
-    } > DTCM0 AT > FLASH
-
-	tcm_cpu1_core_id = CPU1_CORE_ID;
-    .itcm_cpu1 :
-    {
-        . = ALIGN(4);
-        PROVIDE(__itcm_cpu1_text = LOADADDR(.itcm_cpu1));
-        __itcm_cpu1_start__ = .;
-        KEEP(*(.null_trap_handler))
-        *(.itcm_cpu1)
-        . = ALIGN(4);
-
-        __itcm_cpu1_end__ = .;
-    } > ITCM1 AT > FLASH
-
-    .dtcm_cpu1 :
-    {
-        . = ALIGN(4);
-
-        PROVIDE(__dtcm_cpu1_content = LOADADDR(.dtcm_cpu1));
-        __dtcm_cpu1_start__ = .;
-        *(.dtcm_cpu1)
-        . = ALIGN(4);
-        __dtcm_cpu1_end__ = .;
-    } > DTCM1 AT > FLASH
-
-	tcm_cpu2_core_id = CPU2_CORE_ID;
-    .itcm_cpu2 :
-    {
-        . = ALIGN(4);
-        PROVIDE(__itcm_cpu2_text = LOADADDR(.itcm_cpu2));
-        __itcm_cpu2_start__ = .;
-        KEEP(*(.null_trap_handler))
-        *(.itcm_cpu2)
-        . = ALIGN(4);
-
-        __itcm_cpu2_end__ = .;
-    } > ITCM2 AT > FLASH
-
-    .dtcm_cpu2 :
-    {
-        . = ALIGN(4);
-
-        PROVIDE(__dtcm_cpu2_content = LOADADDR(.dtcm_cpu2));
-        __dtcm_cpu2_start__ = .;
-        *(.dtcm_cpu2)
-        . = ALIGN(4);
-        __dtcm_cpu2_end__ = .;
-    } > DTCM2 AT > FLASH
-#else
     .itcm :
     {
         . = ALIGN(4);
@@ -365,7 +223,6 @@ SECTIONS
         . = ALIGN(4);
         __dtcm_end__ = .;
     } > DTCM AT > FLASH
-#endif
 
     .iram :
     {
@@ -436,15 +293,23 @@ SECTIONS
         *uart_hal.c.obj(.text.* *.rodata *.rodata.*)
 #endif
         . = ALIGN(4);
-        __iram_end__ = .;
 
+        _iram_end_dummy_ = .;
+    } > IRAM AT > FLASH
+
+    .iram_boundary :
+    {
+        . += 4;
+        . = ALIGN(4);
+        __iram_end__ = .;
     } > IRAM AT > FLASH
 
     .ramcode :
     {
-        . = . +  SIZEOF(.iram);
+        . = . + (__iram_end__ - __iram_start__);
         . = ALIGN(512);
     } > RAM AT > FLASH
+
 
     .data :
     {
@@ -462,12 +327,6 @@ SECTIONS
         PROVIDE_HIDDEN (__init_array_end = .);
         . = ALIGN(4);
 #endif
-
-#if (CONFIG_SOC_SMP)
-        *(.dtcm)
-        *(.dtcm_section*)
-        *(.dtcm_sec_data*)
-#endif
         *(.data)
         *(".data.*")
         *(.sdata)
@@ -482,7 +341,7 @@ SECTIONS
     _data_ram_begin = __data_start__;
     _data_ram_end = .;
 
-    s_rom_end = LOADADDR(.data) + SIZEOF(.data);
+    s_flash_end = LOADADDR(.data) + SIZEOF(.data);
 
     .uninitialized (NOLOAD):
     {
@@ -515,11 +374,7 @@ SECTIONS
 
     bss_size = _bss_end - _bss_start;
 
-#if (CONFIG_SOC_SMP)
-	_msp_total_size = __MSP_STACK_SIZE * CONFIG_CPU_CNT;
-#else
 	_msp_total_size = __MSP_STACK_SIZE;
-#endif
 
     .heap (COPY) :
     {
@@ -530,42 +385,6 @@ SECTIONS
         _heap_end = .;
     } > RAM
 
-/*multiple cores require independent stack spaces*/
-#if (CONFIG_SOC_SMP)
-    /* ASSERT((CONFIG_CPU_CNT == 3), "cpu count exceptional!!!") */
-    .stack_cpu2 (ORIGIN(RAM) + LENGTH(RAM) - __MSP_STACK_SIZE*2 - __MSP_STACK_SIZE) (COPY) :
-    {
-        . = ALIGN(8);
-        _sstack_cpu2 = .;
-        __StackLimitCpu2 = .;
-        . = . + __MSP_STACK_SIZE;
-        . = ALIGN(8);
-        __StackTopCpu2 = .;
-        _estack_cpu2 = .;
-    } > RAM
-
-    .stack_cpu1 (ORIGIN(RAM) + LENGTH(RAM) - __MSP_STACK_SIZE*2) (COPY) :
-    {
-        . = ALIGN(8);
-        _sstack_cpu1 = .;
-        __StackLimitCpu1 = .;
-        . = . + __MSP_STACK_SIZE;
-        . = ALIGN(8);
-        __StackTopCpu1 = .;
-        _estack_cpu1 = .;
-    } > RAM
-
-    .stack_cpu0 (ORIGIN(RAM) + LENGTH(RAM) - __MSP_STACK_SIZE) (COPY) :
-    {
-        . = ALIGN(8);
-        _sstack_cpu0 = .;
-        __StackLimitCpu0 = .;
-        . = . + __MSP_STACK_SIZE;
-        . = ALIGN(8);
-        __StackTopCpu0 = .;
-        _estack_cpu0 = .;
-    } > RAM
-#else
     .stack (ORIGIN(RAM) + LENGTH(RAM) - __MSP_STACK_SIZE) (COPY) :
     {
         . = ALIGN(8);
@@ -576,7 +395,6 @@ SECTIONS
         __StackTop = .;
         _estack = .;
     } > RAM
-#endif
 
     .swap ORIGIN(SWAP):
     {
@@ -617,7 +435,7 @@ SECTIONS
     __MSPTop = ORIGIN(RAM) + LENGTH(RAM);
     __MSPLimit = __MSPTop - __MSP_STACK_SIZE;
 
-    ASSERT((s_rom_end < ORIGIN(FLASH) + LENGTH(FLASH)), "ROM overflow!!!")
+    ASSERT((s_flash_end < ORIGIN(FLASH) + LENGTH(FLASH)), "flash space overflow!!!")
     ASSERT(((ORIGIN(RAM) + LENGTH(RAM)) > (_heap_start + __MSP_STACK_SIZE + 8)), "Stack overflowed with bss")
     ASSERT(((_heap_end - _heap_start) >= __MIN_HEAP_SIZE), "Heap smaller than minimize size 90K!!!")
 }

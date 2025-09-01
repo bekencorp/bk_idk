@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Beken
+// Copyright 2020-2025 Beken
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -69,6 +69,7 @@ typedef struct
     volatile UINT8 has_data; /* 1: has data      0: no data*/
     volatile UINT8 all_done; /* 1: all done      0: still sampling*/
     UINT8 channel;
+
     /* mode:     ADC mode
      * bit[0:1]: ADC operation mode
      *          00:  ADC power down mode
@@ -111,7 +112,6 @@ void saradc_config_param_init(saradc_desc_t * adc_config);
 void saradc_ensure_close(void);
 UINT32 saradc_check_busy(void);
 UINT32 saradc_check_accuracy(void);
-
 float saradc_calculate(UINT16 adc_val);
 float bk_adc_data_calculate(UINT16 adc_val, UINT8 adc_chan);
 UINT32 saradc_set_calibrate_val(uint16_t *value, SARADC_MODE mode);

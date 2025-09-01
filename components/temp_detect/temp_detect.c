@@ -235,8 +235,10 @@ static int tempd_adc_get_raw_data(adc_chan_t adc_chan)
 
 #if CONFIG_SARADC_V1P2
 	config.src_clk = ADC_SCLK_XTAL;
-#elif SARADC_VER1_0
+#elif CONFIG_SARADC_V1P1
 	config.src_clk = ADC_SCLK_XTAL_26M;
+#else
+	#error "select sardc hw module version"
 #endif
 	config.saturate_mode = ADC_TEMP_SATURATE_MODE;
 	config.sample_rate = TEMP_DETEC_ADC_SAMPLE_RATE;
@@ -402,7 +404,7 @@ void temp_daemon_detect_temperature(void)
 
 	err = tempd_adc_get_temperature(&adc_code);
 	if (BK_OK != err) {
-		TEMPD_LOGW("detect failed(%d), retry\n", err);
+		TEMPD_LOGW("tdetect failed(%d), retry\n", err);
 		temp_daemon_restart();
         bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_SARADC, 1,0);
 		return; //TODO is that correct?

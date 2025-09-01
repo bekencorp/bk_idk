@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Beken
+// Copyright 2020-2025 Beken
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@
 #include "bk_saradc.h"
 #include "common/bk_err.h"
 #include <modules/pm.h>
+
 #ifdef CONFIG_FREERTOS_SMP
 #include "spinlock.h"
 #endif // CONFIG_FREERTOS_SMP
@@ -80,22 +81,7 @@ static volatile spinlock_t adc_spin_lock = SPIN_LOCK_INIT;
 
 __attribute__((section(".dtcm_sec_data "))) adc_config_t g_adc_cfg = {0};
 
-
-//TODO - by Frank
-//1. ADC id range confirm
-//2. Add API for ADC saturate mode, hide it for application
-//3. Considering how/when to use cli_done/calib_trig bits?
-//4. adc_hal_init to reset the ADC to default value
-//5. Currently ADC ISR is always enabled once ADC is started, can we provide ADC
-//   API that don't need to enable ADC ISR?
-//6. Make adc_buf_t.buf configurable in bk_adc_init() since different application may
-//   use different buffer size.
-//7. If necessary, provide ADC API specific for calibration that don't need ADC ISR.
-//8. Hide the difference of ADC RAW data
-//9. Update doc accordingly
-//10. adc_chan_t to adc_chan_t
-
-#define ADC_SAMPLE_CNT_DEFAULT 32
+#define ADC_SAMPLE_CNT_DEFAULT           (32)
 
 #define ADC_RETURN_ON_NOT_INIT() do {\
 		if (!s_adc_driver_is_init) {\
@@ -139,11 +125,7 @@ static void adc_init_gpio(adc_chan_t chan)
 	if(chan == 0) {
 		uint32_t param = PARAM_SARADC_BT_TXSEL_BIT;
 
-#if CONFIG_SYSTEM_CTRL
 		sys_drv_analog_reg4_bits_or(param);// to do,need remove old interface after all adaption is finished
-#else
-		sddev_control(DD_DEV_TYPE_SCTRL, CMD_SCTRL_ANALOG_CTRL4_SET, &param);
-#endif
 	}
 
 	gpio_dev_map(adc_map->gpio_id, adc_map->gpio_dev);
@@ -203,7 +185,6 @@ static bk_err_t adc_chan_deinit_common(adc_chan_t chan)
 
 static bk_err_t adc_read_fifo(void)
 {
-
 	while(!adc_hal_is_fifo_empty(&s_adc.hal)) {
 		ADC_STATIS_INC(s_adc_statis->adc_rx_total_cnt);
 
@@ -221,7 +202,6 @@ static bk_err_t adc_read_fifo(void)
 			}
 		}
 	}
-
 
 	return BK_OK;
 }
@@ -431,8 +411,9 @@ static bk_err_t adc_block_read(uint32_t timeout)
 	sys_drv_sadc_int_enable();
 
 	int ret = rtos_get_semaphore(&(s_adc_dev.adc_read_sema), timeout);
-	if(ret != kNoErr)
+	if(ret != kNoErr){
 		return BK_ERR_ADC_GET_READ_SEMA;
+	}
 
 	return BK_OK;
 }
@@ -446,8 +427,6 @@ bk_err_t bk_adc_single_read(uint16_t* data)
 bk_err_t bk_adc_read_raw(uint16_t* buf, uint32_t size, uint32_t timeout)
 {
 	uint32_t ret = 0;
-
-	//TODO init check
 
 	if (size > s_adc_buf.size) {
 		ADC_LOGE("adc size %d too big\n", size);
@@ -634,6 +613,7 @@ bk_err_t bk_saradc_set_config(adc_config_t *config, uint32_t div)
     ADC_RETURN_ON_INVALID_MODE(config->adc_mode);
     ADC_RETURN_ON_INVALID_SRC_CLK(config->src_clk);
     ADC_RETURN_ON_INVALID_CHAN(config->chan);
+
     adc_hal_set_div(&s_adc.hal, div);
     adc_hal_set_mode(&s_adc.hal, config->adc_mode);
     adc_hal_set_steady_ctrl(&s_adc.hal, config->steady_ctrl);
@@ -653,8 +633,6 @@ bk_err_t bk_adc_read(uint16_t* data, uint32_t timeout)
 	uint32_t sum = 0;
 	int ret = BK_OK;
 	UINT32 num;
-
-	//TODO init check
 
 	if (s_adc_buf.size == 0)
 		return BK_ERR_ADC_NOT_INIT;
@@ -839,38 +817,13 @@ float temprature_calculate(UINT16 adc_val)
     return practic_temprature;
 }
 
-#if (CONFIG_SOC_BK7236N) || (CONFIG_SOC_BK7239XX)
-float bk_adc_data_calculate(UINT16 adc_val, UINT8 adc_chan)
-{
-    float cali_value = 0;
-
-    if (adc_chan == ADC_7) {
-        return temprature_calculate(adc_val);
-    }
-
-    if (adc_chan == ADC_8 || adc_chan == ADC_9 || adc_chan == ADC_11) {
-        ADC_LOGI("adc_chan %d has been used\r\n", adc_chan);
-        return BK_ERR_ADC_BUSY;
-    }
-
-    cali_value = saradc_calculate(adc_val);
-	if (adc_chan == ADC_0) {
-		cali_value = cali_value * 2;
-	}
-
-    return cali_value;
-}
-#else
 float bk_adc_data_calculate(UINT16 adc_val, UINT8 adc_chan)
 {
     float cali_value = 0;
 
     if(adc_chan == 0)
     {
-#if (CONFIG_SOC_BK7256XX)
-        cali_value = saradc_calculate(adc_val);
-        cali_value = cali_value*5/2;
-#elif(CONFIG_SOC_BK7236XX)
+#if (CONFIG_SOC_BK7236XX)
         adc_val = adc_val*5/3;
         cali_value = saradc_calculate(adc_val);
 #else
@@ -878,7 +831,10 @@ float bk_adc_data_calculate(UINT16 adc_val, UINT8 adc_chan)
         cali_value = saradc_calculate(adc_val);
 #endif
     }
-    else if(adc_chan == 7 || adc_chan == 8 || adc_chan == 9 || adc_chan == 11)
+    else if (adc_chan == ADC_7) {
+        return temprature_calculate(adc_val);
+    }
+    else if(adc_chan == 8 || adc_chan == 9 || adc_chan == 11)
     {
         ADC_LOGI("adc_chan %d has been used\r\n", adc_chan);
     }
@@ -889,7 +845,6 @@ float bk_adc_data_calculate(UINT16 adc_val, UINT8 adc_chan)
 
     return cali_value;
 }
-#endif // CONFIG_SARADC_V1P2
 
 UINT32 saradc_get_calibrate_val(uint16_t *value, SARADC_MODE mode)
 {
@@ -946,11 +901,7 @@ void bk_adc_read_for_ate(uint32_t saradc_num, uint16_t *saradc_buf)
     int irq_level = 0;
 
     BK_LOG_ON_ERR(bk_saradc_start_int_disable());
-    //saradc enable
     saradc_hal_start_enable();
-    //need check saradc fifo empty
-    //os_printf("saradc_hal_is_fifo_empty=%x\r\n",saradc_hal_is_fifo_empty());
-    //os_printf("sardata_start\r\n");
     irq_level = rtos_disable_int();
 
     #ifdef CONFIG_FREERTOS_SMP
@@ -962,7 +913,6 @@ void bk_adc_read_for_ate(uint32_t saradc_num, uint16_t *saradc_buf)
         if(saradc_hal_is_fifo_empty())
         {
             saradc_buf[i] = bk_saradc_read_raw_data(1000);
-            //saradc_buf[i] = *((volatile unsigned long *) (BASEADDR_SADC+0x4*4));
         }
         else
         {
