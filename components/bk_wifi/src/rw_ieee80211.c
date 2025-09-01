@@ -595,6 +595,18 @@ UINT8 rw_ieee80211_get_chan_id(UINT32 freq)
 	return 0;
 }
 
+bool rw_ieee80211_5g_channel_supported(uint8_t chan)
+{
+	struct ieee80211_channel *channels = rw_5ghz_channels;;
+	int num_chans = ARRAY_SIZE(rw_5ghz_channels);;
+	for (int i = 0; i < num_chans; i++) {
+		if (channels[i].hw_value == chan)
+			return true;
+	}
+
+	return false;
+}
+
 #if CONFIG_WIFI_BAND_5G
 /* select 5g non radar avaliable channels list according to country code*/
 int* rw_select_5g_non_radar_avaliable_channels(int *selected_channel_size)
@@ -696,10 +708,21 @@ UINT8 rw_ieee80211_is_scan_rst_in_countrycode(UINT8 freq)
 	start_chan = g_country_code.cfg.schan;
 	end_chan = (start_chan + g_country_code.cfg.nchan - 1);
 
-	if ((freq < start_chan) || (freq > end_chan))
-		return 0;
+	if (freq <= 14) {
+		return (freq >= start_chan && freq <= end_chan);
+	} else {
+#if CONFIG_WIFI_BAND_5G
+		// 5G // FIXME: 6E
+		int selected_channels_size = 0;
+		int *selected_channels_5g = rw_select_5g_channels_by_regulatory_domain(&selected_channels_size);
+		for (int i = 0; i < selected_channels_size; i++) {
+			if (freq == selected_channels_5g[i])
+				return 1;
+		}
+#endif
+	}
 
-	return 1;
+	return 0;
 }
 
 UINT8 rw_ieee80211_get_scan_default_chan_num(void)

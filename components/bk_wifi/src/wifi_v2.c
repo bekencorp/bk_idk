@@ -3413,16 +3413,29 @@ static bk_err_t wifi_monitor_validate_channel(const wifi_channel_t *chan)
 		WIFI_LOGD("curently only support HT20, second channel is ignored");
 
 	primary = chan->primary;
-	if ((primary < WIFI_MIN_CHAN_NUM) || (primary > WIFI_MAX_CHAN_NUM)) {
+	if (primary <= WIFI_MAX_CHAN_NUM) {
+		if (primary < WIFI_MIN_CHAN_NUM) {
+			WIFI_LOGD("invalid channel number <%d, %d>\n", primary, chan->second);
+			return BK_ERR_WIFI_CHAN_NUMBER;
+		}
+	} else {
+#if CONFIG_WIFI_BAND_5G
+		if (!rw_ieee80211_5g_channel_supported(chan->primary)) {
+			WIFI_LOGD("invalid channel number <%d, %d>\n", primary, chan->second);
+			return BK_ERR_WIFI_CHAN_NUMBER;
+		}
+#else
+		// 2.4G channel number larger than 14.
 		WIFI_LOGD("invalid channel number <%d, %d>\n", primary, chan->second);
 		return BK_ERR_WIFI_CHAN_NUMBER;
+#endif
 	}
 
 	if (wifi_sta_is_started() || wifi_ap_is_started()) {
 		wifi_country_t country = {0};
 		WIFI_LOGW("monitor change channel when STA or AP is started\n");
 		rw_ieee80211_get_country(&country);
-		if ((primary < country.schan) || (primary > country.nchan))
+		if (primary <= 14 && (primary < country.schan || primary > country.nchan))
 			return BK_ERR_WIFI_CHAN_NUMBER;
 	}
 

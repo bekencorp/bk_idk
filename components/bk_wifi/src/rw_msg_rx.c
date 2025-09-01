@@ -914,12 +914,12 @@ UINT32 mhdr_scanu_result_ind(SCAN_RST_UPLOAD_T *scan_rst, void *msg, UINT32 len)
 	SCAN_IND_PTR scanu_ret_ptr;
 	IEEE802_11_PROBE_RSP_PTR probe_rsp_ieee80211_ptr;
 	char on_channel;
-	#if CONFIG_RWNX_MULTIPLE_SSID_STA_MODE
+#if CONFIG_RWNX_MULTIPLE_SSID_STA_MODE
 	int infor_state;
-	#else
+#else
 	int replace_index = -1;
 	UINT32 i;
-	#endif
+#endif
 
 	ret = BK_OK;
 	result_ptr = scan_rst;
@@ -957,46 +957,43 @@ UINT32 mhdr_scanu_result_ind(SCAN_RST_UPLOAD_T *scan_rst, void *msg, UINT32 len)
 		else
 			on_channel = 0;
 	} else {
-        uint8_t elmt_length;
-        elmt_addr = (UINT8 *)mac_ie_he_capa_find((UINT32)var_part_addr, vies_len, &elmt_length);
-        if (elmt_addr && (LOCAL_CAPA(HE)))
-        {
-            RWNX_LOGI("he+he,scan rst no ds param, not drop it?\r\n");
-            chann = rw_ieee80211_get_chan_id(scanu_ret_ptr->center_freq);
-            if (rw_ieee80211_is_scan_rst_in_countrycode(chann) == 0)
-            {
-                elmt_addr = (UINT8 *)get_ie(var_part_addr, vies_len, WLAN_EID_SSID);
-                if (elmt_addr)
-                {
-                    UINT8 ssid_b[MAC_SSID_LEN];
-                    UINT8 ssid_len = *(elmt_addr + 1);
+		uint8_t elmt_length;
+		elmt_addr = (UINT8 *)mac_ie_he_capa_find((UINT32)var_part_addr, vies_len, &elmt_length);
+		if (elmt_addr && (LOCAL_CAPA(HE))) {
+			// DS IE for 2.4G Only
+			if (scanu_ret_ptr->center_freq < 4900)
+				RWNX_LOGI("he+he,scan rst no ds param, not drop it?\r\n");
+			chann = rw_ieee80211_get_chan_id(scanu_ret_ptr->center_freq);
+			if (rw_ieee80211_is_scan_rst_in_countrycode(chann) == 0) {
+				elmt_addr = (UINT8 *)get_ie(var_part_addr, vies_len, WLAN_EID_SSID);
+				if (elmt_addr) {
+					UINT8 ssid_b[MAC_SSID_LEN];
+					UINT8 ssid_len = *(elmt_addr + 1);
 
-                    if (ssid_len > MAC_SSID_LEN)
-                        ssid_len = MAC_SSID_LEN;
+					if (ssid_len > MAC_SSID_LEN)
+						ssid_len = MAC_SSID_LEN;
 
-                    os_memcpy(ssid_b, elmt_addr + 2, ssid_len);
-                    RWNX_LOGI("drop: %s, chan:%d\r\n", ssid_b, chann);
-                }
-                goto scan_rst_exit;
-            }
-            on_channel = 1;
-        }
-        else
-        {
-            chann = rw_ieee80211_get_chan_id(scanu_ret_ptr->center_freq);
-            on_channel = 0;
-            RWNX_LOGI("scan rst no ds param, drop it?\r\n");
-        }
-    }
+					os_memcpy(ssid_b, elmt_addr + 2, ssid_len);
+					RWNX_LOGI("drop: %s, chan:%d\r\n", ssid_b, chann);
+				}
+				goto scan_rst_exit;
+			}
+			on_channel = 1;
+		} else {
+			chann = rw_ieee80211_get_chan_id(scanu_ret_ptr->center_freq);
+			on_channel = 0;
+			RWNX_LOGI("scan rst no ds param, drop it?\r\n");
+		}
+	}
 
 #if !CONFIG_RWNX_MULTIPLE_SSID_STA_MODE
 	/* check the duplicate bssid*/
 	do {
-		for (i = 0; i < result_ptr->scanu_num; i ++) {
+		for (i = 0; i < result_ptr->scanu_num; i++) {
 			if (!os_memcmp(probe_rsp_ieee80211_ptr->bssid, result_ptr->res[i]->bssid, ETH_ALEN)) {
 				if ((result_ptr->res[i]->on_channel == 1) || (on_channel == 0)) {
 					if (on_channel == 1)
-						result_ptr->res[i]->level = ((result_ptr->res[i]->level + scanu_ret_ptr->rssi)>>1);
+						result_ptr->res[i]->level = ((result_ptr->res[i]->level + scanu_ret_ptr->rssi) >> 1);
 					goto scan_rst_exit;
 				} else {
 					replace_index = i; // should replace it.
@@ -1031,30 +1028,30 @@ UINT32 mhdr_scanu_result_ind(SCAN_RST_UPLOAD_T *scan_rst, void *msg, UINT32 len)
 	item->ie_len = vies_len;
 	item->security = get_security_type_from_ie((u8 *)var_part_addr, vies_len, item->caps);
 	os_memcpy(item->bssid, probe_rsp_ieee80211_ptr->bssid, ETH_ALEN);
-	#if CONFIG_MINIMUM_SCAN_RESULTS
+#if CONFIG_MINIMUM_SCAN_RESULTS
 	item->tsf = probe_rsp_ieee80211_ptr->rsp.timestamp;
-	#else
+#else
 	os_memcpy(item->tsf, probe_rsp_ieee80211_ptr->rsp.timestamp, 8);
-	#endif
+#endif
 	os_memcpy(item + 1, var_part_addr, vies_len);
 #if CONFIG_RWNX_MULTIPLE_SSID_STA_MODE
 	/* upload single transmit-bss infor to upper */
 	infor_state = rwnx_inform_single_bss_data(result_ptr, item);
-	if(infor_state == BK_FAIL)
+	if (infor_state == BK_FAIL)
 		goto scan_rst_exit;
 
 	/* check multiple nontransmit-bss and upload multiple bss infor to upper*/
 	const u8 *multiple_ssid_required = rwnx_find_ie(WLAN_EID_MULTIPLE_BSSID, var_part_addr, vies_len);
-	if (multiple_ssid_required) {
+	if (multiple_ssid_required)
 		rwnx_inform_multiple_bss_data(result_ptr, item, var_part_addr, vies_len);
-	}
+
 #else
 	if (replace_index >= 0) {
 		sr_free_result_item((UINT8 *)result_ptr->res[replace_index]);
 		result_ptr->res[replace_index] = item;
 	} else {
 		result_ptr->res[result_ptr->scanu_num] = item;
-		result_ptr->scanu_num ++;
+		result_ptr->scanu_num++;
 	}
 #endif
 

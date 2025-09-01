@@ -914,11 +914,11 @@ int wpa_send_assoc_req(struct prism2_hostapd_param *param, int len)
 	connect_param->auth_type = param->u.assoc_req.auth_alg;
 #if CFG_WIFI_P2P || CFG_WLAN_FAST_CONNECT_WITHOUT_SCAN
 	if (param->u.assoc_req.freq >= 5925) {
-		// FIXME: BK7239 6E
+		connect_param->chan.band = IEEE80211_BAND_6GHZ;
 	} else if (param->u.assoc_req.freq >= 4900) {
-		connect_param->chan.band = PHY_BAND_5G;
+		connect_param->chan.band = IEEE80211_BAND_5GHZ;
 	} else {
-		connect_param->chan.band = PHY_BAND_2G4;
+		connect_param->chan.band = IEEE80211_BAND_2GHZ;
 	}
 	connect_param->chan.freq = param->u.assoc_req.freq;
 #endif

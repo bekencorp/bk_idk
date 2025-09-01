@@ -283,6 +283,7 @@ extern void mhdr_connect_user_cb(FUNC_2PARAM_PTR ind_cb, void *ctxt);
 extern UINT32 rw_ieee80211_init(void);
 extern UINT32 rw_ieee80211_get_centre_frequency(UINT32 chan_id);
 extern UINT8 rw_ieee80211_get_chan_id(UINT32 freq);
+extern bool rw_ieee80211_5g_channel_supported(uint8_t chan);
 extern void rwnx_set_wifi_rlk_start(uint32_t start);
 extern uint32_t rwnx_get_wifi_rlk_start(void);
 extern uint32_t sr_get_scan_number(void);

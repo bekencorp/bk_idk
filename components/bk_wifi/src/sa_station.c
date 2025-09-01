@@ -57,7 +57,13 @@ int sa_station_send_associate_cmd(CONNECT_PARAM_T *connect_param)
 
 	if (connect_param->chan.freq) {
 		/* for fast connect */
-		connect_param->chan.band = 0;
+		if (connect_param->chan.freq >= 5925) {
+			connect_param->chan.band = IEEE80211_BAND_6GHZ;
+		} else if (connect_param->chan.freq >= 4900) {
+			connect_param->chan.band = IEEE80211_BAND_5GHZ;
+		} else {
+			connect_param->chan.band = IEEE80211_BAND_2GHZ;
+		}
 		connect_param->chan.flags = 0;
 		connect_param->chan.tx_power = VIF_UNDEF_POWER;
 	} else {
