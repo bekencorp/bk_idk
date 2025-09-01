@@ -3140,39 +3140,56 @@ bk_err_t wifi_ap_validate_config(const wifi_ap_config_t *ap_config)
 #endif
 	return BK_OK;
 }
-
 static bk_err_t wifi_ap_set_config(const wifi_ap_config_t *ap_config)
 {
-	BK_ASSERT(g_ap_param_ptr); /* ASSERT VERIFIED */
-	BK_ASSERT(g_wlan_general_param); /* ASSERT VERIFIED */
+	BK_ASSERT(g_ap_param_ptr);          /* ASSERT VERIFIED */
+	BK_ASSERT(g_wlan_general_param);    /* ASSERT VERIFIED */
+
+	uint8_t ap_channel = ap_config->channel;
 
 	if (is_zero_ether_addr((u8 *)&g_ap_param_ptr->bssid))
 		bk_wifi_ap_get_mac((uint8_t *)(&g_ap_param_ptr->bssid));
 
+	// If STA and AP coexistense is enabled, use STA's channel if possible even
+	// if user specified the channel.
+	if (!bk_feature_close_coexist_csa() && !close_coexist_csa) {
+		uint8_t sta_channel;
+
+		// if ap and sta are coexist, ap channel shall match sta channel firstly
+		sta_channel = bk_wlan_sta_get_channel();
+
+		// If user specified softap's channel, prompt to user.
+		if (ap_channel)
+			WIFI_LOGI("Use STA channel %d for softap, user specified channel %d\n", sta_channel, ap_channel);
+
+		if (sta_channel)
+			ap_channel = sta_channel;
+	}
+
 	//TODO
-	if ((ap_config->channel >= 1 && ap_config->channel <= 14)
+	if ((ap_channel >= 1 && ap_channel <= 14)
 #if CONFIG_SOC_BK7239XX || CONFIG_SOC_BK7286XX
-		|| (ap_config->channel >= 36 && ap_config->channel <= 177)
+		|| (ap_channel >= 36 && ap_channel <= 177)
 #endif
 		) {
-		bk_wlan_ap_set_channel_config(ap_config->channel);
-	} else if (ap_config->channel == 0){
+		bk_wlan_ap_set_channel_config(ap_channel);
+	} else if (ap_channel == 0) {
 		bk_wlan_ap_set_channel_config(bk_wlan_ap_get_default_channel());
 	} else {
 		WIFI_LOGE("error:invalid channel\r\n");
 		return BK_FAIL;
 	}
 
-	if(ap_config->max_con == 0 || ap_config->max_con > CFG_SUPPORTED_MAX_STA_NUM) {
-		if(ap_config->max_con == 0)
+	if (ap_config->max_con == 0 || ap_config->max_con > CFG_SUPPORTED_MAX_STA_NUM) {
+		if (ap_config->max_con == 0)
 			WIFI_LOGW("the max conn num is zero, set it is default\n");
-		if(ap_config->max_con > CFG_SUPPORTED_MAX_STA_NUM)
+		if (ap_config->max_con > CFG_SUPPORTED_MAX_STA_NUM)
 			WIFI_LOGW("the max conn num is more than CFG_SUPPORTED_MAX_STA_NUM, set it is default\n");
 
 		g_ap_param_ptr->max_con = CFG_SUPPORTED_MAX_STA_NUM;
-        } else {
+	} else {
 		g_ap_param_ptr->max_con = ap_config->max_con;
-        }
+	}
 	g_wlan_general_param->role = CONFIG_ROLE_AP;
 	//TODO why need this???
 	bk_wlan_set_coexist_at_init_phase(CONFIG_ROLE_AP);
