@@ -593,24 +593,6 @@ static inline uint32_t sys_ll_get_cpu_clk_div_mode1_cksel_uart2(void) {
 	return r->cksel_uart2;
 }
 
-static inline void sys_ll_set_cpu_clk_div_mode1_cksel_i2c0(uint32_t v)
-{
-}
-
-static inline uint32_t sys_ll_get_cpu_clk_div_mode1_cksel_i2c0(void) 
-{
-	return 0;
-}
-
-static inline void sys_ll_set_cpu_clk_div_mode1_cksel_i2c1(uint32_t v)
-{
-}
-
-static inline uint32_t sys_ll_get_cpu_clk_div_mode1_cksel_i2c1(void) 
-{
-	return 0;
-}
-
 static inline void sys_ll_set_cpu_clk_div_mode1_cksel_sadc(uint32_t v) {
 	sys_cpu_clk_div_mode1_t *r = (sys_cpu_clk_div_mode1_t*)(SOC_SYS_REG_BASE + (0x8 << 2));
 	r->cksel_sadc = v;
