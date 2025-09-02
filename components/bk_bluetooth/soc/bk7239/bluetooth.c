@@ -284,7 +284,7 @@ uint8_t lpo_src_get_wrapper(void)
 static bk_err_t bluetooth_power_ctrl_wrapper(uint8_t power_state)
 {
     pm_power_module_state_e state = (power_state ? PM_POWER_MODULE_STATE_ON : PM_POWER_MODULE_STATE_OFF);
-    return bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_BTSP, state);
+    return bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_BTSP, state);
 }
 
 static bk_err_t phy_power_ctrl_wrapper(uint8_t power_state)

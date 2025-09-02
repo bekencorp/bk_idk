@@ -1516,7 +1516,7 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_variable_t g_wifi_os_variabl
 	._pm_lpo_src_divd = PM_LPO_SRC_DIVD,
 	._pm_lpo_src_x32k = PM_LPO_SRC_X32K,
 	._pm_lpo_src_rosc = PM_LPO_SRC_ROSC,
-	._pm_power_module_name_btsp = PM_POWER_MODULE_NAME_BTSP,
+	._pm_power_module_name_btsp = PM_POWER_SUB_MODULE_NAME_BTSP,
 	._pm_power_module_name_wifip_mac = PM_POWER_MODULE_NAME_WIFIP_MAC,
 	._pm_power_module_name_phy = PM_POWER_MODULE_NAME_PHY,
 	._pm_power_module_state_off = PM_POWER_MODULE_STATE_OFF,

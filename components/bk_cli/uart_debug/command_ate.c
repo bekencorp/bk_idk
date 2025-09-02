@@ -764,7 +764,7 @@ int ate_enter_deep_sleep()
 {
 #if (CONFIG_SYS_CPU0)
 	bk_ate_ctrl(0);
-	bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_BTSP,POWER_MODULE_STATE_OFF);
+	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_BTSP,POWER_MODULE_STATE_OFF);
 	bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_WIFIP_MAC,POWER_MODULE_STATE_OFF);
 
 	extern void stop_cpu1_core(void);

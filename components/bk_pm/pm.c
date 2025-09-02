@@ -111,6 +111,8 @@ static uint32_t s_pm_bakp_pm_state                      = 0;
 static uint32_t s_pm_ahpb_pm_state                      = 0;
 static uint32_t s_pm_audio_pm_state                     = 0;
 static uint32_t s_pm_video_pm_state                     = 0;
+static uint32_t s_pm_btsp_pm_state                      = 0;
+static uint32_t s_pm_thread_pm_state                    = 0;
 static uint32_t s_pm_phy_pm_state                       = 0;
 static uint32_t s_pm_cp1_auto_power_down_flag           = PM_CP1_AUTO_POWER_DOWN_CTRL;
 static pm_mem_auto_ctrl_e s_pm_mem_auto_power_down_flag = PM_MEM_AUTO_CTRL_ENABLE;
@@ -419,6 +421,378 @@ uint32_t pm_state_machine()
 /*=========================SLEEP STATE MACHINE END========================*/
 
 /*=========================COMMON PM API START========================*/
+#if CONFIG_SYS_CPU0
+static bk_err_t bk_pm_module_power_on(pm_power_module_name_e module)
+{
+	bk_err_t ret = BK_OK;
+	uint32_t domain, submodule;
+	GLOBAL_INT_DECLARATION();
+
+	if (module < PM_POWER_MODULE_NAME_NONE) {
+		if (module == PM_POWER_MODULE_NAME_BTSP) {
+			if (s_pm_mem_auto_power_down_flag) {
+				pm_module_check_power_on(PM_POWER_MODULE_NAME_MEM3);
+			}
+			sys_drv_module_power_ctrl(module, PM_POWER_MODULE_STATE_ON);
+			GLOBAL_INT_DISABLE();
+			s_pm_off_modules &= ~(0x1 << PM_POWER_MODULE_NAME_BTSP);
+			s_pm_on_modules |= 0x1 << PM_POWER_MODULE_NAME_BTSP;
+			s_pm_sleeped_modules &= ~(0x1ULL << PM_POWER_MODULE_NAME_BTSP);
+			GLOBAL_INT_RESTORE();
+		} else {
+			sys_drv_module_power_ctrl(module, PM_POWER_MODULE_STATE_ON);
+			if (module == PM_POWER_MODULE_NAME_PHY) {
+				s_pm_phy_calibration_state = 0x1;
+			}
+			GLOBAL_INT_DISABLE();
+			s_pm_off_modules &= ~(0x1 << module);
+			s_pm_on_modules |= 0x1 << module;
+			GLOBAL_INT_RESTORE();
+		}
+	} else {
+		domain = module/PM_MODULE_SUB_POWER_DOMAIN_MAX;
+		submodule = module%PM_MODULE_SUB_POWER_DOMAIN_MAX;
+		switch (domain) {
+			case POWER_MODULE_NAME_ENCP:
+			{
+				GLOBAL_INT_DISABLE();
+				s_pm_encp_pm_state |= (0x1 << submodule);
+				s_pm_off_modules &= ~(0x1 << domain);
+				s_pm_on_modules |= (0x1 << domain);
+				GLOBAL_INT_RESTORE();
+
+				if (sys_drv_module_power_state_get(domain)) {
+					sys_drv_module_power_ctrl(domain, PM_POWER_MODULE_STATE_ON);
+				}
+			}
+				break;
+
+			case PM_POWER_MODULE_NAME_BAKP:
+			{
+				GLOBAL_INT_DISABLE();
+				s_pm_bakp_pm_state |= (0x1 << submodule);
+				s_pm_off_modules &= ~(0x1 << domain);
+				s_pm_on_modules |= (0x1 << domain);
+				GLOBAL_INT_RESTORE();
+
+				if (sys_drv_module_power_state_get(domain)) {
+					sys_drv_module_power_ctrl(domain, PM_POWER_MODULE_STATE_ON);
+				}
+			}
+				break;
+
+			case PM_POWER_MODULE_NAME_AHBP:
+			{
+				GLOBAL_INT_DISABLE();
+				s_pm_ahpb_pm_state |= (0x1 << submodule);
+				s_pm_off_modules &= ~(0x1 << domain);
+				s_pm_on_modules |= (0x1 << domain);
+				GLOBAL_INT_RESTORE();
+
+				if (sys_drv_module_power_state_get(domain)) {
+					sys_drv_module_power_ctrl(domain, PM_POWER_MODULE_STATE_ON);
+				}
+			}
+				break;
+
+			case PM_POWER_MODULE_NAME_AUDP:
+			{
+				GLOBAL_INT_DISABLE();
+				s_pm_audio_pm_state |= (0x1 << submodule);
+				s_pm_off_modules &= ~(0x1 << domain);
+				s_pm_on_modules |= (0x1 << domain);
+				s_pm_sleeped_modules &= ~(0x1ULL << domain);
+				GLOBAL_INT_RESTORE();
+
+				if (s_pm_cp1_auto_power_down_flag) {
+					pm_module_check_power_on(PM_POWER_MODULE_NAME_CPU1);
+				}
+
+				if (sys_drv_module_power_state_get(domain)) {
+					if (s_pm_mem_auto_power_down_flag) {
+						pm_module_check_power_on(PM_POWER_MODULE_NAME_MEM3);
+					}
+					sys_drv_module_power_ctrl(domain, PM_POWER_MODULE_STATE_ON);
+				}
+			}
+				break;
+
+			case PM_POWER_MODULE_NAME_VIDP:
+			{
+				GLOBAL_INT_DISABLE();
+				s_pm_video_pm_state |= (0x1 << submodule);
+				s_pm_off_modules &= ~(0x1 << domain);
+				s_pm_on_modules |= (0x1 << domain);
+				s_pm_sleeped_modules &= ~(0x1ULL << domain);
+				GLOBAL_INT_RESTORE();
+
+				if (s_pm_cp1_auto_power_down_flag) {
+					pm_module_check_power_on(PM_POWER_MODULE_NAME_CPU1);
+				}
+
+				if (sys_drv_module_power_state_get(domain)) {
+					if (s_pm_mem_auto_power_down_flag) {
+						pm_module_check_power_on(PM_POWER_MODULE_NAME_MEM3);
+					}
+					sys_drv_module_power_ctrl(domain, PM_POWER_MODULE_STATE_ON);
+				}
+			}
+				break;
+
+			case PM_POWER_MODULE_NAME_BTSP:
+			{
+				GLOBAL_INT_DISABLE();
+				s_pm_btsp_pm_state |= (0x1 << submodule);
+				s_pm_off_modules &= ~(0x1 << domain);
+				s_pm_on_modules |= (0x1 << domain);
+				s_pm_sleeped_modules &= ~(0x1ULL << domain);
+				GLOBAL_INT_RESTORE();
+
+				if (sys_drv_module_power_state_get(domain)) {
+					if (s_pm_mem_auto_power_down_flag) {
+						pm_module_check_power_on(PM_POWER_MODULE_NAME_MEM3);
+					}
+					sys_drv_module_power_ctrl(domain, PM_POWER_MODULE_STATE_ON);
+				}
+			}
+				break;
+
+			case PM_POWER_MODULE_NAME_THREAD:
+			{
+				GLOBAL_INT_DISABLE();
+				s_pm_thread_pm_state |= (0x1 << submodule);
+				s_pm_off_modules &= ~(0x1 << domain);
+				s_pm_on_modules |= (0x1 << domain);
+				GLOBAL_INT_RESTORE();
+
+				if (sys_drv_module_power_state_get(domain)) {
+					sys_drv_module_power_ctrl(domain, PM_POWER_MODULE_STATE_ON);
+				}
+			}
+				break;
+
+			case PM_POWER_MODULE_NAME_PHY:
+			{
+				GLOBAL_INT_DISABLE();
+				s_pm_phy_pm_state |= (0x1 << submodule);
+				GLOBAL_INT_RESTORE();
+				if ((0x0 == sys_drv_module_power_state_get(domain))
+					&& (s_pm_phy_calibration_state == 0x1)) {
+					if (s_debug_en & 0x2)
+						BK_LOGD(NULL, "phy power on already\r\n");
+				} else {
+					sys_drv_module_power_ctrl(domain, PM_POWER_MODULE_STATE_ON);
+					if (0x0 == sys_drv_module_power_state_get(domain)) {
+						if (PM_POWER_SUB_MODULE_NAME_PHY_RF != module) {
+							#if CONFIG_WIFI_ENABLE
+							extern void phy_wakeup_reinit(uint8 is_wifi);
+							phy_wakeup_reinit(module == PM_POWER_SUB_MODULE_NAME_PHY_WIFI);
+							#elif CONFIG_BLUETOOTH
+							extern void phy_wakeup_for_bluetooth();
+							phy_wakeup_for_bluetooth();
+							#else
+							#endif
+							s_pm_is_phy_reinit_flag = true;
+							GLOBAL_INT_DISABLE();
+							s_pm_phy_calibration_state = 0x1;
+							s_pm_off_modules &= ~(0x1 << domain);
+							s_pm_on_modules |= (0x1 << domain);
+							GLOBAL_INT_RESTORE();
+						} else {
+							GLOBAL_INT_DISABLE();
+							s_pm_off_modules &= ~(0x1 << domain);
+							s_pm_on_modules |= (0x1 << domain);
+							GLOBAL_INT_RESTORE();
+						}
+					} else {
+						if (s_debug_en & 0x2) {
+							BK_LOGD(NULL, "phy power on fail 0x%x\r\n", sys_drv_module_power_state_get(domain));
+						}
+						ret = BK_FAIL;
+					}
+				}
+			}
+				break;
+
+			default:
+				ret = BK_FAIL;
+				break;
+		}
+	}
+
+	return ret;
+}
+
+static bk_err_t bk_pm_module_power_off(pm_power_module_name_e module)
+{
+	uint32_t domain, submodule;
+	GLOBAL_INT_DECLARATION();
+
+	if (module < PM_POWER_MODULE_NAME_NONE) {
+		if ((module == PM_POWER_MODULE_NAME_VIDP)
+			|| (module == PM_POWER_MODULE_NAME_AUDP)
+			|| (module == PM_POWER_MODULE_NAME_PHY)) {
+			if (s_debug_en & 0x2)
+				BK_LOGD(NULL, "module[%d] can not directly power off\r\n", module);
+			return BK_FAIL;
+		}
+
+		if (s_pm_cp1_auto_power_down_flag) {
+			if (module == PM_POWER_MODULE_NAME_CPU1) {
+				if (!((s_pm_off_modules & (0x1 << PM_POWER_MODULE_NAME_AUDP))
+					&& (s_pm_off_modules & (0x1 << PM_POWER_MODULE_NAME_VIDP)))) {
+					if (s_debug_en & 0x2)
+						BK_LOGD(NULL, "module[%d] can not directly power off\r\n", module);
+					return BK_FAIL;
+				}
+			}
+		}
+
+		if (module == PM_POWER_MODULE_NAME_CPU1) {
+			sys_drv_module_power_ctrl(module, PM_POWER_MODULE_STATE_OFF);
+			GLOBAL_INT_DISABLE();
+			s_pm_off_modules |= (0x1 << module);
+			s_pm_on_modules &= ~(0x1 << module);
+			GLOBAL_INT_RESTORE();
+			#if CONFIG_SYS_CPU0 && (CONFIG_CPU_CNT > 1)
+			bk_pm_cp1_work_state_set(PM_MAILBOX_COMMUNICATION_INIT);
+			#endif
+		} else {
+			sys_drv_module_power_ctrl(module, PM_POWER_MODULE_STATE_OFF);
+			GLOBAL_INT_DISABLE();
+			s_pm_off_modules |= 0x1 << module;
+			s_pm_on_modules &= ~(0x1 << module);
+			GLOBAL_INT_RESTORE();
+		}
+	} else {
+		domain = module/PM_MODULE_SUB_POWER_DOMAIN_MAX;
+		submodule = module%PM_MODULE_SUB_POWER_DOMAIN_MAX;
+		switch (domain) {
+			case POWER_MODULE_NAME_ENCP:
+			{
+				GLOBAL_INT_DISABLE();
+				s_pm_encp_pm_state &= ~(0x1 << submodule);
+
+				if (0x0 == s_pm_encp_pm_state) {
+					sys_drv_module_power_ctrl(domain, PM_POWER_MODULE_STATE_OFF);
+					s_pm_off_modules |= (0x1 << domain);
+					s_pm_on_modules &= ~(0x1 << domain);
+				}
+				GLOBAL_INT_RESTORE();
+			}
+				break;
+
+			case PM_POWER_MODULE_NAME_BAKP:
+			{
+				GLOBAL_INT_DISABLE();
+				s_pm_bakp_pm_state &= ~(0x1 << submodule);
+
+				if (0x0 == s_pm_bakp_pm_state) {
+					sys_drv_module_power_ctrl(domain, PM_POWER_MODULE_STATE_OFF);
+					s_pm_off_modules |= (0x1 << domain);
+					s_pm_on_modules &= ~(0x1 << domain);
+				}
+				GLOBAL_INT_RESTORE();
+			}
+				break;
+
+			case PM_POWER_MODULE_NAME_AHBP:
+			{
+				GLOBAL_INT_DISABLE();
+				s_pm_ahpb_pm_state &= ~(0x1 << submodule);
+
+				if (0x0 == s_pm_ahpb_pm_state) {
+					sys_drv_module_power_ctrl(domain, PM_POWER_MODULE_STATE_OFF);
+					s_pm_off_modules |= (0x1 << domain);
+					s_pm_on_modules &= ~(0x1 << domain);
+				}
+				GLOBAL_INT_RESTORE();
+			}
+				break;
+
+			case PM_POWER_MODULE_NAME_AUDP:
+			{
+				GLOBAL_INT_DISABLE();
+				s_pm_audio_pm_state &= ~(0x1 << submodule);
+
+				if (0x0 == s_pm_audio_pm_state) {
+					sys_drv_module_power_ctrl(domain, PM_POWER_MODULE_STATE_OFF);
+					s_pm_off_modules |= (0x1 << domain);
+					s_pm_on_modules &= ~(0x1 << domain);
+					s_pm_sleeped_modules |= (0x1ULL << domain);
+				}
+				GLOBAL_INT_RESTORE();
+			}
+				break;
+
+			case PM_POWER_MODULE_NAME_VIDP:
+			{
+				GLOBAL_INT_DISABLE();
+				s_pm_video_pm_state &= ~(0x1 << submodule);
+
+				if (0x0 == s_pm_video_pm_state) {
+					sys_drv_module_power_ctrl(domain, PM_POWER_MODULE_STATE_OFF);
+					s_pm_off_modules |= (0x1 << domain);
+					s_pm_on_modules &= ~(0x1 << domain);
+					s_pm_sleeped_modules |= (0x1ULL << domain);
+				}
+				GLOBAL_INT_RESTORE();
+			}
+				break;
+
+			case PM_POWER_MODULE_NAME_BTSP:
+			{
+				GLOBAL_INT_DISABLE();
+				s_pm_btsp_pm_state &= ~(0x1 << submodule);
+
+				if (0x0 == s_pm_btsp_pm_state) {
+					sys_drv_module_power_ctrl(domain, PM_POWER_MODULE_STATE_OFF);
+					s_pm_off_modules |= (0x1 << domain);
+					s_pm_on_modules &= ~(0x1 << domain);
+					s_pm_sleeped_modules |= (0x1ULL << domain);
+				}
+				GLOBAL_INT_RESTORE();
+			}
+				break;
+
+			case PM_POWER_MODULE_NAME_THREAD:
+			{
+				GLOBAL_INT_DISABLE();
+				s_pm_thread_pm_state &= ~(0x1 << submodule);
+
+				if (0x0 == s_pm_thread_pm_state) {
+					sys_drv_module_power_ctrl(domain, PM_POWER_MODULE_STATE_OFF);
+					s_pm_off_modules |= (0x1 << domain);
+					s_pm_on_modules &= ~(0x1 << domain);
+				}
+				GLOBAL_INT_RESTORE();
+			}
+				break;
+
+			case PM_POWER_MODULE_NAME_PHY:
+			{
+				GLOBAL_INT_DISABLE();
+				s_pm_phy_pm_state &= ~(0x1 << submodule);
+
+				if (0x0 == s_pm_phy_pm_state) {
+					sys_drv_module_power_ctrl(domain, PM_POWER_MODULE_STATE_OFF);
+					s_pm_phy_calibration_state = 0x0;
+					s_pm_off_modules |= (0x1 << domain);
+					s_pm_on_modules &= ~(0x1 << domain);
+				}
+				GLOBAL_INT_RESTORE();
+			}
+				break;
+
+			default:
+				break;
+		}
+	}
+
+	return BK_OK;
+}
+#endif
+
 bk_err_t bk_pm_module_vote_power_ctrl(pm_power_module_name_e module, pm_power_module_state_e power_state)
 {
 #if CONFIG_SYS_CPU1
@@ -460,402 +834,14 @@ bk_err_t bk_pm_module_vote_power_ctrl(pm_power_module_name_e module, pm_power_mo
 	return BK_OK;
 #elif CONFIG_SYS_CPU0
 	uint32_t off_modules = 0;
-	GLOBAL_INT_DECLARATION();
 
 	if (power_state == PM_POWER_MODULE_STATE_ON) // power on
 	{
-		if ( (module == POWER_SUB_MODULE_NAME_ENCP_OTP)
-		|| (module == POWER_SUB_MODULE_NAME_ENCP_TRUSTENGINE))
-		{
-			GLOBAL_INT_DISABLE();
-			s_pm_encp_pm_state |= 0x1 << (module % (PM_POWER_MODULE_NAME_ENCP * PM_MODULE_SUB_POWER_DOMAIN_MAX));
-			s_pm_off_modules &= ~(0x1 << PM_POWER_MODULE_NAME_ENCP);
-			s_pm_on_modules |= 0x1 << PM_POWER_MODULE_NAME_ENCP;
-
-			GLOBAL_INT_RESTORE();
-
-			if (0x0 == sys_drv_module_power_state_get(PM_POWER_MODULE_NAME_ENCP))
-			{
-				return BK_OK;
-			}
-			else
-			{
-				sys_drv_module_power_ctrl(PM_POWER_MODULE_NAME_ENCP, power_state);
-			}
-		}
-		else if ( (module == PM_POWER_SUB_MODULE_NAME_BAKP_TIMER1)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_UART1)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_UART2)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_SPI1)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_I2C0)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_I2C1)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_SADC)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_PWM1)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_PWM0)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_TRNG)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_IRDA)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_SDIO)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_COMSEG)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_DMA0)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_DMA1)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_LA)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_PM))
-		{
-			GLOBAL_INT_DISABLE();
-			s_pm_bakp_pm_state |= 0x1 << (module % (PM_POWER_MODULE_NAME_BAKP * PM_MODULE_SUB_POWER_DOMAIN_MAX));
-			s_pm_off_modules &= ~(0x1 << PM_POWER_MODULE_NAME_BAKP);
-			s_pm_on_modules |= 0x1 << PM_POWER_MODULE_NAME_BAKP;
-
-			GLOBAL_INT_RESTORE();
-
-			if (0x0 == sys_drv_module_power_state_get(PM_POWER_MODULE_NAME_BAKP))
-			{
-				return BK_OK;
-			}
-			else
-			{
-				sys_drv_module_power_ctrl(PM_POWER_MODULE_NAME_BAKP, power_state);
-			}
-		}
-		else if ( (module == PM_POWER_SUB_MODULE_NAME_AHBP_CAN)
-		|| (module == PM_POWER_SUB_MODULE_NAME_AHBP_QSPI)
-		|| (module == PM_POWER_SUB_MODULE_NAME_AHBP_USB)
-		|| (module == PM_POWER_SUB_MODULE_NAME_AHBP_PSRAM)
-		|| (module == PM_POWER_SUB_MODULE_NAME_AHBP_QSPI1)
-		|| (module == PM_POWER_SUB_MODULE_NAME_AHBP_ENET)
-		|| (module == PM_POWER_SUB_MODULE_NAME_AHBP_SCR)
-		|| (module == PM_POWER_SUB_MODULE_NAME_AHBP_LIN))
-		{
-			GLOBAL_INT_DISABLE();
-			s_pm_ahpb_pm_state |= 0x1 << (module % (PM_POWER_MODULE_NAME_AHBP * PM_MODULE_SUB_POWER_DOMAIN_MAX));
-			s_pm_off_modules &= ~(0x1 << PM_POWER_MODULE_NAME_AHBP);
-			s_pm_on_modules |= 0x1 << PM_POWER_MODULE_NAME_AHBP;
-
-			GLOBAL_INT_RESTORE();
-
-			if (0x0 == sys_drv_module_power_state_get(PM_POWER_MODULE_NAME_AHBP))
-			{
-				return BK_OK;
-			}
-			else
-			{
-				sys_drv_module_power_ctrl(PM_POWER_MODULE_NAME_AHBP, power_state);
-			}
-		}
-	  	else if ( (module == PM_POWER_SUB_MODULE_NAME_AUDP_FFT)
-			|| (module == PM_POWER_SUB_MODULE_NAME_AUDP_SBC)
-			|| (module == PM_POWER_SUB_MODULE_NAME_AUDP_AUDIO)
-			|| (module == PM_POWER_SUB_MODULE_NAME_AUDP_I2S))
-		{
-			GLOBAL_INT_DISABLE();
-			s_pm_audio_pm_state |= 0x1 << (module % (PM_POWER_MODULE_NAME_AUDP * PM_MODULE_SUB_POWER_DOMAIN_MAX));
-			s_pm_off_modules &= ~(0x1 << PM_POWER_MODULE_NAME_AUDP);
-			s_pm_on_modules |= 0x1 << PM_POWER_MODULE_NAME_AUDP;
-			s_pm_sleeped_modules &= ~(0x1ULL << PM_POWER_MODULE_NAME_AUDP);
-			GLOBAL_INT_RESTORE();
-
-			if (s_pm_cp1_auto_power_down_flag)
-			{
-				pm_module_check_power_on(PM_POWER_MODULE_NAME_CPU1);
-			}
-			if (0x0 == sys_drv_module_power_state_get(PM_POWER_MODULE_NAME_AUDP))
-			{
-				return BK_OK;
-			}
-			else
-			{
-				if (s_pm_mem_auto_power_down_flag)
-				{
-					pm_module_check_power_on(PM_POWER_MODULE_NAME_MEM3);
-				}
-				sys_drv_module_power_ctrl(PM_POWER_MODULE_NAME_AUDP, power_state);
-			}
-		}
-		else if ((module == PM_POWER_SUB_MODULE_NAME_VIDP_DMA2D)
-			|| (module == PM_POWER_SUB_MODULE_NAME_VIDP_YUVBUF)
-			|| (module == PM_POWER_SUB_MODULE_NAME_VIDP_JPEG_EN)
-			|| (module == PM_POWER_SUB_MODULE_NAME_VIDP_JPEG_DE)
-			|| (module == PM_POWER_SUB_MODULE_NAME_VIDP_LCD)
-			|| (module == PM_POWER_SUB_MODULE_NAME_VIDP_ROTT)
-			|| (module == PM_POWER_SUB_MODULE_NAME_VIDP_SCAL0)
-			|| (module == PM_POWER_SUB_MODULE_NAME_VIDP_SCAL1)
-			|| (module == PM_POWER_SUB_MODULE_NAME_VIDP_H264))
-		{
-			GLOBAL_INT_DISABLE();
-			s_pm_video_pm_state |= 0x1 << (module % (PM_POWER_MODULE_NAME_VIDP * PM_MODULE_SUB_POWER_DOMAIN_MAX));
-			s_pm_off_modules &= ~(0x1 << PM_POWER_MODULE_NAME_VIDP);
-			s_pm_on_modules |= 0x1 << PM_POWER_MODULE_NAME_VIDP;
-			s_pm_sleeped_modules &= ~(0x1ULL << PM_POWER_MODULE_NAME_VIDP);
-			GLOBAL_INT_RESTORE();
-
-			if (s_pm_cp1_auto_power_down_flag)
-			{
-				pm_module_check_power_on(PM_POWER_MODULE_NAME_CPU1);
-			}
-			if (0x0 == sys_drv_module_power_state_get(PM_POWER_MODULE_NAME_VIDP))
-			{
-				// GLOBAL_INT_RESTORE();
-				return BK_OK;
-			}
-			else
-			{
-				if (s_pm_mem_auto_power_down_flag)
-				{
-					pm_module_check_power_on(PM_POWER_MODULE_NAME_MEM3);
-				}
-				sys_drv_module_power_ctrl(PM_POWER_MODULE_NAME_VIDP, power_state);
-			}
-		}
-		else if ((module == PM_POWER_SUB_MODULE_NAME_PHY_BT)
-			|| (module == PM_POWER_SUB_MODULE_NAME_PHY_WIFI)
-			|| (module == PM_POWER_SUB_MODULE_NAME_PHY_RF)
-			|| (module == PM_POWER_SUB_MODULE_NAME_PHY_THREAD))
-		{
-			GLOBAL_INT_DISABLE();
-			s_pm_phy_pm_state |= 0x1 << (module % (PM_POWER_MODULE_NAME_PHY * PM_MODULE_SUB_POWER_DOMAIN_MAX));
-			GLOBAL_INT_RESTORE();
-			if ((0x0 == sys_drv_module_power_state_get(PM_POWER_MODULE_NAME_PHY)) && (s_pm_phy_calibration_state == 0x1))
-			{
-				if (s_debug_en & 0x2)
-					os_printf("phy power on already\r\n");
-				return BK_OK;
-			}
-			else
-			{
-				sys_drv_module_power_ctrl(PM_POWER_MODULE_NAME_PHY, power_state);
-				if (0x0 == sys_drv_module_power_state_get(PM_POWER_MODULE_NAME_PHY))
-				{
-					if(PM_POWER_SUB_MODULE_NAME_PHY_RF != module)
-					{
-#if CONFIG_WIFI_ENABLE
-						 extern void phy_wakeup_reinit(uint8 is_wifi);
-						 phy_wakeup_reinit(module == PM_POWER_SUB_MODULE_NAME_PHY_WIFI);
-#elif CONFIG_BLUETOOTH
-						 extern void phy_wakeup_for_bluetooth();
-						 phy_wakeup_for_bluetooth();
-#else
-#endif
-						 s_pm_is_phy_reinit_flag = true;
-						 GLOBAL_INT_DISABLE();
-						 s_pm_phy_calibration_state = 0x1;
-						 s_pm_off_modules &= ~(0x1 << PM_POWER_MODULE_NAME_PHY);
-						 s_pm_on_modules |= 0x1 << PM_POWER_MODULE_NAME_PHY;
-						 GLOBAL_INT_RESTORE();
-					}
-					else
-					{
-						 GLOBAL_INT_DISABLE();
-						 s_pm_off_modules &= ~(0x1 << PM_POWER_MODULE_NAME_PHY);
-						 s_pm_on_modules |= 0x1 << PM_POWER_MODULE_NAME_PHY;
-						 GLOBAL_INT_RESTORE();
-					}
-				}
-				else
-				{
-					if (s_debug_en & 0x2)
-					{
-						os_printf("phy power on fail 0x%x\r\n", sys_drv_module_power_state_get(PM_POWER_MODULE_NAME_PHY));
-					}
-					return BK_FAIL;
-				}
-			}
-		}
-		else if (module == PM_POWER_MODULE_NAME_BTSP)
-		{
-			if (s_pm_mem_auto_power_down_flag)
-			{
-				pm_module_check_power_on(PM_POWER_MODULE_NAME_MEM3);
-			}
-			sys_drv_module_power_ctrl(module, power_state);
-			GLOBAL_INT_DISABLE();
-			s_pm_off_modules &= ~(0x1 << PM_POWER_MODULE_NAME_BTSP);
-			s_pm_on_modules |= 0x1 << PM_POWER_MODULE_NAME_BTSP;
-			s_pm_sleeped_modules &= ~(0x1ULL << PM_POWER_MODULE_NAME_BTSP);
-			GLOBAL_INT_RESTORE();
-		}
-		else
-		{
-			sys_drv_module_power_ctrl(module, power_state);
-			if (module == PM_POWER_MODULE_NAME_PHY) // phy init call this, phy calibration itself
-			{
-				s_pm_phy_calibration_state = 0x1;
-			}
-			GLOBAL_INT_DISABLE();
-			s_pm_off_modules &= ~(0x1 << module);
-			s_pm_on_modules |= 0x1 << module;
-			GLOBAL_INT_RESTORE();
-		}
+		bk_pm_module_power_on(module);
 	}
 	else // power off
 	{
-		if ( (module == POWER_SUB_MODULE_NAME_ENCP_OTP)
-		|| (module == POWER_SUB_MODULE_NAME_ENCP_TRUSTENGINE))
-		{
-			GLOBAL_INT_DISABLE();
-			s_pm_encp_pm_state &= ~(0x1 << (module % (PM_POWER_MODULE_NAME_ENCP * PM_MODULE_SUB_POWER_DOMAIN_MAX)));
-
-			if (0x0 == s_pm_encp_pm_state)
-			{
-				sys_drv_module_power_ctrl(PM_POWER_MODULE_NAME_ENCP, power_state);
-				s_pm_off_modules |= 0x1 << PM_POWER_MODULE_NAME_ENCP;
-				s_pm_on_modules &= ~(0x1 << PM_POWER_MODULE_NAME_ENCP);
-
-			}
-			GLOBAL_INT_RESTORE();
-		}
-		else if ( (module == PM_POWER_SUB_MODULE_NAME_BAKP_TIMER1)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_UART1)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_UART2)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_SPI1)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_I2C0)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_I2C1)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_SADC)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_PWM1)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_PWM0)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_TRNG)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_IRDA)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_SDIO)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_COMSEG)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_DMA0)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_DMA1)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_LA)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_UART3)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_I2S)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_LEDC)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_QSPI1)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_PSRAM)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_PM))
-		{
-			GLOBAL_INT_DISABLE();
-			s_pm_bakp_pm_state &= ~(0x1 << (module % (PM_POWER_MODULE_NAME_BAKP * PM_MODULE_SUB_POWER_DOMAIN_MAX)));
-
-			if (0x0 == s_pm_bakp_pm_state)
-			{
-				sys_drv_module_power_ctrl(PM_POWER_MODULE_NAME_BAKP, power_state);
-				s_pm_off_modules |= 0x1 << PM_POWER_MODULE_NAME_BAKP;
-				s_pm_on_modules &= ~(0x1 << PM_POWER_MODULE_NAME_BAKP);
-
-			}
-			GLOBAL_INT_RESTORE();
-		}
-		else if ( (module == PM_POWER_SUB_MODULE_NAME_AHBP_CAN)
-		|| (module == PM_POWER_SUB_MODULE_NAME_AHBP_QSPI)
-		|| (module == PM_POWER_SUB_MODULE_NAME_AHBP_USB)
-		|| (module == PM_POWER_SUB_MODULE_NAME_AHBP_PSRAM)
-		|| (module == PM_POWER_SUB_MODULE_NAME_AHBP_QSPI1)
-		|| (module == PM_POWER_SUB_MODULE_NAME_AHBP_ENET)
-		|| (module == PM_POWER_SUB_MODULE_NAME_AHBP_SCR)
-		|| (module == PM_POWER_SUB_MODULE_NAME_AHBP_LIN))
-		{
-			GLOBAL_INT_DISABLE();
-			s_pm_ahpb_pm_state &= ~(0x1 << (module % (PM_POWER_MODULE_NAME_AHBP * PM_MODULE_SUB_POWER_DOMAIN_MAX)));
-
-			if (0x0 == s_pm_ahpb_pm_state)
-			{
-				sys_drv_module_power_ctrl(PM_POWER_MODULE_NAME_AHBP, power_state);
-				s_pm_off_modules |= 0x1 << PM_POWER_MODULE_NAME_AHBP;
-				s_pm_on_modules &= ~(0x1 << PM_POWER_MODULE_NAME_AHBP);
-
-			}
-			GLOBAL_INT_RESTORE();
-		}
-		else if ((module == PM_POWER_SUB_MODULE_NAME_AUDP_FFT)
-			|| (module == PM_POWER_SUB_MODULE_NAME_AUDP_SBC)
-			|| (module == PM_POWER_SUB_MODULE_NAME_AUDP_AUDIO)
-			|| (module == PM_POWER_SUB_MODULE_NAME_AUDP_I2S))
-		{
-			GLOBAL_INT_DISABLE();
-			s_pm_audio_pm_state &= ~(0x1 << (module % (PM_POWER_MODULE_NAME_AUDP * PM_MODULE_SUB_POWER_DOMAIN_MAX)));
-			if (0x0 == s_pm_audio_pm_state)
-			{
-				sys_drv_module_power_ctrl(PM_POWER_MODULE_NAME_AUDP, power_state);
-				s_pm_off_modules |= 0x1 << PM_POWER_MODULE_NAME_AUDP;
-				s_pm_on_modules &= ~(0x1 << PM_POWER_MODULE_NAME_AUDP);
-				s_pm_sleeped_modules |= (0x1ULL << PM_POWER_MODULE_NAME_AUDP);
-			}
-			GLOBAL_INT_RESTORE();
-		}
-		else if ((module == PM_POWER_SUB_MODULE_NAME_VIDP_DMA2D)
-			|| (module == PM_POWER_SUB_MODULE_NAME_VIDP_YUVBUF)
-			|| (module == PM_POWER_SUB_MODULE_NAME_VIDP_JPEG_EN)
-			|| (module == PM_POWER_SUB_MODULE_NAME_VIDP_JPEG_DE)
-			|| (module == PM_POWER_SUB_MODULE_NAME_VIDP_LCD)
-			|| (module == PM_POWER_SUB_MODULE_NAME_VIDP_ROTT)
-			|| (module == PM_POWER_SUB_MODULE_NAME_VIDP_SCAL0)
-			|| (module == PM_POWER_SUB_MODULE_NAME_VIDP_SCAL1)
-			|| (module == PM_POWER_SUB_MODULE_NAME_VIDP_H264))
-		{
-			GLOBAL_INT_DISABLE();
-			s_pm_video_pm_state &= ~(0x1 << (module % (PM_POWER_MODULE_NAME_VIDP * PM_MODULE_SUB_POWER_DOMAIN_MAX)));
-
-			if (0x0 == s_pm_video_pm_state)
-			{
-				sys_drv_module_power_ctrl(PM_POWER_MODULE_NAME_VIDP, power_state);
-				s_pm_off_modules |= 0x1 << PM_POWER_MODULE_NAME_VIDP;
-				s_pm_on_modules &= ~(0x1 << PM_POWER_MODULE_NAME_VIDP);
-				s_pm_sleeped_modules |= (0x1ULL << PM_POWER_MODULE_NAME_VIDP);
-			}
-			GLOBAL_INT_RESTORE();
-		}
-		else if ((module == PM_POWER_SUB_MODULE_NAME_PHY_BT)
-			|| (module == PM_POWER_SUB_MODULE_NAME_PHY_WIFI)
-			|| (module == PM_POWER_SUB_MODULE_NAME_PHY_RF)
-			|| (module == PM_POWER_SUB_MODULE_NAME_PHY_THREAD))
-		{
-			GLOBAL_INT_DISABLE();
-			s_pm_phy_pm_state &= ~(0x1 << (module % (PM_POWER_MODULE_NAME_PHY * PM_MODULE_SUB_POWER_DOMAIN_MAX)));
-
-			if (0x0 == s_pm_phy_pm_state)
-			{
-				sys_drv_module_power_ctrl(PM_POWER_MODULE_NAME_PHY, power_state);
-				s_pm_phy_calibration_state = 0x0;
-				s_pm_off_modules |= 0x1 << PM_POWER_MODULE_NAME_PHY;
-				s_pm_on_modules &= ~(0x1 << PM_POWER_MODULE_NAME_PHY);
-			}
-			GLOBAL_INT_RESTORE();
-		}
-		else if (module == PM_POWER_MODULE_NAME_CPU1)
-		{
-			sys_drv_module_power_ctrl(module, power_state);
-			GLOBAL_INT_DISABLE();
-			s_pm_off_modules |= 0x1 << module;
-			s_pm_on_modules &= ~(0x1 << module);
-			GLOBAL_INT_RESTORE();
-			#if CONFIG_SYS_CPU0&& (CONFIG_CPU_CNT > 1)
-			bk_pm_cp1_work_state_set(PM_MAILBOX_COMMUNICATION_INIT);
-			#endif
-		}
-		else
-		{
-			if ((module == PM_POWER_MODULE_NAME_VIDP)
-				|| (module == PM_POWER_MODULE_NAME_AUDP)
-				|| (module == PM_POWER_MODULE_NAME_PHY))
-			{
-				// GLOBAL_INT_RESTORE();
-				if (s_debug_en & 0x2)
-					os_printf("module[%d] can not directly power off\r\n", module);
-				return BK_FAIL;
-			}
-
-			if (s_pm_cp1_auto_power_down_flag)
-			{
-				if (module == PM_POWER_MODULE_NAME_CPU1)
-				{
-					if (!((s_pm_off_modules & (0x1 << PM_POWER_MODULE_NAME_AUDP)) && (s_pm_off_modules & (0x1 << PM_POWER_MODULE_NAME_VIDP))))
-					{
-						// GLOBAL_INT_RESTORE();
-						if (s_debug_en & 0x2)
-							os_printf("module[%d] can not directly power off\r\n", module);
-						return BK_FAIL;
-					}
-				}
-			}
-			sys_drv_module_power_ctrl(module, power_state);
-			GLOBAL_INT_DISABLE();
-			s_pm_off_modules |= 0x1 << module;
-			s_pm_on_modules &= ~(0x1 << module);
-			GLOBAL_INT_RESTORE();
-		}
+		bk_pm_module_power_off(module);
 	}
 	if (s_pm_cp1_auto_power_down_flag)
 	{
@@ -1270,86 +1256,33 @@ void pm_rf_switch(pm_power_module_name_e name)
 
 int32_t bk_pm_module_power_state_get(pm_power_module_name_e module)
 {
-	if ( (module == PM_POWER_SUB_MODULE_NAME_ENCP_OTP)
-		|| (module == PM_POWER_SUB_MODULE_NAME_ENCP_TRUSTENGINE))
-	{
-		return sys_drv_module_power_state_get(PM_POWER_MODULE_NAME_ENCP);
-	}
-	else if ( (module == PM_POWER_SUB_MODULE_NAME_BAKP_TIMER1)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_UART1)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_UART2)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_SPI1)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_I2C0)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_I2C1)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_SADC)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_PWM1)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_PWM0)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_TRNG)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_IRDA)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_SDIO)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_COMSEG)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_DMA0)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_DMA1)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_LA)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_UART3)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_I2S)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_LEDC)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_QSPI1)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_PSRAM)
-		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_PM))
-	{
-		return sys_drv_module_power_state_get(PM_POWER_MODULE_NAME_BAKP);
-	}
-	else if ( (module == PM_POWER_SUB_MODULE_NAME_AHBP_CAN)
-		|| (module == PM_POWER_SUB_MODULE_NAME_AHBP_QSPI)
-		|| (module == PM_POWER_SUB_MODULE_NAME_AHBP_USB)
-		|| (module == PM_POWER_SUB_MODULE_NAME_AHBP_PSRAM)
-		|| (module == PM_POWER_SUB_MODULE_NAME_AHBP_QSPI1)
-		|| (module == PM_POWER_SUB_MODULE_NAME_AHBP_ENET)
-		|| (module == PM_POWER_SUB_MODULE_NAME_AHBP_SCR)
-		|| (module == PM_POWER_SUB_MODULE_NAME_AHBP_LIN))
-	{
-		return sys_drv_module_power_state_get(PM_POWER_MODULE_NAME_AHBP);
-	}
-	else if ((module == PM_POWER_SUB_MODULE_NAME_AUDP_FFT)
-		|| (module == PM_POWER_SUB_MODULE_NAME_AUDP_SBC)
-		|| (module == PM_POWER_SUB_MODULE_NAME_AUDP_AUDIO)
-		|| (module == PM_POWER_SUB_MODULE_NAME_AUDP_I2S))
-	{
-		return sys_drv_module_power_state_get(PM_POWER_MODULE_NAME_AUDP);
-	}
-	else if ((module == PM_POWER_SUB_MODULE_NAME_VIDP_DMA2D)
-		|| (module == PM_POWER_SUB_MODULE_NAME_VIDP_YUVBUF)
-		|| (module == PM_POWER_SUB_MODULE_NAME_VIDP_JPEG_EN)
-		|| (module == PM_POWER_SUB_MODULE_NAME_VIDP_JPEG_DE)
-		|| (module == PM_POWER_SUB_MODULE_NAME_VIDP_LCD)
-		|| (module == PM_POWER_SUB_MODULE_NAME_VIDP_ROTT)
-		|| (module == PM_POWER_SUB_MODULE_NAME_VIDP_SCAL0)
-		|| (module == PM_POWER_SUB_MODULE_NAME_VIDP_SCAL1)
-		|| (module == PM_POWER_SUB_MODULE_NAME_VIDP_H264))
-	{
-		return sys_drv_module_power_state_get(PM_POWER_MODULE_NAME_VIDP);
-	}
-	else if ((module == PM_POWER_SUB_MODULE_NAME_PHY_BT)
-		|| (module == PM_POWER_SUB_MODULE_NAME_PHY_WIFI)
-		|| (module == PM_POWER_SUB_MODULE_NAME_PHY_THREAD))
-	{
-		return sys_drv_module_power_state_get(PM_POWER_MODULE_NAME_PHY);
-	}
-	else
-	{
-		if (module >= PM_POWER_MODULE_NAME_NONE)
-		{
-			os_printf("pm module[%d] not support ,get power state fail %d\r\n", module);
-			return BK_ERR_NOT_SUPPORT;
-		}
-		else
-		{
-			return sys_drv_module_power_state_get(module);
-		}
+	uint32_t domain;
+	int32_t state;
+
+	if (module < PM_POWER_MODULE_NAME_NONE) {
+		return sys_drv_module_power_state_get(module);
 	}
 
-	return 0;
+	domain = module/PM_MODULE_SUB_POWER_DOMAIN_MAX;
+	switch (domain) {
+		case PM_POWER_MODULE_NAME_ENCP:
+		case PM_POWER_MODULE_NAME_BAKP:
+		case PM_POWER_MODULE_NAME_AHBP:
+		case PM_POWER_MODULE_NAME_AUDP:
+		case PM_POWER_MODULE_NAME_VIDP:
+		case PM_POWER_MODULE_NAME_BTSP:
+		case PM_POWER_MODULE_NAME_THREAD:
+		case PM_POWER_MODULE_NAME_PHY:
+			state = sys_drv_module_power_state_get(domain);
+			break;
+
+		default:
+			BK_LOGD(NULL, "pm module[%d] not support ,get power state fail.\r\n", module);
+			state = BK_ERR_NOT_SUPPORT;
+			break;
+	}
+
+	return state;
 }
 
 #if CONFIG_SYS_CPU0
