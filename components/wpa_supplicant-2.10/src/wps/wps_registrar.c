@@ -2573,7 +2573,7 @@ static int wps_process_wps_state(struct wps_data *wps, const u8 *state)
 
 static int wps_process_assoc_state(struct wps_data *wps, const u8 *assoc)
 {
-	u16 a;
+	u16 a __maybe_unused;
 
 	if (assoc == NULL) {
 		wpa_printf(MSG_DEBUG, "WPS: No Association State received");
@@ -2589,7 +2589,7 @@ static int wps_process_assoc_state(struct wps_data *wps, const u8 *assoc)
 
 static int wps_process_config_error(struct wps_data *wps, const u8 *err)
 {
-	u16 e;
+	u16 e __maybe_unused;
 
 	if (err == NULL) {
 		wpa_printf(MSG_DEBUG, "WPS: No Configuration Error received");

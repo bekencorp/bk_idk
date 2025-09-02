@@ -485,6 +485,85 @@ struct eap_peer_config {
 	char *phase1;
 
 	/**
+	 * ca_cert - File path to CA certificate file (PEM/DER)
+	 *
+	 * This file can have one or more trusted CA certificates. If ca_cert
+	 * and ca_path are not included, server certificate will not be
+	 * verified. This is insecure and a trusted CA certificate should
+	 * always be configured when using EAP-TLS/TTLS/PEAP. Full path to the
+	 * file should be used since working directory may change when
+	 * wpa_supplicant is run in the background.
+	 *
+	 * Alternatively, a named configuration blob can be used by setting
+	 * this to blob://blob_name.
+	 *
+	 * Alternatively, this can be used to only perform matching of the
+	 * server certificate (SHA-256 hash of the DER encoded X.509
+	 * certificate). In this case, the possible CA certificates in the
+	 * server certificate chain are ignored and only the server certificate
+	 * is verified. This is configured with the following format:
+	 * hash:://server/sha256/cert_hash_in_hex
+	 * For example: "hash://server/sha256/
+	 * 5a1bc1296205e6fdbe3979728efe3920798885c1c4590b5f90f43222d239ca6a"
+	 *
+	 * On Windows, trusted CA certificates can be loaded from the system
+	 * certificate store by setting this to cert_store://name, e.g.,
+	 * ca_cert="cert_store://CA" or ca_cert="cert_store://ROOT".
+	 * Note that when running wpa_supplicant as an application, the user
+	 * certificate store (My user account) is used, whereas computer store
+	 * (Computer account) is used when running wpasvc as a service.
+	 */
+	char *ca_cert;
+
+	/**
+	 * client_cert - File path to client certificate file (PEM/DER)
+	 *
+	 * This field is used with EAP method that use TLS authentication.
+	 * Usually, this is only configured for EAP-TLS, even though this could
+	 * in theory be used with EAP-TTLS and EAP-PEAP, too. Full path to the
+	 * file should be used since working directory may change when
+	 * wpa_supplicant is run in the background.
+	 *
+	 * Alternatively, a named configuration blob can be used by setting
+	 * this to blob://blob_name.
+	 */
+	char *client_cert;
+
+	/**
+	 * private_key - File path to client private key file (PEM/DER/PFX)
+	 *
+	 * When PKCS#12/PFX file (.p12/.pfx) is used, client_cert should be
+	 * commented out. Both the private key and certificate will be read
+	 * from the PKCS#12 file in this case. Full path to the file should be
+	 * used since working directory may change when wpa_supplicant is run
+	 * in the background.
+	 *
+	 * Windows certificate store can be used by leaving client_cert out and
+	 * configuring private_key in one of the following formats:
+	 *
+	 * cert://substring_to_match
+	 *
+	 * hash://certificate_thumbprint_in_hex
+	 *
+	 * For example: private_key="hash://63093aa9c47f56ae88334c7b65a4"
+	 *
+	 * Note that when running wpa_supplicant as an application, the user
+	 * certificate store (My user account) is used, whereas computer store
+	 * (Computer account) is used when running wpasvc as a service.
+	 *
+	 * Alternatively, a named configuration blob can be used by setting
+	 * this to blob://blob_name.
+	 */
+	char *private_key;
+
+	/**
+	 * private_key_passwd - Password for private key file
+	 *
+	 * If left out, this will be asked through control interface.
+	 */
+	char *private_key_passwd;
+
+	/**
 	 * phase2 - Phase2 (inner authentication with TLS tunnel) parameters
 	 *
 	 * String with field-value pairs, e.g., "auth=MSCHAPV2" for EAP-PEAP or

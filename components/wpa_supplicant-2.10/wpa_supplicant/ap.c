@@ -222,12 +222,14 @@ static void wpas_conf_ap_he_6ghz(struct wpa_supplicant *wpa_s,
 				 struct wpa_ssid *ssid,
 				 struct hostapd_config *conf)
 {
-	bool is_chanwidth_40_80, is_chanwidth_160;
-	int he_chanwidth;
+	bool is_chanwidth_40_80 = 0, is_chanwidth_160 = 0;
+	int he_chanwidth = 0;
 
+#ifdef CONFIG_IEEE80211AX
 	he_chanwidth =
 		mode->he_capab[wpas_mode_to_ieee80211_mode(
 			ssid->mode)].phy_cap[HE_PHYCAP_CHANNEL_WIDTH_SET_IDX];
+#endif
 	is_chanwidth_40_80 = he_chanwidth &
 		HE_PHYCAP_CHANNEL_WIDTH_SET_40MHZ_80MHZ_IN_5G;
 	is_chanwidth_160 = he_chanwidth &
@@ -236,11 +238,12 @@ static void wpas_conf_ap_he_6ghz(struct wpa_supplicant *wpa_s,
 	wpa_printf(MSG_DEBUG,
 		   "Enable HE support (p2p_group=%d he_chwidth_cap=%d)",
 		   ssid->p2p_group, he_chanwidth);
-
+#ifdef CONFIG_IEEE80211AX
 	if (mode->he_capab[wpas_mode_to_ieee80211_mode(
 			    ssid->mode)].he_supported &&
 	    ssid->he)
 		conf->ieee80211ax = 1;
+#endif
 
 	if (is_chanwidth_40_80 && ssid->p2p_group &&
 	    get_max_oper_chwidth_6ghz(ssid->max_oper_chwidth) >= 40) {
@@ -400,10 +403,12 @@ int wpa_supplicant_conf_ap_ht(struct wpa_supplicant *wpa_s,
 			/* check this before VHT, because setting oper chan
 			 * width and friends is the same call for HE and VHT
 			 * and checks if conf->ieee8021ax == 1 */
+#ifdef CONFIG_IEEE80211AX
 			if (mode->he_capab[wpas_mode_to_ieee80211_mode(
 					    ssid->mode)].he_supported &&
 			    ssid->he)
 				conf->ieee80211ax = 1;
+#endif
 
 			if (mode->vht_capab && ssid->vht) {
 				conf->ieee80211ac = 1;

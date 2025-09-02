@@ -35,7 +35,8 @@
 #include "wpa_err.h"
 #include "bk_wifi_private.h"
 #ifdef CONFIG_P2P
-#include "sa_station.h"
+#include "reg_access.h"
+#include "fhost_msg.h"
 #endif
 #if CONFIG_LWIP
 #include "net.h"
@@ -656,8 +657,7 @@ static int wpa_driver_set_mode(void *priv, enum nl80211_iftype nlmode)
 
 	if (!vif)
 		return -1;
-
-	os_memcpy(mac, &vif->mac_addr, ETH_ALEN);
+	os_memcpy(mac, (void *)mac_vif_mgmt_get_mac_address(vif), ETH_ALEN);
 #ifdef CONFIG_P2P_GO
 	drv->nlmode = nlmode;
 #endif
@@ -667,7 +667,7 @@ static int wpa_driver_set_mode(void *priv, enum nl80211_iftype nlmode)
 		|| nlmode == NL80211_IFTYPE_P2P_GO
 #endif
 		) {
-		if (vif->type != VIF_STA || !vif->p2p) {
+		if (mac_vif_mgmt_get_type(vif) != VIF_STA || !mac_vif_mgmt_interface_is_configured_for_p2p(vif)) {
 #if CONFIG_LWIP
 			net_wlan_remove_netif(mac);
 #endif
@@ -704,7 +704,7 @@ static int wpa_driver_set_mode(void *priv, enum nl80211_iftype nlmode)
 		}
 		return 0;
 	} else if (nlmode == NL80211_IFTYPE_STATION) {
-		if (vif->type != VIF_STA || vif->p2p) {
+		if (mac_vif_mgmt_get_type(vif) != VIF_STA || mac_vif_mgmt_interface_is_configured_for_p2p(vif)) {
 #if CONFIG_LWIP
 			net_wlan_remove_netif(mac);
 #endif
@@ -2628,10 +2628,19 @@ int wpa_driver_get_channel_info(void *priv, struct wpa_channel_info *ci)
 
 int wpa_driver_probe_req_report(void *priv, int report)
 {
-	// FIXME: MAC HW may not be in IDLE state
-	mm_rx_filter_app_set(NXMAC_ACCEPT_PROBE_REQ_BIT);
-
-	return 0;
+    // FIXME: MAC HW may not be in IDLE state
+    extern uint32_t mm_rx_filter_app_set(uint32_t filter);
+    extern uint32_t mm_rx_filter_app_get();
+    //REMIND: there are several kinds of filters, and they work out together
+    //so clear NXMAC_ACCEPT_PROBE_REQ_BIT here
+    //does NOT mean that the related bit of final filter is cleared
+    rwnxl_wakeup();
+    if (report) {
+        mm_rx_filter_app_set(mm_rx_filter_app_get() | NXMAC_ACCEPT_PROBE_REQ_BIT);
+    } else {
+        mm_rx_filter_app_set(mm_rx_filter_app_get() & (~NXMAC_ACCEPT_PROBE_REQ_BIT));
+    }
+    return 0;
 }
 
 int wpa_driver_remain_on_channel(void *priv, unsigned int freq,

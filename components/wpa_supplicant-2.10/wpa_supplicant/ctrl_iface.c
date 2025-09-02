@@ -30,7 +30,7 @@
 #ifdef CONFIG_P2P
 #include "p2p/p2p.h"
 #include "p2p_supplicant.h"
-#include "chan.h"
+//#include "chan.h"
 #include "rwnx_defs.h"
 #endif
 #if CONFIG_LWIP
@@ -1053,7 +1053,7 @@ static int p2p_ctrl_find(struct wpa_supplicant *wpa_s, char *cmd)
 	}
 
 	return wpas_p2p_find(wpa_s, timeout, type, _dev_type != NULL, _dev_type,
-			     _dev_id, search_delay, seek_count, seek, freq);
+			     _dev_id, search_delay, seek_count, seek, freq, is_6ghz_freq(freq));
 }
 
 static int p2p_ctrl_listen(struct wpa_supplicant *wpa_s, char *cmd)
@@ -1118,8 +1118,8 @@ static int p2p_ctrl_connect(struct wpa_supplicant *wpa_s,
 	new_pin = wpas_p2p_connect(wpa_s, addr, pin, wps_method,
 				   persistent_group, automatic, join,
 				   auth, go_intent, freq, freq2, persistent_id,
-				   pd, ht40, vht, max_oper_chwidth, he,
-				   group_ssid, group_ssid_len);
+				   pd, ht40, vht, max_oper_chwidth, he, wpa_s->conf->p2p_go_edmg,
+				   group_ssid, group_ssid_len, is_p2p_allow_6ghz(wpa_s->global->p2p));
 
 	return new_pin;
 }

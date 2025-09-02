@@ -991,7 +991,7 @@ int cmd_wlan_p2p_exec(char *cmd)
 		os_strcpy((char *)wNetConfig.wifi_ssid, oob_ssid);
 		os_strcpy((char *)wNetConfig.wifi_key, connect_key);
 
-		wNetConfig.wifi_mode = BK_STATION;
+		wNetConfig.wifi_mode = BK_P2P;
 		wNetConfig.dhcp_mode = DHCP_CLIENT;
 		wNetConfig.wifi_retry_interval = 100;
 
@@ -999,15 +999,27 @@ int cmd_wlan_p2p_exec(char *cmd)
 		ret = wlan_sta_enable();
 		bk_wlan_status_register_cb(app_p2p_rw_event_func);
 		app_p2p_restart_thread();
-		wlan_p2p_find();
+		//wlan_p2p_find();
 	} else if (os_strcmp(cmd, "find") == 0) {
 		ret = wlan_p2p_find();
 	} else if (os_strcmp(cmd, "listen") == 0) {
 		ret = wlan_p2p_listen();
 	} else if (os_strcmp(cmd, "stop_find") == 0) {
 		ret = wlan_p2p_stop_find();
-	} else if (os_strcmp(cmd, "connect") == 0) {
-		ret = wlan_p2p_connect((uint8_t *)"\xee\xaa\x25\x4a\xf6\x9f", 1, 1);
+	} else if (os_strncmp(cmd, "connect", 7) == 0) {
+		char *mac_addr_str = "";
+		uint8_t mac_addr[6] = {0};
+		if (*(cmd + 7) == ' ') {
+			char *argv[1];
+			if (!cmd_parse_argv(cmd + 8, argv, ARRAY_SIZE(argv)) == 0) {
+				mac_addr_str = (char *)argv[0];
+				hexstr2bin(mac_addr_str, mac_addr, 6);
+				ret = wlan_p2p_connect(mac_addr, 1, 1);
+			}
+		} else {
+			os_printf("connect command requires mac address\n");
+			ret = -1;
+		}
 	} else {
 		BK_LOGE(TAG, "unknown cmd '%s'\n", cmd);
 		return -1;

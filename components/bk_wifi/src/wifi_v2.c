@@ -31,6 +31,7 @@
 #include "wifi_config.h"
 #ifdef CONFIG_P2P
 #include "rw_tx_buffering.h"
+#include "fhost_msg.h"
 #endif
 #include "rw_ieee80211.h"
 #include "ieee802_11_defs.h"
@@ -793,6 +794,7 @@ int app_deinit(void)
 			 msg.dmsg == WIFI_LINKSTATE_STA_CONNECT_FAILED) && status == 1) {
 			sta_ip_down();
 			rwnx_hw_reinit();
+			extern void sys_msleep(u32_t ms);
 			sys_msleep(2000);
 			wlan_p2p_find();
 			status = 0;
@@ -3848,7 +3850,7 @@ bk_err_t bk_wifi_send_listen_interval_req(uint8_t interval) {
 
 #if NX_P2P
 	VIF_INF_PTR vif = rwm_mgmt_vif_idx2ptr(vif_idx);
-	if (vif->p2p)
+	if (mac_vif_mgmt_interface_is_configured_for_p2p(vif))
 		return BK_FAIL;
 #endif
 
@@ -3890,7 +3892,7 @@ bk_err_t bk_wifi_send_bcn_loss_int_req(uint8_t interval,uint8_t repeat_num) {
 
 #if NX_P2P
 	VIF_INF_PTR vif = rwm_mgmt_vif_idx2ptr(vif_idx);
-	if (vif->p2p)
+	if (mac_vif_mgmt_interface_is_configured_for_p2p(vif))
 		return BK_FAIL;
 #endif
         WIFI_LOGD("bcn_loss_int %d,repeat %d\r\n",interval,repeat_num);
@@ -3905,7 +3907,7 @@ bk_err_t bk_wifi_set_bcn_loss_time(uint8_t wait_cnt, uint8_t wake_cnt) {
 
 #if NX_P2P
 	VIF_INF_PTR vif = rwm_mgmt_vif_idx2ptr(vif_idx);
-	if (vif->p2p)
+	if (mac_vif_mgmt_interface_is_configured_for_p2p(vif))
 		return BK_FAIL;
 #endif
 	WIFI_LOGI("bcn_loss_time wait %d,wake %d\r\n",wait_cnt,wake_cnt);
@@ -3920,7 +3922,7 @@ bk_err_t bk_wifi_set_bcn_recv_win(uint8_t default_win, uint8_t max_win, uint8_t 
 
 #if NX_P2P
 	VIF_INF_PTR vif = rwm_mgmt_vif_idx2ptr(vif_idx);
-	if (vif->p2p)
+	if (mac_vif_mgmt_interface_is_configured_for_p2p(vif))
 		return BK_FAIL;
 #endif
 	WIFI_LOGD("bcn_recv_win default %d,max %d,step %d\r\n",default_win,max_win,step);
@@ -3935,7 +3937,7 @@ bk_err_t bk_wifi_set_bcn_miss_time(uint8_t bcnmiss_time) {
 
 #if NX_P2P
 	VIF_INF_PTR vif = rwm_mgmt_vif_idx2ptr(vif_idx);
-	if (vif->p2p)
+	if (mac_vif_mgmt_interface_is_configured_for_p2p(vif))
 		return BK_FAIL;
 #endif
 	WIFI_LOGI("bcn_miss_time %d\r\n",bcnmiss_time);
@@ -3951,7 +3953,7 @@ bk_err_t bk_wifi_get_support_wifi_mode(uint8_t* support_mode)
 
 #if NX_P2P
 	VIF_INF_PTR vif = rwm_mgmt_vif_idx2ptr(vif_idx);
-	if (vif->p2p)
+	if (mac_vif_mgmt_interface_is_configured_for_p2p(vif))
 		return BK_FAIL;
 #endif
 

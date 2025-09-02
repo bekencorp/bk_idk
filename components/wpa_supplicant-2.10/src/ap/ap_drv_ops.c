@@ -43,7 +43,7 @@ u32 hostapd_sta_flags_to_drv(u32 flags)
 }
 
 
-#ifdef CONFIG_FULL_HOSTAPD
+#ifdef CONFIG_P2P
 static int add_buf(struct wpabuf **dst, const struct wpabuf *src)
 {
 	if (!src)
@@ -53,8 +53,9 @@ static int add_buf(struct wpabuf **dst, const struct wpabuf *src)
 	wpabuf_put_buf(*dst, src);
 	return 0;
 }
+#endif
 
-
+#ifdef CONFIG_FULL_HOSTAPD
 static int add_buf_data(struct wpabuf **dst, const u8 *data, size_t len)
 {
 	if (!data || !len)

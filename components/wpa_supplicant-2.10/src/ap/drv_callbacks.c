@@ -334,7 +334,7 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 		if (hapd->conf->wps_state && ie[0] == 0xdd && ie[1] >= 4 &&
 		    os_memcmp(ie + 2, "\x00\x50\xf2\x04", 4) == 0) {
 			struct wpabuf *wps;
-
+			#ifdef CONFIG_IEEE80211W_AP
 			if (check_sa_query_need(hapd, sta)) {
 				status = WLAN_STATUS_ASSOC_REJECTED_TEMPORARILY;
 
@@ -345,6 +345,7 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 						  buf, p - buf);
 				return 0;
 			}
+			#endif
 
 			sta->flags |= WLAN_STA_WPS;
 			wps = ieee802_11_vendor_ie_concat(ie, ielen,

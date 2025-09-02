@@ -75,7 +75,7 @@ struct hostapd_radius_servers;
 struct ft_remote_r0kh;
 struct ft_remote_r1kh;
 
-#ifdef CONFIG_WEP_AP
+#if defined(CONFIG_WEP_AP) || defined(CONFIG_P2P)
 #define NUM_WEP_KEYS 4
 struct hostapd_wep_keys {
 	u8 idx;
@@ -88,7 +88,7 @@ struct hostapd_wep_keys {
 
 typedef enum hostap_security_policy {
 	SECURITY_PLAINTEXT = 0,
-#ifdef CONFIG_WEP_AP
+#if defined(CONFIG_WEP_AP) || defined(CONFIG_P2P)
 	SECURITY_STATIC_WEP = 1,
 #endif /* CONFIG_WEP_AP */
 	SECURITY_IEEE_802_1X = 2,
@@ -118,7 +118,7 @@ struct hostapd_ssid {
 #endif
 	struct sae_pt *pt;
 
-#ifdef CONFIG_WEP_AP
+#if defined(CONFIG_WEP_AP) || defined(CONFIG_P2P)
 	struct hostapd_wep_keys wep;
 #endif /* CONFIG_WEP_AP */
 
@@ -314,13 +314,15 @@ struct hostapd_bss_config {
 	struct hostapd_eap_user *eap_user;
 	char *eap_user_sqlite;
 #endif
+#ifdef CONFIG_P2P
+	struct hostapd_radius_servers *radius;
+#endif
 #ifdef CONFIG_FULL_HOSTAPD
 	char *eap_sim_db;
 	unsigned int eap_sim_db_timeout;
 	int eap_server_erp; /* Whether ERP is enabled on internal EAP server */
 	struct hostapd_ip_addr own_ip_addr;
 	char *nas_identifier;
-	struct hostapd_radius_servers *radius;
 	int acct_interim_interval;
 	int radius_request_cui;
 	struct hostapd_radius_attr *radius_auth_req_attr;
@@ -342,7 +344,7 @@ struct hostapd_bss_config {
 	size_t eap_req_id_text_len;
 	int eapol_key_index_workaround;
 
-#ifdef CONFIG_WEP_AP
+#if defined(CONFIG_WEP_AP) || defined(CONFIG_P2P)
 	size_t default_wep_key_len;
 	int individual_wep_key_len;
 	int wep_rekeying_period;
@@ -697,7 +699,7 @@ struct hostapd_bss_config {
 	struct wpabuf *vendor_elements;
 	struct wpabuf *assocresp_elements;
 
-#ifdef CONFIG_SAE_AP
+#if defined(CONFIG_SAE_AP) || defined(CONFIG_P2P)
 	unsigned int anti_clogging_threshold;
 	unsigned int sae_sync;
 	int sae_require_mfp;

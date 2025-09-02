@@ -1559,7 +1559,7 @@ static char * wpa_config_write_freq_list(const struct parse_data *data,
 
 
 #ifdef IEEE8021X_EAPOL
-static int wpa_config_parse_eap(const struct parse_data *data,
+int wpa_config_parse_eap(const struct parse_data *data,
 				struct wpa_ssid *ssid, int line,
 				const char *value)
 {

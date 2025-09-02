@@ -2497,6 +2497,13 @@ uint8_t mac_vif_mgmt_get_u_sta_rssi(void *_vif);
 uint8_t mac_vif_mgmt_get_u_sta_smooth_rssi(void *_vif);
 int max_mm_sec_key_nbr();
 int mac_vif_mgmt_get_used_cnt(void);
+#if (NX_P2P && BK_MAC)
+bool mac_vif_mgmt_p2p_can_rec_probe_req(void *_vif);
+bool mac_vif_mgmt_interface_is_configured_for_p2p(void *_vif);
+bool mac_vif_mgmt_get_p2p_index(void *_vif);
+bool mac_vif_mgmt_get_nums_of_p2p(void *_vif);
+struct mac_addr *mac_vif_mgmt_get_mac_address(void *_vif);
+#endif
 /// Messages that are logically related to the task.
 enum apm_msg_tag
 {

@@ -27,7 +27,7 @@ xFILE *xfindfile(const char *name)
 	int i;
 
 	if ((name == 0) || (strlen(name) == 0)) {
-		WPA_LOGI("xfile: invalid filename.\n");
+		//WPA_LOGD("xfile: invalid filename.\n");
 		return NULL;
 	}
 
@@ -35,7 +35,7 @@ xFILE *xfindfile(const char *name)
 		if (sysfiles[i]._tmpfname && !strcmp(name, sysfiles[i]._tmpfname))
 			return &sysfiles[i];
 	}
-	WPA_LOGI("xfile: %s not found.\n", name);
+	//WPA_LOGD("xfile: %s not found.\n", name);
 	return NULL;
 }
 
@@ -45,7 +45,7 @@ xFILE *xfopen(const char *filename, const char *mode)
 	xFILE *f;
 
 	f = xfindfile(filename);
-	WPA_LOGI("xfile open: %s\n", filename);
+	//WPA_LOGD("xfile open: %s\n", filename);
 
 	if (f->_flag & _XFINUSE)
 		return NULL; /* file is already opened */
@@ -116,7 +116,7 @@ int xfclose(xFILE *f)
 
 	f->_flag &= ~_XFINUSE;
 
-	WPA_LOGI("Closing file: %s\n", f->_tmpfname);
+	//WPA_LOGD("Closing file: %s\n", f->_tmpfname);
 	return 0;
 }
 

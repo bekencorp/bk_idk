@@ -13,6 +13,7 @@
 
 #include "utils/list.h"
 #include "http.h"
+#include "sockets.h"
 
 #define UPNP_MULTICAST_ADDRESS  "239.255.255.250" /* for UPnP multicasting */
 #define UPNP_MULTICAST_PORT 1900 /* UDP port to monitor for UPnP */

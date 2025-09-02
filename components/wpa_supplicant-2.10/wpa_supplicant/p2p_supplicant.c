@@ -40,8 +40,9 @@
 #ifdef BK_SUPPLICANT
 #include "uart_pub.h"
 #endif
-
-
+#ifdef CONFIG_P2P
+#include "errno.h"
+#endif
 /*
  * How many times to try to scan to find the GO before giving up on join
  * request.
@@ -175,9 +176,11 @@ static int wpas_get_6ghz_he_chwidth_capab(struct hostapd_hw_modes *mode)
 {
 	int he_capab = 0;
 
+#ifdef CONFIG_IEEE80211AX
 	if (mode)
 		he_capab = mode->he_capab[WPAS_MODE_INFRA].phy_cap[
 			HE_PHYCAP_CHANNEL_WIDTH_SET_IDX];
+#endif
 	return he_capab;
 }
 

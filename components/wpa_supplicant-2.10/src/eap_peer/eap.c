@@ -1447,7 +1447,7 @@ static struct wpabuf * eap_sm_build_expanded_nak(
 static struct wpabuf * eap_sm_buildNak(struct eap_sm *sm, int id)
 {
 	struct wpabuf *resp;
-	u8 *start;
+	u8 *start __maybe_unused;
 	int found = 0, expanded_found = 0;
 	size_t count;
 	const struct eap_method *methods, *m;

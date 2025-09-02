@@ -4644,8 +4644,10 @@ static int check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 	if (hapd->conf->wps_state && elems.wps_ie) {
 		wpa_printf(MSG_DEBUG, "STA included WPS IE in (Re)Association "
 			   "Request - assume WPS is used");
+		#ifdef CONFIG_IEEE80211W_AP
 		if (check_sa_query(hapd, sta, reassoc))
 			return WLAN_STATUS_ASSOC_REJECTED_TEMPORARILY;
+		#endif
 		sta->flags |= WLAN_STA_WPS;
 		wpabuf_free(sta->wps_ie);
 		sta->wps_ie = ieee802_11_vendor_ie_concat(ies, ies_len,

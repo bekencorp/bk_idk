@@ -2904,7 +2904,7 @@ static void wpas_wps_dump_ap_info(struct wpa_supplicant *wpa_s)
 
 	for (i = 0; i < wpa_s->num_wps_ap; i++) {
 		struct wps_ap_info *ap = &wpa_s->wps_ap[i];
-		struct wpa_bssid_ignore *e = wpa_bssid_ignore_get(wpa_s,
+		struct wpa_bssid_ignore *e __maybe_unused = wpa_bssid_ignore_get(wpa_s,
 								  ap->bssid);
 
 		wpa_printf(MSG_DEBUG, "WPS: AP[%d] " MACSTR " type=%d "
