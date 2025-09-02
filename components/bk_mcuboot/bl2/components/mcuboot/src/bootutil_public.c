@@ -297,12 +297,19 @@ boot_write_xip_status(uint8_t index, uint32_t type, uint32_t status)
 uint32_t
 bk_boot_ota_confirm_offset(uint8_t image_index)
 {
+#if CONFIG_MIXED_OTA
     if (image_index == 0) {
         return CONFIG_OW_OTA_CONTROL_PHY_PARTITION_OFFSET;
     } else {
-        //return CONFIG_XIP_OTA_CONTROL_PHY_PARTITION_OFFSET;
-        return 0;
+        return CONFIG_XIP_OTA_CONTROL_PHY_PARTITION_OFFSET;
     }
+#endif
+#if CONFIG_OTA_OVERWRITE
+    return CONFIG_OW_OTA_CONTROL_PHY_PARTITION_OFFSET;
+#endif
+#if CONFIG_DIRECT_XIP
+    return CONFIG_XIP_OTA_CONTROL_PHY_PARTITION_OFFSET;
+#endif
 }
 
 bk_err_t 
@@ -979,7 +986,6 @@ bool check_crc(uint32_t vir_start, size_t size)
 #if CONFIG_BL2_WDT
         aon_wdt_feed();
 #endif
-        // printf(">>> phy crc start=%#x\r\n", phy_start + i*34);
         bk_flash_read_bytes(phy_start + i*34, (uint8_t *)&enc_data, 34);
         memset(ff_buf, 0xFF, 34);
         if (memcmp(ff_buf, (const void *)&enc_data, 34) == 0) {

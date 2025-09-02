@@ -100,14 +100,6 @@ target_include_directories(bk_mcuboot_config INTERFACE
 	${TINYSOC_PATH}/driver/flash
 )
 
-
-if(CONFIG_XIP_NO_VERSION)
-	target_compile_definitions(platform_bl2
-		PUBLIC
-			CONFIG_XIP_NO_VERSION
-	)
-endif()
-
 target_include_directories(platform_bl2 PUBLIC ${platform_bl2_inc})
 target_sources(platform_bl2 PRIVATE ${platform_bl2_src})
 add_subdirectory(tinysoc)

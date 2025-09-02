@@ -30,9 +30,26 @@
 #include "xip_loader.h"
 extern void flash_set_excute_enable(int enable);
 
+static inline const char* image_ok_str(uint32_t image_ok)
+{
+	if (image_ok == XIP_IMAGE_OK) {
+		return "OK";
+	} else if (image_ok == XIP_IMAGE_TEST_FIRST) {
+		return "FIRST_TEST_FAIL";
+	} else if (image_ok == XIP_IMAGE_TEST_SECOND) {
+		return "SECOND_TEST_FAIL";
+	} else if (image_ok == XIP_IMAGE_TEST_FINAL) {
+		return "FINAL_TEST_FAIL";
+	} else if (image_ok == XIP_IMAGE_UNKNOWN) {
+		return "DOWNLOADED";
+	} else {
+		return "INVALID";
+	}
+}
+
 static inline const char* slot_str(uint32_t slot)
 {
-	if (slot == 0) {
+	if (slot == BOOT_PRIMARY_SLOT) {
 		return "Primary";
 	} else {
 		return "Secondary";
@@ -74,7 +91,7 @@ find_slot_with_highest_version(struct boot_loader_state *state)
     uint32_t slot;
     uint32_t candidate_slot = NO_ACTIVE_SLOT;
 
-#if CONFIG_XIP_NO_VERSION
+#ifdef CONFIG_XIP_NO_VERSION
 #if CONFIG_OTA_CONFIRM_UPDATE
     if (bk_boot_check_ota_confirm(1, XIP_SET)) {
         slot = 1;

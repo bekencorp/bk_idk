@@ -96,5 +96,9 @@ menu "BL2"
 		config OTA_CONFIRM_UPDATE
 			bool "confirm update after ota download"
 			default n
+
+		config XIP_NO_VERSION
+			bool "xip without security counter and version"
+			default n
 	endmenu
 endmenu

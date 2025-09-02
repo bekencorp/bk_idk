@@ -178,10 +178,6 @@ menu "Tfm"
 			help
 				Enable TFM dead loop panic
 
-		config XIP_NO_VERSION
-			bool "xip without security counter and version"
-			default n
-
 		config BL2_SKIP_VALIDATE
 			bool "Bl2 skip validate"
 			default n

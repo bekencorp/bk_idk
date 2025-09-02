@@ -55,6 +55,10 @@
 extern void bk_ota_confirm_update_partition(ota_confirm_flag ota_confirm_val);
 #endif
 
+#if CONFIG_BK_OTA
+#include <modules/ota.h>
+#endif
+
 #if (CONFIG_CLI)
 #include "bk_api_cli.h"
 #else
@@ -280,6 +284,10 @@ int bk_init(void)
 
 #ifdef APP_VERSION
 	BK_LOGI(TAG, "APP Version: %s\n", APP_VERSION);
+#endif
+
+#if CONFIG_BK_OTA
+	bk_ota_accept(bk_ota_get_xip_handle());
 #endif
 
 #if CONFIG_SYS_CPU0

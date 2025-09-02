@@ -31,9 +31,10 @@ static void flash_mpc_cfg(void)
 #if CONFIG_OTA_OVERWRITE
 	uint32_t ota_phy_offset = partition_get_phy_offset(PARTITION_OTA);
 	uint32_t ota_phy_size = partition_get_phy_size(PARTITION_OTA);
-#else
-	uint32_t ota_phy_offset = partition_get_phy_offset(PARTITION_SECONDARY_ALL);
-	uint32_t ota_phy_size = partition_get_phy_size(PARTITION_SECONDARY_ALL);
+#endif
+#if CONFIG_DIRECT_XIP
+	uint32_t ota_phy_offset = partition_get_phy_offset(PARTITION_XIP_A);
+	uint32_t ota_phy_size = partition_get_phy_size(PARTITION_XIP_B);
 #endif
 	uint32_t ota_vir_offset = FLASH_PHY2VIRTUAL(ota_phy_offset);
 	uint32_t ota_vir_size = FLASH_PHY2VIRTUAL(ota_phy_size);

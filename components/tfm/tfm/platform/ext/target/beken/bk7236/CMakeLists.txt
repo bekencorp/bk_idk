@@ -281,11 +281,6 @@ endif()
 		)
 	endif()
 
-	if(CONFIG_XIP_NO_VERSION)
-		target_compile_definitions(platform_bl2
-			PUBLIC
-				CONFIG_XIP_NO_VERSION
-		)
 	endif()
 
     if(CONFIG_STARTUP_PERFORMANCE)

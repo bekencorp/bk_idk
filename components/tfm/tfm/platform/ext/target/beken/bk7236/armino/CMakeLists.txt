@@ -208,9 +208,4 @@ if(NS)
     )
 endif()
 
-if(CONFIG_XIP_NO_VERSION)
-    target_compile_definitions(platform_s
-        PUBLIC
-            CONFIG_XIP_NO_VERSION
-    )
 endif()

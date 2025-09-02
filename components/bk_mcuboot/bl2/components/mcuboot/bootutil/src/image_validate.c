@@ -145,10 +145,10 @@ bootutil_img_hash(struct enc_key_data *enc_state, int image_index,
         uint32_t addr = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(fap->fa_off));
 
 #if CONFIG_DIRECT_XIP
-        uint32_t sec_addr = partition_get_phy_offset(PARTITION_SECONDARY_ALL);
+        uint32_t sec_addr = partition_get_phy_offset(PARTITION_XIP_B);
         if(fap->fa_off == sec_addr){
             flash_set_excute_enable(1);
-            addr = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(partition_get_phy_offset(PARTITION_PRIMARY_ALL)));
+            addr = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(partition_get_phy_offset(PARTITION_XIP_A)));
         }
 #endif
 #if CONFIG_DBUS_CHECK_CRC
