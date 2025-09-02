@@ -1253,6 +1253,22 @@ static void bk_restore_all_regs_for_mac_wrapper(void)
     restore_all_regs_for_mac();
 }
 
+UINT32 rwnx_sys_is_use_abs_power_wrapper(void)
+{
+#if (CONFIG_SOC_BK7236XX || CONFIG_SOC_BK7239XX || CONFIG_SOC_BK7286XX)
+	return rwnx_sys_is_use_abs_power();
+#else
+	return 0;
+#endif
+}
+
+void rwnx_sys_set_use_abs_power_wrapper(UINT32 use)
+{
+#if (CONFIG_SOC_BK7236XX || CONFIG_SOC_BK7239XX || CONFIG_SOC_BK7286XX)
+	rwnx_sys_set_use_abs_power(use);
+#endif
+}
+
 __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._version = BK_WIFI_OS_ADAPTER_VERSION,
 	._manual_cal_rfcali        = manual_cal_rfcali_status,
@@ -1261,6 +1277,8 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._cal_set_rfconfig_WIFIPLL = rwnx_cal_set_rfconfig_WIFIPLL,
 	._calibration_init = calibration_init,
 	._sys_is_enable_hw_tpc     = rwnx_sys_is_enable_hw_tpc,
+	._sys_is_use_abs_power     = rwnx_sys_is_use_abs_power_wrapper,
+	._sys_set_use_abs_power    = rwnx_sys_set_use_abs_power_wrapper,
 	._evm_via_mac_continue     = evm_via_mac_continue,
 	._evm_via_mac_evt          = evm_via_mac_evt,
 	._do_evm                   = do_evm,

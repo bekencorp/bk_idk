@@ -23,6 +23,8 @@ int rwnx_cal_set_rfconfig_WIFIPLL(void);
 
 int calibration_init(void);
 unsigned int rwnx_sys_is_enable_hw_tpc(void);
+UINT32 rwnx_sys_is_use_abs_power(void);
+void rwnx_sys_set_use_abs_power(UINT32 use);
 UINT32 rwnx_is_enable_pwr_change_by_rssi(void);
 void tpc_auto_change_pwr_by_rssi(INT8 rssi, UINT8 rate, UINT8 *pwr_idx);
 void tpc_change_pwr_by_media(UINT8 rate, UINT8 *pwr_idx, UINT8 level);

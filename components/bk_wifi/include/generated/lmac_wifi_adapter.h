@@ -48,6 +48,8 @@ typedef struct {
 	int (*_cal_set_rfconfig_WIFIPLL)(void);
 	int (*_calibration_init)(void);
 	UINT32 (*_sys_is_enable_hw_tpc)(void);
+	UINT32 (*_sys_is_use_abs_power)(void);
+	void (*_sys_set_use_abs_power)(UINT32 use);
 	void (*_evm_via_mac_continue)(void);
 	void (*_evm_via_mac_evt)(INT32 dummy);
 	int (*_do_evm)(void *cmdtp, int flag, int argc, char *const argv[]);
