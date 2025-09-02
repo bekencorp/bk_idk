@@ -109,6 +109,7 @@ typedef enum
 	FLASH_BYPASS_OTP_EARSE,
 	FLASH_BYPASS_OTP_WRITE,
 	FLASH_BYPASS_OTP_LOCK,
+	FLASH_BYPASS_GET_UID,
 } flash_bypass_otp_cmd_t;
 
 typedef enum

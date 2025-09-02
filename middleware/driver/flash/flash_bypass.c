@@ -12,7 +12,7 @@
 #include "flash_driver.h"
 #include "flash_hal.h"
 
-#if CONFIG_SOC_BK7236XX
+#if  CONFIG_SOC_BK7236XX || (CONFIG_SOC_BK7239XX)
 #define SPI_R_0X2(_id)  (SPI_R_BASE(_id) + 2 * 0x04)
 __attribute__((section(".iram"))) int flash_bypass_op_write(uint8_t *op_code, uint8_t *tx_buf, uint32_t tx_len)
 {
@@ -548,6 +548,34 @@ read_check_exit:
 	return ret;
 }
 
+static int flash_read_uid(flash_bypass_otp_ctrl_t *otp_cfg)
+{
+    UINT8 tx_buf[5] = {0x4B, 0x00, 0x00, 0x00, 0x00};
+    UINT8 rx_buf[16] = {0};
+    int ret = 0;
+
+    if((otp_cfg == NULL) || (otp_cfg->read_buf == NULL))
+        return 0;
+
+    ret = flash_bypass_op_read(tx_buf, 5, rx_buf, 16);
+    if(ret > 0)
+    {
+        int cp_len = (int)otp_cfg->read_len;
+        if(cp_len > ret)
+            cp_len = ret;
+        os_memcpy(otp_cfg->read_buf, rx_buf, cp_len);
+
+		BK_LOGD(NULL, "flash_read_uid: UID (%d bytes):\r\n", cp_len);
+        for (int i = 0; i < cp_len; i++) {
+            BK_DUMP_OUT(" %02X", rx_buf[i]);
+        }
+
+        return BK_OK;
+    }
+
+    return ret;
+}
+
 static bk_err_t flash_bypass_status_read(uint32_t *sta_val)
 {
 	int ret;
@@ -961,7 +989,7 @@ static flash_line_mode_t flash_bypass_set_line_mode(flash_line_mode_t line_mode)
 
 	flash_hal_clear_qwfr(&s_flash.hal);   // cmd CRMR (coutinuous_read_mode reset), quit QPI mode.
 
-#if CONFIG_SOC_BK7236XX
+#if  CONFIG_SOC_BK7236XX || (CONFIG_SOC_BK7239XX)
 	sys_drv_set_sys2flsh_2wire(0);
 #endif
 
@@ -977,7 +1005,7 @@ static flash_line_mode_t flash_bypass_set_line_mode(flash_line_mode_t line_mode)
 
 	s_flash.flash_line_mode = new_line_mode;
 
-#if CONFIG_SOC_BK7236XX
+#if  CONFIG_SOC_BK7236XX || (CONFIG_SOC_BK7239XX)
 	sys_drv_set_sys2flsh_2wire(1);
 #endif
 
@@ -1018,6 +1046,10 @@ bk_err_t flash_bypass_otp_operation(flash_bypass_otp_cmd_t cmd, flash_bypass_otp
 			ret = flash_bypass_otp_lock(otp_cfg);
 			break;
 
+		case FLASH_BYPASS_GET_UID:
+			ret = flash_read_uid(otp_cfg);
+			break;
+
 	}
 	if (ret != BK_OK) {
 		FLASH_BYPASS_LOGW("%s fail\r\n", __func__);
@@ -1029,7 +1061,7 @@ bk_err_t flash_bypass_otp_operation(flash_bypass_otp_cmd_t cmd, flash_bypass_otp
 	return ret;
 }
 #endif
-#else /*CONFIG_SOC_BK7236XX*/
+#else /* CONFIG_SOC_BK7236XX || (CONFIG_SOC_BK7239XX)*/
 
 void flash_bypass_init(void) {
 	char *text_ptr, temp_buf = 0;
