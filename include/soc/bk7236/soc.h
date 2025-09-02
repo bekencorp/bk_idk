@@ -89,7 +89,11 @@ extern "C" {
 #define BIT64(i)                  (1LL << (i))
 #endif
 
-#define __IRAM_SEC __attribute((section(".iram")))
+#if (CONFIG_RELEASE_IRAM)
+#define __IRAM_SEC
+#else
+#define __IRAM_SEC __attribute__((section(".iram")))
+#endif
 
 #ifdef __cplusplus
 }

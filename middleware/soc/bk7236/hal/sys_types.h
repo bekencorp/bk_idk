@@ -99,7 +99,11 @@ extern "C" {
 
 #define RTC_TICKS_PER_1MS                               ((float)RTC_CLOCK_FREQ/1000)
 #define LOW_POWER_DPLL_STABILITY_DELAY_TIME             (0.29) // 0.19ms(hardware need at least 180us,because making the precise it use 290us,it will additional add 6us or 2us(external) )
-#define LOW_POWER_RESTORE_DELAY_TIME_HARDWARE           (0.65) //0.6ms,cpu 60M 0.51ms
+#if (CONFIG_RELEASE_IRAM)
+#define LOW_POWER_RESTORE_DELAY_TIME_HARDWARE            (1.45) //0.6ms,cpu 60M 0.51ms
+#else
+#define LOW_POWER_RESTORE_DELAY_TIME_HARDWARE            (0.65) //0.6ms,cpu 60M 0.51ms
+#endif
 #define LOW_POWER_XTAL_DPLL_STABILITY_DELAY_TIME        ((LOW_POWER_DPLL_STABILITY_DELAY_TIME+LOW_POWER_RESTORE_DELAY_TIME_HARDWARE)*1000)
 
 #define LOW_POWER_26M_STABILITY_DELAY_TIME_HARDWARE     (CONFIG_PM_26M_STABILITY_DELAY_TIME_HARDWARE)

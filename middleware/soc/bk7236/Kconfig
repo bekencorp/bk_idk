@@ -47,4 +47,8 @@ menu "bk7236"
 	config RX_OPTIMIZE
 		bool "Optimize rx current"
 		default n
+
+	config RELEASE_IRAM
+		bool "release iram"
+		default n
 endmenu

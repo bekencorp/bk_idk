@@ -86,16 +86,9 @@ SECTIONS
     {
         . = ALIGN(4);
         _stext = .;
-#if CONFIG_SPE
-	EXCLUDE_FILE
-		(
-		*tasks.c.obj *queue.c.obj *list.c.obj *timers.c.obj *port.c.obj *rtos_pub.c.obj *heap_4.c.obj *mem_arch.c.obj *gpio_driver_base.c.obj *flash_driver.c.obj *ckmn_driver.c.obj *arch_interrupt.c.obj *hal_machw.c.obj *interrupts.c.obj 
-		*rw_task.c.obj  *me_strategy.c.obj *chan.c.obj *vif_mgmt.c.obj *rxl_cntrl.c.obj *rxl_hwdesc.c.obj *mm_timer.c.obj *ke_event.c.obj *rwnx.c.obj *rwnx_rx.c.obj *ps.c.obj *mm.c.obj *rf_cntrl.c.obj *mcc.c.obj 
-		*phy_karst_bk7236.c.obj *crm.c.obj *bk7236_cal.c.obj *manual_cal_bk7236.c.obj *bk_cal_common.c.obj *nv_parameters.c.obj *macif_fhost.c.obj *rc_driver.c.obj *sys_wifi_driver.c.obj *wifi_v2.c.obj *bk_feature.c.obj 
-		*pm.c.obj *sys_ps_driver.c.obj *sys_pm_hal.c.obj *bk_wifi_adapter.c.obj *net_param.c.obj *wifi_api_wrapper.c.obj *bk_rf_adapter.c.obj *bk_phy_adapter.c.obj
-		*shell_task.c.obj *shell_uart.c.obj *uart_driver.c.obj *uart_hal.c.obj
-		)
-	*(.text.* *.rodata *.rodata.*)
+
+#if (CONFIG_SPE && !CONFIG_RELEASE_IRAM)
+	EXCLUDE_FILE (*libos_source.a:tasks.c.obj *libos_source.a:queue.c.obj *libos_source.a:list.c.obj *libos_source.a:timers.c.obj *libos_source.a:port.c.obj *rtos_pub.c.obj *heap_4.c.obj *mem_arch.c.obj *gpio_driver_base.c.obj *flash_driver.c.obj *ckmn_driver.c.obj *arch_interrupt.c.obj *hal_machw.c.obj *interrupts.c.obj *rw_task.c.obj  *me_strategy.c.obj *chan.c.obj *vif_mgmt.c.obj *rxl_cntrl.c.obj *rxl_hwdesc.c.obj *mm_timer.c.obj *ke_event.c.obj *rwnx.c.obj *rwnx_rx.c.obj *ps.c.obj *mm.c.obj *rf_cntrl.c.obj *mcc.c.obj *phy_karst_bk7236.c.obj *crm.c.obj *bk7236_cal.c.obj *manual_cal_bk7236.c.obj *bk_cal_common.c.obj *nv_parameters.c.obj *macif_fhost.c.obj *rc_driver.c.obj *sys_wifi_driver.c.obj *wifi_v2.c.obj *bk_feature.c.obj *libbk_pm.a:pm.c.obj *sys_ps_driver.c.obj *sys_pm_hal.c.obj *bk_wifi_adapter.c.obj *net_param.c.obj *wifi_api_wrapper.c.obj *bk_rf_adapter.c.obj *bk_phy_adapter.c.obj *shell_task.c.obj *shell_uart.c.obj *uart_driver.c.obj *uart_hal.c.obj) *(.text* .rodata*)
 #else
         *(.text)
         *(.text.*)
@@ -239,12 +232,12 @@ SECTIONS
         *(.iram)
         *(.interrupt)
 
-#if CONFIG_SPE
-        *tasks.c.obj(.text.* *.rodata *.rodata.*)
-        *queue.c.obj(.text.* *.rodata *.rodata.*)
-        *list.c.obj(.text.* *.rodata *.rodata.*)
-        *timers.c.obj(.text.* *.rodata *.rodata.*)
-        *port.c.obj(.text.* *.rodata *.rodata.*)
+#if (CONFIG_SPE && !CONFIG_RELEASE_IRAM)
+        *libos_source.a:tasks.c.obj(.text.* *.rodata *.rodata.*)
+        *libos_source.a:queue.c.obj(.text.* *.rodata *.rodata.*)
+        *libos_source.a:list.c.obj(.text.* *.rodata *.rodata.*)
+        *libos_source.a:timers.c.obj(.text.* *.rodata *.rodata.*)
+        *libos_source.a:port.c.obj(.text.* *.rodata *.rodata.*)
         *rtos_pub.c.obj(.text.* *.rodata *.rodata.*)
         *heap_4.c.obj(.text.* *.rodata *.rodata.*)
         *mem_arch.c.obj(.text.* *.rodata *.rodata.*)
