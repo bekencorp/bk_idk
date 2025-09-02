@@ -18,6 +18,7 @@
 #include <driver/trng.h>
 #include "uart_statis.h"
 #include "bk_misc.h"
+#include "sys_driver.h"
 
 #define CLI_UART_RECV_BUF_LEN  1024
 
@@ -201,6 +202,19 @@ static void cli_uart_config_cmd(char *pcWriteBuffer, int xWriteBufferLen, int ar
 		uint32_t timeout_thresh = os_strtoul(argv[3], NULL, 10);
 		BK_LOG_ON_ERR(bk_uart_set_rx_timeout(uart_id, timeout_thresh));
 		CLI_LOGI("uart(%d) config rx_timeout:%d\n", uart_id, timeout_thresh);
+	} else if (os_strcmp(argv[2], "clk_select") == 0) {
+		CLI_RET_ON_INVALID_ARGC(argc, 4);
+		if (os_strcmp(argv[3], "xtal") == 0){
+			sys_drv_uart_select_clock(uart_id, UART_SCLK_XTAL_26M);
+			CLI_LOGI("uart(%d) set clk_source xtal\r\n", uart_id);
+		} else if (os_strcmp(argv[3], "apll") == 0){
+			sys_drv_uart_select_clock(uart_id, UART_SCLK_APLL);
+			CLI_LOGI("uart(%d) set clk_source apll\r\n", uart_id);
+		} else {
+			CLI_LOGI("uart config set failed,clock_source only support xtal/apll\r\n");
+			return;
+		}
+		CLI_LOGI("uart(%d) config clk_select succeed\r\n", uart_id);
 	} else {
 		cli_uart_help();
 		return;
@@ -398,7 +412,7 @@ static void cli_uart_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc
 static const struct cli_command s_uart_commands[] = {
 	{"uart_driver", "{init|deinit}", cli_uart_driver_cmd},
 	{"uart", "uart {id} {init|deinit|write|read|write_string|dump_statis} [...]", cli_uart_cmd},
-	{"uart_config", "uart_config {id} {baud_rate|data_bits} [...]", cli_uart_config_cmd},
+	{"uart_config", "uart_config {id} {baud_rate|data_bits|clk_select} [...]", cli_uart_config_cmd},
 	{"uart_int", "uart_int {id} {enable|disable|reg} {tx|rx}", cli_uart_int_cmd},
 #if CONFIG_IDLE_UART_OUT_TEST
 	{"uart_test", "{idle_start|idle_stop} {uart1|uart2|uart3}", cli_uart_test_cmd},

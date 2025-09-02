@@ -18,6 +18,7 @@
 
 #include <driver/gpio.h>
 #include "gpio_driver.h"
+#include "sys_driver.h"
 
 #define EEPROM_DEV_ADDR          0x50
 #define EEPROM_MEM_ADDR          0x10
@@ -334,6 +335,19 @@ static void cli_i2c_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
 			os_free(data_buf);
 			data_buf = NULL;
 		}
+	} else if (os_strcmp(argv[2], "clk_select") == 0) {
+		CLI_RET_ON_INVALID_ARGC(argc, 4);
+		if (os_strcmp(argv[3], "xtal") == 0){
+			sys_drv_i2c_select_clock(i2c_id, I2C_SCLK_XTAL_26M);
+			CLI_LOGI("i2c(%d) set clk_source xtal\r\n", i2c_id);
+		} else if (os_strcmp(argv[3], "apll") == 0){
+			sys_drv_i2c_select_clock(i2c_id, I2C_SCLK_APLL);
+			CLI_LOGI("i2c(%d) set clk_source apll\r\n", i2c_id);
+		} else {
+			CLI_LOGI("i2c config set failed,clock_source only support xtal/apll\r\n");
+			return;
+		}
+		CLI_LOGI("i2c(%d) config clk_source succeed\r\n", i2c_id);
 	} else {
 		cli_i2c_help();
 		return;
