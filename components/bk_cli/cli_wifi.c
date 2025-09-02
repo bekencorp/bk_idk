@@ -1851,6 +1851,10 @@ void cli_rlk_cfg_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **
 
 	if(os_strcmp(argv[1], "rate") == 0) {
 		rlk_cfg = os_strtoul(argv[2], NULL, 10) & 0xFFFF;
+		if (rlk_cfg > 11) {
+			CLI_LOGI("invalid rate\n");
+			goto error;
+		}
 		bk_rlk_set_tx_rate(rlk_cfg);
 	}
 	else if(os_strcmp(argv[1], "power") == 0) {
