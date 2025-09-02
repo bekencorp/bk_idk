@@ -727,6 +727,16 @@ static void flash_bypass_command_test(char *pcWriteBuffer, int xWriteBufferLen, 
 			}
 			break;
 
+		// flash_bypass_test otp U 2 0 a
+		case 'U':
+			ret = flash_bypass_otp_operation(FLASH_BYPASS_GET_UID, &otp_op);
+			if (ret != BK_OK) {
+				BK_DUMP_OUT("%s fail\r\n", __func__);
+				msg = CLI_CMD_RSP_ERROR;
+				goto flash_bypass_exit;
+			}
+			break;
+
 		default:
 			BK_DUMP_OUT("%d flash_bypass_test otp read/write/earse/lock\r\n", __LINE__);
 			msg = CLI_CMD_RSP_ERROR;
