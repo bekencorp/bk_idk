@@ -66,6 +66,7 @@ typedef struct {
 	uint32_t baud_rate;        /**< i2c clock rate */
 	i2c_addr_mode_t addr_mode; /**< i2c address mode */
 	uint16_t slave_addr;       /**< i2c address for slave mode */
+	i2c_src_clk_t src_clk;        /**< i2c source clock */
 } i2c_config_t;
 
 #ifdef __cplusplus
