@@ -40,7 +40,6 @@
 #endif
 
 #include "stack_base.h"
-
 #include <driver/wdt.h>
 #include <os/os.h>
 #include "bk_aon_wdt.h"
@@ -88,7 +87,7 @@ void PendSV_Handler         (void) __attribute__ ((weak, alias("Default_Handler"
 void SysTick_Handler        (void) __attribute__ ((weak, alias("Default_Handler")));
 
 /* Interrupt Handler */
-void DMA0_NSEC_Handler               (void) __attribute__ ((weak));
+void DMA0_NSEC_Handler               (void);
 void ENCP_SEC_Handler                (void) __attribute__ ((weak));
 void ENCP_NSEC_Handler               (void) __attribute__ ((weak));
 void TIMER0_Handler                  (void) __attribute__ ((weak));
@@ -156,7 +155,6 @@ void MAILBOX_Handler                 (void) __attribute__ ((weak));
 /*----------------------------------------------------------------------------
   Exception / Interrupt Vector table
  *----------------------------------------------------------------------------*/
-
 #if defined ( __GNUC__ )
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
@@ -249,7 +247,6 @@ const VECTOR_TABLE_Type __VECTOR_TABLE[] __VECTOR_TABLE_ATTRIBUTE = {
   /* Interrupts 64 .. 480 are left out */
 };
 
-
 __attribute__((used, section(".vectors_iram"))) \
 const VECTOR_TABLE_Type __VECTOR_TABLE_IRAM[] = {
   (VECTOR_TABLE_Type)(&__INITIAL_SP),       /*     Initial Stack Pointer */
@@ -336,7 +333,6 @@ const VECTOR_TABLE_Type __VECTOR_TABLE_IRAM[] = {
   MAILBOX_Handler
   /* Interrupts 64 .. 480 are left out */
 };
-
 
 #if defined ( __GNUC__ )
 #pragma GCC diagnostic pop

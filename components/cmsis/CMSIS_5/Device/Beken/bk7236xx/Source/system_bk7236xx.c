@@ -34,10 +34,7 @@
   Exception / Interrupt Vector table
  *----------------------------------------------------------------------------*/
 //extern const VECTOR_TABLE_Type __VECTOR_TABLE[];
-
 extern const VECTOR_TABLE_Type __VECTOR_TABLE_IRAM[];
-
-
 
 /*----------------------------------------------------------------------------
   System initialization function
@@ -47,7 +44,6 @@ void SystemInit (void)
 #if defined (__VTOR_PRESENT) && (__VTOR_PRESENT == 1U)
 	SCB->VTOR = (uint32_t) &(__VECTOR_TABLE_IRAM[0]);
 #endif
-
 
 #if defined (__FPU_USED) && (__FPU_USED == 1U)
 	SCB->CPACR |= ((3U << 10U*2U) |           /* enable CP10 Full Access */
@@ -93,7 +89,6 @@ void SystemInit (void)
 	if (SCB->CLIDR & SCB_CLIDR_IC_Msk)
 		SCB_EnableICache();
 #endif
-
 }
 // eof
 
