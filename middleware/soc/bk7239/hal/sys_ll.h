@@ -93,6 +93,78 @@ static inline void sys_set_ana_reg_bit(uint32_t reg_addr, uint32_t pos, uint32_t
 	sys_ll_set_analog_reg_value(reg_addr, reg_value);
 }
 
+static inline void sys_ll_set_cpu_clk_div_mode1_cksel_uart0(uint32_t v)
+{
+	system_cpu_26m_wdt_clk_div_t *r = (system_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	r->cksel_uart0 = v;
+}
+
+static inline uint32_t sys_ll_get_cpu_clk_div_mode1_cksel_uart0(void) 
+{
+	system_cpu_26m_wdt_clk_div_t *r = (system_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	return r->cksel_uart0;
+}
+
+static inline void sys_ll_set_cpu_clk_div_mode1_cksel_uart1(uint32_t v)
+{
+	system_cpu_26m_wdt_clk_div_t *r = (system_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	r->cksel_uart1 = v;
+}
+
+static inline uint32_t sys_ll_get_cpu_clk_div_mode1_cksel_uart1(void) 
+{
+	system_cpu_26m_wdt_clk_div_t *r = (system_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	return r->cksel_uart1;
+}
+
+static inline void sys_ll_set_cpu_clk_div_mode1_cksel_uart2(uint32_t v)
+{
+	system_cpu_26m_wdt_clk_div_t *r = (system_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	r->cksel_uart2 = v;
+}
+
+static inline uint32_t sys_ll_get_cpu_clk_div_mode1_cksel_uart2(void) 
+{
+	system_cpu_26m_wdt_clk_div_t *r = (system_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	return r->cksel_uart2;
+}
+
+static inline void sys_ll_set_cpu_clk_div_mode1_cksel_uart3(uint32_t v)
+{
+	system_cpu_26m_wdt_clk_div_t *r = (system_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	r->cksel_uart3 = v;
+}
+
+static inline uint32_t sys_ll_get_cpu_clk_div_mode1_cksel_uart3(void) 
+{
+	system_cpu_26m_wdt_clk_div_t *r = (system_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	return r->cksel_uart3;
+}
+
+static inline void sys_ll_set_cpu_clk_div_mode1_cksel_i2c0(uint32_t v)
+{
+	system_cpu_26m_wdt_clk_div_t *r = (system_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	r->cksel_i2c0 = v;
+}
+
+static inline uint32_t sys_ll_get_cpu_clk_div_mode1_cksel_i2c0(void) 
+{
+	system_cpu_26m_wdt_clk_div_t *r = (system_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	return r->cksel_i2c0;
+}
+
+static inline void sys_ll_set_cpu_clk_div_mode1_cksel_i2c1(uint32_t v)
+{
+	system_cpu_26m_wdt_clk_div_t *r = (system_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	r->cksel_i2c1 = v;
+}
+
+static inline uint32_t sys_ll_get_cpu_clk_div_mode1_cksel_i2c1(void) 
+{
+	system_cpu_26m_wdt_clk_div_t *r = (system_cpu_26m_wdt_clk_div_t*)(SOC_SYS_REG_BASE + (0xa << 2));
+	return r->cksel_i2c1;
+}
+
 //reg device_id:
 static inline void sys_ll_set_device_id_value(uint32_t v) {
 	system_device_id_t *r = (system_device_id_t*)(SOC_SYSTEM_REG_BASE + (0x0 << 2));

@@ -4,6 +4,7 @@
 
 #include "sys_types.h"
 #include <driver/hal/hal_uart_types.h>
+#include <driver/hal/hal_i2c_types.h>
 #include <driver/hal/hal_pwm_types.h>
 #include <driver/hal/hal_timer_types.h>
 #include <driver/hal/hal_spi_types.h>
@@ -196,6 +197,10 @@ dev_clk_dco_div_t sys_hal_get_dco_div(void);
 void sys_hal_uart_select_clock(uart_id_t id, uart_src_clk_t mode);
 /* UART select clock    DIRTY **/
 
+/* I2C select clock    DIRTY **/
+void sys_hal_i2c_select_clock(i2c_id_t id, i2c_src_clk_t mode);
+/* I2C select clock    DIRTY **/
+
 void sys_hal_arm_wakeup_enable(uint32_t param);
 void sys_hal_arm_wakeup_disable(uint32_t param);
 uint32_t sys_hal_get_arm_wakeup(void);
@@ -206,6 +211,7 @@ uint32_t aon_pmu_hal_get_wakeup_source_reg(void);
 void sys_hal_set_cksel_sadc(uint32_t value);
 void sys_hal_set_cksel_pwm(uint32_t value);
 uint32_t sys_hal_uart_select_clock_get(uart_id_t id);
+uint32_t sys_hal_i2c_select_clock_get(i2c_id_t id);
 void sys_hal_sadc_int_enable(void);
 void sys_hal_sadc_int_disable(void);
 void sys_hal_sadc_pwr_up(void);

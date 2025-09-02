@@ -1083,6 +1083,38 @@ void sys_hal_uart_select_clock(uart_id_t id, uart_src_clk_t mode)
 
 }
 
+/* I2C select clock **/
+void sys_hal_i2c_select_clock(i2c_id_t id, i2c_src_clk_t mode)
+{
+	int sel_xtal = 0;
+	int sel_appl = 1;
+
+	switch(id)
+	{
+		case I2C_ID_0:
+			{
+				if(mode == I2C_SCLK_APLL)
+					sys_ll_set_cpu_clk_div_mode1_cksel_i2c0(sel_appl);
+				else
+					sys_ll_set_cpu_clk_div_mode1_cksel_i2c0(sel_xtal);
+				break;
+			}
+#if (SOC_I2C_UNIT_NUM > 1)
+		case I2C_ID_1:
+			{
+				if(mode == I2C_SCLK_APLL)
+					sys_ll_set_cpu_clk_div_mode1_cksel_i2c1(sel_appl);
+				else
+					sys_ll_set_cpu_clk_div_mode1_cksel_i2c1(sel_xtal);
+				break;
+			}
+#endif
+		default:
+			break;
+	}
+
+}
+
 void sys_hal_pwm_select_clock(sys_sel_pwm_t num, pwm_src_clk_t mode)
 {
 	int sel_clk32 = 0;
@@ -1293,6 +1325,31 @@ uint32_t sys_hal_uart_select_clock_get(uart_id_t id)
     }
 
     ret = (!ret)?UART_SCLK_XTAL_26M:UART_SCLK_APLL;
+
+    return ret;
+}
+
+uint32_t sys_hal_i2c_select_clock_get(i2c_id_t id)
+{
+    uint32_t ret = 0;
+
+    switch(id)
+    {
+        case I2C_ID_0:
+        {
+            ret = sys_ll_get_cpu_clk_div_mode1_cksel_i2c0();
+            break;
+        }
+        case I2C_ID_1:
+        {
+            ret = sys_ll_get_cpu_clk_div_mode1_cksel_i2c1();
+            break;
+        }
+        default:
+            break;
+    }
+
+    ret = (!ret)?I2C_SCLK_XTAL_26M:I2C_SCLK_APLL;
 
     return ret;
 }

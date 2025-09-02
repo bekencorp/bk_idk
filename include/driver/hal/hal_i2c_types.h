@@ -40,6 +40,12 @@ typedef enum {
 } i2c_id_t;
 
 typedef enum {
+	I2C_SCLK_DCO = 0,  /**< I2C source clock dco */
+	I2C_SCLK_XTAL_26M, /**< I2C source clock xtal 26M */
+	I2C_SCLK_APLL,     /**< I2C source clock apll */
+} i2c_src_clk_t;
+
+typedef enum {
 	I2C_ADDR_MODE_7BIT = 0, /**< i2c address mode 7bit */
 	I2C_ADDR_MODE_10BIT,    /**< i2c address mode 10bit */
 } i2c_addr_mode_t;

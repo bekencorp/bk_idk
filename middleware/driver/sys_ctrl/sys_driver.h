@@ -76,6 +76,10 @@ void sys_drv_usb_charge_cal(sys_drv_charge_step_t step, void *arg);
 void sys_drv_uart_select_clock(uart_id_t id, uart_src_clk_t mode);
 /* Platform UART End **/
 
+/* Platform I2C Start **/
+void sys_drv_i2c_select_clock(i2c_id_t id, i2c_src_clk_t mode);
+/* Platform I2C End **/
+
 void sys_drv_pwm_set_clock(uint32_t mode, uint32_t param);
 
 void sys_drv_pwm_select_clock(sys_sel_pwm_t num, pwm_src_clk_t mode);

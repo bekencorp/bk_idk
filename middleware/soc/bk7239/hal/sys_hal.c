@@ -794,39 +794,74 @@ __IRAM_SEC void sys_hal_clk_pwr_ctrl(dev_clk_pwr_id_t dev, dev_clk_pwr_ctrl_t po
 /* UART select clock **/
 void sys_hal_uart_select_clock(uart_id_t id, uart_src_clk_t mode)
 {
+	int sel_xtal = 0;
+	int sel_appl = 1;
+
 	switch(id)
 	{
 		case UART_ID_0:
 			{
 				if(mode == UART_SCLK_APLL)
-					;//sys_ll_set_cpu_clk_div_mode1_clksel_uart0(sel_appl);
+					sys_ll_set_cpu_clk_div_mode1_cksel_uart0(sel_appl);
 				else
-					;//sys_ll_set_cpu_clk_div_mode1_clksel_uart0(sel_xtal);
+					sys_ll_set_cpu_clk_div_mode1_cksel_uart0(sel_xtal);
 				break;
 			}
 		case UART_ID_1:
 			{
 				if(mode == UART_SCLK_APLL)
-					;//sys_ll_set_cpu_clk_div_mode1_cksel_uart1(sel_appl);
+					sys_ll_set_cpu_clk_div_mode1_cksel_uart1(sel_appl);
 				else
-					;//sys_ll_set_cpu_clk_div_mode1_cksel_uart1(sel_xtal);
+					sys_ll_set_cpu_clk_div_mode1_cksel_uart1(sel_xtal);
 				break;
 			}
 		case UART_ID_2:
 			{
 				if(mode == UART_SCLK_APLL)
-					;//sys_ll_set_cpu_clk_div_mode1_cksel_uart2(sel_appl);
+					sys_ll_set_cpu_clk_div_mode1_cksel_uart2(sel_appl);
 				else
-					;//sys_ll_set_cpu_clk_div_mode1_cksel_uart2(sel_xtal);
+					sys_ll_set_cpu_clk_div_mode1_cksel_uart2(sel_xtal);
 				break;
 			}
 #if (SOC_UART_ID_NUM_PER_UNIT  >= 4)
 		case UART_ID_3:
 			{
 				if(mode == UART_SCLK_APLL)
-					;//sys_ll_set_cpu_clk_div_mode1_cksel_uart2(sel_appl);
+					sys_ll_set_cpu_clk_div_mode1_cksel_uart2(sel_appl);
 				else
-					;//sys_ll_set_cpu_clk_div_mode1_cksel_uart2(sel_xtal);
+					sys_ll_set_cpu_clk_div_mode1_cksel_uart2(sel_xtal);
+				break;
+			}
+#endif
+		default:
+			break;
+	}
+
+}
+
+/* I2C select clock **/
+void sys_hal_i2c_select_clock(i2c_id_t id, i2c_src_clk_t mode)
+{
+	int sel_xtal = 0;
+	int sel_appl = 1;
+
+	switch(id)
+	{
+		case I2C_ID_0:
+			{
+				if(mode == I2C_SCLK_APLL)
+					sys_ll_set_cpu_clk_div_mode1_cksel_i2c0(sel_appl);
+				else
+					sys_ll_set_cpu_clk_div_mode1_cksel_i2c0(sel_xtal);
+				break;
+			}
+#if (SOC_I2C_UNIT_NUM > 1)
+		case I2C_ID_1:
+			{
+				if(mode == I2C_SCLK_APLL)
+					sys_ll_set_cpu_clk_div_mode1_cksel_i2c1(sel_appl);
+				else
+					sys_ll_set_cpu_clk_div_mode1_cksel_i2c1(sel_xtal);
 				break;
 			}
 #endif
@@ -1021,23 +1056,23 @@ uint32_t sys_hal_uart_select_clock_get(uart_id_t id)
     {
         case UART_ID_0:
         {
-            //ret = sys_ll_get_cpu_clk_div_mode1_clkdiv_core();
+            ret = sys_ll_get_cpu_clk_div_mode1_cksel_uart0();
             break;
         }
         case UART_ID_1:
         {
-            //ret = sys_ll_get_cpu_clk_div_mode1_cksel_uart1();
+            ret = sys_ll_get_cpu_clk_div_mode1_cksel_uart1();
             break;
         }
         case UART_ID_2:
         {
-            //ret = sys_ll_get_cpu_clk_div_mode1_cksel_uart1();
+            ret = sys_ll_get_cpu_clk_div_mode1_cksel_uart2();
             break;
         }
 #if (SOC_UART_ID_NUM_PER_UNIT  >= 4)
         case UART_ID_3:
         {
-            //ret = sys_ll_get_cpu_clk_div_mode1_cksel_uart1();
+            ret = sys_ll_get_cpu_clk_div_mode1_cksel_uart3();
             break;
         }
 #endif
@@ -1046,6 +1081,31 @@ uint32_t sys_hal_uart_select_clock_get(uart_id_t id)
     }
 
     ret = (!ret)?UART_SCLK_XTAL_26M:UART_SCLK_APLL;
+
+    return ret;
+}
+
+uint32_t sys_hal_i2c_select_clock_get(i2c_id_t id)
+{
+    uint32_t ret = 0;
+
+    switch(id)
+    {
+        case I2C_ID_0:
+        {
+            ret = sys_ll_get_cpu_clk_div_mode1_cksel_i2c0();
+            break;
+        }
+        case I2C_ID_1:
+        {
+            ret = sys_ll_get_cpu_clk_div_mode1_cksel_i2c1();
+            break;
+        }
+        default:
+            break;
+    }
+
+    ret = (!ret)?I2C_SCLK_XTAL_26M:I2C_SCLK_APLL;
 
     return ret;
 }

@@ -165,6 +165,23 @@ void sys_drv_uart_select_clock(uart_id_t id, uart_src_clk_t mode)
 }
 /* Platform UART End **/
 
+/* Platform I2C Start **/
+void sys_drv_i2c_select_clock(i2c_id_t id, i2c_src_clk_t mode)
+{
+	uint32_t int_level = 0;
+	uint32_t ret = SYS_DRV_FAILURE;
+
+	ret = sys_amp_res_acquire();
+	int_level = sys_drv_enter_critical();
+
+	sys_hal_i2c_select_clock(id, mode);
+
+	sys_drv_exit_critical(int_level);
+	if(!ret)
+		ret = sys_amp_res_release();
+}
+/* Platform I2C End **/
+
 /* Platform PWM Start **/
 void sys_drv_pwm_set_clock(uint32_t mode, uint32_t param)
 {
