@@ -182,3 +182,12 @@ int bk_feature_cpu_pwd_enable(void)
 	return 0;
 #endif
 }
+
+int bk_feature_non_standard_enable(void)
+{
+#if CONFIG_WIFI_NON_STANDARD
+	return 1;
+#else
+	return 0;
+#endif
+}

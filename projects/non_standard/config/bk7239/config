@@ -1,0 +1,10 @@
+#@ Enable Override Flash Partition
+CONFIG_OVERRIDE_FLASH_PARTITION=y
+#@ Enable GPIO default set devs
+CONFIG_GPIO_DEFAULT_SET_SUPPORT=n
+#@ Enable UART enter low voltage callback support
+CONFIG_UART_PM_CB_SUPPORT=y
+#@ Enable TIMER enter low voltage callback support
+CONFIG_TIMER_PM_CB_SUPPORT=y
+CONFIG_WIFI_CLI_RAW_LINK_ENABLE=y
+CONFIG_WIFI_NON_STANDARD=y

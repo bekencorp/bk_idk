@@ -631,6 +631,11 @@ static void mcu_ps_bcn_callback_wrapper(uint8_t *data, int len)
 	//mcu_ps_bcn_callback(data, len);
 }
 
+static int bk_feature_non_standard_enable_wrapper(void)
+{
+	return bk_feature_non_standard_enable();
+}
+
 static int bk_feature_receive_bcmc_enable_wrapper(void)
 {
     return bk_feature_receive_bcmc_enable();
@@ -1371,6 +1376,7 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._mcu_ps_bcn_callback = mcu_ps_bcn_callback_wrapper,
 	._wapi_wpi_encrypt = NULL,
 	._wapi_wpi_decrypt = NULL,
+	._bk_feature_non_standard_enable = bk_feature_non_standard_enable_wrapper,
 	._bk_feature_receive_bcmc_enable = bk_feature_receive_bcmc_enable_wrapper,
 	._bk_feature_bssid_connect_enable = bk_feature_bssid_connect_enable_wrapper,
 	._bk_feature_fast_connect_enable = bk_feature_fast_connect_enable_wrapper,

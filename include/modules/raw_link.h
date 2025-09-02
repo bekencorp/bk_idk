@@ -33,6 +33,23 @@ typedef enum {
     WIFI_MAC_HDR_TYPE_ACTION   = 0xD0,
 } bk_rlk_mac_hdr_type_t;
 
+//leagacy rate
+typedef enum
+{
+    LEGACY_RATE_1MBPS = 0,
+    LEGACY_RATE_2MBPS,
+    LEGACY_RATE_5_5MBPS,
+    LEGACY_RATE_11MBPS,
+    LEGACY_RATE_6MBPS,
+    LEGACY_RATE_9MBPS,
+    LEGACY_RATE_12MBPS,
+    LEGACY_RATE_18MBPS,
+    LEGACY_RATE_24MBPS,
+    LEGACY_RATE_36MBPS,
+    LEGACY_RATE_48MBPS,
+    LEGACY_RATE_54MBPS
+} LEGACY_RATE;
+
 typedef enum {
     BK_RLK_ALL_SCAN = 0,          /**< BK-RLK SCAN all BK-RLK device */
     BK_RLK_ONE_SSID_SCAN,         /**< BK-RLK ONE SCAN that used SSID method */
@@ -423,6 +440,48 @@ bk_err_t bk_rlk_set_tx_rate(uint32_t rate);
 bk_err_t bk_rlk_set_tx_retry_cnt(uint32_t retry_cnt);
 
 /**
+ * @brief     Set BK Raw Link ps interval
+ *
+ * @param     interval  ps interval
+ *
+ * @return
+ *          - BK_OK : succeed
+ *          - others : Set ps interval error
+ */
+bk_err_t bk_rlk_set_ps_interval(uint32_t ps_interval);
+
+/**
+ * @brief     Set BK Raw Link ps window
+ *
+ * @param     window  ps window
+ *
+ * @return
+ *          - BK_OK : succeed
+ *          - others : Set ps window error
+ */
+bk_err_t bk_rlk_set_ps_window(uint32_t ps_window);
+
+/**
+ * @brief     Get BK Raw Link ps interval
+ *
+ * @param     void
+ *
+ * @return
+ *          - VALUE : ps interval
+ */
+uint32_t bk_rlk_get_ps_interval(void);
+
+/**
+ * @brief     Get BK Raw Link ps window
+ *
+ * @param     void
+ *
+ * @return
+ *          - VALUE : ps window
+ */
+uint32_t bk_rlk_get_ps_window(void);
+
+/**
  * @brief     Let Raw Link goto sleep mode to reduce power consumption
  *
  * @param     void
@@ -608,6 +667,18 @@ bk_err_t bk_rlk_slave_bssid_app_init(uint8_t *bssid);
   *          - BK_ERR_NOT_INIT : Raw Link is not initialized
   */
 bk_err_t bk_rlk_set_acs_auto_switch_chan(uint32_t auto_switch);
+
+typedef void (*bk_rlk_sync_cb_t)();
+
+bk_err_t bk_rlk_bypass_whitelist_check(bool enable);
+
+bk_err_t bk_rlk_use_legacy_mac_header(bool enable);
+
+bk_err_t bk_rlk_set_sync_enabled(bool enable);
+
+bk_err_t bk_rlk_register_sync_cb(bk_rlk_sync_cb_t cb);
+
+bk_err_t bk_rlk_sync(uint16_t interval, const void *data, size_t len, uint8_t mac_type, uint8_t *oui);
 
 #ifdef __cplusplus
 }

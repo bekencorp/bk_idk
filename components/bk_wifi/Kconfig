@@ -80,6 +80,10 @@ menu "Bk_Wifi"
 		help
 			disable wifi ps if need.
 
+	config WIFI_NON_STANDARD
+		bool "Enable WiFi Non Standard"
+		default n
+
 	config WIFI_CSI_EN
 		depends on WIFI_ENABLE
 		bool "Wifi CSI"

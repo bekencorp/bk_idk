@@ -231,3 +231,12 @@ int bk_feature_wrls_pwd_enable(void);
  *
  */
 int bk_feature_cpu_pwd_enable(void);
+
+/**
+ * @brief     Interface for customer to Enable/Disable non standard functionality
+ *
+ * @return
+ *    - 1: enable
+ *    - 0: disable
+ */
+int bk_feature_non_standard_enable(void);
