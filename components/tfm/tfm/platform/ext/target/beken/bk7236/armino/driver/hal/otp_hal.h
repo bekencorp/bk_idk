@@ -26,6 +26,8 @@ typedef struct {
 	otp2_hw_t *hw2;
 } otp_hal_t;
 
+#define otp_hal_power_on(hal)                                        otp_ll_power_on((hal)->hw)
+#define otp_hal_power_off(hal)                                       otp_ll_power_off((hal)->hw)
 #define otp2_hal_write_permission(hal, location, permission)         otp_ll_write_otp2_permission((hal)->hw, location, permission)
 #define otp2_hal_read_permission(hal, location)                      otp_ll_read_otp2_permission((hal)->hw, location)
 #define otp_hal_write_security(hal, location)                        otp_ll_write_otp_security((hal)->hw, location)
@@ -53,8 +55,6 @@ typedef struct {
 #define otp_hal_read_puf_entropy(hal, location)                      otp_ll_read_puf_entropy((hal)->hw, location)
 #define otp_hal_read_otp(hal, location)                              otp_ll_read_otp((hal)->hw, location)
 #define otp_hal_write_otp(hal, location, value)                      otp_ll_write_otp((hal)->hw, location, value)
-#define otp_hal_sleep(hal)                                           otp_ll_sleep((hal)->hw)
-#define otp_hal_active(hal)                                          otp_ll_active((hal)->hw)
 #define otp2_hal_read_otp(hal, value)                                otp2_ll_read_otp((hal)->hw2, value)
 #define otp2_hal_write_otp(hal, location, value)                     otp2_ll_write_otp((hal)->hw2, location, value)
 #define otp_hal_enable_fre_cont(hal)                                 otp_ll_set_fre_cont((hal)->hw, value)

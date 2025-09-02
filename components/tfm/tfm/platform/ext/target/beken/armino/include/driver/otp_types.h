@@ -15,7 +15,7 @@
 #pragma once
 
 #include <common/bk_include.h>
-#include <driver/hal/hal_otp_types.h>
+#include "_otp.h"
 
 #ifdef __cplusplus
 extern "C" {

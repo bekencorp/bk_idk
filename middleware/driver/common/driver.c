@@ -287,6 +287,10 @@ int driver_early_init(void)
 	bk_efuse_driver_init();
 #endif
 
+#if CONFIG_OTP
+	bk_otp_driver_init();
+#endif
+
 	return 0;
 }
 

@@ -1764,16 +1764,8 @@ int bk_cli_init(void)
     cli_easyflash_init();
 #endif
 
-#if CONFIG_VAULT_SUPPORT
-	#if CONFIG_OTP && CONFIG_OTP_TEST
-		cli_otp_init();
-	#endif
-#endif
-
-#if CONFIG_SOC_BK7236XX
-	#if CONFIG_OTP_V1 && CONFIG_OTP_TEST
-		cli_otp_init();
-	#endif
+#if CONFIG_OTP_TEST
+	cli_otp_init();
 #endif
 
 #if (CLI_CFG_KEY_DEMO == 1)

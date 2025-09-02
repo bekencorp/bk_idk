@@ -57,6 +57,9 @@ extern "C" {
 
 #define PM_POWER_MODULE_NAME_NONE                      (POWER_MODULE_NAME_NONE)
 
+/*----SUB POWER DOMAIN ENCP--------*/
+#define PM_POWER_SUB_MODULE_NAME_ENCP_OTP              (POWER_SUB_MODULE_NAME_ENCP_OTP)
+#define PM_POWER_SUB_MODULE_NAME_ENCP_TRUSTENGINE      (POWER_SUB_MODULE_NAME_ENCP_TRUSTENGINE)
 /*----SUB POWER DOMAIN AUDP--------*/
 #define PM_POWER_SUB_MODULE_NAME_AUDP_FFT              (POWER_SUB_MODULE_NAME_AUDP_FFT)
 #define PM_POWER_SUB_MODULE_NAME_AUDP_SBC              (POWER_SUB_MODULE_NAME_AUDP_SBC)
@@ -259,6 +262,7 @@ typedef enum
 	PM_SLEEP_MODULE_NAME_CPU1,     // 30
 	PM_SLEEP_MODULE_NAME_ROSC_PROG,// 31
 	PM_SLEEP_MODULE_NAME_ROSC,     // 32
+	PM_SLEEP_MODULE_NAME_ENCP,     // 33
 	/*Attention: if you add vote ,the following[ #define PM_ENTER_LOW_VOL_MODULES_CONFIG] also need add the vote*/
 	PM_SLEEP_MODULE_NAME_MAX
 }pm_sleep_module_name_e;
@@ -473,6 +477,7 @@ typedef enum
 	PM_SLEEP_MODULE_NAME_CPU1,\
 	PM_SLEEP_MODULE_NAME_ROSC_PROG,\
 	PM_SLEEP_MODULE_NAME_ROSC,\
+	PM_SLEEP_MODULE_NAME_ENCP,\
 }
 
 /*enter deep sleep ,require sleep module config*/

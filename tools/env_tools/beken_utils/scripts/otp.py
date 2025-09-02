@@ -13,6 +13,7 @@ otp_keys = [
     'end'
     'privilege'
     'security'
+    'crc'
 ]
 
 def str_to_security(s):
@@ -23,6 +24,16 @@ def str_to_security(s):
         return "OTP_NON_SECURITY"
     else:
         logging.error("otp map security error.")
+
+def str_to_crc(s):
+    s = s.upper()
+    if s == "TRUE":
+        return "OTP_NEED_CRC"
+    elif s == "FALSE":
+        return "OTP_NO_NEED_CRC"
+    else:
+        logging.error(f"otp map crc {s} error.")
+
 class OTP:
     is_write_title = False
 
@@ -56,7 +67,8 @@ class OTP:
                     'size':size,
                     'offset':offset,
                     'privilege':row['privilege'],
-                    'security':str_to_security(row['security'])
+                    'security':str_to_security(row['security']),
+                    'crc':str_to_crc(row['crc'])
                 }
         return data
 

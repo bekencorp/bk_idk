@@ -41,13 +41,13 @@ static void bk_otp_init(otp_hal_t *hal)
 
 void otp_sleep()
 {
-	otp_hal_sleep(&s_otp.hal);
+	otp_hal_power_off(&s_otp.hal);
 }
 
 int otp_active()
 {
 	bk_otp_init(&s_otp.hal);
-	return otp_hal_active(&s_otp.hal);
+	return otp_hal_power_on(&s_otp.hal);
 }
 
 static uint32_t _otp_read_otp(uint32_t location)

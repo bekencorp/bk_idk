@@ -403,16 +403,14 @@ endif()
 endif()
 
 if (CONFIG_OTP)
-if (CONFIG_SOC_BK7256XX)
 	list(APPEND srcs
 		"otp/otp_driver.c"
 		)
 endif()
-endif()
 
-if (CONFIG_OTP_V1)
+if (CONFIG_FLASH_OTP)
 	list(APPEND srcs
-		"otp/otp_driver_v1_1.c"
+		"otp/flash_otp.c"
 		)
 endif()
 
@@ -489,26 +487,6 @@ if (CONFIG_SDMADC)
 	list(APPEND srcs
 		"sdmadc/sdmadc_driver.c"
 		)
-endif()
-
-if (CONFIG_VAULT_SUPPORT)
-	list(APPEND incs
-		"vault"
-	)
-
-	list(APPEND srcs
-		"vault/vault_driver.c"
-	)
-
-	if (CONFIG_OTP)
-		list(APPEND incs
-			"otp"
-		)
-
-		list(APPEND srcs
-			"otp/otp_driver.c"
-		)
-	endif()
 endif()
 
 # Ethernet Support

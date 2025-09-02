@@ -3,8 +3,8 @@ menu "OTP"
 		bool "Enable OTP"
 		default n
 
-	config OTP_V1
-		bool "Enable OTP_V1"
+	config FLASH_OTP
+		bool "Enable FLASH_OTP"
 		default n
 
 	config PHY_RFCALI_TO_OTP

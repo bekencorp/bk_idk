@@ -15,8 +15,7 @@
 #pragma once
 
 #include <common/bk_include.h>
-#include <driver/hal/hal_otp_types.h>
-#if CONFIG_OTP_V1
+#if CONFIG_OTP || CONFIG_FLASH_OTP
 #include "_otp.h"
 #endif
 

@@ -174,7 +174,7 @@ if(CONFIG_SDMADC)
 	)
 endif()
 
-if(CONFIG_OTP_V1)
+if(CONFIG_OTP)
 	list(APPEND srcs
 		"hal/otp_hal.c"
 	)

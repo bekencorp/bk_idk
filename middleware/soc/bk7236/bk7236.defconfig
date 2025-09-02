@@ -842,8 +842,6 @@ CONFIG_TRUSTENGINE=n
 CONFIG_SW_CRYPTO=y
 #@ Enable TE200 entropy
 CONFIG_TE200_ENTROPY=y
-#@ Always enable encp
-CONFIG_AON_ENCP=y
 #@ Enable psa mbedtls test
 CONFIG_PSA_MBEDTLS_TEST=n
 #@ Enable security engine cli
@@ -1481,9 +1479,7 @@ CONFIG_PM_LV_WDT_PROTECTION=y
 # OTP
 #
 #@ Enable OTP
-CONFIG_OTP=y
-#@ Enable OTP_V1
-CONFIG_OTP_V1=y
+CONFIG_OTP=n
 #@ Use OTP to save rfcali data
 CONFIG_PHY_RFCALI_TO_OTP=n
 # end of OTP

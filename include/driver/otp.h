@@ -25,47 +25,21 @@ extern "C" {
 /* @brief Overview about this API header
  *
  */
-
-/* @brief     OTP initialization
+#if CONFIG_OTP
+/**
+ * @brief     OTP driver init
  *
  * @return
  *    - BK_OK: succeed
- *    - others: other errors.
+ *    - BK_FAIL: lock init fail
  */
-bk_err_t bk_otp_init(void);
-
+bk_err_t bk_otp_driver_init();
 /**
- * @brief     OTP finalization
- *
- * @return
- *    - BK_OK: succeed
- *    - others: other errors.
+ * @brief     OTP driver deinit
+ * 
+ * 
  */
-bk_err_t bk_otp_deinit(void);
-/**
- * @brief OTP API
- * @defgroup bk_api_otp OTP API group
- * @{
- */
- 
-/**
- * @brief     OTP read operation
- *
- * @param buffer point to the buffer that reads the data
- * @param addr read address, address range 0x0--0x800
- * @param len read length
- *
- * @attention 1. addr+len should be less than 0x800
- * @attention 2. this API can only access non-secure OTP bank
- * @attention 3. this api blocks for 5ms waiting for OTP to stabilize
- *
- * @return
- *    - BK_OK: succeed
- *    - BK_ERR_EFUSE_DRIVER_NOT_INIT: EFUSE driver not init
- *    - BK_ERR_EFUSE_ADDR_OUT_OF_RANGE: EFUSE address is out of range
- *    - others: other errors.
- */
-bk_err_t bk_otp_read_bytes_nonsecure(uint8_t *buffer, uint32_t addr, uint32_t len);
+void bk_otp_driver_deinit();
 /**
  * @brief     OTP read with item type
  *
@@ -79,7 +53,6 @@ bk_err_t bk_otp_read_bytes_nonsecure(uint8_t *buffer, uint32_t addr, uint32_t le
  *    - BK_ERR_OTP_ADDR_OUT_OF_RANGE: param size not match item real size
  *    - others: other errors.
  */
-#if CONFIG_OTP_V1
 bk_err_t bk_otp_apb_read(otp1_id_t item, uint8_t *buf, uint32_t size);
 /**
  * @brief     update OTP write with item type
@@ -187,6 +160,15 @@ bk_err_t bk_otp_apb_write_mask(otp1_id_t item, otp_privilege_t permission);
 */
 bk_err_t bk_otp_read_random_number(uint32_t* buf, uint32_t size);
 #endif
+
+#if CONFIG_FLASH_OTP
+bk_err_t bk_flash_otp_update(uint32_t item_id, uint8_t* buf, size_t size);
+
+bk_err_t bk_flash_otp_read(uint32_t item_id, uint8_t* buf, size_t size);
+
+void bk_flash_otp_init(uint8_t section_id);
+#endif
+
 /**
  * @}
  */

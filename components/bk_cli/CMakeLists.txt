@@ -177,20 +177,8 @@ if (CONFIG_USB)
 	list(APPEND srcs "cli_usb.c")
 endif()
 
-if (CONFIG_VAULT_SUPPORT)
-	if (CONFIG_SECURITYIP)
-		list(APPEND srcs "cli_securityip.c")
-	endif()
-
-	if (CONFIG_OTP AND CONFIG_OTP_TEST)
-		list(APPEND srcs "cli_otp.c")
-	endif()
-ENDIF()
-
-if (CONFIG_SOC_BK7236XX)
-	if (CONFIG_OTP_V1 AND CONFIG_OTP_TEST)
-		list(APPEND srcs "cli_otp.c")
-	endif()
+if (CONFIG_OTP_TEST)
+	list(APPEND srcs "cli_otp.c")
 endif()
 
 if (CONFIG_MBEDTLS)

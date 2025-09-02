@@ -1280,4 +1280,37 @@ bk_err_t bk_flash_check_crc(uint32_t phy_offset, uint32_t phy_size)
 	return BK_OK;
 }
 
-#endif //  CONFIG_BK_OTA && !CONFIG_TFM_FWU
+#endif
+
+#if CONFIG_FLASH_OTP
+
+void bk_flash_lock(flash_line_mode_t* line_mode)
+{
+	flash_lock();
+	* line_mode =  flash_set_line_mode(FLASH_LINE_MODE_TWO);
+}
+
+void bk_flash_unlock(flash_line_mode_t* line_mode)
+{
+	flash_set_line_mode(*line_mode);
+	flash_unlock();
+}
+
+void bk_flash_lock_otp(uint8_t block_index)
+{
+	flash_lock();
+	flash_line_mode_t line_mode =  flash_set_line_mode(FLASH_LINE_MODE_TWO);
+	uint32_t status_reg = flash_read_status_reg();
+	if (block_index == 1) {
+		status_reg |= 1 << 11; //GD25WQ32E
+	} else if (block_index == 2) {
+		status_reg |= 1 << 12; //GD25WQ32E
+	} else if (block_index == 3) {
+		status_reg |= 1 << 13; //GD25WQ32E
+	}
+	flash_write_status_reg(status_reg);
+	flash_set_line_mode(line_mode);
+	flash_unlock();
+	return;
+}
+#endif

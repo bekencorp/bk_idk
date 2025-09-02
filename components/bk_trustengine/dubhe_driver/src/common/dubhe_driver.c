@@ -27,9 +27,13 @@
 #include "bk_misc.h"
 #include <driver/int.h>
 #include "sys_driver.h"
+#if !defined(TEE_M)
+#include <modules/pm.h>
+#endif
 
 unsigned long _g_Dubhe_RegBase;
 static int do_dubhe_driver_init( unsigned long dbh_base_addr );
+bool dubhe_inited = false;
 
 static void dubhe_dma_disable(void)
 {
@@ -135,10 +139,15 @@ static int do_dubhe_driver_init( unsigned long dbh_base_addr )
 {
     uint32_t int_level = rtos_disable_int();
 
+#if defined(TEE_M)
     if (sys_ll_get_cpu_power_sleep_wakeup_pwd_encp() != 0) {
         sys_ll_set_cpu_power_sleep_wakeup_pwd_encp(0);
         bk_delay_us(100);
     }
+#else
+    bk_pm_module_vote_power_ctrl(POWER_SUB_MODULE_NAME_ENCP_TRUSTENGINE, PM_POWER_MODULE_STATE_ON);
+#endif
+    bk_delay_us(100);
 
     _g_Dubhe_RegBase = dbh_base_addr;
 
@@ -178,7 +187,6 @@ static int do_dubhe_driver_init( unsigned long dbh_base_addr )
 
 int dubhe_driver_init( unsigned long dbh_base_addr )
 {
-    static bool dubhe_inited = false;
     bool need_init_driver = false;
     int ret = 0;
 
@@ -186,11 +194,16 @@ int dubhe_driver_init( unsigned long dbh_base_addr )
         dubhe_inited = true;
         need_init_driver = true;
 
-    	dubhe_lv_init();
+        dubhe_lv_init();
+#if defined(TEE_M)
         if (sys_ll_get_cpu_power_sleep_wakeup_pwd_encp() != 0) {
             sys_ll_set_cpu_power_sleep_wakeup_pwd_encp(0);
             bk_delay_us(500); //for power-on init, bk7239n need more delay before dubhe can work correctly
         }
+#else
+        bk_pm_module_vote_power_ctrl(POWER_SUB_MODULE_NAME_ENCP_TRUSTENGINE, PM_POWER_MODULE_STATE_ON);
+#endif
+        // delay_us(500); //for power-on init, bk7239n need more delay before dubhe can work correctly
     }
 
     if ((need_init_driver == true) || (sys_ll_get_cpu_power_sleep_wakeup_pwd_encp() != 0)) {
@@ -215,6 +228,9 @@ void dubhe_driver_cleanup( void )
 #endif
 
     dubhe_event_cleanup( );
+#if !defined(TEE_M)
+    bk_pm_module_vote_power_ctrl(POWER_SUB_MODULE_NAME_ENCP_TRUSTENGINE, PM_POWER_MODULE_STATE_OFF);
+#endif
     bk_delay_us(100);
 }
 

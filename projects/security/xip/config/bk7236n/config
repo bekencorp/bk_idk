@@ -35,8 +35,6 @@ CONFIG_SECURITY_FIRMWARE=y
 #@ Enable Cache
 CONFIG_CACHE_ENABLE=n
 
-#@ Always enable encp
-CONFIG_AON_ENCP=y
 #@ Enable security engine cli
 CONFIG_TRUSTENGINE_TEST=y
 

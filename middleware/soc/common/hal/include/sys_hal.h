@@ -70,6 +70,8 @@ uint32_t sys_hal_flash_get_clk_sel(void);
 
 uint32_t sys_hal_flash_get_clk_div(void);
 
+void sys_hal_set_efstoflash_otp(uint8_t load, uint8_t shaddr, uint8_t en);
+
 /** Platform flash End **/
 
 /** Platform qspi Start **/

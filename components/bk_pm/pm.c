@@ -106,6 +106,7 @@ static uint32_t s_pm_phy_calibration_state    = 0;
 */
 static bool     s_pm_is_phy_reinit_flag       = false;
 #if CONFIG_SYS_CPU0
+static uint32_t s_pm_encp_pm_state                      = 0;
 static uint32_t s_pm_bakp_pm_state                      = 0;
 static uint32_t s_pm_ahpb_pm_state                      = 0;
 static uint32_t s_pm_audio_pm_state                     = 0;
@@ -463,7 +464,26 @@ bk_err_t bk_pm_module_vote_power_ctrl(pm_power_module_name_e module, pm_power_mo
 
 	if (power_state == PM_POWER_MODULE_STATE_ON) // power on
 	{
-		if ( (module == PM_POWER_SUB_MODULE_NAME_BAKP_TIMER1)
+		if ( (module == POWER_SUB_MODULE_NAME_ENCP_OTP)
+		|| (module == POWER_SUB_MODULE_NAME_ENCP_TRUSTENGINE))
+		{
+			GLOBAL_INT_DISABLE();
+			s_pm_encp_pm_state |= 0x1 << (module % (PM_POWER_MODULE_NAME_ENCP * PM_MODULE_SUB_POWER_DOMAIN_MAX));
+			s_pm_off_modules &= ~(0x1 << PM_POWER_MODULE_NAME_ENCP);
+			s_pm_on_modules |= 0x1 << PM_POWER_MODULE_NAME_ENCP;
+
+			GLOBAL_INT_RESTORE();
+
+			if (0x0 == sys_drv_module_power_state_get(PM_POWER_MODULE_NAME_ENCP))
+			{
+				return BK_OK;
+			}
+			else
+			{
+				sys_drv_module_power_ctrl(PM_POWER_MODULE_NAME_ENCP, power_state);
+			}
+		}
+		else if ( (module == PM_POWER_SUB_MODULE_NAME_BAKP_TIMER1)
 		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_UART1)
 		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_UART2)
 		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_SPI1)
@@ -668,7 +688,22 @@ bk_err_t bk_pm_module_vote_power_ctrl(pm_power_module_name_e module, pm_power_mo
 	}
 	else // power off
 	{
-		if ( (module == PM_POWER_SUB_MODULE_NAME_BAKP_TIMER1)
+		if ( (module == POWER_SUB_MODULE_NAME_ENCP_OTP)
+		|| (module == POWER_SUB_MODULE_NAME_ENCP_TRUSTENGINE))
+		{
+			GLOBAL_INT_DISABLE();
+			s_pm_encp_pm_state &= ~(0x1 << (module % (PM_POWER_MODULE_NAME_ENCP * PM_MODULE_SUB_POWER_DOMAIN_MAX)));
+
+			if (0x0 == s_pm_encp_pm_state)
+			{
+				sys_drv_module_power_ctrl(PM_POWER_MODULE_NAME_ENCP, power_state);
+				s_pm_off_modules |= 0x1 << PM_POWER_MODULE_NAME_ENCP;
+				s_pm_on_modules &= ~(0x1 << PM_POWER_MODULE_NAME_ENCP);
+
+			}
+			GLOBAL_INT_RESTORE();
+		}
+		else if ( (module == PM_POWER_SUB_MODULE_NAME_BAKP_TIMER1)
 		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_UART1)
 		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_UART2)
 		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_SPI1)
@@ -1235,7 +1270,12 @@ void pm_rf_switch(pm_power_module_name_e name)
 
 int32_t bk_pm_module_power_state_get(pm_power_module_name_e module)
 {
-	if ( (module == PM_POWER_SUB_MODULE_NAME_BAKP_TIMER1)
+	if ( (module == PM_POWER_SUB_MODULE_NAME_ENCP_OTP)
+		|| (module == PM_POWER_SUB_MODULE_NAME_ENCP_TRUSTENGINE))
+	{
+		return sys_drv_module_power_state_get(PM_POWER_MODULE_NAME_ENCP);
+	}
+	else if ( (module == PM_POWER_SUB_MODULE_NAME_BAKP_TIMER1)
 		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_UART1)
 		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_UART2)
 		|| (module == PM_POWER_SUB_MODULE_NAME_BAKP_SPI1)

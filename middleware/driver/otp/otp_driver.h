@@ -16,6 +16,22 @@
 
 #include <components/log.h>
 
+//TOOD: Move the following code to a higher-level implementation
+typedef struct lock {
+#if CONFIG_SPIN_LOCK
+    spinlock_t spin_lock;
+#endif
+    beken_mutex_t mutex;
+    bool is_rtos_disable;
+    uint32_t int_level;
+} bk_lock_t;
+
+bk_lock_t* lock_init();
+void lock_deinit(bk_lock_t* bk_lock);
+void lock(bk_lock_t* bk_lock);
+void unlock(bk_lock_t* bk_lock);
+//TODO end
+
 #define OTP_TAG "otp"
 #define OTP_LOGI(...) BK_LOGI(OTP_TAG, ##__VA_ARGS__)
 #define OTP_LOGW(...) BK_LOGW(OTP_TAG, ##__VA_ARGS__)
