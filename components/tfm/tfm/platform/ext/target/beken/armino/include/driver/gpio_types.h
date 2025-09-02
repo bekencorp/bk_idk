@@ -44,6 +44,7 @@ extern "C" {
 #define BK_ERR_GPIO_MAP_PWMS_CHAN		(BK_ERR_GPIO_BASE - 10) /**< gpio map to pwm pwms' channel is invalid*/
 #define BK_ERR_GPIO_INVALID_ID		(BK_ERR_GPIO_BASE - 11) /**< gpio id is invalid */
 #define BK_ERR_GPIO_WAKESOURCE_OVER_MAX_CNT (BK_ERR_GPIO_BASE - 12) /**< too much GPIO is register to wakeup source */
+#define BK_ERR_ANA_GPIO_TYPE_NOT_SUPPORT (BK_ERR_GPIO_BASE - 13) /**< analog gpio wake source pin config is invalid>*/
 
 /**
  * @brief GPIO interrupt service routine
@@ -57,6 +58,36 @@ typedef struct {
 	uint32_t valid;
 } gpio_wakeup_config_t;
 
+#if CONFIG_GPIO_CLOCK_PIN_SUPPORT
+typedef enum {
+	GPIO_CLK_PIN_SRC_ROSC = 0,
+	GPIO_CLK_PIN_SRC_XTALL,    // external low freq xtal
+	GPIO_CLK_PIN_SRC_XTALH,    // origin high freq xtal
+	GPIO_CLK_PIN_SRC_XTALHD,   // divided high freq xtal
+	GPIO_CLK_PIN_SRC_XTALH32K, // divided to 32k
+	GPIO_CLK_PIN_SRC_DCO,
+	GPIO_CLK_PIN_SRC_DPLL,
+	GPIO_CLK_PIN_SRC_APLL,
+	GPIO_CLK_PIN_SRC_INVALID,
+} gpio_clk_pin_src_t;
+
+typedef enum {
+	GPIO_CLK_PIN_PORT_ANA = 0,
+	GPIO_CLK_PIN_PORT_DIG,
+	GPIO_CLK_PIN_PORT_INVALID,
+} gpio_clk_pin_port_t;
+
+typedef enum {
+	GPIO_CLK_PIN_OPEN = 0,
+	GPIO_CLK_PIN_CLOSE,
+	GPIO_CLK_PIN_OP_INVALID,
+} gpio_clk_pin_op_e;
+
+typedef struct {
+	gpio_clk_pin_op_e op;
+	void *args;
+} gpio_clk_pin_op_t;
+#endif
 /**
  * @}
  */

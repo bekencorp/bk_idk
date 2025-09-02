@@ -41,7 +41,7 @@ __CPU0_APP_RAM_SIZE = CONFIG_CPU0_SPE_RAM_SIZE - 0x10000; /* the first SMEM(64K)
 #elif CONFIG_SPE
 __CPU0_APP_RAM_SIZE = CONFIG_CPU0_SPE_RAM_SIZE;
 #else
-__CPU0_APP_RAM_SIZE = 0xA0000 - CONFIG_CPU0_SPE_RAM_SIZE;
+__CPU0_APP_RAM_SIZE = 0x80000 - CONFIG_CPU0_SPE_RAM_SIZE;
 #endif
 
 /*****************************************************************************

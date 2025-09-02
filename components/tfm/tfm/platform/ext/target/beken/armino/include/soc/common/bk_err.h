@@ -101,6 +101,7 @@ typedef int bk_err_t;
 #define BK_ERR_USB_BASE            (-0x4400)
 #define BK_ERR_OTP_BASE            (-0x4500)
 #define BK_ERR_CKMN_BASE           (-0x4600)
+#define BK_ERR_IO_MATRIX_BASE      (-0x4C00)
 
 /* -0x1a2c to -0x1a7b is reserved for kXxx error code
  * #define kGenericErrorBase           -6700

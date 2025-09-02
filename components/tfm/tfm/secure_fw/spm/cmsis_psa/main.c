@@ -143,8 +143,8 @@ void close_wdt(void)
 }
 void update_aon_wdt(uint32_t val)
 {
-        REG_WRITE(SOC_AON_WDT_REG_BASE, 0x5A0000 | val);
-        REG_WRITE(SOC_AON_WDT_REG_BASE, 0xA50000 | val);
+        // REG_WRITE(SOC_AON_WDT_REG_BASE, 0x5A0000 | val);
+        // REG_WRITE(SOC_AON_WDT_REG_BASE, 0xA50000 | val);
 }
 
 
@@ -171,7 +171,7 @@ int main(void)
     }
 #endif
 
-    sys_hal_early_init_tfm();
+    // sys_hal_early_init_tfm();
     fih_delay_init();
 
     FIH_CALL(tfm_core_init, fih_rc);

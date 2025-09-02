@@ -161,26 +161,26 @@ int main(void)
 
 #if CONFIG_BL2_DOWNLOAD
     // sys_drv_early_init();
-    sys_hal_dpll_cpu_flash_time_early_init();
+    // sys_hal_dpll_cpu_flash_time_early_init();
     if (efuse_is_secure_download_enabled()) {
         flash_switch_to_line_mode_two();
         bk_flash_cpu_write_enable();
         enable_dcache(0);
         void legacy_boot_main(void);
         legacy_boot_main();
-       enable_dcache(1);
+        enable_dcache(1);
         bk_flash_cpu_write_disable();
         flash_restore_line_mode();
     }
-    sys_hal_flash_set_clk(0x1);
-    sys_hal_flash_set_clk_div(0x0);
-    sys_hal_ctrl_vdddig_h_vol(0xD);
-    sys_hal_switch_freq(0x3, 0x0, 0x0);
+    // sys_hal_flash_set_clk(0x1);
+    // sys_hal_flash_set_clk_div(0x0);
+    // sys_hal_ctrl_vdddig_h_vol(0xD);
+    // sys_hal_switch_freq(0x3, 0x0, 0x0);
 #endif
 
     close_wdt();
 #if CONFIG_BL2_WDT
-    update_aon_wdt(CONFIG_BL2_WDT_PERIOD);
+    // update_aon_wdt(CONFIG_BL2_WDT_PERIOD);
 #endif
 
 

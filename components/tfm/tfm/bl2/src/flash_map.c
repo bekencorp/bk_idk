@@ -255,6 +255,8 @@ uint32_t flash_area_update_dbus(const struct flash_area *area, uint32_t off,
 {
     SYS_LOCK_DECLARATION();
     SYS_LOCK();
+	uint32_t protect_type = bk_flash_get_protect_type();
+	bk_flash_set_protect_type(0);
 #if CONFIG_DIRECT_XIP
     uint32_t update_id = (flash_area_read_offset_enable() ^ 1);
     uint32_t fa_off = CEIL_ALIGN_34((partition_get_phy_offset(update_id)));
@@ -264,6 +266,7 @@ uint32_t flash_area_update_dbus(const struct flash_area *area, uint32_t off,
 #if CONFIG_OTA_OVERWRITE
     bk_flash_write_bytes(area->fa_off + off, src, len);
 #endif
+    bk_flash_set_protect_type(protect_type);
     SYS_UNLOCK();
     return 0;
 }

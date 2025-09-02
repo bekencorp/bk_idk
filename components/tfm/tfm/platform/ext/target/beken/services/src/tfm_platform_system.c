@@ -36,8 +36,9 @@ static void tfm_platform_wdt_reset(void)
     prro_hal_set_secure(PRRO_DEV_APB_WDT, PRRO_SECURE);
     tfm_platform_set_reset_reason(RESET_SOURCE_REBOOT);
     __disable_irq();
-    REG_WRITE(SOC_AON_WDT_REG_BASE, 0x5A000A);
-    REG_WRITE(SOC_AON_WDT_REG_BASE, 0xA5000A);
+	//CYG NEED TODO
+    // REG_WRITE(SOC_AON_WDT_REG_BASE, 0x5A000A);
+    // REG_WRITE(SOC_AON_WDT_REG_BASE, 0xA5000A);
     while(1);
 }
 

@@ -98,7 +98,7 @@ if(BL2)
             ${PLATFORM_DIR}/include
             ${MBEDCRYPTO_PATH}/library
             ${MBEDCRYPTO_PATH}/include
-            ${PLATFORM_DIR}/ext/target/beken/bk7236/armino/config
+            ${PLATFORM_DIR}/ext/target/beken/bk7239/armino/config
             ${CMAKE_SOURCE_DIR}/interface/include
             ${CMAKE_BINARY_DIR}/generated/interface/include
             ${PLATFORM_DIR}/ext/cmsis
@@ -182,7 +182,7 @@ target_sources(crypto_service_crypto_hw
 target_include_directories(crypto_service_crypto_hw
     PRIVATE
         ${PLATFORM_DIR}/ext/target/beken/common/hal/accelerator/dubhe_alt/inc
-        ${PLATFORM_DIR}/ext/target/beken/bk7236/armino/config
+        ${PLATFORM_DIR}/ext/target/beken/bk7239/armino/config
         ${CMAKE_SOURCE_DIR}/interface/include
         ${CMAKE_BINARY_DIR}/generated/interface/include
 )
@@ -218,8 +218,8 @@ target_sources(crypto_service_crypto_hw
 
 target_include_directories(crypto_service_crypto_hw
     PRIVATE
-        ${PLATFORM_DIR}/ext/target/beken/bk7236
-        ${PLATFORM_DIR}/ext/target/beken/bk7236/cmsis_core
+        ${PLATFORM_DIR}/ext/target/beken/bk7239
+        ${PLATFORM_DIR}/ext/target/beken/bk7239/cmsis_core
         ${PLATFORM_DIR}/ext/target/beken/common/hal/accelerator/spe/inc
         ${PLATFORM_DIR}/ext/target/beken/common/hal/accelerator/spe/inc/hal
         ${PLATFORM_DIR}/ext/target/beken/common/hal/accelerator/spe/inc/pal
@@ -337,7 +337,7 @@ target_sources(test_ns_crypto_hw
 target_include_directories(test_ns_crypto_hw
     PRIVATE
         ${PLATFORM_DIR}/ext/target/beken/common/hal/accelerator/dubhe_alt/inc
-        ${PLATFORM_DIR}/ext/target/beken/bk7236/armino/config
+        ${PLATFORM_DIR}/ext/target/beken/bk7239/armino/config
         ${CMAKE_SOURCE_DIR}/interface/include
         ${CMAKE_BINARY_DIR}/generated/interface/include
 )
@@ -373,8 +373,8 @@ target_sources(test_ns_crypto_hw
 
 target_include_directories(test_ns_crypto_hw
     PRIVATE
-        ${PLATFORM_DIR}/ext/target/beken/bk7236
-        ${PLATFORM_DIR}/ext/target/beken/bk7236/cmsis_core
+        ${PLATFORM_DIR}/ext/target/beken/bk7239
+        ${PLATFORM_DIR}/ext/target/beken/bk7239/cmsis_core
         ${PLATFORM_DIR}/ext/target/beken/common/hal/accelerator/spe/inc
         ${PLATFORM_DIR}/ext/target/beken/common/hal/accelerator/spe/inc/hal
         ${PLATFORM_DIR}/ext/target/beken/common/hal/accelerator/spe/inc/pal

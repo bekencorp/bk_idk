@@ -293,17 +293,11 @@ psa_status_t fwu_bootloader_load_image(bl_image_id_t bootloader_image_id,
     } else {
         return PSA_ERROR_INVALID_ARGUMENT;
     }
-#if CONFIG_OTA_OVERWRITE || CONFIG_OTA_ENCRYPTED
+
     if (flash_area_update_dbus(fap, block_offset, block, block_size) != 0) {
         LOG_ERRFMT("TFM FWU: write flash failed.\r\n");
         return PSA_ERROR_GENERIC_ERROR;
     }
-#else
-    if (flash_area_write(fap, block_offset, block, block_size) != 0) {
-        LOG_ERRFMT("TFM FWU: write flash failed.\r\n");
-        return PSA_ERROR_GENERIC_ERROR;
-    }
-#endif
 
     /* The overflow check has been done in flash_area_write. */
     mcuboot_ctx[index].loaded_size += block_size;

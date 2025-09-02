@@ -408,6 +408,8 @@ int flash_area_erase_fast(uint32_t erase_off, uint32_t len)
 
 	SYS_LOCK_DECLARATION();
 	SYS_LOCK();
+	uint32_t protect_type = bk_flash_get_protect_type();
+	bk_flash_set_protect_type(0);
 	while (erase_remain > 0) {
 		if ((erase_remain >= KB(64)) && is_64k_aligned(erase_off)) {
 			BK_TFM_FLASH_LOGI(TAG, "64k erase: off=%x remain=%x\r\n", erase_off, erase_remain);
@@ -425,6 +427,7 @@ int flash_area_erase_fast(uint32_t erase_off, uint32_t len)
 		erase_off += erase_size;
 		erase_remain -= erase_size;
 	}
+	bk_flash_set_protect_type(protect_type);
 	SYS_UNLOCK();
 
 	return 0;

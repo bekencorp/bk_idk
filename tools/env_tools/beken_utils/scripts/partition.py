@@ -475,11 +475,12 @@ class Partition:
         return self.partitions.is_last_bin_verified_by_bl2(self.partition_name)
 
     def add_magic_code(self, bin_file):
-        print(f'Add magic code BK7236 to {bin_file}')
-        bk7236 = b'\x42\x4b\x37\x32\x33\x36\x00'
+        magic = "BK.SB".encode()
+        print(f'Add magic code {magic} to {bin_file}')
+        # bk7236 = b'\x42\x4b\x37\x32\x33\x36\x00'
         with open(bin_file, 'r+b') as f:
                 f.seek(0x100)
-                f.write(bk7236)
+                f.write(magic)
 
     def process_partition_aes_crc(self, aes_type, aes_key):
         if self.bin_name == None:
@@ -908,7 +909,7 @@ class Partitions:
         self.gen_bin_for_bl2_signing('secondary_all', self.secondary_partitions_verified_by_bl2)
 
     def gen_all_app_global_hdr(self, img_num, img_hdr_list, version):
-        magic = "BKDLV10.".encode()
+        magic = "BL1DLV10.".encode()
         magic = struct.pack('8s', magic)
         version = struct.pack('>I', version)
         hdr_len = struct.pack('>H', GLOBAL_HDR_LEN)
@@ -1159,8 +1160,11 @@ class Partitions:
             run_cmd_not_check_ret(cmd)
             crc_bin_name = f'ota_aes_crc.bin'
             crc(aes_bin_name, crc_bin_name)
+        else:
+            crc_bin_name = f'ota_crc.bin'
+            crc(ota_sign_bin, crc_bin_name)
 
-            ota_sign_bin = crc_bin_name
+        ota_sign_bin = crc_bin_name
 
         size = os.path.getsize(ota_sign_bin)
 

@@ -1,6 +1,6 @@
 armino_build_get_property(target ARMINO_SOC)
 
-if(NOT "${target}" STREQUAL "bk7236")
+if(NOT "${target}" STREQUAL "bk7236" AND NOT "${target}" STREQUAL "bk7234" AND NOT "${target}" STREQUAL "bk7239")
     return()
 endif()
 

@@ -262,3 +262,48 @@ void sys_drv_set_base_addr(uint32_t addr)
 {
 	sys_hal_set_base_addr(addr);
 }
+
+uint32_t port_disable_interrupts_flag(void)
+{
+    uint32_t primask_val = __get_PRIMASK();
+    __disable_irq();
+    return primask_val;
+}
+
+void port_enable_interrupts_flag(int val)
+{
+    __set_PRIMASK(val);
+}
+
+void sys_switch_cpu_flash_freq()
+{
+	sys_hal_flash_set_clk_div(FLASH_CLK_DIV_MAX - 1);
+	sys_hal_flash_set_clk(FLASH_CLK_80M);
+	sys_hal_flash_set_clk_div(FLASH_CLK_DIV_1);
+	sys_hal_switch_cpu_bus_freq(CPU_FRQ_80M);
+}
+
+#include "Driver_Flash.h"
+
+
+void bk_flash_lock(uint32_t *ppro_flash_ns_flag, uint32_t *int_status_val) {
+	do {\
+			/* *int_status_val = port_disable_interrupts_flag();*/ \
+			uint32_t reg;\
+			reg = *((volatile uint32_t *)(0x41040000 + PPRO_FLASH_REG * 4));\
+			*ppro_flash_ns_flag = reg & PPRO_FLASH_BITS;\
+			*((volatile uint32_t *)(0x41040000 + PPRO_FLASH_REG * 4)) = reg & (~PPRO_FLASH_BITS);\
+	} while(0);
+}
+
+
+void bk_flash_unlock(uint32_t ppro_flash_ns_flag, uint32_t int_status_val) {
+	do {\
+			uint32_t reg;\
+			reg = *((volatile uint32_t *)(0x41040000 + PPRO_FLASH_REG * 4));\
+			if(ppro_flash_ns_flag){\
+					*((volatile uint32_t *)(0x41040000 + PPRO_FLASH_REG * 4)) = reg | PPRO_FLASH_BITS;\
+			}\
+			/*port_enable_interrupts_flag(int_status_val);*/ \
+	} while(0);
+}

@@ -207,23 +207,12 @@ typedef struct _ARM_DRIVER_FLASH {
 #define PPRO_FLASH_REG 6
 #define PPRO_FLASH_BITS (BIT(6))
 
-#define SYS_LOCK_DECLARATION() sys_lock_ctx_t _lock; uint32_t ppro_flash_ns_flag;
-#define SYS_LOCK() do {\
-        sys_drv_disable_int(&_lock);\
-        uint32_t reg;\
-        reg = *((volatile uint32_t *)(0x41040000 + PPRO_FLASH_REG * 4));\
-        ppro_flash_ns_flag = reg & PPRO_FLASH_BITS;\
-        *((volatile uint32_t *)(0x41040000 + PPRO_FLASH_REG * 4)) = reg & (~PPRO_FLASH_BITS);\
-}while(0)
+void bk_flash_lock(uint32_t *ppro_flash_ns_flag, uint32_t *int_status_val); 
+void bk_flash_unlock(uint32_t ppro_flash_ns_flag, uint32_t int_status_val);
 
-#define SYS_UNLOCK() do {\
-        sys_drv_enable_int(&_lock);\
-        uint32_t reg;\
-        reg = *((volatile uint32_t *)(0x41040000 + PPRO_FLASH_REG * 4));\
-        if(ppro_flash_ns_flag){\
-                *((volatile uint32_t *)(0x41040000 + PPRO_FLASH_REG * 4)) = reg | PPRO_FLASH_BITS;\
-        }\
-}while(0)
+#define SYS_LOCK_DECLARATION() uint32_t ppro_flash_ns_flag; uint32_t int_status_val;
+#define SYS_LOCK() bk_flash_lock(&ppro_flash_ns_flag, &int_status_val)
+#define SYS_UNLOCK() bk_flash_unlock(ppro_flash_ns_flag, int_status_val)
 
 #ifdef  __cplusplus
 }

@@ -109,20 +109,7 @@ void sys_driver_set_sdio_clk_sel(uint32_t value);
 uint32_t sys_driver_get_sdio_clk_sel();
 #endif
 
-void sys_drv_enter_deep_sleep(void * param);
-
-void sys_drv_enter_normal_sleep(uint32_t peri_clk);
-
-void sys_drv_enter_normal_wakeup();
-void sys_drv_enter_low_voltage();
-
 /*for low power  function start*/
-void sys_drv_module_power_ctrl(power_module_name_t module,power_module_state_t power_state);
-
-int32 sys_drv_module_power_state_get(power_module_name_t module);
-
-void sys_drv_module_RF_power_ctrl (module_name_t module,power_module_state_t power_state);
-
 void sys_drv_core_bus_clock_ctrl(high_clock_module_name_t core, uint32_t clksel,uint32_t clkdiv, high_clock_module_name_t bus,uint32_t bus_clksel,uint32_t bus_clkdiv);
 
 void sys_drv_cpu0_main_int_ctrl(dev_clk_pwr_ctrl_t clock_state);
@@ -137,8 +124,6 @@ void sys_drv_enable_mac_wakeup_source();
 void sys_drv_enable_bt_wakeup_source();
 void sys_drv_all_modules_clk_div_set(clk_div_reg_e reg, uint32_t value);
 uint32_t sys_drv_all_modules_clk_div_get(clk_div_reg_e reg);
-void sys_drv_wakeup_interrupt_clear(wakeup_source_t interrupt_source);
-void sys_drv_wakeup_interrupt_set(wakeup_source_t interrupt_source);
 void sys_drv_touch_wakeup_enable(uint8_t index);
 void sys_drv_usb_wakeup_enable(uint8_t index);
 void sys_drv_cpu_clk_div_set(uint32_t core_index, uint32_t value);

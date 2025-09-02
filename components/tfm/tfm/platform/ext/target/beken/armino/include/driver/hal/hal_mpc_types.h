@@ -36,7 +36,6 @@ typedef enum {
 	MPC_DEV_SMEM2,     /**< MPC device SMEM2 */
 	MPC_DEV_SMEM3,     /**< MPC device SMEM3 */
 	MPC_DEV_SMEM4,     /**< MPC device SMEM4 */
-	MPC_DEV_SMEM5,     /**< MPC device SMEM5 */
 	MPC_DEV_MAX,       /**< MPC max device id */
 } mpc_dev_t;
 

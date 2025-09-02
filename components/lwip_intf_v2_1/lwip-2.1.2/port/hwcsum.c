@@ -3,7 +3,7 @@
 
 #ifdef CONFIG_LWIP_HW_IP_CHECKSUM
 #if CONFIG_SOC_BK7236N || CONFIG_SOC_BK7239
-#ifdef CONFIG_SPE
+#if CONFIG_SPE
 #define IPCHKSUM_BASE                       (0x4980DE00)
 #else
 #define IPCHKSUM_BASE                       (0x5980DE00)

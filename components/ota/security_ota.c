@@ -470,6 +470,7 @@ int security_ota_finish(void)
 			/*when run in B cannot read A,so don't check A*/
 			BK_LOGI(TAG, "reboot\r\n");
 			psa_fwu_request_reboot();
+			return BK_OK;
 #endif
 			BK_LOGI(TAG, "checking fwu image%d...\r\n", fwu_image_id);
 			psa_image_id = (psa_image_id_t)FWU_CALCULATE_IMAGE_ID(FWU_IMAGE_ID_SLOT_STAGE, fwu_image_id, 0);

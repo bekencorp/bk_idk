@@ -133,20 +133,19 @@ void boot_platform_enable_fault_interrupt(void)
 
 void update_wdt(uint32_t val)
 {
-        REG_WRITE(SOC_WDT_REG_BASE + 4 * 2, 0x3); 
-        REG_WRITE(SOC_WDT_REG_BASE + 4 * 4, 0x5A0000 | val);
-        REG_WRITE(SOC_WDT_REG_BASE + 4 * 4, 0xA50000 | val);
+    REG_WRITE(SOC_WDT_REG_BASE + 4 * 4, 0x5A0000 | val);
+    REG_WRITE(SOC_WDT_REG_BASE + 4 * 4, 0xA50000 | val);
 }
 
 void close_wdt(void)
 {
 	update_wdt(0);
 }
-
+//CYG NEED TODO
 void update_aon_wdt(uint32_t val)
 {
-        REG_WRITE(SOC_AON_WDT_REG_BASE, 0x5A0000 | val);
-        REG_WRITE(SOC_AON_WDT_REG_BASE, 0xA50000 | val);
+        // REG_WRITE(SOC_AON_WDT_REG_BASE, 0x5A0000 | val);
+        // REG_WRITE(SOC_AON_WDT_REG_BASE, 0xA50000 | val);
 }
 
 void close_aon_wdt(void)

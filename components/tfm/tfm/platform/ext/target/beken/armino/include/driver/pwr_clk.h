@@ -29,7 +29,7 @@ extern "C" {
  *    - PM_LPO_SRC_X32K: support the external 32k clock
  *    - PM_LPO_SRC_ROSC: default support the ROSC
  */
-pm_lpo_src_e bk_clk_32k_customer_config_get(void);
+// pm_lpo_src_e bk_clk_32k_customer_config_get(void);
 
 
 #ifdef __cplusplus

@@ -28,7 +28,7 @@ uint32_t uart_get_clock_freq(void)
 		return UART_CLOCK_FREQ_26M;
 	}
 #else
-	return UART_CLOCK_FREQ_26M;
+	return UART_CLOCK_FREQ_40M;
 #endif
 }
 

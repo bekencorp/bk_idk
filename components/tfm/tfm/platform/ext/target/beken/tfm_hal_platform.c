@@ -173,9 +173,16 @@ void tfm_s_2_ns_hook(void)
 		BK_LOGE(TAG, "memory malloc fails.\r\n");
 	}
 
-	BK_LOGI(TAG, "config ppc and NSPE is coming\r\n");
-	uint32_t partition_vir_offset = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(PARTITION_PARTITION_PHY_OFFSET));
-	bk_flash_read_cbus(partition_vir_offset, buf, 48);
+	printf( "config ppc and NSPE is coming\r\n");
+	// uint32_t partition_vir_offset = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(PARTITION_PARTITION_PHY_OFFSET));
+	// bk_flash_read_cbus(partition_vir_offset, buf, 48);
+	// for(int i=0;i<12;i++){
+	// 	reg[i] = piece_address(buf,0+i*4);
+	// }
+
+    uint32_t partition_vir_offset = PARTITION_PARTITION_PHY_OFFSET;
+    extern bk_err_t bk_flash_read_bytes(uint32_t address, uint8_t *user_buf, uint32_t size);
+	bk_flash_read_bytes(partition_vir_offset, buf, 48);
 	for(int i=0;i<12;i++){
 		reg[i] = piece_address(buf,0+i*4);
 	}
@@ -194,21 +201,21 @@ void tfm_s_2_ns_hook(void)
 	*((volatile uint32_t *)(0x41040000 + 2 * 4)) = 1; /* soft reset ppro module */
 
 #if CONFIG_TFM_BK7236_V5
-	// *((volatile uint32_t *)(0x41040000 + 4 * 4)) = 0xFFFFFFFC; /* gpio_nonsec0  gpio0/1:uart1*/
-	// *((volatile uint32_t *)(0x41040000 + 5 * 4)) = 0xFFFFFFFF; /* gpio_nonsec1 */
+	*((volatile uint32_t *)(0x41040000 + 4 * 4)) = 0xfffffc; /* gpio_nonsec0  gpio0/1:uart1*/
+	*((volatile uint32_t *)(0x41040000 + 5 * 4)) = 0; /* gpio_nonsec1 */
 
-    //     *((volatile uint32_t *)(0x41040000 + 6 * 4)) = 0x080FFF6F;
-    //     *((volatile uint32_t *)(0x41040000 + 7 * 4)) = 0x187;
-    //     *((volatile uint32_t *)(0x41040000 + 8 * 4)) = 0x10003FFB;
-    //     *((volatile uint32_t *)(0x41040000 + 9 * 4)) = 0x9E03F;
-    //     *((volatile uint32_t *)(0x41040000 + 10 * 4)) = 0x21F9;
-    //     *((volatile uint32_t *)(0x41040000 + 11 * 4)) = 0x2E00FF;
-    //     *((volatile uint32_t *)(0x41040000 + 12 * 4)) = 0x13;
-    //     *((volatile uint32_t *)(0x41040000 + 13 * 4)) = 0xB9;
-    //     *((volatile uint32_t *)(0x41040000 + 14 * 4)) = 0x1;
-    //     *((volatile uint32_t *)(0x41040000 + 15 * 4)) = 0x1FFF;
+	*((volatile uint32_t *)(0x41040000 + 6 * 4)) = 0x80dff61;
+	*((volatile uint32_t *)(0x41040000 + 7 * 4)) = 0x117;
+	*((volatile uint32_t *)(0x41040000 + 8 * 4)) = 0x10001ffb;
+	*((volatile uint32_t *)(0x41040000 + 9 * 4)) = 0x86001;
+	*((volatile uint32_t *)(0x41040000 + 10 * 4)) = 0x21d8;
+	*((volatile uint32_t *)(0x41040000 + 11 * 4)) = 0x260000;
+	*((volatile uint32_t *)(0x41040000 + 12 * 4)) = 0x13;
+	*((volatile uint32_t *)(0x41040000 + 13 * 4)) = 0xB9;
+	*((volatile uint32_t *)(0x41040000 + 14 * 4)) = 0x808;
+	*((volatile uint32_t *)(0x41040000 + 15 * 4)) = 0xf8;
 
-	tfm_hal_ppc_init_from_flash(reg);
+	// tfm_hal_ppc_init_from_flash(reg);
 	os_free(reg);
 	os_free(buf);
 #else

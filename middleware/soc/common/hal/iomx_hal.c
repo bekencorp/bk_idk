@@ -22,7 +22,9 @@
 
 bk_err_t iomx_hal_init(void)
 {
+	#if CONFIG_SPE
 	iomx_ll_set_clkg_reset_soft_reset(1);
+	#endif
 
 	// workaround fix for gpio interrupt
 	sys_ll_set_cpu_device_clk_enable_gpio_cken(1);
@@ -32,7 +34,9 @@ bk_err_t iomx_hal_init(void)
 
 bk_err_t iomx_hal_deinit(void)
 {
+	#if CONFIG_SPE
 	iomx_ll_set_clkg_reset_soft_reset(0);
+	#endif
 
 	return BK_OK;
 }
