@@ -24,9 +24,6 @@
 #include "timer_driver.h"
 #include "bk_non_standard_demo.h"
 
-/* previous function definition */
-static void bk_non_standard_demo_deinit();
-
 static bool bk_non_standard_demo_started = false;
 
 static uint8_t g_mac_hdr_type = 0xB0;
@@ -49,6 +46,8 @@ static bk_err_t bk_non_standard_demo_send_cb(const uint8_t *peer_mac_addr, bk_rl
 }
 
 static bk_err_t bk_non_standard_demo_recv_cb(bk_rlk_recv_info_t *rx_info) {
+	GPIO_DOWN(6);
+	GPIO_DOWN(7);
 	if (!td_timer_started) {
 		BK_LOGI(NON_STANDARD_TAG, "recv from "MACSTR", rssi:%d, len:%u\r\n", MAC2STR(rx_info->src_addr), rx_info->rssi, rx_info->len);
 	} else {
@@ -61,6 +60,8 @@ static bk_err_t bk_non_standard_demo_recv_cb(bk_rlk_recv_info_t *rx_info) {
 static void bk_non_standard_demo_period_broadcast(uint8_t interval, uint16_t count) {
 	bk_err_t err;
 	for (int i = 0; i < count; i++) {
+		GPIO_DOWN(6);
+		GPIO_DOWN(7);
 		if ((err = bk_rlk_send_by_oui(g_broadcast_mac, g_broadcast_buffer, 6, g_mac_hdr_type, g_mac_hdr_oui)) < BK_OK) {
 			BK_LOGI(NON_STANDARD_TAG, "send error, err: %d\r\n", err);
 			break;
@@ -228,6 +229,9 @@ static const struct cli_command s_non_standard_commands[] = {
 };
 
 static void bk_non_standard_demo_init() {
+	GPIO_UP(6);
+	GPIO_UP(7);
+
 	bk_rlk_init();
 	bk_rlk_set_channel(BK_NON_STANDARD_DEMO_DEFAULT_CHANNEL);
 	bk_rlk_register_send_cb(bk_non_standard_demo_send_cb);

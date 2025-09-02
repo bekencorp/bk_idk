@@ -20,7 +20,6 @@
 #define BK_ETH_ALEN                              6
 #define BK_NON_STANDARD_HEADER_LEN               34
 
-#define BK_NON_STANDARD_DEMO_QUEUE_SIZE          6
 #define BK_NON_STANDARD_DEMO_DEFAULT_CHANNEL     13
 #define BK_NON_STANDARD_DEMO_TRANS_BUF_SIZE      1500
 
