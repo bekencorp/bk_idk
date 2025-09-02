@@ -2093,6 +2093,10 @@ int wpa_supplicant_handle_events(wpah_msg_t *msg)
 		union wpa_event_data data;
 		struct rwnx_hw *rwnx_hw = &g_rwnx_hw;
 		struct rwnx_roc_elem *roc_elem = rwnx_hw->roc_elem;
+		if (!roc_elem) {
+			WPA_LOGI("roc_elem is null\n");
+			goto exit;
+		}
 
 		os_memset(&data, 0, sizeof(data));
 		data.remain_on_channel.freq = roc_elem->freq;
