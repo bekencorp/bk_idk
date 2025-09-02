@@ -21,6 +21,12 @@ bk_err_t bk_ble_set_tx_power(float powerdBm)
 	return manual_cal_set_tx_power(WIFI_STANDARD_NONE, powerdBm);
 }
 
+bk_err_t bk_ble_set_polar_tx_power(float powerdBm)
+{
+	//WIFI_STANDARD_NONE_POLAR for ble
+	return manual_cal_set_tx_power(WIFI_STANDARD_NONE_POLAR, powerdBm);
+}
+
 bk_err_t bk_wifi_get_tx_power(wifi_standard standard, float *powerdBm)
 {
 	if ((powerdBm == NULL) || (standard <= WIFI_STANDARD_NONE) || (standard >= WIFI_STANDARD_MAX))

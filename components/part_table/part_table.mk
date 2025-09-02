@@ -32,6 +32,7 @@ bk7236xx_supported_projects := $(bk7236xx_supported_projects) wifi/repeater
 bk7236xx_supported_projects := $(bk7236xx_supported_projects) at
 bk7236xx_supported_projects := $(bk7236xx_supported_projects) customization/config_ab
 bk7236xx_supported_projects := $(bk7236xx_supported_projects) matter
+bk7236xx_supported_projects := $(bk7236xx_supported_projects) polar
 ############################################################
 #        Create supported projects list for bk7258         #
 ############################################################

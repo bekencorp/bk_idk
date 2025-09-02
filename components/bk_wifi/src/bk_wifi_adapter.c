@@ -1233,6 +1233,21 @@ static int bk_feature_cpu_pwd_enable_wrapper(void)
     return bk_feature_cpu_pwd_enable();
 }
 
+static void wifi_notify_state_to_bt_wrapper(uint8_t is_active)
+{
+#if CONFIG_BLUETOOTH
+#if CONFIG_BLUETOOTH_USE_MIN_POWER_MODE
+    void wifi_notify_state_to_bt(uint8_t is_active);
+    wifi_notify_state_to_bt(is_active);
+#endif
+#endif
+}
+
+static void bk_restore_all_regs_for_mac_wrapper(void)
+{
+    restore_all_regs_for_mac();
+}
+
 __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._version = BK_WIFI_OS_ADAPTER_VERSION,
 	._manual_cal_rfcali        = manual_cal_rfcali_status,
@@ -1467,6 +1482,8 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	#endif
 	._sys_hal_get_low_voltage_sleep_duration_us = sys_hal_get_low_voltage_sleep_duration_us_wrapper,
 	._sys_hal_set_low_voltage_sleep_duration_us = sys_hal_set_low_voltage_sleep_duration_us_wrapper,
+	._wifi_notify_state_to_bt = wifi_notify_state_to_bt_wrapper,
+	._bk_restore_all_regs_for_mac = bk_restore_all_regs_for_mac_wrapper,
 	._rw_ieee80211_init_scan_chan = rw_ieee80211_init_scan_chan,
 	._rw_ieee80211_get_scan_default_chan_num = rw_ieee80211_get_scan_default_chan_num,
 	._rwnx_set_bk_rlk_start = rwnx_set_wifi_rlk_start,

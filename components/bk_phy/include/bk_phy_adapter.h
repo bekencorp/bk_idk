@@ -177,6 +177,8 @@ typedef struct {
     uint8_t (*_get_tx_pwr_idx)(void);
     void (*_txpwr_max_set_bt_polar)(void);
     void (*_ble_tx_testmode_retrig)(void);
+    void (*_txpwr_max_set_bt_iq)(void);
+    bool (*_get_ble_polar_mode)(void);
 
     int (*_gpio_dev_map_rxen)(uint32_t gpio_id);
     int (*_bk_set_env_enhance)(const char *key, const void *value, int value_len);

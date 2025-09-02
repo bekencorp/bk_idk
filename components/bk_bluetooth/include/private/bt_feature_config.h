@@ -16,4 +16,7 @@ typedef struct
     uint8_t _enable_smp_sec_req_evt;
 
     uint8_t _support_lpo_rosc;
+    uint8_t _use_min_power_mode;
+    uint8_t _support_coex_rf_mode_switch;
+    uint8_t _support_sleep_phy_switch;
 } bt_feature_struct_t;

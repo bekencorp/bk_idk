@@ -270,6 +270,8 @@ typedef struct {
 	UINT8(*_tpc_get_media_pwr_level)(void);
 	uint64_t (*_sys_hal_get_low_voltage_sleep_duration_us)(void);
 	void (*_sys_hal_set_low_voltage_sleep_duration_us)(uint64_t sleep_duration);
+	void (*_wifi_notify_state_to_bt)(uint8_t is_active);
+	void (*_bk_restore_all_regs_for_mac)(void);
 	UINT8 (*_rw_ieee80211_init_scan_chan)(void *req);
 	UINT8 (*_rw_ieee80211_get_scan_default_chan_num)(void);
 	void (*_rwnx_set_bk_rlk_start)(uint32_t rlk_start);

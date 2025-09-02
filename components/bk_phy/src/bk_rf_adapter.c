@@ -81,6 +81,16 @@ bk_err_t bk_pm_module_vote_power_ctrl_ptr(unsigned int module, uint32_t power_st
 	return bk_pm_module_vote_power_ctrl((pm_power_module_name_e)module, (pm_power_module_state_e)power_state);
 }
 
+void sys_hal_low_analog_set(uint32_t en)
+{
+    if(en)
+    {
+        sys_hal_enter_low_analog();
+    }else
+    {
+        sys_hal_exit_low_analog();
+    }
+}
 
 const rf_control_funcs_t g_rf_control_funcs = {
     ._sys_drv_modem_bus_clk_ctrl  = sys_drv_modem_bus_clk_ctrl_ptr,
@@ -94,6 +104,7 @@ const rf_control_funcs_t g_rf_control_funcs = {
     ._sys_drv_set_ana_reg11_apfms = sys_drv_set_ana_reg11_apfms_ptr,
     ._sys_drv_set_ana_reg12_dpfms = sys_drv_set_ana_reg12_dpfms_ptr,
     ._bk_pm_module_vote_power_ctrl = bk_pm_module_vote_power_ctrl_ptr,
+    ._sys_hal_low_analog_set = sys_hal_low_analog_set,
 };
 
 const rf_variable_t g_rf_variable = {
@@ -101,6 +112,8 @@ const rf_variable_t g_rf_variable = {
     ._pm_power_module_state_on = PM_POWER_MODULE_STATE_ON,
     ._pm_power_module_name_phy = PM_POWER_MODULE_NAME_PHY,
     ._pm_power_module_name_rf = PM_POWER_SUB_MODULE_NAME_PHY_RF,
+    ._pm_power_module_name_mac = PM_POWER_MODULE_NAME_WIFIP_MAC,
+    ._pm_power_module_name_ofdm = PM_POWER_MODULE_NAME_OFDM,
 };
 
 void bk_rf_adapter_init(void)

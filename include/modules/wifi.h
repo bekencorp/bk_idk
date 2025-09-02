@@ -1599,6 +1599,24 @@ bk_err_t bk_wifi_csi_demo_turn_on_light(uint8_t color, bool flicker);
 #endif
 #endif
 
+/**
+ * @brief Disable wifi mac
+ *
+ * @return
+ *    - kNoErr: succeed
+ *    - otherwise: fail
+ */
+ bk_err_t bk_wifi_disable(void);
+
+/**
+ * @brief enable wifi mac
+ *
+ * @return
+ *    - kNoErr: succeed
+ *    - otherwise: fail
+ */
+ bk_err_t bk_wifi_enable(void);
+
 #ifdef __cplusplus
 }
 #endif

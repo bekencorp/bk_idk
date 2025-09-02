@@ -365,6 +365,42 @@ void cli_wifi_hidden_ap_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
 
 }
 
+void cli_wifi_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+    int ret = 0;
+    char *msg = NULL;
+
+    if (argc == 2) {
+        if(os_strcmp(argv[1], "disable") == 0)
+            ret = bk_wifi_disable();
+        else if(os_strcmp(argv[1], "enable") == 0)
+            ret = bk_wifi_enable();
+        else {
+            CLI_LOGI("unknown WiFi interface\n");
+            goto error;
+        }
+    } else {
+        CLI_LOGI("bad parameters\r\n");
+        goto error;
+    }
+
+    if (!ret) {
+        msg = WIFI_CMD_RSP_SUCCEED;
+        os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+        return;
+    }
+    else {
+        goto error;
+    }
+
+error:
+    msg = WIFI_CMD_RSP_ERROR;
+    os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+    return;
+}
+
+
+
 void cli_wifi_stop_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
 	int ret = 0;
@@ -2608,6 +2644,7 @@ static const struct cli_command s_wifi_commands[] = {
 	{"sta_eap", "sta_eap ssid password [identity] [client_cert] [private_key]", cli_wifi_sta_eap_cmd},
 #endif
 	{"stop", "stop {sta|ap}", cli_wifi_stop_cmd},
+	{"wifi", "enable/disable", cli_wifi_test_cmd},
 #if CONFIG_RWNX_PROTO_DEBUG
 	{"set_pd_flag", "set proto flag for enable or disable proto debug {1|0}", cli_wifi_set_proto_debug_flag},
 #endif

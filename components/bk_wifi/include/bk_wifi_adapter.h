@@ -18,4 +18,6 @@
 
 #include "generated/lmac_wifi_adapter.h"
 
+extern void restore_all_regs_for_mac();
+
 #endif // __BK_WIFI_ADAPTER_H

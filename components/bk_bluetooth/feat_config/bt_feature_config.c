@@ -21,6 +21,26 @@ int bk_bt_feature_init(void)
 #if CONFIG_BLUETOOTH_SUPPORT_LPO_ROSC
     s_bt_feature_struct._support_lpo_rosc = 1;
 #endif
+
+#if CONFIG_BLUETOOTH_USE_MIN_POWER_MODE
+    extern bool ate_is_enabled(void);
+    if(!ate_is_enabled())
+    {
+        s_bt_feature_struct._use_min_power_mode = 1;
+    }else
+    {
+        s_bt_feature_struct._use_min_power_mode = 0;
+    }
+#endif
+
+#if CONFIG_BLUETOOTH_SUPPORT_COEX_RF_MODE_SWITCH
+    s_bt_feature_struct._support_coex_rf_mode_switch = 1;
+#endif
+
+#if CONFIG_BLUETOOTH_SLEEP_PHY_SWITCH
+    s_bt_feature_struct._support_sleep_phy_switch = 1;
+#endif
+
     extern int bt_feature_adapter_init(void *arg);
 
     if (bt_feature_adapter_init((void *)&s_bt_feature_struct) != 0)

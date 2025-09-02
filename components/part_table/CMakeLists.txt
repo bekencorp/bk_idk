@@ -77,6 +77,7 @@ list(APPEND bk7236xx_supported_projects
 	"customization/config_ab"
 	"clip"
 	"matter"
+	"polar"
 )
 
 

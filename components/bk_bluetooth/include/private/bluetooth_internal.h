@@ -19,6 +19,8 @@
 uint8_t get_tx_pwr_idx(void);
 UINT32 ble_in_dut_mode(void);
 void txpwr_max_set_bt_polar();
+void txpwr_max_set_bt_iq();
+
 
 int bluetooth_controller_init(void);
 int bluetooth_controller_deinit(void);
@@ -26,4 +28,5 @@ int bluetooth_host_init(void);
 int bluetooth_host_deinit(void);
 int bluetooth_get_mac(uint8_t *mac);
 void bluetooth_rf_test_mode_retrig();
+void wifi_notify_state_to_bt(uint8_t is_active);
 

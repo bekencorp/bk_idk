@@ -49,4 +49,16 @@ menu "Bk_ble"
     config BLUETOOTH_SUPPORT_LPO_ROSC
         bool "support lpo rosc"
         default n
+    config BLUETOOTH_SUPPORT_IRAM_CODE
+        bool "support iram code"
+        default n
+    config BLUETOOTH_USE_MIN_POWER_MODE
+        bool "use minimum power mode"
+        default n
+    config BLUETOOTH_SUPPORT_COEX_RF_MODE_SWITCH
+        bool "support coex rf mode switch"
+        default n
+    config BLUETOOTH_SLEEP_PHY_SWITCH
+        bool "support sleep phy switch"
+        default n
 endmenu

@@ -156,6 +156,11 @@ bt_err_t bk_bluetooth_deinit(void)
     bluetooth_already_init = 0;
 
     LOGI("%s ok, %d \r\n", __func__, bluetooth_already_init);
+
+#if CONFIG_BLUETOOTH_USE_MIN_POWER_MODE
+    void bk_cal_set_kmod_calib_recover_flag(void);
+    bk_cal_set_kmod_calib_recover_flag();
+#endif
     rtos_unlock_mutex(&bluetooth_mutex);
     return ret;
 }

@@ -66,6 +66,7 @@ extern int bmsg_ioctl_sender(void *arg);
 extern int bmsg_software_para_ioctl_sender(void *arg);
 extern int bmsg_hardware_para_ioctl_sender(void *arg);
 void phy_get_channel(struct phy_channel_info *info, uint8_t index);
+extern bool g_wifi_enable_flag;
 
 int rw_msg_send(const void *msg_params, int reqcfm, uint16_t reqid, void *cfm)
 {
@@ -75,6 +76,13 @@ int rw_msg_send(const void *msg_params, int reqcfm, uint16_t reqid, void *cfm)
 	int err = BK_OK;
 
 	GLOBAL_INT_DECLARATION();
+
+	if (g_wifi_enable_flag == false) {
+		os_free((void *)msg_params);
+		RWNX_LOGI("%s Wi-Fi is NOT enable, please enable Wi-Fi first\n", __FUNCTION__);
+		err = BK_ERR_WIFI_NOT_INIT;
+		goto failed_or_timeout;
+	}
 
 	// Need wait cfm from full mac
 	if (reqcfm) {

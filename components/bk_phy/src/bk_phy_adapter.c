@@ -437,6 +437,26 @@ static void txpwr_max_set_bt_polar_wrapper()
 #endif
 }
 
+static void txpwr_max_set_bt_iq_wrapper()
+{
+#if CONFIG_BLUETOOTH
+#if (CONFIG_SOC_BK7239) || (CONFIG_SOC_BK7236) || (CONFIG_SOC_BK7286 || CONFIG_SOC_BK7258)
+#if CONFIG_BLUETOOTH_USE_MIN_POWER_MODE
+    txpwr_max_set_bt_iq();
+#endif
+#endif
+#endif
+}
+
+static bool get_ble_polar_mode()
+{
+#if CONFIG_BLUETOOTH_USE_MIN_POWER_MODE
+    return true;
+#else
+    return false;
+#endif
+}
+
 void * mpb_reg_api_wrapper(void)
 {
 #if CONFIG_WIFI_ENABLE
@@ -905,6 +925,8 @@ const phy_os_funcs_t g_phy_os_funcs = {
     ._get_tx_pwr_idx         = get_tx_pwr_idx_wrapper,
     ._txpwr_max_set_bt_polar = txpwr_max_set_bt_polar_wrapper,
     ._ble_tx_testmode_retrig = ble_rf_test_mode_retirg,
+    ._txpwr_max_set_bt_iq    = txpwr_max_set_bt_iq_wrapper,
+    ._get_ble_polar_mode     = get_ble_polar_mode,
 
     ._gpio_dev_map_rxen  = gpio_dev_map_rxen,
 

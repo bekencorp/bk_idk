@@ -49,6 +49,8 @@
 #define LOGW(...) BK_LOGW(TAG, ##__VA_ARGS__)
 #define LOGE(...) BK_LOGE(TAG, ##__VA_ARGS__)
 
+extern uint32_t rwnx_rfconfig;
+
 #define BT_OSI_VERSION              0x00010001
 
 #define BLUETOOTH_TASK_DEFAULT_STACK_SIZE       (1024 * 2)
@@ -300,6 +302,12 @@ static bk_err_t phy_power_ctrl_wrapper(uint8_t power_state)
 {
     pm_power_module_state_e state = (power_state ? PM_POWER_MODULE_STATE_ON : PM_POWER_MODULE_STATE_OFF);
     return bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_PHY_BT, state);
+}
+
+static bk_err_t wifi_mac_power_ctrl_wrapper(uint8_t power_state)
+{
+    pm_power_module_state_e state = (power_state ? PM_POWER_MODULE_STATE_ON : PM_POWER_MODULE_STATE_OFF);
+    return bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_WIFIP_MAC, state);
 }
 
 static bk_err_t bt_mac_clock_ctrl_wrapper(uint8_t clock_state)
@@ -713,10 +721,12 @@ static void free_wrapper(void *ptr)
 
 
 #define EVM_DEFUALT_BLE_RATE                   (158)
+#define PHY_BAND_2G4                           (0)
+#define PHY_CHNL_BW_20                         (0)
 static void manual_cal_save_ble_txpwr_wrapper(uint32_t channel, uint32_t pwr_gain)
 {
-    extern void manual_cal_save_txpwr(UINT32 rate, UINT32 channel, UINT32 pwr_gain);
-    manual_cal_save_txpwr(EVM_DEFUALT_BLE_RATE, channel, pwr_gain);
+    extern void manual_cal_save_txpwr(UINT32 rate, UINT32 rfband, UINT32 bandwidth, UINT32 channel, UINT32 pwr_gain);
+    manual_cal_save_txpwr(EVM_DEFUALT_BLE_RATE, PHY_BAND_2G4, PHY_CHNL_BW_20, channel, pwr_gain);
 }
 
 
@@ -1096,8 +1106,6 @@ static uint32_t get_test_rfconfig(void)
 
 static uint8_t get_rf_mode(void)
 {
-    extern uint32_t rwnx_rfconfig;
-
     if ((rwnx_rfconfig & BLUETOOTH_RF_PLL_MASK) == BLUETOOTH_RF_PLL_WIFI)
     {
         return BT_RF_MODE_WIFI;
@@ -1172,6 +1180,9 @@ static uint32_t manual_calibration_is_in_cali_mode()
     return manual_cal_is_in_rftest_mode();
 }
 
+static double rc32k_freq_old = 0;
+static double rc32k_freq_diff = 0;
+
 static double bk_driver_get_rc32k_freq()
 {
     if (BT_LPO_SRC_X32K == clk_32k_customer_config_get_wrapper() && BT_LPO_SRC_X32K == lpo_src_get_wrapper())
@@ -1187,7 +1198,19 @@ static double bk_driver_get_rc32k_freq()
         else
         {
 #if CONFIG_CKMN
-            return bk_rosc_32k_get_freq();
+            double rc32k_freq = bk_rosc_32k_get_freq();
+
+            rc32k_freq_diff = (rc32k_freq_old - rc32k_freq)>0? (rc32k_freq_old - rc32k_freq) : (rc32k_freq - rc32k_freq_old);
+
+            if ((rc32k_freq_diff >= 2500) && (rc32k_freq_old != 0))
+            {
+                return rc32k_freq_old;
+            }
+            else
+            {
+                rc32k_freq_old = rc32k_freq;
+                return rc32k_freq;
+            }
 #else
             return BLUETOOTH_CLK_32K;
 #endif
@@ -1218,16 +1241,48 @@ static void ble_exit_dut()
 static uint8_t set_bluetooth_power_level(float pwr_gain)
 {
     extern bk_err_t bk_ble_set_tx_power(float powerdBm);
+    extern bk_err_t bk_ble_set_polar_tx_power(float powerdBm);
     extern uint8_t manual_cal_get_ble_pwr_idx(uint8_t channel);
     extern uint8_t get_ble_txpwr_table_size(void);
+    extern uint8_t get_bt_polar_txpwr_table_size(void);
     extern void ble_cal_set_txpwr(uint8_t idx);
 
-    bk_ble_set_tx_power(pwr_gain);
+    if((rwnx_rfconfig & BLUETOOTH_RF_MODE_MASK) == BLUETOOTH_RF_MODE_POLAR)
+    {
+        bk_ble_set_polar_tx_power(pwr_gain);
+    }else
+    {
+        bk_ble_set_tx_power(pwr_gain);
+    }
     uint8_t pwr_index = manual_cal_get_ble_pwr_idx(19);
     uint8_t max_pwr_index = get_ble_txpwr_table_size() - 1;
+    if((rwnx_rfconfig & BLUETOOTH_RF_MODE_MASK) == BLUETOOTH_RF_MODE_POLAR)
+    {
+        max_pwr_index = get_bt_polar_txpwr_table_size() - 1;
+    }
     uint8_t new_pwr_index = pwr_index > max_pwr_index ? max_pwr_index : pwr_index;
     ble_cal_set_txpwr(pwr_index);
     return new_pwr_index;
+}
+
+static void set_rfconfig_rf_mode(uint8_t mode)
+{
+#if CONFIG_BLUETOOTH_USE_MIN_POWER_MODE
+    if (1 == mode)//polar
+    {
+        extern void ble_enter_polar_mode();
+        ble_enter_polar_mode();
+    }
+    else if (0 == mode)//IQ
+    {
+        extern void ble_enter_iq_mode();
+        ble_enter_iq_mode();
+    }
+    else
+    {
+        os_printf("%s, unsupported mode %d\r\n", __func__,mode);
+    }
+#endif
 }
 
 //warning: bt_osi_funcs must be data section, otherwise a2dp_source_pcm and a2dp_source_decode will trig watchdog !!!!!!!!
@@ -1340,6 +1395,8 @@ static struct bt_osi_funcs_t bt_osi_funcs =
     ._ble_enter_dut = ble_enter_dut,
     ._ble_exit_dut = ble_exit_dut,
     ._set_bluetooth_power_level = set_bluetooth_power_level,
+    ._set_rfconfig_rf_mode = set_rfconfig_rf_mode,
+    .wifi_mac_power_ctrl = wifi_mac_power_ctrl_wrapper,
 };
 
 int bk_bt_os_adapter_init(void)
