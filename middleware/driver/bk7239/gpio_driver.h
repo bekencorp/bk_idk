@@ -64,11 +64,6 @@ typedef enum {
        GPIO_SCR_MAP_GROUP_MAX,           /**< Invalid mode*/
 } gpio_scr_map_group_t;
 
-typedef struct {
-	gpio_id_t gpio_id;
-	uint32_t ldo_state;
-} gpio_ctrl_ldo_t;
-
 #if CONFIG_GPIO_DEFAULT_SET_SUPPORT
 typedef struct {
 	uint32_t gpio_id:				6;	//gpio_id_t
@@ -102,6 +97,12 @@ bk_err_t gpio_i2c1_sel(gpio_i2c1_map_mode_t gpio_i2c1_sel_mode);
 bk_err_t gpio_i2s_sel(gpio_i2s_map_mode_t gpio_i2s_sel_mode);
 bk_err_t gpio_jtag_sel(gpio_jtag_map_group_t gpio_jtag_sel_mode);
 bk_err_t gpio_scr_sel(gpio_scr_map_group_t mode);
+#if CONFIG_GPIO_RETENTION_SUPPORT
+bk_err_t gpio_retention_map_set(gpio_id_t id, gpio_output_state_e output);
+bk_err_t gpio_retention_map_clr(gpio_id_t id);
+uint64_t gpio_retention_map_get(void);
+void gpio_retention_sync(bool force_flag);
+#endif
 
 #if CONFIG_GPIO_WAKEUP_SUPPORT
 bk_err_t gpio_enter_low_power(void *param);

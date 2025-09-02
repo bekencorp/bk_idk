@@ -34,7 +34,8 @@ static void aon_pmu_dump_r0(void)
 	SOC_LOGI("	memchk_bps: %-8x\r\n", r->memchk_bps);
 	SOC_LOGI("	fast_boot: %-8x\r\n", r->fast_boot);
 	SOC_LOGI("	dig_wake_en: %-8x\r\n", r->dig_wake_en);
-	SOC_LOGI("	reserved_bit_3_12: %-8x\r\n", r->reserved_bit_3_12);
+	SOC_LOGI("	reserved_bit_3_4: %-8x\r\n", r->reserved_bit_3_4);
+	SOC_LOGI("	gpio_retention_bitmap: %-8x\r\n", r->gpio_retention_bitmap);
 	SOC_LOGI("	saved_time: %-8x\r\n", r->saved_time);
 	SOC_LOGI("	reset_reason: %-8x\r\n", r->reset_reason);
 	SOC_LOGI("	gpio_sleep: %-8x\r\n", r->gpio_sleep);
@@ -183,7 +184,8 @@ static void aon_pmu_dump_r7a(void)
 	SOC_LOGI("	memchk_bps: %-8x\r\n", r->memchk_bps);
 	SOC_LOGI("	fast_boot: %-8x\r\n", r->fast_boot);
 	SOC_LOGI("	dig_wake_en: %-8x\r\n", r->dig_wake_en);
-	SOC_LOGI("	reserved_bit_3_12: %-8x\r\n", r->reserved_bit_3_12);
+	SOC_LOGI("	reserved_bit_3_4: %-8x\r\n", r->reserved_bit_3_4);
+	SOC_LOGI("	gpio_retention_bitmap: %-8x\r\n", r->gpio_retention_bitmap);
 	SOC_LOGI("	saved_time: %-8x\r\n", r->saved_time);
 	SOC_LOGI("	reset_reason: %-8x\r\n", r->reset_reason);
 	SOC_LOGI("	gpio_sleep: %-8x\r\n", r->gpio_sleep);
@@ -197,7 +199,8 @@ static void aon_pmu_dump_r7b(void)
 	SOC_LOGI("	memchk_bps: %-8x\r\n", r->memchk_bps);
 	SOC_LOGI("	fast_boot: %-8x\r\n", r->fast_boot);
 	SOC_LOGI("	dig_wake_en: %-8x\r\n", r->dig_wake_en);
-	SOC_LOGI("	reserved_bit_3_12: %-8x\r\n", r->reserved_bit_3_12);
+	SOC_LOGI("	reserved_bit_3_4: %-8x\r\n", r->reserved_bit_3_4);
+	SOC_LOGI("	gpio_retention_bitmap: %-8x\r\n", r->gpio_retention_bitmap);
 	SOC_LOGI("	saved_time: %-8x\r\n", r->saved_time);
 	SOC_LOGI("	reset_reason: %-8x\r\n", r->reset_reason);
 	SOC_LOGI("	gpio_sleep: %-8x\r\n", r->gpio_sleep);

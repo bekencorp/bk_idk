@@ -153,6 +153,22 @@ static inline uint32_t aon_pmu_ll_get_r7b_saved_time(void) {
 	return r->saved_time;
 }
 
+static inline uint32_t aon_pmu_ll_get_r0_gpio_retention_bitmap(void) {
+	aon_pmu_r0_t *r = (aon_pmu_r0_t*)(SOC_AON_PMU_REG_BASE + (0x0 << 2));
+	return r->gpio_retention_bitmap;
+}
+
+static inline uint32_t aon_pmu_ll_get_r7b_gpio_retention_bitmap(void) {
+	aon_pmu_r0_t *r = (aon_pmu_r0_t*)(SOC_AON_PMU_REG_BASE + (0x7b << 2));
+	return r->gpio_retention_bitmap;
+}
+
+static inline void aon_pmu_ll_set_r0_gpio_retention_bitmap(uint32_t v) {
+	aon_pmu_r0_t *r = (aon_pmu_r0_t*)(SOC_AON_PMU_REG_BASE + (0x0 << 2));
+	r->gpio_retention_bitmap = v;
+}
+
+
 //reg r2:
 
 static inline void aon_pmu_ll_set_r2(uint32_t v) {

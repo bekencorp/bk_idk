@@ -30,11 +30,3 @@ bk_err_t ana_gpio_register_wakeup_source(gpio_id_t gpio_id);
 bk_err_t ana_gpio_unregister_wakeup_source(gpio_id_t gpio_id);
 bk_err_t ana_gpio_config_wakeup_source(uint64_t gpio_bitmap);
 bk_err_t ana_gpio_clear_wakeup_source(void);
-
-
-#if CONFIG_GPIO_WAKEUP_SUPPORT
-typedef struct {
-	gpio_id_t id;
-	gpio_int_type_t int_type;
-} gpio_wakeup_t;
-#endif

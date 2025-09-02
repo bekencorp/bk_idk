@@ -17,6 +17,8 @@
 #include <driver/io_matrix.h>
 #include "gpio_driver.h"
 #include "gpio_adapter.h"
+#include "aon_pmu_hal.h"
+#include "gpio_hal.h"
 
 
 #define GPIO_REG_DEFAULT_VALUE      0x0
@@ -26,6 +28,16 @@
 				}\
 			} while(0)
 
+
+#if CONFIG_GPIO_RETENTION_SUPPORT
+#define GPIO_RETENTION_MAP_DUMP            (0)
+#define GPIO_RETENTION_MAP_SIZE            (8)
+#define GPIO_RETENTION_MAP                 {GPIO_24, GPIO_6, GPIO_NUM_MAX, GPIO_NUM_MAX, GPIO_NUM_MAX, GPIO_NUM_MAX, GPIO_NUM_MAX, GPIO_NUM_MAX}
+#define GPIO_RETENTION_EN_CHECK(id, i, f)  ((id < GPIO_NUM_MAX) && (s_gpio_retention_en_bitmap & BIT(i) || f))
+
+static uint32_t s_gpio_retention_map[GPIO_RETENTION_MAP_SIZE] = GPIO_RETENTION_MAP;
+static uint32_t s_gpio_retention_en_bitmap = 0;
+#endif
 
 bk_err_t gpio_dev_map(gpio_id_t gpio_id, gpio_dev_t dev)
 {
@@ -171,3 +183,186 @@ bk_err_t bk_gpio_ctrl_external_ldo(gpio_ctrl_ldo_module_e module,gpio_id_t gpio_
 
 	return BK_OK;
 }
+
+#if CONFIG_GPIO_RETENTION_SUPPORT
+bk_err_t bk_gpio_retention_set(gpio_id_t gpio_id, gpio_output_state_e gpio_output_state)
+{
+	bk_err_t ret;
+
+	ret = gpio_retention_map_set(gpio_id, gpio_output_state);
+
+	if (BK_OK != ret)
+	{
+		GPIO_LOGW("gpio retention map set fail: gpio_%d type: %d\r\n", gpio_id, gpio_output_state);
+	}
+
+#if GPIO_RETENTION_MAP_DUMP
+	GPIO_LOGD("gpio retention map:\r\n");
+#if CONFIG_AON_PMU_REG0_REFACTOR_DEV
+	uint32_t bitmap = aon_pmu_hal_get_gpio_retention_bitmap(false);
+#else
+	uint32_t bitmap = aon_pmu_hal_gpio_retention_bitmap_get();
+#endif
+	for (uint32_t i = 0; i < GPIO_RETENTION_MAP_SIZE; i++)
+	{
+		gpio_id = s_gpio_retention_map[i];
+		gpio_output_state = !!(bitmap & BIT(i));
+		if (GPIO_RETENTION_EN_CHECK(gpio_id, i, false))
+		{
+			GPIO_LOGD("gpio_%d type: %d\r\n", gpio_id, gpio_output_state);
+		}
+	}
+#endif
+
+	return ret;
+}
+
+bk_err_t bk_gpio_retention_clr(gpio_id_t gpio_id)
+{
+	bk_err_t ret;
+
+	ret = gpio_retention_map_clr(gpio_id);
+
+	if (BK_OK != ret)
+	{
+		GPIO_LOGW("gpio retention map clr fail: gpio_%d\r\n", gpio_id);
+	}
+
+#if GPIO_RETENTION_MAP_DUMP
+	GPIO_LOGD("gpio retention map:\r\n");
+#if CONFIG_AON_PMU_REG0_REFACTOR_DEV
+	uint32_t bitmap = aon_pmu_hal_get_gpio_retention_bitmap(false);
+#else
+	uint32_t bitmap = aon_pmu_hal_gpio_retention_bitmap_get();
+#endif
+	gpio_output_state_e gpio_output_state;
+	for (uint32_t i = 0; i < GPIO_RETENTION_MAP_SIZE; i++)
+	{
+		gpio_id = s_gpio_retention_map[i];
+		gpio_output_state = !!(bitmap & BIT(i));
+		if (GPIO_RETENTION_EN_CHECK(gpio_id, i, false))
+		{
+			GPIO_LOGD("gpio_%d type: %d\r\n", gpio_id, gpio_output_state);
+		}
+	}
+#endif
+
+	return ret;
+}
+
+bk_err_t gpio_retention_map_set(gpio_id_t id, gpio_output_state_e gpio_output_state)
+{
+	bk_err_t ret = BK_FAIL;
+	gpio_id_t gpio_id;
+#if CONFIG_AON_PMU_REG0_REFACTOR_DEV
+	uint32_t bitmap = aon_pmu_hal_get_gpio_retention_bitmap(false);
+#else
+	uint32_t bitmap = aon_pmu_hal_gpio_retention_bitmap_get();
+#endif
+
+	for (uint32_t i = 0; i < GPIO_RETENTION_MAP_SIZE; i++)
+	{
+		gpio_id = s_gpio_retention_map[i];
+		if (id == gpio_id && gpio_id < GPIO_NUM_MAX)
+		{
+			s_gpio_retention_en_bitmap |= BIT(i);
+			if (GPIO_OUTPUT_STATE_HIGH == gpio_output_state) {
+				bitmap |= BIT(i);
+			} else if (GPIO_OUTPUT_STATE_LOW == gpio_output_state) {
+				bitmap &= ~BIT(i);
+			}
+			ret = BK_OK;
+		}
+	}
+
+#if CONFIG_AON_PMU_REG0_REFACTOR_DEV
+	aon_pmu_hal_set_gpio_retention_bitmap(bitmap);
+#else
+	aon_pmu_hal_gpio_retention_bitmap_set(bitmap);
+#endif
+
+	return ret;
+}
+
+bk_err_t gpio_retention_map_clr(gpio_id_t id)
+{
+	bk_err_t ret = BK_FAIL;
+	gpio_id_t gpio_id;
+#if CONFIG_AON_PMU_REG0_REFACTOR_DEV
+	uint32_t bitmap = aon_pmu_hal_get_gpio_retention_bitmap(false);
+#else
+	uint32_t bitmap = aon_pmu_hal_gpio_retention_bitmap_get();
+#endif
+
+	for (uint32_t i = 0; i < GPIO_RETENTION_MAP_SIZE; i++)
+	{
+		gpio_id = s_gpio_retention_map[i];
+		if (id == gpio_id && gpio_id < GPIO_NUM_MAX)
+		{
+			s_gpio_retention_en_bitmap &= ~BIT(i);
+			bitmap &= ~BIT(i);
+			ret = BK_OK;
+		}
+	}
+
+#if CONFIG_AON_PMU_REG0_REFACTOR_DEV
+	aon_pmu_hal_set_gpio_retention_bitmap(bitmap);
+#else
+	aon_pmu_hal_gpio_retention_bitmap_set(bitmap);
+#endif
+
+	return ret;
+}
+
+uint64_t gpio_retention_map_get(void)
+{
+	gpio_id_t gpio_id;
+	uint64_t gpio_bitmap = 0;
+
+	for (uint32_t i = 0; i < GPIO_RETENTION_MAP_SIZE; i++)
+	{
+		gpio_id = s_gpio_retention_map[i];
+		if (GPIO_RETENTION_EN_CHECK(gpio_id, i, false))
+		{
+			gpio_bitmap |= BIT64(gpio_id);
+		}
+	}
+
+	return gpio_bitmap;
+}
+
+void gpio_retention_sync(bool force_flag)
+{
+	gpio_id_t gpio_id;
+#if CONFIG_AON_PMU_REG0_REFACTOR_DEV
+	uint32_t bitmap = aon_pmu_hal_get_gpio_retention_bitmap(true);
+#else
+	uint32_t bitmap = aon_pmu_hal_gpio_retention_bitmap_get();
+#endif
+
+	for (uint32_t i = 0; i < GPIO_RETENTION_MAP_SIZE; i++)
+	{
+		gpio_id = s_gpio_retention_map[i];
+		if (GPIO_IS_SECURE(gpio_id))
+		{
+			continue;
+		}
+		if (GPIO_RETENTION_EN_CHECK(gpio_id, i, force_flag))
+		{
+			if (bitmap & BIT(i)) {
+				GPIO_UP(gpio_id);
+			} else {
+				GPIO_DOWN(gpio_id);
+			}
+		}
+		if (force_flag)
+		{
+#if CONFIG_GPIO_RETENTION_DISPOSABLE
+			gpio_retention_map_clr(gpio_id);
+#else
+			s_gpio_retention_en_bitmap |= BIT64(i);
+#endif
+		}
+	}
+}
+#endif

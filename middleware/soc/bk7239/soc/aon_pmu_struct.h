@@ -27,7 +27,8 @@ typedef volatile union {
 		uint32_t memchk_bps               :  1; /**<bit[0 : 0] */
 		uint32_t fast_boot                :  1; /**<bit[1 : 1] */
 		uint32_t dig_wake_en              :  1; /**<bit[2 : 2] */
-		uint32_t reserved_bit_3_12        : 10; /**<bit[3 :12] */
+		uint32_t reserved_bit_3_4         :  2; /**<bit[3 :4] */
+		uint32_t gpio_retention_bitmap    :  8; /**<bit[5 : 12] */
 		uint32_t saved_time               : 10; /**<bit[13:22] */
 		uint32_t dlv_startup              :  1; /**<bit[23:23] */
 		uint32_t reset_reason             :  7; /**<bit[24:30] */

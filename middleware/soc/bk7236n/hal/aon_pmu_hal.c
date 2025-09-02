@@ -263,6 +263,31 @@ void aon_pmu_hal_set_gpio_sleep(uint32_t value, bool write_immediately)
 		aon_pmu_ll_set_r0_gpio_sleep(value);
 	}
 }
+
+uint32_t aon_pmu_hal_get_gpio_retention_bitmap(bool read_history)
+{
+	if (read_history)
+		return aon_pmu_ll_get_r7b_gpio_retention_bitmap();
+	else
+		return aon_pmu_ll_get_r0_gpio_retention_bitmap();
+}
+
+void aon_pmu_hal_set_gpio_retention_bitmap(uint32_t value)
+{
+	aon_pmu_ll_set_r0_gpio_retention_bitmap(value);
+}
+
+uint32_t aon_pmu_hal_gpio_retention_bitmap_get()
+{
+	return aon_pmu_ll_get_r0_gpio_retention_bitmap();
+}
+
+void aon_pmu_hal_gpio_retention_bitmap_set(uint32_t bitmap)
+{
+	aon_pmu_ll_set_r0_gpio_retention_bitmap(bitmap);
+	aon_pmu_ll_set_r25(0x424B55AA);
+	aon_pmu_ll_set_r25(0xBDB4AA55);
+}
 #else
 uint32_t aon_pmu_hal_get_dlv_startup(void)
 {

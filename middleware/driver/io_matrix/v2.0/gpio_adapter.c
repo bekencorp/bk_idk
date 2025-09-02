@@ -20,6 +20,7 @@
 
 #include "gpio_adapter.h"
 #include "gpio_driver.h"
+#include "gpio_hal.h"
 #include "io_matrix_driver.h"
 #include "iomx_ll.h"
 #if CONFIG_ANA_GPIO
