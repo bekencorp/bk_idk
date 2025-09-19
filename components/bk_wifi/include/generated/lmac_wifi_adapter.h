@@ -363,6 +363,8 @@ typedef struct {
 	int32_t  _pm_low_voltage_delta_wakeup_delay_in_us;
 	#endif
 	bool _improve_he_tb_enable;
+	uint8_t _wifi_mac_short_retry;
+	uint8_t _wifi_mac_long_retry;
 } wifi_os_variable_t;
 extern wifi_os_variable_t g_wifi_os_variable;
 

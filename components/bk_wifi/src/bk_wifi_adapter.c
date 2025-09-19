@@ -1597,6 +1597,8 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_variable_t g_wifi_os_variabl
 	#if (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX)
 	._pm_low_voltage_delta_wakeup_delay_in_us = PM_LOW_VOLTAGE_DELTA_WAKEUP_DELAY_IN_US,
 	#endif
+	._wifi_mac_short_retry = CONFIG_MAC_SHORT_RETRY,
+	._wifi_mac_long_retry = CONFIG_MAC_LONG_RETRY,
 };
 
 Countryregulations country_regulation_table[] = {

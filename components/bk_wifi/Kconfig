@@ -372,4 +372,14 @@ menu "Bk_Wifi"
 	config TCP_PROTECT_EN
 		bool "Enable tcp protect in connected"
 		default n
+
+	config MAC_SHORT_RETRY
+		int "MAC short retry limit"
+		range 1 240
+		default 240
+
+	config MAC_LONG_RETRY
+		int "MAC long retry limit"
+		range 1 240
+		default 240
 endmenu
