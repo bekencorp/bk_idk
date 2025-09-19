@@ -79,6 +79,7 @@
 #include "bk_uart.h"
 #include "bk_wifi.h"
 #include "bk_private/bk_wifi.h"
+#include <components/ate.h>
 
 //TODO should use registered callback here!!!
 extern int ke_l2_packet_tx(unsigned char *buf, int len, int flag);
@@ -122,7 +123,12 @@ static void low_level_init(struct netif *netif)
     netif->hwaddr_len = ETHARP_HWADDR_LEN;
     os_memcpy(netif->hwaddr, macptr, ETHARP_HWADDR_LEN);
     /* maximum transfer unit */
-    netif->mtu = 1500;
+    if (ate_is_enabled()) {
+       netif->mtu = 8192;
+    } else {
+       netif->mtu = 1500;
+    }
+    LWIP_LOGI("wlanif mtu %d\n", netif->mtu);
     /* device capabilities */
     /* don't set NETIF_FLAG_ETHARP if this device is not an ethernet one */
 #if !CONFIG_BRIDGE

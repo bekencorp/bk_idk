@@ -582,6 +582,43 @@ int8_t get_rssi_by_mac(char *mac)
     return rssi;
 }
 
+#ifdef CONFIG_WIFI6
+// Return 0 let icmp module choose response len.
+int icmp_resp_len(struct pbuf *p)
+{
+	int8_t modf, mcs, bw;
+	struct fhost_rx_header *rxhdr;
+	const int ax_20M_n_byte_per_16symbol[10] = { 231, 465, 699, 933, 1401, 1869, 2103, 2337, 2805, 3117};
+
+	if (!p->extra)
+		return 0;
+
+	rxhdr = p->extra;
+
+	modf = rxhdr->hwvect.recvec1a & 0xf;
+	bw = (rxhdr->hwvect.recvec1a & 0b110000) >> 4; // hal_desc_get_bandwdith
+	if (modf < 2) {
+		mcs = (rxhdr->hwvect.recvec1b >> 4) & 0xf;	 //nonht
+	} else if (modf < 4) {
+		mcs = (rxhdr->hwvect.recvec1b >> 24) & 0x7f; //htmf & htgf
+	} else if (modf < 5) {
+		mcs = (rxhdr->hwvect.recvec1c >> 8) & 0xf;	 //vht
+	} else {
+		mcs = rxhdr->hwvect.recvec1d & 0xf; 		//he
+	}
+
+	// HE
+	if (modf >= 5 && mcs >= 0 && mcs <= ARRAY_SIZE(ax_20M_n_byte_per_16symbol)) {
+		if (bw == 0)
+			return ax_20M_n_byte_per_16symbol[mcs];
+		else if (bw == 1)
+			return ax_20M_n_byte_per_16symbol[mcs] << 1;
+	}
+
+	return 0;
+}
+#endif
+
 /**
  * rwm_upload_data - upload 802.3 frame to lwip, and 802.11 frame to wpa_s/hostapd
  *
@@ -634,6 +671,7 @@ UINT32 rwm_upload_data(void *host_id, uint32_t frame_len)
 	// Else pbuf_clone will assert because pbuf->len is larger than
 	// pbuf->tot_len. (AMY-697).
 	rxhdr = (struct fhost_rx_header *)q->payload;
+	q->extra = rxhdr = (struct fhost_rx_header *)q->payload;
 
 	pbuf_header(q, -(s16)macif_get_rxl_payload_offset());
 

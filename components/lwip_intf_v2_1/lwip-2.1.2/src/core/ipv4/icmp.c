@@ -50,6 +50,7 @@
 #include "lwip/stats.h"
 
 #include <string.h>
+#include <components/ate.h>
 
 #if BK_LWIP
 #include "bk_fake_clock.h"
@@ -70,6 +71,7 @@
 #define ICMP_DEST_UNREACH_DATASIZE 8
 
 static void icmp_send_response(struct pbuf *p, u8_t type, u8_t code);
+int icmp_resp_len(struct pbuf *p);
 
 /**
  * Processes ICMP input packets, called from ip_input().
@@ -158,7 +160,11 @@ icmp_input(struct pbuf *p, struct netif *inp)
       }
 #endif
 #if LWIP_ICMP_ECHO_CHECK_INPUT_PBUF_LEN
-      if (pbuf_add_header(p, hlen + PBUF_LINK_HLEN + PBUF_LINK_ENCAPSULATION_HLEN)) {
+      if (
+#if BK_LWIP && CONFIG_WIFI6
+         ate_is_enabled() ||
+#endif
+         pbuf_add_header(p, hlen + PBUF_LINK_HLEN + PBUF_LINK_ENCAPSULATION_HLEN)) {
         /* p is not big enough to contain link headers
          * allocate a new one and copy p into it
          */
@@ -168,6 +174,16 @@ icmp_input(struct pbuf *p, struct netif *inp)
           LWIP_DEBUGF(ICMP_DEBUG, ("icmp_input: allocating new pbuf failed (tot_len overflow)\n"));
           goto icmperr;
         }
+#if BK_LWIP && CONFIG_WIFI6
+        if (ate_is_enabled()) {
+          // If ATE is enabled, change the response length depends on peer's rate and symbols needed.
+          // FIXME: even if length is changed, but the length of IP packet and checksum are not correct.
+          int new_len = icmp_resp_len(p);
+          if (new_len && new_len > alloc_len) {
+            alloc_len = new_len;
+          }
+        }
+#endif
         /* allocate new packet buffer with space for link headers */
         r = pbuf_alloc(PBUF_LINK, alloc_len, PBUF_RAM);
         if (r == NULL) {
