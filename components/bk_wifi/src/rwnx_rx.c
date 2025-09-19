@@ -588,6 +588,8 @@ int icmp_resp_len(struct pbuf *p)
 {
 	int8_t modf, mcs, bw;
 	struct fhost_rx_header *rxhdr;
+	const int ac_20M_byte_per_16symbol[10]  = { 256, 256, 256, 256, 512, 512, 512, 512, 768, 1024};
+	const int ac_40M_byte_per_16symbol[10]  = { 256, 256, 512, 512, 768, 1024, 1024, 1024, 1280, 1536};
 	const int ax_20M_n_byte_per_16symbol[10] = { 231, 465, 699, 933, 1401, 1869, 2103, 2337, 2805, 3117};
 
 	if (!p->extra)
@@ -607,8 +609,14 @@ int icmp_resp_len(struct pbuf *p)
 		mcs = rxhdr->hwvect.recvec1d & 0xf; 		//he
 	}
 
-	// HE
-	if (modf >= 5 && mcs >= 0 && mcs <= ARRAY_SIZE(ax_20M_n_byte_per_16symbol)) {
+	if (modf == 4 && mcs >= 0 && mcs < ARRAY_SIZE(ac_40M_byte_per_16symbol)) {
+		// VHT 20M/40M
+		if (bw == 0)
+			return ac_20M_byte_per_16symbol[mcs];
+		else if (bw == 1)
+			return ac_40M_byte_per_16symbol[mcs];
+	} else if (modf >= 5 && mcs >= 0 && mcs < ARRAY_SIZE(ax_20M_n_byte_per_16symbol)) {
+		// HE 20M/40M
 		if (bw == 0)
 			return ax_20M_n_byte_per_16symbol[mcs];
 		else if (bw == 1)
