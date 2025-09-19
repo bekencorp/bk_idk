@@ -62,6 +62,8 @@ list(APPEND incs
 	lwip-2.1.2/src/core/timeouts.c
 	lwip-2.1.2/src/core/udp.c
 	lwip-2.1.2/src/core/debug.c
+	lwip-2.1.2/src/netif/bridgeif.c
+	lwip-2.1.2/src/netif/bridgeif_fdb.c
 	lwip-2.1.2/src/netif/ethernet.c
 	dhcpd/dhcp-server.c
 	dhcpd/dhcp-server-main.c
@@ -70,13 +72,6 @@ list(APPEND incs
 if (CONFIG_ETH)
 	list(APPEND srcs
 	lwip-2.1.2/port/ethernetif.c
-	)
-endif()
-
-if (CONFIG_BRIDGE)
-	list(APPEND srcs
-	lwip-2.1.2/src/netif/bridgeif.c
-	lwip-2.1.2/src/netif/bridgeif_fdb.c
 	)
 endif()
 

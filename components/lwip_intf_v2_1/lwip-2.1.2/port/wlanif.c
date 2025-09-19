@@ -67,7 +67,9 @@
 
 #include "bk_drv_model.h"
 #include <os/mem.h>
-
+#ifdef CONFIG_BRIDGE
+#include "bridgeif.h"
+#endif
 #include <os/os.h>
 
 /* Define those to better describe your network interface. */
@@ -81,11 +83,10 @@
 //TODO should use registered callback here!!!
 extern int ke_l2_packet_tx(unsigned char *buf, int len, int flag);
 extern int bmsg_tx_sender(struct pbuf *p, uint32_t vif_idx);
+extern uint8_t vif_mgmt_get_staid(void *vif, uint8_t *sta_addr);
 #if CONFIG_WIFI6_CODE_STACK
 extern int bmsg_special_tx_sender(struct pbuf *p, uint32_t vif_idx);
 #endif
-/* Forward declarations. */
-void ethernetif_input(int iface, struct pbuf *p);
 
 /**
  * In this function, the hardware should be initialized.
@@ -198,21 +199,24 @@ static inline int is_broadcast_mac_addr(const u8 *a)
  *
  * @param netif the lwip network interface structure for this ethernetif
  */
+extern uint32_t mac_sta_mgmt_get_inst_nbr(void *_sta);
+extern uint8_t mac_vif_mgmt_get_index(void *_vif);
+extern void *sta_mgmt_get_entry(uint8_t staid);
 void
-ethernetif_input(int iface, struct pbuf *p)
+ethernetif_input(int iface, struct pbuf *p, int dst_idx)
 {
     struct eth_hdr *ethhdr;
-	struct netif *netif;
-	void *vif;
+    struct netif *netif;
+    void *vif;
 
-	if (p->len <= SIZEOF_ETH_HDR) {
-		pbuf_free(p);
-		return;
-	}
+    if (p->len <= SIZEOF_ETH_HDR) {
+        pbuf_free(p);
+        return;
+    }
 
-	vif = wifi_netif_vifid_to_vif(iface);
-	netif = (struct netif *)wifi_netif_get_vif_private_data(vif);
-	if(!netif) {
+    vif = wifi_netif_vifid_to_vif(iface);
+    netif = (struct netif *)wifi_netif_get_vif_private_data(vif);
+    if(!netif) {
         //LWIP_LOGI("ethernetif_input no netif found %d\r\n", iface);
         pbuf_free(p);
         p = NULL;
@@ -222,27 +226,68 @@ ethernetif_input(int iface, struct pbuf *p)
     /* points to packet payload, which starts with an Ethernet header */
     ethhdr = p->payload;
 
-    if( (memcmp(netif->hwaddr,ethhdr->src.addr,NETIF_MAX_HWADDR_LEN)==0) && (htons(ethhdr->type) !=ETHTYPE_ARP) )
-    {
-        LWIP_DEBUGF(ETHARP_DEBUG ,("ethernet_input frame is my send,drop it\r\n"));
-        pbuf_free(p);
-        return;
+    /* need to forward */
+    if (wifi_netif_vif_to_netif_type(vif) == NETIF_IF_AP) {
+        // If dest sta is known, or packet is multicast, forward this packet
+        if ((ethhdr->dest.addr[0] & 1) || dst_idx != 0xff) {
+            // check if is arp request to us, doesn't need to forward
+            struct pbuf *q;
+
+            // unicast frame, check da staidx
+            // for softap+ap, if sta under softap sends packets to router,
+            // dst_idx will be valid, and packets will be forwarded in our
+            // softap bss.
+            // CONFIG_WIFI_MAC_SUPPORT_STAS_MAX_NUM
+            if (!(ethhdr->dest.addr[0] & 1) && dst_idx < CONFIG_WIFI_MAC_SUPPORT_STAS_MAX_NUM) {
+                void *sta = sta_mgmt_get_entry(dst_idx);
+                // if STA doesn't belong to this vif
+                if (mac_sta_mgmt_get_inst_nbr(sta) != mac_vif_mgmt_get_index(vif)) {
+                    goto process;
+                }
+            }
+
+            if (ethhdr->type == PP_HTONS(ETHTYPE_ARP)) {
+                struct etharp_hdr *hdr = (struct etharp_hdr *)(ethhdr + 1);
+                if (hdr->opcode != PP_HTONS(ARP_REQUEST))
+                    goto forward;
+#if CONFIG_BRIDGE
+                // FIXME: Handle ARP Probe
+                struct netif *brif;
+                bridgeif_port_t *port;
+                if (bridgeif_netif_client_id != 0xff) {
+                    port = (bridgeif_port_t *)netif_get_client_data(netif, bridgeif_netif_client_id);
+                    if (!port || !port->bridge || !port->bridge->netif)
+                        goto forward;
+                    brif = port->bridge->netif;
+                    if (!memcmp(&hdr->dipaddr, &brif->ip_addr, 4)) {
+                        // os_printf("DIP TO BR\n");
+                        goto process;
+                    }
+                } else {
+                    if (!memcmp(&hdr->dipaddr, &netif->ip_addr, 4)) {
+                        // os_printf("DIP TO SOFTAP\n");
+                        goto process;
+                    }
+                }
+#else
+                if (!memcmp(&hdr->dipaddr, &netif->ip_addr, 4)) {
+                    // os_printf("DIP TO SOFTAP\n");
+                    goto process;
+                }
+#endif
+            }
+forward:
+            q = pbuf_clone(PBUF_RAW_TX, PBUF_RAM, p);
+            if (q != NULL) {
+                low_level_output(netif, q);
+                pbuf_free(q);
+            } else {
+                LWIP_LOGE("alloc pbuf failed, don't forward\r\n");
+            }
+        }
     }
 
-	/* need to forward*/
-	if (wifi_netif_vif_to_netif_type(vif) == NETIF_IF_AP) {
-		if (((!is_broadcast_mac_addr(ethhdr->dest.addr) &&
-			(memcmp(netif->hwaddr,ethhdr->dest.addr,NETIF_MAX_HWADDR_LEN) != 0))) ||
-			(is_broadcast_mac_addr(ethhdr->dest.addr))) {
-				struct pbuf *q;
-				q = pbuf_clone(PBUF_RAW_TX, PBUF_RAM, p);
-				if (q != NULL) {
-					low_level_output(netif, q);
-					pbuf_free(q);
-				} else
-					LWIP_LOGI("alloc pbuf failed, dont forward\r\n");
-		}
-	}
+process:
 
     switch (htons(ethhdr->type))
     {
@@ -271,9 +316,9 @@ ethernetif_input(int iface, struct pbuf *p)
     case ETHTYPE_WAI:
 #endif
     case ETHTYPE_EAPOL:
-	 	ke_l2_packet_tx(p->payload, p->len, iface);
-		pbuf_free(p);
-		p = NULL;
+        ke_l2_packet_tx(p->payload, p->len, iface);
+        pbuf_free(p);
+        p = NULL;
         break;
 
     default:
@@ -308,8 +353,8 @@ wlanif_init(struct netif *netif)
      */
     NETIF_INIT_SNMP(netif, snmp_ifType_ethernet_csmacd, 10000000);
 
-    netif->name[0] = IFNAME0;
-    netif->name[1] = IFNAME1;
+    //netif->name[0] = IFNAME0;
+    //netif->name[1] = IFNAME1;
     /* We directly use etharp_output() here to save a function call.
      * You can instead declare your own function an call etharp_output()
      * from it if you have to do some checks before sending (e.g. if link

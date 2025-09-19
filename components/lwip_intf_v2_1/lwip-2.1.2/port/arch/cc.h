@@ -92,14 +92,14 @@ typedef uintptr_t mem_ptr_t;
 
 #ifndef LWIP_PLATFORM_DIAG
 #define LWIP_PLATFORM_DIAG(x) do {fatal_prf x ;} while(0)
-#endif 
- 
-#define U16_F "4d"
-#define S16_F "4d"
-#define X16_F "4x"
-#define U32_F "8ld"
-#define S32_F "8ld"
-#define X32_F "8lx"
+#endif
+
+#define U16_F "d"
+#define S16_F "d"
+#define X16_F "x"
+#define U32_F "ld"
+#define S32_F "ld"
+#define X32_F "lx"
 
 /*
  * unknow defination

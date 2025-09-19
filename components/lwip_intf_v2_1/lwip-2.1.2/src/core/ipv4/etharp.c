@@ -63,6 +63,7 @@
 #include LWIP_HOOK_FILENAME
 #endif
 #include "bk_wifi.h"
+#include "lwip/sys.h"
 
 /** Re-request a used ARP entry 1 minute before it would expire to prevent
  *  breaking a steadily used connection because the ARP entry timed out. */
@@ -113,10 +114,6 @@ static int arp_rerequest_used_broadcast = ARP_AGE_REREQUEST_USED_BROADCAST;
 
 static beken2_timer_t arp_conflict_tmr = {0};
 
-#if !LWIP_NETIF_HWADDRHINT
-static netif_addr_idx_t etharp_cached_entry;
-#endif /* !LWIP_NETIF_HWADDRHINT */
-
 /** Try hard to create a new entry - we want the IP address to appear in
     the cache (even if this means removing an active entry or so). */
 #define ETHARP_FLAG_TRY_HARD     1
@@ -124,6 +121,10 @@ static netif_addr_idx_t etharp_cached_entry;
 #if ETHARP_SUPPORT_STATIC_ENTRIES
 #define ETHARP_FLAG_STATIC_ENTRY 4
 #endif /* ETHARP_SUPPORT_STATIC_ENTRIES */
+
+#if !LWIP_NETIF_HWADDRHINT
+static netif_addr_idx_t etharp_cached_entry;
+#endif /* !LWIP_NETIF_HWADDRHINT */
 
 #if LWIP_NETIF_HWADDRHINT
 #define ETHARP_SET_ADDRHINT(netif, addrhint)  do { if (((netif) != NULL) && ((netif)->hints != NULL)) { \

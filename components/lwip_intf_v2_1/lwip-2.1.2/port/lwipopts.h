@@ -44,6 +44,11 @@
 #define LWIP_HAVE_LOOPIF                1
 #define LWIP_NETIF_LOOPBACK_MULTITHREADING       1
 #define LWIP_LOOPBACK_MAX_PBUFS         8
+#ifdef CONFIG_IP_FORWARD_ALLOW_TX_ON_RX_NETIF
+#define IP_FORWARD_ALLOW_TX_ON_RX_NETIF    1
+#else
+#define IP_FORWARD_ALLOW_TX_ON_RX_NETIF    0
+#endif
 
 /* Define IP_FORWARD to 1 if you wish to have the ability to forward
    IP packets across network interfaces. If you are going to run lwIP
@@ -622,6 +627,8 @@ The STM32F107 allows computing and verifying the IP, UDP, TCP and ICMP checksums
 #define ETHARP_SUPPORT_STATIC_ENTRIES   1
 
 #define LWIP_RIPPLE20                   1
+
+#define ARP_TABLE_SIZE                  CONFIG_ARP_TABLE_SIZE
 
 /* Beken specific LWIP options */
 #define BK_DHCP                         1
