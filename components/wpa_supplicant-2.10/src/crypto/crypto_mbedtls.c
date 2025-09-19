@@ -2424,13 +2424,15 @@ void crypto_ecdh_deinit(struct crypto_ecdh *ecdh)
 struct wpabuf *crypto_ecdh_get_pubkey(struct crypto_ecdh *ecdh, int inc_y)
 {
 	struct wpabuf *buf = NULL;
+#define CRYPTO_EC_plen(e) ((((mbedtls_ecp_group *)(e))->pbits + 7) >> 3)
 #if defined(MBEDTLS_ECDH_LEGACY_CONTEXT)
-	int len = ecdh->ctx.Q.X.n * 2;
+	mbedtls_ecp_group *grp = &ecdh->ctx.grp;
 #else
-	int len = ecdh->ctx.MBEDTLS_PRIVATE(ctx).MBEDTLS_PRIVATE(mbed_ecdh).MBEDTLS_PRIVATE(Q).MBEDTLS_PRIVATE(X).MBEDTLS_PRIVATE(n) * 2;
+	mbedtls_ecp_group *grp = &ecdh->ctx.MBEDTLS_PRIVATE(ctx).MBEDTLS_PRIVATE(mbed_ecdh).MBEDTLS_PRIVATE(grp);
 #endif
+	int len = CRYPTO_EC_plen(grp);  //ecdh->ctx.Q.X.n * 2;
+
 	int ret;
-	size_t olen __maybe_unused = 0;
 
 	buf = wpabuf_alloc(len);
 	if (!buf)
