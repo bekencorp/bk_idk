@@ -413,9 +413,10 @@ static void cli_gpio_int_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
 		CLI_LOGI("gpio[%d] set int type:%x\n", id, int_type);
 	} else if (os_strcmp(argv[2], "start") == 0) {
 		BK_LOG_ON_ERR(bk_gpio_enable_interrupt(id));
+		CLI_LOGI("gpio[%d] int start\r\n", id);
 	} else if (os_strcmp(argv[2], "stop") == 0) {
 		BK_LOG_ON_ERR(bk_gpio_disable_interrupt(id));
-		CLI_LOGI("gpio[%d] int  stop \r\n", id);
+		CLI_LOGI("gpio[%d] int stop \r\n", id);
 
 	} else {
 		cli_gpio_help();
