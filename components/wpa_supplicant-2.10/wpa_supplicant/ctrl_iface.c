@@ -1880,19 +1880,24 @@ int wpa_supplicant_ctrl_iface_receive(wpah_msg_t *msg)
 
 #ifdef CONFIG_P2P
 	case WPA_CTRL_CMD_P2P_LISTEN:
+		CHECK_WPA_S();
 		p2p_ctrl_listen(wpa_s, "");
 		break;
 	case WPA_CTRL_CMD_P2P_FIND:
+		CHECK_WPA_S();
 		p2p_ctrl_find(wpa_s, "");
 		break;
 	case WPA_CTRL_CMD_P2P_STOP_FIND:
+		CHECK_WPA_S();
 		wpas_p2p_stop_find(wpa_s);
 		break;
 	case WPA_CTRL_CMD_P2P_CONNECT: {
+		CHECK_WPA_S();
 		struct wlan_p2p_connect_param *param = (struct wlan_p2p_connect_param *)msg->argu;
 		p2p_ctrl_connect(wpa_s, param);
 	}	break;
 	case WPA_CTRL_CMD_P2P_CANCEL:
+		CHECK_WPA_S();
 		wpas_p2p_disconnect(wpa_s);
 		break;
 #endif
