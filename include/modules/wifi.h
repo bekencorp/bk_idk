@@ -1584,19 +1584,6 @@ bk_err_t bk_wifi_csi_stop_req(void);
  *    - otherwise: fail
  */
 bk_err_t bk_wifi_csi_static_param_reset_req(uint8_t update_cali_mode,uint32_t cali_cnt);
-#if CONFIG_WIFI_CSI_DEMO
-/**
- * @brief csi demo light control
- *
- * @param color    the color of the light
- * @param flicker    the light is flicker
- *
- * @return
- *    - kNoErr: succeed
- *    - otherwise: fail
- */
-bk_err_t bk_wifi_csi_demo_turn_on_light(uint8_t color, bool flicker);
-#endif
 #endif
 
 /**

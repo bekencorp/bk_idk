@@ -2432,12 +2432,6 @@ void cli_wifi_csi_alg_config_cmd(char *pcWriteBuffer, int xWriteBufferLen, int a
 	uint16_t rate3;
 	uint16_t thres1;
 	uint16_t thres2;
-	#if CONFIG_WIFI_CSI_DEMO
-	uint16_t thres3;
-	uint32_t static_update;
-	uint32_t hold_time;
-	uint32_t calibration_cnt = 0;
-	#endif
 	int ret = 0;
 
 	if (argc >= 9)
@@ -2447,13 +2441,6 @@ void cli_wifi_csi_alg_config_cmd(char *pcWriteBuffer, int xWriteBufferLen, int a
 		rate3 = (uint16_t)os_strtoul(argv[3], NULL, 10);
 		thres1 = (uint16_t)os_strtoul(argv[4], NULL, 10);
 		thres2 = (uint16_t)os_strtoul(argv[5], NULL, 10);
-		#if CONFIG_WIFI_CSI_DEMO
-		thres3 = (uint16_t)os_strtoul(argv[6], NULL, 10);
-		static_update = (uint32_t)os_strtoul(argv[7], NULL, 10);
-		hold_time = (uint32_t)os_strtoul(argv[8], NULL, 10);
-		if(argc >= 10)
-			calibration_cnt = (uint32_t)os_strtoul(argv[9], NULL, 10);
-		#endif
 
 		struct wifi_csi_cfg_dbg debug_param;
 		debug_param.rate1 = rate1;
@@ -2462,11 +2449,6 @@ void cli_wifi_csi_alg_config_cmd(char *pcWriteBuffer, int xWriteBufferLen, int a
 		debug_param.thres2 = thres2;
 		extern bk_err_t bk_wifi_csi_alg_config_internal(double thres1,struct wifi_csi_cfg_dbg debug_param);
 		ret = bk_wifi_csi_alg_config_internal(thres1,debug_param);
-
-		#if CONFIG_WIFI_CSI_DEMO
-		extern void csi_wifi_demo_param_set(double thres1,double thres3,uint32_t static_update,uint32_t hold_time,uint32_t calibration_cnt);
-		csi_wifi_demo_param_set(thres1,thres3,static_update,hold_time,calibration_cnt);
-		#endif
 
 		if (ret)
 			CLI_LOGI("bad state\r\n");
@@ -2614,29 +2596,6 @@ void cli_wifi_csi_config_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
 		CLI_LOGI("invalid cli_wifi_csi_start_cmd %d\n",argc);
 	}
 }
-
-#if CONFIG_WIFI_CSI_DEMO
-void cli_wifi_csi_demo_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
-{
-	int ret       = 0;
-	uint8_t color = 0;
-	bool flicker  = false;
-	char *msg     = NULL;
-
-	color   = os_strtoul(argv[1], NULL, 10) & 0xFFFF;
-	flicker = (os_strtoul(argv[2], NULL, 10) & 0xFFFF) == 1 ? true : false;
-	ret     = bk_wifi_csi_demo_turn_on_light(color, flicker);
-
-	if (!ret) {
-		msg = WIFI_CMD_RSP_SUCCEED;
-	} else {
-		msg = WIFI_CMD_RSP_ERROR;
-	}
-	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
-	return;
-}
-#endif
-
 #endif
 #define WIFI_CMD_CNT (sizeof(s_wifi_commands) / sizeof(struct cli_command))
 static const struct cli_command s_wifi_commands[] = {
@@ -2708,9 +2667,6 @@ static const struct cli_command s_wifi_commands[] = {
 	{"csi_start","csi_start 0 0x8 0x1 1 200 5", cli_wifi_csi_start_cmd},
 	{"csi_stop","csi_stop", cli_wifi_csi_stop_cmd},
 	{"csi_cali_reset","csi_cali_reset 200 1", cli_wifi_csi_config_cmd},
-	#if CONFIG_WIFI_CSI_DEMO
-	{"csi_test", "csi_test", cli_wifi_csi_demo_test_cmd},
-	#endif
 #endif
 };
 
