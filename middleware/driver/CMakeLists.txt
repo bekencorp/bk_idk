@@ -85,6 +85,7 @@ if (CONFIG_SARADC_V1P2)
 		saradc/v1_2/adc_legacy_api.c
 		saradc/v1_2/adc_ate.c
 		saradc/v1_2/adc_test.c
+		saradc/v1_2/cli_adc_api.c
 	)
 elseif (CONFIG_SARADC_V1P1)
 	list(APPEND incs
