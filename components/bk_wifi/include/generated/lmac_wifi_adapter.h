@@ -288,6 +288,8 @@ typedef struct {
 	void (*_sr_flush_scan_results)(void *rst_ptr);
 	void *(*_rwnx_get_rlk_info_results)(void);
 	void (*_rwnx_flush_rlk_info_results)(void);
+	uint64_t (*_sys_hal_get_low_voltage_wakeup_time_us)(void);
+	void (*_sys_hal_set_low_voltage_wakeup_time_us)(uint64_t wakeup_time);
 	int (*_bk_feature_config_mac_pwd_enable)(void);
 	int (*_bk_feature_config_wrls_pwd_enable)(void);
 	int (*_bk_feature_config_cpu_pwd_enable)(void);

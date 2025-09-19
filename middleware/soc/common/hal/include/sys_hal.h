@@ -3440,6 +3440,8 @@ void sys_hal_disable_ana_gpio_int(void);
 
 uint64_t sys_hal_get_low_voltage_sleep_duration_us(void);
 void sys_hal_set_low_voltage_sleep_duration_us(uint64_t sleep_duration);
+uint64_t sys_hal_get_low_voltage_wakeup_time_us(void);
+void sys_hal_set_low_voltage_wakeup_time_us(uint64_t wakeup_time);
 #if CONFIG_GPIO_CLOCK_PIN_SUPPORT
 /**  System Clock Start **/
 void sys_hal_clk_pin_ana_open(clk_pin_ana_src_t src, clk_pin_div_t div, bool en);

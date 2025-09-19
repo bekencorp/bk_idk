@@ -93,6 +93,7 @@ static uint32_t s_gpio_retention_map[GPIO_RETENTION_MAP_SIZE] = GPIO_RETENTION_M
 
 uint64_t low_voltage_exit_tick = 0;
 uint64_t low_voltage_sleep_duration_us = 0;
+uint64_t low_voltage_wakeup_time_us = 0;
 extern void bk_delay_us(UINT32 us);
 static inline bool is_lpo_src_26m32k(void)
 {
@@ -690,6 +691,16 @@ void sys_hal_set_low_voltage_sleep_duration_us(uint64_t sleep_duration)
 	low_voltage_sleep_duration_us= sleep_duration;
 }
 
+inline uint64_t sys_hal_get_low_voltage_wakeup_time_us(void)
+{
+	return low_voltage_wakeup_time_us;
+}
+
+inline void sys_hal_set_low_voltage_wakeup_time_us(uint64_t wakeup_time)
+{
+	low_voltage_wakeup_time_us = wakeup_time;
+}
+
 static inline void sys_hal_lv_set_buck(void)
 {
 	// fix it when bring up pm
@@ -1043,7 +1054,7 @@ void sys_hal_enter_low_voltage(void)
 	sys_hal_gpio_state_switch(true);
 #endif
 
-//	volatile uint64_t before = bk_aon_rtc_get_us();
+	volatile uint64_t before = bk_aon_rtc_get_us();
 
 /*----enter low voltage sleep-------*/
 #if CONFIG_DEEP_LV
@@ -1057,8 +1068,6 @@ void sys_hal_enter_low_voltage(void)
 #else
 	arch_deep_sleep();
 #endif
-	//sys_hal_set_low_voltage_sleep_duration_us(bk_aon_rtc_get_us() - before);
-	sys_hal_set_low_voltage_sleep_duration_us(1);
 
 #if CONFIG_AON_PMU_REG0_REFACTOR_DEV
 	aon_pmu_hal_set_gpio_sleep(0, true);
@@ -1140,6 +1149,9 @@ void sys_hal_enter_low_voltage(void)
 	}
 #endif
 /*---------------at least delay 190us end -----------------*/
+	uint64_t current = bk_aon_rtc_get_us();
+	sys_hal_set_low_voltage_wakeup_time_us(current);
+	sys_hal_set_low_voltage_sleep_duration_us(current - before);
 
 	sys_hal_restore_core_freq(cksel_core, clkdiv_core, clkdiv_bus);
 

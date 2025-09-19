@@ -1219,6 +1219,16 @@ static void sys_hal_set_low_voltage_sleep_duration_us_wrapper(uint64_t sleep_dur
 #endif
 }
 
+static uint64_t sys_hal_get_low_voltage_wakeup_time_us_wrapper(void)
+{
+	return sys_hal_get_low_voltage_wakeup_time_us();
+}
+
+static void sys_hal_set_low_voltage_wakeup_time_us_wrapper(uint64_t wakeup_time)
+{
+	sys_hal_set_low_voltage_wakeup_time_us(wakeup_time);
+}
+
 #ifndef CONFIG_SHELL_ASYNCLOG
 static int sync_assert_out(bool bContinue, char *format, ...)
 {
@@ -1546,6 +1556,9 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._sr_flush_scan_results = sr_flush_scan_results,
 	._rwnx_get_rlk_info_results = rwnx_get_rlk_info_results,
 	._rwnx_flush_rlk_info_results = rwnx_flush_rlk_info_results,
+	._sys_hal_get_low_voltage_wakeup_time_us = sys_hal_get_low_voltage_wakeup_time_us_wrapper,
+	._sys_hal_set_low_voltage_wakeup_time_us = sys_hal_set_low_voltage_wakeup_time_us_wrapper,
+
 	._bk_feature_config_mac_pwd_enable = bk_feature_mac_pwd_enable_wrapper,
 	._bk_feature_config_wrls_pwd_enable = bk_feature_wrls_pwd_enable_wrapper,
 	._bk_feature_config_cpu_pwd_enable = bk_feature_cpu_pwd_enable_wrapper,
