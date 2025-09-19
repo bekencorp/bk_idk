@@ -3,8 +3,7 @@
 * [中文版](./README_CN.md)
 
 Welcome to Armino bk_idk!
-ARMINO is the AIoT development framework aimed to support Beken SoCs developed since 2022, also it's aimed to support
-all popular IoT OS, such as RT-Thread, AliOS, LiteOS etc.
+ARMINO is the AIoT development framework aimed to support all Beken SoCs developed since 2022, it supports FreeRTOS by default.
 
 
 # bk_idk Release and Supported SoCs
@@ -15,9 +14,10 @@ crucial parts could be missing(like documentation, datasheet). Please use an bk_
 SoC is already supported.
 
 
-|Branch\Chip   |        [BK7236]        |      [BK7258]          |      Comment            |
-|:------------ |:---------------------: |:---------------------: |:----------------------: |
-|release/v2.0.1|![alt text][supported] |![alt text][supported]   |sdk 2.0 MP Branch        |
+|Branch\Chip   |        [BK7236]        |      [BK7258]          | [BK7236N]      | [BK7239N]     | Comment            |
+|:------------ |:---------------------: |:---------------------: |:-----------------: |:-----------------: |:----------------------: |
+|release/v2.0.1|![alt text][supported] |![alt text][supported]   |   | |sdk 2.0 MP Branch        |
+|release/v2.2.1|![alt text][supported] |![alt text][supported]   |![alt text][developing]    |![alt text][developing] | sdk 2.2.1 Branch         |
 
 
 [supported]: https://img.shields.io/badge/-supported-green "supported"
@@ -28,18 +28,6 @@ SoC is already supported.
 release Branch Tag is official release, the format is vx.x.x.x，for example: v2.0.1.1
 
 Beken SoCs released before 2022, such as BK7231N, BK7231U, BK7251 etc, are not supported by ARMINO.
-
-# ARMINO Release and OS
-
-The following table shows Armino support of Popular IoT OS where ![alt text][developing] and ![alt text][supported]
-denote developing status and support, respectively.
-
-|OS           |         main           |
-|:----------- |:---------------------: |
-|FreeRTOS     | ![alt text][supported] |
-
-[supported]: https://img.shields.io/badge/-supported-green "supported"
-[developing]: https://img.shields.io/badge/-developing-orange "developing"
 
 # Resource
 
