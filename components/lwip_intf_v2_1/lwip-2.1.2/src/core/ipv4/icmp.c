@@ -71,7 +71,11 @@
 #define ICMP_DEST_UNREACH_DATASIZE 8
 
 static void icmp_send_response(struct pbuf *p, u8_t type, u8_t code);
+
+#if BK_LWIP && CONFIG_WIFI6
 int icmp_resp_len(struct pbuf *p);
+bool me_is_connect_with_instrument(void);
+#endif
 
 /**
  * Processes ICMP input packets, called from ip_input().
@@ -162,7 +166,7 @@ icmp_input(struct pbuf *p, struct netif *inp)
 #if LWIP_ICMP_ECHO_CHECK_INPUT_PBUF_LEN
       if (
 #if BK_LWIP && CONFIG_WIFI6
-         ate_is_enabled() ||
+         ate_is_enabled() || me_is_connect_with_instrument() ||
 #endif
          pbuf_add_header(p, hlen + PBUF_LINK_HLEN + PBUF_LINK_ENCAPSULATION_HLEN)) {
         /* p is not big enough to contain link headers
@@ -175,7 +179,7 @@ icmp_input(struct pbuf *p, struct netif *inp)
           goto icmperr;
         }
 #if BK_LWIP && CONFIG_WIFI6
-        if (ate_is_enabled()) {
+        if (ate_is_enabled() || me_is_connect_with_instrument()) {
           // If ATE is enabled, change the response length depends on peer's rate and symbols needed.
           // FIXME: even if length is changed, but the length of IP packet and checksum are not correct.
           int new_len = icmp_resp_len(p);

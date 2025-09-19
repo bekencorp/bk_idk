@@ -20,6 +20,7 @@
 #endif
 
 #include <components/system.h>
+#include <components/ate.h>
 #include "bk_drv_model.h"
 #include <os/mem.h>
 #include "bk_wifi.h" //TODO use standard EVENT instead!!!
@@ -141,7 +142,8 @@ extern int net_configure_address(struct ipv4_config *addr, void *intrfc_handle);
 extern int dhcp_server_start(void *intrfc_handle);
 extern void dhcp_server_stop(void);
 extern void net_configure_dns(struct iface *, struct wlan_ip_config *ip);
-bk_err_t bk_wifi_get_ip_status(IPStatusTypedef *outNetpara, WiFi_Interface inInterface);
+extern bk_err_t bk_wifi_get_ip_status(IPStatusTypedef *outNetpara, WiFi_Interface inInterface);
+extern bool me_is_connect_with_instrument(void);
 
 
 #ifdef CONFIG_IPV6
@@ -499,6 +501,14 @@ void sta_ip_start(void)
 {
 #ifdef CONFIG_WIFI_ENABLE
 	struct wlan_ip_config address = { 0 };
+
+	// Set MTU for ATE test.
+	if (ate_is_enabled() || me_is_connect_with_instrument()) {
+		g_mlan.netif.mtu = 8192;
+		LWIP_LOGI("Set MTU to %d for ATE test\n", g_mlan.netif.mtu );
+	} else {
+		g_mlan.netif.mtu = 1500;
+	}
 
 	if (!sta_ip_start_flag) {
 		LWIP_LOGD("sta ip start\r\n");
