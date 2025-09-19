@@ -6,6 +6,41 @@
 #include "bk_sys_ctrl.h"
 #include "bk_drv_model.h"
 
+uint32_t adc_hal_get_temp_code_dft_25degree(void)
+{
+    return 545;
+}
+
+uint32_t adc_hal_get_temp_code_dft_threshold(void)
+{
+    return 50;
+}
+
+uint32_t adc_hal_get_temp_lsb_per_10degree(void)
+{
+    return 46;
+}
+
+uint32_t adc_hal_get_1Volt_value(void)
+{
+    return 0x9C7;
+}
+
+uint32_t adc_hal_get_1Volt_threshold(void)
+{
+    return 150;
+}
+
+uint32_t adc_hal_get_2Volt_value(void)
+{
+    return 0x1358;
+}
+
+uint32_t adc_hal_get_2Volt_threshold(void)
+{
+    return 300;
+}
+
 //TODO the adc_hal should reset the ADC => by Frank!!!
 bk_err_t adc_hal_init(adc_hal_t *hal)
 {

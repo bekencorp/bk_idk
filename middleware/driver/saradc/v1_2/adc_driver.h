@@ -86,6 +86,8 @@ struct sadc_device {
     adc_chan_t adc_chan;
     #endif
 
+    uint8_t adc_cali_invalid;
+
     struct sadc_context ctx;
     struct sadc_data data;
 

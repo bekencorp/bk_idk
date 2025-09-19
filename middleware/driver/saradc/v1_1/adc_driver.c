@@ -33,6 +33,7 @@
 #include "bk_saradc.h"
 #include "common/bk_err.h"
 #include <modules/pm.h>
+#include "temp_detect.h"
 
 #ifdef CONFIG_FREERTOS_SMP
 #include "spinlock.h"
@@ -53,6 +54,7 @@ typedef struct
 typedef struct {
 	adc_hal_t hal;
 	uint16_t chan_init_bits;
+    uint8_t adc_cali_invalid;
 } adc_driver_t;
 
 typedef struct {
@@ -112,6 +114,63 @@ __attribute__((section(".dtcm_sec_data "))) adc_config_t g_adc_cfg = {0};
 
 static void adc_isr(void);
 static void adc_flush(void);
+
+uint32_t bk_adc_get_temp_code_dft_25degree(void)
+{
+    return adc_hal_get_temp_code_dft_25degree();
+}
+
+uint32_t bk_adc_get_temp_code_dft_threshold(void)
+{
+    return adc_hal_get_temp_code_dft_threshold();
+}
+
+uint32_t bk_adc_get_temp_lsb_per_10degree(void)
+{
+    return adc_hal_get_temp_lsb_per_10degree();
+}
+
+uint32_t bk_adc_get_1Volt_value(void)
+{
+    return adc_hal_get_1Volt_value();
+}
+
+uint32_t bk_adc_get_1Volt_threshold(void)
+{
+    return adc_hal_get_1Volt_threshold();
+}
+
+uint32_t bk_adc_get_2Volt_value(void)
+{
+    return adc_hal_get_2Volt_value();
+}
+
+uint32_t bk_adc_get_2Volt_threshold(void)
+{
+    return adc_hal_get_2Volt_threshold();
+}
+
+static bk_err_t adc_set_default_cali_val(adc_buf_t *data)
+{
+    const uint16_t cali_val[SARADC_CALIBRATE_MAX] = {
+        #if (CONFIG_SOC_BK7236N || CONFIG_SOC_BK7236Q)
+        /*TODO Fixme: wangzhilei*/
+        0, 0x11AA, 0x2382, ADC_TEMP_CODE_DFT_25DEGREE, ADC_TMEP_LSB_PER_10DEGREE /* 1Volt, 2Volt, 25Degree, 10Step*/
+        #elif (CONFIG_SOC_BK7239XX)
+        0, 0x1194, 0x23ea, ADC_TEMP_CODE_DFT_25DEGREE, ADC_TMEP_LSB_PER_10DEGREE /* 1Volt, 2Volt, 25Degree, 10Step*/
+        #elif (CONFIG_SOC_BK7259)
+        0, 0x1481, 0x279d, ADC_TEMP_CODE_DFT_25DEGREE, ADC_TMEP_LSB_PER_10DEGREE /* 1Volt, 2Volt, 25Degree, 10Step*/
+        #elif (CONFIG_SOC_BK7236XX)
+        0, 0x9C7,0x1358, ADC_TEMP_CODE_DFT_25DEGREE, ADC_TMEP_LSB_PER_10DEGREE /* 1Volt, 2Volt, 25Degree, 10Step*/
+        #else
+        0, 0x55, 0x354, ADC_TEMP_CODE_DFT_25DEGREE, ADC_TMEP_LSB_PER_10DEGREE
+        #endif
+    };
+
+    os_memcpy(data->sadc_cali_val, cali_val, sizeof(cali_val));
+
+    return BK_OK;
+}
 
 static void adc_init_gpio(adc_chan_t chan)
 {
@@ -271,6 +330,7 @@ bk_err_t bk_adc_driver_init(void)
 		}
 	}
 
+    adc_set_default_cali_val(&s_adc_buf);
 	//bk_int_isr_register(INT_SRC_SARADC, adc_isr, NULL);
 
 	adc_statis_init();
@@ -874,6 +934,8 @@ UINT32 saradc_get_calibrate_val(uint16_t *value, SARADC_MODE mode)
 UINT32 saradc_set_calibrate_val(uint16_t *value, SARADC_MODE mode)
 {
     uint32_t irq_level = rtos_disable_int();
+    uint32_t threshold = 0;
+    uint32_t dft_value = 0;
     adc_buf_t *data = &s_adc_buf;
 
     if ((mode < SARADC_CALIBRATE_EXT_LOW) || (SARADC_CALIBRATE_MAX <= mode))
@@ -886,7 +948,34 @@ UINT32 saradc_set_calibrate_val(uint16_t *value, SARADC_MODE mode)
     spin_lock(&adc_spin_lock);
     #endif // CONFIG_FREERTOS_SMP
 
-    data->sadc_cali_val[mode] = *value;
+
+    if (mode == SARADC_CALIBRATE_LOW) {
+        threshold = bk_adc_get_1Volt_threshold();
+        dft_value = bk_adc_get_1Volt_value();
+        if ((*value + threshold < dft_value) || (dft_value + threshold < *value)) {
+            s_adc.adc_cali_invalid = 1;
+        }
+        if (!s_adc.adc_cali_invalid) {
+            data->sadc_cali_val[mode] = *value;
+        }
+    } else if (mode == SARADC_CALIBRATE_HIGH) {
+        threshold = bk_adc_get_2Volt_threshold();
+        dft_value = bk_adc_get_2Volt_value();
+        if ((*value + threshold < dft_value) || (dft_value + threshold < *value)) {
+            s_adc.adc_cali_invalid = 1;
+        }
+        if (!s_adc.adc_cali_invalid) {
+            data->sadc_cali_val[mode] = *value;
+        }
+    } else if (mode == SARADC_CALIBRATE_TEMP_CODE25) {
+        threshold = bk_adc_get_temp_code_dft_threshold();
+        dft_value = bk_adc_get_temp_code_dft_25degree();
+        if ((dft_value <= *value + threshold) && (*value <= dft_value + threshold)) {
+            data->sadc_cali_val[mode] = *value;
+        }
+    } else {
+        data->sadc_cali_val[mode] = *value;
+    }
 
     #ifdef CONFIG_FREERTOS_SMP
     spin_unlock(&adc_spin_lock);

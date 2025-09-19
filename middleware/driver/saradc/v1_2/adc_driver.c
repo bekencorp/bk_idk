@@ -247,6 +247,41 @@ bk_err_t adc_activate_config(struct sadc_device *dev, adc_config_t *config)
     return BK_OK;
 }
 
+uint32_t bk_adc_get_temp_code_dft_25degree(void)
+{
+    return adc_hal_get_temp_code_dft_25degree();
+}
+
+uint32_t bk_adc_get_temp_code_dft_threshold(void)
+{
+    return adc_hal_get_temp_code_dft_threshold();
+}
+
+uint32_t bk_adc_get_temp_lsb_per_10degree(void)
+{
+    return adc_hal_get_temp_lsb_per_10degree();
+}
+
+uint32_t bk_adc_get_1Volt_value(void)
+{
+    return adc_hal_get_1Volt_value();
+}
+
+uint32_t bk_adc_get_1Volt_threshold(void)
+{
+    return adc_hal_get_1Volt_threshold();
+}
+
+uint32_t bk_adc_get_2Volt_value(void)
+{
+    return adc_hal_get_2Volt_value();
+}
+
+uint32_t bk_adc_get_2Volt_threshold(void)
+{
+    return adc_hal_get_2Volt_threshold();
+}
+
 static int adc_pm_restore_cb(uint64_t sleep_time, void *args)
 {
     hal_calib_apply();
@@ -1054,6 +1089,8 @@ UINT32 saradc_get_calibrate_val(uint16_t *value, SARADC_MODE mode)
 UINT32 saradc_set_calibrate_val(uint16_t *value, SARADC_MODE mode)
 {
     uint32_t irq_level;
+    uint32_t threshold = 0;
+    uint32_t dft_value = 0;
     struct sadc_device *dev = saradc_dev_ptr;
     struct sadc_context *ctx = &dev->ctx;
     struct sadc_data *data = &dev->data;
@@ -1066,7 +1103,33 @@ UINT32 saradc_set_calibrate_val(uint16_t *value, SARADC_MODE mode)
     adc_context_lock(ctx);
     irq_level = rtos_disable_int();
 
-    data->sadc_cali_val[mode] = *value;
+    if (mode == SARADC_CALIBRATE_LOW) {
+        threshold = bk_adc_get_1Volt_threshold();
+        dft_value = bk_adc_get_1Volt_value();
+        if ((*value + threshold < dft_value) || (dft_value + threshold < *value)) {
+            dev->adc_cali_invalid = 1;
+        }
+        if (!dev->adc_cali_invalid) {
+            data->sadc_cali_val[mode] = *value;
+        }
+    } else if (mode == SARADC_CALIBRATE_HIGH) {
+        threshold = bk_adc_get_2Volt_threshold();
+        dft_value = bk_adc_get_2Volt_value();
+        if ((*value + threshold < dft_value) || (dft_value + threshold < *value)) {
+            dev->adc_cali_invalid = 1;
+        }
+        if (!dev->adc_cali_invalid) {
+            data->sadc_cali_val[mode] = *value;
+        }
+    } else if (mode == SARADC_CALIBRATE_TEMP_CODE25) {
+        threshold = bk_adc_get_temp_code_dft_threshold();
+        dft_value = bk_adc_get_temp_code_dft_25degree();
+        if ((dft_value <= *value + threshold) && (*value <= dft_value + threshold)) {
+            data->sadc_cali_val[mode] = *value;
+        }
+    } else {
+        data->sadc_cali_val[mode] = *value;
+    }
 
     rtos_enable_int(irq_level);
     adc_context_release(ctx);

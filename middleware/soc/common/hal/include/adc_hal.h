@@ -101,6 +101,13 @@ uint16_t adc_hal_get_single_step_adc_data(adc_hal_t *hal);
 bk_err_t adc_hal_set_vol_div(adc_chan_t adc_chan, adc_vol_div_t vol_div);
 adc_vol_div_t adc_hal_get_vol_div(adc_chan_t adc_chan);
 #endif
+uint32_t adc_hal_get_temp_code_dft_25degree(void);
+uint32_t adc_hal_get_temp_code_dft_threshold(void);
+uint32_t adc_hal_get_temp_lsb_per_10degree(void);
+uint32_t adc_hal_get_1Volt_value(void);
+uint32_t adc_hal_get_1Volt_threshold(void);
+uint32_t adc_hal_get_2Volt_value(void);
+uint32_t adc_hal_get_2Volt_threshold(void);
 
 #ifdef SOC_ADC_FIFO_DATA_SUPPORT
 #define adc_hal_get_fifo_data(hal) adc_ll_get_fifo_data((hal)->hw)

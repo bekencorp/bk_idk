@@ -20,6 +20,41 @@
 #include "clock_driver.h"
 #include "bk_sys_ctrl.h"
 
+uint32_t adc_hal_get_temp_code_dft_25degree(void)
+{
+    return 8505;
+}
+
+uint32_t adc_hal_get_temp_code_dft_threshold(void)
+{
+    return 800;
+}
+
+uint32_t adc_hal_get_temp_lsb_per_10degree(void)
+{
+    return 580;
+}
+
+uint32_t adc_hal_get_1Volt_value(void)
+{
+    return 0x1194;
+}
+
+uint32_t adc_hal_get_1Volt_threshold(void)
+{
+    return 270;
+}
+
+uint32_t adc_hal_get_2Volt_value(void)
+{
+    return 0x23ea;
+}
+
+uint32_t adc_hal_get_2Volt_threshold(void)
+{
+    return 540;
+}
+
 #define F2ISR(f, s) ((int32_t)((f > 0) ? ((f) * (1 << (s)) + 0.5) : ((f) * (1 << (s)) - 0.5)))
 
 #define ADC_BITS              (16)
