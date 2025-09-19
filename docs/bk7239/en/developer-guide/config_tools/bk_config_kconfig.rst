@@ -7,6 +7,8 @@ Kconfig Configuration
 
 This section introduces frequency ask questions of Armino Kconfig.
 
+Kconfig configuration examples can be found in the project codebase.
+
 Kconfig Files
 ----------------------------------------------------------
 
@@ -90,7 +92,7 @@ Using Kconfig in CMakeLists.txt
 ----------------------------------------------------------
 
 The configuration items defined in Kconfig can be directly used in CMakeLists.txt, but you should NOT put
-armino_component_register() in any configuration condition.
+armino_component_register() in any configuration condition. More information about disabling components via Kconfig can be found in the project codebase.
 
 
 
