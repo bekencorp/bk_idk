@@ -114,7 +114,7 @@ int32_t boot_platform_init(void)
     // aon_pmu_hal_back_and_clear_reset_reason();
 #if CONFIG_BL2_WDT
     close_wdt();
-    update_aon_wdt(0xFFFF);
+    // update_aon_wdt(0xFFFF);
 #endif
 
 #if CONFIG_BL2_SECURE_DEBUG

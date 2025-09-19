@@ -380,6 +380,17 @@ static const uint16_t allowed_unprot_tlvs[] = {
 };
 #endif
 
+static int
+bootutil_hash_hash(uint8_t *digest, uint32_t digest_sz, uint8_t *hash_result)
+{
+    bootutil_sha_context sha256_ctx;
+    bootutil_sha_init(&sha256_ctx);
+    bootutil_sha_update(&sha256_ctx, digest, digest_sz);
+    bootutil_sha_finish(&sha256_ctx, hash_result);
+    bootutil_sha_drop(&sha256_ctx);
+    return 0;
+}
+
 /*
  * Verify the integrity of the image.
  * Return non-zero if image could not be validated/does not validate.
@@ -411,6 +422,7 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
     struct image_tlv_iter it;
     uint8_t buf[SIG_BUF_SIZE];
     uint8_t hash[IMAGE_HASH_SIZE];
+    uint8_t hash_hash[IMAGE_HASH_SIZE];
     int rc = 0;
     FIH_DECLARE(fih_rc, FIH_FAILURE);
 #ifdef MCUBOOT_HW_ROLLBACK_PROT
@@ -421,6 +433,11 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
 
     rc = bootutil_img_hash(enc_state, image_index, hdr, fap, tmp_buf,
             tmp_buf_sz, hash, seed, seed_len);
+    if (rc) {
+        goto out;
+    }
+
+    rc = bootutil_hash_hash(hash, 32, hash_hash);
     if (rc) {
         goto out;
     }

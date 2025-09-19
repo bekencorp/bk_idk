@@ -106,7 +106,7 @@ class PackDownload(Pack):
             return
 
         #TODO: change magic wordk according to soc
-        magic = "BK.SB".encode()
+        magic = "BEKEN".encode()
         logging.debug(f'Add magic code {magic} to {bname}')
         with open(bname, 'r+b') as f:
             f.seek(0x100)

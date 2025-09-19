@@ -24,7 +24,12 @@ class PackBl1sign(Pack):
         static_addr = f'0x%08x' %(static_addr_int)
         load_addr = static_addr
 
-        bl1_sign('sign', 'ec256', img_sign_privkey, img_sign_pubkey, None, infile, static_addr, load_addr, self._outfile)
+        if (img_sign_privkey != None):
+            bl1_sign('sign', 'ec256', img_sign_privkey, img_sign_pubkey, None, infile, static_addr, load_addr, self._outfile)
+        else:
+            with open(self._outfile, "wb") as f:
+                text = "NoManifest".encode()
+                f.write(text)
 
         pack_manifest = f'pack_{self._outfile}'
         ph = PackHeader(pack_manifest)

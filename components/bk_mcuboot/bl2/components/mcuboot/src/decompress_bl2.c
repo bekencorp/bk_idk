@@ -228,7 +228,7 @@ boot_copy_region(struct boot_loader_state *state, const struct flash_area *fap_s
 
 	for (block_idx = restart_block_idx; block_idx < block_num; block_idx++){
 #if CONFIG_BL2_WDT
-		aon_wdt_feed();
+		// aon_wdt_feed();
 #endif
 		clean_buf();
 		flash_area_read(fap_src, off_src + bytes_copied, s_compressed_buf, block_list[block_idx]);
@@ -262,8 +262,7 @@ boot_copy_region(struct boot_loader_state *state, const struct flash_area *fap_s
 #if CONFIG_DECOMPRESS_RESUME
 	BOOT_LOG_INF("erasing resume");
 	flash_area_erase_fast(get_resume_base_address(), 4096);
-	bk_flash_set_protect_type(protect);
 #endif
-
+	bk_flash_set_protect_type(protect);
 	return 0;
 }

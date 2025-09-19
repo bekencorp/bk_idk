@@ -185,7 +185,7 @@ int main(void)
 #endif
 #if CONFIG_BL2_WDT
     close_wdt();
-    update_aon_wdt(CONFIG_BL2_WDT_PERIOD);
+    // update_aon_wdt(CONFIG_BL2_WDT_PERIOD);
 #endif
 
     /* Initialise the mbedtls static memory allocator so that mbedtls allocates

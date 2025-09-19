@@ -73,8 +73,6 @@ int flash_area_open(uint8_t id, const struct flash_area **area)
 {
     int i;
 
-    BOOT_LOG_DBG("area %d", id);
-
     for (i = 0; i < flash_map_entry_num; i++) {
         if (id == flash_map[i].fa_id) {
             break;

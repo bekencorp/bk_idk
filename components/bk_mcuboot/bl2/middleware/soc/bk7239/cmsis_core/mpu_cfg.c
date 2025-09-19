@@ -45,7 +45,7 @@ ARM_MPU_Region_t mpu_regions[] = {
     	dtcm_ns: 0x3000 0000-----------0x3000 3FFF
      */
     { ARM_MPU_RBAR(0x00000000UL, ARM_MPU_SH_NON, 0, 1, 0),
-      ARM_MPU_RLAR(0x27FFFFE0UL, 0) },
+      ARM_MPU_RLAR(0x27FFFFE0UL, 1) },
 
     /* MPU region 1，
         shared memory(smem0) 0x2800 0000-----------0x2800 FFFF   0x3800 0000-----------0x3800 FFFF 
