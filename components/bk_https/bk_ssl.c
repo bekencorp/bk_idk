@@ -38,6 +38,7 @@
 #include <http_utils.h>
 #include <components/system.h>
 #include <bk_rom_md5.h>
+#include <driver/trng.h>
 
 #define TAG "SSL"
 

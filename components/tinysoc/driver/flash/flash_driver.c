@@ -675,13 +675,7 @@ __attribute__((section(".iram")))
 void bk_flash_read_cbus(uint32_t address, void *user_buf, uint32_t size)
 {
 	flash_switch_to_line_mode_two();
-
-#if CONFIG_SECUREBOOT
-	memcpy((void*)user_buf, (const void*)(0x02000000+address),size);
-#else
 	flash_memcpy((char*)user_buf, (const char*)(0x02000000+address),size);
-#endif
-
 	flash_restore_line_mode();
 }
 
@@ -711,11 +705,8 @@ void bk_flash_write_primary_cbus(uint32_t address, const uint8_t *user_buf, uint
 		return;
 	}
 
-#if CONFIG_SECUREBOOT
-	memcpy((void*)(0x02000000+address), (const void*)user_buf,size);
-#else
 	flash_memcpy((char*)(0x02000000+address), (const char*)user_buf,size);
-#endif
+
 	while(flash_hal_is_busy(&s_flash.hal));
 
 	bk_flash_cpu_write_disable();
