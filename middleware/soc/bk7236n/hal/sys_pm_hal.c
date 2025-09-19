@@ -1188,7 +1188,8 @@ void sys_hal_enter_normal_sleep(uint32_t peri_clk)
 	volatile uint8_t cksel_core = 0, clkdiv_core = 0;
 	volatile uint8_t cksel_flash = 0, clkdiv_flash = 0;
 	volatile uint8_t vcoresel = 0;
-	volatile bool en_dpll = false;
+	volatile bool en_dpll_dig = false;
+	volatile bool en_dpll_ana = false;
 	volatile bool xtal_sleep = false;
 
 	clken_peri = sys_ll_get_cpu_device_clk_enable_value();
@@ -1196,7 +1197,6 @@ void sys_hal_enter_normal_sleep(uint32_t peri_clk)
 	sys_ll_set_cpu_device_clk_enable_thread_cken(0);
 	sys_ll_set_cpu_device_clk_enable_phy_cken(0);
 	sys_ll_set_cpu_device_clk_enable_rf_cken(0);
-	sys_ll_set_cpu_device_clk_enable_dplldiv_cken(0);
 	sys_ll_set_cpu_device_clk_enable_xvr_cken(0);
 	sys_ll_set_cpu_device_clk_enable_btdm_cken(0);
 	__asm volatile( "nop" );
@@ -1225,6 +1225,10 @@ void sys_hal_enter_normal_sleep(uint32_t peri_clk)
 	sys_ll_set_cpu_clk_div_mode2_cksel_flash(0);
 	sys_ll_set_cpu_clk_div_mode2_ckdiv_flash(0);
 
+	/*DPLL_DIV disable*/
+	en_dpll_dig = sys_ll_get_cpu_device_clk_enable_dplldiv_cken();
+	sys_ll_set_cpu_device_clk_enable_dplldiv_cken(0);
+
 	/*latch start*/
 	sys_hal_enable_spi_latch();
 
@@ -1234,7 +1238,7 @@ void sys_hal_enter_normal_sleep(uint32_t peri_clk)
 	bk_delay_us(100);
 
 	/*DPLL disable*/
-	en_dpll = sys_ll_get_ana_reg5_en_dpll();
+	en_dpll_ana = sys_ll_get_ana_reg5_en_dpll();
 	sys_ll_set_ana_reg5_en_dpll(0);
 	bk_delay_us(100);
 
@@ -1255,7 +1259,7 @@ void sys_hal_enter_normal_sleep(uint32_t peri_clk)
 	sys_ll_set_ana_reg3_en_xtalh_sleep(xtal_sleep);
 
 	/*DPLL enable*/
-	sys_ll_set_ana_reg5_en_dpll(en_dpll);
+	sys_ll_set_ana_reg5_en_dpll(en_dpll_ana);
 	/*delay for dpll stability*/
 	bk_delay_us(200);
 
@@ -1266,6 +1270,9 @@ void sys_hal_enter_normal_sleep(uint32_t peri_clk)
 
 	/*latch end*/
 	sys_hal_disable_spi_latch();
+
+	/*DPLL_DIV enable*/
+	sys_ll_set_cpu_device_clk_enable_dplldiv_cken(en_dpll_dig);
 
 	/*cpu freq restore*/
 	sys_ll_set_cpu_clk_div_mode1_cksel_core(cksel_core);
