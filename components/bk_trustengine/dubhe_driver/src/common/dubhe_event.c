@@ -218,6 +218,7 @@ int32_t dubhe_wait_event( dubhe_event_type_t dubhe_event )
     default:
         ret = -1;
     }
+    bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_ENCP, 1, 0);
 
     return ret;
 #else
@@ -252,13 +253,10 @@ int32_t dubhe_wait_event( dubhe_event_type_t dubhe_event )
     return ( 0 );
 #endif
 }
-#endif
 
-#if defined( DUBHE_FOR_RUNTIME )
 int32_t dubhe_release_event( dubhe_event_type_t dubhe_event )
 {
 #if !defined( TEE_M )
-    bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_ENCP, 1, 0);
     switch ( dubhe_event ) {
     case DBH_EVENT_SCA_CMD_EXCUTED:
         pal_sema_up( _g_sca_cmd_sem );
