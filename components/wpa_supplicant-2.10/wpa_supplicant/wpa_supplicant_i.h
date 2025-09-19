@@ -1067,6 +1067,9 @@ struct wpa_supplicant {
 	u16 last_owe_group;
 #if defined(CONFIG_SME) || defined(CONFIG_IEEE80211W) || defined(CONFIG_SAE) || defined(CONFIG_IEEE80211R)
 	struct {
+#ifdef BK_SUPPLICANT
+		int retry_count;
+#endif
 #if defined(CONFIG_SME) || defined(CONFIG_IEEE80211R)
 		u8 ssid[SSID_MAX_LEN];
 		size_t ssid_len;

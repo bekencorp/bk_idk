@@ -697,6 +697,8 @@ int wpa_supplicant_ctrl_iface_set_network(struct wpa_supplicant *wpa_s, wlan_sta
 			ssid->psk_set = 0;	// recalc psk
 			if (wpa_s->wpa)
 				wpa_sm_pmksa_cache_flush(wpa_s->wpa, ssid);
+			// if ssid changes, reset retry_count
+			wpa_s->sme.retry_count = 0;
 		}
 		if (ssid->ssid) {
 			os_free(ssid->ssid);
@@ -744,6 +746,8 @@ int wpa_supplicant_ctrl_iface_set_network(struct wpa_supplicant *wpa_s, wlan_sta
 				sae_deinit_pt(ssid->pt);	// clear the last pt
 				ssid->pt = NULL;
 #endif
+				// if passphrase changes, reset retry_count
+				wpa_s->sme.retry_count = 0;
 #endif
 				ssid->psk_set = 0;
 				if (wpa_s->wpa)

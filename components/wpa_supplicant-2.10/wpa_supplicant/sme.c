@@ -1086,6 +1086,33 @@ void wpa_supplicant_external_auth_timeout(void *eloop_ctx, void *timeout_ctx)
 #else
 	wpa_printf(MSG_INFO, "%s", __func__);
 #endif
+	wpa_s->sme.retry_count++;
+
+	// try to send null with pwr bit clear to let ap know sta wakes up
+	if (wpa_s->sme.retry_count >= 2) {
+		if ((wpa_s->sme.retry_count % 2) == 0) {
+			//struct ieee80211_qos_hdr frame;
+			struct ieee80211_hdr frame;
+
+			os_memset(&frame, 0, sizeof(frame));
+
+			frame.frame_control = IEEE80211_FC(WLAN_FC_TYPE_DATA,
+											   WLAN_FC_STYPE_NULLFUNC);
+			frame.frame_control |= host_to_le16(WLAN_FC_TODS);
+
+			os_memcpy(frame.addr1, wpa_s->sme.ext_auth_bssid, ETH_ALEN);
+			os_memcpy(frame.addr2, wpa_s->own_addr, ETH_ALEN);
+			os_memcpy(frame.addr3, wpa_s->own_addr, ETH_ALEN);
+
+			WPA_LOGI("sae retry_count %d\n", wpa_s->sme.retry_count);
+
+			wpa_drv_send_mlme(wpa_s, (u8 *)&frame, sizeof(frame), 1, 0, 0);
+			wpa_drv_send_mlme(wpa_s, (u8 *)&frame, sizeof(frame), 1, 0, 0);
+
+			// wait tx done to avoid mac into inactive state
+			rtos_delay_milliseconds(100);
+		}
+	}
 	sme_send_external_auth_status(wpa_s,
 					  WLAN_STATUS_UNSPECIFIED_FAILURE);
 }
@@ -1181,6 +1208,9 @@ void sme_send_external_auth_status(struct wpa_supplicant *wpa_s,
 		params.pmkid = wpa_s->sme.sae.pmkid;
 	wpa_drv_send_external_auth_status(wpa_s, &params);
 #if BK_SUPPLICANT
+	if (status == WLAN_STATUS_SUCCESS)
+		wpa_s->sme.retry_count = 0;
+
 	eloop_cancel_timeout(wpa_supplicant_external_auth_timeout, wpa_s, NULL);
 #endif
 }
