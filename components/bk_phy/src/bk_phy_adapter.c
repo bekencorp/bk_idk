@@ -271,6 +271,10 @@ static bk_err_t bk_pm_module_vote_cpu_freq_phy(uint32_t module, uint32_t cpu_fre
     return bk_pm_module_vote_cpu_freq((pm_dev_id_e)module, (pm_cpu_freq_e)cpu_freq);
 }
 
+static int32 sys_drv_module_power_state_get_wrapper(uint32_t module)
+{
+    return sys_drv_module_power_state_get(module);
+}
 static void phy_sys_drv_modem_bus_clk_ctrl_on(void)
 {
     sys_drv_modem_bus_clk_ctrl(SYS_DRV_CLK_ON);
@@ -827,7 +831,7 @@ const phy_os_funcs_t g_phy_os_funcs = {
     ._sys_drv_cali_bgcalm             = sys_drv_cali_bgcalm,
     ._sys_drv_analog_get_xtalh_ctune  = sys_drv_analog_get_xtalh_ctune,
     ._sys_drv_analog_set_xtalh_ctune  = sys_drv_analog_set_xtalh_ctune,
-
+    ._sys_drv_module_power_state_get  = sys_drv_module_power_state_get_wrapper,
     ._phy_sys_drv_modem_bus_clk_ctrl_on = phy_sys_drv_modem_bus_clk_ctrl_on,
     ._phy_sys_drv_modem_clk_ctrl_on     = phy_sys_drv_modem_clk_ctrl_on,
 

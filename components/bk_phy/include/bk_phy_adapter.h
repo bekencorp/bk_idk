@@ -79,7 +79,7 @@ typedef struct {
     uint32_t (*_sys_drv_cali_bgcalm)(void);
     uint32_t (*_sys_drv_analog_get_xtalh_ctune)(void);
     uint32_t (*_sys_drv_analog_set_xtalh_ctune)(uint32_t param);
-
+    int32 (*_sys_drv_module_power_state_get)(uint32_t module);
     void (*_phy_sys_drv_modem_bus_clk_ctrl_on)(void);
     void (*_phy_sys_drv_modem_clk_ctrl_on)(void);
 
