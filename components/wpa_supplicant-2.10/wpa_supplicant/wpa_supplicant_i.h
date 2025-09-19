@@ -1311,6 +1311,8 @@ struct wpa_supplicant {
 	int auto_reconnect_count;
 	/* start time of connection */
 	struct os_reltime auto_reconnect_start_time;
+	 /* flag indicates disconnect has been reported once */
+	 bool notified_disconn;
 #endif
 
 	 /* Channel preferences for AP/P2P GO use */

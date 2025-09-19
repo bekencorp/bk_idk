@@ -237,6 +237,7 @@ static int wpa_supplicant_ctrl_iface_select_network(
 	wpa_s->scan_min_time.usec = 0;
 
 #if defined(BK_SUPPLICANT) && defined(CONFIG_AUTO_RECONNECT)
+	wpa_s->notified_disconn = false;
 	/* reinit count */
 	if (wpa_s->auto_reconnect_max_count != 0)
 		wpa_s->auto_reconnect_count = wpa_s->auto_reconnect_max_count;
@@ -1441,6 +1442,9 @@ int wpa_supplicant_ctrl_iface_receive(wpah_msg_t *msg)
 #if CONFIG_LWIP
 			net_wlan_remove_netif((uint8_t*)&g_sta_param_ptr->own_mac);
 #endif
+			extern void wpas_notify_disconnected(struct wpa_supplicant *wpa_s);
+			wpa_s->disconnect_reason = WIFI_REASON_DISCONNECT_BY_APP;
+			wpas_notify_disconnected(wpa_s);
 			supplicant_main_exit();
 			wpa_hostapd_release_scan_rst();
 			supplicant_started = 0;
