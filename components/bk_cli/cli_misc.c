@@ -75,10 +75,11 @@ int hexstr2bin_cli(const char *hex, u8 *buf, size_t len)
 
 __maybe_unused static void cli_misc_help(void)
 {
-	CLI_LOGI("pwm_driver init {26M|DCO}\n");
 #if (CONFIG_WIFI_ENABLE)
 	CLI_LOGI("mac <mac>, get/set mac. e.g. mac c89346000001\r\n");
 #endif
+#if (CONFIG_DEBUG_FIRMWARE)
+	CLI_LOGI("pwm_driver init {26M|DCO}\n");
 
 #if (CONFIG_EFUSE)
 	CLI_LOGI("efuse [-r addr] [-w addr data]\r\n");
@@ -93,7 +94,7 @@ __maybe_unused static void cli_misc_help(void)
 #if CONFIG_COMMON_IO
 	CLI_LOGI("testcommonio test common io\r\n");
 #endif
-
+#endif
 }
 
 extern volatile const uint8_t build_version[];
@@ -260,7 +261,7 @@ static void boot_cpu_core(char *pcWriteBuffer, int xWriteBufferLen, int argc, ch
 		core = os_strtoul(argv[1], NULL, 10);
 		mode = os_strtoul(argv[2], NULL, 10);
 		CLI_LOGI("boot_core id(%d), mode(%d).\r\n", core, mode);
-		
+
 		if(mode == 1)
 		{
 			if(core == 1)
@@ -520,7 +521,7 @@ static void test_fluscache(int count) {
 
     BK_DUMP_OUT("test_flushcache end, time consume=%d us\r\n", diff_us);
 
-} 
+}
 
 void cli_cache_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
@@ -602,14 +603,15 @@ void cli_set_clock_source(char *pcWriteBuffer, int xWriteBufferLen, int argc, ch
 
 #define MISC_CMD_CNT (sizeof(s_misc_commands) / sizeof(struct cli_command))
 static const struct cli_command s_misc_commands[] = {
+#if (CONFIG_WIFI_ENABLE)
+	{"mac", "mac <mac>, get/set mac. e.g. mac c89346000001", mac_command},
+#endif
+#if (CONFIG_DEBUG_FIRMWARE)
 	{"version", NULL, get_version},
 	{"starttype", "show start reason type",cli_show_reset_reason},
 	{"id", NULL, get_id},
 	{"reboot", "reboot system", reboot},
 	{"time",   "system time",   uptime_Command},
-#if (CONFIG_WIFI_ENABLE)
-	{"mac", "mac <mac>, get/set mac. e.g. mac c89346000001", mac_command},
-#endif
 
 #if (!CONFIG_SOC_BK7231)
 #if (CONFIG_EFUSE)
@@ -640,6 +642,7 @@ static const struct cli_command s_misc_commands[] = {
 	{"cputest", "cputest [count]", cli_cpu_test},
 #if CONFIG_CACHE_ENABLE
 	{"cache", "show cache config info", cli_cache_cmd},
+#endif
 #endif
 };
 

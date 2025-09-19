@@ -1614,6 +1614,9 @@ int bk_cli_init(void)
 
 
 /*----------------platform cli command init begin------------------*/
+#if (CLI_CFG_MISC == 1)
+	cli_misc_init();
+#endif
 #if CONFIG_DEBUG_FIRMWARE
 #if !CONFIG_CLI_CODE_SIZE_OPTIMIZE_ENABLE
 
@@ -1822,9 +1825,6 @@ int bk_cli_init(void)
 
 #endif// CONFIG_CODE_SIZE_OPTIMIZE
 
-#if (CLI_CFG_MISC == 1)
-	cli_misc_init();
-#endif
 #if (CLI_CFG_OTA == 1)
 	cli_ota_init();
 #endif

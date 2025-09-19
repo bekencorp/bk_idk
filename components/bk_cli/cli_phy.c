@@ -58,7 +58,7 @@ static const struct cli_command s_phy_commands[] = {
 	{"rfcali_show_data",     "",                      cmd_rfcali_show_data},
 	{"rfcali_cfg_rate_dist", "b g n40 ble (0-31)",    cmd_rfcali_cfg_rate_dist},
 
-	
+
 #if (CONFIG_SOC_BK7256XX)
 	{"cali", "cali auto_test",                        cmd_cali},
     {"rfcali_get_cfg_mode",      "",                  cmd_rfcali_get_cfg_mode},
