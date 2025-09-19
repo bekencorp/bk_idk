@@ -2283,8 +2283,12 @@ bk_err_t bk_wifi_scan_start(const wifi_scan_config_t *config)
 	/* flush old scan results */
 	wlan_sta_bss_flush(0);
 
+	wlan_sta_scan_param_t scan_param = {0};
+	scan_param.id = (uint32_t)rtos_get_current_thread();
+
 	if (config ) {
 		ssid_len = MIN(WLAN_SSID_MAX_LEN, os_strlen((char *)config->ssid));
+		scan_param.scan_cc = !!(config->flag & SCAN_TYPE_CC);
 
 		if((0 != config->scan_type) ||(0 != config->chan_cnt) ||(0 != config->duration)) {
 			scan_param_env.set_param = 1;
@@ -2301,16 +2305,15 @@ bk_err_t bk_wifi_scan_start(const wifi_scan_config_t *config)
 
 	if (0 == ssid_len) {
 		WIFI_LOGI("scan all APs\n");
-		ret = wlan_sta_scan_once();
+		scan_param.num_ssids = 1;
+		scan_param.ssids[0].ssid_len = 0;
 	} else {
-		wlan_sta_scan_param_t scan_param = {0};
-
 		WIFI_LOGI("scan %s\n", config->ssid);
 		scan_param.num_ssids = 1;
 		scan_param.ssids[0].ssid_len = MIN(WLAN_SSID_MAX_LEN, os_strlen((char *)config->ssid));
 		os_memcpy(scan_param.ssids[0].ssid, config->ssid, scan_param.ssids[0].ssid_len);
-		ret = wlan_sta_scan(&scan_param);
 	}
+	ret = wlan_sta_scan(&scan_param);
 
 	if (ret != BK_OK) {
 		if (wlan_sta_scan_need_retry(ret)) {
@@ -4550,3 +4553,62 @@ bk_err_t bk_wifi_enable(void)
     WIFI_LOGI("wifi_enable_flag:%x\r\n", g_wifi_enable_flag);
     return ret;
 }
+
+#if CONFIG_WIFI_SCAN_COUNTRY_CODE
+struct bk_scan_cc_st
+{
+	beken_semaphore_t cc_wait;
+	uint8_t *cc_ptr;
+	uint8_t cc_len;
+};
+
+static bk_err_t bk_scan_country_code_callback(void *ctxt, uint8_t *cc, uint8_t cc_len)
+{
+	struct bk_scan_cc_st *bk_scan_ptr = NULL;
+
+	if(ctxt) {
+		bk_scan_ptr = (struct bk_scan_cc_st *)ctxt;
+		if((cc) && (cc_len != 0)) {
+			if(bk_scan_ptr->cc_ptr) {
+				os_memcpy(bk_scan_ptr->cc_ptr, cc, MAC_COUNTRY_STRING_LEN);
+			}
+			bk_scan_ptr->cc_len = MAC_COUNTRY_STRING_LEN;
+		}
+		bk_wifi_bcn_cc_rxed_register_cb(NULL, NULL);
+		rtos_set_semaphore(&bk_scan_ptr->cc_wait);
+	}
+
+	return 0;
+}
+
+int bk_scan_country_code(uint8_t *country_code)
+{
+	struct bk_scan_cc_st bk_scan = {0};
+	bk_err_t err = kNoErr;
+
+	err = rtos_init_semaphore(&bk_scan.cc_wait, 1);
+	if (err == kNoErr) {
+		bk_scan.cc_len = 0;
+		if(country_code)
+			bk_scan.cc_ptr = country_code;
+		else
+			bk_scan.cc_ptr = NULL;
+
+		bk_wifi_bcn_cc_rxed_register_cb(bk_scan_country_code_callback, &bk_scan);
+		err = cc_scan_start();
+		if (err == kNoErr) {
+			err = rtos_get_semaphore(&bk_scan.cc_wait, 4000);
+			cc_scan_stop();
+			if (err == kNoErr) {
+				rtos_deinit_semaphore(&bk_scan.cc_wait);
+				return bk_scan.cc_len;
+			}
+		}
+		bk_wifi_bcn_cc_rxed_register_cb(NULL, NULL);
+		rtos_deinit_semaphore(&bk_scan.cc_wait);
+	}
+
+	return 0;
+}
+#endif //CONFIG_WIFI_SCAN_COUNTRY_CODE
+

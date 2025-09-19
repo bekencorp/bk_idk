@@ -99,6 +99,14 @@ menu "Bk_Wifi"
 		bool "Wifi CSI MEMORY_OPTIMIZATION"
 		default n
 
+	config WIFI_AUTO_COUNTRY_CODE
+		bool "Wifi AUTO CC"
+		default n
+
+	config WIFI_SCAN_COUNTRY_CODE
+		bool "Wifi SCAN CC"
+		default n
+
 	config MSDU_RESV_HEAD_LENGTH
 		int "Set Msdu Resv Head Length"
 		range 1 1500

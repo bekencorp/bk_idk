@@ -322,6 +322,114 @@ void mhdr_scanu_reg_cb(FUNC_2PARAM_PTR ind_cb, void *ctxt)
 						 scan_ap_cb_for_new_api, NULL);
 }
 
+#if CONFIG_WIFI_SCAN_COUNTRY_CODE
+// Country code beacon received
+static wifi_beacon_cc_rxed_t g_scan_cc_rxed_cb = NULL;
+void *g_scan_cc_ctxt = NULL;
+static beken_thread_t g_scan_cc_thread = NULL;
+static beken_semaphore_t cc_scan_handle = NULL;
+bool site_survey_cc = false;
+
+bk_err_t bk_wifi_bcn_cc_rxed_register_cb(const wifi_beacon_cc_rxed_t cc_cb, void *ctxt)
+{
+	g_scan_cc_rxed_cb = cc_cb;
+	g_scan_cc_ctxt = ctxt;
+
+	return 0;
+}
+
+static int cc_scan_ap_cb(void *arg, event_module_t event_module,
+						 int event_id, void *_event_data)
+{
+	uint32_t thread_id = (uint32_t)arg;
+	wifi_event_scan_done_t *event_data = _event_data;
+
+	// If EVENT_WIFI_SCAN_DONE event's scan_id equals our thread_id
+	if (thread_id == event_data->scan_id) {
+		if (cc_scan_handle)
+			rtos_set_semaphore(&cc_scan_handle);
+	}
+
+	return BK_OK;
+}
+
+static void cc_scan_thread(beken_thread_arg_t arg)
+{
+	bk_err_t err = kNoErr;
+
+	err = rtos_init_semaphore(&cc_scan_handle, 1);
+	if (err == kNoErr) {
+		int loop = 0;
+		uint8 cfm;
+		bk_event_register_cb(EVENT_MOD_WIFI, EVENT_WIFI_SCAN_DONE,
+							 cc_scan_ap_cb, rtos_get_current_thread());
+		wifi_scan_config_t scan_param = {0};
+		scan_param.ssid[0] = 0;
+		scan_param.flag = SCAN_TYPE_CC;
+		err = bk_wifi_scan_start(&scan_param);
+
+		if(err == kNoErr){
+			while((loop < 100)&&(g_scan_cc_thread)) {
+				err = rtos_get_semaphore(&cc_scan_handle, 50);
+				if(err == kNoErr) {
+					break;
+				} else if(err == kTimeoutErr) {
+					loop ++;
+					continue;
+				}
+			}
+			if(g_scan_cc_thread == NULL)
+			{
+				rw_msg_send_scan_cancel_req(&cfm);
+			}
+		}
+		bk_event_unregister_cb(EVENT_MOD_WIFI, EVENT_WIFI_SCAN_DONE,
+							 cc_scan_ap_cb);
+		if (cc_scan_handle)
+			rtos_deinit_semaphore(&cc_scan_handle);
+		cc_scan_handle = NULL;
+	}
+
+	g_scan_cc_thread = NULL;
+	rtos_delete_thread(NULL);
+}
+
+int cc_scan_start(void)
+{
+	bk_err_t err = kNoErr;
+
+	if(g_scan_cc_thread == NULL)
+	{
+		err = rtos_create_thread(&g_scan_cc_thread, BEKEN_APPLICATION_PRIORITY,
+								"ccscan",
+								(beken_thread_function_t)cc_scan_thread,
+								0x800,
+								(beken_thread_arg_t)0);
+	}
+	else
+	{
+		err = kInProgressErr;
+	}
+
+	return err;
+}
+
+void cc_scan_stop(void)
+{
+	if(g_scan_cc_thread)
+	{
+		GLOBAL_INT_DECLARATION();
+
+		GLOBAL_INT_DISABLE();
+		g_scan_cc_thread = NULL;
+		GLOBAL_INT_RESTORE();
+
+		while(cc_scan_handle)
+			rtos_delay_milliseconds(50);
+	}
+}
+#endif // CONFIG_WIFI_SCAN_COUNTRY_CODE
+
 void mhdr_connect_ind(void *msg, UINT32 len)
 {
 	struct ke_msg *msg_ptr;
@@ -924,14 +1032,24 @@ UINT32 mhdr_scanu_result_ind(SCAN_RST_UPLOAD_T *scan_rst, void *msg, UINT32 len)
 	ret = BK_OK;
 	result_ptr = scan_rst;
 
-	if (result_ptr->scanu_num >= MAX_BSS_LIST)
-		goto scan_rst_exit;
-
 	msg_ptr = (struct ke_msg *)msg;
 	scanu_ret_ptr = (SCAN_IND_PTR)msg_ptr->param;
 	probe_rsp_ieee80211_ptr = (IEEE802_11_PROBE_RSP_PTR)scanu_ret_ptr->payload;
 	vies_len = scanu_ret_ptr->length - MAC_BEACON_VARIABLE_PART_OFT;
 	var_part_addr = probe_rsp_ieee80211_ptr->rsp.variable;
+
+	#if CONFIG_WIFI_SCAN_COUNTRY_CODE
+	if (site_survey_cc && g_scan_cc_rxed_cb) {
+		elmt_addr = (UINT8 *)get_ie(var_part_addr, vies_len, MAC_ELTID_COUNTRY);
+		if (elmt_addr) {
+			UINT8 cc_len = *(elmt_addr + MAC_COUNTRY_LEN_OFT);
+			g_scan_cc_rxed_cb(g_scan_cc_ctxt, (uint8_t *)(elmt_addr + MAC_COUNTRY_STRING_OFT), cc_len);
+		}
+	}
+	#endif // CONFIG_WIFI_SCAN_COUNTRY_CODE
+
+	if (result_ptr->scanu_num >= MAX_BSS_LIST)
+		goto scan_rst_exit;
 
 	elmt_addr = (UINT8 *)get_ie(var_part_addr, vies_len, MAC_ELTID_DS);
 	if (elmt_addr) { // adjust channel
@@ -1378,6 +1496,10 @@ void rwnx_handle_recv_msg(struct ke_msg *rx_msg)
 			/* scan activity has valid result*/
 			resultful_scan_cfm = 1;
 		}
+
+		#if CONFIG_WIFI_SCAN_COUNTRY_CODE
+		site_survey_cc = false;
+		#endif // CONFIG_WIFI_SCAN_COUNTRY_CODE
 
 		sort_scan_result(scan_rst_set_ptr);
 

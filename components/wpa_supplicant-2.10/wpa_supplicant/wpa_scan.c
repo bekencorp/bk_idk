@@ -940,7 +940,7 @@ static int wpa_set_ssids_from_scan_req(struct wpa_supplicant *wpa_s,
 }
 
 
-static void wpa_supplicant_scan(void *eloop_ctx, void *timeout_ctx)
+void wpa_supplicant_scan(void *eloop_ctx, void *timeout_ctx)
 {
 	struct wpa_supplicant *wpa_s = eloop_ctx;
 	struct wpa_ssid *ssid;

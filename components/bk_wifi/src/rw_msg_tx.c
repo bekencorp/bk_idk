@@ -1086,9 +1086,18 @@ int rw_msg_send_scanu_req(SCAN_PARAM_T *scan_param)
 			}
 			req->chan[i].flags = 0;
 			req->chan[i].tx_power = VIF_UNDEF_POWER;
+
+			#if CONFIG_WIFI_AUTO_COUNTRY_CODE
+			// If auto mode, disable 12, 13 active scan
+			if (country_code_policy_is_auto() &&
+					(req->chan[i].freq == 2467 || req->chan[i].freq == 2472 || req->chan[i].freq == 2484)) {
+					req->chan[i].flags |= CHAN_NO_IR;
+					// os_printf("XXX disable IR chan for %d\n", req->chan[i].freq);
+			}
+			#endif // CONFIG_WIFI_AUTO_COUNTRY_CODE
 		}
 		req->chan_cnt = i;
-		//RWNX_LOGI("Using specified freqs\n");
+		// RWNX_LOGI("XXX Using specified freqs, chan_cnt %d\n", req->chan_cnt);
 	}
 
 	os_memcpy(&req->bssid, &scan_param->bssid, sizeof(req->bssid));

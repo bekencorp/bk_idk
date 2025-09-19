@@ -22,13 +22,19 @@
 #define TAG "bk_wifi"
 
 static int wlan_scan_done_handler(void *arg, event_module_t event_module,
-								  int event_id, void *event_data)
+								  int event_id, void *_event_data)
 {
 	wifi_scan_result_t scan_result = {0};
+	uint32_t thread_id = (uint32_t)arg;
+	wifi_event_scan_done_t *event_data = _event_data;
 
-	BK_LOG_ON_ERR(bk_wifi_scan_get_result(&scan_result));
-	BK_LOG_ON_ERR(bk_wifi_scan_dump_result(&scan_result));
-	bk_wifi_scan_free_result(&scan_result);
+	BK_LOGD(TAG, "XXX: %s thread_id 0x%x, scan_id 0x%x\n", __func__,
+		thread_id, event_data->scan_id);
+	if (thread_id == event_data->scan_id) {
+		BK_LOG_ON_ERR(bk_wifi_scan_get_result(&scan_result));
+		BK_LOG_ON_ERR(bk_wifi_scan_dump_result(&scan_result));
+		bk_wifi_scan_free_result(&scan_result);
+	}
 
 	return BK_OK;
 }
@@ -43,7 +49,7 @@ void demo_scan_adv_app_init(uint8_t *oob_ssid)
 	wifi_scan_config_t scan_config = {0};
 
 	bk_event_register_cb(EVENT_MOD_WIFI, EVENT_WIFI_SCAN_DONE,
-							   wlan_scan_done_handler, NULL);
+							   wlan_scan_done_handler, rtos_get_current_thread());
 
 	if (oob_ssid) {
 		os_strncpy(scan_config.ssid, (char *)oob_ssid, WIFI_SSID_STR_LEN);

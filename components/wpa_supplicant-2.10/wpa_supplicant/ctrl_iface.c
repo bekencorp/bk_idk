@@ -64,6 +64,7 @@
 #endif
 
 extern beken_thread_t wpas_thread_handle;
+extern bool site_survey_cc;
 static int wpa_ctrl_debug_info_dump(struct wpa_supplicant *wpas, uint32_t type);
 extern void wpa_driver_scan_timeout(void *eloop_ctx, void *timeout_ctx);
 uint32_t bk_lookup_ipaddr_wrapper(void *addr);
@@ -319,6 +320,7 @@ static int wpas_ctrl_scan(struct wpa_supplicant *wpa_s, wlan_sta_scan_param_t *p
 	struct wpa_ssid_value *ssid = NULL;
 	unsigned int ssid_count = 0;
 	int ret = 0;
+	bool scan_pending;
 #ifdef CONFIG_FULL_SUPPLICANT
 	struct wpa_ssid_value *ns;
 	char *pos;
@@ -434,53 +436,54 @@ static int wpas_ctrl_scan(struct wpa_supplicant *wpa_s, wlan_sta_scan_param_t *p
 				pos++;
 		}
 	}
-#else
-	if (params) {
-		ssid_count = params->num_ssids;
-		ssid = os_realloc_array(ssid, ssid_count, sizeof(struct wpa_ssid_value));
-		if (ssid == NULL) {
-			ret = WPA_ERR_NO_MEM;
-			goto done;
-		}
-
-		/* set scan ssid */
-		for (int i = 0; i < ssid_count; i++) {
-			os_memcpy(ssid[i].ssid, params->ssids[i].ssid, params->ssids[i].ssid_len);
-			ssid[i].ssid_len = params->ssids[i].ssid_len;
-			wpa_hexdump_ascii(MSG_DEBUG, "scan SSID",
-					  ssid[i].ssid,
-					  ssid[i].ssid_len);
-		}
-	} else {
-		/* do wildcard scan */
-		ssid_count = 1;
-		ssid = os_calloc(1, sizeof(*ssid));
-		if (!ssid) {
-			ret = WPA_ERR_NO_MEM;
-			goto done;
-		}
-	}
 #endif
-
-	wpa_s->num_ssids_from_scan_req = ssid_count;
-	os_free(wpa_s->ssids_from_scan_req);
-	if (ssid_count) {
-		wpa_s->ssids_from_scan_req = ssid;
-		ssid = NULL;
-	} else {
-		wpa_s->ssids_from_scan_req = NULL;
-	}
-
-	if (scan_only)
-		scan_res_handler = scan_only_handler;
-	else if (wpa_s->scan_res_handler == scan_only_handler)
-		scan_res_handler = NULL;
-	else
-		scan_res_handler = wpa_s->scan_res_handler;
+	scan_pending = eloop_is_timeout_registered(wpa_supplicant_scan, wpa_s, NULL);
 
 	if (!wpa_s->sched_scanning && !wpa_s->scanning &&
-	    ((wpa_s->wpa_state <= WPA_SCANNING) ||
-	     (wpa_s->wpa_state == WPA_COMPLETED))) {
+		((wpa_s->wpa_state <= WPA_SCANNING) ||
+		 (wpa_s->wpa_state == WPA_COMPLETED)) && !scan_pending) {
+		if (params) {
+			ssid_count = params->num_ssids;
+			ssid = os_realloc_array(ssid, ssid_count, sizeof(struct wpa_ssid_value));
+			if (ssid == NULL) {
+				ret = WPA_ERR_NO_MEM;
+				goto done;
+			}
+
+			/* set scan ssid */
+			for (int i = 0; i < ssid_count; i++) {
+				os_memcpy(ssid[i].ssid, params->ssids[i].ssid, params->ssids[i].ssid_len);
+				ssid[i].ssid_len = params->ssids[i].ssid_len;
+				wpa_hexdump_ascii(MSG_DEBUG, "scan SSID",
+						  ssid[i].ssid,
+						  ssid[i].ssid_len);
+			}
+		} else {
+			/* do wildcard scan */
+			ssid_count = 1;
+			ssid = os_calloc(1, sizeof(*ssid));
+			if (!ssid) {
+				ret = WPA_ERR_NO_MEM;
+				goto done;
+			}
+		}
+
+		wpa_s->num_ssids_from_scan_req = ssid_count;
+		os_free(wpa_s->ssids_from_scan_req);
+		if (ssid_count) {
+			wpa_s->ssids_from_scan_req = ssid;
+			ssid = NULL;
+		} else {
+			wpa_s->ssids_from_scan_req = NULL;
+		}
+
+		if (scan_only)
+			scan_res_handler = scan_only_handler;
+		else if (wpa_s->scan_res_handler == scan_only_handler)
+			scan_res_handler = NULL;
+		else
+			scan_res_handler = wpa_s->scan_res_handler;
+
 		wpa_s->manual_scan_passive = manual_scan_passive;
 		wpa_s->manual_scan_use_id = manual_scan_use_id;
 		wpa_s->manual_scan_only_new = manual_scan_only_new;
@@ -497,40 +500,30 @@ static int wpas_ctrl_scan(struct wpa_supplicant *wpa_s, wlan_sta_scan_param_t *p
 		wpa_s->after_wps = 0;
 		wpa_s->known_wps_freq = 0;
 #endif
+#if CONFIG_WIFI_SCAN_COUNTRY_CODE
+		if (params->scan_cc)
+			site_survey_cc = true;
+		else
+			site_survey_cc = false;
+#endif
+
 		ret = wpa_supplicant_req_scan(wpa_s, 0, 100000);
 		if (wpa_s->manual_scan_use_id) {
-			wpa_s->manual_scan_id++;
-			if (!wpa_s->manual_scan_id)
-				wpa_s->manual_scan_id = 1;
-			wpa_dbg(wpa_s, MSG_DEBUG, "Assigned scan id %u",
-				wpa_s->manual_scan_id);
-			//*reply_len = os_snprintf(reply, reply_size, "%u\n",
-			//			 wpa_s->manual_scan_id);
-		}
-#if 0
-	} else if (wpa_s->sched_scanning) {
-		wpa_s->manual_scan_passive = manual_scan_passive;
-		wpa_s->manual_scan_use_id = manual_scan_use_id;
-		wpa_s->manual_scan_only_new = manual_scan_only_new;
-		wpa_s->scan_id_count = scan_id_count;
-		os_memcpy(wpa_s->scan_id, scan_id, scan_id_count * sizeof(int));
-		wpa_s->scan_res_handler = scan_res_handler;
-		os_free(wpa_s->manual_scan_freqs);
-		wpa_s->manual_scan_freqs = manual_scan_freqs;
-		manual_scan_freqs = NULL;
+			if (params->id) {
+				wpa_s->manual_scan_id = params->id;
+			} else {
+				wpa_s->manual_scan_id++;
+				if (!wpa_s->manual_scan_id)
+					wpa_s->manual_scan_id = 1;
+			}
 
-		wpa_printf(MSG_DEBUG, "Stop ongoing sched_scan to allow requested full scan to proceed");
-		wpa_supplicant_cancel_sched_scan(wpa_s);
-		wpa_s->scan_req = MANUAL_SCAN_REQ;
-		wpa_supplicant_req_scan(wpa_s, 0, 0);
-		if (wpa_s->manual_scan_use_id) {
-			wpa_s->manual_scan_id++;
-			//*reply_len = os_snprintf(reply, reply_size, "%u\n",
-			//			 wpa_s->manual_scan_id);
+#ifdef CONFIG_NO_STDOUT_DEBUG
+			WPA_LOGI("Assigned scan id 0x%x\n", wpa_s->manual_scan_id);
+#else
 			wpa_dbg(wpa_s, MSG_DEBUG, "Assigned scan id %u",
 				wpa_s->manual_scan_id);
-		}
 #endif
+		}
 	} else {
 		wpa_printf(MSG_DEBUG, "Ongoing scan action - reject new request");
 
