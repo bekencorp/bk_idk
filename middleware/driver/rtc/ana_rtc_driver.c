@@ -724,6 +724,7 @@ void ana_rtc_update(void)
 			if (s_ana_rtc.alarm_head_p)
 				s_ana_rtc_base_tick = s_ana_rtc.alarm_head_p->expired_tick;
 			s_rtc_updated = true;
+			ana_rtc_set_tick(AON_RTC_ROUND_TICK + 1);
 			return;
 		}
 	}
