@@ -336,6 +336,7 @@ void wpas_notify_disconnected(struct wpa_supplicant *wpa_s)
 	wifi_linkstate_reason_t state = mhdr_get_station_status();
 	bool local_generated = !!(wpa_s->disconnect_reason < 0);
 
+	WPA_LOGI("%s: local_generated %d, reconnect %d\n", __func__, local_generated, wpa_s->reconnect);
 	/* negative reason code for local generated */
 	u16 reason = wpa_s->disconnect_reason < 0 ?
 		-wpa_s->disconnect_reason : wpa_s->disconnect_reason;
@@ -422,7 +423,7 @@ void wpas_notify_state_changed(struct wpa_supplicant *wpa_s,
 	}
 
 	/* FIXME: GTK rekey may failed */
-	if (new_state == WPA_DISCONNECTED && old_state >= WPA_SCANNING) {
+	if (new_state == WPA_DISCONNECTED && old_state > WPA_SCANNING) {
 #if defined(BK_SUPPLICANT) && defined(CONFIG_AUTO_RECONNECT)
 
 		/* if auto reconnect has no limit, notify each connection state */
