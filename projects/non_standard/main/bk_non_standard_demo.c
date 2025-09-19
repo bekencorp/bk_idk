@@ -40,7 +40,7 @@ static bool throughput_test_started = false;
 
 static bk_err_t bk_non_standard_demo_send_cb(const uint8_t *peer_mac_addr, bk_rlk_send_status_t status) {
 	if (!throughput_test_started) {
-		//BK_LOGI(NON_STANDARD_TAG, "send to "MACSTR", status:%d\r\n", MAC2STR(peer_mac_addr), status);
+		BK_LOGI(NON_STANDARD_TAG, "send to "MACSTR", status:%d\r\n", MAC2STR(peer_mac_addr), status);
 	}
 	return BK_OK;
 }
@@ -49,7 +49,7 @@ static bk_err_t bk_non_standard_demo_recv_cb(bk_rlk_recv_info_t *rx_info) {
 	GPIO_DOWN(6);
 	GPIO_DOWN(7);
 	if (!td_timer_started) {
-		//BK_LOGI(NON_STANDARD_TAG, "recv from "MACSTR", rssi:%d, len:%u\r\n", MAC2STR(rx_info->src_addr), rx_info->rssi, rx_info->len);
+		BK_LOGI(NON_STANDARD_TAG, "recv from "MACSTR", rssi:%d, len:%u\r\n", MAC2STR(rx_info->src_addr), rx_info->rssi, rx_info->len);
 	} else {
 		total_recv_cnt += (BK_NON_STANDARD_HEADER_LEN + rx_info->len);
 	}
