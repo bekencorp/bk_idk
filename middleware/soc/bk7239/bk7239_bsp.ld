@@ -151,6 +151,10 @@ SECTIONS
         shell_uart.c.obj
         uart_driver.c.obj
         uart_hal.c.obj
+#if CONFIG_WIFI_NON_STANDARD
+        txu_cntrl.c.obj
+        txl_cntrl.c.obj
+#endif
 	) *(.text .text.* .rodata .rodata.*)
 #else
         *(.text)
@@ -305,6 +309,10 @@ SECTIONS
         shell_uart.c.obj*(.text .text.* *.rodata *.rodata.*)
         uart_driver.c.obj*(.text .text.* *.rodata *.rodata.*)
         uart_hal.c.obj*(.text .text.* *.rodata *.rodata.*)
+#if CONFIG_WIFI_NON_STANDARD
+        txu_cntrl.c.obj*(.text .text.* *.rodata *.rodata.*)
+        txl_cntrl.c.obj*(.text .text.* *.rodata *.rodata.*)
+#endif
 #endif
         . = ALIGN(4);
         _iram_end_dummy_ = .;

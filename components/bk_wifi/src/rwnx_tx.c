@@ -854,7 +854,11 @@ tx_exit:
 		os_free(fhost_txdesc);
 }
 
+#if CONFIG_WIFI_NON_STANDARD
+__attribute__((section(".iram "))) void rwnx_start_xmit_raw_ex(struct sk_buff *skb, raw_tx_cntrl_t *raw_tx_cntrl)
+#else
 void rwnx_start_xmit_raw_ex(struct sk_buff *skb, raw_tx_cntrl_t *raw_tx_cntrl)
+#endif
 {
 	struct hostdesc *host;
 	struct txdesc *txdesc;
