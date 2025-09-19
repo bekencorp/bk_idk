@@ -28,7 +28,7 @@
 
 const UINT32 g_default_xtal   = DEFAULT_TXID_XTAL;
 char *vnd_cal_version         = "24-04-10 00:00:00";
-
+#if CONFIG_EPA_ENABLE_FLAG
 /**
  * pwr_gain<09:00> pregain in cfg_power_table.pregain
  * pwr_gain<13:10> pactrl in TRX_C<11:8>, F at present
@@ -38,7 +38,20 @@ char *vnd_cal_version         = "24-04-10 00:00:00";
  * pwr_gain<29:26> Dia in TRX_A<31:28>, 6 at present
  * pwr_gain<31:31> 1:11g/n 0:11b
  */
-const UINT32 pwr_gain_base_gain_b = 0x18ab7c00;//0x00233C00;
+const UINT32 pwr_gain_base_gain_b = 0x18a85000;//0x00233C00;
+const UINT32 pwr_gain_base_gain_g = 0x98a8d000;//0x80233C00;
+const UINT32 pwr_gain_base_gain_ble = 0x18a85000;
+#else
+const UINT32 pwr_gain_base_gain_b = 0x18ab7c00;
+const UINT32 pwr_gain_base_gain_g = 0x98ab7c00;
+#if CONFIG_BLE_USE_HIGH_POWER_LEVEL
+const UINT32 pwr_gain_base_gain_ble = 0x18ab4c00;
+#else
+const UINT32 pwr_gain_base_gain_ble = 0x18a94c00;
+#endif
+#endif
+
+
 #define TPC_PAMAP_TAB_B_LEN			 (48)
 const PWR_REGS cfg_tab_b[TPC_PAMAP_TAB_B_LEN] = {
 	// pregain
@@ -110,7 +123,6 @@ const PWR_REGS cfg_tab_b[TPC_PAMAP_TAB_B_LEN] = {
 #endif
 };
 
-const UINT32 pwr_gain_base_gain_g = 0x98ab7c00;//0x80233C00;
 #define TPC_PAMAP_TAB_G_LEN			 (80)
 const PWR_REGS cfg_tab_g[TPC_PAMAP_TAB_G_LEN] = {
 	// pregain
@@ -196,11 +208,7 @@ const PWR_REGS cfg_tab_g[TPC_PAMAP_TAB_G_LEN] = {
 	PWRI(0x375),   // 78   22  dBm
 	PWRI(0x38F),   // 79   22.25  dBm
 };
-#if CONFIG_BLE_USE_HIGH_POWER_LEVEL
-const UINT32 pwr_gain_base_gain_ble = 0x18ab4c00;
-#else
-const UINT32 pwr_gain_base_gain_ble = 0x18a94c00;
-#endif
+
 #define TPC_PAMAP_TAB_BT_LEN                        (65)
 const PWR_REGS cfg_tab_bt[TPC_PAMAP_TAB_BT_LEN] = {
 	// pregain
@@ -463,7 +471,6 @@ const AUTO_PWR_CALI_CONTEXT auto_pwr =
     0x22B,   /* gtx_tssi_thred_chan13_g */
 };
 
-
 /****************************** power shift table  ****************************/
 #if CFG_SUPPORT_LOW_MAX_CURRENT//Max default work current<250mA@3.3V
 const INT16 shift_tab_b[4] = {0, 0, 0, 0}; // 11M base,5.5M,2M,1M
@@ -482,16 +489,16 @@ const INT16 shift_tab_g_fcc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0
 const INT16 shift_tab_n20_fcc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // ch1~ch14
 const INT16 shift_tab_n40_fcc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // ch1~ch14
 
-const INT16 shift_tab_b_srrc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -10, -12, 0}; // ch1~ch14
-const INT16 shift_tab_g_srrc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -12, -32, 0}; // ch1~ch14
-const INT16 shift_tab_n20_srrc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -12, -32, 0}; // ch1~ch14
-const INT16 shift_tab_n40_srrc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -12, -32, 0}; // ch1~ch14
+const INT16 shift_tab_b_srrc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // ch1~ch14
+const INT16 shift_tab_g_srrc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // ch1~ch14
+const INT16 shift_tab_n20_srrc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // ch1~ch14
+const INT16 shift_tab_n40_srrc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // ch1~ch14
 
 void vnd_cal_overlay(void)
 {
     vnd_cal_set_auto_pwr_thred(auto_pwr);
     //EPA
-#if EPA_ENABLE_FLAG
+#if CONFIG_EPA_ENABLE_FLAG
     vnd_cal_set_epa_config(1, GPIO_28, GPIO_26, pwr_gain_base_gain_b, pwr_gain_base_gain_g);
 #else
     vnd_cal_set_epa_config(0, GPIO_28, GPIO_26, pwr_gain_base_gain_b, pwr_gain_base_gain_g);
