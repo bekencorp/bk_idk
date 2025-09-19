@@ -78,7 +78,7 @@ typedef struct {
 	void (*_rwnx_cal_recover_rcbeken_reg_val)(void);
 	void (*_rwnx_cal_recover_trx_reg_val)(void);
 	void (*_rwnx_cal_set_channel)(UINT32 freq);
-	void (*_bk7011_cal_dpd)(uint32_t freq);
+	void (*_bk7011_cal_dpd)(uint32_t freq, uint32_t connect_mode);
 	void (*_bk7011_cal_pll)(void);
 	void (*_bk7011_update_by_rx)(int8_t rssi, int8_t freq_offset);
 	INT32 (*_rwnx_cal_load_trx_rcbekn_reg_val)(void);

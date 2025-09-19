@@ -51,7 +51,7 @@ void rwnx_cal_set_20M_setting(void);
 void rwnx_cal_recover_rcbeken_reg_val(void);
 void rwnx_cal_recover_trx_reg_val(void);
 void rwnx_cal_set_channel(UINT32 freq);
-void bk7011_cal_dpd(uint32_t freq);
+void bk7011_cal_dpd(uint32_t freq, uint32_t connect_mode);
 void bk7011_cal_pll(void);
 void bk7011_update_by_rx(int8_t rssi, int8_t freq_offset);
 INT32 rwnx_cal_load_trx_rcbekn_reg_val(void);

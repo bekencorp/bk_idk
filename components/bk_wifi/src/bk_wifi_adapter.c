@@ -273,10 +273,10 @@ static void rwnx_cal_set_channel_wrapper(UINT32 freq)
 	#endif
 }
 
-static void bk7011_cal_dpd_wrapper(uint32_t freq)
+static void bk7011_cal_dpd_wrapper(uint32_t freq, uint32_t connect_mode)
 {
 #if CONFIG_DPD_CALI
-    bk7011_cal_dpd(freq);
+    bk7011_cal_dpd(freq, connect_mode);
 #endif
 }
 
