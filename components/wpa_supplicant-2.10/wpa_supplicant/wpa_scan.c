@@ -985,6 +985,10 @@ void wpa_supplicant_scan(void *eloop_ctx, void *timeout_ctx)
 		return;
 	}
 
+#if defined(BK_SUPPLICANT) && defined(CONFIG_AUTO_RECONNECT)
+	wpa_s->notified_disconn = false;
+#endif
+
 #ifndef BK_SUPPLICANT
 	if (wpa_s->conf->ap_scan != 0 &&
 	    (wpa_s->drv_flags & WPA_DRIVER_FLAGS_WIRED)) {
