@@ -336,7 +336,7 @@ void aon_pmu_hal_set_halt_cpu(uint32_t value)
 	aon_pmu_ll_set_r41_halt_cpu(value);
 }
 
-static uint32_t s_pmu_saved_regs[2] = {0};
+static uint32_t s_pmu_saved_regs[3] = {0};
 
 void aon_pmu_hal_backup(void)
 {
@@ -344,6 +344,7 @@ void aon_pmu_hal_backup(void)
 	aon_pmu_ll_set_r25(0xBDB4AA55);
 	s_pmu_saved_regs[0] = aon_pmu_ll_get_r40();
 	s_pmu_saved_regs[1] = aon_pmu_ll_get_r41();
+	s_pmu_saved_regs[2] = aon_pmu_ll_get_r2();
 }
 
 void aon_pmu_hal_restore(void)
@@ -352,6 +353,7 @@ void aon_pmu_hal_restore(void)
 	aon_pmu_ll_set_r0(reg);
 	aon_pmu_ll_set_r40(s_pmu_saved_regs[0]);
 	aon_pmu_ll_set_r41(s_pmu_saved_regs[1]);
+	aon_pmu_ll_set_r2(s_pmu_saved_regs[2]);
 }
 
 void aon_pmu_hal_save_time(bool is_startup)
