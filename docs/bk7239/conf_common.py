@@ -372,7 +372,9 @@ html_js_files = [
 # Override RTD CSS theme to introduce the theme corrections
 # https://github.com/rtfd/sphinx_rtd_theme/pull/432
 def setup(app):
-    app.add_css_file("css/custom.css")
-    app.add_js_file("js/custom.js")
+    # TODO fixed me - peter
+    pass
+    #app.add_css_file("css/custom.css")
+    #app.add_js_file("js/custom.js")
     #app.add_js_file("js/widget-sidebar.js")
     # pass
