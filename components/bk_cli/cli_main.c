@@ -1655,6 +1655,7 @@ int bk_cli_init(void)
 
 #if (CLI_CFG_GPIO == 1)
 	cli_gpio_init();
+	cli_gpio_api_init();
 #endif
 
 #if (CLI_CFG_OS == 1)
@@ -1683,10 +1684,12 @@ int bk_cli_init(void)
 
 #if (CLI_CFG_UART == 1)
 	cli_uart_init();
+	cli_uart_api_init();
 #endif
 
 #if (CLI_CFG_SPI == 1)
 	cli_spi_init();
+	cli_spi_api_init();
 #endif
 
 #if (CLI_CFG_QSPI == 1)
@@ -1699,6 +1702,7 @@ int bk_cli_init(void)
 
 #if (CLI_CFG_I2C == 1)
 	cli_i2c_init();
+	cli_i2c_api_init();
 #endif
 
 #if (CLI_CFG_JPEGENC == 1)
@@ -1708,6 +1712,7 @@ int bk_cli_init(void)
 #if (CLI_CFG_ADC == 1)
 #if CONFIG_SARADC_V1P2
 	bk_sadc_register_cli_test_feature();
+	cli_adc_api_init();
 #endif // CONFIG_SARADC_V1P2
 	cli_adc_init();
 #endif

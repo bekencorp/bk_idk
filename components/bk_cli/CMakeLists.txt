@@ -16,6 +16,7 @@ list(APPEND srcs
 	cli_event.c
 	cli_common.c
 	cli_gpio.c
+	cli_gpio_api.c
 	cli_main.c
 	cli_misc.c
 	cli_mico.c
@@ -26,8 +27,10 @@ list(APPEND srcs
 	cli_timer.c
 	cli_temp_detect.c
 	cli_uart.c
+	cli_uart_api.c
 	cli_security.c
 	cli_spi.c
+	cli_spi_api.c
 	cli_exception.c
 	)
 
@@ -108,6 +111,7 @@ endif()
 if (CONFIG_I2C)
 	list(APPEND srcs
 		cli_i2c.c
+		cli_i2c_api.c
 	)
 endif()
 
@@ -121,11 +125,6 @@ endif()
 if (CONFIG_FLASH)
 	list(APPEND srcs
 		cli_flash_test.c
-	)
-endif()
-
-if(CONFIG_FLASH)
-	list(APPEND srcs
 		cli_flash_api.c
 	)
 endif()

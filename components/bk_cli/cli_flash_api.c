@@ -87,7 +87,7 @@ static void cli_flash_api_cmd_handler(void **argtable)
         } else {
             BK_DUMP_OUT("Invalid parameter for clock: %s\r\n", arg_clock->sval[0]);
         }
-        return; 
+        return;
     }
 
     if (arg_write_able->count > 0)
@@ -101,7 +101,7 @@ static void cli_flash_api_cmd_handler(void **argtable)
         } else {
             BK_DUMP_OUT("Invalid parameter for write: %s\r\n", arg_write_able->sval[0]);
         }
-        return; 
+        return;
     }
 
     uint32_t block_addr = (uint32_t)strtol(arg_address->sval[0], NULL, 0);  // Convert address from string to integer
@@ -119,7 +119,7 @@ static void cli_flash_api_cmd_handler(void **argtable)
         } else {
             BK_DUMP_OUT("Invalid parameter for write: %s\r\n", arg_deep_sleep_block->sval[0]);
         }
-        return; 
+        return;
     }
 
     if (lm->count > 0)

@@ -86,6 +86,7 @@ int cli_wdt_init(void);
 int cli_trng_init(void);
 int cli_efuse_init(void);
 int cli_gpio_init(void);
+int cli_gpio_api_init(void);
 int cli_os_init(void);
 int cli_ota_init(void);
 int cli_https_ota_init(void);
@@ -96,16 +97,20 @@ int cli_keyVaule_init(void);
 int cli_matter_init(void);
 
 int cli_uart_init(void);
+int cli_uart_api_init(void);
 
 #if CONFIG_SARADC_V1P2
 int bk_sadc_register_cli_test_feature(void);
+int cli_adc_api_init(void);
 #endif
 int cli_adc_init(void);
 
 int cli_sdmadc_init(void);
 int cli_spi_init(void);
+int cli_spi_api_init(void);
 int cli_qspi_init(void);
 int cli_i2c_init(void);
+int cli_i2c_api_init(void);
 int cli_aon_rtc_init(void);
 int cli_sd_init(void);
 int cli_fatfs_init(void);
