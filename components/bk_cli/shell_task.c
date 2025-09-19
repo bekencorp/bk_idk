@@ -350,7 +350,7 @@ static u8            log_handle_init_ok = 0;
 static u8     fault_hint_print = 0;
 static u32    shell_log_overflow = 0;
 static u32    shell_log_count = 0;
-static u8     shell_log_level = LOG_LEVEL;
+static u8     shell_log_level = BK_LOG_LEVEL;
 static u8     log_flush_enabled = 1;
 static u8     shell_assert_buff[SHELL_ASSERT_BUF_LEN];
 static u8     log_tx_init_ok = 0;
