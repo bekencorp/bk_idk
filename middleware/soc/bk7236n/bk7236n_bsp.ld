@@ -99,8 +99,59 @@ SECTIONS
         . = ALIGN(4);
         _stext = .;
 #if (CONFIG_SPE && !CONFIG_RELEASE_IRAM && !CONFIG_DPD_CALI)
-	EXCLUDE_FILE(*libos_source.a:tasks.c.obj *libos_source.a:queue.c.obj *libos_source.a:list.c.obj *libos_source.a:timers.c.obj *libos_source.a:port.c.obj *rtos_pub.c.obj *heap_4.c.obj *mem_arch.c.obj *io_matrix_driver.c.obj *flash_driver.c.obj *ckmn_driver.c.obj *arch_interrupt.c.obj *hal_machw.c.obj *interrupts.c.obj *rw_task.c.obj  *me_strategy.c.obj *chan.c.obj *vif_mgmt.c.obj *rxl_cntrl.c.obj *rxl_hwdesc.c.obj *mm_timer.c.obj *ke_event.c.obj *rwnx.c.obj *rwnx_rx.c.obj *ps.c.obj *mm.c.obj *rf_cntrl.c.obj *mcc.c.obj *phy_karst_bk7236.c.obj *crm.c.obj *bk7236_cal.c.obj *manual_cal_bk7236.c.obj *bk_cal_common.c.obj *nv_parameters.c.obj *macif_fhost.c.obj *rc_driver.c.obj *sys_wifi_driver.c.obj *wifi_v2.c.obj *bk_feature.c.obj *libbk_pm.a:pm.c.obj *sys_ps_driver.c.obj *sys_pm_hal.c.obj k_wifi_adapter.c.obj *net_param.c.obj *wifi_api_wrapper.c.obj *bk_rf_adapter.c.obj *bk_phy_adapter.c.obj *shell_task.c.obj *shell_uart.c.obj *uart_driver.c.obj *uart_hal.c.obj) *(.text* .rodata*)
-
+	EXCLUDE_FILE(
+        libos_source.a:tasks.c.obj
+        libos_source.a:queue.c.obj
+        libos_source.a:list.c.obj
+        libos_source.a:timers.c.obj
+        libos_source.a:port.c.obj
+        rtos_pub.c.obj
+        heap_4.c.obj
+        mem_arch.c.obj
+        io_matrix_driver.c.obj
+        flash_driver.c.obj
+        ckmn_driver.c.obj
+        arch_interrupt.c.obj
+        hal_machw.c.obj
+        interrupts.c.obj
+        rw_task.c.obj
+        ke_event.c.obj
+        me_strategy.c.obj
+        chan.c.obj
+        vif_mgmt.c.obj
+        rxl_cntrl.c.obj
+        rxl_hwdesc.c.obj
+        mm_time.c.obj
+        rwnx.c.obj
+        rwnx_rx.c.obj
+        libwifi.a:ps.c.obj
+        libwifi.a:mm.c.obj
+        rf_cntrl.c.obj
+        mcc.c.obj
+        phy_karst_bk7236.c.obj
+        crm.c.obj 
+        bk7236_cal.c.obj
+        manual_cal_bk7236.c.obj
+        bk_cal_common.c.obj
+        nv_parameters.c.obj
+        macif_fhost.c.obj
+        rc_driver.c.obj
+        sys_wifi_driver.c.obj
+        wifi_v2.c.obj
+        bk_feature.c.obj
+        libbk_pm.a:pm.c.obj
+        sys_ps_driver.c.obj
+        sys_pm_hal.c.obj
+        bk_wifi_adapter.c.obj
+        net_param.c.obj
+        wifi_api_wrapper.c.obj
+        bk_rf_adapter.c.obj
+        bk_phy_adapter.c.obj
+        shell_task.c.obj
+        shell_uart.c.obj
+        uart_driver.c.obj
+        uart_hal.c.obj
+	) *(.text .text.* .rodata .rodata.*)
 #else
         *(.text)
         *(.text.*)
@@ -203,57 +254,57 @@ SECTIONS
         *(.interrupt)
 
 #if (CONFIG_SPE && !CONFIG_RELEASE_IRAM)
-        *libos_source.a:tasks.c.obj(.text.* *.rodata *.rodata.*)
-        *libos_source.a:queue.c.obj(.text.* *.rodata *.rodata.*)
-        *libos_source.a:list.c.obj(.text.* *.rodata *.rodata.*)
-        *libos_source.a:timers.c.obj(.text.* *.rodata *.rodata.*)
-        *libos_source.a:port.c.obj(.text.* *.rodata *.rodata.*)
-        *rtos_pub.c.obj(.text.* *.rodata *.rodata.*)
-        *heap_4.c.obj(.text.* *.rodata *.rodata.*)
-        *mem_arch.c.obj(.text.* *.rodata *.rodata.*)
-        *io_matrix_driver.c.obj(.text.* *.rodata *.rodata.*)
-        *flash_driver.c.obj(.text.* *.rodata *.rodata.*)
-        *ckmn_driver.c.obj(.text.* *.rodata *.rodata.*)
-        *arch_interrupt.c.obj(.text.* *.rodata *.rodata.*)
-        *hal_machw.c.obj(.text.* *.rodata *.rodata.*)
-        *interrupts.c.obj(.text.* *.rodata *.rodata.*)
-        *rw_task.c.obj(.text.* *.rodata *.rodata.*)
-        *ke_event.c.obj(.text.* *.rodata *.rodata.*)
-        *me_strategy.c.obj(.text.* *.rodata *.rodata.*)
-        *chan.c.obj(.text.* *.rodata *.rodata.*)
-        *vif_mgmt.c.obj(.text.* *.rodata *.rodata.*)
-        *rxl_cntrl.c.obj(.text.* *.rodata *.rodata.*)
-        *rxl_hwdesc.c.obj(.text.* *.rodata *.rodata.*)
-        *mm_time.c.obj(.text.* *.rodata *.rodata.*)
-        *rwnx.c.obj(.text.* *.rodata *.rodata.*)
-        *rwnx_rx.c.obj(.text.* *.rodata *.rodata.*)
-        *libwifi.a:ps.c.obj(.text.* *.rodata *.rodata.*)
-        *libwifi.a:mm.c.obj(.text.* *.rodata *.rodata.*)
-        *rf_cntrl.c.obj(.text.* *.rodata *.rodata.*)
-        *mcc.c.obj(.text.* *.rodata *.rodata.*)
-        *phy_karst_bk7236.c.obj(.text.* *.rodata *.rodata.*)
-        *crm.c.obj (.text.* *.rodata *.rodata.*)
-        *bk7236_cal.c.obj(.text.* *.rodata *.rodata.*)
-        *manual_cal_bk7236.c.obj(.text.* *.rodata *.rodata.*)
-        *bk_cal_common.c.obj(.text.* *.rodata *.rodata.*)
-        *nv_parameters.c.obj(.text.* *.rodata *.rodata.*)
-        *macif_fhost.c.obj(.text.* *.rodata *.rodata.*)
-        *rc_driver.c.obj(.text.* *.rodata *.rodata.*)
-        *sys_wifi_driver.c.obj(.text.* *.rodata *.rodata.*)
-        *wifi_v2.c.obj(.text.* *.rodata *.rodata.*)
-        *bk_feature.c.obj(.text.* *.rodata *.rodata.*)
-        *libbk_pm.a:pm.c.obj(.text.* *.rodata *.rodata.*)
-        *sys_ps_driver.c.obj(.text.* *.rodata *.rodata.*)
-        *sys_pm_hal.c.obj(.text.* *.rodata *.rodata.*)
-        *bk_wifi_adapter.c.obj(.text.* *.rodata *.rodata.*)
-        *net_param.c.obj(.text.* *.rodata *.rodata.*)
-        *wifi_api_wrapper.c.obj(.text.* *.rodata *.rodata.*)
-        *bk_rf_adapter.c.obj(.text.* *.rodata *.rodata.*)
-        *bk_phy_adapter.c.obj(.text.* *.rodata *.rodata.*)
-        *shell_task.c.obj(.text.* *.rodata *.rodata.*)
-        *shell_uart.c.obj(.text.* *.rodata *.rodata.*)
-        *uart_driver.c.obj(.text.* *.rodata *.rodata.*)
-        *uart_hal.c.obj(.text.* *.rodata *.rodata.*)
+        libos_source.a:tasks.c.obj*(.text .text.* *.rodata *.rodata.*)
+        libos_source.a:queue.c.obj*(.text .text.* *.rodata *.rodata.*)
+        libos_source.a:list.c.obj*(.text .text.* *.rodata *.rodata.*)
+        libos_source.a:timers.c.obj*(.text .text.* *.rodata *.rodata.*)
+        libos_source.a:port.c.obj*(.text .text.* *.rodata *.rodata.*)
+        rtos_pub.c.obj*(.text .text.* *.rodata *.rodata.*)
+        heap_4.c.obj*(.text .text.* *.rodata *.rodata.*)
+        mem_arch.c.obj*(.text .text.* *.rodata *.rodata.*)
+        io_matrix_driver.c.obj*(.text .text.* *.rodata *.rodata.*)
+        flash_driver.c.obj*(.text .text.* *.rodata *.rodata.*)
+        ckmn_driver.c.obj*(.text .text.* *.rodata *.rodata.*)
+        arch_interrupt.c.obj*(.text .text.* *.rodata *.rodata.*)
+        hal_machw.c.obj*(.text .text.* *.rodata *.rodata.*)
+        interrupts.c.obj*(.text .text.* *.rodata *.rodata.*)
+        rw_task.c.obj*(.text .text.* *.rodata *.rodata.*)
+        ke_event.c.obj*(.text .text.* *.rodata *.rodata.*)
+        me_strategy.c.obj*(.text .text.* *.rodata *.rodata.*)
+        chan.c.obj*(.text .text.* *.rodata *.rodata.*)
+        vif_mgmt.c.obj*(.text .text.* *.rodata *.rodata.*)
+        rxl_cntrl.c.obj*(.text .text.* *.rodata *.rodata.*)
+        rxl_hwdesc.c.obj*(.text .text.* *.rodata *.rodata.*)
+        mm_time.c.obj*(.text .text.* *.rodata *.rodata.*)
+        rwnx.c.obj*(.text .text.* *.rodata *.rodata.*)
+        rwnx_rx.c.obj*(.text .text.* *.rodata *.rodata.*)
+        libwifi.a:ps.c.obj*(.text .text.* *.rodata *.rodata.*)
+        libwifi.a:mm.c.obj*(.text .text.* *.rodata *.rodata.*)
+        rf_cntrl.c.obj*(.text .text.* *.rodata *.rodata.*)
+        mcc.c.obj*(.text .text.* *.rodata *.rodata.*)
+        phy_karst_bk7236.c.obj*(.text .text.* *.rodata *.rodata.*)
+        crm.c.obj*(.text .text.* .rodata .rodata.*)
+        bk7236_cal.c.obj*(.text .text.* *.rodata *.rodata.*)
+        manual_cal_bk7236.c.obj*(.text .text.* *.rodata *.rodata.*)
+        bk_cal_common.c.obj*(.text .text.* *.rodata *.rodata.*)
+        nv_parameters.c.obj*(.text .text.* *.rodata *.rodata.*)
+        macif_fhost.c.obj*(.text .text.* *.rodata *.rodata.*)
+        rc_driver.c.obj*(.text .text.* *.rodata *.rodata.*)
+        sys_wifi_driver.c.obj*(.text .text.* *.rodata *.rodata.*)
+        wifi_v2.c.obj*(.text .text.* *.rodata *.rodata.*)
+        bk_feature.c.obj*(.text .text.* *.rodata *.rodata.*)
+        libbk_pm.a:pm.c.obj*(.text .text.* *.rodata *.rodata.*)
+        sys_ps_driver.c.obj*(.text .text.* *.rodata *.rodata.*)
+        sys_pm_hal.c.obj*(.text .text.* *.rodata *.rodata.*)
+        bk_wifi_adapter.c.obj*(.text .text.* *.rodata *.rodata.*)
+        net_param.c.obj*(.text .text.* *.rodata *.rodata.*)
+        wifi_api_wrapper.c.obj*(.text .text.* *.rodata *.rodata.*)
+        bk_rf_adapter.c.obj*(.text .text.* *.rodata *.rodata.*)
+        bk_phy_adapter.c.obj*(.text .text.* *.rodata *.rodata.*)
+        shell_task.c.obj*(.text .text.* *.rodata *.rodata.*)
+        shell_uart.c.obj*(.text .text.* *.rodata *.rodata.*)
+        uart_driver.c.obj*(.text .text.* *.rodata *.rodata.*)
+        uart_hal.c.obj*(.text .text.* *.rodata *.rodata.*)
 #endif
         . = ALIGN(4);
         _iram_end_dummy_ = .;
