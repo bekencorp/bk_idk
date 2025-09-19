@@ -22,7 +22,7 @@ I2C 具有简单且制造成本低廉等优点，主要用于低速外围设备�
  - SCL：时钟信号, 提供传输数据的时钟，用来同步数据传输；
  - SDA：用于传输数据。
 
-Beken 芯片通常具有 2 个 I2C 控制器，BK7239 支持 3 个 I2C (I2C0、I2C1和I2C2)。
+Beken 芯片通常具有 2 个 I2C 控制器，BK7239 支持 2 个 I2C (I2C0和I2C1)。
 
 I2C 使用方法
 ------------------
@@ -38,6 +38,9 @@ I2C 主机模式下通信
 *********************
 
 调用 bk_i2c_master_write() 写入数据到从设备，bk_i2c_master_read() 读取数据。
+
+I2C 和 EEPROM 通信
+*********************
 针对 eeprom 这类内存设备，Beken 提供 bk_i2c_memory_write()/bk_i2c_memory_read() 接口，可以指定到从设备内部的地址去执行读写操作。
 
 .. figure:: ../../../../common/_static/i2c_memory_write.png
