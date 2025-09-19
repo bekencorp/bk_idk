@@ -502,6 +502,86 @@ static int rwnx_sg_init(struct sk_buff *skb, uint32_t seg_addr[], int seg_len[],
 	return 0;
 }
 
+#if BK_MAC && CONFIG_CCA_AND_RTS_CTS
+#include "lwip/prot/ip4.h"
+#include "lwip/prot/ethernet.h"
+#include "lwip/prot/ip.h"
+#include "lwip/prot/udp.h"
+
+typedef enum {
+    MAC_UNICAST,
+    MAC_MULTICAST,
+    MAC_BROADCAST
+} MacAddrType;
+
+MacAddrType rwm_mgmt_dst_mac_type(void *mac) {
+    unsigned char *addr = (unsigned char *)mac;
+
+    bool is_broadcast = true;
+    for (int i = 0; i < 6; i++) {
+        if (addr[i] != 0xFF) {
+            is_broadcast = false;
+            break;
+        }
+    }
+
+    if (is_broadcast) {
+        return MAC_BROADCAST;
+    }
+
+    if (addr[0] & 0x01) {
+        return MAC_MULTICAST;
+    }
+
+    return MAC_UNICAST;
+}
+
+bool rwm_use_custom_rc_rating(ETH_HDR_T *eth, UINT8 vif_idx) {
+    bool set_custom_rc = true;
+    bool rc_set_for_unicast = false;
+
+    VIF_INF_PTR vif_entry = rwm_mgmt_vif_idx2ptr(vif_idx);
+
+    if (vif_entry) {
+        if (rwm_mgmt_dst_mac_type(&eth->e_dest) == MAC_UNICAST) {
+            //set for unicast user
+            rc_set_for_unicast = true;
+        } else {
+            //do not set for multicat and broadcast user
+            set_custom_rc = false;
+        }
+    }
+
+    //check frame type for unicast user
+    if (rc_set_for_unicast) {
+        uint16_t eth_proto = htons(eth->e_proto);
+
+        switch (eth_proto) {
+            case ETHTYPE_ARP:
+            case ETHTYPE_EAPOL:
+                set_custom_rc = false;
+                break;
+
+            case ETHTYPE_IP: {
+                struct ip_hdr *ip_hdr = (struct ip_hdr *)(eth + 1);
+
+                switch (IPH_PROTO(ip_hdr)) {
+                    case IP_PROTO_UDP: {
+                        struct udp_hdr *udp_hdr = (struct udp_hdr *)((uint8_t *)ip_hdr + IPH_HL(ip_hdr) * 4);
+
+                        if ((ntohs(udp_hdr->dest) == 67) ||
+                            (ntohs(udp_hdr->dest) == 68))
+                            set_custom_rc = false;
+                    }   break;
+                }
+            }   break;
+        }
+    }
+
+    return set_custom_rc;
+}
+#endif
+
 __ITCM_N int rwnx_start_xmit(uint8_t vif_idx, struct pbuf *p, BUS_MSG_T *msg)
 {
 	struct fhost_tx_desc_tag *fhost_txdesc;
@@ -625,6 +705,12 @@ __ITCM_N int rwnx_start_xmit(uint8_t vif_idx, struct pbuf *p, BUS_MSG_T *msg)
 	host->tid = skb->priority;
 	host->vif_idx = skb->vif_idx;
 	host->staid = skb->sta_idx;
+
+	#if CONFIG_CCA_AND_RTS_CTS
+	if (rwm_use_custom_rc_rating(eth_hdr_ptr, host->vif_idx)) {
+		host->flags |= TXU_CNTRL_SET_RTS;
+	}
+	#endif
 
 	// if frame that doesn't need to open TD window, set SPECIAL_FRAME flag
 	if (msg->type == BMSG_SPECIAL_TX_TYPE)

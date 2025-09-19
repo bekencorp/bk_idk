@@ -530,6 +530,50 @@ void rwnx_upload_amsdu(struct fhost_rx_header *rxhdr)
 	}
 }
 
+//#include "mac.h"
+bool compare_mac_addresses(const char *mac1, uint8_t *mac2_input) {
+    unsigned char mac1_bytes[6];
+    struct mac_addr *mac2 = (struct mac_addr *)mac2_input;
+    if (sscanf(mac1, "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx",
+               &mac1_bytes[0], &mac1_bytes[1], &mac1_bytes[2],
+               &mac1_bytes[3], &mac1_bytes[4], &mac1_bytes[5]) != 6) {
+        return false;
+    }
+
+    uint16_t mac1_uint16[3];
+    mac1_uint16[0] = (mac1_bytes[1] << 8) | mac1_bytes[0];
+    mac1_uint16[1] = (mac1_bytes[3] << 8) | mac1_bytes[2];
+    mac1_uint16[2] = (mac1_bytes[5] << 8) | mac1_bytes[4];
+
+    for (int i = 0; i < 3; i++) {
+        if (mac1_uint16[i] != mac2->array[i]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+int8_t get_rssi_by_mac(char *mac)
+{
+    int8_t rssi = 0XFF;
+    void  *sta_entry = NULL;
+    uint8 *sta_mac_addr = NULL;
+
+    for (int i = 0; i < STA_MAX; i++) {
+        sta_entry = sta_mgmt_get_entry(i);
+        sta_mac_addr = sta_mgmt_get_mac_addr(sta_entry);
+        if (compare_mac_addresses(mac, sta_mac_addr))
+            rssi = sta_mgmt_get_rssi(sta_entry);
+    }
+
+    if (rssi == 0XFF)
+        os_printf("input mac address is invalid\r\n");
+    else
+        os_printf("mac:%pM rssi=%d\r\n", mac, rssi);
+
+    return rssi;
+}
 
 /**
  * rwm_upload_data - upload 802.3 frame to lwip, and 802.11 frame to wpa_s/hostapd

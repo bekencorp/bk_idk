@@ -527,9 +527,30 @@ static int hostapd_derive_psk(struct hostapd_ssid *ssid)
 				4096, ssid->wpa_psk->psk, PMK_LEN);
 	}
 #else
+	#if CONFIG_AP_FAST_START_UP
+	struct wlan_fast_connect_info fci;
+	extern void wlan_read_fast_connect_info(struct wlan_fast_connect_info *fci);
+	wlan_read_fast_connect_info(&fci);
+	int fci_ssid_len = os_strlen((char*)fci.ssid);
+	if(fci_ssid_len > SSID_MAX_LEN)
+		fci_ssid_len = SSID_MAX_LEN;
+	int req_ssid_len = os_strlen((char*)ssid->ssid);
+	if(req_ssid_len > SSID_MAX_LEN)
+		req_ssid_len = SSID_MAX_LEN;
+	if ((fci_ssid_len == req_ssid_len &&
+		os_memcmp(ssid->ssid, fci.ssid, fci_ssid_len) == 0 &&
+		os_strcmp(ssid->wpa_passphrase, (char*)fci.pwd) == 0)) {
+		hexstr2bin((char *)fci.psk, ssid->wpa_psk->psk, PMK_LEN);
+	} else {
+		pbkdf2_sha1(ssid->wpa_passphrase,
+				ssid->ssid, ssid->ssid_len,
+				4096, ssid->wpa_psk->psk, PMK_LEN);
+	}
+	#else
 	pbkdf2_sha1(ssid->wpa_passphrase,
 		    ssid->ssid, ssid->ssid_len,
 		    4096, ssid->wpa_psk->psk, PMK_LEN);
+	#endif
 #endif
 	wpa_hexdump_key(MSG_DEBUG, "PSK (from passphrase)",
 			ssid->wpa_psk->psk, PMK_LEN);

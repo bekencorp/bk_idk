@@ -1046,6 +1046,53 @@ void set_scan_chan_duration_param(unsigned char chnb, struct scan_chan_duration_
 struct scan_cfg_scan_param_tag scan_param_env = {0};
 struct scan_cfg_scan_param_tag scan_param_dump_env = {0};
 
+#if CONFIG_USER_SPECIFIC_SCAN
+/**
+ * sta_channel_mask is a 16-bit integer, it represents a WiFi channel from bit0 to bit 13
+ * - Bit 0 corresponds to channel 1.
+ * - Bit 1 corresponds to channel 2, and so on.
+ * - A bit value of `1` indicates the channel is selected, while `0` means it is not.
+ *
+ * For example:
+ * - A mask of `0b0000010000100001` indicates that channels 1, 6, and 11 are selected.
+ * - The corresponding center frequencies are `2412 MHz`, `2437 MHz`, and `2462 MHz`.
+ */
+uint16_t sta_channel_mask = 0x3FFF;   // default 0x3FFF represents the full 2.4G channels
+
+#define WIFI_CHANNEL_COUNT 14
+int global_chan[WIFI_CHANNEL_COUNT] = {
+	2412, 2417, 2422, 2427, 2432, 2437, 2442, 2447,
+	2452, 2457, 2462, 2467, 2472, 2484
+};
+
+int select_center_freq_from_mask(unsigned int sta_channle_mask, int **freq) {
+	int count = 0;
+	for (int i = 0; i < WIFI_CHANNEL_COUNT; i++) {
+		if (sta_channle_mask & (1 << i)) {
+			count++;
+		}
+	}
+
+	if (count == 0) {
+		*freq = NULL;
+		return 0;
+	}
+
+	*freq = (int *)os_malloc(count * sizeof(int));
+	if (*freq == NULL) {
+		return 0;
+	}
+
+	int index = 0;
+	for (int i = 0; i < WIFI_CHANNEL_COUNT; i++) {
+		if (sta_channle_mask & (1 << i)) {
+			(*freq)[index++] = global_chan[i];
+		}
+	}
+
+	return count;
+}
+#endif
 
 int rw_msg_send_scanu_req(SCAN_PARAM_T *scan_param)
 {
@@ -1068,10 +1115,18 @@ int rw_msg_send_scanu_req(SCAN_PARAM_T *scan_param)
 	req->no_cck = 0;
 
 	int *freqs = scan_param->freqs;
+	#if CONFIG_USER_SPECIFIC_SCAN
+	if (!freqs[0] && sta_channel_mask == 0X3FFF) {
+	#else
 	if (!freqs[0]) {
+	#endif
 		/* no specified freq, set to all freqs supported */
 		rw_ieee80211_init_scan_chan(req);
+	#if CONFIG_USER_SPECIFIC_SCAN
+	} else if (freqs[0]) {
+	#else
 	} else {
+	#endif
 		/* specified freqs: XXX 5g band */
 		for (i = 0; i < ARRAY_SIZE(scan_param->freqs); i++, freqs++) {
 			if (!*freqs)
@@ -1098,6 +1153,18 @@ int rw_msg_send_scanu_req(SCAN_PARAM_T *scan_param)
 		}
 		req->chan_cnt = i;
 		// RWNX_LOGI("XXX Using specified freqs, chan_cnt %d\n", req->chan_cnt);
+	#if CONFIG_USER_SPECIFIC_SCAN
+	} else if (sta_channel_mask) {
+		int *scan_freq = NULL;
+		int freq_size = select_center_freq_from_mask(sta_channel_mask, &scan_freq);
+		for (i = 0; i < freq_size; i++) {
+			req->chan[i].band = IEEE80211_BAND_2GHZ;
+			req->chan[i].flags = 0;
+			req->chan[i].freq = scan_freq[i];
+		}
+		req->chan_cnt = i;
+		os_free(scan_freq);
+	#endif
 	}
 
 	os_memcpy(&req->bssid, &scan_param->bssid, sizeof(req->bssid));

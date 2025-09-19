@@ -60,6 +60,7 @@
 #define TXU_CNTRL_TX_NO_WAIT            CO_BIT(17)
 /// The frame wanna use independent policy table
 #define TXU_CNTRL_INDEPENDENT_PT        CO_BIT(18)
+#define TXU_CNTRL_SET_RTS               CO_BIT(19)
 #endif
 /// @}
 

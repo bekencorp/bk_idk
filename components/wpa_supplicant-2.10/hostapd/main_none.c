@@ -431,6 +431,39 @@ static int hostapd_parse_intlist(int **int_list, char *val)
 	return 0;
 }
 
+#if CONFIG_AP_FAST_START_UP
+void hostapd_store_fci(void)
+{
+	struct hapd_interfaces *interfaces = hostapd_ctrl_get_interfaces();
+	if (!interfaces || !interfaces->iface[0] || !interfaces->iface[0]->bss[0])
+		return;
+
+	struct hostapd_data * hapd = interfaces->iface[0]->bss[0];
+	if (!hapd)
+		return;
+
+	struct hostapd_bss_config *conf = hapd->conf;
+	if (unlikely((!conf || !conf->ssid.wpa_psk)))
+		return;
+
+	struct wlan_fast_connect_info fci;
+	char temp[4];
+	int i;
+	os_memset(&fci, 0, sizeof(fci));
+	os_memcpy(fci.ssid, conf->ssid.ssid, conf->ssid.ssid_len);
+	os_strcpy((char*)fci.pwd, conf->ssid.wpa_passphrase);
+
+	u8 *psk = conf->ssid.wpa_psk->psk;
+	for (i = 0; i < PMK_LEN; i++) {
+		sprintf(temp, "%02x", psk[i]);
+		strcat((char*)fci.psk, temp);
+	}
+
+	extern void wlan_write_fast_connect_info(struct wlan_fast_connect_info *fci);
+	wlan_write_fast_connect_info(&fci);
+}
+#endif
+
 static int hostapd_config_fill(struct hostapd_config *conf,
 			       struct hostapd_bss_config *bss,
 			       const char *buf, char *pos, int line)

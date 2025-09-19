@@ -24,6 +24,18 @@ menu "Bk_Wifi"
 		bool "Support WAPI nAPI"
 		default n
 
+	config USER_SPECIFIC_SCAN
+		bool "Support user specific scan"
+		default n
+
+	config CCA_AND_RTS_CTS
+		bool "config CCA and RTS/TCS"
+		default n
+
+	config AP_FAST_START_UP
+		bool "Enable AP_FAST_START_UP"
+		default n
+
 	config WIFI_BAND_5G
 		depends on WIFI_ENABLE
 		bool "Enable 5G Band"

@@ -606,6 +606,10 @@ void uap_ip_start(void)
 		LWIP_LOGD("uap ip start\r\n");
 		uap_ip_start_flag = true;
 		net_configure_address(&uap_ip_settings, net_get_uap_handle());
+		#if CONFIG_AP_FAST_START_UP
+		extern void hostapd_store_fci(void);
+		hostapd_store_fci();
+		#endif
 #if IP_NAPT
 		ip_napt_enable(ip4_addr_get_u32(ip_2_ip4(&g_uap.ipaddr)), 1);
 #endif
