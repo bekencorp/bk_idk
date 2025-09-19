@@ -36,6 +36,8 @@ set(srcs
     ${TFM_BEKEN}/armino/driver/flash/flash_driver.c
     ${TFM_BEKEN}/armino/driver/timer/timer_driver.c
     ${TFM_BEKEN}/armino/driver/ppc/prro_driver.c
+    ${TFM_BEKEN}/armino/driver/efuse/efuse_driver.c
+    ${TFM_BEKEN}/armino/driver/bk_efuse.c
     ../interfaces/common_interfaces.c
     ./driver/hal/prro_hal_v5.c
     ./driver/hal/uart_hal.c
@@ -51,6 +53,7 @@ set(srcs
     ./driver/hal/timer_ll.c
     ./driver/hal/gpio_ll.c
     ./driver/hal/flash_ll.c
+    ./driver/hal/efuse_hal.c
     ./driver/hal/otp_hal.c
     ./driver/hal/otp_ll.c
 )

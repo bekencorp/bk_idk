@@ -35,6 +35,8 @@
 #include "flash_partition.h"
 #include "aon_pmu_hal.h"
 #include <modules/pm.h>
+#include <soc/soc.h>
+
 
 #ifdef TEST_BL2
 #include "mcuboot_suites.h"
@@ -155,10 +157,12 @@ int main(void)
 #if CONFIG_RANDOM_AES_UPGRADE_BL2
     get_pc();
 #endif
-#if !CHIP_BK7236N
+#if (CHIP_BK7236N) || (CHIP_BK7239)
+#else
     sys_hal_dpll_cpu_flash_time_early_init();
 #endif
-    if (efuse_is_secure_download_enabled()) {
+
+    if (is_secure_download_enabled()) {
         flash_switch_to_line_mode_two();
         bk_flash_cpu_write_enable();
         enable_dcache(0);
@@ -168,15 +172,16 @@ int main(void)
         bk_flash_cpu_write_disable();
         flash_restore_line_mode();
     }
-#if !CHIP_BK7236N
+#if (CHIP_BK7236N || CHIP_BK7239)
+#else
     sys_hal_flash_set_clk(0x1);
     sys_hal_flash_set_clk_div(0x0);
     sys_hal_ctrl_vdddig_h_vol(0xD);
     sys_hal_switch_freq(0x3, 0x0, 0x0);
 #endif
 #endif
-#if CHIP_BK7236N
-    sys_hal_switch_cpu_bus_freq(PM_CPU_FRQ_240M);
+#if (CHIP_BK7236N || CHIP_BK7239)
+    // sys_hal_switch_cpu_bus_freq(PM_CPU_FRQ_240M);
 #endif
 #if CONFIG_BL2_WDT
     close_wdt();

@@ -83,24 +83,22 @@ __inline static void ext_flash_lock()
 
 uint16_t ext_flash_rd_status(void)
 {
-		uint8_t cmd[4];
-		uint16_t status;
+	uint8_t cmd[4];
+	uint16_t status;
 
-		u8 spi_status;
-		uint8_t rbuf[2];
-		cmd[0] = RD_STATUS_REG_CMD;
-		cmd[1] = 0;
-		spi_status = spi_write_read(cmd,2,&rbuf[0],1,1);
+	u8 spi_status;
+	uint8_t rbuf[2];
+	cmd[0] = RD_STATUS_REG_CMD;
+	cmd[1] = 0;
+	spi_status = spi_write_read(cmd, 2, &rbuf[0], 1, 1);
 
-		if(spi_status == 0)
-		{
-			status = (rbuf[0] & 0x01);
-		}else
-		{
-			status = SPI_OP_T_OUT;//(rbuf[0] & 0x01);// spi_status ;
-		}
+	if (spi_status == 0) {
+		status = (rbuf[0] & 0x01);
+	} else {
+		status = SPI_OP_T_OUT;//(rbuf[0] & 0x01);// spi_status ;
+	}
 	//	bl_printf("rbuf[0] = %x \r\n",rbuf[0]);
-		return status;
+	return status;
 }
 
 uint32_t ext_flash_rd_identify(void)
@@ -173,47 +171,41 @@ uint8_t  ext_flash_erase_sector_or_block_size(uint8 size_cmd,uint32_t address)
 		uint8_t status = 0;
 		uint8_t w_buf[4];
 	    uint32_t Address ;
-
+		uint32_t w_info_size = FLASH_SPI_WBUF_COUNT;
+		
 	    Address = address;
 	    w_buf[0] = size_cmd;
 		w_buf[1] = (Address >> 16 ) & 0XFF;
 	    w_buf[2] = (Address >> 8 ) & 0XFF;
 	    w_buf[3] = (Address >> 0 ) & 0XFF;
-//	    bl_printf("erase Address = 0x%08x\r\n",Address);
-	 //   enable_pwm1_pt2();
-	    status = ext_flash_rd_status();
-	    set_5mstime_cnt(0);
-		while((0x03 << 0) & (status))
-		{
-			if(get_5mstime_cnt() >= 1000)
-			{
-			//	disble_pwm1_pt2();
-				//status = 1;
+
+		status = ext_flash_rd_status();
+		set_5mstime_cnt(0);
+		while ((0x03 << 0) & (status)) {
+			if (get_5mstime_cnt() >= 1000) {
 				return status;
 			}
 			status = ext_flash_rd_status();
 		}
 
 		status = ext_flash_wr_enable(1);
-		status = spi_write_read(w_buf,4,NULL ,0,0);
-		// status = ext_flash_wr_enable(0);
+		status = spi_write_read(w_buf, w_info_size, NULL, 0, 0);
 
 		set_5mstime_cnt(0);
-		status = ext_flash_rd_status();
-		while(((0x03 << 0) & (status)))
-		{
-			if(get_5mstime_cnt() >= 1000)
-			{
-			//	disble_pwm1_pt2();
-				//status = 1;
-				return status;
+		uint8_t status_1 = 0;
+		uint8_t status_2 = 0;
+		while (1) {
+			status_1 = ext_flash_rd_status();
+			status_2 = ext_flash_rd_status();
+			if (get_5mstime_cnt() >= 1000) {
+				return status_2;
 			}
-			status = ext_flash_rd_status();
+			if (status_1 == 0 && status_2 == 0) {
+				break;
+			}
 		}
-	//	disble_pwm1_pt2();
 
-		return status;
-
+		return status_1;
 }
 
 
@@ -446,9 +438,9 @@ uint32_t ext_flash_erase_chip(uint8_t time_outs) //CHIP_ERASE_CMD
 
  uint8_t ext_flash_wr_data_in_page(uint32_t address,uint8_t *buf,uint32_t size)
 {
-
 		uint8_t status = 0;
 		uint8_t w_buf[8];
+		uint32_t w_info_size = FLASH_SPI_WBUF_COUNT;
 		if(size == 0)
 		{
 			status = PARAM_ERROR;
@@ -476,7 +468,7 @@ uint32_t ext_flash_erase_chip(uint8_t time_outs) //CHIP_ERASE_CMD
 
 		status = ext_flash_wr_enable(1);
 #if 1
-		spi_tx_start();
+		spi_tx_start(w_info_size + size);
 
 		status = spi_write_read_no_cs(w_buf,4,NULL,0,0);
 		status = spi_write_read_no_cs(buf,size,NULL,0,0);

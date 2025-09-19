@@ -96,7 +96,7 @@ void uart_static_read85(void);
 
 void uart_tx_init_enable(u8 en);
 void uart_send(unsigned char *buff, int len);
-
+void uart0_change_baudrate_reinit(uint32_t baud_rate, uint32_t uart_clk);
 void UART_InterruptHandler(void);
 
 #endif // _BL_UART_H_

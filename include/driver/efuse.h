@@ -21,7 +21,6 @@
 extern "C" {
 #endif
 
-
 /* @brief Overview about this API header
  *
  */

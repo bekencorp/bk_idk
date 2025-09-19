@@ -89,20 +89,20 @@ void spi_initial(SPI_ROLE role,uint32_t baud)
 	REG_SPI_RST = 3;
 	 if(SPI_MASTER == role)
 	 {
-			REG_SPI_CTRL = (SPI_ENABLE           << BIT_SPI_CTRL_SPIEN)
-													|( role << BIT_SPI_CTRL_MSTEN)
-													| (CKPHA_CLK1           << BIT_SPI_CTRL_CKPHA)
-													| (CKPOL_L           << BIT_SPI_CTRL_CKPOL)
-													| (SPI_CHARFORMAT_8BIT           << BIT_SPI_CTRL_BIT_WIDTH)
-													| (0x02UL           << BIT_SPI_CTRL_NSSMD)
-												//	| (SPI_CLK_DIVID_SET(baud)  << BIT_SPI_CTRL_SPI_CKR)
-													|( 1  << BIT_SPI_CTRL_SPI_CKR)
-													| (0x00UL           << BIT_SPI_CTRL_RXINT_EN)
-													| (0x00UL           << BIT_SPI_CTRL_TXINT_EN)
-													| (0x00UL           << BIT_SPI_CTRL_RXOVR_EN)
-													| (0x00UL           << BIT_SPI_CTRL_TXOVR_EN)
-													| (0x00UL           << BIT_SPI_CTRL_RXINT_MODE)
-													| (0x00UL           << BIT_SPI_CTRL_TXINT_MODE);
+		REG_SPI_CTRL = (SPI_ENABLE		<< BIT_SPI_CTRL_SPIEN)
+					   | (role << BIT_SPI_CTRL_MSTEN)
+					   | (CKPHA_CLK1           << BIT_SPI_CTRL_CKPHA)
+					   | (CKPOL_L           << BIT_SPI_CTRL_CKPOL)
+					   | (SPI_CHARFORMAT_8BIT           << BIT_SPI_CTRL_BIT_WIDTH)
+					   | (0x02UL           << BIT_SPI_CTRL_NSSMD)
+					   //	| (SPI_CLK_DIVID_SET(baud)  << BIT_SPI_CTRL_SPI_CKR)
+					   | (1  << BIT_SPI_CTRL_SPI_CKR)
+					   | (0x00UL           << BIT_SPI_CTRL_RXINT_EN)
+					   | (0x00UL           << BIT_SPI_CTRL_TXINT_EN)
+					   | (0x00UL           << BIT_SPI_CTRL_RXOVR_EN)
+					   | (0x00UL           << BIT_SPI_CTRL_TXOVR_EN)
+					   | (0x00UL           << BIT_SPI_CTRL_RXINT_MODE)
+					   | (0x00UL           << BIT_SPI_CTRL_TXINT_MODE);
 	 }
 	 else if(SPI_SLAVE == role)
 	 {
@@ -126,53 +126,60 @@ void spi_initial(SPI_ROLE role,uint32_t baud)
 
 }
 
-void spi_tx_start(void)
+void spi_tx_start(uint32_t len)
 {
-		uint32_t reg ;
+	uint32_t reg, reg6 = 0;
 	//	bl_printf("spi_tx_start\r\n");
-	                                               // reset css
-			reg = REG_SPI_CTRL;                        // sel wire4
-  		reg &= ~(0x1 << BIT_SPI_CTRL_WIRE3_EN) ;
-			REG_SPI_CTRL = reg; 
-	
-		reg = REG_SPI_CN;                            //enable tx_en rx_ten
-	  reg |= 0x03UL; 
-	  REG_SPI_CN = reg ;
-	
+	// reset css
+	reg = REG_SPI_CTRL;					// sel wire4
+	reg &= ~(0x1 << BIT_SPI_CTRL_WIRE3_EN) ;
+	REG_SPI_CTRL = reg;
+
+	reg6 = REG_SPI_STAT;
+	reg6 |= (3 << 16);
+	REG_SPI_STAT = reg6;				//TXFIFO_CLR/RX
+
+
+	reg = REG_SPI_CN;
+	reg &= ~(0xfff << 8);
+	reg |= (len << 8);					//TX_TRANS_LEN
+
+	reg &= ~(0xfff << 20);
+	reg |= (len << 20);					//RX_TRANS_LEN
+
+	reg |= (3 << 2);					//TX_FINISH_INT_EN/RX
+	REG_SPI_CN = reg ;
+
+	reg = REG_SPI_CN;					//enable tx_en rx_ten
+	reg |= 0x03UL;
+	REG_SPI_CN = reg ;
 }
-
-
 
 void spi_tx_end(void)
 {
-		uint32_t reg ;
-		uint32_t state;
-		reg  = REG_SPI_CTRL;
+	uint32_t reg ;
+	uint32_t state;
+	reg  = REG_SPI_CTRL;
 
-		reg |=(0x01UL << BIT_SPI_CTRL_TXINT_EN);
-		REG_SPI_CTRL = reg;
-	
+	reg |= (0x01UL << BIT_SPI_CTRL_TXINT_EN);
+	REG_SPI_CTRL = reg;
+
 #if (!SPI_INT_MODE)
+	state = REG_SPI_STAT;
+	while (!(state & (0x01 << BIT_SPI_STAT_TX_FINISH_INT))) {
 		state = REG_SPI_STAT;
-		while(!(state & (0x01 << BIT_SPI_STAT_TXINT)))
-		{
-			state = REG_SPI_STAT;
-		}
-		reg &=~(0x01UL << BIT_SPI_CTRL_TXINT_EN);
-		reg |= (0x1 << BIT_SPI_CTRL_WIRE3_EN);      // reset nss
-		REG_SPI_CTRL = reg;
-		REG_SPI_STAT = state;
+	}
+	reg &= ~(0x01UL << BIT_SPI_CTRL_TXINT_EN);
+	reg |= (0x1 << BIT_SPI_CTRL_WIRE3_EN);      // reset nss
+	REG_SPI_CTRL = reg;
 
-		//reg |= (0x03UL << BIT_SPI_CTRL_NSSMD);
-		//REG_SPI_CTRL = reg;
-		REG_SPI_CN = 0;
-		
+	REG_SPI_STAT = state;
+
+	REG_SPI_CN = 0;							//CN disable
+
 #endif
 	//	bl_printf("spi_tx_end\r\n");
 }
-
-
-
 
 uint8_t spi_writeByte_for_4k(uint8_t *data,uint8_t len)
 {
@@ -324,7 +331,7 @@ uint8_t spi_write_read_4K_R(uint8_t *wbuf, uint32_t w_size, uint8_t *rbuf, uint3
 		max_len = (w_size > (r_size + r_offset)) ? w_size : (r_size + r_offset);
 		w_total = max_len;
 		r_total  = max_len;
-		spi_tx_start();
+		spi_tx_start(w_total);
 		w_cnt = 0;
 		r_cnt = 0;
 		set_5mstime_cnt(0);
@@ -523,7 +530,7 @@ uint8_t spi_write_read_4K_R_for_crc(uint8_t *wbuf, uint32_t w_size, uint8_t *rbu
 		max_len = (w_size > (r_size + r_offset)) ? w_size : (r_size + r_offset);
 		w_total = max_len;
 		r_total  = max_len;
-		spi_tx_start();
+		spi_tx_start(w_total);
 		w_cnt = 0;
 		r_cnt = 0;
 		set_5mstime_cnt(0);
@@ -705,128 +712,93 @@ ret:
 		return status;
 }
 
-
-
-uint8_t spi_write_read(uint8_t *wbuf, uint32_t w_size, uint8_t *rbuf, uint32_t r_size,uint32_t r_offset)
+uint8_t spi_write_read(uint8_t *wbuf, uint16_t w_size, uint8_t *rbuf, uint16_t r_size, uint16_t r_offset)
 {
-		uint32_t max_len;
-		uint8_t status;
+	uint32_t max_len;
+	uint8_t status;
+	uint8_t empty_txbuf[SPI_FIFO_LEN] = {0};
+	uint8_t empty_rxbuf[SPI_FIFO_LEN] = {0};
 
-		uint8_t empty_txbuf[SPI_FIFO_LEN] = {0};
+	memset(empty_txbuf, 0, SPI_FIFO_LEN);
+	max_len = (w_size > (r_size + r_offset)) ? w_size : (r_size + r_offset);
 
-		uint8_t empty_rxbuf[SPI_FIFO_LEN] = {0};
+	status = STATUS_OK;
+	spi_tx_start(max_len);
 
-		memset(empty_txbuf,0,SPI_FIFO_LEN);
+	while (max_len > SPI_FIFO_LEN) {
+		if (w_size > SPI_FIFO_LEN) {
+			status = spi_writeByte1(wbuf, SPI_FIFO_LEN);
+			wbuf += SPI_FIFO_LEN ;
+			w_size -= SPI_FIFO_LEN;
+		} else if (w_size > 0) {
+			status = spi_writeByte1(wbuf, w_size);
+			status = spi_writeByte1(empty_txbuf, SPI_FIFO_LEN - w_size);
+			wbuf += w_size ;
+			w_size -= w_size;
+		} else {
+			status = spi_writeByte1(empty_txbuf, SPI_FIFO_LEN);
+		}
 
-		max_len = (w_size > (r_size + r_offset)) ? w_size : (r_size + r_offset);
+		if (r_offset > SPI_FIFO_LEN) {
+			status = spi_readByte1(empty_rxbuf, SPI_FIFO_LEN);
+			r_offset -= SPI_FIFO_LEN;
+		} else if (r_offset > 0) {
+			status = spi_readByte1(empty_rxbuf, r_offset);
+			status = spi_readByte1(rbuf, SPI_FIFO_LEN - r_offset);
+			rbuf += (SPI_FIFO_LEN - r_offset);
+			r_size -= (SPI_FIFO_LEN - r_offset);
+			r_offset = 0;
 
-		status = STATUS_OK;
-		spi_tx_start();
+		} else if (r_size > SPI_FIFO_LEN) {
+			status = spi_readByte1(rbuf, SPI_FIFO_LEN);
+			rbuf += SPI_FIFO_LEN;
+			r_size -= SPI_FIFO_LEN;
+		} else if (r_size > 0) {
+			status = spi_readByte1(rbuf, r_size);
+			status = spi_readByte1(empty_rxbuf, SPI_FIFO_LEN - r_size);
+			rbuf += r_size;
+			r_size  = 0;
+		} else {
+		}
 
-		while(max_len > SPI_FIFO_LEN)
-		{
-			if(w_size > SPI_FIFO_LEN)
+		max_len -= SPI_FIFO_LEN;
+		if (status != STATUS_OK) {
+			goto ret;
+		}
+	}
+
+	if (max_len > 0) {
+		if (w_size > 0) {
+			if (w_size > SPI_FIFO_LEN)
 			{
-				status = spi_writeByte1(wbuf,SPI_FIFO_LEN);
-				wbuf +=SPI_FIFO_LEN ;
-				w_size -= SPI_FIFO_LEN;
-			}else if(w_size > 0)
-			{
-				status = spi_writeByte1(wbuf,w_size);
-				status = spi_writeByte1(empty_txbuf,SPI_FIFO_LEN - w_size);
-				wbuf +=w_size ;
-				w_size-=w_size;
-			}else
-			{
-				status = spi_writeByte1(empty_txbuf,SPI_FIFO_LEN);
+				return PARAM_ERROR;
 			}
-
-
-			if(r_offset > SPI_FIFO_LEN)
-			{
-				status = spi_readByte1(empty_rxbuf,SPI_FIFO_LEN);
-				r_offset-= SPI_FIFO_LEN;
-			}else if (r_offset > 0)
-			{
-				status = spi_readByte1(empty_rxbuf,r_offset);
-				status = spi_readByte1(rbuf,SPI_FIFO_LEN - r_offset);
-				rbuf +=  (SPI_FIFO_LEN - r_offset);
-				r_size -=  (SPI_FIFO_LEN - r_offset);
-				r_offset = 0;
-
+			
+			memcpy(empty_txbuf, wbuf, w_size);
+			status = spi_writeByte1(empty_txbuf, max_len);
+			status = spi_readByte1(empty_rxbuf, max_len);
+			if (r_size > 0) {
+				memcpy(rbuf, &(empty_rxbuf[r_offset]), r_size);
 			}
-			else if(r_size > SPI_FIFO_LEN)
-			{
-				status = spi_readByte1(rbuf,SPI_FIFO_LEN);
-				rbuf+= SPI_FIFO_LEN;
-				r_size -= SPI_FIFO_LEN;
-			}
-			else if(r_size > 0)
-			{
-					status = spi_readByte1(rbuf,r_size);
-					status = spi_readByte1(empty_rxbuf,SPI_FIFO_LEN - r_size);
-					rbuf+= r_size;
-					r_size  = 0;
-			}else
-			{
-
-			//	status = spi_readByte1(empty_rxbuf,SPI_FIFO_LEN);
-			//	spi_write_read_clean();
-			}
-
-			max_len -= SPI_FIFO_LEN;
-
-			if(status != STATUS_OK)
-			{
-				goto ret;
+		} else {
+			status = spi_writeByte1(empty_txbuf, max_len);
+			status = spi_readByte1(empty_rxbuf, max_len);
+			if (r_size > 0) {
+				memcpy(rbuf, &(empty_rxbuf[r_offset]), r_size);
 			}
 		}
 
-		if(max_len > 0)
-		{
-			if(w_size > 0)
-			{
-				memcpy(empty_txbuf,wbuf,w_size);
-				status = spi_writeByte1(empty_txbuf,max_len);
 
-
-				status = spi_readByte1(empty_rxbuf,max_len);
-				if(r_size > 0)
-				{
-					memcpy(rbuf,&(empty_rxbuf[r_offset]),r_size);
-				}
-
-			}else
-			{
-				status = spi_writeByte1(empty_txbuf,max_len);
-
-				status = spi_readByte1(empty_rxbuf,max_len);
-
-				if(r_size > 0)
-				{
-					memcpy(rbuf,&(empty_rxbuf[r_offset]),r_size);
-				}
-
-
-			}
-
-
-			if(status != STATUS_OK)
-			{
-				goto ret;
-			}
+		if (status != STATUS_OK) {
+			goto ret;
 		}
+	}
 
 ret:
-		spi_tx_end();
-
-
-		spi_write_read_clean();
-
-
-		return status;
+	spi_tx_end();
+	spi_write_read_clean();
+	return status;
 }
-
 
 uint8_t spi_write_read_no_cs(uint8_t *wbuf, uint32_t w_size, uint8_t *rbuf, uint32_t r_size,uint32_t r_offset)
 {
@@ -962,7 +934,7 @@ uint8_t spi_write_read_4K_W(uint8_t *wbuf, uint32_t w_size, uint8_t *rbuf, uint3
 		max_len = (w_size > (r_size + r_offset)) ? w_size : (r_size + r_offset);
 
 		status = STATUS_OK;
-		spi_tx_start();
+		spi_tx_start(max_len);
 
 		while(max_len > SPI_FIFO_LEN)
 		{

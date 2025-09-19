@@ -14,6 +14,15 @@ if (CONFIG_ENCRYPT_PRIVATE_KEY)
 endif()
 
 	string(REGEX REPLACE "beken/" "" SOC "${TFM_PLATFORM}")
+
+if(DEFINED SOC_PATH)
+	string(REGEX MATCH "[^/]+$" SOC "${SOC_PATH}")
+endif()
+
+if(NOT DEFINED TFM_SOC)
+	set(TFM_SOC "${SOC}")
+endif()
+
 	set(download_inc
 		.
 		./inc
@@ -28,6 +37,12 @@ endif()
 		./../../../cmsis/
 		${ARMINO_MIDDLEWARE_REPO_PATH}/boards/${SOC}/partitions
 		${PARTITION_HDR_DIR}
+		${IDK_PATH}/include
+		${IDK_PATH}/include/common
+		${IDK_PATH}/include/driver
+		${IDK_PATH}/components/bk_mcuboot/bl2/components/cmsis
+		${IDK_PATH}/components/bk_mcuboot/bl2/middleware/soc/${SOC}/cmsis_core
+		${IDK_PATH}/middleware/soc/${SOC}/hal
 
 	)
 
@@ -36,7 +51,12 @@ endif()
 			CONFIG_BL2_DOWNLOAD
 	)
 
-	if(TFM_SOC STREQUAL "bk7236n")
+	if(TFM_SOC STREQUAL "bk7239")
+		target_compile_definitions(download
+		PUBLIC
+			CHIP_BK7239
+		)
+	elseif(TFM_SOC STREQUAL "bk7236n")
 		target_compile_definitions(download
 		PUBLIC
 			CHIP_BK7236N
@@ -77,7 +97,7 @@ endif()
 
 	target_compile_options(download PUBLIC ${BL2_COMPILER_CP_FLAG})
 	target_include_directories(download PRIVATE ${download_inc})
-	target_link_libraries(platform_bl2 PUBLIC download)
+	target_link_libraries(bl2 PUBLIC download)
 	link_directories(${CMAKE_CURRENT_BINARY_DIR})
 endif()
 

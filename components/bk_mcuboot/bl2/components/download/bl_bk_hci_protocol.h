@@ -12,8 +12,9 @@
 #include "bl_bk_reg.h"
 
 
-
-
+#define UART_CLOCK_FREQ_26M        26000000
+#define UART_CLOCK_FREQ_40M        40000000
+#define UART_CLOCK_FREQ_80M        80000000
 
 typedef enum        // by gwf
 {

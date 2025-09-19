@@ -26,7 +26,7 @@
     "all-app.bin":
     {
         "bin": ["partition.bin", "app_signed.bin"],
-        "action": "PACK_BL1_DOWNLOAD_BIN"
+        "action": "PACK_BL2_DOWNLOAD_BIN"
     },
 
     "ota.bin":

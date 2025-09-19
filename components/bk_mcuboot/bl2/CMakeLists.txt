@@ -24,6 +24,7 @@ add_executable(bl2 components/mcuboot/src/bl2_main.c)
 add_subdirectory(components/mcuboot)
 add_subdirectory(components/mbedtls)
 add_subdirectory(middleware)
+add_subdirectory(components/download)
 
 set_target_properties(bl2
     PROPERTIES

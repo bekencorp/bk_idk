@@ -24,7 +24,6 @@ set(incs
 	${TINYSOC_PATH}/include/driver/
 	${TINYSOC_PATH}/interfaces/
 )
-
 set(srcs
 	${TINYSOC_PATH}/driver/port/os_port.c
 	${TINYSOC_PATH}/driver/port/mem_port.c
@@ -41,6 +40,8 @@ set(srcs
 	${TINYSOC_PATH}/driver/flash/flash_partition.c
 	${TINYSOC_PATH}/driver/timer/timer_driver.c
 	${TINYSOC_PATH}/driver/ppc/prro_driver.c
+	${TINYSOC_PATH}/driver/efuse/efuse_driver.c
+	${TINYSOC_PATH}/driver/efuse/bk_efuse.c
 	${TINYSOC_PATH}/driver/jtag/hal_jtag.c
 	${TINYSOC_PATH}/driver/nv_otp/rotpk.c
 	${TINYSOC_PATH}/driver/nv_otp/otp_flash.c
@@ -69,6 +70,7 @@ set(srcs
 	${SOC_PATH}/hal/gpio_ll.c
 	${SOC_PATH}/hal/flash_ll.c
 	${SOC_PATH}/hal/wdt_hal.c
+	${SOC_PATH}/hal/hal_high_freq.c
 )
 
 target_compile_definitions(platform_bl2 PUBLIC CONFIG_TFM_SOC_PATH_V5)

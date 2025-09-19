@@ -76,6 +76,7 @@
 
 #define BIT_SPI_STAT_SPIBUSY            15
 #define BIT_SPI_STAT_SLVSEL             14
+#define BIT_SPI_STAT_TX_FINISH_INT      13
 #define BIT_SPI_STAT_RXOVR              12
 #define BIT_SPI_STAT_TXOVR              11
 #define BIT_SPI_STAT_MODF               10
@@ -126,7 +127,7 @@ typedef enum
 
 void spi_initial(SPI_ROLE role,uint32_t baud);
 
-uint8_t spi_write_read(uint8_t *wbuf, uint32_t w_size, uint8_t *rbuf, uint32_t r_size,uint32_t r_offset);
+uint8_t spi_write_read(uint8_t *wbuf, uint16_t w_size, uint8_t *rbuf, uint16_t r_size, uint16_t r_offset);
 
 
 
@@ -139,7 +140,7 @@ uint8_t spi_write_read_4K_R_for_crc(uint8_t *wbuf, uint32_t w_size, uint8_t *rbu
 uint8_t spi_is_busy(void);
 
 #if 1
-void spi_tx_start(void);
+void spi_tx_start(uint32_t len);
 
 void spi_tx_end(void);
 

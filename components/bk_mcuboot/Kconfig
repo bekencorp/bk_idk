@@ -73,6 +73,10 @@ menu "BL2"
 			bool "Enable BL2 watchdog"
 			default n
 
+		config BL2_DOWNLOAD
+			bool "Enable BL2 download"
+			default n
+
 		config TFM_HEAP_SIZE
 			hex "TFM heap size"
 			default 0x1040

@@ -3,7 +3,7 @@
 
 #define BOOTLOADER_VERSION_STR            "2021-08"
 
-#define CHIP_NAME_STR "BK7236"
+#define CHIP_NAME_STR "BEKEN"
 
 #define DELAY_1MS_CNT 160  //riscv 26Mhz 160  //ba22 26Mhz 900  //arm 16MHz 130
 

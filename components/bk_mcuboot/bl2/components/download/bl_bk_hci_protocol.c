@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "driver/hal_high_freq.h"
 #include "bl_bk_hci_protocol.h"
 #include "bl_tra_hcit.h"
 #include "bl_uart.h"
@@ -21,6 +22,8 @@
 #include "driver/flash_partition.h"
 #include "partitions_gen.h"
 #include "hal/hal_common.h"
+#include <driver/efuse.h>
+
 
 //#include "aon_pmu_hal.h"
 
@@ -43,6 +46,7 @@ u32 g_cbus_delay = 800;
 static uint8_t g_backup_buf[FLASH_ERASE_SECTOR_SIZE * 3] = {0};
 u32 g_start_base = 0x1d000;
 u32 g_virtul_base = 0;
+
 static u32 s_record_dl_flag = 0; // 1 rep: dl bootloader ; 0: rep :others.
 const PARTITION_STRUCT g_partitions_map[] = PARTITION_MAP;
 
@@ -158,14 +162,27 @@ static bool addr_is_readable(uint32_t addr)
 		return true;
 	}
 }
-
+#if (CHIP_BK7236N || CHIP_BK7239)
+#define OTP_EFUSE_WORD0                        *((volatile unsigned long *) (SOC_MEM_CHECK_REG_BASE + 0x40*4))
+#define HAL_EFUSE_FLASH_NO_CRC_BIT             (1<<27)
+#endif
 uint32_t download_phy2virtual(uint32_t phy_addr)
 {
+#if (CHIP_BK7236N || CHIP_BK7239)
+	if ((OTP_EFUSE_WORD0 & HAL_EFUSE_FLASH_NO_CRC_BIT) == 0) {
+		return ((phy_addr) - (g_start_base) + (g_virtul_base));
+	}
+	else{
+		return phy_addr;
+	}
+#else
 	return ((phy_addr) - (g_start_base) + (g_virtul_base));
+#endif
 }
 
 bool flash_partition_is_invalid(uint32_t offset, uint32_t size)
 {
+	return false;
 	PARTITION_STRUCT *p;
 #if CONFIG_RANDOM_AES_UPGRADE_BL2
 	if (g_upgrade_bl2) {
@@ -475,11 +492,11 @@ void TRAhcit_UART_Rx(void)
     	pHCITxOperte->code = pHCIrxHeadBuf->code;
     	pHCITxOperte->opcode.ogf = pHCIrxHeadBuf->opcode.ogf;
     	pHCITxOperte->opcode.ocf = pHCIrxHeadBuf->opcode.ocf;
-    	pHCITxOperte->param[0] = pHCIRxOperte->cmd + 1; /* dowload the handshake protocol */
-    	pHCITxOperte->param[1] = 0x00;
+    	pHCITxOperte->param[0] = pHCIrxHeadBuf->total; /* dowload the handshake protocol */
+    	pHCITxOperte->param[1] = pHCIRxOperte->cmd;
     	HciTxOperteLen = 5;
     	uart_link_check_flag = 1;
-			uart_tx_pin_cfg();
+		uart_tx_pin_cfg();
         break;
     }
 
@@ -497,11 +514,11 @@ void TRAhcit_UART_Rx(void)
     	pHCITxOperte->code = pHCIrxHeadBuf->code;
     	pHCITxOperte->opcode.ogf = pHCIrxHeadBuf->opcode.ogf;
     	pHCITxOperte->opcode.ocf = pHCIrxHeadBuf->opcode.ocf;
-    	pHCITxOperte->param[0] = pHCIRxOperte->cmd + 1;
-    	pHCITxOperte->param[1] = 0x00;
+    	pHCITxOperte->param[0] = pHCIrxHeadBuf->total; /* dowload the handshake protocol */
+    	pHCITxOperte->param[1] = pHCIRxOperte->cmd;
     	HciTxOperteLen = 5;
     	uart_link_check_flag = 1;
-			uart_tx_pin_cfg();
+		uart_tx_pin_cfg();
         break;
     }
 
@@ -839,7 +856,6 @@ void TRAhcit_UART_Rx(void)
 
 		u8 *tmp_addr;
 		u32 crc;
-		uint32_t cbus_delay;
 		int i;
 
 		status = FLASH_OPERATE_END;
@@ -859,7 +875,7 @@ void TRAhcit_UART_Rx(void)
 		HciTxOperteLen = 5;
 
 		g_cbus_download = true;
-		SET_SPI_RW_FLASH;
+		
 		g_crc  = 0xffffffff;
 
 #ifdef  TABLE_CRC
@@ -873,10 +889,6 @@ void TRAhcit_UART_Rx(void)
 		bl_memcpy((u8 *)&partition_size, (u8 *)&pHCIRxOperte->param[4], 4);
 		bl_memcpy((u8 *)&g_start_base, (u8 *)&pHCIRxOperte->param[8], 4);
 		bl_memcpy((u8 *)&crc, (u8 *)&pHCIRxOperte->param[12], 4);
-		bl_memcpy((u8 *)&cbus_delay, (u8 *)&pHCIRxOperte->param[16], 4);
-		if (cbus_delay > 0 && cbus_delay < 0xffffffff) {
-			g_cbus_delay = cbus_delay;
-		}
 		if (g_crc != crc) {
 			printf("g_crc=0x%x, crc=0x%x\n", g_crc, crc);
 			g_cbus_download = false;
@@ -940,33 +952,75 @@ void TRAhcit_UART_Rx(void)
 		pHCITxOperte->param[1] = 0x00;
 		break;
 	}
-	case FLASH_ENABLE_HIGH_FREQ:{	// 01 e0 fc 01 16 mode(1B)
-		//04 0e 05 01 E0 FC 16 00
+
+	case FLASH_ENABLE_HIGH_FREQ: {	// 01 e0 fc 01 16 mode(1B) CPU_Freq(1B) FLASH_Freq(1B) baudrate(4B) delay_ms(1B)
+		//04 0e 0D 01 E0 FC 16 00 mode(1B) CPU_Freq(1B) FLASH_Freq(1B) baudrate(4B) delay_ms(1B)
 		u8 op_mode = 0;  				//[0]:invalid; [1]: DBUS; [2]: CBUS; [3]: DBUS + CBUS
+		u8 cpu_frequency = 0;
+		u8 flash_frequency = 0;
+		u32 rate;
+		u8 delay_ms;
 		status = FLASH_OPERATE_END;
 		pHCItxHeadBuf->code = TRA_HCIT_EVENT;
 		pHCItxHeadBuf->event = HCI_COMMAND_COMPLETE_EVENT;
-		pHCItxHeadBuf->total = 05;
+		pHCItxHeadBuf->total = 0xD;
 
 		HciTxHeadLen = HCI_EVENT_HEAD_LENGTH;
 		op_mode = pHCIRxOperte->param[0];
+		cpu_frequency = pHCIRxOperte->param[1];
+		flash_frequency = pHCIRxOperte->param[2];
 
-		if (1 == op_mode) {
+		if (1 == op_mode) 
+		{
+			hal_enable_pll();
+			hal_set_cpu_clock((cpu_clock_t)cpu_frequency);
+			hal_set_spi_clock(CLOCK_PLL_SPI_40M);
+		} 
+		else if (2 == op_mode) 
+		{
+			hal_enable_pll();
+			hal_set_cpu_clock((cpu_clock_t)cpu_frequency);
+			hal_set_flash_clock((flash_clock_t)flash_frequency);
+		} 
+		else if (3 == op_mode) 
+		{
 		}
-		else if (2 == op_mode) {
-			g_cbus_download = true;
-			sys_hal_switch_freq(3, 5, 1);//80M
+
+		pHCITxOperte->param[1] = UNKNOW_CMD;
+		//change high baudrate
+		memcpy((u8 *)&rate, &(pHCIRxOperte->param[3]), 4);
+		if (uart_rx_done_state == TRA_HCIT_STATE_RX_FLASH_DATA_COMMIT) 
+		{
+			delay_ms = pHCIRxOperte->param[7];
+			if ((1 == op_mode) || (2 == op_mode))
+			{
+#if (CHIP_BK7236N || CHIP_BK7239)
+				uart0_change_baudrate_reinit(rate, UART_CLOCK_FREQ_80M);
+#endif
+				set_1mstime_cnt(0);
+				while(get_1mstime_cnt() <= (delay_ms)){
+				// delay(100);
+				}
+
+				memcpy((&pHCITxOperte->param[2]), &(pHCIRxOperte->param[0]), 8);
+				pHCITxOperte->param[1] = STATUS_OK;
+			}
+		} 
+		else 
+		{
+			memcpy((&pHCITxOperte->param[2]), &(pHCIRxOperte->param[0]), 3);
+			memcpy((&pHCITxOperte->param[5]), (u8 *)(&g_baud_rate), 4);
+			pHCITxOperte->param[10] = 0;
 		}
-		else if (3 == op_mode) {
-		}
-		pHCITxOperte = (HCI_TX_OPERATE*)(&Shorttrx_pdu_buf[0]);
+
+		pHCITxOperte = (HCI_TX_OPERATE *)(&Shorttrx_pdu_buf[0]);
 		bl_memcpy(pHCITxOperte, pHCIrxHeadBuf, 3);
 
 		pHCITxOperte->param[0] = pHCIRxOperte->cmd;
-		HciTxOperteLen = 5;
-		pHCITxOperte->param[1] = 0x00;
+		HciTxOperteLen = 0xD;
 		break;
 	}
+
 #if CONFIG_RANDOM_AES_UPGRADE_BL2
 	case FLASH_UPGRADE_BL2: { // 01 e0 fc 01 17
 		//04 0e 05 01 E0 FC 17 00 01(02)

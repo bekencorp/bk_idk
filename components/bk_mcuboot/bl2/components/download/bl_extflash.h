@@ -25,6 +25,10 @@
 #define FLASH_ERASE_BLOCK32_SIZE_MASK				 (FLASH_ERASE_BLOCK32_SIZE - 1)
 #define FLASH_ERASE_BLOCK64_SIZE_MASK				 (FLASH_ERASE_BLOCK64_SIZE - 1)
 
+#define FLASH_SPI_WBUF_SPACE_SIZE                      (0x06)
+#define FLASH_SPI_WBUF_COUNT                           (0x04)
+#define FLASH_SPI_4BYTE_ADDR_WBUF_COUNT                (0x05)
+
 #define FLASH_PAGE_SIZE								 (0x100)
 #define FLASH_PAGE_MASK								 (FLASH_PAGE_SIZE - 1)
 

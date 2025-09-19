@@ -69,6 +69,7 @@ set(srcs
 	${SOC_PATH}/hal/gpio_ll.c
 	${SOC_PATH}/hal/flash_ll.c
 	${SOC_PATH}/hal/wdt_hal.c
+	${SOC_PATH}/hal/hal_high_freq.c
 )
 
 target_compile_definitions(platform_bl2 PUBLIC CONFIG_TFM_SOC_PATH_V5)

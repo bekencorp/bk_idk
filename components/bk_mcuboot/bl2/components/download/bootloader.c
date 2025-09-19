@@ -86,12 +86,13 @@ SET_SPI_RW_FLASH  ;
 	UART0_INT_ENABLE;
 	SET_SPI_RW_FLASH;
 #endif
-#if (CHIP_BK7236N)
+#if (CHIP_BK7236N || CHIP_BK7239)
 	UART0_RESET;
 	UART0_ENABLE;
-	SPI0_CLK_80M;
-	SPI0_ENABLE;
 	UART0_INT_ENABLE;
+
+	// SPI0_CLK_80M;
+	SPI0_ENABLE;
 	SET_SPI_RW_FLASH;
 #endif
 }
@@ -121,7 +122,7 @@ void control_set_to_flash_not_enable_jtag()
 	REBOOT ;
 #endif
 
-#if (CHIP_BK7236 || CHIP_BK7236N)
+#if (CHIP_BK7236 || CHIP_BK7236N || CHIP_BK7239)
 	//SET_FLASHCTRL_RW_FLASH ;
 	//REBOOT;
 	*(volatile uint32_t *)0x44000600 = 0x5A000A;
@@ -165,7 +166,7 @@ void uart_enable(uint8_t flag,uint8_t rx_thr) {
 		BK3000_GPIO_10_CONFIG = 1 << sft_GPIO_FUNCTION_ENABLE | 0xf << 2; // only cfg Rx
 #endif
 
-#if (CHIP_BK7236|| CHIP_BK7236N)
+#if (CHIP_BK7236|| CHIP_BK7236N || CHIP_BK7239)
 	BK3000_GPIO_10_CONFIG = 1 << sft_GPIO_FUNCTION_ENABLE | 0xf << 2; // only cfg Rx
 #endif
 }
@@ -193,7 +194,7 @@ void uart_tx_pin_cfg(void)
 	//BK3000_GPIO_10_CONFIG = 1 << sft_GPIO_FUNCTION_ENABLE | 7 << 3;// only cfg tx
 	BK3000_GPIO_11_CONFIG = 1 << sft_GPIO_FUNCTION_ENABLE | 7 << 3;// only cfg tx
 #endif
-#if (CHIP_BK7236 || CHIP_BK7236N)
+#if (CHIP_BK7236 || CHIP_BK7236N || CHIP_BK7239)
 	BK3000_GPIO_11_CONFIG = 1 << sft_GPIO_FUNCTION_ENABLE | 7 << 3;// only cfg tx
 #endif
 
@@ -256,7 +257,7 @@ void BK3000_start_wdt(uint32_t val) {
 	AON_WDT_CONFIG = 0x5A0000 | val;
 	AON_WDT_CONFIG = 0xA50000 | val;
 #endif
-#elif (CHIP_BK7236N)
+#elif (CHIP_BK7236N || CHIP_BK7239)
 	/* On FPGA, the WDT clock is 25Mhz, it will trigger watchdog soon,
 	 * since FPGA doesn't support reset, it triggers NMI instead of
 	 * WDT reset.
@@ -316,7 +317,8 @@ void set_flash_clk(unsigned char clk_conf) {
 void watchdog_stop(void) {
 	BK3000_WDT_CONFIG = 0x5A0000;
 	BK3000_WDT_CONFIG = 0xA50000;
-#if !CHIP_BK7236N
+#if (CHIP_BK7236N || CHIP_BK7239)
+#else
 	AON_WDT_CONFIG = 0x5A0000;
 	AON_WDT_CONFIG = 0xA50000;
 #endif

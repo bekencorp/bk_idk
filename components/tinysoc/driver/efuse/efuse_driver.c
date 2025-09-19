@@ -55,8 +55,12 @@ bk_err_t bk_efuse_driver_init(void)
 	os_memset(&s_efuse, 0, sizeof(s_efuse));
 	efuse_hal_init(&s_efuse.hal);
 	s_efuse_driver_is_init = true;
-#if (CONFIG_SYSTEM_CTRL && !CONFIG_SOC_BK7236N)
+
+#if CONFIG_SYSTEM_CTRL
+#if CONFIG_SOC_BK7236N || CONFIG_SOC_BK7239
+#else
 	sys_drv_dev_clk_pwr_up(CLK_PWR_ID_EFUSE, CLK_PWR_CTRL_PWR_UP);
+#endif
 #endif
 
 	return BK_OK;
@@ -68,9 +72,13 @@ bk_err_t bk_efuse_driver_deinit(void)
 		return BK_OK;
 	}
 
-#if (CONFIG_SYSTEM_CTRL && !CONFIG_SOC_BK7236N)
+#if CONFIG_SYSTEM_CTRL
+#if CONFIG_SOC_BK7236N || CONFIG_SOC_BK7239
+#else
 	sys_drv_dev_clk_pwr_up(CLK_PWR_ID_EFUSE, CLK_PWR_CTRL_PWR_DOWN);
 #endif
+#endif
+
 	efuse_deinit_common();
 	s_efuse_driver_is_init = false;
 

@@ -2,7 +2,7 @@
 #include "bl_config.h"
 #include "bl_tra_hcit.h"
 #include "bl_uart.h"
-#include "cmsis_gcc.h"
+// #include "cmsis_gcc.h"
 #include "inc/hal/hal_misc.h"
 
 #define TX_FIFO_THRD                0x40
@@ -31,7 +31,7 @@ uint32_t uart_get_clock_freq(void)
 #else
 #if CHIP_BK7236
 	return UART_CLOCK_FREQ_26M;
-#elif CHIP_BK7236N
+#elif (CHIP_BK7236N || CHIP_BK7239)
 
 	return UART_CLOCK_FREQ_40M;
 #endif
@@ -203,15 +203,12 @@ __attribute__((section(".iram"))) void bl_flash_write_cbus(uint32_t address, con
 	int offset;
 	for (offset = 0; offset < (size / FLASH_FIFO_LEN) * FLASH_FIFO_LEN; offset += FLASH_FIFO_LEN) {
 		bl_memcpy((char*)(0x02000000+address + offset), (const char*)&user_buf[offset], FLASH_FIFO_LEN);
-		cbus_delay(g_cbus_delay);
-
 		while (get_FLASH_Reg0x4_busy_sw);
 	}
 
 	if (offset < size) {
 		bl_memcpy((char*)(0x02000000 + address + offset), (const char*)&user_buf[offset], size - offset);
-		cbus_delay(g_cbus_delay);
-
+		while (get_FLASH_Reg0x4_busy_sw);
 	}
 	while (get_FLASH_Reg0x4_busy_sw);
 }
@@ -536,10 +533,6 @@ if(status & (bit_UART_INT_RX_NEED_READ)) {
 #endif
 }
 
-
-
-
-
 void uart_static_read85(void)
 {
 			*tra_hcit_rx_pdu_buf++ = UART_READ_BYTE();
@@ -670,6 +663,31 @@ void uart_static_read85(void)
 
 }
 
+void uart0_change_baudrate_reinit(uint32_t baud_rate, uint32_t uart_clk)
+{
+#if (CHIP_BK7236N || CHIP_BK7239)
+	addSYSTEM_Reg0xa |= (1 << 12);
+#endif
+
+	uint32_t baud_divisor;
+	baud_divisor = uart_clk / baud_rate;
+	baud_divisor = baud_divisor - 1;
+
+    REG_APB3_UART_CFG      = (   (DEF_STOP_BIT    << sft_UART_CONF_STOP_LEN)
+                                 | (DEF_PARITY_MODE << sft_UART_CONF_PAR_MODE)
+                                 | (DEF_PARITY_EN   << sft_UART_CONF_PAR_EN)
+                                 | (DEF_DATA_LEN    << sft_UART_CONF_UART_LEN)
+                                 | (baud_divisor    << sft_UART_CONF_CLK_DIVID)
+                                 | (DEF_IRDA_MODE   << sft_UART_CONF_IRDA)
+                                 | (DEF_RX_EN       << sft_UART_CONF_RX_ENABLE)
+                                 | (DEF_TX_EN       << sft_UART_CONF_TX_ENABLE));
+
+    REG_APB3_UART_FIFO_THRESHOLD = ((RX_FIFO_THR_COUNT << sft_UART_FIFO_CONF_RX_FIFO)
+                                    | (TX_FIFO_THRD << sft_UART_FIFO_CONF_TX_FIFO));
+    REG_APB3_UART_INT_ENABLE=0;             /* Disable UART Interrupts */
+    REG_APB3_UART_INT_ENABLE = bit_UART_INT_RX_NEED_READ | bit_UART_INT_RX_STOP_END ; //enable Rx interrupt
+
+}
 // EOF
 
 

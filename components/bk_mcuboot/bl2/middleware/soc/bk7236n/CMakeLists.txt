@@ -62,6 +62,13 @@ if(CONFIG_BL2_WDT)
 	)
 endif()
 
+if(CONFIG_BL2_DOWNLOAD)
+	target_compile_definitions(platform_bl2
+		PUBLIC
+		CONFIG_BL2_DOWNLOAD
+	)
+endif()
+
 if(CONFIG_BL2_WDT_PERIOD)
 	target_compile_definitions(platform_bl2
 		PUBLIC
