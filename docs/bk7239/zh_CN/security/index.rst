@@ -7,7 +7,7 @@
    :maxdepth: 1
 
    安全术语 <bk_security_glossary>
-   PSA-L2/SESIP-L2 认证 <bk_security_cert>
+   PSA-L3/SESIP-L3 认证 <bk_security_cert>
    安全概述 <bk_security_overview>
    安全引擎 <bk_security_enginee>
    安全启动 <bk_security_boot>

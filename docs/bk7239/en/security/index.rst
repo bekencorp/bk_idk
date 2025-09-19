@@ -7,7 +7,7 @@ System Security
     :maxdepth: 1
 
     Security Glossary <bk_security_glossary>
-    PSA-L2/SESIP-L2 Certification <bk_security_cert>
+    PSA-L3/SESIP-L3 Certification <bk_security_cert>
     Security Overview <bk_security_overview>
     Secure Engine <bk_security_enginee>
     Secure Boot <bk_security_boot>
