@@ -55,8 +55,8 @@
 static uint8_t  s_debug_en               = 0;
 bk_err_t pm_management(uint32_t sleep_ticks);
 
-//============================CPU0/CPU1 CODE START===============================================================
-#if CONFIG_SYS_CPU1 || CONFIG_SYS_CPU0
+#if CONFIG_PM_ENABLE
+#define CONFIG_PM_SERVER                    (!CONFIG_PM_CLIENT)
 /*=====================DEFINE SECTION START=====================*/
 #define PM_WAKEUP_SOURCE_MARK                           (WAKEUP_SOURCE_MARK)
 
@@ -105,7 +105,7 @@ static uint32_t s_pm_phy_calibration_state    = 0;
  * part1 only vaild in BT close,only wifi case
 */
 static bool     s_pm_is_phy_reinit_flag       = false;
-#if CONFIG_SYS_CPU0
+#if CONFIG_PM_SERVER
 static uint32_t s_pm_encp_pm_state                      = 0;
 static uint32_t s_pm_bakp_pm_state                      = 0;
 static uint32_t s_pm_ahpb_pm_state                      = 0;
@@ -129,7 +129,7 @@ static uint64_t s_bt_need_wakeup_time         = 0;
 static system_wakeup_param_t s_bt_system_wakeup_param;
 #endif
 static touch_wakeup_param_t s_touch_wakeup_param;
-#if CONFIG_SYS_CPU0
+#if CONFIG_PM_SERVER
 static pm_wakeup_source_e s_pm_exit_low_vol_wakeup_source = PM_WAKEUP_SOURCE_INT_NONE;
 static pm_wakeup_source_e s_pm_exit_deepsleep_wakeup_source = PM_WAKEUP_SOURCE_INT_NONE;
 #endif
@@ -174,7 +174,7 @@ static uint32_t s_after_low_vol_psram   =  0;
 /*=====================VARIABLE SECTION END=================*/
 
 /*================FUNCTION DECLARATION SECTION START========*/
-#if CONFIG_SYS_CPU0
+#if CONFIG_PM_SERVER
 static void pm_enter_normal_sleep_modules_config();
 static void pm_enter_low_vol_modules_config();
 static void pm_enter_deep_sleep_modules_config();
@@ -220,7 +220,7 @@ extern bk_err_t bk_flash_power_saving_enter(void);
 
 void pm_hardware_init()
 {
-#if CONFIG_SYS_CPU0
+#if CONFIG_PM_SERVER
 	sys_drv_low_power_hardware_init();
 
 	/*config vote for entering normal sleep modules*/
@@ -251,7 +251,7 @@ bk_err_t pm_module_wakeup_time_set(uint32_t module_name, uint32_t wakeup_time)
 	return BK_OK;
 }
 /*=========================SLEEP STATE MACHINE START========================*/
-#if CONFIG_SYS_CPU0
+#if CONFIG_PM_SERVER
 static void pm_enter_normal_sleep_modules_config()
 {
 	uint32_t i = 0;
@@ -327,9 +327,9 @@ static uint32_t pm_check_and_ctrl_sleep()
 	{
 		if (s_debug_en & 0x1)
 		{
-#if CONFIG_SYS_CPU0
-			os_printf("normal 0x%X 0x%llX 0x%llX\r\n", s_pm_sleep_mode, s_pm_sleeped_modules, s_pm_enter_normal_sleep_modules);
-			os_printf("normal 0x%X 0x%X 0x%X 0x%X\r\n", s_pm_ahpb_pm_state, s_pm_video_pm_state, s_pm_audio_pm_state, s_pm_bakp_pm_state);
+#if CONFIG_PM_SERVER
+			BK_LOGD(NULL, "normal 0x%X 0x%llX 0x%llX\r\n", s_pm_sleep_mode, s_pm_sleeped_modules, s_pm_enter_normal_sleep_modules);
+			BK_LOGD(NULL, "normal 0x%X 0x%X 0x%X 0x%X\r\n", s_pm_ahpb_pm_state, s_pm_video_pm_state, s_pm_audio_pm_state, s_pm_bakp_pm_state);
 #endif
 		}
 		if ((s_pm_sleeped_modules & s_pm_enter_normal_sleep_modules) == s_pm_enter_normal_sleep_modules)
@@ -341,9 +341,9 @@ static uint32_t pm_check_and_ctrl_sleep()
 	{
 		if (s_debug_en & 0x1)
 		{
-#if CONFIG_SYS_CPU0
-			os_printf("lowvol1 0x%X 0x%llX 0x%llX\r\n", s_pm_sleep_mode, s_pm_sleeped_modules, s_pm_enter_low_vol_modules);
-			os_printf("lowvol2 0x%X 0x%X 0x%X 0x%X\r\n", s_pm_ahpb_pm_state, s_pm_video_pm_state, s_pm_audio_pm_state, s_pm_bakp_pm_state);
+#if CONFIG_PM_SERVER
+			BK_LOGD(NULL, "lowvol1 0x%X 0x%llX 0x%llX\r\n", s_pm_sleep_mode, s_pm_sleeped_modules, s_pm_enter_low_vol_modules);
+			BK_LOGD(NULL, "lowvol2 0x%X 0x%X 0x%X 0x%X\r\n", s_pm_ahpb_pm_state, s_pm_video_pm_state, s_pm_audio_pm_state, s_pm_bakp_pm_state);
 #endif
 		}
 		if ((s_pm_sleeped_modules & s_pm_enter_low_vol_modules) == s_pm_enter_low_vol_modules)
@@ -355,9 +355,9 @@ static uint32_t pm_check_and_ctrl_sleep()
 	{
 		if (s_debug_en & 0x2)
 		{
-#if CONFIG_SYS_CPU0
-			os_printf("deepsleep1 0x%X 0x%X\r\n", s_pm_off_modules, s_pm_enter_deep_sleep_modules);
-			os_printf("deepsleep2 0x%X 0x%X 0x%X 0x%X\r\n", s_pm_ahpb_pm_state, s_pm_video_pm_state, s_pm_audio_pm_state, s_pm_bakp_pm_state);
+#if CONFIG_PM_SERVER
+			BK_LOGD(NULL, "deepsleep1 0x%X 0x%X\r\n", s_pm_off_modules, s_pm_enter_deep_sleep_modules);
+			BK_LOGD(NULL, "deepsleep2 0x%X 0x%X 0x%X 0x%X\r\n", s_pm_ahpb_pm_state, s_pm_video_pm_state, s_pm_audio_pm_state, s_pm_bakp_pm_state);
 #endif
 		}
 
@@ -371,9 +371,9 @@ static uint32_t pm_check_and_ctrl_sleep()
 	{
 		if (s_debug_en & 0x2)
 		{
-#if CONFIG_SYS_CPU0
-			os_printf("superdeepsleep1 0x%X 0x%X\r\n", s_pm_off_modules, s_pm_enter_deep_sleep_modules);
-			os_printf("superdeepsleep2 0x%X 0x%X 0x%X\r\n", s_pm_ahpb_pm_state, s_pm_video_pm_state, s_pm_audio_pm_state);
+#if CONFIG_PM_SERVER
+			BK_LOGD(NULL, "superdeepsleep1 0x%X 0x%X\r\n", s_pm_off_modules, s_pm_enter_deep_sleep_modules);
+			BK_LOGD(NULL, "superdeepsleep2 0x%X 0x%X 0x%X\r\n", s_pm_ahpb_pm_state, s_pm_video_pm_state, s_pm_audio_pm_state);
 #endif
 		}
 
@@ -387,9 +387,9 @@ static uint32_t pm_check_and_ctrl_sleep()
 	{
 		if (s_debug_en & 0x1)
 		{
-#if CONFIG_SYS_CPU0
-			os_printf("lowvol1 0x%X 0x%llX 0x%llX\r\n", s_pm_sleep_mode, s_pm_sleeped_modules, s_pm_enter_low_vol_modules);
-			os_printf("lowvol2 0x%X 0x%X\r\n", s_pm_video_pm_state, s_pm_audio_pm_state);
+#if CONFIG_PM_SERVER
+			BK_LOGD(NULL, "lowvol1 0x%X 0x%llX 0x%llX\r\n", s_pm_sleep_mode, s_pm_sleeped_modules, s_pm_enter_low_vol_modules);
+			BK_LOGD(NULL, "lowvol2 0x%X 0x%X\r\n", s_pm_video_pm_state, s_pm_audio_pm_state);
 #endif
 		}
 		if ((s_pm_sleeped_modules & s_pm_enter_low_vol_modules) == s_pm_enter_low_vol_modules)
@@ -403,7 +403,7 @@ static uint32_t pm_check_and_ctrl_sleep()
 	return sleep_tick;
 }
 
-uint32_t pm_state_machine()
+static uint32_t pm_state_machine()
 {
 	uint32_t missed_ticks = 0;
 
@@ -418,10 +418,58 @@ uint32_t pm_state_machine()
 	return missed_ticks;
 }
 
+bk_err_t pm_management(uint32_t sleep_ticks)
+{
+#if CONFIG_PM_LIGHT_SLEEP
+	uint64_t previous_tick = 0;
+	uint64_t current_tick = 0;
+	uint64_t missed_ticks = 0;
+	int ret = 0;
+	if (s_pm_mcu_pm_state)
+	{
+		return BK_OK;
+	}
+
+	if ((s_pm_light_sleep_enter_cb_conf.cb == NULL) || (s_pm_light_sleep_exit_cb_conf.cb == NULL))
+	{
+		return BK_FAIL;
+	}
+	ret = s_pm_light_sleep_enter_cb_conf.cb(sleep_ticks * rtos_get_ms_per_tick(), s_pm_light_sleep_enter_cb_conf.args);
+	if (ret)
+	{
+		return BK_FAIL;
+	}
+	previous_tick = bk_aon_rtc_get_current_tick(AON_RTC_ID_1);
+	current_tick = previous_tick;
+	while (((current_tick - previous_tick)) < (sleep_ticks * rtos_get_ms_per_tick() * bk_rtc_get_ms_tick_count()))
+	{
+		current_tick = bk_aon_rtc_get_current_tick(AON_RTC_ID_1);
+	}
+
+	// BK_LOGD(NULL, "idle task after:%d \r\n",sleep_ticks);
+	missed_ticks = pm_state_machine();
+	missed_ticks = sleep_ticks;
+	// bk_update_tick(missed_ticks);
+
+	s_pm_light_sleep_exit_cb_conf.cb(sleep_ticks * rtos_get_ms_per_tick(), s_pm_light_sleep_exit_cb_conf.args);
+#else//CONFIG_PM_LIGHT_SLEEP
+	uint32_t missed_ticks = 0;
+	if (s_pm_mcu_pm_state)
+	{
+		return BK_OK;
+	}
+	missed_ticks = pm_state_machine();
+	if (missed_ticks != 0)
+	{
+		// bk_update_tick(missed_ticks);
+	}
+#endif //CONFIG_PM_LIGHT_SLEEP
+	return BK_OK;
+}
 /*=========================SLEEP STATE MACHINE END========================*/
 
 /*=========================COMMON PM API START========================*/
-#if CONFIG_SYS_CPU0
+#if CONFIG_PM_SERVER
 static bk_err_t bk_pm_module_power_on(pm_power_module_name_e module)
 {
 	bk_err_t ret = BK_OK;
@@ -654,7 +702,7 @@ static bk_err_t bk_pm_module_power_off(pm_power_module_name_e module)
 			s_pm_off_modules |= (0x1 << module);
 			s_pm_on_modules &= ~(0x1 << module);
 			GLOBAL_INT_RESTORE();
-			#if CONFIG_SYS_CPU0 && (CONFIG_CPU_CNT > 1)
+			#if CONFIG_PM_SERVER && (CONFIG_CPU_CNT > 1)
 			bk_pm_cp1_work_state_set(PM_MAILBOX_COMMUNICATION_INIT);
 			#endif
 		} else {
@@ -795,7 +843,7 @@ static bk_err_t bk_pm_module_power_off(pm_power_module_name_e module)
 
 bk_err_t bk_pm_module_vote_power_ctrl(pm_power_module_name_e module, pm_power_module_state_e power_state)
 {
-#if CONFIG_SYS_CPU1
+#if CONFIG_PM_CLIENT
 #if CONFIG_MAILBOX
 	uint64_t previous_tick  = 0;
 	uint64_t current_tick   = 0;
@@ -830,9 +878,7 @@ bk_err_t bk_pm_module_vote_power_ctrl(pm_power_module_name_e module, pm_power_mo
 		os_printf("cp1 vote power\r\n");
 #endif
 	return BK_OK;
-#elif CONFIG_SYS_CPU2
-	return BK_OK;
-#elif CONFIG_SYS_CPU0
+#else
 	uint32_t off_modules = 0;
 
 	if (power_state == PM_POWER_MODULE_STATE_ON) // power on
@@ -859,7 +905,15 @@ bk_err_t bk_pm_module_vote_power_ctrl(pm_power_module_name_e module, pm_power_mo
 	return BK_OK;
 #endif
 }
-#if CONFIG_SYS_CPU0
+#if CONFIG_PM_SERVER
+uint32_t bk_pm_get_audio_vote_pwr_state()
+{
+	return s_pm_audio_pm_state;
+}
+uint32_t bk_pm_get_video_vote_pwr_state()
+{
+	return s_pm_video_pm_state ;
+}
 uint32_t bk_pm_low_vol_vote_state_get()
 {
 	return ((s_pm_sleeped_modules & s_pm_enter_low_vol_modules) == s_pm_enter_low_vol_modules);
@@ -931,7 +985,7 @@ static bk_err_t pm_psram_malloc_state_and_power_ctrl()
 
 bk_err_t bk_pm_module_vote_sleep_ctrl(pm_sleep_module_name_e module, uint32_t sleep_state, uint32_t sleep_time)
 {
-#if CONFIG_SYS_CPU1
+#if CONFIG_PM_CLIENT
 #if CONFIG_MAILBOX
 	uint64_t previous_tick  = 0;
 	uint64_t current_tick   = 0;
@@ -1176,7 +1230,7 @@ void bk_pm_phy_reinit_flag_clear()
 /*=========================MODULES POWER CTRL START========================*/
 static void pm_check_power_on_module()
 {
-#if CONFIG_SYS_CPU0
+#if CONFIG_PM_SERVER
 	uint32_t off_modules = 0;
 #endif
 
@@ -1208,7 +1262,7 @@ static void pm_check_power_on_module()
 		// os_printf("video not power on \r\n");
 	}
 
-#if CONFIG_SYS_CPU0
+#if CONFIG_PM_SERVER
 	if (s_pm_mem_auto_power_down_flag)
 	{
 		off_modules = (0x1 << PM_POWER_MODULE_NAME_VIDP) | (0x1 << PM_POWER_MODULE_NAME_AUDP) | (0x1 << PM_POWER_MODULE_NAME_BTSP);
@@ -1285,7 +1339,7 @@ int32_t bk_pm_module_power_state_get(pm_power_module_name_e module)
 	return state;
 }
 
-#if CONFIG_SYS_CPU0
+#if CONFIG_PM_SERVER
 static void pm_module_check_power_on(pm_power_module_name_e module)
 {
 	if (PM_POWER_MODULE_STATE_OFF == sys_drv_module_power_state_get(module))
@@ -1304,7 +1358,7 @@ static void pm_module_check_power_on(pm_power_module_name_e module)
 
 		if (module == PM_POWER_MODULE_NAME_CPU1)
 		{
-#if (CONFIG_SYS_CPU0) && (CONFIG_CPU_CNT > 1)
+#if (CONFIG_CPU_CNT > 1)
 			extern void start_cpu1_core();
 			start_cpu1_core();
 			// s_pm_cp1_boot_ready = 0x0;
@@ -1322,7 +1376,7 @@ static void pm_module_check_power_off(pm_power_module_name_e module)
 	{
 		if (module == PM_POWER_MODULE_NAME_CPU1)
 		{
-#if (CONFIG_SYS_CPU0) && (CONFIG_CPU_CNT > 1)
+#if (CONFIG_CPU_CNT > 1)
 			extern void stop_cpu1_core(void);
 			stop_cpu1_core();
 #endif
@@ -1429,7 +1483,7 @@ static void pm_touched_wakeup_deep_sleep()
 {
 }
 
-#if CONFIG_SYS_CPU0
+#if CONFIG_PM_SERVER
 static void pm_deep_sleep_wakeup_source_set()
 {
 #if CONFIG_SYSTEM_CTRL
@@ -1580,7 +1634,7 @@ static void pm_normal_sleep_process()
 static int pm_low_voltage_resource_set()
 {
 	pm_dev_id_e dev_id = 0;
-	#if CONFIG_SYS_CPU0
+	#if CONFIG_PM_SERVER
 	pm_psram_malloc_state_and_power_ctrl();
 	pm_lv_enter_time_out_clear();
 	#if CONFIG_PM_LV_WDT_PROTECTION
@@ -2152,7 +2206,7 @@ bk_err_t bk_pm_module_vote_cpu_freq(pm_dev_id_e module, pm_cpu_freq_e cpu_freq)
 		cpu_freq = PM_CPU_FRQ_320M;
 	}
 #endif
-#if CONFIG_SYS_CPU1
+#if CONFIG_PM_CLIENT
 #if CONFIG_MAILBOX
 	uint64_t previous_tick  = 0;
 	uint64_t current_tick   = 0;
@@ -2245,7 +2299,7 @@ bk_err_t bk_pm_module_vote_cpu_freq(pm_dev_id_e module, pm_cpu_freq_e cpu_freq)
 
 bk_err_t bk_pm_clock_ctrl(pm_dev_clk_e module, pm_dev_clk_pwr_e clock_state)
 {
-#if CONFIG_SYS_CPU1
+#if CONFIG_PM_CLIENT
 #if CONFIG_MAILBOX
 	uint64_t previous_tick  = 0;
 	uint64_t current_tick   = 0;
@@ -2428,60 +2482,25 @@ bk_err_t pm_clk_32k_source_switch(pm_lpo_src_e lpo_src)
 	return BK_OK;
 }
 /*=========================CLK/FREQ CTRL END========================*/
-
-#endif //#if CONFIG_SYS_CPU1 || CONFIG_SYS_CPU0
-/*============================CPU0/CPU1 CODE END=========================*/
-
-bk_err_t pm_management(uint32_t sleep_ticks)
+#else
+bk_err_t __attribute__((weak)) bk_pm_module_vote_power_ctrl(pm_power_module_name_e module, pm_power_module_state_e power_state)
 {
-#if CONFIG_MCU_PS
-#if CONFIG_PM_LIGHT_SLEEP
-	uint64_t previous_tick = 0;
-	uint64_t current_tick = 0;
-	uint64_t missed_ticks = 0;
-	int ret = 0;
-	if (s_pm_mcu_pm_state)
-	{
-		return BK_OK;
-	}
+	// PM_LOGD("bk_pm_module_vote_power_ctrl: module=%d, power_state=%d (weak default)\n", module, power_state);
+	return BK_OK;
+}
 
-	if ((s_pm_light_sleep_enter_cb_conf.cb == NULL) || (s_pm_light_sleep_exit_cb_conf.cb == NULL))
-	{
+bk_err_t __attribute__((weak)) bk_pm_module_vote_sleep_ctrl(pm_sleep_module_name_e module, uint32_t sleep_state, uint32_t sleep_time)
+{
+	// PM_LOGD("bk_pm_module_vote_sleep_ctrl: module=%d, sleep_state=%d, sleep_time=%d (weak default)\n", module, sleep_state, sleep_time);
+	return BK_OK;
+}
+#endif //#if CONFIG_PM_ENABLE
 
-		return BK_FAIL;
-	}
-	ret = s_pm_light_sleep_enter_cb_conf.cb(sleep_ticks * rtos_get_ms_per_tick(), s_pm_light_sleep_enter_cb_conf.args);
-	if (ret)
-	{
-		return BK_FAIL;
-	}
-	previous_tick = bk_aon_rtc_get_current_tick(AON_RTC_ID_1);
-	current_tick = previous_tick;
-	while (((current_tick - previous_tick)) < (sleep_ticks * rtos_get_ms_per_tick() * bk_rtc_get_ms_tick_count()))
-	{
-		current_tick = bk_aon_rtc_get_current_tick(AON_RTC_ID_1);
-	}
-
-	// os_printf("idle task after:%d \r\n",sleep_ticks);
-	missed_ticks = pm_state_machine();
-	missed_ticks = sleep_ticks;
-	// bk_update_tick(missed_ticks);
-
-	s_pm_light_sleep_exit_cb_conf.cb(sleep_ticks * rtos_get_ms_per_tick(), s_pm_light_sleep_exit_cb_conf.args);
-#else//CONFIG_PM_LIGHT_SLEEP
-	uint32_t missed_ticks = 0;
-	if (s_pm_mcu_pm_state)
-	{
-		return BK_OK;
-	}
-	missed_ticks = pm_state_machine();
-	if (missed_ticks != 0)
-	{
-		// bk_update_tick(missed_ticks);
-	}
-#endif//CONFIG_PM_LIGHT_SLEEP
-#else //CONFIG_MCU_PS
-#if CONFIG_SYS_CPU1
+bk_err_t bk_pm_suppress_ticks_and_sleep(uint32_t sleep_ticks)
+{
+#if CONFIG_PM_ENABLE && CONFIG_MCU_PS
+	return pm_management(sleep_ticks);
+#elif CONFIG_PM_ENABLE && CONFIG_PM_CLIENT
 	if (bk_pm_cp1_ctrl_state_get() == 0x0)
 	{
 		bk_pm_cp1_ctrl_state_set(PM_MAILBOX_COMMUNICATION_FINISH);
@@ -2489,18 +2508,10 @@ bk_err_t pm_management(uint32_t sleep_ticks)
 		// os_printf("cpu1 already\r\n");
 	}
 	pm_enter_cpu_wfi();
-#endif//CONFIG_SYS_CPU1
-
-#if CONFIG_SYS_CPU2
+#else
 	sys_drv_enter_cpu_wfi();
-#endif//CONFIG_SYS_CPU2
-
-#endif//CONFIG_MCU_PS
+#endif
 	return BK_OK;
-}
-bk_err_t bk_pm_suppress_ticks_and_sleep(uint32_t sleep_ticks)
-{
-	return pm_management(sleep_ticks);
 }
 
 /*=========================DEBUG/TEST CTRL START========================*/
@@ -2523,7 +2534,7 @@ uint32_t pm_debug_mode()
 }
 bk_err_t pm_debug_module_state()
 {
-#if CONFIG_SYS_CPU0
+#if CONFIG_PM_SERVER
 	if(s_pm_video_pm_state > 0)
 	{
 		os_printf("Video not PD[modulue:0x%x]\r\n",s_pm_video_pm_state);
@@ -2570,7 +2581,7 @@ bk_err_t pm_debug_module_state()
 void pm_debug_ctrl(uint32_t debug_en)
 {
 	s_debug_en = debug_en;
-#if CONFIG_SYS_CPU0
+#if CONFIG_PM_SERVER
 	if(debug_en == PM_DEBUG_CTRL_STATE)
 	{
 		os_printf("pm video,audio:0x%x 0x%x \r\n",s_pm_video_pm_state,s_pm_audio_pm_state);

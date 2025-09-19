@@ -398,7 +398,9 @@ static void cli_pm_debug(char *pcWriteBuffer, int xWriteBufferLen, int argc, cha
 	if(pm_debug == PM_DEBUG_CTRL_STATE)
 	{
 		#if CONFIG_SYS_CPU0
+		#if CONFIG_MAILBOX
 		pm_debug_pwr_clk_state();
+		#endif
 		pm_debug_lv_state();
 		#endif
 	}
@@ -1214,6 +1216,7 @@ static void cli_pm_ldo(char *pcWriteBuffer, int xWriteBufferLen, int argc, char 
 static void cli_pm_psram(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
 #if CONFIG_SYS_CPU0
+#if CONFIG_PSRAM
 	UINT32 module_name            = 0;
 	UINT32 power_psram_state      = 0;
 	if (argc != 3)
@@ -1224,6 +1227,7 @@ static void cli_pm_psram(char *pcWriteBuffer, int xWriteBufferLen, int argc, cha
 	module_name         = os_strtoul(argv[1], NULL, 10);
 	power_psram_state   = os_strtoul(argv[2], NULL, 10);
 	bk_pm_module_vote_psram_ctrl(module_name,power_psram_state);
+#endif
 #endif
 }
 #endif//CONFIG_DEBUG_FIRMWARE

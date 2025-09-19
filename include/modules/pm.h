@@ -779,9 +779,9 @@ bk_err_t bk_pm_external_ldo_ctrl(uint32_t value);
  * @param
  * -void
  * @return
- *  - the state of phy calibration(0x1:have calibration;0x0:not calibration)
+ *  - the state of phy calibration(True:have calibration;False:not calibration)
  */
-uint32_t bk_pm_phy_cali_state_get();
+bool bk_pm_phy_cali_state_get();
 /**
  * @brief get the flag of phy reinit part1
  *
@@ -793,7 +793,7 @@ uint32_t bk_pm_phy_cali_state_get();
  * @param
  * -void
  * @return
- *  - the flag of phy reinit part1 (True:have part1;false:not do it)
+ *  - the flag of phy reinit part1 (True:have part1;False:not do it)
  */
 bool bk_pm_phy_reinit_flag_get();
 /**

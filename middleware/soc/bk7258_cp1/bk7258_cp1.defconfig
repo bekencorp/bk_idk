@@ -590,8 +590,6 @@ CONFIG_CALENDAR=n
 # System control
 #
 # CONFIG_SYS_REDUCE_NORMAL_POWER is not set
-#@ Enable power manager V2
-CONFIG_PM_V2=y
 # CONFIG_XTAL_FREQ_40M is not set
 #@ XTAL frequency 26M
 CONFIG_XTAL_FREQ_26M=y
@@ -602,6 +600,14 @@ CONFIG_DCO_FREQ=120000000
 #@ Enable system clock
 CONFIG_SYSTEM_CLOCK=y
 # end of System control
+
+#
+# Power Manager
+#
+#@ pm enable
+CONFIG_PM_ENABLE=y
+#@ pm client
+CONFIG_PM_CLIENT=y
 
 #
 # PHY
@@ -673,8 +679,6 @@ CONFIG_LWIP_MEM_REDUCE=y
 # CONFIG_FAKE_RTC_PS is not set
 # CONFIG_PM_MODEM_PWD is not set
 # CONFIG_PM_STANDALONE is not set
-#@ Enable power manager V2
-CONFIG_PM_V2=y
 # end of Power Save
 
 #

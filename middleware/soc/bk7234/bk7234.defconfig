@@ -1418,7 +1418,7 @@ CONFIG_PM_26M_STABILITY_DELAY_TIME_HARDWARE=1800
 #@ enter LV time out time(unit:ms)
 CONFIG_PM_ENTER_LV_TIME_OUT_PERIOD_MS=30000
 #@ add protection for hardware enter low voltage fail when application abnormal operate, using wdt to reboot
-CONFIG_PM_LV_WDT_PROTECTION=y
+CONFIG_PM_LV_WDT_PROTECTION=n
 # end of PWR_CLK
 
 #

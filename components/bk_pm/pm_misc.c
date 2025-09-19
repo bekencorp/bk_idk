@@ -73,6 +73,8 @@ static wifi_event_t pm_wifi_connect_state = EVENT_WIFI_STA_DISCONNECTED;
 
 
 /*================FUNCTION DECLARATION  SECTION  END===============*/
+#if CONFIG_PM_ENABLE && CONFIG_PM_CLIENT
+#if CONFIG_MAILBOX
 uint64_t pm_cp1_aon_rtc_counter_get()
 {
 	volatile uint32_t val = REG_READ(PM_AON_RTC_CNT_VAL_L_ADDR);
