@@ -30,16 +30,20 @@ BL1 启动流程
 上图描述了 BL1 对 BL2 验签的流程：
 
  - 1 - BL1 先从 FLASH 固定位置读取boot_flag信息，
+
   * 如果 boot_flag 等于0或者1 时，表示后续需要从主分区primary_manifest 读取相应数据进行校验。 
   * 如果 boot_flag 等于2，那么表示后续需要从恢复区recovery manifest 读取相应数据进行校验。
   
    两个分区的存储地址不同，且各自在打包时包含了BL1 在验签时需要的所有信息，包括加签算法，image HASH
    算法，image 版本，公钥等。BL1 先读出安全启动公钥，计算出公钥HASH，然后与固化在 OTP 中的公钥 HASH
    进行对比，如果相同，则继续，否则，验签失败。
+
  - 2 - BL1 使用第 1 步中验证合法的公钥对 manifest 进行验签。其中 manifest signature 是对除
    manifest signature 外 manifest 中所有信息的签名。如果验签通过，则继续；否则，验签失败。
+
  - 3 - BL1 使用 manifest 中指定的 HASH 算法（SHA256）对 bl2 计算 HASH，然后与 manifest
    中的 image hash 进行比较，如果相同则继续，否则，验签失败。
+
  - 4 - 如果 manifest 中 image version 不小于 OTP 中的 image version，则验签成功，否则，验签失败。
 
 
