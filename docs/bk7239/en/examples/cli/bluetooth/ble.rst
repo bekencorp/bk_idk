@@ -1,4 +1,4 @@
-BLE Cli
+BLE Commands
 ================
 
 :link_to_translation:`zh_CN:[中文]`
@@ -11,7 +11,7 @@ BLE Cli
 --------------------------
 	path: ``\components\bk_bluetooth\api\bk_at_ble.c``
 
-3、Cli command introduction
+3、AT command introduction
 ---------------------------------
 The supported CMDs are as follows:
 
@@ -167,10 +167,8 @@ The supported CMDs are as follows:
 
 		+-----------+------------------------------------------------------------------------+
 		|param1     | Own_Address_Type                                                       |
-		|           |  | 0x00 : Public Device Address                                        |
-		|           |  | 0x01 : Random Device Address                                        |
-		|           |  | 0x02 : Resolvable Private Address,if no IRK use the public address  |
-		|           |  | 0x03 : Resolvable Private Address,if no IRK use the random address  |
+		|           |  | 0x00/0x01 : Public Device Address                                   |
+		|           |  | 0x02/0x03 : Random Device Address                                   |
 		+-----------+------------------------------------------------------------------------+
 		|param2     | Scanning_PHYs                                                          |
 		|           |  | 0x01 : Scan advertisements on the LE 1M PHY                         |
@@ -225,14 +223,14 @@ The supported CMDs are as follows:
 		|           |  | 2 : Scan connectable advertisements on the LE Coded PHY             |
 		+-----------+------------------------------------------------------------------------+
 		|param5     | Peer_Address_Type                                                      |
-		|           |  | 0x00 : Public Device Address or Public Identity Address             |
-		|           |  | 0x01 : Random Device Address or Random (static) Identity Address    |
+		|           |  | 0x00 : Public Device Address                                        |
+		|           |  | 0x04 : Random Device Address                                        |
 		+-----------+------------------------------------------------------------------------+
 		|param6     | Peer_Address                                                           |
 		+-----------+------------------------------------------------------------------------+
 
 	 - Test Case
-		``AT+BLECREATECONNECT=17,0,1f4,1,1,db:b4:6f:66:8a:db``
+		``AT+BLECREATECONNECT=17,0,1f4,1,4,db:b4:6f:66:8a:db``
 
 	9.AT+BLECANCELCONNECT
 	 - Function Description

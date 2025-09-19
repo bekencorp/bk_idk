@@ -6,7 +6,6 @@ API References
 .. toctree::
    :maxdepth: 1
 
-   Overview <api_overview>
    Bluetooth <bluetooth/index>
    Wi-Fi <wifi/index>
    TCPIP <tcpip/index>

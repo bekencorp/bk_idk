@@ -10,7 +10,6 @@ User and Developer Guide
    Build <build_config/index>
    Configuration and Tools <config_tools/index>
    Power Management <power_save/index>
-   Memory and Performance <memory_perf/index>
    Device Driver Model <driver_model/index>
    Peripherals <peripheral/index>
    Event Mechanism <event/index>

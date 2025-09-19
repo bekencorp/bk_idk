@@ -159,3 +159,5 @@ DUT
     `开发者指南: <../../developer-guide/bluetooth/index.html>`_ 介绍了蓝牙常用使用场景
 
     `蓝牙工程: <../../projects/bluetooth/bluetooth.html>`_ 介绍了蓝牙相关工程
+
+    `蓝牙证书: <https://qualification.bluetooth.com/ListingDetails/261187>`_ 产品证书详情

@@ -159,3 +159,5 @@ DUT
     `User and Developer Guide : <../../developer-guide/bluetooth/index.html>`_ Introduced common usage scenarios of Bluetooth
 
     `Bluetooth Project: <../../projects/bluetooth/bluetooth.html>`_ Introduced Bluetooth related Project
+
+    `Bluetooth Qualification Workspace: <https://qualification.bluetooth.com/ListingDetails/261187>`_ Introduced qualified product details.

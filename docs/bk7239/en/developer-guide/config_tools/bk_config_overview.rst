@@ -48,7 +48,7 @@ The configuration file is organized in Armino as shown in the following figure:
                  -Kconfig
          - middleware/
              -boards/
-                 - bk7236/
+                 - bk7239/
                      -csv
                          - mpc.csv
                          - ppc.csv
@@ -59,20 +59,20 @@ The configuration file is organized in Armino as shown in the following figure:
                          - root_ec256_pubkey.pem
                          - root_ec256_privkey.pem
              - soc/
-                 - bk7236/
-                     -bk7236.defconfig
+                 - bk7239/
+                     -bk7239.defconfig
          - projects/
              - my_project/
                  -config/
                      - common.config
-                     -bk7236.config
+                     -bk7239.config
                      - csv
                          - mpc.csv
                          -ppc.csv
                          -ota.csv
                          - partitions.csv
                          - security.csv
-                         - bk7236_partitions.csv
+                         - bk7239_partitions.csv
                      - key
                          - root_ec256_pubkey.pem
                          - root_ec256_privkey.pem

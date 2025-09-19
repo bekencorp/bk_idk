@@ -74,7 +74,7 @@ ARMINO 构建系统的列表文件位于 :armino:`/tools/build_tools/cmake` 中�
     可以参考如下方式::
         
         armino_build_get_property(target ARMINO_SOC)
-        if ("${target}" STREQUAL "bk7236")
+        if ("${target}" STREQUAL "bk7239")
             list(APPEND depenency_component)
         endif()
 

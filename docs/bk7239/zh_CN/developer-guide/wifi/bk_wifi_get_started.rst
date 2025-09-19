@@ -12,8 +12,8 @@ AP/SoftAP
 -------------------------------------------------------
 AP Example Demo展示了使用Beken Wi-Fi芯片建立SoftAP的流程.
 
-- 编译命令: ``make bk7236 PROJECT=examples/wifi/ap``
-- 文件路径: ``build/ap/bk7236/all-app.bin``
+- 编译命令: ``make bk7239 PROJECT=examples/wifi/ap``
+- 文件路径: ``build/ap/bk7239/all-app.bin``
 - 参数配置: ``projects/examples/wifi/ap/main/Kconfig.projbuild``
 
 ::
@@ -55,8 +55,8 @@ Scan
 -------------------------------------------------------
 Scan Example Demo介绍了Wi-Fi扫描的基本流程，包含全信道扫描和指定SSID扫描.
 
-- 编译命令: ``make bk7236 PROJECT=examples/wifi/scan``
-- 文件路径: ``build/scan/bk7236/all-app.bin``
+- 编译命令: ``make bk7239 PROJECT=examples/wifi/scan``
+- 文件路径: ``build/scan/bk7239/all-app.bin``
 - 参数配置: ``projects/examples/wifi/scan/main/Kconfig.projbuild``
 
 ::
@@ -101,8 +101,8 @@ sta_connect
 -------------------------------------------------------
 sta_connect通过提前配置SSID、Password，编译成功后烧录版本，可实现开机自动连接功能.
 
-- 编译命令: ``make bk7236 PROJECT=examples/wifi/sta_connect``
-- 文件路径: ``build/sta_connect/bk7236/all-app.bin``
+- 编译命令: ``make bk7239 PROJECT=examples/wifi/sta_connect``
+- 文件路径: ``build/sta_connect/bk7239/all-app.bin``
 - 配置参数: ``projects/examples/wifi/sta_connect/main/Kconfig.projbuild``
 
 ::
@@ -126,7 +126,7 @@ sta_connect通过提前配置SSID、Password，编译成功后烧录版本，可
     example:I(3618):STA connected to aclsemi       //连接成功
     example:I(3658):STA got ip                     //获取IP地址
 
-.. note:: 客户编译命令需指定相应PROJECT和PROJECT_LIBS ``make bk7236 PROJECT=examples/wifi/sta_connect PROJECT_LIBS=bk7236_app``
+.. note:: 客户编译命令需指定相应PROJECT和PROJECT_LIBS ``make bk7239 PROJECT=examples/wifi/sta_connect PROJECT_LIBS=bk7239_app``
 
 :link_to_translation:`en:[English]`
 

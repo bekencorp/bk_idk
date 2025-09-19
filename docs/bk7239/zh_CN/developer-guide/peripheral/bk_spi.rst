@@ -23,7 +23,7 @@ SPI (Serial Peripheral Interface, 串行外设接口) 是一种高速、全双�
  - MISO：(Master Input, Slave Output)，用于 slave 向 master 传输数据；
  - CSN：片选信号，master 选择对应的 slave 进行传输数据，低电平有效
 
-Beken 芯片通常具有 1 个 SPI 控制器，BK7236 支持 2 个 SPI (SPI1、SPI2)。
+Beken 芯片通常具有 1 个 SPI 控制器，BK7239 支持 2 个 SPI (SPI1、SPI2)。
 
 SPI模式
 ------------------

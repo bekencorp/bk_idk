@@ -10,3 +10,4 @@
    外设 <peripheral/index>
    平台 <platform/index>
    VND_CAL <vnd_cal/vnd_cal>
+   saradc <saradc/saradc>

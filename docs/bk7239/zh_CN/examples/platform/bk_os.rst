@@ -19,13 +19,13 @@ OS
 	+--------------------------------------+------------------------------------+--------------------------------------------+---------+
 	|                 NAME                 |      Description                   |                  File                      |  value  |
 	+======================================+====================================+============================================+=========+
-	|CONFIG_FREERTOS                       |support FreeRTOS                    | ``middleware\soc\bk7236\bk7236.defconfig`` |    y    |
+	|CONFIG_FREERTOS                       |support FreeRTOS                    | ``middleware\soc\bk7239\bk7239.defconfig`` |    y    |
 	+--------------------------------------+------------------------------------+--------------------------------------------+---------+
-	|CONFIG_FREERTOS_V9                    |support FreeRTOS V9                 | ``middleware\soc\bk7236\bk7236.defconfig`` |    n    |
+	|CONFIG_FREERTOS_V9                    |support FreeRTOS V9                 | ``middleware\soc\bk7239\bk7239.defconfig`` |    n    |
 	+--------------------------------------+------------------------------------+--------------------------------------------+---------+
-	|CONFIG_FREERTOS_V10                   |support FreeRTOS V10                | ``middleware\soc\bk7236\bk7236.defconfig`` |    y    |
+	|CONFIG_FREERTOS_V10                   |support FreeRTOS V10                | ``middleware\soc\bk7239\bk7239.defconfig`` |    y    |
 	+--------------------------------------+------------------------------------+--------------------------------------------+---------+
-	|CONFIG_CUSTOMIZE_HEAP_SIZE            |customize freerots heap size(byte)  | ``middleware\soc\bk7236\bk7236.defconfig`` | 217088  |
+	|CONFIG_CUSTOMIZE_HEAP_SIZE            |customize freerots heap size(byte)  | ``middleware\soc\bk7239\bk7239.defconfig`` | 217088  |
 	+--------------------------------------+------------------------------------+--------------------------------------------+---------+
 
 

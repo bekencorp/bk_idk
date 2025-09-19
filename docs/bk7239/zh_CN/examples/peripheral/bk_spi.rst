@@ -5,7 +5,7 @@ spi
 
 1 功能概述
 -------------------------------------
-	bk7236具有2路SPI控制器，对应三组SPI引脚。介绍SPI接口的cli命令使用。
+	bk7239具有2路SPI控制器，对应三组SPI引脚。介绍SPI接口的cli命令使用。
 
 2 代码路径
 -------------------------------------
@@ -19,15 +19,15 @@ demo运行依赖的宏配置：
 	+--------------------------------------+---------------------------+--------------------------------------------+---------+
 	|                 NAME                 |      Description          |                  File                      |  value  |
 	+======================================+===========================+============================================+=========+
-	|CONFIG_SPI_DMA                        | SPI support DMA           | ``middleware\soc\bk7236\bk7236.defconfig`` |    y    |
+	|CONFIG_SPI_DMA                        | SPI support DMA           | ``middleware\soc\bk7239\bk7239.defconfig`` |    y    |
 	+--------------------------------------+---------------------------+--------------------------------------------+---------+
-	|CONFIG_SPI_SLAVE                      | support SPI slave mode    | ``middleware\soc\bk7236\bk7236.defconfig`` |    y    |
+	|CONFIG_SPI_SLAVE                      | support SPI slave mode    | ``middleware\soc\bk7239\bk7239.defconfig`` |    y    |
 	+--------------------------------------+---------------------------+--------------------------------------------+---------+
-	|CONFIG_SPI_MASTER                     | support SPI master mode   | ``middleware\soc\bk7236\bk7236.defconfig`` |    y    |
+	|CONFIG_SPI_MASTER                     | support SPI master mode   | ``middleware\soc\bk7239\bk7239.defconfig`` |    y    |
 	+--------------------------------------+---------------------------+--------------------------------------------+---------+
-	|CONFIG_SPI_STATIS                     | support SPI statis func   | ``middleware\soc\bk7236\bk7236.defconfig`` |    y    |
+	|CONFIG_SPI_STATIS                     | support SPI statis func   | ``middleware\soc\bk7239\bk7239.defconfig`` |    y    |
 	+--------------------------------------+---------------------------+--------------------------------------------+---------+
-	|CONFIG_SPI_SUPPORT_TX_FIFO_WR_READY   | support tx write ready    | ``middleware\soc\bk7236\bk7236.defconfig`` |    y    |
+	|CONFIG_SPI_SUPPORT_TX_FIFO_WR_READY   | support tx write ready    | ``middleware\soc\bk7239\bk7239.defconfig`` |    y    |
 	+--------------------------------------+---------------------------+--------------------------------------------+---------+
 
 
@@ -109,7 +109,7 @@ SPI模式和极性、相位的对应关系
 -------------------------------------
 
 
-  1、bk7236开发板在con4中将SPI引出，使用2块bk7236开发板，按照下图进行连接
+  1、bk7239开发板在con4中将SPI引出，使用2块bk7239开发板，按照下图进行连接
 
 .. figure:: ../../../../common/_static/SPI_connect.png
     :align: center

@@ -78,7 +78,7 @@ Enables the TFM_PARTITION_FIRMWARE_UPDATE function of TF-M. And according to the
 
 6.1 The interface provided by FWU
 ----------------------------------
-TFM provides mandatory and unmandatory functions, while bk7236 uses only mandatory functions.
+TFM provides mandatory and unmandatory functions, while bk7239 uses only mandatory functions.
 
 6.1.1 psa_fwu_query
 ------------------------
@@ -106,7 +106,7 @@ The FWU function of TF-M is enabled and the relevant interface functions are cal
 
 6.2.1 Enable the FWU function of TF-M
 ---------------------------------------
-In the configuration file of the bk7236, open TFM_PARTITION_FIRMWARE_UPDATE. Since FWU and MCUBOOT share the same flash interface, it is necessary to open MCUBOOT_DATA_SHARING and enable BL2 at the same time.
+In the configuration file of the bk7239, open TFM_PARTITION_FIRMWARE_UPDATE. Since FWU and MCUBOOT share the same flash interface, it is necessary to open MCUBOOT_DATA_SHARING and enable BL2 at the same time.
 Other configurations include setting MCUBOOT_IMAGE_NUMBER to 1, PSA_FWU_MAX_BLOCK_SIZE to 2048, and a larger stack size for the fwu task.
 
 6.2.2 Open the NSPE call interface of the FWU
@@ -120,7 +120,7 @@ OTA images were generated using OTA bundler, downloaded and split over HTTP, and
 
 7.1 Increase TF-M staging area configuration
 ------------------------------------------------
-Since TF-M has only one staging area by default, it cannot meet the needs of bk7236 to upgrade BL2. Increase the four staging areas in TF-M as follows.
+Since TF-M has only one staging area by default, it cannot meet the needs of bk7239 to upgrade BL2. Increase the four staging areas in TF-M as follows.
 
 .. figure:: picture/code1.svg
     :align: center

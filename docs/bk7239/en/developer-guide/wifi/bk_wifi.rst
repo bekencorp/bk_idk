@@ -103,7 +103,7 @@ The configuration of Wi-Fi MAC address is in ``bk_system\mac.c``,it contains bas
 - CONFIG_NEW_MAC_POLICY defines the MAC address are stored in the first 6 bytes of Net_param partition;if this area is empty,use a random MAC address
 - When first 6 bytes of Net_param are empty and CONFIG_RANDOM_MAC_ADDR is enabled,the MAC address is randomly generated then will be stored in Net_param partition.Certainly,the MAC address generated randomly will follow BEKEN MAC address rules: C8:47:8C
 - CONFIG_BK_MAC_ADDR_CHECK is used to determine whether the MAC address configured by the customer complies with the BEKEN rule C8:47:8C .If not required,set it to N in the defconfig file
-- All above three macro definitions are located in ``middleware\soc\bk7236\bk7236.defconfig`` ,with default values of y
+- All above three macro definitions are located in ``middleware\soc\bk7239\bk7239.defconfig`` ,with default values of y
 - Using the MAC Address Configuration Tool: bk_writer writes the MAC address to flash.If the flash is fully erased,it will cause the MAC address to be lost,resulting in the use of random MAC address
 - use command ``mac`` for temporary test,the example is as follows:
 

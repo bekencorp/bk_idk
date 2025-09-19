@@ -66,29 +66,29 @@ fatfs文件系统和SD卡读写
 	+--------------------------------------+-----------------------------------------------------------+--------------------------------------------+---------+
 	|                 NAME                 |      Description                                          |                  File                      |  value  |
 	+======================================+===========================================================+============================================+=========+
-	|CONFIG_SDIO_V1P0                      | support SDIO version V1P0,unused                          | ``middleware\soc\bk7236\bk7236.defconfig`` |    n    |
+	|CONFIG_SDIO_V1P0                      | support SDIO version V1P0,unused                          | ``middleware\soc\bk7239\bk7239.defconfig`` |    n    |
 	+--------------------------------------+-----------------------------------------------------------+--------------------------------------------+---------+
-	|CONFIG_SDIO_V2P0                      | support SDIO version V2P0,current version                 | ``middleware\soc\bk7236\bk7236.defconfig`` |    y    |
+	|CONFIG_SDIO_V2P0                      | support SDIO version V2P0,current version                 | ``middleware\soc\bk7239\bk7239.defconfig`` |    y    |
 	+--------------------------------------+-----------------------------------------------------------+--------------------------------------------+---------+
-	|CONFIG_SDIO_HOST                      | set to host mode for connecting SD card                   | ``middleware\soc\bk7236\bk7236.defconfig`` |    y    |
+	|CONFIG_SDIO_HOST                      | set to host mode for connecting SD card                   | ``middleware\soc\bk7239\bk7239.defconfig`` |    y    |
 	+--------------------------------------+-----------------------------------------------------------+--------------------------------------------+---------+
-	|CONFIG_SDIO_SLAVE                     | support SDIO slave mode,unused                            | ``middleware\soc\bk7236\bk7236.defconfig`` |    n    |
+	|CONFIG_SDIO_SLAVE                     | support SDIO slave mode,unused                            | ``middleware\soc\bk7239\bk7239.defconfig`` |    n    |
 	+--------------------------------------+-----------------------------------------------------------+--------------------------------------------+---------+
-	|CONFIG_SDIO_CHANNEL_EN                | support SDIO logical channel,depend on CONFIG_SDIO_SLAVE  | ``middleware\soc\bk7236\bk7236.defconfig`` |    n    |
+	|CONFIG_SDIO_CHANNEL_EN                | support SDIO logical channel,depend on CONFIG_SDIO_SLAVE  | ``middleware\soc\bk7239\bk7239.defconfig`` |    n    |
 	+--------------------------------------+-----------------------------------------------------------+--------------------------------------------+---------+
-	|CONFIG_SDIO_BIDIRECT_CHANNEL_EN       | support SDIO bidirect channel,depend on CONFIG_SDIO_SLAVE | ``middleware\soc\bk7236\bk7236.defconfig`` |    n    |
+	|CONFIG_SDIO_BIDIRECT_CHANNEL_EN       | support SDIO bidirect channel,depend on CONFIG_SDIO_SLAVE | ``middleware\soc\bk7239\bk7239.defconfig`` |    n    |
 	+--------------------------------------+-----------------------------------------------------------+--------------------------------------------+---------+
-	|CONFIG_SDIO_GDMA_EN                   | support SDIO GDMA,unsuport,depend on CONFIG_SDIO_SLAVE    | ``middleware\soc\bk7236\bk7236.defconfig`` |    n    |
+	|CONFIG_SDIO_GDMA_EN                   | support SDIO GDMA,unsuport,depend on CONFIG_SDIO_SLAVE    | ``middleware\soc\bk7239\bk7239.defconfig`` |    n    |
 	+--------------------------------------+-----------------------------------------------------------+--------------------------------------------+---------+
-	|CONFIG_GPIO_NOTIFY_TRANSACTION_EN     | support notify transaction,,depend on CONFIG_SDIO_SLAVE   | ``middleware\soc\bk7236\bk7236.defconfig`` |    n    |
+	|CONFIG_GPIO_NOTIFY_TRANSACTION_EN     | support notify transaction,,depend on CONFIG_SDIO_SLAVE   | ``middleware\soc\bk7239\bk7239.defconfig`` |    n    |
 	+--------------------------------------+-----------------------------------------------------------+--------------------------------------------+---------+
-	|CONFIG_SDIO_4LINES_EN                 | support SDIO 4 line,if no,support 1 line                  | ``middleware\soc\bk7236\bk7236.defconfig`` |    n    |
+	|CONFIG_SDIO_4LINES_EN                 | support SDIO 4 line,if no,support 1 line                  | ``middleware\soc\bk7239\bk7239.defconfig`` |    n    |
 	+--------------------------------------+-----------------------------------------------------------+--------------------------------------------+---------+
-	|CONFIG_SDIO_TEST_EN                   | support SDIO testself                                     | ``middleware\soc\bk7236\bk7236.defconfig`` |    n    |
+	|CONFIG_SDIO_TEST_EN                   | support SDIO testself                                     | ``middleware\soc\bk7239\bk7239.defconfig`` |    n    |
 	+--------------------------------------+-----------------------------------------------------------+--------------------------------------------+---------+
-	|CONFIG_SDIO_DEBUG_EN                  | support SDIO debug                                        | ``middleware\soc\bk7236\bk7236.defconfig`` |    n    |
+	|CONFIG_SDIO_DEBUG_EN                  | support SDIO debug                                        | ``middleware\soc\bk7239\bk7239.defconfig`` |    n    |
 	+--------------------------------------+-----------------------------------------------------------+--------------------------------------------+---------+
-	|CONFIG_SDIO_HOST_DEFAULT_CLOCK_FREQ=7 | set SDIO host clk,default 100k                            | ``middleware\soc\bk7236\bk7236.defconfig`` |    7    |
+	|CONFIG_SDIO_HOST_DEFAULT_CLOCK_FREQ=7 | set SDIO host clk,default 100k                            | ``middleware\soc\bk7239\bk7239.defconfig`` |    7    |
 	+--------------------------------------+-----------------------------------------------------------+--------------------------------------------+---------+
 
 	SD card demo运行依赖的宏配置：
@@ -96,13 +96,13 @@ fatfs文件系统和SD卡读写
 	+--------------------------------------+---------------------------+--------------------------------------------+---------+
 	|                 NAME                 |      Description          |                  File                      |  value  |
 	+======================================+===========================+============================================+=========+
-	|CONFIG_SDCARD_HOST                    | support SD card,host mode | ``middleware\soc\bk7236\bk7236.defconfig`` |    y    |
+	|CONFIG_SDCARD_HOST                    | support SD card,host mode | ``middleware\soc\bk7239\bk7239.defconfig`` |    y    |
 	+--------------------------------------+---------------------------+--------------------------------------------+---------+
-	|CONFIG_SDCARD_V2P0                    | support SD version V2P0   | ``middleware\soc\bk7236\bk7236.defconfig`` |    y    |
+	|CONFIG_SDCARD_V2P0                    | support SD version V2P0   | ``middleware\soc\bk7239\bk7239.defconfig`` |    y    |
 	+--------------------------------------+---------------------------+--------------------------------------------+---------+
-	|CONFIG_SDCARD_V1P0                    | support SD version V1P0   | ``middleware\soc\bk7236\bk7236.defconfig`` |    n    |
+	|CONFIG_SDCARD_V1P0                    | support SD version V1P0   | ``middleware\soc\bk7239\bk7239.defconfig`` |    n    |
 	+--------------------------------------+---------------------------+--------------------------------------------+---------+
-	|CONFIG_SDCARD_BUSWIDTH_4LINE          | support SD card 4 line    | ``middleware\soc\bk7236\bk7236.defconfig`` |    n    |
+	|CONFIG_SDCARD_BUSWIDTH_4LINE          | support SD card 4 line    | ``middleware\soc\bk7239\bk7239.defconfig`` |    n    |
 	+--------------------------------------+---------------------------+--------------------------------------------+---------+
 
 	fatfs demo运行依赖的宏配置：
@@ -110,9 +110,9 @@ fatfs文件系统和SD卡读写
 	+--------------------------------------+------------------------+--------------------------------------------+---------+
 	|                 NAME                 |      Description       |                  File                      |  value  |
 	+======================================+========================+============================================+=========+
-	|CONFIG_FATFS                          | support fatfs          | ``middleware\soc\bk7236\bk7236.defconfig`` |    y    |
+	|CONFIG_FATFS                          | support fatfs          | ``middleware\soc\bk7239\bk7239.defconfig`` |    y    |
 	+--------------------------------------+------------------------+--------------------------------------------+---------+
-	|CONFIG_FATFS_SDCARD                   | SD card support fatfs  | ``middleware\soc\bk7236\bk7236.defconfig`` |    y    |
+	|CONFIG_FATFS_SDCARD                   | SD card support fatfs  | ``middleware\soc\bk7239\bk7239.defconfig`` |    y    |
 	+--------------------------------------+------------------------+--------------------------------------------+---------+
 
 	demo支持的cli命令如下表：
@@ -224,11 +224,11 @@ fatfstest S 1   //扫描SD卡
 		Fatfs:I(532884):scan_files OK!
 		Fatfs:I(532886):----- scan_file_system 1 over  -----
 
-fatfstest W 1 test.txt acl_bk7236_write_to_test 24   //向文件test.txt中写入字符串"acl_bk7236_write_to_test"
+fatfstest W 1 test.txt acl_bk7239_write_to_test 24   //向文件test.txt中写入字符串"acl_bk7239_write_to_test"
 
    ::
 
-		[16:15:02.687]发→◇fatfstest W 1 test.txt acl_bk7236_write_to_test 24
+		[16:15:02.687]发→◇fatfstest W 1 test.txt acl_bk7239_write_to_test 24
 
 		[16:15:02.696]收←◆fatfstest W 1 test.txt acl_bkFatfs:I(736530):
 		----- test_fatfs 1 start -----
@@ -240,7 +240,7 @@ fatfstest W 1 test.txt acl_bk7236_write_to_test 24   //向文件test.txt中写�
 		Fatfs:I(736678):----- test_fatfs 1 over  -----
 
 		append and write:test.txt
-		[16:15:02.866]收←◆,acl_bk7236_write_to_test
+		[16:15:02.866]收←◆,acl_bk7239_write_to_test
 
 fatfstest R 1 test.txt 32     //从文件test.txt中读取32字节数据
 

@@ -104,7 +104,7 @@ Wi-Fi MAC地址配置源码位于 ``bk_system\mac.c`` ,分为base_mac、sta_mac�
 - CONFIG_NEW_MAC_POLICY定义MAC地址默认存放在NET_Param分区的前六个字节;如该地址前6字节为空,则使用随机MAC地址
 - CONFIG_RANDOM_MAC_ADDR,在NET_Param前6个字节为空,且使能该宏时,随机生成MAC地址,并写入NET_Param分区的MAC地址区域,同时该随机MAC地址会符合BK_MAC_ADDR_CHECK即C8:47:8C
 - CONFIG_BK_MAC_ADDR_CHECK用于判断客户配置的MAC地址是否符合BEKEN规则C8:47:8C.如不需要,直接在defconfig文件中置为n
-- 上述三个宏定义位于 ``middleware\soc\bk7236\bk7236.defconfig`` ,默认值均为y
+- 上述三个宏定义位于 ``middleware\soc\bk7239\bk7239.defconfig`` ,默认值均为y
 - 使用[MAC地址配置工具]:bk_writer烧写MAC地址到FLASH,如果全擦flash会导致MAC地址丢失,从而使用随机MAC
 - 使用mac命令写入flash,使用方式如下:
 

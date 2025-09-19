@@ -12,7 +12,7 @@
 - 2.升级固件路径为：
 
 .. important::
-   在build/app/bk7236/encrypt/app_pack.rbl
+   在build/app/bk7239/encrypt/app_pack.rbl
 
 - 3.打开Everything-1.4.1.935.x64-Setup.exe，工具->选项->HTTP服务器，绑定本机ip。使用浏览器打开本机的ip地址，找到本地的升级文件 \*.rbl，拷贝url出来，用于cli命令。
 

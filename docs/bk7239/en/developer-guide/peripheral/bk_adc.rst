@@ -6,7 +6,7 @@ SARADC
 Summary
 ------------------------------------------------------------
 
-SARADC currently supports up to 16 channels. In BK7236, channels 1-6, 10, and 12-15 are digital channels, and the rest are analog channels. The SARADC accuracy defaults to 13bit.
+SARADC currently supports up to 16 channels. In BK7239, channels 1-6, 10, and 12-15 are digital channels, and the rest are analog channels. The SARADC accuracy defaults to 13bit.
 The general accuracy is not dynamically adjusted in SARADC driver.
 
 SARADC Mode Type:

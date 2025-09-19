@@ -19,7 +19,7 @@ SPHINXOPTS    =
 # (which will be the most recently installed version of sphinx and may not match)
 #SPHINXBUILD   = python -m sphinx
 SPHINXBUILD   = sphinx-build
-PROCESSES     = -j32
+PROCESSES     = -j4
 #PROCESSES     =
 PAPER         =
 BUILDDIR      = _build
@@ -173,7 +173,7 @@ texinfo: | check_python_packages
 info: | check_python_packages
 	$(SPHINXBUILD) -b texinfo $(ALLSPHINXOPTS) $(BUILDDIR)/texinfo $(PROCESSES)
 	@echo "Running Texinfo files through makeinfo..."
-	make -C $(BUILDDIR)/texinfo info -j32
+	make -C $(BUILDDIR)/texinfo info -j4
 	@echo "makeinfo finished; the Info files are in $(BUILDDIR)/texinfo."
 
 gettext: | check_python_packages

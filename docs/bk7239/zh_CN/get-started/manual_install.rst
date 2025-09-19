@@ -18,7 +18,7 @@
 工具链下载与安装
 ------------------------------------
 
-点击 `下载 <https://dl.bekencorp.com/tools/toolchain/arm/gcc-arm-none-eabi-10.3-2021.10-x86_64-linux.tar.bz2>`_ 下载 BK7236 工具链。
+点击 `下载 <https://dl.bekencorp.com/tools/toolchain/arm/gcc-arm-none-eabi-10.3-2021.10-x86_64-linux.tar.bz2>`_ 下载 BK7239 工具链。
 
 工具包下载后，通过如下操作命令解压至 /opt/ 目录下::
 
@@ -27,7 +27,7 @@
 
 .. note::
 
-    工具链默认路径在 middleware/soc/bk7236/bk7236.defconfig 文件中定义，您也可以在项目配置文件中更改工具链路径::
+    工具链默认路径在 middleware/soc/bk7239/bk7239.defconfig 文件中定义，您也可以在项目配置文件中更改工具链路径::
 
         CONFIG_TOOLCHAIN_PATH="/opt/gcc-arm-none-eabi-10.3-2021.10/bin"
 
@@ -70,7 +70,7 @@
 
 .. note::
 
-    通常您不需要自己编译 Armino 文档，点击进入 `文档 <https://docs.bekencorp.com/arminodoc/bk_idk/bk7236/zh_CN/v2.0.1/index.html>`_ 您就可以查看 Armino 最近或者最新的文档。
+    通常您不需要自己编译 Armino 文档，点击进入 `文档 <https://docs.bekencorp.com/arminodoc/bk_idk/bk7239/zh_CN/v2.0.1/index.html>`_ 您就可以查看 Armino 最近或者最新的文档。
 
 
 但如果您希望自己生成 Armino 文档，则需要安装下述 Python 依赖::

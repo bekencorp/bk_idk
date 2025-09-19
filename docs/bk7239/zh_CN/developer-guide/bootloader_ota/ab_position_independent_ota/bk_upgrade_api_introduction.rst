@@ -25,7 +25,7 @@ AB分区位置无关的升级性格接口介绍
 
     void bk_ota_double_check_for_execution(void);
 
-- 4 当前发布的SDK版本中，上述（2，3）为方便自测试，已实现（被CONFIG_OTA_UPDATE_DEFAULT_PARTITION控制），客户需要在（projects/customization/config_ab/config/bk7236/config）将CONFIG_OTA_UPDATE_DEFAULT_PARTITION 这个宏定义关闭。
+- 4 当前发布的SDK版本中，上述（2，3）为方便自测试，已实现（被CONFIG_OTA_UPDATE_DEFAULT_PARTITION控制），客户需要在（projects/customization/config_ab/config/bk7239/config）将CONFIG_OTA_UPDATE_DEFAULT_PARTITION 这个宏定义关闭。
 
 - app下载镜像成功之后，需要客户返回需要临时执行的分区；见下图1
 

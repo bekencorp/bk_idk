@@ -8,7 +8,7 @@ OTP
 概述
 -----------------------------------------------------------
 
-BK7236 片内 OTP 基于 PUF（Physical-Unclonable-Function，物理不可克隆）技术，为系统提供片内密钥，安全存储及真随机数。
+BK7239 片内 OTP 基于 PUF（Physical-Unclonable-Function，物理不可克隆）技术，为系统提供片内密钥，安全存储及真随机数。
 可以通过 :ref:`BKFIL<bk_tool_bkfil>` 配置 OTP，详情请参考 :ref:`OTP 配置 <bk_config_otp_efuse>`。
 
 .. figure:: picture/otp_region.png
@@ -20,7 +20,7 @@ OTP 主要有 OTP，PUF，OTP2 三块区域：
 
  - PUF - 大小 64x32 Bits (2KB):
  
-   - 前 1Kbits 为 UID (Unique Identification Numbers)，当 PUF 注册之后，UID 即确定，每块板子唯五。PUF 中 UID 用作 :ref:`BK7236 唯一 ID<security_uid>`，随机密钥等。
+   - 前 1Kbits 为 UID (Unique Identification Numbers)，当 PUF 注册之后，UID 即确定，每块板子唯五。PUF 中 UID 用作 :ref:`BK7239 唯一 ID<security_uid>`，随机密钥等。
    - 后 1Kbits 为随机数的熵池，:ref:`安全引擎<security_enginee>` 使用熵池产生真随机数。
  - OTP - 大小 256x32 Bits (8KB)，其中主要存放与系统安全相关的信息。在代码中可调用 :ref:`安全引擎<security_enginee>` OTP 访问 API 间接访问，同时可通过 SPI 经由 System APB 接口进行配置。
  - OTP2 - 大小 768x32 Bits (24KB)。主用供应用程序使用。

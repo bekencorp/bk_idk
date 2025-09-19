@@ -7,7 +7,7 @@ PWM
 概述
 ======
 
-bk7236 共有两组 PWM 控制器，PWM0 与 PWM1，每个PWM控制器下有3个TIM定时器，每个定时器有2个channel。
+bk7239 共有两组 PWM 控制器，PWM0 与 PWM1，每个PWM控制器下有3个TIM定时器，每个定时器有2个channel。
 
 以 PWM0 来说，TIM 与 PWM channel 对应关系如下：
 
@@ -27,7 +27,7 @@ bk7236 共有两组 PWM 控制器，PWM0 与 PWM1，每个PWM控制器下有3个
 |            | 6              |
 +------------+----------------+
 
-因此，每个 PWM 控制器有6个 channel，bk7236共支持12个 channel，对应软件中的 ``PWM_ID_0`` 到 ``PWM_ID_11``。
+因此，每个 PWM 控制器有6个 channel，bk7239共支持12个 channel，对应软件中的 ``PWM_ID_0`` 到 ``PWM_ID_11``。
 
 工作模式
 ===========
@@ -77,7 +77,7 @@ CCR
 当计数器CNT的值跟比较寄存器CCR的值相等时，输出参考信号OCxREF的信号的极性就会改变，并且会产生CCxI中断，相应的标志位CCxIF（REG_0x8寄存器中）会置位。
 然后OCxREF再经过一系列的控制之后输出PWM信号。
 
-BK7236 每个TIM 对应3个 ``CCR`` ，即在一个周期内，信号的极性可以翻转3次，其中
+BK7239 每个TIM 对应3个 ``CCR`` ，即在一个周期内，信号的极性可以翻转3次，其中
 
  - CCR1,CCR2,CCE3(REG_0x15-REG_0x17)对应TIM1
  - CCR4,CCR5,CCE6(REG_0x18-REG_0x1a)对应TIM2

@@ -9,14 +9,14 @@ Secure boot is the security foundation of the system.
 Overview
 ----------------------
 
-BK7236 supports legacy download mode and secure boot mode. When EFUSE BIT(3) is 0, it is legacy download mode, when it is 1, it is secure boot mode.
+BK7239 supports legacy download mode and secure boot mode. When EFUSE BIT(3) is 0, it is legacy download mode, when it is 1, it is secure boot mode.
 
 .. figure:: picture/bl1_overview.svg
      :align: center
      :alt: 8
      :figclass: align-center
 
-As shown in the figure above, BK7236 secure boot is divided into two stages. After the system is powered on, BL1 solidified in the chip first verifies the signature of BL2, and jumps to BL2 after the verification is passed;
+As shown in the figure above, BK7239 secure boot is divided into two stages. After the system is powered on, BL1 solidified in the chip first verifies the signature of BL2, and jumps to BL2 after the verification is passed;
 Then BL2 performs signature verification on all other programs.
 
 BL1 Startup
@@ -29,10 +29,14 @@ BL1 Startup
 
 The figure above describes the process of BL1 verifying the signature of a single BL2 (taking Primary BL2 as an example):
 
-  - 1 - BL1 first reads the manifest from the FLASH fixed location, the manifest is placed in the manifest partition,
-    It packs all the information needed by BL1 for signature verification, including signature algorithm, image HASH algorithm, image version, public key, etc. BL1 first
-    Read out the secure boot public key, calculate the public key HASH, and compare it with the public key HASH solidified in the OTP, if they are the same, continue, otherwise,
-    Signature verification failed.
+  - 1 - BL1 first reads the **boot\_flag** information from a fixed location in FLASH,
+    
+    * If **boot\_flag** is equal to 0 or 1, it means that the subsequent process needs to read the corresponding data from the **primary\_manifest** in the main partition for verification.
+    * If **boot\_flag** is equal to 2, it means that the subsequent process needs to read the corresponding data from the **recovery\_manifest** in the recovery partition for verification.
+
+    The storage addresses of the two partitions are different, and each contains all the information required by BL1 during signature verification when packaged, including signature 
+    algorithm, image HASH algorithm, image version, public key, etc. BL1 first Read out the secure boot public key, calculate the public key HASH, and compare it with the public key 
+    HASH solidified in the OTP, if they are the same, continue, otherwise,Signature verification failed.
   - 2 - BL1 uses the legal public key verified in step 1 to verify the manifest. where the manifest signature is for the
     Signature of all information in manifest except manifest signature. If the signature verification is passed, continue; otherwise, the signature verification fails.
   - 3 - BL1 uses the HASH algorithm (SHA256) specified in manifest to calculate HASH for bl2, and then compares it with manifest
@@ -43,7 +47,7 @@ The figure above describes the process of BL1 verifying the signature of a singl
 BL2 Startup
 ----------------------
 
-BK7236 BL2 is an open source MCUBOOT 1.9.0, so the signature verification process is consistent with the official MCUBOOT. This section only configures special points for BK7236 and
+BK7239 BL2 is an open source MCUBOOT 1.9.0, so the signature verification process is consistent with the official MCUBOOT. This section only configures special points for BK7239 and
 An overview of the MCUBOOT signature verification process, if you want to know the detailed verification process of MCUBOOT, or other functions of MCUBOOT, such as upgrade, anti-backup
 Please refer to `MCUBOOT official website <https://docs.mcuboot.com>`_.
 
@@ -61,7 +65,7 @@ In the FLASH partition, the steps to sign the build system are:
 
 .. note::
 
-  The special feature of BK7236 MCUBOOT signature is that you cannot simply merge two BINs and then add the signature, you must first add padding, and then
+  The special feature of BK7239 MCUBOOT signature is that you cannot simply merge two BINs and then add the signature, you must first add padding, and then
   Merge, this is because the FLASH CRC needs to be considered, and the purpose of adding padding is to ensure that the start address of the BIN falls within the FLASH
   CRC block alignment, and BIN Vector Table 512 byte alignment.
 
@@ -137,24 +141,21 @@ To configure the signature type, configure `pubkey` and `privkey` in the `primar
 
 The public key pair generated in this step needs to be configured in the secure boot configuration table and OTP.
 
-**TODO: Describe how to integrate public key into MCUBOOT or public key HASH into OTP**.
+**Describe how to integrate public key into MCUBOOT or public key HASH into OTP**.
 
 .. _bk_security_boot_flash_key:
 
 FLASH Key
 *********************************
 
-Please use Armino beken_aes to generate FLASH AES key:
+The **FLASH AES key** is a fixed 32-byte key. It is recommended that you write the key into the `security.csv` file of this secure project. 
+Set `flash_aes_type` to `FIXED`, and in the `flash_aes_key` field, provide the 32-byte fixed key you input,for example:
 
 .. code::
 
-   ./tools/env_tools/beken_packager/beken_aes 64 -outfile key.txt
+   flash_aes_key,73c7bf397f2ad6bf4e7403a7b965dc5ce0645df039c2d69c814ffb403183fb18
 
-The FLASH AES KEY generated in this step needs to be configured in the secure boot configuration table and OTP.
-
-.. important::
-
-  The key generated by beken_aes is encrypted key, BKFIL will decrypt the encrypted key when configuring it to OTP.
+The FLASH AES KEY in this step needs to be configured in the secure boot configuration table and OTP.
 
 S2 - Configure Partition Table
 ++++++++++++++++++++++++++++++++++++++
@@ -166,14 +167,14 @@ S3 - Security Configuration
 
 Configure secure boot options in the security configuration table security.csv:
 
-  - Set ``secureboot`` to TRUE
-  - If enable FLASH AES encryption, configure ``flash_aes_en`` to TRUE,
+  - Set ``secureboot_en`` to TRUE
+  - If enable FLASH AES encryption, configure ``flash_aes_type`` to FIXED,
     and :ref:`step S1The AES KEY generated in <bk_security_boot_flash_key>` is configured to ``flash_aes_key``.
   - Configure the public/private key files generated in :ref:`step S1 <bk_security_boot_bl1_key>` to ``root_pubkey`` and ``root_privkey``.
 
 For details, please refer to :ref:`Security Configuration <bk_config_security>`.
 
-S4 - Configure OTP/EFUSE
+S4 - Configure OTP
 ++++++++++++++++++++++++++++++++++++++
 
 Based on the otp_efuse_config.json file generated when Armino was built, deploy the following keys into OTP via BKFIL:

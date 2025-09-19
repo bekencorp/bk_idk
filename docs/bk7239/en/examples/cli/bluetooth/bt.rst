@@ -1,4 +1,4 @@
-BT Cli
+BT Commands
 ===============
 
 :link_to_translation:`zh_CN:[中文]`
@@ -12,7 +12,7 @@ BT Cli
 --------------------------
 	path: ``\components\bk_bluetooth\api\bk_at_bt.c``
 
-3. Cli command introduction
+3. AT command introduction
 ---------------------------------
 The supported CMDs are as follows:
 
@@ -134,3 +134,27 @@ The supported CMDs are as follows:
         After the data of the specified length is sent, the client and server will output the CRC value calculated by sending the data and the transmission rate from the log.
      - Test Case
         AT+BTSPPTHROUGHTEST=0xfffff
+
+4. cli command introduction
+-------------------------------------
+    ble arg1 arg2
+     - Function Description
+        This command is used to perform operations related to Bluetooth.
+     - CMD Format
+        ble arg1 arg2
+     - Parameter Description
+        .. csv-table::
+            :header: "Param", "Parameter Description"
+            :widths: 10, 40
+
+            param1, "dut: Used for entering the Bluetooth DUT test mode, which can only be used in the ATE mode! (Other commands have been replaced by AT commands which not recommended for use.)"
+            param2, "Optional parameter, referring to which serial port (0/1/2) to use for communication. If it is not filled in, it defaults to using the same serial port as the log."
+     - Return Value Description
+        none
+     - Notice
+        The command takes effect under the condition that the CONFIG_BLUETOOTH macro is enabled.
+     - Test Case
+        ble dut 
+        The following log indicates successful entry into the Bluetooth DUT test mode.
+            
+            enter ble dut, log com 0, dut com 0 ,tx_pwr_idx:63

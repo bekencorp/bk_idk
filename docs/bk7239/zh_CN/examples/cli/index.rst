@@ -8,4 +8,10 @@ Cli
 
    蓝牙 <bluetooth/index>
    触摸 <touch/index>
-   saradc <saradc/saradc>
+   wifi <wifi/wifi_cli>
+   phy  <phy/phy_cli>
+   power manager <pm/pm_cli>
+   ota  <ota/ota_cli>
+   platform  <platform/plt_cli>
+   gpio  <gpio/gpio_cli>
+   sd_card  <sd_card/sd_cli>

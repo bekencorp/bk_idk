@@ -48,7 +48,7 @@ Armino 支持下述几种配置文件：
                 - Kconfig
         - middleware/
             - boards/
-                - bk7236/
+                - bk7239/
                     - csv
                         - mpc.csv
                         - ppc.csv
@@ -59,14 +59,14 @@ Armino 支持下述几种配置文件：
                         - root_ec256_pubkey.pem
                         - root_ec256_privkey.pem
             - soc/
-                - bk7236/
-                    - bk7236.defconfig
+                - bk7239/
+                    - bk7239.defconfig
         - projects/
             - my_project/
                 - config/
                     - common
                         - config
-                    - bk7236
+                    - bk7239
                         - config
                         - mpc.csv
                         - ppc.csv

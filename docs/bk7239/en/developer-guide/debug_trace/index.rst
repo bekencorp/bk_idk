@@ -4,11 +4,11 @@ system debugging
 
 :link_to_translation:`zh_CN:[中文]`
 
-Armino platform BK7236 system debugging commands
+Armino platform BK7239 system debugging commands
 --------------------------------------------------
 
 
-  - The log of BK7236 CPU0 is output through the serial port DL_UART0 (default baud rate is 115200)
+  - The log of BK7239 CPU0 is output through the serial port DL_UART0 (default baud rate is 115200)
 
   - Due to memory buffer limitations, the number of bytes of each log data must be less than 128 bytes. Logs exceeding this size will be discarded by the shell module and a message !!some LOGs discarded!! will be output. If there are too many logs and there is no time to output them, causing log accumulation and the buffer is used up, this prompt string will also be output.
   - Enter the log command through the serial port to view the current log configuration
@@ -203,7 +203,7 @@ Armino platform BK7236 system debugging commands
     rfcali_cfg_rate_dist: b g n40 ble (0-31)
     rfcali_cfg_tssi_b: 0-255
     rfcali_cfg_tssi_g: 0-255
-    rfcali_show_data:
+    rfcali_show_data: 
     rfconfig: rfconfig bt_polar|bt_btpll|bt_wifipll|wifi_btpll|wifi_wifipll
     rxsens: rxsens [-m] [-d] [-c] [-l]
     scan: scan [ssid]
@@ -254,7 +254,7 @@ Armino platform BK7236 system debugging commands
 
 
 
-Armino platform BK7236 system jtag debugging
+Armino platform BK7239 system jtag debugging
 -----------------------------------------------
 
   - JLink environment integrates JLink gdb server + gdb tool through Eclipse
@@ -277,38 +277,38 @@ Armino platform BK7236 system jtag debugging
 
   - Eclipse project configuration
 
-   .. figure:: ../../../../common/_static/bk7236_jlink_config.png
+   .. figure:: ../../../../common/_static/bk7239_jlink_config.png
        :align: center
-       :alt: BK7236 JLink configuration
+       :alt: BK7239 JLink configuration
        :figclass: align-center
 
-   .. figure:: ../../../../common/_static/bk7236_jlink_config2.png
+   .. figure:: ../../../../common/_static/bk7239_jlink_config2.png
        :align: center
-       :alt: BK7236 JLink configuration
+       :alt: BK7239 JLink configuration
        :figclass: align-center
-
-   .. figure:: ../../../../common/_static/bk7236_jlink_config3.png
+  
+   .. figure:: ../../../../common/_static/bk7239_jlink_config3.png
      :align: center
-     :alt: BK7236 JLink configuration
+     :alt: BK7239 JLink configuration
      :figclass: align-center
 
 
-  - The default jtag is connected to cpu0, and BK7236 has two Jtag ports (grou1/group2)
+  - The default jtag is connected to cpu0, and BK7239 has two Jtag ports (grou1/group2)
   - You can set jtag connection cpu0 through the setjtagmode cpu0 group1 command
   - You can set jtag to connect cpu1 through setjtagmode cpu1 group1
   - You can view the current jtag status through the jtagmode command
 
 
-Armino platform BK7236/BK7258 abnormal dump one-click recovery on-site tool
+Armino platform BK7239/BK7258 abnormal dump one-click recovery on-site tool
 --------------------------------------------------------------------------------
 
   - Please refer to the usage documentation in the publishing tool:
     https://dl.bekencorp.com/tools/Debug_tool/BK7258-debug.zip
 
-  - BK7236/BK7258 dump tool FAQ:
+  - BK7239/BK7258 dump tool FAQ:
 
     + The dump function of Release version is turned off by default and can be turned on through CONFIG_DUMP_ENABLE configuration
-    + The principle of the Dump tool to restore the scene is that the script analyzes the log, parses out the contents of regs, itcm, dtcm, and sram, and then restores these contents to the qemu virtual machine through gdb
+    + The principle of the Dump tool to restore the scene is that the script analyzes the log, parses out the contents of regs, itcm, dtcm, and sram, and then restores these contents to the cm33 qemu virtual machine through gdb
     + Log file suffix supports txt, log, DAT
     + Log file encoding currently only supports utf-8, other encoding formats can be manually converted to utf-8 encoding format through notepad++
     + If there are multiple Logs in the tool directory, or there are multiple Dumps in the Log, the tool will analyze the last Dump. You need to ensure that there is only one Log in the tool directory, and there is only one dump in the Log.
@@ -317,7 +317,7 @@ Armino platform BK7236/BK7258 abnormal dump one-click recovery on-site tool
     + Dump will dump all the current CPU registers, itcm, dtcm, and 640k sram.
     + If you encounter two CPUs dumping at the same time during the Dump process, you need to split the Log into two dump files, and use the elf of cpu0 and cpu1 to restore the scene.
     + Each CPU needs the registers of the current CPU, itcm, dtcm, sram plus elf to restore the scene
-
+   
         Register format::
 
          CPU0 Current regs:

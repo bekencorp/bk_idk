@@ -32,5 +32,5 @@
 -------------------------------------------------------------
 
 在编译目录下相应工程目录里面中compile_commands.json文件，其中包含所有源文件的编译命令，可以查看每个源文件编译工具链和编译参数。
-如bk7236的app工程，在build/app/bk7236/compile_commands.json中可以查看相应的编译命令。
+如bk7239的app工程，在build/app/bk7239/compile_commands.json中可以查看相应的编译命令。
 

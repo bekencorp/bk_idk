@@ -1,4 +1,4 @@
-BLE Cli
+BLE Commands
 ================
 
 :link_to_translation:`en:[English]`
@@ -13,7 +13,7 @@ BLE Cli
 --------------------------
 	路径: ``\components\bk_bluetooth\api\bk_at_ble.c``
 
-3、cli命令简介
+3、AT命令简介
 --------------------------
 支持的命令如下:
 
@@ -33,10 +33,8 @@ BLE Cli
 		|           |  Range: 0x000020 to 0xFFFFFF(Time = N * 0.625 ms)                      |
 		+-----------+------------------------------------------------------------------------+
 		|param4     | Own_Address_Type                                                       |
-		|           |  | 0x00 : Public Device Address                                        |
-		|           |  | 0x01 : Random Device Address                                        |
-		|           |  | 0x02 : Resolvable Private Address,if no IRK use the public address  |
-		|           |  | 0x03 : Resolvable Private Address,if no IRK use the random address  |
+		|           |  | 0x00/0x01 : Public Device Address                                   |
+		|           |  | 0x02/0x03 : Random Device Address                                   |
 		+-----------+------------------------------------------------------------------------+
 		|param5     | adv_type                                                               |
 		|           |  | 0x00 : Legacy advertising                                           |
@@ -169,10 +167,8 @@ BLE Cli
 
 		+-----------+------------------------------------------------------------------------+
 		|param1     | Own_Address_Type                                                       |
-		|           |  | 0x00 : Public Device Address                                        |
-		|           |  | 0x01 : Random Device Address                                        |
-		|           |  | 0x02 : Resolvable Private Address,if no IRK use the public address  |
-		|           |  | 0x03 : Resolvable Private Address,if no IRK use the random address  |
+		|           |  | 0x00/0x01 : Public Device Address                                   |
+		|           |  | 0x02/0x03 : Random Device Address                                   |
 		+-----------+------------------------------------------------------------------------+
 		|param2     | Scanning_PHYs                                                          |
 		|           |  | 0x01 : Scan advertisements on the LE 1M PHY                         |
@@ -227,14 +223,14 @@ BLE Cli
 		|           |  | 2 : Scan connectable advertisements on the LE Coded PHY             |
 		+-----------+------------------------------------------------------------------------+
 		|param5     | Peer_Address_Type                                                      |
-		|           |  | 0x00 : Public Device Address or Public Identity Address             |
-		|           |  | 0x01 : Random Device Address or Random (static) Identity Address    |
+		|           |  | 0x00 : Public Device Address                                        |
+		|           |  | 0x04 : Random Device Address                                        |
 		+-----------+------------------------------------------------------------------------+
 		|param6     | Peer_Address                                                           |
 		+-----------+------------------------------------------------------------------------+
 
 	 - 测试用例
-		``AT+BLECREATECONNECT=17,0,1f4,1,1,db:b4:6f:66:8a:db``
+		``AT+BLECREATECONNECT=17,0,1f4,1,4,db:b4:6f:66:8a:db``
 
 	9.AT+BLECANCELCONNECT
 	 - 功能说明
@@ -307,7 +303,7 @@ BLE Cli
 	 - 功能说明
 		这条AT命令用来进行注销指定的服务
 	 - 命令格式
-		AT+BLEUNREGISTERSERVICE,param1
+		AT+BLEUNREGISTERSERVICE=param1
 
 		+-----------+------------------------------------------------------------------------+
 		|param1     | Service UUID                                                           |

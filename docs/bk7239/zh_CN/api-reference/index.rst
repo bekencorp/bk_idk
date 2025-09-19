@@ -6,7 +6,6 @@ API 参考
 .. toctree::
    :maxdepth: 1
 
-   概述 <api_overview>
    蓝牙 <bluetooth/index>
    Wi-Fi <wifi/index>
    网络 <tcpip/index>

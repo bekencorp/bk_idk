@@ -8,9 +8,9 @@ EFUSE
 Overview
 ------------------------
 
-EFUSE (Electrically Programming Efuse) is used to configure safety-related features in BK7236. It can only be configured from 0 to 1, and cannot be configured from 1 to 0.
+EFUSE (Electrically Programming Efuse) is used to configure safety-related features in BK7239. It can only be configured from 0 to 1, and cannot be configured from 1 to 0.
 
-BK7236 EFUSE has a total of 4x8 and a total of 32 Bits. Before secure boot is enabled, it can be configured through :ref:`BKFIL<bk_tool_bkfil>`. For details, please refer to :ref:`EFUSE configuration <bk_config_otp_efuse>`.
+BK7239 EFUSE has a total of 4x8 and a total of 32 Bits. Before secure boot is enabled, it can be configured through :ref:`BKFIL<bk_tool_bkfil>`. For details, please refer to :ref:`EFUSE configuration <bk_config_otp_efuse>`.
 
 +-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
 | Bit   | Name                         | description                                                                                                           |
@@ -219,8 +219,8 @@ BIT(21) - spi to ahb disable
 
 BIT(21) is used to disable SPI to AHB channel:
 
-  - 0 - SPI to AHB channel enable. At this time, the BK7236 registers can be directly operated through the SPI interface.
-  - 1 - SPI to AHB channel off. At this time, the BK7236 registers cannot be operated through the SPI interface.
+  - 0 - SPI to AHB channel enable. At this time, the BK7239 registers can be directly operated through the SPI interface.
+  - 1 - SPI to AHB channel off. At this time, the BK7239 registers cannot be operated through the SPI interface.
 
 It should be noted that BIT(21) and :ref:`BIT(30) spi flash download disable<efuse_bit30>` are independent of each other and need to be configured separately.
 
@@ -263,7 +263,7 @@ BIT(31) - SWD debug
 
 BIT(31) is used to control the switch of CPU debug port:
 
-  - 0 - CPU debugging is enabled, BK7236 supports SWD debugging.
+  - 0 - CPU debugging is enabled, BK7239 supports SWD debugging.
   - 1 - CPU debugging off. At this time, the CPU debugging function must be enabled through :ref:`secure debugging <security_secure_debug>`.
 
 .. important::

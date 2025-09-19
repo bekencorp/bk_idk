@@ -73,7 +73,7 @@ Generate component list
     If it is necessary to add component dependencies to the CPU during the generation of the component list stage, the following method can be referred to::
         
         armino_build_get_property(target ARMINO_SOC)
-        if ("${target}" STREQUAL "bk7236")
+        if ("${target}" STREQUAL "bk7239")
             list(APPEND depenency_component)
         endif()
 

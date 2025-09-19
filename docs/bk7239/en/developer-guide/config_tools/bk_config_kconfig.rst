@@ -7,6 +7,8 @@ Kconfig Configuration
 
 This section introduces frequency ask questions of Armino Kconfig.
 
+For Kconfig configuration example, please refer to :ref:`Kconfig configuration example <project_minimum_kconfig>`.
+
 Kconfig Files
 ----------------------------------------------------------
 
@@ -20,8 +22,8 @@ The Armino Kconfig organization is shown in the following diagram:
                  -Kconfig
          - middleware/
              - soc/
-                 - bk7236/
-                     -bk7236.defconfig
+                 - bk7239/
+                     -bk7239.defconfig
                  - bk7258/
                      -bk7258.defconfig
          - projects/
@@ -29,7 +31,7 @@ The Armino Kconfig organization is shown in the following diagram:
                 - config/
                     - common/
                         - config
-                    - bk7236/
+                    - bk7239/
                         - config
                     - bk7258/
                         - config
@@ -48,9 +50,9 @@ These files can be grouped into two categories:
     - Kconfig.projbuild - defined in the component or project directory.
   - Configuration modification file:
 
-    - middleware/soc/bk7236.defconfig - Default configuration of BK7236.
+    - middleware/soc/bk7239.defconfig - Default configuration of BK7239.
     - my_projects/config/common/config - configuration shared by different BK72xx in the project.
-    - my_projects/config/bk7236/config - BK7236 project configuration.
+    - my_projects/config/bk7239/config - BK7239 project configuration.
 
 .. important::
 
@@ -59,7 +61,7 @@ These files can be grouped into two categories:
 
 .. note::
 
-   All the items defined in Kconfig.projbuild will be show in the top menu of menuconfig. BK7236 does not support menuconfig, so Kconfig.projbuild
+   All the items defined in Kconfig.projbuild will be show in the top menu of menuconfig. BK7239 does not support menuconfig, so Kconfig.projbuild
    works same as Kconfig.
 
 .. note::
@@ -68,7 +70,7 @@ These files can be grouped into two categories:
 
 In the Armino project, the priority of Kconfig configuration is::
 
- my_projects/config/bk7236/config > my_projects/config/common/config > bk7236.defconfig > configuration definition files
+ my_projects/config/bk7239/config > my_projects/config/common/config > bk7239.defconfig > configuration definition files
 
 Menuconfig Supporting
 ----------------------------------------------------------
@@ -90,7 +92,7 @@ Using Kconfig in CMakeLists.txt
 ----------------------------------------------------------
 
 The configuration items defined in Kconfig can be directly used in CMakeLists.txt, but you should NOT put
-armino_component_register() in any configuration condition.
+armino_component_register() in any configuration condition, refer to :ref:`Disabling components via Kconfig <project_disable_component>`.
 
 
 

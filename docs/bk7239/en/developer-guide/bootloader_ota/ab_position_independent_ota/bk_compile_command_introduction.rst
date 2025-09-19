@@ -6,6 +6,6 @@ AB partition location independent compilation commands
  Instead of using the project undef bk_idk,use the following compilation command directly in the avdk directory.
 
 .. important::
-  - Compile command: make bk7236 PROJECT=customization/config_ab
+  - Compile command: make bk7239 PROJECT=customization/config_ab
 
 

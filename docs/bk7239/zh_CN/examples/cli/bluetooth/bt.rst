@@ -1,4 +1,4 @@
-BT Cli
+BT Commands
 ===============
 
 :link_to_translation:`en:[English]`
@@ -14,7 +14,7 @@ BT Cli
 	路径: ``\components\bk_bluetooth\api\bk_at_bt.c``
 
 
-3. cli命令简介
+3. AT命令简介
 --------------------------
 支持的命令如下:
 
@@ -136,3 +136,27 @@ BT Cli
         指定长度的数据发送完成后，client和server会从log中输出以发送数据计算的CRC值以及传输速率。
      - 测试用例
         AT+BTSPPTHROUGHTEST=0xfffff
+      
+4. cli命令简介
+--------------------------
+    ble arg1 arg2
+     - 功能说明
+        这条命令用来执行蓝牙相关的操作
+     - 命令格式
+        ble arg1 arg2
+     - 参数说明
+        .. csv-table::
+            :header: "Param", "Parameter Description"
+            :widths: 10, 40
+
+            param1, "dut：用于进入蓝牙dut测试模式，只能在ATE模式下使用!(其他命令已用AT命令替代，不建议使用)"
+            param2, "可选参数，指代使用哪个串口（0/1/2）进行通信。没有填的话默认是跟log用同一个串口。"
+     - 返回值说明
+        无
+     - 注意事项
+        该命令在CONFIG_BLUETOOTH宏开启下生效
+     - 测试用例
+        ble dut 
+        出现以下log说明成功进入蓝牙dut测试模式
+            
+            enter ble dut, log com 0, dut com 0 ,tx_pwr_idx:63

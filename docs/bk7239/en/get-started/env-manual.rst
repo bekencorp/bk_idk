@@ -38,10 +38,10 @@ you can follow the manual installation method.
 Build The Project
 ------------------------------------
 
-Run following commands to build BK7236 app project::
+Run following commands to build BK7239 app project::
 
     cd ~/armino/bk_idk
-    make bk7236
+    make bk7239
 
 The app project startup:
 
@@ -49,7 +49,7 @@ The app project startup:
  - Common pheripheral drivers
  - Armino default Cli
 
-You can build other projects with PROJECT parameter, e.g. run "make bk7236 PROJECT=security/secureboot" 
+You can build other projects with PROJECT parameter, e.g. run "make bk7239 PROJECT=security/secureboot" 
 can build projects/security/secureboot etc.
 
 For more compilation related commands, please refer to :ref:`link <bk_build_overview>`

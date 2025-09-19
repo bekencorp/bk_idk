@@ -52,7 +52,7 @@ After completing the Docker installation, please start Docker to proceed with th
 Docker Image Acquisition
 ------------------------
 
-- Pull the image from Docker Hub. You can visit the `IDK Image Repository <https://hub.docker.com/repository/docker/bekencorp/armino-idk/tags>`_  to view and pull the latest tag::
+- Pull the image from Docker Hub. You can visit the `IDK Image Repository <https://hub.docker.com/r/bekencorp/armino-idk>`_  to view and pull the latest tag::
 
     docker pull bekencorp/armino-idk:[tag]
 
@@ -69,12 +69,12 @@ Enter the SDK root directory and execute the following command to compile:
 
 macOS、Linux::
        
-    ./dbuild.sh make bk7236
-  
+    ./dbuild.sh make bk7239 PROJECT=app
+
 
 Windows::
 
-    ./dbuild.ps1 make bk7236
+    ./dbuild.ps1 make bk7239 PROJECT=app
 
 
 .. note::

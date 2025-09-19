@@ -128,7 +128,7 @@ User Guide
 
 	ble_adv_param_t adv_param;
 
-	adv_param.own_addr_type = 0;//BLE_STATIC_ADDR
+	adv_param.own_addr_type = OWN_ADDR_TYPE_PUBLIC_ADDR;
 	adv_param.adv_type = 0; //ADV_IND
 	adv_param.chnl_map = 7;
 	adv_param.adv_prop = 3;
@@ -164,7 +164,7 @@ User Guide
 
 	ble_scan_param_t scan_param;
 
-	scan_param.own_addr_type = 0;//BLE_STATIC_ADDR
+	scan_param.own_addr_type = OWN_ADDR_TYPE_PUBLIC_ADDR;
 	scan_param.scan_phy = 5;
 	scan_param.scan_intv = 0x64; //interval
 	scan_param.scan_wd = 0x1e; //windows
@@ -190,7 +190,7 @@ User Guide
 	con_idx = bk_ble_get_idle_conn_idx_handle();
 	bk_ble_create_init(con_idx, &conn_param, ble_at_cmd);
 	//wait for ble_at_cmd_cb
-	bk_ble_init_set_connect_dev_addr(con_idx, bt_mac, 1);
+	bk_ble_init_set_connect_dev_addr(con_idx, bt_mac, OWN_ADDR_TYPE_RANDOM_ADDR);
 	bk_ble_init_start_conn(con_idx, ble_at_cmd)
 
 

@@ -31,7 +31,7 @@ In the source files under the main directory of the project, if a function or ma
 -------------------------------------------------------------
 
 In the corresponding project directory under the compilation directory, there is the compile_commands.json file, which contains the compilation commands for all source files. You can view the compilation toolchain and parameters for each source file.
-For the app project of bk7236, the corresponding compilation commands can be viewed in build/app/bk7236/compile_commands.json.
+For the app project of bk7239, the corresponding compilation commands can be viewed in build/app/bk7239/compile_commands.json.
 
 
 

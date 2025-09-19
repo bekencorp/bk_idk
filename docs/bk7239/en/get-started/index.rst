@@ -13,7 +13,7 @@ This article demonstrates:
 Introduction
 --------------------------------------------------------
 
-BK7236 is a SoC that integrates the following features:
+BK7239 is a SoC that integrates the following features:
 
  - Wi-Fi 6 (2.4 GHz Band)
  - Bluetooth Low Energy 5.4
@@ -21,12 +21,12 @@ BK7236 is a SoC that integrates the following features:
  - Multiple peripherals
  - Built-in TrustEngine security hardware
 
-Powered by 22nm technology, BK7236 provides a robust, highly integrated platform, which helps
+Powered by 22nm technology, BK7239 provides a robust, highly integrated platform, which helps
 meet the continuous demands for efficient power usage, compact design, security, high performance,
 reliability and high security.
 
 Beken provides basic hardware and software resources to help application developers realize
-their ideas using BK7236 series hardware. The software development framework Armino is
+their ideas using BK7239 series hardware. The software development framework Armino is
 intended for development of Internet-of-Things (IoT) applications with Wi-Fi, Bluetooth, power
 management, security and other system features.
 
@@ -35,7 +35,7 @@ Preparation
 
 Hardware：
 
- - BK7236 Demo board( :ref:`Introduction to Development Board <bk7236>` )
+ - BK7239 Demo board
  - Serial port burning tool
  - PC
 
@@ -57,9 +57,9 @@ We also can download Armino from github::
 	git clone https://github.com/bekencorp/bk_idk.git
 
 
-Then switch to the stable branch Tag node, such as v2.0.2.1::
+Then switch to the stable branch Tag node, such as v2.0.1.32::
 
-    git checkout -B your_branch_name v2.0.2.1
+    git checkout -B your_branch_name v2.0.1.32
 
 .. warning::
 
@@ -83,7 +83,7 @@ Then switch to the stable branch Tag node, such as v2.0.2.1::
 
 .. note::
 
-    The code on GitHub lags behind that on GitLab. GitLab is only open to corporate users. Please contact the corresponding person to apply. 
+    The GitHub code is relatively lagging behind the GitLab code. If you want to obtain the latest SDK code, please download it from GitLab. Please contact the your BK7239 project owner to get relevant accounts.
 
 
 Environment Deployment and Compilation
@@ -107,11 +107,11 @@ Configuration project
 We can also use the project configuration file for differentiated configuration::
 
     Project Profile Override Chip Profile Override Default Configuration
-    Example： bk7236/config >> bk7236.defconfig >> KConfig
+    Example： bk7239/config >> bk7239.defconfig >> KConfig
     + Example of project configuration file：
-        projects/app/config/bk7236/config
+        projects/app/config/bk7239/config
     + Sample chip configuration file：
-        middleware/soc/bk7236/bk7236.defconfig
+        middleware/soc/bk7239/bk7239.defconfig
     + Sample KConfig configuration file：
         middleware/arch/cm33/Kconfig
         components/bk_cli/Kconfig
@@ -128,7 +128,7 @@ Burn Code
 ------------------------------------
 
 On the Windows platform, Armino currently supports UART burning.
-After the app project is compiled, generate all-app.bin in the build/app/bk7236 directory and burn it using this bin file. When burning the security project for the first time, it is necessary to first burn bootloader.bin, and then burn all-app.bin.
+After the app project is compiled, generate all-app.bin in the build/app/bk7239 directory and burn it using this bin file. When burning the security project for the first time, it is necessary to first burn bootloader.bin, and then burn all-app.bin.
 
 
 
@@ -155,7 +155,7 @@ Download burning tools (BKFILL.exe)：
 
 The snapshot of BKFILL.exe downloading.
 
-.. figure:: ../../../common/_static/download_uart_bk7236_en.png
+.. figure:: ../../../common/_static/download_uart_bk7239_en.png
     :align: center
     :alt: BKFIL GUI
     :figclass: align-center
@@ -171,4 +171,4 @@ Click :ref:`BKFIL <bk_tool_bkfil>` to learn more about BKFIL.
 Serial port Log and Command Line
 ------------------------------------
 
-Currently the BK7236 use the DL_UART0 as the Log output and Cli input; You can get the supported command list through the help command.
+Currently the BK7239 use the DL_UART0 as the Log output and Cli input; You can get the supported command list through the help command.

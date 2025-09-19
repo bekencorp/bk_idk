@@ -22,5 +22,6 @@ Documentation
 
 * HTML version of the `Armino Programming Guide`_ uses the Sphinx theme `sphinx_rtd_theme`_, which is Copyright (c) 2013-2020 Dave Snider, Read the Docs, Inc. It's licensed under MIT license.
 
+
 .. _sphinx_rtd_theme: https://github.com/readthedocs/sphinx_rtd_theme
 .. _Armino Programming Guide: ../index.html

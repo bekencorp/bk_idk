@@ -50,7 +50,7 @@ Docker安装完成以后，请启动Docker以进行后续操作。
 Docker镜像获取
 ------------------------
 
-- 通过Docker Hub拉取镜像, 您可以访问  `IDK镜像仓库 <https://hub.docker.com/repository/docker/bekencorp/armino-idk/tags>`_  查看并拉取最新的tag::
+- 通过Docker Hub拉取镜像, 您可以访问  `IDK镜像仓库 <https://hub.docker.com/r/bekencorp/armino-idk>`_  查看并拉取最新的tag::
 
     docker pull bekencorp/armino-idk:[tag]
 
@@ -67,12 +67,12 @@ Docker镜像获取
 
   macOS、Linux::
        
-      ./dbuild.sh make bk7236
+      ./dbuild.sh make bk7239 PROJECT=app
   
 
   Windows::
 
-      ./dbuild.ps1 make bk7236
+      ./dbuild.ps1 make bk7239 PROJECT=app
 
 
 .. note::

@@ -3,24 +3,26 @@
 
 :link_to_translation:`en:[English]`
 
-本文档主要介绍Armino平台BK7236的log机制
+本文档主要介绍Armino平台BK7239的log机制
 
- - BK7236 的log通过串口DL_UART0输出(默认波特率为115200)
+ - BK7239 的log通过串口DL_UART0输出(默认波特率为115200)
  - Armino平台默认采用异步Log输出机制，缓存缓存分为静态缓存和动态缓存，输出Log时优先使用静态缓存，当静态缓存不足时，使用动态缓存。
  - 当静态缓存和动态缓存均耗尽时，采用阻塞机制，若处于不可阻塞状态下，缓存耗尽时，将使Log直接输出至串口，此时Log带有前缀"INSRT:"，此Log会插入在其他Log中间，并影响此Log输出时序。
  - 通过串口输入log命令查看当前log配置
- - log 1 3 0 命令第一个参数为echo开关 (0/1)，第二个参数为log级别(0~6)，第三个参数为同步开关(0异步,1同步)
+ - 默认Log的编译等级和默认输出等级设置为INFO，可以通过 ``CONFIG_LOG_LEVEL`` 来设置Log编译等级和默认输出等级。
+ - Log等级映射关系为NONE(0),ERROR(1)，WARN(2)，INFO(3)，DEBUG(4)，VERBOSE(5)。
+ - 可通过cli命令来配置log输出，如 ``log 1 3 0`` 命令第一个参数为echo开关 (0/1)，第二个参数为log级别(0~5)，第三个参数为同步开关(0异步,1同步)
  - 关闭 ``CONFIG_SHELL_ASYNCLOG`` 宏和使用log cli命令均可切换至同步log，同步log不使用缓存机制，直接将log内容输出到串口，因此可能造成中断或临界区执行时间过长，影响实时调度，因此强烈不建议切换至同步log
 
-BK7236 log机制
+多核log机制(当前BK7239是单核系统)
 ------------------------------------
 
 .. figure:: ../../../../common/_static/log_system.png
     :align: center
-    :alt: log机制
+    :alt: 多核log机制
     :figclass: align-center
 
-    log机制
+    多核log机制
 
 
 API说明
