@@ -67,11 +67,26 @@ static uint32_t trng_get_random_number(void)
 	return number;
 }
 
+#if (CONFIG_TRNG_PM_CB_SUPPORT)
+static int trng_pm_exit_cb(uint64_t sleep_time, void *args)
+{
+	trng_hal_init(&s_trng.hal);
+	return BK_OK;
+}
+#endif
+
 bk_err_t bk_trng_driver_init(void)
 {
 	if (s_trng_driver_is_init) {
 		return BK_OK;
 	}
+
+#if (CONFIG_TRNG_PM_CB_SUPPORT)
+	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_BAKP_TRNG, PM_POWER_MODULE_STATE_ON);
+	pm_cb_conf_t exit_config = {trng_pm_exit_cb, NULL};
+	bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, PM_DEV_ID_TRNG, NULL, &exit_config);
+	bk_pm_module_lv_sleep_state_clear(PM_DEV_ID_TRNG);
+#endif
 
 	os_memset(&s_trng, 0, sizeof(s_trng));
 	trng_hal_init(&s_trng.hal);
