@@ -38,7 +38,6 @@ bk_err_t bk_int_isr_register(icu_int_src_t src, int_group_isr_t isr_callback, vo
 {
 	ICU_RETURN_ON_INVALID_DEVS(src);
 
-	// icu_int_map_t icu_int_map_table[] = ICU_DEV_MAP;
 	const icu_int_map_t *icu_int_map = &icu_int_map_table[src];
 
 	uint8_t int_num = icu_int_map->int_bit;
@@ -282,7 +281,6 @@ bk_err_t bk_int_set_priority(icu_int_src_t int_src, uint32_t int_priority)
 		return BK_ERR_INT_NOT_EXIST;
 	}
 
-	// icu_int_map_t icu_int_map_table[] = ICU_DEV_MAP;
 	const icu_int_map_t *icu_int_map = &icu_int_map_table[int_src];
 	uint8_t group_id = icu_int_map->group;
 
@@ -300,7 +298,6 @@ bk_err_t bk_int_set_group(void)
 
 void interrupt_spurious(void)
 {
-	//BK_ASSERT(0);
 }
 
 void rf_ps_wakeup_isr_idle_int_cb(void)

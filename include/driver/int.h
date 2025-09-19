@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Beken
+// Copyright 2020-2025 Beken
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ extern "C" {
  * @brief     Init the ICU driver
  *
  * This API init the icu modules  :
- *   - Init ICU driver control memory, enable fiq and irq
+ *   - Init ICU driver control memory, enable fiq and irq of system platform
  *
  * This API should be called before any other ICU APIs.
  *
@@ -75,8 +75,6 @@ bk_err_t bk_icu_driver_deinit(void);
  *
  * @return
  *    - BK_OK: succeed
- *    - BK_ERR_NO_MEM: no memoery
- *    - BK_ERR_INT_DEVICE_NONE: no int device
  *    - others: other errors.
  */
 bk_err_t bk_int_isr_register(icu_int_src_t dev, int_group_isr_t isr, void*arg);
@@ -88,7 +86,6 @@ bk_err_t bk_int_isr_register(icu_int_src_t dev, int_group_isr_t isr, void*arg);
  *
  * @return
  *    - BK_OK: succeed
- *    - BK_ERR_INT_DEVICE_NONE:no int device
  *    - others: other errors.
  */
 bk_err_t bk_int_isr_unregister(icu_int_src_t src);
@@ -113,29 +110,6 @@ bk_err_t bk_int_isr_unregister(icu_int_src_t src);
  *    - others: other errors.
  */
 bk_err_t bk_int_set_priority(icu_int_src_t src, uint32_t int_priority);
-
-
-/**
- * @brief     set the interrupt group priority
- *
- * Every interrupt source has a two-level priority, the group priority and the
- * priority. The interrupt source has higher group priority will be schedule
- * first. The interrupt sources has higher priority will be schedule first if
- * they has the same group priority.
- *
- * This API is used to configure the group priority of the interrupt source.
- *
- * @attention 1. For ARM9, it has two group priorities which are mapped to
- *               ARM9 FIQ and IRQ. Currently all interrupt source are statically
- *               mapped to the group priority and can't change by this API.
- *               We may support it in future.
- *
- * @return
- *    - BK_OK: succeed
- *    - BK_ERR_NOT_SUPPORT :not support
- *    - others: other errors.
- */
-bk_err_t bk_int_set_group(void);
 
 /**
  * @brief     Register callback for mac ps
