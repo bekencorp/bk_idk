@@ -680,6 +680,12 @@ bk_err_t bk_rlk_register_sync_cb(bk_rlk_sync_cb_t cb);
 
 bk_err_t bk_rlk_sync(uint16_t interval, const void *data, size_t len, uint8_t mac_type, uint8_t *oui);
 
+typedef void (*non_standard_slave_cb)(bool sosp);
+bk_err_t bk_non_standard_master_init(uint8_t max_tx_num, uint8_t max_rx_num);
+bk_err_t bk_non_standard_slave_init(uint8_t slave_mode, non_standard_slave_cb cb);
+bk_err_t bk_non_standard_slave_connect();
+bk_err_t bk_non_standard_slave_send(uint8_t *data, uint16_t len);
+
 #ifdef __cplusplus
 }
 #endif

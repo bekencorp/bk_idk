@@ -40,7 +40,7 @@ static bool throughput_test_started = false;
 
 static bk_err_t bk_non_standard_demo_send_cb(const uint8_t *peer_mac_addr, bk_rlk_send_status_t status) {
 	if (!throughput_test_started) {
-		BK_LOGI(NON_STANDARD_TAG, "send to "MACSTR", status:%d\r\n", MAC2STR(peer_mac_addr), status);
+		//BK_LOGI(NON_STANDARD_TAG, "send to "MACSTR", status:%d\r\n", MAC2STR(peer_mac_addr), status);
 	}
 	return BK_OK;
 }
@@ -49,12 +49,23 @@ static bk_err_t bk_non_standard_demo_recv_cb(bk_rlk_recv_info_t *rx_info) {
 	GPIO_DOWN(6);
 	GPIO_DOWN(7);
 	if (!td_timer_started) {
-		BK_LOGI(NON_STANDARD_TAG, "recv from "MACSTR", rssi:%d, len:%u\r\n", MAC2STR(rx_info->src_addr), rx_info->rssi, rx_info->len);
+		//BK_LOGI(NON_STANDARD_TAG, "recv from "MACSTR", rssi:%d, len:%u\r\n", MAC2STR(rx_info->src_addr), rx_info->rssi, rx_info->len);
 	} else {
 		total_recv_cnt += (BK_NON_STANDARD_HEADER_LEN + rx_info->len);
 	}
 
 	return BK_OK;
+}
+
+static void bk_non_standard_demo_slave_cb(bool sosp) {
+	if (sosp)  {
+		BK_LOGI(NON_STANDARD_TAG, "slave cb, recv SOSP\r\n");
+		//start stransmit
+		bk_non_standard_slave_send(g_unicast_buffer, 6);
+	} else {
+		BK_LOGI(NON_STANDARD_TAG, "slave cb, recv EOSP\r\n");
+		//stop stransmit
+	}
 }
 
 static void bk_non_standard_demo_period_broadcast(uint8_t interval, uint16_t count) {
@@ -180,6 +191,9 @@ static void cli_non_standard_cmd(char *pcWriteBuffer, int xWriteBufferLen, int a
 	uint16_t count;
 	uint8_t mac_addr[6] = {0};
 	uint8_t start = 0;
+	uint8_t max_tx_num = 0;
+	uint8_t max_rx_num = 0;
+	uint8_t slave_mode = 0;
 	char *msg = NULL;
 	if (argc <= 1)
 		goto error;
@@ -208,6 +222,21 @@ static void cli_non_standard_cmd(char *pcWriteBuffer, int xWriteBufferLen, int a
 	else if(strcmp(argv[1], "td") == 0) {
 		start = strtoul(argv[2], NULL, 10) & 0xFFFF;
 		bk_non_standard_demo_traffic_detection(start);
+	}
+	else if(strcmp(argv[1], "master") == 0) {
+		if (strcmp(argv[2], "init") == 0) {
+			max_tx_num = strtoul(argv[3], NULL, 10) & 0xFF;
+			max_rx_num = strtoul(argv[4], NULL, 10) & 0xFF;
+			bk_non_standard_master_init(max_tx_num, max_rx_num);
+		}
+	}
+	else if(strcmp(argv[1], "slave") == 0) {
+		if (strcmp(argv[2], "init") == 0) {
+			slave_mode = strtoul(argv[3], NULL, 10) & 0xFF;
+			bk_non_standard_slave_init(slave_mode, bk_non_standard_demo_slave_cb);
+		} else if (strcmp(argv[2], "connect") == 0) {
+			bk_non_standard_slave_connect();
+		}
 	}
 	else {
 		BK_LOGI(NON_STANDARD_TAG, "invalid paramter\r\n");
