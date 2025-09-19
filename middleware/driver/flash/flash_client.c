@@ -621,3 +621,38 @@ erase_fast_exit:
 
 	return ret_val;
 }
+
+uint32_t bk_flash_get_current_total_size(void)
+{
+	return BK_OK;
+}
+
+bk_err_t bk_flash_read_word(uint32_t address, uint32_t *user_buf, uint32_t size)
+{
+	return BK_OK;
+}
+
+bk_err_t bk_flash_write_enable(void)
+{
+	return BK_OK;
+}
+
+bk_err_t bk_flash_write_disable(void)
+{
+	return BK_OK;
+}
+
+static void flash_read_word_common(uint32_t *buffer, uint32_t address, uint32_t len)
+{
+
+}
+
+__attribute__((section(".iram"))) bk_err_t bk_flash_enter_deep_sleep(void)
+{
+	return BK_OK;
+}
+
+__attribute__((section(".iram"))) bk_err_t bk_flash_exit_deep_sleep(void)
+{
+	return BK_OK;
+}

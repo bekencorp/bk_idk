@@ -14,6 +14,7 @@ list(APPEND srcs
 	cli_adc.c
 	cli_ble.c
 	cli_event.c
+	cli_common.c
 	cli_gpio.c
 	cli_main.c
 	cli_misc.c
@@ -120,6 +121,12 @@ endif()
 if (CONFIG_FLASH)
 	list(APPEND srcs
 		cli_flash_test.c
+	)
+endif()
+
+if(CONFIG_FLASH)
+	list(APPEND srcs
+		cli_flash_api.c
 	)
 endif()
 
@@ -407,7 +414,7 @@ set(PRIV_REQUIRES_LIST bk_common mbedtls psa_mbedtls bk_netif bk_ps fatfs bk_vfs
 
 armino_component_register(SRCS "${srcs}"
 	INCLUDE_DIRS "${incs}"
-	REQUIRES utf8 temp_detect app driver user_driver bk_system iperf fatfs user_driver http adc_key key bk_websocket cm33
+	REQUIRES utf8 temp_detect app driver user_driver bk_system iperf fatfs user_driver http adc_key key bk_websocket cm33 console
 	#PRIV_REQUIRES airkiss bk_common bk_netif bk_ps
 	PRIV_REQUIRES ${PRIV_REQUIRES_LIST}
 	)

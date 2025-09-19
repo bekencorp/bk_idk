@@ -640,8 +640,8 @@ bk_err_t bk_flash_driver_init(void)
 #endif
 
 #if CONFIG_FLASH_API_TEST
-    int bk_flash_api_register_cli_test_feature(void);
-    bk_flash_api_register_cli_test_feature();
+    // int bk_flash_api_register_cli_test_feature(void);
+    // bk_flash_api_register_cli_test_feature();
 #endif
 
 	return BK_OK;

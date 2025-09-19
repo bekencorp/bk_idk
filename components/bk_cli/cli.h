@@ -91,6 +91,7 @@ int cli_ota_init(void);
 int cli_https_ota_init(void);
 int cli_flash_init(void);
 int cli_flash_test_init(void);
+int cli_flash_api_test_init(void);
 int cli_keyVaule_init(void);
 int cli_matter_init(void);
 

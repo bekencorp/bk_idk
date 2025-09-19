@@ -1665,6 +1665,10 @@ int bk_cli_init(void)
 	cli_flash_test_init();
 #endif
 
+#if (CLI_CFG_FLASH == 1)
+	cli_flash_api_test_init();
+#endif
+
 #if (CLI_CFG_SDIO_HOST == 1)
 	cli_sdio_host_init();
 #endif
