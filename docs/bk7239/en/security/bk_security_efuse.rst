@@ -158,7 +158,7 @@ When Fast Boot is turned off, it will do a complete safe boot similar to power-o
 BIT(3) - boot mode
 ++++++++++++++++++++++++++++++++++++++++++++++++
 
-It is used to configure the startup mode, please refer to :ref:`BIT(0)<efuse_bit0>`.
+It is used to configure the startup mode, disable download and enable secureboot.
 
 .. _efuse_bit4:
 
