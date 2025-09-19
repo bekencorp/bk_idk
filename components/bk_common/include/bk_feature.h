@@ -177,6 +177,8 @@ int bk_feature_config_cache_enable(void);
 int bk_feature_ckmn_enable(void);
 int bk_feature_send_deauth_before_connect(void);
 int bk_feature_get_scan_speed_level(void);
+int bk_feature_tcp_protect_enable(void);
+
 /**
  * @brief     Interface for customer to save cali data to OTP2
  *

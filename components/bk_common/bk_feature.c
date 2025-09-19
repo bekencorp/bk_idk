@@ -124,6 +124,14 @@ int bk_feature_get_scan_speed_level(void) {
 	return CONFIG_SCAN_SPEED_LEVEL;
 }
 
+int bk_feature_tcp_protect_enable(void) {
+#if CONFIG_TCP_PROTECT_EN
+	return 1;
+#else
+	return 0;
+#endif
+}
+
 int bk_feature_get_mac_sup_sta_max_num(void) {
 #if CONFIG_WIFI_MAC_SUPPORT_STAS_MAX_NUM
     return CONFIG_WIFI_MAC_SUPPORT_STAS_MAX_NUM;
