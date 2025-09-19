@@ -29,7 +29,7 @@ extern "C" {
 
 #define OTP_LL_REG_BASE(_otp_unit_id)    (SOC_OTP_APB_BASE)
 #define OTP2_LL_REG_BASE(_otp_unit_id)    (SOC_OTP_AHB_BASE)
-extern void delay_us(UINT32 us);
+extern void bk_delay_us(UINT32 us);
 #if (CONFIG_MBEDTLS_ACCELERATOR || CONFIG_TRUSTENGINE) && CONFIG_SPE
 extern bool dubhe_inited;
 #endif
@@ -74,9 +74,9 @@ static inline int otp_ll_active(otp_hw_t *hw)
 static inline int otp_ll_power_on(otp_hw_t *hw)
 {
 	sys_ll_set_cpu_device_clk_enable_otp_cken(1);
-	delay_us(10);
+	bk_delay_us(10);
 	bk_pm_module_vote_power_ctrl(POWER_SUB_MODULE_NAME_ENCP_OTP, PM_POWER_MODULE_STATE_ON);
-	delay_us(10);
+	bk_delay_us(10);
 	return otp_ll_active(hw);
 }
 
@@ -84,14 +84,14 @@ static inline void otp_ll_power_off(otp_hw_t *hw)
 {
 	otp_ll_sleep(hw);
 	sys_ll_set_cpu_device_clk_enable_otp_cken(0);
-	delay_us(10);
+	bk_delay_us(10);
 #if (CONFIG_MBEDTLS_ACCELERATOR || CONFIG_TRUSTENGINE) && CONFIG_SPE
 	if (dubhe_inited == false) {
 		return ;
 	}
 #endif
 	bk_pm_module_vote_power_ctrl(POWER_SUB_MODULE_NAME_ENCP_OTP, PM_POWER_MODULE_STATE_OFF);
-	delay_us(10);
+	bk_delay_us(10);
 	return;
 }
 

@@ -1479,7 +1479,7 @@ CONFIG_PM_LV_WDT_PROTECTION=y
 # OTP
 #
 #@ Enable OTP
-CONFIG_OTP=n
+CONFIG_OTP=y
 #@ Use OTP to save rfcali data
 CONFIG_PHY_RFCALI_TO_OTP=n
 # end of OTP
