@@ -309,7 +309,7 @@ menu "Bk_Wifi"
 		default n
 
 	config P2P_GO
-	    bool "Enable P2P Go"
+		bool "Enable P2P Go"
 		default n
 
 	config TX_BUFING
@@ -356,4 +356,12 @@ menu "Bk_Wifi"
 		range 2 10
 		default 2
 
+	config BK_WIFI_MESH
+		bool "Enable BK wifi mesh feature"
+		default n
+		select WIFI_SOFTAP
+
+	config TCP_PROTECT_EN
+		bool "Enable tcp protect in connected"
+		default n
 endmenu

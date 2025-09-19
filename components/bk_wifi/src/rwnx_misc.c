@@ -294,7 +294,7 @@ static bool txu_is_special_packet(uint8_t vif_idx, struct sk_buff *skb)
 			ret = true;
 		}
 #if CONFIG_TCP_PROTECT_IN_CONNECTED
-	} else if (IPH_PROTO(ipv4hdr) == IP_PROTO_TCP) {
+	} else if (IPH_PROTO(ipv4hdr) == IP_PROTO_TCP && wifi_bk_feature_tcp_protect_enable()) {
 		// If TCP packet has data, set flag
 		struct tcp_hdr *tcphdr = (struct tcp_hdr *)buf;
 		uint16_t tcp_hdr_len;
