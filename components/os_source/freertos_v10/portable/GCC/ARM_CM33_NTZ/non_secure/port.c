@@ -844,7 +844,7 @@ void SysTick_Handler( void ) /* PRIVILEGED_FUNCTION */
             portNVIC_INT_CTRL_REG = portNVIC_PENDSVSET_BIT;
         }
     }
-    #if CONFIG_SOC_BK7236XX
+
     {
         #if CONFIG_AON_RTC
         uint32_t rtos_get_time_diff(void);
@@ -855,7 +855,6 @@ void SysTick_Handler( void ) /* PRIVILEGED_FUNCTION */
         }
         #endif // CONFIG_AON_RTC
     }
-    #endif // CONFIG_SOC_BK7236XX
 
     #if CONFIG_AON_PMU_POR_TIMING_SUPPORT
     void aon_pmu_driver_save_time(bool is_startup);
