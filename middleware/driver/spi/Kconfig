@@ -16,6 +16,14 @@ menu "SPI"
 		bool "SPI MST Flash"
 		default n
 
+	config SUPPORT_SPI_ISR_HIGH_PRIORITY
+		bool "SPI ISR High Prioriy"
+		default n
+
+	config SUPPORT_XMIT_READY_CALLBACK
+		bool "SPI tx/rx ready callback"
+		default n
+
 	config SPI_MST_PSRAM
 		bool "SPI MST PSRAM"
 		default n
