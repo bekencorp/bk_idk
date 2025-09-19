@@ -283,7 +283,7 @@ int hapd_intf_sta_add(struct prism2_hostapd_param *param, int len)
 		BK_LOGI(TAG, "add sta, sta=%d, pm state=%d\r\n", cfm->sta_idx, cfm->pm_state);
 
 #if CONFIG_TX_BUFING
-        rwm_tx_bufing_end(cfm->sta_idx);
+		rwm_tx_bufing_end(cfm->sta_idx);
 #endif
 	} else if (!ret)
 		ret = BK_ERR_HITF_ADD_STA;
@@ -304,10 +304,15 @@ int hapd_get_sta_info(struct prism2_hostapd_param *param, int len)
 	param->u.get_info_sta.inactive_sec = 0;
 
 	entry = sta_mgmt_get_sta(param->sta_addr);
+	uint32_t mac_time = bk_wifi_get_mac_time();
 
 	if (entry && sta_mgmt_get_last_active(entry)) {
 		// TODO: bk7236 hal_machw_time may not accessable when enter PS.
-		param->u.get_info_sta.inactive_sec = (bk_wifi_get_mac_time() - sta_mgmt_get_last_active(entry)) / 1000000;
+		if (mac_time >= sta_mgmt_get_last_active(entry)) {
+			param->u.get_info_sta.inactive_sec = (mac_time - sta_mgmt_get_last_active(entry)) / 1000000;
+		} else {
+			param->u.get_info_sta.inactive_sec = ((uint32_t)-1 - sta_mgmt_get_last_active(entry) + mac_time) / 1000000;
+		}
 	}
 
 	return 0;
@@ -327,7 +332,7 @@ int hapd_intf_sta_del(struct prism2_hostapd_param *param, int len)
 		return 0;
 
 #if CONFIG_TX_BUFING
-    rwm_tx_bufing_end(sta_idx);
+	rwm_tx_bufing_end(sta_idx);
 #endif
 
 	ret = rw_msg_send_me_sta_del(sta_idx, tdls_sta);
