@@ -1,5 +1,6 @@
 #include <string.h>
 #include "modules/https_ota.h"
+#include "modules/wifi.h"
 
 #define TAG "HTTPS_OTA"
 
@@ -32,6 +33,7 @@ bk_err_t bk_https_ota_begin(https_ota_t* ota_config)
 	}
 	bk_err_t ret = BK_OK;
 	ota_config->client = bk_http_client_init(ota_config->http_config);
+	bk_wifi_ota_dtim(1);
 
 	bk_http_client_set_method(ota_config->client, HTTP_METHOD_HEAD);
 	bk_http_client_open(ota_config->client, 0);
@@ -119,6 +121,7 @@ fail:
 
 bk_err_t bk_https_ota_end(https_ota_t* ota_config)
 {
+	bk_wifi_ota_dtim(0);
 	if (ota_config == NULL) {
 		return BK_FAIL;
 	}

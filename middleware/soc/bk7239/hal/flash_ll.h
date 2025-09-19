@@ -343,6 +343,11 @@ static inline void flash_ll_set_volatile_status_write(flash_hw_t *hw)
 	hw->cmd_cfg.wrsr_cmd_sel = 0x0;
 }
 
+static inline void flash_ll_set_dual_mode(flash_hw_t *hw)
+{
+	hw->config.mode_sel = FLASH_MODE_DUAL;
+}
+
 #ifdef __cplusplus
 }
 #endif

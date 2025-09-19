@@ -22,6 +22,7 @@ set(incs
 	${TINYSOC_PATH}/driver/platform_include
 	${TINYSOC_PATH}/include/
 	${TINYSOC_PATH}/include/driver/
+	${TINYSOC_PATH}/interfaces/
 )
 
 set(srcs
@@ -46,6 +47,7 @@ set(srcs
 	${TINYSOC_PATH}/driver/nv_otp/rotpk.c
 	${TINYSOC_PATH}/driver/nv_otp/otp_flash.c
 	${TINYSOC_PATH}/driver/pwr_clk/pwr_clk.c
+	${TINYSOC_PATH}/interfaces/common_interfaces.c
 	$<$<NOT:$<BOOL:${PLATFORM_DEFAULT_NV_COUNTERS}>>:${TINYSOC_PATH}/driver/nv_otp/nv_counters.c>
 	$<$<NOT:$<BOOL:${PLATFORM_DEFAULT_NV_COUNTERS}>>:${TINYSOC_PATH}/driver/nv_otp/nv_counters.c>
 	${TINYSOC_PATH}/driver/cmsis_drivers/Driver_Flash.c

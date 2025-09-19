@@ -181,7 +181,7 @@ def get_flash_aes_tool():
     if is_pi():
         return f'{tools_dir}/packager_tools/pi/beken_aes'
 
-    return f'{tools_dir}/packager_tools/centos7/beken_aes'
+    return f'{tools_dir}/packager_tools/centos7/xts_aes.py'
 
 def get_crc_tool():
     tools_dir = get_tools_dir()

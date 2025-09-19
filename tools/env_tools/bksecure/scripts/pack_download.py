@@ -88,7 +88,7 @@ class PackDownload(Pack):
 
         logging.debug(f'encrypt {bname}, startaddress={start_address}')
         outfile = bname[:-4] + '_aes.bin'
-        cmd = f'{aes_tool} encrypt -infile {bname} -keywords {flash_aes_key} -outfile {outfile} -startaddress {start_address}'
+        cmd = f'python3 {aes_tool} encrypt -infile {bname} -keywords {flash_aes_key}  -aes {128} -outfile {outfile} -startaddress {start_address}'
         run_cmd_not_check_ret(cmd)
         return outfile
 

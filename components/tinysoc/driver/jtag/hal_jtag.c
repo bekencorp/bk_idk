@@ -20,7 +20,7 @@ static bool allowed_debug(void)
 		return true;
 	}
 
-	if (efuse_is_spe_debug_enabled()) {
+	if (is_spe_debug_enabled()) {
 		return true;
 	}
 
@@ -43,7 +43,7 @@ void hal_jtag_enable(void)
 	close_wdt();
 #endif
 	arm_ce_dbg_set(true);
-	if (efuse_is_spe_debug_enabled()) {
+	if (is_spe_debug_enabled()) {
 		*((volatile uint32_t*)CORTEX_M33_REG_DAUTHCTRL) = CORTEX_M33_CPU_DEBUG_ENABLE_VALUE;
 	} else {
 		*((volatile uint32_t*)CORTEX_M33_REG_DAUTHCTRL) = CORTEX_M33_CPU_DEBUG_ENABLE_VALUE;

@@ -43,7 +43,7 @@ int bk_efuse_init(void)
         return BK_OK;
 }
 
-bool efuse_is_secureboot_enabled(void)
+bool is_secureboot_enabled(void)
 {
 #if CONFIG_BL2_VALIDATE_ENABLED_BY_EFUSE
 	return !!(s_efuse_data & BIT(EFUSE_SECUREBOOT_ENABLED_BIT));
@@ -52,22 +52,22 @@ bool efuse_is_secureboot_enabled(void)
 #endif
 }
 
-bool efuse_is_spe_debug_enabled(void)
+bool is_spe_debug_enabled(void)
 {
 	return !(s_efuse_data & BIT(EFUSE_SPE_DEBUG_DISABLED_BIT));
 }
 
-bool efuse_is_info_log_enabled(void)
+bool is_info_log_enabled(void)
 {
 	return !(s_efuse_data & BIT(EFUSE_INFO_DISABLED_BIT));
 }
 
-bool efuse_is_err_log_enabled(void)
+bool is_err_log_enabled(void)
 {
 	return !(s_efuse_data & BIT(EFUSE_ERR_DISABLED_BIT));
 }
 
-bool efuse_is_secure_download_enabled(void)
+bool is_secure_download_enabled(void)
 {
 	return !(s_efuse_data & BIT(EFUSE_SECURE_DOWNLOAD_DISABLED_BIT));
 }

@@ -3,7 +3,8 @@ string(REGEX REPLACE "beken/" "" SOC "${TFM_PLATFORM}")
 set(incs
         config/
         driver/
-	${TFM_BEKEN}/armino/driver
+        ../interfaces/
+        ${TFM_BEKEN}/armino/driver
         driver/include/bk_private
         driver/common
         driver/include
@@ -37,6 +38,7 @@ set(srcs
     ${TFM_BEKEN}/armino/driver/ppc/prro_driver.c
     ${TFM_BEKEN}/armino/driver/efuse/efuse_driver.c
     ${TFM_BEKEN}/armino/driver/bk_efuse.c
+    ../interfaces/common_interfaces.c
     ./driver/hal/prro_hal_v5.c
     ./driver/hal/uart_hal.c
     ./driver/hal/timer_hal.c

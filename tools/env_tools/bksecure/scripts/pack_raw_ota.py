@@ -89,9 +89,9 @@ class PackRawOta(Pack):
         if (ph.flags().ota_write_cbus() == False) and (ph.flags().ota_read_cbus() == True):
             aes_bin_name = bname[:-4] + '_aes.bin'
             if flash_aes_key != None:
-                aes_tool = f'{self.tools_dir}/../tools/packager_tools/{self.aes_tool_name}'
+                aes_tool = get_flash_aes_tool()
                 start_address = hex(phy2virtual(ota_partition.phy_partition_offset))
-                cmd = f'{aes_tool} encrypt -infile {ota_sign_bin} -keywords {self.aes_key} -outfile {aes_bin_name} -startaddress {start_address}'
+                cmd = f'python3 {aes_tool} encrypt -infile {ota_sign_bin} -keywords {self.aes_key}  -aes {128} -outfile {aes_bin_name} -startaddress {start_address}'
                 run_cmd_not_check_ret(cmd)
             else:
                 aes_bin_name = bname

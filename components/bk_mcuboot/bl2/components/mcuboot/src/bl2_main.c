@@ -133,7 +133,9 @@ int main(void)
     fih_int fih_rc = FIH_FAILURE;
     enum tfm_plat_err_t plat_err;
 
+#if CONFIG_EFUSE
     bk_efuse_init();
+#endif
 #if 1//CONFIG_BL2_SECURE_DEBUG
     extern void hal_secure_debug(void);
     hal_secure_debug();
@@ -196,8 +198,9 @@ int main(void)
     deep_sleep_reset();
     BOOT_LOG_INF("Starting bootloader");
     dump_partition();
+#if CONFIG_EFUSE
     dump_efuse();
-
+#endif
 
     plat_err = tfm_plat_otp_init();
     if (plat_err != TFM_PLAT_ERR_SUCCESS) {
