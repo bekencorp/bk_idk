@@ -4,8 +4,8 @@ Armino Wi-Fi Instruction
 Armino Wi-Fi Feature List
 -------------------------------------------------------
 - Compatible with 802.11 b/g/n/ax 2.4GHz Standard
-- Support both HT20 and HT40
-- Support 802.11N MCS0-7
+- Support both HT20/40, VHT20/40, HE20
+- Support 802.11N MCS0-7, 802.11AC MCS0-9, 802.11AX MCS0-9
 - Support STA、SoftAP and Direct Mode
 - Support AP+STA Concurrent
 - Support WPA、WPA2 and WPA3 Encryption

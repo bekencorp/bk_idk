@@ -16,7 +16,7 @@ The BK WiFi Driver supports following logical WiFi interfaces:
  - BK AP interface
  - BK Monitor interface
 
-Each interface can be operated independently, so theretically all interfaces can be started independently. However because of performance and interference consideration, we limit the coexisting of some interfaces.
+Each interface can be operated independently, so theoretically all interfaces can be started independently. However because of performance and interference consideration, we limit the coexisting of some interfaces.
 
 E.g. if the monitor interface is started, the starting of STA interface will fail, refer to API for detailed limitation of interface coexisting.
 
@@ -33,7 +33,7 @@ Most of WiFi APIs can be categoried as:
    The API name are prefixed with bk_wifi_interface, the interface can be sta, ap or monitor. e.g. bk_wifi_sta_start() etc.
  - Module specific APIs
 
-   The API name are prefixed with bk_wifi_module, the module can be scan or filter etc, e.g. bk_wifi_scan_start() etc. The API has no direct relationship with the interface, or the API caller don't nedto care about on which interface the API is operated. E.g. the scan API can be based on STA interface, it can also based on AP interface, but the caller don't care about it.
+   The API name are prefixed with bk_wifi_module, the module can be scan or filter etc, e.g. bk_wifi_scan_start() etc. The API has no direct relationship with the interface, or the API caller don't need to care about on which interface the API is operated. E.g. the scan API can be based on STA interface, it can also based on AP interface, but the caller don't care about it.
 
 Common WiFi APIs:
  - :cpp:func:`bk_wifi_init` - init WiFi
@@ -81,17 +81,17 @@ Module Specific WiFi APIs:
  - :cpp:func:`bk_wifi_filter_set_config` - set filter configuration
  - :cpp:func:`bk_wifi_filter_register_cb` - register the filter callback function
 
-Compitability and Extension
+Compatibility and Extension
 ----------------------------------------
 
-The WiFi APIs are flexible, easy to be extended and backward compatible. For most of the WiFi configurations, we put some reserved fields in the config struct for future extendence. The API users need to make sure the reserved fields are initialized to 0, otherwise the compatibility may be broken as more fields are added.
+The WiFi APIs are flexible, easy to be extended and backward compatible. For most of the WiFi configurations, we put some reserved fields in the config struct for future extension. The API users need to make sure the reserved fields are initialized to 0, otherwise the compatibility may be broken as more fields are added.
 
 Programing Principle
 ----------------------------------------
 
 .. important::
   Here is some general principle for WiFi API users:
-   - Always init the reserved fields of config stuct to 0
+   - Always init the reserved fields of config struct to 0
    - Use BK_ERR_CHECK to check the return value of the WiFi API
    - If you are not sure how to use WiFi APIs, study the WiFi example code first
    - If you are not sure how to initialize some fields of config struct, use the default configuration macro to use the config first and then set application specific fields, e.g. use WIFI_DEFAULT_INIT_CONFIG() to init wifi_config_t first.

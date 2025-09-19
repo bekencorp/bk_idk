@@ -216,7 +216,8 @@ def get_directives(tree, kind):
                 'compounddef/sectiondef/memberdef[@kind="%s"]' % kind):
             name = elem.find('name')
             rst_output += ".. doxygen%s:: " % kind
-            rst_output += name.text + "\n"
+            if name:
+                rst_output += name.text + "\n"
     if rst_output:
         all_kinds_dict = dict(all_kinds)
         rst_output = get_rst_header(all_kinds_dict[kind]) + rst_output + "\n"

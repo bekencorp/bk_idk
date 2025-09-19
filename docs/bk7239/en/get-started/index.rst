@@ -15,7 +15,7 @@ Introduction
 
 BK7239 is a SoC that integrates the following features:
 
- - Wi-Fi 6 (2.4 GHz Band)
+ - Wi-Fi 6 (2.4/5 GHz Band)
  - Bluetooth Low Energy 5.4
  - ARMv8-M Star (M33F) MCU
  - Multiple peripherals

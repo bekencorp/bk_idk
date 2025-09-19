@@ -4,9 +4,9 @@ Armino Wi-Fi说明
 Armino Wi-Fi功能列表
 -------------------------------------------------------
 
-- 兼容IEEE802.11 b/g/n/ax 2.4GHz标准
-- 支持HT20 and HT40
-- 支持802.11N MCS0-7
+- 兼容IEEE802.11 b/g/n/ac/ax 2.4/5GHz标准
+- 支持HT20/40, VHT20/40, HE20
+- 支持802.11N MCS0-7, 802.11AC MCS0-9, 802.11AX MCS0-9
 - 支持STA、AP and Direct Modes
 - 支持Concurrent AP+STA
 - 支持WPA、WPA2及WPA3等加密方式

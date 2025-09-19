@@ -100,5 +100,11 @@ iPerf工具介绍
 - SDK运行过程中是否有足够的内存
 - 特殊AP的兼容性问题
 
+吞吐量值
+++++++++++++++++++++++++++++++++
+
+.. image:: ../../../../common/_static/iperf_throughput.png
+
+
 :link_to_translation:`en:[English]`
 
