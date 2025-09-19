@@ -166,7 +166,7 @@ $(cmake_supported_targets): common
 ifneq ("$(ARMINO_TARGET)", "doc")
 	@$(ARMINO_TOOL_WRAPPER) $(ARMINO_DIR) $(PROJECT_DIR) $(PROJECT_BUILD_DIR) $@
 else
-	@echo "skip make doc"
+	@$(ARMINO_TOOL) -B ./$(PROJECT_BUILD_DIR) -P ./$(PROJECT_DIR) $@
 endif
 
 $(clean_targets):

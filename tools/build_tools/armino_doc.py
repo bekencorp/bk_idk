@@ -115,8 +115,9 @@ def build_doc_internal(clean, target):
 		os.makedirs(armino_path + "/build/armino")
 
 	if (target == "all"):
-		build_with_target(clean, "bk7236")
-		build_with_target(clean, "bk7258")
+		#build_with_target(clean, "bk7236")
+		#build_with_target(clean, "bk7258")
+		build_with_target(clean, "bk7239")
 	else:
 		build_with_target(clean, target)
 
