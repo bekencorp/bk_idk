@@ -1,7 +1,19 @@
 {
+    "primary_manifest.bin":
+    {
+        "bin":["bl2.bin"],
+        "action":"BL1_SIGN"
+    },
+
+    "secondary_manifest.bin":
+    {
+        "bin":["bl2.bin"],
+        "action":"BL1_SIGN"
+    },
+
     "bootloader.bin":
     {
-        "bin": ["bl2.bin"],
+        "bin": ["bl1_control.bin", "boot_flag.bin", "primary_manifest.bin", "secondary_manifest.bin", "bl2.bin"],
         "action": "PACK_BL1_DOWNLOAD_BIN"
     },
 
@@ -13,7 +25,7 @@
 
     "all-app.bin":
     {
-        "bin": ["bl2.bin", "partition.bin", "app_signed.bin"],
+        "bin": ["partition.bin", "app_signed.bin"],
         "action": "PACK_BL1_DOWNLOAD_BIN"
     },
 
@@ -21,12 +33,5 @@
     {
         "bin": ["app_signed.bin"],
         "action": "PACK_OTA_BIN"
-    },
-
-    "raw_ota.bin":
-    {
-        "bin": ["app_signed.bin"],
-        "action": "PACK_RAW_OTA_BIN"
     }
-
 }

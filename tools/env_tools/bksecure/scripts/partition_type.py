@@ -26,6 +26,9 @@ SUBTYPE_NVS              = 10
 SUBTYPE_PARTITION        = 11
 SUBTYPE_OW_OTA_CONTROL   = 12
 SUBTYPE_XIP_OTA_CONTROL  = 13
+SUBTYPE_BL1_CONTROL      = 14
+SUBTYPE_BOOT_FLAG        = 15
+SUBTYPE_MANIFEST         = 16
 
 subtype_mapping = {
     ""                : SUBTYPE_DEFAULT,
@@ -41,7 +44,10 @@ subtype_mapping = {
     "nvs"             : SUBTYPE_NVS,
     "partition"       : SUBTYPE_PARTITION,
     "ow_ota_control"  : SUBTYPE_OW_OTA_CONTROL,
-    "xip_ota_control" : SUBTYPE_XIP_OTA_CONTROL
+    "xip_ota_control" : SUBTYPE_XIP_OTA_CONTROL,
+    "bl1_control"     : SUBTYPE_BL1_CONTROL,
+    "boot_flag"       : SUBTYPE_BOOT_FLAG,
+    "manifest"        : SUBTYPE_MANIFEST,
 }
 
 class PartitionType:

@@ -102,18 +102,18 @@ class PackDownload(Pack):
         return crc_bname
 
     def __add_magic(self, bname, pheader):
-        if pheader.type().is_app() and (pheader.size().vir_offset() != 0):
+        if not (pheader.type().is_app() and (pheader.size().vir_offset() == 0)):
             return
 
         #TODO: change magic wordk according to soc
-        logging.debug(f'Add magic code beken to {bname}')
-        beken = b'\x42\x45\x4B\x45\x4E\x00\x00'
+        magic = "BK.SB".encode()
+        logging.debug(f'Add magic code {magic} to {bname}')
         with open(bname, 'r+b') as f:
             f.seek(0x100)
-            f.write(beken)
+            f.write(magic)
 
     def __add_version(self, bname, pheader):
-        if pheader.type().is_app() and (pheader.size().vir_offset() != 0):
+        if not (pheader.type().is_app() and (pheader.size().vir_offset() == 0)):
             return
 
         version = pheader.version()
@@ -125,12 +125,14 @@ class PackDownload(Pack):
                 f.write(versions)
 
     def __add_pad(self, bname, pheader):
-        if pheader.type().is_app():
+        if pheader.type().is_merge():
             pad_size = pheader.size().hdr_pad_size()
+        elif pheader.type().is_app():
+            pad_size = pheader.size().phy_code_offset() - pheader.size().offset()
         else:
             pad_size = 0
 
-        logging.debug(f'add_pad: file={bname}, pad_size={pad_size}')
+        logging.debug(f'add_pad: file={bname}, pad_size={hex(pad_size)}')
 
         img_buf = bytearray()
         with open(bname, 'rb') as f:

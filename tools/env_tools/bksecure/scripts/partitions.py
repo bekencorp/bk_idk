@@ -13,6 +13,9 @@ from .partition_merge import PartitionMerge
 from .partition_app import PartitionApp
 from .partition_subapp import PartitionSubapp
 from .partition_partition import PartitionPartition
+from .partition_bl1_control import PartitionBl1Control
+from .partition_boot_flag import PartitionBootFlag
+from .partition_manifest import PartitionManifest
 from .partition_padding import PartitionPadding
 from .partition_app_padding import PartitionAppPadding
 from .gen_license import *
@@ -157,7 +160,13 @@ class Partitions:
             subtype = pdic['SubType'].strip()
             b = self.__get_bin(pdic['Name'].strip())
 
-            if (type == 'data') and (subtype == 'partition'):
+            if (type == 'app') and (subtype == 'bl1_control'):
+                p = PartitionBl1Control(idx, pdic, mini_offset, self._partitions)
+            elif (type == 'data') and (subtype == 'manifest'):
+                p = PartitionManifest(idx, pdic, mini_offset)
+            elif (type == 'data') and (subtype == 'boot_flag'):
+                p = PartitionBootFlag(idx, pdic, mini_offset, self._partitions)
+            elif (type == 'data') and (subtype == 'partition'):
                 p = PartitionPartition(idx, pdic, mini_offset, self._partitions)
             elif (type == 'data') and ((subtype == 'ow_ota_control') or (subtype == 'xip_ota_control')):
                 p = PartitionPadding(idx, pdic, mini_offset)

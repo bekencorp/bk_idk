@@ -372,7 +372,7 @@ bk_boot_erase_ota_confirm(uint8_t image_index)
     return BK_FAIL;
 }
 
-
+#if CONFIG_DIRECT_XIP
 void 
 bk_boot_switch_xip_confirm()
 {
@@ -385,6 +385,7 @@ bk_boot_switch_xip_confirm()
         bk_boot_erase_ota_confirm(1);
     }
 }
+#endif
 #endif
 
 

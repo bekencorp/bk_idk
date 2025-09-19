@@ -1,0 +1,32 @@
+{
+    "bootloader.bin":
+    {
+        "bin": ["bl2.bin"],
+        "action": "PACK_BL1_DOWNLOAD_BIN"
+    },
+
+    "app_signed.bin":
+    {
+        "bin": ["overwrite.bin"],
+        "action": "BL2_SIGN"
+    },
+
+    "all-app.bin":
+    {
+        "bin": ["bl2.bin", "partition.bin", "app_signed.bin"],
+        "action": "PACK_BL1_DOWNLOAD_BIN"
+    },
+
+    "ota.bin":
+    {
+        "bin": ["app_signed.bin"],
+        "action": "PACK_OTA_BIN"
+    },
+
+    "raw_ota.bin":
+    {
+        "bin": ["app_signed.bin"],
+        "action": "PACK_RAW_OTA_BIN"
+    }
+
+}

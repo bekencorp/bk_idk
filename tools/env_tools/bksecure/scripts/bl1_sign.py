@@ -49,7 +49,7 @@ def gen_manifest_bin(action_type, manifest_json_file, outfile):
         exit(1)
 
     run_cmd(cmd)
-    cmd = f'mv manifest.bin {outfile}'
+    cmd = f'cp manifest.bin {outfile}'
     run_cmd(cmd)
 
     if (action_type == 'hash'):
