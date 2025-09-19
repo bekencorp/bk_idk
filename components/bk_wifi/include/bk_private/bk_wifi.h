@@ -474,6 +474,7 @@ int cmd_wlan_get_ps_status();
 
 #if CONFIG_BRIDGE
 #define WLAN_ANY_IP         "0.0.0.0"
+int demo_bridge_softap_init(char *ap_ssid, char *ap_key, wifi_security_t security);
 #endif
 
 void demo_scan_app_init(void);
@@ -527,12 +528,7 @@ void mm_init(void);
 void mm_active(void);
 
 void phy_vif_mgmt_register(const void *mac_addr, uint8_t vif_type, bool p2p, uint8_t *vif_idx);
-
-
 void tx_evm_set_chan_ctxt_pop(void *chan_info);
-
-
-
 void bk_wlan_dhcp_timeout(void);
 uint32_t bk_sta_cipher_is_open(void);
 uint8_t bk_wlan_ap_get_channel_config(void);
@@ -610,7 +606,12 @@ int wlan_p2p_connect(const uint8_t *mac, int method, int intent);
 void bk_wifi_prepare_deepsleep(void);
 void bk_trigger_mqttping(void);
 
-
+#if CONFIG_BRIDGE
+int wlan_ap_add_blacklist(wlan_ap_blacklist_t *req);
+int wlan_ap_del_blacklist(wlan_ap_blacklist_t *req);
+int wlan_ap_clear_blacklist(void);
+int wlan_ap_sta_info(wlan_ap_stas_t *stas);
+#endif
 
 ////for rf use
 void phy_enter_dsss_only(void);

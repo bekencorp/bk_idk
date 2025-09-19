@@ -26,6 +26,9 @@
 #include "airtime_policy.h"
 #include "ap_config.h"
 #include "bk_wifi_types.h"
+#if BK_SUPPLICANT
+#include "bk_feature.h"
+#endif
 
 extern ap_param_t *g_ap_param_ptr;
 
@@ -101,7 +104,20 @@ void hostapd_config_defaults_bss(struct hostapd_bss_config *bss)
 	bss->eap_sim_db_timeout = 1;
 	bss->eap_sim_id = 3;
 #endif
+#if BK_SUPPLICANT
+	if (bk_feature_set_relay_ap_inactivity()) {
+		if (g_ap_param_ptr->bridge)
+			bss->ap_max_inactivity = AP_DEFAULT_MAX_INACTIVITY;
+		else
+			bss->ap_max_inactivity = AP_MAX_INACTIVITY;
+		WPA_LOGI("hostapd config ap_max_inactivity %d, bridge %s\n",
+			bss->ap_max_inactivity, g_ap_param_ptr->bridge ? "enabled" : "disabled");
+	} else {
+		bss->ap_max_inactivity = AP_MAX_INACTIVITY;
+	}
+#else
 	bss->ap_max_inactivity = AP_MAX_INACTIVITY;
+#endif
 	bss->eapol_version = EAPOL_VERSION;
 
 	bss->max_listen_interval = 65535;

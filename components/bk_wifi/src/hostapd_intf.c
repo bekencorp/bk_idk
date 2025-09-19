@@ -277,6 +277,7 @@ int hapd_intf_sta_add(struct prism2_hostapd_param *param, int len)
 	add_sta.flags = param->u.add_sta.flags;
 	add_sta.supp_rates =  param->u.add_sta.supp_rates;
 	add_sta.supp_rates_len = param->u.add_sta.supp_rates_len;
+	add_sta.qos_info = param->u.add_sta.qos_info;
 
 	ret = rw_msg_send_me_sta_add(&add_sta, cfm);
 	if (!ret && (cfm->status == CO_OK)) {
@@ -337,9 +338,11 @@ int hapd_intf_sta_del(struct prism2_hostapd_param *param, int len)
 
 	ret = rw_msg_send_me_sta_del(sta_idx, tdls_sta);
 
+#ifndef CONFIG_BRIDGE
 	if (!ret)
 		// notify sta del status: drv_event_disassoc
 		wpa_ctrl_event_copy(WPA_CTRL_EVENT_DEL_STATION, param->sta_addr, ETH_ALEN);
+#endif
 
 	return ret;
 }

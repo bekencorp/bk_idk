@@ -294,7 +294,7 @@ typedef enum {
     WIFI_REGU_MKK     = 3,
     WIFI_REGU_EXT     = 4,
 }wifi_regulation_t;
-    
+
 typedef enum {
     WIFI_RS_NULL =0,
     WIFI_RS_CCK  =1,
@@ -524,6 +524,7 @@ typedef struct {
 	int  rssi;                         /**< RSSI of AP found by scan */
 	uint8_t channel;                   /**< The channel of the AP found by scan */
 	wifi_security_t security;          /**< The security type of the AP found by scan */
+	uint8_t is_bridge;                 /**< is AP support bridge */
 	uint8_t reserved[16];              /**< Reserved, **must be zero** */
 } wifi_scan_ap_info_t;
 
@@ -539,9 +540,10 @@ typedef struct {
 	wifi_security_t security;          /**< Security type of BK AP, default value TODO */
 	uint8_t hidden: 1;                 /**< Whether the BK AP is hidden */
 	uint8_t acs: 1;                    /**< Whether Auto Channel Selection is enabled */
+	uint8_t bridge: 1;                 /**< BK AP support bridge */
 	uint8_t vsie_len;                  /**< Beacon/ProbeResp Vendor Specific IE len */
 	uint8_t vsie[255];                 /**< Beacon/ProbeResp Vendor Specific IE */
-	uint8_t max_con;                   /**< Max number of stations allowed to connect to BK AP, TODO default value? */ 
+	uint8_t max_con;                   /**< Max number of stations allowed to connect to BK AP, TODO default value? */
 	u8 max_statype_num[4];
 	uint8_t reserved[32];              /**< Reserved, **must be zero** */
 } wifi_ap_config_t;

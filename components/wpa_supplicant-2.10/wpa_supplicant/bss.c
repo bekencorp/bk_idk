@@ -1277,6 +1277,42 @@ struct wpabuf * wpa_bss_get_vendor_ie_multi(const struct wpa_bss *bss,
 	return buf;
 }
 
+#if CONFIG_BRIDGE
+struct wpabuf * wpa_bss_get_bridge_vendor_ie(const struct wpa_bss *bss,
+					    u32 vendor_type)
+{
+	struct wpabuf *buf;
+	const u8 *end, *pos;
+
+	buf = wpabuf_alloc(bss->ie_len);
+	if (buf == NULL)
+		return NULL;
+
+	pos = wpa_bss_ie_ptr(bss);
+	end = pos + bss->ie_len;
+
+	while (end - pos > 1) {
+		u8 ie, len;
+
+		ie = pos[0];
+		len = pos[1];
+		if (len > end - pos - 2)
+			break;
+		pos += 2;
+		if (ie == WLAN_EID_VENDOR_SPECIFIC && len >= 8 &&
+		    !os_memcmp(pos, "\x74\x79\x62\x72\x69\x64\x67\x65", 8))
+			wpabuf_put_data(buf, pos, len - 2);
+		pos += len;
+	}
+
+	if (wpabuf_len(buf) == 0) {
+		wpabuf_free(buf);
+		buf = NULL;
+	}
+
+	return buf;
+}
+#endif
 
 /**
  * wpa_bss_get_vendor_ie_multi_beacon - Fetch vendor IE data from a BSS entry

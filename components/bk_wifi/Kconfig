@@ -159,6 +159,20 @@ menu "Bk_Wifi"
 		bool "Enable Wifi Fast Connect with easy flash"
 		default y
 
+	config AP_PS
+		bool "Enable AP PS"
+		default n
+
+	config AP_TX_TIM
+		bool "Enable ap tx tim in connection"
+		default n
+
+	config UAPSD
+		bool "Enable UAPSD"
+		default n
+		help
+		Enable use uapsd
+
 	config BSSID_CONNECT
 		depends on WIFI_ENABLE
 		bool "Enable Bssid Connect"

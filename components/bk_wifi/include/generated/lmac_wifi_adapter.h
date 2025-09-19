@@ -175,6 +175,8 @@ typedef struct {
 	int (*_bk_feature_bssid_connect_enable)(void);
 	int (*_bk_feature_fast_connect_enable)(void);
 	int (*_bk_feature_send_deauth_before_connect)(void);
+	int (*_bk_feature_set_relay_ap_inactivity)(void);
+	int (*_bk_feature_send_sta_csa_ind)(void);
 	int (*_bk_feature_fast_dhcp_enable)(void);
 	int (*_bk_feature_get_scan_speed_level)(void);
 	int (*_bk_feature_not_check_ssid_enable)(void);
@@ -184,6 +186,8 @@ typedef struct {
 	int (*_bk_feature_ap_statype_limit_enable)(void);
 	int (*_bk_feature_close_coexist_csa)(void);
 	int (*_bk_feature_network_found_event)(void);
+	int (*_bk_feature_ap_ps_enable)(void);
+	int (*_bk_feature_tx_tim_enable)(void);
 	int (*_bk_feature_get_mac_sup_sta_max_num)(void);
 	void (*_bk_feature_csi_out_cb)(void *data);
 	int (*_bk_feature_tcp_protect_enable)(void);

@@ -962,6 +962,7 @@ typedef struct ap_param {
 	uint8_t key[65];
 	uint8_t key_len;
 	bool hidden_ssid;
+	bool bridge;
 #if CONFIG_AP_VSIE
 	uint8_t vsie[255];
 	uint8_t vsie_len;
@@ -1233,6 +1234,7 @@ typedef  struct  _ScanResult_adv
 		uint8_t bssid[6]; /**< The BSSID of an access point.*/
 		char channel;     /**< The RF frequency, 1-13*/
 		wlan_sec_type_t security;       /**< Security type, see wlan_sec_type_t */
+		uint8_t is_bridge; /**< Is it bridge AP */
 	} *ApList;  /**< AP list found by scan */
 } ScanResult_adv;
 #if !CONFIG_MINIMUM_SCAN_RESULTS

@@ -89,6 +89,7 @@ extern void mac_wakeup_and_pwr_update(BUS_MSG_T msg);
 extern bool ps_close_timer;
 int ps_need_pre_process_wrapper( UINT32 arg );
 bool power_save_rf_sleep_check_wrapper(void);
+void rwnx_ps_bh_traffic_req(STA_INF_PTR sta, u16 pkt_req, u8 ps_id);
 
 void app_set_sema(void)
 {
@@ -729,6 +730,25 @@ void bmsg_tx_drop_traffic_sender(uint8_t arg)
 	}
 }
 
+void bmsg_rx_traffic_req_sender(uint8_t sta_idx, uint8_t pkt_cnt, bool apsd)
+{
+	bk_err_t ret;
+	BUS_MSG_T msg;
+
+	if (g_wifi_core.io_queue) {
+		msg.type = BMSG_RX_TRAFFIC_REQ;
+		msg.arg = apsd << 16 | pkt_cnt << 8 | sta_idx;
+		msg.len = 0;
+		msg.sema = NULL;
+
+		ret = rtos_push_to_queue(&g_wifi_core.io_queue, &msg, BEKEN_NO_WAIT);
+		if (kNoErr != ret)
+			RWNX_LOGE("bmsg_rx_traffic_req_sender failed\r\n");
+	} else {
+		RWNX_LOGE("g_wifi_core.io_queue null\r\n");
+	}
+}
+
 void bmsg_ps_sender(uint8_t arg)
 {
 	bk_err_t ret;
@@ -815,6 +835,15 @@ static void core_thread_main(void *arg)
 			case BMSG_TX_DROP_TRAFFIC:
 				rwnx_txq_cleanup_timer_cb(NULL);
 				break;
+
+			case BMSG_RX_TRAFFIC_REQ: {
+				bool apsd = (msg.arg >> 16) & 0x1;;
+				uint8_t pkt_cnt = (msg.arg >> 8) & 0xFF;
+				uint8_t sta_idx = msg.arg & 0xFF;
+				STA_INF_PTR sta = sta_mgmt_get_entry(sta_idx);
+				rwnx_ps_bh_traffic_req(sta, pkt_cnt,
+					apsd ? UAPSD_ID : LEGACY_PS_ID);
+			}	break;
 #endif
 
 #if !CONFIG_FULLY_HOSTED

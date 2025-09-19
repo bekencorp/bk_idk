@@ -801,7 +801,7 @@ static int hostap_sta_add(void *priv, struct hostapd_sta_add_params *params)
     param.u.add_sta.supp_rates_len = params->supp_rates_len;
     for(i = 0; i < param.u.add_sta.supp_rates_len; i++)
         param.u.add_sta.supp_rates[i] = params->supp_rates[i];
-        
+
 #ifdef DOUBLE_CHECK_TCJ
 	param.u.add_sta.set = params->set;
 #ifdef CONFIG_MESH
@@ -816,8 +816,10 @@ static int hostap_sta_add(void *priv, struct hostapd_sta_add_params *params)
 		flags |= STA_VHT_CAPA;
 	if (params->he_capab)
 		flags |= STA_HE_CAPA;
-	if (params->flags & WPA_STA_WMM)
+	if (params->flags & WPA_STA_WMM) {
+		param.u.add_sta.qos_info = params->qosinfo;
 		flags |= STA_QOS_CAPA;
+	}
 	if (params->flags & WPA_STA_MFP)
 		flags |= STA_MFP_CAPA;
 	param.u.add_sta.flags = flags;

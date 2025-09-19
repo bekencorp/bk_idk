@@ -3213,6 +3213,12 @@ static int wpa_supplicant_use_own_rsne_params(struct wpa_supplicant *wpa_s,
 }
 
 
+#if BK_SUPPLICANT
+extern wifi_connect_tick_t sta_tick;
+extern bool g_bk_ap_connected;
+#endif
+
+
 static int wpa_supplicant_event_associnfo(struct wpa_supplicant *wpa_s,
 					  union wpa_event_data *data)
 {
@@ -3282,6 +3288,11 @@ static int wpa_supplicant_event_associnfo(struct wpa_supplicant *wpa_s,
 				 BAND_2_4_GHZ);
 			wpa_s->connection_he = req_elems.he_capabilities &&
 				resp_elems.he_capabilities;
+#if BK_SUPPLICANT
+			if (resp_elems.bk_vsie && resp_elems.bk_vsie_len) {
+				g_bk_ap_connected = true;
+			}
+#endif
 		}
 	}
 
@@ -3590,9 +3601,6 @@ static void wpas_fst_update_mb_assoc(struct wpa_supplicant *wpa_s,
 #endif /* CONFIG_FST */
 }
 
-#if BK_SUPPLICANT
-extern wifi_connect_tick_t sta_tick;
-#endif
 static void wpa_supplicant_event_assoc(struct wpa_supplicant *wpa_s,
 				       union wpa_event_data *data)
 {
@@ -3628,6 +3636,9 @@ static void wpa_supplicant_event_assoc(struct wpa_supplicant *wpa_s,
 
 #ifdef CONFIG_IEEE80211R
 	ft_completed = wpa_ft_is_completed(wpa_s->wpa);
+#endif
+#if BK_SUPPLICANT
+	g_bk_ap_connected = false;
 #endif
 	if (data && wpa_supplicant_event_associnfo(wpa_s, data) < 0)
 		return;

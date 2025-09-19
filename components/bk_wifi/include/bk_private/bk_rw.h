@@ -196,6 +196,7 @@ struct add_sta_st {
 	u8 ap_vif_idx;
 	u8 *supp_rates;
 	size_t supp_rates_len;
+	u8 qos_info;
 	u32 flags;
 } ;
 

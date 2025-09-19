@@ -75,6 +75,28 @@ int bk_feature_sta_vsie_enable(void);
 int bk_feature_ap_statype_limit_enable(void);
 
 /**
+ * @brief     Interface for customer to Enable/Disable beacon tx tim
+ *
+ * @attention 1 Controled by middleware/soc/bk72xx.defconfig
+ *
+ * @return
+ *    - 1: enable
+ *    - 0: disable
+ */
+int bk_feature_tx_tim_enable(void);
+
+/**
+ * @brief     Interface for customer to Enable/Disable AP_PS
+ *
+ * @attention 1 Controled by middleware/soc/bk72xx.defconfig
+ *
+ * @return
+ *    - 1: enable
+ *    - 0: disable
+ */
+int bk_feature_ap_ps_enable(void);
+
+/**
  * @brief     Interface for customer to Enable/Disable temp detect functionality
  *
  * @attention 1 Controled by middleware/soc/bk72xx.defconfig
@@ -176,8 +198,10 @@ int bk_feature_network_found_event(void);
 int bk_feature_config_cache_enable(void);
 int bk_feature_ckmn_enable(void);
 int bk_feature_send_deauth_before_connect(void);
+int bk_feature_send_sta_csa_ind(void);
 int bk_feature_get_scan_speed_level(void);
 int bk_feature_tcp_protect_enable(void);
+int bk_feature_set_relay_ap_inactivity(void);
 
 /**
  * @brief     Interface for customer to save cali data to OTP2

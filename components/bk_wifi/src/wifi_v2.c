@@ -1469,6 +1469,27 @@ int wlan_ap_sta_info(wlan_ap_stas_t *stas)
 	return wpa_ctrl_request(WPA_CTRL_CMD_AP_STA_INFO, stas);
 }
 
+#if CONFIG_BRIDGE
+int wlan_ap_add_blacklist(wlan_ap_blacklist_t *req)
+{
+	WLAN_RETURN_NULL_POINTER(req);
+
+	return wpa_ctrl_request(WPA_CTRL_CMD_AP_ADD_BLACKLIST, req);
+}
+
+int wlan_ap_del_blacklist(wlan_ap_blacklist_t *req)
+{
+	WLAN_RETURN_NULL_POINTER(req);
+
+	return wpa_ctrl_request(WPA_CTRL_CMD_AP_DEL_BLACKLIST, req);
+}
+
+int wlan_ap_clear_blacklist()
+{
+	return wpa_ctrl_request(WPA_CTRL_CMD_AP_CLEAR_BLACKLIST, NULL);
+}
+#endif
+
 /**
  * @brief Set Beacon/Probe Response Vendor IE
  * @param[in] vendor IE and its len
@@ -3004,6 +3025,9 @@ bk_err_t bk_wifi_scan_get_result(wifi_scan_result_t *scan_result)
 		ap->channel = ap_list.ApList[i].channel;
 		ap->security = ap_list.ApList[i].security;
 		ap->rssi = ap_list.ApList[i].ApPower;
+#if CONFIG_BRIDGE
+		ap->is_bridge = ap_list.ApList[i].is_bridge;
+#endif
 
 		scan_result->ap_num++;
 	}
@@ -3220,6 +3244,7 @@ static bk_err_t wifi_ap_set_config(const wifi_ap_config_t *ap_config)
 	os_memcpy(g_ap_param_ptr->ssid.array, ap_config->ssid, g_ap_param_ptr->ssid.length);
 	g_ap_param_ptr->key_len = os_strlen(ap_config->password);
 	g_ap_param_ptr->hidden_ssid = ap_config->hidden;
+	g_ap_param_ptr->bridge = ap_config->bridge;
 	if (g_ap_param_ptr->key_len < 8) {
 		g_ap_param_ptr->cipher_suite = BK_SECURITY_TYPE_NONE;
 	} else {

@@ -300,7 +300,15 @@ int wpa_supplicant_ctrl_iface_scan_results(
 			ieee80211_freq_to_chan(bss->freq, (u8 *)&results->ApList[index].channel);
 			os_memcpy(results->ApList[index].bssid, bss->bssid, ETH_ALEN);
 			results->ApList[index].security = get_security_type_from_ie(bss->ies, bss->ie_len, bss->caps);
-
+#if CONFIG_BRIDGE
+			struct wpabuf *bridge_ie = wpa_bss_get_bridge_vendor_ie(bss, TYBRIDGE_VENDOR_TYPE);
+			if (NULL == bridge_ie) {
+				results->ApList[index].is_bridge = 0;
+			} else {
+				results->ApList[index].is_bridge = 1;
+				wpabuf_free(bridge_ie);
+			}
+#endif
 			index++;
 		}
 	}
@@ -1219,9 +1227,110 @@ __INLINE int phy_freq_to_channel(uint8_t band, uint16_t freq)
 			return (freq - 2407) / 5;
 	} else if ((band == PHY_BAND_5G) && (freq >= 5005) && (freq <= 5825))
 		return (freq - PHY_FREQ_5G) / 5;
+	return 0;
+}
+
+#if BK_SUPPLICANT
+#define MAX_NUM_DENY_MAC 32
+void hostapd_remove_first_acl_entry(struct mac_acl_entry **acl, int *num) {
+	// If the list is empty, return immediately
+
+	if (*num <= 0) {
+		return;
+	}
+
+	// Remove the first element (index 0) from the ACL array
+	os_remove_in_array(*acl, *num, sizeof(**acl), 0);
+
+	// Decrease the number of entries in the list
+	(*num)--;
+}
+
+int hostapd_add_acl_maclist(struct mac_acl_entry **acl, int *num,
+			    int vlan_id, const u8 *addr)
+{
+	struct mac_acl_entry *newacl;
+
+	if (*num >= MAX_NUM_DENY_MAC) {
+		// delete the first deny mac address
+		hostapd_remove_first_acl_entry(acl, num);
+	}
+
+	newacl = os_realloc_array(*acl, *num + 1, sizeof(**acl));
+	if (!newacl) {
+		wpa_printf(MSG_ERROR, "MAC list reallocation failed");
+		return -1;
+	}
+
+	*acl = newacl;
+	os_memcpy((*acl)[*num].addr, addr, ETH_ALEN);
+	os_memset(&(*acl)[*num].vlan_id, 0, sizeof((*acl)[*num].vlan_id));
+	(*acl)[*num].vlan_id.untagged = vlan_id;
+	(*acl)[*num].vlan_id.notempty = !!vlan_id;
+	(*num)++;
 
 	return 0;
 }
+
+int hostapd_acl_comp(const void *a, const void *b)
+{
+	const struct mac_acl_entry *aa = a;
+	const struct mac_acl_entry *bb = b;
+	return os_memcmp(aa->addr, bb->addr, sizeof(macaddr));
+}
+
+int hostapd_ctrl_iface_acl_add_mac(struct mac_acl_entry **acl, int *num,
+					  const u8 *addr)
+{
+	struct vlan_description vlan_id;
+	int ret = 0, vlanid = 0;
+
+	if (!hostapd_maclist_found(*acl, *num, addr, &vlan_id)) {
+		ret = hostapd_add_acl_maclist(acl, num, vlanid, addr);
+		if (ret != -1 && *acl)
+			qsort(*acl, *num, sizeof(**acl), hostapd_acl_comp);
+	}
+
+	return ret < 0 ? -1 : 0;
+}
+
+void hostapd_remove_acl_mac(struct mac_acl_entry **acl, int *num,
+			    const u8 *addr)
+{
+	int i = 0;
+
+	while (i < *num) {
+		if (os_memcmp((*acl)[i].addr, addr, ETH_ALEN) == 0) {
+			os_remove_in_array(*acl, *num, sizeof(**acl), i);
+			(*num)--;
+		} else {
+			i++;
+		}
+	}
+}
+
+int hostapd_ctrl_iface_acl_del_mac(struct mac_acl_entry **acl, int *num,
+					  const u8 *addr)
+{
+	struct vlan_description vlan_id;
+
+	if (!(*num))
+		return 0;
+
+	if (hostapd_maclist_found(*acl, *num, addr, &vlan_id))
+		hostapd_remove_acl_mac(acl, num, addr);
+
+	return 0;
+}
+
+
+void hostapd_ctrl_iface_acl_clear_list(struct mac_acl_entry **acl,
+					      int *num)
+{
+	while (*num)
+		hostapd_remove_acl_mac(acl, num, (*acl)[0].addr);
+}
+#endif
 
 int wpa_supplicant_ctrl_iface_receive(wpah_msg_t *msg)
 {
@@ -1710,6 +1819,19 @@ int wpa_supplicant_ctrl_iface_receive(wpah_msg_t *msg)
 		CHECK_HAPD();
 		res = ap_channel_switch(interfaces->iface[0], new_freq);
 	}	break;
+
+#if BK_SUPPLICANT
+	case WPA_CTRL_CMD_STA_REPORT_CSA_INFO: {
+		if (bk_feature_send_sta_csa_ind()) {
+			struct mm_sta_report_csa_ind *report_info = (struct mm_sta_report_csa_ind *)msg->argu;
+
+			res = -1;
+			CHECK_HAPD();
+			res = ap_config_csa_info_and_switch_chanel(interfaces->iface[0], report_info->sta_csa_count,
+													   report_info->freq);
+		}
+	}   break;
+#endif
 
 	case WPA_CTRL_CMD_AP_STA_DEAUTH: {
 		wlan_ap_sta_deauth_t *req = (wlan_ap_sta_deauth_t *)msg->argu;

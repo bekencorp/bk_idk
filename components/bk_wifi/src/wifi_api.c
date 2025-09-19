@@ -59,6 +59,66 @@ void demo_scan_adv_app_init(uint8_t *oob_ssid)
 }
 #if CONFIG_BRIDGE
 extern uint8 bridge_is_enabled;
+int demo_bridge_softap_init(char *ap_ssid, char *ap_key, wifi_security_t security)
+{
+	wifi_ap_config_t ap_config = {0};//WIFI_DEFAULT_AP_CONFIG();
+	netif_ip4_config_t ip4_config = {0};
+	int len, key_len = 0;
+	len = os_strlen(ap_ssid);
+	if (ap_key)
+		key_len = os_strlen(ap_key);
+	if (SSID_MAX_LEN < len) {
+		BK_LOGE(TAG, "ssid name more than 32 Bytes\r\n");
+		return BK_FAIL;
+	}
+	if (0 == len) {
+		BK_LOGE(TAG, "ssid name must not be null\r\n");
+		return BK_FAIL;
+	}
+
+	if (8 > key_len)
+		BK_LOGE(TAG, "key less than 8 Bytes, the security will be set NONE\r\n");
+
+	if (64 < key_len) {
+		BK_LOGE(TAG, "key more than 64 Bytes\r\n");
+		return BK_FAIL;
+	}
+	if (!bridge_is_enabled) {
+		os_strcpy(ip4_config.ip, WLAN_DEFAULT_IP);
+		os_strcpy(ip4_config.mask, WLAN_DEFAULT_MASK);
+		os_strcpy(ip4_config.gateway, WLAN_DEFAULT_GW);
+		os_strcpy(ip4_config.dns, WLAN_DEFAULT_GW);
+	} else {
+		os_strcpy(ip4_config.ip, WLAN_ANY_IP);
+		os_strcpy(ip4_config.mask, WLAN_ANY_IP);
+		os_strcpy(ip4_config.gateway, WLAN_ANY_IP);
+		os_strcpy(ip4_config.dns, WLAN_ANY_IP);
+	}
+	BK_RETURN_ON_ERR(bk_netif_set_ip4_config(NETIF_IF_AP, &ip4_config));
+
+	os_strcpy(ap_config.ssid, ap_ssid);
+
+	wifi_link_status_t link_sta_status = {0};
+	os_memset(&link_sta_status, 0x0, sizeof(link_sta_status));
+	bk_wifi_sta_get_link_status(&link_sta_status);
+	extern uint8_t bridge_is_enabled;
+	extern uint8_t bridge_open;
+	if (bridge_open && bridge_is_enabled && link_sta_status.security == WIFI_SECURITY_NONE) {
+		// do not set the key for softap
+	} else if (ap_key) {
+		os_strcpy(ap_config.password, ap_key);
+	}
+	ap_config.security = security;
+	os_memcpy(ap_config.vsie, "\xdd\x07\xc8\x47\x8c\x00\x00\x00\x00", 9);
+	ap_config.vsie_len = 9;
+
+	ap_config.bridge = true;
+
+	BK_LOGI(TAG, "ssid:%s  key:%s\r\n", ap_config.ssid, ap_config.password);
+	BK_RETURN_ON_ERR(bk_wifi_ap_set_config(&ap_config));
+	BK_RETURN_ON_ERR(bk_wifi_ap_start());
+	return BK_OK;
+}
 #endif
 int demo_softap_app_init(char *ap_ssid, char *ap_key, char *ap_channel)
 {
@@ -158,8 +218,20 @@ int demo_sta_app_init(char *oob_ssid, char *connect_key)
 	}
 #endif
 	os_strcpy(sta_config.ssid, oob_ssid);
-	os_strcpy(sta_config.password, connect_key);
-
+	if (connect_key)
+		os_strcpy(sta_config.password, connect_key);
+#if CONFIG_BRIDGE
+	extern uint8_t bridge_is_enabled;
+	extern uint8_t bridge_open;
+	void bk_bridge_stop(void);
+	/* Before connecting the STA to the router, if the bridge is in the enabled state,
+		disconnect the bridge first. After starting the STA, if the original bridge was
+		in the enabled state, maintain the original state */
+	if (bridge_open && bridge_is_enabled) {
+		bk_bridge_stop();
+		bridge_open = true;
+	}
+#endif
 	BK_LOGI(TAG, "ssid:%s key:%s\r\n", sta_config.ssid, sta_config.password);
 	BK_LOG_ON_ERR(bk_wifi_sta_set_config(&sta_config));
 	BK_LOG_ON_ERR(bk_wifi_sta_start());
@@ -263,6 +335,19 @@ int demo_state_app_init(void)
 				   ap_ip4_info.ip, ap_ip4_info.gateway, ap_ip4_info.mask, ap_ip4_info.dns);
 #endif
 	}
+#if CONFIG_BRIDGE
+	if (bridge_ip_is_start()) {
+		os_memset(&ap_info, 0x0, sizeof(ap_info));
+		BK_RETURN_ON_ERR(bk_wifi_ap_get_config(&ap_info));
+		os_memcpy(ssid, ap_info.ssid, 32);
+		BK_LOGI(TAG, "[KW:]bridge: ssid=%s, channel=%d, cipher_type=%s\r\n",
+		   ssid, ap_info.channel, wifi_sec_type_string(ap_info.security));
+	}
+#else
+	BK_RETURN_ON_ERR(bk_netif_get_ip4_config(NETIF_IF_AP, &ap_ip4_info));
+	BK_LOGI(TAG, "[KW:]ip=%s,gate=%s,mask=%s,dns=%s\r\n",
+	ap_ip4_info.ip, ap_ip4_info.gateway, ap_ip4_info.mask, ap_ip4_info.dns);
+#endif
 	return BK_OK;
 #endif
 }

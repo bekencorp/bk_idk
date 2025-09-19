@@ -59,7 +59,6 @@
 #include "rwm_proto.h"
 #endif
 
-void ethernetif_input(int iface, struct pbuf *p);
 #if !CONFIG_SPECIAL_TX_TYPE
 UINT32 rwm_transfer_node(MSDU_NODE_T *node, u8 flag);
 #endif
@@ -338,7 +337,6 @@ void rwm_p2p_ps_change_ind_handler(void *msg)
 
 #endif
 
-#if CONFIG_AP_PS
 void rwm_msdu_ps_change_ind_handler(void *msg)
 {
 	struct ke_msg *msg_ptr = (struct ke_msg *)msg;
@@ -354,7 +352,6 @@ void rwm_msdu_ps_change_ind_handler(void *msg)
 	else if (ind->ps_state == PS_MODE_ON)
 		rwm_trigger_tx_bufing_start(TX_BUFING_SRC_STA_PS, ind->sta_idx);
 }
-#endif
 
 void rwm_msdu_init(void)
 {

@@ -1188,6 +1188,8 @@ enum mm_msg_tag
     MM_SET_DEFAULT_AC_REQ,
     ///set default AC Confirmation.  msgid:135
     MM_SET_DEFAULT_AC_CFM,
+    /// Indication the CSA sta reported. msgid:136
+    MM_STA_CSA_REPORT_IND,
     #endif
 
     /*
@@ -1953,6 +1955,14 @@ struct mm_csa_traffic_ind
     bool enable;
 };
 
+#if BK_MAC
+struct mm_sta_report_csa_ind
+{
+    uint8_t sta_csa_count;
+    uint16_t freq;
+};
+#endif
+
 /// Pointer to callback function
 typedef void (*cb_idle_func_ptr)(void);
 
@@ -2504,6 +2514,12 @@ bool mac_vif_mgmt_get_p2p_index(void *_vif);
 bool mac_vif_mgmt_get_nums_of_p2p(void *_vif);
 struct mac_addr *mac_vif_mgmt_get_mac_address(void *_vif);
 #endif
+uint8_t sta_mgmt_get_uapsd_queues(void *_sta);
+uint16_t sta_mgmt_get_uapsd_tids(void *_sta);
+struct rwnx_sta_ps *sta_mgmt_get_sta_ps(void *_sta);
+uint32_t mac_sta_mgmt_get_staid(void *_sta);
+void *sta_mgmt_get_entry(uint8_t staid);
+void *mac_vif_mgmt_get_mac_addr(void *_vif);
 /// Messages that are logically related to the task.
 enum apm_msg_tag
 {

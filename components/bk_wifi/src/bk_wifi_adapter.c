@@ -681,6 +681,26 @@ static int bk_feature_ap_statype_limit_enable_wrapper(void)
     return bk_feature_ap_statype_limit_enable();
 }
 
+static int bk_feature_set_relay_ap_inactivity_wrapper(void)
+{
+    return bk_feature_set_relay_ap_inactivity();
+}
+
+static int bk_feature_send_sta_csa_ind_wrapper(void)
+{
+    return bk_feature_send_sta_csa_ind();
+}
+
+static int bk_feature_ap_ps_enable_wrapper(void)
+{
+    return bk_feature_ap_ps_enable();
+}
+
+static int bk_feature_tx_tim_enable_wrapper(void)
+{
+    return bk_feature_tx_tim_enable();
+}
+
 static int bk_feature_ckmn_enable_wrapper(void)
 {
     return bk_feature_ckmn_enable();
@@ -1404,6 +1424,8 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._bk_feature_bssid_connect_enable = bk_feature_bssid_connect_enable_wrapper,
 	._bk_feature_fast_connect_enable = bk_feature_fast_connect_enable_wrapper,
 	._bk_feature_send_deauth_before_connect = bk_feature_send_deauth_before_connect_wrapper,
+	._bk_feature_set_relay_ap_inactivity = bk_feature_set_relay_ap_inactivity_wrapper,
+	._bk_feature_send_sta_csa_ind = bk_feature_send_sta_csa_ind_wrapper,
 	._bk_feature_get_scan_speed_level = bk_feature_get_scan_speed_level_wrapper,
 	._bk_feature_fast_dhcp_enable = bk_feature_fast_dhcp_enable_wrapper,
 	._bk_feature_not_check_ssid_enable = bk_feature_not_check_ssid_enable_wrapper,
@@ -1419,6 +1441,8 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._bk_wifi_get_vendor_ie_cb_internal = bk_wifi_get_vendor_ie_cb_internal_wrapper,
 	._bk_wifi_get_vendor_ie_type = bk_wifi_get_vendor_ie_type_wrapper,
 	._bk_wifi_get_vendor_ie_oui_len = bk_wifi_get_vendor_ie_oui_len_wrapper,
+	._bk_feature_ap_ps_enable = bk_feature_ap_ps_enable_wrapper,
+	._bk_feature_tx_tim_enable = bk_feature_tx_tim_enable_wrapper,
 	._flush_all_dcache = flush_all_dcache_wrapper,
 	._bk_ms_to_ticks = bk_ms_to_ticks_wrapper,
 	._dma_memcpy = dma_memcpy_wrapper,

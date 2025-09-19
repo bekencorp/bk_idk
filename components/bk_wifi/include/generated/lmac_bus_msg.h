@@ -21,6 +21,7 @@ enum {
     BMSG_TX_RAW_CB_TYPE,
     BMSG_RX_LSIG,      /* phy receive 802.11 LSIG*/
     BMSG_TX_DROP_TRAFFIC,
+    BMSG_RX_TRAFFIC_REQ,
     BMSG_TX_MGMT_SKB,
 };
 

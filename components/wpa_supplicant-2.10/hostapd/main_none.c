@@ -22,7 +22,7 @@
 #include "common/eapol_common.h"
 #include "signal.h"
 #include "crypto/sha1.h"
-
+#include "wpa_debug.h"
 #include "wpa_ctrl.h"
 #include "wpa_err.h"
 #include "main_none.h"
@@ -128,6 +128,12 @@ struct hostapd_config *hostapd_config_read(const char *fname)
 	conf->ieee80211ax = 1;
 #endif
 
+#if CONFIG_UAPSD
+	if (conf->ieee80211n || conf->ieee80211ax) {
+		bss->wmm_enabled = conf->ieee80211n | conf->ieee80211ax;
+		bss->wmm_uapsd = 1;
+	}
+#endif
 	bss->ssid.ssid_len = g_ap_param_ptr->ssid.length;
 	os_memcpy(bss->ssid.ssid, g_ap_param_ptr->ssid.array, bss->ssid.ssid_len);
 	bss->max_listen_interval = 65535;
@@ -213,6 +219,13 @@ struct hostapd_config *hostapd_config_read(const char *fname)
 			wpa_printf(MSG_ERROR, "%s OOM\n", __func__);
 			errors++;
 		}
+		#if BK_SUPPLICANT
+		bss->assocresp_elements = wpabuf_alloc_copy(g_ap_param_ptr->vsie, g_ap_param_ptr->vsie_len);
+		if (!bss->assocresp_elements) {
+			wpa_printf(MSG_ERROR, "%s OOM\n", __func__);
+			errors++;
+		}
+		#endif
 	}
 #endif
 
@@ -1071,6 +1084,8 @@ int hostapd_main_entry(int argc, char *argv[])
 		//os_free(ap_iface_buf);
 		return -1;
 	}
+
+	wpa_debug_level = MSG_DEBUG;
 
 	os_memset(&g_hapd_interfaces, 0, sizeof(g_hapd_interfaces));
 	g_hapd_interfaces.reload_config  = hostapd_reload_config;

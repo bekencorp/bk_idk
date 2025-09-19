@@ -724,6 +724,7 @@ struct prism2_hostapd_param {
 			u8 plink_state;
 			u8 set;
 			size_t supp_rates_len;
+			u8 qos_info;
 			void *arg;
 			u32 flags;
 		} add_sta;

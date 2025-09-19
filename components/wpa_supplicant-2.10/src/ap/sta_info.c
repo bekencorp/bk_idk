@@ -481,7 +481,7 @@ void ap_handle_timer(void *eloop_ctx, void *timeout_ctx)
 		   hapd->conf->iface, __func__, MAC2STR(sta->addr), sta->flags,
 		   sta->timeout_next);
 #endif
-	WPA_LOGI("ap_handle_timer\n");
+	WPA_LOGI("ap_handle_timer: %pm, timeout_next %d, flags 0x%x\n", sta->addr, sta->timeout_next, sta->flags);
 	if (sta->timeout_next == STA_REMOVE) {
 		hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_IEEE80211,
 			       HOSTAPD_LEVEL_INFO, "deauthenticated due to "

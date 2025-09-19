@@ -10,7 +10,7 @@
 
 #include "common.h"
 
-int wpa_debug_level = MSG_INFO;
+int wpa_debug_level = MSG_DEBUG;
 int wpa_debug_show_keys = 0;
 int wpa_debug_timestamp = 0;
 

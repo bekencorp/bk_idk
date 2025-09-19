@@ -120,6 +120,38 @@ int bk_feature_close_coexist_csa(void) {
 #endif
 }
 
+int bk_feature_ap_ps_enable(void) {
+#if CONFIG_AP_PS
+	return 1;
+#else
+	return 0;
+#endif
+}
+
+int bk_feature_tx_tim_enable(void) {
+#if CONFIG_AP_TX_TIM
+    return 1;
+#else
+    return 0;
+#endif
+}
+
+int bk_feature_set_relay_ap_inactivity(void) {
+#if CONFIG_BRIDGE
+	return 1;
+#else
+	return 0;
+#endif
+}
+
+int bk_feature_send_sta_csa_ind(void) {
+#if CONFIG_BRIDGE
+	return 1;
+#else
+	return 0;
+#endif
+}
+
 int bk_feature_get_scan_speed_level(void) {
 	return CONFIG_SCAN_SPEED_LEVEL;
 }

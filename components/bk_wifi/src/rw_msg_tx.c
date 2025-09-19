@@ -932,6 +932,9 @@ int rw_msg_send_me_sta_add(struct add_sta_st *param,
 	req->vif_idx = param->ap_vif_idx;
 	req->aid = param->aid;
 	req->flags = param->flags; // 1:STA_QOS_CAPA 2: STA_HT_CAPA BIT(3)STA_MFP_CAPA
+	req->uapsd_queues = param->qos_info & 0xf;
+	req->max_sp_len = (((param->qos_info & 0x60) >> 5) * 2);
+	RWNX_LOGI("%s qos_info = 0x%x req->uapsd_queues = 0x%x; max_sp_len = %d\n", __FUNCTION__, param->qos_info, req->uapsd_queues, req->max_sp_len);
 
 	RWNX_LOGI("hapd_intf_sta_add:%d, vif:%d\r\n", req->aid, req->vif_idx);
 	if(param->supp_rates_len > MAC_RATESET_LEN)
@@ -1484,6 +1487,10 @@ int rw_msg_send_sm_connect_req(CONNECT_PARAM_T *sme, void *cfm)
 	os_memcpy(req->ssid.array, sme->ssid.array, sme->ssid.length);
 	os_memcpy(&req->bssid, &sme->bssid, sizeof(sme->bssid));
 
+#if CONFIG_UAPSD
+	//(bit0: VO, bit1: VI, bit2: BK, bit3: BE, bit5-6: max_sp_len)
+	req->uapsd_queues = 0x2f;//default config
+#endif
 	req->vif_idx = sme->vif_idx;
 	req->chan.band = sme->chan.band;
 	req->chan.flags = sme->chan.flags;

@@ -198,10 +198,6 @@ struct icmpv6_hdr {
   	u32_t data;
 };
 #if CONFIG_RWNX_PROTO_DEBUG
-void rwm_udp_printf(char *dir, struct ipv4_hdr *ip_hdr);
-void rwm_ip_printf(char *dir, struct ethhdr *eth_hdr_ptr);
-void rwm_arp_printf(char *dir, struct ethhdr *eth_hdr_ptr);
-void rwm_ipv6_printf(char *dir, struct ethhdr *eth_hdr_ptr);
 void rwm_proto_printf(int direction, struct ethhdr *eth_hdr_ptr);
 #ifdef __cplusplus
 }

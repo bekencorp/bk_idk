@@ -47,6 +47,7 @@
 #include "net.h"
 #include "fhost_msg.h"
 #include <modules/wifi_types.h>
+#include "bk_feature.h"
 
 uint32_t resultful_scan_cfm = 0;
 uint8_t *ind_buf_ptr = 0;
@@ -1268,6 +1269,12 @@ void rwnx_ps_bh_enable(STA_INF_PTR sta, bool enable)
 		if (is_multicast_sta(mac_sta_mgmt_get_staid(sta))) {
 			txq = rwnx_txq_sta_get(sta, 0);
 			txq->hwq = &rwnx_hw->hwq[RWNX_HWQ_BE];
+			txq->push_limit = 0;
+		} else {
+			int i;
+			foreach_sta_txq(sta, txq, i) {
+				txq->push_limit = 0;
+			}
 		}
 
 		rwnx_txq_sta_start(sta, RWNX_TXQ_STOP_STA_PS);
@@ -1316,7 +1323,140 @@ static inline int rwnx_rx_ps_change_ind(struct ke_msg *msg)
 
 	return 0;
 }
-#endif // CONFIG_RWNX_SW_TXQ
+
+/**
+ * rwnx_ps_bh_traffic_req - Handle traffic request for STA in PS mode
+ *
+ * @rwnx_hw: Driver main data
+ * @sta: Sta which enters/leaves PS mode
+ * @pkt_req: number of pkt to push
+ * @ps_id: type of PS data requested (@LEGACY_PS_ID or @UAPSD_ID)
+ *
+ * This function will make sure that @pkt_req are pushed to fw
+ * whereas the STA is in PS mode.
+ * If request is 0, send all traffic
+ * If request is greater than available pkt, reduce request
+ * Note: request will also be reduce if txq credits are not available
+ *
+ * All counter updates are protected from TX path by taking tx_lock
+ *
+ * NOTE: _bh_ in function name indicates that this function is called
+ * from the bottom_half tasklet.
+ */
+void rwnx_ps_bh_traffic_req(STA_INF_PTR sta, u16 pkt_req, u8 ps_id)
+{
+	bool need_process = false;
+	int pkt_ready_all;
+	struct rwnx_txq *txq;
+	struct rwnx_hw *rwnx_hw = &g_rwnx_hw;
+
+	struct rwnx_sta_ps *ps = sta_mgmt_get_sta_ps(sta);
+
+	if (!ps->active)
+		return;
+
+	//trace_ps_traffic_req(sta, pkt_req, ps_id);
+
+	spin_lock(&rwnx_hw->tx_lock);
+
+	/* Fw may ask to stop a service period with PS_SP_INTERRUPTED. This only
+	happens for p2p-go interface if NOA starts during a service period */
+	if ((pkt_req == 0xff) && (ps_id == UAPSD_ID)) {
+		int tid;
+		ps->sp_cnt[ps_id] = 0;
+		foreach_sta_txq(sta, txq, tid) {
+			txq->push_limit = 0;
+		}
+		goto done;
+	}
+
+	pkt_ready_all = (ps->pkt_ready[ps_id] - ps->sp_cnt[ps_id]);
+
+	/* Don't start SP until previous one is finished or we don't have
+	packet ready (which must not happen for U-APSD) */
+	if (ps->sp_cnt[ps_id] || pkt_ready_all <= 0) {
+		goto done;
+	}
+
+	/* Adapt request to what is available. */
+	if (pkt_req == 0 || pkt_req > pkt_ready_all) {
+		pkt_req = pkt_ready_all;
+	}
+
+	/* Reset the SP counter */
+	ps->sp_cnt[ps_id] = 0;
+
+	/* "dispatch" the request between txq */
+	if (is_multicast_sta(mac_sta_mgmt_get_staid(sta))) {
+		txq = rwnx_txq_sta_get(sta, 0);
+		if (txq->credits <= 0)
+			goto done;
+		if (pkt_req > txq->credits)
+			pkt_req = txq->credits;
+		txq->push_limit = pkt_req;
+		ps->sp_cnt[ps_id] = pkt_req;
+		rwnx_txq_add_to_hw_list(txq);
+		if(pkt_req)
+			need_process = true;
+	} else {
+		int i, tid;
+
+		foreach_sta_txq_prio(sta, txq, tid, i) {
+			u16 txq_len = skb_queue_len(&txq->sk_list);
+
+			if (txq->ps_id != ps_id)
+				continue;
+
+			if (txq_len > txq->credits)
+				txq_len = txq->credits;
+
+			if (txq_len == 0)
+				continue;
+
+			if (txq_len < pkt_req) {
+				/* Not enough pkt queued in this txq, add this
+				txq to hwq list and process next txq */
+				pkt_req -= txq_len;
+				txq->push_limit = txq_len;
+				ps->sp_cnt[ps_id] += txq_len;
+				rwnx_txq_add_to_hw_list(txq);
+				need_process = true;
+			} else {
+				/* Enough pkt in this txq to comlete the request
+				add this txq to hwq list and stop processing txq */
+				txq->push_limit = pkt_req;
+				ps->sp_cnt[ps_id] += pkt_req;
+				rwnx_txq_add_to_hw_list(txq);
+				need_process = true;
+				break;
+			}
+		}
+	}
+
+	done:
+	spin_unlock(&rwnx_hw->tx_lock);
+	if(need_process)
+	{
+		rwnx_hwq_process_all(0);
+		//bk_wifi_sw_txq_event_set();
+	}
+}
+#endif
+
+static inline int rwnx_rx_traffic_req_ind(struct ke_msg *msg)
+{
+	struct mm_traffic_req_ind *ind = (struct mm_traffic_req_ind *)msg->param;
+
+#if 0 // called in core-thread
+	STA_INF_PTR sta = sta_mgmt_get_entry(ind->sta_idx);
+
+	rwnx_ps_bh_traffic_req(sta, ind->pkt_cnt,
+		ind->uapsd ? UAPSD_ID : LEGACY_PS_ID);
+#endif
+	bmsg_rx_traffic_req_sender(ind->sta_idx, ind->pkt_cnt, ind->uapsd ? UAPSD_ID : LEGACY_PS_ID);
+
+	return 0;
+}
 
 #if CONFIG_WIFI_P2P
 static int rwnx_rx_p2p_vif_ps_change_ind(struct ke_msg *msg)
@@ -1655,12 +1795,13 @@ void rwnx_handle_recv_msg(struct ke_msg *rx_msg)
 #if CONFIG_RWNX_SW_TXQ
 		rwnx_rx_ps_change_ind(rx_msg);
 #else
-#if CONFIG_AP_PS
 		rwm_msdu_ps_change_ind_handler(rx_msg);
-#endif
 #endif
 		break;
 	case MM_TRAFFIC_REQ_IND:
+#if CONFIG_AP_PS
+		rwnx_rx_traffic_req_ind(rx_msg);
+#endif
 		break;
 #if CONFIG_USE_P2P_PS
 	case MM_P2P_VIF_PS_CHANGE_IND:
@@ -1686,6 +1827,17 @@ void rwnx_handle_recv_msg(struct ke_msg *rx_msg)
 		break;
 	case MM_P2P_NOA_UPD_IND:
 		break;
+
+	case MM_STA_CSA_REPORT_IND: {
+		if (bk_feature_send_sta_csa_ind()) {
+			struct ke_msg *msg_ptr;
+			struct mm_sta_report_csa_ind *ind;
+			msg_ptr = (struct ke_msg *)rx_msg;
+			ind = (struct mm_sta_report_csa_ind *)msg_ptr->param;
+
+			wpa_ctrl_event_copy(WPA_CTRL_CMD_STA_REPORT_CSA_INFO, ind, sizeof(*ind));
+		}
+	}	break;
 
 	case MM_RSSI_STATUS_IND: {
 		struct ke_msg *msg_ptr;

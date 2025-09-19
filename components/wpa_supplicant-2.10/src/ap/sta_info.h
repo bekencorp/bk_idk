@@ -352,7 +352,12 @@ struct sta_info {
  * AP_DISASSOC_DELAY seconds. Similarly, the station will be deauthenticated
  * after AP_DEAUTH_DELAY seconds has passed after disassociation. */
 #if BK_SUPPLICANT
+#if CONFIG_BRIDGE
+#define AP_MAX_INACTIVITY        (5 * 60)
+#else
 #define AP_MAX_INACTIVITY        (31)
+#endif
+#define AP_DEFAULT_MAX_INACTIVITY (5 * 60)
 #define AP_DISASSOC_DELAY        (1)
 #else
 #define AP_MAX_INACTIVITY (5 * 60)
