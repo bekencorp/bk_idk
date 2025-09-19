@@ -345,7 +345,8 @@ void wpas_notify_disconnected(struct wpa_supplicant *wpa_s)
 	// take password wrong in action: wpas_notify_psk_mismatch set mac status in advance.
 	if (state.state == WIFI_LINKSTATE_STA_DISCONNECTED &&
 		(state.reason_code == WIFI_REASON_WRONG_PASSWORD ||
-		state.reason_code == WIFI_REASON_NO_AP_FOUND)) {
+		state.reason_code == WIFI_REASON_NO_AP_FOUND ||
+		state.reason_code == WIFI_REASON_DISCONNECT_BY_APP)) {
 		/* do nothing, just keep WIFI_REASON_WRONG_PASSWORD as its reason code. */
 		/* When fast connect, clean fast_connnect_set flag */
 		g_sta_param_ptr->fast_connect_set = 0;

@@ -1577,9 +1577,24 @@ int wpa_supplicant_req_scan(struct wpa_supplicant *wpa_s, int sec, int usec)
 				wpa_s->auto_reconnect_count--;
 				eloop_register_timeout(sec, usec, wpa_supplicant_scan, wpa_s, NULL);
 			} else if (wpa_s->auto_reconnect_count == 0) {
-				WPA_LOGI("%s: max scan count reached\n", __func__);
+				WPA_LOGI("%s: max scan count reached, wpa_s reconnect %d, no_suitable_network %d\n", __func__,
+					wpa_s->reconnect, wpa_s->no_suitable_network);
+				WPA_LOGI("suitable_network %d, no_suitable_network %d\n",
+					wpa_s->suitable_network, wpa_s->no_suitable_network);
 				// retry count reached
 				eloop_cancel_timeout(wpa_supplicant_auto_reconnect_timeout, wpa_s, NULL);
+				if (wpa_s->no_suitable_network)
+					wpa_s->disconnect_reason = -WIFI_REASON_NO_AP_FOUND;
+				else
+					wpa_s->disconnect_reason = -WIFI_REASON_DISCONNECT_BY_APP;
+
+				wifi_linkstate_reason_t info;
+
+				/* set link status */
+				info.state = WIFI_LINKSTATE_STA_DISCONNECTED;
+				info.reason_code = wpa_s->no_suitable_network ? WIFI_REASON_NO_AP_FOUND : WIFI_REASON_DISCONNECT_BY_APP;
+				mhdr_set_station_status(info);
+
 				// post event
 				wpas_notify_disconnected(wpa_s);
 			}

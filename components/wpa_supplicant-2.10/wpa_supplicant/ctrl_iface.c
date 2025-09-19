@@ -251,6 +251,9 @@ static int wpa_supplicant_ctrl_iface_select_network(
 	}
 #endif
 
+	wpa_s->suitable_network = 0;
+	wpa_s->no_suitable_network = 0;
+
 	wpa_supplicant_select_network(wpa_s, ssid);
 
 	return 0;
