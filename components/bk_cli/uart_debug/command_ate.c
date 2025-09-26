@@ -904,9 +904,11 @@ static void ate_read_otp(const uint8_t *content, int cnt, uint8_t *tx_buffer1)
     if (content[2] == 0x01) {
         /* otp1 use apb_read */
         if (content[3] == OTP_MEMORY_CHECK_MARK) {
-            // No area for crc???
-            // if cannot add crc bytes, and crc = false, then must len = len -1
-            length = 96 - 1;
+            // No area for crc
+            length = 60;
+        } else if (content[3] == OTP_EFUSE) {
+            // No area for crc
+            length = 4;
         } else {
             length = 0;
         }
@@ -925,9 +927,8 @@ static void ate_read_otp(const uint8_t *content, int cnt, uint8_t *tx_buffer1)
             // Batch_Num(2 bytes) + Wafer_ID(1 byte) + X(1 byte) + Y(1 byte)
             length = 5;
         } else if (content[3] == OTP_MEMORY_CHECK_VDDDIG) {
-            // No area for crc???
-            // if cannot add crc bytes, and crc = false, then must len = len -1
-            length = 4 - 1;
+            // No area for crc
+            length = 4;
         } else if (content[3] == OTP_GADC_TEMPERATURE) {
             length = 2;
         } else if (content[3] == OTP_PHY_PWR1) {
