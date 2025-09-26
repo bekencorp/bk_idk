@@ -113,6 +113,10 @@ extern void bk_ota_confirm_update_partition(ota_confirm_flag ota_confirm_val);
 #include "atsvr_unite.h"
 #endif
 
+#if (CONFIG_MAC802154_ENABLE)
+#include "components/mac802154.h"
+#endif
+
 #if (CONFIG_DEBUG_FIRMWARE)
 extern bk_err_t bk_dbg_init(void);
 #endif
@@ -328,6 +332,9 @@ int bk_init(void)
 		app_bt_init();
 		app_ble_init();
 #endif
+#if (CONFIG_MAC802154_ENABLE)
+		mac802154_init();
+#endif
 	}
 #else //!CONFIG_ATE_TEST
 #if CONFIG_WIFI_ENABLE
@@ -346,6 +353,9 @@ int bk_init(void)
 	app_ble_init();
 #endif
 
+#if (CONFIG_MAC802154_ENABLE)
+	mac802154_init();
+#endif
 #endif //CONFIG_ATE_TEST
 
 #if CONFIG_ETH
