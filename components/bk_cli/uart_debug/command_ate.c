@@ -484,7 +484,7 @@ void gpio_voltage_input_high(void)
 	for(i = 0; i < GPIO_NUM_MAX; i ++)
 	{
 		if(i == ATE_GPIO_DEV_UART1_RXD || i == ATE_GPIO_DEV_UART1_TXD) {
-			data[(1 + i/8)] |= (0x1 << (i % 8));
+			continue;
 		} else {
 			val = bk_gpio_get_value(i);
 			if(val & 0x1) {
@@ -533,10 +533,10 @@ void gpio_voltage_input_low(void)
 	for(i = 0; i < GPIO_NUM_MAX; i ++)
 	{
 		if(i == ATE_GPIO_DEV_UART1_RXD || i == ATE_GPIO_DEV_UART1_TXD) {
-			data[(1 + i/8)] |= (0x1 << (i % 8));
+			continue;
 		} else {
 			val = bk_gpio_get_value(i);
-			if(!(val & 0x1)) {
+			if(val & 0x1) {
 				data[(1 + i/8)] |= (0x1 << (i % 8));
 			} else {
 				data[(1 + i/8)] &= ~(0x1 << (i % 8));
