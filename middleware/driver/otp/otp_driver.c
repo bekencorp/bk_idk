@@ -43,6 +43,17 @@ typedef void (*otp_write_ptr)(uint32_t, uint32_t);
 
 static bk_lock_t* otp_lock = NULL;
 
+#if CONFIG_OTP_EFUSE_SUPPORT
+#define OTP_INIT_IF_UNINITIALIZED() do {\
+		if (!s_otp_driver_is_init) {\
+			bk_err_t ret = bk_otp_driver_init();\
+			if(BK_OK != ret){\
+				return ret;\
+			}\
+		}\
+	} while(0)
+#endif
+
 // TODO: Move the following code to a higher-level implementation
 bk_lock_t* lock_init()
 {
@@ -165,6 +176,23 @@ static uint32_t _otp_read_otp(uint32_t location)
 {
 	return otp_hal_read_otp(&s_otp.hal,location);
 }
+
+#if CONFIG_OTP_EFUSE_SUPPORT
+bk_err_t bk_otp_efuse_read_32bit(uint32_t* values)
+{
+    bk_err_t ret = BK_OK;
+	uint32_t location = otp_map_1[OTP_EFUSE].offset / 4;
+    if (values == NULL) {
+        return BK_ERR_PARAM;
+    }
+    OTP_INIT_IF_UNINITIALIZED();
+    OTP_ACTIVE(1);
+ 	*values = _otp_read_otp(location);
+    OTP_SLEEP();
+    return ret;
+}
+#endif
+
 static uint32_t _otp2_read_otp(uint32_t location)
 {
 	return otp2_hal_read_otp(&s_otp.hal,location);
@@ -180,6 +208,24 @@ static void _otp_write_otp(uint32_t location,uint32_t value)
 	otp_hal_write_otp(&s_otp.hal,location,value);
 }
 
+#if CONFIG_OTP_EFUSE_SUPPORT
+bk_err_t bk_otp_efuse_write_32bit(uint32_t* values)
+{
+    uint32_t value_to_write = 0xFFFFFFFF;
+    uint32_t location = otp_map_1[OTP_EFUSE].offset / 4;
+
+    if (values == NULL) {
+        return BK_ERR_PARAM;
+    }
+    value_to_write = *values;
+    OTP_INIT_IF_UNINITIALIZED();
+    OTP_ACTIVE(1);
+    _otp_write_otp(location, value_to_write);
+    OTP_SLEEP();
+    return BK_OK;
+}
+#endif
+
 static uint32_t otp_read_status()
 {
 	return otp_hal_read_status(&s_otp.hal);
@@ -189,6 +235,122 @@ static uint32_t otp_get_failcnt()
 {
 	return otp_hal_get_failcnt(&s_otp.hal);
 }
+
+#if CONFIG_OTP_EFUSE_SUPPORT
+static uint32_t otp_hal_get_offset(uint32_t item) {
+    if (otp_map != NULL) {
+        uint32_t map_1_rows = otp_map_1_row();
+        for (uint32_t i = 0; i < map_1_rows; i++) {
+            if (otp_map_1[i].name == item) {
+                return otp_map_1[i].offset;
+            }
+        }
+
+        uint32_t map_2_rows = otp_map_2_row();
+        for (uint32_t i = 0; i < map_2_rows; i++) {
+            if (otp_map_2[i].name == item) {
+                return otp_map_2[i].offset;
+            }
+        }
+    }
+
+    switch (item) {
+        case OTP_PHY_PWR1:
+            return 0x0;
+		case OTP_RFCALI1:
+            return 0x40;
+        case OTP_BL2_BOOT_PUBLIC_KEY_HASH:
+            return 0x148;
+        case OTP_BL1_BOOT_PUBLIC_KEY_HASH:
+            return 0x128;
+        default:
+            return 0;
+    }
+}
+
+
+uint32_t bk_otp_partical_clean_check_FT(void) {
+    uint32_t otp_start;
+    uint32_t otp_end;
+    uint32_t location;
+    uint32_t value;
+
+    OTP_INIT_IF_UNINITIALIZED();
+    OTP_ACTIVE(2);
+
+    otp_start = otp_hal_get_offset(OTP_PHY_PWR1) / 4;
+    otp_end   = otp_hal_get_offset(OTP_RFCALI1) / 4;
+    for (location = otp_start; location < otp_end; location++) {
+        value = _otp2_read_otp(location);
+        if (value != 0) {
+            OTP_SLEEP();
+            return SOC_OTP_AHB_BASE + location;
+        }
+    }
+
+    OTP_SLEEP();
+    return 0;
+}
+
+uint32_t bk_otp_partical_clean_check_customer(void) {
+    uint32_t otp_start;
+    uint32_t otp_end;
+    uint32_t location;
+    uint32_t value;
+
+    OTP_INIT_IF_UNINITIALIZED();
+    OTP_ACTIVE(1);
+
+    otp_start = otp_hal_get_offset(OTP_MEMORY_CHECK_MARK) / 4;
+    otp_end   = 0x400 / 4;
+    for (location = otp_start; location < otp_end; location++) {
+        value = _otp_read_otp(location);
+        if (value != 0) {
+            OTP_SLEEP();
+            // APB need add 0x400 offset
+            return SOC_OTP_APB_BASE + 0x400 + location;
+        }
+    }
+
+    OTP_ACTIVE(2);
+	otp_start = otp_hal_get_offset(OTP_RFCALI1) / 4;
+    otp_end   = otp_hal_get_offset(OTP_GADC_CALIBRATION) / 4;
+    for (location = otp_start; location < otp_end; location++) {
+        value = _otp2_read_otp(location);
+        if (value != 0) {
+            OTP_SLEEP();
+            return SOC_OTP_AHB_BASE + location;
+        }
+    }
+
+    OTP_SLEEP();
+    return 0;
+}
+
+uint32_t bk_otp_partical_clean_check_efuse(void) {
+    uint32_t otp_start;
+    uint32_t otp_end;
+    uint32_t location;
+    uint32_t value;
+
+    OTP_INIT_IF_UNINITIALIZED();
+    OTP_ACTIVE(1);
+
+    otp_start = 0x3c / 4;
+    otp_end   = otp_hal_get_offset(OTP_AES_KEY) / 4;
+    for (location = otp_start; location < otp_end; location++) {
+        value = _otp_read_otp(location);
+        if (value != 0) {
+            OTP_SLEEP();
+            // APB need add 0x400 offset
+            return SOC_OTP_APB_BASE + 0x400 + location;
+        }
+    }
+
+    OTP_SLEEP();
+    return 0;
+}
+#endif
 
 uint32_t otp_read_otp2_permission(uint32_t location)
 {
