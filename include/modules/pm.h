@@ -335,29 +335,27 @@ typedef enum
 	PM_DEV_ID_LIN,      // 35
 	PM_DEV_ID_PWM_1,    // 36
 	PM_DEV_ID_SECURE_WORLD,// 37
-	PM_DEV_ID_UART4,    // 38
-	PM_DEV_ID_TRNG,     // 39
-	PM_DEV_ID_CPU1,     // 40
+	PM_DEV_ID_UART4,       // 38
+	PM_DEV_ID_TRNG,        // 39
+	PM_DEV_ID_CPU1,        // 40
+	PM_DEV_ID_PHY_DPD_CALI, //41
 
-	PM_DEV_ID_DEFAULT,  // 41  it is used by pm module set default cpu frequency
+	PM_DEV_ID_DEFAULT,      // 42  it is used by pm module set default cpu frequency
 
 	PM_DEV_ID_MAX
 }pm_dev_id_e;
 typedef enum
 {
-	#if CONFIG_PM_EXTEND_CPU_FREQ
-	PM_CPU_FRQ_30M = 0,   // 0:CPU:30M,BUS:30M
-	PM_CPU_FRQ_26M = 1,  // 0:CPU:40M,BUS:40M
-	#else
-	PM_CPU_FRQ_26M = 0,  // 0:CPU:26M,BUS:26M
-	#endif
-	PM_CPU_FRQ_60M,      // 1:CPU0/CPU1:60M,BUS:60M
-	PM_CPU_FRQ_80M,      // 2:CPU0/CPU1:80M,BUS:80M
-	PM_CPU_FRQ_120M,     // 3:CPU0/CPU1:120M,BUS:120M
-	PM_CPU_FRQ_160M,     // 4:CPU0/CPU1:160M,BUS:160M
-	PM_CPU_FRQ_240M,     // 5:CPU0/CPU1:240M,BUS:240M
+	PM_CPU_FRQ_XTAL = 0, // 0:CPU:XTAL,BUS:XTAL(eg:XTAL:40M/26M)
+	PM_CPU_FRQ_60M,      // 1:CPU0:60M,BUS:60M
+	PM_CPU_FRQ_80M,      // 2:CPU0:80M,BUS:80M
+	PM_CPU_FRQ_120M,     // 3:CPU0:120M,BUS:120M
+	PM_CPU_FRQ_160M,     // 4:CPU0:160M,BUS:160M
+	PM_CPU_FRQ_240M,     // 5:CPU0:240M,BUS:240M
 	PM_CPU_FRQ_320M,     // 6:CPU0:160m,CPU1:320M,BUS:160M
 	PM_CPU_FRQ_480M,     // 7:CPU0:240m,CPU1:480M,BUS:240M
+
+	PM_CPU_FRQ_HIGHEST,  // 8:(Appli do not need to be concerned with the specific CPU frequency)
 	PM_CPU_FRQ_DEFAULT   // default cpu frequency which control by pm module
 }pm_cpu_freq_e;
 typedef enum
@@ -527,6 +525,36 @@ typedef enum
  * - others: other errors.
  */
 bk_err_t bk_pm_clear_deep_sleep_modules_config(pm_power_module_name_e module_name);
+ /**
+ * @brief get the video vote power state
+ *
+ * get the video vote power state
+ *
+ * @attention
+ * - This API is used to get the video vote power state
+ *
+ * @param
+ * -void
+ * @return
+ * - the video vote power state(refer to the enum:power_sub_module_name_vidp_e)
+ *
+ */
+uint32_t bk_pm_get_video_vote_pwr_state();
+/**
+ * @brief get the audio vote power state
+ *
+ * get the audio vote power state
+ *
+ * @attention
+ * - This API is used to get the audio vote power state
+ *
+ * @param
+ * -void
+ * @return
+ * - the audio vote power state(refer to the enum:power_sub_module_name_audp_e)
+ *
+ */
+uint32_t bk_pm_get_audio_vote_pwr_state();
 /**
  * @brief check whether enter low voltage sleep mode time out
  *
@@ -1349,6 +1377,16 @@ void bk_pm_wifi_rtc_set(uint32_t tick, void *callback);
  *
  */
 void bk_pm_wifi_rtc_clear(void);
+/**
+ * @brief pm hardware init
+ *
+ * @param
+ * void
+ * @return
+ * - void
+ *
+ */
+void pm_hardware_init();
 
 #ifdef __cplusplus
 }

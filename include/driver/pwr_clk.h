@@ -50,6 +50,7 @@ typedef enum
 	PM_BOOT_CP1_MODULE_NAME_VIDP_SCALE      ,// 11
 	PM_BOOT_CP1_MODULE_NAME_GET_MEDIA_MSG   ,// 12
 	PM_BOOT_CP1_MODULE_NAME_LVGL            ,// 13
+	PM_BOOT_CP1_MODULE_NAME_USER            ,// 14
 	PM_BOOT_CP1_MODULE_NAME_MAX             ,// attention: MAX value can not exceed 31.
 }pm_boot_cp1_module_name_e;
 
