@@ -48,7 +48,6 @@ int mcheck_ate(uint16_t check_res[48])
     uint32_t* reg_start_addr;
     int res = -1;
 
-#if (CONFIG_SOC_BK7236XX)
     reg_start_addr = (uint32_t*)SOC_MEM_CHECK_REG_BASE;
 
     // SMEM2-5 and h265, overall 20 points, no share
@@ -68,18 +67,15 @@ int mcheck_ate(uint16_t check_res[48])
 
    // usb2->dmad overall 4 points, share 2 points
     res += mcheck_section(reg_start_addr + 78, check_res + 46, 4, 2, 12, 2);
-#else
-    (void)reg_start_addr;
-#endif
 
     return res;
 }
 
 int cmd_save_memcheck(void)
 {
-#if ((CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX))
-    uint16_t check_res[48];
+    uint16_t check_res[48];// TODO: bk7236q memcheck size 56
     int res;
+    int ret = -1;
 
 	memset((void *)check_res, 0x0, sizeof(check_res));
     res = mcheck_ate(check_res);
@@ -87,15 +83,24 @@ int cmd_save_memcheck(void)
         return -1;
     }
 
-    return bk_otp_apb_update(OTP_MEMORY_CHECK_MARK, (uint8_t *)check_res, sizeof(check_res));
-#else
-    return -1;
+#if CONFIG_OTP
+    ret = bk_otp_apb_update(OTP_MEMORY_CHECK_MARK, (uint8_t *)check_res, sizeof(check_res));
 #endif
+#if CONFIG_FLASH_OTP
+    extern void sys_hal_set_efstoflash_otp(uint8_t load, uint8_t shaddr, uint8_t en);
+    extern void bk_flash_lock_otp(uint8_t block_index);
+    bk_flash_otp_init(1);
+    uint32_t magic_word = 0x50544f43;
+    sys_hal_set_efstoflash_otp(0, 0, 1);
+    ret = bk_flash_otp_update(OTP_MEMORY_CHECK_MAGIC, (uint8_t *)&magic_word, sizeof(magic_word))
+                || bk_flash_otp_update(OTP_MEMORY_CHECK_MARK, (uint8_t *)check_res, sizeof(check_res));
+    // bk_flash_lock_otp(1); //TODO: confirm the lock at the appropriate time
+#endif
+    return ret;
 }
 
 void cmd_start_softreset(uint8_t vcore, uint8_t wdt_delay)
 {
-#if ((CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX))
 	sys_hal_ctrl_vdddig_h_vol(vcore);
 	aon_pmu_hal_reg_set(PMU_REG2, 0x1FE);
 
@@ -103,14 +108,15 @@ void cmd_start_softreset(uint8_t vcore, uint8_t wdt_delay)
     REG_SET(SOC_WDT_REG_BASE + 4 * 2, 0, 0, 1);
     uart_send_byte_for_ate(0x55);
     uart_send_byte_for_ate(0x33);
+#if CONFIG_SUPPORT_AON_WDT
     //disable always on wdt to avoid dog time when MBIST
     REG_WRITE(SOC_AON_WDT_REG_BASE, 0x5A0000);
     REG_WRITE(SOC_AON_WDT_REG_BASE, 0xA50000);
+#endif
 	//(*(volatile uint32_t *)(SOC_AON_GPIO_REG_BASE + 18 * 4)) = 2; //for test by xiaodi
     REG_WRITE(SOC_WDT_REG_BASE + 4 * 4, 0x5A0000 | wdt_delay);
     REG_WRITE(SOC_WDT_REG_BASE + 4 * 4, 0xA50000 | wdt_delay);
     while(1);
-#endif
 }
 #endif
 
@@ -152,33 +158,10 @@ int cmd_do_memcheck(void)
     bk_gpio_driver_init();
     bk_uart_driver_init();
 
-#if 0//(CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX)
-    if (memcheck((uint32_t *)SOC_SRAM0_DATA_BASE, 0x80000, 0xAAAAAAAA))
-    {
-        goto failed;
-    }
-    if (memcheck((uint32_t *)SOC_SRAM0_DATA_BASE, 0x80000, 0x55555555))
-    {
-        goto failed;
-    }
-#else
-    if (0)
-    {
-        //avoid compile issue
-        goto failed;
-    }
-#endif
-
     uart_send_byte_for_ate(0x55);
     uart_send_byte_for_ate(0x33);
     while(1);
     return 1;
-
-failed:
-    uart_send_byte_for_ate(0x55);
-    uart_send_byte_for_ate(0xCC);
-    while(1);
-    return -1;
 }
 
 void cmd_start_memcheck(void)

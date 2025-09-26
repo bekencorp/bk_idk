@@ -1,6 +1,6 @@
 #include "command_ate.h"
 
-#if CONFIG_ATE_TEST
+#if (CONFIG_ATE_TEST && CONFIG_AUDIO)
 #include "sys_driver.h"
 //#include "aud_driver.h"
 //#include <driver/aud.h>

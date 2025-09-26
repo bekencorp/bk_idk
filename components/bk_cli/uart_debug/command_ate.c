@@ -83,6 +83,8 @@ UINT32 device_id = 0;
 #define RCB_POWER_TABLE_ADDR         0x01050200
 #endif
 
+#define GPIO_NUM_MAX                 (SOC_GPIO_NUM)
+
 extern bk_err_t uart_write_byte(uart_id_t id, uint8_t data);
 extern void rwnx_cal_update_pregain(INT32 new_pwr_gain_bias);
 extern void sctrl_cali_dpll(UINT8 flag);
@@ -342,15 +344,8 @@ static void evm_test(UINT32 rate, UINT32 channel, UINT32 bandwidth, UINT32 modul
     UINT32 gi;
 
     evm_stop_bypass_mac();
-#if (!CONFIG_SOC_BK7236XX) && (!CONFIG_SOC_BK7239XX) && (!CONFIG_SOC_BK7286XX)
-    rwnx_no_use_tpc_set_pwr();
-#endif
 
-#if (CONFIG_SOC_BK7231N) || (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX) || (CONFIG_SOC_BK7256XX)
     mdm_set_scramblerctrl(0x83); //change from 0x85 to 0x83 by cunliang
-#else
-    mdm_set_scramblerctrl(0x85);
-#endif
     //set channel before init macbypass, for bk7236 need it.
     evm_bypass_mac_test_for_ate(channel, bandwidth);
     evm_init_bypass_mac();
@@ -358,7 +353,7 @@ static void evm_test(UINT32 rate, UINT32 channel, UINT32 bandwidth, UINT32 modul
     if (rate <= 54)
 	    modul_format = 0;
     else if (modul_format < 2) {
-	    //os_printf("HT/VHT/HE pkts modul_format >= 2\r\n");
+	    //BK_LOGD(NULL, "HT/VHT/HE pkts modul_format >= 2\r\n");
 	    modul_format = 2;
     }
 
@@ -381,27 +376,15 @@ static void evm_test(UINT32 rate, UINT32 channel, UINT32 bandwidth, UINT32 modul
 
     rwnx_cal_en_extra_txpa();
     rf_module_vote_ctrl(RF_OPEN,RF_BY_TEMP_BIT);
-    rwnx_cal_set_txpwr_by_rate(evm_translate_tx_rate(rate), 0);
+    rwnx_cal_set_txpwr_by_rate(evm_translate_tx_rate(rate), 0, 0, 0, 0);
     rf_module_vote_ctrl(RF_CLOSE,RF_BY_TEMP_BIT);
 	//evm_bypass_mac_set_txdelay(txdelay);
 
     evm_start_bypass_mac();
 
-#if (CONFIG_SOC_BK7231N)
-    //os_printf("pwr_gain:0x%x\r\n", 0x200);
-    REG_WRITE((RC_BEKEN_BASE + (0x43 * 4)), 0x200);
-#elif (CONFIG_SOC_BK7256XX) || (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX)
     bk7011_stop_tx_pattern();
-#endif
 
-#if (CONFIG_SOC_BK7256XX) || (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX)
     bk7011_cal_dpll();
-    //os_printf("cal dpll\r\n");
-#else
-    //os_printf("cal dpll and open int\r\n");
-    sctrl_cali_dpll(0);
-    sctrl_dpll_int_open();
-#endif
     uint32_t duty_in_us;
     if (rate < 128)
     {
@@ -420,16 +403,11 @@ static void evm_single_test(UINT32 rate, UINT32 channel, UINT32 bandwidth)
     UINT32 packet_len;
     UINT32 gi;
     UINT32 duty_in_us;
-    SC_TYPE_T single_carrier_type = SINGLE_CARRIER_11G;
 
     evm_stop_bypass_mac_for_ate();
     rwnx_no_use_tpc_set_pwr();
 
-#if (CONFIG_SOC_BK7231N) || (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX) || (CONFIG_SOC_BK7256XX)
     mdm_set_scramblerctrl(0x83); //change from 0x85 to 0x83 by cunliang
-#else
-    mdm_set_scramblerctrl(0x85);
-#endif
 
     //set channel before init macbypass, for bk7236 need it.
     evm_bypass_mac_test(channel, IEEE80211_BAND_2GHZ, bandwidth);
@@ -438,7 +416,7 @@ static void evm_single_test(UINT32 rate, UINT32 channel, UINT32 bandwidth)
     if (rate <= 54)
         modul_format = 0;
     else if (modul_format < 2) {
-        //os_printf("HT/VHT/HE pkts modul_format >= 2\r\n");
+        //BK_LOGD(NULL, "HT/VHT/HE pkts modul_format >= 2\r\n");
         modul_format = 2;
     }
 
@@ -460,38 +438,16 @@ static void evm_single_test(UINT32 rate, UINT32 channel, UINT32 bandwidth)
     g_single_carrier = 1;
 
     rf_module_vote_ctrl(RF_OPEN,RF_BY_TEMP_BIT);
-    rwnx_cal_set_txpwr_by_rate(evm_translate_tx_rate(rate), 0);
+    rwnx_cal_set_txpwr_by_rate(evm_translate_tx_rate(rate), 0, 0, 0, 0);
     rf_module_vote_ctrl(RF_CLOSE,RF_BY_TEMP_BIT);;
     //evm_bypass_mac_set_txdelay(txdelay);
 
     evm_start_bypass_mac_for_ate();
 
-    if (g_rate == 11)
-        single_carrier_type = SINGLE_CARRIER_11B;
-    else
-        single_carrier_type = SINGLE_CARRIER_11G;
-
     // bk7236,no need do it anymore
-#if (CONFIG_SOC_BK7231N)
-    UINT32 pwr_gain = REG_READ(RCB_POWER_TABLE_ADDR + (0x34 * 4));
-    //os_printf("pwr_gain:0x%x\r\n", pwr_gain & 0x3FF);
-    REG_WRITE((RC_BEKEN_BASE + (0x43 * 4)), pwr_gain & 0x3FF);
-#elif (CONFIG_SOC_BK7256XX)
-    UINT32 pwr_gain = REG_READ(RCB_POWER_TABLE_ADDR + (0x34 * 4));
-    //os_printf("pwr_gain:0x%x\r\n", pwr_gain & 0x3FF);
-    rc_drv_set_tx_pre_gain_2nd(pwr_gain & 0x3FF);
-    rwnx_no_use_tpc_set_pwr();
-#endif
-    evm_bypass_set_single_carrier(single_carrier_type, rate);
+    evm_bypass_set_single_carrier(rate, IEEE80211_BAND_2GHZ, bandwidth, channel);
 
-#if (CONFIG_SOC_BK7256XX) || (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX)
     bk7011_cal_dpll();
-    //os_printf("cal dpll\r\n");
-#else
-    //os_printf("cal dpll and open int\r\n");
-    sctrl_cali_dpll(0);
-    sctrl_dpll_int_open();
-#endif
 
     if (rate < 128)
     {
@@ -718,8 +674,10 @@ static void ate_pm_gpio_callback(gpio_id_t gpio_id)
 	bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_APP,0x0,100000000);
 	bk_ate_ctrl(1);
 	bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_CPU1, PM_POWER_MODULE_STATE_ON);
+	#if (CONFIG_CPU_CNT > 1)
 	extern void start_cpu1_core(void);
 	start_cpu1_core();
+	#endif
 	#endif
 }
 static void ate_pm_exit_lvsleep(uint64_t sleep_time, void *args)
@@ -738,9 +696,10 @@ int ate_enter_low_voltage()
 
 	bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_BTSP,0x1,100000000);
 	bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_WIFIP_MAC,0x1,100000000);
-
+#if (CONFIG_CPU_CNT > 1)
 	extern void stop_cpu1_core(void);
 	stop_cpu1_core();
+#endif
 	bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_CPU1, PM_POWER_MODULE_STATE_OFF);
 #if (CONFIG_CPU_CNT > 2)
 	extern void stop_cpu2_core(void);
@@ -767,8 +726,10 @@ int ate_enter_deep_sleep()
 	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_BTSP,POWER_MODULE_STATE_OFF);
 	bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_WIFIP_MAC,POWER_MODULE_STATE_OFF);
 
+#if (CONFIG_CPU_CNT > 1)
 	extern void stop_cpu1_core(void);
 	stop_cpu1_core();
+#endif
 	bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_CPU1, PM_POWER_MODULE_STATE_OFF);
 #if (CONFIG_CPU_CNT > 2)
 	extern void stop_cpu2_core(void);
@@ -996,7 +957,7 @@ int set_device_id_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buff
 
     return BK_OK;
 }
-
+#if 0
 int set_mac_address_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buffer)
 {
     uint8_t mac_address_write[MAC_ADDR_LEN] = {0};
@@ -1052,6 +1013,7 @@ int set_mac_address_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_bu
 
     return BK_OK;
 }
+#endif
 #else
 int set_device_id_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buffer)
 {
@@ -1163,7 +1125,7 @@ retry_efuse_write:
 int bkreg_run_command1(unsigned char *content, int cnt)
 {
     UINT8 tx_buffer[16];
-    UINT8 addr, data;
+    UINT8 data;
 
     if (cnt < 2)
         return -1;
@@ -1314,9 +1276,6 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 /* 55 0B 20: set 2Volt and read ADC3, return value */
                 /* 55 0B 15: set 1.5Volt and read ADC3, return value */
                 /* 55 0B 02: write efuse 18,19,20,21 */
-#if ((CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX))
-                ate_cali_sdmadc(content, tx_buffer);
-#endif
                 break;
             case 0x15:      // SARADC test
             {
@@ -1367,6 +1326,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 per_test(PHY_CHNL_BW_40, 7, duration, arg);
                 break;
             }
+#if CONFIG_AUDIO
             case 0x31:      // audio_loop test: 55 31 [01|02|00]
             {
                 uint32_t state;
@@ -1375,6 +1335,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 audio_adc_mic2_to_dac_test(state);    /* use for bk7258 mic2 test */
                 break;
             }
+#endif
             case 0x30:      //not test in ATE temporary
             /* 55 3D xx set single tone with channel */
             /* xx channel [00, 7F] */
@@ -1418,9 +1379,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
 #if ((CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX)) && (CONFIG_OTP)
             case 0x40: //read otp
             {
-                if (content[2] == OTP_MAC_ADDRESS) {
-                    data = 6;
-                } else if (content[2] == OTP_VDDDIG_BANDGAP) {
+                if (content[2] == OTP_VDDDIG_BANDGAP) {
                     data = 1;
                 } else if (content[2] == OTP_DIA) {
                     data = 1;
@@ -1438,6 +1397,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 break;
             }
 #endif
+#if 0
             case 0x41:      //not test in ATE temporary
             {
                 addr = 0;
@@ -1486,16 +1446,17 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 }
                 break;
             }
+#endif
             case 0x43:
                 /* write 17th bytes in efuse for analog2<28:23> to cali vdddig */
                 sctrl_set_bandgap_to_efuse(content, cnt, tx_buffer);
                 break;
+#if 0
             case 0x44:
                 /* write macaddr in efuse/OTP */
-#if ((CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX))
                 set_mac_address_to_efuse(content, cnt, tx_buffer);
-#endif
                 break;
+#endif
 #if 0
             case 0x50:
                 if ((cnt > 2) && ((unsigned char) content[2] < 80))
@@ -1561,7 +1522,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 /* set xtal: 55 57 xx */
                 manual_cal_set_xtal((UINT32)content[2]);
                 break;
-
+#if 0
             case 0x58:
                 /* set trxA<31:28>_trxB<17:17> to cali Dia */
                 /* 55 58 xx */
@@ -1573,14 +1534,14 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 /* 55 59 [xx] */
                 sctrl_set_dia_to_efuse(content, cnt, tx_buffer);
                 break;
-
+#endif
             case 0x60:
                 /* 55 60 memory check, return 55 33 if success, otherwise 55 CC */
 #if CONFIG_RESET_REASON
                 cmd_start_memcheck();
 #endif
                 break;
-
+#if 0
             case 0x61:
                 tx_buffer[0] = 0x55;
                 data = cmd_save_memcheck();
@@ -1592,7 +1553,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 }
                 uart_send_bytes_for_ate(tx_buffer, 2);
                 break;
-
+#endif
             case 0x62:
                 /* 55 62 softreset for MBIST/ATPG, return 55 33 if success, otherwise 55 CC */
                 if (cnt > 3) {
@@ -1639,7 +1600,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 ble_dut_start(CONFIG_UART_PRINT_PORT);
                 break;
             }
-
+#if CONFIG_USB
             case 0x80:
             {
                 UINT8 usbbackbuffer[2];
@@ -1713,6 +1674,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 }
                 break;
             }
+#endif
             case 0x99:
             {
                 set_device_id_to_efuse(content, cnt, tx_buffer);
@@ -1792,11 +1754,11 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                         tx_buffer[14] = (ulData >> 24) & 0x000000FFUL;
                         uart_send_bytes_for_ate(tx_buffer, 15);
                         break;
-
+#if (CONFIG_AUDIO)
                     case 0x37:
                         audio_ap_test_for_ate(content[5], content[6], content[7], content[8], content[9],  content[10]);
                         break;
-
+#endif
                     case 0x77:
                         manual_cal_show_txpwr_tab();
                         break;

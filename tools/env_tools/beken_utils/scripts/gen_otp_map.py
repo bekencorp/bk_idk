@@ -17,7 +17,7 @@ def gen_otp_map_file():
 
     otp_instance = []
     regex = re.compile(r'otp(\d+)\.csv')
-    sorted_list = sorted(otp_list,key=lambda x:int(regex.search(x).group(1)) if regex.search(x) else -1) 
+    sorted_list = sorted(otp_list,key=lambda x:int(regex.search(x).group(1)) if regex.search(x) else -1)
     for otp_csv in sorted_list:
         match = regex.search(otp_csv)
         number = match.group(1)
@@ -46,6 +46,11 @@ def gen_otp_map_file():
     f.write("#define BK_ERR_OTP_INIT_FAIL          (BK_ERR_OTP_BASE - 13) /** otp init fail*/\n")
     f.write("#define BK_ERR_OTP_INDEX_WRONG        (BK_ERR_OTP_BASE - 14) /**< OTP item index error*/\n")
     f.write("#define BK_ERR_OTP_CRC_WRONG          (BK_ERR_OTP_BASE - 15) /**< OTP item index error*/\n")
+
+    f.write("#define BK_ERR_OTP_OPERATION_ERROR_MASK         (1 << 16)\n")
+    f.write("#define BK_ERR_OTP_OPERATION_FAIL_MASK          (1 << 19)\n")
+    f.write("#define BK_ERR_OTP_INIT_FAIL_MASK               (1 << 20)\n")
+    f.write("#define BK_ERR_OTP_FULL_ERROR_MASK              (0x1F << 16)\n")
 
     f.write("\ntypedef enum{\n")
     f.write("    OTP_READ_WRITE = 0,\n")

@@ -479,8 +479,10 @@ static void cli_ate_main(uint32_t data)
 #if (CONFIG_SYS_CPU0)
 	bk_pm_cp1_auto_power_down_state_set(0x0);
 	bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_CPU1, PM_POWER_MODULE_STATE_ON);
+#if (CONFIG_CPU_CNT > 1)
 	extern void start_cpu1_core(void);
 	start_cpu1_core();
+#endif
 #if (CONFIG_CPU_CNT > 2)
 	bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_CPU2, PM_POWER_MODULE_STATE_ON);
 	extern void start_cpu2_core(void);

@@ -158,6 +158,7 @@ if (CONFIG_USB_MAILBOX)
 
 endif() # CONFIG_USB_MAILBOX
 
+if (CONFIG_USB)
 if (CONFIG_ATE_TEST)
 	list(APPEND incs
 		example/ate_test
@@ -167,6 +168,7 @@ if (CONFIG_ATE_TEST)
 		example/ate_test/ate_test.c
 		)
 endif() # CONFIG_ATE
+endif() # CONFIG_USB
 
 if (CONFIG_USB_HUB_MULTIPLE_DEVICES)
 	list(APPEND incs

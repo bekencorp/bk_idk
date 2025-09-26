@@ -20,6 +20,11 @@
 #if CONFIG_TFM_OTP_NSC
 #include "tfm_otp_nsc.h"
 #endif
+
+#if CONFIG_ATE_TEST
+#include <driver/otp_types.h>
+#endif
+
 typedef struct {
 	otp_hal_t hal;
 } otp_driver_t;
@@ -430,7 +435,7 @@ static bk_err_t otp_read(uint8_t map_id, uint8_t item, uint8_t* buf, uint32_t si
 
 	if (otp_map[item].crc_en == OTP_NEED_CRC) {
 		uint8_t* zero_buf = os_zalloc(read_buf_len);
-		if (os_memcmp(read_buf, zero_buf, read_buf_len) != 0){ 
+		if (os_memcmp(read_buf, zero_buf, read_buf_len) != 0){
 			if (otp_check_crc8(read_buf, read_buf_len) == false) {
 				os_free(zero_buf);
 				ret = BK_ERR_OTP_CRC_WRONG;
