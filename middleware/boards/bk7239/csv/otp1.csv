@@ -1,2 +1,3 @@
 id,     name,                           size,       offset,     end,        privilege,              security,         crc
-0,      OTP_MEMORY_CHECK_MARK,          96,         0x0,        0x60,       OTP_READ_WRITE,         TRUE,           FALSE,
+0,      OTP_MEMORY_CHECK_MARK,          60,         0x0,        0x3c,       OTP_READ_WRITE,         TRUE,           FALSE,
+1,      OTP_EFUSE,                      4,          0x3c,       0x40,       OTP_READ_WRITE,         TRUE,           FALSE,
