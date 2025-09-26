@@ -28,8 +28,8 @@
 //#include "rc_driver.h"
 //#endif
 
-
 #include <driver/flash.h>
+#include "sys_driver.h"
 
 enum mac_chan_bandwidth {
 	PHY_CHNL_BW_20,
@@ -256,6 +256,30 @@ void send_compile_time_hex(void)
     tx_buffer[6] = (min   >> 0) & 0xFF;
     tx_buffer[7] = (sec   >> 0) & 0xFF;
     uart_send_bytes_for_ate(tx_buffer, 8);
+}
+
+void wifi_cali_dpll_ate(void)
+{
+    UINT8 flag = 0;
+    UINT8 tx_buffer[2];
+
+    for(UINT8 i = 0; i < 3; i++)
+    {
+        if(sys_drv_cali_dpll_ate() != 0)
+        {
+            flag += 1;
+        }
+    }
+    tx_buffer[0] = 0x55;
+    if(flag < 2)
+    {
+        tx_buffer[1] = 0x33;
+    }
+    else
+    {
+        tx_buffer[1] = 0xCC;
+    }
+    uart_send_bytes_for_ate(tx_buffer, 2);
 }
 
 void send_device_id(void)
@@ -1243,6 +1267,11 @@ int bkreg_run_command1(unsigned char *content, int cnt)
             case 0x06:      // read device ID
             {
                 send_device_id();
+                break;
+            }
+            case 0x0D:
+            {
+                wifi_cali_dpll_ate();
                 break;
             }
             case 0x10:      // Pout_Max_2400    135M MCS7 11n 20M

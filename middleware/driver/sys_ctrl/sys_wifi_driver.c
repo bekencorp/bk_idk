@@ -17,6 +17,7 @@
 #include "sys_driver_common.h"
 #include "bk_misc.h"
 #include "aon_pmu_driver.h"
+#include "aon_pmu_hal.h"
 
 #define SYS_DRV_DELAY_TIME_10US	              120
 #define SYS_DRV_DELAY_TIME_200US	          3400
@@ -58,6 +59,62 @@ uint32_t sys_drv_cali_dpll(uint32_t param)
 
     return SYS_DRV_SUCCESS;
 }
+
+#if CONFIG_ATE_TEST
+uint32_t sys_drv_cali_dpll_ate(void)
+{
+	UINT32 int_level = sys_drv_enter_critical();
+
+	// DPLL power on
+	UINT32 ana5_reg = sys_hal_analog_get(ANALOG_REG5);
+	UINT32 ana5_reg_bak = ana5_reg;  // backup reg5 value
+	ana5_reg |= (0x1 << 5);
+	sys_hal_analog_set(ANALOG_REG5,ana5_reg);
+
+	// SYS.REG0<5>=0, SYS.REG0<6>=0
+	UINT32 ana0_reg = sys_hal_analog_get(ANALOG_REG0);
+	UINT32 ana0_reg_bak = ana0_reg;  // backup reg0 value
+	ana0_reg &= ~(0x3 << 5);
+	sys_hal_analog_set(ANALOG_REG0, ana0_reg);
+
+	// SYS.REG0<31>=1
+	ana0_reg &= ~(0x1 << 31);
+	ana0_reg |= (0x1 << 31);
+	sys_hal_analog_set(ANALOG_REG0, ana0_reg);
+
+	// SYS.REG0<31>=0
+	ana0_reg &= ~(0x1 << 31);
+	sys_hal_analog_set(ANALOG_REG0, ana0_reg);
+
+	// delay 100us
+	sys_drv_ps_dpll_delay(120 * 10);
+
+	// if (AON_PMU.Reg7D<12> == 0x01 || AON_PMU.Reg7D<13> == 0x01), the dpll unlock
+	uint32_t unlock;
+	for(UINT32 i = 0; i < 1000; i++)
+	{
+		unlock = aon_pmu_hal_get_dpll_unlock(NULL, NULL);
+		if(unlock == 1)
+		{
+			sys_drv_exit_critical(int_level);
+
+			// restore reg5 and reg0 value
+			sys_hal_analog_set(ANALOG_REG5, ana5_reg_bak);
+			sys_hal_analog_set(ANALOG_REG0, ana0_reg_bak);
+
+			return SYS_DRV_FAILURE;
+		}
+	}
+
+	sys_drv_exit_critical(int_level);
+
+	// restore reg5 and reg0 value
+	sys_hal_analog_set(ANALOG_REG5, ana5_reg_bak);
+	sys_hal_analog_set(ANALOG_REG0, ana0_reg_bak);
+
+	return SYS_DRV_SUCCESS;
+}
+#endif
 
 uint32_t sys_drv_bias_reg_set(uint32_t param)
 {

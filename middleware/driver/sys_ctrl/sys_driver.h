@@ -485,6 +485,9 @@ uint32_t sys_drv_psram_psram_disckg(uint32_t value);
 /**  psram End **/
 
 uint32_t sys_drv_cali_dpll(uint32_t param);
+#if CONFIG_ATE_TEST
+uint32_t sys_drv_cali_dpll_ate(void);
+#endif
 uint32_t sys_drv_cali_bias(uint32_t update);
 uint32_t sys_drv_bias_reg_set(uint32_t param);
 uint32_t sys_drv_bias_reg_clean(uint32_t param);
