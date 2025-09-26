@@ -1158,18 +1158,30 @@ bk_err_t bk_uart_init(uart_id_t id, const uart_config_t *config)
 		.args = (void *)id
 	};
 
+	pm_cb_conf_t uart_exit_config = {
+		.cb = (pm_cb)uart_pm_restore,
+		.args = (void *)id
+	};
+
+#if (CONFIG_ATE_TEST && CONFIG_DEEP_LV)
+	if (id == UART_ID_0) {
+		bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, PM_DEV_ID_UART1, &uart_enter_config, &uart_exit_config);
+		bk_pm_module_lv_sleep_state_clear(PM_DEV_ID_UART1);
+	}
+	else
+#endif
 	if (id == UART_ID_1) {
 		bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_BAKP_UART1, PM_POWER_MODULE_STATE_ON);
-		bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, PM_DEV_ID_UART2, &uart_enter_config, NULL);
+		bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, PM_DEV_ID_UART2, &uart_enter_config, &uart_exit_config);
 		bk_pm_module_lv_sleep_state_clear(PM_DEV_ID_UART2);
 	} else if (id == UART_ID_2) {
 		bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_BAKP_UART2, PM_POWER_MODULE_STATE_ON);
-		bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, PM_DEV_ID_UART3, &uart_enter_config, NULL);
+		bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, PM_DEV_ID_UART3, &uart_enter_config, &uart_exit_config);
 		bk_pm_module_lv_sleep_state_clear(PM_DEV_ID_UART3);
 #if (SOC_UART_ID_NUM_PER_UNIT  >= 4)
 	}else if (id == UART_ID_3) {
 		bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_BAKP_UART3, PM_POWER_MODULE_STATE_ON);
-		bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, PM_DEV_ID_UART4, &uart_enter_config, NULL);
+		bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, PM_DEV_ID_UART4, &uart_enter_config, &uart_exit_config);
 		bk_pm_module_lv_sleep_state_clear(PM_DEV_ID_UART4);
 #endif
 	}

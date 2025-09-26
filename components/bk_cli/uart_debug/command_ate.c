@@ -893,13 +893,14 @@ int ate_enter_low_voltage()
 	bk_ate_ctrl(0);
     bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, PM_DEV_ID_DEFAULT, NULL, &exit_config);
 
-	// bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_BTSP,0x1,100000000);
+	bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_BTSP,0x1,100000000);
 	// bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_WIFIP_MAC,0x1,100000000);
 
 	// bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_OFDM, PM_POWER_MODULE_STATE_OFF);
 	bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_ENCP, PM_POWER_MODULE_STATE_OFF);
 	bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_BAKP,POWER_MODULE_STATE_OFF);
 	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_BTSP,POWER_MODULE_STATE_OFF);
+	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_THREAD,POWER_MODULE_STATE_OFF);
 	bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_WIFIP_MAC,POWER_MODULE_STATE_OFF);
 
 	///close wifi pll
@@ -945,6 +946,7 @@ int ate_enter_deep_sleep()
 {
 	bk_ate_ctrl(0);
 	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_BTSP,POWER_MODULE_STATE_OFF);
+	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_THREAD,POWER_MODULE_STATE_OFF);
 	bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_WIFIP_MAC,POWER_MODULE_STATE_OFF);
 
 #if (CONFIG_CPU_CNT > 1)
@@ -1491,15 +1493,6 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 /* 55 0B 15: set 1.5Volt and read ADC3, return value */
                 /* 55 0B 02: write efuse 18,19,20,21 */
                 break;
-            case 0x15:      // SARADC test
-            {
-                /* cali ADC3/GPIO23  */
-                /* 55 15 01: set 1Volt and read ADC3, would save in efuse<18>efuse<19> */
-                /* 55 15 02: set 2Volt and read ADC3, would save in efuse<20>efuse<21> */
-                /* 55 15 03: verify with 1.5Volt, success: 55 33 failed: 55 CC invalid: 55 AA */
-                sctrl_cal_adc(content, tx_buffer);
-                break;
-            }
             case 0x14:      // PER_Min_2484: 55 14 [ms=50]
             {
                 clock_time_t duration;
@@ -1515,6 +1508,13 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 per_test(PHY_CHNL_BW_20, 14, duration, arg, IEEE80211_BAND_2GHZ);
                 break;
             }
+            #if CONFIG_DEEP_LV
+            case 0x15:      //cpu off low voltage
+            {
+                ate_enter_low_voltage();
+                break;
+            }
+            #endif
             case 0x16:      //low voltage
             {
                 ate_enter_low_voltage();
