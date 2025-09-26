@@ -800,6 +800,7 @@ static int wpa_supplicant_ssid_bss_match(struct wpa_supplicant *wpa_s,
 		return 1;
 	}
 
+#if !BK_SUPPLICANT
 #ifdef CONFIG_IEEE80211W
 	if (wpas_get_ssid_pmf(wpa_s, ssid) == MGMT_FRAME_PROTECTION_REQUIRED &&
 	    (!(ssid->key_mgmt & WPA_KEY_MGMT_OWE) || ssid->owe_only)) {
@@ -809,6 +810,7 @@ static int wpa_supplicant_ssid_bss_match(struct wpa_supplicant *wpa_s,
 		return 0;
 	}
 #endif /* CONFIG_IEEE80211W */
+#endif
 
 	wpa_ie = wpa_bss_get_vendor_ie(bss, WPA_IE_VENDOR_TYPE);
 	while ((ssid->proto & WPA_PROTO_WPA) && wpa_ie) {
@@ -874,6 +876,18 @@ static int wpa_supplicant_ssid_bss_match(struct wpa_supplicant *wpa_s,
 				"   selected based on WPA IE");
 		return 1;
 	}
+
+#if BK_SUPPLICANT
+#ifdef CONFIG_IEEE80211W
+	if (wpas_get_ssid_pmf(wpa_s, ssid) == MGMT_FRAME_PROTECTION_REQUIRED &&
+		(!(ssid->key_mgmt & WPA_KEY_MGMT_OWE) || ssid->owe_only)) {
+		if (debug_print)
+			wpa_dbg(wpa_s, MSG_DEBUG,
+				"	skip - MFP Required but network not MFP Capable");
+		return 0;
+	}
+#endif /* CONFIG_IEEE80211W */
+#endif
 
 	if ((ssid->key_mgmt & WPA_KEY_MGMT_IEEE8021X_NO_WPA) && !wpa_ie &&
 	    !rsn_ie) {
