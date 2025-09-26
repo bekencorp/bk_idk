@@ -541,6 +541,7 @@ CONFIG_PM_26M_STABILITY_DELAY_TIME_HARDWARE=1300
 # CONFIG_FLASH_OTP is not set
 # CONFIG_PHY_RFCALI_TO_OTP is not set
 # CONFIG_AON_ENCP is not set
+# CONFIG_OTP_EFUSE_SUPPORT is not set
 # end of OTP
 
 #
@@ -839,6 +840,12 @@ CONFIG_BLE_WIFI_EXCHANGE=y
 #
 # CONFIG_FT_TEST_TRANSFER is not set
 # end of modules::ft_test
+
+#
+# modules::MAC802154
+#
+CONFIG_MAC802154=y
+# end of modules::MAC802154
 
 #
 # modules::securityip
