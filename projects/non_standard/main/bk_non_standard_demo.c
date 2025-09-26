@@ -38,8 +38,10 @@ static bool td_timer_started = false;
 static uint64_t total_recv_cnt = 0;
 static bool throughput_test_started = false;
 
+static bool running_mtmr_test = false;
+
 static bk_err_t bk_non_standard_demo_send_cb(const uint8_t *peer_mac_addr, bk_rlk_send_status_t status) {
-	if (!throughput_test_started) {
+	if (!throughput_test_started && !running_mtmr_test) {
 		BK_LOGI(NON_STANDARD_TAG, "send to "MACSTR", status:%d\r\n", MAC2STR(peer_mac_addr), status);
 	}
 	return BK_OK;
@@ -48,7 +50,7 @@ static bk_err_t bk_non_standard_demo_send_cb(const uint8_t *peer_mac_addr, bk_rl
 static bk_err_t bk_non_standard_demo_recv_cb(bk_rlk_recv_info_t *rx_info) {
 	GPIO_DOWN(6);
 	GPIO_DOWN(7);
-	if (!td_timer_started) {
+	if (!td_timer_started && !running_mtmr_test) {
 		BK_LOGI(NON_STANDARD_TAG, "recv from "MACSTR", rssi:%d, len:%u\r\n", MAC2STR(rx_info->src_addr), rx_info->rssi, rx_info->len);
 	} else {
 		total_recv_cnt += (BK_NON_STANDARD_HEADER_LEN + rx_info->len);
@@ -224,6 +226,7 @@ static void cli_non_standard_cmd(char *pcWriteBuffer, int xWriteBufferLen, int a
 		bk_non_standard_demo_traffic_detection(start);
 	}
 	else if(strcmp(argv[1], "master") == 0) {
+		running_mtmr_test = true;
 		if (strcmp(argv[2], "init") == 0) {
 			max_tx_num = strtoul(argv[3], NULL, 10) & 0xFF;
 			max_rx_num = strtoul(argv[4], NULL, 10) & 0xFF;
@@ -231,6 +234,7 @@ static void cli_non_standard_cmd(char *pcWriteBuffer, int xWriteBufferLen, int a
 		}
 	}
 	else if(strcmp(argv[1], "slave") == 0) {
+		running_mtmr_test = true;
 		if (strcmp(argv[2], "init") == 0) {
 			slave_mode = strtoul(argv[3], NULL, 10) & 0xFF;
 			bk_non_standard_slave_init(slave_mode, bk_non_standard_demo_slave_cb);
