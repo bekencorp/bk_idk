@@ -31,6 +31,9 @@
 #include <driver/flash.h>
 #include "sys_driver.h"
 
+#define RXSENS_BANDWIDTH_20MHZ                 (0)
+#define RXSENS_BANDWIDTH_40MHZ                 (1)
+
 enum mac_chan_bandwidth {
 	PHY_CHNL_BW_20,
 	PHY_CHNL_BW_40,
@@ -103,6 +106,7 @@ extern void evm_bypass_mac_test_for_ate(UINT32 channel, UINT32 bandwidth);
 
 extern void evm_bypass_mac_test(UINT32 channel, wifi_band_t band, UINT32 bandwidth);
 extern UINT32 rs_test(UINT32 channel, wifi_band_t band, UINT32 mode);
+extern UINT32 rs_test_for_mbp(UINT32 channel, wifi_band_t band, UINT32 mode);
 
 extern UINT32 evm_bypass_mac_set_tx_data_length_for_ate(UINT32 modul_format, \
                                                    UINT32 len, UINT32 rate, \
@@ -462,6 +466,7 @@ void mpb_tx_mode_close_for_ate(void)
 static void evm_test(UINT32 rate, UINT32 channel, UINT32 bandwidth, UINT32 modul_format)
 {
     UINT32 packet_len;
+    UINT32 duty_cycle;
     UINT32 gi;
 
     evm_stop_bypass_mac();
@@ -478,7 +483,9 @@ static void evm_test(UINT32 rate, UINT32 channel, UINT32 bandwidth, UINT32 modul
 	    modul_format = 2;
     }
 
-    packet_len = evm_get_auto_tx_len(rate, modul_format, bandwidth, 0);
+    // packet_len = evm_get_auto_tx_len(rate, modul_format, bandwidth, 0);
+    packet_len = 1;
+    packet_len = packet_len * 100;
     evm_bypass_mac_set_tx_data_length(modul_format, packet_len, rate, bandwidth, 1);
 
     evm_bypass_mac_set_rate_mformat(rate, modul_format);
@@ -514,8 +521,9 @@ static void evm_test(UINT32 rate, UINT32 channel, UINT32 bandwidth, UINT32 modul
     }
     else
         duty_in_us = hal_machw_frame_duration_ate(bandwidth, modul_format, rate - 128, 1, gi, packet_len);
-    /* keep duty cycle 90% */
-    mpb_set_txdelay(duty_in_us/9);
+    /* keep duty cycle 50% */
+    duty_cycle = 50;
+    mpb_set_txdelay(duty_in_us * (100 - duty_cycle) / duty_cycle);
 }
 
 static void evm_single_test(UINT32 rate, UINT32 channel, UINT32 bandwidth)
@@ -694,70 +702,20 @@ void rxsens_ct_hdl_for_ate(void *param)
 	}
 }
 
-static int per_test(uint32_t bandwidth, uint32_t channel, uint32_t duration, uint32_t arg)
+static int per_test(uint32_t bandwidth, uint32_t channel, uint32_t duration, uint32_t arg, wifi_band_t band)
 {
     UINT8 ret;
     int err;
 
-	//sys_ctrl_0x42[6:4]=SCTRL_DIGTAL_VDD=4
-#if (CONFIG_SOC_BK7231N)
-	if (bandwidth == 0) {
-		/* set MDM_REG206<17:16>=3 for band20 */
-		mdm_cfgsmooth_setf(3);
-		bk7011_reduce_vdddig_for_rx(1);
-		/* recover TRX_REG9<22>=0 for band20 */
-		rwnx_cal_set_bw_i2v(0);
-    } else {
-        /* set MDM_REG206<17:16>=1 for band40 */
-        mdm_cfgsmooth_setf(1);
-        bk7011_reduce_vdddig_for_rx(0);
-        /* set TRX_REG9<22>=1 for band40 */
-        rwnx_cal_set_bw_i2v(1);
-    }
-#elif (CONFIG_SOC_BK7256XX) || (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX)
-	// TODO: BK7236 phy karst
-#elif (CONFIG_SOC_BK7271)
-#else
-    if (bandwidth == 0) {
-        sys_hal_set_vdd_value(3);
-    } else {
-        sys_hal_set_vdd_value(5);
-    }
-#endif
-
-    ret = rs_test(channel, IEEE80211_BAND_2GHZ, bandwidth);
+    ret = rs_test(channel, band, bandwidth);
     if (ret)
         return 1;
 
-#if (CONFIG_SOC_BK7231N)
-    extern void phy_enable_lsig_intr(void);
-    phy_enable_lsig_intr();
-    /* set MDM_REG202<23>=1 for rx */
-    mdm_cpemode_setf(1);
-#elif (CONFIG_SOC_BK7256XX) || (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX)
     // TODO: BK7236 phy karst
-    if (bandwidth == 1)
+    if (bandwidth == RXSENS_BANDWIDTH_40MHZ)
         rwnx_cal_set_40M_extra_setting(1);
     else
         rwnx_cal_set_40M_extra_setting(0);
-#else
-    if ((channel == 13) || (channel == 14))
-        rwnx_cal_set_reg_adda_ldo(0);
-    else
-        rwnx_cal_set_reg_adda_ldo(3);
-
-    rwnx_cal_set_reg_rx_ldo();
-    bk7011_max_rxsens_setting();
-    rwnx_cal_dis_extra_txpa();
-
-    if (bandwidth == 1) {
-        if ((channel >= 3) && (channel <= 10))
-            rwnx_cal_set_40M_extra_setting(1);
-        else
-        rwnx_cal_set_40M_extra_setting(0);
-    } else
-        rwnx_cal_set_40M_extra_setting(0);
-#endif
 
     g_rxsens_start = 1;
 
@@ -1383,7 +1341,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 {
                     channel = (uint8_t)content[2];
                 }
-                per_test(PHY_CHNL_BW_20, channel, duration, arg);
+                per_test(PHY_CHNL_BW_20, channel, duration, arg, IEEE80211_BAND_2GHZ);
                 break;
             }
             case 0x21:      // BER_Min_CHxx_40M: 55 21 xx [ms=50]
@@ -1400,7 +1358,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 {
                     channel = (uint8_t)content[2];
                 }
-                per_test(PHY_CHNL_BW_40, channel, duration, arg);
+                per_test(PHY_CHNL_BW_40, channel, duration, arg, IEEE80211_BAND_2GHZ);
                 break;
             }
             case 0x22:      // Pout_Max_2442   135, PHY_CHNL_BW_40
@@ -1454,7 +1412,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 {
                     duration = 50;
                 }
-                per_test(PHY_CHNL_BW_20, 14, duration, arg);
+                per_test(PHY_CHNL_BW_20, 14, duration, arg, IEEE80211_BAND_2GHZ);
                 break;
             }
             case 0x16:      //low voltage
@@ -1479,7 +1437,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 {
                     duration = 50;
                 }
-                per_test(PHY_CHNL_BW_40, 7, duration, arg);
+                per_test(PHY_CHNL_BW_40, 7, duration, arg, IEEE80211_BAND_2GHZ);
                 break;
             }
 #if CONFIG_AUDIO
@@ -1843,6 +1801,218 @@ int bkreg_run_command1(unsigned char *content, int cnt)
             case 0x99:
             {
                 set_device_id_to_efuse(content, cnt, tx_buffer);
+                break;
+            }
+
+            /*
+             * RF Test
+             * Cli_CMD: 0x55 [G][X] [H][J] [K][L] [M][N] [P][Q]
+             * G[3:0]: "TX/RX Mode",
+             *     0xA = TX
+             *     0xB = RX
+             * X[3:0]: "HT20/HT40",
+             *     0x0 = HT20
+             *     0x1 = HT40
+             * H_J_K_L[15:0]: "Channel",
+             *     0x24_12 = 2412MHz
+             *     0x24_42 = 2442MHz
+             *     0x24_72 = 2472Mhz
+             *     ...
+             * M[3:0]: "Modulation Format",
+             *     0x0 = MOD_FMT_NON_HT,
+             *     0x1 = MOD_FMT_NON_HT_DUP_OFDM,
+             *     0x2 = MOD_FMT_HT_MM,
+             *     0x3 = MOD_FMT_HT_GF,
+             *     0x4 = MOD_FMT_VHT,
+             *     0x5 = MOD_FMT_HE_SU,
+             *     0x6 = MOD_FMT_HE_MU,
+             *     0x7 = MOD_FMT_EXT_SU,
+             *     0x8 = MOD_FMT_HE_TB,
+             *     0xF = MOD_FMT_MASK
+             * N_P_Q[11:0]: "Rate",
+             *     0x000 = 1Mbps
+             *     0x001 = 2Mbps
+             *     0x002 = 5.5Mbps
+             *     0x003 = 11Mbps
+             *     0x004 = 6Mbps
+             *     0x005 = 9Mbps
+             *     0x006 = 12Mbps
+             *     0x007 = 18Mbps
+             *     0x008 = 24Mbps
+             *     0x009 = 36Mbps
+             *     0x00A = 48Mbps
+             *     0x00B = 54Mbps
+             *     0x128 = MCS0
+             *     0x129 = MCS1
+             *     0x130 = MCS2
+             *     0x131 = MCS3
+             *     0x132 = MCS4
+             *     0x133 = MCS5
+             *     0x134 = MCS6
+             *     0x135 = MCS7
+             *     0x136 = MCS8
+             *     0x137 = MCS9
+            */
+
+            case 0xA0:  // RF HT20 TX Test
+            {
+                /* 55 A0 Channel<15:0> Modulation<3:0> Rate<11:0> */
+                /* Ep: 0x55 A0 24 12 00 0B, TX Test 11G 54M 2412MHz HT20 */
+                uint32_t channel = 0;
+                uint32_t mod = 0;
+                uint32_t rate_i = 0;
+                uint32_t rate_o = 0;
+
+                if (cnt > 5)
+                {
+                    channel = ((content[2] >> 4) & 0x0F) * 1000
+                            + ((content[2] >> 0) & 0x0F) * 100
+                            + ((content[3] >> 4) & 0x0F) * 10
+                            + ((content[3] >> 0) & 0x0F) * 1;
+
+                    mod = (content[4] >> 4) & 0x0F;
+
+                    rate_i = ((content[4] & 0x0F) << 8) | (content[5] & 0xFF);
+                }
+
+                if (rate_i <= 0xB) {
+                    switch (rate_i) {
+                    case 0x0: rate_o = 1; break;
+                    case 0x1: rate_o = 2; break;
+                    case 0x2: rate_o = 5; break;
+                    case 0x3: rate_o = 11; break;
+                    case 0x4: rate_o = 6; break;
+                    case 0x5: rate_o = 9; break;
+                    case 0x6: rate_o = 12; break;
+                    case 0x7: rate_o = 18; break;
+                    case 0x8: rate_o = 24; break;
+                    case 0x9: rate_o = 36; break;
+                    case 0xA: rate_o = 48; break;
+                    case 0xB: rate_o = 54; break;
+                    default:  rate_o = rate_i; break;
+                    }
+                } else if ((rate_i >= 0x128) && (rate_i <= 0x137)) {
+                    rate_o = ((rate_i >> 8) & 0xF) * 100
+                           + ((rate_i >> 4) & 0xF) * 10
+                           + (rate_i & 0xF);
+                } else {
+                    rate_o = rate_i;
+                }
+
+                evm_test(rate_o, channel, PHY_CHNL_BW_20, mod);
+                break;
+            }
+
+            case 0xB0:  // RF HT20 RX Test
+            {
+                /* 55 B0 Channel<15:0> Modulation<3:0> Rate<11:0> */
+                /* Ep: 0x55 B0 24 12, RX Test 2412MHz HT20 */
+                uint32_t channel_i = 0;
+                uint32_t channel_o = 0;
+                uint32_t duration = 50;
+                uint32_t arg = 0x20;
+
+                if (cnt > 3)
+                {
+                    channel_i = ((content[2] >> 4) & 0x0F) * 1000
+                              + ((content[2] >> 0) & 0x0F) * 100
+                              + ((content[3] >> 4) & 0x0F) * 10
+                              + ((content[3] >> 0) & 0x0F) * 1;
+                }
+
+                uint32_t freq = channel_i;
+                wifi_band_t band;
+                if ((freq >= 2412) && (freq <= 2484)) {
+                    band = IEEE80211_BAND_2GHZ;
+                    if (freq == 2484)
+                        channel_o = 14;
+                    else
+                        channel_o = (freq - 2407) / 5; /* 2412->1 ... 2472->13 */
+                } else if ((freq >= 5005) && (freq <= 5885)) {
+                    band = IEEE80211_BAND_5GHZ;
+                    channel_o = (freq - 5000) / 5; /* e.g. 5180->36 */
+                } else if ((freq >= 5955) && (freq <= 7115)) {
+                    band = IEEE80211_BAND_6GHZ;
+                    channel_o = (freq - 5950) / 5; /* 5955->1 */
+                } else {
+                    band = IEEE80211_BAND_2GHZ;
+                    channel_o = 1; /* default */
+                }
+
+                per_test(PHY_CHNL_BW_20, channel_o, duration, arg, band);
+                break;
+            }
+
+            case 0xA1:  // RF HT40 TX Test
+            {
+                /* 55 A1 Channel<15:0> Modulation<3:0> Rate<11:0> */
+                /* Ep: 0x55 A1 24 12 01 28, TX Test 11N MCS0 2412MHz HT40 */
+                uint32_t channel = 0;
+                uint32_t mod = 0;
+                uint32_t rate_i = 0;
+                uint32_t rate_o = 0;
+
+                if (cnt > 5)
+                {
+                    channel = ((content[2] >> 4) & 0x0F) * 1000
+                            + ((content[2] >> 0) & 0x0F) * 100
+                            + ((content[3] >> 4) & 0x0F) * 10
+                            + ((content[3] >> 0) & 0x0F) * 1;
+
+                    mod = (content[4] >> 4) & 0x0F;
+
+                    rate_i = ((content[4] & 0x0F) << 8) | (content[5] & 0xFF);
+                }
+
+                if ((rate_i >= 0x128) && (rate_i <= 0x137)) {
+                    rate_o = ((rate_i >> 8) & 0xF) * 100
+                           + ((rate_i >> 4) & 0xF) * 10
+                           + (rate_i & 0xF);
+                } else {
+                    rate_o = rate_i;
+                }
+
+                evm_test(rate_o, channel, PHY_CHNL_BW_40, mod);
+                break;
+            }
+
+            case 0xB1:  // RF HT40 RX Test
+            {
+                /* 55 B0 Channel<15:0> Modulation<3:0> Rate<11:0> */
+                /* Ep: 0x55 B0 24 12, RX Test 2412MHz HT20 */
+                uint32_t channel_i = 0;
+                uint32_t channel_o = 0;
+                uint32_t duration = 50;
+                uint32_t arg = 0x21;
+
+                if (cnt > 3)
+                {
+                    channel_i = ((content[2] >> 4) & 0x0F) * 1000
+                              + ((content[2] >> 0) & 0x0F) * 100
+                              + ((content[3] >> 4) & 0x0F) * 10
+                              + ((content[3] >> 0) & 0x0F) * 1;
+                }
+
+                uint32_t freq = channel_i;
+                wifi_band_t band;
+                if ((freq >= 2412) && (freq <= 2484)) {
+                    band = IEEE80211_BAND_2GHZ;
+                    if (freq == 2484)
+                        channel_o = 14;
+                    else
+                        channel_o = (freq - 2407) / 5; /* 2412->1 ... 2472->13 */
+                } else if ((freq >= 5005) && (freq <= 5885)) {
+                    band = IEEE80211_BAND_5GHZ;
+                    channel_o = (freq - 5000) / 5; /* e.g. 5180->36 */
+                } else if ((freq >= 5955) && (freq <= 7115)) {
+                    band = IEEE80211_BAND_6GHZ;
+                    channel_o = (freq - 5950) / 5; /* 5955->1 */
+                } else {
+                    band = IEEE80211_BAND_2GHZ;
+                    channel_o = 1; /* default */
+                }
+
+                per_test(PHY_CHNL_BW_40, channel_o, duration, arg, band);
                 break;
             }
 
