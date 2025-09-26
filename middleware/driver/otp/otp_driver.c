@@ -237,15 +237,30 @@ static uint32_t otp_get_failcnt()
 }
 
 #if CONFIG_OTP_EFUSE_SUPPORT
-static uint32_t otp_hal_get_offset(uint32_t item) {
-    if (otp_map != NULL) {
+static uint32_t otp1_hal_get_offset(uint32_t item) {
+    if (otp_map == NULL) {
         uint32_t map_1_rows = otp_map_1_row();
         for (uint32_t i = 0; i < map_1_rows; i++) {
             if (otp_map_1[i].name == item) {
                 return otp_map_1[i].offset;
             }
         }
+    }
 
+    switch (item) {
+        case OTP_MEMORY_CHECK_MARK:
+            return 0x0;
+		case OTP_EFUSE:
+            return 0x3c;
+        // case OTP_AES_KEY:
+        //     return 0x40;
+        default:
+            return 0;
+    }
+}
+
+static uint32_t otp2_hal_get_offset(uint32_t item) {
+    if (otp_map == NULL) {
         uint32_t map_2_rows = otp_map_2_row();
         for (uint32_t i = 0; i < map_2_rows; i++) {
             if (otp_map_2[i].name == item) {
@@ -258,11 +273,9 @@ static uint32_t otp_hal_get_offset(uint32_t item) {
         case OTP_PHY_PWR1:
             return 0x0;
 		case OTP_RFCALI1:
-            return 0x40;
-        case OTP_BL2_BOOT_PUBLIC_KEY_HASH:
-            return 0x148;
-        case OTP_BL1_BOOT_PUBLIC_KEY_HASH:
-            return 0x128;
+            return 0x60;
+		case OTP_GADC_CALIBRATION:
+            return 0x5A0;
         default:
             return 0;
     }
@@ -278,8 +291,8 @@ uint32_t bk_otp_partical_clean_check_FT(void) {
     OTP_INIT_IF_UNINITIALIZED();
     OTP_ACTIVE(2);
 
-    otp_start = otp_hal_get_offset(OTP_PHY_PWR1) / 4;
-    otp_end   = otp_hal_get_offset(OTP_RFCALI1) / 4;
+    otp_start = otp2_hal_get_offset(OTP_PHY_PWR1) >> 2;
+    otp_end   = otp2_hal_get_offset(OTP_RFCALI1) >> 2;
     for (location = otp_start; location < otp_end; location++) {
         value = _otp2_read_otp(location);
         if (value != 0) {
@@ -301,8 +314,8 @@ uint32_t bk_otp_partical_clean_check_customer(void) {
     OTP_INIT_IF_UNINITIALIZED();
     OTP_ACTIVE(1);
 
-    otp_start = otp_hal_get_offset(OTP_MEMORY_CHECK_MARK) / 4;
-    otp_end   = 0x400 / 4;
+    otp_start = otp1_hal_get_offset(OTP_MEMORY_CHECK_MARK) >> 2;
+    otp_end   = 0x400 >> 2;
     for (location = otp_start; location < otp_end; location++) {
         value = _otp_read_otp(location);
         if (value != 0) {
@@ -311,10 +324,11 @@ uint32_t bk_otp_partical_clean_check_customer(void) {
             return SOC_OTP_APB_BASE + 0x400 + location;
         }
     }
+	OTP_SLEEP();
 
     OTP_ACTIVE(2);
-	otp_start = otp_hal_get_offset(OTP_RFCALI1) / 4;
-    otp_end   = otp_hal_get_offset(OTP_GADC_CALIBRATION) / 4;
+	otp_start = otp2_hal_get_offset(OTP_RFCALI1) >> 2;
+    otp_end   = otp2_hal_get_offset(OTP_GADC_CALIBRATION) >> 2;
     for (location = otp_start; location < otp_end; location++) {
         value = _otp2_read_otp(location);
         if (value != 0) {
@@ -322,7 +336,6 @@ uint32_t bk_otp_partical_clean_check_customer(void) {
             return SOC_OTP_AHB_BASE + location;
         }
     }
-
     OTP_SLEEP();
     return 0;
 }
@@ -336,8 +349,9 @@ uint32_t bk_otp_partical_clean_check_efuse(void) {
     OTP_INIT_IF_UNINITIALIZED();
     OTP_ACTIVE(1);
 
-    otp_start = 0x3c / 4;
-    otp_end   = otp_hal_get_offset(OTP_AES_KEY) / 4;
+    otp_start = otp1_hal_get_offset(OTP_EFUSE) >> 2;
+    // otp_end   = otp1_hal_get_offset(OTP_AES_KEY) >> 2;
+    otp_end   = 0x40 >> 2;
     for (location = otp_start; location < otp_end; location++) {
         value = _otp_read_otp(location);
         if (value != 0) {
