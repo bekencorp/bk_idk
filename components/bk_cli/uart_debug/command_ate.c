@@ -29,6 +29,8 @@
 //#endif
 
 
+#include <driver/flash.h>
+
 enum mac_chan_bandwidth {
 	PHY_CHNL_BW_20,
 	PHY_CHNL_BW_40,
@@ -186,6 +188,74 @@ void send_chip_id(void)
     tx_buffer[3] = chip_id & 0x00FF;
     uart_send_bytes_for_ate(tx_buffer, 4);
 
+}
+
+void send_flash_id(void)
+{
+    UINT8 tx_buffer[8];
+    unsigned long ulFlashID;
+
+    ulFlashID = bk_flash_get_id();
+    tx_buffer[0] = (ulFlashID >> 24) & 0x00FF;
+    tx_buffer[1] = (ulFlashID >> 16) & 0x00FF;
+    tx_buffer[2] = (ulFlashID >> 8) & 0x00FF;
+    tx_buffer[3] = ulFlashID & 0x00FF;
+    uart_send_bytes_for_ate(tx_buffer, 4);
+}
+
+void send_compile_time_hex(void)
+{
+    const char *date = __DATE__;  // e.g. "jul 23 2025"
+    const char *time = __TIME__;  // e.g. "14:37:12"
+
+    static const char month_table[12][4] = {
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    };
+
+    uint8 month = 0;
+    for (size_t i = 0; i < 12; i++) {
+        if (os_memcmp(date, month_table[i], 3) == 0) {
+            month = i + 1;
+            month = month / 10 * 16 + month % 10;
+            break;
+        }
+    }
+
+    uint8_t year = 0;
+    for (size_t i = 9; i < 11; i++) {
+        if (date[i] >= '0' && date[i] <= '9') {
+            year = year * 10 + (date[i] - '0');
+        }
+    }
+    year = year / 10 * 16 + year % 10;
+
+    uint8_t day = 0;
+    for (size_t i = 4; i < 6; i++) {
+        if (date[i] >= '0' && date[i] <= '9') {
+            day = day * 10 + (date[i] - '0');
+        }
+    }
+    day = day / 10 * 16 + day % 10;
+
+    uint8_t hour = (time[0] - '0') * 10 + (time[1] - '0');
+    uint8_t min  = (time[3] - '0') * 10 + (time[4] - '0');
+    uint8_t sec  = (time[6] - '0') * 10 + (time[7] - '0');
+
+    hour = hour / 10 * 16 + hour % 10;
+    min  = min  / 10 * 16 + min  % 10;
+    sec  = sec  / 10 * 16 + sec  % 10;
+
+    UINT8 tx_buffer[16];
+    tx_buffer[0] = (0x00  >> 0) & 0xFF;
+    tx_buffer[1] = (0x00  >> 0) & 0xFF;
+    tx_buffer[2] = (year  >> 0) & 0xFF;
+    tx_buffer[3] = (month >> 0) & 0xFF;
+    tx_buffer[4] = (day   >> 0) & 0xFF;
+    tx_buffer[5] = (hour  >> 0) & 0xFF;
+    tx_buffer[6] = (min   >> 0) & 0xFF;
+    tx_buffer[7] = (sec   >> 0) & 0xFF;
+    uart_send_bytes_for_ate(tx_buffer, 8);
 }
 
 void send_device_id(void)
@@ -1142,6 +1212,8 @@ int bkreg_run_command1(unsigned char *content, int cnt)
             case 0x01:      // read chip ID
             {
                 send_chip_id();
+                send_flash_id();
+                send_compile_time_hex();
                 break;
             }
 
