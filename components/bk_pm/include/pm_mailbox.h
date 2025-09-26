@@ -17,5 +17,5 @@
 
 pm_mailbox_communication_state_e bk_pm_cp1_psram_power_state_get(void);
 bk_err_t bk_pm_cp1_psram_power_state_set(pm_mailbox_communication_state_e state);
-pm_mailbox_communication_state_e bk_pm_cp1_external_ldo_ctrl_state_get();
+pm_mailbox_communication_state_e bk_pm_cp1_external_ldo_ctrl_state_get(void);
 bk_err_t bk_pm_cp1_external_ldo_ctrl_state_set(pm_mailbox_communication_state_e state);

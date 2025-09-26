@@ -135,6 +135,11 @@ bk_err_t bk_pm_external_ldo_ctrl(uint32_t value)
 /*=========================EXTERNAL LDO CTRL END========================*/
 
 /*=========================POWER/VOLTAGE CTRL START========================*/
+bk_err_t bk_pm_cpu_freq_dump()
+{
+	sys_hal_cpu_freq_dump();
+	return BK_OK;
+}
 // TODO: for debug use?
 uint32_t bk_pm_lp_vol_get()
 {

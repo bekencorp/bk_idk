@@ -14,15 +14,15 @@
 
 #include <common/bk_include.h>
 
-void pm_cpu_wfi_process();
-void pm_normal_sleep_process();
-uint32_t pm_low_voltage_process();
+void pm_cpu_wfi_process(void);
+void pm_normal_sleep_process(void);
+uint32_t pm_low_voltage_process(void);
 
-void pm_deep_sleep_prepare();
-void pm_deep_sleep_process();
+void pm_deep_sleep_prepare(void);
+void pm_deep_sleep_process(void);
 #if CONFIG_PM_SUPER_DEEP_SLEEP
-void pm_super_deep_sleep_prepare();
-void pm_super_deep_sleep_process();
+void pm_super_deep_sleep_prepare(void);
+void pm_super_deep_sleep_process(void);
 #endif
 
-bk_err_t pm_lv_enter_time_out_clear();
+bk_err_t pm_lv_enter_time_out_clear(void);

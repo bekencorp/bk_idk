@@ -16,6 +16,7 @@
 #include "sys_driver.h"
 #include "aon_pmu_driver.h"
 
+#define PM_HIGHEST_CPU_FREQ                     (PM_CPU_FRQ_240M)
 
 static uint8_t s_pm_cpu_freq[PM_DEV_ID_MAX];
 static pm_cpu_freq_e s_pm_current_cpu_freq;
@@ -54,21 +55,16 @@ pm_cpu_freq_e bk_pm_module_current_cpu_freq_get(pm_dev_id_e module)
 
 bk_err_t bk_pm_module_vote_cpu_freq(pm_dev_id_e module, pm_cpu_freq_e cpu_freq)
 {
-#if CONFIG_CLK_FORCE_MAX_CPU_FREQ_320M
-	if(PM_CPU_FRQ_480M == cpu_freq)
-	{
-		cpu_freq = PM_CPU_FRQ_320M;
-	}
-#endif
 
 	if (pm_debug_mode() & 0x2)
 	{
 		BK_LOGD(NULL, "current freq = %d,dev_id = %d vote freq = %d \r\n",s_pm_current_cpu_freq, module, cpu_freq);
 	}
-	bk_err_t ret = BK_OK;
-	uint32_t i = 0;
-	uint32_t freq_max = 0;
+	bk_err_t ret            = BK_OK;
+	uint32_t i              = 0;
+	uint32_t freq_max       = 0;
 	uint32_t freq_max_index = 0;
+	bool bcpu_freq_highest  = false;
 
 	GLOBAL_INT_DECLARATION();
 	GLOBAL_INT_DISABLE();
@@ -76,7 +72,18 @@ bk_err_t bk_pm_module_vote_cpu_freq(pm_dev_id_e module, pm_cpu_freq_e cpu_freq)
 	/*save the cpu freq first*/
 	if (PM_CPU_FRQ_DEFAULT == cpu_freq)
 	{
-		cpu_freq = PM_CPU_FRQ_26M; // it will use the PM_DEV_ID_DEFAULT vote cpu frequency
+		cpu_freq = PM_CPU_FRQ_XTAL; // it will use the PM_DEV_ID_DEFAULT vote cpu frequency
+	}
+
+	/*Appli do not need to be concerned with the specific CPU frequency*/
+	if(cpu_freq == PM_CPU_FRQ_HIGHEST)
+	{
+		cpu_freq = PM_HIGHEST_CPU_FREQ;
+		bcpu_freq_highest = true;
+	}
+	else
+	{
+		bcpu_freq_highest = false;
 	}
 	s_pm_cpu_freq[module] = (uint8_t)cpu_freq;
 
@@ -90,7 +97,24 @@ bk_err_t bk_pm_module_vote_cpu_freq(pm_dev_id_e module, pm_cpu_freq_e cpu_freq)
 			freq_max_index = i;
 		}
 	}
+	if(bcpu_freq_highest == true)
+	{
+		s_pm_cpu_freq[module] = (uint8_t)PM_CPU_FRQ_HIGHEST;
+	}
 
+	/*dpd need cpu freq 120M, when dpd calibration, it force dpd need cpu freq, if dpd cali finish, restore it*/
+	if((module == PM_DEV_ID_PHY_DPD_CALI)&&(cpu_freq != PM_CPU_FRQ_XTAL))
+	{
+		freq_max = cpu_freq;
+	}
+	else
+	{
+		//when dpd cali finish, it will use the highest cpu freq in votes cpu freq.
+		if(freq_max == PM_CPU_FRQ_HIGHEST)
+		{
+			freq_max = PM_HIGHEST_CPU_FREQ;
+		}
+	}
 	/*updete the current cpu frequency*/
 	if (s_pm_current_cpu_freq == freq_max)
 	{
@@ -102,13 +126,22 @@ bk_err_t bk_pm_module_vote_cpu_freq(pm_dev_id_e module, pm_cpu_freq_e cpu_freq)
 		ret = sys_drv_switch_cpu_bus_freq(freq_max);
 	}
 	if (ret == BK_OK)
-		s_pm_current_cpu_freq = freq_max;
+	{
+		if(bcpu_freq_highest == true)
+		{
+			s_pm_current_cpu_freq = PM_CPU_FRQ_HIGHEST;
+		}
+		else
+		{
+			s_pm_current_cpu_freq = freq_max;
+		}
+	}
 
 	GLOBAL_INT_RESTORE();
 
 	if (ret != BK_OK)
 	{
-		BK_LOGD(NULL, "cpu0 switch cpu freq error\r\n");
+		BK_LOGD(NULL, "Switch cpu freq error\r\n");
 		return ret;
 	}
 

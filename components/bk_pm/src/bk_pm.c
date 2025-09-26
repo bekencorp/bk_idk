@@ -37,6 +37,7 @@ void bk_pm_enter_sleep(void)
 	bk_pm_suppress_ticks_and_sleep(sleep_ticks);
 }
 
+#if CONFIG_PM_WAKE_FUNC
 /* 用于 CONFIG_PM_ENABLE=n 和 CONFIG_PM_CLIENT=y 时的默认实现 */
 /*=====================WEAK FUNCTION START=====================*/
 /* 2. MCU电源管理 */
@@ -360,4 +361,5 @@ bk_err_t __attribute__((weak)) bk_pm_mailbox_init(void)
 {
 	return BK_OK;
 }
+#endif
 /*=====================WEAK FUNCTION END=====================*/

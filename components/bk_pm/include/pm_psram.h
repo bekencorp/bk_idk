@@ -16,4 +16,4 @@
 
 bk_err_t pm_cp1_psram_malloc_count_state_set(uint32_t value);
 bk_err_t pm_cp1_psram_malloc_state_get(void);
-bk_err_t pm_psram_malloc_state_and_power_ctrl();
+bk_err_t pm_psram_malloc_state_and_power_ctrl(void);

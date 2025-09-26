@@ -16,7 +16,7 @@
 
 #define PM_TAG "PM"
 
-#if 1
+#if CONFIG_PM_LOG_DEBUG
 #define PM_LOGI(...) BK_LOGI(PM_TAG, ##__VA_ARGS__)
 #define PM_LOGW(...) BK_LOGW(PM_TAG, ##__VA_ARGS__)
 #define PM_LOGE(...) BK_LOGE(PM_TAG, ##__VA_ARGS__)
