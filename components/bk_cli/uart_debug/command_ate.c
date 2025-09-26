@@ -1099,7 +1099,6 @@ static void psram_function_test(void)
 	uart_send_bytes_for_ate(&tx_buffer, 1);
 }
 
-#if ((CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX))
 int set_device_id_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buffer)
 {
     uint8_t device_id_write[EFUSE_DEVICE_ID_BYTE_NUM] = {0};
@@ -1144,7 +1143,7 @@ int set_device_id_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buff
     }
 
     for (; retry_times < 3; retry_times++) {
-	    ret = bk_otp_apb_update(OTP_DEVICE_ID, device_id_write, sizeof(device_id_write));
+	    ret = bk_otp_ahb_update(OTP_DEVICE_ID, device_id_write, sizeof(device_id_write));
 		if (ret == BK_OK) {
 			break;
 		}
@@ -1167,14 +1166,14 @@ int set_device_id_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buff
             tx_buffer[2] = 0xff;
         }
 
-        bk_otp_apb_read(OTP_DEVICE_ID, tx_buffer + 3, EFUSE_DEVICE_ID_BYTE_NUM);
+        bk_otp_ahb_read(OTP_DEVICE_ID, tx_buffer + 3, EFUSE_DEVICE_ID_BYTE_NUM);
         uart_send_bytes_for_ate(tx_buffer, 3 + EFUSE_DEVICE_ID_BYTE_NUM);
 
         return BK_FAIL;
 	}
 
     tx_buffer[1] = 0x88;
-    bk_otp_apb_read(OTP_DEVICE_ID, tx_buffer + 2, EFUSE_DEVICE_ID_BYTE_NUM);
+    bk_otp_ahb_read(OTP_DEVICE_ID, tx_buffer + 2, EFUSE_DEVICE_ID_BYTE_NUM);
     uart_send_bytes_for_ate(tx_buffer, 2 + EFUSE_DEVICE_ID_BYTE_NUM);
 
     return BK_OK;
@@ -1236,102 +1235,6 @@ int set_mac_address_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_bu
     return BK_OK;
 }
 #endif
-#else
-int set_device_id_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buffer)
-{
-    uint8_t device_id_write[EFUSE_DEVICE_ID_BYTE_NUM] = {0};
-    uint8_t efuse_addr[EFUSE_DEVICE_ID_BYTE_NUM] = {EFUSE_ADDR_BYTE28, EFUSE_ADDR_BYTE27, EFUSE_ADDR_BYTE26, \
-                                                    EFUSE_ADDR_BYTE25, EFUSE_ADDR_BYTE24};
-    uint8_t device_id_read[EFUSE_DEVICE_ID_BYTE_NUM] = {0};
-    uint8_t retry_times = 0;
-    int ret = 0;
-
-    tx_buffer[0] = 0x55;
-    if (cnt < 7) {
-        /* return param num error */
-        tx_buffer[1] = 0x77;
-        tx_buffer[2] = 0x1;
-        uart_send_bytes_for_ate(tx_buffer, 3);
-        return BK_FAIL;
-    }
-
-    for(int iIndex = 0; iIndex < EFUSE_DEVICE_ID_BYTE_NUM; iIndex++) {
-        device_id_write[iIndex] = (uint8_t) (content[2 + iIndex] & 0xFF);
-    }
-
-    /* sn2 is out of range */
-    if((device_id_write[0] < EFUSE_DEVICE_ID_SN_MINIMUM) || (device_id_write[0] > EFUSE_DEVICE_ID_SN_MAXIMUM)) {
-        tx_buffer[1] = 0x77;
-        tx_buffer[2] = 0x2;
-        uart_send_bytes_for_ate(tx_buffer, 3);
-        return BK_FAIL;
-    }
-
-    /*  sn1 is out of range */
-    if((device_id_write[1] < EFUSE_DEVICE_ID_SN_MINIMUM) || (device_id_write[1] > EFUSE_DEVICE_ID_SN_MAXIMUM)) {
-        tx_buffer[1] = 0x77;
-        tx_buffer[2] = 0x3;
-        uart_send_bytes_for_ate(tx_buffer, 3);
-        return BK_FAIL;
-    }
-
-    /* wafer id is out of range */
-    if((device_id_write[2] < EFUSE_WAFER_ID_MINIMUM) || (device_id_write[2] > EFUSE_WAFER_ID_MAXIMUM)) {
-        tx_buffer[1] = 0x77;
-        tx_buffer[2] = 0x4;
-        uart_send_bytes_for_ate(tx_buffer, 3);
-        return BK_FAIL;
-    }
-
-    for(int iIndex = 0; iIndex < EFUSE_DEVICE_ID_BYTE_NUM; iIndex++) {
-        retry_times = 0;
-retry_efuse_write:
-        //efuse write
-        ret = bk_efuse_write_byte(efuse_addr[iIndex], device_id_write[iIndex]);
-        //efuse read
-        bk_efuse_read_byte(efuse_addr[iIndex], &(device_id_read[iIndex]));
-
-        if(device_id_read[iIndex] != device_id_write[iIndex]) {
-            if(retry_times < 2) {
-                retry_times++;
-                goto retry_efuse_write;
-            } else {
-                tx_buffer[1] = 0x77;
-
-                if (ret == BK_ERR_EFUSE_DRIVER_NOT_INIT) {
-                    tx_buffer[2] = 0x5;
-                } else if(ret == BK_ERR_EFUSE_ADDR_OUT_OF_RANGE) {
-                    tx_buffer[2] = 0x6;
-                } else if(ret == BK_ERR_EFUSE_CANNOT_WRTIE) {
-                    tx_buffer[2] = 0x7;
-                } else if(ret == BK_ERR_EFUSE_WRTIE_NOT_EQUAL) {
-                    tx_buffer[2] = 0x8;
-                } else if(ret == BK_ERR_EFUSE_READ_FAIL) {
-                    tx_buffer[2] = 0x9;
-                } else {
-                    tx_buffer[2] = 0xff;
-                }
-
-                for(int jIndex = 0; jIndex < EFUSE_DEVICE_ID_BYTE_NUM; jIndex++) {
-                    bk_efuse_read_byte(efuse_addr[jIndex], &(device_id_read[jIndex]));
-                    tx_buffer[3 + jIndex] = device_id_read[jIndex];
-                }
-                uart_send_bytes_for_ate(tx_buffer, 8);
-                return BK_FAIL;
-            }
-        }
-    }
-
-    tx_buffer[1] = 0x88;
-    for(int iIndex = 0; iIndex < EFUSE_DEVICE_ID_BYTE_NUM; iIndex++) {
-        tx_buffer[2 + iIndex] = device_id_read[iIndex];
-    }
-    uart_send_bytes_for_ate(tx_buffer, 7);
-
-    return BK_OK;
-}
-#endif
-
 /**
  * command format 55 xx, range of xx:
  * 0x : device test cmd
