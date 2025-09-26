@@ -118,6 +118,8 @@ extern uint32_t bk_otp_fully_flow_test();
 extern void sctrl_dpll_int_open(void);
 #endif
 
+extern uint32_t bk_rfpll_ate_test(void);
+
 void uart_send_byte_for_ate(UINT8 data)
 {
 	uart_write_byte(bk_get_printf_port(), data);
@@ -280,6 +282,27 @@ void wifi_cali_dpll_ate(void)
         tx_buffer[1] = 0xCC;
     }
     uart_send_bytes_for_ate(tx_buffer, 2);
+}
+
+void wifi_cali_rfpll_ate(void)
+{
+    UINT8 tx_buffer[4];
+
+    tx_buffer[0] = 0x55;
+
+    uint32_t err_mask = bk_rfpll_ate_test();
+
+    if(err_mask == 0)
+    {
+        tx_buffer[1] = 0x33;
+        uart_send_bytes_for_ate(tx_buffer, 2);
+    }
+    else
+    {
+        tx_buffer[1] = 0xCC;
+        tx_buffer[2] = (0x00 | (err_mask & 0x0F));
+        uart_send_bytes_for_ate(tx_buffer, 3);
+    }
 }
 
 void send_device_id(void)
@@ -1272,6 +1295,11 @@ int bkreg_run_command1(unsigned char *content, int cnt)
             case 0x0D:
             {
                 wifi_cali_dpll_ate();
+                break;
+            }
+            case 0x0E:
+            {
+                wifi_cali_rfpll_ate();
                 break;
             }
             case 0x10:      // Pout_Max_2400    135M MCS7 11n 20M

@@ -182,6 +182,11 @@ uint32_t aon_pmu_hal_bias_cal_get()
 	return aon_pmu_ll_get_r7e_cbcal();
 }
 
+uint32_t aon_pmu_hal_band_cal_get()
+{
+	return aon_pmu_ll_get_r7e_band_cal();
+}
+
 uint32_t aon_pmu_hal_rtc_tick_h_get(void)
 {
 	return aon_pmu_ll_get_r78_rtc_tick_h();

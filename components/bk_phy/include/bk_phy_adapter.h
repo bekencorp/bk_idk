@@ -59,6 +59,7 @@ typedef struct {
 
     uint32_t (*_aon_pmu_hal_get_chipid)(void);
     uint32_t (*_aon_pmu_drv_bias_cal_get)(void);
+    uint32_t (*_aon_pmu_drv_band_cal_get)(void);
     uint32_t (*_aon_pmu_drv_get_adc_cal)(void);
 
     void (*_sys_drv_set_pwd_anabuf_lownoise)(uint32_t value);

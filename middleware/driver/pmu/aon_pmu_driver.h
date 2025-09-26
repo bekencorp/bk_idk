@@ -51,6 +51,7 @@ void aon_pmu_drv_lpo_src_extern32k_enable(void);
 void aon_pmu_drv_lpo_src_set(uint32_t lpo_src);
 uint32_t aon_pmu_drv_lpo_src_get();
 uint32_t aon_pmu_drv_bias_cal_get();
+uint32_t aon_pmu_drv_band_cal_get();
 void aon_pmu_drv_gpio_clksel_set(uint32_t value);
 uint32_t aon_pmu_drv_gpio_clksel_get(void);
 #if CONFIG_AON_PMU_REG0_REFACTOR_DEV

@@ -180,6 +180,12 @@ uint32_t aon_pmu_hal_bias_cal_get()
 	return aon_pmu_ll_get_r7e_cbcal();
 }
 
+uint32_t aon_pmu_hal_band_cal_get()
+{
+	// return aon_pmu_ll_get_r7e_band_cal();
+	return 0;
+}
+
 void aon_pmu_hal_r0_latch_to_r7b(void)
 {
 	aon_pmu_ll_set_r25(0x424B55AA);

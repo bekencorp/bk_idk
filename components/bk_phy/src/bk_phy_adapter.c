@@ -799,6 +799,7 @@ const phy_os_funcs_t g_phy_os_funcs = {
     ._bk_pm_module_vote_cpu_freq       = bk_pm_module_vote_cpu_freq_phy,
 
     ._aon_pmu_drv_bias_cal_get         = aon_pmu_drv_bias_cal_get,
+    ._aon_pmu_drv_band_cal_get         = aon_pmu_drv_band_cal_get,
     ._aon_pmu_drv_get_adc_cal          = aon_pmu_drv_get_adc_cal,
 
 #if (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX)
