@@ -774,7 +774,7 @@ static int per_test(uint32_t bandwidth, uint32_t channel, uint32_t duration, uin
         BK_ASSERT(kNoErr == err);
         err = rtos_start_oneshot_timer(&rx_sens_ate_tmr);
         BK_ASSERT(kNoErr == err);
-    } 
+    }
     else
     {
         if (rx_sens_ate_tmr.handle != NULL)
@@ -1054,9 +1054,10 @@ static void ate_test_multiple_cpus_case(void)
 
 static void psram_function_test(void)
 {
-	UINT8 tx_buffer;
+	UINT8 tx_buffer[2];
 
-	tx_buffer = 0x32;
+	tx_buffer[0] = 0x55;
+	tx_buffer[1] = 0x32;
 
 #if CONFIG_PSRAM
 
@@ -1064,39 +1065,116 @@ static void psram_function_test(void)
 
 	uint32_t base_addr = 0x60000000;
 	uint32_t value = 0;
-	uint32_t word_len = 1024;
+	uint32_t word_len = 1024 * 256;
 	uint8_t  flag_error = 0;
 
 	bk_psram_set_clk(PSRAM_80M);
 
-	for (uint32_t i = 0; i < word_len; i++)
-	{
-		write_data(base_addr + i * 4, 0x11223344 + i);
+	for (uint32_t i = 0; i < word_len; i++) {
+		write_data(base_addr + i * 4, 0x11111111 + i);
 	}
-
-	for (uint32_t i = 0; i < word_len; i++)
-	{
+	for (uint32_t i = 0; i < word_len; i++) {
 		value = get_addr_data(base_addr + i * 4);
-
-		if (value != (0x11223344 + i))
-		{
+		if (value != (0x11111111 + i)) {
 			flag_error = 1;
-			break;
+			goto exit;
 		}
 	}
 
-	if (flag_error)
-	{
-		tx_buffer = 0x31;
+	base_addr = 0x60200000;
+	for (uint32_t i = 0; i < word_len; i++) {
+		write_data(base_addr + i * 4, 0x22222222 + i);
 	}
-	else
-	{
-		tx_buffer = 0x30;
+	for (uint32_t i = 0; i < word_len; i++) {
+		value = get_addr_data(base_addr + i * 4);
+		if (value != (0x22222222 + i)) {
+			flag_error = 1;
+			goto exit;
+		}
+	}
+
+	base_addr = 0x60100000;
+	for (uint32_t i = 0; i < word_len; i++) {
+		write_data(base_addr + i * 4, 0x33333333 + i);
+	}
+	for (uint32_t i = 0; i < word_len; i++) {
+		value = get_addr_data(base_addr + i * 4);
+		if (value != (0x33333333 + i)) {
+			flag_error = 1;
+			goto exit;
+		}
+	}
+
+	base_addr = 0x60300000;
+	for (uint32_t i = 0; i < word_len; i++) {
+		write_data(base_addr + i * 4, 0x44444444 + i);
+	}
+	for (uint32_t i = 0; i < word_len; i++) {
+		value = get_addr_data(base_addr + i * 4);
+		if (value != (0x44444444 + i)) {
+			flag_error = 1;
+			goto exit;
+		}
+	}
+
+	base_addr = 0x60500000;
+	for (uint32_t i = 0; i < word_len; i++) {
+		write_data(base_addr + i * 4, 0x55555555 + i);
+	}
+	for (uint32_t i = 0; i < word_len; i++) {
+		value = get_addr_data(base_addr + i * 4);
+		if (value != (0x55555555 + i)) {
+			flag_error = 1;
+			goto exit;
+		}
+	}
+
+	base_addr = 0x60700000;
+	for (uint32_t i = 0; i < word_len; i++) {
+		write_data(base_addr + i * 4, 0x66666666 + i);
+	}
+	for (uint32_t i = 0; i < word_len; i++) {
+		value = get_addr_data(base_addr + i * 4);
+		if (value != (0x66666666 + i)) {
+			flag_error = 1;
+			goto exit;
+		}
+	}
+
+	base_addr = 0x60400000;
+	for (uint32_t i = 0; i < word_len; i++) {
+		write_data(base_addr + i * 4, 0x77777777 + i);
+	}
+	for (uint32_t i = 0; i < word_len; i++) {
+		value = get_addr_data(base_addr + i * 4);
+		if (value != (0x77777777 + i)) {
+			flag_error = 1;
+			goto exit;
+		}
+	}
+
+	base_addr = 0x60600000;
+	for (uint32_t i = 0; i < word_len; i++) {
+		write_data(base_addr + i * 4, 0x88888888 + i);
+	}
+	for (uint32_t i = 0; i < word_len; i++) {
+		value = get_addr_data(base_addr + i * 4);
+		if (value != (0x88888888 + i)) {
+			flag_error = 1;
+			goto exit;
+		}
+	}
+
+exit:
+	if (flag_error) {
+		tx_buffer[1] = 0x30;
+	} else {
+		tx_buffer[1] = 0x31;
 	}
 
 #endif
 
-	uart_send_bytes_for_ate(&tx_buffer, 1);
+	uart_send_bytes_for_ate(&tx_buffer[0], 2);
 }
 
 int set_device_id_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buffer)
@@ -1245,7 +1323,7 @@ int set_mac_address_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_bu
  * 5x : set registers for cali
  * 6x : memory / flash / otp check
  * 7x : ble
- * 9x : 
+ * 9x :
  */
 int bkreg_run_command1(unsigned char *content, int cnt)
 {
@@ -1740,21 +1818,21 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                         bk_usb_ate_voh_vol_test(2);
                         break;
                     }
-                    
+
                     case 0x02:
                     {
                         bk_usb_ate_voh_vol_test(1);
                         bk_usb_ate_voh_vol_test(3);
                         break;
                     }
-                    
+
                     case 0x03:
                     {
                         bk_usb_ate_rterm_test(1);
                         bk_usb_ate_rterm_test(2);
                         break;
                     }
-                    
+
                     case 0x04:
                     {
                         bk_usb_ate_rx_dc_input_test(1);
