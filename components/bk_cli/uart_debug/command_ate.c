@@ -123,10 +123,94 @@ extern void sctrl_dpll_int_open(void);
 #endif
 
 extern uint32_t bk_rfpll_ate_test(void);
+extern void sys_hal_set_cpu_cp_test_config(uint32_t cfg_id);
 
 #if CONFIG_MAC802154_ENABLE
 extern uint8_t mac80154_ate(uint8_t * cmd,uint8_t len,uint8_t *out_rsp,uint8_t *out_size);
 #endif
+
+bk_err_t core_mem_wr_test(uint32_t start_addr)
+{
+    uint32_t original_values[10] = {0};
+    uint32_t flags = rtos_disable_int();
+
+    for (int i = 0; i < 10; i++) {
+        original_values[i] = os_get_word(start_addr + i * 4);
+    }
+
+    for (int j = 0; j < 10; j++) {
+        uint32_t test_value = 0xABCDEEEF + j;
+        os_write_word(start_addr + j * sizeof(uint32_t), test_value);
+        uint32_t readback_value = os_get_word(start_addr + j * sizeof(uint32_t));
+
+        if (readback_value != test_value) {
+            for (int k = 0; k <= j; k++) {
+                os_write_word(start_addr + k * 4, original_values[k]);
+            }
+            rtos_enable_int(flags);
+            return BK_FAIL;
+        }
+    }
+    for (int j = 0; j < 10; j++) {
+        os_write_word(start_addr + j * 4, original_values[j]);
+    }
+    rtos_enable_int(flags);
+    return BK_OK;
+}
+
+bk_err_t core_mem_wr_all_test(void)
+{
+    bk_err_t ret;
+    uint32_t smem0 = 0x2806F000;
+    uint32_t smem1 = 0x28000FFF;
+    uint32_t smem2 = 0x28020FFF;
+    uint32_t smem3 = 0x28040FFF;
+    uint32_t smem4 = 0x28070FFF;
+
+    ret = core_mem_wr_test(smem0);
+    if (ret == BK_OK) {
+    } else {
+        return BK_FAIL;
+    }
+
+    ret = core_mem_wr_test(smem1);
+    if (ret != BK_OK) {
+        return BK_FAIL;
+    }
+
+    ret = core_mem_wr_test(smem2);
+    if (ret != BK_OK) {
+        return BK_FAIL;
+    }
+
+    ret = core_mem_wr_test(smem3);
+    if (ret != BK_OK) {
+        return BK_FAIL;
+    }
+
+    ret = core_mem_wr_test(smem4);
+    if (ret != BK_OK) {
+        return BK_FAIL;
+    }
+
+    return BK_OK;
+}
+
+bk_err_t core_cp_test(void)
+{
+    bk_err_t ret;
+    sys_hal_set_cpu_cp_test_config(0);
+    ret = core_mem_wr_all_test();
+    if (ret != BK_OK) {
+        return BK_FAIL;
+    }
+    sys_hal_set_cpu_cp_test_config(1);
+    ret = core_mem_wr_all_test();
+    if (ret != BK_OK) {
+        return BK_FAIL;
+    }
+    return BK_OK;
+}
 
 void uart_send_byte_for_ate(UINT8 data)
 {
