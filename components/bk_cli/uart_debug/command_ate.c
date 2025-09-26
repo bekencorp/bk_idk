@@ -122,7 +122,7 @@ extern uint32_t bk_otp_fully_flow_test();
 extern void sctrl_dpll_int_open(void);
 #endif
 
-extern uint32_t bk_rfpll_ate_test(void);
+extern uint32_t bk_rfpll_ate_test(uint32_t *bandmin_wifi, uint32_t *bandmax_wifi, uint32_t *bandmin_lp, uint32_t *bandmax_lp);
 extern void sys_hal_set_cpu_cp_test_config(uint32_t cfg_id);
 
 #if CONFIG_MAC802154_ENABLE
@@ -378,22 +378,51 @@ void wifi_cali_dpll_ate(void)
 
 void wifi_cali_rfpll_ate(void)
 {
-    UINT8 tx_buffer[4];
+    #define PRINT_RESULT_ENABLE  1
+    UINT8 tx_buffer[16];
+    __maybe_unused uint32_t bandmin_wifi = 0;
+    __maybe_unused uint32_t bandmax_wifi = 0;
+    __maybe_unused uint32_t bandmin_lp = 0;
+    __maybe_unused uint32_t bandmax_lp = 0;
 
     tx_buffer[0] = 0x55;
 
-    uint32_t err_mask = bk_rfpll_ate_test();
+    uint32_t err_mask = bk_rfpll_ate_test(&bandmin_wifi, &bandmax_wifi, &bandmin_lp, &bandmax_lp);
 
     if(err_mask == 0)
     {
         tx_buffer[1] = 0x33;
+#if (PRINT_RESULT_ENABLE)
+        tx_buffer[2] = (bandmin_wifi >> 8) & 0x00FF;
+        tx_buffer[3] = bandmin_wifi & 0x00FF;
+        tx_buffer[4] = (bandmax_wifi >> 8) & 0x00FF;
+        tx_buffer[5] = bandmax_wifi & 0x00FF;
+        tx_buffer[6] = (bandmin_lp >> 8) & 0x00FF;
+        tx_buffer[7] = bandmin_lp & 0x00FF;
+        tx_buffer[8] = (bandmax_lp >> 8) & 0x00FF;
+        tx_buffer[9] = bandmax_lp & 0x00FF;
+        uart_send_bytes_for_ate(tx_buffer, 10);
+#else
         uart_send_bytes_for_ate(tx_buffer, 2);
+#endif
     }
     else
     {
         tx_buffer[1] = 0xCC;
         tx_buffer[2] = (0x00 | (err_mask & 0x0F));
+#if (PRINT_RESULT_ENABLE)
+        tx_buffer[3] = (bandmin_wifi >> 8) & 0x00FF;
+        tx_buffer[4] = bandmin_wifi & 0x00FF;
+        tx_buffer[5] = (bandmax_wifi >> 8) & 0x00FF;
+        tx_buffer[6] = bandmax_wifi & 0x00FF;
+        tx_buffer[7] = (bandmin_lp >> 8) & 0x00FF;
+        tx_buffer[8] = bandmin_lp & 0x00FF;
+        tx_buffer[9] = (bandmax_lp >> 8) & 0x00FF;
+        tx_buffer[10] = bandmax_lp & 0x00FF;
+        uart_send_bytes_for_ate(tx_buffer, 11);
+#else
         uart_send_bytes_for_ate(tx_buffer, 3);
+#endif
     }
 }
 
