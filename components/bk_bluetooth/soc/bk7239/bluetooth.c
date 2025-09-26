@@ -385,7 +385,11 @@ static bk_err_t gpio_dev_map_wrapper(uint32_t gpio_id, uint32_t func)
 
 static void set_printf_enable_wrapper(uint8_t enable)
 {
+#if CONFIG_ATE_TEST
+    return ;
+#else
     bk_set_printf_enable(enable);
+#endif
 }
 
 static void evm_stop_bypass_mac_wrapper(void)
