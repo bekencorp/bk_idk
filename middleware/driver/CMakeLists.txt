@@ -133,6 +133,10 @@ if (CONFIG_EFUSE)
 	list(APPEND srcs
 		efuse/efuse_driver.c
 	)
+else()
+	list(APPEND srcs
+		efuse/efuse_otp_driver.c
+	)
 endif()
 
 if (CONFIG_GENERAL_DMA)
