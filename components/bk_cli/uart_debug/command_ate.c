@@ -552,6 +552,17 @@ static UINT8 g_pwr_idx_11a_ch64 = 0;
 static UINT8 g_pwr_idx_11a_ch100 = 0;
 static UINT8 g_pwr_idx_11a_ch132 = 0;
 static UINT8 g_pwr_idx_11a_ch165 = 0;
+static UINT8 g_pwr_dBm_x10_11b_ch1 = 0;
+static UINT8 g_pwr_dBm_x10_11b_ch7 = 0;
+static UINT8 g_pwr_dBm_x10_11b_ch13 = 0;
+static UINT8 g_pwr_dBm_x10_11g_ch1 = 0;
+static UINT8 g_pwr_dBm_x10_11g_ch7 = 0;
+static UINT8 g_pwr_dBm_x10_11g_ch13 = 0;
+static UINT8 g_pwr_dBm_x10_11a_ch36 = 0;
+static UINT8 g_pwr_dBm_x10_11a_ch64 = 0;
+static UINT8 g_pwr_dBm_x10_11a_ch100 = 0;
+static UINT8 g_pwr_dBm_x10_11a_ch132 = 0;
+static UINT8 g_pwr_dBm_x10_11a_ch165 = 0;
 
 /**
  * rate        : reference to evm_translate_tx_rate
@@ -559,7 +570,7 @@ static UINT8 g_pwr_idx_11a_ch165 = 0;
  * bandwidth   : reference to mac_chan_bandwidth
  * modul_format: reference to ModulationFormat
  */
-static void evm_test(UINT32 rate, UINT32 channel, UINT32 bandwidth, UINT32 modul_format)
+static void evm_test(UINT32 rate, UINT32 channel, UINT32 bandwidth, UINT32 modul_format, UINT8 pwr_dbm)
 {
     UINT32 packet_len;
     UINT32 duty_cycle;
@@ -606,28 +617,39 @@ static void evm_test(UINT32 rate, UINT32 channel, UINT32 bandwidth, UINT32 modul
     if (rate == 11) {
         if (channel == 2412) {
             g_pwr_idx_11b_ch1 = pwr_idx;
+            g_pwr_dBm_x10_11b_ch1 = pwr_dbm;
         } else if (channel == 2442) {
             g_pwr_idx_11b_ch7 = pwr_idx;
+            g_pwr_dBm_x10_11b_ch7 = pwr_dbm;
         } else if (channel == 2472) {
             g_pwr_idx_11b_ch13 = pwr_idx;
+            g_pwr_dBm_x10_11b_ch13 = pwr_dbm;
         }
     } else if (rate == 54) {
         if (channel == 2412) {
             g_pwr_idx_11g_ch1 = pwr_idx;
+            g_pwr_dBm_x10_11g_ch1 = pwr_dbm;
         } else if (channel == 2442) {
             g_pwr_idx_11g_ch7 = pwr_idx;
+            g_pwr_dBm_x10_11g_ch7 = pwr_dbm;
         } else if (channel == 2472) {
             g_pwr_idx_11g_ch13 = pwr_idx;
+            g_pwr_dBm_x10_11g_ch13 = pwr_dbm;
         } else if (channel == 5180) {
             g_pwr_idx_11a_ch36 = pwr_idx;
+            g_pwr_dBm_x10_11a_ch36 = pwr_dbm;
         } else if (channel == 5320) {
             g_pwr_idx_11a_ch64 = pwr_idx;
+            g_pwr_dBm_x10_11a_ch64 = pwr_dbm;
         } else if (channel == 5500) {
             g_pwr_idx_11a_ch100 = pwr_idx;
+            g_pwr_dBm_x10_11a_ch100 = pwr_dbm;
         } else if (channel == 5660) {
             g_pwr_idx_11a_ch132 = pwr_idx;
+            g_pwr_dBm_x10_11a_ch132 = pwr_dbm;
         } else if (channel == 5825) {
             g_pwr_idx_11a_ch165 = pwr_idx;
+            g_pwr_dBm_x10_11a_ch165 = pwr_dbm;
         }
     }
     rf_module_vote_ctrl(RF_CLOSE,RF_BY_TEMP_BIT);
@@ -1480,8 +1502,8 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 {
                     offset = (uint8_t)content[2];
                 }
-				evm_test(135, 2400 + offset, PHY_CHNL_BW_20, 0);
-				break;
+                evm_test(135, 2400 + offset, PHY_CHNL_BW_20, 0, 0);
+                break;
             }
             case 0x11:      // Pout_Max_2400    54M OFDM 11g
             {
@@ -1490,7 +1512,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 {
                     offset = (uint8_t)content[2];
                 }
-				evm_test(54, 2400 + offset, PHY_CHNL_BW_20, 0);
+                evm_test(54, 2400 + offset, PHY_CHNL_BW_20, 0, 0);
                 break;
             }
             case 0x12:      // Pout_Max_2480    11M DSSS 11b
@@ -1500,7 +1522,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 {
                     offset = (uint8_t)content[2];
                 }
-				evm_test(11, 2400 + offset, PHY_CHNL_BW_20, 0);
+                evm_test(11, 2400 + offset, PHY_CHNL_BW_20, 0, 0);
                 break;
             }
             case 0x13:      // Pout_Max_2400    135M MCS7 11ax
@@ -1510,7 +1532,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 {
                     offset = (uint8_t)content[2];
                 }
-				evm_test(135, 2400 + offset, PHY_CHNL_BW_20, 5);
+                evm_test(135, 2400 + offset, PHY_CHNL_BW_20, 5, 0);
                 break;
             }
             case 0x20:      // BER_Min_CHxx_20M: 55 20 xx [ms=50]
@@ -1554,7 +1576,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 {
                     offset = (uint8_t)content[2];
                 }
-				evm_test(135, 2400 + offset, PHY_CHNL_BW_40, 0);
+                evm_test(135, 2400 + offset, PHY_CHNL_BW_40, 0, 0);
                 break;
             }
             case 0x23:      // // not test in ATE temporary,Pout_Max_2462    tx encrypt verify
@@ -1675,9 +1697,68 @@ int bkreg_run_command1(unsigned char *content, int cnt)
             }
 
 #if (CONFIG_OTP)
+            case 0x3E:  // OTP RFPWR_TBL write and read
+            {
+                uint32_t length = 46;
+                UINT8 tx_buffer[100];
+                int ret = 0;
+                UINT8 otp_idx = content[3];
+
+                switch (content[2])
+                {
+                case 0x01:  // OTP RFPWR_TBL read
+                {
+                    ret = bk_otp_ahb_read(otp_idx, tx_buffer + 1, length);
+                    tx_buffer[0] = 0x0E;
+                    if (ret != BK_OK) {
+                        // otp read fail
+                        tx_buffer[0] = 0x55;
+                        tx_buffer[1] = 0xBB;
+                        uart_send_bytes_for_ate(tx_buffer, 2);
+                    } else {
+                        uart_send_bytes_for_ate(tx_buffer, length + 1);
+                    }
+                    break;
+                }
+
+                case 0x02:  // OTP RFPWR_TBL write
+                {
+                    UINT8 tbl_version = content[4];
+                    UINT8 ana_version = content[5];
+                    UINT32 pwr_tbl[12] = {0};
+
+                    pwr_tbl[0] = g_pwr_idx_11b_ch1 << 24 | g_pwr_idx_11g_ch1 << 16;
+                    pwr_tbl[1] = g_pwr_idx_11b_ch7 << 24 | g_pwr_idx_11g_ch7 << 16;
+                    pwr_tbl[2] = g_pwr_idx_11b_ch13 << 24 | g_pwr_idx_11g_ch13 << 16;
+                    pwr_tbl[3] = g_pwr_dBm_x10_11b_ch1 << 24 | g_pwr_dBm_x10_11g_ch1 << 16;
+                    pwr_tbl[4] = g_pwr_dBm_x10_11b_ch7 << 24 | g_pwr_dBm_x10_11g_ch7 << 16;
+                    pwr_tbl[5] = g_pwr_dBm_x10_11b_ch13 << 24 | g_pwr_dBm_x10_11g_ch13 << 16;
+                    pwr_tbl[6] = g_pwr_idx_11a_ch36 << 24 | g_pwr_dBm_x10_11a_ch36 << 16;
+                    pwr_tbl[7] = g_pwr_idx_11a_ch64 << 24 | g_pwr_dBm_x10_11a_ch64 << 16;
+                    pwr_tbl[8] = g_pwr_idx_11a_ch100 << 24 | g_pwr_dBm_x10_11a_ch100 << 16;
+                    pwr_tbl[9] = g_pwr_idx_11a_ch132 << 24 | g_pwr_dBm_x10_11a_ch132 << 16;
+                    pwr_tbl[10] = g_pwr_idx_11a_ch165 << 24 | g_pwr_dBm_x10_11a_ch165 << 16;
+                    pwr_tbl[11] = tbl_version << 24 | ana_version << 16;
+
+                    ret = bk_otp_ahb_update(otp_idx, (uint8_t *)pwr_tbl, sizeof(pwr_tbl));
+                    tx_buffer[0] = 0x55;
+                    if (ret != BK_OK) {
+                        tx_buffer[0] = 0xCC;
+                    } else {
+                        tx_buffer[0] = 0x33;
+                    }
+                        break;
+                    }
+
+                default:
+                    break;
+                }
+                break;
+            }
+
             case 0x40: //read otp
-            ate_read_otp(content, cnt, tx_buffer);
-            break;
+                ate_read_otp(content, cnt, tx_buffer);
+                break;
 #endif
 #if 0
             case 0x41:      //not test in ATE temporary
@@ -2094,8 +2175,9 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 uint32_t mod = 0;
                 uint32_t rate_i = 0;
                 uint32_t rate_o = 0;
+                uint8_t  pwr_dbm_x10 = 0;
 
-                if (cnt > 5)
+                if (cnt > 6)
                 {
                     channel = ((content[2] >> 4) & 0x0F) * 1000
                             + ((content[2] >> 0) & 0x0F) * 100
@@ -2105,6 +2187,8 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                     mod = (content[4] >> 4) & 0x0F;
 
                     rate_i = ((content[4] & 0x0F) << 8) | (content[5] & 0xFF);
+
+                    pwr_dbm_x10 = content[6];
                 }
 
                 if (rate_i <= 0xB) {
@@ -2131,7 +2215,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                     rate_o = rate_i;
                 }
 
-                evm_test(rate_o, channel, PHY_CHNL_BW_20, mod);
+                evm_test(rate_o, channel, PHY_CHNL_BW_20, mod, pwr_dbm_x10);
                 break;
             }
 
@@ -2183,8 +2267,9 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 uint32_t mod = 0;
                 uint32_t rate_i = 0;
                 uint32_t rate_o = 0;
+                uint8_t  pwr_dbm_x10 = 0;
 
-                if (cnt > 5)
+                if (cnt > 6)
                 {
                     channel = ((content[2] >> 4) & 0x0F) * 1000
                             + ((content[2] >> 0) & 0x0F) * 100
@@ -2194,6 +2279,8 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                     mod = (content[4] >> 4) & 0x0F;
 
                     rate_i = ((content[4] & 0x0F) << 8) | (content[5] & 0xFF);
+
+                    pwr_dbm_x10 = content[6];
                 }
 
                 if ((rate_i >= 0x128) && (rate_i <= 0x137)) {
@@ -2204,7 +2291,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                     rate_o = rate_i;
                 }
 
-                evm_test(rate_o, channel, PHY_CHNL_BW_40, mod);
+                evm_test(rate_o, channel, PHY_CHNL_BW_40, mod, pwr_dbm_x10);
                 break;
             }
 
