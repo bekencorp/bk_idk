@@ -746,6 +746,86 @@ static int per_test(uint32_t bandwidth, uint32_t channel, uint32_t duration, uin
     return 0;
 }
 
+static void ate_read_otp(const uint8_t *content, int cnt, uint8_t *tx_buffer1)
+{
+    uint32_t length;
+    UINT8 tx_buffer[100];
+    int ret = 0;
+
+    if (content[2] == 0x01) {
+        /* otp1 use apb_read */
+        if (content[3] == OTP_MEMORY_CHECK_MARK) {
+            // No area for crc???
+            // if cannot add crc bytes, and crc = false, then must len = len -1
+            length = 96 - 1;
+        } else {
+            length = 0;
+        }
+    } else if (content[2] == 0x02) {
+        /* otp2 use ahb_read */
+        if (content[3] == OTP_VDDDIG_BANDGAP) {
+            length = 1;
+        } else if (content[3] == OTP_DIA) {
+            // 2G PA(1 byte) + 5G PA(1 byte)
+            length = 2;
+        } else if (content[3] == OTP_GADC_CALIBRATION) {
+            // saradc_self_cali(16 * 4 bytes) + saradc_volt_cali(3 * 2 bytes)
+            length = 70;
+        } else if (content[3] == OTP_DEVICE_ID) {
+            // Note: "DEVICE_ID" = "UID"
+            // Batch_Num(2 bytes) + Wafer_ID(1 byte) + X(1 byte) + Y(1 byte)
+            length = 5;
+        } else if (content[3] == OTP_MEMORY_CHECK_VDDDIG) {
+            // No area for crc???
+            // if cannot add crc bytes, and crc = false, then must len = len -1
+            length = 4 - 1;
+        } else if (content[3] == OTP_GADC_TEMPERATURE) {
+            length = 2;
+        } else if (content[3] == OTP_PHY_PWR1) {
+            // 2.4G CH1 pwr_idx = 1(11b_11M) + 1(11g_54M) + 2(res)
+            // 2.4G CH7 pwr_idx = 1(11b_11M) + 1(11g_54M) + 2(res)
+            // 2.4G CH13 pwr_idx = 1(11b_11M) + 1(11g_54M) + 2(res)
+            // 2.4G CH1 pwr_dBm_x10 = 1(11b_11M) + 1(11g_54M) + 2(res)
+            // 2.4G CH7 pwr_dBm_x10 = 1(11b_11M) + 1(11g_54M) + 2(res)
+            // 2.4G CH13 pwr_dBm_x10 = 1(11b_11M) + 1(11g_54M)+ 2(res)
+            // 5G 11a 54M CH36 pwr = 1(pwr_idx) + 1(pwr_dBm_x10) + 2(res)
+            // 5G 11a 54M CH64 pwr = 1(pwr_idx) + 1(pwr_dBm_x10) + 2(res)
+            // 5G 11a 54M CH100 pwr = 1(pwr_idx) + 1(pwr_dBm_x10) + 2(res)
+            // 5G 11a 54M CH132 pwr = 1(pwr_idx) + 1(pwr_dBm_x10) + 2(res)
+            // 5G 11a 54M CH165 pwr = 1(pwr_idx) + 1(pwr_dBm_x10) + 2(res)
+            // Firmware Version = 1(tbl_ver) + 1(ana_ver)
+            length = 46;
+        } else if (content[3] == OTP_PHY_PWR2) {
+            // OTP_PHY_PWR1 = OTP_PHY_PWR2
+            length = 46;
+        } else {
+            length = 0;
+        }
+    } else {
+        length = 0;
+    }
+
+    if (length) {
+        tx_buffer[0] = 0x0E;
+        os_memset(tx_buffer + 1, 0x00, length);
+        if (content[2] == 0x01) {
+            ret = bk_otp_apb_read(content[3], tx_buffer + 1, length);
+        } else {
+            // here just for content[2] == 0x02
+            ret = bk_otp_ahb_read(content[3], tx_buffer + 1, length);
+        }
+        if (ret != BK_OK) {
+            // otp read fail
+            tx_buffer[0] = 0x55;
+            tx_buffer[1] = ret & 0xFF;//0xBB;
+            uart_send_bytes_for_ate(tx_buffer, 2);
+        } else {
+            uart_send_bytes_for_ate(tx_buffer, length + 1);
+        }
+    }
+
+}
+
 static void ate_pm_gpio_callback(gpio_id_t gpio_id)
 {
 	#if CONFIG_SYS_CPU0
@@ -1226,7 +1306,6 @@ retry_efuse_write:
 int bkreg_run_command1(unsigned char *content, int cnt)
 {
     UINT8 tx_buffer[16];
-    UINT8 data;
 
     if (cnt < 2)
         return -1;
@@ -1489,26 +1568,10 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 break;
             }
 
-#if ((CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX)) && (CONFIG_OTP)
+#if (CONFIG_OTP)
             case 0x40: //read otp
-            {
-                if (content[2] == OTP_VDDDIG_BANDGAP) {
-                    data = 1;
-                } else if (content[2] == OTP_DIA) {
-                    data = 1;
-                } else if (content[2] == OTP_GADC_CALIBRATION) {
-	                data = 4;
-                } else {
-	                data = 0;
-                }
-                if (data) {
-                    tx_buffer[0] = 0x0E;
-                    os_memset(tx_buffer + 1, 0x00, (uint32_t)data);
-                    bk_otp_apb_read(content[2], tx_buffer + 1, (uint32_t)data);
-                    uart_send_bytes_for_ate(tx_buffer, data + 1);
-                }
-                break;
-            }
+            ate_read_otp(content, cnt, tx_buffer);
+            break;
 #endif
 #if 0
             case 0x41:      //not test in ATE temporary
