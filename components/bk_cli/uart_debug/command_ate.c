@@ -40,7 +40,7 @@ enum mac_chan_bandwidth {
 	PHY_CHNL_BW_OTHER,
 };
 
-#if CONFIG_SOC_BK7236XX
+#if (CONFIG_SOC_BK7236XX || CONFIG_SOC_BK7239XX)
 #define ATE_GPIO_ID                     (6)// GPIO9 use for extern32k
 #else
 #define ATE_GPIO_ID                     (9)//according the test to select the gpio id
@@ -811,13 +811,36 @@ int ate_enter_low_voltage()
 	bk_ate_ctrl(0);
     bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, PM_DEV_ID_DEFAULT, NULL, &exit_config);
 
-	bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_BTSP,0x1,100000000);
-	bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_WIFIP_MAC,0x1,100000000);
+	// bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_BTSP,0x1,100000000);
+	// bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_WIFIP_MAC,0x1,100000000);
+
+	// bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_OFDM, PM_POWER_MODULE_STATE_OFF);
+	bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_ENCP, PM_POWER_MODULE_STATE_OFF);
+	bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_BAKP,POWER_MODULE_STATE_OFF);
+	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_BTSP,POWER_MODULE_STATE_OFF);
+	bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_WIFIP_MAC,POWER_MODULE_STATE_OFF);
+
+	///close wifi pll
+	rf_pll_ctrl(CMD_RF_WIFIPLL_HOLD_BIT_CLR,RF_WIFIPLL_HOLD_BY_WIFI_BIT);
+	rf_pll_ctrl(CMD_RF_WIFIPLL_HOLD_BIT_CLR,RF_WIFIPLL_HOLD_BY_BLE_BIT);
+
+	///close phy power domain
+	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_PHY_WIFI,POWER_MODULE_STATE_OFF);
+	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_PHY_BT,POWER_MODULE_STATE_OFF);
+	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_PHY_RF,POWER_MODULE_STATE_OFF);
+	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_PHY_THREAD,POWER_MODULE_STATE_OFF);
+
+	///close rf
+	rf_module_vote_ctrl(RF_CLOSE, RF_BY_WIFI_BIT);
+	rf_module_vote_ctrl(RF_CLOSE, RF_BY_BLE_BIT);
+	rf_module_vote_ctrl(RF_CLOSE, RF_BY_ATE_WIFI_BIT);
+
 #if (CONFIG_CPU_CNT > 1)
 	extern void stop_cpu1_core(void);
 	stop_cpu1_core();
-#endif
 	bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_CPU1, PM_POWER_MODULE_STATE_OFF);
+#endif
+
 #if (CONFIG_CPU_CNT > 2)
 	extern void stop_cpu2_core(void);
 	stop_cpu2_core();
@@ -838,7 +861,6 @@ int ate_enter_low_voltage()
 }
 int ate_enter_deep_sleep()
 {
-#if (CONFIG_SYS_CPU0)
 	bk_ate_ctrl(0);
 	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_BTSP,POWER_MODULE_STATE_OFF);
 	bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_WIFIP_MAC,POWER_MODULE_STATE_OFF);
@@ -846,19 +868,20 @@ int ate_enter_deep_sleep()
 #if (CONFIG_CPU_CNT > 1)
 	extern void stop_cpu1_core(void);
 	stop_cpu1_core();
-#endif
 	bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_CPU1, PM_POWER_MODULE_STATE_OFF);
+#endif
+
 #if (CONFIG_CPU_CNT > 2)
 	extern void stop_cpu2_core(void);
 	stop_cpu2_core();
 	bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_CPU2, PM_POWER_MODULE_STATE_OFF);
 #endif
 
-    bk_gpio_register_wakeup_source(ATE_GPIO_ID,GPIO_INT_TYPE_HIGH_LEVEL);
+	bk_gpio_register_wakeup_source(ATE_GPIO_ID,GPIO_INT_TYPE_HIGH_LEVEL);
 	bk_pm_wakeup_source_set(PM_WAKEUP_SOURCE_INT_GPIO, NULL);
 
 	bk_pm_sleep_mode_set(PM_MODE_DEEP_SLEEP);
-#endif
+
 	return 0;
 }
 
