@@ -120,6 +120,10 @@ extern void sctrl_dpll_int_open(void);
 
 extern uint32_t bk_rfpll_ate_test(void);
 
+#if CONFIG_MAC802154_ENABLE
+extern uint8_t mac80154_ate(uint8_t * cmd,uint8_t len,uint8_t *out_rsp,uint8_t *out_size);
+#endif
+
 void uart_send_byte_for_ate(UINT8 data)
 {
 	uart_write_byte(bk_get_printf_port(), data);
@@ -1752,6 +1756,15 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 ble_dut_start(CONFIG_UART_PRINT_PORT);
                 break;
             }
+            #if CONFIG_MAC802154_ENABLE
+            case 0x71:
+            {
+                uint8_t size = 0;
+                mac80154_ate(&content[2],cnt-2,tx_buffer,&size);
+                uart_send_bytes_for_ate(tx_buffer, size);
+                break;
+            }
+            #endif
 #if CONFIG_USB
             case 0x80:
             {

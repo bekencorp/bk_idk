@@ -1825,6 +1825,10 @@ int bk_cli_init(void)
 	cli_lin_init();
 #endif
 
+#if (CONFIG_MAC802154_ENABLE)
+	cli_mac802154_init();
+#endif
+
 #endif// CONFIG_CODE_SIZE_OPTIMIZE
 
 #if (CLI_CFG_OTA == 1)

@@ -238,6 +238,12 @@ if (CONFIG_LCD_QSPI_TEST)
 	)
 endif()
 
+if (CONFIG_MAC802154_TEST)
+    list(APPEND srcs
+		cli_mac802154.c
+		)
+endif()
+
 if (CONFIG_SLCD_TEST)
 	list(APPEND srcs
 		"cli_slcd.c"

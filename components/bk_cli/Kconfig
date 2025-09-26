@@ -284,5 +284,10 @@ menu "Bk_cli"
 			depends on CLI
 			bool "Enable arch cli feature"
 			default y
+
+		config MAC802154_TEST
+			depends on CLI && MAC802154_ENABLE
+			bool "Enable mac 802.15.4 Test"
+			default y
 	endmenu
 endmenu
