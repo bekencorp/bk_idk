@@ -31,7 +31,7 @@ void rx_get_rx_result_end_for_ate(void *param1, void *param2);
 void bk7011_cal_dpll(void);
 UINT32 evm_translate_tx_rate(UINT32 rate);
 void rc_drv_set_tx_pre_gain_2nd(uint32_t value);
-
+void rx_get_rx_result_end_for_mbp_ate(void *param, void *reset_stat);
 void evm_bypass_set_single_carrier(UINT32 bk_rate, UINT32 rfband, UINT32 bandwidth, UINT32 channel);
 void rx_get_rx_result_begin_for_ate(void);
 void manual_cal_set_xtal(UINT32 xtal);
