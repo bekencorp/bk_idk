@@ -417,16 +417,6 @@ static bk_err_t uart_take_rx_isr_wrapper(uint8_t id, void *isr, void *param)
 static void ble_vote_rf_ctrl_wrapper(uint8_t cmd)
 {
     rf_module_vote_ctrl(cmd, RF_BY_BLE_BIT);
-
-#if CONFIG_MAC802154_ENABLE
-    extern void rfconfig_rf_switch_to_bt(void);
-    extern void rfconfig_rf_switch_to_thread(void);
-    if (cmd) {
-        rfconfig_rf_switch_to_bt();
-    } else {
-        rfconfig_rf_switch_to_thread();
-    }
-#endif
 }
 
 static void ble_ate_vote_rf_ctrl_wrapper(uint8_t cmd)
@@ -1071,6 +1061,58 @@ static void flush_dcache_wrapper()
 #endif
 }
 
+static void ble_enter_dut()
+{
+    extern void ble_cal_enter_dut();
+    ble_cal_enter_dut();
+}
+
+
+static void ble_exit_dut()
+{
+    extern void ble_cal_exit_dut();
+    ble_cal_exit_dut();
+}
+
+static uint32_t manual_calibration_is_in_cali_mode()
+{
+    extern UINT32 manual_cal_is_in_rftest_mode(void);
+    return manual_cal_is_in_rftest_mode();
+}
+
+static double bk_driver_get_rc32k_freq()
+{
+    os_printf("%s need todo\r\n", __func__);
+
+    return 0;
+}
+
+static uint8_t set_bluetooth_power_level(float pwr_gain)
+{
+    extern bk_err_t bk_ble_set_tx_power(float powerdBm);
+    extern uint8_t manual_cal_get_ble_pwr_idx(uint8_t channel);
+    extern uint8_t get_ble_txpwr_table_size(void);
+    extern void ble_cal_set_txpwr(uint8_t idx);
+
+    bk_ble_set_tx_power(pwr_gain);
+    uint8_t pwr_index = manual_cal_get_ble_pwr_idx(19);
+    uint8_t max_pwr_index = get_ble_txpwr_table_size() - 1;
+    uint8_t new_pwr_index = pwr_index > max_pwr_index ? max_pwr_index : pwr_index;
+    ble_cal_set_txpwr(pwr_index);
+    return new_pwr_index;
+}
+
+static bk_err_t wifi_mac_power_ctrl_wrapper(uint8_t power_state)
+{
+    pm_power_module_state_e state = (power_state ? PM_POWER_MODULE_STATE_ON : PM_POWER_MODULE_STATE_OFF);
+    return bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_WIFIP_MAC, state);
+}
+
+static void set_rfconfig_rf_mode(uint8_t mode)
+{
+    os_printf("%s need todo\r\n");
+}
+
 //warning: bt_osi_funcs must be data section, otherwise a2dp_source_pcm and a2dp_source_decode will trig watchdog !!!!!!!!
 static struct bt_osi_funcs_t bt_osi_funcs =
 {
@@ -1170,11 +1212,17 @@ static struct bt_osi_funcs_t bt_osi_funcs =
     ._set_semaphore = set_semaphore,
     ._get_semaphore = get_semaphore,
     ._deinit_semaphore = deinit_semaphore,
-
     ._get_rf_mode = get_rf_mode,
     ._bkreg_run_command = reg_run_cmd,
     ._manual_cal_txpwr_tab_ready_in_flash = manual_calibration_txpwr_table_ready_in_flash,
+    ._manual_cal_is_in_cali_mode = manual_calibration_is_in_cali_mode,
+    ._bk_driver_get_rc32k_freq = bk_driver_get_rc32k_freq,
     ._flush_dcache = flush_dcache_wrapper,
+    ._ble_enter_dut = ble_enter_dut,
+    ._ble_exit_dut = ble_exit_dut,
+    ._set_bluetooth_power_level = set_bluetooth_power_level,
+    ._set_rfconfig_rf_mode = set_rfconfig_rf_mode,
+    .wifi_mac_power_ctrl = wifi_mac_power_ctrl_wrapper,
 };
 
 int bk_bt_os_adapter_init(void)
