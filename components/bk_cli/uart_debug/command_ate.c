@@ -457,6 +457,18 @@ void mpb_tx_mode_close_for_ate(void)
 	bk_wifi_set_mpb_ctrl(reg);
 }
 
+static UINT8 g_pwr_idx_11b_ch1 = 0;
+static UINT8 g_pwr_idx_11b_ch7 = 0;
+static UINT8 g_pwr_idx_11b_ch13 = 0;
+static UINT8 g_pwr_idx_11g_ch1 = 0;
+static UINT8 g_pwr_idx_11g_ch7 = 0;
+static UINT8 g_pwr_idx_11g_ch13 = 0;
+static UINT8 g_pwr_idx_11a_ch36 = 0;
+static UINT8 g_pwr_idx_11a_ch64 = 0;
+static UINT8 g_pwr_idx_11a_ch100 = 0;
+static UINT8 g_pwr_idx_11a_ch132 = 0;
+static UINT8 g_pwr_idx_11a_ch165 = 0;
+
 /**
  * rate        : reference to evm_translate_tx_rate
  * channel     : [2400, 2655]
@@ -505,6 +517,35 @@ static void evm_test(UINT32 rate, UINT32 channel, UINT32 bandwidth, UINT32 modul
     rwnx_cal_en_extra_txpa();
     rf_module_vote_ctrl(RF_OPEN,RF_BY_TEMP_BIT);
     rwnx_cal_set_txpwr_by_rate(evm_translate_tx_rate(rate), 0, 0, 0, 0);
+    UINT8 pwr_idx = rwnx_cal_get_pwr_idx();
+    bk_printf("channel=%d,rate=%d,pwr_idx=%d\r\n", channel, rate, pwr_idx);
+    if (rate == 11) {
+        if (channel == 2412) {
+            g_pwr_idx_11b_ch1 = pwr_idx;
+        } else if (channel == 2442) {
+            g_pwr_idx_11b_ch7 = pwr_idx;
+        } else if (channel == 2472) {
+            g_pwr_idx_11b_ch13 = pwr_idx;
+        }
+    } else if (rate == 54) {
+        if (channel == 2412) {
+            g_pwr_idx_11g_ch1 = pwr_idx;
+        } else if (channel == 2442) {
+            g_pwr_idx_11g_ch7 = pwr_idx;
+        } else if (channel == 2472) {
+            g_pwr_idx_11g_ch13 = pwr_idx;
+        } else if (channel == 5180) {
+            g_pwr_idx_11a_ch36 = pwr_idx;
+        } else if (channel == 5320) {
+            g_pwr_idx_11a_ch64 = pwr_idx;
+        } else if (channel == 5500) {
+            g_pwr_idx_11a_ch100 = pwr_idx;
+        } else if (channel == 5660) {
+            g_pwr_idx_11a_ch132 = pwr_idx;
+        } else if (channel == 5825) {
+            g_pwr_idx_11a_ch165 = pwr_idx;
+        }
+    }
     rf_module_vote_ctrl(RF_CLOSE,RF_BY_TEMP_BIT);
 	//evm_bypass_mac_set_txdelay(txdelay);
 
@@ -1860,6 +1901,71 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 break;
             }
 #endif
+            case 0x90:
+            /* 0x55 90 [tbl_idx] [vertion] [pwrtbl_dBm_x10] */
+            /* 0x55 90 01/02 01 01 BB BB BB GG GG GG AA AA AA AA AA */
+            {
+                int ret = 0;
+                UINT8 tbl_idx = content[2];
+                UINT8 tbl_version = content[3];
+                UINT8 ana_version = content[4];
+                UINT8 pwr_dBm_x10_11b_ch1 = content[5];
+                UINT8 pwr_dBm_x10_11b_ch7 = content[6];
+                UINT8 pwr_dBm_x10_11b_ch13 = content[7];
+                UINT8 pwr_dBm_x10_11g_ch1 = content[8];
+                UINT8 pwr_dBm_x10_11g_ch7 = content[9];
+                UINT8 pwr_dBm_x10_11g_ch13 = content[10];
+                UINT8 pwr_dBm_x10_11a_ch36 = content[11];
+                UINT8 pwr_dBm_x10_11a_ch64 = content[12];
+                UINT8 pwr_dBm_x10_11a_ch100 = content[13];
+                UINT8 pwr_dBm_x10_11a_ch132 = content[14];
+                UINT8 pwr_dBm_x10_11a_ch165 = content[15];
+
+                UINT8 pwr_idx_11b_ch1 = g_pwr_idx_11b_ch1;
+                UINT8 pwr_idx_11b_ch7 = g_pwr_idx_11b_ch7;
+                UINT8 pwr_idx_11b_ch13 = g_pwr_idx_11b_ch13;
+                UINT8 pwr_idx_11g_ch1 = g_pwr_idx_11g_ch1;
+                UINT8 pwr_idx_11g_ch7 = g_pwr_idx_11g_ch7;
+                UINT8 pwr_idx_11g_ch13 = g_pwr_idx_11g_ch13;
+                UINT8 pwr_idx_11a_ch36 = g_pwr_idx_11a_ch36;
+                UINT8 pwr_idx_11a_ch64 = g_pwr_idx_11a_ch64;
+                UINT8 pwr_idx_11a_ch100 = g_pwr_idx_11a_ch100;
+                UINT8 pwr_idx_11a_ch132 = g_pwr_idx_11a_ch132;
+                UINT8 pwr_idx_11a_ch165 = g_pwr_idx_11a_ch165;
+
+                UINT32 pwr_tbl[12] = {0};
+
+                pwr_tbl[0] = pwr_idx_11b_ch1 << 24 | pwr_idx_11g_ch1 << 16;
+                pwr_tbl[1] = pwr_idx_11b_ch7 << 24 | pwr_idx_11g_ch7 << 16;
+                pwr_tbl[2] = pwr_idx_11b_ch13 << 24 | pwr_idx_11g_ch13 << 16;
+                pwr_tbl[3] = pwr_dBm_x10_11b_ch1 << 24 | pwr_dBm_x10_11g_ch1 << 16;
+                pwr_tbl[4] = pwr_dBm_x10_11b_ch7 << 24 | pwr_dBm_x10_11g_ch7 << 16;
+                pwr_tbl[5] = pwr_dBm_x10_11b_ch13 << 24 | pwr_dBm_x10_11g_ch13 << 16;
+                pwr_tbl[6] = pwr_idx_11a_ch36 << 24 | pwr_dBm_x10_11a_ch36 << 16;
+                pwr_tbl[7] = pwr_idx_11a_ch64 << 24 | pwr_dBm_x10_11a_ch64 << 16;
+                pwr_tbl[8] = pwr_idx_11a_ch100 << 24 | pwr_dBm_x10_11a_ch100 << 16;
+                pwr_tbl[9] = pwr_idx_11a_ch132 << 24 | pwr_dBm_x10_11a_ch132 << 16;
+                pwr_tbl[10] = pwr_idx_11a_ch165 << 24 | pwr_dBm_x10_11a_ch165 << 16;
+                pwr_tbl[11] = tbl_version << 24 | ana_version << 16;
+
+                if (tbl_idx == 0x01) {
+                    ret = bk_otp_ahb_update(OTP_PHY_PWR1, (uint8_t *)pwr_tbl, sizeof(pwr_tbl));
+                } else {
+                    ret = bk_otp_ahb_update(OTP_PHY_PWR2, (uint8_t *)pwr_tbl, sizeof(pwr_tbl));
+                }
+
+                tx_buffer[0] = 0x55;
+                if (ret != BK_OK) {
+                    tx_buffer[0] = 0xCC;
+                } else {
+                    tx_buffer[0] = 0x33;
+                }
+
+                uart_send_bytes_for_ate(tx_buffer, 2);
+
+                break;
+            }
+
             case 0x99:
             {
                 set_device_id_to_efuse(content, cnt, tx_buffer);

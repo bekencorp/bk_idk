@@ -26,6 +26,7 @@ void bk7011_stop_tx_pattern(void);
 void rwnx_cal_set_40M_extra_setting(UINT8 val);
 void rwnx_cal_set_txpwr(UINT32 pwr_gain, UINT32 grate);
 void rwnx_cal_set_txpwr_by_rate(INT32 rate, UINT32 format, UINT32 test_mode, UINT32 ru, UINT32 bw);
+UINT8 rwnx_cal_get_pwr_idx(void);
 
 void rx_get_rx_result_end_for_ate(void *param1, void *param2);
 void bk7011_cal_dpll(void);
