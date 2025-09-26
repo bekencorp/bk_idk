@@ -1685,7 +1685,6 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 }
                 break;
 
-#if ((CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX))
             case 0x63:
             {
                 uint32_t result;
@@ -1712,7 +1711,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 uart_send_bytes_for_ate(tx_buffer, 4);
                 break;
             }
-#endif
+
             case 0x70:
             {
                 /* BLE DUT */

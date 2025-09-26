@@ -919,6 +919,7 @@ uint32_t bk_otp_fully_flow_test()
 	uint32_t fail_code = 0;
 	/*test mode lck means test has been success*/
 	if(otp_hal_read_tmlck(&s_otp.hal) == 0xF){
+		OTP_SLEEP()
 		return BK_OK;
 	}
 
