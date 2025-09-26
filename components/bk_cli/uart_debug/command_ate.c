@@ -706,8 +706,9 @@ static int per_test(uint32_t bandwidth, uint32_t channel, uint32_t duration, uin
 {
     UINT8 ret;
     int err;
+    UINT32 stat_reset = 1;
 
-    ret = rs_test(channel, band, bandwidth);
+    ret = rs_test_for_mbp(channel, band, bandwidth);
     if (ret)
         return 1;
 
@@ -721,8 +722,6 @@ static int per_test(uint32_t bandwidth, uint32_t channel, uint32_t duration, uin
 
     if (duration)
     {
-    	rx_get_rx_result_begin_for_ate();
-
         if (rx_sens_ate_tmr.handle != NULL)
         {
             err = rtos_deinit_oneshot_timer(&rx_sens_ate_tmr);
@@ -730,7 +729,7 @@ static int per_test(uint32_t bandwidth, uint32_t channel, uint32_t duration, uin
             rx_sens_ate_tmr.handle = NULL;
         }
 
-        err = rtos_init_oneshot_timer(&rx_sens_ate_tmr, duration, (timer_2handler_t)rx_get_rx_result_end_for_ate, (void *)arg, NULL);
+        err = rtos_init_oneshot_timer(&rx_sens_ate_tmr, duration, (timer_2handler_t)rx_get_rx_result_end_for_mbp_ate, (void *)arg, (void *)stat_reset);
         BK_ASSERT(kNoErr == err);
         err = rtos_start_oneshot_timer(&rx_sens_ate_tmr);
         BK_ASSERT(kNoErr == err);
