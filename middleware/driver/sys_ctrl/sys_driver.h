@@ -256,7 +256,12 @@ void sys_drv_bt_sleep_exit_ctrl(bool en);
 
 /**  BT End **/
 
-
+/** MAC802.15.4 start **/
+#if (CONFIG_MAC802154_ENABLE)
+void sys_drv_thread_interrupt_ctrl(bool en);
+void sys_drv_thread_rf_ctrl(bool en);
+#endif
+/** MAC802.15.4 End **/
 
 
 /**  Audio Start **/

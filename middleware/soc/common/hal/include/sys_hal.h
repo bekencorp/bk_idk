@@ -263,7 +263,11 @@ void sys_hal_rf_ctrl(uint8_t type);
 uint8_t sys_hal_rf_ctrl_type_get(void);
 
 /**  BT End **/
-
+/** MAC802.15.4 start **/
+#if CONFIG_MAC802154_ENABLE
+void sys_hal_thread_interrupt_ctrl(bool en);
+#endif
+/** MAC802.15.4 End **/
 
 
 

@@ -409,6 +409,12 @@ if (CONFIG_OTP)
 		)
 endif()
 
+if (CONFIG_MAC802154_ENABLE)
+	list(APPEND srcs
+		sys_ctrl/sys_thread_driver.c
+		)
+endif()
+
 if (CONFIG_FLASH_OTP)
 	list(APPEND srcs
 		"otp/flash_otp.c"

@@ -20,7 +20,10 @@ void rc_drv_set_rf_en(uint32_t value);
 uint32_t rc_drv_get_rf_en(void);
 int rwnx_cal_set_rfconfig_BTPLL(void);
 int rwnx_cal_set_rfconfig_WIFIPLL(void);
-
+int32_t rwnx_cal_set_rfconfig_thread_mode(void);
+void rfconfig_set_thread_tx_mode_trxconfig(void);
+void rfconfig_enter_thread_mode(void);
+void rfconfig_exit_thread_mode(void);
 int calibration_init(void);
 unsigned int rwnx_sys_is_enable_hw_tpc(void);
 UINT32 rwnx_sys_is_use_abs_power(void);
