@@ -298,7 +298,11 @@ int bk_init(void)
 	vnd_cal_overlay();
 #endif
 
+#if CONFIG_PM_ENABLE
+#if (CONFIG_MAILBOX)
 	bk_pm_mailbox_init();
+#endif
+#endif
 #if CONFIG_AT
 	at_server_init();
 #endif
@@ -439,11 +443,14 @@ extern int mp_do_startup(int heap_len);
 	pm_wifi_event_init();
 #endif
 #endif
-#if CONFIG_SYS_CPU1
+#if CONFIG_PM_CLIENT
 #if CONFIG_PSRAM
 	REG_READ(SOC_PSRAM_DATA_BASE);//check psram whether valid
 #endif
+#if CONFIG_PM_CLIENT && CONFIG_PM_ENABLE
 	bk_pm_cp1_boot_ok_response_set();
+#endif
+
 #endif
 #if CONFIG_USB //&& CONFIG_MENTOR_USB
 	bk_usb_driver_init();

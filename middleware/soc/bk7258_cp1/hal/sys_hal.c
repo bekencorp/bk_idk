@@ -490,7 +490,7 @@ bk_err_t sys_hal_switch_cpu_bus_freq(pm_cpu_freq_e cpu_bus_freq)
 		    sys_hal_ctrl_vdddig_h_vol(0x6);//0.75V
 			ret = sys_hal_core_bus_clock_ctrl(0x3,0x7,0x0,0x0,0x0);
 			break;
-		case PM_CPU_FRQ_26M://cpu0:26m;cpu1:26m;bus:26m
+		case PM_CPU_FRQ_XTAL://cpu0:26m;cpu1:26m;bus:26m
 		    sys_hal_ctrl_vdddig_h_vol(0x5);//0.725V
 			ret = sys_hal_core_bus_clock_ctrl(0x0,0x0,0x0,0x0,0x0);
 			break;

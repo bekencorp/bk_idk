@@ -196,7 +196,7 @@ static void rosc_calib_thread(void *args)
 		rosc_calib_delay_for_ckest_ready();
 		bk_ckmn_ckest_enable();
 		// wait for ckmn isr
-		ret = rtos_get_semaphore(&s_rosc_calib_sema, 100);
+		ret = rtos_get_semaphore(&s_rosc_calib_sema, 1000);
 		if(kNoErr == ret) {
 			// freq invalid check
 			if (s_freq_32k > ROSC_FREQ_MAX) {

@@ -31,6 +31,11 @@
 #if CONFIG_SOC_BK7236_SMP_TEMP
 #include "cpu_id.h"
 #endif
+#define TAG "pm"
+#define LOGI(...) BK_LOGI(TAG, ##__VA_ARGS__)
+#define LOGW(...) BK_LOGW(TAG, ##__VA_ARGS__)
+#define LOGE(...) BK_LOGE(TAG, ##__VA_ARGS__)
+#define LOGD(...) BK_LOGD(TAG, ##__VA_ARGS__)
 
 #define PM_CLKSEL_CORE_320M                 (2)
 #define PM_CLKSEL_CORE_480M                 (3)
@@ -39,6 +44,13 @@
 #define PM_CLKDIV_CORE_1                    (1)
 #define PM_VDDD_H_VOL_1V                    (0x6)
 #define PM_VDDDIG_H_VOL_0v9                 (0xC)
+#define PM_SOC_SYS_REG_BASE                  (SOC_SYS_REG_BASE)
+#define PM_SYS_REG_0x8                       (SOC_SYS_REG_BASE + 0x8*4)
+#define PM_SYS_REG_0x4                       (SOC_SYS_REG_BASE + 0x4*4)
+#define PM_SYS_REG_0x5                       (SOC_SYS_REG_BASE + 0x5*4)
+
+#define PM_CPU_SRC_POS                       (4)
+#define PM_CPU_SRC_MASK                      (0x1)
 #define PM_CLKDV_CPU1_1                     (0x1)
 #define PM_CLKDV_CPU0_0                     (0x0)
 #define SYS_SWITCH_VDDDIG_VOL_DELAY_TIME    (2600)
@@ -602,7 +614,7 @@ bk_err_t sys_hal_switch_cpu_bus_freq_high_to_low(pm_cpu_freq_e cpu_bus_freq)
 			sys_hal_ctrl_vddd_h_vol(0x6);// 1.0V
 			sys_hal_ctrl_vdddig_h_vol(0xB);//0.875V
 			break;
-		case PM_CPU_FRQ_26M://cpu0:26m;cpu1:26m;cpu2:26m;bus:26m
+		case PM_CPU_FRQ_XTAL://cpu0:26m;cpu1:26m;cpu2:26m;bus:26m
 			ret = sys_hal_core_bus_clock_ctrl(0x0,0x0,0x0,0x1,0x1);
 			sys_hal_ctrl_vddd_h_vol(0x6);// 1.0V
 			sys_hal_ctrl_vdddig_h_vol(0xB);//0.875V
@@ -670,7 +682,7 @@ bk_err_t sys_hal_switch_cpu_bus_freq_low_to_high(pm_cpu_freq_e cpu_bus_freq)
 			ret = sys_hal_core_bus_clock_ctrl(0x3,0x7,0x0,0x1,0x1);
 #endif
 			break;
-		case PM_CPU_FRQ_26M://cpu0:26m;cpu1:26m;cpu2:26m;bus:26m
+		case PM_CPU_FRQ_XTAL://cpu0:26m;cpu1:26m;cpu2:26m;bus:26m
 			sys_hal_ctrl_vddd_h_vol(0x6);// 1.0V
 			sys_hal_ctrl_vdddig_h_vol(0xB);//0.875V
 			ret = sys_hal_core_bus_clock_ctrl(0x0,0x0,0x0,0x1,0x1);
@@ -701,7 +713,36 @@ bk_err_t sys_hal_switch_cpu_bus_freq(pm_cpu_freq_e cpu_bus_freq)
 	s_pre_cpu_freq = cpu_bus_freq;
 	return ret;
 }
+bk_err_t sys_hal_cpu_freq_dump()
+{
+	uint32_t value_8 = 0;
+	uint32_t value_4 = 0;
+	//uint32_t value_5 = 0;
+	uint32_t cp0_div = 0;
+	//uint32_t cp1_div = 0;
+	value_8 = REG_READ(PM_SYS_REG_0x8);
+	value_4 = REG_READ(PM_SYS_REG_0x4);
 
+	if(((value_4>>4)&0x1) == 0x1)
+	{
+		cp0_div = (value_8&0xF)+1;
+	}
+	else
+	{
+		cp0_div = ((value_8&0xF)+1)*2;
+	}
+
+	switch((value_8 >> PM_CPU_SRC_POS)&PM_CPU_SRC_MASK)
+	{
+		case PM_CLKSEL_CORE_480M:
+			LOGI("Cur freq: CPU0:(480/%d)M\r\n",cp0_div);
+			break;
+		default:
+			break;
+	}
+	LOGI("freq_reg:0x%x,0x%x\r\n",value_8,value_4);
+	return BK_OK;
+}
 /*for low power function end*/
 /*sleep feature end*/
 

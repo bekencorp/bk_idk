@@ -21,6 +21,7 @@
 #define ROSC_LOGW(...) BK_LOGW(ROSC_TAG, ##__VA_ARGS__)
 #define ROSC_LOGE(...) BK_LOGE(ROSC_TAG, ##__VA_ARGS__)
 #define ROSC_LOGD(...) BK_LOGD(ROSC_TAG, ##__VA_ARGS__)
+#define ROSC_LOGV(...) BK_LOGV(ROSC_TAG, ##__VA_ARGS__)
 
 #define ROSC_CALIB_DEBUG 0
 #define ROSC_COMPE_DEBUG 0

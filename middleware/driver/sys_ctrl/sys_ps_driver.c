@@ -258,7 +258,7 @@ uint32_t sys_drv_bandgap_cali_get()
 	return sys_hal_bandgap_cali_get();
 }
 
-static pm_cpu_freq_e s_cpu_freq = PM_CPU_FRQ_26M;
+static pm_cpu_freq_e s_cpu_freq = PM_CPU_FRQ_XTAL;
 bk_err_t sys_drv_switch_cpu_bus_freq(pm_cpu_freq_e cpu_bus_freq)
 {
 	uint32_t i;
@@ -277,10 +277,7 @@ bk_err_t sys_drv_switch_cpu_bus_freq(pm_cpu_freq_e cpu_bus_freq)
 		case PM_CPU_FRQ_120M:
 		case PM_CPU_FRQ_80M:
 		case PM_CPU_FRQ_60M:
-		case PM_CPU_FRQ_26M:
-#if CONFIG_PM_EXTEND_CPU_FREQ
-		case PM_CPU_FRQ_30M:
-#endif
+		case PM_CPU_FRQ_XTAL:
 			break;
 
 		default:
