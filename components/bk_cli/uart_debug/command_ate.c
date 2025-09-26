@@ -278,7 +278,7 @@ void gpio_voltage_output_high(void)
 	{
 		if(i == ATE_GPIO_DEV_UART1_RXD || i == ATE_GPIO_DEV_UART1_TXD)
 			continue;
-		bk_gpio_set_value(i, 2);
+		bk_gpio_set_value(i, 0x02000002);
 	}
 }
 
@@ -290,7 +290,7 @@ void gpio_voltage_output_low(void)
 	{
 		if(i == ATE_GPIO_DEV_UART1_RXD || i == ATE_GPIO_DEV_UART1_TXD)
 			continue;
-		bk_gpio_set_value(i, 0);
+		bk_gpio_set_value(i, 0x02000000);
 	}
 }
 
@@ -306,7 +306,7 @@ void gpio_voltage_input_high(void)
 		if(i == ATE_GPIO_DEV_UART1_RXD || i == ATE_GPIO_DEV_UART1_TXD)
 			continue;
 		restore_reg[i] = bk_gpio_get_value(i);
-		bk_gpio_set_value(i, 0x2C);
+		bk_gpio_set_value(i, 0x01000000);
 	}
 
 	//uart_write_byte_for_ate(0, (uint8_t *)restore_reg, GPIO_NUM_MAX);
@@ -354,7 +354,7 @@ void gpio_voltage_input_low(void)
 		if(i == ATE_GPIO_DEV_UART1_RXD || i == ATE_GPIO_DEV_UART1_TXD)
 			continue;
 		restore_reg[i] = bk_gpio_get_value(i);
-		bk_gpio_set_value(i, 0x3D);
+		bk_gpio_set_value(i, 0x01000000);
 	}
 
 	//uart_write_byte_for_ate(0, (uint8_t *)restore_reg, GPIO_NUM_MAX);
