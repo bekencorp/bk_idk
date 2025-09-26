@@ -272,7 +272,7 @@ int rw_msg_send_me_config_req(void)
 	else
 		req->phy_bw_max = PHY_CHNL_BW_20;
 
-	RWNX_LOGD("HT supp %d, VHT supp %d, HE supp %d\n", req->ht_supp, req->vht_supp, req->he_supp);
+	RWNX_LOGI("HT supp %d, VHT supp %d, HE supp %d, bw %dM\n", req->ht_supp, req->vht_supp, req->he_supp, 20 * (1 + req->phy_bw_max));
 
 #if CONFIG_PM_V2
 	req->ps_on = 1;

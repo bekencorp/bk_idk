@@ -4495,7 +4495,11 @@ void bk_wifi_set_ap_channel(uint8_t channel)
 	if (0 == bk_wlan_has_role(VIF_AP))
 		return;
 
-	if ((channel < 1) || (channel > 14)) {
+	if (((channel < 1) || (channel > 14))
+#if CONFIG_SOC_BK7239XX
+		&& (channel < 36 || channel > 177)
+#endif
+		){
 		WIFI_LOGI("please input the valid param\n");
 		return;
 	}
