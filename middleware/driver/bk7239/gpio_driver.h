@@ -64,28 +64,6 @@ typedef enum {
        GPIO_SCR_MAP_GROUP_MAX,           /**< Invalid mode*/
 } gpio_scr_map_group_t;
 
-#if CONFIG_GPIO_DEFAULT_SET_SUPPORT
-typedef struct {
-	uint32_t gpio_id:				6;	//gpio_id_t
-
-	/* if second func en,then second_func_dev value is valid */
-	uint32_t second_func_en:		1;	//gpio_func_mode_t
-	uint32_t second_func_dev:		12;	//gpio_dev_t
-
-	uint32_t io_mode:				2;	//gpio_io_mode_t
-	uint32_t pull_mode:				2;	//gpio_pull_mode_t
-
-	/* if int en and then int_type is valid */
-	uint32_t int_en:				1;	//gpio_int_mode_t
-	uint32_t int_type:				2;	//gpio_int_type_t
-
-	uint32_t low_power_io_ctrl:		2;	//gpio_lowpower_mode_t
-
-	uint32_t driver_capacity:		2;	//gpio_driver_capacity_t
-	uint32_t gpio_skip:             1; //gpio_skip_t
-} gpio_default_map_t;
-#endif
-
 bk_err_t gpio_dev_map(gpio_id_t gpio_id, gpio_dev_t dev);
 bk_err_t gpio_dev_unmap(gpio_id_t gpio_id);
 bk_err_t gpio_dev_unprotect_map(gpio_id_t gpio_id, gpio_dev_t dev);
