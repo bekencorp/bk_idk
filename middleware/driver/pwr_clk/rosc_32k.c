@@ -41,6 +41,7 @@
 #define ROSC_CALIB_CIN1_DEFAULT          (0x100)
 #define ROSC_CALIB_CIN1_MAX              (0x200)
 #define ROSC_CALIB_32K_COUNT_2MS         (2*32)
+#define ROSC_CALIB_RETRY_COUNT           (1)
 
 #if ROSC_CALIB_DEBUG
 #define ROSC_CAL_s_records_cnt_MAX 50
@@ -181,6 +182,7 @@ static void rosc_calib_thread(void *args)
 	uint32_t cin0 = ROSC_CALIB_CIN0_DEFAULT;
 	uint32_t cin1 = ROSC_CALIB_CIN1_DEFAULT;
 	float loss, _loss = 0.0;
+	uint8_t retry_count = 0;
 
 	// init
 	ROSC_LOGI("ckmn calib rosc thread start\r\n");
@@ -261,10 +263,20 @@ static void rosc_calib_thread(void *args)
 			if (cin0 < ROSC_CALIB_CIN0_MAX && cin1 < ROSC_CALIB_CIN1_MAX)
 			{
 				sys_drv_rosc_calibration(ROSC_CALIB_MANUAL_MODE, cin0 + (cin1 << 16)); // manual mode
-			} else {
+			}
+			else
+			{
 				sys_drv_rosc_calibration(ROSC_CALIB_MANUAL_MODE, ROSC_CALIB_CIN0_DEFAULT + (ROSC_CALIB_CIN1_DEFAULT << 16));
-				ret = BK_FAIL;
-				break;
+				if (++retry_count > ROSC_CALIB_RETRY_COUNT) {
+					ret = BK_FAIL;
+					break;
+				} else {
+					cin0 = ROSC_CALIB_CIN0_DEFAULT;
+					cin1 = ROSC_CALIB_CIN1_DEFAULT;
+					loss = 0.0;
+					_loss = 0.0;
+					progress_count = 0;
+				}
 			}
 		}
 	}
