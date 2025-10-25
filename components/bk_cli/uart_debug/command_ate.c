@@ -116,6 +116,11 @@ extern uint8_t evm_add_key(void);
 extern void evm_del_key(uint8_t key_idx);
 extern void ble_dut_start(uint8_t uart_id);
 
+UINT8 phy_closed = 0;
+extern int _phy_power_ctrl_wrapper(uint8_t power_state);
+extern void rwnxl_wakeup();
+extern void rwnxl_sleep();
+
 extern uint32_t bk_otp_fully_flow_test();
 
 #if (!CONFIG_SOC_BK7256XX)
@@ -1467,6 +1472,7 @@ int set_mac_address_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_bu
 int bkreg_run_command1(unsigned char *content, int cnt)
 {
     UINT8 tx_buffer[16];
+    UINT8 addr, data;
 
     if (cnt < 2)
         return -1;
@@ -1706,6 +1712,68 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 uart_send_bytes_for_ate(tx_buffer, 3);
                 break;
             }
+
+            case 0x35:  // CP_CMD_PHY_SWITCH
+            {
+                UINT32 param;
+                static UINT32 ana_reg0x7_bak = 0;
+                static UINT32 ana_reg0x8_bak = 0;
+
+                if ((cnt > 2) && (0 != content[2]))
+                {
+                    if (phy_closed)
+                    {
+                        sys_drv_analog_set(ANALOG_REG7, ana_reg0x7_bak);
+                        sys_drv_analog_set(ANALOG_REG8, ana_reg0x8_bak);
+
+                        rwnxl_wakeup();
+                        _phy_power_ctrl_wrapper(1);
+                        rf_module_vote_ctrl(RF_OPEN, RF_BY_ATE_WIFI_BIT);
+                        phy_closed = 0;
+                    }
+                }
+                else
+                {
+                    if (!phy_closed)
+                    {
+                        ana_reg0x7_bak = sys_drv_analog_get(ANALOG_REG7);
+                        ana_reg0x8_bak = sys_drv_analog_get(ANALOG_REG8);
+                        // sys_ana_0x48<9>=1
+                        param = sys_drv_analog_get(ANALOG_REG8);
+                        param |= (0x1 << 9);
+                        sys_drv_analog_set(ANALOG_REG8, param);
+
+                        // Measure the voltage of VDDIO(ldoio)  [ 0x2 ]：sys_ana_0x47<15:13>=0x2
+                        param = sys_drv_analog_get(ANALOG_REG7);
+                        param &= ~(0x7 << 13);
+                        param |= (0x2 << 13);
+                        sys_drv_analog_set(ANALOG_REG7, param);
+
+                        // Measure the voltage of VDDDIG(ldodig)  [ 0xA ]:sys_ana_0x48<19:16>=0xA
+                        param = sys_drv_analog_get(ANALOG_REG8);
+                        param &= ~(0xF << 16);
+                        param |= (0xA << 16);
+                        sys_drv_analog_set(ANALOG_REG8, param);
+
+                        // Measure the voltage of VDDA(ldoana)  [ 0xB]::sys_ana_0x47<9:6>=0xB
+                        param = sys_drv_analog_get(ANALOG_REG7);
+                        param &= ~(0xF << 6);
+                        param |= (0xB << 6);
+                        sys_drv_analog_set(ANALOG_REG7, param);
+
+                        rf_module_vote_ctrl(RF_CLOSE,RF_BY_ATE_WIFI_BIT);
+                        _phy_power_ctrl_wrapper(0);
+                        rwnxl_sleep();
+                        phy_closed = 1;
+                    }
+                }
+
+                tx_buffer[0] = 0x55;
+                tx_buffer[1] = 0x33;
+                uart_send_bytes_for_ate(tx_buffer, 2);
+                break;
+            }
+
             case 0x3D:      //not test in ATE temporary
             /* 55 3D xx yy set rate and power_gain */
             /* yy rate: 1,2,5,11 for 11B, 6,9,12,18,24,32,48,54 for 11G, 128,...135 for MCS 0-7 */
@@ -1811,28 +1879,30 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 uart_send_bytes_for_ate(tx_buffer, 2);
                 break;
             }
+#endif
             case 0x42:
             {
                 if (cnt > 2)
                 {
                     addr = ((UINT8)content[2] & 0x1F);
                     data = 0;
-#if ((CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX))
                     if (addr == 0x11)
                     {
                         //BANDGAP in efuse for legacy
-                        bk_otp_apb_read(OTP_VDDDIG_BANDGAP, &data, (uint32_t)sizeof(data));
+                        bk_otp_ahb_read(OTP_VDDDIG_BANDGAP, &data, (uint32_t)sizeof(data));
                         tx_buffer[0] = 0x0E;
                         tx_buffer[1] = data;
                         uart_send_bytes_for_ate(tx_buffer, 2);
                         break;
                     }
-#endif
+#if CONFIG_EFUSE
                     bk_efuse_read_byte(addr, &data);
+#endif
                     uart_send_bytes_for_ate(&data, 1);
                 }
                 else
                 {
+#if CONFIG_EFUSE
                     unsigned char i;
                     for (i=0; i<32; i++)
                     {
@@ -1840,10 +1910,11 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                         data = 0;
                         bk_efuse_read_byte(addr, &data);
                     }
+#endif
                 }
                 break;
             }
-#endif
+
             case 0x43:
                 /* write 17th bytes in efuse for analog2<28:23> to cali vdddig */
                 sctrl_set_bandgap_to_efuse(content, cnt, tx_buffer);

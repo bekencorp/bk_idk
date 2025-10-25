@@ -194,7 +194,7 @@ int sctrl_set_bandgap_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_
 	tx_buffer[0] = 0x55;
     if (cnt < 3)
     {
-        if (bk_otp_apb_read(OTP_VDDDIG_BANDGAP, &bandgap, sizeof(bandgap)) == 0)
+        if (bk_otp_ahb_read(OTP_VDDDIG_BANDGAP, &bandgap, sizeof(bandgap)) == 0)
         {
             /* success */
             tx_buffer[0] = 0x0E;
@@ -212,12 +212,12 @@ int sctrl_set_bandgap_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_
     bandgap = content[2];
     if (bandgap > BANDGAP_BGCAL_MANUAL_MASK)
     {
-        tx_buffer[1] = 0xAA;
+        tx_buffer[1] = 0xDD;
         uart_send_bytes_for_ate(tx_buffer, 2);
         return -1;
     }
 
-    if (bk_otp_apb_update(OTP_VDDDIG_BANDGAP, &bandgap, sizeof(bandgap)) == 0)
+    if (bk_otp_ahb_update(OTP_VDDDIG_BANDGAP, &bandgap, sizeof(bandgap)) == 0)
     {
         /* success */
         sys_hal_set_bgcalm(bandgap);
