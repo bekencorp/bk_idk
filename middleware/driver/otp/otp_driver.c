@@ -138,6 +138,17 @@ static int otp_active()
 	return otp_hal_power_on(&s_otp.hal);
 }
 
+int bk_otp_active(void)
+{
+	return otp_active();
+}
+
+int bk_otp_sleep(void)
+{
+	otp_sleep();
+	return 0;
+}
+
 static int switch_map(uint8_t map_id)
 {
 	if(otp_map == NULL){

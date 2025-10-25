@@ -29,6 +29,7 @@
 #include "sys_driver.h"
 #if !defined(TEE_M)
 #include <modules/pm.h>
+#include <driver/otp.h>
 #endif
 
 unsigned long _g_Dubhe_RegBase;
@@ -175,7 +176,9 @@ static int do_dubhe_driver_init( unsigned long dbh_base_addr )
     arm_ce_trng_driver_init( );
 #endif
 #if defined( ARM_CE_DUBHE_OTP )
+    bk_otp_active();
     arm_ce_otp_driver_init( );
+    bk_otp_sleep();
 #endif
 
 #if defined( DUBHE_FOR_RUNTIME )

@@ -211,6 +211,24 @@ uint32_t bk_otp_read_security_flag(void);
  *    - BK_FAIL: error
 */
 bk_err_t bk_otp_read_random_number(uint8_t* buf, uint32_t size);
+
+/**
+ * @brief     active OTP, internal used by dubhe driver
+ *
+ * @return
+ *    - 0: succeed
+ *    - other: error
+ */
+int bk_otp_active(void);
+
+/**
+ * @brief     sleep OTP, internal used by dubhe driver
+ *
+ * @return
+ *    - 0: succeed
+ *    - other: error
+ */
+int bk_otp_sleep(void);
 #endif
 
 #if CONFIG_FLASH_OTP
