@@ -75,8 +75,13 @@ UINT32 device_id = 0;
 #elif (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX)
 #define REG_SYS_CTRL_CHIP_ID         (sys_hal_get_chip_id())
 #define REG_SYS_CTRL_DEVICE_ID       (aon_pmu_hal_get_chipid())
+#if CONFIG_UART_PRINT_PORT_ATE
+#define ATE_GPIO_DEV_UART1_RXD       16
+#define ATE_GPIO_DEV_UART1_TXD       15
+#else
 #define ATE_GPIO_DEV_UART1_RXD       10
 #define ATE_GPIO_DEV_UART1_TXD       11
+#endif
 #else
 #define SOC_SYSTEM_REG_BASE          (0x00800000)
 #define REG_SYS_CTRL_CHIP_ID_ADDR    (SOC_SYSTEM_REG_BASE + 0x0 * 4)
@@ -207,18 +212,27 @@ bk_err_t core_mem_wr_all_test(void)
 
 bk_err_t core_cp_test(void)
 {
+    #define CPU_CLK_240_PASS             (BK_OK)
+    #define CPU_CLK_240_FAIL_160_PASS    (0x1)
+    #define CPU_CLK_240_FAIL_160_FAIL    (0x2)
+
     bk_err_t ret;
-    sys_hal_set_cpu_cp_test_config(0);
-    ret = core_mem_wr_all_test();
-    if (ret != BK_OK) {
-        return BK_FAIL;
-    }
+    /* cpu_core_clock = 240MHz */
     sys_hal_set_cpu_cp_test_config(1);
+    /* if cpu240M test pass, then no need to test cpu160M */
     ret = core_mem_wr_all_test();
-    if (ret != BK_OK) {
-        return BK_FAIL;
+    if (ret == BK_OK) {
+        return CPU_CLK_240_PASS;
     }
-    return BK_OK;
+    /* cpu_core_clock = 160MHz */
+    sys_hal_set_cpu_cp_test_config(0);
+    /* if cpu240M test fail and cpu160M test pass, then return "0x55 CC 01" */
+    ret = core_mem_wr_all_test();
+    if (ret == BK_OK) {
+        return CPU_CLK_240_FAIL_160_PASS;
+    }
+    /* if cpu240M test fail and cpu160M test fail too, then return "0x55 CC 02" */
+    return CPU_CLK_240_FAIL_160_FAIL;
 }
 
 void uart_send_byte_for_ate(UINT8 data)
@@ -364,6 +378,12 @@ void wifi_cali_dpll_ate(void)
 {
     UINT8 flag = 0;
     UINT8 tx_buffer[2];
+
+#if CONFIG_DPLL_UNLOCK_VERIFY_ENABLE
+    /* use cpu clock 26M, do not use dpll */
+    sys_ll_set_cpu_clk_div_mode1_cksel_core(0);
+    sys_ll_set_cpu_clk_div_mode1_clkdiv_core(0);
+#endif
 
     for(UINT8 i = 0; i < 3; i++)
     {
@@ -1006,7 +1026,7 @@ static void ate_read_otp(const uint8_t *content, int cnt, uint8_t *tx_buffer1)
         if (ret != BK_OK) {
             // otp read fail
             tx_buffer[0] = 0x55;
-            tx_buffer[1] = ret & 0xFF;//0xBB;
+            tx_buffer[1] = 0xBB;
             uart_send_bytes_for_ate(tx_buffer, 2);
         } else {
             uart_send_bytes_for_ate(tx_buffer, length + 1);
@@ -1357,7 +1377,7 @@ int sctrl_check_otp(const unsigned char *content, int cnt, UINT8 *tx_buffer)
     tx_buffer[3] = (result >> 16) & 0x00FF;
     tx_buffer[4] = (result >> 24) & 0x00FF;
     uart_send_bytes_for_ate(tx_buffer, 5);
-// 0E 4A 04 10 4B
+
     return result;
 }
 
@@ -1368,6 +1388,22 @@ int set_device_id_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buff
     int ret = 0;
 
     tx_buffer[0] = 0x55;
+
+    if (cnt == 2) {
+        /* return UID or device_id when enter "0x55 99" */
+        tx_buffer[1] = 0x88;
+        ret = bk_otp_ahb_read(OTP_DEVICE_ID, tx_buffer + 2, EFUSE_DEVICE_ID_BYTE_NUM);
+        if (ret != BK_OK) {
+            // otp read fail
+            tx_buffer[1] = 0x77;
+            uart_send_bytes_for_ate(tx_buffer, 2);
+            return BK_FAIL;
+        } else {
+            uart_send_bytes_for_ate(tx_buffer, EFUSE_DEVICE_ID_BYTE_NUM + 2);
+            return BK_OK;
+        }
+    }
+
     if (cnt < 7) {
         /* return param num error */
         tx_buffer[1] = 0x77;
@@ -1720,10 +1756,12 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 tx_buffer[0] = 0x55;
                 if (ret == BK_OK) {
                     tx_buffer[1] = 0x33;
+                    uart_send_bytes_for_ate(tx_buffer, 2);
                 } else {
                     tx_buffer[1] = 0xCC;
+                    tx_buffer[2] = ret & 0x0F;
+                    uart_send_bytes_for_ate(tx_buffer, 3);
                 }
-                uart_send_bytes_for_ate(tx_buffer, 2);
                 break;
             }
 
@@ -1881,8 +1919,8 @@ int bkreg_run_command1(unsigned char *content, int cnt)
 
                 case 0x02:  // OTP RFPWR_TBL write
                 {
-                    UINT8 tbl_version = content[4];
-                    UINT8 ana_version = content[5];
+                    UINT8 tbl_version = CONFIG_ATE_PHY_PWR_TBL_VERSION;
+                    UINT8 ana_version = CONFIG_ATE_PHY_PWR_ANA_VERSION;
                     UINT32 pwr_tbl[12] = {0};
 
                     pwr_tbl[0] = g_pwr_idx_11b_ch1 << 24 | g_pwr_idx_11g_ch1 << 16;
@@ -1896,17 +1934,19 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                     pwr_tbl[8] = g_pwr_idx_11a_ch100 << 24 | g_pwr_dBm_x10_11a_ch100 << 16;
                     pwr_tbl[9] = g_pwr_idx_11a_ch132 << 24 | g_pwr_dBm_x10_11a_ch132 << 16;
                     pwr_tbl[10] = g_pwr_idx_11a_ch165 << 24 | g_pwr_dBm_x10_11a_ch165 << 16;
-                    pwr_tbl[11] = tbl_version << 24 | ana_version << 16;
+                    pwr_tbl[11] = tbl_version | ana_version << 8;
 
+                    // "bk_otp_ahb_update" will do read-back check, so do not need to read back again here
                     ret = bk_otp_ahb_update(otp_idx, (uint8_t *)pwr_tbl, sizeof(pwr_tbl));
                     tx_buffer[0] = 0x55;
                     if (ret != BK_OK) {
-                        tx_buffer[0] = 0xCC;
+                        tx_buffer[1] = 0xCC;
                     } else {
-                        tx_buffer[0] = 0x33;
+                        tx_buffer[1] = 0x33;
                     }
-                        break;
-                    }
+                    uart_send_bytes_for_ate(tx_buffer, 2);
+                    break;
+                }
 
                 default:
                     break;
@@ -1994,7 +2034,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 /* flash crc bypass enable */
                 int ret = 0;
                 tx_buffer[0] = 0x55;
-                UINT32 efuse_val, efuse_check;
+                UINT32 efuse_val;
 
                 ret = bk_otp_apb_read(OTP_EFUSE, (UINT8 *)&efuse_val, sizeof(efuse_val));
                 if (ret != BK_OK) {
@@ -2006,27 +2046,13 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 // flash_crc_bypass = 1
                 efuse_val |= (0x1 << 27);
 
+                // "bk_otp_ahb_update" will do read-back check, so do not need to read back again here
                 ret = bk_otp_apb_update(OTP_EFUSE, (UINT8 *)&efuse_val, sizeof(efuse_val));
                 if (ret != BK_OK) {
                     tx_buffer[1] = 0xCC;
-                    uart_send_bytes_for_ate(tx_buffer, 2);
-                    break;
+                } else {
+                    tx_buffer[1] = 0x33;
                 }
-
-                ret = bk_otp_apb_read(OTP_EFUSE, (UINT8 *)&efuse_check, sizeof(efuse_check));
-                if (ret != BK_OK) {
-                    tx_buffer[1] = 0xCC;
-                    uart_send_bytes_for_ate(tx_buffer, 2);
-                    break;
-                }
-
-                if (efuse_val != efuse_check) {
-                    tx_buffer[1] = 0xCC;
-                    uart_send_bytes_for_ate(tx_buffer, 2);
-                    break;
-                }
-
-                tx_buffer[1] = 0x33;
                 uart_send_bytes_for_ate(tx_buffer, 2);
                 break;
             }

@@ -96,6 +96,21 @@ void ate_cali_adc(const unsigned char *content, UINT8 *tx_buffer)
         }
         os_memcpy(tx_buffer + 1, adc_cali + sizeof(adc_cali) - 6, 6);
         uart_send_bytes_for_ate(tx_buffer,7);
+
+        // if "OTP_GADC_CALIBRATION" is not empty, then reload saradc self-calibration result
+        bool saradc_self_cali = false;
+        for (size_t i = 0; i < sizeof(adc_cali); i++) {
+            if (adc_cali[i] != 0x00) {
+                saradc_self_cali = true;
+                break;
+            }
+        }
+        if (saradc_self_cali) {
+            os_memcpy(sadc_reg_0x07_0x16, adc_cali, sizeof(sadc_reg_0x07_0x16));
+            for (int i = 0; i < 16; i++) {
+                REG_WRITE(SOC_SADC_REG_BASE + ((i + 7) << 2), (sadc_reg_0x07_0x16[i] & 0x00FFFFFF));
+            }
+        }
         return;
     }
     else if (content[2] == 2)
@@ -105,7 +120,9 @@ void ate_cali_adc(const unsigned char *content, UINT8 *tx_buffer)
         // 1v      1000         138E
         // 2v      2000         271C
         // 0.3v    4CC          5DD
-        if ((values[0] > 0x138E) || (values[0] < 0x1000) || (values[1] > 0x271C) || (values[1] < 0x2000) || (values[2] > 0x5DD) || (values[2] < 0x4CC))
+        if ((values[0] > 0x138E) || (values[0] < 0x1000)
+            || (values[1] > 0x271C) || (values[1] < 0x2000)
+            || (values[2] > 0x05DD) || (values[2] < 0x04CC))
         {
             tx_buffer[1] = 0xDD;
             goto exit;

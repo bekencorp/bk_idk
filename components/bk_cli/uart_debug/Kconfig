@@ -12,4 +12,14 @@ menu "modules::uart_debug"
 		depends on ATE
 		bool "Enable ATE Test"
 		default n
+
+	config ATE_PHY_PWR_TBL_VERSION
+		depends on ATE
+		int "Select PHY_PWR_TBL version"
+		default "0"
+
+	config ATE_PHY_PWR_ANA_VERSION
+		depends on ATE
+		int "Select PHY_PWR_ANA version"
+		default "0"
 endmenu

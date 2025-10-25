@@ -847,7 +847,11 @@ static void cli_pm_timer_isr(timer_id_t chan)
 	current_freq = bk_rosc_32k_get_freq();
 	current_ppm = bk_rosc_32k_get_ppm();
 #endif
-	if (s_rosc_acc_mode)
+	if (s_rosc_acc_mode == 1)
+	{
+		current_tick = bk_timer_get_cnt(3);
+	}
+	else if (s_rosc_acc_mode == 2)
 	{
 		current_tick = bk_timer_get_cnt(0);
 	}
@@ -889,7 +893,14 @@ static void cli_pm_rosc_accuracy(char *pcWriteBuffer, int xWriteBufferLen, int a
 		s_rosc_acc_mode    = os_strtoul(argv[2], NULL, 10);
 	}
 
-	if (s_rosc_acc_mode != 0)
+	if (s_rosc_acc_mode == 1)
+	{
+		sys_drv_timer_select_clock(0, 1); // TIMER0 use xtal
+		bk_timer_start_without_callback(3, 0);
+		sys_drv_timer_select_clock(1, 0); // TIMER1 use clk32
+		bk_timer_start(0, timer_count_interval, cli_pm_timer_isr);
+	}
+	else if (s_rosc_acc_mode == 2)
 	{
 		sys_drv_timer_select_clock(0, 1); // TIMER0 use xtal
 		bk_timer_start_without_callback(0, 0);
