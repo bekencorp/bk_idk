@@ -487,8 +487,8 @@ class Image():
             # while `sign_digest` expects only the digest of the payload
 
             if hasattr(key, 'sign'):
-                #sig = key.sign(bytes(self.payload))
-                sig = key.sign(bytes(digest))
+                sig = key.sign(bytes(self.payload))
+                # sig = key.sign(bytes(digest))
             else:
                 sig = key.sign_digest(digest)
             tlv.add(key.sig_tlv(), sig)
