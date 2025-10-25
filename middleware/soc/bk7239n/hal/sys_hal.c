@@ -828,30 +828,30 @@ __IRAM_SEC void sys_hal_clk_pwr_ctrl(dev_clk_pwr_id_t dev, dev_clk_pwr_ctrl_t po
 void sys_hal_uart_select_clock(uart_id_t id, uart_src_clk_t mode)
 {
 	int sel_xtal = 0;
-	int sel_appl = 1;
+	int sel_80m = 1;
 
 	switch(id)
 	{
 		case UART_ID_0:
 			{
-				if(mode == UART_SCLK_APLL)
-					sys_ll_set_cpu_clk_div_mode1_cksel_uart0(sel_appl);
+				if(mode == UART_SCLK_80M)
+					sys_ll_set_cpu_clk_div_mode1_cksel_uart0(sel_80m);
 				else
 					sys_ll_set_cpu_clk_div_mode1_cksel_uart0(sel_xtal);
 				break;
 			}
 		case UART_ID_1:
 			{
-				if(mode == UART_SCLK_APLL)
-					sys_ll_set_cpu_clk_div_mode1_cksel_uart1(sel_appl);
+				if(mode == UART_SCLK_80M)
+					sys_ll_set_cpu_clk_div_mode1_cksel_uart1(sel_80m);
 				else
 					sys_ll_set_cpu_clk_div_mode1_cksel_uart1(sel_xtal);
 				break;
 			}
 		case UART_ID_2:
 			{
-				if(mode == UART_SCLK_APLL)
-					sys_ll_set_cpu_clk_div_mode1_cksel_uart2(sel_appl);
+				if(mode == UART_SCLK_80M)
+					sys_ll_set_cpu_clk_div_mode1_cksel_uart2(sel_80m);
 				else
 					sys_ll_set_cpu_clk_div_mode1_cksel_uart2(sel_xtal);
 				break;
@@ -859,8 +859,8 @@ void sys_hal_uart_select_clock(uart_id_t id, uart_src_clk_t mode)
 #if (SOC_UART_ID_NUM_PER_UNIT  >= 4)
 		case UART_ID_3:
 			{
-				if(mode == UART_SCLK_APLL)
-					sys_ll_set_cpu_clk_div_mode1_cksel_uart2(sel_appl);
+				if(mode == UART_SCLK_80M)
+					sys_ll_set_cpu_clk_div_mode1_cksel_uart2(sel_80m);
 				else
 					sys_ll_set_cpu_clk_div_mode1_cksel_uart2(sel_xtal);
 				break;
@@ -876,14 +876,14 @@ void sys_hal_uart_select_clock(uart_id_t id, uart_src_clk_t mode)
 void sys_hal_i2c_select_clock(i2c_id_t id, i2c_src_clk_t mode)
 {
 	int sel_xtal = 0;
-	int sel_appl = 1;
+	int sel_80m = 1;
 
 	switch(id)
 	{
 		case I2C_ID_0:
 			{
-				if(mode == I2C_SCLK_APLL)
-					sys_ll_set_cpu_clk_div_mode1_cksel_i2c0(sel_appl);
+				if(mode == I2C_SCLK_80M)
+					sys_ll_set_cpu_clk_div_mode1_cksel_i2c0(sel_80m);
 				else
 					sys_ll_set_cpu_clk_div_mode1_cksel_i2c0(sel_xtal);
 				break;
@@ -891,8 +891,8 @@ void sys_hal_i2c_select_clock(i2c_id_t id, i2c_src_clk_t mode)
 #if (SOC_I2C_UNIT_NUM > 1)
 		case I2C_ID_1:
 			{
-				if(mode == I2C_SCLK_APLL)
-					sys_ll_set_cpu_clk_div_mode1_cksel_i2c1(sel_appl);
+				if(mode == I2C_SCLK_80M)
+					sys_ll_set_cpu_clk_div_mode1_cksel_i2c1(sel_80m);
 				else
 					sys_ll_set_cpu_clk_div_mode1_cksel_i2c1(sel_xtal);
 				break;
@@ -1125,7 +1125,7 @@ uint32_t sys_hal_i2c_select_clock_get(i2c_id_t id)
             break;
     }
 
-    ret = (!ret)?I2C_SCLK_XTAL_26M:I2C_SCLK_APLL;
+    ret = (!ret)?I2C_SCLK_XTAL_40M:I2C_SCLK_80M;
 
     return ret;
 }

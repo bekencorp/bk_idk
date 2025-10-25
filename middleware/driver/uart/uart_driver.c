@@ -1153,7 +1153,12 @@ bk_err_t bk_uart_init(uart_id_t id, const uart_config_t *config)
 	UART_RETURN_ON_NOT_INIT();
 	BK_RETURN_ON_NULL(config);
 	UART_RETURN_ON_INVALID_ID(id);
-	UART_RETURN_ON_BAUD_RATE_NOT_SUPPORT(config->baud_rate);
+	if (config->src_clk == UART_SCLK_80M) {
+		uint32_t clock_ratio = UART_CLOCK_FREQ_80M / UART_CLOCK;  // 80M / 40M = 2
+		UART_RETURN_ON_BAUD_RATE_NOT_SUPPORT(config->baud_rate/clock_ratio);
+	} else {
+		UART_RETURN_ON_BAUD_RATE_NOT_SUPPORT(config->baud_rate);
+	}
 	UART_CHECK_SECURE(id);
 
 #if CONFIG_UART_PM_CB_SUPPORT
@@ -1221,6 +1226,8 @@ bk_err_t bk_uart_init(uart_id_t id, const uart_config_t *config)
 #if (CONFIG_SYSTEM_CTRL)
 	if (config->src_clk == UART_SCLK_APLL)
 		sys_drv_uart_select_clock(id, UART_SCLK_APLL);
+	else if (config->src_clk == UART_SCLK_80M)
+		sys_drv_uart_select_clock(id, UART_SCLK_80M);
 	else
 		sys_drv_uart_select_clock(id, UART_SCLK_XTAL_26M);
 

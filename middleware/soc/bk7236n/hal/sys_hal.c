@@ -882,7 +882,7 @@ void sys_hal_i2c_select_clock(i2c_id_t id, i2c_src_clk_t mode)
 	{
 		case I2C_ID_0:
 			{
-				if(mode == I2C_SCLK_APLL)
+				if(mode == I2C_SCLK_80M)
 					sys_ll_set_cpu_clk_div_mode1_cksel_i2c0(sel_appl);
 				else
 					sys_ll_set_cpu_clk_div_mode1_cksel_i2c0(sel_xtal);
@@ -891,7 +891,7 @@ void sys_hal_i2c_select_clock(i2c_id_t id, i2c_src_clk_t mode)
 #if (SOC_I2C_UNIT_NUM > 1)
 		case I2C_ID_1:
 			{
-				if(mode == I2C_SCLK_APLL)
+				if(mode == I2C_SCLK_80M)
 					sys_ll_set_cpu_clk_div_mode1_cksel_i2c1(sel_appl);
 				else
 					sys_ll_set_cpu_clk_div_mode1_cksel_i2c1(sel_xtal);
@@ -1139,7 +1139,7 @@ uint32_t sys_hal_i2c_select_clock_get(i2c_id_t id)
             break;
     }
 
-    ret = (!ret)?I2C_SCLK_XTAL_26M:I2C_SCLK_APLL;
+    ret = (!ret)?I2C_SCLK_XTAL_40M:I2C_SCLK_80M;
 
     return ret;
 }

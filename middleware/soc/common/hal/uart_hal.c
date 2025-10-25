@@ -86,6 +86,8 @@ bk_err_t uart_hal_set_baud_rate(uart_hal_t *hal, uart_id_t id, uint32_t sclk, ui
 #if (CONFIG_SYSTEM_CTRL)
         if (sclk == UART_SCLK_APLL) {
                 clk_div = UART_CLOCK_FREQ_120M / baud_rate - 1;
+        } else if (sclk == UART_SCLK_80M) {
+                clk_div = UART_CLOCK_FREQ_80M / baud_rate - 1;
         } else {
                 clk_div = UART_CLOCK / baud_rate - 1;
 	}
