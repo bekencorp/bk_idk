@@ -93,7 +93,7 @@ static const uint32_t crc32_table[] =
 #define FLASH_IO_DOWN(x)               //(GPIO_DOWN(x))
 
 /* Flash test configuration constants */
-#define BOOT_BASE_ADDR                 0x200000        /**< Base address for flash testing */
+#define BOOT_BASE_ADDR                 0x253000        /**< Base address for flash testing */
 #define FLASH_TEST_LENGTH              4096            /**< Length of data to test in each iteration */
 #define FLASH_TEST_TOTAL_LENGTH        4096            /**< Total length for testing (47 * 4k) */
 #define FLASH_TEST_ADDR                (BOOT_BASE_ADDR + FLASH_TEST_TOTAL_LENGTH)  /**< Test data address */
