@@ -1630,6 +1630,9 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 /* 55 0B 15: set 1.5Volt and read ADC3, return value */
                 /* 55 0B 02: write efuse 18,19,20,21 */
                 break;
+            case 0x0C:       // SARADC temperature
+                ate_cali_temperature(content, tx_buffer);
+                break;
             case 0x14:      // PER_Min_2484: 55 14 [ms=50]
             {
                 clock_time_t duration;

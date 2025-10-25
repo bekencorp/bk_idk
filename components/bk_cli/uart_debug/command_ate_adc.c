@@ -8,6 +8,7 @@
 #include <driver/efuse.h>
 #include <driver/hal/hal_gpio_types.h>
 #include <os/mem.h>
+#include "bk_sensor_internal.h"
 
 typedef UINT16 heap_t;
 size_t MinHeapInsert(heap_t *heap, size_t heap_size, heap_t x);
@@ -157,6 +158,58 @@ void ate_cali_adc(const unsigned char *content, UINT8 *tx_buffer)
     }
 
 exit:
+    uart_send_bytes_for_ate(tx_buffer, 2);
+    return;
+}
+
+void ate_cali_temperature(const unsigned char *content, UINT8 *tx_buffer)
+{
+    uint32_t adc_code32 = 0;
+    uint16_t adc_code16 = 0;
+    int      ret;
+
+    /* try to load vdddiv from efuse before calibrate adc */
+    ret = sctrl_load_vdddig_from_efuse();
+    if (ret < 0)
+    {
+        /* vdddig not valid in efuse, return 55 BB */
+        tx_buffer[1] = 0xBB;
+        goto exit;
+    }
+
+    ret = bk_otp_ahb_read(OTP_GADC_TEMPERATURE, (uint8_t *)&adc_code16, sizeof(adc_code16));
+    if (ret != BK_OK)
+    {
+        tx_buffer[1] = 0xAA;
+        goto exit;
+    }
+    if ((adc_code16 != 0) && (adc_code16 != 0xFFFF))
+    {
+        goto done;
+    }
+
+    ret = temp_detect_get_temperature(&adc_code32);
+    if ((ret != BK_OK) || (adc_code32 >= 0xFFFF))
+    {
+        tx_buffer[1] = 0xDD;
+        goto exit;
+    }
+    adc_code16 = adc_code32;
+    ret = bk_otp_ahb_update(OTP_GADC_TEMPERATURE, (uint8_t *)&adc_code16, sizeof(adc_code16));
+    if (ret != BK_OK)
+    {
+        tx_buffer[1] = 0xCC;
+        goto exit;
+    }
+
+done:
+    tx_buffer[0] = 0x0E;
+    os_memcpy(&tx_buffer[1], &adc_code16, sizeof(adc_code16));
+    uart_send_bytes_for_ate(tx_buffer, 3);
+    return;
+
+exit:
+    tx_buffer[0] = 0x55;
     uart_send_bytes_for_ate(tx_buffer, 2);
     return;
 }
