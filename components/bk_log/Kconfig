@@ -1,0 +1,5 @@
+menu "BK_LOG"
+	config LOG_LEVEL
+		int "Set log level: 0-None, 1-Error, 2-WARN, 3-INFO, 4-DEBUG"
+		default 3
+endmenu

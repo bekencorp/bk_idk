@@ -35,11 +35,7 @@ extern "C" {
 #define BK_LOG_DEBUG   4 /*!< Extra information which is not necessary for normal use (values, pointers, sizes, etc). */
 #define BK_LOG_VERBOSE 5 /*!< Extra information which is not necessary for normal use (values, pointers, sizes, etc). */
 
-#ifdef CFG_LOG_LEVEL
-#define BK_LOG_LEVEL         CFG_LOG_LEVEL
-#else
-#define BK_LOG_LEVEL         BK_LOG_INFO
-#endif
+#define BK_LOG_LEVEL         CONFIG_LOG_LEVEL
 
 #if (BK_LOG_LEVEL >= BK_LOG_ERROR)
 #define BK_LOGE( tag, format, ... )         _BK_LOG_PRINTF(BK_LOG_ERROR, tag, format,  ##__VA_ARGS__)
