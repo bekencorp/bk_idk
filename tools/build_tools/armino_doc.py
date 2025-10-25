@@ -117,7 +117,7 @@ def build_doc_internal(clean, target):
 	if (target == "all"):
 		#build_with_target(clean, "bk7236")
 		#build_with_target(clean, "bk7258")
-		build_with_target(clean, "bk7239")
+		build_with_target(clean, "bk7239n")
 	else:
 		build_with_target(clean, target)
 

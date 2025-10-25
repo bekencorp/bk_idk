@@ -85,7 +85,7 @@ if [ "${need_clean}" == "1" ]; then
 fi
 
 if [ "${need_doc}" == "1" ]; then
-	${ARMINO_TOOL} -B ${BUILD_DIR} -P ./${PROJECT_DIR} doc ${ARMINO_SOC}
+	${ARMINO_TOOL} -B ${BUILD_DIR} -P ${PROJECT_DIR} doc ${ARMINO_SOC}
 	exit 0
 fi
 
@@ -100,8 +100,8 @@ fi
 if [ "${need_build_soc}" == "1" ]; then
 	echo "build ${ARMINO_SOC}"
 	rm -rf ${BUILD_DIR}/sdkconfig
-	${ARMINO_TOOL} -B ${BUILD_DIR} -P ${ARMINO_DIR}/${PROJECT_DIR} set-target ${ARMINO_SOC}
-	${ARMINO_TOOL} -B ${BUILD_DIR} -P ${ARMINO_DIR}/${PROJECT_DIR} ${ARMINO_TARGET}
+	${ARMINO_TOOL} -B ${BUILD_DIR} -P ${PROJECT_DIR} set-target ${ARMINO_SOC}
+	${ARMINO_TOOL} -B ${BUILD_DIR} -P ${PROJECT_DIR} ${ARMINO_TARGET}
 	${ARMINO_DIR}/tools/build_tools/armino_as_lib.sh ${ARMINO_SOC} ${ARMINO_DIR} ${BUILD_DIR} ${PROJECT}
 fi
 

@@ -22,14 +22,14 @@ header_path = "{}/tools/env_tools/rtt_ota/ota-rbl/".format(armino_path)
 is_secure_boot = False
 is_bksecure = False
 
-cpu1_bin  = f'{armino_path}/{project_dir}/{armino_soc}_cpu1.bin'
+cpu1_bin  = f'{project_dir}/{armino_soc}_cpu1.bin'
 bootloader_bin = f'{armino_path}/properties/modules/bootloader/aboot/arm_bootloader/output/bootloader.bin'
 
 nosecurity_pack = "%s/middleware/boards/%s/%s_nosecurity.wrapper"%(armino_path, armino_soc, armino_soc)
-nosecurity_cpu1_bin = '%s/%s/app1.bin'%(armino_path, project_dir)
+nosecurity_cpu1_bin = '%s/app1.bin'%(project_dir)
 pack_boot_tools = '%s/tools/env_tools/beken_packager'%(armino_path)
 
-project_full_path = f'{armino_path}/{project_dir}/config/{armino_soc}'
+project_full_path = f'{project_dir}/config/{armino_soc}'
 secure_config_path = os.path.join(project_full_path,'config')
 
 if os.path.exists(secure_config_path):
@@ -126,7 +126,7 @@ def pack(prebuild):
 	bin_dir = build_path
 	cpu0_armino_soc = armino_soc.replace('_cp1', '')
 	base_cfg_dir = f'{armino_path}/middleware/boards/{cpu0_armino_soc}' #CPU1 share the same config with CPU0
-	prefered_cfg_dir = f'{armino_path}/{project_dir}/config'
+	prefered_cfg_dir = f'{project_dir}/config'
 	gen_dir = f'{build_path}/generated'
 	debug = True
 
@@ -193,7 +193,7 @@ def pack(prebuild):
 		logging.debug(f'Copy BL2 bin to {_BUILD_DIR}')
 		copy_files('.bin', BL2_BIN_DIR, _BUILD_DIR)
 	
-	cpu1_bin  = f'{armino_path}/{project_dir}/{armino_soc}_cpu1.bin'
+	cpu1_bin  = f'{project_dir}/{armino_soc}_cpu1.bin'
 	copy_file(cpu1_bin, f'{_BUILD_DIR}/cpu1_app.bin')
 
 	dest_boot_dir = f'{armino_path}/components/bk_libs/{armino_soc}/bootloader/normal_bootloader'

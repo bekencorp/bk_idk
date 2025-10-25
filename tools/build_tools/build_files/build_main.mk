@@ -31,6 +31,11 @@ else
 	export APP_VERSION := $(APP_VERSION)
 endif
 
+# Check if PROJECT is a relative path and convert to absolute
+ifeq ($(patsubst /%,,$(PROJECT)),$(PROJECT))
+	export PROJECT := $(ARMINO_DIR)/projects/$(PROJECT)
+endif
+
 ifeq ("$(PROJECT)", "")
 	ifneq ("$(INTERNAL)", "")
 		export PROJECT := $(INTERNAL)
@@ -50,7 +55,7 @@ else
 endif
 
 ifeq ("$(PROJECT_DIR)", "")
-	export PROJECT_DIR := projects/$(PROJECT)
+	export PROJECT_DIR := $(ARMINO_DIR)/projects/$(PROJECT)
 else
 	export PROJECT_DIR := $(PROJECT_DIR)
 endif
@@ -82,7 +87,7 @@ endif
 # overwrite project config
 -include $(ARMINO_DIR)/middleware/soc/$(ARMINO_SOC)/soc_config.mk
 -include $(ARMINO_DIR)/components/part_table/part_table.mk
--include $(ARMINO_DIR)/$(PROJECT_DIR)/pj_config.mk
+-include $(PROJECT_DIR)/pj_config.mk
 
 export COMPILER_TOOLCHAIN_PATH := $(COMPILER_TOOLCHAIN_PATH)
 
