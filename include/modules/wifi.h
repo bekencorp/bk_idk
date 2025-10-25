@@ -1163,6 +1163,15 @@ bk_err_t bk_wifi_manual_cal_rfcali_status(void);
 bk_err_t bk_wifi_ap_vif_probe_req_frame_cb_register(void *cb);
 
 /**
+ * @brief  get if ever set dtim10.
+ *
+ * @return
+ *      - true: has been set to >= dtim10.
+ *      - false: never set >= dtim10 before.
+ */
+bool bk_wifi_get_lowpower_mode(void);
+
+/**
  * @brief  Set listen interval.
  *
  * @param  any value is acceptable,but 1, 3, 10 is recommended.
