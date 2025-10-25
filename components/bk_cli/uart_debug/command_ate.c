@@ -136,6 +136,8 @@ extern void sys_hal_set_cpu_cp_test_config(uint32_t cfg_id);
 extern uint8_t mac80154_ate(uint8_t * cmd,uint8_t len,uint8_t *out_rsp,uint8_t *out_size);
 #endif
 
+extern uint32_t bk_otp_partical_clean_check_customer(void);
+
 bk_err_t core_mem_wr_test(uint32_t start_addr)
 {
     uint32_t original_values[10] = {0};
@@ -1325,6 +1327,40 @@ exit:
 	uart_send_bytes_for_ate(&tx_buffer[0], 2);
 }
 
+int sctrl_check_efuse(const unsigned char *content, int cnt, UINT8 *tx_buffer) {
+    bk_err_t result = -1;
+    int count = 4;
+
+    tx_buffer[0] = 0x0E;
+    result = bk_otp_apb_read(OTP_EFUSE, tx_buffer + 1, count);
+
+    if (result != BK_OK) {
+        for (int i = 0; i < 4; i++) {
+            tx_buffer[i + 1] = 0xFF;
+        }
+    }
+
+    uart_send_bytes_for_ate(tx_buffer, 1 + count);
+
+    return result;
+}
+
+int sctrl_check_otp(const unsigned char *content, int cnt, UINT8 *tx_buffer)
+{
+    uint32_t result;
+
+    result = bk_otp_partical_clean_check_customer();
+
+    tx_buffer[0] = 0x0E;
+    tx_buffer[1] = result & 0x00FF;
+    tx_buffer[2] = (result >> 8) & 0x00FF;
+    tx_buffer[3] = (result >> 16) & 0x00FF;
+    tx_buffer[4] = (result >> 24) & 0x00FF;
+    uart_send_bytes_for_ate(tx_buffer, 5);
+// 0E 4A 04 10 4B
+    return result;
+}
+
 int set_device_id_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buffer)
 {
     uint8_t device_id_write[EFUSE_DEVICE_ID_BYTE_NUM] = {0};
@@ -1945,6 +1981,14 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 set_mac_address_to_efuse(content, cnt, tx_buffer);
                 break;
 #endif
+            case 0x45:
+                /* check all efuse bytes: bits[i]=0 means efuse[i]=0 */
+                sctrl_check_efuse((const unsigned char *)content, cnt, tx_buffer);
+                break;
+            case 0x46:
+                /* check partial otp: 0E xx xx xx xx, return first !0 address, 0 means clean */
+                sctrl_check_otp((const unsigned char *)content, cnt, tx_buffer);
+                break;
 #if 0
             case 0x50:
                 if ((cnt > 2) && ((unsigned char) content[2] < 80))
