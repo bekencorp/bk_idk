@@ -4,9 +4,9 @@
  */
 #pragma once
 
-#define CONFIG_SOC_BK7239 1
+#define CONFIG_SOC_BK7239N 1
 #define CONFIG_SOC_BK7239XX 1
-#define CONFIG_SOC_STR "bk7239"
+#define CONFIG_SOC_STR "bk7239n"
 #define CONFIG_SOC_ARCH "cm33"
 #define CONFIG_TOOLCHAIN_PATH "/opt/gcc-arm-none-eabi-9-2020-q2-update/bin"
 #define CONFIG_TOOLCHAIN_PREFIX "arm-none-eabi-"

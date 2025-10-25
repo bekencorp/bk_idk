@@ -220,6 +220,11 @@ static uint32_t flash_read_status_reg(void)
 static void flash_write_status_reg(uint32_t status_reg_val)
 {
 	uint32_t int_level = flash_enter_critical();
+
+#if CONFIG_FLASH_WRITE_STATUS_VOLATILE
+	flash_hal_set_volatile_status_write(&s_flash.hal);
+#endif
+
 	s_flash.flash_status_reg_val = status_reg_val;
 
 	flash_hal_write_status_reg(&s_flash.hal, s_flash.flash_cfg->status_reg_size, status_reg_val);
@@ -323,12 +328,8 @@ static void flash_set_protect_type(flash_protect_type_t type)
 	protect_cfg = flash_get_protect_cfg(type);
 	cmp_cfg = flash_get_cmp_cfg(type);
 
-	#if CONFIG_FLASH_SUPPORT_MULTI_PE  /* multiple process element. (multi-cores or SPE/NSPE) */
+#if CONFIG_FLASH_SUPPORT_MULTI_PE  /* multiple process element. (multi-cores or SPE/NSPE) */
 	status_reg = flash_read_status_reg();
-	#endif
-
-#if CONFIG_FLASH_WRITE_STATUS_VOLATILE
-	flash_hal_set_volatile_status_write(&s_flash.hal);
 #endif
 
 	if (flash_is_need_update_status_reg(protect_cfg, cmp_cfg, status_reg)) {
@@ -580,7 +581,7 @@ bk_err_t bk_flash_driver_init(void)
 	s_flash.flash_status_reg_val = flash_read_status_reg();
 
 	flash_set_protect_type(FLASH_UNPROTECT_LAST_BLOCK);
-
+	
 	flash_set_line_mode(s_flash.flash_cfg->line_mode);
 
 	flash_hal_set_default_clk(&s_flash.hal);

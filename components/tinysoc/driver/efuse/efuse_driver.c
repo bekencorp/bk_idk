@@ -57,7 +57,7 @@ bk_err_t bk_efuse_driver_init(void)
 	s_efuse_driver_is_init = true;
 
 #if CONFIG_SYSTEM_CTRL
-#if CONFIG_SOC_BK7236N || CONFIG_SOC_BK7239
+#if CONFIG_SOC_BK7236N || CONFIG_SOC_BK7239N
 #else
 	sys_drv_dev_clk_pwr_up(CLK_PWR_ID_EFUSE, CLK_PWR_CTRL_PWR_UP);
 #endif
@@ -73,7 +73,7 @@ bk_err_t bk_efuse_driver_deinit(void)
 	}
 
 #if CONFIG_SYSTEM_CTRL
-#if CONFIG_SOC_BK7236N || CONFIG_SOC_BK7239
+#if CONFIG_SOC_BK7236N || CONFIG_SOC_BK7239N
 #else
 	sys_drv_dev_clk_pwr_up(CLK_PWR_ID_EFUSE, CLK_PWR_CTRL_PWR_DOWN);
 #endif

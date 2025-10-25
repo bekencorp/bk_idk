@@ -26,6 +26,9 @@ static void cli_flash_help(void)
 	CLI_LOGI("flash driver init\n");
 	CLI_LOGI("flash_driver deinit\n");
 	CLI_LOGI("flash {erase|write|read} [start_addr] [len]\n");
+	CLI_LOGI("flash get_id\n");
+	CLI_LOGI("flash set_line [line_mode]\n");
+	CLI_LOGI("flash mutex_test [task_priority]\n");
 	CLI_LOGI("flash_partition show\n");
 	CLI_LOGI("flash_erase_test ble\n");
 }
@@ -33,62 +36,93 @@ static void cli_flash_help(void)
 static void cli_flash_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
 	char *msg = NULL;
-	if (argc < 3) {
+	if (argc < 2) {
 		cli_flash_help();
 		return;
 	}
 
-	uint32_t start_addr = os_strtoul(argv[2], NULL, 16);
-	uint32_t len = os_strtoul(argv[3], NULL, 16);
-
 	if (os_strcmp(argv[1], "erase") == 0) {
-		bk_flash_set_protect_type(FLASH_PROTECT_NONE);
-		for (uint32_t addr = start_addr; addr < (start_addr + len); addr += FLASH_SECTOR_SIZE) {
-			bk_flash_erase_sector(addr);
-		}
-		bk_flash_set_protect_type(FLASH_UNPROTECT_LAST_BLOCK);
-		msg = CLI_CMD_RSP_SUCCEED;
-	} else if (os_strcmp(argv[1], "read") == 0) {
-		uint8_t buf[FLASH_PAGE_SIZE] = {0};
-		for (uint32_t addr = start_addr; addr < (start_addr + len); addr += FLASH_PAGE_SIZE) {
-			os_memset(buf, 0, FLASH_PAGE_SIZE);
-			bk_flash_read_bytes(addr, buf, FLASH_PAGE_SIZE);
-			BK_DUMP_OUT("flash read addr:%x\r\n", addr);
-
-			BK_DUMP_OUT("dump read flash data:\r\n");
-			for (uint32_t i = 0; i < 16; i++) {
-				for (uint32_t j = 0; j < 16; j++) {
-					BK_DUMP_OUT("%02x ", buf[i * 16 + j]);
-				}
-				BK_DUMP_OUT("\r\n");
+		if (argc < 4) {
+			cli_flash_help();
+			msg = CLI_CMD_RSP_ERROR;
+		} else {
+			uint32_t start_addr = os_strtoul(argv[2], NULL, 16);
+			uint32_t len = os_strtoul(argv[3], NULL, 16);
+			
+			bk_flash_set_protect_type(FLASH_PROTECT_NONE);
+			for (uint32_t addr = start_addr; addr < (start_addr + len); addr += FLASH_SECTOR_SIZE) {
+				bk_flash_erase_sector(addr);
 			}
+			bk_flash_set_protect_type(FLASH_UNPROTECT_LAST_BLOCK);
+			msg = CLI_CMD_RSP_SUCCEED;
 		}
-		msg = CLI_CMD_RSP_SUCCEED;
+	} else if (os_strcmp(argv[1], "read") == 0) {
+		if (argc < 4) {
+			cli_flash_help();
+			msg = CLI_CMD_RSP_ERROR;
+		} else {
+			uint32_t start_addr = os_strtoul(argv[2], NULL, 16);
+			uint32_t len = os_strtoul(argv[3], NULL, 16);
+			uint8_t buf[FLASH_PAGE_SIZE] = {0};
+			
+			for (uint32_t addr = start_addr; addr < (start_addr + len); addr += FLASH_PAGE_SIZE) {
+				os_memset(buf, 0, FLASH_PAGE_SIZE);
+				bk_flash_read_bytes(addr, buf, FLASH_PAGE_SIZE);
+				BK_DUMP_OUT("flash read addr:%x\r\n", addr);
+
+				BK_DUMP_OUT("dump read flash data:\r\n");
+				for (uint32_t i = 0; i < 16; i++) {
+					for (uint32_t j = 0; j < 16; j++) {
+						BK_DUMP_OUT("%02x ", buf[i * 16 + j]);
+					}
+					BK_DUMP_OUT("\r\n");
+				}
+			}
+			msg = CLI_CMD_RSP_SUCCEED;
+		}
 	} else if (os_strcmp(argv[1], "write") == 0) {
-		uint8_t buf[FLASH_PAGE_SIZE] = {0};
-		for (uint32_t i = 0; i < FLASH_PAGE_SIZE; i++) {
-			buf[i] = i;
+		if (argc < 4) {
+			cli_flash_help();
+			msg = CLI_CMD_RSP_ERROR;
+		} else {
+			uint32_t start_addr = os_strtoul(argv[2], NULL, 16);
+			uint32_t len = os_strtoul(argv[3], NULL, 16);
+			uint8_t buf[FLASH_PAGE_SIZE] = {0};
+			
+			for (uint32_t i = 0; i < FLASH_PAGE_SIZE; i++) {
+				buf[i] = i;
+			}
+			bk_flash_set_protect_type(FLASH_PROTECT_NONE);
+			for (uint32_t addr = start_addr; addr < (start_addr + len); addr += FLASH_PAGE_SIZE) {
+				bk_flash_write_bytes(addr, buf, FLASH_PAGE_SIZE);
+			}
+			bk_flash_set_protect_type(FLASH_UNPROTECT_LAST_BLOCK);
+			msg = CLI_CMD_RSP_SUCCEED;
 		}
-		bk_flash_set_protect_type(FLASH_PROTECT_NONE);
-		for (uint32_t addr = start_addr; addr < (start_addr + len); addr += FLASH_PAGE_SIZE) {
-			bk_flash_write_bytes(addr, buf, FLASH_PAGE_SIZE);
-		}
-		bk_flash_set_protect_type(FLASH_UNPROTECT_LAST_BLOCK);
-		msg = CLI_CMD_RSP_SUCCEED;
 	} else if (os_strcmp(argv[1], "get_id") == 0) {
 		uint32_t flash_id = bk_flash_get_id();
 		CLI_LOGI("flash_id:%x\r\n", flash_id);
 		msg = CLI_CMD_RSP_SUCCEED;
 	} else if (os_strcmp(argv[1], "set_line") == 0) {
-		/*enable FLASH_QUAD_ENABLE first*/
-		uint16_t line_mode = os_strtoul(argv[2], NULL, 16);
-		bk_flash_set_line_mode(line_mode);
-		msg = CLI_CMD_RSP_SUCCEED;
+		if (argc < 3) {
+			cli_flash_help();
+			msg = CLI_CMD_RSP_ERROR;
+		} else {
+			/*enable FLASH_QUAD_ENABLE first*/
+			uint16_t line_mode = os_strtoul(argv[2], NULL, 16);
+			bk_flash_set_line_mode(line_mode);
+			msg = CLI_CMD_RSP_SUCCEED;
+		}
 	} else if (os_strcmp(argv[1], "mutex_test") == 0) {
-		extern void flash_svr_test_task(void * param);
-		int task_pri = os_strtoul(argv[2], NULL, 16);
-		rtos_create_thread(NULL, task_pri, "flash_test", flash_svr_test_task, 2048, NULL);
-		msg = CLI_CMD_RSP_SUCCEED;
+		if (argc < 3) {
+			cli_flash_help();
+			msg = CLI_CMD_RSP_ERROR;
+		} else {
+			extern void flash_svr_test_task(void * param);
+			int task_pri = os_strtoul(argv[2], NULL, 16);
+			rtos_create_thread(NULL, task_pri, "flash_test", flash_svr_test_task, 2048, NULL);
+			msg = CLI_CMD_RSP_SUCCEED;
+		}
 	} else {
 		cli_flash_help();
 		msg = CLI_CMD_RSP_ERROR;

@@ -30,8 +30,6 @@ static int switch_map()
 			otp_map = otp_map_1;
 		} else if (s_flash_otp_config.flash_otp_section_id == 2) {
 			otp_map = otp_map_2;
-		} else if (s_flash_otp_config.flash_otp_section_id == 3) {
-			otp_map = otp_map_3;
 		} else {
 			return -1;
 		}
