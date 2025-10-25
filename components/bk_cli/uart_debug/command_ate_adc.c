@@ -184,6 +184,8 @@ void ate_cali_temperature(const unsigned char *content, UINT8 *tx_buffer)
     uint32_t adc_code32 = 0;
     uint16_t adc_code16 = 0;
     int      ret;
+    uint32_t reg_val;
+    uint32_t temp_result;
 
     /* try to load vdddiv from efuse before calibrate adc */
     ret = sctrl_load_vdddig_from_efuse();
@@ -205,6 +207,10 @@ void ate_cali_temperature(const unsigned char *content, UINT8 *tx_buffer)
         goto done;
     }
 
+    reg_val = sys_ana_ll_get_reg4_value();
+    reg_val &= ~(0x01);
+    sys_ana_ll_set_reg4_value(reg_val);
+
     ret = temp_detect_get_temperature(&adc_code32);
     if ((ret != BK_OK) || (adc_code32 >= 0xFFFF))
     {
@@ -212,7 +218,27 @@ void ate_cali_temperature(const unsigned char *content, UINT8 *tx_buffer)
         goto exit;
     }
     adc_code16 = adc_code32;
-    ret = bk_otp_ahb_update(OTP_GADC_TEMPERATURE, (uint8_t *)&adc_code16, sizeof(adc_code16));
+    bk_printf("tmep code = %d, 0x%x\n", adc_code16, adc_code16);
+
+    temp_result = adc_code16;
+
+    reg_val = sys_ana_ll_get_reg4_value();
+    reg_val |= 0x01;
+    sys_ana_ll_set_reg4_value(reg_val);
+
+    ret = temp_detect_get_temperature(&adc_code32);
+    if ((ret != BK_OK) || (adc_code32 >= 0xFFFF))
+    {
+        tx_buffer[1] = 0xDD;
+        goto exit;
+    }
+    adc_code16 = adc_code32;
+    bk_printf("tmep code = %d, 0x%x\n", adc_code16, adc_code16);
+
+    temp_result = temp_result | (adc_code16 << 16);
+    bk_printf("tmep result = 0x%x\n", temp_result);
+
+    ret = bk_otp_ahb_update(OTP_GADC_TEMPERATURE, (uint8_t *)&temp_result, sizeof(temp_result));
     if (ret != BK_OK)
     {
         tx_buffer[1] = 0xCC;
