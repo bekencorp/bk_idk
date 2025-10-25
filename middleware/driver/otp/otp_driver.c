@@ -305,6 +305,7 @@ uint32_t bk_otp_partical_clean_check_FT(void) {
     return 0;
 }
 
+#if (CONFIG_ATE_TEST)
 uint32_t bk_otp_partical_clean_check_customer(void) {
     uint32_t otp_start;
     uint32_t otp_end;
@@ -314,31 +315,46 @@ uint32_t bk_otp_partical_clean_check_customer(void) {
     OTP_INIT_IF_UNINITIALIZED();
     OTP_ACTIVE(1);
 
-    otp_start = otp1_hal_get_offset(OTP_MEMORY_CHECK_MARK) >> 2;
-    otp_end   = 0x400 >> 2;
+    otp_start = 0x40 >> 2;  // OTP_AES_KEY start
+    otp_end   = 0x400 >> 2;  // OTP1 end
     for (location = otp_start; location < otp_end; location++) {
         value = _otp_read_otp(location);
         if (value != 0) {
             OTP_SLEEP();
             // APB need add 0x400 offset
+            bk_printf("addr(0x%x)=0x%x\n", SOC_OTP_APB_BASE + 0x400 + location, value);
             return SOC_OTP_APB_BASE + 0x400 + location;
         }
     }
-	OTP_SLEEP();
+    OTP_SLEEP();
 
     OTP_ACTIVE(2);
-	otp_start = otp2_hal_get_offset(OTP_RFCALI1) >> 2;
-    otp_end   = otp2_hal_get_offset(OTP_GADC_CALIBRATION) >> 2;
+    otp_start = otp2_hal_get_offset(OTP_RFCALI1) >> 2;  // ft_cali end
+    otp_end   = otp2_hal_get_offset(OTP_GADC_CALIBRATION) >> 2;  // cp_cali begin
     for (location = otp_start; location < otp_end; location++) {
         value = _otp2_read_otp(location);
         if (value != 0) {
             OTP_SLEEP();
+            bk_printf("addr(0x%x)=0x%x\n", SOC_OTP_AHB_BASE + location, value);
             return SOC_OTP_AHB_BASE + location;
         }
     }
+
+    otp_start = 0x600 >> 2;  // cp_cali end
+    otp_end   = 0xC00 >> 2;  // OTP2 end
+    for (location = otp_start; location < otp_end; location++) {
+        value = _otp2_read_otp(location);
+        if (value != 0) {
+            OTP_SLEEP();
+            bk_printf("addr(0x%x)=0x%x\n", SOC_OTP_AHB_BASE + location, value);
+            return SOC_OTP_AHB_BASE + location;
+        }
+    }
+
     OTP_SLEEP();
     return 0;
 }
+#endif
 
 uint32_t bk_otp_partical_clean_check_efuse(void) {
     uint32_t otp_start;
