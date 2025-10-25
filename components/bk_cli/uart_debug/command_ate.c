@@ -1812,6 +1812,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 UINT32 param;
                 static UINT32 ana_reg0x7_bak = 0;
                 static UINT32 ana_reg0x8_bak = 0;
+                static UINT32 ana_reg0x4_bak = 0;
 
                 if ((cnt > 2) && (0 != content[2]))
                 {
@@ -1819,6 +1820,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                     {
                         sys_drv_analog_set(ANALOG_REG7, ana_reg0x7_bak);
                         sys_drv_analog_set(ANALOG_REG8, ana_reg0x8_bak);
+                        sys_drv_analog_set(ANALOG_REG4, ana_reg0x4_bak);
 
                         rwnxl_wakeup();
                         _phy_power_ctrl_wrapper(1);
@@ -1832,28 +1834,37 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                     {
                         ana_reg0x7_bak = sys_drv_analog_get(ANALOG_REG7);
                         ana_reg0x8_bak = sys_drv_analog_get(ANALOG_REG8);
+                        ana_reg0x4_bak = sys_drv_analog_get(ANALOG_REG4);
+
                         // sys_ana_0x48<9>=1
                         param = sys_drv_analog_get(ANALOG_REG8);
                         param |= (0x1 << 9);
                         sys_drv_analog_set(ANALOG_REG8, param);
 
-                        // Measure the voltage of VDDIO(ldoio)  [ 0x2 ]：sys_ana_0x47<15:13>=0x2
+                        // Measure the voltage of VDDIO(ldoio)  [0x2]：sys_ana_0x47<15:13>=0x2
                         param = sys_drv_analog_get(ANALOG_REG7);
                         param &= ~(0x7 << 13);
                         param |= (0x2 << 13);
                         sys_drv_analog_set(ANALOG_REG7, param);
 
-                        // Measure the voltage of VDDDIG(ldodig)  [ 0xA ]:sys_ana_0x48<19:16>=0xA
+                        // Measure the voltage of VDDDIG(ldodig)  [0xB]: sys_ana_0x48<19:16>=0xB
                         param = sys_drv_analog_get(ANALOG_REG8);
                         param &= ~(0xF << 16);
-                        param |= (0xA << 16);
+                        param |= (0xB << 16);
                         sys_drv_analog_set(ANALOG_REG8, param);
 
-                        // Measure the voltage of VDDA(ldoana)  [ 0xB]::sys_ana_0x47<9:6>=0xB
+                        // Measure the voltage of VDDA(ldoana)  [0xB]: sys_ana_0x47<9:6>=0xB
                         param = sys_drv_analog_get(ANALOG_REG7);
                         param &= ~(0xF << 6);
                         param |= (0xB << 6);
                         sys_drv_analog_set(ANALOG_REG7, param);
+
+                        // Measure the voltage of VDDRAM(vddram ldo)  [0x0]: sys_ana_0x44<31>=0x0
+                        param = sys_drv_analog_get(ANALOG_REG4);
+                        param |= (0x1 << 31);
+                        // Measure the voltage of VDDRAM(vddram ldo)  [0x0]: sys_ana_0x44<29:28>=0x0
+                        param &= ~(0x3 << 28);
+                        sys_drv_analog_set(ANALOG_REG4, param);
 
                         rf_module_vote_ctrl(RF_CLOSE,RF_BY_ATE_WIFI_BIT);
                         _phy_power_ctrl_wrapper(0);
