@@ -24,6 +24,8 @@ REBOOT_TAG_AREA_SIZE = 4;
 
 #if CONFIG_CPU0_SRAM_BASE
 __CPU0_APP_RAM_BASE = CONFIG_CPU0_SRAM_BASE;
+#elif CONFIG_DEEP_LV
+__CPU0_APP_RAM_BASE = SOC_SRAM0_DATA_BASE + 0x1000; /* 4K reserved for bootloader */
 #elif CONFIG_DPD_CALI
 __CPU0_APP_RAM_BASE = SOC_SRAM1_DATA_BASE; /* the first SMEM(64K) occupied by dpd-mem-tx */
 #elif CONFIG_SPE
@@ -32,7 +34,9 @@ __CPU0_APP_RAM_BASE = SOC_SRAM0_DATA_BASE;
 __CPU0_APP_RAM_BASE = SOC_SRAM0_DATA_BASE + CONFIG_CPU0_SPE_RAM_SIZE;
 #endif
 
-#if CONFIG_DPD_CALI
+#if CONFIG_DEEP_LV
+__CPU0_APP_RAM_SIZE = (CONFIG_CPU0_SPE_RAM_SIZE - 0x1000 - 0x2800); /* 4K reserved for bootloader,10K reserved for Bootrom*/
+#elif CONFIG_DPD_CALI
 __CPU0_APP_RAM_SIZE = CONFIG_CPU0_SPE_RAM_SIZE - 0x10000; /* the first SMEM(64K) occupied by dpd-mem-tx */
 #elif CONFIG_SPE
 __CPU0_APP_RAM_SIZE = CONFIG_CPU0_SPE_RAM_SIZE;
@@ -40,11 +44,6 @@ __CPU0_APP_RAM_SIZE = CONFIG_CPU0_SPE_RAM_SIZE;
 __CPU0_APP_RAM_SIZE = 0x80000 - CONFIG_CPU0_SPE_RAM_SIZE;
 #endif
 
-#if  CONFIG_DEEP_LV
-#define BOOTLOADER_IRAM_SIZE    0x1000    /* 4K for bootloader iram*/
-#define BOOTROM_STACK_SIZE      0x400     /* 1K for Bootrom stack*/
-__CPU0_APP_RAM_SIZE -= ( BOOTLOADER_IRAM_SIZE + BOOTROM_STACK_SIZE);/* 4K reserved for bootloader,1K reserved for Bootrom*/
-#endif
 /*****************************************************************************
 The follow four shared memory address area mapping to the same physical memory
     0x08000000 ~ 0x080a0000  ---- instruction area, recommend put sram code

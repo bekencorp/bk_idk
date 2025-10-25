@@ -165,6 +165,10 @@ static void sdio_test_tx_tp_thread(void *arg)
 
 		if(s_tx_tp_sub_case[chan_id] == 0)
 		{
+#if (CONFIG_TRNG_SUPPORT)
+			//wait_ms = bk_rand() % 1000;
+			//rtos_delay_milliseconds(wait_ms);
+#endif
 
 			if(s_tx_tp_statistic[chan_id].end_time)
 			{
@@ -197,7 +201,9 @@ static void sdio_test_tx_tp_thread(void *arg)
 		{
 			s_tx_tp_statistic[chan_id].payload_cnt++;
 
-
+#if (CONFIG_TRNG_SUPPORT)
+			//len = bk_rand() % SDIO_TEST_BUFFER_SIZE;
+#endif
 			SDIO_LOG_INFO("pop node, len = %d, size = %d\n", len, size);
 			len = len < size? len : size;
 
@@ -313,6 +319,10 @@ static bk_err_t sdio_test_tx_tp_init(uint32_t chan_id, uint32_t buf_cnt, uint32_
 
 	return ret;
 }
+
+
+
+////////////////////////////////////////////
 
 static bk_err_t sdio_test_tx_sub_case(SDIO_TEST_MSG_T *msg_p)
 {
@@ -737,6 +747,10 @@ static bk_err_t sdio_test_rx_tp_init(uint32_t chan_id, uint32_t buf_cnt, uint32_
 	return ret;
 }
 
+
+
+///////////////////////////////////////////////////////////
+
 static bk_err_t sdio_test_rx_sub_case(SDIO_TEST_MSG_T *msg_p)
 {
 	bk_err_t ret = BK_OK;
@@ -796,7 +810,8 @@ static bk_err_t sdio_test_rx_sub_case(SDIO_TEST_MSG_T *msg_p)
 		case SDIO_TEST_RX_MULTI_PACKETS:
 		{
 			break;
-		}		
+		}
+		
 
 		//chan id, buf_cnt, buf_size
 		case SDIO_TEST_RX_TP_INIT:
@@ -862,7 +877,6 @@ static bk_err_t sdio_test_rx_sub_case(SDIO_TEST_MSG_T *msg_p)
 	}
 
 	SDIO_LOG_DEBUG_FUNCTION_EXIT();
-
 	return ret;
 }
 
@@ -936,6 +950,7 @@ static void sdio_test_thread(void *arg)
 		ret = rtos_pop_from_queue(&s_sdio_test_msg_que, &msg, BEKEN_WAIT_FOREVER);
 		if (kNoErr == ret)
 		{
+			//
 			switch(msg.main_case)
 			{
 				case SDIO_TEST_TX:
@@ -969,6 +984,8 @@ static void sdio_test_thread(void *arg)
 	}
 
 	SDIO_LOG_DEBUG_FUNCTION_EXIT();
+
+	//TODO: Assert
 }
 
 /**

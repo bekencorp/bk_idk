@@ -78,10 +78,8 @@ int32_t sdio_list_dump_info(sdio_node_t *head, sdio_node_t *tail, uint32_t count
 bk_err_t sdio_list_init(uint32_t count, uint32_t size, sdio_node_ptr_t *head_p, sdio_node_ptr_t *tail_p)
 {
 	uint32_t i = 0;
-	sdio_node_t *cur_p = NULL;
+	sdio_node_t *cur_p = NULL, *next_p;
 	uint32_t buf_len = 0;
-	sdio_node_t **allocated_nodes = NULL; // Track allocated nodes for cleanup
-	uint32_t allocated_count = 0;
 
 	if(head_p == NULL || tail_p == NULL)
 	{
@@ -89,61 +87,45 @@ bk_err_t sdio_list_init(uint32_t count, uint32_t size, sdio_node_ptr_t *head_p, 
 		return BK_ERR_SDIO_LIST_INIT;
 	}
 
-	// Handle empty list case
-	if(count == 0) {
-		*head_p = NULL;
-		*tail_p = NULL;
-		return BK_OK;
-	}
-
-	// Allocate array to track nodes for cleanup on failure
-	allocated_nodes = (sdio_node_t **)os_malloc(count * sizeof(sdio_node_t *));
-	if(allocated_nodes == NULL) {
-		SDIO_LOG_ERR("alloc tracking array failed");
-		return BK_ERR_SDIO_NO_MEM;
-	}
-
 	size = ((size + 3) / 4) * 4;	//align to 4 bytes
 	buf_len = sizeof(sdio_node_t) + size;
 #ifdef CONFIG_SDIO_DEBUG_EN
 	buf_len += SDIO_DEBUG_BUFFER_TAIL_LEN;
 #endif
-
-	// Allocate all nodes
-	for(i = 0; i < count; i++)
+	//first node
 	{
-		cur_p = (sdio_node_t *)os_malloc(buf_len);
-		if(cur_p == NULL)
+		cur_p = *head_p = *tail_p = (sdio_node_t *)os_malloc(buf_len);
+		if(*head_p == NULL)
 		{
-			SDIO_LOG_ERR("mem malloc,i=%d,len=%d", i, buf_len);
-			// Cleanup: free all previously allocated nodes
-			for(uint32_t j = 0; j < allocated_count; j++) {
-				os_free(allocated_nodes[j]);
-			}
-			os_free(allocated_nodes);
+			SDIO_LOG_ERR("mem malloc,len=%d", buf_len);		
 			return BK_ERR_SDIO_NO_MEM;
 		}
 
 		cur_p->len = 0;
-		cur_p->next = NULL;
-		
 #ifdef CONFIG_SDIO_DEBUG_EN
-		// Set debug magic value at buffer tail
-		*(uint32_t *)((uint8_t *)cur_p + buf_len - SDIO_DEBUG_BUFFER_TAIL_LEN) = SDIO_DEBUG_MAGIC_VALUE;
+		//TODO:log info
+		*(uint32_t *)(((uint8_t *)cur_p+buf_len-SDIO_DEBUG_BUFFER_TAIL_LEN)) = SDIO_DEBUG_MAGIC_VALUE;
+#endif
+	}
+
+	for(i = 1; i < count; i++)
+	{
+		next_p = (sdio_node_t *)os_malloc(buf_len);
+		if(next_p == NULL)
+		{
+			SDIO_LOG_ERR("mem malloc,i=%d,len=%d", i, buf_len);
+			return BK_ERR_SDIO_NO_MEM;
+		}
+		next_p->len = 0;
+#ifdef CONFIG_SDIO_DEBUG_EN
+		*(uint32_t *)((uint8_t *)(cur_p+buf_len-SDIO_DEBUG_BUFFER_TAIL_LEN)) = SDIO_DEBUG_MAGIC_VALUE;
 #endif
 
-		allocated_nodes[allocated_count++] = cur_p;
-
-		// Link nodes
-		if(i == 0) {
-			*head_p = cur_p;
-		} else {
-			allocated_nodes[i-1]->next = cur_p;
-		}
+		cur_p->next = next_p;
+		cur_p = cur_p->next;
 	}
-	
+	cur_p->next = NULL;
 	*tail_p = cur_p;
-	os_free(allocated_nodes); // Free tracking array
 
 #ifdef CONFIG_SDIO_DEBUG_EN
 	sdio_list_dump_info(*head_p, *tail_p, count);

@@ -2671,6 +2671,7 @@ void  sys_hal_set_cpu_cp_test_config(uint32_t cfg_id)
 		vorehsel = sys_ana_ll_get_reg8_value();
 		vorehsel = (vorehsel & ~(0xF << 16)) | (0x7 << 16);
 		sys_ana_ll_set_reg8_value(vorehsel);
+		spi_latchlb = sys_ana_ll_get_reg8_value();
 		spi_latchlb &= ~(0x1 << 9);
 		sys_ana_ll_set_reg8_value(spi_latchlb);
 
@@ -2692,6 +2693,7 @@ void  sys_hal_set_cpu_cp_test_config(uint32_t cfg_id)
 		vorehsel = sys_ana_ll_get_reg8_value();
 		vorehsel = (vorehsel & ~(0xF << 16)) | (0xB << 16);
 		sys_ana_ll_set_reg8_value(vorehsel);
+		spi_latchlb = sys_ana_ll_get_reg8_value();
 		spi_latchlb &= ~(0x1 << 9);
 		sys_ana_ll_set_reg8_value(spi_latchlb);
 
