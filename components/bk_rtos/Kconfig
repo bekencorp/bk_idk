@@ -97,7 +97,21 @@ menu "Bk_rtos"
 			default 500
 			help
 				System tick count per second, can be 1-1000
-        
+
+		config FREERTOS_TASK_MAX_PRIO
+			depends on FREERTOS
+			int "Set max FreeRTOS task priority"
+			default 10
+			help
+				Set maximum FreeRTOS task priority
+
+		config FREERTOS_TIMER_TASK_PRIO
+			depends on FREERTOS
+			int "Set FreeRTOS timer task priority"
+			default 9
+			help
+				The range is 1 to CONFIG_FREERTOS_MAX_TASK_PRIO
+
         config BK_OS_TIMER_DEBUG
             bool "Enable OS timer Debug"
             default y

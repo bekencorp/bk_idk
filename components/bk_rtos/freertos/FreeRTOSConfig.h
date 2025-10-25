@@ -97,7 +97,7 @@
 
 /* Timers */
 #define configUSE_TIMERS                            ( 1 )
-#define configTIMER_TASK_PRIORITY                   ( configMAX_PRIORITIES - 1 )    //( 5 )
+#define configTIMER_TASK_PRIORITY                   CONFIG_FREERTOS_TIMER_TASK_PRIO
 #define configTIMER_QUEUE_LENGTH                    ( 16 )
 #define configTIMER_TASK_STACK_DEPTH                ( ( unsigned short ) (3072 / sizeof( portSTACK_TYPE )) )
 
@@ -137,7 +137,7 @@
 #define configSUPPORT_STATIC_ALLOCATION            1
 #endif
 
-#define configMAX_PRIORITIES                        ( 10 )
+#define configMAX_PRIORITIES                       CONFIG_FREERTOS_TASK_MAX_PRIO
 #define configUSE_PREEMPTION                        1
 #define configMINIMAL_STACK_SIZE                    ( ( unsigned short ) (768/2) )
 #define configMAX_TASK_NAME_LEN                     ( 16 )
