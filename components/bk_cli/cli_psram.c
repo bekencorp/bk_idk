@@ -857,6 +857,22 @@ static void cli_psram_cmd_handle_ext(char *pcWriteBuffer, int xWriteBufferLen, i
 
 		msg = CLI_CMD_RSP_SUCCEED;
 	}
+	else if (os_strcmp(argv[1], "voltage") == 0)
+	{
+		if (os_strcmp(argv[2], "3_0V") == 0) {
+			bk_psram_set_voltage(PSRAM_OUT_3_0V);
+		} else if (os_strcmp(argv[2], "1_95V") == 0) {
+			bk_psram_set_voltage(PSRAM_OUT_1_95V);
+		} else if (os_strcmp(argv[2], "1_90V") == 0) {
+			bk_psram_set_voltage(PSRAM_OUT_1_90V);
+		} else if (os_strcmp(argv[2], "1_85V") == 0) {
+			bk_psram_set_voltage(PSRAM_OUT_1_85V);
+		} else if (os_strcmp(argv[2], "1_80V") == 0) {
+			bk_psram_set_voltage(PSRAM_OUT_1_80V);
+		}
+
+		msg = CLI_CMD_RSP_SUCCEED;
+	}
 	else if (os_strcmp(argv[1], "byte") == 0)
 	{
 		uint8_t  value = 0;
@@ -913,6 +929,8 @@ static void cli_psram_cmd_handle_ext(char *pcWriteBuffer, int xWriteBufferLen, i
 			goto out;
 		}
 
+		uint32_t value = 0;
+		uint32_t err_flag = 0;
 		addr = os_strtoul(argv[2], NULL, 16);
 		length = os_strtoul(argv[3], NULL, 10);
 		if (length & 0x3)
@@ -926,13 +944,33 @@ static void cli_psram_cmd_handle_ext(char *pcWriteBuffer, int xWriteBufferLen, i
 		}
 		else
 		{
+			err_flag = 0;
 			for (i = 0; i < length; i += 4)
 			{
 				*(((volatile uint32_t *)(addr + i))) = (i << 24) + (i << 16) + (i << 8) + i + 0x11223344;
 			}
+
+			for (i = 0; i < length; i += 4)
+			{
+				value = *(((volatile uint32_t *)(addr + i)));
+
+				if (value != ((i << 24) + (i << 16) + (i << 8) + i + 0x11223344))
+				{
+					err_flag = 1;
+					CLI_LOGI("index:%d, value:%x\r\n", i, value);
+					break;
+				}
+			}
 		}
 
-		msg = CLI_CMD_RSP_SUCCEED;
+		if (err_flag)
+		{
+			msg = CLI_CMD_RSP_ERROR;
+		}
+		else
+		{
+			msg = CLI_CMD_RSP_SUCCEED;
+		}
 	}
 	else if (os_strcmp(argv[1], "rewrite") == 0)
 	{
@@ -995,12 +1033,12 @@ static void cli_psram_cmd_handle_ext(char *pcWriteBuffer, int xWriteBufferLen, i
 			{
 				if ((i % 32) == 0)
 				{
-					CLI_LOGI("\r\n");
+					BK_DUMP_OUT("\r\n");
 				}
 
-				CLI_LOGI("%02x ", *(src + i));
+				BK_DUMP_OUT("%02x ", *(src + i));
 			}
-			CLI_LOGI("\r\n");
+			BK_DUMP_OUT("\r\n");
 			msg = CLI_CMD_RSP_SUCCEED;
 		}
 	}
@@ -1124,6 +1162,104 @@ static void cli_delete_psram_task_handle(char *pcWriteBuffer, int xWriteBufferLe
 	if(psram_task_hdl) {
 		rtos_delete_thread(&psram_task_hdl);
 		psram_task_hdl = NULL;
+	}
+}
+
+static beken_thread_t s_psram_rw_task_hdl = NULL;
+static beken_thread_t s_psram_rw_task_hd2 = NULL;
+
+static void psram_rw_task1(void)
+{
+	uint32_t addr = SOC_PSRAM_DATA_BASE;
+	uint32_t length = 0x400000;
+	uint32_t i = 0;
+	uint32_t value = 0;
+
+	bk_psram_init();
+	while (1) {
+		CLI_LOGI("psram_rw_task1 is running.\r\n");
+		for (i = 0; i < length; i += 4) {
+			*(((volatile uint32_t *)(addr + i))) = 0x55AA55AA;
+		}
+
+		for (i = 0; i < length; i += 4) {
+			value = *(((volatile uint32_t *)(addr + i)));
+
+			if (value != 0x55AA55AA)
+			{
+				CLI_LOGI("index:%d, value:%x\r\n", i, value);
+				break;
+			}
+		}
+	}
+
+	rtos_delete_thread(NULL);
+	s_psram_rw_task_hdl = NULL;
+}
+
+static void psram_rw_task2(void)
+{
+	uint32_t addr = SOC_PSRAM_DATA_BASE + 0x400000;
+	uint32_t length = 0x400000;
+	uint32_t i = 0;
+	uint32_t value = 0;
+
+	bk_psram_init();
+	while (1) {
+		CLI_LOGI("psram_rw_task2 is running.\r\n");
+		for (i = 0; i < length; i += 4) {
+			*(((volatile uint32_t *)(addr + i))) = 0xAA55AA55;
+		}
+
+		for (i = 0; i < length; i += 4) {
+			value = *(((volatile uint32_t *)(addr + i)));
+
+			if (value != 0xAA55AA55)
+			{
+				CLI_LOGI("psram_rw_task2 index:%d, value:%x\r\n", i, value);
+				break;
+			}
+		}
+	}
+
+	rtos_delete_thread(NULL);
+	s_psram_rw_task_hd2 = NULL;
+}
+
+static void cli_psram_multitask_rw_handle(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	bk_err_t ret = BK_OK;
+
+	if (!s_psram_rw_task_hdl)
+	{
+		ret = rtos_create_thread(&s_psram_rw_task_hdl,
+								 4,
+								 "psram_rw_task1",
+								 (beken_thread_function_t)psram_rw_task1,
+								 1024,
+								 (beken_thread_arg_t)NULL);
+		if (ret != BK_OK)
+		{
+			s_psram_rw_task_hdl = NULL;
+			CLI_LOGE("Error: Failed to create psram rw test task1: %d\r\n", ret);
+			return;
+		}
+	}
+
+	if (!s_psram_rw_task_hd2)
+	{
+		ret = rtos_create_thread(&s_psram_rw_task_hd2,
+								 4,
+								 "psram_rw_task2",
+								 (beken_thread_function_t)psram_rw_task2,
+								 1024,
+								 (beken_thread_arg_t)NULL);
+		if (ret != BK_OK)
+		{
+			s_psram_rw_task_hd2 = NULL;
+			CLI_LOGE("Error: Failed to create psram rw test task2: %d\r\n", ret);
+			return;
+		}
 	}
 }
 
@@ -1378,6 +1514,7 @@ static const struct cli_command s_psram_commands[] = {
 #endif
 	{"psram_task_create", "create task on psram", cli_create_psram_task_handle},
 	{"psram_task_delete", "delete task on psram", cli_delete_psram_task_handle},
+	{"psram_multitask_rw", "multiple task read and write", cli_psram_multitask_rw_handle},
 };
 
 int cli_psram_init(void)
