@@ -246,7 +246,7 @@ static int psram_hal_APS6408L_init(uint32_t *id)
 		psram_hal_set_mode_value(PSRAM_MODE3);
 #elif (CONFIG_SOC_BK7239XX)
 	psram_hal_set_mode_value(PSRAM_MODE2);
-	psram_hal_set_reg5_value(0x1703);
+	psram_hal_set_reg5_value(0x1704);
 #else
 	psram_hal_set_mode_value(PSRAM_MODE6);//PSRAM_MODE2
 	//psram_hal_set_reg5_value(0x282);

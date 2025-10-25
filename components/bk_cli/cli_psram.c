@@ -479,6 +479,10 @@ static void psram_calibrate_test(void)
 #endif
 }
 
+#if CONFIG_PSRAM_CALIBRATE && CONFIG_SOC_BK7239N
+static void psram_7239n_calibrate_test(void);
+#endif
+
 static void psram_test_main(void)
 {
 	while (psram_debug->test_running)
@@ -667,6 +671,14 @@ static void cli_psram_cmd_handle(char *pcWriteBuffer, int xWriteBufferLen, int a
 		psram_free(data);
 		msg = CLI_CMD_RSP_SUCCEED;
 	}
+#if CONFIG_PSRAM_CALIBRATE && CONFIG_SOC_BK7239N
+	else if (os_strcmp(argv[1], "calibrate") == 0)
+	{
+		bk_psram_init();
+		psram_7239n_calibrate_test();
+		msg = CLI_CMD_RSP_SUCCEED;
+	}
+#endif
 	else
 	{
 		cli_psram_help();
@@ -1115,6 +1127,246 @@ static void cli_delete_psram_task_handle(char *pcWriteBuffer, int xWriteBufferLe
 	}
 }
 
+#if CONFIG_PSRAM_CALIBRATE && CONFIG_SOC_BK7239N
+typedef struct {
+	uint8_t ds0_delay_t;
+	// uint8_t ds1_delay_t; //16line
+	uint8_t clks_iodrv_t;
+	uint8_t dats_iodrv_t;
+} psram_dly_drv;
+
+static void psram_7239_set_reg5_value(uint32_t value)
+{
+	write_data(SOC_PSRAM_REG_BASE + 0x5 * 4, value);
+}
+
+static void psram_calib_delay(volatile uint32_t times)
+{
+	while(times--);
+}
+
+static int psram_7239n_calibration(uint32_t start_addr, uint32_t test_len)
+{
+	uint32_t i,k,err,val;
+	uint8_t ds0_delay = 0, ds1_delay = 0, clks_iodrv = 0, dats_iodrv = 0;
+	psram_dly_drv *psram_param = (psram_dly_drv *)os_zalloc(512 * sizeof(psram_dly_drv));
+	if (psram_param == NULL) {
+		os_printf("psram_param malloc failed\r\n");
+		return 1;
+	}
+	uint32_t param_ptr_min = 0, param_ptr_max = 0;
+
+	test_len /= 4;
+
+	CLI_LOGI("Start Psram Calib...\r\n");
+
+	// set traversal range
+	for(ds0_delay = 0; ds0_delay <= 7; ds0_delay ++)
+	{
+		for(clks_iodrv = 0; clks_iodrv <= 7; clks_iodrv ++)
+		{
+			for(dats_iodrv = 0; dats_iodrv <= 7; dats_iodrv ++)
+			{
+				psram_7239_set_reg5_value((((uint32_t)ds0_delay)<<0) + (((uint32_t)ds1_delay)<<3) + (((uint32_t)clks_iodrv)<<6) + (((uint32_t)dats_iodrv)<<9) + (1 << 12));
+				psram_calib_delay(100);
+
+				err = 0; k = 1;
+
+				while(k--)
+				{
+					for (i = 0; i < test_len; i++)
+					{
+						write_data((start_addr + i * 0x4), 0x11111111 + i);
+					}
+					psram_calib_delay(100);
+					for (i = 0; i < test_len; i++)
+					{
+						val = get_addr_data(start_addr + i * 0x4);
+						if ((val != (0x11111111 + i)))
+						{
+							err = 1;
+							break;
+						}
+					}
+				}
+
+				if(err == 0)
+				{
+					printf("calib success: ds0_delay=%d,clks_iodrv=%d,dats_iodrv=%d\n",ds0_delay,clks_iodrv,dats_iodrv);
+					psram_param[param_ptr_max].ds0_delay_t =  ds0_delay;
+					psram_param[param_ptr_max].clks_iodrv_t =  clks_iodrv;
+					psram_param[param_ptr_max].dats_iodrv_t =  dats_iodrv;
+					param_ptr_max = param_ptr_max + 1;
+				}
+			}
+		}
+	}
+
+	//no successful parameter
+	if(param_ptr_max == 0)
+		return 1;//err
+
+	//find mid parameter
+	uint32_t param_min,param_max;
+	char flag;
+	param_ptr_max = param_ptr_max -1;
+
+	flag = 1;
+	param_min = psram_param[param_ptr_min].ds0_delay_t;
+	param_max = psram_param[param_ptr_max].ds0_delay_t;
+	while(flag){
+		if((param_max == param_min) || (param_ptr_max == param_ptr_min))
+		{
+			ds0_delay = param_min;
+			flag = 0;
+		}
+		else if((param_max - param_min == 1) || (param_ptr_max - param_ptr_min == 1))
+		{
+			ds0_delay = param_min;
+			flag = 0;
+
+			while(psram_param[param_ptr_max].ds0_delay_t != param_min)
+			{
+				param_ptr_max--;
+			}
+			param_max = psram_param[param_ptr_max].ds0_delay_t;
+		}
+		else
+		{
+			while(psram_param[param_ptr_min].ds0_delay_t == param_min)
+			{
+				param_ptr_min++;
+			}
+			param_min = psram_param[param_ptr_min].ds0_delay_t;
+
+			while(psram_param[param_ptr_max].ds0_delay_t == param_max)
+			{
+				param_ptr_max--;
+			}
+			param_max = psram_param[param_ptr_max].ds0_delay_t;
+		}
+	}
+
+	// printf("ds0 param_min:%d, param_ptr_min:%d, param_max:%d, param_ptr_max:%d\n",param_min,param_ptr_min,param_max,param_ptr_max);
+	for (k = param_ptr_min; k <= param_ptr_max; k++) {
+		printf("ds0 calib success[%u]: ds0_delay=%u, clks_iodrv=%u, dats_iodrv=%u\r\n",
+				k,
+				psram_param[k].ds0_delay_t,
+				psram_param[k].clks_iodrv_t,
+				psram_param[k].dats_iodrv_t);
+	}
+
+	flag = 1;
+	param_min = psram_param[param_ptr_min].clks_iodrv_t;
+	param_max = psram_param[param_ptr_max].clks_iodrv_t;
+	while(flag)
+	{
+		if((param_max == param_min) || (param_ptr_max == param_ptr_min))
+		{
+			clks_iodrv = param_max;
+			flag = 0;
+		}
+		else if((param_max - param_min == 1) || (param_ptr_max - param_ptr_min == 1))
+		{
+			clks_iodrv = param_max;
+			flag = 0;
+
+			while(psram_param[param_ptr_min].clks_iodrv_t != param_max)
+			{
+				param_ptr_min++;
+			}
+			param_min = psram_param[param_ptr_min].clks_iodrv_t;
+		}
+		else
+		{
+			while(psram_param[param_ptr_min].clks_iodrv_t == param_min)
+			{
+				param_ptr_min++;
+			}
+			param_min = psram_param[param_ptr_min].clks_iodrv_t;
+
+			while(psram_param[param_ptr_max].clks_iodrv_t == param_max)
+			{
+				param_ptr_max--;
+			}
+			param_max = psram_param[param_ptr_max].clks_iodrv_t;
+		}
+	}
+	//printf("clks param_min:%d,param_ptr_min:%d,param_max:%d,param_ptr_max:%d\n",param_min,param_ptr_min,param_max,param_ptr_max);
+	for (k = param_ptr_min; k <= param_ptr_max; k++) {
+		printf("clks calib success[%u]: ds0_delay=%u,clks_iodrv=%u,dats_iodrv=%u\r\n",
+				k,
+				psram_param[k].ds0_delay_t,
+				psram_param[k].clks_iodrv_t,
+				psram_param[k].dats_iodrv_t);
+	}
+
+	flag = 1;
+	param_min = psram_param[param_ptr_min].dats_iodrv_t;
+	param_max = psram_param[param_ptr_max].dats_iodrv_t;
+	while(flag)
+	{
+		if((param_max == param_min) || (param_ptr_max == param_ptr_min))
+		{
+			dats_iodrv = param_min;
+			flag = 0;
+		}
+		else if((param_max - param_min == 1) || (param_ptr_max - param_ptr_min == 1))
+		{
+			dats_iodrv = param_min;
+			flag = 0;
+
+			while(psram_param[param_ptr_max].dats_iodrv_t != param_min)
+			{
+				param_ptr_max--;
+			}
+			param_max = psram_param[param_ptr_max].dats_iodrv_t;
+		}
+		else
+		{
+			while(psram_param[param_ptr_min].dats_iodrv_t == param_min)
+			{
+				param_ptr_min++;
+			}
+			param_min = psram_param[param_ptr_min].dats_iodrv_t;
+
+			while(psram_param[param_ptr_max].dats_iodrv_t == param_max)
+			{
+				param_ptr_max--;
+			}
+			param_max = psram_param[param_ptr_max].dats_iodrv_t;
+		}
+	}
+	for (k = param_ptr_min; k <= param_ptr_max; k++) {
+		printf("dats calib success[%u]: ds0_delay=%u, clks_iodrv=%u, dats_iodrv=%u\r\n",
+				k,
+				psram_param[k].ds0_delay_t,
+				psram_param[k].clks_iodrv_t,
+				psram_param[k].dats_iodrv_t);
+	}
+
+	CLI_LOGI("calib result: ds0_delay = %d, clks_iodrv = %d, dats_iodrv = %d\n",ds0_delay,clks_iodrv,dats_iodrv);
+	psram_7239_set_reg5_value((((uint32_t)ds0_delay)<<0) + (((uint32_t)ds1_delay)<<3) + (((uint32_t)clks_iodrv)<<6) + (((uint32_t)dats_iodrv)<<9) + (1 << 12));
+	if (psram_param) {
+		os_free(psram_param);
+		psram_param = NULL;
+	}
+
+	return 0;
+}
+
+static void psram_7239n_calibrate_test(void)
+{
+	bk_err_t ret = 0;
+
+	ret = psram_7239n_calibration(SOC_PSRAM_DATA_BASE, SOC_PSRAM_8M_SIZE);
+	if (ret == BK_OK) {
+		os_printf("psram calibrate success\r\n");
+	} else {
+		os_printf("psram calibrate failed\r\n");
+	}
+}
+#endif
 
 #define PSRAM_CNT (sizeof(s_psram_commands) / sizeof(struct cli_command))
 static const struct cli_command s_psram_commands[] = {

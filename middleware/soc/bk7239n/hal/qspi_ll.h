@@ -26,12 +26,12 @@ extern "C" {
 #define QSPI_LL_REG_BASE(_qspi_unit_id)            (SOC_QSPI0_REG_BASE)
 #define QSPI_DATA_LL_REG_BASE(_qspi_unit_id)       (SOC_QSPI0_DATA_BASE)
 
-#define QSPI0_LL_CLK_PIN     GPIO_2
-#define QSPI0_LL_CSN_PIN     GPIO_3
-#define QSPI0_LL_IO0_PIN     GPIO_4
-#define QSPI0_LL_IO1_PIN     GPIO_5
-#define QSPI0_LL_IO2_PIN     GPIO_6
-#define QSPI0_LL_IO3_PIN     GPIO_7
+#define QSPI0_LL_CLK_PIN     GPIO_14
+#define QSPI0_LL_CSN_PIN     GPIO_15
+#define QSPI0_LL_IO0_PIN     GPIO_16
+#define QSPI0_LL_IO1_PIN     GPIO_17
+#define QSPI0_LL_IO2_PIN     GPIO_18
+#define QSPI0_LL_IO3_PIN     GPIO_19
 
 #define READ_ID_CMD            0x9F
 #define ENTER_QUAD_MODE_CMD    0x35
