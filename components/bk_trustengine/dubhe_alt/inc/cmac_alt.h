@@ -47,14 +47,24 @@ struct mbedtls_cmac_context_t {
 #endif
 };
 
-#define mbedtls_cipher_cmac_starts                   dubhe_cmac_starts
-#define mbedtls_cipher_cmac_update                   dubhe_cmac_update
-#define mbedtls_cipher_cmac_finish                   dubhe_cmac_finish
-#define mbedtls_cmac_free                            dubhe_cmac_free
-#define mbedtls_cipher_cmac                          dubhe_cipher_cmac
-#define mbedtls_cipher_cmac_starts_with_derived_key  dubhe_cmac_starts_with_derived_key
-#define mbedtls_cipher_cmac_reset                    dubhe_cmac_reset
-#define mbedtls_aes_cmac_prf_128                     dubhe_cmac_prf_128
+int dubhe_cmac_starts(mbedtls_cipher_context_t *ctx, const unsigned char *key, size_t keybits);
+int dubhe_cmac_starts_with_derived_key(mbedtls_cipher_context_t *ctx, int key_type, const unsigned char *ek1, const unsigned char *ek2, const unsigned char *ek3, unsigned int ek1bits);
+int dubhe_cmac_update(mbedtls_cipher_context_t *ctx, const unsigned char *input, size_t ilen);
+int dubhe_cmac_finish(mbedtls_cipher_context_t *ctx, unsigned char *output);
+void dubhe_cmac_free(mbedtls_cmac_context_t *ctx);
+int dubhe_cipher_cmac(const mbedtls_cipher_info_t *cipher_info, const unsigned char *key, size_t keylen, const unsigned char *input, size_t ilen, unsigned char *output);
+int dubhe_cmac_reset(mbedtls_cipher_context_t *ctx);
+int dubhe_cmac_prf_128(const unsigned char *key, size_t key_length, const unsigned char *input, size_t in_len, unsigned char *output);
+
+int mbedtls_cipher_cmac_starts(mbedtls_cipher_context_t *ctx, const unsigned char *key, size_t keybits);
+int mbedtls_cipher_cmac_starts_with_derived_key(mbedtls_cipher_context_t *ctx, int key_type, const unsigned char *ek1, const unsigned char *ek2, const unsigned char *ek3, unsigned int ek1bits);
+int mbedtls_cipher_cmac_update(mbedtls_cipher_context_t *ctx, const unsigned char *input, size_t ilen);
+int mbedtls_cipher_cmac_finish(mbedtls_cipher_context_t *ctx, unsigned char *output);
+void mbedtls_cmac_free(mbedtls_cmac_context_t *ctx);
+int mbedtls_cipher_cmac(const mbedtls_cipher_info_t *cipher_info, const unsigned char *key, size_t keylen, const unsigned char *input, size_t ilen, unsigned char *output);
+int mbedtls_cipher_cmac_reset(mbedtls_cipher_context_t *ctx);
+int mbedtls_aes_cmac_prf_128(const unsigned char *key, size_t key_length, const unsigned char *input, size_t in_len, unsigned char *output);
+
 
 /**
  * \brief               This function sets the CMAC key, and prepares to authenticate

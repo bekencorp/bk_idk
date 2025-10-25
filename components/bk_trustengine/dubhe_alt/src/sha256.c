@@ -183,3 +183,69 @@ int dubhe_sha256_finish( mbedtls_sha256_context *ctx,
 #endif
 
 #endif /* MBEDTLS_SHA256_ALT */
+
+#if defined(MBEDTLS_SHA256_ALT)
+
+void mbedtls_sha256_init( mbedtls_sha256_context *ctx )
+{
+    dubhe_sha256_init( ctx );
+}
+
+void mbedtls_sha256_free( mbedtls_sha256_context *ctx )
+{
+    dubhe_sha256_free( ctx );
+}
+
+void mbedtls_sha256_clone( mbedtls_sha256_context *dst, const mbedtls_sha256_context *src )
+{
+    dubhe_sha256_clone( dst, src );
+}
+
+int mbedtls_sha256_starts_ret( mbedtls_sha256_context *ctx, int is224 )
+{
+    return dubhe_sha256_starts_ret( ctx, is224 );
+}
+
+int mbedtls_sha256_update_ret( mbedtls_sha256_context *ctx, const unsigned char *input, size_t ilen )
+{
+    return dubhe_sha256_update_ret( ctx, input, ilen );
+}
+
+int mbedtls_sha256_finish_ret( mbedtls_sha256_context *ctx, unsigned char output[32] )
+{
+    return dubhe_sha256_finish_ret( ctx, output );
+}
+
+int mbedtls_internal_sha256_process( mbedtls_sha256_context *ctx, const unsigned char data[64] )
+{
+    return dubhe_internal_sha256_process( ctx, data );
+}
+
+int mbedtls_internal_sha224_process( mbedtls_sha256_context *ctx, const unsigned char data[64] )
+{
+    return dubhe_internal_sha224_process( ctx, data );
+}
+
+#if !defined( MBEDTLS_DEPRECATED_REMOVED )
+int mbedtls_sha256_starts( mbedtls_sha256_context *ctx, int is224 )
+{
+    return dubhe_sha256_starts( ctx, is224 );
+}
+
+int mbedtls_sha256_update( mbedtls_sha256_context *ctx, const unsigned char *input, size_t ilen )
+{
+    return dubhe_sha256_update( ctx, input, ilen );
+}
+
+int mbedtls_sha256_finish( mbedtls_sha256_context *ctx, unsigned char *output )
+{
+    return dubhe_sha256_finish( ctx, output );
+}
+
+void mbedtls_sha256_process( mbedtls_sha256_context *ctx, const unsigned char data[64] )
+{
+    dubhe_sha256_process( ctx, data );
+}
+#endif
+
+#endif /* MBEDTLS_SHA256_ALT */

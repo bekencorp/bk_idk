@@ -927,4 +927,97 @@ exit:
 #endif
 
 #endif
-#endif /* !MBEDTLS_AES_ALT */
+
+void mbedtls_aes_init( mbedtls_aes_context *ctx )
+{
+    dubhe_aes_init( ctx );
+}
+
+void mbedtls_aes_free( mbedtls_aes_context *ctx )
+{
+    dubhe_aes_free( ctx );
+}
+
+int mbedtls_aes_setkey_enc( mbedtls_aes_context *ctx, const unsigned char *key, unsigned int keybits )
+{
+    return dubhe_aes_setkey_enc( ctx, key, keybits );
+}
+
+int mbedtls_aes_setkey_dec( mbedtls_aes_context *ctx, const unsigned char *key, unsigned int keybits )
+{
+    return dubhe_aes_setkey_dec( ctx, key, keybits );
+}
+
+int mbedtls_aes_crypt_ecb( mbedtls_aes_context *ctx, int mode, const unsigned char input[16], unsigned char output[16] )
+{
+    return dubhe_aes_crypt_ecb( ctx, mode, input, output );
+}
+
+int mbedtls_aes_crypt_cbc( mbedtls_aes_context *ctx, int mode, size_t length, unsigned char iv[16], const unsigned char *input, unsigned char *output )
+{
+    return dubhe_aes_crypt_cbc( ctx, mode, length, iv, input, output );
+}
+
+int mbedtls_aes_crypt_cfb128( mbedtls_aes_context *ctx, int mode, size_t length, size_t *iv_off, unsigned char iv[16], const unsigned char *input, unsigned char *output )
+{
+    return dubhe_aes_crypt_cfb128( ctx, mode, length, iv_off, iv, input, output );
+}
+
+int mbedtls_aes_crypt_cfb8( mbedtls_aes_context *ctx, int mode, size_t length, unsigned char iv[16], const unsigned char *input, unsigned char *output )
+{
+    return dubhe_aes_crypt_cfb8( ctx, mode, length, iv, input, output );
+}
+
+int mbedtls_aes_crypt_ctr( mbedtls_aes_context *ctx, size_t length, size_t *nc_off, unsigned char nonce_counter[16], unsigned char stream_block[16], const unsigned char *input, unsigned char *output )
+{
+    return dubhe_aes_crypt_ctr( ctx, length, nc_off, nonce_counter, stream_block, input, output );
+}
+
+int mbedtls_aes_crypt_ofb( mbedtls_aes_context *ctx, size_t length, size_t *iv_off, unsigned char iv[16], const unsigned char *input, unsigned char *output )
+{
+    return dubhe_aes_crypt_ofb( ctx, length, iv_off, iv, input, output );
+}
+
+int mbedtls_internal_aes_encrypt( mbedtls_aes_context *ctx, const unsigned char input[16], unsigned char output[16] )
+{
+    return dubhe_internal_aes_encrypt( ctx, input, output );
+}
+
+int mbedtls_internal_aes_decrypt( mbedtls_aes_context *ctx, const unsigned char input[16], unsigned char output[16] )
+{
+    return dubhe_internal_aes_decrypt( ctx, input, output );
+}
+
+int mbedtls_aes_set_derived_key( mbedtls_aes_context *ctx, int key_type, int mode, const unsigned char *ek1, const unsigned char *ek2, const unsigned char *ek3, unsigned int ek1bits )
+{
+    return dubhe_aes_set_derived_key( ctx, key_type, mode, ek1, ek2, ek3, ek1bits );
+}
+
+#if defined(MBEDTLS_CIPHER_MODE_XTS)
+void mbedtls_aes_xts_init( mbedtls_aes_xts_context *ctx )
+{
+    dubhe_aes_xts_init( ctx );
+}
+
+void mbedtls_aes_xts_free( mbedtls_aes_xts_context *ctx )
+{
+    dubhe_aes_xts_free( ctx );
+}
+
+int mbedtls_aes_xts_setkey_enc( mbedtls_aes_xts_context *ctx, const unsigned char *key, unsigned int keybits )
+{
+    return dubhe_aes_xts_setkey_enc( ctx, key, keybits );
+}
+
+int mbedtls_aes_xts_setkey_dec( mbedtls_aes_xts_context *ctx, const unsigned char *key, unsigned int keybits )
+{
+    return dubhe_aes_xts_setkey_dec( ctx, key, keybits );
+}
+
+int mbedtls_aes_crypt_xts( mbedtls_aes_xts_context *ctx, int mode, size_t length, const unsigned char data_unit[16], const unsigned char *input, unsigned char *output )
+{
+    return dubhe_aes_crypt_xts( ctx, mode, length, data_unit, input, output );
+}
+#endif
+
+#endif /* MBEDTLS_AES_ALT */

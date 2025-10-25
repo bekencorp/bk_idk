@@ -41,66 +41,51 @@ typedef struct mbedtls_aes_xts_context
 #define MBEDTLS_AES_DERIVED_MODEL_KEY       0
 #define MBEDTLS_AES_DERIVED_DEVICE_ROOT_KEY 1
 
-int dubhe_aes_set_derived_key( mbedtls_aes_context *ctx,
-                          int key_type,
-                          int mode,
-                          const unsigned char *ek1,
-                          const unsigned char *ek2,
-                          const unsigned char *ek3,
-                          unsigned int ek1bits );
-
-int dubhe_aes_crypt_cbc( mbedtls_aes_context *ctx,
-						 int mode,
-						 size_t length,
-						 unsigned char iv[16],
-						 const unsigned char *input,
-						 unsigned char *output );
-
-int dubhe_aes_crypt_ctr( mbedtls_aes_context *ctx,
-						 size_t length,
-						 size_t *nc_off,
-						 unsigned char nonce_counter[16],
-						 unsigned char stream_block[16],
-						 const unsigned char *input,
-						 unsigned char *output );
+void dubhe_aes_init( mbedtls_aes_context *ctx );
+void dubhe_aes_free( mbedtls_aes_context *ctx );
+int dubhe_aes_setkey_enc( mbedtls_aes_context *ctx, const unsigned char *key, unsigned int keybits );
+int dubhe_aes_setkey_dec( mbedtls_aes_context *ctx, const unsigned char *key, unsigned int keybits );
+int dubhe_aes_crypt_ecb( mbedtls_aes_context *ctx, int mode, const unsigned char input[16], unsigned char output[16] );
+int dubhe_aes_crypt_cbc( mbedtls_aes_context *ctx, int mode, size_t length, unsigned char iv[16], const unsigned char *input, unsigned char *output );
+int dubhe_aes_crypt_cfb128( mbedtls_aes_context *ctx, int mode, size_t length, size_t *iv_off, unsigned char iv[16], const unsigned char *input, unsigned char *output );
+int dubhe_aes_crypt_cfb8( mbedtls_aes_context *ctx, int mode, size_t length, unsigned char iv[16], const unsigned char *input, unsigned char *output );
+int dubhe_aes_crypt_ctr( mbedtls_aes_context *ctx, size_t length, size_t *nc_off, unsigned char nonce_counter[16], unsigned char stream_block[16], const unsigned char *input, unsigned char *output );
+int dubhe_aes_crypt_ofb( mbedtls_aes_context *ctx, size_t length, size_t *iv_off, unsigned char iv[16], const unsigned char *input, unsigned char *output );
+int dubhe_internal_aes_encrypt( mbedtls_aes_context *ctx, const unsigned char input[16], unsigned char output[16] );
+int dubhe_internal_aes_decrypt( mbedtls_aes_context *ctx, const unsigned char input[16], unsigned char output[16] );
+int dubhe_aes_set_derived_key( mbedtls_aes_context *ctx, int key_type, int mode, const unsigned char *ek1, const unsigned char *ek2, const unsigned char *ek3, unsigned int ek1bits );
 
 #if defined(MBEDTLS_CIPHER_MODE_XTS)
 void dubhe_aes_xts_init( mbedtls_aes_xts_context *ctx );
-int dubhe_aes_xts_setkey_enc( mbedtls_aes_xts_context *ctx,
-                                const unsigned char *key,
-                                unsigned int keybits);
-int dubhe_aes_xts_setkey_dec( mbedtls_aes_xts_context *ctx,
-                                const unsigned char *key,
-                                unsigned int keybits);
-int dubhe_aes_crypt_xts( mbedtls_aes_xts_context *ctx,
-                           int mode,
-                           size_t length,
-                           const unsigned char data_unit[16],
-                           const unsigned char *input,
-                           unsigned char *output);
+void dubhe_aes_xts_free( mbedtls_aes_xts_context *ctx );
+int dubhe_aes_xts_setkey_enc( mbedtls_aes_xts_context *ctx, const unsigned char *key, unsigned int keybits );
+int dubhe_aes_xts_setkey_dec( mbedtls_aes_xts_context *ctx, const unsigned char *key, unsigned int keybits );
+int dubhe_aes_crypt_xts( mbedtls_aes_xts_context *ctx, int mode, size_t length, const unsigned char data_unit[16], const unsigned char *input, unsigned char *output );
 #endif
 
-#define mbedtls_aes_init                dubhe_aes_init
-#define mbedtls_aes_free                dubhe_aes_free
-#define mbedtls_aes_setkey_enc          dubhe_aes_setkey_enc
-#define mbedtls_aes_set_derived_key     dubhe_aes_set_derived_key
-#define mbedtls_aes_setkey_dec          dubhe_aes_setkey_dec
-#define mbedtls_aes_crypt_ecb           dubhe_aes_crypt_ecb
-#define mbedtls_aes_crypt_cbc           dubhe_aes_crypt_cbc
-#define mbedtls_aes_crypt_cfb128        dubhe_aes_crypt_cfb128
-#define mbedtls_aes_crypt_cfb8          dubhe_aes_crypt_cfb8
-#define mbedtls_aes_crypt_ctr           dubhe_aes_crypt_ctr
-#define mbedtls_aes_crypt_ofb           dubhe_aes_crypt_ofb
-#define mbedtls_internal_aes_encrypt    dubhe_internal_aes_encrypt
-#define mbedtls_internal_aes_decrypt    dubhe_internal_aes_decrypt
+
+void mbedtls_aes_init( mbedtls_aes_context *ctx );
+void mbedtls_aes_free( mbedtls_aes_context *ctx );
+int mbedtls_aes_setkey_enc( mbedtls_aes_context *ctx, const unsigned char *key, unsigned int keybits );
+int mbedtls_aes_setkey_dec( mbedtls_aes_context *ctx, const unsigned char *key, unsigned int keybits );
+int mbedtls_aes_crypt_ecb( mbedtls_aes_context *ctx, int mode, const unsigned char input[16], unsigned char output[16] );
+int mbedtls_aes_crypt_cbc( mbedtls_aes_context *ctx, int mode, size_t length, unsigned char iv[16], const unsigned char *input, unsigned char *output );
+int mbedtls_aes_crypt_cfb128( mbedtls_aes_context *ctx, int mode, size_t length, size_t *iv_off, unsigned char iv[16], const unsigned char *input, unsigned char *output );
+int mbedtls_aes_crypt_cfb8( mbedtls_aes_context *ctx, int mode, size_t length, unsigned char iv[16], const unsigned char *input, unsigned char *output );
+int mbedtls_aes_crypt_ctr( mbedtls_aes_context *ctx, size_t length, size_t *nc_off, unsigned char nonce_counter[16], unsigned char stream_block[16], const unsigned char *input, unsigned char *output );
+int mbedtls_aes_crypt_ofb( mbedtls_aes_context *ctx, size_t length, size_t *iv_off, unsigned char iv[16], const unsigned char *input, unsigned char *output );
+int mbedtls_internal_aes_encrypt( mbedtls_aes_context *ctx, const unsigned char input[16], unsigned char output[16] );
+int mbedtls_internal_aes_decrypt( mbedtls_aes_context *ctx, const unsigned char input[16], unsigned char output[16] );
+int mbedtls_aes_set_derived_key( mbedtls_aes_context *ctx, int key_type, int mode, const unsigned char *ek1, const unsigned char *ek2, const unsigned char *ek3, unsigned int ek1bits );
 
 #if defined(MBEDTLS_CIPHER_MODE_XTS)
-#define mbedtls_aes_xts_setkey_enc      dubhe_aes_xts_setkey_enc
-#define mbedtls_aes_xts_setkey_dec      dubhe_aes_xts_setkey_dec
-#define mbedtls_aes_crypt_xts           dubhe_aes_crypt_xts
-#define mbedtls_aes_xts_init            dubhe_aes_xts_init
-#define mbedtls_aes_xts_free            dubhe_aes_xts_free
-#endif // MBEDTLS_CIPHER_MODE_XTS
+void mbedtls_aes_xts_init( mbedtls_aes_xts_context *ctx );
+void mbedtls_aes_xts_free( mbedtls_aes_xts_context *ctx );
+int mbedtls_aes_xts_setkey_enc( mbedtls_aes_xts_context *ctx, const unsigned char *key, unsigned int keybits );
+int mbedtls_aes_xts_setkey_dec( mbedtls_aes_xts_context *ctx, const unsigned char *key, unsigned int keybits );
+int mbedtls_aes_crypt_xts( mbedtls_aes_xts_context *ctx, int mode, size_t length, const unsigned char data_unit[16], const unsigned char *input, unsigned char *output );
+#endif
+
 #endif /*end MBEDTLS_AES_ALT */
 #ifdef __cplusplus
 }

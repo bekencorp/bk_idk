@@ -118,6 +118,7 @@ list(APPEND srcs
 	mbedtls/library/psa_crypto_pake.c
 	mbedtls/library/psa_crypto_se.c
 	mbedtls/library/psa_crypto_storage.c
+	mbedtls/library/version.c
 )
 
 if(CONFIG_MBEDTLS_CERTIFICATE_BUNDLE)

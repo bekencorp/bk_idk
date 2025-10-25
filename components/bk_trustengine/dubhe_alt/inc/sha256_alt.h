@@ -26,7 +26,8 @@ extern "C" {
 
 #if defined(MBEDTLS_SHA256_ALT)
 #include "dubhe_hash.h"
-/*
+
+/**
  * \brief          SHA-1 context structure
  */
 typedef arm_ce_hash_context_t mbedtls_sha256_context;
@@ -40,23 +41,37 @@ typedef arm_ce_hash_context_t mbedtls_sha256_context;
 #define MBEDTLS_ERR_SHA256_CTX_NULL     -0x00E4
 #endif
 
-#define mbedtls_sha256_init dubhe_sha256_init
-#define mbedtls_sha256_free dubhe_sha256_free
-#define mbedtls_sha256_clone dubhe_sha256_clone
-#define mbedtls_sha256_starts_ret dubhe_sha256_starts_ret
-#define mbedtls_sha256_update_ret dubhe_sha256_update_ret
-#define mbedtls_sha256_finish_ret dubhe_sha256_finish_ret
-#define mbedtls_internal_sha256_process dubhe_internal_sha256_process
-#define mbedtls_sha256_starts dubhe_sha256_starts
-#define mbedtls_sha256_update dubhe_sha256_update
-#define mbedtls_sha256_finish dubhe_sha256_finish
-#define mbedtls_sha256_process dubhe_sha256_process
+void dubhe_sha256_init( mbedtls_sha256_context *ctx );
+void dubhe_sha256_free( mbedtls_sha256_context *ctx );
+void dubhe_sha256_clone( mbedtls_sha256_context *dst, const mbedtls_sha256_context *src );
+int dubhe_sha256_starts_ret( mbedtls_sha256_context *ctx, int is224 );
+int dubhe_sha256_update_ret( mbedtls_sha256_context *ctx, const unsigned char *input, size_t ilen );
+int dubhe_sha256_finish_ret( mbedtls_sha256_context *ctx, unsigned char output[32] );
+int dubhe_internal_sha256_process( mbedtls_sha256_context *ctx, const unsigned char data[64] );
+int dubhe_internal_sha224_process( mbedtls_sha256_context *ctx, const unsigned char data[64] );
 
-int dubhe_internal_sha256_process( mbedtls_sha256_context *ctx,
-                                const unsigned char data[64] );
+#if !defined( MBEDTLS_DEPRECATED_REMOVED )
+int dubhe_sha256_starts( mbedtls_sha256_context *ctx, int is224 );
+int dubhe_sha256_update( mbedtls_sha256_context *ctx, const unsigned char *input, size_t ilen );
+int dubhe_sha256_finish( mbedtls_sha256_context *ctx, unsigned char *output );
+void dubhe_sha256_process( mbedtls_sha256_context *ctx, const unsigned char data[64] );
+#endif
 
-int dubhe_internal_sha224_process( mbedtls_sha256_context *ctx,
-                                const unsigned char data[64] );
+void mbedtls_sha256_init( mbedtls_sha256_context *ctx );
+void mbedtls_sha256_free( mbedtls_sha256_context *ctx );
+void mbedtls_sha256_clone( mbedtls_sha256_context *dst, const mbedtls_sha256_context *src );
+int mbedtls_sha256_starts_ret( mbedtls_sha256_context *ctx, int is224 );
+int mbedtls_sha256_update_ret( mbedtls_sha256_context *ctx, const unsigned char *input, size_t ilen );
+int mbedtls_sha256_finish_ret( mbedtls_sha256_context *ctx, unsigned char output[32] );
+int mbedtls_internal_sha256_process( mbedtls_sha256_context *ctx, const unsigned char data[64] );
+int mbedtls_internal_sha224_process( mbedtls_sha256_context *ctx, const unsigned char data[64] );
+
+#if !defined( MBEDTLS_DEPRECATED_REMOVED )
+int mbedtls_sha256_starts( mbedtls_sha256_context *ctx, int is224 );
+int mbedtls_sha256_update( mbedtls_sha256_context *ctx, const unsigned char *input, size_t ilen );
+int mbedtls_sha256_finish( mbedtls_sha256_context *ctx, unsigned char *output );
+void mbedtls_sha256_process( mbedtls_sha256_context *ctx, const unsigned char data[64] );
+#endif
 
 #endif /*MBEDTLS_SHA256_ALT*/
 

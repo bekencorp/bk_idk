@@ -176,3 +176,64 @@ int dubhe_sha1_finish( mbedtls_sha1_context *ctx, unsigned char output[20] )
 #endif
 
 #endif /* !MBEDTLS_SHA1_ALT */
+
+#if defined(MBEDTLS_SHA1_ALT)
+
+void mbedtls_sha1_init( mbedtls_sha1_context *ctx )
+{
+    dubhe_sha1_init( ctx );
+}
+
+void mbedtls_sha1_free( mbedtls_sha1_context *ctx )
+{
+    dubhe_sha1_free( ctx );
+}
+
+void mbedtls_sha1_clone( mbedtls_sha1_context *dst, const mbedtls_sha1_context *src )
+{
+    dubhe_sha1_clone( dst, src );
+}
+
+int mbedtls_sha1_starts_ret( mbedtls_sha1_context *ctx )
+{
+    return dubhe_sha1_starts_ret( ctx );
+}
+
+int mbedtls_sha1_update_ret( mbedtls_sha1_context *ctx, const unsigned char *input, size_t ilen )
+{
+    return dubhe_sha1_update_ret( ctx, input, ilen );
+}
+
+int mbedtls_sha1_finish_ret( mbedtls_sha1_context *ctx, unsigned char output[20] )
+{
+    return dubhe_sha1_finish_ret( ctx, output );
+}
+
+int mbedtls_internal_sha1_process( mbedtls_sha1_context *ctx, const unsigned char data[64] )
+{
+    return dubhe_internal_sha1_process( ctx, data );
+}
+
+#if !defined( MBEDTLS_DEPRECATED_REMOVED )
+int mbedtls_sha1_starts( mbedtls_sha1_context *ctx )
+{
+    return dubhe_sha1_starts( ctx );
+}
+
+int mbedtls_sha1_update( mbedtls_sha1_context *ctx, const unsigned char *input, size_t ilen )
+{
+    return dubhe_sha1_update( ctx, input, ilen );
+}
+
+int mbedtls_sha1_finish( mbedtls_sha1_context *ctx, unsigned char output[20] )
+{
+    return dubhe_sha1_finish( ctx, output );
+}
+
+void mbedtls_sha1_process( mbedtls_sha1_context *ctx, const unsigned char data[64] )
+{
+    dubhe_sha1_process( ctx, data );
+}
+#endif
+
+#endif /* MBEDTLS_SHA1_ALT */

@@ -777,4 +777,114 @@ exit:
 
 #endif /* !MBEDTLS_CMAC_ALT */
 
-#endif /* MBEDTLS_CMAC_C */
+
+#if defined(MBEDTLS_CMAC_ALT)
+
+int mbedtls_cmac_starts(mbedtls_cmac_context_t *ctx, const unsigned char *key, unsigned int keybits)
+{
+    mbedtls_cipher_context_t cipher_ctx;
+    int ret;
+    
+    mbedtls_cipher_init(&cipher_ctx);
+    
+    cipher_ctx.cmac_ctx = ctx;
+    
+    const mbedtls_cipher_info_t *cipher_info = mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_ECB);
+    if (cipher_info == NULL) {
+        return MBEDTLS_ERR_CIPHER_FEATURE_UNAVAILABLE;
+    }
+    cipher_ctx.cipher_info = cipher_info;
+    
+    ret = dubhe_cmac_starts(&cipher_ctx, key, keybits);
+    
+    return ret;
+}
+
+int mbedtls_cmac_update(mbedtls_cmac_context_t *ctx, const unsigned char *input, size_t ilen)
+{
+    mbedtls_cipher_context_t cipher_ctx;
+    
+    mbedtls_cipher_init(&cipher_ctx);
+    
+    cipher_ctx.cmac_ctx = ctx;
+    
+    const mbedtls_cipher_info_t *cipher_info = mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_ECB);
+    if (cipher_info == NULL) {
+        return MBEDTLS_ERR_CIPHER_FEATURE_UNAVAILABLE;
+    }
+    cipher_ctx.cipher_info = cipher_info;
+    
+    return dubhe_cmac_update(&cipher_ctx, input, ilen);
+}
+
+int mbedtls_cmac_finish(mbedtls_cmac_context_t *ctx, unsigned char *output)
+{
+    mbedtls_cipher_context_t cipher_ctx;
+
+    mbedtls_cipher_init(&cipher_ctx);
+
+    cipher_ctx.cmac_ctx = ctx;
+    
+    const mbedtls_cipher_info_t *cipher_info = mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_ECB);
+    if (cipher_info == NULL) {
+        return MBEDTLS_ERR_CIPHER_FEATURE_UNAVAILABLE;
+    }
+    cipher_ctx.cipher_info = cipher_info;
+
+    return dubhe_cmac_finish(&cipher_ctx, output);
+}
+
+void mbedtls_cmac_free(mbedtls_cmac_context_t *ctx)
+{
+    dubhe_cmac_free(ctx);
+}
+
+void mbedtls_cmac_reset(mbedtls_cmac_context_t *ctx)
+{
+    mbedtls_cipher_context_t cipher_ctx;
+    
+    mbedtls_cipher_init(&cipher_ctx);
+    
+    cipher_ctx.cmac_ctx = ctx;
+    
+    const mbedtls_cipher_info_t *cipher_info = mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_ECB);
+    if (cipher_info == NULL) {
+        return;
+    }
+    cipher_ctx.cipher_info = cipher_info;
+    
+    dubhe_cmac_reset(&cipher_ctx);
+}
+
+int mbedtls_cipher_cmac(const mbedtls_cipher_info_t *cipher_info, const unsigned char *key,
+                       unsigned int keybits, const unsigned char *input, size_t ilen,
+                       unsigned char *output)
+{
+    return dubhe_cipher_cmac(cipher_info, key, keybits, input, ilen, output);
+}
+
+int mbedtls_aes_cmac_prf_128(const unsigned char *key, size_t key_len,
+                        const unsigned char *input, size_t in_len,
+                        unsigned char *output)
+{
+    return dubhe_cmac_prf_128(key, key_len, input, in_len, output);
+}
+
+int mbedtls_cipher_cmac_starts(mbedtls_cipher_context_t *ctx, const unsigned char *key, size_t keybits)
+{
+    return dubhe_cmac_starts(ctx, key, keybits);
+}
+
+int mbedtls_cipher_cmac_update(mbedtls_cipher_context_t *ctx, const unsigned char *input, size_t ilen)
+{
+    return dubhe_cmac_update(ctx, input, ilen);
+}
+
+int mbedtls_cipher_cmac_finish(mbedtls_cipher_context_t *ctx, unsigned char *output)
+{
+    return dubhe_cmac_finish(ctx, output);
+}
+
+#endif /* MBEDTLS_CMAC_ALT */
+
+#endif
