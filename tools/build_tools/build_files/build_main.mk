@@ -31,10 +31,6 @@ else
 	export APP_VERSION := $(APP_VERSION)
 endif
 
-# Check if PROJECT is a relative path and convert to absolute
-ifeq ($(patsubst /%,,$(PROJECT)),$(PROJECT))
-	export PROJECT := $(ARMINO_DIR)/projects/$(PROJECT)
-endif
 
 ifeq ("$(PROJECT)", "")
 	ifneq ("$(INTERNAL)", "")
@@ -58,6 +54,11 @@ ifeq ("$(PROJECT_DIR)", "")
 	export PROJECT_DIR := $(ARMINO_DIR)/projects/$(PROJECT)
 else
 	export PROJECT_DIR := $(PROJECT_DIR)
+endif
+
+# Check if PROJECT is a relative path and convert to absolute
+ifeq ($(patsubst /%,,$(PROJECT)),$(PROJECT))
+	export PROJECT := $(ARMINO_DIR)/projects/$(PROJECT)
 endif
 
 ifeq ("$(ARMINO_SOC)", "")
