@@ -195,18 +195,6 @@ void adc_hal_set_cwt_calib(uint16_t *adc_data, uint16_t data_num)
 
 void hal_calib_apply(void)
 {
-	/* ana_reg0x2 */
-	uint32_t reg_val = sys_ana_ll_get_reg2_value();
-	reg_val |= (BIT(25) | BIT(30) | BIT(31));
-	reg_val |= (0x3 << 28);
-	sys_ana_ll_set_reg2_value(reg_val);
-
-	/* ana_reg0x5 */
-	reg_val = sys_ana_ll_get_reg5_value();
-	reg_val |= (BIT(12) | BIT(14));
-	reg_val &= ~BIT(1);
-	sys_ana_ll_set_reg5_value(reg_val);
-
 	adc_ll_set_reg2_soft_rst(0);
 	adc_ll_set_reg2_soft_rst(1);
 	adc_ll_set_reg4_value(0x12112);
