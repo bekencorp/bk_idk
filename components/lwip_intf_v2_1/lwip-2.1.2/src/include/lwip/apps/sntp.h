@@ -73,6 +73,10 @@ void sntp_servermode_dhcp(int set_servers_from_dhcp);
 #define sntp_servermode_dhcp(x)
 #endif /* SNTP_GET_SERVERS_FROM_DHCP */
 
+typedef void (*sntp_sync_cb)(u32_t tm);
+void sntp_settimesynccb(sntp_sync_cb cb);
+void sntp_setsyncinterval(u32_t interval_second);
+
 #ifdef __cplusplus
 }
 #endif

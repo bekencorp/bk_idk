@@ -2,7 +2,7 @@
 #include <soc/soc.h>
 
 #ifdef CONFIG_LWIP_HW_IP_CHECKSUM
-#if CONFIG_SOC_BK7236N || CONFIG_SOC_BK7239
+#if CONFIG_SOC_BK7236N || CONFIG_SOC_BK7239N
 #if CONFIG_SPE
 #define IPCHKSUM_BASE                       (0x4980DE00)
 #else
@@ -87,7 +87,7 @@ uint16_t ipchksum_get_result(uint32_t addr, uint16_t len)
     ipchksum_clr_int(1);
     return ipchksum_get_data();
 }
-#endif // CONFIG_SOC_BK7236N || CONFIG_SOC_BK7239
+#endif // CONFIG_SOC_BK7236N || CONFIG_SOC_BK7239N
 
 static bool hw_ipcsum_holed = false;
 extern uint16_t lwip_standard_chksum(const void *dataptr, int len);
@@ -109,7 +109,7 @@ uint16_t hw_ipcksum_standard_chksum(const void *dataptr, int len)
 
     GLOBAL_INT_RESTORE();
     hw_ipcsum_holed = true;
-#if CONFIG_SOC_BK7236N || CONFIG_SOC_BK7239
+#if CONFIG_SOC_BK7236N || CONFIG_SOC_BK7239N
     csum = ipchksum_get_result((uint32_t)dataptr, (uint16_t)len);
 #else
     hsu_ip_checksum((uint32_t)dataptr, (uint16_t)len, &csum);

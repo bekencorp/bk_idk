@@ -866,4 +866,24 @@ sntp_getservername(u8_t idx)
 }
 #endif /* SNTP_SERVER_DNS */
 
+/**
+ * Initialize the NTP time sync callback function
+ *
+ * @param callback function
+ */
+void sntp_settimesynccb(sntp_sync_cb cb)
+{
+  sntp_time_sync_cb = cb;
+}
+
+/**
+ * Initialize the NTP time synchronization interval
+ *
+ * @param synchronization interval, in seconds
+ */
+void sntp_setsyncinterval(u32_t interval_second)
+{
+  sntp_sync_interval = interval_second*1000;
+}
+
 #endif /* LWIP_UDP */
