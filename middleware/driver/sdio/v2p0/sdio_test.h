@@ -12,21 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
-
-#ifndef _SDIO_TEST_H_
-#define _SDIO_TEST_H_
+#pragma once
 
 #define SDIO_TEST_PRIORITY (5)
 #define SDIO_TEST_THREAD_NAME "sdio_test"
-#define SDIO_TEST_THREAD_STACK_SIZE (0x1<<10)	//Bytes
+#define SDIO_TEST_THREAD_STACK_SIZE (0x2<<10)	//Bytes
 
 #define SDIO_TEST_MSG_QUEUE_NAME "sdio_test_queue"
 #define SDIO_TEST_MSG_QUEUE_COUNT (8)
 
 #define SDIO_TEST_BUFFER_CNT (4)
 #define SDIO_TEST_BUFFER_SIZE (512)
-
 
 #define SDIO_TEST_TP_THREAD_NAME "sdio_tp"
 #define SDIO_TEST_TX_TP_PRIORITY (5)
@@ -155,5 +151,4 @@ bk_err_t bk_sdio_test_init(void);
  *	  - others: other errors.
  */
 bk_err_t bk_sdio_test_deinit(void);
-
-#endif // _SDIO_SLAVE_TEST_H_
+// eof

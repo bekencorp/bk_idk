@@ -1732,12 +1732,10 @@ static void sdio_thread(void *arg)
 	bk_err_t ret;
 	uint32_t rx_left_bytes = 0;
 	uint32_t tx_left_bytes = 0;
-	//uint32_t tx_app_left_bytes = 0;	//app cnt;
 	sdio_chan_id_t chan_id = SDIO_CHAN_PLATFORM;
 	uint32_t packet_len = 0;
 
 	SDIO_LOG_DEBUG_FUNCTION_ENTRY();
-
 	while(1)
 	{
 		sdio_msg_t msg;
@@ -1757,11 +1755,7 @@ static void sdio_thread(void *arg)
 					else
 						rx_left_bytes = cmd53_arg.count;
 
-#if CONFIG_SDIO_SW_CHANNEL_EN
-//					chan_id = cmd53_arg.channel;
-#else
-//					chan_id = SDIO_CHAN_PLATFORM;
-#endif
+
 					break;
 				}
 
@@ -1795,9 +1789,6 @@ static void sdio_thread(void *arg)
 					{
 						rx_left_bytes = 0;	//last block
 					}
-
-					//slave can receive data again
-					//sdio_hal_slave_rx_clear_host_wait_write_data();
 
 					if(rx_left_bytes != 0)
 					{
@@ -1901,7 +1892,6 @@ static void sdio_thread(void *arg)
 					{
 						sdio_hal_set_tx_fifo_empty_int(0);
 
-						//TODO:
 //						SDIO_LOG_ERR("TODO:why set to 0?");
 						sdio_hal_slave_set_tx_length(0);
 						sdio_slave_tx_left_buffers();
@@ -1929,9 +1919,6 @@ static void sdio_thread(void *arg)
 		}
 	}
 }
-
-
-
 
 /*********************************************/
 #if CONFIG_SDIO_SYNC_TRANS
@@ -2116,7 +2103,6 @@ err_exit:
 
 	return ret;
 }
-
 #endif
 
 
@@ -2324,8 +2310,8 @@ static bk_err_t sdio_slave_hw_init(void)
 #endif
 
 #if CONFIG_SDIO_1V8_EN
-	sys_drv_psram_psldo_vset(1, 0);        //set vddpsram voltage as 1.8v
-	sys_drv_psram_ldo_enable(1);           //vddpsram enable
+	sys_drv_psram_psldo_vset(1, 0);  //set vddpsram voltage as 1.8v
+	sys_drv_psram_ldo_enable(1);     //vddpsram enable
 	sys_hal_set_ana_vddgpio_sel(1);  //GPIO vdd select between vio and vddparam
 #endif
 

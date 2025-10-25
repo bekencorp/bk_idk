@@ -33,6 +33,7 @@ extern void cmd_start_softreset(uint8_t vcore, uint8_t wdt_delay);
 extern void cmd_start_memcheck(void);
 extern int cmd_do_memcheck(void);
 extern int cmd_do_miccheck(void);
+extern void cmd_save_memcheck_from_uart(uint8_t *content, int cnt, uint8_t *tx_buffer);
 extern void bk7011_rf_vco_verify(UINT32 start);
 
 extern bk_err_t bk_usb_ate_bist_test(uint32_t state);

@@ -2151,19 +2151,20 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 cmd_start_memcheck();
 #endif
                 break;
-#if 0
+
             case 0x61:
-                tx_buffer[0] = 0x55;
-                data = cmd_save_memcheck();
-                if (data < 0) {
-                    tx_buffer[1] = 0xCC;
-                } else {
-                    /* success */
-                    tx_buffer[1] = 0x33;
-                }
-                uart_send_bytes_for_ate(tx_buffer, 2);
+                cmd_save_memcheck_from_uart(content, cnt, tx_buffer);
+                // tx_buffer[0] = 0x55;
+                // data = cmd_save_memcheck();
+                // if (data < 0) {
+                //     tx_buffer[1] = 0xCC;
+                // } else {
+                //     /* success */
+                //     tx_buffer[1] = 0x33;
+                // }
+                // uart_send_bytes_for_ate(tx_buffer, 2);
                 break;
-#endif
+
             case 0x62:
                 /* 55 62 softreset for MBIST/ATPG, return 55 33 if success, otherwise 55 CC */
                 if (cnt > 3) {

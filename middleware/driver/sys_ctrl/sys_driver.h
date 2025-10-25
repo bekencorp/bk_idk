@@ -112,9 +112,8 @@ uint32_t sys_drv_nmi_wdt_get_clk_div(void);
 
 void sys_drv_trng_disckg_set(uint32_t value);
 
-#if CONFIG_SDIO_V2P0
+#if ((CONFIG_SDIO_V2P0) || (CONFIG_SDIO_V2P1) || CONFIG_SDIO_V2P2 )
 void sys_driver_set_sdio_clk_en(uint32_t value);
-
 void sys_driver_set_cpu0_sdio_int_en(uint32_t value);
 void sys_driver_set_cpu1_sdio_int_en(uint32_t value);
 void sys_driver_set_sdio_clk_div(uint32_t value);
@@ -124,9 +123,7 @@ uint32_t sys_driver_get_sdio_clk_sel();
 #endif
 
 void sys_drv_enter_deep_sleep(void * param);
-
 void sys_drv_enter_normal_sleep(uint32_t peri_clk);
-
 void sys_drv_enter_normal_wakeup();
 void sys_drv_enter_low_voltage();
 void sys_drv_enter_cpu_wfi(void);
