@@ -2607,14 +2607,14 @@ void sys_hal_early_init(void)
 	val |= (0x1 << 5);
 	sys_hal_analog_set(ANALOG_REG5,val);
 
-	sys_hal_analog_set(ANALOG_REG0, 0x192197E0);//liupeng202400807:<9:7>=7;zhiyin20250429<11>=0 enable dpll_unlock flag;zhiyin20250604<29:28>=1
+	sys_hal_analog_set(ANALOG_REG0, 0x1D2197E0);//liupeng202400807:<9:7>=7;zhiyin20250429<11>=0 enable dpll_unlock flag;zhiyin20250604<29:28>=1;liupeng20251011<27:26>=3
 	sys_hal_analog_set(ANALOG_REG1, 0xC02EFA00);
 	sys_hal_analog_set(ANALOG_REG2, 0xFFC92536);
 	sys_hal_analog_set(ANALOG_REG3, 0xFDFC0B64);//tenglong20240806:high psrr as default, low when sleep;ronghui20250520<27>=1 avoid dpll unlock detect issue when high temp
 	sys_hal_analog_set(ANALOG_REG4, 0x40010000);
 	sys_hal_analog_set(ANALOG_REG5, 0x8407AF60);//liupeng20250514:hp for tx
 	sys_hal_analog_set(ANALOG_REG6, 0x80088100);//liupeng20250427
-	sys_hal_analog_set(ANALOG_REG7, 0x57E297C6);//xinyuan20250611:<9:6>=F for better EVM
+	sys_hal_analog_set(ANALOG_REG7, 0x57E657C6);//xinyuan20250611:<9:6>=F for better EVM;tenglong20251010<18>=1
 	sys_hal_analog_set(ANALOG_REG8, 0xF87C72E4);//ronghui20250519:<31:30>=3(0.9V), avoid write analog failure
 
 	/**
@@ -2624,9 +2624,9 @@ void sys_hal_early_init(void)
 	 */
 	sys_ana_ll_set_ana_reg8_spi_latch1v(1);
 #if CONFIG_AON_RTC_KEEP_TIME_SUPPORT
-	sys_hal_analog_set(ANALOG_REG9, 0xB55DB327);//tenglong20240805:2M buck for EVM
+	sys_hal_analog_set(ANALOG_REG9, 0xB55D9327);//tenglong20240805:2M buck for EVM;tenglong20251011<13>=1
 #else
-	sys_hal_analog_set(ANALOG_REG9, 0xB55D3327);//tenglong20240805:2M buck for EVM
+	sys_hal_analog_set(ANALOG_REG9, 0xB55D1327);//tenglong20240805:2M buck for EVM
 #endif
 	sys_hal_analog_set(ANALOG_REG10, 0xF7EEB89A);
 	sys_hal_analog_set(ANALOG_REG11, 0x00000000);
