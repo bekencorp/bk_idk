@@ -110,9 +110,10 @@ int dubhe_clk_disable( dubhe_module_type_t type )
     return ret;
 }
 
+void dubhe_driver_lv_cleanup(void);
 static int dubhe_lv_enter(uint64_t sleep_time, void *args)
 {
-    dubhe_driver_cleanup();
+    dubhe_driver_lv_cleanup();
     return 0;
 }
 
@@ -213,9 +214,9 @@ int dubhe_driver_init( unsigned long dbh_base_addr )
     return ret;
 }
 
-void dubhe_driver_cleanup( void )
-{
 
+static void dubhe_driver_common_cleanup(bool cleanup_mbedtls)
+{
 #if !defined(TEE_M)
     sys_drv_int_disable(ENCP_SEC_INTERRUPT_CTRL_BIT);
     bk_int_isr_unregister(INT_SRC_ENC_SEC);
@@ -223,15 +224,30 @@ void dubhe_driver_cleanup( void )
 
 #if defined( ARM_CE_DUBHE_ACA )
     dubhe_aca_driver_cleanup( );
-    extern void mbedtls_dubhe_cleanup( );
-    mbedtls_dubhe_cleanup( );
+    
+    if (cleanup_mbedtls) {
+        extern void mbedtls_dubhe_cleanup( );
+        mbedtls_dubhe_cleanup( );
+    }
 #endif
 
     dubhe_event_cleanup( );
+
 #if !defined(TEE_M)
     bk_pm_module_vote_power_ctrl(POWER_SUB_MODULE_NAME_ENCP_TRUSTENGINE, PM_POWER_MODULE_STATE_OFF);
 #endif
+
     bk_delay_us(100);
+}
+
+void dubhe_driver_cleanup(void)
+{
+    dubhe_driver_common_cleanup(true);
+}
+
+void dubhe_driver_lv_cleanup(void)
+{
+    dubhe_driver_common_cleanup(false);
 }
 
 /*************************** The End Of File*****************************/
