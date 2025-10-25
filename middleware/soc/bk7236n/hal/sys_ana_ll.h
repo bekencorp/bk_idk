@@ -1275,9 +1275,9 @@ static inline void sys_ana_ll_set_ana_reg8_rst_wks1v(uint32_t v) {
 	sys_ana_set_ana_reg_bit((SOC_SYS_ANA_REG_BASE + (0x48 << 2)), 4, 0x1, v);
 }
 
-static inline uint32_t sys_ana_ll_get_ana_reg8_rst_wks1v(void) {
+static inline uint32_t sys_ana_ll_get_ana_reg8_rst_timerwks1v(void) {
 	sys_ana_ana_reg8_t *r = (sys_ana_ana_reg8_t*)(SOC_SYS_ANA_REG_BASE + (0x48 << 2));
-	return r->rst_wks1v;
+	return r->rst_timerwks1v;
 }
 
 static inline void sys_ana_ll_set_ana_reg8_dldo_czsel(uint32_t v) {
@@ -1379,13 +1379,13 @@ static inline uint32_t sys_ana_ll_get_ana_reg8_vlden(void) {
 	return r->vlden;
 }
 
-static inline void sys_ana_ll_set_ana_reg8_nc_24_24(uint32_t v) {
+static inline void sys_ana_ll_set_ana_reg8_rst_gpiowks(uint32_t v) {
 	sys_ana_set_ana_reg_bit((SOC_SYS_ANA_REG_BASE + (0x48 << 2)), 24, 0x1, v);
 }
 
-static inline uint32_t sys_ana_ll_get_ana_reg8_nc_24_24(void) {
+static inline uint32_t sys_ana_ll_get_ana_reg8_rst_gpiowks(void) {
 	sys_ana_ana_reg8_t *r = (sys_ana_ana_reg8_t*)(SOC_SYS_ANA_REG_BASE + (0x48 << 2));
-	return r->nc_24_24;
+	return r->rst_gpiowks;
 }
 
 static inline void sys_ana_ll_set_ana_reg8_aldo_rzsel(uint32_t v) {

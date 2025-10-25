@@ -210,7 +210,7 @@ typedef volatile union {
 typedef volatile union {
 	struct {
 		uint32_t asoft_stc                :  4; /**<bit[0 : 3] */
-		uint32_t rst_wks1v                :  1; /**<bit[4 : 4] */
+		uint32_t rst_timerwks1v           :  1; /**<bit[4 : 4] */
 		uint32_t dldo_czsel               :  3; /**<bit[5 : 7] */
 		uint32_t digcurlim                :  1; /**<bit[8 : 8] */
 		uint32_t spi_latch1v              :  1; /**<bit[9 : 9] */
@@ -222,7 +222,7 @@ typedef volatile union {
 		uint32_t vcorehsel                :  4; /**<bit[16 : 19] */
 		uint32_t vcorelsel                :  3; /**<bit[20 : 22] */
 		uint32_t vlden                    :  1; /**<bit[23 : 23] */
-		uint32_t rst_timerwks             :  1; /**<bit[24 : 24]  */
+		uint32_t rst_gpiowks              :  1; /**<bit[24 : 24]  */
 		uint32_t aldo_rzsel               :  2; /**<bit[25 : 26] */
 		uint32_t aldo_czsel               :  3; /**<bit[27 : 29] */
 		uint32_t vtrxspisel               :  2; /**<bit[30 : 31] */

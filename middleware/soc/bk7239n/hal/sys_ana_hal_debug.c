@@ -217,7 +217,7 @@ static void sys_ana_dump_ana_reg8(void)
 
 	SOC_LOGI("ana_reg8: %8x\r\n", REG_READ(SOC_SYS_ANA_REG_BASE + (0x48 << 2)));
 	SOC_LOGI("	asoft_stc: %8x\r\n", r->asoft_stc);
-	SOC_LOGI("	rst_wks1v: %8x\r\n", r->rst_wks1v);
+	SOC_LOGI("	rst_timerwks1v: %8x\r\n", r->rst_timerwks1v);
 	SOC_LOGI("	dldo_czsel: %8x\r\n", r->dldo_czsel);
 	SOC_LOGI("	digcurlim: %8x\r\n", r->digcurlim);
 	SOC_LOGI("	spi_latch1v: %8x\r\n", r->spi_latch1v);
@@ -229,7 +229,7 @@ static void sys_ana_dump_ana_reg8(void)
 	SOC_LOGI("	vcorehsel: %8x\r\n", r->vcorehsel);
 	SOC_LOGI("	vcorelsel: %8x\r\n", r->vcorelsel);
 	SOC_LOGI("	vlden: %8x\r\n", r->vlden);
-	SOC_LOGI("	rst_timerwks: %8x\r\n", r->rst_timerwks);
+	SOC_LOGI("	rst_gpiowks: %8x\r\n", r->rst_gpiowks);
 	SOC_LOGI("	aldo_rzsel: %8x\r\n", r->aldo_rzsel);
 	SOC_LOGI("	aldo_czsel: %8x\r\n", r->aldo_czsel);
 	SOC_LOGI("	vtrxspisel: %8x\r\n", r->vtrxspisel);

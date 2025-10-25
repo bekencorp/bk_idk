@@ -148,7 +148,6 @@ void sys_drv_set_cpu2_pwr_dw(uint32_t is_pwr_down);
 void sys_drv_set_cpu2_reset(uint32_t reset_value);
 #endif
 
-void sys_drv_wakeup_source_clear(void);
 void sys_drv_wakeup_source_gpio_clear(void);
 void sys_drv_wakeup_source_rtc_clear(void);
 void sys_drv_enable_mac_wakeup_source();

@@ -2317,14 +2317,14 @@ void sys_hal_set_ana_reg7_timer_wkrstn(uint32_t value)
 	sys_ana_ll_set_ana_reg7_timer_wkrstn(value);
 }
 
-void sys_hal_set_ana_reg8_rst_wks1v(uint32_t value)
+void sys_hal_set_ana_reg8_rst_timerwks1v(uint32_t value)
 {
-	sys_ana_ll_set_ana_reg8_rst_wks1v(value);
+	sys_ana_ll_set_ana_reg8_rst_timerwks1v(value);
 }
 
-void sys_hal_set_ana_reg8_rst_timerwks(uint32_t value)
+void sys_hal_set_ana_reg8_rst_gpiowks(uint32_t value)
 {
-	sys_ana_ll_set_ana_reg8_rst_timerwks(value);
+	sys_ana_ll_set_ana_reg8_rst_gpiowks(value);
 }
 
 __IRAM_SEC void sys_hal_set_ana_reg8_lvsleep_wkrst(uint32_t value)

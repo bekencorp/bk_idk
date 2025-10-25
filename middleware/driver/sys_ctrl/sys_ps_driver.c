@@ -153,39 +153,6 @@ uint32_t sys_drv_all_modules_clk_div_get(clk_div_reg_e reg)
 	return sys_hal_all_modules_clk_div_get(reg);
 }
 
-void sys_drv_wakeup_source_clear(void)
-{
-	//reset source flag
-#if CONFIG_ANA_RTC || CONFIG_ANA_GPIO
-	sys_hal_set_ana_reg8_spi_latch1v(1);
-	sys_hal_set_ana_reg8_rst_wks1v(1);
-	sys_hal_set_ana_reg8_rst_wks1v(0);
-	sys_hal_set_ana_reg8_spi_latch1v(0);
-#endif
-}
-
-void sys_drv_wakeup_source_gpio_clear(void)
-{
-	//reset source flag
-#if CONFIG_ANA_GPIO
-	sys_hal_set_ana_reg8_spi_latch1v(1);
-	sys_hal_set_ana_reg8_rst_wks1v(1);
-	sys_hal_set_ana_reg8_rst_wks1v(0);
-	sys_hal_set_ana_reg8_spi_latch1v(0);
-#endif
-}
-
-void sys_drv_wakeup_source_rtc_clear(void)
-{
-	//reset source flag
-#if CONFIG_ANA_RTC
-	sys_hal_set_ana_reg8_spi_latch1v(1);
-	sys_hal_set_ana_reg8_rst_timerwks(1);
-	sys_hal_set_ana_reg8_rst_timerwks(0);
-	sys_hal_set_ana_reg8_spi_latch1v(0);
-#endif
-}
-
 void sys_drv_wakeup_interrupt_clear(wakeup_source_t interrupt_source)
 {
     //sys_hal_wakeup_interrupt_clear(interrupt_source);

@@ -861,9 +861,9 @@ void sys_hal_disable_ana_rtc_int(void)
 	sys_hal_set_ana_reg7_timer_wkrstn(0);
 	sys_hal_set_ana_reg8_rtcwk_rstn(0);
 	#endif
-	/*clear ana int*/
-	sys_ana_ll_set_ana_reg8_rst_timerwks(1);
-	sys_ana_ll_set_ana_reg8_rst_timerwks(0);
+	/*rest timer source flag*/
+	sys_ana_ll_set_ana_reg8_rst_timerwks1v(1);
+	sys_ana_ll_set_ana_reg8_rst_timerwks1v(0);
 	sys_hal_disable_spi_latch();
 }
 
@@ -882,10 +882,28 @@ void sys_hal_disable_ana_gpio_int(void)
 
 	sys_hal_enable_spi_latch();
 	sys_hal_set_ana_reg8_gpiowk_rstn(0);
-	/*clear ana int, ask long.teng provide a new bit for gpio in next version*/
-	sys_ana_ll_set_ana_reg8_rst_wks1v(1);
-	sys_ana_ll_set_ana_reg8_rst_wks1v(0);
+	/*rest gpio source flag*/
+	sys_ana_ll_set_ana_reg8_rst_gpiowks(1);
+	sys_ana_ll_set_ana_reg8_rst_gpiowks(0);
 	sys_hal_disable_spi_latch();
+}
+
+void sys_drv_wakeup_source_gpio_clear(void)
+{
+	//reset source flag
+	sys_hal_set_ana_reg8_spi_latch1v(1);
+	sys_hal_set_ana_reg8_rst_gpiowks(1);
+	sys_hal_set_ana_reg8_rst_gpiowks(0);
+	sys_hal_set_ana_reg8_spi_latch1v(0);
+}
+
+void sys_drv_wakeup_source_rtc_clear(void)
+{
+	//reset source flag
+	sys_hal_set_ana_reg8_spi_latch1v(1);
+	sys_hal_set_ana_reg8_rst_timerwks1v(1);
+	sys_hal_set_ana_reg8_rst_timerwks1v(0);
+	sys_hal_set_ana_reg8_spi_latch1v(0);
 }
 
 void sys_hal_enter_low_voltage(void)
