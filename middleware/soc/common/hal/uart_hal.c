@@ -36,7 +36,17 @@ bk_err_t uart_hal_init_uart(uart_hal_t *hal, uart_id_t id, const uart_config_t *
 	uart_ll_set_data_bits(hal->hw, id, config->data_bits);
 	uart_ll_set_stop_bits(hal->hw, id, config->stop_bits);
 	uart_hal_set_parity(hal, id, config->parity);
+
+#if CONFIG_CUSTOMIZE_TY
+	extern bool ate_is_enabled(void);
+	if (ate_is_enabled()) {
+		uart_hal_set_baud_rate(hal, id, config->src_clk, 115200);
+	} else {
+		uart_hal_set_baud_rate(hal, id, config->src_clk, config->baud_rate);
+	}
+#else
 	uart_hal_set_baud_rate(hal, id, config->src_clk, config->baud_rate);
+#endif
 
 	uart_ll_set_tx_fifo_threshold(hal->hw, id, UART_TX_FIFO_THRESHOLD);
 	uart_ll_set_rx_fifo_threshold(hal->hw, id, UART_RX_FIFO_THRESHOLD);

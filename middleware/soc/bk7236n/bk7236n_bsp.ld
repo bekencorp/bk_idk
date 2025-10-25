@@ -374,6 +374,12 @@ SECTIONS
         *(".data.*")
         *(.sdata)
 
+#if CONFIG_CUSTOMIZE_TY
+        *(*ts2.data)
+        *(*ts2.data.*)
+        *(*ts2.sdata)
+#endif
+
         *(.video_spec_data*)
         *(.gnu.linkonce.d*)
         . = ALIGN(4);
@@ -416,6 +422,11 @@ SECTIONS
         *(.bss)
         *(.bss*)
         *(COMMON)
+
+#if CONFIG_CUSTOMIZE_TY
+        *(*ts2.bss)
+        *(*ts2.bss.*)
+#endif
 
         . = ALIGN(4);
         _bss_end = .;
@@ -468,6 +479,36 @@ SECTIONS
         . = ALIGN(4);
         __video_cache_bss_end__ = .;
     } > PSRAM
+
+#if CONFIG_CUSTOMIZE_TY
+    .ty_null_text_section :
+    {
+
+    } > FLASH
+
+    PROVIDE(__ty_null_text_section = LOADADDR(.ty_null_text_section));
+    . = __ty_null_text_section + SIZEOF(.ty_null_text_section);
+    . = ALIGN(0x8);
+    .ty_text_section ALIGN(0x1000) :
+    {
+        _ty_section_start = .;
+
+        /* this is for c++ global constructor init */
+        PROVIDE_HIDDEN (__init_array_start = .);
+        KEEP (*(SORT(*.init_array.*)))
+        KEEP (*(*.init_array*))
+        PROVIDE_HIDDEN (__init_array_end = .);
+
+        _ty_section_caa_end = .;
+        *libCHIP.a:*(.text .text.*)
+        *(*ts2.text *ts2.text.*)
+        _ty_section_text_end = .;
+        *libCHIP.a:*(.rodata .rodata.*)
+        *(*ts2.rodata *ts2.rodata.*)
+        _ty_section_end = .;
+    } >FLASH
+    ty_section_size = SIZEOF(.ty_text_section);
+#endif
 
     /* Set stack top to end of RAM, and stack limit move down by
      * size of stack_dummy section */

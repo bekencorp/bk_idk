@@ -131,7 +131,8 @@ bk_err_t bk_gpio_driver_init(void)
 {
 	//avoid re-init caused some info lost
 	if(s_gpio_is_init) {
-		GPIO_LOGI("%s:has inited \r\n", __func__);
+		//Don't enable below log cos some customers don't need it
+		//GPIO_LOGD("%s:has inited \r\n", __func__);
 		return BK_OK;
 	}
 
@@ -197,7 +198,8 @@ bk_err_t bk_gpio_driver_deinit(void)
 {
 	if(!s_gpio_is_init)
 	{
-		GPIO_LOGI("%s:isn't init \r\n", __func__);
+		//Don't enable below log cos some customers don't need it
+		//GPIO_LOGD("%s:isn't init \r\n", __func__);
 		return BK_OK;
 	}
 
@@ -402,7 +404,8 @@ static void gpio_isr(void)
 			}
 #endif
 			if (s_gpio_isr[gpio_id]) {
-				GPIO_LOGD("gpio int: index:%d \r\n",gpio_id);
+				//Don't enable below log in release cos some customers don't need it
+				//GPIO_LOGD("gpio int: index:%d \r\n",gpio_id);
 				s_gpio_isr[gpio_id](gpio_id);
 			}
 			bk_gpio_clear_interrupt(gpio_id);

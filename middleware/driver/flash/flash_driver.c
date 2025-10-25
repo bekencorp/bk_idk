@@ -153,7 +153,7 @@ static void flash_lock_deinit(void)
 }
 #endif
 
-static void flash_lock(void)
+void flash_lock(void)
 {
 	if(rtos_is_in_interrupt_context() || rtos_local_irq_disabled())
 	{
@@ -168,7 +168,7 @@ static void flash_lock(void)
 	mb_flash_op_prepare();
 }
 
-static void flash_unlock(void)
+void flash_unlock(void)
 {
 	if(rtos_is_in_interrupt_context() || rtos_local_irq_disabled())
 	{
