@@ -386,7 +386,7 @@ static inline void sys_hal_set_power_parameter(uint8_t sleep_mode)
  	 *  r40[19:16] halt2_delay = 0x1;
  	 *  r40[23:20] halt3_delay = 0x1;
  	 *  r40[24] halt_volt: deep = 0, lv = 1
- 	 *  r40[25] halt_xtal = 1 //If LPO is 26M32K, halt_xtal = 0
+ 	 *  r40[25] halt_xtal = 1 //26M32K unable to wakeup system, disable during lv sleep
  	 *  r40[26] halt_core: deep = 1, lv = 0
  	 *  r40[27] halt_flash = 1
  	 *  r40[28] halt_rosc = 0
@@ -406,34 +406,18 @@ static inline void sys_hal_set_power_parameter(uint8_t sleep_mode)
 	else
 	{
 		uint32_t val;
-		if (is_lpo_src_26m32k())//26m/32k
-		{
-			#if CONFIG_LV_FLASH_ENTER_LP_ENABLE
-			val = (0x61111000
-				|(PM_CURRENT_LOW_VOLTAGE_WAKEUP1_DELAY&0xF)
-				|((PM_CURRENT_LOW_VOLTAGE_WAKEUP2_DELAY&0xF)<<4)
-				|((PM_CURRENT_LOW_VOLTAGE_WAKEUP3_DELAY&0xF)<<8));
-			#else
-			val = (0x69111000
-				|(PM_CURRENT_LOW_VOLTAGE_WAKEUP1_DELAY&0xF)
-				|((PM_CURRENT_LOW_VOLTAGE_WAKEUP2_DELAY&0xF)<<4)
-				|((PM_CURRENT_LOW_VOLTAGE_WAKEUP3_DELAY&0xF)<<8));
-			#endif
-		}
-		else//external 32k and rosc
-		{
-			#if CONFIG_LV_FLASH_ENTER_LP_ENABLE
-			val = (0x63111000
-				|(PM_CURRENT_LOW_VOLTAGE_WAKEUP1_DELAY&0xF)
-				|((PM_CURRENT_LOW_VOLTAGE_WAKEUP2_DELAY&0xF)<<4)
-				|((PM_CURRENT_LOW_VOLTAGE_WAKEUP3_DELAY&0xF)<<8));
-			#else
-			val = (0x6B111000
-				|(PM_CURRENT_LOW_VOLTAGE_WAKEUP1_DELAY&0xF)
-				|((PM_CURRENT_LOW_VOLTAGE_WAKEUP2_DELAY&0xF)<<4)
-				|((PM_CURRENT_LOW_VOLTAGE_WAKEUP3_DELAY&0xF)<<8));
-			#endif
-		}
+		#if CONFIG_LV_FLASH_ENTER_LP_ENABLE
+		val = (0x63111000
+			|(PM_CURRENT_LOW_VOLTAGE_WAKEUP1_DELAY&0xF)
+			|((PM_CURRENT_LOW_VOLTAGE_WAKEUP2_DELAY&0xF)<<4)
+			|((PM_CURRENT_LOW_VOLTAGE_WAKEUP3_DELAY&0xF)<<8));
+		#else
+		val = (0x6B111000
+			|(PM_CURRENT_LOW_VOLTAGE_WAKEUP1_DELAY&0xF)
+			|((PM_CURRENT_LOW_VOLTAGE_WAKEUP2_DELAY&0xF)<<4)
+			|((PM_CURRENT_LOW_VOLTAGE_WAKEUP3_DELAY&0xF)<<8));
+		#endif
+
 		aon_pmu_ll_set_r40(val);
 	}
 }
@@ -563,7 +547,8 @@ __attribute__((section(".itcm_sec_code"))) void sys_hal_enter_deep_sleep(void *p
 	sys_hal_mask_cpu0_int();
 
 /*----------config wakeup source  start--------------*/
-	sys_drv_wakeup_source_clear();
+	sys_drv_wakeup_source_gpio_clear();
+	sys_drv_wakeup_source_rtc_clear();
 #if CONFIG_GPIO_WAKEUP_SUPPORT
 	extern bk_err_t gpio_enable_interrupt_mult_for_wake(void);
 	gpio_enable_interrupt_mult_for_wake();
@@ -641,13 +626,18 @@ static inline void sys_hal_set_low_voltage(volatile uint32_t *ana_r0, volatile u
 #if !CONFIG_DEEP_LV
 	sys_ana_ll_set_ana_reg3_en_xtalh_sleep(1);
 #endif
+	sys_ana_ll_set_ana_reg7_spi_pwd_regpow(0);
 	sys_ana_ll_set_ana_reg7_envrefh1v(0);
 	sys_ana_ll_set_ana_reg7_vanaldosel(0);
 #if CONFIG_LDO_SELF_LOW_POWER_MODE_ENA
 	sys_ana_ll_set_ana_reg7_dldohp(0);
 	sys_ana_ll_set_ana_reg7_aldohp(0);
 #endif
-	sys_ana_ll_set_ana_reg9_mrosci_cal(1);
+	// sys_ana_ll_set_ana_reg9_azcd_manu(0x20);
+	// sys_ana_ll_set_ana_reg9_enzcdcalib(0);
+	// sys_ana_ll_set_ana_reg9_zcdmsel(1);
+	sys_ana_ll_set_ana_reg9_mrosci_cal(0);
+
 	sys_ana_ll_set_ana_reg10_avea_sel(3);
 	sys_ana_ll_set_ana_reg10_arampc(0);
 
@@ -872,8 +862,8 @@ void sys_hal_disable_ana_rtc_int(void)
 	sys_hal_set_ana_reg8_rtcwk_rstn(0);
 	#endif
 	/*clear ana int*/
-	sys_hal_set_ana_reg8_rst_wks1v(1);
-	sys_hal_set_ana_reg8_rst_wks1v(0);
+	sys_ana_ll_set_ana_reg8_rst_timerwks(1);
+	sys_ana_ll_set_ana_reg8_rst_timerwks(0);
 	sys_hal_disable_spi_latch();
 }
 
@@ -893,8 +883,8 @@ void sys_hal_disable_ana_gpio_int(void)
 	sys_hal_enable_spi_latch();
 	sys_hal_set_ana_reg8_gpiowk_rstn(0);
 	/*clear ana int, ask long.teng provide a new bit for gpio in next version*/
-	sys_hal_set_ana_reg8_rst_wks1v(1);
-	sys_hal_set_ana_reg8_rst_wks1v(0);
+	sys_ana_ll_set_ana_reg8_rst_wks1v(1);
+	sys_ana_ll_set_ana_reg8_rst_wks1v(0);
 	sys_hal_disable_spi_latch();
 }
 
@@ -941,7 +931,8 @@ void sys_hal_enter_low_voltage(void)
 	portNVIC_SYSTICK_LOAD_REG = PM_EXIT_LOWVOL_SYSTICK_RELOAD_TIME;
 
 	sys_hal_mask_cpu0_int();
-
+	sys_drv_wakeup_source_gpio_clear();
+	sys_drv_wakeup_source_rtc_clear();
 /*----------config wakeup source  start--------------*/
 #if CONFIG_GPIO_WAKEUP_SUPPORT
 	extern bk_err_t gpio_enable_interrupt_mult_for_wake(void);
@@ -1723,14 +1714,14 @@ void sys_hal_low_power_hardware_init()
 	sys_hal_power_config_default();
 
 	/*set the lp voltage*/
-	sys_hal_lp_vol_set(0x4); // core 0.55V
+	sys_hal_lp_vol_set(CONFIG_LP_VOL); // core 0.45V
 
 	/*set rosc modify 2s interval*/
 	#if !CONFIG_ROSC_CALIB_SW
 	sys_hal_rosc_calibration(2, 0x8);
 	#endif
 
-	/*rtc on bk7236N and bk7239 requires spi_timerwken*/
+	/*rtc on bk7236N and bk7239n requires spi_timerwken*/
 	sys_hal_set_ana_reg9_spi_timerwken(1);
 
 }

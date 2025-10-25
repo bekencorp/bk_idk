@@ -16,7 +16,7 @@ set(CONFIG_FILE_LISTS
 	)
 
 armino_build_get_property(python PYTHON)
-set(GEN_TOOL $ENV{ARMINO_PATH}/middleware/boards/${ARMINO_SOC}/bk7239.wrapper)
+set(GEN_TOOL $ENV{ARMINO_PATH}/middleware/boards/${ARMINO_SOC}/bk7239n.wrapper)
 
 add_custom_command(OUTPUT ${GEN_FILE}
 	COMMAND ${python} ${GEN_TOOL} pack --prebuild

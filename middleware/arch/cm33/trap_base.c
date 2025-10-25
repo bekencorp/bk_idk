@@ -40,7 +40,7 @@
 #define SOC_SRAM_TOTAL_SIZE          (CONFIG_CPU0_SPE_RAM_SIZE)
 #define SOC_SRAM_DATA_END            (SOC_SRAM0_DATA_BASE + SOC_SRAM_TOTAL_SIZE)
 
-#if (CONFIG_SOC_BK7236_SMP_TEMP || CONFIG_SOC_BK7239_SMP_TEMP || CONFIG_SOC_BK7286_SMP_TEMP)
+#if (CONFIG_SOC_BK7236_SMP_TEMP || CONFIG_SOC_BK7239N_SMP_TEMP || CONFIG_SOC_BK7286_SMP_TEMP)
 extern unsigned char __itcm_cpu0_end__;
 extern unsigned char __dtcm_cpu0_start__;
 extern unsigned char _estack_cpu0;

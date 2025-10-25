@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Beken
+// Copyright 2020-2025 Beken
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -196,8 +196,9 @@ extern "C" {
 #define SDIO_HOST_GPIO_CMD_INDEX     1
 #define SDIO_HOST_GPIO_DATA0_INDEX   2
 #define SDIO_HOST_GPIO_DATA1_INDEX   3
+
 #if (CONFIG_PIN_SDIO_GROUP_0)
-#define SDIO_HOST_GPIO_MAP \
+#define SDIO_GPIO_MAP \
 {\
 	{GPIO_14, GPIO_DEV_SDIO_HOST_CLK},\
 	{GPIO_15, GPIO_DEV_SDIO_HOST_CMD},\
@@ -207,7 +208,7 @@ extern "C" {
 	{GPIO_19, GPIO_DEV_SDIO_HOST_DATA3},\
 }
 #else
-#define SDIO_HOST_GPIO_MAP \
+#define SDIO_GPIO_MAP \
 {\
 	{GPIO_2, GPIO_DEV_SDIO_HOST_CLK},\
 	{GPIO_3, GPIO_DEV_SDIO_HOST_CMD},\
@@ -216,9 +217,7 @@ extern "C" {
 	{GPIO_10, GPIO_DEV_SDIO_HOST_DATA2},\
 	{GPIO_11, GPIO_DEV_SDIO_HOST_DATA3},\
 }
-#endif
-
-
+#endif // CONFIG_PIN_SDIO_GROUP_0
 
 #define GPIO_PWM_MAP_TABLE \
 { \

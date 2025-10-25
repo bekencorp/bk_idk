@@ -243,6 +243,6 @@ void _spin_unlock_irqrestore(spinlock_t *lock, uint32_t flags)
 	spin_unlock(lock);
 	rtos_enable_int(flags);
 }
-#endif // CONFIG_SOC_BK7236_SMP_TEMP || CONFIG_SOC_BK7239_SMP_TEMP || CONFIG_SOC_BK7286_SMP_TEMP
+#endif // CONFIG_SOC_BK7236_SMP_TEMP || CONFIG_SOC_BK7239N_SMP_TEMP || CONFIG_SOC_BK7286_SMP_TEMP
 // eof
 

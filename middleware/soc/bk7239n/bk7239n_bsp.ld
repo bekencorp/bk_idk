@@ -10,7 +10,7 @@
  * any derivative work shall retain this copyright notice.
  */
 
-#include "soc/bk7239/reg_base.h"
+#include "soc/bk7239n/reg_base.h"
 #include "partitions.h"
 #include "sdkconfig.h"
 

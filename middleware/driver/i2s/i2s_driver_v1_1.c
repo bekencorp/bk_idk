@@ -95,7 +95,7 @@ static void i2s_init_gpio(i2s_gpio_group_id_t id)
 			gpio_dev_map(GPIO_8, GPIO_DEV_I2S1_DIN);
 			gpio_dev_unmap(GPIO_9);
 			gpio_dev_map(GPIO_9, GPIO_DEV_I2S1_DOUT);
-#if (CONFIG_SOC_BK7236N || CONFIG_SOC_BK7239)
+#if (CONFIG_SOC_BK7236N || CONFIG_SOC_BK7239N)
 			gpio_dev_unmap(GPIO_12);
 			gpio_dev_map(GPIO_12, GPIO_DEV_I2S1_MCLK);
 #else

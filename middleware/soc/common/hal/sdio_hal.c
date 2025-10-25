@@ -16,14 +16,29 @@
 #include "sdio_ll.h"
 
 
+void sdio_hal_set_sd_soft_resetn(uint32_t value)
+{
+	sdio_ll_set_sd_soft_resetn(value);
+}
+
 void sdio_hal_slave_cmd_start(uint32_t value)
 {
 	sdio_ll_set_sd_cmd_start(value);
 }
 
+void sdio_hal_set_sd_data_stop_en(uint32_t value)
+{
+	sdio_ll_set_sd_data_stop_en(value);
+}
+
 void sdio_hal_rx_set_sd_byte_sel(bool big_endian)
 {
 	sdio_ll_set_sd_byte_sel(big_endian);
+}
+
+void sdio_hal_set_sd_data_bus(uint32_t value)
+{
+	sdio_ll_set_sd_data_bus(value);
 }
 
 /* REG_0x09:reg0x9->CMD_S_RES_END_INT:0x9[24],Slave only; Slave has finish reponsed the CMD to host side.,0x0,R/W1C*/
@@ -61,6 +76,16 @@ void sdio_hal_set_host_slave_mode(sdio_host_slave_mode_t mode)
 	sdio_ll_set_sd_slave(mode);
 }
 
+void sdio_hal_set_sd_cmd_crc_check(uint32_t value)
+{
+	sdio_ll_set_sd_cmd_crc_check(value);
+}
+
+void sdio_hal_set_cmd_keep_det(uint32_t value)
+{
+	sdio_ll_set_cmd_keep_det(value);
+}
+
 uint32_t sdio_hal_slave_read_data(void)
 {
 	return sdio_ll_get_rx_fifo_dout();
@@ -68,11 +93,7 @@ uint32_t sdio_hal_slave_read_data(void)
 
 void sdio_hal_slave_write_data(uint32_t value)
 {
-#if CONFIG_SOC_BK7256XX
-	sdio_ll_set_reg0xb_value(value);
-#elif CONFIG_SOC_BK7236XX || CONFIG_SOC_BK7239XX|| CONFIG_SOC_BK7286XX
 	sdio_ll_set_reg0xf_value(value);
-#endif
 }
 
 uint32_t sdio_hal_get_int_status(void)
@@ -113,11 +134,7 @@ uint32 sdio_hal_slave_get_func_reg_value(void)
 //SW:private protocal,host read this reg value as the slave send packet length.
 void sdio_hal_slave_set_tx_length(uint32_t len)
 {
-#if CONFIG_SOC_BK7256XX
-	sdio_ll_set_reg0x11_value(len);
-#elif CONFIG_SOC_BK7236XX || CONFIG_SOC_BK7239XX|| CONFIG_SOC_BK7286XX
 	sdio_ll_set_reg0x13_value(len);
-#endif
 }
 
 void sdio_hal_slave_clear_stop(void)
@@ -162,7 +179,6 @@ void sdio_hal_clear_tx_fifo_empty_int_status(void)
 {
     sdio_ll_clear_tx_fifo_empt();
 }
-
 
 //NOTES:be care this is for slave write end, and sdio_ll_get_sd_data_wr_end_int is for host write end
 uint32_t sdio_hal_slave_get_wr_end_int(void)
@@ -214,6 +230,170 @@ void sdio_hal_fifo_reset(void)
 	sdio_ll_set_tx_fifo_rst();
 	sdio_ll_set_rx_fifo_rst();
 	//no need reset status, if reseting sdio when host send CMD,the CMD can't be decoded by sdio hardware.
-	//sdio_ll_set_sd_sta_rst();
+#if CONFIG_SDIO_V2P1
+	sdio_ll_set_sd_sta_rst();
+#endif
 }
+
+#if CONFIG_SDIO_V2P1
+void sdio_hal_slave_clear_wr_blk_int_status(void)
+{
+	sdio_ll_set_dat_s_wr_blk_int(1);
+}
+
+uint32_t sdio_hal_slave_get_wr_blk_int_status(void)
+{
+	return sdio_ll_get_dat_s_wr_blk_int();
+}
+
+void sdio_hal_slave_set_write_block_int_mask(uint32_t en)
+{
+	sdio_ll_slave_set_write_block_int_mask(en);
+}
+
+void sdio_hal_slave_set_write_mul_sel(uint32_t en)
+{
+	sdio_ll_set_write_mul_sel(en);
+}
+
+void sdio_hal_slave_clear_rd_blk_int_status(void)
+{
+	sdio_ll_set_dat_wrsts_err_int(1);
+}
+
+uint32_t sdio_hal_slave_get_rd_blk_int_status(void)
+{
+	return sdio_ll_get_dat_wrsts_err_int();
+}
+
+void sdio_hal_slave_set_read_block_int_mask(uint32_t en)
+{
+	sdio_ll_slave_set_read_block_int_mask(en);
+}
+
+void sdio_hal_slave_set_read_mul_sel(uint32_t en)
+{
+	sdio_ll_set_read_mul_sel(en);
+}
+
+//register addr from host side is:0,1,2,3 bytes
+void sdio_hal_slave_set_arg1_val(uint32_t v)
+{
+	sdio_ll_set_reg0x13_value(v);
+}
+
+uint32_t sdio_hal_slave_get_arg1_val(void)
+{
+	return sdio_ll_get_reg0x13_value();
+}
+
+//register addr from host side is:4,5,6,7 bytes
+void sdio_hal_slave_set_arg2_val(uint32_t v)
+{
+	sdio_ll_set_reg0x14_value(v);
+}
+
+uint32_t sdio_hal_slave_get_arg2_val(void)
+{
+	return sdio_ll_get_reg0x14_value();
+}
+
+void sdio_hal_cmd_sst_sel_en(uint32_t value)
+{
+	sdio_ll_cmd_sst_sel_en(value);
+}
+
+void sdio_hal_dat1_int_en(uint32_t value)
+{
+	sdio_ll_dat1_int_en(value);
+}
+
+void sdio_hal_cccr_intx_en(uint32_t value)
+{
+	sdio_ll_cccr_intx_en(value);
+}
+
+void sdio_hal_cccr_s4mi_en(uint32_t value)
+{
+	sdio_ll_cccr_s4mi_en(value);
+}
+
+/* REG_0x3f:reg0x3f->cmd_s_buf_cnt_clr:0x3f[0],cmd buffer 计数器清零,0x0,RW*/
+void sdio_hal_set_reg0x3f_cmd_s_buf_cnt_clr(uint32_t value)
+{
+	sdio_ll_set_reg0x3f_cmd_s_buf_cnt_clr(value);
+}
+
+/* REG_0x3f:reg0x3f->cmd_s_buf_cnt_num:0x3f[3:1],设置cmd buffer 缓存深度，最大深度值为5; 缓存深度=cmd_s_buf_cnt_num+1,0x0,RW*/
+void sdio_hal_set_reg0x3f_cmd_s_buf_cnt_num(uint32_t value)
+{
+	sdio_ll_set_reg0x3f_cmd_s_buf_cnt_num(value);
+}
+
+/* REG_0x3f:reg0x3f->cmd_s_buf_cnt:0x3f[6:4],cmd buffer 缓存个数; 0：1个缓存的CMD; 1：2个缓存的CMD; 2：3个缓存的CMD; 3：4个缓存的CMD; 4：5个缓存的CMD ,0x0,R*/
+uint32_t sdio_hal_get_reg0x3f_cmd_s_buf_cnt(void)
+{
+	return sdio_ll_get_reg0x3f_cmd_s_buf_cnt();
+}
+
+/* REG_0x3f:reg0x3f->cmd_s_buf_cover_clr:0x3f[7],cmd buffer 溢出标志位清零,0x0,RW*/
+void sdio_hal_set_reg0x3f_cmd_s_buf_cover_clr(uint32_t value)
+{
+	sdio_ll_set_reg0x3f_cmd_s_buf_cover_clr(value);
+}
+
+/* REG_0x3f:reg0x3f->cmd_s_buf_cover:0x3f[8],cmd buffer 溢出标志位,0x0,R*/
+uint32_t sdio_hal_get_reg0x3f_cmd_s_buf_cover(void)
+{
+	return sdio_ll_get_reg0x3f_cmd_s_buf_cover();
+}
+
+/* REG_0x3f:reg0x3f->cmd_s_buf_en:0x3f[9],cmd buffer enable; 注：先把cmd_s_buf_cnt_num深度值设置完成，再使能cmd_s_buf_en,0x0,RW*/
+void sdio_hal_set_reg0x3f_cmd_s_buf_en(uint32_t value)
+{
+	sdio_ll_set_reg0x3f_cmd_s_buf_en(value);
+}
+
+/* REG_0x3f:reg0x3f->cmd_s_cnt_clr:0x3f[10],cmd计数器清零,0x0,RW*/
+void sdio_hal_set_reg0x3f_cmd_s_cnt_clr(uint32_t value)
+{
+	sdio_ll_set_reg0x3f_cmd_s_cnt_clr(value);
+}
+
+uint32_t sdio_hal_get_reg0x40_value(void)
+{
+	return sdio_ll_get_reg0x40_value();
+}
+
+uint32_t sdio_hal_get_reg0x41_cmd_s_rec_argument_buf0(void)
+{
+	return sdio_ll_get_reg0x41_cmd_s_rec_argument_buf0();
+}
+
+uint32_t sdio_hal_get_reg0x42_cmd_s_rec_argument_buf1(void)
+{
+	return sdio_ll_get_reg0x42_cmd_s_rec_argument_buf1();
+}
+
+uint32_t sdio_hal_get_reg0x43_cmd_s_rec_argument_buf2(void)
+{
+	return sdio_ll_get_reg0x43_cmd_s_rec_argument_buf2();
+}
+
+uint32_t sdio_hal_get_reg0x44_cmd_s_rec_argument_buf3(void)
+{
+	return sdio_ll_get_reg0x44_cmd_s_rec_argument_buf3();
+}
+
+uint32_t sdio_hal_get_reg0x45_cmd_s_rec_argument_buf4(void)
+{
+	return sdio_ll_get_reg0x45_cmd_s_rec_argument_buf4();
+}
+
+uint32_t sdio_hal_get_reg0x46_cmd_s_cnt(void)
+{
+	return sdio_ll_get_reg0x46_cmd_s_cnt();
+}
+#endif	//CONFIG_SDIO_V2P1
+
 #endif

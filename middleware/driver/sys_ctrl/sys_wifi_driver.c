@@ -71,6 +71,18 @@ uint32_t sys_drv_cali_dpll_ate(void)
 	ana5_reg |= (0x1 << 5);
 	sys_hal_analog_set(ANALOG_REG5,ana5_reg);
 
+#if CONFIG_DPLL_UNLOCK_VERIFY_ENABLE
+	/* enable manual mode to switch band */
+	UINT32 ana1_reg = sys_hal_analog_get(ANALOG_REG1);
+	UINT32 ana1_reg_bak = ana1_reg;  // backup reg1 value
+	ana1_reg |= (0x1 << 16);
+	sys_hal_analog_set(ANALOG_REG1, ana1_reg);
+
+	/* change band value to trigger band unlock */
+	ana1_reg &= ~(0x1FF << 1);
+	ana1_reg |= (0x1 << 1);
+	sys_hal_analog_set(ANALOG_REG1, ana1_reg);
+#else
 	// SYS.REG0<5>=0, SYS.REG0<6>=0
 	UINT32 ana0_reg = sys_hal_analog_get(ANALOG_REG0);
 	UINT32 ana0_reg_bak = ana0_reg;  // backup reg0 value
@@ -85,6 +97,7 @@ uint32_t sys_drv_cali_dpll_ate(void)
 	// SYS.REG0<31>=0
 	ana0_reg &= ~(0x1 << 31);
 	sys_hal_analog_set(ANALOG_REG0, ana0_reg);
+#endif
 
 	// delay 100us
 	sys_drv_ps_dpll_delay(120 * 10);
@@ -100,7 +113,12 @@ uint32_t sys_drv_cali_dpll_ate(void)
 
 			// restore reg5 and reg0 value
 			sys_hal_analog_set(ANALOG_REG5, ana5_reg_bak);
+
+#if CONFIG_DPLL_UNLOCK_VERIFY_ENABLE
+			sys_hal_analog_set(ANALOG_REG1, ana1_reg_bak);
+#else
 			sys_hal_analog_set(ANALOG_REG0, ana0_reg_bak);
+#endif
 
 			return SYS_DRV_FAILURE;
 		}
@@ -110,7 +128,12 @@ uint32_t sys_drv_cali_dpll_ate(void)
 
 	// restore reg5 and reg0 value
 	sys_hal_analog_set(ANALOG_REG5, ana5_reg_bak);
+
+#if CONFIG_DPLL_UNLOCK_VERIFY_ENABLE
+	sys_hal_analog_set(ANALOG_REG1, ana1_reg_bak);
+#else
 	sys_hal_analog_set(ANALOG_REG0, ana0_reg_bak);
+#endif
 
 	return SYS_DRV_SUCCESS;
 }
@@ -162,7 +185,7 @@ uint32_t sys_drv_cali_bias(uint32_t update)
     uint32_t pwd_rosc = sys_hal_analog_get(ANALOG_REG5) & (1 << 14);
     if (pwd_rosc != 0x0)
     {
-		#if (CONFIG_SOC_BK7236N || CONFIG_SOC_BK7239)
+		#if (CONFIG_SOC_BK7236N || CONFIG_SOC_BK7239N)
         sys_hal_set_ana_reg5_pwd_rosc_spi(0);
 		#endif
         bk_delay_us(2000);
@@ -185,7 +208,7 @@ uint32_t sys_drv_cali_bias(uint32_t update)
 #if !CFG_ROSC
     if (pwd_rosc != 0x0)
     {
-		#if (CONFIG_SOC_BK7236N || CONFIG_SOC_BK7239)
+		#if (CONFIG_SOC_BK7236N || CONFIG_SOC_BK7239N)
         sys_hal_set_ana_reg5_pwd_rosc_spi(1);
 		#endif
     }

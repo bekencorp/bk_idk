@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Beken
+// Copyright 2020-2025 Beken
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ extern void bk_sdio_clk_gate_config(uint32_t enable);
 extern void bk_sdio_tx_fifo_clk_gate_config(uint32_t enable);
 extern void bk_sdio_clock_en(uint32_t enable);
 
-/**/
 typedef enum
 {
 	SDCARD_OPS_READ,
@@ -48,8 +47,7 @@ static sdcard_rw_state_t sd_card_check_continious_rw(sdcard_rw_ops_t ops, uint32
 #endif
 
 #define SD_CARD_MAX_VOLT_TRIAL_COUNT    0xff
-
-#define SD_CARD_MAX_CMD_TRIAL_COUNT	(128)
+#define SD_CARD_MAX_CMD_TRIAL_COUNT	    (128)
 #define SD_CARD_MAX_DATA_TRIAL_COUNT	(128)
 
 #if (CONFIG_SDIO_V2P0)	//Temp code, clock module should re-arch.
@@ -1510,20 +1508,12 @@ bk_err_t bk_sd_card_write_blocks(const uint8_t *data, uint32_t block_addr, uint3
 	s_sdcard_sw_status.write = 4;
 #endif
 
-	{
-		//error_state = sd_card_cmd_stop_transmission();
-
-		//TODO:disable clock for low power
-		//sys_drv_dev_clk_pwr_up(CLK_PWR_ID_SDIO, false);
-	}
-
 #if CONFIG_SDCARD_OPS_TRACE_EN
 	s_sdcard_sw_status.read = 0;
 	s_sdcard_sw_status.write = 5;
 #endif
 
 	rtos_unlock_mutex(&s_mutex_sdcard);
-
 	SD_CARD_LOGD("write[-]error_state=%d\r\n", error_state);
 
 	return error_state;

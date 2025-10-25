@@ -6,7 +6,10 @@ if (CONFIG_FLASH)
 		flash/flash_notify.c
 	)
 	if (CONFIG_SYS_CPU0)
-		list(APPEND srcs flash/flash_driver.c flash/flash_driver_ext.c)
+		list(APPEND srcs
+			flash/flash_driver.c
+			flash/flash_driver_ext.c)
+
 		if ((CONFIG_CPU_CNT GREATER 1))
 			list(APPEND srcs flash/flash_server.c)
 		endif()

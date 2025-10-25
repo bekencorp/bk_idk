@@ -434,7 +434,7 @@ void __attribute__ ((interrupt)) MAILBOX_Handler(void)
 	ARCH_ISR_HANDLER(63);
 }
 
-#if CONFIG_SOC_BK7236_SMP_TEMP || CONFIG_SOC_BK7239_SMP_TEMP
+#if CONFIG_SOC_BK7236_SMP_TEMP || CONFIG_SOC_BK7239N_SMP_TEMP
 /*TODO: the object about the corresponding core shall has the action*/
 bk_err_t arch_isr_entry_init2(void)
 {

@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Beken
+// Copyright 2020-2025 Beken
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 #define SDIO_HOST_LOGW(...) BK_LOGW(SDIO_HOST_TAG, ##__VA_ARGS__)
 #define SDIO_HOST_LOGE(...) BK_LOGE(SDIO_HOST_TAG, ##__VA_ARGS__)
 #define SDIO_HOST_LOGD(...) BK_LOGD(SDIO_HOST_TAG, ##__VA_ARGS__)
+#define SDIO_HOST_LOGV(...) BK_LOGV(SDIO_HOST_TAG, ##__VA_ARGS__)
 
 /* standard sd commands */
 #define GO_IDLE_STATE             0   /* bc                          */

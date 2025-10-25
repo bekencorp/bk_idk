@@ -1,6 +1,6 @@
 armino_build_get_property(target ARMINO_SOC)
 
-if(NOT "${target}" STREQUAL "bk7239")
+if(NOT "${target}" STREQUAL "bk7239n")
     return()
 endif()
 
@@ -78,7 +78,7 @@ LOGI("[Select ld file]: ${LD_FILE}.")
 if(CONFIG_SOC_SMP)
 add_custom_command(
 	OUTPUT ${target}_out.ld
-	COMMAND "${CMAKE_C_COMPILER}" -P -x c -E - < ${LD_FILE} -o ${target}_out.ld -I ${armino_path}/components/cmsis/CMSIS_5/Device/Beken/bk7239xx/Include/ -I ${armino_path}/include/ -I ${config_dir} -I ${armino_path}/middleware/boards/bk7239/partitions -I ${CMAKE_CURRENT_BINARY_DIR}/../partitions/_build
+	COMMAND "${CMAKE_C_COMPILER}" -P -x c -E - < ${LD_FILE} -o ${target}_out.ld -I ${armino_path}/components/cmsis/CMSIS_5/Device/Beken/bk7239nxx/Include/ -I ${armino_path}/include/ -I ${config_dir} -I ${armino_path}/middleware/boards/bk7239n/partitions -I ${CMAKE_CURRENT_BINARY_DIR}/../partitions/_build
 	MAIN_DEPENDENCY ${LD_DIR}/${target}.ld ${sdkconfig_header}
 	DEPENDS generated_files
 	COMMENT "Generating linker script..."
@@ -86,7 +86,7 @@ add_custom_command(
 else()
 add_custom_command(
 	OUTPUT ${target}_out.ld
-	COMMAND "${CMAKE_C_COMPILER}" -P -x c -E - < ${LD_FILE} -o ${target}_out.ld -I ${armino_path}/include/ -I ${config_dir} -I ${armino_path}/middleware/boards/bk7239/partitions -I ${CMAKE_CURRENT_BINARY_DIR}/../partitions/_build
+	COMMAND "${CMAKE_C_COMPILER}" -P -x c -E - < ${LD_FILE} -o ${target}_out.ld -I ${armino_path}/include/ -I ${config_dir} -I ${armino_path}/middleware/boards/bk7239n/partitions -I ${CMAKE_CURRENT_BINARY_DIR}/../partitions/_build
 	MAIN_DEPENDENCY ${LD_DIR}/${target}.ld ${sdkconfig_header}
 	DEPENDS generated_files
 	COMMENT "Generating linker script..."

@@ -26,7 +26,7 @@
 #include <gpio_driver.h>
 #include "bk_misc.h"
 
-#if CONFIG_SOC_BK7239_SMP_TEMP
+#if CONFIG_SOC_BK7239N_SMP_TEMP
 #include "cpu_id.h"
 #endif
 #define TAG "pm"
@@ -631,7 +631,7 @@ __IRAM_SEC int32 sys_hal_int_group2_enable(uint32 param)
 	return 0;
 }
 
-#if CONFIG_SOC_BK7239_SMP_TEMP
+#if CONFIG_SOC_BK7239N_SMP_TEMP
 int32 sys_hal_core_int_group1_disable(uint32 core_id, uint32 param)
 {
 	uint32 reg = 0;
@@ -901,27 +901,14 @@ void sys_hal_i2c_select_clock(i2c_id_t id, i2c_src_clk_t mode)
 
 void sys_hal_pwm_select_clock(sys_sel_pwm_t num, pwm_src_clk_t mode)
 {
-	uint32_t sel_clk32 = 0;
-	uint32_t sel_xtal = 1;
+	 uint32_t sel_80m = 1;
+	 uint32_t sel_xtal = 0;
 
-	switch(num)
-	{
-		case SYS_SEL_PWM0:
-			if(mode == PWM_SCLK_XTAL)
-				sys_ll_set_cpu_clk_div_mode1_cksel_pwm0(sel_xtal);
-			else
-				sys_ll_set_cpu_clk_div_mode1_cksel_pwm0(sel_clk32);
-			break;
-		case SYS_SEL_PWM1:
-			if(mode == PWM_SCLK_XTAL)
-				sys_ll_set_cpu_clk_div_mode1_cksel_pwm0(sel_xtal);
-			else
-				sys_ll_set_cpu_clk_div_mode1_cksel_pwm0(sel_clk32);
-			break;
-
-		default:
-			break;
-	}
+	 if (mode == PWM_SCLK_XTAL) {
+		sys_ll_set_cpu_clk_div_mode1_cksel_pwm0(sel_xtal);
+	 } else {
+		sys_ll_set_cpu_clk_div_mode1_cksel_pwm0(sel_80m);
+	 }
 }
 
 void sys_hal_timer_select_clock(sys_sel_timer_t num, timer_src_clk_t mode)
@@ -2335,6 +2322,11 @@ void sys_hal_set_ana_reg8_rst_wks1v(uint32_t value)
 	sys_ana_ll_set_ana_reg8_rst_wks1v(value);
 }
 
+void sys_hal_set_ana_reg8_rst_timerwks(uint32_t value)
+{
+	sys_ana_ll_set_ana_reg8_rst_timerwks(value);
+}
+
 __IRAM_SEC void sys_hal_set_ana_reg8_lvsleep_wkrst(uint32_t value)
 {
 	//sys_ana_ll_set_ana_reg8_lvsleep_wkrst(value);
@@ -2627,9 +2619,9 @@ void sys_hal_early_init(void)
 	 */
 	sys_ana_ll_set_ana_reg8_spi_latch1v(1);
 #if CONFIG_AON_RTC_KEEP_TIME_SUPPORT
-	sys_hal_analog_set(ANALOG_REG9, 0xB555B327);//tenglong20240805:2M buck for EVM
+	sys_hal_analog_set(ANALOG_REG9, 0xB55DB327);//tenglong20240805:2M buck for EVM
 #else
-	sys_hal_analog_set(ANALOG_REG9, 0xB5553327);//tenglong20240805:2M buck for EVM
+	sys_hal_analog_set(ANALOG_REG9, 0xB55D3327);//tenglong20240805:2M buck for EVM
 #endif
 	sys_hal_analog_set(ANALOG_REG10, 0xF7EEB89A);
 	sys_hal_analog_set(ANALOG_REG11, 0x00000000);
@@ -2654,12 +2646,12 @@ void sys_hal_set_scr_clk(uint32_t value)
 void  sys_hal_set_cpu_cp_test_config(uint32_t cfg_id)
 {
 	uint32_t spi_latchlb;
-    uint32_t vorehsel;
+	uint32_t vorehsel;
 	switch (cfg_id) {
 	case 0:
-		//cpu clk 120MHz
-		sys_ll_set_cpu_clk_div_mode1_cksel_core(0x1);
-		sys_ll_set_cpu_clk_div_mode1_clkdiv_core(0x3);
+		//cpu clk 160MHz
+		sys_ll_set_cpu_clk_div_mode1_cksel_core(0x1);  // select DPLL480MHz
+		sys_ll_set_cpu_clk_div_mode1_clkdiv_core(0x2);  // DPLL480M/(1 + 2) = 160Mhz
 
 		// volt 0.755v
 		spi_latchlb = sys_ana_ll_get_reg8_value();
@@ -2678,9 +2670,9 @@ void  sys_hal_set_cpu_cp_test_config(uint32_t cfg_id)
 
 		break;
 	case 1:
-		//cpu clk 160MHz
-		sys_ll_set_cpu_clk_div_mode1_cksel_core(0x1);
-		sys_ll_set_cpu_clk_div_mode1_clkdiv_core(0x2);
+		//cpu clk 240MHz
+		sys_ll_set_cpu_clk_div_mode1_cksel_core(0x1);  // select DPLL480MHz
+		sys_ll_set_cpu_clk_div_mode1_clkdiv_core(0x1);  // DPLL480M/(1 + 1) = 240Mhz
 
 		// volt 0.875v
 		spi_latchlb = sys_ana_ll_get_reg8_value();

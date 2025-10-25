@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Beken
+// Copyright 2020-2025 Beken
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,13 +24,12 @@
 #include "power_driver.h"
 #include "sdio_host_driver.h"
 #include "sdio_host_hal.h"
+#include "sdio_hal.h"
 #include "sys_driver.h"
 #include "icu_driver.h"
 #include "drv_model_pub.h"
-#if (!CONFIG_SYSTEM_CTRL)
-#include "bk_sys_ctrl.h"
-#endif
 #include "bk_misc.h"
+
 #if CONFIG_SDIO_PM_CB_SUPPORT
 #include <modules/pm.h>
 #endif
@@ -41,6 +40,11 @@
 
 #if (CONFIG_TASK_WDT)
 #include "bk_wdt.h"
+#endif
+
+#if CONFIG_IO_MATRIX_VER2_0
+#include "driver/io_matrix.h"
+#include "io_matrix_driver.h"
 #endif
 
 #if (CONFIG_SDIO_V2P0)
@@ -94,41 +98,44 @@ typedef struct {
 static sdio_host_driver_t s_sdio_host = {0};
 static bool s_sdio_host_driver_is_init = false;
 static bool s_sdio_host_data_crc_error = false;
-
 static void sdio_host_isr(void);
 void bk_sdio_clock_en(uint32_t enable);
 
-
-#if (!CONFIG_GPIO_DEFAULT_SET_SUPPORT)
 static void sdio_host_init_gpio(void)
 {
-	const sdio_host_gpio_map_t sdio_host_gpio_map_table[] = SDIO_HOST_GPIO_MAP;
+	const sdio_host_gpio_map_t sdio_host_gpio_map_table[] = SDIO_GPIO_MAP;
 
 	/* set gpio sdio host map: clk,cmd,data0 */
 	for (uint32_t i = SDIO_HOST_GPIO_CLK_INDEX; i < SDIO_HOST_GPIO_PIN_NUMBER; i++) {
 		gpio_dev_unmap(sdio_host_gpio_map_table[i].gpio_id);
 	}
 
-#if (CONFIG_SYSTEM_CTRL)
 #if CONFIG_SDIO_4LINES_EN
 	gpio_sdio_sel(GPIO_SDIO_MAP_MODE0);
 #else
 	gpio_sdio_one_line_sel(GPIO_SDIO_MAP_MODE0);
 #endif
-#else
-	gpio_sdio_sel(GPIO_SDIO_MAP_MODE0);
-	icu_sdio_host_enable();
-#endif
 
 	/* sdio host clk */
 	bk_gpio_pull_up(sdio_host_gpio_map_table[SDIO_HOST_GPIO_CLK_INDEX].gpio_id);
 	bk_gpio_set_capacity(sdio_host_gpio_map_table[SDIO_HOST_GPIO_CLK_INDEX].gpio_id, 3);
+#if CONFIG_IO_MATRIX_VER2_0
+	bk_iomx_set_gpio_func(sdio_host_gpio_map_table[SDIO_HOST_GPIO_CLK_INDEX].gpio_id, FUNC_CODE_SDIO_CLK);
+#endif
+
 	/* sdio host cmd */
 	bk_gpio_pull_up(sdio_host_gpio_map_table[SDIO_HOST_GPIO_CMD_INDEX].gpio_id);
 	bk_gpio_set_capacity(sdio_host_gpio_map_table[SDIO_HOST_GPIO_CMD_INDEX].gpio_id, 3);
+#if CONFIG_IO_MATRIX_VER2_0
+	bk_iomx_set_gpio_func(sdio_host_gpio_map_table[SDIO_HOST_GPIO_CMD_INDEX].gpio_id, FUNC_CODE_SDIO_CMD);
+#endif
+
 	/* sdio host data0 */
 	bk_gpio_pull_up(sdio_host_gpio_map_table[SDIO_HOST_GPIO_DATA0_INDEX].gpio_id);
 	bk_gpio_set_capacity(sdio_host_gpio_map_table[SDIO_HOST_GPIO_DATA0_INDEX].gpio_id, 3);
+#if CONFIG_IO_MATRIX_VER2_0
+	bk_iomx_set_gpio_func(sdio_host_gpio_map_table[SDIO_HOST_GPIO_DATA0_INDEX].gpio_id, FUNC_CODE_SDIO_DATA_0);
+#endif
 
 #if CONFIG_SDIO_4LINES_EN
 	/* sdio host data1,data2,data3 */
@@ -136,9 +143,14 @@ static void sdio_host_init_gpio(void)
 		bk_gpio_pull_up(sdio_host_gpio_map_table[i].gpio_id);
 		bk_gpio_set_capacity(sdio_host_gpio_map_table[i].gpio_id, 3);
 	}
-#endif
+
+#if CONFIG_IO_MATRIX_VER2_0
+	bk_iomx_set_gpio_func(sdio_host_gpio_map_table[SDIO_HOST_GPIO_DATA1_INDEX].gpio_id, FUNC_CODE_SDIO_DATA_1);
+	bk_iomx_set_gpio_func(sdio_host_gpio_map_table[SDIO_HOST_GPIO_DATA2_INDEX].gpio_id, FUNC_CODE_SDIO_DATA_2);
+	bk_iomx_set_gpio_func(sdio_host_gpio_map_table[SDIO_HOST_GPIO_DATA3_INDEX].gpio_id, FUNC_CODE_SDIO_DATA_3);
+#endif // CONFIG_IO_MATRIX_VER2_0
+#endif // CONFIG_SDIO_4LINES_EN
 }
-#endif
 
 #if CONFIG_SDIO_GDMA_EN
 static uint32_t s_dma_transfer_size_check = 0;
@@ -171,16 +183,12 @@ static void sdio_dma_tx_start(dma_id_t id)
 
 void sdio_dma_tx_finish(dma_id_t id)
 {
-	//static uint32_t s_dma_tx_finish_cnt = 0;
 
 	s_sdio_host.tx_transfered_len += s_sdio_host.tx_cur_trans_len;	//Current round finish, add the transfered len
-	//bk_gpio_set_value(32, 0);
 	sdio_dma_tx_start(id);
 
 	if(s_sdio_host.tx_total_len <= s_sdio_host.tx_transfered_len)
 	{
-		//s_dma_tx_finish_cnt++;
-		//SDIO_HOST_LOGD("%s:s_dma_tx_finish_cnt=%d\r\n", __func__, s_dma_tx_finish_cnt);
 		sdio_host_hal_enable_tx_fifo_empty_mask(&s_sdio_host.hal);
 	}
 }
@@ -194,8 +202,6 @@ static bk_err_t sdio_dma_tx_init(void)
 
 	dma_config.src.dev = DMA_DEV_DTCM;
 	dma_config.src.width = DMA_DATA_WIDTH_32BITS;
-	//dma_config.src.start_addr = (uint32) psrc;
-	//dma_config.src.end_addr =  (uint32) psrc + count;
 	dma_config.src.addr_inc_en = DMA_ADDR_INC_ENABLE;
 
 	dma_config.dst.dev = DMA_DEV_SDIO;
@@ -215,9 +221,9 @@ static bk_err_t sdio_dma_tx_init(void)
 	}
 
 	BK_LOG_ON_ERR(bk_dma_init((dma_id_t)s_sdio_host.dma_tx_id, &dma_config));
-	//BK_LOG_ON_ERR(bk_dma_set_transfer_len(s_sdio_host.dma_tx_id, count));
 	BK_LOG_ON_ERR(bk_dma_register_isr((dma_id_t)s_sdio_host.dma_tx_id, NULL, sdio_dma_tx_finish));
 	BK_LOG_ON_ERR(bk_dma_enable_finish_interrupt((dma_id_t)s_sdio_host.dma_tx_id));
+
 #if (CONFIG_SPE)
 	BK_LOG_ON_ERR(bk_dma_set_dest_sec_attr((dma_id_t)s_sdio_host.dma_tx_id, DMA_ATTR_SEC));
 	BK_LOG_ON_ERR(bk_dma_set_src_sec_attr((dma_id_t)s_sdio_host.dma_tx_id, DMA_ATTR_SEC));
@@ -277,14 +283,10 @@ static bk_err_t sdio_dma_rx_init()
 	dma_config.src.dev = DMA_DEV_SDIO_RX;
 	dma_config.src.width = DMA_DATA_WIDTH_32BITS;
 	dma_config.src.addr_inc_en = DMA_ADDR_INC_DISABLE;
-
 	dma_config.src.start_addr = (uint32) SDIO_REG0X10_ADDR;
 	dma_config.src.end_addr =  (uint32) SDIO_REG0X10_ADDR;
-
 	dma_config.dst.dev = DMA_DEV_DTCM;
 	dma_config.dst.width = DMA_DATA_WIDTH_32BITS;
-	//dma_config.dst.start_addr = (uint32) pbuf;
-	//dma_config.dst.end_addr = (uint32) pbuf + count;
 	dma_config.dst.addr_inc_en = DMA_ADDR_INC_ENABLE;
 
 	s_sdio_host.dma_rx_id = bk_dma_alloc(DMA_DEV_SDIO_RX);
@@ -295,7 +297,6 @@ static bk_err_t sdio_dma_rx_init()
 	}
 
 	BK_LOG_ON_ERR(bk_dma_init(s_sdio_host.dma_rx_id, &dma_config));
-	//BK_LOG_ON_ERR(bk_dma_set_transfer_len(s_sdio_host.dma_rx_id, count));
 	BK_LOG_ON_ERR(bk_dma_register_isr(s_sdio_host.dma_rx_id, NULL, sdio_dma_rx_finish));
 	BK_LOG_ON_ERR(bk_dma_enable_finish_interrupt(s_sdio_host.dma_rx_id));
 #if (CONFIG_SPE)
@@ -315,46 +316,19 @@ static bk_err_t sdio_dma_rx_init()
  */
 static void sdio_host_init_common(void)
 {
-#if (CONFIG_SYSTEM_CTRL)
-	sys_drv_dev_clk_pwr_up(CLK_PWR_ID_SDIO, CLK_PWR_CTRL_PWR_UP);
-	sys_hal_set_sdio_clk_sel(0); // set sdio source clock as XTAL 26M
-
-//set
-#if (CONFIG_SOC_BK7236XX || CONFIG_SOC_BK7239XX || CONFIG_SOC_BK7286XX)
-	sdio_host_hal_write_blk_en(&s_sdio_host.hal, 1);
-	sdio_host_hal_set_fifo_send_cnt(&s_sdio_host.hal, 128);
-#endif
-
-	//sdio_host_interrupt_enable(id);
-	sys_drv_int_enable(SDIO_INTERRUPT_CTRL_BIT);
-#if CONFIG_SDIO_V2P0
-	sdio_host_hal_enable_all_mask(&s_sdio_host.hal);
-#endif
-#else
-	power_sdio_pwr_up();
-	clk_set_sdio_clk_26m();
-	icu_enable_sdio_interrupt();
-#endif
-
-// Temp code : if not set this, bk7271 sdio cmd line will send CMD73 forever
-#if (CONFIG_SOC_BK7271)
-	UINT32 param;
-
-	param = BLK_BIT_MIC_QSPI_RAM_OR_FLASH;
-	sddev_control(DD_DEV_TYPE_SCTRL, CMD_SCTRL_BLK_ENABLE, &param);
-
-	param = PSRAM_VDD_3_3V;
-	sddev_control(DD_DEV_TYPE_SCTRL, CMD_QSPI_VDDRAM_VOLTAGE, &param);
-#endif
-
-#if CONFIG_GPIO_DEFAULT_SET_SUPPORT
-	/*
-	 * GPIO info is setted in GPIO_DEFAULT_DEV_CONFIG and inited in bk_gpio_driver_init->gpio_hal_default_map_init.
-	 * If needs to re-config GPIO, can deal it here.
-	 */
-#else
 	/* config sdio host gpio */
 	sdio_host_init_gpio();
+
+	sys_drv_dev_clk_pwr_up(CLK_PWR_ID_SDIO, CLK_PWR_CTRL_PWR_UP);
+	sys_hal_set_sdio_clk_sel(0); // set sdio source clock as XTAL 26M
+	sdio_hal_set_sd_soft_resetn(1);
+	sdio_host_hal_write_blk_en(&s_sdio_host.hal, 1);
+	sdio_host_hal_set_fifo_send_cnt(&s_sdio_host.hal, 128);
+
+	sys_drv_int_enable(SDIO_INTERRUPT_CTRL_BIT);
+
+#if CONFIG_SDIO_V2P0
+	sdio_host_hal_enable_all_mask(&s_sdio_host.hal);
 #endif
 }
 
@@ -362,12 +336,7 @@ static void sdio_host_deinit_common(void)
 {
 	sdio_host_hal_reset_config_to_default(&s_sdio_host.hal);
 
-#if (CONFIG_SYSTEM_CTRL)
 	sys_drv_dev_clk_pwr_up(CLK_PWR_ID_SDIO, CLK_PWR_CTRL_PWR_DOWN);
-#else
-	power_sdio_pwr_down();
-	icu_disable_sdio_interrupt();
-#endif
 	sys_drv_int_disable(SDIO_INTERRUPT_CTRL_BIT);
 }
 
@@ -505,22 +474,16 @@ bk_err_t bk_sdio_host_init(const sdio_host_config_t *config)
 #endif
 
 #if (CONFIG_SDIO_V2P0)
-	/* reset sdio host register */
-	sdio_host_hal_reset_config_to_default(&s_sdio_host.hal);
-
-	sdio_host_init_common();
-#else
-	sdio_host_init_common();
-
-	/* reset sdio host register */
-	sdio_host_hal_reset_config_to_default(&s_sdio_host.hal);
-#endif
-#if (CONFIG_SDIO_V2P0)
 	bk_sdio_host_set_clock_freq(config->clock_freq);
+	sdio_host_hal_reset_config_to_default(&s_sdio_host.hal);
+
+	sdio_host_init_common();
 #else
-	/* set sdio host clock frequence */
-	//sdio_host_hal_set_clk_freq(&s_sdio_host.hal, CONFIG_SDIO_HOST_DEFAULT_CLOCK_FREQ);
 	sdio_host_hal_set_clk_freq(&s_sdio_host.hal, config->clock_freq);
+	sdio_host_init_common();
+
+	/* reset sdio host register */
+	sdio_host_hal_reset_config_to_default(&s_sdio_host.hal);
 #endif
 
 #if CONFIG_SDIO_GDMA_EN
@@ -874,24 +837,19 @@ static bk_err_t sdio_dma_write_fifo(const uint8_t *write_data, uint32_t data_siz
 			bk_dma_stop(s_sdio_host.dma_tx_id);
 		}
 	}
-
 #endif
-
-	//bk_gpio_set_value(34, 2);
-	//bk_gpio_set_value(34, 0);
 	//maybe DMA finish, but SDIO doesn't finish
-
 	//Default:after DMA finish ISR,there are 512+16 bytes still in the SDIO FIFO.so wait fifo transmit finish here
 	error_state = rtos_get_semaphore(&(s_sdio_host.tx_sema), SDIO_MAX_TX_WAIT_TIME);
 	if(error_state)
 	{
 		SDIO_HOST_LOGE("sdio write data timeout,write_data=0x%x,data_size=%d, tx_transfered_len=%d\r\n", write_data, data_size, s_sdio_host.tx_transfered_len);
 	}
-	//error_state = BK_OK;
 
 	return error_state;
 }
 #endif
+
 static bk_err_t sdio_host_cpu_write_fifo(const uint8_t *write_data, uint32_t data_size)
 {
 	BK_RETURN_ON_NULL(write_data);
@@ -900,7 +858,7 @@ static bk_err_t sdio_host_cpu_write_fifo(const uint8_t *write_data, uint32_t dat
 
 	sdio_host_hal_t *hal = &s_sdio_host.hal;
 	uint32_t index = 0;
-#if (CONFIG_SDIO_DEBUG_SUPPORT || CONFIG_SOC_BK7256XX)
+#if (CONFIG_SDIO_DEBUG_SUPPORT)
 	uint32 data_tmp = 0;
 #endif
 	bk_err_t error_state = BK_OK;
@@ -925,16 +883,10 @@ static bk_err_t sdio_host_cpu_write_fifo(const uint8_t *write_data, uint32_t dat
 //NOTES:SDIO V1P0:write data should be reverted sequence by software, and read data should revert by ASIC of "SD_BYTE_SEL"
 //or the endian isn't match with windows system.
 //From BK7258XX, the write data sequence is reverted by ASIC hardware,without any config of "SD_BYTE_SEL"
-#if CONFIG_SOC_BK7256XX	//after BK7258 V5 chip, ASIC chip TX no needs software revert data.
-		//switch byte sequence, as the SDIO transfer data with big-endian
-		data_tmp = ((write_data[index] << 24) | (write_data[index + 1] << 16) | (write_data[index + 2] << 8) | write_data[index + 3]);
-		sdio_host_hal_write_fifo(hal, data_tmp);
-#else
 #if (CONFIG_SDIO_DEBUG_SUPPORT)
 		data_tmp = *(uint32_t *)&write_data[index];
 #endif
 		sdio_host_hal_write_fifo(hal, *(uint32_t *)&write_data[index]);
-#endif
 
 		index += 4;
 
@@ -1231,25 +1183,16 @@ static void sdio_host_isr(void)
 			uint32_t cmd_rsp_ok = true;
 			if(sdio_host_hal_is_cmd_rsp_crc_ok_interrupt_triggered(hal, int_status))	//CRC OK
 			{
-
 			}
 			else if(sdio_host_hal_is_cmd_rsp_crc_fail_interrupt_triggered(hal, int_status))	//CRC Fail
 			{
 				//SDIO Host driver no need to care about SDCARD CMD Index,SDCARD driver needs to set
 				//the speific CMD Index whether needs CRC check.
-				/* if ((cmd_index != SD_APP_OP_COND) &&
-					(cmd_index != ALL_SEND_CID) &&
-					(cmd_index != SEND_CSD) &&
-					(cmd_index != SEND_OP_COND) &&
-					(cmd_index != APP_RSP_CMD)) */ {
-					SDIO_HOST_LOGW("sdio receive CMD%d crc fail\r\n", cmd_index);
-					cmd_rsp_ok = false;
-					//return BK_ERR_SDIO_HOST_CMD_RSP_CRC_FAIL;
-				}
+				SDIO_HOST_LOGW("sdio receive CMD%d crc fail\r\n", cmd_index);
+				cmd_rsp_ok = false;
 			}
 			else	//some CMD has no response,so has no CRC check.
 			{
-
 			}
 
 			if (/*s_sdio_host.is_cmd_blocked &&*/ cmd_rsp_ok) {
@@ -1257,7 +1200,6 @@ static void sdio_host_isr(void)
 				{
 					SDIO_HOST_LOGE("sdio push cmd msg fail\r\n");
 				}
-				//s_sdio_host.is_cmd_blocked = false;
 			}
 		}
 		else if(sdio_host_hal_is_cmd_rsp_timeout_interrupt_triggered(hal, int_status))	//timeout
@@ -1286,15 +1228,6 @@ static void sdio_host_isr(void)
 			rtos_set_semaphore(&s_sdio_host.tx_sema);
 		}
 #endif
-		/*
-		if(sdio_host_hal_is_tx_fifo_need_write_int_triggered(hal, int_status))
-		{
-			sdio_host_hal_disable_tx_fifo_need_write_mask(hal);
-		}
-		*/
-		//bk_gpio_set_value(33, 2);
-		//bk_gpio_set_value(33, 0);
-
 		//TODO:check write status
 		if (sdio_host_hal_get_wr_status(&s_sdio_host.hal) != 2) {
 			for (int sts_index = 0; sts_index < SDIO_GET_WR_STS_MAX_COUNT; sts_index++ ) {
@@ -1311,31 +1244,12 @@ static void sdio_host_isr(void)
 		{
 			SDIO_HOST_LOGD("write blk end\r\n");
 #if CONFIG_SDIO_GDMA_EN
-#if 0
-			if(s_sdio_host.dma_tx_en)	//WARNING:DMA enable: SDIO,DMA,Software at a-sync status,maybe software loses end isr.
-			{
-				s_dma_transfer_size_check += 512;	//can't use this value to check whether tx finish:because if CPU-INT is disable or CPU response too slow, then it lost ISR handler.
-				if(s_sdio_host.tx_total_len <= s_sdio_host.tx_transfered_len)	//after DMA finish and then set sema to avoid too much sema clear.
-				{
-					rtos_set_semaphore(&s_sdio_host.tx_sema);
-				}
-			}
-			else
-				rtos_set_semaphore(&s_sdio_host.tx_sema);
-#endif
 #else
 			rtos_set_semaphore(&s_sdio_host.tx_sema);
 #endif
 		}
-#if 0	//(CONFIG_SDIO_HOST_CLR_WRITE_INT)
-		bk_sdio_tx_fifo_clk_gate_config(1);
+
 		sdio_host_hal_clear_write_data_interrupt_status(hal, int_status);
-		sdio_host_hal_clear_write_data_interrupt_status(hal, int_status);
-		sdio_host_hal_clear_write_data_interrupt_status(hal, int_status);
-		bk_sdio_tx_fifo_clk_gate_config(0);//clr 3 times to wait sd_card a cycle;
-#else
-		sdio_host_hal_clear_write_data_interrupt_status(hal, int_status);
-#endif
 	}
 	//RX(host read) DATA
 	else if(sdio_host_hal_is_data_recv_end_int_triggered(hal, int_status) ||
@@ -1370,7 +1284,6 @@ static void sdio_host_isr(void)
 			rtos_set_semaphore(&s_sdio_host.rx_sema);
 
 #endif
-			//sdio_host_hal_clear_read_data_interrupt_status(hal, int_status);
 		}
 		else if(sdio_host_hal_is_data_timeout_int_triggered(hal, int_status))	//timeout
 		{

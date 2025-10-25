@@ -1,4 +1,4 @@
-menu "bk7239"
+menu "bk7239n"
 	config CPU0_SPE_RAM_SIZE
 		hex "CPU0 RAM size for SPE"
 		default 0x80000

@@ -594,6 +594,29 @@ bk_err_t bk_flash_driver_init(void)
 
 #if (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX)
 	#if (CONFIG_SOC_BK7236N) || (CONFIG_SOC_BK7239XX)
+	#if CONFIG_ATE_TEST
+	#if (CONFIG_EXT_FLASH_CLK_FREQ == 40000000)
+	if((0 != sys_drv_flash_get_clk_sel()) || (0 != sys_drv_flash_get_clk_div())) {
+		sys_drv_flash_set_clk_div(0); // XTAL= 40M
+		sys_drv_flash_cksel(0);
+	}
+	#elif (CONFIG_EXT_FLASH_CLK_FREQ == 80000000)
+	if((2 != sys_drv_flash_get_clk_sel()) || (0 != sys_drv_flash_get_clk_div())) {
+		sys_drv_flash_set_clk_div(0); // 80M div 1 = 80M
+		sys_drv_flash_cksel(2);
+	}
+	#elif (CONFIG_EXT_FLASH_CLK_FREQ == 120000000)
+	if((3 != sys_drv_flash_get_clk_sel()) || (0 != sys_drv_flash_get_clk_div())) {
+		sys_drv_flash_set_clk_div(0); // 120M div 1 = 120M
+		sys_drv_flash_cksel(3);
+	}
+	#else
+	if((0 != sys_drv_flash_get_clk_sel()) || (0 != sys_drv_flash_get_clk_div())) {
+		sys_drv_flash_set_clk_div(0); // XTAL= 40M
+		sys_drv_flash_cksel(0);
+	}
+	#endif
+	#else
 	if((s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_GD || (s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_TH) {
 		if((2 != sys_drv_flash_get_clk_sel()) || (0 != sys_drv_flash_get_clk_div())) {
 			sys_drv_flash_set_clk_div(0); // 80M div 1 = 80M
@@ -605,6 +628,7 @@ bk_err_t bk_flash_driver_init(void)
 			sys_drv_flash_cksel(0);
 		}
 	}
+	#endif
 	#else
 	if((s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_GD || (s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_TH) {
 		if((1 != sys_drv_flash_get_clk_sel()) || (1 != sys_drv_flash_get_clk_div())) {

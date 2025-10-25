@@ -149,6 +149,8 @@ void sys_drv_set_cpu2_reset(uint32_t reset_value);
 #endif
 
 void sys_drv_wakeup_source_clear(void);
+void sys_drv_wakeup_source_gpio_clear(void);
+void sys_drv_wakeup_source_rtc_clear(void);
 void sys_drv_enable_mac_wakeup_source();
 void sys_drv_enable_bt_wakeup_source();
 void sys_drv_all_modules_clk_div_set(clk_div_reg_e reg, uint32_t value);

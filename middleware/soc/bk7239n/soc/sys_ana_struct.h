@@ -119,7 +119,8 @@ typedef volatile union {
 	struct {
 		uint32_t temp_gsel                :  1; /**<bit[0 : 0]  */
 		uint32_t vbg_0v9sel               :  1; /**<bit[1 : 1]  */
-		uint32_t ck2xsel                  : 15; /**<bit[2 : 16]  */
+		uint32_t nc_2_15                  : 14; /**<bit[2 : 15]  */
+		uint32_t ck2xsel                  :  1; /**<bit[16 : 16]  */
 		uint32_t nc_17_21                 :  5; /**<bit[17 : 21]  */
 		uint32_t dpll_vctrl_tsten         :  1; /**<bit[22 : 22]  */
 		uint32_t spilatchb_rc32k          :  1; /**<bit[23 : 23]  */

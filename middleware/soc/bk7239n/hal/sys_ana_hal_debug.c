@@ -125,6 +125,7 @@ static void sys_ana_dump_ana_reg4(void)
 	SOC_LOGI("ana_reg4: %8x\r\n", REG_READ(SOC_SYS_ANA_REG_BASE + (0x44 << 2)));
 	SOC_LOGI("	temp_gsel: %8x\r\n", r->temp_gsel);
 	SOC_LOGI("	vbg_0v9sel: %8x\r\n", r->vbg_0v9sel);
+	SOC_LOGI("	nc_2_15: %8x\r\n", r->nc_2_15);
 	SOC_LOGI("	ck2xsel: %8x\r\n", r->ck2xsel);
 	SOC_LOGI("	nc_17_21: %8x\r\n", r->nc_17_21);
 	SOC_LOGI("	dpll_vctrl_tsten: %8x\r\n", r->dpll_vctrl_tsten);

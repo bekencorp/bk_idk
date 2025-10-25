@@ -20,7 +20,7 @@ project_name = os.getenv("PROJECT")
 armino_soc = os.getenv("ARMINO_SOC")
 build_path = os.path.realpath('.')
 ota_tool = '%s/tools/env_tools/rtt_ota/ota-rbl/ota_packager_python.py'%(armino_path)
-chip = 'bk7239'
+chip = 'bk7239n'
 firmware = 'app.bin'
 image_name = 'all-app.bin'
 file_op_list = list()
@@ -37,7 +37,7 @@ def parse_args():
     description = '''Beken HID Downloader.'''
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('-c', '--chip',
-                        default='bk7239',
+                        default='bk7239n',
                         help="chip type")
     parser.add_argument('-i', '--index', type=int,
                         default=0,

@@ -32,6 +32,10 @@ typedef struct {
 typedef struct {
 	gpio_id_t gpio_id;
 	gpio_dev_t dev;
+
+#if CONFIG_IO_MATRIX_VER2_0
+	uint32_t func_code;
+#endif
 } sdio_host_gpio_map_t;
 
 #define sdio_host_hal_reset_config_to_default(hal) sdio_host_ll_reset_config_to_default((hal)->hw)
@@ -110,12 +114,8 @@ typedef struct {
 #define sdio_host_hal_enable_all_mask(hal) sdio_host_ll_enable_all_mask((hal)->hw)
 #define sdio_host_hal_set_clock_gate(hal, clk_gate) sdio_host_ll_set_clock_gate((hal)->hw, clk_gate)
 #define sdio_hal_host_set_tx_fifo_need_write_mask_cg(hal, clk_gate) sdio_host_ll_set_tx_fifo_clock_gate((hal)->hw, clk_gate);
-
-#if (CONFIG_SOC_BK7236XX || CONFIG_SOC_BK7239XX || CONFIG_SOC_BK7286XX)
 #define sdio_host_hal_write_blk_en(hal, en) sdio_host_ll_write_blk_en((hal)->hw, en)
 #define sdio_host_hal_set_fifo_send_cnt(hal, cnt) sdio_host_ll_set_fifo_send_cnt((hal)->hw, cnt)
-#endif
-
 #endif
 
 bk_err_t sdio_host_hal_init(sdio_host_hal_t *hal);

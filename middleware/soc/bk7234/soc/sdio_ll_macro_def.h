@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Beken 
+// Copyright 2020-2025 Beken 
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");           
 // you may not use this file except in compliance with the License.            
@@ -25,6 +25,15 @@ extern "C" {
 #endif                      
 
 #include <soc/soc.h>          
+
+static inline void sdio_ll_set_sd_soft_resetn(uint32_t value)
+{
+    uint32_t reg_value;
+    reg_value = REG_READ(SDIO_REG0X2_ADDR);
+    reg_value &= ~(SDIO_SD_SOFT_RESETN_MASK << SDIO_SD_SOFT_RESETN_POS);
+    reg_value |= ((value & SDIO_SD_SOFT_RESETN_MASK) << SDIO_SD_SOFT_RESETN_POS);
+    REG_WRITE(SDIO_REG0X2_ADDR,reg_value);
+}
 
 static inline uint32_t sdio_ll_get_reg0x4_value(void)
 {
@@ -682,6 +691,44 @@ static inline void sdio_ll_set_dat_s_rd_bus_int(uint32_t value)
     REG_WRITE(SDIO_REG0XD_ADDR,reg_value);
 }
 
+/* Slave write multi-block data from host side complete interrupt status:Write 1 to clear to 0 */
+static inline uint32_t sdio_ll_get_dat_wrsts_err_int(void)
+{
+    uint32_t reg_value;
+    reg_value = REG_READ(SDIO_REG0XD_ADDR);
+    reg_value = ((reg_value >> SDIO_DAT_WRSTS_ERR_INT_POS) & SDIO_DAT_WRSTS_ERR_INT_MASK);
+    return reg_value;
+}
+
+/* Slave read multi-block data from host side complete interrupt status:Write 1 to clear to 0 */
+static inline void sdio_ll_set_dat_wrsts_err_int(uint32_t value)
+{
+    uint32_t reg_value;
+
+    //read clear feature
+    reg_value = (value & SDIO_DAT_WRSTS_ERR_INT_MASK) << SDIO_DAT_WRSTS_ERR_INT_POS;
+    REG_WRITE(SDIO_REG0XD_ADDR, reg_value);
+}
+
+/* Slave write multi-block data to host side complete interrupt status:Write 1 to clear to 0 */
+static inline uint32_t sdio_ll_get_dat_s_wr_blk_int(void)
+{
+    uint32_t reg_value;
+    reg_value = REG_READ(SDIO_REG0XD_ADDR);
+    reg_value = ((reg_value >> SDIO_DAT_S_WR_BLK_INT_POS) & SDIO_DAT_S_WR_BLK_INT_MASK);
+    return reg_value;
+}
+
+/* Slave write multi-block data to host side complete interrupt status:Write 1 to clear to 0 */
+static inline void sdio_ll_set_dat_s_wr_blk_int(uint32_t value)
+{
+    uint32_t reg_value;
+
+    //write clear feature
+    reg_value = (value & SDIO_DAT_S_WR_BLK_INT_MASK) << SDIO_DAT_S_WR_BLK_INT_POS;
+    REG_WRITE(SDIO_REG0XD_ADDR, reg_value);
+}
+
 static inline uint32_t sdio_ll_get_reg0xe_value(void)
 {
     return REG_READ(SDIO_REG0XE_ADDR);
@@ -978,6 +1025,46 @@ static inline void sdio_ll_set_idle_stop_jump_sel(uint32_t value)
     reg_value &= ~(SDIO_IDLE_STOP_JUMP_SEL_MASK << SDIO_IDLE_STOP_JUMP_SEL_POS);
     reg_value |= ((value & SDIO_IDLE_STOP_JUMP_SEL_MASK) << SDIO_IDLE_STOP_JUMP_SEL_POS);
     REG_WRITE(SDIO_REG0XE_ADDR,reg_value);
+}
+
+/* If slave read multi-block from host side complete, set it whether enable interrupt. */
+static inline void sdio_ll_slave_set_read_block_int_mask(uint32_t value)
+{
+    uint32_t reg_value;
+    reg_value = REG_READ(SDIO_REG0XE_ADDR);
+    reg_value &= ~(SDIO_WRSTS_ERR_INT_MASK_MASK << SDIO_WRSTS_ERR_INT_MASK_POS);
+    reg_value |= ((value & SDIO_WRSTS_ERR_INT_MASK_MASK) << SDIO_WRSTS_ERR_INT_MASK_POS);
+    REG_WRITE(SDIO_REG0XE_ADDR, reg_value);
+}
+
+/* SDIO enable multi-block transfer feature */
+static inline void sdio_ll_set_read_mul_sel(uint32_t value)
+{
+    uint32_t reg_value;
+    reg_value = REG_READ(SDIO_REG0XE_ADDR);
+    reg_value &= ~(SDIO_SLAVE_READ_MUL_SEL_MASK << SDIO_SLAVE_READ_MUL_SEL_POS);
+    reg_value |= ((value & SDIO_SLAVE_READ_MUL_SEL_MASK) << SDIO_SLAVE_READ_MUL_SEL_POS);
+    REG_WRITE(SDIO_REG0XE_ADDR, reg_value);
+}
+
+/* If slave writes multi-block to host side complete, set it whether enable interrupt. */
+static inline void sdio_ll_slave_set_write_block_int_mask(uint32_t value)
+{
+    uint32_t reg_value;
+    reg_value = REG_READ(SDIO_REG0XE_ADDR);
+    reg_value &= ~(SDIO_SLAVE_WRITE_BLOCK_INT_MASK_MASK << SDIO_SLAVE_WRITE_BLOCK_INT_MASK_POS);
+    reg_value |= ((value & SDIO_SLAVE_WRITE_BLOCK_INT_MASK_MASK) << SDIO_SLAVE_WRITE_BLOCK_INT_MASK_POS);
+    REG_WRITE(SDIO_REG0XE_ADDR, reg_value);
+}
+
+/* SDIO enable multi-block transfer feature */
+static inline void sdio_ll_set_write_mul_sel(uint32_t value)
+{
+    uint32_t reg_value;
+    reg_value = REG_READ(SDIO_REG0XE_ADDR);
+    reg_value &= ~(SDIO_SLAVE_WRITE_MUL_SEL_MASK << SDIO_SLAVE_WRITE_MUL_SEL_POS);
+    reg_value |= ((value & SDIO_SLAVE_WRITE_MUL_SEL_MASK) << SDIO_SLAVE_WRITE_MUL_SEL_POS);
+    REG_WRITE(SDIO_REG0XE_ADDR, reg_value);
 }
 
 /*write only reg:reg0xb:default value:0x0*/

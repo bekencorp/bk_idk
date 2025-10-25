@@ -302,6 +302,10 @@ static void uart_init_gpio(uart_id_t id)
 	{
 		case UART_ID_0:
 		{
+#if CONFIG_UART_PRINT_PORT_ATE
+			bk_gpio_set_value(GPIO_10, 0);
+			bk_gpio_set_value(GPIO_11, 0);
+#endif
 			gpio_dev_unmap(uart_hal_get_tx_pin(id));
 			gpio_dev_unmap(uart_hal_get_rx_pin(id));
 			gpio_dev_map(uart_hal_get_tx_pin(id), GPIO_DEV_UART1_TXD);

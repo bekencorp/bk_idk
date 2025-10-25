@@ -1057,7 +1057,7 @@ float bk_adc_data_calculate(UINT16 adc_val, UINT8 adc_chan)
 
     cali_value = saradc_calculate(adc_val);
     if (adc_chan == ADC_0) {
-        cali_value = cali_value * 2;
+        cali_value = cali_value * 4;
     }
 
     return cali_value;

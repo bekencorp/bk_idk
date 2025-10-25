@@ -1565,7 +1565,7 @@ void sys_hal_low_power_hardware_init()
 	sys_hal_rosc_calibration(2, 0x8);
 	#endif
 
-	/*rtc on bk7236N and bk7239 requires spi_timerwken*/
+	/*rtc on bk7236N and bk7239n requires spi_timerwken*/
 	sys_hal_set_ana_reg9_spi_timerwken(1);
 
 }

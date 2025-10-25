@@ -111,7 +111,11 @@ typedef volatile struct {
 			uint32_t cmd_s_res_end_int:           1; /**< bit[24] */
 			uint32_t data_s_wr_wai_int:           1; /**< bit[25] */
 			uint32_t data_s_rd_bus_int:           1; /**< bit[26] */
-			uint32_t reserved:                    5; /**< bit[27:31] */
+
+			uint32_t dat_wrsts_err_int: 		  1; /**< bit[27] WC */
+			uint32_t dat_crc_fail_int:			  1; /**< bit[28] WC */
+			uint32_t dat_s_wr_blk_int:			  1; /**< bit[29] WC */
+			uint32_t reserved:					  2; /**< bit[30:31] */
 		};
 		uint32_t v;
 	} sd_cmd_rsp_int_sel;
@@ -135,7 +139,13 @@ typedef volatile struct {
 			uint32_t tx_fifo_need_write_mask_cg:   1;  /**< bit[13] */
 			uint32_t write_wait_jump_sel:          1;  /**< bit[14] */
 			uint32_t idle_stop_jump_sel:           1;  /**< bit[15] */
-			uint32_t reserved:                     16; /**< bit[16:31] */
+
+			uint32_t dat_wrsts_err_int_mask:	   1;  /**< bit[16] */
+			uint32_t dat_crc_fail_int_mask:		   1;  /**< bit[17] */
+			uint32_t dat_s_wr_blk_int_mask:		   1;  /**< bit[18] */
+			uint32_t dat_s_rd_mul_sel:			   1;  /**< bit[19] */
+			uint32_t dat_s_wr_mul_sel:			   1;  /**< bit[20] */
+			uint32_t reserved:                     11; /**< bit[21:31] */
 		};
 		uint32_t v;
 	} sd_cmd_rsp_int_mask;

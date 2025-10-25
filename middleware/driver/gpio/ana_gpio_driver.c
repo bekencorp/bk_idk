@@ -33,7 +33,7 @@ gpio_id_t ana_gpio_get_wakeup_pin(void)
 		{
 			if (gpio_id == SOC_GPIO_NUM) {
 				gpio_id = i;
-				sys_drv_wakeup_source_clear();
+				sys_drv_wakeup_source_gpio_clear();
 				break;
 			} else {
 				// TODO: let user know multiple GPIOs were detected triggering wake-up at the same time

@@ -58,5 +58,11 @@ menu "FLASH"
 		depends on FLASH
 		bool "Enable flash partition operation by name"
 		default n
+
+	config EXT_FLASH_CLK_FREQ
+		depends on FLASH
+		int "Select flash clk frequency"
+		default "40000000"
+
 endmenu
 

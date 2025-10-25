@@ -1,4 +1,4 @@
-// Copyright 2022-2023 Beken
+// Copyright 2022-2025 Beken
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,8 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-
 
 #ifndef _SDIO_SLAVE_DRIVER_H_
 #define _SDIO_SLAVE_DRIVER_H_
@@ -37,28 +35,33 @@ typedef enum
 	BK_LOG_RAW(__VA_ARGS__); \
 	BK_LOG_RAW("\r\n"); \
 }}while(0)
+
 #define SDIO_LOG_WARNING(...) do {if(SDIO_LOG_OUTPUT_LEVEL <= SDIO_LOG_WARNING_LEVEL) { \
 	BK_LOG_RAW("[SDIO WARN]"); \
 	BK_LOG_RAW(__VA_ARGS__); \
 	BK_LOG_RAW("\r\n"); \
 }}while(0)
+
 #define SDIO_LOG_INFO(...) do {if(SDIO_LOG_OUTPUT_LEVEL <= SDIO_LOG_INFO_LEVEL) { \
 	BK_LOG_RAW("[SDIO INFO]"); \
 	BK_LOG_RAW(__VA_ARGS__); \
 	BK_LOG_RAW("\r\n"); \
 }}while(0)
+
 #define SDIO_LOG_DEBUG(...) do {if(SDIO_LOG_OUTPUT_LEVEL <= SDIO_LOG_DEBUG_LEVEL) { \
 	BK_LOG_RAW("[SDIO DBG]"); \
 	BK_LOG_RAW(__VA_ARGS__); \
 	BK_LOG_RAW("\r\n"); \
 }}while(0)
+
 #define SDIO_LOG_DUMP(...) do {if(SDIO_LOG_OUTPUT_LEVEL <= SDIO_LOG_DEBUG_LEVEL) { \
 		BK_LOG_RAW(__VA_ARGS__); \
-	}}while(0)
+}}while(0)
 
 #define SDIO_LOG_DEBUG_FUNCTION_ENTRY(...) do {if(SDIO_LOG_OUTPUT_LEVEL <= SDIO_LOG_DEBUG_LEVEL) { \
 	BK_LOG_RAW("SDIO DBG(%s:Entry)\r\n", __FUNCTION__); \
 }}while(0)
+
 #define SDIO_LOG_DEBUG_FUNCTION_EXIT(...) do {if(SDIO_LOG_OUTPUT_LEVEL <= SDIO_LOG_DEBUG_LEVEL) { \
 	BK_LOG_RAW("SDIO DBG(%s:Exit)\r\n", __FUNCTION__); \
 }}while(0)
@@ -168,20 +171,14 @@ typedef union
 }sdio_cmd53_arg_t;
 
 typedef bk_err_t (*sdio_chan_cb_t)(sdio_node_ptr_t head_p, sdio_node_ptr_t tail_p, uint32_t count);
-
 typedef bk_err_t (*sdio_rx_cb_t)(char* buf_p, uint32_t len);
-
 bk_err_t bk_sdio_register_rx_cb(sdio_rx_cb_t cb);
-
-
 
 typedef struct
 {
-	//
 	uint32_t buf_cnt;
 	uint32_t buf_size;
 
-	//free list
 	sdio_list_t free_list;
 	
 	//txing/rxing list

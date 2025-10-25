@@ -76,18 +76,22 @@ void lock_deinit(bk_lock_t* bk_lock)
 
 void lock(bk_lock_t* bk_lock)
 {
+#if (!CONFIG_ATE_TEST)
 	rtos_lock_mutex(&bk_lock->mutex);
 	if (bk_lock->is_rtos_disable) {
 		bk_lock->int_level = rtos_disable_int();
 	}
+#endif
 }
 
 void unlock(bk_lock_t* bk_lock)
 {
+#if (!CONFIG_ATE_TEST)
 	rtos_unlock_mutex(&bk_lock->mutex);
 	if (bk_lock->is_rtos_disable) {
 		rtos_enable_int(bk_lock->int_level);
 	}
+#endif
 }
 //TODO end
 
@@ -236,7 +240,7 @@ static uint32_t otp_get_failcnt()
 	return otp_hal_get_failcnt(&s_otp.hal);
 }
 
-#if CONFIG_OTP_EFUSE_SUPPORT
+#if (CONFIG_OTP_EFUSE_SUPPORT && CONFIG_ATE_TEST)
 static uint32_t otp1_hal_get_offset(uint32_t item) {
     if (otp_map == NULL) {
         uint32_t map_1_rows = otp_map_1_row();
@@ -305,16 +309,75 @@ uint32_t bk_otp_partical_clean_check_FT(void) {
     return 0;
 }
 
-#if (CONFIG_ATE_TEST)
+bk_err_t bk_otp_ahb_read(otp2_id_t item, uint8_t* buf, uint32_t size);
+static bool otp_check_crc8(uint8_t* buf, size_t buflen);
+
+static bool bk_otp_ahb_read_and_check(otp2_id_t item, bool crc_en)
+{
+    uint8_t *read_buf = NULL;
+    uint32_t read_buf_len = 0;
+    int ret = 0;
+    bool check_result = false;
+    bool crc_pass = false;
+
+    read_buf_len = otp_map_2[item].allocated_size;
+    bk_printf("read_buf_len=%d\n", read_buf_len);
+    read_buf = os_malloc(read_buf_len);
+    if (read_buf == NULL) {
+        bk_printf("malloc read_buf failed\n");
+        return false;
+    }
+
+    os_memset(read_buf, 0, read_buf_len);
+    ret = bk_otp_ahb_read(item, read_buf, read_buf_len);
+    bk_printf("read ret = %d\n", ret);
+
+    crc_pass = otp_check_crc8(read_buf, read_buf_len);
+    if (!crc_en) {
+        crc_pass = true;
+    }
+
+    if (ret != BK_OK) {
+        bk_printf("otp read failed\n");
+        check_result = false;
+    } else if (crc_pass != true) {
+        bk_printf("otp crc failed\n");
+        check_result = false;
+    } else if (crc_en == true) {
+        bk_printf("read success, crc8 check pass\n");
+        check_result = true;
+    } else if (crc_en == false) {
+        for (size_t i = 0; i < read_buf_len; i++) {
+            if (read_buf[i] != 0x00) {
+                bk_printf("read success, this item be filled\n");
+                check_result = true;
+                break;
+            }
+        }
+        bk_printf("check failed, this item is empty\n");
+        check_result = false;
+    } else {
+        bk_printf("check failed, unknown error\n");
+        check_result = false;
+    }
+
+    if (read_buf != NULL) os_free(read_buf);
+    return check_result;
+}
+
 uint32_t bk_otp_partical_clean_check_customer(void) {
     uint32_t otp_start;
     uint32_t otp_end;
     uint32_t location;
     uint32_t value;
+    bool check_result = false;
 
     OTP_INIT_IF_UNINITIALIZED();
     OTP_ACTIVE(1);
 
+    // "OTP_MEMORY_CHECK_MARK" will be empty because of memcheck pass
+    // "OTP_EFUSE" will be not empty because of "flash_crc_mode" enable
+    // check OTP1 empty or not without "OTP_MEMORY_CHECK_MARK" and "OTP_EFUSE"
     otp_start = 0x40 >> 2;  // OTP_AES_KEY start
     otp_end   = 0x400 >> 2;  // OTP1 end
     for (location = otp_start; location < otp_end; location++) {
@@ -328,6 +391,18 @@ uint32_t bk_otp_partical_clean_check_customer(void) {
     }
     OTP_SLEEP();
 
+    // "OTP_PHY_PWR1" will be writed in FT
+    check_result = bk_otp_ahb_read_and_check(OTP_PHY_PWR1, true);
+    if (check_result == false) {
+        return (SOC_OTP_AHB_BASE + (otp2_hal_get_offset(OTP_PHY_PWR1) >> 2));
+    }
+
+    // "OTP_PHY_PWR2" will be writed in FT
+    check_result = bk_otp_ahb_read_and_check(OTP_PHY_PWR2, true);
+    if (check_result == false) {
+        return (SOC_OTP_AHB_BASE + (otp2_hal_get_offset(OTP_PHY_PWR2) >> 2));
+    }
+
     OTP_ACTIVE(2);
     otp_start = otp2_hal_get_offset(OTP_RFCALI1) >> 2;  // ft_cali end
     otp_end   = otp2_hal_get_offset(OTP_GADC_CALIBRATION) >> 2;  // cp_cali begin
@@ -339,7 +414,46 @@ uint32_t bk_otp_partical_clean_check_customer(void) {
             return SOC_OTP_AHB_BASE + location;
         }
     }
+    OTP_SLEEP();
 
+    // "OTP_GADC_CALIBRATION" will be writed in CP
+    check_result = bk_otp_ahb_read_and_check(OTP_GADC_CALIBRATION, true);
+    if (check_result == false) {
+        return (SOC_OTP_AHB_BASE + (otp2_hal_get_offset(OTP_GADC_CALIBRATION) >> 2));
+    }
+
+    // "OTP_GADC_TEMPERATURE" will be writed in CP
+    check_result = bk_otp_ahb_read_and_check(OTP_GADC_TEMPERATURE, true);
+    if (check_result == false) {
+        return (SOC_OTP_AHB_BASE + (otp2_hal_get_offset(OTP_GADC_TEMPERATURE) >> 2));
+    }
+
+    // "OTP_VDDDIG_BANDGAP" will be writed in CP
+    check_result = bk_otp_ahb_read_and_check(OTP_VDDDIG_BANDGAP, true);
+    if (check_result == false) {
+        return (SOC_OTP_AHB_BASE + (otp2_hal_get_offset(OTP_VDDDIG_BANDGAP) >> 2));
+    }
+
+    // "OTP_DIA" will be writed in CP
+    check_result = bk_otp_ahb_read_and_check(OTP_DIA, true);
+    if (check_result == false) {
+        return (SOC_OTP_AHB_BASE + (otp2_hal_get_offset(OTP_DIA) >> 2));
+    }
+
+    // "OTP_MEMORY_CHECK_VDDDIG" will be writed in CP
+    // todo: "OTP_MEMORY_CHECK_VDDDIG" is empty now, but will be filled in BK7239N V5
+    // check_result = bk_otp_ahb_read_and_check(OTP_MEMORY_CHECK_VDDDIG, false);
+    // if (check_result == false) {
+    //     return (SOC_OTP_AHB_BASE + (otp2_hal_get_offset(OTP_MEMORY_CHECK_VDDDIG) >> 2));
+    // }
+
+    // "OTP_DEVICE_ID" will be writed in CP
+    check_result = bk_otp_ahb_read_and_check(OTP_DEVICE_ID, true);
+    if (check_result == false) {
+        return (SOC_OTP_AHB_BASE + (otp2_hal_get_offset(OTP_DEVICE_ID) >> 2));
+    }
+
+    OTP_ACTIVE(2);
     otp_start = 0x600 >> 2;  // cp_cali end
     otp_end   = 0xC00 >> 2;  // OTP2 end
     for (location = otp_start; location < otp_end; location++) {
@@ -354,7 +468,6 @@ uint32_t bk_otp_partical_clean_check_customer(void) {
     OTP_SLEEP();
     return 0;
 }
-#endif
 
 uint32_t bk_otp_partical_clean_check_efuse(void) {
     uint32_t otp_start;

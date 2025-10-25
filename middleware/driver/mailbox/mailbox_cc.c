@@ -177,7 +177,7 @@ void bk_mailbox_enable_int(mailbox_endpoint_t mbox)
 
 void bk_core_mbox_enable_int(int core_id, mailbox_endpoint_t mbox)
 {
-#if CONFIG_SOC_BK7236_SMP_TEMP || CONFIG_SOC_BK7239_SMP_TEMP || CONFIG_SOC_BK7286_SMP_TEMP 
+#if CONFIG_SOC_BK7236_SMP_TEMP || CONFIG_SOC_BK7239N_SMP_TEMP || CONFIG_SOC_BK7286_SMP_TEMP 
   core_mbox_interrupt_enable(core_id, mbox);
 #endif
 }

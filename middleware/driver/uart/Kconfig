@@ -88,5 +88,9 @@ menu "UART"
 	config UART_PM_CB_SUPPORT
 		bool "Enable UART enter low voltage callback support"
 		default n
+
+	config UART_PRINT_PORT_ATE
+		bool "Config Uart ATE Port with ext flash"
+		default n
 endmenu
 
