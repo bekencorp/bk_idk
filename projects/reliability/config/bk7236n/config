@@ -1,0 +1,56 @@
+# =============================================================================
+# BK7236N Configuration File
+# =============================================================================
+# This configuration file defines build-time options for the BK7236N platform
+# reliability test application. Each configuration option controls specific
+# features and functionality of the system.
+#
+# Format: CONFIG_OPTION_NAME=y/n
+# - y: Enable the feature
+# - n: Disable the feature
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Flash Configuration
+# -----------------------------------------------------------------------------
+#@ Enable Override Flash Partition
+# Override default flash partition table with custom partition configuration
+CONFIG_OVERRIDE_FLASH_PARTITION=y
+
+# -----------------------------------------------------------------------------
+# GPIO Configuration
+# -----------------------------------------------------------------------------
+#@ Enable GPIO default set devs
+# Enable default GPIO device settings during system initialization
+CONFIG_GPIO_DEFAULT_SET_SUPPORT=n
+
+# -----------------------------------------------------------------------------
+# Power Management Callback Support
+# -----------------------------------------------------------------------------
+#@ Enable UART enter low voltage callback support
+# Enable UART power management callbacks for low voltage operation
+CONFIG_UART_PM_CB_SUPPORT=y
+
+#@ Enable TIMER enter low voltage callback support
+# Enable Timer power management callbacks for low voltage operation
+CONFIG_TIMER_PM_CB_SUPPORT=y
+
+# -----------------------------------------------------------------------------
+# Reliability Test Configuration
+# -----------------------------------------------------------------------------
+#@ Enable PSRAM pressure test
+# Enable PSRAM (Pseudo Static RAM) pressure testing functionality
+CONFIG_PSRAM_PRESSURE_TEST=y
+
+#@ Enable Flash pressure test
+# Enable Flash memory pressure testing functionality
+CONFIG_FLASH_PRESSURE_TEST=y
+
+#@ Enable combined Flash and PSRAM pressure test
+# Enable combined Flash and PSRAM pressure testing functionality
+CONFIG_FLASH_PSRAM_PRESSURE_TEST=y
+
+#@ Enable wifi pressure test
+# Enable wifi pressure testing functionality
+CONFIG_WIFI_PRESSURE_TEST=y
+
