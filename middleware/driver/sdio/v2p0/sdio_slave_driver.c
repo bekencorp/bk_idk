@@ -958,14 +958,6 @@ static bk_err_t sdio_chan_notify_cb(sdio_chan_id_t chan_id, chan_direct_t direct
 		chan_buf_p->cb(chan_buf_p->finish_list.head, chan_buf_p->finish_list.tail, chan_buf_p->finish_list.count);
 	}
 
-#if 0
-	ret = rtos_set_semaphore(&chan_buf_p->semaphore);
-	if(ret != BK_OK)
-	{
-		SDIO_LOG_ERR("set sema");
-		return ret;
-	}
-#endif
 	return ret;
 }
 
@@ -1026,18 +1018,6 @@ bk_err_t bk_sdio_init_channel(sdio_chan_id_t chan_id, chan_direct_t direct, uint
 			          chan_id, direct, chan_buf_p->buf_cnt, chan_buf_p->buf_size);
 		goto err_exit;
 	}
-
-#if 0	//TODO:check whether needs it.
-	if(chan_buf_p->lock_p == NULL)
-	{
-		ret = rtos_init_mutex(&chan_buf_p->lock_p);
-		if (kNoErr != ret) 
-		{
-			SDIO_LOG_ERR("mutex init");
-			goto err_exit;
-		}
-	}
-#endif
 
 	if(count)
 		sema_count = count;
@@ -1160,18 +1140,6 @@ bk_err_t bk_sdio_deinit_channel(sdio_chan_id_t chan_id, chan_direct_t direct)
 
 		chan_buf_p->semaphore = NULL;
 	}
-
-#if 0	//TODO:check whether needs it.
-	if(chan_buf_p->lock_p == NULL)
-	{
-		ret = rtos_deinit_mutex(&chan_buf_p->lock_p);
-		if (kNoErr != ret) 
-		{
-			SDIO_LOG_ERR("mutex deinit");
-			goto err_exit;
-		}
-	}
-#endif
 
 	//save channel info
 	s_sdio_driver.chan[chan_id].chan_id = SDIO_CHAN_MAX_CNT;
@@ -1303,25 +1271,6 @@ static bk_err_t sdio_slave_get_valid_ongoing_tx_buf_ptr(sdio_chan_id_t chan_id, 
 	{
 		*buf_p = NULL;
 		SDIO_LOG_ERR("TODO:chan%d TX", chan_id);
-#if 0
-		sdio_node_ptr_t head_p = NULL;
-		sdio_msg_t msg;
-
-		//pop out the buffer node from ongoing list
-#if CONFIG_SDIO_CHANNEL_EN
-		ret = sdio_chan_pop_ongoing_node(chan_id, SDIO_CHAN_TX, &head_p);
-		if(ret != BK_OK)
-		{
-			SDIO_LOG_ERR("no data to tx");
-			rtos_enable_int(int_level);
-			return ret;
-		}
-#endif
-
-		//get next tx node
-		s_sdio_driver.chan[chan_id].chan_buf[buf_index].transaction_len = 0;
-		*buf_p = (uint8_t *)chan_buf_p->ongoing_list.head + sizeof(sdio_node_t);
-#endif
 	}	
 
 	SDIO_LOG_DEBUG("chan-%d tx buf addr=0x%08x,cnt=%d", chan_id, *buf_p, len);
@@ -1379,16 +1328,6 @@ static bk_err_t sdio_slave_add_ongoing_buf_trans_len(sdio_chan_id_t chan_id, cha
 #endif
 
 		SDIO_LOG_INFO("TODO:maybe need to notify APP without the buffer full");
-#if 0
-		//notify APP read finish
-		ret = rtos_set_semaphore(&chan_buf_p->semaphore);
-		if(ret != BK_OK)
-		{
-			SDIO_LOG_ERR("get sema");
-			rtos_enable_int(int_level);
-			return BK_FAIL;
-		}
-#endif
 
 		//remove node from finish list
 		sdio_chan_pop_finish_node(chan_id, direct, &head_p);
@@ -1401,7 +1340,6 @@ static bk_err_t sdio_slave_add_ongoing_buf_trans_len(sdio_chan_id_t chan_id, cha
 
 	return ret;
 }
-
 #endif
 
 //WARNING:Becard 4bytes align issue
@@ -2363,31 +2301,8 @@ static void sdio_slave_isr(void)
 	//slave tx write data end int
 	if(sdio_hal_slave_get_wr_end_int())
 	{
-//		SDIO_LOG_ERR("TODO:write end int whether similar with empty");
 		sdio_hal_slave_clear_wr_end_int();
 	}
-
-//TODO:
-#if 0
-	if(SDIO_REG0X9_ADDR & (1<<4)){
-		SDIO_REG0X9_ADDR  = (1<<4);	//SD_DATA_WR_END_INT
-		SDIO_LOG_DEBUG("write end");
-		s_write_end = 1;
-	}
-
-	if(SDIO_REG0X9_ADDR & (1<<3)){
-		SDIO_REG0X9_ADDR  = (1<<3);	//TX_FIFO_NEED_WRITE
-	}
-
-	if(SDIO_REG0X9_ADDR & (1<<7)){
-		SDIO_REG0X9_ADDR  = (1<<7);	//TX_FIFO_NEED_WRITE
-	}	
-
-	if(SDIO_REG0X9_ADDR & (1<<9)){	//TX_FIFO_EMPT
-		SDIO_REG0XA_ADDR  &= ~(1<<9);	//TX_FIFO_EMPT_MASK
-	}	
-#endif
-
 }
 
 static bk_err_t sdio_slave_hw_init(void)
@@ -2409,9 +2324,9 @@ static bk_err_t sdio_slave_hw_init(void)
 #endif
 
 #if CONFIG_SDIO_1V8_EN
-	sys_drv_psram_psldo_vset(1, 3);        //set vddpsram voltage as 1.8v
+	sys_drv_psram_psldo_vset(1, 0);        //set vddpsram voltage as 1.8v
 	sys_drv_psram_ldo_enable(1);           //vddpsram enable
-	sys_hal_set_ana_reg10_vddgpio_sel(1);  //GPIO vdd select between vio and vddparam
+	sys_hal_set_ana_vddgpio_sel(1);  //GPIO vdd select between vio and vddparam
 #endif
 
 	//pin

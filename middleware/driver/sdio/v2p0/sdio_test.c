@@ -57,44 +57,13 @@ static volatile uint32_t s_rx_tp_sub_case[SDIO_CHAN_MAX_CNT];
 
 static sdio_tp_statisic_t s_tx_tp_statistic[SDIO_CHAN_MAX_CNT];
 static sdio_tp_statisic_t s_rx_tp_statistic[SDIO_CHAN_MAX_CNT];
+
 #if CONFIG_TRNG_SUPPORT
 static uint32_t wait_ms = 3000;
 static uint32_t rx_wait_ms = 0;
 #endif
 
-#if 0
-static bk_err_t sdio_test_tx_cb(sdio_node_ptr_t head_p, sdio_node_ptr_t tail_p, uint32_t count)
-{
-	bk_err_t ret = BK_OK;
-	sdio_node_ptr_t cur_p = head_p;
-	uint32_t i = count, j = 0;
-
-	SDIO_LOG_DEBUG_FUNCTION_ENTRY();
-
-	//check tx data after finish
-	while(cur_p && (i > 0))
-	{
-		for(j = 0; j < cur_p->len; j += 4)
-		{
-			os_printf("0x%08x ", *(uint32_t *)((uint8_t *)cur_p + (sizeof(sdio_node_t)) + j));
-			if(j % 16 == 0)
-				os_printf("\r\n");
-		}
-
-		cur_p = cur_p->next;
-		i--;
-	}
-
-	//TODO:release buffer
-	//WARNING: Application should should use self CHAN_ID and CHAN_DIRECT.
-	bk_sdio_chan_push_free_list(SDIO_CHAN_PLATFORM, SDIO_CHAN_TX, head_p, tail_p, count);
-
-	//notify app task finish read
-
-	SDIO_LOG_DEBUG_FUNCTION_EXIT();
-	return ret;
-}
-#else
+#if 1
 static bk_err_t sdio_test_tx_cb( sdio_node_ptr_t head_p, sdio_node_ptr_t tail_p, uint32_t count)
 {
 	bk_err_t ret = BK_OK;
@@ -104,7 +73,6 @@ static bk_err_t sdio_test_tx_cb( sdio_node_ptr_t head_p, sdio_node_ptr_t tail_p,
 
 	if(s_sdio_ch_x_tx_msg_que[chan_id % SDIO_CHAN_MAX_CNT])
 	{
-
 		sdio_test_tp_msg_t msg;
 
 		msg.param1 = chan_id % SDIO_CHAN_MAX_CNT;
@@ -132,12 +100,9 @@ static bk_err_t sdio_test_tx_cb( sdio_node_ptr_t head_p, sdio_node_ptr_t tail_p,
 
 	SDIO_LOG_DEBUG_FUNCTION_EXIT();
 
-	//notify app task finish write
-
 	return ret;
 }
 #endif
-
 
 
 static bk_err_t sdio_test_tx_init(uint32_t chan_id, uint32_t buf_cnt, uint32_t buf_size)
@@ -168,7 +133,7 @@ void sdio_set_log_level(uint8_t level)
 	g_sdio_log_level = level;
 }
 
-
+#if CONFIG_TRNG_SUPPORT
 void sdio_set_tx_delay_time(uint32_t time_ms){
 	wait_ms = time_ms;
 }
@@ -176,11 +141,9 @@ void sdio_set_tx_delay_time(uint32_t time_ms){
 void sdio_set_rx_delay_time(uint32_t time_ms){
 	rx_wait_ms = time_ms;
 }
-
-
+#endif
 
 extern uint32_t sdio_list_compute_total_length(sdio_list_t *list_p);
-
 
 static void sdio_test_tx_tp_thread(void *arg)
 {
@@ -255,14 +218,7 @@ static void sdio_test_tx_tp_thread(void *arg)
 			SDIO_LOG_INFO("val_test[%d] = 0x%x\n", chan_id, val_test[chan_id]);
 			val_test[chan_id]++;
 
-#if 0
-			buf_p->pbd.len = len + sizeof(sdio_sw_pbd_t);	//SDIO ASIC will read this value to SDIO FIFO
-			buf_p->sw_pbd.len = len;		//valid data size, exclude sdio_sw_pbd_t
-			buf_p->sw_pbd.type = sdio_get_core_id();
-			buf_p->sw_pbd.sub_type = chan_id;
-#else
 			buf_p->len = len;
-#endif
 
 #if (CONFIG_TRNG_SUPPORT)
 			//wait_ms = bk_rand() % 20;
@@ -409,13 +365,7 @@ static bk_err_t sdio_test_tx_sub_case(SDIO_TEST_MSG_T *msg_p)
 
 if(value == 12345678) {
 
-#if 0
-					for (int i = 0; i < len; i++) {
-						//buf_p[i]
-						*((uint8_t *)(buf_p + sizeof(sdio_node_t) + i)) = i & 0xff;
-					}
-
-#else
+#if 1
 					memset((uint8_t *)buf_p + sizeof(sdio_node_t), 0, len);
 
 					uint8_t *send_data = (uint8_t *)os_zalloc(len);
@@ -478,7 +428,9 @@ if(value == 12345678) {
 		case SDIO_TEST_TX_TP_START:
 		{
 			sdio_chan_id_t chan_id  = msg_p->param1 % SDIO_CHAN_MAX_CNT;
+#if CONFIG_TRNG_SUPPORT
 			wait_ms = msg_p->param2;
+#endif
 			s_tx_tp_sub_case[chan_id] = 1;
 			break;
 		}
@@ -530,39 +482,7 @@ if(value == 12345678) {
 }
 
 
-#if 0
-static bk_err_t sdio_test_rx_cb(sdio_node_ptr_t head_p, sdio_node_ptr_t tail_p, uint32_t count)
-{
-	bk_err_t ret = BK_OK;
-	sdio_node_ptr_t cur_p = head_p;
-	uint32_t i = count, j = 0;
-
-	SDIO_LOG_DEBUG_FUNCTION_ENTRY();
-
-	//deal data
-	while(cur_p && (i > 0))
-	{
-		for(j = 0; j < cur_p->len; j += 4)
-		{
-			os_printf("0x%08x ", *(uint32_t *)((uint8_t *)cur_p + (sizeof(sdio_node_t)) + j));
-			if(j % 16 == 0)
-				os_printf("\r\n");
-		}
-
-		cur_p = cur_p->next;
-		i--;
-	}
-
-	//TODO:release buffer to free list mem-pool
-	//WARNING: Application should should use self CHAN_ID and CHAN_DIRECT.
-	ret = bk_sdio_chan_push_free_list(SDIO_CHAN_PLATFORM, SDIO_CHAN_RX, head_p, tail_p, count);
-
-	SDIO_LOG_DEBUG_FUNCTION_EXIT();
-	return ret;
-}
-
-#else
-
+#if 1
 static bk_err_t sdio_test_rx_cb( sdio_node_ptr_t head_p, sdio_node_ptr_t tail_p, uint32_t count)
 {
 	bk_err_t ret = BK_OK;
@@ -582,15 +502,7 @@ static bk_err_t sdio_test_rx_cb( sdio_node_ptr_t head_p, sdio_node_ptr_t tail_p,
 		while(cur_p && (i > 0))
 		{
 //not print received data by default
-#if 0
-			os_printf("core_id=0x%x, payload cur_p=0x%08x \r\n", chan_id, cur_p);
-			for(j = 0; j < print_len; j += sizeof(uint32_t))
-			{
-				os_printf("0x%08x ", *(uint32_t *)((uint8_t *)cur_p + (sizeof(sdio_node_t)) + j));
-				if(j && (j % 16 == 0))
-					os_printf("\r\n");
-			}
-#else
+#if 1
 			for (j = 4; j < print_len - 4; j += sizeof(uint32_t)) {
 				if(*(uint32_t *)((uint8_t *)cur_p + (sizeof(sdio_node_t)) + j) != (rx_val_test[chan_id] + 0x10000000 * (chan_id))) {
 					os_printf("rx_tp_cb error, cur_p_word[%d] = 0x%x, correct value is 0x%x.\n" , j, *(uint32_t *)((uint8_t *)cur_p + (sizeof(sdio_node_t)) + j), (rx_val_test[chan_id] + 0x10000000 * (chan_id)) );
@@ -640,17 +552,6 @@ static bk_err_t sdio_test_rx_cb( sdio_node_ptr_t head_p, sdio_node_ptr_t tail_p,
 					os_printf("\r\n");
 			}
 
-#if 0
-			extern uint32_t looptest_flag;
-			if (looptest_flag == 1) {
-				for (j = 0; j < (cur_p->sw_pbd.len - 4); j++) {
-					if( *((uint8_t *)cur_p + (sizeof(sdio_node_t)) + j) != ((j + 0x84) % 256)) {
-						os_printf("loopback error, cur_p_byte[%d] = 0x%x, correct value is 0x%x.\n" , j, *((uint8_t *)cur_p + (sizeof(sdio_node_t)) + j), ((j + 0x80) % 256) );
-					}
-				}
-			}
-#endif
-
 			os_printf("\r\n");
 
 			cur_p = (sdio_node_ptr_t)cur_p->next;
@@ -660,7 +561,6 @@ static bk_err_t sdio_test_rx_cb( sdio_node_ptr_t head_p, sdio_node_ptr_t tail_p,
 		//TODO:release buffer to free list mem-pool
 		//WARNING: Application should should use self CHAN_ID and CHAN_DIRECT.
 		ret = bk_sdio_chan_push_free_list(chan_id, SDIO_CHAN_RX, head_p, tail_p, count);
-
 	}
 
 	SDIO_LOG_DEBUG_FUNCTION_EXIT();
@@ -710,15 +610,7 @@ static void sdio_test_rx_tp_thread(void *arg)
 		sdio_test_tp_msg_t msg;
 		sdio_node_ptr_t buf_p = NULL;
 		uint32_t len = SDIO_TEST_BUFFER_SIZE * SDIO_TEST_BUFFER_CNT ;
-#if 0
-		uint32_t value = 0;
-#endif
 		uint32_t size = 0;
-
-#if (CONFIG_TRNG_SUPPORT)
-		//rx_wait_ms = bk_rand() % 1000;
-#endif
-		//rtos_delay_milliseconds(rx_wait_ms);
 
 		if(s_rx_tp_sub_case[chan_id] == 0)	//stop status
 		{
@@ -753,29 +645,10 @@ static void sdio_test_rx_tp_thread(void *arg)
 			s_rx_tp_statistic[chan_id].payload_cnt++;
 
 			len = len < size? len : size;
-#if 0
-			//fill dirty data
-			if(value == 12345678)
-			{
-				for(uint32_t i = 0; i < len; i++)
-					*(uint8_t *)((uint8_t *)buf_p + sizeof(sdio_node_t) + i) = i & 0xff;
-			}
-			else
-			{
-				memset((uint8_t *)buf_p + sizeof(sdio_node_t), value, len);
-			}
-#endif
 
-#if 0
-			buf_p->pbd.len = len + sizeof(sdio_sw_pbd_t);	//SDIO ASIC will read this value to SDIO FIFO
-			buf_p->sw_pbd.len = len;		//valid data size, exclude sdio_sw_pbd_t
-#else
 			buf_p->len = len;
-#endif
-
 
 			//request read
-
 #if CONFIG_SDIO_SYNC_TRANS
 			ret = bk_sdio_slave_sync_read(chan_id, buf_p, buf_p, 1, BEKEN_WAIT_FOREVER);
 #else
@@ -955,7 +828,9 @@ static bk_err_t sdio_test_rx_sub_case(SDIO_TEST_MSG_T *msg_p)
 		case SDIO_TEST_RX_TP_START:
 		{
 			sdio_chan_id_t chan_id  = msg_p->param1 % SDIO_CHAN_MAX_CNT;
+#if CONFIG_TRNG_SUPPORT
 			rx_wait_ms = msg_p->param2;
+#endif
 			s_rx_tp_sub_case[chan_id] = 1;
 			break;
 		}

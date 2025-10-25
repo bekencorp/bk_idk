@@ -509,6 +509,7 @@ void sys_hal_set_h264_clk_en(uint32_t value);
 /** h264 End **/
 
 /**  psram Start **/
+void sys_hal_set_ana_vddgpio_sel(uint32_t value);
 void sys_hal_psram_volstage_sel(uint32_t enable);
 void sys_hal_psram_xtall_osc_enable(uint32_t enable);
 void sys_hal_psram_doc_enable(uint32_t enable);

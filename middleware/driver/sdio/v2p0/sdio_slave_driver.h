@@ -307,11 +307,8 @@ uint32_t get_controller_wk_slp_status(void);
  *	  - 
  */
 void wk_slp_controller_handler(void);
-
 void set_last_receive_data_time(void);
-
 uint64_t get_last_receive_data_time(void);
-
 uint64_t check_wakeup_contorller_validity_timeout(void);
 
 /**
@@ -330,11 +327,10 @@ uint64_t check_wakeup_contorller_validity_timeout(void);
  *	  - 
  */
 void sdio_gpio_notify_transaction_init(uint8_t to_host, uint8_t from_host);
-
 void sdio_gpio_notify_transaction_deinit(uint8_t to_host, uint8_t from_host);
-
 #endif	//CONFIG_GPIO_NOTIFY_TRANSACTION_EN
 
+bk_err_t sdio_slave_hw_reinit(void);
 
 /**
  * @brief	  Init the sdio driver as slave device.

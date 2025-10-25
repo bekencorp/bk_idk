@@ -649,10 +649,6 @@ bk_err_t bk_sdio_host_set_clock_freq(sdio_host_clock_freq_t clock_freq)
 
 static void sdio_dump_cmd_info(const sdio_host_cmd_cfg_t *command)
 {
-#if 0
-	SDIO_HOST_LOGI("cmd_index=%d,argument=0x%08x,response=0x%08x\r\n", command->cmd_index, command->argument, command->response );
-	SDIO_HOST_LOGI("wait_rsp_timeout=%d, crc_check=%d\r\n", command->wait_rsp_timeout, command->crc_check);
-#endif
 }
 
 static uint32_t s_sdio_cmd_index = 0;
@@ -823,21 +819,6 @@ static bk_err_t sdio_dma_write_fifo(const uint8_t *write_data, uint32_t data_siz
 	bk_sdio_tx_fifo_clk_gate_config(1);
 	sdio_host_hal_start_send_data(&s_sdio_host.hal);
 
-#if 0
-	//wait SDIO last one or two block finish(DMA copy data to SDIO FIFO,the last one or two blocks are still ongoing on SDIO wires.)
-	error_state = rtos_get_semaphore(&(s_sdio_host.tx_sema), SDIO_MAX_TX_WAIT_TIME);
-	if(error_state)
-	{
-		s_sdio_host.is_tx_blocked = false;
-		SDIO_HOST_LOGE("TODO:sdio write data timeout,write_data=0x%x,data_size=%d\r\n", write_data, data_size);
-
-		//special abnormal case:If the write_data pointer is error,which cause DMA can't copy data from the source, then it cause DMA err.
-		if(s_sdio_host.tx_total_len != s_sdio_host.tx_transfered_len)
-		{
-			bk_dma_stop(s_sdio_host.dma_tx_id);
-		}
-	}
-#endif
 	//maybe DMA finish, but SDIO doesn't finish
 	//Default:after DMA finish ISR,there are 512+16 bytes still in the SDIO FIFO.so wait fifo transmit finish here
 	error_state = rtos_get_semaphore(&(s_sdio_host.tx_sema), SDIO_MAX_TX_WAIT_TIME);

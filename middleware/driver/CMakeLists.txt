@@ -111,6 +111,7 @@ endif()
 if (NOT CMAKE_BUILD_EARLY_EXPANSION)
 	add_subdirectory(flash)
 	add_subdirectory(pwm)
+	add_subdirectory(sdio)
 	add_subdirectory(rtc)
 	add_subdirectory(gpio)
 	add_subdirectory(h264)
@@ -303,30 +304,6 @@ if (CONFIG_SDIO_HOST)
 		"sd_card/sdcard_test.c"
 		)
 endif() #if (CONFIG_SDIO_HOST)
-
-if (CONFIG_SDIO_V1P0)
-	list(APPEND incs
-		"sdio/v1p0"
-	)
-
-	list(APPEND srcs
-		"sdio/v1p0/sdio.c"
-		"sdio/v1p0/sdma.c"
-		"sdio/v1p0/sutil.c"
-		)
-endif() #if (CONFIG_SDIO_V1P0)
-
-if (CONFIG_SDIO_V2P0 AND CONFIG_SDIO_SLAVE)
-	list(APPEND incs
-		"sdio/v2p0"
-	)
-
-	list(APPEND srcs
-		"sdio/v2p0/sdio_slave_driver.c"
-		"sdio/v2p0/sdio_utils.c"
-		"sdio/v2p0/sdio_test.c"
-		)
-endif() #if (CONFIG_SDIO_V2P0)
 
 if (CONFIG_AUDIO)
 

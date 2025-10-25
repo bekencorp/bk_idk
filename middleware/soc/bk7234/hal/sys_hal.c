@@ -2363,6 +2363,11 @@ void sys_hal_set_h264_clk_en(uint32_t value)
 
 /** h264 End **/
 
+void sys_hal_set_ana_vddgpio_sel(uint32_t value)
+{
+	sys_ll_set_ana_reg10_vddgpio_sel(value); //GPIO vdd select; �� default��0��0:vddio;1:vddpsram
+}
+
 /**  psram Start **/
 void sys_hal_psram_volstage_sel(uint32_t enable)
 {
