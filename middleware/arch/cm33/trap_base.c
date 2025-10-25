@@ -573,6 +573,15 @@ void user_except_handler_ex(uint32_t reset_reason, uint32_t lr, uint32_t sp)
         cm_backtrace_fault(lr, sp);
 #endif
 
+    #if CONFIG_FLASH_PSRAM_PRESSURE_TEST
+    void flash_psram_save_result_in_dump(void);
+    flash_psram_save_result_in_dump();
+    #endif
+
+    #if CONFIG_WIFI_TEST
+    void cli_wifi_save_wifi_test_result_in_dump(void);
+    cli_wifi_save_wifi_test_result_in_dump();
+    #endif
         dump_epilogue();
 
 #if CONFIG_SYS_CPU0

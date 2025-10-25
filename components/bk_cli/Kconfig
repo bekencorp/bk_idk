@@ -1,10 +1,12 @@
 menu "Bk_cli"
-
 	menu "Modify Cli Config"
-
 		config CLI
 			bool "Enable Cli"
 			default y
+
+		config WIFI_PRESSURE_TEST
+			bool "Enable wifi test"
+			default n
 
 		config CLI_USER_CONFIG
 			depends on CLI

@@ -63,6 +63,11 @@ menu "PSRAM"
 		bool "Select Psram PSRAM_APS6408L_O"
 		default n
 
+	config PSRAM_PRESSURE_TEST
+		depends on PSRAM && DRIVER_TEST
+		bool "Enable Psram Test"
+		default n
+
 	config PSRAM_W955D8MKY_5J
 		depends on PSRAM
 		bool "Select Psram PSRAM_W955D8MKY_5J"

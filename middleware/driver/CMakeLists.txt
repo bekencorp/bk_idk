@@ -282,6 +282,12 @@ if (CONFIG_PSRAM)
 	list(APPEND srcs
 		"psram/psram_driver.c"
 		)
+
+	if (CONFIG_PSRAM_PRESSURE_TEST)
+		list(APPEND srcs
+			psram/psram_reliability_test.c
+		)
+	endif()
 endif() #if (CONFIG_PSRAM)
 
 if (CONFIG_CALENDAR)

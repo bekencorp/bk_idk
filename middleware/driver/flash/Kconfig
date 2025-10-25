@@ -26,6 +26,16 @@ menu "FLASH"
 		bool "Enable flash test"
 		default y
 
+	config FLASH_PSRAM_PRESSURE_TEST
+		depends on FLASH && DRIVER_TEST
+		bool "Enable flash test"
+		default n
+
+	config FLASH_PRESSURE_TEST
+		depends on FLASH && DRIVER_TEST
+		bool "Enable flash test"
+		default n
+
 	config PARTITION_TEST
 		depends on FLASH
 		bool "Enable pattition test"

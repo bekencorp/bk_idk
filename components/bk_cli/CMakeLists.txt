@@ -47,6 +47,12 @@ if (CONFIG_BUTTON OR CONFIG_ADC_KEY)
 	)
 endif()
 
+if (CONFIG_WIFI_PRESSURE_TEST)
+	list(APPEND srcs
+		wifi_reliability_test.c
+	)
+endif()
+
 if (CONFIG_INT_WDT)
 	list(APPEND srcs
 		cli_wdt.c

@@ -24,6 +24,12 @@ if (CONFIG_FLASH)
 		list(APPEND srcs flash/flash_svr_test.c)
 	endif()
 
+	if (CONFIG_FLASH_PRESSURE_TEST)
+		list(APPEND srcs
+			flash/flash_reliability_test.c
+		)
+	endif()
+
 	set(incs ${incs} PARENT_SCOPE)
 	set(srcs ${srcs} PARENT_SCOPE)
 endif()
