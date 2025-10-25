@@ -48,8 +48,6 @@ static inline uint32_t mpc_ll_get_reg_base(mpc_dev_t dev)
 		return SOC_MPC_SMEM3_REG_BASE;
 	case MPC_DEV_SMEM4:
 		return SOC_MPC_SMEM4_REG_BASE;
-	// case MPC_DEV_SMEM5:        //bk7239  no  smem5
-	// 	return SOC_MPC_SMEM5_REG_BASE;
 	default:
 		return BK_ERR_MPC_BASE;
 	}

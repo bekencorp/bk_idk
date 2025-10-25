@@ -673,6 +673,59 @@ bk_err_t bk_otp_ahb_write_mask(otp2_id_t item, uint32_t mask)
 	return BK_OK;
 }
 
+bk_err_t bk_otp_write_security(uint32_t item)
+{
+	OTP_ACTIVE(1);
+	uint32_t location = otp_map[item].offset / 4;
+	otp_hal_write_otp_security(&s_otp.hal, location);
+	OTP_SLEEP();
+	return BK_OK;
+}
+
+uint32_t bk_otp_read_security(uint32_t item)
+{
+	OTP_ACTIVE(1);
+	uint32_t location = otp_map[item].offset / 4;
+	uint32_t security_value = otp_hal_read_otp_security(&s_otp.hal, location);
+	OTP_SLEEP();
+
+	return security_value;
+}
+
+bk_err_t bk_otp_write_puf_security(uint32_t item)
+{
+	OTP_ACTIVE(1);
+	uint32_t location = otp_map[item].offset / 4;
+	otp_hal_write_puf_security(&s_otp.hal, location);
+	OTP_SLEEP();
+	return BK_OK;
+}
+
+uint32_t bk_otp_read_puf_security(uint32_t item)
+{
+	OTP_ACTIVE(1);
+	uint32_t location = otp_map[item].offset / 4;
+	uint32_t security_value = otp_hal_read_puf_security(&s_otp.hal, location);
+	OTP_SLEEP();
+	return security_value;
+}
+
+bk_err_t bk_otp_enable_security_flag(void)
+{
+	OTP_ACTIVE(1);
+	otp_hal_enable_security_protection(&s_otp.hal);
+	OTP_SLEEP();
+	return BK_OK;
+}
+
+bk_err_t bk_otp_read_security_flag(void)
+{
+	OTP_ACTIVE(1);
+	uint32_t flag = otp_hal_read_security_protection(&s_otp.hal);
+	OTP_SLEEP();
+	return flag;
+}
+
 static bk_err_t otp_read(uint8_t map_id, uint8_t item, uint8_t* buf, uint32_t size)
 {
 	bk_err_t ret = BK_OK;

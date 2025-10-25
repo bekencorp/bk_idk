@@ -149,6 +149,58 @@ otp_privilege_t bk_otp_apb_read_mask(otp1_id_t item);
 bk_err_t bk_otp_apb_write_mask(otp1_id_t item, otp_privilege_t permission);
 
 /**
+ * @brief Write security configuration for OTP
+ *
+ * @param location The OTP location to set security configuration
+ * @return bk_err_t
+ */
+bk_err_t bk_otp_write_security(uint32_t location);
+
+/**
+ * @brief Read security configuration for OTP
+ *
+ * @param location The OTP location to get security configuration
+ * @return uint32_t The security configuration value
+ */
+uint32_t bk_otp_read_security(uint32_t location);
+
+/**
+ * @brief Write security configuration for PUF
+ *
+ * @param location The PUF location to set security configuration
+ * @return bk_err_t
+ */
+bk_err_t bk_otp_write_puf_security(uint32_t location);
+
+/**
+ * @brief Read security configuration for PUF
+ *
+ * @param location The PUF location to get security configuration
+ * @return uint32_t The security configuration value
+ */
+uint32_t bk_otp_read_puf_security(uint32_t location);
+
+/**
+ * @brief Enable OTP security protection flag
+ *
+ *
+ * @return
+ *    - BK_OK: Security protection flag enabled successfully
+ *    - BK_FAIL: Failed to enable security protection flag
+ */
+bk_err_t bk_otp_enable_security_flag(void);
+
+/**
+ * @brief Read OTP security protection flag status
+ *
+ * @return uint32_t The security protection flag status
+ *    - 0xF: Security protection is fully enabled
+ *    - Other values: Security protection status (implementation specific)
+ */
+uint32_t bk_otp_read_security_flag(void);
+
+
+/**
  * @brief     read random number
  *
  * @param buf the buffer to store value

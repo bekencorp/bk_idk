@@ -50,7 +50,7 @@
 #include "soc/bk7235/soc.h"
 #elif CONFIG_SOC_BK7235 && CONFIG_SYS_CPU1
 #include "soc/bk7235_cp1/soc.h"
-#elif CONFIG_SOC_BK7239
-#include "soc/bk7239/soc.h"
+#elif CONFIG_SOC_BK7239N
+#include "soc/bk7239n/soc.h"
 #endif
 

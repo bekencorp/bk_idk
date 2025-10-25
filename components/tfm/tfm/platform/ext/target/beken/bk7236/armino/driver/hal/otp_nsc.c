@@ -109,6 +109,36 @@ static void _otp2_write_mask(uint32_t location, uint32_t mask)
 	otp2_hal_write_mask(&s_otp.hal, location, mask);
 }
 
+static void _otp_write_security(uint32_t location)
+{
+	otp_hal_write_security(&s_otp.hal, location);
+}
+
+static uint32_t _otp_read_security(uint32_t location)
+{
+	return otp_hal_read_security(&s_otp.hal, location);
+}
+
+static void _otp_write_puf_security(uint32_t location)
+{
+	otp_hal_write_puf_security(&s_otp.hal, location);
+}
+
+static uint32_t _otp_read_puf_security(uint32_t location)
+{
+	return otp_hal_read_puf_security(&s_otp.hal, location);
+}
+
+static void _otp_enable_security_protection(void)
+{
+	otp_hal_enable_security_protection(&s_otp.hal);
+}
+
+static uint32_t _otp_read_security_protection(void)
+{
+	return otp_hal_read_security_protection(&s_otp.hal);
+}
+
 #define OTP_ACTIVE() \
 	do { \
 		int ret = otp_active(); \
@@ -122,17 +152,14 @@ static void _otp2_write_mask(uint32_t location, uint32_t mask)
 
 static bk_err_t switch_map(uint8_t map_id)
 {
-	if(otp_map == NULL){
-		if (map_id == 1) {
-			otp_map = otp_map_1;
-		} else if (map_id == 2) {
-			otp_map = otp_map_2;
-		} else {
-			return BK_ERR_OTP_INDEX_WRONG;
-		}
+	if (map_id == 1) {
+		otp_map = otp_map_1;
+	} else if (map_id == 2) {
+		otp_map = otp_map_2;
 	} else {
-		return BK_FAIL;
+		return BK_ERR_OTP_INDEX_WRONG;
 	}
+
 	return BK_OK;
 }
 
@@ -368,6 +395,98 @@ __tfm_psa_secure_gateway_no_naked_attributes__ bk_err_t bk_otp_read_nsc(uint32_t
 	OTP_SLEEP();
 	OTP_RELEASE_MAP();
 	return ret;
+}
+
+__tfm_psa_secure_gateway_no_naked_attributes__ bk_err_t bk_otp_apb_read_nsc(uint8_t map_id, uint32_t item, uint8_t* buf, uint32_t size)
+{
+	OTP_SELECT_MAP(map_id);
+	OTP_ACTIVE();
+
+	if(buf == NULL)
+		return BK_ERR_NO_MEM;
+	bk_err_t ret = otp_read(map_id, item, buf, size);
+
+	OTP_SLEEP();
+	OTP_RELEASE_MAP();
+	return ret;
+}
+
+__tfm_psa_secure_gateway_no_naked_attributes__ bk_err_t bk_otp_write_security_nsc(uint32_t item)
+{
+	OTP_SELECT_MAP(1);
+	OTP_ACTIVE();
+
+	uint32_t location = otp_map[item].offset / 4;
+	_otp_write_security(location);
+
+	OTP_SLEEP();
+	OTP_RELEASE_MAP();
+	return BK_OK;
+}
+
+
+__tfm_psa_secure_gateway_no_naked_attributes__ uint32_t bk_otp_read_security_nsc(uint32_t item)
+{
+	OTP_SELECT_MAP(1);
+	OTP_ACTIVE();
+
+	uint32_t location = otp_map[item].offset / 4;
+	uint32_t security_value = _otp_read_security(location);
+
+	OTP_SLEEP();
+	OTP_RELEASE_MAP();
+	return security_value;
+}
+
+
+__tfm_psa_secure_gateway_no_naked_attributes__ bk_err_t bk_otp_write_puf_security_nsc(uint32_t item)
+{
+	OTP_SELECT_MAP(1);
+	OTP_ACTIVE();
+
+	uint32_t location = otp_map[item].offset / 4;
+	_otp_write_puf_security(location);
+
+	OTP_SLEEP();
+	OTP_RELEASE_MAP();
+	return BK_OK;
+}
+
+
+__tfm_psa_secure_gateway_no_naked_attributes__ uint32_t bk_otp_read_puf_security_nsc(uint32_t item)
+{
+	OTP_SELECT_MAP(1);
+	OTP_ACTIVE();
+	uint32_t location = otp_map[item].offset / 4;
+	uint32_t security_value = _otp_read_puf_security(location);
+
+	OTP_SLEEP();
+	OTP_RELEASE_MAP();
+	return security_value;
+}
+
+__tfm_psa_secure_gateway_no_naked_attributes__ bk_err_t bk_otp_enable_security_flag_nsc(void)
+{
+	OTP_SELECT_MAP(1);
+	OTP_ACTIVE();
+
+	_otp_enable_security_protection();
+
+	OTP_SLEEP();
+	OTP_RELEASE_MAP();
+	return BK_OK;
+}
+
+__tfm_psa_secure_gateway_no_naked_attributes__ bk_err_t bk_otp_read_security_flag_nsc(void)
+{
+	OTP_SELECT_MAP(1);
+	OTP_ACTIVE();
+
+	uint32_t value = _otp_read_security_protection();
+
+	OTP_SLEEP();
+	OTP_RELEASE_MAP();
+	return value;
 }
 
 /**

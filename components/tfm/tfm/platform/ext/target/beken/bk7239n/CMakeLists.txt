@@ -22,7 +22,7 @@ target_include_directories(platform_region_defs
 # Specify the location of platform specific build dependencies.
 target_sources(tfm_s
 	PRIVATE
-	$<$<C_COMPILER_ID:GNU>:${CMAKE_CURRENT_SOURCE_DIR}/gcc/startup_cmsdk_bk7239_s.S>
+	$<$<C_COMPILER_ID:GNU>:${CMAKE_CURRENT_SOURCE_DIR}/gcc/startup_cmsdk_bk7239n_s.S>
 )
 
 # Use a common scatter file for Isolation L1 and L2, a dedicated one for Isolation L3
@@ -35,10 +35,10 @@ target_add_scatter_file(tfm_s
 if(NS)
 	target_sources(tfm_ns
 		PRIVATE
-			$<$<C_COMPILER_ID:GNU>:${CMAKE_CURRENT_SOURCE_DIR}/gcc/startup_cmsdk_bk7239_ns.S>
+			$<$<C_COMPILER_ID:GNU>:${CMAKE_CURRENT_SOURCE_DIR}/gcc/startup_cmsdk_bk7239n_ns.S>
 	)
 	target_add_scatter_file(tfm_ns
-		$<$<C_COMPILER_ID:GNU>:${CMAKE_CURRENT_SOURCE_DIR}/gcc/bk7239_ns.ld>
+		$<$<C_COMPILER_ID:GNU>:${CMAKE_CURRENT_SOURCE_DIR}/gcc/bk7239n_ns.ld>
 	)
 	
 	target_compile_definitions(tfm_ns
@@ -58,10 +58,10 @@ endif()
 if(BL2)
 	target_sources(bl2
 		PRIVATE
-			$<$<C_COMPILER_ID:GNU>:${CMAKE_CURRENT_SOURCE_DIR}/gcc/startup_cmsdk_bk7239_bl2.c>
+			$<$<C_COMPILER_ID:GNU>:${CMAKE_CURRENT_SOURCE_DIR}/gcc/startup_cmsdk_bk7239n_bl2.c>
 	)
 	target_add_scatter_file(bl2
-			$<$<C_COMPILER_ID:GNU>:${CMAKE_CURRENT_SOURCE_DIR}/gcc/bk7239_bl2.ld>
+			$<$<C_COMPILER_ID:GNU>:${CMAKE_CURRENT_SOURCE_DIR}/gcc/bk7239n_bl2.ld>
 	)
 endif()
 
@@ -89,7 +89,7 @@ set(platform_s_src
 		${TFM_BEKEN}/partition/flash_partition.c
 		${TFM_BEKEN}/cmsis_drivers/Driver_Flash.c
 		${TFM_BEKEN}/cmsis_drivers/Driver_USART.c
-		cmsis_core/system_cmsdk_bk7239.c
+		cmsis_core/system_cmsdk_bk7239n.c
 		cmsis_core/mpu.c
 		cmsis_core/cache.c
 		${TFM_BEKEN}/native_drivers/mpu_armv8m_drv.c
@@ -139,7 +139,7 @@ target_sources(platform_ns
 		${TFM_BEKEN}/native_drivers/arm_uart_drv.c
 		${TFM_BEKEN}/native_drivers/timer_cmsdk/timer_cmsdk.c
 		${TFM_BEKEN}/cmsis_drivers/Driver_USART.c
-		cmsis_core/system_cmsdk_bk7239.c
+		cmsis_core/system_cmsdk_bk7239n.c
 		cmsis_core/mpu.c
 		cmsis_core/cache.c
 		$<$<BOOL:${TFM_PARTITION_PLATFORM}>:${TFM_BEKEN}/plat_test.c>
@@ -161,7 +161,7 @@ target_include_directories(platform_ns
 if(BL2)
 set(platform_bl2_src
 		PRIVATE
-			cmsis_core/system_cmsdk_bk7239.c
+			cmsis_core/system_cmsdk_bk7239n.c
 			cmsis_core/mpu.c
 			cmsis_core/cache.c
 			${TFM_BEKEN}/cmsis_drivers/Driver_Flash.c

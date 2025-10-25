@@ -15,7 +15,7 @@
 #pragma once
 
 #include "platform_irq.h"            /* IRQ numbers */
-#include "soc/bk7239/reg_base.h"
+#include "soc/bk7239n/reg_base.h"
 
 #define FLASH0_BASE_S                  SOC_GET_S_ADDR(SOC_FLASH_DATA_BASE)
 #define FLASH0_BASE_NS                 SOC_GET_NS_ADDR(SOC_FLASH_DATA_BASE)

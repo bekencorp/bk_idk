@@ -14,4 +14,8 @@
 
 #pragma once
 
-#include "bk7239.h"
+#include "platform_irq.h"         /* Platform IRQ numbers */
+
+#include "cmsis_cpu.h"                 /* Processor and core peripherals */
+#include "system_cmsdk_bk7239n.h"   /* System Header */
+#include "platform_retarget.h"    /* Peripherals base addresses */

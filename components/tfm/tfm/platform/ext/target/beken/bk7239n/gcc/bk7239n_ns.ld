@@ -85,7 +85,7 @@ SECTIONS
 
     /* To copy multiple ROM to RAM sections,
      * define etext2/data2_start/data2_end and
-     * define __STARTUP_COPY_MULTIPLE in startup_cmsdk_bk7239_ns.S */
+     * define __STARTUP_COPY_MULTIPLE in startup_cmsdk_bk7239n_ns.S */
     .copy.table :
     {
         . = ALIGN(4);
@@ -101,7 +101,7 @@ SECTIONS
 
     /* To clear multiple BSS sections,
      * uncomment .zero.table section and,
-     * define __STARTUP_CLEAR_BSS_MULTIPLE in startup_cmsdk_bk7239_ns.S */
+     * define __STARTUP_CLEAR_BSS_MULTIPLE in startup_cmsdk_bk7239n_ns.S */
     .zero.table :
     {
         . = ALIGN(4);

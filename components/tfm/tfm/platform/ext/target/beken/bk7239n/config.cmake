@@ -8,7 +8,7 @@
 set(TFM_EXTRA_GENERATED_FILE_LIST_PATH  ${CMAKE_CURRENT_SOURCE_DIR}/platform/ext/target/beken/generated_file_list.yaml  CACHE PATH "Path to extra generated file list. Appended to stardard TFM generated file list." FORCE)
 
 set(TFM_BEKEN  ${CMAKE_CURRENT_SOURCE_DIR}/platform/ext/target/beken/  CACHE PATH "Path to beken" FORCE)
-set(TFM_SOC  bk7239  CACHE STRING "bk7239" FORCE)
+set(TFM_SOC  bk7239n  CACHE STRING "bk7239n" FORCE)
 
 set(PLATFORM_SLIH_IRQ_TEST_SUPPORT    ON    CACHE BOOL    "Platform supports SLIH IRQ tests")
 set(PLATFORM_FLIH_IRQ_TEST_SUPPORT    ON    CACHE BOOL    "Platform supports FLIH IRQ tests")
@@ -67,7 +67,7 @@ else()
     set(BL2_TRAILER_SIZE 0x2000 CACHE STRING "Trailer size")
 endif()
 
-include(platform/ext/target/beken/bk7239/repo_fetch.cmake)
+include(platform/ext/target/beken/bk7239n/repo_fetch.cmake)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_definitions(-DCONFIG_BUILD_DEBUG)
