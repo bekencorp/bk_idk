@@ -46,6 +46,7 @@
 #include "lwip/igmp.h"
 #include "lwip/api.h"
 #include "lwip/priv/tcpip_priv.h"
+#include "sdkconfig.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -187,11 +188,18 @@ struct dns_api_msg {
 };
 #endif /* LWIP_DNS */
 
+#if CONFIG_LWIP_CUST_THREAD_SEM
+sys_sem_t* LWIP_NETCONN_THREAD_SEM_GET(void);
+err_t LWIP_NETCONN_THREAD_SEM_ALLOC(void *thread);
+err_t LWIP_NETCONN_THREAD_SEM_FREE(void *thread);
+#else
 #if LWIP_NETCONN_SEM_PER_THREAD
 #define LWIP_NETCONN_THREAD_SEM_GET() sys_thread_sem_get()
 #define LWIP_NETCONN_THREAD_SEM_ALLOC() sys_thread_sem_init()
 #define LWIP_NETCONN_THREAD_SEM_FREE() sys_thread_sem_deinit()
 #endif
+#endif
+
 #if LWIP_NETCONN_FULLDUPLEX
 int lwip_netconn_is_deallocated_msg(void *msg);
 #endif

@@ -105,6 +105,10 @@
 
 static err_t netconn_close_shutdown(struct netconn *conn, u8_t how);
 
+#if CONFIG_LWIP_CUST_THREAD_SEM
+#include "cust_thread_sem.h"
+#endif
+
 /**
  * Call the lower part of a netconn_* function
  * This function is then running in the thread context
@@ -1341,7 +1345,7 @@ netconn_gethostbyname(const char *name, ip_addr_t *addr)
 }
 #endif /* LWIP_DNS*/
 
-#if LWIP_NETCONN_SEM_PER_THREAD
+#if LWIP_NETCONN_SEM_PER_THREAD && !CONFIG_LWIP_CUST_THREAD_SEM
 void
 netconn_thread_init(void)
 {

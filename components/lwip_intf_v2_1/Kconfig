@@ -134,6 +134,48 @@ menu "Lwip_intf_v2_1"
 			bool "Enable HW IP checksum"
 			default n
 
+		config STATIC_IP_FOR_GATEWAY
+			bool "Enable static ip for gateway"
+			default n
+			help
+				use static ip for gateway
+
+		config DTIM10_TCP_RETRY
+			bool "Enable customized wifi DTIM10 TCP retry strategy"
+			default n
+			help
+				This is a customized TCP retry strategy under Wi-Fi DTIM10, use it carefully
+
+		config WIFI_DTIM10_TEMP_DISABLED
+			bool "ARP response periodic"
+			default n
+			help
+				ARP response periodic
+
+		config TCP_TX_WIN_100MS
+			bool "Enable tcp tx window to 100ms"
+			default n
+			help
+				enable tcp tx window to 100ms
+
+		config TCP_TMR_INTERVAL
+			int "Set TCP timer interval"
+			default 100
+			help
+				Set TCP timer interval
+
+		config LWIP_SO_CONTIMEO
+			bool "Enable tcp tx window to 100ms"
+			default y
+			help
+				Enable tcp tx window to 100ms
+
+		config LWIP_CUST_THREAD_SEM
+			bool "Enable customized netconn thread sem"
+			default n
+			help
+				This is a customized feature, use it carefully
+
 		#TODO optimize it
 		choice LWIP_MEM
 			prompt "Select Lwip Mem Policy"

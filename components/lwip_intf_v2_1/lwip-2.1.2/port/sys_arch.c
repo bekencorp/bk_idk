@@ -580,4 +580,21 @@ sys_thread_sem_deinit(void)
   }
 }
 #endif
+
+#if CONFIG_LWIP_CUST_THREAD_SEM
+#include "task.h"
+/**
+ * @brief sys_get_task_handle
+ *
+ * @param   void
+ * @return  void*
+ *
+ */
+void *sys_get_task_handle(void)
+{
+extern TaskHandle_t xTaskGetCurrentTaskHandle( void );
+    return xTaskGetCurrentTaskHandle();
+}
+
+#endif /* LWIP_NETCONN_SEM_PER_THREAD */
 // eof

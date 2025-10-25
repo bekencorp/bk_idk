@@ -277,6 +277,9 @@ struct tcp_pcb {
   /* Timers */
   u8_t polltmr, pollinterval;
   u8_t last_timer;
+  #if CONFIG_TCP_TX_WIN_100MS
+  u8_t ps_idx;
+  #endif
   u32_t tmr;
 
   /* receiver variables */
@@ -289,6 +292,8 @@ struct tcp_pcb {
   /* SACK ranges to include in ACK packets (entry is invalid if left==right) */
   struct tcp_sack_range rcv_sacks[LWIP_TCP_MAX_SACK_NUM];
 #define LWIP_TCP_SACK_VALID(pcb, idx) ((pcb)->rcv_sacks[idx].left != (pcb)->rcv_sacks[idx].right)
+  u32_t ooq_seqno;
+  u8_t ooq_flag;
 #endif /* LWIP_TCP_SACK_OUT */
 
   /* Retransmission timer. */

@@ -427,12 +427,17 @@ err_t   netconn_err(struct netconn *conn);
 #endif /* LWIP_SO_RCVBUF*/
 
 #if LWIP_NETCONN_SEM_PER_THREAD
+#if CONFIG_LWIP_CUST_THREAD_SEM
+err_t netconn_thread_init(void *ptask);
+err_t netconn_thread_cleanup(void *ptask);
+#else
 void netconn_thread_init(void);
 void netconn_thread_cleanup(void);
-#else /* LWIP_NETCONN_SEM_PER_THREAD */
+#endif
+#else
 #define netconn_thread_init()
 #define netconn_thread_cleanup()
-#endif /* LWIP_NETCONN_SEM_PER_THREAD */
+#endif
 
 #ifdef __cplusplus
 }

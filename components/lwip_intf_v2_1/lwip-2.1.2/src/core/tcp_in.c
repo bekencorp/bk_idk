@@ -1261,6 +1261,12 @@ tcp_receive(struct tcp_pcb *pcb)
       /* Reset the retransmission time-out. */
       pcb->rto = (s16_t)((pcb->sa >> 3) + pcb->sv);
 
+#if CONFIG_DTIM10_TCP_RETRY
+      if(pcb->rto > 3) {
+        pcb->rto = 3;
+      }
+#endif
+
       /* Record how much data this ACK acks */
       acked = (tcpwnd_size_t)(ackno - pcb->lastack);
 
@@ -1375,6 +1381,12 @@ tcp_receive(struct tcp_pcb *pcb)
       m = (s16_t)(m - (pcb->sv >> 2));
       pcb->sv = (s16_t)(pcb->sv + m);
       pcb->rto = (s16_t)((pcb->sa >> 3) + pcb->sv);
+
+#if CONFIG_DTIM10_TCP_RETRY
+      if(pcb->rto > 3) {
+        pcb->rto = 3;
+      }
+#endif
 
       LWIP_DEBUGF(TCP_RTO_DEBUG, ("tcp_receive: RTO %"U16_F" (%"U16_F" milliseconds)\n",
                                   pcb->rto, (u16_t)(pcb->rto * TCP_SLOW_INTERVAL)));
@@ -1919,6 +1931,17 @@ tcp_receive(struct tcp_pcb *pcb)
     if (!TCP_SEQ_BETWEEN(seqno, pcb->rcv_nxt, pcb->rcv_nxt + pcb->rcv_wnd - 1)) {
       tcp_ack_now(pcb);
     }
+
+    #if LWIP_TCP_SACK_OUT
+    //Resolve the issue that no SACK is sent when out-of-order packets with len = 0 are received
+    pcb->ooq_seqno = seqno;
+    if(/*(pcb->ooseq == NULL) && */(pcb->ooq_seqno > pcb->rcv_nxt)) {
+      //#include "system.h"
+      bk_printf("bk sack len = 0 seq(%d)\r\n",seqno);
+      tcp_send_empty_ack(pcb);
+    }
+    #endif
+
   }
 }
 

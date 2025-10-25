@@ -536,8 +536,14 @@ struct timeval {
 #endif /* LWIP_TIMEVAL_PRIVATE */
 
 #define lwip_socket_init() /* Compatibility define, no init needed. */
+
+#if CONFIG_LWIP_CUST_THREAD_SEM
+err_t lwip_socket_thread_init(void *task);
+err_t lwip_socket_thread_cleanup(void *task);
+#else
 void lwip_socket_thread_init(void); /* LWIP_NETCONN_SEM_PER_THREAD==1: initialize thread-local semaphore */
 void lwip_socket_thread_cleanup(void); /* LWIP_NETCONN_SEM_PER_THREAD==1: destroy thread-local semaphore */
+#endif
 
 #if LWIP_COMPAT_SOCKETS == 2
 /* This helps code parsers/code completion by not having the COMPAT functions as defines */

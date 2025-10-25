@@ -35,8 +35,6 @@
 #include <common/sys_config.h>
 #include <components/log.h>
 
-
-
 /**
  * Loopback demo related options.
  */
@@ -464,7 +462,7 @@ u32_t beken_random(void);
  * LWIP_SO_CONTIMEO==1: Enable send timeout for sockets/netconns and
  * SO_CONTIMEO processing.
  */
-#define LWIP_SO_CONTIMEO                1
+#define LWIP_SO_CONTIMEO                CONFIG_LWIP_SO_CONTIMEO
 
 /**
  * LWIP_SO_SNDTIMEO==1: Enable send timeout for sockets/netconns and

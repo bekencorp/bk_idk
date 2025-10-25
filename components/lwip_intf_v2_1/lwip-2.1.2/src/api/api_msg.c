@@ -794,6 +794,7 @@ netconn_alloc(enum netconn_type t, netconn_callback callback)
   conn->linger = -1;
 #endif /* LWIP_SO_LINGER */
   conn->flags = init_flags;
+  conn->mbox_threads_waiting = 0;
   return conn;
 free_and_return:
   memp_free(MEMP_NETCONN, conn);

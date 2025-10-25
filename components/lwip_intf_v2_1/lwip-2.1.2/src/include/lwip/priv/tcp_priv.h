@@ -117,7 +117,7 @@ err_t            tcp_process_refused_data(struct tcp_pcb *pcb);
 #define TCP_SEQ_BETWEEN(a,b,c) (TCP_SEQ_GEQ(a,b) && TCP_SEQ_LEQ(a,c))
 
 #ifndef TCP_TMR_INTERVAL
-#define TCP_TMR_INTERVAL       100  /* The TCP timer interval in milliseconds. */
+#define TCP_TMR_INTERVAL       CONFIG_TCP_TMR_INTERVAL /* The TCP timer interval in milliseconds. */
 #endif /* TCP_TMR_INTERVAL */
 
 #ifndef TCP_FAST_INTERVAL
@@ -400,6 +400,7 @@ extern struct tcp_pcb ** const tcp_pcb_lists[NUM_TCP_PCB_LISTS];
   do {                                             \
     if(*(pcbs) == (npcb)) {                        \
       (*(pcbs)) = (*pcbs)->next;                   \
+      tcp_clear_ps_flag(npcb);                     \
     }                                              \
     else {                                         \
       struct tcp_pcb *tcp_tmp_pcb;                 \
@@ -408,6 +409,7 @@ extern struct tcp_pcb ** const tcp_pcb_lists[NUM_TCP_PCB_LISTS];
           tcp_tmp_pcb = tcp_tmp_pcb->next) {       \
         if(tcp_tmp_pcb->next == (npcb)) {          \
           tcp_tmp_pcb->next = (npcb)->next;        \
+          tcp_clear_ps_flag(npcb);                 \
           break;                                   \
         }                                          \
       }                                            \
@@ -435,7 +437,13 @@ extern struct tcp_pcb ** const tcp_pcb_lists[NUM_TCP_PCB_LISTS];
     tcp_active_pcbs_changed = 1;                   \
   } while (0)
 
-
+u32_t tcp_ps_flag_get(void);
+void tcp_set_ps_flag(struct tcp_pcb *tpcb);
+void tcp_clear_ps_flag(struct tcp_pcb *tpcb);
+void tcp_force_clear_ps_flag(void);
+u32_t tcp_increase_rx_win_cnt_get(void);
+void tcp_increase_rx_win_cnt_set(void);
+void tcp_increase_rx_win_cnt_clear(void);
 /* Internal functions: */
 struct tcp_pcb *tcp_pcb_copy(struct tcp_pcb *pcb);
 void tcp_pcb_purge(struct tcp_pcb *pcb);

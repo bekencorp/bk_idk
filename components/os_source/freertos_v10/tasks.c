@@ -43,6 +43,12 @@
 #include <os/mem.h>
 #include <modules/pm.h>
 
+#if CONFIG_LWIP_CUST_THREAD_SEM
+// lwipopts.h条件包含需要放在#include "FreeRTOS.h"之后，宏 CONFIG_SYS_CPU0 依赖其
+// 包含的sdkconfig.h , FreeRTOS.h ---> FreeRTOSConfig.h ---> sdkconfig.h
+#include "lwip/opt.h"
+#endif
+
 /* Lint e9021, e961 and e750 are suppressed as a MISRA exception justified
  * because the MPU ports require MPU_WRAPPERS_INCLUDED_FROM_API_FILE to be defined
  * for the header files above, but not in this file, in order to generate the
@@ -900,6 +906,12 @@ static void prvAddNewTaskToReadyList( TCB_t * pxNewTCB ) PRIVILEGED_FUNCTION;
             #endif /* tskSTATIC_AND_DYNAMIC_ALLOCATION_POSSIBLE */
 
             prvInitialiseNewTask( pxTaskCode, pcName, ( uint32_t ) usStackDepth, pvParameters, uxPriority, pxCreatedTask, pxNewTCB, NULL );
+
+#if CONFIG_LWIP_CUST_THREAD_SEM
+            extern int8_t lwip_socket_thread_init(void *task);
+            lwip_socket_thread_init(pxNewTCB);
+#endif
+
             prvAddNewTaskToReadyList( pxNewTCB );
             xReturn = pdPASS;
         }
@@ -1270,6 +1282,12 @@ static void prvAddNewTaskToReadyList( TCB_t * pxNewTCB )
     void vTaskDelete( TaskHandle_t xTaskToDelete )
     {
         TCB_t * pxTCB;
+
+
+#if CONFIG_LWIP_CUST_THREAD_SEM
+        extern int8_t lwip_socket_thread_cleanup(void *task);
+        lwip_socket_thread_cleanup(xTaskToDelete);
+#endif
 
         taskENTER_CRITICAL();
         {

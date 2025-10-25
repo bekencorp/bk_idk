@@ -1208,6 +1208,17 @@ tcp_build_sack_option(const struct tcp_pcb *pcb, u32_t *opts, u8_t num_sacks)
   }
 }
 
+static void tcp_build_sack_option_no_ooq(const struct tcp_pcb *pcb, u32_t *opts)
+{
+
+  LWIP_ASSERT("tcp_build_sack_option: invalid pcb", pcb != NULL);
+  LWIP_ASSERT("tcp_build_sack_option: invalid opts", opts != NULL);
+
+  *(opts++) = PP_HTONL(0x01010500 + 2 + 1 * 8);
+
+  *(opts++) = lwip_htonl(pcb->ooq_seqno);
+  *(opts++) = lwip_htonl(pcb->ooq_seqno);
+}
 #endif
 
 #if LWIP_WND_SCALE
@@ -1609,6 +1620,9 @@ tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb, struct netif *netif
   #endif
 
   NETIF_SET_HINTS(netif, &(pcb->netif_hints));
+  #if CONFIG_TCP_TX_WIN_100MS
+  tcp_set_ps_flag((struct tcp_pcb *)pcb);
+  #endif
   err = ip_output_if(seg->p, &pcb->local_ip, &pcb->remote_ip, pcb->ttl,
                      pcb->tos, IP_PROTO_TCP, netif);
   NETIF_RESET_HINTS(netif);
@@ -1909,6 +1923,11 @@ tcp_output_fill_options(const struct tcp_pcb *pcb, struct pbuf *p, u8_t optflags
     /* 1 word for SACKs header (including 2xNOP), and 2 words for each SACK */
     sacks_len = 1 + num_sacks * 2;
     opts += sacks_len;
+  }else if(pcb && (pcb->ooq_seqno > pcb->rcv_nxt) && (pcb->ooq_flag == 1)) {
+    tcp_build_sack_option_no_ooq(pcb, opts);
+    /* 1 word for SACKs header (including 2xNOP), and 2 words for each SACK */
+    sacks_len = 1 + 1 * 2;
+    opts += sacks_len;
   }
 #else
   LWIP_UNUSED_ARG(num_sacks);
@@ -1962,6 +1981,9 @@ tcp_output_control_segment(const struct tcp_pcb *pcb, struct pbuf *p,
       tos = 0;
     }
     TCP_STATS_INC(tcp.xmit);
+    #if CONFIG_TCP_TX_WIN_100MS
+    tcp_set_ps_flag((struct tcp_pcb *)pcb);
+    #endif
     err = ip_output_if(p, src, dst, ttl, tos, IP_PROTO_TCP, netif);
     NETIF_RESET_HINTS(netif);
   }
@@ -2051,6 +2073,10 @@ tcp_send_empty_ack(struct tcp_pcb *pcb)
   if ((num_sacks = tcp_get_num_sacks(pcb, optlen)) > 0) {
     optlen += 4 + num_sacks * 8; /* 4 bytes for header (including 2*NOP), plus 8B for each SACK */
   }
+  if((num_sacks == 0) && (pcb->ooq_seqno > pcb->rcv_nxt)) {
+    optlen += 4 + 1 * 8;
+    pcb->ooq_flag = 1;
+  }
 #endif
 
   p = tcp_output_alloc_header(pcb, optlen, 0, lwip_htonl(pcb->snd_nxt));
@@ -2061,6 +2087,9 @@ tcp_send_empty_ack(struct tcp_pcb *pcb)
     return ERR_BUF;
   }
   tcp_output_fill_options(pcb, p, optflags, num_sacks);
+#if LWIP_TCP_SACK_OUT
+  pcb->ooq_flag = 0;
+#endif
 
 #if LWIP_TCP_TIMESTAMPS
   pcb->ts_lastacksent = pcb->rcv_nxt;

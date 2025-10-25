@@ -104,6 +104,10 @@ struct etharp_entry {
   struct eth_addr ethaddr;
   u16_t ctime;
   u8_t state;
+#if BK_LWIP
+  /** last request time */
+  u32_t rtime;
+#endif
 };
 
 static struct etharp_entry arp_table[ARP_TABLE_SIZE];
@@ -112,7 +116,21 @@ static int arp_timeout = ARP_MAXAGE;
 static int arp_rerequest_used_unicast = ARP_AGE_REREQUEST_USED_UNICAST;
 static int arp_rerequest_used_broadcast = ARP_AGE_REREQUEST_USED_BROADCAST;
 
+#if BK_LWIP
 static beken2_timer_t arp_conflict_tmr = {0};
+/**
+ ****************************************************************************************
+ * @brief Compare timer absolute expiration time.
+ * @return true if time1 is earlier than time2.
+ ****************************************************************************************
+ */
+static inline bool sys_time_cmp(uint32_t time1, uint32_t time2)
+{
+    uint32_t diff = time1 - time2;
+
+    return (int32_t)diff < 0;
+}
+#endif
 
 /** Try hard to create a new entry - we want the IP address to appear in
     the cache (even if this means removing an active entry or so). */
@@ -188,6 +206,11 @@ etharp_free_entry(int i)
   }
   /* recycle entry for re-use */
   arp_table[i].state = ETHARP_STATE_EMPTY;
+#if BK_LWIP
+  /* reset arp request time */
+  arp_table[i].rtime = 0;
+#endif
+
 #ifdef LWIP_DEBUG
   /* for debugging, clean out the complete entry */
   arp_table[i].ctime = 0;
@@ -251,20 +274,22 @@ etharp_tmr(void)
         /* pending or stable entry has become old! */
         LWIP_DEBUGF(ETHARP_DEBUG, ("etharp_timer 1hour: expired %s entry %d.\n",
                                    arp_table[i].state >= ETHARP_STATE_STABLE ? "stable" : "pending", i));
-	 if (bk_feature_fast_dhcp_enable() && (arp_table[i].state == ETHARP_STATE_PENDING) &&
+#if BK_LWIP
+        if (bk_feature_fast_dhcp_enable() && (arp_table[i].state == ETHARP_STATE_PENDING) &&
            (arp_table[i].ctime >= ARP_MAXPENDING)  && ((sta_addr.ipv4.gw) == (arp_table[i].ipaddr.addr))) {
-			if (rtos_is_oneshot_timer_init(&arp_conflict_tmr) == 0) {
-				int clk_time = 1000;
-				rtos_init_oneshot_timer(&arp_conflict_tmr,
-					clk_time,
-					(timer_2handler_t)net_restart_dhcp,
-					NULL,
-					NULL);
-			}
-			if (rtos_is_oneshot_timer_running(&arp_conflict_tmr) == 0) {
-				rtos_start_oneshot_timer(&arp_conflict_tmr);
-			}
-		}
+          if (rtos_is_oneshot_timer_init(&arp_conflict_tmr) == 0) {
+            int clk_time = 1000;
+            rtos_init_oneshot_timer(&arp_conflict_tmr,
+              clk_time,
+              (timer_2handler_t)net_restart_dhcp,
+              NULL,
+              NULL);
+          }
+          if (rtos_is_oneshot_timer_running(&arp_conflict_tmr) == 0) {
+            rtos_start_oneshot_timer(&arp_conflict_tmr);
+          }
+        }
+#endif
         /* clean up entries that have just been expired */
         etharp_free_entry(i);
       }else if (arp_table[i].state == ETHARP_STATE_STABLE_REREQUESTING_1) {
@@ -290,33 +315,34 @@ bool special_arp_flag = false;
 void
 etharp_reply(void)
 {
-	int i;
-	int mark = 0;
-	struct wlan_ip_config sta_addr;
-	void *netif;
-	ip_addr_t dhcp_server_gw;
-	net_get_if_addr(&sta_addr, net_get_sta_handle());
-	ip_addr_set_ip4_u32(&dhcp_server_gw, sta_addr.ipv4.gw);
-	netif = net_get_sta_handle();
-	if (sta_addr.ipv4.gw != 0) {
-		for (i = 0; i < ARP_TABLE_SIZE; ++i) {
-		u8_t state = arp_table[i].state;
-		if (state != ETHARP_STATE_EMPTY && ip4_addr_cmp(ip_2_ip4(&dhcp_server_gw), &arp_table[i].ipaddr)) {
-			special_arp_flag = true;
-			etharp_raw(arp_table[i].netif,
-					 (struct eth_addr *)arp_table[i].netif->hwaddr, &arp_table[i].ethaddr,
-					 (struct eth_addr *)arp_table[i].netif->hwaddr, netif_ip4_addr(arp_table[i].netif),
-					 &arp_table[i].ethaddr, &arp_table[i].ipaddr,
-					 ARP_REPLY);
-		  mark = 1;
-		}
-		}
-		if(mark == 0) {
-		special_arp_flag = true;
-		LWIP_DEBUGF(ETHARP_DEBUG, ("mark null, send request\n"));
-		etharp_request(netif, (ip4_addr_t *)&sta_addr.ipv4.gw);
-		}
-	}
+  int i;
+  int mark = 0;
+  struct wlan_ip_config sta_addr;
+  void *netif;
+  ip_addr_t dhcp_server_gw;
+  net_get_if_addr(&sta_addr, net_get_sta_handle());
+  ip_addr_set_ip4_u32(&dhcp_server_gw, sta_addr.ipv4.gw);
+  netif = net_get_sta_handle();
+  if (sta_addr.ipv4.gw != 0) {
+    for (i = 0; i < ARP_TABLE_SIZE; ++i) {
+      u8_t state = arp_table[i].state;
+      if (state != ETHARP_STATE_EMPTY && ip4_addr_cmp(ip_2_ip4(&dhcp_server_gw), &arp_table[i].ipaddr)) {
+        special_arp_flag = true;
+        etharp_raw(arp_table[i].netif,
+           (struct eth_addr *)arp_table[i].netif->hwaddr, &arp_table[i].ethaddr,
+           (struct eth_addr *)arp_table[i].netif->hwaddr, netif_ip4_addr(arp_table[i].netif),
+           &arp_table[i].ethaddr, &arp_table[i].ipaddr,
+           ARP_REPLY);
+        arp_table[i].rtime = sys_now();
+        mark = 1;
+      }
+    }
+    if(mark == 0) {
+      special_arp_flag = true;
+      LWIP_DEBUGF(ETHARP_DEBUG, ("mark null, send request\n"));
+      etharp_request(netif, (ip4_addr_t *)&sta_addr.ipv4.gw);
+    }
+  }
 }
 #endif
 
@@ -508,7 +534,11 @@ etharp_find_entry(const ip4_addr_t *ipaddr, u8_t flags, struct netif *netif)
  * @see pbuf_free()
  */
 static err_t
-etharp_update_arp_entry(struct netif *netif, const ip4_addr_t *ipaddr, struct eth_addr *ethaddr, u8_t flags)
+etharp_update_arp_entry(struct netif *netif, const ip4_addr_t *ipaddr, struct eth_addr *ethaddr, u8_t flags
+#if BK_LWIP
+                       , s16_t *loc
+#endif
+                       )
 {
   s16_t i;
   LWIP_ASSERT("netif->hwaddr_len == ETH_HWADDR_LEN", netif->hwaddr_len == ETH_HWADDR_LEN);
@@ -542,7 +572,32 @@ etharp_update_arp_entry(struct netif *netif, const ip4_addr_t *ipaddr, struct et
   {
     /* mark it stable */
     arp_table[i].state = ETHARP_STATE_STABLE;
+// Modified by TUYA Start
+#if CONFIG_STATIC_IP_FOR_GATEWAY
+    if (ip4_addr_cmp(&arp_table[i].ipaddr, &netif->gw)) {
+        bk_printf("[etharp] make ip/mac static, [%d.%d.%d.%d] --- [%02x:%02x:%02x:%02x:%02x:%02x]\r\n",
+                ip4_addr1_16(&arp_table[i].ipaddr),
+                ip4_addr2_16(&arp_table[i].ipaddr),
+                ip4_addr3_16(&arp_table[i].ipaddr),
+                ip4_addr4_16(&arp_table[i].ipaddr),
+                ethaddr->addr[0],
+                ethaddr->addr[1],
+                ethaddr->addr[2],
+                ethaddr->addr[3],
+                ethaddr->addr[4],
+                ethaddr->addr[5]);
+        arp_table[i].state = ETHARP_STATE_STATIC;
+        bk_printf("--- %s %d: %d %x %x\r\n", __func__, __LINE__, i, &arp_table[i], arp_table[i].state);
+    }
+#endif
+// Modified by TUYA End
   }
+
+#if BK_LWIP
+  /* record the location of the entry */
+  if (loc)
+    *loc = i;
+#endif
 
   /* record network interface */
   arp_table[i].netif = netif;
@@ -603,7 +658,11 @@ etharp_add_static_entry(const ip4_addr_t *ipaddr, struct eth_addr *ethaddr)
     return ERR_RTE;
   }
 
+#if BK_LWIP
+  return etharp_update_arp_entry(netif, ipaddr, ethaddr, ETHARP_FLAG_TRY_HARD | ETHARP_FLAG_STATIC_ENTRY, NULL);
+#else
   return etharp_update_arp_entry(netif, ipaddr, ethaddr, ETHARP_FLAG_TRY_HARD | ETHARP_FLAG_STATIC_ENTRY);
+#endif
 }
 
 /** Remove a static entry from the ARP table previously added with a call to
@@ -637,6 +696,28 @@ etharp_remove_static_entry(const ip4_addr_t *ipaddr)
   etharp_free_entry(i);
   return ERR_OK;
 }
+
+// Modified by TUYA Start
+void
+etharp_remove_all_static(void)
+{
+#if CONFIG_STATIC_IP_FOR_GATEWAY
+  for (int i = 0; i < ARP_TABLE_SIZE; ++i) {
+    int state = arp_table[i].state;
+    if (state == ETHARP_STATE_STATIC) {
+        ip_addr_t *gw = &arp_table[i].netif->gw;
+        struct eth_addr *ethaddr = &arp_table[i].ethaddr;
+        bk_printf("[etharp] remove static arp item: [%d.%d.%d.%d] --- [%02x:%02x:%02x:%02x:%02x:%02x]\r\n",
+                ip4_addr1_16(gw), ip4_addr2_16(gw), ip4_addr3_16(gw), ip4_addr4_16(gw),
+                ethaddr->addr[0], ethaddr->addr[1], ethaddr->addr[2],
+                ethaddr->addr[3], ethaddr->addr[4], ethaddr->addr[5]);
+        etharp_free_entry(i);
+    }
+  }
+#endif
+}
+// Modified by TUYA End
+
 #endif /* ETHARP_SUPPORT_STATIC_ENTRIES */
 
 /**
@@ -733,6 +814,9 @@ etharp_input(struct pbuf *p, struct netif *netif)
   /* these are aligned properly, whereas the ARP header fields might not be */
   ip4_addr_t sipaddr, dipaddr;
   u8_t for_us;
+#if BK_LWIP
+  s16_t i = -1;
+#endif
 
   LWIP_ASSERT_CORE_LOCKED();
 
@@ -781,7 +865,12 @@ etharp_input(struct pbuf *p, struct netif *netif)
      ARP message not directed to us?
       ->  update the source IP address in the cache, if present */
   etharp_update_arp_entry(netif, &sipaddr, &(hdr->shwaddr),
-                          for_us ? ETHARP_FLAG_TRY_HARD : ETHARP_FLAG_FIND_ONLY);
+                          for_us ? ETHARP_FLAG_TRY_HARD : ETHARP_FLAG_FIND_ONLY
+#if BK_LWIP
+
+                         , &i
+#endif
+                          );
 
   /* now act on the message itself */
   switch (hdr->opcode) {
@@ -795,6 +884,26 @@ etharp_input(struct pbuf *p, struct netif *netif)
       /* ARP request for our address? */
       //if (for_us && !etharp_tmr_flag) {
       if (for_us) {
+#if BK_LWIP
+#ifdef CONFIG_WIFI_DTIM10_TEMP_DISABLED
+        if (i >= 0) {
+          LWIP_DEBUGF(ETHARP_DEBUG | LWIP_DBG_TRACE, ("etharp_input: rtime %d, sys_now %d\n", arp_table[i].rtime, sys_now()));
+          /* If not request before */
+          if (!arp_table[i].rtime) {
+            arp_table[i].rtime = sys_now();
+
+          } else if (sys_time_cmp(sys_now(), arp_table[i].rtime + 15000)) {
+            /* If request in 15s, ignore this request */
+            LWIP_DEBUGF(ETHARP_DEBUG | LWIP_DBG_TRACE, ("etharp_input: ARP_REQUEST too shortly, ignore.\n"));
+            break;
+          }
+
+          /* update latest request time */
+          arp_table[i].rtime = sys_now();
+          LWIP_LOGI("send arp_reply.\r\n");
+        }
+#endif
+#endif
         /* send ARP response */
         etharp_raw(netif,
                    (struct eth_addr *)netif->hwaddr, &hdr->shwaddr,

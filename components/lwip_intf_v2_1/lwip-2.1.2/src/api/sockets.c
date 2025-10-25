@@ -325,18 +325,31 @@ sockaddr_to_ipaddr_port(const struct sockaddr *sockaddr, ip_addr_t *ipaddr, u16_
 #endif /* LWIP_IPV4 && LWIP_IPV6 */
 
 /** LWIP_NETCONN_SEM_PER_THREAD==1: initialize thread-local semaphore */
+#if CONFIG_LWIP_CUST_THREAD_SEM
+err_t
+lwip_socket_thread_init(void *task)
+{
+  return netconn_thread_init(task);
+}
+
+err_t
+lwip_socket_thread_cleanup(void *task)
+{
+  return netconn_thread_cleanup(task);
+}
+#else
 void
 lwip_socket_thread_init(void)
 {
   netconn_thread_init();
 }
 
-/** LWIP_NETCONN_SEM_PER_THREAD==1: destroy thread-local semaphore */
 void
 lwip_socket_thread_cleanup(void)
 {
   netconn_thread_cleanup();
 }
+#endif
 
 #if LWIP_NETCONN_FULLDUPLEX
 /* Thread-safe increment of sock->fd_used, with overflow check */
