@@ -765,6 +765,7 @@ bk_err_t bk_sdio_set_test_case(
 	msg.param4 = param4;
 	return sdio_test_send_msg(&msg);
 }
+
 static void sdio_test_thread(void *arg)
 {
 	bk_err_t ret = BK_OK;
@@ -775,7 +776,6 @@ static void sdio_test_thread(void *arg)
 		ret = rtos_pop_from_queue(&s_sdio_test_msg_que, &msg, BEKEN_WAIT_FOREVER);
 		if (kNoErr == ret)
 		{
-			//
 			switch(msg.main_case)
 			{
 				case SDIO_TEST_TX:

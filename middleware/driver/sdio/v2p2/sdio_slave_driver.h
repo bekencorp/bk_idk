@@ -230,12 +230,13 @@ typedef union
 	};
 	uint32_t v;
 }sdio_cmd_fifo_t;
+
 typedef union
 {
 	struct
 	{
 		uint32_t count : 9;			//block/byte mode, how many blocks/bytes
-#if CONFIG_SDIO_SW_CHANNEL_EN				//BK7256 ASIC not use this bits, SW use it as self-define function
+#if CONFIG_SDIO_SW_CHANNEL_EN       //BK7256 ASIC not use this bits, SW use it as self-define function
 		uint32_t channel : 3;		//for BK7256 slave channel id
 		uint32_t start_packet : 1;	//Host write:after this CMD53,the data is a new packet start
 		uint32_t end_packet : 1;	//Host write:after this CMD53,the data is a packet end
@@ -250,12 +251,13 @@ typedef union
 	};
 	uint32_t v;
 }sdio_cmd53_arg_t;
+
 typedef bk_err_t (*sdio_chan_cb_t)(uint8_t chan_id, sdio_node_ptr_t head_p, sdio_node_ptr_t tail_p, uint32_t count);
 typedef bk_err_t (*sdio_rx_cb_t)(char* buf_p, uint32_t len);
 bk_err_t bk_sdio_register_rx_cb(sdio_rx_cb_t cb);
+
 typedef struct
 {
-	//
 	uint32_t buf_cnt;
 	uint32_t buf_size;
 	//free list
@@ -342,18 +344,19 @@ typedef struct {
 #define FORBID_SLEEP_TIMEOUT (2000)
 #define WAIT_HOST_ACK_TIMEOUT (100)
 #define GPIO_SDIO_HOST_WAKEUP_SLAVE (GPIO_27)	// == gpio_wk_receive_num
-#if 1
-	#if CONFIG_SDIO_RK3568
-		#ifndef GPIO_SDIO_NOTIFY_HOST
-		#define GPIO_SDIO_NOTIFY_HOST (GPIO_0)	// == gpio_wk_send_num
-		#endif
-	#else
-		#ifndef GPIO_SDIO_NOTIFY_HOST
-		#define GPIO_SDIO_NOTIFY_HOST (GPIO_36)
-		#endif
+
+#if CONFIG_SDIO_RK3568
+	#ifndef GPIO_SDIO_NOTIFY_HOST
+	#define GPIO_SDIO_NOTIFY_HOST (GPIO_0)	   // == gpio_wk_send_num
+	#endif
+#else
+	#ifndef GPIO_SDIO_NOTIFY_HOST
+	#define GPIO_SDIO_NOTIFY_HOST (GPIO_2)
 	#endif
 #endif
+
 typedef void (*wk_slp_fail_callback)(void);
+
 void register_wake_host_fail_func(wk_slp_fail_callback cb);
 /**
  * @brief	Pullup GPIO to notify host, slave will send data.

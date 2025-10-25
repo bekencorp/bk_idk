@@ -61,12 +61,12 @@ menu "SDIO"
 
 	config SDIO_4LINES_EN
 		bool "SDIO Uses 4 Lines Transfer Data"
-		depends on SDIO
+		depends on SDIO || SDIO_HOST
 		default y
 
 	config SDIO_1V8_EN
 		bool "SDIO Uses 1.8v work voltage"
-		depends on SDIO
+		depends on SDIO || SDIO_HOST
 		default y
 
 	config SDIO_TEST_EN

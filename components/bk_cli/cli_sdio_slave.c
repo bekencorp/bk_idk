@@ -12,23 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//#include <os/os.h>
 #include "cli.h"
 #include <sdio_test.h>
 
-#if 0
 static void cli_sdio_slave_help(void)
 {
 	CLI_LOGI("sdio_slave_test {main case}{sub case}{param1}{param2}{param3}{param4}\r\n");
 }
-#endif
 
 beken_thread_t loop_test_handle = NULL;
 uint32_t looptest_flag = 0;
 
-static void loop_test(void *arg) {
+static void loop_test(void *arg)
+{
 	uint32_t delay_time = 5000;
-	bk_sdio_set_test_case(1, 0, 0, 1024, 1, 1);  //1 0 0 1024 1
+
+	bk_sdio_set_test_case(1, 0, 0, 1024, 1, 1);
+
 	while (1) {
 		bk_sdio_set_test_case(1, 1, 0, 1024, 80, 1); //1 1 0 1024 80   rx, single_packet, chan_id, len, value, packet_cnt
 		bk_sdio_set_test_case(0, 0, 0, 1024, 1, 1);  //0 0 0 1024 1
@@ -43,6 +43,8 @@ static void cli_sdio_slave_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, in
 {
 	uint8_t main_case = 0, sub_case = 0;
 	uint32_t param1 = 0,param2 = 0,param3 = 0,param4 = 0;
+
+	cli_sdio_slave_help();
 
 	if (os_strcmp(argv[1], "loopstart") == 0) {
 		uint32_t task_prio = 5;

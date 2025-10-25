@@ -34,28 +34,17 @@
 #include "sdio_slave_driver.h"
 static void sdio_send_msg(sdio_msg_t *msg_p);
 
-#if 0	//TODO:
-#define GPIO_ID_SDIO_NOTIFY_START_READ (26)
-#define GPIO_ID_SDIO_READ_TO_FIFO_FINISH (27)
-#define GPIO_ID_SDIO_READ_TO_MEMORY_FINISH (28)
-#define GPIO_ID_SDIO_NOTIFY_START_WRITE (29)
-#define GPIO_ID_SDIO_WRITE_NOTIFY_FIFO_EMPTY (30)
-#define GPIO_ID_SDIO_WRITE_TO_FIFO_FINISH (31)
-#define GPIO_ENTER_LEVEL (2)
-#define GPIO_EXIT_LEVEL (0)
-#define GPIO_ID_DMA_START_END (26)	//RE-USE
-#define GPIO_ID_SDIO_READ_PACK_FINISH (27)
-#endif
-
 static sdio_driver_t s_sdio_driver;
 static bool s_sdio_driver_is_init = false;
 static beken_queue_t s_sdio_msg_que = NULL;
 static beken_thread_t s_sdio_thread = NULL;
-volatile uint8_t g_sdio_log_level = SDIO_LOG_ERR_LEVEL;
-//volatile uint8_t g_sdio_log_level = SDIO_LOG_DEBUG_LEVEL;
+//volatile uint8_t g_sdio_log_level = SDIO_LOG_ERR_LEVEL;
+volatile uint8_t g_sdio_log_level = SDIO_LOG_DEBUG_LEVEL;
+
 #if CONFIG_SDIO_SLAVE_TX_MEMCPY_EN
 static beken_thread_t s_sdio_tx_memcpy_thread = NULL;
 static beken_semaphore_t s_sdio_memcpy_sema = NULL;
+
 //TX
 static uint32_t s_tx_pack_total_len = 0;	//memcpy many payloads to a pack
 static uint32_t s_pack_tx_complete_len = 0;	//current pack has TX how many bytes
@@ -71,6 +60,7 @@ static sdio_node_ptr_t s_rx_last_payload = NULL;	//rx data to which payload buff
 static uint32_t s_rx_payload_copied_len = 0;	//drive read data by DMA, set the len to DMA, after DMA read SDIO data to RAM complete, uses to compute whether read all pack finish
 static uint32_t s_sdio_rx_bytes = 0;	//RX:how many bytes Host write at current read transaction
 static dma_id_t s_sdio_rx_dma_chan = DMA_ID_MAX;  /**< SDIO rx dma channel */
+
 #ifndef CONFIG_SDIO_4LINES_EN  // enable RX_WITH_BLK only in 1line mode
 #define CONFIG_SDIO_SLAVE_RX_WITH_BLK  1
 #endif
@@ -187,12 +177,14 @@ __attribute__((section(".iram_sec_code"))) static void request_dma_copy_sdio_dat
 		s_sdio_driver.rx_pack.wr_index++;
 #endif
 }
+
 //TODO:return value should be check
 __attribute__((section(".iram_sec_code"))) static void request_dma_copy_packet_data_to_sdio(void)
 {
 	uint32_t rd_index = s_sdio_driver.pack.rd_index % SDIO_MEMCPY_PACK_CNT;
 	uint8_t *src_addr = (uint8_t *)s_sdio_driver.pack.start_addr[rd_index];
 	uint32_t count = SDIO_BLOCK_SIZE;
+
 	SDIO_LOG_DEBUG_FUNCTION_ENTRY();
 	//Avoid doesn't request write, but host start a CMD53 to read data.
 	if(s_sdio_driver.pack.rd_index == s_sdio_driver.pack.wr_index)
@@ -204,15 +196,15 @@ __attribute__((section(".iram_sec_code"))) static void request_dma_copy_packet_d
 	{
 		return;
 	}
+
 	//first?
 	if((s_pack_tx_complete_len == 0) &&
 		(s_tx_pack_total_len > SDIO_BLOCK_SIZE))
 	{
 		count = SDIO_DMA_SPLIT_FIRST_SIZE;
 	}
-#if 1 //CONFIG_SDIO_CMD_AUTO_RSP_EN   //7236N ASIC BUG fixed: one packet send all data
 	count = SDIO_BYTES_TO_BLOCKS_CNT(s_tx_pack_total_len)*SDIO_BLOCK_SIZE;
-#endif
+
 	//check it before start DMA
 	if(s_pack_tx_complete_len + count > SDIO_BYTES_TO_BLOCKS_CNT(s_tx_pack_total_len)*SDIO_BLOCK_SIZE)
 	{
@@ -225,22 +217,23 @@ __attribute__((section(".iram_sec_code"))) static void request_dma_copy_packet_d
 	SDIO_LOG_DEBUG("count=%d,complete_len=%d,total_len=%d", count, s_pack_tx_complete_len, s_tx_pack_total_len);
 	//BK_ASSERT(s_pack_tx_complete_len <= SDIO_BYTES_TO_BLOCKS_CNT(s_tx_pack_total_len)*SDIO_BLOCK_SIZE);
 }
+
 static bk_err_t sdio_tx_dma_set_src_buf(uint8_t *psrc, uint32_t count)
 {
 	bk_dma_set_transfer_len(s_sdio_tx_dma_chan, count);
 	return bk_dma_set_src_addr(s_sdio_tx_dma_chan, (uint32_t)psrc, (uint32_t)(psrc+count));
 }
+
 static bk_err_t sdio_dma_tx_init(void)
 {
 	dma_config_t dma_config = {0};
 	SDIO_LOG_DEBUG_FUNCTION_ENTRY();
+
 	os_memset(&dma_config, 0, sizeof(dma_config_t));
 	dma_config.mode = DMA_WORK_MODE_SINGLE;
 	dma_config.chan_prio = 0;
 	dma_config.src.dev = DMA_DEV_DTCM;
 	dma_config.src.width = DMA_DATA_WIDTH_32BITS;
-	//dma_config.src.start_addr = (uint32) psrc;
-	//dma_config.src.end_addr =  (uint32) psrc + count;
 	dma_config.src.addr_inc_en = DMA_ADDR_INC_ENABLE;
 	dma_config.dst.dev = DMA_DEV_SDIO;
 	dma_config.dst.width = DMA_DATA_WIDTH_32BITS;
@@ -972,28 +965,7 @@ void bk_sdio_driver_dump_sdio_regs(void)
 	}
 	SDIO_LOG_DEBUG_FUNCTION_EXIT();
 }
-#if 0
-static void sdio_driver_logout_cmd53_args(sdio_cmd53_arg_t cmd53_arg)
-{
-	//uint32_t reg_addr = 0;
-	SDIO_LOG_DEBUG_FUNCTION_ENTRY();
-	SDIO_LOG_DEBUG("value=0x%x", cmd53_arg.v);
-	SDIO_LOG_DEBUG("count=%d", cmd53_arg.count);
-#if CONFIG_SDIO_SW_CHANNEL_EN
-	SDIO_LOG_DEBUG("channel=%d", cmd53_arg.channel);
-	SDIO_LOG_DEBUG("start_packet=%d", cmd53_arg.start_packet);
-	SDIO_LOG_DEBUG("end_packet=%d", cmd53_arg.end_packet);
-	SDIO_LOG_DEBUG("sw_reserved=%d", cmd53_arg.sw_reserved);
-#else
-	SDIO_LOG_DEBUG("addr=0x%08x", cmd53_arg.addr);
-#endif
-	SDIO_LOG_DEBUG("block_mode=%d", cmd53_arg.block_mode);
-	SDIO_LOG_DEBUG("rw=%d", cmd53_arg.rw);
-	//SDIO_LOG_DEBUG("func=%d", cmd53_arg.func_num);
-	//SDIO_LOG_DEBUG("count=%d", cmd53_arg.op_mode);
-	SDIO_LOG_DEBUG_FUNCTION_EXIT();
-}
-#endif
+
 #if CONFIG_SDIO_CHANNEL_EN
 /**
  * @brief	  Push the data use finish link list to free list.
@@ -1744,16 +1716,19 @@ bk_err_t sdio_slave_async_write(sdio_chan_id_t chan_id, sdio_node_ptr_t head_p, 
 	bk_err_t ret = BK_OK;
 	return ret;
 }
+
 static uint32_t write_blk_cnt = 0;
 static volatile uint32_t s_record_msg = 0;	//just for debug
+
 static void sdio_thread(void *arg)
 {
 	bk_err_t ret;
-	//uint32_t read_to_fifo_flag = 0;
+
 	SDIO_LOG_DEBUG_FUNCTION_ENTRY();
 #if CONFIG_SDIO_CMD_AUTO_RSP_EN
 	sdio_hal_cmd_sst_sel_en(0);
 #endif
+
 	while(1)
 	{
 		sdio_msg_t msg;
@@ -1771,13 +1746,11 @@ static void sdio_thread(void *arg)
 				{
 					sdio_cmd53_arg_t cmd53_arg = (sdio_cmd53_arg_t)sdio_hal_slave_get_cmd_arg0();
 					BK_ASSERT(s_rx_pack_total_len == 0);	//confirm previous complete.
-					//bk_gpio_set_value(GPIO_ID_SDIO_NOTIFY_START_READ, GPIO_ENTER_LEVEL);
-					//cmd53_arg = (sdio_cmd53_arg_t)msg.param;
 					if(cmd53_arg.block_mode)
 						s_pack_rx_left_len = s_rx_pack_total_len = cmd53_arg.count * SDIO_BLOCK_SIZE;
 					else
 						s_pack_rx_left_len = s_rx_pack_total_len = cmd53_arg.count;
-					//read_to_fifo_flag = 0;
+
 					if(s_tx_pack_total_len - s_pack_tx_complete_len)
 						SDIO_LOG_DEBUG("SDIO_NOTIFY_START_READ CMD53 tx_left_bytes is %d.\r\n", s_tx_pack_total_len - s_pack_tx_complete_len);
 #if CONFIG_SDIO_SLAVE_RX_MEMCPY_EN
@@ -1785,24 +1758,11 @@ static void sdio_thread(void *arg)
 #else
 					request_cpu_and_dma_copy_sdio_data_to_payloads();
 #endif
-					//bk_gpio_set_value(GPIO_ID_SDIO_NOTIFY_START_READ, GPIO_EXIT_LEVEL);
 					break;
 				}
-#if 0  //cpu read fifo to do
-				case SDIO_READ_TO_FIFO_FINISH:
-				{
-					//bk_gpio_set_value(GPIO_ID_SDIO_READ_TO_FIFO_FINISH, GPIO_ENTER_LEVEL);
-					if  (read_to_fifo_flag == 0) {
-						request_cpu_copy_sdio_data_to_payloads();
-						read_to_fifo_flag = 1;
-					}
-					//bk_gpio_set_value(GPIO_ID_SDIO_READ_TO_FIFO_FINISH, GPIO_EXIT_LEVEL);
-					break;
-				}
-#endif
+
 				case SDIO_READ_PACK_FINISH:
 				{
-					//bk_gpio_set_value(GPIO_ID_SDIO_READ_PACK_FINISH, GPIO_ENTER_LEVEL);
 					for(sdio_chan_id_t chan_id = 0; chan_id < SDIO_CHAN_MAX_CNT; chan_id++)
 					{
 						sdio_chan_notify_cb(chan_id, SDIO_CHAN_RX);
@@ -1810,7 +1770,6 @@ static void sdio_thread(void *arg)
 					sdio_hal_fifo_reset();
 					sdio_hal_cmd_sst_sel_en(0);//debug
 					sdio_hal_slave_cmd_start(1);	//wait to receive next CMD.
-					//bk_gpio_set_value(GPIO_ID_SDIO_READ_PACK_FINISH, GPIO_EXIT_LEVEL);
 					break;
 				}
 				case SDIO_APP_REQUEST_WRITE:
@@ -1864,16 +1823,6 @@ static void sdio_thread(void *arg)
 					//current pack tx complete
 					if(write_blk_cnt == 0)
 					{
-#if 0	//move to top-half to deal it, let it quickly enable CMD START, and then can response host next CMDx
-						sdio_slave_clear_notify_host();
-						//force reset current TX
-						{
-							sdio_hal_set_tx_fifo_empty_int(0);
-							//TODO:
-							sdio_hal_fifo_reset();
-							sdio_hal_slave_cmd_start(1);	//wait to receive next CMD.
-						}
-#endif
 						//really TX complete by SDIO to Host
 						s_sdio_driver.pack.end_addr[s_sdio_driver.pack.rd_index%SDIO_MEMCPY_PACK_CNT] = s_sdio_driver.pack.start_addr[s_sdio_driver.pack.rd_index%SDIO_MEMCPY_PACK_CNT];
 						s_sdio_driver.pack.rd_index++;
@@ -1920,11 +1869,10 @@ static void sdio_slave_tx_memcpy_thread(void *arg)
 {
 	bk_err_t ret = BK_OK;
 	sdio_chan_id_t chan_id = 0;
-	//bool notify_tx = false;
-	//bool pack_full = false;
 	sdio_node_ptr_t cur_node_p = NULL;
 	uint32_t cur_pack_left_size = 0;
 	uint32_t wr_index = 0;
+
 	SDIO_LOG_DEBUG_FUNCTION_ENTRY();
 	while(1)
 	{
@@ -1958,6 +1906,7 @@ static void sdio_slave_tx_memcpy_thread(void *arg)
 #if 0 //CONFIG_SDIO_CMD_AUTO_RSP_EN
 								sdio_hal_cccr_intx_en(1);		// SDIO IRQ Notify host:slave will send data
 #endif
+
 #if CONFIG_GPIO_NOTIFY_TRANSACTION_EN
 								sdio_slave_set_notify_host();
 								sdio_slave_clear_notify_host();
@@ -2003,44 +1952,27 @@ __attribute__((section(".iram_sec_code"))) static void sdio_slave_isr(void)
 	uint32_t cmd_index = (int_status >> 14) & (0x3f);
 
 	//Slave response end int
-	if(sdio_hal_slave_get_cmd_response_end_int())	//TODO:uses int_status to reduce function caller
+	if(sdio_hal_slave_get_cmd_response_end_int()) //TODO:uses int_status to reduce function caller
 	{
-		sdio_hal_slave_clear_cmd_response_end_int();	//CMD_S_RES_END_INT
+		sdio_hal_slave_clear_cmd_response_end_int(); //CMD_S_RES_END_INT
 		SDIO_LOG_DEBUG("CMD%d Respond end", cmd_index);
 		switch (cmd_index)
 		{
 			case SDIO_CMD_INDEX_52:
 			{
-#if 1
 				sdio_hal_slave_cmd_start(1);
-#else
-				sdio_cmd52_arg_t cmd52_arg;
-				uint32_t cmd52_arg_value = 0;
-				cmd52_arg.v = cmd52_arg_value = sdio_hal_slave_get_cmd_arg0();
-				//host read block cnt
-				if((cmd52_arg.rw_flag == 0) && (cmd52_arg.reg_addr == 0))	//host read reg0 ==>Slave TX,notify host how many blocks needs to read
-				{
-					sdio_hal_slave_set_tx_length(0);	//clear previous tx length
-					sdio_hal_slave_cmd_start(1);	//wait to receive next CMD.
-				}
-				else if((cmd52_arg.rw_flag == 0) && (cmd52_arg.reg_addr == 4))	//host read reg1 ==>flow control, how many payloads slave RX have
-				{
-					//TODO:
-					sdio_hal_slave_cmd_start(1);	//wait to receive next CMD.
-				}
-#endif
 				break;
 			}
 			case SDIO_CMD_INDEX_53:
 			{
 				sdio_cmd53_arg_t cmd53_arg;
 				uint32_t cmd53_arg_value = 0;
-				cmd53_arg.v = cmd53_arg_value = sdio_hal_slave_get_cmd_arg0();
+
+				cmd53_arg_value = sdio_hal_slave_get_cmd_arg0();
+				cmd53_arg.v = cmd53_arg_value;
 #if CONFIG_SDIO_DEBUG
 				s_record_cmd_arg = cmd53_arg_value;
 #endif
-				//SDIO_LOG_DEBUG("cmd53_arg_value=0x%x", cmd53_arg_value);
-				//sdio_driver_logout_cmd53_args(cmd53_arg);
 				if(cmd53_arg.rw)	//host write, slave read
 				{
 					//notify sdio task to read data
@@ -2091,9 +2023,7 @@ __attribute__((section(".iram_sec_code"))) static void sdio_slave_isr(void)
 			default:
 			{
 				SDIO_LOG_ERR("cmd_index = 0x%x.\r\n", cmd_index);
-#if 1 //#ifndef CONFIG_SDIO_CMD_AUTO_RSP_EN
 				sdio_hal_slave_cmd_start(1);	//wait to receive next CMD.
-#endif
 				break;
 			}
 		}
@@ -2240,8 +2170,11 @@ static bk_err_t sdio_sw_init(void)
 	}
 	for(uint32_t i = 0; i < SDIO_MEMCPY_PACK_CNT; i++)
 	{
-		s_sdio_driver.pack.end_addr[i] = s_sdio_driver.pack.start_addr[i] = os_malloc(SDIO_MEMCPY_PACK_SIZE);
-		if(s_sdio_driver.pack.start_addr[i] == NULL)
+		uint32_t *temp_ptr = os_zalloc(SDIO_MEMCPY_PACK_SIZE);
+
+		s_sdio_driver.pack.start_addr[i] = temp_ptr;
+		s_sdio_driver.pack.end_addr[i] = s_sdio_driver.pack.start_addr[i];
+		if(NULL == temp_ptr)
 		{
 			SDIO_LOG_ERR("os_malloc fail, i = %d", i);
 			goto err_exit;
@@ -2355,10 +2288,12 @@ bk_err_t sdio_enter_low_power(void *param_p)
 static bk_err_t sdio_slave_hw_init(void)
 {
 	bk_err_t ret = BK_OK;
+
 	sdio_hal_set_sd_soft_resetn(1);
 	sdio_hal_set_host_slave_mode(SDIO_SLAVE_MODE);
 	sdio_hal_slave_set_samp_sel(1);
 	sdio_hal_rx_set_sd_byte_sel(1);
+
 	//clock
 	sys_hal_set_sdio_clk_en(true);
 	sys_hal_set_sdio_clk_sel((uint32_t)SDIO_CLK_XTL);
@@ -2369,12 +2304,11 @@ static bk_err_t sdio_slave_hw_init(void)
 #endif
 
 #if CONFIG_SDIO_1V8_EN
-	sys_drv_psram_psldo_vset(1, 0);        //set vddpsram voltage as 1.8v
-	sys_drv_psram_ldo_enable(1);           //vddpsram enable
-	sys_hal_set_ana_vddgpio_sel(1);  //GPIO vdd select between vio and vddparam
+	sys_drv_psram_psldo_vset(1, 0); //set vddpsram voltage as 1.8v
+	sys_drv_psram_ldo_enable(1);    //vddpsram enable
+	sys_hal_set_ana_vddgpio_sel(1); //GPIO vdd select between vio and vddparam
 #endif
 
-#if 1	//has config in gpio_map.h
 	//pin
 	ret = sdio_gpio_init();
 	if(ret != BK_OK)
@@ -2382,7 +2316,6 @@ static bk_err_t sdio_slave_hw_init(void)
 		SDIO_LOG_ERR("gpio init");
 		return ret;
 	}
-#endif
 
 #if CONFIG_GPIO_NOTIFY_TRANSACTION_EN
 	sdio_gpio_notify_transaction_init(GPIO_SDIO_NOTIFY_HOST, GPIO_SDIO_HOST_WAKEUP_SLAVE);
@@ -2511,6 +2444,7 @@ bk_err_t bk_sdio_slave_driver_init(void)
 		goto err_exit;
 	}
 	s_sdio_driver_is_init = true;
+
 	bk_sdio_driver_dump_sdio_regs();
 	bk_sdio_loopcheck_init();
 	SDIO_LOG_DEBUG_FUNCTION_EXIT();

@@ -183,7 +183,6 @@ static void sdio_dma_tx_start(dma_id_t id)
 
 void sdio_dma_tx_finish(dma_id_t id)
 {
-
 	s_sdio_host.tx_transfered_len += s_sdio_host.tx_cur_trans_len;	//Current round finish, add the transfered len
 	sdio_dma_tx_start(id);
 
@@ -471,6 +470,12 @@ bk_err_t bk_sdio_host_init(const sdio_host_config_t *config)
 	bk_pm_module_lv_sleep_state_clear(PM_DEV_ID_SDIO);
 	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_BAKP_SDIO, PM_POWER_MODULE_STATE_ON);
 	bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, PM_DEV_ID_SDIO, &enter_config, NULL);
+#endif
+
+#if CONFIG_SDIO_1V8_EN
+	sys_drv_psram_psldo_vset(1, 0); //set vddpsram voltage as 1.8v
+	sys_drv_psram_ldo_enable(1);    //vddpsram enable
+	sys_hal_set_ana_vddgpio_sel(1); //GPIO vdd select between vio and vddparam
 #endif
 
 #if (CONFIG_SDIO_V2P0)

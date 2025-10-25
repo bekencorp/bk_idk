@@ -11,9 +11,8 @@ menu "SDIO_HOST"
 		bool "SDIO CLEAR WRITE INT NEED WAIT"
 		default n
 
-        config PIN_SDIO_GROUP_1
+	config PIN_SDIO_GROUP_1
 		bool "SDIO pin map select"
 		default n
-
 endmenu
 

@@ -60,7 +60,7 @@ static void cli_sdio_host_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc
 		sdio_host_config_t sdio_cfg = {0};
 
 #if (CONFIG_SDIO_V2P0)
-		sdio_cfg.clock_freq = SDIO_HOST_CLK_80M;
+		sdio_cfg.clock_freq = SDIO_HOST_CLK_3_2M; //xtal div:128
 #else
 		sdio_cfg.clock_freq = CONFIG_SDIO_HOST_DEFAULT_CLOCK_FREQ;
 #endif
@@ -96,6 +96,50 @@ static void cli_sdio_host_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc
 
 		BK_LOG_ON_ERR(bk_sdio_host_config_data(&data_config));
 		CLI_LOGI("sdio host config data ok\r\n");
+	} else if (os_strcmp(argv[1], "read_data") == 0) {
+		uint8_t *buf = os_malloc(SD_BLOCK_SIZE);
+		sdio_host_data_config_t data_config = {0};
+		bk_err_t error_state = BK_OK;
+		sdio_host_cmd_cfg_t cmd_cfg = {0};
+		if (buf == NULL) {
+			CLI_LOGE("sdio host buf malloc failed\r\n");
+			return;
+		}
+		for (int i = 0; i < SD_BLOCK_SIZE; i++) {
+			CLI_LOGI("buf[%d]=%x\r\n", i, buf[i]);
+		}
+
+		data_config.data_timeout = DATA_TIMEOUT_13M;
+		data_config.data_len = SD_BLOCK_SIZE * 1;
+		data_config.data_block_size = SD_BLOCK_SIZE;
+		data_config.data_dir = SDIO_HOST_DATA_DIR_RD;
+		BK_LOG_ON_ERR(bk_sdio_host_config_data(&data_config));
+
+		//modify to send cmd by parameter,then we can easy to debug any cmds.
+		cmd_cfg.cmd_index = 53;			//CMD53
+		/*
+			位31:    rw = 0
+			位30-28: func_num = 1 = 001
+			位27:    block_mode = 1:block mode, 0:byte mode
+			位26:    op_mode = 0
+			位25-9:  addr = 1 = 00000000001000000
+			位8-0:   count = 1 = 1
+		*/
+		cmd_cfg.argument = 0x18000201;
+		cmd_cfg.response = SDIO_HOST_CMD_RSP_SHORT;
+		cmd_cfg.wait_rsp_timeout = 5000;
+		bk_sdio_host_send_command(&cmd_cfg);
+		error_state = bk_sdio_host_wait_cmd_response(cmd_cfg.cmd_index);
+		if (error_state != BK_OK) {
+			CLI_LOGW("sdio:cmd %d err:-%x\r\n", cmd_cfg.cmd_index, -error_state);
+		}
+
+		bk_sdio_host_read_blks_fifo(buf, SD_BLOCK_SIZE);
+		CLI_LOGI("sdio host read data ok\r\n");
+		if (buf) {
+			os_free(buf);
+			buf = NULL;
+		}
 	} else {
 		cli_sdio_host_help();
 		return;
