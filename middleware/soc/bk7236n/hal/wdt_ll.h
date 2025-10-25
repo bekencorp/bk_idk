@@ -49,7 +49,6 @@ static inline void wdt_ll_set_2nd_key(wdt_hw_t *hw)
 
 static inline void wdt_ll_set_period(wdt_hw_t *hw, uint32_t period)
 {
-#if CONFIG_NMI_WDT_EN
 	uint32_t nmi_wdt_clk_div = sys_hal_nmi_wdt_get_clk_div();
 
 	uint32_t multi = 1;
@@ -75,7 +74,6 @@ static inline void wdt_ll_set_period(wdt_hw_t *hw, uint32_t period)
 	if (period > WDT_F_PERIOD_M) {
 		period = WDT_F_PERIOD_M;
 	}
-#endif
 
 	uint32_t ctrl_val = (period & WDT_F_PERIOD_M) | (WDT_V_KEY_1ST << WDT_F_KEY_S);
 	REG_WRITE(WDT_R_CTRL, ctrl_val);

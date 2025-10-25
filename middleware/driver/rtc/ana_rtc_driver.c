@@ -994,6 +994,7 @@ __IRAM_SEC uint64_t bk_aon_rtc_get_current_tick(aon_rtc_id_t id)
 	int_level = rtos_disable_int();
 
 	low_tick = aon_pmu_hal_rtc_tick_l_get();
+#if CONFIG_ANA_RTC_SUPPORT_64BIT
 	if (low_tick < s_low_tick)
 	{
 		ANA_RTC_LOGD("rtc carrying:%x %x %x\n", s_low_tick, low_tick, aon_pmu_hal_rtc_tick_l_get());
@@ -1003,6 +1004,9 @@ __IRAM_SEC uint64_t bk_aon_rtc_get_current_tick(aon_rtc_id_t id)
 		s_high_tick++;
 		#endif
 	}
+#else
+	s_high_tick = aon_pmu_hal_rtc_tick_h_get();
+#endif
 	s_low_tick = low_tick;
 #if CONFIG_ROSC_COMPENSATION
 	uint64_t tick_val = ((uint64_t)s_high_tick << 32) + s_low_tick + s_ana_rtc_base_tick;
