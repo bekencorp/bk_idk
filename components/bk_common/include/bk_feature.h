@@ -318,6 +318,55 @@ unsigned int bk_feature_get_td_run_cnt(void);
 unsigned int bk_feature_get_td_level2(void);
 
 /**
+ * @brief     Interface to get arp fail trig null feature
+ *
+ *
+ *    - 1: enable
+ *    - 0: disable
+ */
+int bk_feature_arp_fail_trig_null(void);
+
+/**
+ * @brief     Interface to get ap drift statistic cnt
+ *
+ *
+ * @return
+ *    - ap drift statistic cnt
+ *
+ */
+unsigned int bk_feature_get_ap_drift_statistic_cnt(void);
+
+/**
+ * @brief     Interface to get keep alive retry cnt
+ *
+ *
+ * @return
+ *    - keep alive retry cnt
+ *
+ */
+unsigned int bk_feature_get_keep_alive_retry_cnt(void);
+
+/**
+ * @brief     Interface to get keep alive listen interval threshold
+ *
+ *
+ * @return
+ *    - keep alive listen interval threshold
+ *
+ */
+unsigned int bk_feature_get_listen_interval_threshold(void);
+
+/**
+ * @brief     Interface to get compute listen interval enable
+ *
+ *
+ * @return
+ *    - 1: enable
+ *    - 0: disable
+ */
+int bk_feature_compute_listen_interval_enable(void);
+
+/**
  * @brief     Interface for customer to Enable/Disable [Qos] Null frames with Sequence number
  *
  * @return

@@ -252,6 +252,34 @@ unsigned int bk_feature_get_td_level2(void) {
 	return CONFIG_DYNAMIC_TD_LEVEL2;
 }
 
+int bk_feature_arp_fail_trig_null(void) {
+#if CONFIG_ARP_FAIL_TRIG_NULL
+	return 1;
+#else
+	return 0;
+#endif
+}
+
+unsigned int bk_feature_get_ap_drift_statistic_cnt(void) {
+	return CONFIG_AP_DRIFT_STATISTIC_CNT;
+}
+
+unsigned int bk_feature_get_keep_alive_retry_cnt(void) {
+	return CONFIG_KEEP_ALIVE_RETRY_CNT;
+}
+
+unsigned int bk_feature_get_listen_interval_threshold(void) {
+	return CONFIG_LISTEN_INTERVAL_THRESHOLD;
+}
+
+int bk_feature_compute_listen_interval_enable(void) {
+#if CONFIG_COMPUTE_LISTEN_INTERVAL
+	return 1;
+#else
+	return 0;
+#endif
+}
+
 int bk_feature_wifi_null_frame_with_sn(void)
 {
 #if CONFIG_WIFI_NULL_FRAME_WITH_SN

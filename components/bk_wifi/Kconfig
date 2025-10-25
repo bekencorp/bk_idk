@@ -444,6 +444,28 @@ menu "Bk_Wifi"
 		range 1 5
 		default 2
 
+	config ARP_FAIL_TRIG_NULL
+		bool "Enable null if arp failed"
+		default y
+
+	config AP_DRIFT_STATISTIC_CNT
+		int "Set ap drift statistic cnt"
+		range 1 5
+		default 3
+
+	config KEEP_ALIVE_RETRY_CNT
+		int "Set keep alive retry cnt"
+		range 0 5
+		default 3
+
+	config LISTEN_INTERVAL_THRESHOLD
+		int "Set listen interval threshold for arp keepalive"
+		default 307200
+
+	config COMPUTE_LISTEN_INTERVAL
+		bool "Enable compute listen interval"
+		default n
+
 	config BEACON_MISS_CB
 		bool "Enable beacon miss callback function"
 		default n

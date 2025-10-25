@@ -300,6 +300,11 @@ typedef struct {
 	uint32_t (*_bk_feature_get_td_learn_cnt)(void);
 	uint32_t (*_bk_feature_get_td_run_cnt)(void);
 	uint32_t (*_bk_feature_get_td_level2)(void);
+	int (*_bk_feature_arp_fail_trig_null)(void);
+	uint32_t (*_bk_feature_get_ap_drift_statistic_cnt)(void);
+	uint32_t (*_bk_feature_get_keep_alive_retry_cnt)(void);
+	uint32_t (*_bk_feature_get_listen_interval_threshold)(void);
+	int (*_bk_feature_compute_listen_interval_enable)(void);
 } wifi_os_funcs_t;
 extern wifi_os_funcs_t g_wifi_os_funcs;
 

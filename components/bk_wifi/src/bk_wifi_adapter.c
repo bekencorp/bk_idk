@@ -1303,6 +1303,31 @@ static uint32_t bk_feature_get_td_level2_wrapper(void)
     return bk_feature_get_td_level2();
 }
 
+static int bk_feature_arp_fail_trig_null_wrapper(void)
+{
+    return bk_feature_arp_fail_trig_null();
+}
+
+static uint32_t bk_feature_get_ap_drift_statistic_cnt_wrapper(void)
+{
+    return bk_feature_get_ap_drift_statistic_cnt();
+}
+
+static uint32_t bk_feature_get_keep_alive_retry_cnt_wrapper(void)
+{
+    return bk_feature_get_keep_alive_retry_cnt();
+}
+
+static uint32_t bk_feature_get_listen_interval_threshold_wrapper(void)
+{
+    return bk_feature_get_listen_interval_threshold();
+}
+
+static int bk_feature_compute_listen_interval_enable_wrapper(void)
+{
+    return bk_feature_compute_listen_interval_enable();
+}
+
 static void wifi_notify_state_to_bt_wrapper(uint8_t is_active)
 {
 #if CONFIG_BLUETOOTH
@@ -1599,6 +1624,11 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._bk_feature_get_td_learn_cnt = bk_feature_get_td_learn_cnt_wrapper,
 	._bk_feature_get_td_run_cnt = bk_feature_get_td_run_cnt_wrapper,
 	._bk_feature_get_td_level2 = bk_feature_get_td_level2_wrapper,
+	._bk_feature_arp_fail_trig_null = bk_feature_arp_fail_trig_null_wrapper,
+	._bk_feature_get_ap_drift_statistic_cnt = bk_feature_get_ap_drift_statistic_cnt_wrapper,
+	._bk_feature_get_keep_alive_retry_cnt = bk_feature_get_keep_alive_retry_cnt_wrapper,
+	._bk_feature_get_listen_interval_threshold = bk_feature_get_listen_interval_threshold_wrapper,
+	._bk_feature_compute_listen_interval_enable = bk_feature_compute_listen_interval_enable_wrapper,
 };
 
 __attribute__((section(".dtcm_sec_data "))) wifi_os_variable_t g_wifi_os_variable = {
