@@ -1989,6 +1989,47 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 /* check partial otp: 0E xx xx xx xx, return first !0 address, 0 means clean */
                 sctrl_check_otp((const unsigned char *)content, cnt, tx_buffer);
                 break;
+            case 0x47:
+            {
+                /* flash crc bypass enable */
+                int ret = 0;
+                tx_buffer[0] = 0x55;
+                UINT32 efuse_val, efuse_check;
+
+                ret = bk_otp_apb_read(OTP_EFUSE, (UINT8 *)&efuse_val, sizeof(efuse_val));
+                if (ret != BK_OK) {
+                    tx_buffer[1] = 0xCC;
+                    uart_send_bytes_for_ate(tx_buffer, 2);
+                    break;
+                }
+
+                // flash_crc_bypass = 1
+                efuse_val |= (0x1 << 27);
+
+                ret = bk_otp_apb_update(OTP_EFUSE, (UINT8 *)&efuse_val, sizeof(efuse_val));
+                if (ret != BK_OK) {
+                    tx_buffer[1] = 0xCC;
+                    uart_send_bytes_for_ate(tx_buffer, 2);
+                    break;
+                }
+
+                ret = bk_otp_apb_read(OTP_EFUSE, (UINT8 *)&efuse_check, sizeof(efuse_check));
+                if (ret != BK_OK) {
+                    tx_buffer[1] = 0xCC;
+                    uart_send_bytes_for_ate(tx_buffer, 2);
+                    break;
+                }
+
+                if (efuse_val != efuse_check) {
+                    tx_buffer[1] = 0xCC;
+                    uart_send_bytes_for_ate(tx_buffer, 2);
+                    break;
+                }
+
+                tx_buffer[1] = 0x33;
+                uart_send_bytes_for_ate(tx_buffer, 2);
+                break;
+            }
 #if 0
             case 0x50:
                 if ((cnt > 2) && ((unsigned char) content[2] < 80))
