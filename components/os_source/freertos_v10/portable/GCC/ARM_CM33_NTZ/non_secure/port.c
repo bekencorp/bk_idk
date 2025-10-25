@@ -856,7 +856,7 @@ void SysTick_Handler( void ) /* PRIVILEGED_FUNCTION */
         #endif // CONFIG_AON_RTC
     }
 
-    #if CONFIG_AON_PMU_POR_TIMING_SUPPORT
+    #if CONFIG_AON_PMU_POR_TIMING_SUPPORT && (0 == CONFIG_AON_PMU_POR_RTC_RESET)
     void aon_pmu_driver_save_time(bool is_startup);
     aon_pmu_driver_save_time(false);
     #endif // CONFIG_AON_PMU_POR_TIMING_SUPPORT

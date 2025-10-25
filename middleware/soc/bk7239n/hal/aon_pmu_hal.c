@@ -362,6 +362,18 @@ void aon_pmu_hal_restore(void)
 	aon_pmu_ll_set_r2(s_pmu_saved_regs[2]);
 }
 
+#if CONFIG_AON_PMU_POR_RTC_RESET
+void aon_pmu_hal_save_time(bool is_startup)
+{
+	uint32_t time = aon_pmu_ll_get_r79_rtc_tick_l() / 3200;
+	aon_pmu_ll_set_r0_saved_time(time);
+}
+
+uint32_t aon_pmu_hal_get_por_timing()
+{
+	return aon_pmu_ll_get_r0_saved_time();
+}
+#else
 void aon_pmu_hal_save_time(bool is_startup)
 {
 	uint32_t time = aon_pmu_ll_get_r79_rtc_tick_l() / 3200; // unit=100ms
@@ -415,6 +427,7 @@ uint32_t aon_pmu_hal_get_por_timing(void)
 
 	return delta_time >= 0 ? delta_time : 0;
 }
+#endif
 
 uint32_t aon_pmu_hal_get_ana_gpio_status(void)
 {

@@ -62,6 +62,11 @@ bk_err_t sys_hal_init()
 
 #if CONFIG_AON_PMU_POR_TIMING_SUPPORT
 	sys_ana_ll_set_ana_reg7_vporsel(1);
+#if CONFIG_AON_PMU_POR_RTC_RESET
+	sys_ana_ll_set_ana_reg10_vbg_rstrtc_en(0);
+#else
+	sys_ana_ll_set_ana_reg10_vbg_rstrtc_en(1);
+#endif
 #endif
 
 	return BK_OK;
