@@ -38,4 +38,8 @@ menu "bk7239n"
 	config DPD_CALI
 		bool "Enable DPD Cali"
 		default n
+
+	config CUSTOMIZE_TY
+		bool "Enable customize ty define"
+		default n
 endmenu
