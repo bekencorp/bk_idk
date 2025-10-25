@@ -333,6 +333,7 @@ typedef struct {
 	uint32_t _pm_power_module_state_on;
 	uint32_t _low_power_xtal_dpll_stability_delay_time;
 	uint32_t _low_power_delay_time_hardware;
+	uint32_t _low_power_extern_32k_hardware;
 	uint32_t _low_power_26m_stability_delay_time_hardware;
 	uint32_t _low_power_bootup_restore_delay_time;
 	uint32_t _pm_power_sub_module_name_phy_wifi;

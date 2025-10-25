@@ -103,6 +103,7 @@ extern "C" {
 
 #define LOW_POWER_26M_STABILITY_DELAY_TIME_HARDWARE      (750)
 #define LOW_POWER_DELAY_TIME_HARDWARE                    (500)
+#define LOW_POWER_EXTERN_32K_HARDWARE                    (750)
 #define LOW_POWER_BOOTUP_RESTORE_TIME                    (1500)
 
 #define PM_CHIP_ID_HIGH_POS                              (16)

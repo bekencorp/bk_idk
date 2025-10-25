@@ -1590,6 +1590,7 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_variable_t g_wifi_os_variabl
 	._pm_power_module_state_on = PM_POWER_MODULE_STATE_ON,
 	._low_power_xtal_dpll_stability_delay_time = LOW_POWER_XTAL_DPLL_STABILITY_DELAY_TIME,
 	._low_power_delay_time_hardware = LOW_POWER_DELAY_TIME_HARDWARE,
+	._low_power_extern_32k_hardware = LOW_POWER_EXTERN_32K_HARDWARE,
 	._low_power_26m_stability_delay_time_hardware = LOW_POWER_26M_STABILITY_DELAY_TIME_HARDWARE,
 	._low_power_bootup_restore_delay_time = LOW_POWER_BOOTUP_RESTORE_TIME,
 	._pm_power_sub_module_name_phy_wifi = PM_POWER_SUB_MODULE_NAME_PHY_WIFI,
