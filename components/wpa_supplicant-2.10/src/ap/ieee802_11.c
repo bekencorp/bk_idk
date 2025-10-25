@@ -3634,6 +3634,18 @@ static void handle_auth(struct hostapd_data *hapd,
 		   seq_ctrl, (fc & WLAN_FC_RETRY) ? " retry" : "",
 		   from_queue ? " (from queue)" : "");
 
+#ifdef BK_SUPPLICANT
+	if (len >= IEEE80211_HDRLEN + sizeof(mgmt->u.auth) + 5) {
+		if (mgmt->u.auth.variable[0] == WLAN_EID_VENDOR_SPECIFIC &&
+			mgmt->u.auth.variable[1] == 6 &&
+			!os_memcmp(&mgmt->u.auth.variable[2], "\x66\x69\x6c", 3)) {
+			bk_printf("bk debug: ignore vendor specific auth\r\n");
+			//wpa_printf(MSG_DEBUG, "ignore vendor specific auth\n");
+			return;
+		}
+	}
+#endif
+
 #ifdef CONFIG_NO_RC4
 	if (auth_alg == WLAN_AUTH_SHARED_KEY) {
 		wpa_printf(MSG_INFO,
