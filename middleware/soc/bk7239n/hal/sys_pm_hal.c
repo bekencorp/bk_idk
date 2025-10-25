@@ -570,6 +570,8 @@ __attribute__((section(".itcm_sec_code"))) void sys_hal_enter_deep_sleep(void *p
 #if CONFIG_AON_PMU_POR_TIMING_SUPPORT
 	// disable it or it will cause error
 	sys_ana_ll_set_ana_reg7_vporsel(0);
+	sys_ana_ll_set_ana_reg10_vbg_rstrtc_en(1);
+	aon_pmu_ll_set_r0_saved_time(0);
 #endif
 
 	lpo_src = aon_pmu_ll_get_r41_lpo_config();
