@@ -75,7 +75,7 @@ bk_err_t spi_hal_configure(spi_hal_t *hal, const spi_config_t *config)
 					spi_ll_set_rx_sample_edge(hal->hw, 0);
 				}
 			}else if((config->polarity == 1) && (config->phase == 1)){
-				if(config->baud_rate > 20000000){
+				if(config->baud_rate > 300000){
 					spi_ll_set_rx_sample_edge(hal->hw, 1);
 				}else{
 					spi_ll_set_rx_sample_edge(hal->hw, 0);
