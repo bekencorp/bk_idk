@@ -101,11 +101,11 @@ SECTIONS
         _stext = .;
 #if (CONFIG_SPE && !CONFIG_RELEASE_IRAM && !CONFIG_DPD_CALI)
 	EXCLUDE_FILE (
-        libos_source.a:tasks.c.obj
-        libos_source.a:queue.c.obj
-        libos_source.a:list.c.obj
-        libos_source.a:timers.c.obj
-        libos_source.a:port.c.obj
+        tasks.c.obj
+        queue.c.obj
+        list.c.obj
+        timers.c.obj
+        port.c.obj
         rtos_pub.c.obj
         heap_4.c.obj
         mem_arch.c.obj
@@ -125,8 +125,8 @@ SECTIONS
         mm_time.c.obj
         rwnx.c.obj
         rwnx_rx.c.obj
-        libwifi.a:ps.c.obj
-        libwifi.a:mm.c.obj
+        ps.c.obj
+        mm.c.obj
         rf_cntrl.c.obj
         mcc.c.obj
         phy_karst_bk7236.c.obj
@@ -140,7 +140,17 @@ SECTIONS
         sys_wifi_driver.c.obj
         wifi_v2.c.obj
         bk_feature.c.obj
-        libbk_pm.a:pm.c.obj
+        bk_pm_core.c.obj
+        bk_pm_clock.c.obj
+        bk_pm_debug.c.obj
+        bk_pm_misc.c.obj
+        bk_pm_power.c.obj
+        bk_pm_psram.c.obj
+        bk_pm_sleep.c.obj
+        bk_pm_wakeup_source.c.obj
+        bk_pm_client.c.obj
+        bk_pm_mailbox.c.obj
+        bk_pm.c.obj
         sys_ps_driver.c.obj
         sys_pm_hal.c.obj
         bk_wifi_adapter.c.obj
@@ -259,11 +269,11 @@ SECTIONS
         *(.interrupt)
 
 #if (CONFIG_SPE && !CONFIG_RELEASE_IRAM)
-        libos_source.a:tasks.c.obj*(.text .text.* *.rodata *.rodata.*)
-        libos_source.a:queue.c.obj*(.text .text.* *.rodata *.rodata.*)
-        libos_source.a:list.c.obj*(.text .text.* *.rodata *.rodata.*)
-        libos_source.a:timers.c.obj*(.text .text.* *.rodata *.rodata.*)
-        libos_source.a:port.c.obj*(.text .text.* *.rodata *.rodata.*)
+        tasks.c.obj*(.text .text.* *.rodata *.rodata.*)
+        queue.c.obj*(.text .text.* *.rodata *.rodata.*)
+        list.c.obj*(.text .text.* *.rodata *.rodata.*)
+        timers.c.obj*(.text .text.* *.rodata *.rodata.*)
+        port.c.obj*(.text .text.* *.rodata *.rodata.*)
         rtos_pub.c.obj*(.text .text.* *.rodata *.rodata.*)
         heap_4.c.obj*(.text .text.* *.rodata *.rodata.*)
         mem_arch.c.obj*(.text .text.* *.rodata *.rodata.*)
@@ -283,8 +293,8 @@ SECTIONS
         mm_time.c.obj*(.text .text.* *.rodata *.rodata.*)
         rwnx.c.obj*(.text .text.* *.rodata *.rodata.*)
         rwnx_rx.c.obj*(.text .text.* *.rodata *.rodata.*)
-        libwifi.a:ps.c.obj*(.text .text.* *.rodata *.rodata.*)
-        libwifi.a:mm.c.obj*(.text .text.* *.rodata *.rodata.*)
+        ps.c.obj*(.text .text.* *.rodata *.rodata.*)
+        mm.c.obj*(.text .text.* *.rodata *.rodata.*)
         rf_cntrl.c.obj*(.text .text.* *.rodata *.rodata.*)
         mcc.c.obj*(.text .text.* *.rodata *.rodata.*)
         phy_karst_bk7236.c.obj*(.text .text.* *.rodata *.rodata.*)
@@ -298,7 +308,17 @@ SECTIONS
         sys_wifi_driver.c.obj*(.text .text.* *.rodata *.rodata.*)
         wifi_v2.c.obj*(.text .text.* *.rodata *.rodata.*)
         bk_feature.c.obj*(.text .text.* *.rodata *.rodata.*)
-        libbk_pm.a:pm.c.obj*(.text .text.* *.rodata *.rodata.*)
+        bk_pm_core.c.obj*(.text .text.* *.rodata *.rodata.*)
+        bk_pm_clock.c.obj*(.text .text.* *.rodata *.rodata.*)
+        bk_pm_debug.c.obj*(.text .text.* *.rodata *.rodata.*)
+        bk_pm_misc.c.obj*(.text .text.* *.rodata *.rodata.*)
+        bk_pm_power.c.obj*(.text .text.* *.rodata *.rodata.*)
+        bk_pm_psram.c.obj*(.text .text.* *.rodata *.rodata.*)
+        bk_pm_sleep.c.obj*(.text .text.* *.rodata *.rodata.*)
+        bk_pm_wakeup_source.c.obj*(.text .text.* *.rodata *.rodata.*)
+        bk_pm_client.c.obj*(.text .text.* *.rodata *.rodata.*)
+        bk_pm_mailbox.c.obj*(.text .text.* *.rodata *.rodata.*)
+        bk_pm.c.obj*(.text .text.* *.rodata *.rodata.*)
         sys_ps_driver.c.obj*(.text .text.* *.rodata *.rodata.*)
         sys_pm_hal.c.obj*(.text .text.* *.rodata *.rodata.*)
         bk_wifi_adapter.c.obj*(.text .text.* *.rodata *.rodata.*)
