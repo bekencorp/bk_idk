@@ -250,6 +250,7 @@ struct pbuf {
   u8_t elfags;		/* extend flags */
   u32_t sn; 		/* seqno, 0 invalid */
 #endif
+  uint16_t alloc_size;    //add space for ty matter
 };
 
 
