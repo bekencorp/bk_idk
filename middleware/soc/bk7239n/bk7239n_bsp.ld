@@ -41,10 +41,9 @@ __CPU0_APP_RAM_SIZE = 0x80000 - CONFIG_CPU0_SPE_RAM_SIZE;
 #endif
 
 #if  CONFIG_DEEP_LV
-#define BOOTLOADER_RESERVE_SIZE    0x1000    /* 4K for bootloader */
-#define BOOTROM_RESERVE_SIZE       0x2800    /* 10K for Bootrom */
-__CPU0_APP_RAM_BASE += BOOTLOADER_RESERVE_SIZE;
-__CPU0_APP_RAM_SIZE -= ( BOOTLOADER_RESERVE_SIZE + BOOTROM_RESERVE_SIZE);/* 4K reserved for bootloader,10K reserved for Bootrom*/
+#define BOOTLOADER_IRAM_SIZE    0x1000    /* 4K for bootloader iram*/
+#define BOOTROM_STACK_SIZE      0x400     /* 1K for Bootrom stack*/
+__CPU0_APP_RAM_SIZE -= ( BOOTLOADER_IRAM_SIZE + BOOTROM_STACK_SIZE);/* 4K reserved for bootloader,1K reserved for Bootrom*/
 #endif
 /*****************************************************************************
 The follow four shared memory address area mapping to the same physical memory
