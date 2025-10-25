@@ -418,4 +418,29 @@ menu "Bk_Wifi"
 		int "default wifi tx tid for special tx frames"
 		range 0 7
 		default 0
+
+	config DEFAULT_TD_WIN
+		int "Set default td window"
+		range 30 100
+		default 60
+
+	config TD_REDUCE_INTV
+		int "Set reduce td window"
+		range 5 20
+		default 20
+
+	config DYNAMIC_TD_LEARN
+		int "Set td learn cnt"
+		range 3 10
+		default 5
+
+	config DYNAMIC_TD_RUN
+		int "Set td run cnt"
+		range 10 100
+		default 20
+
+	config DYNAMIC_TD_LEVEL2
+		int "Set td level2 threshold"
+		range 1 5
+		default 2
 endmenu

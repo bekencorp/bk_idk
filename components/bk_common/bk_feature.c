@@ -231,3 +231,23 @@ int bk_feature_non_standard_enable(void)
 	return 0;
 #endif
 }
+
+unsigned int bk_feature_get_default_td_win(void) {
+	return CONFIG_DEFAULT_TD_WIN;
+}
+
+unsigned int bk_feature_get_reduce_td_win(void) {
+	return CONFIG_TD_REDUCE_INTV;
+}
+
+unsigned int bk_feature_get_td_learn_cnt(void) {
+	return CONFIG_DYNAMIC_TD_LEARN;
+}
+
+unsigned int bk_feature_get_td_run_cnt(void) {
+	return CONFIG_DYNAMIC_TD_RUN;
+}
+
+unsigned int bk_feature_get_td_level2(void) {
+	return CONFIG_DYNAMIC_TD_LEVEL2;
+}

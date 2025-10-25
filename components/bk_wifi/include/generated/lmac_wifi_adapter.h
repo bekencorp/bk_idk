@@ -293,6 +293,11 @@ typedef struct {
 	int (*_bk_feature_config_mac_pwd_enable)(void);
 	int (*_bk_feature_config_wrls_pwd_enable)(void);
 	int (*_bk_feature_config_cpu_pwd_enable)(void);
+	uint32_t (*_bk_feature_get_default_td_win)(void);
+	uint32_t (*_bk_feature_get_reduce_td_win)(void);
+	uint32_t (*_bk_feature_get_td_learn_cnt)(void);
+	uint32_t (*_bk_feature_get_td_run_cnt)(void);
+	uint32_t (*_bk_feature_get_td_level2)(void);
 } wifi_os_funcs_t;
 extern wifi_os_funcs_t g_wifi_os_funcs;
 

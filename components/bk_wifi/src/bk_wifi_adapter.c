@@ -1273,6 +1273,31 @@ static int bk_feature_cpu_pwd_enable_wrapper(void)
     return bk_feature_cpu_pwd_enable();
 }
 
+static uint32_t bk_feature_get_default_td_win_wrapper(void)
+{
+    return bk_feature_get_default_td_win();
+}
+
+static uint32_t bk_feature_get_reduce_td_win_wrapper(void)
+{
+    return bk_feature_get_reduce_td_win();
+}
+
+static uint32_t bk_feature_get_td_learn_cnt_wrapper(void)
+{
+    return bk_feature_get_td_learn_cnt();
+}
+
+static uint32_t bk_feature_get_td_run_cnt_wrapper(void)
+{
+    return bk_feature_get_td_run_cnt();
+}
+
+static uint32_t bk_feature_get_td_level2_wrapper(void)
+{
+    return bk_feature_get_td_level2();
+}
+
 static void wifi_notify_state_to_bt_wrapper(uint8_t is_active)
 {
 #if CONFIG_BLUETOOTH
@@ -1562,6 +1587,11 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._bk_feature_config_mac_pwd_enable = bk_feature_mac_pwd_enable_wrapper,
 	._bk_feature_config_wrls_pwd_enable = bk_feature_wrls_pwd_enable_wrapper,
 	._bk_feature_config_cpu_pwd_enable = bk_feature_cpu_pwd_enable_wrapper,
+	._bk_feature_get_default_td_win = bk_feature_get_default_td_win_wrapper,
+	._bk_feature_get_reduce_td_win = bk_feature_get_reduce_td_win_wrapper,
+	._bk_feature_get_td_learn_cnt = bk_feature_get_td_learn_cnt_wrapper,
+	._bk_feature_get_td_run_cnt = bk_feature_get_td_run_cnt_wrapper,
+	._bk_feature_get_td_level2 = bk_feature_get_td_level2_wrapper,
 };
 
 __attribute__((section(".dtcm_sec_data "))) wifi_os_variable_t g_wifi_os_variable = {

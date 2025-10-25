@@ -266,3 +266,53 @@ int bk_feature_cpu_pwd_enable(void);
  *    - 0: disable
  */
 int bk_feature_non_standard_enable(void);
+
+/**
+ * @brief     Interface to get default td window
+ *
+ *
+ * @return
+ *    - default td window
+ *
+ */
+ unsigned int bk_feature_get_default_td_win(void);
+
+/**
+ * @brief     Interface to get reduce td window
+ *
+ *
+ * @return
+ *    - reduce td window
+ *
+ */
+ unsigned int bk_feature_get_reduce_td_win(void);
+
+/**
+ * @brief     Interface to get td learn count
+ *
+ *
+ * @return
+ *    - td learn count
+ *
+ */
+ unsigned int bk_feature_get_td_learn_cnt(void);
+
+/**
+ * @brief     Interface to get td run count
+ *
+ *
+ * @return
+ *    - td run count
+ *
+ */
+ unsigned int bk_feature_get_td_run_cnt(void);
+
+/**
+ * @brief     Interface to get td level2
+*
+ *
+ * @return
+ *    - td level2
+ *
+ */
+ unsigned int bk_feature_get_td_level2(void);
