@@ -41,8 +41,8 @@ typedef enum {
 
 typedef enum {
 	I2C_SCLK_DCO = 0,  /**< I2C source clock dco */
-	I2C_SCLK_XTAL_26M, /**< I2C source clock xtal 26M */
-	I2C_SCLK_APLL,     /**< I2C source clock apll */
+	I2C_SCLK_XTAL_40M, /**< I2C source clock xtal 40M */
+	I2C_SCLK_80M,      /**< I2C source clock 80M */
 } i2c_src_clk_t;
 
 typedef enum {
