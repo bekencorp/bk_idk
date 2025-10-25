@@ -174,16 +174,6 @@ if (CONFIG_SUPPORT_IRDA)
 endif()  #if (CONFIG_SUPPORT_IRDA)
 
 if (NOT CONFIG_SOC_BK7256XX)
-	if ((NOT CONFIG_SOC_BK7236XX) AND (NOT CONFIG_SOC_BK7239XX) AND (NOT CONFIG_SOC_BK7286XX))
-if (CONFIG_I2S)
-	list(APPEND srcs
-		i2s/i2s.c
-		)
-endif()  #if (CONFIG_I2S)
-endif()
-endif()
-
-if (NOT CONFIG_SOC_BK7256XX)
 if (CONFIG_FFT)
 	list(APPEND srcs
 		fft/fft.c
@@ -206,18 +196,6 @@ if (CONFIG_FFT)
 	list(APPEND srcs
 		fft/fft_driver.c
 		)
-endif()
-endif()
-
-if (CONFIG_SOC_BK7256XX)
-if (CONFIG_I2S)
-	list(APPEND incs
-		"i2s"
-	)
-
-	list(APPEND srcs
-		i2s/i2s_driver.c
-	)
 endif()
 endif()
 
