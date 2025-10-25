@@ -876,12 +876,17 @@ typedef bk_err_t (*wifi_beacon_cc_rxed_t)(void *ctxt, uint8_t *cc, uint8_t cc_le
  * @}
  */
 
- /**
+/**
  * @brief wifi get vsie cb interface
  * @param void* vendor_ie
  * @param frame type 1: probe response(or beacon)  2: assoc response
  */
 typedef bk_err_t (* wifi_get_vsie_cb_t)(void* vendor_ie, uint8_t frame_type);
+
+/**
+ * @brief wifi beacon miss cb interface
+ */
+typedef bk_err_t (* wifi_bcnmiss_cb_t)(void);
 
 #ifdef __cplusplus
 }

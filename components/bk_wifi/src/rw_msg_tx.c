@@ -1640,7 +1640,11 @@ int rw_msg_send_bcn_loss_time_req(uint8_t vif_idx, uint8_t wait_cnt,uint8_t wake
 	req->wake_cnt = wake_cnt;
 
 	/* Send the MM_SET_BCN_LOSS_TIME_REQ message to LMAC FW */
-	return rw_msg_send(req, 1, MM_SET_BCN_LOSS_TIME_CFM, NULL);
+	#if CONFIG_BEACON_MISS_CB
+		return rw_msg_send(req, 0, 0, NULL);
+	#else
+		return rw_msg_send(req, 1, MM_SET_BCN_LOSS_TIME_CFM, NULL);
+	#endif
 }
 
 int rw_msg_send_bcn_recv_win_req(uint8_t vif_idx, uint8_t default_win,uint8_t max_win, uint8_t step)

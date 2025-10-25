@@ -443,4 +443,8 @@ menu "Bk_Wifi"
 		int "Set td level2 threshold"
 		range 1 5
 		default 2
+
+	config BEACON_MISS_CB
+		bool "Enable beacon miss callback function"
+		default n
 endmenu

@@ -733,7 +733,12 @@ static void bk_feature_csi_out_cb_wrapper(void *data)
 
 static int bk_feature_tcp_protect_enable_wrapper(void)
 {
-	return bk_feature_tcp_protect_enable();
+    return bk_feature_tcp_protect_enable();
+}
+
+static bk_err_t bk_feature_bcn_miss_cb_wrapper(void)
+{
+    return bk_wifi_bcn_miss_cb();
 }
 
 static bk_err_t bk_wifi_get_vendor_ie_cb_internal_wrapper(void* vendor_ie, uint32_t vendor_type, uint16_t len, uint8_t frame_type)
@@ -1472,6 +1477,7 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._bk_feature_network_found_event = bk_feature_network_found_event_wrapper,
 	._bk_feature_get_mac_sup_sta_max_num = bk_feature_get_mac_sup_sta_max_num_wrapper,
 	._bk_feature_csi_out_cb = bk_feature_csi_out_cb_wrapper,
+	._bk_feature_bcn_miss_cb = bk_feature_bcn_miss_cb_wrapper,
 	._bk_feature_tcp_protect_enable = bk_feature_tcp_protect_enable_wrapper,
 	._bk_wifi_get_vendor_ie_cb_internal = bk_wifi_get_vendor_ie_cb_internal_wrapper,
 	._bk_wifi_get_vendor_ie_type = bk_wifi_get_vendor_ie_type_wrapper,

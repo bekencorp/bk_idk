@@ -1311,6 +1311,18 @@ void cc_scan_stop(void);
 int bk_scan_country_code(uint8_t *country_code);
 
 /**
+ * @brief regist bcn miss callback.
+ *
+ * @param bcnmiss_cb the callback function, this function should return bool value indicating whether disconnected from router or not.
+ *
+ * @return
+ * 	-BK_OK: on success
+ * 	-others:real error, used for future.
+ *
+ */
+bk_err_t bk_wifi_bcn_miss_register_cb(const wifi_bcnmiss_cb_t bcnmiss_cb);
+
+/**
  * @brief  set beacon receive window.
  *
  * @param default_win: default beacon receive window(ms),minimum is 5,less than or equal to max_win.

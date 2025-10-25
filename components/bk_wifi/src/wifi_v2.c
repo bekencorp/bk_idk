@@ -3979,6 +3979,21 @@ bk_err_t bk_wifi_set_bcn_miss_time(uint8_t bcnmiss_time) {
 	return rw_msg_send_bcn_miss_time_req(vif_idx, bcnmiss_time);
 }
 
+static wifi_bcnmiss_cb_t g_wifi_bcn_miss_cb = NULL;
+bk_err_t bk_wifi_bcn_miss_register_cb(wifi_bcnmiss_cb_t bcnmiss_cb)
+{
+	g_wifi_bcn_miss_cb = bcnmiss_cb;
+	return BK_OK;
+}
+
+bk_err_t bk_wifi_bcn_miss_cb(void)
+{
+	if (!g_wifi_bcn_miss_cb)
+		return BK_OK;
+	else
+		return g_wifi_bcn_miss_cb();
+}
+
 bk_err_t bk_wifi_get_support_wifi_mode(uint8_t* support_mode)
 {
 	int ret;
