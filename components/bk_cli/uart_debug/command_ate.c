@@ -1675,6 +1675,22 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 ate_enter_deep_sleep();
                 break;
             }
+
+            case 0x18:  // CPU Test
+            {
+                int ret = 0;
+                ret = core_cp_test();
+
+                tx_buffer[0] = 0x55;
+                if (ret == BK_OK) {
+                    tx_buffer[1] = 0x33;
+                } else {
+                    tx_buffer[1] = 0xCC;
+                }
+                uart_send_bytes_for_ate(tx_buffer, 2);
+                break;
+            }
+
             case 0x24:      // PER_Min_2442: 55 24 [ms=50]
             {
                 clock_time_t duration;
