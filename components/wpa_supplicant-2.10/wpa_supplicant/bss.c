@@ -1152,6 +1152,10 @@ struct wpa_bss * wpa_bss_get_id_range(struct wpa_supplicant *wpa_s,
  */
 const u8 * wpa_bss_get_ie(const struct wpa_bss *bss, u8 ie)
 {
+	#ifdef BK_SUPPLICANT
+	if (bss == NULL)
+		return NULL;
+	#endif
 	return get_ie(wpa_bss_ie_ptr(bss), bss->ie_len, ie);
 }
 

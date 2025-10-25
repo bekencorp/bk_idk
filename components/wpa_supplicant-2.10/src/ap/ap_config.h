@@ -317,7 +317,7 @@ struct hostapd_bss_config {
 #ifdef CONFIG_P2P
 	struct hostapd_radius_servers *radius;
 #endif
-#ifdef CONFIG_FULL_HOSTAPD
+#if defined (CONFIG_FULL_HOSTAPD) || defined(CONFIG_P2P)
 	char *eap_sim_db;
 	unsigned int eap_sim_db_timeout;
 	int eap_server_erp; /* Whether ERP is enabled on internal EAP server */
@@ -433,10 +433,7 @@ struct hostapd_bss_config {
 #endif /* CONFIG_NATIVE_WINDOWS */
 	int ctrl_interface_gid_set;
 #endif
-#ifdef CONFIG_P2P
-	int fragment_size;
-#endif
-#ifdef CONFIG_FULL_HOSTAPD
+#if defined (CONFIG_FULL_HOSTAPD) || defined(CONFIG_P2P)
 	char *ca_cert;
 	char *server_cert;
 	char *server_cert2;

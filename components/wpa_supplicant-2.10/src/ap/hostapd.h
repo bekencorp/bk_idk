@@ -219,7 +219,7 @@ struct hostapd_data {
 	int michael_mic_failures;
 	int tkip_countermeasures;
 
-#ifndef BK_SUPPLICANT
+#ifdef CONFIG_P2P
 	int ctrl_sock;
 	struct dl_list ctrl_dst;
 

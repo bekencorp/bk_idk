@@ -265,6 +265,10 @@ void wpa_parse_mac_rates_ie(struct wpa_supplicant *wpa_s) {
 	u8 *rates = 0;
 	int num_rates, rates_is_11b_1mbps_supported;
 	struct wpa_bss *bss = wpa_s->current_bss;
+	#ifdef BK_SUPPLICANT
+	if (bss == NULL)
+		return;
+	#endif
 
 	/* get basic support rates and ext support rates */
 	num_rates = wpa_bss_get_bit_rates(bss, &rates);

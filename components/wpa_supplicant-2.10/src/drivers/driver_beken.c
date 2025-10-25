@@ -644,16 +644,30 @@ static int hostap_read_sta_data(void *priv,
 #define WLAN_DEFAULT_GO_IP         "192.168.49.1"
 #define WLAN_DEFAULT_GO_GW         "192.168.49.1"
 #define WLAN_DEFAULT_GO_MASK       "255.255.255.0"
+
+__INLINE int phy_freq_to_channel(uint8_t band, uint16_t freq)
+{
+	if ((band == PHY_BAND_2G4) && (freq >= 2412) && (freq <= 2484)) {
+		if (freq == 2484)
+			return 14;
+		else
+			return (freq - 2407) / 5;
+	} else if ((band == PHY_BAND_5G) && (freq >= 5005) && (freq <= 5825))
+		return (freq - PHY_FREQ_5G) / 5;
+	return 0;
+}
+
 /**
  * set vif mode to @nlmode
  */
-static int wpa_driver_set_mode(void *priv, enum nl80211_iftype nlmode)
+static int wpa_driver_set_mode(void *priv, enum nl80211_iftype nlmode, int freq)
 {
 	int ret;
 	uint8_t mac[ETH_ALEN];
-    struct hostap_driver_data *drv = priv;
+	struct hostap_driver_data *drv = priv;
 	VIF_INF_PTR vif = rwm_mgmt_vif_idx2ptr(drv->vif_index);
 	struct mm_add_if_cfm cfm;
+	int channel = 0;
 
 	if (!vif)
 		return -1;
@@ -684,8 +698,13 @@ static int wpa_driver_set_mode(void *priv, enum nl80211_iftype nlmode)
 			net_wlan_add_netif(mac);
 #endif
 #ifdef CONFIG_P2P_GO
-			if (nlmode == NL80211_IFTYPE_P2P_GO) {
-				g_ap_param_ptr->chann = bk_wlan_ap_get_default_channel();
+			if (nlmode == NL80211_IFTYPE_P2P_GO && freq != 0) {
+				if (freq >= 4900) {
+					channel = phy_freq_to_channel(PHY_BAND_5G, freq);
+				} else {
+					channel = phy_freq_to_channel(PHY_BAND_2G4, freq);
+				}
+				g_ap_param_ptr->chann = channel;
 				wpa_printf(MSG_DEBUG, "%s, %d, channel: %u", __func__, __LINE__, g_ap_param_ptr->chann);
 				drv->sock_xmit = l2_packet_init(drv->iface, drv->own_addr, ETH_P_EAPOL,
                                     handle_eapol, drv, 0);
@@ -2016,7 +2035,7 @@ int wpa_driver_associate(void *priv, struct wpa_driver_associate_params *params)
 			nlmode = NL80211_IFTYPE_STATION;
 	}
 
-	if (wpa_driver_set_mode(drv, nlmode))
+	if (wpa_driver_set_mode(drv, nlmode, params->freq.freq))
 		return -1;
 
 	if ((nlmode == NL80211_IFTYPE_P2P_GO) && wpa_driver_hostap_start_apm(drv))
@@ -2710,7 +2729,7 @@ int wpa_driver_nl80211_deinit_ap(void *priv)
 		return -1;
 	wpa_driver_hostap_stop_apm(drv);
 
-	return wpa_driver_set_mode(drv, NL80211_IFTYPE_STATION);
+	return wpa_driver_set_mode(drv, NL80211_IFTYPE_STATION, 0);
 }
 
 #endif

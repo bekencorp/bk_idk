@@ -149,6 +149,7 @@ if (CONFIG_P2P)
 		"src/ap/eap_user_db.c"
 		"src/ap/p2p_hostapd.c"
 		"src/ap/wps_hostapd.c"
+		"src/ap/authsrv.c"
 		"src/common/gas.c"
 		"src/eap_common/eap_common.c"
 		"src/eap_common/eap_wsc_common.c"

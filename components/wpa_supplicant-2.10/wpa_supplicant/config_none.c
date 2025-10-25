@@ -24,6 +24,9 @@
 #include <modules/wifi.h>
 #include "wpa_supplicant_i.h"
 #include "bss.h"
+#ifdef CONFIG_P2P
+#include "p2p/p2p.h"
+#endif
 
 #if !CONFIG_QUICK_TRACK
 /**
@@ -309,6 +312,15 @@ struct wpa_config *wpa_config_read(const char *name, struct wpa_config *cfgp)
 	config->persistent_reconnect = 1;
 	config->p2p_listen_channel = DEFAULT_CHANNEL_AP;
 	config->p2p_listen_reg_class = 81;
+	config->p2p_ssid_postfix = os_strdup("-beken");
+	config->num_p2p_pref_chan = 1;
+	config->p2p_pref_chan = (struct p2p_channel *)os_malloc(config->num_p2p_pref_chan * sizeof(struct p2p_channel));
+	if (config->p2p_pref_chan == NULL) {
+		errors++;
+		goto error;
+	}
+	config->p2p_pref_chan[0].op_class = 81;
+	config->p2p_pref_chan[0].chan = 13;
 #endif
 
 #ifdef CONFIG_IEEE80211R

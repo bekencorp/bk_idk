@@ -920,7 +920,7 @@ int wpa_send_assoc_req(struct prism2_hostapd_param *param, int len)
 #endif
 
 	connect_param->auth_type = param->u.assoc_req.auth_alg;
-#if CFG_WIFI_P2P || CFG_WLAN_FAST_CONNECT_WITHOUT_SCAN
+#if CFG_P2P || CFG_WLAN_FAST_CONNECT_WITHOUT_SCAN
 	if (param->u.assoc_req.freq >= 5925) {
 		connect_param->chan.band = IEEE80211_BAND_6GHZ;
 	} else if (param->u.assoc_req.freq >= 4900) {

@@ -1369,7 +1369,7 @@ static int hostapd_setup_bss(struct hostapd_data *hapd, int first)
 #endif /* CONFIG_DPP_AP */
 
 
-#ifdef CONFIG_FULL_HOSTAPD
+#if defined (CONFIG_FULL_HOSTAPD) || defined(CONFIG_P2P)
 	if (authsrv_init(hapd) < 0)
 		return -1;
 #endif
