@@ -181,6 +181,11 @@ exit:
 
 void ate_cali_temperature(const unsigned char *content, UINT8 *tx_buffer)
 {
+    #define TEMP1_CODE_MIN  (7500)
+    #define TEMP1_CODE_MAX  (9500)
+    #define TEMP2_CODE_MIN  (5000)
+    #define TEMP2_CODE_MAX  (6000)
+
     uint32_t adc_code32 = 0;
     uint16_t adc_code16 = 0;
     int      ret;
@@ -212,7 +217,7 @@ void ate_cali_temperature(const unsigned char *content, UINT8 *tx_buffer)
     sys_ana_ll_set_reg4_value(reg_val);
 
     ret = temp_detect_get_temperature(&adc_code32);
-    if ((ret != BK_OK) || (adc_code32 >= 0xFFFF))
+    if ((ret != BK_OK) || (adc_code32 >= TEMP1_CODE_MAX) || (adc_code32 <= TEMP1_CODE_MIN))
     {
         tx_buffer[1] = 0xDD;
         goto exit;
@@ -227,7 +232,7 @@ void ate_cali_temperature(const unsigned char *content, UINT8 *tx_buffer)
     sys_ana_ll_set_reg4_value(reg_val);
 
     ret = temp_detect_get_temperature(&adc_code32);
-    if ((ret != BK_OK) || (adc_code32 >= 0xFFFF))
+    if ((ret != BK_OK) || (adc_code32 >= TEMP2_CODE_MAX) || (adc_code32 <= TEMP2_CODE_MIN))
     {
         tx_buffer[1] = 0xDD;
         goto exit;
