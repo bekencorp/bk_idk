@@ -1079,7 +1079,10 @@ void sys_hal_enter_low_voltage(void)
 #else
 	arch_deep_sleep();
 #endif
-
+	bk_delay_us(40); //must delay 40us to sampling rtc value
+	uint64_t current = bk_aon_rtc_get_us();
+	sys_hal_set_low_voltage_wakeup_time_us(current);
+	sys_hal_set_low_voltage_sleep_duration_us(current - before);
 #if CONFIG_AON_PMU_REG0_REFACTOR_DEV
 	aon_pmu_hal_set_gpio_sleep(0, true);
 #else
@@ -1160,9 +1163,6 @@ void sys_hal_enter_low_voltage(void)
 	}
 #endif
 /*---------------at least delay 190us end -----------------*/
-	uint64_t current = bk_aon_rtc_get_us();
-	sys_hal_set_low_voltage_wakeup_time_us(current);
-	sys_hal_set_low_voltage_sleep_duration_us(current - before);
 
 	sys_hal_restore_core_freq(cksel_core, clkdiv_core, clkdiv_bus);
 

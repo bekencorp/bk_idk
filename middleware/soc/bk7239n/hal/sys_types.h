@@ -116,7 +116,7 @@ extern "C" {
 #define LOW_POWER_DELAY_TIME_HARDWARE                    (1300)
 #define LOW_POWER_EXTERN_32K_HARDWARE                    (3000)
 
-#define LOW_POWER_BOOTUP_RESTORE_TIME                    (1500)
+#define LOW_POWER_BOOTUP_RESTORE_TIME                    (2000)//from hardware wakeup to wfi() cost 3300us，hardware to bootloader cost 2200us ,bootloader to app cost 800us,app to wfi() cost 300us
 
 #define PM_POWER_ON_ROSC_STABILITY_TIME                  (TIMER_CLOCK_FREQ_XTAL*2)//about 2ms
 
