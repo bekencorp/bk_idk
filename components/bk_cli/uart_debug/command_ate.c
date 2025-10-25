@@ -1615,7 +1615,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 tx_verify_test_2442();
                 break;
             }
-            case 0xA:
+            case 0x0A:
                 /* 55 0A 01 : read efuse 18,19,20,21 first, return value */
                 /* 55 0A 10: set 1Volt and read ADC3, return value */
                 /* 55 0A 20: set 2Volt and read ADC3, return value */

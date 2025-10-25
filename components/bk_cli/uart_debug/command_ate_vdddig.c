@@ -140,7 +140,7 @@ int sctrl_load_vdddig_from_efuse(void)
     bk_err_t result;
     uint8_t new_bandgap = 0xFF;
 
-    result = bk_otp_apb_read(OTP_VDDDIG_BANDGAP, (uint8_t *)&new_bandgap, sizeof(new_bandgap));
+    result = bk_otp_ahb_read(OTP_VDDDIG_BANDGAP, (uint8_t *)&new_bandgap, sizeof(new_bandgap));
     if ((BK_OK != result) || (0x00 == new_bandgap) || (0xFF == new_bandgap))
     {
         return -1;
