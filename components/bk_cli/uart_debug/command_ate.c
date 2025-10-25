@@ -1238,7 +1238,7 @@ static void psram_function_test(void)
 	uint32_t word_len = 1024 * 256;
 	uint8_t  flag_error = 0;
 
-	bk_psram_set_clk(PSRAM_80M);
+	bk_psram_set_clk(PSRAM_120M);
 
 	for (uint32_t i = 0; i < word_len; i++) {
 		write_data(base_addr + i * 4, 0x11111111 + i);
