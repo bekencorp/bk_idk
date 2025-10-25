@@ -210,7 +210,7 @@ uint32_t bk_otp_read_security_flag(void);
  *    - BK_OK: succeed
  *    - BK_FAIL: error
 */
-bk_err_t bk_otp_read_random_number(uint32_t* buf, uint32_t size);
+bk_err_t bk_otp_read_random_number(uint8_t* buf, uint32_t size);
 #endif
 
 #if CONFIG_FLASH_OTP

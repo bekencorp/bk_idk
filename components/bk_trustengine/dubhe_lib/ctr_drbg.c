@@ -25,6 +25,7 @@
 #endif
 
 #include "mbedtls/platform.h"
+#include "driver/otp.h"
 
 /*
  * CTR_DRBG context initialization
@@ -889,30 +890,8 @@ int mbedtls_ctr_drbg_self_test(int verbose)
 int bk_puf_get_random_number(void *data, unsigned char *output, size_t len)
 {
     (void)data;
-    uint32_t random_number;
-
-#if 0 //TODO fix it in production version
-    uint32_t reg_value = REG_READ(0x44010030);
-    reg_value |= 1 << 15;
-    REG_WRITE(0x44010030,reg_value);
-
-    reg_value = REG_READ(0x44010040);
-    reg_value &= ~(1 << 3);
-    REG_WRITE(0x44010040,reg_value);
-#endif
-
-    while((REG_READ(0x4B1002C4) & 0x1));
-
-    for(int i = 0;i<len;i+=4){
-        random_number = REG_READ(0x4B1002A0);
-        *(output+i)   = (random_number & 0xFF);
-        *(output+i+1) = (random_number & 0xFF00) >> 8;
-        *(output+i+2) = (random_number & 0xFF0000) >> 16;
-        *(output+i+3) = (random_number & 0xFF000000) >> 24;
-    }
-
+    bk_otp_read_random_number(output, len);
     return 0;
-
 }
 
 int bk_mbedtls_ctr_drbg_random_with_puf(unsigned char* buf, uint32_t size)

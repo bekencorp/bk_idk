@@ -193,7 +193,7 @@ static void cli_otp_apb_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
 		BK_RAW_LOGI(NULL, "after write,read item %d : puf security: %x\r\n", item, ret);
 	} else if (os_strcmp(argv[1], "read_random") == 0){
 		uint32_t size = os_strtoul(argv[2], NULL, 10);
-		uint32_t* data = (uint32_t*)os_malloc(size*sizeof(uint32_t));
+		uint8_t* data = (uint8_t*)os_malloc(size);
 		if (data == NULL) {
 			return;
 		}
