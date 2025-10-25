@@ -81,11 +81,14 @@ uint32_t sdio_ll_get_sd_slave_wr_finish(void);
 void sdio_hal_fifo_reset(void);
 #endif
 
-#if CONFIG_SDIO_V2P1
+#if CONFIG_SDIO_V2P1 || CONFIG_SDIO_V2P2
 void sdio_hal_slave_clear_wr_blk_int_status(void);
 uint32_t sdio_hal_slave_get_wr_blk_int_status(void);
 void sdio_hal_slave_set_write_block_int_mask(uint32_t en);
 void sdio_hal_slave_set_write_mul_sel(uint32_t en);
+uint32_t sdio_hal_slave_get_data_rec_end_int(void);
+void sdio_hal_slave_clear_data_rec_end_int(void);
+void sdio_hal_slave_set_data_rec_end_int(uint32_t value);
 void sdio_hal_slave_clear_rd_blk_int_status(void);
 uint32_t sdio_hal_slave_get_rd_blk_int_status(void);
 void sdio_hal_slave_set_read_block_int_mask(uint32_t en);
