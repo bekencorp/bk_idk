@@ -16,9 +16,9 @@ class PackBl1sign(Pack):
             logging.error(f'Bin number should be 1, actual={l}')
             exit(1)
         
-        ph = PackHeader(self._bins[0])
+        ph = PackHeader("bl2.bin")
         name = ph.name()
-        infile = f'_{name}.bin'
+        infile = f'_bl2.bin'
 
         static_addr_int = 0x02000000 + ph.size().vir_code_offset()
         static_addr = f'0x%08x' %(static_addr_int)

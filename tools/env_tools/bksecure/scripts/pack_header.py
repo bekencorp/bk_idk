@@ -25,6 +25,7 @@ class PackHeader:
     def create_header(self, bname, version, name, type_, subtype, offset, size, flags, hdr_size, m1=0, m2=0, m3=0, m4=0):
         logging.debug(f'create pack header: bname={bname}, partition={name}')
         logging.debug(f'pack header: version={version},offset={hex(offset)},size={hex(size)}')
+        logging.debug(f'now path : {os.getcwd()}')
 
         if not os.path.exists(bname):
             logging.error(f'create_header: Bin {name} not exists')
@@ -49,6 +50,7 @@ class PackHeader:
             f.write(data)
 
     def __parse_header(self, bname):
+        logging.debug(f"parse Bin {bname} header")
         if os.path.exists(bname) == False:
             logging.error(f'parse header: Bin {bname} not exists')
             exit(1)

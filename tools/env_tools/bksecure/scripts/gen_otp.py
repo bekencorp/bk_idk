@@ -64,8 +64,8 @@ def gen_otp_efuse_config_file(aes_type, flash_aes_key, pubkey_pem_file, securebo
         data["name"] = "flash_aes_key"
         data["mode"] = "write"
         data["permission"] = "WR" #TODO change to NA
-        data["start_addr"] = "0x4B100460"
-        data["last_valid_addr"] = "0x4B100480"
+        data["start_addr"] = "0x4B100440" # in 39N from 440-460, in 36 from 460-480
+        data["last_valid_addr"] = "0x4B100460"
         data["byte_len"] = "0x20"
         data["data"] = flash_aes_key
         data["data_type"] = "hex"

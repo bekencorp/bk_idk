@@ -1,0 +1,26 @@
+{
+    "primary_manifest.bin":
+    {
+        "bin":["pack_primary_manifest.bin"],
+        "action":"STEPS_PACK_HEADER"
+    },
+
+    "app_signed.bin":
+    {
+        "bin":["overwrite.bin"],
+        "action":"STEPS_PACK_HEADER"
+    },
+
+    "bootloader.bin":
+    {
+        "bin": ["bl1_control.bin", "boot_flag.bin", "primary_manifest.bin", "bl2.bin"],
+        "action": "PACK_BL1_DOWNLOAD_BIN"
+    },
+
+    "all-app.bin":
+    {
+        "bin": ["partition.bin", "app_signed.bin"],
+        "action": "PACK_BL1_DOWNLOAD_BIN"
+    }
+
+}

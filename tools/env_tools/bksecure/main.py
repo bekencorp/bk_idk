@@ -13,6 +13,7 @@ from scripts.pack import Pack
 from scripts.pack_all import PackAll
 from scripts.pack_json import PackJson
 from scripts.gen_code import gen_code
+from scripts.steps import *
 
 def set_debug(debug):
     if debug:
@@ -176,6 +177,86 @@ def pack_command(debug):
     set_debug(debug)
     p = PackAll()
     p.pack()
+
+@cli.group("steps")
+def steps():
+    """Create downloadable bin step by step"""
+
+@steps.command("get_app_bin_hash")
+@click.option("--debug", is_flag=True, help="Enable debug")
+def get_bin_hash_command(debug):
+    """Get binaries hash for signing"""
+    set_debug(debug)
+    get_app_bin_hash()
+
+@steps.command("sign_app_bin_hash")
+@click.option("--bl2_bin_hash", type=str, required=False, default=None, help="hash of BL2 binaries")
+@click.option("--bl2_b_bin_hash", type=str, required=False, default=None, help="hash of BL2_B binaries")
+@click.option("--app_bin_hash", type=str, required=False, default=None, help="hash of APP binaries")
+@click.option("--debug", is_flag=True, help="Enable debug")
+def sign_hash_command(bl2_bin_hash, bl2_b_bin_hash, app_bin_hash, debug):
+    """Signing app binaries hash"""
+    set_debug(debug)
+    sign_app_bin_hash(bl2_bin_hash, app_bin_hash)
+
+@steps.command("sign_from_app_sig")
+@click.option("--bl2_sig_r", type=str, required=False, default=None, help="BL2 sig r")
+@click.option("--bl2_sig_s", type=str, required=False, default=None, help="BL2 sig s")
+@click.option("--bl2_b_sig_r", type=str, required=False, default=None, help="BL2_B sig r")
+@click.option("--bl2_b_sig_s", type=str, required=False, default=None, help="BL2_B sig s")
+@click.option("--app_sig", type=str, required=False, default=None, help="APP sig")
+@click.option("--debug", is_flag=True, help="Enable debug")
+def sign_from_sig_command(bl2_sig_r, bl2_sig_s, bl2_b_sig_r, bl2_b_sig_s, app_sig, debug):
+    """Create signed app bin based on signature"""
+    set_debug(debug)
+    # sign_from_app_sig(bl2_sig_r, bl2_sig_s, bl2_b_sig_r, bl2_b_sig_s, app_sig)
+    sign_from_app_sig(bl2_sig_r, bl2_sig_s, app_sig)
+
+@steps.command("get_ota_bin_hash")
+@click.option("--debug", is_flag=True, help="Enable debug")
+def get_ota_bin_hash_command(debug):
+    """Get OTA binary hash"""
+    set_debug(debug)
+    get_ota_bin_hash()
+
+@steps.command("sign_ota_bin_hash")
+@click.option("--ota_bin_hash", type=str, required=False, default=None, help="hash of OTA bin")
+@click.option("--debug", is_flag=True, help="Enable debug")
+def sign_ota_bin_hash_command(ota_bin_hash, debug):
+    """Create signature of OTA bin hash"""
+    set_debug(debug)
+    sign_ota_bin_hash(ota_bin_hash)
+
+@steps.command("sign_from_ota_sig")
+@click.option("--ota_bin_sig", type=str, required=False, default=None, help="OTA bin sig")
+@click.option("--debug", is_flag=True, help="Enable debug")
+def sign_from_ota_sig_command(ota_bin_sig, debug):
+    """Create signed OTA bin from signature"""
+    set_debug(debug)
+    sign_from_ota_sig(ota_bin_sig)
+
+@steps.command("pack")
+@click.option("--debug", is_flag=True, help="Enable debug")
+@click.option("--flash_aes_type", type=click.Choice(['NONE', 'FIXED', 'RANDOM']), default='FIXED', required=True, help="The flash AES type.")
+@click.option("--flash_aes_key", type=str, required=False, default=None, help="configuration flash aes key")
+@click.option("--bl1_secureboot_en", is_flag=True, default=False, help="Indicate whether enable BL1 secure boot")
+@click.option("--ota_type", type=click.Choice(['XIP', 'OVERWRITE']), help="OTA strategy")
+@click.option("--ota_security_counter", type=int, help="APP security counter")
+@click.option("--boot_ota", is_flag=True, default=False, help="Indicate whether support bootloader OTA")
+@click.option("--ota_encrypt", is_flag=True, default=False, help="Indicate whether ota.bin is encrypted")
+@click.option("--pubkey_pem_file", type=str, default='root_ec256_privkey.pem', help="BL2 public key PEM file")
+@click.option("--bl2_version", type=str, required=True, default=None, help="configuration bl2 version")
+def pack_command(debug, flash_aes_type, flash_aes_key, bl1_secureboot_en, ota_type, ota_security_counter, ota_encrypt, boot_ota, bl2_version, pubkey_pem_file):
+    """Pack download bin"""
+    set_debug(debug)
+    steps_pack(flash_aes_type, flash_aes_key, bl1_secureboot_en, ota_type, ota_security_counter, ota_encrypt, boot_ota, bl2_version, pubkey_pem_file)
+
+@steps.command("pack_csv")
+@click.option("--debug", is_flag=True, help="Enable debug")
+def pack_csv_command(debug):
+    """Pack download bin according to CSV file"""
+    set_debug(debug)
+    steps_pack_csv()
 
 if __name__ == '__main__':
     logging.basicConfig()

@@ -60,7 +60,7 @@ class Security(dict):
             exit(1)
 
     def get_anti_rollback(self):
-        return self.anti_rollback;
+        return self.anti_rollback
 
     def parse_csv(self):
         self.bl1_secureboot_en = parse_bool(self.csv.dic['bl1_secureboot_en'])
@@ -81,6 +81,7 @@ class Security(dict):
             self.img_sign_pubkey = self.csv.dic['img_sign_pubkey']
             self.img_sign_privkey = self.csv.dic['img_sign_privkey']
             self.img_sign_pubkey_bytes = self.get_public_bytes_from_pubkeyfile(self.img_sign_pubkey)
+            logging.debug(f"key from security.csv privkey {self.img_sign_privkey} pubkey {self.img_sign_pubkey} pubkeybytes {self.img_sign_pubkey_bytes}")
         else:
             self.img_sign_key_type = None
             self.img_sign_pubkey = None

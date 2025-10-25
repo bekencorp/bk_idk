@@ -57,8 +57,13 @@ def gen_manifest_bin(action_type, manifest_json_file, outfile):
         with open('bl1_manifest_digest.txt', 'r') as f:
             h = f.read()
             data['hash'] = h
-            with open('manifest_hash.json', 'w') as hf:
-                json.dump(data, hf, indent=4)
+            if (manifest_json_file == 'secondary_manifest.json'):
+                with open('secondary_manifest_hash.json', 'w') as hf:
+                    json.dump(data, hf, indent=4)
+            else:
+                with open('primary_manifest_hash.json', 'w') as hf:
+                    json.dump(data, hf, indent=4)
+
         os.remove('bl1_manifest_digest.txt')
 
 def bl1_sign(action_type, key_type, privkey_pem_file, pubkey_pem_file, signature, bin_file, static_addr, load_addr, outfile):
@@ -66,6 +71,7 @@ def bl1_sign(action_type, key_type, privkey_pem_file, pubkey_pem_file, signature
         manifest_json_file = 'secondary_manifest.json'
     else :
         manifest_json_file = 'primary_manifest.json'
+    logging.debug(f"bl1 sign bin_file = {bin_file} static_addr {static_addr}")
     g = Genbl1(action_type, True, key_type, privkey_pem_file, pubkey_pem_file, outfile)
     g.gen_key_desc()
     g.gen_manifest(5, static_addr, load_addr, bin_file, manifest_json_file)

@@ -38,13 +38,13 @@ def bl2_sign(action_type, key_type, privkey_pem_file, pubkey_pem_file, signature
     bl2_signing_tool_dir = f'{script_dir}/../tools/mcuboot_tools/imgtool.py'
     if type(pubkey_pem_file) == str and pubkey_pem_file.endswith("pem"):
         logging.debug("pubkey is pem file")
-        cmd = f'{bl2_signing_tool_dir} sign {key_opt} --public-key-format hash --max-align 8 --align 1 --version {version} --security-counter {security_counter} --pad-header --header-size 0x1000 --slot-size {partition_size} --pad --boot-record SPE --endian little --encrypt-keylen 128 {bin_file} {sign_outfile} --action_type {action_type} {signature_opt} --pubkeyfile {pubkey_pem_file} {hash_outfile_opt}'
+        cmd = f'{bl2_signing_tool_dir} sign {key_opt} --public-key-format hash --max-align 8 --align 1 --version {version} --security-counter {security_counter} --pad-header --header-size 0x1000 --slot-size {partition_size} --pad --boot-record SPE --endian little --encrypt-keylen 128 {bin_file} {sign_outfile} --action_type {action_type} {signature_opt} --pubkeyfile {pubkey_pem_file} {hash_outfile_opt} &> sign.txt'
     elif pubkey_pem_file != None:
         logging.debug("pubkey is not pem file, add custom tlv")
         custom_value = pubkey_pem_file.hex()
-        cmd = f'{bl2_signing_tool_dir} sign {key_opt} --public-key-format hash --max-align 8 --align 1 --version {version} --security-counter {security_counter} --custom-tlv 0xa0 0x{custom_value}    --pad-header --header-size 0x1000 --slot-size {partition_size} --pad --boot-record SPE --endian little --encrypt-keylen 128 {bin_file} {sign_outfile} --action_type {action_type} {signature_opt}'
+        cmd = f'{bl2_signing_tool_dir} sign {key_opt} --public-key-format hash --max-align 8 --align 1 --version {version} --security-counter {security_counter} --custom-tlv 0xa0 0x{custom_value}    --pad-header --header-size 0x1000 --slot-size {partition_size} --pad --boot-record SPE --endian little --encrypt-keylen 128 {bin_file} {sign_outfile} --action_type {action_type} {signature_opt} {hash_outfile_opt}'
     else:
-        cmd = f'{bl2_signing_tool_dir} sign {key_opt} --public-key-format hash --max-align 8 --align 1 --version {version} --security-counter {security_counter}  --pad-header --header-size 0x1000 --slot-size {partition_size} --pad --boot-record SPE --endian little --encrypt-keylen 128 {bin_file} {sign_outfile} --action_type {action_type} {signature_opt}'
+        cmd = f'{bl2_signing_tool_dir} sign {key_opt} --public-key-format hash --max-align 8 --align 1 --version {version} --security-counter {security_counter}  --pad-header --header-size 0x1000 --slot-size {partition_size} --pad --boot-record SPE --endian little --encrypt-keylen 128 {bin_file} {sign_outfile} --action_type {action_type} {signature_opt} {hash_outfile_opt}'
 
     run_cmd(cmd)
     return

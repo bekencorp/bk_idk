@@ -136,7 +136,7 @@ class Partitions:
         return bins
 
     def __parse_partition_csv(self, partition_csv):
-        logging.debug(f'Partitions: __parse_partition_csv')
+        logging.debug(f'Partitions: __parse_partition_csv {partition_csv} ')
 
         if partition_csv == None:
             return []

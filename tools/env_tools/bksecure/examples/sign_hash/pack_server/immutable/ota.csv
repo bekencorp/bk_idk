@@ -1,0 +1,5 @@
+Field,Value
+strategy,NONE
+encrypt,FALSE
+anti_rollback,FALSE
+app_security_counter,1

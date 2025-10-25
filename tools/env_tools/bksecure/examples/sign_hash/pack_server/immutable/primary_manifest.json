@@ -1,0 +1,17 @@
+{
+    "//":"This is a generate file, do not modify it",
+    "mnft_desc_cfg":{
+        "fmt_ver":"0x00010001",
+        "mnft_ver":"0x00000005",
+        "sec_boot":true
+    },
+    "imgs":[
+        {
+            "is_enc":false,
+            "static_addr":"0x02004c00",
+            "load_addr":"0x02004c00",
+            "entry":"0x02004c00",
+            "path":"_bl2.bin"
+        }
+    ]
+}

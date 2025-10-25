@@ -3,6 +3,7 @@
 import logging
 import os
 import json
+import shutil
 
 from .pack import Pack
 from .pack_bl2 import PackBl2
@@ -13,6 +14,7 @@ from .pack_raw_ota import PackRawOta
 from .pack_download import PackDownload
 from .pack_bl2_download import PackBl2Download
 from .pack_nvs import PackNvs
+from .steps_pack_header import StepsPackHeader
 
 class PackJson(Pack):
 
@@ -54,6 +56,8 @@ class PackJson(Pack):
                 p = PackRawOta(bins, k)
             elif action == 'PACK_NVS':
                 p = PackNvs(bins, k)
+            elif action == "STEPS_PACK_HEADER":
+                p = StepsPackHeader(bins, k)
             else:
                 logging.error(f'Unsupported pack action={action}')
                 exit(1)
@@ -65,3 +69,16 @@ class PackJson(Pack):
 
         for p in self._packs:
             p.pack(img_sign_pubkey, img_sign_privkey, flash_aes_key, flash_crc_en, data_aes_key)
+
+    def copy_file(self, file_name, dst):
+        if os.path.exists(file_name):
+            shutil.copy(file_name, f'{dst}/{file_name}')
+
+    def install_bin(self):
+        logging.debug(f"install bins")
+        install_dir = 'install'
+        os.makedirs(install_dir, exist_ok=True)
+        self.copy_file('all-app.bin', install_dir)
+        self.copy_file('ota.bin', install_dir)
+        self.copy_file('bootloader.bin', install_dir)
+        self.copy_file('otp_efuse_config.json', install_dir)
