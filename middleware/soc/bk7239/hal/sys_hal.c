@@ -1161,25 +1161,6 @@ void sys_hal_sadc_pwr_down(void)
 void sys_hal_set_saradc_config(void)
 {
 	/* yanxiang.wei@bekencorp.com, based on doc: bk7236n_v2_gadc register setting.xlms*/
-	sys_ana_ll_set_ana_reg2_inbufen(1);
-	sys_ana_ll_set_ana_reg2_gadc_calcap_ch(3);
-	sys_ana_ll_set_ana_reg2_gadc_clk_inv(1);
-	sys_ana_ll_set_ana_reg2_gadc_clk_sel(1);
-	sys_ana_ll_set_ana_reg2_gadc_calintsaw_en(1);
-	sys_ana_ll_set_ana_reg2_gadc_clk_rlten(1);
-	sys_ana_ll_set_ana_reg2_gadc_vbg_sel(1);
-	sys_ana_ll_set_ana_reg2_gadc_vpcalsaw(4);
-	sys_ana_ll_set_ana_reg2_gadc_vncalsaw(4);
-	sys_ana_ll_set_ana_reg2_gadc_bscalsaw(4);
-	sys_ana_ll_set_ana_reg2_gadc_compisel(4);
-	sys_ana_ll_set_ana_reg2_nc_10_10(1);
-	sys_ana_ll_set_ana_reg2_gadc_inbufsel(1);
-	sys_ana_ll_set_ana_reg2_sar_enspi(1);
-
-	sys_ana_ll_set_ana_reg3_offset_en(0);
-	sys_ana_ll_set_ana_reg3_vref_sel(1);
-	sys_ana_ll_set_ana_reg3_refbuff_isel(4);
-	sys_ana_ll_set_ana_reg3_preamp_isel(4);
 }
 
 void sys_hal_set_sdmadc_config(void)
@@ -2629,14 +2610,14 @@ void sys_hal_early_init(void)
 	val |= (0x1 << 5);
 	sys_hal_analog_set(ANALOG_REG5,val);
 
-	sys_hal_analog_set(ANALOG_REG0, 0x19219780);//liupeng202400807:<9:7>=7;zhiyin20250429<11>=0 enable dpll_unlock flag;zhiyin20250604<29:28>=1
+	sys_hal_analog_set(ANALOG_REG0, 0x192197E0);//liupeng202400807:<9:7>=7;zhiyin20250429<11>=0 enable dpll_unlock flag;zhiyin20250604<29:28>=1
 	sys_hal_analog_set(ANALOG_REG1, 0xC02EFA00);
-	sys_hal_analog_set(ANALOG_REG2, 0x0600D436);
-	sys_hal_analog_set(ANALOG_REG3, 0xFDFC0BC8);//tenglong20240806:high psrr as default, low when sleep;ronghui20250520<27>=1 avoid dpll unlock detect issue when high temp
-	sys_hal_analog_set(ANALOG_REG4, 0x40000000);
+	sys_hal_analog_set(ANALOG_REG2, 0xFFC92536);
+	sys_hal_analog_set(ANALOG_REG3, 0xFDFC0B64);//tenglong20240806:high psrr as default, low when sleep;ronghui20250520<27>=1 avoid dpll unlock detect issue when high temp
+	sys_hal_analog_set(ANALOG_REG4, 0x40010000);
 	sys_hal_analog_set(ANALOG_REG5, 0x8407AF60);//liupeng20250514:hp for tx
 	sys_hal_analog_set(ANALOG_REG6, 0x80088100);//liupeng20250427
-	sys_hal_analog_set(ANALOG_REG7, 0x57E697C6);//xinyuan20250611:<9:6>=F for better EVM
+	sys_hal_analog_set(ANALOG_REG7, 0x57E297C6);//xinyuan20250611:<9:6>=F for better EVM
 	sys_hal_analog_set(ANALOG_REG8, 0xF87C72E4);//ronghui20250519:<31:30>=3(0.9V), avoid write analog failure
 
 	/**
