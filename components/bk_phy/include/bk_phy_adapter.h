@@ -209,10 +209,13 @@ typedef struct {
     uint32_t _pm_cpu_frq_60m;
     uint32_t _pm_cpu_frq_80m;
     uint32_t _pm_cpu_frq_120m;
+    uint32_t _pm_cpu_frq_240m;
     uint32_t _pm_cpu_frq_320m;
+    uint32_t _pm_cpu_frq_480m;
     uint32_t _pm_cpu_frq_default;
 
     uint32_t _pm_dev_id_phy;
+    uint32_t _pm_dev_id_phy_dpd_cali;
 
 
 

@@ -435,7 +435,7 @@ static uint8_t get_tx_pwr_idx_wrapper()
 static void txpwr_max_set_bt_polar_wrapper()
 {
 #if CONFIG_BLUETOOTH
-#if (CONFIG_SOC_BK7239) || (CONFIG_SOC_BK7236) || (CONFIG_SOC_BK7286 || CONFIG_SOC_BK7258)
+#if (CONFIG_SOC_BK7239N) || (CONFIG_SOC_BK7236) || (CONFIG_SOC_BK7286 || CONFIG_SOC_BK7258)
     txpwr_max_set_bt_polar();
 #endif
 #endif
@@ -444,7 +444,7 @@ static void txpwr_max_set_bt_polar_wrapper()
 static void txpwr_max_set_bt_iq_wrapper()
 {
 #if CONFIG_BLUETOOTH
-#if (CONFIG_SOC_BK7239) || (CONFIG_SOC_BK7236) || (CONFIG_SOC_BK7286 || CONFIG_SOC_BK7258)
+#if (CONFIG_SOC_BK7239N) || (CONFIG_SOC_BK7236) || (CONFIG_SOC_BK7286 || CONFIG_SOC_BK7258)
 #if CONFIG_BLUETOOTH_USE_MIN_POWER_MODE
     txpwr_max_set_bt_iq();
 #endif
@@ -972,10 +972,13 @@ const phy_os_variable_t g_phy_os_variable = {
     ._pm_cpu_frq_60m     = PM_CPU_FRQ_60M,
     ._pm_cpu_frq_80m     = PM_CPU_FRQ_80M,
     ._pm_cpu_frq_120m    = PM_CPU_FRQ_120M,
+    ._pm_cpu_frq_240m    = PM_CPU_FRQ_240M,
     ._pm_cpu_frq_320m    = PM_CPU_FRQ_320M,
+    ._pm_cpu_frq_480m    = PM_CPU_FRQ_480M,
     ._pm_cpu_frq_default = PM_CPU_FRQ_DEFAULT,
 
     ._pm_dev_id_phy      = PM_DEV_ID_PHY,
+    ._pm_dev_id_phy_dpd_cali = PM_DEV_ID_PHY_DPD_CALI,
 
 
 
