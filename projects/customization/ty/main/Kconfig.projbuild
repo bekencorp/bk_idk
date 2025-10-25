@@ -1,0 +1,5 @@
+menu "Project specific config"
+	config CUSTOMIZE_TY
+		bool "Enable customize tuya"
+		default n
+endmenu
