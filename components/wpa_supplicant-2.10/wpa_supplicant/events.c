@@ -1852,6 +1852,12 @@ wpa_supplicant_select_bss(struct wpa_supplicant *wpa_s,
 		wpa_dbg(wpa_s, MSG_DEBUG, "Selecting BSS from priority group %d",
 			group->priority);
 
+	// Prioritize 5G band BSS selection with fallback to 2G on auth failure
+	struct wpa_bss *selected_5g = NULL;
+	struct wpa_ssid *selected_5g_ssid = NULL;
+	struct wpa_bss *selected_2g = NULL;
+	struct wpa_ssid *selected_2g_ssid = NULL;
+
 	for (i = 0; i < wpa_s->last_scan_res_used; i++) {
 		struct wpa_bss *bss = wpa_s->last_scan_res[i];
 
@@ -1861,12 +1867,36 @@ wpa_supplicant_select_bss(struct wpa_supplicant *wpa_s,
 		wpa_s->owe_transition_select = 0;
 		if (!*selected_ssid)
 			continue;
+
+		// Prioritize 5G band (freq > 5000)
+		if (bss->freq > 5000 && !selected_5g) {
+			selected_5g = bss;
+			selected_5g_ssid = *selected_ssid;
+		} else if (bss->freq <= 5000 && !selected_2g) {
+			selected_2g = bss;
+			selected_2g_ssid = *selected_ssid;
+		}
+	}
+
+	// Return 5G BSS if found, otherwise return 2G BSS
+	if (selected_5g) {
+		*selected_ssid = selected_5g_ssid;
 		wpa_dbg(wpa_s, MSG_DEBUG, "   selected %sBSS " MACSTR
-			" ssid='%s'",
-			bss == wpa_s->current_bss ? "current ": "",
-			MAC2STR(bss->bssid),
-			wpa_ssid_txt(bss->ssid, bss->ssid_len));
-		return bss;
+			" ssid='%s' freq=%d",
+			selected_5g == wpa_s->current_bss ? "current " : "",
+			MAC2STR(selected_5g->bssid),
+			wpa_ssid_txt(selected_5g->ssid, selected_5g->ssid_len),
+			selected_5g->freq);
+		return selected_5g;
+	} else if (selected_2g) {
+		*selected_ssid = selected_2g_ssid;
+		wpa_dbg(wpa_s, MSG_DEBUG, "   selected %sBSS " MACSTR
+			" ssid='%s' freq=%d",
+			selected_2g == wpa_s->current_bss ? "current " : "",
+			MAC2STR(selected_2g->bssid),
+			wpa_ssid_txt(selected_2g->ssid, selected_2g->ssid_len),
+			selected_2g->freq);
+		return selected_2g;
 	}
 
 	return NULL;
