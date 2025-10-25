@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Beken
+// Copyright 2020-2025 Beken
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -102,37 +102,34 @@ uint32_t sdio_hal_slave_get_arg2_val(void);
 void sdio_hal_set_sd_cmd_crc_check(uint32_t value);
 void sdio_hal_set_cmd_keep_det(uint32_t value);
 
+#if !CONFIG_SOC_BK7236
 void sdio_hal_cmd_sst_sel_en(uint32_t value);
 void sdio_hal_dat1_int_en(uint32_t value);
 void sdio_hal_cccr_intx_en(uint32_t value);
 void sdio_hal_cccr_s4mi_en(uint32_t value);
+void sdio_hal_set_sd_data_en(uint32_t value);
+void sdio_hal_set_dat_s_rd_mul_blk(uint32_t value);
 void sdio_hal_set_reg0x3f_cmd_s_buf_cnt_clr(uint32_t value);
-
 /* REG_0x3f:reg0x3f->cmd_s_buf_cnt_num:0x3f[3:1],设置cmd buffer 缓存深度，最大深度值为5; 缓存深度=cmd_s_buf_cnt_num+1,0x0,RW*/
 void sdio_hal_set_reg0x3f_cmd_s_buf_cnt_num(uint32_t value);
-
 /* REG_0x3f:reg0x3f->cmd_s_buf_cnt:0x3f[6:4],cmd buffer 缓存个数; 0：1个缓存的CMD; 1：2个缓存的CMD; 2：3个缓存的CMD; 3：4个缓存的CMD; 4：5个缓存的CMD ,0x0,R*/
 uint32_t sdio_hal_get_reg0x3f_cmd_s_buf_cnt(void);
-
 /* REG_0x3f:reg0x3f->cmd_s_buf_cover_clr:0x3f[7],cmd buffer 溢出标志位清零,0x0,RW*/
 void sdio_hal_set_reg0x3f_cmd_s_buf_cover_clr(uint32_t value);
-
 /* REG_0x3f:reg0x3f->cmd_s_buf_cover:0x3f[8],cmd buffer 溢出标志位,0x0,R*/
 uint32_t sdio_hal_get_reg0x3f_cmd_s_buf_cover(void);
-
 /* REG_0x3f:reg0x3f->cmd_s_buf_en:0x3f[9],cmd buffer enable; 注：先把cmd_s_buf_cnt_num深度值设置完成，再使能cmd_s_buf_en,0x0,RW*/
 void sdio_hal_set_reg0x3f_cmd_s_buf_en(uint32_t value);
-
 /* REG_0x3f:reg0x3f->cmd_s_cnt_clr:0x3f[10],cmd计数器清零,0x0,RW*/
 void sdio_hal_set_reg0x3f_cmd_s_cnt_clr(uint32_t value);
-
-uint32_t sdio_hal_get_reg0x40_value(void);	
-uint32_t sdio_hal_get_reg0x41_cmd_s_rec_argument_buf0(void);	
-uint32_t sdio_hal_get_reg0x42_cmd_s_rec_argument_buf1(void);	
+uint32_t sdio_hal_get_reg0x40_value(void);
+uint32_t sdio_hal_get_reg0x41_cmd_s_rec_argument_buf0(void);
+uint32_t sdio_hal_get_reg0x42_cmd_s_rec_argument_buf1(void);
 uint32_t sdio_hal_get_reg0x43_cmd_s_rec_argument_buf2(void);
-uint32_t sdio_hal_get_reg0x44_cmd_s_rec_argument_buf3(void);	
-uint32_t sdio_hal_get_reg0x45_cmd_s_rec_argument_buf4(void);	
+uint32_t sdio_hal_get_reg0x44_cmd_s_rec_argument_buf3(void);
+uint32_t sdio_hal_get_reg0x45_cmd_s_rec_argument_buf4(void);
 uint32_t sdio_hal_get_reg0x46_cmd_s_cnt(void);
+#endif
 #endif
 #ifdef __cplusplus
 }

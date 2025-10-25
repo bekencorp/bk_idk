@@ -186,19 +186,11 @@ __attribute__((unused)) static int pm_init(void)
 
 static inline void show_sdk_version(void)
 {
-#if (CONFIG_CMAKE)
-	//BK_LOGI(TAG, "armino rev: %s\r\n", ARMINO_VER);
-	BK_LOGI(TAG, "armino rev: %s\r\n", "");
-#else
-	//BK_LOGI(TAG, "armino rev: %s\r\n", BEKEN_SDK_REV);
-	BK_LOGI(TAG, "armino rev: %s\r\n", "");
-#endif
+	BK_LOGI(TAG, "armino rev: %s\r\n", ARMINO_VER);
 }
 
 static inline void show_chip_id(void)
 {
-	// BK_LOGI(TAG, "armino soc id:%x_%x\r\n",sddev_control(DD_DEV_TYPE_SCTRL,CMD_GET_DEVICE_ID, NULL),
-	// 	sddev_control(DD_DEV_TYPE_SCTRL,CMD_GET_CHIP_ID, NULL));
 	BK_LOGI(TAG, "armino soc id:%x_%x\r\n", sys_drv_get_device_id(), sys_drv_get_chip_id());
 }
 

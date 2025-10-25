@@ -213,7 +213,7 @@ uint32_t sys_drv_cpu_fft_int_en(uint32_t value)
 	return SYS_DRV_SUCCESS;
 }
 
-#if CONFIG_SDIO_V2P0
+#if ((CONFIG_SDIO_V2P0) || (CONFIG_SDIO_V2P1) || CONFIG_SDIO_V2P2)
 void sys_driver_set_cpu0_sdio_int_en(uint32_t value)
 {
 	uint32_t int_level = sys_drv_enter_critical();

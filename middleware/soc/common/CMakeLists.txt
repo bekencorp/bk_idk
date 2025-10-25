@@ -125,7 +125,7 @@ else()
 endif()
 endif()
 
-if (CONFIG_SDIO_V2P0 OR CONFIG_SDIO_V2P1)
+if (CONFIG_SDIO_V2P0 OR CONFIG_SDIO_V2P1 OR CONFIG_SDIO_V2P2)
 	list(APPEND srcs
 		"hal/sdio_hal.c"
 	)

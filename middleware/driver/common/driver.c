@@ -66,7 +66,7 @@
 #include "sdcard.h"
 #endif
 
-#if (CONFIG_SDIO_V2P0 && CONFIG_SDIO_SLAVE)
+#if ((CONFIG_SDIO_V2P0 && CONFIG_SDIO_SLAVE) || CONFIG_SDIO_V2P1 || CONFIG_SDIO_V2P2)
 #include "sdio_slave_driver.h"
 #if CONFIG_SDIO_TEST_EN
 #include "sdio_test.h"
@@ -157,43 +157,7 @@ void power_clk_rf_init()
 	    sys_drv_dev_clk_pwr_up(devid, CLK_PWR_CTRL_PWR_UP);
     }
 	#endif
-    /*4.set the cpu0 and matrix clock*/
-   /*cpu0:26m ,matrix:26m*/
-   //sys_drv_core_bus_clock_ctrl(HIGH_FREQUECY_CLOCK_MODULE_CPU0, 1,0, HIGH_FREQUECY_CLOCK_MODULE_CPU0_MATRIX,0,0);
-   /*cpu0:120m ,matrix:120m*/
-   //sys_drv_core_bus_clock_ctrl(HIGH_FREQUECY_CLOCK_MODULE_CPU0, 3,0, HIGH_FREQUECY_CLOCK_MODULE_CPU0_MATRIX,0,0);
-   /*cpu0:240m ,matrix:120m*/
-	//sys_drv_core_bus_clock_ctrl(HIGH_FREQUECY_CLOCK_MODULE_CPU0, 0,0, HIGH_FREQUECY_CLOCK_MODULE_CPU0_MATRIX,0,0);
-	#if CONFIG_SYS_CPU0
-	//bk_pm_module_vote_cpu_freq(PM_DEV_ID_DEFAULT,PM_CPU_FRQ_120M);
-	#if CONFIG_ATE_TEST
-		//bk_pm_module_vote_cpu_freq(PM_DEV_ID_DEFAULT,PM_CPU_FRQ_320M);//improve the cpu frequency for save boot time at ate test
-	#endif
-	#endif
-   /*5.config the analog*/
-   //sys_drv_analog_set(ANALOG_REG0, param);
-   //sys_drv_analog_set(ANALOG_REG0, param);
-   //sys_drv_analog_set(ANALOG_REG0, param);
 
-	//config apll
-	//param = 0;
-	//param = sys_drv_analog_get(ANALOG_REG4);
-	//param &= ~(0x1f << 5);
-	//param |= (0x14 << 5);
-	//sys_drv_analog_set(ANALOG_REG4, param);
-
-	/*set low power low voltage value */
-#if 0
-	param = 0;
-	param = sys_drv_analog_get(ANALOG_REG3);
-	param &= ~(0x7 << 29);
-	param |= (0x4 << 29);
-	sys_drv_analog_set(ANALOG_REG3, param);
-
-	param = sys_drv_analog_get(ANALOG_REG2);
-	param |= (0x1 << 25);
-	sys_drv_analog_set(ANALOG_REG2, param);
-#endif
 	/*tempreture det enable for VIO*/
 	param = 0;
 	param = sys_drv_analog_get(ANALOG_REG6);
@@ -201,24 +165,12 @@ void power_clk_rf_init()
 	param &= ~(0x1 << SYS_ANA_REG6_EN_SLEEP_POS);
 	sys_drv_analog_set(ANALOG_REG6, param);
 
-#if 0
-	param = 0;
-	param = aon_pmu_drv_reg_get(PMU_REG3);
-	param = 0x1 << 0; //security boot  bypass
-	aon_pmu_drv_reg_set(PMU_REG3,param);
-#endif
 	/*let rosc to bt/wifi ip*/
 	param = 0;
 	param = aon_pmu_drv_reg_get(PMU_REG0x41);
 	param |= 0x1 << 24;
 	aon_pmu_drv_reg_set(PMU_REG0x41,param);
 	/*wake delay of Xtal*/
-#if 0
-	param = 0;
-	param = aon_pmu_drv_reg_get(PMU_REG0x40);
-	param |= 0xF << 0;
-	aon_pmu_drv_reg_set(PMU_REG0x40,param);
-#endif
 	/* rosc calibration start*/
 	/*a.open rosc debug*/
 #if ROSC_DEBUG_EN
@@ -236,8 +188,8 @@ void power_clk_rf_init()
 	param = sys_drv_analog_get(ANALOG_REG4);
 	param |= (0x1 << SYS_ANA_REG4_ROSC_TSTEN_POS);//Rosc test enable
 	sys_drv_analog_set(ANALOG_REG4,param);
-
 #endif
+
 	/*b.config calibration*/
 	param = 0;
 	param = sys_drv_analog_get(ANALOG_REG4);
@@ -258,12 +210,6 @@ void power_clk_rf_init()
 	param = sys_drv_analog_get(ANALOG_REG4);
 	param |= (0x1 << SYS_ANA_REG4_ROSC_CAL_TRIG_POS);//trigger enable
 	sys_drv_analog_set(ANALOG_REG4,param);
-	/* rosc calibration end*/
-	/*7.dpll calibration */
-	//sys_drv_cali_dpll(0);
-
-	/*8.dco calibration*/
-	//clock_dco_cali(0x4);
 }
 #endif
 

@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Beken
+// Copyright 2020-2025 Beken
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,15 +15,19 @@
 #include "sdio_hal.h"
 #include "sdio_ll.h"
 
-
 void sdio_hal_set_sd_soft_resetn(uint32_t value)
 {
 	sdio_ll_set_sd_soft_resetn(value);
 }
 
-void sdio_hal_slave_cmd_start(uint32_t value)
+__attribute__((section(".itcm_sec_code"))) void sdio_hal_slave_cmd_start(uint32_t value)
 {
 	sdio_ll_set_sd_cmd_start(value);
+}
+
+void sdio_hal_set_sd_data_en(uint32_t value)
+{
+	sdio_ll_set_sd_data_en(value);
 }
 
 void sdio_hal_set_sd_data_stop_en(uint32_t value)
@@ -42,7 +46,7 @@ void sdio_hal_set_sd_data_bus(uint32_t value)
 }
 
 /* REG_0x09:reg0x9->CMD_S_RES_END_INT:0x9[24],Slave only; Slave has finish reponsed the CMD to host side.,0x0,R/W1C*/
-bool sdio_hal_slave_get_cmd_response_end_int(void)
+__attribute__((section(".iram_sec_code"))) bool sdio_hal_slave_get_cmd_response_end_int(void)
 {
     return (bool)sdio_ll_get_cmd_s_res_end_int();
 }
@@ -126,13 +130,18 @@ void sdio_hal_slave_notify_host_next_block(void)
 	sdio_ll_set_dat_s_rd_mul_blk(1);
 }
 
+void sdio_hal_set_dat_s_rd_mul_blk(uint32_t value)
+{
+	sdio_ll_set_dat_s_rd_mul_blk(value);
+}
+
 uint32 sdio_hal_slave_get_func_reg_value(void)
 {
 	return sdio_ll_get_reg0x13_value();
 }
 
-//SW:private protocal,host read this reg value as the slave send packet length.
-void sdio_hal_slave_set_tx_length(uint32_t len)
+//SW:private protocal,host read this reg value as the slave send packet length(UNIT is block count, each block size is SDIO_BLK_SIZE==512 bytes)
+__attribute__((section(".itcm_sec_code"))) void sdio_hal_slave_set_tx_length(uint32_t len)
 {
 	sdio_ll_set_reg0x13_value(len);
 }
@@ -165,7 +174,7 @@ void sdio_hal_slave_set_samp_sel(uint32_t value)
 	sdio_ll_set_samp_sel(value);
 }
 
-uint32_t sdio_hal_slave_get_cmd_arg0(void)
+__attribute__((section(".iram_sec_code"))) uint32_t sdio_hal_slave_get_cmd_arg0(void)
 {
 	return sdio_ll_get_sd_rsp_agument_0();
 }
@@ -178,6 +187,17 @@ uint32_t sdio_hal_get_tx_fifo_empty_int_status(void)
 void sdio_hal_clear_tx_fifo_empty_int_status(void)
 {
     sdio_ll_clear_tx_fifo_empt();
+}
+
+//NOTES:this is for slave read block end
+uint32_t sdio_hal_slave_get_data_rec_end_int(void)
+{
+	return sdio_ll_get_sd_data_rec_end_int();
+}
+
+void sdio_hal_slave_clear_data_rec_end_int(void)
+{
+	sdio_ll_set_sd_data_rec_end_int(1);
 }
 
 //NOTES:be care this is for slave write end, and sdio_ll_get_sd_data_wr_end_int is for host write end
@@ -202,6 +222,11 @@ void sdio_hal_slave_set_cmd_res_end_int(uint32_t value)
 {
 	//write 1 to mask clock gate of "tx fifo need write".
     sdio_ll_set_cmd_s_res_end_int_mask(value);
+}
+
+void sdio_hal_slave_set_data_rec_end_int(uint32_t value)
+{
+    sdio_ll_set_sd_data_rec_end_mask(value);
 }
 
 void sdio_hal_slave_set_write_end_int(uint32_t value)
@@ -230,12 +255,12 @@ void sdio_hal_fifo_reset(void)
 	sdio_ll_set_tx_fifo_rst();
 	sdio_ll_set_rx_fifo_rst();
 	//no need reset status, if reseting sdio when host send CMD,the CMD can't be decoded by sdio hardware.
-#if CONFIG_SDIO_V2P1
+#if CONFIG_SDIO_V2P1 || CONFIG_SDIO_V2P2
 	sdio_ll_set_sd_sta_rst();
 #endif
 }
 
-#if CONFIG_SDIO_V2P1
+#if CONFIG_SDIO_V2P1 || CONFIG_SDIO_V2P2
 void sdio_hal_slave_clear_wr_blk_int_status(void)
 {
 	sdio_ll_set_dat_s_wr_blk_int(1);
@@ -298,6 +323,7 @@ uint32_t sdio_hal_slave_get_arg2_val(void)
 	return sdio_ll_get_reg0x14_value();
 }
 
+#if !CONFIG_SOC_BK7236
 void sdio_hal_cmd_sst_sel_en(uint32_t value)
 {
 	sdio_ll_cmd_sst_sel_en(value);
@@ -394,6 +420,7 @@ uint32_t sdio_hal_get_reg0x46_cmd_s_cnt(void)
 {
 	return sdio_ll_get_reg0x46_cmd_s_cnt();
 }
+#endif
 #endif	//CONFIG_SDIO_V2P1
 
 #endif

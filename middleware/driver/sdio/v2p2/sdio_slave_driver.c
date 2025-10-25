@@ -892,16 +892,9 @@ static void sdio_send_msg(sdio_msg_t *msg_p)
 #define REG_GPIO_P17                     *((volatile unsigned long *) (0x44830000+0x51*4))
 #define REG_GPIO_P18                     *((volatile unsigned long *) (0x44830000+0x52*4))
 #define REG_GPIO_P19                     *((volatile unsigned long *) (0x44830000+0x53*4))
-//#define REG_GPIO_P34                     *((volatile unsigned long *) (0x44830000+0x62*4))
+
 bk_err_t sdio_gpio_init(void)
 {
-#if 0
-#if CONFIG_SDIO_4LINES_EN
-	gpio_sdio_sel(GPIO_SDIO_MAP_MODE1);
-#else
-	gpio_sdio_one_line_sel(GPIO_SDIO_MAP_MODE1);
-#endif
-#endif
 	SDIO_LOG_INFO("sdio_gpio_init.\r\n");
 	REG_GPIO_P14 = 0x3E000330;
 	REG_GPIO_P15 = 0x3f000330;
@@ -913,6 +906,7 @@ bk_err_t sdio_gpio_init(void)
 #endif
 	return BK_OK;
 }
+
 bk_err_t sdio_gpio_deinit(void)
 {
 	SDIO_LOG_INFO("sdio_gpio_deinit.\r\n");
@@ -2007,11 +2001,7 @@ __attribute__((section(".iram_sec_code"))) static void sdio_slave_isr(void)
 {
 	uint32_t int_status = sdio_hal_get_int_status();
 	uint32_t cmd_index = (int_status >> 14) & (0x3f);
-	//uint32_t cmd_arg0 = 0;
-	//uint32_t cmd_arg1 = 0;
-	//SDIO_LOG_DEBUG("%s[+]: int_status=0x%x",__func__, int_status);
-	//Temp debug
-	//bk_sdio_driver_dump_sdio_regs();
+
 	//Slave response end int
 	if(sdio_hal_slave_get_cmd_response_end_int())	//TODO:uses int_status to reduce function caller
 	{

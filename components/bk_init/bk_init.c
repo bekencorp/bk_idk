@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Beken
+// Copyright 2020-2025 Beken
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -102,7 +102,7 @@ extern void bk_ota_confirm_update_partition(ota_confirm_flag ota_confirm_val);
 #include "modules/wifi.h"
 #endif
 
-#if (CONFIG_SDIO_V2P0 && CONFIG_SDIO_SLAVE)
+#if ((CONFIG_SDIO_V2P0 && CONFIG_SDIO_SLAVE) || CONFIG_SDIO_V2P1 || CONFIG_SDIO_V2P2)
 #include "sdio_slave_driver.h"
 #if CONFIG_SDIO_TEST_EN
 #include "sdio_test.h"
@@ -208,11 +208,8 @@ static int app_mp3_player_init(void)
 
 int app_sdio_init(void)
 {
-#if (CONFIG_SDIO_V2P0 && CONFIG_SDIO_SLAVE)
+#if ((CONFIG_SDIO_V2P0 && CONFIG_SDIO_SLAVE) || CONFIG_SDIO_V2P1 || CONFIG_SDIO_V2P2)
 	bk_sdio_slave_driver_init();
-#if CONFIG_SDIO_TEST_EN
-	bk_sdio_test_init();
-#endif
 #endif
 	return BK_OK;
 }
@@ -221,10 +218,6 @@ int app_usb_init(void)
 {
 #if CONFIG_USB
 	BK_LOGI(TAG, "fusb init\r\n");
-#if 0//TODO
-	if (!ate_is_enabled())
-		fusb_init();
-#endif
 #endif
 	return BK_OK;
 }

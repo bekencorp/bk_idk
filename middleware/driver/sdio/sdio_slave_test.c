@@ -51,7 +51,6 @@ static const struct cli_command s_sdio_slave_commands[] = {
 	{"sdio_slave_test", "sdio_slave_test {main case}{sub case}{param1}{param2}{param3}{param4}", cli_sdio_slave_test_cmd},
 	{"sdio_slave_repower", "sdio slave re-power up", cli_sdio_slave_repower_cmd},
 	{"sdio_slave_test_init", "sdio slave test init", cli_sdio_test_init_cmd},
-
 };
 
 int cli_sdio_slave_init(void)

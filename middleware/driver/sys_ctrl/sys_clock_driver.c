@@ -97,7 +97,7 @@ void sys_drv_sadc_pwr_down(void)
     sys_drv_exit_critical(int_level);
 }
 
-#if CONFIG_SDIO_V2P0
+#if ((CONFIG_SDIO_V2P0) || (CONFIG_SDIO_V2P1) || (CONFIG_SDIO_V2P2))
 void sys_driver_set_sdio_clk_en(uint32_t value)
 {
 	if (value) {
