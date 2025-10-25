@@ -42,7 +42,7 @@ void user_app_main(void)
 
 	/* Configure Flash clock frequency to 80MHz */
 	sys_ll_set_cpu_clk_div_mode2_ckdiv_flash(0);  /* Set division factor to 0 */
-	sys_ll_set_cpu_clk_div_mode2_cksel_flash(2);  /* Select clock source: 0/1:26M, 2:80M, 3:120M */
+	sys_ll_set_cpu_clk_div_mode2_cksel_flash(2);  /* Select clock source: 0/1:40MHz, 2:80MHz, 3:120MHz */
 
 	/* Start Flash pressure test */
 	flash_pressure_test_start();

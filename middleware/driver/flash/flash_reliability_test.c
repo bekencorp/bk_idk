@@ -16,6 +16,7 @@
 #include <driver/flash_partition.h>
 #include "cli.h"
 #include "flash_driver.h"
+#include "sys_ll.h"
 
 static const uint32_t crc32_table[] =
 {
@@ -254,11 +255,43 @@ uint32_t flash_pressure_test(void)
     uint32 current_addr = 0;
     uint32 write_err_cnt = 0, erase_err_cnt = 0;
     uint32 flag = 0, i;
+    uint32 clock_mode;
 
-    current_addr = BOOT_BASE_ADDR;
-    FLASH_IO_UP(2);
-    bk_flash_set_protect_type(FLASH_PROTECT_NONE);
-    do {
+    os_printf("Starting flash pressure test with multiple clock frequencies\r\n");
+    
+    // Test different Flash clock frequencies: 0(40MHz), 2(80MHz), 3(120MHz)
+    for (clock_mode = 0; clock_mode <= 3; clock_mode++) {
+        if (clock_mode == 1) continue; // Skip mode 1, same as mode 0
+        
+        os_printf("\r\n=== Testing Flash Clock Mode %d ===\r\n", clock_mode);
+        
+        // Configure Flash clock frequency
+        sys_ll_set_cpu_clk_div_mode2_ckdiv_flash(0);  /* Set division factor to 0 */
+        sys_ll_set_cpu_clk_div_mode2_cksel_flash(clock_mode);  /* Select clock source */
+        
+        // Display frequency information based on clock_mode
+        switch(clock_mode) {
+            case 0:
+                os_printf("Clock frequency: 40MHz\r\n");
+                break;
+            case 2:
+                os_printf("Clock frequency: 80MHz\r\n");
+                break;
+            case 3:
+                os_printf("Clock frequency: 120MHz\r\n");
+                break;
+        }
+
+        current_addr = BOOT_BASE_ADDR;
+        FLASH_IO_UP(2);
+        bk_flash_set_protect_type(FLASH_PROTECT_NONE);
+        
+        // Reset error counters
+        write_err_cnt = 0;
+        erase_err_cnt = 0;
+        flag = 0;
+        
+        do {
         // check erase
         FLASH_IO_UP(3);
         if((current_addr & SECTOR_SIZE_MASK) == 0)
@@ -292,8 +325,8 @@ uint32_t flash_pressure_test(void)
         FLASH_IO_DOWN(3);
 
         FLASH_IO_UP(4);
-        // check write
-        {
+        // check write (skip for 120MHz as chip doesn't support write at this frequency)
+        if (clock_mode != 3) {
             flash_pressure_generate_data();
             memset(read_buf, 0, FLASH_TEST_LENGTH);
 
@@ -319,12 +352,39 @@ uint32_t flash_pressure_test(void)
                 FLASH_IO_DOWN(4);
                 break;
             }
+        } else {
+            os_printf("Skipping write test at 120MHz (not supported)\r\n");
         }
         FLASH_IO_DOWN(4);
         flag = 1;
-    } while(0);
-    FLASH_IO_DOWN(2);
+        } while(0);
+        
+        FLASH_IO_DOWN(2);
+        
+        // Display test result for current clock mode
+        if (flag == 1) {
+            if (clock_mode == 3) {
+                os_printf("Clock Mode %d: ERASE/READ TEST PASSED (Write skipped)\r\n", clock_mode);
+            } else {
+                os_printf("Clock Mode %d: TEST PASSED\r\n", clock_mode);
+            }
+        } else {
+            os_printf("Clock Mode %d: TEST FAILED\r\n", clock_mode);
+        }
+        
+        // Restore default clock settings
+        sys_ll_set_cpu_clk_div_mode2_ckdiv_flash(0);  /* Set division factor to 0 */
+        sys_ll_set_cpu_clk_div_mode2_cksel_flash(2);  /* Select clock source: 0/1:40MHz, 2:80MHz, 3:120MHz */
+        
+        os_printf("Clock Mode %d test completed\r\n\r\n", clock_mode);
+    }
+    
+    os_printf("\r\n=== Flash Pressure Test Completed ===\r\n");
+    
+    sys_ll_set_cpu_clk_div_mode2_ckdiv_flash(0);  /* Set division factor to 0 */
+	sys_ll_set_cpu_clk_div_mode2_cksel_flash(2);  /* Select clock source: 0/1:40MHz, 2:80MHz, 3:120MHz */
 
+    // Return 1 if test passed, 0 if test failed
     return flag;
 }
 
