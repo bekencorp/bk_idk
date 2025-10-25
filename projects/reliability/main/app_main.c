@@ -12,20 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "bk_private/bk_init.h"
-#include <components/system.h>
-#include <os/os.h>
-#include <components/shell_task.h>
-#include "sys_ll.h"
-#include <modules/pm.h>
+/* System includes */
+#include "bk_private/bk_init.h"    /**< Beken system initialization */
+#include <components/system.h>      /**< System components */
+#include <os/os.h>                  /**< Operating system interface */
+#include "sys_ll.h"                 /**< System low-level functions */
+#include "modules/pm.h"             /**< Power management module */
 
 /* External function declarations */
-extern void user_app_main(void);                                    /**< User application main function */
 extern void rtos_set_user_app_entry(beken_thread_function_t entry); /**< Set RTOS user application entry point */
-extern int bk_cli_init(void);                                       /**< Initialize CLI command line interface */
-extern void bk_set_jtag_mode(uint32_t cpu_id, uint32_t group_id);   /**< Set JTAG debug mode */
-extern void flash_pressue_test_start(void);                         /**< Start Flash pressure test */
-extern void cli_restable_wifi_start(void);                          /**< Start CLI resettable WiFi functionality */
+extern void flash_pressure_test_start(void);                        /**< Start Flash pressure test */
+extern void cli_resettable_wifi_start(void);                       /**< Start CLI resettable WiFi functionality */
 
 /**
  * @brief User application main function
@@ -40,18 +37,18 @@ extern void cli_restable_wifi_start(void);                          /**< Start C
  */
 void user_app_main(void)
 {
-	/* Set CPU frequency to 160MHz */
-	bk_pm_module_vote_cpu_freq(PM_DEV_ID_DEFAULT, PM_CPU_FRQ_160M);
+	/* Set CPU frequency to 120MHz */
+	bk_pm_module_vote_cpu_freq(PM_DEV_ID_DEFAULT, PM_CPU_FRQ_120M);
 
 	/* Configure Flash clock frequency to 80MHz */
 	sys_ll_set_cpu_clk_div_mode2_ckdiv_flash(0);  /* Set division factor to 0 */
 	sys_ll_set_cpu_clk_div_mode2_cksel_flash(2);  /* Select clock source: 0/1:26M, 2:80M, 3:120M */
 
 	/* Start Flash pressure test */
-	flash_pressue_test_start();
+	flash_pressure_test_start();
 	
 	/* Start CLI resettable WiFi functionality */
-	cli_restable_wifi_start();
+	cli_resettable_wifi_start();
 }
 
 /**
@@ -69,15 +66,8 @@ void user_app_main(void)
  */
 int main(void)
 {
-#if (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7236)
-	/* Start performance monitoring with monitoring point number 14 */
-	STARTUP_PERF(14);
-#endif
-
-#if (CONFIG_SYS_CPU0)
 	/* Set RTOS user application entry function */
 	rtos_set_user_app_entry((beken_thread_function_t)user_app_main);
-#endif
 
 	/* Execute system initialization */
 	bk_init();

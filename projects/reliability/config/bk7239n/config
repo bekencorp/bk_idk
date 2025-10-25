@@ -53,3 +53,9 @@ CONFIG_FLASH_PSRAM_PRESSURE_TEST=y
 #@ Enable wifi pressure test
 # Enable wifi pressure testing functionality
 CONFIG_WIFI_PRESSURE_TEST=y
+
+CONFIG_WDT_EN=n
+CONFIG_INT_WDT=n
+CONFIG_SUPPORT_AON_WDT=n
+CONFIG_TASK_WDT=n
+CONFIG_NMI_WDT_EN=n
