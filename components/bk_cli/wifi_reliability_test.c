@@ -12,52 +12,82 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <string.h>
-#include <common/sys_config.h>
-#include "bk_uart.h"
+/* Standard C library includes */
+#include <string.h>                     /**< String manipulation functions */
+
+/* System configuration includes */
+#include <common/sys_config.h>          /**< System configuration */
+#include "bk_uart.h"                    /**< UART driver interface */
+
+/* Network stack includes */
 #if CONFIG_LWIP
-#include <../../lwip_intf_v2_1/lwip-2.1.2/port/net.h>
+#include <../../lwip_intf_v2_1/lwip-2.1.2/port/net.h>  /**< LwIP network interface */
 #endif
-#include "lwip/ip4.h"
-#include "bk_private/bk_wifi.h"
-#include "bk_wifi_private.h"
-#include "bk_cli.h"
-#include "cli.h"
-#include <components/event.h>
-#include <components/netif.h>
-#include "bk_wifi.h"
-#include "bk_wifi_types.h"
+#include "lwip/ip4.h"                   /**< IPv4 protocol stack */
+
+/* WiFi driver includes */
+#include "bk_private/bk_wifi.h"         /**< Beken WiFi private interface */
+#include "bk_wifi_private.h"            /**< WiFi private definitions */
+#include "bk_wifi.h"                    /**< Beken WiFi interface */
+#include "bk_wifi_types.h"              /**< WiFi type definitions */
+
+/* CLI and component includes */
+#include "bk_cli.h"                     /**< Beken CLI interface */
+#include "cli.h"                        /**< CLI interface */
+#include <components/event.h>           /**< Event system */
+#include <components/netif.h>           /**< Network interface */
+
+/* Optional feature includes */
 #if CONFIG_WIFI_CLI_RAW_LINK_ENABLE
-#include <modules/raw_link.h>
+#include <modules/raw_link.h>           /**< Raw link module */
 #endif
-#include "bk_wifi.h"
-#include "ftp/ftpd.h"
-#include <driver/flash.h>
 
-#define WIFI_TEST_BASE_ADDR            0x210000
-#define COUNT_SAVE_ADDR                (WIFI_TEST_BASE_ADDR)
-#define COUNT_SAVE_BAKEUP_ADDR         (WIFI_TEST_BASE_ADDR - 4096)
+/* Additional service includes */
+#include "ftp/ftpd.h"                   /**< FTP daemon */
+#include <driver/flash.h>               /**< Flash driver interface */
 
-#define WIFI_SAVE_RESULT_INTERVAL      6
-#define WIFI_SAVE_BAK_RESULT_INTERVAL  (WIFI_SAVE_RESULT_INTERVAL * 5)
+/* WiFi test configuration constants */
+#define WIFI_TEST_BASE_ADDR            0x210000              /**< WiFi test base address in flash */
+#define COUNT_SAVE_ADDR                (WIFI_TEST_BASE_ADDR) /**< Main result storage address */
+#define COUNT_SAVE_BACKUP_ADDR         (WIFI_TEST_BASE_ADDR - 4096)  /**< Backup result storage address */
 
-#define WIFI_SAVE_SSID                 "wifi_reliable_test"
-#define WIFI_SAVE_KEY                  "12345678"
+/* Test timing intervals */
+#define WIFI_SAVE_RESULT_INTERVAL      6                    /**< Regular save interval (seconds) */
+#define WIFI_SAVE_BACKUP_RESULT_INTERVAL  (WIFI_SAVE_RESULT_INTERVAL * 5)  /**< Backup save interval */
 
-#define LOW_TEMP_NUM                   (40)
-#define HIGH_TEMP_NUM                  (125)
-#define TEMP_RESULT_LEN                (LOW_TEMP_NUM + HIGH_TEMP_NUM + 2)
+/* WiFi connection parameters */
+#define WIFI_SAVE_SSID                 "wifi_reliable_test"  /**< Test WiFi SSID */
+#define WIFI_SAVE_KEY                  "12345678"           /**< Test WiFi password */
 
+/* Temperature monitoring parameters */
+#define LOW_TEMP_NUM                   (40)                  /**< Low temperature threshold */
+#define HIGH_TEMP_NUM                  (125)                 /**< High temperature threshold */
+#define TEMP_RESULT_LEN                (LOW_TEMP_NUM + HIGH_TEMP_NUM + 2)  /**< Temperature result array length */
+
+/* Magic numbers */
+#define CRC_INVALID_VALUE              0xFFFFFFFF            /**< Invalid CRC value */
+
+/**
+ * WiFi reliability test statistics structure
+ * 
+ * This structure stores the cumulative test statistics for WiFi reliability testing,
+ * including temperature-based disconnection and dump counts.
+ */
 struct wifi_test_st
 {
-	uint32_t total_test_time;   //  second
-	uint32_t temp_count_tab[TEMP_RESULT_LEN][2];
-	uint32_t crc;
+	uint32_t total_test_time;                    /**< Total test time in seconds */
+	uint32_t temp_count_tab[TEMP_RESULT_LEN][2]; /**< Temperature-based count table [disconnect_count, dump_count] */
+	uint32_t crc;                               /**< CRC checksum for data integrity */
 };
-struct wifi_test_st g_wifi_st_save = {0};
-uint32_t g_wifi_test_run = 0;
-int g_tmp_code = 0;
-static beken_thread_t  restable_wifi_task_handle = NULL;
+
+/* Global variables */
+struct wifi_test_st g_wifi_st_save = {0};     /**< Global WiFi test statistics */
+uint32_t g_wifi_test_run = 0;                /**< WiFi test running flag */
+int g_tmp_code = 0;                          /**< Current temperature code */
+static beken_thread_t restable_wifi_task_handle = NULL;  /**< WiFi test thread handle */
+
+/* External function declarations */
+extern int get_current_temperature_code(void);  /**< Get current temperature code */
 
 static const uint32_t crc32_table[] =
 {
@@ -129,6 +159,12 @@ static uint32_t my_calc_crc32(uint32_t crc, const void *buf, size_t size)
 	return crc ^ ~0U;
 }
 
+/**
+ * @brief WiFi disconnect event handler
+ * 
+ * This function is called when WiFi disconnects and records the disconnection
+ * event in the temperature-based statistics table.
+ */
 void cli_wifi_disconnect_handler(void)
 {
 	int get_current_temperature_code(void);
@@ -151,9 +187,15 @@ void cli_wifi_disconnect_handler(void)
 	uint32_t count = g_wifi_st_save.temp_count_tab[idx][0];
 	count++;
 	g_wifi_st_save.temp_count_tab[idx][0] = count;
-	//CLI_LOGI("BK STA disconnected, temp_code:%d, total_cnt:%d\n", tmp_code, count);
+	/* CLI_LOGI("BK STA disconnected, temp_code:%d, total_cnt:%d\n", tmp_code, count); */
 }
 
+/**
+ * @brief Display WiFi test results
+ * 
+ * This function displays the current WiFi reliability test results including
+ * total test time and temperature-based disconnection/dump statistics.
+ */
 void cli_wifi_show_test_result(void)
 {
 	CLI_LOGI("\r\nBuild_info:%s_%s\r\n", __DATE__, __TIME__);
@@ -185,21 +227,27 @@ void cli_wifi_show_test_result(void)
 	CLI_LOGI("\r\n");
 }
 
-void cli_wifi_show_bakup_test_result(void)
+/**
+ * @brief Display backup WiFi test results
+ * 
+ * This function reads and displays the backup WiFi test results from flash memory
+ * with CRC validation.
+ */
+void cli_wifi_show_backup_test_result(void)
 {
 	struct wifi_test_st wifi_st_save = {0};
-	bk_flash_read_bytes(COUNT_SAVE_BAKEUP_ADDR, (uint8_t*)&wifi_st_save, sizeof(wifi_st_save));
+	bk_flash_read_bytes(COUNT_SAVE_BACKUP_ADDR, (uint8_t*)&wifi_st_save, sizeof(wifi_st_save));
 	uint32_t crc = 0;
 	crc = my_calc_crc32(crc, &wifi_st_save, sizeof(wifi_st_save)-4);
 
-	if ((crc != wifi_st_save.crc) || (wifi_st_save.crc == 0xffffffff))
+	if ((crc != wifi_st_save.crc) || (wifi_st_save.crc == CRC_INVALID_VALUE))
 	{
-		os_printf("found bakup history info not effected, exit\r\n");
+		os_printf("found backup history info not affected, exit\r\n");
 		return;
 	}
 
-	CLI_LOGI(" wifi test bakup result total time: %d (s)\r\n", wifi_st_save.total_test_time);
-	CLI_LOGI(" wifi test bakup result tab:\r\n");
+	CLI_LOGI(" wifi test backup result total time: %d (s)\r\n", wifi_st_save.total_test_time);
+	CLI_LOGI(" wifi test backup result tab:\r\n");
 	CLI_LOGI("%-12s   %-5s   %-5s\r\n",
 		"temperature_code", "disc_count", "dump_count");
 	for(int idx=0; idx<TEMP_RESULT_LEN; idx++)
@@ -220,12 +268,28 @@ void cli_wifi_show_bakup_test_result(void)
 	CLI_LOGI("\r\n");
 }
 
+/**
+ * @brief CLI command handler for WiFi test results
+ * 
+ * @param pcWriteBuffer Write buffer for CLI output
+ * @param xWriteBufferLen Length of write buffer
+ * @param argc Number of command arguments
+ * @param argv Command arguments array
+ */
 void cli_restable_wifi_test(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
 	cli_wifi_show_test_result();
-	cli_wifi_show_bakup_test_result();
+	cli_wifi_show_backup_test_result();
 }
 
+/**
+ * @brief Save WiFi test results to flash memory
+ * 
+ * This function saves the current WiFi test statistics to flash memory with
+ * CRC protection and optional backup saving.
+ * 
+ * @param flag Flag indicating if save is forced (1) or regular (0)
+ */
 void cli_wifi_save_wifi_test_result(uint32 flag)
 {
 	static uint32_t g_save_flag = 0;
@@ -246,16 +310,22 @@ void cli_wifi_save_wifi_test_result(uint32 flag)
 		bk_flash_erase_sector(COUNT_SAVE_ADDR);
 		bk_flash_write_bytes(COUNT_SAVE_ADDR, (uint8_t *)&g_wifi_st_save, sizeof(g_wifi_st_save));
 
-		if(((g_wifi_st_save.total_test_time) % WIFI_SAVE_BAK_RESULT_INTERVAL) == 0)
+		if(((g_wifi_st_save.total_test_time) % WIFI_SAVE_BACKUP_RESULT_INTERVAL) == 0)
 		{
-			bk_flash_erase_sector(COUNT_SAVE_BAKEUP_ADDR);
-			bk_flash_write_bytes(COUNT_SAVE_BAKEUP_ADDR, (uint8_t *)&g_wifi_st_save, sizeof(g_wifi_st_save));
+			bk_flash_erase_sector(COUNT_SAVE_BACKUP_ADDR);
+			bk_flash_write_bytes(COUNT_SAVE_BACKUP_ADDR, (uint8_t *)&g_wifi_st_save, sizeof(g_wifi_st_save));
 		}
 		bk_flash_set_protect_type(FLASH_PROTECT_ALL);
 		g_save_flag = 0;
 	}
 }
 
+/**
+ * @brief Save WiFi test results during system dump
+ * 
+ * This function is called during system dump to record the dump event
+ * in the temperature-based statistics and save results.
+ */
 void cli_wifi_save_wifi_test_result_in_dump(void)
 {
 	if(g_wifi_test_run == 0)
@@ -283,6 +353,14 @@ void cli_wifi_save_wifi_test_result_in_dump(void)
 	cli_wifi_save_wifi_test_result(1);
 }
 
+/**
+ * @brief Main WiFi reliability test thread function
+ * 
+ * This function runs as a separate thread and performs continuous WiFi reliability
+ * testing including temperature monitoring, connection management, and result saving.
+ * 
+ * @param arg Thread argument (unused)
+ */
 void cli_restable_wifi_main_test(beken_thread_arg_t arg)
 {
 	uint32 crc = 0;
@@ -291,9 +369,9 @@ void cli_restable_wifi_main_test(beken_thread_arg_t arg)
 	bk_flash_read_bytes(COUNT_SAVE_ADDR, (uint8_t*)&g_wifi_st_save, sizeof(g_wifi_st_save));
 	crc = my_calc_crc32(crc, &g_wifi_st_save, sizeof(g_wifi_st_save)-4);
 
-	if (g_wifi_st_save.crc == 0xffffffff)
+	if (g_wifi_st_save.crc == CRC_INVALID_VALUE)
 	{
-		os_printf("found history info not effected, use all 0 for init\r\n");
+		os_printf("found history info not affected, use all 0 for init\r\n");
 		os_memset(&g_wifi_st_save, 0, sizeof(g_wifi_st_save));
 	}
 	else if (crc != g_wifi_st_save.crc)
@@ -301,27 +379,27 @@ void cli_restable_wifi_main_test(beken_thread_arg_t arg)
 		os_printf("found history info crc err\r\n");
 
 		struct wifi_test_st wifi_st_save = {0};
-		bk_flash_read_bytes(COUNT_SAVE_BAKEUP_ADDR, (uint8_t*)&wifi_st_save, sizeof(wifi_st_save));
+		bk_flash_read_bytes(COUNT_SAVE_BACKUP_ADDR, (uint8_t*)&wifi_st_save, sizeof(wifi_st_save));
 		uint32 crc = 0;
 		crc = my_calc_crc32(crc, &wifi_st_save, sizeof(wifi_st_save)-4);
 
-		if ((crc != wifi_st_save.crc) || (wifi_st_save.crc == 0xffffffff))
+		if ((crc != wifi_st_save.crc) || (wifi_st_save.crc == CRC_INVALID_VALUE))
 		{
-			//os_printf("found bakup history info not effected, exit\r\n");
+			//os_printf("found backup history info not affected, exit\r\n");
 			//restable_wifi_task_handle = NULL;
 			//rtos_delete_thread(NULL);
-			os_printf("found bakup history info not effected, use all 0 for init\r\n");
+			os_printf("found backup history info not affected, use all 0 for init\r\n");
 			os_memset(&g_wifi_st_save, 0, sizeof(g_wifi_st_save));
 		}
 		else
 		{
-			os_printf("found bakeup history info effected, use bakeup\r\n");
+			os_printf("found bakeup history info affected, use bakeup\r\n");
 			memcpy(&g_wifi_st_save, &wifi_st_save, sizeof(wifi_st_save));
 		}
 	}
 	else
 	{
-		//os_printf("found history info effected\r\n");
+		//os_printf("found history info affected\r\n");
 	}
 
 	int get_current_temperature_code(void);
@@ -346,7 +424,13 @@ void cli_restable_wifi_main_test(beken_thread_arg_t arg)
 	rtos_delete_thread(NULL);
 }
 
-void cli_restable_wifi_start(void)
+/**
+ * @brief Start the WiFi reliability test thread
+ * 
+ * This function creates and starts a new thread to run the WiFi reliability tests.
+ * If a test thread is already running, this function does nothing.
+ */
+void cli_resettable_wifi_start(void)
 {
 	if(restable_wifi_task_handle == NULL)
 	{

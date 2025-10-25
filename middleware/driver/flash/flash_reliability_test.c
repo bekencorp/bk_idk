@@ -88,44 +88,69 @@ static const uint32_t crc32_table[] =
 }
 
 
+/* GPIO control macros for flash testing - currently disabled */
 #define FLASH_IO_UP(x)                 //(GPIO_UP(x))
 #define FLASH_IO_DOWN(x)               //(GPIO_DOWN(x))
 
-#define BOOT_BASE_ADDR                 0x200000
-#define FLASH_TEST_LENGTH              4096
-#define FLASH_TEST_TOTLE_LENGTH        4096 // len = 0x2f000 = 47 * 4k
-#define FLASH_TEST_ADDR BOOT_BASE_ADDR + FLASH_TEST_TOTLE_LENGTH
-//#define GPIO_TOGGLE_TEST
-#define READ_TEST_LENGTH               4096
-//#define COUNT_SAVE_ADDR                (BOOT_BASE_ADDR - 4096)
-#define COUNT_SAVE_ADDR                (BOOT_BASE_ADDR)
-#define COUNT_SAVE_BAKEUP_ADDR         (BOOT_BASE_ADDR - 4096)
+/* Flash test configuration constants */
+#define BOOT_BASE_ADDR                 0x200000        /**< Base address for flash testing */
+#define FLASH_TEST_LENGTH              4096            /**< Length of data to test in each iteration */
+#define FLASH_TEST_TOTAL_LENGTH        4096            /**< Total length for testing (47 * 4k) */
+#define FLASH_TEST_ADDR                (BOOT_BASE_ADDR + FLASH_TEST_TOTAL_LENGTH)  /**< Test data address */
+#define READ_TEST_LENGTH               4096            /**< Length for read verification */
 
-#define MAX_WRITE_ERR_COUNT            (0x0)
-#define MAX_ERASE_ERR_COUNT            (0x0)
+/* Test result storage addresses */
+#define COUNT_SAVE_ADDR                (BOOT_BASE_ADDR)        /**< Main result storage address */
+#define COUNT_SAVE_BACKUP_ADDR         (BOOT_BASE_ADDR - 4096) /**< Backup result storage address */
 
+/* Error count thresholds */
+#define MAX_WRITE_ERR_COUNT            (0x0)  /**< Maximum allowed write errors */
+#define MAX_ERASE_ERR_COUNT            (0x0)  /**< Maximum allowed erase errors */
+
+/* Magic numbers and constants */
+#define FLASH_ERASED_VALUE             0xFF   /**< Value of erased flash memory */
+#define CRC_INVALID_VALUE              0xFFFFFFFF  /**< Invalid CRC value */
+#define SECTOR_SIZE_MASK               0xFFF  /**< Mask for sector boundary check */
+#define BACKUP_SAVE_INTERVAL           100    /**< Interval for backup saves */
+
+/* Forward declaration */
 uint32_t flash_bypass_operate_sr_init(void);
+
+/**
+ * Flash test statistics structure
+ * 
+ * This structure stores the cumulative test statistics and error counts
+ * for the flash pressure testing system.
+ */
 struct ft_save_st
 {
-    uint32_t total_test_count;
-    uint32_t total_psram_init_error_count;
-    uint32_t total_psram_error_count;
-    uint32_t total_easer_error_count;
-    uint32_t total_write_error_count;
-    uint32_t total_sys_dump_count;
-    uint32_t crc;
+    uint32_t total_test_count;              /**< Total number of tests performed */
+    uint32_t total_psram_init_error_count;  /**< Total PSRAM initialization errors */
+    uint32_t total_psram_error_count;       /**< Total PSRAM test errors */
+    uint32_t total_erase_error_count;       /**< Total flash erase errors */
+    uint32_t total_write_error_count;       /**< Total flash write errors */
+    uint32_t total_sys_dump_count;          /**< Total system dump count */
+    uint32_t crc;                           /**< CRC checksum for data integrity */
 };
-struct ft_save_st g_ft_save = {0};
-static beken_thread_t  s_flash_pressue_task_handle = NULL;
-uint8 read_buf[FLASH_TEST_LENGTH];
-uint8 write_buf[FLASH_TEST_LENGTH];
-uint32_t s_flash_pressure_start = 0;
 
+/* Global variables */
+struct ft_save_st g_ft_save = {0};                                    /**< Global test statistics */
+static beken_thread_t s_flash_pressure_task_handle = NULL;            /**< Pressure test thread handle */
+uint8 read_buf[FLASH_TEST_LENGTH];                                   /**< Read buffer for testing */
+uint8 write_buf[FLASH_TEST_LENGTH];                                  /**< Write buffer for testing */
+uint32_t s_flash_pressure_start = 0;                                 /**< Test start flag */
+
+/**
+ * Display flash pressure test information and history data.
+ * 
+ * This function reads the saved test history from flash memory and displays
+ * the total test count, error counts, and CRC validation status.
+ */
 void flash_pressure_show_info(void)
 {
     os_printf("\r\nBuild_info:%s_%s\r\n", __DATE__, __TIME__); //Jul 03 2018
     os_printf("BK7236N");
-    os_printf(" flash pressure test case, base_addr:0x%08x,total_len:%d,len:%d\r\n", BOOT_BASE_ADDR, FLASH_TEST_TOTLE_LENGTH, FLASH_TEST_LENGTH);
+    os_printf(" flash pressure test case, base_addr:0x%08x,total_len:%d,len:%d\r\n", BOOT_BASE_ADDR, FLASH_TEST_TOTAL_LENGTH, FLASH_TEST_LENGTH);
     os_printf("flash id:%lx\r\n", bk_flash_get_id());
 
     bk_flash_read_bytes(COUNT_SAVE_ADDR, (uint8_t*)&g_ft_save, sizeof(g_ft_save));
@@ -136,14 +161,14 @@ void flash_pressure_show_info(void)
     os_printf("  total_test_count: %d\r\n", g_ft_save.total_test_count);
     os_printf("  total_psram_init_error_count: %d\r\n", g_ft_save.total_psram_init_error_count);
     os_printf("  total_psram_error_count: %d\r\n", g_ft_save.total_psram_error_count);
-    os_printf("  total_erase_error_count: %d\r\n", g_ft_save.total_easer_error_count);
+    os_printf("  total_erase_error_count: %d\r\n", g_ft_save.total_erase_error_count);
     os_printf("  total_write_error_count: %d\r\n", g_ft_save.total_write_error_count);
     os_printf("  total_sys_dump_count: %d\r\n", g_ft_save.total_sys_dump_count);
-    os_printf("  curent crc: %x - temp:%x\r\n", g_ft_save.crc, crc);
+    os_printf("  current crc: %x - temp:%x\r\n", g_ft_save.crc, crc);
 
-    if (g_ft_save.crc == 0xffffffff)
+    if (g_ft_save.crc == CRC_INVALID_VALUE)
     {
-        os_printf("found history info not effected, use all 0 for init\r\n");
+        os_printf("found history info not affected, use all 0 for init\r\n");
     }
     else if (crc != g_ft_save.crc)
     {
@@ -151,30 +176,36 @@ void flash_pressure_show_info(void)
     }
     else
     {
-        os_printf("found history info effected\r\n");
+        os_printf("found history info affected\r\n");
     }
 }
 
-void flash_pressure_show_bakup_info(void)
+/**
+ * Display backup flash pressure test information.
+ * 
+ * This function reads the backup test history from flash memory and displays
+ * the backup data with CRC validation status.
+ */
+void flash_pressure_show_backup_info(void)
 {
-    os_printf("\r\nbakeup info\r\n");
+    os_printf("\r\nbackup info\r\n");
 
     struct ft_save_st ft_save = {0};
-    bk_flash_read_bytes(COUNT_SAVE_BAKEUP_ADDR, (uint8_t*)&ft_save, sizeof(ft_save));
+    bk_flash_read_bytes(COUNT_SAVE_BACKUP_ADDR, (uint8_t*)&ft_save, sizeof(ft_save));
     uint32 crc = 0;
     crc = my_calc_crc32(crc, &ft_save, sizeof(ft_save)-4);
 
     os_printf("  total_test_count: %d\r\n", ft_save.total_test_count);
     os_printf("  total_psram_init_error_count: %d\r\n", ft_save.total_psram_init_error_count);
     os_printf("  total_psram_error_count: %d\r\n", ft_save.total_psram_error_count);
-    os_printf("  total_erase_error_count: %d\r\n", ft_save.total_easer_error_count);
+    os_printf("  total_erase_error_count: %d\r\n", ft_save.total_erase_error_count);
     os_printf("  total_write_error_count: %d\r\n", ft_save.total_write_error_count);
     os_printf("  total_sys_dump_count: %d\r\n", ft_save.total_sys_dump_count);
-    os_printf("  curent crc: %x - temp:%x\r\n", ft_save.crc, crc);
+    os_printf("  current crc: %x - temp:%x\r\n", ft_save.crc, crc);
 
-    if (ft_save.crc == 0xffffffff)
+    if (ft_save.crc == CRC_INVALID_VALUE)
     {
-        os_printf("found history info not effected\r\n");
+        os_printf("found history info not affected\r\n");
     }
     else if (crc != ft_save.crc)
     {
@@ -182,10 +213,16 @@ void flash_pressure_show_bakup_info(void)
     }
     else
     {
-        os_printf("found history info effected\r\n");
+        os_printf("found history info affected\r\n");
     }
 }
 
+/**
+ * Generate test data for flash pressure testing.
+ * 
+ * This function generates test data based on the current test count and
+ * updates the CRC checksum for the test statistics structure.
+ */
 void flash_pressure_generate_data(void)
 {
     uint32 write_cnt = g_ft_save.total_test_count;
@@ -202,6 +239,16 @@ void flash_pressure_generate_data(void)
     memcpy(write_buf, &g_ft_save, sizeof(g_ft_save));
 }
 
+/**
+ * Perform flash pressure test.
+ * 
+ * This function performs a comprehensive flash memory test including:
+ * - Sector erase verification
+ * - Data write and read verification
+ * - Error counting and reporting
+ * 
+ * @return 1 if test passed, 0 if test failed
+ */
 uint32_t flash_pressure_test(void)
 {
     uint32 current_addr = 0;
@@ -214,7 +261,7 @@ uint32_t flash_pressure_test(void)
     do {
         // check erase
         FLASH_IO_UP(3);
-        if((current_addr & 0xFFF) == 0)
+        if((current_addr & SECTOR_SIZE_MASK) == 0)
         {
             bk_flash_erase_sector(current_addr);
 
@@ -222,7 +269,7 @@ uint32_t flash_pressure_test(void)
             bk_flash_read_bytes(current_addr, (uint8_t*)read_buf, FLASH_TEST_LENGTH);
             for (i = 0; i < FLASH_TEST_LENGTH; i++)
             {
-                if (read_buf[i] != 0xFF)
+                if (read_buf[i] != FLASH_ERASED_VALUE)
                 {
                     if (erase_err_cnt > MAX_ERASE_ERR_COUNT)
                     {
@@ -236,8 +283,8 @@ uint32_t flash_pressure_test(void)
 
             if (erase_err_cnt > MAX_ERASE_ERR_COUNT)
             {
-                os_printf("earse fail:%d\r\n", erase_err_cnt);
-                g_ft_save.total_easer_error_count++;
+                os_printf("erase fail:%d\r\n", erase_err_cnt);
+                g_ft_save.total_erase_error_count++;
                 FLASH_IO_DOWN(3);
                 break;
             }
@@ -281,6 +328,12 @@ uint32_t flash_pressure_test(void)
     return flag;
 }
 
+/**
+ * Save test results to flash memory.
+ * 
+ * @param flag Flag indicating if results should be saved
+ * @param is_both Flag indicating if both main and backup should be saved
+ */
 void flash_psram_save_result(uint32 flag, uint32 is_both)
 {
     if((flag) || (is_both))
@@ -295,13 +348,19 @@ void flash_psram_save_result(uint32 flag, uint32 is_both)
     if(((g_ft_save.total_test_count % 100) == 0) || (is_both))
     {
         bk_flash_set_protect_type(FLASH_PROTECT_NONE);
-        bk_flash_erase_sector(COUNT_SAVE_BAKEUP_ADDR);
+        bk_flash_erase_sector(COUNT_SAVE_BACKUP_ADDR);
         flash_pressure_generate_data();
-        bk_flash_write_bytes(COUNT_SAVE_BAKEUP_ADDR, (uint8_t *)&g_ft_save, sizeof(g_ft_save));
+        bk_flash_write_bytes(COUNT_SAVE_BACKUP_ADDR, (uint8_t *)&g_ft_save, sizeof(g_ft_save));
         bk_flash_set_protect_type(FLASH_PROTECT_ALL);
     }
 }
 
+/**
+ * Save test results during system dump.
+ * 
+ * This function is called during system dump to save the current
+ * test results to flash memory.
+ */
 void flash_psram_save_result_in_dump(void)
 {
     if(s_flash_pressure_start == 0)
@@ -310,19 +369,26 @@ void flash_psram_save_result_in_dump(void)
     flash_psram_save_result(1, 1);
 }
 
+/**
+ * Main pressure test thread function.
+ * 
+ * This function runs as a separate thread and performs both PSRAM and
+ * flash pressure tests. It handles test result saving and error reporting.
+ * 
+ * @param arg Thread argument (unused)
+ */
 void flash_psram_pressure_test(beken_thread_arg_t arg)
 {
-    uint32 crc, flag = 0;
+    uint32 crc = 0, flag = 0;
 
     FLASH_IO_UP(15);
     GPIO_UP(15);
     bk_flash_read_bytes(COUNT_SAVE_ADDR, (uint8_t*)&g_ft_save, sizeof(g_ft_save));
-    crc = 0;
     crc = my_calc_crc32(crc, &g_ft_save, sizeof(g_ft_save)-4);
 
-    if (g_ft_save.crc == 0xffffffff)
+    if (g_ft_save.crc == CRC_INVALID_VALUE)
     {
-        os_printf("found history info not effected, use all 0 for init\r\n");
+        os_printf("found history info not affected, use all 0 for init\r\n");
         os_memset(&g_ft_save, 0, sizeof(g_ft_save));
     }
     else if (crc != g_ft_save.crc)
@@ -330,24 +396,24 @@ void flash_psram_pressure_test(beken_thread_arg_t arg)
         os_printf("found history info crc err\r\n");
 
         struct ft_save_st ft_save = {0};
-        bk_flash_read_bytes(COUNT_SAVE_BAKEUP_ADDR, (uint8_t*)&ft_save, sizeof(ft_save));
+        bk_flash_read_bytes(COUNT_SAVE_BACKUP_ADDR, (uint8_t*)&ft_save, sizeof(ft_save));
         uint32 crc = 0;
         crc = my_calc_crc32(crc, &ft_save, sizeof(ft_save)-4);
 
-        if ((crc != ft_save.crc) || (ft_save.crc == 0xffffffff))
+        if ((crc != ft_save.crc) || (ft_save.crc == CRC_INVALID_VALUE))
         {
-            os_printf("found bakup history info not effected, use all 0 for init\r\n");
+            os_printf("found bakup history info not affected, use all 0 for init\r\n");
             os_memset(&g_ft_save, 0, sizeof(g_ft_save));
         }
         else
         {
-            os_printf("found bakeup history info effected, use bakeup\r\n");
+            os_printf("found backup history info affected, use backup\r\n");
             memcpy(&g_ft_save, &ft_save, sizeof(ft_save));
         }
     }
 
     s_flash_pressure_start = 1;
-    g_ft_save.total_test_count++;
+    g_ft_save.total_test_count ++;
 
 #if CONFIG_PSRAM_PRESSURE_TEST
     uint32_t cli_psram_test_handle(uint32_t *number);
@@ -364,7 +430,7 @@ void flash_psram_pressure_test(beken_thread_arg_t arg)
     }
     else if((ret == 1) && (error_num))
     {
-        g_ft_save.total_psram_error_count++;
+        g_ft_save.total_psram_error_count ++;
     }
     else
     {
@@ -392,7 +458,7 @@ void flash_psram_pressure_test(beken_thread_arg_t arg)
     if((flag & 0x2) == 0)
     {
         os_printf(" flash pressure test failed, total cnt: %d, total write cnt: %d, total easer cnt: %d\r\n",
-            g_ft_save.total_test_count, g_ft_save.total_write_error_count, g_ft_save.total_easer_error_count);
+            g_ft_save.total_test_count, g_ft_save.total_write_error_count, g_ft_save.total_erase_error_count);
         err_happened = 1;
     }
 #endif
@@ -406,28 +472,34 @@ void flash_psram_pressure_test(beken_thread_arg_t arg)
     }
 
     flash_psram_save_result(need_flag, 0);
-    if((g_ft_save.total_test_count % 100) == 0)
+    if((g_ft_save.total_test_count % BACKUP_SAVE_INTERVAL) == 0)
     {
         bk_flash_set_protect_type(FLASH_PROTECT_NONE);
-        bk_flash_erase_sector(COUNT_SAVE_BAKEUP_ADDR);
+        bk_flash_erase_sector(COUNT_SAVE_BACKUP_ADDR);
         flash_pressure_generate_data();
-        bk_flash_write_bytes(COUNT_SAVE_BAKEUP_ADDR, (uint8_t *)&g_ft_save, sizeof(g_ft_save));
+        bk_flash_write_bytes(COUNT_SAVE_BACKUP_ADDR, (uint8_t *)&g_ft_save, sizeof(g_ft_save));
         bk_flash_set_protect_type(FLASH_PROTECT_ALL);
     }
 
     bk_flash_set_protect_type(FLASH_PROTECT_ALL);
-    s_flash_pressue_task_handle = NULL;
+    s_flash_pressure_task_handle = NULL;
     s_flash_pressure_start = 0;
     GPIO_DOWN(15);
     FLASH_IO_DOWN(15);
     rtos_delete_thread(NULL);
 }
 
-void flash_pressue_test_start(void)
+/**
+ * Start the flash pressure test thread.
+ * 
+ * This function creates and starts a new thread to run the pressure tests.
+ * If a test thread is already running, this function does nothing.
+ */
+void flash_pressure_test_start(void)
 {
-    if(s_flash_pressue_task_handle == NULL)
+    if(s_flash_pressure_task_handle == NULL)
     {
-        rtos_create_thread(&s_flash_pressue_task_handle,
+        rtos_create_thread(&s_flash_pressure_task_handle,
             4,
             "flash_test",
             (beken_thread_function_t)flash_psram_pressure_test,
@@ -436,13 +508,29 @@ void flash_pressue_test_start(void)
     }
 }
 
-static void cli_flash_pressue_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+/**
+ * CLI command handler to start flash pressure test.
+ * 
+ * @param pcWriteBuffer Write buffer for CLI output
+ * @param xWriteBufferLen Length of write buffer
+ * @param argc Number of command arguments
+ * @param argv Command arguments array
+ */
+static void cli_flash_pressure_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
-    flash_pressue_test_start();
+    flash_pressure_test_start();
 }
 
-static void cli_flash_pressue_show_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+/**
+ * CLI command handler to show flash pressure test information.
+ * 
+ * @param pcWriteBuffer Write buffer for CLI output
+ * @param xWriteBufferLen Length of write buffer
+ * @param argc Number of command arguments
+ * @param argv Command arguments array
+ */
+static void cli_flash_pressure_show_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
     flash_pressure_show_info();
-    flash_pressure_show_bakup_info();
+    flash_pressure_show_backup_info();
 }
