@@ -371,7 +371,9 @@ void aon_pmu_hal_save_time(bool is_startup)
 
 uint32_t aon_pmu_hal_get_por_timing()
 {
-	return aon_pmu_ll_get_r0_saved_time();
+	uint32_t time = aon_pmu_ll_get_r0_saved_time();
+	aon_pmu_ll_set_r0_saved_time(0);
+	return time;
 }
 #else
 void aon_pmu_hal_save_time(bool is_startup)
