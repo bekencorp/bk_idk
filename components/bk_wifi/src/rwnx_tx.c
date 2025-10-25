@@ -287,7 +287,7 @@ static uint8_t classify8021d(UINT8 *buf)
 	case ETH_P_PAE:
 		return 7;	/* TID7 highest user priority */
 	default:
-		return 0;   /* TID0: mapped to AC_BE */
+		return CONFIG_DEFAULT_TX_TID;
 	}
 }
 
@@ -385,7 +385,7 @@ tx_exit:
 	}
 }
 
-static struct rwnx_txq *rwnx_select_txq(struct sk_buff *skb)
+static struct rwnx_txq *rwnx_select_txq(struct sk_buff *skb, BUS_MSG_T *msg)
 {
 	void *rwnx_vif;
 	struct rwnx_txq *txq = NULL;
@@ -419,6 +419,9 @@ static struct rwnx_txq *rwnx_select_txq(struct sk_buff *skb)
 
 	if (sta && (mac_sta_mgmt_get_capa_flags(sta) & STA_QOS_CAPA)) {
 		skb->priority = classify8021d((uint8_t *)eth_hdr_ptr);
+		// Use highest ac
+		if (msg->type == BMSG_SPECIAL_TX_TYPE)
+			skb->priority = CONFIG_DEFAULT_SPECIAL_TX_TID;
 		rwnx_downgrade_ac(rwnx_vif, skb);
 
 		txq = rwnx_txq_sta_get(sta, skb->priority);
@@ -653,7 +656,7 @@ __ITCM_N int rwnx_start_xmit(uint8_t vif_idx, struct pbuf *p, BUS_MSG_T *msg)
 	skb->sta_idx = rwm_mgmt_tx_get_staidx(vif_idx, &eth_hdr_ptr->e_dest);
 
 	// Select TXQ
-	txq = rwnx_select_txq(skb);
+	txq = rwnx_select_txq(skb, msg);
 	if (!txq || skb->priority == PRIO_STA_NULL) {
 		goto exit;
 	}

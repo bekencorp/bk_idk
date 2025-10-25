@@ -408,4 +408,14 @@ menu "Bk_Wifi"
 		int "MAC long retry limit"
 		range 1 240
 		default 240
+
+	config DEFAULT_TX_TID
+		int "default wifi tx tid"
+		range 0 7
+		default 0
+
+	config DEFAULT_SPECIAL_TX_TID
+		int "default wifi tx tid for special tx frames"
+		range 0 7
+		default 0
 endmenu
