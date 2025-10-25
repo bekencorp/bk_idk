@@ -100,7 +100,11 @@ void ate_cali_adc(const unsigned char *content, UINT8 *tx_buffer)
     else if (content[2] == 2)
     {
         tx_buffer[0] = 0x55;
-        if ((values[0] >= 0x2000) || (values[1] >= 0x2000) || (values[2] >= 0x2000))
+        //         min.(Hex)    max.(Hex)
+        // 1v      1000         138E
+        // 2v      2000         271C
+        // 0.3v    4CC          5DD
+        if ((values[0] > 0x138E) || (values[0] < 0x1000) || (values[1] > 0x271C) || (values[1] < 0x2000) || (values[2] > 0x5DD) || (values[2] < 0x4CC))
         {
             tx_buffer[1] = 0xDD;
             goto exit;
