@@ -80,8 +80,8 @@ typedef enum {
 	PWM_POLARITY_MAX,             /**< Invalid polarity */
 } pwm_polarity_t;
 
-typedef uint8_t pwm_unit_t;
-typedef uint8_t pwm_chan_t;	//pwm_id_t
+typedef uint32_t pwm_unit_t;
+typedef uint32_t pwm_chan_t;	//pwm_id_t
 
 #define BK_ERR_PWM_HAL_CLOCK (BK_ERR_PWM_HAL_BASE - 1)
 
