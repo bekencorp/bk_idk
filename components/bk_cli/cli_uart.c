@@ -210,6 +210,9 @@ static void cli_uart_config_cmd(char *pcWriteBuffer, int xWriteBufferLen, int ar
 		} else if (os_strcmp(argv[3], "apll") == 0){
 			sys_drv_uart_select_clock(uart_id, UART_SCLK_APLL);
 			CLI_LOGI("uart(%d) set clk_source apll\r\n", uart_id);
+		} else if (os_strcmp(argv[3], "80m") == 0){
+			sys_drv_uart_select_clock(uart_id, UART_SCLK_80M);
+			CLI_LOGI("uart(%d) set clk_source 80m\r\n", uart_id);
 		} else {
 			CLI_LOGI("uart config set failed,clock_source only support xtal/apll\r\n");
 			return;

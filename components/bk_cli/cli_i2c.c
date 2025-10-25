@@ -99,6 +99,13 @@ static void cli_i2c_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
 	if (os_strcmp(argv[2], "init") == 0) {
 		i2c_config_t i2c_cfg = {0};
 		i2c_cfg.baud_rate = 400000;
+		if(argc > 3){
+			i2c_cfg.baud_rate = os_strtoul(argv[3], NULL, 10);
+		}
+		if(argc > 4){
+			i2c_cfg.src_clk = os_strtoul(argv[4], NULL, 10);
+			CLI_LOGI("i2c(%d) init, src_clk=%d\n", i2c_id, i2c_cfg.src_clk);
+		}
 		i2c_cfg.addr_mode = I2C_ADDR_MODE_7BIT;
 		i2c_cfg.slave_addr = I2C_SLAVE_ADDR;
 
@@ -338,13 +345,13 @@ static void cli_i2c_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
 	} else if (os_strcmp(argv[2], "clk_select") == 0) {
 		CLI_RET_ON_INVALID_ARGC(argc, 4);
 		if (os_strcmp(argv[3], "xtal") == 0){
-			sys_drv_i2c_select_clock(i2c_id, I2C_SCLK_XTAL_26M);
+			sys_drv_i2c_select_clock(i2c_id, I2C_SCLK_XTAL_40M);
 			CLI_LOGI("i2c(%d) set clk_source xtal\r\n", i2c_id);
-		} else if (os_strcmp(argv[3], "apll") == 0){
-			sys_drv_i2c_select_clock(i2c_id, I2C_SCLK_APLL);
-			CLI_LOGI("i2c(%d) set clk_source apll\r\n", i2c_id);
+		} else if (os_strcmp(argv[3], "80m") == 0){
+			sys_drv_i2c_select_clock(i2c_id, I2C_SCLK_80M);
+			CLI_LOGI("i2c(%d) set clk_source 80m\r\n", i2c_id);
 		} else {
-			CLI_LOGI("i2c config set failed,clock_source only support xtal/apll\r\n");
+			CLI_LOGI("i2c config set failed,clock_source only support xtal/80m\r\n");
 			return;
 		}
 		CLI_LOGI("i2c(%d) config clk_source succeed\r\n", i2c_id);
