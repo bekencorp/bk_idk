@@ -51,7 +51,7 @@ endif()
 			CONFIG_BL2_DOWNLOAD
 	)
 
-	if(TFM_SOC STREQUAL "bk7239")
+	if(TFM_SOC STREQUAL "bk7239n")
 		target_compile_definitions(download
 		PUBLIC
 			CHIP_BK7239

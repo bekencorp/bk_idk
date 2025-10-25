@@ -17,4 +17,4 @@ def build_server_process(project):
     logging.debug(f'--------------------On build server: build--------------------')
     run_cmd(f'make clean')
     #run_cmd(f'make bk7236 PROJECT={project} APP_VERSION="vvvvvvvvvvvvvvvvvvvvvvvv1.0"')
-    run_cmd(f'make bk7239 PROJECT={project} APP_VERSION="v1.0" > 1.log')
+    run_cmd(f'make bk7239n PROJECT={project} APP_VERSION="v1.0" > 1.log')

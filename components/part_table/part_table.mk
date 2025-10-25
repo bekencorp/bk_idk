@@ -61,9 +61,9 @@ bk7234xx_supported_projects := app
 bk7234xx_supported_projects := $(bk7234xx_supported_projects) customization/config_ab
 
 ############################################################
-#        Create supported projects list for bk7239         #
+#        Create supported projects list for bk7239n         #
 ############################################################
-bk7239xx_supported_targets := bk7239
+bk7239xx_supported_targets := bk7239n
 bk7239xx_supported_projects := app
 
 
@@ -116,7 +116,7 @@ endif
 ifeq ("$(ARMINO_SOC)", "bk7234")
 	BOOTLOADER_JSON_OLD := $(ARMINO_BOOTLOADER)/tools/partition_ota.json
 endif
-ifeq ("$(ARMINO_SOC)", "bk7239")
+ifeq ("$(ARMINO_SOC)", "bk7239n")
 	BOOTLOADER_JSON_OLD := $(ARMINO_BOOTLOADER)/tools/partition_ota.json
 endif
 ifeq ("$(ARMINO_SOC)", "bk723L")

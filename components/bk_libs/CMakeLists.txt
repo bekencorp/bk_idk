@@ -57,6 +57,7 @@ set (blacklist_elem
 	libbk_phy[^.]*\.a
 	libcom_phy[^.]*\.a
 	libate_phy[^.]*\.a
+	libdpd_phy[^.]*\.a
 	libtjpg[^.]*\.a
 	libscale[^.]*\.a
 	libwifi[^.]*\.a

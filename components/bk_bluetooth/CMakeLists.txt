@@ -83,7 +83,7 @@ endif()#CONFIG_AT
 
 	if (CONFIG_SOC_BK7239XX)
 		list(APPEND srcs
-			soc/bk7239/bluetooth.c
+			soc/bk7239n/bluetooth.c
 			)
 	endif()
 

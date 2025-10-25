@@ -168,13 +168,13 @@ list(APPEND bk7234xx_supported_projects
 
 
 ######################################################################
-#           Create supported projects list for bk7239                #
+#           Create supported projects list for bk7239n                #
 ######################################################################
 set(bk7239xx_supported_targets)
 list(APPEND bk7239xx_supported_targets
-	"bk7239"
-	"bk7239_cp1"
-	"bk7239_cp2"
+	"bk7239n"
+	"bk7239n_cp1"
+	"bk7239n_cp2"
 )
 set(bk7239xx_supported_projects)
 list(APPEND bk7239xx_supported_projects
