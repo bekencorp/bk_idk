@@ -1375,7 +1375,11 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._do_rx_sensitivity        = do_rx_sensitivity,
 	._rwnx_cal_save_trx_rcbekn_reg_val = rwnx_cal_save_trx_rcbekn_reg_val,
 	._rc_drv_set_agc_manual_en = rc_drv_set_agc_manual_en,
-	._rc_drv_set_rx_mode_enrxsw = rc_drv_set_rx_mode_enrxsw,
+#if (CONFIG_SOC_BK7239XX)
+	._rc_drv_set_rf_macbypass = rc_drv_set_rf_macbypass,
+#else
+	._rc_drv_set_rf_macbypass = NULL,
+#endif
 	._rc_drv_get_rx_mode_enrxsw = rc_drv_get_rx_mode_enrxsw,
 	._bk7011_max_rxsens_setting = bk7011_max_rxsens_setting,
 	._bk7011_default_rxsens_setting = bk7011_default_rxsens_setting,
