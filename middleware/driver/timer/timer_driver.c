@@ -30,6 +30,8 @@ static void timer1_isr(void) __BK_SECTION(".itcm");
 #endif
 static void timer_isr(void) __BK_SECTION(".itcm");
 
+extern void delay(int num);//TODO fix me
+
 typedef struct {
     timer_hal_t hal;
 #if CONFIG_TIMER_PM_CB_SUPPORT
@@ -103,8 +105,7 @@ static void timer_restore_regs(uint32_t group_id)
 #define TIMER_PM_CHECK_RESTORE(id)
 #endif
 
-#if (CONFIG_SYSTEM_CTRL)
-static void timer_clock_select(timer_id_t id, timer_src_clk_t mode)
+void bk_timer_clock_select(timer_id_t id, timer_src_clk_t mode)
 {
 	uint32_t group_index = 0;
 
@@ -120,6 +121,27 @@ static void timer_clock_select(timer_id_t id, timer_src_clk_t mode)
 		default:
 			break;
 	}
+}
+
+uint32_t bk_timer_get_clock_src(timer_id_t timer_id)
+{
+	uint32_t group_index;
+    uint32_t timer_clock = 0xff;
+
+	group_index = timer_id / SOC_TIMER_CHAN_NUM_PER_GROUP;
+	switch(group_index)
+	{
+		case 0:
+			timer_clock = sys_hal_timer_select_clock_get(SYS_SEL_TIMER0);
+			break;
+		case 1:
+			timer_clock = sys_hal_timer_select_clock_get(SYS_SEL_TIMER1);
+			break;
+		default:
+			break;
+	}
+
+    return timer_clock;
 }
 
 static void timer_clock_enable(timer_id_t id)
@@ -182,36 +204,22 @@ static void timer_interrupt_enable(timer_id_t id)
 			break;
 	}
 }
-#endif
 
 static void timer_chan_init_common(timer_id_t timer_id)
 {
-#if (CONFIG_SYSTEM_CTRL)
-	timer_clock_select(timer_id, TIMER_SCLK_XTAL);
 	timer_clock_enable(timer_id);
-#else
-	power_pwr_up_timer(timer_id);
-#endif
 }
 
 static void timer_chan_deinit_common(timer_id_t timer_id)
 {
     timer_hal_stop_common(&s_timer.hal, timer_id);
     timer_hal_reset_config_to_default(&s_timer.hal, timer_id);
-#if (CONFIG_SYSTEM_CTRL)
 	timer_clock_disable(timer_id);
-#else
-	power_pwr_down_timer(timer_id);
-#endif
 }
 
 static void timer_chan_enable_interrupt_common(timer_id_t timer_id)
 {
-#if (CONFIG_SYSTEM_CTRL)
 	timer_interrupt_enable(timer_id);
-#else
-    icu_enable_timer_interrupt();
-#endif
     timer_hal_enable_interrupt(&s_timer.hal, timer_id);
 }
 
@@ -307,6 +315,10 @@ bk_err_t bk_timer_driver_init(void)
         return BK_OK;
     }
 
+    /* the default clock src of timer0 timer1*/
+    bk_timer_clock_select(SYS_SEL_TIMER0, TIMER_SCLK_XTAL);
+    bk_timer_clock_select(SYS_SEL_TIMER1, TIMER_SCLK_XTAL);
+
     os_memset(&s_timer, 0, sizeof(s_timer));
     os_memset(&s_timer_isr, 0, sizeof(s_timer_isr));
 
@@ -349,8 +361,6 @@ bk_err_t bk_timer_driver_deinit(void)
 
     return BK_OK;
 }
-
-extern void delay(int num);//TODO fix me
 
 bk_err_t bk_timer_start_without_callback(timer_id_t timer_id, uint32_t time_ms)
 {
@@ -560,35 +570,19 @@ uint64_t bk_timer_get_time(timer_id_t timer_id, uint32_t div, uint32_t last_coun
 {
     TIMER_RETURN_ON_NOT_INIT();
     TIMER_RETURN_ON_INVALID_ID(timer_id);
-
     TIMER_PM_CHECK_RESTORE(timer_id);
 
     uint64_t current_time = 0;
     uint64_t unit_factor = 1;
+    uint64_t current_count;
+	uint32_t timer_clock = TIMER_SCLK_XTAL;
 
-    uint64_t current_count = timer_hal_get_count(&s_timer.hal, timer_id) + last_count;
-
+    current_count = timer_hal_get_count(&s_timer.hal, timer_id) + last_count;
     if (div == 0) {
         div = 1;
     }
 
-#if (CONFIG_SYSTEM_CTRL)
-	uint32_t group_index = 0;
-	uint32_t timer_clock = TIMER_SCLK_XTAL;
-
-	group_index = timer_id / SOC_TIMER_CHAN_NUM_PER_GROUP;
-	switch(group_index)
-	{
-		case 0:
-			timer_clock = sys_hal_timer_select_clock_get(SYS_SEL_TIMER0);
-			break;
-		case 1:
-			timer_clock = sys_hal_timer_select_clock_get(SYS_SEL_TIMER1);
-			break;
-		default:
-			break;
-	}
-
+    timer_clock = bk_timer_get_clock_src(timer_id);
     unit_factor = (unit_type == TIMER_UNIT_MS) ? 1 : 1000;
 
 	if(timer_clock == TIMER_SCLK_XTAL) {
@@ -596,14 +590,6 @@ uint64_t bk_timer_get_time(timer_id_t timer_id, uint32_t div, uint32_t last_coun
 	} else {
         current_time = unit_factor * current_count * (uint64_t)div / TIMER_CLOCK_FREQ_32K;
 	}
-
-#else
-    if (timer_id < SOC_TIMER_CHAN_NUM_PER_GROUP) {
-        current_time = unit_factor * current_count * div / TIMER_CLOCK_FREQ_26M;
-    } else {
-        current_time = unit_factor * current_count * div / TIMER_CLOCK_FREQ_32K;
-    }
-#endif
 
     return current_time;
 }

@@ -19,7 +19,7 @@
 
 static void cli_timer_isr(timer_id_t chan)
 {
-    CLI_LOGI("[TIMER][ISR] chan:%d\r\n", chan);
+    CLI_LOGI("[TIMER][ISR] chan:%d clk:%d\r\n", chan, bk_timer_get_clock_src(chan));
 }
 
 static void cli_delay_us(int argc, char **argv)
@@ -57,6 +57,10 @@ static void cli_timer_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, ch
         if (ret != BK_OK) {
             CLI_LOGW("[TIMER][START] start failed, error code:%x\n", ret);
         }
+    } else if (os_strcmp(argv[2], "clk_src") == 0) {
+        uint32_t clk_src = os_strtoul(argv[3], NULL, 10);
+        CLI_LOGD("[TIMER][SET_CLOCK_SRC] 0-32K 1-xtal, clk_src:%d\r\n", clk_src);
+        bk_timer_clock_select(channel, clk_src);
     } else if (os_strcmp(argv[2], "stop") == 0) {
         CLI_LOGI("[TIMER][STOP] channel:%d\r\n", channel);
         bk_timer_stop(channel);
@@ -73,7 +77,7 @@ static void cli_timer_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, ch
         read_cnt = bk_timer_get_period(channel);
         CLI_LOGI("[TIMER][GET][PERIOD] period value:%x\r\n", read_cnt);
     } else {
-        CLI_LOGW("timer {chan} {start|stop|read} [...]\r\n");
+        CLI_LOGW("timer {chan} {start|stop|read|clk_src} [...]\r\n");
     }
 }
 

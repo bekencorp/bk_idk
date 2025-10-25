@@ -58,6 +58,7 @@ typedef enum {
 typedef enum {
 	PWM_SCLK_CLK32 = 0,  /**< PWM source clock dco */
 	PWM_SCLK_XTAL,       /**< PWM source clock xtal 26M */
+	PWM_SCLK_80M,        /**< PWM source clock 80M */
 } pwm_src_clk_t;
 
 typedef enum

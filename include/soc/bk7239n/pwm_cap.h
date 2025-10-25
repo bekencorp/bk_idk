@@ -24,9 +24,10 @@ extern "C" {
 #define SOC_PWM_GROUP_NUM              4
 #define SOC_PWM_CHAN_NUM_MAX           (SOC_PWM_UNIT_NUM * SOC_PWM_CHAN_NUM_PER_UNIT)
 #define SOC_PWM_TIM_NUM                12
+#define PWM_PM_BACKUP_REG_NUM          20
 
 #define PWM_CLOCK_SRC_XTAL   40000000 // 40M
-#define PWM_CLOCK_SRC_32K    32000    // 32K
+#define PWM_CLOCK_SRC_80M    80000000 // 80M
 
 #ifdef __cplusplus
 }

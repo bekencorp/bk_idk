@@ -168,7 +168,7 @@ typedef enum {
 	INT_SRC_NONE,
 } icu_int_src_t;
 #elif (CONFIG_SOC_BK7239XX)
-#include "soc/bk7239/int_types.h"
+#include "soc/bk7239n/int_types.h"
 #else
 typedef enum {
 	INT_SRC_UART0 = 0x00,

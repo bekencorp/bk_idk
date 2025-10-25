@@ -29,8 +29,8 @@
 #include "soc/bk7236/soc.h"
 #elif CONFIG_SOC_BK7236N
 #include "soc/bk7236n/soc.h"
-#elif CONFIG_SOC_BK7239
-#include "soc/bk7239/soc.h"
+#elif CONFIG_SOC_BK7239N
+#include "soc/bk7239n/soc.h"
 #elif CONFIG_SOC_BK7258
 #include "soc/bk7258/soc.h"
 #elif CONFIG_SOC_BK7259
