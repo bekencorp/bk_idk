@@ -447,4 +447,8 @@ menu "Bk_Wifi"
 	config BEACON_MISS_CB
 		bool "Enable beacon miss callback function"
 		default n
+
+	config WIFI_NULL_FRAME_WITH_SN
+		bool "Wifi [QoS] Null frames with sequence number"
+		default y
 endmenu

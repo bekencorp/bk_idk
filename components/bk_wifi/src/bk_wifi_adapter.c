@@ -1479,6 +1479,7 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._bk_feature_csi_out_cb = bk_feature_csi_out_cb_wrapper,
 	._bk_feature_bcn_miss_cb = bk_feature_bcn_miss_cb_wrapper,
 	._bk_feature_tcp_protect_enable = bk_feature_tcp_protect_enable_wrapper,
+	._bk_feature_null_frame_with_sn_enable = bk_feature_wifi_null_frame_with_sn,
 	._bk_wifi_get_vendor_ie_cb_internal = bk_wifi_get_vendor_ie_cb_internal_wrapper,
 	._bk_wifi_get_vendor_ie_type = bk_wifi_get_vendor_ie_type_wrapper,
 	._bk_wifi_get_vendor_ie_oui_len = bk_wifi_get_vendor_ie_oui_len_wrapper,

@@ -192,6 +192,7 @@ typedef struct {
 	void (*_bk_feature_csi_out_cb)(void *data);
 	int (*_bk_feature_tcp_protect_enable)(void);
 	bk_err_t (*_bk_feature_bcn_miss_cb)(void);
+	int (*_bk_feature_null_frame_with_sn_enable)(void);
 	bk_err_t (*_bk_wifi_get_vendor_ie_cb_internal)(void* vendor_ie, uint32_t vendor_type, uint16_t len, uint8_t frame_type);
 	uint32_t (*_bk_wifi_get_vendor_ie_type)(void);
 	uint8_t (*_bk_wifi_get_vendor_ie_oui_len)(void);

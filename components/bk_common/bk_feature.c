@@ -251,3 +251,12 @@ unsigned int bk_feature_get_td_run_cnt(void) {
 unsigned int bk_feature_get_td_level2(void) {
 	return CONFIG_DYNAMIC_TD_LEVEL2;
 }
+
+int bk_feature_wifi_null_frame_with_sn(void)
+{
+#if CONFIG_WIFI_NULL_FRAME_WITH_SN
+	return 1;
+#else
+	return 0;
+#endif
+}

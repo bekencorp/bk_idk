@@ -275,7 +275,7 @@ int bk_feature_non_standard_enable(void);
  *    - default td window
  *
  */
- unsigned int bk_feature_get_default_td_win(void);
+unsigned int bk_feature_get_default_td_win(void);
 
 /**
  * @brief     Interface to get reduce td window
@@ -285,7 +285,7 @@ int bk_feature_non_standard_enable(void);
  *    - reduce td window
  *
  */
- unsigned int bk_feature_get_reduce_td_win(void);
+unsigned int bk_feature_get_reduce_td_win(void);
 
 /**
  * @brief     Interface to get td learn count
@@ -295,7 +295,7 @@ int bk_feature_non_standard_enable(void);
  *    - td learn count
  *
  */
- unsigned int bk_feature_get_td_learn_cnt(void);
+unsigned int bk_feature_get_td_learn_cnt(void);
 
 /**
  * @brief     Interface to get td run count
@@ -305,14 +305,24 @@ int bk_feature_non_standard_enable(void);
  *    - td run count
  *
  */
- unsigned int bk_feature_get_td_run_cnt(void);
+unsigned int bk_feature_get_td_run_cnt(void);
 
 /**
  * @brief     Interface to get td level2
-*
+ *
  *
  * @return
  *    - td level2
  *
  */
- unsigned int bk_feature_get_td_level2(void);
+unsigned int bk_feature_get_td_level2(void);
+
+/**
+ * @brief     Interface for customer to Enable/Disable [Qos] Null frames with Sequence number
+ *
+ * @return
+ *    - 1: enable
+ *    - 0: disable
+ */
+int bk_feature_wifi_null_frame_with_sn(void);
+
