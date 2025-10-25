@@ -123,6 +123,8 @@ extern void rwnxl_sleep();
 
 extern uint32_t bk_otp_fully_flow_test();
 
+extern void bk_delay_us(UINT32 us);
+
 #if (!CONFIG_SOC_BK7256XX)
 extern void sctrl_dpll_int_open(void);
 #endif
@@ -483,6 +485,7 @@ void gpio_voltage_input_high(void)
 	}
 
 	//uart_write_byte_for_ate(0, (uint8_t *)restore_reg, GPIO_NUM_MAX);
+	bk_delay_us(1000);
 
 	data[0] = 0x04;
 	for(i = 0; i < GPIO_NUM_MAX; i ++)
@@ -532,6 +535,7 @@ void gpio_voltage_input_low(void)
 	}
 
 	//uart_write_byte_for_ate(0, (uint8_t *)restore_reg, GPIO_NUM_MAX);
+	bk_delay_us(1000);
 
 	data[0] = 0x05;
 	for(i = 0; i < GPIO_NUM_MAX; i ++)
