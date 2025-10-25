@@ -56,9 +56,7 @@ typedef enum {
 	UART_ID_0 = 0, /**< UART id 0 */
 	UART_ID_1,     /**< UART id 1 */
 	UART_ID_2,     /**< UART id 2 */
-#if (SOC_UART_ID_NUM_PER_UNIT  >= 4)
 	UART_ID_3,     /**< UART id 3 */
-#endif
 	UART_ID_MAX    /**< UART id max */
 } uart_id_t;
 
