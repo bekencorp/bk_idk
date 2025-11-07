@@ -19,7 +19,6 @@ CONFIG_SYS_CPU0=y
 # CONFIG_SYS_CPU1 is not set
 # CONFIG_SYS_CPU2 is not set
 CONFIG_CPU_CNT=1
-CONFIG_SYS_CPU1_OFFSET=0x2e0000
 CONFIG_SOC_STR="bk7236n"
 CONFIG_SOC_ARCH="cm33"
 CONFIG_SOC_BK7236XX=y
@@ -703,15 +702,6 @@ CONFIG_DRIVER_TEST=y
 # end of Driver
 
 #
-# Arch::Riscv
-#
-CONFIG_CPU_FREQ_HZ=120000000
-# CONFIG_ARCH_RISCV is not set
-# CONFIG_DUMP_ENABLE is not set
-CONFIG_MEMDUMP_ALL=y
-# end of Arch::Riscv
-
-#
 # Arch::Cm33
 #
 CONFIG_ARCH_CM33=y
@@ -721,8 +711,11 @@ CONFIG_ARCH_CM33=y
 #
 # CONFIG_FPGA is not set
 # CONFIG_MPU is not set
+CONFIG_CPU_FREQ_HZ=120000000
 # CONFIG_ARCH_INT_STATIS is not set
 # CONFIG_SYSTICK_32K is not set
+# CONFIG_DUMP_ENABLE is not set
+CONFIG_MEMDUMP_ALL=y
 # CONFIG_INTERRUPT_DEBUG_RECORDER is not set
 CONFIG_INTERRUPT_RECORDER_CNT=40
 # end of Modify Arch Cm33 Config
@@ -859,12 +852,6 @@ CONFIG_BLE_WIFI_EXCHANGE=y
 #
 CONFIG_MAC802154=y
 # end of modules::MAC802154
-
-#
-# modules::securityip
-#
-# CONFIG_SECURITYIP_SELFTEST is not set
-# end of modules::securityip
 
 #
 # modules::sensor
