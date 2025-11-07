@@ -1078,6 +1078,8 @@ static int per_test(uint32_t bandwidth, uint32_t frequency, uint32_t duration, u
     int err;
     UINT32 stat_reset = 1;
 
+    rwnx_cal_set_rfband(band, rf_mode);
+
     ret = rs_test_for_mbp_with_frequency(frequency, band, bandwidth);
     if (ret)
         return 1;
