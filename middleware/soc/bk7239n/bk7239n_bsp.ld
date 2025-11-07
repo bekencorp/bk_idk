@@ -354,7 +354,7 @@ SECTIONS
     .ramcode :
     {
         . = . +  SIZEOF(.iram);
-        . = ALIGN(512);
+        . = ALIGN(16);
     } > RAM AT > FLASH
 
     .data :

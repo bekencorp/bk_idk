@@ -372,9 +372,8 @@ SECTIONS
     .ramcode :
     {
         . = . + (__iram_end__ - __iram_start__);
-        . = ALIGN(512);
+        . = ALIGN(16);
     } > RAM AT > FLASH
-
 
     .data :
     {
