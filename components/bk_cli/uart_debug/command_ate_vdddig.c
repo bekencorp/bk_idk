@@ -261,17 +261,17 @@ int sctrl_check_dpll_unlock(UINT8 bandgap, UINT8 *tx_buffer)
 
 int sctrl_set_dia_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buffer)
 {
-    UINT8 dia = 0;
+    UINT8 dia[4] = {0};
 
-	tx_buffer[0] = 0x55;
+    tx_buffer[0] = 0x55;
     if (cnt < 3)
     {
-        if (bk_otp_ahb_read(OTP_DIA, &dia, sizeof(dia)) == 0)
+        if (bk_otp_ahb_read(OTP_DIA, dia, sizeof(dia)) == 0)
         {
             /* success */
-            rwnx_cal_set_reg_mod_pa(0, dia);
+            rwnx_cal_set_reg_mod_pa(0, dia[0]);
             tx_buffer[0] = 0x0E;
-            tx_buffer[1] = dia;
+            tx_buffer[1] = dia[0];
             uart_send_bytes_for_ate(tx_buffer, 2);
             return 0;
         }
@@ -282,26 +282,29 @@ int sctrl_set_dia_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buff
             return -1;
         }
     }
-    dia = content[2];
-    if (dia > 0x1F)
+    dia[0] = content[2];
+    if (dia[0] > 0x1F)
     {
         tx_buffer[1] = 0xDD;
         uart_send_bytes_for_ate(tx_buffer, 2);
         return -1;
     }
 
-    if (bk_otp_ahb_update(OTP_DIA, &dia, sizeof(dia)) == 0)
+    // update otp will read back and check, so do not do it here
+    if (bk_otp_ahb_update(OTP_DIA, dia, sizeof(dia)) == 0)
     {
         /* success */
         tx_buffer[1] = 0x33;
+        bk_otp_ahb_read(OTP_DIA, tx_buffer + 2, 1);
+        rwnx_cal_dia_stop();
+        uart_send_bytes_for_ate(tx_buffer, 3);
     }
     else
     {
         tx_buffer[1] = 0xCC;
+        rwnx_cal_dia_stop();
+        uart_send_bytes_for_ate(tx_buffer, 2);
     }
-
-	rwnx_cal_dia_stop();
-    uart_send_bytes_for_ate(tx_buffer, 2);
 
     return 0;
 }
