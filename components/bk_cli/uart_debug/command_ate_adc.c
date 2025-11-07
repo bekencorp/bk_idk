@@ -195,7 +195,7 @@ void ate_cali_temperature(const unsigned char *content, UINT8 *tx_buffer)
     uint16_t adc_code16 = 0;
     int      ret;
     uint32_t reg_val;
-    uint32_t temp_result;
+    uint8_t temp_result[8] = {0};
 
     /* try to load vdddiv from efuse before calibrate adc */
     ret = sctrl_load_vdddig_from_efuse();
@@ -206,15 +206,24 @@ void ate_cali_temperature(const unsigned char *content, UINT8 *tx_buffer)
         goto exit;
     }
 
-    ret = bk_otp_ahb_read(OTP_GADC_TEMPERATURE, (uint8_t *)&adc_code16, sizeof(adc_code16));
+    ret = bk_otp_ahb_read(OTP_GADC_TEMPERATURE, temp_result, sizeof(temp_result));
     if (ret != BK_OK)
     {
         tx_buffer[1] = 0xAA;
         goto exit;
     }
-    if ((adc_code16 != 0) && (adc_code16 != 0xFFFF))
+    uint16_t otp_temp1 = 0;
+    uint16_t otp_temp2 = 0;
+    os_memcpy(&otp_temp1, temp_result, sizeof(otp_temp1));
+    os_memcpy(&otp_temp2, temp_result + 2, sizeof(otp_temp2));
+
+    if ((otp_temp1 != 0) && (otp_temp1 != 0xFFFF) && (otp_temp2 != 0) && (otp_temp2 != 0xFFFF))
     {
-        goto done;
+        tx_buffer[0] = 0x0E;
+        os_memcpy(&tx_buffer[1], temp_result, sizeof(uint16_t) * 2);
+        bk_printf("temp otp result = 0x%x%x%x%x\n", temp_result[0], temp_result[1], temp_result[2], temp_result[3]);
+        uart_send_bytes_for_ate(tx_buffer, 5);
+        return;
     }
 
     reg_val = sys_ana_ll_get_reg4_value();
@@ -228,9 +237,10 @@ void ate_cali_temperature(const unsigned char *content, UINT8 *tx_buffer)
         goto exit;
     }
     adc_code16 = adc_code32;
-    bk_printf("tmep code = %d, 0x%x\n", adc_code16, adc_code16);
+    bk_printf("temp code = %d, 0x%x\n", adc_code16, adc_code16);
 
-    temp_result = adc_code16;
+    os_memset(temp_result, 0, sizeof(temp_result));
+    os_memcpy(temp_result, &adc_code16, sizeof(adc_code16));
 
     reg_val = sys_ana_ll_get_reg4_value();
     reg_val |= 0x01;
@@ -243,22 +253,25 @@ void ate_cali_temperature(const unsigned char *content, UINT8 *tx_buffer)
         goto exit;
     }
     adc_code16 = adc_code32;
-    bk_printf("tmep code = %d, 0x%x\n", adc_code16, adc_code16);
+    bk_printf("temp code = %d, 0x%x\n", adc_code16, adc_code16);
 
-    temp_result = temp_result | (adc_code16 << 16);
-    bk_printf("tmep result = 0x%x\n", temp_result);
+    os_memcpy(temp_result + 2, &adc_code16, sizeof(adc_code16));
+    bk_printf("temp result = 0x%x%x%x%x\n", temp_result[0], temp_result[1], temp_result[2], temp_result[3]);
 
-    ret = bk_otp_ahb_update(OTP_GADC_TEMPERATURE, (uint8_t *)&temp_result, sizeof(temp_result));
+    // update otp will read back and check, so do not do it here
+    ret = bk_otp_ahb_update(OTP_GADC_TEMPERATURE, temp_result, sizeof(temp_result));
     if (ret != BK_OK)
     {
         tx_buffer[1] = 0xCC;
         goto exit;
     }
 
-done:
-    tx_buffer[0] = 0x0E;
-    os_memcpy(&tx_buffer[1], &adc_code16, sizeof(adc_code16));
-    uart_send_bytes_for_ate(tx_buffer, 3);
+    // if run here, means update otp success and read back check success
+    tx_buffer[0] = 0x55;
+    tx_buffer[1] = 0x33;
+    bk_otp_ahb_read(OTP_GADC_TEMPERATURE, tx_buffer + 2, sizeof(uint16_t) * 2);
+    bk_printf("temp otp result = 0x%x%x%x%x\n", temp_result[0], temp_result[1], temp_result[2], temp_result[3]);
+    uart_send_bytes_for_ate(tx_buffer, 6);
     return;
 
 exit:
