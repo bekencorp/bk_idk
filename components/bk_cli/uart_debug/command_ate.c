@@ -968,6 +968,9 @@ static void ate_read_otp(const uint8_t *content, int cnt, uint8_t *tx_buffer1)
         } else if (content[3] == OTP_EFUSE) {
             // No area for crc
             length = 4;
+        } else if (content[3] == OTP_MEMORY_CHECK_MARK_EXTRA) {
+            // No area for crc
+            length = 8;
         } else {
             length = 0;
         }
@@ -989,7 +992,8 @@ static void ate_read_otp(const uint8_t *content, int cnt, uint8_t *tx_buffer1)
             // No area for crc
             length = 4;
         } else if (content[3] == OTP_GADC_TEMPERATURE) {
-            length = 2;
+            // temp code1(2 bytes) + temp code2(2 bytes)
+            length = 4;
         } else if (content[3] == OTP_PHY_PWR1) {
             // 2.4G CH1 pwr_idx = 1(11b_11M) + 1(11g_54M) + 2(res)
             // 2.4G CH7 pwr_idx = 1(11b_11M) + 1(11g_54M) + 2(res)
@@ -1007,6 +1011,9 @@ static void ate_read_otp(const uint8_t *content, int cnt, uint8_t *tx_buffer1)
         } else if (content[3] == OTP_PHY_PWR2) {
             // OTP_PHY_PWR1 = OTP_PHY_PWR2
             length = 46;
+        } else if (content[3] == OTP_CALIBRATION_ID) {
+            // RMB_code(3 byte)
+            length = 3;
         } else {
             length = 0;
         }
