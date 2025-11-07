@@ -286,7 +286,7 @@ typedef struct {
     uint32_t _OTP_VDDDIG_BANDGAP;
     uint32_t _OTP_DIA;
     uint32_t _OTP_GADC_TEMPERATURE;
-    uint32_t _OTP_SDMADC_CALIBRATION;
+    uint32_t _OTP_RFCALI1;
 } phy_os_variable_t;
 
 /*******************************************************************************

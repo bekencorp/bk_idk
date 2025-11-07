@@ -1051,6 +1051,9 @@ const phy_os_variable_t g_phy_os_variable = {
 #ifdef OTP_MAC_ADDRESS
     ._OTP_MAC_ADDRESS        = OTP_MAC_ADDRESS ,
 #endif
+#ifdef OTP_RFCALI1
+    ._OTP_RFCALI1            = OTP_RFCALI1,
+#endif
     ._OTP_VDDDIG_BANDGAP     = OTP_VDDDIG_BANDGAP ,
     ._OTP_DIA                = OTP_DIA ,
     ._OTP_GADC_TEMPERATURE   = OTP_GADC_TEMPERATURE,
