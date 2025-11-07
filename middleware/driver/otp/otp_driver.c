@@ -387,9 +387,22 @@ uint32_t bk_otp_partical_clean_check_customer(void) {
     OTP_ACTIVE(1);
 
     // "OTP_MEMORY_CHECK_MARK" will be empty because of memcheck pass
+    // "OTP_MEMORY_CHECK_MARK_EXTRA" will be empty because of memcheck pass
     // "OTP_EFUSE" will be not empty because of "flash_crc_mode" enable
-    // check OTP1 empty or not without "OTP_MEMORY_CHECK_MARK" and "OTP_EFUSE"
+    // check OTP1 empty or not without "OTP_MEMORY_CHECK_MARK", "OTP_MEMORY_CHECK_MARK_EXTRA" and "OTP_EFUSE"
     otp_start = 0x40 >> 2;  // OTP_AES_KEY start
+    otp_end   = 0x60 >> 2;  // OTP_MEMORY_CHECK_MARK_EXTRA start
+    for (location = otp_start; location < otp_end; location++) {
+        value = _otp_read_otp(location);
+        if (value != 0) {
+            OTP_SLEEP();
+            // APB need add 0x400 offset
+            bk_printf("addr(0x%x)=0x%x\n", SOC_OTP_APB_BASE + 0x400 + location, value);
+            return SOC_OTP_APB_BASE + 0x400 + location;
+        }
+    }
+
+    otp_start = 0x68 >> 2;  // OTP_MEMORY_CHECK_MARK_EXTRA end
     otp_end   = 0x400 >> 2;  // OTP1 end
     for (location = otp_start; location < otp_end; location++) {
         value = _otp_read_otp(location);
@@ -427,6 +440,18 @@ uint32_t bk_otp_partical_clean_check_customer(void) {
     }
     OTP_SLEEP();
 
+    // "OTP_FACTORY_ID" will be writed in CP/FT
+    check_result = bk_otp_ahb_read_and_check(OTP_FACTORY_ID, true);
+    if (check_result == false) {
+        return (SOC_OTP_AHB_BASE + (otp2_hal_get_offset(OTP_FACTORY_ID) >> 2));
+    }
+
+    // "OTP_PRODUCT_ID" will be writed in CP/FT
+    check_result = bk_otp_ahb_read_and_check(OTP_PRODUCT_ID, true);
+    if (check_result == false) {
+        return (SOC_OTP_AHB_BASE + (otp2_hal_get_offset(OTP_PRODUCT_ID) >> 2));
+    }
+
     // "OTP_GADC_CALIBRATION" will be writed in CP
     check_result = bk_otp_ahb_read_and_check(OTP_GADC_CALIBRATION, true);
     if (check_result == false) {
@@ -452,11 +477,10 @@ uint32_t bk_otp_partical_clean_check_customer(void) {
     }
 
     // "OTP_MEMORY_CHECK_VDDDIG" will be writed in CP
-    // todo: "OTP_MEMORY_CHECK_VDDDIG" is empty now, but will be filled in BK7239N V5
-    // check_result = bk_otp_ahb_read_and_check(OTP_MEMORY_CHECK_VDDDIG, false);
-    // if (check_result == false) {
-    //     return (SOC_OTP_AHB_BASE + (otp2_hal_get_offset(OTP_MEMORY_CHECK_VDDDIG) >> 2));
-    // }
+    check_result = bk_otp_ahb_read_and_check(OTP_MEMORY_CHECK_VDDDIG, false);
+    if (check_result == false) {
+        return (SOC_OTP_AHB_BASE + (otp2_hal_get_offset(OTP_MEMORY_CHECK_VDDDIG) >> 2));
+    }
 
     // "OTP_DEVICE_ID" will be writed in CP
     check_result = bk_otp_ahb_read_and_check(OTP_DEVICE_ID, true);
