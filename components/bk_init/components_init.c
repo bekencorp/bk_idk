@@ -60,6 +60,7 @@
 
 #define TAG "init"
 
+static bool s_components_is_inited = false;
 
 //TODO move to better place
 #if CONFIG_MEM_DEBUG
@@ -323,6 +324,10 @@ __attribute__((weak)) void bk_module_init(void) {
 // Run in task environment
 int components_init(void)
 {
+	if (s_components_is_inited) {
+		return BK_OK;
+	}
+
 	if(driver_init())
 		return BK_FAIL;
 
@@ -339,6 +344,8 @@ int components_init(void)
 	bk_module_init();
 
 	show_init_info();
+
+	s_components_is_inited = true;
 
 	return BK_OK;
 }
