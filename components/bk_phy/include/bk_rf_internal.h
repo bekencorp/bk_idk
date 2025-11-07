@@ -40,6 +40,7 @@
 
 
 /* CMD_PLL_HOLD_BIT_SET/_CLR*/
+#define RF_WIFIPLL_HOLD_BY_THREAD_BIT                (2 << 1)
 #define RF_WIFIPLL_HOLD_BY_BLE_BIT                   (1 << 1)
 #define RF_WIFIPLL_HOLD_BY_WIFI_BIT                  (1 << 0)
 /* END*/

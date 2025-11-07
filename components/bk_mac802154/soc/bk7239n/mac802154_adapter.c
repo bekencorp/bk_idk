@@ -224,9 +224,15 @@ static void vote_rf_ctrl(uint8_t cmd)
 static void thread_power_ctrl(uint8_t en)
 {
     if (en) {
+        //Power UP thread and PHY
         bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_THREAD,PM_POWER_MODULE_STATE_ON);
+        bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_PHY_THREAD,PM_POWER_MODULE_STATE_ON);
+        //Switch High Power PLL
+        rf_pll_ctrl(0, RF_WIFIPLL_HOLD_BY_THREAD_BIT);
     } else {
         bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_THREAD,PM_POWER_MODULE_STATE_OFF);
+        bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_PHY_THREAD,PM_POWER_MODULE_STATE_OFF);
+        rf_pll_ctrl(1, RF_WIFIPLL_HOLD_BY_THREAD_BIT);
     }
 }
 
