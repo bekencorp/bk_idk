@@ -103,18 +103,14 @@ void bk_rtc_update_base_time(void)
 	// RTC_LOGI("s_time_base_us: 0x%x:0x%08x\r\n", (u32)(s_time_base_us >> 32), (u32)(s_time_base_us & 0xFFFFFFFF));
 }
 
-void bk_rtc_set_clock_freq(uint32_t clock_freq)
+__IRAM_SEC void bk_rtc_set_clock_freq(uint32_t clock_freq)
 {
-#if CONFIG_AON_RTC_DYNAMIC_CLOCK_SUPPORT
-	AON_RTC_LOGI("Set clock freq: %d\n", clock_freq);
+#if !CONFIG_EXTERN_32K
 	if (clock_freq == s_aon_rtc_clock_freq) {
 		return;
 	}
 	uint32_t int_level = rtos_disable_int();
-	{
-		bk_rtc_update_base_time();
-		s_aon_rtc_clock_freq = clock_freq;
-	}
+	s_aon_rtc_clock_freq = clock_freq;
 	rtos_enable_int(int_level);
 #endif
 }

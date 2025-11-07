@@ -84,12 +84,14 @@ void aon_pmu_drv_lpo_src_extern32k_enable(void)
 }
 void aon_pmu_drv_lpo_src_set(uint32_t lpo_src)
 {
+#if !CONFIG_ANA_RTC
 	if(lpo_src == PM_LPO_SRC_X32K)
 	{
 		bk_rtc_set_clock_freq(AON_RTC_EXTERN_32K_CLOCK_FREQ);
 	} else {
 		bk_rtc_set_clock_freq(AON_RTC_DEFAULT_CLOCK_FREQ);
 	}
+#endif
 
 #if CONFIG_ROSC_COMPENSATION
 	// get current tick to sync tick value for rosc_rtc_tick_compensation
