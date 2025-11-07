@@ -21,8 +21,15 @@
 #include "flash_driver.h"
 
 #define FLASH_PAGE_SIZE 256 /* each page has 256 bytes */
+#define FLASH_RELIABILITY_TEST_ADDR 0x300000 /* Test start address (3MB) */
+#define FLASH_RELIABILITY_TEST_SIZE 0x1000   /* Test size (4KB) */
+
 extern void print_help(const char *progname, void **argtable);
 extern void common_cmd_handler(int argc, char **argv, void **argtable, int argtable_size, void (*handler)(void **argtable));
+
+/* Flash reliability test control */
+static volatile bool g_flash_reliability_running = false;
+static beken_thread_t g_reliability_task_handle = NULL;
 
 static void cli_flash_api_cmd_handler(void **argtable)
 {
@@ -335,10 +342,161 @@ static void cli_argflash_protect_cmd(char *pcWriteBuffer, int xWriteBufferLen, i
     common_cmd_handler(argc, argv, argtable, argtable_size, cli_flash_protect_api_cmd_handler);
 }
 
+/* Flash reliability test task */
+static void flash_reliability_test_task(void)
+{
+    uint32_t test_addr = FLASH_RELIABILITY_TEST_ADDR;
+    uint32_t test_size = FLASH_RELIABILITY_TEST_SIZE;
+    uint8_t *write_buf = (uint8_t *)os_malloc(test_size);
+    uint8_t *read_buf = (uint8_t *)os_malloc(test_size);
+    
+    if (write_buf == NULL || read_buf == NULL) {
+        BK_DUMP_OUT("Failed to allocate memory for flash reliability test\r\n");
+        g_flash_reliability_running = false;
+        return;
+    }
+
+    uint32_t cycle_count = 0;
+    uint32_t error_count = 0;
+
+    while (1) {
+        /* Wait until start command */
+        while (!g_flash_reliability_running) {
+            rtos_thread_sleep(1);
+        }
+
+        /* Reset statistics for new test */
+        test_addr = FLASH_RELIABILITY_TEST_ADDR;
+        test_size = FLASH_RELIABILITY_TEST_SIZE;
+        cycle_count = 0;
+        error_count = 0;
+        
+        BK_DUMP_OUT("Flash reliability test started at address 0x%x, size 0x%x\r\n", test_addr, test_size);
+
+        while (g_flash_reliability_running) {
+            cycle_count++;
+
+            /* Generate test pattern - use cycle count to make data unique */
+            for (uint32_t i = 0; i < test_size; i++) {
+                write_buf[i] = (uint8_t)((cycle_count + i) & 0xFF);
+            }
+
+            /* Erase flash sectors */
+            bk_flash_set_protect_type(FLASH_PROTECT_NONE);
+            for (uint32_t addr = test_addr; addr < (test_addr + test_size); addr += FLASH_SECTOR_SIZE) {
+                bk_flash_erase_sector(addr);
+            }
+            bk_flash_set_protect_type(FLASH_UNPROTECT_LAST_BLOCK);
+
+            /* Write data to flash */
+            bk_flash_set_protect_type(FLASH_PROTECT_NONE);
+            for (uint32_t i = 0; i < test_size; i += FLASH_PAGE_SIZE) {
+                bk_flash_write_bytes(test_addr + i, write_buf + i, FLASH_PAGE_SIZE);
+            }
+            bk_flash_set_protect_type(FLASH_UNPROTECT_LAST_BLOCK);
+
+            /* Read data from flash */
+            for (uint32_t i = 0; i < test_size; i += FLASH_PAGE_SIZE) {
+                bk_flash_read_bytes(test_addr + i, read_buf + i, FLASH_PAGE_SIZE);
+            }
+
+            /* Verify data */
+            bool verify_ok = true;
+            for (uint32_t i = 0; i < test_size; i++) {
+                if (write_buf[i] != read_buf[i]) {
+                    verify_ok = false;
+                    error_count++;
+                    if (error_count <= 10) { /* Only print first 10 errors */
+                        BK_DUMP_OUT("Verify error at offset 0x%x: expected 0x%02x, got 0x%02x\r\n", 
+                                    i, write_buf[i], read_buf[i]);
+                    }
+                }
+            }
+
+            if (!verify_ok && error_count == 10) {
+                BK_DUMP_OUT("More verification errors occurred, only showing first 10...\r\n");
+            }
+
+            /* Print progress every 100 cycles */
+            if ((cycle_count % 100) == 0) {
+                BK_DUMP_OUT("Flash test cycle: %lu, errors: %lu\r\n", cycle_count, error_count);
+            }
+
+            /* Small delay to prevent task starvation */
+            rtos_thread_sleep(1);
+        }
+
+        /* Final statistics */
+        BK_DUMP_OUT("Flash reliability test stopped\r\n");
+        BK_DUMP_OUT("Total cycles: %lu\r\n", cycle_count);
+        BK_DUMP_OUT("Total errors: %lu\r\n", error_count);
+        BK_DUMP_OUT("Error rate: %.2f%%\r\n", error_count > 0 ? (100.0f * error_count / test_size / cycle_count) : 0.0f);
+    }
+
+    /* Never reach here */
+    os_free(write_buf);
+    os_free(read_buf);
+    g_reliability_task_handle = NULL;
+}
+
+static void cli_argflash_reliability_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+    if (argc < 2) {
+        BK_DUMP_OUT("Usage: flash_reliability <start/end>\r\n");
+        return;
+    }
+
+    const char *action = argv[1];
+
+    if (strcmp(action, "start") == 0) {
+        /* If already running, do nothing */
+        if (g_flash_reliability_running) {
+            BK_DUMP_OUT("Flash reliability test is already running\r\n");
+            return;
+        }
+
+        /* Create task if it doesn't exist */
+        if (g_reliability_task_handle == NULL) {
+            bk_err_t ret = rtos_create_thread(&g_reliability_task_handle,
+                                              20,
+                                              "flash_reli",
+                                              (beken_thread_function_t)flash_reliability_test_task,
+                                              1024,
+                                              (beken_thread_arg_t)NULL);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("Failed to create flash reliability test task, err=%d\r\n", ret);
+                g_reliability_task_handle = NULL;
+                return;
+            }
+        }
+
+        /* Start new test immediately by setting flag */
+        g_flash_reliability_running = true;
+        BK_DUMP_OUT("Flash reliability test started\r\n");
+    } else if (strcmp(action, "end") == 0) {
+        if (!g_flash_reliability_running) {
+            BK_DUMP_OUT("Flash reliability test is not running\r\n");
+            return;
+        }
+
+        BK_DUMP_OUT("Stopping flash reliability test...\r\n");
+        g_flash_reliability_running = false;
+        /* Statistics will be printed by task itself */
+        BK_DUMP_OUT("Flash reliability test stopped\r\n");
+    } else if (strcmp(action, "help") == 0 || strcmp(action, "-h") == 0 || strcmp(action, "--help") == 0) {
+        BK_DUMP_OUT("Usage: flash_reliability <start/end>\r\n");
+        BK_DUMP_OUT("  start - Start flash reliability test\r\n");
+        BK_DUMP_OUT("  end   - Stop flash reliability test\r\n");
+    } else {
+        BK_DUMP_OUT("Invalid argument: %s (use 'start' or 'end')\r\n", action);
+    }
+}
+
 #define FLASH_API_CMD_CNT (sizeof(s_flash_api_commands) / sizeof(struct cli_command))
 static const struct cli_command s_flash_api_commands[] = {
     {"argflash", "argflash { init | deinit | erase | read | write | line mode <get/set> | set line mode <2/4> | get flash <id/total_size> | set flash <dpll/dco> | flash write <enable/disable> | <enter/exit> flash deep sleep or erase flash block | Read flash words | <suspend/resume> flash register }", cli_argflash_cmd},
     {"argflash_protect", "argflash { <set/get> flash protect type | set flash protect type mode <none/all/half/unprotect> }", cli_argflash_protect_cmd},
+    {"flash_reliability", "flash_reliability <start/end>", cli_argflash_reliability_cmd},
 };
 
 int cli_flash_api_test_init(void)
