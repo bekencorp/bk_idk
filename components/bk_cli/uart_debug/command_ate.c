@@ -1965,6 +1965,48 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 break;
             }
 
+            case 0x3F:  // OTP CALIBRATION_ID read and write
+            {
+                uint32_t length = 3;
+                int ret = 0;
+
+                switch (content[2])
+                {
+                case 0x01:  // OTP CALIBRATION_ID read
+                {
+                    ret = bk_otp_ahb_read(OTP_CALIBRATION_ID, tx_buffer + 1, length);
+                    tx_buffer[0] = 0x0E;
+                    if (ret != BK_OK) {
+                        // otp read fail
+                        tx_buffer[0] = 0x55;
+                        tx_buffer[1] = 0xBB;
+                        uart_send_bytes_for_ate(tx_buffer, 2);
+                    } else {
+                        uart_send_bytes_for_ate(tx_buffer, length + 1);
+                    }
+                    break;
+                }
+
+                case 0x02:  // OTP CALIBRATION_ID write
+                {
+                    // "bk_otp_ahb_update" will do read-back check, so do not need to read back again here
+                    ret = bk_otp_ahb_update(OTP_CALIBRATION_ID, (uint8_t *)content + 3, 3);
+                    tx_buffer[0] = 0x55;
+                    if (ret != BK_OK) {
+                        tx_buffer[1] = 0xCC;
+                    } else {
+                        tx_buffer[1] = 0x33;
+                    }
+                    uart_send_bytes_for_ate(tx_buffer, 2);
+                    break;
+                }
+
+                default:
+                    break;
+                }
+                break;
+            }
+
             case 0x40: //read otp
                 ate_read_otp(content, cnt, tx_buffer);
                 break;
