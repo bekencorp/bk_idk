@@ -3,11 +3,11 @@ armino_build_get_property(target ARMINO_SOC)
 set(incs)
 set(srcs)
 
-armino_component_register(SRCS "${srcs}" INCLUDE_DIRS "${incs}" REQUIRES partitions)
+armino_component_register(SRCS "${srcs}" INCLUDE_DIRS "${incs}")
 
 if (CONFIG_BL2)
 
-armino_build_get_property(partition_hdr_dir PARTITIONS_HDR_DIR)
+armino_build_get_property(partition_hdr_dir SECURITY_PREBUILD_DIR)
 set(bl2_build_dir ${CMAKE_BINARY_DIR}/armino/bl2)
 
 include(ExternalProject)
@@ -31,7 +31,8 @@ ExternalProject_Add(bl2_project
 		-DOTP_NV_COUNTERS_RAM_EMULATION=${CONFIG_OTP_NV_COUNTERS_RAM_EMULATION}
 		-DPLATFORM_DEFAULT_OTP_WRITEABLE=${CONFIG_PLATFORM_DEFAULT_OTP_WRITEABLE}
 		-DMCUBOOT_LOG_LEVEL=${CONFIG_TFM_BL2_LOG_LEVEL}
-		-DPARTITION_HDR_DIR=${partition_hdr_dir}
+		-DSECURITY_HDR_DIR=$ENV{SECURITY_PREBUILD_DIR}
+		-DPARTITION_HDR_DIR=$ENV{PARTITIONS_DIR}
 		-DMCUBOOT_UPGRADE_STRATEGY=${CONFIG_BL2_UPGRADE_STRATEGY}
 		-DBL2_DOWNLOAD=${CONFIG_TFM_BL2_DOWNLOAD}
 		-DBL2_SECURE_DEBUG=${CONFIG_TFM_SECURE_DEBUG}

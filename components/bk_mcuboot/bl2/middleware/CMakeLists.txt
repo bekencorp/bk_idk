@@ -72,4 +72,5 @@ target_include_directories(platform_region_defs
                 ${TINYSOC_PATH}/driver/flash
                 ${SOC_PATH}/flash_layout
                 ${PARTITION_HDR_DIR}
+		${SECURITY_HDR_DIR}
 )

@@ -39,7 +39,7 @@ set(srcs
 	)
 
 
-set(priv_req bk_common bk_netif bk_ate driver easy_flash bk_libs riscv tfm bk_bluetooth bk_wifi bk_phy)
+set(priv_req bk_common bk_netif bk_ate driver easy_flash bk_libs tfm bk_bluetooth bk_wifi bk_phy)
 
 if (("${target}" STREQUAL "bk7237") OR ("${target}" STREQUAL "bk7256") OR ("${target}" STREQUAL "bk7234") OR ("${target}" STREQUAL "bk7236") OR ("${target}" STREQUAL "bk7239n") OR ("${target}" STREQUAL "bk7286") OR ("${target}" STREQUAL "bk7258") OR ("${target}" STREQUAL "bk723L"))
 list(APPEND priv_req vnd_cal)

@@ -33,6 +33,7 @@ set(platform_bl2_inc
 		flash_layout
 		cmsis_core
 		${PARTITION_HDR_DIR}
+		${SECURITY_HDR_DIR}
 		${BL2_COMPONENTS_PATH}/bl2
 
 	PRIVATE

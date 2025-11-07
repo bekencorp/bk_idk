@@ -48,7 +48,7 @@ u32 g_start_base = 0x1d000;
 u32 g_virtul_base = 0;
 
 static u32 s_record_dl_flag = 0; // 1 rep: dl bootloader ; 0: rep :others.
-const PARTITION_STRUCT g_partitions_map[] = PARTITION_MAP;
+const PARTITION_STRUCT g_partitions_map[] = BK_FLASH_PARTITIONS_MAP;
 
 #if CONFIG_BL2_UPDATE_WITH_PC
 u32 g_forbid_dl_partition[] = {0, 1};  //mainfest can be operate when do bootlaoder update

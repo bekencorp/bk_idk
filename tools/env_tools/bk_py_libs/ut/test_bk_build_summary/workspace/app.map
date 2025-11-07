@@ -1,0 +1,22 @@
+ .text          0x0000000000000000        0x0 /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v8-m.main+fp/hard/libnosys.a(write.o)
+ .data          0x0000000000000000        0x0 /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v8-m.main+fp/hard/libnosys.a(write.o)
+ .bss           0x0000000000000000        0x0 /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v8-m.main+fp/hard/libnosys.a(write.o)
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+FLASH            0x0000000002150000 0x00000000000e0000 xr
+IRAM             0x0000000008002800 0x0000000000061800 xr
+SPINLOCK         0x0000000028000000 0x0000000000002800 xrw
+RAM              0x0000000028002800 0x0000000000061800 xrw
+SWAP             0x000000002809f800 0x0000000000000800 xrw
+ITCM0            0x0000000000000020 0x0000000000003fe0 xrw
+DTCM0            0x0000000020000004 0x0000000000003ffc xrw
+ITCM1            0x0000000000000020 0x0000000000003fe0 xrw
+DTCM1            0x0000000020000004 0x0000000000003ffc xrw
+ITCM2            0x0000000000000020 0x0000000000003fe0 xrw
+DTCM2            0x0000000020000004 0x0000000000003ffc xrw
+PSRAM            0x0000000060000000 0x0000000004000000 xrw
+*default*        0x0000000000000000 0xffffffffffffffff
+
+Linker script and memory map

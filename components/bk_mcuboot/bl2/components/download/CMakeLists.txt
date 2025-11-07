@@ -37,6 +37,7 @@ endif()
 		./../../../cmsis/
 		${ARMINO_MIDDLEWARE_REPO_PATH}/boards/${SOC}/partitions
 		${PARTITION_HDR_DIR}
+		${SECURITY_HDR_DIR}
 		${IDK_PATH}/include
 		${IDK_PATH}/include/common
 		${IDK_PATH}/include/driver

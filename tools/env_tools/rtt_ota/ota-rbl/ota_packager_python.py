@@ -23,6 +23,8 @@ except ModuleNotFoundError:
     from Cryptodome import Random
     from Cryptodome.Cipher import AES
 
+PARTITIONS_DIR = os.environ['PARTITIONS_DIR']
+
 s_base_addr = 0
 SZ_16M = 0x1000000
 TOOL_NAME = 'image.py'
@@ -643,7 +645,7 @@ def packager(args):
     aes = args.encrypt
 
     config = args.gHeader + "/ota_rbl.config"
-    if os.path.exists('%s/%s/config/ota_rbl.config'%(armino_path, project_dir)) and os.path.exists('%s/%s/config/%s/configurationab.json'%(armino_path, project_dir,armino_soc)):
+    if os.path.exists('%s/%s/config/ota_rbl.config'%(armino_path, project_dir)) and ('%s/configurationab.json'%(PARTITIONS_DIR)):
         b_new_chip = 1
         config = '%s/%s/config/ota_rbl.config'%(armino_path, project_dir)
         print('=========================>>>> b_new_chip = 1')
@@ -701,7 +703,7 @@ def packager(args):
         if b_new_chip == 1:
             f.write(dest_obj)
 
-            config = '%s/%s/config/%s/configurationab.json'%(armino_path, project_dir, armino_soc)
+            config = '%s/configurationab.json'%(PARTITIONS_DIR)
             with open(config,"rb") as fj:
                 json_dict = json.load(fj)
                 if "section" in json_dict:

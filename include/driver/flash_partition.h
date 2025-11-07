@@ -21,6 +21,8 @@
 */
 #pragma once
 #include <common/bk_include.h>
+#include <partitions.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -49,21 +51,25 @@ typedef enum
     BK_FLASH_NONE = 3,
 }bk_flash_t;
 
-typedef enum
-{
-    BK_PARTITION_BOOTLOADER = 0,
-    BK_PARTITION_APPLICATION = 1,
-    BK_PARTITION_OTA = 2,
-    BK_PARTITION_APPLICATION1 = 3,
-    BK_PARTITION_MATTER_FLASH = 4,
-    BK_PARTITION_RF_FIRMWARE = 5,
-    BK_PARTITION_NET_PARAM = 6,
-    BK_PARTITION_USR_CONFIG = 7,
-    BK_PARTITION_OTA_FINA_EXECUTIVE = 8,
-    BK_PARTITION_APPLICATION2 = 9,
-    BK_PARTITION_EASYFLASH = 10,
-    BK_PARTITION_MAX,
-}bk_partition_t;
+typedef uint32_t bk_partition_t;
+// typedef enum
+// {
+//     BK_PARTITION_BOOTLOADER = 0,
+//     BK_PARTITION_APPLICATION = 1,
+//     BK_PARTITION_OTA = 2,
+//     BK_PARTITION_APPLICATION1 = 3,
+//     BK_PARTITION_MATTER_FLASH = 4,
+//     BK_PARTITION_RF_FIRMWARE = 5,
+//     BK_PARTITION_NET_PARAM = 6,
+//     BK_PARTITION_USR_CONFIG = 7,
+//     BK_PARTITION_OTA_FINA_EXECUTIVE = 8,
+//     BK_PARTITION_APPLICATION2 = 9,
+//     BK_PARTITION_EASYFLASH = 10,
+// 	BK_PARTITION_NVS = 11,
+//     BK_PARTITION_NVS_KEY = 12,
+//     BK_PARTITION_WIZ_MFR = 13,
+//     BK_PARTITION_MAX,
+// }bk_partition_t;
 
 typedef uint16_t bk_partition_type_t;
 
@@ -239,7 +245,7 @@ uint32_t get_partition_index(const bk_logic_partition_t* partition);
 /**
  * @brief     Write data to flash (only operating 4k flash space)
  *
- * @param partition partition to write  (eg:partition BK_PARTITION_RF_FIRMWARE)
+ * @param partition partition to write  (eg:partition BK_PARTITION_SYS_RF)
  * @param user_buf the pointer to data which is to write
  * @param size size to write
  * @param offset offset to write

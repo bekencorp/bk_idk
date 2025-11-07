@@ -283,10 +283,14 @@ class Partitions:
         f.write(line)
 
         macros = ''
-        struct_array = f"#define PARTITION_MAP {{ \\\r\n"
+        partition_ids = ''
+        id = 0
+        struct_array = f"#define BK_FLASH_PARTITIONS_MAP {{ \\\r\n"
         for p in self._partitions:
             macros += p.gen_code() + '\r\n'
             name = p.name()
+            partition_ids += f"#define BK_PARTITION_{name.upper().replace(' ', '_')} {id}\r\n"
+            id += 1
             struct_array +=  f"    {{BK_FLASH_EMBEDDED, \"{name}\""
             name = name.upper()
             name = name.replace(' ', '_')
@@ -297,6 +301,9 @@ class Partitions:
         struct_array += f"}}\r\n"
         f.write(macros)
         f.write(struct_array)
+        f.write('\r\n')
+        f.write(partition_ids)
+        f.write(f"#define BK_PARTITIONS_TABLE_SIZE {id}\r\n")
         f.flush()
         f.close()
 
@@ -304,7 +311,7 @@ class Partitions:
 
         for p in self._partitions:
             p.prebuild_process()
-        self.__gen_code('partitions_partition.h')
+        self.__gen_code('partitions_gen.h')
 
     def postbuild_process(self, flash_aes_en=False, flash_aes_key=None, img_sign_key=None, flash_crc_en=True):
         for p in self._partitions:

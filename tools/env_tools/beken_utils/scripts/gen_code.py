@@ -16,9 +16,10 @@ def gen_code():
     gen_ota_config_file('ota.csv', '_ota.h')
     gen_otp_map_file()
 
-    s = Security('security.csv')
-
-    o = OTA('ota.csv')
-    p = Partitions('partitions.csv', o.get_strategy(), s.secureboot_en)
-    gen_partitions_hdr_file(p, 'partitions_partition.h')
-    gen_partitions_layout_file(p, 'partition_layout.txt')
+    # TODO
+    # s = Security('security.csv')
+    OTA('ota.csv')
+    # o = OTA('ota.csv')
+    # p = Partitions('partitions.csv', o.get_strategy(), o.get_boot_ota(), s.secureboot_en)
+    # gen_partitions_hdr_file(p, 'partitions_partition.h')
+    # gen_partitions_layout_file(p, 'partition_layout.txt')
