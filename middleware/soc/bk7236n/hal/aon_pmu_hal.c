@@ -18,6 +18,9 @@
 #include "system_hw.h"
 #include "sys_types.h"
 #include "modules/pm.h"
+#include "driver/aon_rtc.h"
+
+#define TICK_CNT_100MS (100 * bk_rtc_get_ms_tick_count())
 
 bk_err_t aon_pmu_hal_init(void)
 {
@@ -192,7 +195,7 @@ uint32_t aon_pmu_hal_get_wakeup_source(void)
 	return aon_pmu_ll_get_r71_wakeup_source();
 }
 
-void aon_pmu_hal_r0_latch_to_r7b(void)
+__IRAM_SEC void aon_pmu_hal_r0_latch_to_r7b(void)
 {
 	aon_pmu_ll_set_r25(0x424B55AA);
 	aon_pmu_ll_set_r25(0xBDB4AA55);
@@ -245,7 +248,7 @@ uint32_t aon_pmu_hal_get_gpio_sleep(void)
 	return aon_pmu_ll_get_r7b_gpio_sleep();
 }
 
-void aon_pmu_hal_set_gpio_sleep(uint32_t value, bool write_immediately)
+__IRAM_SEC void aon_pmu_hal_set_gpio_sleep(uint32_t value, bool write_immediately)
 {
 	if (write_immediately) {
 		uint32_t r0 = aon_pmu_ll_get_r0();
@@ -259,7 +262,7 @@ void aon_pmu_hal_set_gpio_sleep(uint32_t value, bool write_immediately)
 		aon_pmu_ll_set_r0_gpio_sleep(value);
 	}
 }
-
+#if CONFIG_GPIO_RETENTION_SUPPORT
 uint32_t aon_pmu_hal_get_gpio_retention_bitmap(bool read_history)
 {
 	if (read_history)
@@ -284,6 +287,7 @@ void aon_pmu_hal_gpio_retention_bitmap_set(uint32_t bitmap)
 	aon_pmu_ll_set_r25(0x424B55AA);
 	aon_pmu_ll_set_r25(0xBDB4AA55);
 }
+#endif
 #else
 uint32_t aon_pmu_hal_get_dlv_startup(void)
 {
@@ -352,9 +356,23 @@ __IRAM_SEC void aon_pmu_hal_restore(void)
 	aon_pmu_ll_set_r2(s_pmu_saved_regs[2]);
 }
 
+#if CONFIG_AON_PMU_POR_RTC_RESET
 void aon_pmu_hal_save_time(bool is_startup)
 {
-	uint32_t time = aon_pmu_ll_get_r79_rtc_tick_l() / 3200; // unit=100ms
+	uint32_t time = aon_pmu_ll_get_r79_rtc_tick_l() / TICK_CNT_100MS;
+	aon_pmu_ll_set_r2_saved_time(time);
+}
+
+uint32_t aon_pmu_hal_get_por_timing()
+{
+	uint32_t time = aon_pmu_ll_get_r2_saved_time();
+	aon_pmu_ll_set_r2_saved_time(0);
+	return time;
+}
+#else
+void aon_pmu_hal_save_time(bool is_startup)
+{
+	uint32_t time = aon_pmu_ll_get_r79_rtc_tick_l() / TICK_CNT_100MS; // unit=100ms
 	uint32_t _time = aon_pmu_ll_get_r7b_saved_time();
 
 	// use bit10 to indicate time value is over 0x1FF
@@ -405,6 +423,7 @@ uint32_t aon_pmu_hal_get_por_timing(void)
 
 	return delta_time >= 0 ? delta_time : 0;
 }
+#endif
 
 uint32_t aon_pmu_hal_get_ana_gpio_status(void)
 {

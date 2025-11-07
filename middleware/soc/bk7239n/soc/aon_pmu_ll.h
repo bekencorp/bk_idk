@@ -138,34 +138,49 @@ static inline uint32_t aon_pmu_ll_get_r7b_dlv_startup(void) {
 	return r->dlv_startup;
 }
 
+static inline void aon_pmu_ll_set_r0_shared_bits(uint32_t v) {
+	aon_pmu_r0_t *r = (aon_pmu_r0_t*)(SOC_AON_PMU_REG_BASE + (0x0 << 2));
+	r->shared_bits = v;
+}
+
+static inline uint32_t aon_pmu_ll_get_r0_shared_bits(void) {
+	aon_pmu_r0_t *r = (aon_pmu_r0_t*)(SOC_AON_PMU_REG_BASE + (0x0 << 2));
+	return r->shared_bits;
+}
+
+static inline uint32_t aon_pmu_ll_get_r7b_shared_bits(void) {
+	aon_pmu_r0_t *r = (aon_pmu_r0_t*)(SOC_AON_PMU_REG_BASE + (0x7b << 2));
+	return r->shared_bits;
+}
+
 static inline void aon_pmu_ll_set_r0_saved_time(uint32_t v) {
 	aon_pmu_r0_t *r = (aon_pmu_r0_t*)(SOC_AON_PMU_REG_BASE + (0x0 << 2));
-	r->saved_time = v;
+	r->shared_bits = v;
 }
 
 static inline uint32_t aon_pmu_ll_get_r0_saved_time(void) {
 	aon_pmu_r0_t *r = (aon_pmu_r0_t*)(SOC_AON_PMU_REG_BASE + (0x0 << 2));
-	return r->saved_time;
+	return r->shared_bits;
 }
 
 static inline uint32_t aon_pmu_ll_get_r7b_saved_time(void) {
 	aon_pmu_r0_t *r = (aon_pmu_r0_t*)(SOC_AON_PMU_REG_BASE + (0x7b << 2));
-	return r->saved_time;
+	return r->shared_bits;
 }
 
 static inline uint32_t aon_pmu_ll_get_r0_gpio_retention_bitmap(void) {
 	aon_pmu_r0_t *r = (aon_pmu_r0_t*)(SOC_AON_PMU_REG_BASE + (0x0 << 2));
-	return r->gpio_retention_bitmap;
+	return r->shared_bits;
 }
 
 static inline uint32_t aon_pmu_ll_get_r7b_gpio_retention_bitmap(void) {
 	aon_pmu_r0_t *r = (aon_pmu_r0_t*)(SOC_AON_PMU_REG_BASE + (0x7b << 2));
-	return r->gpio_retention_bitmap;
+	return r->shared_bits;
 }
 
 static inline void aon_pmu_ll_set_r0_gpio_retention_bitmap(uint32_t v) {
 	aon_pmu_r0_t *r = (aon_pmu_r0_t*)(SOC_AON_PMU_REG_BASE + (0x0 << 2));
-	r->gpio_retention_bitmap = v;
+	r->shared_bits = v;
 }
 
 
@@ -219,6 +234,16 @@ static inline void aon_pmu_ll_set_r2_rtc_value_samp_sel(uint32_t v) {
 static inline uint32_t aon_pmu_ll_get_r2_rtc_value_samp_sel(void) {
 	aon_pmu_r2_t *r = (aon_pmu_r2_t*)(SOC_AON_PMU_REG_BASE + (0x2 << 2));
 	return r->rtc_value_samp_sel;
+}
+
+static inline void aon_pmu_ll_set_r2_saved_time(uint32_t v) {
+	aon_pmu_r2_t *r = (aon_pmu_r2_t*)(SOC_AON_PMU_REG_BASE + (0x2 << 2));
+	r->saved_time = v;
+}
+
+static inline uint32_t aon_pmu_ll_get_r2_saved_time(void) {
+	aon_pmu_r2_t *r = (aon_pmu_r2_t*)(SOC_AON_PMU_REG_BASE + (0x2 << 2));
+	return r->saved_time;
 }
 
 static inline void aon_pmu_ll_set_r2_otp_vdd_en(uint32_t v) {

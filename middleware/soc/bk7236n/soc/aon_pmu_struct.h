@@ -21,15 +21,19 @@
 extern "C" {
 #endif
 
+#if CONFIG_GPIO_RETENTION_SUPPORT && CONFIG_AON_PMU_POR_TIMING_SUPPORT && !CONFIG_AON_PMU_POR_RTC_RESET
+#error "gpio retention and rtc no reset por timing shared reg0 bit[5:14]"
+#endif
 
 typedef volatile union {
 	struct {
 		uint32_t memchk_bps               :  1; /**<bit[0 : 0] */
 		uint32_t fast_boot                :  1; /**<bit[1 : 1] */
 		uint32_t dig_wake_en              :  1; /**<bit[2 : 2] */
-		uint32_t reserved_bit_3_4         :  2; /**<bit[3 :4] */
-		uint32_t gpio_retention_bitmap    :  8; /**<bit[5 : 12] */
-		uint32_t saved_time               : 10; /**<bit[13 :22] */
+		uint32_t bl2_reboot_times         :  1; /**<bit[3 : 3] */
+		uint32_t reserved_bit_4           :  1; /**<bit[4 : 4] */
+		uint32_t shared_bits              : 10; /**<bit[5 :14] */
+		uint32_t secboot_bootloader_address   :  8; /**<bit[15:22] */
 		uint32_t dlv_startup              :  1; /**<bit[23:23] */
 		uint32_t reset_reason             :  7; /**<bit[24:30] */
 		uint32_t gpio_sleep               :  1; /**<bit[31:31] */
@@ -45,7 +49,8 @@ typedef volatile union {
 		uint32_t wdt_rst_aon              :  1; /**<bit[2 : 2] */
 		uint32_t reserved_bit_3_7         :  5; /**<bit[3 : 7] */
 		uint32_t rtc_value_samp_sel       :  1; /**<bit[8 : 8] */
-		uint32_t reserved_bit_9_30        : 22; /**<bit[9 :30] */
+		uint32_t saved_time               :  10;/**<bit[9 :18] */
+		uint32_t reserved_bit_19_30        : 12; /**<bit[19 :30] */
 		uint32_t otp_vdd_en               :  1; /**<bit[31:31] */
 	};
 	uint32_t v;
