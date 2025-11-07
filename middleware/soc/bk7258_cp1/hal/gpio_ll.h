@@ -252,6 +252,8 @@ static inline void gpio_ll_set_perial_mode(gpio_hw_t *hw, uint32 index, uint32_t
 		REG_MCHAN_SET_FIELD(index-GPIO_16, &gpio_system_gpio_func_mode->gpio_sys_num[2], GPIO_F_PERIAL_MODE, mode);
 	else if (index < GPIO_32)
 		REG_MCHAN_SET_FIELD(index-GPIO_24, &gpio_system_gpio_func_mode->gpio_sys_num[3], GPIO_F_PERIAL_MODE, mode);
+	else if (index < GPIO_40)
+		REG_MCHAN_SET_FIELD(index-GPIO_32, &gpio_system_gpio_func_mode->gpio_sys_num[4], GPIO_F_PERIAL_MODE, mode);
 	else if (index < GPIO_48)
 		REG_MCHAN_SET_FIELD(index-GPIO_40, &gpio_system_gpio_func_mode->gpio_sys_num[5], GPIO_F_PERIAL_MODE, mode);
 	else

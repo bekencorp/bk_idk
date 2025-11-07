@@ -840,10 +840,10 @@ bk_err_t bk_gpio_unregister_wakeup_source(gpio_id_t gpio_id)
 	{
 		if(s_gpio_dynamic_wakeup_source_map[i].id == gpio_id)
 		{
+			s_gpio_is_setted_wake_status &= ~(((uint64_t)1 << s_gpio_dynamic_wakeup_source_map[i].id));
 			s_gpio_dynamic_wakeup_source_map[i].id = GPIO_WAKE_SOURCE_IDLE_ID;
 			s_gpio_dynamic_wakeup_source_map[i].int_type = GPIO_INT_TYPE_MAX;
 			//s_gpio_dynamic_wakeup_source_map[i].isr = NULL;
-			s_gpio_is_setted_wake_status &= ~(((uint64_t)1 << s_gpio_dynamic_wakeup_source_map[i].id));
 
 			/* Clear the hardware status during deregister */
 			bk_gpio_disable_input(gpio_id);

@@ -107,7 +107,7 @@ bk_err_t gpio_hal_get_output(gpio_hal_t *hal, gpio_id_t gpio_id)
 	if(gpio_ll_check_output_enable(hal->hw, gpio_id))
 		return (gpio_ll_get_gpio_output_value(hal->hw, gpio_id));
 	else
-		return BK_ERR_GPIO_NOT_INPUT_MODE;
+		return BK_ERR_GPIO_NOT_OUTPUT_MODE;
 }
 
 bk_err_t gpio_hal_get_input(gpio_hal_t *hal, gpio_id_t gpio_id)
@@ -197,9 +197,17 @@ bk_err_t gpio_hal_func_map(gpio_hal_t *hal, gpio_id_t gpio_id, gpio_dev_t dev)
 		HAL_LOGE("gpio device is none, id=%d dev=%d\r\n", gpio_id, dev);
 		return BK_ERR_GPIOS_MAP_NONE;
 	} else {
+		bool found = false;
 		for (int peri_func = 0; peri_func < GPIO_PERI_FUNC_NUM; peri_func ++) {
-			if (dev == gpio_map->dev[peri_func])
+			if (dev == gpio_map->dev[peri_func]) {
 				gpio_ll_set_gpio_perial_mode((hal)->hw, gpio_id, peri_func);
+				found = true;
+				break;
+			}
+		}
+		if (!found) {
+			HAL_LOGE("gpio device not supported, id=%d dev=%d\r\n", gpio_id, dev);
+			return BK_ERR_GPIO_SET_INVALID_FUNC_MODE;
 		}
 	}
 
