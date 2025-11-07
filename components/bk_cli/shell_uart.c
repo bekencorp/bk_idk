@@ -479,7 +479,7 @@ static bool_t shell_uart_init(shell_dev_t * shell_dev)
 	uart_ext->tx_suspend = 0;
 	uart_ext->uart_id = uart_id;
 
-	if(CONFIG_UART_PRINT_PORT != uart_id)
+	if(bk_get_printf_port() != uart_id)
 	{
 		bk_uart_init(uart_id, &config);
 	}
