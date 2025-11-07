@@ -513,6 +513,6 @@ endif()
 
 armino_component_register(SRCS "${srcs}"
 	INCLUDE_DIRS "${incs}"
-	REQUIRES arm9 riscv cm33
+	REQUIRES cm33
 	PRIV_REQUIRES bk_log bk_ate easy_flash tfm cmsis os_source bk_usb bk_phy
 )

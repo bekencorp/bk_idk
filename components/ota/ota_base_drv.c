@@ -16,7 +16,7 @@
 #endif
 #ifdef CONFIG_HTTP_AB_PARTITION
 #include "modules/ota.h"
-#include "vendor_flash_partition.h"
+#include <driver/flash_partition.h>
 extern part_flag update_part_flag;
 #endif
 
@@ -56,11 +56,11 @@ static int ota_do_init(f_ota_t* ota_ptr)
 
 #ifdef CONFIG_HTTP_AB_PARTITION
 #if CONFIG_OTA_POSITION_INDEPENDENT_AB
-	ota_ptr->partition_length = http_get_sapp_partition_length(BK_PARTITION_S_APP_USER);
+	ota_ptr->partition_length = http_get_sapp_partition_length(BK_PARTITION_S_APP);
     if(update_part_flag == UPDATE_B_PART)
     {
-        OTA_LOGI("UPDATE_B_PART\r\n");
-        ota_ptr->pt = bk_flash_partition_get_info(BK_PARTITION_S_APP_USER); //update B_parition
+        OTA_LOGD("UPDATE_B_PART\r\n");
+        ota_ptr->pt = bk_flash_partition_get_info(BK_PARTITION_S_APP); //update B_parition
     }
     else
     {
@@ -68,7 +68,7 @@ static int ota_do_init(f_ota_t* ota_ptr)
         ota_ptr->pt = bk_flash_partition_get_info(BK_PARTITION_APPLICATION);//update A_parition.
     }
 #else
-    ota_ptr->pt = bk_flash_partition_get_info(BK_PARTITION_S_APP_USER);
+    ota_ptr->pt = bk_flash_partition_get_info(BK_PARTITION_S_APP);
 #endif
 #else
     ota_ptr->pt = bk_flash_partition_get_info(BK_PARTITION_OTA);

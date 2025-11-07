@@ -73,6 +73,13 @@ fi
 PROPERTIES_LIB_BUILD_DIR=${SDK_BUILD_DIR}/properties_libs/${ARMINO_SOC}
 PROPERTIES_LIB_DIR=${PROPERTIES_PROJECT_DIR}
 
+# not to build properties repeatedly when verify.
+if [ -n "${BK_JENKINS_ID:-}" ]; then
+	if [ -d "$PROPERTIES_LIB_BUILD_DIR" ]; then
+		need_build_properties_lib=0
+	fi
+fi
+
 if [ "${need_clean}" == "1" ]; then
 	echo "remove ${ARMINO_DIR}/components/bk_libs/${ARMINO_SOC}"
 	rm -rf ${ARMINO_DIR}/components/bk_libs/${ARMINO_SOC}
@@ -103,35 +110,5 @@ if [ "${need_build_soc}" == "1" ]; then
 	${ARMINO_TOOL} -B ${BUILD_DIR} -P ${PROJECT_DIR} set-target ${ARMINO_SOC}
 	${ARMINO_TOOL} -B ${BUILD_DIR} -P ${PROJECT_DIR} ${ARMINO_TARGET}
 	${ARMINO_DIR}/tools/build_tools/armino_as_lib.sh ${ARMINO_SOC} ${ARMINO_DIR} ${BUILD_DIR} ${PROJECT}
-	
-	# Write product ID to all-app.bin
-	WRITE_PRODUCT_ID_SCRIPT="${ARMINO_DIR}/tools/build_tools/write_product_id.py"
-	ALL_APP_BIN="${BUILD_DIR}/all-app.bin"
-	PRODUCT_ID_FILE="${ARMINO_DIR}/middleware/boards/${ARMINO_SOC}/product_id.txt"
-	
-	if [ -f "${WRITE_PRODUCT_ID_SCRIPT}" ] && [ -f "${ALL_APP_BIN}" ]; then
-		if [ -f "${PRODUCT_ID_FILE}" ]; then
-			# Read product ID from product_id.txt for the specific SOC
-			echo "Writing product ID to ${ALL_APP_BIN} (from ${PRODUCT_ID_FILE})..."
-			python3 "${WRITE_PRODUCT_ID_SCRIPT}" "${ALL_APP_BIN}" --product-id-file "${PRODUCT_ID_FILE}"
-		else
-			# Fallback: if product_id.txt doesn't exist, skip
-			echo "Warning: product_id.txt not found at ${PRODUCT_ID_FILE}"
-			echo "Skipping product ID write operation"
-		fi
-		
-		if [ $? -eq 0 ]; then
-			echo "Product ID write operation completed"
-		else
-			echo "Warning: Product ID write operation returned error"
-		fi
-	else
-		if [ ! -f "${WRITE_PRODUCT_ID_SCRIPT}" ]; then
-			echo "Warning: write_product_id.py not found at ${WRITE_PRODUCT_ID_SCRIPT}"
-		fi
-		if [ ! -f "${ALL_APP_BIN}" ]; then
-			echo "Warning: all-app.bin not found at ${ALL_APP_BIN}"
-		fi
-	fi
 fi
 

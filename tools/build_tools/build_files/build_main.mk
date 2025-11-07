@@ -1,6 +1,5 @@
 export PROPERTIES_PROJECT_DIR := projects/properties_libs
 ARMINO_DIR := $(CURDIR)
-ARMINO_BOOTLOADER := $(ARMINO_DIR)/properties/modules/bootloader/aboot/monitor_bootloader/
 ARMINO_TOOL := $(ARMINO_DIR)/tools/build_tools/armino
 ARMINO_TOOL_WRAPPER := $(ARMINO_DIR)/tools/build_tools/build.sh
 # 1. soc_targets contains all supported SoCs
@@ -35,7 +34,7 @@ endif
 ifeq ("$(PROJECT)", "")
 	ifneq ("$(INTERNAL)", "")
 		export PROJECT := $(INTERNAL)
-		export PROJECT_DIR := properties/projects/$(PROJECT)
+		export PROJECT_DIR := $(ARMINO_DIR)/properties/projects/$(PROJECT)
 		export PROPERTIES_PROJECT_DIR := properties/projects/properties_libs
 	else
 		export PROJECT := app
@@ -70,11 +69,12 @@ else
 	ARMINO_TARGET := build
 endif
 
-PROJECT_NAME := $(notdir $(PROJECT_DIR))
+export ARMINO_SOC_NAME ?= $(ARMINO_SOC)
+export PROJECT_NAME := $(notdir $(PROJECT_DIR))
 ifdef BUILD_DIR
-	PROJECT_BUILD_DIR := $(BUILD_DIR)
+	export PROJECT_BUILD_DIR := $(abspath $(BUILD_DIR)/$(ARMINO_SOC_NAME)/$(PROJECT_NAME))
 else
-	PROJECT_BUILD_DIR := build/$(PROJECT_NAME)
+	export PROJECT_BUILD_DIR := $(CURDIR)/build/$(ARMINO_SOC_NAME)/$(PROJECT_NAME)
 endif
 
 ifeq ($(findstring Windows_NT,$(OS)), Windows_NT)
@@ -87,10 +87,8 @@ endif
 
 # overwrite project config
 -include $(ARMINO_DIR)/middleware/soc/$(ARMINO_SOC)/soc_config.mk
--include $(ARMINO_DIR)/components/part_table/part_table.mk
--include $(PROJECT_DIR)/pj_config.mk
-
 export COMPILER_TOOLCHAIN_PATH := $(COMPILER_TOOLCHAIN_PATH)
+-include $(PROJECT_DIR)/pj_config.mk
 
 .PHONY: all_targets
 
@@ -117,20 +115,14 @@ common:
 	@export ARMINO_PATH=$(ARMINO_DIR)
 	@export APP_NAME=$(APP_NAME)
 
+is_secure_build := $(shell python3 $(ARMINO_DIR)/tools/build_tools/parse_build_type.py ${PROJECT_DIR} ${ARMINO_SOC})
+ifeq ($(is_secure_build), 1)
+BUILD_TYPE := secure_build
+else
+BUILD_TYPE := nonsecure_build
+endif
+
 has_lib_src := $(shell python3 $(ARMINO_DIR)/tools/build_tools/detect_internal_lib_src.py)
-
-bootloader:
-ifeq ($(has_lib_src), 1)
-ifneq ($(findstring $(ARMINO_SOC), $(PART_TABLE_SUPPORTED_TARGETS)),)
-ifneq ($(findstring $(PROJECT), $(PART_TABLE_SUPPORTED_PROJECTS)),)
-	@python3 $(ARMINO_TOOL_PART_TABLE) $(PARTITIONS_CSV_FILE) --to-json=$(BOOTLOADER_JSON) $(PARTITIONS_ARGS) $(BOOTLOADER_JSON_INSEQ)
-	@cp $(BOOTLOADER_JSON) $(BOOTLOADER_JSON_OLD)
-endif
-endif
-	make clean -C ${ARMINO_BOOTLOADER}
-	make -C ${ARMINO_BOOTLOADER} SOC_TYPE=$(ARMINO_SOC)
-endif
-
 ifeq ($(has_lib_src), 1)
 ifneq ("$(APP_VERSION)", "verify")
 $(properties_lib_targets): common
@@ -140,25 +132,15 @@ endif
 
 liball: $(properties_lib_targets)
 
-$(soc_targets): ${PRE_BUILD_TARGET}
-ifneq ($(findstring $(ARMINO_SOC), $(PART_TABLE_SUPPORTED_TARGETS)),)
-ifneq ($(findstring $(PROJECT), $(PART_TABLE_SUPPORTED_PROJECTS)),)
-	@python3 $(ARMINO_TOOL_PART_TABLE) $(PARTITIONS_CSV_FILE) --to-json=$(BOOTLOADER_JSON) $(PARTITIONS_ARGS) $(BOOTLOADER_JSON_INSEQ)
-	@cp $(BOOTLOADER_JSON) $(BOOTLOADER_JSON_PACK)
-else
-ifneq ($(wildcard $(BOOTLOADER_JSON_PACK)),)
-	$(warning "$(BOOTLOADER_JSON_PACK) is exist")
-	@rm -rf $(BOOTLOADER_JSON_PACK)
-else
-	$(warning "$(BOOTLOADER_JSON_PACK) is not exsit")
-endif
-endif
-endif
+export BUILD_TARGETS := ${ARMINO_SOC_NAME} ${PRE_BUILD_TARGET}
 
-ifneq ("$(ARMINO_TARGET)", "doc")
-	@$(ARMINO_TOOL_WRAPPER) $(ARMINO_DIR) $(PROJECT_DIR) $(PROJECT_BUILD_DIR) $@
+# verify enable multithread build.
+ifdef BK_JENKINS_ID
+BUILD_TOOLCHAIN_DIR := $(ARMINO_DIR)/tools/build_tools/toolchain/gcc-arm-none-eabi-10.3-2024.08
+ifneq ("$(wildcard $(BUILD_TOOLCHAIN_DIR))", "")
+MAKEFLAGS += -j$(shell echo $(BUILD_TARGETS) | wc -w)
 else
-	@echo "skip make doc"
+endif
 endif
 
 all: $(soc_targets)
@@ -181,9 +163,70 @@ $(clean_targets):
 $(doc_targets):
 	@$(ARMINO_TOOL_WRAPPER) $(ARMINO_DIR) $(PROJECT_DIR) $(PROJECT_NAME) $@
 
+ifeq ($(findstring Windows_NT,$(OS)), Windows_NT)
+export WIN32 := 1
+PRINT_SUMMARY := 0
+export PYTHONPATH := $(ARMINO_DIR)/tools/env_tools/bk_py_libs;$(PYTHONPATH)
+else
+export WIN32 := 0
+export PYTHONPATH := $(ARMINO_DIR)/tools/env_tools/bk_py_libs:$(PYTHONPATH)
+endif
+
+
+AUTO_PARTITION_TABLE := $(PROJECT_DIR)/config/$(ARMINO_SOC_NAME)/auto_partitions.csv
+export PARTITIONS_DIR := $(PROJECT_BUILD_DIR)/partitions
+export SECURITY_PREBUILD_DIR := $(PROJECT_BUILD_DIR)/security
+auto_partition_script := $(ARMINO_DIR)/tools/build_tools/build_process/bk_build_auto_partition.py
+auto_partition_out := $(PARTITIONS_DIR)/partitions.txt
+
+security_prebuild_script := $(ARMINO_DIR)/tools/build_tools/build_process/bk_sdk/bk_prebuild.py
+security_prebuild_out := $(PROJECT_BUILD_DIR)/security
+
+$(auto_partition_out): $(auto_partition_script) $(AUTO_PARTITION_TABLE)
+	@mkdir -p $(PARTITIONS_DIR)
+	@python3 $(auto_partition_script)
+
+print_partitions: $(auto_partition_out)
+	@echo ===================== Partitions Table =====================
+	@cat $(auto_partition_out)
+	@echo ============================================================
+
+security_prebuild: $(security_prebuild_script)
+	@mkdir -p $(SECURITY_PREBUILD_DIR)
+	@python3 $(security_prebuild_script) --soc $(ARMINO_SOC_NAME) --project_dir $(PROJECT_DIR) --armino_dir $(ARMINO_DIR) --build_dir $(SECURITY_PREBUILD_DIR) --secure $(is_secure_build)
+
+nonsecure_prebuild: $(auto_partition_out) print_partitions security_prebuild
+
+$(ARMINO_SOC_NAME)_ns_cp0: nonsecure_prebuild
+	@$(ARMINO_TOOL_WRAPPER) $(ARMINO_DIR) $(PROJECT_DIR) $(PROJECT_BUILD_DIR) ${ARMINO_SOC_NAME}
+
+nonsecure_package_script := $(ARMINO_DIR)/tools/build_tools/build_process/bk_build_package.py
+package_dir := $(PROJECT_BUILD_DIR)/package
+package_json := $(PARTITIONS_DIR)/bk_package.json
+build_summary := $(package_dir)/build_summary.txt
+nonsecure_package: $(nonsecure_package_script) $(ARMINO_SOC_NAME)_ns_cp0 ${PRE_BUILD_TARGET}
+	@mkdir -p $(package_dir)
+	@python3 $(nonsecure_package_script) $(PROJECT_BUILD_DIR) $(package_json) $(build_summary)
+ifneq ($(PRINT_SUMMARY), 0)
+	@cat $(build_summary)
+endif
+
+$(ARMINO_SOC_NAME)_s_cp0: security_prebuild
+	@$(ARMINO_TOOL_WRAPPER) $(ARMINO_DIR) $(PROJECT_DIR) $(PROJECT_BUILD_DIR) ${ARMINO_SOC_NAME}
+
+secure_package_script := $(ARMINO_DIR)/tools/build_tools/secure_pack.py
+secure_package: $(secure_package_script) $(ARMINO_SOC_NAME)_s_cp0 ${PRE_BUILD_TARGET}
+	@python3 $(secure_package_script) $(ARMINO_SOC_NAME) $(ARMINO_DIR) $(PROJECT_BUILD_DIR) $(PROJECT_DIR)
+
+nonsecure_build: nonsecure_package
+secure_build: secure_package
+
+postbuild_process_script := $(ARMINO_DIR)/tools/build_tools/postbuild_process.sh
+${ARMINO_SOC_NAME}: $(BUILD_TYPE)
+	@$(postbuild_process_script) ${ARMINO_SOC_NAME} $(ARMINO_DIR) $(PROJECT_BUILD_DIR)
+
 clean:
-	@echo "rm all files generated by part_table_tool"
-	-@python3 $(ARMINO_TOOL_PART_TABLE) $(DEFAULT_CSV_FILE) $(PARTITIONS_ARGS) $(CLEAN_ALLFILE_INSEQ)
+	-@$(ARMINO_TOOL_PART_TABLE) $(DEFAULT_CSV_FILE) $(PARTITIONS_ARGS) $(CLEAN_ALLFILE_INSEQ)
 	@echo "rm -rf ./build"
 	@python3 tools/build_tools/armino_doc.py clean
 	@rm -rf ./build

@@ -193,7 +193,7 @@ static void cli_flash_partition_cmd(char *pcWriteBuffer, int xWriteBufferLen, in
 	bk_logic_partition_t *partition;
 
 	if (os_strcmp(argv[1], "show") == 0) {
-		for (bk_partition_t par= BK_PARTITION_BOOTLOADER; par < BK_PARTITION_MAX; par++) {
+		for (bk_partition_t par= BK_PARTITION_BOOTLOADER; par < BK_PARTITIONS_TABLE_SIZE; par++) {
 			partition = bk_flash_partition_get_info(par);
 			if (partition == NULL)
 				continue;

@@ -23,7 +23,7 @@
 
 #ifdef CONFIG_HTTP_AB_PARTITION
     #include "modules/ota.h"
-    #include "vendor_flash_partition.h"
+    #include <driver/flash_partition.h>
     extern part_flag update_part_flag;
 #endif
 #if CONFIG_HTTP
@@ -776,11 +776,11 @@ void http_flash_init(void)
 	bk_http_ptr->pt = bk_flash_partition_get_info(BK_PARTITION_OTA);
 #else
 #if CONFIG_OTA_POSITION_INDEPENDENT_AB
-	ota_partition_length = http_get_sapp_partition_length(BK_PARTITION_S_APP_USER);
+	ota_partition_length = http_get_sapp_partition_length(BK_PARTITION_S_APP);
     if(update_part_flag == UPDATE_B_PART)
     {
-        os_printf("UPDATE_B_PART\r\n");
-        bk_http_ptr->pt = bk_flash_partition_get_info(BK_PARTITION_S_APP_USER); //update B_parition
+        BK_LOGV(TAG, "UPDATE_B_PART\r\n");
+        bk_http_ptr->pt = bk_flash_partition_get_info(BK_PARTITION_S_APP); //update B_parition
     }
     else
     {
@@ -788,7 +788,7 @@ void http_flash_init(void)
         bk_http_ptr->pt = bk_flash_partition_get_info(BK_PARTITION_APPLICATION);//update A_parition.
     }
 #else
-    bk_http_ptr->pt = bk_flash_partition_get_info(BK_PARTITION_S_APP_USER);
+    bk_http_ptr->pt = bk_flash_partition_get_info(BK_PARTITION_S_APP);
 #endif
 
 #if CONFIG_OTA_EVADE_METHOD

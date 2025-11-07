@@ -226,10 +226,10 @@ static int bk_check_mac_address(u8 *mac)
 
 #if (CONFIG_NEW_MAC_POLICY)
 /*
-1. BASE MAC stored at flash partison: BK_PARTITION_NET_PARAM as WIFI_MAC_ITEM (0x3ff000: first 6 bytes)
+1. BASE MAC stored at flash partison: BK_PARTITION_SYS_NET as WIFI_MAC_ITEM (0x3ff000: first 6 bytes)
 2. BASE MAC maybe missed while board power down at the time point:
-	erase flash partition between BK_PARTITION_NET_PARAM update other netinfo process
-3. Use BK_PARTITION_RF_FIRMWARE last free 512 bytes to backup the BASE MAC
+	erase flash partition between BK_PARTITION_SYS_NET update other netinfo process
+3. Use BK_PARTITION_SYS_RF last free 512 bytes to backup the BASE MAC
 4. Every backup record of BASE MAC is 10 bytes, just write, no erase. MAX backup 51 times
 */
 
@@ -373,7 +373,7 @@ static int sync_base_mac_record(uint8_t *mac, int mode)
 	}
 
 	do {
-		ret = bk_flash_partition_read(BK_PARTITION_RF_FIRMWARE,
+		ret = bk_flash_partition_read(BK_PARTITION_SYS_RF,
 					(uint8_t *)mac_rec_p,
 					BASE_MAC_RECORD_OFFSET,
 					BASE_MAC_RECORD_SIZE);
@@ -403,7 +403,7 @@ static int sync_base_mac_record(uint8_t *mac, int mode)
 			os_memcpy(mac, mac_rec_p[valid_index].mac, BASE_MAC_LEN);
 		} else if (BASE_MAC_RECORD_OPT_WRITE == mode) {
 			build_base_mac_record(&mac_rec_p[free_index], mac);
-			bk_flash_partition_write(BK_PARTITION_RF_FIRMWARE,
+			bk_flash_partition_write(BK_PARTITION_SYS_RF,
 					(uint8_t *)&mac_rec_p[free_index],
 					BASE_MAC_RECORD_OFFSET + record_len*free_index,
 					record_len);

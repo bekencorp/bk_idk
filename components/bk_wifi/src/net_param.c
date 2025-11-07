@@ -58,9 +58,9 @@ static UINT32 search_info_tbl(UINT8 *buf, UINT32 *cfg_len)
 #endif
 	TLV_HEADER_ST head;
 #if CONFIG_FLASH_ORIGIN_API
-	bk_logic_partition_t *pt = bk_flash_get_info(BK_PARTITION_NET_PARAM);
+	bk_logic_partition_t *pt = bk_flash_get_info(BK_PARTITION_SYS_NET);
 #else
-	bk_logic_partition_t *pt = bk_flash_partition_get_info(BK_PARTITION_NET_PARAM);
+	bk_logic_partition_t *pt = bk_flash_partition_get_info(BK_PARTITION_SYS_NET);
 #endif
 
 	*cfg_len = 0;
@@ -153,13 +153,13 @@ UINT32 save_net_info(NET_INFO_ITEM item, UINT8 *ptr0, UINT8 *ptr1, UINT8 *ptr2)
 	case WIFI_MAC_ITEM:
 		len = MAC_ADDR_LEN;
 		offset = NET_INFO_MAC_ADDR_OFFSET;
-		bk_spec_flash_write_bytes(BK_PARTITION_NET_PARAM, ptr0, len, offset);
+		bk_spec_flash_write_bytes(BK_PARTITION_SYS_NET, ptr0, len, offset);
 		break;
 
 	case FAST_CONNECT_ITEM:
 		len = sizeof(struct wlan_fast_connect_info);
 		offset = NET_INFO_FAST_CONNECT_OFFSET;
-		bk_spec_flash_write_bytes(BK_PARTITION_NET_PARAM, ptr0, len, offset);
+		bk_spec_flash_write_bytes(BK_PARTITION_SYS_NET, ptr0, len, offset);
 		break;
 
 	default:
@@ -177,7 +177,7 @@ UINT32 get_net_info(NET_INFO_ITEM item, UINT8 *ptr0, UINT8 *ptr1, UINT8 *ptr2)
 	case WIFI_MAC_ITEM:
 		len = 6;
 		offset = NET_INFO_MAC_ADDR_OFFSET;
-		bk_flash_partition_read(BK_PARTITION_NET_PARAM, ptr0, offset, len);
+		bk_flash_partition_read(BK_PARTITION_SYS_NET, ptr0, offset, len);
 		ret = BK_OK;
 		break;
 
@@ -185,7 +185,7 @@ UINT32 get_net_info(NET_INFO_ITEM item, UINT8 *ptr0, UINT8 *ptr1, UINT8 *ptr2)
 		len = sizeof(struct wlan_fast_connect_info);
 		offset = NET_INFO_FAST_CONNECT_OFFSET;
 		if (ptr0 != NULL) {
-			bk_flash_partition_read(BK_PARTITION_NET_PARAM, ptr0, offset, len);
+			bk_flash_partition_read(BK_PARTITION_SYS_NET, ptr0, offset, len);
 			ret = BK_OK;
 			}
 		break;

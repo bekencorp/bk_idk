@@ -20,14 +20,6 @@
 #include "flash_driver.h"
 #include "flash_hal.h"
 
-#if CONFIG_OVERRIDE_FLASH_PARTITION
-#include "vendor_flash_partition.h"
-#endif
-
-#if (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX)
-#include "partitions_gen.h"
-#endif
-
 #include <ctype.h>
 
 #define TAG    "partition"
@@ -131,7 +123,7 @@ const char *s_partition_name[PARTITION_CNT] = {
 		uint32_t size;
 	} partition_info_t;
 
-	const bk_logic_partition_t logic_partitions[] = PARTITION_MAP;
+	const bk_logic_partition_t logic_partitions[] = BK_FLASH_PARTITIONS_MAP;
 
     static struct {
         char name[PARTITION_NAME_LEN + 1];
@@ -144,13 +136,13 @@ const partition_map_t partition_map[] = {
     {BK_PARTITION_BOOTLOADER, "bl2"},
     {BK_PARTITION_APPLICATION, "primary_cpu0_app"},
     {BK_PARTITION_OTA, "ota"},
-    {BK_PARTITION_APPLICATION1, "primary_cpu0_app1"},
-    {BK_PARTITION_MATTER_FLASH, "matter"},
-    {BK_PARTITION_RF_FIRMWARE, "sys_rf"},
-    {BK_PARTITION_NET_PARAM, "sys_net"},
+    //{BK_PARTITION_APPLICATION, "primary_cpu0_app1"},
+    //{BK_PARTITION_MATTER_FLASH, "matter"},
+    {BK_PARTITION_SYS_RF, "sys_rf"},
+    {BK_PARTITION_SYS_NET, "sys_net"},
     {BK_PARTITION_USR_CONFIG, "user_config"},
-    {BK_PARTITION_OTA_FINA_EXECUTIVE, "ota2"},
-    {BK_PARTITION_APPLICATION2, "primary_cpu0_app2"},
+    //{BK_PARTITION_OTA_FINA_EXECUTIVE, "ota2"},
+    //{BK_PARTITION_APPLICATION2, "primary_cpu0_app2"},
     {BK_PARTITION_EASYFLASH, "easyflash"},
 };
 
@@ -175,19 +167,11 @@ const size_t partition_map_size = sizeof(partition_map) / sizeof(partition_map[0
 /// Custom can override bk_flash_partitions in project, For example:
 ///             projects/customization/bk7256_config2/main/vendor_flash.c
 /* Logic partition on flash devices */
-#if (CONFIG_SOC_BK7256XX)
-#if CONFIG_OVERRIDE_FLASH_PARTITION
-extern const bk_logic_partition_t bk_flash_partitions[BK_PARTITION_MAX_USER];
+
+#if (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX)
+static const bk_logic_partition_t bk_flash_partitions[] = BK_FLASH_PARTITIONS_MAP;
 #else
-extern const bk_logic_partition_t bk_flash_partitions[BK_PARTITION_MAX];
-#endif
-#elif (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX)
-#if CONFIG_OVERRIDE_FLASH_PARTITION
-extern const bk_logic_partition_t bk_flash_partitions[BK_PARTITION_MAX_USER];
-#else
-extern const bk_logic_partition_t bk_flash_partitions[BK_PARTITION_MAX];
-#endif
-#else
+// XXX delete it
 #include "partitions.h"
 static const bk_logic_partition_t bk_flash_partitions[BK_PARTITION_MAX] = {
 	[BK_PARTITION_BOOTLOADER] =
@@ -240,7 +224,7 @@ static const bk_logic_partition_t bk_flash_partitions[BK_PARTITION_MAX] = {
 		.partition_options		   = PAR_OPT_READ_EN | PAR_OPT_WRITE_DIS,
 	},
 #endif
-	[BK_PARTITION_RF_FIRMWARE] =
+	[BK_PARTITION_SYS_RF] =
 	{
 		.partition_owner           = BK_FLASH_EMBEDDED,
 		.partition_description     = "RF Firmware",
@@ -252,7 +236,7 @@ static const bk_logic_partition_t bk_flash_partitions[BK_PARTITION_MAX] = {
 		.partition_length          = CONFIG_SYS_RF_PHY_PARTITION_SIZE,
 		.partition_options         = PAR_OPT_READ_EN | PAR_OPT_WRITE_DIS,
 	},
-	[BK_PARTITION_NET_PARAM] =
+	[BK_PARTITION_SYS_NET] =
 	{
 		.partition_owner           = BK_FLASH_EMBEDDED,
 		.partition_description     = "NET info",
@@ -457,7 +441,7 @@ bk_logic_partition_t *bk_flash_partition_get_info(bk_partition_t partition)
 {
 	bk_logic_partition_t *pt = NULL;
 
-	BK_ASSERT(BK_PARTITION_BOOTLOADER < BK_PARTITION_MAX);
+	BK_ASSERT(BK_PARTITION_BOOTLOADER < BK_PARTITIONS_TABLE_SIZE);
 
 	if (flash_partition_is_valid(partition)) {
 #if (CONFIG_SOC_BK7256XX)

@@ -45,8 +45,7 @@ endif()
 
 
 armino_component_register(SRCS "${srcs}"
-	INCLUDE_DIRS "${incs}"
-	REQUIRES partitions)
+	INCLUDE_DIRS "${incs}")
 
 if (CONFIG_TFM)
 armino_build_get_property(partition_hdr_dir PARTITIONS_HDR_DIR)

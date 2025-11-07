@@ -16,17 +16,14 @@
 
 #include "driver/flash_partition.h"
 
-#if defined(CONFIG_OVERRIDE_FLASH_PARTITION) && defined(BK_PARTITION_LITTLEFS_USER)
-#include "vendor_flash_partition.h"
-#define BK_PARTITION_FS_ID BK_PARTITION_LITTLEFS_USER
+// TODO xxx
+// extern const bk_logic_partition_t bk_flash_partitions[BK_PARTITIONS_TABLE_SIZE];
+
+#if defined(BK_PARTITION_LITTLEFS)
+#define BK_PARTITION_FS_ID BK_PARTITION_LITTLEFS
 #else
 #define BK_PARTITION_FS_ID BK_PARTITION_USR_CONFIG
 #endif
-
-extern const bk_logic_partition_t bk_flash_partitions[BK_PARTITION_MAX];
-
-#define FLASH_START   bk_flash_partitions[BK_PARTITION_FS_ID].partition_start_addr
-#define FLASH_SIZE    bk_flash_partitions[BK_PARTITION_FS_ID].partition_length
 
 static int test_format_lfs(void) {
 	struct bk_little_fs_partition partition;
@@ -34,10 +31,13 @@ static int test_format_lfs(void) {
 
 	int ret;
 
+	bk_logic_partition_t *fs_partition = bk_flash_partition_get_info(BK_PARTITION_FS_ID);
+	uint32_t flash_start = fs_partition->partition_start_addr;
+	uint32_t flash_size = fs_partition->partition_length;
 	fs_name = "littlefs";
 	partition.part_type = LFS_FLASH;
-	partition.part_flash.start_addr = FLASH_START;
-	partition.part_flash.size = FLASH_SIZE;
+	partition.part_flash.start_addr = flash_start;
+	partition.part_flash.size = flash_size;
 
 	ret = mkfs("PART_NONE", fs_name, &partition);
 	
@@ -49,11 +49,13 @@ static int test_mount_lfs(char *mount_point) {
 	char *fs_name = NULL;
 
 	int ret;
-
+	bk_logic_partition_t *fs_partition = bk_flash_partition_get_info(BK_PARTITION_FS_ID);
+	uint32_t flash_start = fs_partition->partition_start_addr;
+	uint32_t flash_size = fs_partition->partition_length;
 	fs_name = "littlefs";
 	partition.part_type = LFS_FLASH;
-	partition.part_flash.start_addr = FLASH_START;
-	partition.part_flash.size = FLASH_SIZE;
+	partition.part_flash.start_addr = flash_start;
+	partition.part_flash.size = flash_size;
 	partition.mount_path = mount_point;
 
 	ret = mount("SOURCE_NONE", partition.mount_path, fs_name, 0, &partition);

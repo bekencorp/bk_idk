@@ -58,7 +58,7 @@ list(APPEND srcs
 	"hal/i2s_hal.c"
 )
 
-armino_component_register(SRCS "${srcs}" INCLUDE_DIRS "${incs}" REQUIRES partitions PRIV_REQUIRES tfm)
+armino_component_register(SRCS "${srcs}" INCLUDE_DIRS "${incs}" PRIV_REQUIRES tfm)
 
 armino_build_get_property(sdkconfig_header SDKCONFIG_HEADER)
 armino_build_get_property(config_dir CONFIG_DIR)
@@ -75,23 +75,21 @@ endif()
 
 LOGI("[Select ld file]: ${LD_FILE}.")
 
-if(CONFIG_SOC_SMP)
+set(ld_header_dependencies
+	${armino_path}/include/soc/${target}/reg_base.h
+	$ENV{PARTITIONS_DIR}/partitions_gen.h
+)
+
 add_custom_command(
 	OUTPUT ${target}_out.ld
-	COMMAND "${CMAKE_C_COMPILER}" -P -x c -E - < ${LD_FILE} -o ${target}_out.ld -I ${armino_path}/components/cmsis/CMSIS_5/Device/Beken/bk7239nxx/Include/ -I ${armino_path}/include/ -I ${config_dir} -I ${armino_path}/middleware/boards/bk7239n/partitions -I ${CMAKE_CURRENT_BINARY_DIR}/../partitions/_build
+	COMMAND "${CMAKE_C_COMPILER}" -P -x c -E - < ${LD_FILE} -o ${target}_out.ld
+			-I ${armino_path}/include/ -I ${config_dir}
+			-I $ENV{SECURITY_PREBUILD_DIR}
+			-I $ENV{PARTITIONS_DIR}
 	MAIN_DEPENDENCY ${LD_DIR}/${target}.ld ${sdkconfig_header}
-	DEPENDS generated_files
+	DEPENDS ${ld_header_dependencies}
 	COMMENT "Generating linker script..."
 	VERBATIM)
-else()
-add_custom_command(
-	OUTPUT ${target}_out.ld
-	COMMAND "${CMAKE_C_COMPILER}" -P -x c -E - < ${LD_FILE} -o ${target}_out.ld -I ${armino_path}/include/ -I ${config_dir} -I ${armino_path}/middleware/boards/bk7239n/partitions -I ${CMAKE_CURRENT_BINARY_DIR}/../partitions/_build
-	MAIN_DEPENDENCY ${LD_DIR}/${target}.ld ${sdkconfig_header}
-	DEPENDS generated_files
-	COMMENT "Generating linker script..."
-	VERBATIM)
-endif()
 
 add_custom_target(${target}_linker_script DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${target}_out.ld)
 add_dependencies(${COMPONENT_LIB} ${target}_linker_script)

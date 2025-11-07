@@ -118,5 +118,5 @@ endif()
 
 	list(APPEND srcs rtos_ext.c)
 
-armino_component_register(SRCS "${srcs}" INCLUDE_DIRS "${incs}" REQUIRES cmsis PRIV_REQUIRES bk_common riscv)
+armino_component_register(SRCS "${srcs}" INCLUDE_DIRS "${incs}" REQUIRES cmsis PRIV_REQUIRES bk_common)
 

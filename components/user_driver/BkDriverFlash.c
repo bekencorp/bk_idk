@@ -89,7 +89,7 @@ const bk_logic_partition_t bk7231_partitions[BK_PARTITION_MAX] = {
 		.partition_options		   = PAR_OPT_READ_EN | PAR_OPT_WRITE_DIS,
 	},
 #endif
-	[BK_PARTITION_RF_FIRMWARE] =
+	[BK_PARTITION_SYS_RF] =
 	{
 		.partition_owner           = BK_FLASH_EMBEDDED,
 		.partition_description     = "RF Firmware",

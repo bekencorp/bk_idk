@@ -1,0 +1,1 @@
+/home/ming.liu/code/v2.2.1/tools/build_tools/part_table_tools/tempFiles/partition_bk7256_ota_a_new.json

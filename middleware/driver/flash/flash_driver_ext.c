@@ -65,11 +65,7 @@ bk_err_t bk_spec_flash_write_bytes(bk_partition_t partition, const uint8_t *user
 
 #if	((defined(CONFIG_SECURITY_OTA)) && (!defined(CONFIG_TFM_FWU)) && (!defined(CONFIG_BK_OTA)))
 __attribute__((section(".iram")))
-#if CONFIG_ARCH_RISCV
-void * __attribute__((no_execit, optimize("-O3"))) bk_memcpy_4w(void *dst, void *src, unsigned int size)
-#else
 void * __attribute__((optimize("-O3"))) bk_memcpy_4w(void *dst, const void *src, unsigned int size)  /* 4 words copy. */
-#endif
 {
 	unsigned char *dst_ptr = (unsigned char *)dst;
 	const unsigned char *src_ptr = (const unsigned char *)src;
@@ -126,6 +122,8 @@ void * __attribute__((optimize("-O3"))) bk_memcpy_4w(void *dst, const void *src,
 	return dst;
 }
 
+#define CEIL_ALIGN_34(addr)           (((addr) + 34 - 1) / 34 * 34)
+
 #include "partitions.h"
 #include "_ota.h"
 #if CONFIG_CACHE_ENABLE
@@ -136,7 +134,6 @@ void * __attribute__((optimize("-O3"))) bk_memcpy_4w(void *dst, const void *src,
 #include "bk_wdt.h"
 #endif
 
-#define CEIL_ALIGN_34(addr)           (((addr) + 34 - 1) / 34 * 34)
 
 extern void     bk_flash_enable_cpu_data_wr(void);
 extern void     bk_flash_disable_cpu_data_wr(void);

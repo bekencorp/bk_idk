@@ -9,10 +9,12 @@
 #include "utils_httpc.h"
 #include "modules/wifi.h"
 #endif
+
 #ifdef CONFIG_OTA_HASH_FUNCTION
 #include "bk_private/bk_ota_private.h" 
-#include "vendor_flash_partition.h"
 #endif
+
+#include <driver/flash_partition.h>
 #include "common/bk_err.h"
 
 #ifndef OTA_TAG
@@ -217,13 +219,13 @@ int32_t ota_do_hash_check(void)
 	uint32_t partition_length = 0;
 	int ret = BK_FAIL;
 	if(update_part_flag == UPDATE_B_PART) {
-		bk_ptr = bk_flash_partition_get_info(BK_PARTITION_S_APP_USER);   //note: when update_partition is B, arg: BK_PARTITION_APPLICATION1,update_partition is A??arg: BK_PARTITION_APPLICATION
+		bk_ptr = bk_flash_partition_get_info(BK_PARTITION_S_APP);   //note: when update_partition is B, arg: BK_PARTITION_APPLICATION1,update_partition is A??arg: BK_PARTITION_APPLICATION
 	}
 	else{    //B-->A
 		bk_ptr = bk_flash_partition_get_info(BK_PARTITION_APPLICATION);
 	}
-	partition_length = bk_flash_partition_get_info(BK_PARTITION_S_APP_USER)->partition_length;
-	OTA_LOGD("partition_length :0x%x",partition_length);
+	partition_length = bk_flash_partition_get_info(BK_PARTITION_S_APP)->partition_length;
+	OTA_LOGV("partition_length :0x%x",partition_length);
 	if((bk_ptr == NULL))
 	{
 		OTA_LOGE(" get %s fail \r\n",bk_ptr->partition_owner);

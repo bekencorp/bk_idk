@@ -652,24 +652,15 @@ function(armino_build_executable bin)
         endif()
     endforeach()
 
-    set(wrapper_cmd COMMAND ${python} ${armino_pack} -n all-${bin_name}.bin -f ${bin_name}.bin -c ${ARMINO_SOC})
-    if (("${target}" STREQUAL "bk7236") OR ("${target}" STREQUAL "bk7239n") OR ("${target}" STREQUAL "bk7258") OR ("${target}" STREQUAL "bk7234") OR ("${target}" STREQUAL "bk723L") OR ("${target}" STREQUAL "bk7236n"))
-        set(wrapper_cmd COMMAND ${python} ${armino_pack} pack)
-    elseif (("${target}" STREQUAL "bk7236_cp1") OR ("${target}" STREQUAL "bk7258_cp1") OR ("${target}" STREQUAL "bk7258_cp2"))
-        set(wrapper_cmd)
-    endif()
-
     set(objdump_cmd)
     if(objdump_config EQUAL 1)
         set(objdump_cmd COMMAND ${armino_objdump} -d ${bin_dir}/${bin} > ${bin_dir}/${bin_name}.lst)
     endif()
-
     add_custom_command(OUTPUT "${bin_dir}/bin_tmp"
         COMMAND "${armino_objcopy}" -O binary "${bin_dir}/${bin}" "${bin_dir}/${bin_name}.bin"
         COMMAND "${armino_readelf}" -a -h -l -S -g -s "${bin_dir}/${bin}" > "${bin_dir}/${bin_name}.txt"
         COMMAND "${armino_nm}" -n -l -C -a -A -g "${bin_dir}/${bin}" > "${bin_dir}/${bin_name}.nm"
         COMMAND ${objdump_cmd}
-        COMMAND ${wrapper_cmd}
         DEPENDS ${bin}
         VERBATIM
         WORKING_DIRECTORY ${bin_dir}

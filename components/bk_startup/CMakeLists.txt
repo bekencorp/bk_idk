@@ -15,7 +15,7 @@ elseif(CONFIG_NON_OS)
 	list(APPEND srcs non_os/rtos_init.c)
 endif()
 
-set(PRIV_REQUIRES_LIST bk_common riscv arm9 embeded_gcov)
+set(PRIV_REQUIRES_LIST bk_common embeded_gcov)
 
 armino_component_register(SRCS "${srcs}"
 			INCLUDE_DIRS "${incs}"

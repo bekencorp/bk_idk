@@ -5,7 +5,7 @@
 #include <os/mem.h>
 #include "cli.h"
 #include "driver/flash.h"
-#include "vendor_flash_partition.h"
+#include <driver/flash_partition.h>
 
 #define CPU_OPREATE_FLASH_ADDRESS	(0x02000000)
 
@@ -64,7 +64,7 @@ int32_t ota_read_partition(const bk_logic_partition_t *part, uint32_t addr, uint
 			return BK_FAIL;
         }
 
-        if (addr + size > (bk_flash_partition_get_info(BK_PARTITION_S_APP_USER)->partition_length))
+        if (addr + size > (bk_flash_partition_get_info(BK_PARTITION_S_APP)->partition_length))
         {
         	OTA_LOGE("read data exceeds the partition size \r\n");
             

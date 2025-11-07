@@ -658,7 +658,7 @@ static void partShow_Command(char *pcWriteBuffer, int xWriteBufferLen, int argc,
 	bk_partition_t i;
 	bk_logic_partition_t *partition;
 
-	for (i = BK_PARTITION_BOOTLOADER; i <= BK_PARTITION_MAX; i++) {
+	for (i = BK_PARTITION_BOOTLOADER; i <= BK_PARTITIONS_TABLE_SIZE; i++) {
 		partition = bk_flash_partition_get_info(i);
 		if (partition == NULL)
 			continue;

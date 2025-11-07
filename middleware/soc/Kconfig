@@ -65,13 +65,6 @@ menu "SOC_CONFIG"
 			int "System CPU count: 1: single core, 2: dual core, etc."
 			default 1
 
-	config SYS_CPU1_OFFSET
-		depends on SYS_CPU0
-		hex "Set cpu1 core offset"
-		default 0x2e0000
-		help
-			Cpu1 core offset address default 0x2e0000
-
 	config SOC_STR
 		string "SoC string"
 		default "bk7236"  if SOC_BK7236

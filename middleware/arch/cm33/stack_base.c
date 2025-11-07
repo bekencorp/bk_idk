@@ -31,6 +31,7 @@
 #if CONFIG_CM_BACKTRACE
 #include "cm_backtrace.h"
 #endif
+#include "driver/flash_partition.h"
 
 #define STACK_CALLBACK_BUF_SIZE 32
 #define SOC_ITCM_CODE_SIZE      (0x4000)
@@ -45,7 +46,7 @@ extern char __etext;
 
 static inline int addr_is_in_flash_txt(uint32_t addr)
 {
-    return ((addr > (uint32_t)(SOC_FLASH_DATA_BASE + CONFIG_PRIMARY_CPU0_APP_VIRTUAL_CODE_START)) && (addr < (uint32_t)&__etext));
+	return ((addr > (uint32_t)(SOC_FLASH_DATA_BASE + CONFIG_PRIMARY_CPU0_APP_VIRTUAL_CODE_START)) && (addr < (uint32_t)&__etext));
 }
 
 static inline int addr_is_in_itcm_txt(uint32_t addr)

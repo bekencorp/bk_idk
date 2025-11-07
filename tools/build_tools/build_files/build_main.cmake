@@ -93,11 +93,8 @@ endif()
 armino_build_get_property(build_dir BUILD_DIR)
 set(config_dir ${build_dir}/config)
 
-MESSAGE(STATUS "${config_dir}")
-
 list(APPEND compile_options "-I${config_dir}")
-list(APPEND compile_options "-include;sdkconfig.h")
-
+list(APPEND compile_options "-includesdkconfig.h")
 
 list(APPEND link_options "-fno-lto")
 

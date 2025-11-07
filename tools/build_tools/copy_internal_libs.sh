@@ -37,6 +37,24 @@ copy_libs()
 	repo manifest -r -o ${s_bk_libs_dir}/${s_soc}/hash/libs_version_manifest.xml > /dev/null
 }
 
+copy_bootloader()
+{
+	if [[ $s_soc == *"_cp"* ]]; then
+		return
+	fi
+	mkdir -p ${s_bk_libs_dir}/${s_soc}/bootloader/ab_bootloader
+	mkdir -p ${s_bk_libs_dir}/${s_soc}/bootloader/normal_bootloader
+	rm -rf ${s_bk_libs_dir}/${s_soc}/bootloader/ab_bootloader/*
+	rm -rf ${s_bk_libs_dir}/${s_soc}/bootloader/normal_bootloader/*
+	normal_bl_build_path=${s_armino_dir}/properties/modules/bootloader/aboot/arm_bootloader/output/bootloader.bin
+	normal_bl_archive_path=${s_bk_libs_dir}/${s_soc}/bootloader/normal_bootloader/bootloader.bin
+	ab_bl_build_path=${s_armino_dir}/properties/modules/bootloader/aboot/arm_bootloader_ab/output/bootloader.bin
+	
+	ab_bl_archive_path=${s_bk_libs_dir}/${s_soc}/bootloader/ab_bootloader/bootloader.bin
+	cp ${normal_bl_build_path} ${normal_bl_archive_path}
+	cp ${ab_bl_build_path} ${ab_bl_archive_path}
+}
+
 copy_sdkconfig()
 {
 	cp ${s_armino_build_dir}/sdkconfig ${s_bk_libs_dir}/${s_soc}/config/
@@ -51,4 +69,5 @@ s_bk_libs_dir="${s_armino_dir}/components/bk_libs"
 
 init_bk_libs_dir
 copy_libs
+copy_bootloader
 copy_sdkconfig 
