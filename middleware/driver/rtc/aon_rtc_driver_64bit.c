@@ -239,7 +239,7 @@ void bk_rtc_set_clock_freq(uint32_t clock_freq){
  __IRAM_SEC uint64_t bk_aon_rtc_get_ms(void) {
 	uint64_t time_tick = bk_aon_rtc_get_current_tick(AONRTC_GET_SET_TIME_RTC_ID);
 	uint64_t time_diff = rtc_tick_to_ms(time_tick - s_time_base_tick);
-    uint64_t time_ms = s_time_base_us + time_diff;
+    uint64_t time_ms = s_time_base_us / 1000 + time_diff;
     return  time_ms;
 }
 
