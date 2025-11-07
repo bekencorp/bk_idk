@@ -286,11 +286,11 @@ bk_err_t bk_pm_module_vote_sleep_ctrl(pm_sleep_module_name_e module, uint32_t sl
 			pm_lv_enter_time_out_clear();
 		}
 
-#if CONFIG_ANA_RTC
-		if((module == PM_SLEEP_MODULE_NAME_APP) && (0 == bk_pm_module_power_state_get(PM_POWER_MODULE_NAME_BTSP)))
-			BK_LOGD(NULL, "won't go to lv sleep since ble is exit.\r\n");
-		else
-#endif
+// #if CONFIG_ANA_RTC
+// 		if((module == PM_SLEEP_MODULE_NAME_APP) && (0 == bk_pm_module_power_state_get(PM_POWER_MODULE_NAME_BTSP)))
+// 			BK_LOGD(NULL, "won't go to lv sleep since ble is exit.\r\n");
+// 		else
+// #endif
 		s_pm_sleeped_modules |= 0x1ULL << module;
 	}
 	else // exit sleep

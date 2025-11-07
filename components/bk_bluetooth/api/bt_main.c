@@ -61,6 +61,27 @@ static int bluetooth_deepsleep_enter_cb(uint64_t expected_time_ms, void *args)
     return 0;
 }
 
+#if CONFIG_ANA_RTC_WAKUP_BY_RTC
+static int bluetooth_lv_enter_cb(uint64_t expected_time_ms, void *args)
+{
+    if (bluetooth_already_init)
+    {
+        void bluetooth_lowvol_enter_callback(void);
+        bluetooth_lowvol_enter_callback();
+    }
+    return 0;
+}
+static int bluetooth_lv_exit_cb(uint64_t expected_time_ms, void *args)
+{
+    if (bluetooth_already_init)
+    {
+        void bluetooth_lowvol_exit_callback(void);
+        bluetooth_lowvol_exit_callback();
+    }
+    return 0;
+}
+#endif
+
 bt_err_t bk_bluetooth_init(void)
 {
     bt_err_t ret;
@@ -110,6 +131,15 @@ bt_err_t bk_bluetooth_init(void)
     extern void ble_at_cmd_init(void);
     ble_at_cmd_init();
 #endif
+
+    #if CONFIG_ANA_RTC_WAKUP_BY_RTC
+    pm_cb_conf_t enter_lv_config = {NULL, NULL};
+    pm_cb_conf_t exit_lv_config = {NULL, NULL};
+    enter_lv_config.cb = bluetooth_lv_enter_cb;
+    exit_lv_config.cb = bluetooth_lv_exit_cb;
+    bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, PM_DEV_ID_BTDM, &enter_lv_config, &exit_lv_config);
+    #endif
+
     if (bluetooth_mutex == NULL)
     {
         rtos_init_mutex(&bluetooth_mutex);

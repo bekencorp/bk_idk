@@ -29,4 +29,7 @@ int bluetooth_host_deinit(void);
 int bluetooth_get_mac(uint8_t *mac);
 void bluetooth_rf_test_mode_retrig();
 void wifi_notify_state_to_bt(uint8_t is_active);
+void bluetooth_lowvol_enter_cb_internal(void);
+void bluetooth_lowvol_exit_cb_internal(void);
+
 

@@ -190,6 +190,14 @@ struct bt_osi_funcs_t
     uint8_t (*_set_bluetooth_power_level)(float pwr_gain);
     void  (*_set_rfconfig_rf_mode)(uint8_t mode);
     int (*wifi_mac_power_ctrl)(uint8_t power_state);
+
+    // Add for btsp sleep
+    void (*_bt_lp_rtc_set)(uint32_t tick, void *callback);
+    void (*_bt_lp_rtc_clear)(void);
+    uint32_t (*_get_ana_timersel)(void); // Used to circumvent the hardware issue, can be deleted in the next version
+    uint32_t (*_get_finecnt_samp)(void);
+    uint32_t (*_get_clkcnt_samp)(void);
+    void (*_bt_delay_us)(uint32_t us);
 };
 
 int bt_os_adapter_init(void *osi_funcs);
