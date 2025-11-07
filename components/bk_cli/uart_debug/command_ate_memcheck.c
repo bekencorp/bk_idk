@@ -239,7 +239,10 @@ static int memcheck_check_data_pattern(memcheck_data_t *datas, uint8_t offset, u
         memcheck_data_t *item = &datas[offset + idx];
 
         // except smem2, smem3, smem4
-        if (item->bits.flag != 0 && group_name != "smem2" && group_name != "smem3" && group_name != "smem4") {
+        if (item->bits.flag != 0
+            && strcmp(group_name, "smem2") != 0
+            && strcmp(group_name, "smem3") != 0
+            && strcmp(group_name, "smem4") != 0) {
             bk_printf("[memchk] %s %s error: flag bit should be 0 (value=0x%04X) at index %d\r\n",
                       group_name, data_name, item->raw, idx);
             return -1;
@@ -380,10 +383,10 @@ void cmd_save_memcheck_from_uart(uint8_t *content, int cnt, uint8_t *tx_buffer)
     // Parse vcorehsel and clk_div (bytes 137 and 138)
     uint8_t vcorehsel = payload[MEMCHECK_VCOREHSEL_INDEX];
     uint8_t clk_div   = payload[MEMCHECK_CLK_DIV_INDEX];
-    memcheck_config.bits.vcorehsel1 = (uint8_t)((vcorehsel >> 4) & 0x0F);
-    memcheck_config.bits.vcorehsel2 = (uint8_t)(vcorehsel & 0x0F);
-    memcheck_config.bits.clk_div1   = (uint8_t)((clk_div >> 4) & 0x0F);
-    memcheck_config.bits.clk_div2   = (uint8_t)(clk_div & 0x0F);
+    memcheck_config.bits.vcorehsel1 = (uint8_t)(vcorehsel & 0x0F);
+    memcheck_config.bits.vcorehsel2 = (uint8_t)((vcorehsel >> 4) & 0x0F);
+    memcheck_config.bits.clk_div1   = (uint8_t)(clk_div & 0x0F);
+    memcheck_config.bits.clk_div2   = (uint8_t)((clk_div >> 4) & 0x0F);
 
     /* STEP 3: merge data */
     result = (memcheck_data_t *)os_malloc(MEMCHECK_POINT_COUNT * sizeof(memcheck_data_t));
