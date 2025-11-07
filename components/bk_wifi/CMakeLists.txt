@@ -9,6 +9,8 @@ list(APPEND srcs
 	src/net_param.c
 	src/pbuf.c
 	src/phy.c
+	src/regdb.c
+	src/reg.c
 	src/rw_ieee80211.c
 	src/rw_msdu.c
 	src/rw_msg_rx.c

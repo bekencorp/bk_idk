@@ -1030,9 +1030,9 @@ bk_err_t bk_wifi_get_tx_raw_timeout(uint16_t *time);
    * @return
    *	- BK_OK: succeed
    *	- others: other errors
-   */ 
+   */
  bk_err_t bk_wifi_get_mgmt_rty_num(uint32_t* rty_num);
- 
+
  /**
   * @brief Update Wi-Fi capability configuration
   *
@@ -1056,8 +1056,8 @@ bk_err_t bk_wifi_get_tx_raw_timeout(uint16_t *time);
   */
 
 bk_err_t bk_wifi_capa_config(wifi_capability_t capa_id, uint32_t capa_val);
- /**
 
+/**
  * @brief     configure country info
  *
  * @attention 1. The default country is {.cc="CN", .schan=1, .nchan=13, policy=WIFI_COUNTRY_POLICY_AUTO}
@@ -1081,7 +1081,20 @@ bk_err_t bk_wifi_capa_config(wifi_capability_t capa_id, uint32_t capa_val);
  *    - BK_ERR_WIFI_NOT_INIT: WiFi is not initialized
  *    - BK_ERR_PARAM: invalid argument
  */
+__attribute__((deprecated))
 bk_err_t bk_wifi_set_country(const wifi_country_t *country);
+
+/**
+ * @brief     configure regulatory domain
+ *
+ * @alpha2    alpha2   ISO/IEC 3166-1 alpha
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_WIFI_NOT_INIT: WiFi is not initialized
+ *    - BK_ERR_PARAM: invalid argument
+ */
+bk_err_t bk_wifi_set_country_code(const char *alpha2);
 
 /**
   * @brief     get the current country info
@@ -1093,7 +1106,15 @@ bk_err_t bk_wifi_set_country(const wifi_country_t *country);
   *    - BK_ERR_WIFI_NOT_INIT: WiFi is not initialized
   *    - BK_ERR_PARAM: invalid argument
   */
+__attribute__((deprecated))
 bk_err_t bk_wifi_get_country(wifi_country_t *country);
+
+/**
+  * @brief     get the current country code
+  *
+  * @return    country code string
+  */
+char *bk_wifi_get_country_code(void);
 
 /**
  * @brief  enable wifi sta power management
@@ -1538,7 +1559,7 @@ bool bk_wifi_get_ani_en(void);
  * @param     tx_pwr_lmt  wifi tx power limit info
  *
  * @attention This API can only be used to modify rf max power limit for specific regulation,rate and channel.
- *    
+ *
  * @return
  *    - void: always succeed
  */
@@ -1563,12 +1584,12 @@ bool bk_wifi_get_cal_2g(void);
 void bk_wifi_get_noise_floor(uint8_t *noise_floor);
 
 /**
- * @brief  Get tx stats. 
- * 
+ * @brief  Get tx stats.
+ *
  *         PER calculation formula:  per = (tx_agg_fail + tx_singel_retry)/(tx_agg_total + tx_singel_total*SINGLE_RETRY_CNT)
  *         - tx_agg_fail/tx_singel_retry/tx_agg_total/tx_singel_total: get from struct tx_stats,
  *         - SINGLE_RETRY_CNT: get from function bk_wifi_get_data_rty_num();
- * 
+ *
  * @param config mode.
  *              0:STATION
  *              1:SOFT AP
@@ -1657,7 +1678,7 @@ bk_err_t bk_wifi_csi_stop_req(void);
  * @param update_cali_mode    calibration mode. 0: no calibration, 1: start calibration and with update calibration result
  *                                              2: start calibration, 3: update calibration result
  * @param cali_cnt    calibration count frame
- * 
+ *
  * @return
  *    - kNoErr: succeed
  *    - otherwise: fail

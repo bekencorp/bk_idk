@@ -473,4 +473,16 @@ menu "Bk_Wifi"
 	config WIFI_NULL_FRAME_WITH_SN
 		bool "Wifi [QoS] Null frames with sequence number"
 		default y
+
+	config DEFAULT_COUNTRY_CODE
+		string "Default country code"
+		default "00"
+		help
+			Specifiy default country code, "00" is world regulatory domain.
+
+	config WIFI_REGDOMAIN
+		bool "enable Wifi regulatory domain (802.11d)"
+		default n
+		help
+			Enable regulatory domain.
 endmenu

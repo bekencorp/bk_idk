@@ -3336,6 +3336,7 @@ static int wpa_supplicant_event_associnfo(struct wpa_supplicant *wpa_s,
 			if (resp_elems.bk_vsie && resp_elems.bk_vsie_len) {
 				g_bk_ap_connected = true;
 			}
+
 #endif
 		}
 	}

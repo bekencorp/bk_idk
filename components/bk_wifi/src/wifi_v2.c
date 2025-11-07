@@ -3169,6 +3169,10 @@ bk_err_t wifi_ap_validate_config(const wifi_ap_config_t *ap_config)
 #if (CONFIG_SOC_BK7239XX) && CONFIG_WIFI_BAND_5G
 	if (!ate_is_enabled() && ap_config->channel >= 36 && ap_config->channel <= 177) {
 
+#if CONFIG_WIFI_REGDOMAIN
+		if (check_non_radar_channel_available(ap_config->channel))
+			return BK_OK;
+#else
 		//check if configured channel is avaliable channel and no need for radat detection
 		int selected_channels_size = 0;
 		extern int* rw_select_5g_non_radar_avaliable_channels(int *selected_channels_size);
@@ -3178,6 +3182,7 @@ bk_err_t wifi_ap_validate_config(const wifi_ap_config_t *ap_config)
 			if (non_radar_avaliable_channels[i] == ap_config->channel)
 				return BK_OK;
 		}
+#endif
 
 		//TODO more parameter checking
 		WIFI_LOGE("[%s]configured unavaliable or dfs channel\r\n",__FUNCTION__);

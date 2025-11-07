@@ -643,6 +643,7 @@ uint32_t hal_machw_frame_duration_ate(uint8_t bw, uint8_t modf, uint8_t rate, ui
 void mdm_set_txstartdelay(uint32_t value);
 void mdm_set_txcheckack(uint32_t value);
 void mdm_set_scramblerctrl(uint32_t value);
+void bk_wifi_print_regdomain();
 
 //Optimize it
 __attribute__((weak)) uint32_t cfg_ap_is_open_system(void);

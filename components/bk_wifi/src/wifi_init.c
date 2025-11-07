@@ -54,6 +54,7 @@ extern void wpas_thread_start(void);
 extern int calibration_init(void);
 extern void rwnxl_init(void);
 extern int fhost_rxbuf_push();
+extern int regulatory_init(void);
 
 int wifi_init(const wifi_init_config_t *config)
 {
@@ -117,9 +118,13 @@ int wifi_init(const wifi_init_config_t *config)
 	/* initial wlan rx buf only once after lwip has been initialized */
 	fhost_rxbuf_push(); //TODO choose a better name
 
+#if CONFIG_WIFI_REGDOMAIN
+	regulatory_init();
+#endif
+
 	/* start wpa_supplicant/hostapd eloop thread */
 	wpas_thread_start(); //TODO Choose a better name
-	
+
 	extern void coex_ictw_report_wifi_open_status(bool is_wifi_open);
 	coex_ictw_report_wifi_open_status(true);
 
