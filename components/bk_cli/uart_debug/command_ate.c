@@ -146,7 +146,7 @@ extern UINT32 rs_test_for_mbp(UINT32 channel, wifi_band_t band, UINT32 mode);
 extern UINT32 evm_channel_to_frequency(UINT32 channel, wifi_band_t band);
 extern UINT32 rs_test_for_mbp_with_frequency(UINT32 frequency, wifi_band_t band, UINT32 mode);
 extern RF_MODE rwnx_cal_set_rfband(wifi_band_t rf_band, RF_MODE rf_mode);
-extern void bk_set_spectial_channel_for_ate(uint32_t frequency);
+extern int bk_set_spectial_channel_for_ate(uint32_t frequency);
 extern void bk_revert_spectial_channel_for_ate(void);
 
 extern UINT32 evm_bypass_mac_set_tx_data_length_for_ate(UINT32 modul_format, \
@@ -815,11 +815,17 @@ static void evm_test_save_pwr(UINT32 rate, UINT32 frequency, uint8_t pwr_dbm)
  * bandwidth   : reference to mac_chan_bandwidth
  * modul_format: reference to ModulationFormat
  */
+static bool g_evm_test_special_channel = false;
 static void evm_test(UINT32 rate, UINT32 frequency, UINT32 bandwidth, UINT32 modul_format, UINT8 pwr_dbm, wifi_band_t band)
 {
     UINT32 packet_len;
     UINT32 duty_cycle;
     UINT32 gi;
+
+    if (g_evm_test_special_channel == true) {
+        bk_revert_spectial_channel_for_ate();
+        g_evm_test_special_channel = false;
+    }
 
     evm_stop_bypass_mac();
 
@@ -831,6 +837,11 @@ static void evm_test(UINT32 rate, UINT32 frequency, UINT32 bandwidth, UINT32 mod
 #if(CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX)
     evm_set_pwr_for_he_tb(modul_format);
 #endif
+
+    if (frequency < 2400 && g_evm_test_special_channel == false) {
+        bk_set_spectial_channel_for_ate(frequency);
+        g_evm_test_special_channel = true;
+    }
 
     mdm_set_txstartdelay(1023);
     mdm_set_txcheckack(14400);
@@ -1072,11 +1083,15 @@ void rxsens_ct_hdl_for_ate(void *param)
 	}
 }
 
+#define ERROR_2380_LOCK_FAILED                    (-1)
+#define ERROR_FREQUENCY_LOCK_FAILED               (-2)
+#define ERROR_FREQUENCY_LOCK_FAILED_FIRST_TIME    (-3)
 static int per_test(uint32_t bandwidth, uint32_t frequency, uint32_t duration, uint32_t arg, wifi_band_t band, RF_MODE rf_mode)
 {
     UINT8 ret;
     int err;
     UINT32 stat_reset = 1;
+    UINT8 tx_buffer[8] = {0};
 
     rwnx_cal_set_rfband(band, rf_mode);
 
@@ -1084,17 +1099,18 @@ static int per_test(uint32_t bandwidth, uint32_t frequency, uint32_t duration, u
     if (ret)
         return 1;
 
+    if (frequency < 2400) {
+        ret = bk_set_spectial_channel_for_ate(frequency);
+        if (ret < 0) {
+            goto exit;
+        }
+    }
+
     // TODO: BK7236 phy karst
     if (bandwidth == RXSENS_BANDWIDTH_40MHZ)
         rwnx_cal_set_40M_extra_setting(1);
     else
         rwnx_cal_set_40M_extra_setting(0);
-
-    rwnx_cal_set_rfband(band, rf_mode);
-
-    if (frequency < 2400) {
-        bk_set_spectial_channel_for_ate(frequency);
-    }
 
     g_rxsens_start = 1;
 
@@ -1121,8 +1137,26 @@ static int per_test(uint32_t bandwidth, uint32_t frequency, uint32_t duration, u
             rx_sens_ate_tmr.handle = NULL;
         }
     }
+exit:
     if (frequency < 2400) {
         bk_revert_spectial_channel_for_ate();
+
+        if (ret == ERROR_2380_LOCK_FAILED) {
+            tx_buffer[0] = 0x55;
+            tx_buffer[1] = 0xCC;
+            tx_buffer[2] = 0x01;
+            uart_send_bytes_for_ate(tx_buffer, 3);
+        } else if (ret == ERROR_FREQUENCY_LOCK_FAILED) {
+            tx_buffer[0] = 0x55;
+            tx_buffer[1] = 0xCC;
+            tx_buffer[2] = 0x02;
+            uart_send_bytes_for_ate(tx_buffer, 3);
+        } else if (ret == ERROR_FREQUENCY_LOCK_FAILED_FIRST_TIME) {
+            tx_buffer[0] = 0x55;
+            tx_buffer[1] = 0xCC;
+            tx_buffer[2] = 0x03;
+            uart_send_bytes_for_ate(tx_buffer, 3);
+        }
     }
     return 0;
 }
