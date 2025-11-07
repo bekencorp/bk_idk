@@ -194,7 +194,7 @@ uint32_t aon_pmu_hal_get_wakeup_source(void)
 	return aon_pmu_ll_get_r71_wakeup_source();
 }
 
-void aon_pmu_hal_r0_latch_to_r7b(void)
+__IRAM_SEC void aon_pmu_hal_r0_latch_to_r7b(void)
 {
 	aon_pmu_ll_set_r25(0x424B55AA);
 	aon_pmu_ll_set_r25(0xBDB4AA55);
@@ -247,7 +247,7 @@ uint32_t aon_pmu_hal_get_gpio_sleep(void)
 	return aon_pmu_ll_get_r7b_gpio_sleep();
 }
 
-void aon_pmu_hal_set_gpio_sleep(uint32_t value, bool write_immediately)
+__IRAM_SEC void aon_pmu_hal_set_gpio_sleep(uint32_t value, bool write_immediately)
 {
 	if (write_immediately) {
 		uint32_t r0 = aon_pmu_ll_get_r0();

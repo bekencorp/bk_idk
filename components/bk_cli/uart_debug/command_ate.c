@@ -72,7 +72,7 @@ typedef enum {
 } RF_MODE;
 
 #if (CONFIG_SOC_BK7236XX || CONFIG_SOC_BK7239XX)
-#define ATE_GPIO_ID                     (6)// GPIO9 use for extern32k
+#define ATE_GPIO_ID                     (14)// GPIO9 use for extern32k
 #else
 #define ATE_GPIO_ID                     (9)//according the test to select the gpio id
 #endif

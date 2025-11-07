@@ -1313,12 +1313,12 @@ void rtos_enable_int(uint32_t int_level)
 		vPortExitCritical();
 }
 #else
-uint32_t rtos_disable_int(void)
+__IRAM_SEC uint32_t rtos_disable_int(void)
 {
     return port_disable_interrupts_flag();
 }
 
-void rtos_enable_int(uint32_t int_level)
+__IRAM_SEC void rtos_enable_int(uint32_t int_level)
 {
 	port_enable_interrupts_flag(int_level);
 }

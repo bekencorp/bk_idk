@@ -183,6 +183,14 @@ SECTIONS
         txu_cntrl.c.obj
         txl_cntrl.c.obj
 #endif
+        _aeabi_ldivmod.o
+        _udivmoddi4.o
+        _arm_addsubsf3.o
+        _arm_muldivsf3.o
+        _fixunssfdi.o
+        _arm_muldivdf3.o
+        _arm_addsubdf3.o
+        _arm_fixunsdfsi.o
 	) *(.text .text.* .rodata .rodata.*)
 #else
         *(.text)
@@ -359,6 +367,14 @@ SECTIONS
         txu_cntrl.c.obj*(.text .text.* *.rodata *.rodata.*)
         txl_cntrl.c.obj*(.text .text.* *.rodata *.rodata.*)
 #endif
+        _aeabi_ldivmod.o*(.text .text.* *.rodata *.rodata.*)
+        _udivmoddi4.o*(.text .text.* *.rodata *.rodata.*)
+        _arm_addsubsf3.o*(.text .text.* *.rodata *.rodata.*)
+        _arm_muldivsf3.o*(.text .text.* *.rodata *.rodata.*)
+        _fixunssfdi.o*(.text .text.* *.rodata *.rodata.*)
+        _arm_muldivdf3.o*(.text .text.* *.rodata *.rodata.*)
+        _arm_addsubdf3.o*(.text .text.* *.rodata *.rodata.*)
+        _arm_fixunsdfsi.o*(.text .text.* *.rodata *.rodata.*)
 #endif
         . = ALIGN(4);
         _iram_end_dummy_ = .;

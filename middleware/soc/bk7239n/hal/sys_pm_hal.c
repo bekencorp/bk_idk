@@ -1076,13 +1076,13 @@ void sys_hal_enter_low_voltage(void)
 	bk_flash_enter_deep_sleep();
 #endif
 
+	volatile uint64_t before = bk_aon_rtc_get_us();
+
 #if CONFIG_AON_PMU_REG0_REFACTOR_DEV
 	aon_pmu_hal_set_gpio_sleep(1, true);
 #else
 	sys_hal_gpio_state_switch(true);
 #endif
-
-	volatile uint64_t before = bk_aon_rtc_get_us();
 
 /*----enter low voltage sleep-------*/
 #if CONFIG_DEEP_LV
@@ -1098,14 +1098,15 @@ void sys_hal_enter_low_voltage(void)
 	bk_delay_us(40); //must delay 40us to sampling rtc value
 #endif
 
-	uint64_t current = bk_aon_rtc_get_us();
-	sys_hal_set_low_voltage_wakeup_time_us(current);
-	sys_hal_set_low_voltage_sleep_duration_us(current - before);
 #if CONFIG_AON_PMU_REG0_REFACTOR_DEV
 	aon_pmu_hal_set_gpio_sleep(0, true);
 #else
 	sys_hal_gpio_state_switch(false);
 #endif
+
+	uint64_t current = bk_aon_rtc_get_us();
+	sys_hal_set_low_voltage_wakeup_time_us(current);
+	sys_hal_set_low_voltage_sleep_duration_us(current - before);
 
 #if CONFIG_OTA_POSITION_INDEPENDENT_AB
 	;//flash_ab_info_restore(&ab_flash_reg);

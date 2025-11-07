@@ -1332,14 +1332,14 @@ uint32_t platform_cpsr_content( void )
     return __get_xPSR();
 }
 
-int port_disable_interrupts_flag(void)
+__IRAM_SEC int port_disable_interrupts_flag(void)
 {
     uint32_t primask_val = __get_PRIMASK();
     __disable_irq();
     return primask_val;
 }
 
-void port_enable_interrupts_flag(int val)
+__IRAM_SEC void port_enable_interrupts_flag(int val)
 {
     __set_PRIMASK(val);
 }
