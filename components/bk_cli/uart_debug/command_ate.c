@@ -43,6 +43,33 @@ enum mac_chan_bandwidth {
 	PHY_CHNL_BW_OTHER,
 };
 
+#define RF_PLL_WIFI       0x1
+#define RF_PLL_BT         0x2
+#define RF_PLL_BT_LO5G    0x3
+#define RF_PLL_MASK       0xF
+
+#define RF_MODE_IQ        0x00  // as default
+#define RF_MODE_POLAR     0x10
+#define RF_MODE_MASK      0xF0
+
+#define RF_ROLE_WIFI      0x100
+#define RF_ROLE_BLE       0x200
+#define RF_ROLE_BT        0x400
+#define RF_ROLE_THREAD    0x800
+#define RF_ROLE_MASK      0xF00
+typedef enum {
+    RF_WIFI_WIFIPLL_MODE   = RF_ROLE_WIFI   | RF_PLL_WIFI,  // wifi high power
+    RF_WIFI_BTPLL_MODE     = RF_ROLE_WIFI   | RF_PLL_BT,    // wifi low power
+    RF_BLE_POLAR_MODE      = RF_ROLE_BLE    | RF_PLL_BT   | RF_MODE_POLAR,
+    RF_BLE_WIFIPLL_MODE    = RF_ROLE_BLE    | RF_PLL_WIFI,
+    RF_BLE_BTPLL_MODE      = RF_ROLE_BLE    | RF_PLL_BT,
+    RF_BT_POLAR_MODE       = RF_ROLE_BT     | RF_PLL_BT   | RF_MODE_POLAR,
+    RF_BT_WIFIPLL_MODE     = RF_ROLE_BT     | RF_PLL_WIFI,
+    RF_BT_BTPLL_MODE       = RF_ROLE_BT     | RF_PLL_BT,
+    RF_THREAD_WIFIPLL_MODE = RF_ROLE_THREAD | RF_PLL_WIFI,
+    RF_THREAD_BTPLL_MODE   = RF_ROLE_THREAD | RF_PLL_BT,
+} RF_MODE;
+
 #if (CONFIG_SOC_BK7236XX || CONFIG_SOC_BK7239XX)
 #define ATE_GPIO_ID                     (6)// GPIO9 use for extern32k
 #else
@@ -112,6 +139,9 @@ extern void evm_bypass_mac_test_for_ate(UINT32 channel, UINT32 bandwidth);
 extern void evm_bypass_mac_test(UINT32 channel, wifi_band_t band, UINT32 bandwidth);
 extern UINT32 rs_test(UINT32 channel, wifi_band_t band, UINT32 mode);
 extern UINT32 rs_test_for_mbp(UINT32 channel, wifi_band_t band, UINT32 mode);
+extern UINT32 evm_channel_to_frequency(UINT32 channel, wifi_band_t band);
+extern UINT32 rs_test_for_mbp_with_frequency(UINT32 frequency, wifi_band_t band, UINT32 mode);
+extern RF_MODE rwnx_cal_set_rfband(wifi_band_t rf_band, RF_MODE rf_mode);
 
 extern UINT32 evm_bypass_mac_set_tx_data_length_for_ate(UINT32 modul_format, \
                                                    UINT32 len, UINT32 rate, \
@@ -910,13 +940,13 @@ void rxsens_ct_hdl_for_ate(void *param)
 	}
 }
 
-static int per_test(uint32_t bandwidth, uint32_t channel, uint32_t duration, uint32_t arg, wifi_band_t band)
+static int per_test(uint32_t bandwidth, uint32_t frequency, uint32_t duration, uint32_t arg, wifi_band_t band, RF_MODE rf_mode)
 {
     UINT8 ret;
     int err;
     UINT32 stat_reset = 1;
 
-    ret = rs_test_for_mbp(channel, band, bandwidth);
+    ret = rs_test_for_mbp_with_frequency(frequency, band, bandwidth);
     if (ret)
         return 1;
 
@@ -925,6 +955,8 @@ static int per_test(uint32_t bandwidth, uint32_t channel, uint32_t duration, uin
         rwnx_cal_set_40M_extra_setting(1);
     else
         rwnx_cal_set_40M_extra_setting(0);
+
+    rwnx_cal_set_rfband(band, rf_mode);
 
     g_rxsens_start = 1;
 
@@ -1669,7 +1701,8 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 {
                     channel = (uint8_t)content[2];
                 }
-                per_test(PHY_CHNL_BW_20, channel, duration, arg, IEEE80211_BAND_2GHZ);
+                uint32_t frequency = evm_channel_to_frequency(channel, IEEE80211_BAND_2GHZ);
+                per_test(PHY_CHNL_BW_20, frequency, duration, arg, IEEE80211_BAND_2GHZ, RF_WIFI_WIFIPLL_MODE);
                 break;
             }
             case 0x21:      // BER_Min_CHxx_40M: 55 21 xx [ms=50]
@@ -1686,7 +1719,8 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 {
                     channel = (uint8_t)content[2];
                 }
-                per_test(PHY_CHNL_BW_40, channel, duration, arg, IEEE80211_BAND_2GHZ);
+                uint32_t frequency = evm_channel_to_frequency(channel, IEEE80211_BAND_2GHZ);
+                per_test(PHY_CHNL_BW_40, frequency, duration, arg, IEEE80211_BAND_2GHZ, RF_WIFI_WIFIPLL_MODE);
                 break;
             }
             case 0x22:      // Pout_Max_2442   135, PHY_CHNL_BW_40
@@ -1734,7 +1768,8 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 {
                     duration = 50;
                 }
-                per_test(PHY_CHNL_BW_20, 14, duration, arg, IEEE80211_BAND_2GHZ);
+                uint32_t frequency = evm_channel_to_frequency(14, IEEE80211_BAND_2GHZ);
+                per_test(PHY_CHNL_BW_20, frequency, duration, arg, IEEE80211_BAND_2GHZ, RF_WIFI_WIFIPLL_MODE);
                 break;
             }
             #if CONFIG_DEEP_LV
@@ -1784,7 +1819,8 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 {
                     duration = 50;
                 }
-                per_test(PHY_CHNL_BW_40, 7, duration, arg, IEEE80211_BAND_2GHZ);
+                uint32_t frequency = evm_channel_to_frequency(7, IEEE80211_BAND_2GHZ);
+                per_test(PHY_CHNL_BW_40, frequency, duration, arg, IEEE80211_BAND_2GHZ, RF_WIFI_WIFIPLL_MODE);
                 break;
             }
 #if CONFIG_AUDIO
@@ -2520,39 +2556,36 @@ int bkreg_run_command1(unsigned char *content, int cnt)
             {
                 /* 55 B0 Channel<15:0> Modulation<3:0> Rate<11:0> */
                 /* Ep: 0x55 B0 24 12, RX Test 2412MHz HT20 */
-                uint32_t channel_i = 0;
-                uint32_t channel_o = 0;
+                uint32_t frequency = 0;
                 uint32_t duration = 50;
                 uint32_t arg = 0x20;
+                uint32_t rfmod = RF_WIFI_WIFIPLL_MODE;
 
                 if (cnt > 3)
                 {
-                    channel_i = ((content[2] >> 4) & 0x0F) * 1000
+                    frequency = ((content[2] >> 4) & 0x0F) * 1000
                               + ((content[2] >> 0) & 0x0F) * 100
                               + ((content[3] >> 4) & 0x0F) * 10
                               + ((content[3] >> 0) & 0x0F) * 1;
                 }
 
-                uint32_t freq = channel_i;
-                wifi_band_t band;
-                if ((freq >= 2412) && (freq <= 2484)) {
-                    band = IEEE80211_BAND_2GHZ;
-                    if (freq == 2484)
-                        channel_o = 14;
-                    else
-                        channel_o = (freq - 2407) / 5; /* 2412->1 ... 2472->13 */
-                } else if ((freq >= 5005) && (freq <= 5885)) {
-                    band = IEEE80211_BAND_5GHZ;
-                    channel_o = (freq - 5000) / 5; /* e.g. 5180->36 */
-                } else if ((freq >= 5955) && (freq <= 7115)) {
-                    band = IEEE80211_BAND_6GHZ;
-                    channel_o = (freq - 5950) / 5; /* 5955->1 */
-                } else {
-                    band = IEEE80211_BAND_2GHZ;
-                    channel_o = 1; /* default */
+                if ((cnt > 4) && (content[4] == 0x00))
+                {
+                    rfmod = RF_WIFI_BTPLL_MODE;
                 }
 
-                per_test(PHY_CHNL_BW_20, channel_o, duration, arg, band);
+                wifi_band_t band;
+                if ((frequency >= 2300) && (frequency <= 2600)) {
+                    band = IEEE80211_BAND_2GHZ;
+                } else if ((frequency >= 4500) && (frequency <= 6000)) {
+                    band = IEEE80211_BAND_5GHZ;
+                } else if ((frequency > 6000) && (frequency <= 7500)) {
+                    band = IEEE80211_BAND_6GHZ;
+                } else {
+                    band = IEEE80211_BAND_2GHZ;
+                }
+
+                per_test(PHY_CHNL_BW_20, frequency, duration, arg, band, rfmod);
                 break;
             }
 
@@ -2596,39 +2629,36 @@ int bkreg_run_command1(unsigned char *content, int cnt)
             {
                 /* 55 B0 Channel<15:0> Modulation<3:0> Rate<11:0> */
                 /* Ep: 0x55 B0 24 12, RX Test 2412MHz HT20 */
-                uint32_t channel_i = 0;
-                uint32_t channel_o = 0;
+                uint32_t frequency = 0;
                 uint32_t duration = 50;
                 uint32_t arg = 0x21;
+                uint32_t rfmod = RF_WIFI_WIFIPLL_MODE;
 
                 if (cnt > 3)
                 {
-                    channel_i = ((content[2] >> 4) & 0x0F) * 1000
+                    frequency = ((content[2] >> 4) & 0x0F) * 1000
                               + ((content[2] >> 0) & 0x0F) * 100
                               + ((content[3] >> 4) & 0x0F) * 10
                               + ((content[3] >> 0) & 0x0F) * 1;
                 }
 
-                uint32_t freq = channel_i;
-                wifi_band_t band;
-                if ((freq >= 2412) && (freq <= 2484)) {
-                    band = IEEE80211_BAND_2GHZ;
-                    if (freq == 2484)
-                        channel_o = 14;
-                    else
-                        channel_o = (freq - 2407) / 5; /* 2412->1 ... 2472->13 */
-                } else if ((freq >= 5005) && (freq <= 5885)) {
-                    band = IEEE80211_BAND_5GHZ;
-                    channel_o = (freq - 5000) / 5; /* e.g. 5180->36 */
-                } else if ((freq >= 5955) && (freq <= 7115)) {
-                    band = IEEE80211_BAND_6GHZ;
-                    channel_o = (freq - 5950) / 5; /* 5955->1 */
-                } else {
-                    band = IEEE80211_BAND_2GHZ;
-                    channel_o = 1; /* default */
+                if ((cnt > 4) && (content[4] == 0x00))
+                {
+                    rfmod = RF_WIFI_BTPLL_MODE;
                 }
 
-                per_test(PHY_CHNL_BW_40, channel_o, duration, arg, band);
+                wifi_band_t band;
+                if ((frequency >= 2300) && (frequency <= 2600)) {
+                    band = IEEE80211_BAND_2GHZ;
+                } else if ((frequency >= 4500) && (frequency <= 6000)) {
+                    band = IEEE80211_BAND_5GHZ;
+                } else if ((frequency > 6000) && (frequency <= 7500)) {
+                    band = IEEE80211_BAND_6GHZ;
+                } else {
+                    band = IEEE80211_BAND_2GHZ;
+                }
+
+                per_test(PHY_CHNL_BW_40, frequency, duration, arg, band, rfmod);
                 break;
             }
 
