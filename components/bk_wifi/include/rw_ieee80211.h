@@ -1348,7 +1348,9 @@ struct ieee80211_wmm_rule {
 struct ieee80211_reg_rule {
 	struct ieee80211_freq_range freq_range;
 	struct ieee80211_power_rule power_rule;
+#if CONFIG_WIFI_REGDOMAIN_WMM
 	struct ieee80211_wmm_rule wmm_rule;
+#endif
 	u32 flags;
 	u32 dfs_cac_ms;
 	bool has_wmm;

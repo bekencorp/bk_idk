@@ -481,8 +481,23 @@ menu "Bk_Wifi"
 			Specifiy default country code, "00" is world regulatory domain.
 
 	config WIFI_REGDOMAIN
-		bool "enable Wifi regulatory domain (802.11d)"
+		bool "Enable Wifi regulatory domain (802.11d)"
 		default n
 		help
 			Enable regulatory domain.
+
+	config WIFI_REGDOMAIN_WMM
+		bool "Enable 802.11d WMM rules"
+		depends on WIFI_REGDOMAIN
+		default n
+		help
+			Enable 802.11d wmm rules.
+
+	config WIFI_REGDOMAIN_FWDB
+		bool "Enable 802.11d WMM rules"
+		depends on WIFI_REGDOMAIN
+		default y
+		help
+			Enable binary regulatory db instead of human readable rules.
+			Enable this feature to save flash usage.
 endmenu

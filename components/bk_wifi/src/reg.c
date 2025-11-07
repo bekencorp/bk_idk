@@ -40,6 +40,25 @@ extern const struct ieee80211_regdomain *reg_regdb[];
 #define REG_DBG_PRINT(args...)
 #endif
 
+/**
+ * offsetofend(TYPE, MEMBER)
+ *
+ * @TYPE: The type of the structure
+ * @MEMBER: The member within the structure to get the end offset of
+ *
+ * Simple helper macro for dealing with variable sized structures passed
+ * from user space.  This allows us to easily determine if the provided
+ * structure is sized to include various fields.
+ */
+#define offsetofend(TYPE, MEMBER) ({				\
+	TYPE tmp;						\
+	offsetof(TYPE, MEMBER) + sizeof(tmp.MEMBER); })		\
+
+#define be32_to_cpu  __builtin_bswap32
+#define be16_to_cpu  __builtin_bswap16
+#define cpu_to_be32  __builtin_bswap32
+#define cpu_to_be16  __builtin_bswap16
+
 static void restore_regulatory_settings(bool reset_user);
 static void print_regdomain_info(const struct ieee80211_regdomain *rd);
 
@@ -306,6 +325,7 @@ void nl80211_send_reg_change_event(struct regulatory_request *request)
 			sizeof(event), BEKEN_NEVER_TIMEOUT);
 }
 
+#if !CONFIG_WIFI_REGDOMAIN_FWDB
 static struct ieee80211_regdomain *__reg_regdb_search(const char *request_alpha2)
 {
 	struct ieee80211_regdomain *curdom;
@@ -366,8 +386,360 @@ static int call_crda(const char *alpha2)
 
 	/* query regulatory database */
 	return reg_regdb_search(alpha2);
-;
 }
+
+#else // CONFIG_WIFI_REGDOMAIN_FWDB
+
+extern const uint8_t regulatory_db[];
+extern int regulatory_db_size;
+
+/* code to directly load a firmware database through request_firmware */
+static const struct fwdb_header *regdb = (struct fwdb_header *)regulatory_db;
+
+struct fwdb_country {
+	u8 alpha2[2];
+	__be16 coll_ptr;
+	/* this struct cannot be extended */
+} __packed __aligned(4);
+
+struct fwdb_collection {
+	u8 len;
+	u8 n_rules;
+	u8 dfs_region;
+	/* no optional data yet */
+	/* aligned to 2, then followed by __be16 array of rule pointers */
+} __packed __aligned(4);
+
+enum fwdb_flags {
+	FWDB_FLAG_NO_OFDM	= BIT(0),
+	FWDB_FLAG_NO_OUTDOOR	= BIT(1),
+	FWDB_FLAG_DFS		= BIT(2),
+	FWDB_FLAG_NO_IR		= BIT(3),
+	FWDB_FLAG_AUTO_BW	= BIT(4),
+};
+
+struct fwdb_wmm_ac {
+	u8 ecw;
+	u8 aifsn;
+	__be16 cot;
+} __packed;
+
+struct fwdb_wmm_rule {
+	struct fwdb_wmm_ac client[IEEE80211_NUM_ACS];
+	struct fwdb_wmm_ac ap[IEEE80211_NUM_ACS];
+} __packed;
+
+struct fwdb_rule {
+	u8 len;
+	u8 flags;
+	__be16 max_eirp;
+	__be32 start, end, max_bw;
+	/* start of optional data */
+	__be16 cac_timeout;
+	__be16 wmm_ptr;
+} __packed __aligned(4);
+
+#define FWDB_MAGIC 0x52474442
+#define FWDB_VERSION 20
+
+struct fwdb_header {
+	__be32 magic;
+	__be32 version;
+	struct fwdb_country country[];
+} __packed __aligned(4);
+
+static int ecw2cw(int ecw)
+{
+	return (1 << ecw) - 1;
+}
+
+static bool valid_wmm(struct fwdb_wmm_rule *rule)
+{
+	struct fwdb_wmm_ac *ac = (struct fwdb_wmm_ac *)rule;
+	int i;
+
+	for (i = 0; i < IEEE80211_NUM_ACS * 2; i++) {
+		u16 cw_min = ecw2cw((ac[i].ecw & 0xf0) >> 4);
+		u16 cw_max = ecw2cw(ac[i].ecw & 0x0f);
+		u8 aifsn = ac[i].aifsn;
+
+		if (cw_min >= cw_max)
+			return false;
+
+		if (aifsn < 1)
+			return false;
+	}
+
+	return true;
+}
+
+static bool valid_rule(const u8 *data, unsigned int size, u16 rule_ptr)
+{
+	struct fwdb_rule *rule = (void *)(data + (rule_ptr << 2));
+
+	if ((u8 *)rule + sizeof(rule->len) > data + size)
+		return false;
+
+	/* mandatory fields */
+	if (rule->len < offsetofend(struct fwdb_rule, max_bw))
+		return false;
+	if (rule->len >= offsetofend(struct fwdb_rule, wmm_ptr)) {
+		u32 wmm_ptr = be16_to_cpu(rule->wmm_ptr) << 2;
+		struct fwdb_wmm_rule *wmm;
+
+		if (wmm_ptr + sizeof(struct fwdb_wmm_rule) > size)
+			return false;
+
+		wmm = (void *)(data + wmm_ptr);
+
+		if (!valid_wmm(wmm))
+			return false;
+	}
+	return true;
+}
+
+static bool valid_country(const u8 *data, unsigned int size,
+			  const struct fwdb_country *country)
+{
+	unsigned int ptr = be16_to_cpu(country->coll_ptr) << 2;
+	struct fwdb_collection *coll = (void *)(data + ptr);
+	__be16 *rules_ptr;
+	unsigned int i;
+
+	/* make sure we can read len/n_rules */
+	if ((u8 *)coll + offsetofend(typeof(*coll), n_rules) > data + size)
+		return false;
+
+	/* make sure base struct and all rules fit */
+	if ((u8 *)coll + round_up(coll->len, 2) +
+	    (coll->n_rules * 2) > data + size)
+		return false;
+
+	/* mandatory fields must exist */
+	if (coll->len < offsetofend(struct fwdb_collection, dfs_region))
+		return false;
+
+	rules_ptr = (void *)((u8 *)coll + round_up(coll->len, 2));
+
+	for (i = 0; i < coll->n_rules; i++) {
+		u16 rule_ptr = be16_to_cpu(rules_ptr[i]);
+
+		if (!valid_rule(data, size, rule_ptr))
+			return false;
+	}
+
+	return true;
+}
+
+static bool regdb_has_valid_signature(const u8 *data, unsigned int size)
+{
+	return true;
+}
+
+
+static bool valid_regdb(const u8 *data, unsigned int size)
+{
+	const struct fwdb_header *hdr = (void *)data;
+	const struct fwdb_country *country;
+
+	if (size < sizeof(*hdr))
+		return false;
+
+	if (hdr->magic != cpu_to_be32(FWDB_MAGIC))
+		return false;
+
+	if (hdr->version != cpu_to_be32(FWDB_VERSION))
+		return false;
+
+	if (!regdb_has_valid_signature(data, size))
+		return false;
+
+	country = &hdr->country[0];
+	while ((u8 *)(country + 1) <= data + size) {
+		if (!country->coll_ptr)
+			break;
+		if (!valid_country(data, size, country))
+			return false;
+		country++;
+	}
+
+	return true;
+}
+
+#if CONFIG_WIFI_REGDOMAIN_WMM
+static void set_wmm_rule(const struct fwdb_header *db,
+			 const struct fwdb_country *country,
+			 const struct fwdb_rule *rule,
+			 struct ieee80211_reg_rule *rrule)
+{
+	struct ieee80211_wmm_rule *wmm_rule = &rrule->wmm_rule;
+	struct fwdb_wmm_rule *wmm;
+	unsigned int i, wmm_ptr;
+
+	wmm_ptr = be16_to_cpu(rule->wmm_ptr) << 2;
+	wmm = (void *)((u8 *)db + wmm_ptr);
+
+	if (!valid_wmm(wmm)) {
+		WIFI_LOGI("Invalid regulatory WMM rule %u-%u in domain %c%c\n",
+		       be32_to_cpu(rule->start), be32_to_cpu(rule->end),
+		       country->alpha2[0], country->alpha2[1]);
+		return;
+	}
+
+	for (i = 0; i < IEEE80211_NUM_ACS; i++) {
+		wmm_rule->client[i].cw_min =
+			ecw2cw((wmm->client[i].ecw & 0xf0) >> 4);
+		wmm_rule->client[i].cw_max = ecw2cw(wmm->client[i].ecw & 0x0f);
+		wmm_rule->client[i].aifsn =  wmm->client[i].aifsn;
+		wmm_rule->client[i].cot =
+			1000 * be16_to_cpu(wmm->client[i].cot);
+		wmm_rule->ap[i].cw_min = ecw2cw((wmm->ap[i].ecw & 0xf0) >> 4);
+		wmm_rule->ap[i].cw_max = ecw2cw(wmm->ap[i].ecw & 0x0f);
+		wmm_rule->ap[i].aifsn = wmm->ap[i].aifsn;
+		wmm_rule->ap[i].cot = 1000 * be16_to_cpu(wmm->ap[i].cot);
+	}
+
+	rrule->has_wmm = true;
+}
+
+static int __regdb_query_wmm(const struct fwdb_header *db,
+			     const struct fwdb_country *country, int freq,
+			     struct ieee80211_reg_rule *rrule)
+{
+	unsigned int ptr = be16_to_cpu(country->coll_ptr) << 2;
+	struct fwdb_collection *coll = (void *)((u8 *)db + ptr);
+	int i;
+
+	for (i = 0; i < coll->n_rules; i++) {
+		__be16 *rules_ptr = (void *)((u8 *)coll + round_up(coll->len, 2));
+		unsigned int rule_ptr = be16_to_cpu(rules_ptr[i]) << 2;
+		struct fwdb_rule *rule = (void *)((u8 *)db + rule_ptr);
+
+		if (rule->len < offsetofend(struct fwdb_rule, wmm_ptr))
+			continue;
+
+		if (freq >= KHZ_TO_MHZ(be32_to_cpu(rule->start)) &&
+		    freq <= KHZ_TO_MHZ(be32_to_cpu(rule->end))) {
+			set_wmm_rule(db, country, rule, rrule);
+			return 0;
+		}
+	}
+
+	return -ENODATA;
+}
+
+int reg_query_regdb_wmm(char *alpha2, int freq, struct ieee80211_reg_rule *rule)
+{
+	const struct fwdb_header *hdr = regdb;
+	const struct fwdb_country *country;
+
+	if (!regdb)
+		return -ENODATA;
+
+	country = &hdr->country[0];
+	while (country->coll_ptr) {
+		if (alpha2_equal(alpha2, country->alpha2))
+			return __regdb_query_wmm(regdb, country, freq, rule);
+
+		country++;
+	}
+
+	return -ENODATA;
+}
+#endif
+
+static int regdb_query_country(const struct fwdb_header *db,
+			       const struct fwdb_country *country)
+{
+	unsigned int ptr = be16_to_cpu(country->coll_ptr) << 2;
+	struct fwdb_collection *coll = (void *)((u8 *)db + ptr);
+	struct ieee80211_regdomain *regdom;
+	unsigned int i;
+	int size_of_regd = 0;
+
+	size_of_regd = sizeof(struct ieee80211_regdomain) +
+	  		((coll->n_rules + 1) * sizeof(struct ieee80211_reg_rule));
+
+	regdom = os_zalloc(size_of_regd);
+	if (!regdom)
+		return -ENOMEM;
+
+	regdom->n_reg_rules = coll->n_rules;
+	regdom->alpha2[0] = country->alpha2[0];
+	regdom->alpha2[1] = country->alpha2[1];
+	regdom->dfs_region = coll->dfs_region;
+
+	for (i = 0; i < regdom->n_reg_rules; i++) {
+		__be16 *rules_ptr = (void *)((u8 *)coll + round_up(coll->len, 2));
+		unsigned int rule_ptr = be16_to_cpu(rules_ptr[i]) << 2;
+		struct fwdb_rule *rule = (void *)((u8 *)db + rule_ptr);
+		struct ieee80211_reg_rule *rrule = &regdom->reg_rules[i];
+
+		rrule->freq_range.start_freq_khz = be32_to_cpu(rule->start);
+		rrule->freq_range.end_freq_khz = be32_to_cpu(rule->end);
+		rrule->freq_range.max_bandwidth_khz = be32_to_cpu(rule->max_bw);
+
+		rrule->power_rule.max_antenna_gain = 0;
+		rrule->power_rule.max_eirp = be16_to_cpu(rule->max_eirp);
+
+		rrule->flags = 0;
+		if (rule->flags & FWDB_FLAG_NO_OFDM)
+			rrule->flags |= NL80211_RRF_NO_OFDM;
+		if (rule->flags & FWDB_FLAG_NO_OUTDOOR)
+			rrule->flags |= NL80211_RRF_NO_OUTDOOR;
+		if (rule->flags & FWDB_FLAG_DFS)
+			rrule->flags |= NL80211_RRF_DFS;
+		if (rule->flags & FWDB_FLAG_NO_IR)
+			rrule->flags |= NL80211_RRF_NO_IR;
+		if (rule->flags & FWDB_FLAG_AUTO_BW)
+			rrule->flags |= NL80211_RRF_AUTO_BW;
+
+		rrule->dfs_cac_ms = 0;
+
+		/* handle optional data */
+		if (rule->len >= offsetofend(struct fwdb_rule, cac_timeout))
+			rrule->dfs_cac_ms =
+				1000 * be16_to_cpu(rule->cac_timeout);
+#if CONFIG_WIFI_REGDOMAIN_WMM
+		if (rule->len >= offsetofend(struct fwdb_rule, wmm_ptr))
+			set_wmm_rule(db, country, rule, rrule);
+#endif
+	}
+
+	return set_regdom(regdom);
+}
+
+static bool __reg_regdb_search(const char *alpha2)
+{
+	const struct fwdb_header *hdr = regdb;
+	const struct fwdb_country *country;
+
+	country = &hdr->country[0];
+	while (country->coll_ptr) {
+		if (alpha2_equal(alpha2, (char *)country->alpha2))
+			return true;
+		country++;
+	}
+
+	return false;
+}
+
+static int query_regdb(const char *alpha2)
+{
+	const struct fwdb_header *hdr = regdb;
+	const struct fwdb_country *country;
+
+	country = &hdr->country[0];
+	while (country->coll_ptr) {
+		if (alpha2_equal(alpha2, (char *)country->alpha2))
+			return regdb_query_country(regdb, country);
+		country++;
+	}
+
+	return -ENODATA;
+}
+#endif
+
 
 bool reg_is_valid_request(const char *alpha2)
 {
@@ -648,8 +1020,10 @@ static int reg_rules_intersect(const struct ieee80211_regdomain *rd1,
 	struct ieee80211_freq_range *freq_range;
 	const struct ieee80211_power_rule *power_rule1, *power_rule2;
 	struct ieee80211_power_rule *power_rule;
+#if CONFIG_WIFI_REGDOMAIN_WMM
 	const struct ieee80211_wmm_rule *wmm_rule1, *wmm_rule2;
 	struct ieee80211_wmm_rule *wmm_rule;
+#endif
 	u32 freq_diff, max_bandwidth1, max_bandwidth2;
 
 	freq_range1 = &rule1->freq_range;
@@ -660,9 +1034,11 @@ static int reg_rules_intersect(const struct ieee80211_regdomain *rd1,
 	power_rule2 = &rule2->power_rule;
 	power_rule = &intersected_rule->power_rule;
 
+#if CONFIG_WIFI_REGDOMAIN_WMM
 	wmm_rule1 = &rule1->wmm_rule;
 	wmm_rule2 = &rule2->wmm_rule;
 	wmm_rule = &intersected_rule->wmm_rule;
+#endif
 
 	freq_range->start_freq_khz = max(freq_range1->start_freq_khz,
 					 freq_range2->start_freq_khz);
@@ -707,7 +1083,9 @@ static int reg_rules_intersect(const struct ieee80211_regdomain *rd1,
 	intersected_rule->dfs_cac_ms = max(rule1->dfs_cac_ms,
 					   rule2->dfs_cac_ms);
 
-	if (rule1->has_wmm && rule2->has_wmm) {
+	if (0) {
+#if CONFIG_WIFI_REGDOMAIN_WMM
+	} else if (rule1->has_wmm && rule2->has_wmm) {
 		u8 ac;
 
 		for (ac = 0; ac < IEEE80211_NUM_ACS; ac++) {
@@ -726,6 +1104,7 @@ static int reg_rules_intersect(const struct ieee80211_regdomain *rd1,
 	} else if (rule2->has_wmm) {
 		*wmm_rule = *wmm_rule2;
 		intersected_rule->has_wmm = true;
+#endif
 	} else {
 		intersected_rule->has_wmm = false;
 	}
@@ -1765,7 +2144,11 @@ static int __regulatory_hint(struct wiphy *wiphy,
 		user_alpha2[1] = last_request->alpha2[1];
 	}
 
+#if CONFIG_WIFI_REGDOMAIN_FWDB
+	return query_regdb(last_request->alpha2);
+#else
 	return call_crda(last_request->alpha2);
+#endif
 }
 
 /* This processes *all* regulatory hints */
@@ -2483,7 +2866,12 @@ int regulatory_init(void)
 	bk_work_init(&reg_work, reg_todo, NULL);
 	rtos_init_recursive_mutex(&reg_mutex);
 
+#if !CONFIG_WIFI_REGDOMAIN_FWDB
 	reg_regdb_size_check();
+#else
+	if (!valid_regdb(regulatory_db, regulatory_db_size))
+		WIFI_LOGE("Invalid regulatory_db\n");
+#endif
 
 	cfg80211_regdomain = cfg80211_world_regdom;
 

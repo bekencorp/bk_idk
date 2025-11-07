@@ -10,6 +10,7 @@ list(APPEND srcs
 	src/pbuf.c
 	src/phy.c
 	src/regdb.c
+	src/regdb_bin.c
 	src/reg.c
 	src/rw_ieee80211.c
 	src/rw_msdu.c
@@ -73,6 +74,8 @@ armino_build_get_property(armino_path ARMINO_PATH)
 add_custom_command(
 	TARGET ${target} POST_BUILD
 	COMMAND sh ${CMAKE_CURRENT_LIST_DIR}/scripts/check_generated_headers.sh ${CMAKE_CURRENT_LIST_DIR}
+	COMMAND ${CMAKE_CURRENT_LIST_DIR}/scripts/db2fw.py regulatory.db ${CMAKE_CURRENT_LIST_DIR}/scripts/db.txt
+	COMMAND ${CMAKE_CURRENT_LIST_DIR}/scripts/bin2c.py regulatory.db ${CMAKE_CURRENT_LIST_DIR}/src/regdb_bin.c
 	COMMENT "Check bk_wifi/include/generated/ directory have changes not submitted ..."
 	VERBATIM)
 
