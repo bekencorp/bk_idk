@@ -41,6 +41,8 @@ extern "C" {
 
 #ifdef CONFIG_KEYVALUE
 #define INBUF_SIZE                    1024
+#elif CONFIG_ATE_TEST
+#define INBUF_SIZE                    256
 #else
 #define INBUF_SIZE                    128
 #endif

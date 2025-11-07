@@ -448,10 +448,36 @@ int handle_shell_input2(char *inbuf, int in_buf_size, char * outbuf, int out_buf
 
 #elif CONFIG_ATE_TEST
 static beken_semaphore_t ate_test_semaphore = NULL;
+
+static uint32_t s_ate_uart_rx_data_cnt = 0;
+uint32_t ate_uart_read_all_fifo_data(void)
+{
+	int ret;
+	uint8_t rx_data;
+
+	while(1)  /* read all data from rx-FIFO. */
+	{
+		ret = uart_read_byte_ex(bk_get_printf_port(), &rx_data);
+		if (ret == -1)
+			break;
+
+		pCli->inbuf[s_ate_uart_rx_data_cnt] = rx_data;
+		s_ate_uart_rx_data_cnt++;
+	}
+
+	return s_ate_uart_rx_data_cnt;
+}
+
+void ate_uart_handle_all_data(void)
+{
+	s_ate_uart_rx_data_cnt = 0;
+}
+
 static void ate_uart_rx_isr(uart_id_t id, void *param)
 {
 	int ret;
 
+	ate_uart_read_all_fifo_data();
 	ret = rtos_set_semaphore(&ate_test_semaphore);
 	if(kNoErr !=ret)
 		os_printf("ate_uart_rx_isr: ATE set sema failed\r\n");
@@ -464,11 +490,9 @@ static void ate_uart_tx_isr(uart_id_t id, void *param)
 
 static void cli_ate_main(uint32_t data)
 {
-
 	char *msg = NULL;
 	int ret = -1;
 	int cnt = 0;
-	uint8_t rx_data;
 
 	if(NULL == ate_test_semaphore)
 	{
@@ -501,23 +525,17 @@ static void cli_ate_main(uint32_t data)
 	ate_test_multiple_cpus_init();
 
 	while (1) {
-
 		ret = rtos_get_semaphore(&ate_test_semaphore, BEKEN_WAIT_FOREVER);
 		if(kNoErr == ret) {
-			while(1)  /* read all data from rx-FIFO. */
-			{
-				ret = uart_read_byte_ex(bk_get_printf_port(), &rx_data);
-				if (ret == -1)
-					break;
+			cnt = ate_uart_read_all_fifo_data();
+			if(cnt >= INBUF_SIZE)
+				break;
 
-				pCli->inbuf[cnt] = rx_data;
-				cnt++;
-
-				if(cnt >= INBUF_SIZE)
-					break;
-			}
+			if (pCli->inbuf[0] == 0x55 && pCli->inbuf[1] == 0x61 && cnt < 142)
+				continue;
 
 			bkreg_run_command1(pCli->inbuf, cnt);
+			ate_uart_handle_all_data();
 
 			if (cnt > 0) {
 				for (int i = 0;i < cnt; i++)

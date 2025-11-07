@@ -344,7 +344,7 @@ void cmd_save_memcheck_from_uart(uint8_t *content, int cnt, uint8_t *tx_buffer)
 
     /* STEP 1: crc check */
     if ((content == NULL) || (cnt != MEMCHECK_EXPECTED_LEN)) {
-        bk_printf("[memchk] payload check failed\r\n");
+        bk_printf("[memchk] payload check failed with cnt=%d\r\n", cnt);
         ret = MEMCHK_ERR_UNKNOWN;
         goto cleanup;
     }
