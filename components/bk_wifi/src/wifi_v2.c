@@ -3084,7 +3084,7 @@ bk_err_t bk_wifi_scan_dump_result(const wifi_scan_result_t *scan_result)
 		rtos_delay_milliseconds(10);
 	}
 
-	WIFI_LOG_RAW("\n");
+	//WIFI_LOG_RAW("\n");
 
 	return BK_OK;
 }
