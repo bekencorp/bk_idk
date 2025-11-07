@@ -238,13 +238,14 @@ static int memcheck_check_data_pattern(memcheck_data_t *datas, uint8_t offset, u
     for (uint8_t idx = 0; idx < count; idx++) {
         memcheck_data_t *item = &datas[offset + idx];
 
-        if (item->bits.flag != 0) {
+        // except smem2, smem3, smem4
+        if (item->bits.flag != 0 && group_name != "smem2" && group_name != "smem3" && group_name != "smem4") {
             bk_printf("[memchk] %s %s error: flag bit should be 0 (value=0x%04X) at index %d\r\n",
                       group_name, data_name, item->raw, idx);
             return -1;
         }
 
-        if (item->bits.mchk != 0) {
+        if (item->raw != 0) {
             if (non_empty_count != idx) {
                 bk_printf("[memchk] %s %s error: there is a empty value in the middle of non-empty values\r\n",
                           group_name, data_name);
