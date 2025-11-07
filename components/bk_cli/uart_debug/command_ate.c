@@ -142,6 +142,8 @@ extern UINT32 rs_test_for_mbp(UINT32 channel, wifi_band_t band, UINT32 mode);
 extern UINT32 evm_channel_to_frequency(UINT32 channel, wifi_band_t band);
 extern UINT32 rs_test_for_mbp_with_frequency(UINT32 frequency, wifi_band_t band, UINT32 mode);
 extern RF_MODE rwnx_cal_set_rfband(wifi_band_t rf_band, RF_MODE rf_mode);
+extern void bk_set_spectial_channel_for_ate(uint32_t frequency);
+extern void bk_revert_spectial_channel_for_ate(void);
 
 extern UINT32 evm_bypass_mac_set_tx_data_length_for_ate(UINT32 modul_format, \
                                                    UINT32 len, UINT32 rate, \
@@ -958,6 +960,10 @@ static int per_test(uint32_t bandwidth, uint32_t frequency, uint32_t duration, u
 
     rwnx_cal_set_rfband(band, rf_mode);
 
+    if (frequency < 2400) {
+        bk_set_spectial_channel_for_ate(frequency);
+    }
+
     g_rxsens_start = 1;
 
     if (duration)
@@ -982,6 +988,9 @@ static int per_test(uint32_t bandwidth, uint32_t frequency, uint32_t duration, u
             BK_ASSERT(kNoErr == err);
             rx_sens_ate_tmr.handle = NULL;
         }
+    }
+    if (frequency < 2400) {
+        bk_revert_spectial_channel_for_ate();
     }
     return 0;
 }
