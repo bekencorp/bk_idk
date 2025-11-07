@@ -192,6 +192,13 @@ bool bk_iomx_get_input(gpio_id_t gpio_id)
 	return iomx_hal_get_input(gpio_id);
 }
 
+bool bk_iomx_get_output(gpio_id_t gpio_id)
+{
+	IOMX_RETURN_ON_INVALID_ID(gpio_id);
+
+	return iomx_hal_get_output(gpio_id);
+}
+
 //MAX capactiy:3
 bk_err_t bk_iomx_set_capacity(gpio_id_t gpio_id, uint32 capacity)
 {

@@ -4129,6 +4129,20 @@
 
 /** \} name SECTION: Module configuration options */
 
+
+#if CONFIG_OPENTHREAD
+#ifndef MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED
+#define MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED
+#endif
+
+#ifndef MBEDTLS_CCM_C
+#define MBEDTLS_CCM_C
+#endif
+
+#ifndef MBEDTLS_SSL_EXPORT_KEYS
+#define MBEDTLS_SSL_EXPORT_KEYS
+#endif
+#endif
 #else //CONFIG_FULL_MBEDTLS
 
 #define MBEDTLS_HAVE_ASM

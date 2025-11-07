@@ -16,23 +16,30 @@
 #include "mac802154_adapter.h"
 
 extern struct mac802154_osi_funcs_t g_mac802154_os_funcs;
-
 static uint8_t mac802154_is_inited = 0;
 
+#if CONFIG_OPENTHREAD
 bk_err_t mac802154_init(void)
 {
     if (mac802154_is_inited) {
         return BK_FAIL;
     }
-
     mac802154_osi_init((void *)&g_mac802154_os_funcs);
-    mac802154_mac_init();
-
     mac802154_is_inited = 1;
-
     return BK_OK;
 }
-
+#else//for ate_test
+bk_err_t mac802154_init(void)
+{
+    if (mac802154_is_inited) {
+        return BK_FAIL;
+    }
+    mac802154_osi_init((void *)&g_mac802154_os_funcs);
+    mac802154_mac_init();
+    mac802154_is_inited = 1;
+    return BK_OK;
+}
+#endif
 void mac802154_deinit(void)
 {
     //TODO

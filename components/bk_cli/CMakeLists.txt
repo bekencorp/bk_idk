@@ -319,7 +319,9 @@ if (CONFIG_VOLT_DETECT)
 endif()
 
 elseif (CONFIG_SHELL_ASYNCLOG)
-	list(APPEND srcs "cli_main.c")
+	if (NOT CONFIG_OPENTHREAD)
+		list(APPEND srcs "cli_main.c")
+	endif()
 endif() #if(CONFIG_CLI)
 
 if (CONFIG_SHELL_ASYNCLOG)

@@ -138,12 +138,21 @@ extern "C" {
 /**
  * Type-length-value structure that allows for ASN1 using DER.
  */
+#if CONFIG_OPENTHREAD
+typedef struct mbedtls_asn1_buf {
+    int tag;                /**< ASN1 type, e.g. MBEDTLS_ASN1_UTF8_STRING. */
+    size_t len;             /**< ASN1 length, in octets. */
+    unsigned char *p;       /**< ASN1 data, e.g. in ASCII. */
+}
+mbedtls_asn1_buf;
+#else
 typedef struct mbedtls_asn1_buf {
     int MBEDTLS_PRIVATE(tag);                /**< ASN1 type, e.g. MBEDTLS_ASN1_UTF8_STRING. */
     size_t MBEDTLS_PRIVATE(len);             /**< ASN1 length, in octets. */
     unsigned char *MBEDTLS_PRIVATE(p);       /**< ASN1 data, e.g. in ASCII. */
 }
 mbedtls_asn1_buf;
+#endif
 
 /**
  * Container for ASN1 bit strings.

@@ -355,6 +355,29 @@ static void start_user_app_thread(void)
 					(beken_thread_arg_t)0);
 }
 
+#if CONFIG_SUPPORT_MATTER
+beken_thread_t matter_thread_handle = NULL;
+extern void ChipTest(void);
+static void matter_thread( void *arg ) {
+#ifdef CONFIG_MATTER_EXAMPLE
+    if (CONFIG_MATTER_EXAMPLE[0] != '\0')
+	ChipTest();
+#endif
+    rtos_delete_thread(NULL);
+}
+
+void start_matter(void) {
+    os_printf("start matter\r\n");
+    rtos_create_thread(&matter_thread_handle,
+        BEKEN_DEFAULT_WORKER_PRIORITY,
+         "matter",
+        (beken_thread_function_t)matter_thread,
+        8192,
+        0);
+}
+#endif //#if CONFIG_SUPPORT_MATTER
+
+
 extern int main(void);
 extern bool ate_is_enabled(void);
 
@@ -376,18 +399,13 @@ static void app_main_thread(void *arg)
 
 	main();
 
-#if CONFIG_MATTER_START
-	extern void ChipTest(void);
-    beken_thread_t matter_thread_handle = NULL;
-
-    os_printf("start matter\r\n");
-    rtos_create_thread(&matter_thread_handle,
-		BEKEN_DEFAULT_WORKER_PRIORITY,
-		 "matter",
-		(beken_thread_function_t)ChipTest,
-		8192,
-		0);
+#if CONFIG_MATTER_START && CONFIG_SUPPORT_MATTER
+#ifdef CONFIG_MATTER_EXAMPLE
+	if (CONFIG_MATTER_EXAMPLE[0] != '\0')
+	    start_matter();
 #endif
+#endif //#if CONFIG_MATTER_START && CONFIG_SUPPORT_MATTER
+
     if(ate_is_enabled())
     {
         os_printf("ATE enabled = 1\r\n");

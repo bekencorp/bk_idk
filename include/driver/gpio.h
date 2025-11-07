@@ -227,6 +227,19 @@ bk_err_t bk_gpio_set_output_low(gpio_id_t gpio_id);
 bool bk_gpio_get_input(gpio_id_t gpio_id);
 
 /**
+ * @brief     Get the GPIO output value,
+ *
+ * This API get GPIO's output level: 0 :low_level 1:high_level.
+ *
+ * @return
+ *    - output value
+ *    - BK_ERR_GPIO_CHAN_ID: invalid GPIO channel
+ *    - BK_ERR_GPIO_NOT_INPUT_MODE : GPIO is not input mode
+ *    - others: other errors.
+ */
+bool bk_gpio_get_output(gpio_id_t gpio_id);
+
+/**
  * @brief     Set the GPIO driver capacity.
  *
  * This API Set GPIO's output driver capacity which range is 0~3.

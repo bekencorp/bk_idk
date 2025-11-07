@@ -24,6 +24,9 @@
 #include <stdio.h>
 
 #if defined(MBEDTLS_ENTROPY_HARDWARE_ALT)
+#if (CONFIG_TRNG_SUPPORT && CONFIG_OPENTHREAD)
+#include <driver/trng.h>
+#endif
 
 static int os_get_random(unsigned char *buf, size_t len)
 {
@@ -31,7 +34,11 @@ static int os_get_random(unsigned char *buf, size_t len)
     unsigned long tmp;
 
     for (i = 0; i < ((len + 3) & ~3) / 4; i++) {
+#if (CONFIG_TRNG_SUPPORT && CONFIG_OPENTHREAD)
+        tmp = bk_rand();
+#else
         tmp = rand();
+#endif
 
         for (j = 0; j < 4; j++) {
             if ((i * 4 + j) < len) {
