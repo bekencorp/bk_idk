@@ -318,10 +318,16 @@ bk_err_t bk_sensor_get_current_temperature(float *temperature)
 		return BK_ERR_PARAM;
 	}
 
-	rtos_lock_mutex(&g_sensor_info.lock);
-	*temperature = g_sensor_info.temperature;
-	rtos_unlock_mutex(&g_sensor_info.lock);
-
+	if(rtos_local_irq_disabled() || rtos_is_in_interrupt_context())
+	{
+		*temperature = g_sensor_info.temperature;
+	}
+	else
+	{
+		rtos_lock_mutex(&g_sensor_info.lock);
+		*temperature = g_sensor_info.temperature;
+		rtos_unlock_mutex(&g_sensor_info.lock);
+	}
 	return BK_OK;
 }
 

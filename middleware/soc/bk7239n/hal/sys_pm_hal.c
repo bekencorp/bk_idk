@@ -45,6 +45,10 @@
 #endif
 #include "sys_driver.h"
 
+#if CONFIG_TEMP_DETECT
+#include "components/sensor.h"
+#endif
+
 #define portNVIC_SYSTICK_CTRL_REG             ( *( ( volatile uint32_t * ) 0xe000e010 ) )
 #define portNVIC_SYSTICK_LOAD_REG             ( *( ( volatile uint32_t * ) 0xe000e014 ) )
 #define portNVIC_SYSTICK_CURRENT_VALUE_REG    ( *( ( volatile uint32_t * ) 0xe000e018 ) )
@@ -64,7 +68,7 @@
 #define PM_EXIT_LOWVOL_SYSTICK_TIME           (32)      //1ms
 #define PM_EXIT_LOWVOL_SYSTICK_RELOAD_TIME    (0xFFFFFF)//set max
 #if CONFIG_SOFT_CTRL_VOLT
-#define PM_LOW_VOL_VCOREHSEL_LDO_SEL          (4)       // 0.7V
+#define PM_LOW_VOL_VCOREHSEL_LDO_SEL          (6)       // 0.75V
 #endif
 
 #if CONFIG_OTA_POSITION_INDEPENDENT_AB
@@ -629,10 +633,23 @@ static inline void sys_hal_set_low_voltage(volatile uint32_t *ana_r0, volatile u
 	sys_ana_ll_set_ana_reg3_en_xtalh_sleep(1);
 #endif
 	sys_ana_ll_set_ana_reg7_spi_pwd_regpow(0);
+	sys_ana_ll_set_ana_reg7_vbspbuf_lp(1);
 	sys_ana_ll_set_ana_reg7_envrefh1v(0);
 	sys_ana_ll_set_ana_reg7_vanaldosel(0);
 #if CONFIG_LDO_SELF_LOW_POWER_MODE_ENA
-	sys_ana_ll_set_ana_reg7_dldohp(0);
+	#if CONFIG_TEMP_DETECT
+	float temp;
+	bk_err_t err = bk_sensor_get_current_temperature(&temp);
+
+	if((err != BK_OK) || (temp < 0)) // get temperature failed or temperature is less than 0
+	{
+		sys_ana_ll_set_ana_reg7_dldohp(1); //will increase current 15uA
+	}
+	else
+	{
+		sys_ana_ll_set_ana_reg7_dldohp(0);
+	}
+	#endif
 	sys_ana_ll_set_ana_reg7_aldohp(0);
 #endif
 	// sys_ana_ll_set_ana_reg9_azcd_manu(0x20);
