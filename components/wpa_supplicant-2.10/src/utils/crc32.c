@@ -83,3 +83,17 @@ u32 crc32(const u8 *frame, size_t frame_len)
 
 	return ~crc;
 }
+
+uint32_t calc_crc32(uint32_t crc, const void *buf, size_t len)
+{
+	const uint8_t *p;
+
+	p = (const uint8_t *)buf;
+	crc = crc ^ ~0U;
+
+	while (len--) {
+		crc = crc32_table[(crc ^ *p++) & 0xFF] ^ (crc >> 8);
+	}
+
+	return crc ^ ~0U;
+}
