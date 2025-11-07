@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from functools import total_ordering
 import sys, math
@@ -121,6 +121,9 @@ class FlagError(Exception):
     def __init__(self, flag):
         self.flag = flag
 
+class IgnoreRule(Exception):
+    pass
+
 @total_ordering
 class Permission(object):
     def __init__(self, freqband, power, flags, wmmrule):
@@ -135,6 +138,9 @@ class Permission(object):
             if not flag in flag_definitions:
                 raise FlagError(flag)
             self.flags |= flag_definitions[flag]
+        # ignore rule with NO-INDOOR as the kernel doesn't support it yet.
+        if 'NO-INDOOR' in flags:
+            raise IgnoreRule()
         self.textflags = flags
 
     def _as_tuple(self):
@@ -218,6 +224,9 @@ class DBParser(object):
                 self._syntax_error("Inverted freq range (%d - %d)" % (start, end))
             if start == end:
                 self._syntax_error("Start and end freqs are equal (%d)" % start)
+            if bw > end - start:
+                self._syntax_error("BW is larger than freq_diff (%d - %d) (%d)"
+                                      % (start, end, bw))
         except ValueError:
             self._syntax_error("band must have frequency range")
 
@@ -426,6 +435,8 @@ class DBParser(object):
             perm = Permission(b, p, flags, w)
         except FlagError as e:
             self._syntax_error("Invalid flag '%s'" % e.flag)
+        except IgnoreRule:
+            return
         for cname, c in self._current_countries.items():
             if perm in c:
                 self._warn('Rule "%s, %s" added to "%s" twice' % (
