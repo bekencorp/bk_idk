@@ -5,6 +5,7 @@
 #include "aon_pmu_hal.h"
 #include <driver/otp.h>
 #include <driver/efuse.h>
+#include <os/mem.h>
 
 extern UINT32 device_id;
 
@@ -189,16 +190,16 @@ int sctrl_set_vdddig_to_reg(const unsigned char *content, int cnt, UINT8 *tx_buf
 
 int sctrl_set_bandgap_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buffer)
 {
-    UINT8 bandgap = 0;
+    UINT8 bandgap[4] = {0};
 
-	tx_buffer[0] = 0x55;
+    tx_buffer[0] = 0x55;
     if (cnt < 3)
     {
-        if (bk_otp_ahb_read(OTP_VDDDIG_BANDGAP, &bandgap, sizeof(bandgap)) == 0)
+        if (bk_otp_ahb_read(OTP_VDDDIG_BANDGAP, bandgap, sizeof(bandgap)) == 0)
         {
             /* success */
             tx_buffer[0] = 0x0E;
-            tx_buffer[1] = bandgap;
+            tx_buffer[1] = bandgap[0];
             uart_send_bytes_for_ate(tx_buffer, 2);
             return 0;
         }
@@ -209,26 +210,29 @@ int sctrl_set_bandgap_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_
             return -1;
         }
     }
-    bandgap = content[2];
-    if (bandgap > BANDGAP_BGCAL_MANUAL_MASK)
+    os_memset(bandgap, 0, sizeof(bandgap));
+    bandgap[0] = content[2];
+    if (bandgap[0] > BANDGAP_BGCAL_MANUAL_MASK)
     {
         tx_buffer[1] = 0xDD;
         uart_send_bytes_for_ate(tx_buffer, 2);
         return -1;
     }
 
-    if (bk_otp_ahb_update(OTP_VDDDIG_BANDGAP, &bandgap, sizeof(bandgap)) == 0)
+    // update otp will read back and check, so do not do it here
+    if (bk_otp_ahb_update(OTP_VDDDIG_BANDGAP, bandgap, sizeof(bandgap)) == 0)
     {
         /* success */
-        sys_hal_set_bgcalm(bandgap);
+        sys_hal_set_bgcalm(bandgap[0]);
         tx_buffer[1] = 0x33;
+        bk_otp_ahb_read(OTP_VDDDIG_BANDGAP, tx_buffer + 2, 1);
+        uart_send_bytes_for_ate(tx_buffer, 3);
     }
     else
     {
         tx_buffer[1] = 0xCC;
+        uart_send_bytes_for_ate(tx_buffer, 2);
     }
-
-    uart_send_bytes_for_ate(tx_buffer, 2);
 
     return 0;
 }
