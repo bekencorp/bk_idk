@@ -266,7 +266,7 @@ int sctrl_set_dia_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buff
 	tx_buffer[0] = 0x55;
     if (cnt < 3)
     {
-        if (bk_otp_apb_read(OTP_DIA, &dia, sizeof(dia)) == 0)
+        if (bk_otp_ahb_read(OTP_DIA, &dia, sizeof(dia)) == 0)
         {
             /* success */
             rwnx_cal_set_reg_mod_pa(0, dia);
@@ -290,7 +290,7 @@ int sctrl_set_dia_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buff
         return -1;
     }
 
-    if (bk_otp_apb_update(OTP_DIA, &dia, sizeof(dia)) == 0)
+    if (bk_otp_ahb_update(OTP_DIA, &dia, sizeof(dia)) == 0)
     {
         /* success */
         tx_buffer[1] = 0x33;

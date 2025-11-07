@@ -2132,7 +2132,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 /* set xtal: 55 57 xx */
                 manual_cal_set_xtal((UINT32)content[2]);
                 break;
-#if 0
+
             case 0x58:
                 /* set trxA<31:28>_trxB<17:17> to cali Dia */
                 /* 55 58 xx */
@@ -2144,7 +2144,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 /* 55 59 [xx] */
                 sctrl_set_dia_to_efuse(content, cnt, tx_buffer);
                 break;
-#endif
+
             case 0x60:
                 /* 55 60 memory check, return 55 33 if success, otherwise 55 CC */
 #if CONFIG_RESET_REASON
