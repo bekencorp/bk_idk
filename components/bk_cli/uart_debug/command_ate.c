@@ -137,6 +137,7 @@ extern void evm_start_bypass_mac_for_ate(void);
 extern void evm_bypass_mac_test_with_frequency(UINT32 frequency, wifi_band_t band, UINT32 bandwidth);
 extern void evm_set_pwr_for_he_tb(UINT32 format);
 extern UINT32 evm_get_auto_hetb_tx_len(UINT32 ru, UINT32 rate, UINT32 guard_i_type);
+extern UINT32 evm_frequency_to_channel(UINT32 frequency, wifi_band_t band);
 
 extern void evm_bypass_mac_test(UINT32 channel, wifi_band_t band, UINT32 bandwidth);
 extern UINT32 rs_test(UINT32 channel, wifi_band_t band, UINT32 mode);
@@ -636,28 +637,176 @@ void mpb_tx_mode_close_for_ate(void)
 	bk_wifi_set_mpb_ctrl(reg);
 }
 
-static UINT8 g_pwr_idx_11b_ch1 = 0;
-static UINT8 g_pwr_idx_11b_ch7 = 0;
-static UINT8 g_pwr_idx_11b_ch13 = 0;
-static UINT8 g_pwr_idx_11g_ch1 = 0;
-static UINT8 g_pwr_idx_11g_ch7 = 0;
-static UINT8 g_pwr_idx_11g_ch13 = 0;
-static UINT8 g_pwr_idx_11a_ch36 = 0;
-static UINT8 g_pwr_idx_11a_ch64 = 0;
-static UINT8 g_pwr_idx_11a_ch100 = 0;
-static UINT8 g_pwr_idx_11a_ch132 = 0;
-static UINT8 g_pwr_idx_11a_ch165 = 0;
-static UINT8 g_pwr_dBm_x10_11b_ch1 = 0;
-static UINT8 g_pwr_dBm_x10_11b_ch7 = 0;
-static UINT8 g_pwr_dBm_x10_11b_ch13 = 0;
-static UINT8 g_pwr_dBm_x10_11g_ch1 = 0;
-static UINT8 g_pwr_dBm_x10_11g_ch7 = 0;
-static UINT8 g_pwr_dBm_x10_11g_ch13 = 0;
-static UINT8 g_pwr_dBm_x10_11a_ch36 = 0;
-static UINT8 g_pwr_dBm_x10_11a_ch64 = 0;
-static UINT8 g_pwr_dBm_x10_11a_ch100 = 0;
-static UINT8 g_pwr_dBm_x10_11a_ch132 = 0;
-static UINT8 g_pwr_dBm_x10_11a_ch165 = 0;
+typedef struct {
+    UINT8 channel;
+    UINT8 pwr_idx;
+    UINT8 pwr_dBm_x10;
+} cal_point_t;
+
+static cal_point_t g_2g_11b_cal_points[3] = {
+    {1, 0, 0},   // ch1
+    {7, 0, 0},   // ch7
+    {13, 0, 0}   // ch13
+};
+
+static cal_point_t g_2g_11g_cal_points[3] = {
+    {1, 0, 0},   // ch1
+    {7, 0, 0},   // ch7
+    {13, 0, 0}   // ch13
+};
+
+static cal_point_t g_5g_11a_cal_points[5] = {
+    {36, 0, 0},   // ch36
+    {64, 0, 0},   // ch64
+    {100, 0, 0},  // ch100
+    {132, 0, 0},  // ch132
+    {165, 0, 0}   // ch165
+};
+
+static int find_valid_cal_points(cal_point_t *cal_points, int num_points, cal_point_t *valid_points, int *num_valid)
+{
+    int count = 0;
+    for (int i = 0; i < num_points; i++) {
+        if (cal_points[i].pwr_idx != 0 && cal_points[i].pwr_dBm_x10 != 0) {
+            valid_points[count] = cal_points[i];
+            count++;
+        }
+    }
+    *num_valid = count;
+    return count;
+}
+
+static UINT8 linear_interpolate(UINT8 x1, UINT8 y1, UINT8 x2, UINT8 y2, UINT8 x)
+{
+    if (x1 == x2) {
+        return y1;
+    }
+
+    INT32 result = y1 + ((INT32)(y2 - y1) * (INT32)(x - x1)) / (INT32)(x2 - x1);
+    if (result < 0) {
+        bk_printf("Warning: linear_interpolate() result < 0, clamped to 0\n");
+        return 0;
+    }
+    if (result > 255) {
+        bk_printf("Warning: linear_interpolate() result > 255, clamped to 255\n");
+        return 255;
+    }
+    return (UINT8)result;
+}
+
+static UINT8 fit_power_index_generic(UINT8 target_channel, UINT8 target_pwr_dBm_x10, cal_point_t *cal_points, int num_points)
+{
+    cal_point_t valid_points[5];
+    int num_valid = 0;
+
+    find_valid_cal_points(cal_points, num_points, valid_points, &num_valid);
+
+    if (num_valid == 0) {
+        return 0;
+    }
+
+    // Base values (idx and power) at target channel from calibration data
+    UINT8 base_idx;
+    UINT8 base_dbm_x10;
+
+    if (num_valid == 1) {
+        base_idx = valid_points[0].pwr_idx;
+        base_dbm_x10 = valid_points[0].pwr_dBm_x10;
+    } else {
+        // Clamp to edges if out of range, otherwise interpolate between neighbors
+        if (target_channel <= valid_points[0].channel) {
+            base_idx = valid_points[0].pwr_idx;
+            base_dbm_x10 = valid_points[0].pwr_dBm_x10;
+        } else if (target_channel >= valid_points[num_valid - 1].channel) {
+            base_idx = valid_points[num_valid - 1].pwr_idx;
+            base_dbm_x10 = valid_points[num_valid - 1].pwr_dBm_x10;
+        } else {
+            cal_point_t left_point = valid_points[0];
+            cal_point_t right_point = valid_points[num_valid - 1];
+            for (int i = 0; i < num_valid - 1; i++) {
+                if (target_channel >= valid_points[i].channel && target_channel <= valid_points[i + 1].channel) {
+                    left_point = valid_points[i];
+                    right_point = valid_points[i + 1];
+                    break;
+                }
+            }
+            base_idx = linear_interpolate(left_point.channel, left_point.pwr_idx,
+                                          right_point.channel, right_point.pwr_idx,
+                                          target_channel);
+            base_dbm_x10 = linear_interpolate(left_point.channel, left_point.pwr_dBm_x10,
+                                              right_point.channel, right_point.pwr_dBm_x10,
+                                              target_channel);
+        }
+    }
+
+    // Adjust index by target power difference: 10 (1.0dBm) -> idx delta 4
+    INT32 delta_dbm_x10 = (INT32)target_pwr_dBm_x10 - (INT32)base_dbm_x10;
+    INT32 idx_adjust = (delta_dbm_x10 * 4) / 10;
+    INT32 final_idx = (INT32)base_idx + idx_adjust;
+
+    if (final_idx < 0) {
+        bk_printf("Warning: final_idx < 0 (%d), clamp to 0\r\n", final_idx);
+        final_idx = 0;
+    } else if (final_idx > 255) {
+        bk_printf("Warning: final_idx > 255 (%d), clamp to 255\r\n", final_idx);
+        final_idx = 255;
+    }
+
+    return (UINT8)final_idx;
+}
+
+static void evm_test_save_pwr(UINT32 rate, UINT32 frequency, uint8_t pwr_dbm)
+{
+    uint8_t tx_buffer[3];
+
+    UINT8 pwr_idx = rwnx_cal_get_pwr_idx();
+    bk_printf("frequency=%d,rate=%d,pwr_idx=%d,pwr_dbm=%d\r\n", frequency, rate, pwr_idx, pwr_dbm);
+
+    if (rate == 11) {
+        if (frequency == 2412) {
+            g_2g_11b_cal_points[0].pwr_idx = pwr_idx;
+            g_2g_11b_cal_points[0].pwr_dBm_x10 = pwr_dbm;
+        } else if (frequency == 2442) {
+            g_2g_11b_cal_points[1].pwr_idx = pwr_idx;
+            g_2g_11b_cal_points[1].pwr_dBm_x10 = pwr_dbm;
+        } else if (frequency == 2472) {
+            g_2g_11b_cal_points[2].pwr_idx = pwr_idx;
+            g_2g_11b_cal_points[2].pwr_dBm_x10 = pwr_dbm;
+        }
+    } else if (rate == 54) {
+        if (frequency == 2412) {
+            g_2g_11g_cal_points[0].pwr_idx = pwr_idx;
+            g_2g_11g_cal_points[0].pwr_dBm_x10 = pwr_dbm;
+        } else if (frequency == 2442) {
+            g_2g_11g_cal_points[1].pwr_idx = pwr_idx;
+            g_2g_11g_cal_points[1].pwr_dBm_x10 = pwr_dbm;
+        } else if (frequency == 2472) {
+            g_2g_11g_cal_points[2].pwr_idx = pwr_idx;
+            g_2g_11g_cal_points[2].pwr_dBm_x10 = pwr_dbm;
+        } else if (frequency == 5180) {
+            g_5g_11a_cal_points[0].pwr_idx = pwr_idx;
+            g_5g_11a_cal_points[0].pwr_dBm_x10 = pwr_dbm;
+        } else if (frequency == 5320) {
+            g_5g_11a_cal_points[1].pwr_idx = pwr_idx;
+            g_5g_11a_cal_points[1].pwr_dBm_x10 = pwr_dbm;
+        } else if (frequency == 5500) {
+            g_5g_11a_cal_points[2].pwr_idx = pwr_idx;
+            g_5g_11a_cal_points[2].pwr_dBm_x10 = pwr_dbm;
+        } else if (frequency == 5660) {
+            g_5g_11a_cal_points[3].pwr_idx = pwr_idx;
+            g_5g_11a_cal_points[3].pwr_dBm_x10 = pwr_dbm;
+        } else if (frequency == 5825) {
+            g_5g_11a_cal_points[4].pwr_idx = pwr_idx;
+            g_5g_11a_cal_points[4].pwr_dBm_x10 = pwr_dbm;
+        }
+    }
+
+    tx_buffer[0] = 0x55;
+    tx_buffer[1] = 0x33;
+    tx_buffer[2] = pwr_dbm;
+
+    uart_send_bytes_for_ate(tx_buffer, 3);
+}
 
 /**
  * rate        : reference to evm_translate_tx_rate
@@ -724,44 +873,7 @@ static void evm_test(UINT32 rate, UINT32 frequency, UINT32 bandwidth, UINT32 mod
     rwnx_cal_set_txpwr_by_rate(evm_translate_tx_rate(rate), modul_format, 0, 0, bandwidth);
     UINT8 pwr_idx = rwnx_cal_get_pwr_idx();
     bk_printf("frequency=%d,rate=%d,pwr_idx=%d\r\n", frequency, rate, pwr_idx);
-    if (rate == 11) {
-        if (channel == 2412) {
-            g_pwr_idx_11b_ch1 = pwr_idx;
-            g_pwr_dBm_x10_11b_ch1 = pwr_dbm;
-        } else if (channel == 2442) {
-            g_pwr_idx_11b_ch7 = pwr_idx;
-            g_pwr_dBm_x10_11b_ch7 = pwr_dbm;
-        } else if (channel == 2472) {
-            g_pwr_idx_11b_ch13 = pwr_idx;
-            g_pwr_dBm_x10_11b_ch13 = pwr_dbm;
-        }
-    } else if (rate == 54) {
-        if (channel == 2412) {
-            g_pwr_idx_11g_ch1 = pwr_idx;
-            g_pwr_dBm_x10_11g_ch1 = pwr_dbm;
-        } else if (channel == 2442) {
-            g_pwr_idx_11g_ch7 = pwr_idx;
-            g_pwr_dBm_x10_11g_ch7 = pwr_dbm;
-        } else if (channel == 2472) {
-            g_pwr_idx_11g_ch13 = pwr_idx;
-            g_pwr_dBm_x10_11g_ch13 = pwr_dbm;
-        } else if (channel == 5180) {
-            g_pwr_idx_11a_ch36 = pwr_idx;
-            g_pwr_dBm_x10_11a_ch36 = pwr_dbm;
-        } else if (channel == 5320) {
-            g_pwr_idx_11a_ch64 = pwr_idx;
-            g_pwr_dBm_x10_11a_ch64 = pwr_dbm;
-        } else if (channel == 5500) {
-            g_pwr_idx_11a_ch100 = pwr_idx;
-            g_pwr_dBm_x10_11a_ch100 = pwr_dbm;
-        } else if (channel == 5660) {
-            g_pwr_idx_11a_ch132 = pwr_idx;
-            g_pwr_dBm_x10_11a_ch132 = pwr_dbm;
-        } else if (channel == 5825) {
-            g_pwr_idx_11a_ch165 = pwr_idx;
-            g_pwr_dBm_x10_11a_ch165 = pwr_dbm;
-        }
-    }
+
     rf_module_vote_ctrl(RF_CLOSE,RF_BY_TEMP_BIT);
     //evm_bypass_mac_set_txdelay(txdelay);
 
@@ -2008,17 +2120,17 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                     UINT8 ana_version = CONFIG_ATE_PHY_PWR_ANA_VERSION;
                     UINT32 pwr_tbl[12] = {0};
 
-                    pwr_tbl[0] = g_pwr_idx_11b_ch1 << 24 | g_pwr_idx_11g_ch1 << 16;
-                    pwr_tbl[1] = g_pwr_idx_11b_ch7 << 24 | g_pwr_idx_11g_ch7 << 16;
-                    pwr_tbl[2] = g_pwr_idx_11b_ch13 << 24 | g_pwr_idx_11g_ch13 << 16;
-                    pwr_tbl[3] = g_pwr_dBm_x10_11b_ch1 << 24 | g_pwr_dBm_x10_11g_ch1 << 16;
-                    pwr_tbl[4] = g_pwr_dBm_x10_11b_ch7 << 24 | g_pwr_dBm_x10_11g_ch7 << 16;
-                    pwr_tbl[5] = g_pwr_dBm_x10_11b_ch13 << 24 | g_pwr_dBm_x10_11g_ch13 << 16;
-                    pwr_tbl[6] = g_pwr_idx_11a_ch36 << 24 | g_pwr_dBm_x10_11a_ch36 << 16;
-                    pwr_tbl[7] = g_pwr_idx_11a_ch64 << 24 | g_pwr_dBm_x10_11a_ch64 << 16;
-                    pwr_tbl[8] = g_pwr_idx_11a_ch100 << 24 | g_pwr_dBm_x10_11a_ch100 << 16;
-                    pwr_tbl[9] = g_pwr_idx_11a_ch132 << 24 | g_pwr_dBm_x10_11a_ch132 << 16;
-                    pwr_tbl[10] = g_pwr_idx_11a_ch165 << 24 | g_pwr_dBm_x10_11a_ch165 << 16;
+                    pwr_tbl[0] = g_2g_11b_cal_points[0].pwr_idx << 24 | g_2g_11g_cal_points[0].pwr_idx << 16;
+                    pwr_tbl[1] = g_2g_11b_cal_points[1].pwr_idx << 24 | g_2g_11g_cal_points[1].pwr_idx << 16;
+                    pwr_tbl[2] = g_2g_11b_cal_points[2].pwr_idx << 24 | g_2g_11g_cal_points[2].pwr_idx << 16;
+                    pwr_tbl[3] = g_2g_11b_cal_points[0].pwr_dBm_x10 << 24 | g_2g_11g_cal_points[0].pwr_dBm_x10 << 16;
+                    pwr_tbl[4] = g_2g_11b_cal_points[1].pwr_dBm_x10 << 24 | g_2g_11g_cal_points[1].pwr_dBm_x10 << 16;
+                    pwr_tbl[5] = g_2g_11b_cal_points[2].pwr_dBm_x10 << 24 | g_2g_11g_cal_points[2].pwr_dBm_x10 << 16;
+                    pwr_tbl[6] = g_5g_11a_cal_points[0].pwr_idx << 24 | g_5g_11a_cal_points[0].pwr_dBm_x10 << 16;
+                    pwr_tbl[7] = g_5g_11a_cal_points[1].pwr_idx << 24 | g_5g_11a_cal_points[1].pwr_dBm_x10 << 16;
+                    pwr_tbl[8] = g_5g_11a_cal_points[2].pwr_idx << 24 | g_5g_11a_cal_points[2].pwr_dBm_x10 << 16;
+                    pwr_tbl[9] = g_5g_11a_cal_points[3].pwr_idx << 24 | g_5g_11a_cal_points[3].pwr_dBm_x10 << 16;
+                    pwr_tbl[10] = g_5g_11a_cal_points[4].pwr_idx << 24 | g_5g_11a_cal_points[4].pwr_dBm_x10 << 16;
                     pwr_tbl[11] = tbl_version | ana_version << 8;
 
                     // "bk_otp_ahb_update" will do read-back check, so do not need to read back again here
@@ -2430,17 +2542,17 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 UINT8 pwr_dBm_x10_11a_ch132 = content[14];
                 UINT8 pwr_dBm_x10_11a_ch165 = content[15];
 
-                UINT8 pwr_idx_11b_ch1 = g_pwr_idx_11b_ch1;
-                UINT8 pwr_idx_11b_ch7 = g_pwr_idx_11b_ch7;
-                UINT8 pwr_idx_11b_ch13 = g_pwr_idx_11b_ch13;
-                UINT8 pwr_idx_11g_ch1 = g_pwr_idx_11g_ch1;
-                UINT8 pwr_idx_11g_ch7 = g_pwr_idx_11g_ch7;
-                UINT8 pwr_idx_11g_ch13 = g_pwr_idx_11g_ch13;
-                UINT8 pwr_idx_11a_ch36 = g_pwr_idx_11a_ch36;
-                UINT8 pwr_idx_11a_ch64 = g_pwr_idx_11a_ch64;
-                UINT8 pwr_idx_11a_ch100 = g_pwr_idx_11a_ch100;
-                UINT8 pwr_idx_11a_ch132 = g_pwr_idx_11a_ch132;
-                UINT8 pwr_idx_11a_ch165 = g_pwr_idx_11a_ch165;
+                UINT8 pwr_idx_11b_ch1 = g_2g_11b_cal_points[0].pwr_idx;
+                UINT8 pwr_idx_11b_ch7 = g_2g_11b_cal_points[1].pwr_idx;
+                UINT8 pwr_idx_11b_ch13 = g_2g_11b_cal_points[2].pwr_idx;
+                UINT8 pwr_idx_11g_ch1 = g_2g_11g_cal_points[0].pwr_idx;
+                UINT8 pwr_idx_11g_ch7 = g_2g_11g_cal_points[1].pwr_idx;
+                UINT8 pwr_idx_11g_ch13 = g_2g_11g_cal_points[2].pwr_idx;
+                UINT8 pwr_idx_11a_ch36 = g_5g_11a_cal_points[0].pwr_idx;
+                UINT8 pwr_idx_11a_ch64 = g_5g_11a_cal_points[1].pwr_idx;
+                UINT8 pwr_idx_11a_ch100 = g_5g_11a_cal_points[2].pwr_idx;
+                UINT8 pwr_idx_11a_ch132 = g_5g_11a_cal_points[3].pwr_idx;
+                UINT8 pwr_idx_11a_ch165 = g_5g_11a_cal_points[4].pwr_idx;
 
                 UINT32 pwr_tbl[12] = {0};
 
@@ -2531,6 +2643,10 @@ int bkreg_run_command1(unsigned char *content, int cnt)
              *     0x137 = MCS9
             */
 
+            #define FUNC_TX_SIGNAL         (0x01)
+            #define FUNC_SAVE_TXPWR        (0x02)
+            #define FUNC_SET_TARGET_TXPWR  (0x03)
+
             case 0xA0:  // RF HT20 TX Test
             {
                 /* 55 A0 Channel<15:0> Modulation<3:0> Rate<11:0> */
@@ -2540,6 +2656,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 uint32_t rate_i = 0;
                 uint32_t rate_o = 0;
                 uint8_t  pwr_dbm_x10 = 0;
+                uint8_t  function = 0;
 
                 if (cnt > 6)
                 {
@@ -2552,7 +2669,11 @@ int bkreg_run_command1(unsigned char *content, int cnt)
 
                     rate_i = ((content[4] & 0x0F) << 8) | (content[5] & 0xFF);
 
-                    pwr_dbm_x10 = content[6];
+                    function = content[6];
+                }
+
+                if (function != FUNC_TX_SIGNAL) {
+                    pwr_dbm_x10 = content[7];
                 }
 
                 wifi_band_t band;
@@ -2590,7 +2711,26 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                     rate_o = rate_i;
                 }
 
-                evm_test(rate_o, frequency, PHY_CHNL_BW_20, mod, pwr_dbm_x10, band);
+                if (function == FUNC_TX_SIGNAL) {
+                    evm_test(rate_o, frequency, PHY_CHNL_BW_20, mod, pwr_dbm_x10, band);
+                } else if (function == FUNC_SAVE_TXPWR) {
+                    evm_test_save_pwr(rate_o, frequency, pwr_dbm_x10);
+                } else if (function == FUNC_SET_TARGET_TXPWR) {
+                    if (rate_o >= 128 && rate_o <= 137) {
+                        evm_test(rate_o, frequency, PHY_CHNL_BW_20, mod, pwr_dbm_x10, band);
+                        UINT32 pwr_idx = 0;
+                        if (band == IEEE80211_BAND_2GHZ) {
+                            UINT32 channel = evm_frequency_to_channel(frequency, band);
+                            pwr_idx = fit_power_index_generic((UINT8)channel, pwr_dbm_x10, g_2g_11g_cal_points, 3);
+                        } else if (band == IEEE80211_BAND_5GHZ) {
+                            UINT32 channel = evm_frequency_to_channel(frequency, band);
+                            pwr_idx = fit_power_index_generic((UINT8)channel, pwr_dbm_x10, g_5g_11a_cal_points, 5);
+                        } else {
+                            pwr_idx = 0;
+                        }
+                        rwnx_cal_set_txpwr(pwr_idx, rate_o);
+                    }
+                }
                 break;
             }
 
@@ -2640,6 +2780,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 uint32_t rate_i = 0;
                 uint32_t rate_o = 0;
                 uint8_t  pwr_dbm_x10 = 0;
+                uint8_t  function = 0;
 
                 if (cnt > 6)
                 {
@@ -2652,7 +2793,11 @@ int bkreg_run_command1(unsigned char *content, int cnt)
 
                     rate_i = ((content[4] & 0x0F) << 8) | (content[5] & 0xFF);
 
-                    pwr_dbm_x10 = content[6];
+                    function = content[6];
+                }
+
+                if (function != FUNC_TX_SIGNAL) {
+                    pwr_dbm_x10 = content[7];
                 }
 
                 wifi_band_t band;
@@ -2674,7 +2819,26 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                     rate_o = rate_i;
                 }
 
-                evm_test(rate_o, frequency, PHY_CHNL_BW_40, mod, pwr_dbm_x10, band);
+                if (function == FUNC_TX_SIGNAL) {
+                    evm_test(rate_o, frequency, PHY_CHNL_BW_40, mod, pwr_dbm_x10, band);
+                } else if (function == FUNC_SAVE_TXPWR) {
+                    evm_test_save_pwr(rate_o, frequency, pwr_dbm_x10);
+                } else if (function == FUNC_SET_TARGET_TXPWR) {
+                    if (rate_o >= 128 && rate_o <= 137) {
+                        evm_test(rate_o, frequency, PHY_CHNL_BW_40, mod, pwr_dbm_x10, band);
+                        UINT32 pwr_idx = 0;
+                        if (band == IEEE80211_BAND_2GHZ) {
+                            UINT32 channel = evm_frequency_to_channel(frequency, band);
+                            pwr_idx = fit_power_index_generic((UINT8)channel, pwr_dbm_x10, g_2g_11g_cal_points, 3);
+                        } else if (band == IEEE80211_BAND_5GHZ) {
+                            UINT32 channel = evm_frequency_to_channel(frequency, band);
+                            pwr_idx = fit_power_index_generic((UINT8)channel, pwr_dbm_x10, g_5g_11a_cal_points, 5);
+                        } else {
+                            pwr_idx = 0;
+                        }
+                        rwnx_cal_set_txpwr(pwr_idx, rate_o);
+                    }
+                }
                 break;
             }
 
