@@ -649,6 +649,8 @@ static inline void sys_hal_set_low_voltage(volatile uint32_t *ana_r0, volatile u
 	{
 		sys_ana_ll_set_ana_reg7_dldohp(0);
 	}
+	#else
+	sys_ana_ll_set_ana_reg7_dldohp(0);
 	#endif
 	sys_ana_ll_set_ana_reg7_aldohp(0);
 #endif
