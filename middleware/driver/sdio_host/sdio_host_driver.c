@@ -464,6 +464,7 @@ bk_err_t bk_sdio_host_init(const sdio_host_config_t *config)
 {
 	BK_RETURN_ON_NULL(config);
 	SDIO_HOST_RETURN_ON_NOT_INIT();
+
 #if (CONFIG_SDIO_PM_CB_SUPPORT)
 	uint32_t id = 0;
 	pm_cb_conf_t enter_config = {bk_sdio_backup, (void *)id};

@@ -61,9 +61,10 @@ static uint32_t s_rx_payload_copied_len = 0;	//drive read data by DMA, set the l
 static uint32_t s_sdio_rx_bytes = 0;	//RX:how many bytes Host write at current read transaction
 static dma_id_t s_sdio_rx_dma_chan = DMA_ID_MAX;  /**< SDIO rx dma channel */
 
-#ifndef CONFIG_SDIO_4LINES_EN  // enable RX_WITH_BLK only in 1line mode
+#if (0 == CONFIG_SDIO_4LINES_EN)  // enable RX_WITH_BLK only in 1line mode
 #define CONFIG_SDIO_SLAVE_RX_WITH_BLK  1
 #endif
+
 #if CONFIG_SDIO_SLAVE_RX_WITH_BLK
 static uint32_t s_rx_blk_cnt = 0;	//the block number has been received by slave
 #endif
@@ -86,10 +87,12 @@ static uint32_t s_rx_blk_cnt = 0;	//the block number has been received by slave
 			return BK_ERR_SDIO_DIRECT_INVALID;\
 		}\
 	} while(0)
+
 #if CONFIG_SDIO_GDMA_EN
 static bk_err_t sdio_tx_dma_set_src_buf(uint8_t *psrc, uint32_t count);
 static bk_err_t sdio_rx_dma_set_dst_buf(uint8_t *pdst, uint32_t count);
 static inline uint32_t sdio_read_fifo_data(void);
+
 //TODO:return value should be check
 static void request_cpu_copy_sdio_data_to_payloads(void)
 {
@@ -101,6 +104,7 @@ static void request_cpu_copy_sdio_data_to_payloads(void)
 	uint8_t *payload_buf_p = NULL;
 	sdio_chan_id_t chan_id = 0;
 	uint32_t payload_len = 0;
+
 	while(s_pack_rx_left_len > 0)
 	{
 		//read payload header
@@ -157,6 +161,7 @@ static void request_cpu_copy_sdio_data_to_payloads(void)
 		}
 	}
 }
+
 __attribute__((section(".iram_sec_code"))) static void request_dma_copy_sdio_data_to_payloads(void)
 {
 	uint32_t wr_index = 0;
@@ -546,18 +551,14 @@ static bk_err_t sdio_dma_rx_init()
 	dma_config.src.dev = DMA_DEV_SDIO_RX;
 	dma_config.src.width = DMA_DATA_WIDTH_32BITS;
 	dma_config.src.addr_inc_en = DMA_ADDR_INC_DISABLE;
-#if CONFIG_SOC_BK7256XX
-	dma_config.src.start_addr = (uint32) SDIO_REG0XC_ADDR;
-	dma_config.src.end_addr =  (uint32) SDIO_REG0XC_ADDR;
-#elif CONFIG_SOC_BK7236XX || (CONFIG_SOC_BK7239XX)|| (CONFIG_SOC_BK7286XX)
+#if CONFIG_SOC_BK7236XX || (CONFIG_SOC_BK7239XX)|| (CONFIG_SOC_BK7286XX)
 	dma_config.src.start_addr = (uint32) SDIO_REG0X10_ADDR;
 	dma_config.src.end_addr =  (uint32) SDIO_REG0X10_ADDR;
 #endif
 	dma_config.dst.dev = DMA_DEV_DTCM;
 	dma_config.dst.width = DMA_DATA_WIDTH_32BITS;
-	//dma_config.dst.start_addr = (uint32) pbuf;
-	//dma_config.dst.end_addr = (uint32) pbuf + count;
 	dma_config.dst.addr_inc_en = DMA_ADDR_INC_ENABLE;
+
 	if (s_sdio_rx_dma_chan == DMA_ID_MAX)
 		s_sdio_rx_dma_chan = bk_dma_alloc(DMA_DEV_SDIO_RX);
 	SDIO_LOG_INFO("s_sdio_rx_dma_chan = %d.\n", s_sdio_rx_dma_chan);
@@ -911,7 +912,7 @@ bk_err_t sdio_gpio_deinit(void)
 	REG_GPIO_P18 = 0x0;
 	REG_GPIO_P19 = 0x0;
 #endif
-	//REG_GPIO_P34 = 0x8;
+
 	return BK_OK;
 }
 /**
@@ -954,11 +955,7 @@ void bk_sdio_driver_dump_sdio_regs(void)
 	SDIO_LOG_DEBUG_FUNCTION_ENTRY();
 	for(reg_addr = SDIO_LL_REG_BASE(0); reg_addr <= SDIO_LL_REG_END; reg_addr += 4)
 	{
-#if CONFIG_SOC_BK7256XX
-		if(reg_addr != SDIO_REG0XC_ADDR)	//skip read data out.
-#elif CONFIG_SOC_BK7236XX || (CONFIG_SOC_BK7239XX)|| (CONFIG_SOC_BK7286XX)
 		if(reg_addr != SDIO_REG0X10_ADDR)	//skip read data out.
-#endif
 		{
 			SDIO_LOG_DUMP("Reg0x%x=0x%x\r\n", (reg_addr - SDIO_LL_REG_BASE(0))/4, *(volatile uint32_t *)reg_addr);
 		}
@@ -2171,14 +2168,14 @@ static bk_err_t sdio_sw_init(void)
 	for(uint32_t i = 0; i < SDIO_MEMCPY_PACK_CNT; i++)
 	{
 		uint32_t *temp_ptr = os_zalloc(SDIO_MEMCPY_PACK_SIZE);
-
-		s_sdio_driver.pack.start_addr[i] = temp_ptr;
-		s_sdio_driver.pack.end_addr[i] = s_sdio_driver.pack.start_addr[i];
-		if(NULL == temp_ptr)
+		if(temp_ptr == NULL)
 		{
 			SDIO_LOG_ERR("os_malloc fail, i = %d", i);
 			goto err_exit;
 		}
+
+		s_sdio_driver.pack.start_addr[i] = temp_ptr;
+		s_sdio_driver.pack.end_addr[i] = temp_ptr;
 	}
 #endif
 #if CONFIG_SDIO_SLAVE_RX_MEMCPY_EN

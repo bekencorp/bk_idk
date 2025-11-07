@@ -952,8 +952,6 @@ static bk_err_t sd_card_init_card(void)
 	SD_CARD_LOGI("sd card class:0x%x\r\n", s_sd_card_obj.sd_card.class);
 
 	/* TODO: Get CSD parameters */
-
-
 	/* Send CMD7, Select the card */
 	error_state = sd_card_cmd_select_deselect_card((uint32_t)(s_sd_card_obj.sd_card.relative_card_addr << 16));
 	if (error_state != BK_OK) {
@@ -967,6 +965,11 @@ static bk_err_t sd_card_init_card(void)
 #else
 	error_state = sd_card_cmd_set_bus_width(false);
 #endif
+
+#if (CONFIG_SDCARD_BUSWIDTH_4LINE != CONFIG_SDIO_4LINES_EN)
+#error "CONFIG_SDCARD_BUSWIDTH_4LINE != CONFIG_SDIO_4LINES_EN"
+#endif
+
 	if (error_state != BK_OK) {
 		return error_state;
 	}

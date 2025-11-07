@@ -675,7 +675,7 @@ static SDIO_Error sdcard_acmd6_process(void)
 		return cmd.err;
 
 	cmd.index = SWITCH_FUNC;
-#ifdef CONFIG_SDCARD_BUSWIDTH_4LINE
+#if CONFIG_SDCARD_BUSWIDTH_4LINE
 	cmd.arg = 2;
 #else
 	cmd.arg = 0;
@@ -775,6 +775,11 @@ static SDIO_Error sdcard_cmd17_process(uint32 addr)
 SDIO_Error sdcard_initialize(void)
 {
 	SDIO_Error err = SD_OK;
+
+	#if (CONFIG_SDCARD_BUSWIDTH_4LINE != CONFIG_SDIO_4LINES_EN)
+	#error "CONFIG_SDCARD_BUSWIDTH_4LINE != CONFIG_SDIO_4LINES_EN"
+	#endif
+
 	sdio_sw_init();
 	rtos_delay_milliseconds(20);
 	sdio_hw_init();
@@ -797,7 +802,6 @@ SDIO_Error sdcard_initialize(void)
 		goto MMC_init;
 
 	rtos_delay_milliseconds(5);
-
 
 	// check support voltage
 	err = sdcard_cmd8_process();
@@ -1079,7 +1083,7 @@ static void sd_read_data_init(void)
 		REG_WRITE(REG_SDCARD_FIFO_THRESHOLD, reg);
 #endif
 
-#ifdef CONFIG_SDCARD_BUSWIDTH_4LINE
+#if CONFIG_SDCARD_BUSWIDTH_4LINE
 	reg = 0x1 | (1 << 2) | (1 << 3) | (512 << 4) | (1 << 17);
 	REG_WRITE(REG_SDCARD_DATA_REC_CTRL, reg);
 #else
@@ -1130,7 +1134,6 @@ static SDIO_Error sdcard_rcv_data(UINT8 *read_buff, int block_num)
 	return Ret;
 }
 
-#if 1
 SDIO_Error sdcard_read_multi_block(UINT8 *read_buffer, int first_block, int block_num)
 {
 	int ret = SD_OK;
@@ -1234,106 +1237,7 @@ SDIO_Error sdcard_read_multi_block(UINT8 *read_buffer, int first_block, int bloc
 	last_WR_addr = first_block + block_num;
 	return ret;
 }
-#else
-/********* actual function:  single read*********/
-SDIO_Error sdcard_read_multi_block(UINT8 *read_buff, int first_block, int block_num)
-{
-	int Ret = SD_OK;
-	unsigned int i;
-	SDIO_CMD_S cmd;
-	UINT32 reg;
 
-	//rt_kprintf("----single read: %d\r\n",SDIO_WR_flag);
-
-	if (SDIO_WR_flag == SDIO_WR_DATA) {		// if last state is multi write ,send stop cmd
-		SDIO_WR_flag = SDIO_RD_DATA;
-		Ret = sdcard_send_write_stop(0);		//write stop
-	}
-
-#if CONFIG_SOC_BK7256
-
-#else
-#if CONFIG_SDCARD
-	if(sdcard_check_inserted() == false)
-		return SD_ERROR;
-#endif
-#endif
-
-	sdio_clk_config(1);
-	reg  = get_timeout_param(0);
-	REG_WRITE(REG_SDCARD_DATA_REC_TIMER, reg);
-	REG_WRITE(REG_SDCARD_CMD_RSP_INT_SEL, 0xFFFFFFFF);
-	reg = REG_READ(REG_SDCARD_FIFO_THRESHOLD);
-	reg &= ~(0xFFFF | (1 << 16) | (1 << 20));
-	reg  |= (0x0101 | ((1 << 16) | (1 << 20)));
-	REG_WRITE(REG_SDCARD_FIFO_THRESHOLD, reg);
-
-#ifdef CONFIG_SDCARD_BUSWIDTH_4LINE
-	reg = 0x1 | (1 << 2) | (1 << 3) | (512 << 4) | (1 << 17);
-	REG_WRITE(REG_SDCARD_DATA_REC_CTRL, reg);
-#else
-	reg = 0x1 | (0 << 2) | (1 << 3) | (512 << 4) | (1 << 17);
-	REG_WRITE(REG_SDCARD_DATA_REC_CTRL, reg);
-#endif
-
-	// if((SD_CARD == Sd_MMC_flag)&&(driver_sdcard.total_block > 0x100000))
-	{
-		cmd.index = 18;
-		cmd.arg = (UINT32)(first_block << sdcard.Addr_shift_bit);
-		cmd.flags = SD_CMD_SHORT;
-		cmd.timeout = get_timeout_param(1);
-		cmd.crc_check = true;
-		sdio_send_cmd(&cmd);
-		cmd.err = sdio_wait_cmd_response(cmd.index);
-
-		Ret = cmd.err;
-	}
-	if (Ret == SD_OK) {
-		unsigned int size = SD_DEFAULT_BLOCK_SIZE  * block_num;
-		//reveive data
-		i = 0;
-		while (1) {
-			reg = REG_READ(REG_SDCARD_CMD_RSP_INT_SEL);
-			if (reg & SDCARD_CMDRSP_DATA_REC_END_INT) {
-				REG_WRITE(REG_SDCARD_CMD_RSP_INT_SEL, SDCARD_CMDRSP_DATA_REC_END_INT);
-				if (reg & SDCARD_CMDRSP_DATA_CRC_FAIL)
-					Ret = SD_DATA_CRC_FAIL;
-
-				while (1) {
-					reg = REG_READ(REG_SDCARD_FIFO_THRESHOLD);
-					if (reg & SDCARD_FIFO_RXFIFO_RD_READY) {
-						reg = REG_READ(REG_SDCARD_RD_DATA_ADDR);
-						*(read_buff + i++) = reg & 0xff;
-						*(read_buff + i++) = (reg >> 8) & 0xff;
-						*(read_buff + i++) = (reg >> 16) & 0xff;
-						*(read_buff + i++) = (reg >> 24) & 0xff;
-						if ((i % 512) == 0)
-							break;
-					}
-				}
-				if (i >= size)
-					break;
-			} else {
-				if (reg & SDCARD_CMDRSP_DATA_TIME_OUT_INT) {
-					Ret = SD_DATA_TIMEOUT;
-					break;
-				}
-			}
-		}
-	}
-	reg = REG_READ(REG_SDCARD_FIFO_THRESHOLD);
-	reg &= ~(0xFFFF | (1 << 16) | (1 << 20));
-	reg |= (0x0101 | ((1 << 16) | (1 << 20)));
-	REG_WRITE(REG_SDCARD_FIFO_THRESHOLD, reg);
-	Ret += sdcard_cmd12_process(get_timeout_param(1));
-
-	sdio_clk_config(0);
-
-	if (Ret != SD_OK)
-		os_printf("SD Ret:%d\r\n", Ret);
-	return Ret;
-}
-#endif
 SDIO_Error sdcard_write_single_block(UINT8 *writebuff, UINT32 writeaddr)
 {
 	int  i, ret;
@@ -1390,7 +1294,7 @@ SDIO_Error sdcard_write_single_block(UINT8 *writebuff, UINT32 writeaddr)
 	if (SD_OK == ret) {
 		REG_WRITE(REG_SDCARD_DATA_REC_TIMER, get_timeout_param(1));
 		reg = (1 << 16) | (0 << 3) | (512 << 4) | (1 << 17)
-#ifdef CONFIG_SDCARD_BUSWIDTH_4LINE
+#if CONFIG_SDCARD_BUSWIDTH_4LINE
 			  | SDCARD_DATA_REC_CTRL_DATA_BUS
 #endif
 			  ;
@@ -1422,7 +1326,7 @@ SDIO_Error sdcard_write_single_block(UINT8 *writebuff, UINT32 writeaddr)
 		}
 		reg = REG_READ(REG_SDCARD_DATA_REC_CTRL);
 		reg &= (~((1 << 16) | (1 << 0) | (1 << 1) | (1 << 3))
-#ifdef CONFIG_SDCARD_BUSWIDTH_4LINE
+#if CONFIG_SDCARD_BUSWIDTH_4LINE
 				| SDCARD_DATA_REC_CTRL_DATA_BUS
 #endif
 			   );
@@ -1520,7 +1424,7 @@ static SDIO_Error sdcard_write_data(UINT8 *write_buff, UINT32 block_num, UINT8 f
 		reg = (SD_DEFAULT_BLOCK_SIZE << SDCARD_DATA_REC_CTRL_BLK_SIZE_POSI) |
 			  SDCARD_DATA_REC_CTRL_DATA_MUL_BLK | SDCARD_DATA_REC_CTRL_DATA_BYTE_SEL |
 			  SDCARD_DATA_REC_CTRL_DATA_WR_DATA_EN
-#ifdef CONFIG_SDCARD_BUSWIDTH_4LINE
+#if CONFIG_SDCARD_BUSWIDTH_4LINE
 			  | SDCARD_DATA_REC_CTRL_DATA_BUS
 #endif
 			  ;
@@ -1650,7 +1554,6 @@ static SDIO_Error sdcard_send_write_stop(int err)
 	return ret;
 }
 
-#if 1
 SDIO_Error sdcard_write_multi_block(UINT8 *write_buff, UINT32 first_block, UINT32 block_num)
 {
 	int ret = SD_OK;
@@ -1735,174 +1638,7 @@ SDIO_Error sdcard_write_multi_block(UINT8 *write_buff, UINT32 first_block, UINT3
 	SDIO_WR_flag = SDIO_WR_DATA;
 	return ret;
 }
-#else
-SDIO_Error sdcard_write_multi_block(UINT8 *write_buff, UINT32 first_block, UINT32 block_num)
-{
-	SDIO_CMD_S cmd;
-	int ret;
-	UINT32 i, j, reg, tmpval;
-	GLOBAL_INT_DECLARATION();
 
-#if CONFIG_SOC_BK7256
-
-#else
-#if CONFIG_SDCARD
-	if(sdcard_check_inserted() == false)
-		return SD_ERROR;
-#endif
-#endif
-
-	sdio_clk_config(1);
-	REG_WRITE(REG_SDCARD_CMD_RSP_INT_SEL, 0xffffffff);
-	reg = REG_READ(REG_SDCARD_FIFO_THRESHOLD);
-
-	REG_WRITE(REG_SDCARD_FIFO_THRESHOLD, reg | SDCARD_FIFO_SD_STA_RST);
-
-#if CONFIG_SOC_BK7256XX
-	reg &= (0xffff | (SDCARD_FIFO_SD_RATE_SELECT_MASK << SDCARD_FIFO_SD_RATE_SELECT_POSI) | SDIO_REG0XD_SD_RD_WAIT_SEL | SDIO_REG0XD_CLK_REC_SEL);
-	reg |= (0x0101 | SDCARD_FIFO_TX_FIFO_RST);
-	REG_WRITE(REG_SDCARD_FIFO_THRESHOLD, reg);
-#else
-	reg &= (0xffff | (SDCARD_FIFO_SD_RATE_SELECT_MASK << SDCARD_FIFO_SD_RATE_SELECT_POSI));
-	reg |= (0x0101 | SDCARD_FIFO_TX_FIFO_RST);
-	REG_WRITE(REG_SDCARD_FIFO_THRESHOLD, reg);
-#endif
-
-	cmd.index = 25;//WRITE_MULTIPLE_BLOCK;
-	cmd.arg = (UINT32)(first_block << sdcard.Addr_shift_bit);
-	cmd.flags = SD_CMD_SHORT;
-	cmd.timeout = get_timeout_param(1);
-	cmd.crc_check = true;
-	sdio_send_cmd(&cmd);
-
-	cmd.err = sdio_wait_cmd_response(cmd.index);
-	ret = cmd.err;
-
-	if (SD_OK == ret) {
-		i = 0;
-		// 1. fill the first block to fifo and start write data enable
-		while (REG_READ(REG_SDCARD_FIFO_THRESHOLD) & SDCARD_FIFO_TXFIFO_WR_READY) {
-			tmpval = (write_buff[i] << 24) | (write_buff[i + 1] << 16) | (write_buff[i + 2] << 8) | write_buff[i + 3];
-			REG_WRITE(REG_SDCARD_WR_DATA_ADDR, tmpval);
-			i += 4;
-			if (SD_DEFAULT_BLOCK_SIZE <= i)
-				break;
-		}
-		reg = REG_READ(REG_SDCARD_CMD_RSP_INT_MASK);
-		reg |= SDCARD_CMDRSP_TX_FIFO_EMPTY_MASK;
-		REG_WRITE(REG_SDCARD_CMD_RSP_INT_MASK, reg);
-
-		REG_WRITE(REG_SDCARD_DATA_REC_TIMER, get_timeout_param(0));
-		reg = (SD_DEFAULT_BLOCK_SIZE << SDCARD_DATA_REC_CTRL_BLK_SIZE_POSI) |
-			  SDCARD_DATA_REC_CTRL_DATA_MUL_BLK | SDCARD_DATA_REC_CTRL_DATA_BYTE_SEL |
-			  SDCARD_DATA_REC_CTRL_DATA_WR_DATA_EN
-#ifdef CONFIG_SDCARD_BUSWIDTH_4LINE
-			  | SDCARD_DATA_REC_CTRL_DATA_BUS
-#endif
-			  ;
-		REG_WRITE(REG_SDCARD_DATA_REC_CTRL, reg);
-
-#if CONFIG_SOC_BK7256XX
-
-#else
-		do {
-			reg = REG_READ(REG_SDCARD_CMD_RSP_INT_SEL);
-		} while (!(reg & SDCARD_CMDRSP_TX_FIFO_NEED_WRITE));
-#endif
-
-		// 2. write other blocks
-		while (--block_num) {
-			j = 0;
-			while (j < SD_DEFAULT_BLOCK_SIZE) {
-				if (REG_READ(REG_SDCARD_FIFO_THRESHOLD) & SDCARD_FIFO_TXFIFO_WR_READY) {
-					tmpval = (write_buff[i] << 24) | (write_buff[i + 1] << 16) | (write_buff[i + 2] << 8) | write_buff[i + 3];
-					REG_WRITE(REG_SDCARD_WR_DATA_ADDR, tmpval);
-					i += 4;
-					j += 4;
-				}
-			}
-
-			do {
-				reg = REG_READ(REG_SDCARD_CMD_RSP_INT_SEL);
-			} while (!(reg & SDCARD_CMDRSP_DATA_WR_END_INT));
-			REG_WRITE(REG_SDCARD_CMD_RSP_INT_SEL, SDCARD_CMDRSP_DATA_WR_END_INT);
-
-#if CONFIG_SOC_BK7256XX
-
-#else
-			do {
-				reg = REG_READ(REG_SDCARD_CMD_RSP_INT_SEL);
-			} while (!(reg & SDCARD_CMDRSP_TX_FIFO_NEED_WRITE));
-#endif
-
-			if (2 != ((reg & SDCARD_CMDRSP_WR_STATU) >> 20)) {
-				ret = SD_ERROR;
-				goto sndcmd12;
-			}
-		}
-
-		// 3. after the last block,write zero
-		GLOBAL_INT_DISABLE();
-		while (1) {
-			reg = REG_READ(REG_SDCARD_FIFO_THRESHOLD);
-			if (reg & SDCARD_FIFO_TXFIFO_WR_READY) {
-				REG_WRITE(REG_SDCARD_WR_DATA_ADDR, 0);
-				break;
-			}
-		}
-		// 4.wait and clear flag
-		do {
-			reg = REG_READ(REG_SDCARD_CMD_RSP_INT_SEL);
-			if (reg & (SDCARD_CMDRSP_DATA_BUSY | SDCARD_CMDRSP_DATA_WR_END_INT))
-				break;
-		} while (1); //BUSY
-
-		if ((reg & SDCARD_CMDRSP_DATA_BUSY)) {
-			reg = REG_READ(REG_SDCARD_CMD_RSP_INT_MASK);
-			reg &= ~SDCARD_CMDRSP_TX_FIFO_EMPTY_MASK;
-			REG_WRITE(REG_SDCARD_CMD_RSP_INT_MASK, reg);
-		}
-		if ((reg & SDCARD_CMDRSP_DATA_WR_END_INT))
-			REG_WRITE(REG_SDCARD_CMD_RSP_INT_SEL, SDCARD_CMDRSP_DATA_WR_END_INT);
-
-		reg = REG_READ(REG_SDCARD_CMD_RSP_INT_SEL);
-		if (2 != ((reg & SDCARD_CMDRSP_WR_STATU) >> 20))
-			ret =  SD_ERROR;
-		else
-			ret =  SD_OK;
-	}
-	reg = REG_READ(REG_SDCARD_FIFO_THRESHOLD);
-	reg |= SDCARD_FIFO_TX_FIFO_RST;
-	REG_WRITE(REG_SDCARD_FIFO_THRESHOLD, reg);
-	reg = REG_READ(REG_SDCARD_CMD_RSP_INT_MASK);
-	reg &= ~SDCARD_CMDRSP_TX_FIFO_EMPTY_MASK;
-	REG_WRITE(REG_SDCARD_CMD_RSP_INT_MASK, reg);
-
-	GLOBAL_INT_RESTORE();
-
-#if CONFIG_SOC_BK7256XX
-
-#else
-#if CONFIG_SDCARD
-	if(sdcard_check_inserted() == false)
-		return SD_ERROR;
-#endif
-#endif
-
-sndcmd12:
-	ret += sdcard_cmd12_process(0);
-	if (ret != SD_OK)
-		SDCARD_FATAL("===write err:%x,%x,%x====\r\n", first_block, ret, cmd.err);
-#if 0
-#if CONFIG_SDCARD
-	if(sdcard_check_inserted() == false)
-		return SD_ERROR;
-#endif
-	sdio_clk_config(0);
-#endif
-	return ret;
-}
-#endif
 void sdcard_init(void)
 {
 	ddev_register_dev(DD_DEV_TYPE_SDCARD, (DD_OPERATIONS *)&sdcard_op);

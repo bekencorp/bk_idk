@@ -271,14 +271,10 @@ typedef enum {
 #define SDIO_DEF_LINE_MODE       4
 #define SDIO_DEF_WORK_CLK        13
 
-
 #define	SD_CLK_PIN_TIMEOUT1				0x1000
 #define	SD_CLK_PIN_TIMEOUT2				0x8000
 #define SD_CARD_OFFLINE				    0
 #define SD_CARD_ONLINE				    1
-
-
-//#define CONFIG_SDCARD_BUSWIDTH_4LINE
 
 // interface function
 void sdio_set_clock(UINT8 clk_index);
@@ -296,13 +292,7 @@ void sdio_setup_data(UINT32 data_dir, UINT32 byte_len);
 void sdio_set_data_timeout(UINT32 timeout);
 
 SDIO_Error sdcard_wait_receive_data(UINT8 *receive_buf);
-//SDIO_Error sdcard_wait_write_end(void);
-//SDIO_Error sdcard_write_data(UINT8 *writebuff, UINT32 block);
 void driver_sdcard_recv_data_start(int timeout);
-//uint8 sd_clk_is_attached(void);
-//uint8 sd_is_attached(void);
-//void sdio_register_reenable(void);
 int wait_Receive_Data(void);
-
 #endif
 
