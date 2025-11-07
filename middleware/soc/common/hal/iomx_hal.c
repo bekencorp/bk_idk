@@ -132,7 +132,7 @@ bk_err_t iomx_hal_enable_multi_interrupts(uint64_t gpio_idx)
 	return BK_OK;
 }
 
-bk_err_t iomx_hal_disable_all_interrupts(void)
+__IRAM_SEC bk_err_t iomx_hal_disable_all_interrupts(void)
 {
 	IOMX_GPIO_FOREACH(i)
 	{
@@ -164,7 +164,7 @@ bk_err_t iomx_hal_bakup_configs(uint32_t *iomx_gpio_cfgs)
 	return BK_OK;
 }
 
-bk_err_t iomx_hal_restore_configs(uint32_t *iomx_gpio_cfgs)
+__IRAM_SEC bk_err_t iomx_hal_restore_configs(uint32_t *iomx_gpio_cfgs)
 {
 	if (!iomx_gpio_cfgs)
 	{

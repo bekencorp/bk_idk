@@ -2340,6 +2340,11 @@ void sys_hal_set_ana_reg8_spi_latch1v(uint32_t value)
 	sys_ll_set_ana_reg8_spi_latch1v(value);
 }
 
+__IRAM_SEC void sys_hal_set_ana_reg8_spi_latch1v_iram(uint32_t value)
+{
+	sys_ll_set_ana_reg8_spi_latch1v(value);
+}
+
 void sys_hal_set_ana_reg5_adc_div(uint32_t value)
 {
 	// sys_ll_set_ana_reg5_adc_div(value);
@@ -2417,7 +2422,7 @@ uint32_t sys_hal_get_ana_reg11_gpiowk(void)
 	return sys_ll_get_ana_reg11_gpiowk();
 }
 
-void sys_hal_set_ana_reg11_gpiowk(uint32_t value)
+__IRAM_SEC void sys_hal_set_ana_reg11_gpiowk(uint32_t value)
 {
 	sys_ll_set_ana_reg11_gpiowk(value);
 }

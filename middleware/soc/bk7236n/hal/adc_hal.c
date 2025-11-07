@@ -193,7 +193,7 @@ void adc_hal_set_cwt_calib(uint16_t *adc_data, uint16_t data_num)
 	adc_ll_set_reg4_calib_done(1);
 }
 
-void hal_calib_apply(void)
+__IRAM_SEC void hal_calib_apply(void)
 {
 	adc_ll_set_reg2_soft_rst(0);
 	adc_ll_set_reg2_soft_rst(1);

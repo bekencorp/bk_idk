@@ -590,7 +590,7 @@ bk_err_t gpio_enter_low_power(void *param)
 	return BK_OK;
 }
 
-bk_err_t gpio_exit_low_power(void *param)
+__IRAM_SEC bk_err_t gpio_exit_low_power(void *param)
 {
 	GPIO_LOGD("%s[+]\r\n", __func__);
 
@@ -616,7 +616,7 @@ bk_err_t gpio_exit_low_power(void *param)
 	return BK_OK;
 }
 
-bk_err_t gpio_hal_switch_to_low_power_status(uint64_t skip_io)
+__IRAM_SEC bk_err_t gpio_hal_switch_to_low_power_status(uint64_t skip_io)
 {
 	for (gpio_id_t i = GPIO_0; i < GPIO_NUM_MAX; i++)
 	{

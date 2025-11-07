@@ -82,6 +82,16 @@ static inline void sys_ll_set_analog_reg_value(uint32_t addr, uint32_t value)
 	while(REG_READ(SYS_ANALOG_REG_SPI_STATE_REG) & (1 << SYS_ANALOG_REG_SPI_STATE_POS(idx)));
 }
 
+__IRAM_SEC static inline void sys_ll_set_analog_reg_value_iram(uint32_t addr, uint32_t value)
+{
+	uint32_t idx;
+	idx = GET_SYS_ANALOG_REG_IDX(addr);
+
+	REG_WRITE(addr, value);
+
+	while(REG_READ(SYS_ANALOG_REG_SPI_STATE_REG) & (1 << SYS_ANALOG_REG_SPI_STATE_POS(idx)));
+}
+
 static inline void sys_set_ana_reg_bit(uint32_t reg_addr, uint32_t pos, uint32_t mask, uint32_t value)
 {
 	uint32_t reg_value;

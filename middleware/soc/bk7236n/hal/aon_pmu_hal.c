@@ -100,23 +100,14 @@ uint32_t aon_pmu_hal_get_dpll_band()
 
 __IRAM_SEC void aon_pmu_hal_reg_set(pmu_reg_e reg, uint32_t value)
 {
-    pmu_address_map_t pmu_addr_map[] = PMU_ADDRESS_MAP;
-    pmu_address_map_t *pmu_addr = &pmu_addr_map[reg];
-
-    uint32_t pmu_reg_addr = pmu_addr->reg_address;
-
+    uint32_t pmu_reg_addr = SOC_AON_PMU_REG_BASE + reg * 4;
 	REG_WRITE(pmu_reg_addr, value);
 }
 __IRAM_SEC uint32_t aon_pmu_hal_reg_get(pmu_reg_e reg)
 {
-    pmu_address_map_t pmu_addr_map[] = PMU_ADDRESS_MAP;
-    pmu_address_map_t *pmu_addr = &pmu_addr_map[reg];
-
-    uint32_t pmu_reg_addr = pmu_addr->reg_address;
-
+    uint32_t pmu_reg_addr = SOC_AON_PMU_REG_BASE + reg * 4;
 	return REG_READ(pmu_reg_addr);
 }
-
 
 void aon_pmu_hal_wdt_rst_dev_enable()
 {
@@ -181,12 +172,12 @@ uint32_t aon_pmu_hal_bias_cal_get()
 	return aon_pmu_ll_get_r7e_cbcal();
 }
 
-uint32_t aon_pmu_hal_band_cal_get()
+__IRAM_SEC uint32_t aon_pmu_hal_band_cal_get()
 {
 	return aon_pmu_ll_get_r7e_band_cal();
 }
 
-uint32_t aon_pmu_hal_rtc_tick_h_get(void)
+__IRAM_SEC uint32_t aon_pmu_hal_rtc_tick_h_get(void)
 {
 	return aon_pmu_ll_get_r78_rtc_tick_h();
 }
@@ -343,7 +334,7 @@ void aon_pmu_hal_set_halt_cpu(uint32_t value)
 
 static uint32_t s_pmu_saved_regs[3] = {0};
 
-void aon_pmu_hal_backup(void)
+__IRAM_SEC void aon_pmu_hal_backup(void)
 {
 	aon_pmu_ll_set_r25(0x424B55AA);
 	aon_pmu_ll_set_r25(0xBDB4AA55);
@@ -352,7 +343,7 @@ void aon_pmu_hal_backup(void)
 	s_pmu_saved_regs[2] = aon_pmu_ll_get_r2();
 }
 
-void aon_pmu_hal_restore(void)
+__IRAM_SEC void aon_pmu_hal_restore(void)
 {
 	uint32_t reg = aon_pmu_ll_get_r7b();
 	aon_pmu_ll_set_r0(reg);

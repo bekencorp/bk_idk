@@ -815,12 +815,12 @@ void sys_hal_regs_restore(void)
 	sys_ll_set_cpu0_int_0_31_en_value(s_sys_saved_regs[9]); // reg_0x20
 	sys_ll_set_cpu0_int_32_63_en_value(s_sys_saved_regs[10]); // reg_0x21
 
-	sys_hal_set_ana_reg8_spi_latch1v(1);
+	sys_ana_ll_set_ana_reg8_spi_latch1v(1);
 	/* restore analog regs */
 	for (uint32_t i = 0; i < 9; i++) {
 		if(( i == 0)||( i == 5)||( i == 7)||( i == 8))
 			continue;
-		sys_hal_analog_set(ANALOG_REG0 + i, s_sys_ana_regs[i]);
+		sys_hal_analog_set_iram(ANALOG_REG0 + i, s_sys_ana_regs[i]);
 	}
 	/**
 	 * attention:
@@ -828,9 +828,9 @@ void sys_hal_regs_restore(void)
 	 * and don't forget disable it after that.
 	 */
 	for (uint32_t i = 9; i < 16; i++) {
-		sys_hal_analog_set(ANALOG_REG0 + i, s_sys_ana_regs[i]);
+		sys_hal_analog_set_iram(ANALOG_REG0 + i, s_sys_ana_regs[i]);
 	}
-	sys_hal_set_ana_reg8_spi_latch1v(0);
+	sys_ana_ll_set_ana_reg8_spi_latch1v(0);
 
 	for (uint32_t i = 0; i < 4; i++) {
  		REG_WRITE(0x2801FFF0 + (i << 2), s_saved_sram[i]);
@@ -893,19 +893,19 @@ void sys_hal_disable_ana_gpio_int(void)
 void sys_drv_wakeup_source_gpio_clear(void)
 {
 	//reset source flag
-	sys_hal_set_ana_reg8_spi_latch1v(1);
-	sys_hal_set_ana_reg8_rst_gpiowks(1);
-	sys_hal_set_ana_reg8_rst_gpiowks(0);
-	sys_hal_set_ana_reg8_spi_latch1v(0);
+	sys_ana_ll_set_ana_reg8_spi_latch1v(1);
+	sys_ana_ll_set_ana_reg8_rst_gpiowks(1);
+	sys_ana_ll_set_ana_reg8_rst_gpiowks(0);
+	sys_ana_ll_set_ana_reg8_spi_latch1v(0);
 }
 
 void sys_drv_wakeup_source_rtc_clear(void)
 {
 	//reset source flag
-	sys_hal_set_ana_reg8_spi_latch1v(1);
-	sys_hal_set_ana_reg8_rst_timerwks1v(1);
-	sys_hal_set_ana_reg8_rst_timerwks1v(0);
-	sys_hal_set_ana_reg8_spi_latch1v(0);
+	sys_ana_ll_set_ana_reg8_spi_latch1v(1);
+	sys_ana_ll_set_ana_reg8_rst_timerwks1v(1);
+	sys_ana_ll_set_ana_reg8_rst_timerwks1v(0);
+	sys_ana_ll_set_ana_reg8_spi_latch1v(0);
 }
 
 void sys_hal_enter_low_voltage(void)
@@ -1078,8 +1078,9 @@ void sys_hal_enter_low_voltage(void)
 	}
 #else
 	arch_deep_sleep();
-#endif
 	bk_delay_us(40); //must delay 40us to sampling rtc value
+#endif
+
 	uint64_t current = bk_aon_rtc_get_us();
 	sys_hal_set_low_voltage_wakeup_time_us(current);
 	sys_hal_set_low_voltage_sleep_duration_us(current - before);
@@ -1102,7 +1103,7 @@ void sys_hal_enter_low_voltage(void)
 #endif
 
 /*-----------restore voltage  start----------------*/
-	sys_hal_enable_spi_latch();
+	sys_ana_ll_set_ana_reg8_spi_latch1v(1);
 
 	sys_ana_ll_set_ana_reg0_value(v_ana_r0);
 	sys_ana_ll_set_ana_reg3_value(v_ana_r3);
@@ -1128,8 +1129,6 @@ void sys_hal_enter_low_voltage(void)
 
 	sys_hal_restore_hf_clock(hf_reg_v);
 
-	sys_hal_disable_spi_latch();
-
 /*-----------restore analog clock  end --------------*/
 
 	sys_hal_power_on_pd(v_sys_r10);
@@ -1142,15 +1141,14 @@ void sys_hal_enter_low_voltage(void)
 	pm_low_voltage_bsp_restore();
 
 /*----------reset wakeup source  start--------------*/
-	sys_hal_enable_spi_latch();
 	#if CONFIG_ANA_RTC_WAKUP_BY_RTC
-	sys_hal_set_ana_reg8_rtcwk_rstn(0);
+	sys_ana_ll_set_ana_reg8_rtcwk_rstn(0);
 	#else
-	sys_hal_set_ana_reg7_timer_wkrstn(0);
+	sys_ana_ll_set_ana_reg7_timer_wkrstn(0);
 	#endif
-	sys_hal_set_ana_reg8_gpiowk_rstn(0);
-	sys_hal_set_ana_reg8_lvsleep_wkrst(1);
-	sys_hal_disable_spi_latch();
+	sys_ana_ll_set_ana_reg8_gpiowk_rstn(0);
+	sys_ana_ll_set_ana_reg8_lvsleep_wkrstn(1);
+	sys_ana_ll_set_ana_reg8_spi_latch1v(0);
 /*-----------reset wakeup source  end --------------*/
 
 #if !CONFIG_DEEP_LV

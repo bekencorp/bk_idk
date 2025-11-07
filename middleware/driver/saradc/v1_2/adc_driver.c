@@ -282,7 +282,7 @@ uint32_t bk_adc_get_2Volt_threshold(void)
     return adc_hal_get_2Volt_threshold();
 }
 
-static int adc_pm_restore_cb(uint64_t sleep_time, void *args)
+__IRAM_SEC static int adc_pm_restore_cb(uint64_t sleep_time, void *args)
 {
     hal_calib_apply();
     return BK_OK;

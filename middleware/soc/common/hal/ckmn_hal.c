@@ -23,7 +23,7 @@ bk_err_t ckmn_hal_init(ckmn_hal_t *hal)
 	return BK_OK;
 }
 
-bk_err_t ckmn_hal_set_soft_reset(ckmn_hal_t *hal)
+__IRAM_SEC bk_err_t ckmn_hal_set_soft_reset(ckmn_hal_t *hal)
 {
 	ckmn_ll_set_soft_reset(hal->hw);
 

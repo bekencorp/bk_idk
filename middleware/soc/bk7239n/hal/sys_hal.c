@@ -1618,7 +1618,7 @@ void sys_hal_set_xtalh_ctune(uint32_t value)
     sys_ana_ll_set_ana_reg2_xtalh_ctune(value);
 }
 
-__IRAM_SEC void sys_hal_analog_set(analog_reg_t reg, uint32_t value)
+void sys_hal_analog_set(analog_reg_t reg, uint32_t value)
 {
     uint32_t analog_reg_address;
 
@@ -1630,6 +1630,20 @@ __IRAM_SEC void sys_hal_analog_set(analog_reg_t reg, uint32_t value)
 
 	sys_ll_set_analog_reg_value(analog_reg_address, value);
 }
+
+__IRAM_SEC void sys_hal_analog_set_iram(analog_reg_t reg, uint32_t value)
+{
+    uint32_t analog_reg_address;
+
+    if ((reg < ANALOG_REG0) || (reg >= ANALOG_MAX)) {
+        return;
+    }
+
+    analog_reg_address = SYS_ANA_REG0_ADDR + (reg - ANALOG_REG0) * 4;
+
+	sys_ll_set_analog_reg_value_iram(analog_reg_address, value);
+}
+
 uint32_t sys_hal_analog_get(analog_reg_t reg)
 {
     uint32_t analog_reg_address;
@@ -2309,6 +2323,11 @@ void sys_hal_set_ana_reg8_spi_latch1v(uint32_t value)
 	sys_ana_ll_set_ana_reg8_spi_latch1v(value);
 }
 
+__IRAM_SEC void sys_hal_set_ana_reg8_spi_latch1v_iram(uint32_t value)
+{
+	sys_ana_ll_set_ana_reg8_spi_latch1v_iram(value);
+}
+
 void sys_hal_set_ana_reg5_adc_div(uint32_t value)
 {
 	//sys_ll_set_ana_reg5_adc_div(value);
@@ -2340,7 +2359,7 @@ void sys_hal_set_ana_reg8_rst_gpiowks(uint32_t value)
 
 __IRAM_SEC void sys_hal_set_ana_reg8_lvsleep_wkrst(uint32_t value)
 {
-	//sys_ana_ll_set_ana_reg8_lvsleep_wkrst(value);
+	sys_ana_ll_set_ana_reg8_lvsleep_wkrstn(value);
 }
 
 __IRAM_SEC void sys_hal_set_ana_reg8_gpiowk_rstn(uint32_t value)
@@ -2386,7 +2405,7 @@ uint32_t sys_hal_get_ana_reg11_gpiowk(void)
 	return sys_ana_ll_get_ana_reg11_gpiowk();
 }
 
-void sys_hal_set_ana_reg11_gpiowk(uint32_t value)
+__IRAM_SEC void sys_hal_set_ana_reg11_gpiowk(uint32_t value)
 {
 	sys_ana_ll_set_ana_reg11_gpiowk(value);
 }

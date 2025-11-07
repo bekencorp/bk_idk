@@ -48,6 +48,15 @@ static inline void sys_ana_set_ana_reg_bit(uint32_t reg_addr, uint32_t pos, uint
 	sys_ll_set_analog_reg_value(reg_addr, reg_value);
 }
 
+__IRAM_SEC static inline void sys_ana_set_ana_reg_bit_iram(uint32_t reg_addr, uint32_t pos, uint32_t mask, uint32_t value)
+{
+	uint32_t reg_value;
+	reg_value = *(volatile uint32_t *)(reg_addr);
+	reg_value &= ~(mask << pos);
+	reg_value |= ((value & mask) <<pos);
+	sys_ll_set_analog_reg_value_iram(reg_addr, reg_value);
+}
+
 //reg ana_reg0:
 static inline void sys_ana_ll_set_ana_reg0_value(uint32_t v) {
 	sys_ll_set_analog_reg_value((SOC_SYS_ANA_REG_BASE + (0x40 << 2)), v);
@@ -1320,6 +1329,10 @@ static inline void sys_ana_ll_set_ana_reg8_spi_latch1v(uint32_t v) {
 	sys_ana_set_ana_reg_bit((SOC_SYS_ANA_REG_BASE + (0x48 << 2)), 9, 0x1, v);
 }
 
+__IRAM_SEC static inline void sys_ana_ll_set_ana_reg8_spi_latch1v_iram(uint32_t v) {
+	sys_ana_set_ana_reg_bit_iram((SOC_SYS_ANA_REG_BASE + (0x48 << 2)), 9, 0x1, v);
+}
+
 static inline uint32_t sys_ana_ll_get_ana_reg8_spi_latch1v(void) {
 	sys_ana_ana_reg8_t *r = (sys_ana_ana_reg8_t*)(SOC_SYS_ANA_REG_BASE + (0x48 << 2));
 	return r->spi_latch1v;
@@ -1752,7 +1765,7 @@ static inline uint32_t sys_ana_ll_get_ana_reg11_value(void) {
 }
 
 static inline void sys_ana_ll_set_ana_reg11_gpiowk(uint32_t v) {
-	sys_ana_set_ana_reg_bit((SOC_SYS_ANA_REG_BASE + (0x4b << 2)), 0, 0xffffff, v);
+	sys_ana_set_ana_reg_bit_iram((SOC_SYS_ANA_REG_BASE + (0x4b << 2)), 0, 0xffffff, v);
 }
 
 static inline uint32_t sys_ana_ll_get_ana_reg11_gpiowk(void) {

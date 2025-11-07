@@ -343,6 +343,7 @@ void sys_hal_set_dpll_div_cksel(uint32_t value);
 void sys_hal_set_dpll_reset(uint32_t value);
 void sys_hal_set_gadc_ten(uint32_t value);
 void sys_hal_analog_set(analog_reg_t reg, uint32_t value);
+void sys_hal_analog_set_iram(analog_reg_t reg, uint32_t value);
 uint32_t sys_hal_analog_get(analog_reg_t reg);
 //Yantao Add Start
 void sys_hal_modem_core_reset(void);
@@ -583,12 +584,12 @@ void sys_hal_set_ana_reg12_dpfms(uint32_t value);
 void sys_hal_set_ana_reg5_pwd_rosc_spi(uint32_t value);
 #if CONFIG_ANA_RTC || CONFIG_ANA_GPIO
 void sys_hal_set_ana_reg8_spi_latch1v(uint32_t value);
+void sys_hal_set_ana_reg8_spi_latch1v_iram(uint32_t value);
 void sys_hal_set_ana_reg5_adc_div(uint32_t value);
 void sys_hal_set_ana_reg5_rosc_disable(uint32_t value);
 void sys_hal_set_ana_reg7_timer_wkrstn(uint32_t value);
 void sys_hal_set_ana_reg7_clk_sel(uint32_t value);
 void sys_hal_set_ana_reg8_rst_timerwks1v(uint32_t value);
-void sys_hal_set_ana_reg8_spi_latch1v(uint32_t value);
 void sys_hal_set_ana_reg8_lvsleep_wkrst(uint32_t value);
 void sys_hal_set_ana_reg8_gpiowk_rstn(uint32_t value);
 void sys_hal_set_ana_reg8_rtcwk_rstn(uint32_t value);
@@ -3415,11 +3416,11 @@ void sys_hal_set_scr_clk(uint32_t value);
 void sys_hal_set_ana_reg5_pwd_rosc_spi(uint32_t value);
 #if CONFIG_ANA_RTC || CONFIG_ANA_GPIO
 void sys_hal_set_ana_reg8_spi_latch1v(uint32_t value);
+void sys_hal_set_ana_reg8_spi_latch1v_iram(uint32_t value);
 void sys_hal_set_ana_reg5_adc_div(uint32_t value);
 void sys_hal_set_ana_reg5_rosc_disable(uint32_t value);
 void sys_hal_set_ana_reg7_timer_wkrstn(uint32_t value);
 void sys_hal_set_ana_reg8_rst_timerwks1v(uint32_t value);
-void sys_hal_set_ana_reg8_spi_latch1v(uint32_t value);
 void sys_hal_set_ana_reg8_lvsleep_wkrst(uint32_t value);
 void sys_hal_set_ana_reg8_gpiowk_rstn(uint32_t value);
 void sys_hal_set_ana_reg8_rtcwk_rstn(uint32_t value);
