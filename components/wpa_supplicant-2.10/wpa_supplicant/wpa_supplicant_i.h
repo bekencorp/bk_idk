@@ -1163,6 +1163,7 @@ struct wpa_supplicant {
 	int p2p_mgmt;
 
 #ifdef CONFIG_P2P
+	bool p2p_connected;
 	struct p2p_go_neg_results *go_params;
 	int create_p2p_iface;
 	u8 pending_interface_addr[ETH_ALEN];

@@ -7367,12 +7367,14 @@ int wpas_p2p_find(struct wpa_supplicant *wpa_s, unsigned int timeout,
 	wpa_s->global->p2p_long_listen = 0;
 
 	if (wpa_s->global->p2p_disabled || wpa_s->global->p2p == NULL ||
-	    wpa_s->p2p_in_provisioning) {
-		wpa_dbg(wpa_s, MSG_DEBUG, "P2P: Reject p2p_find operation%s%s",
+	    wpa_s->p2p_in_provisioning || wpa_s->p2p_connected) {
+		wpa_dbg(wpa_s, MSG_DEBUG, "P2P: Reject p2p_find operation%s%s%s",
 			(wpa_s->global->p2p_disabled || !wpa_s->global->p2p) ?
 			" (P2P disabled)" : "",
 			wpa_s->p2p_in_provisioning ?
-			" (p2p_in_provisioning)" : "");
+			" (p2p_in_provisioning)" : "",
+			wpa_s->p2p_connected ?
+			" (p2p_connected)" : "");
 		return -1;
 	}
 
@@ -8223,6 +8225,7 @@ static void wpas_p2p_disable_cross_connect(struct wpa_supplicant *uplink)
 
 void wpas_p2p_notif_connected(struct wpa_supplicant *wpa_s)
 {
+	wpa_s->p2p_connected = true;
 	if (wpa_s->ap_iface || wpa_s->current_ssid == NULL ||
 	    wpa_s->current_ssid->mode != WPAS_MODE_INFRA ||
 	    wpa_s->cross_connect_disallowed)
@@ -8237,6 +8240,7 @@ void wpas_p2p_notif_connected(struct wpa_supplicant *wpa_s)
 
 void wpas_p2p_notif_disconnected(struct wpa_supplicant *wpa_s)
 {
+	wpa_s->p2p_connected = false;
 	wpas_p2p_disable_cross_connect(wpa_s);
 	if (!wpa_s->ap_iface &&
 	    !eloop_is_timeout_registered(wpas_p2p_group_idle_timeout,
