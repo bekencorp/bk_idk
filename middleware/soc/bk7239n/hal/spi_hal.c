@@ -58,6 +58,7 @@ bk_err_t spi_hal_configure(spi_hal_t *hal, const spi_config_t *config)
 	spi_ll_set_cpol(hal->hw, config->polarity);
 	spi_ll_set_cpha(hal->hw, config->phase);
 	spi_ll_set_rx_sample_edge(hal->hw, 0);
+	spi_ll_set_miso_o_fbsel(hal->hw);
 
 	if (config->role == SPI_ROLE_SLAVE) {
 		spi_ll_set_role_slave(hal->hw);
