@@ -1181,7 +1181,7 @@ static void ate_read_otp(const uint8_t *content, int cnt, uint8_t *tx_buffer1)
         } else if (content[3] == OTP_PHY_PWR2) {
             // OTP_PHY_PWR1 = OTP_PHY_PWR2
             length = 46;
-        } else if (content[3] == OTP_CALIBRATION_ID) {
+        } else if (content[3] == OTP_PRODUCT_ID) {
             // RMB_code(3 byte)
             length = 3;
         } else {
@@ -2160,7 +2160,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 {
                 case 0x01:  // OTP CALIBRATION_ID read
                 {
-                    ret = bk_otp_ahb_read(OTP_CALIBRATION_ID, tx_buffer + 1, length);
+                    ret = bk_otp_ahb_read(OTP_PRODUCT_ID, tx_buffer + 1, length);
                     tx_buffer[0] = 0x0E;
                     if (ret != BK_OK) {
                         // otp read fail
@@ -2176,7 +2176,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 case 0x02:  // OTP CALIBRATION_ID write
                 {
                     // "bk_otp_ahb_update" will do read-back check, so do not need to read back again here
-                    ret = bk_otp_ahb_update(OTP_CALIBRATION_ID, (uint8_t *)content + 3, 3);
+                    ret = bk_otp_ahb_update(OTP_PRODUCT_ID, (uint8_t *)content + 3, 3);
                     tx_buffer[0] = 0x55;
                     if (ret != BK_OK) {
                         tx_buffer[1] = 0xCC;
