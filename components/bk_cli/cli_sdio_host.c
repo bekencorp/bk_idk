@@ -147,7 +147,10 @@ static void cli_sdio_host_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc
 			buf = NULL;
 		}
 	} else if (os_strcmp(argv[1], "write_data") == 0) {
-		uint8_t *buf = os_zalloc(SD_BLOCK_SIZE);
+		#define WRITE_BLOCK_CNT  (4)
+		#define WRITE_BLOCK_SIZE (SD_BLOCK_SIZE * WRITE_BLOCK_CNT)
+
+		uint8_t *buf = os_zalloc(WRITE_BLOCK_SIZE);
 		sdio_host_data_config_t data_config = {0};
 		bk_err_t error_state = BK_OK;
 		sdio_host_cmd_cfg_t cmd_cfg = {0};
@@ -156,20 +159,20 @@ static void cli_sdio_host_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc
 			CLI_LOGE("sdio host buf malloc failed\r\n");
 			return;
 		}
-		os_memset(buf, 0x55, SD_BLOCK_SIZE);
-		for (int i = 0; i < SD_BLOCK_SIZE; i++) {
+		os_memset(buf, 0x55, WRITE_BLOCK_SIZE);
+		for (int i = 0; i < WRITE_BLOCK_SIZE; i++) {
 			CLI_LOGI("buf[%d]=%x\r\n", i, buf[i]);
 		}
 
-		data_config.data_timeout = DATA_TIMEOUT_13M;
-		data_config.data_len = SD_BLOCK_SIZE * 1;
+		data_config.data_timeout = DATA_TIMEOUT_13M * WRITE_BLOCK_CNT;
+		data_config.data_len = WRITE_BLOCK_SIZE * 1;
 		data_config.data_block_size = SD_BLOCK_SIZE;
 		data_config.data_dir = SDIO_HOST_DATA_DIR_WR;
 		BK_LOG_ON_ERR(bk_sdio_host_config_data(&data_config));
 
 		//modify to send cmd by parameter,then we can easy to debug any cmds.
-		cmd_cfg.cmd_index = 53;			//CMD53
-		cmd_cfg.argument = 0x98000201;
+		cmd_cfg.cmd_index = 53; //CMD53
+		cmd_cfg.argument = 0x98000200 + WRITE_BLOCK_CNT;
 		cmd_cfg.response = SDIO_HOST_CMD_RSP_SHORT;
 		cmd_cfg.wait_rsp_timeout = 5000;
 		bk_sdio_host_send_command(&cmd_cfg);
@@ -178,7 +181,7 @@ static void cli_sdio_host_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc
 			CLI_LOGW("sdio:cmd %d err:-%x\r\n", cmd_cfg.cmd_index, -error_state);
 		}
 
-		bk_sdio_host_write_fifo(buf, SD_BLOCK_SIZE);
+		bk_sdio_host_write_fifo(buf, WRITE_BLOCK_SIZE);
 		CLI_LOGI("sdio host write data ok\r\n");
 		if (buf) {
 			os_free(buf);
