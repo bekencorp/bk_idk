@@ -30,6 +30,7 @@
 
 #include <driver/flash.h>
 #include "sys_driver.h"
+#include "CheckSumUtils.h"
 
 #define RXSENS_BANDWIDTH_20MHZ                 (0)
 #define RXSENS_BANDWIDTH_40MHZ                 (1)
@@ -1182,7 +1183,10 @@ static void ate_read_otp(const uint8_t *content, int cnt, uint8_t *tx_buffer1)
             // OTP_PHY_PWR1 = OTP_PHY_PWR2
             length = 46;
         } else if (content[3] == OTP_PRODUCT_ID) {
-            // RMB_code(3 byte)
+            // Product_ID(15 bytes)
+            length = 15;
+        } else if (content[3] == OTP_FACTORY_ID) {
+            // Factory_ID(3 bytes)
             length = 3;
         } else {
             length = 0;
@@ -1211,6 +1215,90 @@ static void ate_read_otp(const uint8_t *content, int cnt, uint8_t *tx_buffer1)
     }
 
 }
+
+#if (CONFIG_OTP)
+typedef enum {
+    OTP_OP_READ  = 0x01u,
+    OTP_OP_WRITE = 0x02u,
+} ate_otp_op_t;
+
+static bool otp_check_crc8(uint8_t* buf, size_t buflen)
+{
+    CRC8_Context crc8;
+    uint8_t cal_value;
+    uint8_t store_value = buf[buflen - 1];
+    CRC8_Init(&crc8);
+    CRC8_Update(&crc8, buf, buflen - 1);
+    CRC8_Final(&crc8, &cal_value);
+    if (cal_value == store_value) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+static void ate_otp_write_common(uint32_t otp_addr, const uint8_t *content, uint32_t content_len)
+{
+    uint8_t tx_local[2 + 32] = {0};
+
+    tx_local[0] = 0x55;
+    tx_local[1] = 0xCC;
+
+    // CRC check with debug output
+    uint32_t data_len = content_len - 1;  // data length (excluding CRC byte)
+
+    if (!otp_check_crc8((uint8_t*)content, content_len)) {
+        bk_printf("ate_otp_write_common: crc check failed total_len=%d\r\n", content_len);
+        goto fail;
+    }
+    if (bk_otp_ahb_update(otp_addr, (uint8_t *)content, content_len) != BK_OK) {
+        bk_printf("ate_otp_write_common: ahb_update failed addr=0x%X len=%d\r\n", otp_addr, content_len);
+        goto fail;
+    }
+    /* success: update already verifies internally, no extra readback needed */
+    tx_local[1] = 0x33;
+    bk_otp_ahb_read(otp_addr, tx_local + 2, data_len);
+    uart_send_bytes_for_ate(tx_local, 2 + data_len);
+    return;
+
+fail:
+    tx_local[0] = 0x55;
+    tx_local[1] = 0xCC;
+    uart_send_bytes_for_ate(tx_local, 2);
+}
+
+static void ate_otp_read_common(uint32_t otp_addr, uint32_t read_len)
+{
+    uint8_t tx_local[1 + 32] = {0};
+    int ret;
+
+    tx_local[0] = 0x0E;
+
+    ret = bk_otp_ahb_read(otp_addr, tx_local + 1, read_len);
+    if (ret != BK_OK) {
+        bk_printf("ate_otp_read_common: ahb_read failed addr=0x%X read_len=%d ret=%x\r\n", otp_addr, read_len, ret);
+        goto fail;
+    }
+
+    uart_send_bytes_for_ate(tx_local, read_len + 1);
+    return;
+
+fail:
+    tx_local[0] = 0x55;
+    tx_local[1] = 0xBB;
+    uart_send_bytes_for_ate(tx_local, 2);
+}
+
+static void ate_otp_rw_common(uint32_t otp_addr, const uint8_t *content, uint32_t len, ate_otp_op_t op)
+{
+    if (op == OTP_OP_READ) {
+        ate_otp_read_common(otp_addr, len);
+    }
+    if (op == OTP_OP_WRITE) {
+        ate_otp_write_common(otp_addr, content, len);
+    }
+}
+#endif
 
 static void ate_pm_gpio_callback(gpio_id_t gpio_id)
 {
@@ -2154,44 +2242,20 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 break;
             }
 
-            case 0x3F:  // OTP CALIBRATION_ID read and write
+            case 0x3C:  // OTP_FACTORY_ID read and write
+            case 0x3F:  // OTP_PRODUCT_ID read and write
             {
-                uint32_t length = 3;
-                int ret = 0;
+                uint32_t id = (content[1] == 0x3C) ? OTP_FACTORY_ID : OTP_PRODUCT_ID;
+                ate_otp_op_t op = (ate_otp_op_t)content[2];
 
-                switch (content[2])
-                {
-                case 0x01:  // OTP CALIBRATION_ID read
-                {
-                    ret = bk_otp_ahb_read(OTP_PRODUCT_ID, tx_buffer + 1, length);
-                    tx_buffer[0] = 0x0E;
-                    if (ret != BK_OK) {
-                        // otp read fail
-                        tx_buffer[0] = 0x55;
-                        tx_buffer[1] = 0xBB;
-                        uart_send_bytes_for_ate(tx_buffer, 2);
-                    } else {
-                        uart_send_bytes_for_ate(tx_buffer, length + 1);
-                    }
-                    break;
-                }
-
-                case 0x02:  // OTP CALIBRATION_ID write
-                {
-                    // "bk_otp_ahb_update" will do read-back check, so do not need to read back again here
-                    ret = bk_otp_ahb_update(OTP_PRODUCT_ID, (uint8_t *)content + 3, 3);
-                    tx_buffer[0] = 0x55;
-                    if (ret != BK_OK) {
-                        tx_buffer[1] = 0xCC;
-                    } else {
-                        tx_buffer[1] = 0x33;
-                    }
-                    uart_send_bytes_for_ate(tx_buffer, 2);
-                    break;
-                }
-
-                default:
-                    break;
+                if (op == OTP_OP_READ) {
+                    // Read command: content = 0x55 3C/3F 01
+                    uint32_t len = (content[1] == 0x3C) ? 3 : 15;
+                    ate_otp_rw_common(id, NULL, len, op);
+                } else if (op == OTP_OP_WRITE) {
+                    // Write command: content = 0x55 3C/3F 02 data[4]/data[16]
+                    uint32_t len = (content[1] == 0x3C) ? 4 : 16;
+                    ate_otp_rw_common(id, (uint8_t *)content + 3, len, op);
                 }
                 break;
             }
