@@ -19,4 +19,5 @@ typedef struct
     uint8_t _use_min_power_mode;
     uint8_t _support_coex_rf_mode_switch;
     uint8_t _support_sleep_phy_switch;
+    uint8_t _support_lowpower_sleep;
 } bt_feature_struct_t;

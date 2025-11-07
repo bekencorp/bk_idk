@@ -127,6 +127,13 @@ typedef volatile union {
 
 typedef volatile union {
 	struct {
+		uint32_t isocnt_32k_samp          : 32; /**<bit[0 :27]*/
+	};
+	uint32_t v;
+} aon_pmu_r74_t;
+
+typedef volatile union {
+	struct {
 		uint32_t ana_gpio_sta             : 24; /**<bit[0 :23]*/
 		uint32_t L                        :  8; /**<bit[24:31]*/
 	};

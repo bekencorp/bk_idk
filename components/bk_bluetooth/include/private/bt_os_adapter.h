@@ -197,6 +197,7 @@ struct bt_osi_funcs_t
     uint32_t (*_get_ana_timersel)(void); // Used to circumvent the hardware issue, can be deleted in the next version
     uint32_t (*_get_finecnt_samp)(void);
     uint32_t (*_get_clkcnt_samp)(void);
+    uint32_t (*_get_isocnt_samp)(void);
     void (*_bt_delay_us)(uint32_t us);
 };
 

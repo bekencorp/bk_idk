@@ -41,6 +41,10 @@ int bk_bt_feature_init(void)
     s_bt_feature_struct._support_sleep_phy_switch = 1;
 #endif
 
+#if CONFIG_BLE_LV_SUPPORT
+    s_bt_feature_struct._support_lowpower_sleep = 1;
+#endif
+
     extern int bt_feature_adapter_init(void *arg);
 
     if (bt_feature_adapter_init((void *)&s_bt_feature_struct) != 0)

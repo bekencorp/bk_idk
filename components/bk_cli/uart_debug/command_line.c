@@ -45,6 +45,9 @@
 extern bk_err_t uart_write_byte(uart_id_t id, uint8_t data);
 extern void manual_cal_show_txpwr_tab_simple(void);
 extern UINT32 manual_cal_fitting_txpwr_tab(void);
+extern uint8_t if_ble_sleep(void);
+extern uint8_t is_xvr_reg_backup(uint32_t addr);
+extern uint8_t is_btdm_reg_backup(uint32_t addr);
 
 #if CONFIG_UART_DEBUG
 /* find command table entry for a command */
@@ -484,6 +487,23 @@ static int bkreg_run_command_implement(const char *content, int cnt)
                 rwnx_cal_save_reg_val_with_addr(rx_param->addr, rx_param->value);
         }
 #endif
+
+#if CONFIG_BLE_LV_SUPPORT
+		{
+			// when write xvr and btdm beken regs, updata registers save.
+			extern void write_xvr_reg_backup(uint32_t addr, uint32_t val);
+			if(is_xvr_reg_backup(rx_param->addr))
+			{
+				write_xvr_reg_backup(rx_param->addr, rx_param->value);
+			}
+
+			extern void write_btdm_reg_backup(uint32_t addr, uint32_t val);
+			if(is_btdm_reg_backup(rx_param->addr))
+			{
+				write_btdm_reg_backup(rx_param->addr, rx_param->value);
+			}
+		}
+#endif
 		break;
 
 	case BEKEN_UART_REGISTER_READ_CMD:
@@ -537,6 +557,19 @@ static int bkreg_run_command_implement(const char *content, int cnt)
 					extern UINT32 rwnx_cal_load_reg_val_with_addr(UINT32 addr);
 					// when read trx and rc beken regs, read ram since RF sleep.
 					tx_param->value = rwnx_cal_load_reg_val_with_addr(rx_param->addr);
+				}
+#endif
+#if CONFIG_BLE_LV_SUPPORT
+				// when read xvr and btdm beken regs, read ram since BLE sleep.
+				else if (if_ble_sleep() && is_xvr_reg_backup(rx_param->addr))
+				{
+					extern uint32_t read_xvr_reg_backup(uint32_t addr);
+					tx_param->value = read_xvr_reg_backup(rx_param->addr);
+				}
+				else if (if_ble_sleep() && is_btdm_reg_backup(rx_param->addr))
+				{
+					extern uint32_t read_btdm_reg_backup(uint32_t addr);
+					tx_param->value = read_btdm_reg_backup(rx_param->addr);
 				}
 #endif
 				else

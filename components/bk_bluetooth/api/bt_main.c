@@ -61,7 +61,7 @@ static int bluetooth_deepsleep_enter_cb(uint64_t expected_time_ms, void *args)
     return 0;
 }
 
-#if CONFIG_ANA_RTC_WAKUP_BY_RTC
+#if CONFIG_BLE_LV_SUPPORT
 static int bluetooth_lv_enter_cb(uint64_t expected_time_ms, void *args)
 {
     if (bluetooth_already_init)
@@ -132,7 +132,7 @@ bt_err_t bk_bluetooth_init(void)
     ble_at_cmd_init();
 #endif
 
-    #if CONFIG_ANA_RTC_WAKUP_BY_RTC
+    #if CONFIG_BLE_LV_SUPPORT
     pm_cb_conf_t enter_lv_config = {NULL, NULL};
     pm_cb_conf_t exit_lv_config = {NULL, NULL};
     enter_lv_config.cb = bluetooth_lv_enter_cb;

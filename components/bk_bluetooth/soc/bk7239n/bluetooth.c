@@ -1161,6 +1161,11 @@ static uint32_t get_clkcnt_samp(void)
     return aon_pmu_ll_get_reg73_value();
 }
 
+static uint32_t get_isocnt_samp(void)
+{
+    return aon_pmu_ll_get_reg74_value();
+}
+
 void bluetooth_lowvol_enter_callback(void)
 {
     bluetooth_lowvol_enter_cb_internal();
@@ -1287,6 +1292,7 @@ static struct bt_osi_funcs_t bt_osi_funcs =
     ._get_ana_timersel      = get_ana_timersel,
     ._get_finecnt_samp      = get_finecnt_samp,
     ._get_clkcnt_samp       = get_clkcnt_samp,
+    ._get_isocnt_samp       = get_isocnt_samp,
     ._bt_delay_us           = bt_delay_us,
 };
 
