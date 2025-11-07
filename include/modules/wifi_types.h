@@ -776,6 +776,8 @@ struct wifi_rx_pkt_t{
 	uint8_t secondary_channel; /**< secondary channel on which this packet is received. 0: none; 1: above; 2: below */
 	uint8_t sig_len;	 /**< length of packet including Frame Check Sequence(FCS) */
 	uint32_t timestamp;  /**< timestamp. The local time when this packet is received. unit: microsecond */
+	int8_t agc_rssi;	 /**< RSSI of AGC stage */
+	uint8_t agc_snr;	 /**< SNR of AGC stage */
 };
 
 struct wifi_csi_info_t{
@@ -785,12 +787,12 @@ struct wifi_csi_info_t{
 	uint16_t data_type;					/**< out data type 0: buf, 1:abs*/
 	union
 	{
-		uint32_t buf[52];				/**< CSI info */
+		uint32_t buf[240];				/**< CSI info */
 		//double abs[52];				/**< CSI info abs */
 		struct{							/**< CSI info iq */
 			double real;
 			double imag;
-		}iq[52];
+		}iq[240];
 	}data;
 };
 
