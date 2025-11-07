@@ -135,6 +135,8 @@ extern void bk_wifi_set_mpb_ctrl(uint32_t value);
 extern void evm_stop_bypass_mac_for_ate (void);
 extern void evm_start_bypass_mac_for_ate(void);
 extern void evm_bypass_mac_test_for_ate(UINT32 channel, UINT32 bandwidth);
+extern void evm_set_pwr_for_he_tb(UINT32 format);
+extern UINT32 evm_get_auto_hetb_tx_len(UINT32 ru, UINT32 rate, UINT32 guard_i_type);
 
 extern void evm_bypass_mac_test(UINT32 channel, wifi_band_t band, UINT32 bandwidth);
 extern UINT32 rs_test(UINT32 channel, wifi_band_t band, UINT32 mode);
@@ -676,25 +678,40 @@ static void evm_test(UINT32 rate, UINT32 channel, UINT32 bandwidth, UINT32 modul
     evm_bypass_mac_test_for_ate(channel, bandwidth);
     evm_init_bypass_mac();
 
-    if (rate <= 54)
-	    modul_format = 0;
-    else if (modul_format < 2) {
-	    //BK_LOGD(NULL, "HT/VHT/HE pkts modul_format >= 2\r\n");
-	    modul_format = 2;
+#if(CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX)
+    evm_set_pwr_for_he_tb(modul_format);
+#endif
+
+    mdm_set_txstartdelay(1023);
+    mdm_set_txcheckack(14400);
+
+    if (rate <= 54) {
+        modul_format = 0;
     }
 
     // packet_len = evm_get_auto_tx_len(rate, modul_format, bandwidth, 0);
     packet_len = 1;
     packet_len = packet_len * 100;
-    evm_bypass_mac_set_tx_data_length(modul_format, packet_len, rate, bandwidth, 1);
 
     evm_bypass_mac_set_rate_mformat(rate, modul_format);
     evm_set_bandwidth(bandwidth);
 
-    if (modul_format == 5)
+    if ((modul_format == 5) || (modul_format == 8))
         gi = AX_DEFUALT_GI_TYPE;
     else
         gi = DEFUALT_GI_TYPE;
+
+    if (modul_format == 8) {
+        if (gi == 0x1 || gi == 0x2)
+            packet_len = evm_get_auto_hetb_tx_len(0, rate, gi);
+        bk_printf("HE-TB packet_len : %d\n", packet_len);
+    }
+    if (packet_len != 0)
+        evm_bypass_mac_set_tx_data_length(modul_format, packet_len, rate, bandwidth, 0);
+    else {
+        packet_len = evm_get_auto_tx_len(rate, modul_format, bandwidth, 0);
+        evm_bypass_mac_set_tx_data_length(modul_format, packet_len, rate, bandwidth, 1);
+    }
 
     evm_bypass_mac_set_guard_i_type(gi);
     if ((modul_format >= 5) && (bandwidth == 1)) {
@@ -704,7 +721,7 @@ static void evm_test(UINT32 rate, UINT32 channel, UINT32 bandwidth, UINT32 modul
 
     rwnx_cal_en_extra_txpa();
     rf_module_vote_ctrl(RF_OPEN,RF_BY_TEMP_BIT);
-    rwnx_cal_set_txpwr_by_rate(evm_translate_tx_rate(rate), 0, 0, 0, 0);
+    rwnx_cal_set_txpwr_by_rate(evm_translate_tx_rate(rate), modul_format, 0, 0, bandwidth);
     UINT8 pwr_idx = rwnx_cal_get_pwr_idx();
     bk_printf("channel=%d,rate=%d,pwr_idx=%d\r\n", channel, rate, pwr_idx);
     if (rate == 11) {
@@ -746,7 +763,7 @@ static void evm_test(UINT32 rate, UINT32 channel, UINT32 bandwidth, UINT32 modul
         }
     }
     rf_module_vote_ctrl(RF_CLOSE,RF_BY_TEMP_BIT);
-	//evm_bypass_mac_set_txdelay(txdelay);
+    //evm_bypass_mac_set_txdelay(txdelay);
 
     evm_start_bypass_mac();
 
