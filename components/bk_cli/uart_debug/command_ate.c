@@ -1561,6 +1561,7 @@ int sctrl_check_otp(const unsigned char *content, int cnt, UINT8 *tx_buffer)
 int set_device_id_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buffer)
 {
     uint8_t device_id_write[EFUSE_DEVICE_ID_BYTE_NUM] = {0};
+    uint8_t device_id_buf[8] = {0};
     uint8_t retry_times = 0;
     int ret = 0;
 
@@ -1593,6 +1594,8 @@ int set_device_id_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buff
         device_id_write[iIndex] = (uint8_t) (content[2 + iIndex] & 0xFF);
     }
 
+    os_memcpy(device_id_buf, device_id_write, EFUSE_DEVICE_ID_BYTE_NUM);
+
     /* sn2 is out of range */
     if((device_id_write[0] < EFUSE_DEVICE_ID_SN_MINIMUM) || (device_id_write[0] > EFUSE_DEVICE_ID_SN_MAXIMUM)) {
         tx_buffer[1] = 0x77;
@@ -1618,13 +1621,13 @@ int set_device_id_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buff
     }
 
     for (; retry_times < 3; retry_times++) {
-	    ret = bk_otp_ahb_update(OTP_DEVICE_ID, device_id_write, sizeof(device_id_write));
-		if (ret == BK_OK) {
-			break;
-		}
+        ret = bk_otp_ahb_update(OTP_DEVICE_ID, device_id_buf, sizeof(device_id_buf));
+        if (ret == BK_OK) {
+            break;
+        }
     }
 
-	if (ret != BK_OK) {
+    if (ret != BK_OK) {
         tx_buffer[1] = 0x77;
 
         if (ret == BK_ERR_OTP_NOT_EMPTY) {
