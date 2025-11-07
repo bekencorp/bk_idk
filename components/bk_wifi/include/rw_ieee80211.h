@@ -1042,7 +1042,7 @@ struct ieee80211_sband_iftype_data {
 struct ieee80211_supported_band {
 	struct ieee80211_channel *channels;
 	//struct ieee80211_rate *bitrates;
-	//enum nl80211_band band;
+	wifi_band_t band;
 	int n_channels;
 	//int n_bitrates;
 	struct ieee80211_sta_erp_cap erp_cap;
@@ -1450,6 +1450,8 @@ int regulatory_hint_found_beacon(struct wiphy *wiphy, struct ieee80211_channel *
 struct ieee80211_channel *ieee80211_get_channel(struct wiphy *wiphy, int freq);
 void rwnx_regulatory_hint_11d(int freq, const u8 *country_ie, u8 country_ie_len);
 int ieee80211_freq_khz_to_channel(u32 freq);
+const char *regdom_flag_str(uint32_t channel_flags);
+enum nl80211_dfs_regions reg_get_dfs_region(struct wiphy *wiphy);
 
 #endif // _RW_IEEE80211_H_
 // eof

@@ -12,12 +12,15 @@
 #include "ctrl_iface.h"
 #include "rwnx_defs.h"
 #include "components/ate.h"
+#include "rwnx_tx.h"
+#include "wifi_v2.h"
 #if CONFIG_RWNX_TD
 #include "rwnx_td.h"
 #endif
 
-int rwnx_reg_notifier(struct wiphy *wiphy,
-			    struct regulatory_request *request);
+int rwnx_reg_notifier(struct wiphy *wiphy, struct regulatory_request *request);
+extern int manual_cal_get_tx_power(wifi_standard standard, float *powerdBm);
+extern int manual_cal_set_tx_power(wifi_standard standard, float powerdBm);
 
 #if CONFIG_POWER_TABLE
 //#include "bk_pwr_tbl.h"
@@ -390,6 +393,31 @@ UINT32 rw_ieee80211_init(void)
 #if CONFIG_WIFI_REGDOMAIN
 //	wiphy->regulatory_flags = REGULATORY_WIPHY_SELF_MANAGED;
 //	bk_wifi_set_country_code(CONFIG_DEFAULT_COUNTRY_CODE);
+	struct ieee80211_supported_band *sband;
+	wifi_band_t band;
+
+	/* sanity check supported bands/channels */
+	for (band = 0; band < IEEE80211_NUM_BANDS; band++) {
+		sband = wiphy->bands[band];
+		if (!sband)
+			continue;
+
+		sband->band = band;
+		if (WARN_ON(!sband->n_channels))
+			return -EINVAL;
+
+		for (i = 0; i < sband->n_channels; i++) {
+			sband->channels[i].orig_flags =
+				sband->channels[i].flags;
+			sband->channels[i].orig_mag = INT_MAX;
+			sband->channels[i].orig_mpwr =
+				sband->channels[i].max_power;
+			sband->channels[i].band = band;
+
+			if (WARN_ON(sband->channels[i].freq_offset >= 1000))
+				return -EINVAL;
+		}
+	}
 #else // !CONFIG_WIFI_REGDOMAIN
 	/* init country code */
 	g_country_code.cfg.cc[0] = 'C';
@@ -1033,6 +1061,48 @@ int get_wiphy_idx(struct wiphy *wiphy)
 int rwnx_reg_notifier(struct wiphy *wiphy,
 			    struct regulatory_request *request)
 {
+	float pwr;
+	int regd_max_pwr = 0;
+
+	// Iterates all bands
+	for (wifi_band_t band = 0; band < IEEE80211_NUM_BANDS; band++) {
+		struct ieee80211_supported_band *sband = wiphy->bands[band];
+		if (!sband)
+			continue;
+
+		// Iterates all channels
+		for (int i = 0; i < sband->n_channels; i++) {
+			struct ieee80211_channel *channel = &sband->channels[i];
+
+			// Skip disabled channel
+			if (channel->flags & IEEE80211_CHAN_DISABLED)
+				continue;
+
+			// Since we doesn't support different channel use different tx pwr,
+			// save max tx pwr here
+			if (regd_max_pwr == 0)
+				regd_max_pwr = channel->max_power;
+			if (regd_max_pwr > channel->max_power)
+				regd_max_pwr = channel->max_power;
+
+			WIFI_LOGD("band %d, center %d, flags %s, max_power %d/%d, dfs region %d\n",
+					  channel->band, channel->center_freq, regdom_flag_str(channel->flags),
+					  channel->max_power, regd_max_pwr,
+					  reg_get_dfs_region(&g_wiphy));
+
+			for (wifi_standard std = WIFI_STANDARD_11A; std <= WIFI_STANDARD_11AX; std++) {
+				if (manual_cal_get_tx_power(std, &pwr) == BK_OK) {
+					WIFI_LOGD("current txpwr %f\n", pwr);
+					if (pwr > regd_max_pwr) {
+						if (manual_cal_set_tx_power(std, regd_max_pwr) != BK_OK)
+							WIFI_LOGE("set regd txpwr fail, band %d, freq %d\n",
+									  channel->band, channel->freq_offset);
+					}
+				}
+			}
+		}
+	}
+
 	// Reconfig mac channel
 	if (rwm_mgmt_is_vif_first_used()) {
 		rw_msg_send_me_chan_config_req();

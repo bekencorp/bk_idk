@@ -2672,6 +2672,39 @@ static const char *reg_dfs_region_str(enum nl80211_dfs_regions dfs_region)
 	return "Unknown";
 }
 
+enum nl80211_dfs_regions reg_get_dfs_region(struct wiphy *wiphy)
+{
+	const struct ieee80211_regdomain *regd = NULL;
+	const struct ieee80211_regdomain *wiphy_regd = NULL;
+	enum nl80211_dfs_regions dfs_region;
+
+	regd = cfg80211_regdomain;
+	dfs_region = regd->dfs_region;
+
+	if (!wiphy)
+		goto out;
+
+	wiphy_regd = wiphy->regd;
+	if (!wiphy_regd)
+		goto out;
+
+	if (wiphy->regulatory_flags & REGULATORY_WIPHY_SELF_MANAGED) {
+		dfs_region = wiphy_regd->dfs_region;
+		goto out;
+	}
+
+	if (wiphy_regd->dfs_region == regd->dfs_region)
+		goto out;
+
+	WIFI_LOGE("Device specific dfs_region (%s) disagrees with cfg80211's central dfs_region (%s)\n",
+		 reg_dfs_region_str(wiphy_regd->dfs_region),
+		 reg_dfs_region_str(regd->dfs_region));
+
+out:
+
+	return dfs_region;
+}
+
 static void print_regdomain(const struct ieee80211_regdomain *rd)
 {
 	if (is_intersected_alpha2(rd->alpha2)) {
