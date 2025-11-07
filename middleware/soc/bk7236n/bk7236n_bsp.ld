@@ -14,7 +14,6 @@
 #include "partitions.h"
 #include "sdkconfig.h"
 
-
 OUTPUT_FORMAT("elf32-littlearm", "elf32-bigarm", "elf32-littlearm")
 
 __MSP_STACK_SIZE = (4 << 10);
@@ -52,6 +51,12 @@ The follow four shared memory address area mapping to the same physical memory
     0x28000000 ~ 0x280a0000  ---- data area, recommend put sram data
     0x38000000 ~ 0x380a0000  ---- data area, recommend put sram data
 ******************************************************************************/
+
+/* IRAM and RAM are mapped to the SAME physical memory with different virtual
+ * addresses. The CPU routes instruction fetches through IRAM address space
+ * (0x08000000+) and data access through RAM address space (0x28000000+).
+ * This address offset allows the processor to optimize instruction/data paths.
+ */
 __CPU0_APP_IRAM_OFFSET = 0x20000000;
 
 __CPU0_APP_IRAM_BASE = __CPU0_APP_RAM_BASE - __CPU0_APP_IRAM_OFFSET;  /*0x08000000 = 0x28000000 - __CPU0_APP_IRAM_OFFSET*/
@@ -63,7 +68,13 @@ __CPU0_APP_VIRTUAL_CODE_SIZE = CONFIG_PRIMARY_CPU0_APP_VIRTUAL_CODE_SIZE;
 MEMORY
 {
   FLASH (rx)            : ORIGIN = (SOC_FLASH_DATA_BASE + __CPU0_APP_VIRTUAL_CODE_START), LENGTH = __CPU0_APP_VIRTUAL_CODE_SIZE
+  /* IRAM: Instruction RAM - used for executable code in SRAM.
+   * Physical memory is the same as RAM, but accessed through different address space.
+   */
   IRAM (rx)             : ORIGIN = __CPU0_APP_IRAM_BASE, LENGTH = __CPU0_APP_IRAM_SIZE
+  /* RAM: Data RAM - used for data, stack and heap.
+   * Physical memory is the same as IRAM, but accessed through different address space.
+   */
   RAM (rwx)             : ORIGIN = __CPU0_APP_RAM_BASE, LENGTH = __CPU0_APP_RAM_SIZE
 
   PSRAM (rwx)           : ORIGIN = SOC_PSRAM_DATA_BASE, LENGTH = 0x4000000
@@ -100,6 +111,11 @@ SECTIONS
         . = ALIGN(4);
         _stext = .;
 #if (CONFIG_SPE && !CONFIG_RELEASE_IRAM && !CONFIG_DPD_CALI)
+	/* Exclude these files from FLASH .text/.rodata sections.
+	 * They will be placed in IRAM instead (see .iram section below).
+	 * CAUTION: Files listed here MUST have corresponding entries in IRAM section.
+	 * If excluded but not re-added to IRAM, their rodata may not be copied, leading to runtime errors.
+	 */
 	EXCLUDE_FILE(
         tasks.c.obj
         queue.c.obj
@@ -130,7 +146,7 @@ SECTIONS
         rf_cntrl.c.obj
         mcc.c.obj
         phy_karst_bk7236.c.obj
-        crm.c.obj 
+        crm.c.obj
         bk7236_cal.c.obj
         manual_cal_bk7236.c.obj
         bk_cal_common.c.obj
@@ -265,6 +281,10 @@ SECTIONS
         *(.interrupt)
 
 #if (CONFIG_SPE && !CONFIG_RELEASE_IRAM)
+        /* Re-add files that were excluded from FLASH .text section above.
+         * These files are placed in IRAM for better performance.
+         * WARNING: Use wildcards carefully - mismatched patterns may cause rodata not to be copied.
+         */
         tasks.c.obj*(.text .text.* *.rodata *.rodata.*)
         queue.c.obj*(.text .text.* *.rodata *.rodata.*)
         list.c.obj*(.text .text.* *.rodata *.rodata.*)
@@ -294,7 +314,7 @@ SECTIONS
         rf_cntrl.c.obj*(.text .text.* *.rodata *.rodata.*)
         mcc.c.obj*(.text .text.* *.rodata *.rodata.*)
         phy_karst_bk7236.c.obj*(.text .text.* *.rodata *.rodata.*)
-        crm.c.obj*(.text .text.* .rodata .rodata.*)
+        crm.c.obj*(.text .text.* *.rodata *.rodata.*)
         bk7236_cal.c.obj*(.text .text.* *.rodata *.rodata.*)
         manual_cal_bk7236.c.obj*(.text .text.* *.rodata *.rodata.*)
         bk_cal_common.c.obj*(.text .text.* *.rodata *.rodata.*)
@@ -344,6 +364,12 @@ SECTIONS
         . = ALIGN(4);
     } > IRAM AT > FLASH
 
+    /* Reserve space in RAM that matches the size of IRAM section.
+     * This ensures that subsequent data sections won't overlap with code
+     * that may be copied to RAM at runtime. The alignment to 16 bytes
+     * follows ARM AAPCS (Procedure Call Standard) requirements for
+     * optimal memory access performance.
+     */
     .ramcode :
     {
         . = . +  SIZEOF(.iram);
@@ -390,7 +416,19 @@ SECTIONS
     _data_ram_begin = __data_start__;
     _data_ram_end = .;
 
-    s_rom_end = LOADADDR(.data) + SIZEOF(.data);
+    /* Estimate of total Flash memory usage.
+     * LOADADDR(.data) contains everything before .data in the link script:
+     *   - .vectors, .gnu.sgstubs, .cli_cmds_table
+     *   - .text (all code and rodata from FLASH, excluding IRAM)
+     *   - .a_device_null, .a_devices, .a_init_entries
+     *   - .ARM.extab, .ARM.exidx
+     *   - .copy.table, .zero.table
+     *   - .iram (instruction RAM section, placed BEFORE .data in FLASH image)
+     *   - .iram_boundary, .ramcode
+     * This value is approximate because sections defined after .data that also use
+     * AT > FLASH (such as .video.cache.data) are not included in the calculation.
+     */
+    s_flash_end = LOADADDR(.data) + SIZEOF(.data);
 
     .uninitialized (NOLOAD):
     {
@@ -515,7 +553,7 @@ SECTIONS
     __MSPTop = ORIGIN(RAM) + LENGTH(RAM);
     __MSPLimit = __MSPTop - __MSP_STACK_SIZE;
 
-    ASSERT((s_rom_end < ORIGIN(FLASH) + LENGTH(FLASH)), "ROM overflow!!!")
+    ASSERT((s_flash_end < ORIGIN(FLASH) + LENGTH(FLASH)), "Flash Overflow!!!")
     ASSERT(((ORIGIN(RAM) + LENGTH(RAM)) > (_heap_start + __MSP_STACK_SIZE + 8)), "Stack overflowed with bss")
     ASSERT(((_heap_end - _heap_start) >= __MIN_HEAP_SIZE), "Heap smaller than minimize size 40K!!!")
 }

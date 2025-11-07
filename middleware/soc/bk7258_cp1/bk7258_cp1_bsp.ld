@@ -234,7 +234,7 @@ SECTIONS
     _data_ram_begin = ADDR(.data);
     _data_ram_end = .;
 
-    s_rom_end = LOADADDR(.data) + SIZEOF(.data);
+    s_flash_end = LOADADDR(.data) + SIZEOF(.data);
 
     .uninitialized (NOLOAD):
     {
@@ -327,7 +327,7 @@ SECTIONS
     __MSPTop = ORIGIN(RAM) + LENGTH(RAM);
     __MSPLimit = __MSPTop - __MSP_STACK_SIZE;
 
-    ASSERT((s_rom_end < ORIGIN(FLASH) + LENGTH(FLASH)), "ROM overflow!!!")
+    ASSERT((s_flash_end < ORIGIN(FLASH) + LENGTH(FLASH)), "Flash Overflow!!!")
     ASSERT(((ORIGIN(RAM) + LENGTH(RAM)) > (_heap_start + __MSP_STACK_SIZE + 8)), "Stack overflowed with bss")
     ASSERT(((_heap_end - _heap_start) >= __MIN_HEAP_SIZE), "Heap smaller than minimize size 32K!!!")
 }

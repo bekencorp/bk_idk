@@ -38,12 +38,18 @@ __CPU0_APP_RAM_SIZE = 0xA0000 - CONFIG_CPU0_SPE_RAM_SIZE;
 #endif
 
 /*****************************************************************************
-The follow four shared memory address area mapping to the same physical memory 
-    0x08000000 ~ 0x080a0000  ---- instruction area, recommend put sram code  
-    0x18000000 ~ 0x180a0000  ---- instruction area, recommend put sram code 
-    0x28000000 ~ 0x280a0000  ---- data area, recommend put sram data 
-    0x38000000 ~ 0x380a0000  ---- data area, recommend put sram data 
+The follow four shared memory address area mapping to the same physical memory
+    0x08000000 ~ 0x080a0000  ---- instruction area, recommend put sram code
+    0x18000000 ~ 0x180a0000  ---- instruction area, recommend put sram code
+    0x28000000 ~ 0x280a0000  ---- data area, recommend put sram data
+    0x38000000 ~ 0x380a0000  ---- data area, recommend put sram data
 ******************************************************************************/
+
+/* IRAM and RAM are mapped to the SAME physical memory with different virtual
+ * addresses. The CPU routes instruction fetches through IRAM address space
+ * (0x08000000+) and data access through RAM address space (0x28000000+).
+ * This address offset allows the processor to optimize instruction/data paths.
+ */
 __CPU0_APP_IRAM_OFFSET = 0x20000000;
 
 __CPU0_APP_IRAM_BASE = __CPU0_APP_RAM_BASE - __CPU0_APP_IRAM_OFFSET;  /*0x08000000 = 0x28000000 - __CPU0_APP_IRAM_OFFSET*/
@@ -55,7 +61,13 @@ __CPU0_APP_VIRTUAL_CODE_SIZE = CONFIG_PRIMARY_CPU0_APP_VIRTUAL_CODE_SIZE;
 MEMORY
 {
   FLASH (rx)            : ORIGIN = (SOC_FLASH_DATA_BASE + __CPU0_APP_VIRTUAL_CODE_START), LENGTH = __CPU0_APP_VIRTUAL_CODE_SIZE
+  /* IRAM: Instruction RAM - used for executable code in SRAM.
+   * Physical memory is the same as RAM, but accessed through different address space.
+   */
   IRAM (rx)             : ORIGIN = __CPU0_APP_IRAM_BASE, LENGTH = __CPU0_APP_IRAM_SIZE
+  /* RAM: Data RAM - used for data, stack and heap.
+   * Physical memory is the same as IRAM, but accessed through different address space.
+   */
   RAM (rwx)             : ORIGIN = __CPU0_APP_RAM_BASE, LENGTH = __CPU0_APP_RAM_SIZE - __SWAP_SIZE
   SWAP (rwx)            : ORIGIN = __CPU0_APP_RAM_BASE + __CPU0_APP_RAM_SIZE - __SWAP_SIZE, LENGTH = __SWAP_SIZE
 
@@ -88,6 +100,11 @@ SECTIONS
         _stext = .;
 
 #if (CONFIG_SPE && !CONFIG_RELEASE_IRAM)
+	/* Exclude these files from FLASH .text/.rodata sections.
+	 * They will be placed in IRAM instead (see .iram section below).
+	 * CAUTION: Files listed here MUST have corresponding entries in IRAM section.
+	 * If excluded but not re-added to IRAM, their rodata may not be copied, leading to runtime errors.
+	 */
 	EXCLUDE_FILE (
         tasks.c.obj
         queue.c.obj
@@ -213,7 +230,7 @@ SECTIONS
 
         LONG (__data_flash_begin)
         LONG (__data_start__)
-        LONG ((__data_end__ - __data_start__) / 4)        
+        LONG ((__data_end__ - __data_start__) / 4)
 
         LONG (__video_cache_text)
         LONG (__video_cache_data_start__)
@@ -295,6 +312,10 @@ SECTIONS
         *(.interrupt)
 
 #if (CONFIG_SPE && !CONFIG_RELEASE_IRAM)
+        /* Re-add files that were excluded from FLASH .text section above.
+         * These files are placed in IRAM for better performance.
+         * WARNING: Use wildcards carefully - mismatched patterns may cause rodata not to be copied.
+         */
         tasks.c.obj*(.text .text.* *.rodata *.rodata.*)
         queue.c.obj*(.text .text.* *.rodata *.rodata.*)
         list.c.obj*(.text .text.* *.rodata *.rodata.*)
@@ -369,6 +390,12 @@ SECTIONS
         __iram_end__ = .;
     } > IRAM AT > FLASH
 
+    /* Reserve space in RAM that matches the size of IRAM section.
+     * This ensures that subsequent data sections won't overlap with code
+     * that may be copied to RAM at runtime. The alignment to 16 bytes
+     * follows ARM AAPCS (Procedure Call Standard) requirements for
+     * optimal memory access performance.
+     */
     .ramcode :
     {
         . = . + (__iram_end__ - __iram_start__);
@@ -411,6 +438,18 @@ SECTIONS
     _data_ram_begin = __data_start__;
     _data_ram_end = .;
 
+    /* Estimate of total Flash memory usage.
+     * LOADADDR(.data) contains everything before .data in the link script:
+     *   - .vectors, .gnu.sgstubs, .cli_cmds_table
+     *   - .text (all code and rodata from FLASH, excluding IRAM)
+     *   - .a_device_null, .a_devices, .a_init_entries
+     *   - .ARM.extab, .ARM.exidx
+     *   - .copy.table, .zero.table
+     *   - .iram (instruction RAM section, placed BEFORE .data in FLASH image)
+     *   - .iram_boundary, .ramcode
+     * This value is approximate because sections defined after .data that also use
+     * AT > FLASH (such as .swap, .video.cache.data) are not included in the calculation.
+     */
     s_flash_end = LOADADDR(.data) + SIZEOF(.data);
 
     .uninitialized (NOLOAD):
