@@ -123,7 +123,7 @@ static void psram_cpu_write_test(void)
 
 	uint32_t test_len = 1024 * 1024 * 8;
 
-	CLI_LOGI("begin write %08x-%08x test\r\n", base_addr, base_addr + test_len);
+	CLI_LOGD("begin write %08x-%08x test\r\n", base_addr, base_addr + test_len);
 
 	timer0 = bk_get_current_timer();
 
@@ -146,11 +146,11 @@ static void psram_cpu_write_test(void)
 	{
 		total_time = bk_get_spend_time_us(timer0, timer1);
 		rate = ((uint64_t)test_len) * 1000000 / total_time;
-		CLI_LOGI("finish write, use time: %ld ms, write_rate:%ld%ld byte/s\r\n", (uint32_t)(total_time / 1000),
+		CLI_LOGD("finish write, use time: %ld ms, write_rate:%ld%ld byte/s\r\n", (uint32_t)(total_time / 1000),
 			(uint32_t)(rate >> 32), (uint32_t)(rate & 0xFFFFFFFF));
 	}
 
-	CLI_LOGI("begin read %08x-%08x test\r\n", base_addr, base_addr + test_len);
+	CLI_LOGD("begin read %08x-%08x test\r\n", base_addr, base_addr + test_len);
 
 	timer0 = bk_get_current_timer();
 
@@ -162,11 +162,11 @@ static void psram_cpu_write_test(void)
 	{
 		total_time = bk_get_spend_time_us(timer0, timer1);
 		rate = ((uint64_t)test_len) * 1000000 / total_time;
-		CLI_LOGI("finish read, use time: %ld ms, read_rate:%d%ld byte/s\r\n", (uint32_t)(total_time / 1000),
+		CLI_LOGD("finish read, use time: %ld ms, read_rate:%d%ld byte/s\r\n", (uint32_t)(total_time / 1000),
 			(uint32_t)(rate >> 32), (uint32_t)(rate & 0xFFFFFFFF));
 	}
 
-	CLI_LOGI("%s, %d\r\n", __func__, value);
+	CLI_LOGD("%s, %d\r\n", __func__, value);
 
 #if TEST_PSRAM_ACCURACY
 	for (i = 0; i < test_len / 4; i++)
@@ -174,12 +174,12 @@ static void psram_cpu_write_test(void)
 		value = get_addr_data(base_addr + i * 0x4);
 		if (value != (psram_debug->data[i & 0x1FFF]))
 		{
-			CLI_LOGI("==========%08x %08x %08x=======\n", value, psram_debug->data[i & 0x1FFF], value^psram_debug->data[i & 0x1FFF]);
+			CLI_LOGD("==========%08x %08x %08x=======\n", value, psram_debug->data[i & 0x1FFF], value^psram_debug->data[i & 0x1FFF]);
 			error_num++;
 		}
 	}
 
-	CLI_LOGI("finish compare, error_num: %ld, corr_rate: %ld.\r\n", error_num, ((test_len / 4 - error_num) * 100 / (test_len / 4)));
+	CLI_LOGD("finish compare, error_num: %ld, corr_rate: %ld.\r\n", error_num, ((test_len / 4 - error_num) * 100 / (test_len / 4)));
 #endif
 
 	rtos_delay_milliseconds(psram_debug->delay_time);
