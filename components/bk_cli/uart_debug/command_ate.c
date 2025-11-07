@@ -134,7 +134,7 @@ extern uint32_t bk_wifi_get_mpb_ctrl(void);
 extern void bk_wifi_set_mpb_ctrl(uint32_t value);
 extern void evm_stop_bypass_mac_for_ate (void);
 extern void evm_start_bypass_mac_for_ate(void);
-extern void evm_bypass_mac_test_for_ate(UINT32 channel, UINT32 bandwidth);
+extern void evm_bypass_mac_test_with_frequency(UINT32 frequency, wifi_band_t band, UINT32 bandwidth);
 extern void evm_set_pwr_for_he_tb(UINT32 format);
 extern UINT32 evm_get_auto_hetb_tx_len(UINT32 ru, UINT32 rate, UINT32 guard_i_type);
 
@@ -665,7 +665,7 @@ static UINT8 g_pwr_dBm_x10_11a_ch165 = 0;
  * bandwidth   : reference to mac_chan_bandwidth
  * modul_format: reference to ModulationFormat
  */
-static void evm_test(UINT32 rate, UINT32 channel, UINT32 bandwidth, UINT32 modul_format, UINT8 pwr_dbm)
+static void evm_test(UINT32 rate, UINT32 frequency, UINT32 bandwidth, UINT32 modul_format, UINT8 pwr_dbm, wifi_band_t band)
 {
     UINT32 packet_len;
     UINT32 duty_cycle;
@@ -675,7 +675,7 @@ static void evm_test(UINT32 rate, UINT32 channel, UINT32 bandwidth, UINT32 modul
 
     mdm_set_scramblerctrl(0x83); //change from 0x85 to 0x83 by cunliang
     //set channel before init macbypass, for bk7236 need it.
-    evm_bypass_mac_test_for_ate(channel, bandwidth);
+    evm_bypass_mac_test_with_frequency(frequency, band, bandwidth);
     evm_init_bypass_mac();
 
 #if(CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX)
@@ -723,7 +723,7 @@ static void evm_test(UINT32 rate, UINT32 channel, UINT32 bandwidth, UINT32 modul
     rf_module_vote_ctrl(RF_OPEN,RF_BY_TEMP_BIT);
     rwnx_cal_set_txpwr_by_rate(evm_translate_tx_rate(rate), modul_format, 0, 0, bandwidth);
     UINT8 pwr_idx = rwnx_cal_get_pwr_idx();
-    bk_printf("channel=%d,rate=%d,pwr_idx=%d\r\n", channel, rate, pwr_idx);
+    bk_printf("frequency=%d,rate=%d,pwr_idx=%d\r\n", frequency, rate, pwr_idx);
     if (rate == 11) {
         if (channel == 2412) {
             g_pwr_idx_11b_ch1 = pwr_idx;
@@ -1680,7 +1680,8 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 {
                     offset = (uint8_t)content[2];
                 }
-                evm_test(135, 2400 + offset, PHY_CHNL_BW_20, 0, 0);
+                uint32_t frequency = 2400 + offset;
+                evm_test(135, frequency, PHY_CHNL_BW_20, 0, 0, IEEE80211_BAND_2GHZ);
                 break;
             }
             case 0x11:      // Pout_Max_2400    54M OFDM 11g
@@ -1690,7 +1691,8 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 {
                     offset = (uint8_t)content[2];
                 }
-                evm_test(54, 2400 + offset, PHY_CHNL_BW_20, 0, 0);
+                uint32_t frequency = 2400 + offset;
+                evm_test(54, frequency, PHY_CHNL_BW_20, 0, 0, IEEE80211_BAND_2GHZ);
                 break;
             }
             case 0x12:      // Pout_Max_2480    11M DSSS 11b
@@ -1700,7 +1702,8 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 {
                     offset = (uint8_t)content[2];
                 }
-                evm_test(11, 2400 + offset, PHY_CHNL_BW_20, 0, 0);
+                uint32_t frequency = 2400 + offset;
+                evm_test(11, frequency, PHY_CHNL_BW_20, 0, 0, IEEE80211_BAND_2GHZ);
                 break;
             }
             case 0x13:      // Pout_Max_2400    135M MCS7 11ax
@@ -1710,7 +1713,8 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 {
                     offset = (uint8_t)content[2];
                 }
-                evm_test(135, 2400 + offset, PHY_CHNL_BW_20, 5, 0);
+                uint32_t frequency = 2400 + offset;
+                evm_test(135, frequency, PHY_CHNL_BW_20, 5, 0, IEEE80211_BAND_2GHZ);
                 break;
             }
             case 0x20:      // BER_Min_CHxx_20M: 55 20 xx [ms=50]
@@ -1756,7 +1760,8 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 {
                     offset = (uint8_t)content[2];
                 }
-                evm_test(135, 2400 + offset, PHY_CHNL_BW_40, 0, 0);
+                uint32_t frequency = 2400 + offset;
+                evm_test(135, frequency, PHY_CHNL_BW_40, 0, 0, IEEE80211_BAND_2GHZ);
                 break;
             }
             case 0x23:      // // not test in ATE temporary,Pout_Max_2462    tx encrypt verify
@@ -2530,7 +2535,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
             {
                 /* 55 A0 Channel<15:0> Modulation<3:0> Rate<11:0> */
                 /* Ep: 0x55 A0 24 12 00 0B, TX Test 11G 54M 2412MHz HT20 */
-                uint32_t channel = 0;
+                uint32_t frequency = 0;
                 uint32_t mod = 0;
                 uint32_t rate_i = 0;
                 uint32_t rate_o = 0;
@@ -2538,16 +2543,27 @@ int bkreg_run_command1(unsigned char *content, int cnt)
 
                 if (cnt > 6)
                 {
-                    channel = ((content[2] >> 4) & 0x0F) * 1000
-                            + ((content[2] >> 0) & 0x0F) * 100
-                            + ((content[3] >> 4) & 0x0F) * 10
-                            + ((content[3] >> 0) & 0x0F) * 1;
+                    frequency = ((content[2] >> 4) & 0x0F) * 1000
+                              + ((content[2] >> 0) & 0x0F) * 100
+                              + ((content[3] >> 4) & 0x0F) * 10
+                              + ((content[3] >> 0) & 0x0F) * 1;
 
                     mod = (content[4] >> 4) & 0x0F;
 
                     rate_i = ((content[4] & 0x0F) << 8) | (content[5] & 0xFF);
 
                     pwr_dbm_x10 = content[6];
+                }
+
+                wifi_band_t band;
+                if ((frequency >= 2412) && (frequency <= 2484)) {
+                    band = IEEE80211_BAND_2GHZ;
+                } else if ((frequency >= 5005) && (frequency <= 5885)) {
+                    band = IEEE80211_BAND_5GHZ;
+                } else if ((frequency >= 5955) && (frequency <= 7115)) {
+                    band = IEEE80211_BAND_6GHZ;
+                } else {
+                    band = IEEE80211_BAND_2GHZ;
                 }
 
                 if (rate_i <= 0xB) {
@@ -2574,7 +2590,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                     rate_o = rate_i;
                 }
 
-                evm_test(rate_o, channel, PHY_CHNL_BW_20, mod, pwr_dbm_x10);
+                evm_test(rate_o, frequency, PHY_CHNL_BW_20, mod, pwr_dbm_x10, band);
                 break;
             }
 
@@ -2619,7 +2635,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
             {
                 /* 55 A1 Channel<15:0> Modulation<3:0> Rate<11:0> */
                 /* Ep: 0x55 A1 24 12 01 28, TX Test 11N MCS0 2412MHz HT40 */
-                uint32_t channel = 0;
+                uint32_t frequency = 0;
                 uint32_t mod = 0;
                 uint32_t rate_i = 0;
                 uint32_t rate_o = 0;
@@ -2627,16 +2643,27 @@ int bkreg_run_command1(unsigned char *content, int cnt)
 
                 if (cnt > 6)
                 {
-                    channel = ((content[2] >> 4) & 0x0F) * 1000
-                            + ((content[2] >> 0) & 0x0F) * 100
-                            + ((content[3] >> 4) & 0x0F) * 10
-                            + ((content[3] >> 0) & 0x0F) * 1;
+                    frequency = ((content[2] >> 4) & 0x0F) * 1000
+                              + ((content[2] >> 0) & 0x0F) * 100
+                              + ((content[3] >> 4) & 0x0F) * 10
+                              + ((content[3] >> 0) & 0x0F) * 1;
 
                     mod = (content[4] >> 4) & 0x0F;
 
                     rate_i = ((content[4] & 0x0F) << 8) | (content[5] & 0xFF);
 
                     pwr_dbm_x10 = content[6];
+                }
+
+                wifi_band_t band;
+                if ((frequency >= 2412) && (frequency <= 2484)) {
+                    band = IEEE80211_BAND_2GHZ;
+                } else if ((frequency >= 5005) && (frequency <= 5885)) {
+                    band = IEEE80211_BAND_5GHZ;
+                } else if ((frequency >= 5955) && (frequency <= 7115)) {
+                    band = IEEE80211_BAND_6GHZ;
+                } else {
+                    band = IEEE80211_BAND_2GHZ;
                 }
 
                 if ((rate_i >= 0x128) && (rate_i <= 0x137)) {
@@ -2647,7 +2674,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                     rate_o = rate_i;
                 }
 
-                evm_test(rate_o, channel, PHY_CHNL_BW_40, mod, pwr_dbm_x10);
+                evm_test(rate_o, frequency, PHY_CHNL_BW_40, mod, pwr_dbm_x10, band);
                 break;
             }
 
