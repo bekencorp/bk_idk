@@ -122,12 +122,12 @@ void ate_cali_adc(const unsigned char *content, UINT8 *tx_buffer)
     {
         tx_buffer[0] = 0x55;
         //         min.(Hex)    max.(Hex)
-        // 1v      1000         138E
-        // 2v      2000         271C
-        // 0.3v    4CC          5DD
-        if ((values[0] > 0x138E) || (values[0] < 0x1000)
-            || (values[1] > 0x271C) || (values[1] < 0x2000)
-            || (values[2] > 0x05DD) || (values[2] < 0x04CC))
+        // 1v      F1C          1471
+        // 2v      1E38         28E3
+        // 0.3v    488          622
+        if ((values[0] > 0x1471) || (values[0] < 0xF1C)
+            || (values[1] > 0x28E3) || (values[1] < 0x1E38)
+            || (values[2] > 0x0622) || (values[2] < 0x0488))
         {
             tx_buffer[1] = 0xDD;
             goto exit;
