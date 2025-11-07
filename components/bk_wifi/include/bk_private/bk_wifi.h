@@ -640,6 +640,8 @@ int bk_wifi_bcn_miss_cb(void);
 uint32_t evm_req_tx_for_ate(uint32_t frame_len);
 uint32_t hal_machw_frame_duration_ate(uint8_t bw, uint8_t modf, uint8_t rate, uint8_t long_preamble, uint8_t short_gi, uint16_t len);
 
+void mdm_set_txstartdelay(uint32_t value);
+void mdm_set_txcheckack(uint32_t value);
 void mdm_set_scramblerctrl(uint32_t value);
 
 //Optimize it
