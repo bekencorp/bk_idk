@@ -1323,7 +1323,7 @@ int ate_enter_low_voltage()
 	.cb = (pm_cb)ate_pm_exit_lvsleep,
 	.args = NULL
 	};
-	bk_ate_ctrl(0);
+    	bk_ate_ctrl(0);
     bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, PM_DEV_ID_DEFAULT, NULL, &exit_config);
 
 	bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_BTSP,0x1,100000000);
@@ -1331,7 +1331,7 @@ int ate_enter_low_voltage()
 
 	// bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_OFDM, PM_POWER_MODULE_STATE_OFF);
 	bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_ENCP, PM_POWER_MODULE_STATE_OFF);
-	bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_BAKP,POWER_MODULE_STATE_OFF);
+	// bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_BAKP,POWER_MODULE_STATE_OFF);
 	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_BTSP,POWER_MODULE_STATE_OFF);
 	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_THREAD,POWER_MODULE_STATE_OFF);
 	bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_WIFIP_MAC,POWER_MODULE_STATE_OFF);
