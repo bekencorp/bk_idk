@@ -63,10 +63,15 @@ void ate_cali_adc(const unsigned char *content, UINT8 *tx_buffer)
     static UINT16 values[3];
     UINT16 usData[150];
     int ret = -1;
-    // adc_cali[69:0] = sadc_reg_0x07_0x16 + values;
-    // adc_cali[63:0] = sadc_reg_0x07_0x16[15:0];
-    // adc_cali[69:64] = values[0] + values[1] + values[2];
-    UINT8 adc_cali[70];
+    /*
+    * adc_cali[71:00] = sadc_reg_0x07_0x16 + values + reserve + crc;
+    *
+    * adc_cali[63:00] = sadc_reg_0x07_0x16[15:0];
+    * adc_cali[69:64] = values[0] + values[1] + values[2];
+    * adc_cali[70:70] = reserve;
+    * adc_cali[71:71] = crc;
+    */
+    UINT8 adc_cali[72] = {0};
     UINT32 sadc_reg_0x07_0x16[16];
 
     sys_drv_set_ana_pwd_gadc_buf(0x1);
@@ -94,7 +99,7 @@ void ate_cali_adc(const unsigned char *content, UINT8 *tx_buffer)
             tx_buffer[1] = 0xAA;
             goto exit;
         }
-        os_memcpy(tx_buffer + 1, adc_cali + sizeof(adc_cali) - 6, 6);
+        os_memcpy(tx_buffer + 1, adc_cali + sizeof(sadc_reg_0x07_0x16), 6);
         uart_send_bytes_for_ate(tx_buffer,7);
 
         // if "OTP_GADC_CALIBRATION" is not empty, then reload saradc self-calibration result
@@ -139,7 +144,7 @@ void ate_cali_adc(const unsigned char *content, UINT8 *tx_buffer)
             sadc_reg_0x07_0x16[i] = REG_READ(SOC_SADC_REG_BASE + ((i + 7) << 2)) & 0x00FFFFFF;
         }
         os_memcpy(adc_cali, (uint8_t *)sadc_reg_0x07_0x16, sizeof(sadc_reg_0x07_0x16));
-        os_memcpy(adc_cali + sizeof(adc_cali) - 6, (uint8_t *)values, sizeof(values));
+        os_memcpy(adc_cali + sizeof(sadc_reg_0x07_0x16), (uint8_t *)values, sizeof(values));
         ret = bk_otp_ahb_update(OTP_GADC_CALIBRATION, adc_cali, sizeof(adc_cali));
         if (ret != BK_OK)
         {
