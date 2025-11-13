@@ -10,29 +10,53 @@ BUILD_DIR=$3
 # Write product ID to all-app.bin
 WRITE_PRODUCT_ID_SCRIPT="${ARMINO_DIR}/tools/build_tools/write_product_id.py"
 ALL_APP_BIN="${BUILD_DIR}/package/all-app.bin"
-PRODUCT_ID_FILE="${ARMINO_DIR}/middleware/boards/${ARMINO_SOC}/product_id.txt"
+PRODUCT_ID_FILE="${ARMINO_DIR}/middleware/boards/${ARMINO_SOC}/product_ids.txt"
+SDKCONFIG_H="${BUILD_DIR}/${ARMINO_SOC}/config/sdkconfig.h"
 
-if [ -f "${WRITE_PRODUCT_ID_SCRIPT}" ] && [ -f "${ALL_APP_BIN}" ]; then
-	if [ -f "${PRODUCT_ID_FILE}" ]; then
-		# Read product ID from product_id.txt for the specific SOC
-		echo "Writing product ID to ${ALL_APP_BIN} (from ${PRODUCT_ID_FILE})..."
-		python3 "${WRITE_PRODUCT_ID_SCRIPT}" "${ALL_APP_BIN}" --product-id-file "${PRODUCT_ID_FILE}"
-	else
-		# Fallback: if product_id.txt doesn't exist, skip
-		echo "Warning: product_id.txt not found at ${PRODUCT_ID_FILE}"
-		echo "Skipping product ID write operation"
-	fi
-	
-	if [ $? -eq 0 ]; then
-		echo "Product ID write operation completed"
-	else
-		echo "Warning: Product ID write operation returned error"
-	fi
+# Check if PRODUCT_ID_FILE exists, exit if not
+if [ ! -f "${PRODUCT_ID_FILE}" ]; then
+	echo "product_ids.txt not found at ${PRODUCT_ID_FILE}"
+	exit 0
+fi
+
+# Check if required files exist
+if [ ! -f "${WRITE_PRODUCT_ID_SCRIPT}" ]; then
+	exit 1
+fi
+
+if [ ! -f "${ALL_APP_BIN}" ]; then
+	echo "Error: all-app.bin not found at ${ALL_APP_BIN}"
+	exit 1
+fi
+
+# Parse CONFIG_PRODUCT_STRING from sdkconfig.h
+if [ ! -f "${SDKCONFIG_H}" ]; then
+	echo "Error: sdkconfig.h not found at ${SDKCONFIG_H}"
+	exit 1
+fi
+
+# Extract CONFIG_PRODUCT_STRING value from sdkconfig.h
+# Pattern: #define CONFIG_PRODUCT_STRING "value" or #define CONFIG_PRODUCT_STRING value
+# Handle both quoted and unquoted values
+CONFIG_PRODUCT_STRING=$(grep -E '^#define\s+CONFIG_PRODUCT_STRING' "${SDKCONFIG_H}" | sed -E 's/^#define\s+CONFIG_PRODUCT_STRING\s+//' | sed -E 's/^"([^"]*)"$/\1/' | head -n 1)
+
+if [ -z "${CONFIG_PRODUCT_STRING}" ]; then
+	echo "CONFIG_PRODUCT_STRING not found in ${SDKCONFIG_H}"
+	exit 0
+fi
+
+# Trim whitespace
+CONFIG_PRODUCT_STRING=$(echo "${CONFIG_PRODUCT_STRING}" | xargs)
+
+echo "Found CONFIG_PRODUCT_STRING: ${CONFIG_PRODUCT_STRING}"
+echo "Writing product ID to ${ALL_APP_BIN}..."
+
+# Call write_product_id.py with CONFIG_PRODUCT_STRING as product_id parameter
+python3 "${WRITE_PRODUCT_ID_SCRIPT}" "${ALL_APP_BIN}" "${CONFIG_PRODUCT_STRING}"
+
+if [ $? -eq 0 ]; then
+	echo "Product ID write operation completed successfully"
 else
-	if [ ! -f "${WRITE_PRODUCT_ID_SCRIPT}" ]; then
-		echo "Warning: write_product_id.py not found at ${WRITE_PRODUCT_ID_SCRIPT}"
-	fi
-	if [ ! -f "${ALL_APP_BIN}" ]; then
-		echo "Warning: all-app.bin not found at ${ALL_APP_BIN}"
-	fi
+	echo "Error: Product ID write operation failed"
+	exit 1
 fi

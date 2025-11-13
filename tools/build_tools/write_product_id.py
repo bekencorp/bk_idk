@@ -43,6 +43,18 @@ import sys
 import os
 import argparse
 
+# Global verbose flag
+_verbose = False
+
+def log(*args, **kwargs):
+    """Print function wrapper - only prints if verbose mode is enabled"""
+    if _verbose:
+        print(*args, **kwargs)
+
+def log_error(*args, **kwargs):
+    """Print error messages - always prints regardless of verbose mode"""
+    print(*args, **kwargs, file=sys.stderr)
+
 def read_product_id_from_file(product_id_file):
     """Read product ID from specified file
     
@@ -168,23 +180,23 @@ def write_product_id_to_bin(bin_file, product_id, offset=None, backup=False, use
         bin_data = bytearray(f.read())
     
     file_size = len(bin_data)
-    print(f"Binary file: {bin_file}")
-    print(f"File size: {file_size} bytes (0x{file_size:X})")
+    log(f"Binary file: {bin_file}")
+    log(f"File size: {file_size} bytes (0x{file_size:X})")
     
     # Auto-detect CRC mode if not specified
     if use_crc is None:
         detected_mode = detect_crc_mode(bin_data)
         if detected_mode is None:
-            print(f"No magic strings detected at 0x100 or 0x110.")
-            print(f"Skipping product ID write operation.")
+            log(f"No magic strings detected at 0x100 or 0x110.")
+            log(f"Skipping product ID write operation.")
             return  # Exit without doing anything
         use_crc = detected_mode
-        print(f"CRC mode: Auto-detected as {'Enabled' if use_crc else 'Disabled'} "
-              f"(magic string found at 0x{'110' if use_crc else '100'})")
+        log(f"CRC mode: Auto-detected as {'Enabled' if use_crc else 'Disabled'} "
+            f"(magic string found at 0x{'110' if use_crc else '100'})")
     else:
-        print(f"CRC mode: {'Enabled' if use_crc else 'Disabled'} (manually specified)")
+        log(f"CRC mode: {'Enabled' if use_crc else 'Disabled'} (manually specified)")
     
-    print(f"Data size: {'16 bytes (15-byte ID + 1-byte CRC)' if use_crc else '15 bytes (ID only)'}")
+    log(f"Data size: {'16 bytes (15-byte ID + 1-byte CRC)' if use_crc else '15 bytes (ID only)'}")
     
     # Auto-select offset based on CRC option if not specified
     if offset is None:
@@ -210,25 +222,25 @@ def write_product_id_to_bin(bin_file, product_id, offset=None, backup=False, use
     
     # Display information
     if product_id == "0" or product_id == "":
-        print(f"\nProduct ID: All zeros (clearing product ID)")
+        log(f"\nProduct ID: All zeros (clearing product ID)")
     else:
-        print(f"\nProduct ID (ASCII): '{product_id}'")
-    print(f"Product ID (15 bytes): {' '.join(f'{b:02X}' for b in id_bytes)}")
+        log(f"\nProduct ID (ASCII): '{product_id}'")
+    log(f"Product ID (15 bytes): {' '.join(f'{b:02X}' for b in id_bytes)}")
     
     if use_crc:
-        print(f"CRC byte: 0x{crc_byte:02X}")
-        print(f"Complete ID (16 bytes): {' '.join(f'{b:02X}' for b in data_to_write)}")
-        print(f"\nWrite offset: 0x{offset:X} - 0x{offset + 15:X} (16 bytes)")
+        log(f"CRC byte: 0x{crc_byte:02X}")
+        log(f"Complete ID (16 bytes): {' '.join(f'{b:02X}' for b in data_to_write)}")
+        log(f"\nWrite offset: 0x{offset:X} - 0x{offset + 15:X} (16 bytes)")
     else:
-        print(f"Complete ID (15 bytes, no CRC): {' '.join(f'{b:02X}' for b in data_to_write)}")
-        print(f"\nWrite offset: 0x{offset:X} - 0x{offset + 14:X} (15 bytes)")
+        log(f"Complete ID (15 bytes, no CRC): {' '.join(f'{b:02X}' for b in data_to_write)}")
+        log(f"\nWrite offset: 0x{offset:X} - 0x{offset + 14:X} (15 bytes)")
     
     # Create backup if requested
     if backup:
         backup_file = bin_file + '.backup'
         with open(backup_file, 'wb') as f:
             f.write(bin_data)
-        print(f"Backup created: {backup_file}")
+        log(f"Backup created: {backup_file}")
     
     # Write product ID to binary file at specified offset
     for i, byte in enumerate(data_to_write):
@@ -238,7 +250,7 @@ def write_product_id_to_bin(bin_file, product_id, offset=None, backup=False, use
     with open(bin_file, 'wb') as f:
         f.write(bin_data)
     
-    print(f"\n✓ Product ID successfully written to {bin_file}")
+    log(f"\n✓ Product ID successfully written to {bin_file}")
     
     # Verify the write
     with open(bin_file, 'rb') as f:
@@ -246,11 +258,12 @@ def write_product_id_to_bin(bin_file, product_id, offset=None, backup=False, use
         written_data = f.read(data_length)
     
     if written_data == data_to_write:
-        print("✓ Verification passed!")
+        log("✓ Verification passed!")
     else:
-        print("✗ Verification failed!")
-        print(f"Expected: {' '.join(f'{b:02X}' for b in data_to_write)}")
-        print(f"Read:     {' '.join(f'{b:02X}' for b in written_data)}")
+        log_error("✗ Verification failed!")
+        log_error(f"Expected: {' '.join(f'{b:02X}' for b in data_to_write)}")
+        log_error(f"Read:     {' '.join(f'{b:02X}' for b in written_data)}")
+        raise ValueError("Verification failed: written data does not match expected data")
 
 def main():
     """Main function"""
@@ -318,21 +331,27 @@ Backup:
     
     parser.add_argument('--backup', action='store_true',
                         help='Create backup file before modification (default: no backup)')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='Print detailed information (default: silent mode)')
     
     args = parser.parse_args()
+    
+    # Set global verbose flag
+    global _verbose
+    _verbose = args.verbose
     
     # Get product ID from argument or product_id.txt file
     product_id = args.product_id
     if product_id is None:
         if args.product_id_file is None:
-            print("Error: Either provide product_id as argument or use --product-id-file")
+            log_error("Error: Either provide product_id as argument or use --product-id-file")
             return 1
         
         try:
             product_id = read_product_id_from_file(args.product_id_file)
-            print(f"Product ID read from {args.product_id_file}: '{product_id}'")
+            log(f"Product ID read from {args.product_id_file}: '{product_id}'")
         except Exception as e:
-            print(f"Error reading from {args.product_id_file}: {e}")
+            log_error(f"Error reading from {args.product_id_file}: {e}")
             return 1
     
     # Parse offset (support both hex and decimal)
@@ -344,7 +363,7 @@ Backup:
             else:
                 offset = int(args.offset)
         except ValueError:
-            print(f"Error: Invalid offset value '{args.offset}'")
+            log_error(f"Error: Invalid offset value '{args.offset}'")
             return 1
     
     # Determine CRC mode
@@ -365,7 +384,7 @@ Backup:
         )
         return 0
     except Exception as e:
-        print(f"\nError: {e}")
+        log_error(f"Error: {e}")
         return 1
 
 if __name__ == "__main__":

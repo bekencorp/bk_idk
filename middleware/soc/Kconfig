@@ -101,4 +101,8 @@ menu "SOC_CONFIG"
 	config SOC_BK7239XX
 		bool "For bk7239n series chipset"
 		default n
+
+	config PRODUCT_STRING
+		string "Product string"
+		default ""
 endmenu
