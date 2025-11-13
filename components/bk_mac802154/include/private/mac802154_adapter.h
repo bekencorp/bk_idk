@@ -73,5 +73,6 @@ struct mac802154_osi_funcs_t {
 
 int mac802154_osi_init(void *osi_funcs);
 uint8_t mac802154_mac_init(void);
+void mac802154_mac_deinit(void);
 
 #endif

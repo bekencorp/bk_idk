@@ -1,12 +1,8 @@
 menu "mac802154"
+	depends on SOC_BK7239N
+
 	config MAC802154_ENABLE
 		bool "Enable IEEE802.15.4"
 		default n
 
-    config MAC802154_RX_SFD_EN
-        bool "Enable rx sfd interrupt"
-        default n
-    config MAC802154_TX_SFD_EN
-        bool "Enable tx sfd interrupt"
-        default n
 endmenu

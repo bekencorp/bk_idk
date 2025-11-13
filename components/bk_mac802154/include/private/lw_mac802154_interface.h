@@ -37,7 +37,6 @@
 /* Definitions of API_SUCCESS & API_FAILURE */
 #define API_SUCCESS             0x0000
 #define API_FAILURE             0xFFFF
-#define API_FAILURE_NO_ACK      0x6001
 
 /* Definition for True/False */
 #define LW_FALSE                                   0
@@ -541,4 +540,12 @@ void lw_mac802154_int_tx_sfd_matched_en(void);
 // which play a vital role in maintaining proper synchronization and ensuring the
 // correct initiation of frame reception and transmission operations.
 void lw_mac802154_int_rx_tx_sfd_matched_en(void);
+
+/**
+ * @brief Enable or disable automatic TX acknowledgement.
+ *
+ * @oaram enable Set to 1 to enable, 0 to disable.
+ */
+void lw_mac802154_lw_macl_set_auto_tx_ack(uint8_t enable);
+
 #endif
