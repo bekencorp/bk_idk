@@ -3309,6 +3309,8 @@ enum sm_msg_tag
     SM_CONNCTION_START_IND,
     // Indicats that the beacon is lost
     SM_BEACON_LOSE_IND,
+    // Indicates conn delay time
+    SM_CONN_DELAY_TIME_IND,
 #endif
     // Section of internal SM messages. No SM API messages should be defined below this point
     /// Timeout message for procedures requiring a response from peer
@@ -3448,6 +3450,15 @@ struct sm_ft_auth_ind
     uint16_t ft_ie_len;
     /// Fast Transition elements in the authentication
     uint32_t ft_ie_buf[0];
+};
+
+/// Structure containing the parameters of the @ref SM_DISCONNECT_REQ message.
+struct sm_conn_delay_time_ind
+{
+    /// connect delay time(ms).
+    uint8_t conn_delay_time;
+    /// Index of the VIF.
+    uint8_t vif_idx;
 };
 /*
  * ENUMERATIONS
