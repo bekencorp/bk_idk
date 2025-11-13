@@ -22,7 +22,7 @@
 
 #include "errno.h"
 #include <common/bk_kernel_err.h>
-#include "event.h"
+#include <components/event.h>
 #include "rw_ieee80211.h"
 #include "wifi_v2.h"
 #include "rwnx_defs.h"
