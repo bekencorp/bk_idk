@@ -67,6 +67,11 @@ typedef struct {
 #define dma_hal_enable_dest_addr_loop(hal, id) dma_ll_enable_dest_addr_loop((hal)->hw, id)
 #define dma_hal_disable_dest_addr_loop(hal, id) dma_ll_disable_dest_addr_loop((hal)->hw, id)
 
+#define dma_hal_get_src_pause_addr(hal, id) dma_ll_get_src_pause_addr((hal)->hw, id)
+#define dma_hal_get_dest_pause_addr(hal, id) dma_ll_get_dest_pause_addr((hal)->hw, id)
+#define dma_hal_get_dest_end_addr(hal, id) dma_ll_get_dest_end_addr((hal)->hw, id)
+#define dma_hal_get_src_end_addr(hal, id) dma_ll_get_src_end_addr((hal)->hw, id)
+
 #define dma_hal_set_src_pause_addr(hal, id, addr) dma_ll_set_src_pause_addr((hal)->hw, id, addr)
 #define dma_hal_set_dest_pause_addr(hal, id, addr) dma_ll_set_dest_pause_addr((hal)->hw, id, addr)
 #define dma_hal_get_src_read_addr(hal, id) dma_ll_get_src_read_addr((hal)->hw, id)
