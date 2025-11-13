@@ -14,6 +14,38 @@
 
 #include <common/bk_include.h>
 
-bk_err_t pm_management(uint32_t sleep_ticks);
+/****************************************************************************
+ * Name: pm_management
+ *
+ * Description:
+ *   Main power management function that determines and executes the
+ *   appropriate low power mode based on the expected sleep duration.
+ *   This function analyzes system state and sleep ticks to select the
+ *   optimal power saving mode.
+ *
+ * Input Parameters:
+ *   sleep_ticks - Expected number of ticks the system will sleep
+ *
+ * Returns:
+ *   uint64_t missed_ticks
+ *
+ ****************************************************************************/
+uint64_t pm_management(uint32_t sleep_ticks);
 
+/****************************************************************************
+ * Name: pm_check_protect_time
+ *
+ * Description:
+ *   Check and calculate the protected time interval between two tick values.
+ *   This function ensures minimum timing constraints are met to prevent
+ *   power mode transitions that are too frequent or too short.
+ *
+ * Input Parameters:
+ *   current_tick  - Current RTC tick value
+ *   previous_tick - Previous RTC tick value
+ *
+ * Returns:
+ *   Protected time interval in ticks
+ *
+ ****************************************************************************/
 uint32_t pm_check_protect_time(uint64_t current_tick, uint64_t previous_tick);

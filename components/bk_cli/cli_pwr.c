@@ -273,6 +273,27 @@ static void cli_pm_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char 
 			#endif //CONFIG_AON_RTC
 			bk_pm_wakeup_source_set(PM_WAKEUP_SOURCE_INT_RTC, NULL);
 		}
+		else if (pm_sleep_mode == PM_MODE_NORMAL_SLEEP)
+		{
+			#if defined(CONFIG_AON_RTC) || defined(CONFIG_ANA_RTC)
+			alarm_info_t low_valtage_alarm = {
+											"ns",
+											pm_param1*AON_RTC_MS_TICK_CNT,
+											pm_param2,
+											cli_pm_rtc_callback,
+											NULL
+											};
+			// if(pm_param1 < PM_LOWVOLTAGE_RTC_THRESHOLD)
+			// {
+			// 	CLI_LOGI("param %d invalid ! must > %dms.\r\n",pm_param1,PM_LOWVOLTAGE_RTC_THRESHOLD);
+			// 	return;
+			// }
+			//force unregister previous if doesn't finish.
+			bk_alarm_unregister(AON_RTC_ID_1, low_valtage_alarm.name);
+			bk_alarm_register(AON_RTC_ID_1, &low_valtage_alarm);
+			#endif //CONFIG_AON_RTC
+			bk_pm_wakeup_source_set(PM_WAKEUP_SOURCE_INT_RTC, NULL);
+		}
 	}
 	else if(pm_wake_source == PM_WAKEUP_SOURCE_INT_GPIO)
 	{
@@ -282,7 +303,7 @@ static void cli_pm_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char 
 			bk_gpio_ana_register_wakeup_source(pm_param1,pm_param2);
 			#endif
 		}
-		else
+		else if(pm_sleep_mode == PM_MODE_LOW_VOLTAGE)
 		{
 			#if CONFIG_GPIO_WAKEUP_SUPPORT
 			bk_gpio_register_isr(pm_param1, cli_pm_gpio_callback);
@@ -291,6 +312,25 @@ static void cli_pm_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char 
 			#endif
 			bk_pm_wakeup_source_set(PM_WAKEUP_SOURCE_INT_GPIO, NULL);
 			#endif //CONFIG_GPIO_WAKEUP_SUPPORT
+		}
+		else if(pm_sleep_mode == PM_MODE_NORMAL_SLEEP)
+		{
+			gpio_int_type_t int_type = pm_param2;
+			gpio_id_t gpio_id        = pm_param1;
+			gpio_config_t cfg        = {0};
+			if((int_type == GPIO_INT_TYPE_LOW_LEVEL)||(int_type == GPIO_INT_TYPE_FALLING_EDGE))
+			{
+				cfg.pull_mode = GPIO_PULL_UP_EN;
+			}
+			else if((int_type == GPIO_INT_TYPE_HIGH_LEVEL)||(int_type == GPIO_INT_TYPE_RISING_EDGE))
+			{
+				cfg.pull_mode = GPIO_PULL_DOWN_EN;
+			}
+			cfg.io_mode = GPIO_INPUT_ENABLE;
+			bk_gpio_set_config(gpio_id, &cfg);
+			bk_gpio_register_isr(gpio_id ,cli_pm_gpio_callback);
+			bk_gpio_set_interrupt_type(gpio_id, int_type);
+			bk_gpio_enable_interrupt(gpio_id);
 		}
 	}
 	else if(pm_wake_source == PM_WAKEUP_SOURCE_INT_SYSTEM_WAKE)
@@ -371,6 +411,10 @@ static void cli_pm_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char 
 			bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_APP,0x1,pm_param3);
 		}
 	}
+	else if(pm_sleep_mode == PM_MODE_NORMAL_SLEEP)
+	{
+		bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_APP,0x1,pm_param3);
+	}
 	else
 	{
 		;//do something
@@ -402,6 +446,7 @@ static void cli_pm_debug(char *pcWriteBuffer, int xWriteBufferLen, int argc, cha
 		pm_debug_pwr_clk_state();
 		#endif
 		pm_debug_lv_state();
+		bk_pm_cpu_freq_dump();
 		#endif
 	}
 	/*for temp debug*/

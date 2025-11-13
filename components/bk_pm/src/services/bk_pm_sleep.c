@@ -18,6 +18,9 @@
 #include <driver/aon_rtc.h>
 #include <driver/gpio.h>
 #include "gpio_driver.h"
+#include "wdt_driver.h"
+#include "driver/wdt.h"
+#include "driver/flash.h"
 #include <os/os.h>
 
 #include "pm_sleep.h"
@@ -53,13 +56,13 @@ static uint64_t s_pm_check_lv_enter_time_out	        = 0;
 static pm_enter_lv_timeout_cb_t s_pm_lv_timeout_cb_arr[PM_ENTER_LV_TIME_OUT_MODULE_MAX]= {0};
 
 
-static void pm_enter_cpu_wfi();
-static void pm_enter_normal_sleep();
-static void pm_enter_low_voltage();
-static void pm_enter_deep_sleep();
-static void pm_enter_super_deep_sleep();
-static int pm_low_voltage_resource_set();
-static void pm_low_voltage_resource_restore();
+static void pm_enter_cpu_wfi(void);
+static void pm_enter_normal_sleep(void);
+static void pm_enter_low_voltage(void);
+static void pm_enter_deep_sleep(void);
+static void pm_enter_super_deep_sleep(void);
+static int pm_low_voltage_resource_set(void);
+static void pm_low_voltage_resource_restore(void);
 
 // TODO: fix extern
 extern bk_err_t bk_flash_power_saving_exit(void);
@@ -67,61 +70,147 @@ extern bk_err_t bk_flash_power_saving_enter(void);
 
 
 /*=========================SLEEP/WAKEUP FUNCTION START========================*/
-void pm_cpu_wfi_process()
+uint64_t pm_cpu_wfi_process()
 {
+	GLOBAL_INT_DECLARATION();
+	GLOBAL_INT_DISABLE();
+
+	uint64_t sleep_tick         = 0ULL;
+	#if CONFIG_AON_RTC || CONFIG_ANA_RTC
+	uint64_t entry_tick         = 0ULL;
+	entry_tick = bk_aon_rtc_get_current_tick(AON_RTC_ID_1);
+	#endif
+
 	pm_enter_cpu_wfi();
+
+	#if CONFIG_AON_RTC || CONFIG_ANA_RTC
+	uint64_t exit_tick          = 0ULL;
+	exit_tick = bk_aon_rtc_get_current_tick(AON_RTC_ID_1);
+	if(exit_tick - entry_tick < 0)
+	{
+		sleep_tick = 0ULL;
+	}
+	else
+	{
+		sleep_tick = exit_tick - entry_tick;
+	}
+	#endif
+	GLOBAL_INT_RESTORE();
+	return sleep_tick;
 }
 
-void pm_normal_sleep_process()
+uint64_t pm_normal_sleep_process()
 {
-	volatile uint32_t int_level = 0;
-	int_level = rtos_enter_critical();
+	GLOBAL_INT_DECLARATION();
+	uint64_t sleep_tick         = 0ULL;
+	GLOBAL_INT_DISABLE();
+	#if CONFIG_AON_RTC || CONFIG_ANA_RTC
+	uint64_t entry_tick = bk_aon_rtc_get_current_tick(AON_RTC_ID_1);
+	#endif
+	#if CONFIG_PM_PROTECT_TIME_CHECK
+	if (0 == bk_pm_module_power_state_get(POWER_MODULE_NAME_BTSP))
+	{
+		/*When check bt wakeup time comming ,return, not sleep*/
+		if (!pm_check_protect_time(entry_tick, entry_tick))
+		{
+			return sleep_tick;
+		}
+	}
+	#endif
+
+	/*stop wdt*/
+	bk_wdt_stop();
+	//close_wdt();
+
+	/* Execute pre-sleep callbacks */
+	//bk_pm_pre_sleep_callback_execute();
 
 	pm_enter_normal_sleep();
 
-	rtos_exit_critical(int_level);
+	/* Execute post-sleep (wakeup) callbacks */
+	//bk_pm_post_sleep_callback_execute();
+
+	/*restore wdt*/
+	extern int wdt_init(void);
+	wdt_init();
+	bk_wdt_feed();
+	#if CONFIG_AON_RTC || CONFIG_ANA_RTC
+	uint64_t exit_tick          = 0ULL;
+	exit_tick = bk_aon_rtc_get_current_tick(AON_RTC_ID_1);
+	if(exit_tick - entry_tick < 0)
+	{
+		sleep_tick = 0ULL;
+	}
+	else
+	{
+		sleep_tick = exit_tick - entry_tick;
+	}
+	#else
+	sleep_tick = 0ULL;
+	#endif
+	#if CONFIG_CKMN
+	bk_rosc_32k_ckest_prog(32);
+	#endif
+	GLOBAL_INT_RESTORE();
+
+	return sleep_tick;
 }
 
-uint32_t pm_low_voltage_process()
+uint64_t pm_low_voltage_process()
 {
-	volatile uint32_t int_level = 0;
-	uint32_t sleep_tick = 0;
-#if CONFIG_AON_RTC || CONFIG_ANA_RTC
-	uint32_t entry_tick = 0;
-	uint32_t exit_tick = 0;
-#endif
-	int_level = rtos_enter_critical();
-#if CONFIG_AON_RTC || CONFIG_ANA_RTC
+	GLOBAL_INT_DECLARATION();
+	uint64_t sleep_tick         = 0ULL;
+
+	GLOBAL_INT_DISABLE();
+	#if CONFIG_AON_RTC || CONFIG_ANA_RTC
+	uint64_t entry_tick         = 0ULL;
 	entry_tick = bk_aon_rtc_get_current_tick(AON_RTC_ID_1);
 #endif
 	if(pm_low_voltage_resource_set() != 0)
 	{
-		rtos_exit_critical(int_level);
-		return 0;
+		GLOBAL_INT_RESTORE();
+		return sleep_tick;
 	}
 
 	/*Debug pd,lpo,psram start*/
 	pm_debug_lowvol_sleep_hook();
 	/*Debug pd,lpo,psram end*/
 
+	/* Execute pre-sleep callbacks */
+	//bk_pm_pre_sleep_callback_execute();
+
 	pm_enter_low_voltage();
+
+	/* Execute post-sleep (wakeup) callbacks */
 
 	/*Debug pd,lpo,psram start*/
 	pm_debug_low_vol_wakeup_hook();
 	/*Debug pd,lpo,psram end*/
 
 	pm_low_voltage_resource_restore();
+
 	if (pm_debug_mode() & 0x2)
 		BK_LOGD(NULL, "low voltage int open before\r\n");
 
 #if CONFIG_AON_RTC || CONFIG_ANA_RTC
+	uint64_t exit_tick          = 0ULL;
 	exit_tick = bk_aon_rtc_get_current_tick(AON_RTC_ID_1);
-	sleep_tick = exit_tick - entry_tick;
+	if(exit_tick - entry_tick < 0)
+	{
+		sleep_tick = 0ULL;
+	}
+	else
+	{
+		sleep_tick = exit_tick - entry_tick;
+	}
 #endif
-	rtos_exit_critical(int_level);
+	GLOBAL_INT_RESTORE();
+
+	/* Execute post-sleep (wakeup) callbacks */
+	//bk_pm_post_sleep_callback_execute();
 
 	if (pm_debug_mode() & 0x2)
-		BK_LOGD(NULL, "low voltage int open after 0x%x 0x%x \r\n", /*int_mie,*/ int_level, bk_pm_lp_vol_get());
+		LOGI("low voltage int open after 0x%x 0x%x \r\n", /*int_mie,*/ irq_level, bk_pm_lp_vol_get());
 
 	return sleep_tick;
 }
@@ -137,8 +226,16 @@ void pm_deep_sleep_prepare()
 	}
 }
 
-void pm_deep_sleep_process()
+uint64_t pm_deep_sleep_process()
 {
+	uint64_t sleep_tick         = 0ULL;
+	GLOBAL_INT_DECLARATION();
+	GLOBAL_INT_DISABLE();
+	#if CONFIG_AON_RTC || CONFIG_ANA_RTC
+	uint64_t entry_tick         = 0ULL;
+	entry_tick = bk_aon_rtc_get_current_tick(AON_RTC_ID_1);
+	#endif
+
 	for (uint8_t i = s_pm_deepsleep_enter_cb_cnt[PM_CB_PRIORITY_1]; i < PM_DEEPSLEEP_CB_SIZE; i++)
 	{
 		if (s_pm_deepsleep_enter_cb_conf[i].cfg.cb != NULL)
@@ -161,7 +258,30 @@ void pm_deep_sleep_process()
 		pm_touched_wakeup_deep_sleep();
 	}
 
+	/* Execute pre-sleep callbacks (after legacy callbacks) */
+	//bk_pm_pre_sleep_callback_execute();
+
 	pm_enter_deep_sleep();
+
+	/* Execute post-sleep (wakeup) callbacks (first thing after wakeup) */
+	//bk_pm_post_sleep_callback_execute();
+	#if CONFIG_AON_RTC || CONFIG_ANA_RTC
+	uint64_t exit_tick          = 0ULL;
+	exit_tick = bk_aon_rtc_get_current_tick(AON_RTC_ID_1);
+	if(exit_tick - entry_tick < 0)
+	{
+		sleep_tick = 0ULL;
+	}
+	else
+	{
+		sleep_tick = exit_tick - entry_tick;
+	}
+	#else
+		sleep_tick = 0ULL;
+	#endif
+
+	GLOBAL_INT_RESTORE();
+	return sleep_tick;	
 }
 
 #if CONFIG_PM_SUPER_DEEP_SLEEP
@@ -231,9 +351,9 @@ static int pm_low_voltage_resource_set()
 	}
 
 #if CONFIG_PM_PROTECT_TIME_CHECK
-#if CONFIG_AON_RTC || CONFIG_ANA_RTC
-	uint64_t current_tick = (uint32_t)bk_aon_rtc_get_current_tick(AON_RTC_ID_1);
-#endif
+	#if CONFIG_AON_RTC || CONFIG_ANA_RTC
+	uint64_t current_tick = bk_aon_rtc_get_current_tick(AON_RTC_ID_1);
+	#endif
 	if (0 == bk_pm_module_power_state_get(POWER_MODULE_NAME_BTSP))
 	{
 		/*When check bt wakeup time comming ,return, not sleep*/
@@ -329,7 +449,7 @@ bk_err_t bk_pm_module_lv_sleep_state_clear(pm_dev_id_e module)
 	return BK_OK;
 }
 
-bk_err_t pm_debug_lv_state()
+bk_err_t pm_debug_lv_state(void)
 {
 	BK_LOGD(NULL, "pm_module_lv_sleep_state:0x%llx\r\n",s_pm_module_lv_sleep_state);
 	return BK_OK;

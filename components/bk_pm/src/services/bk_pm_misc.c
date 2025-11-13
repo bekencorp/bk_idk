@@ -20,12 +20,14 @@
 
 #include "pm_debug.h"
 
-// TODO: is debug api ?
-uint32_t pm_wake_int_flag2;
 
-/*=========================SPECIFIC API START========================*/
-// TODO: is debug api ?
-static uint32_t s_pm_mcu_pm_state             = 0;
+static uint32_t s_pm_mcu_pm_state                       = 0;
+static uint32_t s_pm_cp1_auto_power_down_flag           = PM_CP1_AUTO_POWER_DOWN_CTRL;
+static uint32_t s_pm_lowvol_consume_time_exit_wfi       = 0;
+
+
+static pm_mem_auto_ctrl_e s_pm_mem_auto_power_down_flag = PM_MEM_AUTO_CTRL_ENABLE;
+
 uint32_t bk_pm_mcu_pm_state_get()
 {
 	return s_pm_mcu_pm_state;
@@ -36,29 +38,6 @@ bk_err_t bk_pm_mcu_pm_ctrl(uint32_t power_state)
 	return BK_OK;
 }
 
-// TODO: is still in use ?
-#define DEFAULT_WAKEUP_TIME                     (10000) // 10s
-static uint32_t s_module_wakeup_time_ms       = DEFAULT_WAKEUP_TIME;
-bk_err_t pm_module_wakeup_time_set(uint32_t module_name, uint32_t wakeup_time)
-{
-	s_module_wakeup_time_ms = wakeup_time;
-	return BK_OK;
-}
-
-// TODO: is still in use ?
-static uint8_t  s_pm_app_auto_vote_enable     = 1;
-uint32_t bk_pm_app_auto_vote_state_get()
-{
-	return s_pm_app_auto_vote_enable;
-}
-bk_err_t bk_pm_app_auto_vote_state_set(uint32_t value)
-{
-	s_pm_app_auto_vote_enable = value;
-	return BK_OK;
-}
-
-// TODO: is still in use ?
-static uint32_t s_pm_lowvol_consume_time_exit_wfi = 0;
 uint32_t bk_pm_wakeup_from_lowvol_consume_time_get()
 {
 	return ((s_pm_lowvol_consume_time_exit_wfi * 1000) / bk_rtc_get_ms_tick_count()); // unit: us
@@ -70,8 +49,6 @@ uint32_t bk_pm_cp1_boot_flag_get()
 	return 0; // s_pm_cp1_boot_ready;
 }
 
-static uint32_t s_pm_cp1_auto_power_down_flag           = PM_CP1_AUTO_POWER_DOWN_CTRL;
-
 uint32_t bk_pm_cp1_auto_power_down_state_get()
 {
 	return s_pm_cp1_auto_power_down_flag;
@@ -82,8 +59,6 @@ bk_err_t bk_pm_cp1_auto_power_down_state_set(uint32_t value)
 	s_pm_cp1_auto_power_down_flag = value;
 	return BK_OK;
 }
-
-static pm_mem_auto_ctrl_e s_pm_mem_auto_power_down_flag = PM_MEM_AUTO_CTRL_ENABLE;
 
 pm_mem_auto_ctrl_e bk_pm_mem_auto_power_down_state_get()
 {
@@ -135,13 +110,13 @@ bk_err_t bk_pm_external_ldo_ctrl(uint32_t value)
 /*=========================EXTERNAL LDO CTRL END========================*/
 
 /*=========================POWER/VOLTAGE CTRL START========================*/
-bk_err_t bk_pm_cpu_freq_dump()
+bk_err_t bk_pm_cpu_freq_dump(void)
 {
 	sys_hal_cpu_freq_dump();
 	return BK_OK;
 }
 // TODO: for debug use?
-uint32_t bk_pm_lp_vol_get()
+uint32_t bk_pm_lp_vol_get(void)
 {
 	return sys_drv_lp_vol_get();
 }
@@ -152,7 +127,6 @@ int bk_pm_lp_vol_set(uint32_t value)
 	return BK_OK;
 }
 
-// TODO: still in use?
 uint32_t bk_pm_rf_tx_vol_get()
 {
 	return sys_drv_rf_tx_vol_get();
@@ -195,7 +169,6 @@ const char *pm_sleep_mode_to_string(pm_sleep_mode_e sleep_mode)
     return sleep_mode_strings[sleep_mode];
 }
 
-// TODO: for debug use only
 void pm_printf_current_temperature(void)
 {
 #if CONFIG_TEMP_DETECT
@@ -205,4 +178,60 @@ void pm_printf_current_temperature(void)
 	BK_LOGD(NULL, "current chip temperature about %.2f\r\n",temp);
 #endif
 }
-/*=========================DEBUG/TEST CTRL END========================*/
+#if CONFIG_ADAPT_NEW_RTOS_ENABLE
+uint32_t pm_disable_int(void)
+{
+	uint32_t primask = 0;
+
+	/* Return the current value of primask register and set
+	 * bit 0 of the primask register to disable interrupts
+	 */
+	__asm__ __volatile__
+	(
+		"\tmrs    %0, primask\n"
+		"\tcpsid  i\n"
+		: "=r"(primask)
+		:
+		: "memory"
+	);
+
+	__asm volatile ( "dsb" );
+	__asm volatile ( "isb" );
+	return primask;
+}
+
+uint32_t pm_get_int_status(void)
+{
+	uint32_t primask = 0;
+
+	/* Read the current value of primask register without modifying it */
+	__asm__ __volatile__
+	(
+		"\tmrs    %0, primask\n"
+		: "=r"(primask)
+		:
+		: "memory"
+	);
+
+	return primask;
+}
+void pm_enable_int(uint32_t int_level)
+{
+	/* If bit 0 of the primask is 0, then we need to restore
+	 * interrupts.
+	 */
+	__asm__ __volatile__
+	(
+		"\ttst    %0, #1\n"
+		"\tbne.n  1f\n"
+		"\tcpsie  i\n"
+		"1:\n"
+		:
+		: "r"(int_level)
+		: "memory"
+	);
+
+	__asm volatile ( "dsb" );
+	__asm volatile ( "isb" );
+}
+#endif

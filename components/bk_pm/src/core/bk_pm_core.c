@@ -14,9 +14,7 @@
 #include <modules/pm.h>
 #include "sys_driver.h"
 #include "aon_pmu_driver.h"
-#if CONFIG_PM_PROTECT_TIME_CHECK
 #include <driver/aon_rtc.h>
-#endif
 
 #include "pm_power.h"
 #include "pm_sleep.h"
@@ -45,14 +43,14 @@ static uint64_t s_bt_need_wakeup_time         = 0;
 static system_wakeup_param_t s_bt_system_wakeup_param;
 #endif
 
-static uint32_t pm_state_machine();
-static uint32_t pm_check_and_ctrl_sleep();
-static void pm_enter_normal_sleep_modules_config();
-static void pm_enter_low_vol_modules_config();
-static void pm_enter_deep_sleep_modules_config();
+static uint64_t pm_state_machine(void);
+static uint64_t pm_check_and_ctrl_sleep(void);
+static void pm_enter_normal_sleep_modules_config(void);
+static void pm_enter_low_vol_modules_config(void);
+static void pm_enter_deep_sleep_modules_config(void);
+static void pm_core_debug(void);
 
-
-void pm_hardware_init()
+void pm_hardware_init(void)
 {
 	sys_drv_low_power_hardware_init();
 
@@ -78,8 +76,9 @@ void pm_hardware_init()
 }
 
 /*=========================SLEEP STATE MACHINE START========================*/
-bk_err_t pm_management(uint32_t sleep_ticks)
+uint64_t pm_management(uint32_t sleep_ticks)
 {
+	uint64_t missed_ticks = 0ULL;
 #if CONFIG_PM_CLIENT
 	if (bk_pm_cp1_ctrl_state_get() == 0x0)
 	{
@@ -87,12 +86,12 @@ bk_err_t pm_management(uint32_t sleep_ticks)
 		pm_cp1_mailbox_response(PM_CPU1_BOOT_READY_CMD, 0x1);
 		// BK_LOGD(NULL, "cpu1 already\r\n");
 	}
-	pm_enter_cpu_wfi();
+	missed_ticks = pm_enter_cpu_wfi();
 #elif CONFIG_MCU_PS
 #if CONFIG_PM_LIGHT_SLEEP
 	return pm_light_sleep(sleep_ticks);
 #else // CONFIG_PM_LIGHT_SLEEP
-	uint32_t missed_ticks = 0;
+
 	if (bk_pm_mcu_pm_state_get())
 	{
 		return BK_OK;
@@ -104,44 +103,59 @@ bk_err_t pm_management(uint32_t sleep_ticks)
 	}
 #endif // CONFIG_PM_LIGHT_SLEEP
 #else
-	sys_drv_enter_cpu_wfi();
+	missed_ticks = pm_cpu_wfi_process();
 #endif
-	return BK_OK;
+	return missed_ticks;
 }
 
-static uint32_t pm_state_machine()
+static uint64_t pm_state_machine()
 {
-	uint32_t missed_ticks = 0;
+	uint64_t missed_ticks       = 0ULL;
+	uint64_t sleep_tick         = 0ULL;
+	GLOBAL_INT_DECLARATION();
+	GLOBAL_INT_DISABLE();
+	#if CONFIG_AON_RTC || CONFIG_ANA_RTC
+	uint64_t entry_tick         = 0ULL;
+	entry_tick = bk_aon_rtc_get_current_tick(AON_RTC_ID_1);
+	#endif
 
 	pm_check_power_on_module(&s_pm_off_modules, &s_pm_on_modules, &s_pm_sleeped_modules);
-
 	pm_wakeup_from_deepsleep_handle();
+	pm_core_debug();
 
-	missed_ticks = pm_check_and_ctrl_sleep();
+	#if CONFIG_AON_RTC || CONFIG_ANA_RTC
+	uint64_t exit_tick          = 0ULL;
+	exit_tick = bk_aon_rtc_get_current_tick(AON_RTC_ID_1);
+	sleep_tick = exit_tick - entry_tick;
+	if(exit_tick - entry_tick < 0)
+	{
+		sleep_tick = 0ULL;
+	}
+	else
+	{
+		sleep_tick = exit_tick - entry_tick;
+	}
+	#endif
+	GLOBAL_INT_RESTORE();
 
-// TODO: is still in use ?
+	missed_ticks = pm_check_and_ctrl_sleep() + sleep_tick;
+
 #if PM_SLEEP_TIME_COMPENSATION_ENABLE
 	missed_ticks = (missed_ticks) / (bk_rtc_get_ms_tick_count() * (rtos_get_ms_per_tick()));
-#else
-	missed_ticks = 0;
 #endif
 
 	return missed_ticks;
 }
 
-static void pm_core_debug(void);
-static uint32_t pm_check_and_ctrl_sleep()
+static uint64_t pm_check_and_ctrl_sleep()
 {
-	uint32_t sleep_tick = 0;
-
-	pm_core_debug();
+	uint64_t sleep_tick = 0;
 
 	if (s_pm_sleep_mode == PM_MODE_NORMAL_SLEEP)
 	{
 		if ((s_pm_sleeped_modules & s_pm_enter_normal_sleep_modules) == s_pm_enter_normal_sleep_modules)
 		{
-			pm_normal_sleep_process();
-			// avoid entering cpu_wfi twice, which may cause systick abnormal
+			sleep_tick = pm_normal_sleep_process();
 			return sleep_tick;
 		}
 	}
@@ -157,7 +171,8 @@ static uint32_t pm_check_and_ctrl_sleep()
 	{
 		if ((s_pm_off_modules & s_pm_enter_deep_sleep_modules) == s_pm_enter_deep_sleep_modules)
 		{
-			pm_deep_sleep_process();
+			sleep_tick = pm_deep_sleep_process();
+			return sleep_tick;
 		}
 	}
 #if CONFIG_PM_SUPER_DEEP_SLEEP
@@ -177,9 +192,7 @@ static uint32_t pm_check_and_ctrl_sleep()
 			return sleep_tick;
 		}
 	}
-
-	pm_cpu_wfi_process();
-
+	sleep_tick = pm_cpu_wfi_process();
 	return sleep_tick;
 }
 
@@ -328,7 +341,7 @@ uint64_t pm_sleeped_modules_get(void)
 	return s_pm_sleeped_modules;
 }
 
-uint32_t bk_pm_low_vol_vote_state_get()
+uint32_t bk_pm_low_vol_vote_state_get(void)
 {
 	return ((s_pm_sleeped_modules & s_pm_enter_low_vol_modules) == s_pm_enter_low_vol_modules);
 }
@@ -414,8 +427,10 @@ uint32_t pm_check_protect_time(uint64_t current_tick, uint64_t previous_tick)
 /*=========================DEBUG/TEST CTRL START========================*/
 void pm_core_dump(void)
 {
-	BK_LOGD(NULL, "pm low vol[module:0x%llx] [need module:0x%llx]\r\n",s_pm_sleeped_modules,s_pm_enter_low_vol_modules);
-	BK_LOGD(NULL, "pm deepsleep[module:0x%x][need module:0x%x]\r\n",s_pm_off_modules,s_pm_enter_deep_sleep_modules);
+	LOGI("pm low vol[module:0x%llx] [need module:0x%llx]\r\n",s_pm_sleeped_modules,s_pm_enter_low_vol_modules);
+	LOGI("pm deepsleep[module:0x%x][need module:0x%x]\r\n",s_pm_off_modules,s_pm_enter_deep_sleep_modules);
+	LOGI("pm normal sleep[module:0x%llx][need module:0x%llx]\r\n",s_pm_sleeped_modules,s_pm_enter_normal_sleep_modules);
+	LOGI("pm normal sleep wakeup src:%d\r\n",bk_pm_sleep_wakeup_reason_get());
 }
 
 static void pm_core_debug(void)
@@ -424,7 +439,7 @@ static void pm_core_debug(void)
 	{
 		if (pm_debug_mode() & 0x1)
 		{
-			BK_LOGD(NULL, "normal1 0x%X 0x%llX 0x%llX\r\n", s_pm_sleep_mode, s_pm_sleeped_modules, s_pm_enter_normal_sleep_modules);
+			LOGI("normal1 0x%X 0x%llX 0x%llX\r\n", s_pm_sleep_mode, s_pm_sleeped_modules, s_pm_enter_normal_sleep_modules);
 			// BK_LOGD(NULL, "normal2 0x%X 0x%X 0x%X 0x%X\r\n", s_pm_ahpb_pm_state, s_pm_video_pm_state, s_pm_audio_pm_state, s_pm_bakp_pm_state);
 			pm_power_modules_dump_with_sleep_mode(s_pm_sleep_mode);
 		}
@@ -433,7 +448,7 @@ static void pm_core_debug(void)
 	{
 		if (pm_debug_mode() & 0x1)
 		{
-			BK_LOGD(NULL, "lowvol1 0x%X 0x%llX 0x%llX\r\n", s_pm_sleep_mode, s_pm_sleeped_modules, s_pm_enter_low_vol_modules);
+			LOGI("lowvol1 0x%X 0x%llX 0x%llX\r\n", s_pm_sleep_mode, s_pm_sleeped_modules, s_pm_enter_low_vol_modules);
 			// BK_LOGD(NULL, "lowvol2 0x%X 0x%X 0x%X 0x%X\r\n", s_pm_ahpb_pm_state, s_pm_video_pm_state, s_pm_audio_pm_state, s_pm_bakp_pm_state);
 			pm_power_modules_dump_with_sleep_mode(s_pm_sleep_mode);
 		}
@@ -442,7 +457,7 @@ static void pm_core_debug(void)
 	{
 		if (pm_debug_mode() & 0x2)
 		{
-			BK_LOGD(NULL, "deepsleep1 0x%X 0x%X\r\n", s_pm_off_modules, s_pm_enter_deep_sleep_modules);
+			LOGI("deepsleep1 0x%X 0x%X\r\n", s_pm_off_modules, s_pm_enter_deep_sleep_modules);
 			// BK_LOGD(NULL, "deepsleep2 0x%X 0x%X 0x%X 0x%X\r\n", s_pm_ahpb_pm_state, s_pm_video_pm_state, s_pm_audio_pm_state, s_pm_bakp_pm_state);
 			pm_power_modules_dump_with_sleep_mode(s_pm_sleep_mode);
 		}
@@ -452,7 +467,7 @@ static void pm_core_debug(void)
 	{
 		if (pm_debug_mode() & 0x2)
 		{
-			BK_LOGD(NULL, "superdeepsleep1 0x%X 0x%X\r\n", s_pm_off_modules, s_pm_enter_deep_sleep_modules);
+			LOGI("superdeepsleep1 0x%X 0x%X\r\n", s_pm_off_modules, s_pm_enter_deep_sleep_modules);
 			// BK_LOGD(NULL, "superdeepsleep2 0x%X 0x%X 0x%X\r\n", s_pm_ahpb_pm_state, s_pm_video_pm_state, s_pm_audio_pm_state);
 			pm_power_modules_dump_with_sleep_mode(s_pm_sleep_mode);
 		}
@@ -462,7 +477,7 @@ static void pm_core_debug(void)
 	{
 		if (pm_debug_mode() & 0x1)
 		{
-			BK_LOGD(NULL, "lowvol1 0x%X 0x%llX 0x%llX\r\n", s_pm_sleep_mode, s_pm_sleeped_modules, s_pm_enter_low_vol_modules);
+			LOGI("lowvol1 0x%X 0x%llX 0x%llX\r\n", s_pm_sleep_mode, s_pm_sleeped_modules, s_pm_enter_low_vol_modules);
 			// BK_LOGD(NULL, "lowvol2 0x%X 0x%X\r\n", s_pm_video_pm_state, s_pm_audio_pm_state);
 			pm_power_modules_dump_with_sleep_mode(s_pm_sleep_mode);
 		}

@@ -16,7 +16,8 @@
 #include "sys_driver.h"
 #include "aon_pmu_driver.h"
 
-#define PM_HIGHEST_CPU_FREQ                     (PM_CPU_FRQ_240M)
+
+#define PM_HIGHEST_CPU_FREQ                     (CONFIG_PM_CPU_FRQ_HIGHEST)
 
 static uint8_t s_pm_cpu_freq[PM_DEV_ID_MAX];
 static pm_cpu_freq_e s_pm_current_cpu_freq;
@@ -141,13 +142,13 @@ bk_err_t bk_pm_module_vote_cpu_freq(pm_dev_id_e module, pm_cpu_freq_e cpu_freq)
 
 	if (ret != BK_OK)
 	{
-		BK_LOGD(NULL, "Switch cpu freq error\r\n");
+		LOGI("switch cpu freq error\r\n");
 		return ret;
 	}
 
 	if (pm_debug_mode() & 0x2)
 	{
-		BK_LOGD(NULL, "cpu0 switch freq ok, freq_max = %d, dev_id = %d ,freq_div = %d\r\n", freq_max, freq_max_index,sys_hal_all_modules_clk_div_get(CLK_DIV_REG0)&0xF);
+		LOGI("Switch cpu freq %d %d\r\n", freq_max, freq_max_index);
 	}
 	return BK_OK;
 }

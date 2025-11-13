@@ -30,7 +30,7 @@ static uint32_t s_before_low_vol_psram  =  0;
 static uint32_t s_after_low_vol_pd      =  0;
 static uint32_t s_after_low_vol_lpo     =  0;
 static uint32_t s_after_low_vol_psram   =  0;
-
+uint32_t pm_wake_int_flag2;
 
 static void pm_pmu_dump(void);
 
@@ -66,7 +66,7 @@ static void pm_pmu_dump(void)
 	uint32_t lpo = REG_READ(PM_DEBUG_PMU_REG_BASE+0x41*4);
 	pm_wakeup_source_e wkup_src = bk_pm_exit_low_vol_wakeup_source_get();
 
-	BK_LOGD(NULL, "pm power,pmu[0x%x][0x%x][%d],[0x%x][0x%x][0x%x],[0x%x][0x%x][0x%x]\r\n", pd, lpo, wkup_src,
+	LOGI("pm power,pmu[0x%x][0x%x][%d],[0x%x][0x%x][0x%x],[0x%x][0x%x][0x%x]\r\n", pd, lpo, wkup_src,
 											s_before_low_vol_pd, s_before_low_vol_lpo, s_before_low_vol_psram,
 											s_after_low_vol_pd, s_after_low_vol_lpo, s_after_low_vol_psram);
 }

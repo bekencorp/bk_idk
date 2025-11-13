@@ -567,16 +567,16 @@ static void pm_module_check_power_off(uint32_t *pm_off_modules, uint32_t *pm_on_
 	}
 }
 
-uint32_t bk_pm_get_audio_vote_pwr_state()
+uint32_t bk_pm_get_audio_vote_pwr_state(void)
 {
 	return s_pm_audio_pm_state;
 }
-uint32_t bk_pm_get_video_vote_pwr_state()
+uint32_t bk_pm_get_video_vote_pwr_state(void)
 {
 	return s_pm_video_pm_state ;
 }
 
-uint32_t bk_pm_phy_pm_state_get(void)
+uint32_t bk_pm_phy_pm_state_get()
 {
 	return s_pm_phy_pm_state;
 }
@@ -626,13 +626,13 @@ void bk_pm_phy_reinit_flag_clear()
 /*=========================DEBUG/TEST CTRL START========================*/
 void pm_power_dump(void)
 {
-	BK_LOGD(NULL, "pm video,audio:0x%x 0x%x \r\n",s_pm_video_pm_state,s_pm_audio_pm_state);
-	BK_LOGD(NULL, "pm ahpb,bakp:0x%x 0x%x\r\n",s_pm_ahpb_pm_state,s_pm_bakp_pm_state);
+	LOGD("pm video,audio:0x%x 0x%x \r\n",s_pm_video_pm_state,s_pm_audio_pm_state);
+	LOGD("pm ahpb,bakp:0x%x 0x%x\r\n",s_pm_ahpb_pm_state,s_pm_bakp_pm_state);
 }
 
 void pm_power_modules_dump_with_sleep_mode(pm_sleep_mode_e sleep_mode)
 {
-	BK_LOGD(NULL, "%s2 0x%X 0x%X 0x%X 0x%X\r\n", pm_sleep_mode_to_string(sleep_mode),
+	LOGI("%s2 0x%X 0x%X 0x%X 0x%X\r\n", pm_sleep_mode_to_string(sleep_mode),
 		s_pm_ahpb_pm_state, s_pm_video_pm_state, s_pm_audio_pm_state, s_pm_bakp_pm_state);
 }
 
@@ -645,24 +645,24 @@ bk_err_t pm_debug_module_state(void)
 
 	if(s_pm_ahpb_pm_state > 0)
 	{
-		BK_LOGD(NULL, "Ahbp not PD[module:0x%x]\r\n",s_pm_ahpb_pm_state);
+		LOGD("Ahbp not PD[module:0x%x]\r\n",s_pm_ahpb_pm_state);
 	}
 	if(s_pm_bakp_pm_state > 0)
 	{
-		BK_LOGD(NULL, "Bakp not PD[module:0x%x]\r\n",s_pm_bakp_pm_state);
+		LOGI("Bakp not PD[module:0x%x]\r\n",s_pm_bakp_pm_state);
 	}
 	if(s_pm_video_pm_state > 0)
 	{
-		BK_LOGD(NULL, "Video not PD[modulue:0x%x]\r\n",s_pm_video_pm_state);
+		LOGD("Video not PD[modulue:0x%x]\r\n",s_pm_video_pm_state);
 	}
 	if(s_pm_audio_pm_state > 0)
 	{
-		BK_LOGD(NULL, "Audio not PD[modulue:0x%x]\r\n",s_pm_audio_pm_state);
+		LOGD("Audio not PD[modulue:0x%x]\r\n",s_pm_audio_pm_state);
 	}
 
 	if(!bk_pm_module_power_state_get(PM_POWER_MODULE_NAME_CPU1))
 	{
-		BK_LOGD(NULL, "Cp1 not PD[state:0x%x]\r\n",bk_pm_module_power_state_get(PM_POWER_MODULE_NAME_CPU1));
+		LOGD("Cp1 not PD[state:0x%x]\r\n",bk_pm_module_power_state_get(PM_POWER_MODULE_NAME_CPU1));
 	}
 
 	// TODO: why not using bk_pm_module_power_state_get(PM_POWER_MODULE_NAME_CPU2) ?

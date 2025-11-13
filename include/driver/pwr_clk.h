@@ -131,7 +131,7 @@ typedef enum
  * - others: other errors.
  *
  */
-bk_err_t bk_pm_cp1_boot_ok_response_set();
+bk_err_t bk_pm_cp1_boot_ok_response_set(void);
 /**
  * @brief get the cp1 revovery all finish
  *
@@ -147,7 +147,7 @@ bk_err_t bk_pm_cp1_boot_ok_response_set();
  *
  *
  */
-bool bk_pm_cp1_recovery_all_state_get();
+bool bk_pm_cp1_recovery_all_state_get(void);
 /**
  * @brief cp1 prepare close module response message
  *
@@ -181,7 +181,7 @@ bk_err_t bk_pm_cp1_recovery_response(uint32_t cmd, pm_cp1_prepare_close_module_n
  *
  *
  */
-pm_mailbox_communication_state_e bk_pm_cp1_work_state_get();
+pm_mailbox_communication_state_e bk_pm_cp1_work_state_get(void);
 /**
  * @brief set the work state of cpu1
  *
@@ -213,7 +213,7 @@ bk_err_t bk_pm_cp1_work_state_set(pm_mailbox_communication_state_e state);
  * 
  *
  */
-bk_err_t bk_pm_dump_cp1_psram_malloc_info();
+bk_err_t bk_pm_dump_cp1_psram_malloc_info(void);
 /**
  * @brief pm get the cp1 psram malloc count
  *
@@ -229,7 +229,7 @@ bk_err_t bk_pm_dump_cp1_psram_malloc_info();
  * - others: other errors.
  *
  */
-uint32_t bk_pm_get_cp1_psram_malloc_count();
+uint32_t bk_pm_get_cp1_psram_malloc_count(void);
 /**
  * @brief pm vote gpio ctrl external ldo
  *
@@ -259,7 +259,7 @@ bk_err_t bk_pm_module_vote_ctrl_external_ldo(gpio_ctrl_ldo_module_e module,gpio_
  * @return
  * - cpu1 power ctrl state(PM_MAILBOX_COMMUNICATION_INIT:mailbox communication init ;PM_MAILBOX_COMMUNICATION_FINISH:mailbox communication finish)
  */
-pm_mailbox_communication_state_e bk_pm_cp1_pwr_ctrl_state_get();
+pm_mailbox_communication_state_e bk_pm_cp1_pwr_ctrl_state_get(void);
 /**
  * @brief set power control state in cpu1
  *
@@ -290,7 +290,7 @@ bk_err_t bk_pm_cp1_pwr_ctrl_state_set(pm_mailbox_communication_state_e state);
  * @return
  * - cpu1 power ctrl state(PM_MAILBOX_COMMUNICATION_INIT:mailbox communication init ;PM_MAILBOX_COMMUNICATION_FINISH:mailbox communication finish)
  */
-pm_mailbox_communication_state_e bk_pm_cp1_clk_ctrl_state_get();
+pm_mailbox_communication_state_e bk_pm_cp1_clk_ctrl_state_get(void);
 
 /**
  * @brief set clock control state in cpu1
@@ -321,7 +321,7 @@ bk_err_t bk_pm_cp1_clk_ctrl_state_set(pm_mailbox_communication_state_e state);
  * @return
  * - cpu1 power ctrl state(PM_MAILBOX_COMMUNICATION_INIT:mailbox communication init ;PM_MAILBOX_COMMUNICATION_FINISH:mailbox communication finish)
  */
-pm_mailbox_communication_state_e bk_pm_cp1_sleep_ctrl_state_get();
+pm_mailbox_communication_state_e bk_pm_cp1_sleep_ctrl_state_get(void);
 /**
  * @brief set vote sleep state in cpu1
  *
@@ -351,7 +351,7 @@ bk_err_t bk_pm_cp1_sleep_ctrl_state_set(pm_mailbox_communication_state_e state);
  * @return
  * - cpu1 power ctrl state(PM_MAILBOX_COMMUNICATION_INIT:mailbox communication init ;PM_MAILBOX_COMMUNICATION_FINISH:mailbox communication finish)
  */
-pm_mailbox_communication_state_e bk_pm_cp1_cpu_freq_ctrl_state_get();
+pm_mailbox_communication_state_e bk_pm_cp1_cpu_freq_ctrl_state_get(void);
 /**
  * @brief set vote cpu frequency in cpu1
  *
@@ -381,7 +381,7 @@ bk_err_t bk_pm_cp1_cpu_freq_ctrl_state_set(pm_mailbox_communication_state_e stat
  * @return
  * - cpu1 power ctrl state(PM_MAILBOX_COMMUNICATION_INIT:mailbox communication init ;PM_MAILBOX_COMMUNICATION_FINISH:mailbox communication finish)
  */
-pm_mailbox_communication_state_e bk_pm_cp1_ctrl_state_get();
+pm_mailbox_communication_state_e bk_pm_cp1_ctrl_state_get(void);
 /**
  * @brief set bootup cpu1 state
  *
@@ -478,7 +478,7 @@ bk_err_t bk_pm_module_vote_boot_cp2_ctrl(pm_boot_cp2_module_name_e module,pm_pow
  * - others: other errors.
  *
  */
-bk_err_t bk_pm_mailbox_init();
+bk_err_t bk_pm_mailbox_init(void);
 
 /**
  * @brief   get the 32k clock source configured by the customer

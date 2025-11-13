@@ -10,6 +10,27 @@ extern "C" {
 #include "common/bk_err.h"
 #include "sys_types.h"
 
+/**
+ * Sleep callback function type
+ *
+ * @param arg  User-defined argument passed during registration
+ *
+ * Note: Callback functions are called at specific points in sleep cycle:
+ *   - Pre-sleep callback:  Called before entering sleep mode
+ *   - Post-sleep callback: Called after waking up from sleep
+ */
+typedef void (*sleep_callback_t)(void *arg);
+
+/* Standard priority definitions for callback execution order
+ * Lower value = Higher priority = Executes first
+ * Range: 0 (highest) to 255 (lowest)
+ */
+#define PM_CALLBACK_PRIORITY_CRITICAL    0    /**< Critical hardware (clocks, PMU, power domains) */
+#define PM_CALLBACK_PRIORITY_HIGH        50   /**< Important peripherals (UART, SPI, I2C) */
+#define PM_CALLBACK_PRIORITY_NORMAL      100  /**< Standard drivers (GPIO, ADC, PWM) */
+#define PM_CALLBACK_PRIORITY_LOW         150  /**< Non-critical modules (sensors, LEDs) */
+#define PM_CALLBACK_PRIORITY_LOWEST      200  /**< Optional features (debug, logging, statistics) */
+
 #define PARAM_DATA_VALID  (0xFFFF)
 #define PM_APP_AUTO_VOTE_ENABLE          (0x1)
 #define PM_APP_AUTO_VOTE_DISENABLE       (0x0)
@@ -161,6 +182,21 @@ extern "C" {
 
 
 /*---------------------------POWER DOMAIN MODUEL DEFINE  END-------------------------------------*/
+typedef struct
+{
+    uint32_t event;
+    uint32_t param1;
+	uint32_t param2;
+    uint32_t param3;
+} pm_ap_core_msg_t;
+
+typedef enum
+{
+   PM_ENTER_LOW_VOLTAGE_MSG = 0,
+   PM_ENTER_DEEP_SLEEP_MSG,
+   PM_CALLBACK_HANDLE_MSG
+}pm_sleep_mode_msg_e;
+
 typedef enum
 {
 	PM_CP1_AUTO_CTRL_DISABLE = 0,
@@ -435,12 +471,40 @@ typedef enum
 /*=====================CONFIG  SECTION  START====================*/
 #define PM_ENTER_NORMAL_SLEEP_MODULES_CONFIG \
 {\
+	PM_SLEEP_MODULE_NAME_I2C1,\
+	PM_SLEEP_MODULE_NAME_SPI_1,\
+	PM_SLEEP_MODULE_NAME_UART1,\
+	PM_SLEEP_MODULE_NAME_PWM_1,\
+	PM_SLEEP_MODULE_NAME_TIMER_1,\
+	PM_SLEEP_MODULE_NAME_SARADC,\
 	PM_SLEEP_MODULE_NAME_AUDP,\
 	PM_SLEEP_MODULE_NAME_VIDP,\
 	PM_SLEEP_MODULE_NAME_BTSP,\
 	PM_SLEEP_MODULE_NAME_WIFIP_MAC,\
 	PM_SLEEP_MODULE_NAME_WIFI_PHY,\
+	PM_SLEEP_MODULE_NAME_TIMER_2,\
 	PM_SLEEP_MODULE_NAME_APP,\
+	PM_SLEEP_MODULE_NAME_OTP,\
+	PM_SLEEP_MODULE_NAME_I2S_1,\
+	PM_SLEEP_MODULE_NAME_USB_1,\
+	PM_SLEEP_MODULE_NAME_CAN,\
+	PM_SLEEP_MODULE_NAME_PSRAM,\
+	PM_SLEEP_MODULE_NAME_QSPI_1,\
+	PM_SLEEP_MODULE_NAME_QSPI_2,\
+	PM_SLEEP_MODULE_NAME_SDIO,\
+	PM_SLEEP_MODULE_NAME_AUXS,\
+	PM_SLEEP_MODULE_NAME_LOG,\
+	PM_SLEEP_MODULE_NAME_AT,\
+	PM_SLEEP_MODULE_NAME_I2C2,\
+	PM_SLEEP_MODULE_NAME_UART2,\
+	PM_SLEEP_MODULE_NAME_UART3,\
+	PM_SLEEP_MODULE_NAME_WDG,\
+	PM_SLEEP_MODULE_NAME_TIMER_3,\
+	PM_SLEEP_MODULE_NAME_APP1,\
+	PM_SLEEP_MODULE_NAME_CPU1,\
+	PM_SLEEP_MODULE_NAME_ROSC_PROG,\
+	PM_SLEEP_MODULE_NAME_ROSC,\
+	PM_SLEEP_MODULE_NAME_ENCP,\
 }
 
 /*enter low voltage ,require sleep module config*/
@@ -490,7 +554,16 @@ typedef enum
 	PM_POWER_MODULE_NAME_AUDP,\
 	PM_POWER_MODULE_NAME_VIDP,\
 }
-
+typedef enum {
+	BK_PM_WAKEUP_UNKNOWN,       /* Unknown Wakeup Source*/
+	BK_PM_WAKEUP_BLE,           /* 1:BLE Interrupts */
+	BK_PM_WAKEUP_WIFI,          /* 2:Wifi Interrupts */
+	BK_PM_WAKEUP_UART_CONSOLE,  /* 3:UART Console Interrupts */
+	BK_PM_WAKEUP_UART_TTYS2,    /* 4:UART TTYS2 Interrupts */
+	BK_PM_WAKEUP_GPIO,          /* 5:GPIO Interrupts */
+	BK_PM_WAKEUP_HW_TIMER,      /* 6:Timer Expiration */
+	BK_PM_WAKEUP_SRC_COUNT,     /* 7:Source Count */
+} bk_pm_wakeup_reason_e;
 /*config the voltage at low vol*/
 #define PM_VOLTAGE_OF_LOW_VOL            (PM_LOW_VOL_VOLTAGE_0_6)
 
@@ -504,6 +577,205 @@ typedef enum
 #define PM_CP1_AUTO_POWER_DOWN_CTRL      (PM_CP1_AUTO_POWER_DOWN_ENABLE)
 
 /*=====================CONFIG  SECTION  END=======================*/
+/**
+ * @brief send message to pm thread for enter deepsleep or low voltage
+ *
+ * @attention
+ * - This API is to send message to pm demo thread for enter deepsleep or low voltage.
+ *
+ * @param
+ * -msg:message info
+ * @return
+ * - BK_OK: succeed
+ * - others: other errors.
+ */
+bk_err_t bk_pm_send_msg(pm_ap_core_msg_t *msg);
+/**
+ * @brief start pm thread
+ *
+ * @attention
+ * - This API is start pm thread.
+ *
+ * @param
+ * -void
+ * @return
+ * - BK_OK: succeed
+ * - others: other errors.
+ */
+bk_err_t pm_thread_main(void);
+/**
+ * @brief Register a pre-sleep callback with execution priority
+ *
+ * This callback will be called BEFORE the system enters sleep mode.
+ * Callbacks are executed in priority order (0=first, 255=last).
+ *
+ * Typical use cases:
+ *   - Save peripheral states
+ *   - Power down devices
+ *   - Flush buffers
+ *
+ * @param callback  Function to call before sleep (must not be NULL)
+ * @param arg       User argument passed to callback (can be NULL)
+ * @param priority  Execution priority: 0 (highest) to 255 (lowest)
+ *                  Use predefined constants: PM_CALLBACK_PRIORITY_*
+ *
+ * @return  0  Success
+ *         -1  Invalid callback (NULL pointer)
+ *         -2  Out of memory
+ *
+ * Memory cost: 16 bytes per registration (32-bit ARM, aligned)
+ * Time complexity: O(n) insertion, O(n) execution
+ *
+ * Example:
+ *   void uart_pre_sleep(void *arg) {
+ *       // Save UART state and power down
+ *   }
+ *   bk_pm_pre_sleep_callback_register(uart_pre_sleep, NULL, PM_CALLBACK_PRIORITY_HIGH);
+ *
+ * Priority table example:
+ *   Priority 0   (CRITICAL): Clock manager, PMU
+ *   Priority 50  (HIGH):     UART, SPI
+ *   Priority 100 (NORMAL):   GPIO, ADC
+ *   Priority 150 (LOW):      Sensors
+ *   Priority 200 (LOWEST):   Debug logging
+ */
+bk_err_t bk_pm_pre_sleep_callback_register(sleep_callback_t callback, void *arg, uint8_t priority);
+
+/**
+ * @brief Unregister a pre-sleep callback
+ *
+ * @param callback  Function to remove
+ *
+ * @return  0  Success
+ *         -1  Invalid callback (NULL pointer)
+ *         -2  Callback not found
+ *
+ * Memory: Frees 12 bytes
+ * Time complexity: O(n) where n is number of registered callbacks
+ *
+ * Example:
+ *   bk_pm_pre_sleep_callback_unregister(uart_pre_sleep);
+ */
+bk_err_t bk_pm_pre_sleep_callback_unregister(sleep_callback_t callback);
+
+/**
+ * @brief Execute all pre-sleep callbacks
+ *
+ * This function is called automatically by the PM system before entering sleep.
+ * Application modules should NOT call this directly.
+ *
+ * Execution order: LIFO (Last-In-First-Out)
+ * - The most recently registered callback executes first
+ *
+ * Time complexity: O(n)
+ */
+bk_err_t bk_pm_pre_sleep_callback_execute(void);
+
+/**
+ * @brief Register a post-sleep (wakeup) callback with execution priority
+ *
+ * This callback will be called AFTER the system wakes up from sleep.
+ * Callbacks are executed in priority order (0=first, 255=last).
+ *
+ * Typical use cases:
+ *   - Restore peripheral states
+ *   - Power up devices
+ *   - Reconfigure clocks
+ *
+ * @param callback  Function to call after wakeup (must not be NULL)
+ * @param arg       User argument passed to callback (can be NULL)
+ * @param priority  Execution priority: 0 (highest) to 255 (lowest)
+ *                  Use predefined constants: PM_CALLBACK_PRIORITY_*
+ *
+ * @return  0  Success
+ *         -1  Invalid callback (NULL pointer)
+ *         -2  Out of memory
+ *
+ * Memory cost: 16 bytes per registration (32-bit ARM, aligned)
+ * Time complexity: O(n) insertion, O(n) execution
+ *
+ * Example:
+ *   void uart_post_sleep(void *arg) {
+ *       // Restore UART state and power up
+ *   }
+ *   bk_pm_post_sleep_callback_register(uart_post_sleep, NULL, PM_CALLBACK_PRIORITY_HIGH);
+ */
+bk_err_t bk_pm_post_sleep_callback_register(sleep_callback_t callback, void *arg, uint8_t priority);
+
+/**
+ * @brief Unregister a post-sleep callback
+ *
+ * @param callback  Function to remove
+ *
+ * @return  0  Success
+ *         -1  Invalid callback (NULL pointer)
+ *         -2  Callback not found
+ *
+ * Memory: Frees 12 bytes
+ * Time complexity: O(n)
+ *
+ * Example:
+ *   bk_pm_post_sleep_callback_unregister(uart_post_sleep);
+ */
+bk_err_t bk_pm_post_sleep_callback_unregister(sleep_callback_t callback);
+
+/**
+ * @brief Execute all post-sleep callbacks
+ *
+ * This function is called automatically by the PM system after waking up.
+ * Application modules should NOT call this directly.
+ *
+ * Execution order: LIFO (Last-In-First-Out)
+ *
+ * Time complexity: O(n)
+ */
+bk_err_t bk_pm_post_sleep_callback_execute(void);
+/**
+ * @brief set and save wakeup source of exiting  sleep
+ *
+ * set and save wakeup source of exiting  sleep
+ *
+ * @attention
+ * - This API is used to set and save wakeup source of exiting  sleep
+ *
+ * @param
+ * -wakeup_irq:wakeup irq
+ * @return
+ * - BK_OK: succeed
+ * - others: other errors.
+ *
+ */
+bk_err_t bk_pm_sleep_wakeup_reason_set(uint64_t wakeup_irq);
+/**
+ * @brief clear wakeup source of exiting  sleep process
+ *
+ * clear wakeup source of exit  sleep
+ *
+ * @attention
+ * - This API is used to clear wakeup source of exiting  sleep process
+ *
+ * @param
+ * -void
+ * @return
+ * - BK_OK: succeed
+ * - others: other errors.
+ *
+ */
+bk_err_t bk_pm_sleep_wakeup_reason_clear();
+/**
+ * @brief get wakeup source of exiting  sleep
+ *
+ * get wakeup source of exiting  sleep
+ *
+ * @attention
+ * - This API is used to get wakeup source of exiting  sleep
+ *
+ * @param
+ * -void
+ * @return
+ * - wakeup source(refer to icu_int_src_t in int_types.h)
+ */
+bk_pm_wakeup_reason_e bk_pm_sleep_wakeup_reason_get();
 /**
  * @brief clear deep sleep module config
  *
@@ -569,7 +841,7 @@ uint32_t bk_pm_get_audio_vote_pwr_state();
  * - BK_OK: succeed
  * - others: other errors.
  */
-bk_err_t bk_pm_check_enter_lv_time_out();
+bk_err_t bk_pm_check_enter_lv_time_out(void);
 /**
  * @brief register enter low voltage sleep mode time out callback
  *
@@ -614,7 +886,7 @@ bk_err_t bk_pm_module_lv_sleep_state_clear(pm_dev_id_e module);
  * - BK_OK: succeed
  * - others: other errors.
  */
-__attribute__((section(".itcm_sec_code"))) bk_err_t bk_pm_module_lv_sleep_state_set();
+__attribute__((section(".itcm_sec_code"))) bk_err_t bk_pm_module_lv_sleep_state_set(void);
 /**
  * @brief get the lv sleep state
  *
@@ -642,7 +914,7 @@ uint64_t bk_pm_module_lv_sleep_state_get(pm_dev_id_e module);
  * @return
  * - wakeup source(0x0:WAKEUP SOURCE OF GPIO;0x1:WAKEUP SOURCE OF RTC;0x2:WAKEUP SOURCE OF WIFI OR BT;0x4:WAKEUP SOURCE OF TOUCHED;0x5:NONE WAKEUP_SOURCE)
  */
-pm_wakeup_source_e bk_pm_deep_sleep_wakeup_source_get();
+pm_wakeup_source_e bk_pm_deep_sleep_wakeup_source_get(void);
 /**
  * @brief clear wakeup source of exiting low voltage process
  *
@@ -658,7 +930,7 @@ pm_wakeup_source_e bk_pm_deep_sleep_wakeup_source_get();
  * - others: other errors.
  *
  */
-bk_err_t bk_pm_exit_low_vol_wakeup_source_clear();
+bk_err_t bk_pm_exit_low_vol_wakeup_source_clear(void);
 /**
  * @brief set and save wakeup source of exiting low voltage
  *
@@ -668,13 +940,13 @@ bk_err_t bk_pm_exit_low_vol_wakeup_source_clear();
  * - This API is used to set and save wakeup source of exiting low voltage
  *
  * @param
- * -0x0:close cp1 auto power down feature ;0x1:open cp1 auto power down feature
+ * void
  * @return
  * - BK_OK: succeed
  * - others: other errors.
  *
  */
-bk_err_t bk_pm_exit_low_vol_wakeup_source_set();
+bk_err_t bk_pm_exit_low_vol_wakeup_source_set(void);
 /**
  * @brief get wakeup source of exiting low voltage
  *
@@ -688,7 +960,7 @@ bk_err_t bk_pm_exit_low_vol_wakeup_source_set();
  * @return
  * - wakeup source(0x0:WAKEUP SOURCE OF GPIO;0x1:WAKEUP SOURCE OF RTC;0x2:WAKEUP SOURCE OF WIFI OR BT;0x4:WAKEUP SOURCE OF TOUCHED;0x5:NONE WAKEUP_SOURCE)
  */
-pm_wakeup_source_e bk_pm_exit_low_vol_wakeup_source_get();
+pm_wakeup_source_e bk_pm_exit_low_vol_wakeup_source_get(void);
 /**
  * @brief get memory auto power down flag
  *
@@ -702,7 +974,7 @@ pm_wakeup_source_e bk_pm_exit_low_vol_wakeup_source_get();
  * @return
  * - memory auto power down flag(PM_MEM_AUTO_CTRL_DISABLE:disable memory auto power down feature ;PM_MEM_AUTO_CTRL_ENABLE:enable memory auto power down feature)
  */
-pm_mem_auto_ctrl_e bk_pm_mem_auto_power_down_state_get();
+pm_mem_auto_ctrl_e bk_pm_mem_auto_power_down_state_get(void);
 /**
  * @brief memory auto power down flag set
  *
@@ -733,7 +1005,7 @@ bk_err_t bk_pm_mem_auto_power_down_state_set(pm_mem_auto_ctrl_e value);
  * @return
  * - cp1 auto power down flag(0x0:close cp1 auto power down feature ;0x1:open cp1 auto power down feature)
  */
-uint32_t bk_pm_cp1_auto_power_down_state_get();
+uint32_t bk_pm_cp1_auto_power_down_state_get(void);
 /**
  * @brief cp1 auto power down flag set
  *
@@ -764,7 +1036,7 @@ bk_err_t bk_pm_cp1_auto_power_down_state_set(uint32_t value);
  * @return
  * - the flag of cpu1 boot flag (0x0:cpu1 not boot ready;0x1:cpu1 boot ready)
  */
-uint32_t bk_pm_cp1_boot_flag_get();
+uint32_t bk_pm_cp1_boot_flag_get(void);
 /**
  * @brief rosc calibration
  *
@@ -809,7 +1081,7 @@ bk_err_t bk_pm_external_ldo_ctrl(uint32_t value);
  * @return
  *  - the state of phy calibration(True:have calibration;False:not calibration)
  */
-bool bk_pm_phy_cali_state_get();
+bool bk_pm_phy_cali_state_get(void);
 /**
  * @brief get the flag of phy reinit part1
  *
@@ -823,7 +1095,7 @@ bool bk_pm_phy_cali_state_get();
  * @return
  *  - the flag of phy reinit part1 (True:have part1;False:not do it)
  */
-bool bk_pm_phy_reinit_flag_get();
+bool bk_pm_phy_reinit_flag_get(void);
 /**
  * @brief clear the flag of phy reinit part1
  *
@@ -837,7 +1109,7 @@ bool bk_pm_phy_reinit_flag_get();
  * @return
  * -void
  */
-void bk_pm_phy_reinit_flag_clear();
+void bk_pm_phy_reinit_flag_clear(void);
 
 /**
  * @brief get the phy power feature state
@@ -870,7 +1142,7 @@ uint32_t bk_pm_phy_pm_state_get(void);
  * @return
  *  - the consume time of wakeup from lowvol
  */
-uint32_t bk_pm_wakeup_from_lowvol_consume_time_get();
+uint32_t bk_pm_wakeup_from_lowvol_consume_time_get(void);
 /**
  * @brief register sleep mode(low voltage and deepsleep) config
  *
@@ -998,7 +1270,7 @@ pm_cpu_freq_e bk_pm_module_current_cpu_freq_get(pm_dev_id_e module);
  *  - get the current max and used cpu frequency
  *
  */
-pm_cpu_freq_e bk_pm_current_max_cpu_freq_get();
+pm_cpu_freq_e bk_pm_current_max_cpu_freq_get(void);
 /**
  * @brief vote cpu frequency
  *
@@ -1060,7 +1332,7 @@ bk_err_t bk_pm_lp_vol_set(uint32_t lp_vol);
  * - the lp voltage value
  *
  */
-uint32_t bk_pm_lp_vol_get();
+uint32_t bk_pm_lp_vol_get(void);
 
 /**
  * @brief rf tx voltage set
@@ -1093,7 +1365,7 @@ bk_err_t bk_pm_rf_tx_vol_set(uint32_t tx_vol);
  * - the tx voltage value
  *
  */
-uint32_t bk_pm_rf_tx_vol_get();
+uint32_t bk_pm_rf_tx_vol_get(void);
 
 /**
  * @brief rf rx voltage set
@@ -1126,7 +1398,7 @@ bk_err_t bk_pm_rf_rx_vol_set(uint32_t rx_vol);
  * - the rx voltage value
  *
  */
-uint32_t bk_pm_rf_rx_vol_get();
+uint32_t bk_pm_rf_rx_vol_get(void);
 
 /**
  * @brief lpo source set
@@ -1158,7 +1430,7 @@ bk_err_t bk_pm_lpo_src_set(pm_lpo_src_e lpo_src);
  * -lpo_src:0x0:32K from 26m;0x1:32K from 26m;0x2:32K from ROSC;0x3:32K from ROSC
  *
  */
-pm_lpo_src_e bk_pm_lpo_src_get();
+pm_lpo_src_e bk_pm_lpo_src_get(void);
 /**
  * @brief mcu pm ctrl
  *
@@ -1189,7 +1461,7 @@ bk_err_t bk_pm_mcu_pm_ctrl(uint32_t power_state);
  *-mcu power manage state(0x0:enable the mcu power manage;0x1:disable the mcu power manage)
  *
  */
-uint32_t bk_pm_mcu_pm_state_get();
+uint32_t bk_pm_mcu_pm_state_get(void);
 
 /**
  * @brief set sleep mode
@@ -1271,10 +1543,10 @@ bk_err_t bk_pm_module_vote_power_ctrl(pm_power_module_name_e module,pm_power_mod
  * @param
  * -sleep_ticks:sleep time using tick unit
  * @return
- * - BK_OK: succeed
- * - others: other errors.
+ * - uint64_t: missed_ticks
+ * missed_ticks is the number of missed ticks during the sleep time
  */
-bk_err_t bk_pm_suppress_ticks_and_sleep(uint32_t sleep_ticks);
+uint64_t bk_pm_suppress_ticks_and_sleep(uint32_t sleep_ticks);
 /**
  * @brief enter sleep
  *
@@ -1289,7 +1561,7 @@ bk_err_t bk_pm_suppress_ticks_and_sleep(uint32_t sleep_ticks);
  * - void
  *
  */
-void  bk_pm_enter_sleep();
+void  bk_pm_enter_sleep(void);
 /**
  * @brief sleep vote init
  *
@@ -1305,7 +1577,7 @@ void  bk_pm_enter_sleep();
  * - others: other errors.
  *
  */
-static inline bk_err_t pm_sleep_vote_init()
+static inline bk_err_t pm_sleep_vote_init(void)
 {
 	uint32_t i = 0;
 	pm_sleep_module_name_e enter_low_vol_modules[] = PM_ENTER_LOW_VOL_MODULES_CONFIG;

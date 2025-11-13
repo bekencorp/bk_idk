@@ -43,17 +43,17 @@ bk_err_t bk_pm_module_vote_psram_ctrl(pm_power_psram_module_name_e module,pm_pow
 		ret = bk_psram_init();
 		if(ret != BK_OK)
 		{
-			PM_LOGE("Psram_I err0:%d",ret);
+			LOGE("Psram_I err0:%d",ret);
 			bk_psram_deinit();
 			ret = bk_psram_init();
 			if(ret != BK_OK)
 			{
-				PM_LOGE("Psram_I err1:%d",ret);
+				LOGE("Psram_I err1:%d",ret);
 				bk_psram_deinit();
 				ret = bk_psram_init();
 				if(ret != BK_OK)
 				{
-					PM_LOGE("Psram_I err2:%d",ret);
+					LOGE("Psram_I err2:%d",ret);
 					#if CONFIG_WDT_EN
 					bk_wdt_force_reboot();//try 3 times, if fail ,reboot.
 					#endif
@@ -105,8 +105,8 @@ bk_err_t pm_psram_malloc_state_and_power_ctrl()
 	{
 		if(s_pm_cp1_psram_malloc_count_state > 0)
 		{
-			BK_LOGD(NULL, "CP1 psram malloc count[%d] > 0\r\n",cp1_psram_malloc_count);
-			BK_LOGD(NULL, "Power consumption will get higher,free them\r\n");
+			LOGV("CP1 psram malloc count[%d] > 0\r\n",cp1_psram_malloc_count);
+			LOGV("Power consumption will get higher,free them\r\n");
 
 			bk_pm_dump_cp1_psram_malloc_info();
 		}
@@ -118,8 +118,8 @@ bk_err_t pm_psram_malloc_state_and_power_ctrl()
 	{
 		if(cp0_psram_malloc_count > 0)
 		{
-			BK_LOGD(NULL, "CP0 psram malloc count[%d] > 0\r\n",cp0_psram_malloc_count);
-			BK_LOGD(NULL, "Power consumption will get higher,free them\r\n");
+			LOGV("CP0 psram malloc count[%d] > 0\r\n",cp0_psram_malloc_count);
+			LOGV("Power consumption will get higher,free them\r\n");
 
 			bk_psram_heap_get_used_state();
 		}
@@ -144,8 +144,8 @@ void pm_debug_psram()
 
 	if(cp1_psram_malloc_count > 0)
 	{
-		BK_LOGD(NULL, "CP1 psram malloc count[%d] > 0\r\n",cp1_psram_malloc_count);
-		BK_LOGD(NULL, "Power consumption will get higher, please free them\r\n");
+		LOGI("CP1 psram malloc count[%d] > 0\r\n",cp1_psram_malloc_count);
+		LOGI("Power consumption will get higher, please free them\r\n");
 		bk_pm_dump_cp1_psram_malloc_info();
 	}
 	#endif
@@ -154,14 +154,14 @@ void pm_debug_psram()
 	cp0_psram_malloc_count = bk_psram_heap_get_used_count();
 	if(cp0_psram_malloc_count > 0)
 	{
-		BK_LOGD(NULL, "CP0 psram malloc count[%d] > 0\r\n",cp0_psram_malloc_count);
-		BK_LOGD(NULL, "power consumption will get higher,free them\r\n");
+		LOGI("CP0 psram malloc count[%d] > 0\r\n",cp0_psram_malloc_count);
+		LOGI("power consumption will get higher,free them\r\n");
 		bk_psram_heap_get_used_state();
 	}
 }
 
 void pm_debug_psram_state()
 {
-	BK_LOGD(NULL, "pm_psram:0x%x 0x%x\r\n",s_pm_psram_ctrl_state,bk_psram_heap_init_flag_get());
+	LOGI("pm_psram:0x%x 0x%x\r\n",s_pm_psram_ctrl_state,bk_psram_heap_init_flag_get());
 }
 

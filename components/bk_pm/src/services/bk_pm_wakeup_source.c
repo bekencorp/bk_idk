@@ -17,22 +17,29 @@
 #include "aon_pmu_driver.h"
 #include <os/mem.h>
 #include "pm_debug.h"
-
+#include "driver/int_types.h"
 #include "pm_wakeup_source.h"
 #include "pm_sleep.h"
 
+/*=====================DEFINE SECTION START=====================*/
+#define PM_WAKEUP_SOURCE_MARK                                (WAKEUP_SOURCE_MARK)
 
-#define PM_WAKEUP_SOURCE_MARK                           (WAKEUP_SOURCE_MARK)
+/*=====================DEFINE SECTION END=====================*/
 
-
-static uint32_t s_pm_wakeup_source            = 0;
-static pm_wakeup_source_e s_pm_exit_low_vol_wakeup_source = PM_WAKEUP_SOURCE_INT_NONE;
+/*=====================VARIABLE SECTION START=================*/
+static uint32_t s_pm_wakeup_source                          = 0;
+static pm_wakeup_source_e s_pm_exit_low_vol_wakeup_source   = PM_WAKEUP_SOURCE_INT_NONE;
 static pm_wakeup_source_e s_pm_exit_deepsleep_wakeup_source = PM_WAKEUP_SOURCE_INT_NONE;
 
 static touch_wakeup_param_t s_touch_wakeup_param;
+static uint64_t s_normal_sleep_wakeup_irq                   = 0;
+static icu_int_src_t s_normal_sleep_wakeup_irq_id           = INT_SRC_NONE;
+/*=====================VARIABLE SECTION END=================*/
 
+/*================FUNCTION DECLARATION SECTION START========*/
 
-/*=========================WAKEUP SOURCE CONFIG START========================*/
+/*================FUNCTION DECLARATION SECTION END========*/
+
 bk_err_t bk_pm_wakeup_source_set(pm_wakeup_source_e wakeup_source, void *source_param)
 {
 	GLOBAL_INT_DECLARATION();
@@ -194,4 +201,66 @@ bk_err_t bk_pm_exit_low_vol_wakeup_source_clear()
 	s_pm_exit_low_vol_wakeup_source = PM_WAKEUP_SOURCE_INT_NONE;
 	return BK_OK;
 }
-/*=========================WAKEUP SOURCE CONFIG END========================*/
+
+__attribute__((section(".iram")))  bk_err_t bk_pm_sleep_wakeup_reason_clear()
+{
+	s_normal_sleep_wakeup_irq    = 0;
+	s_normal_sleep_wakeup_irq_id = 0;
+	return BK_OK;
+}
+
+__attribute__((section(".iram")))  bk_err_t bk_pm_sleep_wakeup_reason_set(uint64_t wakeup_irq)
+{
+	s_normal_sleep_wakeup_irq = wakeup_irq;
+	for(int i = 0; i < INT_SRC_NONE; i++)
+	{
+		if(wakeup_irq & (1ULL << i))
+		{
+			s_normal_sleep_wakeup_irq_id = i;
+		}
+	}
+	return BK_OK;
+}
+
+bk_pm_wakeup_reason_e bk_pm_sleep_wakeup_reason_get()
+{
+	if(s_normal_sleep_wakeup_irq_id != INT_SRC_NONE)
+	{
+		/*Debug*/
+		//LOGI("NS wakeup irq: %d,0x%llx", s_normal_sleep_wakeup_irq_id,s_normal_sleep_wakeup_irq);
+	}
+	bk_pm_wakeup_reason_e wakeup_reason = BK_PM_WAKEUP_UNKNOWN;
+	switch (s_normal_sleep_wakeup_irq_id)
+	{
+		#if CONFIG_ANA_GPIO
+		case INT_SRC_ANA_GPIO:
+		#endif
+		case INT_SRC_GPIO:
+		case INT_SRC_GPIO_NS:
+		    wakeup_reason = BK_PM_WAKEUP_GPIO;
+			break;
+		#if CONFIG_ANA_RTC
+		case INT_SRC_ANA_RTC:
+		#else
+		case INT_SRC_RTC:
+		#endif
+		    wakeup_reason = BK_PM_WAKEUP_HW_TIMER;
+			break;
+		case INT_SRC_MAC_GENERAL:
+		    wakeup_reason = BK_PM_WAKEUP_WIFI;
+			break;
+		case INT_SRC_BT:
+		    wakeup_reason = BK_PM_WAKEUP_BLE;
+			break;
+		case INT_SRC_UART1:
+		    wakeup_reason = BK_PM_WAKEUP_UART_CONSOLE;
+			break;
+		case INT_SRC_UART2:
+		    wakeup_reason = BK_PM_WAKEUP_UART_TTYS2;
+			break;
+		default:
+		   wakeup_reason =  BK_PM_WAKEUP_UNKNOWN;
+			break;
+	}
+	return wakeup_reason;
+}

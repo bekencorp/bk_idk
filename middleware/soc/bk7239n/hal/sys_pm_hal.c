@@ -70,6 +70,9 @@
 #if CONFIG_SOFT_CTRL_VOLT
 #define PM_LOW_VOL_VCOREHSEL_LDO_SEL          (6)       // 0.75V
 #endif
+#if CONFIG_CACHE_ENABLE
+extern void flush_all_dcache();
+#endif
 
 #if CONFIG_OTA_POSITION_INDEPENDENT_AB
 #define FLASH_BASE_ADDRESS                    (0x44030000)
@@ -939,6 +942,7 @@ void sys_hal_enter_low_voltage(void)
 	volatile uint32_t pmu_val               = 0;
 	volatile uint32_t systick_ctrl_value    = 0;
 	volatile uint32_t hf_reg_v = 0;
+	volatile uint32_t systick_load_value    = 0;
 	bk_err_t sleep_allowd       = BK_OK;
 
 #if CONFIG_OTA_POSITION_INDEPENDENT_AB
@@ -946,6 +950,7 @@ void sys_hal_enter_low_voltage(void)
 #endif
 	portNVIC_INT_CTRL_REG |= portNVIC_SYSTICKCLR_BIT;
 	systick_ctrl_value = portNVIC_SYSTICK_CTRL_REG;
+	systick_load_value = portNVIC_SYSTICK_LOAD_REG;
 	portNVIC_SYSTICK_LOAD_REG = PM_EXIT_LOWVOL_SYSTICK_RELOAD_TIME;
 	portNVIC_SYSTICK_CTRL_REG = 0;//disable the systick, avoid it affect the enter low voltage sleep
 
@@ -1086,6 +1091,7 @@ void sys_hal_enter_low_voltage(void)
 	sys_hal_gpio_state_switch(true);
 #endif
 
+	bk_pm_sleep_wakeup_reason_clear();
 /*----enter low voltage sleep-------*/
 #if CONFIG_DEEP_LV
 	sys_hal_regs_save();
@@ -1099,6 +1105,7 @@ void sys_hal_enter_low_voltage(void)
 	arch_deep_sleep();
 	bk_delay_us(40); //must delay 40us to sampling rtc value
 #endif
+	bk_pm_sleep_wakeup_reason_set(check_IRQ_pending());
 
 #if CONFIG_AON_PMU_REG0_REFACTOR_DEV
 	aon_pmu_hal_set_gpio_sleep(0, true);
@@ -1188,7 +1195,7 @@ void sys_hal_enter_low_voltage(void)
 
 	sys_hal_restore_int(int_state1, int_state2);
 
-	portNVIC_SYSTICK_LOAD_REG = PM_EXIT_LOWVOL_SYSTICK_RELOAD_TIME;
+	portNVIC_SYSTICK_LOAD_REG = systick_load_value;
 
 	portNVIC_SYSTICK_CTRL_REG = systick_ctrl_value;
 #endif
@@ -1387,14 +1394,24 @@ void sys_hal_enter_normal_sleep(uint32_t peri_clk)
 	volatile bool en_dpll_dig = false;
 	volatile bool en_dpll_ana = false;
 	volatile bool xtal_sleep = false;
+	volatile uint32_t systick_ctrl_value    = 0;
+	volatile uint32_t systick_load_value    = 0;
 
 	clken_peri = sys_ll_get_cpu_device_clk_enable_value();
 	sys_ll_set_cpu_device_clk_enable_mac_cken(0);
 	sys_ll_set_cpu_device_clk_enable_thread_cken(0);
 	sys_ll_set_cpu_device_clk_enable_phy_cken(0);
 	sys_ll_set_cpu_device_clk_enable_rf_cken(0);
-	sys_ll_set_cpu_device_clk_enable_xvr_cken(0);
-	sys_ll_set_cpu_device_clk_enable_btdm_cken(0);
+	/*Support BT,it can disable btdm,xvr clock*/
+	//sys_ll_set_cpu_device_clk_enable_xvr_cken(0);
+	//sys_ll_set_cpu_device_clk_enable_btdm_cken(0);
+
+
+	portNVIC_INT_CTRL_REG |= portNVIC_SYSTICKCLR_BIT;
+	systick_ctrl_value = portNVIC_SYSTICK_CTRL_REG;
+	systick_load_value = portNVIC_SYSTICK_LOAD_REG;
+	portNVIC_SYSTICK_LOAD_REG = PM_EXIT_LOWVOL_SYSTICK_RELOAD_TIME;
+	portNVIC_SYSTICK_CTRL_REG = 0;//disable the systick, avoid it affect the enter low voltage sleep
 	__asm volatile( "nop" );
 	__asm volatile( "nop" );
 	__asm volatile( "nop" );
@@ -1402,13 +1419,20 @@ void sys_hal_enter_normal_sleep(uint32_t peri_clk)
 	__asm volatile( "nop" );
 
 	/*confirm here hasn't external interrupt*/
-	if (check_IRQ_pending())
+	if (check_IRQ_pending()||(portNVIC_INT_CTRL_REG&portNVIC_SYSTICKSET_BIT))
 	{
 		sys_ll_set_cpu_device_clk_enable_value(clken_peri);
-		// os_printf("%x\r\n", clken_peri);
+
+		portNVIC_SYSTICK_CTRL_REG = systick_ctrl_value;
+		portNVIC_SYSTICK_LOAD_REG = systick_load_value;
 		return;
 	}
+	#if CONFIG_CACHE_ENABLE
+		/* flush all dcache(data in sram and psram)*/
+		flush_all_dcache();
+	#endif
 
+	portNVIC_SYSTICK_LOAD_REG = PM_EXIT_LOWVOL_SYSTICK_RELOAD_TIME;
 	/* cpu freq use 10M*/
 	cksel_core = sys_ll_get_cpu_clk_div_mode1_cksel_core();
 	clkdiv_core = sys_ll_get_cpu_clk_div_mode1_clkdiv_core();
@@ -1421,6 +1445,12 @@ void sys_hal_enter_normal_sleep(uint32_t peri_clk)
 	sys_ll_set_cpu_clk_div_mode2_cksel_flash(0);
 	sys_ll_set_cpu_clk_div_mode2_ckdiv_flash(0);
 
+	sys_ll_set_cpu_device_clk_enable_mac_cken(0);
+	sys_ll_set_cpu_device_clk_enable_thread_cken(0);
+	sys_ll_set_cpu_device_clk_enable_phy_cken(0);
+	sys_ll_set_cpu_device_clk_enable_rf_cken(0);
+	//sys_ll_set_cpu_device_clk_enable_xvr_cken(0);
+	//sys_ll_set_cpu_device_clk_enable_btdm_cken(0);
 	/*DPLL_DIV disable*/
 	en_dpll_dig = sys_ll_get_cpu_device_clk_enable_dplldiv_cken();
 	sys_ll_set_cpu_device_clk_enable_dplldiv_cken(0);
@@ -1431,58 +1461,60 @@ void sys_hal_enter_normal_sleep(uint32_t peri_clk)
 	/*vcore 0.75v*/
 	vcoresel = sys_ana_ll_get_ana_reg8_vcorehsel();
 	sys_ana_ll_set_ana_reg8_vcorehsel(0x6);
-	bk_delay_us(100);
+	bk_delay_us(30);
 
 	/*DPLL disable*/
 	en_dpll_ana = sys_ana_ll_get_ana_reg5_en_dpll();
 	sys_ana_ll_set_ana_reg5_en_dpll(0);
-	bk_delay_us(100);
+	bk_delay_us(50);
 
 	/*xtal sleep*/
 	xtal_sleep = sys_ana_ll_get_ana_reg3_en_xtalh_sleep();
 	sys_ana_ll_set_ana_reg3_en_xtalh_sleep(1);
 
-	/*latch end*/
-	sys_hal_disable_spi_latch();
+	bk_pm_sleep_wakeup_reason_clear();
 
-	// sys_ll_set_cpu0_int_halt_clk_op_cpu0_halt(1);
 	arch_sleep();
 
-	/*latch start*/
-	sys_hal_enable_spi_latch();
+	bk_pm_sleep_wakeup_reason_set(check_IRQ_pending());
 
 	/*xtal sleep disable*/
 	sys_ana_ll_set_ana_reg3_en_xtalh_sleep(xtal_sleep);
+	bk_delay_us(50);
 
+	/*restore vcore*/
+	sys_ana_ll_set_ana_reg8_vcorehsel(vcoresel);
+	/*delay for vddcore stability*/
+	bk_delay_us(50);
 	/*DPLL enable*/
 	sys_ana_ll_set_ana_reg5_en_dpll(en_dpll_ana);
 	/*delay for dpll stability*/
 	bk_delay_us(200);
 
-	/*vcore 0.875v*/
-	sys_ana_ll_set_ana_reg8_vcorehsel(vcoresel);
-	/*delay for vddcore stability*/
-	bk_delay_us(100);
 
 	/*latch end*/
 	sys_hal_disable_spi_latch();
 
 	/*DPLL_DIV enable*/
 	sys_ll_set_cpu_device_clk_enable_dplldiv_cken(en_dpll_dig);
-
+	bk_delay_us(50);
 	/*cpu freq restore*/
 	sys_ll_set_cpu_clk_div_mode1_cksel_core(cksel_core);
 	sys_ll_set_cpu_clk_div_mode1_clkdiv_core(clkdiv_core);
-
+	bk_delay_us(50);
 	/*Flash freq restore */
-	sys_ll_set_cpu_clk_div_mode2_cksel_flash(cksel_flash);
 	sys_ll_set_cpu_clk_div_mode2_ckdiv_flash(clkdiv_flash);
+	sys_ll_set_cpu_clk_div_mode2_cksel_flash(cksel_flash);
 
 	/*delay for flash stability*/
-	bk_delay_us(100);
+	bk_delay_us(50);
 
 	sys_ll_set_cpu_device_clk_enable_value(clken_peri);
-	// os_printf("%x %x\r\n", sys_ll_get_cpu0_int_0_31_status_value(), sys_ll_get_cpu0_int_32_63_status_value());
+
+	portNVIC_SYSTICK_LOAD_REG = systick_load_value;
+
+	portNVIC_SYSTICK_CTRL_REG = systick_ctrl_value;
+
 }
 
 void sys_hal_enter_normal_wakeup()
@@ -1634,8 +1666,9 @@ static int sys_hal_power_config_default()
 {
 	//TODO: fix it when bring up pm
 	/*config the power domain*/
-	sys_hal_module_power_ctrl(POWER_MODULE_NAME_THREAD,POWER_MODULE_STATE_OFF);
-	sys_hal_module_power_ctrl(POWER_MODULE_NAME_ENCP,POWER_MODULE_STATE_OFF);
+	//sys_hal_module_power_ctrl(POWER_MODULE_NAME_BTSP,POWER_MODULE_STATE_OFF);
+	//sys_hal_module_power_ctrl(POWER_MODULE_NAME_WIFIP_MAC,POWER_MODULE_STATE_OFF);
+	//sys_hal_module_power_ctrl(POWER_MODULE_NAME_WIFI_PHY,POWER_MODULE_STATE_OFF);
 #if 0
 #if CONFIG_SPE
 	sys_hal_module_power_ctrl(POWER_MODULE_NAME_ENCP,POWER_MODULE_STATE_OFF);
@@ -1752,7 +1785,7 @@ void sys_hal_low_power_hardware_init()
 	sys_hal_power_config_default();
 
 	/*set the lp voltage*/
-	sys_hal_lp_vol_set(CONFIG_LP_VOL); // core 0.45V
+	sys_hal_lp_vol_set(CONFIG_LP_VOL);
 
 	/*set rosc modify 2s interval*/
 	#if !CONFIG_ROSC_CALIB_SW
