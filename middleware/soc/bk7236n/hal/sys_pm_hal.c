@@ -679,10 +679,14 @@ static inline void sys_hal_set_low_voltage(volatile uint32_t *ana_r0, volatile u
 	sys_ll_set_ana_reg7_bypassen(1);//bit20
 	sys_ll_set_ana_reg7_ioldolp(1);//bit21
 
+	// sys_ll_set_ana_reg9_azcd_manu(0x20);
+	// sys_ll_set_ana_reg9_enzcdcalib(0);
+	// sys_ll_set_ana_reg9_zcdmsel(1);
+
 	sys_ll_set_ana_reg9_lburstsel(3);//bit[19:18]
 	sys_ll_set_ana_reg9_mrosci_cal(0);//bit[27:25]
 	sys_ll_set_ana_reg10_avea_sel(3);
-	sys_ll_set_ana_reg10_arampc(0);
+	// sys_ll_set_ana_reg10_arampc(0);//suggest by long.teng,20251105
 
 	sys_hal_disable_spi_latch();
 }

@@ -673,7 +673,7 @@ static inline void sys_hal_set_low_voltage(volatile uint32_t *ana_r0, volatile u
 	sys_ana_ll_set_ana_reg9_mrosci_cal(0);
 
 	sys_ana_ll_set_ana_reg10_avea_sel(3);
-	sys_ana_ll_set_ana_reg10_arampc(0);
+	// sys_ana_ll_set_ana_reg10_arampc(0);//suggest by long.teng,20251105
 
 	sys_hal_disable_spi_latch();
 }
