@@ -727,6 +727,40 @@ bk_err_t pwm_hal_set_cc1ie(pwm_chan_t tim_id, uint32_t value)
 	return BK_OK;
 }
 
+uint32_t pwm_hal_get_ccr1(pwm_chan_t sw_ch)
+{
+	switch (sw_ch) {
+		case 0:
+			return pwm_ll_get_reg51_ccr1();
+		case 1:
+			return pwm_ll_get_reg54_ccr4();
+		case 2:
+			return pwm_ll_get_reg57_ccr7();
+		case 3:
+			return pwm_ll_get_reg91_ccr1();
+		case 4:
+			return pwm_ll_get_reg94_ccr4();
+		case 5:
+			return pwm_ll_get_reg97_ccr7();
+		case 6:
+			return pwm_ll_get_regd1_ccr1();
+		case 7:
+			return pwm_ll_get_regd4_ccr4();
+		case 8:
+			return pwm_ll_get_regd7_ccr7();
+		case 9:
+			return pwm_ll_get_reg111_ccr1();
+		case 10:
+			return pwm_ll_get_reg114_ccr4();
+		case 11:
+			return pwm_ll_get_reg117_ccr7();
+		default:
+			return 0;
+	}
+
+	return 0;
+}
+
 uint32_t pwm_hal_get_ccr1_shadow(pwm_chan_t tim_id)
 {
 	switch (tim_id) {

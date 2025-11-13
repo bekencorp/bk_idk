@@ -47,6 +47,7 @@ bool pwm_hal_is_cc1if_triggered(pwm_chan_t tim_id, uint32_t *status, uint32_t gr
 void pwm_hal_set_sync_all_enable(bool is_enable);
 void pwm_hal_sync_all_shadow(void);
 bk_err_t pwm_hal_init_capture(pwm_chan_t chan, pwm_capture_edge_t edge);
+uint32_t pwm_hal_get_ccr1(pwm_chan_t tim_id);
 uint32_t pwm_hal_get_ccr1_shadow(pwm_chan_t tim_id);
 uint32_t pwm_hal_get_ccr2_shadow(pwm_chan_t tim_id);
 uint32_t pwm_hal_get_tim_arr(pwm_chan_t tim_id);

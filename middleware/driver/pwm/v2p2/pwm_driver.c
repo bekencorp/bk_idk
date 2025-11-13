@@ -411,8 +411,8 @@ bk_err_t bk_pwm_init(pwm_chan_t chan, const pwm_init_config_t *config)
 	}
 
 	pwm_config.period_cycle = config->period_cycle;
-	pwm_config.duty_cycle = 0;
-	pwm_config.duty2_cycle = config->period_cycle - config->duty_cycle;
+	pwm_config.duty_cycle = config->period_cycle - config->duty_cycle;
+	pwm_config.duty2_cycle = config->period_cycle;
 	pwm_config.duty3_cycle = 0;
 	pwm_config.psc = config->psc;
 	ret = pwm_hal_set_chan_config(chan, &pwm_config);
@@ -490,12 +490,12 @@ bk_err_t bk_pwm_set_period_duty(pwm_chan_t chan, pwm_period_duty_config_t *confi
 	}
 
 	if (s_pwm.chan_init_signal_level & BIT(chan)) {
-		pwm_config.duty_cycle = 0;
-		pwm_config.duty2_cycle = config->duty_cycle;
+		pwm_config.duty_cycle = config->duty_cycle;
+		pwm_config.duty2_cycle = config->period_cycle;
 		pwm_config.duty3_cycle = 0;
 	} else {
-		pwm_config.duty_cycle = 0;
-		pwm_config.duty2_cycle = config->period_cycle - config->duty_cycle;
+		pwm_config.duty_cycle = config->period_cycle - config->duty_cycle;
+		pwm_config.duty2_cycle = config->period_cycle;
 		pwm_config.duty3_cycle = 0;
 	}
 	PWM_LOGD("chan:%d, period_cycle:%d, duty_cycle:%d, duty2_cycle:%d, duty3_cycle:%d\r\n",
@@ -509,15 +509,39 @@ bk_err_t bk_pwm_set_period_duty(pwm_chan_t chan, pwm_period_duty_config_t *confi
 	return ret;
 }
 
+static bool pwm_is_0_duty_ratio(pwm_chan_t chan)
+{
+	return (pwm_hal_get_ccr1(chan) == 0 && ((s_pwm.chan_init_signal_level &= BIT(chan)) == 0));
+}
+
+static bool pwm_is_100_duty_ratio(pwm_chan_t chan)
+{
+	return (pwm_hal_get_ccr1(chan) == 0 && ((s_pwm.chan_init_signal_level &= BIT(chan)) == 1));
+}
+
 bk_err_t bk_pwm_set_init_signal_low(pwm_chan_t chan)
 {
-	pwm_hal_set_init_level(chan, 0);
+	PWM_RETURN_ON_INVALID_CHAN(chan);
+	PWM_RETURN_ON_CHAN_NOT_INIT(chan);
+
+	if (pwm_is_100_duty_ratio(chan))
+		pwm_hal_set_init_level(chan, 1);
+	else if (pwm_is_0_duty_ratio(chan))
+		pwm_hal_set_init_level(chan, 0);
+
 	return BK_OK;
 }
 
 bk_err_t bk_pwm_set_init_signal_high(pwm_chan_t chan)
 {
-	pwm_hal_set_init_level(chan, 1);
+	PWM_RETURN_ON_INVALID_CHAN(chan);
+	PWM_RETURN_ON_CHAN_NOT_INIT(chan);
+
+	if (pwm_is_0_duty_ratio(chan))
+		pwm_hal_set_init_level(chan, 0);
+	else if (pwm_is_100_duty_ratio(chan))
+		pwm_hal_set_init_level(chan, 1);
+
 	return BK_OK;
 }
 
