@@ -44,6 +44,10 @@
 #endif
 #include "sys_driver.h"
 
+#if CONFIG_TEMP_DETECT
+#include "components/sensor.h"
+#endif
+
 #define portNVIC_SYSTICK_CTRL_REG             ( *( ( volatile uint32_t * ) 0xe000e010 ) )
 #define portNVIC_SYSTICK_LOAD_REG             ( *( ( volatile uint32_t * ) 0xe000e014 ) )
 #define portNVIC_SYSTICK_CURRENT_VALUE_REG    ( *( ( volatile uint32_t * ) 0xe000e018 ) )
@@ -643,11 +647,35 @@ static inline void sys_hal_set_low_voltage(volatile uint32_t *ana_r0, volatile u
 	sys_ll_set_ana_reg7_vporsel(1);
 	sys_ll_set_ana_reg7_vbspbuf_lp(1);//bit4
 	sys_ll_set_ana_reg7_envrefh1v(0);//bit12
-	sys_ll_set_ana_reg7_vanaldosel(0);//bit[9:6]
-#if CONFIG_LDO_SELF_LOW_POWER_MODE_ENA
-	sys_ll_set_ana_reg7_dldohp(0);//bit2
-	sys_ll_set_ana_reg7_aldohp(0);//bit10
+
+#if CONFIG_TEMP_DETECT
+	float temp;
+	bk_err_t err = bk_sensor_get_current_temperature(&temp);
+
+	if((err != BK_OK) || (temp < 0)) // get temperature failed or temperature is less than 0
+	{
+		sys_ll_set_ana_reg7_vanaldosel(2); // 0: 0.9V, 2: 1V
+		#if CONFIG_LDO_SELF_LOW_POWER_MODE_ENA
+		sys_ll_set_ana_reg7_dldohp(1); //will increase current 15uA
+		sys_ll_set_ana_reg7_aldohp(0);
+		#endif
+	}
+	else
+	{
+		sys_ll_set_ana_reg7_vanaldosel(0); // 0: 0.9V, 2: 1V
+		#if CONFIG_LDO_SELF_LOW_POWER_MODE_ENA
+		sys_ll_set_ana_reg7_dldohp(0);
+		sys_ll_set_ana_reg7_aldohp(0);
+		#endif
+	}
+#else
+	sys_ll_set_ana_reg7_vanaldosel(0); // 0: 0.9V, 2: 1V
+	#if CONFIG_LDO_SELF_LOW_POWER_MODE_ENA
+	sys_ll_set_ana_reg7_dldohp(0);
+	sys_ll_set_ana_reg7_aldohp(0);
+	#endif
 #endif
+
 	sys_ll_set_ana_reg7_bypassen(1);//bit20
 	sys_ll_set_ana_reg7_ioldolp(1);//bit21
 
