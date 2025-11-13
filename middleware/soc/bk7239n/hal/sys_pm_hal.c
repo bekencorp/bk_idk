@@ -638,14 +638,13 @@ static inline void sys_hal_set_low_voltage(volatile uint32_t *ana_r0, volatile u
 	sys_ana_ll_set_ana_reg7_spi_pwd_regpow(0);
 	sys_ana_ll_set_ana_reg7_vbspbuf_lp(1);
 	sys_ana_ll_set_ana_reg7_envrefh1v(0);
-
+	sys_ana_ll_set_ana_reg7_vanaldosel(2); // 0: 0.9V, 2: 1V
 #if CONFIG_TEMP_DETECT
 	float temp;
 	bk_err_t err = bk_sensor_get_current_temperature(&temp);
 
 	if((err != BK_OK) || (temp < 0)) // get temperature failed or temperature is less than 0
 	{
-		sys_ana_ll_set_ana_reg7_vanaldosel(2); // 0: 0.9V, 2: 1V
 		#if CONFIG_LDO_SELF_LOW_POWER_MODE_ENA
 		sys_ana_ll_set_ana_reg7_dldohp(1); //will increase current 15uA
 		sys_ana_ll_set_ana_reg7_aldohp(0);
@@ -653,14 +652,12 @@ static inline void sys_hal_set_low_voltage(volatile uint32_t *ana_r0, volatile u
 	}
 	else
 	{
-		sys_ana_ll_set_ana_reg7_vanaldosel(0); // 0: 0.9V, 2: 1V
 		#if CONFIG_LDO_SELF_LOW_POWER_MODE_ENA
 		sys_ana_ll_set_ana_reg7_dldohp(0);
 		sys_ana_ll_set_ana_reg7_aldohp(0);
 		#endif
 	}
 #else
-	sys_ana_ll_set_ana_reg7_vanaldosel(0); // 0: 0.9V, 2: 1V
 	#if CONFIG_LDO_SELF_LOW_POWER_MODE_ENA
 	sys_ana_ll_set_ana_reg7_dldohp(0);
 	sys_ana_ll_set_ana_reg7_aldohp(0);
