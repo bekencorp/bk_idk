@@ -1418,6 +1418,7 @@ int hapd_intf_ke_rx_handle(int dummy)
 		skb->vif_idx = type_ptr->vif_index;
 		skb->cb = hapd_intf_mgmt_tx_cb;
 		skb->args = skb; // cb args
+		skb->mgmt_hw_retries = 64;  // todo: set different count for different frame
 
 		// start to send the skb
 		extern void rwnx_start_xmit_mgmt(struct sk_buff *skb);
