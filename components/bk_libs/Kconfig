@@ -24,5 +24,4 @@ menu "Bk_libs"
 		bool "Enable Sta Ps"
 		default y if !RF_OTA_TEST
 		default n if RF_OTA_TEST
-
 endmenu

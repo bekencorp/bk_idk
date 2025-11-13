@@ -9,6 +9,7 @@
 #define CONFIG_SOC_STR "bk7239n"
 #define CONFIG_SOC_ARCH "cm33"
 #define CONFIG_SOC_BK7239XX 1
+#define CONFIG_PRODUCT_STRING ""
 #define CONFIG_TOOLCHAIN_PATH "/opt/gcc-arm-none-eabi-10.3-2021.10/bin"
 #define CONFIG_OBJDUMP 1
 #define CONFIG_ASSERT_IGNORE 1
@@ -18,7 +19,7 @@
 #define CONFIG_BLUETOOTH 1
 #define CONFIG_BK_COEX 1
 #define CONFIG_CALI 1
-#define CONFIG_CALI_ID 1
+#define CONFIG_PRODUCT_ID 1
 #define CONFIG_MANUAL_CALI 1
 #define CONFIG_TPC_PA_MAP 1
 #define CONFIG_TEMP_DETECT 1

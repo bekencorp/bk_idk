@@ -26,6 +26,7 @@ CONFIG_SOC_BK7236XX=y
 # CONFIG_SOC_BK7236_SMP is not set
 # CONFIG_SOC_BK7236_SMP_TEMP is not set
 # CONFIG_SOC_BK7239XX is not set
+CONFIG_PRODUCT_STRING=""
 # end of SOC_CONFIG
 
 #
@@ -101,7 +102,7 @@ CONFIG_BK_COEX=y
 # Modules::Bk_cal
 #
 CONFIG_CALI=y
-CONFIG_CALI_ID=y
+CONFIG_PRODUCT_ID=y
 
 #
 # Modify Cail Config
