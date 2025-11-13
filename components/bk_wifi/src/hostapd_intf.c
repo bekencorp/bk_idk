@@ -1418,7 +1418,14 @@ int hapd_intf_ke_rx_handle(int dummy)
 		skb->vif_idx = type_ptr->vif_index;
 		skb->cb = hapd_intf_mgmt_tx_cb;
 		skb->args = skb; // cb args
-		skb->mgmt_hw_retries = 64;  // todo: set different count for different frame
+
+		void *vif = mac_vif_mgmt_get_entry(type_ptr->vif_index);
+		if (vif && mac_vif_mgmt_get_type(vif) == VIF_STA) {
+			struct ieee80211_mgmt *mgmt = (struct ieee80211_mgmt *)skb->msdu_ptr;
+			// set SAE auth hw retry count
+			if (ieee80211_is_deauth(mgmt->frame_control))
+				skb->mgmt_hw_retries = 0x1F;  // todo: set different count for different frame
+		}
 
 		// start to send the skb
 		extern void rwnx_start_xmit_mgmt(struct sk_buff *skb);
