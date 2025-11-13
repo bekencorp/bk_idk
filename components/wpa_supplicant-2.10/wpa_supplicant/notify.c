@@ -229,7 +229,8 @@ out:
 }
 #endif
 
-#if BK_SUPPLICANT
+//#if BK_SUPPLICANT
+#if 0
 #define RATE_11B_1MBPS      0x02
 #define RATE_11B_2MBPS      0x04
 #define RATE_11B_5_5MBPS    0x0B
@@ -295,6 +296,7 @@ __IRAM_SEC bool sta_check_user_is_11b_1mbps_supported()
 	else
 		return false;
 }
+
 #endif
 
 #if BK_SUPPLICANT
@@ -324,7 +326,7 @@ void wpas_notify_connected(struct wpa_supplicant *wpa_s)
 					&sta_connected, sizeof(sta_connected), BEKEN_NEVER_TIMEOUT));
 #if BK_SUPPLICANT
 		/* parse mac rates in the beacon frame and set 11b flags */
-		wpa_parse_mac_rates_ie(wpa_s);
+		//wpa_parse_mac_rates_ie(wpa_s);
 #endif
 #ifdef CONFIG_WPA_PSK_CACHE
 		wpa_psk_thread_lower_prio();  // stop_wpa_psk_cal_thread();
