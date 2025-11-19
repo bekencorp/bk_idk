@@ -2659,6 +2659,8 @@ static void dynamic_node_gc(void)
 	dynamic_log_node *node;
 	dynamic_log_node *temp_node;
 	dynamic_log_node *free_list = NULL;
+	u32 free_len = 0;
+	u32 free_num = 0;
 	u32  int_mask = shell_task_enter_critical();
 	if (s_to_free_list != NULL) {
 		free_list = s_to_free_list;
@@ -2668,11 +2670,16 @@ static void dynamic_node_gc(void)
 	node = free_list;
 	while (node != NULL) {
 		temp_node = node;
-		s_dynamic_log_total_len -= node->len;
+		free_len += node->len;
 		node = node->next;
 		LOG_FREE(temp_node);
-		s_dynamic_log_num_in_mem--;
+		free_num++;
 	}
+	int_mask = shell_task_enter_critical();
+	BK_ASSERT(s_dynamic_log_total_len >= free_len);
+	s_dynamic_log_total_len -= free_len;
+	s_dynamic_log_num_in_mem -= free_num;
+	shell_task_exit_critical(int_mask);
 }
 
 static void check_and_free_dynamic_node(void)
