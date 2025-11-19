@@ -87,6 +87,7 @@ list(APPEND srcs
 	mbedtls/library/entropy.c
 	mbedtls/library/error.c
 	mbedtls/library/gcm.c
+	mbedtls/library/hkdf.c
 	mbedtls/library/hmac_drbg.c
 	mbedtls/library/md5.c
 	mbedtls/library/nist_kw.c
