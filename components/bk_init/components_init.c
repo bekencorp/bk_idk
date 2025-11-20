@@ -97,7 +97,7 @@ void mem_debug_start_timer(void)
 
 int bandgap_init(void)
 {
-#if (CONFIG_SOC_BK7236XX) && (CONFIG_OTP) && (CONFIG_SYS_CPU0)
+#if (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) && (CONFIG_OTP) && (CONFIG_SYS_CPU0)
 	uint8_t device_id[2]; //only check seqNUM
 	uint8_t new_bandgap;
 	uint8_t old_bandgap;
@@ -105,12 +105,12 @@ int bandgap_init(void)
 
 	old_bandgap = (uint8_t)sys_drv_get_bgcalm();
 
-	result = bk_otp_apb_read(OTP_VDDDIG_BANDGAP, &new_bandgap, sizeof(new_bandgap));
+	result = bk_otp_ahb_read(OTP_VDDDIG_BANDGAP, &new_bandgap, sizeof(new_bandgap));
 	if ((result != BK_OK) || (new_bandgap == 0) || (new_bandgap > 0x3F)) {
 		goto default_bandgap;
 	}
 
-	result = bk_otp_apb_read(OTP_DEVICE_ID, device_id, sizeof(device_id));
+	result = bk_otp_ahb_read(OTP_DEVICE_ID, device_id, sizeof(device_id));
 	if ((result != BK_OK) || ((device_id[0] == 0x32) && (device_id[1] == 0x31))) {
 		goto default_bandgap;
 	}
