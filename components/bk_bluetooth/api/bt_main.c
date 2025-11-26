@@ -85,10 +85,17 @@ static int bluetooth_lv_exit_cb(uint64_t expected_time_ms, void *args)
 bt_err_t bk_bluetooth_init(void)
 {
     bt_err_t ret;
+    LOGI("%s start, %d,%p \r\n", __func__, bluetooth_already_init, bluetooth_mutex);
+    if (bluetooth_mutex == NULL)
+    {
+        rtos_init_mutex(&bluetooth_mutex);
+    }
 
+    rtos_lock_mutex(&bluetooth_mutex);
     if (bluetooth_already_init)
     {
         LOGE("%s bluetooth already initialised\r\n", __func__);
+        rtos_unlock_mutex(&bluetooth_mutex);
         return 0;
     }
 
@@ -96,12 +103,14 @@ bt_err_t bk_bluetooth_init(void)
     if (ret)
     {
         LOGE("%s initialize bt os adapter failed\r\n", __func__);
+        rtos_unlock_mutex(&bluetooth_mutex);
         return ret;
     }
 
     if ((ret = bk_bt_feature_init()) != 0)
     {
         LOGE("%s initialize bt feature failed\r\n", __func__);
+        rtos_unlock_mutex(&bluetooth_mutex);
         return ret;
     }
 
@@ -109,6 +118,7 @@ bt_err_t bk_bluetooth_init(void)
     if (ret)
     {
         LOGE("%s initialize controller failed\r\n", __func__);
+        rtos_unlock_mutex(&bluetooth_mutex);
         return ret;
     }
 
@@ -117,6 +127,7 @@ bt_err_t bk_bluetooth_init(void)
     if (ret)
     {
         LOGE("%s init host failed\r\n", __func__);
+        rtos_unlock_mutex(&bluetooth_mutex);
         return ret;
     }
 #endif
@@ -140,12 +151,9 @@ bt_err_t bk_bluetooth_init(void)
     bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, PM_DEV_ID_BTDM, &enter_lv_config, &exit_lv_config);
     #endif
 
-    if (bluetooth_mutex == NULL)
-    {
-        rtos_init_mutex(&bluetooth_mutex);
-    }
     bluetooth_already_init = 1;
     LOGI("%s ok\r\n", __func__);
+    rtos_unlock_mutex(&bluetooth_mutex);
     return ret;
 }
 
