@@ -2639,7 +2639,7 @@ void sys_hal_early_init(void)
 	sys_hal_analog_set(ANALOG_REG4, 0x40010000);
 	sys_hal_analog_set(ANALOG_REG5, 0x8407AF60);//liupeng20250514:hp for tx
 	sys_hal_analog_set(ANALOG_REG6, 0x80088100);//liupeng20250427
-	sys_hal_analog_set(ANALOG_REG7, 0x57E657C6);//xinyuan20250611:<9:6>=F for better EVM;tenglong20251010<18>=1
+	sys_hal_analog_set(ANALOG_REG7, 0x57E647C6);//xinyuan20250611:<9:6>=F for better EVM;tenglong20251010<18>=1
 	sys_hal_analog_set(ANALOG_REG8, 0xF87C72E4);//ronghui20250519:<31:30>=3(0.9V), avoid write analog failure
 
 	/**

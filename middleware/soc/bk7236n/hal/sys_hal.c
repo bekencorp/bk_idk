@@ -2655,7 +2655,7 @@ void sys_hal_early_init(void)
 	sys_hal_analog_set(ANALOG_REG4, 0x40000000);
 	sys_hal_analog_set(ANALOG_REG5, 0x84072160);
 	sys_hal_analog_set(ANALOG_REG6, 0x80088100);//liupeng20250427
-	sys_hal_analog_set(ANALOG_REG7, 0x57E697C6);//tenglong20250430:ldo current limit for EVM;//shuguang20250512:vio=3.3V;xinyuan20250611:<9:6>=F for better EVM
+	sys_hal_analog_set(ANALOG_REG7, 0x57E687C6);//tenglong20250430:ldo current limit for EVM;//shuguang20250512:vio=3.3V;xinyuan20250611:<9:6>=F for better EVM
 	sys_hal_analog_set(ANALOG_REG8, 0xF97C72E4);//tenglong20250519:<31:30>=3(0.9V), same with BK7236_SYS_ANA_4D<13:12>
 
 	/**
