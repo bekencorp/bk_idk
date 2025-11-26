@@ -886,7 +886,9 @@ etharp_input(struct pbuf *p, struct netif *netif)
       if (for_us) {
 #if BK_LWIP
 #ifdef CONFIG_WIFI_DTIM10_TEMP_DISABLED
-        if (i >= 0) {
+        // If STA low power mode is enabled, reduce the times of ARP request.
+        // Skip for softap interface and non low power mode.
+        if (net_get_sta_handle() == netif && i >= 0 && bk_wifi_get_lowpower_mode()) {
           LWIP_DEBUGF(ETHARP_DEBUG | LWIP_DBG_TRACE, ("etharp_input: rtime %d, sys_now %d\n", arp_table[i].rtime, sys_now()));
           /* If not request before */
           if (!arp_table[i].rtime) {
