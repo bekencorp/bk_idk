@@ -29,7 +29,7 @@ if [ ! -f "${BOOTLOADER_BIN}" ]; then
     exit 1
 fi
 
-PRODUCT_BYTES=$(dd if="${BOOTLOADER_BIN}" bs=1 skip=$((0x118)) count=16 2>/dev/null | xxd -p -c 16)
+PRODUCT_BYTES=$(dd if="${BOOTLOADER_BIN}" bs=1 skip=$((0x108)) count=16 2>/dev/null | xxd -p -c 16)
 # Convert hexadecimal data back to ASCII string (only take first 15 bytes, ignore CRC byte)
 PRODUCT_STRING=$(echo "${PRODUCT_BYTES:0:30}" | sed 's/../& /g' | xxd -r -p | tr -d '\0')
 
@@ -40,8 +40,6 @@ fi
 
 # Trim whitespace
 PRODUCT_STRING=$(echo "${PRODUCT_STRING}" | xargs)
-
-echo "Found PRODUCT_STRING: ${PRODUCT_STRING}"
 echo "Writing product ID to ${ALL_APP_BIN}..."
 
 # Call write_product_id.py with PRODUCT_STRING as product_id parameter

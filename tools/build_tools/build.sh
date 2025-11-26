@@ -111,8 +111,6 @@ if [ "${need_build_properties_lib}" == "1" ]; then
 		PRODUCT_STRING=$(echo "${PRODUCT_STRING}" | xargs)
 		
 		if [ -n "${PRODUCT_STRING}" ]; then
-			echo "Found PRODUCT_STRING: ${PRODUCT_STRING}"
-			
 			if [ -f "${NORMAL_BOOTLOADER_BIN}" ]; then
 				echo "Writing product ID to ${NORMAL_BOOTLOADER_BIN}..."
 				python3 "${WRITE_PRODUCT_ID_SCRIPT}" "${NORMAL_BOOTLOADER_BIN}" "${PRODUCT_STRING}"
