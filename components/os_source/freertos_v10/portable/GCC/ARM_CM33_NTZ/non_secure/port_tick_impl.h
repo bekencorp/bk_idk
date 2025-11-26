@@ -25,12 +25,11 @@ void rtos_init_base_time(void) {
 }
 
 uint32_t rtos_get_time_diff(void) {
+	uint32_t diff_ms = 0;
 #if CONFIG_AON_RTC || CONFIG_ANA_RTC
-	//uint64_t cur_aon_time = bk_aon_rtc_get_us()/1000;
 	uint64_t cur_aon_time = bk_aon_rtc_get_ms();
 	uint32_t cur_os_time = rtos_get_time(); //ms
 	uint64_t diff_time = (cur_aon_time - base_aon_time); //ms
-	uint32_t diff_ms = 0;
 
 	if((uint32_t)(diff_time >> 32) & 0x7FF0000) {
 		BK_LOGI(TAG, "aon_rtc overfollow....\r\n");
@@ -55,11 +54,8 @@ uint32_t rtos_get_time_diff(void) {
 		BK_LOGI(TAG, "aon_rtc diff_ms: %dms.\r\n", diff_ms);
 		BK_LOGI(TAG, "cur aon time: 0x%x:0x%08x\r\n", (u32)(cur_aon_time >> 32), (u32)(cur_aon_time & 0xFFFFFFFF));
 	}
-
-	return  diff_ms / OS_MS_PER_TICK; // tick
-#else
-	return 0;
 #endif
+	return diff_ms / OS_MS_PER_TICK; // tick
 }
 
 

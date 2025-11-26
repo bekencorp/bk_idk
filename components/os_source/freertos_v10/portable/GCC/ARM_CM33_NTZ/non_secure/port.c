@@ -845,15 +845,10 @@ void SysTick_Handler( void ) /* PRIVILEGED_FUNCTION */
         }
     }
 
-    {
-        #if CONFIG_AON_RTC
-        uint32_t rtos_get_time_diff(void);
-        TickType_t slept_ticks = rtos_get_time_diff();
-
-        if(slept_ticks > 1) {
-            vTaskStepTick(slept_ticks - 1);
-        }
-        #endif // CONFIG_AON_RTC
+    uint32_t rtos_get_time_diff(void);
+    TickType_t slept_ticks = rtos_get_time_diff();
+    if(slept_ticks > 1) {
+        vTaskStepTick(slept_ticks - 1);
     }
 
     #if CONFIG_AON_PMU_POR_TIMING_SUPPORT && (0 == CONFIG_AON_PMU_POR_RTC_RESET)
