@@ -105,12 +105,20 @@ int bandgap_init(void)
 
 	old_bandgap = (uint8_t)sys_drv_get_bgcalm();
 
+#if(CONFIG_SOC_BK7239XX)
 	result = bk_otp_ahb_read(OTP_VDDDIG_BANDGAP, &new_bandgap, sizeof(new_bandgap));
+#else
+	result = bk_otp_apb_read(OTP_VDDDIG_BANDGAP, &new_bandgap, sizeof(new_bandgap));
+#endif
 	if ((result != BK_OK) || (new_bandgap == 0) || (new_bandgap > 0x3F)) {
 		goto default_bandgap;
 	}
 
+#if(CONFIG_SOC_BK7239XX)
 	result = bk_otp_ahb_read(OTP_DEVICE_ID, device_id, sizeof(device_id));
+#else
+	result = bk_otp_apb_read(OTP_DEVICE_ID, device_id, sizeof(device_id));
+#endif
 	if ((result != BK_OK) || ((device_id[0] == 0x32) && (device_id[1] == 0x31))) {
 		goto default_bandgap;
 	}
