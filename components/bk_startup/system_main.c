@@ -83,7 +83,7 @@ void rtos_user_app_waiting_for_launch(void)
 
 
 __attribute__((weak)) void bk_module_init(void) {
-	
+
 }
 
 #if (CONFIG_CPU_CNT > 1)
@@ -150,12 +150,12 @@ static uint32 get_partition_addr(uint32 cpu_id)
 		{
 			part_id = BK_PARTITION_APPLICATION1;
 			break;
-		} 
+		}
 		case 2:
 		{
 			part_id = BK_PARTITION_APPLICATION2;
 			break;
-		} 
+		}
 		default:
 			return 0;
 	}
@@ -181,7 +181,7 @@ void reset_cpu1_core(uint32 offset, uint32_t start_flag)
 	extern void mon_reset_cpu1(u32 enable, u32 start_addr);
 
 	mon_reset_cpu1(start_flag, offset);
-	#else	
+	#else
 	sys_drv_set_cpu1_pwr_dw(0);
 	sys_drv_set_cpu1_boot_address_offset(offset >> 8);
 	sys_drv_set_cpu1_reset(start_flag);
@@ -463,11 +463,6 @@ void entry_main(void)
 	start_app_main_thread();
 #if (CONFIG_SYS_CPU0)
 	start_user_app_thread();
-#endif
-
-#if (CONFIG_SYS_CPU0) && (CONFIG_FREERTOS_V10)
-	extern void rtos_init_base_time(void);
-	rtos_init_base_time();
 #endif
 
 #if CONFIG_SAVE_BOOT_TIME_POINT

@@ -335,7 +335,10 @@ int components_init(void)
 	wdt_init();
 #endif
 
-
+#if (CONFIG_SYS_CPU0) && (CONFIG_FREERTOS_V10)
+	extern void rtos_init_base_time(void);
+	rtos_init_base_time();
+#endif
 
 #if (CONFIG_TEMP_DETECT || CONFIG_VOLT_DETECT) && (CONFIG_SYS_CPU0)
 	bk_sensor_init();
