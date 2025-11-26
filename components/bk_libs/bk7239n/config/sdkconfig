@@ -727,6 +727,7 @@ CONFIG_INTERRUPT_RECORDER_CNT=40
 #
 # CONFIG_SDMADC_TEMP is not set
 # CONFIG_VOLT_DETECT is not set
+# CONFIG_TEMPERATURE_HIGH_VOLT is not set
 # end of sensor_detect
 
 #

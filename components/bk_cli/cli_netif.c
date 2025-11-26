@@ -244,8 +244,17 @@ void cli_ping_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **arg
 		os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
 		return;
 	}
-	if (argc > 2)
-		cnt = os_strtoul(argv[2], NULL, 10);
+	if (argc > 2) {
+		if (os_strcmp("-t", argv[2]) == 0) {
+			cnt = UINT32_MAX;
+		} else {
+			cnt = os_strtoul(argv[2], NULL, 10);
+			if (!cnt) {
+				os_printf("invalid count [%s], default to 4\n", argv[2]);
+				cnt = 4;
+			}
+		}
+	}
 
 	os_printf("ping IP address:%s\n", argv[1]);
 	ping_start(argv[1], cnt, 0);

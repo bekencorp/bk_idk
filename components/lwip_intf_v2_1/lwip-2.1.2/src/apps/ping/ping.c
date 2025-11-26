@@ -79,16 +79,16 @@ struct _ip_addr
 #define THREAD_SIZE             (1536)
 
 enum {
-	PING_STATE_STOPPED = 0,
-	PING_STATE_STOPPING,
-	PING_STATE_STARTED,
+    PING_STATE_STOPPED = 0,
+    PING_STATE_STOPPING,
+    PING_STATE_STARTED,
 };
 
 typedef struct {
-	int state;
-	char *ip;
-	uint32_t time;
-	uint32_t size;
+    int state;
+    char *ip;
+    uint32_t time;
+    uint32_t size;
 } ping_param_t;
 
 static ping_param_t p_param;
@@ -124,10 +124,10 @@ static err_t ping_send(int s, ip_addr_t *addr, int size)
     int ping_size = sizeof(struct icmp_echo_hdr) + size; //1472:icmp max payload size without fragment
     LWIP_ASSERT("ping_size is too big", ping_size <= 0xffff);
 
-	iecho = (struct icmp_echo_hdr *)mem_malloc((mem_size_t)ping_size);
-	if (!iecho) {
-		return ERR_MEM;
-	}
+    iecho = (struct icmp_echo_hdr *)mem_malloc((mem_size_t)ping_size);
+    if (!iecho) {
+        return ERR_MEM;
+    }
     ping_prepare_echo(iecho, (u16_t) ping_size);
 
     to.sin_len = sizeof(to);
@@ -191,7 +191,7 @@ static int ping_recv(int s, int *ttl)
 #if LWIP_IPV6
 /** Prepare a echo ICMP request */
 static void ping6_prepare_echo( struct icmp6_echo_hdr *iecho, u16_t tot_len,
-	ip6_addr_t *reply_src,ip6_addr_t *dest_add)
+    ip6_addr_t *reply_src,ip6_addr_t *dest_add)
 {
     size_t i;
     size_t data_len = tot_len - sizeof(struct icmp6_echo_hdr);
@@ -208,11 +208,11 @@ static void ping6_prepare_echo( struct icmp6_echo_hdr *iecho, u16_t tot_len,
         ((char*) iecho)[sizeof(struct icmp6_echo_hdr) + i] = (char) i;
     }
 }
-    
+
 
 static int ping6_recv(int s, int *ttl)
 {
-	struct icmp6_echo_hdr *iecho;
+    struct icmp6_echo_hdr *iecho;
     struct sockaddr_in6 from;
     int fromlen = sizeof(struct sockaddr_in6),len;
     char buf[128];
@@ -237,14 +237,14 @@ static err_t ping6_send(int s, ip_addr_t *src_addr,ip_addr_t *dest_addr,int size
     struct pbuf *p;
     struct icmp6_echo_hdr *iecho;
     struct sockaddr_in6 to;
-	size_t ping_size = sizeof(struct icmp6_echo_hdr) + size;
-	int error=0;
+    size_t ping_size = sizeof(struct icmp6_echo_hdr) + size;
+    int error=0;
 
     p = pbuf_alloc(PBUF_IP, ping_size, PBUF_RAM);
-    
+
     if (p != NULL) {
         iecho = (struct icmp6_echo_hdr *)p->payload;
-		ping6_prepare_echo(iecho, (u16_t)ping_size,ip_2_ip6(src_addr),ip_2_ip6(dest_addr));
+        ping6_prepare_echo(iecho, (u16_t)ping_size,ip_2_ip6(src_addr),ip_2_ip6(dest_addr));
         memset(&to,0,sizeof(to));
         to.sin6_len = sizeof(to);
         to.sin6_family = AF_INET6;
@@ -275,62 +275,62 @@ static err_t ping_mid_send(int s, ip_addr_t *src_addr,ip_addr_t *dest_addr,int s
         return ping6_send(s,src_addr,dest_addr,size);
     else
 #endif
-    return ping_send(s,dest_addr,size); 
+    return ping_send(s,dest_addr,size);
 }
 
 static void ping_thread(void *thread_param)
 {
 
-	ping(p_param.ip, p_param.time, p_param.size);
+    ping(p_param.ip, p_param.time, p_param.size);
 
-	//LWIP_DEBUGF( PING_DEBUG, ("ping: end\n"));
-	if (p_param.ip)
-		os_free(p_param.ip);
-	p_param.ip = NULL;
-	p_param.state = PING_STATE_STOPPED;
-	rtos_delete_thread(NULL);
+    //LWIP_DEBUGF( PING_DEBUG, ("ping: end\n"));
+    if (p_param.ip)
+        os_free(p_param.ip);
+    p_param.ip = NULL;
+    p_param.state = PING_STATE_STOPPED;
+    rtos_delete_thread(NULL);
 }
 
 
 void ping_stop(void)
 {
-	if (p_param.state == PING_STATE_STARTED) {
-		p_param.state = PING_STATE_STOPPING;
-		LWIP_DEBUGF( PING_DEBUG, ("ping: ping is stopping...\n"));
-	}
+    if (p_param.state == PING_STATE_STARTED) {
+        p_param.state = PING_STATE_STOPPING;
+        LWIP_DEBUGF( PING_DEBUG, ("ping: ping is stopping...\n"));
+    }
 }
 
 
 void ping_start(char* target_name, uint32_t times, size_t size)
 {
-	if (p_param.state == PING_STATE_STOPPED) {
-	    if (p_param.ip) {
-			os_free(p_param.ip);
-			p_param.ip = NULL;
-		}
-	    if (target_name) {
-			p_param.state = PING_STATE_STARTED;
-			p_param.ip = os_strdup(target_name);
-			p_param.time = times;
-			p_param.size = size;
+    if (p_param.state == PING_STATE_STOPPED) {
+        if (p_param.ip) {
+            os_free(p_param.ip);
+            p_param.ip = NULL;
+        }
+        if (target_name) {
+            p_param.state = PING_STATE_STARTED;
+            p_param.ip = os_strdup(target_name);
+            p_param.time = times;
+            p_param.size = size;
 #ifdef CONFIG_FREERTOS_SMP
-			rtos_create_thread_with_affinity(NULL, -1, ping_priority, "ping",
-							   ping_thread, THREAD_SIZE,
-							   (beken_thread_arg_t) 0);
+            rtos_create_thread_with_affinity(NULL, -1, ping_priority, "ping",
+                               ping_thread, THREAD_SIZE,
+                               (beken_thread_arg_t) 0);
 #else
-			rtos_create_thread(NULL, ping_priority, "ping",
-							   ping_thread, THREAD_SIZE,
-							   (beken_thread_arg_t) 0);	
+            rtos_create_thread(NULL, ping_priority, "ping",
+                               ping_thread, THREAD_SIZE,
+                               (beken_thread_arg_t) 0);
 #endif
-		}
-		else
-			LWIP_DEBUGF( PING_DEBUG, ("Please input: ping <host address>\n"));
+        }
+        else
+            LWIP_DEBUGF( PING_DEBUG, ("Please input: ping <host address>\n"));
 
-	}
-	else if (p_param.state == PING_STATE_STOPPING)
-		LWIP_DEBUGF( PING_DEBUG, ("ping: ping is stopping, try again later!\n"));
-	else
-		LWIP_DEBUGF( PING_DEBUG, ("ping: ping is running, stop first!\n"));
+    }
+    else if (p_param.state == PING_STATE_STOPPING)
+        LWIP_DEBUGF( PING_DEBUG, ("ping: ping is stopping, try again later!\n"));
+    else
+        LWIP_DEBUGF( PING_DEBUG, ("ping: ping is running, stop first!\n"));
 }
 
 int ping(char* target_name, uint32_t times, size_t size)
@@ -346,8 +346,8 @@ int ping(char* target_name, uint32_t times, size_t size)
     struct sockaddr_in6 *h6 = NULL;
     struct netif *netif=NULL;
 #endif
-	int recv_cnt = 0;
-	int sent_cnt = 0;
+    int recv_cnt = 0;
+    int sent_cnt = 0;
     send_times = 0;
     ping_seq_num = 0;
 
@@ -355,7 +355,10 @@ int ping(char* target_name, uint32_t times, size_t size)
     {
         size = PING_DATA_SIZE;
     }
-	LWIP_DEBUGF( PING_DEBUG, ("ping: size:%u times:%u\n", size, times));
+    if (times == UINT32_MAX)
+        LWIP_DEBUGF( PING_DEBUG, ("ping: size:%u times:infinite\n", size));
+    else
+        LWIP_DEBUGF( PING_DEBUG, ("ping: size:%u times:%u\n", size, times));
     memset(&hint, 0, sizeof(hint));
     /* convert URL to IP */
     if (lwip_getaddrinfo(target_name, NULL, &hint, &res) != 0)
@@ -387,7 +390,7 @@ int ping(char* target_name, uint32_t times, size_t size)
             IP_SET_TYPE(&target_addr,IPADDR_TYPE_V6);
             ip6_addr_set_zone(ip_2_ip6(&target_addr),ip6_addr_zone(ip_2_ip6(src_addr)));
         }
-#endif        
+#endif
     }
     else
     {
@@ -400,7 +403,7 @@ int ping(char* target_name, uint32_t times, size_t size)
     /* new a socket */
     if ((s = lwip_socket(af, SOCK_RAW, proto)) < 0)
     {
-		LWIP_DEBUGF( PING_DEBUG, ("ping: create socket failed\n"));
+        LWIP_DEBUGF( PING_DEBUG, ("ping: create socket failed\n"));
         return -1;
     }
 
@@ -411,8 +414,8 @@ int ping(char* target_name, uint32_t times, size_t size)
     {
         if (ping_mid_send(s, src_addr,&target_addr, size) == ERR_OK)
         {
-			sent_cnt++;
-			recv_start_tick = sys_now();
+            sent_cnt++;
+            recv_start_tick = sys_now();
             if ((recv_len = ping_mid_recv(s, &ttl,af)) >= 0)
             {
                 recv_cnt++;
@@ -421,28 +424,34 @@ int ping(char* target_name, uint32_t times, size_t size)
             }
             else
             {
-				LWIP_DEBUGF( PING_DEBUG, ("From %s icmp_seq=%d timeout\n", ipaddr_ntoa(&target_addr), send_times));
+                LWIP_DEBUGF( PING_DEBUG, ("From %s icmp_seq=%d timeout\n", ipaddr_ntoa(&target_addr), send_times));
             }
         }
         else
         {
-			LWIP_DEBUGF( PING_DEBUG, ("Send %s - error\n", ipaddr_ntoa(&target_addr)));
+            LWIP_DEBUGF( PING_DEBUG, ("Send %s - error\n", ipaddr_ntoa(&target_addr)));
         }
 
         send_times++;
-        if (send_times >= times)
+        if (times != UINT32_MAX && send_times >= times)
         {
-			LWIP_DEBUGF( PING_DEBUG, ("ping end, sent cnt: %d, recv cnt: %d, drop cnt: %d(%.1f%%)\n", 
-				sent_cnt, recv_cnt, (times-recv_cnt), (float)(((times-recv_cnt)*100)/times)));
+            // ping without -t
+            LWIP_DEBUGF( PING_DEBUG, ("ping end, sent cnt: %d, recv cnt: %d, drop cnt: %d(%.1f%%)\n",
+                sent_cnt, recv_cnt, send_times - recv_cnt, (float)(((send_times-recv_cnt)*100)/send_times)));
             /* send ping times reached, stop */
             break;
         }
-		
-		if (p_param.state != PING_STATE_STARTED)
-			break;
-		
-		sys_msleep(PING_DELAY);
+
+        if (p_param.state != PING_STATE_STARTED)
+            break;
+
+        sys_msleep(PING_DELAY);
     }
+
+    // ping with -t
+    if (times == UINT32_MAX)
+        LWIP_DEBUGF( PING_DEBUG, ("ping end, sent cnt: %d, recv cnt: %d, drop cnt: %d(%.1f%%)\n",
+            sent_cnt, recv_cnt, send_times - recv_cnt, (float)(((send_times-recv_cnt)*100)/send_times)));
 
     lwip_close(s);
 

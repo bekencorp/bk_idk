@@ -61,7 +61,6 @@ set (blacklist_elem
 	libtjpg[^.]*\.a
 	libscale[^.]*\.a
 	libwifi[^.]*\.a
-	libproduct_[^.]*\.a
 )
 
 list (JOIN blacklist_elem | blacklist_elem_regax)
@@ -78,21 +77,3 @@ foreach(lib ${libs})
  	add_prebuilt_library(${lib_name} "${CMAKE_CURRENT_SOURCE_DIR}/${armino_soc}/libs/${lib_name}")
  	target_link_libraries(${COMPONENT_LIB} INTERFACE ${lib_name})
 endforeach()
-
-# Link product ID library if CONFIG_PRODUCT_STRING is defined
-if(DEFINED CONFIG_PRODUCT_STRING AND NOT "${CONFIG_PRODUCT_STRING}" STREQUAL "")
-	# Convert CONFIG_PRODUCT_STRING to lowercase
-	string(TOLOWER "${CONFIG_PRODUCT_STRING}" product_id_lower)
-	# Build library name: libproduct_xx.a
-	set(product_lib_name "libproduct_${product_id_lower}.a")
-	set(product_lib_path "${CMAKE_CURRENT_SOURCE_DIR}/${armino_soc}/libs/${product_lib_name}")
-	
-	# Check if library exists and link it
-	if(EXISTS "${product_lib_path}")
-		add_prebuilt_library(${product_lib_name} "${product_lib_path}")
-		target_link_libraries(${COMPONENT_LIB} INTERFACE ${product_lib_name})
-		message(STATUS "Linked product library: ${product_lib_name}")
-	else()
-		message(WARNING "Product library not found: ${product_lib_path}")
-	endif()
-endif()
