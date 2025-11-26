@@ -30,6 +30,8 @@ bk_lock_t* lock_init();
 void lock_deinit(bk_lock_t* bk_lock);
 void lock(bk_lock_t* bk_lock);
 void unlock(bk_lock_t* bk_lock);
+int bk_otp_activate(uint8_t map_id);
+void bk_otp_deactivate(void);
 //TODO end
 
 #define OTP_TAG "otp"

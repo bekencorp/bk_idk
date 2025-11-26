@@ -72,7 +72,10 @@ fi
 
 PROPERTIES_LIB_BUILD_DIR=${SDK_BUILD_DIR}/properties_libs/${ARMINO_SOC}
 PROPERTIES_LIB_DIR=${PROPERTIES_PROJECT_DIR}
-
+WRITE_PRODUCT_ID_SCRIPT="${ARMINO_DIR}/tools/build_tools/write_product_id.py"
+PRODUCT_ID_FILE="${ARMINO_DIR}/properties/soc/${ARMINO_SOC}/product_id.txt"
+NORMAL_BOOTLOADER_BIN="${ARMINO_DIR}/components/bk_libs/${ARMINO_SOC}/bootloader/normal_bootloader/bootloader.bin"
+AB_BOOTLOADER_BIN="${ARMINO_DIR}/components/bk_libs/${ARMINO_SOC}/bootloader/ab_bootloader/bootloader.bin"
 # not to build properties repeatedly when verify.
 if [ -n "${BK_JENKINS_ID:-}" ]; then
 	if [ -d "$PROPERTIES_LIB_BUILD_DIR" ]; then
@@ -102,6 +105,36 @@ if [ "${need_build_properties_lib}" == "1" ]; then
 	${ARMINO_TOOL} -B ${PROPERTIES_LIB_BUILD_DIR} -P ${PROPERTIES_LIB_DIR} set-target ${ARMINO_SOC}
 	${ARMINO_TOOL} -B ${PROPERTIES_LIB_BUILD_DIR} -P ${PROPERTIES_LIB_DIR} ${ARMINO_TARGET}
 	${ARMINO_DIR}/tools/build_tools/copy_internal_libs.sh ${ARMINO_SOC} ${ARMINO_DIR} ${PROPERTIES_LIB_BUILD_DIR} ${PROJECT}
+	
+	if [ -f "${PRODUCT_ID_FILE}" ] && [ -f "${WRITE_PRODUCT_ID_SCRIPT}" ]; then
+		PRODUCT_STRING=$(cat "${PRODUCT_ID_FILE}")
+		PRODUCT_STRING=$(echo "${PRODUCT_STRING}" | xargs)
+		
+		if [ -n "${PRODUCT_STRING}" ]; then
+			echo "Found PRODUCT_STRING: ${PRODUCT_STRING}"
+			
+			if [ -f "${NORMAL_BOOTLOADER_BIN}" ]; then
+				echo "Writing product ID to ${NORMAL_BOOTLOADER_BIN}..."
+				python3 "${WRITE_PRODUCT_ID_SCRIPT}" "${NORMAL_BOOTLOADER_BIN}" "${PRODUCT_STRING}"
+				if [ $? -eq 0 ]; then
+					echo "Product ID write to normal bootloader completed successfully"
+				else
+					echo "Warning: Product ID write to normal bootloader failed, continuing build"
+				fi
+			fi
+			
+			if [ -f "${AB_BOOTLOADER_BIN}" ]; then
+				echo "Writing product ID to ${AB_BOOTLOADER_BIN}..."
+				python3 "${WRITE_PRODUCT_ID_SCRIPT}" "${AB_BOOTLOADER_BIN}" "${PRODUCT_STRING}"
+				if [ $? -eq 0 ]; then
+					echo "Product ID write to AB bootloader completed successfully"
+				else
+					echo "Warning: Product ID write to AB bootloader failed, continuing build"
+				fi
+			fi
+		fi
+	fi
+
 fi
 
 if [ "${need_build_soc}" == "1" ]; then

@@ -192,6 +192,17 @@ static uint32_t _otp_read_otp(uint32_t location)
 	return otp_hal_read_otp(&s_otp.hal,location);
 }
 
+int bk_otp_activate(uint8_t map_id)
+{
+	OTP_ACTIVE(map_id);
+	return 0;
+}
+void bk_otp_deactivate(void)
+{
+	OTP_SLEEP();
+}
+
+
 #if CONFIG_OTP_EFUSE_SUPPORT
 bk_err_t bk_otp_efuse_read_32bit(uint32_t* values)
 {

@@ -10,14 +10,8 @@ BUILD_DIR=$3
 # Write product ID to all-app.bin
 WRITE_PRODUCT_ID_SCRIPT="${ARMINO_DIR}/tools/build_tools/write_product_id.py"
 ALL_APP_BIN="${BUILD_DIR}/package/all-app.bin"
-PRODUCT_ID_FILE="${ARMINO_DIR}/middleware/boards/${ARMINO_SOC}/product_ids.txt"
-SDKCONFIG_H="${BUILD_DIR}/${ARMINO_SOC}/config/sdkconfig.h"
-
-# Check if PRODUCT_ID_FILE exists, exit if not
-if [ ! -f "${PRODUCT_ID_FILE}" ]; then
-	echo "product_ids.txt not found at ${PRODUCT_ID_FILE}"
-	exit 0
-fi
+# Read product_id from bootloader.bin file (read 16 bytes from 0x118 offset)
+BOOTLOADER_BIN="${ARMINO_DIR}/components/bk_libs/${ARMINO_SOC}/bootloader/normal_bootloader/bootloader.bin"
 
 # Check if required files exist
 if [ ! -f "${WRITE_PRODUCT_ID_SCRIPT}" ]; then
@@ -29,30 +23,29 @@ if [ ! -f "${ALL_APP_BIN}" ]; then
 	exit 1
 fi
 
-# Parse CONFIG_PRODUCT_STRING from sdkconfig.h
-if [ ! -f "${SDKCONFIG_H}" ]; then
-	echo "Error: sdkconfig.h not found at ${SDKCONFIG_H}"
-	exit 1
+# Check if bootloader.bin exists
+if [ ! -f "${BOOTLOADER_BIN}" ]; then
+    echo "Error: bootloader.bin not found at ${BOOTLOADER_BIN}"
+    exit 1
 fi
 
-# Extract CONFIG_PRODUCT_STRING value from sdkconfig.h
-# Pattern: #define CONFIG_PRODUCT_STRING "value" or #define CONFIG_PRODUCT_STRING value
-# Handle both quoted and unquoted values
-CONFIG_PRODUCT_STRING=$(grep -E '^#define\s+CONFIG_PRODUCT_STRING' "${SDKCONFIG_H}" | sed -E 's/^#define\s+CONFIG_PRODUCT_STRING\s+//' | sed -E 's/^"([^"]*)"$/\1/' | head -n 1)
+PRODUCT_BYTES=$(dd if="${BOOTLOADER_BIN}" bs=1 skip=$((0x118)) count=16 2>/dev/null | xxd -p -c 16)
+# Convert hexadecimal data back to ASCII string (only take first 15 bytes, ignore CRC byte)
+PRODUCT_STRING=$(echo "${PRODUCT_BYTES:0:30}" | sed 's/../& /g' | xxd -r -p | tr -d '\0')
 
-if [ -z "${CONFIG_PRODUCT_STRING}" ]; then
-	echo "CONFIG_PRODUCT_STRING not found in ${SDKCONFIG_H}"
-	exit 0
+if [ -z "${PRODUCT_STRING}" ]; then
+    echo "Product ID is empty in ${BOOTLOADER_BIN}"
+    exit 0
 fi
 
 # Trim whitespace
-CONFIG_PRODUCT_STRING=$(echo "${CONFIG_PRODUCT_STRING}" | xargs)
+PRODUCT_STRING=$(echo "${PRODUCT_STRING}" | xargs)
 
-echo "Found CONFIG_PRODUCT_STRING: ${CONFIG_PRODUCT_STRING}"
+echo "Found PRODUCT_STRING: ${PRODUCT_STRING}"
 echo "Writing product ID to ${ALL_APP_BIN}..."
 
-# Call write_product_id.py with CONFIG_PRODUCT_STRING as product_id parameter
-python3 "${WRITE_PRODUCT_ID_SCRIPT}" "${ALL_APP_BIN}" "${CONFIG_PRODUCT_STRING}"
+# Call write_product_id.py with PRODUCT_STRING as product_id parameter
+python3 "${WRITE_PRODUCT_ID_SCRIPT}" "${ALL_APP_BIN}" "${PRODUCT_STRING}"
 
 if [ $? -eq 0 ]; then
 	echo "Product ID write operation completed successfully"
