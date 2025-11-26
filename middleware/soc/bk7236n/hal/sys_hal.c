@@ -1066,6 +1066,7 @@ dev_clk_dco_div_t sys_hal_get_dco_div(void)
 /*clock power control end*/
 void sys_hal_set_cksel_sadc(uint32_t value)
 {
+	sys_ll_set_cpu_device_clk_enable_sadc_cken(value);
 }
 
 void sys_hal_set_cksel_pwm0(uint32_t value)

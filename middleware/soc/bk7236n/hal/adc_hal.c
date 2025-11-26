@@ -16,6 +16,7 @@
 #include <common/bk_include.h>
 #include <os/mem.h>
 #include "adc_hal.h"
+#include <driver/adc_types.h>
 #include "power_driver.h"
 #include "clock_driver.h"
 #include "bk_sys_ctrl.h"
@@ -321,26 +322,24 @@ bk_err_t adc_hal_deinit(adc_hal_t *hal)
 
 bk_err_t adc_hal_set_clk(adc_hal_t *hal, adc_src_clk_t src_clk, uint32_t adc_clk)
 {
-	#if 0//TODO
 	uint32_t clk_src = 0;
 	uint32_t pre_div = 0;
 
 	if (src_clk == ADC_SCLK_XTAL) {
-		sys_hal_set_cksel_sadc(0);
+		sys_hal_set_cksel_sadc(1);
 		clk_src = SOC_ADC_XTAL_CLK;
 	} else if (src_clk == ADC_SCLK_DPLL) {
-		sys_hal_set_cksel_sadc(1);
-		clk_src = ADC_SRC_DPLL_CLK;
+		return BK_ERR_ADC_DPLL_NOT_SUPPORTED;
 	}
 
 	if (clk_src && (adc_clk > (clk_src / 2))) {
 		pre_div = 0;
-	} else {
-		pre_div = clk_src / 2 / adc_clk - 1;
+	} else if (clk_src && adc_clk) {
+		/* adc_clk = clk_src / (adc_sclk_div * 2) */
+		pre_div = clk_src / (2 * adc_clk);
 	}
 
 	adc_ll_set_reg4_adc_sclk_div(pre_div);
-	#endif
 
 	return BK_OK;
 }
