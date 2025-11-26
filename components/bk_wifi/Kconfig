@@ -507,6 +507,13 @@ menu "Bk_Wifi"
 		help
 			Enable regulatory radar support.
 
+
+	config WIFI_SAP_PROBE_RSP_LIFETIME
+		int "softap probe response life time"
+		default 0
+		help
+			Set softap probe response lifetime(in us), 0 to disable.
+
 	config MEM_SHORTAGE_LOG_ENABLE
 		bool "Enable memory shortage log enable"
 		default n

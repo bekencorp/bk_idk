@@ -1420,11 +1420,18 @@ int hapd_intf_ke_rx_handle(int dummy)
 		skb->args = skb; // cb args
 
 		void *vif = mac_vif_mgmt_get_entry(type_ptr->vif_index);
-		if (vif && mac_vif_mgmt_get_type(vif) == VIF_STA) {
+		if (vif) {
 			struct ieee80211_mgmt *mgmt = (struct ieee80211_mgmt *)skb->msdu_ptr;
-			// set SAE auth hw retry count
-			if (ieee80211_is_deauth(mgmt->frame_control))
-				skb->mgmt_hw_retries = 0x1F;  // todo: set different count for different frame
+
+			if (mac_vif_mgmt_get_type(vif) == VIF_STA) {
+				// set SAE auth hw retry count
+				if (ieee80211_is_deauth(mgmt->frame_control))
+					skb->mgmt_hw_retries = 0x1F;  // todo: set different count for different frame
+			} else if (mac_vif_mgmt_get_type(vif) == VIF_AP) {
+				// set frame life time
+				if (ieee80211_is_probe_resp(mgmt->frame_control))
+					skb->life_time = CONFIG_WIFI_SAP_PROBE_RSP_LIFETIME; // life time for hw to transmit, 0 to disable
+			}
 		}
 
 		// start to send the skb

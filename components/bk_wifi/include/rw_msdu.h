@@ -96,6 +96,8 @@ struct sk_buff {
 	uint16_t offchannel: 1;
 	/// mgmt frame hw retries, 0 for default, else user specified
 	uint16_t mgmt_hw_retries;
+	/// frame life time in us (used by mgmt frame)
+	uint32_t life_time;
 
 #if CONFIG_RWNX_SW_TXQ
 	/// jiffies that queue this frame to umac

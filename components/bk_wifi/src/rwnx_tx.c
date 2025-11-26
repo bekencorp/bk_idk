@@ -834,6 +834,7 @@ void rwnx_start_xmit_mgmt(struct sk_buff *skb)
 	host->vif_idx = skb->vif_idx;
 	host->staid = skb->sta_idx;
 	host->mgmt_hw_retry_cnt = skb->mgmt_hw_retries;
+	host->life_time = skb->life_time;
 
 	// fill lmac desc
 	if (fhost_txdesc_mgmt_init(txdesc, p_cnt, (uint32_t)skb->msdu_ptr, skb->len))

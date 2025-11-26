@@ -189,6 +189,8 @@ struct hostdesc
     uint8_t sw_retry_cnt;
     // mgmt frame hw retry cnt, 0 for default, else user specified
     uint16_t mgmt_hw_retry_cnt;
+    /// frame life time in us
+    uint32_t life_time;
     #endif
     #if NX_FULLY_HOSTED
     /// TX confirmation callback (Only used for mgmt frame)
