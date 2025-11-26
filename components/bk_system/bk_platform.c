@@ -115,6 +115,7 @@ static void trng_delay_us(uint32 num)
         }
 }
 
+#if (CONFIG_CUSTOMIZE_TY == 0)
 int bk_rand(void)
 {
 	int i, number;
@@ -132,6 +133,15 @@ int bk_rand(void)
 
 	return (number & RAND_MAX);
 }
+#else
+bk_err_t bk_otp_read_random_number(uint8* value, uint32_t size);
+int bk_rand(void)
+{
+	int random_number;
+	bk_otp_read_random_number((uint8*)&random_number, sizeof(int));
+	return random_number;
+}
+#endif
 
 #endif /* CONFIG_MBEDTLS_ACCELERATOR && CONFIG_SPE */
 #endif

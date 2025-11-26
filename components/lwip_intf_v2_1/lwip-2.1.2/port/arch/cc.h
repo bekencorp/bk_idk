@@ -108,7 +108,7 @@ typedef uintptr_t mem_ptr_t;
 #ifndef BYTE_ORDER
 #define BYTE_ORDER          LITTLE_ENDIAN
 #endif
-#ifdef CONFIG_TRNG_SUPPORT
+#if CONFIG_CUSTOMIZE_TY
 extern int bk_rand();		/* FIXME: move to right place */
 
 #ifndef LWIP_RAND
