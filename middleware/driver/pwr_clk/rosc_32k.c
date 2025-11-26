@@ -20,7 +20,7 @@
 #include <os/mem.h>
 #include "aon_pmu_driver.h"
 #include "rosc.h"
-
+#include "sys_pm_hal.h"
 
 #define ROSC_CLK_26M                     (26 * 1000 * 1000)
 #define ROSC_CLK_40M                     (40 * 1000 * 1000)
@@ -28,7 +28,7 @@
 #define ROSC_FREQ_MAX                    (100 * 1000)
 #define ROSC_FREQ_INVLID_COUNT           (2)
 
-#define ROSC_CKMN_PPM                    (600)
+#define ROSC_CKMN_PPM                    (ROSC_PPM_NOMINAL)
 #define ROSC_CKMN_MEASURE_TIME_THRESHOLD (64)
 
 #define ROSC_CALIB_THREAD_PRIORITY       (8)
@@ -62,11 +62,7 @@ double bk_rosc_32k_get_freq(void)
 
 bk_err_t bk_rosc_32k_get_ppm(void)
 {
-#if !CONFIG_ANA_RTC
 	return s_rosc_ppm;
-#else
-	return ROSC_CKMN_PPM;
-#endif
 }
 
 static void rosc_ckmn_isr(void)

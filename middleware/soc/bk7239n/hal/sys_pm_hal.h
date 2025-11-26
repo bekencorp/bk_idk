@@ -18,6 +18,8 @@
 #include "sys_pm_hal_debug.h"
 #include "sys_pm_hal_ctrl.h"
 
+#define ROSC_PPM_NOMINAL 300
+
 //TODO may need to adjust the interrupt bits
 #define WS_WIFI_INT0    (BIT(29) | BIT(30) | BIT(31))
 #define WS_WIFI_INT1    (BIT(0) | BIT(1) | BIT(2) | BIT(3) | BIT(4) | BIT(5) | BIT(6))
