@@ -2682,7 +2682,12 @@ int wpas_select_network_from_last_scan(struct wpa_supplicant *wpa_s,
 				wpa_supplicant_rsn_preauth_scan_results(wpa_s);
 		} else
 #endif
-		if (own_request) {
+		if (own_request
+#if BK_SUPPLICANT
+			// Ignore new scan if already scanning
+			&& !wpa_s->scanning
+#endif
+		) {
 			/*
 			 * No SSID found. If SCAN results are as a result of
 			 * own scan request and not due to a scan request on
