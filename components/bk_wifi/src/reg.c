@@ -1452,6 +1452,9 @@ static void handle_channel_single_rule(struct wiphy *wiphy,
 	chan->max_reg_power = (int) MBM_TO_DBM(power_rule->max_eirp);
 
 	if (chan->flags & IEEE80211_CHAN_RADAR) {
+#if !CONFIG_WIFI_RADAR_SUPPORT
+		chan->flags |= IEEE80211_CHAN_NO_IR;
+#endif
 		if (reg_rule->dfs_cac_ms)
 			chan->dfs_cac_ms = reg_rule->dfs_cac_ms;
 		else
@@ -1525,6 +1528,9 @@ static void handle_channel_adjacent_rules(struct wiphy *wiphy,
 				    MBM_TO_DBM(power_rule2->max_eirp));
 
 	if (chan->flags & IEEE80211_CHAN_RADAR) {
+#if !CONFIG_WIFI_RADAR_SUPPORT
+		chan->flags |= IEEE80211_CHAN_NO_IR;
+#endif
 		if (rrule1->dfs_cac_ms || rrule2->dfs_cac_ms)
 			chan->dfs_cac_ms = max_t(unsigned int,
 						 rrule1->dfs_cac_ms,
@@ -1972,6 +1978,9 @@ static void handle_channel_custom(struct wiphy *wiphy,
 		(int) MBM_TO_DBM(power_rule->max_eirp);
 
 	if (chan->flags & IEEE80211_CHAN_RADAR) {
+#if !CONFIG_WIFI_RADAR_SUPPORT
+		chan->flags |= IEEE80211_CHAN_NO_IR;
+#endif
 		if (reg_rule->dfs_cac_ms)
 			chan->dfs_cac_ms = reg_rule->dfs_cac_ms;
 		else
@@ -3005,6 +3014,7 @@ void bk_wifi_print_regdomain()
 	WIFI_LOGI("country %c%c: DFS-%s\n", cfg80211_regdomain->alpha2[0], cfg80211_regdomain->alpha2[1],
 		reg_dfs_region_str(cfg80211_regdomain->dfs_region));
 	print_rd_rules(cfg80211_regdomain);
+	// reg_print_ieee80211_channel(&g_wiphy);
 	rtos_unlock_recursive_mutex(&reg_mutex);
 }
 

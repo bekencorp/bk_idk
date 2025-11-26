@@ -501,8 +501,14 @@ menu "Bk_Wifi"
 			Enable binary regulatory db instead of human readable rules.
 			Enable this feature to save flash usage.
 
+	config WIFI_RADAR_SUPPORT
+		bool "Enable radar support"
+		default n
+		help
+			Enable regulatory radar support.
+
 	config MEM_SHORTAGE_LOG_ENABLE
-	        bool "Enable memory shortage log enable"
+		bool "Enable memory shortage log enable"
 		default n
 		help
 		    Enable memory shortage log.
