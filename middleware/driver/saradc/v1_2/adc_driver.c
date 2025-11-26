@@ -15,6 +15,7 @@
 #define TAG "sadc"
 
 #include <common/bk_include.h>
+#include <stdbool.h>
 #include <common/bk_compiler.h>
 #include <os/mem.h>
 #include <driver/gpio.h>
@@ -34,6 +35,7 @@
 #include "bk_rf_internal.h"
 #include "aon_pmu_hal.h"
 #include "temp_detect.h"
+#include <driver/otp.h>
 
 uint32_t rc_drv_get_rf_rxon(void);
 
@@ -67,6 +69,48 @@ static uint8_t s_saradc_use_calibration_val_flag = 0x0;
 			return BK_ERR_ADC_INVALID_SCLK_MODE;\
 		}\
 	} while(0)
+
+static bool adc_try_load_otp_cwt(uint32_t *otp_cwt_buf, uint32_t otp_cwt_num)
+{
+    uint32_t otp_data_size = otp_map_2[OTP_GADC_CALIBRATION].allocated_size;
+    uint8_t *data = NULL;
+    bk_err_t result = BK_FAIL;
+    uint32_t required_size = ADC_CWT_COEF_NUM * sizeof(uint32_t);
+
+    // Check if OTP data size is sufficient for CWT coefficients
+    // For bk7236/bk7236n, otp_data_size is too small (4/8 bytes), so this will return false
+    if ((otp_cwt_buf == NULL) || (otp_data_size < required_size)) {
+        return false;
+    }
+
+    data = (uint8_t *)os_zalloc(otp_data_size);
+    if (data == NULL) {
+        ADC_LOGE("malloc otp data buffer failed\r\n");
+        return false;
+    }
+
+    result = bk_otp_ahb_read(OTP_GADC_CALIBRATION, data, otp_data_size);
+    if (result != BK_OK) {
+        ADC_LOGW("read otp gadc calib failed:%d\r\n", result);
+        os_free(data);
+        return false;
+    }
+
+    for (uint32_t idx = 0; idx < ADC_CWT_COEF_NUM; idx++) {
+        uint32_t otp_words;
+        os_memcpy(&otp_words, &data[idx * 4], sizeof(uint32_t));
+        otp_cwt_buf[idx] = otp_words & 0xFFFFFF;
+    }
+
+    if ((otp_cwt_buf[ADC_CWT_COEF_NUM - 1] == 0)) {//The last set of self-calibration values has the highest weight.
+        ADC_LOGW("invalid otp cwt value:[%x]\r\n",otp_cwt_buf[ADC_CWT_COEF_NUM - 1]);
+        os_free(data);
+        return false;
+    }
+
+    os_free(data);
+    return true;
+}
 
 static void adc_flush(struct sadc_device *dev)
 {
@@ -295,7 +339,7 @@ static bk_err_t adc_set_default_cali_val(struct sadc_data *data)
         /*TODO Fixme: wangzhilei*/
         0, 0x11AA, 0x2382, ADC_TEMP_CODE_DFT_25DEGREE, ADC_TMEP_LSB_PER_10DEGREE /* 1Volt, 2Volt, 25Degree, 10Step*/
         #elif (CONFIG_SOC_BK7239XX)
-        0, 0x1194, 0x23ea, ADC_TEMP_CODE_DFT_25DEGREE, ADC_TMEP_LSB_PER_10DEGREE /* 1Volt, 2Volt, 25Degree, 10Step*/
+        0x4ca, 0x1194, 0x23ea, ADC_TEMP_CODE_DFT_25DEGREE, ADC_TMEP_LSB_PER_10DEGREE /* 1Volt, 2Volt, 25Degree, 10Step*/
         #elif (CONFIG_SOC_BK7259)
         0, 0x1481, 0x279d, ADC_TEMP_CODE_DFT_25DEGREE, ADC_TMEP_LSB_PER_10DEGREE /* 1Volt, 2Volt, 25Degree, 10Step*/
         #elif (CONFIG_SOC_BK7236XX)
@@ -992,10 +1036,23 @@ float saradc_calculate(UINT16 adc_val)
     practic_voltage = 2*practic_voltage;
     #endif
     #elif CONFIG_SARADC_V1P2
+    #if  (CONFIG_SOC_BK7239XX) //need adapt for 0.3v valtage
+    UINT16 cali_300mV_val = data->sadc_cali_val[SARADC_CALIBRATE_EXT_LOW];
+    if ((cali_300mV_val != 0) && (adc_val < cali_low_val)) {
+        /* (adc_val - low) / (practic_voltage - 1Volt) = (low - ext_low) / 0.7Volt */
+        /* practic_voltage = 0.7 * (adc_val - low) / (low - ext_low) + 1Volt */
+        practic_voltage = 0.7 * (adc_val - cali_low_val);
+        practic_voltage = (practic_voltage / (float)(cali_low_val - cali_300mV_val)) + 1;
+    } else {
     /* (adc_val - low) / (practic_voltage - 1Volt) = (high - low) / 1Volt */
     /* practic_voltage = (adc_val - low) / (high - low) + 1Volt */
     practic_voltage = (float)(adc_val - cali_low_val);
     practic_voltage = (practic_voltage / (float)(cali_high_val - cali_low_val)) + 1;
+    }
+    #else
+    practic_voltage = (float)(adc_val - cali_low_val);
+    practic_voltage = (practic_voltage / (float)(cali_high_val - cali_low_val)) + 1;
+    #endif
     #endif
 
     if (practic_voltage < 0) {
@@ -1174,40 +1231,53 @@ bk_err_t adc_calib_restore_analog_context(struct sadc_calib_ana_context *ana_con
 
 bk_err_t bk_adc_enter_calib_mode(void)
 {
-    adc_config_t config = {0};
+    uint32_t otp_cwt[ADC_CWT_COEF_NUM] = {0};
     struct sadc_calib_ana_context ana_context;
+#if CONFIG_SOC_BK7236XX
+    uint32_t otp_data_size = otp_map_1[OTP_GADC_CALIBRATION].allocated_size;
+#else
+    uint32_t otp_data_size = otp_map_2[OTP_GADC_CALIBRATION].allocated_size;
+#endif
 
-    uint16_t *adc_raw_data_buf = (uint16_t *)os_zalloc(ADC_CALIBRATION_DATA_NUM * sizeof(uint16_t));
-    if (NULL == adc_raw_data_buf) {
-        ADC_LOGE("adc_raw_data_buf malloc failed\r\n");
-        return BK_ERR_NO_MEM;
+    if (adc_try_load_otp_cwt(otp_cwt, otp_data_size)) {
+        adc_calib_save_analog_context(&ana_context);
+        sys_drv_set_ana_pwd_gadc_buf(1);
+        adc_hal_calib_init();
+        adc_hal_set_cwt(otp_cwt);
+        adc_calib_restore_analog_context(&ana_context);
+    } else {
+        adc_config_t config = {0};
+        uint16_t *adc_raw_data_buf = (uint16_t *)os_zalloc(ADC_CALIBRATION_DATA_NUM * sizeof(uint16_t));
+        if (NULL == adc_raw_data_buf) {
+            ADC_LOGE("adc_raw_data_buf malloc failed\r\n");
+            return BK_ERR_NO_MEM;
+        }
+
+        config.chan = 0;
+        config.adc_mode = ADC_CONTINUOUS_MODE;
+        config.src_clk = ADC_SCLK_XTAL;
+        config.clk = 2;
+        config.saturate_mode = 0;
+        config.steady_ctrl= 0;
+        config.adc_filter = 0;
+        config.sample_rate = 0;
+
+        os_memset(adc_raw_data_buf, 0, ADC_CALIBRATION_DATA_NUM * sizeof(uint16_t));
+
+        adc_calib_save_analog_context(&ana_context);
+        sys_drv_set_ana_pwd_gadc_buf(1);
+        bk_adc_cont_start(&config, config.chan, adc_raw_data_buf, ADC_CALIBRATION_DATA_NUM);
+        adc_hal_calib_init();
+        bk_adc_cont_get_raw(config.chan, adc_raw_data_buf, ADC_CALIBRATION_DATA_NUM);
+        adc_hal_stop_commom(NULL);
+        adc_hal_set_cwt_calib(adc_raw_data_buf, ADC_CALIBRATION_DATA_NUM);
+
+        if (adc_raw_data_buf) {
+            os_free(adc_raw_data_buf);
+            adc_raw_data_buf = NULL;
+        }
+        adc_calib_restore_analog_context(&ana_context);
     }
-
-    config.chan = 0;
-    config.adc_mode = ADC_CONTINUOUS_MODE;
-    config.src_clk = ADC_SCLK_XTAL;
-    config.clk = 2;
-    config.saturate_mode = 0;
-    config.steady_ctrl= 0;
-    config.adc_filter = 0;
-    config.sample_rate = 0;
-
-    os_memset(adc_raw_data_buf, 0, ADC_CALIBRATION_DATA_NUM * sizeof(uint16_t));
-
-    adc_calib_save_analog_context(&ana_context);
-    sys_drv_set_ana_pwd_gadc_buf(1);
-    bk_adc_cont_start(&config, config.chan, adc_raw_data_buf, ADC_CALIBRATION_DATA_NUM);
-    adc_hal_calib_init();
-    bk_adc_cont_get_raw(config.chan, adc_raw_data_buf, ADC_CALIBRATION_DATA_NUM);
-    adc_hal_stop_commom(NULL);
-    adc_hal_set_cwt_calib(adc_raw_data_buf, ADC_CALIBRATION_DATA_NUM);
-
-    if (adc_raw_data_buf) {
-        os_free(adc_raw_data_buf);
-        adc_raw_data_buf = NULL;
-    }
-    adc_calib_restore_analog_context(&ana_context);
-
     return BK_OK;
 }
 #endif // CONFIG_SARADC_V1P2

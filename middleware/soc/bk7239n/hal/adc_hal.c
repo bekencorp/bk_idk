@@ -169,6 +169,18 @@ void adc_hal_set_cwt_calib(uint16_t *adc_data, uint16_t data_num)
 	}
 #endif
 
+	adc_hal_set_cwt((uint32_t *)s_adc_cali_context.cwt);
+}
+
+void adc_hal_set_cwt(uint32_t *adc_data)
+{
+	if (adc_data == NULL) {
+		return;
+	}
+	for (int k = 0; k < ADC_CWT_COEF_NUM; k++) {
+		s_adc_cali_context.cwt[k] = adc_data[k];
+	}
+
 	adc_ll_set_reg7_cwt_cal00(s_adc_cali_context.cwt[0]);
 	adc_ll_set_reg8_cwt_cal01(s_adc_cali_context.cwt[1]);
 	adc_ll_set_reg9_cwt_cal02(s_adc_cali_context.cwt[2]);

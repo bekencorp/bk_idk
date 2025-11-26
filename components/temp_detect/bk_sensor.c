@@ -121,44 +121,73 @@ tempd_exit:
 #if ((CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX)) && (CONFIG_OTP)
 static bk_err_t bk_sensor_load_adc_cali_value(void)
 {
-    uint16_t values[2];
     bk_err_t result;
-
-    result = bk_otp_apb_read(OTP_GADC_CALIBRATION, (uint8_t *)&values[0], sizeof(values));
-    if ((result != BK_OK) || (values[0] == 0) || (values[1] == 0)) {
-        BK_LOGW(TAG, "uncali saradc value:[%x %x]\r\n", values[0], values[1]);
+#if CONFIG_SOC_BK7239XX
+    uint16_t vol_values[3];
+    uint16_t temp_values[2];
+    uint8_t data[72];
+    result = bk_otp_ahb_read(OTP_GADC_CALIBRATION, data, sizeof(data));
+    if (result != BK_OK) {
+        BK_LOGW(TAG, "read otp calibration data failed\r\n");
+        goto LOAD_SDMADC;
+    }
+    memcpy(&vol_values[0], &data[64], sizeof(uint16_t));
+    memcpy(&vol_values[1], &data[66], sizeof(uint16_t));
+    memcpy(&vol_values[2], &data[68], sizeof(uint16_t));
+    if (vol_values[2] == 0) {
+        BK_LOGW(TAG, "uncali saradc_ext_low value:[%x]\r\n", vol_values[2]);
+        goto LOAD_SDMADC;
+    }
+    BK_LOGI(TAG, "saradc ext_low value:[%x]\r\n", vol_values[2]);
+    saradc_set_calibrate_val(&vol_values[2], SARADC_CALIBRATE_EXT_LOW);
+#else
+    uint16_t vol_values[2];
+    uint16_t temp_values[1];
+    result = bk_otp_apb_read(OTP_GADC_CALIBRATION, (uint8_t *)&vol_values[0], sizeof(vol_values));
+#endif
+    if ((result != BK_OK) || (vol_values[0] == 0) || (vol_values[1] == 0)) {
+        BK_LOGW(TAG, "uncali saradc value:[%x %x]\r\n", vol_values[0], vol_values[1]);
         goto LOAD_SDMADC;
     }
 
-    BK_LOGI(TAG, "saradc low value:[%x]\r\n", values[0]);
-    BK_LOGI(TAG, "saradc high value:[%x]\r\n", values[1]);
-    saradc_set_calibrate_val(&values[0], SARADC_CALIBRATE_LOW);
-    saradc_set_calibrate_val(&values[1], SARADC_CALIBRATE_HIGH);
+    BK_LOGI(TAG, "saradc low value:[%x]\r\n", vol_values[0]);
+    BK_LOGI(TAG, "saradc high value:[%x]\r\n", vol_values[1]);
+    saradc_set_calibrate_val(&vol_values[0], SARADC_CALIBRATE_LOW);
+    saradc_set_calibrate_val(&vol_values[1], SARADC_CALIBRATE_HIGH);
 
 LOAD_SDMADC:
 #if CONFIG_SDMADC
-    result = bk_otp_apb_read(OTP_SDMADC_CALIBRATION, (uint8_t *)&values[0], sizeof(values));
-    if ((result != BK_OK) || (values[0] == 0) || (values[1] == 0)) {
-        BK_LOGW(TAG, "uncali sdmadc value:[%x %x]\r\n", values[0], values[1]);
+    result = bk_otp_apb_read(OTP_SDMADC_CALIBRATION, (uint8_t *)&vol_values[0], sizeof(vol_values));
+    if ((result != BK_OK) || (vol_values[0] == 0) || (vol_values[1] == 0)) {
+        BK_LOGW(TAG, "uncali sdmadc value:[%x %x]\r\n", vol_values[0], vol_values[1]);
         goto LOAD_TEMP;
     }
 
-    BK_LOGI(TAG, "sdmadc low value:[%x]\r\n", values[0]);
-    BK_LOGI(TAG, "sdmadc high value:[%x]\r\n", values[1]);
-    bk_sdmadc_set_calibrate_val(values[0], SARADC_CALIBRATE_LOW);
-    bk_sdmadc_set_calibrate_val(values[1], SARADC_CALIBRATE_HIGH);
+    BK_LOGI(TAG, "sdmadc low value:[%x]\r\n", vol_values[0]);
+    BK_LOGI(TAG, "sdmadc high value:[%x]\r\n", vol_values[1]);
+    bk_sdmadc_set_calibrate_val(vol_values[0], SARADC_CALIBRATE_LOW);
+    bk_sdmadc_set_calibrate_val(vol_values[1], SARADC_CALIBRATE_HIGH);
 
 LOAD_TEMP:
 #endif
 
-    result = bk_otp_apb_read(OTP_GADC_TEMPERATURE, (uint8_t *)&values, sizeof(values[0]));
-    if ((result != BK_OK) || (values[0] == 0) || (0xFFFF == values[0])) {
-        BK_LOGW(TAG, "uncali temp value:[%x]\r\n", values[0]);
+#if CONFIG_SOC_BK7239XX
+    result = bk_otp_ahb_read(OTP_GADC_TEMPERATURE, (uint8_t *)&temp_values, sizeof(temp_values));
+    if ((result != BK_OK) || (temp_values[0] == 0) || (0xFFFF == temp_values[0]) || (temp_values[1] == 0) || (0xFFFF == temp_values[1])) {
+#else
+    result = bk_otp_apb_read(OTP_GADC_TEMPERATURE, (uint8_t *)&temp_values, sizeof(temp_values));
+    if ((result != BK_OK) || (temp_values[0] == 0) || (0xFFFF == temp_values[0])) {
+#endif
+        BK_LOGW(TAG, "uncali temp value:[%x]\r\n", temp_values[0]);
         goto FAILURE;
     }
-
-    BK_LOGI(TAG, "saradc temp value:[%x]\r\n", values[0]);
-    saradc_set_calibrate_val(&values[0], SARADC_CALIBRATE_TEMP_CODE25);
+#if CONFIG_TEMPERATURE_HIGH_VOLT
+    BK_LOGI(TAG, "saradc temp value:[%x]\r\n", temp_values[0]);
+    saradc_set_calibrate_val(&temp_values[1], SARADC_CALIBRATE_TEMP_CODE25);
+#else
+    BK_LOGI(TAG, "saradc temp value:[%x]\r\n", temp_values[1]);
+    saradc_set_calibrate_val(&temp_values[0], SARADC_CALIBRATE_TEMP_CODE25);
+#endif
 
     return BK_OK;
 
