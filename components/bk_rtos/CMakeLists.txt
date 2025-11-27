@@ -21,11 +21,6 @@ if(CONFIG_FREERTOS)
 			platform_stub.c
 			freertos/str_arch.c
 		)
-		if(CONFIG_ARCH_RISCV)
-			list(APPEND srcs
-				freertos/FreeRTOS_tick_config.c
-			)
-		endif()
 	elseif(CONFIG_FREERTOS_SMP)
 		set(srcs
 			freertos/v10/rtos_pub_smp.c
@@ -34,11 +29,6 @@ if(CONFIG_FREERTOS)
 			platform_stub.c
 			freertos/str_arch.c
 		)
-		if(CONFIG_ARCH_RISCV)
-			list(APPEND srcs
-				freertos/FreeRTOS_tick_config.c
-			)
-		endif()
 	endif()
 
 	if(CONFIG_FULLY_HOSTED OR CONFIG_MEM_MGMT)
