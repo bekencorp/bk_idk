@@ -790,7 +790,6 @@ static inline void flash_ab_info_restore(flash_ab_reg_t *p_flash_ab_reg)
 #if CONFIG_DEEP_LV
 static uint32_t s_sys_saved_regs[12] = {0};
 static uint32_t s_sys_ana_regs[16] = {0};
-static uint32_t s_saved_sram[4] = {0};
 
 static void _deep_lv_enter_(void)
 {
@@ -834,11 +833,9 @@ void sys_hal_regs_save(void)
 
 	for (uint32_t i = 0; i < 16; i++) {
 		s_sys_ana_regs[i] = sys_hal_analog_get(ANALOG_REG0 + i);
+		REG_WRITE(0x2807E400 + (i << 2), s_sys_ana_regs[i]);//save analog regs to bootloader stack
 	}
 
-	for (uint32_t i = 0; i < 4; i++) {
-		s_saved_sram[i] = REG_READ(0x2801FFF0 + (i << 2));
-	}
 }
 
 void sys_hal_regs_restore(void)
@@ -873,10 +870,6 @@ void sys_hal_regs_restore(void)
 		sys_hal_analog_set_iram(ANALOG_REG0 + i, s_sys_ana_regs[i]);
 	}
 	sys_ll_set_ana_reg8_spi_latch1v(0);
-
-	for (uint32_t i = 0; i < 4; i++) {
- 		REG_WRITE(0x2801FFF0 + (i << 2), s_saved_sram[i]);
-	}
 }
 #endif
 
