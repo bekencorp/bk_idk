@@ -54,7 +54,7 @@ typedef struct
 
 static ana_rtc_driver_t s_ana_rtc = {0};
 static ana_rtc_callback_t s_ana_rtc_tick_isr = {NULL};
-static ana_rtc_nodes_memory_t *s_ana_rtc_nodes_p;
+static ana_rtc_nodes_memory_t *s_ana_rtc_nodes_p = NULL;
 
 static void aon_rtc_interrupt_disable(aon_rtc_id_t id);
 
@@ -210,18 +210,23 @@ static alarm_node_t *ana_rtc_request_node(aon_rtc_id_t id)
     return NULL;
 }
 
-static void ana_rtc_release_node(aon_rtc_id_t id, alarm_node_t *node_p)
+static void ana_rtc_release_node(alarm_node_t *node_p)
 {
     uint32_t i = 0;
 
     ANA_RTC_LOGD("%s[+]\r\n", __func__);
+    if ((NULL == s_ana_rtc_nodes_p) || (NULL == node_p))
+    {
+        ANA_RTC_LOGE("s_ana_rtc_nodes_p or node_p is NULL\r\n");
+        return;
+    }
 
     for (i = 0; i < AON_RTC_MAX_ALARM_CNT; i++)
     {
         if (&s_ana_rtc_nodes_p->nodes[i] == node_p)
         {
             s_ana_rtc_nodes_p->busy_bits &= ~(0x1 << i);
-            os_memset(&s_ana_rtc_nodes_p->nodes[i], 0, sizeof(alarm_info_t));
+            os_memset(&s_ana_rtc_nodes_p->nodes[i], 0, sizeof(alarm_node_t));
             ANA_RTC_LOGD("%s[-]:node[%d]=0x%x\r\n", __func__, i, &s_ana_rtc_nodes_p->nodes[i]);
             break;
         }
@@ -366,7 +371,7 @@ static alarm_node_t *alarm_remove_node(aon_rtc_id_t id, uint8_t *name_p)
                 s_ana_rtc.alarm_node_cnt--;
 
                 ANA_RTC_LOGD("free=0x%x,name=%s\r\n", cur_p, cur_p->name);
-                ana_rtc_release_node(id, cur_p);
+                ana_rtc_release_node(cur_p);
                 break;
             }
             else
@@ -375,7 +380,7 @@ static alarm_node_t *alarm_remove_node(aon_rtc_id_t id, uint8_t *name_p)
                 previous_p->next = cur_p->next;
                 s_ana_rtc.alarm_node_cnt--;
                 ANA_RTC_LOGD("free=0x%x,name=%s\r\n", cur_p, cur_p->name);
-                ana_rtc_release_node(id, cur_p);
+                ana_rtc_release_node(cur_p);
                 break;
             }
         }
@@ -447,11 +452,7 @@ static void alarm_update_expeired_nodes(aon_rtc_id_t id)
  * so the APPLIACTION who calls bk_alarm_register should release the memory
  * returns by bk_alarm_register.
  */
-#if 0
-                ANA_RTC_LOGD("last alarm:free=0x%x,name=%s\r\n", cur_p, cur_p->name);
-                os_free(cur_p);
-#endif
-                ana_rtc_release_node(id, cur_p);
+                ana_rtc_release_node(cur_p);
             }
             // loop timer
             else
@@ -902,7 +903,7 @@ bk_err_t bk_alarm_register(aon_rtc_id_t id, alarm_info_t *alarm_info_p)
     if (alarm_insert_node(id, node_p) != 0)
     {
         ANA_RTC_LOGE("alarm name=%s has registered\r\n", alarm_info_p->name);
-        ana_rtc_release_node(id, node_p);
+        ana_rtc_release_node(node_p);
         rtos_enable_int(int_level);
         return BK_FAIL;
     }
