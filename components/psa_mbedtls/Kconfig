@@ -38,6 +38,10 @@ menu "PSA Mbedtls"
 			bool "Enable hardware crypto engine"
 			default n
 
+		config TRUSTENGINE_PM_CB_SUPPORT
+			bool "Enable trustengine pm cb support"
+			default n
+
 		config SW_CRYPTO
 			bool "Enable software crypto"
 			default n
