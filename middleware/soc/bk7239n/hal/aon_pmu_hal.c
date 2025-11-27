@@ -129,6 +129,11 @@ void aon_pmu_hal_rtc_samp_sel(uint32_t value)
 	aon_pmu_ll_set_r2_rtc_value_samp_sel(value);
 }
 
+uint32_t aon_pmu_hal_rtc_get_samp_sel(void)
+{
+	return aon_pmu_ll_get_r2_rtc_value_samp_sel();
+}
+
 void aon_pmu_hal_lpo_src_extern32k_enable(void)
 {
 	//Empty function

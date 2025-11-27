@@ -32,13 +32,14 @@ uint32_t rtos_get_time_diff(void) {
 	uint64_t diff_time = (cur_aon_time - base_aon_time); //ms
 
 	if((uint32_t)(diff_time >> 32) & 0x7FF0000) {
-		BK_LOGI(TAG, "aon_rtc overfollow....\r\n");
+		BK_LOGI(TAG, "aon_rtc overflow....\r\n");
 		BK_DUMP_OUT("diff time: 0x%x:0x%08x\r\n", (u32)(diff_time >> 32), (u32)(diff_time & 0xFFFFFFFF));
 		return 0;
 	}
 
 	if(cur_os_time >= base_os_time) {
 		if (diff_time + base_os_time < cur_os_time) {
+			BK_LOGI(TAG, "[ERROR] aon/ana_rtc underflow....\r\n");
 			return 0;
 		}
 		diff_ms = (uint32_t)(diff_time + base_os_time - cur_os_time);

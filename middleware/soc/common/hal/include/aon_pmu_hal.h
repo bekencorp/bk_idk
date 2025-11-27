@@ -71,6 +71,7 @@ void aon_pmu_hal_gpio_retention_bitmap_set(uint32_t bitmap);
 uint32_t aon_pmu_hal_rtc_tick_h_get(void);
 uint32_t aon_pmu_hal_rtc_tick_l_get(void);
 void aon_pmu_hal_rtc_samp_sel(uint32_t value);
+uint32_t aon_pmu_hal_rtc_get_samp_sel(void);
 uint32_t aon_pmu_hal_get_wakeup_source(void);
 void aon_pmu_hal_gpio_clksel_set(uint32_t value);
 uint32_t aon_pmu_hal_gpio_clksel_get(void);

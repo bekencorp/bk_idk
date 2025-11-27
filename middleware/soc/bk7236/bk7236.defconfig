@@ -994,11 +994,6 @@ CONFIG_MEMDUMP_ALL=y
 # end of Modify Arch Cm33 Config
 # end of Arch::Cm33
 
-#
-# Arch::Riscv
-#
-# CONFIG_ARCH_RISCV is not set
-# end of Arch::Riscv
 
 #
 # Compal
