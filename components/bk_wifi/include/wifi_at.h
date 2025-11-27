@@ -88,7 +88,7 @@
 #endif
 
 
-#define AT_WLAN_SCAN_TIMEOUT_MS          (8000)
+#define AT_WLAN_SCAN_TIMEOUT_MS          (10000)
 #define AT_WLAN_STA_TIMEOUT_MS          (20000)
 #define AT_WLAN_SAP_TIMEOUT_MS          (4000)
 
