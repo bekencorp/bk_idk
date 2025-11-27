@@ -111,6 +111,7 @@ int dubhe_clk_disable( dubhe_module_type_t type )
     return ret;
 }
 
+#if CONFIG_TRUSTENGINE_PM_CB_SUPPORT
 void dubhe_driver_lv_cleanup(void);
 static int dubhe_lv_enter(uint64_t sleep_time, void *args)
 {
@@ -130,6 +131,7 @@ static void dubhe_lv_init(void)
     pm_cb_conf_t exit = {dubhe_lv_exit, NULL};
     bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, PM_DEV_ID_SECURE_WORLD, &enter, &exit);
 }
+#endif
 
 static void te200_isr(void)
 {
@@ -198,7 +200,10 @@ int dubhe_driver_init( unsigned long dbh_base_addr )
         dubhe_inited = true;
         need_init_driver = true;
 
+#if CONFIG_TRUSTENGINE_PM_CB_SUPPORT
         dubhe_lv_init();
+#endif
+
 #if defined(TEE_M)
         if (sys_ll_get_cpu_power_sleep_wakeup_pwd_encp() != 0) {
             sys_ll_set_cpu_power_sleep_wakeup_pwd_encp(0);
