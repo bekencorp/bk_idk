@@ -1225,10 +1225,38 @@ static void flush_dcache_wrapper()
 #endif
 }
 
+#if CONFIG_SOC_BK7236N
+static void ble_enter_dut_set_vanaldosel(uint8_t value)
+{
+    uint32_t analog_val = sys_hal_analog_get(ANALOG_REG8);
+    sys_hal_analog_set(ANALOG_REG8, (analog_val | (1U << 9))); //spi_latch1v enable
+
+    analog_val = sys_hal_analog_get(ANALOG_REG7);
+    sys_hal_analog_set(ANALOG_REG7, ((analog_val & (~0x3C0)) | (value << 6))); //vanaldosel set value
+
+    analog_val = sys_hal_analog_get(ANALOG_REG8);
+    sys_hal_analog_set(ANALOG_REG8, (analog_val & ~(1U << 9)));//spi_latch1v disable
+}
+#endif
+
 static void ble_enter_dut()
 {
     extern void ble_cal_enter_dut();
     ble_cal_enter_dut();
+
+    #if CONFIG_SOC_BK7236N
+    uint32_t analog_val = sys_hal_analog_get(ANALOG_REG8);
+    sys_hal_analog_set(ANALOG_REG8, (analog_val | (1U << 9))); //spi_latch1v enable
+
+    analog_val = sys_hal_analog_get(ANALOG_REG3);
+    sys_hal_analog_set(ANALOG_REG3, (analog_val & ~(1U << 9))); //ck_sel select high hystersis digital buffer
+
+    analog_val = sys_hal_analog_get(ANALOG_REG7);
+    sys_hal_analog_set(ANALOG_REG7, ((analog_val & (~0x3C0)) | (0x3 << 6))); //vanaldosel set 3
+
+    analog_val = sys_hal_analog_get(ANALOG_REG8);
+    sys_hal_analog_set(ANALOG_REG8, (analog_val & ~(1U << 9)));//spi_latch1v disable
+    #endif
 }
 
 
@@ -1236,6 +1264,19 @@ static void ble_exit_dut()
 {
     extern void ble_cal_exit_dut();
     ble_cal_exit_dut();
+    #if CONFIG_SOC_BK7236N
+    uint32_t analog_val = sys_hal_analog_get(ANALOG_REG8);
+    sys_hal_analog_set(ANALOG_REG8, (analog_val | (1U << 9))); //spi_latch1v enable
+
+    analog_val = sys_hal_analog_get(ANALOG_REG3);
+    sys_hal_analog_set(ANALOG_REG3, (analog_val | (1U << 9))); //ck_sel select high gain digital buffer
+
+    analog_val = sys_hal_analog_get(ANALOG_REG7);
+    sys_hal_analog_set(ANALOG_REG7, ((analog_val & (~0x3C0)) | (0xF << 6))); //vanaldosel set F
+
+    analog_val = sys_hal_analog_get(ANALOG_REG8);
+    sys_hal_analog_set(ANALOG_REG8, (analog_val & ~(1U << 9)));//spi_latch1v disable
+    #endif
 }
 
 static uint8_t set_bluetooth_power_level(float pwr_gain)
@@ -1392,6 +1433,9 @@ static struct bt_osi_funcs_t bt_osi_funcs =
     ._manual_cal_is_in_cali_mode = manual_calibration_is_in_cali_mode,
     ._bk_driver_get_rc32k_freq = bk_driver_get_rc32k_freq,
     ._flush_dcache = flush_dcache_wrapper,
+    #if CONFIG_SOC_BK7236N
+    ._ble_enter_dut_set_vanaldosel = ble_enter_dut_set_vanaldosel,
+    #endif
     ._ble_enter_dut = ble_enter_dut,
     ._ble_exit_dut = ble_exit_dut,
     ._set_bluetooth_power_level = set_bluetooth_power_level,

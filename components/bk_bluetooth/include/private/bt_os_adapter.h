@@ -184,7 +184,9 @@ struct bt_osi_funcs_t
     uint32_t (*_manual_cal_is_in_cali_mode)(void);
     double (*_bk_driver_get_rc32k_freq)(void);
     void (*_flush_dcache)(void);
-
+    #if CONFIG_SOC_BK7236N
+    void (*_ble_enter_dut_set_vanaldosel)(uint8_t value);
+    #endif
     void (*_ble_enter_dut)(void);
     void (*_ble_exit_dut)(void);
     uint8_t (*_set_bluetooth_power_level)(float pwr_gain);
