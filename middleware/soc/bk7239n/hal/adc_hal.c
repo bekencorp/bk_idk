@@ -56,6 +56,21 @@ uint32_t adc_hal_get_2Volt_threshold(void)
     return 540;
 }
 
+uint32_t adc_hal_get_channel0_2Volt_default(void)
+{
+    return 0x8FA;
+}
+
+uint32_t adc_hal_get_channel0_3Volt_default(void)
+{
+    return 0xD5F;
+}
+
+void adc_hal_switch_vol_range(uint32_t vref_sel)
+{
+    /* bk7239n does not need to switch range */
+}
+
 #define F2ISR(f, s) ((int32_t)((f > 0) ? ((f) * (1 << (s)) + 0.5) : ((f) * (1 << (s)) - 0.5)))
 
 #define ADC_BITS              (16)

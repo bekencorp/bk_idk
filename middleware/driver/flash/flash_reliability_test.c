@@ -496,6 +496,8 @@ void flash_psram_pressure_test(beken_thread_arg_t arg)
     {
         flag |= 0x1;
     }
+#else
+    bk_printf("PSRAM pressure test is disabled\r\n");
 #endif // CONFIG_PSRAM_PRESSURE_TEST
 
 #if CONFIG_FLASH_PRESSURE_TEST

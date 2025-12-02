@@ -451,37 +451,39 @@ uint32_t sys_hal_vdddig_h_vol_get()
 
 bk_err_t sys_hal_switch_cpu_bus_freq_high_to_low(pm_cpu_freq_e cpu_bus_freq)
 {
-	bk_err_t ret = BK_OK;
-	switch(cpu_bus_freq)
-	{
-		case PM_CPU_FRQ_240M://cpu0:240m;bus:240m
-			ret = sys_hal_core_bus_clock_ctrl(0x1,0x1,0x0,0x1,0x1);
-			sys_hal_ctrl_vdddig_h_vol(0xE);//0.95V
+    bk_err_t ret = BK_OK;
+    switch(cpu_bus_freq)
+    {
+        case PM_CPU_FRQ_240M://cpu0:240m;bus:240m
+            ret = sys_hal_core_bus_clock_ctrl(0x1,0x1,0x0,0x1,0x1);
+            sys_hal_ctrl_vdddig_h_vol(0xE);//0.95V
+            break;
 
-			break;
-		case PM_CPU_FRQ_160M://cpu0:160m;bus:160m
+        case PM_CPU_FRQ_160M://cpu0:160m;bus:160m
 			ret = sys_hal_core_bus_clock_ctrl(0x1,0x2,0x0,0x1,0x1);
 			sys_hal_ctrl_vdddig_h_vol(0xD);//0.925V
-
 			break;
+
 		case PM_CPU_FRQ_120M://cpu0:120m;bus:120m
 			ret = sys_hal_core_bus_clock_ctrl(0x1,0x3,0x0,0x1,0x1);
 			sys_hal_ctrl_vdddig_h_vol(0xC);//0.9V
 			break;
+
 		case PM_CPU_FRQ_80M://cpu0:80m;bus:80m
 			ret = sys_hal_core_bus_clock_ctrl(0x1,0x5,0x0,0x1,0x1);
 			sys_hal_ctrl_vdddig_h_vol(0xC);//0.9V
-
 			break;
+
 		case PM_CPU_FRQ_60M://cpu0:60m;bus:60m
 			ret = sys_hal_core_bus_clock_ctrl(0x1,0x7,0x0,0x1,0x1);
 			sys_hal_ctrl_vdddig_h_vol(0xC);//0.9V
 			break;
+
 		case PM_CPU_FRQ_XTAL://cpu0:xtral,bus:xtral (xtal:40M)
 			ret = sys_hal_core_bus_clock_ctrl(0x0,0x0,0x0,0x1,0x1);
 			sys_hal_ctrl_vdddig_h_vol(0xC);//0.9V
-
 			break;
+
 		default:
 			break;
 	}

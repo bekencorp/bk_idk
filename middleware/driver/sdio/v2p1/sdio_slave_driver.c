@@ -35,24 +35,11 @@
 #include "sdio_utils.h"
 #include "sdio_slave_driver.h"
 
-static void sdio_send_msg(sdio_msg_t *msg_p);
-
-#if 0	//TODO:
-#define GPIO_ID_SDIO_NOTIFY_START_READ (26)
-#define GPIO_ID_SDIO_READ_TO_FIFO_FINISH (27)
-#define GPIO_ID_SDIO_READ_TO_MEMORY_FINISH (28)
-#define GPIO_ID_SDIO_NOTIFY_START_WRITE (29)
-#define GPIO_ID_SDIO_WRITE_NOTIFY_FIFO_EMPTY (30)
-#define GPIO_ID_SDIO_WRITE_TO_FIFO_FINISH (31)
-
-#define GPIO_ENTER_LEVEL (2)
-#define GPIO_EXIT_LEVEL (0)
-
-#define GPIO_ID_DMA_START_END (26)	//RE-USE
-#define GPIO_ID_SDIO_READ_PACK_FINISH (27)
-
+#if CONFIG_IO_MATRIX_VER2_0
+#include "driver/io_matrix.h"
 #endif
 
+static void sdio_send_msg(sdio_msg_t *msg_p);
 
 #if CONFIG_SDIO_V2P1
 static sdio_driver_t s_sdio_driver;
@@ -1072,48 +1059,67 @@ static void sdio_send_msg(sdio_msg_t *msg_p)
 	}
 }
 
-
-#define REG_GPIO_P14                     *((volatile unsigned long *) (0x44830000+0x4e*4))
-#define REG_GPIO_P15                     *((volatile unsigned long *) (0x44830000+0x4f*4))
-#define REG_GPIO_P16                     *((volatile unsigned long *) (0x44830000+0x50*4))
-#define REG_GPIO_P17                     *((volatile unsigned long *) (0x44830000+0x51*4))
-#define REG_GPIO_P18                     *((volatile unsigned long *) (0x44830000+0x52*4))
-#define REG_GPIO_P19                     *((volatile unsigned long *) (0x44830000+0x53*4))
-
-bk_err_t sdio_gpio_init(void)
+bk_err_t sdio_init_gpio(void)
 {
-#if 0
-#if CONFIG_SDIO_4LINES_EN
-	gpio_sdio_sel(GPIO_SDIO_MAP_MODE1);
-#else
-	gpio_sdio_one_line_sel(GPIO_SDIO_MAP_MODE1);
-#endif
-#endif
-	REG_GPIO_P14 = 0x3E000330;
-	REG_GPIO_P15 = 0x3f000330;
-	REG_GPIO_P16 = 0x40000330;
-	REG_GPIO_P17 = 0x41000330;
-	#if CONFIG_SDIO_4LINES_EN
+	const sdio_gpio_map_t sdio_gpio_map_table[] = SDIO_GPIO_MAP;
 
-	REG_GPIO_P18 = 0x42000330;
-	REG_GPIO_P19 = 0x43000330;
-	#endif
-	REG_GPIO_P4 = 0x2000000;
+	/* set gpio sdio host map: clk,cmd,data0 */
+	for (uint32_t i = SDIO_GPIO_CLK_INDEX; i < SDIO_GPIO_PIN_NUMBER; i++) {
+		gpio_dev_unmap(sdio_gpio_map_table[i].gpio_id);
+	}
+
+#if CONFIG_SDIO_4LINES_EN
+	gpio_sdio_sel(GPIO_SDIO_MAP_MODE0);
+#else
+	gpio_sdio_one_line_sel(GPIO_SDIO_MAP_MODE0);
+#endif
+
+	/* sdio host clk */
+	bk_gpio_pull_up(sdio_gpio_map_table[SDIO_GPIO_CLK_INDEX].gpio_id);
+	bk_gpio_set_capacity(sdio_gpio_map_table[SDIO_GPIO_CLK_INDEX].gpio_id, 3);
+#if CONFIG_IO_MATRIX_VER2_0
+	bk_iomx_set_gpio_func(sdio_gpio_map_table[SDIO_GPIO_CLK_INDEX].gpio_id, FUNC_CODE_SDIO_CLK);
+#endif
+
+	/* sdio host cmd */
+	bk_gpio_pull_up(sdio_gpio_map_table[SDIO_GPIO_CMD_INDEX].gpio_id);
+	bk_gpio_set_capacity(sdio_gpio_map_table[SDIO_GPIO_CMD_INDEX].gpio_id, 3);
+#if CONFIG_IO_MATRIX_VER2_0
+	bk_iomx_set_gpio_func(sdio_gpio_map_table[SDIO_GPIO_CMD_INDEX].gpio_id, FUNC_CODE_SDIO_CMD);
+#endif
+
+	/* sdio host data0 */
+	bk_gpio_pull_up(sdio_gpio_map_table[SDIO_GPIO_DATA0_INDEX].gpio_id);
+	bk_gpio_set_capacity(sdio_gpio_map_table[SDIO_GPIO_DATA0_INDEX].gpio_id, 3);
+#if CONFIG_IO_MATRIX_VER2_0
+	bk_iomx_set_gpio_func(sdio_gpio_map_table[SDIO_GPIO_DATA0_INDEX].gpio_id, FUNC_CODE_SDIO_DATA_0);
+#endif
+
+#if CONFIG_SDIO_4LINES_EN
+	/* sdio host data1,data2,data3 */
+	for (uint32_t i = SDIO_GPIO_DATA1_INDEX; i < SDIO_GPIO_PIN_NUMBER; i++) {
+		bk_gpio_pull_up(sdio_gpio_map_table[i].gpio_id);
+		bk_gpio_set_capacity(sdio_gpio_map_table[i].gpio_id, 3);
+	}
+
+#if CONFIG_IO_MATRIX_VER2_0
+	bk_iomx_set_gpio_func(sdio_gpio_map_table[SDIO_GPIO_DATA1_INDEX].gpio_id, FUNC_CODE_SDIO_DATA_1);
+	bk_iomx_set_gpio_func(sdio_gpio_map_table[SDIO_GPIO_DATA2_INDEX].gpio_id, FUNC_CODE_SDIO_DATA_2);
+	bk_iomx_set_gpio_func(sdio_gpio_map_table[SDIO_GPIO_DATA3_INDEX].gpio_id, FUNC_CODE_SDIO_DATA_3);
+#endif // CONFIG_IO_MATRIX_VER2_0
+#endif // CONFIG_SDIO_4LINES_EN
+
 	return BK_OK;
 }
 
-bk_err_t sdio_gpio_deinit(void)
+bk_err_t sdio_deinit_gpio(void)
 {
-	REG_GPIO_P14 = 0x0;
-	REG_GPIO_P15 = 0x0;
-	REG_GPIO_P16 = 0x0;
-	REG_GPIO_P17 = 0x0;
-#if CONFIG_SDIO_4LINES_EN
-	REG_GPIO_P18 = 0x0;
-	REG_GPIO_P19 = 0x0;
-#endif
+	const sdio_gpio_map_t sdio_gpio_map_table[] = SDIO_GPIO_MAP;
 
-	//REG_GPIO_P34 = 0x8;
+	for (uint32_t i = SDIO_GPIO_CLK_INDEX; i < SDIO_GPIO_PIN_NUMBER; i++) {
+		gpio_dev_unmap(sdio_gpio_map_table[i].gpio_id);
+	}
+
 	return BK_OK;
 }
 
@@ -2804,19 +2810,11 @@ static bk_err_t sdio_slave_hw_init(void)
 #endif
 
 #if CONFIG_SDIO_1V8_EN
-	sys_drv_psram_psldo_vset(1, 3);        //set vddpsram voltage as 1.8v
-	sys_drv_psram_ldo_enable(1);           //vddpsram enable
-	sys_hal_set_ana_vddgpio_sel(1);  //GPIO vdd select between vio and vddparam
-#endif
-
-#if 0	//has config in gpio_map.h
-	//pin
-	ret = sdio_gpio_init();
-	if(ret != BK_OK)
-	{
-		SDIO_LOG_ERR("gpio init");
-		return ret;
-	}
+	sys_hal_set_ana_reg8_spi_latch1v(1);
+	sys_drv_psram_psldo_vset(1, 0); //set vddpsram voltage as 1.8v
+	sys_drv_psram_ldo_enable(1);    //vddpsram enable
+	sys_hal_set_ana_vddgpio_sel(1); //GPIO vdd select between vio and vddparam
+	sys_hal_set_ana_reg8_spi_latch1v(0);
 #endif
 
 #if CONFIG_GPIO_NOTIFY_TRANSACTION_EN
@@ -3036,7 +3034,7 @@ static bk_err_t sdio_hw_deinit(void)
 
 #if 0	//has config in gpio_map.h
 	//pin
-	ret = sdio_gpio_deinit();
+	ret = sdio_deinit_gpio();
 	if(ret != BK_OK)
 	{
 		SDIO_LOG_ERR("gpio deinit");

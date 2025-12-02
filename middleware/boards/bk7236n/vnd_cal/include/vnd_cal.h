@@ -19,9 +19,10 @@ typedef struct tmp_pwr_st {
     signed xtal_c_dlta : 10; //8bits xtalh_ctune on BK7236
 } TMP_PWR_ST, *TMP_PWR_PTR;
 
-typedef struct txpwr_st {
+typedef struct txpwr_cal_st {
+    UINT8 channel;
     UINT8 value;
-} TXPWR_ST, *TXPWR_PTR;
+} TXPWR_CAL_ST, *TXPWR_CAL_PTR;
 
 typedef struct
 {
@@ -46,10 +47,10 @@ void vnd_cal_overlay(void);
 
 //typedef void (*hook_function_t)(void);
 
-extern void vnd_cal_txpwr_tab_def_b_overlay(TXPWR_ST *txpwr_tab_def_ptr);
-extern void vnd_cal_txpwr_tab_def_g_overlay(TXPWR_ST *txpwr_tab_def_ptr);
-extern void vnd_cal_txpwr_tab_def_n40_overlay(TXPWR_ST *txpwr_tab_def_ptr);
-extern void vnd_cal_txpwr_tab_def_ble_overlay(TXPWR_ST *txpwr_tab_def_ptr);
+extern void vnd_cal_txpwr_tab_def_b_overlay(TXPWR_CAL_ST *txpwr_tab_def_ptr);
+extern void vnd_cal_txpwr_tab_def_g_overlay(TXPWR_CAL_ST *txpwr_tab_def_ptr);
+extern void vnd_cal_txpwr_tab_def_n40_overlay(TXPWR_CAL_ST *txpwr_tab_def_ptr);
+extern void vnd_cal_txpwr_tab_def_ble_overlay(TXPWR_CAL_ST *txpwr_tab_def_ptr);
 extern void vnd_cal_tmp_pwr_tab_overlay(TMP_PWR_ST *tmp_pwr_tab_def_ptr);
 extern void vnd_cal_gxtal_overlay(uint32 overlay_xtal);
 extern void vnd_cal_gcmtag_overlay(uint32 overlay_cmtag);

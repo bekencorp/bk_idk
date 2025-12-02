@@ -222,6 +222,89 @@ typedef volatile struct {
 		};
 		uint32_t v;
 	} sd_slave_status;
+
+	/* REG_0x18 */
+	union {
+		struct {
+			uint32_t rd_rgt_blks                    : 16;  //0x18[15:0],rd_rgt_blks
+			uint32_t wr_rgt_blks                    : 16;  //0x18[31:16],wr_rgt_blks ,
+		};
+		uint32_t v;
+	} sd_op_rgt_blks;
+
+	/* REG_0x19 */
+	union {
+		struct {
+			uint32_t dat_s_wr_blk_cnt               : 9;  //0x19[8:0],dat_s_wr_blk_cnt
+			uint32_t reserved                       : 16;  //0x19[31:9],
+		};
+		uint32_t v;
+	} sd_dat_s_wr_blk_cnt;
+
+	/* REG_0x1a */
+	union {
+		struct {
+			uint32_t sd_cmd3_res_argument           : 16;  //0x1a[15:0],sd_cmd3_res_argument
+			uint32_t sd_cmd0_res_sel                : 1;  //0x1a[16],sd_cmd0_res_sel
+			uint32_t sd_cmd5_crc_sel                : 1;  //0x1a[17],
+			uint32_t sd_cmd5_ind_sel                : 1;  //0x1a[18],
+			uint32_t sd_cmd_stt_sel                 : 1;  //0x1a[19],
+			uint32_t dat_s_dat1_int_en              : 1;  //0x1a[20],
+			uint32_t reserved                       : 11;  //0x1a[31:21],
+		};
+		uint32_t v;
+	} sd_cmd_irq_ex_op;
+
+	/* REG_0x1b */
+	union {
+		struct {
+			uint32_t sd_cmd5_res_argument           : 32;  //0x1b[31:0],sd_cmd5_res_argument
+		};
+		uint32_t v;
+	} sd_cmd5_res;
+
+	/* REG_0x1c */
+	union {
+		struct {
+			uint32_t sd_cmd7_res_argument           : 32;  //0x1c[31:0],sd_cmd7_res_argument
+		};
+		uint32_t v;
+	} sd_cmd7_res;
+
+	/* REG_0x1d */
+	union {
+		struct {
+			uint32_t cccrx           : 4;  //0x1d[3:0], CCCR version
+			uint32_t sdiox           : 4;  //0x1d[7:4], Value SDIO Specification
+			uint32_t sdx             : 4;  //0x1d[11:8], Value SD Physical Specification
+			uint32_t reserved        : 5;  //0x1d[16:12],
+			uint32_t ioex            : 7;  //0x1d[23:17], Enable Function
+			uint32_t reserved1        : 1;  //0x1d[24],
+			uint32_t ior             : 7;  //0x1d[31:25],I/O Function Ready
+		};
+		uint32_t v;
+	} sd_cccr_1;
+
+	/* REG_0x1e */
+	union {
+		struct {
+			uint32_t ienm              : 1;  //0x1e[0]      Interrupt Enable Master.
+			uint32_t ienx              : 7;  //0x1e[7:1]    Interrupt Enable for function x.
+			uint32_t reserved          : 1;  //0x1e[8]
+			uint32_t intx              : 7;  //0x1e[15:9]
+			uint32_t asx               : 3;  //0x1e[18:16]
+			uint32_t reset             : 1;  //0x1e[19]     I/O CARD RESET
+			uint32_t reserved1          : 4;  //0x1e[23:20]
+			uint32_t bus_width         : 2;  //0x1e[25:24]  Defines the data bus width
+			uint32_t s8b               : 1;  //0x1e[26]     Support 8-bit Bus Mode
+			uint32_t reserved2          : 2;  //0x1e[28:27]
+			uint32_t ecsi              : 1;  //0x1e[29]     Enable Continuous SPI Interrupt.
+			uint32_t scsi              : 1;  //0x1e[30]     Support Continuous SPI interrupt.
+			uint32_t cd_disable        : 1;  //0x1e[31]     Connect[0]/Disconnect[1] the 10K-90K ohm pull-up resistor on CD/DAT[3] (pin 1) of the card.
+		};
+		uint32_t v;
+	} sd_cccr_2;
+
 } sdio_hw_t;
 
 #ifdef __cplusplus

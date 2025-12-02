@@ -66,13 +66,49 @@ static inline uint32_t sys_ana_ll_get_ana_reg0_value(void) {
 	return sys_ll_get_analog_reg_value(SOC_SYS_ANA_REG_BASE + (0x40 << 2));
 }
 
-static inline void sys_ana_ll_set_ana_reg0_nc_0_6(uint32_t v) {
-	sys_ana_set_ana_reg_bit((SOC_SYS_ANA_REG_BASE + (0x40 << 2)), 0, 0x7f, v);
+static inline void sys_ana_ll_set_ana_reg0_vctrl_testen(uint32_t v) {
+	sys_ana_set_ana_reg_bit((SOC_SYS_ANA_REG_BASE + (0x40 << 2)), 0, 0x1, v);
 }
 
-static inline uint32_t sys_ana_ll_get_ana_reg0_nc_0_6(void) {
+static inline uint32_t sys_ana_ll_get_ana_reg0_vctrl_testen(void) {
 	sys_ana_ana_reg0_t *r = (sys_ana_ana_reg0_t*)(SOC_SYS_ANA_REG_BASE + (0x40 << 2));
-	return r->nc_0_6;
+	return r->vctrl_testen;
+}
+
+static inline void sys_ana_ll_set_ana_reg0_vctrlsel(uint32_t v) {
+	sys_ana_set_ana_reg_bit((SOC_SYS_ANA_REG_BASE + (0x40 << 2)), 1, 0x3, v);
+}
+
+static inline uint32_t sys_ana_ll_get_ana_reg0_vctrlsel(void) {
+	sys_ana_ana_reg0_t *r = (sys_ana_ana_reg0_t*)(SOC_SYS_ANA_REG_BASE + (0x40 << 2));
+	return r->vctrlsel;
+}
+
+static inline void sys_ana_ll_set_ana_reg0_cp_ioff(uint32_t v) {
+	sys_ana_set_ana_reg_bit((SOC_SYS_ANA_REG_BASE + (0x40 << 2)), 3, 0x3, v);
+}
+
+static inline uint32_t sys_ana_ll_get_ana_reg0_cp_ioff(void) {
+	sys_ana_ana_reg0_t *r = (sys_ana_ana_reg0_t*)(SOC_SYS_ANA_REG_BASE + (0x40 << 2));
+	return r->cp_ioff;
+}
+
+static inline void sys_ana_ll_set_ana_reg0_spisel_unlockl(uint32_t v) {
+	sys_ana_set_ana_reg_bit((SOC_SYS_ANA_REG_BASE + (0x40 << 2)), 5, 0x1, v);
+}
+
+static inline uint32_t sys_ana_ll_get_ana_reg0_spisel_unlockl(void) {
+	sys_ana_ana_reg0_t *r = (sys_ana_ana_reg0_t*)(SOC_SYS_ANA_REG_BASE + (0x40 << 2));
+	return r->spisel_unlockl;
+}
+
+static inline void sys_ana_ll_set_ana_reg0_spisel_unlockh(uint32_t v) {
+	sys_ana_set_ana_reg_bit((SOC_SYS_ANA_REG_BASE + (0x40 << 2)), 6, 0x1, v);
+}
+
+static inline uint32_t sys_ana_ll_get_ana_reg0_spisel_unlockh(void) {
+	sys_ana_ana_reg0_t *r = (sys_ana_ana_reg0_t*)(SOC_SYS_ANA_REG_BASE + (0x40 << 2));
+	return r->spisel_unlockh;
 }
 
 static inline void sys_ana_ll_set_ana_reg0_cp(uint32_t v) {
@@ -192,13 +228,13 @@ static inline uint32_t sys_ana_ll_get_ana_reg0_bp_caldone(void) {
 	return r->bp_caldone;
 }
 
-static inline void sys_ana_ll_set_ana_reg0_nc_31_31(uint32_t v) {
+static inline void sys_ana_ll_set_ana_reg0_spi_rst_unlock(uint32_t v) {
 	sys_ana_set_ana_reg_bit((SOC_SYS_ANA_REG_BASE + (0x40 << 2)), 31, 0x1, v);
 }
 
-static inline uint32_t sys_ana_ll_get_ana_reg0_nc_31_31(void) {
+static inline uint32_t sys_ana_ll_get_ana_reg0_spi_rst_unlock(void) {
 	sys_ana_ana_reg0_t *r = (sys_ana_ana_reg0_t*)(SOC_SYS_ANA_REG_BASE + (0x40 << 2));
-	return r->nc_31_31;
+	return r->spi_rst_unlock;
 }
 
 //reg ana_reg1:
@@ -356,13 +392,13 @@ static inline uint32_t sys_ana_ll_get_ana_reg2_gadc_inbufsel(void) {
 	return r->gadc_inbufsel;
 }
 
-static inline void sys_ana_ll_set_ana_reg2_nc_10_10(uint32_t v) {
+static inline void sys_ana_ll_set_ana_reg2_temp_gsel(uint32_t v) {
 	sys_ana_set_ana_reg_bit((SOC_SYS_ANA_REG_BASE + (0x42 << 2)), 10, 0x1, v);
 }
 
-static inline uint32_t sys_ana_ll_get_ana_reg2_nc_10_10(void) {
+static inline uint32_t sys_ana_ll_get_ana_reg2_temp_gsel(void) {
 	sys_ana_ana_reg2_t *r = (sys_ana_ana_reg2_t*)(SOC_SYS_ANA_REG_BASE + (0x42 << 2));
-	return r->nc_10_10;
+	return r->temp_gsel;
 }
 
 static inline void sys_ana_ll_set_ana_reg2_gadc_compisel(uint32_t v) {
@@ -800,13 +836,13 @@ static inline uint32_t sys_ana_ll_get_ana_reg5_nc_2_2(void) {
 	return r->nc_2_2;
 }
 
-static inline void sys_ana_ll_set_ana_reg5_nc_3_3(uint32_t v) {
+static inline void sys_ana_ll_set_ana_reg5_temp_gsel(uint32_t v) {
 	sys_ana_set_ana_reg_bit((SOC_SYS_ANA_REG_BASE + (0x45 << 2)), 3, 0x1, v);
 }
 
-static inline uint32_t sys_ana_ll_get_ana_reg5_nc_3_3(void) {
+static inline uint32_t sys_ana_ll_get_ana_reg5_temp_gsel(void) {
 	sys_ana_ana_reg5_t *r = (sys_ana_ana_reg5_t*)(SOC_SYS_ANA_REG_BASE + (0x45 << 2));
-	return r->nc_3_3;
+	return r->temp_gsel;
 }
 
 static inline void sys_ana_ll_set_ana_reg5_en_temp(uint32_t v) {
@@ -1180,13 +1216,13 @@ static inline uint32_t sys_ana_ll_get_ana_reg7_vbatdetsel(void) {
 	return r->vbatdetsel;
 }
 
-static inline void sys_ana_ll_set_ana_reg7_nc_18_18(uint32_t v) {
+static inline void sys_ana_ll_set_ana_reg7_en_compe(uint32_t v) {
 	sys_ana_set_ana_reg_bit((SOC_SYS_ANA_REG_BASE + (0x47 << 2)), 18, 0x1, v);
 }
 
-static inline uint32_t sys_ana_ll_get_ana_reg7_nc_18_18(void) {
+static inline uint32_t sys_ana_ll_get_ana_reg7_en_compe(void) {
 	sys_ana_ana_reg7_t *r = (sys_ana_ana_reg7_t*)(SOC_SYS_ANA_REG_BASE + (0x47 << 2));
-	return r->nc_18_18;
+	return r->en_compe;
 }
 
 static inline void sys_ana_ll_set_ana_reg7_spi_pwd_regpow(uint32_t v) {
@@ -1280,7 +1316,7 @@ static inline uint32_t sys_ana_ll_get_ana_reg8_asoft_stc(void) {
 	return r->asoft_stc;
 }
 
-static inline void sys_ana_ll_set_ana_reg8_rst_wks1v(uint32_t v) {
+static inline void sys_ana_ll_set_ana_reg8_rst_timerwks1v(uint32_t v) {
 	sys_ana_set_ana_reg_bit((SOC_SYS_ANA_REG_BASE + (0x48 << 2)), 4, 0x1, v);
 }
 
@@ -1311,7 +1347,7 @@ static inline void sys_ana_ll_set_ana_reg8_spi_latch1v(uint32_t v) {
 	sys_ana_set_ana_reg_bit((SOC_SYS_ANA_REG_BASE + (0x48 << 2)), 9, 0x1, v);
 }
 
-static inline void sys_ana_ll_set_ana_reg8_spi_latch1v_iram(uint32_t v) {
+__IRAM_SEC static inline void sys_ana_ll_set_ana_reg8_spi_latch1v_iram(uint32_t v) {
 	sys_ana_set_ana_reg_bit_iram((SOC_SYS_ANA_REG_BASE + (0x48 << 2)), 9, 0x1, v);
 }
 
@@ -1637,13 +1673,13 @@ static inline uint32_t sys_ana_ll_get_ana_reg10_ampoen(void) {
 	return r->ampoen;
 }
 
-static inline void sys_ana_ll_set_ana_reg10_nc_13_13(uint32_t v) {
+static inline void sys_ana_ll_set_ana_reg10_vbg_rstrtc_en(uint32_t v) {
 	sys_ana_set_ana_reg_bit((SOC_SYS_ANA_REG_BASE + (0x4a << 2)), 13, 0x1, v);
 }
 
-static inline uint32_t sys_ana_ll_get_ana_reg10_nc_13_13(void) {
+static inline uint32_t sys_ana_ll_get_ana_reg10_vbg_rstrtc_en(void) {
 	sys_ana_ana_reg10_t *r = (sys_ana_ana_reg10_t*)(SOC_SYS_ANA_REG_BASE + (0x4a << 2));
-	return r->nc_13_13;
+	return r->vbg_rstrtc_en;
 }
 
 static inline void sys_ana_ll_set_ana_reg10_avea_sel(uint32_t v) {

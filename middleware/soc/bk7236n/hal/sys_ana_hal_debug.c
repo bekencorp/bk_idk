@@ -31,7 +31,11 @@ static void sys_ana_dump_ana_reg0(void)
 	sys_ana_ana_reg0_t *r = (sys_ana_ana_reg0_t *)(SOC_SYS_ANA_REG_BASE + (0x40 << 2));
 
 	SOC_LOGI("ana_reg0: %8x\r\n", REG_READ(SOC_SYS_ANA_REG_BASE + (0x40 << 2)));
-	SOC_LOGI("	nc_0_6: %8x\r\n", r->nc_0_6);
+	SOC_LOGI("	vctrl_testen: %8x\r\n", r->vctrl_testen);
+	SOC_LOGI("	vctrlsel: %8x\r\n", r->vctrlsel);
+	SOC_LOGI("	cp_ioff: %8x\r\n", r->cp_ioff);
+	SOC_LOGI("	spisel_unlockl: %8x\r\n", r->spisel_unlockl);
+	SOC_LOGI("	spisel_unlockh: %8x\r\n", r->spisel_unlockh);
 	SOC_LOGI("	cp: %8x\r\n", r->cp);
 	SOC_LOGI("	spideten: %8x\r\n", r->spideten);
 	SOC_LOGI("	cben: %8x\r\n", r->cben);
@@ -45,7 +49,7 @@ static void sys_ana_dump_ana_reg0(void)
 	SOC_LOGI("	kctrl: %8x\r\n", r->kctrl);
 	SOC_LOGI("	vsel_ldo: %8x\r\n", r->vsel_ldo);
 	SOC_LOGI("	bp_caldone: %8x\r\n", r->bp_caldone);
-	SOC_LOGI("	nc_31_31: %8x\r\n", r->nc_31_31);
+	SOC_LOGI("	spi_rst_unlock: %8x\r\n", r->spi_rst_unlock);
 }
 
 static void sys_ana_dump_ana_reg1(void)
@@ -143,7 +147,7 @@ static void sys_ana_dump_ana_reg5(void)
 	SOC_LOGI("	anabufsel_rx: %8x\r\n", r->anabufsel_rx);
 	SOC_LOGI("	en_xtall: %8x\r\n", r->en_xtall);
 	SOC_LOGI("	nc_2_2: %8x\r\n", r->nc_2_2);
-	SOC_LOGI("	nc_3_3: %8x\r\n", r->nc_3_3);
+	SOC_LOGI("	temp_gsel: %8x\r\n", r->temp_gsel);
 	SOC_LOGI("	en_temp: %8x\r\n", r->en_temp);
 	SOC_LOGI("	en_dpll: %8x\r\n", r->en_dpll);
 	SOC_LOGI("	en_cb: %8x\r\n", r->en_cb);
@@ -197,7 +201,7 @@ static void sys_ana_dump_ana_reg7(void)
 	SOC_LOGI("	envrefh1v: %8x\r\n", r->envrefh1v);
 	SOC_LOGI("	violdosel: %8x\r\n", r->violdosel);
 	SOC_LOGI("	vbatdetsel: %8x\r\n", r->vbatdetsel);
-	SOC_LOGI("	nc_18_18: %8x\r\n", r->nc_18_18);
+	SOC_LOGI("	en_compe: %8x\r\n", r->en_compe);
 	SOC_LOGI("	spi_pwd_regpow: %8x\r\n", r->spi_pwd_regpow);
 	SOC_LOGI("	bypassen: %8x\r\n", r->bypassen);
 	SOC_LOGI("	ioldolp: %8x\r\n", r->ioldolp);
@@ -265,7 +269,7 @@ static void sys_ana_dump_ana_reg10(void)
 	SOC_LOGI("	apfms: %8x\r\n", r->apfms);
 	SOC_LOGI("	atmpo_sel: %8x\r\n", r->atmpo_sel);
 	SOC_LOGI("	ampoen: %8x\r\n", r->ampoen);
-	SOC_LOGI("	nc_13_13: %8x\r\n", r->nc_13_13);
+	SOC_LOGI("	vbg_rstrtc_en: %8x\r\n", r->vbg_rstrtc_en);
 	SOC_LOGI("	avea_sel: %8x\r\n", r->avea_sel);
 	SOC_LOGI("	aforcepfm: %8x\r\n", r->aforcepfm);
 	SOC_LOGI("	acls: %8x\r\n", r->acls);

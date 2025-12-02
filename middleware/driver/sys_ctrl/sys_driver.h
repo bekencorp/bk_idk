@@ -81,35 +81,20 @@ void sys_drv_i2c_select_clock(i2c_id_t id, i2c_src_clk_t mode);
 /* Platform I2C End **/
 
 void sys_drv_pwm_set_clock(uint32_t mode, uint32_t param);
-
 void sys_drv_pwm_select_clock(sys_sel_pwm_t num, pwm_src_clk_t mode);
-
 void sys_drv_timer_select_clock(sys_sel_timer_t num, timer_src_clk_t mode);
-
 void sys_drv_flash_set_dco(void);
-
 void sys_drv_flash_set_dpll(void);
-
 void sys_drv_flash_cksel(uint32_t value);
-
 void sys_drv_flash_set_clk_div(uint32_t value);
-
 uint32_t sys_drv_flash_get_clk_sel(void);
-
 uint32_t sys_drv_flash_get_clk_div(void);
-
 void sys_drv_set_qspi_vddram_voltage(uint32_t param);
-
 void sys_drv_set_qspi_io_voltage(uint32_t param);
-
 void sys_drv_qspi_clk_sel(uint32_t id, uint32_t param);
-
 void sys_drv_qspi_set_src_clk_div(uint32_t id, uint32_t value);
-
 void sys_drv_nmi_wdt_set_clk_div(uint32_t value);
-
 uint32_t sys_drv_nmi_wdt_get_clk_div(void);
-
 void sys_drv_trng_disckg_set(uint32_t value);
 
 #if ((CONFIG_SDIO_V2P0) || (CONFIG_SDIO_V2P1) || CONFIG_SDIO_V2P2 )

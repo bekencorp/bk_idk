@@ -1,22 +1,32 @@
+// Copyright 2020-2025 Beken
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include <common/bk_include.h>
 #include "bk_arm_arch.h"
-
-#if CONFIG_SDCARD
-
 #include "sdio_driver.h"
 #include "sdcard.h"
 #include "sdcard_pub.h"
-
 #include "bk_drv_model.h"
 #include "bk_sys_ctrl.h"
 #include <os/mem.h>
 #include "bk_icu.h"
 #include "bk_misc.h"
-
 #include "sdcard_test.h"
-
 #include "driver/sd_card.h"
+
 #define SDCARD_TEST_BUFFER_SIZE (512 * 2)
+
 static SDIO_Error sdcard_test_open(void)
 {
 	return bk_sd_card_init();
@@ -43,7 +53,6 @@ UINT32 sdcard_intf_test(void)
 err_out:
 	SDCARD_FATAL("sdcard_test err, ret:%d\r\n", ret);
 	return SDCARD_FAILURE;
-
 }
 
 UINT32 test_sdcard_read(UINT32 blk, UINT32 blk_cnt)
@@ -130,5 +139,3 @@ void sdcard_intf_close(void)
 {
 	sdcard_test_close();
 }
-
-#endif

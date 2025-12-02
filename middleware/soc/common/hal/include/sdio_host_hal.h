@@ -29,15 +29,6 @@ typedef struct {
 	sdio_host_unit_t id;
 } sdio_host_hal_t;
 
-typedef struct {
-	gpio_id_t gpio_id;
-	gpio_dev_t dev;
-
-#if CONFIG_IO_MATRIX_VER2_0
-	uint32_t func_code;
-#endif
-} sdio_host_gpio_map_t;
-
 #define sdio_host_hal_reset_config_to_default(hal) sdio_host_ll_reset_config_to_default((hal)->hw)
 #define sdio_host_hal_set_clk_freq(hal, clk_freq) sdio_host_ll_set_clk_freq((hal)->hw, clk_freq)
 #define sdio_host_hal_set_bus_width(hal, bus_width) sdio_host_ll_set_bus_width((hal)->hw, bus_width)

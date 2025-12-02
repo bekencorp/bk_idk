@@ -1,4 +1,4 @@
-// Copyright 2022-2023 Beken
+// Copyright 2022-2025 Beken
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,10 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
-
-#ifndef _SDIO_SLAVE_DRIVER_H_
-#define _SDIO_SLAVE_DRIVER_H_
+#pragma once
 
 #include <common/bk_err.h>
 #include "bk_list.h"
@@ -716,14 +713,7 @@ void bk_sdio_driver_dump_sdio_regs(void);
  */
 bk_err_t sdio_slave_driver_deinit(void);
 bk_err_t bk_sdio_slave_tx(char* buf_p, uint32_t len, uint32_t timeout_ms);
-
-bk_err_t sdio_gpio_init(void);
-
-bk_err_t sdio_gpio_deinit(void);
-
+bk_err_t sdio_init_gpio(void);
+bk_err_t sdio_deinit_gpio(void);
 bk_err_t bk_sdio_loopcheck_init(void);
-
 bk_err_t bk_sdio_auto_test(void);
-
-#endif // _SDIO_H_
-

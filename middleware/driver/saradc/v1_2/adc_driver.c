@@ -717,6 +717,10 @@ bk_err_t bk_adc_channel_read(adc_chan_t chan_id, uint16_t *data, uint32_t timeou
     uint32_t sum = 0;
     uint16_t samples[DEFAULT_AVERAGE_SAMPLE_SIZE] = {0};
     uint32_t num, average_sample_count;
+    if (chan_id == ADC_0) {
+        /*When configured as 0, reference voltage is 1.5V; when configured as 1, reference voltage is 1.8V*/
+        adc_hal_switch_vol_range(0);
+    }
 
     ret = bk_adc_get_raw(chan_id, samples, DEFAULT_AVERAGE_SAMPLE_SIZE * DEFAULT_ADC_SAMPLE_UNIT_BYTES, timeout);
 
@@ -734,6 +738,9 @@ bk_err_t bk_adc_channel_read(adc_chan_t chan_id, uint16_t *data, uint32_t timeou
     #endif
 
     *data = sum;
+    if (chan_id == ADC_0) {
+        adc_hal_switch_vol_range(1);
+    }
 
     return ret;
 }
@@ -1008,6 +1015,24 @@ uint32_t bk_adc_is_using_calibration_val_flag(void)
     return (!!(s_saradc_use_calibration_val_flag));
 }
 
+float saradc_channel0_calculate(UINT16 adc_val)
+{
+    float practic_voltage = 0;
+    UINT16 cali_low_val = adc_hal_get_channel0_2Volt_default();
+    UINT16 cali_high_val = adc_hal_get_channel0_3Volt_default();
+
+    /* (adc_val - low) / (practic_voltage - 2Volt) = (high - low) / 2Volt */
+    /* practic_voltage = (adc_val - low) / (high - low) + 2Volt */
+    practic_voltage = (float)(adc_val - cali_low_val);
+    practic_voltage = (practic_voltage / (float)(cali_high_val - cali_low_val)) + 2;
+
+    if (practic_voltage < 0) {
+        practic_voltage = 0.0f;
+    }
+
+    return practic_voltage;
+}
+
 float saradc_calculate(UINT16 adc_val)
 {
     struct sadc_device *dev = saradc_dev_ptr;
@@ -1112,9 +1137,10 @@ float bk_adc_data_calculate(UINT16 adc_val, UINT8 adc_chan)
         return BK_ERR_ADC_BUSY;
     }
 
-    cali_value = saradc_calculate(adc_val);
     if (adc_chan == ADC_0) {
-        cali_value = cali_value * 4;
+        cali_value = saradc_channel0_calculate(adc_val);
+    } else {
+        cali_value = saradc_calculate(adc_val);
     }
 
     return cali_value;

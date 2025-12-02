@@ -8,6 +8,8 @@
 
 #define TXPWR_ELEM_INUSED               (0)
 #define TXPWR_ELEM_UNUSED               (1)
+#define TXPWR_CAL_2G_MAX                (4)
+#define TXPWR_CAL_5G_MAX                (8)
 #define WLAN_2_4_G_CHANNEL_NUM          (14)
 #define BLE_2_4_G_CHANNEL_NUM           (40)
 
@@ -24,7 +26,43 @@
 #define GET_TXPWR_FLAG(p)               (((p)->value>>FLAG_POSI)&FLAG_MASK)
 #define SET_TXPWR_FLAG(p, flag)         {(p)->value &= (~(FLAG_MASK<<FLAG_POSI)); \
                                          (p)->value |= ((flag&FLAG_MASK)<<FLAG_POSI);}
-#define INIT_TXPWR_VALUE(gain, flag)    {(((flag&FLAG_MASK)<<FLAG_POSI)|(gain&GAIN_MASK))}
+#define INIT_TXPWR_VALUE(channel, gain)    { channel, gain }
+
+/**
+ * target power of all format:
+ * could be update with 'txevm -e 6 [-band 1] [-b 0] rate power' by iTest
+ * or update here directly before/without iTest
+ */
+float target_pwr_ble = 6.0; //2G4 BLE target power
+float target_pwr_11b = 18.0; //2G4 11B target power
+float target_pwr_11g = 16.0; //2G4 11G target power
+float target_pwr_n20 = 15.0; //2G4 N20 target power
+float target_pwr_n40 = 15.0; //2G4 N40 target power
+float target_pwr_ax20 = 15.0; //2G4 N20 target power
+
+/**
+ * shift power index of n/ax:
+ * 0.25dB for 1 LSB
+ * used for generate n/ax power table with g/a
+ */
+int8_t g_dif_g_n20 = 4;  //differ between g and n20
+int8_t g_dif_g_ax20 = 4; //differ between g and ax20
+int8_t g_dif_g_n40 = 2;  //differ between g and n40
+int8_t g_dif_g_ble_ch0 = -14;
+int8_t g_dif_g_ble_ch19 = -13;
+int8_t g_dif_g_ble_ch39 = -12;
+
+/**
+ * shift power index of all format:
+ * 0.25dB for 1 LSB
+ * used with FT PWR CAL
+ */
+int8_t shift_pwr_idx_b_ch1 = -6;
+int8_t shift_pwr_idx_b_ch7 = -10;
+int8_t shift_pwr_idx_b_ch13 = -6;
+int8_t shift_pwr_idx_g_ch1 = -8;
+int8_t shift_pwr_idx_g_ch7 = -12;
+int8_t shift_pwr_idx_g_ch13 = -8;
 
 const UINT32 g_default_xtal   = DEFAULT_TXID_XTAL;
 char *vnd_cal_version         = "24-04-10 00:00:00";
@@ -248,98 +286,26 @@ const PWR_REGS cfg_tab_bt[TPC_PAMAP_TAB_BT_LEN] = {
 };
 
 /********************************  power table ********************************/
-const TXPWR_ST gtxpwr_tab_def_b[WLAN_2_4_G_CHANNEL_NUM] = {
-    INIT_TXPWR_VALUE(50, TXPWR_ELEM_INUSED),  // ch1  inused
-    INIT_TXPWR_VALUE(50, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(50, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(50, TXPWR_ELEM_UNUSED),  // ch4
-    INIT_TXPWR_VALUE(50, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(50, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(50, TXPWR_ELEM_UNUSED),  // ch7
-    INIT_TXPWR_VALUE(50, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(50, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(50, TXPWR_ELEM_UNUSED),  // ch10
-    INIT_TXPWR_VALUE(50, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(50, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(50, TXPWR_ELEM_INUSED),  // ch13  inused
-    INIT_TXPWR_VALUE(50, TXPWR_ELEM_UNUSED),
+/**
+ * we save stripped calibration power info like this
+ * { channel, power_index },
+ * so, max TXPWR_CAL_2G_MAX channels for WIFI 2G/BLE calibration
+ * so, max TXPWR_CAL_5G_MAX channels for WIFI 5G calibration
+ */
+const TXPWR_CAL_ST gtxpwr_tab_def_b[TXPWR_CAL_2G_MAX] = {
+    INIT_TXPWR_VALUE(1, 50),  // ch1  inused
+    INIT_TXPWR_VALUE(13, 50),  // ch13  inused
 };
 
-const TXPWR_ST gtxpwr_tab_def_g[WLAN_2_4_G_CHANNEL_NUM] = {
-    INIT_TXPWR_VALUE(88, TXPWR_ELEM_INUSED),  // ch1  inused
-    INIT_TXPWR_VALUE(88, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(88, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(88, TXPWR_ELEM_UNUSED),  // ch4
-    INIT_TXPWR_VALUE(88, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(88, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(88, TXPWR_ELEM_UNUSED),  // ch7
-    INIT_TXPWR_VALUE(88, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(88, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(88, TXPWR_ELEM_UNUSED),  // ch10
-    INIT_TXPWR_VALUE(88, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(88, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(88, TXPWR_ELEM_INUSED),  // ch13  inused
-    INIT_TXPWR_VALUE(88, TXPWR_ELEM_UNUSED),
+const TXPWR_CAL_ST gtxpwr_tab_def_g[TXPWR_CAL_2G_MAX] = {
+    INIT_TXPWR_VALUE(1, 88),  // ch1  inused
+    INIT_TXPWR_VALUE(13, 88),  // ch13  inused
 };
 
-const TXPWR_ST gtxpwr_tab_def_n_40[WLAN_2_4_G_CHANNEL_NUM] = {
-    INIT_TXPWR_VALUE(80, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(80, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(80, TXPWR_ELEM_UNUSED),  // ch3
-    INIT_TXPWR_VALUE(80, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(80, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(80, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(80, TXPWR_ELEM_UNUSED),  // ch7
-    INIT_TXPWR_VALUE(80, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(80, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(80, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(80, TXPWR_ELEM_UNUSED),  // ch11
-    INIT_TXPWR_VALUE(80, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(80, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(80, TXPWR_ELEM_UNUSED),
-};
-
-const TXPWR_ST gtxpwr_tab_def_ble[BLE_2_4_G_CHANNEL_NUM] = {
-    INIT_TXPWR_VALUE(51, TXPWR_ELEM_UNUSED),  // ch0 2402  inused
-    INIT_TXPWR_VALUE(51, TXPWR_ELEM_UNUSED),  // ch1 2404
-    INIT_TXPWR_VALUE(51, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(51, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(51, TXPWR_ELEM_UNUSED),  // ch4 2410
-    INIT_TXPWR_VALUE(50, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(50, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(50, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(50, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(50, TXPWR_ELEM_UNUSED),  // ch9 2420
-    INIT_TXPWR_VALUE(49, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(49, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(49, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(49, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(49, TXPWR_ELEM_UNUSED),  // ch14 2430
-    INIT_TXPWR_VALUE(48, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(48, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(48, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(48, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(47, TXPWR_ELEM_INUSED),  // ch19 2440 inused
-    INIT_TXPWR_VALUE(47, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(47, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(47, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(47, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(47, TXPWR_ELEM_UNUSED),  // ch24 2450
-    INIT_TXPWR_VALUE(47, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(47, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(47, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(47, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(47, TXPWR_ELEM_UNUSED),  // ch29 2460
-    INIT_TXPWR_VALUE(47, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(47, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(47, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(47, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(47, TXPWR_ELEM_UNUSED),  // ch34 2470
-    INIT_TXPWR_VALUE(46, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(46, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(46, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(46, TXPWR_ELEM_UNUSED),
-    INIT_TXPWR_VALUE(45, TXPWR_ELEM_UNUSED),  // ch39 2480 inused
+const TXPWR_CAL_ST gtxpwr_tab_def_ble[TXPWR_CAL_2G_MAX] = {
+    INIT_TXPWR_VALUE(1, 51),  // ch0 2402  inused
+    INIT_TXPWR_VALUE(20, 47),  // ch19 2440 inused
+    INIT_TXPWR_VALUE(40, 46),  // ch39 2480 inused
 };
 
 /****************************** temperature table  ****************************/
@@ -408,7 +374,8 @@ const INT16 shift_tab_n[1] = {0}; // for MCS7
 const INT16 shift_tab_b[4] = {0, 0, 0, 0}; // 11M base,5.5M,2M,1M
 // 54M base -                 54M,48M,36M,24M,18M,12M,9M,6M
 const INT16 shift_tab_g[8] = {0,  2,  2,  2,  3,  3,  4, 4/*4*/}; // 54M base -  12M,9M,6M//do
-const INT16 shift_tab_n20[10] = {-10,  -6,  0,  2,  2,  2,  3,  3,  4, 4/*4*/}; // n20 mcs9 mcs8 mcs7(base) -  mcs0,
+const INT16 shift_tab_n20[10] = {-6,  -6,  0,  2,  2,  2,  3,  3,  4, 5/*4*/}; // n20 mcs9 mcs8 mcs7(base) -  mcs0,
+const INT16 shift_tab_ax20[10] = {-6,  -6,  0,  2,  2,  2,  3,  3,  4, 5/*4*/}; // n20 mcs9 mcs8 mcs7(base) -  mcs0,
 const INT16 shift_tab_n40[10] = {-10,  -6,  0,  0,  0,  0,  0,  0,  0, 0/*4*/}; // n40 mcs9 mcs8 mcs7(base) -  mcs0,
 #endif
 

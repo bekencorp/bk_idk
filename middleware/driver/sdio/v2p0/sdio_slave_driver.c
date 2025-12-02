@@ -33,6 +33,10 @@
 #include "sdio_utils.h"
 #include "sdio_slave_driver.h"
 
+#if CONFIG_IO_MATRIX_VER2_0
+#include "driver/io_matrix.h"
+#endif
+
 static bk_err_t sdio_slave_add_ongoing_buf_trans_len(sdio_chan_id_t chan_id, chan_direct_t direct, uint32_t trans_len);
 static void sdio_send_msg(sdio_msg_t *msg_p);
 
@@ -178,7 +182,6 @@ static bk_err_t sdio_dma_init()
 	bk_err_t ret = BK_OK;
 
 	sdio_dma_tx_init();
-
 	sdio_dma_rx_init();
 
 	return ret;
@@ -186,14 +189,11 @@ static bk_err_t sdio_dma_init()
 
 static bk_err_t sdio_dma_deinit()
 {
-	bk_err_t ret = BK_OK;
-
 	bk_dma_deinit(s_sdio_tx_dma_chan);
 	bk_dma_deinit(s_sdio_rx_dma_chan);
 
-	return ret;
+	return BK_OK;
 }
-
 #endif
 
 #if CONFIG_GPIO_NOTIFY_TRANSACTION_EN
@@ -541,7 +541,7 @@ static void sdio_send_msg(sdio_msg_t *msg_p)
 	}
 }
 
-static bk_err_t sdio_gpio_init(void)
+static bk_err_t sdio_init_gpio(void)
 {
 #if CONFIG_SDIO_4LINES_EN
 	return gpio_sdio_sel(GPIO_SDIO_MAP_MODE0);
@@ -550,9 +550,14 @@ static bk_err_t sdio_gpio_init(void)
 #endif
 }
 
-static bk_err_t sdio_gpio_deinit(void)
+static bk_err_t sdio_deinit_gpio(void)
 {
-	SDIO_LOG_ERR("%s:TODO");
+	const sdio_gpio_map_t sdio_gpio_map_table[] = SDIO_GPIO_MAP;
+
+	for (uint32_t i = SDIO_GPIO_CLK_INDEX; i < SDIO_GPIO_PIN_NUMBER; i++) {
+		gpio_dev_unmap(sdio_gpio_map_table[i].gpio_id);
+	}
+
 	return BK_OK;
 }
 
@@ -2310,13 +2315,15 @@ static bk_err_t sdio_slave_hw_init(void)
 #endif
 
 #if CONFIG_SDIO_1V8_EN
-	sys_drv_psram_psldo_vset(1, 0);  //set vddpsram voltage as 1.8v
-	sys_drv_psram_ldo_enable(1);     //vddpsram enable
-	sys_hal_set_ana_vddgpio_sel(1);  //GPIO vdd select between vio and vddparam
+	sys_hal_set_ana_reg8_spi_latch1v(1);
+	sys_drv_psram_psldo_vset(1, 0); //set vddpsram voltage as 1.8v
+	sys_drv_psram_ldo_enable(1);    //vddpsram enable
+	sys_hal_set_ana_vddgpio_sel(1); //GPIO vdd select between vio and vddparam
+	sys_hal_set_ana_reg8_spi_latch1v(0);
 #endif
 
 	//pin
-	ret = sdio_gpio_init();
+	ret = sdio_init_gpio();
 	if(ret != BK_OK)
 	{
 		SDIO_LOG_ERR("gpio init");
@@ -2453,7 +2460,7 @@ static bk_err_t sdio_hw_deinit(void)
 	sys_hal_set_sdio_clk_div((uint32_t)SDIO_CLK_DIV_1);
 
 	//pin
-	ret = sdio_gpio_deinit();
+	ret = sdio_deinit_gpio();
 	if(ret != BK_OK)
 	{
 		SDIO_LOG_ERR("gpio deinit");

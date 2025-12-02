@@ -301,9 +301,14 @@ if (CONFIG_SDIO_HOST)
 	list(APPEND srcs
 		"sdio_host/sdio_host_driver.c"
 		"sd_card/sd_card_driver.c"
-		"sd_card/sdcard_test.c"
 		)
 endif() #if (CONFIG_SDIO_HOST)
+
+if (CONFIG_SDCARD)
+	list(APPEND srcs
+		"sd_card/sdcard_test.c"
+		)
+endif() #if (CONFIG_SDCARD)
 
 if (CONFIG_AUDIO)
 

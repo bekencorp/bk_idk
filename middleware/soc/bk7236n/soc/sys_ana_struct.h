@@ -24,7 +24,11 @@ extern "C" {
 
 typedef volatile union {
 	struct {
-		uint32_t nc_0_6                   :  7; /**<bit[0 : 6] */
+		uint32_t vctrl_testen             :  1; /**<bit[0 : 0]  */
+		uint32_t vctrlsel                 :  2; /**<bit[1 : 2]  */
+		uint32_t cp_ioff                  :  2; /**<bit[3 : 4]  */
+		uint32_t spisel_unlockl           :  1; /**<bit[5 : 5]  */
+		uint32_t spisel_unlockh           :  1; /**<bit[6 : 6]  */
 		uint32_t cp                       :  3; /**<bit[7 : 9] */
 		uint32_t spideten                 :  1; /**<bit[10 : 10] */
 		uint32_t cben                     :  1; /**<bit[11 : 11] */
@@ -38,7 +42,7 @@ typedef volatile union {
 		uint32_t kctrl                    :  2; /**<bit[26 : 27] */
 		uint32_t vsel_ldo                 :  2; /**<bit[28 : 29] */
 		uint32_t bp_caldone               :  1; /**<bit[30 : 30] */
-		uint32_t nc_31_31                 :  1; /**<bit[31 : 31] */
+		uint32_t spi_rst_unlock           :  1; /**<bit[31 : 31]  */
 	};
 	uint32_t v;
 } sys_ana_ana_reg0_t;
@@ -68,7 +72,7 @@ typedef volatile union {
 	struct {
 		uint32_t xtalh_ctune              :  8; /**<bit[0 : 7] */
 		uint32_t gadc_inbufsel            :  2; /**<bit[8 : 9] */
-		uint32_t nc_10_10                 :  1; /**<bit[10 : 10] */
+		uint32_t temp_gsel                :  1; /**<bit[10 : 10] */
 		uint32_t gadc_compisel            :  3; /**<bit[11 : 13] */
 		uint32_t gadc_bscalsaw            :  3; /**<bit[14 : 16] */
 		uint32_t gadc_vncalsaw            :  3; /**<bit[17 : 19] */
@@ -136,7 +140,7 @@ typedef volatile union {
 		uint32_t anabufsel_rx             :  1; /**<bit[0 : 0] */
 		uint32_t en_xtall                 :  1; /**<bit[1 : 1] */
 		uint32_t nc_2_2                   :  1; /**<bit[2 : 2] */
-		uint32_t nc_3_3                   :  1; /**<bit[3 : 3] */
+		uint32_t temp_gsel                :  1; /**<bit[3 : 3] */
 		uint32_t en_temp                  :  1; /**<bit[4 : 4] */
 		uint32_t en_dpll                  :  1; /**<bit[5 : 5] */
 		uint32_t en_cb                    :  1; /**<bit[6 : 6] */
@@ -190,7 +194,7 @@ typedef volatile union {
 		uint32_t envrefh1v                :  1; /**<bit[12 : 12] */
 		uint32_t violdosel                :  3; /**<bit[13 : 15] */
 		uint32_t vbatdetsel               :  2; /**<bit[16 : 17] */
-		uint32_t nc_18_18                 :  1; /**<bit[18 : 18] */
+		uint32_t en_compe                 :  1; /**<bit[18 : 18]  */
 		uint32_t spi_pwd_regpow           :  1; /**<bit[19 : 19] */
 		uint32_t bypassen                 :  1; /**<bit[20 : 20] */
 		uint32_t ioldolp                  :  1; /**<bit[21 : 21] */
@@ -258,7 +262,7 @@ typedef volatile union {
 		uint32_t apfms                    :  5; /**<bit[5 : 9] */
 		uint32_t atmpo_sel                :  2; /**<bit[10 : 11] */
 		uint32_t ampoen                   :  1; /**<bit[12 : 12] */
-		uint32_t nc_13_13                 :  1; /**<bit[13 : 13] */
+		uint32_t vbg_rstrtc_en            :  1; /**<bit[13 : 13]  */
 		uint32_t avea_sel                 :  2; /**<bit[14 : 15] */
 		uint32_t aforcepfm                :  1; /**<bit[16 : 16] */
 		uint32_t acls                     :  3; /**<bit[17 : 19] */

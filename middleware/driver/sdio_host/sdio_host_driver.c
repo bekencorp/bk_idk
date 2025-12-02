@@ -101,13 +101,13 @@ static bool s_sdio_host_data_crc_error = false;
 static void sdio_host_isr(void);
 void bk_sdio_clock_en(uint32_t enable);
 
-static void sdio_host_init_gpio(void)
+static bk_err_t sdio_init_gpio(void)
 {
-	const sdio_host_gpio_map_t sdio_host_gpio_map_table[] = SDIO_GPIO_MAP;
+	const sdio_gpio_map_t sdio_gpio_map_table[] = SDIO_GPIO_MAP;
 
 	/* set gpio sdio host map: clk,cmd,data0 */
-	for (uint32_t i = SDIO_HOST_GPIO_CLK_INDEX; i < SDIO_HOST_GPIO_PIN_NUMBER; i++) {
-		gpio_dev_unmap(sdio_host_gpio_map_table[i].gpio_id);
+	for (uint32_t i = SDIO_GPIO_CLK_INDEX; i < SDIO_GPIO_PIN_NUMBER; i++) {
+		gpio_dev_unmap(sdio_gpio_map_table[i].gpio_id);
 	}
 
 #if CONFIG_SDIO_4LINES_EN
@@ -117,39 +117,41 @@ static void sdio_host_init_gpio(void)
 #endif
 
 	/* sdio host clk */
-	bk_gpio_pull_up(sdio_host_gpio_map_table[SDIO_HOST_GPIO_CLK_INDEX].gpio_id);
-	bk_gpio_set_capacity(sdio_host_gpio_map_table[SDIO_HOST_GPIO_CLK_INDEX].gpio_id, 3);
+	bk_gpio_pull_up(sdio_gpio_map_table[SDIO_GPIO_CLK_INDEX].gpio_id);
+	bk_gpio_set_capacity(sdio_gpio_map_table[SDIO_GPIO_CLK_INDEX].gpio_id, 3);
 #if CONFIG_IO_MATRIX_VER2_0
-	bk_iomx_set_gpio_func(sdio_host_gpio_map_table[SDIO_HOST_GPIO_CLK_INDEX].gpio_id, FUNC_CODE_SDIO_CLK);
+	bk_iomx_set_gpio_func(sdio_gpio_map_table[SDIO_GPIO_CLK_INDEX].gpio_id, FUNC_CODE_SDIO_CLK);
 #endif
 
 	/* sdio host cmd */
-	bk_gpio_pull_up(sdio_host_gpio_map_table[SDIO_HOST_GPIO_CMD_INDEX].gpio_id);
-	bk_gpio_set_capacity(sdio_host_gpio_map_table[SDIO_HOST_GPIO_CMD_INDEX].gpio_id, 3);
+	bk_gpio_pull_up(sdio_gpio_map_table[SDIO_GPIO_CMD_INDEX].gpio_id);
+	bk_gpio_set_capacity(sdio_gpio_map_table[SDIO_GPIO_CMD_INDEX].gpio_id, 3);
 #if CONFIG_IO_MATRIX_VER2_0
-	bk_iomx_set_gpio_func(sdio_host_gpio_map_table[SDIO_HOST_GPIO_CMD_INDEX].gpio_id, FUNC_CODE_SDIO_CMD);
+	bk_iomx_set_gpio_func(sdio_gpio_map_table[SDIO_GPIO_CMD_INDEX].gpio_id, FUNC_CODE_SDIO_CMD);
 #endif
 
 	/* sdio host data0 */
-	bk_gpio_pull_up(sdio_host_gpio_map_table[SDIO_HOST_GPIO_DATA0_INDEX].gpio_id);
-	bk_gpio_set_capacity(sdio_host_gpio_map_table[SDIO_HOST_GPIO_DATA0_INDEX].gpio_id, 3);
+	bk_gpio_pull_up(sdio_gpio_map_table[SDIO_GPIO_DATA0_INDEX].gpio_id);
+	bk_gpio_set_capacity(sdio_gpio_map_table[SDIO_GPIO_DATA0_INDEX].gpio_id, 3);
 #if CONFIG_IO_MATRIX_VER2_0
-	bk_iomx_set_gpio_func(sdio_host_gpio_map_table[SDIO_HOST_GPIO_DATA0_INDEX].gpio_id, FUNC_CODE_SDIO_DATA_0);
+	bk_iomx_set_gpio_func(sdio_gpio_map_table[SDIO_GPIO_DATA0_INDEX].gpio_id, FUNC_CODE_SDIO_DATA_0);
 #endif
 
 #if CONFIG_SDIO_4LINES_EN
 	/* sdio host data1,data2,data3 */
-	for (uint32_t i = SDIO_HOST_GPIO_DATA1_INDEX; i < SDIO_HOST_GPIO_PIN_NUMBER; i++) {
-		bk_gpio_pull_up(sdio_host_gpio_map_table[i].gpio_id);
-		bk_gpio_set_capacity(sdio_host_gpio_map_table[i].gpio_id, 3);
+	for (uint32_t i = SDIO_GPIO_DATA1_INDEX; i < SDIO_GPIO_PIN_NUMBER; i++) {
+		bk_gpio_pull_up(sdio_gpio_map_table[i].gpio_id);
+		bk_gpio_set_capacity(sdio_gpio_map_table[i].gpio_id, 3);
 	}
 
 #if CONFIG_IO_MATRIX_VER2_0
-	bk_iomx_set_gpio_func(sdio_host_gpio_map_table[SDIO_HOST_GPIO_DATA1_INDEX].gpio_id, FUNC_CODE_SDIO_DATA_1);
-	bk_iomx_set_gpio_func(sdio_host_gpio_map_table[SDIO_HOST_GPIO_DATA2_INDEX].gpio_id, FUNC_CODE_SDIO_DATA_2);
-	bk_iomx_set_gpio_func(sdio_host_gpio_map_table[SDIO_HOST_GPIO_DATA3_INDEX].gpio_id, FUNC_CODE_SDIO_DATA_3);
+	bk_iomx_set_gpio_func(sdio_gpio_map_table[SDIO_GPIO_DATA1_INDEX].gpio_id, FUNC_CODE_SDIO_DATA_1);
+	bk_iomx_set_gpio_func(sdio_gpio_map_table[SDIO_GPIO_DATA2_INDEX].gpio_id, FUNC_CODE_SDIO_DATA_2);
+	bk_iomx_set_gpio_func(sdio_gpio_map_table[SDIO_GPIO_DATA3_INDEX].gpio_id, FUNC_CODE_SDIO_DATA_3);
 #endif // CONFIG_IO_MATRIX_VER2_0
 #endif // CONFIG_SDIO_4LINES_EN
+
+	return BK_OK;
 }
 
 #if CONFIG_SDIO_GDMA_EN
@@ -173,7 +175,6 @@ static void sdio_dma_tx_start(dma_id_t id)
 
 	if(next_trans_len)
 	{
-		//bk_gpio_set_value(32, 2);
 		s_sdio_host.tx_cur_trans_len = next_trans_len;
 		bk_dma_set_transfer_len(id, next_trans_len);
 		bk_dma_set_src_addr(id, (uint32_t)(s_sdio_host.tx_start_addr + s_sdio_host.tx_transfered_len), (uint32_t)((s_sdio_host.tx_start_addr + s_sdio_host.tx_transfered_len)+next_trans_len));
@@ -316,7 +317,7 @@ static bk_err_t sdio_dma_rx_init()
 static void sdio_host_init_common(void)
 {
 	/* config sdio host gpio */
-	sdio_host_init_gpio();
+	sdio_init_gpio();
 
 	sys_drv_dev_clk_pwr_up(CLK_PWR_ID_SDIO, CLK_PWR_CTRL_PWR_UP);
 	sys_hal_set_sdio_clk_sel(0); // set sdio source clock as XTAL 26M
@@ -474,9 +475,11 @@ bk_err_t bk_sdio_host_init(const sdio_host_config_t *config)
 #endif
 
 #if CONFIG_SDIO_1V8_EN
+	sys_hal_set_ana_reg8_spi_latch1v(1);
 	sys_drv_psram_psldo_vset(1, 0); //set vddpsram voltage as 1.8v
 	sys_drv_psram_ldo_enable(1);    //vddpsram enable
 	sys_hal_set_ana_vddgpio_sel(1); //GPIO vdd select between vio and vddparam
+	sys_hal_set_ana_reg8_spi_latch1v(0);
 #endif
 
 #if (CONFIG_SDIO_V2P0)

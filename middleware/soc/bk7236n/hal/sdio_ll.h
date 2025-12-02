@@ -30,6 +30,9 @@ extern "C" {
 
 static inline void sdio_host_ll_reset_sd_state(sdio_hw_t *hw)
 {
+	hw->global_ctrl.soft_reset = 1;         /* different from bk7236n and bk7236*/
+	hw->sd_fifo_threshold.clk_gate_on  = 0; /*TODO, sd clock cannot output, if clk_gate_on = 0 and tx_fifo_need_write_mask_cg=1*/
+
 	hw->sd_fifo_threshold.rx_fifo_reset = 0;
 	hw->sd_fifo_threshold.tx_fifo_reset = 0;
 	hw->sd_fifo_threshold.sd_state_reset = 0;
@@ -91,8 +94,13 @@ static inline void sdio_host_ll_set_clk_div(sdio_hw_t *hw, uint32_t clk_div)
 
 static inline void sdio_host_ll_set_clk_freq(sdio_hw_t *hw, sdio_host_clock_freq_t clk_freq)
 {
+	uint32_t clk_div;
+
+	/*TODO wangzhilei: cksel_sdio sys reg0x09[17:16], ckdiv_sdio sys reg0x09[15:14]*/
+	clk_div = (uint32_t)clk_freq & 0x03;
+
 	//temp code, will be switch to sdcard_driver.c
-	*((volatile unsigned long *) (0x44010000+0x9*4)) = (((*((volatile unsigned long *) (0x44010000+0x9*4))) & (~0x3C000)) | ((clk_freq) << 14));
+	*((volatile unsigned long *) (0x44010000+0x9*4)) = (((*((volatile unsigned long *) (0x44010000+0x9*4))) & (~0x3C000)) | ((clk_div) << 14));
 }
 
 static inline void sdio_host_ll_set_bus_width(sdio_hw_t *hw, sdio_host_bus_width_t bus_width)
@@ -215,7 +223,7 @@ static inline void sdio_host_ll_set_write_data(sdio_hw_t *hw, uint32_t size)
 {
 	hw->sd_fifo_threshold.tx_fifo_reset = 1;
 	hw->sd_fifo_threshold.sd_state_reset = 1;
-#ifdef CONFIG_SDCARD_BUSWIDTH_4LINE
+#if CONFIG_SDIO_4LINES_EN
 	hw->sd_data_ctrl.sd_data_bus = 1;
 #else
 	hw->sd_data_ctrl.sd_data_bus = 0;
@@ -229,7 +237,7 @@ static inline void sdio_host_ll_set_write_multi_block_data(sdio_hw_t *hw, uint32
 {
 	hw->sd_fifo_threshold.tx_fifo_reset = 1;
 	hw->sd_fifo_threshold.sd_state_reset = 1;
-#ifdef CONFIG_SDCARD_BUSWIDTH_4LINE
+#if CONFIG_SDIO_4LINES_EN
 	hw->sd_data_ctrl.sd_data_bus = 1;
 #else
 	hw->sd_data_ctrl.sd_data_bus = 0;
@@ -243,7 +251,7 @@ static inline void sdio_host_ll_set_read_data(sdio_hw_t *hw, uint32_t block_size
 {
 	hw->sd_fifo_threshold.sd_state_reset = 1;
 	hw->sd_fifo_threshold.rx_fifo_reset = 1;
-#ifdef CONFIG_SDCARD_BUSWIDTH_4LINE
+#if CONFIG_SDIO_4LINES_EN
 	hw->sd_data_ctrl.sd_data_bus = 1;
 #else
 	hw->sd_data_ctrl.sd_data_bus = 0;
@@ -257,7 +265,7 @@ static inline void sdio_host_ll_set_read_multi_block_data(sdio_hw_t *hw, uint32_
 {
 	hw->sd_fifo_threshold.sd_state_reset = 1;
 	hw->sd_fifo_threshold.rx_fifo_reset = 1;
-#ifdef CONFIG_SDCARD_BUSWIDTH_4LINE
+#if CONFIG_SDIO_4LINES_EN
 	hw->sd_data_ctrl.sd_data_bus = 1;
 #else
 	hw->sd_data_ctrl.sd_data_bus = 0;
@@ -437,7 +445,7 @@ static inline void sdio_host_ll_disable_tx_fifo_empty_mask(sdio_hw_t *hw)
 static inline void sdio_host_ll_enable_all_mask(sdio_hw_t *hw)
 {
 	//TODO:Just debug, enable host all mask,except tx fifo need write/empty,RX OV,
-	hw->sd_cmd_rsp_int_mask.v = 0xe03f;
+	hw->sd_cmd_rsp_int_mask.v = 0xc03f;	//0xe03f;:tx fifo clock gate default disable, only TX data enables it.
 }
 
 static inline bool sdio_host_ll_is_tx_fifo_need_write(sdio_hw_t *hw, uint32_t int_status)

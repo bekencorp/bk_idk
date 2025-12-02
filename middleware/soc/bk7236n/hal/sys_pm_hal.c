@@ -15,6 +15,7 @@
 #include <common/bk_include.h>
 #include "sys_hal.h"
 #include "sys_ll.h"
+#include "sys_ana_ll.h"
 #include "aon_pmu_hal.h"
 #include "sys_types.h"
 #include <driver/aon_rtc.h>
@@ -67,7 +68,7 @@
 #define PM_EXIT_LOWVOL_SYSTICK_TIME           (32)      //1ms
 #define PM_EXIT_LOWVOL_SYSTICK_RELOAD_TIME    (0xFFFFFF)//set max
 #if CONFIG_SOFT_CTRL_VOLT
-#define PM_LOW_VOL_VCOREHSEL_LDO_SEL          (4)       // 0.7V
+#define PM_LOW_VOL_VCOREHSEL_LDO_SEL          (6)       // 0.75V
 #endif
 
 #if CONFIG_OTA_POSITION_INDEPENDENT_AB
@@ -389,7 +390,7 @@ static inline void sys_hal_set_power_parameter(uint8_t sleep_mode)
  	 *  r40[19:16] halt2_delay = 0x1;
  	 *  r40[23:20] halt3_delay = 0x1;
  	 *  r40[24] halt_volt: deep = 0, lv = 1
- 	 *  r40[25] halt_xtal = 1 //If LPO is 26M32K, halt_xtal = 0
+ 	 *  r40[25] halt_xtal = 1 //26M32K unable to wakeup system, disable during lv sleep
  	 *  r40[26] halt_core: deep = 1, lv = 0
  	 *  r40[27] halt_flash = 1
  	 *  r40[28] halt_rosc = 0
@@ -409,34 +410,18 @@ static inline void sys_hal_set_power_parameter(uint8_t sleep_mode)
 	else
 	{
 		uint32_t val;
-		if (is_lpo_src_26m32k())//26m/32k
-		{
-			#if CONFIG_LV_FLASH_ENTER_LP_ENABLE
-			val = (0x61111000
-				|(PM_CURRENT_LOW_VOLTAGE_WAKEUP1_DELAY&0xF)
-				|((PM_CURRENT_LOW_VOLTAGE_WAKEUP2_DELAY&0xF)<<4)
-				|((PM_CURRENT_LOW_VOLTAGE_WAKEUP3_DELAY&0xF)<<8));
-			#else
-			val = (0x69111000
-				|(PM_CURRENT_LOW_VOLTAGE_WAKEUP1_DELAY&0xF)
-				|((PM_CURRENT_LOW_VOLTAGE_WAKEUP2_DELAY&0xF)<<4)
-				|((PM_CURRENT_LOW_VOLTAGE_WAKEUP3_DELAY&0xF)<<8));
-			#endif
-		}
-		else//external 32k and rosc
-		{
-			#if CONFIG_LV_FLASH_ENTER_LP_ENABLE
-			val = (0x63111000
-				|(PM_CURRENT_LOW_VOLTAGE_WAKEUP1_DELAY&0xF)
-				|((PM_CURRENT_LOW_VOLTAGE_WAKEUP2_DELAY&0xF)<<4)
-				|((PM_CURRENT_LOW_VOLTAGE_WAKEUP3_DELAY&0xF)<<8));
-			#else
-			val = (0x6B111000
-				|(PM_CURRENT_LOW_VOLTAGE_WAKEUP1_DELAY&0xF)
-				|((PM_CURRENT_LOW_VOLTAGE_WAKEUP2_DELAY&0xF)<<4)
-				|((PM_CURRENT_LOW_VOLTAGE_WAKEUP3_DELAY&0xF)<<8));
-			#endif
-		}
+		#if CONFIG_LV_FLASH_ENTER_LP_ENABLE
+		val = (0x63111000
+			|(PM_CURRENT_LOW_VOLTAGE_WAKEUP1_DELAY&0xF)
+			|((PM_CURRENT_LOW_VOLTAGE_WAKEUP2_DELAY&0xF)<<4)
+			|((PM_CURRENT_LOW_VOLTAGE_WAKEUP3_DELAY&0xF)<<8));
+		#else
+		val = (0x6B111000
+			|(PM_CURRENT_LOW_VOLTAGE_WAKEUP1_DELAY&0xF)
+			|((PM_CURRENT_LOW_VOLTAGE_WAKEUP2_DELAY&0xF)<<4)
+			|((PM_CURRENT_LOW_VOLTAGE_WAKEUP3_DELAY&0xF)<<8));
+		#endif
+
 		aon_pmu_ll_set_r40(val);
 	}
 }
@@ -589,6 +574,8 @@ __attribute__((section(".itcm_sec_code"))) void sys_hal_enter_deep_sleep(void *p
 #if CONFIG_AON_PMU_POR_TIMING_SUPPORT
 	// disable it or it will cause error
 	sys_ll_set_ana_reg7_vporsel(0);
+	sys_ana_ll_set_ana_reg10_vbg_rstrtc_en(1);
+	// aon_pmu_ll_set_r0_saved_time(0);
 #endif
 
 	lpo_src = aon_pmu_ll_get_r41_lpo_config();
@@ -1595,7 +1582,7 @@ void sys_hal_low_power_hardware_init()
 	sys_hal_power_config_default();
 
 	/*set the lp voltage*/
-	sys_hal_lp_vol_set(0x7); // core 0.625V
+	sys_hal_lp_vol_set(CONFIG_LP_VOL); // core 0.6V
 
 	/*set rosc modify 2s interval*/
 	#if !CONFIG_ROSC_CALIB_SW

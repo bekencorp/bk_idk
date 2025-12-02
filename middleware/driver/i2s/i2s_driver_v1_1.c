@@ -731,8 +731,10 @@ static bk_err_t i2s_init_txrx_cfg(i2s_chl_cfg_t *chl_cfg, i2s_txrx_type_t type, 
         I2S_LOGE("malloc rb fail \n");
         os_free((*txrx_cfg)->buff_addr);
         (*txrx_cfg)->buff_addr = NULL;
+
         os_free(*txrx_cfg);
         *txrx_cfg = NULL;
+
         return BK_FAIL;
     }
 
@@ -744,10 +746,13 @@ static bk_err_t i2s_init_txrx_cfg(i2s_chl_cfg_t *chl_cfg, i2s_txrx_type_t type, 
         I2S_LOGE("dma driver init failed\r\n");
         os_free((*txrx_cfg)->buff_addr);
         (*txrx_cfg)->buff_addr = NULL;
+
         os_free((*txrx_cfg)->rb);
         (*txrx_cfg)->rb = NULL;
+
         os_free(*txrx_cfg);
         *txrx_cfg = NULL;
+
         return BK_FAIL;
     }
 
@@ -785,7 +790,7 @@ static bk_err_t i2s_configure_dma_for_channel(i2s_chl_cfg_t *chl_cfg, i2s_channe
 
     /* Configure DMA */
     transfer_len = (type == I2S_TXRX_TYPE_TX) ? 
-        (txrx_cfg->buff_size + DMA_CARRY_I2S_RINGBUF_SAFE_INTERVAL) / 2 : 
+        (txrx_cfg->buff_size + 0) / 2 : /* DMA_CARRY_I2S_RINGBUF_SAFE_INTERVAL*/
         txrx_cfg->buff_size / 2;
 
     ret = i2s_dma_config(txrx_cfg->dma_id, (uint32_t *)txrx_cfg->buff_addr, 
@@ -880,7 +885,7 @@ bk_err_t bk_i2s_driver_init(void)
     sys_drv_i2s_select_clock(1);
     bk_pm_clock_ctrl(PM_CLK_ID_I2S_1, CLK_PWR_CTRL_PWR_UP);
 
-    sys_drv_apll_en(1);
+    sys_drv_apll_en(1); /* TODO:wangzhilei*/
     sys_drv_apll_cal_val_set(0x8973CA6F);
     sys_drv_apll_config_set(0xC2A0AE86);
     sys_drv_apll_spi_trigger_set(1);
@@ -1702,11 +1707,10 @@ bk_err_t bk_i2s_set_clk_div(uint32_t div_val)
 /* register i2s interrupt */
 bk_err_t bk_i2s_register_i2s_isr(i2s_isr_id_t isr_id, i2s_isr_t isr, void *param)
 {
+    bk_err_t ret;
     uint32_t int_level;
     i2s_callback_t *isr_cb = NULL;
     uint8_t i2s_index = i2s_hal_get_cfg_index();
-
-    bk_err_t ret;
 
     ret = i2s_validate_and_get_isr_cb(i2s_index, &isr_cb);
     if (ret != BK_OK) {

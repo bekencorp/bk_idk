@@ -662,7 +662,7 @@ static void gpio_record_wakeup_pin_id(void)
 #endif
 }
 
-bk_err_t gpio_enable_interrupt_mult_for_wake(void)
+__IRAM_SEC bk_err_t gpio_enable_interrupt_mult_for_wake(void)
 {
 #if CONFIG_ANA_GPIO
 	ana_gpio_config_wakeup_source(s_gpio_is_setted_wake_status);

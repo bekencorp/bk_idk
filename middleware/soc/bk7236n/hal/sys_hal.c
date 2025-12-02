@@ -66,6 +66,11 @@ bk_err_t sys_hal_init()
 
 #if CONFIG_AON_PMU_POR_TIMING_SUPPORT
 	sys_ana_ll_set_ana_reg7_vporsel(1);
+#if CONFIG_AON_PMU_POR_RTC_RESET
+	sys_ana_ll_set_ana_reg10_vbg_rstrtc_en(0);
+#else
+	sys_ana_ll_set_ana_reg10_vbg_rstrtc_en(1);
+#endif
 #endif
 
 	return BK_OK;
@@ -153,6 +158,7 @@ __IRAM_SEC void sys_hal_module_power_ctrl(power_module_name_t module,power_modul
 			value |= (1 << module);
 		}
 		sys_ll_set_cpu_power_sleep_wakeup_value(value);
+		bk_delay_us(40);// V3 delay 200us, V4 delay 0us, V5 delay 40us
     }else if(module == POWER_MODULE_NAME_TCM1_PGEN) {
 		if(power_state == POWER_MODULE_STATE_ON) {
 			/*TODO
@@ -433,15 +439,15 @@ bk_err_t sys_hal_core_bus_clock_ctrl(uint32_t cksel_core, uint32_t ckdiv_core,ui
 
 bk_err_t sys_hal_ctrl_vdddig_h_vol(uint32_t vol_value)
 {
-	if(sys_ll_get_ana_reg8_vcorehsel() != vol_value)
-	{
-		sys_ll_set_ana_reg8_spi_latch1v(1);
-		sys_ll_set_ana_reg8_vcorehsel(vol_value);
-		sys_ll_set_ana_reg8_spi_latch1v(0);
-		sys_hal_delay(SYS_SWITCH_VDDDIG_VOL_DELAY_TIME);//when cpu0 max freq 240m ,it delay 10uS for voltage stability
-	}
+    if(sys_ll_get_ana_reg8_vcorehsel() != vol_value)
+    {
+        sys_ll_set_ana_reg8_spi_latch1v(1);
+        sys_ll_set_ana_reg8_vcorehsel(vol_value);
+        sys_ll_set_ana_reg8_spi_latch1v(0);
+        sys_hal_delay(SYS_SWITCH_VDDDIG_VOL_DELAY_TIME);//when cpu0 max freq 240m ,it delay 10uS for voltage stability
+    }
 
-	return BK_OK;
+    return BK_OK;
 }
 
 uint32_t sys_hal_vdddig_h_vol_get()
@@ -457,8 +463,8 @@ bk_err_t sys_hal_switch_cpu_bus_freq_high_to_low(pm_cpu_freq_e cpu_bus_freq)
 		case PM_CPU_FRQ_240M://cpu0:240m;cpu1:240m;;cpu2:240m;bus:240m
 			ret = sys_hal_core_bus_clock_ctrl(0x1,0x1,0x0,0x1,0x1);
 			sys_hal_ctrl_vdddig_h_vol(0xC);//0.9V
-
 			break;
+
 		case PM_CPU_FRQ_160M://cpu0:160m;cpu1:xm;;cpu2:xm;bus:240m
 			ret = sys_hal_core_bus_clock_ctrl(0x1,0x2,0x0,0x1,0x1);
 			sys_hal_ctrl_vdddig_h_vol(0xC);//0.9V
@@ -470,52 +476,65 @@ bk_err_t sys_hal_switch_cpu_bus_freq_high_to_low(pm_cpu_freq_e cpu_bus_freq)
 			#else
 			sys_hal_ctrl_vdddig_h_vol(0xB);//0.875V
 			#endif
-
 			break;
+
 		case PM_CPU_FRQ_80M://cpu0:80m;cpu1:80m;cpu2:80m;bus:80m
 			ret = sys_hal_core_bus_clock_ctrl(0x1,0x5,0x0,0x1,0x1);
 			sys_hal_ctrl_vdddig_h_vol(0xB);//0.875V
-
 			break;
+
 		case PM_CPU_FRQ_60M://cpu0:60m;cpu1:60m;cpu2:60m;bus:60m
 			ret = sys_hal_core_bus_clock_ctrl(0x1,0x7,0x0,0x1,0x1);
 			sys_hal_ctrl_vdddig_h_vol(0xB);//0.875V
 			break;
+
 		case PM_CPU_FRQ_XTAL://cpu0:26m;cpu1:26m;cpu2:26m;bus:26m
 			ret = sys_hal_core_bus_clock_ctrl(0x0,0x0,0x0,0x1,0x1);
 			sys_hal_ctrl_vdddig_h_vol(0xB);//0.875V
 			break;
+
 		default:
 			break;
 	}
 
 	return ret;
 }
+
 bk_err_t sys_hal_switch_cpu_bus_freq_low_to_high(pm_cpu_freq_e cpu_bus_freq)
 {
 	bk_err_t ret = BK_OK;
 	switch(cpu_bus_freq)
 	{
-		case PM_CPU_FRQ_160M://cpu0:160m;cpu1:xm;;cpu2:xm;bus:240m
-			sys_hal_ctrl_vdddig_h_vol(0xC);//0.95V
-			ret = sys_hal_core_bus_clock_ctrl(0x1,0x2,0x0,0x1,0x1);
-			break;
+    case PM_CPU_FRQ_240M://cpu0:240m;cpu1:240m;;cpu2:240m;bus:240m
+        ret = sys_hal_core_bus_clock_ctrl(0x1,0x1,0x0,0x1,0x1);
+        sys_hal_ctrl_vdddig_h_vol(0xC);//0.9V
+        break;
+
+    case PM_CPU_FRQ_160M://cpu0:160m;cpu1:xm;;cpu2:xm;bus:240m
+        sys_hal_ctrl_vdddig_h_vol(0xC);//0.95V
+        ret = sys_hal_core_bus_clock_ctrl(0x1,0x2,0x0,0x1,0x1);
+        break;
+
 		case PM_CPU_FRQ_120M://cpu0:120m;cpu1:120m;cpu2:120m;bus:120m
 			sys_hal_ctrl_vdddig_h_vol(0xB);//0.875V
 			ret = sys_hal_core_bus_clock_ctrl(0x1,0x3,0x0,0x1,0x1);
 			break;
+
 		case PM_CPU_FRQ_80M://cpu0:80m;cpu1:80m;cpu2:80m;bus:80m
 			sys_hal_ctrl_vdddig_h_vol(0xB);//0.875V
 			ret = sys_hal_core_bus_clock_ctrl(0x1,0x5,0x0,0x1,0x1);
 			break;
+
 		case PM_CPU_FRQ_60M://cpu0:60m;cpu1:60m;cpu2:60m;bus:60m
 			sys_hal_ctrl_vdddig_h_vol(0xB);//0.875V
 			ret = sys_hal_core_bus_clock_ctrl(0x1,0x7,0x0,0x1,0x1);
 			break;
+
 		case PM_CPU_FRQ_XTAL://cpu0:26m;cpu1:26m;cpu2:26m;bus:26m
 			sys_hal_ctrl_vdddig_h_vol(0xB);//0.875V
 			ret = sys_hal_core_bus_clock_ctrl(0x0,0x0,0x0,0x1,0x1);
 			break;
+
 		default:
 			break;
 	}
@@ -906,26 +925,13 @@ void sys_hal_i2c_select_clock(i2c_id_t id, i2c_src_clk_t mode)
 
 void sys_hal_pwm_select_clock(sys_sel_pwm_t num, pwm_src_clk_t mode)
 {
-	uint32_t sel_clk32 = 0;
-	uint32_t sel_xtal = 1;
+	uint32_t sel_80m = 1;
+	uint32_t sel_xtal = 0;
 
-	switch(num)
-	{
-		case SYS_SEL_PWM0:
-			if(mode == PWM_SCLK_XTAL)
-				sys_ll_set_cpu_clk_div_mode1_cksel_pwm0(sel_xtal);
-			else
-				sys_ll_set_cpu_clk_div_mode1_cksel_pwm0(sel_clk32);
-			break;
-		case SYS_SEL_PWM1:
-			if(mode == PWM_SCLK_XTAL)
-				sys_ll_set_cpu_clk_div_mode1_cksel_pwm0(sel_xtal);
-			else
-				sys_ll_set_cpu_clk_div_mode1_cksel_pwm0(sel_clk32);
-			break;
-
-		default:
-			break;
+	if (mode == PWM_SCLK_XTAL) {
+		sys_ll_set_cpu_clk_div_mode1_cksel_pwm0(sel_xtal);
+	} else {
+		sys_ll_set_cpu_clk_div_mode1_cksel_pwm0(sel_80m);
 	}
 }
 
@@ -1168,25 +1174,6 @@ void sys_hal_sadc_pwr_down(void)
 void sys_hal_set_saradc_config(void)
 {
 	/* yanxiang.wei@bekencorp.com, based on doc: bk7236n_v2_gadc register setting.xlms*/
-	sys_ana_ll_set_ana_reg2_inbufen(1);
-	sys_ana_ll_set_ana_reg2_gadc_calcap_ch(3);
-	sys_ana_ll_set_ana_reg2_gadc_clk_inv(1);
-	sys_ana_ll_set_ana_reg2_gadc_clk_sel(1);
-	sys_ana_ll_set_ana_reg2_gadc_calintsaw_en(1);
-	sys_ana_ll_set_ana_reg2_gadc_clk_rlten(1);
-	sys_ana_ll_set_ana_reg2_gadc_vbg_sel(1);
-	sys_ana_ll_set_ana_reg2_gadc_vpcalsaw(4);
-	sys_ana_ll_set_ana_reg2_gadc_vncalsaw(4);
-	sys_ana_ll_set_ana_reg2_gadc_bscalsaw(4);
-	sys_ana_ll_set_ana_reg2_gadc_compisel(4);
-	sys_ana_ll_set_ana_reg2_nc_10_10(1);
-	sys_ana_ll_set_ana_reg2_gadc_inbufsel(1);
-	sys_ana_ll_set_ana_reg2_sar_enspi(1);
-
-	sys_ana_ll_set_ana_reg3_offset_en(0);
-	sys_ana_ll_set_ana_reg3_vref_sel(1);
-	sys_ana_ll_set_ana_reg3_refbuff_isel(4);
-	sys_ana_ll_set_ana_reg3_preamp_isel(4);
 }
 
 void sys_hal_set_sdmadc_config(void)
@@ -2663,15 +2650,15 @@ void sys_hal_early_init(void)
 	val |= (0x1 << 5);
 	sys_hal_analog_set(ANALOG_REG5,val);
 
-	sys_hal_analog_set(ANALOG_REG0, 0x19219780);//liupeng202400807:<9:7>=7;zhiyin20250429<11>=0 enable dpll_unlock flag;zhiyin20250604<29:28>=1
+	sys_hal_analog_set(ANALOG_REG0, 0x1D2197E0);//liupeng202400807:<9:7>=7;zhiyin20250429<11>=0 enable dpll_unlock flag;zhiyin20250604<29:28>=1
 	sys_hal_analog_set(ANALOG_REG1, 0xC02EFA00);
-	sys_hal_analog_set(ANALOG_REG2, 0x0600D436);
-	sys_hal_analog_set(ANALOG_REG3, 0xFDFC0BC8);//tenglong20240806:high psrr as default, low when sleep;ronghui20250520<27>=1 avoid dpll unlock detect issue when high temp
+	sys_hal_analog_set(ANALOG_REG2, 0xFFC92136);//yanxiang20251104:<10>=0
+	sys_hal_analog_set(ANALOG_REG3, 0xFCCC0B64);//tenglong20240806:high psrr as default, low when sleep;ronghui20250520<27>=1 avoid dpll unlock detect issue when high temp
 	sys_hal_analog_set(ANALOG_REG4, 0x40000000);
 	sys_hal_analog_set(ANALOG_REG5, 0x84072160);
 	sys_hal_analog_set(ANALOG_REG6, 0x80088100);//liupeng20250427
-	sys_hal_analog_set(ANALOG_REG7, 0x57E687C6);//tenglong20250430:ldo current limit for EVM;//shuguang20250512:vio=3.3V;xinyuan20250611:<9:6>=F for better EVM
-	sys_hal_analog_set(ANALOG_REG8, 0xF97C72E4);//tenglong20250519:<31:30>=3(0.9V), same with BK7236_SYS_ANA_4D<13:12>
+	sys_hal_analog_set(ANALOG_REG7, 0x57E657C6);//tenglong20250430:ldo current limit for EVM;//shuguang20250512:vio=3.3V;xinyuan20250611:<9:6>=F for better EVM
+	sys_hal_analog_set(ANALOG_REG8, 0xF87C72E4);//tenglong20250519:<31:30>=3(0.9V), same with BK7236_SYS_ANA_4D<13:12>
 
 	/**
 	 * attention:
@@ -2681,9 +2668,9 @@ void sys_hal_early_init(void)
 	sys_ll_set_ana_reg8_spi_latch1v(1);
 
 #if CONFIG_AON_RTC_KEEP_TIME_SUPPORT
-	sys_hal_analog_set(ANALOG_REG9, 0xB755B327);//tenglong20240805:2M buck for EVM
+	sys_hal_analog_set(ANALOG_REG9, 0xB55D9327);//tenglong20240805:2M buck for EVM;tenglong20251011<13>=1
 #else
-	sys_hal_analog_set(ANALOG_REG9, 0xB7553327);//tenglong20240805:2M buck for EVM
+	sys_hal_analog_set(ANALOG_REG9, 0xB55D1327);//tenglong20240805:2M buck for EVM
 #endif
 	sys_hal_analog_set(ANALOG_REG10, 0xF7EEB89A);
 	sys_hal_analog_set(ANALOG_REG11, 0x00000000);

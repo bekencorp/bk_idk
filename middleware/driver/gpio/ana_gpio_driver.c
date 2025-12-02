@@ -85,7 +85,7 @@ bk_err_t ana_gpio_wakeup_deinit(void)
 	return BK_OK;
 }
 
-bk_err_t ana_gpio_config_wakeup_source(uint64_t gpio_bitmap)
+__IRAM_SEC bk_err_t ana_gpio_config_wakeup_source(uint64_t gpio_bitmap)
 {
 	sys_hal_set_ana_reg8_spi_latch1v_iram(1);
 	sys_hal_set_ana_reg11_gpiowk((uint32_t)gpio_bitmap);

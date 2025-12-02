@@ -659,7 +659,7 @@ static void ana_rtc1_isr_handler(void)
     ana_rtc_isr_handler(AON_RTC_ID_1);
 }
 
-bk_err_t ana_rtc_wakeup_config(void *args)
+__IRAM_SEC bk_err_t ana_rtc_wakeup_config(void *args)
 {
     // protect sleep time check
     uint64_t current_tick;

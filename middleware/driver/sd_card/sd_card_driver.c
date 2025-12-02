@@ -228,6 +228,7 @@ static bk_err_t sd_card_cmd_go_idle_state(void)
 	bk_sdio_host_send_command(&cmd_cfg);
 	error_state = bk_sdio_host_wait_cmd_response(cmd_cfg.cmd_index);
 	if (error_state != BK_OK) {
+		/*Pay attention to SDIO module enable and its power LDO*/
 		SD_CARD_LOGW("CMD0 GO_IDLE_STATE err:-%x\r\n", -error_state);
 		return error_state;
 	}
@@ -836,6 +837,7 @@ static bk_err_t sd_card_power_on(void)
 	uint32_t count = 0, valid_volt = 0;
 	uint32_t response = 0;
 
+	bk_printf("sd_card_power_on\r\n");
 	/* CMD0: GO_IDLE_STATE */
 	error_state = sd_card_cmd_go_idle_state();
 	if (error_state != BK_OK) {
@@ -855,12 +857,13 @@ static bk_err_t sd_card_power_on(void)
 		/* SEND CMD55 APP_CMD with RCA as 0 */
 		error_state = sd_card_cmd_app_cmd(0);
 		if (error_state != BK_OK) {
-			SD_CARD_LOGW("unsupported feature\r\n");
+			bk_printf("unsupported feature\r\n");
 			return BK_ERR_SDIO_HOST_UNSUPPORTED_FEATURE;
 		}
 	}
 
 	while ((count < SD_CARD_MAX_VOLT_TRIAL_COUNT) && (valid_volt == 0)) {
+		bk_printf("sd_card_cmd_app_cmd:%d\r\n");
 		/* Send CMD55 APP_CMD with RCA as 0 */
 		error_state = sd_card_cmd_app_cmd(0);
 		if (error_state != BK_OK) {
@@ -893,6 +896,8 @@ static bk_err_t sd_card_power_on(void)
 
 	/* OCR register BIT[30] */
 	if ((response & SD_OCR_HIGH_CAPACITY) == SD_OCR_HIGH_CAPACITY) {
+		/*Pay attention to pull-up resistors and the relevant jumpers on the EVB*/
+
 		SD_CARD_LOGI("card capacity SDHC_SDXC\r\n");
 		s_sd_card_obj.sd_card.card_type = SD_CARD_TYPE_SDHC_SDXC;
 	} else {

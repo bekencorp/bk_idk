@@ -11,14 +11,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#ifndef _SDIO_SLAVE_DRIVER_H_
-#define _SDIO_SLAVE_DRIVER_H_
+
+#pragma once
+
 #include <common/bk_err.h>
 #include "bk_list.h"
 #include "sdio_utils.h"
 #if CONFIG_USR_GPIO_CFG_EN
 #include "usr_gpio_cfg.h"
 #endif
+
 //LOG's
 typedef enum
 {
@@ -627,8 +629,7 @@ void bk_sdio_driver_dump_sdio_regs(void);
  */
 bk_err_t sdio_slave_driver_deinit(void);
 bk_err_t bk_sdio_slave_tx(char* buf_p, uint32_t len, uint32_t timeout_ms);
-bk_err_t sdio_gpio_init(void);
-bk_err_t sdio_gpio_deinit(void);
+bk_err_t sdio_init_gpio(void);
+bk_err_t sdio_deinit_gpio(void);
 bk_err_t bk_sdio_loopcheck_init(void);
 bk_err_t bk_sdio_auto_test(void);
-#endif // _SDIO_H_
