@@ -19,6 +19,8 @@
 #include <driver/rosc_32k.h>
 #include <modules/pm.h>
 
+#include "sys_driver.h"
+
 #define TAG "sensor"
 #define ADC_SWITCH_DELT                   2
 
@@ -181,11 +183,18 @@ LOAD_TEMP:
         BK_LOGW(TAG, "uncali temp value:[%x]\r\n", temp_values[0]);
         goto FAILURE;
     }
+#if CONFIG_SOC_BK7239XX
 #if CONFIG_TEMPERATURE_HIGH_VOLT
     BK_LOGI(TAG, "saradc temp value:[%x]\r\n", temp_values[0]);
-    saradc_set_calibrate_val(&temp_values[1], SARADC_CALIBRATE_TEMP_CODE25);
+    saradc_set_calibrate_val(&temp_values[0], SARADC_CALIBRATE_TEMP_CODE25);
+    sys_drv_set_temp_mode(true);
 #else
     BK_LOGI(TAG, "saradc temp value:[%x]\r\n", temp_values[1]);
+    saradc_set_calibrate_val(&temp_values[1], SARADC_CALIBRATE_TEMP_CODE25);
+    sys_drv_set_temp_mode(false);
+#endif
+#else
+    BK_LOGI(TAG, "saradc temp value:[%x]\r\n", temp_values[0]);
     saradc_set_calibrate_val(&temp_values[0], SARADC_CALIBRATE_TEMP_CODE25);
 #endif
 
