@@ -70,12 +70,18 @@ static uint8_t s_saradc_use_calibration_val_flag = 0x0;
 		}\
 	} while(0)
 
-static bool adc_try_load_otp_cwt(uint32_t *otp_cwt_buf, uint32_t otp_cwt_num)
+static bool adc_try_load_otp_cwt(uint32_t *otp_cwt_buf)
 {
-    uint32_t otp_data_size = otp_map_2[OTP_GADC_CALIBRATION].allocated_size;
+    uint32_t otp_data_size;
     uint8_t *data = NULL;
     bk_err_t result = BK_FAIL;
     uint32_t required_size = ADC_CWT_COEF_NUM * sizeof(uint32_t);
+
+#if CONFIG_SOC_BK7236XX
+    otp_data_size = otp_map_1[OTP_GADC_CALIBRATION].allocated_size;
+#else
+    otp_data_size = otp_map_2[OTP_GADC_CALIBRATION].allocated_size;
+#endif
 
     // Check if OTP data size is sufficient for CWT coefficients
     // For bk7236/bk7236n, otp_data_size is too small (4/8 bytes), so this will return false
@@ -89,7 +95,11 @@ static bool adc_try_load_otp_cwt(uint32_t *otp_cwt_buf, uint32_t otp_cwt_num)
         return false;
     }
 
+#if CONFIG_SOC_BK7236XX
+    result = bk_otp_apb_read(OTP_GADC_CALIBRATION, data, otp_data_size);
+#else
     result = bk_otp_ahb_read(OTP_GADC_CALIBRATION, data, otp_data_size);
+#endif
     if (result != BK_OK) {
         ADC_LOGW("read otp gadc calib failed:%d\r\n", result);
         os_free(data);
@@ -1259,13 +1269,7 @@ bk_err_t bk_adc_enter_calib_mode(void)
 {
     uint32_t otp_cwt[ADC_CWT_COEF_NUM] = {0};
     struct sadc_calib_ana_context ana_context;
-#if CONFIG_SOC_BK7236XX
-    uint32_t otp_data_size = otp_map_1[OTP_GADC_CALIBRATION].allocated_size;
-#else
-    uint32_t otp_data_size = otp_map_2[OTP_GADC_CALIBRATION].allocated_size;
-#endif
-
-    if (adc_try_load_otp_cwt(otp_cwt, otp_data_size)) {
+    if (adc_try_load_otp_cwt(otp_cwt)) {
         adc_calib_save_analog_context(&ana_context);
         sys_drv_set_ana_pwd_gadc_buf(1);
         adc_hal_calib_init();
