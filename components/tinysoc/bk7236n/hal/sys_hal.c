@@ -464,7 +464,7 @@ void sys_hal_early_init(void)
 
 	sys_hal_analog_set(ANALOG_REG0, 0x19219780);//liupeng202400807:<9:7>=7;zhiyin20250429<11>=0 enable dpll_unlock flag;zhiyin20250604<29:28>=1
 	sys_hal_analog_set(ANALOG_REG1, 0xC02EFA00);
-	sys_hal_analog_set(ANALOG_REG2, 0x0600D436);
+	sys_hal_analog_set(ANALOG_REG2, 0xFFC92136);//yanxiang20251104:<10>=0
 	sys_hal_analog_set(ANALOG_REG3, 0xF5F00BC8);//tenglong20240806:high psrr as default, low when sleep
 	sys_hal_analog_set(ANALOG_REG4, 0x40000000);
 	sys_hal_analog_set(ANALOG_REG5, 0x84072160);

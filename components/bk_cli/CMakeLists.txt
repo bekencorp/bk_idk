@@ -96,7 +96,7 @@ if (CONFIG_GENERAL_DMA)
 	)
 endif()
 
-if (CONFIG_SDCARD)
+if (CONFIG_SDCARD AND CONFIG_SDCARD_TEST)
 	list(APPEND srcs
 		cli_sd.c
 	)

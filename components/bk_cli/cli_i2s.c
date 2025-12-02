@@ -23,7 +23,6 @@
 #include "i2s_hal.h"
 #include "sys_driver.h"
 #include "i2s_driver.h"
-#include <driver/dma.h>
 
 #if CLI_FOR_AUDIO_ATE_TEST
 #include <driver/aud_adc_types.h>
@@ -51,9 +50,9 @@ static RingBufferContext *ch2_rx_rb;
 static RingBufferContext *ch3_tx_rb;
 static RingBufferContext *ch3_rx_rb;
 
-static uint8_t *ch1_temp = NULL;
-static uint8_t *ch2_temp = NULL;
-static uint8_t *ch3_temp = NULL;
+static uint8_t *ch1_trans_buf = NULL;
+static uint8_t *ch2_trans_buf = NULL;
+static uint8_t *ch3_trans_buf = NULL;
 
 /* ============================================================================
  * Utility Functions
@@ -110,16 +109,34 @@ static bool cli_parse_sample_rate(char **argv, int *samp_rate)
 }
 
 /**
+ * @brief Parse and validate data length parameter
+ * @param argv Command arguments
+ * @param data_length Output parameter for data length
+ * @return true if valid, false otherwise
+ */
+static bool cli_parse_data_length(char **argv, int *data_length)
+{
+        *data_length = os_strtoul(argv[4], NULL, 10);
+        if (*data_length != 16 && *data_length != 24 && *data_length != 32) {
+                BK_LOGD(NULL, "data length is invalid (16/24/32)\n");
+                return false;
+        }
+        return true;
+}
+
+/**
  * @brief Validate start command arguments
  * @param argc Argument count
  * @param argv Command arguments
  * @param group_id Output parameter for group_id
  * @param samp_rate Output parameter for sample rate
+ * @param data_length Output parameter for data length (optional, NULL if not needed)
  * @return true if valid, false otherwise
  */
-static bool cli_validate_start_cmd(int argc, char **argv, int *group_id, int *samp_rate)
+static bool cli_validate_start_cmd(int argc, char **argv, int *group_id, int *samp_rate, int *data_length)
 {
-        if (!cli_validate_args(argc, 4)) {
+        int required_args = data_length ? 5 : 4;
+        if (!cli_validate_args(argc, required_args)) {
                 return false;
         }
         if (!cli_parse_group_id(argv, group_id)) {
@@ -127,6 +144,11 @@ static bool cli_validate_start_cmd(int argc, char **argv, int *group_id, int *sa
         }
         if (!cli_parse_sample_rate(argv, samp_rate)) {
                 return false;
+        }
+        if (data_length != NULL) {
+                if (!cli_parse_data_length(argv, data_length)) {
+                        return false;
+                }
         }
         return true;
 }
@@ -189,29 +211,29 @@ static i2s_samp_rate_t cli_i2s_get_samp_rate(int samp_rate)
 static void cli_i2s_help(void)
 {
         /* I2S Test Commands */
-        os_printf("i2s_master_test start group_id samp_rate \r\n");
+        os_printf("i2s_master_test start group_id samp_rate data_length \r\n");
         os_printf("i2s_master_test stop group_id \r\n");
-        os_printf("i2s_slave_test start group_id samp_rate \r\n");
+        os_printf("i2s_slave_test start group_id samp_rate data_length \r\n");
         os_printf("i2s_slave_test stop group_id \r\n");
-        
+
         /* PCM Test Commands */
-        os_printf("pcm_master_test start group_id samp_rate \r\n");
+        os_printf("pcm_master_test start group_id samp_rate data_length \r\n");
         os_printf("pcm_master_test stop group_id \r\n");
-        os_printf("pcm_slave_test start group_id samp_rate \r\n");
+        os_printf("pcm_slave_test start group_id samp_rate data_length \r\n");
         os_printf("pcm_slave_test stop group_id \r\n");
-        
+
         /* TDM Test Commands */
-        os_printf("tdm_master_test start group_id samp_rate \r\n");
+        os_printf("tdm_master_test start group_id samp_rate data_length \r\n");
         os_printf("tdm_master_test stop group_id \r\n");
-        os_printf("tdm_slave_test start group_id samp_rate \r\n");
+        os_printf("tdm_slave_test start group_id samp_rate data_length \r\n");
         os_printf("tdm_slave_test stop group_id \r\n");
-        
+
         /* 2B+D Test Commands */
-        os_printf("2bd_master_test start group_id samp_rate \r\n");
+        os_printf("2bd_master_test start group_id samp_rate data_length \r\n");
         os_printf("2bd_master_test stop group_id \r\n");
-        os_printf("2bd_slave_test start group_id samp_rate \r\n");
+        os_printf("2bd_slave_test start group_id samp_rate data_length \r\n");
         os_printf("2bd_slave_test stop group_id \r\n");
-        
+
         /* Sample Rate Options */
         os_printf("Sample rate options: \r\n");
         os_printf("  0: 8K, 1: 12K, 2: 16K, 3: 24K, 4: 32K, 5: 48K, 6: 96K \r\n");
@@ -233,45 +255,47 @@ static void cli_iis_init_buf(void *buf, uint32_t len)
 
 static int ch1_tx_data_handle_cb(uint32_t size)
 {
-        ring_buffer_write(ch1_tx_rb, ch1_temp, size);
+        uint32_t cnt;
 
-        return size;
+        cnt = ring_buffer_write(ch1_tx_rb, ch1_trans_buf, size);
+
+        return cnt;
 }
 
 static int ch1_rx_data_handle_cb(uint32_t size)
 {
-        ring_buffer_read(ch1_rx_rb, ch1_temp, size);
-        os_printf("rx ch1_temp[0]: 0x%2x, ch1_temp[1]: 0x%2x\n", ch1_temp[0], ch1_temp[1]);
+        ring_buffer_read(ch1_rx_rb, ch1_trans_buf, size);
+        os_printf("rx ch1_trans_buf[0]: 0x%2x, ch1_trans_buf[1]: 0x%2x\n", ch1_trans_buf[0], ch1_trans_buf[1]);
 
         return size;
 }
 
 static int ch2_tx_data_handle_cb(uint32_t size)
 {
-        ring_buffer_write(ch2_tx_rb, ch2_temp, size);
+        ring_buffer_write(ch2_tx_rb, ch2_trans_buf, size);
 
         return size;
 }
 
 static int ch2_rx_data_handle_cb(uint32_t size)
 {
-        ring_buffer_read(ch2_rx_rb, ch2_temp, size);
-        os_printf("rx ch2_temp[0]: 0x%2x \n", ch2_temp[0]);
+        ring_buffer_read(ch2_rx_rb, ch2_trans_buf, size);
+        os_printf("rx ch2_trans_buf[0]: 0x%2x \n", ch2_trans_buf[0]);
 
         return size;
 }
 
 static int ch3_tx_data_handle_cb(uint32_t size)
 {
-        ring_buffer_write(ch3_tx_rb, ch3_temp, size);
+        ring_buffer_write(ch3_tx_rb, ch3_trans_buf, size);
 
         return size;
 }
 
 static int ch3_rx_data_handle_cb(uint32_t size)
 {
-        ring_buffer_read(ch3_rx_rb, ch3_temp, size);
-        BK_LOGD(NULL, "rx ch3_temp[0]: 0x%2x \n", ch3_temp[0]);
+        ring_buffer_read(ch3_rx_rb, ch3_trans_buf, size);
+        BK_LOGD(NULL, "rx ch3_trans_buf[0]: 0x%2x \n", ch3_trans_buf[0]);
 
         return size;
 }
@@ -573,7 +597,7 @@ static void cli_aud_i2s_dma_deconfig(void)
 
 static void cli_aud_i2s_dma_ctrl(uint32_t state, dma_id_t adc_dma_id, dma_id_t dac_dma_id)
 {
-        uint32_t temp_data = 0xF0F0F0F0;
+        uint32_t pioneer_data_ptr = 0xF0F0F0F0;
 
         if (state) {
                 /* start dma */
@@ -585,10 +609,10 @@ static void cli_aud_i2s_dma_ctrl(uint32_t state, dma_id_t adc_dma_id, dma_id_t d
                         bk_dma_start(dac_dma_id);
                 }
 
-                bk_i2s_write_data(0, &temp_data, 1);
-                bk_i2s_write_data(1, &temp_data, 1);
-                bk_i2s_write_data(2, &temp_data, 1);
-                /* bk_i2s_write_data(3, &temp_data, 1); */
+                bk_i2s_write_data(0, &pioneer_data_ptr, 1);
+                bk_i2s_write_data(1, &pioneer_data_ptr, 1);
+                bk_i2s_write_data(2, &pioneer_data_ptr, 1);
+                /* bk_i2s_write_data(3, &pioneer_data_ptr, 1); */
         } else {
                 /* stop dma */
                 if (adc_dma_id != DMA_ID_MAX) {
@@ -610,7 +634,7 @@ void cli_i2s_master_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
         i2s_config_t i2s_config = DEFAULT_I2S_CONFIG();
         bk_err_t ret = BK_OK;
         uint32_t size = 0;
-        int group_id, samp_rate;
+        int group_id, samp_rate, data_length;
 
         if (argc < 3) {
                 cli_i2s_help();
@@ -619,23 +643,24 @@ void cli_i2s_master_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
 
         if (os_strcmp(argv[1], "start") == 0) {
                 /* Parameter validation */
-                if (!cli_validate_start_cmd(argc, argv, &group_id, &samp_rate)) {
+                if (!cli_validate_start_cmd(argc, argv, &group_id, &samp_rate, &data_length)) {
                         return;
                 }
-                
+
                 BK_LOGD(NULL, "i2s master test start \r\n");
 
                 /* Memory allocation */
-                ch1_temp = os_zalloc(I2S_BUF_CNT);
-                if (ch1_temp == NULL) {
-                        BK_LOGD(NULL, "Failed to allocate memory for ch1_temp\n");
+                ch1_trans_buf = os_zalloc(I2S_BUF_CNT);
+                if (ch1_trans_buf == NULL) {
+                        BK_LOGD(NULL, "Failed to allocate memory for ch1_trans_buf\n");
                         return;
                 }
-                cli_iis_init_buf(ch1_temp, I2S_BUF_CNT);
+                cli_iis_init_buf(ch1_trans_buf, I2S_BUF_CNT);
 
                 /* I2S driver initialization */
                 bk_i2s_driver_init();
                 i2s_config.samp_rate = cli_i2s_get_samp_rate(samp_rate);
+                i2s_config.data_length = data_length;
                 bk_i2s_init(group_id, &i2s_config);
                 BK_LOGD(NULL, "init i2s driver and config successful \r\n");
 
@@ -647,18 +672,20 @@ void cli_i2s_master_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
                 }
 
                 /* Data preparation and transmission */
-                uint8_t *temp_data = (uint8_t *)os_zalloc(I2S_BUF_CNT * 2);
-                if (temp_data == NULL) {
-                        BK_LOGD(NULL, "Failed to allocate memory for temp_data\n");
-                        os_free(ch1_temp);
-                        ch1_temp = NULL;
+                uint8_t *pioneer_data_ptr = (uint8_t *)os_zalloc(I2S_BUF_CNT * 2);
+                if (pioneer_data_ptr == NULL) {
+                        BK_LOGD(NULL, "Failed to allocate memory for pioneer_data_ptr\n");
+                        os_free(ch1_trans_buf);
+                        ch1_trans_buf = NULL;
                         return;
                 }
-                size = ring_buffer_write(ch1_tx_rb, temp_data, I2S_BUF_CNT * 2);
+                os_memset(pioneer_data_ptr, 0x33, I2S_BUF_CNT * 2);
+
+                size = ring_buffer_write(ch1_tx_rb, pioneer_data_ptr, I2S_BUF_CNT * 2);
                 BK_LOGD(NULL, "ring_buffer_write, size: %d \n", size);
-                os_free(temp_data);
-                temp_data = NULL;
-                
+                os_free(pioneer_data_ptr);
+                pioneer_data_ptr = NULL;
+
                 /* Start I2S transmission */
                 bk_i2s_start();
                 BK_LOGD(NULL, "i2s master test complete \r\n");
@@ -667,9 +694,9 @@ void cli_i2s_master_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
                 if (!cli_validate_stop_cmd(argc, argv, &group_id)) {
                         return;
                 }
-                
+
                 BK_LOGD(NULL, "i2s master test stop \r\n");
-                
+
                 /* Stop I2S operations */
                 bk_i2s_stop();
                 bk_i2s_chl_deinit(I2S_CHANNEL_1, I2S_TXRX_TYPE_TX);
@@ -677,9 +704,9 @@ void cli_i2s_master_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
                 bk_i2s_driver_deinit();
 
                 /* Cleanup memory */
-                os_free(ch1_temp);
-                ch1_temp = NULL;
-                
+                os_free(ch1_trans_buf);
+                ch1_trans_buf = NULL;
+
                 BK_LOGD(NULL, "i2s master test stop successful \r\n");
         }
 #if CLI_FOR_AUDIO_ATE_TEST
@@ -730,7 +757,7 @@ void cli_i2s_slave_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
 {
         i2s_config_t i2s_config = DEFAULT_I2S_CONFIG();
         bk_err_t ret = BK_OK;
-        int group_id, samp_rate;
+        int group_id, samp_rate, data_length;
 
         if (argc < 3) {
                 cli_i2s_help();
@@ -739,15 +766,15 @@ void cli_i2s_slave_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
 
         if (os_strcmp(argv[1], "start") == 0) {
                 /* Parameter validation */
-                if (!cli_validate_start_cmd(argc, argv, &group_id, &samp_rate)) {
+                if (!cli_validate_start_cmd(argc, argv, &group_id, &samp_rate, &data_length)) {
                         return;
                 }
-                
+
                 BK_LOGD(NULL, "i2s slave test start \r\n");
 
-                ch1_temp = os_zalloc(I2S_BUF_CNT);
-                if (ch1_temp == NULL) {
-                        BK_LOGD(NULL, "Failed to allocate memory for ch1_temp\n");
+                ch1_trans_buf = os_zalloc(I2S_BUF_CNT);
+                if (ch1_trans_buf == NULL) {
+                        BK_LOGD(NULL, "Failed to allocate memory for ch1_trans_buf\n");
                         return;
                 }
 
@@ -757,6 +784,7 @@ void cli_i2s_slave_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
                 i2s_config.role = I2S_ROLE_SLAVE;
                 /* Set sample rate based on input parameter */
                 i2s_config.samp_rate = cli_i2s_get_samp_rate(samp_rate);
+                i2s_config.data_length = data_length;
                 bk_i2s_init(group_id, &i2s_config);
                 BK_LOGD(NULL, "init i2s driver and config successful \r\n");
 
@@ -774,15 +802,15 @@ void cli_i2s_slave_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
                 if (!cli_validate_stop_cmd(argc, argv, &group_id)) {
                         return;
                 }
-                
+
                 BK_LOGD(NULL, "i2s slave test stop \r\n");
                 bk_i2s_stop();
                 bk_i2s_chl_deinit(I2S_CHANNEL_1, I2S_TXRX_TYPE_RX);
                 bk_i2s_deinit();
                 bk_i2s_driver_deinit();
 
-                os_free(ch1_temp);
-                ch1_temp = NULL;
+                os_free(ch1_trans_buf);
+                ch1_trans_buf = NULL;
                 BK_LOGD(NULL, "i2s slave test stop successful \r\n");
         } else {
                 cli_i2s_help();
@@ -795,7 +823,7 @@ void cli_pcm_master_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
         i2s_config_t i2s_config = DEFAULT_PCM_CONFIG();
         bk_err_t ret = BK_OK;
         uint32_t size = 0;
-        int group_id, samp_rate;
+        int group_id, samp_rate, data_length;
 
         if (argc < 3) {
                 cli_i2s_help();
@@ -804,14 +832,14 @@ void cli_pcm_master_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
 
         if (os_strcmp(argv[1], "start") == 0) {
                 /* Parameter validation */
-                if (!cli_validate_start_cmd(argc, argv, &group_id, &samp_rate)) {
+                if (!cli_validate_start_cmd(argc, argv, &group_id, &samp_rate, &data_length)) {
                         return;
                 }
-                
+
                 BK_LOGD(NULL, "pcm master test start \r\n");
 
-                ch1_temp = os_zalloc(I2S_BUF_CNT);
-                cli_iis_init_buf(ch1_temp, I2S_BUF_CNT);
+                ch1_trans_buf = os_zalloc(I2S_BUF_CNT);
+                cli_iis_init_buf(ch1_trans_buf, I2S_BUF_CNT);
 
                 /* init i2s driver */
                 bk_i2s_driver_init();
@@ -819,6 +847,7 @@ void cli_pcm_master_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
                 /* init i2s configure */
                 /* Set sample rate based on input parameter */
                 i2s_config.samp_rate = cli_i2s_get_samp_rate(samp_rate);
+                i2s_config.data_length = data_length;
                 bk_i2s_init(group_id, &i2s_config);
                 BK_LOGD(NULL, "init i2s driver and config successful \r\n");
 
@@ -828,12 +857,12 @@ void cli_pcm_master_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
                         return;
                 }
 
-                uint8_t *temp_data = (uint8_t *)os_zalloc(PCM_BUF_CNT);
-                cli_iis_init_buf(temp_data, PCM_BUF_CNT);
+                uint8_t *pioneer_data_ptr = (uint8_t *)os_zalloc(PCM_BUF_CNT);
+                cli_iis_init_buf(pioneer_data_ptr, PCM_BUF_CNT);
 
-                size = ring_buffer_write(ch1_tx_rb, temp_data, PCM_BUF_CNT);
+                size = ring_buffer_write(ch1_tx_rb, pioneer_data_ptr, PCM_BUF_CNT);
                 BK_LOGD(NULL, "ring_buffer_write, size: %d \n", size);
-                os_free(temp_data);
+                os_free(pioneer_data_ptr);
                 bk_i2s_start();
 
                 BK_LOGD(NULL, "pcm master test complete \r\n");
@@ -842,15 +871,15 @@ void cli_pcm_master_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
                 if (!cli_validate_stop_cmd(argc, argv, &group_id)) {
                         return;
                 }
-                
+
                 BK_LOGD(NULL, "pcm master test stop \r\n");
                 bk_i2s_stop();
                 bk_i2s_chl_deinit(I2S_CHANNEL_1, I2S_TXRX_TYPE_TX);
                 bk_i2s_deinit();
                 bk_i2s_driver_deinit();
 
-                os_free(ch1_temp);
-                ch1_temp = NULL;
+                os_free(ch1_trans_buf);
+                ch1_trans_buf = NULL;
                 BK_LOGD(NULL, "pcm master test stop successful \r\n");
         } else {
                 cli_i2s_help();
@@ -862,7 +891,7 @@ void cli_pcm_slave_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
 {
         i2s_config_t i2s_config = DEFAULT_PCM_CONFIG();
         bk_err_t ret = BK_OK;
-        int group_id, samp_rate;
+        int group_id, samp_rate, data_length;
 
         if (argc < 3) {
                 cli_i2s_help();
@@ -871,13 +900,13 @@ void cli_pcm_slave_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
 
         if (os_strcmp(argv[1], "start") == 0) {
                 /* Parameter validation */
-                if (!cli_validate_start_cmd(argc, argv, &group_id, &samp_rate)) {
+                if (!cli_validate_start_cmd(argc, argv, &group_id, &samp_rate, &data_length)) {
                         return;
                 }
-                
+
                 BK_LOGD(NULL, "pcm slave test start \r\n");
 
-                ch1_temp = os_zalloc(I2S_BUF_CNT);
+                ch1_trans_buf = os_zalloc(I2S_BUF_CNT);
 
                 /* init i2s driver */
                 bk_i2s_driver_init();
@@ -885,6 +914,7 @@ void cli_pcm_slave_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
                 /* init i2s configure */
                 /* Set sample rate based on input parameter */
                 i2s_config.samp_rate = cli_i2s_get_samp_rate(samp_rate);
+                i2s_config.data_length = data_length;
                 i2s_config.role = I2S_ROLE_SLAVE;
                 bk_i2s_init(group_id, &i2s_config);
                 BK_LOGD(NULL, "init i2s driver and config successful \r\n");
@@ -901,15 +931,15 @@ void cli_pcm_slave_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
                 if (!cli_validate_stop_cmd(argc, argv, &group_id)) {
                         return;
                 }
-                
+
                 BK_LOGD(NULL, "pcm slave test stop \r\n");
                 bk_i2s_stop();
                 bk_i2s_chl_deinit(I2S_CHANNEL_1, I2S_TXRX_TYPE_RX);
                 bk_i2s_deinit();
                 bk_i2s_driver_deinit();
 
-                os_free(ch1_temp);
-                ch1_temp = NULL;
+                os_free(ch1_trans_buf);
+                ch1_trans_buf = NULL;
                 BK_LOGD(NULL, "pcm slave test stop successful \r\n");
         } else {
                 cli_i2s_help();
@@ -921,7 +951,7 @@ void cli_tdm_master_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
 {
         i2s_config_t i2s_config = DEFAULT_TDM_CONFIG();
         bk_err_t ret = BK_OK;
-        int group_id, samp_rate;
+        int group_id, samp_rate, data_length;
 
         if (argc < 3) {
                 cli_i2s_help();
@@ -930,18 +960,18 @@ void cli_tdm_master_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
 
         if (os_strcmp(argv[1], "start") == 0) {
                 /* Parameter validation */
-                if (!cli_validate_start_cmd(argc, argv, &group_id, &samp_rate)) {
+                if (!cli_validate_start_cmd(argc, argv, &group_id, &samp_rate, &data_length)) {
                         return;
                 }
-                
+
                 BK_LOGD(NULL, "tdm master test start \r\n");
 
-                ch1_temp = os_zalloc(I2S_BUF_CNT);
-                cli_iis_init_buf(ch1_temp, I2S_BUF_CNT);
-                ch2_temp = os_zalloc(I2S_BUF_CNT);
-                cli_iis_init_buf(ch2_temp, I2S_BUF_CNT);
-                ch3_temp = os_zalloc(I2S_BUF_CNT);
-                cli_iis_init_buf(ch3_temp, I2S_BUF_CNT);
+                ch1_trans_buf = os_zalloc(I2S_BUF_CNT);
+                cli_iis_init_buf(ch1_trans_buf, I2S_BUF_CNT);
+                ch2_trans_buf = os_zalloc(I2S_BUF_CNT);
+                cli_iis_init_buf(ch2_trans_buf, I2S_BUF_CNT);
+                ch3_trans_buf = os_zalloc(I2S_BUF_CNT);
+                cli_iis_init_buf(ch3_trans_buf, I2S_BUF_CNT);
 
                 /* init i2s driver */
                 bk_i2s_driver_init();
@@ -949,6 +979,7 @@ void cli_tdm_master_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
                 /* init i2s configure */
                 /* Set sample rate based on input parameter */
                 i2s_config.samp_rate = cli_i2s_get_samp_rate(samp_rate);
+                i2s_config.data_length = data_length;
                 bk_i2s_init(group_id, &i2s_config);
                 BK_LOGD(NULL, "init i2s driver and config successful \r\n");
 
@@ -970,14 +1001,14 @@ void cli_tdm_master_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
                         return;
                 }
 
-                uint8_t *temp_data = (uint8_t *)os_zalloc(DTM_BUF_CNT);
-                cli_iis_init_buf(temp_data, DTM_BUF_CNT);
-                ring_buffer_write(ch1_tx_rb, temp_data, DTM_BUF_CNT);
-                cli_iis_init_buf(temp_data, DTM_BUF_CNT);
-                ring_buffer_write(ch2_tx_rb, temp_data, DTM_BUF_CNT);
-                cli_iis_init_buf(temp_data, DTM_BUF_CNT);
-                ring_buffer_write(ch3_tx_rb, temp_data, DTM_BUF_CNT);
-                os_free(temp_data);
+                uint8_t *pioneer_data_ptr = (uint8_t *)os_zalloc(DTM_BUF_CNT);
+                cli_iis_init_buf(pioneer_data_ptr, DTM_BUF_CNT);
+                ring_buffer_write(ch1_tx_rb, pioneer_data_ptr, DTM_BUF_CNT);
+                cli_iis_init_buf(pioneer_data_ptr, DTM_BUF_CNT);
+                ring_buffer_write(ch2_tx_rb, pioneer_data_ptr, DTM_BUF_CNT);
+                cli_iis_init_buf(pioneer_data_ptr, DTM_BUF_CNT);
+                ring_buffer_write(ch3_tx_rb, pioneer_data_ptr, DTM_BUF_CNT);
+                os_free(pioneer_data_ptr);
                 BK_LOGD(NULL, "write data ok \r\n");
                 bk_i2s_start();
 
@@ -991,12 +1022,12 @@ void cli_tdm_master_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
                 bk_i2s_deinit();
                 bk_i2s_driver_deinit();
 
-                os_free(ch1_temp);
-                ch1_temp = NULL;
-                os_free(ch2_temp);
-                ch2_temp = NULL;
-                os_free(ch3_temp);
-                ch3_temp = NULL;
+                os_free(ch1_trans_buf);
+                ch1_trans_buf = NULL;
+                os_free(ch2_trans_buf);
+                ch2_trans_buf = NULL;
+                os_free(ch3_trans_buf);
+                ch3_trans_buf = NULL;
                 BK_LOGD(NULL, "pcm master test stop successful \r\n");
         } else {
                 cli_i2s_help();
@@ -1008,7 +1039,7 @@ void cli_tdm_slave_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
 {
         i2s_config_t i2s_config = DEFAULT_TDM_CONFIG();
         bk_err_t ret = BK_OK;
-        int group_id, samp_rate;
+        int group_id, samp_rate, data_length;
 
         if (argc < 3) {
                 cli_i2s_help();
@@ -1017,20 +1048,21 @@ void cli_tdm_slave_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
 
         if (os_strcmp(argv[1], "start") == 0) {
                 /* Parameter validation */
-                if (!cli_validate_start_cmd(argc, argv, &group_id, &samp_rate)) {
+                if (!cli_validate_start_cmd(argc, argv, &group_id, &samp_rate, &data_length)) {
                         return;
                 }
-                
+
                 BK_LOGD(NULL, "tdm slave test start \r\n");
 
-                ch1_temp = os_zalloc(I2S_BUF_CNT);
-                ch2_temp = os_zalloc(I2S_BUF_CNT);
-                ch3_temp = os_zalloc(I2S_BUF_CNT);
+                ch1_trans_buf = os_zalloc(I2S_BUF_CNT);
+                ch2_trans_buf = os_zalloc(I2S_BUF_CNT);
+                ch3_trans_buf = os_zalloc(I2S_BUF_CNT);
 
                 bk_i2s_driver_init();
 
                 i2s_config.role = I2S_ROLE_SLAVE;
                 i2s_config.samp_rate = cli_i2s_get_samp_rate(samp_rate);
+                i2s_config.data_length = data_length;
                 bk_i2s_init(group_id, &i2s_config);
                 BK_LOGD(NULL, "init i2s driver and config successful \r\n");
 
@@ -1059,7 +1091,7 @@ void cli_tdm_slave_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
                 if (!cli_validate_stop_cmd(argc, argv, &group_id)) {
                         return;
                 }
-                
+
                 BK_LOGD(NULL, "tdm slave test stop \r\n");
                 bk_i2s_stop();
                 bk_i2s_chl_deinit(I2S_CHANNEL_1, I2S_TXRX_TYPE_RX);
@@ -1068,12 +1100,12 @@ void cli_tdm_slave_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
                 bk_i2s_deinit();
                 bk_i2s_driver_deinit();
 
-                os_free(ch1_temp);
-                ch1_temp = NULL;
-                os_free(ch2_temp);
-                ch2_temp = NULL;
-                os_free(ch3_temp);
-                ch3_temp = NULL;
+                os_free(ch1_trans_buf);
+                ch1_trans_buf = NULL;
+                os_free(ch2_trans_buf);
+                ch2_trans_buf = NULL;
+                os_free(ch3_trans_buf);
+                ch3_trans_buf = NULL;
                 BK_LOGD(NULL, "pcm slave test stop successful \r\n");
         } else {
                 cli_i2s_help();
@@ -1086,7 +1118,7 @@ void cli_2bd_master_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
         i2s_config_t i2s_config = DEFAULT_2BD_CONFIG();
         bk_err_t ret = BK_OK;
         uint32_t size = 0;
-        int group_id, samp_rate;
+        int group_id, samp_rate, data_length;
 
         if (argc < 3) {
                 cli_i2s_help();
@@ -1095,14 +1127,14 @@ void cli_2bd_master_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
 
         if (os_strcmp(argv[1], "start") == 0) {
                 /* Parameter validation */
-                if (!cli_validate_start_cmd(argc, argv, &group_id, &samp_rate)) {
+                if (!cli_validate_start_cmd(argc, argv, &group_id, &samp_rate, &data_length)) {
                         return;
                 }
-                
+
                 BK_LOGD(NULL, "2B+D master test start \r\n");
 
-                ch1_temp = os_zalloc(I2S_BUF_CNT);
-                cli_iis_init_buf(ch1_temp, I2S_BUF_CNT);
+                ch1_trans_buf = os_zalloc(I2S_BUF_CNT);
+                cli_iis_init_buf(ch1_trans_buf, I2S_BUF_CNT);
 
                 /* init i2s driver */
                 bk_i2s_driver_init();
@@ -1110,6 +1142,7 @@ void cli_2bd_master_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
                 /* init i2s configure */
                 /* Set sample rate based on input parameter */
                 i2s_config.samp_rate = cli_i2s_get_samp_rate(samp_rate);
+                i2s_config.data_length = data_length;
                 bk_i2s_init(group_id, &i2s_config);
                 BK_LOGD(NULL, "init i2s driver and config successful \r\n");
 
@@ -1119,11 +1152,11 @@ void cli_2bd_master_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
                         return;
                 }
 
-                uint8_t *temp_data = (uint8_t *)os_zalloc(TWO_BD_BUF_CNT);
-                cli_iis_init_buf(temp_data, TWO_BD_BUF_CNT);
-                size = ring_buffer_write(ch1_tx_rb, temp_data, TWO_BD_BUF_CNT);
+                uint8_t *pioneer_data_ptr = (uint8_t *)os_zalloc(TWO_BD_BUF_CNT);
+                cli_iis_init_buf(pioneer_data_ptr, TWO_BD_BUF_CNT);
+                size = ring_buffer_write(ch1_tx_rb, pioneer_data_ptr, TWO_BD_BUF_CNT);
                 BK_LOGD(NULL, "ring_buffer_write, size: %d \n", size);
-                os_free(temp_data);
+                os_free(pioneer_data_ptr);
                 bk_i2s_start();
 
                 BK_LOGD(NULL, "2B+D master test complete \r\n");
@@ -1132,15 +1165,15 @@ void cli_2bd_master_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
                 if (!cli_validate_stop_cmd(argc, argv, &group_id)) {
                         return;
                 }
-                
+
                 BK_LOGD(NULL, "2B+D master test stop \r\n");
                 bk_i2s_stop();
                 bk_i2s_chl_deinit(I2S_CHANNEL_1, I2S_TXRX_TYPE_TX);
                 bk_i2s_deinit();
                 bk_i2s_driver_deinit();
 
-                os_free(ch1_temp);
-                ch1_temp = NULL;
+                os_free(ch1_trans_buf);
+                ch1_trans_buf = NULL;
                 BK_LOGD(NULL, "2B+D master test stop successful \r\n");
         } else {
                 cli_i2s_help();
@@ -1152,7 +1185,7 @@ void cli_2bd_slave_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
 {
         i2s_config_t i2s_config = DEFAULT_2BD_CONFIG();
         bk_err_t ret = BK_OK;
-        int group_id, samp_rate;
+        int group_id, samp_rate, data_length;
 
         if (argc < 3) {
                 cli_i2s_help();
@@ -1161,13 +1194,13 @@ void cli_2bd_slave_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
 
         if (os_strcmp(argv[1], "start") == 0) {
                 /* Parameter validation */
-                if (!cli_validate_start_cmd(argc, argv, &group_id, &samp_rate)) {
+                if (!cli_validate_start_cmd(argc, argv, &group_id, &samp_rate, &data_length)) {
                         return;
                 }
-                
+
                 BK_LOGD(NULL, "2B+D slave test start \r\n");
 
-                ch1_temp = os_zalloc(I2S_BUF_CNT);
+                ch1_trans_buf = os_zalloc(I2S_BUF_CNT);
 
                 /* init i2s driver */
                 bk_i2s_driver_init();
@@ -1175,6 +1208,7 @@ void cli_2bd_slave_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
                 /* init i2s configure */
                 i2s_config.role = I2S_ROLE_SLAVE;
                 i2s_config.samp_rate = cli_i2s_get_samp_rate(samp_rate);
+                i2s_config.data_length = data_length;
                 bk_i2s_init(group_id, &i2s_config);
                 BK_LOGD(NULL, "init i2s driver and config successful \r\n");
 
@@ -1192,15 +1226,15 @@ void cli_2bd_slave_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
                 if (!cli_validate_stop_cmd(argc, argv, &group_id)) {
                         return;
                 }
-                
+
                 BK_LOGD(NULL, "2B+D slave test stop \r\n");
                 bk_i2s_stop();
                 bk_i2s_chl_deinit(I2S_CHANNEL_1, I2S_TXRX_TYPE_RX);
                 bk_i2s_deinit();
                 bk_i2s_driver_deinit();
 
-                os_free(ch1_temp);
-                ch1_temp = NULL;
+                os_free(ch1_trans_buf);
+                ch1_trans_buf = NULL;
                 BK_LOGD(NULL, "2B+D slave test stop successful \r\n");
         } else {
                 cli_i2s_help();
@@ -1212,7 +1246,7 @@ void cli_2bd_slave_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
 void cli_i2s_cpu_master_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
         i2s_config_t i2s_config = DEFAULT_I2S_CONFIG();
-        uint32_t temp_data = 0xF0F0F0F0;
+        uint32_t pioneer_data_ptr = 0xF0F0F0F0;
         uint32_t data = 0xF1F1F1F1;
 
         if (argc != 2) {
@@ -1237,9 +1271,9 @@ void cli_i2s_cpu_master_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int a
         BK_LOGD(NULL, "init i2s driver and config successful \r\n");
 
         bk_i2s_enable(I2S_ENABLE);
-        bk_i2s_write_data(I2S_CHANNEL_1, &temp_data, 1);
-        bk_i2s_write_data(I2S_CHANNEL_2, &temp_data, 1);
-        bk_i2s_write_data(I2S_CHANNEL_3, &temp_data, 1);
+        bk_i2s_write_data(I2S_CHANNEL_1, &pioneer_data_ptr, 1);
+        bk_i2s_write_data(I2S_CHANNEL_2, &pioneer_data_ptr, 1);
+        bk_i2s_write_data(I2S_CHANNEL_3, &pioneer_data_ptr, 1);
 
         uint32_t write_flag = 0;
         while (1) {
@@ -1262,14 +1296,14 @@ void cli_i2s_cpu_master_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int a
  * ============================================================================ */
 #define I2S_CMD_CNT (sizeof(s_i2s_commands) / sizeof(struct cli_command))
 DRV_CLI_CMD_EXPORT static const struct cli_command s_i2s_commands[] = {
-        {"i2s_master_test", "i2s_master_test start group_id samp_rate / i2s_master_test stop group_id", cli_i2s_master_test_cmd},
-        {"i2s_slave_test", "i2s_slave_test start group_id samp_rate / i2s_slave_test stop group_id", cli_i2s_slave_test_cmd},
-        {"pcm_master_test", "pcm_master_test start group_id samp_rate / pcm_master_test stop group_id", cli_pcm_master_test_cmd},
-        {"pcm_slave_test", "pcm_slave_test start group_id samp_rate / pcm_slave_test stop group_id", cli_pcm_slave_test_cmd},
-        {"tdm_master_test", "tdm_master_test start group_id samp_rate / tdm_master_test stop group_id", cli_tdm_master_test_cmd},
-        {"tdm_slave_test", "tdm_slave_test start group_id samp_rate / tdm_slave_test stop group_id", cli_tdm_slave_test_cmd},
-        {"2bd_master_test", "2bd_master_test start group_id samp_rate / 2bd_master_test stop group_id", cli_2bd_master_test_cmd},
-        {"2bd_slave_test", "2bd_slave_test start group_id samp_rate / 2bd_slave_test stop group_id", cli_2bd_slave_test_cmd},
+        {"i2s_master_test", "i2s_master_test start group_id samp_rate data_length / i2s_master_test stop group_id", cli_i2s_master_test_cmd},
+        {"i2s_slave_test", "i2s_slave_test start group_id samp_rate data_length / i2s_slave_test stop group_id", cli_i2s_slave_test_cmd},
+        {"pcm_master_test", "pcm_master_test start group_id samp_rate data_length / pcm_master_test stop group_id", cli_pcm_master_test_cmd},
+        {"pcm_slave_test", "pcm_slave_test start group_id samp_rate data_length / pcm_slave_test stop group_id", cli_pcm_slave_test_cmd},
+        {"tdm_master_test", "tdm_master_test start group_id samp_rate data_length / tdm_master_test stop group_id", cli_tdm_master_test_cmd},
+        {"tdm_slave_test", "tdm_slave_test start group_id samp_rate data_length / tdm_slave_test stop group_id", cli_tdm_slave_test_cmd},
+        {"2bd_master_test", "2bd_master_test start group_id samp_rate data_length / 2bd_master_test stop group_id", cli_2bd_master_test_cmd},
+        {"2bd_slave_test", "2bd_slave_test start group_id samp_rate data_length / 2bd_slave_test stop group_id", cli_2bd_slave_test_cmd},
 #if CPU_TEST_I2S_DEBUG
         {"i2s_cpu_master_test", "i2s_cpu_master_test {group_id}", cli_i2s_cpu_master_test_cmd},
 #endif
