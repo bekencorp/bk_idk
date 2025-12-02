@@ -40,7 +40,7 @@ CONFIG_TIMER_PM_CB_SUPPORT=y
 # -----------------------------------------------------------------------------
 #@ Enable PSRAM pressure test
 # Enable PSRAM (Pseudo Static RAM) pressure testing functionality
-CONFIG_PSRAM_PRESSURE_TEST=y
+CONFIG_PSRAM_PRESSURE_TEST=n
 
 #@ Enable Flash pressure test
 # Enable Flash memory pressure testing functionality
