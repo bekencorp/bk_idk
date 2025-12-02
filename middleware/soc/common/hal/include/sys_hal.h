@@ -227,6 +227,7 @@ void sys_hal_pwm_select_clock(sys_sel_pwm_t num, pwm_src_clk_t mode);
 /* PWM select clock    DIRTY **/
 
 void sys_hal_en_tempdet(uint32_t value);
+void sys_hal_set_temp_mode(bool high_volt_mode);
 
 uint32_t sys_hal_nmi_wdt_get_clk_div(void);
 void sys_hal_nmi_wdt_set_clk_div(uint32_t value);

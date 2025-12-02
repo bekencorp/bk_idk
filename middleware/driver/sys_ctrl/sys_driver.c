@@ -86,6 +86,14 @@ void sys_drv_en_tempdet(uint32_t value)
     sys_hal_en_tempdet(value);
     sys_drv_exit_critical(int_level);
 }
+
+void sys_drv_set_temp_mode(bool high_volt_mode)
+{
+    uint32_t int_level = sys_drv_enter_critical();
+
+    sys_hal_set_temp_mode(high_volt_mode);
+    sys_drv_exit_critical(int_level);
+}
 /**  Platform End **/
 
 uint32_t sys_drv_get_cpu_storage_connect_op_select_flash_sel(void)
