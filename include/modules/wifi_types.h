@@ -732,6 +732,10 @@ typedef struct {
 	uint32_t tx_power;      /**< RAW Data TX power information */
 	uint32_t tx_retry_cnt;  /**< RAW Data TX retry count */
 	uint32_t tx_timeout_ms; /**< RAW Data TX timeout information */
+	uint8_t format;         /**< RAW Data TX format information */
+	uint8_t band_width;     /**< RAW Data TX band width information */
+	uint8_t gi_type;        /**< RAW Data TX guard interval type information */
+	uint8_t ht_mcs;         /**< RAW Data TX HT MCS index information */
 } raw_tx_cntrl_t;
 
 /**

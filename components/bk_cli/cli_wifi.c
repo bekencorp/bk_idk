@@ -1919,6 +1919,8 @@ error:
 void cli_rlk_cfg_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
 	uint32_t rlk_cfg = 0;
+	uint32_t prim_channel = 0;
+	uint32_t second_channel = 0;
 	int ret = 0;
 	char *msg = NULL;
 
@@ -1946,6 +1948,27 @@ void cli_rlk_cfg_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **
 	else if(os_strcmp(argv[1], "timeout") == 0) {
 		rlk_cfg = os_strtoul(argv[2], NULL, 10) & 0xFFFF;
 		bk_rlk_set_tx_timeout_ms(rlk_cfg);
+	}
+	else if(os_strcmp(argv[1], "format") == 0) {
+		rlk_cfg = os_strtoul(argv[2], NULL, 10) & 0xFFFF;
+		bk_rlk_set_format(rlk_cfg);
+	}
+	else if(os_strcmp(argv[1], "bw") == 0) {
+		rlk_cfg = os_strtoul(argv[2], NULL, 10) & 0xFFFF;
+		bk_rlk_set_band_width(rlk_cfg);
+	}
+	else if(os_strcmp(argv[1], "gi") == 0) {
+		rlk_cfg = os_strtoul(argv[2], NULL, 10) & 0xFFFF;
+		bk_rlk_set_gi_type(rlk_cfg);
+	}
+	else if(os_strcmp(argv[1], "mcs") == 0) {
+		rlk_cfg = os_strtoul(argv[2], NULL, 10) & 0xFFFF;
+		bk_rlk_set_ht_mcs(rlk_cfg);
+	}
+	else if(os_strcmp(argv[1], "channel") == 0) {
+		prim_channel = os_strtoul(argv[2], NULL, 10) & 0xFFFF;
+		second_channel = os_strtoul(argv[3], NULL, 10) & 0xFFFF;
+		bk_rlk_set_channel(prim_channel, second_channel);
 	}
 	else {
 		CLI_LOGI("invalid RLK paramter\n");

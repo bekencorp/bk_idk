@@ -3520,7 +3520,23 @@ bk_err_t bk_wifi_monitor_set_channel(const wifi_channel_t *chan)
 		return ret;
 
 	//always set to HT20
-	rw_msg_set_channel(chan->primary, PHY_CHNL_BW_20, NULL);
+	rw_msg_set_channel(chan->primary, 0, PHY_CHNL_BW_20, NULL);
+
+	rwnxl_reset_evt(0);
+
+	WIFI_LOGD("monitor set channel<%d, %d>\n", chan->primary, chan->second);
+	return BK_OK;
+}
+
+bk_err_t bk_wifi_monitor_set_channel_bonding(const wifi_channel_t *chan)
+{
+	int ret = BK_OK;
+
+	ret = wifi_monitor_validate_channel(chan);
+	if (ret != BK_OK)
+		return ret;
+
+	rw_msg_set_channel(chan->primary, chan->second, PHY_CHNL_BW_40, NULL);
 
 	rwnxl_reset_evt(0);
 

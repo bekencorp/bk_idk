@@ -927,7 +927,8 @@ void rwnx_start_xmit_raw_ex(struct sk_buff *skb, raw_tx_cntrl_t *raw_tx_cntrl)
 	host = &txdesc->host;
 
 	fhost_txdesc_raw_ext_init(txdesc, (uint32_t)skb->msdu_ptr, skb->len,
-		raw_tx_cntrl->tx_retry_cnt, raw_tx_cntrl->tx_rate, raw_tx_cntrl->tx_power);
+		raw_tx_cntrl->tx_retry_cnt, raw_tx_cntrl->tx_rate, raw_tx_cntrl->tx_power,
+		raw_tx_cntrl->format, raw_tx_cntrl->band_width, raw_tx_cntrl->gi_type, raw_tx_cntrl->ht_mcs);
 
 	// setup hostdesc
 	host->flags = TXU_CNTRL_MGMT;

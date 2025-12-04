@@ -83,7 +83,8 @@ struct fhost_tx_desc_tag
 int fhost_txdesc_init(struct txdesc *txdesc, uint32_t *seg_addr, int *seg_len, int seg_cnt);
 int fhost_txdesc_mgmt_init(struct txdesc *txdesc, int pbd_cnt, uint32_t addr, int len);
 int fhost_txdesc_raw_ext_init(struct txdesc *txdesc, uint32_t addr, int len,
-	uint32_t retry_cnt, uint32_t tx_rate, uint32_t tx_power);
+	uint32_t retry_cnt, uint32_t tx_rate, uint32_t tx_power,
+	uint8_t format, uint8_t band_width, uint8_t gi_type, uint8_t ht_mcs);
 bk_err_t txl_cntrl_set_timeout_per_ac(uint8_t ac, uint16_t timeout_ms);
 int txdesc_extra_size();
 

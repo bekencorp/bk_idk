@@ -354,7 +354,7 @@ extern int rw_msg_send_mm_mqtt_info(bool mqtt_connect, bool is_send_pingreq, uin
 extern int rw_msg_get_channel(void *cfm);
 extern int rw_msg_set_filter(uint32_t filter);
 extern int rw_msg_set_app_filter(uint32_t filter);
-extern int rw_msg_set_channel(uint32_t channel, uint32_t band_width, void *cfm);
+extern int rw_msg_set_channel(uint32_t prim_channel, uint32_t second_channel, uint32_t band_width, void *cfm);
 extern int rw_msg_send_scan_cancel_req(void *cfm);
 extern int rw_msg_send_sm_disconnect_req(DISCONNECT_PARAM_T *param);
 extern int rw_msg_send_sm_connect_req(CONNECT_PARAM_T *sme, void *cfm);

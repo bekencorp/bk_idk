@@ -51,6 +51,40 @@ typedef enum
 } LEGACY_RATE;
 
 typedef enum {
+    BK_RLK_FORMAT_NON_HT = 0,
+    BK_RLK_FORMAT_HT = 2,
+
+    BK_RLK_FORMAT_NUM,
+} BK_RLK_FORMAT;
+
+typedef enum {
+  BK_RLK_BW_20,
+  BK_RLK_BW_40,
+
+  BK_RLK_BW_NUM,
+} BK_RLK_BW;
+
+typedef enum {
+    BK_RLK_LONG_GI,
+    BK_RLK_SHORT_GI,
+
+    BK_RLK_GI_TYPE_NUM,
+} BK_RLK_GI_TYPE;
+
+typedef enum {
+  BK_RLK_HT_MCS_0,
+  BK_RLK_HT_MCS_1,
+  BK_RLK_HT_MCS_2,
+  BK_RLK_HT_MCS_3,
+  BK_RLK_HT_MCS_4,
+  BK_RLK_HT_MCS_5,
+  BK_RLK_HT_MCS_6,
+  BK_RLK_HT_MCS_7,
+
+  BK_RLK_HT_MCS_NUM,
+} BK_RLK_HT_MCS;
+
+typedef enum {
     BK_RLK_ALL_SCAN = 0,          /**< BK-RLK SCAN all BK-RLK device */
     BK_RLK_ONE_SSID_SCAN,         /**< BK-RLK ONE SCAN that used SSID method */
     BK_RLK_ONE_BSSID_SCAN,        /**< BK-RLK ONE SCAN that used BSSID method */
@@ -86,6 +120,10 @@ typedef struct bk_rlk_config_info {
     uint32_t tx_rate;           /**<  TX rate information */
     uint32_t tx_power;          /**<  TX power information */
     uint32_t tx_retry_cnt;      /**<  TX retry count */
+    uint8_t format;             /**<  TX format */
+    uint8_t band_width;         /**<  TX band width */
+    uint8_t gi_type;            /**<  TX guard interval type */
+    uint8_t ht_mcs;             /**<  TX HT MCS index */
 }bk_rlk_config_info_t;
 
 /**
@@ -248,13 +286,14 @@ bk_err_t bk_rlk_unregister_acs_cfm_cb(void);
  * @attention 2. This API is only used for settting Raw Link channel, NOT for other purpose.
  * @attention 3. The channel range can be set is from channel 1 to channel 13,
  *
- * @param chan channel of Raw Link
+ * @param prim_chan   primary channel of Raw Link
+ * @param second_chan secondary channel of Raw Link
  *
  * @return
  *    - BK_OK: succeed
  *    - others: other errors
  */
-bk_err_t bk_rlk_set_channel(uint8_t chan);
+bk_err_t bk_rlk_set_channel(uint8_t prim_chan, uint8_t second_chan);
 
 /**
  * @brief     BK Raw Link get current channel
@@ -438,6 +477,50 @@ bk_err_t bk_rlk_set_tx_rate(uint32_t rate);
  *          - others : Set TX rate error
  */
 bk_err_t bk_rlk_set_tx_retry_cnt(uint32_t retry_cnt);
+
+/**
+ * @brief     Set BK Raw Link format
+ *
+ * @param     format  format
+ *
+ * @return
+ *          - BK_OK : succeed
+ *          - others : Set format error
+ */
+bk_err_t bk_rlk_set_format(uint8_t format);
+
+/**
+ * @brief     Set BK Raw Link band width
+ *
+ * @param     bw  band width
+ *
+ * @return
+ *          - BK_OK : succeed
+ *          - others : Set band width error
+ */
+bk_err_t bk_rlk_set_band_width(uint8_t bw);
+
+/**
+ * @brief     Set BK Raw Link GI type
+ *
+ * @param     gi_type  GI type
+ *
+ * @return
+ *          - BK_OK : succeed
+ *          - others : Set GI type error
+ */
+bk_err_t bk_rlk_set_gi_type(uint8_t gi_type);
+
+/**
+ * @brief     Set BK Raw Link HT MCS
+ *
+ * @param     mcs  HT MCS
+ *
+ * @return
+ *          - BK_OK : succeed
+ *          - others : Set HT MCS error
+ */
+bk_err_t bk_rlk_set_ht_mcs(uint8_t mcs);
 
 /**
  * @brief     Set BK Raw Link ps interval

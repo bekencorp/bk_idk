@@ -1463,7 +1463,7 @@ int rw_msg_set_filter(uint32_t filter)
 	return rw_msg_send(set_filter_req_param, 1, MM_SET_FILTER_CFM, NULL);
 }
 
-int rw_msg_set_channel(uint32_t channel, uint32_t band_width, void *cfm)
+int rw_msg_set_channel(uint32_t prim_channel, uint32_t second_channel, uint32_t band_width, void *cfm)
 {
 	struct mm_set_channel_req *set_chnl_par;
 
@@ -1473,14 +1473,20 @@ int rw_msg_set_channel(uint32_t channel, uint32_t band_width, void *cfm)
 		return BK_ERR_NO_MEM;
 
 	// FIXME: BK7239 6E channel starts with channel 1
-	if (channel <= 14) {
+	if (prim_channel <= 14) {
 		set_chnl_par->chan.band = PHY_BAND_2G4;
 	} else {
 		set_chnl_par->chan.band = PHY_BAND_5G;
 	}
 	set_chnl_par->chan.type = band_width;//PHY_CHNL_BW_20;
-	set_chnl_par->chan.prim20_freq = set_chnl_par->chan.center1_freq =
-										 rw_ieee80211_get_centre_frequency(channel);
+	if (second_channel != 0) {
+		//TODO: check if second_channel is valid for bonding
+		set_chnl_par->chan.prim20_freq  = rw_ieee80211_get_centre_frequency(prim_channel);
+		set_chnl_par->chan.center1_freq = rw_ieee80211_get_centre_frequency(second_channel);
+	} else {
+		set_chnl_par->chan.prim20_freq = set_chnl_par->chan.center1_freq =
+											rw_ieee80211_get_centre_frequency(prim_channel);
+	}
 	set_chnl_par->chan.center2_freq = 0;
 	set_chnl_par->chan.tx_power = VIF_UNDEF_POWER;
 	set_chnl_par->index = PHY_PRIM;

@@ -84,11 +84,34 @@ static void bk_non_standard_demo_period_broadcast(uint8_t interval, uint16_t cou
 	BK_LOGI(NON_STANDARD_TAG, "period broadcast done\r\n");
 }
 
+static uint8_t unicast_ack_cnt = 0;
+
+static void bk_rlk_send_ex_cb(void *args, bool status) {
+	BK_LOGI(NON_STANDARD_TAG, "bk_rlk_send_ex_cb status:%u\n", status);
+}
+
 static void bk_non_standard_demo_unicast(uint8_t *mac_addr) {
 	bk_err_t err;
-	if ((err = bk_rlk_send_by_oui(mac_addr, g_unicast_buffer, 6, g_mac_hdr_type, g_mac_hdr_oui)) < BK_OK) {
-		BK_LOGI(NON_STANDARD_TAG, "send error, err: %d\r\n", err);
-		return;
+
+	bk_rlk_config_info_t rlk_tx;
+	rlk_tx.len            = 6;
+	rlk_tx.data           = g_unicast_buffer;
+	rlk_tx.cb             = bk_rlk_send_ex_cb;
+	rlk_tx.args           = (void *)&unicast_ack_cnt;
+	//rlk_tx.tx_rate        = LEGACY_RATE_24MBPS;
+	rlk_tx.tx_power       = 0x7F;
+	rlk_tx.tx_retry_cnt   = 0;
+	rlk_tx.format         = BK_RLK_FORMAT_HT;
+	rlk_tx.band_width     = BK_RLK_BW_20;
+	rlk_tx.gi_type        = BK_RLK_LONG_GI;
+	rlk_tx.ht_mcs         = BK_RLK_HT_MCS_3;
+
+	for (int i = 0; i < 100; i++) {
+		if ((err = bk_rlk_send_ex(mac_addr, &rlk_tx)) < BK_OK) {
+			BK_LOGI(NON_STANDARD_TAG, "Send error, err: %d\n", err);
+			return;
+		}
+		bk_timer_delay_us(10 * 1000);
 	}
 	BK_LOGI(NON_STANDARD_TAG, "unicast done\r\n");
 }
@@ -266,7 +289,8 @@ static void bk_non_standard_demo_init() {
 	GPIO_UP(7);
 
 	bk_rlk_init();
-	bk_rlk_set_channel(BK_NON_STANDARD_DEMO_DEFAULT_CHANNEL);
+	//bk_rlk_set_channel(BK_NON_STANDARD_DEMO_DEFAULT_CHANNEL);
+	bk_rlk_set_channel(BK_NON_STANDARD_DEMO_DEFAULT_PRIM_CHANNEL, BK_NON_STANDARD_DEMO_DEFAULT_SECOND_CHANNEL);
 	bk_rlk_register_send_cb(bk_non_standard_demo_send_cb);
 	bk_rlk_register_recv_cb(bk_non_standard_demo_recv_cb);
 	bk_rlk_add_white_list(g_mac_hdr_type, g_mac_hdr_oui);

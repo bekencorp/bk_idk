@@ -549,6 +549,23 @@ bk_err_t bk_wifi_monitor_register_cb(const wifi_monitor_cb_t monitor_cb);
 bk_err_t bk_wifi_monitor_set_channel(const wifi_channel_t *chan);
 
 /**
+ * @brief     Set monitor channel bonding
+ *
+ * @attention 1. This API will bond the monitor channel with the given channel.
+ * @attention 2. This API is only used for settting monitor channel, NOT for other purpose.
+ * @attention 3. This API directly change the hardware channel, it may impacts BK STA/AP if
+ *               the STA or AP interface is started. TODO describe details of the impact.
+ * @attention 4. The channel range can be set is from channel 1 to channel 14,
+ *
+ * @param chan channel of monitor
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: other errors
+ */
+bk_err_t bk_wifi_monitor_set_channel_bonding(const wifi_channel_t *chan);
+
+/**
  * @brief     resume the monitor to wakeup Wi-Fi from sleep mode
  *
  * @return
