@@ -37,12 +37,8 @@ typedef enum
 } psram_mode_t;
 
 #define PSRAM_APS6408L_ID         (0x8d09)
-#if (CONFIG_SOC_BK7256XX)
-	#define PSRAM_W955D8MKY_5J_ID     (0x1f8f)
-#else
-	#define PSRAM_W955D8MKY_5J_ID     (0x1c8f)
+#define PSRAM_W955D8MKY_5J_ID     (0x1c8f)
 
-#endif
 #define PSRAM_APS128XXO_OB9_ID    (0x8d08)
 
 /* REG_0x00 */
