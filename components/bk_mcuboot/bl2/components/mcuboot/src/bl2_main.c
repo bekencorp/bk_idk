@@ -37,6 +37,9 @@
 #include <modules/pm.h>
 #include <soc/soc.h>
 
+#if (CONFIG_SOC_BK7236N || CONFIG_SOC_BK7239)
+#include "iomx_ll.h"
+#endif
 
 #ifdef TEST_BL2
 #include "mcuboot_suites.h"
@@ -168,7 +171,7 @@ int main(void)
         enable_dcache(0);
         void legacy_boot_main(void);
         legacy_boot_main();
-       enable_dcache(1);
+        enable_dcache(1);
         bk_flash_cpu_write_disable();
         flash_restore_line_mode();
     }
@@ -198,9 +201,16 @@ int main(void)
     stdio_init();
 #endif
 #endif
+    
+#if (CONFIG_SOC_BK7236N || CONFIG_SOC_BK7239)
+    hal_iomux_init();
+    hal_iomux_uart_enable(IOMX_UART_TX); //enable uart0 print
+#endif
+
     partition_init();
     flash_map_init();
     deep_sleep_reset();
+    boot_show_version();
     BOOT_LOG_INF("Starting bootloader");
     dump_partition();
 #if CONFIG_EFUSE

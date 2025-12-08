@@ -44,7 +44,7 @@ bk_err_t ow_ota_erase_sector(const bk_ota_t *ota, uint32_t off)
 bk_err_t ow_ota_confirm(const bk_logic_partition_t *control_partition)
 {
 	OTA_LOGD(TAG, "ow confirm\r\n");
-	return ota_confirm(control_partition, OVERWRITE_CONFIRM);
+	return ota_confirm(control_partition, OTA_CONFIRM);
 }
 
 bk_err_t ow_ota_cancel(const bk_logic_partition_t *control_partition)

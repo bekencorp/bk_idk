@@ -30,9 +30,50 @@ typedef volatile struct {
 	uint32_t gpio_0_23_int_status;
 } iomx_gpio_interrupt_status_t;
 
+typedef enum {
+	IOMX_UART_TX = 0,
+	IOMX_UART_RX,
+} iomx_uart_t;
+
+#define IO_FUNC_UART0_RXD  82
+#define IO_FUNC_UART0_TXD  83
+#define IO_FUNC_UART1_RXD  84
+#define IO_FUNC_UART1_TXD  85
+
 #define IOMX_LL_REG_BASE   (SOC_IOMX_REG_BASE)
 #define GPIO_LL_REG_BASE   (SOC_IOMX_REG_BASE + 0x40)
 #define GPIO_NUM_MAX       (SOC_GPIO_NUM)
+
+#define IOMX_SOFT_RST_REG                 *((volatile unsigned long*)(SOC_IOMX_REG_BASE + (2 * 4)))
+#define IOMX_FUNC_CFG10_REG               *((volatile unsigned long*)(SOC_IOMX_REG_BASE + (0x4a * 4)))
+#define IOMX_FUNC_CFG11_REG               *((volatile unsigned long*)(SOC_IOMX_REG_BASE + (0x4b * 4)))
+
+void hal_iomux_init(void)
+{
+	/* enable iomux module*/
+	IOMX_SOFT_RST_REG |= 0x01;
+}
+
+void hal_iomux_uart_enable(iomx_uart_t index)
+{
+	if (index == IOMX_UART_TX) {
+		/* gpio 11:uart0 tx*/
+		IOMX_FUNC_CFG11_REG |= ((IO_FUNC_UART0_TXD & 0xFF) << 24);
+
+#if CONFIG_LOG_UART1
+		/* gpio0:uart1 tx*/
+		IOMX_FUNC_CFG12_REG |= ((IO_FUNC_UART1_TXD & 0xFF) << 24);
+#endif
+	} else {
+		/* gpio10:uart0 rx*/
+		IOMX_FUNC_CFG10_REG |= ((IO_FUNC_UART0_RXD & 0xFF) << 24);
+
+#if CONFIG_LOG_UART1
+		/*gpio 1:uart1 rx*/
+		IOMX_FUNC_CFG13_REG |= ((IO_FUNC_UART1_RXD & 0xFF) << 24);
+#endif
+	}
+}
 
 //reg dev_id:
 static inline void iomx_ll_set_dev_id_value(uint32_t v) {

@@ -257,7 +257,7 @@ psa_status_t fwu_bootloader_staging_area_init(bl_image_id_t bootloader_image_id)
     uint32_t erase_size = (fap->fa_size / 32 *34);
     wdt_close();
     flash_area_erase(fap, 0, erase_size);
-    boot_write_xip_status(fap,XIP_MAGIC_TYPE,XIP_SET);
+    boot_write_xip_status(fap,XIP_MAGIC_TYPE,OTA_CONFIRM);
     flash_area_close(fap);
 #else
     if (flash_area_erase(fap, 0, fap->fa_size) != 0) {

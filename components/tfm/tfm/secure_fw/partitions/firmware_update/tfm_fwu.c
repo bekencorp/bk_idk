@@ -56,7 +56,7 @@ psa_status_t tfm_internal_fwu_install(psa_image_id_t image_id,
     const struct flash_area *fap;
     uint32_t update_id = (flash_area_read_offset_enable() ^ 1);
     flash_area_open(update_id,&fap);
-    boot_write_xip_status(fap,XIP_COPY_DONE_TYPE,XIP_SET);
+    boot_write_xip_status(fap,XIP_COPY_DONE_TYPE,OTA_CONFIRM);
     flash_area_close(fap);
 #endif
     /* Check the image slot, the target should be the staging slot. */
@@ -120,7 +120,7 @@ void tfm_internal_fwu_request_reboot(void)
     const struct flash_area *fap;
     uint32_t update_id = (flash_area_read_offset_enable() ^ 1);
     flash_area_open(update_id,&fap);
-    boot_write_xip_status(fap,XIP_COPY_DONE_TYPE,XIP_SET);
+    boot_write_xip_status(fap,XIP_COPY_DONE_TYPE,OTA_CONFIRM);
     flash_area_close(fap);
 #endif
 

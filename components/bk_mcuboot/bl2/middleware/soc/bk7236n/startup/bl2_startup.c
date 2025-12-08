@@ -189,7 +189,7 @@ void boot_mem_check(void)
 __NO_RETURN ENTRY_SECTION __attribute__((naked)) void Reset_Handler(void)
 {
 	/*Memory check vddig*/
-	boot_mem_check();
+	// boot_mem_check();
 
     __set_MSPLIM((uint32_t)(&__STACK_LIMIT));
 

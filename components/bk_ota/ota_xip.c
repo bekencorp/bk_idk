@@ -135,7 +135,7 @@ bk_err_t xip_ota_erase(const bk_ota_t *ota)
 bk_err_t xip_ota_confirm(const bk_logic_partition_t *control)
 {
 	OTA_LOGD(TAG, "xip confirm\r\n");
-	return ota_confirm(control, OVERWRITE_CONFIRM);
+	return ota_confirm(control, OTA_CONFIRM);
 }
 
 static bool xip_ota_partition_is_valid(const bk_logic_partition_t *ota)

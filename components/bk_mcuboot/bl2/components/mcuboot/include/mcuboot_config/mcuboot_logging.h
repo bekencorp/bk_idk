@@ -21,6 +21,7 @@
 #include "bootutil/ignore.h"
 #include <stdio.h>
 #include "common_interfaces.h"
+#include "driver/efuse.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,6 +43,13 @@ extern "C" {
 
 #define MCUBOOT_LOG_MODULE_DECLARE(domain)      /* Ignore */
 #define MCUBOOT_LOG_MODULE_REGISTER(domain)     /* Ignore */
+
+#if MCUBOOT_LOG_LEVEL >= MCUBOOT_LOG_LEVEL_ERROR
+#define MCUBOOT_LOG_FORCE(_fmt, ...)                  \
+    if (efuse_is_err_log_enabled()) printf("[FORCE] " _fmt "\r\n", ##__VA_ARGS__)
+#else
+#define MCUBOOT_LOG_FORCE(...) IGNORE(__VA_ARGS__)
+#endif
 
 #if MCUBOOT_LOG_LEVEL >= MCUBOOT_LOG_LEVEL_ERROR
 #define MCUBOOT_LOG_ERR(_fmt, ...)                  \

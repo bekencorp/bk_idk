@@ -242,7 +242,7 @@ class Partitions:
             line = f'#define %-45s %d\r\n' %(macro_name, 0)
             f.write(line)
 
-        macro_name = f'OVERWRITE_CONFIRM'
+        macro_name = f'OTA_CONFIRM'
         line = f'#define %-45s 0x%x\r\n' %(macro_name, OTA_CONFIRM)
         f.write(line)
 
@@ -253,9 +253,6 @@ class Partitions:
             line = f'#define %-45s %d\r\n' %(macro_name, 0)
             f.write(line)
 
-        f.write(line)
-        macro_name = f'XIP_SET'
-        line = f'#define %-45s 0x%x\r\n' %(macro_name, OTA_CONFIRM)
         f.write(line)
         macro_name = f'XIP_MAGIC_TYPE'
         line = f'#define %-45s %d\r\n' %(macro_name, 1)

@@ -93,7 +93,7 @@ find_slot_with_highest_version(struct boot_loader_state *state)
 
 #ifdef CONFIG_XIP_NO_VERSION
 #if CONFIG_OTA_CONFIRM_UPDATE
-    if (bk_boot_check_ota_confirm(1, XIP_SET)) {
+    if (bk_boot_check_ota_confirm(1, OTA_CONFIRM)) {
         slot = 1;
     } else {
         slot = 0;

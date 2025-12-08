@@ -500,7 +500,7 @@ int security_ota_finish(void)
 		}
 		uint32_t fa_size = CONFIG_PRIMARY_ALL_PHY_PARTITION_SIZE;
 		uint32_t copy_done_offset = CEIL_ALIGN_34(fa_addr + fa_size - 4096) + 32;
-		uint32_t status = XIP_SET;
+		uint32_t status = OTA_CONFIRM;
 		const uint8_t * value = (const uint8_t *)&(status);
 		bk_flash_write_bytes(copy_done_offset,value,sizeof(value));
 #endif // CONFIG_DIRECT_XIP

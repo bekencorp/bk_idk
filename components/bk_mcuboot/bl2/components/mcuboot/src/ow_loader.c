@@ -95,7 +95,7 @@ boot_validated_swap_type(struct boot_loader_state *state,
     FIH_DECLARE(fih_rc, FIH_FAILURE);
 
 #if CONFIG_OTA_CONFIRM_UPDATE
-    if ((bk_boot_check_ota_confirm(0, OVERWRITE_CONFIRM))) {
+    if ((bk_boot_check_ota_confirm(0, OTA_CONFIRM))) {
         BOOT_LOG_INF("confirm set");
         swap_type = BOOT_SWAP_TYPE_TEST;
     } else {

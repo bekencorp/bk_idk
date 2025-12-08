@@ -380,7 +380,7 @@ bk_boot_switch_xip_confirm()
     uint32_t offset = bk_boot_ota_confirm_offset(1);
     bk_flash_read_bytes(offset, (uint8_t*)&check_value, 4);
     if (check_value == UINT32_MAX) {
-        bk_boot_write_ota_confirm(1, XIP_SET);
+        bk_boot_write_ota_confirm(1, OTA_CONFIRM);
     } else {
         bk_boot_erase_ota_confirm(1);
     }

@@ -334,7 +334,7 @@ void bk_flash_ota_erase(void)
 void bk_flash_ota_write_magic(void)
 {
 	uint32_t update_id = flash_get_excute_enable() ^ 1;
-	bk_flash_write_xip_status(update_id,XIP_MAGIC_TYPE,XIP_SET);
+	bk_flash_write_xip_status(update_id,XIP_MAGIC_TYPE,OTA_CONFIRM);
 }
 #endif
 

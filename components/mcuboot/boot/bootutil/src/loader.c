@@ -2288,7 +2288,7 @@ boot_get_slot_usage(struct boot_loader_state *state)
             copy_done = boot_read_xip_status(fap,XIP_COPY_DONE_TYPE);
             magic = boot_read_xip_status(fap,XIP_MAGIC_TYPE);
             BOOT_LOG_INF("slot %d: copy_done = %#x\r\n",slot,copy_done);
-            if (magic == XIP_SET && copy_done != XIP_SET) {
+            if (magic == OTA_CONFIRM && copy_done != OTA_CONFIRM) {
                 uint32_t erase_size = flash_area_get_size(fap) / 32 * 34;
                 flash_area_erase(fap, 0, erase_size);
             }
@@ -2347,7 +2347,7 @@ find_slot_with_highest_version(struct boot_loader_state *state)
         flash_area_open(slot, &fap);
         magic = boot_read_xip_status(fap,XIP_MAGIC_TYPE);
         active = boot_read_xip_status(fap,XIP_IMAGE_OK_TYPE);
-        if (magic != XIP_SET) {
+        if (magic != OTA_CONFIRM) {
             continue;
         }
         if(active >= max_active){
@@ -2497,7 +2497,7 @@ boot_select_or_erase(struct boot_loader_state *state)
     magic = boot_read_xip_status(fap,XIP_MAGIC_TYPE);
     copy_done = boot_read_xip_status(fap,XIP_COPY_DONE_TYPE);
 
-    if( magic == XIP_SET && copy_done == XIP_SET ) {
+    if( magic == OTA_CONFIRM && copy_done == OTA_CONFIRM ) {
         return 0;
     } else {
         printf("xip ota image download aborted,erase image\r\n");

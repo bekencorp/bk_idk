@@ -107,7 +107,7 @@ int partition_init(void)
 void dump_partition(void)
 {
 	for (int k = 0; k < PARTITION_CNT; k++) {
-		BK_LOGI(TAG, "%s offset=%x size=%x flags=%x\r\n", s_partition_name[k], \
+		BK_LOGD(TAG, "%s offset=%x size=%x flags=%x\r\n", s_partition_name[k], \
             s_partition_config[k].phy_offset, s_partition_config[k].phy_size, s_partition_config[k].phy_flags);
 	}
 }

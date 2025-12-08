@@ -52,9 +52,19 @@ bool is_secureboot_enabled(void)
 #endif
 }
 
+bool efuse_is_secureboot_enabled(void)
+{
+	return is_secureboot_enabled();
+}
+
 bool is_spe_debug_enabled(void)
 {
 	return !(s_efuse_data & BIT(EFUSE_SPE_DEBUG_DISABLED_BIT));
+}
+
+bool efuse_is_spe_debug_enabled(void)
+{
+	return is_spe_debug_enabled();
 }
 
 bool is_info_log_enabled(void)
@@ -62,14 +72,29 @@ bool is_info_log_enabled(void)
 	return !(s_efuse_data & BIT(EFUSE_INFO_DISABLED_BIT));
 }
 
+bool efuse_is_info_log_enabled(void)
+{
+	return is_info_log_enabled();
+}
+
 bool is_err_log_enabled(void)
 {
 	return !(s_efuse_data & BIT(EFUSE_ERR_DISABLED_BIT));
 }
 
+bool efuse_is_err_log_enabled(void)
+{
+	return is_err_log_enabled();
+}
+
 bool is_secure_download_enabled(void)
 {
 	return !(s_efuse_data & BIT(EFUSE_SECURE_DOWNLOAD_DISABLED_BIT));
+}
+
+bool efuse_is_secure_download_enabled(void)
+{
+	return is_secure_download_enabled();
 }
 
 void dump_efuse(void)

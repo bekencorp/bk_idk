@@ -23,7 +23,7 @@ def gen_ota_config_file(ota_csv, outfile):
     if (ota.get_strategy().upper() == 'XIP'):
         line = f'#define %-45s %d\n' %(macro_name, 1)
         f.write(line)
-        macro_name = f'XIP_SET'
+        macro_name = f'OTA_CONFIRM'
         line = f'#define %-45s 0x%x\n' %(macro_name, 0xDEADBEEF)
         f.write(line)
         macro_name = f'XIP_MAGIC_TYPE'
