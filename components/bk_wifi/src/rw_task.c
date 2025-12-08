@@ -1125,6 +1125,7 @@ int rwnx_intf_init(void)
 	if (ret != BK_OK)
 		goto exit;
 
+#if !CONFIG_CUSTOMER_INIT_CALI
 #if CONFIG_PM_V2 && CONFIG_STA_PS && (CONFIG_SOC_BK7256XX || CONFIG_SOC_BK7236XX || CONFIG_SOC_BK7239XX || CONFIG_SOC_BK7286XX)
 	if (!ate_is_enabled())
 	{
@@ -1132,6 +1133,7 @@ int rwnx_intf_init(void)
 		ps_env_set_ps_on(true);
 		ps_env_set_cmd_ps_on(true);
 	}
+#endif
 #endif
 
 #if CONFIG_TX_BUFING

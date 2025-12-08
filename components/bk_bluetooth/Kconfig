@@ -64,4 +64,8 @@ menu "Bk_ble"
 	config BLE_LV_SUPPORT
         bool "support low voltage sleep"
         default n
+
+	config CUSTOMER_INIT_BLE
+		bool "Enable customer init BLE"
+		default n
 endmenu

@@ -523,4 +523,8 @@ menu "Bk_Wifi"
 	config ADD_CHAN_CTXT
 		bool "add chan ctxt"
 		default n
+
+	config CUSTOMER_INIT_CALI
+		bool "Enable customer init calibration"
+		default n
 endmenu

@@ -86,11 +86,13 @@ int wifi_init(const wifi_init_config_t *config)
 	rwnxl_init();
 
 	/* RF calibration */
+	#if !CONFIG_CUSTOMER_INIT_CALI
 	ret = calibration_init();
 	if (ret != BK_OK) {
 		WIFI_LOGI("cal init failed, ret(%x)\n", ret);
 		return ret;
 	}
+	#endif
 
 	/* TODO optimize it, move common param init to other places */
 	cfg_param_init();

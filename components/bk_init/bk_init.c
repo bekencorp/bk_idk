@@ -150,9 +150,11 @@ static int app_wifi_init(void)
 	BK_LOG_ON_ERR(bk_dbg_init());
 #endif
 
+#if !CONFIG_CUSTOMER_INIT_CALI
 #if CONFIG_WIFI_PS_DISABLE
 	//disable ps if needed
 	bk_wifi_sta_pm_disable();
+#endif
 #endif
 #if CONFIG_WIFI_AT_ENABLE
 	wifi_at_cmd_init();
@@ -270,6 +272,41 @@ static int app_eth_init(void)
 extern void demo_wifi_fast_connect(void);
 #endif
 
+#if CONFIG_CUSTOMER_INIT_CALI
+#include "components/ate.h"
+#include "fhost_msg.h"
+extern uint8_t tx_pwr_idx;
+extern uint8_t _get_ble_pwr_idx_wrapper(uint8_t channel);
+extern void _ble_cal_set_txpwr_wrapper(uint8_t idx);
+extern int calibration_init(void);
+
+int bk_cali_customer_init(void)
+{
+	int ret;
+
+	ret = calibration_init();
+	if (ret != BK_OK) {
+		BK_LOGW(NULL, "calibration init failed, ret(%x)\r\n", ret);
+		return ret;
+	}
+
+#if CONFIG_PM_V2 && CONFIG_STA_PS && (CONFIG_SOC_BK7256XX || CONFIG_SOC_BK7236XX || CONFIG_SOC_BK7239XX || CONFIG_SOC_BK7286XX)
+	if (!ate_is_enabled()) {
+		rwnxl_sleep();
+		ps_env_set_ps_on(true);
+		ps_env_set_cmd_ps_on(true);
+	}
+#endif
+
+#if !CONFIG_CUSTOMER_INIT_BLE
+	tx_pwr_idx = _get_ble_pwr_idx_wrapper(19);
+	_ble_cal_set_txpwr_wrapper(tx_pwr_idx);
+#endif
+
+	return BK_OK;
+}
+#endif
+
 int components_init(void);
 
 int bk_init(void)
@@ -343,7 +380,9 @@ int bk_init(void)
 
 #if (CONFIG_BLUETOOTH)
 	app_bt_init();
+#if !CONFIG_CUSTOMER_INIT_BLE
 	app_ble_init();
+#endif
 #endif
 
 #if (CONFIG_MAC802154_ENABLE)
