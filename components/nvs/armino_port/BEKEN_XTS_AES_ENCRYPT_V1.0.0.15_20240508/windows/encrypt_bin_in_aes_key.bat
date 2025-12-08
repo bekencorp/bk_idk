@@ -1,0 +1,1 @@
+beken_aes.exe encrypt -infile app.bin -startaddress 0x0  -keywords 9d72b287f26e36a4d2f006e0830c6a54ac8a4b82f52098a95ab0958156d7a006 -outfile app_enc.bin

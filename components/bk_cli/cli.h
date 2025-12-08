@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Beken
+// Copyright 2020-2025 Beken
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -107,6 +107,7 @@ int cli_adc_init(void);
 
 int cli_sdmadc_init(void);
 int cli_spi_init(void);
+int cli_nvs_init(void);
 int cli_spi_api_init(void);
 int cli_qspi_init(void);
 int cli_i2c_init(void);

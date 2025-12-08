@@ -4,7 +4,7 @@
  * @brief This file provides all the headers of Flash operation functions..
  *********************************************************************************
  *
- *Copyright 2020-2021 Beken
+ *Copyright 2020-2025 Beken
  *
  *Licensed under the Apache License, Version 2.0 (the "License");
  *you may not use this file except in compliance with the License.
@@ -52,25 +52,6 @@ typedef enum
 }bk_flash_t;
 
 typedef uint32_t bk_partition_t;
-// typedef enum
-// {
-//     BK_PARTITION_BOOTLOADER = 0,
-//     BK_PARTITION_APPLICATION = 1,
-//     BK_PARTITION_OTA = 2,
-//     BK_PARTITION_APPLICATION1 = 3,
-//     BK_PARTITION_MATTER_FLASH = 4,
-//     BK_PARTITION_RF_FIRMWARE = 5,
-//     BK_PARTITION_NET_PARAM = 6,
-//     BK_PARTITION_USR_CONFIG = 7,
-//     BK_PARTITION_OTA_FINA_EXECUTIVE = 8,
-//     BK_PARTITION_APPLICATION2 = 9,
-//     BK_PARTITION_EASYFLASH = 10,
-// 	BK_PARTITION_NVS = 11,
-//     BK_PARTITION_NVS_KEY = 12,
-//     BK_PARTITION_WIZ_MFR = 13,
-//     BK_PARTITION_MAX,
-// }bk_partition_t;
-
 typedef uint16_t bk_partition_type_t;
 
 enum {
@@ -235,11 +216,56 @@ bk_err_t bk_flash_partition_read(bk_partition_t partition, uint8_t *out_buffer, 
  */
 bk_err_t bk_flash_partition_read_by_name(const char *label, uint8_t *out_buffer, uint32_t offset, uint32_t buffer_len);
 
-bk_err_t bk_flash_partition_read_enhanced(bk_partition_t partition, uint8_t *out_buffer, uint32_t offset, uint32_t buffer_len);
-bk_err_t bk_flash_partition_write_enhanced(bk_partition_t partition, const uint8_t *buffer, uint32_t offset, uint32_t buffer_len);
+bk_err_t bk_flash_partition_read_cbus(bk_partition_t partition, uint8_t *out_buffer, uint32_t offset, uint32_t buffer_len);
+
+/**
+ * @brief    Write a block to flash via the control (CBUS) channel.
+ *
+ * @param    partition: Target logical partition.
+ * @param    buffer: Pointer to source data to be written.
+ * @param    offset: Offset inside the partition where writing starts.
+ * @param    buffer_len: Number of bytes to write.
+ *
+ * @return
+ *    - BK_OK on success
+ *    - other bk_err_t codes on failure
+ */
+bk_err_t bk_flash_partition_write_cbus(bk_partition_t partition, const uint8_t *buffer, uint32_t offset, uint32_t buffer_len);
+
+/**
+ * @brief    Lookup the logical partition metadata by its name label.
+ *
+ * @param    label: Null-terminated name of the desired partition.
+ *
+ * @return   Pointer to partition descriptor or NULL if not found.
+ */
 const bk_logic_partition_t * get_partition_info_by_name(const char *label);
+
+/**
+ * @brief    Retrieve partition metadata from the enum identifier.
+ *
+ * @param    partition: Enum value defined in bk_partition_t.
+ *
+ * @return   Pointer to matching partition descriptor, or NULL when invalid.
+ */
 const bk_logic_partition_t * get_partition_info(bk_partition_t partition);
+
+/**
+ * @brief    Redundant helper matching `get_partition_info_by_name`, exported for legacy compatibility.
+ *
+ * @param    label: Name of the partition to query.
+ *
+ * @return   Partition descriptor pointer or NULL when not found.
+ */
 const bk_logic_partition_t * bk_flash_partition_get_info_by_name(const char *label);
+
+/**
+ * @brief    Convert a partition descriptor into its table index.
+ *
+ * @param    partition: Pointer to the logic partition returned by other helpers.
+ *
+ * @return   Index (0-based) inside the flash partition table.
+ */
 uint32_t get_partition_index(const bk_logic_partition_t* partition);
 
 /**
@@ -257,11 +283,25 @@ uint32_t get_partition_index(const bk_logic_partition_t* partition);
  */
 bk_err_t bk_spec_flash_write_bytes(bk_partition_t partition, const uint8_t *user_buf, uint32_t size,uint32_t offset);
 
+/**
+ * @brief    Extract the stored type (first byte) from partition options.
+ *
+ * @param    partition: Pointer to the partition descriptor.
+ *
+ * @return   Type field encoded into bits [31:24] of partition_options.
+ */
 static inline uint32_t bk_flash_partition_get_type(const bk_logic_partition_t* partition)
 {
 	return (partition->partition_options >> 24) & 0xFF;
 }
 
+/**
+ * @brief    Extract the option flags (lower 24 bits) from partition_options.
+ *
+ * @param    partition: Pointer to the partition descriptor.
+ *
+ * @return   Option bitmap stored in bits [23:0] of partition_options.
+ */
 static inline uint32_t bk_flash_partition_get_options(const bk_logic_partition_t* partition)
 {
 	return partition->partition_options & 0xFFFFFF;

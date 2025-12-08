@@ -16,6 +16,7 @@
 #include "os/os.h"
 #include "common/bk_assert.h"
 #include "sdkconfig.h"
+#include "partitions_gen.h"
 
 /*
 * #define ARM_MPU_RBAR(BASE, SH, RO, NP, XN)
@@ -39,21 +40,25 @@ ARM_MPU_Region_t mpu_regions[] = {
     /* Region 1, RO-code/RO-data.
     	Flash_s:  0x0200 0000-----------0x02FF FFFF
     	Flash_ns: 0x1200 0000-----------0x12FF FFFF
+      TODO: flash space is readable and writable NOW 
+      TODO: and in the future, whether an mpu flash region is writable or readable is 
+            determined by the partition's configuration.
      */
-    { ARM_MPU_RBAR(0x02000000UL, ARM_MPU_SH_NON, 1, 1, 0),
+    { ARM_MPU_RBAR(0x02000000UL, ARM_MPU_SH_NON, 0, 1, 0),
       ARM_MPU_RLAR(0x02FFFFE0UL, 4) },                     /* Flash, for RO-code/RO-data. WT-RA */
 
+      /* Region 2, XIP WRITE, nocacheable */
     { ARM_MPU_RBAR(0x03000000UL, ARM_MPU_SH_NON, 0, 1, 0),
       ARM_MPU_RLAR(0x03FFFFE0UL, 1) },                     /* Flash, for XIP WRITE, nocacheable */
 
-    /* Region 2
+    /* Region 3
     	iram_s:  0x0800 0000-----------0x0809 FFFF
     	iram_ns: 0x1800 0000-----------0x1809 FFFF
      */
     { ARM_MPU_RBAR(0x08000000UL, ARM_MPU_SH_NON, 1, 1, 0),
       ARM_MPU_RLAR(0x0809FFE0UL, 1) },                     /* SRAM, for RO-code/RO-data. WT-RA */
 
-    /* Region 3
+    /* Region 4/5
         shared memory(smem0) 0x2800 0000-----------0x2800 FFFF   0x3800 0000-----------0x3800 FFFF
         shared memory(smem1) 0x2801 0000-----------0x2801 FFFF   0x3801 0000-----------0x3801 FFFF
         shared memory(smem2) 0x2802 0000-----------0x2803 FFFF   0x3802 0000-----------0x3803 FFFF
@@ -72,26 +77,26 @@ ARM_MPU_Region_t mpu_regions[] = {
       ARM_MPU_RLAR(0x3807FFE0UL, 1) },
     #endif
 
-    /* Region 4 periphral, device memory
+    /* Region 6 periphral, device memory
         device memory is shareable, and must not be cached.
         please refer to the document:star_user_guide_reference_material.pdf page50
 	 */
     { ARM_MPU_RBAR(0x40000000UL, ARM_MPU_SH_INNER, 0, 1, 1),
       ARM_MPU_RLAR(0x5FFFFFE0UL, 2) },
 
-    /* Region 5 psram */
+    /* Region 7 psram */
     { ARM_MPU_RBAR(0x60000000UL, ARM_MPU_SH_NON, 0, 1, 1),
       ARM_MPU_RLAR(0x63FFFFE0UL, 1) },
 
-     /* Region 6 qspi1 */
+     /* Region 8 qspi1 */
      { ARM_MPU_RBAR(0x68000000UL, ARM_MPU_SH_NON, 0, 1, 1),
        ARM_MPU_RLAR(0x6FFFFFE0UL, 3) },
 
-     /* Region 7 non-secure psram and non-secure qspi */
+     /* Region 9 non-secure psram and non-secure qspi */
      { ARM_MPU_RBAR(0x70000000UL, ARM_MPU_SH_NON, 0, 1, 1),
        ARM_MPU_RLAR(0x7FFFFFE0UL, 1) },
 
-     /* Region 8 ppb and other */
+     /* Region 10 ppb and other */
      { ARM_MPU_RBAR(0x80000000UL, ARM_MPU_SH_NON, 0, 1, 1),
        ARM_MPU_RLAR(0xEFFFFFE0UL, 2) }
 };

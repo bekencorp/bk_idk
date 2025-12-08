@@ -1,0 +1,1 @@
+beken_aes.exe encrypt -infile app.bin -startaddress 0x0 -keyfile aes_encrypt_key.json -outfile app_enc.bin

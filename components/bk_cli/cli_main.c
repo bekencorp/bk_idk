@@ -1715,6 +1715,10 @@ int bk_cli_init(void)
 	cli_spi_api_init();
 #endif
 
+#if (CONFIG_NVS_TEST)
+	cli_nvs_init();
+#endif
+
 #if (CLI_CFG_QSPI == 1)
 	cli_qspi_init();
 #endif

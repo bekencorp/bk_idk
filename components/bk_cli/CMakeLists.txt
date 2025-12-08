@@ -415,6 +415,10 @@ if (CONFIG_TFM_INT_TARGET_NSC)
 	list(APPEND srcs cli_int_target.c)
 endif()
 
+if (CONFIG_NVS_TEST)
+	list(APPEND srcs cli_nvs.c)
+endif()
+
 if (CONFIG_LIN)
 	list(APPEND srcs cli_lin.c)
 endif()
@@ -425,10 +429,15 @@ endif()
 
 set(PRIV_REQUIRES_LIST bk_common mbedtls psa_mbedtls bk_netif bk_ps fatfs bk_vfs bk_init bk_libs at bk_wifi compal ota cmsis jrtplib flashdb bk_bluetooth bk_phy tfm)
 
+if (CONFIG_NVS_TEST)
+	list(APPEND PRIV_REQUIRES_LIST nvs)
+	list(APPEND incs "../nvs/include")
+	list(APPEND incs "../nvs/port")
+endif()
+
 armino_component_register(SRCS "${srcs}"
 	INCLUDE_DIRS "${incs}"
 	REQUIRES utf8 temp_detect app driver user_driver bk_system iperf fatfs user_driver http adc_key key bk_websocket cm33 console
-	#PRIV_REQUIRES airkiss bk_common bk_netif bk_ps
 	PRIV_REQUIRES ${PRIV_REQUIRES_LIST}
 	)
 

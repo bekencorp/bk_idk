@@ -14,6 +14,10 @@ menu "FLASH"
 	config FLASH_ORIGIN_API
 		bool "Enable flash old api"
 		default n
+	
+	config SUPPORT_PARTITIONS_PARTITION
+		bool "Enable flash partition"
+		default n
 
 	config FLASH_MB
 		bool "Enable flash mailbox channel"
@@ -64,15 +68,9 @@ menu "FLASH"
 		bool "Bypass flash to operate otp in flash"
 		default n
 
-	config PARTITION_OP_BY_NAME
-		depends on FLASH
-		bool "Enable flash partition operation by name"
-		default n
-
 	config EXT_FLASH_CLK_FREQ
 		depends on FLASH
 		int "Select flash clk frequency"
 		default "40000000"
-
 endmenu
 

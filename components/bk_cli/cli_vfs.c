@@ -17,7 +17,6 @@
 #include "driver/flash_partition.h"
 
 // TODO xxx
-// extern const bk_logic_partition_t bk_flash_partitions[BK_PARTITIONS_TABLE_SIZE];
 
 #if defined(BK_PARTITION_LITTLEFS)
 #define BK_PARTITION_FS_ID BK_PARTITION_LITTLEFS

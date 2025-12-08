@@ -60,10 +60,8 @@ bk_err_t bk_spec_flash_write_bytes(bk_partition_t partition, const uint8_t *user
 	save_flashdata_buff = NULL;
 
 	return BK_OK;
-
 }
 
-#if	((defined(CONFIG_SECURITY_OTA)) && (!defined(CONFIG_TFM_FWU)) && (!defined(CONFIG_BK_OTA)))
 __attribute__((section(".iram")))
 void * __attribute__((optimize("-O3"))) bk_memcpy_4w(void *dst, const void *src, unsigned int size)  /* 4 words copy. */
 {
@@ -122,6 +120,7 @@ void * __attribute__((optimize("-O3"))) bk_memcpy_4w(void *dst, const void *src,
 	return dst;
 }
 
+#if	((defined(CONFIG_SECURITY_OTA)) && (!defined(CONFIG_TFM_FWU)) && (!defined(CONFIG_BK_OTA)))
 #define CEIL_ALIGN_34(addr)           (((addr) + 34 - 1) / 34 * 34)
 
 #include "partitions.h"

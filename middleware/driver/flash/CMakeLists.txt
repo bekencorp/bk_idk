@@ -1,10 +1,20 @@
 if (CONFIG_FLASH)
 	list(APPEND incs flash)
 	list(APPEND srcs
-		flash/flash_partition.c
 		flash/flash_bypass.c
 		flash/flash_notify.c
 	)
+
+	if (CONFIG_SUPPORT_PARTITIONS_PARTITION)
+		list(APPEND srcs
+			flash/flash_partition_v1_1.c
+		)
+	else()
+		list(APPEND srcs
+			flash/flash_partition.c
+		)
+	endif()
+
 	if (CONFIG_SYS_CPU0)
 		list(APPEND srcs
 			flash/flash_driver.c
