@@ -519,4 +519,8 @@ menu "Bk_Wifi"
 		default n
 		help
 		    Enable memory shortage log.
+
+	config ADD_CHAN_CTXT
+		bool "add chan ctxt"
+		default n
 endmenu

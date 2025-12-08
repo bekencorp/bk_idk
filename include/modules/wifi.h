@@ -85,6 +85,42 @@ bk_err_t bk_wifi_deinit(void);
 bk_err_t bk_wifi_sta_start(void);
 
 /**
+ * @brief     Init the BK STA
+ *
+ * This API init is splited form bk_wifi_sta_start.
+ *
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: other errors.
+ */
+bk_err_t bk_wifi_sta_split_init(void);
+
+/**
+ * @brief     Start the BK STA
+ *
+ * This API start is splited form bk_wifi_sta_start.
+ *
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: other errors.
+ */
+bk_err_t bk_wifi_sta_split_start(void);
+
+/**
+ * @brief     Connect the BK STA
+ *
+ * This API connect is splited form bk_wifi_sta_start.
+ *
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: other errors.
+ */
+bk_err_t bk_wifi_sta_split_connect(void);
+
+/**
  * @brief     Stop the BK STA
  *
  * @attention This API causes the BK STA disconnect from the AP, it similar as

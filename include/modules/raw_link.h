@@ -757,6 +757,8 @@ bk_err_t bk_rlk_bypass_whitelist_check(bool enable);
 
 bk_err_t bk_rlk_use_legacy_mac_header(bool enable);
 
+bk_err_t bk_rlk_use_ext_feature(bool enable);
+
 bk_err_t bk_rlk_set_sync_enabled(bool enable);
 
 bk_err_t bk_rlk_register_sync_cb(bk_rlk_sync_cb_t cb);

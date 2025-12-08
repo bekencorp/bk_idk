@@ -2228,6 +2228,207 @@ bk_err_t bk_wifi_sta_start(void)
 	return BK_OK;
 }
 
+bk_err_t bk_wifi_sta_split_init(void)
+{
+	wifi_sta_init_rw_driver();
+	return BK_OK;
+}
+
+bk_err_t bk_wifi_sta_split_start(void)
+{
+	WIFI_LOGD("sta starting\n");
+	sta_tick.sta_start_tick = rtos_get_time();
+
+	if (wifi_monitor_is_started()) {
+		WIFI_LOGD("sta start fail, monitor in progress\n");
+		return BK_ERR_WIFI_MONITOR_IP;
+	}
+
+	if (g_is_deepsleep) {
+		WIFI_LOGD("sta start fail, deepsleep in progress\n");
+		return BK_ERR_WIFI_NOT_INIT;
+	}
+
+	if (g_wifi_enable_flag == false) {
+		WIFI_LOGE("sta start fail, wifi disable\n");
+		return BK_ERR_WIFI_STA_NOT_CONFIG;
+	}
+
+	if (wifi_sta_is_started()) {
+		WIFI_LOGD("sta already started, ignored!\n");
+		return BK_OK;
+	}
+
+	if (wifi_supplicant_start()) {
+		WIFI_LOGI("%s wifi enable fail\n");
+		return BK_OK;
+	}
+
+	wifi_set_state_bit(WIFI_STA_STARTED_BIT);
+	WIFI_LOGD("sta started(%x)\n", s_wifi_state_bits);
+
+	return BK_OK;
+}
+
+bk_err_t bk_wifi_sta_split_connect(void)
+{
+	wifi_sta_config_t sta_config = { 0 };
+	size_t psk_len = 0;
+	u8 *psk = 0;
+
+#if CONFIG_STA_AUTO_RECONNECT
+	wlan_auto_reconnect_t ar;
+#endif
+	bool fast_connect __maybe_unused = false;
+	struct wlan_fast_connect_info fci;
+
+	WIFI_LOGD("sta connecting\n");
+
+	if (!wifi_sta_is_started()) {
+		WIFI_LOGD("sta connect fail, sta not start\n");
+		return BK_ERR_WIFI_STA_NOT_STARTED;
+	}
+
+	if (!wifi_sta_is_configured()) {
+		WIFI_LOGI("sta start fail, sta not configured\n");
+		return BK_ERR_WIFI_STA_NOT_CONFIG;
+	}
+
+	wifi_sta_init_global_config();
+
+	// enable softap's channel to follow STA's channel
+	wifi_sta_init_callback();
+
+	wifi_sta_get_global_config(&sta_config);
+
+#ifdef CONFIG_CONNECT_THROUGH_PSK_OR_SAE_PASSWORD
+	if (sta_config.psk_calculated) {
+		psk_len = sta_config.psk_len;
+		psk = sta_config.psk;
+	}
+#endif
+
+	if (bk_feature_fast_connect_enable()) {
+		int ssid_len, req_ssid_len;
+
+		os_memset(&fci, 0, sizeof(fci));
+#if CONFIG_EASY_FLASH_FAST_CONNECT
+		bk_get_env_enhance("fast_connect_id", (void *)&fci, sizeof(struct wlan_fast_connect_info));
+#endif
+
+		ssid_len = os_strlen((char *)fci.ssid);
+		if (ssid_len > SSID_MAX_LEN)
+			ssid_len = SSID_MAX_LEN;
+
+		req_ssid_len = os_strlen(sta_config.ssid);
+		if (req_ssid_len > SSID_MAX_LEN)
+			req_ssid_len = SSID_MAX_LEN;
+
+#if 0
+		print_hex_dump("fci: ", &fci, sizeof(fci));
+		WIFI_LOGI("  ssid: |%s|\n", fci.ssid);
+		WIFI_LOGI("  bssid: %pM\n", fci.bssid);
+		WIFI_LOGI("  chan: %d\n", fci.channel);
+		WIFI_LOGI("  desire ssid: |%s|\n", sta_config.ssid);
+#endif
+		if (((ssid_len == req_ssid_len &&
+			os_memcmp(sta_config.ssid, fci.ssid, ssid_len) == 0) ||
+			(os_memcmp(sta_config.bssid, fci.bssid, 6) == 0)) &&
+			((os_strcmp(sta_config.password, (char *)fci.pwd) == 0) ||
+			(os_strcmp(sta_config.password, (char *)fci.psk) == 0))) {
+
+			fast_connect = true;
+
+			psk = fci.psk;
+			psk_len = PMK_LEN * 2;
+			g_sta_param_ptr->fast_connect.chann = fci.channel;
+			g_sta_param_ptr->fast_connect_set = 1;
+
+			WIFI_LOGI("fast_connect\n");
+#if 0
+			WIFI_LOGI("  chan: %d\n", fci.channel);
+			WIFI_LOGI("  PMK: %s\n", psk);
+#endif
+			if (os_strlen((char *)psk) == 0) {
+				/* no psk info, calcuate pmk */
+				psk = 0;
+				psk_len = 0;
+			}
+
+			if (bk_feature_fast_dhcp_enable()) {
+				if ((fci.ip_addr[0] != 0) && (fci.ip_addr[0] != 0xFF))
+					#if CONFIG_STA_USE_STATIC_IP
+					sta_ip_mode_set(0);
+					#else
+					sta_ip_mode_set(2);
+					#endif
+				else
+					sta_ip_mode_set(1);
+			}
+			// #if CONFIG_WIFI_MFP_CONNECT_DEAUTH
+			/* Send deauth frames to AP, if sta disconnect with the AP without Deauth or Disconnect.*/
+			wlan_mfp_connect_deauth(!!(fci.pmf == MGMT_FRAME_PROTECTION_REQUIRED),fci.bssid, fci.tk,false);
+			// #endif
+		} else {
+			sta_ip_mode_set(1);
+		}
+	}
+
+#if CONFIG_STA_AUTO_RECONNECT
+	/*
+	 * let supplicant know we will reconnect after disconnect, so supplicant will not post
+	 * DISCONNECT EVENT if we are connecting to another ssid(can be the same ssid).
+	 */
+	wpa_ctrl_request(WPA_CTRL_CMD_WPAS_SET, (void *)true);
+#endif
+	bk_wifi_sta_disconnect();
+#if CONFIG_STA_AUTO_RECONNECT
+	wpa_ctrl_request(WPA_CTRL_CMD_WPAS_SET, (void *)false);
+#endif
+
+#if CONFIG_STA_VSIE
+	if (bk_feature_sta_vsie_enable()) {
+		for (int i = 0; i < NUM_WIFI_VENDOR_ELEM_FRAMES; i++) {
+			if (g_sta_param_ptr->vsies[i] ) {
+				if (g_sta_param_ptr->vsies[i]->len > 0)
+					bk_wifi_sta_add_vendor_ie(i, g_sta_param_ptr->vsies[i]->buf,
+						g_sta_param_ptr->vsies[i]->len);
+			}
+		}
+	}
+#endif
+
+// #if CONFIG_WIFI_MFP_CONNECT_DEAUTH
+	/* Send deauth frames to AP, if sta disconnect with the AP without Deauth or Disconnect.*/
+	if (fast_connect){
+		wlan_mfp_connect_deauth(!!(fci.pmf == MGMT_FRAME_PROTECTION_REQUIRED),fci.bssid, fci.tk,true);
+	}
+// #endif
+
+	/* set network parameters: ssid, passphase */
+	wlan_sta_set((uint8_t *)sta_config.ssid, os_strlen(sta_config.ssid), (uint8_t *)sta_config.password);
+
+	/*
+	 * let wpa_psk_cal thread to caculate psk.
+	 * XXX: If you know psk value, fill last two parameters of `wpa_psk_request()'.
+	 */
+	wpa_psk_request(g_sta_param_ptr->ssid.array, g_sta_param_ptr->ssid.length,
+						(char *)g_sta_param_ptr->key, psk, psk_len);
+
+#if CONFIG_STA_AUTO_RECONNECT
+	/* set auto reconnect parameters */
+	ar.max_count = g_sta_param_ptr->auto_reconnect_count;
+	ar.timeout = g_sta_param_ptr->auto_reconnect_timeout;
+	ar.disable_reconnect_when_disconnect = g_sta_param_ptr->disable_auto_reconnect_after_disconnect;
+	wlan_sta_set_autoreconnect(&ar);
+#endif
+
+	/* always connect the AP automatically */
+	bk_wifi_sta_connect();
+
+	return BK_OK;
+}
+
 bk_err_t bk_wifi_sta_stop(void)
 {
 	WIFI_LOGI("sta stopping\n");

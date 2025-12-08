@@ -144,6 +144,14 @@ int bk_feature_set_relay_ap_inactivity(void) {
 #endif
 }
 
+int bk_feature_config_add_chan_ctxt(void) {
+#if CONFIG_ADD_CHAN_CTXT
+    return 1;
+#else
+    return 0;
+#endif
+}
+
 int bk_feature_send_sta_csa_ind(void) {
 #if CONFIG_BRIDGE
 	return 1;

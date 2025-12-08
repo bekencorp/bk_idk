@@ -962,6 +962,10 @@ void rwnx_start_xmit_raw_ex(struct sk_buff *skb, raw_tx_cntrl_t *raw_tx_cntrl)
 	return;
 
 tx_exit:
+	if (skb->cb && skb->args) {
+		void (*cb)(void *, bool) = skb->cb;
+		cb(skb->args, 0);
+	}
 	if (skb)
 		kfree_skb(skb);
 	else if (fhost_txdesc)

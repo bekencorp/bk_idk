@@ -1169,5 +1169,14 @@ void rwnx_hwq_init()
 	}
 }
 
+void bk_rlk_txq_init(void)
+{
+	extern struct vif_info_tag *vif_mgmt_get_entry(uint8_t id);
+	extern uint8_t vif_mgmt_get_sta_vif_index();
+	uint8_t bcmc_vif_idx = VIF_TO_BCMC_IDX(vif_mgmt_get_sta_vif_index());
+	void *sta = sta_mgmt_get_entry(bcmc_vif_idx);
+	rwnx_txq_sta_init(sta, 0);
+}
+
 #endif // CONFIG_RWNX_SW_TXQ
 

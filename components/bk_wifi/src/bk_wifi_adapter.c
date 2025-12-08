@@ -1359,6 +1359,12 @@ void rwnx_sys_set_use_abs_power_wrapper(UINT32 use)
 #endif
 }
 
+static int bk_feature_config_add_chan_ctxt_wrapper(void)
+{
+    return bk_feature_config_add_chan_ctxt();
+}
+
+
 __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._version = BK_WIFI_OS_ADAPTER_VERSION,
 	._manual_cal_rfcali        = manual_cal_rfcali_status,
@@ -1509,6 +1515,7 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._bk_feature_bcn_miss_cb = bk_feature_bcn_miss_cb_wrapper,
 	._bk_feature_tcp_protect_enable = bk_feature_tcp_protect_enable_wrapper,
 	._bk_feature_null_frame_with_sn_enable = bk_feature_wifi_null_frame_with_sn,
+	._bk_feature_config_add_chan_ctxt = bk_feature_config_add_chan_ctxt_wrapper,
 	._bk_wifi_get_vendor_ie_cb_internal = bk_wifi_get_vendor_ie_cb_internal_wrapper,
 	._bk_wifi_get_vendor_ie_type = bk_wifi_get_vendor_ie_type_wrapper,
 	._bk_wifi_get_vendor_ie_oui_len = bk_wifi_get_vendor_ie_oui_len_wrapper,

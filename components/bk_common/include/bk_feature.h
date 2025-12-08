@@ -202,6 +202,7 @@ int bk_feature_send_sta_csa_ind(void);
 int bk_feature_get_scan_speed_level(void);
 int bk_feature_tcp_protect_enable(void);
 int bk_feature_set_relay_ap_inactivity(void);
+int bk_feature_config_add_chan_ctxt(void);
 
 /**
  * @brief     Interface for customer to save cali data to OTP2
