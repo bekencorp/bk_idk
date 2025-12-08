@@ -113,10 +113,14 @@ extern "C" {
 #define LOW_POWER_XTAL_DPLL_STABILITY_DELAY_TIME  ((LOW_POWER_DPLL_STABILITY_DELAY_TIME+LOW_POWER_RESTORE_DELAY_TIME_HARDWARE)*1000)
 
 #define LOW_POWER_26M_STABILITY_DELAY_TIME_HARDWARE      (CONFIG_PM_26M_STABILITY_DELAY_TIME_HARDWARE)
-#define LOW_POWER_DELAY_TIME_HARDWARE                    (1300)
-#define LOW_POWER_EXTERN_32K_HARDWARE                    (3000)
-
-#define LOW_POWER_BOOTUP_RESTORE_TIME                    (2000)
+#if CONFIG_DEEP_LV
+#define LOW_POWER_DELAY_TIME_HARDWARE                    (2200) //hardware to bootloader cost 2100us
+#define LOW_POWER_EXTERN_32K_HARDWARE                    (2200) //hardware to bootloader cost 2100us
+#else
+#define LOW_POWER_DELAY_TIME_HARDWARE                    (1100) //hardware to wfi() cost 1000us
+#define LOW_POWER_EXTERN_32K_HARDWARE                    (1100) //hardware to wfi() cost 1000us
+#endif
+#define LOW_POWER_BOOTUP_RESTORE_TIME                    (350) //bootloader to app cost 200us,app to wfi() cost 100us
 
 #define PM_POWER_ON_ROSC_STABILITY_TIME                  (TIMER_CLOCK_FREQ_XTAL*2)//about 2ms
 
