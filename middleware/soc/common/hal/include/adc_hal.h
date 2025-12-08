@@ -42,7 +42,6 @@ void adc_hal_calib_init(void);
 void adc_hal_set_cwt_calib(uint16_t *adc_data, uint16_t data_num);
 void adc_hal_set_cwt(uint32_t *adc_data);
 void hal_calib_apply(void);
-void adc_hal_switch_vol_range(uint32_t vref_sel);
 
 #define adc_hal_enable_bypass_calib(hal)
 #define adc_hal_disable_bypass_calib(hal)
@@ -111,8 +110,6 @@ uint32_t adc_hal_get_1Volt_value(void);
 uint32_t adc_hal_get_1Volt_threshold(void);
 uint32_t adc_hal_get_2Volt_value(void);
 uint32_t adc_hal_get_2Volt_threshold(void);
-uint32_t adc_hal_get_channel0_2Volt_default(void);
-uint32_t adc_hal_get_channel0_3Volt_default(void);
 
 #ifdef SOC_ADC_FIFO_DATA_SUPPORT
 #define adc_hal_get_fifo_data(hal) adc_ll_get_fifo_data((hal)->hw)
