@@ -78,6 +78,7 @@ typedef enum {
 #define BK_ERR_ZERO_MAC           (BK_ERR_MAC_BASE - 1)
 #define BK_ERR_GROUP_MAC          (BK_ERR_MAC_BASE - 2)
 #define BK_ERR_INVALID_MAC        (BK_ERR_MAC_BASE - 3)
+#define BK_ERR_INVALID_CPU_CLK    (BK_ERR_MAC_BASE - 4)
 
 #define BK_MAC_ADDR_LEN           6
 

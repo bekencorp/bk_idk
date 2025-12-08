@@ -26,6 +26,9 @@ extern "C" {
 #define BK_ERR_FLASH_PARTITION_NOT_FOUND  (BK_ERR_FLASH_BASE - 3) /**< FLASH partition not found */
 #define BK_ERR_FLASH_WAIT_CB_FULL         (BK_ERR_FLASH_BASE - 4) /**< FLASH wait cb is registered too much */
 #define BK_ERR_FLASH_WAIT_CB_NOT_REGISTER         (BK_ERR_FLASH_BASE - 5) /**< FLASH wait cb is not registered but tried to unregister */
+#define BK_ERR_FLASH_DBUS_REGION         (BK_ERR_FLASH_BASE - 6) /**< FLASH dbus region is incorrect */
+#define BK_ERR_FLASH_ADDR                (BK_ERR_FLASH_BASE - 7) /**< FLASH address is incorrect */
+#define BK_ERR_FLASH_INVALID_CLK_PARAM              (BK_ERR_FLASH_BASE - 8) /**< FLASH invalid flash clk param */
 
 typedef enum
 {
