@@ -245,12 +245,12 @@ static inline void sys_hal_mask_cpu0_int(void)
 
 static inline void sys_hal_enable_spi_latch(void)
 {
-	 sys_ll_set_ana_reg8_spi_latch1v(1);
+	 sys_ll_set_ana_reg8_spi_latch1v_iram(1);
 }
 
 static inline void sys_hal_disable_spi_latch(void)
 {
-	 sys_ll_set_ana_reg8_spi_latch1v(0);
+	 sys_ll_set_ana_reg8_spi_latch1v_iram(0);
 }
 
 static inline uint32_t sys_hal_disable_hf_clock(void)
@@ -819,7 +819,7 @@ void sys_hal_regs_save(void)
 	s_sys_saved_regs[10] = sys_ll_get_cpu0_int_32_63_en_value(); // reg_0x21
 
 	for (uint32_t i = 0; i < 16; i++) {
-		s_sys_ana_regs[i] = sys_hal_analog_get(ANALOG_REG0 + i);
+		s_sys_ana_regs[i] = sys_hal_analog_get_iram(ANALOG_REG0 + i);
 		REG_WRITE(0x2807E400 + (i << 2), s_sys_ana_regs[i]);//save analog regs to bootloader stack
 	}
 
@@ -1466,6 +1466,7 @@ static int sys_hal_power_config_default()
 	/*config the power domain*/
 	sys_hal_module_power_ctrl(POWER_MODULE_NAME_THREAD,POWER_MODULE_STATE_OFF);
 	sys_hal_module_power_ctrl(POWER_MODULE_NAME_ENCP,POWER_MODULE_STATE_OFF);
+	sys_hal_module_power_ctrl(POWER_MODULE_NAME_BTSP,POWER_MODULE_STATE_OFF);
 #if 0
 #if CONFIG_SPE
 	sys_hal_module_power_ctrl(POWER_MODULE_NAME_ENCP,POWER_MODULE_STATE_OFF);

@@ -74,6 +74,11 @@ static inline uint32_t sys_ll_get_analog_reg_value(uint32_t addr)
 	return REG_READ(addr);
 }
 
+__IRAM_SEC static inline uint32_t sys_ll_get_analog_reg_value_iram(uint32_t addr)
+{
+	return REG_READ(addr);
+}
+
 static inline void sys_ll_set_analog_reg_value(uint32_t addr, uint32_t value)
 {
 	uint32_t idx;

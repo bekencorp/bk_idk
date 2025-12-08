@@ -241,7 +241,7 @@ u32_t tcp_slowtmr_ms = 0;
 /**
  * Called periodically to dispatch TCP timers.
  */
-void
+__IRAM_SEC void
 tcp_tmr(void)
 {
   /* Call tcp_fasttmr() every 250 ms */

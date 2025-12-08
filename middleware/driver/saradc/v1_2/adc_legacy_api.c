@@ -24,7 +24,7 @@ static adc_chan_t s_current_channel_id = 0;
 #endif
 
 /* These functions will be deprecated; obsolete interfaces*/
-bk_err_t bk_adc_init(adc_chan_t adc_chan)
+__IRAM_SEC bk_err_t bk_adc_init(adc_chan_t adc_chan)
 {
     return BK_OK;
 }
@@ -38,7 +38,7 @@ bk_err_t bk_adc_deinit(adc_chan_t chan)
     #endif
 }
 
-bk_err_t bk_adc_acquire(void)
+__IRAM_SEC bk_err_t bk_adc_acquire(void)
 {
     return BK_OK;
 }
@@ -53,12 +53,12 @@ bk_err_t bk_adc_stop(void)
     return BK_OK;
 }
 
-bk_err_t bk_adc_start(void)
+__IRAM_SEC bk_err_t bk_adc_start(void)
 {
     return BK_OK;
 }
 
-bk_err_t bk_adc_enable_bypass_clalibration(void)
+__IRAM_SEC bk_err_t bk_adc_enable_bypass_clalibration(void)
 {
     return BK_OK;
 }
@@ -68,7 +68,7 @@ bk_err_t bk_adc_disable_bypass_clalibration(void)
     return BK_OK;
 }
 
-bk_err_t bk_adc_set_config(adc_config_t *config)
+__IRAM_SEC bk_err_t bk_adc_set_config(adc_config_t *config)
 {
     #if CONFIG_SARADC_V1P2_COMPATIBLE_MODE
     s_current_channel_id = config->chan;
@@ -88,7 +88,7 @@ bk_err_t bk_adc_set_channel(adc_chan_t adc_chan)
     #endif
 }
 
-bk_err_t bk_adc_read_raw(uint16_t* buf, uint32_t size, uint32_t timeout)
+__IRAM_SEC bk_err_t bk_adc_read_raw(uint16_t* buf, uint32_t size, uint32_t timeout)
 {
     #if CONFIG_SARADC_V1P2_COMPATIBLE_MODE
     return bk_adc_channel_raw_read(s_current_channel_id, buf, size, timeout);

@@ -74,7 +74,7 @@ int bk_update_tick(uint32_t tick)
 	return 0;
 }
 
-uint64_t bk_get_tick(void)
+ __IRAM_SEC uint64_t bk_get_tick(void)
 {
 	if(platform_is_in_interrupt_context() == RTOS_SUCCESS) {
 		return xTaskGetTickCountFromISR();
@@ -83,12 +83,12 @@ uint64_t bk_get_tick(void)
 	}
 }
 
-uint32_t bk_get_second(void)
+__IRAM_SEC uint32_t bk_get_second(void)
 {
 	return (bk_get_tick() / bk_get_ticks_per_second());
 }
 
-uint32_t bk_get_ticks_per_second(void)
+__IRAM_SEC uint32_t bk_get_ticks_per_second(void)
 {
 	return configTICK_RATE_HZ;
 }

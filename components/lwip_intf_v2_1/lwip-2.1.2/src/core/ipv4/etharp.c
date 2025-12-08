@@ -245,7 +245,7 @@ int get_etharp_timeout (void)
  * This function should be called every ARP_TMR_INTERVAL milliseconds (1 second),
  * in order to expire entries in the ARP table.
  */
-void
+__IRAM_SEC void
 etharp_tmr(void)
 {
   int i;

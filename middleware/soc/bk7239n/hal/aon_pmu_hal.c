@@ -82,7 +82,7 @@ uint32_t aon_pmu_hal_get_adc_cal()
 	return aon_pmu_ll_get_r7d_adc_cal();
 }
 
-uint32_t aon_pmu_hal_get_dpll_unlock(uint32_t *unlockL, uint32_t *unlockH)
+__IRAM_SEC uint32_t aon_pmu_hal_get_dpll_unlock(uint32_t *unlockL, uint32_t *unlockH)
 {
     aon_pmu_r7d_t r7d;
 
@@ -129,7 +129,7 @@ void aon_pmu_hal_rtc_samp_sel(uint32_t value)
 	aon_pmu_ll_set_r2_rtc_value_samp_sel(value);
 }
 
-uint32_t aon_pmu_hal_rtc_get_samp_sel(void)
+__IRAM_SEC uint32_t aon_pmu_hal_rtc_get_samp_sel(void)
 {
 	return aon_pmu_ll_get_r2_rtc_value_samp_sel();
 }
@@ -338,7 +338,7 @@ uint32_t aon_pmu_hal_gpio_clksel_get(void)
 	return aon_pmu_ll_get_r41_gpio_clksel();
 }
 
-void aon_pmu_hal_set_halt_cpu(uint32_t value)
+__IRAM_SEC void aon_pmu_hal_set_halt_cpu(uint32_t value)
 {
 	aon_pmu_ll_set_r41_halt_cpu(value);
 }

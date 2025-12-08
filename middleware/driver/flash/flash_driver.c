@@ -64,7 +64,7 @@ typedef struct {
 	}\
 } while(0)
 
-static const flash_config_t flash_config[] = {
+__DRAM_SEC static const flash_config_t flash_config[] = {
 	/* flash_id, flash_size,    status_reg_size, line_mode,            cmp_post, protect_post, protect_mask, protect_all, protect_none, unprotect_last_block. quad_en_post, quad_en_val, coutinuous_read_mode_bits_val   */
 	{0x1C7016,   FLASH_SIZE_4M,   1,             FLASH_LINE_MODE_FOUR,   0,        2,            0x1F,         0x1F,        0x00,         0x01B,                9,            1,           0xA5,                         }, //en_25qh32b
 	{0x1C7015,   FLASH_SIZE_2M,   1,             FLASH_LINE_MODE_FOUR,   0,        2,            0x1F,         0x1F,        0x00,         0x0d,                 9,            1,           0xA5,                         }, //en_25qh16b
@@ -468,7 +468,7 @@ static bk_err_t flash_erase_block(uint32_t address, int type)
 	return BK_OK;
 }
 
-static flash_line_mode_t flash_set_line_mode(flash_line_mode_t line_mode)
+__IRAM_SEC static flash_line_mode_t flash_set_line_mode(flash_line_mode_t line_mode)
 {
 	uint32_t int_level = flash_enter_critical();
 
@@ -998,7 +998,7 @@ bk_err_t bk_flash_register_ps_resume_callback(flash_ps_callback_t ps_resume_cb)
 	return BK_OK;
 }
 
-bk_err_t bk_flash_power_saving_enter(void)
+__IRAM_SEC bk_err_t bk_flash_power_saving_enter(void)
 {
 	// save flash ctrl setting to flash_ctrl_context;
 	flash_set_line_mode(FLASH_LINE_MODE_TWO);
@@ -1006,7 +1006,7 @@ bk_err_t bk_flash_power_saving_enter(void)
 	return BK_OK;
 }
 
-bk_err_t bk_flash_power_saving_exit(void)
+__IRAM_SEC bk_err_t bk_flash_power_saving_exit(void)
 {
 	// restore flash ctrl setting from flash_ctrl_context;
 	// the restore API must run in SRAM/ITCM.

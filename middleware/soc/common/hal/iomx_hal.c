@@ -41,7 +41,7 @@ bk_err_t iomx_hal_deinit(void)
 	return BK_OK;
 }
 
-void iomx_hal_set_value(gpio_id_t id, uint32_t v)
+__IRAM_SEC void iomx_hal_set_value(gpio_id_t id, uint32_t v)
 {
 	iomx_ll_set_gpio_cfg_value(v, id);
 }
@@ -51,7 +51,7 @@ uint32_t iomx_hal_get_value(gpio_id_t id)
 	return iomx_ll_get_gpio_cfg_value(id);
 }
 
-bk_err_t iomx_hal_set_func_code(gpio_id_t gpio_id, uint32_t code)
+__IRAM_SEC bk_err_t iomx_hal_set_func_code(gpio_id_t gpio_id, uint32_t code)
 {
 	iomx_ll_set_gpio_function_sel(code, gpio_id);
 
@@ -63,14 +63,14 @@ uint32_t iomx_hal_get_func_code(gpio_id_t gpio_id)
 	return iomx_ll_get_gpio_function_sel(gpio_id);
 }
 
-bk_err_t iomx_hal_pull_up_enable(gpio_id_t gpio_id, uint32 enable)
+__IRAM_SEC bk_err_t iomx_hal_pull_up_enable(gpio_id_t gpio_id, uint32 enable)
 {
 	iomx_ll_set_gpio_pull_mode(enable, gpio_id);
 
 	return BK_OK;
 }
 
-bk_err_t iomx_hal_pull_enable(gpio_id_t gpio_id, uint32 enable)
+__IRAM_SEC bk_err_t iomx_hal_pull_enable(gpio_id_t gpio_id, uint32 enable)
 {
 	iomx_ll_set_gpio_pull_ena(enable, gpio_id);
 
@@ -109,7 +109,7 @@ bk_err_t iomx_hal_get_output(gpio_id_t gpio_id)
 }
 
 
-bk_err_t iomx_hal_set_int_type(gpio_id_t gpio_id, uint32_t type)
+__IRAM_SEC bk_err_t iomx_hal_set_int_type(gpio_id_t gpio_id, uint32_t type)
 {
 	iomx_ll_set_gpio_interrupt_type(type, gpio_id);
 
@@ -124,7 +124,7 @@ bk_err_t iomx_hal_enable_interrupt(gpio_id_t gpio_id)
 	return BK_OK;
 }
 
-bk_err_t iomx_hal_enable_multi_interrupts(uint64_t gpio_idx)
+__IRAM_SEC bk_err_t iomx_hal_enable_multi_interrupts(uint64_t gpio_idx)
 {
 	IOMX_GPIO_FOREACH(i)
 	{
@@ -154,7 +154,7 @@ bk_err_t iomx_hal_get_interrupt_overview(void)
 	return iomx_ll_get_gpio_intsta_overview_value();
 }
 
-bk_err_t iomx_hal_bakup_configs(uint32_t *iomx_gpio_cfgs)
+__IRAM_SEC bk_err_t iomx_hal_bakup_configs(uint32_t *iomx_gpio_cfgs)
 {
 	if (!iomx_gpio_cfgs)
 	{

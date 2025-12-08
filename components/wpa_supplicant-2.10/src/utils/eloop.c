@@ -434,7 +434,7 @@ int eloop_signal_is_registered(int sig)
 	return hit_flag;
 }
 
-static void eloop_process_pending_signals(void)
+__IRAM_SEC static void eloop_process_pending_signals(void)
 {
 	int i, sig;
 	int sig_count;
@@ -636,7 +636,7 @@ void eloop_timeout_run(void)
 	}
 }
 
-void eloop_run(void)
+__IRAM_SEC void eloop_run(void)
 {
 	struct os_reltime tv, now;
 	int timeout_ms = BEKEN_WAIT_FOREVER;

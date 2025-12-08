@@ -118,20 +118,21 @@ SECTIONS
 	 * If excluded but not re-added to IRAM, their rodata may not be copied, leading to runtime errors.
 	 */
 	EXCLUDE_FILE (
+        mpu.c.obj
         tasks.c.obj
         queue.c.obj
         list.c.obj
         timers.c.obj
         port.c.obj
         rtos_pub.c.obj
-        heap_4.c.obj
         mem_arch.c.obj
+        str_arch.c.obj
         io_matrix_driver.c.obj
-        flash_driver.c.obj
         ckmn_driver.c.obj
+        ckmn_hal.c.obj
+        ana_rtc_driver.c.obj
         arch_interrupt.c.obj
         hal_machw.c.obj
-        interrupts.c.obj
         rw_task.c.obj
         ke_event.c.obj
         me_strategy.c.obj
@@ -139,34 +140,33 @@ SECTIONS
         vif_mgmt.c.obj
         rxl_cntrl.c.obj
         rxl_hwdesc.c.obj
-        mm_time.c.obj
+        rxu_cntrl.c.obj
+        mm_timer.c.obj
+        ke_timer.c.obj
+        co_list.c.obj
         rwnx.c.obj
         rwnx_rx.c.obj
         ps.c.obj
+        td.c.obj
         mm.c.obj
         rf_cntrl.c.obj
         mcc.c.obj
         phy_karst_bk7236.c.obj
         crm.c.obj
-        bk7236_cal.c.obj
-        manual_cal_bk7236.c.obj
+        bk7239n_cal.c.obj
+        manual_cal_bk7239n.c.obj
         bk_cal_common.c.obj
         nv_parameters.c.obj
-        macif_fhost.c.obj
         rc_driver.c.obj
         sys_wifi_driver.c.obj
-        wifi_v2.c.obj
         bk_feature.c.obj
         bk_pm_core.c.obj
         bk_pm_clock.c.obj
         bk_pm_debug.c.obj
         bk_pm_misc.c.obj
         bk_pm_power.c.obj
-        bk_pm_psram.c.obj
         bk_pm_sleep.c.obj
         bk_pm_wakeup_source.c.obj
-        bk_pm_client.c.obj
-        bk_pm_mailbox.c.obj
         bk_pm.c.obj
         sys_ps_driver.c.obj
         sys_pm_hal.c.obj
@@ -175,8 +175,7 @@ SECTIONS
         wifi_api_wrapper.c.obj
         bk_rf_adapter.c.obj
         bk_phy_adapter.c.obj
-        shell_task.c.obj
-        shell_uart.c.obj
+        bk_wifi_phy_api.c.obj
         uart_driver.c.obj
         uart_hal.c.obj
 #if CONFIG_WIFI_NON_STANDARD
@@ -184,13 +183,26 @@ SECTIONS
         txl_cntrl.c.obj
 #endif
         _aeabi_ldivmod.o
+        _aeabi_uldivmod.o
+        _arm_cmpsf2.o
+        _arm_cmpdf2.o
         _udivmoddi4.o
         _arm_addsubsf3.o
         _arm_muldivsf3.o
         _fixunssfdi.o
+        _fixunsdfdi.o
+        _fixdfdi.o
         _arm_muldivdf3.o
         _arm_addsubdf3.o
         _arm_fixunsdfsi.o
+        _arm_fixunssfsi.o
+        _arm_fixdfsi.o
+        lib_a-memcpy.o
+        lib_a-memset.o
+        lib_a-strcpy.o
+        lib_a-strncpy.o
+        lib_a-strlen-stub.o
+        lib_a-strncmp.o
 	) *(.text .text.* .rodata .rodata.*)
 #else
         *(.text)
@@ -302,20 +314,21 @@ SECTIONS
          * These files are placed in IRAM for better performance.
          * WARNING: Use wildcards carefully - mismatched patterns may cause rodata not to be copied.
          */
+        mpu.c.obj*(.text .text.* *.rodata *.rodata.*)
         tasks.c.obj*(.text .text.* *.rodata *.rodata.*)
         queue.c.obj*(.text .text.* *.rodata *.rodata.*)
         list.c.obj*(.text .text.* *.rodata *.rodata.*)
         timers.c.obj*(.text .text.* *.rodata *.rodata.*)
         port.c.obj*(.text .text.* *.rodata *.rodata.*)
         rtos_pub.c.obj*(.text .text.* *.rodata *.rodata.*)
-        heap_4.c.obj*(.text .text.* *.rodata *.rodata.*)
         mem_arch.c.obj*(.text .text.* *.rodata *.rodata.*)
+        str_arch.c.obj*(.text .text.* *.rodata *.rodata.*)
         io_matrix_driver.c.obj*(.text .text.* *.rodata *.rodata.*)
-        flash_driver.c.obj*(.text .text.* *.rodata *.rodata.*)
         ckmn_driver.c.obj*(.text .text.* *.rodata *.rodata.*)
+        ckmn_hal.c.obj*(.text .text.* *.rodata *.rodata.*)
+        ana_rtc_driver.c.obj*(.text .text.* *.rodata *.rodata.*)
         arch_interrupt.c.obj*(.text .text.* *.rodata *.rodata.*)
         hal_machw.c.obj*(.text .text.* *.rodata *.rodata.*)
-        interrupts.c.obj*(.text .text.* *.rodata *.rodata.*)
         rw_task.c.obj*(.text .text.* *.rodata *.rodata.*)
         ke_event.c.obj*(.text .text.* *.rodata *.rodata.*)
         me_strategy.c.obj*(.text .text.* *.rodata *.rodata.*)
@@ -323,34 +336,33 @@ SECTIONS
         vif_mgmt.c.obj*(.text .text.* *.rodata *.rodata.*)
         rxl_cntrl.c.obj*(.text .text.* *.rodata *.rodata.*)
         rxl_hwdesc.c.obj*(.text .text.* *.rodata *.rodata.*)
-        mm_time.c.obj*(.text .text.* *.rodata *.rodata.*)
+        rxu_cntrl.c.obj*(.text .text.* *.rodata *.rodata.*)
+        mm_timer.c.obj*(.text .text.* *.rodata *.rodata.*)
+        ke_timer.c.obj*(.text .text.* *.rodata *.rodata.*)
+        co_list.c.obj*(.text .text.* *.rodata *.rodata.*)
         rwnx.c.obj*(.text .text.* *.rodata *.rodata.*)
         rwnx_rx.c.obj*(.text .text.* *.rodata *.rodata.*)
         ps.c.obj*(.text .text.* *.rodata *.rodata.*)
+        td.c.obj*(.text .text.* *.rodata *.rodata.*)
         mm.c.obj*(.text .text.* *.rodata *.rodata.*)
         rf_cntrl.c.obj*(.text .text.* *.rodata *.rodata.*)
         mcc.c.obj*(.text .text.* *.rodata *.rodata.*)
         phy_karst_bk7236.c.obj*(.text .text.* *.rodata *.rodata.*)
         crm.c.obj*(.text .text.* *.rodata *.rodata.*)
-        bk7236_cal.c.obj*(.text .text.* *.rodata *.rodata.*)
-        manual_cal_bk7236.c.obj*(.text .text.* *.rodata *.rodata.*)
+        bk7239n_cal.c.obj*(.text .text.* *.rodata *.rodata.*)
+        manual_cal_bk7239n.c.obj*(.text .text.* *.rodata *.rodata.*)
         bk_cal_common.c.obj*(.text .text.* *.rodata *.rodata.*)
         nv_parameters.c.obj*(.text .text.* *.rodata *.rodata.*)
-        macif_fhost.c.obj*(.text .text.* *.rodata *.rodata.*)
         rc_driver.c.obj*(.text .text.* *.rodata *.rodata.*)
         sys_wifi_driver.c.obj*(.text .text.* *.rodata *.rodata.*)
-        wifi_v2.c.obj*(.text .text.* *.rodata *.rodata.*)
         bk_feature.c.obj*(.text .text.* *.rodata *.rodata.*)
         bk_pm_core.c.obj*(.text .text.* *.rodata *.rodata.*)
         bk_pm_clock.c.obj*(.text .text.* *.rodata *.rodata.*)
         bk_pm_debug.c.obj*(.text .text.* *.rodata *.rodata.*)
         bk_pm_misc.c.obj*(.text .text.* *.rodata *.rodata.*)
         bk_pm_power.c.obj*(.text .text.* *.rodata *.rodata.*)
-        bk_pm_psram.c.obj*(.text .text.* *.rodata *.rodata.*)
         bk_pm_sleep.c.obj*(.text .text.* *.rodata *.rodata.*)
         bk_pm_wakeup_source.c.obj*(.text .text.* *.rodata *.rodata.*)
-        bk_pm_client.c.obj*(.text .text.* *.rodata *.rodata.*)
-        bk_pm_mailbox.c.obj*(.text .text.* *.rodata *.rodata.*)
         bk_pm.c.obj*(.text .text.* *.rodata *.rodata.*)
         sys_ps_driver.c.obj*(.text .text.* *.rodata *.rodata.*)
         sys_pm_hal.c.obj*(.text .text.* *.rodata *.rodata.*)
@@ -359,8 +371,7 @@ SECTIONS
         wifi_api_wrapper.c.obj*(.text .text.* *.rodata *.rodata.*)
         bk_rf_adapter.c.obj*(.text .text.* *.rodata *.rodata.*)
         bk_phy_adapter.c.obj*(.text .text.* *.rodata *.rodata.*)
-        shell_task.c.obj*(.text .text.* *.rodata *.rodata.*)
-        shell_uart.c.obj*(.text .text.* *.rodata *.rodata.*)
+        bk_wifi_phy_api.c.obj*(.text .text.* *.rodata *.rodata.*)
         uart_driver.c.obj*(.text .text.* *.rodata *.rodata.*)
         uart_hal.c.obj*(.text .text.* *.rodata *.rodata.*)
 #if CONFIG_WIFI_NON_STANDARD
@@ -368,13 +379,26 @@ SECTIONS
         txl_cntrl.c.obj*(.text .text.* *.rodata *.rodata.*)
 #endif
         _aeabi_ldivmod.o*(.text .text.* *.rodata *.rodata.*)
+        _aeabi_uldivmod.o*(.text .text.* *.rodata *.rodata.*)
+        _arm_cmpsf2.o*(.text .text.* *.rodata *.rodata.*)
+        _arm_cmpdf2.o*(.text .text.* *.rodata *.rodata.*)
         _udivmoddi4.o*(.text .text.* *.rodata *.rodata.*)
         _arm_addsubsf3.o*(.text .text.* *.rodata *.rodata.*)
         _arm_muldivsf3.o*(.text .text.* *.rodata *.rodata.*)
         _fixunssfdi.o*(.text .text.* *.rodata *.rodata.*)
+        _fixunsdfdi.o*(.text .text.* *.rodata *.rodata.*)
+        _fixdfdi.o*(.text .text.* *.rodata *.rodata.*)
         _arm_muldivdf3.o*(.text .text.* *.rodata *.rodata.*)
         _arm_addsubdf3.o*(.text .text.* *.rodata *.rodata.*)
         _arm_fixunsdfsi.o*(.text .text.* *.rodata *.rodata.*)
+        _arm_fixunssfsi.o*(.text .text.* *.rodata *.rodata.*)
+        _arm_fixdfsi.o*(.text .text.* *.rodata *.rodata.*)
+        lib_a-memcpy.o*(.text .text.* *.rodata *.rodata.*)
+        lib_a-memset.o*(.text .text.* *.rodata *.rodata.*)
+        lib_a-strcpy.o*(.text .text.* *.rodata *.rodata.*)
+        lib_a-strncpy.o*(.text .text.* *.rodata *.rodata.*)
+        lib_a-strlen-stub.o*(.text .text.* *.rodata *.rodata.*)
+        lib_a-strncmp.o*(.text .text.* *.rodata *.rodata.*)
 #endif
         . = ALIGN(4);
         _iram_end_dummy_ = .;

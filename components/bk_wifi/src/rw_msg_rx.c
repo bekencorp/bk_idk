@@ -494,12 +494,12 @@ void mhdr_set_station_status(wifi_linkstate_reason_t info)
 #endif
 }
 
-wifi_linkstate_reason_t mhdr_get_station_status(void)
+__IRAM_SEC wifi_linkstate_reason_t mhdr_get_station_status(void)
 {
 	return connect_flag;
 }
 
-bool mhdr_station_status_not_connected(void)
+__IRAM_SEC bool mhdr_station_status_not_connected(void)
 {
     wifi_linkstate_reason_t info = mhdr_get_station_status();
 
@@ -1625,7 +1625,7 @@ void rwnx_set_wifi_rlk_start(uint32_t start)
 	RWNX_LOGD("%s start %d\r\n",__func__,wifi_rlk_info.wifi_rlk_start);
 }
 
-uint32_t rwnx_get_wifi_rlk_start(void)
+__IRAM_SEC uint32_t rwnx_get_wifi_rlk_start(void)
 {
 	RWNX_LOGD("%s start %d\r\n",__func__,wifi_rlk_info.wifi_rlk_start);
 	return wifi_rlk_info.wifi_rlk_start;

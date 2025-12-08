@@ -78,7 +78,7 @@
 #define LWIP_MEMPOOL(name,num,size,desc) LWIP_MEMPOOL_DECLARE(name,num,size,desc)
 #include "lwip/priv/memp_std.h"
 
-const struct memp_desc *const memp_pools[MEMP_MAX] = {
+__DRAM_SEC const struct memp_desc *const memp_pools[MEMP_MAX] = {
 #define LWIP_MEMPOOL(name,num,size,desc) &memp_ ## name,
 #include "lwip/priv/memp_std.h"
 };
@@ -240,7 +240,7 @@ memp_init(void)
 #endif /* MEMP_OVERFLOW_CHECK >= 2 */
 }
 
-static void *
+__IRAM_SEC static void *
 #if !MEMP_OVERFLOW_CHECK
 do_memp_malloc_pool(const struct memp_desc *desc)
 #else
@@ -336,7 +336,7 @@ memp_malloc_pool_fn(const struct memp_desc *desc, const char *file, const int li
  *
  * @return a pointer to the allocated memory or a NULL pointer on error
  */
-void *
+__IRAM_SEC void *
 #if !MEMP_OVERFLOW_CHECK
 memp_malloc(memp_t type)
 #else
@@ -420,7 +420,7 @@ memp_free_pool(const struct memp_desc *desc, void *mem)
  * @param type the pool where to put mem
  * @param mem the memp element to free
  */
-void
+__IRAM_SEC void
 memp_free(memp_t type, void *mem)
 {
 #ifdef LWIP_HOOK_MEMP_AVAILABLE

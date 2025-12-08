@@ -30,7 +30,7 @@ static uint32_t s_pm_psram_ctrl_state     = 0;
 static uint32_t s_pm_cp1_psram_malloc_count_state       = 0;
 #endif
 
-bk_err_t bk_pm_module_vote_psram_ctrl(pm_power_psram_module_name_e module,pm_power_module_state_e power_state)
+__IRAM_SEC bk_err_t bk_pm_module_vote_psram_ctrl(pm_power_psram_module_name_e module,pm_power_module_state_e power_state)
 {
 	bk_err_t ret = BK_OK;
 	GLOBAL_INT_DECLARATION();
@@ -93,7 +93,7 @@ bk_err_t pm_cp1_psram_malloc_state_get()
 	return BK_OK;
 }
 
-bk_err_t pm_psram_malloc_state_and_power_ctrl()
+__IRAM_SEC bk_err_t pm_psram_malloc_state_and_power_ctrl()
 {
 #if CONFIG_PSRAM_AS_SYS_MEMORY
 	uint32_t cp0_psram_malloc_count = 0;

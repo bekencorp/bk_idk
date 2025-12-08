@@ -126,12 +126,12 @@ __IRAM_SEC uint64_t bk_aon_rtc_get_us(void)
     return time_us;
 }
 
-uint64_t bk_aon_rtc_get_ms(void)
+__IRAM_SEC uint64_t bk_aon_rtc_get_ms(void)
 {
-    uint64_t time_tick = ANA_RTC_CURRENT_TICK;
-    uint64_t time_diff = (time_tick - s_time_base_tick) / bk_rtc_get_ms_tick_count();
-    uint64_t time_us = s_time_base_us + time_diff;
-    return time_us;
+	uint64_t time_tick = ANA_RTC_CURRENT_TICK;
+	uint64_t time_diff = (time_tick - s_time_base_tick) / bk_rtc_get_ms_tick_count();
+	uint64_t time_us = s_time_base_us + time_diff;
+	return time_us;
 }
 
 #if CONFIG_ROSC_COMPENSATION
@@ -654,7 +654,7 @@ static bk_err_t ana_rtc_isr_handler(void *args)
     return BK_OK;
 }
 
-static void ana_rtc1_isr_handler(void)
+__IRAM_SEC static void ana_rtc1_isr_handler(void)
 {
     ana_rtc_isr_handler(AON_RTC_ID_1);
 }

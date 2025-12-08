@@ -1494,7 +1494,7 @@ extern gpio_id_t bk_uart_get_rx_gpio(uart_id_t id);
 
 static void shell_rx_wakeup(int gpio_id);
 
-static void shell_power_save_enter(void)
+__IRAM_SEC static void shell_power_save_enter(void)
 {
 	if(log_tx_init_ok)
 	{
@@ -1520,7 +1520,7 @@ static void shell_power_save_enter(void)
 	}
 }
 
-static void shell_power_save_exit(void)
+__IRAM_SEC static void shell_power_save_exit(void)
 {
 	if(cmd_dev->dev_type == SHELL_DEV_UART)
 	{

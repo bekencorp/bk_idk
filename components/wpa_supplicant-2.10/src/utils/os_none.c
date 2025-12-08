@@ -216,7 +216,7 @@ int os_get_time(struct os_time *t)
 }
 
 
-int os_get_reltime(struct os_reltime *t)
+__IRAM_SEC int os_get_reltime(struct os_reltime *t)
 {
 	t->sec = bk_get_second();
 	t->usec = (bk_get_tick() * rtos_get_ms_per_tick() * 1000) % 1000000;

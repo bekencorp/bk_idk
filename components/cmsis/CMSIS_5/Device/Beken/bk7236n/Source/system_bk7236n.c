@@ -24,6 +24,9 @@
   #include "partition_star.h"
 #endif
 
+#if CONFIG_DEEP_LV
+#include "deep_lv.h"
+#endif
 /*----------------------------------------------------------------------------
   Define clocks
  *----------------------------------------------------------------------------*/
@@ -91,7 +94,7 @@ __IRAM_SEC void SystemInit_iram (void)
 
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
 #if CONFIG_SPE
-	TZ_SAU_Setup();
+	TZ_SAU_Setup_iram();
 #endif
 #endif
 
@@ -114,6 +117,10 @@ __IRAM_SEC void SystemInit_iram (void)
 #if (CONFIG_ICACHE)
 	if (SCB->CLIDR & SCB_CLIDR_IC_Msk)
 		SCB_EnableICache();
+#endif
+
+#if (CONFIG_DEEP_LV)
+    dlv_startup();
 #endif
 }
 

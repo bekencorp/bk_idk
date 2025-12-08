@@ -55,17 +55,17 @@ static int64_t s_rosc_freq_hz_fix = ROSC_CLK_32K;
 static int32_t s_rosc_ppm = ROSC_CKMN_PPM;
 
 
-double bk_rosc_32k_get_freq(void)
+__IRAM_SEC double bk_rosc_32k_get_freq(void)
 {
 	return s_rosc_freq_hz;
 }
 
-bk_err_t bk_rosc_32k_get_ppm(void)
+__IRAM_SEC bk_err_t bk_rosc_32k_get_ppm(void)
 {
 	return s_rosc_ppm;
 }
 
-static void rosc_ckmn_isr(void)
+__IRAM_SEC static void rosc_ckmn_isr(void)
 {
 	// GPIO_UP(16); // 1us
 	uint32_t cnt_32k = bk_ckmn_get_rc32k_count();

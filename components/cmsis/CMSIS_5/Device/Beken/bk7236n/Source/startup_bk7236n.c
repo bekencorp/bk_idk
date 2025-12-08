@@ -377,12 +377,11 @@ static inline void boot_mem_check(void)
  *----------------------------------------------------------------------------*/
 __NO_RETURN ENTRY_SECTION void Reset_Handler(void)
 {
-#if CONFIG_DEEP_LV
+    #if CONFIG_DEEP_LV
     if (dlv_is_startup()) {
         __set_MSPLIM((uint32_t)(&__STACK_LIMIT));
         /* CMSIS System Initialization */
-        SystemInit_iram();
-        dlv_startup();
+                SystemInit_iram();
     }
 #endif
 

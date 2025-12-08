@@ -79,7 +79,7 @@ uint32 sys_drv_get_jtag_mode(void)
 	return ret;
 }
 
-void sys_drv_en_tempdet(uint32_t value)
+__IRAM_SEC void sys_drv_en_tempdet(uint32_t value)
 {
     uint32_t int_level = sys_drv_enter_critical();
 

@@ -124,7 +124,7 @@ static int ip_reass_free_complete_datagram(struct ip_reassdata *ipr, struct ip_r
  *
  * Should be called every 1000 msec (defined by IP_TMR_INTERVAL).
  */
-void
+__IRAM_SEC void
 ip_reass_tmr(void)
 {
   struct ip_reassdata *r, *prev = NULL;

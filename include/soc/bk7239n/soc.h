@@ -91,8 +91,10 @@ extern "C" {
 
 #if (CONFIG_RELEASE_IRAM)
 #define __IRAM_SEC
+#define __DRAM_SEC
 #else
 #define __IRAM_SEC __attribute__((section(".iram")))
+#define __DRAM_SEC __attribute__((section(".dtcm_sec_data "))) 
 #endif
 
 #ifdef __cplusplus

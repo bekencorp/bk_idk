@@ -182,12 +182,12 @@ bk_err_t bk_gpio_disable_pull(gpio_id_t gpio_id)
 	return bk_iomx_disable_pull(gpio_id);
 }
 
-bk_err_t bk_gpio_pull_up(gpio_id_t gpio_id)
+__IRAM_SEC bk_err_t bk_gpio_pull_up(gpio_id_t gpio_id)
 {
 	return bk_iomx_pull_up(gpio_id);
 }
 
-bk_err_t bk_gpio_pull_down(gpio_id_t gpio_id)
+__IRAM_SEC bk_err_t bk_gpio_pull_down(gpio_id_t gpio_id)
 {
 	return bk_iomx_pull_down(gpio_id);
 }
@@ -260,7 +260,7 @@ bk_err_t bk_gpio_set_config(gpio_id_t gpio_id, const gpio_config_t *config)
 
 /* Enable GPIO  interrupt.
 */
-bk_err_t bk_gpio_register_isr(gpio_id_t gpio_id, gpio_isr_t isr)
+__IRAM_SEC bk_err_t bk_gpio_register_isr(gpio_id_t gpio_id, gpio_isr_t isr)
 {
 	return bk_iomx_register_isr(gpio_id, isr);
 }
@@ -281,7 +281,7 @@ bk_err_t bk_gpio_clear_interrupt(gpio_id_t gpio_id)
 	return bk_iomx_clear_interrupt(gpio_id);
 }
 
-bk_err_t bk_gpio_set_interrupt_type(gpio_id_t gpio_id, gpio_int_type_t type)
+__IRAM_SEC bk_err_t bk_gpio_set_interrupt_type(gpio_id_t gpio_id, gpio_int_type_t type)
 {
 	return bk_iomx_set_interrupt_type(gpio_id, type);
 }
@@ -565,7 +565,7 @@ IOMX_CODE_T contert_gpio_dev_to_iomx_code(gpio_dev_t dev)
 }
 
 static void gpio_low_power_config(void);
-bk_err_t gpio_enter_low_power(void *param)
+__IRAM_SEC bk_err_t gpio_enter_low_power(void *param)
 {
 	GPIO_LOGD("%s[+]\r\n", __func__);
 
@@ -646,7 +646,7 @@ static void gpio_low_power_config(void)
 	skip_io |= s_gpio_is_lowpower_keep_status;
 #endif
 
-	gpio_hal_switch_to_low_power_status(skip_io);
+	gpio_hal_switch_to_low_power_status(skip_io|0x3);
 }
 
 #if CONFIG_GPIO_WAKEUP_SUPPORT
@@ -671,7 +671,7 @@ __IRAM_SEC bk_err_t gpio_enable_interrupt_mult_for_wake(void)
 	return iomx_enable_multi_interrupts(s_gpio_is_setted_wake_status);
 }
 
-static void gpio_set_wakeup_config(gpio_id_t gpio_id, gpio_int_type_t int_type)
+__IRAM_SEC static void gpio_set_wakeup_config(gpio_id_t gpio_id, gpio_int_type_t int_type)
 {
 	// setup gpio as input mode
 	bk_iomx_set_value(gpio_id, GPIO_REG_DEFAULT_VALUE);

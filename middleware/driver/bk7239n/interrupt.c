@@ -77,13 +77,13 @@ void __attribute__ ((interrupt)) ENCP_NSEC_Handler(void)
 }
 
 extern uint32_t     g_wdt_handler_lr;
-void __attribute__ ((interrupt)) TIMER0_Handler(void)
+__IRAM_SEC void __attribute__ ((interrupt)) TIMER0_Handler(void)
 {
 	g_wdt_handler_lr = __get_LR();
 	ARCH_ISR_HANDLER(3);
 }
 
-void __attribute__ ((interrupt)) UART0_Handler(void)
+__IRAM_SEC void __attribute__ ((interrupt)) UART0_Handler(void)
 {
 	ARCH_ISR_HANDLER(4);
 }
@@ -163,7 +163,7 @@ void __attribute__ ((interrupt)) Anti_Tamper_Handler(void)
 	ARCH_ISR_HANDLER(19);
 }
 
-void __attribute__ ((interrupt)) CKMN_Handler(void)
+__IRAM_SEC void __attribute__ ((interrupt)) CKMN_Handler(void)
 {
 	ARCH_ISR_HANDLER(21);
 }
@@ -193,7 +193,7 @@ void __attribute__ ((interrupt)) MAC_INT_TX_RX_MISC_Handler(void)
 	ARCH_ISR_HANDLER(32);
 }
 
-void __attribute__ ((interrupt)) MAC_INT_RX_TRIGGER_Handler(void)
+__IRAM_SEC void __attribute__ ((interrupt)) MAC_INT_RX_TRIGGER_Handler(void)
 {
 	ARCH_ISR_HANDLER(33);
 }
@@ -208,7 +208,7 @@ void __attribute__ ((interrupt)) MAC_INT_PORT_TRIGGER_Handler(void)
 	ARCH_ISR_HANDLER(35);
 }
 
-void __attribute__ ((interrupt)) MAC_INT_GEN_Handler(void)
+__IRAM_SEC void __attribute__ ((interrupt)) MAC_INT_GEN_Handler(void)
 {
 	ARCH_ISR_HANDLER(36);
 }
@@ -253,7 +253,7 @@ void __attribute__ ((interrupt)) OTP_Handler(void)
 	ARCH_ISR_HANDLER(50);
 }
 
-void __attribute__ ((interrupt)) DPLL_UNLOCK_Handler(void)
+__IRAM_SEC void __attribute__ ((interrupt)) DPLL_UNLOCK_Handler(void)
 {
 	ARCH_ISR_HANDLER(51);
 }
@@ -273,7 +273,7 @@ void __attribute__ ((interrupt)) ANA_GPIO_Handler(void)
 	ARCH_ISR_HANDLER(58);
 }
 
-void __attribute__ ((interrupt)) ANA_RTC_Handler(void)
+__IRAM_SEC void __attribute__ ((interrupt)) ANA_RTC_Handler(void)
 {
 	ARCH_ISR_HANDLER(59);
 }

@@ -56,7 +56,7 @@ const int rwnx_tid2hwq[16] = {
 //#undef TRACE_TXQ
 //#define TRACE_TXQ(mod, ...) os_printf(__VA_ARGS__)
 
-static inline int rwnx_txq_sta_idx(STA_INF_PTR sta, u8 tid)
+__IRAM_SEC static inline int rwnx_txq_sta_idx(STA_INF_PTR sta, u8 tid)
 {
 #if !CONFIG_WFA_CERT
 	/* For Non WFA Certification, SW only use one tid */
@@ -73,7 +73,7 @@ static inline int rwnx_txq_vif_idx(VIF_INF_PTR vif, u8 type)
 	return NX_FIRST_VIF_TXQ_IDX + mac_vif_mgmt_get_index(vif) + (type * NX_VIRT_DEV_MAX);
 }
 
-struct rwnx_txq *rwnx_txq_sta_get(STA_INF_PTR sta, u8 tid)
+__IRAM_SEC struct rwnx_txq *rwnx_txq_sta_get(STA_INF_PTR sta, u8 tid)
 {
 	if (tid >= NX_NB_TXQ_PER_STA)
 		tid = 0;
@@ -89,7 +89,7 @@ struct rwnx_txq *rwnx_txq_sta_get(STA_INF_PTR sta, u8 tid)
 	return &g_rwnx_hw.txq[rwnx_txq_sta_idx(sta, tid)];
 }
 
-struct rwnx_txq *rwnx_txq_vif_get(VIF_INF_PTR vif, u8 type)
+__IRAM_SEC struct rwnx_txq *rwnx_txq_vif_get(VIF_INF_PTR vif, u8 type)
 {
 	if (type > NX_UNK_TXQ_TYPE)
 		type = NX_BCMC_TXQ_TYPE;
@@ -515,7 +515,7 @@ void rwnx_txq_cleanup_timer_cb(void *dummy)
 		rtos_stop_oneshot_timer(&rwnx_hw->txq_cleanup);
 }
 
-static void __rwnx_txq_cleanup_timer_cb(void *dummy0,void *dummy1)
+__IRAM_SEC static void __rwnx_txq_cleanup_timer_cb(void *dummy0,void *dummy1)
 {
 	bmsg_tx_drop_traffic_sender(0);
 }
@@ -656,7 +656,7 @@ static inline bool rwnx_txq_skb_ready(struct rwnx_txq *txq)
  * the TX queue is also added to HW queue list.
  * To be called with tx_lock hold
  */
-void rwnx_txq_start(struct rwnx_txq *txq, u16 reason)
+__IRAM_SEC void rwnx_txq_start(struct rwnx_txq *txq, u16 reason)
 {
 	BK_ASSERT(txq != NULL); /* ASSERT VERIFIED */
 
@@ -713,7 +713,7 @@ void rwnx_txq_stop(struct rwnx_txq *txq, u16 reason)
  * added to the HW queue list
  * To be called with tx_lock hold
  */
-void rwnx_txq_sta_start(STA_INF_PTR rwnx_sta, u16 reason)
+__IRAM_SEC void rwnx_txq_sta_start(STA_INF_PTR rwnx_sta, u16 reason)
 {
 	struct rwnx_txq *txq;
 	int tid;
@@ -755,7 +755,7 @@ void rwnx_txq_sta_stop(STA_INF_PTR rwnx_sta, u16 reason)
 		rwnx_txq_stop(txq, reason);
 }
 
-static inline
+__IRAM_SEC static inline
 void rwnx_txq_vif_for_each_sta(VIF_INF_PTR rwnx_vif,
 							   void (*f)(STA_INF_PTR , u16),
 							   u16 reason)
@@ -800,7 +800,7 @@ void rwnx_txq_vif_for_each_sta(VIF_INF_PTR rwnx_vif,
  * reason @reason
  * Take tx_lock
  */
-void rwnx_txq_vif_start(VIF_INF_PTR rwnx_vif, u16 reason)
+__IRAM_SEC void rwnx_txq_vif_start(VIF_INF_PTR rwnx_vif, u16 reason)
 {
 	struct rwnx_txq *txq;
 
@@ -1141,7 +1141,7 @@ void rwnx_hwq_process_all(int dummy)
  * *
  * Loop over all HWQ, and returns true if any hwq needs processing
  */
-bool rwnx_any_hwq_need_processing()
+__IRAM_SEC bool rwnx_any_hwq_need_processing()
 {
 	int id;
 	for (id = ARRAY_SIZE(g_rwnx_hw.hwq) - 1; id >= 0 ; id--) {

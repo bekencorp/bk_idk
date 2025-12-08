@@ -210,7 +210,7 @@ bk_err_t bk_iomx_set_capacity(gpio_id_t gpio_id, uint32 capacity)
 
 /* Enable GPIO  interrupt.
 */
-bk_err_t bk_iomx_register_isr(gpio_id_t gpio_id, gpio_isr_t isr)
+__IRAM_SEC bk_err_t bk_iomx_register_isr(gpio_id_t gpio_id, gpio_isr_t isr)
 {
 	IOMX_RETURN_ON_INVALID_ID(gpio_id);
 

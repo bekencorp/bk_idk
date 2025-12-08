@@ -81,7 +81,7 @@ dev_clk_dco_div_t sys_drv_get_dco_div(void)
 
 /*clock power control end*/
 
-void sys_drv_sadc_pwr_up(void)
+__IRAM_SEC void sys_drv_sadc_pwr_up(void)
 {
     uint32_t int_level = sys_drv_enter_critical();
 

@@ -305,7 +305,7 @@ bk_err_t bk_sensor_deinit(void)
 	return ret;
 }
 
-int bk_sensor_send_msg(uint32_t msg_type)
+__IRAM_SEC int bk_sensor_send_msg(uint32_t msg_type)
 {
 	bk_err_t ret = BK_FAIL;
 

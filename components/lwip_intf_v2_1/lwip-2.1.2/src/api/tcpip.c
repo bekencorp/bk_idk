@@ -123,7 +123,7 @@ again:
  *
  * @param arg unused argument
  */
-static void
+__IRAM_SEC static void
 tcpip_thread(void *arg)
 {
   struct tcpip_msg *msg;

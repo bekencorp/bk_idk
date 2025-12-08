@@ -95,7 +95,7 @@ __IRAM_SEC uint32_t dlv_is_startup_iram(void)
 
 __IRAM_SEC void dlv_startup(void)
 {
-	uint32_t dlv_startup = aon_pmu_hal_get_dlv_startup();
+	uint32_t dlv_startup = aon_pmu_hal_get_dlv_startup_iram();
 	if (dlv_startup) {
 		aon_pmu_hal_set_dlv_startup(0);
 	}

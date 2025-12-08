@@ -517,7 +517,7 @@ bool bk_timer_is_interrupt_triggered(timer_id_t timer_id)
     return timer_hal_is_interrupt_triggered(&s_timer.hal, timer_id, int_status);
 }
 
-uint32_t timer_clear_isr_status(void)
+__IRAM_SEC uint32_t timer_clear_isr_status(void)
 {
 	uint32_t int_status;
     timer_hal_t *hal = &s_timer.hal;
@@ -528,7 +528,7 @@ uint32_t timer_clear_isr_status(void)
 	return int_status;
 }
 
-static void timer_isr(void)
+__IRAM_SEC static void timer_isr(void)
 {
     uint32_t int_status;
     timer_hal_t *hal = &s_timer.hal;

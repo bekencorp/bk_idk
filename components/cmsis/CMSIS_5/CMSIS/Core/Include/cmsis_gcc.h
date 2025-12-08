@@ -152,10 +152,34 @@ __STATIC_FORCEINLINE void __tcm_start(void)
 }
 #endif
 
+/* Standard memcpy implementation */
+__STATIC_FORCEINLINE void * __cmsis_memcpy(void *dest, const void *src, unsigned int n)
+{
+  unsigned char *d = (unsigned char *)dest;
+  const unsigned char *s = (const unsigned char *)src;
+
+  while (n--) {
+    *d++ = *s++;
+  }
+
+  return dest;
+}
+
+/* Standard memset implementation */
+__STATIC_FORCEINLINE void * __cmsis_memset(void *s, int c, unsigned int n)
+{
+  unsigned char *p = (unsigned char *)s;
+  unsigned char uc = (unsigned char)c;
+
+  while (n--) {
+    *p++ = uc;
+  }
+
+  return s;
+}
+
 __STATIC_FORCEINLINE __NO_RETURN void __cmsis_start(void)
 {
-  void * memcpy(void *, const void *, unsigned int);
-  void * memset(void *, int, unsigned int);
   extern void _start(void) __NO_RETURN;
 
   typedef struct {
@@ -175,11 +199,11 @@ __STATIC_FORCEINLINE __NO_RETURN void __cmsis_start(void)
   extern const __zero_table_t __zero_table_end__;
 
   for (__copy_table_t const* pTable = &__copy_table_start__; pTable < &__copy_table_end__; ++pTable) {
-    memcpy(pTable->dest, pTable->src, pTable->wlen * 4);
+    __cmsis_memcpy(pTable->dest, pTable->src, pTable->wlen * 4);
   }
 
   for (__zero_table_t const* pTable = &__zero_table_start__; pTable < &__zero_table_end__; ++pTable) {
-    memset(pTable->dest, 0, pTable->wlen * 4);
+    __cmsis_memset(pTable->dest, 0, pTable->wlen * 4);
   }
 
 #if (CONFIG_SOC_SMP)

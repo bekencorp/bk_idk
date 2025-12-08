@@ -98,7 +98,7 @@ const UINT32 pwr_gain_base_gain_2g = 0x24E3FC00;//0x00233C00;
  */
 const UINT32 pwr_gain_base_gain_5g = 0x80017C00;
 #define TPC_PAMAP_TAB_LEN			 (128)
-const PWR_REGS cfg_tab[TPC_PAMAP_TAB_LEN] = {
+__DRAM_SEC const PWR_REGS cfg_tab[TPC_PAMAP_TAB_LEN] = {
 	// pregain
 	PWRI(0x1A),	//0	-25.75db
 	PWRI(0x1B),	//1	-25.5db

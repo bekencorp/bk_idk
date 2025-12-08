@@ -1161,7 +1161,7 @@ void sys_hal_sadc_int_disable(void)
     sys_hal_int_disable(SADC_INTERRUPT_CTRL_BIT);
 }
 
-void sys_hal_sadc_pwr_up(void)
+__IRAM_SEC void sys_hal_sadc_pwr_up(void)
 {
 	sys_ll_set_cpu_device_clk_enable_sadc_cken(1);
 }
@@ -1204,7 +1204,7 @@ void sys_hal_set_clksel_spi(uint32_t value)
     }
 }
 
-void sys_hal_en_tempdet(uint32_t value)
+__IRAM_SEC void sys_hal_en_tempdet(uint32_t value)
 {
     sys_ll_set_ana_reg5_en_temp(value);
 }
@@ -1660,6 +1660,19 @@ __IRAM_SEC void sys_hal_analog_set_iram(analog_reg_t reg, uint32_t value)
     analog_reg_address = SYS_ANA_REG0_ADDR + (reg - ANALOG_REG0) * 4;
 
 	sys_ll_set_analog_reg_value_iram(analog_reg_address, value);
+}
+
+__IRAM_SEC uint32_t sys_hal_analog_get_iram(analog_reg_t reg)
+{
+    uint32_t analog_reg_address;
+
+    if ((reg < ANALOG_REG0) || (reg >= ANALOG_MAX)) {
+        return 0;
+    }
+
+    analog_reg_address = SYS_ANA_REG0_ADDR + (reg - ANALOG_REG0) * 4;
+
+	return sys_ll_get_analog_reg_value_iram(analog_reg_address);
 }
 
 uint32_t sys_hal_analog_get(analog_reg_t reg)
@@ -2344,7 +2357,7 @@ void sys_hal_set_ana_reg8_spi_latch1v(uint32_t value)
 
 __IRAM_SEC void sys_hal_set_ana_reg8_spi_latch1v_iram(uint32_t value)
 {
-	sys_ll_set_ana_reg8_spi_latch1v(value);
+	sys_ll_set_ana_reg8_spi_latch1v_iram(value);
 }
 
 void sys_hal_set_ana_reg5_adc_div(uint32_t value)
@@ -2361,17 +2374,17 @@ void sys_hal_set_ana_reg5_rosc_disable(uint32_t value)
 	sys_ll_set_ana_reg5_rosc_disable(value);
 }
 
-void sys_hal_set_ana_reg7_timer_wkrstn(uint32_t value)
+__IRAM_SEC void sys_hal_set_ana_reg7_timer_wkrstn(uint32_t value)
 {
 	sys_ll_set_ana_reg7_timer_wkrstn(value);
 }
 
-void sys_hal_set_ana_reg8_rst_timerwks1v(uint32_t value)
+__IRAM_SEC void sys_hal_set_ana_reg8_rst_timerwks1v(uint32_t value)
 {
 	sys_ll_set_ana_reg8_rst_timerwks1v(value);
 }
 
-void sys_hal_set_ana_reg8_rst_gpiowks(uint32_t value)
+__IRAM_SEC void sys_hal_set_ana_reg8_rst_gpiowks(uint32_t value)
 {
 	sys_ll_set_ana_reg8_rst_gpiowks(value);
 }
@@ -2429,42 +2442,42 @@ __IRAM_SEC void sys_hal_set_ana_reg11_gpiowk(uint32_t value)
 	sys_ll_set_ana_reg11_gpiowk(value);
 }
 
-uint32_t sys_hal_get_ana_reg11_rtcsel(void)
+__IRAM_SEC uint32_t sys_hal_get_ana_reg11_rtcsel(void)
 {
 	return sys_ll_get_ana_reg11_rtcsel();
 }
 
-void sys_hal_set_ana_reg11_rtcsel(uint32_t value)
+__IRAM_SEC void sys_hal_set_ana_reg11_rtcsel(uint32_t value)
 {
 	sys_ll_set_ana_reg11_rtcsel(value);
 }
 
-uint32_t sys_hal_get_ana_reg11_timersel(void)
+__IRAM_SEC uint32_t sys_hal_get_ana_reg11_timersel(void)
 {
 	return sys_ll_get_ana_reg11_timersel();
 }
 
-void sys_hal_set_ana_reg11_timersel(uint32_t value)
+__IRAM_SEC void sys_hal_set_ana_reg11_timersel(uint32_t value)
 {
 	sys_ll_set_ana_reg11_timersel(value);
 }
 
-uint32_t sys_hal_get_ana_reg12_timersel(void)
+__IRAM_SEC uint32_t sys_hal_get_ana_reg12_timersel(void)
 {
 	return sys_ll_get_ana_reg12_timersel();
 }
 
-void sys_hal_set_ana_reg12_timersel(uint32_t value)
+__IRAM_SEC void sys_hal_set_ana_reg12_timersel(uint32_t value)
 {
 	sys_ll_set_ana_reg12_timersel(value);
 }
 
-uint32_t sys_hal_get_ana_reg13_rtcsel(void)
+__IRAM_SEC uint32_t sys_hal_get_ana_reg13_rtcsel(void)
 {
 	return sys_ll_get_ana_reg13_rtcsel();
 }
 
-void sys_hal_set_ana_reg13_rtcsel(uint32_t value)
+__IRAM_SEC void sys_hal_set_ana_reg13_rtcsel(uint32_t value)
 {
 	sys_ll_set_ana_reg13_rtcsel(value);
 }
@@ -2475,7 +2488,7 @@ static void sys_hal_delay(volatile uint32_t times)
         while(times--);
 }
 
-void sys_hal_adjust_dpll(void)
+__IRAM_SEC void sys_hal_adjust_dpll(void)
 {
     uint32_t unlock, unlockL = 0, unlockH = 0;
     int32_t dpll_band, count;

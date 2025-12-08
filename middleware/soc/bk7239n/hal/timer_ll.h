@@ -165,13 +165,13 @@ static inline uint32_t timer_ll_get_chan_interrupt_status(timer_hw_t *hw, uint32
         return hw->group[group].ctrl.timer2_int_en;
 }
 
-static inline void timer_ll_clear_chan_interrupt_status(timer_hw_t *hw, uint32_t chan)
+__IRAM_SEC static inline void timer_ll_clear_chan_interrupt_status(timer_hw_t *hw, uint32_t chan)
 {
     BK_DO_WHILE(timer_ll_set_chan_interrupt_status(hw, chan, 1),
                 timer_ll_get_chan_interrupt_status(hw, chan));
 }
 
-static inline uint32_t timer_ll_get_interrupt_status(timer_hw_t *hw)
+__IRAM_SEC static inline uint32_t timer_ll_get_interrupt_status(timer_hw_t *hw)
 {
     uint32_t bit_pos = 0;
     uint32_t status = 0;

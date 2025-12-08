@@ -73,7 +73,7 @@ static u16        shell_uart_write_echo(shell_dev_t * shell_dev, u8 * pBuf, u16 
 static bool_t     shell_uart_ctrl(shell_dev_t * shell_dev, u8 cmd, void *param);
 static bool_t     shell_uart_close(shell_dev_t * shell_dev);
 
-static const shell_dev_drv_t shell_uart_drv =
+__DRAM_SEC static const shell_dev_drv_t shell_uart_drv =
 	{
 		.init    = shell_uart_init,
 		.open    = shell_uart_open,
@@ -197,7 +197,7 @@ static void shell_uart_rx_isr(int uartn, shell_uart_ext_t *uart_ext)
 
 #if !CONFIG_UART_RING_BUFF
 
-static void shell_uart_tx_isr(int uartn, shell_uart_ext_t *uart_ext)
+__IRAM_SEC static void shell_uart_tx_isr(int uartn, shell_uart_ext_t *uart_ext)
 {
 	int   ret;
 	(void)uartn;
@@ -426,7 +426,7 @@ static void shell_uart_tx_isr(int uartn, shell_uart_ext_t *uart_ext)
 
 #endif
 
-static void shell_uart_tx_trigger(shell_uart_ext_t *uart_ext)
+__IRAM_SEC static void shell_uart_tx_trigger(shell_uart_ext_t *uart_ext)
 {
 	if(uart_ext->tx_suspend != 0)
 		return;
@@ -657,7 +657,7 @@ static u16 shell_uart_write_echo(shell_dev_t * shell_dev, u8 * pBuf, u16 BufLen)
 
 }
 
-static bool_t shell_uart_ctrl(shell_dev_t * shell_dev, u8 cmd, void *param)
+__IRAM_SEC static bool_t shell_uart_ctrl(shell_dev_t * shell_dev, u8 cmd, void *param)
 {
 	shell_uart_ext_t *uart_ext;
 

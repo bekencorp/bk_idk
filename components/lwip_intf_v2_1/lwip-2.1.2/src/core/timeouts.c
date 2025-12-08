@@ -74,7 +74,7 @@
 
 /** This array contains all stack-internal cyclic timers. To get the number of
  * timers, use LWIP_ARRAYSIZE() */
-const struct lwip_cyclic_timer lwip_cyclic_timers[] = {
+__DRAM_SEC const struct lwip_cyclic_timer lwip_cyclic_timers[] = {
 #if LWIP_TCP
   /* The TCP timer is a special case: it does not have to run always and
      is triggered to start from TCP using tcp_timer_needed() */
@@ -176,7 +176,7 @@ tcp_timer_needed(void)
 }
 #endif /* LWIP_TCP */
 
-static void
+__IRAM_SEC static void
 #if LWIP_DEBUG_TIMERNAMES
 sys_timeout_abs(u32_t abs_time, sys_timeout_handler handler, void *arg, const char *handler_name)
 #else /* LWIP_DEBUG_TIMERNAMES */
@@ -225,6 +225,7 @@ sys_timeout_abs(u32_t abs_time, sys_timeout_handler handler, void *arg)
  *
  * @param arg unused argument
  */
+__IRAM_SEC
 #if !LWIP_TESTMODE
 static
 #endif
@@ -348,7 +349,7 @@ sys_untimeout(sys_timeout_handler handler, void *arg)
  *
  * Must be called periodically from your main loop.
  */
-void
+__IRAM_SEC void
 sys_check_timeouts(void)
 {
   u32_t now;
@@ -422,7 +423,7 @@ sys_restart_timeouts(void)
 /** Return the time left before the next timeout is due. If no timeouts are
  * enqueued, returns 0xffffffff
  */
-u32_t
+__IRAM_SEC u32_t
 sys_timeouts_sleeptime(void)
 {
   u32_t now;

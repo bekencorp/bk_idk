@@ -151,7 +151,7 @@ err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg)
   Note that a function with a similar name, sys_mbox_fetch(), is
   implemented by lwIP.
 */
-u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
+__IRAM_SEC u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
 {
 	void *dummyptr;
 	beken_time_t StartTime, EndTime, Elapsed;
@@ -390,12 +390,12 @@ void sys_mutex_free(sys_mutex_t *mutex)
 	rtos_deinit_mutex(mutex);
 }
 
-void sys_mutex_lock(sys_mutex_t *mutex)
+__IRAM_SEC void sys_mutex_lock(sys_mutex_t *mutex)
 {
 	rtos_lock_mutex(mutex);
 }
 
-void sys_mutex_unlock(sys_mutex_t *mutex)
+__IRAM_SEC void sys_mutex_unlock(sys_mutex_t *mutex)
 {
 	rtos_unlock_mutex(mutex);
 }
@@ -457,7 +457,7 @@ int sys_thread_delete(sys_thread_t pid)
   sys_arch_protect() is only required if your port is supporting an operating
   system.
 */
-sys_prot_t sys_arch_protect(void)
+__IRAM_SEC sys_prot_t sys_arch_protect(void)
 {
 #if CFG_ENABLE_LWIP_MUTEX
 	sys_mutex_lock(&sys_arch_mutex);
@@ -474,7 +474,7 @@ sys_prot_t sys_arch_protect(void)
   more information. This function is only required if your port is supporting
   an operating system.
 */
-void sys_arch_unprotect(sys_prot_t pval)
+__IRAM_SEC void sys_arch_unprotect(sys_prot_t pval)
 {
 #if CFG_ENABLE_LWIP_MUTEX
 	(void)pval;
@@ -501,7 +501,7 @@ void sys_assert( const char *msg )
 	;
 }
 
-u32_t sys_now(void)
+__IRAM_SEC u32_t sys_now(void)
 {
 	beken_time_t now_tick = 0;
 

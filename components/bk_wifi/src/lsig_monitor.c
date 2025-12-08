@@ -345,7 +345,7 @@ void lsig_input(int len, int8_t rssi, uint32_t time_ms)
 	rts_tbl[rep_index].last_time = rtos_get_time();
 }
 
-int rx_mgmt_filter(uint16_t framectrl, void *payload, uint16_t length, int8_t rssi, void *extra)
+__IRAM_SEC int rx_mgmt_filter(uint16_t framectrl, void *payload, uint16_t length, int8_t rssi, void *extra)
 {
 	bool discard = true;
 

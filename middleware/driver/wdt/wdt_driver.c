@@ -168,7 +168,7 @@ __attribute__((section(".itcm_sec_code"))) bk_err_t bk_wdt_stop(void)
 	return BK_OK;
 }
 
-bk_err_t bk_wdt_feed(void)
+__IRAM_SEC bk_err_t bk_wdt_feed(void)
 {
 	WDT_RETURN_ON_DRIVER_NOT_INIT();
 	WDT_RETURN_ON_NOT_INIT();
@@ -179,7 +179,7 @@ bk_err_t bk_wdt_feed(void)
 }
 
 #if (CONFIG_INT_WDT)
-void bk_int_wdt_feed(void)
+__IRAM_SEC void bk_int_wdt_feed(void)
 {
 	static uint64_t s_last_int_wdt_feed_tick = 0;
 	uint64_t current_tick = GET_TASK_CURRENT_TICK();
@@ -214,12 +214,12 @@ __attribute__((section(".itcm_sec_code"))) void bk_task_wdt_stop()
 	s_task_wdt_enabled = false;
 }
 
-void bk_task_wdt_feed(void)
+__IRAM_SEC void bk_task_wdt_feed(void)
 {
 	s_last_task_wdt_feed_tick = GET_TASK_CURRENT_TICK();
 }
 
-void bk_task_wdt_timeout_check(void)
+__IRAM_SEC void bk_task_wdt_timeout_check(void)
 {
 	if (s_last_task_wdt_feed_tick && s_task_wdt_enabled) {
 		const uint64_t c_last_feed_tick = s_last_task_wdt_feed_tick;
@@ -244,7 +244,7 @@ bool bk_wdt_is_driver_inited()
 	return s_wdt_driver_is_init;
 }
 
-void bk_wdt_feed_handle(void)
+__IRAM_SEC void bk_wdt_feed_handle(void)
 {
 	GLOBAL_INT_DECLARATION();
 	GLOBAL_INT_DISABLE();

@@ -72,6 +72,11 @@ static inline uint32_t sys_ll_get_analog_reg_value(uint32_t addr)
 	return REG_READ(addr);
 }
 
+__IRAM_SEC static inline uint32_t sys_ll_get_analog_reg_value_iram(uint32_t addr)
+{
+	return REG_READ(addr);
+}
+
 static inline void sys_ll_set_analog_reg_value(uint32_t addr, uint32_t value)
 {
 	uint32_t idx;
@@ -99,6 +104,15 @@ static inline void sys_set_ana_reg_bit(uint32_t reg_addr, uint32_t pos, uint32_t
 	reg_value &= ~(mask << pos);
 	reg_value |= ((value & mask) <<pos);
 	sys_ll_set_analog_reg_value(reg_addr, reg_value);
+}
+
+__IRAM_SEC static inline void sys_set_ana_reg_bit_iram(uint32_t reg_addr, uint32_t pos, uint32_t mask, uint32_t value)
+{
+	uint32_t reg_value;
+	reg_value = *(volatile uint32_t *)(reg_addr);
+	reg_value &= ~(mask << pos);
+	reg_value |= ((value & mask) <<pos);
+	sys_ll_set_analog_reg_value_iram(reg_addr, reg_value);
 }
 
 static inline void sys_ll_set_cpu_clk_div_mode1_cksel_uart0(uint32_t v)
@@ -3862,7 +3876,7 @@ static inline uint32_t sys_ll_get_ana_reg5_nc_3_3(void) {
 }
 
 static inline void sys_ll_set_ana_reg5_en_temp(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x45 << 2)), 4, 0x1, v);
+	sys_set_ana_reg_bit_iram((SOC_SYS_REG_BASE + (0x45 << 2)), 4, 0x1, v);
 }
 
 static inline uint32_t sys_ll_get_ana_reg5_en_temp(void) {
@@ -4134,7 +4148,7 @@ static inline uint32_t sys_ll_get_ana_reg7_clk_sel(void) {
 }
 
 static inline void sys_ll_set_ana_reg7_timer_wkrstn(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x47 << 2)), 1, 0x1, v);
+	sys_set_ana_reg_bit_iram((SOC_SYS_REG_BASE + (0x47 << 2)), 1, 0x1, v);
 }
 
 static inline uint32_t sys_ll_get_ana_reg7_timer_wkrstn(void) {
@@ -4332,7 +4346,7 @@ static inline uint32_t sys_ll_get_ana_reg8_asoft_stc(void) {
 }
 
 static inline void sys_ll_set_ana_reg8_rst_timerwks1v(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x48 << 2)), 4, 0x1, v);
+	sys_set_ana_reg_bit_iram((SOC_SYS_REG_BASE + (0x48 << 2)), 4, 0x1, v);
 }
 
 static inline uint32_t sys_ll_get_ana_reg8_rst_timerwks1v(void) {
@@ -4362,6 +4376,10 @@ static inline void sys_ll_set_ana_reg8_spi_latch1v(uint32_t v) {
 	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x48 << 2)), 9, 0x1, v);
 }
 
+__IRAM_SEC static inline void sys_ll_set_ana_reg8_spi_latch1v_iram(uint32_t v) {
+	sys_set_ana_reg_bit_iram((SOC_SYS_REG_BASE + (0x48 << 2)), 9, 0x1, v);
+}
+
 static inline uint32_t sys_ll_get_ana_reg8_spi_latch1v(void) {
 	sys_ana_reg8_t *r = (sys_ana_reg8_t*)(SOC_SYS_REG_BASE + (0x48 << 2));
 	return r->spi_latch1v;
@@ -4386,7 +4404,7 @@ static inline uint32_t sys_ll_get_ana_reg8_lvsleep_wkrst(void) {
 }
 
 static inline void sys_ll_set_ana_reg8_gpiowk_rstn(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x48 << 2)), 13, 0x1, v);
+	sys_set_ana_reg_bit_iram((SOC_SYS_REG_BASE + (0x48 << 2)), 13, 0x1, v);
 }
 
 static inline uint32_t sys_ll_get_ana_reg8_gpiowk_rstn(void) {
@@ -4395,7 +4413,7 @@ static inline uint32_t sys_ll_get_ana_reg8_gpiowk_rstn(void) {
 }
 
 static inline void sys_ll_set_ana_reg8_rtcwk_rstn(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x48 << 2)), 14, 0x1, v);
+	sys_set_ana_reg_bit_iram((SOC_SYS_REG_BASE + (0x48 << 2)), 14, 0x1, v);
 }
 
 static inline uint32_t sys_ll_get_ana_reg8_rtcwk_rstn(void) {
@@ -4440,7 +4458,7 @@ static inline uint32_t sys_ll_get_ana_reg8_vlden(void) {
 }
 
 static inline void sys_ll_set_ana_reg8_rst_gpiowks(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x48 << 2)), 24, 0x1, v);
+	sys_set_ana_reg_bit_iram((SOC_SYS_REG_BASE + (0x48 << 2)), 24, 0x1, v);
 }
 
 static inline uint32_t sys_ll_get_ana_reg8_rst_gpiowks(void) {
@@ -4808,7 +4826,7 @@ static inline uint32_t sys_ll_get_ana_reg11_value(void) {
 }
 
 static inline void sys_ll_set_ana_reg11_gpiowk(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4b << 2)), 0, 0xffffff, v);
+	sys_set_ana_reg_bit_iram((SOC_SYS_REG_BASE + (0x4b << 2)), 0, 0xffffff, v);
 }
 
 static inline uint32_t sys_ll_get_ana_reg11_gpiowk(void) {
@@ -4817,7 +4835,7 @@ static inline uint32_t sys_ll_get_ana_reg11_gpiowk(void) {
 }
 
 static inline void sys_ll_set_ana_reg11_rtcsel(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4b << 2)), 24, 0xf, v);
+	sys_set_ana_reg_bit_iram((SOC_SYS_REG_BASE + (0x4b << 2)), 24, 0xf, v);
 }
 
 static inline uint32_t sys_ll_get_ana_reg11_rtcsel(void) {
@@ -4826,7 +4844,7 @@ static inline uint32_t sys_ll_get_ana_reg11_rtcsel(void) {
 }
 
 static inline void sys_ll_set_ana_reg11_timersel(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4b << 2)), 28, 0xf, v);
+	sys_set_ana_reg_bit_iram((SOC_SYS_REG_BASE + (0x4b << 2)), 28, 0xf, v);
 }
 
 static inline uint32_t sys_ll_get_ana_reg11_timersel(void) {
@@ -4845,7 +4863,7 @@ static inline uint32_t sys_ll_get_ana_reg12_value(void) {
 }
 
 static inline void sys_ll_set_ana_reg12_timersel(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4c << 2)), 0, 0xffffffff, v);
+	sys_set_ana_reg_bit_iram((SOC_SYS_REG_BASE + (0x4c << 2)), 0, 0xffffffff, v);
 }
 
 static inline uint32_t sys_ll_get_ana_reg12_timersel(void) {
@@ -4864,7 +4882,7 @@ static inline uint32_t sys_ll_get_ana_reg13_value(void) {
 }
 
 static inline void sys_ll_set_ana_reg13_rtcsel(uint32_t v) {
-	sys_set_ana_reg_bit((SOC_SYS_REG_BASE + (0x4d << 2)), 0, 0xffffffff, v);
+	sys_set_ana_reg_bit_iram((SOC_SYS_REG_BASE + (0x4d << 2)), 0, 0xffffffff, v);
 }
 
 static inline uint32_t sys_ll_get_ana_reg13_rtcsel(void) {

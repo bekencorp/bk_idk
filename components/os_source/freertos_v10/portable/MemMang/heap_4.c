@@ -1292,7 +1292,7 @@ void mem_overflow_check_all(void)
 
 #endif
 
-uint32_t bk_psram_heap_get_used_count(void) {
+__IRAM_SEC uint32_t bk_psram_heap_get_used_count(void) {
 #if CONFIG_PSRAM_AS_SYS_MEMORY
 	return s_psram_used_count;
 #else

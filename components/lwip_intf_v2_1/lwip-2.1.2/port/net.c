@@ -433,7 +433,7 @@ void *net_sock_to_interface(int sock)
 	return req_iface;
 }
 
-void *net_get_sta_handle(void)
+__IRAM_SEC void *net_get_sta_handle(void)
 {
 	return &g_mlan.netif;
 }
@@ -868,7 +868,7 @@ struct ipv4_config* bk_wifi_get_sta_settings(void)
 	return &sta_ip_settings;
 }
 
-int net_get_if_addr(struct wlan_ip_config *addr, void *intrfc_handle)
+__IRAM_SEC int net_get_if_addr(struct wlan_ip_config *addr, void *intrfc_handle)
 {
 	const ip_addr_t *tmp;
 	struct iface *if_handle = (struct iface *)intrfc_handle;

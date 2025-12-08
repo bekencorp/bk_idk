@@ -1643,12 +1643,12 @@ static int wifi_deepsleep_enter_cb(uint64_t expected_time_ms, void *args)
 	return 0;
 }
 
-static int wifi_lowvol_enter_cb(uint64_t expected_time_ms, void *args)
+__IRAM_SEC static int wifi_lowvol_enter_cb(uint64_t expected_time_ms, void *args)
 {
 	rwnx_lowvol_enter_callback();
 	return 0;
 }
-static int wifi_lowvol_exit_cb(uint64_t expected_time_ms, void *args)
+__IRAM_SEC static int wifi_lowvol_exit_cb(uint64_t expected_time_ms, void *args)
 {
 	if (bk_pm_exit_low_vol_wakeup_source_get() == PM_WAKEUP_SOURCE_INT_GPIO)
 		bk_wifi_media_dtim();
@@ -3683,7 +3683,7 @@ bk_err_t bk_wifi_set_wifi_media_mode(bool flag)
 	return BK_OK;
 }
 
-bk_err_t bk_wifi_get_wifi_media_mode_config(bool *flag)
+__IRAM_SEC bk_err_t bk_wifi_get_wifi_media_mode_config(bool *flag)
 {
 	if (!flag)
 		return BK_ERR_NULL_PARAM;

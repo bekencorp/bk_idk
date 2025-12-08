@@ -346,6 +346,7 @@ void sys_hal_set_gadc_ten(uint32_t value);
 void sys_hal_analog_set(analog_reg_t reg, uint32_t value);
 void sys_hal_analog_set_iram(analog_reg_t reg, uint32_t value);
 uint32_t sys_hal_analog_get(analog_reg_t reg);
+uint32_t sys_hal_analog_get_iram(analog_reg_t reg);
 //Yantao Add Start
 void sys_hal_modem_core_reset(void);
 void sys_hal_mpif_invert(void);

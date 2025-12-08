@@ -633,7 +633,7 @@ void print_hex_dump(const char *prefix, const void *buf, int len)
 	BK_LOG_RAW("\n");
 }
 
-bk_err_t uart_write_byte(uart_id_t id, uint8_t data)
+__IRAM_SEC bk_err_t uart_write_byte(uart_id_t id, uint8_t data)
 {
 	/* wait for fifo write ready
 	 * optimize it when write very fast
@@ -673,7 +673,7 @@ void uart_write_byte_for_fr(uint8_t *data, uint8_t cnt)
 }
 
 
-bk_err_t uart_write_ready(uart_id_t id)
+__IRAM_SEC bk_err_t uart_write_ready(uart_id_t id)
 {
 	/* wait for fifo write ready
 	 * optimize it when write very fast
@@ -839,7 +839,7 @@ static bk_err_t uart_pm_backup(uint64_t sleep_time, void *args)
 	return BK_OK;
 }
 
-static bk_err_t uart_pm_restore(uint64_t sleep_time, void *args)
+__IRAM_SEC static bk_err_t uart_pm_restore(uint64_t sleep_time, void *args)
 {
 	uart_id_t uart_id = (uart_id_t)args;
 
@@ -856,13 +856,13 @@ static bk_err_t uart_pm_restore(uint64_t sleep_time, void *args)
 	return BK_OK;
 }
 
-bk_err_t bk_uart_pm_backup(uart_id_t id)
+__IRAM_SEC bk_err_t bk_uart_pm_backup(uart_id_t id)
 {
 	uart_pm_backup(0, (void *)id);
 	return BK_OK;
 }
 
-bk_err_t bk_uart_pm_restore(uart_id_t id)
+__IRAM_SEC bk_err_t bk_uart_pm_restore(uart_id_t id)
 {
 	uart_pm_restore(0, (void *)id);
 	return BK_OK;
@@ -1380,7 +1380,7 @@ bk_err_t bk_uart_disable_filter_glitch(uart_id_t id)
 }
 #endif
 
-bk_err_t bk_uart_enable_tx_interrupt(uart_id_t id)
+__IRAM_SEC bk_err_t bk_uart_enable_tx_interrupt(uart_id_t id)
 {
 	UART_RETURN_ON_NOT_INIT();
 	UART_RETURN_ON_INVALID_ID(id);
@@ -1389,7 +1389,7 @@ bk_err_t bk_uart_enable_tx_interrupt(uart_id_t id)
 	return BK_OK;
 }
 
-bk_err_t bk_uart_disable_tx_interrupt(uart_id_t id)
+__IRAM_SEC bk_err_t bk_uart_disable_tx_interrupt(uart_id_t id)
 {
 	UART_RETURN_ON_NOT_INIT();
 	UART_RETURN_ON_INVALID_ID(id);
@@ -1399,7 +1399,7 @@ bk_err_t bk_uart_disable_tx_interrupt(uart_id_t id)
 	return BK_OK;
 }
 
-bk_err_t bk_uart_enable_rx_interrupt(uart_id_t id)
+__IRAM_SEC bk_err_t bk_uart_enable_rx_interrupt(uart_id_t id)
 {
 	UART_RETURN_ON_NOT_INIT();
 	UART_RETURN_ON_INVALID_ID(id);
@@ -1639,7 +1639,7 @@ bk_err_t bk_uart_disable_tx(uart_id_t id)
 	return BK_OK;
 }
 
-bk_err_t bk_uart_set_enable_rx(uart_id_t id, bool enable)
+__IRAM_SEC bk_err_t bk_uart_set_enable_rx(uart_id_t id, bool enable)
 {
 	UART_RETURN_ON_NOT_INIT();
 	UART_RETURN_ON_INVALID_ID(id);
@@ -1649,7 +1649,7 @@ bk_err_t bk_uart_set_enable_rx(uart_id_t id, bool enable)
 	return BK_OK;
 }
 
-bk_err_t bk_uart_set_enable_tx(uart_id_t id, bool enable)
+__IRAM_SEC bk_err_t bk_uart_set_enable_tx(uart_id_t id, bool enable)
 {
 	UART_RETURN_ON_NOT_INIT();
 	UART_RETURN_ON_INVALID_ID(id);
@@ -1702,12 +1702,12 @@ gpio_id_t bk_uart_get_rx_gpio(uart_id_t id)
 	return uart_hal_get_rx_pin(id);
 }
 
-bool bk_uart_is_tx_over(uart_id_t id)
+__IRAM_SEC bool bk_uart_is_tx_over(uart_id_t id)
 {
 	return uart_hal_is_tx_fifo_empty(&s_uart[id].hal, id);
 }
 
-void bk_uart_wait_tx_over(uart_id_t id)
+__IRAM_SEC void bk_uart_wait_tx_over(uart_id_t id)
 {
 	uint32_t uart_wait_us;
 	uint32_t baudrate;
@@ -1747,7 +1747,7 @@ void uart_clear_interrupt_status(uart_id_t id, uint32_t int_status)
  * read int status
  * clear int status
  */
-static void uart_isr_common(uart_id_t id)
+__IRAM_SEC static void uart_isr_common(uart_id_t id)
 {
 	uint32_t int_status = 0;
 	uint32_t int_enable_status = 0;
@@ -1864,7 +1864,7 @@ static void uart_isr_common(uart_id_t id)
 	}
 }
 
-void uart0_isr(void)
+__IRAM_SEC void uart0_isr(void)
 {
 	uart_isr_common(UART_ID_0);
 }

@@ -377,7 +377,6 @@ __NO_RETURN ENTRY_SECTION void Reset_Handler(void)
         __set_MSPLIM((uint32_t)(&__STACK_LIMIT));
         /* CMSIS System Initialization */
         SystemInit_iram();
-        dlv_startup();
     }
 #endif
 

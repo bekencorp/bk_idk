@@ -79,7 +79,7 @@ char *vnd_cal_version         = "24-04-10 00:00:00";
 const UINT32 pwr_gain_base_gain_b = 0x20BB7C00;//0x00233C00;
 const UINT32 pwr_gain_base_gain_g = 0xA0BB7C00;//0x80233C00;
 #define TPC_PAMAP_TAB_LEN			 (128)
-const PWR_REGS cfg_tab[TPC_PAMAP_TAB_LEN] = {
+__DRAM_SEC const PWR_REGS cfg_tab[TPC_PAMAP_TAB_LEN] = {
 	// pregain
 	PWRI(0x1A),	//0	-25.75db
 	PWRI(0x1B),	//1	-25.5db

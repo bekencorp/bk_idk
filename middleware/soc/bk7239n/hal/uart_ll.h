@@ -122,7 +122,7 @@ static inline gpio_id_t uart_ll_get_rts_pin(uart_id_t id)
 	}
 }
 
-static inline uint32_t uart_ll_get_reg_base(uart_id_t id)
+__IRAM_SEC static inline uint32_t uart_ll_get_reg_base(uart_id_t id)
 {
 	switch (id) {
 	case UART_ID_0:
