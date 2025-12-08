@@ -110,6 +110,9 @@ __IRAM_SEC static void rosc_ckmn_isr(void)
 	theta = s_rosc_freq_hz / ROSC_CLK_32K;
 	s_rosc_ppm = (int32_t)(1e6 * (1 - theta) + ROSC_CKMN_PPM * theta);
 	s_rosc_freq_hz_fix = (int64_t)(s_rosc_freq_hz );
+#if !CONFIG_ROSC_COMPENSATION
+	bk_rtc_set_clock_freq((uint32_t)s_rosc_freq_hz);
+#endif
 	// GPIO_DOWN(16);
 	// ROSC_LOGI("ckmn_rosc_isr rosc_freq:%7.2f\r\n", s_rosc_freq_hz);
 	bk_ckmn_ckest_disable();

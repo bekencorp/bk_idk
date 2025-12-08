@@ -108,13 +108,14 @@ void bk_rtc_update_base_time(void)
 
 __IRAM_SEC void bk_rtc_set_clock_freq(uint32_t clock_freq)
 {
-#if !CONFIG_EXTERN_32K
-    if (clock_freq == s_aon_rtc_clock_freq) {
-        return;
-    }
-    uint32_t int_level = rtos_disable_int();
-    s_aon_rtc_clock_freq = clock_freq;
-    rtos_enable_int(int_level);
+#if !CONFIG_EXTERN_32K && !CONFIG_ROSC_COMPENSATION
+	if (clock_freq == s_aon_rtc_clock_freq) {
+		return;
+	}
+	uint32_t int_level = rtos_disable_int();
+	bk_rtc_update_base_time();
+	s_aon_rtc_clock_freq = clock_freq;
+	rtos_enable_int(int_level);
 #endif
 }
 
@@ -130,7 +131,7 @@ __IRAM_SEC uint64_t bk_aon_rtc_get_ms(void)
 {
 	uint64_t time_tick = ANA_RTC_CURRENT_TICK;
 	uint64_t time_diff = (time_tick - s_time_base_tick) / bk_rtc_get_ms_tick_count();
-	uint64_t time_us = s_time_base_us + time_diff;
+	uint64_t time_us = s_time_base_us / 1000 + time_diff;
 	return time_us;
 }
 
