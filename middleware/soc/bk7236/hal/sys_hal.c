@@ -3010,4 +3010,47 @@ void sys_hal_set_scr_clk(uint32_t value)
 	sys_ll_set_reserver_reg0xd_scr_cken(value);
 }
 
+#define FLASH_DPLL_CLK    120    // 120MHz
+#define CLK_XTAL    26    // 26MHz
+
+
+void sys_hal_set_flash_clk(uint32_t flash_clk)
+{
+	uint32_t flash_max_clk = FLASH_DPLL_CLK;
+	uint32_t calculated_div = flash_max_clk / flash_clk;
+	uint32_t flash_div = 0;
+
+	if (flash_clk <= CLK_XTAL) {
+		sys_ll_set_cpu_clk_div_mode2_cksel_flash(0);
+	} else {
+		sys_ll_set_cpu_clk_div_mode2_cksel_flash(1);
+		if (calculated_div <= 4) {          //0:/4  1:/6  2:/8  3:/10，it is invalid when cksel_flash=0
+			flash_div = 0;
+		} else if (calculated_div <= 6) {
+			flash_div = 1;
+		} else if (calculated_div <= 8) {
+			flash_div = 2;
+		} else {
+			flash_div = 3;
+		}
+		sys_ll_set_cpu_clk_div_mode2_ckdiv_flash(flash_div);
+	}
+}
+
+void sys_hal_set_cpu_clk(uint32_t cpu_clk)
+{
+	if (cpu_clk <= CLK_XTAL) {
+		sys_hal_switch_cpu_bus_freq(PM_CPU_FRQ_XTAL);
+	} else if (cpu_clk <= 60) {
+		sys_hal_switch_cpu_bus_freq(PM_CPU_FRQ_60M);
+	} else if (cpu_clk <= 80) {
+		sys_hal_switch_cpu_bus_freq(PM_CPU_FRQ_80M);
+	} else if (cpu_clk <= 120) {
+		sys_hal_switch_cpu_bus_freq(PM_CPU_FRQ_120M);
+	} else if (cpu_clk <= 160) {
+		sys_hal_switch_cpu_bus_freq(PM_CPU_FRQ_160M);
+	} else {
+		sys_hal_switch_cpu_bus_freq(PM_CPU_FRQ_240M);
+	}
+}
 /**  SCR End  */

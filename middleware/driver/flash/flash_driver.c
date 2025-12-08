@@ -90,6 +90,7 @@ __DRAM_SEC static const flash_config_t flash_config[] = {
 	{0xC22315,   FLASH_SIZE_2M,   1,             FLASH_LINE_MODE_FOUR,   0,        2,            0x0F,         0x0F,        0x00,         0x00E,                6,            1,           0xA5,                         }, //mx_25v16b
 	{0xEB6015,   FLASH_SIZE_2M,   2,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x101,                9,            1,           0xA0,                         }, //zg_th25q16b
 	{0xC86517,	 FLASH_SIZE_8M,   2,             FLASH_LINE_MODE_FOUR,   14,	   2,            0x1F,         0x1F,        0x00,         0x00E,                9,            1,           0xA0,                         }, //gd_25Q32E
+	{0xCD6016,   FLASH_SIZE_4M,   2,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x00E,                9,            1,           0xA0,                         }, //th_25q32ub
 	{0xCD6017,   FLASH_SIZE_8M,   3,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x00E,                9,            1,           0xA0,                         }, //th_25q64ha
 	{0x000000,   FLASH_SIZE_4M,   2,             FLASH_LINE_MODE_TWO,    0,        2,            0x1F,         0x00,        0x00,         0x000,                0,            0,           0x00,                         }, //default
 };
@@ -319,7 +320,7 @@ static flash_protect_type_t flash_get_protect_type(uint32_t sr_value)
 	return type;
 }
 
-static void flash_set_protect_type(flash_protect_type_t type)
+void flash_set_protect_type(flash_protect_type_t type)
 {
 	uint32_t protect_cfg;
 	uint32_t cmp_cfg;
@@ -424,7 +425,7 @@ static void flash_read_word_common(uint32_t *buffer, uint32_t address, uint32_t 
 	}
 }
 
-static bk_err_t flash_write_common(const uint8_t *buffer, uint32_t address, uint32_t len)
+bk_err_t flash_write_common(const uint8_t *buffer, uint32_t address, uint32_t len)
 {
 	uint32_t buf[FLASH_BUFFER_LEN];
 	uint8_t *pb = (uint8_t *)&buf[0];
@@ -457,7 +458,7 @@ static bk_err_t flash_write_common(const uint8_t *buffer, uint32_t address, uint
 	return BK_OK;
 }
 
-static bk_err_t flash_erase_block(uint32_t address, int type)
+bk_err_t flash_erase_block(uint32_t address, int type)
 {
 	uint32_t int_level = flash_enter_critical();
 
@@ -468,7 +469,7 @@ static bk_err_t flash_erase_block(uint32_t address, int type)
 	return BK_OK;
 }
 
-__IRAM_SEC static flash_line_mode_t flash_set_line_mode(flash_line_mode_t line_mode)
+__IRAM_SEC flash_line_mode_t flash_set_line_mode(flash_line_mode_t line_mode)
 {
 	uint32_t int_level = flash_enter_critical();
 

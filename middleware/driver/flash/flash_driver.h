@@ -50,6 +50,8 @@
 #define FLASH_BLOCK_SIZE                 (0x10000)
 #define FLASH_MAX_SIZE                   (FLASH_SIZE_16M)
 #define FLASH_API_MAGIC_CODE             (0x12345678)
+#define FLASH_MAX_CLK                        120    // 120MHz
+#define CPU_CLK_DPLL                         480   // 480MHz
 
 typedef struct {
 	uint32_t flash_id;
