@@ -13,12 +13,10 @@
 // limitations under the License.
 
 #include "bk_phy_adapter.h"
-
 #include "driver/wdt.h"
 #include "bk_wdt.h"
 #include "bk_wifi.h"
 #include "adc_driver.h"
-
 #include "sys_driver.h"
 
 #if (CONFIG_SOC_BK7236XX || CONFIG_SOC_BK7239XX || CONFIG_SOC_BK7286XX)
@@ -41,13 +39,10 @@
 #include "bk_misc.h"
 #include <modules/pm.h>
 #include <modules/chip_support.h>
-
 #include <components/system.h>
 #include <os/mem.h>
 #include <os/str.h>
-
 #include <common/bk_assert.h>
-
 #include "gpio_driver.h"
 #include <driver/gpio.h>
 #include <driver/efuse.h>
@@ -318,6 +313,9 @@ static uint32_t bk_flash_partition_get_rf_firmware_info(void)
 #else
     bk_logic_partition_t * pt = NULL;
     pt = bk_flash_partition_get_info(BK_PARTITION_SYS_RF);
+    if (pt == NULL) {
+        return 0;
+    }
     return pt->partition_start_addr;
 #endif
 }
