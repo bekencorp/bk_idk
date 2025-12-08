@@ -432,8 +432,6 @@ void cc_scan_stop(void)
 }
 #endif // CONFIG_WIFI_SCAN_COUNTRY_CODE
 
-uint32_t mac_ie_country_find(uint32_t buffer, uint16_t buflen, uint8_t *ie_len);
-
 void mhdr_connect_ind(void *msg, UINT32 len)
 {
 	struct ke_msg *msg_ptr;
@@ -446,15 +444,6 @@ void mhdr_connect_ind(void *msg, UINT32 len)
 		RWNX_LOGI("connect ok\n");
 
 		bk7011_default_rxsens_setting();
-
-		uint32_t assoc_rsp = (uint32_t)ind->assoc_ie_buf + ind->assoc_req_ie_len;
-		uint8_t ie_len = 0;
-		uint32_t addr = mac_ie_country_find(assoc_rsp, ind->assoc_rsp_ie_len, &ie_len);
-		if (addr) {
-			regulatory_hint_11d(&g_wiphy, ind->chan.band, (uint8_t *)addr, ie_len);
-		} else {
-			RWNX_LOGI("country ie null, assoc_rsp_ie_len %d\n", ind->assoc_rsp_ie_len);
-		}
 
 #if NX_VERSION > NX_VERSION_PACK(6, 22, 0, 0)
 		rwnx_misc_connect_ind(ind);
