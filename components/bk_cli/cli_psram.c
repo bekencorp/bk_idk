@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include "cli.h"
+#include "pm.h"
 
 #include <os/os.h>
 #include <driver/psram.h>
@@ -120,6 +121,9 @@ static void psram_cpu_write_test(void)
 		base_addr = 0x64000000;
 		#endif
 	}
+
+	bk_pm_module_vote_cpu_freq(PM_DEV_ID_DEFAULT, PM_CPU_FRQ_240M);
+	bk_psram_set_clk(PSRAM_160M);
 
 	uint32_t test_len = 1024 * 1024 * 8;
 
@@ -479,7 +483,7 @@ static void psram_calibrate_test(void)
 #endif
 }
 
-#if CONFIG_PSRAM_CALIBRATE && CONFIG_SOC_BK7239N
+#if CONFIG_PSRAM_CALIBRATE
 static void psram_7239n_calibrate_test(void);
 #endif
 
@@ -671,7 +675,7 @@ static void cli_psram_cmd_handle(char *pcWriteBuffer, int xWriteBufferLen, int a
 		psram_free(data);
 		msg = CLI_CMD_RSP_SUCCEED;
 	}
-#if CONFIG_PSRAM_CALIBRATE && CONFIG_SOC_BK7239N
+#if CONFIG_PSRAM_CALIBRATE
 	else if (os_strcmp(argv[1], "calibrate") == 0)
 	{
 		bk_psram_init();
@@ -1263,7 +1267,7 @@ static void cli_psram_multitask_rw_handle(char *pcWriteBuffer, int xWriteBufferL
 	}
 }
 
-#if CONFIG_PSRAM_CALIBRATE && CONFIG_SOC_BK7239N
+#if CONFIG_PSRAM_CALIBRATE
 typedef struct {
 	uint8_t ds0_delay_t;
 	// uint8_t ds1_delay_t; //16line
@@ -1299,11 +1303,11 @@ static int psram_7239n_calibration(uint32_t start_addr, uint32_t test_len)
 	// set traversal range
 	for(ds0_delay = 0; ds0_delay <= 7; ds0_delay ++)
 	{
-		for(clks_iodrv = 0; clks_iodrv <= 7; clks_iodrv ++)
+		for(clks_iodrv = 0; clks_iodrv <= 3; clks_iodrv ++)
 		{
-			for(dats_iodrv = 0; dats_iodrv <= 7; dats_iodrv ++)
+			for(dats_iodrv = 0; dats_iodrv <= 3; dats_iodrv ++)
 			{
-				psram_7239_set_reg5_value((((uint32_t)ds0_delay)<<0) + (((uint32_t)ds1_delay)<<3) + (((uint32_t)clks_iodrv)<<6) + (((uint32_t)dats_iodrv)<<9) + (1 << 12));
+				psram_7239_set_reg5_value((((uint32_t)ds0_delay)<<0) + (((uint32_t)ds1_delay)<<3) + (((uint32_t)clks_iodrv)<<6) + (((uint32_t)dats_iodrv)<<9) + (0 << 12));
 				psram_calib_delay(100);
 
 				err = 0; k = 1;
@@ -1482,7 +1486,7 @@ static int psram_7239n_calibration(uint32_t start_addr, uint32_t test_len)
 	}
 
 	CLI_LOGI("calib result: ds0_delay = %d, clks_iodrv = %d, dats_iodrv = %d\n",ds0_delay,clks_iodrv,dats_iodrv);
-	psram_7239_set_reg5_value((((uint32_t)ds0_delay)<<0) + (((uint32_t)ds1_delay)<<3) + (((uint32_t)clks_iodrv)<<6) + (((uint32_t)dats_iodrv)<<9) + (1 << 12));
+	psram_7239_set_reg5_value((((uint32_t)ds0_delay)<<0) + (((uint32_t)ds1_delay)<<3) + (((uint32_t)clks_iodrv)<<6) + (((uint32_t)dats_iodrv)<<9) + (0 << 12));
 	if (psram_param) {
 		os_free(psram_param);
 		psram_param = NULL;

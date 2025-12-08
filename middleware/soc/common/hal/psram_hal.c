@@ -239,7 +239,7 @@ static int psram_hal_APS6408L_init(uint32_t *id)
 
 #if (CONFIG_SOC_BK7239XX)
     psram_hal_set_mode_value(PSRAM_MODE2);
-    psram_hal_set_reg5_value(0x1704);
+    psram_hal_set_reg5_value(0x6c3);
 #else
     psram_hal_set_mode_value(PSRAM_MODE6);//PSRAM_MODE2
     psram_hal_set_reg5_value(0x380);
