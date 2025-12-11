@@ -300,6 +300,31 @@ __IRAM_SEC bool sta_check_user_is_11b_1mbps_supported()
 #endif
 
 #if BK_SUPPLICANT
+bool wpas_check_if_6mbps_supported(struct wpa_supplicant *wpa_s)
+{
+	struct wpa_bss *bss = wpa_s->current_bss;
+	u8 *rates = NULL;
+	int num_rates;
+	int i;
+	bool rate_6m_supported = false;
+
+	if (bss != NULL) {
+		/* Get supported rates from BSS (units of 500 kbps) */
+		num_rates = wpa_bss_get_bit_rates(bss, &rates);
+		if (num_rates > 0 && rates != NULL) {
+			/* Check if 6Mbps rate is supported (6Mbps = 12 * 500kbps) */
+			for (i = 0; i < num_rates; i++) {
+				if (rates[i] == 12) {  /* 12 = 6Mbps in 500kbps units */
+					rate_6m_supported = true;
+					break;
+				}
+			}
+			os_free(rates);
+		}
+	}
+	return rate_6m_supported;
+}
+
 void wpas_notify_connected(struct wpa_supplicant *wpa_s)
 {
 	if (mhdr_get_station_status().state < WIFI_LINKSTATE_STA_CONNECTED) {
@@ -328,6 +353,12 @@ void wpas_notify_connected(struct wpa_supplicant *wpa_s)
 		wpa_bss_flush(wpa_s);
 		/* parse mac rates in the beacon frame and set 11b flags */
 		//wpa_parse_mac_rates_ie(wpa_s);
+
+		/* Check if router supports 6M rate, if yes, set ARP keepalive rate to 6M */
+		if (wpas_check_if_6mbps_supported(wpa_s)) {
+			/* Set ARP keepalive rate to 6M (60 = 6Mbps in 100kbps units) */
+			bk_wifi_send_arp_set_rate_req(60);
+		}
 #endif
 #ifdef CONFIG_WPA_PSK_CACHE
 		wpa_psk_thread_lower_prio();  // stop_wpa_psk_cal_thread();
