@@ -29,6 +29,38 @@
                                          (p)->value |= ((flag&FLAG_MASK)<<FLAG_POSI);}
 #define INIT_TXPWR_VALUE(channel, gain)    { channel, gain }
 
+#if defined(CONFIG_CUSTOMIZE_MD)
+/**
+ * target power of all format:
+ * could be update with 'txevm -e 6 [-band 1] [-b 0] rate power' by iTest
+ * or update here directly before/without iTest
+ */
+float target_pwr_ble = 6.0; //2G4 BLE target power
+float target_pwr_11b = 17.0; //2G4 11B target power
+float target_pwr_11g = 15.0; //2G4 11G target power
+float target_pwr_n20 = 14.0; //2G4 N20 target power
+float target_pwr_n40 = 14.0; //2G4 N40 target power
+float target_pwr_ax20 = 14.0; //2G4 N20 target power
+float target_pwr_11a = 14.0; //5G 11A target power
+float target_pwr_n20_5g = 13.0; //5G N20 target power
+float target_pwr_n40_5g = 13.0; //5G N40 target power
+float target_pwr_ax20_5g = 14.0; //5G N20 target power
+
+/**
+ * shift power index of n/ax:
+ * 0.25dB for 1 LSB
+ * used for generate n/ax power table with g/a
+ */
+int8_t g_dif_g_n20 = 4;    //differ between g and n20
+int8_t g_dif_g_ax20 = 4;  //differ between g and ax20
+int8_t g_dif_g_n40 = 4;   //differ between g and n40
+int8_t g_dif_a_n20 = 4;    //differ between a and n20
+int8_t g_dif_a_ax20 = 0;  //differ between a and ax20
+int8_t g_dif_a_n40 = 4;    //differ between a and n40
+int8_t g_dif_g_ble_ch0 = -13;
+int8_t g_dif_g_ble_ch19 = -12;
+int8_t g_dif_g_ble_ch39 = -11;
+#else
 /**
  * target power of all format:
  * could be update with 'txevm -e 6 [-band 1] [-b 0] rate power' by iTest
@@ -59,6 +91,7 @@ int8_t g_dif_a_n40 = 9;    //differ between a and n40
 int8_t g_dif_g_ble_ch0 = -13;
 int8_t g_dif_g_ble_ch19 = -12;
 int8_t g_dif_g_ble_ch39 = -11;
+#endif
 
 /**
  * shift power index of all format:
@@ -459,6 +492,18 @@ const AUTO_PWR_CALI_CONTEXT auto_pwr =
 const INT16 shift_tab_b[4] = {0, 0, 0, 0}; // 11M base,5.5M,2M,1M
 const INT16 shift_tab_g[8] = {0, 2, 4, 4, 4, 4, 4, 4}; // 54M base -  6M
 const INT16 shift_tab_n[1] = {0}; // for MCS7
+#elif defined(CONFIG_CUSTOMIZE_MD)
+const INT16 shift_tab_b[4] = {0, 0, 0, 0}; // 11M base,5.5M,2M,1M
+// 54M base -                 54M,48M,36M,24M,18M,12M,9M,6M
+const INT16 shift_tab_g[8] = {0,  0,  4,  4,  4,  8,  8, 8/*4*/}; // 54M base -  12M,9M,6M//do
+const INT16 shift_tab_n20[10] = {-16,  -8,  0,  0,  4,  4,  4,  8,  8, 8/*4*/}; // n20 mcs9 mcs8 mcs7(base) -  mcs0,
+const INT16 shift_tab_ax20[10] = {-16,  -8,  0,  0,  4,  4,  4,  8,  8, 8/*4*/}; // n20 mcs9 mcs8 mcs7(base) -  mcs0,
+const INT16 shift_tab_n40[10] = {-8,  -4,  0,  2,  2,  2,  3,  3,  4, 4/*4*/}; // n40 mcs9 mcs8 mcs7(base) -  mcs0,
+// 54M base -                 54M,48M,36M,24M,18M,12M,9M,6M
+const INT16 shift_tab_a[8] = {0,  0,  4,  4,  4,  8,  8, 8}; // 54M base -  12M,9M,6M//do
+const INT16 shift_tab_n20_5g[10] = {-16,  -8,  0,  0,  8,  8,  8,  12,  12, 12}; // n20 mcs9 mcs8 mcs7(base) -  mcs0,
+const INT16 shift_tab_ax20_5g[10] = {-16,  -8,  0,  0,  4,  4,  4,  8,  8, 8}; // n20 mcs9 mcs8 mcs7(base) -  mcs0,
+const INT16 shift_tab_n40_5g[10] = {-8,  -4,  0,  2,  2,  2,  3,  3,  4, 4}; // n40 mcs9 mcs8 mcs7(base) -  mcs0,
 #else
 const INT16 shift_tab_b[4] = {0, 0, 0, 0}; // 11M base,5.5M,2M,1M
 // 54M base -                 54M,48M,36M,24M,18M,12M,9M,6M
