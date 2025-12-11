@@ -196,6 +196,14 @@ static bk_err_t ota_download_handle_image(ota_download_t* ota_parse, uint8_t **d
 	uint32_t image_crc;
 	bk_err_t ret = BK_OK;
 
+	#if (CONFIG_TASK_WDT)
+	extern void bk_task_wdt_feed(void);
+	bk_task_wdt_feed();
+	#endif
+	#if (CONFIG_INT_WDT)
+	bk_wdt_feed();
+	#endif
+
 	do {
 		if (ota_parse->offset == 0) {
 			BK_LOGI(TAG, "downloading OTA image%d, expected data len=%x...\r\n", ota_parse->index, ota_parse->ota_image_header[ota_parse->index].image_len);
