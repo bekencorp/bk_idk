@@ -163,7 +163,7 @@ if(GEN_FILES)
         OUTPUT
             ${CMAKE_CURRENT_BINARY_DIR}/ssl_debug_helpers_generated.c
         COMMAND
-            ${MBEDTLS_PYTHON_EXECUTABLE}
+            ${MBEDTLS_PYTHON_EXECUTABLE} -B
                 ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/generate_ssl_debug_helpers.py
                 --mbedtls-root ${CMAKE_CURRENT_SOURCE_DIR}/..
                 ${CMAKE_CURRENT_BINARY_DIR}
@@ -177,7 +177,7 @@ if(GEN_FILES)
             ${CMAKE_CURRENT_BINARY_DIR}/psa_crypto_driver_wrappers.h
             ${CMAKE_CURRENT_BINARY_DIR}/psa_crypto_driver_wrappers_no_static.c
         COMMAND
-            ${MBEDTLS_PYTHON_EXECUTABLE}
+            ${MBEDTLS_PYTHON_EXECUTABLE} -B
                 ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/generate_driver_wrappers.py
                 ${CMAKE_CURRENT_BINARY_DIR}
         DEPENDS

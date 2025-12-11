@@ -19,7 +19,7 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/suites)
 # Get base names for generated files
 execute_process(
     COMMAND
-        ${MBEDTLS_PYTHON_EXECUTABLE}
+        ${MBEDTLS_PYTHON_EXECUTABLE} -B
         ${CMAKE_CURRENT_SOURCE_DIR}/../tests/scripts/generate_bignum_tests.py
         --list-for-cmake
     WORKING_DIRECTORY
@@ -31,7 +31,7 @@ string(REGEX REPLACE "[^;]*/" ""
 
 execute_process(
     COMMAND
-        ${MBEDTLS_PYTHON_EXECUTABLE}
+        ${MBEDTLS_PYTHON_EXECUTABLE} -B
         ${CMAKE_CURRENT_SOURCE_DIR}/../tests/scripts/generate_ecp_tests.py
         --list-for-cmake
     WORKING_DIRECTORY
@@ -43,7 +43,7 @@ string(REGEX REPLACE "[^;]*/" ""
 
 execute_process(
     COMMAND
-        ${MBEDTLS_PYTHON_EXECUTABLE}
+        ${MBEDTLS_PYTHON_EXECUTABLE} -B
         ${CMAKE_CURRENT_SOURCE_DIR}/../tests/scripts/generate_psa_tests.py
         --list-for-cmake
     WORKING_DIRECTORY
@@ -79,7 +79,7 @@ if(GEN_FILES)
         WORKING_DIRECTORY
             ${CMAKE_CURRENT_SOURCE_DIR}/..
         COMMAND
-            ${MBEDTLS_PYTHON_EXECUTABLE}
+            ${MBEDTLS_PYTHON_EXECUTABLE} -B
             ${CMAKE_CURRENT_SOURCE_DIR}/../tests/scripts/generate_bignum_tests.py
             --directory ${CMAKE_CURRENT_BINARY_DIR}/suites
         DEPENDS
@@ -97,7 +97,7 @@ if(GEN_FILES)
         WORKING_DIRECTORY
             ${CMAKE_CURRENT_SOURCE_DIR}/..
         COMMAND
-            ${MBEDTLS_PYTHON_EXECUTABLE}
+            ${MBEDTLS_PYTHON_EXECUTABLE} -B
             ${CMAKE_CURRENT_SOURCE_DIR}/../tests/scripts/generate_ecp_tests.py
             --directory ${CMAKE_CURRENT_BINARY_DIR}/suites
         DEPENDS
@@ -113,7 +113,7 @@ if(GEN_FILES)
         WORKING_DIRECTORY
             ${CMAKE_CURRENT_SOURCE_DIR}/..
         COMMAND
-            ${MBEDTLS_PYTHON_EXECUTABLE}
+            ${MBEDTLS_PYTHON_EXECUTABLE} -B
             ${CMAKE_CURRENT_SOURCE_DIR}/../tests/scripts/generate_psa_tests.py
             --directory ${CMAKE_CURRENT_BINARY_DIR}/suites
         DEPENDS
@@ -218,7 +218,7 @@ function(add_test_suite suite_name)
             # input argument.
             test_suite_${data_name}.c
         COMMAND
-            ${MBEDTLS_PYTHON_EXECUTABLE}
+            ${MBEDTLS_PYTHON_EXECUTABLE} -B
             ${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate_test_code.py
             -f ${CMAKE_CURRENT_SOURCE_DIR}/suites/test_suite_${suite_name}.function
             -d ${data_file}

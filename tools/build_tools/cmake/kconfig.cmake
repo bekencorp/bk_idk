@@ -186,11 +186,11 @@ function(__kconfig_generate_config sdkconfig sdkconfig_defaults sdkconfig_defaul
     armino_build_get_property(python PYTHON)
 
     set(prepare_kconfig_files_command
-        ${python} ${armino_path}/tools/build_tools/kconfig_new/prepare_kconfig_files.py
+        ${python} -B ${armino_path}/tools/build_tools/kconfig_new/prepare_kconfig_files.py
         --env-file ${config_env_path})
 
     set(confgen_basecommand
-        ${python} ${armino_path}/tools/build_tools/kconfig_new/confgen.py
+        ${python} -B ${armino_path}/tools/build_tools/kconfig_new/confgen.py
         --kconfig ${root_kconfig}
         #--sdkconfig-rename ${root_sdkconfig_rename} by peter
         --config ${sdkconfig}
@@ -198,7 +198,7 @@ function(__kconfig_generate_config sdkconfig sdkconfig_defaults sdkconfig_defaul
         --env-file ${config_env_path})
 		
 	set(sdkconfig_diff_command
-		${python} ${armino_path}/tools/build_tools/kconfig_new/sdkconfig_diff.py
+		${python} -B ${armino_path}/tools/build_tools/kconfig_new/sdkconfig_diff.py
 		--sdkconfig=${sdkconfig}
 		--old_sdkconfig=${sdkconfig_dir}/sdkconfig.old)
 	set(diff_sdkconfig_arg ${CMAKE_CURRENT_LIST_DIR}/config/${ARMINO_SOC}.config)
@@ -274,8 +274,8 @@ function(__kconfig_generate_config sdkconfig sdkconfig_defaults sdkconfig_defaul
 
         set(MENUCONFIG_CMD ${mconf})
     else()
-        set(MENUCONFIG_CMD ${python} ${armino_path}/tools/build_tools/kconfig_new/menuconfig.py)
-        set(TERM_CHECK_CMD ${python} ${armino_path}/tools/build_tools/check_term.py)
+        set(MENUCONFIG_CMD ${python} -B ${armino_path}/tools/build_tools/kconfig_new/menuconfig.py)
+        set(TERM_CHECK_CMD ${python} -B ${armino_path}/tools/build_tools/check_term.py)
     endif()
 
     # Generate the menuconfig target
@@ -319,7 +319,7 @@ function(__kconfig_generate_config sdkconfig sdkconfig_defaults sdkconfig_defaul
     # Custom target to run confserver.py from the build tool
     add_custom_target(confserver
         COMMAND ${prepare_kconfig_files_command}
-        COMMAND ${PYTHON} ${ARMINO_PATH}/tools/build_tools/kconfig_new/confserver.py
+        COMMAND ${PYTHON} -B ${ARMINO_PATH}/tools/build_tools/kconfig_new/confserver.py
         --env-file ${config_env_path}
         --kconfig ${ARMINO_PATH}/Kconfig
         --sdkconfig-rename ${root_sdkconfig_rename}
