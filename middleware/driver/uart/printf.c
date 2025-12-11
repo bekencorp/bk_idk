@@ -1322,6 +1322,7 @@ int __wrap_sprintf(char *str, const char *format, ...)
 int __wrap_puts(const char *s)
 {
 	uart_write_string(bk_get_printf_port(), s);
+	uart_write_string(bk_get_printf_port(), "\r\n");
 
 	return 1;	/* non-negative value returned */
 }
