@@ -42,4 +42,8 @@ menu "bk7239n"
 	config CUSTOMIZE_TY
 		bool "Enable customize ty define"
 		default n
+
+	config CUSTOMIZE_TY_BOARD
+		bool "Enable customize ty's board define"
+		default n
 endmenu

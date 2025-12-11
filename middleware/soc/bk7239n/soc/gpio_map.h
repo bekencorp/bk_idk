@@ -131,8 +131,13 @@ extern "C" {
 #define UART0_CTS_PIN GPIO_12
 #define UART0_RTS_PIN GPIO_13
 
+#if(CONFIG_CUSTOMIZE_TY_BOARD)
+#define UART1_TX_PIN  GPIO_1
+#define UART1_RX_PIN  GPIO_0
+#else
 #define UART1_TX_PIN  GPIO_0
 #define UART1_RX_PIN  GPIO_1
+#endif
 
 #define UART2_TX_PIN  GPIO_20
 #define UART2_RX_PIN  GPIO_21
