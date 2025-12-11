@@ -462,6 +462,11 @@ menu "Bk_Wifi"
 		int "Set listen interval threshold for arp keepalive"
 		default 307200
 
+	config VIF_MGMT_KEEP_ALIVE_TO_DUR
+		int "Set keep alive timeout duration"
+		range 1000 50000
+		default 10000
+
 	config COMPUTE_LISTEN_INTERVAL
 		bool "Enable compute listen interval"
 		default n

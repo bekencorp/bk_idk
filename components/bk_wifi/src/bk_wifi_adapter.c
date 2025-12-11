@@ -1323,6 +1323,11 @@ static uint32_t bk_feature_get_listen_interval_threshold_wrapper(void)
     return bk_feature_get_listen_interval_threshold();
 }
 
+static uint32_t bk_feature_get_keep_alive_to_dur_wrapper(void)
+{
+    return bk_feature_get_keep_alive_to_dur();
+}
+
 static int bk_feature_compute_listen_interval_enable_wrapper(void)
 {
     return bk_feature_compute_listen_interval_enable();
@@ -1639,6 +1644,7 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._bk_feature_get_ap_drift_statistic_cnt = bk_feature_get_ap_drift_statistic_cnt_wrapper,
 	._bk_feature_get_keep_alive_retry_cnt = bk_feature_get_keep_alive_retry_cnt_wrapper,
 	._bk_feature_get_listen_interval_threshold = bk_feature_get_listen_interval_threshold_wrapper,
+	._bk_feature_get_keep_alive_to_dur = bk_feature_get_keep_alive_to_dur_wrapper,
 	._bk_feature_compute_listen_interval_enable = bk_feature_compute_listen_interval_enable_wrapper,
 };
 

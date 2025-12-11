@@ -358,6 +358,16 @@ unsigned int bk_feature_get_keep_alive_retry_cnt(void);
 unsigned int bk_feature_get_listen_interval_threshold(void);
 
 /**
+ * @brief     Interface to get keep alive timeout duration
+ *
+ *
+ * @return
+ *    - keep alive timeout duration
+ *
+ */
+unsigned int bk_feature_get_keep_alive_to_dur(void);
+
+/**
  * @brief     Interface to get compute listen interval enable
  *
  *

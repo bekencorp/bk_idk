@@ -280,6 +280,10 @@ unsigned int bk_feature_get_listen_interval_threshold(void) {
 	return CONFIG_LISTEN_INTERVAL_THRESHOLD;
 }
 
+unsigned int bk_feature_get_keep_alive_to_dur(void) {
+	return CONFIG_VIF_MGMT_KEEP_ALIVE_TO_DUR;
+}
+
 int bk_feature_compute_listen_interval_enable(void) {
 #if CONFIG_COMPUTE_LISTEN_INTERVAL
 	return 1;
