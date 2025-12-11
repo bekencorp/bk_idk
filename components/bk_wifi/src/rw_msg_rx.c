@@ -56,6 +56,7 @@ struct co_list rw_msg_rx_head;
 struct co_list rw_msg_tx_head;
 wifi_linkstate_reason_t connect_flag = {WIFI_LINKSTATE_STA_IDLE, WIFI_REASON_MAX};
 SCAN_RST_UPLOAD_T *scan_rst_set_ptr = 0;
+bool scan_regd_flag = true;
 
 IND_CALLBACK_T scan_cfm_cb_user = {0};
 IND_CALLBACK_T wlan_connect_user_cb = {0};
@@ -103,6 +104,8 @@ extern void app_set_sema(void);
 extern int get_security_type_from_ie(u8 *, int, u16);
 extern void rwnx_cal_set_txpwr(UINT32 pwr_gain, UINT32 grate);
 extern void bk7011_default_rxsens_setting(void);
+extern uint8_t vif_mgmt_get_sta_vif_index();
+static bool rwnx_regd_need_update();
 
 /* scan result malloc item */
 UINT8 *sr_malloc_result_item(UINT32 vies_len)
@@ -442,6 +445,7 @@ void mhdr_connect_ind(void *msg, UINT32 len)
 
 	if (!ind->status_code) {
 		RWNX_LOGI("connect ok\n");
+		g_rwnx_hw.connected = true;
 
 		bk7011_default_rxsens_setting();
 
@@ -1046,8 +1050,21 @@ UINT32 mhdr_scanu_result_ind(SCAN_RST_UPLOAD_T *scan_rst, void *msg, UINT32 len)
 
 	if (chan)
 		regulatory_hint_found_beacon(&g_wiphy, chan);
-#endif
 
+	if (rwnx_regd_need_update()) {
+		elmt_addr = (UINT8 *)get_ie(var_part_addr, vies_len, MAC_ELTID_COUNTRY);
+		if (elmt_addr) {
+			const char *curr_regd = reg_current_regd();
+			const char *bcn_regd = (char *)(elmt_addr + 2);
+			if (!curr_regd || (curr_regd[0] != bcn_regd[0] || curr_regd[1] != bcn_regd[1])) {
+				// RWNX_LOGI("XXX hint core %c%c\n", bcn_regd[0], bcn_regd[1]);
+				// regulatory_hint_core(&g_wiphy, ind->band, ind->ie, ind->len);
+				regulatory_hint_core(bcn_regd);
+				scan_regd_flag = false;
+			}
+		}
+	}
+#endif
 
 	#if CONFIG_WIFI_SCAN_COUNTRY_CODE
 	if (site_survey_cc && g_scan_cc_rxed_cb) {
@@ -1628,6 +1645,23 @@ void rwnx_wifi_rlk_trigger_scan_process(void)
 		cfm_cb();
 }
 
+static bool rwnx_regd_need_update()
+{
+	// If global option disabled
+	if (!bk_wifi_regd_updated_by_scan())
+		return false;
+
+	// if scan regdomain is disabled
+	if (!scan_regd_flag)
+		return false;
+
+	// If station connected with AP, doesn't allow to update regd
+	if (vif_mgmt_get_sta_vif_index() != INVALID_VIF_IDX && g_rwnx_hw.connected)
+		return false;
+
+	return true;
+}
+
 //TODO remove old event handler
 void rwnx_handle_recv_msg(struct ke_msg *rx_msg)
 {
@@ -1662,6 +1696,7 @@ void rwnx_handle_recv_msg(struct ke_msg *rx_msg)
 			wpa_ctrl_event(WPA_CTRL_EVENT_SCAN_RESULTS, NULL);
 		}
 
+		scan_regd_flag = false;
 		break;
 
 	case SCANU_RESULT_IND:
@@ -1712,12 +1747,37 @@ void rwnx_handle_recv_msg(struct ke_msg *rx_msg)
 		break;
 #endif
 
+#if CONFIG_WIFI_REGDOMAIN
+	case SCANU_DOT11_IND: {
+		// check assoc state:
+		struct scanu_dot11_ind *ind = (struct scanu_dot11_ind *)ke_msg2param(rx_msg);
+
+		if (rwnx_regd_need_update()) {
+			const char *curr_regd = reg_current_regd();
+			const char *bcn_regd = (char *)ind->ie;
+			if (!curr_regd || (curr_regd[0] != bcn_regd[0] || curr_regd[1] != bcn_regd[1])) {
+				// If connected with AP, doesn't not allow change regd from beacon
+				//RWNX_LOGI("XXX dot11 %c%c\n", ind->ie[0], ind->ie[1]);
+				//regulatory_hint_core(&g_wiphy, ind->band, ind->ie, ind->len);
+				regulatory_hint_core((char *)ind->ie);
+				scan_regd_flag = false;
+			}
+		}
+		struct ieee80211_channel *chan = ieee80211_get_channel(&g_wiphy, ind->center_freq);
+
+		if (chan)
+			regulatory_hint_found_beacon(&g_wiphy, chan);
+	}	break;
+#endif
+
 	case SM_DISCONNECT_IND: {
 		struct ke_msg *msg_ptr;
 		struct sm_disconnect_ind *ind;
 
 		msg_ptr = (struct ke_msg *)rx_msg;
 		ind = (struct sm_disconnect_ind *)msg_ptr->param;
+
+		g_rwnx_hw.connected = false;
 
 		RWNX_LOGD("disconnect\r\n");
 

@@ -66,7 +66,9 @@ extern int bmsg_ioctl_sender(void *arg);
 extern int bmsg_software_para_ioctl_sender(void *arg);
 extern int bmsg_hardware_para_ioctl_sender(void *arg);
 void phy_get_channel(struct phy_channel_info *info, uint8_t index);
+uint8_t vif_mgmt_get_sta_vif_index();
 extern bool g_wifi_enable_flag;
+extern bool scan_regd_flag;
 
 int rw_msg_send(const void *msg_params, int reqcfm, uint16_t reqid, void *cfm)
 {
@@ -310,6 +312,30 @@ uint16_t get_chan_flags(uint32_t flags)
     return chan_flags;
 }
 
+// Check if this channel needs to be disabled, used by dot11d
+bool chan_need_disabled(struct ieee80211_channel *channel)
+{
+	// Always enable this channel for ATE
+	if (ate_is_enabled())
+		return false;
+
+	if (!(channel->flags & IEEE80211_CHAN_DISABLED))
+		return false;
+
+#if CONFIG_WIFI_REGDOMAIN
+	// If regdomain updated by scan is disabled
+	if (!bk_wifi_regd_updated_by_scan())
+		return true;
+
+	// If station connected with AP, disable this channel
+	if (vif_mgmt_get_sta_vif_index() != INVALID_VIF_IDX && g_rwnx_hw.connected)
+		return true;
+#endif
+
+	// enable this channel
+	return false;
+}
+
 int rw_msg_send_me_chan_config_req(void)
 {
 	struct me_chan_config_req *req;
@@ -328,8 +354,10 @@ int rw_msg_send_me_chan_config_req(void)
 		for (i = 0; i < b->n_channels; i++) {
 			req->chan2G4[req->chan2G4_cnt].flags = 0;
 
-			if (b->channels[i].flags & IEEE80211_CHAN_DISABLED)
+			if (chan_need_disabled(&b->channels[i])) {
 				req->chan2G4[req->chan2G4_cnt].flags |= CHAN_DISABLED;
+				RWNX_LOGD("disable band %d, freq %d\n", IEEE80211_BAND_2GHZ, b->channels[i].center_freq);
+			}
 
 			req->chan2G4[req->chan2G4_cnt].flags |= get_chan_flags(b->channels[i].flags);
 			req->chan2G4[req->chan2G4_cnt].band = IEEE80211_BAND_2GHZ;
@@ -350,8 +378,10 @@ int rw_msg_send_me_chan_config_req(void)
 		for (i = 0; i < b->n_channels; i++) {
 			req->chan5G[req->chan5G_cnt].flags = 0;
 
-			if (b->channels[i].flags & IEEE80211_CHAN_DISABLED && !ate_is_enabled())
+			if (chan_need_disabled(&b->channels[i])) {
 				req->chan5G[req->chan5G_cnt].flags |= CHAN_DISABLED;
+				RWNX_LOGD("disable band %d, freq %d\n", IEEE80211_BAND_5GHZ, b->channels[i].center_freq);
+			}
 
 			req->chan5G[req->chan5G_cnt].flags |= get_chan_flags(b->channels[i].flags);
 			req->chan5G[req->chan5G_cnt].band = IEEE80211_BAND_5GHZ;
@@ -1280,6 +1310,8 @@ int rw_msg_send_scanu_req(SCAN_PARAM_T *scan_param)
 	req->add_ie_len = scan_param->extra_ies_len;
 	os_memcpy(extra_ies, scan_param->extra_ies, req->add_ie_len);
 	req->add_ies = (uint32_t)extra_ies;
+
+	scan_regd_flag = true;
 
 	/* Send the SCANU_START_REQ message to LMAC FW */
 	return rw_msg_send(req, 0, SCANU_START_CFM, NULL);

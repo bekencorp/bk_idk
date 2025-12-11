@@ -3133,7 +3133,9 @@ enum
     SCANU_FAST_REQ,
     /// Confirmation of fast scan request.
     SCANU_FAST_CFM,
-    SCANU_JOIN_IND
+    SCANU_JOIN_IND,
+    /// Indication of country code
+    SCANU_DOT11_IND,
     #endif
 };
 
@@ -3207,6 +3209,23 @@ struct scanu_fast_req
     /// The channel number to scan.
     uint16_t ch_nbr;
 };
+
+struct scanu_dot11_ind
+{
+    /// The SSID to scan in the channel.
+    struct mac_ssid ssid;
+    /// BSSID.
+    struct mac_addr bssid;
+    /// Center freq
+    uint16_t center_freq;
+    /// Band
+    uint8_t band;
+    /// Country code ie len (exclude ie&len)
+    uint8_t len;
+    /// Country code
+    uint8_t ie[];
+};
+
 #endif
 /// Message API of the SM task
 enum sm_msg_tag

@@ -1450,6 +1450,7 @@ int ieee80211_channel_to_frequency(int chan, wifi_band_t band);
 int ieee80211_frequency_to_channel(int freq);
 uint16_t get_chan_flags(uint32_t flags);
 void regulatory_hint_11d(struct wiphy *wiphy, wifi_band_t band, const u8 *country_ie, u8 country_ie_len);
+int regulatory_hint_core(const char *alpha2);
 int regulatory_hint_found_beacon(struct wiphy *wiphy, struct ieee80211_channel *beacon_chan);
 struct ieee80211_channel *ieee80211_get_channel(struct wiphy *wiphy, int freq);
 void rwnx_regulatory_hint_11d(int freq, const u8 *country_ie, u8 country_ie_len);

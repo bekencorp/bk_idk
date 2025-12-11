@@ -281,6 +281,15 @@ int wpa_supplicant_ctrl_iface_scan_results(
 	}
 
 	dl_list_for_each(bss, &wpa_s->bss_id, struct wpa_bss, list_id) {
+#if CONFIG_WIFI_REGDOMAIN
+		u8 chan;
+
+		/* check country code */
+		ieee80211_freq_to_chan(bss->freq, &chan);
+		if (!rw_ieee80211_is_scan_rst_in_countrycode(chan))
+			continue;
+#endif
+
 		/* if no ssid specified, or match the specified ssid */
 		if (!ssid ||
 			(bss->ssid_len == ssid_len && !os_memcmp(ssid, bss->ssid, bss->ssid_len))) {
@@ -294,6 +303,15 @@ int wpa_supplicant_ctrl_iface_scan_results(
 	if (!results->ApList)
 		return -1;
 	dl_list_for_each(bss, &wpa_s->bss_id, struct wpa_bss, list_id) {
+#if CONFIG_WIFI_REGDOMAIN
+		u8 chan;
+
+		/* check country code */
+		ieee80211_freq_to_chan(bss->freq, &chan);
+		if (!rw_ieee80211_is_scan_rst_in_countrycode(chan))
+			continue;
+#endif
+
 		/* if no ssid specified, or match the specified ssid */
 		if (!ssid ||
 			(bss->ssid_len == ssid_len && !os_memcmp(ssid, bss->ssid, bss->ssid_len))) {

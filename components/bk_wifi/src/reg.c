@@ -54,6 +54,8 @@ extern const struct ieee80211_regdomain *reg_regdb[];
 	TYPE tmp;						\
 	offsetof(TYPE, MEMBER) + sizeof(tmp.MEMBER); })		\
 
+static bool regd_updated_by_scan = false;
+
 #define be32_to_cpu  __builtin_bswap32
 #define be16_to_cpu  __builtin_bswap16
 #define cpu_to_be32  __builtin_bswap32
@@ -2283,7 +2285,7 @@ static void queue_regulatory_request(struct regulatory_request *request)
  * Core regulatory hint -- happens during cfg80211_init()
  * and when we restore regulatory settings.
  */
-static int regulatory_hint_core(const char *alpha2)
+int regulatory_hint_core(const char *alpha2)
 {
 	struct regulatory_request *request;
 
@@ -2542,7 +2544,7 @@ static void restore_regulatory_settings(bool reset_user)
 
 void regulatory_hint_disconnect(void)
 {
-	REG_DBG_PRINT("Restore regulatory settings\n");
+	WIFI_LOGI("Restore regulatory settings\n");
 	restore_regulatory_settings(false);
 }
 
@@ -2912,6 +2914,10 @@ int regulatory_init(void)
 {
 	int err = 0;
 
+#if CONFIG_WIFI_REGDOMAIN_UPDATE_BY_SCAN
+	regd_updated_by_scan = true;
+#endif
+
 	bk_work_init(&reg_work, reg_todo, NULL);
 	rtos_init_recursive_mutex(&reg_mutex);
 
@@ -3008,6 +3014,13 @@ char *bk_wifi_get_country_code(void)
 	return (char *)cfg80211_regdomain->alpha2;
 }
 
+const char *reg_current_regd()
+{
+	if (cfg80211_regdomain)
+		return cfg80211_regdomain->alpha2;
+	return NULL;
+}
+
 void bk_wifi_print_regdomain()
 {
 	rtos_lock_recursive_mutex(&reg_mutex);
@@ -3016,5 +3029,16 @@ void bk_wifi_print_regdomain()
 	print_rd_rules(cfg80211_regdomain);
 	// reg_print_ieee80211_channel(&g_wiphy);
 	rtos_unlock_recursive_mutex(&reg_mutex);
+}
+
+
+bool bk_wifi_regd_updated_by_scan()
+{
+	return regd_updated_by_scan;
+}
+
+void bk_wifi_set_regd_updated_by_scan(bool enable)
+{
+	regd_updated_by_scan = enable;
 }
 

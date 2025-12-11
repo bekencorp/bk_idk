@@ -644,6 +644,11 @@ void mdm_set_txstartdelay(uint32_t value);
 void mdm_set_txcheckack(uint32_t value);
 void mdm_set_scramblerctrl(uint32_t value);
 void bk_wifi_print_regdomain();
+const char *reg_current_regd();
+bool bk_wifi_regd_updated_by_scan();
+void bk_wifi_set_regd_updated_by_scan(bool enable);
+struct ieee80211_channel;
+bool chan_need_disabled(struct ieee80211_channel *channel);
 
 //Optimize it
 __attribute__((weak)) uint32_t cfg_ap_is_open_system(void);

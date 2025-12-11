@@ -2557,7 +2557,7 @@ void cli_wifi_regd_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char 
 {
 	CLI_LOGD("regulatory command\r\n");
 
-	if (!strcmp(argv[1], "get")) {
+	if (argc > 1 && !strcmp(argv[1], "get")) {
 		bk_wifi_print_regdomain();
 		return;
 	} else if (argc > 2 && !strcmp(argv[1], "set")) {
@@ -2565,11 +2565,17 @@ void cli_wifi_regd_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char 
 		os_strlcpy(alpha2, argv[2], 3);
 		bk_wifi_set_country_code(alpha2);
 		return;
+	} else if (argc > 2 && !strcmp(argv[1], "updated_by_scan")) {
+		bool enable = atoi(argv[2]);
+		bk_wifi_set_regd_updated_by_scan(enable);
+		os_printf("regd updated_by_scan %d\n", enable);
+		return;
 	}
 
 	CLI_LOGE("Usage: \n");
 	CLI_LOGE("	%s get\n", argv[0]);
 	CLI_LOGE("	%s set <alpha2>\n", argv[0]);
+	CLI_LOGE("	%s updated_by_scan <enable>\n", argv[0]);
 }
 #endif
 

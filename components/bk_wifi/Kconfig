@@ -512,6 +512,12 @@ menu "Bk_Wifi"
 		help
 			Enable regulatory radar support.
 
+	config WIFI_REGDOMAIN_UPDATE_BY_SCAN
+		bool "regdomain updated by scan"
+		depends on WIFI_REGDOMAIN
+		default n
+		help
+			Use scan results to update regulatory domain.
 
 	config WIFI_SAP_PROBE_RSP_LIFETIME
 		int "softap probe response life time"

@@ -381,8 +381,9 @@ UINT32 rw_ieee80211_init(void)
 
 	wiphy->bands[IEEE80211_BAND_2GHZ] = &rwnx_band_2GHz;
 	wiphy->bands[IEEE80211_BAND_5GHZ] = &rwnx_band_5GHz;
+#if CONFIG_WIFI_REGDOMAIN
 	wiphy->reg_notifier = rwnx_reg_notifier;
-
+#endif
 	intf.msg_outbound_func = mr_kmsg_fwd;
 	intf.data_outbound_func = rwm_upload_data;
 	intf.rx_alloc_func = rwm_get_rx_free_node;
@@ -709,7 +710,8 @@ bool check_non_radar_channel_available(int chan)
 
 			// Found channel, check RADAR flag
 			if (channel->hw_value == chan) {
-				if (channel->flags & IEEE80211_CHAN_RADAR)
+				if ((channel->flags & (IEEE80211_CHAN_RADAR | IEEE80211_CHAN_NO_IR)) ==
+					(IEEE80211_CHAN_RADAR | IEEE80211_CHAN_NO_IR))
 					return false;
 				return true;
 			}
@@ -769,13 +771,16 @@ UINT8 rw_ieee80211_init_scan_chan(void *request)
 		num_chan = wiphy->bands[band]->n_channels;
 		channel = wiphy->bands[band]->channels;
 		for (i = 0; i < num_chan; i++, channel++) {
-			if ((channel->flags & IEEE80211_CHAN_DISABLED) && !ate_is_enabled())
+			if (chan_need_disabled(channel)) {
+				RWNX_LOGD("disable band %d, freq %d\n", band, channel->center_freq);
 				continue;
+			}
 
 			req->chan[cnt].band = channel->band;
 			req->chan[cnt].freq = channel->center_freq;
 			req->chan[cnt].tx_power = VIF_UNDEF_POWER;
 			req->chan[cnt].flags = get_chan_flags(channel->flags);
+			RWNX_LOGD("band %d, freq %d\n", band, channel->center_freq);
 
 			cnt++;
 		}
@@ -918,9 +923,11 @@ UINT8 rw_ieee80211_get_scan_default_chan_num(void)
 		num_chan = wiphy->bands[band]->n_channels;
 		channel = wiphy->bands[band]->channels;
 		for (i = 0; i < num_chan; i++, channel++) {
+#if 0
 			// For ATE, assume channel is available
-			if ((channel->flags & IEEE80211_CHAN_DISABLED) && !ate_is_enabled())
+			if ((channel->flags & IEEE80211_CHAN_DISABLED) && !ate_is_enabled() && g_rwnx_hw.connected)
 				continue;
+#endif
 			cnt++;
 		}
 	}
@@ -1058,6 +1065,7 @@ int get_wiphy_idx(struct wiphy *wiphy)
 	return 1;
 }
 
+#if CONFIG_WIFI_REGDOMAIN
 int rwnx_reg_notifier(struct wiphy *wiphy,
 			    struct regulatory_request *request)
 {
@@ -1123,5 +1131,6 @@ void rwnx_regulatory_hint_11d(int freq, const u8 *country_ie, u8 country_ie_len)
     }
 	regulatory_hint_11d(&g_wiphy, band, country_ie, country_ie_len);
 }
+#endif
 // eof
 

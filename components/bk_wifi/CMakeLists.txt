@@ -9,9 +9,6 @@ list(APPEND srcs
 	src/net_param.c
 	src/pbuf.c
 	src/phy.c
-	src/regdb.c
-	src/regdb_bin.c
-	src/reg.c
 	src/rw_ieee80211.c
 	src/rw_msdu.c
 	src/rw_msg_rx.c
@@ -57,6 +54,13 @@ endif()
 if(CONFIG_NET_PARAM)
 list(APPEND srcs
 	src/net_param.c
+)
+endif()
+if(CONFIG_WIFI_REGDOMAIN)
+list(APPEND srcs
+	src/regdb.c
+	src/regdb_bin.c
+	src/reg.c
 )
 endif()
 
