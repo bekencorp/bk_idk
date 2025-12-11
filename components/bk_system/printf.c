@@ -50,8 +50,8 @@ static volatile uint8_t s_printf_sync = 0;
 
 typedef  struct
 {
-	char	mod_name[11];
-	u8		disabled;
+    char    mod_name[11];
+    u8        disabled;
 } __bk_packed mod_disable_list_t;
 
 static mod_disable_list_t mod_tag_list[6];
@@ -61,226 +61,308 @@ static u8 whitelist_enabled = 0;
 int printf_lock_init(void)
 {
 #if CONFIG_SHELL_ASYNCLOG
-	memset(&mod_tag_list[0], 0, sizeof(mod_tag_list));
-	shell_set_log_level(BK_LOG_LEVEL);
+    memset(&mod_tag_list[0], 0, sizeof(mod_tag_list));
+    shell_set_log_level(BK_LOG_LEVEL);
 #endif
 
-	return BK_OK;
+    return BK_OK;
 }
 
 int printf_lock_deinit(void)
 {
-	return BK_OK;
+    return BK_OK;
 }
 
 static void bk_printf_sync_port(char *prefix, const char *fmt, va_list args)
 {
-	if(!printf_is_init())
-		return;
+    if(!printf_is_init())
+        return;
 
-	char string[CONFIG_PRINTF_BUF_SIZE];
+    char string[CONFIG_PRINTF_BUF_SIZE];
 
-	os_snprintf(&string[0], CONFIG_PRINTF_BUF_SIZE, "[SYNC]:%s", prefix);
-	string[CONFIG_PRINTF_BUF_SIZE - 1] = 0;
+    os_snprintf(&string[0], CONFIG_PRINTF_BUF_SIZE, "[SYNC]:%s", prefix);
+    string[CONFIG_PRINTF_BUF_SIZE - 1] = 0;
 
-	int   data_len = strlen(string);
+    int   data_len = strlen(string);
 
-	vsnprintf(&string[data_len], CONFIG_PRINTF_BUF_SIZE - data_len, fmt, args);
+    vsnprintf(&string[data_len], CONFIG_PRINTF_BUF_SIZE - data_len, fmt, args);
 
-	string[CONFIG_PRINTF_BUF_SIZE - 1] = 0;
-	uart_write_string(bk_get_printf_port(), string);
+    string[CONFIG_PRINTF_BUF_SIZE - 1] = 0;
+    uart_write_string(bk_get_printf_port(), string);
 }
 
 static void bk_printf_raw_sync(const char *fmt, va_list args)
 {
-	if(!printf_is_init())
-		return;
+    if(!printf_is_init())
+        return;
 
-	char string[CONFIG_PRINTF_BUF_SIZE];
+    char string[CONFIG_PRINTF_BUF_SIZE];
 
-	vsnprintf(&string[0], sizeof(string), fmt, args);
-	string[CONFIG_PRINTF_BUF_SIZE - 1] = 0;
-	uart_write_string(bk_get_printf_port(), string);
+    vsnprintf(&string[0], sizeof(string), fmt, args);
+    string[CONFIG_PRINTF_BUF_SIZE - 1] = 0;
+    uart_write_string(bk_get_printf_port(), string);
 }
 
 static const char * level_format[] =
 {
-	"(%d):",
-	"E(%d):",
-	"W(%d):",
-	"I(%d):",
-	"D(%d):",
-	"V(%d):",
+    "(%d):",
+    "E(%d):",
+    "W(%d):",
+    "I(%d):",
+    "D(%d):",
+    "V(%d):",
 };
 
 static void bk_printf_port_ext_internel(int block_mode, int level, char *tag, const char *fmt, va_list args)
 {
-#define CPU_STR_LEN		4
-#define MAX_TAG_LEN		8
-#define MAX_INFO_LEN	14    /* 13 + 1(:) */
+#define CPU_STR_LEN        4
+#define MAX_TAG_LEN        8
+#define MAX_INFO_LEN    14    /* 13 + 1(:) */
 
-	/*                  "cpux" + ":"       "Tag12345" + ":"    "X(1234567890)" + ":"   */
-	char    prefix_str[(CPU_STR_LEN + 1) + (MAX_TAG_LEN + 1) + (MAX_INFO_LEN) + 1];
-	int     data_len = 0;
+    /*                  "cpux" + ":"       "Tag12345" + ":"    "X(1234567890)" + ":"   */
+    char    prefix_str[(CPU_STR_LEN + 1) + (MAX_TAG_LEN + 1) + (MAX_INFO_LEN) + 1];
+    int     data_len = 0;
 #if CONFIG_SHELL_ASYNCLOG
-	int cpu_id = shell_get_cpu_id();
+    int cpu_id = shell_get_cpu_id();
 #else
-	int cpu_id = rtos_get_core_id();
+    int cpu_id = rtos_get_core_id();
 #endif
 
-	prefix_str[0] = 0;
-	if(cpu_id >= 0)
-	{
-		os_snprintf(&prefix_str[data_len], CPU_STR_LEN + 1, "cpu%d", cpu_id);
-		data_len += CPU_STR_LEN;
+    prefix_str[0] = 0;
+    if(cpu_id >= 0)
+    {
+        os_snprintf(&prefix_str[data_len], CPU_STR_LEN + 1, "cpu%d", cpu_id);
+        data_len += CPU_STR_LEN;
 
-		prefix_str[data_len++] = ':';
-		prefix_str[data_len] = 0;
-	}
+        prefix_str[data_len++] = ':';
+        prefix_str[data_len] = 0;
+    }
 
-	if((tag != NULL) && (tag[0] != 0))
-	{
-		strncpy(&prefix_str[data_len], tag, MAX_TAG_LEN);
-		prefix_str[MAX_TAG_LEN + data_len] = 0;
+    if((tag != NULL) && (tag[0] != 0))
+    {
+        strncpy(&prefix_str[data_len], tag, MAX_TAG_LEN);
+        prefix_str[MAX_TAG_LEN + data_len] = 0;
 
-		data_len = strlen(prefix_str);
+        data_len = strlen(prefix_str);
 
-		prefix_str[data_len] = ':';
-		data_len++;
-		prefix_str[data_len] = 0;
-	}
+        prefix_str[data_len] = ':';
+        data_len++;
+        prefix_str[data_len] = 0;
+    }
 
-	os_snprintf(&prefix_str[data_len], MAX_INFO_LEN + 1, level_format[level], rtos_get_time());
+    os_snprintf(&prefix_str[data_len], MAX_INFO_LEN + 1, level_format[level], rtos_get_time());
 
 #if CONFIG_SHELL_ASYNCLOG
 
-	if(s_printf_sync == 0)
-	{
-		shell_log_out_port(block_mode, level, prefix_str, fmt, args);
-	}
-	else
-	{
-		bk_printf_sync_port(prefix_str, fmt, args);
-	}
+    if(s_printf_sync == 0)
+    {
+        shell_log_out_port(block_mode, level, prefix_str, fmt, args);
+    }
+    else
+    {
+        bk_printf_sync_port(prefix_str, fmt, args);
+    }
 
 #else
-	bk_printf_sync_port(prefix_str, fmt, args);
+    bk_printf_sync_port(prefix_str, fmt, args);
 #endif // #if CONFIG_SHELL_ASYNCLOG
 }
 
 static void bk_printf_port_ext(int level, char *tag, const char *fmt, va_list args)
 {
-	bk_printf_port_ext_internel(LOG_COMMON_MODE, level, tag, fmt, args);
+    bk_printf_port_ext_internel(LOG_COMMON_MODE, level, tag, fmt, args);
 }
 
 static void bk_printf_raw_port(int block_mode, int level, const char *fmt, va_list args)
 {
 #if CONFIG_SHELL_ASYNCLOG
-
-	if(s_printf_sync == 0)
-	{
-		shell_log_out_port(block_mode, level, NULL, fmt, args);
-	}
-	else
-	{
-		bk_printf_raw_sync(fmt, args);
-	}
+    if(s_printf_sync == 0)
+    {
+        shell_log_out_port(block_mode, level, NULL, fmt, args);
+    }
+    else
+    {
+        bk_printf_raw_sync(fmt, args);
+    }
 
 #else
-	bk_printf_raw_sync(fmt, args);
+    bk_printf_raw_sync(fmt, args);
 #endif // #if CONFIG_SHELL_ASYNCLOG
 }
 
 void bk_printf(const char *fmt, ...)
 {
-	int level = 0; // BK_LOG_INFO;
-	va_list args;
+    int level = 0; // BK_LOG_INFO;
+    va_list args;
 
-	if(!printf_is_init())
-		return;
+    if(!printf_is_init())
+        return;
 
-	if(!s_printf_enable)
-		return;
+    if(!s_printf_enable)
+        return;
 
 #if CONFIG_SHELL_ASYNCLOG
-	if( !shell_level_check_valid(level) )  /* check here instead of in shell_log_out to reduce API instructions. */
-		return;
+    if( !shell_level_check_valid(level) )  /* check here instead of in shell_log_out to reduce API instructions. */
+        return;
 #endif
 
-	va_start(args, fmt);
-	MULTI_CORE_PRINTF_LOCK();
+    va_start(args, fmt);
+    MULTI_CORE_PRINTF_LOCK();
 
-	bk_printf_port_ext(level, NULL, fmt, args);
+    bk_printf_port_ext(level, NULL, fmt, args);
 
-	MULTI_CORE_PRINTF_UNLOCK();
-	va_end(args);
+    MULTI_CORE_PRINTF_UNLOCK();
+    va_end(args);
 
-	return;
+    return;
 }
 
 #define __is_print(ch) ((unsigned int)((ch) - ' ') < 127u - ' ')
+
+static void _bk_printf_raw_sync_wrapper(const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    bk_printf_raw_sync(fmt, args);
+    va_end(args);
+}
+
+static void _bk_print_dump_hex_internal(const uint8_t *ptr, size_t buflen, int cell_size)
+{
+    unsigned char *buf = (unsigned char *)ptr;
+    int i, j;
+    int cells_per_line = 16 / cell_size;
+    int cell_count = buflen / cell_size;
+    const char *fmt_str;
+    int empty_width;
+
+    switch (cell_size)
+    {
+        case 1:
+            fmt_str = "%02X ";
+            empty_width = 3;
+            break;
+        case 2:
+            fmt_str = "%04X ";
+            empty_width = 5;
+            break;
+        case 4:
+            fmt_str = "%08X ";
+            empty_width = 9;
+            break;
+        default:
+            return;
+    }
+
+    for (i = 0; i < buflen; i += 16)
+    {
+        _bk_printf_raw_sync_wrapper("%08X: ", i);
+
+        for (j = 0; j < cells_per_line; j++)
+        {
+            int cell_idx = (i / cell_size) + j;
+            if (cell_idx < cell_count)
+            {
+                switch (cell_size)
+                {
+                    case 1:
+                        _bk_printf_raw_sync_wrapper(fmt_str, buf[i + j]);
+                        break;
+                    case 2:
+                        {
+                            uint16_t *buf_16 = (uint16_t *)ptr;
+                            _bk_printf_raw_sync_wrapper(fmt_str, buf_16[cell_idx]);
+                        }
+                        break;
+                    case 4:
+                        {
+                            uint32_t *buf_32 = (uint32_t *)ptr;
+                            _bk_printf_raw_sync_wrapper(fmt_str, buf_32[cell_idx]);
+                        }
+                        break;
+                }
+            }
+            else
+            {
+                int k;
+                for (k = 0; k < empty_width; k++)
+                {
+                    _bk_printf_raw_sync_wrapper(" ");
+                }
+            }
+        }
+
+        _bk_printf_raw_sync_wrapper(" ");
+
+        for (j = 0; j < 16; j++)
+        {
+            if (i + j < buflen)
+            {
+                _bk_printf_raw_sync_wrapper("%c", __is_print(buf[i + j]) ? buf[i + j] : '.');
+            }
+            else
+            {
+                _bk_printf_raw_sync_wrapper(" ");
+            }
+        }
+
+        _bk_printf_raw_sync_wrapper("\n");
+    }
+}
+
 void bk_print_dump_hex(const uint8_t *ptr, size_t buflen)
 {
-    unsigned char *buf = (unsigned char*)ptr;
-    int i, j;
+    _bk_print_dump_hex_internal(ptr, buflen, 1);
+}
 
-    for (i=0; i<buflen; i+=16)
-    {
-        bk_printf("%08X: ", i);
+void bk_print_dump_hex_16bit(const uint8_t *ptr, size_t buflen)
+{
+    _bk_print_dump_hex_internal(ptr, buflen, 2);
+}
 
-        for (j=0; j<16; j++)
-            if (i+j < buflen)
-                bk_printf("%02X ", buf[i+j]);
-            else
-                bk_printf("   ");
-        bk_printf(" ");
-
-        for (j=0; j<16; j++)
-            if (i+j < buflen)
-                bk_printf("%c", __is_print(buf[i+j]) ? buf[i+j] : '.');
-        bk_printf("\n");
-    }
+void bk_print_dump_hex_32bit(const uint8_t *ptr, size_t buflen)
+{
+    _bk_print_dump_hex_internal(ptr, buflen, 4);
 }
 
 #if CONFIG_SHELL_ASYNCLOG
 static int bk_mod_printf_disbled(char * tag)
 {
-	int		i, result;
+    int i, result;
 
-	for(i = 0; i < ARRAY_SIZE(mod_tag_list); i++)
-	{
-		if(mod_tag_list[i].disabled)
-		{
-			result = strncmp(mod_tag_list[i].mod_name, tag, sizeof(mod_tag_list[i].mod_name) - 1);
+    for(i = 0; i < ARRAY_SIZE(mod_tag_list); i++)
+    {
+        if(mod_tag_list[i].disabled)
+        {
+            result = strncmp(mod_tag_list[i].mod_name, tag, sizeof(mod_tag_list[i].mod_name) - 1);
 
-			if(result == 0)
-				return 1;
-		}
-	}
+            if(result == 0)
+                return 1;
+        }
+    }
 
-	return 0;
+    return 0;
 }
 
 void bk_enable_white_list(int enabled)
 {
-	if(enabled)
-		whitelist_enabled = 1;
-	else
-		whitelist_enabled = 0;
+    if(enabled)
+        whitelist_enabled = 1;
+    else
+        whitelist_enabled = 0;
 }
 
 int bk_white_list_state(void)
 {
-	return whitelist_enabled;
+    return whitelist_enabled;
 }
-
 #endif // #if CONFIG_SHELL_ASYNCLOG
 
 /*  ========= !! NOTE !! =========  */
 /*          Obsoleted  API          */
 void bk_buf_printf_sync(char *buf, int buf_len)   /* Obsoleted  API */
 {
-	return;
+    return;
 }
 
 /*  ========= !! NOTE !! =========  */
@@ -288,157 +370,135 @@ void bk_buf_printf_sync(char *buf, int buf_len)   /* Obsoleted  API */
 /* use bk_printf_ext(...) instead.  */
 void bk_printf_ex(int level, char *tag, const char *fmt, ...)   /* Obsoleted  API */
 {
-#if 0
-	va_list args;
-
-	if(!printf_is_init())
-		return;
-
-#if CONFIG_SHELL_ASYNCLOG
-	if( !shell_level_check_valid(level) )  /* check here instead of in shell_log_out to reduce API instructions. */
-		return;
-
-	if(bk_mod_printf_disbled(tag) ^ whitelist_enabled)
-		return;
-#endif
-
-	va_start(args, fmt);
-
-	bk_printf_port(level, tag, fmt, args);
-
-	va_end(args);
-
-	return;
-#endif
 }
 
 static void bk_printf_ext_internel(int block_mode, int level, char *tag, const char *fmt, va_list args)
 {
-	if(!printf_is_init())
-		return;
+    if(!printf_is_init())
+        return;
 
-	if(!s_printf_enable)
-		return;
+    if(!s_printf_enable)
+        return;
 
 #if CONFIG_SHELL_ASYNCLOG
-	if( !shell_level_check_valid(level) )  /* check here instead of in shell_log_out to reduce API instructions. */
-		return;
+    if( !shell_level_check_valid(level) )  /* check here instead of in shell_log_out to reduce API instructions. */
+        return;
 
-	if(tag != NULL)
-	{
-		if(bk_mod_printf_disbled(tag) ^ whitelist_enabled)
-			return;
-	}
+    if(tag != NULL)
+    {
+        if(bk_mod_printf_disbled(tag) ^ whitelist_enabled)
+            return;
+    }
 #endif
 
-	bk_printf_port_ext_internel(block_mode, level, tag, fmt, args);
+    bk_printf_port_ext_internel(block_mode, level, tag, fmt, args);
 
-	return;
+    return;
 }
 
 void bk_printf_ext(int level, char *tag, const char *fmt, ...)
 {
-	va_list args;
-	va_start(args, fmt);
-	bk_printf_ext_internel(LOG_COMMON_MODE, level, tag, fmt, args);
-	va_end(args);
+    va_list args;
+    va_start(args, fmt);
+    bk_printf_ext_internel(LOG_COMMON_MODE, level, tag, fmt, args);
+    va_end(args);
 }
 
 void bk_printf_nonblock(int level, char *tag, const char *fmt, ...)
 {
-	va_list args;
-	va_start(args, fmt);
-	bk_printf_ext_internel(LOG_NONBLOCK_MODE, level, tag, fmt, args);
-	va_end(args);
+    va_list args;
+    va_start(args, fmt);
+    bk_printf_ext_internel(LOG_NONBLOCK_MODE, level, tag, fmt, args);
+    va_end(args);
 }
 
 void bk_printf_static_nonblock(int level, char *tag, const char *fmt, ...)
 {
-	va_list args;
-	va_start(args, fmt);
-	bk_printf_ext_internel(LOG_STAIC_NONBLOCK_MODE, level, tag, fmt, args);
-	va_end(args);
+    va_list args;
+    va_start(args, fmt);
+    bk_printf_ext_internel(LOG_STAIC_NONBLOCK_MODE, level, tag, fmt, args);
+    va_end(args);
 }
 
 void bk_printf_static_block(int level, char *tag, const char *fmt, ...)
 {
-	va_list args;
-	va_start(args, fmt);
-	bk_printf_ext_internel(LOG_STATIC_BLOCK_MODE, level, tag, fmt, args);
-	va_end(args);
+    va_list args;
+    va_start(args, fmt);
+    bk_printf_ext_internel(LOG_STATIC_BLOCK_MODE, level, tag, fmt, args);
+    va_end(args);
 }
 
 void bk_vprintf_ext(int level, char *tag, const char *fmt, va_list args)
 {
-	bk_printf_ext_internel(LOG_COMMON_MODE, level, tag, fmt, args);
+    bk_printf_ext_internel(LOG_COMMON_MODE, level, tag, fmt, args);
 }
 
 static void bk_printf_raw_internel(int block_mode, int level, char *tag, const char *fmt, va_list args)
 {
-	if(!printf_is_init())
-		return;
+    if(!printf_is_init())
+        return;
 
-	if(!s_printf_enable)
-		return;
+    if(!s_printf_enable)
+        return;
 
 #if CONFIG_SHELL_ASYNCLOG
-	if( !shell_level_check_valid(level) )  /* check here instead of in shell_log_out to reduce API instructions. */
-		return;
+    if( !shell_level_check_valid(level) )  /* check here instead of in shell_log_out to reduce API instructions. */
+        return;
 
-	if(tag != NULL)
-	{
-		if(bk_mod_printf_disbled(tag) ^ whitelist_enabled)
-			return;
-	}
+    if(tag != NULL)
+    {
+        if(bk_mod_printf_disbled(tag) ^ whitelist_enabled)
+            return;
+    }
 #endif
 
-	bk_printf_raw_port(block_mode, level, fmt, args);
+    bk_printf_raw_port(block_mode, level, fmt, args);
 
-	return;
+    return;
 }
 
 void bk_printf_raw(int level, char *tag, const char *fmt, ...)
 {
-	va_list args;
-	va_start(args, fmt);
-	bk_printf_raw_internel(LOG_COMMON_MODE, level, tag, fmt, args);
-	va_end(args);
+    va_list args;
+    va_start(args, fmt);
+    bk_printf_raw_internel(LOG_COMMON_MODE, level, tag, fmt, args);
+    va_end(args);
 }
 
 void bk_printf_raw_nonblock(int level, char *tag, const char *fmt, ...)
 {
-	va_list args;
-	va_start(args, fmt);
-	bk_printf_raw_internel(LOG_NONBLOCK_MODE, level, tag, fmt, args);
-	va_end(args);
+    va_list args;
+    va_start(args, fmt);
+    bk_printf_raw_internel(LOG_NONBLOCK_MODE, level, tag, fmt, args);
+    va_end(args);
 }
 
 void bk_vprintf_raw(int level, char *tag, const char *fmt, va_list args)
 {
-	bk_printf_raw_internel(LOG_COMMON_MODE, level, tag, fmt, args);
+    bk_printf_raw_internel(LOG_COMMON_MODE, level, tag, fmt, args);
 }
 
 void bk_set_printf_enable(uint8_t enable)
 {
 #if CONFIG_SHELL_ASYNCLOG
-	if(0 == enable) {
-		shell_echo_set(0);
-		shell_set_log_level(0);
-	} else {
-		shell_echo_set(1);
-		shell_set_log_level(BK_LOG_LEVEL);
-	}
+    if(0 == enable) {
+        shell_echo_set(0);
+        shell_set_log_level(0);
+    } else {
+        shell_echo_set(1);
+        shell_set_log_level(BK_LOG_LEVEL);
+    }
 #endif
-	s_printf_enable = enable;
+    s_printf_enable = enable;
 }
 
 void bk_set_printf_sync(uint8_t enable)
 {
 #if CONFIG_SHELL_ASYNCLOG
 #if CONFIG_SYS_CPU1
-	s_printf_sync = 0;
+    s_printf_sync = 0;
 #else
-	s_printf_sync = enable;
+    s_printf_sync = enable;
 #endif
 #endif
 }
@@ -446,65 +506,65 @@ void bk_set_printf_sync(uint8_t enable)
 int bk_get_printf_sync(void)
 {
 #if CONFIG_SHELL_ASYNCLOG
-	return s_printf_sync;
+    return s_printf_sync;
 #endif
 
-	return 1;
+    return 1;
 }
 
 void bk_disable_mod_printf(char *mod_name, uint8_t disable)
 {
 #if CONFIG_SHELL_ASYNCLOG
 
-	int		i, j, result;
+    int        i, j, result;
 
-	disable = disable ^ whitelist_enabled;
+    disable = disable ^ whitelist_enabled;
 
-	if(disable == 0)
-	{
-		for(i = 0; i < ARRAY_SIZE(mod_tag_list); i++)
-		{
-			if(mod_tag_list[i].disabled)
-			{
-				result = strncmp(mod_tag_list[i].mod_name, mod_name, sizeof(mod_tag_list[i].mod_name) - 1);
+    if(disable == 0)
+    {
+        for(i = 0; i < ARRAY_SIZE(mod_tag_list); i++)
+        {
+            if(mod_tag_list[i].disabled)
+            {
+                result = strncmp(mod_tag_list[i].mod_name, mod_name, sizeof(mod_tag_list[i].mod_name) - 1);
 
-				if(result == 0)
-				{
-					mod_tag_list[i].disabled = 0;
-				}
-			}
-		}
-	}
-	else
-	{
-		j = ARRAY_SIZE(mod_tag_list);
+                if(result == 0)
+                {
+                    mod_tag_list[i].disabled = 0;
+                }
+            }
+        }
+    }
+    else
+    {
+        j = ARRAY_SIZE(mod_tag_list);
 
-		for(i = 0; i < ARRAY_SIZE(mod_tag_list); i++)
-		{
-			if(mod_tag_list[i].disabled)
-			{
-				result = strncmp(mod_tag_list[i].mod_name, mod_name, sizeof(mod_tag_list[i].mod_name) - 1);
+        for(i = 0; i < ARRAY_SIZE(mod_tag_list); i++)
+        {
+            if(mod_tag_list[i].disabled)
+            {
+                result = strncmp(mod_tag_list[i].mod_name, mod_name, sizeof(mod_tag_list[i].mod_name) - 1);
 
-				if(result == 0)
-				{
-					return;
-				}
-			}
-			else
-				j = i;
-		}
+                if(result == 0)
+                {
+                    return;
+                }
+            }
+            else
+                j = i;
+        }
 
-		if(j >= ARRAY_SIZE(mod_tag_list)) /* no free slot to record this module name. */
-			return;
-		else
-		{
-			strncpy(mod_tag_list[j].mod_name, mod_name, sizeof(mod_tag_list[j].mod_name) - 1);
-			mod_tag_list[j].mod_name[sizeof(mod_tag_list[j].mod_name) - 1] = 0;
-			mod_tag_list[j].disabled = 1;
-		}
-	}
+        if(j >= ARRAY_SIZE(mod_tag_list)) /* no free slot to record this module name. */
+            return;
+        else
+        {
+            strncpy(mod_tag_list[j].mod_name, mod_name, sizeof(mod_tag_list[j].mod_name) - 1);
+            mod_tag_list[j].mod_name[sizeof(mod_tag_list[j].mod_name) - 1] = 0;
+            mod_tag_list[j].disabled = 1;
+        }
+    }
 
-	return;
+    return;
 
 #endif
 }
@@ -513,21 +573,21 @@ char * bk_get_disable_mod(int * idx)
 {
 #if CONFIG_SHELL_ASYNCLOG
 
-	int 	i;
+    int     i;
 
-	for(i = *idx; i < ARRAY_SIZE(mod_tag_list); i++)
-	{
-		(*idx)++;
-		if(mod_tag_list[i].disabled)
-		{
-			return &mod_tag_list[i].mod_name[0];
-		}
-	}
+    for(i = *idx; i < ARRAY_SIZE(mod_tag_list); i++)
+    {
+        (*idx)++;
+        if(mod_tag_list[i].disabled)
+        {
+            return &mod_tag_list[i].mod_name[0];
+        }
+    }
 
-	return NULL;
+    return NULL;
 
 #endif
 
-	return NULL;
+    return NULL;
 }
 

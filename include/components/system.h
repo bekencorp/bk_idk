@@ -138,6 +138,8 @@ uint32_t bk_get_ticks_per_second(void);
 int bk_get_tick_timer_id(void);
 void bk_printf(const char *fmt, ...);
 void bk_print_dump_hex(const uint8_t *ptr, size_t buflen);
+void bk_print_dump_hex_16bit(const uint8_t *ptr, size_t buflen);
+void bk_print_dump_hex_32bit(const uint8_t *ptr, size_t buflen);
 void bk_null_printf(const char *fmt, ...);
 int bk_printf_init(void);
 int bk_printf_deinit(void);

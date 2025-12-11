@@ -28,11 +28,26 @@ static UINT8 s_adc_reading_flag = 0;
 static void cli_adc_help(void)
 {
     CLI_LOGI("adc_driver init/deinit\n");
+    CLI_LOGI("  Examples: sadc_driver init, sadc_driver deinit\n");
     CLI_LOGI("adc_test [channel] [init/deinit/start/stop/dump_statis/get_value/single_step_mode_read\n");
+    CLI_LOGI("  Examples: sadc 3 get_value, sadc 3 dump_statis, sadc 3 single_step_mode_read\n");
     CLI_LOGI("adc_test [channel] [config] [mode] [src_clk] [adc_clk] [sature_mode] [sampl_rate]\n");
-    CLI_LOGI("adc_test [channel] [read/rag_cb] [size] [time_out]\n");
-    CLI_LOGI("adc_api_test [set_mode/get_mode/set_clk/set_sample_rate/set_channel/set_filter/\
-		set_steady_time/set_sample_cnt/set_saturate\n");
+    CLI_LOGI("  Example: sadc 3 config 3 1 0x30e035 4 0\n");
+    CLI_LOGI("adc_test [channel] [read/reg_cb] [size] [time_out]\n");
+    CLI_LOGI("  Examples: sadc 3 read 16 1000, sadc 3 reg_cb 4\n");
+    CLI_LOGI("adc_test [channel] [single_adc_example/multi_adc_example]\n");
+    CLI_LOGI("  Examples: sadc 3 single_adc_example, sadc 0 multi_adc_example\n");
+    CLI_LOGI("adc_test [channel] [saradc_val_read/use_sample_set_saradc_val ...]\n");
+    CLI_LOGI("  Examples: sadc 3 saradc_val_read, sadc 4 use_sample_set_saradc_val 3 1 0x200000 4 0 low\n");
+    CLI_LOGI("sadc_cont start/read/stop [num val] [chan val] [div val] [sam_rate val] [mode val]\n");
+    CLI_LOGI("  Examples: sadc_cont start num 1024 chan 3 div 32 sam_rate 0 mode 1\n");
+    CLI_LOGI("           sadc_cont read, sadc_cont stop\n");
+    CLI_LOGI("sadc_multi config/read [chan id]\n");
+    CLI_LOGI("  Examples: sadc_multi config chan 3, sadc_multi read chan 3\n");
+    CLI_LOGI("sadc_rate [chan val] [clk val]\n");
+    CLI_LOGI("  Example: sadc_rate 2 0x30e035\n");
+    CLI_LOGI("adc_api_test [set_mode/get_mode/set_clk/set_sample_rate/set_channel/set_filter/"
+             "set_steady_time/set_sample_cnt/set_saturate\n");
 }
 
 static void cli_adc_register_cb(uint32_t param)
@@ -159,7 +174,7 @@ static float cli_adc_read_single_chan(UINT8 adc_chan, uint32_t clk)
 #define SARADC_READ_TIMEOUT         1000
 #define SARADC_CONTINUOUS_MODE      3
 #define SARADC_SCLKV_XTAL           1
-#define SARADC_STEADY_TIME	    7
+#define SARADC_STEADY_TIME          7
 #define SARADC_SATURATE_MODE_3      4
 #define SARADC_PSRAM_ADDRESS        0x60000000
 #define DATA_HANDLE_MODE_PRINT      0x55
@@ -221,7 +236,7 @@ static void cli_sadc_multi_cmd(char *pcWriteBuffer, int xWriteBufferLen, int arg
     uint32_t adc_clk_div  = 32;
 
     if(4 != argc) {
-        CLI_LOGI("sadc parameters count are exceptional\r\n");
+        CLI_LOGI("sadc parameters count exception\r\n");
         return ;
     }
 
@@ -229,7 +244,7 @@ static void cli_sadc_multi_cmd(char *pcWriteBuffer, int xWriteBufferLen, int arg
         channel_id = os_strtoul(argv[3], NULL, 10);
         CLI_LOGI("adc_channel = %d\r\n",channel_id);
     } else {
-        CLI_LOGI("get sadc channel exceptionally\r\n");
+        CLI_LOGI("get sadc channel exception\r\n");
         return;
     }
 
@@ -240,7 +255,7 @@ static void cli_sadc_multi_cmd(char *pcWriteBuffer, int xWriteBufferLen, int arg
         config.chan = channel_id;
         config.adc_mode = ADC_CONTINUOUS_MODE;
         config.src_clk = SARADC_SCLKV_XTAL;
-        config.clk = SOC_ADC_XTAL_CLK/2/(adc_clk_div + 1);;
+        config.clk = SOC_ADC_XTAL_CLK/2/(adc_clk_div + 1);
         config.saturate_mode = SARADC_SATURATE_MODE_3;
         config.steady_ctrl= SARADC_STEADY_TIME;
         config.adc_filter = 0;
@@ -270,7 +285,7 @@ static void cli_sadc_multi_cmd(char *pcWriteBuffer, int xWriteBufferLen, int arg
         got_cnt  = buf_size/DEFAULT_ADC_SAMPLE_UNIT_BYTES;
         if(BK_OK == ret) {
             CLI_LOGI("dump_hex rx_data[0x%x] cnt:%d\r\n", recv_data, got_cnt);
-            bk_print_dump_hex((uint8_t *)recv_data, got_cnt);
+            bk_print_dump_hex_16bit((uint8_t *)recv_data, got_cnt);
         } else {
             CLI_LOGI("get_raw failed ret:0x%x got_cnt:%d\r\n", ret, got_cnt);
         }
@@ -294,7 +309,7 @@ static void cli_sadc_multi_cmd(char *pcWriteBuffer, int xWriteBufferLen, int arg
         got_cnt  = buf_size/DEFAULT_ADC_SAMPLE_UNIT_BYTES;
         if(BK_OK == ret) {
             CLI_LOGI("dump_hex rx_data[0x%x] cnt:%d\r\n", recv_data, got_cnt);
-            bk_print_dump_hex((uint8_t *)recv_data, got_cnt);
+            bk_print_dump_hex_16bit((uint8_t *)recv_data, got_cnt);
         } else {
             CLI_LOGI("get_raw failed ret:0x%x got_cnt:%d\r\n", ret, got_cnt);
         }
@@ -311,16 +326,14 @@ static void cli_sadc_multi_cmd(char *pcWriteBuffer, int xWriteBufferLen, int arg
             return;
         }
 
-        CLI_LOGI("malloc recv_data:0x%x\r\n", recv_data);
         for(i = 0; i < (buf_size / DEFAULT_ADC_SAMPLE_UNIT_BYTES); i ++) {
-            CLI_LOGI("[%d] recv_ptr:0x%x\r\n", i, &recv_data[i]);
             ret = bk_adc_channel_read(channel_id, &recv_data[i], BEKEN_WAIT_FOREVER);
         }
 
         got_cnt  = buf_size/DEFAULT_ADC_SAMPLE_UNIT_BYTES;
         if(BK_OK == ret) {
             CLI_LOGI("dump_hex rx_data[0x%x] cnt:%d\r\n", recv_data, got_cnt);
-            bk_print_dump_hex((uint8_t *)recv_data, got_cnt);
+            bk_print_dump_hex_16bit((uint8_t *)recv_data, got_cnt);
         } else {
             CLI_LOGI("get_raw failed ret:0x%x got_cnt:%d\r\n", ret, got_cnt);
         }
@@ -331,7 +344,7 @@ static void cli_sadc_multi_cmd(char *pcWriteBuffer, int xWriteBufferLen, int arg
 
         return;
     } else {
-        CLI_LOGI("sadc parameters are exceptional\r\n");
+        CLI_LOGI("sadc parameters exception\r\n");
         return ;
     }
 
@@ -344,7 +357,7 @@ static void cli_adc_rate_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
     uint8_t adc_chan;
 
     if(3 != argc) {
-        CLI_LOGI("saradc_rate parameter exceptioanl\r\n");
+        CLI_LOGI("saradc_rate parameter exception\r\n");
         return;
     }
 
@@ -432,7 +445,7 @@ static void cli_adc_cont_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
 
     if(0 == param_in_cnt)
     {
-        CLI_LOGI("input partam is exceptional\r\n");
+        CLI_LOGI("input parameter exception\r\n");
         return;
     }
 
@@ -534,7 +547,7 @@ static void cli_adc_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
     } else if (os_strcmp(argv[2], "read") == 0) {
         uint32_t sum = 0;
         uint32_t sample_cnt = os_strtoul(argv[3], NULL, 10);
-        uint16_t *recv_data = (uint16_t *)os_malloc(sample_cnt * SADC_SAMPLE_UNIT_BYTES);
+        uint16_t *recv_data = (uint16_t *)os_zalloc(sample_cnt * SADC_SAMPLE_UNIT_BYTES);
         if (recv_data == NULL) {
             CLI_LOGE("recv buffer malloc failed\r\n");
             return;
@@ -545,10 +558,11 @@ static void cli_adc_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
             time_out = BEKEN_WAIT_FOREVER;
         }
 
-        BK_LOG_ON_ERR(bk_adc_channel_raw_read(adc_chan, recv_data, sample_cnt, time_out));
-
-        if (!recv_data) {
-            CLI_LOGE("adc read failed, recv_data is null \r\n");
+        bk_err_t ret = bk_adc_channel_raw_read(adc_chan, recv_data, sample_cnt, time_out);
+        if (BK_OK != ret) {
+            CLI_LOGE("adc read failed, ret:0x%x\r\n", ret);
+            os_free(recv_data);
+            return;
         }
         CLI_LOGI("adc: read length :time_out:%d read_size:%d\n",time_out, sample_cnt);
 
@@ -614,7 +628,7 @@ static void cli_adc_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
         {
             saradc_cal_mode = SARADC_CALIBRATE_LOW;
         }
-        else if (0 == os_strcmp(argv[3], "high"))
+        else if (0 == os_strcmp(argv[8], "high"))
         {
             saradc_cal_mode = SARADC_CALIBRATE_HIGH;
         }

@@ -79,7 +79,6 @@ void hal_calib_apply(void);
 #define adc_hal_set_steady_ctrl(hal, value)	adc_ll_set_steady_ctrl((hal)->hw, value)
 
 #define adc_hal_is_over_flow(hal)		adc_ll_is_over_flow((hal)->hw)
-
 #define adc_hal_get_adc_data(hal)		adc_ll_get_adc_data((hal)->hw)
 
 #define adc_hal_enable_bypass_calib(hal)	adc_ll_enable_bypass_calib((hal)->hw)
