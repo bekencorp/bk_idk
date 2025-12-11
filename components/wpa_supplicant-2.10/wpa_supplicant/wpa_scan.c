@@ -1304,7 +1304,11 @@ ssid_list_set:
 		wpa_s->manual_scan_freqs = NULL;
 	}
 
-	if (params.freqs == NULL && wpa_s->select_network_scan_freqs) {
+	if (
+#if BK_SUPPLICANT
+		wpa_s->last_scan_req != MANUAL_SCAN_REQ &&
+#endif
+		params.freqs == NULL && wpa_s->select_network_scan_freqs) {
 		wpa_dbg(wpa_s, MSG_DEBUG,
 			"Limit select_network scan to specified channels");
 		params.freqs = wpa_s->select_network_scan_freqs;
@@ -3044,7 +3048,7 @@ void scan_only_handler(struct wpa_supplicant *wpa_s,
 		wpa_s->wpa_state <= WPA_SCANNING &&
 		wpa_supplicant_enabled_networks(wpa_s)) {
 		wpa_s->scan_req = NORMAL_SCAN_REQ;
-		wpa_supplicant_req_scan(wpa_s, 1, 0);
+		wpa_supplicant_req_scan(wpa_s, 0, 100000);
 	}
 #endif
 }

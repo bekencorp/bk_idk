@@ -4761,9 +4761,21 @@ void wpa_supplicant_select_network(struct wpa_supplicant *wpa_s,
 
 	if (wpa_s->connect_without_scan ||
 	    wpa_supplicant_fast_associate(wpa_s) != 1) {
+
+#if BK_SUPPLICANT
+		if (wpa_s->last_scan_req == MANUAL_SCAN_REQ &&
+			wpa_s->scan_res_handler == scan_only_handler) {
+			/* If previous manual scan is in progress, ignore this scan,
+			 * scan_only_handler will try to scan again */
+			/* wpa_supplicant_req_scan(wpa_s, 5, 0); */
+		} else {
+#endif
 		wpa_s->scan_req = NORMAL_SCAN_REQ;
 		wpas_scan_reset_sched_scan(wpa_s);
 		wpa_supplicant_req_scan(wpa_s, 0, disconnected ? 100000 : 0);
+#if BK_SUPPLICANT
+		}
+#endif
 	}
 
 	if (ssid)
