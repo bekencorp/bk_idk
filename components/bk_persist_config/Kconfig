@@ -1,0 +1,11 @@
+menu "PERSIST_CONFIG"
+
+	config PERSIST_CONFIG
+		bool "Enable system persist config cli"
+		default n
+
+	config PERSIST_CONFIG_CLI
+		depends on PERSIST_CONFIG
+		bool "Enable system persist config cli"
+		default y
+endmenu
