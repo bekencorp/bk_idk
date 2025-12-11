@@ -34,6 +34,9 @@
 #include "bk_uart_debug.h"
 #include "bk_api_cli.h"
 
+#if CONFIG_PERSIST_CONFIG_CLI
+#include "sys_persist_config_cli.h"
+#endif
 
 #define TAG "cli"
 
@@ -1849,6 +1852,10 @@ int bk_cli_init(void)
 
 #if (CONFIG_MAC802154_ENABLE)
 	cli_mac802154_init();
+#endif
+
+#if CONFIG_PERSIST_CONFIG_CLI
+	sys_persist_cli_init();
 #endif
 
 #endif// CONFIG_CODE_SIZE_OPTIMIZE

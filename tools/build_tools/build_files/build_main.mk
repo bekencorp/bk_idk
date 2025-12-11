@@ -176,11 +176,14 @@ endif
 AUTO_PARTITION_TABLE := $(PROJECT_DIR)/config/$(ARMINO_SOC_NAME)/auto_partitions.csv
 export PARTITIONS_DIR := $(PROJECT_BUILD_DIR)/partitions
 export SECURITY_PREBUILD_DIR := $(PROJECT_BUILD_DIR)/security
+export SYS_PERSIST_CONFIG_DIR := $(PROJECT_BUILD_DIR)/sys_persist_config
 auto_partition_script := $(ARMINO_DIR)/tools/build_tools/build_process/bk_build_auto_partition.py
 auto_partition_out := $(PARTITIONS_DIR)/partitions.txt
 
 security_prebuild_script := $(ARMINO_DIR)/tools/build_tools/build_process/bk_sdk/bk_prebuild.py
-security_prebuild_out := $(PROJECT_BUILD_DIR)/security
+
+sys_persist_config_script := $(ARMINO_DIR)/tools/build_tools/sys_persist_config/sys_persist_config_tool.py
+sys_persist_config_bin := $(SYS_PERSIST_CONFIG_DIR)/sys_persist_config.bin
 
 $(auto_partition_out): $(auto_partition_script) $(AUTO_PARTITION_TABLE)
 	@mkdir -p $(PARTITIONS_DIR)
@@ -191,20 +194,32 @@ print_partitions: $(auto_partition_out)
 	@cat $(auto_partition_out)
 	@echo ============================================================
 
-security_prebuild: $(security_prebuild_script)
+gen_sys_persist_config: $(sys_persist_config_script)
+	@mkdir -p $(SYS_PERSIST_CONFIG_DIR)
+	@python3 $(sys_persist_config_script)  --soc $(ARMINO_SOC_NAME) --project_dir $(PROJECT_DIR) --armino_dir $(ARMINO_DIR) --out_dir $(SYS_PERSIST_CONFIG_DIR) excel2bin
+	@python3 $(sys_persist_config_script)  --soc $(ARMINO_SOC_NAME) --project_dir $(PROJECT_DIR) --armino_dir $(ARMINO_DIR) --out_dir $(SYS_PERSIST_CONFIG_DIR) gen_code
+
+security_prebuild: $(security_prebuild_script) gen_sys_persist_config
 	@mkdir -p $(SECURITY_PREBUILD_DIR)
 	@python3 $(security_prebuild_script) --soc $(ARMINO_SOC_NAME) --project_dir $(PROJECT_DIR) --armino_dir $(ARMINO_DIR) --build_dir $(SECURITY_PREBUILD_DIR) --secure $(is_secure_build)
 
-nonsecure_prebuild: $(auto_partition_out) print_partitions security_prebuild
+nonsecure_prebuild: print_partitions security_prebuild
 
 $(ARMINO_SOC_NAME)_ns_cp0: nonsecure_prebuild
 	@$(ARMINO_TOOL_WRAPPER) $(ARMINO_DIR) $(PROJECT_DIR) $(PROJECT_BUILD_DIR) ${ARMINO_SOC_NAME}
+
+pack_sys_persist_config_script := $(ARMINO_DIR)/tools/build_tools/build_files/pack_sys_persist_config.py
+nonsecure_pack_sys_persist_config: $(pack_sys_persist_config_script) $(ARMINO_SOC_NAME)_ns_cp0
+	@python3 $(pack_sys_persist_config_script) --project_build_dir $(PROJECT_BUILD_DIR) --armino_soc $(ARMINO_SOC_NAME) --sys_persist_config_dir $(SYS_PERSIST_CONFIG_DIR)
+
+secure_pack_sys_persist_config: $(pack_sys_persist_config_script) $(ARMINO_SOC_NAME)_s_cp0
+	@python3 $(pack_sys_persist_config_script) --project_build_dir $(PROJECT_BUILD_DIR) --armino_soc $(ARMINO_SOC_NAME) --sys_persist_config_dir $(SYS_PERSIST_CONFIG_DIR)
 
 nonsecure_package_script := $(ARMINO_DIR)/tools/build_tools/build_process/bk_build_package.py
 package_dir := $(PROJECT_BUILD_DIR)/package
 package_json := $(PARTITIONS_DIR)/bk_package.json
 build_summary := $(package_dir)/build_summary.txt
-nonsecure_package: $(nonsecure_package_script) $(ARMINO_SOC_NAME)_ns_cp0 ${PRE_BUILD_TARGET}
+nonsecure_package: $(nonsecure_package_script) nonsecure_pack_sys_persist_config ${PRE_BUILD_TARGET}
 	@mkdir -p $(package_dir)
 	@python3 $(nonsecure_package_script) $(PROJECT_BUILD_DIR) $(package_json) $(build_summary)
 ifneq ($(PRINT_SUMMARY), 0)
@@ -215,7 +230,7 @@ $(ARMINO_SOC_NAME)_s_cp0: security_prebuild
 	@$(ARMINO_TOOL_WRAPPER) $(ARMINO_DIR) $(PROJECT_DIR) $(PROJECT_BUILD_DIR) ${ARMINO_SOC_NAME}
 
 secure_package_script := $(ARMINO_DIR)/tools/build_tools/secure_pack.py
-secure_package: $(secure_package_script) $(ARMINO_SOC_NAME)_s_cp0 ${PRE_BUILD_TARGET}
+secure_package: $(secure_package_script) secure_pack_sys_persist_config $(ARMINO_SOC_NAME)_s_cp0 ${PRE_BUILD_TARGET}
 	@python3 $(secure_package_script) $(ARMINO_SOC_NAME) $(ARMINO_DIR) $(PROJECT_BUILD_DIR) $(PROJECT_DIR)
 
 nonsecure_build: nonsecure_package

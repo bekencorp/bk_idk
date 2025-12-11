@@ -96,14 +96,16 @@ LOGI("[Select ld file]: ${LD_FILE}.")
 set(ld_header_dependencies
 	${armino_path}/include/soc/bk7236/reg_base.h
 	$ENV{PARTITIONS_DIR}/partitions_gen.h
+	$ENV{SYS_PERSIST_CONFIG_DIR}/sys_persist_config.h
 )
 
 add_custom_command(
 	OUTPUT ${target}_out.ld
-	COMMAND "${CMAKE_C_COMPILER}" -P -x c -E - < ${LD_FILE} -o ${target}_out.ld
+	COMMAND "${CMAKE_C_COMPILER}" -P -x c -E -D__ASSEMBLER__ - < ${LD_FILE} -o ${target}_out.ld
 			-I ${armino_path}/include/ -I ${config_dir}
 			-I $ENV{SECURITY_PREBUILD_DIR}
 			-I $ENV{PARTITIONS_DIR}
+			-I $ENV{SYS_PERSIST_CONFIG_DIR}
 	MAIN_DEPENDENCY ${LD_DIR}/${target}.ld ${sdkconfig_header}
 	DEPENDS ${ld_header_dependencies}
 	COMMENT "Generating linker script..."

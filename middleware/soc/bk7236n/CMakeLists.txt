@@ -80,6 +80,7 @@ LOGI("[Select ld file]: ${LD_FILE}.")
 set(ld_header_dependencies
 	${armino_path}/include/soc/${target}/reg_base.h
 	$ENV{PARTITIONS_DIR}/partitions_gen.h
+	$ENV{SYS_PERSIST_CONFIG_DIR}/sys_persist_config.h
 )
 
 add_custom_command(
@@ -88,6 +89,7 @@ add_custom_command(
 			-I ${armino_path}/include/ -I ${config_dir}
 			-I $ENV{SECURITY_PREBUILD_DIR}
 			-I $ENV{PARTITIONS_DIR}
+			-I $ENV{SYS_PERSIST_CONFIG_DIR}
 	MAIN_DEPENDENCY ${LD_DIR}/${target}.ld ${sdkconfig_header}
 	DEPENDS ${ld_header_dependencies}
 	COMMENT "Generating linker script..."
