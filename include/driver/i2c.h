@@ -16,6 +16,7 @@
 
 #include <stdbool.h>
 #include <driver/i2c_types.h>
+#include <os/os.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -306,6 +307,15 @@ uint32_t bk_i2c_get_cur_action(i2c_id_t id);
  * @return
 */
 void bk_i2c_timer_callback(int id, void* myTimer);
+
+/**
+ * @brief     bk_i2c_queue_callback
+ *
+ * This API set queue call back
+ *
+ * @return
+*/
+void bk_i2c_queue_callback(int id, beken_queue_t *queue, void *data);
 
 /**
  * @brief	  bk_i2c_get_busstate

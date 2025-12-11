@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Beken
+// Copyright 2020-2025 Beken
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,9 @@ extern "C" {
 #define BK_ERR_I2C_ACK_TIMEOUT           (BK_ERR_I2C_BASE - 4) /**< I2C receive ack timeout */
 #define BK_ERR_I2C_CHECK_DEFCONFIG       (BK_ERR_I2C_BASE - 5) /**< I2C please check defconfig */
 #define BK_ERR_I2C_SCL_TIMEOUT           (BK_ERR_I2C_BASE - 6) /**< I2C SCL timeout */
+#define BK_ERR_I2C_INVALID_ID            (BK_ERR_I2C_BASE - 7) /**< I2C invalid id */
+#define BK_ERR_I2C_SET_SEMAPHORE_FAILED  (BK_ERR_I2C_BASE - 8) /**< I2C set semaphore failed */
+#define BK_ERR_I2C_START_TIMER_FAILED    (BK_ERR_I2C_BASE - 9) /**< I2C start timer failed */
 
 typedef enum {
 	I2C_MASTER_WRITE = 0, /**< I2C master write */
@@ -44,6 +47,12 @@ typedef struct {
 	uint32_t data_size;                /**< I2C data size */
 	uint32_t timeout_ms;               /**< I2C timeout ms */
 } i2c_mem_param_t;
+
+typedef struct {
+	uint32_t data_len;                 /**< I2C write/read data length */
+	i2c_work_mode_t work_mode;         /**< I2C work mode */
+	void *app_data;                    /**< I2C pointer to application data */
+} i2c_cb_param_t;
 
 #ifdef __cplusplus
 }

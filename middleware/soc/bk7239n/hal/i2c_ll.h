@@ -477,6 +477,24 @@ static inline bool i2c_ll_is_rx_mode(i2c_hw_t *hw, i2c_id_t id)
 	}
 }
 
+static inline bool i2c_ll_is_master_mode(i2c_hw_t *hw, i2c_id_t id)
+{
+	if (id == I2C_ID_1) {
+		return !!(hw->i2c1_hw->sm_bus_status.master);
+	} else {
+		return !!(hw->i2c0_hw->sm_bus_status.master);
+	}
+}
+
+static inline bool i2c_ll_is_slave_mode(i2c_hw_t *hw, i2c_id_t id)
+{
+	if (id == I2C_ID_1) {
+		return !(hw->i2c1_hw->sm_bus_status.master);
+	} else {
+		return !(hw->i2c0_hw->sm_bus_status.master);
+	}
+}
+
 static inline uint32_t i2c_ll_get_interrupt_status(i2c_hw_t *hw, i2c_id_t id)
 {
 	if (id == I2C_ID_0) {
@@ -534,11 +552,6 @@ static inline bool i2c_ll_is_receiver_ack_req(i2c_hw_t *hw, i2c_id_t id, uint32_
 static inline bool i2c_ll_is_transmitter_mode(i2c_hw_t *hw, i2c_id_t id, uint32_t int_status)
 {
 	return !!(int_status & BIT(13));
-}
-
-static inline bool i2c_ll_is_master_mode(i2c_hw_t *hw, i2c_id_t id, uint32_t int_status)
-{
-	return !!(int_status & BIT(14));
 }
 
 static inline void i2c_ll_tx_ack(i2c_hw_t *hw, i2c_id_t id)

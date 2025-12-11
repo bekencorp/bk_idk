@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Beken
+// Copyright 2020-2025 Beken
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -56,7 +56,6 @@ typedef struct {
 #define i2c_hal_is_rx_ack_triggered(hal, int_status) i2c_ll_is_rx_ack_triggered(&(hal)->hw, (hal)->id, int_status)
 #define i2c_hal_is_receiver_ack_req(hal, int_status) i2c_ll_is_receiver_ack_req(&(hal)->hw, (hal)->id, int_status)
 #define i2c_hal_is_transmitter_mode(hal, int_status) i2c_ll_is_transmitter_mode(&(hal)->hw, (hal)->id, int_status)
-#define i2c_hal_is_master_mode(hal, int_status) i2c_ll_is_master_mode(&(hal)->hw, (hal)->id, int_status)
 
 #define i2c_hal_tx_ack(hal) i2c_ll_tx_ack(&(hal)->hw, (hal)->id)
 #define i2c_hal_tx_non_ack(hal) i2c_ll_tx_non_ack(&(hal)->hw, (hal)->id)
@@ -65,6 +64,8 @@ typedef struct {
 #define i2c_hal_is_rx_mode(hal) i2c_ll_is_rx_mode(&(hal)->hw, (hal)->id)
 #define i2c_hal_set_tx_mode(hal) i2c_ll_set_tx_mode(&(hal)->hw, (hal)->id)
 #define i2c_hal_set_rx_mode(hal) i2c_ll_set_rx_mode(&(hal)->hw, (hal)->id)
+#define i2c_hal_is_master_mode(hal) i2c_ll_is_master_mode(&(hal)->hw, (hal)->id)
+#define i2c_hal_is_slave_mode(hal) i2c_ll_is_slave_mode(&(hal)->hw, (hal)->id)
 
 #define i2c_hal_write_byte(hal, data) i2c_ll_write_byte(&(hal)->hw, (hal)->id, data)
 #define i2c_hal_read_byte(hal) i2c_ll_read_byte(&(hal)->hw, (hal)->id)
