@@ -88,8 +88,6 @@
 
 #if CONFIG_AGORA_IOT_SDK
 #define LWIP_DEBUG                      1
-#else
-#define LWIP_DEBUG                      0
 #endif
 #define LWIP_DEBUG_TRACE                0
 #define SOCKETS_DEBUG                   LWIP_DBG_OFF

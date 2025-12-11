@@ -637,40 +637,38 @@ static int handle_input(char *inbuf)
 			}
 			break;
 
-        case '=':
-            if(argc == 1) {
-                inbuf[i] = '\0';
-                stat.inArg = 0;
-                stat.isD = 1;
-            }
-            else if(argc == 0){
-                os_printf("The data does not conform to the regulations %d\r\n",__LINE__);
-                return 2;
-            }
-            break;
+		case '=':
+			if (argc == 1) {
+				inbuf[i] = '\0';
+				stat.inArg = 0;
+				stat.isD = 1;
+			} else if(argc == 0) {
+				os_printf("The data does not conform to the regulations %d\r\n",__LINE__);
+				return 2;
+			}
+			break;
 
-        case ',':
-            if((stat.isD == 1)&&(argc == 1))  ///=,
-            {
-                os_printf("The data does not conform to the regulations %d\r\n",__LINE__);
-                return 2;
-            }
-            if(!stat.inQuote && stat.inArg) {
-                stat.inArg = 0;
-                inbuf[i] = '\0';
-                stat.limQ = 1;
-            }
-            break;
+		case ',':
+			if ((stat.isD == 1)&&(argc == 1)) { ///=,
+				os_printf("The data does not conform to the regulations %d\r\n",__LINE__);
+				return 2;
+			}
+			if (!stat.inQuote && stat.inArg) {
+				stat.inArg = 0;
+				inbuf[i] = '\0';
+				stat.limQ = 1;
+			}
+			break;
 
 		default:
 			if (!stat.inArg) {
 				stat.inArg = 1;
 				argc++;
 				argv[argc - 1] = &inbuf[i];
-                stat.limQ = 0;
-                if(stat.isD == 1) {
-                    stat.isD = 2;
-                }
+				stat.limQ = 0;
+				if (stat.isD == 1) {
+					stat.isD = 2;
+				}
 			}
 			break;
 		}
@@ -683,7 +681,7 @@ static int handle_input(char *inbuf)
 		return 0;
 
 	if (!pCli->echo_disabled)
-		os_printf("\r\n");
+		bk_printf_raw(BK_LOG_NONE, NULL, "\r\n");
 
 	/*
 	* Some comamands can allow extensions like foo.a, foo.b and hence
@@ -828,7 +826,7 @@ static int get_input(char *inbuf, unsigned int *bp)
 			if (*bp > 0) {
 				(*bp)--;
 				if (!pCli->echo_disabled)
-					os_printf("%c %c", 0x08, 0x08);
+					bk_printf_raw(BK_LOG_NONE, NULL, "%c %c", 0x08, 0x08);
 			}
 			continue;
 		}
@@ -840,12 +838,12 @@ static int get_input(char *inbuf, unsigned int *bp)
 		}
 
 		if (!pCli->echo_disabled)
-			os_printf("%c", inbuf[*bp]);
+			bk_printf_raw(BK_LOG_NONE, NULL, "%c", inbuf[*bp]);
 
 		(*bp)++;
 		if (*bp >= INBUF_SIZE) {
 			os_printf("Error: input buffer overflow\r\n");
-			os_printf(PROMPT);
+			bk_printf_raw(BK_LOG_NONE, NULL, PROMPT);
 			*bp = 0;
 			return 0;
 		}
@@ -865,12 +863,12 @@ static void print_bad_command(char *cmd_string)
 		os_printf("command '");
 		while (*c != '\0') {
 			if (is_print(*c))
-				os_printf("%c", *c);
+				bk_printf_raw(BK_LOG_NONE, NULL, "%c", *c);
 			else
-				os_printf("\\0x%x", *c);
+				bk_printf_raw(BK_LOG_NONE, NULL, "\\0x%x", *c);
 			++c;
 		}
-		os_printf("' not found\r\n");
+		bk_printf_raw(BK_LOG_NONE, NULL, "' not found\r\n");
 	}
 }
 
@@ -916,7 +914,7 @@ static void cli_main(uint32_t data)
 			else if (ret == 2)
 				os_printf("syntax error\r\n");
 
-			os_printf(prompt);
+			bk_printf_raw(BK_LOG_NONE, NULL, prompt);
 		}
 	}
 
@@ -1940,7 +1938,9 @@ int bk_cli_init(void)
 	}
 
 	/* create log handle task */
+#if CONFIG_SHELL_ASYNCLOG
 	create_log_handle_task();
+#endif
 
 #if CONFIG_CLI
 

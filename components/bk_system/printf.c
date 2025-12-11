@@ -44,6 +44,13 @@ volatile spinlock_t printf_spin_lock = SPIN_LOCK_INIT;
 #define CONFIG_PRINTF_BUF_SIZE    (136)
 #endif
 
+#if !(CONFIG_SHELL_ASYNCLOG)
+#define LOG_COMMON_MODE           0
+#define LOG_NONBLOCK_MODE         0
+#define LOG_STATIC_BLOCK_MODE     0
+#define LOG_STAIC_NONBLOCK_MODE   0
+#endif
+
 static uint8_t s_printf_enable = 1;
 #if CONFIG_SHELL_ASYNCLOG
 static volatile uint8_t s_printf_sync = 0;
@@ -124,8 +131,10 @@ static void bk_printf_port_ext_internel(int block_mode, int level, char *tag, co
     int     data_len = 0;
 #if CONFIG_SHELL_ASYNCLOG
     int cpu_id = shell_get_cpu_id();
-#else
+#elif CONFIG_FREERTOS_SMP_TEMP
     int cpu_id = rtos_get_core_id();
+#else
+    int cpu_id = 0;
 #endif
 
     prefix_str[0] = 0;
@@ -389,6 +398,9 @@ static void bk_printf_ext_internel(int block_mode, int level, char *tag, const c
         if(bk_mod_printf_disbled(tag) ^ whitelist_enabled)
             return;
     }
+#else
+    if (level > BK_LOG_LEVEL)
+        return;
 #endif
 
     bk_printf_port_ext_internel(block_mode, level, tag, fmt, args);
@@ -450,6 +462,9 @@ static void bk_printf_raw_internel(int block_mode, int level, char *tag, const c
         if(bk_mod_printf_disbled(tag) ^ whitelist_enabled)
             return;
     }
+#else
+    if (level > BK_LOG_LEVEL)
+        return;
 #endif
 
     bk_printf_raw_port(block_mode, level, fmt, args);

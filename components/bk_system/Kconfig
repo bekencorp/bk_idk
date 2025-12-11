@@ -44,6 +44,27 @@ menu "BK_system"
 				bool "Close system print"
 		endchoice
 
+		choice SYSTEM_LOG_LEVEL
+			prompt "System log level"
+			default SYS_LOG_INFO
+			config SYS_LOG_NONE
+				bool "No output"
+			config SYS_LOG_ERROR
+				bool "Error"
+			config SYS_LOG_WARN
+				bool "Warning"
+			config SYS_LOG_INFO
+				bool "Info"
+			config SYS_LOG_DEBUG
+				bool "Debug"
+			config SYS_LOG_VERBOSE
+				bool "Verbose"
+		endchoice
+
+		config SUPPORT_LOG_LEVEL_CFG
+			bool "support config log level"
+			default n
+
 		config FWD_CMD_TO_CPUx
 			depends on MAILBOX
 			bool "Forward cpu1/cpu2 cmd by mailbox"

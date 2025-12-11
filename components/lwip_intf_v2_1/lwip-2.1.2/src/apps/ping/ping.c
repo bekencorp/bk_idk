@@ -45,7 +45,7 @@
  * PING_DEBUG: Enable debugging for PING.
  */
 #ifndef PING_DEBUG
-#define PING_DEBUG     LWIP_DBG_ON
+#define PING_DEBUG     "ping"
 #endif
 
 /** ping receive timeout - in milliseconds */
@@ -296,7 +296,7 @@ void ping_stop(void)
 {
     if (p_param.state == PING_STATE_STARTED) {
         p_param.state = PING_STATE_STOPPING;
-        LWIP_DEBUGF( PING_DEBUG, ("ping: ping is stopping...\n"));
+        BK_LOGI( PING_DEBUG, "ping: ping is stopping...\n");
     }
 }
 
@@ -324,13 +324,13 @@ void ping_start(char* target_name, uint32_t times, size_t size)
 #endif
         }
         else
-            LWIP_DEBUGF( PING_DEBUG, ("Please input: ping <host address>\n"));
+            BK_LOGI( PING_DEBUG, "Please input: ping <host address>\n");
 
     }
     else if (p_param.state == PING_STATE_STOPPING)
-        LWIP_DEBUGF( PING_DEBUG, ("ping: ping is stopping, try again later!\n"));
+        BK_LOGI( PING_DEBUG, "ping: ping is stopping, try again later!\n");
     else
-        LWIP_DEBUGF( PING_DEBUG, ("ping: ping is running, stop first!\n"));
+        BK_LOGI( PING_DEBUG, "ping: ping is running, stop first!\n");
 }
 
 int ping(char* target_name, uint32_t times, size_t size)
@@ -356,14 +356,14 @@ int ping(char* target_name, uint32_t times, size_t size)
         size = PING_DATA_SIZE;
     }
     if (times == UINT32_MAX)
-        LWIP_DEBUGF( PING_DEBUG, ("ping: size:%u times:infinite\n", size));
+        BK_LOGI( PING_DEBUG, "ping: size:%u times:infinite\n", size);
     else
-        LWIP_DEBUGF( PING_DEBUG, ("ping: size:%u times:%u\n", size, times));
+        BK_LOGI( PING_DEBUG, "ping: size:%u times:%u\n", size, times);
     memset(&hint, 0, sizeof(hint));
     /* convert URL to IP */
     if (lwip_getaddrinfo(target_name, NULL, &hint, &res) != 0)
     {
-        LWIP_DEBUGF( PING_DEBUG, ("ping: unknown host\n"));
+        BK_LOGI( PING_DEBUG, "ping: unknown host\n");
         return -1;
     }
 
@@ -371,7 +371,7 @@ int ping(char* target_name, uint32_t times, size_t size)
     {
 #if (LWIP_IPV6==0)
         {
-            LWIP_DEBUGF( PING_DEBUG, ("ping: not support ipv6\n"));
+            BK_LOGI( PING_DEBUG, "ping: not support ipv6\n");
             return -1;
         }
 #else
@@ -383,7 +383,7 @@ int ping(char* target_name, uint32_t times, size_t size)
                 src_addr = &(netif->ip6_addr[0]);
             else
             {
-                LWIP_DEBUGF( PING_DEBUG, ("ping: netif addr_ipv6 err\n"));
+                BK_LOGI( PING_DEBUG, "ping: netif addr_ipv6 err\n");
                 return -1;
             }
             inet6_addr_to_ip6addr(ip_2_ip6(&target_addr),&h6->sin6_addr);
@@ -403,7 +403,7 @@ int ping(char* target_name, uint32_t times, size_t size)
     /* new a socket */
     if ((s = lwip_socket(af, SOCK_RAW, proto)) < 0)
     {
-        LWIP_DEBUGF( PING_DEBUG, ("ping: create socket failed\n"));
+        BK_LOGI( PING_DEBUG, "ping: create socket failed\n");
         return -1;
     }
 
@@ -419,25 +419,25 @@ int ping(char* target_name, uint32_t times, size_t size)
             if ((recv_len = ping_mid_recv(s, &ttl,af)) >= 0)
             {
                 recv_cnt++;
-                LWIP_DEBUGF( PING_DEBUG, ("%d bytes from %s icmp_seq=%d ttl=%d time=%d ticks\n", recv_len, ipaddr_ntoa(&target_addr), send_times,
-                        ttl, sys_now() - recv_start_tick));
+                BK_LOGI( PING_DEBUG, "%d bytes from %s icmp_seq=%d ttl=%d time=%d ticks\n", recv_len, ipaddr_ntoa(&target_addr), send_times,
+                        ttl, sys_now() - recv_start_tick);
             }
             else
             {
-                LWIP_DEBUGF( PING_DEBUG, ("From %s icmp_seq=%d timeout\n", ipaddr_ntoa(&target_addr), send_times));
+                BK_LOGI( PING_DEBUG, "From %s icmp_seq=%d timeout\n", ipaddr_ntoa(&target_addr), send_times);
             }
         }
         else
         {
-            LWIP_DEBUGF( PING_DEBUG, ("Send %s - error\n", ipaddr_ntoa(&target_addr)));
+            BK_LOGI( PING_DEBUG, "Send %s - error\n", ipaddr_ntoa(&target_addr));
         }
 
         send_times++;
         if (times != UINT32_MAX && send_times >= times)
         {
             // ping without -t
-            LWIP_DEBUGF( PING_DEBUG, ("ping end, sent cnt: %d, recv cnt: %d, drop cnt: %d(%.1f%%)\n",
-                sent_cnt, recv_cnt, send_times - recv_cnt, (float)(((send_times-recv_cnt)*100)/send_times)));
+            BK_LOGI( PING_DEBUG, "ping end, sent cnt: %d, recv cnt: %d, drop cnt: %d(%.1f%%)\n",
+                sent_cnt, recv_cnt, send_times - recv_cnt, (float)(((send_times-recv_cnt)*100)/send_times));
             /* send ping times reached, stop */
             break;
         }
@@ -450,8 +450,8 @@ int ping(char* target_name, uint32_t times, size_t size)
 
     // ping with -t
     if (times == UINT32_MAX)
-        LWIP_DEBUGF( PING_DEBUG, ("ping end, sent cnt: %d, recv cnt: %d, drop cnt: %d(%.1f%%)\n",
-            sent_cnt, recv_cnt, send_times - recv_cnt, (float)(((send_times-recv_cnt)*100)/send_times)));
+        BK_LOGI( PING_DEBUG, "ping end, sent cnt: %d, recv cnt: %d, drop cnt: %d(%.1f%%)\n",
+            sent_cnt, recv_cnt, send_times - recv_cnt, (float)(((send_times-recv_cnt)*100)/send_times));
 
     lwip_close(s);
 

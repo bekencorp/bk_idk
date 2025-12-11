@@ -330,7 +330,7 @@ static void user_app_thread( void *arg )
 {
 	rtos_user_app_waiting_for_launch();
 	/* add your user_main*/
-	os_printf("user app entry(0x%0x)\r\n", s_user_app_entry);
+	BK_LOGI(NULL, "user app entry(0x%0x)\r\n", s_user_app_entry);
 	if(NULL != s_user_app_entry) {
 		s_user_app_entry(0);
 	}
@@ -346,7 +346,7 @@ static void user_app_thread( void *arg )
 
 static void start_user_app_thread(void)
 {
-	os_printf("start user app thread.\r\n");
+	BK_LOGI(NULL, "start user app thread.\r\n");
 	rtos_create_sram_thread(NULL,
 					BEKEN_APPLICATION_PRIORITY,
 					"app",

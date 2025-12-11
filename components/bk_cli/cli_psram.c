@@ -12,7 +12,7 @@
 // limitations under the License.
 
 #include "cli.h"
-#include "pm.h"
+#include "modules/pm.h"
 
 #include <os/os.h>
 #include <driver/psram.h>

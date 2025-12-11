@@ -26,6 +26,7 @@
 #include <os/os.h>
 #include "common/bk_assert.h"
 
+#include "bk_uart.h"
 
 /************** wrap C library functions **************/
 __attribute__((weak)) void *__wrap_malloc(size_t size)
@@ -111,7 +112,14 @@ int __wrap_printf(const char *fmt, ...)
         return 0;
 
     va_start(args,fmt);
-    shell_log_out_port(LOG_COMMON_MODE, BK_LOG_WARN, NULL, fmt, args);
+#if CONFIG_SHELL_ASYNCLOG
+    shell_log_out_port(LOG_COMMON_MODE, BK_LOG_NONE, NULL, fmt, args);
+#else
+    char string[128];
+    vsnprintf(string, sizeof(string)-1, fmt, args);
+    string[sizeof(string)-1] = 0;
+    uart_write_string(bk_get_printf_port(), string);
+#endif
 
     va_end(args);
 
@@ -126,7 +134,14 @@ int __wrap_iprintf(const char *fmt, ...)
         return 0;
 
     va_start(args,fmt);
-    shell_log_out_port(LOG_COMMON_MODE, BK_LOG_WARN,NULL,fmt,args);
+#if CONFIG_SHELL_ASYNCLOG
+    shell_log_out_port(LOG_COMMON_MODE, BK_LOG_NONE, NULL, fmt, args);
+#else
+    char string[128];
+    vsnprintf(string, sizeof(string)-1, fmt, args);
+    string[sizeof(string)-1] = 0;
+    uart_write_string(bk_get_printf_port(), string);
+#endif
 
     va_end(args);
 
