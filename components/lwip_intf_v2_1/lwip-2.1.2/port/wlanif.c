@@ -112,7 +112,9 @@ static void low_level_init(struct netif *netif)
 
 #if LWIP_NETIF_HOSTNAME
     /* Initialize interface hostname */
-    netif->hostname = (char*)&wlan_name[vif_index];
+    if(netif->hostname == NULL) {
+        netif->hostname = (char*)&wlan_name[vif_index];
+    }
 #endif /* LWIP_NETIF_HOSTNAME */
 
     /* set MAC hardware address length */
