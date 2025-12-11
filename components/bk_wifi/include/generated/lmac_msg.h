@@ -14,9 +14,9 @@ enum
     TASK_DBG,
     /// SCAN task
     TASK_SCAN,
-    /// TDLS task
     /// CSI task
     TASK_CSI,
+    /// TDLS task
     TASK_TDLS,
 
     #if (NX_UMAC_PRESENT)
@@ -620,125 +620,52 @@ void ke_msg_free(struct ke_msg const *param);
 /// Messages that are logically related to the task.
 enum csi_msg_tag
 {
-    /// Request to start the CSI
-    CSI_START_REQ = KE_FIRST_MSG(TASK_CSI),
-    /// Confirmation of the CSI start.
-    CSI_START_CFM,
-    /// Request to stop the CSI
-    CSI_STOP_REQ,
-    /// Confirmation of the CSI stop.
-    CSI_STOP_CFM,
-    /// IND CSI has station is connecting
-    CSI_STA_CONNECT_IND,
-    /// CSI algorithm result ind
-    CSI_ALGO_IND,
-    /// CSI_DHCP_DONE_IND
-    CSI_DHCP_DONE_IND,
-    /// CSI_RESET_ALGO_STATIC_IND
-    CSI_RESET_ALGO_STATIC_IND,
-    /// CSI_RESET_ALGO_STATIC_IND
-    CSI_ALG_CONFIG_IND,
-    
+    /// Request to start the CSI active
+    CSI_ACTIVE_MODE_REQ = KE_FIRST_MSG(TASK_CSI),
+    /// Confirmation of the CSI active start.
+    CSI_ACTIVE_MODE_CFM,
+    /// Request to start the CSI pure receiving
+    CSI_RECEIVE_MODE_REQ,
+    /// Confirmation of the CSI pure receiving start.
+    CSI_RECEIVE_MODE_CFM,
+    /// CSI_START_CHECK_IND
+    CSI_START_CHECK_IND,
+    /// MAX
     CSI_MESSAGE_MAX
 };
 
-struct csi_alg_config
+typedef enum
 {
-    //#define CSI_SMOOTH_RATE_1  (1/64)
-    uint16_t csi_smooth_rate1;
-    //#define CSI_SMOOTH_RATE_2  (1/32)
-    uint16_t csi_smooth_rate2;
-    //#define CSI_SMOOTH_RATE_2  (1/32)
-    uint16_t csi_smooth_rate3;
+    CSI_STATUS_SUCCESS = 0,
+    CSI_STATUS_ERROR = 1,
+    CSI_STATUS_ERROR_NO_MEMORY = 2,
+    CSI_STATUS_ERROR_RESTART = 3,
+    CSI_STATUS_ERROR_INIT = 4,
+} csi_status_t;
 
+struct csi_active_mode_req
+{
+    bool enable;
     uint32_t interval;
-    //#define CSI_THRES_1        (2)
-    double csi_thres1;
-    //#define CSI_THRES_2        (1)
-    double csi_thres2;
-    //double csi_thres3;
-};
-
-/// Structure containing the parameters of the @ref CSI_START_REQ and messages
-struct csi_start_req
-{
-    // work type. 0: single mode group method, 1: dual mode group method
-    uint8_t csi_work_type;
-    // bit 01-- support STA csi; bit 10 -- support AP csi
-    uint8_t csi_work_identity;
-    // bit 01--data capture for host; bit 10 -- data capture to uart; bit 100 -- algorithm
-    uint8_t csi_work_mode;
-    // frame format : NON_HT 0x01;HT_MM 0x02;HE_SU 0x04
-    uint8_t csi_work_format;
-    // count of get csi continuous
-    uint8_t csi_gap_num;
-    // value 1 -- NULL frame;
-    // value 2 -- ; 
-    uint8_t csi_tx_type;
-    // value 1 -- csi data get opportunity at frame ACK, type 1;
-    // value 2 -- csi data get opportunity at rx frame, type 2;
-    uint8_t csi_rx_mode;
-    // csi get time interval
-    uint32_t csi_interval_time;
-    // csi get continuous time interval
-    uint32_t csi_gap_time;
-    // csi send frame cnt
-    uint32_t csi_data_cnt;
-    // csi start delay time
-    uint32_t csi_delay_time;
-    // csi filter mac
-    uint8_t filter_mac_num;
-    uint8_t mac[MAC_ADDR_LEN * 4];
 };
 
 /// Structure containing the parameters of the @ref CSI_STOT_REQ and messages
-struct csi_start_cfm
+struct csi_active_mode_cfm
 {
-    uint8_t vif_idx;
+    uint8_t status;
+};
+
+struct csi_receive_mode_req
+{
+    bool enable;
+    wifi_csi_filter_config_t filter_config;
 };
 
 /// Structure containing the parameters of the @ref CSI_STOT_REQ and messages
-struct csi_stop_req
+struct csi_receive_mode_cfm
 {
-    uint8_t vif_idx;
+    uint8_t status;
 };
-
-/// Structure containing the parameters of the @ref CSI_STOT_REQ and messages
-struct csi_stop_cfm
-{
-    uint8_t vif_idx;
-};
-
-/// Structure containing the parameters of the @ref CSI_STA_CONNECT_IND and messages
-struct csi_sta_connect_ind
-{
-    uint8_t is_connecting;
-};
-
-
-/// Structure containing the parameters of the @ref CSI_DHCP_DONE_IND and messages
-struct csi_dhcp_done_ind 
-{
-    uint8_t vif_idx;
-    uint8_t mac[MAC_ADDR_LEN];
-};
-
-/// Structure containing the parameters of the @ref CSI_ALGO_IND and messages
-struct csi_alg_ind 
-{
-    double move_change_rate;
-    double state_change_rate;
-};
-
-
-/// Structure containing the parameters of the @ref CSI_RESET_ALGO_STATIC_IND and messages
-struct csi_static_reset_ind 
-{
-    uint8_t vif_idx;
-    uint8_t cali_mode;
-    uint32_t cali_cnt;
-};
-
 #if NX_MON_DATA
 /// MAC header backup descriptor
 struct rxu_machdrdesc

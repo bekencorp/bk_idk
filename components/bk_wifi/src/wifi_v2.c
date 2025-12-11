@@ -4587,64 +4587,28 @@ void bk_wifi_ftm_free_result(wifi_ftm_results_t *ftm_results)
 #endif //CONFIG_WIFI_FTM
 
 #if CONFIG_WIFI_CSI_EN
-
-bk_err_t bk_wifi_csi_alg_config_internal(double thres1,struct wifi_csi_cfg_dbg debug_param)
+bk_err_t bk_wifi_csi_active_mode_req(wifi_csi_active_mode_config_t *config)
 {
-	WIFI_LOGI("bk_wifi_csi_alg_config_internal thres1 %d, interval %d\r\n", thres1, debug_param.interval);
-	return rw_msg_send_csi_alg_config_ind(debug_param.rate1,debug_param.rate2,debug_param.rate3,thres1,debug_param.thres2, debug_param.interval);
-}
-
-bk_err_t bk_wifi_csi_alg_config(double thres1)
-{
-	struct wifi_csi_cfg_dbg debug_param;
-	debug_param.rate1 = 0;
-	debug_param.rate2 = 0;
-	debug_param.rate3 = 0;
-	debug_param.thres2 = 0;
-	return bk_wifi_csi_alg_config_internal(thres1,debug_param);
-}
-
-bk_err_t bk_wifi_csi_start_req_internal(uint8_t csi_work_type,uint8_t csi_work_mode,uint8_t csi_work_identity,uint8_t csi_data_format,
-					uint32_t csi_data_interval,uint32_t delay,struct wifi_csi_start_dbg debug_param)
-{
-	return rw_msg_send_csi_start_req(csi_work_type,csi_work_mode,csi_work_identity,csi_data_format,csi_data_interval,delay,
-		debug_param.tx_type,debug_param.rx_mode,debug_param.gap_num,debug_param.gap,debug_param.data_cnt,
-		debug_param.filter_mac_num,debug_param.mac);
-}
-
-bk_err_t bk_wifi_csi_start_req(uint8_t csi_work_type,uint8_t csi_work_mode,uint8_t csi_work_identity,uint8_t csi_data_format,
-					uint32_t csi_data_interval,uint32_t delay)
-{
-	struct wifi_csi_start_dbg debug_param;
-	debug_param.tx_type = 1;
-	debug_param.rx_mode = 1;
-	debug_param.gap_num = 0;
-	debug_param.gap = 0;
-	debug_param.data_cnt = 0;
-	debug_param.filter_mac_num = 0;
-	debug_param.mac = NULL;
-	return bk_wifi_csi_start_req_internal(csi_work_type,csi_work_mode,csi_work_identity,
-		csi_data_format,csi_data_interval,delay,debug_param);
-}
-
-bk_err_t bk_wifi_csi_stop_req(void)
-{
-	uint8_t vif_idx = 0;
-	vif_idx = wifi_netif_mac_to_vifid((uint8_t*)&g_sta_param_ptr->own_mac);
-
-#if NX_P2P
-	VIF_INF_PTR vif = rwm_mgmt_vif_idx2ptr(vif_idx);
-	if (vif->p2p)
+	struct csi_active_mode_cfm cfm;
+	rw_msg_send_csi_active_mode_req(config, &cfm);
+	if(cfm.status != BK_OK)
+	{
+		WIFI_LOGE("csi active mode req failed, status: %d\r\n", cfm.status);
 		return BK_FAIL;
-#endif
-
-	return rw_msg_send_csi_stop_req(vif_idx);
+	}
+	return BK_OK;
 }
 
-bk_err_t bk_wifi_csi_static_param_reset_req(uint8_t update_cali_mode,uint32_t cali_cnt)
+bk_err_t bk_wifi_csi_receive_mode_req(wifi_csi_receive_mode_config_t *config)
 {
-	os_printf("bk_wifi_csi_static_param_reset_req cali_cnt %d\n",cali_cnt);
-	return rw_msg_send_csi_static_param_reset_req(update_cali_mode,cali_cnt);
+	struct csi_receive_mode_cfm cfm;
+	rw_msg_send_csi_receive_mode_req(config, &cfm);
+	if(cfm.status != BK_OK)
+	{
+		WIFI_LOGE("csi receive mode req failed, status: %d\r\n", cfm.status);
+		return BK_FAIL;
+	}
+	return BK_OK;
 }
 #endif //CONFIG_WIFI_CSI_EN
 

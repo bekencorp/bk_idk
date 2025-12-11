@@ -345,7 +345,7 @@ void lsig_input(int len, int8_t rssi, uint32_t time_ms)
 	rts_tbl[rep_index].last_time = rtos_get_time();
 }
 
-__IRAM_SEC int rx_mgmt_filter(uint16_t framectrl, void *payload, uint16_t length, int8_t rssi, void *extra)
+__IRAM_SEC int rx_mgmt_filter(uint16_t framectrl, void *payload, uint16_t length, int8_t rssi)
 {
 	bool discard = true;
 
@@ -377,7 +377,6 @@ __IRAM_SEC int rx_mgmt_filter(uint16_t framectrl, void *payload, uint16_t length
 	if (!discard) {
 		wifi_frame_info_t frame_info = {0};
 		frame_info.rssi = rssi;
-		frame_info.extra = extra;
 		s_filter_cb(payload, length, &frame_info);
 	}
 

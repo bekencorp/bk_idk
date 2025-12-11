@@ -604,7 +604,6 @@ typedef struct {
 	uint32_t recvec1d;                /** Receive Vector 1 */
 	uint32_t recvec2a;                /** Receive Vector 2 */
 	uint32_t recvec2b;                /** Receive Vector 2 */
-	void *extra;                      /**< extra info of this frame */
 } wifi_frame_info_t;
 
 /**
@@ -775,68 +774,64 @@ typedef struct {
 /**
  * @brief Wi-Fi Channel State Information configuration and results.
  */
-struct wifi_rx_pkt_t{
-	int8_t rssi;		 /**< Received Signal Strength Indicator(RSSI) of packet. unit: dBm */
-	uint8_t rate;		 /**< PHY rate encoding of the packet. Only valid for non HT(11bg) packet */
-	uint8_t foramat;	 /**< 0x0:non HT(11g) packet; 0x2:HT(11n)packet;0x4:VHT(11ac)packet;0x5:HE(11ax)packet */
-	uint8_t mcs;		 /**< Modulation Coding Scheme.*/
-	uint8_t cwb;		 /**< Channel Bandwidth of the packet. 0: 20MHz; 1: 40MHz */
+typedef struct {
+	bool enable;            /**< enable or disable csi active, true: enable, false: disable */
+	uint32_t interval;      /**< interval of csi active, unit: ms */
+}wifi_csi_active_mode_config_t;
+
+typedef struct {
+	uint8_t format;                   /**< format: b`0001:NON_HT,b`0010:HT, b`0100:VHT, b`1000:HE */
+	uint8_t bandwidth;                /**< bandwidth: b`0001:20MHz, b`0010:40MHz, b`0100:80MHz, b`1000:160MHz */
+	uint8_t ltf_type_bitmap;          /**< LTF type selection ,reserved*/
+	uint8_t filter_mac_type;          /**< Filtering rule type, 0��oboth src and dst, 1: dst only, 2:src only, 3:all mac, 4:src or dst */
+	uint8_t filter_src_mac_num;       /**< Number of source MAC addresses to filter */
+	uint8_t filter_src_mac[WIFI_MAC_LEN * 8]; /**< Source MAC filter list (max 8 entries) */
+	uint8_t filter_dst_mac_num;       /**< Number of destination MAC addresses to filter */
+	uint8_t filter_dst_mac[WIFI_MAC_LEN * 8]; /**< Destination MAC filter list (max 8 entries) */
+	uint32_t mgmt_frame_filter;       /**< Bitmap for management frames to capture ,enable:0x80000000, disable:0x00000000*/
+	uint32_t ctrl_frame_filter;       /**< Bitmap for control frames to capture ,enable:0x80000000, disable:0x00000000*/
+	uint32_t data_frame_filter;       /**< Bitmap for data frames to capture ,enable:0x80000000, disable:0x00000000*/
+}wifi_csi_filter_config_t;
+
+typedef struct {
+	bool enable;                            /**< enable or disable csi pure receiving, true: enable, false: disable */
+	wifi_csi_filter_config_t filter_config; /**< filter config */
+}wifi_csi_receive_mode_config_t;
+
+struct wifi_rx_pkt_t {
+	int8_t rssi;         /**< Received Signal Strength Indicator(RSSI) of packet. unit: dBm */
+	uint8_t rate;        /**< PHY rate encoding of the packet. Only valid for non HT(11bg) packet */
+	uint8_t format;      /**< 0x0:non HT(11g) packet; 0x2:HT(11n)packet;0x4:VHT(11ac)packet;0x5:HE(11ax)packet */
+	uint8_t mcs;         /**< Modulation Coding Scheme.*/
+	uint8_t cwb;         /**< Channel Bandwidth of the packet. 0: 20MHz; 1: 40MHz */
 	uint8_t aggregation; /**< Aggregation. 0: MPDU packet; 1: AMPDU packet */
-	uint8_t stbc;		 /**< Space Time Block Code(STBC). 0: non STBC packet; 1: STBC packet */
+	uint8_t stbc;        /**< Space Time Block Code(STBC). 0: non STBC packet; 1: STBC packet */
 	uint8_t fec_coding;  /**< Forward Error Correction(FEC). Flag is set for 11n packets which are LDPC */
-	uint8_t sgi;		 /**< Short Guide Interval(SGI). 0: Long GI; 1: Short GI */
-	uint8_t channel;	 /**< primary channel on which this packet is received */
+	uint8_t sgi;         /**< Short Guide Interval(SGI). 0: Long GI; 1: Short GI */
+	uint8_t channel;     /**< primary channel on which this packet is received */
 	uint8_t secondary_channel; /**< secondary channel on which this packet is received. 0: none; 1: above; 2: below */
-	uint8_t sig_len;	 /**< length of packet including Frame Check Sequence(FCS) */
+	uint8_t sig_len;     /**< length of packet including Frame Check Sequence(FCS) */
 	uint32_t timestamp;  /**< timestamp. The local time when this packet is received. unit: microsecond */
-	int8_t agc_rssi;	 /**< RSSI of AGC stage */
-	uint8_t agc_snr;	 /**< SNR of AGC stage */
+	int8_t agc_rssi;     /**< RSSI of AGC stage */
+	uint8_t agc_snr;     /**< SNR of AGC stage */
+	uint8_t ltf_type;    /**< LTF type */
 };
 
-struct wifi_csi_info_t{
-	struct wifi_rx_pkt_t rx_ctrl;		/**< rx packet ctrl  */
-	uint8_t mac[WIFI_MAC_LEN];			/**< MAC Address of the CSI info receive */
-	uint16_t len;						/**< The length of CSI info */
-	uint16_t data_type;					/**< out data type 0: buf, 1:abs*/
-	union
-	{
-		uint32_t buf[240];				/**< CSI info */
-		//double abs[52];				/**< CSI info abs */
-		struct{							/**< CSI info iq */
+struct wifi_csi_info_t {
+	struct wifi_rx_pkt_t rx_ctrl;       /**< rx packet ctrl  */
+	uint8_t src_mac[WIFI_MAC_LEN];      /**< MAC Address of the CSI info receive */
+	uint8_t dst_mac[WIFI_MAC_LEN];      /**< MAC Address of the CSI info receive */
+	uint16_t len;                       /**< The length of CSI info */
+	union {
+		uint32_t buf[240];              /**< CSI info */
+		struct {                        /**< CSI info iq data, user use this data*/
 			double real;
 			double imag;
 		}iq[240];
 	}data;
 };
 
-struct wifi_csi_alg_ind
-{
-	double move_change_rate;
-	double state_change_rate;
-};
-
 typedef void (* wifi_csi_cb_t)(struct wifi_csi_info_t *info);
-
-struct wifi_csi_cfg_dbg
-{
-	uint16_t rate1;
-	uint16_t rate2;
-	uint16_t rate3;
-	uint32_t interval;
-	double thres2;
-};
-
-struct wifi_csi_start_dbg
-{
-	uint8_t tx_type;
-	uint8_t rx_mode;
-	uint8_t gap_num;
-	uint32_t gap;
-	uint32_t data_cnt;
-	uint8_t filter_mac_num;
-	uint8_t *mac;
-};
-
 
 /**
  * @brief Wi-Fi tx statistics.
@@ -847,7 +842,14 @@ struct tx_stats_t
     uint32_t tx_singel_retry;           /**< tx single mpdu retry count */
     uint32_t tx_agg_total;              /**< tx mpdu of ampdu total count */
     uint32_t tx_agg_fail;               /**< tx mpdu of ampdu fail count */
-    //uint32_t tx_single_drop;
+    uint32_t tx_drop;
+    uint32_t rx_drop;
+    uint32_t tx_retry;
+    double   max_rate;
+    uint8_t  bandwidth;
+    uint8_t  chan;
+    uint8_t  band;
+    char     snr;
 };
 
 typedef struct {

@@ -82,8 +82,8 @@ void user_app_main(void){
 	rtos_init_semaphore(&wifi_app_sema, 1);
 	bk_event_register_cb(EVENT_MOD_WIFI, EVENT_ID_ALL, app_wifi_event_cb, NULL);
 	bk_event_register_cb(EVENT_MOD_NETIF, EVENT_ID_ALL, app_netif_event_cb, NULL);
-	os_strcpy(sta_config.ssid, "belon");
-	os_strcpy(sta_config.password, "belon123");
+	os_strcpy(sta_config.ssid, "beken");
+	os_strcpy(sta_config.password, "12345678");
 	bk_wifi_sta_split_init();
 	bk_wifi_sta_split_start();
 	bk_wifi_sta_set_config(&sta_config);

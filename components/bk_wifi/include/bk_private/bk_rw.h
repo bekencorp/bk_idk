@@ -338,7 +338,6 @@ extern int rw_msg_send_connection_loss_ind(u8 vif_index);
 extern int rw_msg_get_bss_info(u8 vif_idx, void *cfm);
 extern int rw_msg_get_channel_info(u8 vif_idx, PHY_CHAN_INFO_T *channel_info);
 extern int rw_msg_dhcp_done_ind(u8 vif_idx);
-extern int rw_msg_ap_dhcp_done_ind(uint8_t *hdr);
 extern int rw_msg_send_listen_interval_req(uint8_t sta_idx, uint8_t interval);
 extern int rw_msg_send_arp_set_rate_req(uint8_t vif_idx, uint16_t arp_tx_rate);
 extern int rw_msg_get_listen_interval_req(void *cfm);
@@ -370,14 +369,8 @@ extern int rw_msg_send_version_req(void);
 int rw_msg_send_ftm_start_req(uint8_t vif_idx, uint8_t ftm_per_burst, uint8_t nb_ftm_rsp, void *ind);
 #endif
 #if CONFIG_WIFI_CSI_EN
-int rw_msg_send_csi_alg_config_ind(uint16_t rate1,uint16_t rate2,uint16_t rate3,
-                    double thres1,double thres2, uint32_t interval);
-
-int rw_msg_send_csi_start_req(uint8_t work_type,uint8_t mode,uint8_t identity,uint8_t format,uint32_t interval,uint32_t delay,
-                    uint8_t tx_type,uint8_t rx_mode,uint8_t gap_num,uint32_t gap,uint32_t data_cnt,uint8_t filter_mac_num,uint8_t *mac);
-
-int rw_msg_send_csi_stop_req(uint8_t vif_idx);
-int rw_msg_send_csi_static_param_reset_req(uint8_t update_cali_mode,uint32_t cali_cnt);
+extern int rw_msg_send_csi_active_mode_req(wifi_csi_active_mode_config_t *config,struct csi_active_mode_cfm *cfm);
+extern int rw_msg_send_csi_receive_mode_req(wifi_csi_receive_mode_config_t *config,struct csi_receive_mode_cfm *cfm);
 #endif
 extern int rwnx_handle_dynparams();
 

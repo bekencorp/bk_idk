@@ -1783,11 +1783,6 @@ int cli_wifi_event_cb(void *arg, event_module_t event_module,
 		CLI_LOGI(" target AP: %s, bssid %pm found\n", network_found->ssid, network_found->bssid);
 		break;
 
-#if CONFIG_WIFI_CSI_EN
-	case EVENT_WIFI_CSI_ALG_IND:
-		break;
-#endif
-
 #if CONFIG_WIFI_REGDOMAIN
 	case EVENT_WIFI_REGDOMAIN_CHANGED: {
 		wifi_event_reg_change_t *event = event_data;
@@ -2552,43 +2547,33 @@ void ap_switch_channel_test(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
 }
 #endif
 
-#if CONFIG_WIFI_CSI_EN
-
-void cli_wifi_csi_alg_config_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+#if CONFIG_WIFI_REGDOMAIN
+/*
+ * regulatory domain command.
+ *     regd get
+ *     regd set <alpha2>
+ */
+void cli_wifi_regd_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
-	uint16_t rate1;
-	uint16_t rate2;
-	uint16_t rate3;
-	uint16_t thres1;
-	uint16_t thres2;
-	int ret = 0;
+	CLI_LOGD("regulatory command\r\n");
 
-	if (argc >= 9)
-	{
-		rate1 = (uint16_t)os_strtoul(argv[1], NULL, 10);
-		rate2 = (uint16_t)os_strtoul(argv[2], NULL, 10);
-		rate3 = (uint16_t)os_strtoul(argv[3], NULL, 10);
-		thres1 = (uint16_t)os_strtoul(argv[4], NULL, 10);
-		thres2 = (uint16_t)os_strtoul(argv[5], NULL, 10);
-
-		struct wifi_csi_cfg_dbg debug_param;
-		debug_param.rate1 = rate1;
-		debug_param.rate2 = rate2;
-		debug_param.rate3 = rate3;
-		debug_param.thres2 = thres2;
-		extern bk_err_t bk_wifi_csi_alg_config_internal(double thres1,struct wifi_csi_cfg_dbg debug_param);
-		ret = bk_wifi_csi_alg_config_internal(thres1,debug_param);
-
-		if (ret)
-			CLI_LOGI("bad state\r\n");
-	}
-	else
-	{
-		CLI_LOGI("invalid cli_wifi_csi_start_cmd %d\n",argc);
+	if (!strcmp(argv[1], "get")) {
+		bk_wifi_print_regdomain();
+		return;
+	} else if (argc > 2 && !strcmp(argv[1], "set")) {
+		char alpha2[3] = {0};
+		os_strlcpy(alpha2, argv[2], 3);
+		bk_wifi_set_country_code(alpha2);
 		return;
 	}
 
+	CLI_LOGE("Usage: \n");
+	CLI_LOGE("	%s get\n", argv[0]);
+	CLI_LOGE("	%s set <alpha2>\n", argv[0]);
 }
+#endif
+
+#if CONFIG_WIFI_CSI_EN
 extern int hexstr2bin(const char *hex, u8 *buf, size_t len);
 bool cli_wifi_csi_read_addr(char *mac_str,uint8_t *base_mac)
 {
@@ -2624,132 +2609,157 @@ bool cli_wifi_csi_read_addr(char *mac_str,uint8_t *base_mac)
 	hexstr2bin(mac, base_mac, BK_MAC_ADDR_LEN);
 	return true;
 }
-void cli_wifi_csi_start_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
-{
-	uint8_t work_type = 0;
-	uint8_t mode = 0x2;
-	uint8_t work_identity = 0x1;
-	uint8_t format = 0x3;
-	uint32_t interval = 40;
-	uint32_t delay = 1000;
-	uint8_t tx_type = 1;
-	uint8_t rx_mode = 1;
-	uint8_t gap_num = 0;
-	uint32_t gap = 0;
-	uint32_t data_cnt = 1000;
-	uint8_t mac_num = 0;
-	uint8_t mac[6*4];
-	uint8_t base_mac[BK_MAC_ADDR_LEN] = {0};
-	int ret = 0;
 
-	if (argc >= 7)
+void cli_wifi_csi_cmd(char * pcWriteBuffer, int xWriteBufferLen, int argc, char * * argv)
+{
+	extern bk_err_t bk_wifi_csi_active_mode_req(wifi_csi_active_mode_config_t *config);
+	wifi_csi_active_mode_config_t active_mode_config = {0};
+	active_mode_config.enable = true;
+	active_mode_config.interval = 200;
+	extern bk_err_t bk_wifi_csi_receive_mode_req(wifi_csi_receive_mode_config_t *config);
+	wifi_csi_receive_mode_config_t receive_mode_config = {0};
+	receive_mode_config.enable = true;
+	uint8_t base_mac[BK_MAC_ADDR_LEN] = {0};
+
+	receive_mode_config.filter_config.format = 1;
+	receive_mode_config.filter_config.ltf_type_bitmap = 1;
+	receive_mode_config.filter_config.filter_mac_type = 0x2;
+	receive_mode_config.filter_config.filter_src_mac_num = 2;
+	receive_mode_config.filter_config.filter_src_mac[0] = 0xc8;
+	receive_mode_config.filter_config.filter_src_mac[1] = 0x47;
+	receive_mode_config.filter_config.filter_src_mac[2] = 0x8c;
+	receive_mode_config.filter_config.filter_src_mac[3] = 0x3d;
+	receive_mode_config.filter_config.filter_src_mac[4] = 0xec;
+	receive_mode_config.filter_config.filter_src_mac[5] = 0x22;
+	//{0xc8, 0x47, 0x8c, 0x63, 0x54, 0x39};
+	receive_mode_config.filter_config.filter_src_mac[6] = 0xc8;
+	receive_mode_config.filter_config.filter_src_mac[7] = 0x47;
+	receive_mode_config.filter_config.filter_src_mac[8] = 0x8c;
+	receive_mode_config.filter_config.filter_src_mac[9] = 0xa2;
+	receive_mode_config.filter_config.filter_src_mac[10] = 0xfa;
+	receive_mode_config.filter_config.filter_src_mac[11] = 0x29;
+	receive_mode_config.filter_config.filter_dst_mac_num = 0;
+	receive_mode_config.filter_config.filter_dst_mac[0] = 0;
+	receive_mode_config.filter_config.mgmt_frame_filter = 0x80000000;
+	receive_mode_config.filter_config.ctrl_frame_filter = 0;
+	receive_mode_config.filter_config.data_frame_filter = 0x80000000;
+
+	if(os_strcmp(argv[1], "start") == 0)
 	{
-		work_type = (uint8_t)os_strtoul(argv[1], NULL, 10);
-		mode = (uint8_t)os_strtoul(argv[2], NULL, 16);
-		work_identity = (uint8_t)os_strtoul(argv[3], NULL, 16);
-		format = (uint8_t)os_strtoul(argv[4], NULL, 16);
-		interval = (uint32_t)os_strtoul(argv[5], NULL, 10);
-		delay = (uint32_t)os_strtoul(argv[6], NULL, 10);
-		if (argc >= 8)
-			gap_num = (uint8_t)os_strtoul(argv[7], NULL, 10);
-		if (argc >= 9)
-			gap = (uint32_t)os_strtoul(argv[8], NULL, 10);
-		if (argc >= 10)
-			data_cnt = (uint32_t)os_strtoul(argv[9], NULL, 10);
-		if (argc >= 11)
-			tx_type = (uint8_t)os_strtoul(argv[10], NULL, 10);
-		if (argc >= 12)
-			rx_mode = (uint8_t)os_strtoul(argv[11], NULL, 10);
-		if(argc > 12)
-			mac_num = (uint32_t)os_strtoul(argv[12], NULL, 10);
-		if((mac_num > 0)&&(mac_num < 5))
+		if (argc > 2)
 		{
-			for(uint8_t i=0;i<mac_num;i++)
+			active_mode_config.interval = os_strtoul(argv[2], NULL, 10);
+		}
+		bk_wifi_csi_active_mode_req(&active_mode_config);
+	}
+	else if(os_strcmp(argv[1], "stop") == 0)
+	{
+		active_mode_config.enable = false;
+		bk_wifi_csi_active_mode_req(&active_mode_config);
+	}
+	else if(os_strcmp(argv[1], "mode_config") == 0)
+	{
+		if (argc > 2)
+		{
+			receive_mode_config.filter_config.format = os_strtoul(argv[2], NULL, 10);
+			if(argc > 3)
 			{
-				if((i<mac_num)&&(argc > (13+i)))
+				receive_mode_config.filter_config.ltf_type_bitmap = os_strtoul(argv[3], NULL, 10);
+
+				if(argc > 4)
 				{
-					if(cli_wifi_csi_read_addr(argv[13+i],base_mac))
-						os_memcpy((mac+i*6),base_mac,6);
-					else
+					receive_mode_config.filter_config.filter_mac_type = os_strtoul(argv[4], NULL, 10);
+					uint8_t argc_offset = 5;
+
+					if((receive_mode_config.filter_config.filter_mac_type == 0)||
+						(receive_mode_config.filter_config.filter_mac_type == 2) ||
+						(receive_mode_config.filter_config.filter_mac_type > 3))
 					{
-						CLI_LOGI("err param\r\n");
-						return;
+						if(argc > argc_offset)
+						{
+							receive_mode_config.filter_config.filter_src_mac_num = os_strtoul(argv[argc_offset], NULL, 10);
+							argc_offset++;
+						}
+						else
+						{
+							CLI_LOGI("err param 1\r\n");
+							return;
+						}
+
+						uint8_t mac_num = receive_mode_config.filter_config.filter_src_mac_num;
+						CLI_LOGI("mac_num %d\r\n", mac_num);
+						CLI_LOGI("argc_offset %d\r\n", argc_offset);
+						CLI_LOGI("argc %d\r\n", argc);
+						if(argc > (argc_offset+mac_num-1))
+						{
+							for(uint8_t i=0;i<mac_num;i++)
+							{
+								if(cli_wifi_csi_read_addr(argv[argc_offset],base_mac))
+								{
+									os_memcpy((receive_mode_config.filter_config.filter_src_mac+i*6),base_mac,6);
+									argc_offset++;
+								}
+								else
+								{
+									CLI_LOGI("err param 2\r\n");
+									return;
+								}
+							}
+						}
+						else
+						{
+							CLI_LOGI("err param 3 , argc %d, argc_offset %d, mac_num %d\r\n", argc, argc_offset, mac_num);
+							return;
+						}
 					}
-				}
-				else
-				{
-					CLI_LOGI("err param\r\n");
-					return;
+					if((receive_mode_config.filter_config.filter_mac_type == 0)||
+						(receive_mode_config.filter_config.filter_mac_type == 1) ||
+						(receive_mode_config.filter_config.filter_mac_type > 3))
+					{
+						if(argc > argc_offset)
+						{
+							receive_mode_config.filter_config.filter_dst_mac_num = os_strtoul(argv[argc_offset], NULL, 10);
+							argc_offset++;
+						}
+						else
+						{
+							CLI_LOGI("err param 4\r\n");
+							return;
+						}
+
+						uint8_t mac_num = receive_mode_config.filter_config.filter_dst_mac_num;
+						if(argc > (argc_offset+mac_num-1))
+						{
+							for(uint8_t i=0;i<mac_num;i++)
+							{
+								if(cli_wifi_csi_read_addr(argv[argc_offset],base_mac))
+								{
+									os_memcpy((receive_mode_config.filter_config.filter_dst_mac+i*6),base_mac,6);
+									argc_offset++;
+								}
+								else
+								{
+									CLI_LOGI("err param 5\r\n");
+									return;
+								}
+							}
+						}
+						else
+						{
+							CLI_LOGI("err param 6 , argc %d, argc_offset %d, mac_num %d\r\n", argc, argc_offset, mac_num);
+							return;
+						}
+					}
 				}
 			}
 		}
-		struct wifi_csi_start_dbg debug_param;
-		debug_param.tx_type = tx_type;
-		debug_param.rx_mode = rx_mode;
-		debug_param.gap_num = gap_num;
-		debug_param.gap = gap;
-		debug_param.data_cnt = data_cnt;
-		debug_param.filter_mac_num = mac_num;
-		debug_param.mac = mac;
-		extern bk_err_t bk_wifi_csi_start_req_internal(uint8_t csi_work_type,uint8_t csi_work_mode,
-								uint8_t csi_work_identity,uint8_t csi_data_format,uint32_t csi_data_interval,
-								uint32_t delay,struct wifi_csi_start_dbg debug_param);
-		ret = bk_wifi_csi_start_req_internal(work_type,mode,work_identity,format,interval,delay,debug_param);
-
-		if (ret)
-			CLI_LOGI("bad state\r\n");
+		bk_wifi_csi_receive_mode_req(&receive_mode_config);
 	}
-	else
+	else if(os_strcmp(argv[1], "mode_disable") == 0)
 	{
-		CLI_LOGI("invalid cli_wifi_csi_start_cmd %d\n",argc);
-		return;
+		receive_mode_config.enable = false;
+		bk_wifi_csi_receive_mode_req(&receive_mode_config);
 	}
-}
-void cli_wifi_csi_stop_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
-{
-	bk_wifi_csi_stop_req();
-}
-void cli_wifi_csi_config_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
-{
-	uint32_t cnt = 200;
-	uint8_t update_cali_mode = 0;
-
-	if (argc == 3)
-	{
-		cnt = (uint32_t)os_strtoul(argv[1], NULL, 10);
-		update_cali_mode = (uint8_t)os_strtoul(argv[2], NULL, 10);
-		bk_wifi_csi_static_param_reset_req(update_cali_mode,cnt);
-	}
-	else
-	{
-		CLI_LOGI("invalid cli_wifi_csi_start_cmd %d\n",argc);
-	}
-}
-#endif
-
-#if CONFIG_WIFI_REGDOMAIN
-/*
- * regulatory domain command.
- *     regd get
- *     regd set <alpha2>
- */
-void cli_wifi_regd_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
-{
-	CLI_LOGD("regulatory command\r\n");
-
-	if (!strcmp(argv[1], "get")) {
-		bk_wifi_print_regdomain();
-		return;
-	} else if (argc > 2 && !strcmp(argv[1], "set")) {
-		char alpha2[3] = {0};
-		os_strlcpy(alpha2, argv[2], 3);
-		bk_wifi_set_country_code(alpha2);
-		return;
-	}
-
-	CLI_LOGE("Usage: \n");
-	CLI_LOGE("	%s get\n", argv[0]);
-	CLI_LOGE("	%s set <alpha2>\n", argv[0]);
 }
 #endif
 
@@ -2827,11 +2837,7 @@ static const struct cli_command s_wifi_commands[] = {
 	{"brctl", "bridge control utils", cli_brctl_cmd},
 #endif
 #if CONFIG_WIFI_CSI_EN
-
-	{"csi_alg_config","csi_alg_config 8 16 8 5 3 8 15000 100", cli_wifi_csi_alg_config_cmd},
-	{"csi_start","csi_start 0 0x8 0x1 1 200 5", cli_wifi_csi_start_cmd},
-	{"csi_stop","csi_stop", cli_wifi_csi_stop_cmd},
-	{"csi_cali_reset","csi_cali_reset 200 1", cli_wifi_csi_config_cmd},
+	{"csi", "csi {start|stop}", cli_wifi_csi_cmd},
 #endif
 };
 

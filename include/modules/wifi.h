@@ -1685,58 +1685,9 @@ bk_err_t bk_wifi_set_tx_power(wifi_standard standard, float powerdBm);
  */
 void bk_wifi_csi_info_cb_register(wifi_csi_cb_t cb);
 
-/**
- * @brief config csi algorithm param
- *
- * @param thres1    detection sensitivity(default 5),the larger the value,the less sensitive it is for motion detection.
- *                  , set range >=3
- *
- * @return
- *    - kNoErr: succeed
- *    - otherwise: fail
- */
-bk_err_t bk_wifi_csi_alg_config(double thres1);
+bk_err_t bk_wifi_csi_active_mode_req(wifi_csi_active_mode_config_t *config);
 
-/**
- * @brief start csi
- *
- * @param csi_work_type    work type. 0: single mode group method, 1: dual mode group method
- * @param csi_work_mode    bit 100 -- algorithm; bit 1000 -- csi abs
- * @param csi_work_identity    bit 01-- support STA csi; bit 10 -- support AP csi
- * @param csi_data_format    frame format : NON_HT 0x01;HT_MM 0x02;HE_SU 0x04(now algorithm only support NON_HT)
- * @param csi_data_interval    csi data get interval(ms), set range >=10
- * @param delay    delay time for getting csi data(s), set range 0~4000
- *
- * @return
- *    - kNoErr: succeed
- *    - otherwise: fail
- */
-bk_err_t bk_wifi_csi_start_req(uint8_t csi_work_type,uint8_t csi_work_mode,uint8_t csi_work_identity,uint8_t csi_data_format,
-                               uint32_t csi_data_interval,uint32_t delay);
-
-/**
- * @brief stop csi
- *
- * @return
- *    - kNoErr: succeed
- *    - otherwise: fail
- */
-bk_err_t bk_wifi_csi_stop_req(void);
-
-/**
- * @brief clear csi static param to recalibration, only for old algorithm
- *
- * @attention. during calibration, the surrounding encironment must still
- *
- * @param update_cali_mode    calibration mode. 0: no calibration, 1: start calibration and with update calibration result
- *                                              2: start calibration, 3: update calibration result
- * @param cali_cnt    calibration count frame
- *
- * @return
- *    - kNoErr: succeed
- *    - otherwise: fail
- */
-bk_err_t bk_wifi_csi_static_param_reset_req(uint8_t update_cali_mode,uint32_t cali_cnt);
+bk_err_t bk_wifi_csi_receive_mode_req(wifi_csi_receive_mode_config_t *config);
 #endif
 
 /**
