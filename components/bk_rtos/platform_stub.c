@@ -27,6 +27,7 @@
 #include "common/bk_assert.h"
 
 #include "bk_uart.h"
+#include <driver/aon_rtc.h>
 
 /************** wrap C library functions **************/
 __attribute__((weak)) void *__wrap_malloc(size_t size)
@@ -178,6 +179,38 @@ void __wrap___assert_func(const char *file, int line, const char *func, const ch
 {
 	os_printf("%s %d func %s expr %s\n", file, line, func, failedexpr);
 	BK_ASSERT(0); /* ASSERT VERIFIED */
+}
+
+int64_t s_microseconds_offset = 0;
+
+int __wrap_gettimeofday(struct timeval *tv, void *ptz)
+{
+	(void)ptz;
+
+#if CONFIG_AON_RTC || CONFIG_ANA_RTC
+	if (tv) {
+		uint64_t uCurTimeUs = s_microseconds_offset + bk_aon_rtc_get_us();
+		tv->tv_sec=uCurTimeUs/1000000;
+		tv->tv_usec=uCurTimeUs%1000000;
+	}
+#endif
+
+	return 0;
+}
+
+int __wrap_settimeofday(const struct timeval *tv, const struct timezone *tz)
+{
+	(void)tz;
+
+#if CONFIG_AON_RTC || CONFIG_ANA_RTC
+	if (tv) {
+		uint64_t setTimeUs = ((uint64_t)tv->tv_sec)*1000000LL+tv->tv_usec;
+		uint64_t getCurTimeUs = bk_aon_rtc_get_us();
+		s_microseconds_offset = setTimeUs - getCurTimeUs;
+	}
+#endif
+
+	return 0;
 }
 
 // eof

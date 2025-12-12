@@ -4,7 +4,7 @@
   
   <default remote="origin" revision="bk_idk_release_2.2.1"/>
   
-  <project name="iot/wcn/bootloader/bk_mcuboot" path="components/bk_mcuboot" revision="8efb1c4855a76d34ccb65f9f504d717c2ecbf675" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="platform"/>
+  <project name="iot/wcn/bootloader/bk_mcuboot" path="components/bk_mcuboot" revision="92f379ad9ea9776ccf1f57c746e187be54be0861" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="platform"/>
   <project name="iot/wcn/bootloader/mcuboot" path="components/mcuboot" revision="cdc254594f86e2ecdfc431fabc9a06c52931a15a" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="platform"/>
   <project name="iot/wcn/components/adc_key" path="components/adc_key" revision="57324a33a258138dd09ca7191c1aa79abd2557ed" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="adc"/>
   <project name="iot/wcn/components/ali_mqtt" path="components/ali_mqtt" revision="671039bd8050d4d9c2bbd4739a24ca33617ba44c" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="app"/>
@@ -31,7 +31,7 @@
   <project name="iot/wcn/components/bk_phy" path="components/bk_phy" revision="6dde8f3a3b975446e65b491efbdd17cc8ccb05f7" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="wifi"/>
   <project name="iot/wcn/components/bk_pm" path="components/bk_pm" revision="24e6a9c2a77a1ad8eed00ede717599f29b2546f7" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="platform"/>
   <project name="iot/wcn/components/bk_ps" path="components/bk_ps" revision="5d1f25fc6926289a9f772fa82f6c8eea56000a4c" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="platform"/>
-  <project name="iot/wcn/components/bk_rtos" path="components/bk_rtos" revision="31feea6256099a85c9825326d728d54eb33ceeb2" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="platform"/>
+  <project name="iot/wcn/components/bk_rtos" path="components/bk_rtos" revision="50f645b35f3c94910010f9a6840b979a4a0166be" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="platform"/>
   <project name="iot/wcn/components/bk_startup" path="components/bk_startup" revision="124efe3fcc13ba964a7dc54163fbeab6f48d76ec" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="platform"/>
   <project name="iot/wcn/components/bk_system" path="components/bk_system" revision="858ab4b23b5b35067484e3c860ca0030a245f920" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="platform"/>
   <project name="iot/wcn/components/bk_trustengine" path="components/bk_trustengine" revision="bddbc5b21d7899c884934d6d0aa2228a75db7509" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="platform"/>
@@ -75,7 +75,7 @@
   <project name="iot/wcn/components/tfm" path="components/tfm" revision="e30acffe73454477a40f14fee8822e890b22dc4a" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="platform"/>
   <project name="iot/wcn/components/tfm_mbedtls" path="components/tfm_mbedtls" revision="a3ded432170637c4fc94776ea8a556d17a2ce2b2" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="platform"/>
   <project name="iot/wcn/components/tfm_tests" path="components/tfm_tests" revision="a00d64dd63099d36e159abbad2760b2bd24d7529" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="platform"/>
-  <project name="iot/wcn/components/tinysoc" path="components/tinysoc" revision="91525ec54281769ddc7da0ccdbb198f2ff43de2c" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="platform"/>
+  <project name="iot/wcn/components/tinysoc" path="components/tinysoc" revision="20562dd0001d4035218548284b880a8fd66e9085" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="platform"/>
   <project name="iot/wcn/components/unity" path="components/unity" revision="c044d6f59cdccc62d0133adaae2bed7efc15c835" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="platform"/>
   <project name="iot/wcn/components/user_driver" path="components/user_driver" revision="ae2c46ceb838cfbbce0dd93cbbf6cf5864545a6e" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="platform"/>
   <project name="iot/wcn/components/utf8" path="components/utf8" revision="91b58bedee033346cb41cf742030e1087f74b764" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="platform"/>
@@ -84,7 +84,7 @@
   <project name="iot/wcn/components/wpa_supplicant-2.10" path="components/wpa_supplicant-2.10" revision="47c5b1b33bf3340966fd6c91a01c21653ae09c1b" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="wifi"/>
   <project name="iot/wcn/docs" path="docs" revision="ff3d9e38eb48e60fdc4890cdbca90014ae9c0443" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="platform"/>
   <project name="iot/wcn/include" path="include" revision="5d00b13c5c951e36cdc39775531329cb1f390c72" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="platform"/>
-  <project name="iot/wcn/middleware" path="middleware" revision="4ddb31fc3593843ba23a03958be0a8be9fdc296b" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="platform"/>
+  <project name="iot/wcn/middleware" path="middleware" revision="fc0c64edd2001110136c4f32aa1e6ba911965d88" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="platform"/>
   <project name="iot/wcn/projects" path="projects" revision="759f6cde2216adacc74758e5d4977e04634602d6" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="platform"/>
   <project name="iot/wcn/properties" path="properties" revision="5712de73ce7b37871f7cb2d3e68dbad107780d5f" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="platform"/>
   <project name="iot/wcn/properties/arch" path="properties/arch" revision="7fefd63005fee1e3717425cd644ce13c7bd4e476" upstream="bk_idk_release_2.2.1" dest-branch="bk_idk_release_2.2.1" groups="platform"/>
