@@ -765,6 +765,25 @@ bk_err_t bk_pwm_capture_init(pwm_chan_t chan, const pwm_capture_init_config_t *c
 	pwm_hal_chan_alloc_capture_io(cap_map[chan].sw_ch, cap_map[chan].tim_cap_ch);
 	pwm_hal_chan_alloc_io(cap_map[chan].sw_ch, cap_map[chan].tim_cap_ch);
 	pwm_hal_init_capture(chan, config->edge);
+
+	/* Set SMS register based on capture mode */
+	if (config->capture_mode == PWM_CAPTURE_MODE_PULSE_COUNT) {
+		/* Pulse count mode: SMS=7 (trigger mode for external pulse counting) */
+		/* Validate pulse_count_threshold: must be > 0 */
+		if (config->pulse_count_threshold == 0) {
+			PWM_LOGE("invalid pulse_count_threshold: must be > 0, got %d\r\n", config->pulse_count_threshold);
+			return BK_ERR_PWM_PERIOD_DUTY;
+		}
+
+		/* Set ARR register: interrupt when pulse count reaches threshold */
+		uint32_t arr_value = config->pulse_count_threshold - 1;
+		pwm_hal_set_tim_arr(chan, arr_value);
+		pwm_hal_set_sms(chan, 0x7);
+	} else {
+		/* Pulse width mode: SMS=5 (already set in pwm_hal_init_capture, no need to change) */
+		/* SMS=5 is set in pwm_hal_init_capture, so we don't need to set it again */
+	}
+
 	s_pwm_isr[chan] = config->isr;
 	if (s_pwm.capture_sema == NULL) {
 		ret = rtos_init_semaphore(&(s_pwm.capture_sema), 1);
@@ -778,8 +797,7 @@ bk_err_t bk_pwm_capture_deinit(pwm_chan_t chan)
 {
 	PWM_RETURN_ON_INVALID_CHAN(chan);
 
-	pwm_hal_set_single_chan_tim_enable(chan, 0);
-	pwm_hal_set_cc1ie(chan, 0);
+	bk_pwm_capture_stop(chan);
 	s_pwm_isr[chan] = NULL;
 	if (s_pwm.capture_sema) {
 		rtos_deinit_semaphore(&(s_pwm.capture_sema));
@@ -794,7 +812,11 @@ bk_err_t bk_pwm_capture_start(pwm_chan_t chan)
 	PWM_RETURN_ON_INVALID_CHAN(chan);
 
 	pwm_hal_set_single_chan_tim_enable(chan, 1);
-	pwm_hal_set_cc1ie(chan, 1);
+	if (pwm_hal_get_sms(chan) == 0x7) {
+		pwm_hal_set_uie(chan, 1);
+	} else {
+		pwm_hal_set_cc1ie(chan, 1);
+	}
 	return BK_OK;
 }
 
@@ -803,7 +825,11 @@ bk_err_t bk_pwm_capture_stop(pwm_chan_t chan)
 	PWM_RETURN_ON_INVALID_CHAN(chan);
 
 	pwm_hal_set_single_chan_tim_enable(chan, 0);
-	pwm_hal_set_cc1ie(chan, 0);
+	if (pwm_hal_get_sms(chan) == 0x7) {
+		pwm_hal_set_uie(chan, 0);
+	} else {
+		pwm_hal_set_cc1ie(chan, 0);
+	}
 	return BK_OK;
 }
 

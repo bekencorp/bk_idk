@@ -635,6 +635,84 @@ bk_err_t pwm_hal_init_capture(pwm_chan_t chan, pwm_capture_edge_t edge)
 	return BK_OK;
 }
 
+bk_err_t pwm_hal_set_sms(pwm_chan_t tim_id, uint32_t value)
+{
+	switch (tim_id) {
+	case 0:
+		pwm_ll_set_reg42_sms1(value);
+		break;
+	case 1:
+		pwm_ll_set_reg42_sms2(value);
+		break;
+	case 2:
+		pwm_ll_set_reg42_sms3(value);
+		break;
+	case 3:
+		pwm_ll_set_reg82_sms1(value);
+		break;
+	case 4:
+		pwm_ll_set_reg82_sms2(value);
+		break;
+	case 5:
+		pwm_ll_set_reg82_sms3(value);
+		break;
+	case 6:
+		pwm_ll_set_regc2_sms1(value);
+		break;
+	case 7:
+		pwm_ll_set_regc2_sms2(value);
+		break;
+	case 8:
+		pwm_ll_set_regc2_sms3(value);
+		break;
+	case 9:
+		pwm_ll_set_reg102_sms1(value);
+		break;
+	case 10:
+		pwm_ll_set_reg102_sms2(value);
+		break;
+	case 11:
+		pwm_ll_set_reg102_sms3(value);
+		break;
+	default:
+		break;
+	}
+
+	return BK_OK;
+}
+
+uint32_t pwm_hal_get_sms(pwm_chan_t tim_id)
+{
+	switch (tim_id) {
+	case 0:
+		return pwm_ll_get_reg42_sms1();
+	case 1:
+		return pwm_ll_get_reg42_sms2();
+	case 2:
+		return pwm_ll_get_reg42_sms3();
+	case 3:
+		return pwm_ll_get_reg82_sms1();
+	case 4:
+		return pwm_ll_get_reg82_sms2();
+	case 5:
+		return pwm_ll_get_reg82_sms3();
+	case 6:
+		return pwm_ll_get_regc2_sms1();
+	case 7:
+		return pwm_ll_get_regc2_sms2();
+	case 8:
+		return pwm_ll_get_regc2_sms3();
+	case 9:
+		return pwm_ll_get_reg102_sms1();
+	case 10:
+		return pwm_ll_get_reg102_sms2();
+	case 11:
+		return pwm_ll_get_reg102_sms3();
+	default:
+		return 0;
+	}
+}
+
 bk_err_t pwm_hal_set_uie(pwm_chan_t tim_id, uint32_t value)
 {
 	switch (tim_id) {
@@ -861,6 +939,52 @@ uint32_t pwm_hal_get_ccr2(pwm_chan_t tim_id)
 	}
 
 	return 0;
+}
+
+bk_err_t pwm_hal_set_tim_arr(pwm_chan_t tim_id, uint32_t value)
+{
+	switch (tim_id) {
+	case 0:
+		pwm_ll_set_reg4b_tim1_arr(value);
+		break;
+	case 1:
+		pwm_ll_set_reg4c_tim2_arr(value);
+		break;
+	case 2:
+		pwm_ll_set_reg4d_tim3_arr(value);
+		break;
+	case 3:
+		pwm_ll_set_reg8b_tim1_arr(value);
+		break;
+	case 4:
+		pwm_ll_set_reg8c_tim2_arr(value);
+		break;
+	case 5:
+		pwm_ll_set_reg8d_tim3_arr(value);
+		break;
+	case 6:
+		pwm_ll_set_regcb_tim1_arr(value);
+		break;
+	case 7:
+		pwm_ll_set_regcc_tim2_arr(value);
+		break;
+	case 8:
+		pwm_ll_set_regcd_tim3_arr(value);
+		break;
+	case 9:
+		pwm_ll_set_reg10b_tim1_arr(value);
+		break;
+	case 10:
+		pwm_ll_set_reg10c_tim2_arr(value);
+		break;
+	case 11:
+		pwm_ll_set_reg10d_tim3_arr(value);
+		break;
+	default:
+		break;
+	}
+
+	return BK_OK;
 }
 
 uint32_t pwm_hal_get_tim_arr(pwm_chan_t tim_id)

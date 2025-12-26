@@ -65,6 +65,8 @@ extern "C" {
  */
 #define PWM_DEFAULT_PWM_CAPTURE_CONFIG() {\
 	.isr = NULL,\
+	.capture_mode = PWM_CAPTURE_MODE_PULSE_WIDTH,\
+	.pulse_count_threshold = 0,\
 }
 
 #define PWM_PHASE_SHIFT_CHAN_NUM    6
@@ -93,9 +95,19 @@ typedef struct {
  */
 typedef void (*pwm_isr_t)(pwm_chan_t chan);
 
+/**
+ * @brief PWM capture mode
+ */
+typedef enum {
+	PWM_CAPTURE_MODE_PULSE_WIDTH = 0,  /**< Pulse width capture mode */
+	PWM_CAPTURE_MODE_PULSE_COUNT = 1,  /**< Pulse count capture mode */
+} pwm_capture_mode_t;
+
 typedef struct {
-	pwm_capture_edge_t edge; /**< PWM chan capture edge */
-	pwm_isr_t isr;           /**< PWM capture interrupt routine */
+	pwm_capture_edge_t edge;        /**< PWM chan capture edge */
+	pwm_isr_t isr;                  /**< PWM capture interrupt routine */
+	pwm_capture_mode_t capture_mode; /**< PWM capture mode: 0=pulse width, 1=pulse count */
+	uint32_t pulse_count_threshold; /**< Pulse count threshold: interrupt when pulse count reaches this value (only for pulse count mode) */
 } pwm_capture_init_config_t;
 
 typedef struct {

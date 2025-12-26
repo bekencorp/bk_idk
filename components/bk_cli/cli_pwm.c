@@ -234,7 +234,7 @@ static void cli_pwm_capture_cmd(char *pcWriteBuffer, int xWriteBufferLen, int ar
 	chan = os_strtoul(argv[1], NULL, 10);
 
 	if (os_strcmp(argv[2], "init") == 0) {
-		CLI_RET_ON_INVALID_ARGC(argc, 4);
+		CLI_RET_ON_INVALID_ARGC(argc, 6);
 		pwm_capture_init_config_t config = {0};
 		if (os_strcmp(argv[3], "pos") == 0)
 			config.edge = PWM_CAPTURE_POS;
@@ -247,6 +247,12 @@ static void cli_pwm_capture_cmd(char *pcWriteBuffer, int xWriteBufferLen, int ar
 			return;
 		}
 
+		if (os_strcmp(argv[4], "count") == 0)
+			config.capture_mode = PWM_CAPTURE_MODE_PULSE_COUNT;
+		else
+			config.capture_mode = PWM_CAPTURE_MODE_PULSE_WIDTH;
+
+		config.pulse_count_threshold = os_strtoul(argv[5], NULL, 10);
 		config.isr = cli_pwm_capture_isr;
 		BK_LOG_ON_ERR(bk_pwm_capture_init(chan, &config));
 		CLI_LOGI("pwm_capture init, chan=%d\n", chan);
@@ -259,6 +265,8 @@ static void cli_pwm_capture_cmd(char *pcWriteBuffer, int xWriteBufferLen, int ar
 	} else if (os_strcmp(argv[2], "deinit") == 0) {
 		BK_LOG_ON_ERR(bk_pwm_capture_deinit(chan));
 		CLI_LOGI("pwm_capture deinit, chan=%d\n", chan);
+	} else if (os_strcmp(argv[2], "get_value") == 0) {
+		CLI_LOGI("capture(%d), value=%x\n", chan, bk_pwm_capture_get_value(chan));
 	} else if (os_strcmp(argv[2], "capture_example") == 0) {
 		pwm_capture_init_config_t config = {0};
 		float duty_ratio = 0;
