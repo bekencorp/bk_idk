@@ -40,7 +40,7 @@ menu "PSA Mbedtls"
 
 		config TRUSTENGINE_PM_CB_SUPPORT
 			bool "Enable trustengine pm cb support"
-			default n
+			default y
 
 		config SW_CRYPTO
 			bool "Enable software crypto"
