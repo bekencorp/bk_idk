@@ -323,16 +323,16 @@ static inline void flash_ll_set_addr_offset(flash_hw_t *hw, uint32_t addr_offset
 static inline void flash_ll_set_volatile_status_write(flash_hw_t *hw)
 {
 	while (flash_ll_is_busy(hw));
-	hw->cmd_cfg.wrsr_cmd_reg = 0x50;
-	hw->cmd_cfg.wrsr_cmd_sel = 0x1;
+	hw->flash_ctrl.susres_cmd_reg = 0x50;
+	hw->flash_ctrl.susres_cmd_sel = 0x1;
 	while (flash_ll_is_busy(hw));
 }
 
 static inline void flash_ll_clear_volatile_status_write(flash_hw_t *hw)
 {
 	while (flash_ll_is_busy(hw));
-	hw->cmd_cfg.wrsr_cmd_reg = 0x00;
-	hw->cmd_cfg.wrsr_cmd_sel = 0x0;
+	hw->flash_ctrl.susres_cmd_reg = 0x00;
+	hw->flash_ctrl.susres_cmd_sel = 0x0;
 	while (flash_ll_is_busy(hw));
 }
 
