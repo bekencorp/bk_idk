@@ -76,6 +76,7 @@ WRITE_PRODUCT_ID_SCRIPT="${ARMINO_DIR}/tools/build_tools/write_product_id.py"
 PRODUCT_ID_FILE="${ARMINO_DIR}/properties/soc/${ARMINO_SOC}/product_id.txt"
 NORMAL_BOOTLOADER_BIN="${ARMINO_DIR}/components/bk_libs/${ARMINO_SOC}/bootloader/normal_bootloader/bootloader.bin"
 AB_BOOTLOADER_BIN="${ARMINO_DIR}/components/bk_libs/${ARMINO_SOC}/bootloader/ab_bootloader/bootloader.bin"
+SDKCONFIG_H="${PROPERTIES_LIB_BUILD_DIR}/sdkconfig"
 # not to build properties repeatedly when verify.
 if [ -n "${BK_JENKINS_ID:-}" ]; then
 	if [ -d "$PROPERTIES_LIB_BUILD_DIR" ]; then
@@ -105,11 +106,23 @@ if [ "${need_build_properties_lib}" == "1" ]; then
 	${ARMINO_TOOL} -B ${PROPERTIES_LIB_BUILD_DIR} -P ${PROPERTIES_LIB_DIR} set-target ${ARMINO_SOC}
 	${ARMINO_TOOL} -B ${PROPERTIES_LIB_BUILD_DIR} -P ${PROPERTIES_LIB_DIR} ${ARMINO_TARGET}
 	${ARMINO_DIR}/tools/build_tools/copy_internal_libs.sh ${ARMINO_SOC} ${ARMINO_DIR} ${PROPERTIES_LIB_BUILD_DIR} ${PROJECT}
-	
+
 	if [ -f "${PRODUCT_ID_FILE}" ] && [ -f "${WRITE_PRODUCT_ID_SCRIPT}" ]; then
 		PRODUCT_STRING=$(cat "${PRODUCT_ID_FILE}")
 		PRODUCT_STRING=$(echo "${PRODUCT_STRING}" | xargs)
-		
+
+		# Parse CONFIG_PRODUCT_STRING from sdkconfig
+		if [ ! -f "${SDKCONFIG_H}" ]; then
+			echo "Error: sdkconfig.h not found at ${SDKCONFIG_H}"
+			exit 1
+		fi
+
+		CONFIG_PRODUCT_ID=$(grep "CONFIG_PRODUCT_ID" "${SDKCONFIG_H}" | cut -d '=' -f 2)
+
+		if [ "${CONFIG_PRODUCT_ID}" != "y" ]; then
+			PRODUCT_STRING="0"
+		fi
+
 		if [ -n "${PRODUCT_STRING}" ]; then
 			if [ -f "${NORMAL_BOOTLOADER_BIN}" ]; then
 				echo "Writing product ID to ${NORMAL_BOOTLOADER_BIN}..."
