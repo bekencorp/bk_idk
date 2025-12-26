@@ -975,6 +975,7 @@ void sys_hal_enter_low_voltage(void)
 	portNVIC_SYSTICK_LOAD_REG = PM_EXIT_LOWVOL_SYSTICK_RELOAD_TIME;
 
 	sys_hal_mask_cpu0_int();
+	aon_pmu_ll_set_r0_fast_boot(1); // set fast boot flag to 1
 	sys_drv_wakeup_source_gpio_clear();
 	sys_drv_wakeup_source_rtc_clear();
 /*----------config wakeup source  start--------------*/
