@@ -2660,7 +2660,9 @@ static int wifi_sta_set_global_config(const wifi_sta_config_t *config)
 		os_memcpy(g_sta_param_ptr->fast_connect.bssid, config->bssid, sizeof(config->bssid));
 		g_sta_param_ptr->fast_connect.chann = config->channel;
 	}
-
+#ifdef CONFIG_STA_MINMUM_SECURITY
+	g_sta_param_ptr->sta_cipher_suite = config->security;
+#endif
 	g_sta_param_ptr->key_len = os_strlen(config->password);
 	os_memcpy(g_sta_param_ptr->key, config->password, g_sta_param_ptr->key_len);
 	g_sta_param_ptr->key[g_sta_param_ptr->key_len] = 0;

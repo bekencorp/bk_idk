@@ -232,6 +232,9 @@ int demo_sta_app_init(char *oob_ssid, char *connect_key)
 		bridge_open = true;
 	}
 #endif
+#ifdef CONFIG_STA_MINMUM_SECURITY
+	sta_config.security = WIFI_SECURITY_NONE;
+#endif
 	BK_LOGI(TAG, "ssid:%s key:%s\r\n", sta_config.ssid, sta_config.password);
 	BK_LOG_ON_ERR(bk_wifi_sta_set_config(&sta_config));
 	BK_LOG_ON_ERR(bk_wifi_sta_start());

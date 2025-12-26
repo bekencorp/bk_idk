@@ -990,6 +990,9 @@ typedef struct sta_param {
 	uint8_t key_len;
 	uint8_t fast_connect_set;
 	uint8_t ocv;
+#ifdef CONFIG_STA_MINMUM_SECURITY
+	uint8_t sta_cipher_suite;
+#endif
 	fast_connect_param_t fast_connect;
 #ifdef CONFIG_CONNECT_THROUGH_PSK_OR_SAE_PASSWORD
 	bool psk_calculated;
