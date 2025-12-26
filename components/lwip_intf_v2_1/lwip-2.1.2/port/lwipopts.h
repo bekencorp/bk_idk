@@ -353,6 +353,7 @@ u32_t beken_random(void);
 #define LWIP_RAW                        1
 #ifdef CONFIG_IPV6
 #define LWIP_IPV6                        1
+#define LWIP_NETIF_EXT_STATUS_CALLBACK  1
 #endif
 
 /* Enable IPv4 Auto IP	*/

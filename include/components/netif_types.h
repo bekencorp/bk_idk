@@ -46,6 +46,7 @@ typedef enum {
 
 typedef enum {
 	EVENT_NETIF_GOT_IP4, /**< Netif get IP4 event */
+	EVENT_NETIF_GOT_IP6, /**< Netif get IP6 event */
 	EVENT_NETIF_DHCP_TIMEOUT, /**get IP4 addr timeout, 20s**/
 } netif_event_t;
 

@@ -106,7 +106,7 @@ void *wifi_netif_get_vif_private_data(void *vif)
 }
 
 extern sta_param_t *g_sta_param_ptr;
-void wifi_netif_notify_sta_got_ip(void)
+void wifi_netif_notify_sta_got_ip(enum ip_ver ver)
 {
 	wifi_linkstate_reason_t info;
 	unsigned char vif_idx;
@@ -124,8 +124,12 @@ void wifi_netif_notify_sta_got_ip(void)
 	if (vif_idx != WIFI_INVALID_VIFID)
 		wlan_dhcp_done_ind(vif_idx);
 
-	BK_LOG_ON_ERR(bk_event_post(EVENT_MOD_NETIF, EVENT_NETIF_GOT_IP4,
-								&event_data, sizeof(event_data), BEKEN_NEVER_TIMEOUT));
+	if (ver == IP4)
+		BK_LOG_ON_ERR(bk_event_post(EVENT_MOD_NETIF, EVENT_NETIF_GOT_IP4,
+									&event_data, sizeof(event_data), BEKEN_NEVER_TIMEOUT));
+	else
+		BK_LOG_ON_ERR(bk_event_post(EVENT_MOD_NETIF, EVENT_NETIF_GOT_IP6,
+									&event_data, sizeof(event_data), BEKEN_NEVER_TIMEOUT));
 }
 
 void wifi_netif_notify_sta_dhcp_timeout(void)

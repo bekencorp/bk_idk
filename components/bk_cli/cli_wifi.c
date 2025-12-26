@@ -1678,6 +1678,7 @@ int cli_netif_event_cb(void *arg, event_module_t event_module,
 
 	switch (event_id) {
 	case EVENT_NETIF_GOT_IP4:
+	case EVENT_NETIF_GOT_IP6:
 #if CONFIG_BRIDGE && !CONFIG_CLI_CODE_SIZE_OPTIMIZE_ENABLE
 		if ((!bridge_is_enabled) && bridge_open) {
 			uint8_t mac[6] = {0};
@@ -1723,7 +1724,8 @@ int cli_netif_event_cb(void *arg, event_module_t event_module,
 			rtos_set_semaphore(&wifi_cmd_sema);
 		}
 		got_ip = (netif_event_got_ip4_t *)event_data;
-		CLI_LOGI("%s got ip\n", got_ip->netif_if == NETIF_IF_STA ? "BK STA" : "unknown netif");
+		CLI_LOGI("%s got ip%d\n", got_ip->netif_if == NETIF_IF_STA ? "BK STA" : "unknown netif",
+			event_id== EVENT_NETIF_GOT_IP4 ? 4 : 6);
 		break;
 	default:
 		CLI_LOGI("rx event <%d %d>\n", event_module, event_id);

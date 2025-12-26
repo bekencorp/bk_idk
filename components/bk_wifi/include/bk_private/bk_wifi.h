@@ -34,6 +34,11 @@ extern "C" {
 /* wlan_ui_pub */
 #define __bk_deprecated                 __attribute__((deprecated))
 
+enum ip_ver{
+	IP4 = 1<<4,
+	IP6 = 1<<6,
+};
+
 /**
  * @brief WiFi APIs Version 1.0
  * @defgroup bk_api_wifi_v1 Old WiFi API group
@@ -416,7 +421,7 @@ netif_if_t wifi_netif_vif_to_netif_type(void *vif);
 netif_if_t wifi_netif_mac_to_netif_type(uint8_t *mac);
 void wifi_netif_set_vif_private_data(void *vif, void *data);
 void* wifi_netif_get_vif_private_data(void *vif);
-void wifi_netif_notify_sta_got_ip(void);
+void wifi_netif_notify_sta_got_ip(enum ip_ver ver);
 void wifi_netif_notify_sta_dhcp_timeout(void);
 void wifi_netif_call_status_cb_when_sta_got_ip(void);
 void wifi_netif_call_status_cb_when_sta_dhcp_timeout(void);
