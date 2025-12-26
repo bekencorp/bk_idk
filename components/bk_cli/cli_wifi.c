@@ -726,6 +726,39 @@ error:
 	return;
 }
 
+#if CONFIG_WIFI_SLEEP_MODE_SUPPORT
+void cli_wifi_set_sleep_mode_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+       uint8_t sleep_mode = 0;
+       int ret = 0;
+       char *msg = NULL;
+
+       if (argc < 2) {
+               CLI_LOGI("invalid argc num\n");
+               goto error;
+       }
+
+       sleep_mode = (uint8_t)os_strtoul(argv[1], NULL, 10);
+       ret = bk_wifi_send_sleep_mode_req(sleep_mode);
+
+       if (!ret) {
+               CLI_LOGI("set sleep_mode ok\n");
+               msg = WIFI_CMD_RSP_SUCCEED;
+               os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+               return;
+       }
+       else {
+               CLI_LOGI("set sleep_mode failed\n");
+               goto error;
+       }
+
+error:
+       msg = WIFI_CMD_RSP_ERROR;
+       os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+       return;
+}
+#endif
+
 void cli_wifi_bcn_loss_intv_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
 	uint8_t interval = 0;
@@ -1793,6 +1826,12 @@ int cli_wifi_event_cb(void *arg, event_module_t event_module,
 	}	break;
 #endif
 
+	case EVENT_WIFI_DTIM_RECEIVED:
+		break;
+
+	case EVENT_WIFI_AWARE_WAKE_INTERVAL_START:
+		break;
+
 	default:
 		CLI_LOGI("rx event <%d %d>\n", event_module, event_id);
 		break;
@@ -2792,6 +2831,9 @@ static const struct cli_command s_wifi_commands[] = {
 	{"wifi", "enable/disable", cli_wifi_test_cmd},
 #if CONFIG_RWNX_PROTO_DEBUG
 	{"set_pd_flag", "set proto flag for enable or disable proto debug {1|0}", cli_wifi_set_proto_debug_flag},
+#endif
+#if CONFIG_WIFI_SLEEP_MODE_SUPPORT
+	{"sleep_mode", "set sleep_mode", cli_wifi_set_sleep_mode_cmd},
 #endif
 	{"set_interval", "set listen interval}", cli_wifi_set_interval_cmd},
 	{"set_arp_rate", "set arp rate}", cli_wifi_set_arp_rate_cmd},
