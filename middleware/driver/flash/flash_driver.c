@@ -182,6 +182,11 @@ static void flash_write_status_reg(uint32_t status_reg_val)
     s_flash.flash_status_reg_val = status_reg_val;
 
     flash_hal_write_status_reg(&s_flash.hal, s_flash.flash_cfg->status_reg_size, status_reg_val);
+
+#if CONFIG_FLASH_WRITE_STATUS_VOLATILE
+    flash_hal_clear_volatile_status_write(&s_flash.hal);
+#endif
+
     flash_exit_critical(int_level);
 }
 
