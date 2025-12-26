@@ -240,6 +240,7 @@ typedef enum {
 	WIFI_REASON_WRONG_PASSWORD = 258,    /**< The password is wrong */
 	WIFI_REASON_DISCONNECT_BY_APP = 259, /**< The BK STA disconnected by application */
 	WIFI_REASON_DHCP_TIMEOUT = 260,      /**<The BK STA dhcp timeout, 20s**/
+	WIFI_REASON_SECURITY_LEVEL_NOT_MATCH = 261,      /**<The AP's security level is too low**/
 	WIFI_REASON_MAX,                     /**<The BK STA connect success*/
 } wifi_err_reason_t;
 

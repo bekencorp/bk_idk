@@ -1289,6 +1289,18 @@ static bool sae_pk_acceptable_bss_with_pk(struct wpa_supplicant *wpa_s,
 }
 #endif /* CONFIG_SAE_PK */
 
+#ifdef CONFIG_STA_MINMUM_SECURITY
+bool sta_security_mixed(int sta_security)
+{
+	if (sta_security == WIFI_SECURITY_WPA3_WPA2_MIXED ||
+		sta_security == WIFI_SECURITY_WPA2_MIXED ||
+		sta_security == WIFI_SECURITY_WPA_MIXED)
+		return true;
+
+	return false;
+}
+#endif
+
 
 static bool wpa_scan_res_ok(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid,
 			    const u8 *match_ssid, size_t match_ssid_len,
@@ -1856,6 +1868,25 @@ wpa_supplicant_select_bss(struct wpa_supplicant *wpa_s,
 	for (i = 0; i < wpa_s->last_scan_res_used; i++) {
 		struct wpa_bss *bss = wpa_s->last_scan_res[i];
 
+#ifdef CONFIG_STA_MINMUM_SECURITY
+		int ap_security = get_security_type_from_ie(bss->ies, bss->ie_len, bss->caps);
+		int sta_security = g_sta_param_ptr->sta_cipher_suite;
+
+		if (((sta_security == WIFI_SECURITY_WPA3_WPA2_MIXED) && (ap_security < WIFI_SECURITY_WPA2_TKIP)) ||
+			((sta_security == WIFI_SECURITY_WPA2_MIXED) && (ap_security < WIFI_SECURITY_WPA2_TKIP)) ||
+			((sta_security == WIFI_SECURITY_WPA_MIXED) && (ap_security < WIFI_SECURITY_WPA_TKIP)) ||
+			((sta_security != WIFI_SECURITY_AUTO) && (!sta_security_mixed(sta_security)) && (ap_security < sta_security))) {
+			wpa_dbg(wpa_s, MSG_DEBUG,
+				"	skip - minimum security not match");
+
+			//Add this BSSID to ignore list in case there are APs with the same ssid
+			wpa_bssid_ignore_add(wpa_s, bss->bssid);
+			wpa_s->bssid_ignore_security = true;
+
+			continue;
+		}
+#endif
+
 		wpa_s->owe_transition_select = 1;
 		*selected_ssid = wpa_scan_res_match(wpa_s, i, bss, group,
 						    only_first_ssid, 1);
@@ -1937,11 +1968,38 @@ struct wpa_bss * wpa_supplicant_pick_network(struct wpa_supplicant *wpa_s,
 		}
 
 		if (selected == NULL && wpa_s->bssid_ignore &&
-		    !wpa_s->countermeasures) {
+		    !wpa_s->countermeasures
+#ifdef CONFIG_STA_MINMUM_SECURITY
+			 && ! wpa_s->bssid_ignore_security
+#endif
+			 ) {
 			wpa_dbg(wpa_s, MSG_DEBUG,
-				"No APs found - clear BSSID ignore list and try again");
+			"No APs found - clear BSSID ignore list and try again");
 			wpa_bssid_ignore_clear(wpa_s);
 			wpa_s->bssid_ignore_cleared = true;
+#ifdef CONFIG_STA_MINMUM_SECURITY
+		} else if (selected == NULL && wpa_s->bssid_ignore && wpa_s->bssid_ignore_security) {
+
+			wpa_bssid_ignore_clear(wpa_s);
+			wpa_s->bssid_ignore_cleared = true;
+			wpa_s->bssid_ignore_security = false;
+
+			//post event
+			wifi_linkstate_reason_t info;
+			wifi_event_sta_disconnected_t sta_disconnected = {0};
+
+			/* set mac status */
+			info.state = WIFI_LINKSTATE_STA_DISCONNECTED;
+			info.reason_code = WIFI_REASON_SECURITY_LEVEL_NOT_MATCH;
+			mhdr_set_station_status(info);
+
+			/* post event */
+			sta_disconnected.disconnect_reason = info.reason_code;
+			sta_disconnected.local_generated = true;
+			BK_LOG_ON_ERR(bk_event_post(EVENT_MOD_WIFI, EVENT_WIFI_STA_DISCONNECTED,
+						 &sta_disconnected, sizeof(sta_disconnected), BEKEN_NEVER_TIMEOUT));
+			break;
+#endif
 		} else if (selected == NULL)
 			break;
 	}

@@ -93,6 +93,10 @@ menu "modules::wpa_supplicant-2.10"
 			bool "Enable WPA Log"
 			default n
 
+		config WIFI_STA_MINMUM_SECURITY
+			bool "Enable STA MINMUM SECURITY"
+			default n
+
 		config P2P
 			bool "Enable P2P"
 			default n

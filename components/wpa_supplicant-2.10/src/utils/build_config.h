@@ -165,6 +165,10 @@
 #define CONFIG_NO_WPA_MSG          	1
 #endif
 
+#if CONFIG_WIFI_STA_MINMUM_SECURITY
+#define CONFIG_STA_MINMUM_SECURITY  1
+#endif
+
 /* Add support for writing debug log to a file: -f /tmp/hostapd.log
  * Disabled by default. */
 //#define CONFIG_DEBUG_FILE  1

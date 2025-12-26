@@ -1030,7 +1030,9 @@ struct wpa_supplicant {
 	struct os_reltime wps_pin_start_time;
 #endif
 	bool bssid_ignore_cleared;
-
+#ifdef CONFIG_STA_MINMUM_SECURITY
+	bool bssid_ignore_security;
+#endif
 	struct wpabuf *pending_eapol_rx;
 	struct os_reltime pending_eapol_rx_time;
 	u8 pending_eapol_rx_src[ETH_ALEN];
