@@ -197,7 +197,7 @@ print_partitions: $(auto_partition_out)
 
 gen_sys_persist_config: $(sys_persist_config_script)
 	@mkdir -p $(SYS_PERSIST_CONFIG_DIR)
-	@python3 $(sys_persist_config_script)  --soc $(ARMINO_SOC_NAME) --project_dir $(PROJECT_DIR) --armino_dir $(ARMINO_DIR) --out_dir $(SYS_PERSIST_CONFIG_DIR) excel2bin
+	@python3 $(sys_persist_config_script)  --soc $(ARMINO_SOC_NAME) --project_dir $(PROJECT_DIR) --armino_dir $(ARMINO_DIR) --out_dir $(SYS_PERSIST_CONFIG_DIR) csv2bin
 	@python3 $(sys_persist_config_script)  --soc $(ARMINO_SOC_NAME) --project_dir $(PROJECT_DIR) --armino_dir $(ARMINO_DIR) --out_dir $(SYS_PERSIST_CONFIG_DIR) gen_code
 
 security_prebuild: $(security_prebuild_script) gen_sys_persist_config

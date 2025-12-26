@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-配置文件转换工具：将 Excel 配置文件转换为二进制文件或 C 代码
-支持的命令: excel2bin, gen_code
+配置文件转换工具：将 CSV 配置文件转换为二进制文件或 C 代码
+支持的命令: csv2bin, gen_code
 """
 
 import argparse
@@ -88,14 +88,14 @@ def wpa_crc32(data: bytearray) -> int:
 class ConfigConverter:
     """配置转换器类"""
     
-    def __init__(self, excel_file: str):
+    def __init__(self, csv_file: str):
         """
         初始化配置转换器
         
         Args:
-            excel_file: Excel 文件路径
+            csv_file: CSV 文件路径
         """
-        self.excel_file = excel_file
+        self.csv_file = csv_file
         self.df = None
         self.bin_data = bytearray()
         self.crc_offset = None  # CRC字段的偏移量
@@ -104,18 +104,18 @@ class ConfigConverter:
         self.magic_size = 0  # Magic字段的大小
         self.tlv_type_counter = 0  # TLV type计数器
         
-    def load_excel(self) -> bool:
+    def load_csv(self) -> bool:
         """
-        加载Excel文件
+        加载CSV文件
         
         Returns:
             bool: 成功返回True，失败返回False
         """
         try:
-            self.df = pd.read_excel(self.excel_file)
+            self.df = pd.read_csv(self.csv_file)
             return True
         except Exception as e:
-            print(f"Error: failed to read Excel file {self.excel_file}: {e}")
+            print(f"Error: failed to read CSV file {self.csv_file}: {e}")
             return False
     
     def check_required_columns(self) -> bool:
@@ -198,15 +198,15 @@ class ConfigConverter:
         except Exception:
             return None
     
-    def convert_excel_to_bin(self) -> bool:
+    def convert_csv_to_bin(self) -> bool:
         """
-        将Excel数据转换为二进制
+        将CSV数据转换为二进制
         
         Returns:
             bool: 成功返回True，失败返回False
         """
         if self.df is None:
-            print("Error: Excel file is not loaded")
+            print("Error: CSV file is not loaded")
             return False
         
         # 过滤掉空行（所有关键字段都为空）
@@ -217,7 +217,7 @@ class ConfigConverter:
         ].copy()
         
         if len(valid_rows) == 0:
-            print("Error: no valid data rows in the Excel file")
+            print("Error: no valid data rows in the CSV file")
             return False
         
         # 确保bin_data足够大，初始化为0
@@ -654,30 +654,30 @@ class ConfigConverter:
             return False
 
 
-def excel2bin(excel_file: str, output_file: Optional[str] = None) -> bool:
+def csv2bin(csv_file: str, output_file: Optional[str] = None) -> bool:
     """
-    将Excel文件转换为二进制文件
+    将CSV文件转换为二进制文件
     
     Args:
-        excel_file: Excel文件路径
+        csv_file: CSV文件路径
         output_file: 输出二进制文件路径，如果为None则自动生成
         
     Returns:
         bool: 成功返回True，失败返回False
     """
-    if not os.path.exists(excel_file):
-        print(f"Error: Excel file does not exist: {excel_file}")
+    if not os.path.exists(csv_file):
+        print(f"Error: CSV file does not exist: {csv_file}")
         return False
     
     if output_file is None:
         # 自动生成输出文件名
-        base_name = os.path.splitext(excel_file)[0]
+        base_name = os.path.splitext(csv_file)[0]
         output_file = base_name + '.bin'
     
-    converter = ConfigConverter(excel_file)
+    converter = ConfigConverter(csv_file)
     
-    # 加载Excel
-    if not converter.load_excel():
+    # 加载CSV
+    if not converter.load_csv():
         return False
     
     # 检查必需的列
@@ -685,7 +685,7 @@ def excel2bin(excel_file: str, output_file: Optional[str] = None) -> bool:
         return False
     
     # 转换
-    if not converter.convert_excel_to_bin():
+    if not converter.convert_csv_to_bin():
         return False
     
     # 保存
@@ -698,29 +698,29 @@ def excel2bin(excel_file: str, output_file: Optional[str] = None) -> bool:
 class CodeGenerator:
     """C代码生成器类"""
     
-    def __init__(self, excel_file: str):
+    def __init__(self, csv_file: str):
         """
         初始化代码生成器
         
         Args:
-            excel_file: Excel 文件路径
+            csv_file: CSV 文件路径
         """
-        self.excel_file = excel_file
+        self.csv_file = csv_file
         self.df = None
         self.bits_value_col = None
         
-    def load_excel(self) -> bool:
+    def load_csv(self) -> bool:
         """
-        加载Excel文件
+        加载CSV文件
         
         Returns:
             bool: 成功返回True，失败返回False
         """
         try:
-            self.df = pd.read_excel(self.excel_file)
+            self.df = pd.read_csv(self.csv_file)
             return True
         except Exception as e:
-            print(f"Error: failed to read Excel file {self.excel_file}: {e}")
+            print(f"Error: failed to read CSV file {self.csv_file}: {e}")
             return False
     
     def check_required_columns(self) -> bool:
@@ -750,13 +750,13 @@ class CodeGenerator:
         生成C代码
         
         Args:
-            output_dir: 输出目录，如果为None则使用Excel文件所在目录
+            output_dir: 输出目录，如果为None则使用CSV文件所在目录
             
         Returns:
             bool: 成功返回True，失败返回False
         """
         if output_dir is None:
-            output_dir = os.path.dirname(os.path.abspath(self.excel_file))
+            output_dir = os.path.dirname(os.path.abspath(self.csv_file))
             if not output_dir:
                 output_dir = '.'
         
@@ -872,7 +872,7 @@ typedef struct sys_persist_tlv {
 
 """)
                 
-                # 解析Excel生成代码
+                # 解析CSV生成代码
                 valid_rows = self.df[
                     (self.df['offset'].notna()) | 
                     (self.df['size'].notna()) | 
@@ -880,7 +880,7 @@ typedef struct sys_persist_tlv {
                 ].copy()
                 
                 if len(valid_rows) == 0:
-                    print("Error: no valid data rows in the Excel file")
+                    print("Error: no valid data rows in the CSV file")
                     return False
                 
                 # 用于跟踪当前处理的space和结构体信息
@@ -1564,6 +1564,7 @@ int sys_persist_check_crc(void)
                 tlv_type_defs = []
                 name_offset = None
                 name_size = None
+                tlv_base_offset = None  # tlv_base 的绝对偏移量
                 prev_offset = None
                 prev_size = None
                 
@@ -1578,6 +1579,15 @@ int sys_persist_check_crc(void)
                     if pd.notna(space) and str(space).strip() == 'tlv_base':
                         has_tlv_base = True
                         current_tlv_base = True
+                        # 计算 tlv_base 的起始偏移量
+                        if pd.notna(offset_val):
+                            tlv_base_offset = int(offset_val)
+                        else:
+                            # 如果 offset 为空，需要从上一行推断
+                            if prev_offset is not None and prev_size is not None:
+                                tlv_base_offset = prev_offset + prev_size
+                            else:
+                                tlv_base_offset = 0
                         prev_offset = None
                         prev_size = None
                     elif pd.notna(space) and str(space).strip() != '':
@@ -1591,7 +1601,7 @@ int sys_persist_check_crc(void)
                             if prev_offset is not None and prev_size is not None:
                                 offset = prev_offset + prev_size
                             else:
-                                offset = 0
+                                offset = tlv_base_offset if tlv_base_offset is not None else 0
                         else:
                             offset = int(offset_val)
                         
@@ -1603,7 +1613,11 @@ int sys_persist_check_crc(void)
                         if pd.notna(field):
                             field_str = str(field).strip().lower()
                             if field_str == 'name':
-                                name_offset = offset
+                                # 计算相对于 tlv_base 的偏移量
+                                if tlv_base_offset is not None:
+                                    name_offset = offset - tlv_base_offset
+                                else:
+                                    name_offset = offset
                                 name_size = size
                             elif field_str == 'type' or field_str == 'tlv_type':
                                 value = row.get('value')
@@ -1624,25 +1638,32 @@ int sys_persist_check_crc(void)
                     f.write("    SYS_PERSIST_CONFIG_LOG(\"=== sys_persist_tlv ===\\n\");\n")
                     f.write("    \n")
                     
-                    # 读取name字段
+                    # 读取name字段（相对于 tlv_base 的偏移量，通常是 0）
                     if name_offset is not None and name_size is not None:
-                        f.write(f"    /* Read name from offset {name_offset} */\n")
+                        f.write(f"    /* Read name from offset {name_offset} (relative to tlv_base) */\n")
                         f.write(f"    char name[{name_size}] = {{0}};\n")
                         f.write(f"    memcpy(name, (uint8_t *)tlv + {name_offset}, {name_size});\n")
                         f.write("    SYS_PERSIST_CONFIG_LOG(\"  name: %s\\n\", name);\n")
-                        # 计算TLV条目的起始位置（name之后）
+                        # 计算TLV条目的起始位置（name之后，相对于 tlv_base）
                         tlv_start_offset = name_offset + name_size
                         f.write(f"    \n")
-                        f.write(f"    /* Traverse all TLV entries starting from offset {tlv_start_offset} */\n")
+                        f.write(f"    /* Traverse all TLV entries starting from offset {tlv_start_offset} (relative to tlv_base) */\n")
                         f.write(f"    uint8_t *p = (uint8_t *)tlv + {tlv_start_offset};\n")
                     else:
-                        f.write("    /* Warning: name field not found in Excel, using default offset */\n")
+                        f.write("    /* Warning: name field not found in CSV, using default offset */\n")
                         f.write("    uint8_t *p = (uint8_t *)tlv + 8; /* Skip name (8 bytes) */\n")
                     
                     f.write("    \n")
                     f.write("    /* Traverse all TLV entries until end of config */\n")
                     f.write("    uint16_t i = 0;\n")
-                    f.write("    uint8_t *end = (uint8_t *)tlv + CONFIG_SYS_PERSIST_SIZE;\n")
+                    # end 应该指向配置的结束位置，而不是相对于 tlv 的偏移
+                    if tlv_base_offset is not None:
+                        f.write(f"    /* tlv_base is at offset {tlv_base_offset}, calculate remaining space */\n")
+                        f.write(f"    uint8_t *config_base = (uint8_t *)SYS_PERSIST_CONFIG_FLASH_OFFSET;\n")
+                        f.write(f"    uint8_t *end = config_base + CONFIG_SYS_PERSIST_SIZE;\n")
+                    else:
+                        f.write("    uint8_t *config_base = (uint8_t *)SYS_PERSIST_CONFIG_FLASH_OFFSET;\n")
+                        f.write("    uint8_t *end = config_base + CONFIG_SYS_PERSIST_SIZE;\n")
                     f.write("    while (p < end) {\n")
                     f.write("        /* Check if there's enough space for a TLV entry (at least type + length) */\n")
                     f.write("        if (p + sizeof(uint16_t) * 2 > end) break;\n")
@@ -1817,25 +1838,25 @@ int sys_persist_cli_init(void);
             return False
 
 
-def gen_code(excel_file: str, output_dir: Optional[str] = None) -> bool:
+def gen_code(csv_file: str, output_dir: Optional[str] = None) -> bool:
     """
     生成C代码
     
     Args:
-        excel_file: Excel文件路径
-        output_dir: 输出目录，如果为None则使用Excel文件所在目录
+        csv_file: CSV文件路径
+        output_dir: 输出目录，如果为None则使用CSV文件所在目录
         
     Returns:
         bool: 成功返回True，失败返回False
     """
-    if not os.path.exists(excel_file):
-        print(f"Error: Excel file does not exist: {excel_file}")
+    if not os.path.exists(csv_file):
+        print(f"Error: CSV file does not exist: {csv_file}")
         return False
     
-    generator = CodeGenerator(excel_file)
+    generator = CodeGenerator(csv_file)
     
-    # 加载Excel
-    if not generator.load_excel():
+    # 加载CSV
+    if not generator.load_csv():
         return False
     
     # 检查必需的列
@@ -1849,30 +1870,30 @@ def gen_code(excel_file: str, output_dir: Optional[str] = None) -> bool:
     return True
 
 
-class BinToExcelConverter:
-    """二进制到Excel转换器类"""
+class BinToCsvConverter:
+    """二进制到CSV转换器类"""
     
-    def __init__(self, excel_file: str, bin_file: str):
+    def __init__(self, csv_file: str, bin_file: str):
         """
         初始化转换器
         
         Args:
-            excel_file: Excel文件路径
+            csv_file: CSV文件路径
             bin_file: 二进制文件路径
         """
-        self.excel_file = excel_file
+        self.csv_file = csv_file
         self.bin_file = bin_file
         self.df = None
         self.bin_data = None
         self.bits_value_col = None
     
-    def load_excel(self) -> bool:
-        """加载Excel文件"""
+    def load_csv(self) -> bool:
+        """加载CSV文件"""
         try:
-            self.df = pd.read_excel(self.excel_file)
+            self.df = pd.read_csv(self.csv_file)
             return True
         except Exception as e:
-            print(f"Error: failed to read Excel file {self.excel_file}: {e}")
+            print(f"Error: failed to read CSV file {self.csv_file}: {e}")
             return False
     
     def load_bin(self) -> bool:
@@ -1902,18 +1923,18 @@ class BinToExcelConverter:
         
         return True
     
-    def convert_bin_to_excel(self, output_file: Optional[str] = None) -> bool:
+    def convert_bin_to_csv(self, output_file: Optional[str] = None) -> bool:
         """
-        将二进制文件转换为Excel
+        将二进制文件转换为CSV
         
         Args:
-            output_file: 输出Excel文件路径，如果为None则覆盖原文件
+            output_file: 输出CSV文件路径，如果为None则覆盖原文件
             
         Returns:
             bool: 成功返回True，失败返回False
         """
         if output_file is None:
-            output_file = self.excel_file
+            output_file = self.csv_file
         
         valid_rows = self.df[
             (self.df['offset'].notna()) | 
@@ -1922,13 +1943,13 @@ class BinToExcelConverter:
         ].copy()
         
         if len(valid_rows) == 0:
-            print("Error: no valid data rows in the Excel file")
+            print("Error: no valid data rows in the CSV file")
             return False
         
         prev_offset = None
         prev_size = None
         
-        # 遍历每一行，解析bin数据并更新Excel
+        # 遍历每一行，解析bin数据并更新CSV
         for idx, row in valid_rows.iterrows():
             space = row.get('space')
             offset_val = row.get('offset')
@@ -2043,79 +2064,43 @@ class BinToExcelConverter:
             prev_offset = offset
             prev_size = size
         
-        # 保存到Excel文件
+        # 保存到CSV文件
         try:
-            from openpyxl import load_workbook
-            from openpyxl.utils.dataframe import dataframe_to_rows
-            
-            # 加载原始Excel文件以保留格式
-            wb = load_workbook(self.excel_file)
-            ws = wb.active
-            
-            # 更新数据
-            for idx, row in valid_rows.iterrows():
-                excel_row = idx + 2  # Excel行号（第1行是标题）
-                if excel_row > ws.max_row:
-                    continue
-                
-                # 更新value列
-                if 'value' in self.df.columns:
-                    value_col = self.df.columns.get_loc('value') + 1
-                    if pd.notna(self.df.at[idx, 'value']):
-                        ws.cell(row=excel_row, column=value_col, value=self.df.at[idx, 'value'])
-                
-                # 更新reg列
-                if 'reg' in self.df.columns:
-                    reg_col = self.df.columns.get_loc('reg') + 1
-                    if pd.notna(self.df.at[idx, 'reg']):
-                        ws.cell(row=excel_row, column=reg_col, value=self.df.at[idx, 'reg'])
-                
-                # 更新mask列
-                if 'mask' in self.df.columns:
-                    mask_col = self.df.columns.get_loc('mask') + 1
-                    if pd.notna(self.df.at[idx, 'mask']):
-                        ws.cell(row=excel_row, column=mask_col, value=self.df.at[idx, 'mask'])
-                
-                # 更新bits_value列
-                if self.bits_value_col:
-                    bits_col = self.df.columns.get_loc(self.bits_value_col) + 1
-                    if pd.notna(self.df.at[idx, self.bits_value_col]):
-                        ws.cell(row=excel_row, column=bits_col, value=self.df.at[idx, self.bits_value_col])
-            
-            wb.save(output_file)
-            print(f"Updated Excel file: {output_file}")
+            # 直接使用pandas保存CSV文件
+            self.df.to_csv(output_file, index=False, encoding='utf-8')
+            print(f"Updated CSV file: {output_file}")
             return True
         except Exception as e:
-            print(f"Error: failed to save Excel file {output_file}: {e}")
+            print(f"Error: failed to save CSV file {output_file}: {e}")
             import traceback
             traceback.print_exc()
             return False
 
 
-def bin2excel(excel_file: str, bin_file: str, output_file: Optional[str] = None) -> bool:
+def bin2csv(csv_file: str, bin_file: str, output_file: Optional[str] = None) -> bool:
     """
-    将二进制文件转换为Excel
+    将二进制文件转换为CSV
     
     Args:
-        excel_file: Excel文件路径（用作模板）
+        csv_file: CSV文件路径（用作模板）
         bin_file: 二进制文件路径
-        output_file: 输出Excel文件路径，如果为None则覆盖原文件
+        output_file: 输出CSV文件路径，如果为None则覆盖原文件
         
     Returns:
         bool: 成功返回True，失败返回False
     """
-    if not os.path.exists(excel_file):
-        print(f"Error: Excel file does not exist: {excel_file}")
+    if not os.path.exists(csv_file):
+        print(f"Error: CSV file does not exist: {csv_file}")
         return False
     
     if not os.path.exists(bin_file):
         print(f"Error: binary file does not exist: {bin_file}")
         return False
     
-    converter = BinToExcelConverter(excel_file, bin_file)
+    converter = BinToCsvConverter(csv_file, bin_file)
     
-    # 加载Excel
-    if not converter.load_excel():
+    # 加载CSV
+    if not converter.load_csv():
         return False
     
     # 加载二进制文件
@@ -2127,7 +2112,7 @@ def bin2excel(excel_file: str, bin_file: str, output_file: Optional[str] = None)
         return False
     
     # 转换
-    if not converter.convert_bin_to_excel(output_file):
+    if not converter.convert_bin_to_csv(output_file):
         return False
     
     return True
@@ -2175,14 +2160,14 @@ def create_empty_config_files(output_dir: str) -> bool:
         return False
 
 
-def find_excel_file(soc_name: Optional[str] = None, project_dir: Optional[str] = None, 
+def find_csv_file(soc_name: Optional[str] = None, project_dir: Optional[str] = None, 
                     armino_dir: Optional[str] = None) -> Optional[str]:
     """
-    自动查找Excel文件
+    自动查找CSV文件
     
     查找顺序：
-    1. project_dir/soc_name/config/sys_persist_config.xlsx
-    2. armino_dir/middleware/soc/soc_name/sys_persist_config.xlsx
+    1. project_dir/soc_name/config/sys_persist_config.csv
+    2. armino_dir/middleware/soc/soc_name/sys_persist_config.csv
     
     Args:
         soc_name: SOC名称
@@ -2190,25 +2175,25 @@ def find_excel_file(soc_name: Optional[str] = None, project_dir: Optional[str] =
         armino_dir: Armino目录
         
     Returns:
-        str: Excel文件路径，如果找不到则返回None
+        str: CSV文件路径，如果找不到则返回None
     """
-    excel_filename = 'sys_persist_config.xlsx'
+    csv_filename = 'sys_persist_config.csv'
     
     if not soc_name:
-        print("Error: auto-search for Excel requires --soc option")
+        print("Error: auto-search for CSV requires --soc option")
         return None
     
-    # 1. 先查看 project_dir/soc_name/config/sys_persist_config.xlsx
+    # 1. 先查看 project_dir/soc_name/config/sys_persist_config.csv
     if project_dir:
-        excel_path = os.path.join(project_dir, soc_name, 'config', excel_filename)
-        if os.path.exists(excel_path):
-            return excel_path
+        csv_path = os.path.join(project_dir, soc_name, 'config', csv_filename)
+        if os.path.exists(csv_path):
+            return csv_path
     
-    # 2. 如果不存在，查看 armino_dir/middleware/soc/soc_name/sys_persist_config.xlsx
+    # 2. 如果不存在，查看 armino_dir/middleware/soc/soc_name/sys_persist_config.csv
     if armino_dir:
-        excel_path = os.path.join(armino_dir, 'middleware', 'soc', soc_name, excel_filename)
-        if os.path.exists(excel_path):
-            return excel_path
+        csv_path = os.path.join(armino_dir, 'middleware', 'soc', soc_name, csv_filename)
+        if os.path.exists(csv_path):
+            return csv_path
     
     return None
 
@@ -2225,41 +2210,41 @@ def main():
     
     subparsers = parser.add_subparsers(dest='command', help='可用命令')
     
-    # excel2bin命令
-    excel2bin_parser = subparsers.add_parser('excel2bin', help='将Excel文件转换为二进制文件')
-    excel2bin_parser.add_argument('-excel', help='输入的Excel文件路径（可选，如果未指定则自动查找）')
-    excel2bin_parser.add_argument('-o', '--output', help='输出的二进制文件路径（可选，默认与Excel同名.bin）')
+    # csv2bin命令
+    csv2bin_parser = subparsers.add_parser('csv2bin', help='将CSV文件转换为二进制文件')
+    csv2bin_parser.add_argument('-csv', help='输入的CSV文件路径（可选，如果未指定则自动查找）')
+    csv2bin_parser.add_argument('-o', '--output', help='输出的二进制文件路径（可选，默认与CSV同名.bin）')
     
     # gen_code命令
-    gen_code_parser = subparsers.add_parser('gen_code', help='将Excel文件转换为C代码')
-    gen_code_parser.add_argument('-excel', help='输入的Excel文件路径（可选，如果未指定则自动查找）')
-    gen_code_parser.add_argument('-o', '--output', help='输出目录（可选，默认与Excel文件同目录）')
+    gen_code_parser = subparsers.add_parser('gen_code', help='将CSV文件转换为C代码')
+    gen_code_parser.add_argument('-csv', help='输入的CSV文件路径（可选，如果未指定则自动查找）')
+    gen_code_parser.add_argument('-o', '--output', help='输出目录（可选，默认与CSV文件同目录）')
     
-    # bin2excel命令
-    bin2excel_parser = subparsers.add_parser('bin2excel', help='将二进制文件转换为Excel')
-    bin2excel_parser.add_argument('-excel', help='Excel模板文件路径（可选，如果未指定则自动查找）')
-    bin2excel_parser.add_argument('-bin', required=True, help='输入的二进制文件路径')
-    bin2excel_parser.add_argument('-o', '--output', help='输出的Excel文件路径（可选，默认覆盖原文件）')
+    # bin2csv命令
+    bin2csv_parser = subparsers.add_parser('bin2csv', help='将二进制文件转换为CSV')
+    bin2csv_parser.add_argument('-csv', help='CSV模板文件路径（可选，如果未指定则自动查找）')
+    bin2csv_parser.add_argument('-bin', required=True, help='输入的二进制文件路径')
+    bin2csv_parser.add_argument('-o', '--output', help='输出的CSV文件路径（可选，默认覆盖原文件）')
     
     args = parser.parse_args()
     
     # 处理输出目录
     output_dir = args.out_dir if args.out_dir else None
     
-    # 处理Excel文件路径
-    excel_file = None
-    if hasattr(args, 'excel') and args.excel:
-        # 如果指定了excel参数，直接使用
-        excel_file = args.excel
+    # 处理CSV文件路径
+    csv_file = None
+    if hasattr(args, 'csv') and args.csv:
+        # 如果指定了csv参数，直接使用
+        csv_file = args.csv
     else:
         # 如果未指定，自动查找
-        excel_file = find_excel_file(
+        csv_file = find_csv_file(
             soc_name=args.soc_name,
             project_dir=args.project_dir,
             armino_dir=args.armino_dir
         )
-        if not excel_file:
-            # 如果找不到Excel文件，对于gen_code命令，创建空文件并退出
+        if not csv_file:
+            # 如果找不到CSV文件，对于gen_code命令，创建空文件并退出
             if args.command == 'gen_code':
                 if not output_dir:
                     # 如果没有指定输出目录，尝试使用project_dir或armino_dir
@@ -2274,24 +2259,24 @@ def main():
                 else:
                     sys.exit(1)
             else:
-                #print("Error: cannot find Excel file. Please specify -excel or set --soc, --project_dir, --armino_dir")
+                #print("Error: cannot find CSV file. Please specify -csv or set --soc, --project_dir, --armino_dir")
                 sys.exit(0)
-        print(f"Found Excel file automatically: {excel_file}")
+        print(f"Found CSV file automatically: {csv_file}")
     
-    if args.command == 'excel2bin':
+    if args.command == 'csv2bin':
         # 如果指定了out_dir，将输出文件放在out_dir中
         output_file = args.output
         if output_file is None and output_dir:
-            excel_basename = os.path.splitext(os.path.basename(excel_file))[0]
-            output_file = os.path.join(output_dir, excel_basename + '.bin')
-        success = excel2bin(excel_file, output_file)
+            csv_basename = os.path.splitext(os.path.basename(csv_file))[0]
+            output_file = os.path.join(output_dir, csv_basename + '.bin')
+        success = csv2bin(csv_file, output_file)
         sys.exit(0 if success else 1)
     elif args.command == 'gen_code':
         # 如果指定了out_dir，将输出文件放在out_dir中
-        success = gen_code(excel_file, output_dir or args.output)
+        success = gen_code(csv_file, output_dir or args.output)
         sys.exit(0 if success else 1)
-    elif args.command == 'bin2excel':
-        success = bin2excel(excel_file, args.bin, args.output)
+    elif args.command == 'bin2csv':
+        success = bin2csv(csv_file, args.bin, args.output)
         sys.exit(0 if success else 1)
     else:
         parser.print_help()
