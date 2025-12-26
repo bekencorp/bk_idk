@@ -224,7 +224,7 @@ list(APPEND c_compile_options "-DBK_SUPPLICANT=1")
 armino_component_register(SRCS "${srcs}"
 	INCLUDE_DIRS "${incs}"
 	REQUIRES lwip_intf_v2_1
-	PRIV_REQUIRES mbedtls psa_mbedtls tfm_mbedtls wolfssl
+	PRIV_REQUIRES mbedtls psa_mbedtls tfm_mbedtls
 	)
 # set CFLAGS
 armino_build_set_property(C_COMPILE_OPTIONS "${c_compile_options}" APPEND)

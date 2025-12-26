@@ -466,26 +466,6 @@ if (CONFIG_SDMADC)
 		)
 endif()
 
-# Ethernet Support
-if (CONFIG_ETH)
-	list(APPEND incs
-		eth
-		eth/phy
-	)
-
-	# MAC and PHY src
-	list(APPEND srcs
-		eth/eth_mac.c
-		eth/eth_mac_ex.c
-		eth/lan8742.c
-		eth/phy/phy.c
-		eth/phy/smsc.c
-		eth/phy/micrel_ksz90x1.c
-		eth/phy/miiphyutil.c
-		eth/phy/realtek.c
-	)
-endif()
-
 # ckmn Support
 if (CONFIG_CKMN)
 	list(APPEND incs

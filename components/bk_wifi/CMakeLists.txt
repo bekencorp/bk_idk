@@ -66,7 +66,7 @@ endif()
 
 armino_component_register(SRCS "${srcs}"
     INCLUDE_DIRS "${incs}"
-    PRIV_REQUIRES bk_common wpa_supplicant-2.10 mbedtls wolfssl lwip_intf_v2_1 uart_debug bk_phy
+    PRIV_REQUIRES bk_common wpa_supplicant-2.10 mbedtls lwip_intf_v2_1 uart_debug bk_phy
     REQUIRES bk_netif)
 
 
