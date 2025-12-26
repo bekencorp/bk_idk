@@ -1,0 +1,24 @@
+menu "Paho_mqtt"
+
+	config PAHO_MQTT
+		depends on WIFI_ENABLE
+		bool "Enable Paho MQTT Client"
+		default n
+		help
+			Enable Eclipse Paho MQTT client library for IoT communication
+
+	config PAHO_MQTT_TLS
+		depends on PAHO_MQTT && PSA_MBEDTLS
+		bool "Enable Paho MQTT TLS Support"
+		default n
+		help
+			Enable TLS/SSL encryption support for Paho MQTT client
+
+	config PAHO_MQTT_TEST
+		depends on PAHO_MQTT
+		bool "Enable Paho MQTT Test Code"
+		default n
+		help
+			Include test code for Paho MQTT client (for development only)
+
+endmenu
