@@ -21,6 +21,7 @@
 #include <string.h>
 #include <components/log.h>
 #include "tls_connect.h"
+#include "tls_certificate.h"
 
 #define TAG "TLS"
 #if CFG_OUT_PUT_MBEDTLS_DEBUG_INFO
@@ -31,7 +32,8 @@ static void my_debug( void *ctx, int level,
     ((void) level);
 
    // mbedtls_fprintf( (FILE *) ctx, "%s:%04d: %s", file, line, str );
-    ///fflush(  (FILE *) ctx  );
+    ///fflush(  (FILE *) ctx  );
+
     bk_printf("[mbed]%s:%04d: %s\r\n", file, line, str);
 }
 #endif 
@@ -47,6 +49,10 @@ int mbedtls_client_init(MbedTLSSession *session, void *entropy, size_t entropyLe
     mbedtls_entropy_init(&session->entropy);
 	#if USE_CA_CERTIFICATE_EN
     mbedtls_x509_crt_init(&session->cacert);
+	#endif
+    #if USE_CLIENT_CERTIFICATE_EN
+    mbedtls_x509_crt_init(&session->client_cert);
+    mbedtls_pk_init(&session->client_pkey);
 	#endif
 	#if CFG_OUT_PUT_MBEDTLS_DEBUG_INFO
     mbedtls_ssl_conf_dbg( &session->conf, my_debug, 0 );
@@ -70,6 +76,10 @@ void mbedtls_client_close(MbedTLSSession *session)
     mbedtls_net_free(&session->server_fd);
 #if USE_CA_CERTIFICATE_EN
     mbedtls_x509_crt_free(&session->cacert);
+#endif
+#if USE_CLIENT_CERTIFICATE_EN
+    mbedtls_x509_crt_free(&session->client_cert);
+    mbedtls_pk_free(&session->client_pkey);
 #endif
     mbedtls_entropy_free(&session->entropy);
     mbedtls_ctr_drbg_free(&session->ctr_drbg);
@@ -104,13 +114,32 @@ int mbedtls_client_context(MbedTLSSession *session)
     #if defined(MBEDTLS_SSL_MAX_FRAGMENT_LENGTH)
     unsigned char mfl_code; 	/* code for maximum fragment length 		*/
     #endif
-    BK_LOGE(TAG, "Loading the CA root certificate success...\r\n");
+    BK_LOGI(TAG, "Loading the CA root certificate success...\r\n");
 #if CFG_USE_CA_CERTIFICATE
     ret = mbedtls_x509_crt_parse(&session->cacert, (const unsigned char *)mbedtls_root_certificate,
                                  mbedtls_root_certificate_len);
     if(ret < 0){
 		BK_LOGE(TAG, "mbedtls_x509_crt_parse err returned -0x%x\r\n", -ret);
 		return ret;
+    }
+#endif
+#if CFG_USE_CLIENT_CERTIFICATE
+    /* Parse client certificate from embedded data */
+    ret = mbedtls_x509_crt_parse(&session->client_cert, (const unsigned char *)mbedtls_client_certificate,
+                                 mbedtls_client_certificate_len);
+    if(ret < 0)
+    {
+        BK_LOGE(TAG, "mbedtls_x509_crt_parse client cert err returned -0x%x\r\n", -ret);
+        return ret;
+    }
+
+    /* Parse client private key from embedded data */
+    ret = mbedtls_pk_parse_key(&session->client_pkey, (const unsigned char *)mbedtls_client_key,
+                                 mbedtls_client_key_len, NULL, 0,NULL, NULL);
+    if(ret < 0)
+    {
+        BK_LOGE(TAG, "mbedtls_pk_parse_key client key err returned -0x%x\r\n", -ret);
+        return ret;
     }
 #endif
 
@@ -148,6 +177,23 @@ int mbedtls_client_context(MbedTLSSession *session)
 #endif
 #if CFG_USE_CA_CERTIFICATE
 	mbedtls_ssl_conf_ca_chain(&session->conf, &session->cacert, NULL);
+#endif
+#if CFG_USE_CLIENT_CERTIFICATE_VERIFY
+    /* Check if client certificate and private key are properly initialized */
+    if(session->client_cert.raw.MBEDTLS_PRIVATE(len) > 0 && session->client_pkey.MBEDTLS_PRIVATE(pk_ctx) != NULL)
+    {
+        if ((ret = mbedtls_ssl_conf_own_cert(&session->conf, &session->client_cert, &session->client_pkey)) != 0)
+        {
+            BK_LOGE(TAG, "mbedtls_ssl_conf_own_cert returned -0x%x\r\n", -ret);
+            return ret;
+        }
+    }
+    else
+    {
+        /* Client certificate not properly initialized, return error */
+        BK_LOGE(TAG, "Client certificate not properly initialized, please configure client certificate first\r\n");
+        return MBEDTLS_ERR_X509_BAD_INPUT_DATA;
+    }
 #endif
 
     mbedtls_ssl_conf_rng(&session->conf, mbedtls_ctr_drbg_random, &session->ctr_drbg);

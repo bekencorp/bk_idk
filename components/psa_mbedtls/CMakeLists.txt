@@ -15,6 +15,7 @@ list(APPEND incs
 	mbedtls_port/mbedtls/include
 	mbedtls_port/mbedtls/library
 	mbedtls_port/configs
+	mbedtls_ui
 
 	mbedtls/include
 	mbedtls/library
@@ -31,10 +32,12 @@ list(APPEND srcs
 	mbedtls_port/src/tls_hardware.c
 	mbedtls_port/src/tls_mem.c
 	mbedtls_port/src/tls_connect.c
+	mbedtls_port/src/tls_certificate.c
 	mbedtls_port/mbedtls/library/net_sockets.c
 	mbedtls_port/mbedtls/library/platform.c
 	mbedtls_port/mbedtls/library/threading.c
 	mbedtls_port/mbedtls/programs/test/selftest.c
+	mbedtls_ui/sl_tls.c
 
 	mbedtls/tests/src/certs.c
 
