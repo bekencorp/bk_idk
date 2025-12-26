@@ -80,7 +80,7 @@ int rw_msg_send(const void *msg_params, int reqcfm, uint16_t reqid, void *cfm)
 	GLOBAL_INT_DECLARATION();
 
 	if (g_wifi_enable_flag == false) {
-		os_free((void *)msg_params);
+		ke_msg_free(msg);
 		RWNX_LOGI("%s Wi-Fi is NOT enable, please enable Wi-Fi first\n", __FUNCTION__);
 		err = BK_ERR_WIFI_NOT_INIT;
 		goto failed_or_timeout;
@@ -120,7 +120,8 @@ int rw_msg_send(const void *msg_params, int reqcfm, uint16_t reqid, void *cfm)
 	}
 	if (kNoErr != ret) {
 		RWNX_LOGI("%s failed send %d\n", __FUNCTION__, msg->id);
-		os_free((void *)msg_params);
+		// need to free the whole ke_msg not the msg_param part
+		ke_msg_free(msg);
 		err = RWNX_ERR_IOCTL_SEND;
 		goto failed_or_timeout;
 	} else if (reqcfm) {
