@@ -1349,7 +1349,7 @@ int sys_hal_set_lpo_src(sys_lpo_src_t src)
 void sys_hal_enter_low_analog(void)
 {
 	sys_ll_set_ana_reg8_spi_latch1v(1);
-	sys_ll_set_ana_reg7_vanaldosel(4);
+	sys_ll_set_ana_reg7_vanaldosel(7);
 	sys_ll_set_ana_reg8_spi_latch1v(0);
 
 	sys_ll_set_ana_reg3_hpssren(0);
