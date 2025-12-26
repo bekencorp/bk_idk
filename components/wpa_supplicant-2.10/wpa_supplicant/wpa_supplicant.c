@@ -6191,7 +6191,7 @@ static void wpas_fst_get_channel_info_cb(void *ctx,
 	if (wpa_s->current_bss) {
 		*hw_mode = ieee80211_freq_to_chan(wpa_s->current_bss->freq,
 						  channel);
-	} else if (wpa_s->hw.num_modes) {
+	} else if (wpa_s->hw.modes && wpa_s->hw.num_modes) {
 		*hw_mode = wpa_s->hw.modes[0].mode;
 	} else {
 		WPA_ASSERT(0);
@@ -6203,9 +6203,11 @@ static void wpas_fst_get_channel_info_cb(void *ctx,
 static int wpas_fst_get_hw_modes(void *ctx, struct hostapd_hw_modes **modes)
 {
 	struct wpa_supplicant *wpa_s = ctx;
-
-	*modes = wpa_s->hw.modes;
-	return wpa_s->hw.num_modes;
+	if (wpa_s->hw.modes && wpa_s->hw.num_modes) {
+		*modes = wpa_s->hw.modes;
+		return wpa_s->hw.num_modes;
+	}
+	return 0;
 }
 
 
@@ -6337,7 +6339,7 @@ unsigned int wpas_get_bands(struct wpa_supplicant *wpa_s, const int *freqs)
 		 * freqs are not specified, implies all
 		 * the supported freqs by HW
 		 */
-		for (i = 0; i < wpa_s->hw.num_modes; i++) {
+		for (i = 0; wpa_s->hw.modes && i < wpa_s->hw.num_modes; i++) {
 			if (wpa_s->hw.modes[i].num_channels != 0) {
 				if (wpa_s->hw.modes[i].mode ==
 				    HOSTAPD_MODE_IEEE80211B ||
@@ -7094,6 +7096,11 @@ static int wpa_supplicant_init_iface(struct wpa_supplicant *wpa_s,
 				 wpa_s->hw_capab == CAPAB_NO_HT_VHT)
 				wpa_s->hw_capab = CAPAB_HT;
 		}
+	} else {
+		wpa_s->hw.modes = NULL;
+		wpa_s->hw.num_modes = 0;
+		wpa_msg(wpa_s, MSG_ERROR, "no modes");
+		//return -1;
 	}
 
 	capa_res = wpa_drv_get_capa(wpa_s, &capa);

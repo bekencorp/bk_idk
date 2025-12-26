@@ -5164,7 +5164,7 @@ static unsigned int wpas_event_cac_ms(const struct wpa_supplicant *wpa_s,
 	size_t i;
 	int j;
 
-	for (i = 0; i < wpa_s->hw.num_modes; i++) {
+	for (i = 0; wpa_s->hw.modes && i < wpa_s->hw.num_modes; i++) {
 		const struct hostapd_hw_modes *mode = &wpa_s->hw.modes[i];
 
 		for (j = 0; j < mode->num_channels; j++) {
