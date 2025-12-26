@@ -86,17 +86,24 @@ bk_err_t bk_https_client_flash_deinit(bk_http_client_handle_t client)
 	bk_wifi_ota_dtim(0);
 #endif
 	if (security_ota_deinit() != 0) {
+		BK_LOGE(TAG, "[SECURITY_OTA_HTTPS] ERROR: security_ota_deinit() failed, return BK_FAIL\r\n");
 		return BK_FAIL;
 	}
 
-	if(!client)
+	if(client)
+	{
 		err = bk_http_client_cleanup(client);
+	}
 	else
+	{
+		BK_LOGE(TAG, "[SECURITY_OTA_HTTPS] ERROR: client is NULL, return BK_FAIL\r\n");
 		return BK_FAIL;
+	}
 
 	return err;
 
 }
+
 
 bk_err_t https_ota_event_cb(bk_http_client_event_t *evt)
 {
@@ -155,10 +162,15 @@ int bk_https_ota_download(const char *url)
       if(!url)
       {
           err = BK_FAIL;
-          BK_LOGI(TAG, "url is NULL\r\n");
-
+          BK_LOGE(TAG, "[SECURITY_OTA_HTTPS] ERROR: url is NULL, return BK_FAIL\r\n");
           return err;
       }
+
+	/* Validate URL format */
+	if (os_strncmp(url, "https://", 8) != 0 && os_strncmp(url, "http://", 7) != 0) {
+		BK_LOGW(TAG, "[SECURITY_OTA_HTTPS] WARNING: URL does not start with http:// or https://\r\n");
+	}
+	
 	bk_http_input_t config = {
 	    .url = url,
 	    .cert_pem = ca_crt_rsa,
@@ -169,17 +181,18 @@ int bk_https_ota_download(const char *url)
 
 	bk_http_client_handle_t client = bk_https_client_flash_init(config);
 	if (client == NULL) {
-		BK_LOGI(TAG, "client is NULL\r\n");
+		BK_LOGE(TAG, "[SECURITY_OTA_HTTPS] ERROR: client is NULL after bk_https_client_flash_init\r\n");
 		err = BK_FAIL;
 		return err;
 	}
+
 	err = bk_http_client_perform(client);
+	
 	if(err == BK_OK){
-		BK_LOGI(TAG, "bk_http_client_perform ok\r\n");
 		err = security_ota_finish();
 	} else {
+		BK_LOGE(TAG, "[SECURITY_OTA_HTTPS] bk_http_client_perform FAILED (err=0x%x)\r\n", err);
 		bk_https_client_flash_deinit(client);
-		BK_LOGI(TAG, "bk_http_client_perform fail, err:%x\r\n", err);
 	}
 
 	return err;

@@ -16,7 +16,7 @@
 
 #define TAG "HTTPS_OTA"
 
-extern UINT8  ota_flag ;
+extern UINT8 ota_flag;
 #ifdef CONFIG_HTTP_AB_PARTITION
 extern part_flag update_part_flag;
 #endif
@@ -73,6 +73,10 @@ bk_http_client_handle_t bk_https_client_flash_init(bk_http_input_t config)
 	bk_wifi_ota_dtim(1);
 #endif
 #if HTTP_WR_TO_FLASH
+	if (!bk_http_ptr) {
+		BK_LOGE(TAG, "[OTA_HTTPS] ERROR: bk_http_ptr is NULL!\r\n");
+		return NULL;
+	}
 	http_flash_init();
 #endif
 	client = bk_http_client_init(&config);
@@ -92,10 +96,15 @@ bk_err_t bk_https_client_flash_deinit(bk_http_client_handle_t client)
 #if HTTP_WR_TO_FLASH
 	http_flash_deinit();
 #endif
-	if(!client)
+	if(client)
+	{
 		err = bk_http_client_cleanup(client);
+	}
 	else
+	{
+		BK_LOGE(TAG, "[OTA_HTTPS] ERROR: client is NULL, return BK_FAIL\r\n");
 		return BK_FAIL;
+	}
 
 	return err;
 
@@ -156,10 +165,15 @@ int bk_https_ota_download(const char *url)
       if(!url)
       {
           err = BK_FAIL;
-          BK_LOGI(TAG, "url is NULL\r\n");
-
+          BK_LOGE(TAG, "[OTA_HTTPS] ERROR: url is NULL, return BK_FAIL\r\n");
           return err;
       }
+
+	/* Validate URL format */
+	if (os_strncmp(url, "https://", 8) != 0 && os_strncmp(url, "http://", 7) != 0) {
+		BK_LOGW(TAG, "[OTA_HTTPS] WARNING: URL does not start with http:// or https://\r\n");
+	}
+	
 	bk_http_input_t config = {
 	    .url = url,
 	    .cert_pem = ca_crt_rsa,
@@ -173,28 +187,34 @@ int bk_https_ota_download(const char *url)
 	exec_flag exec_temp_part = 6;
 	uint8 current_partition;
 	current_partition = bk_ota_get_current_partition();
-	BK_LOGI(TAG, "current_partition :0x%x",current_partition);
 	if(current_partition == EXEX_A_PART ||current_partition == 0xFF)
+	{
 		update_part_flag = UPDATE_B_PART;
+	}
 	else if(current_partition == EXEC_B_PART)
+	{
 		update_part_flag = UPDATE_A_PART;
+	}
 	else
+	{
+		BK_LOGE(TAG, "[OTA_HTTPS] ERROR: Invalid partition 0x%x, return -1\r\n", current_partition);
 		return -1;
+	}
 #endif
 
 	bk_http_client_handle_t client = bk_https_client_flash_init(config);
 	if (client == NULL) {
-		BK_LOGI(TAG, "client is NULL\r\n");
+		BK_LOGE(TAG, "[OTA_HTTPS] ERROR: client is NULL after bk_https_client_flash_init\r\n");
 		err = BK_FAIL;
 		return err;
 	}
-	err = bk_http_client_perform(client);
-	if(err == BK_OK){
-		BK_LOGI(TAG, "bk_http_client_perform ok\r\n");
 
+	err = bk_http_client_perform(client);
+	
+	if(err == BK_OK){
 #ifdef CONFIG_HTTP_AB_PARTITION
         #ifndef CONFIG_OTA_UPDATE_DEFAULT_PARTITION
-            temp_exec_flag = ota_temp_execute_partition(ret); //temp_exec_flag :3 :A ,4:B
+            temp_exec_flag = ota_temp_execute_partition(err); //temp_exec_flag :3 :A ,4:B
         #else
             #ifdef CONFIG_OTA_UPDATE_B_PARTITION
                 temp_exec_flag = CONFIRM_EXEC_B; //update B Partition;
@@ -203,27 +223,26 @@ int bk_https_ota_download(const char *url)
             #endif
         #endif
 
-        BK_LOGI(TAG, "from cus temp_exec_flag:0x%x \r\n",temp_exec_flag);
-
         if(temp_exec_flag == CONFIRM_EXEC_A){
-	        BK_LOGI(TAG, "B>>>A \r\n");
 	        exec_temp_part = EXEX_A_PART;
         }
         else if(temp_exec_flag == CONFIRM_EXEC_B){
-		BK_LOGI(TAG, "A>>B \r\n");
 		exec_temp_part = EXEC_B_PART;
         }
+        else
+        {
+		BK_LOGE(TAG, "[OTA_HTTPS] ERROR: Invalid temp_exec_flag: 0x%x\r\n", temp_exec_flag);
+        }
 
-        BK_LOGI(TAG, "temp_exec_flag:0x%x \r\n",exec_temp_part);
-        ota_write_flash(BK_PARTITION_OTA_FINA_EXECUTIVE, exec_temp_part, 4); //
-	 bk_reboot();
+        ota_write_flash(BK_PARTITION_OTA_FINA_EXECUTIVE, exec_temp_part, 4);
+	bk_reboot();
 #else
         bk_reboot();
 #endif
 	}
 	else{
+		BK_LOGE(TAG, "[OTA_HTTPS] bk_http_client_perform FAILED (err=0x%x)\r\n", err);
 		bk_https_client_flash_deinit(client);
-		BK_LOGI(TAG, "bk_http_client_perform fail, err:%x\r\n", err);
 	}
 
 	return err;

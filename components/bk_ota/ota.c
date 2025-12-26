@@ -35,7 +35,9 @@ static bk_ota_t* bk_ota_init(const char* app_partition_name, const char* ota_par
 #endif
 
 	if ((!ota->app_partition) || (!ota->ota_partition) || (!ota->control_partition)) {
-		OTA_LOGE(TAG, "invalid ota partition\r\n");
+		OTA_LOGD(TAG, "invalid ota partition: app=%s ota=%s control=%s\r\n", 
+			app_partition_name, ota_partition_name, control_partition_name);
+		os_free(ota);
 		return NULL;
 	}
 
@@ -69,7 +71,7 @@ static bk_ota_t* bk_ota_init(const char* app_partition_name, const char* ota_par
 		if (partition_options & PARTITION_FLAGS_OTA_WRITE_CBUS) {
 		} else {
 			ota->ops.info = xip_ota_get_info;
-			ota->ops.write = xip_ota_write_dbus;
+			ota->ops.write = xip_ota_write_cbus;
 		}
 
 		if (partition_options & PARTITION_FLAGS_OTA_READ_CBUS) {
@@ -167,11 +169,21 @@ bk_err_t bk_ota_verify(bk_ota_t* ota)
 bk_err_t bk_ota_confirm(bk_ota_t* ota)
 {
 	OTA_LOGD(TAG, "confirm\r\n");
-	if (ota && ota->ops.confirm) {
-		return ota->ops.confirm(ota->control_partition);
-	} else {
+	if (ota == NULL) {
+		OTA_LOGE(TAG, "bk_ota_confirm: ota is NULL\r\n");
 		return BK_ERR_NOT_SUPPORT;
 	}
+	if (ota->ops.confirm == NULL) {
+		OTA_LOGE(TAG, "bk_ota_confirm: ops.confirm is NULL\r\n");
+		return BK_ERR_NOT_SUPPORT;
+	}
+	if (ota->control_partition == NULL) {
+		OTA_LOGE(TAG, "bk_ota_confirm: control_partition is NULL\r\n");
+		return BK_FAIL;
+	}
+	OTA_LOGD(TAG, "bk_ota_confirm: calling ops.confirm for partition %s\r\n", 
+		ota->control_partition->partition_description ? ota->control_partition->partition_description : "NULL");
+	return ota->ops.confirm(ota->control_partition);
 }
 
 bk_err_t bk_ota_cancel(bk_ota_t* ota)

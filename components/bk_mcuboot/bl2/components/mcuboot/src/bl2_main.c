@@ -69,10 +69,10 @@ static void do_boot(struct boot_rsp *rsp)
 {
     struct boot_arm_vector_table *vt;
     int rc;
-    extern uint32_t get_flash_map_offset(uint32_t index);
-    uint32_t primary_off  = rsp->br_image_off;
+    uint32_t image_off  = rsp->br_image_off;
+    
     vt = (struct boot_arm_vector_table *)(FLASH_BASE + 
-                    FLASH_PHY2VIRTUAL_CODE_START(primary_off +
+                    FLASH_PHY2VIRTUAL_CODE_START(image_off +
                                          rsp->br_hdr->ih_hdr_size / 32 * 34));
     BOOT_LOG_INF("Jump to msp=%p vector=%p\r\n", vt->msp, vt->reset);
 #if MCUBOOT_LOG_LEVEL > MCUBOOT_LOG_LEVEL_OFF || TEST_BL2
@@ -262,7 +262,13 @@ int main(void)
     sys_hal_early_deinit();
     BOOT_LOG_INF("Bootloader chainload address offset: 0x%x",
                  rsp.br_image_off);
-    BOOT_LOG_INF("Jumping to the first image slot");
+    /* Determine which slot is being used by comparing offset */
+    extern uint32_t get_flash_map_offset(uint32_t index);
+    uint32_t primary_off = get_flash_map_offset(2);  /* Primary slot for image 1 */
+    uint32_t secondary_off = get_flash_map_offset(3); /* Secondary slot for image 1 */
+    uint32_t active_slot = (rsp.br_image_off == primary_off) ? 0 : 1;
+    const char *slot_name = (active_slot == 0) ? "first" : "second";
+    BOOT_LOG_INF("Jumping to the %s image slot", slot_name);
     do_boot(&rsp);
 
     BOOT_LOG_ERR("Never should get here");

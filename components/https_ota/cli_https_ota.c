@@ -1,5 +1,6 @@
 #include "https_ota.h"
 #include "cli.h"
+#include "modules/bk_ota.h"
 #if CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
 #include "esp_crt_bundle.h"
 #endif
@@ -156,12 +157,30 @@ void bk_https_start_download(beken_thread_arg_t arg)
 	s_ota_config = generate_ota_config(https_url);
 	bk_https_ota_init(s_ota_config);
 	bk_https_ota_set_erase_method(s_ota_config, true);
+
 	state = bk_https_ota_perform(s_ota_config);
-	if (state == HTTPS_OTA_FINISH || state == HTTPS_OTA_FAIL) {
-		bk_https_ota_deinit(s_ota_config);
-		release_ota_config(s_ota_config);
-		s_ota_config = NULL;
+
+	if (state == HTTPS_OTA_FINISH) {
+		bk_err_t verify_ret = BK_FAIL;
+		bk_err_t confirm_ret = BK_FAIL;
+		if (s_ota_config && s_ota_config->ota_parse && s_ota_config->ota_parse->ota_handle) {
+			verify_ret = bk_ota_verify(s_ota_config->ota_parse->ota_handle);
+			if (verify_ret == BK_OK) {
+				confirm_ret = bk_ota_confirm(s_ota_config->ota_parse->ota_handle);
+			}
+		}
+		if (verify_ret == BK_OK && confirm_ret == BK_OK) {
+			BK_LOGI(TAG, "HTTPS OTA SUCCESS (verify+confirm done)\r\n");
+		} else {
+			BK_LOGE(TAG, "HTTPS OTA verify/confirm fail, verify=0x%x confirm=0x%x\r\n", verify_ret, confirm_ret);
+		}
+	} else {
+		BK_LOGE(TAG, "HTTPS OTA perform fail, state=%d\r\n", state);
 	}
+
+	bk_https_ota_deinit(s_ota_config);
+	release_ota_config(s_ota_config);
+	s_ota_config = NULL;
 	ota_thread_handle = NULL;
 	rtos_delete_thread(NULL);
 }
@@ -214,20 +233,56 @@ void ota_steps_Command(char *pcWriteBuffer, int xWriteBufferLen, int argc, char 
 	} else if (os_strcmp(argv[1], "end") == 0) {
 		bk_https_ota_end(s_ota_config);
 	} else if (os_strcmp(argv[1], "confirm") == 0) {
+		if (argc < 3) {
+			BK_LOGE(TAG, "Usage: ota confirm <current/ow/xip>\r\n");
+			BK_LOGE(TAG, "  current - confirm current OTA upgrade\r\n");
+			BK_LOGE(TAG, "  ow      - confirm OW mode upgrade\r\n");
+			BK_LOGE(TAG, "  xip     - confirm XIP mode upgrade\r\n");
+			return;
+		}
 		if (os_strcmp(argv[2], "ow") == 0) {
 			bk_ota_t *ow_ota_handle = NULL;
 			ow_ota_handle = bk_ota_get_ow_handle();
-			bk_ota_confirm(ow_ota_handle);
+			if (ow_ota_handle != NULL) {
+				bk_ota_confirm(ow_ota_handle);
+				BK_LOGI(TAG, "OTA confirm (ow) success\r\n");
+			} else {
+				BK_LOGE(TAG, "Failed to get OW OTA handle\r\n");
+			}
 		} else if (os_strcmp(argv[2], "xip") == 0) {
 			bk_ota_t *wifi_ota_handle = NULL;
 			wifi_ota_handle = bk_ota_get_xip_handle();
-			bk_ota_confirm(wifi_ota_handle);
-		} else if (os_strcmp(argv[2], "current") == 0) {
-			if (s_ota_config != NULL) {
-				bk_ota_confirm(s_ota_config->ota_parse->ota_handle);
+			if (wifi_ota_handle != NULL) {
+				bk_ota_confirm(wifi_ota_handle);
+				BK_LOGI(TAG, "OTA confirm (xip) success\r\n");
 			} else {
-				BK_LOGE(TAG,"config has been released,try other confirm commands!\r\n");
+				BK_LOGE(TAG, "Failed to get XIP OTA handle\r\n");
 			}
+		} else if (os_strcmp(argv[2], "current") == 0) {
+			if (s_ota_config != NULL && s_ota_config->ota_parse != NULL && s_ota_config->ota_parse->ota_handle != NULL) {
+				BK_LOGI(TAG, "OTA confirm (current): using ota_handle from config\r\n");
+				if (s_ota_config->ota_parse->ota_handle->control_partition != NULL) {
+					BK_LOGI(TAG, "control_partition: %s, addr=0x%x\r\n", 
+						s_ota_config->ota_parse->ota_handle->control_partition->partition_description ? 
+						s_ota_config->ota_parse->ota_handle->control_partition->partition_description : "NULL",
+						s_ota_config->ota_parse->ota_handle->control_partition->partition_start_addr);
+				} else {
+					BK_LOGE(TAG, "control_partition is NULL!\r\n");
+				}
+				bk_err_t ret = bk_ota_confirm(s_ota_config->ota_parse->ota_handle);
+				if (ret == BK_OK) {
+					BK_LOGI(TAG, "OTA confirm (current) success\r\n");
+				} else {
+					BK_LOGE(TAG, "OTA confirm (current) failed, ret=0x%x\r\n", ret);
+					BK_LOGE(TAG, "Try: ota confirm xip (for DIRECT_XIP mode)\r\n");
+				}
+			} else {
+				BK_LOGE(TAG, "config or ota_handle is NULL\r\n");
+				BK_LOGE(TAG, "Try: ota confirm <ow/xip>\r\n");
+			}
+		} else {
+			BK_LOGE(TAG, "Invalid confirm parameter: %s\r\n", argv[2]);
+			BK_LOGE(TAG, "Usage: ota confirm <current/ow/xip>\r\n");
 		}
 	} else if (os_strcmp(argv[1], "verify") == 0) {
 		if (s_ota_config != NULL) {

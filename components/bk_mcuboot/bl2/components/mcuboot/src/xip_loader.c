@@ -30,6 +30,8 @@
 #include "xip_loader.h"
 extern void flash_set_excute_enable(int enable);
 
+static bool g_fast_boot_secondary = false;
+
 static inline const char* image_ok_str(uint32_t image_ok)
 {
 	if (image_ok == XIP_IMAGE_OK) {
@@ -91,19 +93,78 @@ find_slot_with_highest_version(struct boot_loader_state *state)
     uint32_t slot;
     uint32_t candidate_slot = NO_ACTIVE_SLOT;
 
+    g_fast_boot_secondary = false;
+
 #ifdef CONFIG_XIP_NO_VERSION
+    uint32_t ota_preferred_slot;
 #if CONFIG_OTA_CONFIRM_UPDATE
     if (bk_boot_check_ota_confirm(1, OTA_CONFIRM)) {
-        slot = 1;
+        ota_preferred_slot = 1;
     } else {
-        slot = 0;
+        ota_preferred_slot = 0;
     }
 #else
     /*TODO use magic in image to decide which image to load*/
-    slot = 0;
+    ota_preferred_slot = 0;
 #endif
+
+    /* First, determine the preferred slot based on version comparison if both slots are available */
+    uint32_t version_preferred_slot = NO_ACTIVE_SLOT;
+    bool prefer_by_version = false;
+    
+    /* Compare versions if both slots are available and have valid headers */
+    if (state->slot_usage[BOOT_CURR_IMG(state)].slot_available[0] &&
+        state->slot_usage[BOOT_CURR_IMG(state)].slot_available[1]) {
+        struct image_header *hdr_slot0 = boot_img_hdr(state, 0);
+        struct image_header *hdr_slot1 = boot_img_hdr(state, 1);
+        
+        if (boot_is_header_valid(hdr_slot0, BOOT_IMG_AREA(state, 0)) &&
+            boot_is_header_valid(hdr_slot1, BOOT_IMG_AREA(state, 1))) {
+            int version_cmp = boot_version_cmp(&hdr_slot0->ih_ver, &hdr_slot1->ih_ver);
+            if (version_cmp > 0) {
+                /* Slot 0 has higher version */
+                version_preferred_slot = 0;
+                prefer_by_version = true;
+            } else if (version_cmp < 0) {
+                /* Slot 1 has higher version */
+                version_preferred_slot = 1;
+                prefer_by_version = true;
+            }
+        }
+    }
+    
+    /* Choose the final slot: prefer version-based selection if available, otherwise use OTA confirm flag */
+    if (prefer_by_version && version_preferred_slot != NO_ACTIVE_SLOT) {
+        slot = version_preferred_slot;
+        BOOT_LOG_INF("Version comparison: %s slot version is higher, prefer by version", 
+                    slot_str(slot));
+    } else {
+        slot = ota_preferred_slot;
+    }
+
+    if (!state->slot_usage[BOOT_CURR_IMG(state)].slot_available[slot]) {
+        uint32_t other_slot = slot ^ 1;
+        if (state->slot_usage[BOOT_CURR_IMG(state)].slot_available[other_slot]) {
+            BOOT_LOG_INF("%s slot unavailable, fallback to %s", slot_str(slot), slot_str(other_slot));
+            slot = other_slot;
+        } else {
+            BOOT_LOG_ERR("No available slots to boot");
+            return NO_ACTIVE_SLOT;
+        }
+    }
+
+    if (!boot_is_header_valid(boot_img_hdr(state, slot), BOOT_IMG_AREA(state, slot))) {
+        BOOT_LOG_ERR("%s slot header invalid, abort selecting slot", slot_str(slot));
+        return NO_ACTIVE_SLOT;
+    }
+    
     uint32_t image_ok = boot_read_xip_status(slot, XIP_IMAGE_OK_TYPE);
     BOOT_LOG_INF("xip prefer %s: state=%s(%x)", slot_str(slot), image_ok_str(image_ok), image_ok);
+
+    if (slot == BOOT_SECONDARY_SLOT && image_ok == XIP_IMAGE_OK) {
+        g_fast_boot_secondary = true;
+        return slot;
+    }
 
     if (image_ok == XIP_IMAGE_TEST_FINAL) {
         // TODO use partition api to erase
@@ -247,6 +308,17 @@ boot_load_and_validate_images(struct boot_loader_state *state)
             }
             continue;
         }
+        
+        /* Validation successful, clear OTA confirm flag if it was set */
+#if CONFIG_OTA_CONFIRM_UPDATE
+        if (!g_fast_boot_secondary) {
+            if (bk_boot_check_ota_confirm(1, OTA_CONFIRM)) {
+                /* OTA confirm flag is set, clear it after successful validation */
+                bk_boot_erase_ota_confirm(1);
+                BOOT_LOG_INF("OTA confirm flag cleared after successful validation");
+            }
+        }
+#endif
     }
 
 
@@ -268,8 +340,15 @@ xip_boot_go(struct boot_loader_state *state, struct boot_rsp *rsp)
         goto out;
     }
 
-    BOOT_LOG_INF("Final boot from %s slot",slot_str(state->slot_usage[BOOT_CURR_IMG(state)].active_slot));
-    flash_set_excute_enable(state->slot_usage[BOOT_CURR_IMG(state)].active_slot);
+    uint32_t active_slot = state->slot_usage[BOOT_CURR_IMG(state)].active_slot;
+    BOOT_LOG_INF("Final boot from %s slot",slot_str(active_slot));
+    flash_set_excute_enable(active_slot);
+    
+    /* Fill the boot response structure with the actual active slot */
+    rsp->br_flash_dev_id = flash_area_get_device_id(BOOT_IMG_AREA(state, active_slot));
+    rsp->br_image_off = boot_img_slot_off(state, active_slot);
+    rsp->br_hdr = boot_img_hdr(state, active_slot);
+    
 out:
     if (rc != 0) {
         FIH_SET(fih_rc, FIH_FAILURE);

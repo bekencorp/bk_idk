@@ -59,7 +59,7 @@ void get_http_ab_version(char *pcWriteBuffer, int xWriteBufferLen, int argc, cha
 }
 #endif
 
-#if CONFIG_DIRECT_XIP && CONFIG_SECURITY_OTA
+#if CONFIG_DIRECT_XIP
 void get_http_ab_version(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
 	extern uint32_t flash_get_excute_enable();
@@ -73,11 +73,20 @@ void get_http_ab_version(char *pcWriteBuffer, int xWriteBufferLen, int argc, cha
 #endif
 
 #if CONFIG_OTA_HTTP
+extern int bk_http_ota_download(const char *uri);
 void http_ota_Command(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
 	int ret;
 	if (argc != 2)
 		goto HTTP_CMD_ERR;
+
+	/* Check for help option */
+	if (os_strcmp(argv[1], "--help") == 0 || os_strcmp(argv[1], "-h") == 0 || os_strcmp(argv[1], "help") == 0) {
+		os_printf("Usage: http_ota <url>\r\n");
+		os_printf("  url - HTTP URL for OTA download\r\n");
+		return;
+	}
+
 	ret = bk_http_ota_download(argv[1]);
 
 	if (0 != ret)
@@ -86,51 +95,89 @@ void http_ota_Command(char *pcWriteBuffer, int xWriteBufferLen, int argc, char *
 	return;
 
 HTTP_CMD_ERR:
-	os_printf("Usage:http_ota [url:]\r\n");
+	os_printf("Usage: http_ota <url>\r\n");
+	os_printf("  url - HTTP URL for OTA download\r\n");
 }
 #endif
 
-#if CONFIG_OTA_HTTPS
-char *https_url = NULL;
+#if CONFIG_OTA_HTTPS && !CONFIG_OTA_TEST
 int bk_https_ota_download(const char *url);
 void bk_https_start_download(beken_thread_arg_t arg) {
+	char *url = (char *)arg;
 	int ret;
-	ret = bk_https_ota_download(https_url);
+
+	if (!url) {
+		os_printf("%s: url is NULL\r\n", __func__);
+		rtos_delete_thread(NULL);
+		return;
+	}
+
+	os_printf("%s: starting download from %s\r\n", __func__, url);
+	os_printf("%s: About to call bk_https_ota_download, url=%p\r\n", __func__, url);
+	ret = bk_https_ota_download(url);
+	os_printf("%s: bk_https_ota_download returned, ret=%d\r\n", __func__, ret);
 	if(ret != BK_OK) {
 		os_printf("%s download fail, ret:%d\r\n", __func__, ret);
 	}
+
+	/* Free the URL string allocated in https_ota_Command */
+	os_free(url);
+	url = NULL;
+
 	rtos_delete_thread(NULL);
 }
 
-void https_ota_start(void)
+void https_ota_start(const char *url)
 {
 	UINT32 ret;
+
+	if (!url) {
+		os_printf("https_ota_start: url is NULL\r\n");
+		return;
+	}
 
 	os_printf("https_ota_start\r\n");
 	ret = rtos_create_thread(NULL, BEKEN_APPLICATION_PRIORITY,
 							 "https_ota",
 							 (beken_thread_function_t)bk_https_start_download,
 							 5120,
-							 0);
+							 (beken_thread_arg_t)url);
 
-	if (kNoErr != ret)
-		os_printf("https_ota_start failed\r\n");
-
+	if (kNoErr != ret) {
+		os_printf("https_ota_start failed, ret:%d\r\n", ret);
+		os_free((void *)url);
+	}
 }
 
 void https_ota_Command(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
+	char *url_copy = NULL;
 
 	if (argc != 2)
 		goto HTTP_CMD_ERR;
 
-	https_url = argv[1];
-	https_ota_start();
+	/* Check for help option */
+	if (os_strcmp(argv[1], "--help") == 0 || os_strcmp(argv[1], "-h") == 0 || os_strcmp(argv[1], "help") == 0) {
+		os_printf("Usage: https_ota <url>\r\n");
+		os_printf("  url - HTTPS URL for OTA download\r\n");
+		return;
+	}
+
+	/* Allocate memory and copy the URL string for thread safety */
+	url_copy = (char *)os_malloc(os_strlen(argv[1]) + 1);
+	if (!url_copy) {
+		os_printf("https_ota: failed to allocate memory for URL\r\n");
+		return;
+	}
+	os_strcpy(url_copy, argv[1]);
+
+	https_ota_start(url_copy);
 
 	return;
 
 HTTP_CMD_ERR:
-	os_printf("%s,Usage:http_ota [url:]\r\n",__func__);
+	os_printf("Usage: https_ota <url>\r\n");
+	os_printf("  url - HTTPS URL for OTA download\r\n");
 }
 #endif
 
@@ -145,8 +192,8 @@ static const struct cli_command s_ota_commands[] = {
 	{"http_ota", "http_ota url", http_ota_Command},
 #endif
 
-#if CONFIG_OTA_HTTPS
-	{"https_ota", "ip [sta|ap][{ip}{mask}{gate}{dns}]", https_ota_Command},
+#if CONFIG_OTA_HTTPS && !CONFIG_OTA_TEST
+	{"https_ota", "https_ota <url>", https_ota_Command},
 	
 #endif
 
@@ -154,7 +201,7 @@ static const struct cli_command s_ota_commands[] = {
 	{"ab_version", NULL, get_http_ab_version},
 #endif
 
-#if CONFIG_DIRECT_XIP && CONFIG_SECURITY_OTA
+#if CONFIG_DIRECT_XIP
 	{"ab_version", NULL, get_http_ab_version},
 #endif
 };

@@ -39,7 +39,23 @@ bk_err_t bk_https_ota_begin(https_ota_t* ota_config)
 	bk_http_client_open(ota_config->client, 0);
 	bk_http_client_fetch_headers(ota_config->client);
 
-	bk_http_check_response(ota_config->client);
+	ret = bk_http_check_response(ota_config->client);
+	if (ret != BK_OK) {
+		BK_LOGE(TAG, "HEAD request failed, trying GET method instead\r\n");
+		/* If HEAD request fails, try GET method but only fetch headers */
+		bk_http_client_close(ota_config->client);
+		bk_http_client_cleanup(ota_config->client);
+		ota_config->client = bk_http_client_init(ota_config->http_config);
+		bk_http_client_set_method(ota_config->client, HTTP_METHOD_GET);
+		bk_http_client_open(ota_config->client, 0);
+		bk_http_client_fetch_headers(ota_config->client);
+		ret = bk_http_check_response(ota_config->client);
+		if (ret != BK_OK) {
+			BK_LOGE(TAG, "GET request also failed, status: %d\r\n", 
+				ota_config->client->response ? ota_config->client->response->status_code : -1);
+			return ret;
+		}
+	}
 
 	if (ota_config->ETag == NULL && ota_config->client->etag != NULL) {
 		ota_config->ETag = (char*)malloc(strlen(ota_config->client->etag) + 1);
@@ -58,6 +74,15 @@ bk_err_t bk_https_ota_progress_data(https_ota_t* ota_config)
 	if (ota_config == NULL || ota_config->ota_parse == NULL) {
 		return BK_FAIL;
 	}
+	BK_LOGI(TAG, "progress start state=%d rx_len=%u phase=%d idx=%u off=%u wr_off=%u erase_off=%u percent=%u\r\n",
+			ota_config->state,
+			ota_config->ota_parse->total_rx_len,
+			ota_config->ota_parse->phase,
+			ota_config->ota_parse->index,
+			ota_config->ota_parse->offset,
+			ota_config->ota_parse->write_offset,
+			ota_config->ota_parse->erase_offset,
+			ota_config->ota_parse->percent);
 	bk_err_t err = BK_FAIL;
 	uint32_t read_buf_len = 4096;
 	char* read_buf;
@@ -101,10 +126,34 @@ bk_err_t bk_https_ota_progress_data(https_ota_t* ota_config)
 				goto fail;
 			}
 		} else if (data_read > 0) {
+			BK_LOGD(TAG, "read chunk len=%d rx_total_before=%u phase=%d idx=%u img_off=%u wr_off=%u erase_off=%u percent=%u\r\n",
+					data_read,
+					ota_config->ota_parse->total_rx_len,
+					ota_config->ota_parse->phase,
+					ota_config->ota_parse->index,
+					ota_config->ota_parse->offset,
+					ota_config->ota_parse->write_offset,
+					ota_config->ota_parse->erase_offset,
+					ota_config->ota_parse->percent);
 			if (bk_ota_download_parse_data(ota_config->ota_parse, read_buf, data_read) != BK_OK) {
-				BK_LOGE(TAG, "ota download parse data fail.\r\n");
+				BK_LOGE(TAG, "ota download parse data fail. phase=%d idx=%u img_off=%u wr_off=%u erase_off=%u percent=%u total_rx=%u\r\n",
+						ota_config->ota_parse->phase,
+						ota_config->ota_parse->index,
+						ota_config->ota_parse->offset,
+						ota_config->ota_parse->write_offset,
+						ota_config->ota_parse->erase_offset,
+						ota_config->ota_parse->percent,
+						ota_config->ota_parse->total_rx_len);
 				goto fail;
 			}
+			BK_LOGD(TAG, "parse ok rx_total_after=%u phase=%d idx=%u img_off=%u wr_off=%u erase_off=%u percent=%u\r\n",
+					ota_config->ota_parse->total_rx_len,
+					ota_config->ota_parse->phase,
+					ota_config->ota_parse->index,
+					ota_config->ota_parse->offset,
+					ota_config->ota_parse->write_offset,
+					ota_config->ota_parse->erase_offset,
+					ota_config->ota_parse->percent);
 		} else {
 			BK_LOGE(TAG, "http client read data error\r\n");
 			goto fail;

@@ -65,7 +65,7 @@ if (CONFIG_STA_PS)
 	)
 endif()
 
-if (CONFIG_OTA_TFTP OR CONFIG_OTA_HTTP)
+if (CONFIG_OTA_TFTP OR CONFIG_OTA_HTTP OR CONFIG_OTA_HTTPS)
 	list(APPEND srcs
 		cli_ota.c
 	)

@@ -752,6 +752,9 @@ void http_flash_init(void)
 #if CONFIG_FLASH_ORIGIN_API
 	UINT32 status;
 #endif
+	if (!bk_http_ptr) {
+		return;
+	}
 	bk_http_ptr->wr_buf = NULL;
 	bk_http_ptr->wr_tmp_buf = NULL;
 
@@ -774,6 +777,9 @@ void http_flash_init(void)
 #else
 #ifndef CONFIG_HTTP_AB_PARTITION
 	bk_http_ptr->pt = bk_flash_partition_get_info(BK_PARTITION_OTA);
+	if (!bk_http_ptr->pt) {
+		return;
+	}
 #else
 #if CONFIG_OTA_POSITION_INDEPENDENT_AB
 	ota_partition_length = http_get_sapp_partition_length(BK_PARTITION_S_APP);
@@ -801,6 +807,9 @@ void http_flash_init(void)
 
 	bk_http_ptr->wr_last_len = 0;
 	ota_wr_block = 0;
+	if (!bk_http_ptr->pt) {
+		return;
+	}
 	bk_http_ptr->flash_address = bk_http_ptr->pt->partition_start_addr;
 
 #if CONFIG_FLASH_ORIGIN_API
@@ -808,7 +817,6 @@ void http_flash_init(void)
 #else
 	bk_flash_set_protect_type(FLASH_PROTECT_NONE);
 #endif
-	os_printf("ota write to 0x%x\r\n", bk_http_ptr->flash_address);
 }
 
 void http_flash_deinit(void)

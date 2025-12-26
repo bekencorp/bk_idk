@@ -11,10 +11,19 @@
 #include <components/bluetooth/bk_dm_bluetooth.h>
 #include "aon_pmu_hal.h"
 #include "driver/wdt.h"
+#include "cache.h"
+#include "armstar.h"
+#include "core_star.h"
 
 #if (CONFIG_SUPPORT_MULTICORE)
 #include "state.h"
 #endif
+
+extern void vPortEnableTimerInterrupt(void);
+extern void vPortDisableTimerInterrupt(void);
+extern void bk_flash_write_cbus(uint32_t address, const uint8_t *user_buf, uint32_t size);
+extern void bk_flash_read_cbus(uint32_t address, void *user_buf, uint32_t size);
+
 
 #define TAG "ota"
 
@@ -59,7 +68,6 @@ bk_err_t xip_ota_write_dbus(const bk_ota_t *ota, uint32_t off, uint8_t *buf, uin
 	return bk_flash_write_bytes(addr, buf, len);
 }
 
-#if CONFIG_XIP_OTA_WRITE_CBUS
 __attribute__((section(".iram")))
 bk_err_t xip_ota_write_cbus(const bk_ota_t *ota, uint32_t off, uint8_t *buf, uint32_t len)
 {
@@ -84,6 +92,12 @@ bk_err_t xip_ota_write_cbus(const bk_ota_t *ota, uint32_t off, uint8_t *buf, uin
 	write_addr |= 1 << 24;
 	bk_flash_write_cbus(write_addr, buf, len);
 
+#if  !CONFIG_CACHE_ENABLE
+	
+	// SCB_CleanDCache_by_Addr((uint32_t *)write_addr, (int32_t)len);
+	SCB_CleanDCache();
+#endif
+
 #if CONFIG_CACHE_ENABLE
 	enable_dcache(1);
 #endif
@@ -91,7 +105,6 @@ bk_err_t xip_ota_write_cbus(const bk_ota_t *ota, uint32_t off, uint8_t *buf, uin
 	vPortEnableTimerInterrupt();
 	return BK_OK;
 }
-#endif
 
 bk_err_t xip_ota_read_dbus(const bk_ota_t *ota, uint32_t off, uint8_t *buf, uint32_t len)
 {
@@ -104,7 +117,19 @@ bk_err_t xip_ota_read_dbus(const bk_ota_t *ota, uint32_t off, uint8_t *buf, uint
 
 bk_err_t xip_ota_read_cbus(const bk_ota_t *ota, uint32_t off, uint8_t *buf, uint32_t len)
 {
-	return BK_ERR_NOT_SUPPORT;
+	OTA_LOGD(TAG, "xip read, off=%x len=%x\r\n", off, len);
+	const bk_logic_partition_t *partition_a = xip_ota_get_a_partition(ota);
+	BK_RETURN_ON_ERR(common_ota_partition_check(partition_a, off, buf, len));
+
+	uint32_t fa_off = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(partition_a->partition_start_addr));
+
+	if((fa_off + off) & 0x31) { // MUST aligh with 32-byte.
+		OTA_LOGE(TAG, "align\r\n");
+		return BK_ERR_PARAM;
+	}
+
+	bk_flash_read_cbus(fa_off + off, buf, len);
+	return 0;
 }
 
 bk_err_t xip_ota_erase_sector(const bk_ota_t *ota, uint32_t off)
