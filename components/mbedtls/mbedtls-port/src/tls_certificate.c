@@ -80,6 +80,19 @@ const char mbedtls_root_certificate[] =
 	GLOBALSIGN_ROOT_CA
 ;
 #elif 1
+/* 
+ * Root CA Certificate Selection
+ * 
+ * Available options:
+ * 1. GLOBALSIGN_ROOT_CA - default 
+ * 2. DIGI_GLOBAL_ROOT_CA - DigiCert Global Root CA for connecting to broker.emqx.io   
+ * 3. MOSQUITTO_ROOT_CA - Self-signed certificate for Mosquitto MQTT broker
+ * 
+ * To change CA, modify the #if conditions below and update the mbedtls_root_certificate assignment:
+ * - Set #if 1 for the desired CA
+ * - Set #if 0 for other CAs
+ * - Update mbedtls_root_certificate to use the selected CA macro
+ */
 ////myca for mqtt
 #define GLOBALSIGN_ROOT_CA   \
 "-----BEGIN CERTIFICATE-----\r\n"  \
@@ -106,6 +119,54 @@ const char mbedtls_root_certificate[] =
 "JkLASY80XmUo6WQVq7iN6mO3zsgIZmwmwSVnTcSPcHARoZ4=\r\n"  \
 "-----END CERTIFICATE-----\r\n"
 
+/* DIGI_GLOBAL_ROOT_CA - DigiCert Global Root CA for connecting to broker.emqx.io */
+#define DIGI_GLOBAL_ROOT_CA   \
+"-----BEGIN CERTIFICATE-----\r\n"  \
+"MIIDrzCCApegAwIBAgIQCDvgVpBCRrGhdWrJWZHHSjANBgkqhkiG9w0BAQUFADBh\r\n"  \
+"MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3\r\n"  \
+"d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBD\r\n"  \
+"QTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVT\r\n"  \
+"MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j\r\n"  \
+"b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG\r\n"  \
+"9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1eqUKKPC3eQyaKl7hLOllsB\r\n"  \
+"CSDMAZOnTjC3U/dDxGkAV53ijSLdhwZAAIEJzs4bg7/fzTtxRuLWZscFs3YnFo97\r\n"  \
+"nh6Vfe63SKMI2tavegw5BmV/Sl0fvBf4q77uKNd0f3p4mVmFaG5cIzJLv07A6Fpt\r\n"  \
+"43C/dxC//AH2hdmoRBBYMql1GNXRor5H4idq9Joz+EkIYIvUX7Q6hL+hqkpMfT7P\r\n"  \
+"T19sdl6gSzeRntwi5m3OFBqOasv+zbMUZBfHWymeMr/y7vrTC0LUq7dBMtoM1O/4\r\n"  \
+"gdW7jVg/tRvoSSiicNoxBN33shbyTApOB6jtSj1etX+jkMOvJwIDAQABo2MwYTAO\r\n"  \
+"BgNVHQ8BAf8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUA95QNVbR\r\n"  \
+"TLtm8KPiGxvDl7I90VUwHwYDVR0jBBgwFoAUA95QNVbRTLtm8KPiGxvDl7I90VUw\r\n"  \
+"DQYJKoZIhvcNAQEFBQADggEBAMucN6pIExIK+t1EnE9SsPTfrgT1eXkIoyQY/Esr\r\n"  \
+"hMAtudXH/vTBH1jLuG2cenTnmCmrEbXjcKChzUyImZOMkXDiqw8cvpOp/2PV5Adg\r\n"  \
+"06O/nVsJ8dWO41P0jmP6P6fbtGbfYmbW0W5BjfIttep3Sp+dWOIrWcBAI+0tKIJF\r\n"  \
+"PnlUkiaY4IBIqDfv8NZ5YBberOgOzW6sRBc4L0na4UU+Krk2U886UAb3LujEV0ls\r\n"  \
+"YSEY1QSteDwsOoBrp+uvFRTp2InBuThs4pFsiv9kuXclVzDAGySj4dzp30d8tbQk\r\n"  \
+"CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=\r\n"  \
+"-----END CERTIFICATE-----\r\n"  \
+
+/* MOSQUITTO_ROOT_CA - Self-signed certificate for Mosquitto MQTT broker */
+#define MOSQUITTO_ROOT_CA   \
+"-----BEGIN CERTIFICATE-----\r\n"  \
+"MIIDSzCCAjOgAwIBAgIUBsIrK3nP7iAr2qqJ9QzIN6xkvQ8wDQYJKoZIhvcNAQEL\r\n"  \
+"BQAwNTELMAkGA1UEBhMCQ04xDjAMBgNVBAoMBU15T3JnMRYwFAYDVQQDDA1NeU9y\r\n"  \
+"ZyBSb290IENBMB4XDTI1MTAzMDA5NTUzM1oXDTM1MTAyODA5NTUzM1owNTELMAkG\r\n"  \
+"A1UEBhMCQ04xDjAMBgNVBAoMBU15T3JnMRYwFAYDVQQDDA1NeU9yZyBSb290IENB\r\n"  \
+"MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2h+9NDj2OnI1QTVybhiC\r\n"  \
+"Nkr9y6L+lxfz+J4wSwaHCRMoJg2t8F8067we9EQcvJ7me++hXUN3ms0HOvOgb0r7\r\n"  \
+"6m8ZApfwei1EMIWIycbPSNO3WXNknlNX20dzH3mLooKckJZ6JFUlBjFBkDbuMgg7\r\n"  \
+"g/4IYWVx58oC1cX6cDhG6x8Lwdse+u0CSJoMJGgNJE78+2ekf551+QBN2qaag1if\r\n"  \
+"KVWTe9K2bLdKT5Cp3XCOpI4alC0X7O+sTnmER9vfTKPiSvwuCs9tXLxdmIlJOrBq\r\n"  \
+"WXbCIe6fbAlUCKE+fC2aSb6Rq3drhLP4LBI/KsNRIoXtrMflCt3T5LRgeAsFJfm5\r\n"  \
+"YQIDAQABo1MwUTAdBgNVHQ4EFgQUUa1iLLBGGRJcs3KyAxerC5hfx4cwHwYDVR0j\r\n"  \
+"BBgwFoAUUa1iLLBGGRJcs3KyAxerC5hfx4cwDwYDVR0TAQH/BAUwAwEB/zANBgkq\r\n"  \
+"hkiG9w0BAQsFAAOCAQEAbFqe3jDyz/tfHj+xNeHSo7SRyarMqMkIJMi9CtnXAz/t\r\n"  \
+"k4yXljELg54O5O3t/2g/DhVo59d4UWFuylQgqMImW9ra42sJCItRax4BKVx47mEa\r\n"  \
+"+Jp0l4tXZTR1kzR4vcFNOKSf/IlTzcEWGiz+xd1fCTmOw9/AHATeGN74NqrQruIg\r\n"  \
+"aqnukyNTv4uvLIeWZh5hiibMYWS368FIYwdHcoOHruHpWwp9Iye1LoogWNGky26D\r\n"  \
+"NczVFyvJ/sY6W182Xn4Uj9tEda7aEvEXEdBDSLF1V6YbDErbGbSa3BClfByVidyk\r\n"  \
+"593bwbd2lAkpkdtBSH8+tDSWb60uuHtgbuaipBzeEQ==\r\n"  \
+"-----END CERTIFICATE-----\r\n"  \
+
 const char mbedtls_root_certificate[] = 
 	GLOBALSIGN_ROOT_CA
 ;
@@ -113,6 +174,69 @@ const char mbedtls_root_certificate[] =
 
 
 const size_t mbedtls_root_certificate_len = sizeof(mbedtls_root_certificate);
+
+#if 0
+/* Client certificate and private key for testing with Mosquitto MQTT broker */
+#define MOSQUITTO_CLIENT_CRT   \
+"-----BEGIN CERTIFICATE-----\r\n"  \
+"MIICzzCCAbcCFHya+WQBvBpkKIK7WZlLV2HC/yKlMA0GCSqGSIb3DQEBCwUAMDUx\r\n"  \
+"CzAJBgNVBAYTAkNOMQ4wDAYDVQQKDAVNeU9yZzEWMBQGA1UEAwwNTXlPcmcgUm9v\r\n"  \
+"dCBDQTAeFw0yNTEwMzAxMDMwMTBaFw0yNjEwMzAxMDMwMTBaMBMxETAPBgNVBAMM\r\n"  \
+"CG15Y2xpZW50MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3GjaOs8m\r\n"  \
+"Ufrp1CijOp68DZHoVZ36dO91uVBBZoaucry0hWXYi7flWYTFwlJp4NibV6ZFPJol\r\n"  \
+"Nr8MbfJFu4wky6ktrO3Vx40D1udp3yypGyqitImexW6QyX0+D0q1jQLki30L35z7\r\n"  \
+"QsCptTg2mDzN8p0D+OQA201+ZaR6kx7ajCfkl91+7/Anah1D6cTmqOytepHL09cc\r\n"  \
+"u9HTvMmfP8PUdQ1NNJbJnLT20R5aZZDREW80V491DgOaJzTcMaS0kYjz0KKG8l/x\r\n"  \
+"/Q830P3xjxADwBo6CibZ+Z75Da+pNHnDjt4NkcePL2fA/wJODAWOUQJ+gMsRmXWu\r\n"  \
+"Rh7/9KfBtgcO1wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQCuYr445aTTUV0b/+P8\r\n"  \
+"ExaTdn+svCvtbNtt9uqBouk25DL+thLn71I2U0bjFWKfNY/a1Bm0TFT1JkiNX8cc\r\n"  \
+"OeJHi84k8QLmsdKlns7J54VZpO9Qc/lu7aJPmdEA/qOAvJ0IB+xdgrBNgSe3meoE\r\n"  \
+"SBQMc6nXML2s+mY9+Y3tGtovqhSl9gON7+9tGnmbZ2x1QCOTY53uP271oft3FbBc\r\n"  \
+"5EmSWF6xVXKHabX9YboM5hJKJ0bsfP007pAKoRY22fVdCCTuzR04zXR1f1Ltbx+C\r\n"  \
+"8lGP85+waTn4Y9ae2Cl2JQIBtfkS8je7DrjEbjIvMVxR4Q83tcn00lj+y2YWzh8S\r\n"  \
+"DCF1\r\n"  \
+"-----END CERTIFICATE-----\r\n"  \
+
+#define MOSQUITTO_CLIENT_KEY   \
+"-----BEGIN RSA PRIVATE KEY-----\r\n"  \
+"MIIEogIBAAKCAQEA3GjaOs8mUfrp1CijOp68DZHoVZ36dO91uVBBZoaucry0hWXY\r\n"  \
+"i7flWYTFwlJp4NibV6ZFPJolNr8MbfJFu4wky6ktrO3Vx40D1udp3yypGyqitIme\r\n"  \
+"xW6QyX0+D0q1jQLki30L35z7QsCptTg2mDzN8p0D+OQA201+ZaR6kx7ajCfkl91+\r\n"  \
+"7/Anah1D6cTmqOytepHL09ccu9HTvMmfP8PUdQ1NNJbJnLT20R5aZZDREW80V491\r\n"  \
+"DgOaJzTcMaS0kYjz0KKG8l/x/Q830P3xjxADwBo6CibZ+Z75Da+pNHnDjt4NkceP\r\n"  \
+"L2fA/wJODAWOUQJ+gMsRmXWuRh7/9KfBtgcO1wIDAQABAoIBABHa2Jrc/xCzD9Ak\r\n"  \
+"/pwYEcnToQuWgZyJbXL2omWo0WbwDHul9XXUDttCmzaTsIoLYgImsQMoxYz6ywn5\r\n"  \
+"D1cTEkQBT3bryV6h+Mam9neiyYwu1wFjCJ6bx1TbNXTNq4lhy5vVJGoX8G7G5riM\r\n"  \
+"dje87T4TJCg8aClbzLp1KYzTegbSafZPz/i6Gynoiu/0cZlY6V+PsE38YqIdbifW\r\n"  \
+"j9JQHcURFSzIBx6O1FmxjeHk/WqeuRo/HgljCE+qBrI5aUsq1zrtEGjxDll+MXxw\r\n"  \
+"Lo9P+cu5do9/O++8q5lCRKKAoE4/hrlwxUOdiiLaifpxXsbMN2QAh00SeUfQYeDP\r\n"  \
+"EXSsSpkCgYEA+NCcrAARC1zZXOGokOfXs0Xk3vTpYEtuEPHS9t+KS2X3h891Jz2J\r\n"  \
+"rQaDrSotMMUSoIPc4rNux4Qi0dEkQY+J/kqk+d/lT6HUSepnz7XbZqnS/rx0TTlW\r\n"  \
+"qXpOEmpJ3fMCNdiFlRTWld/oOnRBSEMeI8+bjOMMocxRSCYVuA/l0mMCgYEA4sZA\r\n"  \
+"YFcbV3VKOgrjmf7gF+9Irq7FllIzbnFuve+uqGSiasvUiQcriKUkUSiKkqu76/l9\r\n"  \
+"ziuo8fJHmHgf1vChWEoJ7WpclD/pV5GK2U0+yGctzlQGMMwE1booEVPwZoHHo8rV\r\n"  \
+"i18954vah9omGfkcCg7I1+lLFkx+N9Jh5sAJQf0CgYAR1CDl0jtmbQjGNwU1HOe/\r\n"  \
+"2MpFj5cJZ15DqJBNUEdAj9XkzWC/pxEubMESr2r9i6GCDvDM7b6KXVWBY1MNv5NL\r\n"  \
+"vV2E6h4sTpQ/l6RIpedKu/B6gFZ1Eh67lh/yAdu5I6iM4y7vN8cIhjrFtX7YBrcq\r\n"  \
+"Kb4jokFNdq58VP5Jaho1sQKBgElA5Ta5rJlZx/pr3g22qUjSANZ8mlLuhrKcbbtp\r\n"  \
+"GzBGIbkB0svYxxVC0zJsOCcc1n1pgFwC+nX9X2c/FnnmDRhqAj7w5qr04jlpSELd\r\n"  \
+"kvRFcCSAO+ezX7Ryh9LhHHzgW07rjIOS5npPUO4lZ71oHMia8gHc2GaBmxwJF5rk\r\n"  \
+"WZk5AoGAUUh94awlQAoovUDx2koivHm5lTdkPESfsFULEW4BMP5O/NwZm6LBEbVJ\r\n"  \
+"HYarrJLNUwNl6c9qk1yIRSagu54VYj+rN9dqFBAYjZuWqkNQlparYsvhjnoej+8b\r\n"  \
+"PcdxfY56gPOJ1i4z8FQZ2zx772Fu9N+HzrdJFCaKI58gy9ii17w=\r\n"  \
+"-----END RSA PRIVATE KEY-----\r\n"  \
+
+
+const char mbedtls_client_certificate[] =
+    MOSQUITTO_CLIENT_CRT
+    "";
+const size_t mbedtls_client_certificate_len = sizeof(mbedtls_client_certificate);
+
+const char mbedtls_client_key[] =
+    MOSQUITTO_CLIENT_KEY
+    "";
+const size_t mbedtls_client_key_len = sizeof(mbedtls_client_key);
+#endif
 
 #if 0
 ///client client.crt

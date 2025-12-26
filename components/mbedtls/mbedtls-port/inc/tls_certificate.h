@@ -22,7 +22,11 @@
 
 
 extern const char mbedtls_root_certificate[];
+extern const char mbedtls_client_certificate[];
+extern const char mbedtls_client_key[];
 
 extern const size_t mbedtls_root_certificate_len;
+extern const size_t mbedtls_client_certificate_len;
+extern const size_t mbedtls_client_key_len;
 
 #endif 

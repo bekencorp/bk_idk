@@ -27,10 +27,15 @@
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/certs.h"
 
-#define CFG_USE_CA_CERTIFICATE                 0
-#define CFG_USE_CA_CERTIFICATE_VERIFY          0
+/* TLS Configuration Flags - Set to 1 to enable corresponding feature */
+#define CFG_USE_CA_CERTIFICATE                 0  /* Enable CA certificate loading */
+#define CFG_USE_CA_CERTIFICATE_VERIFY          0  /* Enable CA certificate verification */
+#define CFG_USE_CLIENT_CERTIFICATE             0  /* Enable client certificate loading */
+#define CFG_USE_CLIENT_CERTIFICATE_VERIFY      0  /* Enable client certificate verification */
 
+/* Combined enable flags */
 #define USE_CA_CERTIFICATE_EN                  ((CFG_USE_CA_CERTIFICATE) || (CFG_USE_CA_CERTIFICATE_VERIFY))
+#define USE_CLIENT_CERTIFICATE_EN               ((CFG_USE_CLIENT_CERTIFICATE) || (CFG_USE_CLIENT_CERTIFICATE_VERIFY))
 
 #define CFG_OUT_PUT_MBEDTLS_DEBUG_INFO         0
 
@@ -49,6 +54,10 @@ typedef struct MbedTLSSession
     mbedtls_net_context server_fd;
 #if USE_CA_CERTIFICATE_EN
     mbedtls_x509_crt cacert;
+#endif
+#if USE_CLIENT_CERTIFICATE_EN
+    mbedtls_x509_crt client_cert;
+    mbedtls_pk_context client_pkey;
 #endif
 }MbedTLSSession;
  
