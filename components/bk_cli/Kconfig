@@ -8,6 +8,12 @@ menu "Bk_cli"
 			bool "Enable wifi test"
 			default n
 
+		config CLI_INIT_MODULE_INCLUDE_NAME
+			bool "Enable Cli Init Module Include Name"
+			default n
+			help
+				Enable Cli Init Module Include Name
+
 		config CLI_USER_CONFIG
 			depends on CLI
 			bool "Enable Cli User Config"

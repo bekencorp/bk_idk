@@ -64,20 +64,24 @@ CONFIG_BUILD_TFM=n
 CONFIG_OTA_UPDATE_PUBKEY=n
 #@ confirm update after ota download
 CONFIG_OTA_CONFIRM_UPDATE=y
-#@ Enable Cli
-CONFIG_CLI=y
+#@ CLI support is disabled for this secure BL2 build to reduce attack surface.
+CONFIG_CLI=n
 
+# Core bootloader and PSA crypto settings
 CONFIG_BL2=y
 CONFIG_PSA_EMBEDTLS=y
 CONFIG_MBEDTLS_CERTIFICATE_BUNDLE=n
 
+# XIP layout options
 CONFIG_XIP_NO_VERSION=y
 
+# Customer initialization hooks and feature toggles
 CONFIG_CUSTOMER_INIT_CALI=y
 CONFIG_CUSTOMER_INIT_BLE=y
 CONFIG_EASY_FLASH=n
 CONFIG_OTA_TEST=y
 
+# Platform runtime subsystems
 CONFIG_CACHE_ENABLE=y
 CONFIG_DBUS_CHECK_CRC=y
 CONFIG_BL2_WDT=y

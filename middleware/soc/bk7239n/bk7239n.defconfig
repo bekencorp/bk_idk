@@ -730,12 +730,6 @@ CONFIG_MBEDTLS_ACCELERATOR=n
 # end of Mbedtls
 
 #
-# MICROPYTHON CONFIG
-#
-# CONFIG_MICROPYTHON is not set
-# end of MICROPYTHON CONFIG
-
-#
 # Media
 #
 # CONFIG_MEDIA_MAJOR is not set
