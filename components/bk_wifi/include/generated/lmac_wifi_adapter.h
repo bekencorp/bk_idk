@@ -392,6 +392,7 @@ typedef struct {
 	bool _improve_he_tb_enable;
 	uint8_t _wifi_mac_short_retry;
 	uint8_t _wifi_mac_long_retry;
+	bool _ble_polar_enable;
 } wifi_os_variable_t;
 extern wifi_os_variable_t g_wifi_os_variable;
 
