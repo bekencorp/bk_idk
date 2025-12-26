@@ -603,6 +603,8 @@ __attribute__((section(".itcm_sec_code"))) void sys_hal_enter_deep_sleep(void *p
 
 	sys_ll_set_cpu_power_sleep_wakeup_cpu0_subpwdm_en(1);
 
+	aon_pmu_ll_set_r0_fast_boot(1); // set fast boot flag to 1
+	
 #if CONFIG_AON_PMU_REG0_REFACTOR_DEV
 	aon_pmu_hal_r0_latch_to_r7b();
 #endif
@@ -1542,7 +1544,6 @@ void sys_hal_low_power_hardware_init()
 
 	/*set memery bypass*/
 	aon_pmu_ll_set_r0_memchk_bps(1);
-	aon_pmu_ll_set_r0_fast_boot(1);
 
 	/*set wakeup source*/
 	sys_hal_wakeup_source_init();
