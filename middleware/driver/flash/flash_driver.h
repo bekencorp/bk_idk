@@ -32,6 +32,7 @@
 #define FLASH_STATUS_REG_PROTECT_OFFSET  8
 #define FLASH_CMP_MASK                   0x1
 #define FLASH_BUFFER_LEN                 8
+#define FLASH_BYTE_SEL_RD_DEFAULT_VAL    (FLASH_BUFFER_LEN - 1)
 #define FLASH_BYTES_CNT                  32
 #define FLASH_ADDRESS_MASK               0x1f
 #define FLASH_ERASE_SECTOR_MASK          0xFFF000

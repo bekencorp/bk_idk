@@ -67,9 +67,9 @@ __DRAM_SEC static const flash_config_t flash_config[] = {
     {0x0B4015,   FLASH_SIZE_2M,   2,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x101,                9,            1,           0xA0,                         }, //xtx_25f16b
     {0x0B4016,   FLASH_SIZE_4M,   2,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x101,                9,            1,           0xA0,                         }, //xtx_25f32b
     {0x0B4017,   FLASH_SIZE_8M,   2,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x05,        0x00,         0x109,                9,            1,           0xA0,                         }, //xtx_25f64b
-    {0x0B6017,   FLASH_SIZE_8M,   2,             FLASH_LINE_MODE_FOUR,   0,           2,            0x0F,         0x0F,        0x00,         0x00E,                9,            1,           0xA0,                         }, //xt_25q64d
-    {0x0B6018,   FLASH_SIZE_16M,  2,             FLASH_LINE_MODE_FOUR,   0,           2,            0x0F,         0x0F,        0x00,         0x00E,                9,            1,           0xA0,                         }, //xt_25q128d
-    {0x0B4018,   FLASH_SIZE_16M,  2,             FLASH_LINE_MODE_FOUR,   0,           2,            0x0F,         0x0F,        0x00,         0x00E,                9,            1,           0xA0,                         }, //xt_25F128F-W
+    {0x0B6017,   FLASH_SIZE_8M,   2,             FLASH_LINE_MODE_FOUR,   0,        2,            0x0F,         0x0F,        0x00,         0x00E,                9,            1,           0xA0,                         }, //xt_25q64d
+    {0x0B6018,   FLASH_SIZE_16M,  2,             FLASH_LINE_MODE_FOUR,   0,        2,            0x0F,         0x0F,        0x00,         0x00E,                9,            1,           0xA0,                         }, //xt_25q128d
+    {0x0B4018,   FLASH_SIZE_16M,  2,             FLASH_LINE_MODE_FOUR,   0,        2,            0x0F,         0x0F,        0x00,         0x00E,                9,            1,           0xA0,                         }, //xt_25F128F-W
     {0x0E4016,   FLASH_SIZE_4M,   2,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x101,                9,            1,           0xA0,                         }, //xtx_FT25H32
     {0x1C4116,   FLASH_SIZE_4M,   1,             FLASH_LINE_MODE_FOUR,   0,        2,            0x1F,         0x1F,        0x00,         0x00E,                9,            1,           0xA0,                         }, //en_25qe32a(not support 4 line)
     {0x5E5018,   FLASH_SIZE_16M,  1,             FLASH_LINE_MODE_FOUR,   0,        2,            0x0F,         0x0F,        0x00,         0x00E,                9,            1,           0xA0,                         }, //zb_25lq128c
@@ -80,11 +80,11 @@ __DRAM_SEC static const flash_config_t flash_config[] = {
     {0xC86515,   FLASH_SIZE_2M,   2,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x101,                9,            1,           0xA0,                         }, //gd_25w16e
     {0xC86516,   FLASH_SIZE_4M,   2,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x00E,                9,            1,           0xA0,                         }, //gd_25wq32e
     {0xEF4016,   FLASH_SIZE_4M,   2,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x101,                9,            1,           0xA0,                         }, //w_25q32(bfj)
-    {0x204118,     FLASH_SIZE_16M,  2,             FLASH_LINE_MODE_FOUR,   0,           2,            0x0F,         0x0F,        0x00,         0x00E,                9,            1,           0xA0,                         }, //xm_25qu128c
+    {0x204118,   FLASH_SIZE_16M,  2,             FLASH_LINE_MODE_FOUR,   0,        2,            0x0F,         0x0F,        0x00,         0x00E,                9,            1,           0xA0,                         }, //xm_25qu128c
     {0x204016,   FLASH_SIZE_4M,   2,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x101,                9,            1,           0xA0,                         }, //xmc_25qh32b
     {0xC22315,   FLASH_SIZE_2M,   1,             FLASH_LINE_MODE_FOUR,   0,        2,            0x0F,         0x0F,        0x00,         0x00E,                6,            1,           0xA5,                         }, //mx_25v16b
     {0xEB6015,   FLASH_SIZE_2M,   2,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x101,                9,            1,           0xA0,                         }, //zg_th25q16b
-    {0xC86517,     FLASH_SIZE_8M,   2,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x00E,                9,            1,           0xA0,                         }, //gd_25Q32E
+    {0xC86517,   FLASH_SIZE_8M,   2,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x00E,                9,            1,           0xA0,                         }, //gd_25Q32E
     {0xCD6016,   FLASH_SIZE_4M,   2,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x00E,                9,            1,           0xA0,                         }, //th_25q32ub
     {0xCD6017,   FLASH_SIZE_8M,   3,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x00E,                9,            1,           0xA0,                         }, //th_25q64ha
     {0x000000,   FLASH_SIZE_4M,   2,             FLASH_LINE_MODE_TWO,    0,        2,            0x1F,         0x00,        0x00,         0x000,                0,            0,           0x00,                         }, //default
@@ -120,7 +120,7 @@ void flash_lock(void)
         return;
     }
 
-	/*disable scheduler for special device, contact with zili.guo/ling.zhou*/
+    /*disable scheduler for special device, contact with zili.guo/ling.zhou*/
     vTaskSuspendAll();
 
     mb_flash_op_prepare();
@@ -328,8 +328,8 @@ static void flash_read_common(uint8_t *buffer, uint32_t address, uint32_t len)
     while (len) {
         uint32_t int_level;
 
-		/*disable interrupt for special device, contact with zili.guo/ling.zhou*/
-		int_level = flash_enter_critical();
+        /*disable interrupt for special device, contact with zili.guo/ling.zhou*/
+        int_level = flash_enter_critical();
         flash_hal_set_op_cmd_read(&s_flash.hal, addr);
         addr += FLASH_BYTES_CNT;
         for (uint32_t i = 0; i < FLASH_BUFFER_LEN; i++) {
@@ -361,8 +361,8 @@ static void flash_read_word_common(uint32_t *buffer, uint32_t address, uint32_t 
     while (len) {
         uint32_t int_level;
 
-		/*disable interrupt for special device, contact with zili.guo/ling.zhou*/
-		int_level = flash_enter_critical();
+        /*disable interrupt for special device, contact with zili.guo/ling.zhou*/
+        int_level = flash_enter_critical();
         flash_hal_set_op_cmd_read(&s_flash.hal, addr);
         addr += FLASH_BYTES_CNT;
         for (uint32_t i = 0; i < FLASH_BUFFER_LEN; i++) {
@@ -499,25 +499,41 @@ bk_err_t bk_flash_set_line_mode(flash_line_mode_t line_mode)
 
 bk_err_t flash_clear_rd_residual_data(flash_hal_t *hal)
 {
-	uint32_t tmp_val;
-	uint32_t residual_cnt, read_cnt;
+    uint32_t tmp_val;
+    uint32_t residual_cnt, read_cnt;
 
-	read_cnt = flash_hal_read_data_sw_flash_sel(hal);
-	if(read_cnt){
-		residual_cnt = FLASH_BUFFER_LEN - read_cnt;
-		while(residual_cnt){
-			tmp_val = flash_hal_read_data(hal);
-			residual_cnt --;
-		}
-	}
-	(void)tmp_val;
+    /*
+     * data_sw_flash_sel (bits[21:19]): Software-to-flash data selector.
+     * - Read-only field reporting the current data buffer segment being accessed.
+     * - 3-bit selector that picks a 32-bit chunk out of the 256-bit buffer.
+     * - Reset/default value: 0x7 (3'h7), held during reset and while IDLE.
+     * - Selector mapping:
+     *     0x0 → buf_sw_flash[31:0]  (most recent write)
+     *     0x1 → buf_sw_flash[63:32]
+     *     0x2 → buf_sw_flash[95:64]
+     *     ...
+     *     0x7 → buf_sw_flash[255:224] (oldest entry)
+     */
+    read_cnt = flash_hal_read_data_sw_flash_sel(hal);
+    residual_cnt = FLASH_BYTE_SEL_RD_DEFAULT_VAL - read_cnt;
 
-	return BK_OK;
+    if(FLASH_BYTE_SEL_RD_DEFAULT_VAL == read_cnt){
+        goto clear_out;
+    }
+    FLASH_LOGE("flash_clear_rd_residual_data: residual_cnt=%d\r\n", residual_cnt);
+
+    while(residual_cnt--){
+        tmp_val = flash_hal_read_data(hal);
+    }
+    (void)tmp_val;
+
+clear_out:
+    return BK_OK;
 }
 
 bk_err_t bk_flash_driver_init(void)
 {
-	flash_hal_t *hal_ptr;
+    flash_hal_t *hal_ptr;
 
     if (s_flash_is_init) {
         return BK_OK;
@@ -538,14 +554,14 @@ bk_err_t bk_flash_driver_init(void)
 
     os_memset(&s_flash, 0, sizeof(s_flash));
 
-	hal_ptr = &s_flash.hal;
-	flash_hal_init(hal_ptr);
+    hal_ptr = &s_flash.hal;
+    flash_hal_init(hal_ptr);
 
     flash_hal_disable_cpu_data_wr(hal_ptr);
     flash_set_line_mode(FLASH_LINE_MODE_TWO);
 
     s_flash.flash_id = flash_get_id();
-    FLASH_LOGI("id=0x%x\r\n", s_flash.flash_id);
+    FLASH_LOGI("ID=0x%X\r\n", s_flash.flash_id);
 
     flash_get_current_config();
 
@@ -618,11 +634,11 @@ bk_err_t bk_flash_driver_init(void)
     sys_drv_set_sys2flsh_2wire(1);
 #endif
 
-	/* If start flash read, and the 8-word data was not fully read out
-	 * from the flash fifo. and then a next flash read is initiated again
-	 * the data will no be read correctly for hw fifo pointer is wrong.
-	 */
-	flash_clear_rd_residual_data(hal_ptr);
+    /* If start flash read, and the 8-word data was not fully read out
+     * from the flash fifo. and then a next flash read is initiated again
+     * the data will no be read correctly for hw fifo pointer is wrong.
+     */
+    flash_clear_rd_residual_data(hal_ptr);
 
     s_flash_is_init = true;
 
@@ -756,7 +772,7 @@ static bk_err_t flash_write_no_lock(uint32_t address, const uint8_t *user_buf, u
         return BK_ERR_FLASH_ADDR_OUT_OF_RANGE;
     }
 
-    bk_err_t    ret_val = BK_FAIL;
+    bk_err_t ret_val = BK_FAIL;
 
     flash_line_mode_t old_line_mode = flash_set_line_mode(FLASH_LINE_MODE_TWO);
 
