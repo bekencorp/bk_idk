@@ -247,6 +247,10 @@ menu "Bk_Wifi"
 		bool "Enable network found event"
 		default n
 
+	config DTIM_EVENT_ENABLE
+		bool "Enable dtim event and wake event"
+		default n
+
 	config POWER_TABLE
 		bool "Enable POWER TABLE"
 		default n

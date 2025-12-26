@@ -180,6 +180,17 @@ int bk_feature_config_sleep_mode_enable(void);
 int bk_feature_get_auto_garp_period(void);
 
 /**
+ * @brief     Interface for customer to Enable/Disable dtim event
+ *
+ *
+ * @return
+ *    - 0: Disable dtim event
+ *    - 1: Enable dtim event
+ *
+ */
+int bk_feature_dtim_event_enable(void);
+
+/**
  * @brief     Interface for customer to Enable/Disable Station receiving BCMC frame in dtim10
  *
  *

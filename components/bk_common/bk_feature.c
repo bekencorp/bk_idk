@@ -103,6 +103,14 @@ int bk_feature_config_sleep_mode_enable(void) {
 #endif
 }
 
+int bk_feature_dtim_event_enable(void) {
+#if CONFIG_DTIM_EVENT_ENABLE
+	return 1;
+#else
+	return 0;
+#endif
+}
+
 
 int bk_feature_receive_bcmc_enable(void) {
 #if CONFIG_RECEIVE_BCMC_IN_DTIM10

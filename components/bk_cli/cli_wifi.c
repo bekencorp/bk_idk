@@ -1826,11 +1826,13 @@ int cli_wifi_event_cb(void *arg, event_module_t event_module,
 	}	break;
 #endif
 
+#if CONFIG_DTIM_EVENT_ENABLE
 	case EVENT_WIFI_DTIM_RECEIVED:
 		break;
 
 	case EVENT_WIFI_AWARE_WAKE_INTERVAL_START:
 		break;
+#endif
 
 	default:
 		CLI_LOGI("rx event <%d %d>\n", event_module, event_id);
