@@ -93,13 +93,6 @@ typedef struct
 
 #endif
 
-#if CONFIG_GPIO_RETENTION_SUPPORT
-#define GPIO_RETENTION_MAP_SIZE            (8)
-#define GPIO_NUM_MAX       (SOC_GPIO_NUM)
-#define GPIO_RETENTION_MAP                 {GPIO_24, GPIO_6, GPIO_NUM_MAX, GPIO_NUM_MAX, GPIO_NUM_MAX, GPIO_NUM_MAX, GPIO_NUM_MAX, GPIO_NUM_MAX}
-static uint32_t s_gpio_retention_map[GPIO_RETENTION_MAP_SIZE] = GPIO_RETENTION_MAP;
-#endif
-
 uint64_t low_voltage_exit_tick = 0;
 uint64_t low_voltage_sleep_duration_us = 0;
 uint64_t low_voltage_wakeup_time_us = 0;
@@ -1733,25 +1726,6 @@ static void sys_hal_wakeup_source_init(void)
 	#endif
 	sys_hal_set_ana_reg8_spi_latch1v(0);
 }
-#if CONFIG_GPIO_RETENTION_SUPPORT
-static void sys_hal_gpio_retention_reset(void)
-{
-	uint32_t bitmap = aon_pmu_ll_get_r7b_gpio_retention_bitmap();
-	if (bitmap != 0){
-		const size_t retention_map_size = sizeof(s_gpio_retention_map)/sizeof(s_gpio_retention_map[0]);
-		for (size_t i = 0; i < retention_map_size; i++) {
-			const gpio_id_t gpio_id = s_gpio_retention_map[i];
-			if (gpio_id >= GPIO_NUM_MAX) continue;
-			const bool is_high = (bitmap & BIT(i));
-			if (is_high) {
-				GPIO_UP(gpio_id);
-			} else {
-				GPIO_DOWN(gpio_id);
-			}
-		}
-	}
-}
-#endif
 
 void sys_hal_low_power_hardware_init()
 {
@@ -1769,6 +1743,7 @@ void sys_hal_low_power_hardware_init()
 
 	/*set GPIO retetnion function continue*/
 #if CONFIG_GPIO_RETENTION_SUPPORT
+	extern void sys_hal_gpio_retention_reset(void);
 	sys_hal_gpio_retention_reset();
 #endif
 

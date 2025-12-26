@@ -348,7 +348,7 @@ static void cli_gpio_int_isr(gpio_id_t id)
 static void cli_gpio_retention_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
 #if CONFIG_GPIO_RETENTION_SUPPORT
-	gpio_id_t gpio_id = GPIO_24;
+	gpio_id_t gpio_id = GPIO_6;
 	GPIO_UP(gpio_id);
 
 #if !CONFIG_GPIO_RETENTION_DISPOSABLE
@@ -363,6 +363,7 @@ static void cli_gpio_retention_test_cmd(char *pcWriteBuffer, int xWriteBufferLen
 	else
 #endif
 	{
+		gpio_id_t gpio_id = os_strtoul(argv[1], NULL, 10);
 		bk_gpio_retention_set(gpio_id, GPIO_OUTPUT_STATE_HIGH);
 	}
 #endif

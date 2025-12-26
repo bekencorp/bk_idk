@@ -19,7 +19,7 @@
 #include "gpio_adapter.h"
 #include "aon_pmu_hal.h"
 #include "gpio_hal.h"
-
+#include <string.h>
 
 #define GPIO_REG_DEFAULT_VALUE      0x0
 #define GPIO_RETURN_ON_INVALID_PERIAL_MODE(mode, mode_max) do {\
@@ -28,16 +28,16 @@
 				}\
 			} while(0)
 
+
 #if CONFIG_GPIO_RETENTION_SUPPORT
 #define GPIO_RETENTION_MAP_DUMP            (0)
 #define GPIO_RETENTION_MAP_SIZE            (8)
-#define GPIO_RETENTION_MAP                 {GPIO_24, GPIO_6, GPIO_NUM_MAX, GPIO_NUM_MAX, GPIO_NUM_MAX, GPIO_NUM_MAX, GPIO_NUM_MAX, GPIO_NUM_MAX}
 #define GPIO_RETENTION_EN_CHECK(id, i, f)  ((id < GPIO_NUM_MAX) && (s_gpio_retention_en_bitmap & BIT(i) || f))
-
-static uint32_t s_gpio_retention_map[GPIO_RETENTION_MAP_SIZE] = GPIO_RETENTION_MAP;
 static uint32_t s_gpio_retention_en_bitmap = 0;
+/* PM retention map is SoC-specific and used during low-power HW init */
+#define GPIO_RETENTION_PM_MAP                 {GPIO_24, GPIO_6, GPIO_NUM_MAX, GPIO_NUM_MAX, GPIO_NUM_MAX, GPIO_NUM_MAX, GPIO_NUM_MAX, GPIO_NUM_MAX}
+static uint32_t s_gpio_retention_pm_map[GPIO_RETENTION_MAP_SIZE] = GPIO_RETENTION_PM_MAP;
 #endif
-
 
 bk_err_t gpio_dev_map(gpio_id_t gpio_id, gpio_dev_t dev)
 {
@@ -205,7 +205,7 @@ bk_err_t bk_gpio_retention_set(gpio_id_t gpio_id, gpio_output_state_e gpio_outpu
 #endif
 	for (uint32_t i = 0; i < GPIO_RETENTION_MAP_SIZE; i++)
 	{
-		gpio_id = s_gpio_retention_map[i];
+		gpio_id = s_gpio_retention_pm_map[i];
 		gpio_output_state = !!(bitmap & BIT(i));
 		if (GPIO_RETENTION_EN_CHECK(gpio_id, i, false))
 		{
@@ -238,7 +238,7 @@ bk_err_t bk_gpio_retention_clr(gpio_id_t gpio_id)
 	gpio_output_state_e gpio_output_state;
 	for (uint32_t i = 0; i < GPIO_RETENTION_MAP_SIZE; i++)
 	{
-		gpio_id = s_gpio_retention_map[i];
+		gpio_id = s_gpio_retention_pm_map[i];
 		gpio_output_state = !!(bitmap & BIT(i));
 		if (GPIO_RETENTION_EN_CHECK(gpio_id, i, false))
 		{
@@ -248,6 +248,48 @@ bk_err_t bk_gpio_retention_clr(gpio_id_t gpio_id)
 #endif
 
 	return ret;
+}
+
+void gpio_retention_pm_reset(void)
+{
+#if CONFIG_AON_PMU_REG0_REFACTOR_DEV
+	uint32_t bitmap = aon_pmu_hal_get_gpio_retention_bitmap(true);
+#else
+	uint32_t bitmap = aon_pmu_hal_gpio_retention_bitmap_get();
+#endif
+	if (bitmap != 0) {
+		const size_t retention_map_size = sizeof(s_gpio_retention_pm_map) / sizeof(s_gpio_retention_pm_map[0]);
+		for (size_t i = 0; i < retention_map_size; i++) {
+			const gpio_id_t gpio_id = s_gpio_retention_pm_map[i];
+			if (gpio_id >= GPIO_NUM_MAX) {
+				continue;
+			}
+			const bool is_high = (bitmap & BIT(i));
+			if (is_high) {
+				GPIO_UP(gpio_id);
+			} else {
+				GPIO_DOWN(gpio_id);
+			}
+		}
+	}
+}
+
+void sys_hal_gpio_retention_reset(void)
+{
+	uint32_t bitmap = aon_pmu_ll_get_r7b_gpio_retention_bitmap();
+	if (bitmap != 0){
+		const size_t retention_map_size = sizeof(s_gpio_retention_pm_map)/sizeof(s_gpio_retention_pm_map[0]);
+		for (size_t i = 0; i < retention_map_size; i++) {
+			const gpio_id_t gpio_id = s_gpio_retention_pm_map[i];
+			if (gpio_id >= GPIO_NUM_MAX) continue;
+			const bool is_high = (bitmap & BIT(i));
+			if (is_high) {
+				GPIO_UP(gpio_id);
+			} else {
+				GPIO_DOWN(gpio_id);
+			}
+		}
+	}
 }
 
 bk_err_t gpio_retention_map_set(gpio_id_t id, gpio_output_state_e gpio_output_state)
@@ -262,7 +304,7 @@ bk_err_t gpio_retention_map_set(gpio_id_t id, gpio_output_state_e gpio_output_st
 
 	for (uint32_t i = 0; i < GPIO_RETENTION_MAP_SIZE; i++)
 	{
-		gpio_id = s_gpio_retention_map[i];
+		gpio_id = s_gpio_retention_pm_map[i];
 		if (id == gpio_id && gpio_id < GPIO_NUM_MAX)
 		{
 			s_gpio_retention_en_bitmap |= BIT(i);
@@ -296,7 +338,7 @@ bk_err_t gpio_retention_map_clr(gpio_id_t id)
 
 	for (uint32_t i = 0; i < GPIO_RETENTION_MAP_SIZE; i++)
 	{
-		gpio_id = s_gpio_retention_map[i];
+		gpio_id = s_gpio_retention_pm_map[i];
 		if (id == gpio_id && gpio_id < GPIO_NUM_MAX)
 		{
 			s_gpio_retention_en_bitmap &= ~BIT(i);
@@ -321,7 +363,7 @@ uint64_t gpio_retention_map_get(void)
 
 	for (uint32_t i = 0; i < GPIO_RETENTION_MAP_SIZE; i++)
 	{
-		gpio_id = s_gpio_retention_map[i];
+		gpio_id = s_gpio_retention_pm_map[i];
 		if (GPIO_RETENTION_EN_CHECK(gpio_id, i, false))
 		{
 			gpio_bitmap |= BIT64(gpio_id);
@@ -342,7 +384,7 @@ void gpio_retention_sync(bool force_flag)
 
 	for (uint32_t i = 0; i < GPIO_RETENTION_MAP_SIZE; i++)
 	{
-		gpio_id = s_gpio_retention_map[i];
+		gpio_id = s_gpio_retention_pm_map[i];
 		if (GPIO_IS_SECURE(gpio_id))
 		{
 			continue;
