@@ -163,6 +163,7 @@ def extract_jira_info(log_lines: List[str], repo_path: str) -> List[Tuple[str, s
         List of (module_name, jira_info) tuples
     """
     jira_infos = []
+    seen_jira_ids = set()  # 在同一批 log_lines 中去重，避免同一个 commit 内的重复
     
     # 从 repo_path 提取模块名（作为默认模块名）
     # 例如: properties/modules/wifi/ip_ax -> wifi
@@ -194,6 +195,7 @@ def extract_jira_info(log_lines: List[str], repo_path: str) -> List[Tuple[str, s
         subject = parts_line[1] if len(parts_line) > 1 else ''
         body = parts_line[2] if len(parts_line) > 2 else ''
         
+        # 清理内容，移除可能的引号后缀（如 " into bk_idk_release_2.2.1）
         # 在 subject 和 body 中查找 [Jira ...] 格式的信息
         search_text = subject + '\n' + body
         
@@ -207,21 +209,34 @@ def extract_jira_info(log_lines: List[str], repo_path: str) -> List[Tuple[str, s
             jira_id = match.group(1).strip()
             content = match.group(2).strip()
             
+            # 清理内容，移除可能的引号和后续文本（如 " into bk_idk_release_2.2.1）
+            # 移除末尾的引号和 " into ..." 这样的文本
+            content = re.sub(r'["\']\s*into\s+[^"\']+["\']?\s*$', '', content, flags=re.IGNORECASE)
+            content = content.strip().rstrip('"').rstrip("'").strip()
+            
+            # 规范化空格（多个空格变成一个）
+            content = re.sub(r'\s+', ' ', content)
+            
             # 如果内容中包含 <module> 标签，提取模块名
             # 例如: <platform> <fix> modify persist file
             module_match = re.match(r'<([^>]+)>\s*(.+)', content)
             if module_match:
                 actual_module = module_match.group(1).strip()
                 actual_content = module_match.group(2).strip()
-                # 使用实际的模块名
-                jira_info = f"[{jira_id}]: <{actual_module}> {actual_content}"
+                # 使用实际的模块名进行分类，但不在 jira_info 中显示模块名
+                # 移除模块名，只保留类型标签和描述
+                jira_info = f"[{jira_id}]:  {actual_content}"
                 final_module = actual_module
             else:
                 # 没有模块标签，使用默认模块名
                 jira_info = f"[{jira_id}]: {content}"
                 final_module = default_module_name
             
-            jira_infos.append((final_module, jira_info))
+            # 使用 (module, jira_id) 作为去重键，确保同一个模块的同一个 Jira ID 只保留第一个
+            dedup_key = (final_module, jira_id)
+            if dedup_key not in seen_jira_ids:
+                jira_infos.append((final_module, jira_info))
+                seen_jira_ids.add(dedup_key)
     
     return jira_infos
 
@@ -380,6 +395,7 @@ def generate_release_notes(tag: str, output_file: str = 'release_notes.md'):
     # 4. 遍历每个 repo，提取 changelog
     print("\n4. Extracting changelog from git repos...")
     changelog_data = defaultdict(set)  # {module_name: set of jira_infos}
+    jira_id_seen = defaultdict(set)  # {module_name: set of jira_ids} 用于去重
     
     current_dir = os.getcwd()
     processed_count = 0
@@ -401,13 +417,20 @@ def generate_release_notes(tag: str, output_file: str = 'release_notes.md'):
         jira_infos = extract_jira_info(log_lines, repo_path)
         
         for module_name, jira_info in jira_infos:
-            changelog_data[module_name].add(jira_info)
-            processed_count += 1
+            # 提取 Jira ID 用于去重
+            jira_match = re.search(r'\[([^\]]+)\]', jira_info)
+            if jira_match:
+                jira_id = jira_match.group(1)
+                # 如果该 Jira ID 在该模块中还没有出现过，则添加
+                if jira_id not in jira_id_seen[module_name]:
+                    changelog_data[module_name].add(jira_info)
+                    jira_id_seen[module_name].add(jira_id)
+                    processed_count += 1
         
         if jira_infos:
             print(f"      Found {len(jira_infos)} Jira entries")
     
-    print(f"\n   Total processed entries: {processed_count}")
+    print(f"\n   Total processed entries (after deduplication): {processed_count}")
     print(f"   Total modules: {len(changelog_data)}")
     
     # 5. 更新 release notes
