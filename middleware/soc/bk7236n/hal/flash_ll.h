@@ -117,14 +117,6 @@ static inline void flash_ll_write_status_reg(flash_hw_t *hw, uint8_t sr_width, u
 			flash_ll_init_wrsr_cmd(hw, CMD_WRSR_S8_S15);
 			// hw->op_ctrl.wp_value = 1;    //  ???
 			flash_ll_set_op_cmd(hw, FLASH_OP_CMD_WRSR);
-
-			#if 0
-			while (flash_ll_is_busy(hw));
-			hw->config.wrsr_data = (sr_data >> LEN_WRSR_S8_S15);
-			flash_ll_init_wrsr_cmd(hw, CMD_WRSR_S16_S24);
-			flash_ll_set_op_cmd(hw, FLASH_OP_CMD_WRSR);
-			#endif
-
 			while (flash_ll_is_busy(hw));
 
 			// flash_ll_deinit_wrsr_cmd(hw);
@@ -250,10 +242,6 @@ static inline void flash_ll_write_data(flash_hw_t *hw, uint32_t data)
 static inline void flash_ll_set_clk(flash_hw_t *hw, uint8_t clk_cfg)
 {
 	hw->config.clk_cfg = clk_cfg;
-
-#if CONFIG_JTAG
-	hw->config.crc_en = 0;
-#endif
 }
 
 static inline void flash_ll_set_default_clk(flash_hw_t *hw)

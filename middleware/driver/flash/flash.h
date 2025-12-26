@@ -1,19 +1,26 @@
-#ifndef _FLASH_H_
-#define _FLASH_H_
+// Copyright 2020-2026 Beken
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#pragma once
 
 #include <common/bk_include.h>
-#if CONFIG_SOC_BK7256XX
-#include <soc/soc.h>
-#endif
 
 #define MODE_STD              0
 #define MODE_DUAL             1
 #define MODE_QUAD             2
-#if CONFIG_SOC_BK7256XX
-#define FLASH_BASE                           SOC_FLASH_REG_BASE//(0x44030000)
-#else
+
 #define FLASH_BASE                           (0x00803000)
-#endif
 #define REG_FLASH_OPERATE_SW                 (FLASH_BASE + 0 * 4)
 #define ADDR_SW_REG_POSI                     (0)
 #define ADDR_SW_REG_MASK                     (0x00FFFFFF)
@@ -106,6 +113,5 @@ typedef struct {
 UINT32 flash_read(char *user_buf, UINT32 count, UINT32 address);
 UINT32 flash_write(char *user_buf, UINT32 count, UINT32 address);
 UINT32 flash_ctrl(UINT32 cmd, void *parm);
-#endif //_FLASH_H_
 // eof
 

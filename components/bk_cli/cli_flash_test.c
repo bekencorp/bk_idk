@@ -12,7 +12,12 @@
 #include <driver/aon_rtc.h>
 #include <common/bk_assert.h>
 
+#if CONFIG_FLASH_RACE_TEST
+#include "flash_thread_safety_test.h"
+#endif
+
 #define  TICK_PER_US    26
+
 beken_thread_t idle_read_flash_handle = NULL;
 beken_thread_t idle_read_psram_handle = NULL;
 
@@ -122,121 +127,6 @@ static bk_err_t test_flash_read_time(volatile uint32_t start_addr, uint32_t len)
 	return kNoErr;
 }
 
-#if (CONFIG_SOC_BK7256XX)
-static bk_err_t test_flash_count_time(volatile uint32_t start_addr, uint32_t len, uint32_t test_times)
-{
-	uint32_t tmp;
-	u8 buf[256];
-	uint32_t addr = start_addr;
-	uint32_t length = len;
-	extern u64 riscv_get_mtimer(void);
-	uint64_t start_tick, end_tick, tick_cnt = 0;
-	uint32_t print_cnt = 100;
-	uint32_t int_level = 0;
-
-	bk_wdt_stop();
-#if (CONFIG_TASK_WDT)
-	bk_task_wdt_stop();
-#endif
-
-	tmp = addr + length;
-	bk_flash_set_protect_type(FLASH_PROTECT_NONE);
-
-	BK_DUMP_OUT("----- FLASH COUNT TIME TEST BEGIN -----\r\n");
-	BK_DUMP_OUT("===============================\r\n");
-
-for(int i = 0; i <= test_times; i++) {
-
-	start_tick = riscv_get_mtimer();
-	for (addr = start_addr; addr < tmp; addr += 256) {
-		os_memset(buf, 0, 256);
-		bk_flash_read_bytes(addr, (uint8_t *)buf, 256);
-	}
-	end_tick = riscv_get_mtimer();
-	tick_cnt = end_tick - start_tick;
-	if(i % print_cnt == 0) {
-		int_level = rtos_enter_critical();
-		BK_DUMP_OUT("[read %d time] >>>>> cost tick time: %d us.\r\n", i, (uint32_t) (tick_cnt / TICK_PER_US));
-		rtos_exit_critical(int_level);
-	}
-
-	start_tick = riscv_get_mtimer();
-	for (addr = start_addr; addr < tmp; addr += 0x1000) {
-		bk_flash_erase_sector(addr);
-	}
-	end_tick = riscv_get_mtimer();
-	tick_cnt = end_tick - start_tick;
-	if(i % print_cnt == 0) {
-		int_level = rtos_enter_critical();
-		BK_DUMP_OUT("[erase %d time] >>>>> cost tick time: %d us.\r\n", i, (uint32_t) (tick_cnt / TICK_PER_US));
-		rtos_exit_critical(int_level);
-	}
-
-	//check erase data valid
-	if(i % print_cnt == 0) {
-		for (addr = start_addr; addr < tmp; addr += 256) {
-			os_memset(buf, 0, 256);
-			bk_flash_read_bytes(addr, (uint8_t *)buf, 256);
-			for (int j = 0; j < 256; j++) {
-				if(buf[j] != 0xff)
-					BK_DUMP_OUT("[erase %d time ERROR]: addr = 0x%x.\r\n", i, addr + j);
-			}
-		}
-	}
-
-	for (int j = 0; j < 256; j++)
-		buf[j] = j;
-	start_tick = riscv_get_mtimer();
-	for (addr = start_addr; addr < tmp; addr += 256) {
-		bk_flash_write_bytes(addr, (uint8_t *)buf, 256);
-	}
-	end_tick = riscv_get_mtimer();
-	tick_cnt = end_tick - start_tick;
-	if(i % print_cnt == 0) {
-		int_level = rtos_enter_critical();
-		BK_DUMP_OUT("[write %d time] >>>>> cost tick time: %d us.\r\n", i, (uint32_t) (tick_cnt / TICK_PER_US));
-		rtos_exit_critical(int_level);
-	}
-
-	//check write data valid
-	if(i % print_cnt == 0) {
-		for (addr = start_addr; addr < tmp; addr += 256) {
-			os_memset(buf, 0, 256);
-			bk_flash_read_bytes(addr, (uint8_t *)buf, 256);
-			for (int j = 0; j < 256; j++) {
-				if(buf[j] != j)
-					BK_DUMP_OUT("[write %d time ERROR]: addr = 0x%x.\r\n", i, addr);
-			}
-		}
-	}
-
-	start_tick = riscv_get_mtimer();
-	bk_flash_set_protect_type(FLASH_PROTECT_NONE);
-	end_tick = riscv_get_mtimer();
-	tick_cnt = end_tick - start_tick;
-	if(i % print_cnt == 0) {
-		int_level = rtos_enter_critical();
-		BK_DUMP_OUT("[enable security %d time] >>>>> cost tick time: %d us.\r\n", i, (uint32_t)(tick_cnt / TICK_PER_US));
-		BK_DUMP_OUT("===============================\r\n");
-		rtos_exit_critical(int_level);
-	}
-}
-
-	start_tick = riscv_get_mtimer();
-	bk_flash_set_protect_type(FLASH_PROTECT_NONE);
-	bk_flash_set_protect_type(FLASH_UNPROTECT_LAST_BLOCK);
-	end_tick = riscv_get_mtimer();
-	tick_cnt = end_tick - start_tick;
-	int_level = rtos_enter_critical();
-	BK_DUMP_OUT("[en/dis security 0 time] >>>>> cost tick time: %d us.\r\n", (uint32_t) ((tick_cnt / TICK_PER_US)));
-
-	BK_DUMP_OUT("----- FLASH COUNT TIME TEST END -----\r\n");
-	rtos_exit_critical(int_level);
-
-	bk_flash_set_protect_type(FLASH_UNPROTECT_LAST_BLOCK);
-	return kNoErr;
-}
-#else
 static bk_err_t test_flash_count_time(volatile uint32_t start_addr, uint32_t len, uint32_t test_times)
 {
 	uint32_t tmp;
@@ -339,7 +229,6 @@ static bk_err_t test_flash_count_time(volatile uint32_t start_addr, uint32_t len
 	bk_flash_set_protect_type(FLASH_UNPROTECT_LAST_BLOCK);
 	return kNoErr;
 }
-#endif
 
 static void test_idle_read_flash(void *arg) {
 	while (1) {
@@ -781,6 +670,10 @@ static const struct cli_command s_flash_commands[] = {
 	{"flash_test",   "flash_test <cmd(R/W/E/N)>", flash_command_test},
 #if CONFIG_FLASH_BYPASS_OTP_OPERATION
 	{"flash_bypass_test",   "flash_bypass_test otp R/W/E/L", flash_bypass_command_test},
+#endif
+
+#if CONFIG_FLASH_RACE_TEST
+{"flash_race_test", "Flash race test suite", cli_flash_race_test_cmd},
 #endif
 };
 

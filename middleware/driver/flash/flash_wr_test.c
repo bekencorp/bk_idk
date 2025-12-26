@@ -1,3 +1,17 @@
+// Copyright 2020-2026 Beken
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include <stdlib.h>
 #include "cli.h"
 #include "driver/flash.h"
@@ -116,122 +130,6 @@ static bk_err_t test_flash_read_time(volatile uint32_t start_addr, uint32_t len)
 	return kNoErr;
 }
 
-#if (CONFIG_SOC_BK7256XX)
-static bk_err_t test_flash_count_time(volatile uint32_t start_addr, uint32_t len, uint32_t test_times, uint32_t mode,uint32_t print_cnt){
-	uint32_t tmp;
-	u8 buf[256];
-	uint32_t addr = start_addr;
-	uint32_t length = len;
-	extern u64 riscv_get_mtimer(void);
-	uint64_t start_tick, end_tick, tick_cnt = 0;
-	uint32_t int_level = 0;
-
-#if CONFIG_WDT_EN
-	bk_wdt_stop();
-#endif
-
-#if (CONFIG_TASK_WDT)
-	bk_task_wdt_stop();
-#endif
-
-	tmp = addr + length;
-	bk_flash_set_protect_type(FLASH_PROTECT_NONE);
-
-	BK_DUMP_OUT("----- FLASH COUNT TIME TEST BEGIN -----\r\n");
-	BK_DUMP_OUT("===============================\r\n");
-
-for(int i = 0; i <= test_times; i++) {
-
-	start_tick = riscv_get_mtimer();
-	for (addr = start_addr; addr < tmp; addr += 256) {
-		os_memset(buf, 0, 256);
-		bk_flash_read_bytes(addr, (uint8_t *)buf, 256);
-	}
-	end_tick = riscv_get_mtimer();
-	tick_cnt = end_tick - start_tick;
-	if(i % print_cnt == 0) {
-		int_level = rtos_enter_critical();
-		BK_DUMP_OUT("[read %d time] >>>>> cost tick time: %d us.\r\n", i, (uint32_t) (tick_cnt / TICK_PER_US));
-		rtos_exit_critical(int_level);
-	}
-
-	start_tick = riscv_get_mtimer();
-	for (addr = start_addr; addr < tmp; addr += 0x1000) {
-		bk_flash_erase_sector(addr);
-	}
-	end_tick = riscv_get_mtimer();
-	tick_cnt = end_tick - start_tick;
-	if(i % print_cnt == 0) {
-		int_level = rtos_enter_critical();
-		BK_DUMP_OUT("[erase %d time] >>>>> cost tick time: %d us.\r\n", i, (uint32_t) (tick_cnt / TICK_PER_US));
-		rtos_exit_critical(int_level);
-	}
-
-	//check erase data valid
-	if(i % print_cnt == 0) {
-		for (addr = start_addr; addr < tmp; addr += 256) {
-			os_memset(buf, 0, 256);
-			bk_flash_read_bytes(addr, (uint8_t *)buf, 256);
-			for (int j = 0; j < 256; j++) {
-				if(buf[j] != 0xff)
-					BK_DUMP_OUT("[erase %d time ERROR]: addr = 0x%x.\r\n", i, addr + j);
-			}
-		}
-	}
-
-	for (int j = 0; j < 256; j++)
-		buf[j] = j;
-	start_tick = riscv_get_mtimer();
-	for (addr = start_addr; addr < tmp; addr += 256) {
-		bk_flash_write_bytes(addr, (uint8_t *)buf, 256);
-	}
-	end_tick = riscv_get_mtimer();
-	tick_cnt = end_tick - start_tick;
-	if(i % print_cnt == 0) {
-		int_level = rtos_enter_critical();
-		BK_DUMP_OUT("[write %d time] >>>>> cost tick time: %d us.\r\n", i, (uint32_t) (tick_cnt / TICK_PER_US));
-		rtos_exit_critical(int_level);
-	}
-
-	//check write data valid
-	if(i % print_cnt == 0) {
-		for (addr = start_addr; addr < tmp; addr += 256) {
-			os_memset(buf, 0, 256);
-			bk_flash_read_bytes(addr, (uint8_t *)buf, 256);
-			for (int j = 0; j < 256; j++) {
-				if(buf[j] != j)
-					BK_DUMP_OUT("[write %d time ERROR]: addr = 0x%x.\r\n", i, addr);
-			}
-		}
-	}
-
-	start_tick = riscv_get_mtimer();
-	bk_flash_set_protect_type(FLASH_PROTECT_NONE);
-	end_tick = riscv_get_mtimer();
-	tick_cnt = end_tick - start_tick;
-	if(i % print_cnt == 0) {
-		int_level = rtos_enter_critical();
-		BK_DUMP_OUT("[enable security %d time] >>>>> cost tick time: %d us.\r\n", i, (uint32_t)(tick_cnt / TICK_PER_US));
-		BK_DUMP_OUT("===============================\r\n");
-		rtos_exit_critical(int_level);
-	}
-}
-
-	start_tick = riscv_get_mtimer();
-	bk_flash_set_protect_type(FLASH_PROTECT_NONE);
-	bk_flash_set_protect_type(FLASH_UNPROTECT_LAST_BLOCK);
-	end_tick = riscv_get_mtimer();
-	tick_cnt = end_tick - start_tick;
-	int_level = rtos_enter_critical();
-	BK_DUMP_OUT("[en/dis security 0 time] >>>>> cost tick time: %d us.\r\n", (uint32_t) ((tick_cnt / TICK_PER_US)));
-
-	BK_DUMP_OUT("----- FLASH COUNT TIME TEST END -----\r\n");
-	rtos_exit_critical(int_level);
-
-	bk_flash_set_protect_type(FLASH_UNPROTECT_LAST_BLOCK);
-	return kNoErr;
-}
-#else
 static bk_err_t test_flash_count_time(volatile uint32_t start_addr, uint32_t len, uint32_t test_times, uint32_t mode,uint32_t print_cnt)
 {
 	uint32_t tmp;
@@ -363,7 +261,6 @@ static bk_err_t test_flash_count_time(volatile uint32_t start_addr, uint32_t len
 	bk_flash_set_protect_type(FLASH_UNPROTECT_LAST_BLOCK);
 	return kNoErr;
 }
-#endif
 
 static void test_idle_read_flash(void *arg) {
 	while (1) {
@@ -483,51 +380,6 @@ static void flash_command_test(char *pcWriteBuffer, int xWriteBufferLen, int arg
 
 		return;
 	}
-
-//used for set flash status in itcm, not used now
-#if 0
-	if (os_strcmp(argv[1], "qe") == 0) {
-		uint32_t param = 0;
-		uint32_t quad_enable = os_strtoul(argv[2], NULL, 10);
-		uint32_t delay_cycle1 = os_strtoul(argv[3], NULL, 10);
-		uint32_t delay_cycle2 = os_strtoul(argv[4], NULL, 10);
-
-		for(int i = 0; i< 20; i++) {
-			bk_flash_set_line_mode(2);
-			flash_bypass_quad_test(quad_enable, delay_cycle1, delay_cycle2);
-			while (REG_READ(REG_FLASH_OPERATE_SW) & BUSY_SW);
-			param = bk_flash_read_status_reg();
-			if (quad_enable) {
-				if(param & 0x200){
-					break;
-				} else {
-					BK_DUMP_OUT("retry quad test, i = %d, flash status: 0x%x.\n", i, param);
-				}
-			} else {
-				if(param & 0x200){
-					BK_DUMP_OUT("retry quad test, i = %d, flash status: 0x%x.\n", i, param);
-				} else {
-					break;
-				}
-			}
-		}
-
-		if (quad_enable) {
-			if(param & 0x200){
-				BK_DUMP_OUT("flash quad enable success, flash status: 0x%x.\n", param);
-			} else {
-				BK_DUMP_OUT("flash quad enable fail, flash status: 0x%x.\n", param);
-			}
-		} else {
-			if(param & 0x200){
-				BK_DUMP_OUT("flash quad disable fail, flash status: 0x%x.\n", param);
-			} else {
-				BK_DUMP_OUT("flash quad disable success, flash status: 0x%x.\n", param);
-			}
-		}
-		return;
-	}
-#endif
 #endif
 	if (os_strcmp(argv[1], "idle_read_start") == 0) {
 		uint32_t task_prio = os_strtoul(argv[2], NULL, 10);

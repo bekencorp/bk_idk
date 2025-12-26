@@ -448,16 +448,6 @@ static void flash_svr_connect_handler(u32 handle, u8 connect_id)
 	{
 		flash_cmd_handler(handle, connect_id);
 	}
-	#if 0
-	else if(cmd_id == MB_IPC_DISCONNECT_CMD)
-	{
-		TRACE_I(TAG, "disconnect 0x%x, %x-%x.\r\n", handle, src, dst);
-	}
-	else if(cmd_id == MB_IPC_CONNECT_CMD)
-	{
-		TRACE_I(TAG, "connect 0x%x, %x-%x.\r\n", handle, src, dst);
-	}
-	#endif
 	else  /* any other commands. */
 	{
 		TRACE_I(TAG, "cmd=%d, 0x%x, %x-%x.\r\n", cmd_id, handle, src, dst);

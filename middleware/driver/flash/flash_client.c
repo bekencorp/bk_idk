@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Beken
+// Copyright 2020-2026 Beken
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -412,8 +412,7 @@ bk_err_t bk_flash_read_bytes(uint32_t address, uint8_t *user_buf, uint32_t size)
 	while(size > FLASH_IPC_READ_SIZE)
 	{
 		ret_val = flash_read_bytes(address + rd_len, user_buf + rd_len, FLASH_IPC_READ_SIZE);
-
-		if(ret_val != BK_OK)
+		if(BK_OK != ret_val)
 			return ret_val;
 
 		rd_len += FLASH_IPC_READ_SIZE;
@@ -481,20 +480,9 @@ static bk_err_t flash_write_bytes(uint32_t address, const uint8_t *user_buf, uin
 		goto write_exit;
 	}
 
-	#if 0
-	if(cmd_buff.len != size)
-	{
-		line_num = __LINE__;
-		ret = cmd_buff.len;
-
-		goto write_exit;
-	}
-	#endif
-
 	ret_val = BK_OK;
 
 write_exit:
-
 	rtos_unlock_mutex(&flash_mutex);
 
 #if LOCAL_TRACE

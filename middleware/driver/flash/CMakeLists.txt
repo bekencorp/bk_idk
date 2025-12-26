@@ -40,6 +40,10 @@ if (CONFIG_FLASH)
 		)
 	endif()
 
+	if (CONFIG_FLASH_RACE_TEST)
+		list(APPEND srcs flash/flash_thread_safety_test.c)
+	endif()
+
 	set(incs ${incs} PARENT_SCOPE)
 	set(srcs ${srcs} PARENT_SCOPE)
 endif()

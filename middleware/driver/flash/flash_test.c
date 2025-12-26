@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Beken
+// Copyright 2020-2026 Beken
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,10 @@
 
 #if CONFIG_TFM_FLASH_NSC
 #include "tfm_flash_nsc.h"
+#endif
+
+#if CONFIG_FLASH_RACE_TEST
+#include "flash_thread_safety_test.h"
 #endif
 
 static void cli_flash_help(void)
@@ -415,6 +419,9 @@ DRV_CLI_CMD_EXPORT static const struct cli_command s_flash_commands[] = {
 	{"flash_partition", "flash_partition {show}", cli_flash_partition_cmd},
 #endif
 	{"flash_erase_test", "cli_flash_erase_test with ble connecting", cli_flash_erase_test_with_ble},
+#if CONFIG_FLASH_RACE_TEST
+	{"flash_race_test", "Flash race test suite", cli_flash_race_test_cmd},
+#endif
 };
 
 int bk_flash_register_cli_test_feature(void)

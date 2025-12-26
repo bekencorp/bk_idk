@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Beken
+// Copyright 2020-2026 Beken
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -68,7 +68,6 @@ static volatile uint32_t flash_erase_ipc_state = IPC_FLASH_OP_COMPLETE;
 extern int mb_ipc_cpu_is_power_off(u32 cpu_id);
 
 #if 1  // new design of flash operation notification.
-
 static bk_err_t send_flash_op_state(uint8_t state)
 {
 	uint64_t us_start = 0;

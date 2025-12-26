@@ -60,7 +60,6 @@ CONFIG_TOOLCHAIN_PATH="/opt/gcc-arm-none-eabi-10.3-2021.10/bin"
 # CONFIG_ASSERT_HALT is not set
 #@ Assert reboots the system
 CONFIG_ASSERT_REBOOT=y
-# CONFIG_JTAG is not set
 # end of Debug
 # end of Common Configuration
 

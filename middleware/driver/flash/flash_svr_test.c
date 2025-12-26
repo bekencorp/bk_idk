@@ -60,14 +60,11 @@ void flash_svr_test_task(void * param)
 			
 			test_addr = flash_start_addr + j * 0x1000;
 
-			//bk_printf("test-addr = 0x%x!\r\n", test_addr);
-
 			ret_val = bk_flash_erase_sector(test_addr);
-
 			if(ret_val != 0)
 			{
 				bk_printf("erase failed, addr=0x%x!\r\n", test_addr);
-				continue;;
+				continue;
 			}
 			
 			ret_val = bk_flash_read_bytes(test_addr, test_buff, sizeof(test_buff));
@@ -75,7 +72,7 @@ void flash_svr_test_task(void * param)
 			if(ret_val != 0)
 			{
 				bk_printf("read failed, addr=0x%x!\r\n", test_addr);
-				continue;;
+				continue;
 			}
 
 			for(k = 0; k < sizeof(test_buff); k++)
@@ -90,13 +87,13 @@ void flash_svr_test_task(void * param)
 			}
 
 			if(k < sizeof(test_buff))
-				continue;;
+				continue;
 			
 			ret_val = bk_flash_write_bytes(test_addr, test_buff, sizeof(test_buff));
 			if(ret_val != 0)
 			{
 				bk_printf("write failed, addr=0x%x!\r\n", test_addr);
-				continue;;
+				continue;
 			}
 
 			memset(test_buff, 0, sizeof(test_buff));
@@ -106,7 +103,7 @@ void flash_svr_test_task(void * param)
 			if(ret_val != 0)
 			{
 				bk_printf("read2 failed, addr=0x%x!\r\n", test_addr);
-				continue;;
+				continue;
 			}
 
 			for(k = 0; k < sizeof(test_buff); k++)
