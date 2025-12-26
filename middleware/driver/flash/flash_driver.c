@@ -637,8 +637,8 @@ bk_err_t bk_flash_driver_init(void)
     /* If start flash read, and the 8-word data was not fully read out
      * from the flash fifo. and then a next flash read is initiated again
      * the data will no be read correctly for hw fifo pointer is wrong.
+     * flash_clear_rd_residual_data(hal_ptr);
      */
-    flash_clear_rd_residual_data(hal_ptr);
 
     s_flash_is_init = true;
 

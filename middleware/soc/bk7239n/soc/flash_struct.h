@@ -77,8 +77,8 @@ typedef volatile struct {
 		struct {
 			uint32_t status_reg:  8; /**< bit[0:7] state register data from flash */
 			uint32_t crc_err_num: 8; /**< bit[8:15] CRC error number */
+			uint32_t byte_sel_wr: 3; /**< bit[16:18] No. byte software write to flash */
 			uint32_t byte_sel_rd: 3; /**< bit[16:18] No. byte software write to flash */
-			uint32_t byte_sel_wr: 3; /**< bit[19:21] No. byte software read from flash */
 			uint32_t m_value:     8; /**< bit[22:29] Quad M value */
 			uint32_t pw_write:    1; /**< bit[30] page write enable */
 			uint32_t otp_sel:     1; /**< bit[31] 0 - use GD type  1: use MAX type */
