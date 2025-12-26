@@ -1541,7 +1541,7 @@ int sys_hal_set_lpo_src(sys_lpo_src_t src)
 void sys_hal_enter_low_analog(void)
 {
 	sys_ana_ll_set_ana_reg8_spi_latch1v(1);
-	sys_ana_ll_set_ana_reg7_vanaldosel((s_pm_config.btpll_vanaldosel == 0xff) ? 7 : s_pm_config.btpll_vanaldosel);
+	sys_ana_ll_set_ana_reg7_vanaldosel((s_pm_config.btpll_vanaldosel == 0xff) ? 0xa : s_pm_config.btpll_vanaldosel);//0xf ok,0xa beacon loss 0% ok,0x9 beacon loss 1%,0x8 nok,0x7 nok
 	sys_ana_ll_set_ana_reg8_spi_latch1v(0);
 
 	sys_ana_ll_set_ana_reg3_hpssren((s_pm_config.btpll_hpssren == 0xff) ? 0 : s_pm_config.btpll_hpssren);
