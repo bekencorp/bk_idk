@@ -37,9 +37,6 @@
 #include "bk_wifi_prop_private.h"
 #include "pbuf.h"
 #include "bk_feature.h"
-#if CONFIG_EASY_FLASH_FAST_CONNECT
-#include "bk_ef.h"
-#endif
 
 #ifdef CONFIG_SME
 extern int sa_station_send_associate_cmd(ASSOC_PARAM_T *assoc_param);
@@ -666,14 +663,9 @@ int wpa_get_scan_rst(struct prism2_hostapd_param *param, int len)
 			g_sta_param_ptr->fast_connect_set = 0;
 			struct wlan_fast_connect_info fci;
 			os_memset(&fci, 0, sizeof(fci));
-#if CONFIG_EASY_FLASH_FAST_CONNECT
-			bk_get_env_enhance("fast_connect_id", (void *)&fci, sizeof(struct wlan_fast_connect_info));
-#endif
-
+			wlan_read_fast_connect_info(&fci);
 			fci.channel = 0;
-#if CONFIG_EASY_FLASH_FAST_CONNECT
-			bk_set_env_enhance("fast_connect_id", (void *)&fci, sizeof(struct wlan_fast_connect_info));
-#endif
+			wlan_write_fast_connect_info(&fci);
 		}
 
 		/* Don't fail get scan result, but allow empty scan result */

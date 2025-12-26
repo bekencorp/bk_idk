@@ -61,9 +61,6 @@
 #include "wpa_psk_cache.h"
 #include "bk_feature.h"
 #endif
-#if CONFIG_EASY_FLASH_FAST_CONNECT
-#include "bk_ef.h"
-#endif
 
 #define MAX_OWE_TRANSITION_BSS_SELECT_COUNT 5
 
@@ -1427,9 +1424,7 @@ static bool wpa_scan_res_ok(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid,
 			if (bk_feature_fast_connect_enable()) {
 				if (g_sta_param_ptr->fast_connect_set) {
 					struct wlan_fast_connect_info fci = {0};
-#if CONFIG_EASY_FLASH_FAST_CONNECT
-					bk_get_env_enhance("fast_connect_id", (void *)&fci, sizeof(struct wlan_fast_connect_info));
-#endif
+					wlan_read_fast_connect_info(&fci);
 					psk = fci.psk;
 					psk_len = PMK_LEN * 2;
 					wpa_dbg(wpa_s, MSG_DEBUG, "fast connect: %s", __func__);

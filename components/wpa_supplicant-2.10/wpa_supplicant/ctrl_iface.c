@@ -56,9 +56,6 @@
 #include "driver_i.h"
 #include "bk_rw.h"
 #include "rwnx_defs.h"
-#if CONFIG_EASY_FLASH_FAST_CONNECT
-#include "bk_ef.h"
-#endif
 #if CONFIG_WAPI_SUPPORT
 #include "sk_intf.h"
 #endif
@@ -1217,9 +1214,7 @@ static int wpa_supplicant_ctrl_iface_get_network(struct wpa_supplicant *wpa_s, w
 
 	case WLAN_STA_FIELD_PSK:
 		os_memset(&fci, 0, sizeof(fci));
-#if CONFIG_EASY_FLASH_FAST_CONNECT
-		bk_get_env_enhance("fast_connect_id", (void *)&fci, sizeof(struct wlan_fast_connect_info));
-#endif
+		wlan_read_fast_connect_info(&fci);
 		get_psk = fci.psk;
 		uint8_t psk_len = os_strlen((const char *)get_psk);
 		uint8_t psk_max_len = 64;

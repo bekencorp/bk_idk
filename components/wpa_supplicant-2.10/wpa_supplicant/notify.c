@@ -47,9 +47,6 @@
 #include "bk_vsie_cus.h"
 #endif
 #endif
-#if CONFIG_EASY_FLASH_FAST_CONNECT
-#include "bk_ef.h"
-#endif
 
 #if BK_SUPPLICANT
 extern uint32_t wpa_hostapd_no_password_connected(const uint8_t *addr);
@@ -144,9 +141,7 @@ void wlan_store_fci(struct wpa_supplicant *wpa_s)
 	os_memset(&fci, 0, sizeof(fci));
 
 	//read the static ip param that obtained
-#if CONFIG_EASY_FLASH_FAST_CONNECT
-	bk_get_env_enhance("fast_connect_id", (void *)&pre_fci, sizeof(struct wlan_fast_connect_info));
-#endif
+	wlan_read_fast_connect_info(&fci);
 
 	os_memcpy(fci.ip_addr, pre_fci.ip_addr, sizeof(pre_fci.ip_addr));
 	os_memcpy(fci.netmask, pre_fci.netmask, sizeof(pre_fci.netmask));
@@ -216,9 +211,7 @@ void wlan_store_fci(struct wpa_supplicant *wpa_s)
 	wpa_hexdump(MSG_DEBUG, "fci", &fci, sizeof(fci));
 
 	/* write fci to flash if previous fci is different with current */
-#if CONFIG_EASY_FLASH_FAST_CONNECT
-	bk_set_env_enhance("fast_connect_id", (void *)&fci, sizeof(struct wlan_fast_connect_info));
-#endif
+	wlan_write_fast_connect_info(&fci);
 
 out:
 	// #if CONFIG_WIFI_MFP_CONNECT_DEAUTH

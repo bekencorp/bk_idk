@@ -259,9 +259,7 @@ static void wm_netif_status_static_callback(struct netif *n)
 			if (bk_feature_fast_dhcp_enable()) {
 				/* read stored IP from flash as the static IP */
 				struct wlan_fast_connect_info fci = {0};
-#if CONFIG_EASY_FLASH_FAST_DHCP
-				bk_get_env_enhance("fast_connect_id", (void *)&fci, sizeof(struct wlan_fast_connect_info));
-#endif
+				wlan_read_fast_connect_info(&fci);
 				ip_addr_set_ip4_u32(&n->ip_addr, *((u32 *)&fci.ip_addr));
 				ip_addr_set_ip4_u32(&n->netmask, *((u32 *)&fci.netmask));
 				ip_addr_set_ip4_u32(&n->gw, *((u32 *)&fci.gw));
@@ -343,17 +341,13 @@ static void wm_netif_status_callback(struct netif *n)
 						dns_server = dns_getserver(0);
 						n->dns1 = ip_addr_get_ip4_u32(dns_server);
 						struct wlan_fast_connect_info fci = { 0 };
-#if CONFIG_EASY_FLASH_FAST_DHCP
-						bk_get_env_enhance("fast_connect_id", (void *)&fci, sizeof(struct wlan_fast_connect_info));
-#endif
+						wlan_read_fast_connect_info(&fci);
 						os_memset(&fci.ip_addr, 0, sizeof(fci.ip_addr));
 						os_memcpy((char *)&fci.ip_addr, (char *)ip_2_ip4(&n->ip_addr), sizeof(fci.ip_addr));
 						os_memcpy((char *)&fci.netmask, (char *)ip_2_ip4(&n->netmask), sizeof(fci.netmask));
 						os_memcpy((char *)&fci.gw, (char *)ip_2_ip4(&n->gw), sizeof(fci.gw));
 						os_memcpy((char *)&fci.dns1, (char *)&n->dns1, sizeof(fci.dns1));
-#if CONFIG_EASY_FLASH_FAST_DHCP
-						bk_set_env_enhance("fast_connect_id", (void *)&fci, sizeof(struct wlan_fast_connect_info));
-#endif
+						wlan_write_fast_connect_info(&fci);
 					}
 
 #if !CONFIG_DISABLE_DEPRECIATED_WIFI_API
@@ -972,9 +966,7 @@ void net_configure_dns(struct iface *if_handle, struct wlan_ip_config *ip)
 			if (if_handle == &g_mlan && bk_feature_fast_dhcp_enable()) {
 #ifdef CONFIG_WIFI_ENABLE
 				struct wlan_fast_connect_info fci = {0};
-#if CONFIG_EASY_FLASH_FAST_DHCP
-				bk_get_env_enhance("fast_connect_id", (void *)&fci, sizeof(struct wlan_fast_connect_info));
-#endif
+				wlan_read_fast_connect_info(&fci);
 				os_memcpy((char *)&ip->ipv4.dns1, (char *)&fci.dns1, sizeof(fci.dns1));
 #endif
 			} else {
