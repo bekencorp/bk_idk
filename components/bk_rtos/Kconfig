@@ -36,10 +36,8 @@ menu "Bk_rtos"
 		choice FREERTOS_VER
 			depends on FREERTOS
 			prompt "Select FreeRTOS Version"
-			default FREERTOS_V9
+			default FREERTOS_V10
 
-			config FREERTOS_V9
-				bool "FreeRTOS v9.0.0"
 			config FREERTOS_V10
 				bool "FreeRTOS v10"
 			config FREERTOS_SMP

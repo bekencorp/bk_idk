@@ -248,7 +248,7 @@ void rtos_dump_task_runtime_stats(void)
 void rtos_dump_task_list(void)
 {
 	int num_of_tasks = 0;
-	int buf_len = 0, info_len = 0;
+	size_t buf_len = 0, info_len = 0;
 	char *buf = NULL;
 
 	BK_DUMP_OUT(">>>>dump task list begin.\r\n");
@@ -257,23 +257,19 @@ void rtos_dump_task_list(void)
 		BK_DUMP_OUT("no task running.\r\n");
 		return;
 	}
-	buf_len = (num_of_tasks + 5) * 100;
-	buf = (char*)os_malloc(buf_len);
+	buf_len = (num_of_tasks + 5) * (configMAX_TASK_NAME_LEN + 60);
+	buf = (char*)os_zalloc(buf_len);
 	if (!buf) {
 		BK_DUMP_OUT("dump task list oom.\r\n");
 		return;
 	}
-#if CONFIG_FREERTOS_SMP && ( configUSE_CORE_AFFINITY == 1 ) && ( configNUM_CORES > 1 )
-	BK_DUMP_OUT("%-12s   %-5s   %-5s   %-5s   %-5s   %-5s\r\n",
-		"task", "state", "pri", "water", "no", "affinity");
-#else
+
 	BK_DUMP_OUT("%-12s   %-5s   %-5s   %-5s   %-5s\r\n",
 		"task", "state", "pri", "water", "no");
-#endif
 	vTaskList(buf);
 
 	buf[buf_len - 1] = '\0';
-	info_len = strlen(buf);
+	info_len = strnlen(buf, buf_len - 1);
 	BK_DUMP_RAW_OUT(buf, info_len);
 
 	os_free(buf);
@@ -286,6 +282,8 @@ void rtos_stack_overflow(char *taskname)
 {
 	BK_DUMP_OUT("stack overflow: %s\r\n", taskname);
 	BK_ASSERT(false); /* ASSERT VERIFIED */
-	while(1);
+	while(1){
+		;
+	}
 }
 

@@ -1,26 +1,5 @@
 if(CONFIG_FREERTOS)
-	if(CONFIG_FREERTOS_V9)
-		set(incs
-			freertos_v9/portable/Keil/ARM968es
-			freertos_v9/include
-		)
-
-		set(srcs
-			freertos_v9/croutine.c
-			freertos_v9/event_groups.c
-			freertos_v9/list.c
-			freertos_v9/portable/Keil/ARM968es/port.c
-			freertos_v9/queue.c
-			freertos_v9/tasks.c
-			freertos_v9/timers.c
-			freertos_v9/portable/MemMang/heap_4.c
-			)
-
-		if(CONFIG_FULLY_HOSTED OR CONFIG_MEM_MGMT)
-			list(REMOVE_ITEM  srcs freertos_v9/portable/MemMang/heap_4.c)
-		endif()
-		set_source_files_properties("${CMAKE_CURRENT_LIST_DIR}/freertos_v9/portable/Keil/ARM968es/port.c" PROPERTIES COMPILE_FLAGS "-marm")
-	elseif(CONFIG_FREERTOS_V10)
+	if(CONFIG_FREERTOS_V10)
 		set(incs freertos_v10/include)
 		set(srcs
 			freertos_v10/croutine.c

@@ -5,25 +5,9 @@ set(incs
 
 if(CONFIG_FREERTOS)
 	list(APPEND incs freertos)
-	if(CONFIG_FREERTOS_V9)
-		set(srcs
-			freertos/v9/rtos_pub.c
-			freertos/v9/rtos_debug.c
-			freertos/mem_arch.c
-			platform_stub.c
-			freertos/str_arch.c
-			)
-	elseif(CONFIG_FREERTOS_V10)
+	if(CONFIG_FREERTOS_V10)
 		set(srcs
 			freertos/v10/rtos_pub.c
-			freertos/v10/rtos_debug.c
-			freertos/mem_arch.c
-			platform_stub.c
-			freertos/str_arch.c
-		)
-	elseif(CONFIG_FREERTOS_SMP)
-		set(srcs
-			freertos/v10/rtos_pub_smp.c
 			freertos/v10/rtos_debug.c
 			freertos/mem_arch.c
 			platform_stub.c

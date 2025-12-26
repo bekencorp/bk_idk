@@ -186,9 +186,7 @@
 #define configUSE_ALTERNATIVE_API                   0
 //Set configCHECK_FOR_STACK_OVERFLOW to 3 to add ISR stack checking.
 #define configCHECK_FOR_STACK_OVERFLOW              3
-#if CONFIG_FREERTOS_V9
-#define configGENERATE_RUN_TIME_STATS               0
-#endif
+
 #if CONFIG_FREERTOS_V10
 #define configGENERATE_RUN_TIME_STATS               1
 #elif CONFIG_FREERTOS_SMP
