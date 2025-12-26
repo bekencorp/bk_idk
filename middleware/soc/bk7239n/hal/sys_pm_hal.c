@@ -48,6 +48,8 @@
 #if CONFIG_TEMP_DETECT
 #include "components/sensor.h"
 #endif
+#include <os/mem.h>
+#include "sys_persist_config.h"
 
 #define portNVIC_SYSTICK_CTRL_REG             ( *( ( volatile uint32_t * ) 0xe000e010 ) )
 #define portNVIC_SYSTICK_LOAD_REG             ( *( ( volatile uint32_t * ) 0xe000e014 ) )
@@ -101,6 +103,8 @@ static uint32_t s_gpio_retention_map[GPIO_RETENTION_MAP_SIZE] = GPIO_RETENTION_M
 uint64_t low_voltage_exit_tick = 0;
 uint64_t low_voltage_sleep_duration_us = 0;
 uint64_t low_voltage_wakeup_time_us = 0;
+sys_persist_pm_t *persist_pm;
+sys_persist_pm_t s_pm_config;
 extern void bk_delay_us(UINT32 us);
 static inline bool is_lpo_src_26m32k(void)
 {
@@ -638,7 +642,7 @@ static inline void sys_hal_set_low_voltage(volatile uint32_t *ana_r0, volatile u
 	sys_ana_ll_set_ana_reg7_spi_pwd_regpow(0);
 	sys_ana_ll_set_ana_reg7_vbspbuf_lp(1);
 	sys_ana_ll_set_ana_reg7_envrefh1v(0);
-	sys_ana_ll_set_ana_reg7_vanaldosel(2); // 0: 0.9V, 2: 1V
+	sys_ana_ll_set_ana_reg7_vanaldosel((s_pm_config.lvsleep_vanaldosel == 0xff) ? 2 : s_pm_config.lvsleep_vanaldosel); // 0: 0.9V, 2: 1V
 #if CONFIG_TEMP_DETECT
 	float temp;
 	bk_err_t err = bk_sensor_get_current_temperature(&temp);
@@ -646,33 +650,33 @@ static inline void sys_hal_set_low_voltage(volatile uint32_t *ana_r0, volatile u
 	if((err != BK_OK) || (temp < 0)) // get temperature failed or temperature is less than 0
 	{
 		#if CONFIG_LDO_SELF_LOW_POWER_MODE_ENA
-		sys_ana_ll_set_ana_reg7_dldohp(1); //will increase current 15uA
-		sys_ana_ll_set_ana_reg7_aldohp(0);
+		sys_ana_ll_set_ana_reg7_dldohp((s_pm_config.lvsleep_dldohp_low_temp == 0xff) ? 1 : s_pm_config.lvsleep_dldohp_low_temp); //will increase current 15uA
+		sys_ana_ll_set_ana_reg7_aldohp((s_pm_config.lvsleep_aldohp_low_temp == 0xff) ? 0 : s_pm_config.lvsleep_aldohp_low_temp);
 		#endif
 	}
 	else
 	{
 		#if CONFIG_LDO_SELF_LOW_POWER_MODE_ENA
-		sys_ana_ll_set_ana_reg7_dldohp(0);
-		sys_ana_ll_set_ana_reg7_aldohp(0);
+		sys_ana_ll_set_ana_reg7_dldohp((s_pm_config.lvsleep_dldohp_high_temp == 0xff) ? 0 : s_pm_config.lvsleep_dldohp_high_temp);
+		sys_ana_ll_set_ana_reg7_aldohp((s_pm_config.lvsleep_aldohp_high_temp == 0xff) ? 0 : s_pm_config.lvsleep_aldohp_high_temp);
 		#endif
 	}
 #else
 	#if CONFIG_LDO_SELF_LOW_POWER_MODE_ENA
-	sys_ana_ll_set_ana_reg7_dldohp(0);
-	sys_ana_ll_set_ana_reg7_aldohp(0);
+	sys_ana_ll_set_ana_reg7_dldohp((s_pm_config.lvsleep_dldohp_high_temp == 0xff) ? 0 : s_pm_config.lvsleep_dldohp_high_temp);
+	sys_ana_ll_set_ana_reg7_aldohp((s_pm_config.lvsleep_aldohp_high_temp == 0xff) ? 0 : s_pm_config.lvsleep_aldohp_high_temp);
 	#endif
 #endif
-	sys_ana_ll_set_ana_reg7_bypassen(1);//bit20
-	sys_ana_ll_set_ana_reg7_ioldolp(1);//bit21
+	sys_ana_ll_set_ana_reg7_bypassen((s_pm_config.lvsleep_bypassen == 0xff) ? 1 : s_pm_config.lvsleep_bypassen);//bit20
+	sys_ana_ll_set_ana_reg7_ioldolp((s_pm_config.lvsleep_ioldolp == 0xff) ? 1 : s_pm_config.lvsleep_ioldolp);//bit21
 
 	// sys_ana_ll_set_ana_reg9_azcd_manu(0x20);
 	// sys_ana_ll_set_ana_reg9_enzcdcalib(0);
 	// sys_ana_ll_set_ana_reg9_zcdmsel(1);
 
-	sys_ana_ll_set_ana_reg9_iburstsel(3);//bit[19:18]
-	sys_ana_ll_set_ana_reg9_mrosci_cal(0);//bit[27:25]
-	sys_ana_ll_set_ana_reg10_avea_sel(3);
+	sys_ana_ll_set_ana_reg9_iburstsel((s_pm_config.lvsleep_iburstsel == 0xff) ? 3 : s_pm_config.lvsleep_iburstsel);//bit[19:18]
+	sys_ana_ll_set_ana_reg9_mrosci_cal((s_pm_config.lvsleep_mrosci_cal == 0xff) ? 0 : s_pm_config.lvsleep_mrosci_cal);//bit[27:25]
+	sys_ana_ll_set_ana_reg10_avea_sel((s_pm_config.lvsleep_avea_sel == 0xff) ? 3 : s_pm_config.lvsleep_avea_sel);
 	// sys_ana_ll_set_ana_reg10_arampc(0);//suggest by long.teng,20251105
 
 	sys_hal_disable_spi_latch();
@@ -1075,7 +1079,7 @@ void sys_hal_enter_low_voltage(void)
 	uint8_t  ustep                 = 0;
 	sys_hal_enable_spi_latch();
 	vcorehsel = sys_ana_ll_get_ana_reg8_vcorehsel();
-	sys_ana_ll_set_ana_reg8_vcorehsel(PM_LOW_VOL_VCOREHSEL_LDO_SEL); //0x0:0.7V vcore
+	sys_ana_ll_set_ana_reg8_vcorehsel((s_pm_config.lvsleep_vcorehsel == 0xff) ? PM_LOW_VOL_VCOREHSEL_LDO_SEL : s_pm_config.lvsleep_vcorehsel); //0x0:0.7V vcore
 	sys_hal_disable_spi_latch();
 #endif
 	/*step 2: set ana voltage to 0.9V */
@@ -1141,7 +1145,7 @@ void sys_hal_enter_low_voltage(void)
 	/*step 2: restore dig voltage to 0.875V by step */
 #if CONFIG_SOFT_CTRL_VOLT
 	/*vdddig voltage*/
-	for(ustep = PM_LOW_VOL_VCOREHSEL_LDO_SEL+1; ustep <= vcorehsel; ustep++)
+	for(ustep = ((s_pm_config.lvsleep_vcorehsel == 0xff) ? PM_LOW_VOL_VCOREHSEL_LDO_SEL : s_pm_config.lvsleep_vcorehsel)+1; ustep <= vcorehsel; ustep++)
 	{
 		sys_ana_ll_set_ana_reg8_vcorehsel(ustep); //restore vdddig
 	}
@@ -1544,16 +1548,16 @@ int sys_hal_set_lpo_src(sys_lpo_src_t src)
 void sys_hal_enter_low_analog(void)
 {
 	sys_ana_ll_set_ana_reg8_spi_latch1v(1);
-	sys_ana_ll_set_ana_reg7_vanaldosel(4);
+	sys_ana_ll_set_ana_reg7_vanaldosel((s_pm_config.btpll_vanaldosel == 0xff) ? 4 : s_pm_config.btpll_vanaldosel);
 	sys_ana_ll_set_ana_reg8_spi_latch1v(0);
 
-	sys_ana_ll_set_ana_reg3_hpssren(0);
+	sys_ana_ll_set_ana_reg3_hpssren((s_pm_config.btpll_hpssren == 0xff) ? 0 : s_pm_config.btpll_hpssren);
 	/* tx low performence 0x45[11][9] = 1*/
-	sys_ana_ll_set_ana_reg5_anabufsel_tx1(0);
-	sys_ana_ll_set_ana_reg5_anabufsel_tx0(1);
+	sys_ana_ll_set_ana_reg5_anabufsel_tx1((s_pm_config.btpll_anabufsel_tx1 == 0xff) ? 0 : s_pm_config.btpll_anabufsel_tx1);
+	sys_ana_ll_set_ana_reg5_anabufsel_tx0((s_pm_config.btpll_anabufsel_tx0 == 0xff) ? 1 : s_pm_config.btpll_anabufsel_tx0);
 	/* rx low performence 0x45[10][8] = 1*/
-	sys_ana_ll_set_ana_reg5_anabufsel_rx1(0);
-	sys_ana_ll_set_ana_reg5_anabufsel_rx0(1);
+	sys_ana_ll_set_ana_reg5_anabufsel_rx1((s_pm_config.btpll_anabufsel_rx1 == 0xff) ? 0 : s_pm_config.btpll_anabufsel_rx1);
+	sys_ana_ll_set_ana_reg5_anabufsel_rx0((s_pm_config.btpll_anabufsel_rx0 == 0xff) ? 1 : s_pm_config.btpll_anabufsel_rx0);
 
 
 }
@@ -1561,16 +1565,16 @@ void sys_hal_enter_low_analog(void)
 void sys_hal_exit_low_analog(void)
 {
 	sys_ana_ll_set_ana_reg8_spi_latch1v(1);
-	sys_ana_ll_set_ana_reg7_vanaldosel(0xf);
+	sys_ana_ll_set_ana_reg7_vanaldosel((s_pm_config.wifipll_vanaldosel == 0xff) ? 0xf : s_pm_config.wifipll_vanaldosel);
 	sys_ana_ll_set_ana_reg8_spi_latch1v(0);
 
-	sys_ana_ll_set_ana_reg3_hpssren(1);
+	sys_ana_ll_set_ana_reg3_hpssren((s_pm_config.wifipll_hpssren == 0xff) ? 1 : s_pm_config.wifipll_hpssren);
 	/* tx high performence 0x45[11][9] = 3*/
-	sys_ana_ll_set_ana_reg5_anabufsel_tx1(1);
-	sys_ana_ll_set_ana_reg5_anabufsel_tx0(1);
+	sys_ana_ll_set_ana_reg5_anabufsel_tx1((s_pm_config.wifipll_anabufsel_tx1 == 0xff) ? 1 : s_pm_config.wifipll_anabufsel_tx1);
+	sys_ana_ll_set_ana_reg5_anabufsel_tx0((s_pm_config.wifipll_anabufsel_tx0 == 0xff) ? 1 : s_pm_config.wifipll_anabufsel_tx0);
 	/* rx high performence 0x45[10][8] = 3*/
-	sys_ana_ll_set_ana_reg5_anabufsel_rx1(1);
-	sys_ana_ll_set_ana_reg5_anabufsel_rx0(1);
+	sys_ana_ll_set_ana_reg5_anabufsel_rx1((s_pm_config.wifipll_anabufsel_rx1 == 0xff) ? 1 : s_pm_config.wifipll_anabufsel_rx1);
+	sys_ana_ll_set_ana_reg5_anabufsel_rx0((s_pm_config.wifipll_anabufsel_rx0 == 0xff) ? 1 : s_pm_config.wifipll_anabufsel_rx0);
 
 }
 
@@ -1748,8 +1752,15 @@ static void sys_hal_gpio_retention_reset(void)
 	}
 }
 #endif
+
 void sys_hal_low_power_hardware_init()
 {
+	persist_pm = get_sys_persist_pm();
+	if (NULL != persist_pm) {
+		os_memcpy(&s_pm_config, persist_pm, sizeof(sys_persist_pm_t));
+	} else {
+		os_memset(&s_pm_config, 0xff, sizeof(sys_persist_pm_t));
+	}
 	#if !CONFIG_AON_PMU_REG0_REFACTOR_DEV
 	/*recover aon pmu reg0*/
 	uint32_t reg = aon_pmu_ll_get_r7b();
@@ -1787,7 +1798,7 @@ void sys_hal_low_power_hardware_init()
 	sys_hal_power_config_default();
 
 	/*set the lp voltage*/
-	sys_hal_lp_vol_set(CONFIG_LP_VOL);
+	sys_hal_lp_vol_set((s_pm_config.vcorelsel == 0xff) ? CONFIG_LP_VOL : s_pm_config.vcorelsel);
 
 	/*set rosc modify 2s interval*/
 	#if !CONFIG_ROSC_CALIB_SW
