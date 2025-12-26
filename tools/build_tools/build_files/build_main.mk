@@ -23,6 +23,7 @@ export SOC_SUPPORTED_TARGETS := ${soc_targets}
 export ARMINO_SOC := $(findstring $(MAKECMDGOALS), $(soc_targets))
 export ARMINO_SOC_LIB := $(findstring $(MAKECMDGOALS), $(properties_lib_targets))
 export CMD_TARGET := $(MAKECMDGOALS)
+export BUILD_TARGET := $(findstring $(MAKECMDGOALS), $(cmake_supported_targets))
 
 ifeq ("$(APP_VERSION)", "")
 	export APP_VERSION := unknow
@@ -151,10 +152,10 @@ $(rel_targets):
 relall: $(rel_targets)
 
 $(cmake_supported_targets): common
-ifneq ("$(ARMINO_TARGET)", "doc")
-	@$(ARMINO_TOOL_WRAPPER) $(ARMINO_DIR) $(PROJECT_DIR) $(PROJECT_BUILD_DIR) $@
-else
+ifeq ($(filter $(BUILD_TARGET), menuconfig doc), $(BUILD_TARGET))
 	@$(ARMINO_TOOL) -B ./$(PROJECT_BUILD_DIR) -P ./$(PROJECT_DIR) $@
+else
+	@$(ARMINO_TOOL_WRAPPER) $(ARMINO_DIR) $(PROJECT_DIR) $(PROJECT_BUILD_DIR) $@
 endif
 
 $(clean_targets):
