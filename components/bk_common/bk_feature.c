@@ -300,3 +300,12 @@ int bk_feature_wifi_null_frame_with_sn(void)
 	return 0;
 #endif
 }
+
+int bk_feature_wifi_dsss_only(void)
+{
+#if CONFIG_PM_DSSS_ONLY
+	return 1;
+#else
+	return 0;
+#endif
+}

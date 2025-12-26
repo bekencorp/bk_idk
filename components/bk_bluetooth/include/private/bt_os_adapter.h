@@ -201,6 +201,7 @@ struct bt_osi_funcs_t
     uint32_t (*_get_clkcnt_samp)(void);
     uint32_t (*_get_isocnt_samp)(void);
     void (*_bt_delay_us)(uint32_t us);
+    int (*_bk_feature_dsss_only_enable)(void);
 };
 
 int bt_os_adapter_init(void *osi_funcs);

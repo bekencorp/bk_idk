@@ -386,3 +386,12 @@ int bk_feature_compute_listen_interval_enable(void);
  */
 int bk_feature_wifi_null_frame_with_sn(void);
 
+/**
+ * @brief     Interface for customer to Enable/Disable wifi dsss only
+ *
+ * @return
+ *    - 1: enable
+ *    - 0: disable
+ */
+int bk_feature_wifi_dsss_only(void);
+

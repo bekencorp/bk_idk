@@ -308,6 +308,7 @@ typedef struct {
 	uint32_t (*_bk_feature_get_listen_interval_threshold)(void);
 	uint32_t (*_bk_feature_get_keep_alive_to_dur)(void);
 	int (*_bk_feature_compute_listen_interval_enable)(void);
+	int (*_bk_feature_wifi_dsss_only_enable)(void);
 } wifi_os_funcs_t;
 extern wifi_os_funcs_t g_wifi_os_funcs;
 

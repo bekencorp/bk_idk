@@ -37,6 +37,7 @@
 #include "aon_pmu_hal.h"
 #include "bk_rf_internal.h"
 #include "driver/rosc_32k.h"
+#include "bk_feature.h"
 
 #if CONFIG_CACHE_ENABLE
 #include "cache.h"
@@ -1441,6 +1442,7 @@ static struct bt_osi_funcs_t bt_osi_funcs =
     ._set_bluetooth_power_level = set_bluetooth_power_level,
     ._set_rfconfig_rf_mode = set_rfconfig_rf_mode,
     .wifi_mac_power_ctrl = wifi_mac_power_ctrl_wrapper,
+    ._bk_feature_dsss_only_enable = bk_feature_wifi_dsss_only,
 };
 
 int bk_bt_os_adapter_init(void)

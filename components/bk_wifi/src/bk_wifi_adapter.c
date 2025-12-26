@@ -1378,6 +1378,10 @@ static int bk_feature_config_add_chan_ctxt_wrapper(void)
     return bk_feature_config_add_chan_ctxt();
 }
 
+static int bk_feature_wifi_dsss_only_wrapper(void)
+{
+    return bk_feature_wifi_dsss_only();
+}
 
 __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._version = BK_WIFI_OS_ADAPTER_VERSION,
@@ -1656,6 +1660,7 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._bk_feature_get_listen_interval_threshold = bk_feature_get_listen_interval_threshold_wrapper,
 	._bk_feature_get_keep_alive_to_dur = bk_feature_get_keep_alive_to_dur_wrapper,
 	._bk_feature_compute_listen_interval_enable = bk_feature_compute_listen_interval_enable_wrapper,
+	._bk_feature_wifi_dsss_only_enable = bk_feature_wifi_dsss_only_wrapper,
 };
 
 __attribute__((section(".dtcm_sec_data "))) wifi_os_variable_t g_wifi_os_variable = {

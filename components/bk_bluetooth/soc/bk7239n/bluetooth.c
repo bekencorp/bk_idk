@@ -35,6 +35,7 @@
 #include <string.h>
 #include "aon_pmu_hal.h"
 #include "bk_rf_internal.h"
+#include "bk_feature.h"
 
 #if CONFIG_CACHE_ENABLE
 #include "cache.h"
@@ -1306,6 +1307,7 @@ static struct bt_osi_funcs_t bt_osi_funcs =
     ._get_clkcnt_samp       = get_clkcnt_samp,
     ._get_isocnt_samp       = get_isocnt_samp,
     ._bt_delay_us           = bt_delay_us,
+    ._bk_feature_dsss_only_enable = bk_feature_wifi_dsss_only,
 };
 
 int bk_bt_os_adapter_init(void)

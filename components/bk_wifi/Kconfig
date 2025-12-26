@@ -538,4 +538,10 @@ menu "Bk_Wifi"
 	config CUSTOMER_INIT_CALI
 		bool "Enable customer init calibration"
 		default n
+
+	config PM_DSSS_ONLY
+		bool "Enable DSSS ONLY"
+		default n
+		help
+			Enable DSSS ONLY
 endmenu
