@@ -228,19 +228,20 @@ if (CONFIG_USE_EXTERNAL_MBEDTLS)
 	# Use external mbedtls library (source code or pre-built library)
 	# User must provide mbedtls headers via Kconfig options
 
-	# Expand ${WPA_CMAKE_ROOT} variable in config paths
+	# Expand @WPA_CMAKE_ROOT@ placeholder in config paths
 	# WPA_CMAKE_ROOT = CMAKE_SOURCE_DIR = vendor/T7/t7_os/armino
+	# Note: Using @...@ syntax to avoid shell variable expansion in Kconfig
 	set(WPA_CMAKE_ROOT "${CMAKE_SOURCE_DIR}")
 
 	# Process config path
 	if (CONFIG_EXTERNAL_MBEDTLS_CONFIG_PATH)
-		string(REPLACE "\${WPA_CMAKE_ROOT}" "${WPA_CMAKE_ROOT}" EXT_MBEDTLS_CONFIG_PATH "${CONFIG_EXTERNAL_MBEDTLS_CONFIG_PATH}")
+		string(REPLACE "@WPA_CMAKE_ROOT@" "${WPA_CMAKE_ROOT}" EXT_MBEDTLS_CONFIG_PATH "${CONFIG_EXTERNAL_MBEDTLS_CONFIG_PATH}")
 		list(APPEND incs "${EXT_MBEDTLS_CONFIG_PATH}")
 	endif()
 
 	# Process include path
 	if (CONFIG_EXTERNAL_MBEDTLS_INCLUDE_PATH)
-		string(REPLACE "\${WPA_CMAKE_ROOT}" "${WPA_CMAKE_ROOT}" EXT_MBEDTLS_INC_PATH "${CONFIG_EXTERNAL_MBEDTLS_INCLUDE_PATH}")
+		string(REPLACE "@WPA_CMAKE_ROOT@" "${WPA_CMAKE_ROOT}" EXT_MBEDTLS_INC_PATH "${CONFIG_EXTERNAL_MBEDTLS_INCLUDE_PATH}")
 		list(APPEND incs "${EXT_MBEDTLS_INC_PATH}")
 		list(APPEND incs "${EXT_MBEDTLS_INC_PATH}/mbedtls")
 	endif()
