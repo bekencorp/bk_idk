@@ -29,6 +29,8 @@
 
 #include "xip_loader.h"
 extern void flash_set_excute_enable(int enable);
+extern uint32_t flash_get_excute_enable(void);
+extern void flush_all_dcache(void);
 
 static bool g_fast_boot_secondary = false;
 
@@ -109,12 +111,29 @@ find_slot_with_highest_version(struct boot_loader_state *state)
 #endif
 
     /* First, determine the preferred slot based on version comparison if both slots are available */
+    /* Only allow version-based selection if OTA confirm flag is set */
     uint32_t version_preferred_slot = NO_ACTIVE_SLOT;
     bool prefer_by_version = false;
+    bool ota_confirm_set = false;
     
-    /* Compare versions if both slots are available and have valid headers */
-    if (state->slot_usage[BOOT_CURR_IMG(state)].slot_available[0] &&
-        state->slot_usage[BOOT_CURR_IMG(state)].slot_available[1]) {
+#if CONFIG_OTA_CONFIRM_UPDATE
+    ota_confirm_set = bk_boot_check_ota_confirm(1, OTA_CONFIRM);
+#endif
+    
+    /* Check if only one slot is available - use it directly */
+    bool slot0_available = state->slot_usage[BOOT_CURR_IMG(state)].slot_available[0];
+    bool slot1_available = state->slot_usage[BOOT_CURR_IMG(state)].slot_available[1];
+    
+    if (slot0_available && !slot1_available) {
+        /* Only slot0 available - use it directly */
+        slot = 0;
+        BOOT_LOG_INF("Only Primary slot available, using Primary slot");
+    } else if (!slot0_available && slot1_available) {
+        /* Only slot1 available - use it directly */
+        slot = 1;
+        BOOT_LOG_INF("Only Secondary slot available, using Secondary slot");
+    } else if (slot0_available && slot1_available) {
+        /* Both slots available - compare versions and choose the higher one */
         struct image_header *hdr_slot0 = boot_img_hdr(state, 0);
         struct image_header *hdr_slot1 = boot_img_hdr(state, 1);
         
@@ -131,15 +150,26 @@ find_slot_with_highest_version(struct boot_loader_state *state)
                 prefer_by_version = true;
             }
         }
-    }
-    
-    /* Choose the final slot: prefer version-based selection if available, otherwise use OTA confirm flag */
-    if (prefer_by_version && version_preferred_slot != NO_ACTIVE_SLOT) {
-        slot = version_preferred_slot;
-        BOOT_LOG_INF("Version comparison: %s slot version is higher, prefer by version", 
-                    slot_str(slot));
+        
+        /* Choose the final slot: always prefer version-based selection if available */
+        /* OTA confirm flag only affects whether to clear the confirm flag after successful validation */
+        if (prefer_by_version && version_preferred_slot != NO_ACTIVE_SLOT) {
+            slot = version_preferred_slot;
+            if (ota_confirm_set) {
+                BOOT_LOG_INF("Version comparison: %s slot version is higher, prefer by version (OTA confirm set)", 
+                            slot_str(slot));
+            } else {
+                BOOT_LOG_INF("Version comparison: %s slot version is higher, prefer by version (OTA confirm not set)", 
+                            slot_str(slot));
+            }
+        } else {
+            slot = ota_preferred_slot;
+            BOOT_LOG_INF("Using OTA preferred slot: %s", slot_str(slot));
+        }
     } else {
+        /* No slots available - use OTA preferred slot as fallback */
         slot = ota_preferred_slot;
+        BOOT_LOG_INF("No available slots detected, using OTA preferred slot: %s", slot_str(slot));
     }
 
     if (!state->slot_usage[BOOT_CURR_IMG(state)].slot_available[slot]) {
@@ -161,10 +191,8 @@ find_slot_with_highest_version(struct boot_loader_state *state)
     uint32_t image_ok = boot_read_xip_status(slot, XIP_IMAGE_OK_TYPE);
     BOOT_LOG_INF("xip prefer %s: state=%s(%x)", slot_str(slot), image_ok_str(image_ok), image_ok);
 
-    if (slot == BOOT_SECONDARY_SLOT && image_ok == XIP_IMAGE_OK) {
-        g_fast_boot_secondary = true;
-        return slot;
-    }
+    /* Remove fast path to force all slots to go through validation for security */
+    /* No longer return directly based on image_ok status, must go through boot_validate_slot validation */
 
     if (image_ok == XIP_IMAGE_TEST_FINAL) {
         // TODO use partition api to erase
@@ -263,6 +291,7 @@ fih_ret
 boot_load_and_validate_images(struct boot_loader_state *state)
 {
     uint32_t active_slot;
+    uint32_t fallback_slot;
     int rc;
     fih_ret fih_rc;
 
@@ -277,50 +306,113 @@ boot_load_and_validate_images(struct boot_loader_state *state)
             break;
         }
 
+        /* Step 1: Find the slot with highest version */
         active_slot = find_slot_with_highest_version(state);
         if (active_slot == NO_ACTIVE_SLOT) {
-            BOOT_LOG_INF("No slot to load for image %d",
-                            BOOT_CURR_IMG(state));
+            BOOT_LOG_ERR("No slot to load for image %d", BOOT_CURR_IMG(state));
             FIH_RET(FIH_FAILURE);
         }
 
-        /* Save the number of the active slot. */
-        state->slot_usage[BOOT_CURR_IMG(state)].active_slot = active_slot;
+        /* Determine fallback slot (the other partition) */
+        fallback_slot = active_slot ^ 1;
 
+        BOOT_LOG_INF("Found high version slot: %s (version comparison), will validate first", 
+                     slot_str(active_slot));
+
+        /* Step 2: Force validation of the high version slot */
         FIH_CALL(boot_validate_slot, fih_rc, state, active_slot, NULL);
-        if (FIH_NOT_EQ(fih_rc, FIH_SUCCESS)) {
-            /* Image is invalid. */
-            state->slot_usage[BOOT_CURR_IMG(state)].slot_available[active_slot] = false;
-            state->slot_usage[BOOT_CURR_IMG(state)].active_slot = NO_ACTIVE_SLOT;
-            state->slot_usage[BOOT_CURR_IMG(state)].slot_state[active_slot] += 1; 
-            BOOT_LOG_ERR("validate %s slot fail, validate_state = %d\r\n", slot_str(active_slot),
-                                        state->slot_usage[BOOT_CURR_IMG(state)].slot_state[active_slot]);
-            if (state->slot_usage[BOOT_CURR_IMG(state)].slot_state[active_slot] == FAIL_TEST) {
-                BOOT_LOG_ERR("%s slot invalid,offset=%#x,size=%#x\r\n", slot_str(active_slot),
-                                                get_flash_map_offset(2 + active_slot), get_flash_map_phy_size(2 + active_slot));
-                // flash_area_erase_fast(get_flash_map_offset(2 + active_slot), get_flash_map_phy_size(2 + active_slot));
-#if CONFIG_OTA_CONFIRM_UPDATE
-                bk_boot_switch_xip_confirm();
-#endif
-            } else if (state->slot_usage[BOOT_CURR_IMG(state)].slot_state[active_slot] > FAIL_TEST) {
-                BOOT_LOG_ERR("all xip images are invalid");
-                FIH_RET(FIH_FAILURE);
+        if (FIH_EQ(fih_rc, FIH_SUCCESS)) {
+            /* High version slot validation successful */
+            state->slot_usage[BOOT_CURR_IMG(state)].active_slot = active_slot;
+            BOOT_LOG_INF("High version %s slot validation successful", slot_str(active_slot));
+            
+            /* Set fast boot flag (if it was secondary slot and image_ok is OK) */
+            uint32_t image_ok = boot_read_xip_status(active_slot, XIP_IMAGE_OK_TYPE);
+            if (active_slot == BOOT_SECONDARY_SLOT && image_ok == XIP_IMAGE_OK) {
+                g_fast_boot_secondary = true;
             }
-            continue;
-        }
-        
-        /* Validation successful, clear OTA confirm flag if it was set */
+            break;
+        } else {
+            /* High version slot validation failed */
+            BOOT_LOG_ERR("High version %s slot validation failed, will try fallback %s slot", 
+                         slot_str(active_slot), slot_str(fallback_slot));
+            
+#if CONFIG_DIRECT_XIP
+            /* Critical: Reset execute_enable and flush cache before validating fallback slot */
+            /* If Secondary slot validation failed, execute_enable might still be 1, which would cause */
+            /* Primary slot hash calculation to read from wrong address */
+            uint32_t saved_enable = flash_get_excute_enable();
+            BOOT_LOG_INF("Before fallback validation: execute_enable=%d", saved_enable);
+            if(saved_enable == 1){
+                BOOT_LOG_INF("Resetting execute_enable from 1 to 0 before validating fallback Primary slot");
+                flush_all_dcache();
+                flash_set_excute_enable(0);
+                BOOT_LOG_INF("After reset: execute_enable=%d", flash_get_excute_enable());
+            }
+#endif
+            
+            /* Check if fallback slot is available and has valid header */
+            bool fallback_valid = false;
+            if (state->slot_usage[BOOT_CURR_IMG(state)].slot_available[fallback_slot] &&
+                boot_is_header_valid(boot_img_hdr(state, fallback_slot), 
+                                    BOOT_IMG_AREA(state, fallback_slot))) {
+                /* Step 3: Validate fallback slot */
+                BOOT_LOG_INF("Validating fallback %s slot", slot_str(fallback_slot));
+                FIH_CALL(boot_validate_slot, fih_rc, state, fallback_slot, NULL);
+                if (FIH_EQ(fih_rc, FIH_SUCCESS)) {
+                    /* Fallback slot validation successful */
+                    fallback_valid = true;
+                    state->slot_usage[BOOT_CURR_IMG(state)].active_slot = fallback_slot;
+                    BOOT_LOG_INF("Fallback %s slot validation successful, will boot from fallback", 
+                                 slot_str(fallback_slot));
+                    break;
+                } else {
+                    /* Fallback slot validation also failed */
+                    BOOT_LOG_ERR("Fallback %s slot validation also failed", slot_str(fallback_slot));
+                    state->slot_usage[BOOT_CURR_IMG(state)].slot_available[fallback_slot] = false;
+                    state->slot_usage[BOOT_CURR_IMG(state)].slot_state[fallback_slot] += 1;
+                }
+            } else {
+                BOOT_LOG_ERR("Fallback %s slot is not available or header invalid", slot_str(fallback_slot));
+            }
+            
+            /* Both slots validation failed, mark high version slot and continue retry */
+            if (!fallback_valid) {
+                state->slot_usage[BOOT_CURR_IMG(state)].slot_available[active_slot] = false;
+                state->slot_usage[BOOT_CURR_IMG(state)].slot_state[active_slot] += 1;
+                state->slot_usage[BOOT_CURR_IMG(state)].active_slot = NO_ACTIVE_SLOT;
+                
+                BOOT_LOG_ERR("validate %s slot fail, validate_state = %d", slot_str(active_slot),
+                             state->slot_usage[BOOT_CURR_IMG(state)].slot_state[active_slot]);
+                
+                if (state->slot_usage[BOOT_CURR_IMG(state)].slot_state[active_slot] == FAIL_TEST) {
+                    BOOT_LOG_ERR("%s slot invalid,offset=%#x,size=%#x", slot_str(active_slot),
+                                 get_flash_map_offset(2 + active_slot), get_flash_map_phy_size(2 + active_slot));
 #if CONFIG_OTA_CONFIRM_UPDATE
-        if (!g_fast_boot_secondary) {
-            if (bk_boot_check_ota_confirm(1, OTA_CONFIRM)) {
-                /* OTA confirm flag is set, clear it after successful validation */
-                bk_boot_erase_ota_confirm(1);
-                BOOT_LOG_INF("OTA confirm flag cleared after successful validation");
+                    bk_boot_switch_xip_confirm();
+#endif
+                } else if (state->slot_usage[BOOT_CURR_IMG(state)].slot_state[active_slot] > FAIL_TEST) {
+                    BOOT_LOG_ERR("all xip images are invalid");
+                    FIH_RET(FIH_FAILURE);
+                }
+                
+                /* Continue retry in the loop */
+                continue;
             }
         }
-#endif
     }
 
+    /* Validation successful, clear OTA confirm flag */
+#if CONFIG_OTA_CONFIRM_UPDATE
+    active_slot = state->slot_usage[BOOT_CURR_IMG(state)].active_slot;
+    if (!g_fast_boot_secondary) {
+        if (bk_boot_check_ota_confirm(1, OTA_CONFIRM)) {
+            /* OTA confirm flag is set, clear it after successful validation */
+            bk_boot_erase_ota_confirm(1);
+            BOOT_LOG_INF("OTA confirm flag cleared after successful validation");
+        }
+    }
+#endif
 
     FIH_RET(FIH_SUCCESS);
 }
@@ -341,13 +433,31 @@ xip_boot_go(struct boot_loader_state *state, struct boot_rsp *rsp)
     }
 
     uint32_t active_slot = state->slot_usage[BOOT_CURR_IMG(state)].active_slot;
-    BOOT_LOG_INF("Final boot from %s slot",slot_str(active_slot));
     flash_set_excute_enable(active_slot);
     
+    /* Re-read the header from flash to ensure we have the correct, up-to-date header */
+    /* This is important especially when the other slot's data is corrupted */
+    struct image_header *active_hdr = boot_img_hdr(state, active_slot);
+    const struct flash_area *active_fap = BOOT_IMG_AREA(state, active_slot);
+    rc = flash_area_read(active_fap, 0, active_hdr, sizeof(struct image_header));
+    if (rc != 0) {
+        BOOT_LOG_ERR("Failed to re-read header from %s slot", slot_str(active_slot));
+        FIH_SET(fih_rc, FIH_FAILURE);
+        goto out;
+    }
+    
+    /* Verify the header is valid before using it */
+    if (!boot_is_header_valid(active_hdr, active_fap)) {
+        BOOT_LOG_ERR("Re-read header from %s slot is invalid", slot_str(active_slot));
+        FIH_SET(fih_rc, FIH_FAILURE);
+        goto out;
+    }
+    
     /* Fill the boot response structure with the actual active slot */
-    rsp->br_flash_dev_id = flash_area_get_device_id(BOOT_IMG_AREA(state, active_slot));
+    rsp->br_flash_dev_id = flash_area_get_device_id(active_fap);
     rsp->br_image_off = boot_img_slot_off(state, active_slot);
-    rsp->br_hdr = boot_img_hdr(state, active_slot);
+    rsp->br_hdr = active_hdr;
+    BOOT_LOG_INF("Jump to %s slot. \r\n",slot_str(active_slot));
     
 out:
     if (rc != 0) {

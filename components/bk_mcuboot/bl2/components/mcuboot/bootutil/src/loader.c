@@ -88,8 +88,6 @@ static struct boot_loader_state boot_data;
 #define BUF_SZ 1024
 #endif
 
-#define NO_ACTIVE_SLOT UINT32_MAX
-
 static int
 boot_read_image_headers(struct boot_loader_state *state, bool require_all,
         struct boot_status *bs)

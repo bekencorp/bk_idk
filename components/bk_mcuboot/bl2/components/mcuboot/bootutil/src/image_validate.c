@@ -57,6 +57,13 @@
 
 #include "bootutil_priv.h"
 #include "flash_partition.h"
+#include "bootutil/bootutil_public.h"
+
+#if CONFIG_BL2_SKIP_VALIDATE
+#include "partitions_gen.h"
+#include "aon_pmu_hal.h"
+#include "components/system.h"
+#endif
 
 /*
  * Compute SHA hash over the image.
@@ -103,14 +110,6 @@ bootutil_img_hash(struct enc_key_data *enc_state, int image_index,
     }
 #endif
 
-    bootutil_sha_init(&sha_ctx);
-
-    /* in some cases (split image) the hash is seeded with data from
-     * the loader image */
-    if (seed && (seed_len > 0)) {
-        bootutil_sha_update(&sha_ctx, seed, seed_len);
-    }
-
     /* Hash is computed over image header and image itself. */
     size = hdr_size = hdr->ih_hdr_size;
     size += hdr->ih_img_size;
@@ -125,6 +124,15 @@ bootutil_img_hash(struct enc_key_data *enc_state, int image_index,
 
 #if CONFIG_OTA_OVERWRITE
     if( fap->fa_off == partition_get_phy_offset(PARTITION_OTA )) {
+        /* For OTA partition, CRC check is not applicable, proceed with SHA init */
+        bootutil_sha_init(&sha_ctx);
+        
+        /* in some cases (split image) the hash is seeded with data from
+         * the loader image */
+        if (seed && (seed_len > 0)) {
+            bootutil_sha_update(&sha_ctx, seed, seed_len);
+        }
+        
         for (off = 0; off < size; off += blk_sz) {
             blk_sz = size - off;
             if (blk_sz > tmp_buf_sz) {
@@ -143,30 +151,56 @@ bootutil_img_hash(struct enc_key_data *enc_state, int image_index,
 #endif /* CONFIG_OTA_OVERWRITE */
     {
         uint32_t addr = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(fap->fa_off));
+        uint32_t crc_check_addr = addr;  // Address for CRC check
 
 #if CONFIG_DIRECT_XIP
         uint32_t sec_addr = partition_get_phy_offset(PARTITION_XIP_B);
+        uint32_t pri_addr = partition_get_phy_offset(PARTITION_XIP_A);
+        uint32_t execute_enable_saved = 0;
+        bool need_restore_execute_enable = false;
+        
         if(fap->fa_off == sec_addr){
-            flash_set_excute_enable(1);
-            addr = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(partition_get_phy_offset(PARTITION_XIP_A)));
+            crc_check_addr = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(sec_addr));
+        } else if(fap->fa_off == pri_addr){
+            addr = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(pri_addr));
+            crc_check_addr = addr;
         }
 #endif
-#if CONFIG_DBUS_CHECK_CRC
-        if (check_crc(addr, size) != true) {
+#ifdef CONFIG_DBUS_CHECK_CRC
+        /* CRITICAL: Perform CRC check BEFORE initializing SHA context */
+        /* This prevents hardware SHA accelerator state pollution if CRC fails */
+        /* Hardware SHA accelerators may allocate resources during init, which can */
+        /* cause state corruption if not properly cleaned up after CRC failure */
+        BOOT_LOG_INF("check crc16");
+        if (check_crc(crc_check_addr, size) != true) {
             BOOT_LOG_ERR("app crc16 error");
+            /* Return immediately without initializing SHA context */
+            /* This prevents hardware SHA accelerator state pollution */
+            enable_dcache(1);
             return -1;
         } else {
             BOOT_LOG_INF("app crc16 right");
         }
 #endif
+        /* Initialize SHA context only after CRC check passes */
+        /* This ensures hardware SHA accelerator is only initialized when needed */
+        /* Critical: Ensure any previous hardware SHA state is fully cleared before init */
+        /* This is especially important after a previous validation failure */
+
+        bootutil_sha_init(&sha_ctx);
+
+        /* in some cases (split image) the hash is seeded with data from
+         * the loader image */
+        if (seed && (seed_len > 0)) {
+            bootutil_sha_update(&sha_ctx, seed, seed_len);
+        }
+        uint32_t hash_calc_addr = crc_check_addr + FLASH_BASE_ADDRESS;
         bootutil_sha_update(&sha_ctx,
-                            (void*)(addr + FLASH_BASE_ADDRESS),
+                            (void*)hash_calc_addr,
                             size);
-#if CONFIG_DIRECT_XIP
-        flash_set_excute_enable(0);
-#endif
     }
     bootutil_sha_finish(&sha_ctx, hash_result);
+    
     bootutil_sha_drop(&sha_ctx);
     enable_dcache(1);
     return 0;
@@ -401,6 +435,16 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
                       uint8_t *tmp_buf, uint32_t tmp_buf_sz, uint8_t *seed,
                       int seed_len, uint8_t *out_hash)
 {
+#if CONFIG_BL2_SKIP_VALIDATE
+    /* This optimization allows skipping validation on first power-on when OTA confirm is not set */
+    uint32_t reset_reason = aon_pmu_hal_get_reset_reason();
+    if ((!bk_boot_check_ota_confirm(image_index, OTA_CONFIRM)) && (reset_reason == RESET_SOURCE_POWERON)) {
+        BOOT_LOG_INF("reset reason %#x, skip validate", reset_reason);
+        FIH_RET(FIH_SUCCESS);
+    }
+    BOOT_LOG_INF("reset reason %#x, do validate", reset_reason);
+#endif
+
     uint32_t off;
     uint16_t len;
     uint16_t type;
@@ -436,7 +480,6 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
     if (rc) {
         goto out;
     }
-
     rc = bootutil_hash_hash(hash, 32, hash_hash);
     if (rc) {
         goto out;
@@ -448,10 +491,13 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
 
     rc = bootutil_tlv_iter_begin(&it, hdr, fap, IMAGE_TLV_ANY, false);
     if (rc) {
+        BOOT_LOG_ERR("Failed to begin TLV iteration, rc=%d", rc);
         goto out;
     }
 
     if (it.tlv_end > bootutil_max_image_size(fap)) {
+        BOOT_LOG_ERR("TLV end exceeds max image size: tlv_end=0x%x, max_size=0x%x", 
+                     it.tlv_end, bootutil_max_image_size(fap));
         rc = -1;
         goto out;
     }
@@ -464,6 +510,7 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
         rc = bootutil_tlv_iter_next(&it, &off, &len, &type);
         BOOT_LOG_DBG("tlv type=%#x,%d",type,bootutil_tlv_iter_is_prot(&it, off));
         if (rc < 0) {
+            BOOT_LOG_ERR("TLV iteration error, rc=%d", rc);
             goto out;
         } else if (rc > 0) {
             break;
@@ -493,11 +540,14 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
         if (type == EXPECTED_HASH_TLV) {
             /* Verify the image hash. This must always be present. */
             if (len != sizeof(hash)) {
+                BOOT_LOG_ERR("TLV hash length mismatch: expected %d, got %d", sizeof(hash), len);
                 rc = -1;
                 goto out;
             }
+            
             rc = LOAD_IMAGE_DATA(hdr, fap, off, buf, sizeof(hash));
             if (rc) {
+                BOOT_LOG_ERR("Failed to read TLV hash data, rc=%d", rc);
                 goto out;
             }
 
@@ -509,11 +559,25 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
 
             if (FIH_NOT_EQ(fih_rc, FIH_SUCCESS)) {
                 FIH_SET(fih_rc, FIH_FAILURE);
-                BOOT_LOG_INF("image hash error");
+                BOOT_LOG_ERR("TLV hash verification failed!");
                 goto out;
             }
 
             image_hash_valid = 1;
+
+#if CONFIG_BL2_SKIP_VALIDATE
+            if (image_hash_valid == 1 && (
+#if CONFIG_OTA_OVERWRITE
+                fap->fa_id == 0
+#elif CONFIG_DIRECT_XIP
+                (fap->fa_id == 2 || fap->fa_id == 3)
+#endif
+            )) {
+                /* Do not clear OTA confirm here, it will be cleared after XIP switching */
+                return 0;
+            }
+#endif
+
 #ifdef EXPECTED_KEY_TLV
         } else if (type == EXPECTED_KEY_TLV) {
             /*

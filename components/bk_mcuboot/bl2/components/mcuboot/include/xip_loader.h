@@ -32,6 +32,4 @@
 
 #include "common_loader.h"
 
-#define NO_ACTIVE_SLOT UINT32_MAX
-
 #endif

@@ -1,37 +1,37 @@
 /*
- * SPDX-License-Identifier: Apache-2.0
- *
- * Copyright (c) 2016-2020 Linaro LTD
- * Copyright (c) 2016-2019 JUUL Labs
- * Copyright (c) 2019-2023 Arm Limited
- * Copyright (c) 2024 Nordic Semiconductor ASA
- * Copyright (c) 2024 Beken
- *
- * Original license:
- *
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
+* SPDX-License-Identifier: Apache-2.0
+*
+* Copyright (c) 2016-2020 Linaro LTD
+* Copyright (c) 2016-2019 JUUL Labs
+* Copyright (c) 2019-2023 Arm Limited
+* Copyright (c) 2024 Nordic Semiconductor ASA
+* Copyright (c) 2024 Beken
+*
+* Original license:
+*
+* Licensed to the Apache Software Foundation (ASF) under one
+* or more contributor license agreements.  See the NOTICE file
+* distributed with this work for additional information
+* regarding copyright ownership.  The ASF licenses this file
+* to you under the Apache License, Version 2.0 (the
+* "License"); you may not use this file except in compliance
+* with the License.  You may obtain a copy of the License at
+*
+*  http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*/
 
 #include "common_loader.h"
 
 int
 boot_add_shared_data(struct boot_loader_state *state,
-                     uint8_t active_slot)
+                    uint8_t active_slot)
 {
 #if defined(MCUBOOT_MEASURED_BOOT) || defined(MCUBOOT_DATA_SHARING)
     int rc;
@@ -156,7 +156,7 @@ boot_erase_region(const struct flash_area *fap, uint32_t off, uint32_t sz)
 
 static fih_ret
 boot_image_check(struct boot_loader_state *state, struct image_header *hdr,
-                 const struct flash_area *fap, struct boot_status *bs)
+                const struct flash_area *fap, struct boot_status *bs)
 {
     TARGET_STATIC uint8_t tmpbuf[BOOT_TMPBUF_SZ];
     uint8_t image_index;
@@ -173,7 +173,7 @@ boot_image_check(struct boot_loader_state *state, struct image_header *hdr,
     image_index = BOOT_CURR_IMG(state);
 
     FIH_CALL(bootutil_img_validate, fih_rc, BOOT_CURR_ENC(state), image_index,
-             hdr, fap, tmpbuf, BOOT_TMPBUF_SZ, NULL, 0, NULL);
+            hdr, fap, tmpbuf, BOOT_TMPBUF_SZ, NULL, 0, NULL);
 
     FIH_RET(fih_rc);
 }
@@ -218,7 +218,7 @@ bool bk_skip_validate()
 
 fih_ret
 boot_validate_slot(struct boot_loader_state *state, int slot,
-                   struct boot_status *bs)
+                struct boot_status *bs)
 {
     const struct flash_area *fap;
     struct image_header *hdr;
@@ -241,21 +241,25 @@ boot_validate_slot(struct boot_loader_state *state, int slot,
         goto out;
     }
 
+    BOOT_LOG_INF("Starting validation of %s slot", (slot == BOOT_PRIMARY_SLOT) ? "primary" : "secondary");
     BOOT_HOOK_CALL_FIH(boot_image_check_hook, FIH_BOOT_HOOK_REGULAR,
-                       fih_rc, BOOT_CURR_IMG(state), slot);
+                    fih_rc, BOOT_CURR_IMG(state), slot);
     if (FIH_EQ(fih_rc, FIH_BOOT_HOOK_REGULAR))
     {
         FIH_CALL(boot_image_check, fih_rc, state, hdr, fap, bs);
     }
+    BOOT_LOG_INF("Validation of %s slot completed, result=%s", 
+                 (slot == BOOT_PRIMARY_SLOT) ? "primary" : "secondary",
+                 FIH_EQ(fih_rc, FIH_SUCCESS) ? "SUCCESS" : "FAILED");
     if (!boot_is_header_valid(hdr, fap) || FIH_NOT_EQ(fih_rc, FIH_SUCCESS)) {
         if ((slot != BOOT_PRIMARY_SLOT) || ARE_SLOTS_EQUIVALENT()) {
             // flash_area_erase(fap, 0, flash_area_get_size(fap));
             /* Image is invalid, erase it to prevent further unnecessary
-             * attempts to validate and boot it.
-             */
+            * attempts to validate and boot it.
+            */
         }
         BOOT_LOG_ERR("Image in the %s slot is not valid!",
-                     (slot == BOOT_PRIMARY_SLOT) ? "primary" : "secondary");
+                    (slot == BOOT_PRIMARY_SLOT) ? "primary" : "secondary");
         fih_rc = FIH_NO_BOOTABLE_IMAGE;
         goto out;
     }
@@ -324,7 +328,7 @@ done:
 
 int
 boot_read_image_header(struct boot_loader_state *state, int slot,
-                       struct image_header *out_hdr, struct boot_status *bs)
+                    struct image_header *out_hdr, struct boot_status *bs)
 {
     const struct flash_area *fap;
     int area_id;
@@ -362,11 +366,11 @@ boot_read_image_headers(struct boot_loader_state *state, bool require_all,
         }
         if (rc != 0) {
             /* If `require_all` is set, fail on any single fail, otherwisetianxin
-             * if at least the first slot's header was read successfully,
-             * then the boot loader can attempt a boot.
-             *
-             * Failure to read any headers is a fatal error.
-             */
+            * if at least the first slot's header was read successfully,
+            * then the boot loader can attempt a boot.
+            *
+            * Failure to read any headers is a fatal error.
+            */
             if (i > 0 && !require_all) {
                 return 0;
             } else {
@@ -393,7 +397,37 @@ fill_rsp(struct boot_loader_state *state, struct boot_rsp *rsp)
 #if CONFIG_MIXED_OTA
     BOOT_CURR_IMG(state) = 1;
 #endif
+    
+#if CONFIG_DIRECT_XIP || CONFIG_MIXED_OTA
+    /* For XIP mode: Check if xip_boot_go has already set the rsp */
+    /* xip_boot_go re-reads the header from flash and sets rsp->br_hdr correctly */
+    /* We should not overwrite it if it's already set correctly */
+    if (state->slot_usage[BOOT_CURR_IMG(state)].active_slot != NO_ACTIVE_SLOT) {
+        active_slot = state->slot_usage[BOOT_CURR_IMG(state)].active_slot;
+        uint32_t slot_off = boot_img_slot_off(state, active_slot);
+        
+        /* Check if rsp has already been set by xip_boot_go */
+        /* If image_off matches the active_slot's offset, rsp was already set correctly */
+        if (rsp->br_image_off == slot_off && rsp->br_hdr != NULL) {
+            /* rsp has already been set by xip_boot_go, don't overwrite it */
+            return;
+        }
+    } else {
+        /* Fallback logic: prefer PRIMARY_SLOT if available, otherwise try SECONDARY_SLOT */
+        /* This handles cases where xip_boot_go didn't set active_slot (e.g., first boot) */
+        if (state->slot_usage[BOOT_CURR_IMG(state)].slot_available[BOOT_PRIMARY_SLOT]) {
+            active_slot = BOOT_PRIMARY_SLOT;
+        } else if (state->slot_usage[BOOT_CURR_IMG(state)].slot_available[BOOT_SECONDARY_SLOT]) {
+            active_slot = BOOT_SECONDARY_SLOT;
+        } else {
+            /* If no slot is available, default to PRIMARY_SLOT (original behavior) */
+            active_slot = BOOT_PRIMARY_SLOT;
+        }
+    }
+#else
+    /* For overwrite mode: Always use PRIMARY_SLOT (original behavior) */
     active_slot = BOOT_PRIMARY_SLOT;
+#endif
 
     rsp->br_flash_dev_id = flash_area_get_device_id(BOOT_IMG_AREA(state, active_slot));
     rsp->br_image_off = boot_img_slot_off(state, active_slot);
@@ -403,14 +437,14 @@ fill_rsp(struct boot_loader_state *state, struct boot_rsp *rsp)
 #if CONFIG_ANTI_ROLLBACK
 int
 boot_update_security_counter(uint8_t image_index, int slot,
-                             struct image_header *hdr)
+                            struct image_header *hdr)
 {
     const struct flash_area *fap = NULL;
     uint32_t img_security_cnt;
     int rc;
 
     rc = flash_area_open(flash_area_id_from_multi_image_slot(image_index, slot),
-                         &fap);
+                        &fap);
     if (rc != 0) {
         rc = BOOT_EFLASH;
         goto done;

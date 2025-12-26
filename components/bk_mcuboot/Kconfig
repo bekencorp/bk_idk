@@ -100,6 +100,10 @@ menu "BL2"
 		config OTA_CONFIRM_UPDATE
 			bool "confirm update after ota download"
 			default n
+			
+		config DBUS_CHECK_CRC
+			bool "do crc check before cbus read"
+			default y
 
 		config XIP_NO_VERSION
 			bool "xip without security counter and version"

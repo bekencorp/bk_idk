@@ -53,6 +53,10 @@
 #include "bootutil_misc.h"
 #include "flash_partition.h"
 
+#if CONFIG_BL2_WDT
+#include <driver/wdt_hal.h>
+#endif
+
 #ifdef CONFIG_MCUBOOT
 BOOT_LOG_MODULE_DECLARE(mcuboot);
 #else
@@ -985,7 +989,7 @@ bool check_crc(uint32_t vir_start, size_t size)
 
     for (size_t i = 0; i < size / 34; i++) {
 #if CONFIG_BL2_WDT
-        aon_wdt_feed();
+        wdt_hal_force_feed();
 #endif
         bk_flash_read_bytes(phy_start + i*34, (uint8_t *)&enc_data, 34);
         memset(ff_buf, 0xFF, 34);

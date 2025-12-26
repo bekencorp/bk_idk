@@ -77,8 +77,8 @@ bk_err_t xip_ota_write_cbus(const bk_ota_t *ota, uint32_t off, uint8_t *buf, uin
 
 	uint32_t fa_off = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(partition_a->partition_start_addr));
 
-	if((fa_off + off) & 0x31) { // MUST aligh with 32-byte.
-		OTA_LOGE(TAG, "align\r\n");
+	if((fa_off + off) & 0x1F) { // MUST align with 32-byte (check lower 5 bits)
+		OTA_LOGE(TAG, "address not aligned to 32-byte boundary\r\n");
 		return BK_ERR_PARAM;
 	}
 	vPortDisableTimerInterrupt();
@@ -123,8 +123,8 @@ bk_err_t xip_ota_read_cbus(const bk_ota_t *ota, uint32_t off, uint8_t *buf, uint
 
 	uint32_t fa_off = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(partition_a->partition_start_addr));
 
-	if((fa_off + off) & 0x31) { // MUST aligh with 32-byte.
-		OTA_LOGE(TAG, "align\r\n");
+	if((fa_off + off) & 0x1F) { // MUST align with 32-byte (check lower 5 bits)
+		OTA_LOGE(TAG, "address not aligned to 32-byte boundary\r\n");
 		return BK_ERR_PARAM;
 	}
 

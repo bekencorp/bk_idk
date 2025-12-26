@@ -7,6 +7,10 @@
 #include "bootutil/bootutil_log.h"
 #include "flash_map.h"
 
+#if CONFIG_BL2_WDT
+#include <driver/wdt_hal.h>
+#endif
+
 #define TOVIRTURE(addr) ((addr)%34+(addr)/34*32)
 #define TOPHY(addr) ((addr)%32+(addr)/32*34)
 #define CEIL_ALIGN_34(addr) (((addr) + 34 - 1) / 34 * 34)
@@ -228,7 +232,7 @@ boot_copy_region(struct boot_loader_state *state, const struct flash_area *fap_s
 
 	for (block_idx = restart_block_idx; block_idx < block_num; block_idx++){
 #if CONFIG_BL2_WDT
-		// aon_wdt_feed();
+		wdt_hal_force_feed();
 #endif
 		clean_buf();
 		flash_area_read(fap_src, off_src + bytes_copied, s_compressed_buf, block_list[block_idx]);

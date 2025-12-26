@@ -24,7 +24,7 @@ target_sources(bl2
 		${CMAKE_CURRENT_SOURCE_DIR}/src/update_pubkey.c
 		${CMAKE_CURRENT_SOURCE_DIR}/src/common_loader.c
 		${CMAKE_CURRENT_SOURCE_DIR}/src/hooks_bl2.c
-		${CMAKE_CURRENT_SOURCE_DIR}/src/bootutil_public.c
+		$<$<NOT:$<BOOL:${CONFIG_DBUS_CHECK_CRC}>>:${CMAKE_CURRENT_SOURCE_DIR}/src/bootutil_public.c>
 		${TINYSOC_PATH}/driver/cmsis_drivers/Driver_Flash.c
 )
 
@@ -56,6 +56,10 @@ target_compile_options(bootutil
 target_compile_definitions(bootutil
 	PRIVATE
 		$<$<BOOL:${DEFAULT_MCUBOOT_FLASH_MAP}>:DEFAULT_MCUBOOT_FLASH_MAP>
+		$<$<BOOL:${MCUBOOT_DIRECT_XIP}>:CONFIG_DIRECT_XIP>
+		$<$<BOOL:${CONFIG_OTA_CONFIRM_UPDATE}>:CONFIG_OTA_CONFIRM_UPDATE>
+		$<$<BOOL:${CONFIG_BL2_SKIP_VALIDATE}>:CONFIG_BL2_SKIP_VALIDATE>
+		$<$<BOOL:${CONFIG_DBUS_CHECK_CRC}>:CONFIG_DBUS_CHECK_CRC>
 )
 
 target_include_directories(mcuboot_config
