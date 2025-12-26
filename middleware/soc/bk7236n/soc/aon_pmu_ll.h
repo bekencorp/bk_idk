@@ -563,6 +563,23 @@ static inline uint32_t aon_pmu_ll_get_reg73_clkcnt_32k_samp(void) {
 	return r->clkcnt_32k_samp;
 }
 
+//reg reg74:
+
+static inline void aon_pmu_ll_set_reg74_value(uint32_t v) {
+	aon_pmu_r74_t *r = (aon_pmu_r74_t*)(SOC_AON_PMU_REG_BASE + (0x74 << 2));
+	r->v = v;
+}
+
+static inline uint32_t aon_pmu_ll_get_reg74_value(void) {
+	aon_pmu_r74_t *r = (aon_pmu_r74_t*)(SOC_AON_PMU_REG_BASE + (0x74 << 2));
+	return r->v;
+}
+
+static inline uint32_t aon_pmu_ll_get_reg74_isocnt_32k_samp(void) {
+	aon_pmu_r74_t *r = (aon_pmu_r74_t*)(SOC_AON_PMU_REG_BASE + (0x74 << 2));
+	return r->isocnt_32k_samp;
+}
+
 //reg r77:
 
 static inline uint32_t aon_pmu_ll_get_r77(void) {

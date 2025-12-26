@@ -43,6 +43,9 @@
 #include "cache.h"
 #endif
 
+#include <driver/aon_rtc.h>
+#define PM_BT_LP_RTC_ALARM_NAME "bt_lp"
+
 #define TAG       "bluetooth"
 #define LOGV(...) BK_LOGV(TAG, ##__VA_ARGS__)
 #define LOGD(...) BK_LOGD(TAG, ##__VA_ARGS__)
@@ -1327,6 +1330,78 @@ static void set_rfconfig_rf_mode(uint8_t mode)
 #endif
 }
 
+static void bt_lp_rtc_set(uint32_t tick, void *callback)
+{
+    alarm_info_t low_valtage_alarm = {
+                                    PM_BT_LP_RTC_ALARM_NAME,
+                                    tick,
+                                    1,
+                                    callback,
+                                    NULL
+                                    };
+    //force unregister previous if doesn't finish.
+    bk_alarm_unregister(AON_RTC_ID_1, low_valtage_alarm.name);
+    bk_alarm_register(AON_RTC_ID_1, &low_valtage_alarm);
+    bk_pm_wakeup_source_set(PM_WAKEUP_SOURCE_INT_RTC, NULL);
+}
+
+static void bt_lp_rtc_clear(void)
+{
+    bk_alarm_unregister(AON_RTC_ID_1, (uint8_t *)PM_BT_LP_RTC_ALARM_NAME);
+}
+
+static void bt_delay_us(uint32_t us)
+{
+    extern void bk_delay_us(UINT32 us);
+    bk_delay_us(us);
+}
+
+static uint32_t get_ana_timersel()
+{
+    #if CONFIG_BLE_LV_SUPPORT
+    return sys_hal_get_ana_reg12_timersel();
+    #else
+    return 0;
+    #endif
+}
+
+static uint32_t get_finecnt_samp(void)
+{
+    #if CONFIG_BLE_LV_SUPPORT
+    return aon_pmu_ll_get_reg72_value();
+    #else
+    return 0;
+    #endif
+}
+
+static uint32_t get_clkcnt_samp(void)
+{
+    #if CONFIG_BLE_LV_SUPPORT
+    return aon_pmu_ll_get_reg73_value();
+    #else
+    return 0;
+    #endif
+}
+
+static uint32_t get_isocnt_samp(void)
+{
+    #if CONFIG_BLE_LV_SUPPORT
+    return aon_pmu_ll_get_reg74_value();
+    #else
+    return 0;
+    #endif
+}
+
+void bluetooth_lowvol_enter_callback(void)
+{
+    bluetooth_lowvol_enter_cb_internal();
+}
+
+void bluetooth_lowvol_exit_callback(void)
+{
+    bluetooth_lowvol_exit_cb_internal();
+}
+
 //warning: bt_osi_funcs must be data section, otherwise a2dp_source_pcm and a2dp_source_decode will trig watchdog !!!!!!!!
 static struct bt_osi_funcs_t bt_osi_funcs =
 {
@@ -1443,6 +1518,14 @@ static struct bt_osi_funcs_t bt_osi_funcs =
     ._set_rfconfig_rf_mode = set_rfconfig_rf_mode,
     .wifi_mac_power_ctrl = wifi_mac_power_ctrl_wrapper,
     ._bk_feature_dsss_only_enable = bk_feature_wifi_dsss_only,
+
+    ._bt_lp_rtc_set         = bt_lp_rtc_set,
+    ._bt_lp_rtc_clear       = bt_lp_rtc_clear,
+    ._get_ana_timersel      = get_ana_timersel,
+    ._get_finecnt_samp      = get_finecnt_samp,
+    ._get_clkcnt_samp       = get_clkcnt_samp,
+    ._get_isocnt_samp       = get_isocnt_samp,
+    ._bt_delay_us           = bt_delay_us,
 };
 
 int bk_bt_os_adapter_init(void)

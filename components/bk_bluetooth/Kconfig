@@ -61,7 +61,7 @@ menu "Bk_ble"
     config BLUETOOTH_SLEEP_PHY_SWITCH
         bool "support sleep phy switch"
         default n
-	config BLE_LV_SUPPORT
+    config BLE_LV_SUPPORT
         bool "support low voltage sleep"
         default n
 
