@@ -68,4 +68,7 @@ menu "Bk_ble"
 	config CUSTOMER_INIT_BLE
 		bool "Enable customer init BLE"
 		default n
+    config BLE_THREAD_COEXIST_EN
+        bool "bt and thread coexist enable"
+        default n
 endmenu

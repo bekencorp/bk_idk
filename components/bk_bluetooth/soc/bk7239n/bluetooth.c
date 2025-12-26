@@ -423,7 +423,19 @@ static bk_err_t uart_take_rx_isr_wrapper(uint8_t id, void *isr, void *param)
 
 static void ble_vote_rf_ctrl_wrapper(uint8_t cmd)
 {
+#if (CONFIG_MAC802154_ENABLE && CONFIG_BLE_THREAD_COEXIST_EN)
+    extern void rfconfig_rf_switch_to_bt(void);
+    extern void rfconfig_rf_switch_to_thread(void);
+    if (cmd) {
+        rfconfig_rf_switch_to_bt();
+        rf_module_vote_ctrl(cmd, RF_BY_BLE_BIT);
+    } else {
+        rfconfig_rf_switch_to_thread();
+        rf_module_vote_ctrl((!cmd), RF_BY_THREAD_BIT);
+    }
+#else
     rf_module_vote_ctrl(cmd, RF_BY_BLE_BIT);
+#endif
 }
 
 static void ble_ate_vote_rf_ctrl_wrapper(uint8_t cmd)
