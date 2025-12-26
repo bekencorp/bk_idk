@@ -200,9 +200,6 @@ if (CONFIG_WPA3)
 		"src/common/dragonfly.c"
 		"src/common/sae.c"
 		)
-	if (NOT CONFIG_USE_MBEDTLS)
-		list(APPEND srcs "src/crypto/crypto_wolfssl.c")
-	endif()
 endif()
 if (CONFIG_WIFI_ROAMING)
 	list(APPEND srcs
