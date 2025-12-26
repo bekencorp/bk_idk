@@ -53,7 +53,8 @@
 
 #if !CONFIG_PSA_MBEDTLS
 #include "mbedtls/arc4.h"
-#define MBEDTLS_PRIVATE(member) member
+/* NOTE: Do NOT redefine MBEDTLS_PRIVATE here - use the one from private_access.h */
+/* mbedtls 3.x uses private_X member names by default */
 #endif
 
 #if defined(MBEDTLS_HAVE_INT32)
@@ -1750,7 +1751,8 @@ int crypto_ec_point_cmp(const struct crypto_ec *e,
 
 int crypto_key_compare(struct crypto_key *key1, struct crypto_key *key2)
 {
-#if CONFIG_PSA_MBEDTLS
+#if CONFIG_PSA_MBEDTLS || CONFIG_EXTERNAL_MBEDTLS_VERSION_3X
+	/* mbedtls 3.x API requires f_rng and p_rng parameters */
 	if (mbedtls_pk_check_pair((mbedtls_pk_context *)key1, (mbedtls_pk_context *)key2, NULL, NULL) < 0)
 #else
 	if (mbedtls_pk_check_pair((mbedtls_pk_context *)key1, (mbedtls_pk_context *)key2) < 0)
@@ -1952,7 +1954,8 @@ struct crypto_key *crypto_ec_get_key(const u8 *privkey, size_t privkey_len)
 		wpa_printf(MSG_ERROR, "memory allocation failed\n");
 		return NULL;
 	}
-#if CONFIG_PSA_MBEDTLS && !CONFIG_PSA_MBEDTLS_FORWARD_COMPATIBILITY
+#if (CONFIG_PSA_MBEDTLS && !CONFIG_PSA_MBEDTLS_FORWARD_COMPATIBILITY) || CONFIG_EXTERNAL_MBEDTLS_VERSION_3X
+	/* mbedtls 3.x API requires f_rng and p_rng parameters */
 	ret = mbedtls_pk_parse_key(kctx, privkey, privkey_len, NULL, 0, NULL, NULL);
 #else
 	ret = mbedtls_pk_parse_key(kctx, privkey, privkey_len, NULL, 0);
@@ -2869,7 +2872,8 @@ cleanup:
 }
 #endif
 
-#ifdef MBEDTLS_ARC4_C
+#if defined(MBEDTLS_ARC4_C) && !defined(CONFIG_EXTERNAL_MBEDTLS_VERSION_3X)
+/* Use mbedtls arc4 implementation (not available in mbedtls 3.x) */
 #include "mbedtls/arc4.h"
 int rc4_skip(const u8 *key, size_t keylen, size_t skip,
              u8 *data, size_t data_len)

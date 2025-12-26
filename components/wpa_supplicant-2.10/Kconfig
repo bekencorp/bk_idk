@@ -124,12 +124,51 @@ menu "modules::wpa_supplicant-2.10"
 				Statistics mobile connect sap time
 
 		config USE_MBEDTLS
-			depends on WIFI_ENABLE && (MBEDTLS || PSA_MBEDTLS)
+			depends on WIFI_ENABLE && (MBEDTLS || PSA_MBEDTLS) && !USE_EXTERNAL_MBEDTLS
 			bool "Enable MBEDTLS"
 			default y
 			help
 				use mbedtls as tls transport.
 				Use mbedtls as the crypto suite may accelerate ECC caculation speed.
+
+		config USE_EXTERNAL_MBEDTLS
+			depends on WIFI_ENABLE
+			bool "Use external mbedtls library"
+			default n
+			help
+				Use external mbedtls library instead of armino's built-in mbedtls.
+				This allows using mbedtls from external sources (source code or library).
+				When enabled, you must provide the mbedtls headers via
+				EXTERNAL_MBEDTLS_INCLUDE_PATH.
+
+		config EXTERNAL_MBEDTLS_CONFIG_PATH
+			string "External mbedtls config header path"
+			depends on USE_EXTERNAL_MBEDTLS
+			default ""
+			help
+				Path to the directory containing mbedtls config.h compatibility wrapper.
+				This directory will be searched first for mbedtls/config.h.
+				Leave empty to use the default from EXTERNAL_MBEDTLS_INCLUDE_PATH.
+
+		config EXTERNAL_MBEDTLS_INCLUDE_PATH
+			string "External mbedtls include path"
+			depends on USE_EXTERNAL_MBEDTLS
+			default ""
+			help
+				Path to the external mbedtls include directory.
+				This directory should contain mbedtls header files (md.h, pk.h, etc.).
+
+		config EXTERNAL_MBEDTLS_VERSION_3X
+			bool "External mbedtls is version 3.x"
+			depends on USE_EXTERNAL_MBEDTLS
+			default n
+			help
+				Enable this if external mbedtls is version 3.x.
+				This enables API compatibility adaptations:
+				- mbedtls_pk_check_pair() with 4 parameters
+				- mbedtls_pk_parse_key() with 7 parameters
+				- MBEDTLS_ECDH_LEGACY_CONTEXT for ECDH compatibility
+				- Use wpa_supplicant's aes-wrap/aes-omac1 implementations
 
 		config WPA_PSK_CACHE
 			bool "Enable WPA PSK Cache"

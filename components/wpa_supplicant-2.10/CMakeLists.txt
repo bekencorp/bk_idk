@@ -110,9 +110,15 @@ endif()
 			)
 	endif()
 
+	# mbedtls crypto implementation selection
 	if (CONFIG_USE_MBEDTLS)
 		# if mbedtls is enabled, use crypto_mbedtls
 		list(APPEND srcs "src/crypto/crypto_mbedtls.c")
+	elseif (CONFIG_USE_EXTERNAL_MBEDTLS)
+		# Use external mbedtls - may lack mbedtls_cipher_cmac_* functions
+		list(APPEND srcs "src/crypto/crypto_mbedtls.c")
+		# Add aes-omac1.c because external mbedtls may not have CMAC support
+		list(APPEND srcs "src/crypto/aes-omac1.c")
 	else()
 		# if mbedtls is not enabled, use wpa_supplicant's internal crypto implementation
 		list(APPEND srcs
@@ -218,11 +224,51 @@ unset(c_compile_options)
 # list(APPEND c_compile_options "-DBK_SUPPLICANT=1" "-DOS_NO_C_LIB_DEFINES")
 list(APPEND c_compile_options "-DBK_SUPPLICANT=1")
 
-armino_component_register(SRCS "${srcs}"
-	INCLUDE_DIRS "${incs}"
-	REQUIRES lwip_intf_v2_1
-	PRIV_REQUIRES mbedtls psa_mbedtls tfm_mbedtls
+if (CONFIG_USE_EXTERNAL_MBEDTLS)
+	# Use external mbedtls library (source code or pre-built library)
+	# User must provide mbedtls headers via Kconfig options
+
+	# Expand ${WPA_CMAKE_ROOT} variable in config paths
+	# WPA_CMAKE_ROOT = CMAKE_SOURCE_DIR = vendor/T7/t7_os/armino
+	set(WPA_CMAKE_ROOT "${CMAKE_SOURCE_DIR}")
+
+	# Process config path
+	if (CONFIG_EXTERNAL_MBEDTLS_CONFIG_PATH)
+		string(REPLACE "\${WPA_CMAKE_ROOT}" "${WPA_CMAKE_ROOT}" EXT_MBEDTLS_CONFIG_PATH "${CONFIG_EXTERNAL_MBEDTLS_CONFIG_PATH}")
+		list(APPEND incs "${EXT_MBEDTLS_CONFIG_PATH}")
+	endif()
+
+	# Process include path
+	if (CONFIG_EXTERNAL_MBEDTLS_INCLUDE_PATH)
+		string(REPLACE "\${WPA_CMAKE_ROOT}" "${WPA_CMAKE_ROOT}" EXT_MBEDTLS_INC_PATH "${CONFIG_EXTERNAL_MBEDTLS_INCLUDE_PATH}")
+		list(APPEND incs "${EXT_MBEDTLS_INC_PATH}")
+		list(APPEND incs "${EXT_MBEDTLS_INC_PATH}/mbedtls")
+	endif()
+
+	# Register component without linking armino's mbedtls
+	armino_component_register(SRCS "${srcs}"
+		INCLUDE_DIRS "${incs}"
+		REQUIRES lwip_intf_v2_1
 	)
+
+	message(STATUS "wpa_supplicant: Using external mbedtls")
+	if (CONFIG_EXTERNAL_MBEDTLS_CONFIG_PATH)
+		message(STATUS "  Config path: ${EXT_MBEDTLS_CONFIG_PATH}")
+	endif()
+	if (CONFIG_EXTERNAL_MBEDTLS_INCLUDE_PATH)
+		message(STATUS "  Include path: ${EXT_MBEDTLS_INC_PATH}")
+	endif()
+	if (CONFIG_EXTERNAL_MBEDTLS_VERSION_3X)
+		message(STATUS "  Version: 3.x (compatibility mode enabled)")
+	endif()
+
+else()
+	armino_component_register(SRCS "${srcs}"
+		INCLUDE_DIRS "${incs}"
+		REQUIRES lwip_intf_v2_1
+		PRIV_REQUIRES mbedtls psa_mbedtls tfm_mbedtls
+	)
+endif()
 # set CFLAGS
 armino_build_set_property(C_COMPILE_OPTIONS "${c_compile_options}" APPEND)
 
