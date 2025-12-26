@@ -71,6 +71,38 @@ int bk_feature_get_cpu_cnt(void) {
 #endif
 }
 
+int bk_feature_auto_garp_enable(void) {
+#if CONFIG_AUTO_GARP
+	return 1;
+#else
+	return 0;
+#endif
+}
+
+int bk_feature_get_auto_garp_period(void) {
+#if CONFIG_AUTO_GARP
+	return CONFIG_AUTO_GARP_PERIOD;
+#else
+	return 0;
+#endif
+}
+
+int bk_feature_correct_listen_interval_ie_enable(void) {
+#if CONFIG_CORRECT_LISTEN_INTERVAL_IE
+	return 1;
+#else
+	return 0;
+#endif
+}
+
+int bk_feature_config_sleep_mode_enable(void) {
+#if CONFIG_WIFI_SLEEP_MODE_SUPPORT
+	return 1;
+#else
+	return 0;
+#endif
+}
+
 
 int bk_feature_receive_bcmc_enable(void) {
 #if CONFIG_RECEIVE_BCMC_IN_DTIM10

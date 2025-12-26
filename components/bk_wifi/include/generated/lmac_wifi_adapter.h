@@ -172,6 +172,10 @@ typedef struct {
 	int (*_wapi_wpi_decrypt)(uint8_t *data, uint32_t data_len, uint32_t info);
 	int (*_bk_feature_non_standard_enable)(void);
 	int (*_bk_feature_receive_bcmc_enable)(void);
+	int (*_bk_feature_auto_garp_enable)(void);
+	int (*_bk_feature_get_auto_garp_period)(void);
+	int (*_bk_feature_correct_listen_interval_ie_enable)(void);
+	int (*_bk_feature_config_sleep_mode_enable)(void);
 	int (*_bk_feature_bssid_connect_enable)(void);
 	int (*_bk_feature_fast_connect_enable)(void);
 	int (*_bk_feature_send_deauth_before_connect)(void);

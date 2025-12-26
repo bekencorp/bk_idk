@@ -1258,6 +1258,30 @@ bool bk_wifi_get_lowpower_mode(void);
 bk_err_t bk_wifi_send_listen_interval_req(uint8_t interval);
 
 /**
+ * @brief  Set sleep mode.
+ *
+ * @param  0, 1, 2
+ *
+ * @return
+ * 	-BK_OK: on success
+ * 	-others:real error, used for future.
+ *
+ */
+bk_err_t bk_wifi_send_sleep_mode_req(uint8_t sleep_mode);
+
+/**
+ * @brief  Get sleep mode.
+ *
+ * @param  return the configure sleep mode
+ *
+ * @return
+ *  -0: min    modem sleep mode
+ *  -1: middle modem sleep mode
+ *  -2: max    modem sleep mode
+ */
+bk_err_t bk_wifi_get_sleep_mode(uint8_t *sleep_mode);
+
+/**
  * @brief  Get listen interval.
  *
  * @param  return the configure listen interval

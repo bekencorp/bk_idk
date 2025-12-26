@@ -4099,11 +4099,6 @@ bool bk_wifi_get_lowpower_mode(void) {
 }
 
 bk_err_t bk_wifi_send_listen_interval_req(uint8_t interval) {
-	if(!((1 == interval) || (3 == interval) || (10 == interval)))
-	{
-		WIFI_LOGE("set listen_int %d,the recommended value is 1,3,10\r\n",interval);
-	}
-
 	if (interval >= 10)
 		wifi_lowpower_mode = true;
 
@@ -4138,6 +4133,53 @@ bk_err_t bk_wifi_get_listen_interval(uint8_t *listen_interval)
 	}
 
 	*listen_interval = cfm->listen_intv_dyna;
+	get_result = BK_OK;
+
+get_exit:
+	if (cfm)
+		os_free(cfm);
+
+	return get_result;
+}
+
+bk_err_t bk_wifi_send_sleep_mode_req(uint8_t sleep_mode) {
+	if(sleep_mode > 2)
+	{
+		WIFI_LOGE("sleep mode can only be set 0, 1 or 2\n");
+		return BK_FAIL;
+	}
+
+	uint8_t vif_idx = 0;
+	vif_idx = wifi_netif_mac_to_vifid((uint8_t*)&g_sta_param_ptr->own_mac);
+
+#if NX_P2P
+	VIF_INF_PTR vif = rwm_mgmt_vif_idx2ptr(vif_idx);
+	if (mac_vif_mgmt_interface_is_configured_for_p2p(vif))
+		return BK_FAIL;
+#endif
+
+	return rw_msg_send_sleep_mode_req(vif_idx, sleep_mode);
+}
+
+bk_err_t bk_wifi_get_sleep_mode(uint8_t *sleep_mode)
+{
+	bk_err_t get_result = BK_FAIL;
+	struct mm_get_sleep_mode_cfm *cfm = NULL;
+
+	WIFI_LOGD("bk_wifi_get_sleep_mode\n");
+
+	cfm = os_malloc(sizeof(struct mm_get_sleep_mode_cfm));
+	if (!cfm) {
+		WIFI_LOGE("get_sleep_mode, malloc fail\r\n");
+		goto get_exit;
+	}
+
+	if (BK_OK != rw_msg_get_sleep_mode_req((void *)cfm)) {
+		WIFI_LOGE("get_sleep_mode, send fail\r\n");
+		goto get_exit;
+	}
+
+	*sleep_mode = cfm->sleep_mode;
 	get_result = BK_OK;
 
 get_exit:

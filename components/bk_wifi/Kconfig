@@ -92,6 +92,10 @@ menu "Bk_Wifi"
 		help
 			disable wifi ps if need.
 
+	config WIFI_SLEEP_MODE_SUPPORT
+		bool "support config sleep mode"
+		default n
+
 	config WIFI_NON_STANDARD
 		bool "Enable WiFi Non Standard"
 		default n
@@ -469,6 +473,10 @@ menu "Bk_Wifi"
 
 	config COMPUTE_LISTEN_INTERVAL
 		bool "Enable compute listen interval"
+		default n
+
+	config CORRECT_LISTEN_INTERVAL_IE
+		bool "put correct listen interval ie in assoc req"
 		default n
 
 	config BEACON_MISS_CB

@@ -72,6 +72,18 @@ menu "Lwip_intf_v2_1"
 			bool "Enable DHCP_ONGOING_OPTIM"
 			default n
 
+		config AUTO_GARP
+			bool "Enable Auto Gratuitous ARP"
+			default n
+
+		config AUTO_GARP_PERIOD
+			depends on AUTO_GARP
+			int "Set Gratuitous ARP period"
+			range 30 180
+			default 60
+			help
+				Period of Gratuitous ARP
+
 		config AUTOIP
 			bool "Enable AUTOIP"
 			default n

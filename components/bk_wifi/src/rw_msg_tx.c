@@ -1682,6 +1682,36 @@ int rw_msg_get_listen_interval_req(void *cfm)
 	return rw_msg_send(req, 1, MM_GET_LISTEN_INTERVAL_CFM, cfm);
 }
 
+int rw_msg_send_sleep_mode_req(uint8_t vif_idx, uint8_t sleep_mode)
+{
+	struct mm_set_sleep_mode_req *req;
+	/* Build the MM_SET_SLEEP_MODE_REQ message */
+	req = ke_msg_alloc(MM_SET_SLEEP_MODE_REQ, TASK_MM, TASK_API,
+                          sizeof(struct mm_set_sleep_mode_req));
+	if (!req)
+		return -ENOMEM;
+
+	/* Set parameters */
+	req->vif_index = vif_idx;
+	req->sleep_mode = sleep_mode;
+
+	/* Send the MM_SET_SLEEP_MODE_REQ message to LMAC FW */
+	return rw_msg_send(req, 1, MM_SET_SLEEP_MODE_CFM, NULL);
+}
+
+int rw_msg_get_sleep_mode_req(void *cfm)
+{
+	struct mm_get_sleep_mode_req *req = NULL;
+
+	req = ke_msg_alloc(MM_GET_SLEEP_MODE_REQ, TASK_MM, TASK_API,
+					   sizeof(struct mm_get_sleep_mode_req));
+
+	if (!req)
+		return BK_ERR_NO_MEM;
+
+	return rw_msg_send(req, 1, MM_GET_SLEEP_MODE_CFM, cfm);
+}
+
 int rw_msg_send_bcn_loss_int_req(uint8_t vif_idx, uint8_t interval,uint8_t repeat_num)
 {
 	struct mm_set_bcn_loss_int_req *req;

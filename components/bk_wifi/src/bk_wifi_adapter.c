@@ -534,6 +534,22 @@ static void mac_ps_bcn_callback_wrapper(uint8_t *data, int len)
     //mac_ps_bcn_callback(data, len);
 }
 
+static int bk_feature_auto_garp_enable_wrapper(void) {
+    return bk_feature_auto_garp_enable();
+}
+
+static int bk_feature_get_auto_garp_period_wrapper(void) {
+    return bk_feature_get_auto_garp_period();
+}
+
+static int bk_feature_correct_listen_interval_ie_enable_wrapper(void) {
+    return bk_feature_correct_listen_interval_ie_enable();
+}
+
+static int bk_feature_config_sleep_mode_enable_wrapper(void) {
+    return bk_feature_config_sleep_mode_enable();
+}
+
 static UINT8 mac_sleeped_wrapper(void)
 {
     //return mac_sleeped();
@@ -1514,6 +1530,10 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._wapi_wpi_decrypt = NULL,
 	._bk_feature_non_standard_enable = bk_feature_non_standard_enable_wrapper,
 	._bk_feature_receive_bcmc_enable = bk_feature_receive_bcmc_enable_wrapper,
+	._bk_feature_auto_garp_enable = bk_feature_auto_garp_enable_wrapper,
+	._bk_feature_get_auto_garp_period = bk_feature_get_auto_garp_period_wrapper,
+	._bk_feature_correct_listen_interval_ie_enable = bk_feature_correct_listen_interval_ie_enable_wrapper,
+	._bk_feature_config_sleep_mode_enable = bk_feature_config_sleep_mode_enable_wrapper,
 	._bk_feature_bssid_connect_enable = bk_feature_bssid_connect_enable_wrapper,
 	._bk_feature_fast_connect_enable = bk_feature_fast_connect_enable_wrapper,
 	._bk_feature_send_deauth_before_connect = bk_feature_send_deauth_before_connect_wrapper,

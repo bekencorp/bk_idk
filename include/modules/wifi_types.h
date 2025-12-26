@@ -167,6 +167,8 @@ typedef enum {
 	EVENT_WIFI_NETWORK_FOUND,      /**< The BK STA find target AP */
 	EVENT_WIFI_BEACON_HINT,        /**< Beacon found on NO_IR channel */
 	EVENT_WIFI_REGDOMAIN_CHANGED,  /**< Regulatory domain changed */
+	EVENT_WIFI_DTIM_RECEIVED,      /**< The BK STA receives DTIM from AP */
+	EVENT_WIFI_AWARE_WAKE_INTERVAL_START, /**< The BK Aware wake interval start */
 
 	EVENT_WIFI_COUNT,              /**< WiFi event count */
 } wifi_event_t;
@@ -696,6 +698,11 @@ typedef struct {
 typedef struct {
 	uint8_t mac[WIFI_MAC_LEN];            /**< MAC of the STA disconnected from the BK AP */
 } wifi_event_ap_disconnected_t;
+
+typedef struct {
+	uint32_t beacon_interval;            /**< beacon interval */
+	uint8_t dtim_period;                 /**< dtim period */
+} wifi_event_dtim_received_t;
 
 typedef struct {
 	uint8_t initiator; /**< 0: core, 1: user, 2: driver, 3: dot11d */

@@ -1918,7 +1918,7 @@ void rwnx_handle_recv_msg(struct ke_msg *rx_msg)
 
 		wpa_ctrl_event_copy(WPA_CTRL_EVENT_MM_RSSI_STATUS_IND, ind, sizeof(*ind));
 	}	break;
-#if CONFIG_WIFI6
+#if CONFIG_WIFI6 || CONFIG_AUTO_GARP
 	case ME_INDICATE_SEND_ARP_IND: {
 		struct ke_msg *msg_ptr;
 		struct me_indicate_send_arp_ind *ind;

@@ -713,6 +713,13 @@ enum
     BEACON_IND_MOREDATA    = 2,
     BEACON_IND_MISS        = 3,
 };
+
+enum MM_SLEEP_MODE
+{
+    MM_MIN_MODEM_SLEEP_MODE,
+    MM_MID_MODEM_SLEEP_MODE,
+    MM_MAX_MODEM_SLEEP_MODE,
+};
 #endif
 
 /// Features supported by LMAC - Positions
@@ -1130,6 +1137,15 @@ enum mm_msg_tag
     MM_SCAN_CHANNEL_END_IND,
     /// Internal request to move the AP TBTT by an offset.
     MM_TBTT_MOVE_REQ,
+    /// MAX number of messages.
+    ///sleep mode Configuration Request.
+    MM_SET_SLEEP_MODE_REQ,
+    ///sleep mode Configuration Confirmation.
+    MM_SET_SLEEP_MODE_CFM,
+    ///get sleep mode Request.
+    MM_GET_SLEEP_MODE_REQ,
+    ///get sleep mode Confirmation.
+    MM_GET_SLEEP_MODE_CFM,
     /// MAX number of messages.
     MM_MAX,
 };
@@ -2018,11 +2034,34 @@ struct mm_get_listen_interval_req
     //uint8_t vif_index;
 };
 
+/// Structure containing the parameters of the @ref MM_SET_SLEEP_MODE_REQ message.
+struct mm_set_sleep_mode_req
+{
+    /// Index of the VIF
+    uint8_t vif_index;
+    /// sleep mode
+    uint8_t sleep_mode;
+};
+
 /// Structure containing the parameters of the @ref MM_GET_LISTEN_INTERVAL_CFM message.
 struct mm_get_listen_interval_cfm
 {
     /// Dynamic Listen interval
     uint8_t listen_intv_dyna;
+};
+
+/// Structure containing the parameters of the @ref MM_GET_SLEEP_MODE_REQ message.
+struct mm_get_sleep_mode_req
+{
+    /// Index of the VIF
+    //uint8_t vif_index;
+};
+
+/// Structure containing the parameters of the @ref MM_GET_SLEEP_MODE_CFM message.
+struct mm_get_sleep_mode_cfm
+{
+    /// sleep mode
+    uint8_t sleep_mode;
 };
 
 /// Structure containing the parameters of the @ref MM_SET_LISTEN_INTERVAL_REQ message.

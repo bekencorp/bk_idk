@@ -140,6 +140,44 @@ int bk_feature_get_cpu_id(void);
  */
 int bk_feature_get_cpu_cnt(void);
 
+/**
+ * @brief     Interface for customer to Enable/Disable Auto Gratuitous ARP
+ *
+ *
+ * @return
+ *    - 0: Disable Auto Gratuitous ARP
+ *    - 1: Enable Auto Gratuitous ARP
+ *
+ */
+int bk_feature_auto_garp_enable(void);
+
+/**
+ * @brief     Interface for customer to Enable/Disable correct listen interval ie in assoc req
+ *
+ *
+ * @return
+ *    - 0: Disable correct listen interval ie
+ *    - 1: Enable correct listen interval ie
+ *
+ */
+int bk_feature_correct_listen_interval_ie_enable(void);
+
+/**
+ * @brief     Interface for customer to Enable/Disable config sleep mode
+ *
+ *
+ * @return
+ *    - 0: Disable config sleep mode
+ *    - 1: Enable config sleep mode
+ *
+ */
+int bk_feature_config_sleep_mode_enable(void);
+
+/**
+ * @brief     Interface for customer to get Auto Gratuitous ARP period
+ *
+ */
+int bk_feature_get_auto_garp_period(void);
 
 /**
  * @brief     Interface for customer to Enable/Disable Station receiving BCMC frame in dtim10
