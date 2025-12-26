@@ -42,22 +42,89 @@
  #define TEST_SECTOR_SIZE         0x1000       /* 4KB sector */
  #define TEST_PAGE_SIZE           256          /* 256 bytes page */
 
- /* Maximum number of test tasks */
- #define MAX_READ_TASKS           5
- #define MAX_WRITE_TASKS          2
- #define MAX_ERASE_TASKS          1
+/* Maximum number of test tasks */
+#define MAX_READ_TASKS           6
+#define MAX_WRITE_TASKS          6
+#define MAX_ERASE_TASKS          6
+#define MAX_STRESS_TASKS         10
+
+#define TASK_BLOCK_SIZE          0x2000      /* 8KB per task */
+#define READ_TASK_AREA_BASE      TEST_FLASH_BASE_ADDR
+#define READ_TASK_AREA_SIZE      (MAX_READ_TASKS * TASK_BLOCK_SIZE)
+#define WRITE_TASK_AREA_BASE     (TEST_FLASH_BASE_ADDR + READ_TASK_AREA_SIZE)
+
+#define READ_TASK_ADDR(id)       (READ_TASK_AREA_BASE + ((uint32_t)(id) * TASK_BLOCK_SIZE))
+#define WRITE_TASK_ADDR(id)      (WRITE_TASK_AREA_BASE + ((uint32_t)(id) * TASK_BLOCK_SIZE))
+#define ERASE_TASK_AREA_BASE     (WRITE_TASK_AREA_BASE + (MAX_WRITE_TASKS * TASK_BLOCK_SIZE))
+#define ERASE_TASK_STRIDE        0x4000
+#define ERASE_TASK_ADDR(id)      (ERASE_TASK_AREA_BASE + ((uint32_t)(id) * ERASE_TASK_STRIDE))
+#define STRESS_TASK_AREA_BASE    TEST_FLASH_BASE_ADDR
+#define STRESS_TASK_STRIDE       0x1000
+#define STRESS_TASK_ADDR(id)     (STRESS_TASK_AREA_BASE + ((uint32_t)(id) * STRESS_TASK_STRIDE))
+#define INIT_SEQ_VALUE           0xAAAAAAAA
+#define FLASH_PRIORITY_BASE      4
+#define FLASH_PRIORITY_SLOTS     6
+
+#ifndef FLASH_TEST_TASK_NAME_LEN
+#ifdef configMAX_TASK_NAME_LEN
+#define FLASH_TEST_TASK_NAME_LEN configMAX_TASK_NAME_LEN
+#else
+#define FLASH_TEST_TASK_NAME_LEN 16
+#endif
+#endif
+
+typedef enum {
+    STRESS_OP_READ = 0,
+    STRESS_OP_WRITE = 1,
+    STRESS_OP_ERASE = 2,
+} stress_op_type_t;
 
 /* Test run control */
 static volatile bool g_test_running = false;
 static volatile bool g_test_stopped = false;
 
+static void apply_task_jitter(uint32_t task_id)
+{
+    extern int bk_rand(void);
+    extern void bk_delay_us(uint32 num);
+    uint32_t delay = (bk_rand() % 100) + 1 + task_id;
+    bk_delay_us(delay);
+}
+
+static bk_err_t create_thread_checked(beken_thread_t *thread, uint8_t priority,
+                                      const char *name, beken_thread_function_t function,
+                                      uint32_t stack_size, void *arg)
+{
+    bk_err_t ret = rtos_create_thread(thread, priority, name, function, stack_size, arg);
+    if(ret != BK_OK) {
+        CLI_LOGE("Failed to create '%s' thread (prio=%u), ret=%d, arg=0x%x\r\n",
+                 name ? name : "unknown", priority, ret, arg);
+    }
+    return ret;
+}
+
 /* Global buffers to avoid stack overflow (256 bytes per buffer)
- * Create enough buffers for maximum concurrent tasks (10 for stress test)
+ * Each task type gets dedicated buffers so there is no sharing or aliasing.
  */
-#define MAX_CONCURRENT_BUFFERS  10
-static uint8_t g_read_buffers[MAX_CONCURRENT_BUFFERS][TEST_PAGE_SIZE];
-static uint8_t g_write_buffers[MAX_CONCURRENT_BUFFERS][TEST_PAGE_SIZE];
-static uint8_t g_verify_buffers[MAX_CONCURRENT_BUFFERS][TEST_PAGE_SIZE];
+static uint8_t g_read_buffers[MAX_READ_TASKS][TEST_PAGE_SIZE];
+static uint8_t g_read_verify_buffers[MAX_READ_TASKS][TEST_PAGE_SIZE];
+static uint8_t g_read_expected[MAX_READ_TASKS][TEST_PAGE_SIZE];
+
+static uint8_t g_write_buffers[MAX_WRITE_TASKS][TEST_PAGE_SIZE];
+static uint8_t g_write_verify_buffers[MAX_WRITE_TASKS][TEST_PAGE_SIZE];
+
+static uint8_t g_erase_buffers[MAX_ERASE_TASKS][TEST_PAGE_SIZE];
+
+static uint8_t g_stress_buffers[MAX_STRESS_TASKS][TEST_PAGE_SIZE];
+static uint8_t g_stress_verify_buffers[MAX_STRESS_TASKS][TEST_PAGE_SIZE];
+
+static uint8_t g_isr_buffer[TEST_PAGE_SIZE];
+static uint8_t g_sector_verify_buffer[TEST_PAGE_SIZE];
+static char g_read_task_names[MAX_READ_TASKS][FLASH_TEST_TASK_NAME_LEN];
+static char g_write_task_names[MAX_WRITE_TASKS][FLASH_TEST_TASK_NAME_LEN];
+static char g_erase_task_names[MAX_ERASE_TASKS][FLASH_TEST_TASK_NAME_LEN];
+static char g_stress_task_names[MAX_STRESS_TASKS][FLASH_TEST_TASK_NAME_LEN];
+static char g_isr_task_name[FLASH_TEST_TASK_NAME_LEN];
 
  /* ============================================================================
   * Statistics Data Structure
@@ -91,6 +158,53 @@ static uint8_t g_verify_buffers[MAX_CONCURRENT_BUFFERS][TEST_PAGE_SIZE];
      bk_rtc_gettimeofday(&tv, NULL);
      return (uint64_t)tv.tv_sec * 1000000 + tv.tv_usec;
  }
+
+static char *prepare_task_name(char *buf, const char *fmt, uint32_t id)
+{
+    os_snprintf(buf, FLASH_TEST_TASK_NAME_LEN, fmt, id);
+    buf[FLASH_TEST_TASK_NAME_LEN - 1] = '\0';
+    return buf;
+}
+
+static void create_tasks_with_priority_cycle(uint32_t task_count,
+                                             uint32_t priority_base,
+                                             uint32_t slot_count,
+                                             char (*names)[FLASH_TEST_TASK_NAME_LEN],
+                                             const char *fmt,
+                                             beken_thread_function_t function,
+                                             uint32_t stack_size,
+                                             uint32_t delay_ms)
+{
+    if(slot_count == 0 || task_count == 0) {
+        return;
+    }
+
+    uint32_t created = 0;
+    for(uint32_t iter = 0; created < task_count; iter++) {
+        uint32_t slot = slot_count - 1 - (iter % slot_count);
+        uint32_t group = iter / slot_count;
+        uint32_t idx = slot + group * slot_count;
+
+        if(idx >= task_count) {
+            continue;
+        }
+
+        uint32_t priority = priority_base + slot;
+        char *task_name = names[idx];
+        prepare_task_name(task_name, fmt, idx);
+
+        if(create_thread_checked(NULL, priority, task_name,
+                                 function, stack_size, (void*)idx) != BK_OK) {
+            continue;
+        }
+
+        if(delay_ms) {
+            rtos_delay_milliseconds(delay_ms);
+        }
+
+        created++;
+    }
+}
 
  /**
   * @brief Update statistics
@@ -185,6 +299,105 @@ static uint8_t g_verify_buffers[MAX_CONCURRENT_BUFFERS][TEST_PAGE_SIZE];
      return true;
  }
 
+/**
+ * @brief Verify that a flash page is fully erased (0xFF)
+ */
+static void dump_page_buffer(const char *title, uint32_t addr, const uint8_t *buf, uint32_t len)
+{
+    if(buf == NULL || len == 0) {
+        return;
+    }
+
+    CLI_LOGI("%s @ 0x%08lx:\r\n", title, addr);
+    for(uint32_t line = 0; line < (len + 15) / 16; line++) {
+        char hex_line[64];
+        int pos = 0;
+        uint32_t base = line * 16;
+        for(uint32_t j = 0; j < 16 && base + j < len; j++) {
+            pos += os_snprintf(hex_line + pos, sizeof(hex_line) - pos, "%02X ", buf[base + j]);
+        }
+
+        CLI_LOGI("  %04X: %s\r\n", base, hex_line);
+    }
+}
+
+static void handle_verification_failure(const char *title, uint32_t addr, uint8_t *buf)
+{
+    dump_page_buffer(title, addr, buf, TEST_PAGE_SIZE);
+    rtos_delay_milliseconds(5000);
+    while (1) {
+        int port_disable_interrupts_flag(void);
+        port_disable_interrupts_flag();
+    }
+}
+
+static bk_err_t verify_erased_page(uint32_t addr, uint8_t *verify_buf)
+{
+    if(NULL == verify_buf) {
+        return BK_FAIL;
+    }
+
+    bk_err_t read_ret = bk_flash_read_bytes(addr, verify_buf, TEST_PAGE_SIZE);
+    if(read_ret != BK_OK) {
+        CLI_LOGE("Erase verification read failed at 0x%08lx, ret: %d\r\n",
+                 addr, read_ret);
+        return read_ret;
+    }
+
+    for(uint32_t i = 0; i < TEST_PAGE_SIZE; i++) {
+        if(verify_buf[i] != 0xFF) {
+            char * vTaskName();
+            const char *task_name = vTaskName();
+
+            CLI_LOGE("Erase verification failed at 0x%08lx during %s, offset %lu = 0x%02x\r\n",
+                     addr, task_name, (unsigned long)i, verify_buf[i]);
+            handle_verification_failure("Erase verification page", addr, verify_buf);
+            return BK_FAIL;
+        }
+    }
+
+    return BK_OK;
+}
+
+/**
+ * @brief Initialize read blocks with known pattern and seq=0
+ */
+static void initialize_read_blocks(uint32_t task_count)
+{
+    CLI_LOGI("Initializing read area with known data pattern...\r\n");
+
+    for(uint32_t i = 0; i < task_count; i++) {
+        uint32_t test_addr = READ_TASK_ADDR(i);
+        uint8_t *init_buf = g_read_buffers[i];
+        uint8_t *verify_buf = g_read_verify_buffers[i];
+
+        uint32_t sector_addr = test_addr & (~(TEST_SECTOR_SIZE - 1));
+        bk_err_t erase_ret = bk_flash_erase_sector(sector_addr);
+        if(erase_ret != BK_OK) {
+            CLI_LOGE("Failed to erase read block at 0x%08lx for task %lu, ret: %d\r\n",
+                    sector_addr, i, erase_ret);
+            continue;
+        }
+
+        if(verify_erased_page(sector_addr, verify_buf) != BK_OK) {
+            CLI_LOGE("Read area verification failed at 0x%08lx for task %lu\r\n", sector_addr, i);
+            continue;
+        }
+
+        for(uint32_t j = 0; j < TEST_PAGE_SIZE; j++) {
+            init_buf[j] = (uint8_t)(j & 0xFF);
+        }
+
+        /* initial sequence number should be zero for comparison baseline */
+        init_buf[0] = init_buf[1] = init_buf[2] = init_buf[3] = (INIT_SEQ_VALUE & 0xFF);
+
+        bk_err_t write_ret = bk_flash_write_bytes(test_addr, init_buf, TEST_PAGE_SIZE);
+        if(write_ret != BK_OK) {
+            CLI_LOGE("Failed to write initial read pattern for task %lu, ret: %d\r\n", i, write_ret);
+        }
+    }
+}
+
  /**
   * @brief Initialize test area (erase)
   */
@@ -200,6 +413,11 @@ static uint8_t g_verify_buffers[MAX_CONCURRENT_BUFFERS][TEST_PAGE_SIZE];
              CLI_LOGE("Failed to erase sector at 0x%08lx, ret: %d\r\n", addr, ret);
              return ret;
          }
+
+        if(verify_erased_page(addr, g_sector_verify_buffer) != BK_OK) {
+            CLI_LOGE("Sector verification failed after erase at 0x%08lx\r\n", addr);
+            return BK_FAIL;
+        }
      }
 
      bk_flash_set_protect_type(FLASH_UNPROTECT_LAST_BLOCK);
@@ -214,10 +432,9 @@ static uint8_t g_verify_buffers[MAX_CONCURRENT_BUFFERS][TEST_PAGE_SIZE];
 static void task_flash_read_test(void *param)
 {
     uint32_t task_id = (uint32_t)param;
-    uint32_t test_addr = TEST_FLASH_BASE_ADDR + (task_id * 0x2000);  /* 8KB area per task */
-    uint32_t buf_idx = task_id % MAX_CONCURRENT_BUFFERS;
-    uint8_t *buf = g_read_buffers[buf_idx];
-    uint8_t *expected_buf = g_verify_buffers[buf_idx];
+    uint32_t test_addr = READ_TASK_ADDR(task_id);
+    uint8_t *buf = g_read_buffers[task_id];
+    uint8_t *expected_buf = g_read_expected[task_id];
     uint32_t op_count = 0;
     uint32_t error_count = 0;
     uint32_t last_valid_seq = 0;
@@ -225,9 +442,10 @@ static void task_flash_read_test(void *param)
     CLI_LOGI("Read task %lu started, addr: 0x%08lx\r\n", task_id, test_addr);
 
     /* Prepare expected data pattern (same as write test) */
-    for(uint32_t i = 0; i < TEST_PAGE_SIZE; i++) {
+    for(uint32_t i = 4; i < TEST_PAGE_SIZE; i++) {
         expected_buf[i] = (uint8_t)(i & 0xFF);
     }
+    expected_buf[0] = expected_buf[1] = expected_buf[2] = expected_buf[3] = (uint8_t)(INIT_SEQ_VALUE & 0xFF);
 
     while(g_test_running) {
         uint64_t start_time = get_system_time_us();
@@ -242,36 +460,22 @@ static void task_flash_read_test(void *param)
             /* Extract sequence number from first 4 bytes */
             uint32_t seq = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
 
-            /* Check if data pattern is valid */
-            bool pattern_valid = true;
-
-            /* Verify sequence number is reasonable (not too old, not too new) */
-            /* In concurrent test, seq may be different from expected, but should be consistent */
-            if(seq > last_valid_seq + 1000) {
-                /* Sequence jumped too much, might be corrupted */
-                pattern_valid = false;
+            if(seq != INIT_SEQ_VALUE) {
+                CLI_LOGE("Read task %lu: unexpected seq 0x%08x, aborting\r\n", task_id, seq);
+                handle_verification_failure("Read task unexpected seq", test_addr, buf);
             }
 
-            /* Verify data pattern (bytes 4-255 should follow increment pattern) */
+            bool pattern_ok = true;
             for(uint32_t i = 4; i < TEST_PAGE_SIZE; i++) {
-                uint8_t expected = (uint8_t)(i & 0xFF);
-                if(buf[i] != expected) {
-                    pattern_valid = false;
+                if(buf[i] != expected_buf[i]) {
+                    pattern_ok = false;
                     break;
                 }
             }
 
-            if(!pattern_valid) {
-                error_count++;
-                if(error_count <= 10) {  /* Limit error logging */
-                    CLI_LOGE("Read task %lu: Data corruption detected at seq %lu, op %lu\r\n",
-                            task_id, seq, op_count);
-                }
-            } else {
-                /* Update last valid sequence */
-                if(seq > last_valid_seq) {
-                    last_valid_seq = seq;
-                }
+            if(!pattern_ok) {
+                CLI_LOGE("Read task %lu: data pattern mismatch found\r\n", task_id);
+                handle_verification_failure("Read task pattern mismatch", test_addr, buf);
             }
         }
 
@@ -283,7 +487,8 @@ static void task_flash_read_test(void *param)
                     task_id, op_count, error_count, last_valid_seq);
         }
 
-        rtos_delay_milliseconds(2);
+        apply_task_jitter(task_id);
+        rtos_delay_milliseconds(10);
     }
 
     CLI_LOGI("Read task %lu stopped: total %lu ops, %lu errors, last_seq: %lu\r\n",
@@ -298,12 +503,13 @@ static void task_flash_read_test(void *param)
 static void task_flash_write_test(void *param)
 {
     uint32_t task_id = (uint32_t)param;
-    uint32_t test_addr = TEST_FLASH_BASE_ADDR + (task_id * 0x2000);
-    uint32_t buf_idx = task_id % MAX_CONCURRENT_BUFFERS;
-    uint8_t *buf = g_write_buffers[buf_idx];
-    uint8_t *read_buf = g_read_buffers[buf_idx];  /* For verification */
+    uint32_t test_addr = WRITE_TASK_ADDR(task_id);
+    uint8_t *buf = g_write_buffers[task_id];
+    uint8_t *verify_buf = g_write_verify_buffers[task_id];
     uint32_t write_seq = 0;
     uint32_t op_count = 0;
+    uint64_t start_time, end_time;
+    uint32_t time_us;
 
      CLI_LOGI("Write task %lu started, addr: 0x%08lx\r\n", task_id, test_addr);
 
@@ -319,26 +525,41 @@ static void task_flash_write_test(void *param)
          buf[2] = (write_seq >> 8) & 0xFF;
          buf[3] = write_seq & 0xFF;
 
-         uint64_t start_time = get_system_time_us();
+        uint64_t erase_start = get_system_time_us();
+        bk_err_t erase_ret = bk_flash_erase_sector(test_addr);
+        uint64_t erase_end = get_system_time_us();
 
-         bk_err_t ret = bk_flash_write_bytes(test_addr, buf, TEST_PAGE_SIZE);
+        uint32_t erase_time_us = (uint32_t)(erase_end - erase_start);
+        update_statistics(&g_erase_stats, erase_ret, erase_time_us);
 
-         uint64_t end_time = get_system_time_us();
-         uint32_t time_us = (uint32_t)(end_time - start_time);
+        if(erase_ret != BK_OK) {
+            CLI_LOGE("Write task %lu: erase failed (0x%08lx)\r\n", task_id, erase_ret);
+            continue;
+        }
 
-         update_statistics(&g_write_stats, ret, time_us);
+        if(verify_erased_page(test_addr, verify_buf) != BK_OK) {
+            CLI_LOGE("Write task %lu: page not zeroed after erase at 0x%08lx\r\n", task_id, test_addr);
+            continue;
+        }
 
-         if(ret == BK_OK) {
-             /* Verify written data */
-             bk_err_t read_ret = bk_flash_read_bytes(test_addr, read_buf, TEST_PAGE_SIZE);
+        start_time = get_system_time_us();
+        bk_err_t ret = bk_flash_write_bytes(test_addr, buf, TEST_PAGE_SIZE);
+        end_time = get_system_time_us();
 
-             if(read_ret == BK_OK) {
-                 if(!verify_data_pattern(read_buf, TEST_PAGE_SIZE, write_seq)) {
-                     CLI_LOGE("Write task %lu: Data verification failed at seq %lu\r\n",
-                             task_id, write_seq);
-                 }
-             }
-         }
+        time_us = (uint32_t)(end_time - start_time);
+        update_statistics(&g_write_stats, ret, time_us);
+
+            if(ret == BK_OK) {
+                /* Verify written data */
+                bk_err_t read_ret = bk_flash_read_bytes(test_addr, verify_buf, TEST_PAGE_SIZE);
+                if(read_ret == BK_OK) {
+                    if(!verify_data_pattern(verify_buf, TEST_PAGE_SIZE, write_seq)) {
+                        CLI_LOGE("Write task %lu: Data verification failed at seq %lu\r\n",
+                                task_id, write_seq);
+                        handle_verification_failure("Write task data", test_addr, verify_buf);
+                    }
+                }
+            }
 
          write_seq++;
          op_count++;
@@ -348,7 +569,8 @@ static void task_flash_write_test(void *param)
              CLI_LOGI("Write task %lu: %lu operations completed\r\n", task_id, op_count);
          }
 
-         rtos_delay_milliseconds(100);
+        apply_task_jitter(task_id);
+        rtos_delay_milliseconds(10);
      }
 
      CLI_LOGI("Write task %lu stopped, total ops: %lu\r\n", task_id, op_count);
@@ -361,7 +583,7 @@ static void task_flash_write_test(void *param)
  static void task_flash_erase_test(void *param)
  {
      uint32_t task_id = (uint32_t)param;
-     uint32_t test_addr = TEST_FLASH_BASE_ADDR + (task_id * 0x4000);  /* 16KB area per task */
+    uint32_t test_addr = ERASE_TASK_ADDR(task_id);  /* 16KB area per task */
      uint32_t op_count = 0;
 
      CLI_LOGI("Erase task %lu started, addr: 0x%08lx\r\n", task_id, test_addr);
@@ -377,35 +599,21 @@ static void task_flash_write_test(void *param)
          update_statistics(&g_erase_stats, ret, time_us);
 
         if(ret == BK_OK) {
-            /* Verify erase result (should be all 0xFF) */
-            uint32_t buf_idx = task_id % MAX_CONCURRENT_BUFFERS;
-            uint8_t *read_buf = g_read_buffers[buf_idx];
-            bk_err_t read_ret = bk_flash_read_bytes(test_addr, read_buf, TEST_PAGE_SIZE);
+            uint8_t *verify_buf = g_erase_buffers[task_id];
+            if(verify_erased_page(test_addr, verify_buf) != BK_OK) {
+                continue;
+            }
+        }
 
-             if(read_ret == BK_OK) {
-                 bool all_ff = true;
-                 for(uint32_t i = 0; i < TEST_PAGE_SIZE; i++) {
-                     if(read_buf[i] != 0xFF) {
-                         all_ff = false;
-                         break;
-                     }
-                 }
+        op_count++;
 
-                 if(!all_ff) {
-                     CLI_LOGE("Erase task %lu: Sector not fully erased at 0x%08lx\r\n",
-                             task_id, test_addr);
-                 }
-             }
-         }
+        /* Print every 50 operations */
+        if(op_count % 50 == 0) {
+            CLI_LOGI("Erase task %lu: %lu operations completed\r\n", task_id, op_count);
+        }
 
-         op_count++;
-
-         /* Print every 50 operations */
-         if(op_count % 50 == 0) {
-             CLI_LOGI("Erase task %lu: %lu operations completed\r\n", task_id, op_count);
-         }
-
-         rtos_delay_milliseconds(500);
+        apply_task_jitter(task_id);
+        rtos_delay_milliseconds(10);
      }
 
      CLI_LOGI("Erase task %lu stopped, total ops: %lu\r\n", task_id, op_count);
@@ -443,7 +651,7 @@ static void task_flash_write_test(void *param)
   */
 static void task_flash_from_isr(void *param)
 {
-    uint8_t *buf = g_read_buffers[0];  /* Use first buffer for ISR task */
+    uint8_t *buf = g_isr_buffer;
     uint32_t op_count = 0;
     uint32_t test_addr = TEST_FLASH_BASE_ADDR;
 
@@ -455,7 +663,6 @@ static void task_flash_from_isr(void *param)
 
              /* Correct: Execute Flash operation in task context */
              bk_err_t ret = bk_flash_read_bytes(test_addr, buf, TEST_PAGE_SIZE);
-
              if(ret != BK_OK) {
                  CLI_LOGE("Flash-from-ISR task: Read failed, ret: %d\r\n", ret);
              }
@@ -467,7 +674,7 @@ static void task_flash_from_isr(void *param)
              }
          }
 
-         rtos_delay_milliseconds(10);
+         rtos_delay_milliseconds(2);
      }
 
      CLI_LOGI("Flash-from-ISR task stopped, total ops: %lu, ISR count: %lu\r\n",
@@ -482,10 +689,9 @@ static void task_flash_from_isr(void *param)
 static void task_flash_stress_test(void *param)
 {
     uint32_t task_id = (uint32_t)param;
-    uint32_t op_type = task_id % 3;  /* 0=read, 1=write, 2=erase */
-    uint32_t test_addr = TEST_FLASH_BASE_ADDR + (task_id * 0x1000);
-    uint32_t buf_idx = task_id % MAX_CONCURRENT_BUFFERS;
-    uint8_t *buf = (op_type == 0) ? g_read_buffers[buf_idx] : g_write_buffers[buf_idx];
+    stress_op_type_t op_type = (stress_op_type_t)(task_id % 3);  /* 0=read, 1=write, 2=erase */
+    uint32_t test_addr = STRESS_TASK_ADDR(task_id);
+    uint8_t *buf = g_stress_buffers[task_id];
     uint32_t op_count = 0;
     uint32_t write_seq = 0;
 
@@ -502,37 +708,99 @@ static void task_flash_stress_test(void *param)
          uint64_t start_time = get_system_time_us();
          bk_err_t ret = BK_FAIL;
 
-         switch(op_type) {
-             case 0:  /* Read operation */
-                 ret = bk_flash_read_bytes(test_addr, buf, TEST_PAGE_SIZE);
+        switch(op_type) {
+            case STRESS_OP_READ:  /* Read operation */
+                ret = bk_flash_read_bytes(test_addr, buf, TEST_PAGE_SIZE);
+				if(ret == BK_OK) {
+					bool good = true;
+					for(uint32_t k = 4; k < TEST_PAGE_SIZE; k++) {
+						uint8_t expected = (uint8_t)(k & 0xFF);
+						if(buf[k] != expected) {
+							good = false;
+							break;
+						}
+					}
+
+                if(!good) {
+                    uint32_t seq = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
+                    CLI_LOGE("Stress read task %lu: pattern mismatch at seq 0x%08x\r\n",
+                             task_id, seq);
+                    handle_verification_failure("Stress read pattern", test_addr, buf);
+                }
+				}
                  break;
 
-             case 1:  /* Write operation */
-                 buf[0] = (write_seq >> 24) & 0xFF;
-                 buf[1] = (write_seq >> 16) & 0xFF;
-                 buf[2] = (write_seq >> 8) & 0xFF;
-                 buf[3] = write_seq & 0xFF;
-                 ret = bk_flash_write_bytes(test_addr, buf, TEST_PAGE_SIZE);
-                 write_seq++;
-                 break;
+            case STRESS_OP_WRITE:  /* Write operation */
+                {
+                    uint64_t erase_start = get_system_time_us();
+                    bk_err_t erase_ret = bk_flash_erase_sector(test_addr);
+                    uint64_t erase_end = get_system_time_us();
+                    uint32_t erase_time_us = (uint32_t)(erase_end - erase_start);
 
-             case 2:  /* Erase operation */
-                 ret = bk_flash_erase_sector(test_addr);
-                 break;
+                    update_statistics(&g_erase_stats, erase_ret, erase_time_us);
+
+                    if(erase_ret != BK_OK) {
+                        CLI_LOGE("Stress task %lu: erase failed at 0x%08lx, ret: %d\r\n",
+                                task_id, test_addr, erase_ret);
+                        ret = erase_ret;
+                        break;
+                    }
+
+                    uint8_t *verify_buf = g_stress_verify_buffers[task_id];
+                    if(verify_erased_page(test_addr, verify_buf) != BK_OK) {
+                        CLI_LOGE("Stress task %lu: erase verification failed at 0x%08lx\r\n",
+                                task_id, test_addr);
+                        ret = BK_FAIL;
+                        break;
+                    }
+
+                    buf[0] = (write_seq >> 24) & 0xFF;
+                    buf[1] = (write_seq >> 16) & 0xFF;
+                    buf[2] = (write_seq >> 8) & 0xFF;
+                    buf[3] = write_seq & 0xFF;
+                    ret = bk_flash_write_bytes(test_addr, buf, TEST_PAGE_SIZE);
+
+                    if(ret == BK_OK) {
+                        bk_err_t read_ret = bk_flash_read_bytes(test_addr, verify_buf, TEST_PAGE_SIZE);
+                        if(read_ret == BK_OK) {
+                            if(!verify_data_pattern(verify_buf, TEST_PAGE_SIZE, write_seq)) {
+                                CLI_LOGE("Stress task %lu: sequence mismatch or pattern corrupted at seq %lu\r\n",
+                                         task_id, write_seq);
+                                handle_verification_failure("Stress write pattern", test_addr, verify_buf);
+                            }
+                        } else {
+                            CLI_LOGE("Stress task %lu: read-back failed after write, ret %d\r\n",
+                                     task_id, read_ret);
+                        }
+                    }
+                }
+
+                write_seq++;
+                break;
+
+            case STRESS_OP_ERASE:  /* Erase operation */
+                ret = bk_flash_erase_sector(test_addr);
+                if(ret == BK_OK) {
+                    if(verify_erased_page(test_addr, g_stress_verify_buffers[task_id]) != BK_OK) {
+                        CLI_LOGE("Stress task %lu: erase verify failed at 0x%08lx\r\n",
+                                 task_id, test_addr);
+                    }
+                }
+                break;
          }
 
          uint64_t end_time = get_system_time_us();
          uint32_t time_us = (uint32_t)(end_time - start_time);
 
          /* Update corresponding statistics */
-         switch(op_type) {
-             case 0:
+        switch(op_type) {
+            case STRESS_OP_READ:
                  update_statistics(&g_read_stats, ret, time_us);
                  break;
-             case 1:
+            case STRESS_OP_WRITE:
                  update_statistics(&g_write_stats, ret, time_us);
                  break;
-             case 2:
+            case STRESS_OP_ERASE:
                  update_statistics(&g_erase_stats, ret, time_us);
                  break;
          }
@@ -546,7 +814,8 @@ static void task_flash_stress_test(void *param)
          }
 
          /* Minimum delay to maximize concurrency */
-         rtos_delay_milliseconds(1);
+        apply_task_jitter(task_id);
+        rtos_delay_milliseconds(10);
      }
 
      CLI_LOGI("Stress test task %lu (%s) stopped, total ops: %lu\r\n",
@@ -577,38 +846,7 @@ static void task_flash_stress_test(void *param)
         return;
     }
 
-    /* Write initial data pattern to each task's area */
-    for(uint32_t i = 0; i < task_count; i++) {
-        uint32_t test_addr = TEST_FLASH_BASE_ADDR + (i * 0x2000);
-        uint32_t buf_idx = i % MAX_CONCURRENT_BUFFERS;
-        uint8_t *init_buf = g_write_buffers[buf_idx];
-
-        /* Erase sector before write (ensure sector is erased) */
-        uint32_t sector_addr = test_addr & (~(TEST_SECTOR_SIZE - 1));  /* Align to sector boundary */
-        bk_err_t erase_ret = bk_flash_erase_sector(sector_addr);
-        if(erase_ret != BK_OK) {
-            CLI_LOGE("Failed to erase sector at 0x%08lx for task %lu, ret: %d\r\n",
-                    sector_addr, i, erase_ret);
-            continue;
-        }
-
-        /* Prepare initial data pattern */
-        for(uint32_t j = 0; j < TEST_PAGE_SIZE; j++) {
-            init_buf[j] = (uint8_t)(j & 0xFF);
-        }
-        /* Set initial sequence number to 0 */
-        init_buf[0] = 0;
-        init_buf[1] = 0;
-        init_buf[2] = 0;
-        init_buf[3] = 0;
-
-        /* Write data after erase */
-        bk_err_t write_ret = bk_flash_write_bytes(test_addr, init_buf, TEST_PAGE_SIZE);
-        if(write_ret != BK_OK) {
-            CLI_LOGE("Failed to write initial data for task %lu, ret: %d\r\n", i, write_ret);
-        }
-    }
-    CLI_LOGI("Test area initialized with known data pattern\r\n");
+    initialize_read_blocks(task_count);
 
     /* Initialize statistics */
     os_memset(&g_read_stats, 0, sizeof(g_read_stats));
@@ -616,18 +854,17 @@ static void task_flash_stress_test(void *param)
     g_test_running = true;
 
     /* Create read tasks with different priorities to test preemption
-     * Priority range: 5-9 (higher number = higher priority in FreeRTOS)
+     * Priority range: 4-9 (higher number = higher priority in FreeRTOS)
      * This allows testing both time-slicing and preemption scenarios
      */
-    for(uint32_t i = 0; i < task_count; i++) {
-        char task_name[32];
-        os_snprintf(task_name, sizeof(task_name), "read_task_%lu", i);
-        /* Use different priorities: 5, 6, 7, 8, 9 to test preemption */
-        uint32_t priority = 5 + (i % 5);  /* Cycle through priorities 5-9 */
-        rtos_create_thread(NULL, priority, task_name,
-                          task_flash_read_test, 2048, (void*)i);
-        rtos_delay_milliseconds(100);  /* Stagger startup time */
-    }
+    create_tasks_with_priority_cycle(task_count,
+                                     FLASH_PRIORITY_BASE,
+                                     FLASH_PRIORITY_SLOTS,
+                                     g_read_task_names,
+                                     "read_task_%lu",
+                                     task_flash_read_test,
+                                     2048,
+                                     20);
  }
 
  /**
@@ -649,28 +886,31 @@ static void task_flash_stress_test(void *param)
      os_memset(&g_read_stats, 0, sizeof(g_read_stats));
      os_memset(&g_write_stats, 0, sizeof(g_write_stats));
 
-     /* Initialize test area */
-     init_test_area(TEST_FLASH_BASE_ADDR, TEST_FLASH_SIZE);
+    /* Initialize test area */
+    init_test_area(TEST_FLASH_BASE_ADDR, TEST_FLASH_SIZE);
+    initialize_read_blocks(read_task_count);
 
      g_test_running = true;
 
      /* Create read tasks */
-     for(uint32_t i = 0; i < read_task_count; i++) {
-         char task_name[32];
-         os_snprintf(task_name, sizeof(task_name), "read_task_%lu", i);
-         rtos_create_thread(NULL, 5, task_name,
-                           task_flash_read_test, 2048, (void*)i);
-         rtos_delay_milliseconds(50);
-     }
+    create_tasks_with_priority_cycle(read_task_count,
+                                     FLASH_PRIORITY_BASE,
+                                     FLASH_PRIORITY_SLOTS,
+                                     g_read_task_names,
+                                     "read_task_%lu",
+                                     task_flash_read_test,
+                                     2048,
+                                     20);
 
-     /* Create write tasks */
-     for(uint32_t i = 0; i < write_task_count; i++) {
-         char task_name[32];
-         os_snprintf(task_name, sizeof(task_name), "write_task_%lu", i);
-         rtos_create_thread(NULL, 6, task_name,
-                           task_flash_write_test, 2048, (void*)i);
-         rtos_delay_milliseconds(50);
-     }
+    /* Create write tasks */
+    create_tasks_with_priority_cycle(write_task_count,
+                                     FLASH_PRIORITY_BASE,
+                                     FLASH_PRIORITY_SLOTS,
+                                     g_write_task_names,
+                                     "write_task_%lu",
+                                     task_flash_write_test,
+                                     2048,
+                                     20);
  }
 
  /**
@@ -698,22 +938,24 @@ static void task_flash_stress_test(void *param)
      g_test_running = true;
 
      /* Create write tasks */
-     for(uint32_t i = 0; i < write_task_count; i++) {
-         char task_name[32];
-         os_snprintf(task_name, sizeof(task_name), "write_task_%lu", i);
-         rtos_create_thread(NULL, 6, task_name,
-                           task_flash_write_test, 2048, (void*)i);
-         rtos_delay_milliseconds(50);
-     }
+    create_tasks_with_priority_cycle(write_task_count,
+                                     FLASH_PRIORITY_BASE,
+                                     FLASH_PRIORITY_SLOTS,
+                                     g_write_task_names,
+                                     "write_task_%lu",
+                                     task_flash_write_test,
+                                     2048,
+                                     5);
 
-     /* Create erase tasks */
-     for(uint32_t i = 0; i < erase_task_count; i++) {
-         char task_name[32];
-         os_snprintf(task_name, sizeof(task_name), "erase_task_%lu", i);
-         rtos_create_thread(NULL, 7, task_name,
-                           task_flash_erase_test, 2048, (void*)i);
-         rtos_delay_milliseconds(50);
-     }
+    /* Create erase tasks */
+    create_tasks_with_priority_cycle(erase_task_count,
+                                     FLASH_PRIORITY_BASE,
+                                     FLASH_PRIORITY_SLOTS,
+                                     g_erase_task_names,
+                                     "erase_task_%lu",
+                                     task_flash_erase_test,
+                                     2048,
+                                     20);
  }
 
  /**
@@ -721,9 +963,9 @@ static void task_flash_stress_test(void *param)
   */
  static void start_stress_test(uint32_t task_count)
  {
-     if(task_count > 10) {
-         task_count = 10;
-     }
+    if(task_count > MAX_STRESS_TASKS) {
+        task_count = MAX_STRESS_TASKS;
+    }
 
      CLI_LOGI("Starting stress test with %lu tasks\r\n", task_count);
 
@@ -738,13 +980,14 @@ static void task_flash_stress_test(void *param)
      g_test_running = true;
 
      /* Create stress test tasks */
-     for(uint32_t i = 0; i < task_count; i++) {
-         char task_name[32];
-         os_snprintf(task_name, sizeof(task_name), "stress_task_%lu", i);
-         rtos_create_thread(NULL, 5, task_name,
-                           task_flash_stress_test, 2048, (void*)i);
-         rtos_delay_milliseconds(50);
-     }
+    create_tasks_with_priority_cycle(task_count,
+                                     FLASH_PRIORITY_BASE,
+                                     FLASH_PRIORITY_SLOTS,
+                                     g_stress_task_names,
+                                     "stress_task_%lu",
+                                     task_flash_stress_test,
+                                     2048,
+                                     20);
  }
 
  /**
@@ -767,9 +1010,12 @@ static void task_flash_stress_test(void *param)
 
      g_test_running = true;
 
-     /* Create Flash operation task triggered from ISR */
-     rtos_create_thread(NULL, 5, "flash_from_isr",
-                       task_flash_from_isr, 2048, NULL);
+    /* Create Flash operation task triggered from ISR */
+    prepare_task_name(g_isr_task_name, "flash_from_isr", 0);
+    if(create_thread_checked(NULL, 5, g_isr_task_name,
+                             task_flash_from_isr, 2048, NULL) != BK_OK) {
+        CLI_LOGE("Failed to create flash_from_isr task\r\n");
+    }
 
      /* Create a task to simulate ISR trigger (should be triggered by hardware interrupt in reality) */
      /* This is only for demonstration, real interrupt should be used in actual test */
@@ -846,7 +1092,6 @@ static void task_flash_stress_test(void *param)
          uint32_t task_count = os_strtoul(argv[2], NULL, 10);
          start_concurrent_read_test(task_count);
          msg = CLI_CMD_RSP_SUCCEED;
-
      } else if(os_strcmp(argv[1], "start_rw") == 0) {
          if(argc < 4) {
              CLI_LOGI("Usage: flash_race_test start_rw <read_cnt> <write_cnt>\r\n");
@@ -857,7 +1102,6 @@ static void task_flash_stress_test(void *param)
          uint32_t write_cnt = os_strtoul(argv[3], NULL, 10);
          start_read_write_test(read_cnt, write_cnt);
          msg = CLI_CMD_RSP_SUCCEED;
-
      } else if(os_strcmp(argv[1], "start_we") == 0) {
          if(argc < 4) {
              CLI_LOGI("Usage: flash_race_test start_we <write_cnt> <erase_cnt>\r\n");
@@ -868,7 +1112,6 @@ static void task_flash_stress_test(void *param)
          uint32_t erase_cnt = os_strtoul(argv[3], NULL, 10);
          start_write_erase_test(write_cnt, erase_cnt);
          msg = CLI_CMD_RSP_SUCCEED;
-
      } else if(os_strcmp(argv[1], "start_stress") == 0) {
          if(argc < 3) {
              CLI_LOGI("Usage: flash_race_test start_stress <task_count>\r\n");
@@ -878,20 +1121,16 @@ static void task_flash_stress_test(void *param)
          uint32_t task_count = os_strtoul(argv[2], NULL, 10);
          start_stress_test(task_count);
          msg = CLI_CMD_RSP_SUCCEED;
-
      } else if(os_strcmp(argv[1], "start_isr") == 0) {
          start_isr_rule_test();
          msg = CLI_CMD_RSP_SUCCEED;
-
      } else if(os_strcmp(argv[1], "stop") == 0) {
          stop_all_tests();
          print_all_statistics();
          msg = CLI_CMD_RSP_SUCCEED;
-
      } else if(os_strcmp(argv[1], "status") == 0) {
          print_all_statistics();
          msg = CLI_CMD_RSP_SUCCEED;
-
      } else if(os_strcmp(argv[1], "init") == 0) {
          bk_err_t ret = init_test_area(TEST_FLASH_BASE_ADDR, TEST_FLASH_SIZE);
          if(ret == BK_OK) {
@@ -901,7 +1140,6 @@ static void task_flash_stress_test(void *param)
              CLI_LOGE("Failed to initialize test area, ret: %d\r\n", ret);
              msg = CLI_CMD_RSP_ERROR;
          }
-
      } else {
          CLI_LOGI("Unknown command: %s\r\n", argv[1]);
          msg = CLI_CMD_RSP_ERROR;
