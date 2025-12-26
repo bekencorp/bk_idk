@@ -115,21 +115,21 @@ const UINT32 g_default_xtal   = DEFAULT_TXID_XTAL;
 /**
  * pwr_gain<09:00> pregain in cfg_power_table.pregain
  * pwr_gain<13:10> pactrl in TRX_C<11:8>, F at present
- * pwr_gain<17:14> padctrl in TRX_C<7:4>, F at present
- * pwr_gain<21:18> Rgm in TRX_C<15:12>, 8 at present
- * pwr_gain<25:22> Gmgain in TRX_C<3:0>, 3 at present
+ * pwr_gain<17:14> padctrl in TRX_C<7:4>, C at present
+ * pwr_gain<21:18> Rgm in TRX_C<15:12>, E at present
+ * pwr_gain<25:22> Gmgain in TRX_C<3:0>, 5 at present
  * pwr_gain<29:26> Dia in TRX_A<31:28>, 9 at present
  * pwr_gain<31:31> 1:11g/n 0:11b
  */
-const UINT32 pwr_gain_base_gain_2g = 0x24E3FC00;//0x00233C00;
+const UINT32 pwr_gain_base_gain_2g = 0x257B3C00;
 
 /**
  * pwr_gain<09:00> pregain in cfg_power_table.pregain
  * pwr_gain<13:10> pactrl in TRX_24<11:8>, F at present
- * pwr_gain<17:14> padctrl in TRX_24<7:4>, 5 at present
+ * pwr_gain<17:14> padctrl in TRX_24<7:4>, 7 at present
  * pwr_gain<31:31> 1:11g/n 0:11b
  */
-const UINT32 pwr_gain_base_gain_5g = 0x80017C00;
+const UINT32 pwr_gain_base_gain_5g = 0x8001FC00;
 #define TPC_PAMAP_TAB_LEN			 (128)
 __DRAM_SEC const PWR_REGS cfg_tab[TPC_PAMAP_TAB_LEN] = {
 	// pregain
@@ -263,7 +263,7 @@ __DRAM_SEC const PWR_REGS cfg_tab[TPC_PAMAP_TAB_LEN] = {
 	PWRI(0x3FE),	//127	6db
 };
 
-const UINT32 pwr_gain_base_gain_ble = 0x0d3e0c00;//0x00220C00;
+const UINT32 pwr_gain_base_gain_ble = 0x25798400;
 #define TPC_PAMAP_TAB_BT_LEN                        (65)
 const PWR_REGS cfg_tab_bt[TPC_PAMAP_TAB_BT_LEN] = {
 	// pregain
@@ -343,11 +343,11 @@ const PWR_REGS cfg_tab_bt[TPC_PAMAP_TAB_BT_LEN] = {
  */
 const TXPWR_CAL_ST gtxpwr_tab_def_b[TXPWR_CAL_2G_MAX] = {
 #ifdef CONFIG_ATE_TEST
-    INIT_TXPWR_VALUE(1, 24),  // ch1  inused
-    INIT_TXPWR_VALUE(13, 24),  // ch13  inused
+    INIT_TXPWR_VALUE(1, 48),  // ch1  inused
+    INIT_TXPWR_VALUE(13, 48),  // ch13  inused
 #else
-    INIT_TXPWR_VALUE(1, 35),  // ch1  inused
-    INIT_TXPWR_VALUE(13, 35),  // ch13  inused
+    INIT_TXPWR_VALUE(1, 59),  // ch1  inused
+    INIT_TXPWR_VALUE(13, 59),  // ch13  inused
 #endif
 };
 

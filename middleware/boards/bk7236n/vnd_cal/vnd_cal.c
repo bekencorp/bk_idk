@@ -293,8 +293,8 @@ const PWR_REGS cfg_tab_bt[TPC_PAMAP_TAB_BT_LEN] = {
  * so, max TXPWR_CAL_5G_MAX channels for WIFI 5G calibration
  */
 const TXPWR_CAL_ST gtxpwr_tab_def_b[TXPWR_CAL_2G_MAX] = {
-    INIT_TXPWR_VALUE(1, 50),  // ch1  inused
-    INIT_TXPWR_VALUE(13, 50),  // ch13  inused
+    INIT_TXPWR_VALUE(1, 74),  // ch1  inused
+    INIT_TXPWR_VALUE(13, 74),  // ch13  inused
 };
 
 const TXPWR_CAL_ST gtxpwr_tab_def_g[TXPWR_CAL_2G_MAX] = {
