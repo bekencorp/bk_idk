@@ -1028,6 +1028,7 @@ static bk_err_t uart_rx_dma_init(uart_id_t id)
 
 	dma_cfg.mode = DMA_WORK_MODE_SINGLE;
 	dma_cfg.chan_prio = 0;	//UART speed is slow, so no need high priority
+	dma_cfg.src_rd_intlv = 4;
 
 	//init DMA config
 	dma_id_t dma_id = bk_dma_alloc(uart_id_to_dma_dev(id, 1));
