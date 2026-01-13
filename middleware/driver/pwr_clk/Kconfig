@@ -59,9 +59,6 @@ menu "PWR_CLK"
 	config ROSC_CALIB_SW
 		 bool "enable calibrate rc32k by software"
 		default n
-	config ROSC_COMPENSATION
-		 bool "enable rosc compensation for rtc tick"
-		default n
 	config LP_VOL
 		hex "Set Low power voltage value"
 		default 0x6

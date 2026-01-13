@@ -26,10 +26,7 @@
 #include <driver/aon_rtc.h>
 #include <driver/wakeup.h>
 #include "ana_rtc_driver.h"
-
-#if CONFIG_ROSC_COMPENSATION
 #include <driver/rosc_32k.h>
-#endif
 
 typedef struct
 {
@@ -66,17 +63,8 @@ static void aon_rtc_interrupt_disable(aon_rtc_id_t id);
 #define ANA_RTC_CURRENT_TICK        bk_aon_rtc_get_current_tick(ANA_RTC_GET_SET_TIME_RTC_ID)
 static int64_t s_boot_time_us       = 0; // timeofday value
 
-#ifdef CONFIG_EXTERN_32K
-static uint32_t s_aon_rtc_clock_freq = AON_RTC_EXTERN_32K_CLOCK_FREQ;
-#else
-static uint32_t s_aon_rtc_clock_freq = AON_RTC_DEFAULT_CLOCK_FREQ;
-#endif
-
 #define ANA_RTC_OPS_SAFE_DELAY_US (125)
 static uint64_t s_ana_rtc_base_tick = 0; // use for rtc reset
-#if CONFIG_ROSC_COMPENSATION
-static int64_t s_ana_rtc_diff_tick  = 0; // use for rtc compesation
-#endif
 static uint64_t s_time_base_us      = 0; // use for freq switch
 static uint64_t s_time_base_tick    = 0; // use for freq switch
 static uint32_t s_low_tick          = 0;
@@ -87,58 +75,55 @@ static bool s_rtc_updated           = true;
 
 __IRAM_SEC float bk_rtc_get_ms_tick_count(void)
 {
-    return (float)s_aon_rtc_clock_freq / 1000;
+    return (float)bk_rtc_get_clock_freq() / 1000.0f;
 }
 
-uint32_t bk_rtc_get_clock_freq(void)
+__IRAM_SEC uint32_t bk_rtc_get_clock_freq(void)
 {
-    return s_aon_rtc_clock_freq;
+    #if CONFIG_EXTERN_32K
+    return AON_RTC_EXTERN_32K_CLOCK_FREQ;
+    #else
+    return bk_rosc_32k_get_freq();
+    #endif
 }
 
-void bk_rtc_update_base_time(void)
+void bk_rtc_set_clock_freq(uint32_t clock_freq)
 {
-    uint64_t time_tick = ANA_RTC_CURRENT_TICK;
-    uint64_t time_diff = (time_tick - s_time_base_tick) * 1000LL / bk_rtc_get_ms_tick_count();
-
-    s_time_base_tick = time_tick;
-    s_time_base_us += time_diff;
-    // RTC_LOGI("s_time_base_tick: 0x%x:0x%08x\r\n", (u32)(s_time_base_tick >> 32), (u32)(s_time_base_tick & 0xFFFFFFFF));
-    // RTC_LOGI("s_time_base_us: 0x%x:0x%08x\r\n", (u32)(s_time_base_us >> 32), (u32)(s_time_base_us & 0xFFFFFFFF));
+    bk_aon_rtc_get_us(); //update base time to compensate the frequency change
 }
 
-__IRAM_SEC void bk_rtc_set_clock_freq(uint32_t clock_freq)
+__IRAM_SEC uint64_t bk_aon_rtc_tick_to_us(uint64_t tick)
 {
-#if !CONFIG_EXTERN_32K && !CONFIG_ROSC_COMPENSATION
-	if (clock_freq == s_aon_rtc_clock_freq) {
-		return;
-	}
-	uint32_t int_level = rtos_disable_int();
-	bk_rtc_update_base_time();
-	s_aon_rtc_clock_freq = clock_freq;
-	rtos_enable_int(int_level);
-#endif
+    return (tick * 1000000) / bk_rtc_get_clock_freq();
+}
+
+__IRAM_SEC uint64_t bk_aon_rtc_us_to_tick(uint64_t us)
+{
+    return (us * bk_rtc_get_clock_freq()) / 1000000;
 }
 
 __IRAM_SEC uint64_t bk_aon_rtc_get_us(void)
 {
-    uint64_t time_tick = ANA_RTC_CURRENT_TICK;
-    uint64_t time_diff = (time_tick - s_time_base_tick) * 1000LL / bk_rtc_get_ms_tick_count();
-    uint64_t time_us = s_time_base_us + time_diff;
-    return time_us;
+    GLOBAL_INT_DECLARATION();
+    GLOBAL_INT_DISABLE();
+    uint64_t current_tick = ANA_RTC_CURRENT_TICK;
+    uint64_t delta_us = bk_aon_rtc_tick_to_us(current_tick - s_time_base_tick);
+
+    s_time_base_tick = current_tick;
+    s_time_base_us += delta_us;
+    GLOBAL_INT_RESTORE();
+    return s_time_base_us;
 }
 
 __IRAM_SEC uint64_t bk_aon_rtc_get_ms(void)
 {
-	uint64_t time_tick = ANA_RTC_CURRENT_TICK;
-	uint64_t time_diff = (time_tick - s_time_base_tick) / bk_rtc_get_ms_tick_count();
-	uint64_t time_us = s_time_base_us / 1000 + time_diff;
-	return time_us;
+    return bk_aon_rtc_get_us()/1000;
 }
 
 #if CONFIG_ROSC_COMPENSATION
 __IRAM_SEC uint64_t bk_aon_rtc_get_current_tick_with_compensation(aon_rtc_id_t id)
 {
-    return bk_aon_rtc_get_current_tick(id);
+    return bk_aon_rtc_get_us();
 }
 #endif
 
@@ -529,12 +514,6 @@ static void ana_rtc_set_tick(uint64_t val)
         return;
     }
 
-#if CONFIG_ROSC_COMPENSATION
-    uint64_t sleep_tick_old = val - ANA_RTC_CURRENT_TICK;
-    uint64_t sleep_tick_new = sleep_tick_old * bk_rosc_32k_get_freq() / AON_RTC_DEFAULT_CLOCK_FREQ;
-    val = val - sleep_tick_old + sleep_tick_new - s_ana_rtc_diff_tick;
-#endif
-
     val -= s_ana_rtc_base_tick; // convert rtc tick
 
     uint32_t val_h = val >> 32, val_l = (uint32_t)val;
@@ -564,12 +543,6 @@ static void ana_rtc_set_tick(uint64_t val)
         sys_hal_set_ana_reg12_timersel((uint32_t)AON_RTC_ROUND_TICK - 1);
         return;
     }
-
-#if CONFIG_ROSC_COMPENSATION
-    uint64_t sleep_tick_old = val - ANA_RTC_CURRENT_TICK;
-    uint64_t sleep_tick_new = sleep_tick_old * bk_rosc_32k_get_freq() / AON_RTC_DEFAULT_CLOCK_FREQ;
-    val = val - sleep_tick_old + sleep_tick_new - s_ana_rtc_diff_tick;
-#endif
 
     val -= s_ana_rtc_base_tick; // convert rtc tick
 
@@ -1012,15 +985,8 @@ __IRAM_SEC uint64_t bk_aon_rtc_get_current_tick(aon_rtc_id_t id)
     s_high_tick = aon_pmu_hal_rtc_tick_h_get();
 #endif
     s_low_tick = low_tick;
-#if CONFIG_ROSC_COMPENSATION
-    uint64_t tick_val = ((uint64_t)s_high_tick << 32) + s_low_tick + s_ana_rtc_base_tick;
-    s_ana_rtc_diff_tick = bk_rosc_32k_get_tick_diff(tick_val);
-    rtos_enable_int(int_level);
-    return (tick_val + s_ana_rtc_diff_tick);
-#else
     rtos_enable_int(int_level);
     return ((uint64_t)s_high_tick << 32) + s_low_tick + s_ana_rtc_base_tick;
-#endif
 }
 
 void bk_aon_rtc_dump(aon_rtc_id_t id)

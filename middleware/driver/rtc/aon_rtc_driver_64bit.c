@@ -25,10 +25,8 @@
 #include <driver/aon_rtc.h>
 #include "aon_rtc_hal_64bit.h"
 #include "aon_rtc_driver_64bit.h"
-
-#if CONFIG_ROSC_COMPENSATION
 #include <driver/rosc_32k.h>
-#endif
+
 
 /* 
  * NOTES: System entery deepsleep or reboot, the aon rtc time should reserved.
@@ -108,11 +106,6 @@ static void aon_rtc_delay_to_grantee_ops_safe()
 	bk_delay_us(AON_RTC_OPS_SAFE_DELAY_US);
 }
 
-#ifdef CONFIG_EXTERN_32K
-static uint32_t s_aon_rtc_clock_freq = AON_RTC_EXTERN_32K_CLOCK_FREQ;
-#else
-static uint32_t s_aon_rtc_clock_freq = AON_RTC_DEFAULT_CLOCK_FREQ;
-#endif
 static uint64_t s_time_base_us = 0;
 static uint64_t s_time_base_tick = 0;
 
@@ -137,110 +130,56 @@ static inline void rtc_exit_critical(uint32_t flags)
 }
 
 __IRAM_SEC float bk_rtc_get_ms_tick_count(void) {
-	return (float)s_aon_rtc_clock_freq/1000;
+    return (float)bk_rtc_get_clock_freq() / 1000.0f;
 }
 
 uint32_t bk_rtc_get_clock_freq(void) {
-	return s_aon_rtc_clock_freq;
+    #if CONFIG_EXTERN_32K
+    return AON_RTC_EXTERN_32K_CLOCK_FREQ;
+    #else
+    return bk_rosc_32k_get_freq();
+    #endif
 }
 
-static uint64_t rtc_tick_to_us(uint64_t rtc_tick)
+__IRAM_SEC uint64_t bk_aon_rtc_tick_to_us(uint64_t rtc_tick)
 {
-	if(s_aon_rtc_clock_freq == AON_RTC_EXTERN_32K_CLOCK_FREQ)
-	{
-		return ((rtc_tick * 125LL * 125LL) >> 9); // rtc_tick * 1000 * 1000 / 32768;
-	}
-	else if(s_aon_rtc_clock_freq == AON_RTC_DEFAULT_CLOCK_FREQ)
-	{
-		return ((rtc_tick * 125LL) >> 2);   // rtc_tick * 1000 * 1000 / 32000;
-	}
-	else if(s_aon_rtc_clock_freq != 0)
-	{
-		return (rtc_tick * 1000LL * 1000LL) / s_aon_rtc_clock_freq;
-	}
+	return (rtc_tick * 1000000) / bk_rtc_get_clock_freq();
+}
 
-	return -1;
+__IRAM_SEC uint64_t bk_aon_rtc_us_to_tick(uint64_t us)
+{
+    return (us * bk_rtc_get_clock_freq()) / 1000000;
 }
 
 static uint64_t rtc_tick_to_ms(uint64_t rtc_tick)
 {
-	if(s_aon_rtc_clock_freq == AON_RTC_EXTERN_32K_CLOCK_FREQ)
-	{
-		return ((rtc_tick * 125) >> 12); // rtc_tick * 1000 / 32768;
-	}
-	else if(s_aon_rtc_clock_freq == AON_RTC_DEFAULT_CLOCK_FREQ)
-	{
-		return (rtc_tick >> 5);   // rtc_tick * 1000 / 32000;
-	}
-	else if(s_aon_rtc_clock_freq != 0)
-	{
-		return (rtc_tick * 1000LL) / s_aon_rtc_clock_freq;
-	}
-
-	return -1;
+	return (rtc_tick * 1000) / bk_rtc_get_clock_freq();
 }
 
 static uint64_t rtc_tick_to_s(uint64_t rtc_tick)
 {
-	if(s_aon_rtc_clock_freq == AON_RTC_EXTERN_32K_CLOCK_FREQ)
-	{
-		return ((rtc_tick) >> 15); // rtc_tick / 32768;
-	}
-	else if(s_aon_rtc_clock_freq == AON_RTC_DEFAULT_CLOCK_FREQ)
-	{
-		return (rtc_tick >> 8) / 125LL;   // rtc_tick / 32000;
-	}
-	else if(s_aon_rtc_clock_freq != 0)
-	{
-		return rtc_tick / s_aon_rtc_clock_freq;
-	}
-
-	return -1;
-}
-
-static inline uint64_t get_diff_time_us(void) {
-	uint64_t time_tick = bk_aon_rtc_get_current_tick(AONRTC_GET_SET_TIME_RTC_ID);
-	uint64_t time_diff = rtc_tick_to_us(time_tick - s_time_base_tick); // *1000LL/bk_rtc_get_ms_tick_count();
-	return time_diff;
-}
-
-void bk_rtc_update_base_time(void) {
-	uint64_t time_tick = bk_aon_rtc_get_current_tick(AONRTC_GET_SET_TIME_RTC_ID);
-	uint64_t time_diff = rtc_tick_to_us(time_tick - s_time_base_tick);  // *1000LL/bk_rtc_get_ms_tick_count();
-
-	s_time_base_tick = time_tick;
-	s_time_base_us += time_diff;
-	// AON_RTC_LOGI("s_time_base_tick: 0x%x:0x%08x\r\n", (u32)(s_time_base_tick >> 32), (u32)(s_time_base_tick & 0xFFFFFFFF));
-	// AON_RTC_LOGI("s_time_base_us: 0x%x:0x%08x\r\n", (u32)(s_time_base_us >> 32), (u32)(s_time_base_us & 0xFFFFFFFF));
-}
-
-void bk_rtc_set_clock_freq(uint32_t clock_freq){
-#if CONFIG_AON_RTC_DYNAMIC_CLOCK_SUPPORT
-	AON_RTC_LOGI("Set clock freq: %d\n", clock_freq);
-	if (clock_freq == s_aon_rtc_clock_freq) {
-		return;
-	}
-	uint32_t int_level = rtc_enter_critical();
-	{
-		bk_rtc_update_base_time();
-		s_aon_rtc_clock_freq = clock_freq;
-	}
-	rtc_exit_critical(int_level);
-#endif
+	return rtc_tick / bk_rtc_get_clock_freq();
 }
 
  __IRAM_SEC uint64_t bk_aon_rtc_get_us(void) {
-	uint64_t time_tick = bk_aon_rtc_get_current_tick(AONRTC_GET_SET_TIME_RTC_ID);
-	uint64_t time_diff = rtc_tick_to_us(time_tick - s_time_base_tick);  // *1000LL/bk_rtc_get_ms_tick_count();
-    uint64_t time_us = s_time_base_us + time_diff;
-    return  time_us;
+    GLOBAL_INT_DECLARATION();
+    GLOBAL_INT_DISABLE();
+    uint64_t current_tick = bk_aon_rtc_get_current_tick(AONRTC_GET_SET_TIME_RTC_ID);
+    uint64_t delta_us = bk_aon_rtc_tick_to_us(current_tick - s_time_base_tick);
+
+    s_time_base_tick = current_tick;
+    s_time_base_us += delta_us;
+    GLOBAL_INT_RESTORE();
+    return s_time_base_us;
 }
 
  __IRAM_SEC uint64_t bk_aon_rtc_get_ms(void) {
-	uint64_t time_tick = bk_aon_rtc_get_current_tick(AONRTC_GET_SET_TIME_RTC_ID);
-	uint64_t time_diff = rtc_tick_to_ms(time_tick - s_time_base_tick);
-    uint64_t time_ms = s_time_base_us / 1000 + time_diff;
-    return  time_ms;
+    return bk_aon_rtc_get_us()/1000;
+}
+
+void bk_rtc_set_clock_freq(uint32_t clock_freq)
+{
+    bk_aon_rtc_get_us(); //update base time to compensate the frequency change
 }
 
 #if CONFIG_AON_RTC_KEEP_TIME_SUPPORT
@@ -1296,14 +1235,6 @@ __IRAM_SEC uint64_t bk_aon_rtc_get_current_tick(aon_rtc_id_t id)
 
 	return (aon_rtc_hal_get_counter_val(&s_aon_rtc[id].hal));
 }
-
-#if CONFIG_ROSC_COMPENSATION
-__IRAM_SEC uint64_t bk_aon_rtc_get_current_tick_with_compensation(aon_rtc_id_t id)
-{
-	uint64_t tick_val = bk_aon_rtc_get_current_tick(id);
-	return (tick_val + bk_rosc_32k_get_tick_diff(tick_val));
-}
-#endif
 
 #if CONFIG_RTC_ANA_WAKEUP_SUPPORT
 static int ana_wakesource_rtc_enter_cb(uint64_t sleep_time, void *args)

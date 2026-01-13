@@ -190,20 +190,6 @@ bk_err_t bk_aon_rtc_open_rtc_wakeup(rtc_tick_t period);
  */
 uint64_t bk_aon_rtc_get_current_tick(aon_rtc_id_t id);
 
-#if CONFIG_ROSC_COMPENSATION
-/**
- * @brief  Get AON RTC current tick with 64 bits (compensated by ckmn)
- *	       AON RTC uses 32 Bits counter with 32K clock, the max time is about 36.4 hours.
- *         The 32K clock really frequency is 32768 HZ(External 32K XTL) or 32000 HZ(Internel ROSC).
- *         Set upper interrupt as the 0xFFFFFFFF ticks as one round.
- * @id: register to which aon_rtc id
- * @return
- *    - BK_OK: succeed
- *    - others: other errors.
- */
-uint64_t bk_aon_rtc_get_current_tick_with_compensation(aon_rtc_id_t id);
-#endif
-
 #if CONFIG_RTC_ANA_WAKEUP_SUPPORT
 /**
  * @brief     Register the RTC analog channel to wakeup system with input period.
@@ -341,6 +327,26 @@ uint64_t bk_aon_rtc_get_us(void);
  *
  */
 uint64_t bk_aon_rtc_get_ms(void);
+
+/**
+ * @brief  Convert AON RTC tick to us
+ *
+ * @tick: AON RTC tick
+ *
+ * @return
+ *    - AON RTC tick to us
+ */
+uint64_t bk_aon_rtc_tick_to_us(uint64_t tick);
+
+/**
+ * @brief  Convert AON RTC us to tick
+ *
+ * @us: AON RTC us
+ *
+ * @return
+ *    - AON RTC us to tick
+ */
+uint64_t bk_aon_rtc_us_to_tick(uint64_t us);
 
 /**
  * @}

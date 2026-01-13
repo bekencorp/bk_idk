@@ -70,28 +70,6 @@ bk_err_t bk_rosc_32k_ckest_prog(uint32_t count);
 bk_err_t bk_rosc_32k_calib(void);
 
 /**
- * @brief    Get tick diff for rtc tick compensation
- *
- * This API tells the current tick diff for compensation.
- *
- * @param tick current tick value
- *
- * @return
- *    - tick diff value.
- */
-int64_t bk_rosc_32k_get_tick_diff(uint64_t tick);
-
-/**
- * @brief    Get time diff for mac time compensation
- *
- * This API tells the current time diff for compensation.
- *
- * @return
- *    - time diff value.
- */
-int64_t bk_rosc_32k_get_time_diff(void);
-
-/**
  * @}
  */
 

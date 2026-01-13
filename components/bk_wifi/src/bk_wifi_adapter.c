@@ -414,6 +414,24 @@ static void bk_pm_wifi_rtc_set_wrapper(uint32_t tick, void *callback)
 #endif
 }
 
+static uint64_t bk_pm_wifi_rtc_tick_to_us_wrapper(uint64_t tick)
+{
+#if CONFIG_ANA_RTC
+    return bk_aon_rtc_tick_to_us(tick);
+#else
+    return 0;
+#endif
+}
+
+static uint64_t bk_pm_wifi_rtc_us_to_tick_wrapper(uint64_t us)
+{
+#if CONFIG_ANA_RTC
+    return bk_aon_rtc_us_to_tick(us);
+#else
+    return 0;
+#endif
+}
+
 static void bk_pm_wifi_rtc_clear_wrapper(void)
 {
 #if CONFIG_ANA_RTC
@@ -495,15 +513,6 @@ static double bk_rosc_32k_get_freq_wrapper(void)
 {
 	#if (CONFIG_CKMN)
 	return bk_rosc_32k_get_freq();
-	#else
-	return BK_OK;
-	#endif
-}
-
-static INT64 bk_rosc_32k_get_time_diff_wrapper(void)
-{
-	#if (CONFIG_ROSC_COMPENSATION)
-	return bk_rosc_32k_get_time_diff();
 	#else
 	return BK_OK;
 	#endif
@@ -1554,6 +1563,8 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._bk_pm_sleep_register = bk_pm_sleep_register_wrapper,
 	._bk_pm_low_voltage_register = bk_pm_low_voltage_register_wrapper,
 	._bk_pm_wifi_rtc_set = bk_pm_wifi_rtc_set_wrapper,
+	._rtc_us_to_tick = bk_pm_wifi_rtc_us_to_tick_wrapper,
+	._rtc_tick_to_us = bk_pm_wifi_rtc_tick_to_us_wrapper,
 	._bk_pm_wifi_rtc_clear = bk_pm_wifi_rtc_clear_wrapper,
 	._wifi_vote_rf_ctrl = wifi_vote_rf_ctrl_wrapper,
 	._wifi_phy_clk_open = wifi_phy_clk_open_wrapper,
@@ -1571,7 +1582,6 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._bk_rosc_32k_ckest_prog = bk_rosc_32k_ckest_prog_wrapper,
 	._bk_rosc_32k_get_ppm = bk_rosc_32k_get_ppm_wrapper,
 	._bk_rosc_32k_get_freq = bk_rosc_32k_get_freq_wrapper,
-	._bk_rosc_32k_get_time_diff = bk_rosc_32k_get_time_diff_wrapper,
 	._mac_printf_encode = mac_printf_encode_wrapper,
 	._dbg_enable_debug_gpio = dbg_enable_debug_gpio,
 	._dbg_enable_debug_mac = sys_hal_diag_debug_mac,

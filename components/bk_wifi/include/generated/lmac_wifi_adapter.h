@@ -173,7 +173,6 @@ typedef struct {
 	bk_err_t (*_bk_rosc_32k_ckest_prog)(uint32_t param);
 	bk_err_t (*_bk_rosc_32k_get_ppm)(void);
 	double (*_bk_rosc_32k_get_freq)(void);
-	INT64 (*_bk_rosc_32k_get_time_diff)(void);
 
 	void (*_mac_printf_encode)(char *txt, size_t maxlen, const u8 *data, size_t len);
 	void (*_dbg_enable_debug_gpio)(void);
@@ -252,6 +251,8 @@ typedef struct {
 	uint64_t (*_bk_aon_rtc_get_us)(void);
 	bk_err_t (*_bk_int_isr_register)(uint32_t src, void* isr_callback, void*arg);
 	float(*_rtc_get_ms_tick_cnt)(void);
+	uint64_t (*_rtc_tick_to_us)(uint64_t tick);
+	uint64_t (*_rtc_us_to_tick)(uint64_t us);
 	bk_err_t (*_rtos_init_semaphore)(void** semaphore, int maxCount);
 	bk_err_t (*_rtos_get_semaphore)(void** semaphore, uint32_t timeout_ms);
 	bk_err_t (*_rtos_deinit_semaphore)(void** semaphore);

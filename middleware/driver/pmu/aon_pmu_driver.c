@@ -84,19 +84,14 @@ void aon_pmu_drv_lpo_src_extern32k_enable(void)
 }
 void aon_pmu_drv_lpo_src_set(uint32_t lpo_src)
 {
-#if !CONFIG_ANA_RTC
+	//Notify RTC to update base time to compensate the frequency change
 	if(lpo_src == PM_LPO_SRC_X32K)
 	{
 		bk_rtc_set_clock_freq(AON_RTC_EXTERN_32K_CLOCK_FREQ);
 	} else {
 		bk_rtc_set_clock_freq(AON_RTC_DEFAULT_CLOCK_FREQ);
 	}
-#endif
 
-#if CONFIG_ROSC_COMPENSATION
-	// get current tick to sync tick value for rosc_rtc_tick_compensation
-	bk_aon_rtc_get_current_tick_with_compensation(AON_RTC_ID_1);
-#endif
 	aon_pmu_hal_lpo_src_set(lpo_src);
 }
 __IRAM_SEC uint32_t aon_pmu_drv_lpo_src_get()

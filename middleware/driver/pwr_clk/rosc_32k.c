@@ -51,7 +51,6 @@ static uint32_t s_records_cnt = 0;
 #endif
 
 static double s_rosc_freq_hz = ROSC_CLK_32K;
-static int64_t s_rosc_freq_hz_fix = ROSC_CLK_32K;
 static int32_t s_rosc_ppm = ROSC_CKMN_PPM;
 
 
@@ -70,7 +69,7 @@ __IRAM_SEC static void rosc_ckmn_isr(void)
 	// GPIO_UP(16); // 1us
 	uint32_t cnt_32k = bk_ckmn_get_rc32k_count();
 	uint32_t cnt_26m = bk_ckmn_get_rc26m_count();
-	double theta, freq;
+	double freq;
 	// GPIO_DOWN(16); // 25us 17us
 #if CONFIG_ANA_RTC
 	freq = ROSC_CLK_40M * cnt_32k / (double)cnt_26m;
@@ -106,15 +105,8 @@ __IRAM_SEC static void rosc_ckmn_isr(void)
 		}
 		c_th = 1;
 	}
-	// GPIO_UP(16); // 17us
-	theta = s_rosc_freq_hz / ROSC_CLK_32K;
-	s_rosc_ppm = (int32_t)(1e6 * (1 - theta) + ROSC_CKMN_PPM * theta);
-	s_rosc_freq_hz_fix = (int64_t)(s_rosc_freq_hz );
-#if !CONFIG_ROSC_COMPENSATION
-	bk_rtc_set_clock_freq((uint32_t)s_rosc_freq_hz);
-#endif
-	// GPIO_DOWN(16);
-	// ROSC_LOGI("ckmn_rosc_isr rosc_freq:%7.2f\r\n", s_rosc_freq_hz);
+
+	bk_rtc_set_clock_freq(s_rosc_freq_hz);
 	bk_ckmn_ckest_disable();
 exit:
 	bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_ROSC_PROG,1,0);
@@ -125,9 +117,7 @@ __IRAM_SEC bk_err_t bk_rosc_32k_ckest_prog(uint32_t count)
 	if (0 == bk_ckmn_ckest_check_busy())
 	{
 		bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_ROSC_PROG,0,0);
-#if CONFIG_ROSC_COMPENSATION
-		bk_aon_rtc_get_current_tick_with_compensation(AON_RTC_ID_1); // trig tick compensation
-#endif
+		bk_rtc_set_clock_freq(s_rosc_freq_hz); //update base time to compensate the frequency change
 #if CONFIG_DEEP_LV
 		bk_ckmn_soft_reset();
 #endif
@@ -282,11 +272,7 @@ static void rosc_calib_thread(void *args)
 
 	bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_ROSC, 0x1, 0x0);
 
-	// update rosc freq
 	s_rosc_freq_hz = s_freq_32k;
-	float theta = s_rosc_freq_hz / ROSC_CLK_32K;
-	s_rosc_ppm = (int32_t)(1e6 * (1 - theta) + ROSC_CKMN_PPM * theta);
-	s_rosc_freq_hz_fix = (int64_t)(s_rosc_freq_hz );
 
 	// complete
 	if (ret) {
@@ -367,80 +353,6 @@ err_exit:
 	}
 
 	return ret;
-}
-#endif
-
-#if CONFIG_ROSC_COMPENSATION
-#define ROSC_COMPE_DEBUG_INTV 1000 // *31.25us 1000 is recommanded for normal debug and 10000 for low voltage sleep (> dtim3)
-
-static uint64_t s_base_tick = 0;
-static int64_t s_tick_diff = 0;
-
-
-__IRAM_SEC int64_t bk_rosc_32k_get_tick_diff(uint64_t tick)
-{
-	int64_t tick_diff = 0;
-
-	if (s_base_tick == 0)
-	{
-#if !CONFIG_ANA_RTC
-		if (aon_pmu_drv_lpo_src_get() == PM_LPO_SRC_ROSC)
-		{
-			ROSC_LOGE("should not be here: %s %d\r\n", __func__, __LINE__);
-		}
-#endif
-		ROSC_LOGI("rosc rtc tick compensation start\r\n");
-	}
-
-	GLOBAL_INT_DECLARATION();
-	GLOBAL_INT_DISABLE();
-	// if tick is 0 means get tick diff without recalculation
-	if (tick != 0)
-	{
-#if !CONFIG_ANA_RTC
-		if (aon_pmu_drv_lpo_src_get() == PM_LPO_SRC_ROSC)
-#endif
-		{
-#if ROSC_COMPE_DEBUG
-			if (tick - s_base_tick >= ROSC_COMPE_DEBUG_INTV)
-			ROSC_LOGI("rosc rtc tick compe: %d+%d->%d\r\n", (int32_t)s_tick_diff, (uint32_t)s_base_tick, (uint32_t)(s_base_tick + s_tick_diff));
-#endif
-			if (tick < s_base_tick)
-			{
-				ROSC_LOGW("check if tick is overflow %d %d %d\r\n", (int32_t)s_tick_diff, (uint32_t)s_base_tick, (uint32_t)tick);
-			}
-			else
-			{
-				s_tick_diff += (int64_t)(tick - s_base_tick) * (ROSC_CLK_32K  - s_rosc_freq_hz_fix)  * 1000 / s_rosc_freq_hz_fix;
-			}
-		}
-		s_base_tick = tick;
-	}
-	tick_diff = (int64_t)(s_tick_diff/1000);
-	GLOBAL_INT_RESTORE();
-
-	return tick_diff;
-}
-
-int64_t bk_rosc_32k_get_time_diff(void)
-{
-	int64_t time_diff = 0;
-
-	GLOBAL_INT_DECLARATION();
-	GLOBAL_INT_DISABLE();
-	time_diff = (int64_t)(s_tick_diff / 32);
-	GLOBAL_INT_RESTORE();
-
-	return time_diff;
-}
-#else
-int64_t bk_rosc_32k_get_tick_diff(uint64_t tick)
-{
-	return 0;
-}
-int64_t bk_rosc_32k_get_time_diff(void)
-{
-	return 0;
 }
 #endif
 
