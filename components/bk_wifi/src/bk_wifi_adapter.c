@@ -416,20 +416,13 @@ static void bk_pm_wifi_rtc_set_wrapper(uint32_t tick, void *callback)
 
 static uint64_t bk_pm_wifi_rtc_tick_to_us_wrapper(uint64_t tick)
 {
-#if CONFIG_ANA_RTC
+
     return bk_aon_rtc_tick_to_us(tick);
-#else
-    return 0;
-#endif
 }
 
 static uint64_t bk_pm_wifi_rtc_us_to_tick_wrapper(uint64_t us)
 {
-#if CONFIG_ANA_RTC
     return bk_aon_rtc_us_to_tick(us);
-#else
-    return 0;
-#endif
 }
 
 static void bk_pm_wifi_rtc_clear_wrapper(void)
