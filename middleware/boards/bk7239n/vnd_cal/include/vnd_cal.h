@@ -12,11 +12,11 @@
 }
 
 typedef struct tmp_pwr_st {
-    unsigned trx0x0c_12_15 : 1; //not used on BK7239 actually
-    signed p_index_delta : 7;
-    signed p_index_delta_g : 7;
-    signed p_index_delta_ble : 7;
-    signed xtal_c_dlta : 10; //8bits xtalh_ctune on BK7239
+    int8_t p_index_delta_a;
+    int8_t p_index_delta;
+    int8_t p_index_delta_g;
+    int8_t p_index_delta_ble;
+    int16_t xtal_c_dlta;
 } TMP_PWR_ST, *TMP_PWR_PTR;
 
 typedef struct txpwr_cal_st
