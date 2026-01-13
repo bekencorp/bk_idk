@@ -29,6 +29,8 @@ SUBTYPE_XIP_OTA_CONTROL  = 13
 SUBTYPE_BL1_CONTROL      = 14
 SUBTYPE_BOOT_FLAG        = 15
 SUBTYPE_MANIFEST         = 16
+SUBTYPE_FACTORY          = 17
+SUBTYPE_NVS_KEY          = 18
 
 subtype_mapping = {
     ""                : SUBTYPE_DEFAULT,
@@ -48,6 +50,8 @@ subtype_mapping = {
     "bl1_control"     : SUBTYPE_BL1_CONTROL,
     "boot_flag"       : SUBTYPE_BOOT_FLAG,
     "manifest"        : SUBTYPE_MANIFEST,
+    "factory"         : SUBTYPE_FACTORY,
+    "nvs_key"         : SUBTYPE_NVS_KEY,
 }
 
 class PartitionType:

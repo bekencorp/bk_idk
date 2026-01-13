@@ -18,7 +18,6 @@ BL2_HDR_SZ = 0x1000
 BL2_TAIL_SZ = 0x1000
 CPU_VECTOR_ALIGN_SZ = 512
 
-
 def ceil_align(value, alignment):
     return (((value + alignment - 1) // alignment) * alignment)
 
@@ -28,27 +27,37 @@ def floor_align(value, alignment):
 def p2v(addr):
     return (addr - s_base_addr)
 
-
 def hex2int(str):
     return int(str, base=16) % (2**32)
-
 
 def decimal2int(str):
     return int(str, base=10) % (2**32)
 
-
 def crc_size(size):
-    return (((size + 31) >> 5) * 34)
+    if is_flash_crc_enabled():
+        # Align size to 34-byte boundary (32-byte data + 2-byte CRC)
+        return (((size + (CRC_UNIT_DATA_SZ - 1)) // CRC_UNIT_DATA_SZ) * CRC_UNIT_TOTAL_SZ)
+    else:
+        # In no_crc mode: no alignment needed (1:1 mapping)
+        return size 
 
 def virtual2phy(addr):
-    return ((addr % 32) + ((addr >> 5) * 34))
+    if is_flash_crc_enabled():
+        return ((addr % CRC_UNIT_DATA_SZ) + ((addr // CRC_UNIT_DATA_SZ) * CRC_UNIT_TOTAL_SZ))
+    else:
+        return addr
 
 def phy2virtual(addr):
-    return ((addr % 34) + ((addr // 34) * 32))
+    if is_flash_crc_enabled():
+        return ((addr % CRC_UNIT_TOTAL_SZ) + ((addr // CRC_UNIT_TOTAL_SZ) * CRC_UNIT_DATA_SZ))
+    else:
+        return addr
 
 def crc_addr(addr):
-    return crc_size(addr)
-
+    if is_flash_crc_enabled():
+        return crc_size(addr)
+    else:
+        return addr
 
 def size2int(str):
     size_str = re.findall(r"\d+", str)

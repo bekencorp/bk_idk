@@ -67,7 +67,7 @@ class PartitionMerge(PartitionApp):
             else:
                 self._size = Size(self._int_offset, self._int_size, BL2_HDR_SZ)
 
-    def postbuild_process(self, flash_aes_en=False, flash_aes_key=None, img_sign_key=None, flash_crc_en=True):
+    def postbuild_process(self, flash_aes_en=False, flash_aes_key=None, img_sign_key=None, flash_crc_en=True, flash_aes_type=None):
         self.__create_merge_bin(flash_aes_en, flash_aes_key, img_sign_key, flash_crc_en)
         p = self._ota_partition
         if p != None:

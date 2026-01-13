@@ -25,6 +25,7 @@
 extern bk_err_t nvs_flash_partition_test_various_op(void);
 extern bk_err_t read_default_nvs_data(void);
 #endif
+extern void nvs_flash_test(void);
 extern void print_help(const char *progname, void **argtable);
 extern void common_cmd_handler(int argc, char **argv, void **argtable, int argtable_size, void (*handler)(void **argtable));
 
@@ -32,6 +33,7 @@ static void cli_nvs_test_cmd_handler(void **argtable)
 {
     struct arg_lit *self_test     = (struct arg_lit *)argtable[1];
     struct arg_lit *default_value = (struct arg_lit *)argtable[2];
+    struct arg_lit *preset_test   = (struct arg_lit *)argtable[3];
     bk_err_t ret;
 
     if (self_test->count > 0) {
@@ -50,6 +52,10 @@ static void cli_nvs_test_cmd_handler(void **argtable)
         ret = BK_FAIL;
 #endif
         CLI_LOGI(ret ? "read default value fail, err = %x\r\n" : "read default value pass\r\n", ret);
+    }
+    if (preset_test->count > 0) {
+        nvs_flash_test();
+        CLI_LOGI("preset test completed\r\n");
     }
 }
 
@@ -317,9 +323,10 @@ static void cli_nvs_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
     struct arg_lit *help          = arg_lit0("h", "help",     "Display this help message");
     struct arg_lit *self_test     = arg_lit0("s", "selftest", "Set self test");
     struct arg_lit *default_value = arg_lit0("d", "default",  "Read default value in NVS");
+    struct arg_lit *preset_test   = arg_lit0("p", "preset",   "Run preset test (nvs_flash_test)");
     struct arg_end *end           = arg_end(20);
 
-    void* argtable[] = { help, self_test, default_value, end };
+    void* argtable[] = { help, self_test, default_value, preset_test, end };
     int argtable_size = sizeof(argtable) / sizeof(argtable[0]);
 
     common_cmd_handler(argc, argv, argtable, argtable_size, cli_nvs_test_cmd_handler);
@@ -359,7 +366,7 @@ static void cli_nvs_api_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
 
 #define NVS_CMD_CNT (sizeof(s_nvs_commands) / sizeof(struct cli_command))
 static const struct cli_command s_nvs_commands[] = {
-    {"nvs_test", "nvs_test { selftest | default } (example: nvs_test --selftest)", cli_nvs_test_cmd},
+    {"nvs_test", "nvs_test { selftest | default | preset } (example: nvs_test --selftest)", cli_nvs_test_cmd},
     {"nvs", "nvs { get | set | eraseall } (example: nvs -s -n myns -t i32 -k counter -v 42)", cli_nvs_cmd},
     {"nvs_api", "nvs_api { erase | getstats | getused } (example: nvs_api --getstats)", cli_nvs_api_cmd},
 #if CONFIG_SUPPORT_NVS_THREAD_SAFETY_TEST

@@ -15,7 +15,7 @@ class PartitionBl1Control(Partition):
         super().__init__(idx, field_dic, mini_offset)
         self._bin = Bin('bl1_control.bin', 'bl1_control', self.name())
 
-    def postbuild_process(self, flash_aes_en=False, flash_aes_key=None, img_sign_key=None, flash_crc_en=True):
+    def postbuild_process(self, flash_aes_en=False, flash_aes_key=None, img_sign_key=None, flash_crc_en=True, flash_aes_type=None):
         self.__create_bl1_control_bin(flash_aes_en, flash_aes_key, img_sign_key, flash_crc_en)
         super().postbuild_process()
 

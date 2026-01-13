@@ -16,7 +16,7 @@ class PartitionPartition(Partition):
         self._partitions = partitions
         self._bin = Bin('partition.bin', 'PARTITION', self.name())
 
-    def postbuild_process(self, flash_aes_en=False, flash_aes_key=None, img_sign_key=None, flash_crc_en=True):
+    def postbuild_process(self, flash_aes_en=False, flash_aes_key=None, img_sign_key=None, flash_crc_en=True, flash_aes_type=None):
         self.__create_partition_bin(flash_aes_en, flash_aes_key, img_sign_key, flash_crc_en)
         super().postbuild_process()
 

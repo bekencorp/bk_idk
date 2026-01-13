@@ -21,7 +21,9 @@
 #include <driver/flash_partition.h>
 #include "flash_driver.h"
 #include "flash_hal.h"
+#include "security.h"
 #include <ctype.h>
+#include <soc/soc.h>
 
 #define TAG    "partition"
 
@@ -33,11 +35,18 @@
 #define FLASH_LOGICAL_ADDR_UNIT_SIZE      32
 
 #define FLASH_PHY_ADDR_IS_ALIGN(addr)  (((addr) % FLASH_PHYSICAL_ADDR_UNIT_SIZE) < FLASH_LOGICAL_ADDR_UNIT_SIZE)
-#define FLASH_PHY_2_LOGICAL(addr)      ((((addr) / FLASH_PHYSICAL_ADDR_UNIT_SIZE) * FLASH_LOGICAL_ADDR_UNIT_SIZE) + ((addr) % FLASH_PHYSICAL_ADDR_UNIT_SIZE))
-#define FLASH_LOGICAL_2_PHY(addr)      ((((addr) / FLASH_LOGICAL_ADDR_UNIT_SIZE) * FLASH_PHYSICAL_ADDR_UNIT_SIZE) + ((addr) % FLASH_LOGICAL_ADDR_UNIT_SIZE))
 
-#define SOC_FLASH_BASE_ADDR           0x02000000
-#define FLASH_LOGICAL_BASE_ADDR       SOC_FLASH_BASE_ADDR
+/* depending on FLASH_PHY2VIRTUAL of security.h , this macro is different
+ */
+#define FLASH_PHY_2_VIRTUAL_ALIGN(addr)  FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(addr))
+
+/* Convert logical address to physical address
+ * Logical layout: [0-31: data] per 32-byte unit
+ * Physical layout: [0-31: data] [32-33: ECC] per 34-byte unit
+ */
+#define FLASH_LOGICAL_2_PHY(addr)     FLASH_VIRTUAL2PHY(addr)
+
+#define FLASH_LOGICAL_BASE_ADDR       SOC_FLASH_DATA_BASE
 
 #if (CONFIG_TFM_FWU)
 #include "tfm_flash_nsc.h"
@@ -791,7 +800,7 @@ bk_err_t bk_flash_partition_read_cbus(bk_partition_t partition, uint8_t *out_buf
     if(ret != BK_OK)
         return ret;
 
-    in_ptr = flash_base + FLASH_PHY_2_LOGICAL(start_addr) + offset;
+    in_ptr = flash_base + FLASH_PHY_2_VIRTUAL_ALIGN(start_addr) + offset;
 
     memcpy(out_buffer, (void *)in_ptr, buffer_len);
 
@@ -816,7 +825,7 @@ bk_err_t bk_flash_partition_write_cbus(bk_partition_t partition, const uint8_t *
 
     flash_base = SOC_FLASH_DATA_BASE;
     start_addr = partition_info->partition_start_addr;
-    wr_ptr = flash_base + FLASH_PHY_2_LOGICAL(start_addr) + offset;
+    wr_ptr = flash_base + FLASH_PHY_2_VIRTUAL_ALIGN(start_addr) + offset;
     if((offset + buffer_len) > partition_info->partition_length) {
         FLASH_LOGE("partition overlap. offset(%d),len(%d)\r\n", offset, buffer_len);
         return BK_ERR_FLASH_ADDR_OUT_OF_RANGE;

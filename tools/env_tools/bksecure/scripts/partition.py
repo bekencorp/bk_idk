@@ -52,7 +52,7 @@ class Partition:
     def prebuild_process(self):
         pass
 
-    def postbuild_process(self, flash_aes_en=False, flash_aes_key=None, img_sign_key=None, flash_crc_en=True):
+    def postbuild_process(self, flash_aes_en=False, flash_aes_key=None, img_sign_key=None, flash_crc_en=True, flash_aes_type=None):
         self._add_pack_header_to_bin()
 
     def _add_pack_header_to_bin(self, m1=0, m2=0, m3=0, m4=0):
