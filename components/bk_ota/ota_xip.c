@@ -215,7 +215,32 @@ bk_err_t xip_ota_accept(const bk_ota_t *ota)
 	uint32_t image_ok_offset =  xip_ota_get_app_magic_off(ota) - (XIP_IMAGE_OK_TYPE - 1) * 8;
 	uint32_t image_ok_value = XIP_IMAGE_OK;
 
-	bk_flash_write_bytes(image_ok_offset, (const uint8_t *)&image_ok_value, 4);
+	uint32_t current_image_ok_value = 0;
+	bk_flash_read_bytes(image_ok_offset, (uint8_t *)&current_image_ok_value, 4);
+	if (current_image_ok_value != image_ok_value) {
+		bk_flash_write_bytes(image_ok_offset, (const uint8_t *)&image_ok_value, 4);
+	}
+	
+	// Save current running slot information for bootloader
+	uint32_t running_slot_offset = CONFIG_XIP_OTA_CONTROL_PHY_PARTITION_OFFSET + 0x1000;
+	uint32_t current_slot = flash_get_excute_enable(); // 0 = slot A, 1 = slot B
+	
+	uint32_t current_slot_value = 0;
+	bk_flash_read_bytes(running_slot_offset, (uint8_t *)&current_slot_value, 4);
+	
+	if (current_slot == 0) {
+		if (current_slot_value != 0xFFFFFFFF) {
+			OTA_LOGI(TAG, "current slot is 0, erasing 4k at offset 0x%x\r\n", running_slot_offset);
+			bk_flash_erase_sector(running_slot_offset);
+		}
+	} else {
+		uint32_t running_slot_value = 1;
+		if (current_slot_value != running_slot_value) {
+			OTA_LOGI(TAG, "save running slot: %d, value: 0x%x\r\n", current_slot, running_slot_value);
+			bk_flash_write_bytes(running_slot_offset, (const uint8_t *)&running_slot_value, 4);
+		}
+	}
+	
 	return BK_OK;
 }
 

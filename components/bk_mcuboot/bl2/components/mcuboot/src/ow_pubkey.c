@@ -77,10 +77,10 @@ static void CRC8_Update( CRC8_Context *inContext, const void *inSrc, size_t inLe
 
 extern unsigned int pub_key_len;
 
-#if CONFIG_OTA_UPDATE_PUBKEY
 int
 bk_find_key(uint8_t image_index, uint8_t *key, uint16_t key_len, uint32_t current_slot_addr)
 {
+#if CONFIG_OTA_UPDATE_PUBKEY
     (void)current_slot_addr; // Not used in this code path
     uint32_t phy_off = partition_get_phy_offset(PARTITION_PUBLIC_KEY);
     uint32_t vir_off = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(phy_off + 3)); 
@@ -122,8 +122,12 @@ bk_find_key(uint8_t image_index, uint8_t *key, uint16_t key_len, uint32_t curren
         BOOT_LOG_INF("pubkey ok!");
         return 0;
     }
-
+#else
+    bootutil_keys[0].key = key;
+    pub_key_len = key_len;
+    BOOT_LOG_DBG("pubkey verified");
+    return 0;
+#endif
     BOOT_LOG_ERR("pubkey of back and OTA-outer not equal!");
     return -1;
 }
-#endif
