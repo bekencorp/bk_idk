@@ -36,6 +36,10 @@
 #if BK_SUPPLICANT
 #include <common/bk_include.h>
 #include "wpa_ctrl.h"
+
+struct wpa_supplicant;
+extern void wpa_supplicant_req_auth_timeout(struct wpa_supplicant *wpa_s,
+					     int sec, int usec);
 #endif
 
 static const u8 null_rsc[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -1917,6 +1921,12 @@ static void wpa_supplicant_process_3_of_4(struct wpa_sm *sm,
 			MLME_SETPROTECTION_KEY_TYPE_PAIRWISE);
 		eapol_sm_notify_portValid(sm->eapol, true);
 	}
+
+#if BK_SUPPLICANT
+	/* Some routers require extra time for group handshake */
+	if (!ie.gtk && sm->group_cipher != WPA_CIPHER_GTK_NOT_USED)
+		wpa_supplicant_req_auth_timeout((struct wpa_supplicant *)(sm->ctx->ctx), 10 ,0);
+#endif
 	wpa_sm_set_state(sm, WPA_GROUP_HANDSHAKE);
 
 	if (sm->group_cipher == WPA_CIPHER_GTK_NOT_USED) {
