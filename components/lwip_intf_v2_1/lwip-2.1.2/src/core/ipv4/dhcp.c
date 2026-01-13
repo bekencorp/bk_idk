@@ -98,6 +98,8 @@ extern void ps_clear_dhcp_ongoing_prevent(void);
 static void dhcp_stop_ongoing_timeout_check(void);
 static void dhcp_start_ongoing_timeout_check(u32_t milliseconds);
 static beken2_timer_t dhcp_ongoing_tmr = {0};
+static bool no_forced_release_time = false;
+static u8_t nack_recv_cnt = 0;
 #endif
 
 #ifdef LWIP_HOOK_FILENAME
@@ -672,7 +674,7 @@ dhcp_handle_ack(struct netif *netif, struct dhcp_msg *msg_in)
 
   #if CONFIG_DHCP_ONGOING_OPTIM
   /* not allownd too short time to avoid dhcp-renew too frequency */
-  if(dhcp->offered_t0_lease < DHCP_MIN_RELESE_TIME_S)
+  if ((dhcp->offered_t0_lease < DHCP_MIN_RELESE_TIME_S) && !no_forced_release_time)
   {
     dhcp->offered_t0_lease = DHCP_MIN_RELESE_TIME_S;
     dhcp->offered_t1_renew = dhcp->offered_t0_lease / 2;
@@ -841,7 +843,10 @@ dhcp_start(struct netif *netif)
 {
   struct dhcp *dhcp;
   err_t result;
-
+#if CONFIG_DHCP_ONGOING_OPTIM
+  no_forced_release_time = false;
+  nack_recv_cnt = 0;  
+#endif
 #if BK_LWIP
   /*if dhcp can't get IP, will rescan after 10 seconds.*/
   if (netif == (struct netif *)net_get_sta_handle())
@@ -2001,6 +2006,12 @@ dhcp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr,
             (dhcp->state == DHCP_STATE_REBINDING) || (dhcp->state == DHCP_STATE_RENEWING  ))) {
     LWIP_DEBUGF(DHCP_DEBUG | LWIP_BK_DBG_TRACE, ("DHCP_NAK received\n"));
     #if CONFIG_DHCP_ONGOING_OPTIM
+    if ((dhcp->state == DHCP_STATE_REBINDING) || (dhcp->state == DHCP_STATE_RENEWING)) {
+      nack_recv_cnt++;
+
+      if (nack_recv_cnt >= 3)
+        no_forced_release_time = true;
+    }
     dhcp_stop_ongoing_timeout_check();
     #endif
     dhcp_handle_nak(netif);
