@@ -196,13 +196,13 @@ static bk_err_t ota_download_handle_image(ota_download_t* ota_parse, uint8_t **d
 	uint32_t image_crc;
 	bk_err_t ret = BK_OK;
 
-	#if (CONFIG_TASK_WDT)
+#if (CONFIG_TASK_WDT)
 	extern void bk_task_wdt_feed(void);
 	bk_task_wdt_feed();
-	#endif
-	#if (CONFIG_INT_WDT)
+#endif
+#if (CONFIG_INT_WDT)
 	bk_wdt_feed();
-	#endif
+#endif
 
 	do {
 		if (ota_parse->offset == 0) {
@@ -218,7 +218,7 @@ static bk_err_t ota_download_handle_image(ota_download_t* ota_parse, uint8_t **d
 
 			ota_parse->percent = 0;
 			CRC32_Init(&(ota_parse->ota_crc));
-#if CONFIG_VALIDATE_DURING_DOWNLOADING
+#if CONFIG_VALIDATE_DURING_DOWNLOADING || CONFIG_OTA_VERIFY_TRUST_CHAIN
 			ota_parse->ota_verify = ota_verify_init();
 			if (ota_parse->ota_verify == NULL) {
 				return BK_ERR_NO_MEM;
@@ -234,7 +234,7 @@ static bk_err_t ota_download_handle_image(ota_download_t* ota_parse, uint8_t **d
 				BK_LOGI(TAG, "downloading %d%%\r\n", ota_parse->percent);
 			}
 		}
-#if CONFIG_VALIDATE_DURING_DOWNLOADING
+#if CONFIG_VALIDATE_DURING_DOWNLOADING || CONFIG_OTA_VERIFY_TRUST_CHAIN
 		ret = ota_verify_receive_data(ota_parse->ota_verify, *data, *len);
 #endif
 		if (*len < data_len) {
@@ -260,10 +260,15 @@ static bk_err_t ota_download_handle_image(ota_download_t* ota_parse, uint8_t **d
 				ret = ota_verify_process(ota_parse->ota_handle->app_partition, ota_parse->ota_verify);
 				if (ret != BK_OK) {
 					ota_verify_deinit(ota_parse->ota_verify);
+					ota_parse->ota_verify = NULL;
 					return ret;
 				}
 			}
 			ota_verify_deinit(ota_parse->ota_verify);
+			ota_parse->ota_verify = NULL;
+#elif CONFIG_OTA_VERIFY_TRUST_CHAIN
+			// Keep ota_verify for trust chain verification after download completes
+			// ota_verify will be deinitialized in cli_https_ota.c after trust chain verification
 #endif
 			/*to next image*/
 			BK_LOGI(TAG, "\r\n");
