@@ -917,6 +917,9 @@ __IRAM_SEC bk_err_t bk_flash_power_saving_exit(void)
     // the restore API must run in SRAM/ITCM.
     // don't access flash before restoring setting, especially for A/B image project.
 
+    // update flash status register value, for volatile way reset flash status register value
+    s_flash.flash_status_reg_val = flash_read_status_reg();
+
     s_flash.flash_line_mode = 0;
     flash_set_line_mode(s_flash.flash_cfg->line_mode);
 
