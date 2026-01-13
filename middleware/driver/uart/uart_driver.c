@@ -41,6 +41,7 @@
 #if CONFIG_SPE
 #include "security.h"
 #endif
+#include <stdio.h>
 
 static void uart_isr_common(uart_id_t id) __BK_SECTION(".itcm");
 static uint32_t uart_id_read_fifo_frame(uart_id_t id, const kfifo_ptr_t rx_ptr) __BK_SECTION(".itcm");
@@ -75,6 +76,9 @@ typedef struct {
 typedef struct {
 	bool rx_blocked;
 	beken_semaphore_t rx_int_sema;
+#if (CONFIG_UART_TX_DMA)
+	beken_semaphore_t tx_dma_sema;
+#endif
 } uart_sema_t;
 
 typedef struct
@@ -1078,6 +1082,15 @@ static void uart_tx_dma_write_done(dma_id_t dma_id)
 {
 	UART_LOGD("%s:dma_id=%d\r\n", __func__, dma_id);
 
+	/* Find uart_id by dma_id and release semaphore */
+	for (uart_id_t id = UART_ID_0; id < SOC_UART_ID_NUM_PER_UNIT; id++) {
+		if (s_uart[id].tx_dma_enable && s_uart[id].tx_dma_id == dma_id) {
+			if (s_uart_sema[id].tx_dma_sema) {
+				rtos_set_semaphore(&s_uart_sema[id].tx_dma_sema);
+			}
+			break;
+		}
+	}
 }
 
 static bk_err_t uart_tx_dma_write_to_fifo(uart_id_t id, uint32_t data_address, uint32_t size)
@@ -1118,7 +1131,7 @@ static bk_err_t uart_tx_dma_init(uart_id_t id)
 		dma_cfg.src = dma_mem_port_config;
 		dma_cfg.mode = DMA_WORK_MODE_SINGLE;
 		dma_cfg.chan_prio = 0;	//UART speed is slow, so no need high priority
-		dma_cfg.dest_wr_intlv = 4;
+		dma_cfg.dest_wr_intlv = 4;  
 		BK_LOG_ON_ERR(bk_dma_init(dma_id, &dma_cfg));
 		bk_dma_set_dest_burst_len(dma_id, BURST_LEN_SINGLE);
 		bk_dma_set_src_burst_len(dma_id, BURST_LEN_SINGLE);
@@ -1136,6 +1149,15 @@ static bk_err_t uart_tx_dma_init(uart_id_t id)
 	s_uart[id].tx_dma_id = dma_id;
 	s_uart[id].tx_dma_enable = 1;
 
+	/* Create semaphore for TX DMA sync */
+	if (s_uart_sema[id].tx_dma_sema == NULL) {
+		bk_err_t ret = rtos_init_semaphore(&s_uart_sema[id].tx_dma_sema, 1);
+		if (ret != BK_OK) {
+			UART_LOGE("uart(%d) tx_dma_sema init failed\r\n", id);
+			return BK_FAIL;
+		}
+	}
+
 	return BK_OK;
 }
 
@@ -1144,6 +1166,13 @@ static bk_err_t uart_tx_dma_deinit(uart_id_t id)
 	dma_id_t dma_id = s_uart[id].tx_dma_id;
 	s_uart[id].tx_dma_id = 0;
 	s_uart[id].tx_dma_enable = 0;
+
+	/* Deinit semaphore */
+	if (s_uart_sema[id].tx_dma_sema) {
+		rtos_deinit_semaphore(&s_uart_sema[id].tx_dma_sema);
+		s_uart_sema[id].tx_dma_sema = NULL;
+	}
+
 	return bk_dma_free(uart_id_to_dma_dev(id, 0), dma_id);
 }
 #endif
@@ -1495,6 +1524,14 @@ bk_err_t bk_uart_write_bytes(uart_id_t id, const void *data, uint32_t size)
 		//UART_LOGE("%s id:%d data:0x%x &data[0]:0x%x size:%d\r\n", __func__, id, data, &((uint8 *)data)[0], size);
 		uart_tx_dma_write_to_fifo(id, (uint32_t)data, size);
 
+		/* Wait for DMA transfer complete */
+		if (s_uart_sema[id].tx_dma_sema) {
+			bk_err_t ret = rtos_get_semaphore(&s_uart_sema[id].tx_dma_sema, BEKEN_WAIT_FOREVER);
+			if (ret != BK_OK) {
+				UART_LOGE("uart(%d) wait tx_dma_sema failed\r\n", id);
+				return BK_FAIL;
+			}
+		}
 	} else
 #endif
 	{

@@ -493,13 +493,14 @@ static inline void dma_ll_flush_src_buffer(dma_hw_t *hw, dma_id_t id)
 	BK_WHILE(hw->config_group[id].status.flush_src_buff);
 }
 
-//TODO
 static inline void dma_ll_set_dest_write_interval(dma_hw_t *hw, dma_id_t id, uint32_t interval)
 {
+	hw->config_group[id].req_mux.dest_write_interval = interval & 0xf;
 }
 
 static inline void dma_ll_set_src_read_interval(dma_hw_t *hw, dma_id_t id, uint32_t interval)
 {
+	hw->config_group[id].req_mux.src_read_interval = interval & 0xf;
 }
 
 #ifdef __cplusplus
