@@ -29,7 +29,6 @@
 #include "pm_debug.h"
 #include "pm_wakeup_source.h"
 #include "pm_interface.h"
-#include "bk_misc.h"
 
 
 #define PM_LOWVOL_CB_SIZE                               (0x2)
@@ -395,6 +394,8 @@ static int pm_low_voltage_resource_set()
 
 void pm_low_voltage_bsp_restore(void)
 {
+	bk_flash_power_saving_exit();
+
 #if CONFIG_CKMN
 	bk_rosc_32k_ckest_prog(32);
 #endif
@@ -408,9 +409,8 @@ void pm_low_voltage_bsp_restore(void)
 		bk_aon_wdt_stop();
 	#endif
 #endif
-	bk_delay_us(100);
+
 	bk_pm_exit_low_vol_wakeup_source_set();
-	bk_flash_power_saving_exit();
 }
 
 static void pm_low_voltage_resource_restore()
