@@ -72,7 +72,9 @@ bool wifi_ap_is_started(void);
 void bk_wifi_ota_dtim(bool is_open);
 void rwnx_lowvol_enter_callback(void);
 void rwnx_lowvol_exit_callback(void);
-
+uint8_t bk_wifi_get_encrypt_key(void);
+uint8_t* bk_wifi_encrypt_string(const uint8_t *original_str, int original_len);
+uint8_t* bk_wifi_encrypt_array(const uint8_t *data_array, int array_len);
 #ifdef __cplusplus
 }
 #endif

@@ -1224,7 +1224,17 @@ static int wpa_supplicant_pairwise_gtk(struct wpa_sm *sm,
 	gd.gtk_len = gtk_len;
 
 #if BK_SUPPLICANT
+	#if CONFIG_ENCRYPT_WIFI_INFO
+	extern uint8_t* bk_wifi_encrypt_array(const uint8_t *data_array, int array_len);
+	extern uint8_t bk_wifi_get_encrypt_key(void);
+	uint8_t *encrypted_gtk = bk_wifi_encrypt_array(gtk, gtk_len);
+	if(encrypted_gtk != NULL) {
+		WPA_LOGI("WPA GTK(%02X): %pb\n", bk_wifi_get_encrypt_key(), encrypted_gtk, gtk_len);
+		os_free(encrypted_gtk);
+	}
+	#else
 	WPA_LOGI("WPA: GTK %pb\n", gtk, gtk_len);
+	#endif
 #endif
 
 	key_rsc = key->key_rsc;

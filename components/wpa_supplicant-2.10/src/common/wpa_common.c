@@ -505,7 +505,17 @@ int wpa_pmk_to_ptk(const u8 *pmk, size_t pmk_len, const char *label,
 	}
 
 #if BK_SUPPLICANT
+	#if CONFIG_ENCRYPT_WIFI_INFO
+	extern uint8_t* bk_wifi_encrypt_array(const uint8_t *data_array, int array_len);
+	extern uint8_t bk_wifi_get_encrypt_key(void);
+	uint8_t *encrypted_ptk = bk_wifi_encrypt_array(ptk->tk, ptk->tk_len);
+	if(encrypted_ptk != NULL) {
+		WPA_LOGI("WPA: TK (%02X): %pb\n", bk_wifi_get_encrypt_key(), encrypted_ptk, ptk->tk_len);
+		os_free(encrypted_ptk);
+	}
+	#else
 	WPA_LOGI("WPA: TK %pb\n", ptk->tk, ptk->tk_len);
+	#endif
 #endif
 
 	ptk->kek2_len = 0;

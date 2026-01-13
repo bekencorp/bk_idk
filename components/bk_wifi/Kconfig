@@ -562,4 +562,9 @@ menu "Bk_Wifi"
 		range 20 80
 		default 35
 
+	config ENCRYPT_WIFI_INFO
+		bool "Enable encrypt wifi infomation"
+		default n
+		help
+			Enable encrypt wifi info
 endmenu

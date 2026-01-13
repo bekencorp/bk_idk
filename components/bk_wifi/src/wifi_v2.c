@@ -4902,3 +4902,140 @@ int bk_scan_country_code(uint8_t *country_code)
 }
 #endif //CONFIG_WIFI_SCAN_COUNTRY_CODE
 
+#if CONFIG_ENCRYPT_WIFI_INFO
+/* see decrypt_psk_README.md for more details */
+#define BK_WIFI_ENCRYPT_KEY 	(0xAA)
+static void bk_wifi_decrypt_array(const uint8_t *encrypted_array, int encrypted_len, uint8_t *decrypted_array)
+{
+	for (int i = 0; i < encrypted_len; i++) {
+		decrypted_array[i] = encrypted_array[i] ^ BK_WIFI_ENCRYPT_KEY;
+	}
+}
+
+uint8_t bk_wifi_get_encrypt_key(void)
+{
+	return BK_WIFI_ENCRYPT_KEY;
+}
+
+uint8_t* bk_wifi_encrypt_array(const uint8_t *data_array, int array_len)
+{
+	uint8_t *encrypted_array;
+
+	if (data_array == NULL || array_len <= 0) {
+		return NULL;
+	}
+
+	encrypted_array = (uint8_t *)os_malloc(array_len);
+	if (encrypted_array == NULL) {
+		return NULL;
+	}
+
+	// Encrypt each byte: simple XOR with the key
+	bk_wifi_decrypt_array(data_array, array_len, encrypted_array);
+
+	return encrypted_array;
+}
+
+uint8_t* bk_wifi_encrypt_string(const uint8_t *original_str, int original_len)
+{
+	int len = 0;
+	int array_len = 0;
+	int i;
+	uint8_t *data_array = NULL;
+	uint8_t *encrypted_array = NULL;
+	uint8_t *encrypted_str = NULL;
+
+	if (original_str == NULL) {
+		return NULL;
+	}
+
+	len = os_strlen((char *)original_str);
+	if(len > original_len) {
+		len = original_len;
+	}
+	if (len == 0) {
+		return NULL;
+	}
+
+	// Convert hex string to byte array
+	// Each 2 hex characters = 1 byte
+	array_len = len / 2;
+	if (len % 2 != 0) {
+		// Odd length, add one more byte for the last character
+		array_len++;
+	}
+
+	data_array = (uint8_t *)os_malloc(array_len);
+	if (data_array == NULL) {
+		return NULL;
+	}
+	os_memset(data_array, 0, array_len);
+
+	// Convert hex string to byte array
+	for (i = 0; i < len; i++) {
+		uint8_t hex_value = 0;
+		uint8_t c = original_str[i];
+
+		// Convert hex character to value (0-15)
+		if (c >= '0' && c <= '9') {
+			hex_value = c - '0';
+		} else if (c >= 'a' && c <= 'f') {
+			hex_value = c - 'a' + 10;
+		} else if (c >= 'A' && c <= 'F') {
+			hex_value = c - 'A' + 10;
+		} else {
+			hex_value = 0;
+		}
+
+		if (i % 2 == 0) {
+			// High nibble
+			data_array[i / 2] = hex_value << 4;
+		} else {
+			// Low nibble
+			data_array[i / 2] |= hex_value;
+		}
+	}
+
+	// Encrypt the byte array
+
+	encrypted_array = data_array;
+	bk_wifi_decrypt_array(data_array, array_len, encrypted_array);
+
+	// Convert encrypted byte array back to hex string
+	encrypted_str = (uint8_t *)os_malloc(len + 1);
+	if (encrypted_str == NULL) {
+		os_free(data_array);
+		return NULL;
+	}
+	os_memset(encrypted_str, 0, len + 1);
+
+	for (i = 0; i < array_len; i++) {
+		uint8_t byte_val = encrypted_array[i];
+		uint8_t high_nibble = (byte_val >> 4) & 0x0F;
+		uint8_t low_nibble = byte_val & 0x0F;
+
+		// High nibble
+		if (i * 2 < len) {
+			if (high_nibble < 10) {
+				encrypted_str[i * 2] = '0' + high_nibble;
+			} else {
+				encrypted_str[i * 2] = 'a' + (high_nibble - 10);
+			}
+		}
+
+		// Low nibble
+		if (i * 2 + 1 < len) {
+			if (low_nibble < 10) {
+				encrypted_str[i * 2 + 1] = '0' + low_nibble;
+			} else {
+				encrypted_str[i * 2 + 1] = 'a' + (low_nibble - 10);
+			}
+		}
+	}
+
+	os_free(encrypted_array);
+	encrypted_str[len] = '\0';
+
+	return encrypted_str;
+}
+#endif //CONFIG_ENCRYPT_WIFI_INFO
