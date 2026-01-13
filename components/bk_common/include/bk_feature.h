@@ -454,3 +454,14 @@ int bk_feature_wifi_dsss_only(void);
  *
  */
 int bk_feature_coex_enable(void);
+
+/**
+ * @brief     Interface for update power with RSSI
+ *
+ *
+ * @return
+ *    - 0: disable update power with RSSI
+ *    - 1: enable update power with RSSI
+ *
+ */
+int bk_feature_update_power_with_rssi(void);

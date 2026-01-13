@@ -357,3 +357,11 @@ int bk_feature_coex_enable(void) {
 	return 0;
 #endif
 }
+
+int bk_feature_update_power_with_rssi(void) {
+#if (CONFIG_UPDATE_POWER_WITH_RSSI)
+	return 1;
+#else
+	return 0;
+#endif
+}

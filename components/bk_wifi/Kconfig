@@ -567,4 +567,10 @@ menu "Bk_Wifi"
 		default n
 		help
 			Enable encrypt wifi info
+
+	config UPDATE_POWER_WITH_RSSI
+		bool "Enable update power with RSSI"
+		default y
+		help
+			Enable update power with RSSI
 endmenu

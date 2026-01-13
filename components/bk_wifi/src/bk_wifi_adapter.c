@@ -1440,6 +1440,11 @@ static uint32_t coex_wifi_event_get_wrapper(void)
     #endif
 }
 
+static UINT32 bk_feature_update_power_with_rssi_wrapper(void)
+{
+    return bk_feature_update_power_with_rssi();
+}
+
 __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._version = BK_WIFI_OS_ADAPTER_VERSION,
 	._manual_cal_rfcali        = manual_cal_rfcali_status,
@@ -1471,7 +1476,7 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._tx_evm_bandwidth_get = tx_evm_bandwidth_get,
 	._tx_evm_mode_get      = tx_evm_mode_get,
 	._rwnx_tpc_get_pwridx_by_rate = rwnx_tpc_get_pwridx_by_rate,
-	._rwnx_is_enable_pwr_change_by_rssi = rwnx_is_enable_pwr_change_by_rssi,
+	._rwnx_is_enable_pwr_change_by_rssi = bk_feature_update_power_with_rssi_wrapper,
 	._tpc_auto_change_pwr_by_rssi = tpc_auto_change_pwr_by_rssi,
 	._rwnx_setting_for_single_rate = rwnx_setting_for_single_rate,
 	._delay05us = delay05us,
