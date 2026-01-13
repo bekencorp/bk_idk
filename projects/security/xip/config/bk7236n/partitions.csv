@@ -1,8 +1,8 @@
 Name,               Type, SubType,        Offset, Size, Flags
 bl2,                app,  ,               ,       76k,
 partition,          data, partition,      ,       4k,
-primary_cpu0_app,   app,  xip_a,          ,       2000k,
-secondeary_cpu0_app,app,  xip_b,          ,       2000k,
+primary_cpu0_app,   app,  xip_a,          ,       1800k,
+secondeary_cpu0_app,app,  xip_b,          ,       1800k,
 xip_ota_control,    data, xip_ota_control, ,      4k,
 user_config,        data, ,               ,       136k,
 public_key,         data, ,               ,       4k,

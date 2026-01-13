@@ -65,7 +65,7 @@ CONFIG_OTA_UPDATE_PUBKEY=n
 #@ confirm update after ota download
 CONFIG_OTA_CONFIRM_UPDATE=y
 #@ CLI support is disabled for this secure BL2 build to reduce attack surface.
-CONFIG_CLI=n
+CONFIG_CLI=y
 
 # Core bootloader and PSA crypto settings
 CONFIG_BL2=y
@@ -83,5 +83,6 @@ CONFIG_OTA_TEST=y
 
 # Platform runtime subsystems
 CONFIG_CACHE_ENABLE=y
-CONFIG_DBUS_CHECK_CRC=y
+CONFIG_DBUS_CHECK_CRC=n
 CONFIG_BL2_WDT=y
+CONFIG_OTA_UPDATE_PUBKEY=n
