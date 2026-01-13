@@ -68,6 +68,20 @@ menu "PSRAM"
 		bool "Enable Psram Test"
 		default n
 
+	config SUPPORT_PSRAM_XIP
+		depends on PSRAM
+		bool "Support Psram XIP"
+		default n
+
+	config PSRAM_XIP_STRESS_TEST
+		depends on PSRAM && DRIVER_TEST
+		bool "Enable PSRAM XIP Stress Test"
+		default n
+		help
+			Enable comprehensive stress test for PSRAM in XIP (eXecute In Place) mode.
+			This test verifies both instruction fetch and data access reliability.
+			The test code itself runs in PSRAM space to detect XIP-related errors.
+
 	config PSRAM_W955D8MKY_5J
 		depends on PSRAM
 		bool "Select Psram PSRAM_W955D8MKY_5J"

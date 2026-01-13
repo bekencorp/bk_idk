@@ -50,8 +50,13 @@
 #include <driver/uart.h>
 #include <reset_reason.h>
 #include "arch_interrupt.h"
+
 #if CONFIG_DEEP_LV
 #include "deep_lv.h"
+#endif
+
+#if CONFIG_SUPPORT_PSRAM_XIP
+#include <driver/psram.h>
 #endif
 
 #define TAG "arch"
@@ -337,39 +342,39 @@ const VECTOR_TABLE_Type __VECTOR_TABLE_IRAM[] = {
 
 void set_reboot_tag(uint32_t tag)
 {
-	REG_WRITE(REBOOT_TAG_ADDR, tag);
+    REG_WRITE(REBOOT_TAG_ADDR, tag);
 }
 
 uint32_t sys_get_reboot_tag(void)
 {
-	return REG_READ(REBOOT_TAG_ADDR);
+    return REG_READ(REBOOT_TAG_ADDR);
 }
 
 /* sets mem-repair module use OTP param if it has been set by CP-TEST. */
 static inline void boot_mem_check(void)
 {
-	if(GET_BIT_VAL(REG_READ(SYSTEM_BASE_ADDRESS + 0x10*4), BIT_ID(3)) != 0)
-	{
-		REG_WRITE((SYSTEM_BASE_ADDRESS + 0x10*4), SET_BIT_VAL(REG_READ(SYSTEM_BASE_ADDRESS + 0x10*4), BIT_ID(3), 0));
-	}
+    if(GET_BIT_VAL(REG_READ(SYSTEM_BASE_ADDRESS + 0x10*4), BIT_ID(3)) != 0)
+    {
+        REG_WRITE((SYSTEM_BASE_ADDRESS + 0x10*4), SET_BIT_VAL(REG_READ(SYSTEM_BASE_ADDRESS + 0x10*4), BIT_ID(3), 0));
+    }
 
-	if(GET_BIT_VAL(REG_READ(SYSTEM_BASE_ADDRESS + 0xC*4), BIT_ID(15)) != 1)
-	{
-		REG_WRITE((SYSTEM_BASE_ADDRESS + 0xC*4), SET_BIT_VAL(REG_READ(SYSTEM_BASE_ADDRESS + 0xC*4), BIT_ID(15), 1));
-	}
+    if(GET_BIT_VAL(REG_READ(SYSTEM_BASE_ADDRESS + 0xC*4), BIT_ID(15)) != 1)
+    {
+        REG_WRITE((SYSTEM_BASE_ADDRESS + 0xC*4), SET_BIT_VAL(REG_READ(SYSTEM_BASE_ADDRESS + 0xC*4), BIT_ID(15), 1));
+    }
 
-	if((GET_BIT_VAL(REG_READ(OTP_APB_BASE_ADDRESS + 0xB2*4), BIT_ID(0)) != 1)||(GET_BIT_VAL(REG_READ(OTP_APB_BASE_ADDRESS + 0xB2*4), BIT_ID(1)) != 1))
-	{
-		REG_WRITE((OTP_APB_BASE_ADDRESS + 0xB2*4), SET_BIT_VAL(REG_READ(OTP_APB_BASE_ADDRESS + 0xB2*4), BIT_ID(0), 3));
-	}
+    if((GET_BIT_VAL(REG_READ(OTP_APB_BASE_ADDRESS + 0xB2*4), BIT_ID(0)) != 1)||(GET_BIT_VAL(REG_READ(OTP_APB_BASE_ADDRESS + 0xB2*4), BIT_ID(1)) != 1))
+    {
+        REG_WRITE((OTP_APB_BASE_ADDRESS + 0xB2*4), SET_BIT_VAL(REG_READ(OTP_APB_BASE_ADDRESS + 0xB2*4), BIT_ID(0), 3));
+    }
 
-	if(GET_BIT_VAL(REG_READ(OTP_APB_BASE_ADDRESS + 0xB1*4), BIT_ID(0)) == 0)
-	{
-		if((REG_READ(OTP_APB_BASE_ADDRESS + 0x7c8) & 0xF ) == 0x7)
-		{
-			REG_WRITE((MEM_CHECK_BASE_ADDRESS + 0x2*4), 0x7);
-		}
-	}
+    if(GET_BIT_VAL(REG_READ(OTP_APB_BASE_ADDRESS + 0xB1*4), BIT_ID(0)) == 0)
+    {
+        if((REG_READ(OTP_APB_BASE_ADDRESS + 0x7c8) & 0xF ) == 0x7)
+        {
+            REG_WRITE((MEM_CHECK_BASE_ADDRESS + 0x2*4), 0x7);
+        }
+    }
 }
 
 /*----------------------------------------------------------------------------
@@ -389,22 +394,22 @@ __NO_RETURN ENTRY_SECTION void Reset_Handler(void)
     aon_pmu_driver_save_time(true);
 #endif
 
-    //boot_mem_check(); //disable it since OTP issue
-
     STARTUP_PERF(15);
     __set_MSPLIM((uint32_t)(&__STACK_LIMIT));
 
     /* CMSIS System Initialization */
     SystemInit();
 
-#if (CONFIG_SYS_CPU0)
 #if (CONFIG_INT_WDT || CONFIG_TASK_WDT)
     bk_wdt_force_feed();
 #endif
-  //clear mannully reboot flag
-  set_reboot_tag(0);
+    //clear mannully reboot flag
+    set_reboot_tag(0);
 
-  sys_drv_early_init();
+    sys_drv_early_init();
+
+#if CONFIG_SUPPORT_PSRAM_XIP
+    bk_psram_init();
 #endif
 
     /* Enter PreMain (C library entry point) */
@@ -456,47 +461,47 @@ __STATIC_FORCEINLINE void dump_system_info(uint32_t rr, uint32_t lr, uint32_t sp
 
 #define dump_fault_info(rr) \
 {\
-	uint32_t lr = __get_LR();\
-	uint32_t sp = __get_MSP();\
+    uint32_t lr = __get_LR();\
+    uint32_t sp = __get_MSP();\
 \
     __asm volatile \
     (\
-        "	push {r4-r11}								\n"\
+        "   push {r4-r11}                               \n"\
     );\
 \
-	dump_system_info(rr, lr, sp);\
+    dump_system_info(rr, lr, sp);\
 \
-	while(1);\
+    while(1);\
 }
 
 void user_nmi_handler(uint32_t lr, uint32_t sp)
 {
 #if CONFIG_DEBUG_FIRMWARE || CONFIG_DUMP_ENABLE
-	if(arch_is_enter_exception())
-	{
-		//For nmi wdt reset
-		aon_pmu_drv_wdt_change_not_rosc_clk();
-		aon_pmu_drv_wdt_rst_dev_enable();
-		while(1);
-	}
+    if(arch_is_enter_exception())
+    {
+        //For nmi wdt reset
+        aon_pmu_drv_wdt_change_not_rosc_clk();
+        aon_pmu_drv_wdt_rst_dev_enable();
+        while(1);
+    }
 
-	if(REBOOT_TAG_REQ == sys_get_reboot_tag()) {
-		while(1);
-	}
+    if(REBOOT_TAG_REQ == sys_get_reboot_tag()) {
+        while(1);
+    }
 
 #if CONFIG_WDT_EN
-	bk_wdt_feed();
+    bk_wdt_feed();
 #endif
 
-	dump_system_info(RESET_SOURCE_NMI_WDT, lr, sp);
+    dump_system_info(RESET_SOURCE_NMI_WDT, lr, sp);
 #else // nmi wdt without system info dump
-	if(REBOOT_TAG_REQ != sys_get_reboot_tag()) {
-		bk_misc_set_reset_reason(RESET_SOURCE_NMI_WDT);
-	}
+    if(REBOOT_TAG_REQ != sys_get_reboot_tag()) {
+        bk_misc_set_reset_reason(RESET_SOURCE_NMI_WDT);
+    }
 
-	aon_pmu_drv_wdt_change_not_rosc_clk();
-	aon_pmu_drv_wdt_rst_dev_enable();
-	while(1);
+    aon_pmu_drv_wdt_change_not_rosc_clk();
+    aon_pmu_drv_wdt_rst_dev_enable();
+    while(1);
 
 #endif // CONFIG_DEBUG_FIRMWARE || CONFIG_DUMP_ENABLE
 }
@@ -506,42 +511,42 @@ void user_nmi_handler(uint32_t lr, uint32_t sp)
  *----------------------------------------------------------------------------*/
 __attribute__((naked)) void HardFault_Handler(void)
 {
-	dump_fault_info(RESET_SOURCE_HARD_FAULT);
+    dump_fault_info(RESET_SOURCE_HARD_FAULT);
 }
 
 __attribute__((naked, section(".itcm")))  void NMI_Handler(void)
 {
-	uint32_t lr = __get_LR();
-	uint32_t sp = __get_MSP();
+    uint32_t lr = __get_LR();
+    uint32_t sp = __get_MSP();
 
     __asm volatile
     (
-        "	push {r4-r11}								\n"
+        "   push {r4-r11}                               \n"
     );
 
-	user_nmi_handler(lr, sp);
+    user_nmi_handler(lr, sp);
 
-	while(1);
+    while(1);
 }
 
 __attribute__((naked)) void MemManage_Handler(void)
 {
-	dump_fault_info(RESET_SOURCE_MPU_FAULT);
+    dump_fault_info(RESET_SOURCE_MPU_FAULT);
 }
 
 __attribute__((naked)) void BusFault_Handler(void)
 {
-	dump_fault_info(RESET_SOURCE_BUS_FAULT);
+    dump_fault_info(RESET_SOURCE_BUS_FAULT);
 }
 
 __attribute__((naked)) void UsageFault_Handler(void)
 {
-	dump_fault_info(RESET_SOURCE_USAGE_FAULT);
+    dump_fault_info(RESET_SOURCE_USAGE_FAULT);
 }
 
 __attribute__((naked)) void SecureFault_Handler(void)
 {
-	dump_fault_info(RESET_SOURCE_SECURE_FAULT);
+    dump_fault_info(RESET_SOURCE_SECURE_FAULT);
 }
 
 #if CONFIG_SOC_CORTEX_M_UART_DEBUG
@@ -563,7 +568,7 @@ __attribute__((naked)) void DebugMon_Handler(void)
 #else
 __attribute__((naked)) void DebugMon_Handler(void)
 {
-	dump_fault_info(RESET_SOURCE_DEBUG_MONITOR_FAULT);
+    dump_fault_info(RESET_SOURCE_DEBUG_MONITOR_FAULT);
 }
 #endif // CONFIG_SOC_CORTEX_M_UART_DEBUG
 
@@ -572,7 +577,7 @@ __attribute__((naked)) void DebugMon_Handler(void)
  *----------------------------------------------------------------------------*/
 __attribute__((naked)) void Default_Handler(void)
 {
-	dump_fault_info(RESET_SOURCE_DEFAULT_EXCEPTION);
+    dump_fault_info(RESET_SOURCE_DEFAULT_EXCEPTION);
 }
 // eof
 

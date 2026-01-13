@@ -272,6 +272,16 @@ SECTIONS
         LONG (__video_cache_text)
         LONG (__video_cache_data_start__)
         LONG ((__video_cache_data_end__ - __video_cache_data_start__) / 4)
+
+#if CONFIG_SUPPORT_PSRAM_XIP
+        LONG (__psram_code_flash_begin)
+        LONG (__psram_code_start__)
+        LONG ((__psram_code_end__ - __psram_code_start__) / 4)
+
+        LONG (__psram_data_flash_begin)
+        LONG (__psram_data_start__)
+        LONG ((__psram_data_end__ - __psram_data_start__) / 4)
+#endif
         __copy_table_end__ = .;
     } > FLASH
 
@@ -287,6 +297,11 @@ SECTIONS
         /* Add each additional bss section here */
         LONG (__video_cache_bss_start__)
         LONG ((__video_cache_bss_end__ - __video_cache_bss_start__) / 4)
+
+#if CONFIG_SUPPORT_PSRAM_XIP
+        LONG (__psram_bss_start__)
+        LONG ((__psram_bss_end__ - __psram_bss_start__) / 4)
+#endif
         __zero_table_end__ = .;
     } > FLASH
 
@@ -564,6 +579,50 @@ SECTIONS
         . = ALIGN(4);
         __video_cache_bss_end__ = .;
     } > PSRAM
+
+#if (CONFIG_SUPPORT_PSRAM_XIP) && (CONFIG_PSRAM_XIP_STRESS_TEST)
+    /* PSRAM XIP stress test code section
+     * Code marked with PSRAM_XIP_CODE_SECTION will be placed here
+     * and executed directly from PSRAM (XIP mode)
+     */
+    .psram.text :
+    {
+        . = ALIGN(4);
+        PROVIDE(__psram_code_flash_begin = LOADADDR(.psram.text));
+        __psram_code_start__ = .;
+
+        *(.psram.text)
+        *(.psram.text.*)
+
+        . = ALIGN(4);
+        __psram_code_end__ = .;
+    } > PSRAM AT > FLASH
+
+    /* PSRAM XIP stress test data section */
+    .psram.data :
+    {
+        . = ALIGN(4);
+        PROVIDE(__psram_data_flash_begin = LOADADDR(.psram.data));
+        __psram_data_start__ = .;
+
+        *(.psram.data)
+        *(.psram.data.*)
+
+        . = ALIGN(4);
+        __psram_data_end__ = .;
+    } > PSRAM AT > FLASH
+
+    /* PSRAM XIP stress test BSS section */
+    .psram.bss (NOLOAD):
+    {
+        . = ALIGN(4);
+        __psram_bss_start__ = .;
+        *(.psram.bss)
+        *(.psram.bss.*)
+        . = ALIGN(4);
+        __psram_bss_end__ = .;
+    } > PSRAM
+#endif
 
 #if CONFIG_CUSTOMIZE_TY
     .ty_null_text_section :

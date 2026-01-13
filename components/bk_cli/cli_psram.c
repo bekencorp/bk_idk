@@ -31,6 +31,10 @@
 #include "bk_ef.h"
 #endif
 
+#if (CONFIG_PSRAM_XIP_STRESS_TEST)
+extern void cli_psram_xip_stress_test(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv);
+#endif
+
 #define TEST_PSRAM_ACCURACY     1
 
 #define write_data(addr,val)                 *((volatile uint32_t *)(addr)) = val
@@ -1517,6 +1521,9 @@ static const struct cli_command s_psram_commands[] = {
 	{"psram_task_create", "create task on psram", cli_create_psram_task_handle},
 	{"psram_task_delete", "delete task on psram", cli_delete_psram_task_handle},
 	{"psram_multitask_rw", "multiple task read and write", cli_psram_multitask_rw_handle},
+#if (CONFIG_PSRAM_XIP_STRESS_TEST)
+	{"psram_xip_test", "start [duration_sec]|stop|status", cli_psram_xip_stress_test},
+#endif
 };
 
 int cli_psram_init(void)

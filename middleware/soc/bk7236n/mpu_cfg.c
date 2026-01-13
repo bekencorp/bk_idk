@@ -85,8 +85,13 @@ ARM_MPU_Region_t mpu_regions[] = {
       ARM_MPU_RLAR(0x5FFFFFE0UL, 2) },
 
     /* Region 7 psram */
+    #if CONFIG_SUPPORT_PSRAM_XIP
+    { ARM_MPU_RBAR(0x60000000UL, ARM_MPU_SH_NON, 0, 1, 0),
+      ARM_MPU_RLAR(0x63FFFFE0UL, 1) },
+    #else
     { ARM_MPU_RBAR(0x60000000UL, ARM_MPU_SH_NON, 0, 1, 1),
       ARM_MPU_RLAR(0x63FFFFE0UL, 1) },
+    #endif
 
      /* Region 8 qspi1 */
      { ARM_MPU_RBAR(0x68000000UL, ARM_MPU_SH_NON, 0, 1, 1),

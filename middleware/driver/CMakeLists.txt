@@ -289,6 +289,12 @@ if (CONFIG_PSRAM)
 			psram/psram_reliability_test.c
 		)
 	endif()
+
+	if (CONFIG_PSRAM_XIP_STRESS_TEST)
+		list(APPEND srcs
+			psram/psram_xip_stress_test.c
+		)
+	endif()
 endif() #if (CONFIG_PSRAM)
 
 if (CONFIG_CALENDAR)
