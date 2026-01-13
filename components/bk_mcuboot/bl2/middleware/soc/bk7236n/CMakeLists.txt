@@ -78,6 +78,13 @@ if(CONFIG_BL2_WDT_PERIOD)
 	)
 endif()
 
+if(CONFIG_AON_PMU_REG0_REFACTOR_DEV)
+	target_compile_definitions(platform_bl2
+		PUBLIC
+			CONFIG_AON_PMU_REG0_REFACTOR_DEV
+	)
+endif()
+
 if(MCUBOOT_UPGRADE_STRATEGY STREQUAL OVERWRITE_ONLY)
 	list(APPEND platform_bl2_src
 		${IDK_PATH}/components/compress/decompress.c

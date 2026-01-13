@@ -31,185 +31,183 @@ static uint32_t s_reset_reason_inited = false;
 
 uint32_t bk_misc_get_reset_reason(void)
 {
-	return s_start_type;
+    return s_start_type;
 }
 
 static char *misc_get_start_type_str(uint32_t start_type)
 {
 #if CONFIG_DISPLAY_START_TYPE_STR
-	switch (start_type) {
-	case RESET_SOURCE_POWERON:
-		return "power on";
+    switch (start_type) {
+    case RESET_SOURCE_POWERON:
+        return "power on";
 
-	case RESET_SOURCE_REBOOT:
-		return "software reboot";
+    case RESET_SOURCE_REBOOT:
+        return "software reboot";
 
-	case RESET_SOURCE_WATCHDOG:
-		return "interrupt watchdog";
+    case RESET_SOURCE_WATCHDOG:
+        return "interrupt watchdog";
 
-	case RESET_SOURCE_DEEPPS_GPIO:
-		return "deep sleep gpio";
+    case RESET_SOURCE_DEEPPS_GPIO:
+        return "deep sleep gpio";
 
-	case RESET_SOURCE_DEEPPS_RTC:
-		return "deep sleep rtc";
+    case RESET_SOURCE_DEEPPS_RTC:
+        return "deep sleep rtc";
 
-	case RESET_SOURCE_DEEPPS_TOUCH:
-		return "deep sleep touch";
+    case RESET_SOURCE_DEEPPS_TOUCH:
+        return "deep sleep touch";
 
-	case RESET_SOURCE_CRASH_ILLEGAL_JUMP:
-		return "illegal jump";
+    case RESET_SOURCE_CRASH_ILLEGAL_JUMP:
+        return "illegal jump";
 
-	case RESET_SOURCE_CRASH_UNDEFINED:
-		return "undefined";
+    case RESET_SOURCE_CRASH_UNDEFINED:
+        return "undefined";
 
-	case RESET_SOURCE_CRASH_PREFETCH_ABORT:
-		return "prefetch abort";
+    case RESET_SOURCE_CRASH_PREFETCH_ABORT:
+        return "prefetch abort";
 
-	case RESET_SOURCE_CRASH_DATA_ABORT:
-		return "data abort";
+    case RESET_SOURCE_CRASH_DATA_ABORT:
+        return "data abort";
 
-	case RESET_SOURCE_CRASH_UNUSED:
-		return "unused";
+    case RESET_SOURCE_CRASH_UNUSED:
+        return "unused";
 
-	case RESET_SOURCE_CRASH_ILLEGAL_INSTRUCTION:
-		return "illegal instruction";
+    case RESET_SOURCE_CRASH_ILLEGAL_INSTRUCTION:
+        return "illegal instruction";
 
-	case RESET_SOURCE_CRASH_MISALIGNED:
-		return "misaligned";
+    case RESET_SOURCE_CRASH_MISALIGNED:
+        return "misaligned";
 
-	case RESET_SOURCE_CRASH_ASSERT:
-		return "assert";
+    case RESET_SOURCE_CRASH_ASSERT:
+        return "assert";
 
-	case RESET_SOURCE_DEEPPS_USB:
-		return "deep sleep usb";
+    case RESET_SOURCE_DEEPPS_USB:
+        return "deep sleep usb";
 
-	case RESET_SOURCE_SUPER_DEEP:
-		return "super deep sleep";
+    case RESET_SOURCE_SUPER_DEEP:
+        return "super deep sleep";
 
-	case RESET_SOURCE_NMI_WDT:
-		return "nmi watchdog";
+    case RESET_SOURCE_NMI_WDT:
+        return "nmi watchdog";
 
-	case RESET_SOURCE_HARD_FAULT:
-		return "hard fault";
+    case RESET_SOURCE_HARD_FAULT:
+        return "hard fault";
 
-	case RESET_SOURCE_MPU_FAULT:
-		return "mpu fault";
+    case RESET_SOURCE_MPU_FAULT:
+        return "mpu fault";
 
-	case RESET_SOURCE_BUS_FAULT:
-		return "bus fault";
+    case RESET_SOURCE_BUS_FAULT:
+        return "bus fault";
 
-	case RESET_SOURCE_USAGE_FAULT:
-		return "usage fault";
+    case RESET_SOURCE_USAGE_FAULT:
+        return "usage fault";
 
-	case RESET_SOURCE_SECURE_FAULT:
-		return "secure fault";
+    case RESET_SOURCE_SECURE_FAULT:
+        return "secure fault";
 
-	case RESET_SOURCE_DEFAULT_EXCEPTION:
-		return "default exception";
+    case RESET_SOURCE_DEFAULT_EXCEPTION:
+        return "default exception";
 
-	case RESET_SOURCE_OTA_REBOOT:
-		return "ota reboot";
+    case RESET_SOURCE_OTA_REBOOT:
+        return "ota reboot";
 
-	case RESET_SOURCE_BROWN_OUT:
-		return "brown out";
+    case RESET_SOURCE_BROWN_OUT:
+        return "brown out";
 
-	case RESET_SOURCE_FASTBOOT_POWER_ON:
-		return "fastboot power on";
+    case RESET_SOURCE_FASTBOOT_POWER_ON:
+        return "fastboot power on";
 
-	case RESET_SOURCE_UNKNOWN:
-	default:
-		// Chip power on the value of start address may not always be 0
-		// return "unknown";
-		return "power on";
-	}
+    case RESET_SOURCE_UNKNOWN:
+    default:
+        // Chip power on the value of start address may not always be 0
+        // return "unknown";
+        return "power on";
+    }
 #else
-	return "";
+    return "";
 #endif
 }
 
 void show_reset_reason(void)
 {
-	BK_LOGI(TAG, "reason - %s\r\n", misc_get_start_type_str(s_start_type));
-	if(RESET_SOURCE_DEEPPS_GPIO == s_start_type)
-	{
+    BK_LOGI(TAG, "reason - %s\r\n", misc_get_start_type_str(s_start_type));
+    if(RESET_SOURCE_DEEPPS_GPIO == s_start_type)
+    {
 #if CONFIG_DEEP_PS
-		BK_LOGI(TAG, "by gpio - %d\r\n", bk_misc_wakeup_get_gpio_num());
-#else
-#ifdef CONFIG_GPIO_WAKEUP_SUPPORT
-		BK_LOGI(TAG, "by gpio - %d\r\n", bk_gpio_get_wakeup_gpio_id());
+        BK_LOGI(TAG, "by gpio - %d\r\n", bk_misc_wakeup_get_gpio_num());
+#elif CONFIG_GPIO_WAKEUP_SUPPORT
+        BK_LOGI(TAG, "by gpio - %d\r\n", bk_gpio_get_wakeup_gpio_id());
 #endif
-#endif
-	}
-	BK_LOGI(TAG, "regs - start_type: %x, misc_value_save: %x\r\n", s_start_type, s_misc_value_save);
+    }
+    BK_LOGI(TAG, "regs - start_type: %x, misc_value_save: %x\r\n", s_start_type, s_misc_value_save);
 }
 
 #if (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX)
 uint32_t reset_reason_deep_sleep_check(void)
 {
-	uint32_t misc_value = 0;
+    uint32_t misc_value = 0;
 
-	if(s_misc_value_save != RESET_SOURCE_SUPER_DEEP)
-		return misc_value;
+    if(s_misc_value_save != RESET_SOURCE_SUPER_DEEP)
+        return misc_value;
 
-	misc_value = aon_pmu_hal_get_wakeup_source();
-	switch (misc_value)
-	{
-	case WAKEUP_SOURCE_GPIO:
-		misc_value = RESET_SOURCE_DEEPPS_GPIO;
-		break;
-	case WAKEUP_SOURCE_RTC:
-		misc_value = RESET_SOURCE_DEEPPS_RTC;
-		break;
-	case WAKEUP_SOURCE_TOUCH:
-		misc_value = RESET_SOURCE_DEEPPS_TOUCH;
-		break;
-	case WAKEUP_SOURCE_USB:
-		misc_value = RESET_SOURCE_DEEPPS_USB;
-		break;
+    misc_value = aon_pmu_hal_get_wakeup_source();
+    switch (misc_value)
+    {
+    case WAKEUP_SOURCE_GPIO:
+        misc_value = RESET_SOURCE_DEEPPS_GPIO;
+        break;
+    case WAKEUP_SOURCE_RTC:
+        misc_value = RESET_SOURCE_DEEPPS_RTC;
+        break;
+    case WAKEUP_SOURCE_TOUCH:
+        misc_value = RESET_SOURCE_DEEPPS_TOUCH;
+        break;
+    case WAKEUP_SOURCE_USB:
+        misc_value = RESET_SOURCE_DEEPPS_USB;
+        break;
 
-	default:
-		misc_value = 0;
-		break;
-	}
+    default:
+        misc_value = 0;
+        break;
+    }
 
-	return misc_value;
+    return misc_value;
 }
 
 uint32_t reset_reason_init(void)
 {
-	uint32_t misc_value;
+    uint32_t misc_value;
 
-	if (s_reset_reason_inited) {
-		return s_start_type;
-	}
+    if (s_reset_reason_inited) {
+        return s_start_type;
+    }
 
-	misc_value = aon_pmu_hal_get_reset_reason();
-	s_misc_value_save = misc_value;
+    misc_value = aon_pmu_hal_get_reset_reason();
+    s_misc_value_save = misc_value;
 
-	// check if wakeup from deep sleep
-	misc_value = reset_reason_deep_sleep_check();
-	if (misc_value) {
-		s_start_type = misc_value;
-	} else {
-		s_start_type = s_misc_value_save;
-	}
-	bk_misc_set_reset_reason(RESET_SOURCE_POWERON);
+    // check if wakeup from deep sleep
+    misc_value = reset_reason_deep_sleep_check();
+    if (misc_value) {
+        s_start_type = misc_value;
+    } else {
+        s_start_type = s_misc_value_save;
+    }
+    bk_misc_set_reset_reason(RESET_SOURCE_POWERON);
 
-	s_reset_reason_inited = true;
-	return s_start_type;
+    s_reset_reason_inited = true;
+    return s_start_type;
 }
 
 void bk_misc_set_reset_reason(uint32_t type)
 {
 #if CONFIG_AON_PMU_REG0_REFACTOR_DEV
-	if (type == RESET_SOURCE_POWERON || type == RESET_SOURCE_WATCHDOG) {
-		// aon watchdog do not have other chance to write into r7b
-		aon_pmu_hal_set_reset_reason(type, true);
-	} else {
-		aon_pmu_hal_set_reset_reason(type, false);
-	}
+    if (type == RESET_SOURCE_POWERON || type == RESET_SOURCE_WATCHDOG) {
+        // aon watchdog do not have other chance to write into r7b
+        aon_pmu_hal_set_reset_reason(type, true);
+    } else {
+        aon_pmu_hal_set_reset_reason(type, false);
+    }
 #else
-	aon_pmu_hal_set_reset_reason(type);
+    aon_pmu_hal_set_reset_reason(type);
 #endif
 }
 #else
