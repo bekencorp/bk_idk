@@ -78,10 +78,8 @@ bk_err_t NVSEncryptedPartition::write(size_t addr, const void* src, size_t size)
         if (size % ESP_ENCRYPT_BLOCK_SIZE != 0) 
 		return ESP_ERR_INVALID_SIZE;
 	
-	BK_LOGI(NULL, "\r\n enc_write addr:%d, src:0x%x, size:%d\r\n", addr, src, size);
     // copy data to buffer for encryption
     uint8_t* buf = new (std::nothrow) uint8_t [size];
-
     if (!buf) 
 		return ESP_ERR_NO_MEM;
 

@@ -24,6 +24,7 @@ list(APPEND srcs
 	"src/nvs_types.cpp"
 	"src/nvs_platform.cpp"
 	"src/nvs_test.c"
+	"src/nvs_thread_safety_test.c"
 	"port/rom_crc.cpp"
 	"port/platform.cpp"
 	"port/locks.c"

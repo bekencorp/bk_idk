@@ -17,10 +17,15 @@ menu "NVS"
         depends on SUPPORT_NVS_FLASH
         bool "Enable shanghai/te200 Key Ladder"
         default n
-    
+
     config NVS_TEST
         bool "Enable nvs test"
         depends on SUPPORT_NVS_FLASH
+        default n
+
+    config SUPPORT_NVS_THREAD_SAFETY_TEST
+        bool "Enable nvs thread safety test"
+        depends on SUPPORT_NVS_FLASH && NVS_TEST
         default n
 
     config NVS_DEBUG_STORAGE

@@ -1,1 +1,0 @@
-./beken_aes genkey -aes_cbc -outfile aes_encrypt_key.json
