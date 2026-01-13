@@ -39,15 +39,10 @@
 #include "security.h"
 #include "bootutil/image.h"
 #include "sdkconfig.h"
+#include "driver/flash.h"
+#include "cache.h"
 
 #if CONFIG_OTA_UPDATE_PUBKEY
-#include "driver/flash.h"
-extern uint32_t flash_get_excute_enable(void);
-extern void flash_set_excute_enable(int enable);
-extern void bk_flash_read_cbus(uint32_t address, void *user_buf, uint32_t size);
-extern bk_err_t bk_flash_read_bytes(uint32_t address, uint8_t *user_buf, uint32_t size);
-extern void enable_dcache(int enable);
-
 // Type definitions and macros for TLV parsing
 typedef struct image_header image_header_t;
 typedef struct image_tlv image_tlv_t;
@@ -63,40 +58,21 @@ static int read_pubkey_0xa0_from_slot(uint32_t last_slot_addr, uint32_t current_
     uint32_t slot0_addr = partition_get_phy_offset(PARTITION_XIP_A);
     uint32_t slot1_addr = partition_get_phy_offset(PARTITION_XIP_B);
     uint32_t read_slot_addr = slot0_addr;  // Always use slot0 address
-    uint32_t saved_xip = 0;
-    bool need_restore_xip = false;
+    uint32_t slot = 0;
     
     (void)current_slot_addr; // Not used in this function
     
-    // Always use slot0 address for reading
-    // If last_slot is slot1, set XIP=1 to read slot1 data through slot0 address
-    // If last_slot is slot0, set XIP=0 to read slot0 data
-    saved_xip = flash_get_excute_enable();
     if (last_slot_addr == slot1_addr) {
-        // Need to read slot1 data, set XIP=1
-        enable_dcache(0);
-        uint8_t dummy;
-        bk_flash_read_cbus(0, &dummy, 1);  // Trigger hardware state
-        flash_set_excute_enable(1);
-        need_restore_xip = true;
+        slot = 1;
     } else {
-        // Need to read slot0 data, set XIP=0
-        enable_dcache(0);
-        uint8_t dummy;
-        bk_flash_read_cbus(0, &dummy, 1);  // Trigger hardware state
-        flash_set_excute_enable(0);
-        need_restore_xip = true;
+        slot = 0;
     }
     
     uint32_t fa_off = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(read_slot_addr));
-    bk_flash_read_cbus(fa_off, &hdr, sizeof(image_header_t));
+    bk_flash_read_cbus_xip(slot, fa_off, &hdr, sizeof(image_header_t));
     
     if (hdr.ih_magic != IMAGE_MAGIC) {
         BOOT_LOG_ERR("[0xA0] Invalid image magic in slot");
-        if (need_restore_xip) {
-            flash_set_excute_enable(saved_xip);
-            enable_dcache(1);
-        }
         return -1;
     }
     
@@ -107,7 +83,7 @@ static int read_pubkey_0xa0_from_slot(uint32_t last_slot_addr, uint32_t current_
     // Find 0xA0 TLV
     while(offset < TLV_TOTAL_SIZE) {
         uint32_t tlv_addr = fa_off + tlv_begin + offset;
-        bk_flash_read_cbus(tlv_addr, (void *)&tlv, sizeof(image_tlv_t));
+        bk_flash_read_cbus_xip(slot, tlv_addr, (void *)&tlv, sizeof(image_tlv_t));
         
         if (tlv.it_type == IMAGE_TLV_PROT_INFO_MAGIC || tlv.it_type == IMAGE_TLV_INFO_MAGIC) {
             offset += sizeof(image_tlv_t);
@@ -116,33 +92,19 @@ static int read_pubkey_0xa0_from_slot(uint32_t last_slot_addr, uint32_t current_
             offset += sizeof(image_tlv_t);
             if (tlv.it_len > MAX_PUBKEY_LEN) {
                 BOOT_LOG_ERR("[0xA0] TLV length too large: %d > %d", tlv.it_len, MAX_PUBKEY_LEN);
-                if (need_restore_xip) {
-                    flash_set_excute_enable(saved_xip);
-                    enable_dcache(1);
-                }
                 return -1;
             }
             uint32_t pubkey_addr = fa_off + tlv_begin + offset;
-            bk_flash_read_cbus(pubkey_addr, pubkey, tlv.it_len);
+            bk_flash_read_cbus_xip(slot, pubkey_addr, pubkey, tlv.it_len);
             if (pubkey_size != NULL) {
                 *pubkey_size = tlv.it_len;
-            }
-            if (need_restore_xip) {
-                flash_set_excute_enable(saved_xip);
-                enable_dcache(1);
             }
             return 0;
         } else {
             offset += (sizeof(image_tlv_t) + tlv.it_len);
         }
     }
-    
-    // Restore XIP state if changed
-    if (need_restore_xip) {
-        flash_set_excute_enable(saved_xip);
-        enable_dcache(1);
-    }
-    
+        
     return -1;
 }
 
@@ -155,40 +117,24 @@ static int read_pubkey_0xa1_from_slot(uint32_t last_slot_addr, uint32_t current_
     uint32_t slot0_addr = partition_get_phy_offset(PARTITION_XIP_A);
     uint32_t slot1_addr = partition_get_phy_offset(PARTITION_XIP_B);
     uint32_t read_slot_addr = slot0_addr;  // Always use slot0 address
-    uint32_t saved_xip = 0;
-    bool need_restore_xip = false;
+    uint32_t slot = 0;
     
     (void)last_slot_addr; // Not used in this function
     
     // Always use slot0 address for reading
     // If current_slot is slot1, set XIP=1 to read slot1 data through slot0 address
     // If current_slot is slot0, set XIP=0 to read slot0 data
-    saved_xip = flash_get_excute_enable();
     if (current_slot_addr == slot1_addr) {
-        // Need to read slot1 data, set XIP=1
-        enable_dcache(0);
-        uint8_t dummy;
-        bk_flash_read_cbus(0, &dummy, 1);  // Trigger hardware state
-        flash_set_excute_enable(1);
-        need_restore_xip = true;
+        slot = 1;
     } else {
-        // Need to read slot0 data, set XIP=0
-        enable_dcache(0);
-        uint8_t dummy;
-        bk_flash_read_cbus(0, &dummy, 1);  // Trigger hardware state
-        flash_set_excute_enable(0);
-        need_restore_xip = true;
+        slot = 0;
     }
     
     uint32_t fa_off = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(read_slot_addr));
-    bk_flash_read_cbus(fa_off, &hdr, sizeof(image_header_t));
+    bk_flash_read_cbus_xip(slot, fa_off, &hdr, sizeof(image_header_t));
     
     if (hdr.ih_magic != IMAGE_MAGIC) {
         BOOT_LOG_ERR("[0xA1] Invalid image magic in slot");
-        if (need_restore_xip) {
-            flash_set_excute_enable(saved_xip);
-            enable_dcache(1);
-        }
         return -1;
     }
     
@@ -199,7 +145,7 @@ static int read_pubkey_0xa1_from_slot(uint32_t last_slot_addr, uint32_t current_
     // Find 0xA1 TLV
     while(offset < TLV_TOTAL_SIZE) {
         uint32_t tlv_addr = fa_off + tlv_begin + offset;
-        bk_flash_read_cbus(tlv_addr, (void *)&tlv, sizeof(image_tlv_t));
+        bk_flash_read_cbus_xip(slot, tlv_addr, (void *)&tlv, sizeof(image_tlv_t));
         
         if (tlv.it_type == IMAGE_TLV_PROT_INFO_MAGIC || tlv.it_type == IMAGE_TLV_INFO_MAGIC) {
             offset += sizeof(image_tlv_t);
@@ -208,31 +154,17 @@ static int read_pubkey_0xa1_from_slot(uint32_t last_slot_addr, uint32_t current_
             offset += sizeof(image_tlv_t);
             if (tlv.it_len > MAX_PUBKEY_LEN) {
                 BOOT_LOG_ERR("[0xA1] TLV length too large: %d > %d", tlv.it_len, MAX_PUBKEY_LEN);
-                if (need_restore_xip) {
-                    flash_set_excute_enable(saved_xip);
-                    enable_dcache(1);
-                }
                 return -1;
             }
             uint32_t pubkey_addr = fa_off + tlv_begin + offset;
-            bk_flash_read_cbus(pubkey_addr, pubkey, tlv.it_len);
+            bk_flash_read_cbus_xip(slot, pubkey_addr, pubkey, tlv.it_len);
             if (pubkey_size != NULL) {
                 *pubkey_size = tlv.it_len;
-            }
-            if (need_restore_xip) {
-                flash_set_excute_enable(saved_xip);
-                enable_dcache(1);
             }
             return 0;
         } else {
             offset += (sizeof(image_tlv_t) + tlv.it_len);
         }
-    }
-    
-    // Restore XIP state if changed
-    if (need_restore_xip) {
-        flash_set_excute_enable(saved_xip);
-        enable_dcache(1);
     }
     
     return -1;
@@ -245,24 +177,19 @@ static int check_slot_has_trust_chain(uint32_t slot_addr, bool *has_a1, bool *ha
     uint32_t slot0_addr = partition_get_phy_offset(PARTITION_XIP_A);
     uint32_t slot1_addr = partition_get_phy_offset(PARTITION_XIP_B);
     uint32_t read_slot_addr = slot_addr;
-    uint32_t saved_xip = 0;
+    uint32_t slot = 0;
     bool need_restore_xip = false;
     
     // If slot1, use slot0 address and set XIP mode
     if (slot_addr == slot1_addr) {
         read_slot_addr = slot0_addr;
-        saved_xip = flash_get_excute_enable();
-        flash_set_excute_enable(1);
-        need_restore_xip = true;
+        slot = 1;
     }
     
     uint32_t fa_off = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(read_slot_addr));
-    bk_flash_read_cbus(fa_off, &hdr, sizeof(image_header_t));
+    bk_flash_read_cbus_xip(slot, fa_off, &hdr, sizeof(image_header_t));
     
     if (hdr.ih_magic != IMAGE_MAGIC) {
-        if (need_restore_xip) {
-            flash_set_excute_enable(saved_xip);
-        }
         return -1;
     }
     
@@ -273,7 +200,7 @@ static int check_slot_has_trust_chain(uint32_t slot_addr, bool *has_a1, bool *ha
     *has_a2 = false;
     
     while(offset < TLV_TOTAL_SIZE) {
-        bk_flash_read_cbus(fa_off + tlv_begin + offset, (void *)&tlv, sizeof(image_tlv_t));
+        bk_flash_read_cbus_xip(slot, fa_off + tlv_begin + offset, (void *)&tlv, sizeof(image_tlv_t));
         
         if (tlv.it_type == IMAGE_TLV_PROT_INFO_MAGIC || tlv.it_type == IMAGE_TLV_INFO_MAGIC) {
             offset += sizeof(image_tlv_t);
@@ -288,16 +215,10 @@ static int check_slot_has_trust_chain(uint32_t slot_addr, bool *has_a1, bool *ha
         }
     }
     
-    // Restore XIP state if changed
-    if (need_restore_xip) {
-        flash_set_excute_enable(saved_xip);
-    }
-    
     return 0;
 }
 
 // Main logic: find key based on trust chain verification
-extern uint32_t flash_get_excute_enable(void);
 extern bk_err_t bk_boot_write_ota_confirm(uint8_t image_index, uint32_t status);
     
 // TLV definitions (these are already defined in bootutil/image.h, but we define them here for clarity)

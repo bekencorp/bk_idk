@@ -16,35 +16,23 @@ menu "BL2"
 			help
 				build type: debug, release or minsizerel
 
-		config TFM_BL2_LOG_LEVEL
-			string "Define Tfm Bl2 Log Level"
+		config BL2_LOG_LEVEL
+			string "Define Bl2 Log Level"
 			default "INFO"
 			help
 				Set BL2 log level: OFF/ERROR/WARNING/INFO/DEBUG
 
-		config TFM_BL2_DOWNLOAD
+		config BL2_DOWNLOAD
 			bool "Enable BL2 download"
 			default y
 			help
 				Enable BL2 Download
 
-		config TFM_SECURE_DEBUG
+		config SECURE_DEBUG
 			bool "Enable Secure Debug"
 			default n
 			help
 				Enable Secure Debug
-
-		config OTP_NV_COUNTERS_RAM_EMULATION
-			string "Define Otp Nv Counters Ram Emulation"
-			default "OFF"
-			help
-				Enable OTP/NV counter RAM emulation: ON/OFF
-
-		config PLATFORM_DEFAULT_OTP_WRITEABLE
-			string "Define Platform Default Otp Writeable"
-			default "ON"
-			help
-				Enable platform default OTP writable: ON/OFF
 
 		config BL2_UPGRADE_STRATEGY
 			string "Define mcuboot upgrade strategy"
@@ -52,10 +40,6 @@ menu "BL2"
 			help
 				The MCUBOOT upgrade strategy can be:
 				OVERWRITE_ONLY, SWAP_USING_SCRATCH, SWAP_USING_MOVE.
-
-		config TFM_BK7236_V5
-			bool "Use BK7236 v5"
-			default y
 
 		config ANTI_ROLLBACK
 			bool "Enable OTA anti-rollback"
@@ -76,10 +60,6 @@ menu "BL2"
 		config BL2_DOWNLOAD
 			bool "Enable BL2 download"
 			default n
-
-		config TFM_HEAP_SIZE
-			hex "TFM heap size"
-			default 0x1040
 
 		config BL2_WDT_PERIOD
 			hex "BL2 wdt timeout period"

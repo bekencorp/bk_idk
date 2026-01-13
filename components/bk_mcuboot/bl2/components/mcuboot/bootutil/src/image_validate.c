@@ -58,16 +58,12 @@
 #include "bootutil_priv.h"
 #include "flash_partition.h"
 #include "bootutil/bootutil_public.h"
+#include "flash.h"
 
 #if CONFIG_BL2_SKIP_VALIDATE
 #include "partitions_gen.h"
 #include "aon_pmu_hal.h"
 #include "components/system.h"
-#endif
-
-#if CONFIG_DIRECT_XIP
-extern uint32_t flash_get_excute_enable(void);
-extern void flash_set_excute_enable(int enable);
 #endif
 
 /*
@@ -87,6 +83,7 @@ bootutil_img_hash(struct enc_key_data *enc_state, int image_index,
     uint16_t hdr_size;
     uint32_t off;
     int rc;
+    int ret = 0;
     uint32_t blk_off;
     uint32_t tlv_off;
 #if CONFIG_DIRECT_XIP
@@ -188,14 +185,8 @@ bootutil_img_hash(struct enc_key_data *enc_state, int image_index,
             BOOT_LOG_ERR("app crc16 error");
             /* Return immediately without initializing SHA context */
             /* This prevents hardware SHA accelerator state pollution */
-            enable_dcache(1);
-#if CONFIG_DIRECT_XIP
-            // Restore XIP state if changed
-            if (need_restore_execute_enable) {
-                flash_set_excute_enable(execute_enable_saved);
-            }
-#endif
-            return -1;
+            ret = -1;
+            goto _restore_execute_enable;
         } else {
             BOOT_LOG_INF("app crc16 right");
         }
@@ -220,7 +211,8 @@ bootutil_img_hash(struct enc_key_data *enc_state, int image_index,
     bootutil_sha_finish(&sha_ctx, hash_result);
     
     bootutil_sha_drop(&sha_ctx);
-    
+
+_restore_execute_enable:
 #if CONFIG_DIRECT_XIP
     // Restore XIP state if changed
     if (need_restore_execute_enable) {
@@ -228,7 +220,7 @@ bootutil_img_hash(struct enc_key_data *enc_state, int image_index,
     }
 #endif
     enable_dcache(1);
-    return 0;
+    return ret;
 }
 /*
  * Currently, we only support being able to verify one type of
@@ -467,12 +459,13 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
     
 #if CONFIG_DIRECT_XIP
     int slot = flash_area_id_to_multi_image_slot(image_index, flash_area_get_id(fap));
-    if (can_skip && (slot >= 0) && (boot_read_xip_status(slot, XIP_IMAGE_OK_TYPE) != XIP_IMAGE_TEST_FINAL)) {
+    uint32_t xip_status = (slot >= 0) ? boot_read_xip_status(slot, XIP_IMAGE_OK_TYPE) : 0xFFFFFFFF;
+    if (can_skip && (slot >= 0) && (xip_status == XIP_IMAGE_OK)) {
         BOOT_LOG_INF("reset reason %#x, skip validate", reset_reason);
         FIH_RET(FIH_SUCCESS);
+        return 0;
     }
 
-    uint32_t xip_status = (slot >= 0) ? boot_read_xip_status(slot, XIP_IMAGE_OK_TYPE) : 0xFFFFFFFF;
     BOOT_LOG_INF("reset reason %#x, ota_confirm=%d, slot=%d, xip_status=%#x, do validate", 
                  reset_reason, ota_confirm_set, slot, xip_status);
 #elif CONFIG_OTA_OVERWRITE

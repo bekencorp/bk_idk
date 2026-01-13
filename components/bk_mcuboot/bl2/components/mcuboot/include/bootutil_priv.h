@@ -457,6 +457,15 @@ struct bootsim_ram_info *bootsim_get_ram_info(void);
 
 uint32_t bootutil_max_image_size(const struct flash_area *fap);
 
+static inline const char* slot_str(uint32_t slot)
+{
+	if (slot == BOOT_PRIMARY_SLOT) {
+		return "A";
+	} else {
+		return "B";
+	}
+}
+
 #ifdef __cplusplus
 }
 #endif

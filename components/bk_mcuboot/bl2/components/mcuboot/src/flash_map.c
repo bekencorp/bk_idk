@@ -154,19 +154,11 @@ int flash_area_read(const struct flash_area *area, uint32_t off, void *dst,
     }
 #endif
     if(area->fa_id == 2){
-        enable_dcache(0);
-        bk_flash_read_cbus(fa_off + off, dst, len);
-        enable_dcache(1);
+        bk_flash_read_cbus_xip(0, fa_off + off, dst, len);
         return 0;
     } else if(area->fa_id == 3){
         fa_off = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(partition_get_phy_offset(PARTITION_XIP_A)));
-        enable_dcache(0);
-        uint32_t enable = flash_get_excute_enable();
-        bk_flash_read_cbus(0,dst,1);
-        flash_set_excute_enable(1);
-        bk_flash_read_cbus(fa_off + off,dst,len);
-        flash_set_excute_enable(enable);
-        enable_dcache(1);
+        bk_flash_read_cbus_xip(1, fa_off + off, dst, len);
         return 0;
     }
 #endif

@@ -23,6 +23,8 @@
 #include "sys_driver.h"
 #include "driver/flash_partition.h"
 #include <modules/chip_support.h>
+#include "cache.h"
+#include "partitions_gen.h"
 
 
 #if CONFIG_FLASH_QUAD_ENABLE
@@ -694,6 +696,30 @@ void bk_flash_read_cbus(uint32_t address, void *user_buf, uint32_t size)
 	flash_switch_to_line_mode_two();
 	flash_memcpy((char*)user_buf, (const char*)(0x02000000+address),size);
 	flash_restore_line_mode();
+}
+
+
+__attribute__((section(".iram")))
+void bk_flash_read_cbus_xip(uint32_t slot, uint32_t address, void *user_buf, uint32_t size)
+{
+	uint32_t old_excute_enable = flash_get_excute_enable();
+	uint32_t new_excute_enable = (slot == 1) ? 1 : 0;
+	uint8_t dummy;
+
+	enable_dcache(0);
+
+	if (old_excute_enable != new_excute_enable) {
+		bk_flash_read_cbus(0, &dummy, 1);  //Read a different address to flush flash FIFO
+		flash_set_excute_enable(new_excute_enable);
+	}
+
+	bk_flash_read_cbus(address, user_buf, size);
+
+	if (old_excute_enable != new_excute_enable) {
+		bk_flash_read_cbus(0, &dummy, 1);  //Read a different address to flush flash FIFO
+		flash_set_excute_enable(old_excute_enable);
+	}
+	enable_dcache(1);
 }
 
 #define CEIL_ALIGN_34(addr) (((addr) + 34 - 1) / 34 * 34)

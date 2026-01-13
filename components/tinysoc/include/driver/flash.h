@@ -298,6 +298,9 @@ void flash_switch_to_line_mode_two(void);
 void flash_restore_line_mode(void);
 bk_err_t bk_flash_cpu_write_enable(void);
 bk_err_t bk_flash_cpu_write_disable(void);
+uint32_t flash_get_excute_enable(void);
+void flash_set_excute_enable(int enable);
+void bk_flash_read_cbus_xip(uint32_t slot, uint32_t address, void *user_buf, uint32_t size);
 
 int bk_flash_set_dbus_security_region(uint32_t id, uint32_t start, uint32_t end, bool secure);
 

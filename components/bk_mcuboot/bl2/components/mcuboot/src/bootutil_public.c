@@ -251,106 +251,32 @@ boot_read_copy_done(const struct flash_area *fap, uint8_t *copy_done)
 }
 
 #if CONFIG_DIRECT_XIP
-extern bk_err_t bk_flash_read_bytes(uint32_t address, uint8_t *user_buf, uint32_t size);
-extern bk_err_t bk_flash_write_bytes(uint32_t address, const uint8_t *user_buf, uint32_t size);
-extern void bk_flash_read_cbus(uint32_t address, void *user_buf, uint32_t size);
-extern void flash_set_excute_enable(int enable);
-extern uint32_t flash_get_excute_enable(void);
-
-static uint32_t boot_read_status_adaptive(uint32_t off, bool (*is_valid)(uint32_t), int slot)
-{
-    uint32_t status;
-    
-    bk_flash_read_bytes(off, (uint8_t *)&status, 4);
-    
-    if (is_valid && !is_valid(status)) {
-        uint32_t cbus_status;
-        uint32_t saved_xip = 0;
-        bool need_restore_xip = false;
-        uint32_t read_addr = off;
-        
-        if (slot == 1) {
-            read_addr = boot_xip_magic_off(0);
-            saved_xip = flash_get_excute_enable();
-            flash_set_excute_enable(1);
-            need_restore_xip = true;
-        }
-        
-        bk_flash_read_cbus(read_addr, &cbus_status, 4);
-        
-        if (need_restore_xip) {
-            flash_set_excute_enable(saved_xip);
-        }
-        
-        if (is_valid(cbus_status)) {
-            return cbus_status;
-        }
-    }
-    return status;
-}
-
-static bool is_valid_xip_status(uint32_t status)
-{
-    return (status == XIP_IMAGE_TEST_FIRST ||
-            status == XIP_IMAGE_TEST_SECOND ||
-            status == XIP_IMAGE_TEST_FINAL ||
-            status == XIP_IMAGE_OK ||
-            status == XIP_IMAGE_UNKNOWN);
-}
-
 int
 boot_read_xip_status(uint8_t index, uint32_t type)
 {
-    uint32_t off;
-    switch (type)
-    {
-    case XIP_MAGIC_TYPE:
-        off = boot_xip_magic_off(index);
-        break;
-    case XIP_COPY_DONE_TYPE:
-        off = boot_xip_copy_done_off(index);
-        break;
-    case XIP_IMAGE_OK_TYPE:
-        off = boot_xip_image_ok_off(index);
-        break;
-    default:
-        break;
-    }
+    uint32_t off = boot_xip_image_ok_off(index);
 
     if (off == UINT32_MAX) {
-        BOOT_LOG_ERR("boot_read_xip_status: Invalid offset=0x%08x, type=%d, slot=%d", off, type, index);
+        BOOT_LOG_ERR("invalid read image ok offset=0x%08x, type=%d, slot=%d", off, type, index);
         return 0;
     }
-    
-    return boot_read_status_adaptive(off, is_valid_xip_status, index);
+
+    uint32_t status;
+    bk_flash_read_bytes(off, &status, 4);
+    return status;
 }
 
 void
 boot_write_xip_status(uint8_t index, uint32_t type, uint32_t status)
 {
-    uint32_t off = UINT32_MAX;
-
-    switch (type)
-    {
-    case 1:
-        off = boot_xip_magic_off(index);
-        break;
-    case 2:
-        off = boot_xip_copy_done_off(index);
-        break;
-    case 3:
-        off = boot_xip_image_ok_off(index);
-        break;
-    default:
-        BOOT_LOG_ERR("boot_write_xip_status: Invalid type=%d, slot=%d", type, index);
-        return;
-    }
+    uint32_t off = boot_xip_image_ok_off(index);
 
     if (off == UINT32_MAX) {
-        BOOT_LOG_ERR("boot_write_xip_status: Failed to calculate offset, type=%d, slot=%d", type, index);
+        BOOT_LOG_ERR("invalid write image ok offset, slot=%d", index);
         return;
     }
     bk_flash_write_bytes(off, &status, 4);
+    //TODO re-read the status to ensure the write is successful
 }
 
 #endif
@@ -402,6 +328,7 @@ bk_boot_check_ota_confirm(uint8_t index, uint32_t value)
     uint32_t phy_off = bk_boot_ota_confirm_offset(index);
     uint32_t status;
     bk_flash_read_bytes(phy_off, &status, 4);
+
     BOOT_LOG_INF("get image%d ota confirm=%#x",index, status);
     if (status == value) {
         return true;

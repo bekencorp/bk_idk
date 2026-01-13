@@ -1,6 +1,6 @@
 # Don't load this file if it is specified as a cmake toolchain file
-if(NOT TFM_TOOLCHAIN_FILE)
-    message(DEPRECATION "SETTING CMAKE_TOOLCHAIN_FILE is deprecated. It has been replaced with TFM_TOOLCHAIN_FILE.")
+if(NOT BL2_TOOLCHAIN_FILE)
+	message(DEPRECATION "SETTING CMAKE_TOOLCHAIN_FILE is deprecated. It has been replaced with BL2_TOOLCHAIN_FILE.")
     return()
 endif()
 

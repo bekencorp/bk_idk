@@ -183,32 +183,22 @@ bool
 boot_is_header_valid(const struct image_header *hdr, const struct flash_area *fap)
 {
     uint32_t size;
-    uint32_t magic_from_flash;
-    bk_err_t ret;
     
-    ret = bk_flash_read_bytes(fap->fa_off, (uint8_t *)&magic_from_flash, sizeof(uint32_t));
-    if (ret != BK_OK) {
-        BOOT_LOG_ERR("boot_is_header_valid: failed to read magic from flash, ret=%d", ret);
-        return false;
-    }
-    
-    if (magic_from_flash == 0xFFFFFFFF) {
-        return false;
-    }
-    
+    BOOT_LOG_DBG("hdr: magic=0x%x, img_size=0x%x, hdr_size=0x%x", hdr->ih_magic, hdr->ih_img_size, hdr->ih_hdr_size);
+
     if (hdr->ih_magic != IMAGE_MAGIC) {
-        BOOT_LOG_ERR("boot_is_header_valid: magic mismatch, hdr->ih_magic=0x%x, expected=0x%x", 
+        BOOT_LOG_DBG("magic mismatch, hdr->ih_magic=0x%x, expected=0x%x", 
                      hdr->ih_magic, IMAGE_MAGIC);
         return false;
     }
 
     if (!boot_u32_safe_add(&size, hdr->ih_img_size, hdr->ih_hdr_size)) {
-        BOOT_LOG_ERR("boot_is_header_valid: size overflow");
+        BOOT_LOG_DBG("size overflow");
         return false;
     }
 
     if (size >= flash_area_get_size(fap)) {
-        BOOT_LOG_ERR("boot_is_header_valid: size too large, size=0x%x, fa_size=0x%x", 
+        BOOT_LOG_DBG("size too large, size=0x%x, fa_size=0x%x", 
                      size, flash_area_get_size(fap));
         return false;
     }

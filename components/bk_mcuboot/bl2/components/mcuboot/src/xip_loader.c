@@ -50,15 +50,6 @@ static inline const char* image_ok_str(uint32_t image_ok)
 	}
 }
 
-static inline const char* slot_str(uint32_t slot)
-{
-	if (slot == BOOT_PRIMARY_SLOT) {
-		return "A";
-	} else {
-		return "B";
-	}
-}
-
 static int
 boot_version_cmp(const struct image_version *ver1,
                  const struct image_version *ver2)
@@ -147,11 +138,11 @@ find_slot_via_version_and_ota_confirm(struct boot_loader_state *state, bool ota_
     if (slot0_available && !slot1_available) {
         /* Only slot0 available - use it directly */
         slot = 0;
-        BOOT_LOG_INF("Only Primary slot available, using Primary slot");
+        BOOT_LOG_INF("Only A available, using A");
     } else if (!slot0_available && slot1_available) {
         /* Only slot1 available - use it directly */
         slot = 1;
-        BOOT_LOG_INF("Only Secondary slot available, using Secondary slot");
+        BOOT_LOG_INF("Only B available, using B");
     } else if (slot0_available && slot1_available) {
         /* Both slots available - compare versions and choose the higher one */
         struct image_header *hdr_slot0 = boot_img_hdr(state, 0);
@@ -286,15 +277,11 @@ boot_get_slot_usage(struct boot_loader_state *state)
             BOOT_LOG_IMAGE_INFO(slot, hdr);
         } else {
             state->slot_usage[BOOT_CURR_IMG(state)].slot_available[slot] = false;
-            BOOT_LOG_INF("Image %d %s slot: Image not found",
-                            BOOT_CURR_IMG(state),
-                            (slot == BOOT_PRIMARY_SLOT)
-                            ? "Primary" : "Secondary");
+            BOOT_LOG_INF("Image %d %s: Image not found", BOOT_CURR_IMG(state), slot_str(slot));
         }
     }
 
     state->slot_usage[BOOT_CURR_IMG(state)].active_slot = NO_ACTIVE_SLOT;
-
 
     return 0;
 }
@@ -311,7 +298,7 @@ boot_load_and_validate_images(struct boot_loader_state *state)
 
     ota_confirm_set = bk_boot_check_ota_confirm(1, OTA_CONFIRM);
     if (ota_confirm_set){
-        BOOT_LOG_INF("get ota confirm=0x%08x", OTA_CONFIRM);
+        BOOT_LOG_INF("ota confirm=0x%08x", OTA_CONFIRM);
     }
 
     while (true) {
