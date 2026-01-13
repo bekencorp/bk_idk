@@ -49,30 +49,40 @@ typedef struct image_tlv image_tlv_t;
 #define TLV_TOTAL_SIZE 512
 #define MAX_PUBKEY_LEN 128
 
-// Helper function to read 0xA0 pubkey from a slot partition
-// This function reads 0xA0 from last_slot_addr
-// Always use slot0 address, set XIP mode based on which slot we need to read
-static int read_pubkey_0xa0_from_slot(uint32_t last_slot_addr, uint32_t current_slot_addr, uint8_t* pubkey, uint16_t* pubkey_size)
+static inline uint32_t addr_to_slot(uint32_t addr)  
+{
+    if (addr == partition_get_phy_offset(PARTITION_XIP_A)) {
+        return 0;
+    } else if (addr == partition_get_phy_offset(PARTITION_XIP_B)) {
+        return 1;
+    }
+    return NO_ACTIVE_SLOT;
+}
+
+static inline uint32_t slot_to_addr(uint32_t slot)
+{
+    if (slot == 0) {
+        return partition_get_phy_offset(PARTITION_XIP_A);
+    } else if (slot == 1) {
+        return partition_get_phy_offset(PARTITION_XIP_B);
+    }
+    return 0;
+}
+
+static inline uint32_t cbus_read_base_addr(void)
+{
+    return FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(partition_get_phy_offset(PARTITION_XIP_A)));
+}
+
+static int read_tlv_from_slot(uint32_t slot, uint32_t tlv_type, uint8_t* tlv_data, uint16_t* tlv_data_size)
 {
     image_header_t hdr;
-    uint32_t slot0_addr = partition_get_phy_offset(PARTITION_XIP_A);
-    uint32_t slot1_addr = partition_get_phy_offset(PARTITION_XIP_B);
-    uint32_t read_slot_addr = slot0_addr;  // Always use slot0 address
-    uint32_t slot = 0;
-    
-    (void)current_slot_addr; // Not used in this function
-    
-    if (last_slot_addr == slot1_addr) {
-        slot = 1;
-    } else {
-        slot = 0;
-    }
-    
-    uint32_t fa_off = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(read_slot_addr));
+    uint32_t fa_off = cbus_read_base_addr();
+
     bk_flash_read_cbus_xip(slot, fa_off, &hdr, sizeof(image_header_t));
     
     if (hdr.ih_magic != IMAGE_MAGIC) {
-        BOOT_LOG_ERR("[0xA0] Invalid image magic in slot");
+        BOOT_LOG_ERR("Invalid image magic in slot");
         return -1;
     }
     
@@ -80,24 +90,24 @@ static int read_pubkey_0xa0_from_slot(uint32_t last_slot_addr, uint32_t current_
     uint32_t offset = 0;
     image_tlv_t tlv;
     
-    // Find 0xA0 TLV
+    // Find TLV
     while(offset < TLV_TOTAL_SIZE) {
         uint32_t tlv_addr = fa_off + tlv_begin + offset;
         bk_flash_read_cbus_xip(slot, tlv_addr, (void *)&tlv, sizeof(image_tlv_t));
         
         if (tlv.it_type == IMAGE_TLV_PROT_INFO_MAGIC || tlv.it_type == IMAGE_TLV_INFO_MAGIC) {
             offset += sizeof(image_tlv_t);
-        } else if (tlv.it_type == IMAGE_TLV_CUSTOM) {
-            // Found 0xA0 TLV
+        } else if (tlv.it_type == tlv_type) {
+            // Found TLV
             offset += sizeof(image_tlv_t);
             if (tlv.it_len > MAX_PUBKEY_LEN) {
-                BOOT_LOG_ERR("[0xA0] TLV length too large: %d > %d", tlv.it_len, MAX_PUBKEY_LEN);
+                BOOT_LOG_ERR("TLV length too large: %d > %d", tlv.it_len, tlv_data_size);
                 return -1;
             }
-            uint32_t pubkey_addr = fa_off + tlv_begin + offset;
-            bk_flash_read_cbus_xip(slot, pubkey_addr, pubkey, tlv.it_len);
-            if (pubkey_size != NULL) {
-                *pubkey_size = tlv.it_len;
+            uint32_t tlv_data_addr = fa_off + tlv_begin + offset;
+            bk_flash_read_cbus_xip(slot, tlv_data_addr, tlv_data, tlv.it_len);
+            if (tlv_data_size != NULL) {
+                *tlv_data_size = tlv.it_len;
             }
             return 0;
         } else {
@@ -108,66 +118,20 @@ static int read_pubkey_0xa0_from_slot(uint32_t last_slot_addr, uint32_t current_
     return -1;
 }
 
+// Helper function to read 0xA0 pubkey from a slot partition
+// This function reads 0xA0 from last_slot_addr
+// Always use slot0 address, set XIP mode based on which slot we need to read
+static int read_pubkey_from_slot(uint32_t slot, uint8_t* pubkey, uint16_t* pubkey_size)
+{
+    return read_tlv_from_slot(slot, IMAGE_TLV_CUSTOM_PUBKEY, pubkey, pubkey_size);
+}
+
 // Helper function to read 0xA1 pubkey from a slot partition
 // This function reads 0xA1 from current_slot_addr
 // Always use slot0 address, set XIP mode based on which slot we need to read
-static int read_pubkey_0xa1_from_slot(uint32_t last_slot_addr, uint32_t current_slot_addr, uint8_t* pubkey, uint16_t* pubkey_size)
+static int read_root_pubkey_from_slot(uint32_t slot, uint8_t* pubkey, uint16_t* pubkey_size)
 {
-    image_header_t hdr;
-    uint32_t slot0_addr = partition_get_phy_offset(PARTITION_XIP_A);
-    uint32_t slot1_addr = partition_get_phy_offset(PARTITION_XIP_B);
-    uint32_t read_slot_addr = slot0_addr;  // Always use slot0 address
-    uint32_t slot = 0;
-    
-    (void)last_slot_addr; // Not used in this function
-    
-    // Always use slot0 address for reading
-    // If current_slot is slot1, set XIP=1 to read slot1 data through slot0 address
-    // If current_slot is slot0, set XIP=0 to read slot0 data
-    if (current_slot_addr == slot1_addr) {
-        slot = 1;
-    } else {
-        slot = 0;
-    }
-    
-    uint32_t fa_off = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(read_slot_addr));
-    bk_flash_read_cbus_xip(slot, fa_off, &hdr, sizeof(image_header_t));
-    
-    if (hdr.ih_magic != IMAGE_MAGIC) {
-        BOOT_LOG_ERR("[0xA1] Invalid image magic in slot");
-        return -1;
-    }
-    
-    uint32_t tlv_begin = hdr.ih_hdr_size + hdr.ih_img_size;
-    uint32_t offset = 0;
-    image_tlv_t tlv;
-    
-    // Find 0xA1 TLV
-    while(offset < TLV_TOTAL_SIZE) {
-        uint32_t tlv_addr = fa_off + tlv_begin + offset;
-        bk_flash_read_cbus_xip(slot, tlv_addr, (void *)&tlv, sizeof(image_tlv_t));
-        
-        if (tlv.it_type == IMAGE_TLV_PROT_INFO_MAGIC || tlv.it_type == IMAGE_TLV_INFO_MAGIC) {
-            offset += sizeof(image_tlv_t);
-        } else if (tlv.it_type == IMAGE_TLV_CUSTOM_ORIGIN_PUBKEY) {
-            // Found 0xA1 TLV
-            offset += sizeof(image_tlv_t);
-            if (tlv.it_len > MAX_PUBKEY_LEN) {
-                BOOT_LOG_ERR("[0xA1] TLV length too large: %d > %d", tlv.it_len, MAX_PUBKEY_LEN);
-                return -1;
-            }
-            uint32_t pubkey_addr = fa_off + tlv_begin + offset;
-            bk_flash_read_cbus_xip(slot, pubkey_addr, pubkey, tlv.it_len);
-            if (pubkey_size != NULL) {
-                *pubkey_size = tlv.it_len;
-            }
-            return 0;
-        } else {
-            offset += (sizeof(image_tlv_t) + tlv.it_len);
-        }
-    }
-    
-    return -1;
+    return read_tlv_from_slot(slot, IMAGE_TLV_CUSTOM_ROOT_PUBKEY, pubkey, pubkey_size);
 }
 
 // Helper function to check if slot has 0xA1 and 0xA2 TLVs
@@ -204,7 +168,7 @@ static int check_slot_has_trust_chain(uint32_t slot_addr, bool *has_a1, bool *ha
         
         if (tlv.it_type == IMAGE_TLV_PROT_INFO_MAGIC || tlv.it_type == IMAGE_TLV_INFO_MAGIC) {
             offset += sizeof(image_tlv_t);
-        } else if (tlv.it_type == IMAGE_TLV_CUSTOM_ORIGIN_PUBKEY) {
+        } else if (tlv.it_type == IMAGE_TLV_CUSTOM_ROOT_PUBKEY) {
             *has_a1 = true;
             offset += (sizeof(image_tlv_t) + tlv.it_len);
         } else if (tlv.it_type == IMAGE_TLV_CUSTOM_PUBKEY_SIG) {
@@ -222,8 +186,8 @@ static int check_slot_has_trust_chain(uint32_t slot_addr, bool *has_a1, bool *ha
 extern bk_err_t bk_boot_write_ota_confirm(uint8_t image_index, uint32_t status);
     
 // TLV definitions (these are already defined in bootutil/image.h, but we define them here for clarity)
-#define IMAGE_TLV_CUSTOM               0xA0
-#define IMAGE_TLV_CUSTOM_ORIGIN_PUBKEY 0xA1
+#define IMAGE_TLV_CUSTOM_PUBKEY        0xA0
+#define IMAGE_TLV_CUSTOM_ROOT_PUBKEY   0xA1
 #define IMAGE_TLV_CUSTOM_PUBKEY_SIG    0xA2
 // Note: IMAGE_TLV_PROT_INFO_MAGIC and IMAGE_TLV_INFO_MAGIC are already defined in bootutil/image.h
 // Note: image_header_t and image_tlv_t are already defined via typedef above (lines 49-50)
@@ -273,126 +237,80 @@ static void CRC8_Update( CRC8_Context *inContext, const void *inSrc, size_t inLe
 
 extern unsigned int pub_key_len;
 
+static bool key_is_equal(uint8_t *key1, uint16_t key1_len, uint8_t *key2, uint16_t key2_len)
+{
+    if (key1_len != key2_len) {
+        return false;
+    }
+
+    FIH_DECLARE(fih_rc, FIH_FAILURE);
+    FIH_CALL(boot_fih_memequal, fih_rc, key1, key2, key1_len);
+    if (FIH_NOT_EQ(fih_rc, FIH_SUCCESS)) {
+        return false;
+    }
+
+    return true;
+}
+
 int
 bk_find_key(uint8_t image_index, uint8_t *key, uint16_t key_len, uint32_t current_slot_addr)
 {
 #if CONFIG_OTA_UPDATE_PUBKEY
-    uint32_t slot0_addr = partition_get_phy_offset(PARTITION_XIP_A);
-    uint32_t slot1_addr = partition_get_phy_offset(PARTITION_XIP_B);
-    uint32_t last_slot_addr;
+    uint32_t running_slot = boot_read_running_slot();
+    uint32_t verifying_slot = addr_to_slot(current_slot_addr);
     int ret;
     FIH_DECLARE(fih_rc, FIH_FAILURE);
-    
-    if (current_slot_addr == slot0_addr) {
-        last_slot_addr = slot1_addr;
-        BOOT_LOG_DBG("Validating slot0 (Primary), last run was in slot1 (Secondary)");
-    } else if (current_slot_addr == slot1_addr) {
-        last_slot_addr = slot0_addr;
-        BOOT_LOG_DBG("Validating slot1 (Secondary), last run was in slot0 (Primary)");
-    } else {
-        BOOT_LOG_ERR("Invalid current_slot_addr: 0x%x, expected slot0=0x%x or slot1=0x%x", 
-                     current_slot_addr, slot0_addr, slot1_addr);
-        goto fail;
-    }
-    
-    // Check if current slot has trust chain TLVs (0xA1 and 0xA2)
-    bool has_a1 = false, has_a2 = false;
-    ret = check_slot_has_trust_chain(current_slot_addr, &has_a1, &has_a2);
-    if (ret != 0) {
-        BOOT_LOG_ERR("Failed to check trust chain TLVs in current slot");
-        goto fail;
-    }
-    
-    if (!has_a1 && !has_a2) {
-        // Case 2.1: No 0xA1 and 0xA2, compare 0xA0 from both slots
-        BOOT_LOG_DBG("Current slot has no trust chain TLVs, comparing 0xA0 from both slots");
-        
-        uint8_t last_slot_0xa0[MAX_PUBKEY_LEN];
-        uint16_t last_slot_0xa0_len = 0;
-        uint8_t current_slot_0xa0[MAX_PUBKEY_LEN];
-        uint16_t current_slot_0xa0_len = 0;
-        
-        ret = read_pubkey_0xa0_from_slot(last_slot_addr,current_slot_addr, last_slot_0xa0, &last_slot_0xa0_len);
-        if (ret != 0) {
-            BOOT_LOG_ERR("Failed to read 0xA0 from last slot");
-            goto fail;
-        }
-        
-        // Current slot's 0xA0 is the key parameter passed in
-        if (key_len > MAX_PUBKEY_LEN) {
-            BOOT_LOG_ERR("Key length too large");
-            goto fail;
-        }
-        memcpy(current_slot_0xa0, key, key_len);
-        current_slot_0xa0_len = key_len;
-        
-        // Compare 0xA0 pubkeys
-        if (last_slot_0xa0_len != current_slot_0xa0_len) {
-            BOOT_LOG_ERR("0xA0 pubkey length mismatch: last_slot=%d, current_slot=%d", 
-                         last_slot_0xa0_len, current_slot_0xa0_len);
-            goto fail;
-        }
-        
-        FIH_CALL(boot_fih_memequal, fih_rc, last_slot_0xa0, current_slot_0xa0, last_slot_0xa0_len);
-        if (FIH_NOT_EQ(fih_rc, FIH_SUCCESS)) {
-            BOOT_LOG_ERR("0xA0 pubkey mismatch between slots");
-            goto fail;
-        }
-        
-        BOOT_LOG_DBG("new_img_sign_pubkey 0xA0 pubkey match, key found");
-    } else {
-        // Case 2.2: Has 0xA1 and 0xA2, compare last slot's 0xA0 with current slot's 0xA1
-        BOOT_LOG_DBG("Current slot has trust chain TLVs, comparing last slot 0xA0 with current slot 0xA1");
-        
-        uint8_t last_slot_0xa0[MAX_PUBKEY_LEN];
-        uint16_t last_slot_0xa0_len = 0;
-        uint8_t current_slot_0xa1[MAX_PUBKEY_LEN];
-        uint16_t current_slot_0xa1_len = 0;
-        
-        ret = read_pubkey_0xa0_from_slot(last_slot_addr,current_slot_addr, last_slot_0xa0, &last_slot_0xa0_len);
-        if (ret != 0) {
-            BOOT_LOG_ERR("Failed to read 0xA0 from last slot");
-            goto fail;
-        }
-        
-        ret = read_pubkey_0xa1_from_slot( last_slot_addr, current_slot_addr, current_slot_0xa1, &current_slot_0xa1_len);
-        if (ret != 0) {
-            BOOT_LOG_ERR("Failed to read 0xA1 from current slot");
-            goto fail;
-        }
-        
-        BOOT_LOG_INF("check trust chain. ");
 
-        if (last_slot_0xa0_len != current_slot_0xa1_len) {
-            BOOT_LOG_ERR("Pubkey length mismatch: last_slot_0xA0=%d, current_slot_0xA1=%d", 
-                         last_slot_0xa0_len, current_slot_0xa1_len);
+    BOOT_LOG_DBG("verifying slot: %s, running slot: %s", slot_str(verifying_slot), slot_str(running_slot));
+    ret = read_pubkey_from_slot(verifying_slot, key, &key_len);
+    if (ret != 0) {
+        BOOT_LOG_ERR("failed to read pubkey from %s", slot_str(verifying_slot));
+        goto fail;
+    }
+
+    if (running_slot != verifying_slot) {
+        BOOT_LOG_DBG("verifying pubkey of %s", slot_str(verifying_slot));
+ 
+        uint8_t running_slot_pubkey[MAX_PUBKEY_LEN];
+        uint16_t running_slot_pubkey_len = 0;
+        ret = read_pubkey_from_slot(running_slot, running_slot_pubkey, &running_slot_pubkey_len);
+        if (ret != 0) {
+            BOOT_LOG_ERR("failed to read pubkey from %s", slot_str(running_slot));
             goto fail;
         }
-        
-        FIH_CALL(boot_fih_memequal, fih_rc, last_slot_0xa0, current_slot_0xa1, last_slot_0xa0_len);
-        if (FIH_NOT_EQ(fih_rc, FIH_SUCCESS)) {
-            BOOT_LOG_ERR("Pubkey mismatch: last slot 0xA0 != current slot 0xA1");
-            goto fail;
+
+        uint8_t verifying_slot_root_pubkey[MAX_PUBKEY_LEN];
+        uint16_t verifying_slot_root_pubkey_len = 0;
+        ret = read_root_pubkey_from_slot(verifying_slot, verifying_slot_root_pubkey, &verifying_slot_root_pubkey_len);
+        if (ret == 0) {
+            BOOT_LOG_DBG("%s has root pubkey, verifying pubkey of it with %s", slot_str(verifying_slot), slot_str(running_slot));
+            if (!key_is_equal(verifying_slot_root_pubkey, verifying_slot_root_pubkey_len, running_slot_pubkey, running_slot_pubkey_len)) {
+                BOOT_LOG_ERR("%s root pubkey mismatch with %s", slot_str(verifying_slot), slot_str(running_slot));
+                goto fail;
+            }
+            //TODO validate signature of verifying_slot_root_pubkey
+            //TODO yuqiang
+        } else {
+            if (!key_is_equal(key, key_len, running_slot_pubkey, running_slot_pubkey_len)) {
+                BOOT_LOG_ERR("%s pubkey mismatch with %s", slot_str(verifying_slot), slot_str(running_slot));
+                goto fail;
+            }
         }
-        
-        BOOT_LOG_DBG("Pubkey match (last slot 0xA0 == current slot 0xA1), key found");
     }
     
     // Key found and verified, accept it
     bootutil_keys[0].key = key;
     pub_key_len = key_len;
-    BOOT_LOG_DBG("XIP mode: accept pubkey from 0xA0 TLV (len=%d) after trust chain verification", key_len);
+    BOOT_LOG_DBG("%s pubkey verified", slot_str(verifying_slot));
     return 0;
     
 fail:
-    // Key verification failed, clear confirm and boot from other slot
-    BOOT_LOG_ERR("Key verification failed, clearing OTA confirm and booting from other slot");
-    bk_boot_write_ota_confirm(image_index, 0xFFFFFFFF); // Clear confirm
+    BOOT_LOG_ERR("Failed to verify pubkey of %s", slot_str(verifying_slot));
     return -1;
 #else
     bootutil_keys[0].key = key;
     pub_key_len = key_len;
-    BOOT_LOG_DBG("XIP mode: accept pubkey from 0xA0 TLV (len=%d)", key_len);
+    BOOT_LOG_DBG("pubkey verified");
     return 0;
 #endif
 }

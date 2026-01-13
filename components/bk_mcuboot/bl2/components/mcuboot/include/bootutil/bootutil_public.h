@@ -312,7 +312,6 @@ boot_image_load_header(const struct flash_area *fa_p,
 
 bool bk_boot_check_ota_confirm(uint8_t index, uint32_t value);
 uint32_t bk_boot_ota_confirm_offset(uint8_t index);
-void bk_boot_switch_xip_confirm();
 int bk_boot_erase_ota_confirm(uint8_t image_index);
 
 #if CONFIG_DBUS_CHECK_CRC

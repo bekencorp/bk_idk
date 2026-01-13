@@ -279,6 +279,21 @@ boot_write_xip_status(uint8_t index, uint32_t type, uint32_t status)
     //TODO re-read the status to ensure the write is successful
 }
 
+int boot_read_running_slot(void)
+{
+    uint32_t offset = CONFIG_XIP_OTA_CONTROL_PHY_PARTITION_OFFSET + 0x1000;
+    uint32_t running_slot_value = 0;
+    uint32_t running_slot = 0;
+
+    bk_flash_read_bytes(offset, &running_slot_value, 4);
+    if (running_slot_value == 0xFFFFFFFF) {
+        return 0;
+    } else {
+        return 1;
+    }
+    BOOT_LOG_DBG("running slot = %d", slot_str(running_slot));
+    return running_slot;
+}
 #endif
 
 #if CONFIG_OTA_CONFIRM_UPDATE
@@ -360,21 +375,6 @@ bk_boot_erase_ota_confirm(uint8_t image_index)
     BOOT_LOG_ERR("erase ota confirm=%#x fail\r\n", check_value);
     return BK_FAIL;
 }
-
-#if CONFIG_DIRECT_XIP
-void 
-bk_boot_switch_xip_confirm()
-{
-    uint32_t check_value = 0;
-    uint32_t offset = bk_boot_ota_confirm_offset(1);
-    bk_flash_read_bytes(offset, (uint8_t*)&check_value, 4);
-    if (check_value == UINT32_MAX) {
-        bk_boot_write_ota_confirm(1, OTA_CONFIRM);
-    } else {
-        bk_boot_erase_ota_confirm(1);
-    }
-}
-#endif
 #endif
 
 

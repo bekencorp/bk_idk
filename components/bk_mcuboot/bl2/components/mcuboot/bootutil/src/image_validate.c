@@ -276,7 +276,7 @@ _restore_execute_enable:
  * Add a few extra bytes to the key buffer size for encoding and
  * for public exponent.
  */
-#   define EXPECTED_KEY_TLV     IMAGE_TLV_CUSTOM
+#   define EXPECTED_KEY_TLV     IMAGE_TLV_CUSTOM_PUBKEY
 #   define KEY_BUF_SIZE         (91)
 #endif /* !MCUBOOT_HW_KEY */
 
@@ -466,8 +466,8 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
         return 0;
     }
 
-    BOOT_LOG_INF("reset reason %#x, ota_confirm=%d, slot=%d, xip_status=%#x, do validate", 
-                 reset_reason, ota_confirm_set, slot, xip_status);
+    BOOT_LOG_INF("reset reason %#x, ota_confirm=%d, slot=%s, xip_status=%#x, do validate", 
+                 reset_reason, ota_confirm_set, slot_str(slot), xip_status);
 #elif CONFIG_OTA_OVERWRITE
     if (can_skip) {
         BOOT_LOG_INF("reset reason %#x, skip validate", reset_reason);

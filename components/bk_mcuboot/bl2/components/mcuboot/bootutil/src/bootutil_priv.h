@@ -175,8 +175,8 @@ _Static_assert(sizeof(boot_img_magic) == BOOT_MAGIC_SZ, "Invalid size for image 
 #endif /* MCUBOOT_DIRECT_XIP || MCUBOOT_RAM_LOAD */
 
 #define BOOT_LOG_IMAGE_INFO(slot, hdr)                                    \
-    BOOT_LOG_INF("%-9s slot: version=%u.%u.%u+%u",                        \
-                 ((slot) == BOOT_PRIMARY_SLOT) ? "Primary" : "Secondary", \
+    BOOT_LOG_INF("%s: version=%u.%u.%u+%u",                        \
+                 ((slot) == BOOT_PRIMARY_SLOT) ? "A" : "B", \
                  (hdr)->ih_ver.iv_major,                                  \
                  (hdr)->ih_ver.iv_minor,                                  \
                  (hdr)->ih_ver.iv_revision,                               \
@@ -469,6 +469,16 @@ uint32_t bootutil_max_image_size(const struct flash_area *fap);
 #if CONFIG_DIRECT_XIP
 int boot_read_xip_status(uint8_t index, uint32_t type);
 void boot_write_xip_status(uint8_t index, uint32_t type, uint32_t status);
+int boot_read_running_slot(void);
+
+static inline const char* slot_str(uint32_t slot)
+{
+	if (slot == BOOT_PRIMARY_SLOT) {
+		return "A";
+	} else {
+		return "B";
+	}
+}
 #endif
 
 #ifdef __cplusplus

@@ -249,25 +249,18 @@ boot_validate_slot(struct boot_loader_state *state, int slot,
         goto out;
     }
 
-    BOOT_LOG_INF("Starting validation of %s slot", (slot == BOOT_PRIMARY_SLOT) ? "primary" : "secondary");
+    BOOT_LOG_INF("starting validation of %s", slot_str(slot));
     BOOT_HOOK_CALL_FIH(boot_image_check_hook, FIH_BOOT_HOOK_REGULAR,
                     fih_rc, BOOT_CURR_IMG(state), slot);
     if (FIH_EQ(fih_rc, FIH_BOOT_HOOK_REGULAR))
     {
         FIH_CALL(boot_image_check, fih_rc, state, hdr, fap, bs);
     }
-    BOOT_LOG_INF("Validation of %s slot completed, result=%s", 
-                 (slot == BOOT_PRIMARY_SLOT) ? "primary" : "secondary",
-                 FIH_EQ(fih_rc, FIH_SUCCESS) ? "SUCCESS" : "FAILED");
+    BOOT_LOG_INF("%s is verified", slot_str(slot));
     if (!boot_is_header_valid(hdr, fap) || FIH_NOT_EQ(fih_rc, FIH_SUCCESS)) {
         if ((slot != BOOT_PRIMARY_SLOT) || ARE_SLOTS_EQUIVALENT()) {
-            // flash_area_erase(fap, 0, flash_area_get_size(fap));
-            /* Image is invalid, erase it to prevent further unnecessary
-            * attempts to validate and boot it.
-            */
+            BOOT_LOG_ERR("%s image is not valid!", slot_str(slot));
         }
-        BOOT_LOG_ERR("Image in the %s slot is not valid!",
-                    (slot == BOOT_PRIMARY_SLOT) ? "primary" : "secondary");
         fih_rc = FIH_NO_BOOTABLE_IMAGE;
         goto out;
     }
