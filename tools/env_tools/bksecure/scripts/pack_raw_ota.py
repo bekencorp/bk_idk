@@ -90,7 +90,10 @@ class PackRawOta(Pack):
             aes_bin_name = bname[:-4] + '_aes.bin'
             if flash_aes_key != None:
                 aes_tool = get_flash_aes_tool()
-                start_address = hex(phy2virtual(ota_partition.phy_partition_offset))
+                if flash_crc_en:
+                    start_address = hex(phy2virtual(ota_partition.phy_partition_offset))
+                else:
+                    start_address = hex(ota_partition.phy_partition_offset)
                 cmd = f'python3 {aes_tool} encrypt -infile {ota_sign_bin} -keywords {self.aes_key}  -aes {128} -outfile {aes_bin_name} -startaddress {start_address}'
                 run_cmd_not_check_ret(cmd)
             else:

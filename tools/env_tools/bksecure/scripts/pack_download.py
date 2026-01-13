@@ -78,8 +78,10 @@ class PackDownload(Pack):
 
         aes_tool = get_flash_aes_tool()
         if pheader.type().is_merge():
-            # The encryption also include the BL2 sign hdr
-            start_address = hex(phy2virtual(pheader.size().phy_offset()))
+            if flash_crc_en:
+                start_address = hex(phy2virtual(pheader.size().phy_offset()))
+            else:
+                start_address = hex(pheader.size().phy_offset())
         else:
             if flash_crc_en:
                 start_address = hex(pheader.size().vir_code_offset())

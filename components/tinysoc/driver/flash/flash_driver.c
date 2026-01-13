@@ -283,6 +283,23 @@ static bool flash_is_need_update_status_reg(uint32_t protect_cfg, uint32_t cmp_c
 	}
 }
 
+static flash_protect_type_t flash_get_protect_type(uint32_t status_reg)
+{
+	uint16_t protect_value;
+
+	protect_value = (status_reg >> s_flash.flash_cfg->protect_post) & s_flash.flash_cfg->protect_mask;
+	if (protect_value == s_flash.flash_cfg->protect_all)
+		return FLASH_PROTECT_ALL;
+	else if (protect_value == s_flash.flash_cfg->protect_none)
+		return FLASH_PROTECT_NONE;
+	else if (protect_value == s_flash.flash_cfg->protect_half)
+		return FLASH_PROTECT_HALF;
+	else if (protect_value == s_flash.flash_cfg->unprotect_last_block)
+		return FLASH_UNPROTECT_LAST_BLOCK;
+	else
+		return FLASH_PROTECT_NONE;
+}
+
 static void flash_set_protect_type(flash_protect_type_t type)
 {
 	uint32_t protect_cfg = flash_get_protect_cfg(type);
@@ -691,6 +708,28 @@ bool is_addr_write_primary_cbus(uint32_t address, uint32_t size)
 	} else {
 		return false;
 	}
+}
+
+__attribute__((section(".iram")))
+void bk_flash_write_cbus(uint32_t address, const uint8_t *user_buf, uint32_t size)
+{
+	flash_protect_type_t protect_type;
+	uint16_t status_reg;
+
+	flash_switch_to_line_mode_two();
+
+	status_reg = flash_hal_read_status_reg(&s_flash.hal, s_flash.flash_cfg->status_reg_size);
+	protect_type = flash_get_protect_type(status_reg);
+	flash_set_protect_type(FLASH_PROTECT_NONE);
+
+	bk_flash_cpu_write_enable();
+	flash_memcpy((char*)(0x02000000+address), (const char*)user_buf, size);
+	while(flash_hal_is_busy(&s_flash.hal));
+
+	bk_flash_cpu_write_disable();
+	flash_set_protect_type(protect_type);
+
+	flash_restore_line_mode();
 }
 
 __attribute__((section(".iram")))

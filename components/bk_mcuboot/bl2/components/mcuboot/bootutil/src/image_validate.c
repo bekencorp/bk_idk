@@ -65,6 +65,11 @@
 #include "components/system.h"
 #endif
 
+#if CONFIG_DIRECT_XIP
+extern uint32_t flash_get_excute_enable(void);
+extern void flash_set_excute_enable(int enable);
+#endif
+
 /*
  * Compute SHA hash over the image.
  * (SHA384 if ECDSA-P384 is being used,
@@ -84,6 +89,10 @@ bootutil_img_hash(struct enc_key_data *enc_state, int image_index,
     int rc;
     uint32_t blk_off;
     uint32_t tlv_off;
+#if CONFIG_DIRECT_XIP
+    uint32_t execute_enable_saved = 0;
+    bool need_restore_execute_enable = false;
+#endif
 
 #if (BOOT_IMAGE_NUMBER == 1) || !defined(MCUBOOT_ENC_IMAGES) || \
     defined(MCUBOOT_RAM_LOAD)
@@ -156,11 +165,14 @@ bootutil_img_hash(struct enc_key_data *enc_state, int image_index,
 #if CONFIG_DIRECT_XIP
         uint32_t sec_addr = partition_get_phy_offset(PARTITION_XIP_B);
         uint32_t pri_addr = partition_get_phy_offset(PARTITION_XIP_A);
-        uint32_t execute_enable_saved = 0;
-        bool need_restore_execute_enable = false;
         
         if(fap->fa_off == sec_addr){
-            crc_check_addr = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(sec_addr));
+            // For slot1, use slot0 address and set XIP mode
+            addr = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(pri_addr));
+            crc_check_addr = addr;
+            execute_enable_saved = flash_get_excute_enable();
+            flash_set_excute_enable(1);
+            need_restore_execute_enable = true;
         } else if(fap->fa_off == pri_addr){
             addr = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(pri_addr));
             crc_check_addr = addr;
@@ -177,6 +189,12 @@ bootutil_img_hash(struct enc_key_data *enc_state, int image_index,
             /* Return immediately without initializing SHA context */
             /* This prevents hardware SHA accelerator state pollution */
             enable_dcache(1);
+#if CONFIG_DIRECT_XIP
+            // Restore XIP state if changed
+            if (need_restore_execute_enable) {
+                flash_set_excute_enable(execute_enable_saved);
+            }
+#endif
             return -1;
         } else {
             BOOT_LOG_INF("app crc16 right");
@@ -202,6 +220,13 @@ bootutil_img_hash(struct enc_key_data *enc_state, int image_index,
     bootutil_sha_finish(&sha_ctx, hash_result);
     
     bootutil_sha_drop(&sha_ctx);
+    
+#if CONFIG_DIRECT_XIP
+    // Restore XIP state if changed
+    if (need_restore_execute_enable) {
+        flash_set_excute_enable(execute_enable_saved);
+    }
+#endif
     enable_dcache(1);
     return 0;
 }
@@ -442,7 +467,7 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
     
 #if CONFIG_DIRECT_XIP
     int slot = flash_area_id_to_multi_image_slot(image_index, flash_area_get_id(fap));
-    if (can_skip && (slot >= 0) && (boot_read_xip_status(slot, XIP_IMAGE_OK_TYPE) == XIP_IMAGE_OK)) {
+    if (can_skip && (slot >= 0) && (boot_read_xip_status(slot, XIP_IMAGE_OK_TYPE) != XIP_IMAGE_TEST_FINAL)) {
         BOOT_LOG_INF("reset reason %#x, skip validate", reset_reason);
         FIH_RET(FIH_SUCCESS);
     }

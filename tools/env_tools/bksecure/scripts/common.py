@@ -201,15 +201,29 @@ def is_pi():
 def is_centos():
     return True
 
+def get_soc_type():
+    """Get SOC type from environment variable ARMINO_SOC"""
+    soc_type = os.environ.get('ARMINO_SOC', '').upper()
+    if soc_type:
+        logging.debug(f'Detected SOC type from ARMINO_SOC: {soc_type}')
+        return soc_type
+    else:
+        logging.debug('ARMINO_SOC not set, using default: BK7236')
+        return 'BK7236'
+
 def get_flash_aes_tool():
     tools_dir = get_tools_dir()
-    if os.name == 'nt':
-        return f'{tools_dir}\\packager_tools\\win\\beken_aes.exe'
+    soc_type = get_soc_type()
+    if soc_type  == 'BK7236':
+        if os.name == 'nt':
+            return f'{tools_dir}\\packager_tools\\win\\beken_aes.exe'
 
-    if is_pi():
-        return f'{tools_dir}/packager_tools/pi/beken_aes'
+        if is_pi():
+            return f'{tools_dir}/packager_tools/pi/beken_aes'
 
-    return f'{tools_dir}/packager_tools/centos7/xts_aes.py'
+        return f'{tools_dir}/packager_tools/centos7/beken_aes'
+    else:
+        return f'{tools_dir}/packager_tools/aes_xts.py'
 
 def get_crc_tool():
     tools_dir = get_tools_dir()
