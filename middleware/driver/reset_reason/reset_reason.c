@@ -24,38 +24,19 @@
 #include "driver/gpio.h"
 
 #define TAG "init"
-#define DISPLAY_START_TYPE_STR 1
 
-static uint32_t s_start_type;
-static uint32_t s_misc_value_save;
-static uint32_t s_mem_value_save;
+static uint32_t s_start_type = RESET_SOURCE_POWERON;
+static uint32_t s_misc_value_save = RESET_SOURCE_POWERON;
+static uint32_t s_reset_reason_inited = false;
 
 uint32_t bk_misc_get_reset_reason(void)
 {
 	return s_start_type;
 }
 
-void persist_memory_init(void)
-{
-	*((volatile uint32_t *)(PERSIST_MEMORY_ADDR)) = (uint32_t)CRASH_ILLEGAL_JUMP_VALUE;
-}
-
-uint32_t persist_memory_get(void)
-{
-	return (*((volatile uint32_t *)(PERSIST_MEMORY_ADDR)));
-}
-
-bool persist_memory_is_lost(void)
-{
-	if ((uint32_t)CRASH_ILLEGAL_JUMP_VALUE == persist_memory_get())
-		return false;
-	else
-		return true;
-}
-
 static char *misc_get_start_type_str(uint32_t start_type)
 {
-#if DISPLAY_START_TYPE_STR
+#if CONFIG_DISPLAY_START_TYPE_STR
 	switch (start_type) {
 	case RESET_SOURCE_POWERON:
 		return "power on";
@@ -159,11 +140,10 @@ void show_reset_reason(void)
 #endif
 #endif
 	}
-	BK_LOGI(TAG, "regs - %x, %x, %x\r\n", s_start_type, s_misc_value_save, s_mem_value_save);
+	BK_LOGI(TAG, "regs - start_type: %x, misc_value_save: %x\r\n", s_start_type, s_misc_value_save);
 }
 
 #if (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX)
-
 uint32_t reset_reason_deep_sleep_check(void)
 {
 	uint32_t misc_value = 0;
@@ -174,16 +154,16 @@ uint32_t reset_reason_deep_sleep_check(void)
 	misc_value = aon_pmu_hal_get_wakeup_source();
 	switch (misc_value)
 	{
-	case 0x1: // gpio
+	case WAKEUP_SOURCE_GPIO:
 		misc_value = RESET_SOURCE_DEEPPS_GPIO;
 		break;
-	case 0x2: // rtc
+	case WAKEUP_SOURCE_RTC:
 		misc_value = RESET_SOURCE_DEEPPS_RTC;
 		break;
-	case 0x10: // touch
+	case WAKEUP_SOURCE_TOUCH:
 		misc_value = RESET_SOURCE_DEEPPS_TOUCH;
 		break;
-	case 0x20: // usb
+	case WAKEUP_SOURCE_USB:
 		misc_value = RESET_SOURCE_DEEPPS_USB;
 		break;
 
@@ -199,7 +179,7 @@ uint32_t reset_reason_init(void)
 {
 	uint32_t misc_value;
 
-	if (s_start_type) {
+	if (s_reset_reason_inited) {
 		return s_start_type;
 	}
 
@@ -215,6 +195,7 @@ uint32_t reset_reason_init(void)
 	}
 	bk_misc_set_reset_reason(RESET_SOURCE_POWERON);
 
+	s_reset_reason_inited = true;
 	return s_start_type;
 }
 

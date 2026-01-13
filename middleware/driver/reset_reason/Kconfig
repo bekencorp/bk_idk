@@ -2,4 +2,7 @@ menu "RESET_REASON"
 	config RESET_REASON
 		bool "Enable reset reason"
 		default y
+	config DISPLAY_START_TYPE_STR
+		bool "Enable display string of reset reason"
+		default y
 endmenu

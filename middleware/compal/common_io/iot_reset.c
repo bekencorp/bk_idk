@@ -56,12 +56,16 @@ int32_t iot_get_reset_reason( IotResetReason_t * xResetReason )
     switch (start_type) {
     case RESET_SOURCE_POWERON:
         *xResetReason = eResetPowerOnBoot;
+        break;
     case RESET_SOURCE_REBOOT:
         *xResetReason = eResetWarmBoot;
+        break;
     case RESET_SOURCE_WATCHDOG:
         *xResetReason = eResetWatchdog;
+        break;
     default:
         *xResetReason = eResetOther;
+        break;
     }    
     
     return IOT_RESET_SUCCESS;
