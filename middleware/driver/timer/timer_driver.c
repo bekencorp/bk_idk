@@ -316,8 +316,10 @@ bk_err_t bk_timer_driver_init(void)
     }
 
     /* the default clock src of timer0 timer1*/
-    bk_timer_clock_select(SYS_SEL_TIMER0, TIMER_SCLK_XTAL);
-    bk_timer_clock_select(SYS_SEL_TIMER1, TIMER_SCLK_XTAL);
+    bk_timer_clock_select(TIMER_ID0, TIMER_SCLK_XTAL);
+#if (SOC_TIMER_INTERRUPT_NUM > 1)
+    bk_timer_clock_select(TIMER_ID3, TIMER_SCLK_XTAL);
+#endif
 
     os_memset(&s_timer, 0, sizeof(s_timer));
     os_memset(&s_timer_isr, 0, sizeof(s_timer_isr));
