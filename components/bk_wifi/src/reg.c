@@ -2609,6 +2609,14 @@ int regulatory_hint_found_beacon(struct wiphy *wiphy,
 	return 0;
 }
 
+void regd_hint_beacon(int freq)
+{
+	struct ieee80211_channel *chan = ieee80211_get_channel(&g_wiphy, freq);
+
+	if (chan)
+		regulatory_hint_found_beacon(&g_wiphy, chan);
+}
+
 static void print_rd_rules(const struct ieee80211_regdomain *rd)
 {
 	unsigned int i;
