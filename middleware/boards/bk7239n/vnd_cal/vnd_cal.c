@@ -129,17 +129,17 @@ int8_t g_dif_g_ble_ch39 = -11;
  * 0.25dB for 1 LSB
  * used with FT PWR CAL
  */
-int8_t shift_pwr_idx_b_ch1 = -6;
-int8_t shift_pwr_idx_b_ch7 = -10;
-int8_t shift_pwr_idx_b_ch13 = -6;
-int8_t shift_pwr_idx_g_ch1 = -8;
-int8_t shift_pwr_idx_g_ch7 = -12;
-int8_t shift_pwr_idx_g_ch13 = -8;
-int8_t shift_pwr_idx_a_ch36 = -24;
-int8_t shift_pwr_idx_a_ch64 = -18;
-int8_t shift_pwr_idx_a_ch100 = 2;
-int8_t shift_pwr_idx_a_ch132 = 5;
-int8_t shift_pwr_idx_a_ch165 = -1;
+int8_t shift_pwr_idx_b_ch1 = -3;
+int8_t shift_pwr_idx_b_ch7 = -5;
+int8_t shift_pwr_idx_b_ch13 = 0;
+int8_t shift_pwr_idx_g_ch1 = -4;
+int8_t shift_pwr_idx_g_ch7 = -5;
+int8_t shift_pwr_idx_g_ch13 = 0;
+int8_t shift_pwr_idx_a_ch36 = -12;
+int8_t shift_pwr_idx_a_ch64 = -5;
+int8_t shift_pwr_idx_a_ch100 = 0;
+int8_t shift_pwr_idx_a_ch132 = 0;
+int8_t shift_pwr_idx_a_ch165 = -3;
 
 const UINT32 g_default_xtal   = DEFAULT_TXID_XTAL;
 
