@@ -228,41 +228,59 @@ if (CONFIG_USE_EXTERNAL_MBEDTLS)
 	# Use external mbedtls library (source code or pre-built library)
 	# User must provide mbedtls headers via Kconfig options
 
-	# Expand @WPA_CMAKE_ROOT@ placeholder in config paths
-	# WPA_CMAKE_ROOT = CMAKE_SOURCE_DIR = vendor/T7/t7_os/armino
-	# Note: Using @...@ syntax to avoid shell variable expansion in Kconfig
-	set(WPA_CMAKE_ROOT "${CMAKE_SOURCE_DIR}")
+	# SDK_ROOT from config (replace @CMAKE_SOURCE_DIR@ placeholder)
+	if (CONFIG_SDK_ROOT)
+		string(REPLACE "@CMAKE_SOURCE_DIR@" "${CMAKE_SOURCE_DIR}" SDK_ROOT "${CONFIG_SDK_ROOT}")
+	endif()
 
 	# Process config path
 	if (CONFIG_EXTERNAL_MBEDTLS_CONFIG_PATH)
-		string(REPLACE "@WPA_CMAKE_ROOT@" "${WPA_CMAKE_ROOT}" EXT_MBEDTLS_CONFIG_PATH "${CONFIG_EXTERNAL_MBEDTLS_CONFIG_PATH}")
-		list(APPEND incs "${EXT_MBEDTLS_CONFIG_PATH}")
+		string(REPLACE "@SDK@" "${SDK_ROOT}" EXT_MBEDTLS_CONFIG_PATH "${CONFIG_EXTERNAL_MBEDTLS_CONFIG_PATH}")
+		message(STATUS "EXT_MBEDTLS_CONFIG_PATH: ${EXT_MBEDTLS_CONFIG_PATH}")
+		list(APPEND c_compile_options "-DMBEDTLS_CONFIG_FILE=\"${EXT_MBEDTLS_CONFIG_PATH}\"")
+	else()
+		message(STATUS "CONFIG_EXTERNAL_MBEDTLS_CONFIG_PATH is not set")
 	endif()
 
-	# Process include path
+	# Process include paths
 	if (CONFIG_EXTERNAL_MBEDTLS_INCLUDE_PATH)
-		string(REPLACE "@WPA_CMAKE_ROOT@" "${WPA_CMAKE_ROOT}" EXT_MBEDTLS_INC_PATH "${CONFIG_EXTERNAL_MBEDTLS_INCLUDE_PATH}")
-		list(APPEND incs "${EXT_MBEDTLS_INC_PATH}")
-		list(APPEND incs "${EXT_MBEDTLS_INC_PATH}/mbedtls")
+		string(REPLACE "@SDK@" "${SDK_ROOT}" EXT_MBEDTLS_INC_PATH "${CONFIG_EXTERNAL_MBEDTLS_INCLUDE_PATH}")
+		list(APPEND incs ${EXT_MBEDTLS_INC_PATH})
+	else()
+		message(STATUS "CONFIG_EXTERNAL_MBEDTLS_INCLUDE_PATH is not set")
 	endif()
+
+	# Process enable macros from config (space or semicolon separated)
+	if (CONFIG_EXTERNAL_MBEDTLS_ENABLE_MACROS)
+		# Remove quotes if present (CMake may preserve quotes from config file)
+		string(REPLACE "\"" "" ENABLE_MACROS "${CONFIG_EXTERNAL_MBEDTLS_ENABLE_MACROS}")
+		# Split by semicolon or space and add -D prefix for each macro
+		string(REPLACE ";" " " ENABLE_MACROS "${ENABLE_MACROS}")
+		string(REPLACE "  " " " ENABLE_MACROS "${ENABLE_MACROS}")  # Remove double spaces
+		string(STRIP "${ENABLE_MACROS}" ENABLE_MACROS)
+		if (ENABLE_MACROS)
+			# Split by space
+			string(REPLACE " " ";" ENABLE_MACROS_LIST "${ENABLE_MACROS}")
+			foreach(MACRO ${ENABLE_MACROS_LIST})
+				string(STRIP "${MACRO}" MACRO)
+				if (MACRO)
+					list(APPEND c_compile_options "-D${MACRO}")
+					message(STATUS "  Adding macro: -D${MACRO}")
+				endif()
+			endforeach()
+		endif()
+	endif()
+
+	if (CONFIG_EXTERNAL_MBEDTLS_VERSION_3X)
+		message(STATUS "  Version: 3.x (compatibility mode enabled)")
+	endif()
+
 
 	# Register component without linking armino's mbedtls
 	armino_component_register(SRCS "${srcs}"
 		INCLUDE_DIRS "${incs}"
 		REQUIRES lwip_intf_v2_1
 	)
-
-	message(STATUS "wpa_supplicant: Using external mbedtls")
-	if (CONFIG_EXTERNAL_MBEDTLS_CONFIG_PATH)
-		message(STATUS "  Config path: ${EXT_MBEDTLS_CONFIG_PATH}")
-	endif()
-	if (CONFIG_EXTERNAL_MBEDTLS_INCLUDE_PATH)
-		message(STATUS "  Include path: ${EXT_MBEDTLS_INC_PATH}")
-	endif()
-	if (CONFIG_EXTERNAL_MBEDTLS_VERSION_3X)
-		message(STATUS "  Version: 3.x (compatibility mode enabled)")
-	endif()
-
 else()
 	armino_component_register(SRCS "${srcs}"
 		INCLUDE_DIRS "${incs}"

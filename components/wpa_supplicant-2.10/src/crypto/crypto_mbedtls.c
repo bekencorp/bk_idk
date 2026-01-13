@@ -52,7 +52,10 @@
 #ifndef BYTES_TO_T_UINT_8
 
 #if !CONFIG_PSA_MBEDTLS
+/* ARC4 was removed in mbedtls 3.x - only include if available */
+#if defined(MBEDTLS_ARC4_C)
 #include "mbedtls/arc4.h"
+#endif
 /* NOTE: Do NOT redefine MBEDTLS_PRIVATE here - use the one from private_access.h */
 /* mbedtls 3.x uses private_X member names by default */
 #endif

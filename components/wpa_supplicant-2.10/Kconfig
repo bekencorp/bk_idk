@@ -141,6 +141,14 @@ menu "modules::wpa_supplicant-2.10"
 				When enabled, you must provide the mbedtls headers via
 				EXTERNAL_MBEDTLS_INCLUDE_PATH.
 
+		config SDK_ROOT
+			string "SDK root path"
+			depends on USE_EXTERNAL_MBEDTLS
+			default ""
+			help
+				Path to the SDK root directory.
+				This is used to replace @CMAKE_SOURCE_DIR@ placeholder in config paths.
+
 		config EXTERNAL_MBEDTLS_CONFIG_PATH
 			string "External mbedtls config header path"
 			depends on USE_EXTERNAL_MBEDTLS
@@ -169,6 +177,22 @@ menu "modules::wpa_supplicant-2.10"
 				- mbedtls_pk_parse_key() with 7 parameters
 				- MBEDTLS_ECDH_LEGACY_CONTEXT for ECDH compatibility
 				- Use wpa_supplicant's aes-wrap/aes-omac1 implementations
+
+		config EXTERNAL_MBEDTLS_ENABLE_MACROS
+			string "External mbedtls enable macros"
+			depends on USE_EXTERNAL_MBEDTLS
+			default "MBEDTLS_SKIP_CHECK_CONFIG;ENABLE_MBEDTLS_ECP_C;ENABLE_MBEDTLS_ECDH_C;ENABLE_MBEDTLS_ECDSA_C;ENABLE_MBEDTLS_PK_C;ENABLE_MBEDTLS_ECP_DP_SECP256R1_ENABLED;ENABLE_MBEDTLS_ECP_DP_SECP384R1_ENABLED;ENABLE_MBEDTLS_ECP_DP_SECP521R1_ENABLED"
+			help
+				Space or semicolon separated list of macros to enable for external mbedtls.
+				Common macros:
+				- MBEDTLS_SKIP_CHECK_CONFIG (Skip mbedtls check_config.h validation for external config compatibility)
+				- ENABLE_MBEDTLS_ECP_C (Elliptic Curve features, required for WPA3-SAE)
+				- ENABLE_MBEDTLS_ECDH_C (ECDH features)
+				- ENABLE_MBEDTLS_ECDSA_C (ECDSA features)
+				- ENABLE_MBEDTLS_PK_C (PK parse/write functions)
+				- ENABLE_MBEDTLS_ECP_DP_SECP256R1_ENABLED (SECP256R1 curve)
+				- ENABLE_MBEDTLS_ECP_DP_SECP384R1_ENABLED (SECP384R1 curve)
+				- ENABLE_MBEDTLS_ECP_DP_SECP521R1_ENABLED (SECP521R1 curve)
 
 		config WPA_PSK_CACHE
 			bool "Enable WPA PSK Cache"
