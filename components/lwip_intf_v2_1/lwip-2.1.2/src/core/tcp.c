@@ -1209,7 +1209,7 @@ void tcp_force_clear_ps_flag(void)
 //  if(tcp_ps_flag == 0)
 //    return;
 
-  os_printf("force cleared %x\r\n", tcp_ps_flag);
+  //os_printf("force cleared %x\r\n", tcp_ps_flag);
   tcp_ps_flag = 0;
   //ps_clear_dhcp_ongoing_prevent();
   rtos_exit_critical(int_level);
