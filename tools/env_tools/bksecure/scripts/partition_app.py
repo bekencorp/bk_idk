@@ -7,12 +7,16 @@ import logging
 from .common import *
 from .partition import Partition
 from .size_crc import SizeCrc
+from .size import Size
 
 class PartitionApp(Partition):
 
     def __init__(self, idx=None, field_dic=None, mini_offset=None, hdr_size=0, bin=None):
         super().__init__(idx, field_dic, mini_offset)
-        self._size = SizeCrc(self._int_offset, self._int_size, hdr_size)
+        if is_flash_crc_enabled():
+            self._size = SizeCrc(self._int_offset, self._int_size, hdr_size)
+        else:
+            self._size = Size(self._int_offset, self._int_size, hdr_size)
         self._bin = bin
 
     def gen_code(self):

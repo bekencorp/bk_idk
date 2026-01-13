@@ -74,8 +74,6 @@ static void do_boot(struct boot_rsp *rsp)
     struct boot_arm_vector_table *vt;
     int rc;
     uint32_t image_off;
-    uint32_t hdr_offset;
-    uint32_t vt_offset;
     
     if (rsp->br_hdr != NULL) {
         /* Due to hardware limitation, always use primary slot (slot0) offset 
@@ -90,19 +88,21 @@ static void do_boot(struct boot_rsp *rsp)
         uint32_t primary_off = get_flash_map_offset(0);  /* Primary slot for image 0 (FLASH_AREA_OVERWRITE_ID) */
 #endif
         image_off = primary_off;
-        
-        hdr_offset = rsp->br_hdr->ih_hdr_size / 32 * 34;
-        vt_offset = image_off + hdr_offset;
-        uint32_t vt_virtual = FLASH_PHY2VIRTUAL_CODE_START(vt_offset);
-        uint32_t vt_addr = FLASH_BASE + vt_virtual;
     } else {
         BOOT_LOG_ERR("do_boot: rsp->br_hdr is NULL!");
         return;
     }
     
+#if CONFIG_FLASH_CRC_EN
+    // In CRC mode, use original calculation
     vt = (struct boot_arm_vector_table *)(FLASH_BASE + 
                     FLASH_PHY2VIRTUAL_CODE_START(image_off +
                                          rsp->br_hdr->ih_hdr_size / 32 * 34));
+#else
+    // In no_crc mode, vector table is at image_off + hdr_size (1:1 mapping)
+    vt = (struct boot_arm_vector_table *)(FLASH_BASE + image_off + rsp->br_hdr->ih_hdr_size);
+#endif
+    
 #if MCUBOOT_LOG_LEVEL > MCUBOOT_LOG_LEVEL_OFF || TEST_BL2
 #if CONFIG_BL2_CLEAN_UART_ON_EXIT
     stdio_uninit();

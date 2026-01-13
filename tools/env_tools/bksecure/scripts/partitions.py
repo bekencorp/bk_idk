@@ -30,7 +30,8 @@ class Partitions:
         self._bins = self.__parse_bin_csv(bin_csv)
         self.__parse_partition_csv(partition_csv)
         self._pack_json = pack_json
-
+        
+        self._flash_crc_en = is_flash_crc_enabled()
         self.__common_process()
 
     def __validate_duplication(self):
@@ -170,8 +171,6 @@ class Partitions:
                 p = PartitionPartition(idx, pdic, mini_offset, self._partitions)
             elif (type == 'data') and ((subtype == 'ow_ota_control') or (subtype == 'xip_ota_control')):
                 p = PartitionPadding(idx, pdic, mini_offset)
-            elif (type == 'app') and ((subtype == 'ow_ota') or (subtype == 'xip_b')):
-                p = PartitionAppPadding(idx, pdic, mini_offset)
             elif (type == 'app') and ((subtype == 'ow_active') or (subtype == 'xip_a') or (subtype == 'xip_b')):
                 subapp_idx_dic[subtype] += 1
                 if subapp_idx_dic[subtype] == 1:
@@ -179,6 +178,8 @@ class Partitions:
                     p = PartitionSubapp(idx, pdic, mini_offset, BL2_HDR_SZ, b)
                 else:
                     p = PartitionSubapp(idx, pdic, mini_offset, 0, b)
+            elif (type == 'app') and (subtype == 'ow_ota'):
+                p = PartitionAppPadding(idx, pdic, mini_offset)
             elif (type == 'app'):
                 p = PartitionApp(idx, pdic, mini_offset, 0, b)
             elif (type == 'data'):
@@ -251,8 +252,15 @@ class Partitions:
             line = f'#define %-45s %d\r\n' %(macro_name, 1)
         else:
             line = f'#define %-45s %d\r\n' %(macro_name, 0)
-            f.write(line)
+        f.write(line)
 
+        macro_name = f'CONFIG_FLASH_CRC_EN'
+        # If flash_crc_en is True, then CONFIG_FLASH_CRC should be 1 (crc mode)
+        # If flash_crc_en is False, then CONFIG_FLASH_CRC should be 0 (no_crc mode)
+        if self._flash_crc_en:
+            line = f'#define %-45s %d\r\n' %(macro_name, 1)
+        else:
+            line = f'#define %-45s %d\r\n' %(macro_name, 0)
         f.write(line)
         macro_name = f'XIP_MAGIC_TYPE'
         line = f'#define %-45s %d\r\n' %(macro_name, 1)

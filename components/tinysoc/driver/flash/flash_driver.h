@@ -47,8 +47,13 @@
 #define FLASH_ManuFacID_POSI             (16)
 #define FLASH_ManuFacID_GD               (0xC8)
 
+#ifndef CEIL_ALIGN_34
+#define CEIL_ALIGN_34(addr)           (((addr) + 34 - 1) / 34 * 34)
+#endif
+
+#ifndef FLASH_PHY2VIRTUAL
 #define FLASH_PHY2VIRTUAL(phy_addr)      ((((phy_addr) / 34) << 5) + ((phy_addr) % 34))
-#define CEIL_ALIGN_34(addr) (((addr) + 34 - 1) / 34 * 34)
+#endif
 
 typedef struct {
 	uint32_t flash_id;

@@ -9,6 +9,7 @@ from .common import *
 from .partition_app import PartitionApp
 from .partition_str_type import PartitionStrType
 from .size_crc import SizeCrc
+from .size import Size
 from .size_cbus import SizeCbus
 from .bin import Bin
 
@@ -61,7 +62,10 @@ class PartitionMerge(PartitionApp):
         if self.flags().download_write_cbus():
             self._size = SizeCbus(self._int_offset, self._int_size, BL2_HDR_SZ)
         else:
-            self._size = SizeCrc(self._int_offset, self._int_size, BL2_HDR_SZ)
+            if is_flash_crc_enabled():
+                self._size = SizeCrc(self._int_offset, self._int_size, BL2_HDR_SZ)
+            else:
+                self._size = Size(self._int_offset, self._int_size, BL2_HDR_SZ)
 
     def postbuild_process(self, flash_aes_en=False, flash_aes_key=None, img_sign_key=None, flash_crc_en=True):
         self.__create_merge_bin(flash_aes_en, flash_aes_key, img_sign_key, flash_crc_en)

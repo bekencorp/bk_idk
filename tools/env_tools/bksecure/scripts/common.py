@@ -115,6 +115,34 @@ def parse_bool(v):
         return True
     return False
 
+def is_flash_crc_enabled():
+    """Check if flash_crc_en is enabled by reading security.csv using Security class
+    Returns True if flash_crc_en is True (crc mode), False if flash_crc_en is False (no_crc mode)
+    """
+    try:
+        from .security import Security
+        # Try to find security.csv in current directory or common locations
+        security_csv = None
+        common_paths = [
+            'security.csv',
+        ]
+        for path in common_paths:
+            if os.path.exists(path):
+                security_csv = path
+                break
+        
+        if security_csv and os.path.exists(security_csv):
+            s = Security(security_csv)
+            flash_crc_en = s.flash_crc_en
+            logging.debug(f'Read flash_crc_en={flash_crc_en} from {security_csv}')
+            return flash_crc_en
+    except Exception as e:
+        logging.debug(f'Failed to read flash_crc_en from config: {e}')
+    
+    # Default to True (CRC mode) if not found
+    logging.debug('Using default flash_crc_en=TRUE (CRC mode)')
+    return True
+
 def clear_dir(directory):
     for filename in os.listdir(directory):
         file_path = os.path.join(directory, filename)

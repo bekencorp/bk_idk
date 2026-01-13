@@ -182,16 +182,20 @@ bool
 boot_is_header_valid(const struct image_header *hdr, const struct flash_area *fap)
 {
     uint32_t size;
-
     if (hdr->ih_magic != IMAGE_MAGIC) {
+        BOOT_LOG_ERR("boot_is_header_valid: magic mismatch, hdr->ih_magic=0x%x, expected=0x%x", 
+                     hdr->ih_magic, IMAGE_MAGIC);
         return false;
     }
 
     if (!boot_u32_safe_add(&size, hdr->ih_img_size, hdr->ih_hdr_size)) {
+        BOOT_LOG_ERR("boot_is_header_valid: size overflow");
         return false;
     }
 
     if (size >= flash_area_get_size(fap)) {
+        BOOT_LOG_ERR("boot_is_header_valid: size too large, size=0x%x, fa_size=0x%x", 
+                     size, flash_area_get_size(fap));
         return false;
     }
 
@@ -337,11 +341,15 @@ boot_read_image_header(struct boot_loader_state *state, int slot,
     (void)bs;
 
     area_id = flash_area_id_from_multi_image_slot(BOOT_CURR_IMG(state), slot);
-
     rc = flash_area_open(area_id, &fap);
     if (rc == 0) {
         rc = flash_area_read(fap, 0, out_hdr, sizeof *out_hdr);
+        if (rc != 0) {
+            BOOT_LOG_ERR("boot_read_image_header: flash_area_read failed, rc=%d", rc);
+        }
         flash_area_close(fap);
+    } else {
+        BOOT_LOG_ERR("boot_read_image_header: flash_area_open failed, area_id=%d, rc=%d", area_id, rc);
     }
 
     if (rc != 0) {

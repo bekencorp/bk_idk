@@ -33,9 +33,15 @@ enum {
 #define PARTITION_SIZE_OFFSET            26
 #define PARTITION_FLAGS_OFFSET           30
 
+#ifndef FLASH_PHY2VIRTUAL
 #define FLASH_PHY2VIRTUAL(phy_addr)      ((((phy_addr) / 34) << 5) + ((phy_addr) % 34))
+#endif
 
+#if CONFIG_FLASH_CRC_EN
 #define BOOT_VERSION_OFFSET              0x132
+#else
+#define BOOT_VERSION_OFFSET              0x120
+#endif
 
 int partition_init(void);
 uint32_t partition_get_phy_offset(uint32_t id);

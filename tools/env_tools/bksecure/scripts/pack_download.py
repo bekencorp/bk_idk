@@ -7,6 +7,7 @@ from .pack import Pack
 from .pack_header import PackHeader
 from .common import *
 from .crc import pack_crc32
+from .size import Size
 
 DOWNLOAD_GLOBAL_HDR_LEN = 32
 DOWNLOAD_IMG_HDR_LEN = 32
@@ -68,7 +69,7 @@ class PackDownload(Pack):
         hdr = partition_offset + partition_size + flash_start_addr + img_offset + img_len  + checksum + version + cbus + reserved
         return hdr 
 
-    def __encrypt(self, bname, pheader, flash_aes_key):
+    def __encrypt(self, bname, pheader, flash_aes_key,flash_crc_en):
         if pheader.type().is_data():
             return bname
 
@@ -80,7 +81,10 @@ class PackDownload(Pack):
             # The encryption also include the BL2 sign hdr
             start_address = hex(phy2virtual(pheader.size().phy_offset()))
         else:
-            start_address = hex(pheader.size().vir_code_offset())
+            if flash_crc_en:
+                start_address = hex(pheader.size().vir_code_offset())
+            else:
+                start_address = hex(pheader.size().offset())
 
         if os.path.exists(bname) == False:
             logging.error(f'{bname} not exists, abort')
@@ -101,9 +105,17 @@ class PackDownload(Pack):
         logging.debug(f'add crc, in={bname}, out={crc_bname}')
         return crc_bname
 
-    def __add_magic(self, bname, pheader):
-        if not (pheader.type().is_app() and (pheader.size().vir_offset() == 0)):
+    def __add_magic(self, bname, pheader, flash_crc_en):
+        if not pheader.type().is_app():
             return
+
+        size_obj = pheader.size()
+        if flash_crc_en:
+            if not hasattr(size_obj, "vir_offset") or size_obj.vir_offset() != 0:
+                return
+        else:
+            if size_obj.offset() != 0:
+                return
 
         #TODO: change magic wordk according to soc
         magic = "BEKEN".encode()
@@ -112,9 +124,17 @@ class PackDownload(Pack):
             f.seek(0x100)
             f.write(magic)
 
-    def __add_version(self, bname, pheader):
-        if not (pheader.type().is_app() and (pheader.size().vir_offset() == 0)):
+    def __add_version(self, bname, pheader, flash_crc_en):
+        if not pheader.type().is_app():
             return
+
+        size_obj = pheader.size()
+        if flash_crc_en:
+            if not hasattr(size_obj, "vir_offset") or size_obj.vir_offset() != 0:
+                return
+        else:
+            if size_obj.offset() != 0:
+                return
 
         version = pheader.version()
         numbers = [int(x) for x in version.split('.')]
@@ -124,11 +144,16 @@ class PackDownload(Pack):
                 f.seek(0x120)
                 f.write(versions)
 
-    def __add_pad(self, bname, pheader):
-        if pheader.type().is_merge():
-            pad_size = pheader.size().hdr_pad_size()
-        elif pheader.type().is_app():
-            pad_size = pheader.size().phy_code_offset() - pheader.size().offset()
+    def __add_pad(self, bname, pheader, flash_crc_en):
+        size_obj = pheader.size()
+        if pheader.type().is_app():
+            if pheader.type().is_merge():
+                pad_size = size_obj.hdr_pad_size() if hasattr(size_obj, "hdr_pad_size") else 0
+            else:
+                if flash_crc_en:
+                    pad_size = (size_obj.phy_code_offset() - size_obj.offset()) if hasattr(size_obj, "phy_code_offset") else 0
+                else:
+                    pad_size = size_obj.offset()
         else:
             pad_size = 0
 
@@ -166,6 +191,8 @@ class PackDownload(Pack):
         if (img_num == 0):
             return
 
+        logging.info(f'Pack download: flash_crc_en={flash_crc_en}, bins={self._bins}')
+
         img_offset = (DOWNLOAD_IMG_HDR_LEN * img_num) + DOWNLOAD_GLOBAL_HDR_LEN
         img_hdrs = []
         img_bufs = []
@@ -173,16 +200,36 @@ class PackDownload(Pack):
         for b in self._bins:
             # If pack download is too complex, can relay encrypt/magic/version/crc to Partition
             ph = PackHeader(b)
-            outfile = self.__encrypt('_' + b, ph, flash_aes_key)
-            self.__add_magic(outfile, ph)
-            self.__add_version(outfile, ph)
-            outfile = self.__add_crc(outfile, ph, flash_crc_en)
-            img_buf = self.__add_pad(outfile, ph)
 
-            #TODO special handling for OTA and XIP_B 4k padding
+            # In no_crc mode, app partitions use physical layout to avoid vir_offset drift
+            if (not flash_crc_en) and ph.type().is_app():
+                orig_size = ph.size()
+                ph._size = Size(orig_size.offset(), orig_size.size(), orig_size.hdr_size())
+                logging.info(f'override size to physical layout for {b}: offset=0x{orig_size.offset():x}, size=0x{orig_size.size():x}, hdr_size=0x{orig_size.hdr_size():x}')
+
+            outfile = self.__encrypt('_' + b, ph, flash_aes_key, flash_crc_en)
+
+            size_obj = ph.size()
+            # Safe logging: data partitions may not have vir_offset/phy_code_offset
+            vir_offset = size_obj.vir_offset() if hasattr(size_obj, "vir_offset") else 0
+            phy_code_offset = size_obj.phy_code_offset() if hasattr(size_obj, "phy_code_offset") else 0
+            logging.info(f'bin={b}, type={ph.type().type()}, phy_offset=0x{size_obj.offset():x}, phy_size=0x{size_obj.size():x}, vir_offset=0x{vir_offset:x}, phy_code_offset=0x{phy_code_offset:x}, flash_crc_en={flash_crc_en}')
+
+            # Only app add magic & version
+            if ph.type().is_app():
+                self.__add_magic(outfile, ph, flash_crc_en)
+                self.__add_version(outfile, ph, flash_crc_en)
+
+            outfile = self.__add_crc(outfile, ph, flash_crc_en)
+            img_buf = self.__add_pad(outfile, ph, flash_crc_en)
+
+            logging.info(f'bin={b}, after pad len=0x{len(img_buf):x}, img_offset=0x{img_offset:x}')
+
+            # Special handling for OTA and XIP_B 4k padding
             if ph.type().is_ow_ota() or ph.type().is_xip_b():
                 l = len(img_buf)
                 img_buf = bytes([0xFF]*l)
+                logging.info(f'bin={b}, type special (ow_ota/xip_b), replace with 0xFF, len=0x{l:x}')
 
             img_bufs.append(img_buf)
             img_hdr = self.__gen_download_img_hdr(ph, img_offset, img_buf)

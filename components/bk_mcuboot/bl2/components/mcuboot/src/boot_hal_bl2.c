@@ -165,6 +165,7 @@ void boot_platform_quit(struct boot_arm_vector_table *vt)
 #endif /* CRYPTO_HW_ACCELERATOR */
 
     vt_cpy = vt;
+    
 #if defined(__ARM_ARCH_8M_MAIN__) || defined(__ARM_ARCH_8M_BASE__) \
  || defined(__ARM_ARCH_8_1M_MAIN__)
     /* Restore the Main Stack Pointer Limit register's reset value
@@ -174,7 +175,6 @@ void boot_platform_quit(struct boot_arm_vector_table *vt)
     __set_MSPLIM(0);
 #endif /* defined(__ARM_ARCH_8M_MAIN__) || defined(__ARM_ARCH_8M_BASE__) \
        || defined(__ARM_ARCH_8_1M_MAIN__) */
-
     __set_MSP(vt_cpy->msp);
     __DSB();
     __ISB();

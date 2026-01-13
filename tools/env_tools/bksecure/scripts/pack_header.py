@@ -8,6 +8,7 @@ from .partition_flags import PartitionFlags
 from .partition_type import PartitionType
 from .size_crc import SizeCrc
 from .size import Size
+from .common import is_flash_crc_enabled
 
 #pack_header(12), Name(20)
 #version(8), Type(1), Subtype(1), Reserved(2) Offset(4), Size(4), Flags(4), Hdr_size(4) Reserved(4)
@@ -83,7 +84,10 @@ class PackHeader:
         if self.type().is_data():
             self._size = Size(offset, size, hdr_size)
         else:
-            self._size = SizeCrc(offset, size, hdr_size)
+            if is_flash_crc_enabled():
+                self._size = SizeCrc(offset, size, hdr_size)
+            else:
+                self._size = Size(offset, size, hdr_size)
 
     def name(self):
         return self._name

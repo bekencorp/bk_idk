@@ -1044,7 +1044,9 @@ __attribute__((section(".iram"))) void bk_flash_disable_cpu_data_wr(void)
 #include "bk_wdt.h"
 #endif
 
+#ifndef CEIL_ALIGN_34
 #define CEIL_ALIGN_34(addr)           (((addr) + 34 - 1) / 34 * 34)
+#endif
 
 bk_err_t bk_flash_check_crc(uint32_t phy_offset, uint32_t phy_size);
 

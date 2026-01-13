@@ -15,9 +15,21 @@
 #include "sys_driver.h"
 #include "bk_tfm_mpc.h"
 #include <components/log.h>
+#include "partitions_gen.h"
 
 #define TAG "flash_map"
 #define FLASH_PROGRAM_UNIT    TFM_HAL_FLASH_PROGRAM_UNIT
+
+// Convert physical address to virtual address based on CRC mode
+static inline uint32_t phy_to_virtual_addr(uint32_t phy_addr)
+{
+    return FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(phy_addr));
+}
+
+static inline uint32_t virtual_to_physical_offset(uint32_t virtual_off)
+{
+    return FLASH_VIRTUAL2PHY(virtual_off);
+}
 
 /**
  * Return the greatest value not greater than `value` that is aligned to
@@ -142,7 +154,9 @@ int flash_area_read(const struct flash_area *area, uint32_t off, void *dst,
     }
 #endif
     if(area->fa_id == 2){
-        bk_flash_read_cbus(fa_off + off,dst,len);
+        enable_dcache(0);
+        bk_flash_read_cbus(fa_off + off, dst, len);
+        enable_dcache(1);
         return 0;
     } else if(area->fa_id == 3){
         fa_off = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(partition_get_phy_offset(PARTITION_XIP_A)));

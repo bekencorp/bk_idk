@@ -10,6 +10,7 @@
 
 #include "Driver_Flash.h"
 #include "flash_partition.h"
+#include "partitions_gen.h"
 
 /* When undefined FLASH_DEV_NAME_0 or FLASH_DEVICE_ID_0 , default */
 #if !defined(FLASH_DEV_NAME_0) || !defined(FLASH_DEVICE_ID_0)
