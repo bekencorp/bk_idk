@@ -36,7 +36,7 @@ CONFIG_HTTPS=y
 CONFIG_OTA_HTTPS=y
 CONFIG_OTA_HTTP=n
 #@ use public key in flash
-CONFIG_OTA_UPDATE_PUBKEY=n
+CONFIG_OTA_UPDATE_PUBKEY=y
 #@ confirm update after ota download
 CONFIG_OTA_CONFIRM_UPDATE=y
 #@ CLI support is disabled for this secure BL2 build to reduce attack surface.
@@ -60,4 +60,3 @@ CONFIG_OTA_TEST=y
 CONFIG_CACHE_ENABLE=y
 CONFIG_DBUS_CHECK_CRC=n
 CONFIG_BL2_WDT=y
-CONFIG_OTA_UPDATE_PUBKEY=y
