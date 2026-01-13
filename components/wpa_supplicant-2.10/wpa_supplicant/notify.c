@@ -121,7 +121,6 @@ uint8_t s_tk[16];
 void wlan_store_fci(struct wpa_supplicant *wpa_s)
 {
 	struct wlan_fast_connect_info fci;
-	char temp[4];
 	int i;
 	unsigned char *psk;
 	struct wpa_bss *bss;
@@ -160,8 +159,7 @@ void wlan_store_fci(struct wpa_supplicant *wpa_s)
 		if (ssid->psk_set) {
 			psk = ssid->psk;
 			for (i = 0; i < PMK_LEN; i++) {
-				sprintf(temp, "%02x", psk[i]);
-				strcat((char*)fci.psk, temp);
+				sprintf((char*)fci.psk + i * 2, "%02x", psk[i]);
 			}
 		}
 	} else {

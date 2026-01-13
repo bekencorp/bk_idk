@@ -460,7 +460,6 @@ void hostapd_store_fci(void)
 		return;
 
 	struct wlan_fast_connect_info fci;
-	char temp[4];
 	int i;
 	os_memset(&fci, 0, sizeof(fci));
 	os_memcpy(fci.ssid, conf->ssid.ssid, conf->ssid.ssid_len);
@@ -468,8 +467,7 @@ void hostapd_store_fci(void)
 
 	u8 *psk = conf->ssid.wpa_psk->psk;
 	for (i = 0; i < PMK_LEN; i++) {
-		sprintf(temp, "%02x", psk[i]);
-		strcat((char*)fci.psk, temp);
+		sprintf((char*)fci.psk + i * 2, "%02x", psk[i]);
 	}
 
 	extern void wlan_write_fast_connect_info(struct wlan_fast_connect_info *fci);
