@@ -36,6 +36,7 @@
 #if BK_SUPPLICANT
 #include <common/bk_include.h>
 #include "wpa_ctrl.h"
+#include "bk_private/bk_wifi.h"
 
 struct wpa_supplicant;
 extern void wpa_supplicant_req_auth_timeout(struct wpa_supplicant *wpa_s,
@@ -849,8 +850,14 @@ static void wpa_supplicant_process_1_of_4(struct wpa_sm *sm,
 
 #if BK_SUPPLICANT
 	/* send EAPOL-Key with retries */
+	int retry_times = RESEND_KEY_MAX;
+#ifdef CONFIG_WIFI_RETRY_CONFIG_SUPPORT
+	if (g_sta_param_ptr && g_sta_param_ptr->eapol_2_retry > 0) {
+		retry_times = g_sta_param_ptr->eapol_2_retry;
+	}
+#endif
 	send_success = false;
-	for (i = 0; i  < RESEND_KEY_MAX; i++) {
+	for (i = 0; i  < retry_times; i++) {
 		if (wpa_supplicant_send_2_of_4(sm, sm->bssid, key, ver, sm->snonce,
 				       kde, kde_len, ptk) >= 0) {
 			send_success = true;

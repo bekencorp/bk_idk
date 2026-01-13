@@ -353,6 +353,57 @@ bk_err_t bk_wifi_scan_dump_result(const wifi_scan_result_t *scan_result);
  */
 void bk_wifi_scan_free_result(wifi_scan_result_t *scan_result);
 
+/**
+ * @brief Set the wireless mode for the WLAN station
+ *
+ * @param wireless_mode The desired wireless mode to be configured
+ *
+ * @note This API is used to configure the wireless mode (e.g., 802.11b/g/n) for the station interface.
+ */
+void bk_wlan_sta_set_wireless_mode(uint8_t wireless_mode);
+
+/**
+ * @brief Set the retry configuration for the WLAN station
+ *
+ * Configure authentication/association retry counts and intervals for the STA.
+ *
+ * @param auth_retry            Authentication retry count
+ * @param auth_retry_interval   Authentication retry interval (unit: 100 ms)
+ * @param assoc_retry           Association retry count
+ * @param assoc_retry_interval  Association retry interval (unit: 100 ms)
+ * @param eapol_2_retry         EAPOL-2 retry count
+ */
+void bk_wlan_sta_set_retry_config(uint8_t auth_retry, uint8_t auth_retry_interval,
+                                  uint8_t assoc_retry, uint8_t assoc_retry_interval,
+                                  uint8_t eapol_2_retry);
+
+/**
+ * @brief     Get the TX frame statistics of the WLAN station
+ *
+ * This API retrieves the total number of transmitted frames, the number of dropped frames,
+ * and the number of transmitted data frames for the STA interface.
+ *
+ * @param[out] tx_total_num   Pointer to store the total number of transmitted frames
+ * @param[out] tx_dropped_num Pointer to store the number of dropped frames
+ * @param[out] tx_data_num    Pointer to store the number of transmitted data frames
+ *
+ * @note The counters are typically reset on Wi-Fi initialization or STA start.
+ */
+void bk_wlan_sta_get_tx_frame_count(uint32_t *tx_total_num, uint32_t *tx_dropped_num, uint32_t *tx_data_num);
+
+/**
+ * @brief     Get the RX frame statistics of the WLAN station
+ *
+ * This API retrieves the total number of received frames, the number of dropped frames,
+ * and the number of received data frames for the STA interface.
+ *
+ * @param[out] rx_total_num   Pointer to store the total number of received frames
+ * @param[out] rx_dropped_num Pointer to store the number of dropped frames
+ * @param[out] rx_data_num    Pointer to store the number of received data frames
+ *
+ * @note The counters are typically reset on Wi-Fi initialization or STA start.
+ */
+void bk_wlan_sta_get_rx_frame_count(uint32_t *rx_total_num, uint32_t *rx_dropped_num, uint32_t *rx_data_num);
 
 /**
  * @brief     Add/Update/Del STA's Vendor Specific IE **before** connect to AP.
@@ -455,6 +506,44 @@ bk_err_t bk_wifi_ap_get_config(wifi_ap_config_t *ap_config);
  *    - others: other errors
  */
 bk_err_t bk_wifi_ap_get_sta_list(wlan_ap_stas_t *stas);
+
+/**
+ * @brief     De-authenticate a specific station associated to the BK AP
+ *
+ * This API sends a de-authentication frame to the specified STA and removes it from
+ * the associated STA list of the AP.
+ *
+ * @param mac Pointer to the MAC address of the station to be de-authenticated
+ * @param reason_code Reason code for de-authentication
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: other errors
+ */
+int wlan_ap_sta_deauth(uint8_t *mac, int reason_code);
+
+/**
+ * @brief     De-authenticate all stations currently associated to the BK AP
+ *
+ * This API sends a de-authentication frame to every associated STA and clears the
+ * entire associated STA list of the AP.
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: other errors
+ */
+int wlan_ap_deauth_all_sta(void);
+
+/**
+ * @brief     Get the signal information of the connected AP.
+ *
+ * @param signal_info store the signal information of the connected AP
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: other errors
+ */
+bk_err_t bk_wifi_sta_get_signal_info(wifi_signal_info_t *signal_info);
 
 /**
  * @brief     Calculate softap's Pmk when softap is starts.

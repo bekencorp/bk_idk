@@ -1867,6 +1867,21 @@ int wpa_supplicant_ctrl_iface_receive(wpah_msg_t *msg)
 				req->reason <= 0 ? WLAN_REASON_PREV_AUTH_NOT_VALID : req->reason);
 	}	break;
 
+#if BK_SUPPLICANT
+	case WPA_CTRL_CMD_AP_DEAUTH_ALL_STA: {
+		struct hostapd_data *hapd;
+
+		CHECK_HAPD();
+
+		if (!interfaces->iface[0] || !interfaces->iface[0]->bss[0])
+			goto exit;
+
+		hapd = interfaces->iface[0]->bss[0];
+
+		hostapd_free_stas(hapd);
+	}	break;
+#endif
+
 #if CONFIG_AP_VSIE
 	case WPA_CTRL_CMD_UPDATE_BEACON: {
 		wlan_ap_vsie_t *vsie = (wlan_ap_vsie_t *)msg->argu;

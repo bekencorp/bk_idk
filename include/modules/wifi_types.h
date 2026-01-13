@@ -841,6 +841,13 @@ struct wifi_csi_info_t {
 
 typedef void (* wifi_csi_cb_t)(struct wifi_csi_info_t *info);
 
+typedef struct {
+	uint32_t frequency; /**< frequency of the signal */
+	int current_signal; /**< current signal */
+	int avg_signal;     /**< average signal */
+	int current_noise;  /**< current noise */
+} wifi_signal_info_t;
+
 /**
  * @brief Wi-Fi tx statistics.
  */
