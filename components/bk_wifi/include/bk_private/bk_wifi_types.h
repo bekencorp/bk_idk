@@ -50,6 +50,10 @@ extern "C" {
 #define ETH_ALEN		6
 #endif
 
+#define WIFI_WIRELESS_MODE_B   1
+#define WIFI_WIRELESS_MODE_BG  2
+#define WIFI_WIRELESS_MODE_BGN 3
+
 /**
  * @brief Wlan ssid definition
  */
@@ -990,6 +994,16 @@ typedef struct sta_param {
 	uint8_t key_len;
 	uint8_t fast_connect_set;
 	uint8_t ocv;
+#ifdef CONFIG_WIFI_WIRELESS_MODE_SUPPORT
+	uint8_t wireless_mode;
+#endif
+#ifdef CONFIG_WIFI_RETRY_CONFIG_SUPPORT
+	uint8_t auth_retry;
+	uint8_t assoc_retry;
+	uint8_t eapol_2_retry;
+	uint8_t auth_retry_interval;
+	uint8_t assoc_retry_interval;
+#endif
 #ifdef CONFIG_STA_MINMUM_SECURITY
 	uint8_t sta_cipher_suite;
 #endif

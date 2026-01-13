@@ -180,6 +180,28 @@ int bk_feature_config_sleep_mode_enable(void);
 int bk_feature_get_auto_garp_period(void);
 
 /**
+ * @brief     Interface for customer to Enable/Disable config retry parameters
+ *
+ *
+ * @return
+ *    - 0: Disable retry config
+ *    - 1: Enable retry config
+ *
+ */
+int bk_feature_retry_config_enable(void);
+
+/**
+ * @brief     Interface for customer to Enable/Disable config wireless mode
+ *
+ *
+ * @return
+ *    - 0: Disable config wireless mode
+ *    - 1: Enable config wireless mode
+ *
+ */
+int bk_feature_config_wireless_mode_enable(void);
+
+/**
  * @brief     Interface for customer to Enable/Disable dtim event
  *
  *

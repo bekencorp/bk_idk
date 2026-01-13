@@ -115,6 +115,14 @@ menu "Bk_Wifi"
 		bool "Wifi CSI MEMORY_OPTIMIZATION"
 		default n
 
+	config WIFI_WIRELESS_MODE_SUPPORT
+		bool "support configure wireless mode"
+		default n
+
+	config WIFI_RETRY_CONFIG_SUPPORT
+		bool "support retry config"
+		default n
+
 	config WIFI_AUTO_COUNTRY_CODE
 		bool "Wifi AUTO CC"
 		default n

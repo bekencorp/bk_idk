@@ -192,6 +192,8 @@ typedef struct {
 	int (*_bk_feature_correct_listen_interval_ie_enable)(void);
 	int (*_bk_feature_config_sleep_mode_enable)(void);
 	int (*_bk_feature_dtim_event_enable)(void);
+	int (*_bk_feature_retry_config_enable)(void);
+	int (*_bk_feature_config_wireless_mode_enable)(void);
 	int (*_bk_feature_bssid_connect_enable)(void);
 	int (*_bk_feature_fast_connect_enable)(void);
 	int (*_bk_feature_send_deauth_before_connect)(void);

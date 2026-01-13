@@ -339,6 +339,11 @@ extern int rw_msg_get_bss_info(u8 vif_idx, void *cfm);
 extern int rw_msg_get_channel_info(u8 vif_idx, PHY_CHAN_INFO_T *channel_info);
 extern int rw_msg_dhcp_done_ind(u8 vif_idx);
 extern int rw_msg_send_listen_interval_req(uint8_t sta_idx, uint8_t interval);
+extern int rw_msg_send_wireless_mode_req(uint8_t wireless_mode);
+extern int rw_msg_send_retry_config_req(uint8_t auth_retry, uint8_t auth_retry_interval,
+		uint8_t assoc_retry, uint8_t assoc_retry_interval);
+extern int rw_msg_get_tx_frame_count_req(void *cfm);
+extern int rw_msg_get_rx_frame_count_req(void *cfm);
 extern int rw_msg_send_sleep_mode_req(uint8_t sta_idx, uint8_t sleep_mode);
 extern int rw_msg_send_arp_set_rate_req(uint8_t vif_idx, uint16_t arp_tx_rate);
 extern int rw_msg_get_listen_interval_req(void *cfm);

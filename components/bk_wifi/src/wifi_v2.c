@@ -605,6 +605,12 @@ void bk_wlan_sta_init(network_InitTypeDef_st *inNetworkInitPara)
 				  inNetworkInitPara->wifi_ssid,
 				  g_sta_param_ptr->ssid.length);
 
+#ifdef CONFIG_WIFI_WIRELESS_MODE_SUPPORT
+		if (!g_sta_param_ptr->wireless_mode) {
+			g_sta_param_ptr->wireless_mode = WIFI_WIRELESS_MODE_BGN;
+		}
+#endif
+
 		if(bk_feature_bssid_connect_enable()) {
 			os_memcpy(g_sta_param_ptr->fast_connect.bssid, inNetworkInitPara->wifi_bssid, sizeof(inNetworkInitPara->wifi_bssid));
 		}
@@ -1465,6 +1471,46 @@ int wlan_ap_sta_info(wlan_ap_stas_t *stas)
 	WLAN_RETURN_NULL_POINTER(stas);
 
 	return wpa_ctrl_request(WPA_CTRL_CMD_AP_STA_INFO, stas);
+}
+
+int wlan_ap_sta_deauth(uint8_t *mac, int reason_code)
+{
+	wlan_ap_sta_deauth_t *req = (wlan_ap_sta_deauth_t *)os_malloc(sizeof(wlan_ap_sta_deauth_t));
+	if (req == NULL) {
+		WPA_LOGE("wlan_ap_sta_deauth: malloc failed\n");
+		return BK_FAIL;
+	}
+
+	os_memset(req, 0, sizeof(wlan_ap_sta_deauth_t));
+	os_memcpy(req->addr, mac, 6);
+	req->reason = reason_code;
+
+	return wpa_ctrl_request(WPA_CTRL_CMD_AP_STA_DEAUTH, req);
+}
+
+int wlan_ap_deauth_all_sta(void)
+{
+	return wpa_ctrl_request(WPA_CTRL_CMD_AP_DEAUTH_ALL_STA, NULL);
+}
+
+bk_err_t bk_wifi_sta_get_signal_info(wifi_signal_info_t *signal_info)
+{
+	uint8_t vif_idx = rwm_mgmt_vif_mac2idx((void *)&g_sta_param_ptr->own_mac);
+	if (INVALID_VIF_IDX == vif_idx) {
+		return BK_FAIL;
+	}
+	SIGNAL_INFO_PARAM_T *signal_info_param = (SIGNAL_INFO_PARAM_T *)os_malloc(sizeof(SIGNAL_INFO_PARAM_T));
+	if (rw_msg_get_signal_info(vif_idx, signal_info_param) != 0) {
+		os_free(signal_info_param);
+		return BK_FAIL;
+	} else {
+		signal_info->frequency      = signal_info_param->frequency;
+		signal_info->current_signal = signal_info_param->current_signal;
+		signal_info->avg_signal     = signal_info_param->avg_signal;
+		signal_info->current_noise  = signal_info_param->current_noise;
+	}
+	os_free(signal_info_param);
+	return BK_OK;
 }
 
 #if CONFIG_BRIDGE
@@ -2966,6 +3012,79 @@ bk_err_t bk_wifi_sta_get_config(wifi_sta_config_t *config)
 
 	//TODO get channel and security type
 	return BK_OK;
+}
+
+#ifdef CONFIG_WIFI_WIRELESS_MODE_SUPPORT
+void bk_wlan_sta_set_wireless_mode(uint8_t wireless_mode)
+{
+	if (wireless_mode == 0 || wireless_mode > 3) {
+		WIFI_LOGE("invalid wireless_mode!\n");
+		return;
+	}
+	g_sta_param_ptr->wireless_mode = wireless_mode;
+	if (g_sta_param_ptr->wireless_mode != WIFI_WIRELESS_MODE_BGN) {
+		rw_ieee80211_set_ht_cap(0);
+	} else {
+		rw_ieee80211_set_ht_cap(1);
+	}
+	rw_msg_send_wireless_mode_req(wireless_mode);
+}
+#endif
+
+#ifdef CONFIG_WIFI_RETRY_CONFIG_SUPPORT
+void bk_wlan_sta_set_retry_config(uint8_t auth_retry, uint8_t auth_retry_interval,
+		uint8_t assoc_retry, uint8_t assoc_retry_interval, uint8_t eapol_2_retry) {
+	g_sta_param_ptr->auth_retry = auth_retry;
+	g_sta_param_ptr->assoc_retry = assoc_retry;
+	g_sta_param_ptr->eapol_2_retry = eapol_2_retry;
+	g_sta_param_ptr->auth_retry_interval = auth_retry_interval;
+	g_sta_param_ptr->assoc_retry_interval = assoc_retry_interval;
+	rw_msg_send_retry_config_req(auth_retry, auth_retry_interval, assoc_retry, assoc_retry_interval);
+}
+#endif
+
+void bk_wlan_sta_get_tx_frame_count(uint32_t *tx_total_num, uint32_t *tx_dropped_num, uint32_t *tx_data_num) {
+	struct mm_get_tx_frame_count_cfm *cfm = NULL;
+	cfm = os_malloc(sizeof(struct mm_get_tx_frame_count_cfm));
+	if (!cfm) {
+		WIFI_LOGE("bk_wifi_get_tx_frame_count, malloc fail\r\n");
+		goto get_exit;
+	}
+
+	if (BK_OK != rw_msg_get_tx_frame_count_req((void *)cfm)) {
+		WIFI_LOGE("bk_wifi_get_tx_frame_count, send fail\r\n");
+		goto get_exit;
+	}
+
+	*tx_total_num = cfm->tx_total_num;
+	*tx_dropped_num = cfm->tx_dropped_num;
+	*tx_data_num = cfm->tx_data_num;
+
+get_exit:
+	if (cfm)
+		os_free(cfm);
+}
+
+void bk_wlan_sta_get_rx_frame_count(uint32_t *rx_total_num, uint32_t *rx_dropped_num, uint32_t *rx_data_num) {
+	struct mm_get_rx_frame_count_cfm *cfm = NULL;
+	cfm = os_malloc(sizeof(struct mm_get_rx_frame_count_cfm));
+	if (!cfm) {
+		WIFI_LOGE("bk_wifi_get_rx_frame_count, malloc fail\r\n");
+		goto get_exit;
+	}
+
+	if (BK_OK != rw_msg_get_rx_frame_count_req((void *)cfm)) {
+		WIFI_LOGE("bk_wifi_get_rx_frame_count, send fail\r\n");
+		goto get_exit;
+	}
+
+	*rx_total_num = cfm->rx_total_num;
+	*rx_dropped_num = cfm->rx_dropped_num;
+	*rx_data_num = cfm->rx_data_num;
+
+get_exit:
+	if (cfm)
+		os_free(cfm);
 }
 
 bk_err_t bk_wifi_sta_get_linkstate_with_reason(wifi_linkstate_reason_t *info)

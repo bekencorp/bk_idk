@@ -558,6 +558,14 @@ static int bk_feature_dtim_event_enable_wrapper(void) {
     return bk_feature_dtim_event_enable();
 }
 
+static int bk_feature_retry_config_enable_wrapper(void) {
+    return bk_feature_retry_config_enable();
+}
+
+static int bk_feature_config_wireless_mode_enable_wrapper(void) {
+    return bk_feature_config_wireless_mode_enable();
+}
+
 static UINT8 mac_sleeped_wrapper(void)
 {
     //return mac_sleeped();
@@ -1581,6 +1589,8 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._bk_feature_correct_listen_interval_ie_enable = bk_feature_correct_listen_interval_ie_enable_wrapper,
 	._bk_feature_config_sleep_mode_enable = bk_feature_config_sleep_mode_enable_wrapper,
 	._bk_feature_dtim_event_enable = bk_feature_dtim_event_enable_wrapper,
+	._bk_feature_retry_config_enable = bk_feature_retry_config_enable_wrapper,
+	._bk_feature_config_wireless_mode_enable = bk_feature_config_wireless_mode_enable_wrapper,
 	._bk_feature_bssid_connect_enable = bk_feature_bssid_connect_enable_wrapper,
 	._bk_feature_fast_connect_enable = bk_feature_fast_connect_enable_wrapper,
 	._bk_feature_send_deauth_before_connect = bk_feature_send_deauth_before_connect_wrapper,

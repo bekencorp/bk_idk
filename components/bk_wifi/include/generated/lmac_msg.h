@@ -1124,6 +1124,14 @@ enum mm_msg_tag
     MM_SET_DEFAULT_AC_CFM,
     /// Indication the CSA sta reported. msgid:136
     MM_STA_CSA_REPORT_IND,
+    ///get tx frame count Request.  msgid:137
+    MM_GET_TX_FRAME_COUNT_REQ,
+    ///get tx frame count Confirmation.  msgid:138
+    MM_GET_TX_FRAME_COUNT_CFM,
+    ///get rx frame count Request.  msgid:139
+    MM_GET_RX_FRAME_COUNT_REQ,
+    ///get rx frame count Confirmation.  msgid:140
+    MM_GET_RX_FRAME_COUNT_CFM,
     #endif
 
     /*
@@ -2034,6 +2042,46 @@ struct mm_get_listen_interval_req
     //uint8_t vif_index;
 };
 
+/// Structure containing the parameters of the @ref MM_GET_TX_FRAME_COUNT_REQ message.
+struct mm_get_tx_frame_count_req
+{
+    /// Index of the VIF
+    //uint8_t vif_index;
+};
+
+/// Structure containing the parameters of the @ref MM_GET_TX_FRAME_COUNT_CFM message.
+struct mm_get_tx_frame_count_cfm
+{
+    /// Index of the VIF
+    uint8_t vif_index;
+    /// Total number of transmitted frames
+    uint32_t tx_total_num;
+    /// Number of dropped frames
+    uint32_t tx_dropped_num;
+    /// Number of data frames transmitted
+    uint32_t tx_data_num;
+};
+
+/// Structure containing the parameters of the @ref MM_GET_RX_FRAME_COUNT_REQ message.
+struct mm_get_rx_frame_count_req
+{
+    /// Index of the VIF
+    //uint8_t vif_index;
+};
+
+/// Structure containing the parameters of the @ref MM_GET_RX_FRAME_COUNT_CFM message.
+struct mm_get_rx_frame_count_cfm
+{
+    /// Index of the VIF
+    uint8_t vif_index;
+    /// Total number of received frames
+    uint32_t rx_total_num;
+    /// Number of dropped frames
+    uint32_t rx_dropped_num;
+    /// Number of data frames received
+    uint32_t rx_data_num;
+};
+
 /// Structure containing the parameters of the @ref MM_SET_SLEEP_MODE_REQ message.
 struct mm_set_sleep_mode_req
 {
@@ -2469,8 +2517,8 @@ void sta_mgmt_set_rssi(void *_sta, int8_t rssi);
 void sta_mgmt_set_freq_offset(void *_sta, int8_t freq_offset);
 int8_t sta_mgmt_get_rssi(void *_sta);
 int8_t sta_mgmt_get_freq_offset(void *_sta);
-uint8_t mac_vif_mgmt_get_u_sta_rssi(void *_vif);
-uint8_t mac_vif_mgmt_get_u_sta_smooth_rssi(void *_vif);
+int8_t mac_vif_mgmt_get_u_sta_rssi(void *_vif);
+int8_t mac_vif_mgmt_get_u_sta_smooth_rssi(void *_vif);
 int max_mm_sec_key_nbr();
 int mac_vif_mgmt_get_used_cnt(void);
 #if (NX_P2P && BK_MAC)
@@ -2691,6 +2739,8 @@ enum
     /// Indication that data path is flushed for a given station
     ME_DATA_PATH_FLUSHED_IND,
     #if BK_MAC
+    /// Request to set the wireless mode
+    ME_SET_WIRELESS_MODE_REQ,
     //for change ps on-off
     ME_PS_REQ,
     /// Indication that station arp update
@@ -2971,6 +3021,13 @@ struct me_data_path_flushed_ind
 };
 
 #if BK_MAC
+/// Structure containing the parameters of the @ref ME_SET_WIRELESS_MODE_REQ message.
+struct me_set_wireless_mode_req
+{
+    /// wireless mode
+    uint8_t wireless_mode;
+};
+
 /// Structure containing the parameters of the @ref ME_STA_ARP_UPDATE_IND message.
 struct me_sta_arp_update_ind
 {
@@ -3296,6 +3353,7 @@ enum sm_msg_tag
     SM_BEACON_LOSE_IND,
     // Indicates conn delay time
     SM_CONN_DELAY_TIME_IND,
+    SM_SET_RETRY_CONFIG_REQ,
 #endif
     // Section of internal SM messages. No SM API messages should be defined below this point
     /// Timeout message for procedures requiring a response from peer
@@ -3444,6 +3502,18 @@ struct sm_conn_delay_time_ind
     uint8_t conn_delay_time;
     /// Index of the VIF.
     uint8_t vif_idx;
+};
+
+struct sm_set_retry_config_req
+{
+    /// Number of authentication retries
+    uint8_t auth_retry;
+    /// Authentication retry interval in units of 10 ms
+    uint8_t auth_retry_interval;
+    /// Number of association retries
+    uint8_t assoc_retry;
+    /// Association retry interval in units of 10 ms
+    uint8_t assoc_retry_interval;
 };
 /*
  * ENUMERATIONS

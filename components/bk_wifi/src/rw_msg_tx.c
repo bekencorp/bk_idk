@@ -1398,8 +1398,8 @@ int rw_msg_get_signal_info(u8 vif_idx, SIGNAL_INFO_PARAM_T *signal_info_param)
 
 	/* get link signal */
 	vif = mac_vif_mgmt_get_entry(vif_idx);
-	signal_info_param->current_signal = mac_vif_mgmt_get_u_sta_rssi(vif);
-	signal_info_param->avg_signal = mac_vif_mgmt_get_u_sta_smooth_rssi(vif);
+	signal_info_param->current_signal = (int)mac_vif_mgmt_get_u_sta_rssi(vif);
+	signal_info_param->avg_signal = (int)mac_vif_mgmt_get_u_sta_smooth_rssi(vif);
 
 	return 0;
 }
@@ -1668,6 +1668,62 @@ int rw_msg_send_listen_interval_req(uint8_t vif_idx, uint8_t interval)
 
 	/* Send the MM_BA_DEL_REQ message to LMAC FW */
 	return rw_msg_send(req, 1, MM_SET_LISTEN_INTERVAL_CFM, NULL);
+}
+
+int rw_msg_send_wireless_mode_req(uint8_t wireless_mode)
+{
+	struct me_set_wireless_mode_req *req;
+	req = ke_msg_alloc(ME_SET_WIRELESS_MODE_REQ, TASK_ME, TASK_API,
+                          sizeof(struct me_set_wireless_mode_req));
+	if (!req)
+		return -ENOMEM;
+
+	req->wireless_mode = wireless_mode;
+
+	return rw_msg_send(req, 0, 0, NULL);
+}
+
+int rw_msg_send_retry_config_req(uint8_t auth_retry, uint8_t auth_retry_interval,
+		uint8_t assoc_retry, uint8_t assoc_retry_interval)
+{
+	struct sm_set_retry_config_req *req;
+	req = ke_msg_alloc(SM_SET_RETRY_CONFIG_REQ, TASK_SM, TASK_API,
+                          sizeof(struct sm_set_retry_config_req));
+	if (!req)
+		return -ENOMEM;
+
+	req->auth_retry = auth_retry;
+	req->auth_retry_interval = auth_retry_interval;
+	req->assoc_retry = assoc_retry;
+	req->assoc_retry_interval = assoc_retry_interval;
+
+	return rw_msg_send(req, 0, 0, NULL);
+}
+
+int rw_msg_get_tx_frame_count_req(void *cfm)
+{
+	struct mm_get_tx_frame_count_req *req = NULL;
+
+	req = ke_msg_alloc(MM_GET_TX_FRAME_COUNT_REQ, TASK_MM, TASK_API,
+					   sizeof(struct mm_get_tx_frame_count_req));
+
+	if (!req)
+		return BK_ERR_NO_MEM;
+
+	return rw_msg_send(req, 1, MM_GET_TX_FRAME_COUNT_CFM, cfm);
+}
+
+int rw_msg_get_rx_frame_count_req(void *cfm)
+{
+	struct mm_get_rx_frame_count_req *req = NULL;
+
+	req = ke_msg_alloc(MM_GET_RX_FRAME_COUNT_REQ, TASK_MM, TASK_API,
+					   sizeof(struct mm_get_rx_frame_count_req));
+
+	if (!req)
+		return BK_ERR_NO_MEM;
+
+	return rw_msg_send(req, 1, MM_GET_RX_FRAME_COUNT_CFM, cfm);
 }
 
 int rw_msg_get_listen_interval_req(void *cfm)

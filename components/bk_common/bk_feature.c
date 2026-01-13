@@ -111,6 +111,21 @@ int bk_feature_dtim_event_enable(void) {
 #endif
 }
 
+int bk_feature_retry_config_enable(void) {
+#if CONFIG_WIFI_RETRY_CONFIG_SUPPORT
+	return 1;
+#else
+	return 0;
+#endif
+}
+
+int bk_feature_config_wireless_mode_enable(void) {
+#if CONFIG_WIFI_WIRELESS_MODE_SUPPORT
+	return 1;
+#else
+	return 0;
+#endif
+}
 
 int bk_feature_receive_bcmc_enable(void) {
 #if CONFIG_RECEIVE_BCMC_IN_DTIM10
