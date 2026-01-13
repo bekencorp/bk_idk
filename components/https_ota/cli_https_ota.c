@@ -7,7 +7,7 @@
 #if CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
 #include "esp_crt_bundle.h"
 #endif
-#if CONFIG_OTA_VERIFY_TRUST_CHAIN
+#if CONFIG_OTA_UPDATE_PUBKEY
 #if CONFIG_PSA_MBEDTLS
 #include <mbedtls/sha256.h>
 #include "mbedtls/ecdsa.h"
@@ -27,7 +27,7 @@ static beken_thread_t ota_thread_handle = NULL;
 https_ota_t* s_ota_config = NULL;
 char *https_url = NULL;
 
-#if CONFIG_OTA_VERIFY_TRUST_CHAIN
+#if CONFIG_OTA_UPDATE_PUBKEY
 extern bk_err_t bk_flash_read_cbus(uint32_t address, void *user_buf, uint32_t size);
 extern uint32_t flash_get_excute_enable(void);
 
@@ -643,7 +643,7 @@ void bk_https_start_download(beken_thread_arg_t arg)
 		bk_err_t confirm_ret = BK_FAIL;
 		if (s_ota_config && s_ota_config->ota_parse && s_ota_config->ota_parse->ota_handle) {
 			verify_ret = bk_ota_verify(s_ota_config->ota_parse->ota_handle);
-#if CONFIG_OTA_VERIFY_TRUST_CHAIN
+#if CONFIG_OTA_UPDATE_PUBKEY
 			// Verify trust chain using TLV data collected during download
 			if (verify_ret == BK_OK && s_ota_config->ota_parse->ota_verify != NULL) {
 				const bk_logic_partition_t *app_partition = s_ota_config->ota_parse->ota_handle->app_partition;
@@ -656,11 +656,15 @@ void bk_https_start_download(beken_thread_arg_t arg)
 			
 			if (trust_chain_ret != BK_OK && s_ota_config->ota_parse->ota_handle != NULL) {
 				const bk_logic_partition_t *ota_partition = NULL;
+				#if CONFIG_OTA_OVERWRITE
+				ota_partition = s_ota_config->ota_parse->ota_handle->ota_partition;//TODO optimize it
+				#else
 				if (flash_get_excute_enable()) {
 					ota_partition = s_ota_config->ota_parse->ota_handle->app_partition;
 				} else {
 					ota_partition = s_ota_config->ota_parse->ota_handle->ota_partition;
 				}
+				#endif
 				
 				if (ota_partition != NULL) {
 					uint32_t partition_start = ota_partition->partition_start_addr;
@@ -680,7 +684,7 @@ void bk_https_start_download(beken_thread_arg_t arg)
 			if (verify_ret == BK_OK && trust_chain_ret == BK_OK) {
 				confirm_ret = bk_ota_confirm(s_ota_config->ota_parse->ota_handle);
 			}
-#if CONFIG_OTA_VERIFY_TRUST_CHAIN
+#if CONFIG_OTA_UPDATE_PUBKEY
 			// Deinitialize ota_verify after trust chain verification
 			if (s_ota_config->ota_parse->ota_verify != NULL) {
 				ota_verify_deinit(s_ota_config->ota_parse->ota_verify);

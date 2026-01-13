@@ -40,7 +40,7 @@
 #include "bootutil/image.h"
 #include "sdkconfig.h"
 
-#if CONFIG_DIRECT_XIP && CONFIG_OTA_VERIFY_TRUST_CHAIN
+#if CONFIG_DIRECT_XIP && CONFIG_OTA_UPDATE_PUBKEY
 #include "driver/flash.h"
 extern uint32_t flash_get_excute_enable(void);
 extern void bk_flash_read_cbus(uint32_t address, void *user_buf, uint32_t size);
@@ -279,7 +279,7 @@ int
 bk_find_key(uint8_t image_index, uint8_t *key, uint16_t key_len, uint32_t current_slot_addr)
 {
 #if CONFIG_DIRECT_XIP
-#if CONFIG_OTA_VERIFY_TRUST_CHAIN
+#if CONFIG_OTA_UPDATE_PUBKEY
     uint32_t slot0_addr = partition_get_phy_offset(PARTITION_XIP_A);
     uint32_t slot1_addr = partition_get_phy_offset(PARTITION_XIP_B);
     uint32_t last_slot_addr;

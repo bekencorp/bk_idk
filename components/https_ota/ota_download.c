@@ -218,7 +218,7 @@ static bk_err_t ota_download_handle_image(ota_download_t* ota_parse, uint8_t **d
 
 			ota_parse->percent = 0;
 			CRC32_Init(&(ota_parse->ota_crc));
-#if CONFIG_VALIDATE_DURING_DOWNLOADING || CONFIG_OTA_VERIFY_TRUST_CHAIN
+#if CONFIG_VALIDATE_DURING_DOWNLOADING || CONFIG_OTA_UPDATE_PUBKEY
 			ota_parse->ota_verify = ota_verify_init();
 			if (ota_parse->ota_verify == NULL) {
 				return BK_ERR_NO_MEM;
@@ -234,7 +234,7 @@ static bk_err_t ota_download_handle_image(ota_download_t* ota_parse, uint8_t **d
 				BK_LOGI(TAG, "downloading %d%%\r\n", ota_parse->percent);
 			}
 		}
-#if CONFIG_VALIDATE_DURING_DOWNLOADING || CONFIG_OTA_VERIFY_TRUST_CHAIN
+#if CONFIG_VALIDATE_DURING_DOWNLOADING || CONFIG_OTA_UPDATE_PUBKEY
 		ret = ota_verify_receive_data(ota_parse->ota_verify, *data, *len);
 #endif
 		if (*len < data_len) {
@@ -266,7 +266,7 @@ static bk_err_t ota_download_handle_image(ota_download_t* ota_parse, uint8_t **d
 			}
 			ota_verify_deinit(ota_parse->ota_verify);
 			ota_parse->ota_verify = NULL;
-#elif CONFIG_OTA_VERIFY_TRUST_CHAIN
+#elif CONFIG_OTA_UPDATE_PUBKEY
 			// Keep ota_verify for trust chain verification after download completes
 			// ota_verify will be deinitialized in cli_https_ota.c after trust chain verification
 #endif
