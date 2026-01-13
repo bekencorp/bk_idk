@@ -1267,6 +1267,11 @@ static void sys_hal_set_low_voltage_wakeup_time_us_wrapper(uint64_t wakeup_time)
 	sys_hal_set_low_voltage_wakeup_time_us(wakeup_time);
 }
 
+static uint32_t sys_hal_get_bootup_restore_time_us_wrapper(void)
+{
+	return sys_hal_get_bootup_restore_time_us();
+}
+
 #ifndef CONFIG_SHELL_ASYNCLOG
 static int sync_assert_out(bool bContinue, char *format, ...)
 {
@@ -1702,6 +1707,7 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._rwnx_flush_rlk_info_results = rwnx_flush_rlk_info_results,
 	._sys_hal_get_low_voltage_wakeup_time_us = sys_hal_get_low_voltage_wakeup_time_us_wrapper,
 	._sys_hal_set_low_voltage_wakeup_time_us = sys_hal_set_low_voltage_wakeup_time_us_wrapper,
+	._sys_hal_get_bootup_restore_time_us = sys_hal_get_bootup_restore_time_us_wrapper,
 
 	._bk_feature_config_mac_pwd_enable = bk_feature_mac_pwd_enable_wrapper,
 	._bk_feature_config_wrls_pwd_enable = bk_feature_wrls_pwd_enable_wrapper,
@@ -1752,7 +1758,6 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_variable_t g_wifi_os_variabl
 	._low_power_delay_time_hardware = LOW_POWER_DELAY_TIME_HARDWARE,
 	._low_power_extern_32k_hardware = LOW_POWER_EXTERN_32K_HARDWARE,
 	._low_power_26m_stability_delay_time_hardware = LOW_POWER_26M_STABILITY_DELAY_TIME_HARDWARE,
-	._low_power_bootup_restore_delay_time = LOW_POWER_BOOTUP_RESTORE_TIME,
 	._pm_power_sub_module_name_phy_wifi = PM_POWER_SUB_MODULE_NAME_PHY_WIFI,
 	._pm_sleep_module_name_wifip_mac = PM_SLEEP_MODULE_NAME_WIFIP_MAC,
 	._pm_dev_id_mac = PM_DEV_ID_MAC,

@@ -314,6 +314,7 @@ typedef struct {
 	void (*_rwnx_flush_rlk_info_results)(void);
 	uint64_t (*_sys_hal_get_low_voltage_wakeup_time_us)(void);
 	void (*_sys_hal_set_low_voltage_wakeup_time_us)(uint64_t wakeup_time);
+	uint32_t (*_sys_hal_get_bootup_restore_time_us)(void);
 	int (*_bk_feature_config_mac_pwd_enable)(void);
 	int (*_bk_feature_config_wrls_pwd_enable)(void);
 	int (*_bk_feature_config_cpu_pwd_enable)(void);
@@ -375,7 +376,6 @@ typedef struct {
 	uint32_t _low_power_delay_time_hardware;
 	uint32_t _low_power_extern_32k_hardware;
 	uint32_t _low_power_26m_stability_delay_time_hardware;
-	uint32_t _low_power_bootup_restore_delay_time;
 	uint32_t _pm_power_sub_module_name_phy_wifi;
 	uint32_t _pm_sleep_module_name_wifip_mac;
 	uint32_t _pm_dev_id_mac;

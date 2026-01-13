@@ -91,7 +91,28 @@ typedef struct
 uint64_t low_voltage_exit_tick = 0;
 uint64_t low_voltage_sleep_duration_us = 0;
 uint64_t low_voltage_wakeup_time_us = 0;
+uint32_t bootup_restore_time_us = 0;
 extern void bk_delay_us(UINT32 us);
+
+#define TIMER0_REG_SET(reg_id, l, h, v) REG_SET((SOC_TIMER0_REG_BASE + ((reg_id) << 2)), (l), (h), (v))
+#define TIMER0_PERIOD 0xFFFFFFFF
+
+static uint32_t timer_hal_get_timer0_cnt(void)
+{
+	TIMER0_REG_SET(8, 2, 3, 0);
+	TIMER0_REG_SET(8, 0, 0, 1);
+	while (REG_READ((SOC_TIMER0_REG_BASE + (8 << 2))) & BIT(0));
+
+	return REG_READ(SOC_TIMER0_REG_BASE + (9 << 2));
+}
+
+static uint32_t bootloader_to_wfi_time_cost_us(void)
+{
+	uint32_t tick_cnt = timer_hal_get_timer0_cnt();
+	uint32_t time_cost_us = tick_cnt * 1000 / TIMER_CLOCK_FREQ_XTAL;
+	return time_cost_us;
+}
+
 static inline bool is_lpo_src_26m32k(void)
 {
 	return (aon_pmu_ll_get_r41_lpo_config() == SYS_LPO_SRC_26M32K);
@@ -717,6 +738,11 @@ inline void sys_hal_set_low_voltage_wakeup_time_us(uint64_t wakeup_time)
 	low_voltage_wakeup_time_us = wakeup_time;
 }
 
+uint32_t sys_hal_get_bootup_restore_time_us(void)
+{
+	return bootup_restore_time_us;
+}
+
 static inline void sys_hal_lv_set_buck(void)
 {
 	// fix it when bring up pm
@@ -1094,6 +1120,7 @@ void sys_hal_enter_low_voltage(void)
 	if (dlv_is_startup_iram()) {
 		arch_deep_sleep();
 	}
+	bootup_restore_time_us = bootloader_to_wfi_time_cost_us();
 #else
 	arch_deep_sleep();
 	bk_delay_us(40); //must delay 40us to sampling rtc value

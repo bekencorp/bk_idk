@@ -80,6 +80,7 @@ typedef struct
 
 uint64_t low_voltage_exit_tick = 0;
 uint64_t low_voltage_wakeup_time_us = 0;
+uint32_t bootup_restore_time_us = 0;
 extern void bk_delay_us(UINT32 us);
 static inline bool is_lpo_src_26m32k(void)
 {
@@ -781,6 +782,11 @@ inline uint64_t sys_hal_get_low_voltage_wakeup_time_us(void)
 inline void sys_hal_set_low_voltage_wakeup_time_us(uint64_t wakeup_time)
 {
 	low_voltage_wakeup_time_us = wakeup_time;
+}
+
+uint32_t sys_hal_get_bootup_restore_time_us(void)
+{
+	return bootup_restore_time_us;
 }
 
 static inline void sys_hal_lv_set_buck(void)
