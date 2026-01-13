@@ -39,6 +39,11 @@
 #include "driver/rosc_32k.h"
 #include "bk_feature.h"
 
+#if CONFIG_COEX
+#include "coex_internal.h"
+#include "coex.h"
+#endif
+
 #if CONFIG_CACHE_ENABLE
 #include "cache.h"
 #endif
@@ -1402,6 +1407,20 @@ void bluetooth_lowvol_exit_callback(void)
     bluetooth_lowvol_exit_cb_internal();
 }
 
+static void coex_bt_request_wrapper(uint32_t event,uint8_t mode,uint32_t duration)
+{
+    #if (CONFIG_COEX)
+    softcoex_bt_request(event,mode,duration);
+    #endif
+}
+
+static void coex_bt_release_wrapper(uint32_t event)
+{
+    #if (CONFIG_COEX)
+    softcoex_bt_release(event);
+    #endif
+}
+
 //warning: bt_osi_funcs must be data section, otherwise a2dp_source_pcm and a2dp_source_decode will trig watchdog !!!!!!!!
 static struct bt_osi_funcs_t bt_osi_funcs =
 {
@@ -1526,6 +1545,8 @@ static struct bt_osi_funcs_t bt_osi_funcs =
     ._get_clkcnt_samp       = get_clkcnt_samp,
     ._get_isocnt_samp       = get_isocnt_samp,
     ._bt_delay_us           = bt_delay_us,
+    ._coex_bt_request = coex_bt_request_wrapper,
+    ._coex_bt_release = coex_bt_release_wrapper,
 };
 
 int bk_bt_os_adapter_init(void)
@@ -1536,6 +1557,10 @@ int bk_bt_os_adapter_init(void)
     {
         return BK_FAIL;
     }
+
+#if CONFIG_COEX
+    bk_coex_init();
+#endif
 
     return ret;
 }

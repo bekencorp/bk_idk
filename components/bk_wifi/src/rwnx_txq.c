@@ -1178,5 +1178,35 @@ void bk_rlk_txq_init(void)
 	rwnx_txq_sta_init(sta, 0);
 }
 
+#ifdef CONFIG_COEX
+void rwnx_stop_txq_for_sta(uint16_t reason)
+{
+	VIF_INF_PTR vif = mac_vif_mgmt_first_vif();
+
+	while (vif) {
+		if (mac_vif_mgmt_get_active(vif)) {
+			if (mac_vif_mgmt_get_type(vif) == VIF_STA)
+				rwnx_txq_vif_stop(vif, reason);
+		}
+
+		vif = (VIF_INF_PTR )mac_vif_mgmt_next_vif(vif);
+	}
+}
+
+void rwnx_start_txq_for_sta(uint16_t reason)
+{
+	VIF_INF_PTR vif = mac_vif_mgmt_first_vif();
+
+	while (vif) {
+		if (mac_vif_mgmt_get_active(vif)) {
+			if (mac_vif_mgmt_get_type(vif) == VIF_STA)
+				rwnx_txq_vif_start(vif, reason);
+		}
+
+		vif = (VIF_INF_PTR )mac_vif_mgmt_next_vif(vif);
+	}
+}
+#endif // CONFIG_COEX
+
 #endif // CONFIG_RWNX_SW_TXQ
 

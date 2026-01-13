@@ -1810,6 +1810,11 @@ tcp_rexmit(struct tcp_pcb *pcb)
 void
 tcp_rexmit_fast(struct tcp_pcb *pcb)
 {
+#if BK_LWIP
+  #if (CONFIG_COEX)
+  return;
+  #endif
+#endif
   LWIP_ASSERT("tcp_rexmit_fast: invalid pcb", pcb != NULL);
 
   if (pcb->unacked != NULL && !(pcb->flags & TF_INFR)) {

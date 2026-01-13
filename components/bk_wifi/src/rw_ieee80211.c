@@ -332,7 +332,31 @@ static void rwnx_csa_finish(void *arg)
 }
 
 extern void rwnxl_register_connector(RW_CONNECTOR_T *intf);
+#ifdef CONFIG_COEX
+void bmsg_rf_to_wifi_end_sender(uint8_t arg);
 
+// timeout, send msg to corethread
+static void rwnx_rf_to_wifi_end(void *dummy0, void *dummy1)
+{
+	bmsg_rf_to_wifi_end_sender(0);
+}
+
+// start rf timer
+void rwnx_coex_start_rf_wifi_end_timer()
+{
+	struct rwnx_hw *rwnx_hw = &g_rwnx_hw;
+
+	rtos_oneshot_reload_timer(&rwnx_hw->coex_timer);
+}
+
+// stop rf timer
+void rwnx_coex_stop_timer()
+{
+	struct rwnx_hw *rwnx_hw = &g_rwnx_hw;
+
+	rtos_stop_oneshot_timer(&rwnx_hw->coex_timer);
+}
+#endif
 
 UINT32 rw_ieee80211_init(void)
 {
@@ -375,6 +399,11 @@ UINT32 rw_ieee80211_init(void)
 
 #if CONFIG_RWNX_TD
 	rwnx_td_init();
+#endif
+
+#ifdef CONFIG_COEX
+	rtos_init_oneshot_timer(&g_rwnx_hw.coex_timer, CONFIG_WIFI_COEX_DUR,
+					rwnx_rf_to_wifi_end, 0, NULL);
 #endif
 
 	bk_work_init(&rwnx_hw->csa_work, rwnx_csa_finish, rwnx_hw);

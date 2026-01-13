@@ -1126,6 +1126,61 @@ typedef struct
     uint8_t conn_idx;
 } bk_ble_gatt_cmp_evt_t;
 
+#if 1/// used for CONFIG_NSP24G
+struct nsp24g_access_addr {
+    ///4-byte array access address
+    uint8_t  addr[4];
+};
+
+struct nsp24g_crc_init {
+    ///3-byte array CRC initial value
+    uint8_t crc[3];
+};
+
+typedef struct {
+    /// Access address
+    struct nsp24g_access_addr aa;
+    /// CRC init
+    struct nsp24g_crc_init crcinit;
+} bk_nsp24g_param_t;
+
+typedef enum {
+    NSP24G_2423 = 0x17,
+    NSP24G_2470 = 0x46,
+} nsp24g_channel_t;
+
+typedef struct {
+    /// nsp24g channel
+    nsp24g_channel_t channel;
+    /// nsp24g packet
+    uint8_t data[36];
+    /// nsp24g packet length
+    uint8_t size;
+} nsp24g_packet_t;
+
+/**
+ * @brief for nsp24g rx callback.
+ *
+ * @param
+ * - in_rx_data: Input Parameters
+ * - out_ack_frame:  Output Parameters
+ *
+ * @note The callback function is within the interrupt handling function.
+**/
+typedef void (*ble_nsp24g_rx_cb_t)(nsp24g_packet_t *in_rx_data,nsp24g_packet_t *out_ack_frame);
+
+/**
+ * @brief for nsp24g Receive ack callback.
+ *
+ * @param
+ * - ack_state: 1 is receive ack success,0 is timeout
+ * - ack_frame:  if ack_state is 1,ack_frame is valid poniter
+ *
+ * @note The callback function is within the interrupt handling function.
+**/
+typedef void (*ble_nsp24g_ack_cb_t)(uint8_t ack_state,nsp24g_packet_t *ack_frame);
+#endif
+
 /**
  * @brief for sync ble api call return
  *

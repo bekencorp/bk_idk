@@ -4375,6 +4375,9 @@ extern uint32_t rwnxl_get_video_transfer_flag(void);
  */
 int16_t bk_recalc_tcp_rto(int16_t rto, uint8_t nrtx, int16_t sa, int16_t sv)
 {
+    #if (CONFIG_COEX)
+    return WIFI_VIDEO_TRANSFER_TCP_RTO;
+    #endif
     // decrease RTO to get better TCP letancy when video transfer is ongoing
     if (rwnxl_get_video_transfer_flag())
     {

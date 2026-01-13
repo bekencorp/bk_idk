@@ -27,6 +27,19 @@ bk_err_t bk_netif_static_ip(netif_ip4_config_t static_ip4_config)
 	return BK_OK;
 }
 
+#ifdef CONFIG_COEX
+typedef void (*coex_cb)(uint32_t duration);
+void softcoex_wifi_register_cb(coex_cb cb);
+void bmsg_rf_to_wifi_start_sender(uint8_t arg);
+
+// Register RF switched to WiFi callback
+void wifi_bt_coex_cb(uint32_t duration)
+{
+	// os_printf("dur:%d\n", duration);
+	bmsg_rf_to_wifi_start_sender(0);
+}
+#endif // CONFIG_COEX
+
 bk_err_t netif_wifi_event_cb(void *arg, event_module_t event_module,
                 int event_id, void *event_data)
 {
@@ -43,12 +56,24 @@ bk_err_t netif_wifi_event_cb(void *arg, event_module_t event_module,
 		}
 		sta_ip_start();
 #endif
+#ifdef CONFIG_COEX
+		// Set listen interval to 1 dtim
+		bk_wifi_send_listen_interval_req(1);
+		// Register RF switched to WIFI callback
+		softcoex_wifi_register_cb(wifi_bt_coex_cb);
+#endif
 		break;
 	case EVENT_WIFI_STA_DISCONNECTED:
 #if CONFIG_NETIF_LWIP
 		sta_ip_down();
 		sta_static_ip_flag = 0;
 		sta_ip_mode_set(1);
+#endif
+#ifdef CONFIG_COEX
+		// Unregister RF switched to WIFI callback
+		softcoex_wifi_register_cb(NULL);
+		// cleanup coex related
+		bmsg_rf_to_wifi_start_sender(1);
 #endif
 		break;
 	default:

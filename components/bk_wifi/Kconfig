@@ -556,4 +556,10 @@ menu "Bk_Wifi"
 		default n
 		help
 			Enable DSSS ONLY
+
+	config WIFI_COEX_DUR
+		int "RF hold time when coex with BT"
+		range 20 80
+		default 35
+
 endmenu

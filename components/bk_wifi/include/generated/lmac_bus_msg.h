@@ -23,6 +23,8 @@ enum {
     BMSG_TX_DROP_TRAFFIC,
     BMSG_RX_TRAFFIC_REQ,
     BMSG_TX_MGMT_SKB,
+    BMSG_RF_TO_WIFI_START,  // 18
+    BMSG_RF_TO_WIFI_END,  // 19
 };
 
 typedef struct bus_message {

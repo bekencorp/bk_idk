@@ -751,6 +751,98 @@ void bmsg_rx_traffic_req_sender(uint8_t sta_idx, uint8_t pkt_cnt, bool apsd)
 	}
 }
 
+#ifdef CONFIG_COEX
+void rwnx_nxmac_pwr_mgt_setf(bool pwr);
+void rwnx_coex_start_rf_wifi_end_timer();
+void rwnx_coex_stop_timer();
+void txl_send_ps_null_frame();
+
+// Send rf switched to wifi start msg to core thread
+void bmsg_rf_to_wifi_start_sender(uint8_t arg)
+{
+	bk_err_t ret;
+	BUS_MSG_T msg;
+
+	if (g_wifi_core.io_queue) {
+		msg.type = BMSG_RF_TO_WIFI_START;
+		msg.arg = (uint32_t)arg;
+		msg.len = 0;
+		msg.sema = NULL;
+
+		ret = rtos_push_to_queue(&g_wifi_core.io_queue, &msg, BEKEN_NO_WAIT);
+		if (kNoErr != ret)
+			RWNX_LOGE("bmsg_rf_to_wifi_end_sender failed\r\n");
+	} else {
+		RWNX_LOGE("g_wifi_core.io_queue null\r\n");
+	}
+}
+
+// Send rf switched to wifi end msg to core thread
+void bmsg_rf_to_wifi_end_sender(uint8_t arg)
+{
+	bk_err_t ret;
+	BUS_MSG_T msg;
+
+	if (g_wifi_core.io_queue) {
+		msg.type = BMSG_RF_TO_WIFI_END;
+		msg.arg = (uint32_t)arg;
+		msg.len = 0;
+		msg.sema = NULL;
+
+		ret = rtos_push_to_queue_front(&g_wifi_core.io_queue, &msg, BEKEN_NO_WAIT);
+		if (kNoErr != ret)
+			RWNX_LOGE("bmsg_rf_to_wifi_end_sender failed\r\n");
+	} else {
+		RWNX_LOGE("g_wifi_core.io_queue null\r\n");
+	}
+}
+
+// rf switched to wifi start msg handler
+void bmsg_rf_to_wifi_start_handler(BUS_MSG_T *msg)
+{
+	if (msg->arg == 0) {
+		// clear pwr bit
+		rwnx_nxmac_pwr_mgt_setf(0);
+		// os_printf("cps\n");
+		ps_set_prevent(BIT(15));
+
+		// send null frame
+		txl_send_ps_null_frame();
+
+		// start 45ms timer
+		rwnx_coex_start_rf_wifi_end_timer();
+
+		// process txq
+		rwnx_start_txq_for_sta(RWNX_TXQ_STOP_CSA);
+		rwnx_hwq_process_all(0);
+	} else {
+		// os_printf("cps\n");
+		ps_clear_prevent(BIT(15));
+
+		// set pwr bit
+		rwnx_nxmac_pwr_mgt_setf(0);
+
+		// stop timer
+		rwnx_coex_stop_timer();
+	}
+}
+
+// before rf changed to bt handler
+void bmsg_rf_to_wifi_end_handler(void)
+{
+	// stop txq
+	rwnx_stop_txq_for_sta(RWNX_TXQ_STOP_CSA);
+
+	// set pwr bit
+	rwnx_nxmac_pwr_mgt_setf(1);
+	// os_printf("sps\n");
+	ps_clear_prevent(BIT(15));
+
+	// send null frame
+	txl_send_ps_null_frame();
+}
+#endif
+
 void bmsg_ps_sender(uint8_t arg)
 {
 	bk_err_t ret;
@@ -893,6 +985,16 @@ static void core_thread_main(void *arg)
 #if 0
 			case BMSG_MEDIA_TYPE:
 				bmsg_music_handler(&msg);
+				break;
+#endif
+
+#ifdef CONFIG_COEX
+			case BMSG_RF_TO_WIFI_END:
+				bmsg_rf_to_wifi_end_handler();
+				break;
+
+			case BMSG_RF_TO_WIFI_START:
+				bmsg_rf_to_wifi_start_handler(&msg);
 				break;
 #endif
 

@@ -158,6 +158,10 @@ struct rwnx_hw {
 	uint8_t cur_chanctx;
 #endif
 
+#ifdef CONFIG_COEX
+	beken2_timer_t coex_timer;
+#endif
+
 	//struct rwnx_csa *csa;
 	BCN_PARAM_ST *csa;
 	struct hostapd_freq_params freq_params;

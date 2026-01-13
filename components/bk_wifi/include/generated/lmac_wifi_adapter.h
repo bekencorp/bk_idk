@@ -39,6 +39,21 @@ typedef enum {
 	BK_PBUF_POOL
 } bk_pbuf_type;
 
+///Wi-Fi coex event types
+enum coex_wifi_event{
+    COEX_WIFI_SCAN                  = 1 << 0,
+    COEX_WIFI_TBTT                  = 1 << 1,
+    COEX_WIFI_TBTT_DATA             = 1 << 2,
+    COEX_WIFI_TX                    = 1 << 3,
+    COEX_WIFI_AP_MODE               = 1 << 4,
+    COEX_WIFI_STA_CONNECTING        = 1 << 5,
+    COEX_WIFI_STA_CONNECTED         = 1 << 6,
+    COEX_WIFI_STA_MODE              = 1 << 7,
+
+    COEX_WIFI_MAC_ACTIVE            = 1 << 8,
+    COEX_WIFI_MAC_DOZE              = 1 << 9,
+};
+
 typedef struct {
 	int _version;
 	int (*_manual_cal_rfcali)(void);
@@ -314,6 +329,10 @@ typedef struct {
 	uint32_t (*_bk_feature_get_keep_alive_to_dur)(void);
 	int (*_bk_feature_compute_listen_interval_enable)(void);
 	int (*_bk_feature_wifi_dsss_only_enable)(void);
+	int (*_bk_feature_coex_enable)(void);
+	void (*_coex_wifi_request)(uint32_t event,uint8_t mode,uint32_t duration);
+	void (*_coex_wifi_release)(uint32_t event);
+	uint32_t (*_coex_wifi_event_get)(void);
 } wifi_os_funcs_t;
 extern wifi_os_funcs_t g_wifi_os_funcs;
 

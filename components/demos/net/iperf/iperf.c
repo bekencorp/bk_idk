@@ -147,6 +147,21 @@ static void iperf_set_sock_opt(int sock)
 	tosval = iperf_tos;
 	setsockopt(sock, IPPROTO_IP, IP_TOS, &tosval, sizeof(tosval));
 }
+
+#if (CONFIG_COEX)
+static void iperf_set_tcp_server_sock_opt(int sock)
+{
+	int flag = 1;
+	setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &flag, sizeof(flag));
+	flag = 200;
+	setsockopt(sock, IPPROTO_TCP, TCP_KEEPALIVE, &flag, sizeof(flag));
+	flag = 150;
+	setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL2, &flag, sizeof(flag));
+	flag = 25;
+	setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, &flag, sizeof(flag));
+}
+#endif
+
 static void printf_transfer_bw(uint64_t amount, float start, float end)
 {
 	int unit;
@@ -509,6 +524,9 @@ void iperf_server(void *thread_param)
 		goto __exit;
 	}
 	iperf_set_sock_opt(sock);
+	#if (CONFIG_COEX)
+	iperf_set_tcp_server_sock_opt(sock);
+	#endif
 
 	while (s_param.state == IPERF_STATE_STARTED) {
 		sin_size = sizeof(struct sockaddr_in);
@@ -526,6 +544,9 @@ _accept_retry:
 				  ntohs(client_addr.sin_port));
 
 		iperf_set_sock_opt(connected);
+		#if (CONFIG_COEX)
+		iperf_set_tcp_server_sock_opt(connected);
+		#endif
 		iperf_report_task_start();
 
 		while (s_param.state == IPERF_STATE_STARTED) {

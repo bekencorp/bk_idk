@@ -105,6 +105,10 @@ static void tcp_remove_sacks_gt(struct tcp_pcb *pcb, u32_t seq);
 #endif /* TCP_OOSEQ_BYTES_LIMIT || TCP_OOSEQ_PBUFS_LIMIT */
 #endif /* LWIP_TCP_SACK_OUT */
 
+#if BK_LWIP
+extern s16_t bk_recalc_tcp_rto(s16_t rto, u8_t nrtx, s16_t sa, s16_t sv);
+#endif
+
 /**
  * The initial input processing of TCP. It verifies the TCP header, demultiplexes
  * the segment between the PCBs and passes it on to tcp_process(), which implements
@@ -1266,6 +1270,12 @@ tcp_receive(struct tcp_pcb *pcb)
         pcb->rto = 3;
       }
 #endif
+#if BK_LWIP
+      // smart RTO strategy
+      #if (CONFIG_COEX)
+      pcb->rto = bk_recalc_tcp_rto(pcb->rto, pcb->nrtx, pcb->sa, pcb->sv);
+      #endif
+#endif
 
       /* Record how much data this ACK acks */
       acked = (tcpwnd_size_t)(ackno - pcb->lastack);
@@ -1386,6 +1396,12 @@ tcp_receive(struct tcp_pcb *pcb)
       if(pcb->rto > 3) {
         pcb->rto = 3;
       }
+#endif
+#if BK_LWIP
+      // smart RTO strategy
+      #if (CONFIG_COEX)
+      pcb->rto = bk_recalc_tcp_rto(pcb->rto, pcb->nrtx, pcb->sa, pcb->sv);
+      #endif
 #endif
 
       LWIP_DEBUGF(TCP_RTO_DEBUG, ("tcp_receive: RTO %"U16_F" (%"U16_F" milliseconds)\n",

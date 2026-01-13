@@ -43,32 +43,43 @@ menu "Bk_ble"
 		depends on !BLUETOOTH_RELEASE_CODESIZE
 		default n
 
-    config BLUETOOTH_BLE_DISCOVER_AUTO
-        bool "auto ble discover. Only used when single ble host"
-        default y
-    config BLUETOOTH_SUPPORT_LPO_ROSC
-        bool "support lpo rosc"
-        default n
-    config BLUETOOTH_SUPPORT_IRAM_CODE
-        bool "support iram code"
-        default n
-    config BLUETOOTH_USE_MIN_POWER_MODE
-        bool "use minimum power mode"
-        default n
-    config BLUETOOTH_SUPPORT_COEX_RF_MODE_SWITCH
-        bool "support coex rf mode switch"
-        default n
-    config BLUETOOTH_SLEEP_PHY_SWITCH
-        bool "support sleep phy switch"
-        default n
-    config BLE_LV_SUPPORT
-        bool "support low voltage sleep"
-        default n
+	config BLUETOOTH_BLE_DISCOVER_AUTO
+		bool "auto ble discover. Only used when single ble host"
+		default y
+	config BLUETOOTH_SUPPORT_LPO_ROSC
+		bool "support lpo rosc"
+		default n
+	config BLUETOOTH_SUPPORT_IRAM_CODE
+		bool "support iram code"
+		default n
+	config BLUETOOTH_USE_MIN_POWER_MODE
+		bool "use minimum power mode"
+		default n
+	config BLUETOOTH_SUPPORT_COEX_RF_MODE_SWITCH
+		bool "support coex rf mode switch"
+		default n
+	config BLUETOOTH_SLEEP_PHY_SWITCH
+		bool "support sleep phy switch"
+		default n
+	config BLE_LV_SUPPORT
+		bool "support low voltage sleep"
+		default n
 
 	config CUSTOMER_INIT_BLE
 		bool "Enable customer init BLE"
 		default n
-    config BLE_THREAD_COEXIST_EN
-        bool "bt and thread coexist enable"
-        default n
+	config BLE_THREAD_COEXIST_EN
+		bool "bt and thread coexist enable"
+		default n
+
+	config BLUETOOTH_NSP24G
+		bool "Enable nsp24g feature"
+		depends on BLE
+		default n
+
+	config COEX
+		bool "Enable software coexistence"
+		depends on BLE
+		default n
+
 endmenu

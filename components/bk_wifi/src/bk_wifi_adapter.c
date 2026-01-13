@@ -58,6 +58,10 @@
 #include "cache.h"
 #endif
 
+#if CONFIG_COEX
+#include "coex_internal.h"
+#endif
+
 #define TAG "wifi_adapter"
 
 void *
@@ -1403,6 +1407,34 @@ static int bk_feature_wifi_dsss_only_wrapper(void)
     return bk_feature_wifi_dsss_only();
 }
 
+static int bk_feature_coex_enable_wrapper(void)
+{
+    return bk_feature_coex_enable();
+}
+
+static void coex_wifi_request_wrapper(uint32_t event,uint8_t mode,uint32_t duration)
+{
+    #if (CONFIG_COEX)
+    softcoex_wifi_request(event,mode,duration);
+    #endif
+}
+
+static void coex_wifi_release_wrapper(uint32_t event)
+{
+    #if (CONFIG_COEX)
+    softcoex_wifi_release(event);
+    #endif
+}
+
+static uint32_t coex_wifi_event_get_wrapper(void)
+{
+    #if (CONFIG_COEX)
+    return softcoex_wifi_event_get();
+    #else
+    return 0;
+    #endif
+}
+
 __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._version = BK_WIFI_OS_ADAPTER_VERSION,
 	._manual_cal_rfcali        = manual_cal_rfcali_status,
@@ -1686,6 +1718,10 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._bk_feature_get_keep_alive_to_dur = bk_feature_get_keep_alive_to_dur_wrapper,
 	._bk_feature_compute_listen_interval_enable = bk_feature_compute_listen_interval_enable_wrapper,
 	._bk_feature_wifi_dsss_only_enable = bk_feature_wifi_dsss_only_wrapper,
+	._bk_feature_coex_enable = bk_feature_coex_enable_wrapper,
+	._coex_wifi_request = coex_wifi_request_wrapper,
+	._coex_wifi_release = coex_wifi_release_wrapper,
+	._coex_wifi_event_get = coex_wifi_event_get_wrapper,
 };
 
 __attribute__((section(".dtcm_sec_data "))) wifi_os_variable_t g_wifi_os_variable = {

@@ -1314,6 +1314,84 @@ ble_err_t bk_ble_tx_power_set(float pwr_gain);
  */
 ble_err_t bk_ble_authorization_reply(uint8_t con_idx, uint16_t prf_id, uint16_t att_idx, uint8_t type, uint8_t accept, uint32_t len, uint8_t *buf);
 
+#if CONFIG_BLUETOOTH_NSP24G
+/**
+ * @brief   Before initializing nsp24g,need to initializing ble first.if initializing is ok,the ble mode will switch nsp24g mode.
+ *
+ * @param
+ *
+ *
+ * @return
+ *    - BK_ERR_BLE_SUCCESS: succeed
+ *    - others: other errors.
+ */
+ble_err_t bk_bluetooth_nsp24g_init(void);
+
+/**
+ * @brief   The nsp24g mode will switch ble mode.
+ *
+ * @param
+ *
+ * @attention Before deinit nsp24g,need to call bk_bluetooth_nsp24g_stop
+ *
+ * @return
+ *    - BK_ERR_BLE_SUCCESS: succeed
+ *    - others: other errors.
+ */
+ble_err_t bk_bluetooth_nsp24g_deinit(void);
+
+
+/**
+ * @brief   Nsp24g mode enter receive mode
+ *
+ * @param
+ *
+* User example:
+ * @code
+ *      void ble_nsp24g_rx_cb(nsp24g_rx_t *rx_data)
+ *      {
+ *          rx_data->data; // data pointer
+ *          rx_data->size; // data size
+ *      }
+ *      bk_bluetooth_nsp24g_start();
+ *      bk_bluetooth_nsp24g_rx_start(ble_nsp24g_rx_cb);
+ * @endcode
+ *
+ * @return
+ *    - BK_ERR_BLE_SUCCESS: succeed
+ *    - others: other errors.
+ */
+ble_err_t bk_bluetooth_nsp24g_start(void);
+ble_err_t bk_bluetooth_nsp24g_rx_start(ble_nsp24g_rx_cb_t rx_cb);
+ble_err_t bk_bluetooth_nsp24g_rx_stop(void);
+
+
+/**
+ * @brief   Nsp24g mode stop receiving,can call bk_bluetooth_nsp24g_start api restart.
+ *
+ * @param
+ *
+ *
+ * @return
+ *    - BK_ERR_BLE_SUCCESS: succeed
+ *    - others: other errors.
+ */
+ble_err_t bk_bluetooth_nsp24g_stop(void);
+
+/**
+ * @brief   The nsp24g mode send packet.
+ *
+ * @param
+ *    - tx_frame: tx paket pointer
+ *    - ack_timeout(us): receive ack timeout
+ *    - ack_cb: ack handler
+ *
+ * @return
+ *    - BK_ERR_BLE_SUCCESS: succeed
+ *    - others: other errors.
+ */
+ble_err_t bk_bluetooth_nsp24g_send_frame(nsp24g_packet_t *tx_frame,uint16_t ack_timeout,ble_nsp24g_ack_cb_t ack_cb);
+#endif
 /*
  * @}
  */

@@ -40,6 +40,7 @@ endif()#CONFIG_AT
 	set(bk_inc ../../include)
 		list(APPEND incs
 			${bk_inc}/os
+			${bk_inc}/driver
 			#${components}/ali_mqtt/mqtt/utils
 		)
 
@@ -58,6 +59,22 @@ endif()#CONFIG_AT
     if (CONFIG_BLE)
         list(APPEND srcs
             api/ble_gap_export_api.c
+        )
+    endif()
+
+    if (CONFIG_BLUETOOTH_NSP24G)
+        list(APPEND srcs
+            api/bk_nsp24g.c
+        )
+    endif()
+
+    if (CONFIG_COEX)
+    list(APPEND incs
+            coex/private
+            coex/soc/bk7236
+        )
+    list(APPEND srcs
+            coex/soc/bk7236/coex.c
         )
     endif()
 

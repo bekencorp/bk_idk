@@ -310,5 +310,8 @@ void rwnx_hwq_init();
 void rwnx_hwq_process(struct rwnx_hwq *hwq);
 void rwnx_hwq_process_all(int);
 bool rwnx_any_hwq_need_processing();
-
+#ifdef CONFIG_COEX
+void rwnx_stop_txq_for_sta(uint16_t reason);
+void rwnx_start_txq_for_sta(uint16_t reason);
+#endif
 #endif // _RWNX_TXQ_H_

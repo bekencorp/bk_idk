@@ -444,3 +444,13 @@ int bk_feature_wifi_null_frame_with_sn(void);
  */
 int bk_feature_wifi_dsss_only(void);
 
+/**
+ * @brief     Interface for wi-fi and ble coex
+ *
+ *
+ * @return
+ *    - 0: disable wi-fi and ble coex
+ *    - 1: enable wi-fi and ble coex
+ *
+ */
+int bk_feature_coex_enable(void);

@@ -3636,6 +3636,15 @@ lwip_setsockopt_impl(int s, int level, int optname, const void *optval, socklen_
           LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_setsockopt(%d, IPPROTO_TCP, TCP_KEEPINTVL) -> %"U32_F"\n",
                                       s, sock->conn->pcb.tcp->keep_intvl));
           break;
+#if BK_LWIP
+        #if (CONFIG_COEX)
+        case TCP_KEEPINTVL2:
+          sock->conn->pcb.tcp->keep_intvl = (u32_t)(*(const int *)optval);
+          LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_setsockopt(%d, IPPROTO_TCP, TCP_KEEPINTVL) -> %"U32_F"\n",
+                                      s, sock->conn->pcb.tcp->keep_intvl));
+          break;
+        #endif
+#endif
         case TCP_KEEPCNT:
           sock->conn->pcb.tcp->keep_cnt = (u32_t)(*(const int *)optval);
           LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_setsockopt(%d, IPPROTO_TCP, TCP_KEEPCNT) -> %"U32_F"\n",
