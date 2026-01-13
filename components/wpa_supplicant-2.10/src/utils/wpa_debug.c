@@ -76,8 +76,6 @@ void wpa_dbg(void *ctx, int level, const char *fmt, ...)
 static void _wpa_hexdump(int level, const char *title, const u8 *buf,
 			 size_t len, int show)
 {
-	size_t i;
-
 	if (level < wpa_debug_level)
 		return;
 	wpa_debug_print_timestamp();
@@ -85,8 +83,7 @@ static void _wpa_hexdump(int level, const char *title, const u8 *buf,
 	if (buf == NULL) {
 		WPA_LOGI(" [NULL]");
 	} else if (show) {
-		for (i = 0; i < len; i++)
-			bk_printf(" %02x", buf[i]);
+		bk_print_dump_hex(buf, len);
 	} else {
 		WPA_LOGI(" [REMOVED]");
 	}
