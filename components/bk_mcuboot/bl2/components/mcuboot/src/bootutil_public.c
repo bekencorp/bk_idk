@@ -268,8 +268,14 @@ boot_read_xip_status(uint8_t index, uint32_t type)
     default:
         break;
     }
+
+    if (off == UINT32_MAX) {
+        BOOT_LOG_ERR("boot_read_xip_status: Invalid offset=0x%08x, type=%d, slot=%d", off, type, index);
+        return 0;
+    }
+
     uint32_t status;
-    bk_flash_read_bytes(off,&status, 4);
+    bk_flash_read_bytes(off, &status, 4);
     return status;
 }
 
@@ -277,22 +283,53 @@ void
 boot_write_xip_status(uint8_t index, uint32_t type, uint32_t status)
 {
     uint32_t off = UINT32_MAX;
+    const char *type_str = "UNKNOWN";
+    uint32_t verify_status = 0;
 
     switch (type)
     {
     case 1:
         off = boot_xip_magic_off(index);
+        type_str = "MAGIC";
         break;
     case 2:
         off = boot_xip_copy_done_off(index);
+        type_str = "COPY_DONE";
         break;
     case 3:
         off = boot_xip_image_ok_off(index);
+        type_str = "IMAGE_OK";
         break;
     default:
-        break;
+        BOOT_LOG_ERR("boot_write_xip_status: Invalid type=%d, slot=%d", type, index);
+        return;
     }
-    flash_write_bytes_dbus(off, &status, 4);
+
+    if (off == UINT32_MAX) {
+        BOOT_LOG_ERR("boot_write_xip_status: Failed to calculate offset, type=%d, slot=%d", type, index);
+        return;
+    }
+
+    uint32_t sector_addr = off & ~(4096 - 1);
+    uint32_t sector_offset = off - sector_addr;  // Offset within the sector
+    uint8_t sector_buf[4096];
+    
+    bk_flash_read_bytes(sector_addr, sector_buf, 4096);
+    memcpy(&sector_buf[sector_offset], &status, 4);
+    
+    uint32_t protect_type = bk_flash_get_protect_type();
+    bk_flash_set_protect_type(0);
+
+    bk_flash_erase_sector(sector_addr);
+    bk_flash_write_bytes(sector_addr, sector_buf, 4096);
+    bk_flash_set_protect_type(protect_type);
+
+    bk_flash_read_bytes(off, &verify_status, 4);
+    
+    if (verify_status != status) {
+        BOOT_LOG_ERR("boot_write_xip_status: Write FAILED, slot=%d, type=%s, addr=0x%08x, expected=0x%08x, actual=0x%08x", 
+                     index, type_str, off, status, verify_status);
+    }
 }
 
 #endif

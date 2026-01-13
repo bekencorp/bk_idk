@@ -32,6 +32,7 @@ class Partitions:
         self._pack_json = pack_json
         
         self._flash_crc_en = is_flash_crc_enabled()
+        self._update_img_sign_key_en = self.__is_update_img_sign_key_enabled()
         self.__common_process()
 
     def __validate_duplication(self):
@@ -209,6 +210,33 @@ class Partitions:
                 return True
         return False
 
+    def __is_update_img_sign_key_enabled(self):
+        """Check if update_img_sign_key_en is enabled by reading security.csv using Security class
+        Returns True if update_img_sign_key_en is True, False otherwise
+        """
+        try:
+            from .security import Security
+            # Try to find security.csv in current directory or common locations
+            security_csv = None
+            common_paths = [
+                'security.csv',
+            ]
+            for path in common_paths:
+                if os.path.exists(path):
+                    security_csv = path
+                    break
+            
+            if security_csv and os.path.exists(security_csv):
+                s = Security(security_csv)
+                update_img_sign_key_en = s.update_img_sign_key_en
+                logging.debug(f'Read update_img_sign_key_en={update_img_sign_key_en} from {security_csv}')
+                return update_img_sign_key_en
+        except Exception as e:
+            logging.debug(f'Failed to read update_img_sign_key_en from config: {e}')
+        
+        # Default to False if not found
+        return False
+
     def __common_process(self):
         logging.debug(f'Partitions: common process')
         self.__validate()
@@ -258,6 +286,15 @@ class Partitions:
         # If flash_crc_en is True, then CONFIG_FLASH_CRC should be 1 (crc mode)
         # If flash_crc_en is False, then CONFIG_FLASH_CRC should be 0 (no_crc mode)
         if self._flash_crc_en:
+            line = f'#define %-45s %d\r\n' %(macro_name, 1)
+        else:
+            line = f'#define %-45s %d\r\n' %(macro_name, 0)
+        f.write(line)
+
+        macro_name = f'CONFIG_UPDATE_IMG_SIGN_KEY'
+        # If update_img_sign_key_en is True, then CONFIG_UPDATE_IMG_SIGN_KEY should be 1
+        # If update_img_sign_key_en is False, then CONFIG_UPDATE_IMG_SIGN_KEY should be 0
+        if self._update_img_sign_key_en:
             line = f'#define %-45s %d\r\n' %(macro_name, 1)
         else:
             line = f'#define %-45s %d\r\n' %(macro_name, 0)

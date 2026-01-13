@@ -39,8 +39,14 @@ class Security(dict):
     def get_public_bytes_from_pubkeyfile(self, pubkey_file):
         if pubkey_file == None:
             return
-        if not os.path.exists(pubkey_file):
-            return
+        
+        # Resolve file path
+        if os.path.isabs(pubkey_file):
+            # Absolute path: check directly
+            if not os.path.exists(pubkey_file):
+                logging.error(f'Absolute path pubkey file not found: {pubkey_file}')
+                return
+
         with open(pubkey_file, 'rt') as pem_file:
             first_line = pem_file.readline().strip()
             if first_line != "-----BEGIN PUBLIC KEY-----":
@@ -88,8 +94,8 @@ class Security(dict):
             self.img_sign_privkey = None
             self.img_sign_pubkey_bytes = None
 
-        if "update_img_sign_key" in self.csv.dic:
-            self.update_img_sign_key_en = parse_bool(self.csv.dic['update_img_sign_key'])
+        if "update_img_sign_key_en" in self.csv.dic:
+            self.update_img_sign_key_en = parse_bool(self.csv.dic['update_img_sign_key_en'])
             if self.update_img_sign_key_en == True:
                 self.new_img_sign_pubkey = self.csv.dic['new_img_sign_pubkey']
                 self.new_img_sign_pubkey_bytes = self.get_public_bytes_from_pubkeyfile(self.new_img_sign_pubkey)

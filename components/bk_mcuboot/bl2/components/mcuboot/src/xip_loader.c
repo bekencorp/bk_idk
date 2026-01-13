@@ -90,7 +90,7 @@ boot_version_cmp(const struct image_version *ver1,
 
 
 static uint32_t
-find_slot_with_highest_version(struct boot_loader_state *state)
+find_slot_with_highest_version(struct boot_loader_state *state, bool ota_confirm_set)
 {
     uint32_t slot;
     uint32_t candidate_slot = NO_ACTIVE_SLOT;
@@ -99,8 +99,10 @@ find_slot_with_highest_version(struct boot_loader_state *state)
 
 #ifdef CONFIG_XIP_NO_VERSION
     uint32_t ota_preferred_slot;
+    
 #if CONFIG_OTA_CONFIRM_UPDATE
-    if (bk_boot_check_ota_confirm(1, OTA_CONFIRM)) {
+    /* Use cached OTA confirm status passed as parameter */
+    if (ota_confirm_set) {
         ota_preferred_slot = 1;
     } else {
         ota_preferred_slot = 0;
@@ -114,11 +116,6 @@ find_slot_with_highest_version(struct boot_loader_state *state)
     /* Only allow version-based selection if OTA confirm flag is set */
     uint32_t version_preferred_slot = NO_ACTIVE_SLOT;
     bool prefer_by_version = false;
-    bool ota_confirm_set = false;
-    
-#if CONFIG_OTA_CONFIRM_UPDATE
-    ota_confirm_set = bk_boot_check_ota_confirm(1, OTA_CONFIRM);
-#endif
     
     /* Check if only one slot is available - use it directly */
     bool slot0_available = state->slot_usage[BOOT_CURR_IMG(state)].slot_available[0];
@@ -294,10 +291,12 @@ boot_load_and_validate_images(struct boot_loader_state *state)
     uint32_t fallback_slot;
     int rc;
     fih_ret fih_rc;
+    bool ota_confirm_set = false;
+    ota_confirm_set = bk_boot_check_ota_confirm(1, OTA_CONFIRM);
+    if (ota_confirm_set){
+        BOOT_LOG_INF("get ota confirm=0x%08x", OTA_CONFIRM);
+    }
 
-    /* All slots tried until a valid image found. Breaking from this loop
-        * means that a valid image found or already loaded. If no slot is
-        * found the function returns with error code. */
     while (true) {
         /* Go over all the slots and try to load one */
         active_slot = state->slot_usage[BOOT_CURR_IMG(state)].active_slot;
@@ -307,7 +306,7 @@ boot_load_and_validate_images(struct boot_loader_state *state)
         }
 
         /* Step 1: Find the slot with highest version */
-        active_slot = find_slot_with_highest_version(state);
+        active_slot = find_slot_with_highest_version(state, ota_confirm_set);
         if (active_slot == NO_ACTIVE_SLOT) {
             BOOT_LOG_ERR("No slot to load for image %d", BOOT_CURR_IMG(state));
             FIH_RET(FIH_FAILURE);
@@ -338,16 +337,15 @@ boot_load_and_validate_images(struct boot_loader_state *state)
                          slot_str(active_slot), slot_str(fallback_slot));
             
 #if CONFIG_DIRECT_XIP
+            boot_write_xip_status(active_slot, XIP_IMAGE_OK_TYPE, XIP_IMAGE_TEST_FINAL);
+            BOOT_LOG_INF("Set %s slot status to TEST_FINAL due to validation failure", slot_str(active_slot));
+            
             /* Critical: Reset execute_enable and flush cache before validating fallback slot */
             /* If Secondary slot validation failed, execute_enable might still be 1, which would cause */
             /* Primary slot hash calculation to read from wrong address */
-            uint32_t saved_enable = flash_get_excute_enable();
-            BOOT_LOG_INF("Before fallback validation: execute_enable=%d", saved_enable);
-            if(saved_enable == 1){
-                BOOT_LOG_INF("Resetting execute_enable from 1 to 0 before validating fallback Primary slot");
+            if(flash_get_excute_enable() == 1){
                 flush_all_dcache();
                 flash_set_excute_enable(0);
-                BOOT_LOG_INF("After reset: execute_enable=%d", flash_get_excute_enable());
             }
 #endif
             
@@ -406,7 +404,7 @@ boot_load_and_validate_images(struct boot_loader_state *state)
 #if CONFIG_OTA_CONFIRM_UPDATE
     active_slot = state->slot_usage[BOOT_CURR_IMG(state)].active_slot;
     if (!g_fast_boot_secondary) {
-        if (bk_boot_check_ota_confirm(1, OTA_CONFIRM)) {
+        if (ota_confirm_set) {
             /* OTA confirm flag is set, clear it after successful validation */
             bk_boot_erase_ota_confirm(1);
             BOOT_LOG_INF("OTA confirm flag cleared after successful validation");

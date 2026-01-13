@@ -31,11 +31,13 @@
 #define IMAGE_TLV_INFO_MAGIC        0x6907
 #define IMAGE_TLV_PROT_INFO_MAGIC   0x6908
 
-#define IMAGE_TLV_PUBKEY            0x02   /* public key */
-#define IMAGE_TLV_SHA256            0x10   /* SHA256 of image hdr and body */
-#define IMAGE_TLV_ECDSA256          0x22   /* ECDSA of hash output */
-#define IMAGE_TLV_SEC_CNT           0x50   /* security counter */
-#define IMAGE_TLV_CUSTOM            0xA0
+#define IMAGE_TLV_PUBKEY               0x02   /* public key */
+#define IMAGE_TLV_SHA256               0x10   /* SHA256 of image hdr and body */
+#define IMAGE_TLV_ECDSA256             0x22   /* ECDSA of hash output */
+#define IMAGE_TLV_SEC_CNT              0x50   /* security counter */
+#define IMAGE_TLV_CUSTOM               0xA0   /* custom public key (new key for app signing) */
+#define IMAGE_TLV_CUSTOM_ORIGIN_PUBKEY 0xA1   /* root pubkey*/
+#define IMAGE_TLV_CUSTOM_PUBKEY_SIG    0xA2   /* signature of new pubkey hash (signed by root key) */
 
 #define MAX_PUBKEY_LEN              128
 

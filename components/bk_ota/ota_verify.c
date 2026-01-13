@@ -290,7 +290,7 @@ bk_err_t ota_update_back_pubkey_from_primary(const bk_logic_partition_t *app_par
 	if (memcmp(check_erase_buf, ff_buf, 64) != 0) {
 		bk_flash_read_bytes(phy_off, (uint8_t *)&vir_length, 2);
 		bk_flash_read_bytes(phy_off + 2, (uint8_t *)&check_crc, 1);
-		uint16_t phy_length = ((vir_length + 31) >> 5) * 34; //ceil align 34
+		uint16_t phy_length = VIR_LEN_TO_PHY_LEN(vir_length);
 
 		enc_buf = (uint8_t*)malloc(phy_length);
 		if (!enc_buf) {
@@ -319,7 +319,7 @@ bk_err_t ota_update_back_pubkey_from_primary(const bk_logic_partition_t *app_par
 	}
 
 	bk_flash_erase_sector(phy_off);
-	uint16_t phy_key_size = ((primary_key_size + 31) >> 5) * 34; //ceil align 34
+	uint16_t phy_key_size = VIR_LEN_TO_PHY_LEN(primary_key_size);
 	uint16_t vir_key_size = FLASH_PHY2VIRTUAL(phy_key_size); // vir_key_size - keysize = data 0
 
 	bk_flash_write_cbus(vir_off, primary_key, vir_key_size);

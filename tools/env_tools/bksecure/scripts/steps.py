@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 
 import logging
+import json
+import struct
+import os
+import shutil
 from .gen_ppc import *
 from .gen_mpc import *
 from .gen_security import *
@@ -14,6 +18,44 @@ from .gen_ppc import *
 from .pk_hash import *
 from .partitions import *
 from .pack_json import *
+from .common import copy_files as copy_all_files, get_config_paths
+
+def copy_files_by_postfix(postfix, src_dir, dst_dir):
+    """Copy files with specific postfix from src_dir to dst_dir"""
+    if not os.path.exists(src_dir) or not os.path.isdir(src_dir):
+        return
+    logging.debug(f'copy *{postfix} from {src_dir} to {dst_dir}')
+    for f in os.listdir(src_dir):
+        if f.endswith(postfix):
+            src_path = os.path.join(src_dir, f)
+            dst_path = os.path.join(dst_dir, f)
+            if os.path.isfile(src_path):
+                shutil.copy(src_path, dst_path)
+
+def install_configs(cfg_dir, install_dir):
+    """Install config files (csv, pem, json, bin) from cfg_dir to install_dir"""
+    if not os.path.exists(cfg_dir):
+        return
+    
+    logging.debug(f'install configs from: {cfg_dir}')
+    logging.debug(f'to: {install_dir}')
+    
+    # Ensure install directory exists
+    os.makedirs(install_dir, exist_ok=True)
+    
+    # Copy common config files
+    copy_files_by_postfix('.bin', cfg_dir, install_dir)
+    copy_files_by_postfix('.json', cfg_dir, install_dir)
+    copy_files_by_postfix('.pem', cfg_dir, install_dir)
+    copy_files_by_postfix('.csv', cfg_dir, install_dir)
+    
+    # Copy files from subdirectories if they exist
+    if os.path.exists(os.path.join(cfg_dir, 'key')):
+        copy_files_by_postfix('.pem', os.path.join(cfg_dir, 'key'), install_dir)
+    if os.path.exists(os.path.join(cfg_dir, 'csv')):
+        copy_files_by_postfix('.csv', os.path.join(cfg_dir, 'csv'), install_dir)
+    if os.path.exists(os.path.join(cfg_dir, 'regs')):
+        copy_files_by_postfix('.csv', os.path.join(cfg_dir, 'regs'), install_dir)
 
 def check_exist(file_name):
     if not os.path.exists(file_name):
@@ -41,6 +83,9 @@ def get_app_sig(file_name):
 #Step1 - get hash of app binary and hash of manifest
 def get_app_bin_hash():
     s = Security('security.csv')
+    o = OTA('ota.csv')
+    ota_type = o.get_strategy().upper()
+    
     ph = PackHeader("bl2.bin")
     name = ph.name()
     infile = f'_{name}.bin'
@@ -55,7 +100,7 @@ def get_app_bin_hash():
     name = ph.name()
     infile = f'_{name}.bin'
     if s.update_img_sign_key_en:
-        bl2_sign('hash', s.img_sign_key_type, s.bl2_new_privkey, s.bl2_new_pubkey_bytes, None, infile, ph.size().sign_size(), ph.version(), ph.security_counter(), 'app_signed.bin', 'app_hash.json')
+        bl2_sign('hash', s.img_sign_key_type, s.new_img_sign_privkey, s.new_img_sign_pubkey_bytes, None, infile, ph.size().sign_size(), ph.version(), ph.security_counter(), 'app_signed.bin', 'app_hash.json')
     else:
         bl2_sign('hash', s.img_sign_key_type, s.img_sign_privkey, s.img_sign_pubkey_bytes, None, infile, ph.size().sign_size(), ph.version(), ph.security_counter(), 'app_signed.bin', 'app_hash.json')
 
@@ -70,7 +115,7 @@ def sign_app_bin_hash(bl2_bin_hash=None, app_bin_hash=None):
 
     bl1_sign_hash(s.img_sign_privkey, bl2_bin_hash, 'manifest_sig.json')
     if s.update_img_sign_key_en:
-        bl2_sign_hash(s.bl2_new_privkey, app_bin_hash, 'app_sig.json')
+        bl2_sign_hash(s.new_img_sign_privkey, app_bin_hash, 'app_sig.json')
     else:
         bl2_sign_hash(s.img_sign_privkey, app_bin_hash, 'app_sig.json')
 
@@ -92,12 +137,44 @@ def sign_from_app_sig(bl2_sig_s, bl2_sig_r, app_sig):
             f.write(bl2_sig_r)
         bl1_sign('sign_from_sig', s.img_sign_key_type, s.img_sign_privkey, s.img_sign_pubkey, None, infile, static_addr, load_addr,  'primary_manifest.bin')
 
+    o = OTA('ota.csv')
+    ota_type = o.get_strategy().upper()
+    
     logging.debug(f"sign_from_app_sig privkey = {s.img_sign_privkey}")
+    
     ph = PackHeader("overwrite.bin")
     name = ph.name()
     infile = f'_{name}.bin'
+    
+    # For XIP mode with update_img_sign_key_en, generate TLV for new format:
+    #   0xA0: new_img_sign_pubkey (new public key)
+    #   0xA1: img_sign_pubkey (root public key)
+    #   0xA2: signature of new_pubkey hash (signed by root key, DER format)
+    new_pubkey_tlv = None  # 0xA0: new_img_sign_pubkey
+    root_pubkey_tlv = None  # 0xA1: img_sign_pubkey (root key)
+    signature_tlv = None  # 0xA2: signature of new_pubkey hash (DER format)
+    
+    if s.update_img_sign_key_en and ota_type == 'XIP':
+        # 0xA0: new_img_sign_pubkey (new public key)
+        new_pubkey_tlv = s.new_img_sign_pubkey_bytes
+        
+        # 0xA1: img_sign_pubkey (root public key)
+        root_pubkey_tlv = s.img_sign_pubkey_bytes
+        
+        # 0xA2: Generate signature of new_pubkey hash using root key
+        import hashlib
+        new_pubkey_hash = hashlib.sha256(s.new_img_sign_pubkey_bytes).digest()
+        # Sign the hash with root key (imgtool sign-hash returns DER format signature)
+        bl2_sign_hash(s.img_sign_privkey, new_pubkey_hash.hex(), 'new_pubkey_sig.json')
+        # Read signature (DER format, hex string)
+        with open('new_pubkey_sig.json', 'r') as f:
+            sig_data = json.load(f)
+            sig_der_hex = sig_data['signature']
+        # Convert hex string to bytes (DER format)
+        signature_tlv = bytes.fromhex(sig_der_hex)
+    
     if s.update_img_sign_key_en:
-        bl2_sign('sign_from_sig', s.img_sign_key_type, s.bl2_new_privkey, s.bl2_new_pubkey_bytes, app_sig, infile, ph.size().sign_size(), ph.version(), ph.security_counter(), 'app_signed.bin', 'app_hash.json')
+        bl2_sign('sign_from_sig', s.img_sign_key_type, s.new_img_sign_privkey, new_pubkey_tlv, app_sig, infile, ph.size().sign_size(), ph.version(), ph.security_counter(), 'app_signed.bin', 'app_hash.json', root_pubkey_tlv=root_pubkey_tlv, signature_tlv=signature_tlv)
     else:
         bl2_sign('sign_from_sig', s.img_sign_key_type, s.img_sign_privkey, s.img_sign_pubkey_bytes, app_sig, infile, ph.size().sign_size(), ph.version(), ph.security_counter(), 'app_signed.bin', 'app_hash.json')
 
@@ -140,6 +217,18 @@ def sign_from_ota_sig(ota_bin_sig):
 
 def steps_pack_csv():
     logging.debug(f'steps pack csv')
+    
+    cwd = os.getcwd()
+    
+    # Dynamically discover config paths
+    config_paths = get_config_paths(current_dir=cwd)
+    
+    # Copy config files from found directories to current directory
+    for cfg_dir in config_paths:
+        if os.path.exists(cfg_dir):
+            install_configs(cfg_dir, cwd)
+    
+    # Now all config files should be in current directory, proceed with packing
     s = Security('security.csv')
     # p = Partitions('partitions.csv', 'bin.csv', 'pack.json')
     # p.postbuild_process()

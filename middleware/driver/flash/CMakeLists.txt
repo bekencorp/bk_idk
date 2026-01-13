@@ -3,6 +3,7 @@ if (CONFIG_FLASH)
 	list(APPEND srcs
 		flash/flash_bypass.c
 		flash/flash_notify.c
+		flash/CheckSumUtils.c
 	)
 
 	if (CONFIG_SUPPORT_PARTITIONS_PARTITION)

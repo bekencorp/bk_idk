@@ -62,6 +62,9 @@ def gen_security_config_file(security_csv, outfile):
         f.write(line)
         line = f'#define %-45s %s' %("FLOOR_ALIGN_34(addr)", "((addr) / 34 * 34)\r\n")
         f.write(line)
+        # Convert virtual length to physical length (32-byte aligned virtual to 34-byte physical)
+        line = f'#define %-45s %s' %("VIR_LEN_TO_PHY_LEN(vir_len)", "((((vir_len) + 31) >> 5) * 34)\r\n")
+        f.write(line)
     else:
         # In no_crc mode: physical address = virtual address (1:1 mapping), no alignment
         line = f'#define %-45s %s' %("FLASH_VIRTUAL2PHY(virtual_addr)", "(virtual_addr)\r\n")
@@ -71,6 +74,9 @@ def gen_security_config_file(security_csv, outfile):
         line = f'#define %-45s %s' %("CEIL_ALIGN_34(addr)", "(addr)\r\n")
         f.write(line)
         line = f'#define %-45s %s' %("FLOOR_ALIGN_34(addr)", "(addr)\r\n")
+        f.write(line)
+        # In no_crc mode: virtual length = physical length (1:1 mapping)
+        line = f'#define %-45s %s' %("VIR_LEN_TO_PHY_LEN(vir_len)", "(vir_len)\r\n")
         f.write(line)
     line = f'#define %-45s %s' %("FLOOR_ALIGN_4K(addr)", "((addr) / 4096 * 4096)\r\n")
     f.write(line)

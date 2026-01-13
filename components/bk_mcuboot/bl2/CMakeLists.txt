@@ -48,6 +48,13 @@ if(CONFIG_OTA_CONFIRM_UPDATE)
     )
 endif()
 
+if(CONFIG_OTA_VERIFY_TRUST_CHAIN)
+    target_compile_definitions(bl2
+        PUBLIC
+            CONFIG_OTA_VERIFY_TRUST_CHAIN
+    )
+endif()
+
 add_convert_to_bin_target(bl2)
 
 install(DIRECTORY ${CMAKE_BINARY_DIR}/bin/ DESTINATION ${TFM_INSTALL_PATH}/outputs)

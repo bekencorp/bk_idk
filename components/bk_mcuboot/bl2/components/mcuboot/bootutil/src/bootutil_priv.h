@@ -466,6 +466,11 @@ struct bootsim_ram_info *bootsim_get_ram_info(void);
 
 uint32_t bootutil_max_image_size(const struct flash_area *fap);
 
+#if CONFIG_DIRECT_XIP
+int boot_read_xip_status(uint8_t index, uint32_t type);
+void boot_write_xip_status(uint8_t index, uint32_t type, uint32_t status);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

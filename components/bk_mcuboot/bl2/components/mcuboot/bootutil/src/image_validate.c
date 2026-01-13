@@ -436,13 +436,30 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
                       int seed_len, uint8_t *out_hash)
 {
 #if CONFIG_BL2_SKIP_VALIDATE
-    /* This optimization allows skipping validation on first power-on when OTA confirm is not set */
     uint32_t reset_reason = aon_pmu_hal_get_reset_reason();
-    if ((!bk_boot_check_ota_confirm(image_index, OTA_CONFIRM)) && (reset_reason == RESET_SOURCE_POWERON)) {
+    bool ota_confirm_set = bk_boot_check_ota_confirm(image_index, OTA_CONFIRM);
+    bool can_skip = (reset_reason == RESET_SOURCE_POWERON) && (!ota_confirm_set);
+    
+#if CONFIG_DIRECT_XIP
+    int slot = flash_area_id_to_multi_image_slot(image_index, flash_area_get_id(fap));
+    if (can_skip && (slot >= 0) && (boot_read_xip_status(slot, XIP_IMAGE_OK_TYPE) == XIP_IMAGE_OK)) {
         BOOT_LOG_INF("reset reason %#x, skip validate", reset_reason);
         FIH_RET(FIH_SUCCESS);
     }
-    BOOT_LOG_INF("reset reason %#x, do validate", reset_reason);
+#elif CONFIG_OTA_OVERWRITE
+    if (can_skip) {
+        BOOT_LOG_INF("reset reason %#x, skip validate", reset_reason);
+        return 0;
+    }
+#endif
+    
+#if CONFIG_DIRECT_XIP
+    uint32_t xip_status = (slot >= 0) ? boot_read_xip_status(slot, XIP_IMAGE_OK_TYPE) : 0xFFFFFFFF;
+    BOOT_LOG_INF("reset reason %#x, ota_confirm=%d, slot=%d, xip_status=%#x, do validate", 
+                 reset_reason, ota_confirm_set, slot, xip_status);
+#else
+    BOOT_LOG_INF("reset reason %#x, ota_confirm=%d, do validate", reset_reason, ota_confirm_set);
+#endif
 #endif
 
     uint32_t off;
@@ -591,9 +608,11 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
             if (rc) {
                 goto out;
             }
-            extern int bk_find_key(uint8_t image_index, uint8_t *key, uint16_t key_len);
-            key_id = bk_find_key(image_index, key_buf, len);
-            BOOT_LOG_INF("find key %d",key_id);
+            extern int bk_find_key(uint8_t image_index, uint8_t *key, uint16_t key_len, uint32_t current_slot_addr);
+            key_id = bk_find_key(image_index, key_buf, len, fap->fa_off);
+            if (key_id == 0) {
+                BOOT_LOG_INF("pubkey ok!");
+            }
 #endif /* !MCUBOOT_HW_KEY */
             /*
              * The key may not be found, which is acceptable.  There

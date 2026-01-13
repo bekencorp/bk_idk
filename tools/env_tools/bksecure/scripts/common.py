@@ -249,4 +249,117 @@ def get_lzma_tool():
 
     return f'{tools_dir}/packager_tools/centos7/lzma'
 
+def get_key_files_from_security_csv(csv_file='security.csv'):
+    if not os.path.exists(csv_file):
+        return ({}, False)
+    
+    key_files_dict = {}
+    key_fields = ['img_sign_pubkey', 'img_sign_privkey', 'new_img_sign_pubkey', 'new_img_sign_privkey']
+    update_img_sign_key_en = False
+    
+    try:
+        import csv
+        with open(csv_file, 'r') as f:
+            csv_data = csv.reader(f)
+            row_idx = 0
+            csv_dict = {}
+            for row in csv_data:
+                if row_idx == 0:
+                    # Skip header row
+                    row_idx = 1
+                    continue
+                if len(row) >= 2:
+                    field = row[0].strip()
+                    value = row[1].strip()
+                    csv_dict[field] = value
+        
+        # Extract key file names from CSV
+        for field in key_fields:
+            if field in csv_dict and csv_dict[field]:
+                key_files_dict[field] = csv_dict[field]
+        
+        # Extract update_img_sign_key_en value
+        if 'update_img_sign_key_en' in csv_dict:
+            update_img_sign_key_en = parse_bool(csv_dict['update_img_sign_key_en'])
+    except Exception as e:
+        logging.debug(f'Failed to parse {csv_file}: {e}')
+        return ({}, False)
+    
+    return (key_files_dict, update_img_sign_key_en)
+
+def get_config_paths(armino_root=None, current_dir=None):
+    if armino_root is None:
+        # Try to infer armino_root from current script location or environment
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        # Assuming we're in tools/env_tools/bksecure/scripts
+        armino_root = os.path.abspath(os.path.join(script_dir, '..', '..', '..', '..'))
+    
+    if current_dir is None:
+        current_dir = os.getcwd()
+    
+    config_paths = []
+    
+    # Priority 1: Use environment variables if available
+    project_dir = os.getenv('PROJECT_DIR', '')
+    armino_soc = os.getenv('ARMINO_SOC', '')
+    
+    if project_dir and armino_soc:
+        # Project-specific config paths
+        config_paths.append(os.path.join(armino_root, project_dir, 'config', armino_soc))
+        config_paths.append(os.path.join(armino_root, project_dir, 'config'))
+        config_paths.append(os.path.join(armino_root, project_dir, 'config', 'common'))
+    
+    # Priority 2: Try to infer from current directory path
+    # Common pattern: .../build/{project}/{soc}/... or .../build/{project}/...
+    path_parts = os.path.normpath(current_dir).split(os.sep)
+    try:
+        build_idx = path_parts.index('build')
+        if build_idx + 1 < len(path_parts):
+            inferred_project = path_parts[build_idx + 1]
+            if build_idx + 2 < len(path_parts):
+                inferred_soc = path_parts[build_idx + 2]
+                # Try inferred project paths (in projects directory)
+                inferred_project_path = os.path.join(armino_root, 'projects', inferred_project, 'config', inferred_soc)
+                if os.path.exists(inferred_project_path):
+                    config_paths.append(inferred_project_path)
+                inferred_project_path = os.path.join(armino_root, 'projects', inferred_project, 'config')
+                if os.path.exists(inferred_project_path):
+                    config_paths.append(inferred_project_path)
+    except ValueError:
+        # 'build' not in path, skip inference
+        pass
+    
+    # Priority 3: Search common locations (only if PROJECT_DIR is set)
+    # This allows for projects outside the standard structure
+    if project_dir:
+        # Search in projects directory for matching project name
+        projects_dir = os.path.join(armino_root, 'projects')
+        if os.path.exists(projects_dir):
+            for item in os.listdir(projects_dir):
+                # Skip hidden files/directories like .git
+                if item.startswith('.'):
+                    continue
+                project_path = os.path.join(projects_dir, item)
+                if os.path.isdir(project_path):
+                    config_dir = os.path.join(project_path, 'config')
+                    if os.path.exists(config_dir) and os.path.isdir(config_dir):
+                        if armino_soc:
+                            soc_config = os.path.join(config_dir, armino_soc)
+                            if os.path.exists(soc_config) and os.path.isdir(soc_config):
+                                config_paths.append(soc_config)
+                        config_paths.append(config_dir)
+                        common_config = os.path.join(config_dir, 'common')
+                        if os.path.exists(common_config) and os.path.isdir(common_config):
+                            config_paths.append(common_config)
+    
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_paths = []
+    for path in config_paths:
+        if path not in seen:
+            seen.add(path)
+            unique_paths.append(path)
+    
+    return unique_paths
+
 
