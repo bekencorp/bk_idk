@@ -32,9 +32,9 @@
 #define FLASH_PHYSICAL_ADDR_UNIT_SIZE     34
 #define FLASH_LOGICAL_ADDR_UNIT_SIZE      32
 
-#define FLASH_PHY_ADDR_VALID(addr)    (((addr) % FLASH_PHYSICAL_ADDR_UNIT_SIZE) < FLASH_LOGICAL_ADDR_UNIT_SIZE)
-#define FLASH_PHY_2_LOGICAL(addr)     ((((addr) / FLASH_PHYSICAL_ADDR_UNIT_SIZE) * FLASH_LOGICAL_ADDR_UNIT_SIZE) + ((addr) % FLASH_PHYSICAL_ADDR_UNIT_SIZE))
-#define FLASH_LOGICAL_2_PHY(addr)     ((((addr) / FLASH_LOGICAL_ADDR_UNIT_SIZE) * FLASH_PHYSICAL_ADDR_UNIT_SIZE) + ((addr) % FLASH_LOGICAL_ADDR_UNIT_SIZE))
+#define FLASH_PHY_ADDR_IS_ALIGN(addr)  (((addr) % FLASH_PHYSICAL_ADDR_UNIT_SIZE) < FLASH_LOGICAL_ADDR_UNIT_SIZE)
+#define FLASH_PHY_2_LOGICAL(addr)      ((((addr) / FLASH_PHYSICAL_ADDR_UNIT_SIZE) * FLASH_LOGICAL_ADDR_UNIT_SIZE) + ((addr) % FLASH_PHYSICAL_ADDR_UNIT_SIZE))
+#define FLASH_LOGICAL_2_PHY(addr)      ((((addr) / FLASH_LOGICAL_ADDR_UNIT_SIZE) * FLASH_PHYSICAL_ADDR_UNIT_SIZE) + ((addr) % FLASH_LOGICAL_ADDR_UNIT_SIZE))
 
 #define SOC_FLASH_BASE_ADDR           0x02000000
 #define FLASH_LOGICAL_BASE_ADDR       SOC_FLASH_BASE_ADDR
@@ -351,8 +351,10 @@ bk_logic_partition_t *bk_flash_partition_get_info(bk_partition_t partition)
 }
 
 #define APP_PARTITION_NAME    "application"
-static bk_err_t flash_partition_addr_check(const bk_logic_partition_t *partition_info, uint32_t offset, uint32_t size)
+static bk_err_t flash_partition_offset_is_valid(const bk_logic_partition_t *partition_info, uint32_t offset, uint32_t size)
 {
+    bk_err_t ret = BK_OK;
+
 #if CONFIG_OTA_POSITION_INDEPENDENT_AB
     if(strcmp(partition_info->partition_description, APP_PARTITION_NAME) == 0)
     {
@@ -362,12 +364,11 @@ static bk_err_t flash_partition_addr_check(const bk_logic_partition_t *partition
 
     if ( (offset >= partition_info->partition_length)
         || (size > partition_info->partition_length)
-        || (offset + size > partition_info->partition_length) )
-    {
-        return BK_ERR_FLASH_ADDR_OUT_OF_RANGE;
+        || (offset + size > partition_info->partition_length) ){
+        ret = BK_ERR_FLASH_ADDR_OUT_OF_RANGE;
     }
 
-    return BK_OK;
+    return ret;
 }
 
 /*********************************************
@@ -429,7 +430,7 @@ bk_err_t bk_flash_partition_erase(bk_partition_t partition, uint32_t offset, uin
         return BK_ERR_FLASH_PARTITION_NOT_FOUND;
     }
     bk_logic_partition_t *partition_info = ctx.partition_info;
-    if (flash_partition_addr_check(partition_info, offset, size) != BK_OK )
+    if (flash_partition_offset_is_valid(partition_info, offset, size) != BK_OK )
     {
         return BK_ERR_FLASH_ADDR_OUT_OF_RANGE;
     }
@@ -543,7 +544,7 @@ bk_err_t bk_flash_partition_write(bk_partition_t partition, const uint8_t *buffe
         return BK_ERR_FLASH_PARTITION_NOT_FOUND;
     }
     bk_logic_partition_t *partition_info = ctx.partition_info;
-    if (flash_partition_addr_check(partition_info, offset, buffer_len) != BK_OK )
+    if (flash_partition_offset_is_valid(partition_info, offset, buffer_len) != BK_OK )
     {
         return BK_ERR_FLASH_ADDR_OUT_OF_RANGE;
     }
@@ -651,7 +652,7 @@ bk_err_t bk_flash_partition_read(bk_partition_t partition, uint8_t *out_buffer, 
         return BK_ERR_FLASH_PARTITION_NOT_FOUND;
     }
     bk_logic_partition_t *partition_info = ctx.partition_info;
-    if (flash_partition_addr_check(partition_info, offset, buffer_len) != BK_OK )
+    if (flash_partition_offset_is_valid(partition_info, offset, buffer_len) != BK_OK )
     {
         return BK_ERR_FLASH_ADDR_OUT_OF_RANGE;
     }
@@ -698,7 +699,7 @@ bk_err_t bk_flash_partition_erase_by_name(const char* label, uint32_t offset, ui
     if (partition_info == NULL) {
         return BK_ERR_FLASH_PARTITION_NOT_FOUND;
     }
-    if (flash_partition_addr_check(partition_info, offset, size) != BK_OK )
+    if (flash_partition_offset_is_valid(partition_info, offset, size) != BK_OK )
     {
         return BK_ERR_FLASH_ADDR_OUT_OF_RANGE;
     }
@@ -718,7 +719,7 @@ bk_err_t bk_flash_partition_write_by_name(const char *label, const uint8_t *buff
         FLASH_LOGW("%s partition not found\r\n", __func__);
         return BK_ERR_FLASH_PARTITION_NOT_FOUND;
     }
-    if (flash_partition_addr_check(partition_info, offset, buffer_len) != BK_OK )
+    if (flash_partition_offset_is_valid(partition_info, offset, buffer_len) != BK_OK )
     {
         return BK_ERR_FLASH_ADDR_OUT_OF_RANGE;
     }
@@ -738,7 +739,7 @@ bk_err_t bk_flash_partition_read_by_name(const char *label, uint8_t *out_buffer,
         FLASH_LOGW("%s partition not found\r\n", __func__);
         return BK_ERR_FLASH_PARTITION_NOT_FOUND;
     }
-    if (flash_partition_addr_check(partition_info, offset, buffer_len) != BK_OK )
+    if (flash_partition_offset_is_valid(partition_info, offset, buffer_len) != BK_OK )
     {
         return BK_ERR_FLASH_ADDR_OUT_OF_RANGE;
     }
@@ -781,11 +782,12 @@ bk_err_t bk_flash_partition_read_cbus(bk_partition_t partition, uint8_t *out_buf
 
     flash_base = FLASH_LOGICAL_BASE_ADDR;
     start_addr = partition_info->partition_start_addr;
-    if(!FLASH_PHY_ADDR_VALID(start_addr))
+    if(!(FLASH_PHY_ADDR_IS_ALIGN(start_addr) 
+          && (bk_flash_get_current_total_size() > start_addr))){
         return BK_FAIL;
+    }
 
-    int ret = flash_partition_addr_check(partition_info, FLASH_LOGICAL_2_PHY(offset), FLASH_LOGICAL_2_PHY(buffer_len));
-
+    int ret = flash_partition_offset_is_valid(partition_info, FLASH_LOGICAL_2_PHY(offset), FLASH_LOGICAL_2_PHY(buffer_len));
     if(ret != BK_OK)
         return ret;
 
@@ -856,7 +858,7 @@ bk_err_t bk_flash_partition_write_perm_check_by_addr(uint32_t addr, uint32_t siz
     }
 
     uint32_t   offset = addr - partition_info->partition_start_addr;
-    bk_err_t   ret_val = flash_partition_addr_check(partition_info, offset, size);
+    bk_err_t   ret_val = flash_partition_offset_is_valid(partition_info, offset, size);
     if(ret_val != BK_OK)
         return ret_val;
 

@@ -19,6 +19,7 @@
 #include "nvs.h"
 #include "nvs_flash.h"
 #include "nvs_internal.h"
+#include "nvs_thread_safety_test.h"
 
 #if CONFIG_NVS_ENCRYPTION
 extern bk_err_t nvs_flash_partition_test_various_op(void);
@@ -343,9 +344,9 @@ static void cli_nvs_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
 
 static void cli_nvs_api_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
-    struct arg_lit *help             = arg_lit0("h", "help",         "Display this help message");
-    struct arg_lit *eraseall         = arg_lit0("e", "eraseall",     "Erase all namespace in NVS");
-    struct arg_lit *getstats         = arg_lit0("g", "getstats",     "Get stats in NVS");
+    struct arg_lit *help            = arg_lit0("h", "help",         "Display this help message");
+    struct arg_lit *eraseall        = arg_lit0("e", "eraseall",     "Erase all namespace in NVS");
+    struct arg_lit *getstats        = arg_lit0("g", "getstats",     "Get stats in NVS");
     struct arg_lit *getused         = arg_lit0("u", "getused",         "Get used in NVS");
     struct arg_str *arg_namespace   = arg_str0("n", "namespace",    "<namespace>",             "Namespace for the NVS");
     struct arg_end *end             = arg_end(20);
@@ -358,9 +359,12 @@ static void cli_nvs_api_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
 
 #define NVS_CMD_CNT (sizeof(s_nvs_commands) / sizeof(struct cli_command))
 static const struct cli_command s_nvs_commands[] = {
-    {"nvs_test", "nvs_test { selftest | default } (example: nvs_test --selftest)", cli_nvs_test_cmd    },
-    {"nvs", "nvs { get | set | eraseall } (example: nvs -s -n myns -t i32 -k counter -v 42)", cli_nvs_cmd            },
-    {"nvs_api", "nvs_api { erase | getstats | getused } (example: nvs_api --getstats)", cli_nvs_api_cmd        },
+    {"nvs_test", "nvs_test { selftest | default } (example: nvs_test --selftest)", cli_nvs_test_cmd},
+    {"nvs", "nvs { get | set | eraseall } (example: nvs -s -n myns -t i32 -k counter -v 42)", cli_nvs_cmd},
+    {"nvs_api", "nvs_api { erase | getstats | getused } (example: nvs_api --getstats)", cli_nvs_api_cmd},
+#if CONFIG_SUPPORT_NVS_THREAD_SAFETY_TEST
+    {"nvs_race_test", "nvs_race_test { --start read_task_cnt write_task_cnt | --stop }", cli_nvs_thread_safety_test_cmd},
+#endif
 };
 
 int cli_nvs_init(void)
