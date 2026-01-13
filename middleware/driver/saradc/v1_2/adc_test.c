@@ -383,8 +383,23 @@ static void cli_adc_cont_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
             CLI_LOGI("please saradc start\r\n");
             return;
         }
+        if (arg_cnt >= 4) {
+            if (os_strcmp(argv[2], "cnt") == 0) {
+                uint32_t read_loop_cnt = os_strtoul(argv[3], NULL, 10);
+                if (read_loop_cnt > 0) {
+                    for(uint32_t i = 0; i < read_loop_cnt; i ++) {
+                        _adc_cont_read(s_adc_channel_id, s_rd_data_buf, s_user_rd_cnt);
+                    }
+                } else {
+                    CLI_LOGI("Invalid loop count, must be > 0\r\n");
+                }
+            } else{
+                CLI_LOGI("please use \"sadc_cont read cnt <read_loop_cnt>\"\r\n");
+            }
+        } else{
+            _adc_cont_read(s_adc_channel_id, s_rd_data_buf, s_user_rd_cnt);
+        }
 
-        _adc_cont_read(s_adc_channel_id, s_rd_data_buf, s_user_rd_cnt);
         return;
     } else if((arg_cnt > 1) && (os_strcmp(argv[0 + 1], "stop") == 0)) {
         bk_adc_channel_deinit(s_adc_channel_id);
