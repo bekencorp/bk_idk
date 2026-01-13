@@ -21,7 +21,8 @@ target_sources(bl2
 		${CMAKE_CURRENT_SOURCE_DIR}/src/bk_loader.c
 		${CMAKE_CURRENT_SOURCE_DIR}/src/ow_loader.c
 		${CMAKE_CURRENT_SOURCE_DIR}/src/xip_loader.c
-		${CMAKE_CURRENT_SOURCE_DIR}/src/update_pubkey.c
+		$<$<NOT:$<BOOL:${MCUBOOT_DIRECT_XIP}>>:${CMAKE_CURRENT_SOURCE_DIR}/src/xip_pubkey.c>
+		$<$<NOT:$<BOOL:${MCUBOOT_OVERWRITE_ONLY}>>:${CMAKE_CURRENT_SOURCE_DIR}/src/ow_pubkey.c>
 		${CMAKE_CURRENT_SOURCE_DIR}/src/common_loader.c
 		${CMAKE_CURRENT_SOURCE_DIR}/src/hooks_bl2.c
 		$<$<NOT:$<BOOL:${CONFIG_DBUS_CHECK_CRC}>>:${CMAKE_CURRENT_SOURCE_DIR}/src/bootutil_public.c>

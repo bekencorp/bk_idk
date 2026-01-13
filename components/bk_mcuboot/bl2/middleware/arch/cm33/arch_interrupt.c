@@ -137,22 +137,6 @@ bk_err_t arch_isr_entry_init(void)
 	return BK_OK;
 }
 
-#if CONFIG_SOC_BK7236_SMP_TEMP || CONFIG_SOC_BK7239N_SMP_TEMP
-/*TODO: the object about the corresponding core shall has the action*/
-bk_err_t arch_isr_entry_init2(void)
-{
-	/* group priority is depends on macro:__NVIC_PRIO_BITS.
-	   please refer to: www.freertos.org/zh-cn-cmn-s/RTOS-Cortex-M3-M4.html*/
-	NVIC_SetPriorityGrouping(PRI_GOURP_BITS_7_5);
-	for (uint32_t irq_type = 0; irq_type < INT_NUMBER_MAX; irq_type++) {
-		NVIC_SetPriority(irq_type, IRQ_DEFAULT_PRIORITY);
-		NVIC_EnableIRQ(irq_type);
-	}
-
-	return BK_OK;
-}
-#endif
-
 void dump_state(void)
 {
 	uint32_t bits = 0;

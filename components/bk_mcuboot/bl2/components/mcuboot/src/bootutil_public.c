@@ -381,7 +381,7 @@ bk_boot_check_ota_confirm(uint8_t index, uint32_t value)
     uint32_t phy_off = bk_boot_ota_confirm_offset(index);
     uint32_t status;
     bk_flash_read_bytes(phy_off, &status, 4);
-    BOOT_LOG_INF("get %d ota confirm=%#x",index, status);
+    BOOT_LOG_INF("get image%d ota confirm=%#x",index, status);
     if (status == value) {
         return true;
     } else {

@@ -480,6 +480,31 @@ LEGACY_BOOT_FINISH:
 	return;
 }
 
+void download_main(void)
+{
+#if CONFIG_RANDOM_AES_UPGRADE_BL2
+    get_pc();
+#endif
+#if (CONFIG_IOMX)
+#else
+    sys_hal_dpll_cpu_flash_time_early_init();
+#endif
 
-
-// EOF
+    if (is_secure_download_enabled()) {
+        flash_switch_to_line_mode_two();
+        bk_flash_cpu_write_enable();
+        enable_dcache(0);
+        void legacy_boot_main(void);
+        legacy_boot_main();
+        enable_dcache(1);
+        bk_flash_cpu_write_disable();
+        flash_restore_line_mode();
+    }
+#if (CHIP_BK7236N || CHIP_BK7239)
+#else
+    sys_hal_flash_set_clk(0x1);
+    sys_hal_flash_set_clk_div(0x0);
+    sys_hal_ctrl_vdddig_h_vol(0xD);
+    sys_hal_switch_freq(0x3, 0x0, 0x0);
+#endif
+}

@@ -446,18 +446,15 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
         BOOT_LOG_INF("reset reason %#x, skip validate", reset_reason);
         FIH_RET(FIH_SUCCESS);
     }
+
+    uint32_t xip_status = (slot >= 0) ? boot_read_xip_status(slot, XIP_IMAGE_OK_TYPE) : 0xFFFFFFFF;
+    BOOT_LOG_INF("reset reason %#x, ota_confirm=%d, slot=%d, xip_status=%#x, do validate", 
+                 reset_reason, ota_confirm_set, slot, xip_status);
 #elif CONFIG_OTA_OVERWRITE
     if (can_skip) {
         BOOT_LOG_INF("reset reason %#x, skip validate", reset_reason);
         return 0;
     }
-#endif
-    
-#if CONFIG_DIRECT_XIP
-    uint32_t xip_status = (slot >= 0) ? boot_read_xip_status(slot, XIP_IMAGE_OK_TYPE) : 0xFFFFFFFF;
-    BOOT_LOG_INF("reset reason %#x, ota_confirm=%d, slot=%d, xip_status=%#x, do validate", 
-                 reset_reason, ota_confirm_set, slot, xip_status);
-#else
     BOOT_LOG_INF("reset reason %#x, ota_confirm=%d, do validate", reset_reason, ota_confirm_set);
 #endif
 #endif

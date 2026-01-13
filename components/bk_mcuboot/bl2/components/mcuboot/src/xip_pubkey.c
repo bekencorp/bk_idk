@@ -40,7 +40,7 @@
 #include "bootutil/image.h"
 #include "sdkconfig.h"
 
-#if CONFIG_DIRECT_XIP && CONFIG_OTA_UPDATE_PUBKEY
+#if CONFIG_OTA_UPDATE_PUBKEY
 #include "driver/flash.h"
 extern uint32_t flash_get_excute_enable(void);
 extern void bk_flash_read_cbus(uint32_t address, void *user_buf, uint32_t size);
@@ -225,60 +225,9 @@ static void CRC8_Update( CRC8_Context *inContext, const void *inSrc, size_t inLe
 
 extern unsigned int pub_key_len;
 
-#if CONFIG_OTA_UPDATE_PUBKEY
 int
 bk_find_key(uint8_t image_index, uint8_t *key, uint16_t key_len, uint32_t current_slot_addr)
 {
-    (void)current_slot_addr; // Not used in this code path
-    uint32_t phy_off = partition_get_phy_offset(PARTITION_PUBLIC_KEY);
-    uint32_t vir_off = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(phy_off + 3)); 
-    uint16_t vir_length;
-    uint8_t* check_key;
-    CRC8_Context crc8;
-    CRC8_Context check_crc;
-    int fih_rc;
-
-    bk_flash_read_bytes(phy_off, (uint8_t *)&vir_length, 2); // vir_length = key_size
-    if (key_len != vir_length) {
-        BOOT_LOG_ERR("pubkey size mismatch: back=%#x, ota-outer=%#x", vir_length, key_len);
-        return -1;
-    }
-
-    bk_flash_read_bytes(phy_off + 2, (uint8_t*)&check_crc, 1);
-    uint16_t phy_length = VIR_LEN_TO_PHY_LEN(vir_length);
-    uint8_t *enc_buf = (uint8_t*)malloc(phy_length);
-    bk_flash_read_bytes(phy_off + 3, enc_buf, phy_length);
-    CRC8_Init(&crc8);
-    CRC8_Update(&crc8, enc_buf, phy_length);
-
-    if (crc8.crc != check_crc.crc) {
-        free(enc_buf);
-        BOOT_LOG_ERR("back pubkey corrupted, crc8 expected=%#x, actual=%#x", check_crc.crc, crc8.crc);
-        return -1;
-    }
-
-    check_key = (uint8_t *)malloc(key_len);
-    bk_flash_read_cbus(vir_off, check_key, key_len);
-
-    FIH_CALL(boot_fih_memequal, fih_rc, key, check_key, key_len);
-    
-    if (FIH_EQ(fih_rc, FIH_SUCCESS)) {
-        bootutil_keys[0].key = key;
-        pub_key_len = key_len;
-        free(enc_buf);
-        free(check_key);
-        BOOT_LOG_INF("pubkey ok!");
-        return 0;
-    }
-
-    BOOT_LOG_ERR("pubkey of back and OTA-outer not equal!");
-    return -1;
-}
-#else
-int
-bk_find_key(uint8_t image_index, uint8_t *key, uint16_t key_len, uint32_t current_slot_addr)
-{
-#if CONFIG_DIRECT_XIP
 #if CONFIG_OTA_UPDATE_PUBKEY
     uint32_t slot0_addr = partition_get_phy_offset(PARTITION_XIP_A);
     uint32_t slot1_addr = partition_get_phy_offset(PARTITION_XIP_B);
@@ -397,39 +346,4 @@ fail:
     BOOT_LOG_DBG("XIP mode: accept pubkey from 0xA0 TLV (len=%d)", key_len);
     return 0;
 #endif
-
-#else
-    bootutil_sha_context sha_ctx;
-    uint8_t hash[IMAGE_HASH_SIZE];
-    uint8_t key_hash[IMAGE_HASH_SIZE];
-    size_t key_hash_size = sizeof(key_hash);
-    int rc;
-    FIH_DECLARE(fih_rc, FIH_FAILURE);
-
-    bootutil_sha_init(&sha_ctx);
-    bootutil_sha_update(&sha_ctx, key, key_len);
-    bootutil_sha_finish(&sha_ctx, hash);
-    bootutil_sha_drop(&sha_ctx);
-
-    rc = boot_retrieve_public_key_hash(image_index, key_hash, &key_hash_size);
-    if (rc) {
-        return -1;
-    }
-
-    /* Adding hardening to avoid this potential attack:
-     *  - Image is signed with an arbitrary key and the corresponding public
-     *    key is added as a TLV field.
-     * - During public key validation (comparing against key-hash read from
-     *   HW) a fault is injected to accept the public key as valid one.
-     */
-    FIH_CALL(boot_fih_memequal, fih_rc, hash, key_hash, key_hash_size);
-    if (FIH_EQ(fih_rc, FIH_SUCCESS)) {
-        bootutil_keys[0].key = key;
-        pub_key_len = key_len;
-        return 0;
-    }
-
-    return -1;
-#endif
 }
-#endif

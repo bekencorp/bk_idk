@@ -28,9 +28,8 @@
  */
 
 #include "xip_loader.h"
-extern void flash_set_excute_enable(int enable);
-extern uint32_t flash_get_excute_enable(void);
-extern void flush_all_dcache(void);
+#include "flash_driver.h"
+#include "cache.h"
 
 static bool g_fast_boot_secondary = false;
 
@@ -54,9 +53,9 @@ static inline const char* image_ok_str(uint32_t image_ok)
 static inline const char* slot_str(uint32_t slot)
 {
 	if (slot == BOOT_PRIMARY_SLOT) {
-		return "Primary";
+		return "A";
 	} else {
-		return "Secondary";
+		return "B";
 	}
 }
 
@@ -88,16 +87,40 @@ boot_version_cmp(const struct image_version *ver1,
     return 0;
 }
 
+#if CONFIG_ANTI_ROLLBACK
+static uint32_t
+find_slot_with_highest_version(struct boot_loader_state *state)
+{
+    for (slot = 0; slot < BOOT_NUM_SLOTS; slot++) {
+        if (state->slot_usage[BOOT_CURR_IMG(state)].slot_available[slot]) {
+            if (candidate_slot == NO_ACTIVE_SLOT) {
+                candidate_slot = slot;
+            } else {
+                int rc = boot_version_cmp(
+                            &boot_img_hdr(state, slot)->ih_ver,
+                            &boot_img_hdr(state, candidate_slot)->ih_ver);
+                if (rc == 1) {
+                    /* The version of the image being examined is greater than
+                     * the version of the current candidate.
+                     */
+                    candidate_slot = slot;
+                }
+            }
+        }
+    }
+    return candidate_slot;
+}
+
+#else
 
 static uint32_t
-find_slot_with_highest_version(struct boot_loader_state *state, bool ota_confirm_set)
+find_slot_via_version_and_ota_confirm(struct boot_loader_state *state, bool ota_confirm_set)
 {
     uint32_t slot;
     uint32_t candidate_slot = NO_ACTIVE_SLOT;
 
     g_fast_boot_secondary = false;
 
-#ifdef CONFIG_XIP_NO_VERSION
     uint32_t ota_preferred_slot;
     
 #if CONFIG_OTA_CONFIRM_UPDATE
@@ -214,26 +237,19 @@ find_slot_with_highest_version(struct boot_loader_state *state, bool ota_confirm
         candidate_slot = slot ^ 1;
         BOOT_LOG_INF("%s not valid, switch to %s", slot_str(slot), slot_str(candidate_slot));
     }
-#else
-    for (slot = 0; slot < BOOT_NUM_SLOTS; slot++) {
-        if (state->slot_usage[BOOT_CURR_IMG(state)].slot_available[slot]) {
-            if (candidate_slot == NO_ACTIVE_SLOT) {
-                candidate_slot = slot;
-            } else {
-                int rc = boot_version_cmp(
-                            &boot_img_hdr(state, slot)->ih_ver,
-                            &boot_img_hdr(state, candidate_slot)->ih_ver);
-                if (rc == 1) {
-                    /* The version of the image being examined is greater than
-                     * the version of the current candidate.
-                     */
-                    candidate_slot = slot;
-                }
-            }
-        }
-    }
-#endif
+
     return candidate_slot;
+}
+#endif
+
+static uint32_t
+find_preferred_slot(struct boot_loader_state *state, bool ota_confirm_set)
+{
+#if CONFIG_ANTI_ROLLBACK
+    return find_slot_with_highest_version(state);
+#else
+    return find_slot_via_version_and_ota_confirm(state, ota_confirm_set);
+#endif
 }
 
 static int
@@ -292,6 +308,7 @@ boot_load_and_validate_images(struct boot_loader_state *state)
     int rc;
     fih_ret fih_rc;
     bool ota_confirm_set = false;
+
     ota_confirm_set = bk_boot_check_ota_confirm(1, OTA_CONFIRM);
     if (ota_confirm_set){
         BOOT_LOG_INF("get ota confirm=0x%08x", OTA_CONFIRM);
@@ -306,7 +323,7 @@ boot_load_and_validate_images(struct boot_loader_state *state)
         }
 
         /* Step 1: Find the slot with highest version */
-        active_slot = find_slot_with_highest_version(state, ota_confirm_set);
+        active_slot = find_preferred_slot(state, ota_confirm_set);
         if (active_slot == NO_ACTIVE_SLOT) {
             BOOT_LOG_ERR("No slot to load for image %d", BOOT_CURR_IMG(state));
             FIH_RET(FIH_FAILURE);
@@ -336,7 +353,6 @@ boot_load_and_validate_images(struct boot_loader_state *state)
             BOOT_LOG_ERR("High version %s slot validation failed, will try fallback %s slot", 
                          slot_str(active_slot), slot_str(fallback_slot));
             
-#if CONFIG_DIRECT_XIP
             boot_write_xip_status(active_slot, XIP_IMAGE_OK_TYPE, XIP_IMAGE_TEST_FINAL);
             BOOT_LOG_INF("Set %s slot status to TEST_FINAL due to validation failure", slot_str(active_slot));
             
@@ -347,7 +363,6 @@ boot_load_and_validate_images(struct boot_loader_state *state)
                 flush_all_dcache();
                 flash_set_excute_enable(0);
             }
-#endif
             
             /* Check if fallback slot is available and has valid header */
             bool fallback_valid = false;
@@ -421,7 +436,7 @@ xip_boot_go(struct boot_loader_state *state, struct boot_rsp *rsp)
     FIH_DECLARE(fih_rc, FIH_SUCCESS);
     int rc;
 
-    BOOT_LOG_INF("load xip begin");
+    BOOT_LOG_INF("xip begin");
     BOOT_CURR_IMG(state) = 1;
     rc = boot_get_slot_usage(state);
     FIH_CALL(boot_load_and_validate_images, fih_rc, state);
@@ -455,7 +470,7 @@ xip_boot_go(struct boot_loader_state *state, struct boot_rsp *rsp)
     rsp->br_flash_dev_id = flash_area_get_device_id(active_fap);
     rsp->br_image_off = boot_img_slot_off(state, active_slot);
     rsp->br_hdr = active_hdr;
-    BOOT_LOG_INF("Jump to %s slot. \r\n",slot_str(active_slot));
+    BOOT_LOG_FORCE("Jump to %s\r\n",slot_str(active_slot));
     
 out:
     if (rc != 0) {
