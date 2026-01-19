@@ -982,9 +982,9 @@ bk_err_t nvs_flash_partition_test_various_op(void)
 	int32_t v1;
 	TEST_NVS(nvs_get_i32(handle_1, "foo", &v1));
 
-    NVS_PRINTF_TITLE("read -- [BK_PARTITION_WIZ_MFR]");
+    NVS_PRINTF_TITLE("read -- [BK_PARTITION_USER_MFR]");
 	uint8_t buffer[100] = {0};
-	bk_flash_partition_read(BK_PARTITION_WIZ_MFR, buffer, 0, 64);
+	bk_flash_partition_read(BK_PARTITION_USER_MFR, buffer, 0, 64);
     NVS_PRINTF(buffer,64);
 
 
