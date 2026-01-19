@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import logging
+import os
+import shutil
 import struct
 
 from .pack import Pack
@@ -69,14 +71,45 @@ class PackDownload(Pack):
         hdr = partition_offset + partition_size + flash_start_addr + img_offset + img_len  + checksum + version + cbus + reserved
         return hdr 
 
-    def __encrypt(self, bname, pheader, flash_aes_key,flash_crc_en):
+    def __encrypt(self, bname, pheader, flash_aes_key, flash_crc_en, flash_aes_type=None):
+        partition_name = pheader.name() if hasattr(pheader, 'name') else 'unknown'
+        is_data = pheader.type().is_data()
+        
+        # Check if partition is data type (skip encryption for data partitions)
         if pheader.type().is_data():
+            logging.debug(f'Encrypt: {partition_name} (data partition, skipping)')
             return bname
 
+        # Generate output filename with _aes suffix
+        outfile = bname[:-4] + '_aes.bin'
+        outfile_abs = os.path.abspath(outfile)
+
+        # If flash_aes_type is NONE, just copy the file without encryption
+        if flash_aes_type == 'NONE':
+            logging.debug(f'Encrypt: {partition_name} (AES disabled, copying)')
+            if os.path.exists(bname) == False:
+                logging.error(f'Encrypt: {bname} not exists, abort')
+                exit(1)
+            shutil.copy(bname, outfile)
+            if not os.path.exists(outfile):
+                logging.error(f'Encrypt: failed to copy {bname} to {outfile}')
+                exit(1)
+            return outfile
+
+        # If flash_aes_key is None, return original filename (no encryption)
         if flash_aes_key == None:
+            logging.warning(f'Encrypt: {partition_name} (no key provided, skipping encryption)')
             return bname
 
+        # Get AES encryption tool
         aes_tool = get_flash_aes_tool()
+        
+        # Check if AES tool exists
+        if not os.path.exists(aes_tool):
+            logging.error(f'Encrypt: AES tool not found: {aes_tool}')
+            exit(1)
+        
+        # Calculate encryption start address
         if pheader.type().is_merge():
             if flash_crc_en:
                 start_address = hex(phy2virtual(pheader.size().phy_offset()))
@@ -87,15 +120,32 @@ class PackDownload(Pack):
                 start_address = hex(pheader.size().vir_code_offset())
             else:
                 start_address = hex(pheader.size().offset())
-
+        
+        # Check if input file exists
         if os.path.exists(bname) == False:
-            logging.error(f'{bname} not exists, abort')
+            logging.error(f'Encrypt: input file {bname} not exists, abort')
             exit(1)
+        
+        input_file_size = os.path.getsize(bname)
 
-        logging.debug(f'encrypt {bname}, startaddress={start_address}')
-        outfile = bname[:-4] + '_aes.bin'
-        cmd = f'python3 {aes_tool} encrypt -infile {bname} -keywords {flash_aes_key}  -aes {128} -outfile {outfile} -startaddress {start_address}'
+        # Determine command format based on tool type
+        if aes_tool.endswith('.py'):
+            cmd = f'python3 {aes_tool} encrypt -infile {bname} -keywords {flash_aes_key}  -aes {128} -outfile {outfile} -startaddress {start_address}'
+        else:
+            cmd = f'{aes_tool} encrypt -infile {bname} -keywords {flash_aes_key} -outfile {outfile} -startaddress {start_address}'
+        
+        logging.debug(f'Encrypt: {partition_name} - executing: {cmd}')
         run_cmd_not_check_ret(cmd)
+        
+        # Verify that output file was created after encryption
+        if not os.path.exists(outfile):
+            logging.error(f'Encrypt: {partition_name} - encryption failed, output file not created')
+            logging.error(f'Encrypt: Command: {cmd}')
+            exit(1)
+        
+        output_file_size = os.path.getsize(outfile)
+        logging.info(f'Encrypt: {partition_name} ({input_file_size} -> {output_file_size} bytes)')
+        
         return outfile
 
     def __add_crc(self, bname, pheader, flash_crc_en):
@@ -168,7 +218,6 @@ class PackDownload(Pack):
         return img_buf
 
     def __create_download_bin(self, img_bufs, img_hdrs, global_hdr):
-
         offset = 0
         with open(self._outfile, 'wb+') as f:
             f.seek(offset)
@@ -185,15 +234,12 @@ class PackDownload(Pack):
                 f.write(buf)
                 offset += len(buf)
 
-    def pack(self, img_sign_pubkey=None, img_sign_privkey=None, flash_aes_key=None, flash_crc_en=True, data_aes_key=None):
-
-        logging.debug(f'PackDownload({self._outfile}): bins={self._bins}, flash_aes_key={flash_aes_key} data_aes_key={data_aes_key}')
-
+    def pack(self, img_sign_pubkey=None, img_sign_privkey=None, flash_aes_key=None, flash_crc_en=True, data_aes_key=None, flash_aes_type=None):
         img_num = len(self._bins)
         if (img_num == 0):
             return
 
-        logging.info(f'Pack download: flash_crc_en={flash_crc_en}, bins={self._bins}')
+        logging.debug(f'PackDownload: {self._outfile}, bins={self._bins}, flash_aes_type={flash_aes_type}')
 
         img_offset = (DOWNLOAD_IMG_HDR_LEN * img_num) + DOWNLOAD_GLOBAL_HDR_LEN
         img_hdrs = []
@@ -201,21 +247,33 @@ class PackDownload(Pack):
 
         for b in self._bins:
             # If pack download is too complex, can relay encrypt/magic/version/crc to Partition
-            ph = PackHeader(b)
+            # Try to parse pack header, if file doesn't have header, try to use _bname (without header version)
+            try:
+                ph = PackHeader(b)
+            except SystemExit:
+                # File doesn't have pack header, check if _bname exists (created by PackHeader when parsing)
+                bname_without_header = '_' + b
+                if os.path.exists(bname_without_header):
+                    logging.warning(f'{b} does not have pack header, but {bname_without_header} exists. This file may need to be processed first (e.g., BL2_SIGN or PACK_BL2_BIN)')
+                    logging.error(f'{b} must have pack header to be used in PACK_BL1_DOWNLOAD_BIN. Please ensure it is processed by BL2_SIGN or PACK_BL2_BIN first.')
+                    exit(1)
+                else:
+                    logging.error(f'{b} does not have pack header and {bname_without_header} does not exist. This file may need to be processed first (e.g., BL2_SIGN or PACK_BL2_BIN)')
+                    exit(1)
 
             # In no_crc mode, app partitions use physical layout to avoid vir_offset drift
             if (not flash_crc_en) and ph.type().is_app():
                 orig_size = ph.size()
                 ph._size = Size(orig_size.offset(), orig_size.size(), orig_size.hdr_size())
-                logging.info(f'override size to physical layout for {b}: offset=0x{orig_size.offset():x}, size=0x{orig_size.size():x}, hdr_size=0x{orig_size.hdr_size():x}')
+                logging.debug(f'Override size to physical layout for {b}: offset=0x{orig_size.offset():x}, size=0x{orig_size.size():x}')
 
-            outfile = self.__encrypt('_' + b, ph, flash_aes_key, flash_crc_en)
+            outfile = self.__encrypt('_' + b, ph, flash_aes_key, flash_crc_en, flash_aes_type)
 
             size_obj = ph.size()
             # Safe logging: data partitions may not have vir_offset/phy_code_offset
             vir_offset = size_obj.vir_offset() if hasattr(size_obj, "vir_offset") else 0
             phy_code_offset = size_obj.phy_code_offset() if hasattr(size_obj, "phy_code_offset") else 0
-            logging.info(f'bin={b}, type={ph.type().type()}, phy_offset=0x{size_obj.offset():x}, phy_size=0x{size_obj.size():x}, vir_offset=0x{vir_offset:x}, phy_code_offset=0x{phy_code_offset:x}, flash_crc_en={flash_crc_en}')
+            logging.debug(f'bin={b}, type={ph.type().type()}, offset=0x{size_obj.offset():x}, size=0x{size_obj.size():x}, flash_crc_en={flash_crc_en}')
 
             # Only app add magic & version
             if ph.type().is_app():
@@ -225,13 +283,13 @@ class PackDownload(Pack):
             outfile = self.__add_crc(outfile, ph, flash_crc_en)
             img_buf = self.__add_pad(outfile, ph, flash_crc_en)
 
-            logging.info(f'bin={b}, after pad len=0x{len(img_buf):x}, img_offset=0x{img_offset:x}')
+            logging.debug(f'bin={b}, after pad len=0x{len(img_buf):x}, img_offset=0x{img_offset:x}')
 
             # Special handling for OTA and XIP_B 4k padding
             if ph.type().is_ow_ota() or ph.type().is_xip_b():
                 l = len(img_buf)
                 img_buf = bytes([0xFF]*l)
-                logging.info(f'bin={b}, type special (ow_ota/xip_b), replace with 0xFF, len=0x{l:x}')
+                logging.debug(f'bin={b}, type special (ow_ota/xip_b), replace with 0xFF, len=0x{l:x}')
 
             img_bufs.append(img_buf)
             img_hdr = self.__gen_download_img_hdr(ph, img_offset, img_buf)

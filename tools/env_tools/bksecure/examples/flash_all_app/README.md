@@ -64,3 +64,48 @@ Where to find the NVS tool
 --------------------------------------------------------
 The third-party NVS tool is place in: tools/env_tools/beken_utils/scripts/NVS
 
+run.py Parameter Reference
+--------------------------------------------------------
+
+### Required Parameters
+
+| Parameter               | Description                                      | Choices / Example                          |
+|-------------------------|--------------------------------------------------|---------------------------------------------|
+| `--flash_aes_type`      | Flash AES encryption type                        | `NONE` \| `FIXED` \| `RANDOM`               |
+| `--bl2_version`         | Bootloader (BL2) version string                  | `1.0.3`                                     |
+| `--app_version`         | Application version string                       | `0.0.3`                                     |
+| `--app_security_counter`| Application security counter (integer)           | `5`                                         |
+| `--ota_version`         | OTA version string                               | `0.0.4`                                     |
+| `--ota_security_counter`| OTA security counter                             | `5`                                         |
+| `--ota_type`            | OTA upgrade strategy                             | `XIP` \| `OVERWRITE`                        |
+| `--pubkey`              | BL2 public key (PEM file or hex string)          | `root_ec256_pubkey.pem` or hex string       |
+| `--app_slot_size`       | Virtual APP slot size in bytes                   | `1867776`                                   |
+
+### Optional Parameters
+
+| Parameter               | Description                                      | Choices / Example                          |
+|-------------------------|--------------------------------------------------|---------------------------------------------|
+| `--flash_aes_key`       | Flash AES key (required when flash_aes_type=FIXED)| `73c7bf397f2ad6bf...`                      |
+| `--flash_crc_en`        | Enable flash CRC                                 | `True` \| `False` (default: from csv/True) |
+| `--privkey`             | BL2 private key PEM file                         | `ec256_private_key.pem`                     |
+| `--replace_key_en`      | Enable key replacement (flag)                    | -                                           |
+| `--new_privkey`         | New BL2 private key (with --replace_key_en)      | `ec256_private_key_new.pem`                 |
+| `--new_pubkey`          | New BL2 public key (with --replace_key_en)       | hex string                                  |
+| `--ota_slot_size`       | OTA slot size (required when ota_type=OVERWRITE) | `1437696`                                   |
+| `--project`             | Project name (required with --build)             | `security/xip`                              |
+| `--bl1_secureboot_en`   | Enable BL1 secure boot (flag)                    | -                                           |
+| `--bl2_load_addr`       | BL2 load address (with --bl1_secureboot_en)      | `0x02008000`                                |
+| `--boot_ota`            | Enable bootloader OTA support (flag)             | -                                           |
+| `--build`               | Rebuild project before signing/packing (flag)    | -                                           |
+| `--clean`               | Clean temporary files after completion (flag)    | -                                           |
+| `--log-level`           | Set log verbosity level                          | `quiet` \| `simple` \| `normal` \| `verbose` \| `debug` |
+
+### Log Level Description
+
+| Level     | Description              |
+|-----------|--------------------------|
+| `quiet`   | Errors only              |
+| `simple`  | Key steps (default)      |
+| `normal`  | Normal info              |
+| `verbose` | Detailed info            |
+| `debug`   | Everything               |

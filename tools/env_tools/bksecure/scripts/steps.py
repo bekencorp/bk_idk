@@ -17,7 +17,6 @@ from .compress import *
 from .gen_ppc import *
 from .pk_hash import *
 from .partitions import *
-from .pack_json import *
 from .common import copy_files as copy_all_files, get_config_paths
 
 def copy_files_by_postfix(postfix, src_dir, dst_dir):
@@ -198,22 +197,31 @@ def sign_from_ota_sig(ota_bin_sig):
     bl2_sign('sign_from_sig', s.img_sign_key_type, s.img_sign_privkey, s.img_sign_pubkey_bytes, ota_bin_sig, 'compress.bin', pheader.m2(), pheader.version(), pheader.security_counter(), 'ota_signed.bin', 'ota_hash.json')
 
 #Step7 - pack download bin
-# def steps_pack(aes_key_type=None, aes_key=None, bl1_secureboot_en=False, ota_type='XIP', ota_security_counter=0, ota_encrypt='FALSE', boot_ota=False, bl2_version="v1.0.0"):
-    # if aes_key_type != None:
-    #     flash_aes_type = aes_key_type
-    #     flash_aes_key = aes_key
-    # elif os.path.exists('security.csv'):
-    #     s = Security('security.csv')
-    #     flash_aes_key = s.flash_aes_key 
-    #     flash_aes_type = s.flash_aes_type
-    # else:
-    #     flash_aes_type = 'NONE'
-    #     flash_aes_key = ''
+def steps_pack(aes_key_type=None, aes_key=None, flash_crc_en=None, bl1_secureboot_en=False, ota_type='XIP', ota_security_counter=0, ota_encrypt='FALSE', boot_ota=False, bl2_version="v1.0.0", pubkey_pem_file=None):
+    s = None
+    if aes_key_type != None:
+        flash_aes_type = aes_key_type
+        flash_aes_key = aes_key
+    elif os.path.exists('security.csv'):
+        s = Security('security.csv')
+        flash_aes_key = s.flash_aes_key 
+        flash_aes_type = s.flash_aes_type
+    else:
+        flash_aes_type = 'NONE'
+        flash_aes_key = ''
 
-    # logging.debug(f'steps_pack, bl1_secureboot_en={bl1_secureboot_en}, ota_type={ota_type}, ota_security_counter={ota_security_counter}, ota_encrypt={ota_encrypt}')
-    # p = Partitions('partitions.csv', ota_type, boot_ota, bl1_secureboot_en, bl2_version)
-    # p.pack_bin('pack.json', flash_aes_type, flash_aes_key, ota_security_counter, ota_encrypt, boot_ota, False)
-    # p.install_bin()
+    # Determine flash_crc_en: use parameter if provided, otherwise from security.csv, otherwise default to True
+    if flash_crc_en is None:
+        if s is not None:
+            flash_crc_en = s.flash_crc_en
+        else:
+            flash_crc_en = True
+
+    logging.info(f'steps_pack, bl1_secureboot_en={bl1_secureboot_en}, ota_type={ota_type}, ota_security_counter={ota_security_counter}, ota_encrypt={ota_encrypt}, flash_crc_en={flash_crc_en}')
+
+    p = Partitions('partitions.csv', 'bin.csv', 'pack.json')
+    p.pack_bin('pack.json', flash_aes_type, flash_aes_key, ota_security_counter, ota_encrypt, boot_ota, False)
+    p.install_bin()
 
 def steps_pack_csv():
     logging.debug(f'steps pack csv')
@@ -230,10 +238,10 @@ def steps_pack_csv():
     
     # Now all config files should be in current directory, proceed with packing
     s = Security('security.csv')
-    # p = Partitions('partitions.csv', 'bin.csv', 'pack.json')
-    # p.postbuild_process()
+    # Import PackJson here to avoid circular import (pack_json -> pack_bl2_sign -> steps)
+    from .pack_json import PackJson
     pack = PackJson()
-    pack.pack('steps_pack.json', s.img_sign_pubkey, None, s.flash_aes_key, s.flash_crc_en, None)
+    pack.pack('steps_pack.json', s.img_sign_pubkey, None, s.flash_aes_key, s.flash_crc_en, None, s.flash_aes_type)
     gen_otp_efuse_config_file(s.flash_aes_type, s.flash_aes_key, s.img_sign_pubkey, s.bl1_secureboot_en, False, 'otp_efuse_config.json')
     pack.install_bin()
     insert_pk_hash('bootloader.bin', s.img_sign_pubkey)

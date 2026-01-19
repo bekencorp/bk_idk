@@ -13,7 +13,6 @@ import binascii
 import codecs
 import csv
 import datetime
-import distutils.dir_util
 import os
 import random
 import struct
@@ -684,12 +683,12 @@ def set_target_filepath(outdir, filepath):
 
     # Create dir if does not exist
     if not (os.path.isdir(outdir)):
-        distutils.dir_util.mkpath(outdir)
+        os.makedirs(outdir, exist_ok=True)
 
     filedir, filename = os.path.split(filepath)
     filedir = os.path.join(outdir,filedir,'')
     if filedir and not os.path.isdir(filedir):
-        distutils.dir_util.mkpath(filedir)
+        os.makedirs(filedir, exist_ok=True)
 
     if os.path.isabs(filepath):
         if not outdir == os.getcwd():
@@ -840,7 +839,7 @@ def generate_key(args):
     keys_outdir = os.path.join(args.outdir,keys_dir, '')
     # Create keys/ dir in <outdir> if does not exist
     if not (os.path.isdir(keys_outdir)):
-        distutils.dir_util.mkpath(keys_outdir)
+        os.makedirs(keys_outdir, exist_ok=True)
     keys_outdir, output_keyfile = set_target_filepath(keys_outdir, args.keyfile)
 
     key = ''.join(random.choice('0123456789abcdef') for _ in range(128)).strip()

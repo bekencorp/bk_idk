@@ -239,6 +239,7 @@ def sign_from_ota_sig_command(ota_bin_sig, debug):
 @click.option("--debug", is_flag=True, help="Enable debug")
 @click.option("--flash_aes_type", type=click.Choice(['NONE', 'FIXED', 'RANDOM']), default='FIXED', required=True, help="The flash AES type.")
 @click.option("--flash_aes_key", type=str, required=False, default=None, help="configuration flash aes key")
+@click.option("--flash_crc_en", type=click.Choice(['True', 'False', 'true', 'false']), required=False, default=None, help="Enable flash CRC (True/False). If not specified, read from security.csv or default to True")
 @click.option("--bl1_secureboot_en", is_flag=True, default=False, help="Indicate whether enable BL1 secure boot")
 @click.option("--ota_type", type=click.Choice(['XIP', 'OVERWRITE']), help="OTA strategy")
 @click.option("--ota_security_counter", type=int, help="APP security counter")
@@ -246,10 +247,14 @@ def sign_from_ota_sig_command(ota_bin_sig, debug):
 @click.option("--ota_encrypt", is_flag=True, default=False, help="Indicate whether ota.bin is encrypted")
 @click.option("--pubkey_pem_file", type=str, default='root_ec256_privkey.pem', help="BL2 public key PEM file")
 @click.option("--bl2_version", type=str, required=True, default=None, help="configuration bl2 version")
-def pack_command(debug, flash_aes_type, flash_aes_key, bl1_secureboot_en, ota_type, ota_security_counter, ota_encrypt, boot_ota, bl2_version, pubkey_pem_file):
+def pack_command(debug, flash_aes_type, flash_aes_key, flash_crc_en, bl1_secureboot_en, ota_type, ota_security_counter, ota_encrypt, boot_ota, bl2_version, pubkey_pem_file):
     """Pack download bin"""
     set_debug(debug)
-    steps_pack(flash_aes_type, flash_aes_key, bl1_secureboot_en, ota_type, ota_security_counter, ota_encrypt, boot_ota, bl2_version, pubkey_pem_file)
+    # Convert flash_crc_en string to boolean if provided
+    flash_crc_en_bool = None
+    if flash_crc_en is not None:
+        flash_crc_en_bool = flash_crc_en.lower() == 'true'
+    steps_pack(flash_aes_type, flash_aes_key, flash_crc_en_bool, bl1_secureboot_en, ota_type, ota_security_counter, ota_encrypt, boot_ota, bl2_version, pubkey_pem_file)
 
 @steps.command("pack_csv")
 @click.option("--debug", is_flag=True, help="Enable debug")

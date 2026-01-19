@@ -139,8 +139,11 @@ class PartitionNvsKey(Partition):
         # Reference: beken_utils partition.py lines 721-722
         crc_bin_name = f'{self.name()}_crc.bin'
         if flash_crc_en:
+            # Verify that input file exists before calling calc_crc16
+            if not os.path.exists(aes_bin_name):
+                raise FileNotFoundError(f'{self.name()}: Input file for CRC calculation not found: {aes_bin_name}')
             calc_crc16(aes_bin_name, crc_bin_name)
-            logging.debug(f'{self.name()}: added CRC to {crc_bin_name}')
+            logging.info(f'{self.name()}: added CRC to {crc_bin_name}')
         else:
             # Skip CRC: copy the encrypted/original file to crc_bin_name (same content, different filename)
             shutil.copy(aes_bin_name, crc_bin_name)
@@ -159,6 +162,7 @@ class PartitionNvsKey(Partition):
         # Create padded data: padding + actual data
         pad = bytes([0xFF] * partition_hdr_pad_size)
         padded_data = pad + data
+        logging.info(f'{self.name()}: padded data: {len(padded_data)} bytes, data: {len(data)} bytes, pad_size: {partition_hdr_pad_size}')
         
         # Check if padded data exceeds partition size
         if len(padded_data) > self.size().size():

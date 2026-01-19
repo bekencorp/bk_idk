@@ -1,0 +1,14 @@
+Name,Type,SubType,Offset,Size,Flags
+bl2,app,,,76k,
+partition,data,partition,,4k,
+primary_cpu0_app,app,xip_a,,1824k,
+secondary_cpu0_app,app,xip_b,,1824k,
+xip_ota_control,data,xip_ota_control,,4k,
+user_config,data,,,136k,
+user_File,data,,,56k,flash_encrypted
+user_mfr,data,factory,,4k,encrypted
+wiz_mfr,data,,,8k,
+sys_rf,data,,,4k,
+sys_net,data,,,4k,
+nvs,data,nvs,,128k,
+nvs_key,data,nvs_key,,4k,flash_encrypted

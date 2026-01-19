@@ -14,5 +14,4 @@ def run_cmd(cmd):
 
 def build_server_process(project):
     run_cmd(f'make clean')
-    run_cmd(f'make bk7236 PROJECT={project} APP_VERSION="vvvvvvvvvvvvvvvvvvvvvvvv1.0"')
-    #run_cmd(f'make bk7236 PROJECT={project} APP_VERSION="v1.0"')
+    run_cmd(f'make bk7236n PROJECT={project} APP_VERSION="vvvvvvvvvvvvvvvvvvvvvvvv1.0"')

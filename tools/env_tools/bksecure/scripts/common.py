@@ -217,8 +217,8 @@ def get_soc_type():
         logging.debug(f'Detected SOC type from ARMINO_SOC: {soc_type}')
         return soc_type
     else:
-        logging.debug('ARMINO_SOC not set, using default: BK7236')
-        return 'BK7236'
+        logging.debug('ARMINO_SOC not set, using default: BK7236N')
+        return 'BK7236N'
 
 def get_flash_aes_tool():
     tools_dir = get_tools_dir()
@@ -245,11 +245,36 @@ def get_crc_tool():
     return f'{tools_dir}/packager_tools/centos7/cmake_encrypt_crc'
 
 def calc_crc16(raw,dst):
+    # Check if input file exists
+    if not os.path.exists(raw):
+        raise FileNotFoundError(f'Input file not found: {raw}')
+    
+    # Check if tool exists
     crc_tool = get_crc_tool()
-    cmd = f'{crc_tool} -enc {raw} 0 0 0 0 -crc'
-    run_cmd_not_check_ret(cmd)
+    if not os.path.exists(crc_tool):
+        raise FileNotFoundError(f'CRC tool not found: {crc_tool}')
+    
+    # Execute CRC tool and check return value
+    # Quote file paths to handle spaces or special characters
+    raw_quoted = f'"{raw}"' if ' ' in raw or '\t' in raw else raw
+    cmd = f'{crc_tool} -enc {raw_quoted} 0 0 0 0 -crc'
+    logging.debug(f'calc_crc16: executing command: {cmd}')
+    logging.debug(f'calc_crc16: input file: {raw}, exists: {os.path.exists(raw)}, size: {os.path.getsize(raw) if os.path.exists(raw) else "N/A"}')
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = p.communicate()
+    ret = p.returncode
+    if ret != 0:
+        error_msg = stderr.decode('utf-8', errors='ignore') if stderr else ''
+        raise RuntimeError(f'CRC tool failed with return code {ret}: {cmd}\nError: {error_msg}')
+    
+    # Check if output file was generated
     aes_crc_bin_name = raw.replace(".bin","_crc.bin")
-    os.rename(aes_crc_bin_name,dst)
+    if not os.path.exists(aes_crc_bin_name):
+        raise FileNotFoundError(f'CRC tool did not generate output file: {aes_crc_bin_name}')
+    
+    # Rename output file to destination
+    os.rename(aes_crc_bin_name, dst)
+    logging.debug(f'calc_crc16: successfully generated {dst}')
     
 def get_nvs_tool():
     tools_dir = get_tools_dir()

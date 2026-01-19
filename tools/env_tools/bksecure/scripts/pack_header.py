@@ -66,12 +66,18 @@ class PackHeader:
 
         magic_bytes, name_bytes, version_bytes, type_, subtype, offset, size, flags, hdr_size, m1, m2, m3, m4 = struct.unpack(PACK_HEADER_FORMAT, header_data)
 
+        # Check magic before decoding to avoid UnicodeDecodeError for files without pack header
+        if not magic_bytes.startswith(PACK_HEADER_MAGIC.encode('utf-8')):
+            logging.error(f'Invalid bin pack header, bname={bname}')
+            logging.error(f'  Expected magic: {PACK_HEADER_MAGIC}')
+            logging.error(f'  Found magic bytes (hex): {magic_bytes[:12].hex()}')
+            logging.error(f'  File may not have pack header or is corrupted')
+            exit(1)
+        
+        # Safe to decode now that we know magic is valid
         magic = magic_bytes.rstrip(b'\x00').decode('utf-8')
         name = name_bytes.rstrip(b'\x00').decode('utf-8')
         version = version_bytes.rstrip(b'\x00').decode('utf-8')
-        if magic != PACK_HEADER_MAGIC:
-            logging.error(f'Invalid bin pack header, bname={bname}')
-            exit(1)
 
         self._name = name
         self._type = PartitionType(type_, subtype)

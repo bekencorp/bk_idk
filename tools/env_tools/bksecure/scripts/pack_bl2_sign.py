@@ -107,6 +107,47 @@ class PackBl2sign(Pack):
         name = ph.name()
         infile = f'_{name}.bin'
 
+        # Pack Server scenario: if img_sign_privkey is None, check if signed file already exists
+        # Sign Server has already generated signed files (e.g., primary_all_signed.bin, ota_signed.bin)
+        # Pack Server should use these signed files directly instead of signing again
+        if img_sign_privkey is None:
+            # Check if output file already exists (from Sign Server)
+            if os.path.exists(self._outfile):
+                logging.info(f'Pack Server: {self._outfile} already exists from Sign Server, skipping signing step')
+                # Just create pack header for the existing signed file
+                p = PackHeader()
+                t = ph.type()
+                p.create_header(self._outfile, ph.version(), ph.name(), ph.type().type(),
+                    ph.type().subtype(), ph.size().offset(), ph.size().size(), ph.flags().flags(), 0, ph.m1(), ph.m2(), ph.m3(), ph.m4())
+                return
+            
+            # If output file doesn't exist, check for common signed file names from Sign Server
+            # Map common input names to signed file names from Sign Server
+            signed_file_mapping = {
+                'xip_a.bin': 'primary_all_signed.bin',
+                'primary_all.bin': 'primary_all_signed.bin',
+                'ota.bin': 'ota_signed.bin',
+            }
+            
+            input_bin = self._bins[0]
+            signed_file = signed_file_mapping.get(input_bin)
+            if signed_file and os.path.exists(signed_file):
+                logging.info(f'Pack Server: Found signed file {signed_file} from Sign Server, copying to {self._outfile}')
+                import shutil
+                shutil.copy(signed_file, self._outfile)
+                # Create pack header for the copied signed file
+                p = PackHeader()
+                t = ph.type()
+                p.create_header(self._outfile, ph.version(), ph.name(), ph.type().type(),
+                    ph.type().subtype(), ph.size().offset(), ph.size().size(), ph.flags().flags(), 0, ph.m1(), ph.m2(), ph.m3(), ph.m4())
+                return
+            
+            # If no signed file found, this is an error in Pack Server scenario
+            logging.error(f'Pack Server: img_sign_privkey is None, but signed file not found for {self._outfile}')
+            logging.error(f'Pack Server: Expected signed file from Sign Server (e.g., primary_all_signed.bin, ota_signed.bin)')
+            logging.error(f'Pack Server: Cannot sign without private key. Please ensure Sign Server has generated signed files.')
+            exit(1)
+
         # For XIP mode with update_img_sign_key_en, setup trust chain verification
         # New TLV format:
         #   0xA0: new_img_sign_pubkey (new public key)

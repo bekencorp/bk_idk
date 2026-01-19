@@ -5,6 +5,7 @@ import json
 import logging
 import csv
 import struct
+import shutil
 
 from .common import *
 from .parse_csv import *
@@ -356,7 +357,6 @@ class Partitions:
         f.close()
 
     def prebuild_process(self):
-
         for p in self._partitions:
             p.prebuild_process()
         self.__gen_code('partitions_gen.h')
@@ -379,3 +379,538 @@ class Partitions:
         # Then process other partitions (nvs_key.bin should be available now)
         for p in other_partitions:
             p.postbuild_process(flash_aes_en, flash_aes_key, img_sign_key, flash_crc_en, flash_aes_type)
+
+    def gen_primary_all_bin_for_bl2_signing(self, partition_name, app_version):
+        # In OTA XIP mode, generate primary_all.bin from app.bin
+        # Only support primary_all partition in XIP mode
+        if partition_name != 'primary_all':
+            logging.debug(f'Skip generate partition {partition_name}, only support primary_all in XIP mode')
+            return
+        
+        if self._ota_type != 'XIP':
+            logging.debug(f'Skip generate partition {partition_name}, only support XIP mode')
+            return
+        
+        logging.debug(f'Generate {partition_name} from app.bin in OTA XIP mode')
+        app_bin = 'app.bin'
+        all_bin_name = f'{partition_name}.bin'
+        
+        if not os.path.exists(app_bin):
+            logging.error(f'{app_bin} not exists, cannot generate {all_bin_name}')
+            return
+        
+        # Copy app.bin to primary_all.bin
+        shutil.copy(app_bin, all_bin_name)
+        logging.debug(f'Copied {app_bin} to {all_bin_name}')
+        
+        # Append version and chip info (same format as original logic)
+        parts = app_version.split('.')
+        iv_major = struct.pack('B', int(parts[0]))
+        iv_minor = struct.pack('B', int(parts[1]))
+        iv_revision = struct.pack('<H', int(parts[2]))
+        chip = struct.pack('<6s','BK7236N'.encode('utf-8'))
+        
+        with open(all_bin_name, 'ab') as f:
+            f.write(iv_major)
+            f.write(iv_minor)
+            f.write(iv_revision)
+            f.write(chip)
+        
+        logging.debug(f'Generated {all_bin_name} from {app_bin} in XIP mode')
+
+    def pack_bin(self, pack_json, aes_type, aes_key, security_counter, ota_aes_en, boot_ota=False, ci_test=False):
+        """Pack bins for Pack Server (after Build and Sign servers)
+        
+        This method implements the Pack Server functionality in the three-server architecture:
+        1. Build Server: compiles source code, generates raw binaries (no private keys)
+        2. Sign Server: signs binaries (requires private keys, security isolated)
+        3. Pack Server: encrypts, packs, generates final download files (no private keys)
+        
+        Args:
+            pack_json: Path to pack.json file
+            aes_type: AES encryption type ('FIXED', 'RANDOM', or 'NONE')
+            aes_key: AES encryption key
+            security_counter: Security counter for OTA
+            ota_aes_en: Whether to enable AES encryption for OTA
+            boot_ota: Whether to enable boot OTA
+            ci_test: Whether this is a CI test build
+        """
+        logging.info(f'pack_bin, aes_type={aes_type}, aes_key={aes_key}, security_counter={security_counter}, ota_aes_en={ota_aes_en}, boot_ota={boot_ota}, ci_test={ci_test}')
+
+        # Get bl1_secureboot_en and ota_type from security.csv if available
+        self._bl1_secureboot_en = self.__get_bl1_secureboot_en()
+        self._ota_type = self.__get_ota_type()
+        self._boot_ota = boot_ota
+
+        self.parse_and_validate_partitions_after_build()
+        self.parse_and_validate_pack_json(pack_json)
+        
+        # Process partitions: handle encryption, CRC, etc. (similar to bksecure_mfr)
+        # These operations work on raw bin files from Sign Server (no pack header needed)
+        self.process_bl1_control(aes_type, aes_key, boot_ota)
+        self.process_manifest()
+        self.process_partition_partition(aes_type)
+        self.process_boot_flag(aes_type)
+        self.process_nvs(aes_type, aes_key)
+        self.process_encrypted(aes_type, aes_key)
+        self.process_app_aes_crc(aes_type, aes_key)
+        
+        # Before calling PackJson.pack(), ensure all bin files have pack headers
+        # Pack Server receives signed binaries from Sign Server (may not have pack headers)
+        # PackDownload expects files with pack headers, so we need to add them first
+        logging.debug('Adding pack headers to bin files for PackDownload')
+        self.__ensure_pack_headers_for_pack_json(pack_json, aes_type, aes_key)
+        
+        # Use PackJson to handle the actual packing (all-app.bin, ota.bin, bootloader.bin, etc.)
+        # This is the Pack Server functionality: encrypt, pack, generate final download files
+        from .pack_json import PackJson
+        pack = PackJson()
+        
+        # Get pubkey from security.csv if available (for PackJson)
+        pubkey_for_pack = None
+        try:
+            from .security import Security
+            if os.path.exists('security.csv'):
+                s = Security('security.csv')
+                pubkey_for_pack = s.img_sign_pubkey
+        except Exception as e:
+            logging.debug(f'Failed to read pubkey from security.csv: {e}')
+        
+        # PackJson handles: all-app.bin, ota.bin, bootloader.bin, bootloader_ota.bin, etc.
+        flash_crc_en = self._flash_crc_en
+        pack.pack(pack_json, pubkey_for_pack, None, aes_key, flash_crc_en, None, aes_type)
+        
+        # Call gen methods for compatibility (they are no-ops, actual work done by PackJson)
+        self.gen_all_apps_bin(aes_type)  # all_apps depends on nvs/encrypted/app etc
+        self.gen_ota_bin(ota_aes_en, aes_key, security_counter, ci_test)
+        self.gen_bootloader_ota_bin(aes_type)
+        if (self._bl1_secureboot_en == True):
+            self.gen_provisioning_bin(aes_type)
+
+    def __ensure_pack_headers_for_pack_json(self, pack_json, aes_type, aes_key):
+        """Ensure all bin files referenced in pack.json have pack headers
+        
+        Pack Server receives signed binaries from Sign Server which may not have pack headers.
+        PackDownload expects files with pack headers, so we need to add them before calling PackJson.pack().
+        
+        This method:
+        1. Reads pack.json to find all bin files that need pack headers
+        2. For each bin file, checks if it has a pack header
+        3. If not, adds pack header using partition information
+        """
+        from .pack_header import PackHeader, PACK_HEADER_SIZE, PACK_HEADER_MAGIC
+        import struct
+        from .pack_header import PACK_HEADER_FORMAT
+        
+        if not os.path.exists(pack_json):
+            return
+        
+        with open(pack_json, 'r') as f:
+            pack_data = json.load(f)
+        
+        # Collect all bin files that need pack headers
+        bins_needing_headers = set()
+        for k in pack_data:
+            bins = pack_data[k].get('bin', [])
+            for bin_name in bins:
+                bins_needing_headers.add(bin_name)
+        
+        logging.debug(f'Bins needing pack headers: {bins_needing_headers}')
+        
+        # For each bin file, check and add pack header if needed
+        for bin_name in bins_needing_headers:
+            if not os.path.exists(bin_name):
+                logging.debug(f'{bin_name} not exists, skip adding pack header')
+                continue
+            
+            # Check if file already has pack header
+            has_header = False
+            try:
+                with open(bin_name, 'rb') as f:
+                    header_data = f.read(PACK_HEADER_SIZE)
+                    if len(header_data) == PACK_HEADER_SIZE:
+                        try:
+                            magic_bytes, name_bytes, version_bytes, type_, subtype, offset, size, flags, hdr_size, m1, m2, m3, m4 = struct.unpack(PACK_HEADER_FORMAT, header_data)
+                            magic = magic_bytes.rstrip(b'\x00').decode('utf-8')
+                            if magic == PACK_HEADER_MAGIC:
+                                has_header = True
+                                logging.debug(f'{bin_name} already has pack header, skipping')
+                        except Exception as e:
+                            logging.debug(f'{bin_name} header parse failed ({e}), will add new header')
+            except Exception as e:
+                logging.debug(f'Failed to check header for {bin_name}: {e}')
+            
+            if has_header:
+                continue
+            
+            # Find partition for this bin file
+            # Remove .bin extension and try to find partition
+            partition_name = bin_name.replace('.bin', '')
+            # Handle special cases like pack_primary_manifest.bin -> primary_manifest
+            if partition_name.startswith('pack_'):
+                partition_name = partition_name[5:]
+            
+            p = self._find_partition_by_name(partition_name)
+            if p is None:
+                logging.warning(f'Partition {partition_name} not found for {bin_name}, cannot add pack header')
+                continue
+            
+            # Get bin version from Bin object if available
+            version = "1.0.0"  # Default version
+            if hasattr(p, 'bin') and p.bin():
+                version = p.bin().version()
+            
+            # Add pack header
+            try:
+                ph = PackHeader()
+                ph.create_header(
+                    bin_name,
+                    version,
+                    p.name(),
+                    p.type().type(),
+                    p.type().subtype(),
+                    p.size().offset(),
+                    p.size().size(),
+                    p.flags().flags(),
+                    0  # hdr_size
+                )
+                logging.debug(f'Added pack header to {bin_name}')
+            except Exception as e:
+                logging.warning(f'Failed to add pack header to {bin_name}: {e}')
+
+    def __get_bl1_secureboot_en(self):
+        """Get bl1_secureboot_en from security.csv if available"""
+        try:
+            from .security import Security
+            if os.path.exists('security.csv'):
+                s = Security('security.csv')
+                return s.bl1_secureboot_en
+        except Exception as e:
+            logging.debug(f'Failed to read bl1_secureboot_en from security.csv: {e}')
+        return False
+
+    def __get_ota_type(self):
+        """Get ota_type from security.csv if available, or infer from partitions"""
+        try:
+            from .security import Security
+            if os.path.exists('security.csv'):
+                s = Security('security.csv')
+                if hasattr(s, 'ota_type'):
+                    return s.ota_type
+        except Exception as e:
+            logging.debug(f'Failed to read ota_type from security.csv: {e}')
+        
+        # Infer from partitions
+        if self.__has_overwrite():
+            return 'OVERWRITE'
+        elif self.__has_xip():
+            return 'XIP'
+        return 'NONE'
+
+    def parse_and_validate_partitions_after_build(self):
+        """Validate partitions after build is complete"""
+        logging.debug('parse_and_validate_partitions_after_build')
+        for p in self._partitions:
+            if hasattr(p, 'parse_and_validate_after_build'):
+                p.parse_and_validate_after_build()
+
+    def parse_and_validate_pack_json(self, pack_json):
+        """Parse and validate pack.json file"""
+        if pack_json == None:
+            logging.error('Invalid pack json')
+            exit(1)
+
+        if not os.path.exists(pack_json):
+            logging.error(f'pack.json file {pack_json} not exists')
+            exit(1)
+
+        self._pack_json_data = None
+        with open(pack_json, 'r') as f:
+            self._pack_json_data = json.load(f)
+
+        # Build list of all partitions that need to be packed
+        self._all_pack_partitions = ['bl2', 'partition']
+        for k in self._pack_json_data:
+            bins = self._pack_json_data[k].get('bin', [])
+            for bin_name in bins:
+                # Remove .bin extension if present
+                partition_name = bin_name.replace('.bin', '')
+                if partition_name not in self._all_pack_partitions:
+                    self._all_pack_partitions.append(partition_name)
+        
+        logging.debug(f'all_pack_partitions: {self._all_pack_partitions}')
+
+    def is_partition_need_pack(self, p):
+        """Check if partition needs to be packed"""
+        partition_name = p.name()
+        if partition_name in self._all_pack_partitions:
+            return True
+        return False
+
+    def get_pack_idx_list(self, pack_name):
+        """Get list of partition indices for a pack bin name"""
+        idx_list = []
+        if not hasattr(self, '_pack_json_data') or pack_name not in self._pack_json_data:
+            logging.debug(f'Pack bin {pack_name} not in pack.json, skip it')
+            return idx_list
+
+        bins = self._pack_json_data[pack_name].get('bin', [])
+        for bin_name in bins:
+            # Remove .bin extension if present
+            partition_name = bin_name.replace('.bin', '')
+            p = self._find_partition_by_name(partition_name)
+            if p:
+                idx = self._partitions.index(p)
+                idx_list.append(idx)
+        
+        logging.debug(f'Partition id list of {pack_name}: {idx_list}')
+        return idx_list
+
+    def process_bl1_control(self, aes_type, aes_key, boot_ota):
+        """Process bl1_control partition"""
+        if self._bl1_secureboot_en == False:
+            return
+
+        p = self._find_partition_by_name('bl1_control')
+        if p == None:
+            return
+
+        # bl1_control.bin should already exist from build/sign process
+        bin_name = 'bl1_control.bin'
+        if not os.path.exists(bin_name):
+            logging.warning(f'{bin_name} not exists, creating empty one')
+            with open(bin_name, 'wb') as f:
+                pad = bytes([0xFF]*(0xF00))
+                f.write(pad)
+
+        if aes_type == 'RANDOM':
+            logging.debug(f'Copy MSP and PC from provision.bin to {bin_name}')
+            if os.path.exists('provision.bin'):
+                with open('provision.bin', 'rb') as f:
+                    privison_msp_pc = f.read(64)
+                    with open(bin_name, 'rb+') as bl1_control_f:
+                        bl1_control_f.seek(0)
+                        bl1_control_f.write(privison_msp_pc)
+            aes_bin_name = bin_name
+        else:
+            if boot_ota == False:
+                logging.debug(f'Copy MSP and PC from bl2.bin to {bin_name}')
+                if os.path.exists('bl2.bin'):
+                    with open('bl2.bin', 'rb') as f:
+                        bl2_msp_pc = f.read(64)
+                        with open(bin_name, 'rb+') as bl1_control_f:
+                            bl1_control_f.seek(0)
+                            bl1_control_f.write(bl2_msp_pc)
+            else:
+                if os.path.exists("bl2_B.bin") and os.path.exists("jump.bin"):
+                    logging.debug(f'Copy jump_bin to {bin_name}')
+                    with open("jump.bin", 'rb') as jump_f:
+                        jump_data = jump_f.read()
+                        with open(bin_name, 'rb+') as bl1_control_f:
+                            bl1_control_f.seek(0)
+                            bl1_control_f.write(jump_data)
+
+            if aes_type == 'FIXED':
+                aes_bin_name = f'{p.name()}_aes.bin'
+                aes_tool = get_flash_aes_tool()
+                start_address = hex(phy2virtual(p.size().offset()))
+                cmd = f'python3 {aes_tool} encrypt -infile {bin_name} -keywords {aes_key} -outfile {aes_bin_name} -startaddress {start_address}'
+                run_cmd_not_check_ret(cmd)
+            else:
+                aes_bin_name = bin_name
+
+        # Add magic code and CRC if needed
+        if self._flash_crc_en:
+            # Magic code should be added by partition's postbuild_process
+            crc_bin_name = f'{p.name()}_crc.bin'
+            calc_crc16(aes_bin_name, crc_bin_name)
+            final_bin_name = crc_bin_name
+        else:
+            final_bin_name = aes_bin_name
+
+        # Read partition buffer for packing
+        read_size = os.path.getsize(final_bin_name)
+        if read_size > p.size().size():
+            read_size = p.size().size()
+
+        with open(final_bin_name, 'rb') as f:
+            p.partition_buf = bytearray(f.read(read_size))
+
+    def process_manifest(self):
+        """Process manifest partitions"""
+        p = self._find_partition_by_name('primary_manifest')
+        if p != None and hasattr(p, 'bin') and p.bin() and os.path.exists(p.bin().name()):
+            with open(p.bin().name(), 'rb') as f:
+                p.partition_buf = bytearray(f.read())
+        
+        p2 = self._find_partition_by_name('secondary_manifest')
+        if p2 != None and hasattr(p2, 'bin') and p2.bin() and os.path.exists(p2.bin().name()):
+            with open(p2.bin().name(), 'rb') as f:
+                p2.partition_buf = bytearray(f.read())
+
+    def process_partition_partition(self, aes_type):
+        """Process partition partition (partition.bin)"""
+        p = self._find_partition_by_name('partition')
+        if p == None:
+            logging.debug(f'partition partition not exists, not create partition.bin')
+            return
+
+        # partition.bin should already be created by PartitionPartition.postbuild_process
+        # Just read it for packing
+        bin_name = 'partition.bin'
+        if os.path.exists(bin_name):
+            with open(bin_name, 'rb') as f:
+                p.partition_buf = bytearray(f.read())
+        else:
+            logging.warning(f'{bin_name} not exists')
+
+    def process_boot_flag(self, aes_type):
+        """Process boot_flag partition"""
+        if self._bl1_secureboot_en == False:
+            return
+
+        p = self._find_partition_by_name('boot_flag')
+        if p == None:
+            return
+
+        boot_flag_val = bytes([0x63, 0x54, 0x72, 0x4c, 0x1])
+        bin_name = 'boot_flag.bin'
+        
+        # boot_flag.bin should already exist from build process
+        if not os.path.exists(bin_name):
+            with open(bin_name, 'wb+') as f:
+                logging.debug(f'create new {bin_name}')
+                pad = bytes([0x0]*(0x20))
+                f.write(pad)
+                f.seek(32)
+                pad = bytes([0xFF]*(0xFE0))
+                f.write(pad)
+
+        with open(bin_name, 'rb+') as f:
+            f.seek(0)
+            f.write(boot_flag_val)
+
+        with open(bin_name, 'rb') as f:
+            p.partition_buf = bytearray(f.read())
+
+    def process_nvs(self, aes_type, aes_key):
+        """Process NVS and NVS key partitions"""
+        nvs_key_partition_cnt = 0
+        self._nvs_key_partition = None
+        logging.debug(f'process nvs partitions')
+        
+        # Process nvs_key partitions first
+        for p in self._partitions:
+            if isinstance(p, PartitionNvsKey):
+                if nvs_key_partition_cnt == 1:
+                    logging.error(f'More than 2 partition with nvs_key subtype')
+                    exit(1)
+
+                if not self.is_partition_need_pack(p):
+                    logging.debug(f'process_nvs_key: skip {p.name()}, no need pack')
+                    continue
+
+                self._nvs_key_partition = p.name()
+                nvs_key_partition_cnt = nvs_key_partition_cnt + 1
+                # nvs_key should already be processed by postbuild_process
+                # Just read partition_buf if available
+                if hasattr(p, 'partition_buf'):
+                    pass  # Already processed
+
+        # Process nvs partitions
+        for p in self._partitions:
+            if isinstance(p, PartitionNvs):
+                if not self.is_partition_need_pack(p):
+                    logging.debug(f'process_nvs: skip {p.name()}, no need pack')
+                    continue
+                # nvs should already be processed by postbuild_process
+                # Just read partition_buf if available
+                if hasattr(p, 'partition_buf'):
+                    pass  # Already processed
+
+    def process_encrypted(self, aes_type, aes_key):
+        """Process encrypted partitions"""
+        logging.debug('process encrypted partition')
+        for p in self._partitions:
+            if not self.is_partition_need_pack(p):
+                logging.debug(f'process_encrypted: skip {p.name()}, no need pack')
+                continue
+            
+            # Encrypted partitions should already be processed by postbuild_process
+            # Just ensure partition_buf is available
+            if hasattr(p, 'partition_buf'):
+                pass  # Already processed
+
+    def process_app_aes_crc(self, aes_type, aes_key):
+        """Process app partitions: add AES encryption and CRC"""
+        logging.debug('process app partition, add aes and crc')
+        for p in self._partitions:
+            partition_name = p.name()
+            if (partition_name == 'bl2') or (partition_name == 'bl2_B') or (partition_name == 'primary_all'):
+                # These partitions should already be processed by postbuild_process
+                # Just ensure partition_buf is available
+                if hasattr(p, 'partition_buf'):
+                    pass  # Already processed
+                elif hasattr(p, 'bin') and p.bin() and os.path.exists(p.bin().name()):
+                    # Read bin file if partition_buf not available
+                    with open(p.bin().name(), 'rb') as f:
+                        p.partition_buf = bytearray(f.read())
+
+    def gen_all_apps_bin(self, aes_type):
+        """Generate all-app.bin - handled by PackJson in pack() method"""
+        logging.debug('gen_all_apps_bin: will be handled by PackJson')
+        # The actual packing is done by PackJson.pack() method
+        # This method is called for compatibility with bksecure_mfr interface
+        pass
+
+    def gen_ota_bin(self, ota_aes_en, aes_key, security_counter, ci_test):
+        """Generate ota.bin - handled by PackJson in pack() method"""
+        logging.debug(f'gen_ota_bin: will be handled by PackJson (ota_aes_en={ota_aes_en}, security_counter={security_counter}, ci_test={ci_test})')
+        # The actual OTA packing is done by PackJson.pack() method
+        # This method is called for compatibility with bksecure_mfr interface
+        pass
+
+    def gen_bootloader_ota_bin(self, aes_type):
+        """Generate bootloader_ota.bin - handled by PackJson in pack() method"""
+        if self._boot_ota == False:
+            return
+        logging.debug('gen_bootloader_ota_bin: will be handled by PackJson')
+        # The actual packing is done by PackJson.pack() method
+        # This method is called for compatibility with bksecure_mfr interface
+        pass
+
+    def gen_provisioning_bin(self, aes_type):
+        """Generate provisioning bin - handled by PackJson in pack() method"""
+        if self._bl1_secureboot_en == False:
+            return
+        logging.debug('gen_provisioning_bin: will be handled by PackJson')
+        # The actual packing is done by PackJson.pack() method
+        # This method is called for compatibility with bksecure_mfr interface
+        pass
+
+    def install_bin(self):
+        """Install generated bins to install directory"""
+        install_dir = 'install'
+        os.makedirs(install_dir, exist_ok=True)
+        
+        # List of files to install
+        files_to_install = [
+            'all-app.bin',
+            'ota.bin',
+            'bootloader.bin',
+            'bootloader_B.bin',
+            'bootloader_ota.bin',
+            'provision_pack.bin',
+            'otp_efuse_config.json',
+            'app.bin',
+            'pack_cmd_list.txt',
+            'ota_error.bin',
+            'ota_vmin.bin'
+        ]
+        
+        for file_name in files_to_install:
+            if os.path.exists(file_name):
+                shutil.copy(file_name, f'{install_dir}/{file_name}')
+                logging.debug(f'Installed {file_name} to {install_dir}')
+            else:
+                logging.debug(f'{file_name} not exists, skip install')

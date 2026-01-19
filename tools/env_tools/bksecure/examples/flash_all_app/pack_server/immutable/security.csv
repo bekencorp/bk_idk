@@ -1,0 +1,12 @@
+Field,Value
+bl1_secureboot_en,FALSE
+flash_crc_en,FALSE
+flash_aes_type,FIXED
+flash_aes_key,73c7bf397f2ad6bf4e7403a7b965dc5ce0645df039c2d69c814ffb403183fb18
+img_sign_key_type,ec256
+img_sign_pubkey,root_ec256_pubkey.pem
+img_sign_privkey,root_ec256_privkey.pem
+new_img_sign_pubkey,ec256_public_key.pem
+new_img_sign_privkey,ec256_private_key.pem
+update_img_sign_key_en,FALSE
+anti_rollback,FALSE
