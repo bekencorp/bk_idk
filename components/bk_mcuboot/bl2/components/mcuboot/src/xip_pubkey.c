@@ -204,16 +204,6 @@ static int verify_signature_with_bootutil(const uint8_t *data, uint16_t data_len
     mbedtls_sha256_finish(&sha256_ctx, data_hash);
     mbedtls_sha256_free(&sha256_ctx);
     
-    // NOTE: imgtool sign-hash uses ec.ECDSA(SHA256()) which hashes the input again
-    // So we need to hash the hash again to match what imgtool signed
-    // This is a workaround because we cannot modify imgtool
-    uint8_t double_hashed[32];
-    mbedtls_sha256_init(&sha256_ctx);
-    mbedtls_sha256_starts(&sha256_ctx, 0);
-    mbedtls_sha256_update(&sha256_ctx, data_hash, 32);
-    mbedtls_sha256_finish(&sha256_ctx, double_hashed);
-    mbedtls_sha256_free(&sha256_ctx);
-    
     // Setup bootutil_keys[0] for verification
     extern unsigned int pub_key_len;
     unsigned int saved_pub_key_len = pub_key_len;
@@ -224,9 +214,8 @@ static int verify_signature_with_bootutil(const uint8_t *data, uint16_t data_len
     pub_key_len = (unsigned int)verify_pubkey_len;
     bootutil_keys[0].len = &pub_key_len;
     
-    // Verify signature using bootutil_verify_sig
     FIH_CALL(bootutil_verify_sig, fih_rc,
-             double_hashed, sizeof(double_hashed),
+             data_hash, sizeof(data_hash),
              signature, signature_len, 0);
     
     // Restore bootutil_keys[0]
@@ -352,9 +341,7 @@ bk_find_key(uint8_t image_index, uint8_t *key, uint16_t key_len, uint32_t curren
         uint8_t running_slot_root_pubkey[MAX_PUBKEY_LEN];
         uint16_t running_slot_root_pubkey_len = 0;
         ret = read_root_pubkey_from_slot(running_slot, running_slot_root_pubkey, &running_slot_root_pubkey_len);
-        bool running_root_pubkey = (ret == 0);
-
-        if (running_root_pubkey) {
+        if (ret == 0) {
             if (!key_is_equal(key, key_len, running_slot_pubkey, running_slot_pubkey_len)) {
                 BOOT_LOG_ERR("%s pubkey mismatch with %s", slot_str(verifying_slot), slot_str(running_slot));
                 goto fail;
@@ -363,14 +350,7 @@ bk_find_key(uint8_t image_index, uint8_t *key, uint16_t key_len, uint32_t curren
             uint8_t verifying_slot_root_pubkey[MAX_PUBKEY_LEN];
             uint16_t verifying_slot_root_pubkey_len = 0;
             ret = read_root_pubkey_from_slot(verifying_slot, verifying_slot_root_pubkey, &verifying_slot_root_pubkey_len);
-            bool verifying_root_pubkey = (ret == 0);
-
-            if (!verifying_root_pubkey) {
-                if (!key_is_equal(key, key_len, running_slot_pubkey, running_slot_pubkey_len)) {
-                    BOOT_LOG_ERR("%s pubkey mismatch with %s", slot_str(verifying_slot), slot_str(running_slot));
-                    goto fail;
-                }
-            } else {
+            if (ret == 0) {
                 uint8_t signature[MAX_PUBKEY_LEN];
                 uint16_t signature_len = 0;
                 ret = read_signature_from_slot(verifying_slot, signature, &signature_len);
@@ -388,6 +368,12 @@ bk_find_key(uint8_t image_index, uint8_t *key, uint16_t key_len, uint32_t curren
                                                      running_slot_pubkey, running_slot_pubkey_len,
                                                      slot_str(verifying_slot));
                 if (ret != 0) {
+                    goto fail;
+                }
+            }
+            else{
+                if (!key_is_equal(key, key_len, running_slot_pubkey, running_slot_pubkey_len)) {
+                    BOOT_LOG_ERR("%s pubkey mismatch with %s", slot_str(verifying_slot), slot_str(running_slot));
                     goto fail;
                 }
             }

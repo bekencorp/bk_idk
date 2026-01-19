@@ -92,7 +92,7 @@ static const uint8_t ec_pubkey_oid[] = MBEDTLS_OID_EC_ALG_UNRESTRICTED;
 static const uint8_t ec_secp256r1_oid[] = MBEDTLS_OID_EC_GRP_SECP256R1;
 struct bootutil_key bootutil_keys;
 
-static int ota_import_key(uint8_t **cp, uint8_t *end)
+int ota_import_key(uint8_t **cp, uint8_t *end)
 {
 	size_t len;
 	mbedtls_asn1_buf alg;
@@ -133,7 +133,7 @@ static int ota_import_key(uint8_t **cp, uint8_t *end)
 	return 0;
 }
 
-static inline int ota_mbedtls_ecdsa_verify(mbedtls_ecdsa_context *ctx,
+int ota_mbedtls_ecdsa_verify(mbedtls_ecdsa_context *ctx,
 											uint8_t *pk, size_t pk_len,
 											uint8_t *hash, size_t hash_len,
 											uint8_t *sig, size_t sig_len)
@@ -202,10 +202,136 @@ static void mbedtls_sha256_hash(uint8_t *digest, uint32_t digest_sz, uint8_t *ha
 	mbedtls_sha256_finish(&sha256_ctx, hash_result);
 	mbedtls_sha256_free(&sha256_ctx);
 }
+
+bk_err_t ota_verify_signature(uint8_t *hash, uint32_t hash_len,
+                               uint8_t *pubkey, uint32_t pubkey_len,
+                               uint8_t *signature, uint32_t signature_len)
+{
+	// Validate hash length
+	if (hash_len != 32) {
+		BK_LOGE(TAG, "Invalid hash length, must be 32 bytes\r\n");
+		return BK_ERR_OTA_VALIDATE_SIGNATURE_FAIL;
+	}
+	
+	// Validate signature format (DER format should start with 0x30)
+	if (signature_len < 8 || signature[0] != 0x30) {
+		BK_LOGE(TAG, "Invalid DER signature format\r\n");
+		return BK_ERR_OTA_VALIDATE_SIGNATURE_FAIL;
+	}
+	
+	// Setup mbedTLS context for verification
+	mbedtls_ecdsa_context ctx;
+	mbedtls_ecdsa_init(&ctx);
+	
+	// Import public key
+	uint8_t *ppubkey = pubkey;
+	uint8_t *end = pubkey + pubkey_len;
+	int ret = ota_import_key(&ppubkey, end);
+	if (ret != 0) {
+		BK_LOGE(TAG, "Failed to import public key, ret=%d\r\n", ret);
+		mbedtls_ecdsa_free(&ctx);
+		return BK_ERR_OTA_VALIDATE_SIGNATURE_FAIL;
+	}
+	
+	// Verify signature
+	ret = ota_mbedtls_ecdsa_verify(&ctx, ppubkey, end - ppubkey, hash, hash_len, signature, signature_len);
+	mbedtls_ecdsa_free(&ctx);
+	
+	if (ret != 0) {
+		BK_LOGE(TAG, "Signature verification failed, ret=%d\r\n", ret);
+		return BK_ERR_OTA_VALIDATE_SIGNATURE_FAIL;
+	}
+	
+	return BK_OK;
+}
 #endif
 
 extern bk_err_t bk_flash_read_cbus(uint32_t address, void *user_buf, uint32_t size);
 extern void bk_flash_write_cbus(uint32_t address, const uint8_t *user_buf, uint32_t size);
+
+// Read TLV from TLV data buffer
+// This is a generic function to read specific TLV type from TLV data
+bk_err_t ota_read_tlv_from_data(uint8_t *tlv_data, uint32_t tlv_data_size, uint16_t tlv_type, 
+                                 uint8_t *tlv_value, uint32_t *tlv_value_len)
+{
+	uint32_t tlv_off = 0;
+	image_tlv_info_t tlv_pro_info, tlv_info;
+	image_tlv_t tlv;
+	
+	if (tlv_data == NULL || tlv_value == NULL || tlv_value_len == NULL) {
+		return BK_ERR_PARAM;
+	}
+	
+	memcpy(&tlv_pro_info, tlv_data + tlv_off, sizeof(image_tlv_info_t));
+	tlv_off += sizeof(image_tlv_info_t);
+	memcpy(&tlv_info, tlv_data + tlv_pro_info.it_tlv_tot, sizeof(image_tlv_info_t));
+	
+	if(tlv_pro_info.it_magic != IMAGE_TLV_PROT_INFO_MAGIC || tlv_info.it_magic != IMAGE_TLV_INFO_MAGIC){
+		return BK_ERR_OTA_VALIDATE_TLV_FAIL;
+	}
+	
+	// Parse TLV to find specific type
+	tlv_off = sizeof(image_tlv_info_t);
+	while(tlv_off < tlv_pro_info.it_tlv_tot + tlv_info.it_tlv_tot) {
+		if(tlv_off == tlv_pro_info.it_tlv_tot){
+			tlv_off += sizeof(image_tlv_info_t);
+		}
+		memcpy(&tlv, tlv_data + tlv_off, sizeof(image_tlv_t));
+		tlv_off += sizeof(image_tlv_t);
+		
+		if (tlv.it_type == tlv_type) {
+			// Found TLV
+			if (tlv.it_len > *tlv_value_len) {
+				return BK_ERR_PARAM;
+			}
+			memcpy(tlv_value, tlv_data + tlv_off, tlv.it_len);
+			*tlv_value_len = tlv.it_len;
+			return BK_OK;
+		}
+		
+		tlv_off += tlv.it_len;
+	}
+	
+	return BK_FAIL;
+}
+
+// Read TLV from flash partition
+bk_err_t ota_read_tlv_from_partition(const bk_logic_partition_t *partition, uint16_t tlv_type,
+                                      uint8_t *tlv_value, uint16_t *tlv_value_len)
+{
+	uint32_t key_len = 0;
+	image_header_t primary_hdr;
+	
+	uint32_t fa_off = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(partition->partition_start_addr));
+	bk_flash_read_cbus(fa_off, &primary_hdr, sizeof(image_header_t));
+	uint32_t tlv_begin = primary_hdr.ih_hdr_size + primary_hdr.ih_img_size;
+	uint32_t offset = 0;
+	image_tlv_t tlv;
+	
+	while(offset < TLV_TOTAL_SIZE) {
+		bk_flash_read_cbus(fa_off + tlv_begin + offset, (void *)&tlv, sizeof(image_tlv_t));
+		
+		if (tlv.it_type == IMAGE_TLV_PROT_INFO_MAGIC || tlv.it_type == IMAGE_TLV_INFO_MAGIC) {
+			offset += sizeof(image_tlv_t);
+		} else if (tlv.it_type == tlv_type) {
+			// Found TLV
+			offset += sizeof(image_tlv_t);
+			key_len = tlv.it_len;
+			if (key_len > MAX_PUBKEY_LEN || (tlv_value_len && key_len > *tlv_value_len)) {
+				return BK_FAIL;
+			}
+			bk_flash_read_cbus(fa_off + tlv_begin + offset, tlv_value, key_len);
+			if (tlv_value_len != NULL) {
+				*tlv_value_len = key_len;
+			}
+			return BK_OK;
+		} else {
+			offset += (sizeof(image_tlv_t) + tlv.it_len);
+		}
+	}
+	
+	return BK_FAIL;
+}
 
 static void debug_print_buf(const char *str, const uint8_t *buf, uint32_t len)
 {

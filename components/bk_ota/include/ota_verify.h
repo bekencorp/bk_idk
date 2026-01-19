@@ -101,3 +101,17 @@ bk_err_t ota_verify_receive_data(ota_verify_t* ota_verify, const void* data, int
 bk_err_t ota_verify_process(const bk_logic_partition_t *partition, ota_verify_t* ota_verify);
 void ota_verify_deinit(ota_verify_t* ota_verify);
 bk_err_t ota_update_back_pubkey_from_primary(const bk_logic_partition_t *app_partition, const bk_logic_partition_t *key_partition);
+#if CONFIG_PSA_MBEDTLS
+int ota_import_key(uint8_t **cp, uint8_t *end);
+int ota_mbedtls_ecdsa_verify(mbedtls_ecdsa_context *ctx,
+								uint8_t *pk, size_t pk_len,
+								uint8_t *hash, size_t hash_len,
+								uint8_t *sig, size_t sig_len);
+bk_err_t ota_verify_signature(uint8_t *hash, uint32_t hash_len,
+                               uint8_t *pubkey, uint32_t pubkey_len,
+                               uint8_t *signature, uint32_t signature_len);
+bk_err_t ota_read_tlv_from_data(uint8_t *tlv_data, uint32_t tlv_data_size, uint16_t tlv_type,
+                                 uint8_t *tlv_value, uint32_t *tlv_value_len);
+bk_err_t ota_read_tlv_from_partition(const bk_logic_partition_t *partition, uint16_t tlv_type,
+                                      uint8_t *tlv_value, uint16_t *tlv_value_len);
+#endif

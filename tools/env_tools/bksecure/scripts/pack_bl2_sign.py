@@ -107,56 +107,10 @@ class PackBl2sign(Pack):
         name = ph.name()
         infile = f'_{name}.bin'
 
-        # Pack Server scenario: if img_sign_privkey is None, check if signed file already exists
-        # Sign Server has already generated signed files (e.g., primary_all_signed.bin, ota_signed.bin)
-        # Pack Server should use these signed files directly instead of signing again
-        if img_sign_privkey is None:
-            # Check if output file already exists (from Sign Server)
-            if os.path.exists(self._outfile):
-                logging.info(f'Pack Server: {self._outfile} already exists from Sign Server, skipping signing step')
-                # Just create pack header for the existing signed file
-                p = PackHeader()
-                t = ph.type()
-                p.create_header(self._outfile, ph.version(), ph.name(), ph.type().type(),
-                    ph.type().subtype(), ph.size().offset(), ph.size().size(), ph.flags().flags(), 0, ph.m1(), ph.m2(), ph.m3(), ph.m4())
-                return
-            
-            # If output file doesn't exist, check for common signed file names from Sign Server
-            # Map common input names to signed file names from Sign Server
-            signed_file_mapping = {
-                'xip_a.bin': 'primary_all_signed.bin',
-                'primary_all.bin': 'primary_all_signed.bin',
-                'ota.bin': 'ota_signed.bin',
-            }
-            
-            input_bin = self._bins[0]
-            signed_file = signed_file_mapping.get(input_bin)
-            if signed_file and os.path.exists(signed_file):
-                logging.info(f'Pack Server: Found signed file {signed_file} from Sign Server, copying to {self._outfile}')
-                import shutil
-                shutil.copy(signed_file, self._outfile)
-                # Create pack header for the copied signed file
-                p = PackHeader()
-                t = ph.type()
-                p.create_header(self._outfile, ph.version(), ph.name(), ph.type().type(),
-                    ph.type().subtype(), ph.size().offset(), ph.size().size(), ph.flags().flags(), 0, ph.m1(), ph.m2(), ph.m3(), ph.m4())
-                return
-            
-            # If no signed file found, this is an error in Pack Server scenario
-            logging.error(f'Pack Server: img_sign_privkey is None, but signed file not found for {self._outfile}')
-            logging.error(f'Pack Server: Expected signed file from Sign Server (e.g., primary_all_signed.bin, ota_signed.bin)')
-            logging.error(f'Pack Server: Cannot sign without private key. Please ensure Sign Server has generated signed files.')
-            exit(1)
-
-        # For XIP mode with update_img_sign_key_en, setup trust chain verification
-        # New TLV format:
-        #   0xA0: new_img_sign_pubkey (new public key)
-        #   0xA1: img_sign_pubkey (root public key)
-        #   0xA2: signature of new_pubkey hash (signed by root key, DER format)
-        root_pubkey_tlv = None  # For 0xA1: root public key
-        signature_tlv = None  # For 0xA2: signature of new_pubkey hash (DER format)
-        signing_privkey = img_sign_privkey  # Default to root key
-        pubkey_for_0xa0 = None  # new_img_sign_pubkey bytes for 0xA0 (or root pubkey for normal mode)
+        root_pubkey_tlv = None
+        signature_tlv = None
+        signing_privkey = img_sign_privkey
+        pubkey_for_custom = None
         
         try:
             s = Security('security.csv')
@@ -164,42 +118,25 @@ class PackBl2sign(Pack):
             ota_type = o.get_strategy().upper()
             
             if s.update_img_sign_key_en and ota_type == 'XIP':
-                # Use new_img_sign_privkey to sign app
-                # Key files should already be in current directory (copied by install_configs)
                 if not os.path.exists(s.new_img_sign_privkey):
                     raise ValueError(f"new_img_sign_privkey file not found: {s.new_img_sign_privkey}")
                 signing_privkey = s.new_img_sign_privkey
                 
-                # Also resolve path for img_sign_privkey (root key) used for signing new_pubkey
                 if not os.path.exists(s.img_sign_privkey):
                     raise ValueError(f"img_sign_privkey file not found: {s.img_sign_privkey}")
                 resolved_root_privkey = s.img_sign_privkey
                 
-                # Verify that private key and public key are a matching pair
-                if os.path.exists(s.img_sign_privkey) and os.path.exists(s.img_sign_pubkey):
-                    keys_match = verify_key_pair_match(s.img_sign_privkey, s.img_sign_pubkey)
-                    if not keys_match:
-                        logging.warning(f"Root private key and public key DO NOT MATCH - signature verification will fail!")
-                
-                # Check if new_img_sign_pubkey_bytes is valid
                 if s.new_img_sign_pubkey_bytes is None:
                     raise ValueError(f"new_img_sign_pubkey_bytes is None")
                 
-                # Check if img_sign_pubkey_bytes (root public key) is valid
                 if s.img_sign_pubkey_bytes is None:
                     raise ValueError(f"img_sign_pubkey_bytes is None")
                 
-                # 0xA0: new_img_sign_pubkey (new public key)
-                pubkey_for_0xa0 = s.new_img_sign_pubkey_bytes
-                
-                # 0xA1: img_sign_pubkey (root public key)
+                pubkey_for_custom = s.new_img_sign_pubkey_bytes
                 root_pubkey_tlv = s.img_sign_pubkey_bytes
                 
-                # 0xA2: Generate signature of new_pubkey hash using root key
-                new_pubkey_hash = hashlib.sha256(s.new_img_sign_pubkey_bytes).digest()
-                bl2_sign_hash(resolved_root_privkey, new_pubkey_hash.hex(), 'new_pubkey_sig.json')
+                bl2_sign_hash(resolved_root_privkey, s.new_img_sign_pubkey_bytes.hex(), 'new_pubkey_sig.json')
                 
-                # Read signature (DER format, hex string)
                 with open('new_pubkey_sig.json', 'r') as f:
                     sig_data = json.load(f)
                     if isinstance(sig_data, str):
@@ -207,40 +144,23 @@ class PackBl2sign(Pack):
                     if 'signature' not in sig_data:
                         raise ValueError(f"Invalid signature JSON format: {sig_data}")
                     
-                    # imgtool sign-hash returns DER format signature as hex string
                     if isinstance(sig_data['signature'], str):
                         sig_der_hex = sig_data['signature']
                         signature_tlv = bytes.fromhex(sig_der_hex)
                     else:
                         raise ValueError(f"Invalid signature format: expected string, got {type(sig_data['signature'])}")
             else:
-                # Normal case: use root key for signing
-                # Key files should already be in current directory (copied by install_configs)
-                if img_sign_privkey and img_sign_pubkey:
-                    # Verify key pair match in normal mode
-                    if os.path.exists(img_sign_privkey) and os.path.exists(img_sign_pubkey):
-                        keys_match_normal = verify_key_pair_match(img_sign_privkey, img_sign_pubkey)
-                        if not keys_match_normal:
-                            logging.warning(f"Root private key and public key DO NOT MATCH - signature verification will fail!")
-                
                 pk = Pubkey(img_sign_pubkey)
-                pubkey_for_0xa0 = pk.key_bytes()
+                pubkey_for_custom = pk.key_bytes()
         except Exception as e:
             logging.debug(f"Failed to load security/ota config: {e}, continuing without trust chain")
-            # Fallback to normal mode
-            if pubkey_for_0xa0 is None:
+            if pubkey_for_custom is None:
                 pk = Pubkey(img_sign_pubkey)
-                pubkey_for_0xa0 = pk.key_bytes()
-            # Reset TLV values to None in case of exception
+                pubkey_for_custom = pk.key_bytes()
             root_pubkey_tlv = None
             signature_tlv = None
 
-        # Call bl2_sign with:
-        # - signing_privkey: new_img_sign_privkey (for app signing) or img_sign_privkey (normal)
-        # - pubkey_for_0xa0: new_img_sign_pubkey_bytes (for 0xA0) or root pubkey (normal)
-        # - root_pubkey_tlv: root pubkey (for 0xA1, if update enabled)
-        # - signature_tlv: signature of new_pubkey hash (for 0xA2, if update enabled)
-        bl2_sign('sign', 'ec256', signing_privkey, pubkey_for_0xa0, None, infile, ph.size().sign_size(), ph.version(), ph.security_counter(), self._outfile, None, root_pubkey_tlv=root_pubkey_tlv, signature_tlv=signature_tlv)
+        bl2_sign('sign', 'ec256', signing_privkey, pubkey_for_custom, None, infile, ph.size().sign_size(), ph.version(), ph.security_counter(), self._outfile, None, root_pubkey_tlv=root_pubkey_tlv, signature_tlv=signature_tlv)
 
         p = PackHeader()
         t = ph.type()

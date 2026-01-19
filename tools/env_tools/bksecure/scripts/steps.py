@@ -139,37 +139,22 @@ def sign_from_app_sig(bl2_sig_s, bl2_sig_r, app_sig):
     o = OTA('ota.csv')
     ota_type = o.get_strategy().upper()
     
-    logging.debug(f"sign_from_app_sig privkey = {s.img_sign_privkey}")
-    
     ph = PackHeader("overwrite.bin")
     name = ph.name()
     infile = f'_{name}.bin'
     
-    # For XIP mode with update_img_sign_key_en, generate TLV for new format:
-    #   0xA0: new_img_sign_pubkey (new public key)
-    #   0xA1: img_sign_pubkey (root public key)
-    #   0xA2: signature of new_pubkey hash (signed by root key, DER format)
-    new_pubkey_tlv = None  # 0xA0: new_img_sign_pubkey
-    root_pubkey_tlv = None  # 0xA1: img_sign_pubkey (root key)
-    signature_tlv = None  # 0xA2: signature of new_pubkey hash (DER format)
+    new_pubkey_tlv = None
+    root_pubkey_tlv = None
+    signature_tlv = None
     
     if s.update_img_sign_key_en and ota_type == 'XIP':
-        # 0xA0: new_img_sign_pubkey (new public key)
         new_pubkey_tlv = s.new_img_sign_pubkey_bytes
-        
-        # 0xA1: img_sign_pubkey (root public key)
         root_pubkey_tlv = s.img_sign_pubkey_bytes
         
-        # 0xA2: Generate signature of new_pubkey hash using root key
-        import hashlib
-        new_pubkey_hash = hashlib.sha256(s.new_img_sign_pubkey_bytes).digest()
-        # Sign the hash with root key (imgtool sign-hash returns DER format signature)
-        bl2_sign_hash(s.img_sign_privkey, new_pubkey_hash.hex(), 'new_pubkey_sig.json')
-        # Read signature (DER format, hex string)
+        bl2_sign_hash(s.img_sign_privkey, s.new_img_sign_pubkey_bytes.hex(), 'new_pubkey_sig.json')
         with open('new_pubkey_sig.json', 'r') as f:
             sig_data = json.load(f)
             sig_der_hex = sig_data['signature']
-        # Convert hex string to bytes (DER format)
         signature_tlv = bytes.fromhex(sig_der_hex)
     
     if s.update_img_sign_key_en:
