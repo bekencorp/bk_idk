@@ -110,6 +110,7 @@ typedef struct {
 	void *(*_pbuf_coalesce)(void *p);
 	int (*_get_rx_pbuf_type)(void);
 	int (*_get_pbuf_pool_size)(void);
+	bool (*_pbuf_check_overflow)(void *p, uint32_t buf);
 	void *(*_get_netif_hostname)(void *netif);
 	int (*_save_net_info)(int item, u8 *ptr0, u8 *ptr1, u8 *ptr2);
 	int (*_get_net_info)(int item, u8 *ptr0, u8 *ptr1, u8 *ptr2);

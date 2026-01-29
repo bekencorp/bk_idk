@@ -138,6 +138,22 @@ int bk_get_pbuf_pool_size_wrapper()
 #endif
 }
 
+bool bk_pbuf_check_overflow_wrapper(void *_p, uint32_t buf)
+{
+	struct pbuf *p = _p;
+
+	// if pbuf payload directly follows pbuf, check overflow after
+	// 802.3 frame is coverted to 802.11 hdr.
+	if (p && (p->type_internal & PBUF_TYPE_FLAG_STRUCT_DATA_CONTIGUOUS)) {
+		if ((uint32_t)(p + 1) > buf) {
+			BK_LOGE(TAG, "pbuf overflow, check PBUF settings\n");
+			BK_ASSERT(0);
+			return true;
+		}
+	}
+	return false;
+}
+
 void *bk_get_netif_hostname_wrapper(void *netif)
 {
 	const char*  hostname = ((struct netif *)netif)->hostname;
@@ -1512,6 +1528,7 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._pbuf_cat = bk_pbuf_cat_wrapper,
 	._get_rx_pbuf_type = bk_get_rx_pbuf_type_wrapper,
 	._get_pbuf_pool_size = bk_get_pbuf_pool_size_wrapper,
+	._pbuf_check_overflow = bk_pbuf_check_overflow_wrapper,
 	._get_netif_hostname = bk_get_netif_hostname_wrapper,
 	._save_net_info = bk_save_net_info_wrapper,
 	._get_net_info = bk_get_net_info_wrapper,
