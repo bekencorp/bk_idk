@@ -182,7 +182,7 @@ def sign_from_ota_sig(ota_bin_sig):
     bl2_sign('sign_from_sig', s.img_sign_key_type, s.img_sign_privkey, s.img_sign_pubkey_bytes, ota_bin_sig, 'compress.bin', pheader.m2(), pheader.version(), pheader.security_counter(), 'ota_signed.bin', 'ota_hash.json')
 
 #Step7 - pack download bin
-def steps_pack(aes_key_type=None, aes_key=None, flash_crc_en=None, bl1_secureboot_en=False, ota_type='XIP', ota_security_counter=0, ota_encrypt='FALSE', boot_ota=False, bl2_version="v1.0.0", pubkey_pem_file=None):
+def steps_pack(aes_key_type=None, aes_key=None, flash_crc_en=None, bl1_secureboot_en=False, ota_type='XIP', ota_security_counter=0, ota_encrypt='FALSE', boot_ota=False, bl2_version='1.0.0', app_version='1.0.0', pubkey_pem_file=None):
     s = None
     if aes_key_type != None:
         flash_aes_type = aes_key_type
@@ -205,6 +205,18 @@ def steps_pack(aes_key_type=None, aes_key=None, flash_crc_en=None, bl1_secureboo
     logging.info(f'steps_pack, bl1_secureboot_en={bl1_secureboot_en}, ota_type={ota_type}, ota_security_counter={ota_security_counter}, ota_encrypt={ota_encrypt}, flash_crc_en={flash_crc_en}')
 
     p = Partitions('partitions.csv', 'bin.csv', 'pack.json')
+
+    if bl2_version:
+        # Remove 'v' prefix if present (e.g., 'v1.0.3' -> '1.0.3')
+        bl2_version_clean = bl2_version.lstrip('vV')
+        p.set_version_override('bl2', bl2_version_clean)
+        logging.info(f'Set BL2 version override: {bl2_version_clean} (from parameter, overriding bin.csv)')
+    if app_version:
+        # Remove 'v' prefix if present (e.g., 'v0.0.3' -> '0.0.3')
+        app_version_clean = app_version.lstrip('vV')
+        p.set_version_override('xip_a', app_version_clean)
+        logging.info(f'Set APP version override: {app_version_clean} (from parameter, overriding bin.csv)')
+
     p.pack_bin('pack.json', flash_aes_type, flash_aes_key, ota_security_counter, ota_encrypt, boot_ota, False)
     p.install_bin()
 

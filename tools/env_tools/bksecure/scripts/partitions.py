@@ -36,6 +36,7 @@ class Partitions:
         
         self._flash_crc_en = is_flash_crc_enabled()
         self._update_img_sign_key_en = self.__is_update_img_sign_key_enabled()
+        self._version_overrides = {}
         self.__common_process()
 
     def __validate_duplication(self):
@@ -418,7 +419,20 @@ class Partitions:
         
         logging.debug(f'Generated {all_bin_name} from {app_bin} in XIP mode')
 
-    def pack_bin(self, pack_json, aes_type, aes_key, security_counter, ota_aes_en, boot_ota=False, ci_test=False):
+    def set_version_override(self, partition_name, version):
+        """Set version override for a partition
+        
+        This allows overriding the version from bin.csv with a version passed via command line.
+        The override takes priority over bin.csv when adding pack headers.
+        
+        Args:
+            partition_name: Name of the partition (e.g., 'bl2', 'app_a', 'cpu0_app')
+            version: Version string (e.g., '1.0.3', '0.0.3')
+        """
+        self._version_overrides[partition_name] = version
+        logging.debug(f'Set version override for partition {partition_name}: {version}')
+
+    def pack_bin(self, pack_json, aes_type, aes_key, security_counter, ota_aes_en, boot_ota=False, ci_test=False, app_version=None, bl2_version=None):
         """Pack bins for Pack Server (after Build and Sign servers)
         
         This method implements the Pack Server functionality in the three-server architecture:
@@ -516,13 +530,24 @@ class Partitions:
                 bins_needing_headers.add(bin_name)
         
         logging.debug(f'Bins needing pack headers: {bins_needing_headers}')
-        
+        logging.debug(f'Bins need override version: {self._version_overrides}')
         # For each bin file, check and add pack header if needed
         for bin_name in bins_needing_headers:
             if not os.path.exists(bin_name):
                 logging.debug(f'{bin_name} not exists, skip adding pack header')
                 continue
-            
+
+            # Find partition name for this bin file
+            # Remove .bin extension and try to find partition
+            partition_name = bin_name.replace('.bin', '')
+            # Handle special cases like pack_primary_manifest.bin -> primary_manifest
+            if partition_name.startswith('pack_'):
+                partition_name = partition_name[5:]
+
+            # If this partition has a version override, we should always
+            # re-generate the header to update the version, even if a header exists.
+            has_override = partition_name in self._version_overrides
+
             # Check if file already has pack header
             has_header = False
             try:
@@ -534,22 +559,35 @@ class Partitions:
                             magic = magic_bytes.rstrip(b'\x00').decode('utf-8')
                             if magic == PACK_HEADER_MAGIC:
                                 has_header = True
-                                logging.debug(f'{bin_name} already has pack header, skipping')
+                                if has_override:
+                                    logging.debug(f'{bin_name} already has pack header, but version override exists for {partition_name}, will replace header with override version')
+                                else:
+                                    logging.debug(f'{bin_name} already has pack header, skipping')
                         except Exception as e:
                             logging.debug(f'{bin_name} header parse failed ({e}), will add new header')
             except Exception as e:
                 logging.debug(f'Failed to check header for {bin_name}: {e}')
-            
-            if has_header:
+
+            # if already has header and no version override, keep it
+            if has_header and not has_override:
                 continue
-            
+
+            # if already has header and has version override, remove old header
+            # and let PackHeader.create_header to generate new header with "naked bin"
+            # to avoid two headers in the file.
+            if has_header and has_override:
+                try:
+                    with open(bin_name, 'rb') as f:
+                        f.seek(PACK_HEADER_SIZE)
+                        remaining = f.read()
+                    with open(bin_name, 'wb') as f:
+                        f.write(remaining)
+                    logging.debug(f'Removed existing pack header from {bin_name} before applying version override')
+                except Exception as e:
+                    logging.warning(f'Failed to remove existing pack header from {bin_name}, skip updating: {e}')
+                    continue
+
             # Find partition for this bin file
-            # Remove .bin extension and try to find partition
-            partition_name = bin_name.replace('.bin', '')
-            # Handle special cases like pack_primary_manifest.bin -> primary_manifest
-            if partition_name.startswith('pack_'):
-                partition_name = partition_name[5:]
-            
             p = self._find_partition_by_name(partition_name)
             if p is None:
                 logging.warning(f'Partition {partition_name} not found for {bin_name}, cannot add pack header')
@@ -557,7 +595,10 @@ class Partitions:
             
             # Get bin version from Bin object if available
             version = "1.0.0"  # Default version
-            if hasattr(p, 'bin') and p.bin():
+            if partition_name in self._version_overrides:
+                version = self._version_overrides[partition_name]
+                logging.info(f'Using version override for {partition_name}: {version}')
+            elif hasattr(p, 'bin') and p.bin():
                 version = p.bin().version()
             
             # Add pack header

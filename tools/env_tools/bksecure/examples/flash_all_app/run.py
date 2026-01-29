@@ -247,7 +247,7 @@ def main():
                           'Failed to copy primary_manifest.bin to pack_server/_tmp')
 
     os.chdir(f'{pack_path}/_tmp')
-    pack_server_process(tool_path, args.bl1_secureboot_en, args.flash_aes_type, args.flash_aes_key, args.flash_crc_en, args.ota_type, args.ota_security_counter, args.boot_ota, args.bl2_version, debug_opt)
+    pack_server_process(tool_path, args.bl1_secureboot_en, args.flash_aes_type, args.flash_aes_key, args.flash_crc_en, args.ota_type, args.ota_security_counter, args.boot_ota, args.bl2_version, args.app_version, debug_opt)
     log_step_end('Pack Server', 'OK')
 
     # Install files
