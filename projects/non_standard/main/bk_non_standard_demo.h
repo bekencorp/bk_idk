@@ -17,13 +17,12 @@
 #define MACSTR "%02x:%02x:%02x:%02x:%02x:%02x "
 #endif
 
-#define BK_ETH_ALEN                              6
 #define BK_NON_STANDARD_HEADER_LEN               34
 
 #define BK_NON_STANDARD_DEMO_DEFAULT_CHANNEL          6
 #define BK_NON_STANDARD_DEMO_DEFAULT_PRIM_CHANNEL     6
 #define BK_NON_STANDARD_DEMO_DEFAULT_SECOND_CHANNEL   8
-#define BK_NON_STANDARD_DEMO_TRANS_BUF_SIZE          1500
+#define BK_NON_STANDARD_DEMO_TRANS_BUF_SIZE           1500
 
 void bk_non_standard_demo_main();
 void bk_non_standard_demo_stop();
