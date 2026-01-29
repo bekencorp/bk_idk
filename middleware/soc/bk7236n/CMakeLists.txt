@@ -71,8 +71,14 @@ set(LD_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(LD_FILE ${LD_DIR}/${target}_bsp.ld)
 
-if(EXISTS "${armino_path}/$ENV{PROJECT_DIR}/${target}_bsp.ld")
-	set(LD_FILE ${armino_path}/$ENV{PROJECT_DIR}/${target}_bsp.ld)
+if(IS_ABSOLUTE "$ENV{PROJECT_DIR}")
+	if(EXISTS "$ENV{PROJECT_DIR}/${target}_bsp.ld")
+		set(LD_FILE "$ENV{PROJECT_DIR}/${target}_bsp.ld")
+	endif()
+else()
+	if(EXISTS "${armino_path}/$ENV{PROJECT_DIR}/${target}_bsp.ld")
+		set(LD_FILE ${armino_path}/$ENV{PROJECT_DIR}/${target}_bsp.ld)
+	endif()
 endif()
 
 LOGI("[Select ld file]: ${LD_FILE}.")

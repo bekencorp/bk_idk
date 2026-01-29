@@ -35,9 +35,15 @@ set(incs
 	slcd
 	)
 
-list(APPEND incs
-	${armino_path}/$ENV{PROJECT_DIR}/config/${target}/
-)
+if(IS_ABSOLUTE "$ENV{PROJECT_DIR}")
+	list(APPEND incs
+		$ENV{PROJECT_DIR}/config/${target}/
+	)
+else()
+	list(APPEND incs
+		${armino_path}/$ENV{PROJECT_DIR}/config/${target}/
+	)
+endif()
 
 set(srcs
 	common/driver.c
