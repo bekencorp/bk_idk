@@ -48,9 +48,9 @@ float target_pwr_ax20 = 15.0; //2G4 N20 target power
 int8_t g_dif_g_n20 = 4;  //differ between g and n20
 int8_t g_dif_g_ax20 = 4; //differ between g and ax20
 int8_t g_dif_g_n40 = 2;  //differ between g and n40
-int8_t g_dif_g_ble_ch0 = -14;
-int8_t g_dif_g_ble_ch19 = -13;
-int8_t g_dif_g_ble_ch39 = -12;
+int8_t g_dif_g_ble_ch0 = 0;
+int8_t g_dif_g_ble_ch19 = 0;
+int8_t g_dif_g_ble_ch39 = 0;
 
 /**
  * shift power index of all format:
@@ -72,12 +72,12 @@ char *vnd_cal_version         = "24-04-10 00:00:00";
  * pwr_gain<13:10> pactrl in TRX_C<11:8>, F at present
  * pwr_gain<17:14> padctrl in TRX_C<7:4>, D at present
  * pwr_gain<21:18> Rgm in TRX_C<15:12>, E at present
- * pwr_gain<25:22> Gmgain in TRX_C<3:0>, 2 at present
+ * pwr_gain<25:22> Gmgain in TRX_C<3:0>, 3 at present
  * pwr_gain<29:26> Dia in TRX_A<31:28>, 8 at present
  * pwr_gain<31:31> 1:11g/n 0:11b
  */
-const UINT32 pwr_gain_base_gain_b = 0x20BB7C00;//0x00233C00;
-const UINT32 pwr_gain_base_gain_g = 0xA0BB7C00;//0x80233C00;
+const UINT32 pwr_gain_base_gain_b = 0x20FB7C00;//0x00233C00;
+const UINT32 pwr_gain_base_gain_g = 0xA0FB7C00;//0x80233C00;
 #define TPC_PAMAP_TAB_LEN			 (128)
 __DRAM_SEC const PWR_REGS cfg_tab[TPC_PAMAP_TAB_LEN] = {
 	// pregain
@@ -211,9 +211,9 @@ __DRAM_SEC const PWR_REGS cfg_tab[TPC_PAMAP_TAB_LEN] = {
 	PWRI(0x3FE),	//127	6db
 };
 #if CONFIG_BLE_USE_HIGH_POWER_LEVEL
-const UINT32 pwr_gain_base_gain_ble = 0x20BA0C00;
+const UINT32 pwr_gain_base_gain_ble = 0x20FA0C00;
 #else
-const UINT32 pwr_gain_base_gain_ble = 0x20BA0C00;
+const UINT32 pwr_gain_base_gain_ble = 0x20F94C00;
 #endif
 #define TPC_PAMAP_TAB_BT_LEN                        (65)
 const PWR_REGS cfg_tab_bt[TPC_PAMAP_TAB_BT_LEN] = {

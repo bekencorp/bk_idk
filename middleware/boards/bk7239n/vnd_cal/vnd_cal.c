@@ -4,7 +4,7 @@
 #ifdef CONFIG_ATE_TEST
 #define DEFAULT_TXID_XTAL               (0x20)
 #else
-#define DEFAULT_TXID_XTAL               (0x3D)
+#define DEFAULT_TXID_XTAL               (0x37)
 #endif
 
 #define TXPWR_ELEM_INUSED               (0)
@@ -57,9 +57,9 @@ int8_t g_dif_g_n40 = 4;   //differ between g and n40
 int8_t g_dif_a_n20 = 4;    //differ between a and n20
 int8_t g_dif_a_ax20 = 0;  //differ between a and ax20
 int8_t g_dif_a_n40 = 4;    //differ between a and n40
-int8_t g_dif_g_ble_ch0 = -13;
-int8_t g_dif_g_ble_ch19 = -12;
-int8_t g_dif_g_ble_ch39 = -11;
+int8_t g_dif_g_ble_ch0 = -9;
+int8_t g_dif_g_ble_ch19 = -8;
+int8_t g_dif_g_ble_ch39 = -7;
 #elif defined(CONFIG_CUSTOMIZE_TY)
 /**
  * target power of all format:
@@ -88,9 +88,9 @@ int8_t g_dif_g_n40 = 13;   //differ between g and n40
 int8_t g_dif_a_n20 = 4;    //differ between a and n20
 int8_t g_dif_a_ax20 = 12;  //differ between a and ax20
 int8_t g_dif_a_n40 = 9;    //differ between a and n40
-int8_t g_dif_g_ble_ch0 = -13;
-int8_t g_dif_g_ble_ch19 = -12;
-int8_t g_dif_g_ble_ch39 = -11;
+int8_t g_dif_g_ble_ch0 = -9;
+int8_t g_dif_g_ble_ch19 = -8;
+int8_t g_dif_g_ble_ch39 = -7;
 #else
 /**
  * target power of all format:
@@ -98,7 +98,7 @@ int8_t g_dif_g_ble_ch39 = -11;
  * or update here directly before/without iTest
  */
 float target_pwr_ble = 6.0; //2G4 BLE target power
-float target_pwr_11b = 18.0; //2G4 11B target power
+float target_pwr_11b = 17.0; //2G4 11B target power
 float target_pwr_11g = 16.0; //2G4 11G target power
 float target_pwr_n20 = 15.0; //2G4 N20 target power
 float target_pwr_n40 = 13.0; //2G4 N40 target power
@@ -119,9 +119,9 @@ int8_t g_dif_g_n40 = 9;   //differ between g and n40
 int8_t g_dif_a_n20 = 4;    //differ between a and n20
 int8_t g_dif_a_ax20 = 4;  //differ between a and ax20
 int8_t g_dif_a_n40 = 9;    //differ between a and n40
-int8_t g_dif_g_ble_ch0 = -13;
-int8_t g_dif_g_ble_ch19 = -12;
-int8_t g_dif_g_ble_ch39 = -11;
+int8_t g_dif_g_ble_ch0 = -5;
+int8_t g_dif_g_ble_ch19 = -4;
+int8_t g_dif_g_ble_ch39 = -3;
 #endif
 
 /**
@@ -129,17 +129,17 @@ int8_t g_dif_g_ble_ch39 = -11;
  * 0.25dB for 1 LSB
  * used with FT PWR CAL
  */
-int8_t shift_pwr_idx_b_ch1 = -3;
-int8_t shift_pwr_idx_b_ch7 = -5;
-int8_t shift_pwr_idx_b_ch13 = 0;
-int8_t shift_pwr_idx_g_ch1 = -4;
-int8_t shift_pwr_idx_g_ch7 = -5;
-int8_t shift_pwr_idx_g_ch13 = 0;
-int8_t shift_pwr_idx_a_ch36 = -12;
-int8_t shift_pwr_idx_a_ch64 = -5;
-int8_t shift_pwr_idx_a_ch100 = 0;
-int8_t shift_pwr_idx_a_ch132 = 0;
-int8_t shift_pwr_idx_a_ch165 = -3;
+int8_t shift_pwr_idx_b_ch1 = 7;
+int8_t shift_pwr_idx_b_ch7 = 5;
+int8_t shift_pwr_idx_b_ch13 = 11;
+int8_t shift_pwr_idx_g_ch1 = 6;
+int8_t shift_pwr_idx_g_ch7 = 5;
+int8_t shift_pwr_idx_g_ch13 = 11;
+int8_t shift_pwr_idx_a_ch36 = -10;
+int8_t shift_pwr_idx_a_ch64 = -4;
+int8_t shift_pwr_idx_a_ch100 = 2;
+int8_t shift_pwr_idx_a_ch132 = 2;
+int8_t shift_pwr_idx_a_ch165 = -1;
 
 const UINT32 g_default_xtal   = DEFAULT_TXID_XTAL;
 
@@ -151,16 +151,18 @@ const UINT32 g_default_xtal   = DEFAULT_TXID_XTAL;
  * pwr_gain<25:22> Gmgain in TRX_C<3:0>, 3 at present
  * pwr_gain<29:26> Dia in TRX_A<31:28>, 9 at present
  * pwr_gain<31:31> 1:11g/n 0:11b
+ * move to sys_persist_config.csv::rf_config.pwr_gain_base_2g
  */
-const UINT32 pwr_gain_base_gain_2g = 0x24FB3C00;
+//const UINT32 pwr_gain_base_gain_2g = 0x24FBBC00;
 
 /**
  * pwr_gain<09:00> pregain in cfg_power_table.pregain
  * pwr_gain<13:10> pactrl in TRX_24<11:8>, F at present
  * pwr_gain<17:14> padctrl in TRX_24<7:4>, 7 at present
  * pwr_gain<31:31> 1:11g/n 0:11b
+ * move to sys_persist_config.csv::rf_config.pwr_gain_base_5g
  */
-const UINT32 pwr_gain_base_gain_5g = 0x8001FC00;
+//const UINT32 pwr_gain_base_gain_5g = 0x8001FC00;
 #define TPC_PAMAP_TAB_LEN			 (128)
 __DRAM_SEC const PWR_REGS cfg_tab[TPC_PAMAP_TAB_LEN] = {
 	// pregain
@@ -294,7 +296,10 @@ __DRAM_SEC const PWR_REGS cfg_tab[TPC_PAMAP_TAB_LEN] = {
 	PWRI(0x3FE),	//127	6db
 };
 
-const UINT32 pwr_gain_base_gain_ble = 0x25798400;
+/**
+ * move to sys_persist_config.csv::rf_config.pwr_gain_base_ble
+ */
+//const UINT32 pwr_gain_base_gain_ble = 0x24F98C00;
 #define TPC_PAMAP_TAB_BT_LEN                        (65)
 const PWR_REGS cfg_tab_bt[TPC_PAMAP_TAB_BT_LEN] = {
 	// pregain
@@ -377,8 +382,8 @@ const TXPWR_CAL_ST gtxpwr_tab_def_b[TXPWR_CAL_2G_MAX] = {
     INIT_TXPWR_VALUE(1, 48),  // ch1  inused
     INIT_TXPWR_VALUE(13, 48),  // ch13  inused
 #else
-    INIT_TXPWR_VALUE(1, 71),  // ch1  inused
-    INIT_TXPWR_VALUE(13, 71),  // ch13  inused
+    INIT_TXPWR_VALUE(1, 67),  // ch1  inused
+    INIT_TXPWR_VALUE(13, 67),  // ch13  inused
 #endif
 };
 
@@ -412,9 +417,9 @@ const TXPWR_CAL_ST gtxpwr_tab_def_ble[TXPWR_CAL_2G_MAX] = {
     INIT_TXPWR_VALUE(20, 96),  // ch19 2440 inused
     INIT_TXPWR_VALUE(40, 96),  // ch39 2480 inused
 #else
-    INIT_TXPWR_VALUE(1, 48),  // ch0 2402  inused
-    INIT_TXPWR_VALUE(20, 48),  // ch19 2440 inused
-    INIT_TXPWR_VALUE(40, 48),  // ch39 2480 inused
+    INIT_TXPWR_VALUE(1, 88),  // ch0 2402  inused
+    INIT_TXPWR_VALUE(20, 88),  // ch19 2440 inused
+    INIT_TXPWR_VALUE(40, 88),  // ch39 2480 inused
 #endif
 };
 
@@ -578,9 +583,9 @@ void vnd_cal_overlay(void)
     vnd_cal_set_auto_pwr_thred(auto_pwr);
     //EPA
 #if EPA_ENABLE_FLAG
-    vnd_cal_set_epa_config(1, GPIO_28, GPIO_26, pwr_gain_base_gain_2g, pwr_gain_base_gain_5g);
+    vnd_cal_set_epa_config(1, GPIO_28, GPIO_26, 0, 0);
 #else
-    vnd_cal_set_epa_config(0, GPIO_28, GPIO_26, pwr_gain_base_gain_2g, pwr_gain_base_gain_5g);
+    vnd_cal_set_epa_config(0, GPIO_28, GPIO_26, 0, 0);
 #endif
     /*only used in SRRC adaptive testing !!!
     0:default;if SRRC adaptive test fail,you can set cca offset value 0-15(recommended use 5)*/
