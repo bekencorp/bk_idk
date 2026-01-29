@@ -225,7 +225,7 @@ typedef struct {
     uint32_t _dd_dev_type_flash;
 
 
-    uint32_t _chip_version_a;
+    uint32_t _dpd_cali_group;
     uint32_t _chip_version_b;
     uint32_t _chip_version_c;
     uint32_t _chip_version_default;

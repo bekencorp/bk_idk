@@ -990,7 +990,7 @@ const phy_os_variable_t g_phy_os_variable = {
     ._dd_dev_type_flash = DD_DEV_TYPE_FLASH,
 #endif
 
-    ._chip_version_a       = CHIP_VERSION_A,
+    ._dpd_cali_group       = CONFIG_DPD_CALI_GROUP,
     ._chip_version_b       = CHIP_VERSION_B,
     ._chip_version_c       = CHIP_VERSION_C,
     ._chip_version_default = CHIP_VERSION_DEFAULT,
