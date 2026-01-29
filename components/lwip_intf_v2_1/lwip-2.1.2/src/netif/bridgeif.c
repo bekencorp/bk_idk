@@ -124,7 +124,7 @@ extern void *net_get_uap_handle(void);
 #define BK_LWIP_FAST_CSUM_MOD  1
 #endif // BK_LWIP
 
-#if LWIP_NUM_NETIF_CLIENT_DATA
+#if LWIP_NUM_NETIF_CLIENT_DATA && CONFIG_BRIDGE
 
 /* Define those to better describe your network interface. */
 #define IFNAME0 'b'
