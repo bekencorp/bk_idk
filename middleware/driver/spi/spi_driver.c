@@ -1107,6 +1107,10 @@ uint32_t bk_spi_dma_write_bytes(spi_id_t id, const void *data, uint32_t size)
                         if(i == 500)
                                 SPI_LOGE("wait tx fifo empty timeout.\n");
                 }
+
+                //wait additional time to ensure all data in FIFO and shift register are sent out
+                 bk_delay_us(48);
+
                 spi_hal_disable_tx_fifo_int(&s_spi[id].hal);
                 spi_hal_clear_tx_fifo_int_status(&s_spi[id].hal);
                 spi_hal_disable_tx(&s_spi[id].hal);
