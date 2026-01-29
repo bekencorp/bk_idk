@@ -606,10 +606,10 @@ static int at_wlan_get_station_status(int sync, int argc, char **argv)
 		BK_RETURN_ON_ERR(bk_wifi_sta_get_link_status(&link_status));
 		os_memcpy(ssid, link_status.ssid, 32);
 		os_memset(resultbuf,0,200);
-		snprintf(resultbuf,sizeof(resultbuf), "EVT:sta:rssi=%d,aid=%d,ssid=%s,bssid=%pm,channel=%d,cipher_type=%s\r\n",
+		snprintf(resultbuf,sizeof(resultbuf), "EVT:sta:rssi=%d,aid=%d,ssid=%s,bssid=%pm,channel=%d,cipher_type=%s,password=%s\r\n",
 												link_status.rssi, link_status.aid, ssid, link_status.bssid,
-												link_status.channel, wifi_sec_type_string(link_status.security));
-		atsvr_output_msg(resultbuf);	
+												link_status.channel, wifi_sec_type_string(link_status.security), link_status.password);
+		atsvr_output_msg(resultbuf);
 	}
 	if (uap_ip_is_start()) 
 	{

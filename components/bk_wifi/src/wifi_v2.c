@@ -3148,6 +3148,7 @@ bk_err_t bk_wifi_sta_get_link_status(wifi_link_status_t *link_status)
 	os_memcpy(link_status->bssid, cfm->bssid, WIFI_BSSID_LEN);
 	ssid_len = MIN(SSID_MAX_LEN, os_strlen((char *)(cfm->ssid)));
 	os_memcpy(link_status->ssid, cfm->ssid, ssid_len);
+	os_memcpy(link_status->password, g_sta_param_ptr->key, g_sta_param_ptr->key_len);
 
 get_exit:
 	if (cfm)

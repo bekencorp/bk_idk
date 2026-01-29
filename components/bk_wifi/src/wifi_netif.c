@@ -18,6 +18,8 @@
 
 #include <components/netif.h>
 #include <components/event.h>
+#include <os/mem.h>
+
 #include "bk_rw.h"
 #include "wifi_v2.h"
 #include "bk_wifi.h"
@@ -110,6 +112,7 @@ void wifi_netif_notify_sta_got_ip(enum ip_ver ver)
 {
 	wifi_linkstate_reason_t info;
 	unsigned char vif_idx;
+	netif_ip4_config_t ip_param;
 
 	/* set wifi status */
 	info.state = WIFI_LINKSTATE_STA_GOT_IP;
@@ -123,6 +126,9 @@ void wifi_netif_notify_sta_got_ip(enum ip_ver ver)
 	vif_idx = wifi_netif_mac_to_vifid(g_sta_param_ptr->own_mac);
 	if (vif_idx != WIFI_INVALID_VIFID)
 		wlan_dhcp_done_ind(vif_idx);
+
+	bk_netif_get_ip4_config(NETIF_IF_STA,&ip_param);
+	os_memcpy(&event_data.ip, &ip_param.ip, NETIF_IP4_STR_LEN);
 
 	if (ver == IP4)
 		BK_LOG_ON_ERR(bk_event_post(EVENT_MOD_NETIF, EVENT_NETIF_GOT_IP4,
