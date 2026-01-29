@@ -21,7 +21,7 @@ menu "App"
 		default n
 
 	config NTP_SYNC_RTC
-		depends on AON_RTC
+		depends on AON_RTC || ANA_RTC
 		bool "Enable Ntp Sync Rtc"
 		default n
 

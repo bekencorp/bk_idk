@@ -126,6 +126,7 @@ static void uptime_Command(char *pcWriteBuffer, int xWriteBufferLen, int argc, c
 	CLI_LOGI("OS time %ldms\r\n", rtos_get_time());
 #if CONFIG_NTP_SYNC_RTC
 	extern time_t timestamp_get();
+	extern char *ctime(const time_t *timep);
 	time_t cur_time = timestamp_get();
 	CLI_LOGI("Current time:%s\n", ctime(&cur_time));
 #endif
