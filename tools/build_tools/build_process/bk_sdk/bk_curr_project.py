@@ -19,13 +19,14 @@ def get_curr_project():
         raise RuntimeError("get build dir error")
 
     project_info = bk_project_info(
-        project_name,
-        project_dir,
-        project_build_dir,
-        soc_name,
-        True,
-        # TODO
-        project_build_targets.split(),
+        project_name,       # project_name
+        project_dir,        # project_path
+        project_build_dir,  # build_dir
+        soc_name,           # soc_name
+        True,               # flash_crc_enable (default is True, will be updated later from auto_partitions.csv)
+        False,              # flash_aes_enable (default is False, will be updated later from auto_partitions.csv)
+        "",                 # flash_aes_key (default is empty)
+        project_build_targets.split(),  # apps
     )
     return bk_sdk_project(project_info)
 

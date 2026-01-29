@@ -15,7 +15,12 @@
 #pragma once
 #include "partitions_gen.h"
 
+#if defined(CONFIG_FLASH_CRC_ENABLE) && CONFIG_FLASH_CRC_ENABLE == 0
+#define ADDR_PHY_TO_VIRTUAL(addr) (addr)
+#else
 #define ADDR_PHY_TO_VIRTUAL(addr) ((addr) / 34 * 32)
+#endif
+
 
 #ifndef CONFIG_BL1_PHY_PARTITION_OFFSET
 #define CONFIG_BL1_PHY_PARTITION_OFFSET               0x0

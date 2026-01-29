@@ -33,12 +33,13 @@ def get_license() -> str:
 class bk_flash_denpendecny_generator(bk_flash_partition_content_generator):
     # region layout_hdr
     def get_flash_partitions_layout_hdr_content(
-        self, part_info: list[partition_info], flash_crc_enable: bool
+        self, part_info: list[partition_info], flash_crc_enable: bool, flash_aes_enable: bool, flash_aes_key: str
     ) -> str:
         s_hdr = get_license()
 
         s_hdr += "#pragma once\n\n"
         s_hdr += f"#define {'CONFIG_FLASH_CRC_ENABLE':<45} {int(flash_crc_enable)}\n"
+        s_hdr += f"#define {'CONFIG_FLASH_AES_ENABLE':<45} {int(flash_aes_enable)}\n"
         s_hdr += f"#define {'CONFIG_PARTITIONS_NUM':<45} {len(part_info) if part_info else 0}\n"
         partition_struct_array = "#define BK_FLASH_PARTITIONS_MAP { \\\n"
         partitions_id_define = ""

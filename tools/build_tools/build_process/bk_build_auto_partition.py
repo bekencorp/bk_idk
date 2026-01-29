@@ -17,6 +17,85 @@ def set_logging():
     log_format = "[%(name)s|%(levelname)s] %(message)s"
     logging.basicConfig(format=log_format, level=logging.INFO)
 
+def _read_flash_crc_enable_from_csv(csv_path: Path, default_value: bool = True) -> bool:
+    if not csv_path.exists():
+        logger.warning(f"auto_partitions.csv not found at {csv_path}, using default flash_crc_enable={default_value}")
+        return default_value
+    
+    try:
+        csv_contents = csv_path.read_text()
+        lines = csv_contents.splitlines()
+        for line in lines:
+            line_content = line.strip()
+            if line_content.startswith("#") or len(line_content) == 0:
+                continue
+            if "FLASH_CRC_ENABLE" in line_content:
+                crc_value = line_content.split("=")[1].strip().upper()
+                if crc_value == "TRUE" or crc_value == "1":
+                    logger.info(f"Read FLASH_CRC_ENABLE=TRUE from {csv_path}")
+                    return True
+                elif crc_value == "FALSE" or crc_value == "0":
+                    logger.info(f"Read FLASH_CRC_ENABLE=FALSE from {csv_path}")
+                    return False
+                else:
+                    logger.warning(f"Invalid FLASH_CRC_ENABLE value: {crc_value}, using default: {default_value}")
+                    return default_value
+    except Exception as e:
+        logger.warning(f"Failed to read FLASH_CRC_ENABLE from {csv_path}: {e}, using default: {default_value}")
+    
+    logger.info(f"FLASH_CRC_ENABLE not found in {csv_path}, using default: {default_value}")
+    return default_value
+
+def _read_flash_aes_enable_from_csv(csv_path: Path, default_value: bool = False) -> bool:
+    if not csv_path.exists():
+        logger.warning(f"auto_partitions.csv not found at {csv_path}, using default flash_aes_enable={default_value}")
+        return default_value
+    
+    try:
+        csv_contents = csv_path.read_text()
+        lines = csv_contents.splitlines()
+        for line in lines:
+            line_content = line.strip()
+            if line_content.startswith("#") or len(line_content) == 0:
+                continue
+            if "FLASH_AES_ENABLE" in line_content:
+                aes_value = line_content.split("=")[1].strip().upper()
+                if aes_value == "TRUE" or aes_value == "1":
+                    logger.info(f"Read FLASH_AES_ENABLE=TRUE from {csv_path}")
+                    return True
+                elif aes_value == "FALSE" or aes_value == "0":
+                    logger.info(f"Read FLASH_AES_ENABLE=FALSE from {csv_path}")
+                    return False
+                else:
+                    logger.warning(f"Invalid FLASH_AES_ENABLE value: {aes_value}, using default: {default_value}")
+                    return default_value
+    except Exception as e:
+        logger.warning(f"Failed to read FLASH_CRC_ENABLE from {csv_path}: {e}, using default: {default_value}")
+    
+    logger.info(f"FLASH_CRC_ENABLE not found in {csv_path}, using default: {default_value}")
+    return default_value
+
+def _read_flash_aes_key_from_csv(csv_path: Path, default_str: str = "") -> str:
+    if not csv_path.exists():
+        logger.warning(f"auto_partitions.csv not found at {csv_path}, using default flash_aes_key={default_str}")
+        return default_str
+    
+    try:
+        csv_contents = csv_path.read_text()
+        lines = csv_contents.splitlines()
+        for line in lines:
+            line_content = line.strip()
+            if line_content.startswith("#") or len(line_content) == 0:
+                continue
+            if "FLASH_AES_KEY" in line_content:
+                aes_value = line_content.split("=")[1].strip()
+                logger.info(f"Read FLASH_AES_KEY={aes_value} from {csv_path}")
+                return aes_value
+    except Exception as e:
+        logger.warning(f"Failed to read FLASH_AES_KEY from {csv_path}: {e}, using default: {default_str}")
+    
+    logger.info(f"FLASH_AES_KEY not found in {csv_path}, using default: {default_str}")
+    return default_str
 
 class bk_part:
     def __init__(
@@ -25,6 +104,8 @@ class bk_part:
         auto_part_table: Path,
         partitions_json: Path,
         crc_enable: bool,
+        aes_enable: bool,
+        aes_key: str,
     ):
         if not partitions_dir.exists():
             raise RuntimeError(f"partitions directory not found: {partitions_dir}")
@@ -35,7 +116,8 @@ class bk_part:
         self.auto_part_table = auto_part_table
         self.partitions_json = partitions_json
         self.crc_enable = crc_enable
-
+        self.aes_enable = aes_enable
+        self.aes_key = aes_key
     @staticmethod
     def _partitions_setting(part_table: bk_partitions_table):
         setting_path = curr_project.flash_partitions_setting
@@ -64,7 +146,7 @@ class bk_part:
         partitions_csv = self.partitions_dir / "partitions.csv"
         flash_size = self._get_flash_size()
         part_table = bk_partitions_table(
-            self.auto_part_table, flash_size, self.crc_enable
+            self.auto_part_table, flash_size, self.crc_enable, self.aes_enable, self.aes_key
         )
         self._partitions_setting(part_table)
         part_table.gen_partition_csv(partitions_csv)
@@ -83,11 +165,11 @@ class bk_part:
         self.flash_part.gen_pack_json(pack_json)
 
 
-def auto_patitions(partitions_dir: Path, auto_part_table: Path, flash_crc_enable: bool):
+def auto_patitions(partitions_dir: Path, auto_part_table: Path, flash_crc_enable: bool, flash_aes_enable: bool, flash_aes_key: str):
     partitions_json = partitions_dir / "partitions.json"
     partitions_txt = partitions_dir / "partitions.txt"
     partitioner = bk_part(
-        partitions_dir, auto_part_table, partitions_json, flash_crc_enable
+        partitions_dir, auto_part_table, partitions_json, flash_crc_enable, flash_aes_enable, flash_aes_key
     )
     partitioner.auto_partition(partitions_txt)
     partitioner.gen_partition_header()
@@ -98,9 +180,17 @@ def main():
     logger.info("Enter Armino Auto Partition")
     build_partitions_dir = curr_project.project_build_parititons_dir
     auto_part_table = curr_project.auto_partitions_table
-    flash_crc_enable = curr_project.flash_crc_enable
+    # Read flash_crc_enable and flash_aes_enable from auto_partitions.csv
+    flash_crc_enable = _read_flash_crc_enable_from_csv(auto_part_table)
+    flash_aes_enable = _read_flash_aes_enable_from_csv(auto_part_table)
+    flash_aes_key = _read_flash_aes_key_from_csv(auto_part_table)
+    # Update curr_project.flash_crc_enable and curr_project.flash_aes_enable values
+    curr_project.set_flash_crc_enable(flash_crc_enable)
+    curr_project.set_flash_aes_enable(flash_aes_enable)
+    curr_project.set_flash_aes_key(flash_aes_key)
+
     curr_project.pre_auto_partition()
-    auto_patitions(build_partitions_dir, auto_part_table, flash_crc_enable)
+    auto_patitions(build_partitions_dir, auto_part_table, flash_crc_enable, flash_aes_enable, flash_aes_key)
     curr_project.post_auto_partition()
 
 

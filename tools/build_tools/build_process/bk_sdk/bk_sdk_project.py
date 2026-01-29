@@ -15,6 +15,8 @@ class bk_project_info:
     build_dir: Path
     soc_name: str
     flash_crc_enable: bool
+    flash_aes_enable: bool
+    flash_aes_key: str
     apps: list[str]
 
 
@@ -150,6 +152,14 @@ class bk_sdk_project(bk_project):
         return self._project_info.flash_crc_enable
 
     @property
+    def flash_aes_enable(self) -> bool:
+        return self._project_info.flash_aes_enable
+
+    @property
+    def flash_aes_key(self) -> str:
+        return self._project_info.flash_aes_key
+
+    @property
     def ram_regions_setting(self) -> Path:
         return Path(__file__).absolute().parent / "idk_ram_setting.json"
 
@@ -207,3 +217,15 @@ class bk_sdk_project(bk_project):
         src = Path(__file__).absolute().parent / "partitions.h"
         dst = self.project_build_parititons_dir / "partitions.h"
         shutil.copy2(src, dst)
+
+    def set_flash_crc_enable(self, value: bool) -> None:
+        """set flash_crc_enable value"""
+        self._project_info.flash_crc_enable = value
+
+    def set_flash_aes_enable(self, value: bool) -> None:
+        """set flash_aes_enable value"""
+        self._project_info.flash_aes_enable = value
+
+    def set_flash_aes_key(self, value: str) -> None:
+        """set flash_aes_key value"""
+        self._project_info.flash_aes_key = value

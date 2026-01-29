@@ -19,7 +19,12 @@
 #define KB(size)                                      ((size) << 10)
 #define MB(size)                                      ((size) << 20)
 
+#if defined(CONFIG_FLASH_CRC_ENABLE) && CONFIG_FLASH_CRC_ENABLE == 0
+#define ADDR_PHY_TO_VIRTUAL(addr) (addr)
+#else
 #define ADDR_PHY_TO_VIRTUAL(addr) ((addr) / 34 * 32)
+#endif
+
 
 #ifdef CONFIG_BOOTLOADER_PARTITION_OFFSET
 #define CONFIG_BOOTLOADER_PHY_PARTITION_OFFSET      CONFIG_BOOTLOADER_PARTITION_OFFSET

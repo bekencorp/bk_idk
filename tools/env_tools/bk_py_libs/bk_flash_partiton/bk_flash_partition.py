@@ -35,7 +35,7 @@ class partition_section:
 class bk_flash_partition_content_generator(ABC):
     @abstractmethod
     def get_flash_partitions_layout_hdr_content(
-        self, part_info: list[partition_info], flash_crc_enable: bool
+        self, part_info: list[partition_info], flash_crc_enable: bool, flash_aes_enable: bool, flash_aes_key: str
     ) -> str: ...
 
 
@@ -48,6 +48,8 @@ class bk_flash_partition:
             json_content = json.load(f)
         part_info_json: list[dict[str, Any]] = json_content["section"]
         self.crc_enable = json_content["crc_enable"]
+        self.aes_enable = json_content["aes_enable"]
+        self.aes_key = json_content["aes_key"]
         self.raw_part_info = copy.deepcopy(part_info_json)
         self.header_path = Path("flash_partition.h")
         self.part_info: list[partition_info] = []
@@ -72,7 +74,7 @@ class bk_flash_partition:
     def gen_partitions_layout_hdr(self, partition_hdr_file: Path):
         logger.debug(f"Create partition hdr file: {partition_hdr_file}")
         hdr_contents = self.generator.get_flash_partitions_layout_hdr_content(
-            self.part_info, self.crc_enable
+            self.part_info, self.crc_enable, self.aes_enable, self.aes_key
         )
         with partition_hdr_file.open("w", newline="\n") as f:
             f.write(hdr_contents)
@@ -88,6 +90,8 @@ class bk_flash_partition:
         config_dict: dict[str, Any] = {
             "magic": "beken",
             "crc_enable": self.crc_enable,
+            "aes_enable": self.aes_enable,
+            "aes_key": self.aes_key,
             "count": 0,
             "section": [],
         }

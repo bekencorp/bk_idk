@@ -22,7 +22,7 @@ class partition_limit:
 
 class bk_partitions_table:
     def __init__(
-        self, csv_path: Path, flash_size: str = "8M", crc_enable: bool = False
+        self, csv_path: Path, flash_size: str = "8M", crc_enable: bool = False, aes_enable: bool = False, aes_key: str = ""
     ) -> None:
         if not csv_path.exists():
             msg = f"auto partition config table {csv_path} not exist."
@@ -30,6 +30,8 @@ class bk_partitions_table:
 
         logger.info(f"read parititon table from {csv_path}")
         self.crc_enable = crc_enable
+        self.aes_enable = aes_enable
+        self.aes_key = aes_key
         self._csv_path = csv_path
         self.partitions: list[bk_partition] = []
         self.cumulative_offset = 0
@@ -122,6 +124,19 @@ class bk_partitions_table:
             if "FLASH_CAPACITY" in line_content:
                 self.flash_size = parse_format_size(line_content.split("=")[1])
                 continue
+            if "FLASH_CRC_ENABLE" in line_content:
+                crc_value = line_content.split("=")[1].strip().upper()
+                if crc_value == "TRUE" or crc_value == "1":
+                    self.crc_enable = True
+                elif crc_value == "FALSE" or crc_value == "0":
+                    self.crc_enable = False
+                else:
+                    logger.warning(f"Invalid FLASH_CRC_ENABLE value: {crc_value}, using default: {self.crc_enable}")
+                continue
+            if "FLASH_AES_ENABLE" in line_content:
+                continue
+            if "FLASH_AES_KEY" in line_content:
+                continue
             check_auto_partition_line_valid(line_content)
             part = self._parse_partition_line(index, line_content)
             index += 1
@@ -139,6 +154,8 @@ class bk_partitions_table:
         table = [part.get_part_dict() for part in self.partitions]
 
         json_content.update({"crc_enable": self.crc_enable})
+        json_content.update({"aes_enable": self.aes_enable})
+        json_content.update({"aes_key": self.aes_key})
         json_content.update({"section": table})
         logger.info(f"save partition json to {save_path}")
         with save_path.open("w", newline="\n") as f:
