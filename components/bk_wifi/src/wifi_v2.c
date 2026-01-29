@@ -1878,7 +1878,7 @@ void wlan_read_fast_connect_info(struct wlan_fast_connect_info *fci)
 	/* read fast connect info from flash */
 	if(g_is_get_fci_from_flash && g_is_use_fci_from_flash)
 		#if CONFIG_EASY_FLASH_FAST_CONNECT
-		bk_get_env_enhance("fast_connect_id", (void *)&fci, sizeof(struct wlan_fast_connect_info));
+		bk_get_env_enhance("fast_connect_id", (void *)fci, sizeof(struct wlan_fast_connect_info));
 		#else
 		get_net_info(FAST_CONNECT_ITEM, (UINT8 *)fci, NULL, NULL);
 		#endif
@@ -1913,7 +1913,7 @@ void wlan_write_fast_connect_info(struct wlan_fast_connect_info *fci)
 	/* save encrypted or plain fast connect info to flash */
 	if(g_is_get_fci_from_flash && g_is_use_fci_from_flash)
 		#if CONFIG_EASY_FLASH_FAST_CONNECT
-		bk_set_env_enhance("fast_connect_id", (void *)&fci, sizeof(struct wlan_fast_connect_info));
+		bk_set_env_enhance("fast_connect_id", (void *)fci, sizeof(struct wlan_fast_connect_info));
 		#else
 		save_net_info(FAST_CONNECT_ITEM, (UINT8 *)fci, NULL, NULL);
 		#endif
