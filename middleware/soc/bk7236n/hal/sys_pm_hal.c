@@ -1372,7 +1372,28 @@ int sys_hal_set_lpo_src(sys_lpo_src_t src)
 void sys_hal_enter_low_analog(void)
 {
 	sys_ll_set_ana_reg8_spi_latch1v(1);
-	sys_ll_set_ana_reg7_vanaldosel(0xa);//0xf ok,0xa beacon loss 0% ok,0x9 beacon loss 1%,0x8 nok,0x7 nok
+	#if CONFIG_TEMP_DETECT
+	float temp;
+	bk_err_t err = bk_sensor_get_current_temperature(&temp);
+	if((err != BK_OK) || (temp < -10))
+	{
+		sys_ll_set_ana_reg7_vanaldosel(0xa);
+	}
+	else if (temp < 20)
+	{
+		sys_ll_set_ana_reg7_vanaldosel(0x7);
+	}
+	else if (temp < 60)
+	{
+		sys_ll_set_ana_reg7_vanaldosel(0x4);
+	}
+	else
+	{
+		sys_ll_set_ana_reg7_vanaldosel(0xa);
+	}
+	#else
+	sys_ll_set_ana_reg7_vanaldosel(0xa);
+	#endif
 	sys_ll_set_ana_reg8_spi_latch1v(0);
 
 	sys_ll_set_ana_reg3_hpssren(0);

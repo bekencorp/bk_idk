@@ -1570,7 +1570,28 @@ int sys_hal_set_lpo_src(sys_lpo_src_t src)
 void sys_hal_enter_low_analog(void)
 {
 	sys_ana_ll_set_ana_reg8_spi_latch1v(1);
-	sys_ana_ll_set_ana_reg7_vanaldosel((s_pm_config.btpll_vanaldosel == 0xff) ? 0xa : s_pm_config.btpll_vanaldosel);//0xf ok,0xa beacon loss 0% ok,0x9 beacon loss 1%,0x8 nok,0x7 nok
+	#if CONFIG_TEMP_DETECT
+	float temp;
+	bk_err_t err = bk_sensor_get_current_temperature(&temp);
+	if((err != BK_OK) || (temp < -10))
+	{
+		sys_ana_ll_set_ana_reg7_vanaldosel((s_pm_config.btpll_vanaldosel_high == 0xff) ? 0xa : s_pm_config.btpll_vanaldosel_high);
+	}
+	else if (temp < 20)
+	{
+		sys_ana_ll_set_ana_reg7_vanaldosel((s_pm_config.btpll_vanaldosel_mid == 0xff) ? 0x7 : s_pm_config.btpll_vanaldosel_mid);
+	}
+	else if (temp < 60)
+	{
+		sys_ana_ll_set_ana_reg7_vanaldosel((s_pm_config.btpll_vanaldosel_low == 0xff) ? 0x4 : s_pm_config.btpll_vanaldosel_low);
+	}
+	else
+	{
+		sys_ana_ll_set_ana_reg7_vanaldosel((s_pm_config.btpll_vanaldosel_high == 0xff) ? 0xa : s_pm_config.btpll_vanaldosel_high);
+	}
+	#else
+	sys_ana_ll_set_ana_reg7_vanaldosel((s_pm_config.btpll_vanaldosel_high == 0xff) ? 0xa : s_pm_config.btpll_vanaldosel_high);
+	#endif
 	sys_ana_ll_set_ana_reg8_spi_latch1v(0);
 
 	sys_ana_ll_set_ana_reg3_hpssren((s_pm_config.btpll_hpssren == 0xff) ? 0 : s_pm_config.btpll_hpssren);
