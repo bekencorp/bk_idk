@@ -73,7 +73,7 @@ fi
 PROPERTIES_LIB_BUILD_DIR=${SDK_BUILD_DIR}/properties_libs/${ARMINO_SOC}
 PROPERTIES_LIB_DIR=${PROPERTIES_PROJECT_DIR}
 WRITE_PRODUCT_ID_SCRIPT="${ARMINO_DIR}/tools/build_tools/write_product_id.py"
-PRODUCT_ID_FILE="${ARMINO_DIR}/properties/soc/${ARMINO_SOC}/product_id.txt"
+PRODUCT_ID_FILE="${ARMINO_DIR}/properties/soc/${ARMINO_SOC}/spid.txt"
 NORMAL_BOOTLOADER_BIN="${ARMINO_DIR}/components/bk_libs/${ARMINO_SOC}/bootloader/normal_bootloader/bootloader.bin"
 AB_BOOTLOADER_BIN="${ARMINO_DIR}/components/bk_libs/${ARMINO_SOC}/bootloader/ab_bootloader/bootloader.bin"
 SDKCONFIG_H="${PROPERTIES_LIB_BUILD_DIR}/sdkconfig"
