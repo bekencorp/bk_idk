@@ -301,6 +301,7 @@ bk_err_t bk_flash_cpu_write_disable(void);
 uint32_t flash_get_excute_enable(void);
 void flash_set_excute_enable(int enable);
 void bk_flash_read_cbus_xip(uint32_t slot, uint32_t address, void *user_buf, uint32_t size);
+void bk_flash_write_cbus(uint32_t address, const uint8_t *user_buf, uint32_t size);
 
 int bk_flash_set_dbus_security_region(uint32_t id, uint32_t start, uint32_t end, bool secure);
 

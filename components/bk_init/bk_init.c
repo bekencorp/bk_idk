@@ -50,6 +50,9 @@
 #include <driver/can.h>
 #endif
 
+#if CONFIG_BK_OTA
+#include <modules/ota.h>
+#endif
 #if (CONFIG_OTA_UPDATE_DEFAULT_PARTITION && CONFIG_HTTP_AB_PARTITION)
 #include <modules/ota.h>
 extern void bk_ota_confirm_update_partition(ota_confirm_flag ota_confirm_val);
@@ -321,7 +324,7 @@ int bk_init(void)
 #endif
 
 #if CONFIG_BK_OTA
-	bk_ota_accept(bk_ota_get_xip_handle());
+	bk_ota_accept_image();
 #endif
 
 #if CONFIG_SYS_CPU0
