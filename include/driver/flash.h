@@ -375,6 +375,25 @@ bk_err_t mb_flash_register_op_notify(void * notify_cb);
  */
 bk_err_t mb_flash_unregister_op_notify(void * notify_cb);
 
+/**
+ * @brief     Read data from flash via CBUS
+ *
+ * @param address flash address to read
+ * @param user_buf buffer to store the read data
+ * @param size number of bytes to read
+ *
+ */
+void bk_flash_read_cbus(uint32_t address, void *user_buf, uint32_t size);
+
+/**
+ * @brief     Write data to flash via CBUS
+ *
+ * @param address flash address to write
+ * @param user_buf buffer holding data to write
+ * @param size number of bytes to write
+ *
+ */
+void bk_flash_write_cbus(uint32_t address, const uint8_t *user_buf, uint32_t size);
 
 uint32_t flash_get_excute_enable();
 

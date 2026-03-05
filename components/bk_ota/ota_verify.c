@@ -246,9 +246,6 @@ bk_err_t ota_verify_signature(uint8_t *hash, uint32_t hash_len,
 }
 #endif
 
-extern bk_err_t bk_flash_read_cbus(uint32_t address, void *user_buf, uint32_t size);
-extern void bk_flash_write_cbus(uint32_t address, const uint8_t *user_buf, uint32_t size);
-
 // Read TLV from TLV data buffer
 // This is a generic function to read specific TLV type from TLV data
 bk_err_t ota_read_tlv_from_data(uint8_t *tlv_data, uint32_t tlv_data_size, uint16_t tlv_type, 
@@ -428,7 +425,7 @@ bk_err_t ota_update_back_pubkey_from_primary(const bk_logic_partition_t *app_par
 		CRC8_Init(&crc8);
 		CRC8_Update(&crc8, enc_buf, phy_length);
 		free(enc_buf);
-		enc_buf = NULL;  /* avoid double free at end when goto end from below */
+		enc_buf = NULL;
 
 		if (crc8.crc == check_crc.crc) {
 			back_key = (uint8_t *)malloc(vir_length);
@@ -436,8 +433,7 @@ bk_err_t ota_update_back_pubkey_from_primary(const bk_logic_partition_t *app_par
 				ret = BK_ERR_NO_MEM;
 				goto end;
 			}
-
-			(bk_flash_read_cbus(vir_off, back_key, vir_length));
+			bk_flash_read_bytes(vir_off, back_key, vir_length);
 			if (memcmp(back_key, primary_key, primary_key_size) == 0) {
 				ret = BK_OK;
 				goto end;
@@ -449,8 +445,7 @@ bk_err_t ota_update_back_pubkey_from_primary(const bk_logic_partition_t *app_par
 	uint16_t phy_key_size = VIR_LEN_TO_PHY_LEN(primary_key_size);
 	uint16_t vir_key_size = FLASH_PHY2VIRTUAL(phy_key_size); // vir_key_size - keysize = data 0
 
-	bk_flash_write_cbus(vir_off, primary_key, vir_key_size);
-
+	bk_flash_write_bytes(vir_off, primary_key, vir_key_size);
 	enc_buf = (uint8_t*)malloc(phy_key_size);
 	if (enc_buf == NULL) {
 		ret = BK_ERR_NO_MEM;
@@ -469,7 +464,7 @@ bk_err_t ota_update_back_pubkey_from_primary(const bk_logic_partition_t *app_par
 		ret = BK_ERR_NO_MEM;
 		goto end;
 	}
-	(bk_flash_read_cbus(vir_off, back_key, primary_key_size));
+	bk_flash_read_bytes(vir_off, back_key, primary_key_size);
 	bk_flash_read_bytes(phy_off + 2, (uint8_t *)&check_crc, 1);
 
 	if ((crc8.crc == check_crc.crc) && (memcmp(back_key, primary_key, primary_key_size) == 0)) {

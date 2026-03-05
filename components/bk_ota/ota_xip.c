@@ -22,8 +22,6 @@
 
 extern void vPortEnableTimerInterrupt(void);
 extern void vPortDisableTimerInterrupt(void);
-extern void bk_flash_write_cbus(uint32_t address, const uint8_t *user_buf, uint32_t size);
-extern void bk_flash_read_cbus(uint32_t address, void *user_buf, uint32_t size);
 
 
 #define TAG "ota"

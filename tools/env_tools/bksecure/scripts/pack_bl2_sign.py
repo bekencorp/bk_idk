@@ -149,6 +149,13 @@ class PackBl2sign(Pack):
                         signature_tlv = bytes.fromhex(sig_der_hex)
                     else:
                         raise ValueError(f"Invalid signature format: expected string, got {type(sig_data['signature'])}")
+            elif s.update_img_sign_key_en and ota_type == 'OVERWRITE':
+                if not os.path.exists(s.new_img_sign_privkey):
+                    raise ValueError(f"new_img_sign_privkey file not found: {s.new_img_sign_privkey}")
+                signing_privkey = s.new_img_sign_privkey
+                if s.new_img_sign_pubkey_bytes is None:
+                    raise ValueError(f"new_img_sign_pubkey_bytes is None")
+                pubkey_for_custom = s.new_img_sign_pubkey_bytes
             else:
                 pk = Pubkey(img_sign_pubkey)
                 pubkey_for_custom = pk.key_bytes()

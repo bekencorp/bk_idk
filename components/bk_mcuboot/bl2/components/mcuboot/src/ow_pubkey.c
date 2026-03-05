@@ -110,7 +110,7 @@ bk_find_key(uint8_t image_index, uint8_t *key, uint16_t key_len, uint32_t curren
     }
 
     check_key = (uint8_t *)malloc(key_len);
-    bk_flash_read_cbus(vir_off, check_key, key_len);
+    bk_flash_read_bytes(vir_off, check_key, key_len);
 
     FIH_CALL(boot_fih_memequal, fih_rc, key, check_key, key_len);
     
@@ -119,7 +119,6 @@ bk_find_key(uint8_t image_index, uint8_t *key, uint16_t key_len, uint32_t curren
         pub_key_len = key_len;
         free(enc_buf);
         free(check_key);
-        BOOT_LOG_INF("pubkey ok!");
         return 0;
     }
 #else
