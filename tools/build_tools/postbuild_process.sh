@@ -46,8 +46,47 @@ echo "Writing product ID to ${ALL_APP_BIN}..."
 
 # Copy all-app.bin and rename it with spid and timestamp
 if [ -f "${ALL_APP_BIN}" ] && [ -n "${SPID}" ] && [ "${SPID}" != "0" ]; then
+	# Detect CRC mode by checking for magic strings at specific offsets
+	# Check for magic strings at 0x100 (no_crc) or 0x110 (crc)
+	# Define magic strings array for easy maintenance
+	MAGIC_STRINGS=("BEKEN" "BK.SB" "BK7236")
+
+	CRC_MODE="NO_CRC"
+	if [ -f "${ALL_APP_BIN}" ]; then
+		# Read bytes at offset 0x100 and 0x110 using xxd to avoid null byte issues
+		# xxd -p: plain hexdump, -l6: read 6 bytes, -s256: skip to offset 0x100 (0x100 = 256)
+		MAGIC_100_HEX=$(xxd -p -l6 -s256 "${ALL_APP_BIN}" 2>/dev/null | tr -d '\n')
+		MAGIC_110_HEX=$(xxd -p -l6 -s272 "${ALL_APP_BIN}" 2>/dev/null | tr -d '\n')
+
+		# Convert hex to ASCII for comparison
+		MAGIC_100_ASCII=$(echo "${MAGIC_100_HEX}" | xxd -r -p 2>/dev/null | tr -d '\0')
+		MAGIC_110_ASCII=$(echo "${MAGIC_110_HEX}" | xxd -r -p 2>/dev/null | tr -d '\0')
+
+		# Check for magic strings at 0x100 (no_crc mode)
+		FOUND_AT_100=0
+		if [ -n "${MAGIC_100_ASCII}" ]; then
+			for magic in "${MAGIC_STRINGS[@]}"; do
+				if echo -n "${MAGIC_100_ASCII}" | grep -qF "${magic}" 2>/dev/null; then
+					CRC_MODE="NO_CRC"
+					FOUND_AT_100=1
+					break
+				fi
+			done
+		fi
+
+		# Check for magic strings at 0x110 (crc mode) - only if not found at 0x100
+		if [ "${FOUND_AT_100}" -eq 0 ] && [ -n "${MAGIC_110_ASCII}" ]; then
+			for magic in "${MAGIC_STRINGS[@]}"; do
+				if echo -n "${MAGIC_110_ASCII}" | grep -qF "${magic}" 2>/dev/null; then
+					CRC_MODE="CRC"
+					break
+				fi
+			done
+		fi
+	fi
+
 	TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-	NEW_FIRMWARE_NAME="${SPID}_${TIMESTAMP}.bin"
+	NEW_FIRMWARE_NAME="${SPID}_${CRC_MODE}_${TIMESTAMP}.bin"
 	NEW_FIRMWARE_PATH="${BUILD_DIR}/${NEW_FIRMWARE_NAME}"
 	cp "${ALL_APP_BIN}" "${NEW_FIRMWARE_PATH}"
 	if [ $? -eq 0 ]; then
