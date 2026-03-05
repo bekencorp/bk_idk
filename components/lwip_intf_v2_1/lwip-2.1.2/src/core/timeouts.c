@@ -154,6 +154,11 @@ tcpip_tcp_timer(void *arg)
   } else {
     /* disable timer */
     tcpip_tcp_timer_active = 0;
+#if CONFIG_DTIM10_TCP_RETRY
+    extern u32_t tcp_slowtmr_ms;
+    tcp_slowtmr_ms = 0;
+    LWIP_DEBUGF(TCP_DEBUG, ("tcpip_tcp_timer: reset tcp_slowtmr_ms\n"));
+#endif
   }
 }
 

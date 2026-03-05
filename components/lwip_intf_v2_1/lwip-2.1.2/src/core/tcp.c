@@ -251,7 +251,7 @@ tcp_tmr(void)
   tcp_fasttmr();
 
 #if CONFIG_DTIM10_TCP_RETRY
-  if((MS_DIFF >= TCP_SLOW_INTERVAL) && (tcp_timer & 1)) {
+  if (tcp_slowtmr_ms && (MS_DIFF >= TCP_SLOW_INTERVAL) && (tcp_timer & 1)) {
     tcp_timer++;
   }
 #endif
@@ -1375,9 +1375,10 @@ tcp_slowtmr(void)
 
 #if CONFIG_DTIM10_TCP_RETRY
   u16_t diff_cnt = 0;
-  if((MS_DIFF > TCP_SLOW_INTERVAL)) {
+  if (tcp_slowtmr_ms && (MS_DIFF > TCP_SLOW_INTERVAL)) {
     diff_cnt = (MS_DIFF - TCP_SLOW_INTERVAL) / TCP_SLOW_INTERVAL;
   }
+  LWIP_DEBUGF(TCP_DEBUG, ("tcp_slowtmr: diff_cnt %d\n", diff_cnt));
   tcp_slowtmr_ms = sys_now();
 #endif
 
@@ -1450,7 +1451,11 @@ tcp_slowtmr_start:
         if ((pcb->rtime >= 0) && (pcb->rtime < 0x7FFF)) {
           ++pcb->rtime;
 #if CONFIG_DTIM10_TCP_RETRY
-          pcb->rtime += diff_cnt;
+          if ((pcb->rtime + diff_cnt >= 0) && (pcb->rtime + diff_cnt <= 0x7FFF)) {
+            pcb->rtime += diff_cnt;
+          } else {
+            LWIP_DEBUGF(TCP_DEBUG, ("tcp_slowtmr: invalid rtime %d\n", pcb->rtime + diff_cnt));
+          }
 #endif
         }
 #if CONFIG_DTIM10_TCP_RETRY
