@@ -147,8 +147,10 @@ rf_config,672,8,name,rf_cfg,,,,
 ,680,4,pwr_gain_base_2g,0x24FBBC00,,,,
 ,684,4,pwr_gain_base_5g,0x8001FC00,,,,
 ,688,4,pwr_gain_base_ble,0x24F98C00,,,,
-,692,1,test_mode_temp_optimize,0x0,,,,
-,693,107,reserved,0xff,,,,
+,692,2,pwr_shift_in_srrc,0xFFFF,,,,bit-flag(with channel mask) to use shift_tab_b etc. in SRRC mode
+,694,1,test_mode_temp_optimize,0x0,,,,flag to optimize analog even in FCC/SRRC mode
+,695,1,ftpwr_cali_valid,0x0,,,,flag to use ftpwr as valid
+,696,104,reserved,0xff,,,,
 tlv_base,800,8,name,tlv,,,,
 ,808,2,tlv_type,tlv_test1,,,,
 ,810,2,tlv_length,4,,,,
