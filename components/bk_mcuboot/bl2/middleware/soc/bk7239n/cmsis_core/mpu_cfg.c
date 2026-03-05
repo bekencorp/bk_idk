@@ -37,7 +37,7 @@
 * \param IDX The attribute index to be associated with this memory region.
 */
 
-ARM_MPU_Region_t mpu_regions[] = {
+const ARM_MPU_Region_t mpu_regions[] = {
     /* MPU region 0，
     	itcm_s:  0x0000 0000-----------0x0000 3FFF
     	itcm_ns: 0x1000 0000-----------0x1000 3FFF
@@ -92,7 +92,7 @@ const uint8_t mpu_attrs[] = {
     ARM_MPU_ATTR(0xa, 0xa), // Normal memory, cacheable write through, read allocate, (RO) no WA.
 };
 
-void mpu_register_regions(ARM_MPU_Region_t *regions, uint32_t region_cnt);
+void mpu_register_regions(ARM_MPU_Region_t const *regions, uint32_t region_cnt);
 void mpu_register_attrs(uint8_t *attrs, uint32_t cnt);
 
 void mpu_soc_cfg(void)

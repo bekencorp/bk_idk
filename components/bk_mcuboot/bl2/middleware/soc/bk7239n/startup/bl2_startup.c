@@ -167,38 +167,27 @@ const VECTOR_TABLE_Type __VECTOR_IRAM[] __VECTOR_IRAM_ATTRIBUTE = {
 	UART_InterruptHandler,                    /* Interrupt 4 */
 };
 
-void boot_mem_check(void)
-{
-	if(GET_BIT_VAL(REG_READ(SYSTEM_BASE_ADDR + 0x10*4), 3) != 0){
-		REG_WRITE((SYSTEM_BASE_ADDR + 0x10*4), SET_BIT_VAL(REG_READ(SYSTEM_BASE_ADDR + 0x10*4), 3, 0));
-	}
-	if(GET_BIT_VAL(REG_READ(SYSTEM_BASE_ADDR + 0xC*4), 15) != 1){
-		REG_WRITE((SYSTEM_BASE_ADDR + 0xC*4), SET_BIT_VAL(REG_READ(SYSTEM_BASE_ADDR + 0xC*4), 15, 1));
-	}
-	if((GET_BIT_VAL(REG_READ(OTP_APB_BASE_ADDRESSS + 0xB2*4), 0) != 1)||(GET_BIT_VAL(REG_READ(OTP_APB_BASE_ADDRESSS + 0xB2*4), 1) != 1)){
-		REG_WRITE((OTP_APB_BASE_ADDRESSS + 0xB2*4), SET_BIT_VAL(REG_READ(OTP_APB_BASE_ADDRESSS + 0xB2*4), 0, 3));
-	}
-	if(GET_BIT_VAL(REG_READ(OTP_APB_BASE_ADDRESSS + 0xB1*4), 0) == 0){
-		if((REG_READ(OTP_APB_BASE_ADDRESSS + 0x7c8) & 0xF ) == 0x7)
-		{
-			REG_WRITE((MEM_CHECK_BASE_ADDRESSS + 0x2*4), 0x7);
-		}
-	}
-}
-
 __NO_RETURN ENTRY_SECTION __attribute__((naked)) void Reset_Handler(void)
 {
-	/*Memory check vddig*/
-	boot_mem_check();
-
     __set_MSPLIM((uint32_t)(&__STACK_LIMIT));
 
 	/* CMSIS System Initialization */
     SystemInit();
 
-  	// sys_hal_early_init_tfm();
 	sys_drv_early_init();
 
     /* Enter PreMain (C library entry point) */
     __PROGRAM_START();
 }
+
+/* Naked fault handlers: use asm branch-to-self to halt without stack/prologue.
+   Do not return from fault to avoid handing control to non-secure or undefined state. */
+#define FAULT_HANDLER_HALT()  __ASM volatile("b .")
+
+#define DEFINE_NAKED_FAULT_HANDLER(handler) \
+    __attribute__((naked)) void handler(void) { FAULT_HANDLER_HALT(); }
+
+DEFINE_NAKED_FAULT_HANDLER(MemManage_Handler)
+DEFINE_NAKED_FAULT_HANDLER(BusFault_Handler)
+DEFINE_NAKED_FAULT_HANDLER(UsageFault_Handler)
+DEFINE_NAKED_FAULT_HANDLER(SecureFault_Handler)

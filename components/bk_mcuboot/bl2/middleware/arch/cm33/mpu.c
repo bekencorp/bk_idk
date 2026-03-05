@@ -17,32 +17,32 @@
 #include "sdkconfig.h"
 #include "armstar.h"
 
-#define MPU_MAX_NUM_REGIONS     (16UL)  
-#define MPU_MAX_NUM_ATTRS       (8UL)   
+#define MPU_MAX_NUM_REGIONS     (16UL)
+#define MPU_MAX_NUM_ATTRS       (8UL)
 
-static ARM_MPU_Region_t *s_mpu_regions;
+static ARM_MPU_Region_t const *s_mpu_regions;
 static uint32_t s_mpu_regions_cnt = 0;
-static uint8_t *s_mpu_attrs;
+static uint8_t *s_mpu_attrs = NULL;
 static uint32_t s_mpu_attrs_cnt = 0;
 
 extern void mpu_soc_cfg(void);
 
-void mpu_register_regions(ARM_MPU_Region_t *regions, uint32_t region_cnt)
+void mpu_register_regions(ARM_MPU_Region_t const *regions, uint32_t region_cnt)
 {
-	BK_ASSERT(regions);
-	BK_ASSERT(region_cnt);
+    BK_ASSERT(regions);
+    BK_ASSERT(region_cnt);
 
-	s_mpu_regions = regions;
-	s_mpu_regions_cnt = region_cnt;
+    s_mpu_regions = regions;
+    s_mpu_regions_cnt = region_cnt;
 }
 
 void mpu_register_attrs(uint8_t *attrs, uint32_t cnt)
 {
-	BK_ASSERT(attrs);
-	BK_ASSERT(cnt);
+    BK_ASSERT(attrs);
+    BK_ASSERT(cnt);
 
-	s_mpu_attrs = attrs;
-	s_mpu_attrs_cnt = cnt;
+    s_mpu_attrs = attrs;
+    s_mpu_attrs_cnt = cnt;
 }
 
 void mpu_clear(uint32_t rnr)
@@ -65,10 +65,10 @@ void mpu_enable(void)
     uint32_t region_num;
     uint32_t attr_num;
 
-	mpu_soc_cfg();
-	region_num = s_mpu_regions_cnt;
-	attr_num = s_mpu_attrs_cnt;
-	
+    mpu_soc_cfg();
+    region_num = s_mpu_regions_cnt;
+    attr_num = s_mpu_attrs_cnt;
+
     ARM_MPU_Disable();
 
     if (region_num > MPU_MAX_NUM_REGIONS){
@@ -115,4 +115,3 @@ void mpu_dump(void)
     }
     BK_DUMP_OUT("******************** Dump mpu config begin ********************\r\n");
 }
-

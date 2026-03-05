@@ -189,8 +189,6 @@ int main(void)
     download_main();
 #endif
 
-    //TODO support bl2 high frequency
-
 #if CONFIG_BL2_WDT
     wdt_hal_force_feed();
 #endif
