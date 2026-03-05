@@ -112,6 +112,8 @@
 #include "lwip/ip6_addr.h"
 #include "lwip/nd6.h"
 #include "lwip/sys.h"
+#include "net.h"
+#include "bk_wifi.h"
 
 #include <string.h>
 
@@ -1508,9 +1510,14 @@ tcp_slowtmr_start:
 
 #ifdef CONFIG_WIFI_DTIM10_TEMP_DISABLED
             {// when station period response arp req, offline may occurred, and we add a arp reply at each tcp retry to improve this situation
-                bk_printf("tcp retry cnt %d, send arp_reply.\r\n",pcb->nrtx);
-                void etharp_reply(void);
-                etharp_reply();
+                struct netif *netif = net_get_sta_handle();
+                uint8_t vif_idx = wifi_netif_vif_to_vifid(netif->state);
+                if (vif_idx != 0xff) 
+                {
+                  bk_printf("tcp retry cnt %d, send arp_reply.\r\n",pcb->nrtx);
+                  void etharp_reply(void);
+                  etharp_reply();
+                }
             }
 #endif
 
