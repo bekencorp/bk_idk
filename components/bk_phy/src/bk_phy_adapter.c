@@ -72,6 +72,8 @@
 
 #define PHY_OSI_VERSION              0x00060006
 
+bk_err_t bk_sensor_set_enable_temperature(int enable);
+
 static void bk_set_g_saradc_flag(UINT8 flag)
 {
 }
@@ -263,6 +265,16 @@ static bk_err_t bk_pm_module_vote_power_ctrl_phy(int32_t on_off)
 
 static bk_err_t bk_pm_module_vote_cpu_freq_phy(uint32_t module, uint32_t cpu_freq)
 {
+#if (CONFIG_TEMP_DETECT)
+    if (module == PM_DEV_ID_PHY_DPD_CALI) {
+        //hengzh20260126: skip temp detect when DPD cali
+        if (cpu_freq == PM_CPU_FRQ_DEFAULT) {
+            bk_sensor_set_enable_temperature(1);
+        } else if (cpu_freq == PM_CPU_FRQ_120M) {
+            bk_sensor_set_enable_temperature(0);
+        }
+    }
+#endif
     return bk_pm_module_vote_cpu_freq((pm_dev_id_e)module, (pm_cpu_freq_e)cpu_freq);
 }
 
