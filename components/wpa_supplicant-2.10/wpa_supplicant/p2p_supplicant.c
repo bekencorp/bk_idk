@@ -7446,7 +7446,7 @@ int wpas_p2p_listen(struct wpa_supplicant *wpa_s, unsigned int timeout)
 {
 	int res;
 
-	if (wpa_s->global->p2p_disabled || wpa_s->global->p2p == NULL)
+	if (wpa_s->global->p2p_disabled || wpa_s->global->p2p == NULL || wpa_s->p2p_connected)
 		return -1;
 
 	if (wpa_s->p2p_lo_started) {
