@@ -858,6 +858,12 @@ bk_err_t bk_spi_read_bytes(spi_id_t id, void *data, uint32_t size)
         rtos_get_semaphore(&(s_spi[id].rx_sema), BEKEN_NEVER_TIMEOUT);
 
         int_level = spi_enter_critical();
+        if(s_spi[id].rx_offset < s_spi[id].rx_size){
+                SPI_LOGE("[SPI%d] bk_spi_read_bytes failed: rx incomplete! rx_offset(%d) < rx_size(%d), missing %d bytes\r\n", 
+                         id, s_spi[id].rx_offset, s_spi[id].rx_size, s_spi[id].rx_size - s_spi[id].rx_offset);
+                spi_exit_critical(int_level);
+                return BK_FAIL;
+        }
         bk_spi_clr_rx(id);
         spi_exit_critical(int_level);
 
