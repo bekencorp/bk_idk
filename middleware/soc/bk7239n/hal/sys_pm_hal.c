@@ -1583,7 +1583,7 @@ void sys_hal_enter_low_analog(void)
 	}
 	else if (temp < 60)
 	{
-		sys_ana_ll_set_ana_reg7_vanaldosel((s_pm_config.btpll_vanaldosel_low == 0xff) ? 0x4 : s_pm_config.btpll_vanaldosel_low);
+		sys_ana_ll_set_ana_reg7_vanaldosel((s_pm_config.btpll_vanaldosel_low == 0xff) ? 0x7 : s_pm_config.btpll_vanaldosel_low);
 	}
 	else
 	{
