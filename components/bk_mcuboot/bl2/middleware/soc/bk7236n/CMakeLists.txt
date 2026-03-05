@@ -64,6 +64,13 @@ if(CONFIG_BL2_WDT)
 	)
 endif()
 
+if(CONFIG_DECOMPRESS_RESUME)
+	target_compile_definitions(platform_bl2
+		PUBLIC
+			CONFIG_DECOMPRESS_RESUME
+	)
+endif()
+
 if(CONFIG_BL2_DOWNLOAD)
 	target_compile_definitions(platform_bl2
 		PUBLIC

@@ -53,6 +53,41 @@ bk_err_t ow_ota_cancel(const bk_logic_partition_t *control_partition)
 	return bk_flash_erase_fast(control_partition->partition_start_addr, control_partition->partition_length);
 }
 
+bk_err_t ow_ota_accept(const bk_ota_t *ota)
+{
+	OTA_LOGD(TAG, "ow accept, erase confirm\r\n");
+	if (ota == NULL || ota->control_partition == NULL) {
+		return BK_FAIL;
+	}
+	uint32_t offset = ota_confirm_phy_offset(ota->control_partition);
+	uint8_t retry_cnt = 3;
+	while (retry_cnt--) {
+		/* Save and restore original protect status, only disable during erase. */
+		flash_protect_type_t protect = bk_flash_get_protect_type();
+		bk_flash_set_protect_type(FLASH_PROTECT_NONE);
+		bk_err_t ret = bk_flash_erase_sector(offset);
+		bk_flash_set_protect_type(protect);
+		if (ret != BK_OK) {
+			continue;
+		}
+
+		uint32_t value = 0;
+		bk_flash_read_bytes(offset, (uint8_t*)&value, 4);
+		if (value == 0xFFFFFFFF) {
+			return BK_OK;
+		}
+	}
+
+	return BK_FAIL;
+}
+
+bk_err_t ow_ota_verify(const bk_ota_t *ota, void* metadata)
+{
+	(void)ota;
+	(void)metadata;
+	return BK_OK;
+}
+
 bk_err_t ow_ota_reboot(void)
 {
 	OTA_LOGD(TAG, "ow reboot\r\n");

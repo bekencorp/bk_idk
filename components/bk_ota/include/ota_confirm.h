@@ -14,5 +14,18 @@
 
 #pragma once
 
+#include "driver/flash_partition.h"
+
+/*
+ * Standard: OTA confirm is stored in the last 4 bytes of the OTA control partition.
+ * Same rule for overwrite (ow_ota_control) and xip (ota_control) so that bootloader
+ * and application use the same address: partition_start + partition_size - 4.
+ */
+#define OTA_CONFIRM_PHY_OFFSET(partition_start, partition_size) \
+    ((uint32_t)((partition_start) + (partition_size) - 4))
+
+/** Get physical offset of OTA confirm from partition (last 4 bytes). */
+uint32_t ota_confirm_phy_offset(const bk_logic_partition_t *partition);
+
 bk_err_t ota_confirm(const bk_logic_partition_t *partition, uint32_t status);
 bk_err_t ota_cancel(const bk_logic_partition_t *partition);

@@ -6,24 +6,28 @@
 #include "region_defs.h"
 #include "bootutil/bootutil_log.h"
 #include "flash_map.h"
+#include "security.h"
 
 #if CONFIG_BL2_WDT
 #include <driver/wdt_hal.h>
 #endif
 
-#define TOVIRTURE(addr) ((addr)%34+(addr)/34*32)
-#define TOPHY(addr) ((addr)%32+(addr)/32*34)
-#define CEIL_ALIGN_34(addr) (((addr) + 34 - 1) / 34 * 34)
 #define ALIGN_4096(addr) (((addr) + 4096 - 1) / 4096 * 4096)
 #define COMPRESS_BLOCK_SIZE (64*1024)
 #define MAX_BLOCK_NUM 100
 
-extern uint8_t *decompress_in_memory();
-
-#if CONFIG_STATIC_ARRARY
 typedef struct {
 	uint8_t crc;
 } CRC8_Context;
+typedef struct {
+	uint8_t index;
+	uint8_t data[33];
+	CRC8_Context crc8;
+} resume_block_t;
+
+extern uint8_t *decompress_in_memory();
+
+#if CONFIG_STATIC_ARRARY
 
 static uint8_t s_compressed_buf[COMPRESS_BLOCK_SIZE + 64];
 static uint8_t s_decompressed_buf[COMPRESS_BLOCK_SIZE + 64];
@@ -34,11 +38,6 @@ static uint8_t *s_decompressed_buf = (uint8_t*)(BL2_FREE_SRAM + COMPRESS_BLOCK_S
 #endif
 
 #if CONFIG_DECOMPRESS_RESUME
-typedef struct {
-	uint8_t index;
-	uint8_t data[33];
-	CRC8_Context crc8;
-} resume_block_t;
 
 
 static uint8_t UpdateCRC8(uint8_t crcIn, uint8_t byte)
@@ -80,8 +79,7 @@ static void CRC8_Final( CRC8_Context *inContext, uint8_t *outResult )
 
 static uint32_t get_resume_base_address(void)
 {
-	uint32_t back_address = partition_get_phy_offset(PARTITION_OW_OTA_RESUME);
-	return back_address;
+	return partition_get_phy_offset(PARTITION_OW_OTA_CONTROL);
 }
 
 
@@ -143,16 +141,25 @@ static uint32_t resume_flash(uint32_t block_num)
 	if((restart_block_idx == 0) || (restart_block_idx == 0xffu) || (restart_block_idx > block_num)) {
 		BOOT_LOG_INF("Erasing primary and resume");
 		flash_area_erase_fast(primary_all_phy_offset, area_size);
-		flash_area_erase_fast(get_resume_base_address(), 4096);
+		/* Safeguard: never erase at 0 or below overwrite start (would erase bootloader) */
+		uint32_t resume_addr = get_resume_base_address();
+		if (resume_addr != 0 && resume_addr >= primary_all_phy_offset) {
+			flash_area_erase_fast(resume_addr, 4096);
+		} else {
+			BOOT_LOG_ERR("resume addr 0x%x invalid, skip resume erase to protect bootloader", (unsigned)resume_addr);
+		}
+#if CONFIG_BL2_WDT
+		wdt_hal_force_feed();
+#endif
 		restart_block_idx = 0;
 		return restart_block_idx;
 	}
 
-	uint32_t restart_block_offset = primary_all_phy_offset + TOPHY(COMPRESS_BLOCK_SIZE) * restart_block_idx;
-	uint32_t erase_size = TOPHY(COMPRESS_BLOCK_SIZE) + 4 * 1024;
+	uint32_t restart_block_offset = primary_all_phy_offset + FLASH_VIRTUAL2PHY(COMPRESS_BLOCK_SIZE) * restart_block_idx;
+	uint32_t erase_size = FLASH_VIRTUAL2PHY(COMPRESS_BLOCK_SIZE) + 4 * 1024;
 
 	if(restart_block_idx < block_num) {
-		erase_size = TOPHY(COMPRESS_BLOCK_SIZE) + 4 * 1024;
+		erase_size = FLASH_VIRTUAL2PHY(COMPRESS_BLOCK_SIZE) + 4 * 1024;
 	} else if(restart_block_idx == block_num) {
 		erase_size = primary_all_phy_offset + area_size - restart_block_offset;
 	}
@@ -171,7 +178,7 @@ static void back_flash(uint32_t restart_block_idx)
 	uint32_t back_address = get_resume_base_address();
 	uint32_t back_data_size = CEIL_ALIGN_34(primary_all_phy_offset) - primary_all_phy_offset; // COMPRESS_BLOCK = 68k
 	uint8_t back_data[back_data_size];
-	uint32_t restart_block_offset = primary_all_phy_offset + TOPHY(COMPRESS_BLOCK_SIZE) * (restart_block_idx + 1);
+	uint32_t restart_block_offset = primary_all_phy_offset + FLASH_VIRTUAL2PHY(COMPRESS_BLOCK_SIZE) * (restart_block_idx + 1);
 
 	bk_flash_read_bytes(restart_block_offset, back_data, back_data_size);
 	write_resume_block(restart_block_idx, back_address, back_data, back_data_size);
@@ -212,7 +219,6 @@ boot_copy_region(struct boot_loader_state *state, const struct flash_area *fap_s
 
 #if CONFIG_DECOMPRESS_RESUME
         restart_block_idx = resume_flash(block_num);
-        TEST_OVERWRITE_RESET_START(restart_block_idx, block_num);
 #else
         restart_block_idx = 0;
         uint32_t area_size = fap_dst->fa_phy_size;
@@ -220,7 +226,7 @@ boot_copy_region(struct boot_loader_state *state, const struct flash_area *fap_s
 #endif
 
 	int rate_process = block_num / 5;
-	uint32_t vir_primary_all_start_address = TOVIRTURE(CEIL_ALIGN_34(primary_all_phy_offset));
+	uint32_t vir_primary_all_start_address = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(primary_all_phy_offset));
 
 	uint8_t block_idx = 0;
 
@@ -237,7 +243,7 @@ boot_copy_region(struct boot_loader_state *state, const struct flash_area *fap_s
 		clean_buf();
 		flash_area_read(fap_src, off_src + bytes_copied, s_compressed_buf, block_list[block_idx]);
 		decompress_in_memory(s_compressed_buf, s_decompressed_buf, COMPRESS_BLOCK_SIZE, 0);
-		bk_flash_write_primary_cbus(vir_primary_all_start_address + COMPRESS_BLOCK_SIZE * block_idx, (s_decompressed_buf), COMPRESS_BLOCK_SIZE);
+		bk_flash_write_cbus(vir_primary_all_start_address + COMPRESS_BLOCK_SIZE * block_idx, (s_decompressed_buf), COMPRESS_BLOCK_SIZE);
 
 #if CONFIG_DECOMPRESS_RESUME
 		back_flash(restart_block_idx);
@@ -260,12 +266,19 @@ boot_copy_region(struct boot_loader_state *state, const struct flash_area *fap_s
 		decompress_in_memory(s_compressed_buf, s_decompressed_buf, last_block_before_size, 0);
 
 		uint16_t write_size = (last_block_before_size + 31) / 32 * 32;
-		bk_flash_write_primary_cbus(vir_primary_all_start_address + COMPRESS_BLOCK_SIZE * block_idx, s_decompressed_buf, write_size);
+		bk_flash_write_cbus(vir_primary_all_start_address + COMPRESS_BLOCK_SIZE * block_idx, s_decompressed_buf, write_size);
 	}
 
 #if CONFIG_DECOMPRESS_RESUME
-	BOOT_LOG_INF("erasing resume");
-	flash_area_erase_fast(get_resume_base_address(), 4096);
+	{
+		uint32_t resume_addr = get_resume_base_address();
+		if (resume_addr != 0 && resume_addr >= primary_all_phy_offset) {
+			BOOT_LOG_INF("erasing resume");
+			flash_area_erase_fast(resume_addr, 4096);
+		} else {
+			BOOT_LOG_ERR("resume addr 0x%x invalid, skip resume erase", (unsigned)resume_addr);
+		}
+	}
 #endif
 	bk_flash_set_protect_type(protect);
 	return 0;

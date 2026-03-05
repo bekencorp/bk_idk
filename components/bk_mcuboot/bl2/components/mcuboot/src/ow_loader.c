@@ -130,6 +130,7 @@ boot_prepare_image_for_update(struct boot_loader_state *state,
                               struct boot_status *bs)
 {
     int rc;
+    struct image_header *hdr;
     FIH_DECLARE(fih_rc, FIH_FAILURE);
 
     /* Attempt to read an image header from each slot. */
@@ -140,6 +141,11 @@ boot_prepare_image_for_update(struct boot_loader_state *state,
                 BOOT_CURR_IMG(state));
         BOOT_SWAP_TYPE(state) = BOOT_SWAP_TYPE_NONE;
         return;
+    }
+
+    hdr = boot_img_hdr(state, 0);
+    if (boot_is_header_valid(hdr, BOOT_IMG_AREA(state, 0))) {
+        BOOT_LOG_IMAGE_INFO(0, hdr);
     }
 
     BOOT_SWAP_TYPE(state) = boot_validated_swap_type(state, bs);
@@ -279,14 +285,6 @@ overwrite_boot_go(struct boot_loader_state *state, struct boot_rsp *rsp)
                 goto out;
             } else {
                 BOOT_LOG_INF("Overwrite update success");
-    #if CONFIG_OTA_CONFIRM_UPDATE
-                bk_boot_erase_ota_confirm(0);
-    #else
-                // erase ota slot
-                BOOT_LOG_INF("Erase ota slot");
-                flash_area_erase(BOOT_IMG(state, 1).area, 0,
-                            flash_area_get_erase_size(BOOT_IMG(state, 1).area));
-    #endif
             }
         }
 
@@ -313,7 +311,7 @@ overwrite_boot_go(struct boot_loader_state *state, struct boot_rsp *rsp)
     }
 
     (void*)rsp;
-
+    BOOT_LOG_FORCE("Jump APP\r\n");
     fih_rc = FIH_SUCCESS;
 out:
     /*

@@ -998,23 +998,6 @@ boot_validate_slot(struct boot_loader_state *state, int slot,
         goto out;
     }
 
-#if defined(MCUBOOT_OVERWRITE_ONLY) && defined(MCUBOOT_DOWNGRADE_PREVENTION)
-    if (slot != BOOT_PRIMARY_SLOT) {
-        /* Check if version of secondary slot is sufficient */
-        rc = boot_version_cmp(
-                &boot_img_hdr(state, BOOT_SECONDARY_SLOT)->ih_ver,
-                &boot_img_hdr(state, BOOT_PRIMARY_SLOT)->ih_ver);
-        if (rc < 0 && boot_check_header_erased(state, BOOT_PRIMARY_SLOT)) {
-            BOOT_LOG_ERR("insufficient version in secondary slot");
-            flash_area_erase(fap, 0, flash_area_get_size(fap));
-            /* Image in the secondary slot does not satisfy version requirement.
-             * Erase the image and continue booting from the primary slot.
-             */
-            fih_rc = FIH_NO_BOOTABLE_IMAGE;
-            goto out;
-        }
-    }
-#endif
     BOOT_HOOK_CALL_FIH(boot_image_check_hook, FIH_BOOT_HOOK_REGULAR,
                        fih_rc, BOOT_CURR_IMG(state), slot);
     if (FIH_EQ(fih_rc, FIH_BOOT_HOOK_REGULAR))
@@ -1022,12 +1005,6 @@ boot_validate_slot(struct boot_loader_state *state, int slot,
         FIH_CALL(boot_image_check, fih_rc, state, hdr, fap, bs);
     }
     if (!boot_is_header_valid(hdr, fap) || FIH_NOT_EQ(fih_rc, FIH_SUCCESS)) {
-        if ((slot != BOOT_PRIMARY_SLOT) || ARE_SLOTS_EQUIVALENT()) {
-            flash_area_erase(fap, 0, flash_area_get_size(fap));
-            /* Image is invalid, erase it to prevent further unnecessary
-             * attempts to validate and boot it.
-             */
-        }
 #if !defined(__BOOTSIM__)
         BOOT_LOG_ERR("Image in the %s slot is not valid!",
                      (slot == BOOT_PRIMARY_SLOT) ? "primary" : "secondary");
@@ -2597,11 +2574,15 @@ boot_select_or_erase(struct boot_loader_state *state)
          * A reboot happened without the image being confirmed at
          * runtime or its trailer is corrupted/invalid. Erase the image
          * to prevent it from being selected again on the next reboot.
+         * Secondary slot is never erased; only primary slot may be erased.
          */
-        BOOT_LOG_DBG("Erasing faulty image in the %s slot.",
-                     (active_slot == BOOT_PRIMARY_SLOT) ? "primary" : "secondary");
-        rc = flash_area_erase(fap, 0, flash_area_get_size(fap));
-        assert(rc == 0);
+        if (active_slot == BOOT_PRIMARY_SLOT) {
+            BOOT_LOG_DBG("Erasing faulty image in the primary slot.");
+            rc = flash_area_erase(fap, 0, flash_area_get_size(fap));
+            assert(rc == 0);
+        } else {
+            BOOT_LOG_DBG("Skipping erase of faulty image in the secondary slot.");
+        }
 
         flash_area_close(fap);
         rc = -1;

@@ -281,7 +281,7 @@ boot_write_xip_status(uint8_t index, uint32_t type, uint32_t status)
 
 int boot_read_running_slot(void)
 {
-    uint32_t offset = CONFIG_XIP_OTA_CONTROL_PHY_PARTITION_OFFSET + 0x1000;
+    uint32_t offset = CONFIG_XIP_OTA_CONTROL_PHY_PARTITION_OFFSET;
     uint32_t running_slot_value = 0;
     uint32_t running_slot = 0;
 
@@ -302,16 +302,16 @@ bk_boot_ota_confirm_offset(uint8_t image_index)
 {
 #if CONFIG_MIXED_OTA
     if (image_index == 0) {
-        return CONFIG_OW_OTA_CONTROL_PHY_PARTITION_OFFSET;
+        return CONFIG_OW_OTA_CONTROL_PHY_PARTITION_OFFSET + CONFIG_OW_OTA_CONTROL_PHY_PARTITION_SIZE - 4;
     } else {
-        return CONFIG_XIP_OTA_CONTROL_PHY_PARTITION_OFFSET;
+        return CONFIG_XIP_OTA_CONTROL_PHY_PARTITION_OFFSET + CONFIG_XIP_OTA_CONTROL_PHY_PARTITION_SIZE - 4;
     }
 #endif
 #if CONFIG_OTA_OVERWRITE
-    return CONFIG_OW_OTA_CONTROL_PHY_PARTITION_OFFSET;
+    return CONFIG_OW_OTA_CONTROL_PHY_PARTITION_OFFSET + CONFIG_OW_OTA_CONTROL_PHY_PARTITION_SIZE - 4;
 #endif
 #if CONFIG_DIRECT_XIP
-    return CONFIG_XIP_OTA_CONTROL_PHY_PARTITION_OFFSET;
+    return CONFIG_XIP_OTA_CONTROL_PHY_PARTITION_OFFSET + CONFIG_XIP_OTA_CONTROL_PHY_PARTITION_SIZE - 4;
 #endif
 }
 

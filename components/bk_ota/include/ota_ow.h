@@ -21,9 +21,10 @@ bk_err_t ow_ota_read_dbus(const bk_ota_t *ota, uint32_t off, uint8_t *buf, uint3
 bk_err_t ow_ota_read_cbus(const bk_ota_t *ota, uint32_t off, uint8_t *buf, uint32_t len);
 bk_err_t ow_ota_erase(const bk_ota_t *ota);
 bk_err_t ow_ota_erase_sector(const bk_ota_t *ota, uint32_t off);
-
+bk_err_t ow_ota_verify(const bk_ota_t *ota, void* metadata);
 bk_err_t ow_ota_confirm(const bk_logic_partition_t *partition);
 bk_err_t ow_ota_cancel(const bk_logic_partition_t *control_partition);
+bk_err_t ow_ota_accept(const bk_ota_t *ota);
 
 bk_err_t ow_ota_read_primary_version(const bk_ota_t *ota);
 bk_err_t ow_ota_read_compress_version(const bk_ota_t *ota);

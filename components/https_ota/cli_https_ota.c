@@ -1,7 +1,6 @@
 #include "https_ota.h"
 #include "cli.h"
 #include "modules/bk_ota.h"
-// ota_verify.h is already included via https_ota.h -> ota_download.h
 #include "driver/flash.h"
 #include "driver/flash_partition.h"
 #if CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
@@ -20,120 +19,6 @@ static beken_thread_t ota_thread_handle = NULL;
 https_ota_t* s_ota_config = NULL;
 char *https_url = NULL;
 
-#if CONFIG_OTA_UPDATE_PUBKEY
-extern bk_err_t bk_flash_read_cbus(uint32_t address, void *user_buf, uint32_t size);
-extern uint32_t flash_get_excute_enable(void);
-
-
-
-static bk_err_t verify_trust_chain_from_tlv(ota_verify_t* ota_verify, const bk_logic_partition_t *app_partition)
-{
-	if (ota_verify == NULL || ota_verify->tlv_total == NULL) {
-		return BK_ERR_PARAM;
-	}
-	
-	uint8_t new_pubkey[MAX_PUBKEY_LEN];  // new_pubkey: new_img_sign_pubkey
-	uint32_t new_pubkey_len = MAX_PUBKEY_LEN;
-	uint8_t root_pubkey_tlv[MAX_PUBKEY_LEN];  // root_pubkey: img_sign_pubkey (root key)
-	uint32_t root_pubkey_tlv_len = MAX_PUBKEY_LEN;
-	uint8_t pubkey_sig[MAX_PUBKEY_LEN];  // pubkey_sig: signature of new_pubkey hash
-	uint32_t pubkey_sig_len = MAX_PUBKEY_LEN;
-	bk_err_t ret;
-	
-	// Read new_pubkey TLV from OTA data
-	ret = ota_read_tlv_from_data(ota_verify->tlv_total, TLV_TOTAL_SIZE, IMAGE_TLV_CUSTOM, new_pubkey, &new_pubkey_len);
-	if (ret != BK_OK) {
-		BK_LOGE(TAG, "missing required TLV: new_pubkey\r\n");
-		return BK_ERR_OTA_VALIDATE_PUB_KEY_FAIL;
-	}
-	
-	if (new_pubkey_len > MAX_PUBKEY_LEN) {
-		BK_LOGE(TAG, "invalid new_pubkey TLV length\r\n");
-		return BK_ERR_OTA_VALIDATE_PUB_KEY_FAIL;
-	}
-	
-	// Try to read root_pubkey and pubkey_sig (new format)
-	ret = ota_read_tlv_from_data(ota_verify->tlv_total, TLV_TOTAL_SIZE, IMAGE_TLV_CUSTOM_ORIGIN_PUBKEY, 
-	                              root_pubkey_tlv, &root_pubkey_tlv_len);
-	if (ret == BK_OK) {
-		// Found root_pubkey, check for pubkey_sig
-		ret = ota_read_tlv_from_data(ota_verify->tlv_total, TLV_TOTAL_SIZE, IMAGE_TLV_CUSTOM_PUBKEY_SIG,
-		                              pubkey_sig, &pubkey_sig_len);
-		if (ret == BK_OK) {
-			BK_LOGI(TAG, "update pubkey");
-			
-			if (root_pubkey_tlv_len > MAX_PUBKEY_LEN) {
-				BK_LOGE(TAG, "invalid root_pubkey TLV length\r\n");
-				return BK_ERR_OTA_VALIDATE_PUB_KEY_FAIL;
-			}
-			
-			// Step 1: Compare root_pubkey with primary partition root pubkey
-			uint8_t root_pubkey_from_primary[MAX_PUBKEY_LEN];
-			uint16_t root_pubkey_from_primary_len = MAX_PUBKEY_LEN;
-			ret = ota_read_tlv_from_partition(app_partition, IMAGE_TLV_CUSTOM_ORIGIN_PUBKEY,
-			                                   root_pubkey_from_primary, &root_pubkey_from_primary_len);
-			if (ret != BK_OK) {
-				// Fallback: try to read new_pubkey as root pubkey (old format in primary)
-				ret = ota_read_tlv_from_partition(app_partition, IMAGE_TLV_CUSTOM,
-				                                   root_pubkey_from_primary, &root_pubkey_from_primary_len);
-			}
-			
-			if (ret != BK_OK) {
-				BK_LOGE(TAG, "failed to read root pubkey from primary, ret=0x%x\r\n", ret);
-				return ret;
-			}
-			
-			if (root_pubkey_tlv_len != root_pubkey_from_primary_len ||
-			    memcmp(root_pubkey_tlv, root_pubkey_from_primary, root_pubkey_tlv_len) != 0) {
-				BK_LOGE(TAG, "root pubkey mismatch\r\n");
-				return BK_ERR_OTA_VALIDATE_PUB_KEY_FAIL;
-			}
-			
-			// Step 2: Verify signature of new_pubkey using root pubkey
-#if CONFIG_PSA_MBEDTLS
-			// Calculate hash of new pubkey
-			uint8_t new_pubkey_hash[32];
-			mbedtls_sha256_context sha256_ctx;
-			mbedtls_sha256_init(&sha256_ctx);
-			mbedtls_sha256_starts(&sha256_ctx, 0);
-			mbedtls_sha256_update(&sha256_ctx, new_pubkey, new_pubkey_len);
-			mbedtls_sha256_finish(&sha256_ctx, new_pubkey_hash);
-			mbedtls_sha256_free(&sha256_ctx);
-			
-			// Verify signature
-			ret = ota_verify_signature(new_pubkey_hash, 32,
-			                           root_pubkey_from_primary, root_pubkey_from_primary_len,
-			                           pubkey_sig, pubkey_sig_len);
-			if (ret != BK_OK) {
-				return ret;
-			}
-			
-			BK_LOGI(TAG, "pubkey ok!");
-#endif
-			return BK_OK;
-		}
-	}
-	
-	uint8_t primary_new_pubkey[MAX_PUBKEY_LEN];
-	uint16_t primary_new_pubkey_len = MAX_PUBKEY_LEN;
-	ret = ota_read_tlv_from_partition(app_partition, IMAGE_TLV_CUSTOM,
-	                                   primary_new_pubkey, &primary_new_pubkey_len);
-	if (ret != BK_OK) {
-		BK_LOGE(TAG, "failed to read new_pubkey from primary, ret=0x%x\r\n", ret);
-		return ret;
-	}
-	
-	// Compare new_pubkey from OTA with new_pubkey from primary
-	if (new_pubkey_len != primary_new_pubkey_len ||
-	    memcmp(new_pubkey, primary_new_pubkey, new_pubkey_len) != 0) {
-		BK_LOGE(TAG, "new_pubkey mismatch between OTA and primary\r\n");
-		return BK_ERR_OTA_VALIDATE_PUB_KEY_FAIL;
-	}
-	
-	BK_LOGI(TAG, "pubkey ok!");
-	return BK_OK;
-}
-#endif
 
 /* this crt for url https://docs.bekencorp.com , support test*/
 const char ca_crt_rsa[] = {
@@ -184,6 +69,7 @@ static void cli_ota_help(void)
 	BK_LOGI(TAG,"ota init + url\n");
 	BK_LOGI(TAG,"ota begin/download/pause/end/deinit/verify\n");
 	BK_LOGI(TAG,"ota confirm current/ow/xip\r\n");
+	BK_LOGI(TAG,"ota cancel current/ow/xip\r\n");
 	BK_LOGI(TAG,"ota entire_erase 1/0\r\n");
 }
 
@@ -196,7 +82,7 @@ void ota_event_cb(https_ota_event_t evt)
 		BK_LOGE(TAG,"OTA ERROR CODE %d\r\n",*(int*)(evt.data));
 		break;
 	case HTTPS_OTA_SUCCESS_EVENT:
-#if CONFIG_OTA_UPDATE_PUBKEY
+#if CONFIG_OTA_UPDATE_PUBKEY && CONFIG_OTA_OVERWRITE
 		if (s_ota_config && s_ota_config->ota_parse && s_ota_config->ota_parse->ota_handle) {
 			if (bk_ota_update_public_key(s_ota_config->ota_parse->ota_handle) != BK_OK) {
 				BK_LOGE(TAG, "Back pubkey fail!\r\n");
@@ -301,38 +187,30 @@ void bk_https_start_download(beken_thread_arg_t arg)
 
 	if (state == HTTPS_OTA_FINISH) {
 		bk_err_t verify_ret = BK_FAIL;
-		bk_err_t trust_chain_ret = BK_OK;
 		bk_err_t confirm_ret = BK_FAIL;
 		if (s_ota_config && s_ota_config->ota_parse && s_ota_config->ota_parse->ota_handle) {
-			verify_ret = bk_ota_verify(s_ota_config->ota_parse->ota_handle);
-#if CONFIG_OTA_UPDATE_PUBKEY
-			// Verify trust chain using TLV data collected during download
-			if (verify_ret == BK_OK && s_ota_config->ota_parse->ota_verify != NULL) {
-				const bk_logic_partition_t *app_partition = s_ota_config->ota_parse->ota_handle->app_partition;
-				if (app_partition == NULL) {
-					trust_chain_ret = BK_ERR_PARAM;
-				} else {
-					trust_chain_ret = verify_trust_chain_from_tlv(s_ota_config->ota_parse->ota_verify, app_partition);
-				}
-			}
-
-#endif
-			if (verify_ret == BK_OK && trust_chain_ret == BK_OK) {
-				confirm_ret = bk_ota_confirm(s_ota_config->ota_parse->ota_handle);
-			}
-#if CONFIG_OTA_UPDATE_PUBKEY
-			// Deinitialize ota_verify after trust chain verification
-			if (s_ota_config->ota_parse->ota_verify != NULL) {
-				ota_verify_deinit(s_ota_config->ota_parse->ota_verify);
+			verify_ret = bk_ota_verify(s_ota_config->ota_parse->ota_handle, s_ota_config->ota_parse->ota_verify);
+			if (s_ota_config->ota_parse) {
 				s_ota_config->ota_parse->ota_verify = NULL;
 			}
-#endif
+			if (verify_ret == BK_OK) {
+				confirm_ret = bk_ota_confirm(s_ota_config->ota_parse->ota_handle);
+			} else {
+				BK_LOGE(TAG, "HTTPS OTA verify fail, verify=0x%x\r\n", verify_ret);
+			}
 		}
-		if (verify_ret == BK_OK && trust_chain_ret == BK_OK && confirm_ret == BK_OK) {
+		if (confirm_ret == BK_OK) {
+			if (s_ota_config && s_ota_config->ota_event_handler) {
+				https_ota_event_t success_evt = {
+					.event_id = HTTPS_OTA_SUCCESS_EVENT,
+					.data = NULL,
+					.data_len = 0,
+				};
+				s_ota_config->ota_event_handler(success_evt);
+			}
 			BK_LOGI(TAG, "HTTPS OTA SUCCESS");
 		} else {
-			BK_LOGE(TAG, "HTTPS OTA verify/trust_chain/confirm fail, verify=0x%x trust_chain=0x%x confirm=0x%x\r\n", 
-				verify_ret, trust_chain_ret, confirm_ret);
+			BK_LOGE(TAG, "HTTPS OTA confirm fail, confirm=0x%x\r\n", confirm_ret);
 		}
 	} else {
 		BK_LOGE(TAG, "HTTPS OTA perform fail, state=%d\r\n", state);
@@ -414,17 +292,25 @@ void ota_steps_Command(char *pcWriteBuffer, int xWriteBufferLen, int argc, char 
 			bk_ota_t *ow_ota_handle = NULL;
 			ow_ota_handle = bk_ota_get_ow_handle();
 			if (ow_ota_handle != NULL) {
-				bk_ota_confirm(ow_ota_handle);
-				BK_LOGI(TAG, "OTA confirm (ow) success\r\n");
+				bk_err_t ret = bk_ota_confirm(ow_ota_handle);
+				if (ret == BK_OK) {
+					BK_LOGI(TAG, "OTA confirm (ow) success\r\n");
+				} else {
+					BK_LOGE(TAG, "OTA confirm (ow) failed, ret=0x%x\r\n", ret);
+				}
 			} else {
 				BK_LOGE(TAG, "Failed to get OW OTA handle\r\n");
 			}
 		} else if (os_strcmp(argv[2], "xip") == 0) {
-			bk_ota_t *wifi_ota_handle = NULL;
-			wifi_ota_handle = bk_ota_get_xip_handle();
-			if (wifi_ota_handle != NULL) {
-				bk_ota_confirm(wifi_ota_handle);
-				BK_LOGI(TAG, "OTA confirm (xip) success\r\n");
+			bk_ota_t *xip_ota_handle = NULL;
+			xip_ota_handle = bk_ota_get_xip_handle();
+			if (xip_ota_handle != NULL) {
+				bk_err_t ret = bk_ota_confirm(xip_ota_handle);
+				if (ret == BK_OK) {
+					BK_LOGI(TAG, "OTA confirm (xip) success\r\n");
+				} else {
+					BK_LOGE(TAG, "OTA confirm (xip) failed, ret=0x%x\r\n", ret);
+				}
 			} else {
 				BK_LOGE(TAG, "Failed to get XIP OTA handle\r\n");
 			}
@@ -454,9 +340,69 @@ void ota_steps_Command(char *pcWriteBuffer, int xWriteBufferLen, int argc, char 
 			BK_LOGE(TAG, "Invalid confirm parameter: %s\r\n", argv[2]);
 			BK_LOGE(TAG, "Usage: ota confirm <current/ow/xip>\r\n");
 		}
+	} else if (os_strcmp(argv[1], "cancel") == 0) {
+		if (argc < 3) {
+			BK_LOGE(TAG, "Usage: ota cancel <current/ow/xip>\r\n");
+			BK_LOGE(TAG, "  current - cancel current OTA upgrade\r\n");
+			BK_LOGE(TAG, "  ow      - cancel OW mode upgrade\r\n");
+			BK_LOGE(TAG, "  xip     - cancel XIP mode upgrade\r\n");
+			return;
+		}
+		if (os_strcmp(argv[2], "ow") == 0) {
+			bk_ota_t *ow_ota_handle = NULL;
+			ow_ota_handle = bk_ota_get_ow_handle();
+			if (ow_ota_handle != NULL) {
+				bk_err_t ret = bk_ota_cancel(ow_ota_handle);
+				if (ret == BK_OK) {
+					BK_LOGI(TAG, "OTA cancel (ow) success\r\n");
+				} else {
+					BK_LOGE(TAG, "OTA cancel (ow) failed, ret=0x%x\r\n", ret);
+				}
+			} else {
+				BK_LOGE(TAG, "Failed to get OW OTA handle\r\n");
+			}
+		} else if (os_strcmp(argv[2], "xip") == 0) {
+			bk_ota_t *xip_ota_handle = NULL;
+			xip_ota_handle = bk_ota_get_xip_handle();
+			if (xip_ota_handle != NULL) {
+				bk_err_t ret = bk_ota_cancel(xip_ota_handle);
+				if (ret == BK_OK) {
+					BK_LOGI(TAG, "OTA cancel (xip) success\r\n");
+				} else {
+					BK_LOGE(TAG, "OTA cancel (xip) failed, ret=0x%x\r\n", ret);
+				}
+			} else {
+				BK_LOGE(TAG, "Failed to get XIP OTA handle\r\n");
+			}
+		} else if (os_strcmp(argv[2], "current") == 0) {
+			if (s_ota_config != NULL && s_ota_config->ota_parse != NULL && s_ota_config->ota_parse->ota_handle != NULL) {
+				BK_LOGI(TAG, "OTA cancel (current): using ota_handle from config\r\n");
+				if (s_ota_config->ota_parse->ota_handle->control_partition != NULL) {
+					BK_LOGI(TAG, "control_partition: %s, addr=0x%x\r\n", 
+						s_ota_config->ota_parse->ota_handle->control_partition->partition_description ? 
+						s_ota_config->ota_parse->ota_handle->control_partition->partition_description : "NULL",
+						s_ota_config->ota_parse->ota_handle->control_partition->partition_start_addr);
+				} else {
+					BK_LOGE(TAG, "control_partition is NULL!\r\n");
+				}
+				bk_err_t ret = bk_ota_cancel(s_ota_config->ota_parse->ota_handle);
+				if (ret == BK_OK) {
+					BK_LOGI(TAG, "OTA cancel (current) success\r\n");
+				} else {
+					BK_LOGE(TAG, "OTA cancel (current) failed, ret=0x%x\r\n", ret);
+					BK_LOGE(TAG, "Try: ota cancel xip (for DIRECT_XIP mode)\r\n");
+				}
+			} else {
+				BK_LOGE(TAG, "config or ota_handle is NULL\r\n");
+				BK_LOGE(TAG, "Try: ota cancel <ow/xip>\r\n");
+			}
+		} else {
+			BK_LOGE(TAG, "Invalid cancel parameter: %s\r\n", argv[2]);
+			BK_LOGE(TAG, "Usage: ota cancel <current/ow/xip>\r\n");
+		}
 	} else if (os_strcmp(argv[1], "verify") == 0) {
 		if (s_ota_config != NULL) {
-			if (bk_ota_verify(s_ota_config->ota_parse->ota_handle) != BK_OK) {
+			if (bk_ota_verify(s_ota_config->ota_parse->ota_handle, 0) != BK_OK) {
 				BK_LOGE(TAG,"ota partition verify error!\r\n");
 			} else {
 				BK_LOGI(TAG,"verify pass\r\n");

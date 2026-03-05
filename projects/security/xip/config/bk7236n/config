@@ -1,65 +1,25 @@
 #@ Set BL2 log level: OFF/ERROR/WARNING/INFO/DEBUG
 CONFIG_BL2_LOG_LEVEL="INFO"
-#@ Enable BL2: ON/OFF
-CONFIG_BL2_DOWNLOAD=n
-
-#@ CPU0 RAM size for SPE
-CONFIG_CPU0_SPE_RAM_SIZE=0x80000
-
-CONFIG_FLASH_SIZE_4M=n
-#@ enable security firmware / no-security firmware
 CONFIG_SECURITY_FIRMWARE=y
-#@ Enable Cache
-CONFIG_CACHE_ENABLE=n
-
-#@ Enable security engine cli
-CONFIG_TRUSTENGINE_TEST=y
-
-# OTA config
-#@ The MCUBOOT upgrade strategy can be:
 CONFIG_BL2_UPGRADE_STRATEGY="DIRECT_XIP"
-#@ Bl2 skip validate
 CONFIG_BL2_SKIP_VALIDATE=y
-#@ mcuboot validate before reboot
 CONFIG_VALIDATE_BEFORE_REBOOT=y
-#@ BL2 validate is enabled by eFuse
-CONFIG_BL2_VALIDATE_ENABLED_BY_EFUSE=n
 CONFIG_OTA=n
 CONFIG_BK_OTA=y
 CONFIG_BK_OTA_NEW_PACK_TOOL=y
-#@ Enable ota test
-CONFIG_OTA_TEST=n
-#@ Enable flash partition operation by name
-CONFIG_PARTITION_OP_BY_NAME=y
-#@ enable https ota
 CONFIG_HTTPS=y
 CONFIG_OTA_HTTPS=y
 CONFIG_OTA_HTTP=n
-#@ use public key in flash
 CONFIG_OTA_UPDATE_PUBKEY=y
-#@ confirm update after ota download
-CONFIG_OTA_CONFIRM_UPDATE=y
-#@ CLI support is disabled for this secure BL2 build to reduce attack surface.
-CONFIG_CLI=y
-
-# Core bootloader and PSA crypto settings
+CONFIG_OTA_TEST=y
 CONFIG_BL2=y
-CONFIG_PSA_EMBEDTLS=y
 CONFIG_MBEDTLS_CERTIFICATE_BUNDLE=n
-
-# XIP layout options
 CONFIG_XIP_NO_VERSION=y
-
-# Customer initialization hooks and feature toggles
 CONFIG_CUSTOMER_INIT_CALI=y
 CONFIG_CUSTOMER_INIT_BLE=y
 CONFIG_EASY_FLASH=n
-CONFIG_OTA_TEST=y
-
-# Platform runtime subsystems
 CONFIG_CACHE_ENABLE=y
 CONFIG_DBUS_CHECK_CRC=n
-CONFIG_BL2_WDT=y
 
 #nvs
 CONFIG_NVS_ENCRYPTION=y

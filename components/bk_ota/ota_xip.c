@@ -14,6 +14,7 @@
 #include "cache.h"
 #include "armstar.h"
 #include "core_star.h"
+#include "ota_verify.h"
 
 #if (CONFIG_SUPPORT_MULTICORE)
 #include "state.h"
@@ -180,20 +181,131 @@ static bool xip_ota_partition_is_valid(const bk_logic_partition_t *ota)
 	}
 }
 
-bk_err_t xip_ota_verify(const bk_ota_t *ota)
+static bk_err_t verify_trust_chain_from_tlv(ota_verify_t* ota_verify, const bk_logic_partition_t *app_partition)
 {
-	#if 0
-	const bk_logic_partition_t *ota_partition = xip_ota_get_ota_partition(ota);
-
-	OTA_LOGD(TAG, "xip verify\r\n");
-	if (xip_ota_partition_is_valid(ota_partition)) {
-		return bk_flash_check_crc(ota_partition->partition_start_addr, ota_partition->partition_length);
-	} else {
-		OTA_LOGD(TAG, "invalid\r\n");
-		return BK_FAIL;
+	if (ota_verify == NULL || ota_verify->tlv_total == NULL) {
+		return BK_ERR_PARAM;
 	}
-	#endif
+	
+	uint8_t new_pubkey[MAX_PUBKEY_LEN];  // new_pubkey: new_img_sign_pubkey
+	uint32_t new_pubkey_len = MAX_PUBKEY_LEN;
+	uint8_t root_pubkey_tlv[MAX_PUBKEY_LEN];  // root_pubkey: img_sign_pubkey (root key)
+	uint32_t root_pubkey_tlv_len = MAX_PUBKEY_LEN;
+	uint8_t pubkey_sig[MAX_PUBKEY_LEN];  // pubkey_sig: signature of new_pubkey hash
+	uint32_t pubkey_sig_len = MAX_PUBKEY_LEN;
+	bk_err_t ret;
+	
+	// Read new_pubkey TLV from OTA data
+	ret = ota_read_tlv_from_data(ota_verify->tlv_total, TLV_TOTAL_SIZE, IMAGE_TLV_CUSTOM, new_pubkey, &new_pubkey_len);
+	if (ret != BK_OK) {
+		BK_LOGE(TAG, "missing required TLV: new_pubkey\r\n");
+		return BK_ERR_OTA_VALIDATE_PUB_KEY_FAIL;
+	}
+	
+	if (new_pubkey_len > MAX_PUBKEY_LEN) {
+		BK_LOGE(TAG, "invalid new_pubkey TLV length\r\n");
+		return BK_ERR_OTA_VALIDATE_PUB_KEY_FAIL;
+	}
+	
+	// Try to read root_pubkey and pubkey_sig (new format)
+	ret = ota_read_tlv_from_data(ota_verify->tlv_total, TLV_TOTAL_SIZE, IMAGE_TLV_CUSTOM_ORIGIN_PUBKEY, 
+	                              root_pubkey_tlv, &root_pubkey_tlv_len);
+	if (ret == BK_OK) {
+		// Found root_pubkey, check for pubkey_sig
+		ret = ota_read_tlv_from_data(ota_verify->tlv_total, TLV_TOTAL_SIZE, IMAGE_TLV_CUSTOM_PUBKEY_SIG,
+		                              pubkey_sig, &pubkey_sig_len);
+		if (ret == BK_OK) {
+			BK_LOGI(TAG, "update pubkey");
+			
+			if (root_pubkey_tlv_len > MAX_PUBKEY_LEN) {
+				BK_LOGE(TAG, "invalid root_pubkey TLV length\r\n");
+				return BK_ERR_OTA_VALIDATE_PUB_KEY_FAIL;
+			}
+			
+			// Step 1: Compare root_pubkey with primary partition root pubkey
+			uint8_t root_pubkey_from_primary[MAX_PUBKEY_LEN];
+			uint16_t root_pubkey_from_primary_len = MAX_PUBKEY_LEN;
+			ret = ota_read_tlv_from_partition(app_partition, IMAGE_TLV_CUSTOM_ORIGIN_PUBKEY,
+			                                   root_pubkey_from_primary, &root_pubkey_from_primary_len);
+			if (ret != BK_OK) {
+				// Fallback: try to read new_pubkey as root pubkey (old format in primary)
+				ret = ota_read_tlv_from_partition(app_partition, IMAGE_TLV_CUSTOM,
+				                                   root_pubkey_from_primary, &root_pubkey_from_primary_len);
+			}
+			
+			if (ret != BK_OK) {
+				BK_LOGE(TAG, "failed to read root pubkey from primary, ret=0x%x\r\n", ret);
+				return ret;
+			}
+			
+			if (root_pubkey_tlv_len != root_pubkey_from_primary_len ||
+			    memcmp(root_pubkey_tlv, root_pubkey_from_primary, root_pubkey_tlv_len) != 0) {
+				BK_LOGE(TAG, "root pubkey mismatch\r\n");
+				return BK_ERR_OTA_VALIDATE_PUB_KEY_FAIL;
+			}
+			
+			// Step 2: Verify signature of new_pubkey using root pubkey
+#if CONFIG_PSA_MBEDTLS
+			// Calculate hash of new pubkey
+			uint8_t new_pubkey_hash[32];
+			mbedtls_sha256_context sha256_ctx;
+			mbedtls_sha256_init(&sha256_ctx);
+			mbedtls_sha256_starts(&sha256_ctx, 0);
+			mbedtls_sha256_update(&sha256_ctx, new_pubkey, new_pubkey_len);
+			mbedtls_sha256_finish(&sha256_ctx, new_pubkey_hash);
+			mbedtls_sha256_free(&sha256_ctx);
+			
+			// Verify signature
+			ret = ota_verify_signature(new_pubkey_hash, 32,
+			                           root_pubkey_from_primary, root_pubkey_from_primary_len,
+			                           pubkey_sig, pubkey_sig_len);
+			if (ret != BK_OK) {
+				return ret;
+			}
+			
+			BK_LOGI(TAG, "pubkey ok!");
+#endif
+			return BK_OK;
+		}
+	}
+	
+	uint8_t primary_new_pubkey[MAX_PUBKEY_LEN];
+	uint16_t primary_new_pubkey_len = MAX_PUBKEY_LEN;
+	ret = ota_read_tlv_from_partition(app_partition, IMAGE_TLV_CUSTOM,
+	                                   primary_new_pubkey, &primary_new_pubkey_len);
+	if (ret != BK_OK) {
+		BK_LOGE(TAG, "failed to read new_pubkey from primary, ret=0x%x\r\n", ret);
+		return ret;
+	}
+	
+	// Compare new_pubkey from OTA with new_pubkey from primary
+	if (new_pubkey_len != primary_new_pubkey_len ||
+	    memcmp(new_pubkey, primary_new_pubkey, new_pubkey_len) != 0) {
+		BK_LOGE(TAG, "new_pubkey mismatch between OTA and primary\r\n");
+		return BK_ERR_OTA_VALIDATE_PUB_KEY_FAIL;
+	}
+	
+	BK_LOGI(TAG, "pubkey ok!");
 	return BK_OK;
+}
+
+bk_err_t xip_ota_verify(const bk_ota_t *ota, void* metadata)
+{
+	ota_verify_t* ota_verify = (ota_verify_t*)metadata;
+	int ret = BK_OK;
+	
+	if (ota_verify != NULL) {
+		const bk_logic_partition_t *app_partition = ota->app_partition;
+		if (app_partition == NULL) {
+			ota_verify_deinit(ota_verify);
+			return BK_ERR_PARAM;
+		} else {
+			ret =  verify_trust_chain_from_tlv(ota_verify, app_partition);
+		}
+		ota_verify_deinit(ota_verify);
+		ota_verify = NULL;
+	}
+	return ret;
 }
 
 static uint32_t xip_ota_get_app_magic_off(const bk_ota_t *ota)
@@ -222,7 +334,7 @@ bk_err_t xip_ota_accept(const bk_ota_t *ota)
 	}
 	
 	// Save current running slot information for bootloader
-	uint32_t running_slot_offset = CONFIG_XIP_OTA_CONTROL_PHY_PARTITION_OFFSET + 0x1000;
+	uint32_t running_slot_offset = CONFIG_XIP_OTA_CONTROL_PHY_PARTITION_OFFSET;
 	uint32_t current_slot = flash_get_excute_enable(); // 0 = slot A, 1 = slot B
 	
 	uint32_t current_slot_value = 0;

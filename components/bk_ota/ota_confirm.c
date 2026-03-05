@@ -1,8 +1,17 @@
 #include "sdkconfig.h"
 #include "driver/flash.h"
 #include "driver/flash_partition.h"
+#include "ota_confirm.h"
 
 #define TAG "ota"
+
+uint32_t ota_confirm_phy_offset(const bk_logic_partition_t *partition)
+{
+	if (partition == NULL) {
+		return 0;
+	}
+	return OTA_CONFIRM_PHY_OFFSET(partition->partition_start_addr, partition->partition_length);
+}
 
 bk_err_t ota_confirm(const bk_logic_partition_t *partition, uint32_t status)
 {
@@ -14,13 +23,12 @@ bk_err_t ota_confirm(const bk_logic_partition_t *partition, uint32_t status)
 		return BK_FAIL;
 	}
 
-	BK_LOGD(TAG, "ota_confirm: partition=%s, addr=0x%x, status=0x%x\r\n", 
+	uint32_t offset = ota_confirm_phy_offset(partition);
+	BK_LOGD(TAG, "ota_confirm: partition=%s, addr=0x%x, status=0x%x\r\n",
 		partition->partition_description ? partition->partition_description : "NULL",
-		partition->partition_start_addr, status);
+		offset, status);
 
 	while (retry_cnt--) {
-		uint32_t offset = partition->partition_start_addr;
-
 		bk_flash_read_bytes(offset, (uint8_t*)&check_value, 4);
 		BK_LOGD(TAG, "ota_confirm: read from 0x%x, value=0x%x, expected=0x%x\r\n", 
 			offset, check_value, status);

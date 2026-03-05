@@ -7,7 +7,9 @@
 #include "ota_ow.h"
 #include "ota_xip.h"
 #include "ota_common.h"
+#if CONFIG_OTA_BACKUP_PUBKEY
 #include "ota_verify.h"
+#endif
 #include "partitions_gen.h"
 
 #define TAG "ota"
@@ -62,7 +64,9 @@ static bk_ota_t* bk_ota_init(const char* app_partition_name, const char* ota_par
 		ota->ops.erase = ow_ota_erase;
 		ota->ops.erase_sector = ow_ota_erase_sector;
 		ota->ops.confirm = ow_ota_confirm;
+		ota->ops.verify = ow_ota_verify;
 		ota->ops.cancel = ow_ota_cancel;
+		ota->ops.accept = ow_ota_accept;
 		ota->ops.reboot = ow_ota_reboot;
 #endif
 	} else if (partition_type == PARTITION_SUBTYPE_XIP_OTA_CONTROL) {
@@ -92,7 +96,7 @@ static bk_ota_t* bk_ota_init(const char* app_partition_name, const char* ota_par
 		return NULL;
 	}
 
-#if CONFIG_OTA_UPDATE_PUBKEY
+#if CONFIG_OTA_BACKUP_PUBKEY
 	ota->ops.updatekey = ota_update_back_pubkey_from_primary;
 #endif
 	return ota;
@@ -156,11 +160,11 @@ bk_err_t bk_ota_erase_sector(bk_ota_t* ota, uint32_t off)
 	}
 }
 
-bk_err_t bk_ota_verify(bk_ota_t* ota)
+bk_err_t bk_ota_verify(bk_ota_t* ota, void* metadata)
 {
 	OTA_LOGD(TAG, "verify\r\n");
 	if (ota && ota->ops.verify) {
-		return ota->ops.verify(ota);
+		return ota->ops.verify(ota, metadata);
 	} else {
 		return BK_ERR_NOT_SUPPORT;
 	}
@@ -216,6 +220,86 @@ bk_err_t bk_ota_reboot(bk_ota_t* ota)
 	}
 
 	return BK_OK;
+}
+
+#if CONFIG_OTA_CONFIRM_UPDATE
+bk_err_t bk_ota_confirm_update(void)
+{
+	bk_err_t ret = BK_ERR_NOT_SUPPORT;
+
+#if CONFIG_OTA_OVERWRITE
+	{
+		bk_ota_t *ow = bk_ota_get_ow_handle();
+		if (ow) {
+			ret = bk_ota_confirm(ow);
+		}
+	}
+#endif
+
+#if CONFIG_DIRECT_XIP
+	if (ret != BK_OK) {
+		bk_ota_t *xip = bk_ota_get_xip_handle();
+		if (xip) {
+			ret = bk_ota_confirm(xip);
+		}
+	}
+#endif
+
+	if (ret == BK_ERR_NOT_SUPPORT) {
+		ret = BK_FAIL;
+	}
+
+	return ret;
+}
+
+bk_err_t bk_ota_cancel_update(uint8_t erase_ota)
+{
+	bk_err_t ret = BK_ERR_NOT_SUPPORT;
+
+	(void)erase_ota;
+
+#if CONFIG_OTA_OVERWRITE
+	{
+		bk_ota_t *ow = bk_ota_get_ow_handle();
+		if (ow) {
+			ret = bk_ota_cancel(ow);
+		}
+	}
+#endif
+
+#if CONFIG_DIRECT_XIP
+	if (ret != BK_OK) {
+		bk_ota_t *xip = bk_ota_get_xip_handle();
+		if (xip) {
+			ret = bk_ota_cancel(xip);
+		}
+	}
+#endif
+
+	if (ret == BK_ERR_NOT_SUPPORT) {
+		ret = BK_FAIL;
+	}
+
+	return ret;
+}
+#endif
+
+void bk_ota_accept_image(void)
+{
+#if CONFIG_OTA_CONFIRM_UPDATE
+#if CONFIG_OTA_OVERWRITE
+	bk_ota_t *ow = bk_ota_get_ow_handle();
+	if (ow) {
+		bk_ota_accept(ow);
+	}
+#endif
+#if CONFIG_DIRECT_XIP
+	bk_ota_t *xip = bk_ota_get_xip_handle();
+	if (xip) {
+		bk_ota_accept(xip);
+	}
+#endif
+#endif
 }
 
 const bk_logic_partition_t* bk_ota_get_partition(bk_ota_t* ota)

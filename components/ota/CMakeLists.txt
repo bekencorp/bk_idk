@@ -7,25 +7,14 @@ endif()
 
 list(APPEND srcs CheckSumUtils.c)
 
-if (CONFIG_SECURITY_OTA)
-list(APPEND srcs security_ota.c)
-	if (CONFIG_OTA_HTTPS)
-		list(APPEND srcs security_ota_https.c)
-	endif()
+if (CONFIG_OTA_HTTPS)
+	list(APPEND srcs ota_https.c)
+endif()
 
-	if (CONFIG_OTA_HTTP)
-		list(APPEND srcs security_ota_http.c)
-	endif()
-else()
-	if (CONFIG_OTA_HTTPS)
-		list(APPEND srcs ota_https.c)
-	endif()
-
-	if (CONFIG_OTA_HTTP)
-		list(APPEND srcs
-			ota.c
-			ota_base_drv.c)
-	endif()
+if (CONFIG_OTA_HTTP)
+	list(APPEND srcs
+		ota.c
+		ota_base_drv.c)
 endif()
 
 armino_component_register(SRCS "${srcs}"

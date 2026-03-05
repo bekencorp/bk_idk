@@ -33,7 +33,7 @@ typedef struct {
 	bk_err_t (*read)(const bk_ota_t *ota, uint32_t off, uint8_t *buf, uint32_t len);
 	bk_err_t (*erase)(const bk_ota_t *ota);
 	bk_err_t (*erase_sector)(const bk_ota_t *ota, uint32_t off);
-	bk_err_t (*verify)(const bk_ota_t *ota);
+	bk_err_t (*verify)(const bk_ota_t *ota, void* metadata);
 	bk_err_t (*accept)(const bk_ota_t *ota);
 
 	bk_err_t (*confirm)(const bk_logic_partition_t *partition);
@@ -67,11 +67,12 @@ bk_err_t bk_ota_write(bk_ota_t* ota, uint32_t off, const uint8_t *buf, uint32_t 
 bk_err_t bk_ota_read(bk_ota_t* ota, uint32_t off, uint8_t *buf, uint32_t len);
 bk_err_t bk_ota_erase(bk_ota_t* ota);
 bk_err_t bk_ota_erase_sector(bk_ota_t* ota, uint32_t off);
-bk_err_t bk_ota_verify(bk_ota_t* ota);
+bk_err_t bk_ota_verify(bk_ota_t* ota, void* metadata);
 bk_err_t bk_ota_confirm(bk_ota_t* ota);
 bk_err_t bk_ota_cancel(bk_ota_t* ota);
 bk_err_t bk_ota_accept(bk_ota_t* ota);
 bk_err_t bk_ota_reboot(bk_ota_t* ota);
+void bk_ota_accept_image(void);
 #if CONFIG_OTA_UPDATE_PUBKEY
 bk_err_t bk_ota_update_public_key(bk_ota_t* ota);
 #endif

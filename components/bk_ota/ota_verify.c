@@ -92,7 +92,7 @@ static const uint8_t ec_pubkey_oid[] = MBEDTLS_OID_EC_ALG_UNRESTRICTED;
 static const uint8_t ec_secp256r1_oid[] = MBEDTLS_OID_EC_GRP_SECP256R1;
 struct bootutil_key bootutil_keys;
 
-int ota_import_key(uint8_t **cp, uint8_t *end)
+static int ota_import_key(uint8_t **cp, uint8_t *end)
 {
 	size_t len;
 	mbedtls_asn1_buf alg;
@@ -428,6 +428,7 @@ bk_err_t ota_update_back_pubkey_from_primary(const bk_logic_partition_t *app_par
 		CRC8_Init(&crc8);
 		CRC8_Update(&crc8, enc_buf, phy_length);
 		free(enc_buf);
+		enc_buf = NULL;  /* avoid double free at end when goto end from below */
 
 		if (crc8.crc == check_crc.crc) {
 			back_key = (uint8_t *)malloc(vir_length);

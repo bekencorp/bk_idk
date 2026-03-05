@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "modules/bk_ota.h"
+
 bk_err_t xip_ota_get_info(const bk_ota_t *ota, uint32_t *pad_offset, uint32_t *length);
 bk_err_t xip_ota_write_dbus(const bk_ota_t *ota, uint32_t off, const uint8_t *buf, uint32_t len);
 bk_err_t xip_ota_write_cbus(const bk_ota_t *ota, uint32_t off, const uint8_t *buf, uint32_t len);
@@ -21,7 +23,7 @@ bk_err_t xip_ota_read_dbus(const bk_ota_t *ota, uint32_t off, uint8_t *buf, uint
 bk_err_t xip_ota_read_cbus(const bk_ota_t *ota, uint32_t off, uint8_t *buf, uint32_t len);
 bk_err_t xip_ota_erase(const bk_ota_t *ota);
 bk_err_t xip_ota_erase_sector(const bk_ota_t *ota, uint32_t off);
-bk_err_t xip_ota_verify(const bk_ota_t *ota);
+bk_err_t xip_ota_verify(const bk_ota_t *ota, void* metadata);
 bk_err_t xip_ota_accept(const bk_ota_t *ota);
 bk_err_t xip_ota_read_primary_version(const bk_ota_t *ota);
 bk_err_t xip_ota_read_secondary_version(const bk_ota_t *ota);

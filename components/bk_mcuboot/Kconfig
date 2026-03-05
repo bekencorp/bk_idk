@@ -24,7 +24,7 @@ menu "BL2"
 
 		config BL2_DOWNLOAD
 			bool "Enable BL2 download"
-			default y
+			default n
 			help
 				Enable BL2 Download
 
@@ -36,10 +36,10 @@ menu "BL2"
 
 		config BL2_UPGRADE_STRATEGY
 			string "Define mcuboot upgrade strategy"
-			default "SWAP_USING_SCRATCH"
+			default "OVERWRITE_ONLY"
 			help
 				The MCUBOOT upgrade strategy can be:
-				OVERWRITE_ONLY, SWAP_USING_SCRATCH, SWAP_USING_MOVE.
+				OVERWRITE_ONLY, DIRECT_XIP.
 
 		config ANTI_ROLLBACK
 			bool "Enable OTA anti-rollback"
@@ -51,11 +51,11 @@ menu "BL2"
 
 		config BL2_VALIDATE_ENABLED_BY_EFUSE
 			bool "BL2 validate is enabled by eFuse"
-			default y
+			default n
 
 		config BL2_WDT
 			bool "Enable BL2 watchdog"
-			default n
+			default y
 
 		config BL2_DOWNLOAD
 			bool "Enable BL2 download"
@@ -79,7 +79,7 @@ menu "BL2"
 
 		config OTA_CONFIRM_UPDATE
 			bool "confirm update after ota download"
-			default n
+			default y
 			
 		config DBUS_CHECK_CRC
 			bool "do crc check before cbus read"
@@ -88,5 +88,9 @@ menu "BL2"
 		config XIP_NO_VERSION
 			bool "xip without security counter and version"
 			default n
+
+		config DECOMPRESS_RESUME
+			bool "decompress resume"
+			default y
 	endmenu
 endmenu

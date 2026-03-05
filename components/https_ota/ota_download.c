@@ -38,14 +38,26 @@ ota_download_t* bk_ota_download_init()
 
 bk_err_t bk_ota_download_deinit(ota_download_t* ota_parse)
 {
-	if (ota_parse->ota_image_header) {
-		free(ota_parse->ota_image_header);
+	if (ota_parse == NULL) {
+		return BK_OK;
 	}
 
-	if (ota_parse) {
-		free(ota_parse->wr_buf);
-		free(ota_parse);
+	if (ota_parse->ota_verify != NULL) {
+		ota_verify_deinit(ota_parse->ota_verify);
+		ota_parse->ota_verify = NULL;
 	}
+
+	if (ota_parse->ota_image_header) {
+		free(ota_parse->ota_image_header);
+		ota_parse->ota_image_header = NULL;
+	}
+
+	if (ota_parse->wr_buf) {
+		free(ota_parse->wr_buf);
+		ota_parse->wr_buf = NULL;
+	}
+
+	free(ota_parse);
 
 	return BK_OK;
 }
