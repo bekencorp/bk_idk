@@ -373,8 +373,8 @@ void bk_wlan_sta_set_wireless_mode(uint8_t wireless_mode);
  * @param assoc_retry_interval  Association retry interval (unit: 100 ms)
  * @param eapol_2_retry         EAPOL-2 retry count
  */
-void bk_wlan_sta_set_retry_config(uint8_t auth_retry, uint8_t auth_retry_interval,
-                                  uint8_t assoc_retry, uint8_t assoc_retry_interval,
+void bk_wlan_sta_set_retry_config(uint8_t auth_retry, uint16_t auth_retry_interval,
+                                  uint8_t assoc_retry, uint16_t assoc_retry_interval,
                                   uint8_t eapol_2_retry);
 
 /**

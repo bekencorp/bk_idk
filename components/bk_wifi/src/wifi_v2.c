@@ -3033,8 +3033,8 @@ void bk_wlan_sta_set_wireless_mode(uint8_t wireless_mode)
 #endif
 
 #ifdef CONFIG_WIFI_RETRY_CONFIG_SUPPORT
-void bk_wlan_sta_set_retry_config(uint8_t auth_retry, uint8_t auth_retry_interval,
-		uint8_t assoc_retry, uint8_t assoc_retry_interval, uint8_t eapol_2_retry) {
+void bk_wlan_sta_set_retry_config(uint8_t auth_retry, uint16_t auth_retry_interval,
+		uint8_t assoc_retry, uint16_t assoc_retry_interval, uint8_t eapol_2_retry) {
 	g_sta_param_ptr->auth_retry = auth_retry;
 	g_sta_param_ptr->assoc_retry = assoc_retry;
 	g_sta_param_ptr->eapol_2_retry = eapol_2_retry;

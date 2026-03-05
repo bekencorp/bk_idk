@@ -3509,11 +3509,11 @@ struct sm_set_retry_config_req
     /// Number of authentication retries
     uint8_t auth_retry;
     /// Authentication retry interval in units of 10 ms
-    uint8_t auth_retry_interval;
+    uint16_t auth_retry_interval;
     /// Number of association retries
     uint8_t assoc_retry;
     /// Association retry interval in units of 10 ms
-    uint8_t assoc_retry_interval;
+    uint16_t assoc_retry_interval;
 };
 /*
  * ENUMERATIONS

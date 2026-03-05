@@ -1683,8 +1683,8 @@ int rw_msg_send_wireless_mode_req(uint8_t wireless_mode)
 	return rw_msg_send(req, 0, 0, NULL);
 }
 
-int rw_msg_send_retry_config_req(uint8_t auth_retry, uint8_t auth_retry_interval,
-		uint8_t assoc_retry, uint8_t assoc_retry_interval)
+int rw_msg_send_retry_config_req(uint8_t auth_retry, uint16_t auth_retry_interval,
+		uint8_t assoc_retry, uint16_t assoc_retry_interval)
 {
 	struct sm_set_retry_config_req *req;
 	req = ke_msg_alloc(SM_SET_RETRY_CONFIG_REQ, TASK_SM, TASK_API,

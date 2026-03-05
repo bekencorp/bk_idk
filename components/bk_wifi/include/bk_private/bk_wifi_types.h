@@ -1001,8 +1001,8 @@ typedef struct sta_param {
 	uint8_t auth_retry;
 	uint8_t assoc_retry;
 	uint8_t eapol_2_retry;
-	uint8_t auth_retry_interval;
-	uint8_t assoc_retry_interval;
+	uint16_t auth_retry_interval;
+	uint16_t assoc_retry_interval;
 #endif
 #ifdef CONFIG_STA_MINMUM_SECURITY
 	uint8_t sta_cipher_suite;
