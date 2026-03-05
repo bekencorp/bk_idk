@@ -43,7 +43,6 @@
 #define PD_MEM1         (BIT(0))
 #define PD_MEM2         (BIT(1))
 #define PD_MEM3         (BIT(2))
-#define PD_ENCP         (BIT(3))
 #define PD_BAKP         (BIT(4))
 #define PD_BTSP         (BIT(8))
 #define PD_WIFI         (BIT(9))
@@ -55,13 +54,6 @@
 #define PD_ROM          (BIT(15))
 #define PD_MEM          (PD_MEM0 | PD_MEM1 | PD_MEM2 | PD_MEM3 | PD_MEM4) //TODO consider TCM/MEM low power
 
-/*ahbp power domain control*/
-#if CONFIG_AHBP_POWER_DOMAIN_LV_DISABLE
-#define POWER_AHBP   (PD_ALL)
-#else
-#define POWER_AHBP  ~(PD_AHBP)
-#endif
-
 /*bakp power domain control*/
 #if CONFIG_BAKP_POWER_DOMAIN_DISABLE
 #define POWER_BAKP   (PD_ALL)
@@ -71,7 +63,7 @@
 
 
 #if CONFIG_SPE
-#define PD_DOWN_DOMAIN  (PD_ALL & ~(PD_MEM) & ~(PD_BTSP) & ~(PD_WIFI) & ~(PD_PHY) & ~(PD_OFDM) & ~(PD_THREAD) & POWER_BAKP & POWER_AHBP)
+#define PD_DOWN_DOMAIN  (PD_ALL & ~(PD_MEM) & ~(PD_BTSP) & ~(PD_WIFI) & ~(PD_PHY) & ~(PD_OFDM) & ~(PD_THREAD) & POWER_BAKP)
 #else
 #define PD_DOWN_DOMAIN  (PD_ALL & ~(PD_MEM) & ~(PD_BTSP) & ~(PD_WIFI) & ~(PD_PHY) & ~(PD_OFDM) & ~(PD_THREAD))
 #endif
