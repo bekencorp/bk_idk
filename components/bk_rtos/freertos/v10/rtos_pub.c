@@ -678,6 +678,27 @@ bk_err_t rtos_start_oneshot_timer( beken2_timer_t* timer )
     return kNoErr;
 }
 
+bk_err_t rtos_start_oneshot_timer_ex(beken2_timer_t* timer, uint32_t time_ms)
+{
+    signed portBASE_TYPE result;
+
+    if (platform_is_in_interrupt_context() != 0) {
+        signed portBASE_TYPE xHigherPriorityTaskWoken = 0;
+        result = xTimerStartFromISR(timer->handle, &xHigherPriorityTaskWoken);
+        portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
+    } else {
+        RTOS_ASSERT_INT_ENABLED_WITH_SCHEDULER();
+
+        result = xTimerStart(timer->handle, (portTickType)(time_ms / bk_get_ms_per_tick()));
+    }
+
+    if (result != pdPASS) {
+        return kGeneralErr;
+    }
+
+    return kNoErr;
+}
+
 bk_err_t rtos_deinit_oneshot_timer( beken2_timer_t* timer )
 {
 	bk_err_t ret = kNoErr;
@@ -734,6 +755,27 @@ bk_err_t rtos_stop_oneshot_timer( beken2_timer_t* timer )
 
     if ( result != pdPASS )
     {
+        return kGeneralErr;
+    }
+
+    return kNoErr;
+}
+
+bk_err_t rtos_stop_oneshot_timer_ex(beken2_timer_t* timer, uint32_t time_ms)
+{
+    signed portBASE_TYPE result;
+
+    if (platform_is_in_interrupt_context() != 0) {
+        signed portBASE_TYPE xHigherPriorityTaskWoken = 0;
+        result = xTimerStopFromISR(timer->handle, &xHigherPriorityTaskWoken);
+        portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
+    } else {
+        RTOS_ASSERT_INT_ENABLED_WITH_SCHEDULER();
+
+        result = xTimerStop(timer->handle, (portTickType)(time_ms / bk_get_ms_per_tick()));
+    }
+
+    if (result != pdPASS) {
         return kGeneralErr;
     }
 
@@ -886,6 +928,27 @@ bk_err_t rtos_start_timer( beken_timer_t* timer )
     return kNoErr;
 }
 
+bk_err_t rtos_start_timer_ex(beken_timer_t* timer, uint32_t time_ms)
+{
+    signed portBASE_TYPE result;
+
+    if (platform_is_in_interrupt_context() != 0) {
+        signed portBASE_TYPE xHigherPriorityTaskWoken = 0;
+        result = xTimerStartFromISR(timer->handle, &xHigherPriorityTaskWoken);
+        portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
+    } else {
+        RTOS_ASSERT_INT_ENABLED_WITH_SCHEDULER();
+
+        result = xTimerStart(timer->handle, (portTickType)(time_ms / bk_get_ms_per_tick()));
+    }
+
+    if (result != pdPASS) {
+        return kGeneralErr;
+    }
+
+    return kNoErr;
+}
+
 bk_err_t rtos_stop_timer( beken_timer_t* timer )
 {
     signed portBASE_TYPE result;
@@ -905,6 +968,27 @@ bk_err_t rtos_stop_timer( beken_timer_t* timer )
 
     if ( result != pdPASS )
     {
+        return kGeneralErr;
+    }
+
+    return kNoErr;
+}
+
+bk_err_t rtos_stop_timer_ex(beken_timer_t* timer, uint32_t time_ms)
+{
+    signed portBASE_TYPE result;
+
+    if (platform_is_in_interrupt_context() != 0) {
+        signed portBASE_TYPE xHigherPriorityTaskWoken = 0;
+        result = xTimerStopFromISR(timer->handle, &xHigherPriorityTaskWoken);
+        portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
+    } else {
+        RTOS_ASSERT_INT_ENABLED_WITH_SCHEDULER();
+
+        result = xTimerStop(timer->handle, (portTickType)(time_ms / bk_get_ms_per_tick()));
+    }
+
+    if (result != pdPASS) {
         return kGeneralErr;
     }
 

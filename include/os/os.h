@@ -907,6 +907,23 @@ bk_err_t rtos_init_timer(beken_timer_t *timer, uint32_t time_ms, timer_handler_t
   */
 bk_err_t rtos_start_timer(beken_timer_t *timer);
 
+/** @brief    Starts a RTOS periodic timer with configurable block time
+  *
+  * @note     Timer must have been previously initialised with @ref rtos_init_timer.
+  *           This API behaves like @ref rtos_start_timer but allows the caller to specify
+  *           the maximum time to block waiting for the timer command to be sent to the
+  *           timer service task. In interrupt context the @p time_ms parameter is ignored
+  *           and the non-blocking FromISR API is used.
+  *
+  * @param    timer    : a pointer to the timer handle to start
+  * @param    time_ms  : maximum time in milliseconds to block waiting for the start
+  *                      command to be sent to the timer service task (task context only)
+  *
+  * @return   kNoErr        : on success.
+  * @return   kGeneralErr   : if an error occurred
+  */
+bk_err_t rtos_start_timer_ex(beken_timer_t* timer, uint32_t time_ms);
+
 /** @brief    Stops a running RTOS periodic timer
   *
   * @note     Timer must have been previously started with @ref rtos_init_timer.
@@ -920,6 +937,23 @@ bk_err_t rtos_start_timer(beken_timer_t *timer);
   * @return   kGeneralErr   : if an error occurred
   */
 bk_err_t rtos_stop_timer(beken_timer_t *timer);
+
+/** @brief    Stops a running RTOS periodic timer with configurable block time
+  *
+  * @note     Timer must have been previously started with @ref rtos_init_timer.
+  *           This API behaves like @ref rtos_stop_timer but allows the caller to specify
+  *           the maximum time to block waiting for the stop command to be sent to the
+  *           timer service task. In interrupt context the @p time_ms parameter is ignored
+  *           and the non-blocking FromISR API is used.
+  *
+  * @param    timer    : a pointer to the timer handle to stop
+  * @param    time_ms  : maximum time in milliseconds to block waiting for the stop
+  *                      command to be sent to the timer service task (task context only)
+  *
+  * @return   kNoErr        : on success.
+  * @return   kGeneralErr   : if an error occurred
+  */
+bk_err_t rtos_stop_timer_ex(beken_timer_t* timer, uint32_t time_ms);
 
 /** @brief    Reloads a RTOS periodic timer that has expired
   *
@@ -1016,6 +1050,23 @@ bk_err_t rtos_deinit_oneshot_timer(beken2_timer_t *timer);
   */
 bk_err_t rtos_start_oneshot_timer(beken2_timer_t *timer);
 
+/** @brief    start a RTOS oneshot timer with configurable block time
+  *
+  * @note     Timer must have been previously started with @ref rtos_init_oneshot_timer.
+  *           This API behaves like @ref rtos_start_oneshot_timer but allows the caller
+  *           to specify the maximum time to block waiting for the start command to be
+  *           sent to the timer service task. In interrupt context the @p time_ms parameter
+  *           is ignored and the non-blocking FromISR API is used.
+  *
+  * @param    timer   : a pointer to the RTOS timer handle
+  * @param    time_ms : maximum time in milliseconds to block waiting for the start
+  *                     command to be sent to the timer service task (task context only)
+  *
+  * @return   kNoErr        : on success.
+  * @return   kGeneralErr   : if an error occurred
+  */
+bk_err_t rtos_start_oneshot_timer_ex(beken2_timer_t* timer, uint32_t time_ms);
+
 /** @brief    stop a RTOS oneshot timer
   *
   * @note     Timer must have been previously started with @ref rtos_init_oneshot_timer.
@@ -1029,6 +1080,23 @@ bk_err_t rtos_start_oneshot_timer(beken2_timer_t *timer);
   * @return   kGeneralErr   : if an error occurred
   */
 bk_err_t rtos_stop_oneshot_timer(beken2_timer_t *timer);
+
+/** @brief    stop a RTOS oneshot timer with configurable block time
+  *
+  * @note     Timer must have been previously started with @ref rtos_init_oneshot_timer.
+  *           This API behaves like @ref rtos_stop_oneshot_timer but allows the caller
+  *           to specify the maximum time to block waiting for the stop command to be
+  *           sent to the timer service task. In interrupt context the @p time_ms parameter
+  *           is ignored and the non-blocking FromISR API is used.
+  *
+  * @param    timer   : a pointer to the RTOS timer handle
+  * @param    time_ms : maximum time in milliseconds to block waiting for the stop
+  *                     command to be sent to the timer service task (task context only)
+  *
+  * @return   kNoErr        : on success.
+  * @return   kGeneralErr   : if an error occurred
+  */
+bk_err_t rtos_stop_oneshot_timer_ex(beken2_timer_t* timer, uint32_t time_ms);
 
 /** @brief    Check if an RTOS oneshot timer is running
   *

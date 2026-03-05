@@ -73,6 +73,10 @@ bk_err_t bk_ota_cancel(bk_ota_t* ota);
 bk_err_t bk_ota_accept(bk_ota_t* ota);
 bk_err_t bk_ota_reboot(bk_ota_t* ota);
 void bk_ota_accept_image(void);
+#if CONFIG_OTA_CONFIRM_UPDATE
+bk_err_t bk_ota_confirm_update(void);
+bk_err_t bk_ota_cancel_update(uint8_t erase_ota);
+#endif
 #if CONFIG_OTA_UPDATE_PUBKEY
 bk_err_t bk_ota_update_public_key(bk_ota_t* ota);
 #endif

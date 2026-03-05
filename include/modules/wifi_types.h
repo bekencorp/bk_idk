@@ -158,6 +158,9 @@ typedef enum {
 	EVENT_WIFI_CSI_DATA_IND,
 	EVENT_WIFI_CSI_ALG_IND,
 
+	EVENT_WIFI_START,              /**< WiFi start event */
+	EVENT_WIFI_STOP,               /**< WiFi stop event */
+
 	EVENT_WIFI_STA_CONNECTED,      /**< The BK STA is connected */
 	EVENT_WIFI_STA_DISCONNECTED,   /**< The BK STA is disconnected */
 

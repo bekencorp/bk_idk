@@ -12,5 +12,5 @@ endif()
 
 armino_component_register(SRCS "${srcs}"
 	INCLUDE_DIRS "${incs}"
-	PRIV_REQUIRES bk_common bk_https psa_mbedtls bk_ota
+	REQUIRES bk_common bk_https psa_mbedtls bk_ota
 	)

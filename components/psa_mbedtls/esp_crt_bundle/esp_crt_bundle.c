@@ -79,7 +79,7 @@ static int _crt_bundle_mbedtls_x509_crt_ca_cb(void *buf, mbedtls_x509_crt const 
         name_len = s_crt_bundle.crts[middle][0] << 8 | s_crt_bundle.crts[middle][1];
         crt_name = s_crt_bundle.crts[middle] + CRT_HEADER_OFFSET;
 
-        int cmp_res = memcmp(child->issuer_raw.p, crt_name, name_len );
+        int cmp_res = memcmp(child->issuer_raw.MBEDTLS_PRIVATE(p), crt_name, name_len );
         if (cmp_res == 0) {
             crt_found = true;
             break;
