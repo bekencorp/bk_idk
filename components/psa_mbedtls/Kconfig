@@ -32,14 +32,17 @@ menu "PSA Mbedtls"
 	
 		config TRUSTENGINE_TEST
 			bool "Enable security engine cli"
+			depends on !DEEP_LV && !BAKP_POWER_DOMAIN_PM_CONTROL
 			default n
 
 		config TRUSTENGINE
 			bool "Enable hardware crypto engine"
+			depends on !DEEP_LV && !BAKP_POWER_DOMAIN_PM_CONTROL
 			default n
 
 		config TRUSTENGINE_PM_CB_SUPPORT
 			bool "Enable trustengine pm cb support"
+			depends on !DEEP_LV && !BAKP_POWER_DOMAIN_PM_CONTROL
 			default y
 
 		config SW_CRYPTO
