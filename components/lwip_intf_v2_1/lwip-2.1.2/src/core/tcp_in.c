@@ -907,6 +907,9 @@ tcp_process(struct tcp_pcb *pcb)
         } else {
           pcb->rtime = 0;
           pcb->nrtx = 0;
+#if CONFIG_MICROWAVE_POLICY
+          pcb->nrtx_r = 0;
+#endif
         }
 
         /* Call the user specified function to call when successfully
@@ -1261,6 +1264,10 @@ tcp_receive(struct tcp_pcb *pcb)
 
       /* Reset the number of retransmissions. */
       pcb->nrtx = 0;
+
+#if CONFIG_MICROWAVE_POLICY
+      pcb->nrtx_r = 0;
+#endif
 
       /* Reset the retransmission time-out. */
       pcb->rto = (s16_t)((pcb->sa >> 3) + pcb->sv);

@@ -655,6 +655,9 @@ void bk_wifi_set_regd_updated_by_scan(bool enable);
 struct ieee80211_channel;
 bool chan_need_disabled(struct ieee80211_channel *channel);
 
+void bk_wifi_set_microwave_policy_en(bool enable);
+bool bk_wifi_get_microwave_policy_en(void);
+
 //Optimize it
 __attribute__((weak)) uint32_t cfg_ap_is_open_system(void);
 uint8_t bk_wifi_get_ps_status();

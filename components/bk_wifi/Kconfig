@@ -581,4 +581,10 @@ menu "Bk_Wifi"
 		default y
 		help
 			Enable update power with RSSI
+
+	config MICROWAVE_POLICY
+		depends on WIFI_ENABLE
+		bool "Enable Microwave Policy"
+		default n
+
 endmenu

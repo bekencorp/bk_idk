@@ -58,6 +58,7 @@ int rwnx_start_xmit(uint8_t vif_idx, struct pbuf *p, BUS_MSG_T *msg);
 void rwnx_start_xmit_mgmt(struct sk_buff *skb);
 void rwnx_start_xmit_raw_ex(struct sk_buff *skb,raw_tx_cntrl_t *raw_tx_cntrl);
 
+enum mac_tid get_default_tx_tid(void);
 void fhost_tx_cfm_push(uint8_t queue_idx, struct txdesc *txdesc);
 int fhost_txbuf_push(void *desc, uint8_t queue_idx);
 

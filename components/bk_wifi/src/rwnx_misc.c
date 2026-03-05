@@ -792,5 +792,22 @@ void rwnx_connecting_handler()
 	dhcp_state = DHCP_STATE_CONNECTING;
 }
 
+/**
+ ****************************************************************************************
+ * @brief Get beacon loss count
+ *
+ * @return Beacon loss count
+ ****************************************************************************************
+ */
+#if CONFIG_MICROWAVE_POLICY
+UINT32 rwnx_get_beacon_loss_count(void)
+{
+	if (bk_wifi_get_microwave_policy_en())
+		return 600;
+	else
+		return 0;
+}
+#endif
+
 #endif
 

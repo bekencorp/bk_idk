@@ -308,6 +308,9 @@ struct tcp_pcb {
 
   s16_t rto;    /* retransmission time-out (in ticks of TCP_SLOW_INTERVAL) */
   u8_t nrtx;    /* number of retransmissions */
+#if CONFIG_MICROWAVE_POLICY
+  u8_t nrtx_r;  /* real number of retransmissions */
+#endif
 
   /* fast retransmit/recovery */
   u8_t dupacks;

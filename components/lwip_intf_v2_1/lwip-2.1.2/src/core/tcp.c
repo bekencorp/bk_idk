@@ -1487,6 +1487,21 @@ tcp_slowtmr_start:
               #endif
 #endif
 #endif
+
+#if CONFIG_MICROWAVE_POLICY
+              if (pcb->nrtx <= 1 && pcb->rto > 1) {
+                  pcb->rto = 1;
+              } else if(pcb->nrtx <= 2 && pcb->rto > 1) {
+                  pcb->rto = 1;
+              } else if(pcb->nrtx <= 3 && pcb->rto > 1) {
+                  pcb->rto = 1;
+              } else if(pcb->nrtx <= 11 && pcb->rto > 2) {
+                  pcb->rto = 1;
+              } else if(pcb->nrtx <= 12 && pcb->rto > 3) {
+                  pcb->rto = 2;
+              }
+#endif /* CFG_MICROWAVE_POLICY */
+
             }
 
             /* Reset the retransmission timer. */
@@ -1524,6 +1539,13 @@ tcp_slowtmr_start:
             /* The following needs to be called AFTER cwnd is set to one
                mss - STJ */
             tcp_rexmit_rto_commit(pcb);
+#if CONFIG_MICROWAVE_POLICY
+            /* FIXME: MICROWAVE */
+            if (pcb->nrtx_r < 70) /* sum(tcp_backoff[13]) = 70 */
+                pcb->nrtx = (pcb->nrtx > 11) ? 11 : pcb->nrtx;
+            else
+                pcb->nrtx = TCP_MAXRTX;
+#endif
           }
         }
       }

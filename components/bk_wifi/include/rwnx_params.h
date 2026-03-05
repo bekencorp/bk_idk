@@ -19,6 +19,7 @@ struct rwnx_mod_params {
 	bool ht_on;
 	bool vht_on;
 	bool he_on;
+	int ht_mcs_map; // ht mcs map
 	int mcs_map;	// vht mcs map
 	int he_mcs_map;	// he mcs map
 	bool he_ul_on;	// OFDMA UL
@@ -72,6 +73,7 @@ void rwnx_enable_wapi(struct rwnx_hw *rwnx_hw);
 void rwnx_enable_mfp(struct rwnx_hw *rwnx_hw);
 bool rwnx_get_rx_ampdu_capa_on(void);
 uint8_t rwnx_get_rx_ampdu_num(void);
+
 __INLINE void rwnx_update_erp_capa(uint32_t erp_en)
 {
 	rwnx_mod_params.erp_on = erp_en;

@@ -1718,6 +1718,10 @@ tcp_rexmit_rto_commit(struct tcp_pcb *pcb)
   /* increment number of retransmissions */
   if (pcb->nrtx < 0xFF) {
     ++pcb->nrtx;
+#if CONFIG_MICROWAVE_POLICY
+    ++pcb->nrtx_r;
+#endif
+
   }
   /* Do the actual retransmission */
   tcp_output(pcb);
@@ -1789,6 +1793,10 @@ tcp_rexmit(struct tcp_pcb *pcb)
 
   if (pcb->nrtx < 0xFF) {
     ++pcb->nrtx;
+#if CONFIG_MICROWAVE_POLICY
+    ++pcb->nrtx_r;
+#endif
+
   }
 
   /* Don't take any rtt measurements after retransmitting. */
@@ -1815,6 +1823,11 @@ tcp_rexmit_fast(struct tcp_pcb *pcb)
   return;
   #endif
 #endif
+
+#if CONFIG_MICROWAVE_POLICY
+  return;
+#endif
+
   LWIP_ASSERT("tcp_rexmit_fast: invalid pcb", pcb != NULL);
 
   if (pcb->unacked != NULL && !(pcb->flags & TF_INFR)) {

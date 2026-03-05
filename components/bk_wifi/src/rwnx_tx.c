@@ -269,6 +269,11 @@ static uint8_t ipv6_ieee8023_dscp(void *buf)
 	return (tos & 0xfc) >> 5;
 }
 
+enum mac_tid get_default_tx_tid(void)
+{
+	return CONFIG_DEFAULT_TX_TID;
+}
+
 /*
  * get user priority from @buf.
  * ipv4 dscp/tos, ipv6 flow control. for eapol packets, disable qos.

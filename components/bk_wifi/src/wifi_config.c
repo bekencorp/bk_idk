@@ -25,6 +25,7 @@
 general_param_t *g_wlan_general_param = NULL;
 ap_param_t *g_ap_param_ptr = NULL;
 sta_param_t *g_sta_param_ptr = NULL;
+bool bk_microwave_policy_en = false;
 wifi_mac_config_t g_wifi_mac_config = {
 	WIFI_CFG_DFT_RAW_TX_AC,
 	WIFI_CFG_DFT_RAW_TX_AC_TIMEOUT_MS,

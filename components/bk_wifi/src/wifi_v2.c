@@ -103,6 +103,7 @@ int ps_cmd_get(void);
 extern void* mac_vif_tx_stats_get(uint8_t vif_idx);
 extern uint8_t vif_mgmt_get_sta_vif_index();
 extern uint8_t vif_mgmt_get_softap_vif_index();
+extern bool bk_microwave_policy_en;
 /**
  * wifi_sec_type_string - Get the security name as a text string
  * @state: security
@@ -4652,6 +4653,16 @@ void bk_wifi_ap_power_register_cb(FUNC_1PARAM_PTR cb)
 FUNC_1PARAM_PTR bk_wifi_get_ap_power_cb(void)
 {
 	return ap_power_cb;
+}
+
+void bk_wifi_set_microwave_policy_en(bool enable)
+{
+	bk_microwave_policy_en = enable;
+}
+
+bool bk_wifi_get_microwave_policy_en(void)
+{
+	return bk_microwave_policy_en;
 }
 
 bk_err_t bk_wifi_set_csa_coexist_mode_flag(bool is_close)

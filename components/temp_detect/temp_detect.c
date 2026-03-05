@@ -383,7 +383,11 @@ void temp_daemon_restart(void)
 
 void temp_daemon_change_config(void)
 {
-	temp_detect_change_configuration(ADC_TMEP_DETECT_INTERVAL,
+	int interval = ADC_TMEP_DETECT_INTERVAL;
+#if CONFIG_MICROWAVE_POLICY
+	interval = 2;
+#endif
+	temp_detect_change_configuration(interval,
 		s_tempd.detect_threshold, ADC_TMEP_DIST_INTIAL_VAL);
 }
 

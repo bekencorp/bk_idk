@@ -28,6 +28,7 @@ struct rwnx_mod_params rwnx_mod_params = {
 	PARAM(ht_on, true),
 	PARAM(vht_on, true),
 	PARAM(he_on, true),
+	PARAM(ht_mcs_map, 0xFF),
 	PARAM(mcs_map, IEEE80211_VHT_MCS_SUPPORT_0_9),
 	PARAM(he_mcs_map, IEEE80211_HE_MCS_SUPPORT_0_9),
 	PARAM(he_ul_on, false),
@@ -465,8 +466,13 @@ static void rwnx_set_ht_capa(struct rwnx_hw *rwnx_hw, struct wiphy *wiphy)
 	if (rwnx_hw->mod_params->gf_rx_on)
 		band_2GHz->ht_cap.cap |= IEEE80211_HT_CAP_GRN_FLD;
 
-	for (i = 0; i < nss; i++)
-		band_2GHz->ht_cap.mcs.rx_mask[i] = 0xFF;
+	for (i = 0; i < nss; i++) {
+		#if CONFIG_MICROWAVE_POLICY
+		if(bk_wifi_get_microwave_policy_en())
+			rwnx_hw->mod_params->ht_mcs_map = 0xF;
+		#endif
+		band_2GHz->ht_cap.mcs.rx_mask[i] = rwnx_hw->mod_params->ht_mcs_map;
+	}
 
 	band_5GHz->ht_cap = band_2GHz->ht_cap;
 }
@@ -867,7 +873,14 @@ void rwnx_udpate_capability(uint32_t capa_id, uint32_t capa_val)
 
 bool rwnx_get_tx_ampdu_capa_on(void)
 {
-    return rwnx_mod_params.tx_ampdu_on;
+#if CONFIG_MICROWAVE_POLICY
+	if(bk_wifi_get_microwave_policy_en())
+		return false;
+	else
+		return rwnx_mod_params.tx_ampdu_on;
+#else
+	return rwnx_mod_params.tx_ampdu_on;
+#endif
 }
 
 uint32_t rwnx_get_tx_ampdu_num(void)

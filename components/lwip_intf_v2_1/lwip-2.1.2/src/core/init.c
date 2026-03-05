@@ -154,7 +154,7 @@ PACK_STRUCT_END
 #if (LWIP_TCP && (TCP_SND_QUEUELEN > 0xffff))
 #error "If you want to use TCP, TCP_SND_QUEUELEN must fit in an u16_t, so, you have to reduce it in your lwipopts.h"
 #endif
-#if (LWIP_TCP && (TCP_SND_QUEUELEN < 2))
+#if (LWIP_TCP && !CONFIG_MICROWAVE_POLICY && (TCP_SND_QUEUELEN < 2))
 #error "TCP_SND_QUEUELEN must be at least 2 for no-copy TCP writes to work"
 #endif
 #if (LWIP_TCP && ((TCP_MAXRTX > 12) || (TCP_SYNMAXRTX > 12)))
