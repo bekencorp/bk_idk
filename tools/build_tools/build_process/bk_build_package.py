@@ -47,9 +47,6 @@ def add_aes_to_all_bin(pack_dir: Path, pack_json: Path):
     with pack_json.open("r") as f:
         pack_data = json.load(f)
     
-    if "aes_enable" not in pack_data or not pack_data["aes_enable"]:
-        return
-    
     aes_key = pack_data.get("aes_key")
     if not aes_key:
         logger.warning("aes_key not found or empty in pack_json when aes_enable is true, skip AES encryption")
@@ -77,10 +74,14 @@ def add_aes_to_all_bin(pack_dir: Path, pack_json: Path):
             logger.warning(f"{bin_file} not found, skip encryption")
             continue
         
-        output_original_bin = bin_file.parent / f"{bin_file.stem}_no_aes{bin_file.suffix}"
-        shutil.copy2(bin_file, output_original_bin)
-        logger.debug(f"Backed up original file to {output_original_bin}")
+        output_origin_bin = bin_file.parent / f"origin_{bin_file.stem}{bin_file.suffix}"
+        shutil.copy2(bin_file, output_origin_bin)
+        logger.debug(f"Backed up origin file to {output_origin_bin}")
         
+        if "aes_enable" not in pack_data or not pack_data["aes_enable"]:
+            logger.debug("aes_enable is false in pack_json, skip encryption")
+            continue
+
         logger.info(f"Encrypting {firmware} with start_addr={start_addr}")
         cmd = f'python3 {aes_tool} encrypt -infile {bin_file} -keywords {aes_key} -aes 128 -outfile {bin_file} -startaddress {start_addr}'
         run_cmd_not_check_ret(cmd)
@@ -90,11 +91,57 @@ def add_aes_to_all_bin(pack_dir: Path, pack_json: Path):
             magic = "BEKEN".encode()
             magic_offset = 0x100
             if flash_crc_enable:
-                magic_offset = 0x110
+                pass
             with bin_file.open('r+b') as f:
                 f.seek(magic_offset)
                 f.write(magic)
             logger.debug(f'Added magic code {magic} to {bin_file} at offset {magic_offset}')
+
+def _parse_size_to_bytes(size_str: str) -> int:
+    """Parse size string like '68K', '2312K', '2M' to bytes."""
+    size_str = size_str.strip().upper()
+    if size_str.endswith("K"):
+        return int(size_str[:-1]) * 1024
+    if size_str.endswith("M"):
+        return int(size_str[:-1]) * 1024 * 1024
+    return int(size_str)
+
+
+def pack_origin_bin(pack_dir: Path, pack_json: Path, output_origin_bin: Path):
+    """
+    Pack bootloader_oringin.bin and app_oringin.bin into all_app_oringin.bin.
+    Order: bootloader first, app second. Pad with 0xFF up to each partition size from pack_json.
+    """
+    if not pack_json.exists():
+        raise FileNotFoundError(f"{pack_json} not found")
+    with pack_json.open("r") as f:
+        pack_data = json.load(f)
+    sections = pack_data.get("section", [])
+    if not sections:
+        logger.warning("pack_json has no section, skip pack_origin_bin")
+        return
+    # sort by start_addr so order is bootloader -> app
+    sections = sorted(sections, key=lambda s: int(s.get("start_addr", "0x0"), 16))
+    with output_origin_bin.open("wb") as out_f:
+        for section in sections:
+            partition = section.get("partition", "")
+            size_str = section.get("size", "0")
+            part_size = _parse_size_to_bytes(size_str)
+            origin_name = f"origin_{partition}.bin"
+            origin_path = pack_dir / origin_name
+            if not origin_path.exists():
+                logger.warning(f"{origin_path} not found, skip in all_app_oringin.bin")
+                out_f.write(bytes([0xFF] * part_size))
+                continue
+            data = origin_path.read_bytes()
+            if len(data) > part_size:
+                logger.warning(f"{origin_name} size {len(data)} > partition size {part_size}, truncate")
+                data = data[:part_size]
+            out_f.write(data)
+            if len(data) < part_size:
+                out_f.write(bytes([0xFF] * (part_size - len(data))))
+    logger.info(f"Packed origin bins to {output_origin_bin}")
+
 
 def pack_all_bin(pack_dir: Path, pack_json: Path, output_bin: Path):
     def binary_align_32_byte(bin_path: Path):
@@ -112,6 +159,9 @@ def pack_all_bin(pack_dir: Path, pack_json: Path, output_bin: Path):
     packager.pack()
     # cmake_Gen_img 32byte align, so do same here.
     binary_align_32_byte(output_bin)
+    # pack origin_bootloader.bin + origin_app.bin -> origin_all_app.bin (0xFF pad by partition size)
+    output_origin_bin = output_bin.parent / "origin_all_app.bin"
+    pack_origin_bin(pack_dir, pack_json, output_origin_bin)
 
 
 def gen_build_summary(output_info: str):

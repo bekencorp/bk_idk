@@ -171,10 +171,11 @@ def pack_ota_app_bin(pack_dir: Path, output_bin: Path):
             part["size"] = f"{size_format}K"
 
     flash_aes_enable = apps_part_info.get("aes_enable", False)
+    # if flash_aes_enable is true, change the firmware name to origin_app.bin
     if flash_aes_enable:
         for part in sections:
             if part.get("firmware") == "app.bin":
-                part["firmware"] = "app_no_aes.bin"
+                part["firmware"] = "origin_app.bin"
                 break
         
     app_pack_json = pack_dir / "ota_apps_pack.json"
