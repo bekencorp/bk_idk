@@ -45,6 +45,10 @@ int bk_bt_feature_init(void)
     s_bt_feature_struct._support_lowpower_sleep = 1;
 #endif
 
+#if CONFIG_SUPPORT_GENERIC_SVC
+    s_bt_feature_struct._support_generic_svc = 1;
+#endif
+
     extern int bt_feature_adapter_init(void *arg);
 
     if (bt_feature_adapter_init((void *)&s_bt_feature_struct) != 0)

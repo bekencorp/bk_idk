@@ -82,4 +82,8 @@ menu "Bk_ble"
 		depends on BLE
 		default n
 
+	config SUPPORT_GENERIC_SVC
+		bool "Support generic service 1800 and 1801"
+		depends on BLE
+		default y
 endmenu
