@@ -55,7 +55,7 @@ static void cli_flash_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, ch
 			uint32_t start_addr = os_strtoul(argv[2], NULL, 16);
 			uint32_t len = os_strtoul(argv[3], NULL, 16);
 			bk_err_t ret = BK_OK;
-			
+
 			bk_flash_set_protect_type(FLASH_PROTECT_NONE);
 			for (uint32_t addr = start_addr; addr < (start_addr + len); addr += CLI_FLASH_SECTOR_SIZE) {
 				ret = bk_flash_erase_sector(addr);
@@ -76,7 +76,7 @@ static void cli_flash_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, ch
 			uint32_t len = os_strtoul(argv[3], NULL, 16);
 			uint8_t buf[CLI_FLASH_PAGE_SIZE] = {0};
 			bk_err_t ret = BK_OK;
-			
+
 			for (uint32_t addr = start_addr; addr < (start_addr + len); addr += CLI_FLASH_PAGE_SIZE) {
 				os_memset(buf, 0, CLI_FLASH_PAGE_SIZE);
 				ret = bk_flash_read_bytes(addr, buf, CLI_FLASH_PAGE_SIZE);
@@ -105,7 +105,7 @@ static void cli_flash_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, ch
 			uint32_t len = os_strtoul(argv[3], NULL, 16);
 			uint8_t buf[CLI_FLASH_PAGE_SIZE] = {0};
 			bk_err_t ret = BK_OK;
-			
+
 			for (uint32_t i = 0; i < CLI_FLASH_PAGE_SIZE; i++) {
 				buf[i] = i;
 			}
@@ -145,7 +145,9 @@ static void cli_flash_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, ch
 			bk_flash_set_line_mode(line_mode);
 			msg = CLI_CMD_RSP_SUCCEED;
 		}
-	} else if (os_strcmp(argv[1], "mutex_test") == 0) {
+	}
+#if CONFIG_FLASH_SVR_TEST
+	else if (os_strcmp(argv[1], "mutex_test") == 0) {
 		if (argc < 3) {
 			cli_flash_help();
 			msg = CLI_CMD_RSP_ERROR;
@@ -155,7 +157,9 @@ static void cli_flash_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, ch
 			rtos_create_thread(NULL, task_pri, "flash_test", flash_svr_test_task, 2048, NULL);
 			msg = CLI_CMD_RSP_SUCCEED;
 		}
-	} else {
+	}
+#endif
+	else {
 		cli_flash_help();
 		msg = CLI_CMD_RSP_ERROR;
 	}

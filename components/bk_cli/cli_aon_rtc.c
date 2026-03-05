@@ -170,7 +170,7 @@ static void cli_rtc_drift_calculation(void)
 		if (rtc_drift_us > s_rtc_drift_max_us) {
 			s_rtc_drift_max_us = rtc_drift_us;
 		}
-	
+
 		os_printf("%-8u %-10d %-10d %-10d %-10u %-10u %-10u %-10d %-10d\r\n",
 			s_rtc_timer_expired_cnt, rtc_drift, rtc_drift_us, s_rtc_total_drift_us, s_rtc_total_abs_drift_us,
 			g_26m_current_cnt, s_26m_last_cnt, s_rtc_drift_min_us, s_rtc_drift_max_us);
@@ -182,7 +182,7 @@ static void cli_rtc_drift_calculation(void)
 #define cli_rtc_drift_calculation()
 #endif
 
-static uint8_t alarm_param[12] = {'a', 'l', 'a', 'r', 'm', 'p', 'r', 'm', 0, 0, 0, 0};
+static const uint8_t alarm_param[12] = {'a', 'l', 'a', 'r', 'm', 'p', 'r', 'm', 0, 0, 0, 0};
 static void alarm_callback(aon_rtc_id_t id, uint8_t *name_p, void *param)
 {
 #if CONFIG_RTC_TIMER_PRECISION_TEST
@@ -288,7 +288,7 @@ static void cli_aon_rtc_unregister_cmd(char *pcWriteBuffer, int xWriteBufferLen,
 	bk_alarm_unregister(aon_rtc_id, name);
 }
 
-static alarm_info_t s_cli_alarm_info[] = 
+static alarm_info_t s_cli_alarm_info[] =
 {
 	{"alarm_1", (1000), 0xFFFFFFFF, alarm_auto_test_callback, NULL},
 	{"alarm_2", (6000), 0xFFFFFFFF, alarm_auto_test_callback, NULL},
@@ -301,7 +301,7 @@ static alarm_info_t s_cli_alarm_info[] =
 static void alarm_auto_test_callback(aon_rtc_id_t id, uint8_t *name_p, void *param)
 {
 	uint32_t i = 0;
-	uint32_t arr_size = sizeof(s_cli_alarm_info)/sizeof(alarm_info_t); 
+	uint32_t arr_size = sizeof(s_cli_alarm_info)/sizeof(alarm_info_t);
 
 	CLI_LOGI("id=%d, name=%s\r\n", id, name_p);
 	for(i = 0; i < arr_size; i++)

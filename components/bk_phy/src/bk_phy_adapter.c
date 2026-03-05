@@ -790,7 +790,6 @@ const phy_os_funcs_t g_phy_os_funcs = {
     ////
     ._delay                    = delay,
     ._delay_us                 = bk_delay_us,
-    ._ddev_control             = ddev_control,
     ._bk_wdt_stop              = bk_wdt_stop_wrapper,
 
     ._temp_detect_is_init              = temp_detect_is_init,
@@ -997,7 +996,7 @@ const phy_os_variable_t g_phy_os_variable = {
 #endif
     ._dd_dev_type_sctrl = DD_DEV_TYPE_SCTRL,
     ._dd_dev_type_icu   = DD_DEV_TYPE_ICU,
-    
+
 #if CONFIG_FLASH_ORIGIN_API
     ._dd_dev_type_flash = DD_DEV_TYPE_FLASH,
 #endif

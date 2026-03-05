@@ -251,7 +251,7 @@ static u16 s_dynamic_log_mem_max = 0;  // maximum of consumption
 #elif CONFIG_SOC_BK7258 && CONFIG_SYS_PRINT_DEV_UART
 #define  SHELL_DECLARE_MEMORY_ATTR __attribute__((section(".dtcm_section")))
 #else
-#define  SHELL_DECLARE_MEMORY_ATTR 
+#define  SHELL_DECLARE_MEMORY_ATTR
 #endif
 
 beken_semaphore_t   log_buf_semaphore = NULL;
@@ -597,7 +597,7 @@ static int merge_log_data(u16 blk_tag, u16 data_len)
 	{
 		return 0;
 	}
-	
+
 	u8      queue_id = GET_QUEUE_ID(blk_tag);
 	u16     blk_id = GET_BLOCK_ID(blk_tag);
 	if(queue_id >= TBL_SIZE(free_queue))  /* not log buffer */
@@ -616,7 +616,7 @@ static int merge_log_data(u16 blk_tag, u16 data_len)
 	}
 	else
 		return 0;
-	
+
 	u16    pre_in_idx;
 
 	if(pending_queue.list_in_idx > 0)
@@ -927,7 +927,7 @@ static void cmd_info_out(u8 * msg_buf, u16 msg_len, u16 blk_tag)
 {
 	if(msg_len == 0)
 		return;
-	
+
 	u32  int_mask = shell_task_enter_critical();
 
 	if(log_dev != cmd_dev)
@@ -1112,7 +1112,7 @@ static void tx_req_process(void)
 				shell_assert_out(bTRUE, "xFATAL: in Tx_req id=%x\r\n", blk_id);
 		}
 	}
-	else if (queue_id == SHELL_DYM_QUEUE_ID) 
+	else if (queue_id == SHELL_DYM_QUEUE_ID)
 	{
 		dynamic_log_node *node = dynamic_list_switch();
 		packet_buf = node->ptr;
@@ -1280,7 +1280,7 @@ static void rx_ind_process(void)
 								cmd_line_buf.cmd_buff[cmd_line_buf.cmd_data_len] = rx_temp_buff[i];
 								cmd_line_buf.cmd_data_len++;
 								continue;
-							}	
+							}
 							//else
 							//	cmd_line_buf.cmd_buff[cmd_line_buf.cmd_data_len] = 0;  // in case cmd_data_len overflow.
 
@@ -1715,7 +1715,7 @@ static void shell_task_init(void)
 	}
 
 	cmd_rx_init_ok = 1;
-	
+
 	{
 
 		#if 0
@@ -1816,7 +1816,7 @@ void reset_forward_log_status(void)
 	ipc_fwd_data.rsp_buf.tag = INVALID_LOG_TAG;
 	ipc_fwd_data.ind_buf.tag = INVALID_LOG_TAG;
 	ipc_fwd_data.common_log_buf.tag = INVALID_LOG_TAG;
-	
+
 	shell_task_exit_critical(int_mask);
 }
 #endif
@@ -1827,7 +1827,7 @@ static void log_handle_task( void *para )
 	while(bTRUE)
 	{
 		Events = wait_any_event(&shell_log_event, BEKEN_WAIT_FOREVER);
-		
+
 		if(Events & SHELL_EVENT_DYM_FREE)
 		{
 			check_and_free_dynamic_node();
@@ -1869,7 +1869,7 @@ void shell_task( void *para )
 			wakeup_process();
 			rx_ind_process();
 		}
-		
+
 		if(Events & SHELL_EVENT_WAKEUP)
 		{
 			// TODO
@@ -2026,7 +2026,7 @@ static int shell_log_raw_data_internel(bool hint, const u8 *data, u16 data_len)
 
 	if (NULL == packet_buf)
 	{
-		if (hint == 0) 
+		if (hint == 0)
 			return 0;
 
 		if (s_block_mode & LOG_BLOCK_MASK) {
@@ -2213,7 +2213,7 @@ static int shell_assert_out_va(bool bContinue, const char * format, va_list arg_
 	/* because other core's dump has been blocked by shell_cpu_check_valid(). */
 	/* can't try to get SPINLOCK, because may be it is called from HardFault handler, */
 	/* and meanwhile the spinlock is held by other cores. */
-	
+
 	// int_mask = shell_task_enter_critical();
 	int_mask = rtos_disable_int();
 
@@ -2261,7 +2261,7 @@ int shell_assert_raw(bool bContinue, char * data_buff, u16 data_len)
 	/* because other core's dump has been blocked by shell_cpu_check_valid(). */
 	/* can't try to get SPINLOCK, because may be it is called from HardFault handler, */
 	/* and meanwhile the spinlock is held by other cores. */
-	
+
 	// int_mask = shell_task_enter_critical();
 	int_mask = rtos_disable_int();
 
@@ -2438,10 +2438,10 @@ int shell_cmd_forward(char *cmd, u16 cmd_len)
 	    u32  int_mask = shell_task_enter_critical();
 	    ret_code = ipc_dev->dev_drv->write_cmd(ipc_dev, &mb_cmd_buf);
 	    shell_task_exit_critical(int_mask);
-	    
+
 	    if(ret_code != 0)
 	        break;
-	        
+
 	    rtos_delay_milliseconds(10);
 	    try_cnt++;
 	    if(try_cnt < 4)
@@ -2449,7 +2449,7 @@ int shell_cmd_forward(char *cmd, u16 cmd_len)
 	    else
 	        return 0;
 	}
-	
+
 	rtos_get_semaphore(&cmd_line_buf.cmd_fwd_semaphore, SHELL_WAIT_OUT_TIME);
 	return ret_code;
 }
@@ -2532,7 +2532,7 @@ void shell_log_flush(void)
 	/* in any case, only one core is running. */
 	/* can't try to get SPINLOCK, because may be it is called from HardFault handler, */
 	/* and meanwhile the spinlock is held by other cores. */
-	
+
 	// int_mask = shell_task_enter_critical();
 	int_mask = rtos_disable_int();
 

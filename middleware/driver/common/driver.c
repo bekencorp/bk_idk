@@ -270,10 +270,6 @@ int driver_init(void) {
 	}
 #endif
 
-	drv_model_init();
-
-	g_dd_init();
-
 #if CONFIG_TIMER
 	bk_timer_driver_init();
 #endif

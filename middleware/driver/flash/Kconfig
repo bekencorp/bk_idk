@@ -14,7 +14,7 @@ menu "FLASH"
 	config FLASH_ORIGIN_API
 		bool "Enable flash old api"
 		default n
-	
+
 	config SUPPORT_PARTITIONS_PARTITION
 		bool "Enable flash partition"
 		default n
@@ -54,6 +54,15 @@ menu "FLASH"
 		depends on FLASH
 		bool "Enable flash_api test"
 		default n
+
+	config FLASH_SVR_TEST
+		depends on FLASH_TEST
+		bool "Enable flash server test (multi-core flash mutex test)"
+		default n
+		help
+		  Enable flash_svr_test.c for multi-core flash access test.
+		  Only takes effect when CONFIG_CPU_CNT > 1. Single-core builds
+		  never compile this file.
 
 	config FLASH_WRITE_STATUS_VOLATILE
 		bool "Enable write volatile status register"

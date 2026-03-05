@@ -256,7 +256,7 @@ if (CONFIG_SLCD_TEST)
 	)
 endif()
 
-if (CONFIG_EASY_FLASH)
+if (CONFIG_EASY_FLASH_TEST)
 	list(APPEND srcs
 		"cli_easyflash.c"
 	)

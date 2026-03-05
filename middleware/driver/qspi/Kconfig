@@ -5,7 +5,7 @@ menu "QSPI"
 
 		config QSPI_STATIS
 			bool "Enable QSPI Statis"
-			default y
+			default n
 
 		config QSPI_FLASH
 			bool "Enable QSPI Flash"

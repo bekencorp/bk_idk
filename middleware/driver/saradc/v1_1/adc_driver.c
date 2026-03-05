@@ -48,7 +48,7 @@ typedef struct
 	adc_isr_t callback;
 	uint32_t param;
     IotAdcCallback_t     iot_callback;
-    void *               p_iot_context; 
+    void *               p_iot_context;
 } adc_callback_t;
 
 typedef struct {
@@ -206,11 +206,7 @@ static void adc_deinit_gpio(adc_chan_t chan)
 
 static void adc_enable_block(void)
 {
-#if (!CONFIG_SOC_BK7231N) && (!CONFIG_SOC_BK7256XX)
-	//TODO - optimize it after sysctrl driver optimized!
-	uint32_t param = BLK_BIT_SARADC;
-	sddev_control(DD_DEV_TYPE_SCTRL, CMD_SCTRL_BLK_ENABLE, &param);
-#endif
+
 }
 
 static bk_err_t adc_chan_init_common(adc_chan_t chan)
@@ -742,7 +738,7 @@ static void adc_isr(void)
 
 bk_err_t bk_adc_is_valid_ch(uint32_t ch)
 {
-    if (!adc_hal_is_valid_channel(&s_adc.hal, ch)) 
+    if (!adc_hal_is_valid_channel(&s_adc.hal, ch))
     {
         ADC_LOGE("ADC id number(%d) is invalid\r\n", (ch));
         return BK_ERR_ADC_INVALID_CHAN;
@@ -780,7 +776,7 @@ bk_err_t bk_adc_unregister_isr_iot_callback(void)
 bk_err_t bk_adc_en(void)
 {
 	if(adc_hal_check_adc_busy(&s_adc.hal))
-    {   
+    {
         os_printf("adc_start:adc busy\n");
 		return BK_ERR_ADC_BUSY;
     }
@@ -789,7 +785,7 @@ bk_err_t bk_adc_en(void)
 
 	int ret = rtos_get_semaphore(&(s_adc_dev.adc_read_sema), 1000);
 	if(ret != kNoErr)
-    {   
+    {
         os_printf("adc_start:rtos_get_semaphore fail\n");
 		return BK_ERR_ADC_GET_READ_SEMA;
     }

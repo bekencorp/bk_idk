@@ -59,8 +59,6 @@ set(srcs
 	sys_ctrl/sys_video_driver.c
 	sys_ctrl/sys_psram_driver.c
 	sys_ctrl/sys_touch_driver.c
-	common/dd.c
-	common/drv_model.c
 	icu/icu_driver.c
 	icu/interrupt_base.c
 	timer/timer_driver.c
@@ -103,7 +101,7 @@ elseif (CONFIG_SARADC_V1P1)
 		saradc/v1_1/adc_statis.c
 	)
 endif()
-	
+
 if (CONFIG_AON_WDT)
 	list(APPEND incs
 		aon_wdt

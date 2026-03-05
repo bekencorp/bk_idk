@@ -31,7 +31,7 @@ if (CONFIG_FLASH)
 	if (CONFIG_SYS_CPU1)
 		list(APPEND srcs flash/flash_client.c flash/flash_notify.c)
 	endif()
-	if (CONFIG_FLASH_TEST)
+	if (CONFIG_FLASH_SVR_TEST)
 		list(APPEND srcs flash/flash_svr_test.c)
 	endif()
 

@@ -39,7 +39,6 @@ typedef struct {
     ////
     void (*_delay)(int32 num);
     void (*_delay_us)(UINT32 us);
-    UINT32 (*_ddev_control)(UINT32 handle, UINT32 cmd, VOID *param);
     int (*_bk_wdt_stop)(void);
 
     bool (*_temp_detect_is_init)(void);
@@ -137,7 +136,7 @@ typedef struct {
     bk_err_t (*_rtos_lock_mutex)(void** mutex);
     bk_err_t (*_rtos_unlock_mutex)(void** mutex);
     bool     (*_rtos_is_critical_section)(void);
-    
+
 ////for bk7256
     uint64 (*_riscv_get_mtimer)(void);
 

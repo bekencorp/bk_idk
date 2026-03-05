@@ -4,6 +4,11 @@ menu "Easy_flash"
 		bool "Enable Easy Flash"
 		default y
 
+	config EASY_FLASH_TEST
+		depends on EASY_FLASH
+		bool "Enable Easy Flash Test"
+		default n
+
 	menu "Modify Easy Flash Config"
 		depends on EASY_FLASH
 

@@ -6,8 +6,8 @@ menu "SPI"
 
 	config SPI_STATIS
 		bool "Enable SPI Statis"
-		default y
-			
+		default n
+
 	config SPI_SUPPORT_TX_FIFO_WR_READY
 		bool "Support TX FIFO Write Ready"
 		default y

@@ -239,7 +239,7 @@ int handle_shell_input(char *inbuf, int in_buf_size, char * outbuf, int out_buf_
                                 4,
                                 "shell_handle",
                                 (beken_thread_function_t)handle_shell_input_proxy,
-                                1024*7,
+                                1024*4,
                                 (beken_thread_arg_t)(&cmd_par));
     if (ret != kNoErr)
     {
@@ -1433,7 +1433,7 @@ static const struct cli_command user_clis[] = {
 };
 #endif
 
-#if CONFIG_EASY_FLASH
+#if CONFIG_EASY_FLASH_TEST
 extern int cli_easyflash_init(void);
 #endif
 
@@ -1784,7 +1784,7 @@ static const cli_module_init_entry_t cli_platform_inits[] = {
 #endif
 #endif
 
-#if CONFIG_EASY_FLASH
+#if CONFIG_EASY_FLASH_TEST
 	CLI_MODULE_INIT_ENTRY(cli_easyflash_init),
 #endif
 

@@ -349,10 +349,14 @@ typedef enum
 	PM_DEV_ID_PWM_2,    // 13
 	PM_DEV_ID_TIMER_2,  // 14
 	PM_DEV_ID_TIMER_3,  // 15
+#if (CONFIG_TOUCH)
 	PM_DEV_ID_TOUCH,    // 16
+#endif
 	PM_DEV_ID_I2S_1,    // 17
 	PM_DEV_ID_USB_1,    // 18
+#if (CONFIG_CAN)
 	PM_DEV_ID_CAN,      // 19
+#endif
 	PM_DEV_ID_PSRAM,    // 20
 	PM_DEV_ID_QSPI_1,   // 21
 	PM_DEV_ID_QSPI_2,   // 22
@@ -362,18 +366,30 @@ typedef enum
 	PM_DEV_ID_WPAS,     // 26
 	PM_DEV_ID_MAC,      // 27
 	PM_DEV_ID_PHY,      // 28
+#if (CONFIG_JPEGENC_HW)
 	PM_DEV_ID_JPEG,     // 29
+#endif
+#if (CONFIG_LCD)
 	PM_DEV_ID_DISP,     // 30
+#endif
+#if (CONFIG_AUDIO)
 	PM_DEV_ID_AUDIO,    // 31
+#endif
 	PM_DEV_ID_RTC,      // 32
 	PM_DEV_ID_GPIO,     // 33
+#if (CONFIG_JPEGDEC_HW)
 	PM_DEV_ID_DECODER,  // 34
+#endif
+#if (CONFIG_LIN)
 	PM_DEV_ID_LIN,      // 35
+#endif
 	PM_DEV_ID_PWM_1,    // 36
 	PM_DEV_ID_SECURE_WORLD,// 37
 	PM_DEV_ID_UART4,       // 38
 	PM_DEV_ID_TRNG,        // 39
+#if (CONFIG_SYS_CPU1)
 	PM_DEV_ID_CPU1,        // 40
+#endif
 	PM_DEV_ID_PHY_DPD_CALI, //41
 
 	PM_DEV_ID_DEFAULT,      // 42  it is used by pm module set default cpu frequency
