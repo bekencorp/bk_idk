@@ -56,6 +56,7 @@ struct co_list rw_msg_rx_head;
 struct co_list rw_msg_tx_head;
 wifi_linkstate_reason_t connect_flag = {WIFI_LINKSTATE_STA_IDLE, WIFI_REASON_MAX};
 SCAN_RST_UPLOAD_T *scan_rst_set_ptr = 0;
+int lowest_rssi_index = -1;
 bool scan_regd_flag = true;
 
 IND_CALLBACK_T scan_cfm_cb_user = {0};
@@ -223,6 +224,7 @@ void sr_release_scan_results(SCAN_RST_UPLOAD_PTR ptr)
 		sr_free_all(ptr);
 	scan_rst_set_ptr = 0;
 	resultful_scan_cfm = 0;
+	lowest_rssi_index = -1;
 
 	wpa_clear_scan_results();
 
@@ -519,6 +521,58 @@ static void sort_scan_result(SCAN_RST_UPLOAD_T *ap_list)
 				tmp = ap_list->res[j];
 				ap_list->res[j] = ap_list->res[i];
 				ap_list->res[i] = tmp;
+			}
+		}
+	}
+}
+
+static bool rwnx_check_duplicate_bssid(SCAN_RST_UPLOAD_PTR result_ptr, UINT8* bssid, int8_t rssi, char on_channel, int* duplicate_replace_index)
+{
+	/* Caution: NO check for pointer NULL */
+	for (int i = 0; i < result_ptr->scanu_num; i++) {
+		if (!os_memcmp(bssid, result_ptr->res[i]->bssid, ETH_ALEN)) {
+			if ((result_ptr->res[i]->on_channel == 1) || (on_channel == 0)) {
+				if (on_channel == 1)
+					result_ptr->res[i]->level = ((result_ptr->res[i]->level + rssi) >> 1);
+				return false;
+			} else {
+				// should replace it.
+				*duplicate_replace_index = i;
+			}
+		}
+	}
+
+	return true;
+}
+
+static void rwnx_inform_single_bss_data(SCAN_RST_UPLOAD_PTR result_ptr, SCAN_RST_ITEM_PTR item, int duplicate_replace_index)
+{
+	if (result_ptr->scanu_num < MAX_BSS_LIST) {
+		if (duplicate_replace_index >= 0) {
+			sr_free_result_item((UINT8 *)result_ptr->res[duplicate_replace_index]);
+			result_ptr->res[duplicate_replace_index] = item;
+		} else {
+			result_ptr->res[result_ptr->scanu_num] = item;
+			result_ptr->scanu_num ++;
+		}
+	} else {
+		/* exceed the bss limit, replace 1. duplicate bssid 2. lowest rssi */
+		if (duplicate_replace_index >= 0) {
+			sr_free_result_item((UINT8 *)result_ptr->res[duplicate_replace_index]);
+			result_ptr->res[duplicate_replace_index] = item;
+		} else {
+			sr_free_result_item((UINT8 *)result_ptr->res[lowest_rssi_index]);
+			result_ptr->res[lowest_rssi_index] = item;
+		}
+	}
+
+	/* update the lowest_rssi_index */
+	if (lowest_rssi_index == -1) {
+		lowest_rssi_index = 0;
+	} else {
+		for (int i = 0; i < result_ptr->scanu_num; i++) {
+			if (result_ptr->res[i]->level < result_ptr->res[lowest_rssi_index]->level) {
+				lowest_rssi_index = i;
 			}
 		}
 	}
@@ -860,42 +914,6 @@ size_t rwnx_merge_profile(const u8 *ie, size_t ielen,
 	return copied_len;
 }
 
-static int rwnx_inform_single_bss_data(SCAN_RST_UPLOAD_PTR result_ptr, SCAN_RST_ITEM_PTR item)
-{
-	int replace_index = -1, ret = BK_OK, i;
-	/* check the duplicate bssid*/
-	do {
-		for (i = 0; i < result_ptr->scanu_num; i ++) {
-			if (!os_memcmp(item->bssid, result_ptr->res[i]->bssid, ETH_ALEN)) {
-				if ((result_ptr->res[i]->on_channel == 1) || (item->on_channel == 0)) {
-					ret = BK_FAIL;
-					os_free(item);
-					goto scan_rst_exit;
-				}
-				else {
-					replace_index = i; // should replace it.
-				}
-			}
-		}
-	} while (0);
-
-	if (replace_index >= 0) {
-		sr_free_result_item((UINT8 *)result_ptr->res[replace_index]);
-		result_ptr->res[replace_index] = item;
-#if CONFIG_RWNX_MULTIPLE_SSID_STA_MODE
-	} else if (result_ptr->scanu_num < MAX_BSS_LIST) {
-			result_ptr->res[result_ptr->scanu_num] = item;
-			result_ptr->scanu_num ++;
-#else
-	} else {
-		result_ptr->res[result_ptr->scanu_num] = item;
-		result_ptr->scanu_num ++;
-#endif
-	}
-scan_rst_exit:
-	return ret;
-}
-
 /* process each multiple ssid element data and generate new_ie */
 static void rwnx_inform_multiple_bss_data(SCAN_RST_UPLOAD_PTR result_ptr, SCAN_RST_ITEM_PTR item,
 											UINT8 * var_part_addr, UINT32 vies_len)
@@ -909,6 +927,7 @@ static void rwnx_inform_multiple_bss_data(SCAN_RST_UPLOAD_PTR result_ptr, SCAN_R
 	u8 new_bssid[ETH_ALEN];
 	u16 capability;
 	SCAN_RST_ITEM_PTR multiple_item;
+	int duplicate_replace_index = -1;
 
 	if (!rwnx_find_ie(WLAN_EID_MULTIPLE_BSSID, var_part_addr, vies_len))
 		return;
@@ -963,6 +982,14 @@ static void rwnx_inform_multiple_bss_data(SCAN_RST_UPLOAD_PTR result_ptr, SCAN_R
 			u8 bssid_index = mbssid_index_ie[2];
 			u8 max_bssid_indicator = elem->data[0];
 
+			//generate new bssid and update the bss_id in ie_info
+			rwnx_gen_new_bssid(item->bssid, max_bssid_indicator, bssid_index, new_bssid);
+
+			/* check the duplicate bssid */
+			if (false == rwnx_check_duplicate_bssid(result_ptr, new_bssid, item->level, item->on_channel, &duplicate_replace_index)) {
+				continue;
+			}
+
 			/* new multiple ssid ie to be upload */
 			multiple_item = (SCAN_RST_ITEM_PTR)sr_malloc_result_item(vies_len);
 			multiple_item->on_channel = item->on_channel;
@@ -975,9 +1002,6 @@ static void rwnx_inform_multiple_bss_data(SCAN_RST_UPLOAD_PTR result_ptr, SCAN_R
 #else
 			os_memcpy(multiple_item->tsf, item->tsf, 8);
 #endif
-
-			//generate new bssid and update the bss_id in ie_info
-			rwnx_gen_new_bssid(item->bssid, max_bssid_indicator, bssid_index, new_bssid);
 			os_memcpy(multiple_item->bssid, new_bssid, ETH_ALEN);
 
 			//clean the new_ie buffer
@@ -989,8 +1013,8 @@ static void rwnx_inform_multiple_bss_data(SCAN_RST_UPLOAD_PTR result_ptr, SCAN_R
 			                                  profile, profile_len, new_ie);
 			if (!new_ie_len)
 				continue;
-			//save the nontransmitted capability for bssid_idx
-			capability = co_read16(profile + 2);
+			//save the nontransmitted capability for bssid_idx, co_read16
+			capability = *((uint16_t*)(profile + 2));
 
 			//save the new_ie_info into struct ie_info
 			multiple_item->caps = capability;
@@ -1006,7 +1030,7 @@ static void rwnx_inform_multiple_bss_data(SCAN_RST_UPLOAD_PTR result_ptr, SCAN_R
 			os_memcpy(multiple_item + 1, new_ie, new_ie_len);
 
 			/* upload the single infor to the upper */
-			rwnx_inform_single_bss_data(result_ptr, multiple_item);
+			rwnx_inform_single_bss_data(result_ptr, multiple_item, duplicate_replace_index);
 		}
 	}
 
@@ -1028,13 +1052,8 @@ UINT32 mhdr_scanu_result_ind(SCAN_RST_UPLOAD_T *scan_rst, void *msg, UINT32 len)
 	SCAN_RST_UPLOAD_PTR result_ptr;
 	SCAN_IND_PTR scanu_ret_ptr;
 	IEEE802_11_PROBE_RSP_PTR probe_rsp_ieee80211_ptr;
-	char on_channel;
-#if CONFIG_RWNX_MULTIPLE_SSID_STA_MODE
-	int infor_state;
-#else
-	int replace_index = -1;
-	UINT32 i;
-#endif
+	char on_channel = 0;
+	int duplicate_replace_index = -1;
 
 	result_ptr = scan_rst;
 
@@ -1076,8 +1095,14 @@ UINT32 mhdr_scanu_result_ind(SCAN_RST_UPLOAD_T *scan_rst, void *msg, UINT32 len)
 	}
 	#endif // CONFIG_WIFI_SCAN_COUNTRY_CODE
 
+	/* check bss limit*/
 	if (result_ptr->scanu_num >= MAX_BSS_LIST)
-		goto scan_rst_exit;
+	{
+		/* check the lowest rssi */
+		if (lowest_rssi_index >= 0 && scanu_ret_ptr->rssi < result_ptr->res[lowest_rssi_index]->level) {
+			goto scan_rst_exit;
+		}
+	}
 
 	elmt_addr = (UINT8 *)get_ie(var_part_addr, vies_len, MAC_ELTID_DS);
 	if (elmt_addr) { // adjust channel
@@ -1133,22 +1158,11 @@ UINT32 mhdr_scanu_result_ind(SCAN_RST_UPLOAD_T *scan_rst, void *msg, UINT32 len)
 		}
 	}
 
-#if !CONFIG_RWNX_MULTIPLE_SSID_STA_MODE
-	/* check the duplicate bssid*/
-	do {
-		for (i = 0; i < result_ptr->scanu_num; i++) {
-			if (!os_memcmp(probe_rsp_ieee80211_ptr->bssid, result_ptr->res[i]->bssid, ETH_ALEN)) {
-				if ((result_ptr->res[i]->on_channel == 1) || (on_channel == 0)) {
-					if (on_channel == 1)
-						result_ptr->res[i]->level = ((result_ptr->res[i]->level + scanu_ret_ptr->rssi) >> 1);
-					goto scan_rst_exit;
-				} else {
-					replace_index = i; // should replace it.
-				}
-			}
-		}
-	} while (0);
-#endif
+	/* check the duplicate bssid */
+	if (false == rwnx_check_duplicate_bssid(result_ptr, probe_rsp_ieee80211_ptr->bssid, 
+		scanu_ret_ptr->rssi, on_channel, &duplicate_replace_index)) {
+		goto scan_rst_exit;
+	}
 
 	item = (SCAN_RST_ITEM_PTR)sr_malloc_result_item(vies_len);
 	if (item == NULL)
@@ -1181,25 +1195,15 @@ UINT32 mhdr_scanu_result_ind(SCAN_RST_UPLOAD_T *scan_rst, void *msg, UINT32 len)
 	os_memcpy(item->tsf, probe_rsp_ieee80211_ptr->rsp.timestamp, 8);
 #endif
 	os_memcpy(item + 1, var_part_addr, vies_len);
-#if CONFIG_RWNX_MULTIPLE_SSID_STA_MODE
-	/* upload single transmit-bss infor to upper */
-	infor_state = rwnx_inform_single_bss_data(result_ptr, item);
-	if (infor_state == BK_FAIL)
-		goto scan_rst_exit;
 
+	/* upload single transmit-bss infor to upper */
+	rwnx_inform_single_bss_data(result_ptr, item, duplicate_replace_index);
+	
+#if CONFIG_RWNX_MULTIPLE_SSID_STA_MODE
 	/* check multiple nontransmit-bss and upload multiple bss infor to upper*/
 	const u8 *multiple_ssid_required = rwnx_find_ie(WLAN_EID_MULTIPLE_BSSID, var_part_addr, vies_len);
 	if (multiple_ssid_required)
 		rwnx_inform_multiple_bss_data(result_ptr, item, var_part_addr, vies_len);
-
-#else
-	if (replace_index >= 0) {
-		sr_free_result_item((UINT8 *)result_ptr->res[replace_index]);
-		result_ptr->res[replace_index] = item;
-	} else {
-		result_ptr->res[result_ptr->scanu_num] = item;
-		result_ptr->scanu_num++;
-	}
 #endif
 
 scan_rst_exit:
@@ -1706,6 +1710,7 @@ void rwnx_handle_recv_msg(struct ke_msg *rx_msg)
 
 			scan_rst_set_ptr = 0;
 			resultful_scan_cfm = 0;
+			lowest_rssi_index = -1;
 		}
 
 		if (0 == scan_rst_set_ptr) {
@@ -1735,6 +1740,7 @@ void rwnx_handle_recv_msg(struct ke_msg *rx_msg)
 
 			scan_rst_set_ptr = 0;
 			resultful_scan_cfm = 0;
+			lowest_rssi_index = -1;
 		}
 
 		mhdr_connect_ind(rx_msg, rx_msg->param_len);

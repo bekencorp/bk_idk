@@ -332,6 +332,20 @@ menu "Bk_Wifi"
 		bool "Enable minimum scan results"
 		default n
 
+	config BSS_MAX_COUNT
+		int "Set BSS Max Count"
+		range 24 96
+		default 64
+		help
+			maximum number of BSS entries to keep in the cache
+
+	config BSS_EXPIRATION_AGE
+		int "Set BSS Expiration Age"
+		range 5 100
+		default 10
+		help
+			expiration age of BSS entries in the cache
+
 	config BK_MEM_DYNA_APPLY_EN
 		bool "Enable BK Mem Dyna Apply En"
 		default y

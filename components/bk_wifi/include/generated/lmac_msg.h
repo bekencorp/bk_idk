@@ -377,7 +377,7 @@ void ke_evt_core_scheduler(void);
 #endif
 ///Maximum number of scan results that can be stored.
 #ifndef MAX_BSS_LIST
-#define MAX_BSS_LIST            64//SCANU_MAX_RESULTS
+#define MAX_BSS_LIST            CONFIG_BSS_MAX_COUNT//SCANU_MAX_RESULTS
 #endif
 /// Invalid value for some octet parameters reserved for the future
 #define PHY_UNUSED           0xFF
