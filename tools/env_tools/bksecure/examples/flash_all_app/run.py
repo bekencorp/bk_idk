@@ -183,73 +183,108 @@ def main():
         debug_opt = ''
     
     log_step_start('Build Process', f'Project: {args.project if args.project else "N/A"}, Log Level: {args.log_level}')
-    
+    idk_path = go_back_dir(5)
+    # Build Server Start
     if args.build:
         log_step_start('Build Server', f'Building project: {args.project}')
-        idk_path = go_back_dir(5)
         os.chdir(idk_path)
         build_server_process(args.project)
         log_step_end('Build Server', 'OK')
         project_base = os.path.basename(args.project)
-        #copy_file_or_exit(f'{idk_path}/build/bk7236n/xip/package/primary_all.bin', f'{sign_path}/',
-        #                  'Failed to copy primary_all.bin to sign_server')
+    # Build Server End
 
-        if args.bl1_secureboot_en:
-            copy_file_or_exit(f'{idk_path}/build/bk7236n/xip/package/bl2.bin', f'{sign_path}/',
-                              'Failed to copy bl2.bin to sign_server')
-            copy_file_or_exit(f'{idk_path}/build/bk7236n/xip/package/provision.bin', f'{pack_path}/immutable',
-                              'Failed to copy provision.bin to pack_server/immutable')
-            copy_file_or_exit(f'{idk_path}/build/bk7236n/xip/package/primary_manifest.json', f'{pack_path}/immutable',
-                              'Failed to copy primary_manifest.json to pack_server/immutable')
-        
-        # Copy app.bin to sign_server if needed (for XIP mode to generate primary_all.bin, or for bl1_secureboot_en)
-        if args.ota_type == 'XIP' or args.bl1_secureboot_en:
-            copy_file_or_exit(f'{idk_path}/build/bk7236n/xip/bk7236n/app.bin', f'{sign_path}/',
-                              'Failed to copy app.bin to sign_server')
-
-        log_progress('Copying immutable files to pack server')
-        required_files = [
-            (f'{idk_path}/build/bk7236n/xip/package/bl2.bin', f'{pack_path}/immutable', 'bl2.bin'),
-            (f'{idk_path}/build/bk7236n/xip/package/user_mfr.bin', f'{pack_path}/immutable', 'user_mfr.bin'),
-            (f'{idk_path}/build/bk7236n/xip/package/nvs.csv', f'{pack_path}/immutable', 'nvs.csv'),
-            (f'{idk_path}/build/bk7236n/xip/package/pack.json', f'{pack_path}/immutable', 'pack.json'),
-            (f'{idk_path}/build/bk7236n/xip/package/partitions.csv', f'{pack_path}/immutable', 'partitions.csv'),
-            (f'{idk_path}/build/bk7236n/xip/package/partition.bin', f'{pack_path}/immutable', 'partition.bin'),
-            (f'{idk_path}/build/bk7236n/xip/package/xip_a.bin', f'{pack_path}/immutable', 'xip_a.bin'),
-            (f'{idk_path}/build/bk7236n/xip/package/root_ec256_pubkey.pem', f'{pack_path}/immutable', 'root_ec256_pubkey.pem'),
-        ]
-        for src, dst, name in required_files:
-            copy_file_or_exit(src, dst, f'Failed to copy {name} to pack_server/immutable')
- 
-    # Sign Server
+    # Copy files to sign_server
+    if args.ota_type == 'XIP':
+        copy_file_or_exit(f'{idk_path}/build/bk7236n/xip/package/bl2.bin', f'{sign_path}/',
+                            'Failed to copy bl2.bin to sign_server')
+        copy_file_or_exit(f'{idk_path}/build/bk7236n/xip/bk7236n/app.bin', f'{sign_path}/',
+                        'Failed to copy app.bin to sign_server')
+        copy_file_or_exit(f'{idk_path}/build/bk7236n/xip/package/{args.privkey}', f'{sign_path}/',
+                        'Failed to copy {args.privkey} to sign_server')
+    elif args.ota_type == 'OVERWRITE':
+        copy_file_or_exit(f'{idk_path}/build/bk7236n/overwrite/package/bl2.bin', f'{sign_path}/',
+                            'Failed to copy bl2.bin to sign_server')
+        copy_file_or_exit(f'{idk_path}/build/bk7236n/overwrite/bk7236n/app.bin', f'{sign_path}/',
+                        'Failed to copy app.bin to sign_server')
+        copy_file_or_exit(f'{idk_path}/build/bk7236n/overwrite/package/{args.privkey}', f'{sign_path}/',
+                        'Failed to copy {args.privkey} to sign_server')
+    # Sign Server Start
     log_step_start('Sign Server', f'OTA Type: {args.ota_type}, App Version: {args.app_version}')
     os.chdir(sign_path)
     sign_server_process(tool_path, args.ota_type, args.app_version, args.app_security_counter, args.ota_version, args.ota_security_counter, args.privkey, args.pubkey, args.replace_key_en ,args.new_privkey, args.new_pubkey,args.app_slot_size, args.ota_slot_size, args.bl1_secureboot_en, args.bl2_load_addr, debug_opt)
     log_step_end('Sign Server', 'OK')
+    # Sign Server End
 
-    # Pack Server
+    log_progress('Copying immutable files to pack server')
+    if args.ota_type == 'XIP':
+        required_files = [
+            (f'{idk_path}/build/bk7236n/xip/package/bl2.bin', f'{pack_path}/immutable', 'bl2.bin'),
+            (f'{idk_path}/build/bk7236n/xip/package/user_mfr.bin', f'{pack_path}/immutable', 'user_mfr.bin'),
+            (f'{idk_path}/build/bk7236n/xip/package/bin.csv', f'{pack_path}/immutable', 'bin.csv'),
+            (f'{idk_path}/build/bk7236n/xip/package/nvs.csv', f'{pack_path}/immutable', 'nvs.csv'),
+            (f'{idk_path}/build/bk7236n/xip/package/pack.json', f'{pack_path}/immutable', 'pack.json'),
+            (f'{idk_path}/build/bk7236n/xip/package/security.csv', f'{pack_path}/immutable', 'security.csv'),
+            (f'{idk_path}/build/bk7236n/xip/package/ota.csv', f'{pack_path}/immutable', 'ota.csv'),
+            (f'{idk_path}/build/bk7236n/xip/package/partitions.csv', f'{pack_path}/immutable', 'partitions.csv'),
+            (f'{idk_path}/build/bk7236n/xip/package/partition.bin', f'{pack_path}/immutable', 'partition.bin'),
+            (f'{idk_path}/build/bk7236n/xip/package/xip_a.bin', f'{pack_path}/immutable', 'xip_a.bin'),
+            (f'{idk_path}/build/bk7236n/xip/package/provision.bin', f'{pack_path}/immutable', 'provision.bin'),
+            (f'{idk_path}/build/bk7236n/xip/package/root_ec256_pubkey.pem', f'{pack_path}/immutable', 'root_ec256_pubkey.pem'),
+            (f'{idk_path}/build/bk7236n/xip/package/{args.privkey}', f'{pack_path}/immutable', args.privkey),
+        ]
+    elif args.ota_type == 'OVERWRITE':
+        required_files = [
+            (f'{idk_path}/build/bk7236n/overwrite/package/bl2.bin', f'{pack_path}/immutable', 'bl2.bin'),
+            (f'{idk_path}/build/bk7236n/overwrite/package/user_mfr.bin', f'{pack_path}/immutable', 'user_mfr.bin'),
+            (f'{idk_path}/build/bk7236n/overwrite/package/bin.csv', f'{pack_path}/immutable', 'bin.csv'),
+            (f'{idk_path}/build/bk7236n/overwrite/package/nvs.csv', f'{pack_path}/immutable', 'nvs.csv'),
+            (f'{idk_path}/build/bk7236n/overwrite/package/pack.json', f'{pack_path}/immutable', 'pack.json'),
+            (f'{idk_path}/build/bk7236n/overwrite/package/security.csv', f'{pack_path}/immutable', 'security.csv'),
+            (f'{idk_path}/build/bk7236n/overwrite/package/ota.csv', f'{pack_path}/immutable', 'ota.csv'),
+            (f'{idk_path}/build/bk7236n/overwrite/package/partitions.csv', f'{pack_path}/immutable', 'partitions.csv'),
+            (f'{idk_path}/build/bk7236n/overwrite/package/partition.bin', f'{pack_path}/immutable', 'partition.bin'),
+            (f'{idk_path}/build/bk7236n/overwrite/package/overwrite.bin', f'{pack_path}/immutable', 'overwrite.bin'),
+            (f'{idk_path}/build/bk7236n/overwrite/package/provision.bin', f'{pack_path}/immutable', 'provision.bin'),
+            (f'{idk_path}/build/bk7236n/overwrite/package/root_ec256_pubkey.pem', f'{pack_path}/immutable', 'root_ec256_pubkey.pem'),
+            (f'{idk_path}/build/bk7236n/overwrite/package/{args.privkey}', f'{pack_path}/immutable', args.privkey),
+        ]
+    else:
+        logging.error(f'Invalid OTA type: {args.ota_type}, only support XIP and OVERWRITE type')
+        exit(1)
+
+    for src, dst, name in required_files:
+        copy_file_or_exit(src, dst, f'Failed to copy {name} to pack_server/immutable')
+
+    # Pack Server Start
     log_step_start('Pack Server', f'AES Type: {args.flash_aes_type}, CRC: {args.flash_crc_en}')
     
     if os.path.exists(f'{pack_path}/_tmp'):
         shutil.rmtree(f'{pack_path}/_tmp')
     os.makedirs(f'{pack_path}/_tmp', exist_ok=True)
-    
+
     log_progress('Copying signed binaries to pack directory')
     copy_file_or_exit(f'{sign_path}/primary_all_signed.bin', f'{pack_path}/_tmp',
-                      'Failed to copy primary_all_signed.bin to pack_server/_tmp')
+                    'Failed to copy primary_all_signed.bin to pack_server/_tmp')
     copy_file_or_exit(f'{sign_path}/ota_signed.bin', f'{pack_path}/_tmp',
-                      'Failed to copy ota_signed.bin to pack_server/_tmp')
+                    'Failed to copy ota_signed.bin to pack_server/_tmp')
     shutil.move(f'{sign_path}/pack_cmd_list.txt', f'{pack_path}/_tmp')
     copy_files(f'{pack_path}/immutable', f'{pack_path}/_tmp')
 
     if args.bl1_secureboot_en:
         copy_file_or_exit(f'{sign_path}/primary_manifest.bin', f'{pack_path}/_tmp',
                           'Failed to copy primary_manifest.bin to pack_server/_tmp')
+        if args.ota_type == 'XIP':
+            copy_file_or_exit(f'{idk_path}/build/bk7236n/xip/package/primary_manifest.json', f'{pack_path}/immutable',
+                              'Failed to copy primary_manifest.json to pack_server/immutable')
+        elif args.ota_type == 'OVERWRITE':
+            copy_file_or_exit(f'{idk_path}/build/bk7236n/overwrite/package/primary_manifest.json', f'{pack_path}/immutable',
+                              'Failed to copy primary_manifest.json to pack_server/immutable')
 
     os.chdir(f'{pack_path}/_tmp')
-    pack_server_process(tool_path, args.bl1_secureboot_en, args.flash_aes_type, args.flash_aes_key, args.flash_crc_en, args.ota_type, args.ota_security_counter, args.boot_ota, args.bl2_version, args.app_version, debug_opt)
+    pack_server_process(tool_path, args.pubkey, args.privkey, args.bl1_secureboot_en, args.flash_aes_type, args.flash_aes_key, args.flash_crc_en, args.ota_type, args.ota_security_counter, args.boot_ota, args.bl2_version, args.app_version, debug_opt)
     log_step_end('Pack Server', 'OK')
-
+    # Pack Server End
+    
     # Install files
     log_step_start('Install', 'Copying final files to install directory')
     os.chdir(cwd)
@@ -264,11 +299,13 @@ def main():
         log_progress('Cleaning temporary files')
         if os.path.exists(f'{pack_path}/_tmp'):
             shutil.rmtree(f'{pack_path}/_tmp')
-        rm_file(f'{sign_path}/ota_signed.bin')
-        rm_file(f'{sign_path}/compress.bin')
+        if os.path.exists(f'{pack_path}/immutable'):
+            shutil.rmtree(f'{pack_path}/immutable')
+        rm_file(f'{sign_path}/*.pem')
+        rm_file(f'{sign_path}/*.bin')
+        rm_file(f'{sign_path}/*.csv')
         rm_file(f'{sign_path}/temp_after_compress')
         rm_file(f'{sign_path}/temp_before_compress')
-        rm_file(f'{sign_path}/primary_all_signed.bin')
     
     log_step_end('Build Process', 'OK', f'Output: {cwd}/install/all-app.bin')
     

@@ -6,6 +6,7 @@ import logging
 import csv
 import struct
 import shutil
+import base64
 
 from .common import *
 from .parse_csv import *
@@ -382,17 +383,12 @@ class Partitions:
             p.postbuild_process(flash_aes_en, flash_aes_key, img_sign_key, flash_crc_en, flash_aes_type)
 
     def gen_primary_all_bin_for_bl2_signing(self, partition_name, app_version):
-        # In OTA XIP mode, generate primary_all.bin from app.bin
-        # Only support primary_all partition in XIP mode
+        # In OTA, generate primary_all.bin from app.bin
         if partition_name != 'primary_all':
-            logging.debug(f'Skip generate partition {partition_name}, only support primary_all in XIP mode')
+            logging.debug(f'Skip generate partition {partition_name}')
             return
         
-        if self._ota_type != 'XIP':
-            logging.debug(f'Skip generate partition {partition_name}, only support XIP mode')
-            return
-        
-        logging.debug(f'Generate {partition_name} from app.bin in OTA XIP mode')
+        logging.debug(f'Generate {partition_name} from app.bin')
         app_bin = 'app.bin'
         all_bin_name = f'{partition_name}.bin'
         
@@ -417,7 +413,7 @@ class Partitions:
             f.write(iv_revision)
             f.write(chip)
         
-        logging.debug(f'Generated {all_bin_name} from {app_bin} in XIP mode')
+        logging.debug(f'Generated {all_bin_name} from {app_bin}')
 
     def set_version_override(self, partition_name, version):
         """Set version override for a partition
@@ -432,7 +428,7 @@ class Partitions:
         self._version_overrides[partition_name] = version
         logging.debug(f'Set version override for partition {partition_name}: {version}')
 
-    def pack_bin(self, pack_json, aes_type, aes_key, security_counter, ota_aes_en, boot_ota=False, ci_test=False, app_version=None, bl2_version=None):
+    def pack_bin(self, pack_json, pubkey_pem, privkey_pem, aes_type, aes_key, security_counter, ota_aes_en, boot_ota=False, ci_test=False, app_version=None, bl2_version=None):
         """Pack bins for Pack Server (after Build and Sign servers)
         
         This method implements the Pack Server functionality in the three-server architecture:
@@ -442,6 +438,8 @@ class Partitions:
         
         Args:
             pack_json: Path to pack.json file
+            pubkey_pem: Path to public key PEM
+            privkey_pem: Path to private key PEM
             aes_type: AES encryption type ('FIXED', 'RANDOM', or 'NONE')
             aes_key: AES encryption key
             security_counter: Security counter for OTA
@@ -480,19 +478,21 @@ class Partitions:
         from .pack_json import PackJson
         pack = PackJson()
         
-        # Get pubkey from security.csv if available (for PackJson)
-        pubkey_for_pack = None
-        try:
-            from .security import Security
-            if os.path.exists('security.csv'):
-                s = Security('security.csv')
-                pubkey_for_pack = s.img_sign_pubkey
-        except Exception as e:
-            logging.debug(f'Failed to read pubkey from security.csv: {e}')
-        
         # PackJson handles: all-app.bin, ota.bin, bootloader.bin, bootloader_ota.bin, etc.
         flash_crc_en = self._flash_crc_en
-        pack.pack(pack_json, pubkey_for_pack, None, aes_key, flash_crc_en, None, aes_type)
+        # If pubkey is a hex string (not a file path), convert to .pem file in current directory
+        if isinstance(pubkey_pem, str) and not os.path.isfile(pubkey_pem):
+            s = pubkey_pem.strip()
+            if len(s) >= 64 and len(s) % 2 == 0 and all(c in '0123456789abcdefABCDEF' for c in s):
+                der = bytes.fromhex(s)
+                b64 = base64.b64encode(der).decode('ascii')
+                pem_lines = '\n'.join(b64[i:i + 64] for i in range(0, len(b64), 64))
+                pem_content = '-----BEGIN PUBLIC KEY-----\n' + pem_lines + '\n-----END PUBLIC KEY-----\n'
+                pubkey_pem_path = os.path.join(os.getcwd(), 'pubkey.pem')
+                with open(pubkey_pem_path, 'w') as f:
+                    f.write(pem_content)
+                pubkey_pem = 'pubkey.pem'
+        pack.pack(pack_json, pubkey_pem, privkey_pem, aes_key, flash_crc_en, None, aes_type)
         
         # Call gen methods for compatibility (they are no-ops, actual work done by PackJson)
         self.gen_all_apps_bin(aes_type)  # all_apps depends on nvs/encrypted/app etc
@@ -561,6 +561,10 @@ class Partitions:
                                 has_header = True
                                 if has_override:
                                     logging.debug(f'{bin_name} already has pack header, but version override exists for {partition_name}, will replace header with override version')
+                                    #remove old header
+                                    remaining_data = f.read()
+                                    with open(bin_name, 'wb') as new_bin_f:
+                                        new_bin_f.write(remaining_data)
                                 else:
                                     logging.debug(f'{bin_name} already has pack header, skipping')
                         except Exception as e:
@@ -571,21 +575,6 @@ class Partitions:
             # if already has header and no version override, keep it
             if has_header and not has_override:
                 continue
-
-            # if already has header and has version override, remove old header
-            # and let PackHeader.create_header to generate new header with "naked bin"
-            # to avoid two headers in the file.
-            if has_header and has_override:
-                try:
-                    with open(bin_name, 'rb') as f:
-                        f.seek(PACK_HEADER_SIZE)
-                        remaining = f.read()
-                    with open(bin_name, 'wb') as f:
-                        f.write(remaining)
-                    logging.debug(f'Removed existing pack header from {bin_name} before applying version override')
-                except Exception as e:
-                    logging.warning(f'Failed to remove existing pack header from {bin_name}, skip updating: {e}')
-                    continue
 
             # Find partition for this bin file
             p = self._find_partition_by_name(partition_name)
@@ -613,7 +602,8 @@ class Partitions:
                     p.size().offset(),
                     p.size().size(),
                     p.flags().flags(),
-                    0  # hdr_size
+                    hdr_size,
+                    m1, m2, m3, m4
                 )
                 logging.debug(f'Added pack header to {bin_name}')
             except Exception as e:

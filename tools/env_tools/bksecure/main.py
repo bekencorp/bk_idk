@@ -245,17 +245,18 @@ def sign_from_ota_sig_command(ota_bin_sig, debug):
 @click.option("--ota_security_counter", type=int, help="APP security counter")
 @click.option("--boot_ota", is_flag=True, default=False, help="Indicate whether support bootloader OTA")
 @click.option("--ota_encrypt", is_flag=True, default=False, help="Indicate whether ota.bin is encrypted")
-@click.option("--pubkey_pem_file", type=str, default='root_ec256_privkey.pem', help="BL2 public key PEM file")
+@click.option("--pubkey_pem", type=str, default='root_ec256_pubkey.pem', help="BL2 public key PEM file")
+@click.option("--privkey_pem", type=str, default='root_ec256_privkey.pem', help="BL2 private key PEM file")
 @click.option("--bl2_version", type=str, required=True, default=None, help="configuration bl2 version")
 @click.option("--app_version", type=str, required=True, default=None, help="configuration app version")
-def pack_command(debug, flash_aes_type, flash_aes_key, flash_crc_en, bl1_secureboot_en, ota_type, ota_security_counter, ota_encrypt, boot_ota, bl2_version, app_version, pubkey_pem_file):
+def pack_command(debug, flash_aes_type, flash_aes_key, flash_crc_en, bl1_secureboot_en, ota_type, ota_security_counter, ota_encrypt, boot_ota, bl2_version, app_version, pubkey_pem, privkey_pem):
     """Pack download bin"""
     set_debug(debug)
     # Convert flash_crc_en string to boolean if provided
     flash_crc_en_bool = None
     if flash_crc_en is not None:
         flash_crc_en_bool = flash_crc_en.lower() == 'true'
-    steps_pack(flash_aes_type, flash_aes_key, flash_crc_en_bool, bl1_secureboot_en, ota_type, ota_security_counter, ota_encrypt, boot_ota, bl2_version, app_version, pubkey_pem_file)
+    steps_pack(flash_aes_type, flash_aes_key, flash_crc_en_bool, bl1_secureboot_en, ota_type, ota_security_counter, ota_encrypt, boot_ota, bl2_version, app_version, pubkey_pem, privkey_pem)
 
 @steps.command("pack_csv")
 @click.option("--debug", is_flag=True, help="Enable debug")

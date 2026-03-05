@@ -35,9 +35,9 @@ def run_cmd(cmd):
 def sign_server_process(tool_path, ota_type, app_version, app_security_counter, ota_version, ota_security_counter, privkey, pubkey, replace_key_en, new_privkey, new_pubkey, app_slot_size, ota_slot_size, bl1_secureboot_en, bl2_load_addr, debug_opt=''):
     debug_opt=''
     
-    # Generate primary_all.bin from app.bin in OTA XIP mode before signing
-    if ota_type == 'XIP' and os.path.exists('app.bin'):
-        logging.info('Generate primary_all.bin from app.bin in OTA XIP mode before signing')
+    # Generate primary_all.bin from app.bin in OTA before signing
+    if os.path.exists('app.bin'):
+        logging.info('Generate primary_all.bin from app.bin in OTA before signing')
         add_tool_path_to_syspath(tool_path)
         try:
             # Import Partitions from scripts package (relative imports will work now)
@@ -121,11 +121,11 @@ def sign_server_process(tool_path, ota_type, app_version, app_security_counter, 
                f'--endian little --encrypt-keylen 128 '
                f'primary_all.bin ota_signed.bin {debug_opt}')
         run_cmd(cmd)
-        save_cmd("Sign and create XIP ota_signed.bin from ota.bin", cmd)
+        save_cmd("Sign and create XIP ota_signed.bin from primary_all.bin", cmd)
     else:
         cmd = f'{tool_path}/main.py pack compress --infile primary_all_signed.bin --outfile compress.bin {debug_opt}'
         run_cmd(cmd)
-        save_cmd("Sign and create Overwrite ota_signed.bin from ota.bin", cmd)
+        save_cmd("Overwrite mode, Compress primary_all_signed.bin to compress.bin", cmd)
 
         cmd = (f'{tool_path}/scripts/../tools/mcuboot_tools/imgtool.py sign '
                f'-k {privkey} '
@@ -140,4 +140,4 @@ def sign_server_process(tool_path, ota_type, app_version, app_security_counter, 
                f'--endian little --encrypt-keylen 128 '
                f'compress.bin ota_signed.bin {debug_opt}')
         run_cmd(cmd)
-        save_cmd("Sign and create Overwrite ota_signed.bin from ota.bin", cmd)
+        save_cmd("Overwrite mode, Sign and create ota_signed.bin from compress.bin", cmd)

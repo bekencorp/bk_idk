@@ -178,11 +178,10 @@ def sign_ota_bin_hash(ota_hash):
 def sign_from_ota_sig(ota_bin_sig):
     pheader = PackHeader('overwrite.bin')
     s = Security('security.csv')
-
     bl2_sign('sign_from_sig', s.img_sign_key_type, s.img_sign_privkey, s.img_sign_pubkey_bytes, ota_bin_sig, 'compress.bin', pheader.m2(), pheader.version(), pheader.security_counter(), 'ota_signed.bin', 'ota_hash.json')
 
 #Step7 - pack download bin
-def steps_pack(aes_key_type=None, aes_key=None, flash_crc_en=None, bl1_secureboot_en=False, ota_type='XIP', ota_security_counter=0, ota_encrypt='FALSE', boot_ota=False, bl2_version='1.0.0', app_version='1.0.0', pubkey_pem_file=None):
+def steps_pack(aes_key_type=None, aes_key=None, flash_crc_en=None, bl1_secureboot_en=False, ota_type='XIP', ota_security_counter=0, ota_encrypt='FALSE', boot_ota=False, bl2_version='1.0.0', app_version='1.0.0', pubkey_pem=None, privkey_pem=None):
     s = None
     if aes_key_type != None:
         flash_aes_type = aes_key_type
@@ -214,10 +213,13 @@ def steps_pack(aes_key_type=None, aes_key=None, flash_crc_en=None, bl1_secureboo
     if app_version:
         # Remove 'v' prefix if present (e.g., 'v0.0.3' -> '0.0.3')
         app_version_clean = app_version.lstrip('vV')
-        p.set_version_override('xip_a', app_version_clean)
+        if ota_type == 'XIP':
+            p.set_version_override('xip_a', app_version_clean)
+        elif ota_type == 'OVERWRITE':
+            p.set_version_override('overwrite', app_version_clean)
         logging.info(f'Set APP version override: {app_version_clean} (from parameter, overriding bin.csv)')
 
-    p.pack_bin('pack.json', flash_aes_type, flash_aes_key, ota_security_counter, ota_encrypt, boot_ota, False)
+    p.pack_bin('pack.json', pubkey_pem, privkey_pem, flash_aes_type, flash_aes_key, ota_security_counter, ota_encrypt, boot_ota, False)
     p.install_bin()
 
 def steps_pack_csv():
