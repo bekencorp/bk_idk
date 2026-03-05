@@ -4500,8 +4500,13 @@ struct wpa_config * wpa_config_alloc_empty(const char *ctrl_interface,
 	config->p2p_go_max_inactivity = DEFAULT_P2P_GO_MAX_INACTIVITY;
 	config->p2p_optimize_listen_chan = DEFAULT_P2P_OPTIMIZE_LISTEN_CHAN;
 	config->p2p_go_ctwindow = DEFAULT_P2P_GO_CTWINDOW;
+	#if BK_SUPPLICANT
+	config->bss_max_count = CONFIG_BSS_MAX_COUNT;
+	config->bss_expiration_age = CONFIG_BSS_EXPIRATION_AGE;
+	#else
 	config->bss_max_count = DEFAULT_BSS_MAX_COUNT;
 	config->bss_expiration_age = DEFAULT_BSS_EXPIRATION_AGE;
+	#endif
 	config->bss_expiration_scan_count = DEFAULT_BSS_EXPIRATION_SCAN_COUNT;
 	config->max_num_sta = DEFAULT_MAX_NUM_STA;
 	config->ap_isolate = DEFAULT_AP_ISOLATE;
