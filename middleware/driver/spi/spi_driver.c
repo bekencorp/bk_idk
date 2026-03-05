@@ -821,8 +821,7 @@ bk_err_t bk_spi_write_bytes(spi_id_t id, const void *data, uint32_t size)
         rtos_get_semaphore(&s_spi[id].tx_sema, BEKEN_NEVER_TIMEOUT);
 
         int_level = spi_enter_critical();
-        spi_hal_disable_tx_fifo_int(&s_spi[id].hal);
-        spi_hal_disable_tx(&s_spi[id].hal);
+        bk_spi_clr_tx(id);
         spi_exit_critical(int_level);
 
         return BK_OK;
@@ -859,12 +858,7 @@ bk_err_t bk_spi_read_bytes(spi_id_t id, void *data, uint32_t size)
         rtos_get_semaphore(&(s_spi[id].rx_sema), BEKEN_NEVER_TIMEOUT);
 
         int_level = spi_enter_critical();
-        spi_hal_disable_rx(&s_spi[id].hal);
-        spi_hal_disable_tx_fifo_int(&s_spi[id].hal);
-        spi_hal_disable_rx_fifo_int(&s_spi[id].hal);
-        s_spi[id].rx_size = 0;
-        s_spi[id].rx_offset = 0;
-        s_spi[id].rx_buf = NULL;
+        bk_spi_clr_rx(id);
         spi_exit_critical(int_level);
 
         return BK_OK;
@@ -898,7 +892,6 @@ bk_err_t bk_spi_clr_tx(spi_id_t id)
 bk_err_t bk_spi_clr_rx(spi_id_t id)
 {
         spi_hal_disable_rx(&s_spi[id].hal);
-        spi_hal_disable_tx_fifo_int(&s_spi[id].hal);
         spi_hal_disable_rx_fifo_int(&s_spi[id].hal);
         s_spi[id].rx_size = 0;
         s_spi[id].rx_offset = 0;
@@ -1162,12 +1155,17 @@ uint32_t bk_spi_dma_read_bytes(spi_id_t id, void *data, uint32_t size)
                 rtos_get_semaphore(&s_spi[id].rx_sema, BEKEN_NEVER_TIMEOUT);
 
                 int_level = spi_enter_critical();
-                spi_hal_disable_rx(&s_spi[id].hal);
+                bk_spi_clr_rx(id);
                 bk_dma_stop(s_spi[id].spi_rx_dma_chan);
                 spi_exit_critical(int_level);
 
                 left_len -= rx_len;
                 buf_offset += rx_len;
+        }
+
+        if (buf_offset != size) {
+                SPI_LOGE("DMA read bytes mismatch: buf_offset=%d, size=%d\r\n", buf_offset, size);
+                return buf_offset;
         }
 
         return size;
@@ -1230,13 +1228,19 @@ static void spi_isr_common(spi_id_t id)
                         }
                         s_spi[id].rx_offset = rd_offset;
                 }
-                bk_spi_clr_rx(id);
-                if (s_spi_rx_finish_isr[id].callback) {
-                        s_spi_rx_finish_isr[id].callback(s_current_spi_dma_rd_id,s_spi_rx_finish_isr[id].param);
-                }
-                if (s_spi[id].is_rx_blocked && (0 != s_spi[id].rx_offset)) {
+
+                if (s_spi[id].is_rx_blocked) {
+                        if (0 == s_spi[id].rx_offset) {
+                                SPI_LOGW("rx finish int triggered but rx_offset is 0\r\n");
+                        }
+                        if (s_spi[id].rx_offset < s_spi[id].rx_size) {
+                                SPI_LOGE("rx finish int triggered but rx_offset(%d) < rx_size(%d)\r\n", s_spi[id].rx_offset, s_spi[id].rx_size);
+                        }
                         rtos_set_semaphore(&s_spi[id].rx_sema);
                         s_spi[id].is_rx_blocked = false;
+                }
+                if (s_spi_rx_finish_isr[id].callback) {
+                        s_spi_rx_finish_isr[id].callback(s_current_spi_dma_rd_id,s_spi_rx_finish_isr[id].param);
                 }
         }
 
