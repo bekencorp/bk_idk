@@ -964,6 +964,7 @@ const phy_os_funcs_t g_phy_os_funcs = {
     ._sys_ll_set_ana_reg8_iocurlim = NULL,
 #endif
     ._bk_feature_phy_log_enable = bk_feature_phy_log_enable,
+    ._bk_feature_wifi6_enable = bk_feature_wifi6_enable,
 };
 
 const phy_os_variable_t g_phy_os_variable = {
