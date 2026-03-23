@@ -1373,32 +1373,64 @@ int sys_hal_set_lpo_src(sys_lpo_src_t src)
 	return BK_OK;
 }
 
+#define VANALDOSEL_STEP_UP_DELAY_US  (10)
+#define VANALDOSEL_STEP_SIZE         (2)
+int32_t sys_hal_set_vanaldosel(uint32_t value)
+{
+	if(value > 0xF) {
+		return 0;
+	}
+
+	uint32_t cur = 0;
+	cur = sys_ll_get_ana_reg7_vanaldosel();
+	if (cur == value) {
+		return 0;
+	}
+
+	sys_ll_set_ana_reg8_spi_latch1v(1);
+	if (value < cur) {
+		/* Target is lower: set directly */
+		sys_ll_set_ana_reg7_vanaldosel(value);
+	} else {
+		/* Target is higher: step up in increments of VANALDOSEL_STEP_SIZE with delay each step */
+		uint32_t v = cur;
+		while (v < value) {
+			v += VANALDOSEL_STEP_SIZE;
+			if (v > value)
+				v = value;
+			sys_ll_set_ana_reg7_vanaldosel(v);
+			bk_delay_us(VANALDOSEL_STEP_UP_DELAY_US);
+		}
+	}
+
+	sys_ll_set_ana_reg8_spi_latch1v(0);
+	return 0;
+}
+
 void sys_hal_enter_low_analog(void)
 {
-	sys_ll_set_ana_reg8_spi_latch1v(1);
 	#if CONFIG_TEMP_DETECT
 	float temp;
 	bk_err_t err = bk_sensor_get_current_temperature(&temp);
 	if((err != BK_OK) || (temp < -10))
 	{
-		sys_ll_set_ana_reg7_vanaldosel((s_pm_config.btpll_vanaldosel_high == 0xff) ? 0xa : s_pm_config.btpll_vanaldosel_high);
+		sys_hal_set_vanaldosel((s_pm_config.btpll_vanaldosel_high == 0xff) ? 0xa : s_pm_config.btpll_vanaldosel_high);
 	}
 	else if (temp < 20)
 	{
-		sys_ll_set_ana_reg7_vanaldosel((s_pm_config.btpll_vanaldosel_mid == 0xff) ? 0x7 : s_pm_config.btpll_vanaldosel_mid);
+		sys_hal_set_vanaldosel((s_pm_config.btpll_vanaldosel_mid == 0xff) ? 0x7 : s_pm_config.btpll_vanaldosel_mid);
 	}
 	else if (temp < 60)
 	{
-		sys_ll_set_ana_reg7_vanaldosel((s_pm_config.btpll_vanaldosel_low == 0xff) ? 0x4 : s_pm_config.btpll_vanaldosel_low);
+		sys_hal_set_vanaldosel((s_pm_config.btpll_vanaldosel_low == 0xff) ? 0x4 : s_pm_config.btpll_vanaldosel_low);
 	}
 	else
 	{
-		sys_ll_set_ana_reg7_vanaldosel((s_pm_config.btpll_vanaldosel_high == 0xff) ? 0xa : s_pm_config.btpll_vanaldosel_high);
+		sys_hal_set_vanaldosel((s_pm_config.btpll_vanaldosel_high == 0xff) ? 0xa : s_pm_config.btpll_vanaldosel_high);
 	}
 	#else
-	sys_ll_set_ana_reg7_vanaldosel((s_pm_config.btpll_vanaldosel_high == 0xff) ? 0xa : s_pm_config.btpll_vanaldosel_high);
+	sys_hal_set_vanaldosel((s_pm_config.btpll_vanaldosel_high == 0xff) ? 0xa : s_pm_config.btpll_vanaldosel_high);
 	#endif
-	sys_ll_set_ana_reg8_spi_latch1v(0);
 
 	sys_ll_set_ana_reg3_hpssren((s_pm_config.btpll_hpssren == 0xff) ? 0 : s_pm_config.btpll_hpssren);
 	sys_ll_set_ana_reg5_pwd_anabuf_lownoise(1);
@@ -1408,9 +1440,7 @@ void sys_hal_enter_low_analog(void)
 
 void sys_hal_exit_low_analog(void)
 {
-	sys_ll_set_ana_reg8_spi_latch1v(1);
-	sys_ll_set_ana_reg7_vanaldosel((s_pm_config.wifipll_vanaldosel == 0xff) ? 0xf : s_pm_config.wifipll_vanaldosel);
-	sys_ll_set_ana_reg8_spi_latch1v(0);
+	sys_hal_set_vanaldosel((s_pm_config.wifipll_vanaldosel == 0xff) ? 0xf : s_pm_config.wifipll_vanaldosel);
 
 	sys_ll_set_ana_reg3_hpssren((s_pm_config.wifipll_hpssren == 0xff) ? 1 : s_pm_config.wifipll_hpssren);
 	sys_ll_set_ana_reg5_pwd_anabuf_lownoise(0);
