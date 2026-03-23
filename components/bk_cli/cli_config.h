@@ -135,6 +135,12 @@ extern "C" {
 #define CLI_CFG_FLASH       0
 #endif
 
+#if(CONFIG_FLASH_TEST)
+#define CLI_CFG_FLASH_TEST       1
+#else
+#define CLI_CFG_FLASH_TEST       0
+#endif
+
 #if(CONFIG_SDIO_HOST && (CONFIG_SYS_CPU0))
 #define CLI_CFG_SDIO_HOST   1
 #else

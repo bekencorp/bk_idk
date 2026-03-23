@@ -128,7 +128,7 @@ if (CONFIG_FLASH)
 	)
 endif()
 
-if (CONFIG_FLASH)
+if (CONFIG_FLASH_TEST)
 	list(APPEND srcs
 		cli_flash_test.c
 		cli_flash_api.c

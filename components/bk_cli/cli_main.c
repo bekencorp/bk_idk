@@ -1680,11 +1680,11 @@ static const cli_module_init_entry_t cli_platform_inits[] = {
 	CLI_MODULE_INIT_ENTRY(cli_os_init),
 #endif
 
-#if (CLI_CFG_FLASH == 1)
+#if (CLI_CFG_FLASH_TEST == 1)
 	CLI_MODULE_INIT_ENTRY(cli_flash_test_init),
 #endif
 
-#if (CLI_CFG_FLASH == 1)
+#if (CLI_CFG_FLASH_TEST == 1)
 	CLI_MODULE_INIT_ENTRY(cli_flash_api_test_init),
 #endif
 
