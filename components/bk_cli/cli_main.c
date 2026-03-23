@@ -1603,11 +1603,12 @@ static const cli_module_init_entry_t cli_bt_multimedia_inits[] = {
             CLI_MODULE_INIT_ENTRY(cli_cs2_p2p_init),
 #endif
 
+#endif
+
 #if (CLI_CFG_MATTER == 1)
             CLI_MODULE_INIT_ENTRY(cli_matter_init),
 #endif
 
-#endif
 #if (CLI_CFG_PSRAM)
             CLI_MODULE_INIT_ENTRY(cli_psram_init),
 #endif

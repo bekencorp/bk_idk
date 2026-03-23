@@ -607,11 +607,11 @@ static const struct cli_command s_misc_commands[] = {
 #if (CONFIG_WIFI_ENABLE)
 	{"mac", "mac <mac>, get/set mac. e.g. mac c89346000001", mac_command},
 #endif
+	{"reboot", "reboot system", reboot},
 #if (CONFIG_DEBUG_FIRMWARE)
 	{"version", NULL, get_version},
 	{"starttype", "show start reason type",cli_show_reset_reason},
 	{"id", NULL, get_id},
-	{"reboot", "reboot system", reboot},
 	{"time",   "system time",   uptime_Command},
 
 #if (!CONFIG_SOC_BK7231)
