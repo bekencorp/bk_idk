@@ -36,7 +36,7 @@
 #define ADC_TEMP_SATURATE_MODE                      ADC_SATURATE_MODE_3
 #endif
 
-#if (CONFIG_SOC_BK7239XX)
+#if (CONFIG_SOC_BK7239XX)|| (CONFIG_SOC_BK7236N)
 #define ADC_TEMP_BUFFER_SIZE                        (5+5)//(+5 for skip)
 #if CONFIG_TEMPERATURE_HIGH_VOLT
 #define ADC_TEMP_CODE_DFT_25DEGREE                  (8505)  // todo: check the value
@@ -45,12 +45,6 @@
 #define ADC_TEMP_CODE_DFT_25DEGREE                  (5505)  // todo: check the value
 #define ADC_TMEP_LSB_PER_10DEGREE                   (375)   // todo: check the value
 #endif
-#define ADC_TEMP_VAL_MIN                            (10)
-#define ADC_TEMP_VAL_MAX                            (0x3FFF) //for ana_reg5_adc_div=1/3
-#elif (CONFIG_SOC_BK7236N)
-#define ADC_TEMP_BUFFER_SIZE                        (5+5)//(+5 for skip)
-#define ADC_TEMP_CODE_DFT_25DEGREE                  (8505)
-#define ADC_TMEP_LSB_PER_10DEGREE                   (580)
 #define ADC_TEMP_VAL_MIN                            (10)
 #define ADC_TEMP_VAL_MAX                            (0x3FFF) //for ana_reg5_adc_div=1/3
 #elif (CONFIG_SOC_BK7236XX)

@@ -16,4 +16,4 @@ id,     name,                           size,       offset,     end,        priv
 14,     OTP_VDDDIG_BANDGAP,             4,          0x5EC,      0x5F0,      OTP_READ_WRITE,         FALSE,        TRUE,
 15,     OTP_DIA,                        4,          0x5F0,      0x5F4,      OTP_READ_WRITE,         FALSE,        TRUE,
 16,     OTP_MEMORY_CHECK_VDDDIG,        4,          0x5F4,      0x5F8,      OTP_READ_WRITE,         FALSE,        FALSE,
-17,     OTP_DEVICE_ID,                  8,          0x5F8,      0x600,      OTP_READ_WRITE,         FALSE,        TRUE,
+17,     OTP_DEVICE_ID,                  8,          0x5F8,      0x600,      OTP_READ_WRITE,         FALSE,        FALSE,

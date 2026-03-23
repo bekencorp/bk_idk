@@ -24,5 +24,13 @@ struct uid_osi_funcs_t {
     uint32_t size;
     /* log */
     void (*_log)(int level, char *tag, const char *fmt, ...);
+    /* otp read */
+    int (*_bk_otp_apb_read)(uint32_t item, uint8_t *buf, uint32_t size);
+    int (*_bk_otp_ahb_read)(uint32_t item, uint8_t *buf, uint32_t size);
+};
+
+/* adapter variable */
+struct uid_osi_vars_t {
+    uint32_t _OTP_DEVICE_ID;
 };
 

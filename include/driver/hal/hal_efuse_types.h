@@ -76,7 +76,7 @@ extern "C" {
  * the device id stores in efuse address byte 0x18 ~ 0x1c
  * the efuse device id is set via ate cmds
  */
-#define EFUSE_DEVICE_ID_BYTE_NUM     5
+#define EFUSE_DEVICE_ID_BYTE_NUM     8
 #define EFUSE_DEVICE_ID_SN_MINIMUM   48
 #define EFUSE_DEVICE_ID_SN_MAXIMUM   122
 #define EFUSE_WAFER_ID_MINIMUM       1

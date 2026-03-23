@@ -15,21 +15,56 @@
 #include "os/os.h"
 #include "bk_uid_adaptor.h"
 #include <modules/uidlib.h>
+#include <driver/otp.h>
 
 #define UID_OSI_VERSION              0x00000001
 
+static int uid_otp_apb_read_wrapper(uint32_t item, uint8_t *buf, uint32_t size)
+{
+#if CONFIG_OTP
+    return (int)bk_otp_apb_read((otp1_id_t)item, buf, size);
+#else
+    (void)item;
+    (void)buf;
+    (void)size;
+    return (int)BK_ERR_NOT_SUPPORT;
+#endif
+}
+static int uid_otp_ahb_read_wrapper(uint32_t item, uint8_t *buf, uint32_t size)
+{
+#if CONFIG_OTP
+    return (int)bk_otp_ahb_read((otp2_id_t)item, buf, size);
+#else
+    (void)item;
+    (void)buf;
+    (void)size;
+    return (int)BK_ERR_NOT_SUPPORT;
+#endif
+}
+
+static struct uid_osi_vars_t uid_osi_vars = {
+#if CONFIG_OTP
+    ._OTP_DEVICE_ID = OTP_DEVICE_ID,
+#else
+    ._OTP_DEVICE_ID = 0,
+#endif
+};
+
 static const struct uid_osi_funcs_t uid_osi_funcs = {
     ._version = UID_OSI_VERSION,
-    .size = sizeof(struct uid_osi_funcs_t), 
+    .size = sizeof(struct uid_osi_funcs_t),
     /* log */
     ._log = bk_printf_ext,
+    /* otp read */
+    ._bk_otp_apb_read = uid_otp_apb_read_wrapper,
+    ._bk_otp_ahb_read = uid_otp_ahb_read_wrapper,
 };
 
 bk_err_t bk_uid_adaptor_init(void)
 {
     bk_err_t ret = BK_OK;
 
-    if (uid_osi_funcs_init((void*)&uid_osi_funcs) != 0)
+    if (uid_osi_funcs_init((void *)&uid_osi_funcs, (void *)&uid_osi_vars) != 0)
     {
         return BK_FAIL;
     }

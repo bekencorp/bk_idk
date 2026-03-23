@@ -126,7 +126,7 @@ tempd_exit:
 static bk_err_t bk_sensor_load_adc_cali_value(void)
 {
     bk_err_t result;
-#if CONFIG_SOC_BK7239XX
+#if (CONFIG_SOC_BK7239XX || CONFIG_SOC_BK7236N)
     uint16_t vol_values[3];
     uint16_t temp_values[2];
     uint8_t data[72];
@@ -175,7 +175,7 @@ LOAD_SDMADC:
 LOAD_TEMP:
 #endif
 
-#if CONFIG_SOC_BK7239XX
+#if (CONFIG_SOC_BK7239XX || CONFIG_SOC_BK7236N)
     result = bk_otp_ahb_read(OTP_GADC_TEMPERATURE, (uint8_t *)&temp_values, sizeof(temp_values));
     if ((result != BK_OK) || (temp_values[0] == 0) || (0xFFFF == temp_values[0]) || (temp_values[1] == 0) || (0xFFFF == temp_values[1])) {
 #else
@@ -185,7 +185,7 @@ LOAD_TEMP:
         BK_LOGW(TAG, "uncali temp value:[%x]\r\n", temp_values[0]);
         goto FAILURE;
     }
-#if CONFIG_SOC_BK7239XX
+#if (CONFIG_SOC_BK7239XX || CONFIG_SOC_BK7236N)
 #if CONFIG_TEMPERATURE_HIGH_VOLT
     BK_LOGI(TAG, "saradc temp value:[%x]\r\n", temp_values[0]);
     saradc_set_calibrate_val(&temp_values[0], SARADC_CALIBRATE_TEMP_CODE25);

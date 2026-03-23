@@ -77,7 +77,7 @@ static bool adc_try_load_otp_cwt(uint32_t *otp_cwt_buf)
     bk_err_t result = BK_FAIL;
     uint32_t required_size = ADC_CWT_COEF_NUM * sizeof(uint32_t);
 
-#if CONFIG_SOC_BK7236XX
+#if CONFIG_SOC_BK7236XX && !CONFIG_SOC_BK7236N
     otp_data_size = otp_map_1[OTP_GADC_CALIBRATION].allocated_size;
 #else
     otp_data_size = otp_map_2[OTP_GADC_CALIBRATION].allocated_size;
@@ -95,7 +95,7 @@ static bool adc_try_load_otp_cwt(uint32_t *otp_cwt_buf)
         return false;
     }
 
-#if CONFIG_SOC_BK7236XX
+#if CONFIG_SOC_BK7236XX && !CONFIG_SOC_BK7236N
     result = bk_otp_apb_read(OTP_GADC_CALIBRATION, data, otp_data_size);
 #else
     result = bk_otp_ahb_read(OTP_GADC_CALIBRATION, data, otp_data_size);

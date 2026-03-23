@@ -23,7 +23,7 @@ extern "C" {
 /*******************************************************************************
 * Function Declarations
 *******************************************************************************/
-int uid_osi_funcs_init(void *osi_funcs);
+int uid_osi_funcs_init(void *osi_funcs, void *osi_vars);
 int get_uid(unsigned char data[32]);
 
 #ifdef __cplusplus
