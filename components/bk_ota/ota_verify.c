@@ -343,7 +343,7 @@ static void debug_print_buf(const char *str, const uint8_t *buf, uint32_t len)
 }
 
 
-static bk_err_t read_pubkey_from_primary(const bk_logic_partition_t *partition, uint8_t* pubkey, uint16_t* pubkey_size)
+bk_err_t read_pubkey_from_primary(const bk_logic_partition_t *partition, uint8_t* pubkey, uint16_t* pubkey_size)
 {
 	uint32_t key_len = 0;
 	image_header_t primary_hdr;
@@ -581,6 +581,10 @@ static bk_err_t ota_verify_handle_tlv(const bk_logic_partition_t *partition, ota
 			memcpy(pubkey, value, tlv.it_len);
 			end = pubkey + tlv.it_len;
 #if CONFIG_OTA_UPDATE_PUBKEY
+			ret = ota_verify_pubkey(partition, ota_verify, pubkey, tlv.it_len);
+			if (ret != BK_OK) {
+				goto out;
+			}
 #else
 #ifdef OTP_BL2_BOOT_PUBLIC_KEY_HASH
 			uint8_t key_hash[32];

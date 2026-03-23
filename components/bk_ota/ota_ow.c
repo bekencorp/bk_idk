@@ -1,8 +1,10 @@
 #include "sdkconfig.h"
+#include <string.h>
 #include <components/system.h>
 #include "driver/flash.h"
 #include "modules/ota.h"
 #include "ota_common.h"
+#include "ota_verify.h"
 #include "ota_confirm.h"
 #include "partitions_gen.h"
 
@@ -94,4 +96,29 @@ bk_err_t ow_ota_reboot(void)
 	bk_reboot();
 	return BK_OK;
 }
+
+#if CONFIG_OTA_UPDATE_PUBKEY
+bk_err_t ota_verify_pubkey(const bk_logic_partition_t *app_partition,
+    ota_verify_t *ota_verify, const uint8_t *ota_outer_pubkey, uint16_t ota_outer_pubkey_len)
+{
+	(void)ota_verify;
+	uint8_t primary_pubkey[MAX_PUBKEY_LEN];
+
+	if (ota_outer_pubkey_len > MAX_PUBKEY_LEN) {
+		return BK_ERR_OTA_VALIDATE_PUB_KEY_FAIL;
+	}
+
+	bk_err_t ret = read_pubkey_from_primary(app_partition, primary_pubkey, NULL);
+	if (ret != BK_OK) {
+		BK_LOGE(TAG, "primary read public key fail!\r\n");
+		return ret;
+	}
+
+	if (memcmp(primary_pubkey, ota_outer_pubkey, ota_outer_pubkey_len) != 0) {
+		BK_LOGE(TAG, "public key of OTA-outer and primary not equal!\r\n");
+		return BK_ERR_OTA_VALIDATE_PUB_KEY_FAIL;
+	}
+	return BK_OK;
+}
+#endif
 #endif

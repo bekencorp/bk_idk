@@ -100,7 +100,12 @@ bk_err_t ota_check_crc(const bk_logic_partition_t *partition);
 ota_verify_t* ota_verify_init(void);
 bk_err_t ota_verify_receive_data(ota_verify_t* ota_verify, const void* data, int len);
 bk_err_t ota_verify_image(const bk_logic_partition_t *partition, ota_verify_t* ota_verify);
+bk_err_t read_pubkey_from_primary(const bk_logic_partition_t *partition, uint8_t* pubkey, uint16_t* pubkey_size);
 void ota_verify_deinit(ota_verify_t* ota_verify);
+#if CONFIG_OTA_UPDATE_PUBKEY
+bk_err_t ota_verify_pubkey(const bk_logic_partition_t *app_partition,
+    ota_verify_t *ota_verify, const uint8_t *ota_outer_pubkey, uint16_t ota_outer_pubkey_len);
+#endif
 bk_err_t ota_update_back_pubkey_from_primary(const bk_logic_partition_t *app_partition, const bk_logic_partition_t *key_partition);
 #if CONFIG_PSA_MBEDTLS
 int ota_mbedtls_ecdsa_verify(mbedtls_ecdsa_context *ctx,

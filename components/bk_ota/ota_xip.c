@@ -207,8 +207,12 @@ static bool xip_ota_partition_is_valid(const bk_logic_partition_t *ota)
 	}
 }
 
-static bk_err_t ota_verify_pubkey_trust_chain(ota_verify_t* ota_verify, const bk_logic_partition_t *app_partition)
+bk_err_t ota_verify_pubkey(const bk_logic_partition_t *app_partition,
+    ota_verify_t *ota_verify, const uint8_t *ota_outer_pubkey, uint16_t ota_outer_pubkey_len)
 {
+	(void)ota_outer_pubkey;
+	(void)ota_outer_pubkey_len;
+
 	if (ota_verify == NULL || ota_verify->tlv_total == NULL) {
 		return BK_ERR_PARAM;
 	}
@@ -323,12 +327,9 @@ bk_err_t xip_ota_verify(const bk_ota_t *ota, void* metadata)
 		if (app_partition == NULL) {
 			ota_verify_deinit(ota_verify);
 			return BK_ERR_PARAM;
-		} else {
-			ret = ota_verify_image(app_partition, ota_verify);
-			if (ret == BK_OK) {
-				ret = ota_verify_pubkey_trust_chain(ota_verify, app_partition);
-			}
 		}
+
+		ret = ota_verify_image(app_partition, ota_verify);
 		ota_verify_deinit(ota_verify);
 		ota_verify = NULL;
 	}
