@@ -43,4 +43,11 @@ menu "Ota"
 	config BLE_OTA_WAIT_TIMEOUT
 		int "ble ota wait time(ms)"
 		default 3000
+
+	config ENABLE_OTA_CONFIRM
+		bool "Enable ota confirm flag in ota_123 partition"
+		default n
+		help
+			enable ota confirm flag in ota_123 partition
+
 endmenu

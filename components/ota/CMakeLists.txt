@@ -1,7 +1,7 @@
 set(incs include include/bk_private)
 set(srcs)
 
-if (CONFIG_OTA_HASH_FUNCTION)
+if (CONFIG_OTA_HASH_FUNCTION OR CONFIG_ENABLE_OTA_CONFIRM)
 	list(APPEND srcs ota_hash.c)
 endif()
 

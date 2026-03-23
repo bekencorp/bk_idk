@@ -317,6 +317,7 @@ int bk_ota_update_partition_flag(int input_val)
 }
 
 #endif // CONFIG_HTTP_AB_PARTITION
+
 u8  ota_flag =0;
 #if CONFIG_OTA_HTTP
 int bk_http_ota_download(const char *uri)
@@ -387,6 +388,21 @@ int bk_http_ota_download(const char *uri)
 		OTA_LOGI("success.\r\n");
 		bk_reboot();
 #else
+#if CONFIG_ENABLE_OTA_CONFIRM
+		int32_t bk_ota_check_hash(void);
+		int32_t bk_ota_confirm();
+
+		ret = bk_ota_check_hash();
+		if(ret != BK_OK)
+		{
+			return ret;
+		}
+		ret = bk_ota_confirm();
+		if(ret != BK_OK)
+		{
+			return ret;
+		}
+#endif
 		OTA_LOGI("success.\r\n");
 		bk_reboot();
 #endif /*CONFIG_HTTP_AB_PARTITION*/
@@ -394,4 +410,90 @@ int bk_http_ota_download(const char *uri)
 	return ret;
 }
 
+#endif
+
+#if CONFIG_ENABLE_OTA_CONFIRM
+#include "bk_private/bk_ota_private.h"
+int32_t bk_ota_check_hash(void)
+{
+	struct ota_rbl_head  rbl_hdr;
+	const bk_logic_partition_t *bk_ptr = NULL;
+	uint32_t partition_length = 0;
+	int ret = BK_FAIL;
+
+	bk_ptr = bk_flash_partition_get_info(BK_PARTITION_OTA);
+	partition_length = bk_ptr->partition_length;
+
+	if((bk_ptr == NULL))
+	{
+		OTA_LOGE(" get %s fail \r\n", BK_PARTITION_OTA);
+		return BK_FAIL;
+	}
+
+	ret = ota_get_rbl_head(bk_ptr, &rbl_hdr, partition_length);
+	if(ret != BK_OK)
+	{
+		return BK_FAIL;
+	}
+
+	ret = ota_hash_verify(bk_ptr, &rbl_hdr);
+	if(ret == BK_OK)
+	{
+		OTA_LOGI("bk_ota_check_hash ok \r\n");
+	}
+
+	return ret;
+}
+
+int32_t bk_ota_confirm(void)
+{
+	const bk_logic_partition_t *partition;
+	uint8_t retry_cnt = 3;
+	uint32_t check_value = 0;
+	uint32_t status = 0xA16D8FB0;
+
+	partition = bk_flash_partition_get_info_by_name("ota123");
+	if (partition == NULL) {
+		OTA_LOGE("ota_confirm: partition is NULL\r\n");
+		return BK_FAIL;
+	}
+
+	//uint32_t offset = ota_confirm_phy_offset(partition);
+	uint32_t offset = partition->partition_start_addr;
+
+	OTA_LOGI("ota_confirm: partition=%s, addr=0x%x, status=0x%x\r\n",
+		partition->partition_description ? partition->partition_description : "NULL",
+		offset, status);
+
+	while (retry_cnt--) {
+		bk_flash_read_bytes(offset, (uint8_t*)&check_value, 4);
+		OTA_LOGD("ota_confirm: read from 0x%x, value=0x%x, expected=0x%x\r\n",
+			offset, check_value, status);
+		if (check_value == status) {
+			OTA_LOGE("ota_confirm: already confirmed, return OK\r\n");
+			return BK_OK;
+		}
+
+		OTA_LOGD("ota_confirm: writing status 0x%x to 0x%x\r\n", status, offset);
+		bk_flash_set_protect_type(FLASH_PROTECT_NONE);
+		bk_flash_erase_sector(offset);
+		bk_flash_write_bytes(offset, (uint8_t*)&status, 4);
+
+		/* Verify write */
+		uint32_t verify_value = 0;
+		bk_flash_read_bytes(offset, (uint8_t*)&verify_value, 4);
+		OTA_LOGD("ota_confirm: verify read from 0x%x, value=0x%x\r\n", offset, verify_value);
+		if (verify_value == status) {
+			bk_flash_set_protect_type(FLASH_PROTECT_ALL);
+			OTA_LOGI("ota_confirm: write and verify success\r\n");
+			return BK_OK;
+		}
+		bk_flash_set_protect_type(FLASH_PROTECT_ALL);
+		OTA_LOGD("ota_confirm: verify failed, retry=%d\r\n", retry_cnt);
+	}
+
+	OTA_LOGD("write image %s ota confirm failed, value in flash %#x\r\n",
+		partition->partition_description ? partition->partition_description : "NULL", check_value);
+	return BK_FAIL;
+}
 #endif
