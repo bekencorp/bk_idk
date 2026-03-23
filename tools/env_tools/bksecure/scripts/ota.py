@@ -58,7 +58,7 @@ class OTA(list):
 
     def get_bootloader_version(self):
         if self.__is__exist__item__('bootloader_version'):
-            return (self.csv.dic['bootloader_version'] == 'TRUE')
+            return self.csv.dic['bootloader_version']
         else:
             return "0.0.0"
 

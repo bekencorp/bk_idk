@@ -3,6 +3,11 @@ armino_build_get_property(target ARMINO_SOC)
 set(incs)
 set(srcs)
 
+if(CONFIG_BL2_UPGRADE_WITH_APP)
+	list(APPEND srcs upgrade/upgrade_bl2.c)
+	list(APPEND incs upgrade)
+endif()
+
 armino_component_register(SRCS "${srcs}" INCLUDE_DIRS "${incs}")
 
 if (CONFIG_BL2)

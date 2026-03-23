@@ -15,10 +15,9 @@ elseif(CONFIG_NON_OS)
 	list(APPEND srcs non_os/rtos_init.c)
 endif()
 
-set(PRIV_REQUIRES_LIST bk_common embeded_gcov)
+set(PRIV_REQUIRES_LIST bk_common embeded_gcov bk_mcuboot)
 
 armino_component_register(SRCS "${srcs}"
 			INCLUDE_DIRS "${incs}"
-			#REQUIRES easy_flash usb bk_init
 			REQUIRES easy_flash bk_init
 			PRIV_REQUIRES ${PRIV_REQUIRES_LIST})

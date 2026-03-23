@@ -37,7 +37,7 @@ enum {
 #define FLASH_PHY2VIRTUAL(phy_addr)      ((((phy_addr) / 34) << 5) + ((phy_addr) % 34))
 #endif
 
-#if CONFIG_FLASH_CRC_EN
+#if CONFIG_FLASH_CRC_ENABLE
 #define BOOT_VERSION_OFFSET              0x132
 #else
 #define BOOT_VERSION_OFFSET              0x120

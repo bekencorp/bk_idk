@@ -24,6 +24,7 @@ from .partition_nvs_key import PartitionNvsKey
 from .partition_nvs import PartitionNvs
 from .gen_license import *
 from .bin import Bin
+from .ota import OTA
 
 OTA_CONFIRM = 0xA16D8FB0
 
@@ -127,7 +128,9 @@ class Partitions:
         
     def __parse_bin_csv(self, bin_csv):
         logging.debug(f'Partitions: __parse_bin_csv')
-
+        o = OTA('ota.csv')
+        app_version = o.get_version()
+        bl2_version = o.get_bootloader_version()
         if bin_csv == None:
             return []
 
@@ -137,6 +140,10 @@ class Partitions:
         bins = []
         print(f'{csv.dic_list}')
         for dic in csv.dic_list:
+            if dic['Name'] == 'bl2.bin':
+                dic['Version'] = bl2_version
+            elif dic['Name'] == 'cpu0_app.bin':
+                dic['Version'] = app_version
             b = Bin(dic['Name'], dic['Type'], dic['Partition'], dic['Version'], dic['Security_counter'])
             bins.append(b)
 
@@ -256,7 +263,7 @@ class Partitions:
 
     def __gen_code(self, fname):
         f = open(fname, 'w+')
-    
+        
         logging.debug(f'Create partition hdr file: {fname}')
         f.write(get_license())
     
@@ -291,7 +298,7 @@ class Partitions:
             line = f'#define %-45s %d\r\n' %(macro_name, 0)
         f.write(line)
 
-        macro_name = f'CONFIG_FLASH_CRC_EN'
+        macro_name = f'CONFIG_FLASH_CRC_ENABLE'
         # If flash_crc_en is True, then CONFIG_FLASH_CRC should be 1 (crc mode)
         # If flash_crc_en is False, then CONFIG_FLASH_CRC should be 0 (no_crc mode)
         if self._flash_crc_en:
@@ -333,6 +340,20 @@ class Partitions:
         line = f'#define %-45s 0x%x\r\n' %(macro_name, 0xFFFFFFFF)
         f.write(line)
 
+        # Bootloader version: CONFIG_BOOTLOADER_VERSION and CONFIG_BOOTLOADER_VERSION_BYTES (optional in ota.csv)
+        ota = OTA('ota.csv')
+        bootloader_version = ota.get_bootloader_version()
+        if bootloader_version != '0.0.0' and bootloader_version:
+            line = f'#define %-45s "%s"\r\n' % ('CONFIG_BOOTLOADER_VERSION', bootloader_version)
+            f.write(line)
+            parts = bootloader_version.split('.')
+            version_bytes = [int(p) for p in parts[:4]]
+            while len(version_bytes) < 4:
+                version_bytes.append(0)
+            bytes_str = ', '.join(str(b) for b in version_bytes)
+            line = f'#define %-45s {{{bytes_str}}}\r\n' % ('CONFIG_BOOTLOADER_VERSION_BYTES')
+            f.write(line)
+        
         macros = ''
         partition_ids = ''
         id = 0
@@ -589,7 +610,7 @@ class Partitions:
                 logging.info(f'Using version override for {partition_name}: {version}')
             elif hasattr(p, 'bin') and p.bin():
                 version = p.bin().version()
-            
+                logging.debug(f'Using version from bin.csv for {partition_name}: {version}')
             # Add pack header
             try:
                 ph = PackHeader()

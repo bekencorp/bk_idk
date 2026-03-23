@@ -51,8 +51,8 @@ def gen_security_config_file(security_csv, outfile):
 
     f.write(line)
     # Generate address conversion macros based on flash_crc_en
-    # When CONFIG_FLASH_CRC_EN == 1: use CRC mode conversion (32:34 mapping)
-    # When CONFIG_FLASH_CRC_EN == 0: use 1:1 mapping (no conversion, no alignment)
+    # When CONFIG_FLASH_CRC_ENABLE == 1: use CRC mode conversion (32:34 mapping)
+    # When CONFIG_FLASH_CRC_ENABLE == 0: use 1:1 mapping (no conversion, no alignment)
     if security.flash_crc_en:
         line = f'#define %-45s %s' %("FLASH_VIRTUAL2PHY(virtual_addr)", "((((virtual_addr) >> 5) * 34) + ((virtual_addr) & 31))\r\n")
         f.write(line)

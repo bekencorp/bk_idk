@@ -94,7 +94,7 @@ static void do_boot(struct boot_rsp *rsp)
     }
 
     BOOT_LOG_ERR("image_off: 0x%x", image_off);
-#if CONFIG_FLASH_CRC_EN
+#if CONFIG_FLASH_CRC_ENABLE
     // In CRC mode, use original calculation
     vt = (struct boot_arm_vector_table *)(FLASH_BASE + 
                     FLASH_PHY2VIRTUAL_CODE_START(image_off +

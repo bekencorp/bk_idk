@@ -18,5 +18,4 @@ menu "Bk_startup"
 		default n
 		help
 			enable matter auto start
-
 endmenu

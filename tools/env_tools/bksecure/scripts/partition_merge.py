@@ -12,6 +12,40 @@ from .size_crc import SizeCrc
 from .size import Size
 from .size_cbus import SizeCbus
 from .bin import Bin
+from .ota import OTA
+
+def _is_bl2_upgrade_with_app_enabled():
+    """Check CONFIG_BL2_UPGRADE_WITH_APP in sdkconfig using a relative path.
+
+    Current working directory is expected to be the package directory:
+        .../build/<soc>/overwrite/package
+    The sdkconfig file is located at:
+        ../<soc>/sdkconfig
+    where <soc> is taken from environment (e.g. ARMINO_SOC_NAME / ARMINO_SOC).
+    """
+    soc = os.getenv('ARMINO_SOC_NAME') or os.getenv('ARMINO_SOC')
+    if not soc:
+        # Fallback to default if env not set, to keep backward compatibility
+        soc = 'bk7236n'
+        logging.debug('_is_bl2_upgrade_with_app_enabled: ARMINO_SOC_NAME/ARMINO_SOC not set, use default %s', soc)
+
+    sdkconfig_path = os.path.normpath(os.path.join(os.getcwd(), '..', soc, 'sdkconfig'))
+    logging.debug(f'_is_bl2_upgrade_with_app_enabled: sdkconfig_path: {sdkconfig_path}')
+    if not os.path.isfile(sdkconfig_path):
+        logging.debug(f'sdkconfig not found: {sdkconfig_path}')
+        return False
+    try:
+        with open(sdkconfig_path, 'r', encoding='utf-8', errors='ignore') as f:
+            for line in f:
+                line = line.strip()
+                if line == 'CONFIG_BL2_UPGRADE_WITH_APP=y':
+                    logging.debug(f'CONFIG_BL2_UPGRADE_WITH_APP=y found in {sdkconfig_path}')
+                    return True
+                if line.startswith('CONFIG_BL2_UPGRADE_WITH_APP=') and line != 'CONFIG_BL2_UPGRADE_WITH_APP=y':
+                    return False
+    except (OSError, IOError):
+        pass
+    return False
 
 class PartitionMerge(PartitionApp):
 
@@ -107,13 +141,40 @@ class PartitionMerge(PartitionApp):
                     start_offset = self.size().vir_code_offset() - pad_size
                 else:
                     pad_size = p.size().vir_code_offset() - start_offset - f.tell()
-
-                logging.debug(f'PartitionMerge: merge bin {p.bin().name()}, pad_size:{hex(pad_size)}, start_offet={hex(start_offset)}')
                 pad = bytes([0xFF]*(pad_size))
                 f.write(pad)
 
                 with open(p.bin().name(), 'rb') as pf:
                     f.write(pf.read())
+            if _is_bl2_upgrade_with_app_enabled():
+                o = OTA('ota.csv')
+                bl2_version = o.get_bootloader_version()
+                parts = bl2_version.split('.')
+                version_nums = []
+                for p_ver in parts:
+                    if p_ver != '':
+                        version_nums.append(int(p_ver))
+                while len(version_nums) < 4:
+                    version_nums.append(0)
+                if len(version_nums) > 4:
+                    version_nums = version_nums[:4]
+                bl2_version_bytes = struct.pack('4B', *version_nums)
+
+                logging.debug(f'CONFIG_BL2_UPGRADE_WITH_APP=y found, append bl2.bin and partition.bin to the end of the merged bin')
+                with open('bl2.bin', 'rb') as bl2_src, open('partition.bin', 'rb') as partition_src:
+                    file_len = f.tell()
+                    new_bl2_offset = self.size().vir_code_size() - 80*1024
+                    logging.debug(f'virtual code size: {hex(self.size().vir_code_size())}')
+                    logging.debug(f'new_bl2_offset: {hex(new_bl2_offset)}')
+                    if file_len >= new_bl2_offset:
+                        logging.error("oversize!")
+                        exit(1)
+                    f.seek(new_bl2_offset)
+                    f.write(bl2_src.read())
+                    pad_size = self.size().vir_code_size() - 8*1024 - f.tell()
+                    pad = bytes([0xFF] * pad_size)
+                    f.write(pad)
+                    f.write(partition_src.read())
 
             f.write(iv_major)
             f.write(iv_minor)

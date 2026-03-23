@@ -1,7 +1,6 @@
 Field,Value
 strategy,OVERWRITE
 encrypt,FALSE
-app_security_counter,1
 anti_rollback,FALSE
 app_security_counter,1
 app_version,0.0.3

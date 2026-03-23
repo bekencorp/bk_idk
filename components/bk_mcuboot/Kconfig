@@ -92,5 +92,9 @@ menu "BL2"
 		config DECOMPRESS_RESUME
 			bool "decompress resume"
 			default y
+
+		config BL2_UPGRADE_WITH_APP
+		bool "Enable BL2 upgrade with application"
+		default n
 	endmenu
 endmenu

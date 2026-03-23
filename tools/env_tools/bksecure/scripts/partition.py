@@ -60,8 +60,19 @@ class Partition:
             return
 
         p = PackHeader()
+        size = self.size().size()
+        if self.name() == 'bl2':
+            try:
+                bin_obj = self.bin()
+                bin_path = bin_obj.name() if bin_obj is not None else None
+                if bin_path and os.path.exists(bin_path):
+                    size = os.path.getsize(bin_path)
+                else:
+                    logging.warning('bl2 bin file not found, fallback to partition size')
+            except Exception as e:
+                logging.warning(f'failed to get bl2 bin size, fallback to partition size: {e}')
         p.create_header(self.bin().name(), self.bin().version(), self.name(), self.type().type(),
-            self.type().subtype(), self.size().offset(), self.size().size(), self.flags().flags(), 0, m1, m2, m3, m4)
+            self.type().subtype(), self.size().offset(), size, self.flags().flags(), 0, m1, m2, m3, m4)
 
     def bin(self):
         return self._bin
