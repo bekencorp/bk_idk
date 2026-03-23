@@ -2087,6 +2087,8 @@ tcp_send_empty_ack(struct tcp_pcb *pcb)
   optlen = LWIP_TCP_OPT_LENGTH_SEGMENT(optflags, pcb);
 
 #if LWIP_TCP_SACK_OUT
+  // clear ooq_flag every time
+  pcb->ooq_flag = 0;
   /* For now, SACKs are only sent with empty ACKs */
   if ((num_sacks = tcp_get_num_sacks(pcb, optlen)) > 0) {
     optlen += 4 + num_sacks * 8; /* 4 bytes for header (including 2*NOP), plus 8B for each SACK */
@@ -2099,6 +2101,10 @@ tcp_send_empty_ack(struct tcp_pcb *pcb)
 
   p = tcp_output_alloc_header(pcb, optlen, 0, lwip_htonl(pcb->snd_nxt));
   if (p == NULL) {
+    #if LWIP_TCP_SACK_OUT
+    // clear ooq_flag for ack failure 
+    pcb->ooq_flag = 0;
+    #endif
     /* let tcp_fasttmr retry sending this ACK */
     tcp_set_flags(pcb, TF_ACK_DELAY | TF_ACK_NOW);
     LWIP_DEBUGF(TCP_OUTPUT_DEBUG, ("tcp_output: (ACK) could not allocate pbuf\n"));
