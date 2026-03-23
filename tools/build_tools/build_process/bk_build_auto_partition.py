@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from bk_auto_partition import bk_partitions_table, partition_limit
 from bk_flash_partiton import bk_flash_partition
@@ -97,6 +97,70 @@ def _read_flash_aes_key_from_csv(csv_path: Path, default_str: str = "") -> str:
     logger.info(f"FLASH_AES_KEY not found in {csv_path}, using default: {default_str}")
     return default_str
 
+
+def _read_partition_size_kb_from_auto_partitions_csv(csv_path: Path, partition_name: str) -> Optional[int]:
+    """read the size of a partition from auto_partitions.csv in KB"""
+    if not csv_path.exists():
+        logger.error(f"auto_partitions.csv not found at {csv_path}, cannot read {partition_name} Size")
+        return None
+
+    try:
+        csv_contents = csv_path.read_text()
+        for raw_line in csv_contents.splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#"):
+                continue
+            # Skip key=value lines like FLASH_CAPACITY=4M
+            if "=" in line and "," not in line:
+                continue
+
+            cols = [c.strip() for c in line.split(",")]
+            if len(cols) < 3:
+                continue
+            if cols[0] != partition_name:
+                continue
+
+            size_str = cols[2].strip()
+            if not size_str:
+                logger.error(f"{partition_name} Size is empty in {csv_path}")
+                return None
+
+            # Size unit is KB, common writing: 68k / 68K / 68
+            s = size_str.strip()
+            if s[-1] in ("k", "K"):
+                s = s[:-1].strip()
+
+            if not s.isdigit():
+                logger.error(
+                    f"Invalid {partition_name} Size '{size_str}' in {csv_path}. "
+                    f"Expect integer KB like '68k' or '68'."
+                )
+                return None
+
+            size_kb = int(s, 10)
+            logger.info(f"Read {partition_name} Size={size_str} ({size_kb} KB) from {csv_path}")
+            return size_kb
+    except Exception as e:
+        logger.error(f"Failed to read {partition_name} Size from {csv_path}: {e}")
+        return None
+
+    logger.error(f"{partition_name} not found in {csv_path}")
+    return None
+
+
+def _check_primary_bootloader_size_alignment(auto_partitions_csv: Path, flash_crc_enable: bool) -> None:
+    primary_bootloader_size_kb = _read_partition_size_kb_from_auto_partitions_csv(auto_partitions_csv, "primary_bootloader")
+    if primary_bootloader_size_kb is None:
+        raise SystemExit(1)
+    align_kb = 68 if flash_crc_enable else 64
+    if primary_bootloader_size_kb % align_kb != 0:
+        logger.error(
+            f"primary_bootloader Size ({primary_bootloader_size_kb} KB) is NOT aligned to {align_kb}K "
+            f"(FLASH_CRC_ENABLE={'TRUE' if flash_crc_enable else 'FALSE'}). "
+            f"Please adjust primary_bootloader Size in {auto_partitions_csv}."
+        )
+        raise SystemExit(1)
+
 class bk_part:
     def __init__(
         self,
@@ -182,6 +246,7 @@ def main():
     auto_part_table = curr_project.auto_partitions_table
     # Read flash_crc_enable and flash_aes_enable from auto_partitions.csv
     flash_crc_enable = _read_flash_crc_enable_from_csv(auto_part_table)
+    _check_primary_bootloader_size_alignment(auto_part_table, flash_crc_enable)
     flash_aes_enable = _read_flash_aes_enable_from_csv(auto_part_table)
     flash_aes_key = _read_flash_aes_key_from_csv(auto_part_table)
     # Update curr_project.flash_crc_enable and curr_project.flash_aes_enable values
