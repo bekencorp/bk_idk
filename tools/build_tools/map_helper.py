@@ -190,6 +190,21 @@ class MapHelper(object):
                     line_section_type = self.parse_flag(line)
                     if line_section_type is not None:
                         current_section_type = line_section_type
+                        # For single-line entries (section name + addr/size/source
+                        # on the same line), also try matching size_pat here instead
+                        # of skipping to the next line.
+                        size_match = self.size_pat.match(line)
+                        if size_match:
+                            address_hex = size_match.group(1)
+                            size_hex = size_match.group(2)
+                            file_path = size_match.group(3)
+                            obj_name = size_match.group(4)
+
+                            if address_hex != '0' and int(address_hex, 16) != 0:
+                                size = int(size_hex, 16)
+                                self.add_parse_data(current_section_type, size, file_path, obj_name)
+
+                            current_section_type = None
                         continue
 
                     # Skip if we haven't found a section yet
