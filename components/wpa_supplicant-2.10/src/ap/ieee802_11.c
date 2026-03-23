@@ -4300,13 +4300,17 @@ static u16 owe_process_assoc_req(struct hostapd_data *hapd,
 	if (group == 19) {
 		res = sha256_vector(2, addr, len, pmkid);
 		hash_len = SHA256_MAC_LEN;
+#ifdef CONFIG_SHA384
 	} else if (group == 20) {
 		res = sha384_vector(2, addr, len, pmkid);
 		hash_len = SHA384_MAC_LEN;
+#endif
+#ifdef CONFIG_SHA512
 	} else if (group == 21) {
 		res = sha512_vector(2, addr, len, pmkid);
 		hash_len = SHA512_MAC_LEN;
 	} else {
+#endif
 		wpabuf_free(pub);
 		wpabuf_clear_free(secret);
 		return WLAN_STATUS_UNSPECIFIED_FAILURE;
@@ -4332,12 +4336,16 @@ static u16 owe_process_assoc_req(struct hostapd_data *hapd,
 	if (group == 19)
 		res = hmac_sha256(wpabuf_head(hkey), wpabuf_len(hkey),
 				  wpabuf_head(secret), wpabuf_len(secret), prk);
+#ifdef CONFIG_SHA384
 	else if (group == 20)
 		res = hmac_sha384(wpabuf_head(hkey), wpabuf_len(hkey),
 				  wpabuf_head(secret), wpabuf_len(secret), prk);
+#endif
+#ifdef CONFIG_SHA512
 	else if (group == 21)
 		res = hmac_sha512(wpabuf_head(hkey), wpabuf_len(hkey),
 				  wpabuf_head(secret), wpabuf_len(secret), prk);
+#endif
 	wpabuf_clear_free(hkey);
 	wpabuf_clear_free(secret);
 	if (res < 0)
@@ -4357,12 +4365,16 @@ static u16 owe_process_assoc_req(struct hostapd_data *hapd,
 	if (group == 19)
 		res = hmac_sha256_kdf(prk, hash_len, NULL, (const u8 *) info,
 				      os_strlen(info), sta->owe_pmk, hash_len);
+#ifdef CONFIG_SHA384
 	else if (group == 20)
 		res = hmac_sha384_kdf(prk, hash_len, NULL, (const u8 *) info,
 				      os_strlen(info), sta->owe_pmk, hash_len);
+#endif
+#ifdef CONFIG_SHA512
 	else if (group == 21)
 		res = hmac_sha512_kdf(prk, hash_len, NULL, (const u8 *) info,
 				      os_strlen(info), sta->owe_pmk, hash_len);
+#endif
 	os_memset(prk, 0, SHA512_MAC_LEN);
 	if (res < 0) {
 		os_free(sta->owe_pmk);

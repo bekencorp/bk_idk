@@ -21,14 +21,15 @@ void wpa_scan_results_free(struct wpa_scan_results *res)
 		os_free(res->res[i]);
 		res->res[i] = 0;
 	}
-	
+
 	os_free(res->res);
 	res->res = 0;
-	
+
 	os_free(res);
 }
 
 
+#ifdef CONFIG_FULL_SUPPLICANT
 const char * event_to_string(enum wpa_event_type event)
 {
 #define E2S(n) case EVENT_ ## n: return #n
@@ -100,6 +101,7 @@ const char * event_to_string(enum wpa_event_type event)
 	return "UNKNOWN";
 #undef E2S
 }
+#endif
 
 
 const char * channel_width_to_string(enum chan_width width)
@@ -254,6 +256,7 @@ out:
 }
 
 
+#ifdef CONFIG_FULL_SUPPLICANT
 const char * driver_flag_to_string(u64 flag)
 {
 #define DF2S(x) case WPA_DRIVER_FLAGS_ ## x: return #x
@@ -338,3 +341,5 @@ const char * driver_flag2_to_string(u64 flag2)
 	return "UNKNOWN";
 #undef DF2S
 }
+#endif
+

@@ -188,10 +188,10 @@ static int wpa_supplicant_ctrl_iface_select_network(
 			os_free(wpa_s->select_network_scan_freqs);
 
 			freqs[0] = rw_ieee80211_get_centre_frequency(chan);
-			if (!bk_feature_fast_connect_enable()) {
+#ifndef CONFIG_WIFI_FAST_CONNECT
 			/* scan twice in this fixed channel */
-				freqs[1] = freqs[0];
-			}
+			freqs[1] = freqs[0];
+#endif
 			wpa_s->select_network_scan_freqs = freqs;
 		}
 	}
@@ -734,14 +734,13 @@ int wpa_supplicant_ctrl_iface_set_network(struct wpa_supplicant *wpa_s, wlan_sta
 			ssid->ssid = (u8 *)dup_binstr(config->u.ssid.ssid, config->u.ssid.ssid_len);
 			ssid->ssid_len = config->u.ssid.ssid_len;
 		}
-		if (bk_feature_bssid_connect_enable()) {
-			if (ssid->bssid) {
-				WPA_LOGD("clear bssid\r\n");
-				os_memset(ssid->bssid, 0, ETH_ALEN);
-				ssid->bssid_set = 0;
-			}
+#if CONFIG_BSSID_CONNECT
+		if (ssid->bssid) {
+			WPA_LOGD("clear bssid\r\n");
+			os_memset(ssid->bssid, 0, ETH_ALEN);
+			ssid->bssid_set = 0;
 		}
-
+#endif
 		break;
 
 	case WLAN_STA_FIELD_BSSID:

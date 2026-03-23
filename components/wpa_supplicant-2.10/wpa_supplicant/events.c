@@ -1404,9 +1404,8 @@ static bool wpa_scan_res_ok(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid,
 		return false;
 	}
 
-#if BK_SUPPLICANT
-	if (bk_feature_bssid_connect_enable() &&
-		ssid->ssid_len == 0 && ssid->bssid_set &&
+#if BK_SUPPLICANT && CONFIG_BSSID_CONNECT
+	if (ssid->ssid_len == 0 && ssid->bssid_set &&
 		os_memcmp(bss->bssid, ssid->bssid, ETH_ALEN) == 0) {
 
 		/* bssid set but ssid->ssid is null, set ssid from wpa_bss */
@@ -1435,15 +1434,15 @@ static bool wpa_scan_res_ok(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid,
 		} else {
 			size_t psk_len = 0;
 			u8 *psk = 0;
-			if (bk_feature_fast_connect_enable()) {
-				if (g_sta_param_ptr->fast_connect_set) {
-					struct wlan_fast_connect_info fci = {0};
-					wlan_read_fast_connect_info(&fci);
-					psk = fci.psk;
-					psk_len = PMK_LEN * 2;
-					wpa_dbg(wpa_s, MSG_DEBUG, "fast connect: %s", __func__);
-				}
+#if CONFIG_WIFI_FAST_CONNECT
+			if (g_sta_param_ptr->fast_connect_set) {
+				struct wlan_fast_connect_info fci = {0};
+				wlan_read_fast_connect_info(&fci);
+				psk = fci.psk;
+				psk_len = PMK_LEN * 2;
+				wpa_dbg(wpa_s, MSG_DEBUG, "fast connect: %s", __func__);
 			}
+#endif
 			/* trigger wpa_psk_cal thread to calcuate PSK */
 			wpa_psk_request(bss->ssid, bss->ssid_len, ssid->passphrase, psk, psk_len);
 		}
@@ -2675,14 +2674,14 @@ int wpas_select_network_from_last_scan(struct wpa_supplicant *wpa_s,
 			}
 		}
 #endif
-		if (bk_feature_network_found_event()) {
-			wifi_event_network_found_t network_found = {0};
-			os_memset(&network_found, 0, sizeof(network_found));
-			os_memcpy(&network_found.ssid, selected->ssid, sizeof(selected->ssid));
-			os_memcpy(&network_found.bssid,selected->bssid, ETH_ALEN);
-			BK_LOG_ON_ERR(bk_event_post(EVENT_MOD_WIFI, EVENT_WIFI_NETWORK_FOUND,
-						&network_found, sizeof(network_found), BEKEN_NEVER_TIMEOUT));
-		}
+#if CONFIG_NETWORK_FOUND_EVENT_ENABLE
+		wifi_event_network_found_t network_found = {0};
+		os_memset(&network_found, 0, sizeof(network_found));
+		os_memcpy(&network_found.ssid, selected->ssid, sizeof(selected->ssid));
+		os_memcpy(&network_found.bssid,selected->bssid, ETH_ALEN);
+		BK_LOG_ON_ERR(bk_event_post(EVENT_MOD_WIFI, EVENT_WIFI_NETWORK_FOUND,
+					&network_found, sizeof(network_found), BEKEN_NEVER_TIMEOUT));
+#endif
 
 		wpa_s->suitable_network++;
 
@@ -2712,21 +2711,21 @@ int wpas_select_network_from_last_scan(struct wpa_supplicant *wpa_s,
 #if BK_SUPPLICANT
 		WPA_LOGI("No suitable network found\r\n");
 
-		if (bk_feature_bssid_connect_enable()) {
-			/* if set bssid info, and cannot find suitable network info, clear bssid info */
-			if (!is_zero_ether_addr(g_sta_param_ptr->fast_connect.bssid)) {
-				/* get ssid from config */
-				struct wpa_ssid *conf_ssid = wpa_config_get_network(wpa_s->conf, 0);
+#if CONFIG_BSSID_CONNECT
+		/* if set bssid info, and cannot find suitable network info, clear bssid info */
+		if (!is_zero_ether_addr(g_sta_param_ptr->fast_connect.bssid)) {
+			/* get ssid from config */
+			struct wpa_ssid *conf_ssid = wpa_config_get_network(wpa_s->conf, 0);
 
-				/* if ssid or ssid_len */
-				if (conf_ssid && conf_ssid->ssid && conf_ssid->ssid_len) {
-					os_memset(g_sta_param_ptr->fast_connect.bssid, 0, ETH_ALEN);
-					if (conf_ssid) {
-						conf_ssid->bssid_set = 0;
-					}
+			/* if ssid or ssid_len */
+			if (conf_ssid && conf_ssid->ssid && conf_ssid->ssid_len) {
+				os_memset(g_sta_param_ptr->fast_connect.bssid, 0, ETH_ALEN);
+				if (conf_ssid) {
+					conf_ssid->bssid_set = 0;
 				}
 			}
 		}
+#endif
 #endif
 #ifdef CONFIG_FULL_SUPPLICANT
 		ssid = wpa_supplicant_pick_new_network(wpa_s);
@@ -5573,7 +5572,8 @@ void wpa_supplicant_event_sta(void *ctx, enum wpa_event_type event,
 	wpa_dbg(wpa_s, level, "Event %s (%d) received",
 		event_to_string(event), event);
 #else
-	WPA_LOGD("Event %s (%d) received\n", event_to_string(event), event);
+	//WPA_LOGD("Event %s (%d) received\n", event_to_string(event), event);
+	WPA_LOGD("Event (%d) received\n", event);
 #endif /* CONFIG_NO_STDOUT_DEBUG */
 
 	switch (event) {

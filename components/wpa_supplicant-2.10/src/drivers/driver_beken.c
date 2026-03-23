@@ -989,193 +989,6 @@ static int hostap_set_ap_wps_ie(void *priv, const struct wpabuf *beacon,
 }
 #endif
 
-
-static void
-hostapd_wireless_event_wireless_custom(struct hostap_driver_data *drv,
-                                       char *custom)
-{
-    wpa_printf(MSG_DEBUG, "Custom wireless event: '%s'", custom);
-
-    if (strncmp(custom, "MLME-MICHAELMICFAILURE.indication", 33) == 0)
-    {
-        char *pos;
-        u8 addr[ETH_ALEN];
-        pos = strstr(custom, "addr=");
-        if (pos == NULL)
-        {
-            wpa_printf(MSG_DEBUG,
-                       "MLME-MICHAELMICFAILURE.indication "
-                       "without sender address ignored");
-            return;
-        }
-        pos += 5;
-        if (hwaddr_aton(pos, addr) == 0)
-        {
-            union wpa_event_data data;
-            os_memset(&data, 0, sizeof(data));
-            data.michael_mic_failure.unicast = 1;
-            data.michael_mic_failure.src = addr;
-            wpa_supplicant_event(drv->hapd,
-                                 EVENT_MICHAEL_MIC_FAILURE, &data);
-        }
-        else
-        {
-            wpa_printf(MSG_DEBUG,
-                       "MLME-MICHAELMICFAILURE.indication "
-                       "with invalid MAC address");
-        }
-    }
-}
-
-
-static void hostapd_wireless_event_wireless(struct hostap_driver_data *drv,
-        char *data, int len)
-{
-    struct iw_event iwe_buf, *iwe = &iwe_buf;
-    char *pos, *end, *custom, *buf;
-
-    pos = data;
-    end = data + len;
-
-    while (pos + IW_EV_LCP_LEN <= end)
-    {
-        /* Event data may be unaligned, so make a local, aligned copy
-         * before processing. */
-        memcpy(&iwe_buf, pos, IW_EV_LCP_LEN);
-        wpa_printf(MSG_DEBUG, "Wireless event: cmd=0x%x len=%d",
-                   iwe->cmd, iwe->len);
-        if (iwe->len <= IW_EV_LCP_LEN)
-            return;
-
-        custom = pos + IW_EV_POINT_LEN;
-        if (drv->we_version > 18 &&
-                (iwe->cmd == IWEVMICHAELMICFAILURE ||
-                 iwe->cmd == IWEVCUSTOM))
-        {
-            /* WE-19 removed the pointer from struct iw_point */
-            char *dpos = (char *) &iwe_buf.u.data.length;
-            int dlen = dpos - (char *) &iwe_buf;
-            memcpy(dpos, pos + IW_EV_LCP_LEN,
-                   sizeof(struct iw_event) - dlen);
-        }
-        else
-        {
-            memcpy(&iwe_buf, pos, sizeof(struct iw_event));
-            custom += IW_EV_POINT_OFF;
-        }
-
-        switch (iwe->cmd)
-        {
-        case IWEVCUSTOM:
-            if (custom + iwe->u.data.length > end)
-                return;
-            buf = os_malloc(iwe->u.data.length + 1);
-            if (buf == NULL)
-                return;
-            memcpy(buf, custom, iwe->u.data.length);
-            buf[iwe->u.data.length] = '\0';
-            hostapd_wireless_event_wireless_custom(drv, buf);
-
-            os_free(buf);
-            break;
-        }
-
-        pos += iwe->len;
-    }
-}
-
-
-static void hostapd_wireless_event_rtm_newlink(void *ctx,
-        struct ifinfomsg *ifi,
-        u8 *buf, size_t len)
-{
-    struct hostap_driver_data *drv = ctx;
-    int attrlen, rta_len;
-    struct rtattr *attr;
-
-    /* TODO: use ifi->ifi_index to filter out wireless events from other
-     * interfaces */
-
-    attrlen = len;
-    attr = (struct rtattr *) buf;
-
-    rta_len = RTA_ALIGN(sizeof(struct rtattr));
-    while (RTA_OK(attr, attrlen))
-    {
-        if (attr->rta_type == IFLA_WIRELESS)
-        {
-            hostapd_wireless_event_wireless(
-                drv, ((char *) attr) + rta_len,
-                attr->rta_len - rta_len);
-        }
-        attr = RTA_NEXT(attr, attrlen);
-    }
-}
-
-
-static int hostap_get_we_version(struct hostap_driver_data *drv)
-{
-    struct iw_range *range;
-    struct iwreq iwr;
-    int minlen;
-    size_t buflen;
-
-    drv->we_version = 0;
-
-    /*
-     * Use larger buffer than struct iw_range in order to allow the
-     * structure to grow in the future.
-     */
-    buflen = sizeof(struct iw_range) + 500;
-    range = os_zalloc(buflen);
-    if (range == NULL)
-        return -1;
-
-    memset(&iwr, 0, sizeof(iwr));
-    os_strlcpy(iwr.ifr_name, drv->iface, IFNAMSIZ);
-    iwr.u.data.pointer = (c_addr_t) range;
-    iwr.u.data.length = buflen;
-
-    minlen = ((char *) &range->enc_capa) - (char *) range +
-             sizeof(range->enc_capa);
-
-    if (ioctl_inet(drv->ioctl_sock, drv->vif_index, SIOCGIWRANGE, (unsigned long)&iwr) < 0)
-    {
-        os_free(range);
-        return -1;
-    }
-    else if (iwr.u.data.length >= minlen &&
-             range->we_version_compiled >= 18)
-    {
-        drv->we_version = range->we_version_compiled;
-    }
-
-    os_free(range);
-    return 0;
-}
-
-
-static int hostap_wireless_event_init(struct hostap_driver_data *drv)
-{
-    struct netlink_config *cfg;
-
-    hostap_get_we_version(drv);
-
-    cfg = os_zalloc(sizeof(*cfg));
-    if (cfg == NULL)
-        return -1;
-    cfg->ctx = drv;
-    cfg->newlink_cb = hostapd_wireless_event_rtm_newlink;
-    drv->netlink = 0;
-    if (drv->netlink == NULL)
-    {
-        os_free(cfg);
-    }
-
-    return 0;
-}
-
-
 static void *hostap_init(struct hostapd_data *hapd,
                          struct wpa_init_params *params)
 {
@@ -1221,8 +1034,7 @@ static void *hostap_init(struct hostapd_data *hapd,
         return NULL;
     }
 
-    if (hostap_init_sockets(drv, params->own_addr) ||
-            hostap_wireless_event_init(drv)) {
+    if (hostap_init_sockets(drv, params->own_addr)) {
         fsocket_close(drv->ioctl_sock);
 
         os_free(drv);
@@ -1937,11 +1749,11 @@ int wpa_driver_scan2(void *priv, struct wpa_driver_scan_params *params)
 			os_memcpy(param->u.scan_req.ssids[i].ssid, params->ssids[i].ssid,
 						param->u.scan_req.ssids[i].ssid_len);
 		}
-		if (bk_feature_bssid_connect_enable()) {
-			if(params->bssid) {
-				os_memcpy(param->u.scan_req.bssid, params->bssid, sizeof(param->u.scan_req.bssid));
-			}
+#if CONFIG_BSSID_CONNECT
+		if (params->bssid) {
+			os_memcpy(param->u.scan_req.bssid, params->bssid, sizeof(param->u.scan_req.bssid));
 		}
+#endif
 		WPA_LOGD("%s: Scan specified BSSID " MACSTR  "\n", __func__, MAC2STR(param->u.scan_req.bssid));
 	}
 

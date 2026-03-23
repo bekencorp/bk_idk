@@ -5342,12 +5342,16 @@ int owe_process_assoc_resp(struct wpa_sm *sm, const u8 *bssid,
 	if (group == 19) {
 		res = sha256_vector(2, addr, len, pmkid);
 		hash_len = SHA256_MAC_LEN;
+#ifdef CONFIG_SHA384
 	} else if (group == 20) {
 		res = sha384_vector(2, addr, len, pmkid);
 		hash_len = SHA384_MAC_LEN;
+#endif
+#ifdef CONFIG_SHA512
 	} else if (group == 21) {
 		res = sha512_vector(2, addr, len, pmkid);
 		hash_len = SHA512_MAC_LEN;
+#endif
 	} else {
 		res = -1;
 		hash_len = 0;
@@ -5373,12 +5377,16 @@ int owe_process_assoc_resp(struct wpa_sm *sm, const u8 *bssid,
 	if (group == 19)
 		res = hmac_sha256(wpabuf_head(hkey), wpabuf_len(hkey),
 				  wpabuf_head(secret), wpabuf_len(secret), prk);
+#ifdef CONFIG_SHA384
 	else if (group == 20)
 		res = hmac_sha384(wpabuf_head(hkey), wpabuf_len(hkey),
 				  wpabuf_head(secret), wpabuf_len(secret), prk);
+#endif
+#ifdef CONFIG_SHA512
 	else if (group == 21)
 		res = hmac_sha512(wpabuf_head(hkey), wpabuf_len(hkey),
 				  wpabuf_head(secret), wpabuf_len(secret), prk);
+#endif
 	wpabuf_clear_free(hkey);
 	wpabuf_clear_free(secret);
 	if (res < 0)
@@ -5391,12 +5399,16 @@ int owe_process_assoc_resp(struct wpa_sm *sm, const u8 *bssid,
 	if (group == 19)
 		res = hmac_sha256_kdf(prk, hash_len, NULL, (const u8 *) info,
 				      os_strlen(info), sm->pmk, hash_len);
+#ifdef CONFIG_SHA384
 	else if (group == 20)
 		res = hmac_sha384_kdf(prk, hash_len, NULL, (const u8 *) info,
 				      os_strlen(info), sm->pmk, hash_len);
+#endif
+#ifdef CONFIG_SHA512
 	else if (group == 21)
 		res = hmac_sha512_kdf(prk, hash_len, NULL, (const u8 *) info,
 				      os_strlen(info), sm->pmk, hash_len);
+#endif
 	forced_memzero(prk, SHA512_MAC_LEN);
 	if (res < 0) {
 		sm->pmk_len = 0;

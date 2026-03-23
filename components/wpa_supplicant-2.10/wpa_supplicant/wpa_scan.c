@@ -1408,12 +1408,12 @@ ssid_list_set:
 		}
 	}
 
-	if (bk_feature_bssid_connect_enable()) {
-		if (!is_zero_ether_addr(g_sta_param_ptr->fast_connect.bssid)) {
-			params.bssid = g_sta_param_ptr->fast_connect.bssid;
-			WPA_LOGI("Scan specified BSSID " MACSTR  "\r\n", MAC2STR(params.bssid));
-		}
+#if CONFIG_BSSID_CONNECT
+	if (!is_zero_ether_addr(g_sta_param_ptr->fast_connect.bssid)) {
+		params.bssid = g_sta_param_ptr->fast_connect.bssid;
+		WPA_LOGI("Scan specified BSSID " MACSTR  "\r\n", MAC2STR(params.bssid));
 	}
+#endif
 
 	scan_params = &params;
 

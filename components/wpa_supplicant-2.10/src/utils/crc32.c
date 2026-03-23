@@ -11,6 +11,7 @@
 #include "utils/common.h"
 #include "utils/crc32.h"
 
+#ifndef BK_SUPPLICANT
 /*
  * IEEE 802.11 FCS CRC32
  * G(x) = x^32 + x^26 + x^23 + x^22 + x^16 + x^12 + x^11 + x^10 + x^8 + x^7 +
@@ -70,7 +71,10 @@ static const u32 crc32_table[256] = {
 	0x5d681b02, 0x2a6f2b94, 0xb40bbe37, 0xc30c8ea1, 0x5a05df1b,
 	0x2d02ef8d
 };
-
+#else
+extern const uint32_t crc_tab[256];
+#define crc32_table crc_tab
+#endif
 
 u32 crc32(const u8 *frame, size_t frame_len)
 {

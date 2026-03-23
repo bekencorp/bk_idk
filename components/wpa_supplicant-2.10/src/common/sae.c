@@ -1632,8 +1632,10 @@ static int sae_derive_keys(struct sae_data *sae, const u8 *k)
 	 */
 	if (!sae->h2e)
 		hash_len = SHA256_MAC_LEN;
+#ifdef CONFIG_SAE_DH
 	else if (sae->tmp->dh)
 		hash_len = sae_ffc_prime_len_2_hash_len(prime_len);
+#endif
 	else
 		hash_len = sae_ecc_prime_len_2_hash_len(prime_len);
 	if (sae->h2e && (sae->tmp->own_rejected_groups ||

@@ -118,6 +118,7 @@ void wpas_notify_iface_removed(struct wpa_supplicant *wpa_s)
 // #if CONFIG_WIFI_MFP_CONNECT_DEAUTH
 uint8_t s_tk[16];
 // #endif
+#ifdef CONFIG_WIFI_FAST_CONNECT
 void wlan_store_fci(struct wpa_supplicant *wpa_s)
 {
 	struct wlan_fast_connect_info fci;
@@ -129,9 +130,6 @@ void wlan_store_fci(struct wpa_supplicant *wpa_s)
 	// #if CONFIG_WIFI_MFP_CONNECT_DEAUTH
 	uint8_t pmf = 0;
 	// #endif
-
-	if (!bk_feature_fast_connect_enable())
-		goto out;
 
 	if (unlikely(!wpa_s || !wpa_s->current_ssid || !wpa_s->current_bss))
 		goto out;
@@ -220,6 +218,7 @@ out:
 	// #endif
 	return;
 }
+#endif
 #endif
 
 //#if BK_SUPPLICANT
@@ -356,8 +355,10 @@ void wpas_notify_connected(struct wpa_supplicant *wpa_s)
 #ifdef CONFIG_WPA_PSK_CACHE
 		wpa_psk_thread_lower_prio();  // stop_wpa_psk_cal_thread();
 #endif
+#ifdef CONFIG_WIFI_FAST_CONNECT
 		/* Store fast connect info: psk, channel, ssid, bssid, etc. */
 		wlan_store_fci(wpa_s);
+#endif
 	}
 }
 
@@ -574,8 +575,7 @@ void hapd_notify_sta_disconnected(struct hostapd_data *hapd, const u8 *mac)
 #endif
 	os_memcpy(ap_disconnected.mac, mac, ETH_ALEN);
 #if CONFIG_AP_STATYPE_LIMIT
-	if (bk_feature_ap_statype_limit_enable())
-		bk_vsie_cus_del_sta(ap_disconnected.mac, true);
+	bk_vsie_cus_del_sta(ap_disconnected.mac, true);
 #endif
 	BK_LOG_ON_ERR(bk_event_post(EVENT_MOD_WIFI, EVENT_WIFI_AP_DISCONNECTED,
 				&ap_disconnected, sizeof(ap_disconnected), BEKEN_NEVER_TIMEOUT));

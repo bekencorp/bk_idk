@@ -256,12 +256,16 @@ int wpa_eapol_key_mic(const u8 *key, size_t key_len, int akmp, int ver,
 			if (key_len == 128 / 8) {
 				if (hmac_sha256(key, key_len, buf, len, hash))
 					return -1;
+#ifdef CONFIG_SHA384
 			} else if (key_len == 192 / 8) {
 				if (hmac_sha384(key, key_len, buf, len, hash))
 					return -1;
+#endif
+#ifdef CONFIG_SHA512
 			} else if (key_len == 256 / 8) {
 				if (hmac_sha512(key, key_len, buf, len, hash))
 					return -1;
+#endif
 			} else {
 				wpa_printf(MSG_INFO,
 					   "OWE: Unsupported KCK length: %u",
@@ -437,16 +441,20 @@ int wpa_pmk_to_ptk(const u8 *pmk, size_t pmk_len, const char *label,
 		if (sha256_prf(pmk, pmk_len, label, data, data_len,
 			       tmp, ptk_len) < 0)
 			return -1;
+#ifdef CONFIG_SHA384
 	} else if (akmp == WPA_KEY_MGMT_OWE && pmk_len == 48) {
 		wpa_printf(MSG_DEBUG, "WPA: PTK derivation using PRF(SHA384)");
 		if (sha384_prf(pmk, pmk_len, label, data, data_len,
 			       tmp, ptk_len) < 0)
 			return -1;
+#endif
+#ifdef CONFIG_SHA512
 	} else if (akmp == WPA_KEY_MGMT_OWE && pmk_len == 64) {
 		wpa_printf(MSG_DEBUG, "WPA: PTK derivation using PRF(SHA512)");
 		if (sha512_prf(pmk, pmk_len, label, data, data_len,
 			       tmp, ptk_len) < 0)
 			return -1;
+#endif
 	} else if (akmp == WPA_KEY_MGMT_OWE) {
 		wpa_printf(MSG_INFO, "OWE: Unknown PMK length %u",
 			   (unsigned int) pmk_len);
