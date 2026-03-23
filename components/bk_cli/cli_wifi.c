@@ -2672,28 +2672,12 @@ void cli_wifi_csi_cmd(char * pcWriteBuffer, int xWriteBufferLen, int argc, char 
 	receive_mode_config.enable = true;
 	uint8_t base_mac[BK_MAC_ADDR_LEN] = {0};
 
-	receive_mode_config.filter_config.format = 1;
-	receive_mode_config.filter_config.ltf_type_bitmap = 1;
-	receive_mode_config.filter_config.filter_mac_type = 0x2;
-	receive_mode_config.filter_config.filter_src_mac_num = 2;
-	receive_mode_config.filter_config.filter_src_mac[0] = 0xc8;
-	receive_mode_config.filter_config.filter_src_mac[1] = 0x47;
-	receive_mode_config.filter_config.filter_src_mac[2] = 0x8c;
-	receive_mode_config.filter_config.filter_src_mac[3] = 0x3d;
-	receive_mode_config.filter_config.filter_src_mac[4] = 0xec;
-	receive_mode_config.filter_config.filter_src_mac[5] = 0x22;
-	//{0xc8, 0x47, 0x8c, 0x63, 0x54, 0x39};
-	receive_mode_config.filter_config.filter_src_mac[6] = 0xc8;
-	receive_mode_config.filter_config.filter_src_mac[7] = 0x47;
-	receive_mode_config.filter_config.filter_src_mac[8] = 0x8c;
-	receive_mode_config.filter_config.filter_src_mac[9] = 0xa2;
-	receive_mode_config.filter_config.filter_src_mac[10] = 0xfa;
-	receive_mode_config.filter_config.filter_src_mac[11] = 0x29;
-	receive_mode_config.filter_config.filter_dst_mac_num = 0;
-	receive_mode_config.filter_config.filter_dst_mac[0] = 0;
-	receive_mode_config.filter_config.mgmt_frame_filter = 0x80000000;
-	receive_mode_config.filter_config.ctrl_frame_filter = 0;
-	receive_mode_config.filter_config.data_frame_filter = 0x80000000;
+	receive_mode_config.filter_config.proto_type_bmp = 0xF;// all format
+	receive_mode_config.filter_config.cbw_bmp = 0x3; // 20M/40M
+	receive_mode_config.filter_config.filter_mac_addr_type = 0; // all mac
+	receive_mode_config.filter_config.filter_mgmt_frame_bmp = 0x80000000;
+	receive_mode_config.filter_config.filter_ctrl_frame_bmp = 0;
+	receive_mode_config.filter_config.filter_data_frame_bmp = 0x80000000;
 
 	if(os_strcmp(argv[1], "start") == 0)
 	{
@@ -2701,6 +2685,7 @@ void cli_wifi_csi_cmd(char * pcWriteBuffer, int xWriteBufferLen, int argc, char 
 		{
 			active_mode_config.interval = os_strtoul(argv[2], NULL, 10);
 		}
+		CLI_LOGI("csi active mode interval %d\r\n",active_mode_config.interval);
 		bk_wifi_csi_active_mode_req(&active_mode_config);
 	}
 	else if(os_strcmp(argv[1], "stop") == 0)
@@ -2712,19 +2697,23 @@ void cli_wifi_csi_cmd(char * pcWriteBuffer, int xWriteBufferLen, int argc, char 
 	{
 		if (argc > 2)
 		{
-			receive_mode_config.filter_config.format = os_strtoul(argv[2], NULL, 10);
+			receive_mode_config.filter_config.proto_type_bmp = os_strtoul(argv[2], NULL, 16);
 			if(argc > 3)
 			{
-				receive_mode_config.filter_config.ltf_type_bitmap = os_strtoul(argv[3], NULL, 10);
+				receive_mode_config.filter_config.cbw_bmp = os_strtoul(argv[3], NULL, 16);
 
 				if(argc > 4)
 				{
-					receive_mode_config.filter_config.filter_mac_type = os_strtoul(argv[4], NULL, 10);
+					receive_mode_config.filter_config.filter_mac_addr_type = os_strtoul(argv[4], NULL, 10);
 					uint8_t argc_offset = 5;
 
-					if((receive_mode_config.filter_config.filter_mac_type == 0)||
-						(receive_mode_config.filter_config.filter_mac_type == 2) ||
-						(receive_mode_config.filter_config.filter_mac_type > 3))
+					if(receive_mode_config.filter_config.filter_mac_addr_type == 0)
+					{
+						CLI_LOGI("err param 4, filter_mac_addr_type %d\r\n",receive_mode_config.filter_config.filter_mac_addr_type);
+					}
+					else if ((receive_mode_config.filter_config.filter_mac_addr_type == 1)||
+						(receive_mode_config.filter_config.filter_mac_addr_type == 3) ||
+						(receive_mode_config.filter_config.filter_mac_addr_type == 4))
 					{
 						if(argc > argc_offset)
 						{
@@ -2763,9 +2752,9 @@ void cli_wifi_csi_cmd(char * pcWriteBuffer, int xWriteBufferLen, int argc, char 
 							return;
 						}
 					}
-					if((receive_mode_config.filter_config.filter_mac_type == 0)||
-						(receive_mode_config.filter_config.filter_mac_type == 1) ||
-						(receive_mode_config.filter_config.filter_mac_type > 3))
+					if((receive_mode_config.filter_config.filter_mac_addr_type == 1)||
+						(receive_mode_config.filter_config.filter_mac_addr_type == 2) ||
+						(receive_mode_config.filter_config.filter_mac_addr_type == 4))
 					{
 						if(argc > argc_offset)
 						{

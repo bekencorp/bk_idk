@@ -114,18 +114,19 @@ static void csi_wifi_event_handler_init(void)
  */
 void wifi_csi_rx_cb_demo(struct wifi_csi_info_t *info)
 {
-	if(info != NULL)
-	{
-		//CSI_LOGI("--1----csi data %d %d,  %d %d src %02x:%02x:%02x:%02x:%02x:%02x,dst %02x:%02x:%02x:%02x:%02x:%02x\r\n", 
-		//	info->rx_ctrl.rssi, info->rx_ctrl.agc_rssi, info->rx_ctrl.format,info->rx_ctrl.rate,
-		//	info->src_mac[0],info->src_mac[1],info->src_mac[2],info->src_mac[3],info->src_mac[4],info->src_mac[5],
-		//	info->dst_mac[0],info->dst_mac[1],info->dst_mac[2],info->dst_mac[3],info->dst_mac[4],info->dst_mac[5]);
-		BK_LOG_RAW("SPCSIINFO iq:%d,[",info->len);
-		for(int i=0;i<info->len;i++)
-		{
-			BK_LOG_RAW("%f + %f i,",info->data.iq[i].real,info->data.iq[i].imag);
+	if (info != NULL) {
+		struct csi_info_t *ci = info->csi_info;
+
+		for (int i = 0; i < MAX_NUM; i++, ci++) {
+			if (!ci->sc_num || !ci->csi_data)
+				continue;
+
+			BK_LOG_RAW("SPCSIINFO type:%d iq:%d,[", ci->ltf_type, ci->sc_num);
+			for (int j = 0; j < ci->sc_num; j++) {
+				BK_LOG_RAW("%f + %f i,", ci->csi_data[j].real, ci->csi_data[j].imag);
+			}
+			BK_LOG_RAW("]\r\n");
 		}
-		BK_LOG_RAW("]\r\n");
 	}
 }
 
