@@ -2,46 +2,6 @@
 #include "sdkconfig.h"
 
 
-int bk_feature_bssid_connect_enable(void) {
-#if CONFIG_BSSID_CONNECT
-	return 1;
-#else
-	return 0;
-#endif
-}
-
-int bk_feature_fast_connect_enable(void) {
-#if CONFIG_WIFI_FAST_CONNECT
-	return 1;
-#else
-	return 0;
-#endif
-}
-
-int bk_feature_fast_dhcp_enable(void) {
-#if CONFIG_WIFI_FAST_DHCP
-	return 1;
-#else
-	return 0;
-#endif
-}
-
-int bk_feature_sta_vsie_enable(void) {
-#if CONFIG_COMPONENTS_STA_VSIE
-	return 1;
-#else
-	return 0;
-#endif
-}
-
-int bk_feature_ap_statype_limit_enable(void) {
-#if CONFIG_AP_STATYPE_LIMIT
-	return 1;
-#else
-	return 0;
-#endif
-}
-
 int bk_feature_temp_detect_enable(void) {
 #if CONFIG_TEMP_DETECT
     return 1;
@@ -232,14 +192,6 @@ int bk_feature_get_mac_sup_sta_max_num(void) {
     return CONFIG_WIFI_MAC_SUPPORT_STAS_MAX_NUM;
 #else
     return 2;
-#endif
-}
-
-int bk_feature_network_found_event(void) {
-#if CONFIG_NETWORK_FOUND_EVENT_ENABLE
-	return 1;
-#else
-	return 0;
 #endif
 }
 

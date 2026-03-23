@@ -17,64 +17,6 @@
  */
 
 /**
- * @brief     Interface for customer to Enable/Disable bssid connect functionality
- *
- * @attention 1 Controled by middleware/soc/bk72xx.defconfig
- * @attention 2 Support to use with fast connect
- *
- * @return
- *    - 1: enable
- *    - 0: disable
- */
-int bk_feature_bssid_connect_enable(void);
-
-/**
- * @brief     Interface for customer to Enable/Disable fast connect functionality
- *
- * @attention 1 This API only enable phase 1 fast connect (skip psk calculate、all channel scanning)
- * @attention 2 Controled by middleware/soc/bk72xx.defconfig
- *
- * @return
- *    - 1: enable
- *    - 0: disable
- */
-int bk_feature_fast_connect_enable(void);
-
-/**
- * @brief     Interface for customer to Enable/Disable fast dhcp functionality
- *
- * @attention 1 This API only enable phase 2 fast connect (skip dhcp and use static ip saved in flash)
- * @attention 2 Controled by middleware/soc/bk72xx.defconfig
- *
- * @return
- *    - 1: enable
- *    - 0: disable
- */
-int bk_feature_fast_dhcp_enable(void);
-
-/**
- * @brief     Interface for customer to Enable/Disable Station Vendor Specific IEs
- *
- * @attention 1 Controled by middleware/soc/bk72xx.defconfig
- *
- * @return
- *    - 1: enable
- *    - 0: disable
- */
-int bk_feature_sta_vsie_enable(void);
-
-/**
- * @brief     Interface for customer to Enable/Disable max limit connection of sta to softap
- *
- * @attention 1 Controled by middleware/soc/bk72xx.defconfig
- *
- * @return
- *    - 1: enable
- *    - 0: disable
- */
-int bk_feature_ap_statype_limit_enable(void);
-
-/**
  * @brief     Interface for customer to Enable/Disable beacon tx tim
  *
  * @attention 1 Controled by middleware/soc/bk72xx.defconfig
@@ -252,19 +194,6 @@ int bk_feature_close_coexist_csa(void);
  *    - the MAX number of stations supported by Mac
  */
 int bk_feature_get_mac_sup_sta_max_num(void);
-
-/**
- * @brief     Interface for customer to control network found event report
- *
- *
- * @return
- *    - 0: disable network found evevnt
- *    - 1: enable network found event
- *
- */
-
-int bk_feature_network_found_event(void);
-
 
 int bk_feature_config_cache_enable(void);
 int bk_feature_ckmn_enable(void);
