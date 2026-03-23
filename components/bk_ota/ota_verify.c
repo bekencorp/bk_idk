@@ -581,18 +581,6 @@ static bk_err_t ota_verify_handle_tlv(const bk_logic_partition_t *partition, ota
 			memcpy(pubkey, value, tlv.it_len);
 			end = pubkey + tlv.it_len;
 #if CONFIG_OTA_UPDATE_PUBKEY
-			// uint8_t primary_pubkey[MAX_PUBKEY_LEN];
-			// ret = read_pubkey_from_primary(partition, primary_pubkey, NULL);
-			// if (ret != BK_OK) {
-			// 	BK_LOGE(TAG, "primary read public key fail!\r\n");
-			// 	goto out;
-			// }
-
-			// if (memcmp(primary_pubkey, pubkey, tlv.it_len) != 0) {
-			// 	BK_LOGE(TAG, "public key of OTA-outer and primary not equal!\r\n");
-			// 	ret = BK_ERR_OTA_VALIDATE_PUB_KEY_FAIL;
-			// 	goto out;
-			// }
 #else
 #ifdef OTP_BL2_BOOT_PUBLIC_KEY_HASH
 			uint8_t key_hash[32];
@@ -718,7 +706,7 @@ bk_err_t ota_verify_receive_data(ota_verify_t* ota_verify, const void* data, int
 	return BK_OK;
 }
 
-bk_err_t ota_verify_process(const bk_logic_partition_t *partition, ota_verify_t* ota_verify)
+bk_err_t ota_verify_image(const bk_logic_partition_t *partition, ota_verify_t* ota_verify)
 {
 	if (ota_verify->is_verify_supported == true) {
 		return ota_verify_handle_tlv(partition, ota_verify);

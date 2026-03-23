@@ -99,7 +99,7 @@ typedef struct ota_verify
 bk_err_t ota_check_crc(const bk_logic_partition_t *partition);
 ota_verify_t* ota_verify_init(void);
 bk_err_t ota_verify_receive_data(ota_verify_t* ota_verify, const void* data, int len);
-bk_err_t ota_verify_process(const bk_logic_partition_t *partition, ota_verify_t* ota_verify);
+bk_err_t ota_verify_image(const bk_logic_partition_t *partition, ota_verify_t* ota_verify);
 void ota_verify_deinit(ota_verify_t* ota_verify);
 bk_err_t ota_update_back_pubkey_from_primary(const bk_logic_partition_t *app_partition, const bk_logic_partition_t *key_partition);
 #if CONFIG_PSA_MBEDTLS

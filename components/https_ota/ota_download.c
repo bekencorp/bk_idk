@@ -269,7 +269,7 @@ static bk_err_t ota_download_handle_image(ota_download_t* ota_parse, uint8_t **d
 			}
 #if CONFIG_VALIDATE_DURING_DOWNLOADING
 			if (ret == BK_OK) {
-				ret = ota_verify_process(ota_parse->ota_handle->app_partition, ota_parse->ota_verify);
+				ret = ota_verify_image(ota_parse->ota_handle->app_partition, ota_parse->ota_verify);
 				if (ret != BK_OK) {
 					ota_verify_deinit(ota_parse->ota_verify);
 					ota_parse->ota_verify = NULL;
