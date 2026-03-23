@@ -60,6 +60,11 @@ menu "Lwip_intf_v2_1"
 		bool "Enable LWIP BRIDGE"
 		default n
 
+	config RIO
+		depends on IPV6
+		bool "Enable RIO(Route Information Options)"
+		default n
+
 	menu "Modify Lwip Config"
 		depends on LWIP
 

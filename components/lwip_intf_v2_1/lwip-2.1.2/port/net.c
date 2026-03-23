@@ -289,6 +289,9 @@ static void wm_netif_status_static_callback(struct netif *n)
 	}
 }
 
+#ifdef CONFIG_RIO
+extern int8_t bk_route_hook_init(void);
+#endif
 //extern wifi_connect_tick_t sta_tick;
 #if IP_NAPT
 const ip_addr_t *sta_dns;
@@ -378,8 +381,11 @@ wm_netif_ipv6_status_callback(struct netif *netif, netif_nsc_reason_t reason, co
 		addr_index = args->ipv6_addr_state_changed.addr_index;
 		ipv6_addr = (u8 *)(ip_2_ip6(&netif->ip6_addr[addr_index]))->addr;
 		/*only global addr send got ip6 event*/
-		if (ip6_addr_isvalid(netif_ip6_addr_state(netif, addr_index)) &&
-			!ip6_addr_islinklocal(ip_2_ip6(&netif->ip6_addr[addr_index]))) {
+		if (ip6_addr_isvalid(netif_ip6_addr_state(netif, addr_index))) {
+			
+			#ifdef CONFIG_RIO
+				bk_route_hook_init();
+			#endif
 			LWIP_LOGD("ipv6_addr[%d] : %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x\r\n", addr_index,
 				  ipv6_addr[0], ipv6_addr[1], ipv6_addr[2], ipv6_addr[3],
 				  ipv6_addr[4], ipv6_addr[5], ipv6_addr[6], ipv6_addr[7],

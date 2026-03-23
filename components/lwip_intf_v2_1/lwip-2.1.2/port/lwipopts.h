@@ -635,8 +635,11 @@ The STM32F107 allows computing and verifying the IP, UDP, TCP and ICMP checksums
 #define LWIP_LOGW(...) BK_LOGW(LWIP_TAG, ##__VA_ARGS__)
 #define LWIP_LOGE(...) BK_LOGE(LWIP_TAG, ##__VA_ARGS__)
 #define LWIP_LOGD(...) BK_LOGD(LWIP_TAG, ##__VA_ARGS__)
-#if 0
+
+#ifdef CONFIG_RIO
 #define LWIP_HOOK_FILENAME              "lwip_hooks.h"
+#endif
+#if 0
 #define LWIP_HOOK_IP4_ROUTE_SRC         ip4_route_src_hook
 #endif
 #define BK_IP4_ROUTE                    1

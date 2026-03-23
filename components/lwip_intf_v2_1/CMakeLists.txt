@@ -75,6 +75,17 @@ if (CONFIG_ETH)
 	)
 endif()
 
+
+if (CONFIG_RIO)
+       list(APPEND incs
+               lwip-2.1.2/port/ip6_route_hook
+               )
+       list(APPEND srcs
+               lwip-2.1.2/port/ip6_route_hook/ip6_route_hook.c
+               lwip-2.1.2/port/ip6_route_hook/ip6_route_table.c
+               )
+endif()
+
 else()
 
 if (CONFIG_SYS_CPU1)
