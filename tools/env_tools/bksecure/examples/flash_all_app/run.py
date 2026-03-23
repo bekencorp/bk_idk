@@ -208,13 +208,8 @@ def main():
                         'Failed to copy app.bin to sign_server')
         copy_file_or_exit(f'{idk_path}/build/bk7236n/overwrite/package/{args.privkey}', f'{sign_path}/',
                         'Failed to copy {args.privkey} to sign_server')
-    # Sign Server Start
-    log_step_start('Sign Server', f'OTA Type: {args.ota_type}, App Version: {args.app_version}')
-    os.chdir(sign_path)
-    sign_server_process(tool_path, args.ota_type, args.app_version, args.app_security_counter, args.ota_version, args.ota_security_counter, args.privkey, args.pubkey, args.replace_key_en ,args.new_privkey, args.new_pubkey,args.app_slot_size, args.ota_slot_size, args.bl1_secureboot_en, args.bl2_load_addr, debug_opt)
-    log_step_end('Sign Server', 'OK')
-    # Sign Server End
-
+    
+    # Copy files to pack_server
     log_progress('Copying immutable files to pack server')
     if args.ota_type == 'XIP':
         required_files = [
@@ -252,8 +247,16 @@ def main():
         logging.error(f'Invalid OTA type: {args.ota_type}, only support XIP and OVERWRITE type')
         exit(1)
 
+    os.makedirs(f'{pack_path}/immutable', exist_ok=True)
     for src, dst, name in required_files:
         copy_file_or_exit(src, dst, f'Failed to copy {name} to pack_server/immutable')
+
+    # Sign Server Start
+    log_step_start('Sign Server', f'OTA Type: {args.ota_type}, App Version: {args.app_version}')
+    os.chdir(sign_path)
+    sign_server_process(tool_path, args.ota_type, args.app_version, args.app_security_counter, args.ota_version, args.ota_security_counter, args.privkey, args.pubkey, args.replace_key_en ,args.new_privkey, args.new_pubkey,args.app_slot_size, args.ota_slot_size, args.bl1_secureboot_en, args.bl2_load_addr, debug_opt)
+    log_step_end('Sign Server', 'OK')
+    # Sign Server End
 
     # Pack Server Start
     log_step_start('Pack Server', f'AES Type: {args.flash_aes_type}, CRC: {args.flash_crc_en}')
