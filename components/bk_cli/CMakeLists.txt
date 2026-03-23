@@ -34,7 +34,7 @@ list(APPEND srcs
 	cli_exception.c
 	)
 
-if (CONFIG_SOC_BK7236XX)
+if (CONFIG_SOC_BK7236XX OR CONFIG_SOC_BK7239XX)
 	list(APPEND srcs
     	cli_fpb.c
     	cli_dwt.c

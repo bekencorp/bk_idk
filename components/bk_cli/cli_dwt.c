@@ -1,7 +1,7 @@
 #include "cli.h"
 #include "sdkconfig.h"
 
-#if CONFIG_SOC_BK7236XX
+#if CONFIG_SOC_BK7236XX || CONFIG_SOC_BK7239XX
 #include "dwt.h"
 
 static void dwt_command_usage(void)

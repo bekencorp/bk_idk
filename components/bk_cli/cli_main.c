@@ -1644,11 +1644,11 @@ static const cli_module_init_entry_t cli_platform_inits[] = {
 	CLI_MODULE_INIT_ENTRY(cli_mem_init),
 #endif
 
-#if ((CONFIG_SOC_BK7236XX) && (CLI_CFG_FPB == 1))
+#if ((CONFIG_SOC_BK7236XX || CONFIG_SOC_BK7239XX) && (CLI_CFG_FPB == 1))
 	CLI_MODULE_INIT_ENTRY(cli_fpb_init),
 #endif
 
-#if ((CONFIG_SOC_BK7236XX) && (CLI_CFG_DWT == 1))
+#if ((CONFIG_SOC_BK7236XX || CONFIG_SOC_BK7239XX) && (CLI_CFG_DWT == 1))
 	CLI_MODULE_INIT_ENTRY(cli_dwt_init),
 #endif
 

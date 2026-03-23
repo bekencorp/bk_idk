@@ -1,7 +1,7 @@
 #include "cli.h"
 #include "sdkconfig.h"
 
-#if CONFIG_SOC_BK7236XX
+#if CONFIG_SOC_BK7236XX || CONFIG_SOC_BK7239XX
 #include "fpb.h"
 
 static void fpb_Command(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
