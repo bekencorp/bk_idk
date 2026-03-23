@@ -24,7 +24,8 @@ python3 -B run.py \
   --pubkey 3059301306072a8648ce3d020106082a8648ce3d03010703420004c70395cd213da2e86daf373412212eaea0d5d87668a7b55edcc3fdc195f9ed75f35bd37b7ac7a0d078edcc96255836d78e9ca45801b8b8a7047c12d03e0dffdb \
   --app_slot_size 1867776 \
   --project security/xip \
-  --log-level simple
+  --log-level simple  \
+  --build
 
 # example 2: OVERWRITE
 # python3 -B run.py \

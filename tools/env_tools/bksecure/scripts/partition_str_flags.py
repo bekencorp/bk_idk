@@ -5,6 +5,8 @@ import logging
 from .partition_flags import *
 
 flags_mapping = {
+    "encrypted" : FLAG_ENCRYPTED,
+    "flash_encrypted" : FLAG_FLASH_ENCRYPTED,
     "download_write_cbus" : FLAG_DOWNLOAD_WRITE_CBUS,
     "ota_write_cbus" : FLAG_OTA_WRITE_CBUS,
     "ota_read_cbus"  : FLAG_OTA_READ_CBUS,

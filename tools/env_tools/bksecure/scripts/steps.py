@@ -204,7 +204,6 @@ def steps_pack(aes_key_type=None, aes_key=None, flash_crc_en=None, bl1_secureboo
     logging.info(f'steps_pack, bl1_secureboot_en={bl1_secureboot_en}, ota_type={ota_type}, ota_security_counter={ota_security_counter}, ota_encrypt={ota_encrypt}, flash_crc_en={flash_crc_en}')
 
     p = Partitions('partitions.csv', 'bin.csv', 'pack.json')
-
     if bl2_version:
         # Remove 'v' prefix if present (e.g., 'v1.0.3' -> '1.0.3')
         bl2_version_clean = bl2_version.lstrip('vV')

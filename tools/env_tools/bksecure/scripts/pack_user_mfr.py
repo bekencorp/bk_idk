@@ -80,38 +80,28 @@ class PackUserMfr(Pack):
         partition_size = 0
         partition_flags = 0
         
-        # ========== MODIFICATION START: Parse partition info from partitions.csv (consistent with beken_utils) ==========
-        # Reference: xnf_connect_1226/tools/env_tools/beken_utils/scripts/partition.py process_partition_encrypted() line 688
-        # beken_utils uses self.partition_offset directly without alignment for encrypted partitions (like user_mfr)
-        # user_mfr partition does not need address alignment, Flash AES encryption, or CRC
-        # (it's encrypted with nvs_key using mbedtls_aes_xts, not Flash AES)
-        # Try to parse partitions.csv to get user_mfr partition info
+        # ========== MODIFICATION START: Parse partition info via Partitions object ==========
+        # Prefer object getters (similar to ph.size().offset()) instead of parsing partitions_gen.h.
+        # This avoids dependency on current working directory layout.
         if os.path.exists('partitions.csv'):
             try:
-                partition_keys = ['Name', 'Type', 'SubType', 'Offset', 'Size', 'Flags']
-                csv = Csv('partitions.csv', True, partition_keys)
-                for pdic in csv.dic_list:
-                    if pdic['Name'].strip() == partition_name:
-                        # Parse offset - use original offset without alignment (consistent with beken_utils)
-                        offset_str = pdic['Offset'].strip()
-                        if offset_str:
-                            partition_offset = hex2int(offset_str)
-                        
-                        # Parse size
-                        size_str = pdic['Size'].strip()
-                        if size_str:
-                            partition_size = size2int(size_str)
-                        
-                        # Parse flags
-                        flags_str = pdic.get('Flags', '').strip()
-                        if flags_str:
-                            from .partition_str_flags import PartitionStrFlags
-                            flags_obj = PartitionStrFlags(flags_str)
-                            partition_flags = flags_obj.flags()
-                        
-                        break
+                from .partitions import Partitions
+                parts = Partitions('partitions.csv', None, None)
+                p = parts._find_partition_by_name(partition_name)
+                if p is not None:
+                    partition_offset = p.size().offset()
+                    partition_size = p.size().size()
+                    partition_type = p.type().type()
+                    partition_subtype = p.type().subtype()
+                    partition_flags = p.flags().flags()
+                    logging.debug(
+                        f'PackUserMfr: resolved partition by Partitions object: '
+                        f'offset=0x{partition_offset:x}, size=0x{partition_size:x}, flags=0x{partition_flags:x}'
+                    )
+                else:
+                    logging.warning(f'PackUserMfr: partition {partition_name} not found in partitions.csv, using defaults')
             except Exception as e:
-                logging.warning(f'PackUserMfr: failed to parse partitions.csv: {e}, using defaults')
+                logging.warning(f'PackUserMfr: failed to resolve partition from partitions.csv: {e}, using defaults')
         # ========== MODIFICATION END ==========
         
         # Create pack header for user_mfr_aes.bin

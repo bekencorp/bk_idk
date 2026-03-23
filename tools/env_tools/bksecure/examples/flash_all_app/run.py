@@ -212,6 +212,7 @@ def main():
     # Copy files to pack_server
     log_progress('Copying immutable files to pack server')
     if args.ota_type == 'XIP':
+        optional_nvs_key_src = f'{idk_path}/build/bk7236n/xip/package/nvs_key.bin'
         required_files = [
             (f'{idk_path}/build/bk7236n/xip/package/bl2.bin', f'{pack_path}/immutable', 'bl2.bin'),
             (f'{idk_path}/build/bk7236n/xip/package/user_mfr.bin', f'{pack_path}/immutable', 'user_mfr.bin'),
@@ -228,6 +229,7 @@ def main():
             (f'{idk_path}/build/bk7236n/xip/package/{args.privkey}', f'{pack_path}/immutable', args.privkey),
         ]
     elif args.ota_type == 'OVERWRITE':
+        optional_nvs_key_src = f'{idk_path}/build/bk7236n/overwrite/package/nvs_key.bin'
         required_files = [
             (f'{idk_path}/build/bk7236n/overwrite/package/bl2.bin', f'{pack_path}/immutable', 'bl2.bin'),
             (f'{idk_path}/build/bk7236n/overwrite/package/user_mfr.bin', f'{pack_path}/immutable', 'user_mfr.bin'),
@@ -250,6 +252,14 @@ def main():
     os.makedirs(f'{pack_path}/immutable', exist_ok=True)
     for src, dst, name in required_files:
         copy_file_or_exit(src, dst, f'Failed to copy {name} to pack_server/immutable')
+
+    # Copy optional nvs_key.bin if present in build output
+    if os.path.exists(optional_nvs_key_src):
+        copy_file_or_exit(optional_nvs_key_src, f'{pack_path}/immutable',
+                          'Failed to copy optional nvs_key.bin to pack_server/immutable')
+        log_progress('Copied optional nvs_key.bin to pack_server/immutable')
+    else:
+        log_progress(f'Skip optional nvs_key.bin (not found): {optional_nvs_key_src}')
 
     # Sign Server Start
     log_step_start('Sign Server', f'OTA Type: {args.ota_type}, App Version: {args.app_version}')

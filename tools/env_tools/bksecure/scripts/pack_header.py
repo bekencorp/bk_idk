@@ -40,6 +40,8 @@ class PackHeader:
             m1, m2, m3, m4)
 
         backup = f'_{bname}'
+        if os.path.exists(backup):
+            os.remove(backup)
         os.rename(bname, backup)
 
         data = None

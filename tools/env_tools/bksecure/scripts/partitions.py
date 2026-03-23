@@ -549,11 +549,15 @@ class Partitions:
             bins = pack_data[k].get('bin', [])
             for bin_name in bins:
                 bins_needing_headers.add(bin_name)
-        
+                
         logging.debug(f'Bins needing pack headers: {bins_needing_headers}')
         logging.debug(f'Bins need override version: {self._version_overrides}')
         # For each bin file, check and add pack header if needed
         for bin_name in bins_needing_headers:
+            if bin_name == 'user_mfr.bin':
+                logging.debug('Skip adding pack header to user_mfr.bin (handled by USER_MFR_AES flow)')
+                continue
+
             if not os.path.exists(bin_name):
                 logging.debug(f'{bin_name} not exists, skip adding pack header')
                 continue
@@ -957,7 +961,9 @@ class Partitions:
             'app.bin',
             'pack_cmd_list.txt',
             'ota_error.bin',
-            'ota_vmin.bin'
+            'ota_vmin.bin',
+            'nvs.bin',
+            'nvs_key.bin'
         ]
         
         for file_name in files_to_install:

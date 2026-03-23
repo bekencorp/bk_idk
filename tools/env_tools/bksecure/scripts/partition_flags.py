@@ -10,6 +10,8 @@ FLAG_DBUS_WRITE          = (1<<1)
 FLAG_EXECUTE             = (1<<2)
 FLAG_CBUS_READ           = (1<<3)
 FLAG_CBUS_WRITE          = (1<<4)
+FLAG_ENCRYPTED           = (1<<0)
+FLAG_FLASH_ENCRYPTED     = (1<<1)
 
 FLAG_OTA_WRITE_CBUS      = (1<<5)
 FLAG_DOWNLOAD_WRITE_CBUS = (1<<6)

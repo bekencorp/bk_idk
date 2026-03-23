@@ -13,7 +13,7 @@ def run_cmd(cmd):
         exit(1)
 
 def pack_server_process(tool_path, pubkey, privkey, bl1_secureboot_en, flash_aes_type, flash_aes_key, flash_crc_en, ota_type, ota_security_counter, boot_ota, bl2_version, app_version, debug_opt=''):
-    cmd = f'{tool_path}/main.py gen otp_efuse --flash_aes_type {flash_aes_type} --flash_aes_key flash_aes_key --outfile otp_efuse_config.json {debug_opt}'
+    cmd = f'{tool_path}/main.py gen otp_efuse --flash_aes_type {flash_aes_type} --flash_aes_key {flash_aes_key} --outfile otp_efuse_config.json {debug_opt}'
     run_cmd(cmd)
 
     if bl1_secureboot_en:
