@@ -29,6 +29,7 @@ extern "C" {
 #define BK_ERR_I2C_INVALID_ID            (BK_ERR_I2C_BASE - 7) /**< I2C invalid id */
 #define BK_ERR_I2C_SET_SEMAPHORE_FAILED  (BK_ERR_I2C_BASE - 8) /**< I2C set semaphore failed */
 #define BK_ERR_I2C_START_TIMER_FAILED    (BK_ERR_I2C_BASE - 9) /**< I2C start timer failed */
+#define BK_ERR_I2C_BUS_BUSY_TIMEOUT      (BK_ERR_I2C_BASE - 10) /**< I2C bus busy timeout */
 
 typedef enum {
 	I2C_MASTER_WRITE = 0, /**< I2C master write */

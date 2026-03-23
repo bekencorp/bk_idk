@@ -26,7 +26,7 @@
 #include "i2c_hal.h"
 #include "i2c_statis.h"
 #include "sys_driver.h"
-
+#include "bk_misc.h"
 #if CONFIG_SPE
 #include "security.h"
 #endif
@@ -83,8 +83,8 @@ typedef struct _cb_context_{
     void *app_data;
     beken2_timer_t* i2c_timer;
     int is_app_cb_configured;  /**< Flag indicating if application callback context is initialized
-                                       (timer or queue registered via bk_i2c_timer_callback() or 
-                                       bk_i2c_queue_callback()). Used together with has_timeout_limit to 
+                                       (timer or queue registered via bk_i2c_timer_callback() or
+                                       bk_i2c_queue_callback()). Used together with has_timeout_limit to
                                        determine if callback mechanism should be used. */
     int has_timeout_limit;       /**< Flag indicating if current I2C operation has a timeout limit.
                                        Note: Both modes are actually synchronous (blocking), the difference
@@ -167,9 +167,17 @@ static void i2c1_isr(void);
 static void i2c2_isr(void);
 #endif
 
-#if CONFIG_GPIO_DEFAULT_SET_SUPPORT
-//if the special hardware/board needs to over-write the I2C GPIO,please implement it here like i2c_init_gpio
-#else
+static bk_err_t i2c_wait_sm_bus_idle(i2c_id_t id, uint32_t timeout_ms);
+static bk_err_t i2c_master_start(i2c_id_t id);
+static bk_err_t i2c_master_set_write_dev_addr(i2c_id_t id, uint16_t dev_addr);
+static bk_err_t i2c_master_set_read_dev_addr(i2c_id_t id, uint16_t dev_addr);
+static bk_err_t i2c_retry_master_write(i2c_id_t id, uint32_t dev_addr, const uint8_t *data, uint32_t size, uint32_t timeout_ms);
+static bk_err_t i2c_retry_master_read(i2c_id_t id, uint32_t dev_addr, uint8_t *data, uint32_t size, uint32_t timeout_ms);
+static bk_err_t i2c_retry_noaddr_write(i2c_id_t id, const uint8_t *data, uint32_t size, uint32_t timeout_ms);
+static bk_err_t i2c_retry_noaddr_read(i2c_id_t id, uint8_t *data, uint32_t size, uint32_t timeout_ms);
+static bk_err_t i2c_retry_memory_write(i2c_id_t id, const i2c_mem_param_t *mem_param);
+static bk_err_t i2c_retry_memory_read(i2c_id_t id, const i2c_mem_param_t *mem_param);
+
 static void i2c_init_gpio(i2c_id_t id)
 {
     switch(id) {
@@ -190,7 +198,6 @@ static void i2c_init_gpio(i2c_id_t id)
         break;
     }
 }
-#endif
 
 static void i2c_clock_enable(i2c_id_t id)
 {
@@ -317,6 +324,340 @@ static void i2c_id_deinit_common(i2c_id_t id)
     s_i2c[id].id_init_bits &= ~BIT(id);
 }
 
+/**
+* @brief Get GPIO pin numbers for I2C SDA and SCL
+* @param id I2C ID
+* @param scl_pin Pointer to store SCL pin number
+* @param sda_pin Pointer to store SDA pin number
+* @return BK_OK on success
+*/
+static bk_err_t i2c_get_gpio_pins(i2c_id_t id, uint32_t *scl_pin, uint32_t *sda_pin)
+{
+    switch(id) {
+    case I2C_ID_0:
+        *scl_pin = I2C0_LL_SCL_PIN;
+        *sda_pin = I2C0_LL_SDA_PIN;
+        break;
+#if (SOC_I2C_UNIT_NUM > 1)
+    case I2C_ID_1:
+        *scl_pin = I2C1_LL_SCL_PIN;
+        *sda_pin = I2C1_LL_SDA_PIN;
+        break;
+#endif
+#if (SOC_I2C_UNIT_NUM > 2)
+    case I2C_ID_2:
+        *scl_pin = I2C2_LL_SCL_PIN;
+        *sda_pin = I2C2_LL_SDA_PIN;
+        break;
+#endif
+    default:
+        return BK_ERR_I2C_ID_NOT_INIT;
+    }
+    return BK_OK;
+}
+
+/**
+ * @brief Retry master write operation after bus recovery
+ * @param id I2C ID
+ * @param dev_addr Device address
+ * @param data Data buffer
+ * @param size Data size
+ * @param timeout_ms Timeout in milliseconds
+ * @return BK_OK on success
+ */
+static bk_err_t i2c_retry_master_write(i2c_id_t id, uint32_t dev_addr, const uint8_t *data, uint32_t size, uint32_t timeout_ms)
+{
+	BK_RETURN_ON_ERR(i2c_wait_sm_bus_idle(id, timeout_ms));
+
+	uint32_t int_level = rtos_enter_critical();
+	I2C_LOGI("retry i2c master write, dev_addr=0x%02x, size=%d\r\n", dev_addr, size);
+	s_i2c[id].err_code = BK_OK;
+	s_i2c[id].work_mode = I2C_MASTER_WRITE;
+	s_i2c[id].is_with_mem_addr = false;
+	s_i2c[id].dev_addr = dev_addr;
+	s_i2c[id].data_ptr = (uint8_t *)data;
+	s_i2c[id].data_size = size;
+	s_i2c[id].data_offset = 0;
+	s_i2c[id].int_status = 0;
+	i2c_master_start(id);
+	i2c_master_set_write_dev_addr(id, dev_addr);
+	i2c_hal_set_write_int_mode(&s_i2c[id].hal, size);
+#if (CONFIG_SOC_BK7236XX)
+	i2c_hal_disable_addr_output(&s_i2c[id].hal);
+	i2c_hal_disable_data_output(&s_i2c[id].hal);
+#endif
+	rtos_exit_critical(int_level);
+
+	rtos_get_semaphore(&s_i2c[id].tx_sema, timeout_ms);
+
+	return BK_OK;
+}
+
+/**
+ * @brief Retry master read operation after bus recovery
+ * @param id I2C ID
+ * @param dev_addr Device address
+ * @param data Data buffer
+ * @param size Data size
+ * @param timeout_ms Timeout in milliseconds
+ * @return BK_OK on success
+ */
+static bk_err_t i2c_retry_master_read(i2c_id_t id, uint32_t dev_addr, uint8_t *data, uint32_t size, uint32_t timeout_ms)
+{
+	BK_RETURN_ON_ERR(i2c_wait_sm_bus_idle(id, timeout_ms));
+
+	uint32_t int_level = rtos_enter_critical();
+	I2C_LOGI("retry i2c master read, dev_addr=0x%02x, size=%d\r\n", dev_addr, size);
+	s_i2c[id].err_code = BK_OK;
+	s_i2c[id].work_mode = I2C_MASTER_READ;
+	s_i2c[id].is_with_mem_addr = false;
+	s_i2c[id].dev_addr = dev_addr;
+	s_i2c[id].data_ptr = data;
+	s_i2c[id].data_size = size;
+	s_i2c[id].data_offset = 0;
+	s_i2c[id].int_status = 0;
+	i2c_master_start(id);
+	i2c_master_set_read_dev_addr(id, dev_addr);
+	i2c_hal_set_rx_mode(&s_i2c[id].hal);
+	i2c_hal_set_read_int_mode(&s_i2c[id].hal, size);
+#if (CONFIG_SOC_BK7236XX)
+	i2c_hal_disable_addr_output(&s_i2c[id].hal);
+	i2c_hal_disable_data_output(&s_i2c[id].hal);
+#endif
+	rtos_exit_critical(int_level);
+
+	rtos_get_semaphore(&s_i2c[id].rx_sema, timeout_ms);
+
+	return BK_OK;
+}
+
+/**
+ * @brief Retry noaddr write operation after bus recovery
+ * @param id I2C ID
+ * @param data Data buffer (first byte is dev_addr)
+ * @param size Data size (including dev_addr)
+ * @param timeout_ms Timeout in milliseconds
+ * @return BK_OK on success
+ */
+static bk_err_t i2c_retry_noaddr_write(i2c_id_t id, const uint8_t *data, uint32_t size, uint32_t timeout_ms)
+{
+	BK_RETURN_ON_ERR(i2c_wait_sm_bus_idle(id, timeout_ms));
+
+	uint32_t int_level = rtos_enter_critical();
+	I2C_LOGI("retry i2c noaddr write, size=%d\r\n", size);
+	s_i2c[id].err_code = BK_OK;
+	s_i2c[id].work_mode = I2C_MASTER_WRITE;
+	s_i2c[id].is_with_mem_addr = false;
+	s_i2c[id].dev_addr = data[0];
+	s_i2c[id].data_ptr = (uint8_t *)data + 1;
+	s_i2c[id].data_size = size - 1;
+	s_i2c[id].data_offset = 0;
+	s_i2c[id].int_status = 0;
+	i2c_master_start(id);
+	i2c_hal_write_byte(&s_i2c[id].hal, data[0]);
+	i2c_hal_enable_start(&s_i2c[id].hal);
+	s_i2c[id].master_status = I2C_TX_DATA;
+	i2c_hal_set_write_int_mode(&s_i2c[id].hal, size);
+	rtos_exit_critical(int_level);
+
+	rtos_get_semaphore(&s_i2c[id].tx_sema, timeout_ms);
+
+	return BK_OK;
+}
+
+/**
+ * @brief Retry noaddr read operation after bus recovery
+ * @param id I2C ID
+ * @param data Data buffer
+ * @param size Data size
+ * @param timeout_ms Timeout in milliseconds
+ * @return BK_OK on success
+ */
+static bk_err_t i2c_retry_noaddr_read(i2c_id_t id, uint8_t *data, uint32_t size, uint32_t timeout_ms)
+{
+	BK_RETURN_ON_ERR(i2c_wait_sm_bus_idle(id, timeout_ms));
+
+	uint32_t int_level = rtos_enter_critical();
+	I2C_LOGI("retry i2c noaddr read, size=%d\r\n", size);
+	s_i2c[id].err_code = BK_OK;
+	s_i2c[id].work_mode = I2C_MASTER_READ;
+	s_i2c[id].is_with_mem_addr = false;
+	s_i2c[id].dev_addr = data[0];
+	s_i2c[id].data_ptr = data;
+	s_i2c[id].data_size = size;
+	s_i2c[id].data_offset = 0;
+	s_i2c[id].int_status = 0;
+	i2c_master_start(id);
+	// skip read slave address
+	s_i2c[id].master_status = I2C_RX_DATA;
+	i2c_hal_enable_start(&s_i2c[id].hal);
+	s_i2c[id].int_status |= I2C1_F_START;
+	i2c_hal_set_rx_mode(&s_i2c[id].hal);
+	i2c_hal_set_read_int_mode(&s_i2c[id].hal, size);
+	rtos_exit_critical(int_level);
+
+	rtos_get_semaphore(&s_i2c[id].rx_sema, timeout_ms);
+
+	return BK_OK;
+}
+
+/**
+ * @brief Retry memory write operation after bus recovery
+ * @param id I2C ID
+ * @param mem_param Memory parameter structure
+ * @return BK_OK on success
+ */
+static bk_err_t i2c_retry_memory_write(i2c_id_t id, const i2c_mem_param_t *mem_param)
+{
+	BK_RETURN_ON_ERR(i2c_wait_sm_bus_idle(id, mem_param->timeout_ms));
+
+	uint32_t int_level = rtos_enter_critical();
+	I2C_LOGI("retry i2c memory write, dev_addr=0x%02x, mem_addr=0x%04x, size=%d\r\n",
+	         mem_param->dev_addr, mem_param->mem_addr, mem_param->data_size);
+	s_i2c[id].err_code = BK_OK;
+	s_i2c[id].work_mode = I2C_MASTER_WRITE;
+	s_i2c[id].is_with_mem_addr = true;
+	s_i2c[id].dev_addr = mem_param->dev_addr;
+	s_i2c[id].mem_addr = mem_param->mem_addr;
+	s_i2c[id].mem_addr_size = mem_param->mem_addr_size;
+	s_i2c[id].data_ptr = mem_param->data;
+	s_i2c[id].data_size = mem_param->data_size;
+	s_i2c[id].data_offset = 0;
+	s_i2c[id].int_status = 0;
+	i2c_master_start(id);
+	i2c_master_set_write_dev_addr(id, mem_param->dev_addr);
+	i2c_hal_set_write_int_mode(&s_i2c[id].hal, mem_param->data_size);
+	rtos_exit_critical(int_level);
+
+	rtos_get_semaphore(&s_i2c[id].tx_sema, mem_param->timeout_ms);
+
+	return BK_OK;
+}
+
+/**
+ * @brief Retry memory read operation after bus recovery
+ * @param id I2C ID
+ * @param mem_param Memory parameter structure
+ * @return BK_OK on success
+ */
+static bk_err_t i2c_retry_memory_read(i2c_id_t id, const i2c_mem_param_t *mem_param)
+{
+	BK_RETURN_ON_ERR(i2c_wait_sm_bus_idle(id, mem_param->timeout_ms));
+
+	uint32_t int_level = rtos_enter_critical();
+	I2C_LOGI("retry i2c memory read, dev_addr=0x%02x, mem_addr=0x%04x, size=%d\r\n",
+	         mem_param->dev_addr, mem_param->mem_addr, mem_param->data_size);
+	s_i2c[id].err_code = BK_OK;
+	s_i2c[id].work_mode = I2C_MASTER_READ;
+	s_i2c[id].is_with_mem_addr = true;
+	s_i2c[id].dev_addr = mem_param->dev_addr;
+	s_i2c[id].mem_addr = mem_param->mem_addr;
+	s_i2c[id].mem_addr_size = mem_param->mem_addr_size;
+	s_i2c[id].data_ptr = mem_param->data;
+	s_i2c[id].data_size = mem_param->data_size;
+	s_i2c[id].data_offset = 0;
+	s_i2c[id].int_status = 0;
+	i2c_master_start(id);
+	i2c_master_set_write_dev_addr(id, mem_param->dev_addr);
+	i2c_hal_set_read_int_mode(&s_i2c[id].hal, mem_param->data_size);
+	rtos_exit_critical(int_level);
+
+	rtos_get_semaphore(&s_i2c[id].rx_sema, mem_param->timeout_ms);
+
+	return BK_OK;
+}
+
+/**
+ * @brief Recover I2C bus when stuck (SDA low, SCL high)
+ * This function implements the standard I2C bus recovery procedure:
+ * 1. Switch GPIO from I2C function to normal GPIO
+ * 2. Send clock pulses to recover bus
+ * 3. Send STOP condition
+ * 4. Reconfigure GPIO back to I2C function
+ * 5. Soft reset I2C hardware
+ * @param id I2C ID
+ * @return BK_OK on success
+ */
+static bk_err_t i2c_recover_bus(i2c_id_t id)
+{
+    uint32_t int_level = rtos_enter_critical();
+    uint32_t scl_pin, sda_pin;
+    uint32_t i = 0;
+    /* Fixed 100kHz clock for recovery: half period = 5us */
+    const uint32_t half_delay_us = 5;
+
+    // Get GPIO pin numbers
+    if (i2c_get_gpio_pins(id, &scl_pin, &sda_pin) != BK_OK) {
+        I2C_LOGE("failed to get gpio pins for i2c id %d\r\n", id);
+        rtos_exit_critical(int_level);
+        return BK_ERR_I2C_ID_NOT_INIT;
+    }
+
+    I2C_LOGW("try to recover i2c bus\r\n");
+
+    // Switch GPIO from I2C function to normal GPIO
+#if CONFIG_SUPPORT_IO_MATRIX
+    bk_gpio_set_value(scl_pin, 0x30);
+    bk_gpio_set_value(sda_pin, 0x30);
+
+    bk_gpio_set_value(scl_pin, 0x2000000);
+    bk_gpio_set_value(sda_pin, 0x1000030);
+#else
+    bk_gpio_set_value(scl_pin, 0x38);
+    bk_gpio_set_value(sda_pin, 0x38);
+
+    bk_gpio_set_value(scl_pin, 0x0);
+    bk_gpio_set_value(sda_pin, 0x3C);
+#endif
+
+    bk_delay_us(half_delay_us);
+
+    // Send 9 clock pulses to recover bus
+    while (!bk_gpio_get_input(sda_pin) && (i++ < 9)) {
+#if CONFIG_SUPPORT_IO_MATRIX
+        bk_gpio_set_value(scl_pin, 0x30);
+        bk_delay_us(half_delay_us);
+        bk_gpio_set_value(scl_pin, 0x2000000);
+        bk_delay_us(half_delay_us);
+#else
+        bk_gpio_set_value(scl_pin, 0x38);
+        bk_delay_us(half_delay_us);
+        bk_gpio_set_value(scl_pin, 0x0);
+        bk_delay_us(half_delay_us);
+#endif
+    }
+
+    // Send STOP condition: SDA low -> SCL high -> SDA high
+#if CONFIG_SUPPORT_IO_MATRIX
+    bk_gpio_set_value(sda_pin, 0x2000000);
+    bk_gpio_set_value(scl_pin, 0x30);
+    bk_delay_us(half_delay_us);
+    bk_gpio_set_value(sda_pin, 0x1000030);
+#else
+    bk_gpio_set_value(sda_pin, 0x0);
+    bk_gpio_set_value(scl_pin, 0x38);
+    bk_delay_us(half_delay_us);
+    bk_gpio_set_value(sda_pin, 0x3C);
+#endif
+
+    // Reconfigure GPIO back to I2C function
+    i2c_init_gpio(id);
+
+    // Soft reset I2C hardware
+    i2c_hal_soft_reset(&s_i2c[id].hal);
+
+    s_i2c[id].master_status = 0;
+    rtos_exit_critical(int_level);
+
+    if (i == 10) {
+        I2C_LOGW("recover i2c bus failed\r\n");
+        return BK_ERR_I2C_BUS_BUSY_TIMEOUT;
+    } else {
+        I2C_LOGW("recover i2c bus success, clock index=%d\r\n", i);
+        return BK_OK;
+    }
+}
+
 static bk_err_t i2c_wait_sm_bus_idle(i2c_id_t id, uint32_t timeout_ms)
 {
     uint32_t start_tick = 0;
@@ -329,6 +670,15 @@ static bk_err_t i2c_wait_sm_bus_idle(i2c_id_t id, uint32_t timeout_ms)
         tick_offset = (cur_tick >= start_tick) ? (cur_tick - start_tick) : (0xffffffff - start_tick + cur_tick);
         if (tick_offset > timeout_ms) {
             I2C_LOGW("i2c sm bus is busy\r\n");
+            // Attempt to recover the bus
+            if (i2c_recover_bus(id) == BK_OK) {
+                // Wait a bit more after recovery
+                rtos_delay_milliseconds(10);
+                // Check if bus is now idle
+                if (!i2c_hal_is_busy(&s_i2c[id].hal)) {
+                    return BK_OK;
+                }
+            }
             return BK_ERR_I2C_SM_BUS_BUSY;
         }
     }
@@ -370,9 +720,9 @@ static void i2c_timer_start (int id)
 
 /**
  * @brief Fill timer callback parameters
- * 
+ *
  * @param id I2C device ID
- * 
+ *
  * If the application has registered a timer callback, fill the callback parameter structure.
  * Parameters include: actual data length transferred, work mode, and application data pointer.
  */
@@ -397,17 +747,17 @@ static void i2c_fill_timer_callback_param(i2c_id_t id)
 
 /**
  * @brief Set timeout limit flag based on timeout value
- * 
+ *
  * @param id I2C device ID
  * @param timeout_ms Timeout value in milliseconds
- * 
+ *
  * Sets the has_timeout_limit flag in the callback context based on whether
  * the timeout value is BEKEN_NEVER_TIMEOUT (infinite wait) or a finite value.
  */
 static void i2c_set_timeout_limit_flag(i2c_id_t id, uint32_t timeout_ms)
 {
     i2c_cb_ctx_t *cb_context = &i2c_cb_context[id];
-    
+
     if (timeout_ms == BEKEN_NEVER_TIMEOUT) {
         cb_context->has_timeout_limit = 0;
     } else {
@@ -423,10 +773,10 @@ static uint32_t i2c_is_timeout_limit_flag(i2c_id_t id)
 
 /**
  * @brief Switch slave work mode based on HAL TX/RX mode
- * 
+ *
  * @param id I2C device ID
  * @param hal Pointer to I2C HAL structure
- * 
+ *
  * In slave mode, when the HAL layer switches between TX and RX modes,
  * this function switches the driver's work mode accordingly and restores
  * the corresponding data context (data pointer, size, and offset) from
@@ -435,11 +785,11 @@ static uint32_t i2c_is_timeout_limit_flag(i2c_id_t id)
 static void i2c_switch_slave_work_mode(i2c_id_t id, i2c_hal_t *hal)
 {
     i2c_driver_t *i2c_drv_obj = &s_i2c[id];
-    
+
     if (!i2c_hal_is_slave_mode(hal)) {
         return;
     }
-    
+
     i2c_slave_data_t *slave_rx_ctx = &s_slave_rx_ctx[id];
     i2c_slave_data_t *slave_tx_ctx = &s_slave_tx_ctx[id];
 
@@ -460,9 +810,9 @@ static void i2c_switch_slave_work_mode(i2c_id_t id, i2c_hal_t *hal)
 
 /**
  * @brief Push message queue callback notification
- * 
+ *
  * @param id I2C device ID
- * 
+ *
  * If the application has registered a message queue callback, create callback parameters
  * and push them to the queue. Parameters include: actual data length transferred, work mode,
  * and application data pointer.
@@ -481,7 +831,7 @@ static void i2c_push_queue_callback(i2c_id_t id)
     cb_param.data_len = i2c_drv_obj->data_offset;
     cb_param.work_mode = i2c_drv_obj->work_mode;
     cb_param.app_data = cb_context->app_data;
-    
+
     ret = rtos_push_to_queue(cb_context->i2c_queue, &cb_param, BEKEN_NO_WAIT);
     if (ret != kNoErr) {
         I2C_LOGW("i2c(%d) push callback to queue failed, queue may be full\r\n", id);
@@ -675,24 +1025,24 @@ bk_err_t i2c1_master_read_data(i2c_id_t id)
 /**
  * @brief Register timer callback mechanism for I2C
  *        Attention: it is for APPLICATION to set the callback function.
- * 
+ *
  * @param id I2C device ID
  * @param myTimer Pointer to a beken2_timer_t timer object that has been initialized
  *                with rtos_init_oneshot_timer(). The timer's left_arg should point
  *                to an i2c_cb_param_t structure, and the callback function should
  *                be set during timer initialization.
- * 
+ *
  * @details When I2C transfer completes, the driver will fill the callback parameters
  *          in the timer's left_arg and start the timer. The callback function will be
  *          invoked when the timer expires.
- * 
+ *
  * @example
  *   beken2_timer_t my_timer;
  *   i2c_cb_param_t cb_param;
- *   
+ *
  *   Initialize timer with callback function
  *   rtos_init_oneshot_timer(&my_timer, 10, my_callback_func, &cb_param, app_data);
- *   
+ *
  *   Register timer to I2C driver
  *   bk_i2c_timer_callback(I2C_ID_0, &my_timer);
  */
@@ -716,7 +1066,7 @@ void bk_i2c_timer_callback(int id, void* myTimer)
  *       Unlike traditional callback functions, this mechanism uses message queue
  *       for communication. The application must create a task to receive messages
  *       from the queue using rtos_pop_from_queue().
- * 
+ *
  * @param id I2C device ID
  * @param queue Pointer to a beken_queue_t message queue that has been initialized
  *              with rtos_init_queue(). The queue message size should be
@@ -725,26 +1075,26 @@ void bk_i2c_timer_callback(int id, void* myTimer)
  *             This pointer value will be copied to the queue messages, but the data
  *             it points to is NOT copied. The application must ensure this data
  *             remains valid until all queued messages are processed.
- * 
+ *
  * @details When I2C transfer completes, the driver will push an i2c_cb_param_t
  *          message to the registered queue. The message contains:
  *          - data_len: actual data length transferred
  *          - work_mode: I2C work mode (master/slave, read/write)
  *          - app_data: the data pointer passed to this function
- * 
+ *
  *          The application must have a dedicated task that continuously reads from
  *          the queue to process these messages.
- * 
+ *
  * @example
  *   beken_queue_t i2c_queue;
  *   uint8_t rx_buffer[256];
- *   
+ *
  *   Initialize message queue
  *   rtos_init_queue(&i2c_queue, "i2c_queue", sizeof(i2c_cb_param_t), 10);
- *   
+ *
  *   Register queue to I2C driver
  *   bk_i2c_queue_callback(I2C_ID_0, &i2c_queue, rx_buffer);
- *   
+ *
  *   Create task to process queue messages
  *   void i2c_handler_task(void *param) {
  *       i2c_cb_param_t msg;
@@ -920,6 +1270,7 @@ bk_err_t bk_i2c_init(i2c_id_t id, const i2c_config_t *cfg)
     s_i2c[id].int_status = 0;
     s_i2c[id].addr_mode = cfg->addr_mode;
     i2c_id_init_common(id);
+    i2c_hal_soft_reset(&s_i2c[id].hal);
     i2c_hal_configure(&s_i2c[id].hal, cfg);
     i2c_hal_start_common(&s_i2c[id].hal);
     I2C_LOGI("I2C(%d) init ok, baud_rate:%d\r\n", id, cfg->baud_rate);
@@ -982,7 +1333,21 @@ bk_err_t bk_i2c_master_write(i2c_id_t id, uint32_t dev_addr, const uint8_t *data
     ret = rtos_get_semaphore(&i2c_drv_obj->tx_sema, timeout_ms);
     if (ret != kNoErr) {
         I2C_LOGW("I2C(%d) master_write get semaphore timeout\r\n", id);
-        i2c_drv_obj->err_code = BK_ERR_I2C_ACK_TIMEOUT;
+        i2c_drv_obj->err_code = BK_ERR_I2C_BUS_BUSY_TIMEOUT;
+        if (i2c_recover_bus(id) == BK_OK) {
+            // Wait a bit more after recovery
+            rtos_delay_milliseconds(2);
+            i2c_retry_master_write(id, dev_addr, data, size, timeout_ms);
+        }
+    }
+
+    if (i2c_drv_obj->err_code == BK_ERR_I2C_ACK_TIMEOUT) {
+        I2C_LOGW("I2C(%d) master_write no ack, err=%d\r\n", id, i2c_drv_obj->err_code);
+        if (i2c_recover_bus(id) == BK_OK) {
+            // Wait a bit more after recovery
+            rtos_delay_milliseconds(2);
+            i2c_retry_master_write(id, dev_addr, data, size, timeout_ms);
+        }
     }
 
     return i2c_drv_obj->err_code;
@@ -1024,7 +1389,21 @@ bk_err_t bk_i2c_master_write_noaddr(i2c_id_t id, const uint8_t *data, uint32_t s
     ret = rtos_get_semaphore(&i2c_drv_obj->tx_sema, timeout_ms);
     if (ret != kNoErr) {
         I2C_LOGW("I2C(%d) master_write_noaddr get semaphore timeout\r\n", id);
-        i2c_drv_obj->err_code = BK_ERR_I2C_ACK_TIMEOUT;
+        i2c_drv_obj->err_code = BK_ERR_I2C_BUS_BUSY_TIMEOUT;
+        if (i2c_recover_bus(id) == BK_OK) {
+            // Wait a bit more after recovery
+            rtos_delay_milliseconds(2);
+            i2c_retry_noaddr_write(id, data, size, timeout_ms);
+        }
+    }
+
+    if (i2c_drv_obj->err_code == BK_ERR_I2C_ACK_TIMEOUT) {
+        I2C_LOGW("I2C(%d) master_write_noaddr no ack, err=%d\r\n", id, i2c_drv_obj->err_code);
+        if (i2c_recover_bus(id) == BK_OK) {
+            // Wait a bit more after recovery
+            rtos_delay_milliseconds(2);
+            i2c_retry_noaddr_write(id, data, size, timeout_ms);
+        }
     }
 
     return i2c_drv_obj->err_code;
@@ -1063,7 +1442,12 @@ bk_err_t bk_i2c_master_read(i2c_id_t id, uint32_t dev_addr, uint8_t *data, uint3
     ret = rtos_get_semaphore(&i2c_drv_obj->rx_sema, timeout_ms);
     if (ret != kNoErr) {
         I2C_LOGW("I2C(%d) master_read get semaphore timeout\r\n", id);
-        i2c_drv_obj->err_code = BK_ERR_I2C_ACK_TIMEOUT;
+        i2c_drv_obj->err_code = BK_ERR_I2C_BUS_BUSY_TIMEOUT;
+        if (i2c_recover_bus(id) == BK_OK) {
+            // Wait a bit more after recovery
+            rtos_delay_milliseconds(2);
+            i2c_retry_master_read(id, dev_addr, data, size, timeout_ms);
+        }
     }
 
     return i2c_drv_obj->err_code;
@@ -1106,7 +1490,12 @@ bk_err_t bk_i2c_master_read_noaddr(i2c_id_t id, uint8_t *data, uint32_t size, ui
     ret = rtos_get_semaphore(&i2c_drv_obj->rx_sema, timeout_ms);
     if (ret != kNoErr) {
         I2C_LOGW("I2C(%d) master_read_noaddr get semaphore timeout\r\n", id);
-        i2c_drv_obj->err_code = BK_ERR_I2C_ACK_TIMEOUT;
+        i2c_drv_obj->err_code = BK_ERR_I2C_BUS_BUSY_TIMEOUT;
+        if (i2c_recover_bus(id) == BK_OK) {
+            // Wait a bit more after recovery
+            rtos_delay_milliseconds(2);
+            i2c_retry_noaddr_read(id, data, size, timeout_ms);
+        }
     }
 
     return i2c_drv_obj->err_code;
@@ -1217,7 +1606,21 @@ bk_err_t bk_i2c_memory_write(i2c_id_t id, const i2c_mem_param_t *mem_param)
     ret = rtos_get_semaphore(&i2c_drv_obj->tx_sema, mem_param->timeout_ms);
     if (ret != kNoErr) {
         I2C_LOGW("I2C(%d) memory_write get semaphore timeout\r\n", id);
-        i2c_drv_obj->err_code = BK_ERR_I2C_ACK_TIMEOUT;
+        i2c_drv_obj->err_code = BK_ERR_I2C_BUS_BUSY_TIMEOUT;
+        if (i2c_recover_bus(id) == BK_OK) {
+            // Wait a bit more after recovery
+            rtos_delay_milliseconds(2);
+            i2c_retry_memory_write(id, mem_param);
+        }
+    }
+
+    if (i2c_drv_obj->err_code == BK_ERR_I2C_ACK_TIMEOUT) {
+        I2C_LOGW("I2C(%d) memory_write no ack, err=%d\r\n", id, i2c_drv_obj->err_code);
+        if (i2c_recover_bus(id) == BK_OK) {
+            // Wait a bit more after recovery
+            rtos_delay_milliseconds(2);
+            i2c_retry_memory_write(id, mem_param);
+        }
     }
 
     return i2c_drv_obj->err_code;
@@ -1252,7 +1655,12 @@ bk_err_t bk_i2c_memory_read(i2c_id_t id, const i2c_mem_param_t *mem_param)
     ret = rtos_get_semaphore(&s_i2c[id].rx_sema, mem_param->timeout_ms);
     if (ret != kNoErr) {
         I2C_LOGW("I2C(%d) memory_read get semaphore timeout\r\n", id);
-        s_i2c[id].err_code = BK_ERR_I2C_ACK_TIMEOUT;
+        s_i2c[id].err_code = BK_ERR_I2C_BUS_BUSY_TIMEOUT;
+        if (i2c_recover_bus(id) == BK_OK) {
+            // Wait a bit more after recovery
+            rtos_delay_milliseconds(2);
+            i2c_retry_memory_read(id, mem_param);
+        }
     }
 
     return s_i2c[id].err_code;
