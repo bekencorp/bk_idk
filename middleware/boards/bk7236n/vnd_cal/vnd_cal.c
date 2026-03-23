@@ -75,145 +75,150 @@ char *vnd_cal_version         = "24-04-10 00:00:00";
  * pwr_gain<25:22> Gmgain in TRX_C<3:0>, 3 at present
  * pwr_gain<29:26> Dia in TRX_A<31:28>, 8 at present
  * pwr_gain<31:31> 1:11g/n 0:11b
+ * move to sys_persist_config.csv::rf_config.pwr_gain_base_11b
+ * move to sys_persist_config.csv::rf_config.pwr_gain_base_11g
  */
-const UINT32 pwr_gain_base_gain_b = 0x20FB7C00;//0x00233C00;
-const UINT32 pwr_gain_base_gain_g = 0xA0FB7C00;//0x80233C00;
+//const UINT32 pwr_gain_base_gain_b = 0x20FB7C00;//0x00233C00;
+//const UINT32 pwr_gain_base_gain_g = 0xA0FB7C00;//0x80233C00;
 #define TPC_PAMAP_TAB_LEN			 (128)
 __DRAM_SEC const PWR_REGS cfg_tab[TPC_PAMAP_TAB_LEN] = {
-	// pregain
-	PWRI(0x1A),	//0	-25.75db
-	PWRI(0x1B),	//1	-25.5db
-	PWRI(0x1C),	//2	-25.25db
-	PWRI(0x1D),	//3	-25db
-	PWRI(0x1E),	//4	-24.75db
-	PWRI(0x1E),	//5	-24.5db
-	PWRI(0x1F),	//6	-24.25db
-	PWRI(0x20),	//7	-24db
-	PWRI(0x21),	//8	-23.75db
-	PWRI(0x22),	//9	-23.5db
-	PWRI(0x23),	//10	-23.25db
-	PWRI(0x24),	//11	-23db
-	PWRI(0x25),	//12	-22.75db
-	PWRI(0x26),	//13	-22.5db
-	PWRI(0x28),	//14	-22.25db
-	PWRI(0x29),	//15	-22db
-	PWRI(0x2A),	//16	-21.75db
-	PWRI(0x2B),	//17	-21.5db
-	PWRI(0x2C),	//18	-21.25db
-	PWRI(0x2E),	//19	-21db
-	PWRI(0x2F),	//20	-20.75db
-	PWRI(0x30),	//21	-20.5db
-	PWRI(0x32),	//22	-20.25db
-	PWRI(0x33),	//23	-20db
-	PWRI(0x35),	//24	-19.75db
-	PWRI(0x36),	//25	-19.5db
-	PWRI(0x38),	//26	-19.25db
-	PWRI(0x39),	//27	-19db
-	PWRI(0x3B),	//28	-18.75db
-	PWRI(0x3D),	//29	-18.5db
-	PWRI(0x3F),	//30	-18.25db
-	PWRI(0x40),	//31	-18db
-	PWRI(0x42),	//32	-17.75db
-	PWRI(0x44),	//33	-17.5db
-	PWRI(0x46),	//34	-17.25db
-	PWRI(0x48),	//35	-17db
-	PWRI(0x4A),	//36	-16.75db
-	PWRI(0x4D),	//37	-16.5db
-	PWRI(0x4F),	//38	-16.25db
-	PWRI(0x51),	//39	-16db
-	PWRI(0x54),	//40	-15.75db
-	PWRI(0x56),	//41	-15.5db
-	PWRI(0x58),	//42	-15.25db
-	PWRI(0x5B),	//43	-15db
-	PWRI(0x5E),	//44	-14.75db
-	PWRI(0x60),	//45	-14.5db
-	PWRI(0x63),	//46	-14.25db
-	PWRI(0x66),	//47	-14db
-	PWRI(0x69),	//48	-13.75db
-	PWRI(0x6C),	//49	-13.5db
-	PWRI(0x6F),	//50	-13.25db
-	PWRI(0x73),	//51	-13db
-	PWRI(0x76),	//52	-12.75db
-	PWRI(0x79),	//53	-12.5db
-	PWRI(0x7D),	//54	-12.25db
-	PWRI(0x81),	//55	-12db
-	PWRI(0x84),	//56	-11.75db
-	PWRI(0x88),	//57	-11.5db
-	PWRI(0x8C),	//58	-11.25db
-	PWRI(0x90),	//59	-11db
-	PWRI(0x95),	//60	-10.75db
-	PWRI(0x99),	//61	-10.5db
-	PWRI(0x9D),	//62	-10.25db
-	PWRI(0xA2),	//63	-10db
-	PWRI(0xA7),	//64	-9.75db
-	PWRI(0xAC),	//65	-9.5db
-	PWRI(0xB1),	//66	-9.25db
-	PWRI(0xB6),	//67	-9db
-	PWRI(0xBB),	//68	-8.75db
-	PWRI(0xC0),	//69	-8.5db
-	PWRI(0xC6),	//70	-8.25db
-	PWRI(0xCC),	//71	-8db
-	PWRI(0xD2),	//72	-7.75db
-	PWRI(0xD8),	//73	-7.5db
-	PWRI(0xDE),	//74	-7.25db
-	PWRI(0xE5),	//75	-7db
-	PWRI(0xEB),	//76	-6.75db
-	PWRI(0xF2),	//77	-6.5db
-	PWRI(0xF9),	//78	-6.25db
-	PWRI(0x101),	//79	-6db
-	PWRI(0x108),	//80	-5.75db
-	PWRI(0x110),	//81	-5.5db
-	PWRI(0x118),	//82	-5.25db
-	PWRI(0x120),	//83	-5db
-	PWRI(0x128),	//84	-4.75db
-	PWRI(0x131),	//85	-4.5db
-	PWRI(0x13A),	//86	-4.25db
-	PWRI(0x143),	//87	-4db
-	PWRI(0x14C),	//88	-3.75db
-	PWRI(0x156),	//89	-3.5db
-	PWRI(0x160),	//90	-3.25db
-	PWRI(0x16A),	//91	-3db
-	PWRI(0x175),	//92	-2.75db
-	PWRI(0x180),	//93	-2.5db
-	PWRI(0x18B),	//94	-2.25db
-	PWRI(0x197),	//95	-2db
-	PWRI(0x1A3),	//96	-1.75db
-	PWRI(0x1AF),	//97	-1.5db
-	PWRI(0x1BB),	//98	-1.25db
-	PWRI(0x1C8),	//99	-1db
-	PWRI(0x1D6),	//100	-0.75db
-	PWRI(0x1E3),	//101	-0.5db
-	PWRI(0x1F1),	//102	-0.25db
-	PWRI(0x200),	//103	0db
-	PWRI(0x20F),	//104	0.25db
-	PWRI(0x21E),	//105	0.5db
-	PWRI(0x22E),	//106	0.75db
-	PWRI(0x23E),	//107	1db
-	PWRI(0x24F),	//108	1.25db
-	PWRI(0x261),	//109	1.5db
-	PWRI(0x272),	//110	1.75db
-	PWRI(0x285),	//111	2db
-	PWRI(0x297),	//112	2.25db
-	PWRI(0x2AB),	//113	2.5db
-	PWRI(0x2BF),	//114	2.75db
-	PWRI(0x2D3),	//115	3db
-	PWRI(0x2E8),	//116	3.25db
-	PWRI(0x2FE),	//117	3.5db
-	PWRI(0x314),	//118	3.75db
-	PWRI(0x32B),	//119	4db
-	PWRI(0x343),	//120	4.25db
-	PWRI(0x35C),	//121	4.5db
-	PWRI(0x375),	//122	4.75db
-	PWRI(0x38E),	//123	5db
-	PWRI(0x3A9),	//124	5.25db
-	PWRI(0x3C4),	//125	5.5db
-	PWRI(0x3E1),	//126	5.75db
-	PWRI(0x3FE),	//127	6db
+    // pregain
+    PWRI(0x1A),    //0    -25.75db
+    PWRI(0x1B),    //1    -25.5db
+    PWRI(0x1C),    //2    -25.25db
+    PWRI(0x1D),    //3    -25db
+    PWRI(0x1E),    //4    -24.75db
+    PWRI(0x1E),    //5    -24.5db
+    PWRI(0x1F),    //6    -24.25db
+    PWRI(0x20),    //7    -24db
+    PWRI(0x21),    //8    -23.75db
+    PWRI(0x22),    //9    -23.5db
+    PWRI(0x23),    //10    -23.25db
+    PWRI(0x24),    //11    -23db
+    PWRI(0x25),    //12    -22.75db
+    PWRI(0x26),    //13    -22.5db
+    PWRI(0x28),    //14    -22.25db
+    PWRI(0x29),    //15    -22db
+    PWRI(0x2A),    //16    -21.75db
+    PWRI(0x2B),    //17    -21.5db
+    PWRI(0x2C),    //18    -21.25db
+    PWRI(0x2E),    //19    -21db
+    PWRI(0x2F),    //20    -20.75db
+    PWRI(0x30),    //21    -20.5db
+    PWRI(0x32),    //22    -20.25db
+    PWRI(0x33),    //23    -20db
+    PWRI(0x35),    //24    -19.75db
+    PWRI(0x36),    //25    -19.5db
+    PWRI(0x38),    //26    -19.25db
+    PWRI(0x39),    //27    -19db
+    PWRI(0x3B),    //28    -18.75db
+    PWRI(0x3D),    //29    -18.5db
+    PWRI(0x3F),    //30    -18.25db
+    PWRI(0x40),    //31    -18db
+    PWRI(0x42),    //32    -17.75db
+    PWRI(0x44),    //33    -17.5db
+    PWRI(0x46),    //34    -17.25db
+    PWRI(0x48),    //35    -17db
+    PWRI(0x4A),    //36    -16.75db
+    PWRI(0x4D),    //37    -16.5db
+    PWRI(0x4F),    //38    -16.25db
+    PWRI(0x51),    //39    -16db
+    PWRI(0x54),    //40    -15.75db
+    PWRI(0x56),    //41    -15.5db
+    PWRI(0x58),    //42    -15.25db
+    PWRI(0x5B),    //43    -15db
+    PWRI(0x5E),    //44    -14.75db
+    PWRI(0x60),    //45    -14.5db
+    PWRI(0x63),    //46    -14.25db
+    PWRI(0x66),    //47    -14db
+    PWRI(0x69),    //48    -13.75db
+    PWRI(0x6C),    //49    -13.5db
+    PWRI(0x6F),    //50    -13.25db
+    PWRI(0x73),    //51    -13db
+    PWRI(0x76),    //52    -12.75db
+    PWRI(0x79),    //53    -12.5db
+    PWRI(0x7D),    //54    -12.25db
+    PWRI(0x81),    //55    -12db
+    PWRI(0x84),    //56    -11.75db
+    PWRI(0x88),    //57    -11.5db
+    PWRI(0x8C),    //58    -11.25db
+    PWRI(0x90),    //59    -11db
+    PWRI(0x95),    //60    -10.75db
+    PWRI(0x99),    //61    -10.5db
+    PWRI(0x9D),    //62    -10.25db
+    PWRI(0xA2),    //63    -10db
+    PWRI(0xA7),    //64    -9.75db
+    PWRI(0xAC),    //65    -9.5db
+    PWRI(0xB1),    //66    -9.25db
+    PWRI(0xB6),    //67    -9db
+    PWRI(0xBB),    //68    -8.75db
+    PWRI(0xC0),    //69    -8.5db
+    PWRI(0xC6),    //70    -8.25db
+    PWRI(0xCC),    //71    -8db
+    PWRI(0xD2),    //72    -7.75db
+    PWRI(0xD8),    //73    -7.5db
+    PWRI(0xDE),    //74    -7.25db
+    PWRI(0xE5),    //75    -7db
+    PWRI(0xEB),    //76    -6.75db
+    PWRI(0xF2),    //77    -6.5db
+    PWRI(0xF9),    //78    -6.25db
+    PWRI(0x101),    //79    -6db
+    PWRI(0x108),    //80    -5.75db
+    PWRI(0x110),    //81    -5.5db
+    PWRI(0x118),    //82    -5.25db
+    PWRI(0x120),    //83    -5db
+    PWRI(0x128),    //84    -4.75db
+    PWRI(0x131),    //85    -4.5db
+    PWRI(0x13A),    //86    -4.25db
+    PWRI(0x143),    //87    -4db
+    PWRI(0x14C),    //88    -3.75db
+    PWRI(0x156),    //89    -3.5db
+    PWRI(0x160),    //90    -3.25db
+    PWRI(0x16A),    //91    -3db
+    PWRI(0x175),    //92    -2.75db
+    PWRI(0x180),    //93    -2.5db
+    PWRI(0x18B),    //94    -2.25db
+    PWRI(0x197),    //95    -2db
+    PWRI(0x1A3),    //96    -1.75db
+    PWRI(0x1AF),    //97    -1.5db
+    PWRI(0x1BB),    //98    -1.25db
+    PWRI(0x1C8),    //99    -1db
+    PWRI(0x1D6),    //100    -0.75db
+    PWRI(0x1E3),    //101    -0.5db
+    PWRI(0x1F1),    //102    -0.25db
+    PWRI(0x200),    //103    0db
+    PWRI(0x20F),    //104    0.25db
+    PWRI(0x21E),    //105    0.5db
+    PWRI(0x22E),    //106    0.75db
+    PWRI(0x23E),    //107    1db
+    PWRI(0x24F),    //108    1.25db
+    PWRI(0x261),    //109    1.5db
+    PWRI(0x272),    //110    1.75db
+    PWRI(0x285),    //111    2db
+    PWRI(0x297),    //112    2.25db
+    PWRI(0x2AB),    //113    2.5db
+    PWRI(0x2BF),    //114    2.75db
+    PWRI(0x2D3),    //115    3db
+    PWRI(0x2E8),    //116    3.25db
+    PWRI(0x2FE),    //117    3.5db
+    PWRI(0x314),    //118    3.75db
+    PWRI(0x32B),    //119    4db
+    PWRI(0x343),    //120    4.25db
+    PWRI(0x35C),    //121    4.5db
+    PWRI(0x375),    //122    4.75db
+    PWRI(0x38E),    //123    5db
+    PWRI(0x3A9),    //124    5.25db
+    PWRI(0x3C4),    //125    5.5db
+    PWRI(0x3E1),    //126    5.75db
+    PWRI(0x3FE),    //127    6db
 };
+/**
+ * move to sys_persist_config.csv::rf_config.pwr_gain_base_ble
+ */
 #if CONFIG_BLE_USE_HIGH_POWER_LEVEL
-const UINT32 pwr_gain_base_gain_ble = 0x20FA0C00;
+//const UINT32 pwr_gain_base_gain_ble = 0x20FA0C00;
 #else
-const UINT32 pwr_gain_base_gain_ble = 0x20F94C00;
+//const UINT32 pwr_gain_base_gain_ble = 0x20F94C00;
 #endif
 #define TPC_PAMAP_TAB_BT_LEN                        (65)
 const PWR_REGS cfg_tab_bt[TPC_PAMAP_TAB_BT_LEN] = {
@@ -396,9 +401,9 @@ void vnd_cal_overlay(void)
     vnd_cal_set_auto_pwr_thred(auto_pwr);
     //EPA
 #if EPA_ENABLE_FLAG
-    vnd_cal_set_epa_config(1, GPIO_28, GPIO_26, pwr_gain_base_gain_b, pwr_gain_base_gain_g);
+    vnd_cal_set_epa_config(1, GPIO_28, GPIO_26, 0, 0);
 #else
-    vnd_cal_set_epa_config(0, GPIO_28, GPIO_26, pwr_gain_base_gain_b, pwr_gain_base_gain_g);
+    vnd_cal_set_epa_config(0, GPIO_28, GPIO_26, 0, 0);
 #endif
     vnd_cal_version_log(vnd_cal_version);
 }
