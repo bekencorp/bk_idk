@@ -19,11 +19,26 @@ bk_err_t bk_https_ota_init(https_ota_t* ota_config)
 
 bk_err_t bk_https_ota_deinit(https_ota_t* ota_config)
 {
+	bk_err_t err;
+
 	if (ota_config == NULL) {
 		return BK_FAIL;
 	}
 	ota_config->state = HTTPS_OTA_UNINIT;
-	return bk_ota_download_deinit(ota_config->ota_parse);
+
+	if (ota_config->client) {
+		bk_http_client_close(ota_config->client);
+		bk_http_client_cleanup(ota_config->client);
+		ota_config->client = NULL;
+	}
+	if (ota_config->ETag) {
+		os_free(ota_config->ETag);
+		ota_config->ETag = NULL;
+	}
+
+	err = bk_ota_download_deinit(ota_config->ota_parse);
+	ota_config->ota_parse = NULL;
+	return err;
 }
 
 bk_err_t bk_https_ota_begin(https_ota_t* ota_config)
@@ -177,9 +192,11 @@ bk_err_t bk_https_ota_end(https_ota_t* ota_config)
 	if (ota_config->client) {
 		bk_http_client_close(ota_config->client);
 		bk_http_client_cleanup(ota_config->client);
+		ota_config->client = NULL;
 	}
 	if (ota_config->ETag) {
 		os_free(ota_config->ETag);
+		ota_config->ETag = NULL;
 	}
 
 	return BK_OK;
