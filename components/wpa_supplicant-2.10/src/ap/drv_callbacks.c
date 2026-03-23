@@ -2067,6 +2067,8 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 			hapd, data->connect_failed_reason.addr,
 			data->connect_failed_reason.code);
 		break;
+#endif
+#ifdef CONFIG_ACS
 	case EVENT_SURVEY:
 		hostapd_event_get_survey(hapd->iface, &data->survey_results);
 		break;

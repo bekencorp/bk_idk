@@ -1238,10 +1238,21 @@ static void *hostap_init(struct hostapd_data *hapd,
 static void hostap_driver_deinit(void *priv)
 {
     struct hostap_driver_data *drv = priv;
+    int retries = 0;
 
     (void) hostap_set_iface_flags(drv, 0);
     (void) hostap_ioctl_prism2param(drv, PRISM2_PARAM_HOSTAPD, 0);
     (void) hostap_ioctl_prism2param(drv, PRISM2_PARAM_HOSTAPD_STA, 0);
+
+	// Wait scan complete
+	/* wait hw cleanup complete */
+	while (ke_state_get(TASK_SCANU) == SCANU_SCANNING) {
+		rtos_delay_milliseconds(100);
+		WPA_LOGI("wait scan complete\r\n");
+		if (retries++ > 50)
+			break;
+	}
+	WPA_LOGI("scanu completed\r\n");
 
 	if(wpa_driver_hostap_stop_apm(drv))
 		WPA_LOGE("Could not stop apm vif: %d\n", drv->vif_index);
@@ -1336,6 +1347,9 @@ int hostap_channel_switch(void *priv, struct csa_settings *settings)
 
 static int hostap_set_freq(void *priv, struct hostapd_freq_params *freq)
 {
+#ifdef CONFIG_ACS
+    rw_msg_send_channel_update_req(freq->channel);
+#else
     struct hostap_driver_data *drv = priv;
     struct iwreq iwr;
 
@@ -1349,6 +1363,7 @@ static int hostap_set_freq(void *priv, struct hostapd_freq_params *freq)
                    strerror(errno));
         return -1;
     }
+#endif
 
     return 0;
 }
@@ -2734,6 +2749,67 @@ int wpa_driver_nl80211_deinit_ap(void *priv)
 
 #endif
 
+#ifdef CONFIG_ACS
+static void clean_survey_results(struct survey_results *survey_results)
+{
+	struct freq_survey *survey, *tmp;
+
+	if (dl_list_empty(&survey_results->survey_list))
+		return;
+
+	dl_list_for_each_safe(survey, tmp, &survey_results->survey_list,
+			      struct freq_survey, list) {
+		dl_list_del(&survey->list);
+		os_free(survey);
+	}
+}
+
+int hostap_get_survey(void *priv, unsigned int freq)
+{
+	union wpa_event_data data;
+	struct survey_results *survey_results;
+	struct hostap_driver_data *drv = priv;
+	struct prism2_hostapd_param *param;
+
+	os_memset(&data, 0, sizeof(data));
+	survey_results = &data.survey_results;
+
+	dl_list_init(&survey_results->survey_list);
+
+	if (freq)
+		data.survey_results.freq_filter = freq;
+
+	u8 *buf;
+	size_t blen;
+	int ret = 0;
+
+	blen = sizeof(*param);
+	buf = os_zalloc(blen);
+	if (buf == NULL)
+		return -1;
+
+	param = (struct prism2_hostapd_param *)buf;
+	param->cmd = PRISM2_HOSTAPD_GET_SITE_SURVEY;
+	param->vif_idx = drv->vif_index;
+	param->u.survey_results = &data.survey_results;
+
+	if (hostapd_ioctl(drv, param, blen))
+		ret = -1;
+
+	os_free(buf);
+
+	if (ret)
+		wpa_printf(MSG_ERROR, "nl80211: Failed to process survey data");
+	else if (drv->hapd)
+		wpa_supplicant_event(drv->hapd, EVENT_SURVEY, &data);
+
+	clean_survey_results(survey_results);
+
+	return ret;
+}
+#endif
+
+
 const struct wpa_driver_ops wpa_driver_hostap_ops =
 {
     .name = "hostap_beken",
@@ -2795,6 +2871,9 @@ const struct wpa_driver_ops wpa_driver_hostap_ops =
 
 	.signal_monitor = wpa_driver_signal_monitor,
 	.signal_poll = wpa_driver_signal_poll,
+#ifdef CONFIG_ACS
+	.get_survey = hostap_get_survey,
+#endif
 
 #ifdef CONFIG_P2P
 	.probe_req_report = wpa_driver_probe_req_report,

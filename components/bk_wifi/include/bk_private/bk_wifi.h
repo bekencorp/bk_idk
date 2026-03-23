@@ -539,6 +539,7 @@ uint32_t bk_sta_cipher_is_open(void);
 uint8_t bk_wlan_ap_get_channel_config(void);
 VOID bk_wlan_ap_set_channel_config(uint8_t channel);
 uint8_t bk_wlan_has_role(uint8_t role);
+uint8_t bk_wlan_sta_get_channel(void);
 void bk_wlan_reg_csa_cb_coexist_mode(void);
 #ifdef CONFIG_P2P_GO
 uint8_t bk_wlan_ap_get_default_channel(void);

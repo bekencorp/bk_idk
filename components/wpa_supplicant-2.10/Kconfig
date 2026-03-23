@@ -73,6 +73,20 @@ menu "modules::wpa_supplicant-2.10"
 			help
 				Enable AP Vendor Specific IE
 
+		config ACS_SUPPORT
+			bool "Enable Auto Channel Selection"
+			default n
+			help
+				Specify ACS scan number.
+
+		config ACS_NUM_SCANS
+			int "ACS scan number"
+			range 1 10
+			default 3
+			depends on ACS_SUPPORT
+			help
+				Enable Auto Channel Selection
+
 		config STA_VSIE
 			bool "Enable STA VSIE"
 			default n

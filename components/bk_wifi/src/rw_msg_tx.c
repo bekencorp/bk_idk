@@ -920,6 +920,19 @@ int rw_msg_send_apm_start_req(u8 vif_index, u8 channel,
 	return rw_msg_send(req, 1, APM_START_CFM, cfm);
 }
 
+int rw_msg_send_channel_update_req(uint8_t channel) {
+	struct mm_chan_ctxt_update_req *req = KE_MSG_ALLOC(MM_CHAN_CTXT_UPDATE_REQ,
+											TASK_MM, TASK_API, mm_chan_ctxt_update_req);
+	req->chan_index = 0;
+	req->chan.band = PHY_BAND_2G4;
+	req->chan.flags = 0;
+	req->chan.prim20_freq = req->chan.center1_freq = rw_ieee80211_get_centre_frequency(channel);
+	req->chan.center2_freq = 0;
+	req->chan.type = PHY_CHNL_BW_20;
+	ke_msg_send(req);
+	return 0;
+}
+
 int rw_msg_send_apm_stop_req(u8 vif_index)
 {
 	struct apm_stop_req *req;

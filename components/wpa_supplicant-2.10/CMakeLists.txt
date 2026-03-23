@@ -86,6 +86,10 @@ endif()
 		"wpa_supplicant/wnm_sta.c"
 		)
 
+	if (CONFIG_ACS_SUPPORT)
+		list(APPEND srcs "src/ap/acs.c")
+	endif()
+
 	# Crypto functions
 	list(APPEND srcs
 		"src/crypto/aes-siv.c"

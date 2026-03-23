@@ -891,8 +891,13 @@ bw_selected:
 	}
 
 	if (ideal_chan) {
+#ifdef CONFIG_NO_STDOUT_DEBUG
+		WPA_LOGI("ACS: Ideal channel is %d (%d MHz) with total interference factor of %Lg\n",
+			   ideal_chan->chan, ideal_chan->freq, ideal_factor);
+#else
 		wpa_printf(MSG_DEBUG, "ACS: Ideal channel is %d (%d MHz) with total interference factor of %Lg",
 			   ideal_chan->chan, ideal_chan->freq, ideal_factor);
+#endif
 		return ideal_chan;
 	}
 
@@ -1101,9 +1106,15 @@ static int acs_request_scan(struct hostapd_iface *iface)
 
 	iface->scan_cb = acs_scan_complete;
 
+#ifdef CONFIG_NO_STDOUT_DEBUG
+	WPA_LOGI("ACS: Scanning %d / %d\n",
+		   iface->acs_num_completed_scans + 1,
+		   iface->conf->acs_num_scans);
+#else
 	wpa_printf(MSG_DEBUG, "ACS: Scanning %d / %d",
 		   iface->acs_num_completed_scans + 1,
 		   iface->conf->acs_num_scans);
+#endif
 
 	if (hostapd_driver_scan(iface->bss[0], &params) < 0) {
 		wpa_printf(MSG_ERROR, "ACS: Failed to request initial scan");
@@ -1119,7 +1130,11 @@ static int acs_request_scan(struct hostapd_iface *iface)
 
 enum hostapd_chan_status acs_init(struct hostapd_iface *iface)
 {
+#ifdef CONFIG_NO_STDOUT_DEBUG
+	WPA_LOGI("ACS: Automatic channel selection started, this may take a bit\n");
+#else
 	wpa_printf(MSG_INFO, "ACS: Automatic channel selection started, this may take a bit");
+#endif
 
 	if (iface->drv_flags & WPA_DRIVER_FLAGS_ACS_OFFLOAD) {
 		wpa_printf(MSG_INFO, "ACS: Offloading to driver");

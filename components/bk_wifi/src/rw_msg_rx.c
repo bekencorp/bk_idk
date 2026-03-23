@@ -1159,7 +1159,7 @@ UINT32 mhdr_scanu_result_ind(SCAN_RST_UPLOAD_T *scan_rst, void *msg, UINT32 len)
 	}
 
 	/* check the duplicate bssid */
-	if (false == rwnx_check_duplicate_bssid(result_ptr, probe_rsp_ieee80211_ptr->bssid, 
+	if (false == rwnx_check_duplicate_bssid(result_ptr, probe_rsp_ieee80211_ptr->bssid,
 		scanu_ret_ptr->rssi, on_channel, &duplicate_replace_index)) {
 		goto scan_rst_exit;
 	}
@@ -1198,7 +1198,7 @@ UINT32 mhdr_scanu_result_ind(SCAN_RST_UPLOAD_T *scan_rst, void *msg, UINT32 len)
 
 	/* upload single transmit-bss infor to upper */
 	rwnx_inform_single_bss_data(result_ptr, item, duplicate_replace_index);
-	
+
 #if CONFIG_RWNX_MULTIPLE_SSID_STA_MODE
 	/* check multiple nontransmit-bss and upload multiple bss infor to upper*/
 	const u8 *multiple_ssid_required = rwnx_find_ie(WLAN_EID_MULTIPLE_BSSID, var_part_addr, vies_len);
@@ -1598,6 +1598,31 @@ void rwnx_flush_rlk_info_results(void)
 	wifi_rlk_info.wifi_rlk_start = rlk_start;
 }
 
+static int rwnx_freq_to_idx(struct rwnx_hw *rwnx_hw, int freq)
+{
+    struct ieee80211_supported_band *sband;
+    int band, ch, idx = 0;
+
+    for (band = IEEE80211_BAND_2GHZ; band < IEEE80211_NUM_BANDS; band++) {
+        sband = rwnx_hw->wiphy->bands[band];
+        if (!sband) {
+            continue;
+        }
+
+        for (ch = 0; ch < sband->n_channels; ch++, idx++) {
+            if (sband->channels[ch].center_freq == freq) {
+                goto exit;
+            }
+        }
+    }
+
+    BUG_ON(1);
+
+exit:
+    // Channel has been found, return the index
+    return idx;
+}
+
 void rwnx_chan_survey_ind_handler(void *msg)
 {
 	struct ke_msg *msg_ptr = (struct ke_msg *)msg;
@@ -1611,6 +1636,19 @@ void rwnx_chan_survey_ind_handler(void *msg)
 
 	RWNX_LOGD("chan_survey busy %d ms time %d ms noise %d freq %d\r\n",
 			 ind->chan_time_busy_ms,ind->chan_time_ms,ind->noise_dbm,ind->freq);
+
+#ifdef CONFIG_ACS_SUPPORT
+	struct rwnx_hw *rwnx_hw = &g_rwnx_hw;
+    int idx = rwnx_freq_to_idx(rwnx_hw, ind->freq);
+
+	if (idx < ARRAY_SIZE(rwnx_hw->channel_surveys)) {
+		rwnx_hw->channel_surveys[idx].freq = ind->freq;
+		rwnx_hw->channel_surveys[idx].noise_dbm = ind->noise_dbm;
+		rwnx_hw->channel_surveys[idx].chan_time_ms = ind->chan_time_ms;
+		rwnx_hw->channel_surveys[idx].chan_time_busy_ms = ind->chan_time_busy_ms;
+		rwnx_hw->channel_surveys[idx].filled = true;
+	}
+#endif
 
 	if((ind->freq < CHANNEL_ONE_FREQUENCY_FOR_2_4G) || (ind->freq >= CHANNEL_FOURTEEN_FREQUENCY_FOR_2_4G))
 	{
@@ -1669,11 +1707,6 @@ static bool rwnx_regd_need_update()
 //TODO remove old event handler
 void rwnx_handle_recv_msg(struct ke_msg *rx_msg)
 {
-	//uint32_t param;
-	//FUNC_1PARAM_PTR fn = bk_wlan_get_status_cb();
-	//wifi_event_sta_disconnected_t sta_disconnected = {0};
-	//wifi_linkstate_reason_t info;
-
 	switch (rx_msg->id) {
 
 	/**************************************************************************/
@@ -1692,11 +1725,12 @@ void rwnx_handle_recv_msg(struct ke_msg *rx_msg)
 
 		sort_scan_result(scan_rst_set_ptr);
 
-		if (rwnx_get_wifi_rlk_start())
-		{
+		if (rwnx_get_wifi_rlk_start()) {
 			rwnx_wifi_rlk_trigger_scan_process();
-		}
-		else {
+		} else {
+#if CONFIG_ACS_SUPPORT
+			wpa_ctrl_event(WPA_CTRL_EVENT_AP_SCAN_RESULTS, NULL);
+#endif
 			wpa_ctrl_event(WPA_CTRL_EVENT_SCAN_RESULTS, NULL);
 		}
 

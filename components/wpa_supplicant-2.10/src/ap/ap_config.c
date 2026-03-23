@@ -319,7 +319,11 @@ struct hostapd_config * hostapd_config_defaults(void)
 	conf->acs = 0;
 	conf->acs_ch_list.num = 0;
 #ifdef CONFIG_ACS
+#if BK_SUPPLICANT
+	conf->acs_num_scans = CONFIG_ACS_NUM_SCANS;
+#else
 	conf->acs_num_scans = 5;
+#endif
 #endif /* CONFIG_ACS */
 
 #ifdef CONFIG_IEEE80211AX

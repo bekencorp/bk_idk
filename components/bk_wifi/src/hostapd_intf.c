@@ -487,6 +487,7 @@ int hapd_intf_remove_vif(struct prism2_hostapd_param *param, int len)
 int hapd_intf_start_apm(struct prism2_hostapd_param *param, int len)
 {
 	int ret;
+	u8 chan;
 	struct apm_start_cfm *cfm
 		= (struct apm_start_cfm *)os_malloc(sizeof(struct apm_start_cfm));
 
@@ -495,7 +496,13 @@ int hapd_intf_start_apm(struct prism2_hostapd_param *param, int len)
 		return BK_ERR_NO_MEM;
 	}
 
-	ret = rw_msg_send_apm_start_req(param->vif_idx, g_ap_param_ptr->chann, cfm);
+	chan = g_ap_param_ptr->chann;
+#if CONFIG_ACS_SUPPORT
+	if (!chan)
+		chan = 1; // default to channel 1
+#endif
+	ret = rw_msg_send_apm_start_req(param->vif_idx, chan, cfm);
+
 	if (ret) {
 		BK_LOGE(TAG, "start apm failed, ret=%x!\r\n", ret);
 		os_free(cfm);
@@ -1165,6 +1172,56 @@ int hapd_poll_null_frame(struct prism2_hostapd_param *param, int len)
 	return -1;
 }
 
+#ifdef CONFIG_ACS_SUPPORT
+int hapd_get_site_survey(struct prism2_hostapd_param *param, int len)
+{
+	struct survey_results *res;
+	struct rwnx_hw *rwnx_hw = &g_rwnx_hw;;
+	struct channel_survey *cs = rwnx_hw->channel_surveys;
+	struct freq_survey *survey;
+	res = param->u.survey_results;
+	int freq = res->freq_filter;
+
+	dl_list_init(&res->survey_list);
+
+	for (int i = 0; i < ARRAY_SIZE(rwnx_hw->channel_surveys); i++, cs++) {
+		if (cs->filled) {
+			// Skip 2.4G chan 14, only DSSS rate is allowed
+			if (!freq && cs->freq == 2484)
+				continue;
+
+			// If specified freq filter
+			if (freq && cs->freq != freq)
+				continue;
+
+			survey = os_zalloc(sizeof(*survey));
+
+			if (!survey)
+				return 0;
+
+			survey->freq = cs->freq;
+			survey->nf = cs->noise_dbm;
+			survey->channel_time = cs->chan_time_ms;
+			survey->channel_time_busy = cs->chan_time_busy_ms;
+			survey->filled = SURVEY_HAS_CHAN_TIME | SURVEY_HAS_CHAN_TIME_BUSY;
+			if (cs->noise_dbm)
+				survey->filled |= SURVEY_HAS_NF;
+
+			dl_list_add_tail(&res->survey_list, &survey->list);
+
+			// Set the survey report as not used
+			cs->filled = 0;
+
+			// If found freq filter, break
+			if (freq)
+				break;
+		}
+	}
+
+	return 0;
+}
+#endif
+
 int hapd_intf_ioctl(unsigned long arg)
 {
 	u32 cmd = 0;
@@ -1321,6 +1378,12 @@ int hapd_intf_ioctl(unsigned long arg)
 	case PRISM2_HOSTAPD_CANCEL_ROC: {
 		ret = rw_msg_send_cancel_roc(param->vif_idx);
 	}	break;
+#endif
+
+#ifdef CONFIG_ACS_SUPPORT
+	case PRISM2_HOSTAPD_GET_SITE_SURVEY:
+		ret = hapd_get_site_survey(param, len);
+		break;
 #endif
 
 	default:

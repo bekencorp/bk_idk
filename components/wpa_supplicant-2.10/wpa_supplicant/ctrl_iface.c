@@ -59,6 +59,9 @@
 #if CONFIG_WAPI_SUPPORT
 #include "sk_intf.h"
 #endif
+#if CONFIG_ACS
+#include "acs.h"
+#endif
 
 extern beken_thread_t wpas_thread_handle;
 extern bool site_survey_cc;
@@ -2017,7 +2020,8 @@ int wpa_supplicant_handle_events(wpah_msg_t *msg)
 	if (msg->cmd == WPA_CTRL_EVENT_CHAN_SWITCH_IND ||
 		msg->cmd == WPA_CTRL_EVENT_CHAN_SWITCH_START_IND ||
 		msg->cmd == WPA_CTRL_EVENT_PROBE_STATUS ||
-		msg->cmd == WPA_CTRL_EVENT_DEL_STATION)
+		msg->cmd == WPA_CTRL_EVENT_DEL_STATION ||
+		msg->cmd == WPA_CTRL_EVENT_AP_SCAN_RESULTS)
 		CHECK_HAPD();
 	else
 		CHECK_WPA_S();
@@ -2031,6 +2035,15 @@ int wpa_supplicant_handle_events(wpah_msg_t *msg)
 		eloop_cancel_timeout(wpa_driver_scan_timeout, wpa_s, NULL);
 		wpa_supplicant_event_sta(wpa_s, EVENT_SCAN_RESULTS, NULL);
 	}	break;
+
+#if CONFIG_ACS
+	case WPA_CTRL_EVENT_AP_SCAN_RESULTS: {
+		if (!interfaces->iface || !interfaces->iface[0]->bss[0])
+			break;
+		struct hostapd_data *hapd = interfaces->iface[0]->bss[0];
+		wpa_supplicant_event(hapd, EVENT_SCAN_RESULTS, NULL);
+	}	break;
+#endif
 
 	case WPA_CTRL_EVENT_DISCONNECT_IND: {
 		struct sm_disconnect_ind *ind = (struct sm_disconnect_ind *)msg->argu;

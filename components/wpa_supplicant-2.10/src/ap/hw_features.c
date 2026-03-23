@@ -27,6 +27,7 @@
 #include "hostapd_cfg.h"
 #include <common/bk_include.h>
 #include "bk_wifi_types.h"
+#include "bk_wifi.h"
 #endif
 
 void hostapd_free_hw_features(struct hostapd_hw_modes *hw_features,
@@ -1078,6 +1079,10 @@ int hostapd_acs_completed(struct hostapd_iface *iface, int err)
 
 	if (err)
 		goto out;
+
+#if BK_SUPPLICANT && CONFIG_ACS
+	bk_wlan_ap_set_channel_config(iface->conf->channel);
+#endif
 
 	switch (hostapd_check_chans(iface)) {
 	case HOSTAPD_CHAN_VALID:

@@ -670,6 +670,7 @@ enum {
 	PRISM2_HOSTAPD_CANCEL_ROC,
 	PRISM2_HOSTAPD_SIGNAL_MONITOR,
 	PRISM2_HOSTAPD_GET_SIGNAL_POLL,
+	PRISM2_HOSTAPD_GET_SITE_SURVEY,
 };
 
 #define PRISM2_HOSTAPD_MAX_BUF_SIZE 1024
@@ -887,6 +888,7 @@ struct prism2_hostapd_param {
 			int avg_signal;
 			int current_noise;
 		} signal_info;
+		struct survey_results *survey_results;
 	} u;
 };
 

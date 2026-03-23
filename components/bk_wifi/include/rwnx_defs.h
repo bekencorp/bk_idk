@@ -121,6 +121,22 @@ struct rwnx_csa {
     //struct work_struct work;
 };
 
+#ifdef CONFIG_ACS_SUPPORT
+struct channel_survey
+{
+    /// Frequency of the channel
+    uint16_t freq;
+    /// Noise in dbm
+    int8_t noise_dbm;
+    /// Amount of time spent on the channel (in ms)
+    uint32_t chan_time_ms;
+    /// Amount of time the primary channel was sensed busy
+    uint32_t chan_time_busy_ms;
+
+    bool filled;
+};
+#endif
+
 // TODO: add lock (mutex, spinlock, etc.)
 struct rwnx_hw {
 	struct rwnx_mod_params *mod_params;
@@ -167,6 +183,10 @@ struct rwnx_hw {
 	struct hostapd_freq_params freq_params;
 
 	struct bk_work csa_work;
+
+#ifdef CONFIG_ACS_SUPPORT
+	struct channel_survey channel_surveys[SCAN_CHANNEL_MAX];
+#endif
 };
 
 #if CONFIG_RWNX_SW_TXQ

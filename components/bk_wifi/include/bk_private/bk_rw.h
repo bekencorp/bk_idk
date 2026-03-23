@@ -326,6 +326,7 @@ extern int rw_send_me_traffic_ind(u8 sta_idx, bool uapsd, u8 tx_status);
 extern int rw_msg_send_roc(u8 vif_index, unsigned int freq, uint32_t duration);
 extern int rw_msg_send_cancel_roc(u8 vif_index);
 extern int rw_msg_send_apm_start_req(u8 vif_index, u8 channel, struct apm_start_cfm *cfm);
+extern int rw_msg_send_channel_update_req(u8 channel);
 extern int rw_msg_apm_send_null_frame(uint8_t sta_id, uint8_t vif_idx);
 extern int rw_msg_send_bcn_change(void *bcn_param);
 extern int rw_msg_send_me_sta_add(struct add_sta_st *param, struct me_sta_add_cfm *cfm);

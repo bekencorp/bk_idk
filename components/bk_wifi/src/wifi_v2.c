@@ -327,12 +327,16 @@ uint8_t bk_wlan_ap_get_default_channel(void)
 
 	/* if ap and sta are coexist, ap channel shall match sta channel firstly*/
 	channel = bk_wlan_sta_get_channel();
+
+	/* If ACS is enabled, let hostpad choose best channel instead of DEFAULT_CHANNEL_AP */
+#ifndef CONFIG_ACS_SUPPORT
 	if (0 == channel) {
 		if (sys_channel == DEFAULT_CHANNEL_AP)
 			channel = DEFAULT_CHANNEL_AP;
 		else
 			channel = sys_channel;
 	}
+#endif
 
 	return channel;
 }

@@ -254,7 +254,9 @@
 //#define CONFIG_TESTING_OPTIONS  1
 
 /* Automatic Channel Selection */
-//#define CONFIG_ACS  1
+#ifdef CONFIG_ACS_SUPPORT
+#define CONFIG_ACS  1
+#endif
 
 #ifndef CONFIG_IEEE80211R
 #define CONFIG_NO_ROAMING
