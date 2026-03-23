@@ -61,6 +61,7 @@ typedef enum {
     RESET_SOURCE_BOOTLOADER_UNKNOWN         = 0x1f,
 
     RESET_SOURCE_FASTBOOT_POWER_ON          = 0x20,
+    RESET_SOURCE_ILLEGAL_PERSIST_DATA       = 0x21,
 
     RESET_SOURCE_UNKNOWN = 0xff,
 } RESET_SOURCE_STATUS;
@@ -174,8 +175,8 @@ uint32_t bk_misc_get_reset_reason(void);
 void bk_misc_set_reset_reason(uint32_t type);
 
 #if (CONFIG_CPU_CNT > 1)
-//This callback function can be registered in cpu1, and will be called when cpu0 stops cpu1 
-//Note: As the callback is called in mailbox ISR, remember to keep it simplify 
+//This callback function can be registered in cpu1, and will be called when cpu0 stops cpu1
+//Note: As the callback is called in mailbox ISR, remember to keep it simplify
 typedef bk_err_t (*stop_cpu1_notification)(void *);
 void stop_cpu1_register_notification(stop_cpu1_notification notification, void *param);
 void stop_cpu1_unregister_notification(stop_cpu1_notification notification);

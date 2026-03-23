@@ -235,7 +235,9 @@ uint32_t reset_reason_init(void)
 void bk_misc_set_reset_reason(uint32_t type)
 {
 #if CONFIG_AON_PMU_REG0_REFACTOR_DEV
-    if (type == RESET_SOURCE_POWERON || type == RESET_SOURCE_WATCHDOG) {
+    if (type == RESET_SOURCE_POWERON ||
+        type == RESET_SOURCE_WATCHDOG ||
+        type == RESET_SOURCE_ILLEGAL_PERSIST_DATA) {
         // aon watchdog do not have other chance to write into r7b
         aon_pmu_hal_set_reset_reason(type, true);
     } else {

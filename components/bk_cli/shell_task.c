@@ -1022,6 +1022,13 @@ static bool_t log_hint_out(void)
 	return bTRUE;
 }
 
+static bool shell_log_dev_ready(void)
+{
+	return log_dev != NULL
+		&& log_dev->dev_drv != NULL
+		&& log_dev->dev_drv->io_ctrl != NULL;
+}
+
 /* call this in interrupt !* DISABLED *! context. */
 static void tx_req_process(void)
 {
@@ -1041,6 +1048,10 @@ static void tx_req_process(void)
 		return;
 
 	tx_ready = 0;
+
+	if (!shell_log_dev_ready()) {
+		return;
+	}
 
 	log_dev->dev_drv->io_ctrl(log_dev, SHELL_IO_CTRL_GET_STATUS, &tx_ready);
 

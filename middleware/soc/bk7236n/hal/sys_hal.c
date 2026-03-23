@@ -2710,6 +2710,13 @@ void sys_hal_early_init(void)
 	val |= (0x1 << 5);
 	sys_hal_analog_set(ANALOG_REG5,val);
 
+	/* sys_persist_check_crc costs about 3 ms */
+	if (sys_persist_check_crc()) {
+		bk_misc_set_reset_reason(RESET_SOURCE_ILLEGAL_PERSIST_DATA);
+		bk_reboot_ex(RESET_SOURCE_ILLEGAL_PERSIST_DATA);
+		return;
+	}
+
 	sys_persist_sys_t *sys_ana = get_sys_persist_sys();
 	sys_hal_analog_set(ANALOG_REG0, sys_ana->r0);
 	sys_hal_analog_set(ANALOG_REG1, sys_ana->r1);

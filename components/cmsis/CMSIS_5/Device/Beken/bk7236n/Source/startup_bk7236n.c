@@ -377,6 +377,16 @@ static inline void boot_mem_check(void)
     }
 }
 
+static uint32_t relocate_vector_table(void)
+{
+    uint32_t vtor_addr;
+
+    vtor_addr = (uint32_t) &(__VECTOR_TABLE_IRAM[0]);
+    SCB->VTOR = vtor_addr;
+
+    return vtor_addr;
+}
+
 /*----------------------------------------------------------------------------
   Reset Handler called on controller reset
  *----------------------------------------------------------------------------*/
@@ -445,6 +455,8 @@ void _start(void)
     bk_pm_cp1_auto_power_down_state_set(PM_CP1_AUTO_CTRL_DISABLE);
     bk_pm_mem_auto_power_down_state_set(PM_MEM_AUTO_CTRL_DISABLE);
 #endif
+
+    relocate_vector_table();
 
     entry_main();
 

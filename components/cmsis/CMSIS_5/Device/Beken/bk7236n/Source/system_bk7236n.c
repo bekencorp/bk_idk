@@ -35,7 +35,7 @@
 /*----------------------------------------------------------------------------
   Exception / Interrupt Vector table
  *----------------------------------------------------------------------------*/
-//extern const VECTOR_TABLE_Type __VECTOR_TABLE[];
+extern const VECTOR_TABLE_Type __VECTOR_TABLE[];
 
 extern const VECTOR_TABLE_Type __VECTOR_TABLE_IRAM[];
 
@@ -47,7 +47,7 @@ extern const VECTOR_TABLE_Type __VECTOR_TABLE_IRAM[];
 void SystemInit (void)
 {
 #if defined (__VTOR_PRESENT) && (__VTOR_PRESENT == 1U)
-	SCB->VTOR = (uint32_t) &(__VECTOR_TABLE_IRAM[0]);
+	SCB->VTOR = (uint32_t) &(__VECTOR_TABLE[0]);
 #endif
 
 #ifdef UNALIGNED_SUPPORT_DISABLE

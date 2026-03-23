@@ -140,7 +140,12 @@ static void uptime_Command(char *pcWriteBuffer, int xWriteBufferLen, int argc, c
 
 void reboot(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
-	bk_reboot();
+	if (argc == 1) {
+		bk_reboot();
+	} else if (argc == 2) {
+		uint32_t reset_reason = os_strtoul(argv[1], NULL, 16);
+		bk_reboot_ex(reset_reason);
+	}
 }
 
 #if (!CONFIG_SOC_BK7231)
