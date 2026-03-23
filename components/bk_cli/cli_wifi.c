@@ -2188,6 +2188,8 @@ void cli_wifi_capa_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char 
 		capa_id = WIFI_CAPA_ID_TX_AMPDU_NUM;
 	} else if (os_strcmp(argv[1], "rx_ampdu_num") == 0) {
 		capa_id = WIFI_CAPA_ID_RX_AMPDU_NUM;
+	} else if (os_strcmp(argv[1], "tx_use_max_bw") == 0) {
+		capa_id = WIFI_CAPA_ID_TX_USE_MAX_BW;
 	} else if (os_strcmp(argv[1], "vht_mcs") == 0) {
 		capa_id = WIFI_CAPA_ID_VHT_MCS;
 	} else if (os_strcmp(argv[1], "he_mcs") == 0) {
