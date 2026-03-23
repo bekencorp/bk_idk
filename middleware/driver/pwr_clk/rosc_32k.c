@@ -148,6 +148,12 @@ static void rosc_calib_ckmn_isr(void)
 	int rosc_count = 0;
 
 	bk_ckmn_ckest_disable();
+
+	/* avoid GiveFromISR with NULL if thread already deinited semaphore */
+	if(s_rosc_calib_sema == NULL) {
+		return;
+	}
+
 	rc26m_count = bk_ckmn_get_rc26m_count();
 	rosc_count = bk_ckmn_get_rc32k_count();
 
@@ -290,8 +296,12 @@ static void rosc_calib_thread(void *args)
 	s_records_array = NULL;
 #endif
 
+	/* Lock interrupts so CKEST ISR cannot run between deinit and clearing sema (avoids GiveFromISR with NULL) */
+	GLOBAL_INT_DECLARATION();
+	GLOBAL_INT_DISABLE();
 	rtos_deinit_semaphore(&s_rosc_calib_sema);
 	s_rosc_calib_sema = NULL;
+	GLOBAL_INT_RESTORE();
 
 	rtos_delete_thread(NULL);
 	s_rosc_calib_thread = NULL;
