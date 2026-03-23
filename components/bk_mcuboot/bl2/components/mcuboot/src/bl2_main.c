@@ -36,7 +36,7 @@
 #include "aon_pmu_hal.h"
 #include <modules/pm.h>
 #include <soc/soc.h>
-
+#include "sys_persist_config.h"
 #if CONFIG_BL2_WDT
 #include <driver/wdt_hal.h>
 #endif
@@ -92,15 +92,16 @@ static void do_boot(struct boot_rsp *rsp)
         BOOT_LOG_ERR("do_boot: rsp->br_hdr is NULL!");
         return;
     }
-    
+
+    BOOT_LOG_ERR("image_off: 0x%x", image_off);
 #if CONFIG_FLASH_CRC_EN
     // In CRC mode, use original calculation
     vt = (struct boot_arm_vector_table *)(FLASH_BASE + 
                     FLASH_PHY2VIRTUAL_CODE_START(image_off +
-                                         rsp->br_hdr->ih_hdr_size / 32 * 34));
+                                         rsp->br_hdr->ih_hdr_size / 32 * 34) + CONFIG_SYS_PERSIST_SIZE);
 #else
     // In no_crc mode, vector table is at image_off + hdr_size (1:1 mapping)
-    vt = (struct boot_arm_vector_table *)(FLASH_BASE + image_off + rsp->br_hdr->ih_hdr_size);
+    vt = (struct boot_arm_vector_table *)(FLASH_BASE + image_off + rsp->br_hdr->ih_hdr_size + CONFIG_SYS_PERSIST_SIZE);
 #endif
     
 #if MCUBOOT_LOG_LEVEL > MCUBOOT_LOG_LEVEL_OFF || TEST_BL2

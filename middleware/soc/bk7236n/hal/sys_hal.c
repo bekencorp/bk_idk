@@ -26,6 +26,7 @@
 #include <gpio_driver.h>
 #include "bk_misc.h"
 #include "driver/qspi.h"
+#include "sys_persist_config.h"
 
 #if CONFIG_SOC_BK7236_SMP_TEMP
 #include "cpu_id.h"
@@ -2663,15 +2664,16 @@ void sys_hal_early_init(void)
 	val |= (0x1 << 5);
 	sys_hal_analog_set(ANALOG_REG5,val);
 
-	sys_hal_analog_set(ANALOG_REG0, 0x1D2197E0);//liupeng202400807:<9:7>=7;zhiyin20250429<11>=0 enable dpll_unlock flag;zhiyin20250604<29:28>=1
-	sys_hal_analog_set(ANALOG_REG1, 0xC02EFA00);
-	sys_hal_analog_set(ANALOG_REG2, 0xFFC92136);//yanxiang20251104:<10>=0
-	sys_hal_analog_set(ANALOG_REG3, 0xFCCC0B64);//tenglong20240806:high psrr as default, low when sleep;ronghui20250520<27>=1 avoid dpll unlock detect issue when high temp
-	sys_hal_analog_set(ANALOG_REG4, 0x40000000);
-	sys_hal_analog_set(ANALOG_REG5, 0x84072160);
-	sys_hal_analog_set(ANALOG_REG6, 0x80088100);//liupeng20250427
-	sys_hal_analog_set(ANALOG_REG7, 0x57E657C6);//tenglong20250430:ldo current limit for EVM;//shuguang20250512:vio=3.3V;xinyuan20250611:<9:6>=F for better EVM
-	sys_hal_analog_set(ANALOG_REG8, 0xF87C72E4);//tenglong20250519:<31:30>=3(0.9V), same with BK7236_SYS_ANA_4D<13:12>
+	sys_persist_sys_t *sys_ana = get_sys_persist_sys();
+	sys_hal_analog_set(ANALOG_REG0, sys_ana->r0);
+	sys_hal_analog_set(ANALOG_REG1, sys_ana->r1);
+	sys_hal_analog_set(ANALOG_REG2, sys_ana->r2);
+	sys_hal_analog_set(ANALOG_REG3, sys_ana->r3);
+	sys_hal_analog_set(ANALOG_REG4, sys_ana->r4);
+	sys_hal_analog_set(ANALOG_REG5, sys_ana->r5);
+	sys_hal_analog_set(ANALOG_REG6, sys_ana->r6);
+	sys_hal_analog_set(ANALOG_REG7, sys_ana->r7);
+	sys_hal_analog_set(ANALOG_REG8, sys_ana->r8);
 
 	/**
 	 * attention:
@@ -2683,14 +2685,14 @@ void sys_hal_early_init(void)
 #if CONFIG_AON_RTC_KEEP_TIME_SUPPORT
 	sys_hal_analog_set(ANALOG_REG9, 0xB55D9327);//tenglong20240805:2M buck for EVM;tenglong20251011<13>=1
 #else
-	sys_hal_analog_set(ANALOG_REG9, 0xB55D1327);//tenglong20240805:2M buck for EVM
+	sys_hal_analog_set(ANALOG_REG9, sys_ana->r9);//tenglong20240805:2M buck for EVM
 #endif
-	sys_hal_analog_set(ANALOG_REG10, 0xF7EEB89A);
-	sys_hal_analog_set(ANALOG_REG11, 0x00000000);
-	sys_hal_analog_set(ANALOG_REG12, 0x00100000);
-	sys_hal_analog_set(ANALOG_REG13, 0x00080000);
-	sys_hal_analog_set(ANALOG_REG14, 0x00A80008);
-	sys_hal_analog_set(ANALOG_REG15, 0x528809F6);
+	sys_hal_analog_set(ANALOG_REG10, sys_ana->r10);
+	sys_hal_analog_set(ANALOG_REG11, sys_ana->r11);
+	sys_hal_analog_set(ANALOG_REG12, sys_ana->r12);
+	sys_hal_analog_set(ANALOG_REG13, sys_ana->r13);
+	sys_hal_analog_set(ANALOG_REG14, sys_ana->r14);
+	sys_hal_analog_set(ANALOG_REG15, sys_ana->r15);
 	sys_ll_set_ana_reg8_spi_latch1v(0);
 
 	/*early init cpu flash time*/

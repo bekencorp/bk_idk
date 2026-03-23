@@ -35,6 +35,7 @@ set(platform_bl2_inc
 		${PARTITION_HDR_DIR}
 		${SECURITY_HDR_DIR}
 		${BL2_COMPONENTS_PATH}/bl2
+		${SYS_PERSIST_CONFIG_DIR}
 
 	PRIVATE
 		.
