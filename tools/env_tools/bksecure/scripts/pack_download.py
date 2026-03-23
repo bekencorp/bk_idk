@@ -69,12 +69,12 @@ class PackDownload(Pack):
         reserved = struct.pack('>H', reserved)
 
         hdr = partition_offset + partition_size + flash_start_addr + img_offset + img_len  + checksum + version + cbus + reserved
-        return hdr 
+        return hdr
 
     def __encrypt(self, bname, pheader, flash_aes_key, flash_crc_en, flash_aes_type=None):
         partition_name = pheader.name() if hasattr(pheader, 'name') else 'unknown'
         is_data = pheader.type().is_data()
-        
+
         # Check if partition is data type (skip encryption for data partitions)
         if pheader.type().is_data():
             logging.debug(f'Encrypt: {partition_name} (data partition, skipping)')
@@ -103,12 +103,12 @@ class PackDownload(Pack):
 
         # Get AES encryption tool
         aes_tool = get_flash_aes_tool()
-        
+
         # Check if AES tool exists
         if not os.path.exists(aes_tool):
             logging.error(f'Encrypt: AES tool not found: {aes_tool}')
             exit(1)
-        
+
         # Calculate encryption start address
         if pheader.type().is_merge():
             if flash_crc_en:
@@ -120,12 +120,12 @@ class PackDownload(Pack):
                 start_address = hex(pheader.size().vir_code_offset())
             else:
                 start_address = hex(pheader.size().offset())
-        
+
         # Check if input file exists
         if os.path.exists(bname) == False:
             logging.error(f'Encrypt: input file {bname} not exists, abort')
             exit(1)
-        
+
         input_file_size = os.path.getsize(bname)
 
         # Determine command format based on tool type
@@ -133,19 +133,19 @@ class PackDownload(Pack):
             cmd = f'python3 {aes_tool} encrypt -infile {bname} -keywords {flash_aes_key}  -aes {128} -outfile {outfile} -startaddress {start_address}'
         else:
             cmd = f'{aes_tool} encrypt -infile {bname} -keywords {flash_aes_key} -outfile {outfile} -startaddress {start_address}'
-        
+
         logging.debug(f'Encrypt: {partition_name} - executing: {cmd}')
         run_cmd_not_check_ret(cmd)
-        
+
         # Verify that output file was created after encryption
         if not os.path.exists(outfile):
             logging.error(f'Encrypt: {partition_name} - encryption failed, output file not created')
             logging.error(f'Encrypt: Command: {cmd}')
             exit(1)
-        
+
         output_file_size = os.path.getsize(outfile)
         logging.info(f'Encrypt: {partition_name} ({input_file_size} -> {output_file_size} bytes)')
-        
+
         return outfile
 
     def __add_crc(self, bname, pheader, flash_crc_en):
@@ -170,7 +170,7 @@ class PackDownload(Pack):
                 return
 
         #TODO: change magic wordk according to soc
-        magic = "BEKEN".encode()
+        magic = "BEKEN".encode() + b'\x00' * 3
         logging.debug(f'Add magic code {magic} to {bname}')
         with open(bname, 'r+b') as f:
             f.seek(0x100)
