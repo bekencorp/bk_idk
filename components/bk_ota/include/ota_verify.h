@@ -26,7 +26,7 @@
 #define BK_ERR_OTA_VALIDATE_SIGNATURE_FAIL              (BK_ERR_OTA_BASE - 10)
 #define BK_ERR_OTA_CBUS_READ_CRC_FAIL                   (BK_ERR_OTA_BASE - 11)
 
-#define TLV_TOTAL_SIZE 512
+#define TLV_TOTAL_SIZE 1024
 #define NUM_ECC_BYTES (256 / 8)
 #define IMAGE_TLV_INFO_MAGIC        0x6907
 #define IMAGE_TLV_PROT_INFO_MAGIC   0x6908
@@ -87,6 +87,7 @@ typedef struct ota_verify
     bool is_verify_supported;
 #if CONFIG_PSA_MBEDTLS
     mbedtls_sha256_context ctx;
+	bool ctx_inited;
 #endif
     uint32_t validate_offset;
     uint32_t hash_size;

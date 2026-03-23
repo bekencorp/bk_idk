@@ -29,4 +29,5 @@ bk_err_t xip_ota_read_primary_version(const bk_ota_t *ota);
 bk_err_t xip_ota_read_secondary_version(const bk_ota_t *ota);
 
 bk_err_t xip_ota_confirm(const bk_logic_partition_t *partition);
+bk_err_t xip_ota_cancel(const bk_logic_partition_t *partition);
 bk_err_t xip_ota_reboot(void);

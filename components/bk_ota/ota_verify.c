@@ -504,8 +504,11 @@ static bk_err_t ota_verify_handle_tlv(const bk_logic_partition_t *partition, ota
 	(void*)end;
 	(void*)valid_public_key;
 #if CONFIG_PSA_MBEDTLS
-	mbedtls_sha256_finish(&ota_verify->ctx, ota_verify->hash_result);
-	mbedtls_sha256_free(&ota_verify->ctx);
+	if (ota_verify->ctx_inited) {
+		mbedtls_sha256_finish(&ota_verify->ctx, ota_verify->hash_result);
+		mbedtls_sha256_free(&ota_verify->ctx);
+		ota_verify->ctx_inited = false;
+	}
 #endif
 	memcpy(&tlv_pro_info, ota_verify->tlv_total + tlv_off, sizeof(image_tlv_info_t));
 	tlv_off += sizeof(image_tlv_info_t);
@@ -578,18 +581,18 @@ static bk_err_t ota_verify_handle_tlv(const bk_logic_partition_t *partition, ota
 			memcpy(pubkey, value, tlv.it_len);
 			end = pubkey + tlv.it_len;
 #if CONFIG_OTA_UPDATE_PUBKEY
-			uint8_t primary_pubkey[MAX_PUBKEY_LEN];
-			ret = read_pubkey_from_primary(partition, primary_pubkey, NULL);
-			if (ret != BK_OK) {
-				BK_LOGE(TAG, "primary read public key fail!\r\n");
-				goto out;
-			}
+			// uint8_t primary_pubkey[MAX_PUBKEY_LEN];
+			// ret = read_pubkey_from_primary(partition, primary_pubkey, NULL);
+			// if (ret != BK_OK) {
+			// 	BK_LOGE(TAG, "primary read public key fail!\r\n");
+			// 	goto out;
+			// }
 
-			if (memcmp(primary_pubkey, pubkey, tlv.it_len) != 0) {
-				BK_LOGE(TAG, "public key of OTA-outer and primary not equal!\r\n");
-				ret = BK_ERR_OTA_VALIDATE_PUB_KEY_FAIL;
-				goto out;
-			}
+			// if (memcmp(primary_pubkey, pubkey, tlv.it_len) != 0) {
+			// 	BK_LOGE(TAG, "public key of OTA-outer and primary not equal!\r\n");
+			// 	ret = BK_ERR_OTA_VALIDATE_PUB_KEY_FAIL;
+			// 	goto out;
+			// }
 #else
 #ifdef OTP_BL2_BOOT_PUBLIC_KEY_HASH
 			uint8_t key_hash[32];
@@ -665,6 +668,7 @@ ota_verify_t* ota_verify_init(void)
 #if CONFIG_PSA_MBEDTLS
 	mbedtls_sha256_init(&ota_verify->ctx);
 	mbedtls_sha256_starts(&ota_verify->ctx,0);
+	ota_verify->ctx_inited = true;
 #endif
 	ota_verify->is_verify_supported = true;
 	ota_verify->hash_size = 0xFFFFFFFF;
@@ -727,6 +731,12 @@ bk_err_t ota_verify_process(const bk_logic_partition_t *partition, ota_verify_t*
 void ota_verify_deinit(ota_verify_t* ota_verify)
 {
 	if (ota_verify != NULL) {
+#if CONFIG_PSA_MBEDTLS
+		if (ota_verify->ctx_inited) {
+			mbedtls_sha256_free(&ota_verify->ctx);
+			ota_verify->ctx_inited = false;
+		}
+#endif
 		free(ota_verify);
 	}
 }

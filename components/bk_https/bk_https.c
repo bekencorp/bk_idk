@@ -241,6 +241,7 @@ bk_err_t bk_http_client_set_header(bk_http_client_handle_t client, const char *k
 bk_err_t bk_http_client_set_method(bk_http_client_handle_t client, bk_http_client_method_t method)
 {
 	client->connection_info.method = method;
+	client->first_line_prepared = false;
 	return BK_OK;
 }
 
@@ -978,7 +979,7 @@ bk_err_t bk_http_client_request_send(bk_http_client_handle_t client, int write_l
 			return first_line_len;
 		}
 		//BK_LOGE(TAG, "http_client_prepare_first_line over, len:%d\r\n", first_line_len);
-		// client->first_line_prepared = true;
+		client->first_line_prepared = true;
 		client->header_index = 0;
 		client->data_written_index = 0;
 		client->data_write_left = 0;
@@ -1285,7 +1286,7 @@ int bk_http_client_read(bk_http_client_handle_t client, char *buffer, int len)
 			}
 			if (rlen < 0 && ridx == 0 && !bk_http_client_is_complete_data_received(client)) {
 				http_dispatch_event(client, HTTP_EVENT_ERROR, NULL, 0);
-				return -1;
+				return BK_FAIL;
 			}
 			return ridx;
 		}

@@ -87,6 +87,7 @@ static bk_ota_t* bk_ota_init(const char* app_partition_name, const char* ota_par
 		ota->ops.erase = xip_ota_erase;
 		ota->ops.erase_sector = xip_ota_erase_sector;
 		ota->ops.confirm = xip_ota_confirm;
+		ota->ops.cancel = xip_ota_cancel;
 		ota->ops.verify = xip_ota_verify;
 		ota->ops.reboot = xip_ota_reboot;
 		ota->ops.accept = xip_ota_accept;
