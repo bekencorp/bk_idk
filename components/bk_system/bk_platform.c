@@ -45,6 +45,10 @@ int bk_rand(void)
 	return (number & RAND_MAX);
 }
 #else
+#if defined(CONFIG_OTP_PUF) && (CONFIG_OTP_PUF)
+#include <driver/otp.h>
+#endif
+
 #define TRNG_RETURN_ON_NOT_INIT() do {\
 		if (!s_trng_driver_is_init) {\
 			return BK_FAIL;\
@@ -115,10 +119,10 @@ static void trng_delay_us(uint32 num)
         }
 }
 
-#if (CONFIG_CUSTOMIZE_TY == 0)
-int bk_rand(void)
+static int bk_trng_rand_impl(void)
 {
-	int i, number;
+	int i;
+	int number;
 
 	bk_trng_start();
 
@@ -133,15 +137,19 @@ int bk_rand(void)
 
 	return (number & RAND_MAX);
 }
-#else
-bk_err_t bk_otp_read_random_number(uint8* value, uint32_t size);
+
 int bk_rand(void)
 {
-	int random_number;
-	bk_otp_read_random_number((uint8*)&random_number, sizeof(int));
-	return random_number;
-}
+#if defined(CONFIG_OTP_PUF) && (CONFIG_OTP_PUF)
+	int random_number = 0;
+	bk_err_t ret = bk_otp_read_random_number((uint8_t *)&random_number, sizeof(random_number));
+	if (ret == BK_OK) {
+		return (random_number & RAND_MAX);
+	}
 #endif
+
+	return bk_trng_rand_impl();
+}
 
 #endif /* CONFIG_MBEDTLS_ACCELERATOR && CONFIG_SPE */
 #endif

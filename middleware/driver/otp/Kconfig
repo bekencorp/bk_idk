@@ -3,6 +3,13 @@ menu "OTP"
 		bool "Enable OTP"
 		default n
 
+	config OTP_PUF
+		bool "Enable OTP random for bk_rand"
+		default n
+		depends on OTP
+		help
+			Use OTP PUF to generate true random numbers.
+
 	config FLASH_OTP
 		bool "Enable FLASH_OTP"
 		default n
