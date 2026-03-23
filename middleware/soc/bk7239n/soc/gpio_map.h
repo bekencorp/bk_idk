@@ -139,8 +139,9 @@ extern "C" {
 #define UART1_RX_PIN  GPIO_1
 #endif
 
-#define UART2_TX_PIN  GPIO_20
-#define UART2_RX_PIN  GPIO_21
+//bk7239nl not recommend use GPIO_20 and GPIO_21 as their proximity to RF components may affect RF performance
+#define UART2_TX_PIN  GPIO_19
+#define UART2_RX_PIN  GPIO_18 //bk7239n d board can not use GPIO_21 as UART
 
 #define UART3_TX_PIN  GPIO_14
 #define UART3_RX_PIN  GPIO_15
