@@ -362,6 +362,7 @@ typedef enum {
 	WIFI_CAPA_ID_LDPC_EN,       /**< Update Wi-Fi LDPC support capability */
 	WIFI_CAPA_ID_BEAMFORMEE_EN, /**< Update Wi-Fi Beamforming support capability */
 	WIFI_CAPA_ID_11B_ONLY_EN,   /**< Update Wi-Fi 11b support capability */
+	WIFI_CAPA_ID_TX_USE_MAX_BW, /**< Update Wi-Fi TX Use max bandwidth capability */
 	WIFI_CAPA_ID_MAX,
 }wifi_capability_t;
 
