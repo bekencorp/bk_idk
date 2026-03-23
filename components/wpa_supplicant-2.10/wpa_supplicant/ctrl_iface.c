@@ -293,7 +293,9 @@ int wpa_supplicant_ctrl_iface_scan_results(
 		/* if no ssid specified, or match the specified ssid */
 		if (!ssid ||
 			(bss->ssid_len == ssid_len && !os_memcmp(ssid, bss->ssid, bss->ssid_len))) {
-			bss_num++;
+			/* bss has updated in scan*/
+			if (bss->last_update_idx == wpa_s->bss_update_idx)
+				bss_num++;
 		}
 	}
 	if (!bss_num)
@@ -315,6 +317,8 @@ int wpa_supplicant_ctrl_iface_scan_results(
 		/* if no ssid specified, or match the specified ssid */
 		if (!ssid ||
 			(bss->ssid_len == ssid_len && !os_memcmp(ssid, bss->ssid, bss->ssid_len))) {
+			if (bss->last_update_idx != wpa_s->bss_update_idx)
+				continue;
 			os_memcpy(results->ApList[index].ssid, bss->ssid, bss->ssid_len);
 			results->ApList[index].ssid[bss->ssid_len] = '\0';
 			results->ApList[index].ApPower = bss->level;
