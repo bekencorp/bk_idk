@@ -112,6 +112,8 @@ static int speed_limit = IPERF_DEFAULT_SPEED_LIMIT;
 // TOS
 static uint32_t iperf_tos = 0; // TOS_BE: 0, BK: 0x20, VI: 0xA0, VO: 0xD0
 
+static beken_thread_t iperf_report_task_thread = NULL;
+
 #if (CONFIG_TASK_WDT)
 extern void bk_task_wdt_feed(void);
 #endif
@@ -123,6 +125,7 @@ static void iperf_reset(void)
 		os_free(s_param.host);
 	s_param.host = NULL;
 	s_param.state = IPERF_STATE_STOPPED;
+	iperf_report_task_thread = NULL;
 }
 
 static void iperf_set_sock_opt(int sock)
@@ -364,13 +367,18 @@ static void iperf_report_task_handler(void *arg)
 static err_t iperf_report_task_start(void)
 {
 	int ret;
-	ret = rtos_create_thread(NULL, iperf_report_priority, IPERF_REPORT_TASK_NAME,
-						iperf_report_task_handler, IPERF_REPORT_TASK_STACK,
-						(beken_thread_arg_t) 0);
-	
-	if (ret != kNoErr) {
-		BK_LOGE(TAG, "create task %s failed", IPERF_REPORT_TASK_NAME);
-		return BK_FAIL;
+	if (iperf_report_task_thread == NULL)
+	{
+	    ret = rtos_create_thread(&iperf_report_task_thread, iperf_report_priority, IPERF_REPORT_TASK_NAME,
+						    iperf_report_task_handler, IPERF_REPORT_TASK_STACK,
+						    (beken_thread_arg_t) 0);
+		if (ret != kNoErr) {
+			BK_LOGE(TAG, "create task %s failed", IPERF_REPORT_TASK_NAME);
+			return BK_FAIL;
+		}
+	}
+	else {
+		BK_LOGW(TAG, "%s is already created no need to create again\n", IPERF_REPORT_TASK_NAME);
 	}
 
 	return BK_OK;
