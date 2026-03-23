@@ -260,16 +260,16 @@ static void wm_netif_status_static_callback(struct netif *n)
 		if (n == &g_mlan.netif) {
 			wifi_netif_notify_sta_got_ip(IP4);
 
-			if (bk_feature_fast_dhcp_enable()) {
-				/* read stored IP from flash as the static IP */
-				struct wlan_fast_connect_info fci = {0};
-				wlan_read_fast_connect_info(&fci);
-				ip_addr_set_ip4_u32(&n->ip_addr, *((u32 *)&fci.ip_addr));
-				ip_addr_set_ip4_u32(&n->netmask, *((u32 *)&fci.netmask));
-				ip_addr_set_ip4_u32(&n->gw, *((u32 *)&fci.gw));
-				os_memcpy((char *)&n->dns1, (char *)&fci.dns1, sizeof(n->dns1));
-				LWIP_LOGI("ip_addr: "BK_IP4_FORMAT" \r\n", BK_IP4_STR(ip_addr_get_ip4_u32(&n->ip_addr)));
-			}
+#ifdef CONFIG_WIFI_FAST_DHCP
+		/* read stored IP from flash as the static IP */
+		struct wlan_fast_connect_info fci = {0};
+		wlan_read_fast_connect_info(&fci);
+		ip_addr_set_ip4_u32(&n->ip_addr, *((u32 *)&fci.ip_addr));
+		ip_addr_set_ip4_u32(&n->netmask, *((u32 *)&fci.netmask));
+		ip_addr_set_ip4_u32(&n->gw, *((u32 *)&fci.gw));
+		os_memcpy((char *)&n->dns1, (char *)&fci.dns1, sizeof(n->dns1));
+		LWIP_LOGI("ip_addr: "BK_IP4_FORMAT" \r\n", BK_IP4_STR(ip_addr_get_ip4_u32(&n->ip_addr)));
+#endif
 #if !CONFIG_DISABLE_DEPRECIATED_WIFI_API
 			if (sta_ipup_cb != NULL)
 				sta_ipup_cb(NULL);
@@ -317,20 +317,20 @@ static void wm_netif_status_callback(struct netif *n)
 					ip4_addr_set |= IP4;
 					wifi_netif_notify_sta_got_ip(IP4);
 
-					if (bk_feature_fast_dhcp_enable()) {
-						/* store current IP to flash */
-						const ip_addr_t *dns_server;
-						dns_server = dns_getserver(0);
-						n->dns1 = ip_addr_get_ip4_u32(dns_server);
-						struct wlan_fast_connect_info fci = { 0 };
-						wlan_read_fast_connect_info(&fci);
-						os_memset(&fci.ip_addr, 0, sizeof(fci.ip_addr));
-						os_memcpy((char *)&fci.ip_addr, (char *)ip_2_ip4(&n->ip_addr), sizeof(fci.ip_addr));
-						os_memcpy((char *)&fci.netmask, (char *)ip_2_ip4(&n->netmask), sizeof(fci.netmask));
-						os_memcpy((char *)&fci.gw, (char *)ip_2_ip4(&n->gw), sizeof(fci.gw));
-						os_memcpy((char *)&fci.dns1, (char *)&n->dns1, sizeof(fci.dns1));
-						wlan_write_fast_connect_info(&fci);
-					}
+#ifdef CONFIG_WIFI_FAST_DHCP
+					/* store current IP to flash */
+					const ip_addr_t *dns_server;
+					dns_server = dns_getserver(0);
+					n->dns1 = ip_addr_get_ip4_u32(dns_server);
+					struct wlan_fast_connect_info fci = { 0 };
+					wlan_read_fast_connect_info(&fci);
+					os_memset(&fci.ip_addr, 0, sizeof(fci.ip_addr));
+					os_memcpy((char *)&fci.ip_addr, (char *)ip_2_ip4(&n->ip_addr), sizeof(fci.ip_addr));
+					os_memcpy((char *)&fci.netmask, (char *)ip_2_ip4(&n->netmask), sizeof(fci.netmask));
+					os_memcpy((char *)&fci.gw, (char *)ip_2_ip4(&n->gw), sizeof(fci.gw));
+					os_memcpy((char *)&fci.dns1, (char *)&n->dns1, sizeof(fci.dns1));
+					wlan_write_fast_connect_info(&fci);
+#endif
 
 #if !CONFIG_DISABLE_DEPRECIATED_WIFI_API
 					if (sta_ipup_cb)
@@ -384,25 +384,24 @@ wm_netif_ipv6_status_callback(struct netif *netif, netif_nsc_reason_t reason, co
 			LWIP_LOGD("ipv6_state[%d] :0x%x\r\n", addr_index, netif->ip6_addr_state[addr_index]);
 
 			wifi_netif_notify_sta_got_ip(IP6);
-			if (bk_feature_fast_dhcp_enable()) {
-				/* store current IP to flash */
-				const ip_addr_t *dns_server;
-				dns_server = dns_getserver(0);
-				netif->dns1 = ip_addr_get_ip4_u32(dns_server);
-				struct wlan_fast_connect_info fci = { 0 };
+#ifdef CONFIG_WIFI_FAST_DHCP
+			/* store current IP to flash */
+			const ip_addr_t *dns_server;
+			dns_server = dns_getserver(0);
+			netif->dns1 = ip_addr_get_ip4_u32(dns_server);
+			struct wlan_fast_connect_info fci = { 0 };
 #if CONFIG_EASY_FLASH_FAST_DHCP
-				bk_get_env_enhance("fast_connect_id", (void *)&fci, sizeof(struct wlan_fast_connect_info));
+			bk_get_env_enhance("fast_connect_id", (void *)&fci, sizeof(struct wlan_fast_connect_info));
 #endif
-				os_memset(&fci.ip_addr, 0, sizeof(ip_addr_t) * 4);
-				os_memcpy((char *)&fci.ip_addr, (char *)&netif->ip_addr, sizeof(netif->ip_addr));
-				os_memcpy((char *)&fci.netmask, (char *)&netif->netmask, sizeof(netif->netmask));
-				os_memcpy((char *)&fci.gw, (char *)&netif->gw, sizeof(netif->gw));
-				os_memcpy((char *)&fci.dns1, (char *)&netif->dns1, sizeof(netif->dns1));
+			os_memset(&fci.ip_addr, 0, sizeof(ip_addr_t) * 4);
+			os_memcpy((char *)&fci.ip_addr, (char *)&netif->ip_addr, sizeof(netif->ip_addr));
+			os_memcpy((char *)&fci.netmask, (char *)&netif->netmask, sizeof(netif->netmask));
+			os_memcpy((char *)&fci.gw, (char *)&netif->gw, sizeof(netif->gw));
+			os_memcpy((char *)&fci.dns1, (char *)&netif->dns1, sizeof(netif->dns1));
 #if CONFIG_EASY_FLASH_FAST_DHCP
-				bk_set_env_enhance("fast_connect_id", (void *)&fci, sizeof(struct wlan_fast_connect_info));
+			bk_set_env_enhance("fast_connect_id", (void *)&fci, sizeof(struct wlan_fast_connect_info));
 #endif
-
-			}
+#endif // CONFIG_WIFI_FAST_DHCP
 #if !CONFIG_DISABLE_DEPRECIATED_WIFI_API
 			if (sta_ipup_cb)
 				sta_ipup_cb(NULL);
@@ -1006,12 +1005,16 @@ void net_configure_dns(struct iface *if_handle, struct wlan_ip_config *ip)
 
 	if (ip->ipv4.addr_type == ADDR_TYPE_STATIC) {
 		if (ip->ipv4.dns1 == 0) {
-			if (if_handle == &g_mlan && bk_feature_fast_dhcp_enable()) {
+			if (if_handle == &g_mlan) {
+#if CONFIG_WIFI_FAST_DHCP
 #ifdef CONFIG_WIFI_ENABLE
 				struct wlan_fast_connect_info fci = {0};
 				wlan_read_fast_connect_info(&fci);
 				os_memcpy((char *)&ip->ipv4.dns1, (char *)&fci.dns1, sizeof(fci.dns1));
 #endif
+#else // CONFIG_WIFI_FAST_DHCP
+				ip->ipv4.dns1 = ip->ipv4.gw;
+#endif // CONFIG_WIFI_FAST_DHCP
 			} else {
 				ip->ipv4.dns1 = ip->ipv4.gw;
 			}

@@ -92,6 +92,14 @@ menu "Lwip_intf_v2_1"
 			bool "Enable MDNS"
 			default n
 
+		config LWIP_IGMP
+			bool "enable IGMP"
+			default y
+
+		config LWIP_RAW
+			bool "enable raw socket"
+			default y
+
 		config TASK_LWIP_PRIO
 			depends on WIFI_ENABLE
 			int "Set Task Lwip Prio"

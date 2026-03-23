@@ -117,7 +117,9 @@ static int arp_rerequest_used_unicast = ARP_AGE_REREQUEST_USED_UNICAST;
 static int arp_rerequest_used_broadcast = ARP_AGE_REREQUEST_USED_BROADCAST;
 
 #if BK_LWIP
+#ifdef CONFIG_WIFI_FAST_DHCP
 static beken2_timer_t arp_conflict_tmr = {0};
+#endif
 /**
  ****************************************************************************************
  * @brief Compare timer absolute expiration time.
@@ -275,7 +277,8 @@ etharp_tmr(void)
         LWIP_DEBUGF(ETHARP_DEBUG, ("etharp_timer 1hour: expired %s entry %d.\n",
                                    arp_table[i].state >= ETHARP_STATE_STABLE ? "stable" : "pending", i));
 #if BK_LWIP
-        if (bk_feature_fast_dhcp_enable() && (arp_table[i].state == ETHARP_STATE_PENDING) &&
+#ifdef CONFIG_WIFI_FAST_DHCP
+        if ((arp_table[i].state == ETHARP_STATE_PENDING) &&
            (arp_table[i].ctime >= ARP_MAXPENDING)  && ((sta_addr.ipv4.gw) == (arp_table[i].ipaddr.addr))) {
           if (rtos_is_oneshot_timer_init(&arp_conflict_tmr) == 0) {
             int clk_time = 1000;
@@ -289,6 +292,7 @@ etharp_tmr(void)
             rtos_start_oneshot_timer(&arp_conflict_tmr);
           }
         }
+#endif
 #endif
         /* clean up entries that have just been expired */
         etharp_free_entry(i);

@@ -350,7 +350,7 @@ u32_t beken_random(void);
 /**
  * LWIP_RAW==1: Enable application layer to hook into the IP layer itself.
  */
-#define LWIP_RAW                        1
+#define LWIP_RAW                         CONFIG_LWIP_RAW
 #ifdef CONFIG_IPV6
 #define LWIP_IPV6                        1
 #define LWIP_NETIF_EXT_STATUS_CALLBACK  1
@@ -455,7 +455,7 @@ u32_t beken_random(void);
 /**
  * LWIP_IGMP==1: Turn on IGMP module.
  */
-#define LWIP_IGMP                       1
+#define LWIP_IGMP                       CONFIG_LWIP_IGMP
 
 /**
  * LWIP_SO_CONTIMEO==1: Enable send timeout for sockets/netconns and
