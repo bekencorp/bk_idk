@@ -16,6 +16,7 @@
 #include "boot.h"
 #include "sdkconfig.h"
 #include "reset_reason.h"
+#include "aon_pmu_driver.h"
 #include <os/os.h>
 #include "bk_arch.h"
 #include "bk_rtos_debug.h"
@@ -390,6 +391,13 @@ uint32_t g_wdt_handler_lr;
 
 static void user_except_handler(uint32_t reset_reason, SAVED_CONTEXT *regs)
 {
+    if (reset_reason < RESET_SOURCE_UNKNOWN) {
+        bk_misc_set_reset_reason(reset_reason);
+#if CONFIG_AON_PMU_REG0_REFACTOR_DEV
+        aon_pmu_drv_r0_latch_to_r7b();
+#endif
+    }
+
     if (0 == g_enter_exception) {
         // Make sure the interrupt is disable
         uint32_t int_level = rtos_disable_int();
@@ -483,7 +491,7 @@ static void store_cpu_regs(uint32_t mcause, SAVED_CONTEXT *regs) {
 extern void bk_set_jtag_mode(uint32_t cpu_id, uint32_t group_id);
 extern volatile const uint8_t build_version[];
 
-void bk_system_dump(void) 
+void bk_system_dump(void)
 {
     SAVED_CONTEXT regs = {0};
     store_cpu_regs(ECAUSE_ASSERT, &regs);
@@ -511,6 +519,9 @@ void user_except_handler_ex(uint32_t reset_reason, uint32_t lr, uint32_t sp)
 {
     if (reset_reason < RESET_SOURCE_UNKNOWN) {
         bk_misc_set_reset_reason(reset_reason);
+#if CONFIG_AON_PMU_REG0_REFACTOR_DEV
+        aon_pmu_drv_r0_latch_to_r7b();
+#endif
     }
 
     if (0 == g_enter_exception) {
@@ -557,7 +568,7 @@ void user_except_handler_ex(uint32_t reset_reason, uint32_t lr, uint32_t sp)
 
         dump_epilogue();
         #if CONFIG_SYS_CPU0
-        bk_misc_set_reset_reason(reset_reason);
+        // bk_misc_set_reset_reason(reset_reason);
         bk_wdt_force_reboot();
         #endif
     }
