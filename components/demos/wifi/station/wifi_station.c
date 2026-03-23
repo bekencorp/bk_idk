@@ -196,28 +196,28 @@ int wifi_station_show_scan_result(unsigned char *ssid)
         os_printf("Channal:%d, ", scan_rst_table[i].channel);
         switch(scan_rst_table[i].security)
         {
-        case BK_SECURITY_TYPE_NONE:
+        case WIFI_SECURITY_NONE:
             os_printf(" %s, ", "OPEN");
             break;
-        case BK_SECURITY_TYPE_WEP:
+        case WIFI_SECURITY_WEP:
             os_printf(" %s, ", "CIPHER_WEP");
             break;
-        case BK_SECURITY_TYPE_WPA_TKIP:
+        case WIFI_SECURITY_WPA_TKIP:
             os_printf(" %s, ", "WPA_TKIP");
             break;
-        case BK_SECURITY_TYPE_WPA_AES:
+        case WIFI_SECURITY_WPA_AES:
             os_printf(" %s, ", "WPA_AES");
             break;
-        case BK_SECURITY_TYPE_WPA2_TKIP:
+        case WIFI_SECURITY_WPA2_TKIP:
             os_printf(" %s, ", "WPA2_TKIP");
             break;
-        case BK_SECURITY_TYPE_WPA2_AES:
+        case WIFI_SECURITY_WPA2_AES:
             os_printf(" %s, ", "WPA2_AES");
             break;
-        case BK_SECURITY_TYPE_WPA2_MIXED:
+        case WIFI_SECURITY_WPA2_MIXED:
             os_printf(" %s, ", "WPA2_MIXED");
             break;
-        case BK_SECURITY_TYPE_AUTO:
+        case WIFI_SECURITY_AUTO:
             os_printf(" %s, ", "CIPHER_AUTO");
             break;
         default:
