@@ -53,6 +53,7 @@
 #include "bootutil_misc.h"
 #include "flash_partition.h"
 #include "partitions_gen.h"
+#include <driver/flash.h>
 
 #if CONFIG_BL2_WDT
 #include <driver/wdt_hal.h>
@@ -168,11 +169,13 @@ boot_xip_magic_off(uint8_t index)
 	return phy_offset;
 }
 
+static uint32_t
 boot_xip_copy_done_off(uint8_t index)
 {
     return boot_xip_magic_off(index) - 8;
 }
 
+static uint32_t
 boot_xip_image_ok_off(uint8_t index)
 {
     return boot_xip_magic_off(index) - 16;
@@ -261,8 +264,19 @@ boot_read_xip_status(uint8_t index, uint32_t type)
         return 0;
     }
 
-    uint32_t status;
+    uint32_t status = 0;
     bk_flash_read_bytes(off, &status, 4);
+
+    if ((status != XIP_IMAGE_OK) &&
+        (status != XIP_IMAGE_TEST_FIRST) &&
+        (status != XIP_IMAGE_TEST_SECOND) &&
+        (status != XIP_IMAGE_TEST_FINAL) &&
+        (status != XIP_IMAGE_UNKNOWN)) {
+        uint32_t sector = off & (~(uint32_t)0xFFF);
+        bk_flash_erase_sector(sector);
+        bk_flash_read_bytes(off, &status, 4);
+    }
+
     return status;
 }
 

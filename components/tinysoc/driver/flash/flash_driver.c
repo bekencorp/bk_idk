@@ -440,6 +440,10 @@ static bk_err_t flash_write_common(const uint8_t *buffer, uint32_t address, uint
 
 	FLASH_RETURN_ON_WRITE_ADDR_OUT_OF_RANGE(addr, len);
 
+	flash_protect_type_t protect_type = bk_flash_get_protect_type();
+	bk_err_t ret = BK_OK;
+	bk_flash_set_protect_type(FLASH_PROTECT_NONE);
+
 	while (len) {
 		os_memset(pb, 0xFF, FLASH_BYTES_CNT);
 		for (uint32_t i = address % FLASH_BYTES_CNT; i < FLASH_BYTES_CNT; i++) {
@@ -462,7 +466,8 @@ static bk_err_t flash_write_common(const uint8_t *buffer, uint32_t address, uint
 
 		addr += FLASH_BYTES_CNT;
 	}
-	return BK_OK;
+	bk_flash_set_protect_type(protect_type);
+	return ret;
 }
 
 void flash_lock(void)
@@ -579,9 +584,12 @@ static bk_err_t flash_erase_block(uint32_t erase_addr, int type)
 	if (flash_is_area_write_disable(erase_addr)) {
 		return BK_ERR_FLASH_ADDR_OUT_OF_RANGE;
 	}
+	flash_protect_type_t protect_type = bk_flash_get_protect_type();
+	bk_flash_set_protect_type(FLASH_PROTECT_NONE);
 	uint32_t int_level = rtos_disable_int();
 	flash_hal_erase_block(&s_flash.hal, erase_addr, type);
 	rtos_enable_int(int_level);
+	bk_flash_set_protect_type(protect_type);
 	flash_restore_line_mode();
 
 	return BK_OK;

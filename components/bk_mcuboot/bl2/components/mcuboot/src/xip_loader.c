@@ -30,6 +30,7 @@
 #include "xip_loader.h"
 #include "flash_driver.h"
 #include "cache.h"
+#include "bootutil_priv.h"
 
 static inline const char* image_ok_str(uint32_t image_ok)
 {
@@ -115,9 +116,8 @@ static inline uint32_t xip_get_peer_slot(uint32_t slot)
 }
 
 static uint32_t
-find_slot_via_ota_confirm_and_image_state(struct boot_loader_state *state, bool ota_confirm_set)
+find_slot_via_ota_confirm_and_image_state(struct boot_loader_state *state, bool ota_confirm_set, uint8_t *slot_retry_count)
 {
-    uint32_t slot;
     uint32_t invalid_slot_num = 0;
 
     uint32_t running_slot = boot_read_running_slot();
@@ -137,14 +137,16 @@ find_slot_via_ota_confirm_and_image_state(struct boot_loader_state *state, bool 
     BOOT_LOG_INF("OTA confirm not set, try to use %s", slot_str(preferred_slot));
 #endif
 
-    if (state->slot_usage[BOOT_CURR_IMG(state)].slot_available[preferred_slot]) {
-        BOOT_LOG_INF("%s hdr valid, use it", slot_str(preferred_slot));
-    } else {
+    if ((state->slot_usage[BOOT_CURR_IMG(state)].slot_available[preferred_slot] == false) || (slot_retry_count[preferred_slot] >= 3)) {
+        BOOT_LOG_INF("%s retry=%d, hdr_valid=%d, switch to peer slot", slot_str(preferred_slot), slot_retry_count[preferred_slot], state->slot_usage[BOOT_CURR_IMG(state)].slot_available[preferred_slot]);
         preferred_slot = xip_get_peer_slot(preferred_slot);
         invalid_slot_num++;
-        BOOT_LOG_INF("%s hdr invalid, switch to %s", slot_str(xip_get_peer_slot(preferred_slot)), slot_str(preferred_slot));
+        if ((state->slot_usage[BOOT_CURR_IMG(state)].slot_available[preferred_slot] == false) || (slot_retry_count[preferred_slot] >= 3)) {
+            BOOT_LOG_INF("both A/B retry=%d, hdr_valid=%d", slot_retry_count[preferred_slot], state->slot_usage[BOOT_CURR_IMG(state)].slot_available[preferred_slot]);
+            return NO_ACTIVE_SLOT;
+        }
     }
-    
+
     uint32_t image_status = boot_read_xip_status(preferred_slot, XIP_IMAGE_OK_TYPE);
 
     if (image_status == XIP_IMAGE_TEST_FINAL) {
@@ -173,12 +175,12 @@ find_slot_via_ota_confirm_and_image_state(struct boot_loader_state *state, bool 
 #endif
 
 static uint32_t
-find_preferred_slot(struct boot_loader_state *state, bool ota_confirm_set)
+find_preferred_slot(struct boot_loader_state *state, bool ota_confirm_set, uint8_t *slot_retry_count)
 {
 #if CONFIG_ANTI_ROLLBACK
     return find_slot_with_highest_version(state);
 #else
-    return find_slot_via_ota_confirm_and_image_state(state, ota_confirm_set);
+    return find_slot_via_ota_confirm_and_image_state(state, ota_confirm_set, slot_retry_count);
 #endif
 }
 
@@ -230,17 +232,20 @@ fih_ret
 boot_load_and_validate_images(struct boot_loader_state *state)
 {
     uint32_t active_slot;
-    uint32_t fallback_slot;
-    int rc;
+    uint32_t preferred_slot;
     fih_ret fih_rc;
     bool ota_confirm_set = false;
+    uint8_t retry_count = 0;
+    uint8_t slot_retry_count[BOOT_NUM_SLOTS] = {0};
 
     ota_confirm_set = bk_boot_check_ota_confirm(1, OTA_CONFIRM);
     if (ota_confirm_set){
         BOOT_LOG_INF("ota confirm=0x%08x", OTA_CONFIRM);
     }
 
-    while (true) {
+    while (retry_count < 6) {
+        retry_count++;
+
         /* Go over all the slots and try to load one */
         active_slot = state->slot_usage[BOOT_CURR_IMG(state)].active_slot;
         if (active_slot != NO_ACTIVE_SLOT){
@@ -248,32 +253,21 @@ boot_load_and_validate_images(struct boot_loader_state *state)
             break;
         }
 
-        /* Step 1: Find the slot with highest version */
-        active_slot = find_preferred_slot(state, ota_confirm_set);
-        if (active_slot == NO_ACTIVE_SLOT) {
+        preferred_slot = find_preferred_slot(state, ota_confirm_set, slot_retry_count);
+        if (preferred_slot == NO_ACTIVE_SLOT) {
             BOOT_LOG_ERR("both A/B invalid");
             FIH_RET(FIH_FAILURE);
             break;
         }
  
-        FIH_CALL(boot_validate_slot, fih_rc, state, active_slot, NULL);
+        slot_retry_count[preferred_slot]++;
+        FIH_CALL(boot_validate_slot, fih_rc, state, preferred_slot, NULL);
         if (FIH_EQ(fih_rc, FIH_SUCCESS)) {
-            state->slot_usage[BOOT_CURR_IMG(state)].active_slot = active_slot;
-            BOOT_LOG_INF("%s is valid, will boot from it", slot_str(active_slot));
+            state->slot_usage[BOOT_CURR_IMG(state)].active_slot = preferred_slot;
+            BOOT_LOG_INF("%s is valid, will boot from it", slot_str(preferred_slot));
             break;
-        } else {
-            BOOT_LOG_INF("set %s state to TEST_FINAL", slot_str(active_slot));
-            boot_write_xip_status(active_slot, XIP_IMAGE_OK_TYPE, XIP_IMAGE_TEST_FINAL);
         }
     }
-
-#if CONFIG_OTA_CONFIRM_UPDATE
-    active_slot = state->slot_usage[BOOT_CURR_IMG(state)].active_slot;
-    if (ota_confirm_set) {
-        bk_boot_erase_ota_confirm(1);
-        BOOT_LOG_INF("OTA confirm flag cleared after successful validation");
-    }
-#endif
 
     FIH_RET(FIH_SUCCESS);
 }

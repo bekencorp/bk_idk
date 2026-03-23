@@ -325,6 +325,7 @@ int bk_init(void)
 
 #if CONFIG_BK_OTA
 	bk_ota_accept_image();
+	bk_ota_cancel_update(0);
 #endif
 
 #if CONFIG_SYS_CPU0

@@ -591,6 +591,7 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
             }
 
             image_hash_valid = 1;
+            BOOT_LOG_INF("hash ok!");
 
 #if CONFIG_BL2_SKIP_VALIDATE
             if (image_hash_valid == 1 && (
