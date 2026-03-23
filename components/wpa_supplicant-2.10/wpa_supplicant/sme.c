@@ -1722,6 +1722,10 @@ void sme_event_auth(struct wpa_supplicant *wpa_s, union wpa_event_data *data)
 				   data->auth.status_code, data->auth.ies,
 				   data->auth.ies_len, 0, data->auth.peer);
 		if (res < 0) {
+		if (data->auth.auth_transaction == 2 &&
+			data->auth.status_code ==
+			WLAN_STATUS_CHALLENGE_FAIL)
+			wpas_notify_sae_password_mismatch(wpa_s);
 			wpas_connection_failed(wpa_s, wpa_s->pending_bssid);
 			wpa_supplicant_set_state(wpa_s, WPA_DISCONNECTED);
 
