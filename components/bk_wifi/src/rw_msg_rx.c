@@ -141,7 +141,7 @@ UINT8 *sr_malloc_shell(void)
 	if (ptr)
 		return ptr;
 	else {
-		RWNX_LOGI("sr_malloc fail \r\n");
+		RWNX_LOGI("sr_malloc fail \n");
 		return 0;
 	}
 }
@@ -209,14 +209,14 @@ void sr_release_scan_results(SCAN_RST_UPLOAD_PTR ptr)
 {
 	rtos_lock_mutex(&sr_mutex);
 	if ((0 == ptr) || (0 == ptr->ref)) {
-		RWNX_LOGI("released_scan_results\r\n");
+		RWNX_LOGI("released_scan_results\n");
 		goto release_exit;
 	}
 
 	ptr->ref -= 1;
 
 	if (ptr->ref) {
-		RWNX_LOGI("release_scan_results later\r\n");
+		RWNX_LOGI("release_scan_results later\n");
 		goto release_exit;
 	}
 
@@ -1117,7 +1117,7 @@ UINT32 mhdr_scanu_result_ind(SCAN_RST_UPLOAD_T *scan_rst, void *msg, UINT32 len)
 					ssid_len = MAC_SSID_LEN;
 
 				os_memcpy(ssid_b, elmt_addr + 2, ssid_len);
-				RWNX_LOGI("drop: %s, chan:%d\r\n", wpa_ssid_txt(ssid_b, ssid_len), chann);
+				RWNX_LOGI("drop: %s, chan:%d\n", wpa_ssid_txt(ssid_b, ssid_len), chann);
 			}
 
 			goto scan_rst_exit;
@@ -1133,7 +1133,7 @@ UINT32 mhdr_scanu_result_ind(SCAN_RST_UPLOAD_T *scan_rst, void *msg, UINT32 len)
 		if (elmt_addr && (LOCAL_CAPA(HE))) {
 			// DS IE for 2.4G Only
 			if (scanu_ret_ptr->center_freq < 4900)
-				RWNX_LOGI("he+he,scan rst no ds param, not drop it?\r\n");
+				RWNX_LOGI("he+he,scan rst no ds param, not drop it?\n");
 			chann = rw_ieee80211_get_chan_id(scanu_ret_ptr->center_freq);
 			if (rw_ieee80211_is_scan_rst_in_countrycode(chann) == 0) {
 				elmt_addr = (UINT8 *)get_ie(var_part_addr, vies_len, WLAN_EID_SSID);
@@ -1145,7 +1145,7 @@ UINT32 mhdr_scanu_result_ind(SCAN_RST_UPLOAD_T *scan_rst, void *msg, UINT32 len)
 						ssid_len = MAC_SSID_LEN;
 
 					os_memcpy(ssid_b, elmt_addr + 2, ssid_len);
-					RWNX_LOGI("drop: %s, chan:%d\r\n", wpa_ssid_txt(ssid_b, ssid_len), chann);
+					RWNX_LOGI("drop: %s, chan:%d\n", wpa_ssid_txt(ssid_b, ssid_len), chann);
 				}
 				goto scan_rst_exit;
 			}
@@ -1154,7 +1154,7 @@ UINT32 mhdr_scanu_result_ind(SCAN_RST_UPLOAD_T *scan_rst, void *msg, UINT32 len)
 			chann = rw_ieee80211_get_chan_id(scanu_ret_ptr->center_freq);
 			on_channel = 0;
 			if (scanu_ret_ptr->center_freq < 4900)
-				RWNX_LOGI("scan rst no ds param, drop it?\r\n");
+				RWNX_LOGI("scan rst no ds param, drop it?\n");
 		}
 	}
 
@@ -1177,7 +1177,7 @@ UINT32 mhdr_scanu_result_ind(SCAN_RST_UPLOAD_T *scan_rst, void *msg, UINT32 len)
 
 		os_memcpy(item->ssid, elmt_addr + 2, ssid_len);
 	} else {
-		RWNX_LOGI("No ssid\r\n");
+		RWNX_LOGI("No ssid\n");
 	}
 
 
@@ -1754,7 +1754,7 @@ void rwnx_handle_recv_msg(struct ke_msg *rx_msg)
 				scan_rst_set_ptr->res = (SCAN_RST_ITEM_PTR *)&scan_rst_set_ptr[1];
 				mhdr_scanu_result_ind(scan_rst_set_ptr, rx_msg, rx_msg->param_len);
 			} else
-				RWNX_LOGI("scan_rst_set_ptr malloc fail\r\n");
+				RWNX_LOGI("scan_rst_set_ptr malloc fail\n");
 		} else {
 			mhdr_scanu_result_ind(scan_rst_set_ptr, rx_msg, rx_msg->param_len);
 		}
@@ -1819,7 +1819,7 @@ void rwnx_handle_recv_msg(struct ke_msg *rx_msg)
 
 		g_rwnx_hw.connected = false;
 
-		RWNX_LOGD("disconnect\r\n");
+		RWNX_LOGD("disconnect\n");
 
 #if defined(CONFIG_IEEE80211R) || defined(CONFIG_WNM)
 				if (!ind->reassoc)
@@ -1873,7 +1873,7 @@ void rwnx_handle_recv_msg(struct ke_msg *rx_msg)
 	/*							mm_hdlrs									  */
 	/**************************************************************************/
 	case MM_TAGGED_PARAM_CHANGE: {
-		RWNX_LOGD("MM_TAGGED_PARAM_CHANGE\r\n");
+		RWNX_LOGD("MM_TAGGED_PARAM_CHANGE\n");
 	}
 		break;
 

@@ -406,7 +406,7 @@ static struct rwnx_txq *rwnx_select_txq(struct sk_buff *skb, BUS_MSG_T *msg)
 
 	rwnx_vif = rwm_mgmt_vif_idx2ptr(skb->vif_idx);
 	if (!rwnx_vif) {
-		RWNX_LOGI("%s: vif is NULL!\r\n", __func__);
+		RWNX_LOGI("%s: vif is NULL!\n", __func__);
 		return NULL;
 	}
 
@@ -418,7 +418,7 @@ static struct rwnx_txq *rwnx_select_txq(struct sk_buff *skb, BUS_MSG_T *msg)
 
 	if (sta && (!sta_mgmt_get_valid(sta)))
 	{
-		RWNX_LOGI("%s: sta is invalid!\r\n", __func__);
+		RWNX_LOGI("%s: sta is invalid!\n", __func__);
 		return NULL;
 	}
 
@@ -620,7 +620,7 @@ __ITCM_N int rwnx_start_xmit(uint8_t vif_idx, struct pbuf *p, BUS_MSG_T *msg)
 
 	if (q) {
 		if ((err = pbuf_copy(q, p)) != ERR_OK) {
-			RWNX_LOGD("copy p failed\r\n");
+			RWNX_LOGD("copy p failed\n");
 			pbuf_free(q);
 			goto exit;
 		}
@@ -632,14 +632,14 @@ __ITCM_N int rwnx_start_xmit(uint8_t vif_idx, struct pbuf *p, BUS_MSG_T *msg)
 	}
 	else
 	{
-		RWNX_LOGD("alloc p failed\r\n");
+		RWNX_LOGD("alloc p failed\n");
 		goto exit;
 	}
 #endif
 
 	skb = alloc_skb_with_pbuf(p);
 	if (!skb) {
-		RWNX_LOGI("rwnx_start_xmit no node\r\n");
+		RWNX_LOGI("%s no node\n", __func__);
 		goto exit;
 	}
 
@@ -1082,7 +1082,7 @@ void fhost_tx_cfm_push(uint8_t queue_idx, struct txdesc *txdesc)
 
 			//Do NOT re-transmit the packet if retry count has reached the limit
 			if (txdesc->host.sw_retry_cnt++ >= CFG_MAX_SW_RETRY_CNT) {
-				RWNX_LOGI("SW retry has reached the limit\r\n");
+				RWNX_LOGI("SW retry has reached the limit\n");
 				txdesc->host.sw_retry_cnt = 0;
 				goto err_tx;
 			}
@@ -1096,7 +1096,7 @@ void fhost_tx_cfm_push(uint8_t queue_idx, struct txdesc *txdesc)
 #else
 			//Do NOT re-transmit the packet if retry count has reached the limit
 			if (txdesc->host.sw_retry_cnt++ >= CFG_MAX_SW_RETRY_CNT) {
-				RWNX_LOGI("SW retry has reached the limit\r\n");
+				RWNX_LOGI("SW retry has reached the limit\n");
 				txdesc->host.sw_retry_cnt = 0;
 				goto err_tx;
 			}
@@ -1110,14 +1110,14 @@ void fhost_tx_cfm_push(uint8_t queue_idx, struct txdesc *txdesc)
 		} else if (cfm->status & TX_STATUS_ACKNOWLEDGED) {
 			//xmit successfully, run callback
 			rwnx_tx_confirm(txdesc);
-			dbg(D_INF D_FHOST "FHOST: xmit one packet success by queue(%0d)\r\n", queue_idx);
+			dbg(D_INF D_FHOST "FHOST: xmit one packet success by queue(%0d)\n", queue_idx);
 		} else {
 err_tx:
 			rwnx_tx_confirm(txdesc);
-			dbg(D_INF D_FHOST "FHOST: xmit one packet failed by queue(%0d)\r\n", queue_idx);
+			dbg(D_INF D_FHOST "FHOST: xmit one packet failed by queue(%0d)\n", queue_idx);
 		}
 	} else {
-		dbg(D_ERR D_FHOST "FHOST: Rx one error tx_cfm\r\n");
+		dbg(D_ERR D_FHOST "FHOST: Rx one error tx_cfm\n");
 	}
 }
 

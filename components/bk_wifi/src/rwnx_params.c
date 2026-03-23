@@ -91,7 +91,7 @@ struct rwnx_mod_params rwnx_mod_params = {
 	PARAM(amsdu_require_spp, false)
 };
 
-static const int mcs_map_to_rate[4][3] = {
+static const int mcs_map_to_rate[4][3] __maybe_unused = {
 	[PHY_CHNL_BW_20][IEEE80211_VHT_MCS_SUPPORT_0_7] = 65,
 	[PHY_CHNL_BW_20][IEEE80211_VHT_MCS_SUPPORT_0_8] = 78,
 	[PHY_CHNL_BW_20][IEEE80211_VHT_MCS_SUPPORT_0_9] = 78,
@@ -133,19 +133,26 @@ static int rwnx_check_fw_hw_feature(struct rwnx_hw *rwnx_hw,
 		rwnx_hw->mod_params->tdls = false;
 	}
 
+#if 0
 	if (!(sys_feat & BIT(MM_FEAT_UMAC_BIT))) {
 		RWNX_LOGI("Loading softmac firmware with fullmac driver\n");
 		res = -1;
 	}
+#endif
 
 	if (!(sys_feat & BIT(MM_FEAT_ANT_DIV_BIT)))
 		rwnx_hw->mod_params->ant_div = false;
 
+#ifdef CONFIG_WIFI5
 	if (!(sys_feat & BIT(MM_FEAT_VHT_BIT)))
+#endif
 		rwnx_hw->mod_params->vht_on = false;
 
 	// Check if HE is supported
-	if (!(sys_feat & BIT(MM_FEAT_HE_BIT))) {
+#ifdef CONFIG_WIFI6
+	if (!(sys_feat & BIT(MM_FEAT_HE_BIT)))
+#endif
+	{
 		rwnx_hw->mod_params->he_on = false;
 		rwnx_hw->mod_params->he_ul_on = false;
 	}
@@ -291,7 +298,7 @@ static int rwnx_check_fw_hw_feature(struct rwnx_hw *rwnx_hw,
 #define PRINT_RWNX_FEAT(feat)                                   \
 	(sys_feat & (1ULL << MM_FEAT_##feat##_BIT) ? "["#feat"]" : "")
 
-	RWNX_LOGI("FW features: %s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n",
+	RWNX_LOGD("FW features: %s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n",
 			  PRINT_RWNX_FEAT(BCN),
 #if NX_VERSION >= NX_VERSION_PACK(6, 22, 0, 0)
 			  "", "", "", "", /* enabled by default */
@@ -790,11 +797,15 @@ int rwnx_handle_dynparams()
 	if (ret)
 		return ret;
 
+#ifdef CONFIG_WIFI5
 	/* Set VHT capabilities */
 	rwnx_set_vht_capa(rwnx_hw, wiphy);
+#endif
 
+#ifdef CONFIG_WIFI6
 	/* Set HE capabilities */
 	rwnx_set_he_capa(rwnx_hw, wiphy);
+#endif
 
 	/* Set HT capabilities */
 	rwnx_set_ht_capa(rwnx_hw, wiphy);

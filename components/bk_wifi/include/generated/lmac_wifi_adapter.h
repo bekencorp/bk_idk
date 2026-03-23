@@ -67,8 +67,6 @@ typedef struct {
 	void (*_sys_set_use_abs_power)(UINT32 use);
 	void (*_evm_via_mac_continue)(void);
 	void (*_evm_via_mac_evt)(INT32 dummy);
-	int (*_do_evm)(void *cmdtp, int flag, int argc, char *const argv[]);
-	int (*_do_rx_sensitivity)(void *cmdtp, int flag, int argc, char *const argv[]);
 	INT32 (*_rwnx_cal_save_trx_rcbekn_reg_val)(void);
 	void (*_rc_drv_set_agc_manual_en)(uint32_t value);
 	void (*_rc_drv_set_rf_macbypass)(uint32_t value);
@@ -102,31 +100,8 @@ typedef struct {
 
 	/////////////////////////
 
-	void *(*_pbuf_alloc)(int layer, uint16_t length, int type);
-	void (*_pbuf_free)(void *p);
-	void (*_pbuf_ref)(void *p);
-	void (*_pbuf_header)(void *p, int16_t len);
 	void (*_pbuf_cat)(void *p, void *q);
-	void *(*_pbuf_coalesce)(void *p);
-	int (*_get_rx_pbuf_type)(void);
-	int (*_get_pbuf_pool_size)(void);
 	bool (*_pbuf_check_overflow)(void *p, uint32_t buf);
-	void *(*_get_netif_hostname)(void *netif);
-	int (*_save_net_info)(int item, u8 *ptr0, u8 *ptr1, u8 *ptr2);
-	int (*_get_net_info)(int item, u8 *ptr0, u8 *ptr1, u8 *ptr2);
-	void *(*_inet_ntoa)(void *addr);
-	uint32_t (*_lwip_ntohl)(uint32_t val);
-	uint16_t (*_lwip_htons)(uint16_t val);
-	void (*_sta_ip_start)(void);
-	void (*_sta_ip_down)(void);
-	void (*_uap_ip_start)(void);
-	void (*_uap_ip_down)(void);
-	int (*_net_wlan_add_netif)(void *mac);
-	int (*_net_wlan_remove_netif)(void *mac);
-	uint32_t (*_lookup_ipaddr)(void *addr);
-	void (*_set_sta_status)(void *info);
-	void (*_sta_ip_mode_set)(int dhcp);
-	void (*_net_begin_send_arp_reply)(int is_send_arp, int is_allow_send_req);
 	void (*_delay)(INT32 num);
 	void (*_delay_us)(UINT32 us);
 	uint32_t (*_sys_drv_modem_bus_clk_ctrl)(bool clk_en);
@@ -174,8 +149,6 @@ typedef struct {
 	bk_err_t (*_bk_rosc_32k_ckest_prog)(uint32_t param);
 	bk_err_t (*_bk_rosc_32k_get_ppm)(void);
 	double (*_bk_rosc_32k_get_freq)(void);
-
-	void (*_mac_printf_encode)(char *txt, size_t maxlen, const u8 *data, size_t len);
 	void (*_dbg_enable_debug_gpio)(void);
 	void (*_dbg_enable_debug_mac)(void);
 	void (*_dbg_enable_debug_phy)(void);
@@ -194,20 +167,12 @@ typedef struct {
 	int (*_bk_feature_dtim_event_enable)(void);
 	int (*_bk_feature_retry_config_enable)(void);
 	int (*_bk_feature_config_wireless_mode_enable)(void);
-	int (*_bk_feature_bssid_connect_enable)(void);
-	int (*_bk_feature_fast_connect_enable)(void);
 	int (*_bk_feature_send_deauth_before_connect)(void);
-	int (*_bk_feature_set_relay_ap_inactivity)(void);
 	int (*_bk_feature_send_sta_csa_ind)(void);
-	int (*_bk_feature_fast_dhcp_enable)(void);
 	int (*_bk_feature_get_scan_speed_level)(void);
 	int (*_bk_feature_not_check_ssid_enable)(void);
 	int (*_bk_feature_config_cache_enable)(void);
 	int (*_bk_feature_config_ckmn_enable)(void);
-	int (*_bk_feature_sta_vsie_enable)(void);
-	int (*_bk_feature_ap_statype_limit_enable)(void);
-	int (*_bk_feature_close_coexist_csa)(void);
-	int (*_bk_feature_network_found_event)(void);
 	int (*_bk_feature_ap_ps_enable)(void);
 	int (*_bk_feature_tx_tim_enable)(void);
 	int (*_bk_feature_get_mac_sup_sta_max_num)(void);
@@ -296,7 +261,6 @@ typedef struct {
 	char *(*_os_strstr)(const char *haystack, const char *needle);
 	///
 	UINT32 (*_rf_pll_ctrl)(UINT32 cmd, UINT32 param);
-	void (*_send_udp_bc_pkt)(uint8_t data);
 	void (*_tx_verify_test_call_back)(void);
 	void (*_sys_hal_enter_low_analog)(void);
 	void (*_sys_hal_exit_low_analog)(void);

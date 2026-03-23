@@ -416,7 +416,9 @@ UINT32 rw_ieee80211_init(void)
 	intf.msg_outbound_func = mr_kmsg_fwd;
 	intf.data_outbound_func = rwm_upload_data;
 	intf.rx_alloc_func = rwm_get_rx_free_node;
+#ifdef CONFIG_WIFI_MONITOR
 	intf.monitor_outbound_func = rwm_rx_monitor;
+#endif
 
 	rwnxl_register_connector(&intf);
 
@@ -545,7 +547,7 @@ static UINT32 rw_ieee80211_set_chan_power(void)
 		}
 	}
     manual_cal_set_cc_backoff_flag(true);
-	RWNX_LOGI("set regulation %d chan maxpower:%ddbm\r\n", regulation,txpwr);
+	RWNX_LOGI("set regulation %d chan maxpower:%ddbm\n", regulation,txpwr);
 
 	return kNoErr;
 }
@@ -597,13 +599,13 @@ int rw_ieee80211_set_country(const wifi_country_t *country)
 	prev_policy = g_country_code.cfg.policy;
 
 	os_memcpy(&g_country_code.cfg, country, sizeof(wifi_country_t));
-	RWNX_LOGI("set country code {cc=%s, chan=<%d-%d> policy=%s}\r\n", country->cc,
+	RWNX_LOGI("set country code {cc=%s, chan=<%d-%d> policy=%s}\n", country->cc,
 			  country->schan, (country->schan + country->nchan - 1),
 			  country->policy == WIFI_COUNTRY_POLICY_MANUAL ? "manual" : "auto");
 
 	if (g_country_code.cfg.policy == WIFI_COUNTRY_POLICY_AUTO) {
 		if (prev_policy != g_country_code.cfg.policy) {
-			RWNX_LOGI("need change softap beacon\r\n");
+			RWNX_LOGI("need change softap beacon\n");
 			//TODO
 		}
 	}

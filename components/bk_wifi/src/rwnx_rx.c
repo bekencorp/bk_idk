@@ -768,6 +768,7 @@ UINT32 rwm_upload_data(void *host_id, uint32_t frame_len)
 	return BK_OK;
 }
 
+#ifdef CONFIG_WIFI_MONITOR
 /**
  * NOTE: monitor frame is converted to 802.3 frame if the original
  * 802.11 frameis Data format, but the 802.11 mac header is backed
@@ -818,6 +819,7 @@ UINT32 rwm_rx_monitor(void *host_id, uint32_t frame_len)
 
 	return 0;
 }
+#endif
 
 int fhost_rxbuf_push()
 {
@@ -832,7 +834,7 @@ int fhost_rxbuf_push()
 
 	pbuf = pbuf_alloc(PBUF_RAW, CFG_MSDU_MAX_LEN, PBUF_RAM);
 	if (!pbuf) {
-		RWNX_LOGI("%s alloc pbuf fail\r\n", __func__);
+		RWNX_LOGI("%s alloc pbuf fail\n", __func__);
 		return -ENOMEM;
 	}
 
@@ -848,7 +850,7 @@ int fhost_rxbuf_push()
 
 	payload = ke_malloc(CFG_MSDU_MAX_LEN);
 	if (!payload) {
-		RWNX_LOGI("%s alloc payload fail\r\n", __func__);
+		RWNX_LOGI("%s alloc payload fail\n", __func__);
 		return -ENOMEM;
 	}
 

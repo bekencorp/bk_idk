@@ -1336,7 +1336,7 @@ int cmd_wlan_ap_exec(char *cmd)
 			len = os_strlen(ap_ssid);
 			if(32 < len)
 			{
-				BK_LOGE(TAG, "ssid name more than 32 Bytes\r\n");
+				BK_LOGE(TAG, "ssid name more than 32 Bytes\n");
 				return -2;
 				goto out;
 			}
@@ -1349,10 +1349,10 @@ int cmd_wlan_ap_exec(char *cmd)
 			os_strcpy((char *)wNetConfiga.net_mask, WLAN_DEFAULT_MASK);
 			os_strcpy((char *)wNetConfiga.gateway_ip_addr, WLAN_DEFAULT_GW);
 			os_strcpy((char *)wNetConfiga.dns_server_ip_addr, WLAN_DEFAULT_GW);
-			WIFI_LOGD("ssid:%s  key:%s\r\n", wNetConfiga.wifi_ssid, wNetConfiga.wifi_key);
+			WIFI_LOGD("ssid:%s  key:%s\n", wNetConfiga.wifi_ssid, wNetConfiga.wifi_key);
 			//if(bk_wlan_is_monitor_mode())
 			//{
-				//os_printf("monitor (ie.airkiss) is not finish yet, stop it or waiting it finish!\r\n");
+				//os_printf("monitor (ie.airkiss) is not finish yet, stop it or waiting it finish!\n");
 				//return ret;
 			//}
 			ret = bk_wlan_start_ap(&wNetConfiga);

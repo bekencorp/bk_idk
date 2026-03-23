@@ -584,7 +584,7 @@ int rwnx_monitor_open()
 		return ret;
 
 	if (add_if_cfm.status != 0) {
-		//dbg(D_ERR D_FHOST "FHOST: add virtual iface error(status=%d)!\r\n", add_if_cfm.status);
+		//dbg(D_ERR D_FHOST "FHOST: add virtual iface error(status=%d)!\n", add_if_cfm.status);
 
 		return -1;
 	}
@@ -621,7 +621,7 @@ int rwnx_msg_send_twt_setup(uint8_t setup_type, uint16_t mantissa, uint8_t min_t
 	struct twt_setup_cfm *twt_setup_cfm
 		= (struct twt_setup_cfm *)os_malloc(sizeof(struct twt_setup_cfm));
 	if (NULL == twt_setup_cfm) {
-		RWNX_LOGI("twt setup failed: oom\r\n");
+		RWNX_LOGI("twt setup failed: oom\n");
 		return BK_ERR_NO_MEM;
 	}
 
@@ -637,9 +637,9 @@ int rwnx_msg_send_twt_setup(uint8_t setup_type, uint16_t mantissa, uint8_t min_t
 
 	ret = rw_msg_send_twt_setup(setup_type, vif_idx, &twt_conf, twt_setup_cfm);
 	if (!ret && (twt_setup_cfm->status == CO_OK))
-		RWNX_LOGI("set up success\r\n");
+		RWNX_LOGI("set up success\n");
 	else
-		RWNX_LOGI("set up fail, ret = %d\r\n", ret);
+		RWNX_LOGI("set up fail, ret = %d\n", ret);
 	os_free(twt_setup_cfm);
 	return ret;
 
@@ -661,9 +661,9 @@ int rwnx_msg_send_twt_teardown(void)
 	}
 
 	if (!ret)
-		RWNX_LOGI( "tear down success\r\n");
+		RWNX_LOGI( "tear down success\n");
 	else
-		RWNX_LOGI( "tear down fail, ret = %d\r\n", ret);
+		RWNX_LOGI( "tear down fail, ret = %d\n", ret);
 	return ret;
 }
 #endif
@@ -915,7 +915,7 @@ int rw_msg_send_apm_start_req(u8 vif_index, u8 channel,
 	req->ctrl_port_ethertype = PP_HTONS(ETH_P_PAE);
 	req->vif_idx = vif_index;
 
-	RWNX_LOGD("apm start with vif:%d\r\n", vif_index);
+	RWNX_LOGD("apm start with vif:%d\n", vif_index);
 
 	return rw_msg_send(req, 1, APM_START_CFM, cfm);
 }
@@ -1008,9 +1008,9 @@ int rw_msg_send_me_sta_add(struct add_sta_st *param,
 	req->max_sp_len = (((param->qos_info & 0x60) >> 5) * 2);
 	RWNX_LOGI("%s qos_info = 0x%x req->uapsd_queues = 0x%x; max_sp_len = %d\n", __FUNCTION__, param->qos_info, req->uapsd_queues, req->max_sp_len);
 
-	RWNX_LOGI("hapd_intf_sta_add:%d, vif:%d\r\n", req->aid, req->vif_idx);
+	RWNX_LOGI("hapd_intf_sta_add:%d, vif:%d\n", req->aid, req->vif_idx);
 	if(param->supp_rates_len > MAC_RATESET_LEN)
-		RWNX_LOGW("hapd_intf_sta_add: supp_rates_len:%d\r\n", param->supp_rates_len);
+		RWNX_LOGW("hapd_intf_sta_add: supp_rates_len:%d\n", param->supp_rates_len);
 	req->rate_set.length = param->supp_rates_len <= MAC_RATESET_LEN ? param->supp_rates_len : MAC_RATESET_LEN;
 	for(uint8_t i = 0; i < req->rate_set.length; i++)
 		req->rate_set.array[i] = param->supp_rates[i];
@@ -1065,7 +1065,7 @@ int rw_msg_send_key_add(KEY_PARAM_T *param, struct mm_key_add_cfm *cfm)
 	key_add_req = ke_msg_alloc(MM_KEY_ADD_REQ, TASK_MM, TASK_API,
 							   sizeof(struct mm_key_add_req));
 	if (!key_add_req) {
-		RWNX_LOGI("rw_msg_send_key_add NULL\r\n");
+		RWNX_LOGI("rw_msg_send_key_add NULL\n");
 		return BK_ERR_NO_MEM;
 	}
 
@@ -1183,7 +1183,7 @@ int rw_msg_send_scanu_req(SCAN_PARAM_T *scan_param)
 	req = ke_msg_alloc(SCANU_START_REQ, TASK_SCANU, TASK_API,
 					   sizeof(struct scanu_start_req) + scan_param->extra_ies_len);
 	if (!req) {
-		RWNX_LOGE("scanu req alloc failed\r\n");
+		RWNX_LOGE("scanu req alloc failed\n");
 		return BK_ERR_NO_MEM;
 	}
 
@@ -1269,7 +1269,7 @@ int rw_msg_send_scanu_req(SCAN_PARAM_T *scan_param)
 			for (i = 0; i < scancd_env.table_nm; i++) {
 				freq = rw_ieee80211_get_centre_frequency(scancd_env.tb[i].ch_nb);
 				if (scancd_env.tb[i].ch_nb == 0 || freq == 0) {
-					RWNX_LOGI("channel_number error\r\n");
+					RWNX_LOGI("channel_number error\n");
 					break;
 				}
 
@@ -1295,7 +1295,7 @@ int rw_msg_send_scanu_req(SCAN_PARAM_T *scan_param)
 				uint16_t freq;
 				freq = rw_ieee80211_get_centre_frequency(scan_param_env.chan_nb[i]);
 				if (freq == 0) {
-					RWNX_LOGI("channel_number error\r\n");
+					RWNX_LOGI("channel_number error\n");
 					break;
 				}
 				req->chan[i].freq = freq;

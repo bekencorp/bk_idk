@@ -110,7 +110,7 @@ static void kmsg_bk_thread_main(void *arg)
 	while (1) {
 		ret = rtos_get_semaphore(&app_sema, BEKEN_WAIT_FOREVER);
 		if (kNoErr != ret) {
-			RWNX_LOGE("%s timeout\r\n", __func__);
+			RWNX_LOGE("%s timeout\n", __func__);
 			continue;
 		}
 
@@ -144,7 +144,7 @@ void bmsg_skt_tx_handler(BUS_MSG_T *msg)
 		int dummy = msg->arg;
 		S_TYPE_PTR type_ptr = (S_TYPE_PTR)dummy;
 
-		RWNX_LOGW("hapd_intf_ke_rx_handle resend 3 times, drop it!\r\n");
+		RWNX_LOGW("hapd_intf_ke_rx_handle resend 3 times, drop it!\n");
 		if (type_ptr->type == HOSTAPD_MGMT ||
 			type_ptr->type == HOSTAPD_MGMT_ROBUST)
 			ke_mgmt_packet_rx(NULL, 0, type_ptr->vif_index);
@@ -156,11 +156,11 @@ void bmsg_skt_tx_handler(BUS_MSG_T *msg)
 		return;
 	}
 	if (hapd_intf_ke_rx_handle(msg->arg)) {
-		RWNX_LOGW("hapd_intf_ke_rx_handle resend\r\n");
+		RWNX_LOGW("hapd_intf_ke_rx_handle resend\n");
 		rtos_delay_milliseconds(10);
 		ret = rtos_push_to_queue(&g_wifi_core.io_queue, msg, BEKEN_NO_WAIT);
 		if (kNoErr != ret)
-			RWNX_LOGW("hapd_intf_ke_rx_handle resend fail!\r\n");
+			RWNX_LOGW("hapd_intf_ke_rx_handle resend fail!\n");
 		resend_num++;
 	} else {
 		resend_num = 0;
@@ -222,7 +222,7 @@ int bmsg_tx_raw_cb_sender(uint8_t *buffer, int length, void *cb, void *param)
 
 	ret = rtos_push_to_queue(&g_wifi_core.io_queue, &msg, 1 * SECONDS);
 	if (ret != kNoErr)
-		RWNX_LOGD("bmsg_tx_sender failed\r\n");
+		RWNX_LOGD("bmsg_tx_sender failed\n");
 
 	return ret;
 }
@@ -252,7 +252,7 @@ int bmsg_tx_raw_ex_sender(wifi_raw_tx_info_t *raw_tx, void *cb, void *param)
 
 	ret = rtos_push_to_queue(&g_wifi_core.io_queue, &msg, 1 * SECONDS);
 	if (ret != kNoErr) {
-		RWNX_LOGD("bmsg_tx_sender failed\r\n");
+		RWNX_LOGD("bmsg_tx_sender failed\n");
 		os_free(raw_tx);
 	}
 
@@ -337,7 +337,7 @@ int bmsg_tx_mgmt_sender(struct sk_buff *skb)
 
 	ret = rtos_push_to_queue(&g_wifi_core.io_queue, &msg, 1 * SECONDS);
 	if (ret != kNoErr)
-		RWNX_LOGW("bmsg_tx_mgmt failed\r\n");
+		RWNX_LOGW("bmsg_tx_mgmt failed\n");
 
 	return ret;
 }
@@ -414,7 +414,7 @@ void bmsg_skt_tx_sender(void *arg)
 
 	ret = rtos_push_to_queue(&g_wifi_core.io_queue, &msg, BEKEN_NO_WAIT);
 	if (kNoErr != ret)
-		RWNX_LOGW("bmsg_skt_tx_sender failed, ret=%d\r\n", ret);
+		RWNX_LOGW("bmsg_skt_tx_sender failed, ret=%d\n", ret);
 }
 
 
@@ -433,7 +433,7 @@ void bmsg_null_sender(void)
 
 	ret = rtos_push_to_queue(&g_wifi_core.io_queue, &msg, BEKEN_NO_WAIT);
 	if (kNoErr != ret)
-		RWNX_LOGW("bmsg_null_sender failed, ret=%d\r\n", ret);
+		RWNX_LOGW("bmsg_null_sender failed, ret=%d\n", ret);
 }
 
 void bmsg_rx_sender(void *arg)
@@ -462,7 +462,7 @@ void bmsg_rx_sender(void *arg)
 		GLOBAL_INT_DISABLE();
 		bmsg_rx_count -= 1;
 		GLOBAL_INT_RESTORE();
-		RWNX_LOGW("bmsg_rx_sender failed, ret=%d\r\n", ret);
+		RWNX_LOGW("bmsg_rx_sender failed, ret=%d\n", ret);
 	}
 }
 
@@ -496,7 +496,7 @@ int bmsg_tx_sender(struct pbuf *p, uint32_t vif_idx)
 	pbuf_ref(p);
 	ret = rtos_push_to_queue(&g_wifi_core.io_queue, &msg, 1 * SECONDS);
 	if (kNoErr != ret) {
-		RWNX_LOGW("bmsg_tx_sender failed, ret=%d\r\n", ret);
+		RWNX_LOGW("bmsg_tx_sender failed, ret=%d\n", ret);
 		pbuf_free(p);
 	}
 
@@ -518,7 +518,7 @@ int bmsg_special_tx_sender(struct pbuf *p, uint32_t vif_idx)
 	pbuf_ref(p);
 	ret = rtos_push_to_queue(&g_wifi_core.io_queue, &msg, 1 * SECONDS);
 	if (kNoErr != ret) {
-		RWNX_LOGW("bmsg_tx_sender failed, ret=%d\r\n", ret);
+		RWNX_LOGW("bmsg_tx_sender failed, ret=%d\n", ret);
 		pbuf_ref(p);
 	}
 
@@ -542,7 +542,7 @@ int bmsg_tx_sender_ext(struct pbuf *p, uint32_t vif_idx, void *cb, void *param)
 
 	ret = rtos_push_to_queue(&g_wifi_core.io_queue, &msg, 1 * SECONDS);
 	if (kNoErr != ret) {
-		RWNX_LOGW("bmsg_tx_sender_ext failed\r\n");
+		RWNX_LOGW("bmsg_tx_sender_ext failed\n");
 		if (p)
 			pbuf_free(p);
 	}
@@ -567,7 +567,7 @@ int bmsg_special_tx_sender_ext(struct pbuf *p, uint32_t vif_idx, void *cb, void 
 
 	ret = rtos_push_to_queue(&g_wifi_core.io_queue, &msg, 1 * SECONDS);
 	if (kNoErr != ret) {
-		RWNX_LOGW("bmsg_tx_sender_ext failed\r\n");
+		RWNX_LOGW("bmsg_tx_sender_ext failed\n");
 		if (p)
 			pbuf_free(p);
 	}
@@ -591,7 +591,7 @@ int bmsg_tx_raw_sender(uint8_t *payload, uint16_t length)
 	ret = rtos_push_to_queue(&g_wifi_core.io_queue, &msg, 1 * SECONDS);
 
 	if (ret != kNoErr) {
-		RWNX_LOGW("bmsg_tx_raw_sender failed, ret=%d\r\n", ret);
+		RWNX_LOGW("bmsg_tx_raw_sender failed, ret=%d\n", ret);
 		os_free(payload);
 	}
 
@@ -628,9 +628,9 @@ int bmsg_ioctl_sender(void *arg)
 
 	ret = rtos_push_to_queue(&g_wifi_core.io_queue, &msg, BEKEN_NO_WAIT);
 	if (kNoErr != ret)
-		RWNX_LOGD("bmsg_ioctl_sender_failed\r\n");
+		RWNX_LOGD("bmsg_ioctl_sender_failed\n");
 	else
-		RWNX_LOGD("bmsg_ioctl_sender\r\n");
+		RWNX_LOGD("bmsg_ioctl_sender\n");
 
 	return ret;
 }
@@ -647,9 +647,9 @@ int bmsg_software_para_ioctl_sender(void *arg)
 
 	ret = rtos_push_to_queue(&g_wifi_core.io_queue, &msg, BEKEN_NO_WAIT);
 	if (kNoErr != ret)
-		RWNX_LOGD("bmsg_software_ioctl_sender_failed\r\n");
+		RWNX_LOGD("bmsg_software_ioctl_sender_failed\n");
 	else
-		RWNX_LOGD("bmsg_software_ioctl_sender\r\n");
+		RWNX_LOGD("bmsg_software_ioctl_sender\n");
 
 	return ret;
 }
@@ -666,9 +666,9 @@ int bmsg_hardware_para_ioctl_sender(void *arg)
 
 	ret = rtos_push_to_queue(&g_wifi_core.io_queue, &msg, BEKEN_NO_WAIT);
 	if (kNoErr != ret)
-		RWNX_LOGD("bmsg_hardware_ioctl_sender_failed\r\n");
+		RWNX_LOGD("bmsg_hardware_ioctl_sender_failed\n");
 	else
-		RWNX_LOGD("bmsg_hardware_ioctl_sender\r\n");
+		RWNX_LOGD("bmsg_hardware_ioctl_sender\n");
 
 	return ret;
 }
@@ -685,7 +685,7 @@ void bmsg_music_sender(void *arg)
 
 	ret = rtos_push_to_queue(&g_wifi_core.io_queue, &msg, BEKEN_NO_WAIT);
 	if (kNoErr != ret)
-		RWNX_LOGD("bmsg_media_sender_failed\r\n");
+		RWNX_LOGD("bmsg_media_sender_failed\n");
 }
 
 #if CONFIG_TX_BUFING
@@ -701,7 +701,7 @@ void bmsg_tx_bufing_sender(uint32_t cid_and_flag)
 
 	ret = rtos_push_to_queue(&g_wifi_core.io_queue, &msg, BEKEN_NO_WAIT);
 	if (kNoErr != ret)
-		RWNX_LOGD("bmsg_txing_sender failed\r\n");
+		RWNX_LOGD("bmsg_txing_sender failed\n");
 }
 
 
@@ -726,9 +726,9 @@ void bmsg_tx_drop_traffic_sender(uint8_t arg)
 
 		ret = rtos_push_to_queue(&g_wifi_core.io_queue, &msg, BEKEN_NO_WAIT);
 		if (kNoErr != ret)
-			RWNX_LOGE("bmsg_tx_drop_traffic_sender failed\r\n");
+			RWNX_LOGE("bmsg_tx_drop_traffic_sender failed\n");
 	} else {
-		RWNX_LOGE("g_wifi_core.io_queue null\r\n");
+		RWNX_LOGE("g_wifi_core.io_queue null\n");
 	}
 }
 
@@ -856,9 +856,9 @@ void bmsg_ps_sender(uint8_t arg)
 
 		ret = rtos_push_to_queue(&g_wifi_core.io_queue, &msg, BEKEN_NO_WAIT);
 		if (kNoErr != ret)
-			RWNX_LOGE("bmsg_ps_sender failed\r\n");
+			RWNX_LOGE("bmsg_ps_sender failed\n");
 	} else {
-		RWNX_LOGE("g_wifi_core.io_queue null\r\n");
+		RWNX_LOGE("g_wifi_core.io_queue null\n");
 	}
 }
 
@@ -875,9 +875,9 @@ void ps_send_lpo_msg(uint8_t arg,uint8_t lpo_src)
 
 		ret = rtos_push_to_queue(&g_wifi_core.io_queue, &msg, BEKEN_NO_WAIT);
 		if (kNoErr != ret)
-			RWNX_LOGE("ps_send_msg failed\r\n");
+			RWNX_LOGE("ps_send_msg failed\n");
 	} else {
-		RWNX_LOGE("ps_send_msg.io_queue null\r\n");
+		RWNX_LOGE("ps_send_msg.io_queue null\n");
 	}
 }
 
@@ -903,13 +903,13 @@ static void core_thread_main(void *arg)
 		if (kNoErr == ret) {
 			switch (msg.type) {
 			case BMSG_STA_PS_TYPE:
-				RWNX_LOGD("bmsg_ioctl_handler\r\n");
+				RWNX_LOGD("bmsg_ioctl_handler\n");
 				bmsg_ps_handler(&msg);
 				break;
 
 			case BMSG_RX_TYPE:
 				/* ieee 802.11 rx handler */
-				RWNX_LOGD("bmsg_rx_handler\r\n");
+				RWNX_LOGD("bmsg_rx_handler\n");
 				bmsg_rx_handler(&msg);
 				break;
 
@@ -917,7 +917,7 @@ static void core_thread_main(void *arg)
 			case BMSG_SPECIAL_TX_TYPE:
 			case BMSG_TX_TYPE:
 				/* ieee 802.3 data tx handler */
-				RWNX_LOGD("bmsg_tx_handler\r\n");
+				RWNX_LOGD("bmsg_tx_handler\n");
 				bmsg_tx_handler(&msg);
 #if CONFIG_RWNX_SW_TXQ
 				rwnx_hwq_process_all(0);
@@ -943,7 +943,7 @@ static void core_thread_main(void *arg)
 #if !CONFIG_FULLY_HOSTED
 			case BMSG_SKT_TX_TYPE:
 				/* ieee 802.11 mlme frame tx handler, used by wpa_s/hapd */
-				RWNX_LOGD("bmsg_skt_tx_handler\r\n");
+				RWNX_LOGD("bmsg_skt_tx_handler\n");
 				bmsg_skt_tx_handler(&msg);
 				break;
 
@@ -968,18 +968,18 @@ static void core_thread_main(void *arg)
 
 			case BMSG_IOCTL_TYPE:
 				/* ke_msg tx handler */
-				RWNX_LOGD("bmsg_ioctl_handler\r\n");
+				RWNX_LOGD("bmsg_ioctl_handler\n");
 				bmsg_ioctl_handler(&msg);
 
 				break;
 
 			case BMSG_SOFTWARE_IOCTL_TYPE:
-				RWNX_LOGD("bmsg_software_ioctl_handler\r\n");
+				RWNX_LOGD("bmsg_software_ioctl_handler\n");
 				bmsg_ioctl_handler(&msg);
 				break;
 
 			case BMSG_HARDWARE_IOCTL_TYPE:
-				RWNX_LOGD("bmsg_hardware_ioctl_handler\r\n");
+				RWNX_LOGD("bmsg_hardware_ioctl_handler\n");
 				bmsg_ioctl_handler(&msg);
 				break;
 #if 0
@@ -1044,14 +1044,14 @@ static void core_thread_main(void *arg)
 
 			case BMSG_RX_TYPE:
 				/* ieee 802.11 rx handler */
-				RWNX_LOGD("bmsg_rx_handler\r\n");
+				RWNX_LOGD("bmsg_rx_handler\n");
 				bmsg_rx_handler(&msg);
 				break;
 
 #if !CONFIG_FULLY_HOSTED
 			case BMSG_TX_TYPE:
 				/* ieee 802.3 data tx handler */
-				RWNX_LOGD("bmsg_tx_handler\r\n");
+				RWNX_LOGD("bmsg_tx_handler\n");
 				bmsg_tx_handler(&msg);
 #if CONFIG_RWNX_SW_TXQ
 				rwnx_hwq_process_all(0);
@@ -1068,7 +1068,7 @@ static void core_thread_main(void *arg)
 #if !CONFIG_FULLY_HOSTED
 			case BMSG_SKT_TX_TYPE:
 				/* ieee 802.11 mlme frame tx handler, used by wpa_s/hapd */
-				RWNX_LOGD("bmsg_skt_tx_handler\r\n");
+				RWNX_LOGD("bmsg_skt_tx_handler\n");
 				bmsg_skt_tx_handler(&msg);
 				break;
 
@@ -1090,7 +1090,7 @@ static void core_thread_main(void *arg)
 
 			case BMSG_IOCTL_TYPE:
 				/* ke_msg tx handler */
-				RWNX_LOGD("bmsg_ioctl_handler\r\n");
+				RWNX_LOGD("bmsg_ioctl_handler\n");
 				bmsg_ioctl_handler(&msg);
 				break;
 
@@ -1106,7 +1106,7 @@ static void core_thread_main(void *arg)
 				break;
 #endif
 			default:
-				RWNX_LOGD("unknown_msg\r\n");
+				RWNX_LOGD("unknown_msg\n");
 				break;
 			}
 

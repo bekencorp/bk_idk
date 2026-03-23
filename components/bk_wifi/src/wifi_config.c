@@ -75,21 +75,17 @@ uint32_t cfg_param_init(void)
 	}
 
 #if COFIG_AP_STATYPE_LIMIT
-	if (wifi_bk_feature_ap_statype_limit_enable())
-		g_ap_param_ptr->max_statype_num[0] = CFG_SUPPORTED_MAX_STA_NUM;
+	g_ap_param_ptr->max_statype_num[0] = CFG_SUPPORTED_MAX_STA_NUM;
 #endif
 
 	if (NULL == g_sta_param_ptr) {
 		g_sta_param_ptr = (sta_param_t *)os_zalloc(sizeof(sta_param_t));
 		BK_ASSERT(g_sta_param_ptr); /* ASSERT VERIFIED */
 #if CONFIG_STA_VSIE
-	if (wifi_bk_feature_sta_vsie_enable()) {
-		for (int i = 0; i < NUM_WIFI_VENDOR_ELEM_FRAMES; i++) {
-			g_sta_param_ptr->vsies[i] = (struct bk_vise *)os_zalloc(sizeof(struct bk_vise));
-			BK_ASSERT(g_sta_param_ptr->vsies[i]);
-		}
+	for (int i = 0; i < NUM_WIFI_VENDOR_ELEM_FRAMES; i++) {
+		g_sta_param_ptr->vsies[i] = (struct bk_vise *)os_zalloc(sizeof(struct bk_vise));
+		BK_ASSERT(g_sta_param_ptr->vsies[i]);
 	}
-
 #endif
 	}
 

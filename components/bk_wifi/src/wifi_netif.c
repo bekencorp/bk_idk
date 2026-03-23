@@ -150,7 +150,7 @@ void wifi_netif_notify_sta_dhcp_timeout(void)
 
 	/* Send Event DHCP_TIMEOUT */
 	event_data.netif_if = NETIF_IF_STA;
-	WIFI_LOGI("DHCP timeout\r\n");
+	WIFI_LOGI("DHCP timeout\n");
 	BK_LOG_ON_ERR(bk_event_post(EVENT_MOD_NETIF, EVENT_NETIF_DHCP_TIMEOUT,
 				  &event_data, sizeof(event_data), BEKEN_NEVER_TIMEOUT));
 }

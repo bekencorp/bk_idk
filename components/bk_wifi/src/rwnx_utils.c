@@ -151,53 +151,6 @@ UINT8 rwm_mgmt_vif_name2idx(char *name)
 
 	return vif_idx;
 }
-
-#if 0
-void rwm_mgmt_set_vif_netif(uint8_t *mac, void *net_if)
-{
-	VIF_INF_PTR vif_entry = NULL;
-	UINT8 vif_idx;
-
-	if (!net_if)
-		return;
-
-	vif_idx = rwm_mgmt_vif_mac2idx(mac);
-	vif_entry = rwm_mgmt_vif_idx2ptr(vif_idx);
-
-	if (vif_entry) {
-		vif_entry->priv = net_if;
-		net_if->state = (void *)vif_entry;
-	} else
-		RWNX_LOGI("warnning: set_vif_netif failed\r\n");
-}
-
-
-struct netif *rwm_mgmt_get_vif2netif(UINT8 vif_idx)
-{
-	VIF_INF_PTR vif_entry = NULL;
-	struct netif *netif = NULL;
-
-	vif_entry = rwm_mgmt_vif_idx2ptr(vif_idx);
-
-	if (vif_entry)
-		netif = (struct netif *)vif_entry->priv;
-
-	return netif;
-}
-
-UINT8 rwm_mgmt_get_netif2vif(struct netif *netif)
-{
-	UINT8 vif_idx = 0xff;
-	VIF_INF_PTR vif_entry = NULL;
-
-	if (netif && netif->state) {
-		vif_entry = (VIF_INF_PTR)netif->state;
-		vif_idx = vif_entry->index;
-	}
-
-	return vif_idx;
-}
-#endif
 #endif /* CONFIG_NO_HOSTED */
 
 UINT8 rwm_mgmt_tx_get_staidx(UINT8 vif_idx, void *dstmac)
@@ -235,38 +188,6 @@ u8 rwn_mgmt_is_only_sta_role_add(void)
 
 #if CONFIG_NO_HOSTED
 extern uint8_t *dhcp_lookup_mac(uint8_t *chaddr);
-#if 0
-void rwn_mgmt_show_vif_peer_sta_list(UINT8 role)
-{
-	struct vif_info_tag *vif = (VIF_INF_PTR)rwm_mgmt_is_vif_first_used();
-	struct sta_info_tag *sta;
-	UINT8 num = 0;
-
-	while (vif) {
-		if (vif->type == role) {
-			sta = (struct sta_info_tag *)co_list_pick(&vif->sta_list);
-			while (sta != NULL) {
-				UINT8 *macptr = (UINT8 *)sta->mac_addr.array;
-				UINT8 *ipptr = NULL;
-
-				if (role == VIF_AP)
-					ipptr = dhcp_lookup_mac(macptr);
-				else if (role == VIF_STA) {
-					struct netif *netif = (struct netif *)vif->priv;
-					ipptr = (UINT8 *)inet_ntoa(netif->gw);
-				}
-
-				RWNX_LOGI("%d: mac:%02x-%02x-%02x-%02x-%02x-%02x, ip:%s\r\n", num++,
-						  macptr[0], macptr[1], macptr[2],
-						  macptr[3], macptr[4], macptr[5], ipptr);
-
-				sta = (struct sta_info_tag *)co_list_next(&sta->list_hdr);
-			}
-		}
-		vif = (VIF_INF_PTR) rwm_mgmt_next(vif);
-	}
-}
-#endif
 #endif /* CONFIG_NO_HOSTED */
 
 UINT8 rwn_mgmt_if_ap_stas_empty()

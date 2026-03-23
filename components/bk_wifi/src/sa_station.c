@@ -81,7 +81,7 @@ int sa_station_send_associate_cmd(CONNECT_PARAM_T *connect_param)
 	}
 
 	if (rw_ieee80211_is_scan_rst_in_countrycode(rw_ieee80211_get_chan_id(connect_param->chan.freq)) == 0) {
-		WIFI_LOGE("ch:%d not in countrycode\r\n", connect_param->chan.freq);
+		WIFI_LOGE("ch:%d not in countrycode\n", connect_param->chan.freq);
 		return -1;
 	}
 
@@ -118,14 +118,9 @@ static void sa_station_cfg80211_init(void)
 	if (rwm_mgmt_is_vif_first_used() == NULL) {
 		WIFI_LOGD("init 1st vif\n");
 		BK_LOG_ON_ERR(rw_msg_send_reset());
-
-#if CONFIG_WIFI6
 		/* request lmac/umac features and handle dynamic parameters */
 		BK_LOG_ON_ERR(rw_msg_send_version_req());
-
 		BK_LOG_ON_ERR(rwnx_handle_dynparams());
-#endif
-
 		BK_LOG_ON_ERR(rw_msg_send_me_config_req());
 		BK_LOG_ON_ERR(rw_msg_send_me_chan_config_req());
 		BK_LOG_ON_ERR(rw_msg_send_start());
@@ -140,7 +135,7 @@ uint32_t  reconnect_stack_size = 2000;
 void sa_reconnect_main(void *arg)
 {
 	sa_station_init();
-	WIFI_LOGI("sa_reconnect_main\r\n");
+	WIFI_LOGI("sa_reconnect_main\n");
 
 	rtos_delete_thread(NULL);
 	reconnect_thread_handle = NULL;
@@ -159,7 +154,7 @@ void sa_reconnect_init(void)
 								 (beken_thread_arg_t)0);
 		BK_ASSERT(kNoErr == ret); /* ASSERT VERIFIED */
 	} else
-		WIFI_LOGI("sa_reconnect_init_strange\r\n");
+		WIFI_LOGI("sa_reconnect_init_strange\n");
 }
 #endif
 

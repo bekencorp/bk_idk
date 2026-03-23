@@ -372,7 +372,7 @@ static void aes_gen_tables(void)
 
 	tmp = (int *)os_malloc((POW_LEN + LOG_LEN) * sizeof(pow[0]));
 	if (NULL == tmp) {
-		BK_LOGI(TAG, "aes_gen_tables failed\r\n");
+		BK_LOGI(TAG, "aes_gen_tables failed\n");
 		return;
 	}
 

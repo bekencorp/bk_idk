@@ -64,78 +64,9 @@
 
 #define TAG "wifi_adapter"
 
-void *
-bk_pbuf_alloc_wrapper(int layer, uint16_t length, int type)
-{
-	pbuf_layer layer_tmp = 0;
-	pbuf_type type_tmp = 0;
-
-	switch (layer) {
-		case BK_PBUF_RAW_TX:
-			layer_tmp = PBUF_RAW_TX;
-			break;
-		case BK_PBUF_RAW:
-			layer_tmp = PBUF_RAW;
-			break;
-		default: return NULL;
-	}
-
-	switch (type) {
-		case BK_PBUF_RAM:
-			type_tmp = PBUF_RAM;
-			break;
-		case BK_PBUF_RAM_RX:
-			type_tmp = PBUF_RAM_RX;
-			break;
-		case BK_PBUF_POOL:
-			type_tmp = PBUF_POOL;
-			break;
-		default: return NULL;
-	}
-	return pbuf_alloc(layer_tmp, length, type_tmp);
-}
-
-void bk_pbuf_free_wrapper(void *p)
-{
-	pbuf_free((struct pbuf *)p);
-}
-
-void bk_pbuf_ref_wrapper(void *p)
-{
-	pbuf_ref((struct pbuf*)p);
-}
-
-void bk_pbuf_header_wrapper(void *p, int16_t len)
-{
-	pbuf_header((struct pbuf *)p, len);
-}
-
-void *bk_pbuf_coalesce_wrapper(void *p)
-{
-	return pbuf_coalesce(p, PBUF_RAW);
-}
-
 void bk_pbuf_cat_wrapper(void *p, void *q)
 {
 	pbuf_cat(p, q);
-}
-
-int bk_get_rx_pbuf_type_wrapper()
-{
-#if MEM_TRX_DYNAMIC_EN
-	return BK_PBUF_RAM_RX;
-#else
-	return BK_PBUF_POOL;
-#endif
-}
-
-int bk_get_pbuf_pool_size_wrapper()
-{
-#if MEM_TRX_DYNAMIC_EN
-	return 0;
-#else
-	return PBUF_POOL_BUFSIZE;
-#endif
 }
 
 bool bk_pbuf_check_overflow_wrapper(void *_p, uint32_t buf)
@@ -154,66 +85,6 @@ bool bk_pbuf_check_overflow_wrapper(void *_p, uint32_t buf)
 	return false;
 }
 
-void *bk_get_netif_hostname_wrapper(void *netif)
-{
-	const char*  hostname = ((struct netif *)netif)->hostname;
-	return (void *)hostname;
-}
-
-int bk_save_net_info_wrapper(int item, u8 *ptr0, u8 *ptr1, u8 *ptr2)
-{
-	return save_net_info(item,ptr0,ptr1,ptr2);
-}
-
-int bk_get_net_info_wrapper(int item, u8 *ptr0, u8 *ptr1, u8 *ptr2)
-{
-	return get_net_info(item,ptr0,ptr1,ptr2);
-}
-
-void *bk_inet_ntoa_wrapper(void *addr)
-{
-	return (UINT8 *)inet_ntoa(addr);
-}
-
-uint32_t bk_lwip_ntohl_wrapper(uint32_t val)
-{
-	return lwip_ntohl(val);
-}
-
-uint16_t bk_lwip_htons_wrapper(uint16_t val)
-{
-	return lwip_htons(val);
-}
-
-void bk_sta_start()
-{
-	sta_ip_start();
-}
-
-void bk_sta_ip_down_wrapper()
-{
-	sta_ip_down();
-}
-
-void bk_uap_ip_start_wrapper()
-{
-	uap_ip_start();
-}
-
-void bk_uap_ip_down_wrapper()
-{
-	uap_ip_down();
-}
-
-int bk_net_wlan_add_netif_wrapper(void *mac)
-{
-	return net_wlan_add_netif(mac);
-}
-
-int bk_net_wlan_remove_netif_wrapper(void *mac)
-{
-	return net_wlan_remove_netif(mac);
-}
 
 extern uint8_t* dhcp_lookup_mac(uint8_t *chaddr);
 uint32_t bk_lookup_ipaddr_wrapper(void *addr)
@@ -230,15 +101,6 @@ uint32_t bk_lookup_ipaddr_wrapper(void *addr)
 	return 0;
 }
 
-void bk_net_begin_send_arp_reply_wrapper(int is_send_arp, int is_allow_send_req)
-{
-	net_begin_send_arp_reply(is_send_arp, is_allow_send_req);
-}
-
-void bk_set_sta_status_wrapper(void *info)
-{
-	mhdr_set_station_status(*(wifi_linkstate_reason_t *)info);
-}
 static void delay_wrapper(INT32 num)
 {
     delay(num);
@@ -600,53 +462,6 @@ static void rwnx_cal_mac_sleep_rc_recover_wrapper(void)
 	rwnx_cal_mac_sleep_rc_recover();
 }
 
-static void mac_printf_encode_wrapper(char *txt, size_t maxlen, const u8 *data, size_t len)
-{
-    char *end = txt + maxlen;
-    size_t i;
-
-    for (i = 0; i < len; i++)
-    {
-        if (txt + 4 >= end)
-            break;
-
-        switch (data[i])
-        {
-        case '\"':
-            *txt++ = '\\';
-            *txt++ = '\"';
-            break;
-        case '\\':
-            *txt++ = '\\';
-            *txt++ = '\\';
-            break;
-        case '\033':
-            *txt++ = '\\';
-            *txt++ = 'e';
-            break;
-        case '\n':
-            *txt++ = '\\';
-            *txt++ = 'n';
-            break;
-        case '\r':
-            *txt++ = '\\';
-            *txt++ = 'r';
-            break;
-        case '\t':
-            *txt++ = '\\';
-            *txt++ = 't';
-            break;
-        default:
-            if (data[i] >= 32 && data[i] <= 126)
-                *txt++ = data[i];
-            else
-                txt += snprintf(txt, end - txt, "\\x%02x", data[i]);
-            break;
-        }
-    }
-
-    *txt = '\0';
-}
 
 int ps_need_pre_process_wrapper( UINT32 arg )
 {
@@ -691,24 +506,9 @@ static int bk_feature_receive_bcmc_enable_wrapper(void)
     return bk_feature_receive_bcmc_enable();
 }
 
-static int bk_feature_bssid_connect_enable_wrapper(void)
-{
-    return bk_feature_bssid_connect_enable();
-}
-
-static int bk_feature_fast_connect_enable_wrapper(void)
-{
-    return bk_feature_fast_connect_enable();
-}
-
 static int bk_feature_send_deauth_before_connect_wrapper(void)
 {
     return bk_feature_send_deauth_before_connect();
-}
-
-static int bk_feature_fast_dhcp_enable_wrapper(void)
-{
-    return bk_feature_fast_dhcp_enable();
 }
 
 static int bk_feature_not_check_ssid_enable_wrapper(void)
@@ -719,21 +519,6 @@ static int bk_feature_not_check_ssid_enable_wrapper(void)
 static int bk_feature_config_cache_enable_wrapper(void)
 {
     return bk_feature_config_cache_enable();
-}
-
-static int bk_feature_sta_vsie_enable_wrapper(void)
-{
-    return bk_feature_sta_vsie_enable();
-}
-
-static int bk_feature_ap_statype_limit_enable_wrapper(void)
-{
-    return bk_feature_ap_statype_limit_enable();
-}
-
-static int bk_feature_set_relay_ap_inactivity_wrapper(void)
-{
-    return bk_feature_set_relay_ap_inactivity();
 }
 
 static int bk_feature_send_sta_csa_ind_wrapper(void)
@@ -756,19 +541,9 @@ static int bk_feature_ckmn_enable_wrapper(void)
     return bk_feature_ckmn_enable();
 }
 
-static int bk_feature_close_coexist_csa_wrapper(void)
-{
-    return bk_feature_close_coexist_csa();
-}
-
 static int bk_feature_get_scan_speed_level_wrapper(void)
 {
     return bk_feature_get_scan_speed_level();
-}
-
-static int bk_feature_network_found_event_wrapper(void)
-{
-    return bk_feature_network_found_event();
 }
 
 static int bk_feature_get_mac_sup_sta_max_num_wrapper(void)
@@ -1210,38 +985,6 @@ static void register_wifi_dump_hook_wrapper(void *wifi_func)
 	rtos_regist_wifi_dump_hook(wifi_func);
 }
 
-static void bk_airkiss_start_udp_boardcast_wrapper(u8 random_data)
-{
-	int err, i;
-	int udp_broadcast_fd = -1;
-	struct sockaddr_in remote_skt;
-
-	BK_LOGI(TAG, "start_udp_boardcast\n");
-	udp_broadcast_fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	if (udp_broadcast_fd == -1) {
-		BK_LOGE(TAG, "Socket failed\r\n");
-		return;
-	}
-	os_memset(&remote_skt, 0, sizeof(struct sockaddr_in));
-	remote_skt.sin_family = AF_INET;
-	remote_skt.sin_addr.s_addr = INADDR_BROADCAST;//INADDR_ANY;
-	remote_skt.sin_port = htons(10000);
-
-	i = 20;
-	while (i --) {
-		BK_LOGI(TAG, "udp-sendto:%d\r\n", i);
-
-		err = sendto(udp_broadcast_fd, &random_data, 1, 0, (struct sockaddr *)&remote_skt, sizeof(remote_skt));
-		rtos_delay_milliseconds(2);
-
-		if (err == -1)
-			BK_LOGE(TAG, "send udp boardcast failed\r\n");
-	}
-
-	BK_LOGI(TAG, "close socket\r\n");
-	close(udp_broadcast_fd);
-}
-
 static void tx_verify_test_call_back_wrapper(void)
 {
 #if CONFIG_ATE_TEST
@@ -1483,8 +1226,6 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._sys_set_use_abs_power    = rwnx_sys_set_use_abs_power_wrapper,
 	._evm_via_mac_continue     = evm_via_mac_continue,
 	._evm_via_mac_evt          = evm_via_mac_evt,
-	._do_evm                   = do_evm,
-	._do_rx_sensitivity        = do_rx_sensitivity,
 	._rwnx_cal_save_trx_rcbekn_reg_val = rwnx_cal_save_trx_rcbekn_reg_val,
 	._rc_drv_set_agc_manual_en = rc_drv_set_agc_manual_en,
 #if (CONFIG_SOC_BK7239XX)
@@ -1520,30 +1261,8 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._manual_get_epa_flag = manual_get_epa_flag,
 	._rxsens_start_flag_get = rxsens_start_flag_get,
 
-	._pbuf_alloc = bk_pbuf_alloc_wrapper,
-	._pbuf_free = bk_pbuf_free_wrapper,
-	._pbuf_ref = bk_pbuf_ref_wrapper,
-	._pbuf_header = bk_pbuf_header_wrapper,
-	._pbuf_coalesce = bk_pbuf_coalesce_wrapper,
 	._pbuf_cat = bk_pbuf_cat_wrapper,
-	._get_rx_pbuf_type = bk_get_rx_pbuf_type_wrapper,
-	._get_pbuf_pool_size = bk_get_pbuf_pool_size_wrapper,
 	._pbuf_check_overflow = bk_pbuf_check_overflow_wrapper,
-	._get_netif_hostname = bk_get_netif_hostname_wrapper,
-	._save_net_info = bk_save_net_info_wrapper,
-	._get_net_info = bk_get_net_info_wrapper,
-	._inet_ntoa = bk_inet_ntoa_wrapper,
-	._lwip_ntohl = bk_lwip_ntohl_wrapper,
-	._lwip_htons = bk_lwip_htons_wrapper,
-	._sta_ip_down = bk_sta_ip_down_wrapper,
-	._uap_ip_start = bk_uap_ip_start_wrapper,
-	._uap_ip_down = bk_uap_ip_down_wrapper,
-	._net_wlan_add_netif = bk_net_wlan_add_netif_wrapper,
-	._net_wlan_remove_netif = bk_net_wlan_remove_netif_wrapper,
-	._lookup_ipaddr = bk_lookup_ipaddr_wrapper,
-	._set_sta_status = bk_set_sta_status_wrapper,
-	._sta_ip_mode_set = sta_ip_mode_set,
-	._net_begin_send_arp_reply = bk_net_begin_send_arp_reply_wrapper,
 	._delay_us = delay_us_wrapper,
 	._sys_drv_modem_bus_clk_ctrl = sys_drv_modem_bus_clk_ctrl_wrapper,
 	._sys_drv_modem_clk_ctrl = sys_drv_modem_clk_ctrl_wrapper,
@@ -1592,7 +1311,6 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._bk_rosc_32k_ckest_prog = bk_rosc_32k_ckest_prog_wrapper,
 	._bk_rosc_32k_get_ppm = bk_rosc_32k_get_ppm_wrapper,
 	._bk_rosc_32k_get_freq = bk_rosc_32k_get_freq_wrapper,
-	._mac_printf_encode = mac_printf_encode_wrapper,
 	._dbg_enable_debug_gpio = dbg_enable_debug_gpio,
 	._dbg_enable_debug_mac = sys_hal_diag_debug_mac,
 	._dbg_enable_debug_phy = sys_hal_diag_debug_phy,
@@ -1611,20 +1329,12 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._bk_feature_dtim_event_enable = bk_feature_dtim_event_enable_wrapper,
 	._bk_feature_retry_config_enable = bk_feature_retry_config_enable_wrapper,
 	._bk_feature_config_wireless_mode_enable = bk_feature_config_wireless_mode_enable_wrapper,
-	._bk_feature_bssid_connect_enable = bk_feature_bssid_connect_enable_wrapper,
-	._bk_feature_fast_connect_enable = bk_feature_fast_connect_enable_wrapper,
 	._bk_feature_send_deauth_before_connect = bk_feature_send_deauth_before_connect_wrapper,
-	._bk_feature_set_relay_ap_inactivity = bk_feature_set_relay_ap_inactivity_wrapper,
 	._bk_feature_send_sta_csa_ind = bk_feature_send_sta_csa_ind_wrapper,
 	._bk_feature_get_scan_speed_level = bk_feature_get_scan_speed_level_wrapper,
-	._bk_feature_fast_dhcp_enable = bk_feature_fast_dhcp_enable_wrapper,
 	._bk_feature_not_check_ssid_enable = bk_feature_not_check_ssid_enable_wrapper,
 	._bk_feature_config_cache_enable = bk_feature_config_cache_enable_wrapper,
 	._bk_feature_config_ckmn_enable = bk_feature_ckmn_enable_wrapper,
-	._bk_feature_sta_vsie_enable = bk_feature_sta_vsie_enable_wrapper,
-	._bk_feature_ap_statype_limit_enable = bk_feature_ap_statype_limit_enable_wrapper,
-	._bk_feature_close_coexist_csa = bk_feature_close_coexist_csa_wrapper,
-	._bk_feature_network_found_event = bk_feature_network_found_event_wrapper,
 	._bk_feature_get_mac_sup_sta_max_num = bk_feature_get_mac_sup_sta_max_num_wrapper,
 	._bk_feature_csi_out_cb = bk_feature_csi_out_cb_wrapper,
 	._bk_feature_bcn_miss_cb = bk_feature_bcn_miss_cb_wrapper,
@@ -1714,7 +1424,6 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._os_strstr = os_strstr_wrapper,
 	/////
 	._rf_pll_ctrl = rf_pll_ctrl_wrapper,
-	._send_udp_bc_pkt = bk_airkiss_start_udp_boardcast_wrapper,
 	._tx_verify_test_call_back = tx_verify_test_call_back_wrapper,
 	._sys_hal_enter_low_analog = sys_hal_enter_low_analog_wrapper,
 	._sys_hal_exit_low_analog = sys_hal_exit_low_analog_wrapper,

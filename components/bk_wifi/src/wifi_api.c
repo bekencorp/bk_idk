@@ -129,19 +129,19 @@ int demo_softap_app_init(char *ap_ssid, char *ap_key, char *ap_channel)
 	if (ap_key)
 		key_len = os_strlen(ap_key);
 	if (SSID_MAX_LEN < len) {
-		BK_LOGE(TAG, "ssid name more than 32 Bytes\r\n");
+		BK_LOGE(TAG, "ssid name more than 32 Bytes\n");
 		return BK_FAIL;
 	}
 	if (0 == len) {
-		BK_LOGE(TAG, "ssid name must not be null\r\n");
+		BK_LOGE(TAG, "ssid name must not be null\n");
 		return BK_FAIL;
 	}
 
 	if (8 > key_len)
-		BK_LOGE(TAG, "key less than 8 Bytes, the security will be set NONE\r\n");
+		BK_LOGE(TAG, "key less than 8 Bytes, the security will be set NONE\n");
 
 	if (64 < key_len) {
-		BK_LOGE(TAG, "key more than 64 Bytes\r\n");
+		BK_LOGE(TAG, "key more than 64 Bytes\n");
 		return BK_FAIL;
 	}
 #if CONFIG_BRIDGE
@@ -177,7 +177,7 @@ int demo_softap_app_init(char *ap_ssid, char *ap_key, char *ap_channel)
 		ap_config.channel = channel;
 	}
 
-	BK_LOGI(TAG, "ssid:%s  key:%s\r\n", ap_config.ssid, ap_config.password);
+	BK_LOGI(TAG, "ssid:%s  key:%s\n", ap_config.ssid, ap_config.password);
 	BK_RETURN_ON_ERR(bk_wifi_ap_set_config(&ap_config));
 	BK_RETURN_ON_ERR(bk_wifi_ap_start());
 	return BK_OK;
@@ -191,7 +191,7 @@ void demo_sta_bssid_app_init(uint8_t *oob_bssid, char *connect_key)
 	os_memcpy(sta_config.bssid, oob_bssid, 6);
 	os_strcpy(sta_config.password, connect_key);
 
-	BK_LOGI(TAG, "Scan specified BSSID %pm\r\n", sta_config.bssid);
+	BK_LOGI(TAG, "Scan specified BSSID %pm\n", sta_config.bssid);
 	BK_LOG_ON_ERR(bk_wifi_sta_set_config(&sta_config));
 	BK_LOG_ON_ERR(bk_wifi_sta_start());
 }
@@ -207,7 +207,7 @@ int demo_sta_app_init(char *oob_ssid, char *connect_key)
 
 	len = os_strlen(oob_ssid);
 	if (SSID_MAX_LEN < len) {
-		BK_LOGI(TAG, "ssid name more than 32 Bytes\r\n");
+		BK_LOGI(TAG, "ssid name more than 32 Bytes\n");
 		return BK_FAIL;
 	}
 #ifdef CONFIG_CONNECT_THROUGH_PSK_OR_SAE_PASSWORD
@@ -235,7 +235,7 @@ int demo_sta_app_init(char *oob_ssid, char *connect_key)
 #ifdef CONFIG_STA_MINMUM_SECURITY
 	sta_config.security = WIFI_SECURITY_NONE;
 #endif
-	BK_LOGI(TAG, "ssid:%s key:%s\r\n", sta_config.ssid, sta_config.password);
+	BK_LOGI(TAG, "ssid:%s key:%s\n", sta_config.ssid, sta_config.password);
 	BK_LOG_ON_ERR(bk_wifi_sta_set_config(&sta_config));
 	BK_LOG_ON_ERR(bk_wifi_sta_start());
 	return BK_OK;
@@ -248,7 +248,7 @@ void demo_sta_adv_app_init(char *oob_ssid, char *connect_key)
 
 	len = os_strlen(oob_ssid);
 	if (SSID_MAX_LEN < len) {
-		BK_LOGE(TAG, "ssid name more than 32 Bytes\r\n");
+		BK_LOGE(TAG, "ssid name more than 32 Bytes\n");
 		return;
 	}
 
@@ -260,7 +260,7 @@ void demo_sta_adv_app_init(char *oob_ssid, char *connect_key)
 	sta_config.security = BK_SECURITY_TYPE_WPA2_MIXED;
 	sta_config.channel = 11;
 
-	BK_LOGI(TAG, "ssid:%s  key:%s\r\n", sta_config.ssid, sta_config.password);
+	BK_LOGI(TAG, "ssid:%s  key:%s\n", sta_config.ssid, sta_config.password);
 	BK_LOG_ON_ERR(bk_wifi_sta_set_config(&sta_config));
 	BK_LOG_ON_ERR(bk_wifi_sta_start());
 }
@@ -279,11 +279,11 @@ void demo_wlan_app_init(VIF_ADDCFG_PTR cfg)
 #else
 			demo_sta_app_init(cfg->ssid, cfg->key);
 #endif
-			BK_LOGI(TAG, "ssid:%s key:%s\r\n", network_cfg.wifi_ssid, network_cfg.wifi_key);
+			BK_LOGI(TAG, "ssid:%s key:%s\n", network_cfg.wifi_ssid, network_cfg.wifi_key);
 		}
 	} else if (cfg->wlan_role == BK_SOFT_AP) {
 		demo_softap_app_init(cfg->ssid, cfg->key, NULL);
-		BK_LOGI(TAG, "ssid:%s  key:%s\r\n", network_cfg.wifi_ssid, network_cfg.wifi_key);
+		BK_LOGI(TAG, "ssid:%s  key:%s\n", network_cfg.wifi_ssid, network_cfg.wifi_key);
 	}
 }
 
@@ -300,15 +300,15 @@ int demo_state_app_init(void)
 	char ssid[33] = {0};
 #if CONFIG_WIFI4
 #if CONFIG_BRIDGE
-	BK_LOGI(TAG, "[KW:]sta: %d, ap: %d, bridge: %d b/g/n\r\n", wifi_netif_sta_is_got_ip(), uap_ip_is_start(), bridge_ip_is_start());
+	BK_LOGI(TAG, "[KW:]sta: %d, ap: %d, bridge: %d b/g/n\n", wifi_netif_sta_is_got_ip(), uap_ip_is_start(), bridge_ip_is_start());
 #else
-	BK_LOGI(TAG, "[KW:]sta: %d, ap: %d, b/g/n\r\n", wifi_netif_sta_is_got_ip(), uap_ip_is_start());
+	BK_LOGI(TAG, "[KW:]sta: %d, ap: %d, b/g/n\n", wifi_netif_sta_is_got_ip(), uap_ip_is_start());
 #endif
 #else
 #if CONFIG_BRIDGE
-	BK_LOGI(TAG, "[KW:]sta: %d, ap: %d, bridge: %d b/g/n\r\n", wifi_netif_sta_is_got_ip(), uap_ip_is_start(), bridge_ip_is_start());
+	BK_LOGI(TAG, "[KW:]sta: %d, ap: %d, bridge: %d b/g/n\n", wifi_netif_sta_is_got_ip(), uap_ip_is_start(), bridge_ip_is_start());
 #else
-	BK_LOGI(TAG, "[KW:]sta: %d, ap: %d, b/g\r\n", wifi_netif_sta_is_got_ip(), uap_ip_is_start());
+	BK_LOGI(TAG, "[KW:]sta: %d, ap: %d, b/g\n", wifi_netif_sta_is_got_ip(), uap_ip_is_start());
 #endif
 #endif
 
@@ -317,7 +317,7 @@ int demo_state_app_init(void)
 		BK_RETURN_ON_ERR(bk_wifi_sta_get_link_status(&link_status));
 		os_memcpy(ssid, link_status.ssid, 32);
 
-		BK_LOGI(TAG, "[KW:]sta:rssi=%d,aid=%d,ssid=%s,bssid=%pm,channel=%d,cipher_type=%s\r\n",
+		BK_LOGI(TAG, "[KW:]sta:rssi=%d,aid=%d,ssid=%s,bssid=%pm,channel=%d,cipher_type=%s\n",
 				   link_status.rssi, link_status.aid, ssid, link_status.bssid,
 				   link_status.channel, wifi_sec_type_string(link_status.security));
 	}
@@ -327,14 +327,14 @@ int demo_state_app_init(void)
 		BK_RETURN_ON_ERR(bk_wifi_ap_get_config(&ap_info));
 		os_memcpy(ssid, ap_info.ssid, 32);
 #if CONFIG_BRIDGE
-		BK_LOGI(TAG, "[KW:]bridge: ssid=%s, channel=%d, cipher_type=%s\r\n",
+		BK_LOGI(TAG, "[KW:]bridge: ssid=%s, channel=%d, cipher_type=%s\n",
 				   ssid, ap_info.channel, wifi_sec_type_string(ap_info.security));
 #else
-		BK_LOGI(TAG, "[KW:]softap: ssid=%s, channel=%d, cipher_type=%s\r\n",
+		BK_LOGI(TAG, "[KW:]softap: ssid=%s, channel=%d, cipher_type=%s\n",
 				   ssid, ap_info.channel, wifi_sec_type_string(ap_info.security));
 
 		BK_RETURN_ON_ERR(bk_netif_get_ip4_config(NETIF_IF_AP, &ap_ip4_info));
-		BK_LOGI(TAG, "[KW:]ip=%s,gate=%s,mask=%s,dns=%s\r\n",
+		BK_LOGI(TAG, "[KW:]ip=%s,gate=%s,mask=%s,dns=%s\n",
 				   ap_ip4_info.ip, ap_ip4_info.gateway, ap_ip4_info.mask, ap_ip4_info.dns);
 #endif
 	}
@@ -343,12 +343,12 @@ int demo_state_app_init(void)
 		os_memset(&ap_info, 0x0, sizeof(ap_info));
 		BK_RETURN_ON_ERR(bk_wifi_ap_get_config(&ap_info));
 		os_memcpy(ssid, ap_info.ssid, 32);
-		BK_LOGI(TAG, "[KW:]bridge: ssid=%s, channel=%d, cipher_type=%s\r\n",
+		BK_LOGI(TAG, "[KW:]bridge: ssid=%s, channel=%d, cipher_type=%s\n",
 		   ssid, ap_info.channel, wifi_sec_type_string(ap_info.security));
 	}
 #else
 	BK_RETURN_ON_ERR(bk_netif_get_ip4_config(NETIF_IF_AP, &ap_ip4_info));
-	BK_LOGI(TAG, "[KW:]ip=%s,gate=%s,mask=%s,dns=%s\r\n",
+	BK_LOGI(TAG, "[KW:]ip=%s,gate=%s,mask=%s,dns=%s\n",
 	ap_ip4_info.ip, ap_ip4_info.gateway, ap_ip4_info.mask, ap_ip4_info.dns);
 #endif
 	return BK_OK;
@@ -367,7 +367,7 @@ int wifi_demo(int argc, char **argv)
 	char *connect_key;
 
 	if (strcmp(argv[1], "sta") == 0) {
-		BK_LOGI(TAG, "sta_Command\r\n");
+		BK_LOGI(TAG, "sta_Command\n");
 		if (argc == 3) {
 			oob_ssid = argv[2];
 			connect_key = "1";
@@ -375,7 +375,7 @@ int wifi_demo(int argc, char **argv)
 			oob_ssid = argv[2];
 			connect_key = argv[3];
 		} else {
-			BK_LOGI(TAG, "parameter invalid\r\n");
+			BK_LOGI(TAG, "parameter invalid\n");
 			return -1;
 		}
 
@@ -390,7 +390,7 @@ int wifi_demo(int argc, char **argv)
 	}
 
 	if (strcmp(argv[1], "adv") == 0) {
-		BK_LOGI(TAG, "sta_adv_Command\r\n");
+		BK_LOGI(TAG, "sta_adv_Command\n");
 		if (argc == 3) {
 			oob_ssid = argv[2];
 			connect_key = "1";
@@ -398,7 +398,7 @@ int wifi_demo(int argc, char **argv)
 			oob_ssid = argv[2];
 			connect_key = argv[3];
 		} else {
-			BK_LOGI(TAG, "parameter invalid\r\n");
+			BK_LOGI(TAG, "parameter invalid\n");
 			return -1;
 		}
 
@@ -409,7 +409,7 @@ int wifi_demo(int argc, char **argv)
 
 	if (strcmp(argv[1], "softap") == 0) {
 
-		BK_LOGI(TAG, "SOFTAP_COMMAND\r\n\r\n");
+		BK_LOGI(TAG, "SOFTAP_COMMAND\n\n");
 		if (argc == 3) {
 			oob_ssid = argv[2];
 			connect_key = "1";
@@ -417,7 +417,7 @@ int wifi_demo(int argc, char **argv)
 			oob_ssid = argv[2];
 			connect_key = argv[3];
 		} else {
-			BK_LOGI(TAG, "parameter invalid\r\n");
+			BK_LOGI(TAG, "parameter invalid\n");
 			return -1;
 		}
 
@@ -428,14 +428,14 @@ int wifi_demo(int argc, char **argv)
 
 	if (strcmp(argv[1], "status") == 0) {
 		if (argc != 3)
-			BK_LOGI(TAG, "parameter invalid\r\n");
+			BK_LOGI(TAG, "parameter invalid\n");
 
 		if (strcmp(argv[2], "net") == 0)
 			demo_ip_app_init();
 		else if (strcmp(argv[2], "link") == 0)
 			demo_state_app_init();
 		else
-			BK_LOGI(TAG, "parameter invalid\r\n");
+			BK_LOGI(TAG, "parameter invalid\n");
 	}
 
 	if (strcmp(argv[1], "scan") == 0) {
@@ -444,12 +444,12 @@ int wifi_demo(int argc, char **argv)
 		else if (argc == 3)
 			demo_scan_adv_app_init((uint8_t *)argv[2]);
 		else
-			BK_LOGI(TAG, "parameter invalid\r\n");
+			BK_LOGI(TAG, "parameter invalid\n");
 	}
 
 	if (strcmp(argv[1], "monitor") == 0) {
 		if (argc != 3)
-			BK_LOGI(TAG, "parameter invalid\r\n");
+			BK_LOGI(TAG, "parameter invalid\n");
 
 		if (strcmp(argv[2], "start") == 0) {
 			BK_LOG_ON_ERR(bk_wifi_monitor_register_cb(demo_monitor_cb));
@@ -457,7 +457,7 @@ int wifi_demo(int argc, char **argv)
 		} else if (strcmp(argv[2], "stop") == 0)
 			BK_LOG_ON_ERR(bk_wifi_monitor_stop());
 		else
-			BK_LOGI(TAG, "parameter invalid\r\n");
+			BK_LOGI(TAG, "parameter invalid\n");
 	}
 
 	return 0;
@@ -469,7 +469,7 @@ void demo_ip_app_init(void)
 	netif_ip4_config_t ip4_config = {0};
 
 	BK_LOG_ON_ERR(bk_netif_get_ip4_config(NETIF_IF_STA, &ip4_config));
-	WIFI_LOGI("ip=%s gate=%s mask=%s\r\n", ip4_config.ip, ip4_config.gateway, ip4_config.mask);
+	WIFI_LOGI("ip=%s gate=%s mask=%s\n", ip4_config.ip, ip4_config.gateway, ip4_config.mask);
 #endif
 }
 
@@ -542,7 +542,7 @@ void demo_wifi_iplog_init(char *iplogmode, char *iplogtype)
     }
     else
     {
-        WIFI_LOGI("wifi ip log mode set: fail\r\n");
+        WIFI_LOGI("wifi ip log mode set: fail\n");
         return;
     }
 
@@ -575,27 +575,27 @@ void demo_wifi_iplog_init(char *iplogmode, char *iplogtype)
         }
     }
 
-    WIFI_LOGI("wifi ip log set: mode %s,type %s\r\n",iplogmode, iplogtype);
+    WIFI_LOGI("wifi ip log set: mode %s,type %s\n",iplogmode, iplogtype);
     bk_iplog_set(set_log_mode, set_log_type);
 #else
-    WIFI_LOGI("not support!!\r\n");
+    WIFI_LOGI("not support!!\n");
 #endif
 }
 
 void demo_wifi_ipdbg_init(uint32_t ipdbg_func, uint16_t ipdbg_value)
 {
 #if BK_MEM_DYNA_APPLY_EN
-    WIFI_LOGI("wifi ip debug set: func: %d,value:%d\r\n",ipdbg_func, ipdbg_value);
+    WIFI_LOGI("wifi ip debug set: func: %d,value:%d\n",ipdbg_func, ipdbg_value);
     bk_ip_dbg_set(ipdbg_func, ipdbg_value);
 #else
-    WIFI_LOGI("not support!!\r\n");
+    WIFI_LOGI("not support!!\n");
 #endif
 }
 
 void demo_wifi_mem_apply_init(uint8_t module, uint8_t value)
 {
 #if BK_MEM_DYNA_APPLY_EN
-    WIFI_LOGD("demo_wifi_mem_apply_init: module %d,value %d\r\n",module,value);
+    WIFI_LOGD("demo_wifi_mem_apply_init: module %d,value %d\n",module,value);
 
     if(MEM_DYNA_APPLY == value)
     {
@@ -632,7 +632,7 @@ void demo_wifi_mem_apply_init(uint8_t module, uint8_t value)
         }
     }
 #else
-            WIFI_LOGI("demo_wifi_mem_apply_init:not support!!\r\n");
+            WIFI_LOGI("demo_wifi_mem_apply_init:not support!!\n");
 #endif
 }
 

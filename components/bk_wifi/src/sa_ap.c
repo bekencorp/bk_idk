@@ -14,16 +14,11 @@ extern void mm_bcn_init(void);
 int sa_ap_init(void)
 {
 	if (rwm_mgmt_is_vif_first_used() == NULL) {
-		WIFI_LOGD("init 1st vif\r\n");
+		WIFI_LOGD("init 1st vif\n");
 		BK_RETURN_ON_ERR(rw_msg_send_reset());
-
-#if CONFIG_WIFI6
 		/* request lmac/umac features and handle dynamic parameters */
 		BK_RETURN_ON_ERR(rw_msg_send_version_req());
-
 		BK_RETURN_ON_ERR(rwnx_handle_dynparams());
-#endif
-
 		BK_RETURN_ON_ERR(rw_msg_send_me_config_req());
 		BK_RETURN_ON_ERR(rw_msg_send_me_chan_config_req());
 		BK_RETURN_ON_ERR(rw_msg_send_start());

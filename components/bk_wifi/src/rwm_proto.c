@@ -104,9 +104,9 @@ static void rwm_arp_printf(char *dir, struct ethhdr *eth_hdr_ptr)
 	RWNX_LOGI("Protocol Addr Length: 4\n");
 	RWNX_LOGI("Operation: %u\n", ntohs(ARP_OPCODE(arphdr)));
 	RWNX_LOGI("Sender Hardware Addr: "BK_MAC_FORMAT "\n", BK_MAC_STR(arphdr->shwaddr));
-	RWNX_LOGI("Sender Internet Addr: "BK_IP4_FORMAT " \r\n", BK_IP_STR(arphdr->sipaddr));
+	RWNX_LOGI("Sender Internet Addr: "BK_IP4_FORMAT " \n", BK_IP_STR(arphdr->sipaddr));
 	RWNX_LOGI("Target Hardware Addr: "BK_MAC_FORMAT "\n", BK_MAC_STR(arphdr->dhwaddr));
-	RWNX_LOGI("Target Internet Addr: "BK_IP4_FORMAT " \r\n", BK_IP_STR(arphdr->dipaddr));
+	RWNX_LOGI("Target Internet Addr: "BK_IP4_FORMAT " \n", BK_IP_STR(arphdr->dipaddr));
 }
 
 static void rwm_ipv6_printf(char *dir, struct ethhdr *eth_hdr_ptr)

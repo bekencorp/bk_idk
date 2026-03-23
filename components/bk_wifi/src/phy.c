@@ -24,12 +24,12 @@ void tx_evm_cmd_test(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **
 {
 	int ret = do_evm(NULL, 0, argc, argv);
 	if (ret)
-		WIFI_LOGE("tx_evm bad parameters\r\n");
+		WIFI_LOGE("tx_evm bad parameters\n");
 }
 
 void rx_sens_cmd_test(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
 	int ret = do_rx_sensitivity(NULL, 0, argc, argv);
 	if (ret)
-		WIFI_LOGE("rx sensitivity bad parameters\r\n");
+		WIFI_LOGE("rx sensitivity bad parameters\n");
 }
