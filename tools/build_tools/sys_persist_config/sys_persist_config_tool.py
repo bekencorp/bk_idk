@@ -1028,7 +1028,7 @@ typedef struct sys_persist_tlv {
                                             f.write(f"    {member_type} {field_str};\n")
                                         struct_member_names.add(field_str)
                         
-                        # 注意：static inline函数将在结构体关闭后生成
+                        # 注意：getter 声明在结构体关闭后生成；实现在 sys_persist_config.c
                     
                     # 处理space为空的情况
                     elif pd.isna(space) or str(space).strip() == '':
@@ -1156,7 +1156,7 @@ typedef struct sys_persist_tlv {
                 if current_space and current_space != 'tlv_base' and current_struct_name:
                     f.write(f"}} {current_struct_name}_t;\n\n")
                 
-                # 第二遍遍历：生成static inline函数
+                # 第二遍遍历：生成各 space 基址 getter 声明（实现在 sys_persist_config.c）
                 current_space_func = None
                 for idx, row in valid_rows.iterrows():
                     space = row.get('space')
@@ -1166,13 +1166,10 @@ typedef struct sys_persist_tlv {
                             current_space_func = space_str
                             struct_name_base = space_str.replace('_base', '')
                             struct_name = f"sys_persist_{struct_name_base}"
-                            macro_name = f"SYS_PERSIST_CONFIG_{space_str.upper().replace('-', '_')}"
                             func_name = f"get_{struct_name}"
-                            f.write(f"static inline {struct_name}_t *{func_name}(void)\n")
-                            f.write("{\n")
-                            f.write(f"    return ({struct_name}_t *){macro_name};\n")
-                            f.write("}\n\n")
-                
+                            f.write(f"{struct_name}_t *{func_name}(void);\n")
+                f.write("\n")
+
                 # 写入文件尾
                 f.write("/* API声明 */\n")
                 f.write("sys_persist_tlv_t *sys_persist_get_tlv(uint16_t type);\n")
@@ -1240,7 +1237,29 @@ typedef struct sys_persist_tlv {
 extern uint32_t crc32(const uint8_t *frame, size_t frame_len);
 
 """)
-                
+                # Base-address getters (implementation; declarations in sys_persist_config.h)
+                valid_rows_getters = self.df[
+                    (self.df['offset'].notna()) |
+                    (self.df['size'].notna()) |
+                    (self.df['field'].notna())
+                ].copy()
+                f.write("/* Base-address getters (generated from CSV spaces) */\n")
+                current_space_func = None
+                for idx, row in valid_rows_getters.iterrows():
+                    space = row.get('space')
+                    if pd.notna(space) and str(space).strip() != '':
+                        space_str = str(space).strip()
+                        if space_str != 'tlv_base' and space_str != current_space_func:
+                            current_space_func = space_str
+                            struct_name_base = space_str.replace('_base', '')
+                            struct_name = f"sys_persist_{struct_name_base}"
+                            macro_name = f"SYS_PERSIST_CONFIG_{space_str.upper().replace('-', '_')}"
+                            func_name = f"get_{struct_name}"
+                            f.write(f"{struct_name}_t *{func_name}(void)\n")
+                            f.write("{\n")
+                            f.write(f"    return ({struct_name}_t *){macro_name};\n")
+                            f.write("}\n\n")
+
                 # 5.1 解析TLV的API
                 f.write("""/* 解析TLV的API */
 sys_persist_tlv_t *sys_persist_get_tlv(uint16_t type)
