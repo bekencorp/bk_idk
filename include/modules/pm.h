@@ -364,34 +364,34 @@ typedef enum
 	PM_DEV_ID_AUXS,     // 24
 	PM_DEV_ID_BTDM,     // 25
 	PM_DEV_ID_WPAS,     // 26
-	PM_DEV_ID_MAC,      // 27
-	PM_DEV_ID_PHY,      // 28
+
+	PM_DEV_ID_PHY,      // 27
 #if (CONFIG_JPEGENC_HW)
-	PM_DEV_ID_JPEG,     // 29
+	PM_DEV_ID_JPEG,     // 28
 #endif
 #if (CONFIG_LCD)
-	PM_DEV_ID_DISP,     // 30
+	PM_DEV_ID_DISP,     // 29
 #endif
 #if (CONFIG_AUDIO)
-	PM_DEV_ID_AUDIO,    // 31
+	PM_DEV_ID_AUDIO,    // 30
 #endif
-	PM_DEV_ID_RTC,      // 32
-	PM_DEV_ID_GPIO,     // 33
+	PM_DEV_ID_RTC,      // 31
+	PM_DEV_ID_GPIO,     // 32
 #if (CONFIG_JPEGDEC_HW)
-	PM_DEV_ID_DECODER,  // 34
+	PM_DEV_ID_DECODER,  // 33
 #endif
 #if (CONFIG_LIN)
-	PM_DEV_ID_LIN,      // 35
+	PM_DEV_ID_LIN,      // 34
 #endif
-	PM_DEV_ID_PWM_1,    // 36
-	PM_DEV_ID_SECURE_WORLD,// 37
-	PM_DEV_ID_UART4,       // 38
-	PM_DEV_ID_TRNG,        // 39
+	PM_DEV_ID_PWM_1,    // 35
+	PM_DEV_ID_SECURE_WORLD,// 36
+	PM_DEV_ID_UART4,       // 37
+	PM_DEV_ID_TRNG,        // 38
 #if (CONFIG_SYS_CPU1)
-	PM_DEV_ID_CPU1,        // 40
+	PM_DEV_ID_CPU1,        // 39
 #endif
-	PM_DEV_ID_PHY_DPD_CALI, //41
-
+	PM_DEV_ID_PHY_DPD_CALI, //40
+	PM_DEV_ID_MAC,      // 41
 	PM_DEV_ID_DEFAULT,      // 42  it is used by pm module set default cpu frequency
 
 	PM_DEV_ID_MAX
