@@ -2,7 +2,7 @@
 
 import logging
 from .common import *
-from scripts.rotpk_hash import *
+from .rotpk_hash import *
 
 def reverse_order(hex_str):
     hex_str_len = len(hex_str)

@@ -16,6 +16,7 @@ if str(_tools_dir) not in sys.path:
 from bk_build_summary import bk_build_summary
 from bk_sdk.bk_curr_project import curr_project
 from env_tools.bksecure.scripts.common import get_flash_aes_tool, run_cmd_not_check_ret
+from env_tools.bksecure.scripts.gen_otp import gen_otp_efuse_config_file
 
 logger = logging.getLogger(Path(__file__).name)
 
@@ -180,6 +181,87 @@ def gen_build_summary(output_info: str):
     summary.gen_summary(sumary_file)
 
 
+def _read_flash_aes_enable_from_csv(csv_path: Path, default_value: bool = False) -> bool:
+    if not csv_path.exists():
+        logger.warning(f"auto_partitions.csv not found at {csv_path}, using default flash_aes_enable={default_value}")
+        return default_value
+
+    try:
+        csv_contents = csv_path.read_text()
+        lines = csv_contents.splitlines()
+        for line in lines:
+            line_content = line.strip()
+            if line_content.startswith("#") or len(line_content) == 0:
+                continue
+            if "FLASH_AES_ENABLE" in line_content:
+                aes_value = line_content.split("=")[1].strip().upper()
+                if aes_value in ("TRUE", "1"):
+                    logger.info(f"Read FLASH_AES_ENABLE=TRUE from {csv_path}")
+                    return True
+                if aes_value in ("FALSE", "0"):
+                    logger.info(f"Read FLASH_AES_ENABLE=FALSE from {csv_path}")
+                    return False
+                logger.warning(f"Invalid FLASH_AES_ENABLE value: {aes_value}, using default: {default_value}")
+                return default_value
+    except Exception as e:
+        logger.warning(f"Failed to read FLASH_AES_ENABLE from {csv_path}: {e}, using default: {default_value}")
+
+    logger.info(f"FLASH_AES_ENABLE not found in {csv_path}, using default: {default_value}")
+    return default_value
+
+
+def _read_flash_aes_key_from_csv(csv_path: Path, default_str: str = "") -> str:
+    if not csv_path.exists():
+        logger.warning(f"auto_partitions.csv not found at {csv_path}, using default flash_aes_key={default_str}")
+        return default_str
+
+    try:
+        csv_contents = csv_path.read_text()
+        lines = csv_contents.splitlines()
+        for line in lines:
+            line_content = line.strip()
+            if line_content.startswith("#") or len(line_content) == 0:
+                continue
+            if "FLASH_AES_KEY" in line_content:
+                aes_value = line_content.split("=")[1].strip()
+                logger.info(f"Read FLASH_AES_KEY={aes_value} from {csv_path}")
+                return aes_value
+    except Exception as e:
+        logger.warning(f"Failed to read FLASH_AES_KEY from {csv_path}: {e}, using default: {default_str}")
+
+    logger.info(f"FLASH_AES_KEY not found in {csv_path}, using default: {default_str}")
+    return default_str
+
+
+def gen_otp_efuse_from_auto_partition(output_dir: Path):
+    """
+    Generate otp_efuse_config.json based on auto_partitions.csv settings.
+    Only FLASH_AES related configuration is generated.
+    """
+    # Re-read AES settings from auto_partitions.csv to ensure this process
+    # sees the same configuration as auto_partition step.
+    csv_path = curr_project.auto_partitions_table
+    flash_aes_enable = _read_flash_aes_enable_from_csv(csv_path)
+    flash_aes_key = _read_flash_aes_key_from_csv(csv_path)
+
+    # Decide AES type according to enable flag and key
+    if flash_aes_enable and flash_aes_key:
+        aes_type = "FIXED"
+    else:
+        # AES disabled or key empty, keep FLASH AES disabled in otp_efuse_config.json
+        aes_type = "NONE"
+
+    prev_cwd = Path.cwd()
+    try:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        os.chdir(output_dir)
+        # pubkey_pem_file=None, secureboot_en=False, boot_ota=False
+        gen_otp_efuse_config_file(aes_type, flash_aes_key, None, False, False, "otp_efuse_config.json")
+        logger.info(f"Generated otp_efuse_config.json at {output_dir}")
+    finally:
+        os.chdir(prev_cwd)
+
+
 def firmware_package():
     build_pack_dir = curr_project.project_build_package_dir
     all_app_bin = build_pack_dir / "all-app.bin"
@@ -192,6 +274,8 @@ def firmware_package():
     os.chdir(build_pack_dir)
     add_aes_to_all_bin(pack_dir_temp, pack_json)
     pack_all_bin(pack_dir_temp, pack_json, all_app_bin)
+    # Generate otp_efuse_config.json based on auto_partitions.csv (FLASH_AES only)
+    gen_otp_efuse_from_auto_partition(build_pack_dir)
     return all_app_bin
 
 
