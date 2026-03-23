@@ -45,7 +45,8 @@
 #endif
 
 #if CONFIG_NVS_ENCRYPTION
-/**/
+#include "nvs_flash.h"
+#include "nvs_sec_provider.h"
 #else
 char eky[4 * NVS_KEY_SIZE + 1] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -447,6 +448,7 @@ static bk_err_t bk_flash_partition_write_internal(const bk_logic_partition_t *pa
 
     uint32_t start_addr;
     bk_err_t ret = BK_OK;
+    GLOBAL_INT_DECLARATION();
 
     start_addr = partition_info->partition_start_addr + offset;
     if ((offset + buffer_len) > partition_info->partition_length) {
@@ -473,6 +475,30 @@ static bk_err_t bk_flash_partition_write_internal(const bk_logic_partition_t *pa
         mbedtls_aes_xts_init(ectx);
 
 #if CONFIG_NVS_ENCRYPTION
+        nvs_sec_cfg_t cfg = {{0x72, 0x36}, {0x20, 0x24}};
+        ret = nvs_flash_read_cfg_by_partId(BK_PARTITION_NVS_KEY, &cfg);
+        if (ret == ESP_ERR_NVS_KEYS_NOT_INITIALIZED) {
+            BK_LOGI(TAG, "NVS key partition empty, generating keys");
+            const bk_logic_partition_t *key_part = bk_partition_find_first(
+                ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_NVS_KEYS, NVS_KEY_PARTITION_LABEL);
+            if (key_part == NULL) {
+                BK_LOGE(TAG, "CONFIG_NVS_ENCRYPTION is enabled, but no partition with subtype nvs_keys found in the partition table.");
+                ret = ESP_ERR_NOT_FOUND;
+                goto write_internal_exit;
+            }
+
+            ret = nvs_flash_generate_keys(key_part, &cfg);
+            if (ret != BK_OK) {
+                BK_LOGE(TAG, "Failed to generate keys: [0x%02X]", ret);
+                goto write_internal_exit;
+            }
+        } else if (ret != BK_OK) {
+            BK_LOGE(TAG, "Failed to read NVS security cfg: [0x%02X]", ret);
+            goto write_internal_exit;
+        }
+
+        os_memcpy(eky_hex, cfg.eky, NVS_KEY_SIZE);
+        os_memcpy(eky_hex + NVS_KEY_SIZE, cfg.tky, NVS_KEY_SIZE);
 #else
         uint32_t byteArrayLen = 0;
         toHexStream(eky, eky_hex, &byteArrayLen);
@@ -515,13 +541,17 @@ static bk_err_t bk_flash_partition_write_internal(const bk_logic_partition_t *pa
     }
 #endif
 
+    GLOBAL_INT_DISABLE();
+
     if ((offset + buffer_len) <= partition_info->partition_length) {
 #if (CONFIG_PARTITION_ENCRYPTION)
-    bk_flash_write_bytes(start_addr, dest_hex, buffer_len);
+        bk_flash_write_bytes(start_addr, dest_hex, buffer_len);
 #else
         bk_flash_write_bytes(start_addr, buffer, buffer_len);
 #endif
     }
+
+    GLOBAL_INT_RESTORE();
 
 #if (CONFIG_PARTITION_ENCRYPTION)
 write_internal_exit:
@@ -560,6 +590,7 @@ static bk_err_t bk_flash_partition_read_internal(const bk_logic_partition_t *par
 
     uint32_t start_addr;
     bk_err_t ret = BK_OK;
+    GLOBAL_INT_DECLARATION();
 
     start_addr = partition_info->partition_start_addr + offset;
     if ((offset + buffer_len) > partition_info->partition_length) {
@@ -567,7 +598,9 @@ static bk_err_t bk_flash_partition_read_internal(const bk_logic_partition_t *par
         return BK_ERR_FLASH_ADDR_OUT_OF_RANGE;
     }
 
+    GLOBAL_INT_DISABLE();
     bk_flash_read_bytes(start_addr, out_buffer, buffer_len);
+    GLOBAL_INT_RESTORE();
 
 #if (CONFIG_PARTITION_ENCRYPTION)
     if (0 == partition_is_encrypt(partition_info)) {
@@ -591,6 +624,30 @@ static bk_err_t bk_flash_partition_read_internal(const bk_logic_partition_t *par
     mbedtls_aes_xts_init(dctx);
 
 #if CONFIG_NVS_ENCRYPTION
+    nvs_sec_cfg_t cfg = {{0x72, 0x36}, {0x20, 0x24}};
+    ret = nvs_flash_read_cfg_by_partId(BK_PARTITION_NVS_KEY, &cfg);
+    if (ret == ESP_ERR_NVS_KEYS_NOT_INITIALIZED) {
+        BK_LOGI(TAG, "NVS key partition empty, generating keys");
+        const bk_logic_partition_t *key_part = bk_partition_find_first(
+            ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_NVS_KEYS, NVS_KEY_PARTITION_LABEL);
+        if (key_part == NULL) {
+            BK_LOGE(TAG, "CONFIG_NVS_ENCRYPTION is enabled, but no partition with subtype nvs_keys found in the partition table.");
+            ret = ESP_ERR_NOT_FOUND;
+            goto read_internal_exit;
+        }
+
+        ret = nvs_flash_generate_keys(key_part, &cfg);
+        if (ret != BK_OK) {
+            BK_LOGE(TAG, "Failed to generate keys: [0x%02X]", ret);
+            goto read_internal_exit;
+        }
+    } else if (ret != BK_OK) {
+        BK_LOGE(TAG, "Failed to read NVS security cfg: [0x%02X]", ret);
+        goto read_internal_exit;
+    }
+
+    os_memcpy(eky_hex, cfg.eky, NVS_KEY_SIZE);
+    os_memcpy(eky_hex + NVS_KEY_SIZE, cfg.tky, NVS_KEY_SIZE);
 #else
     uint32_t byteArrayLen = 0;
     toHexStream(eky, eky_hex, &byteArrayLen);

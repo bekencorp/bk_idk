@@ -27,7 +27,7 @@
 #include <os/os.h>
 #include <os/str.h>
 
-#define CSI_WIFI_CONNECT   1
+#define CSI_WIFI_CONNECT   0
 #define APP_TAG "CSI_DEMO"
 
 #if (CONFIG_SYS_CPU0)

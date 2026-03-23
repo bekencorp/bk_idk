@@ -25,6 +25,10 @@
 #include <ctype.h>
 #include <soc/soc.h>
 
+#if (CONFIG_PARTITION_ENCRYPTION)
+#include "mbedtls/aes.h"
+#endif
+
 #define TAG    "partition"
 
 #define NVS_KEY_SIZE        32 // AES-256
@@ -53,7 +57,8 @@
 #endif
 
 #if CONFIG_NVS_ENCRYPTION
-/**/
+#include "nvs_flash.h"
+#include "nvs_sec_provider.h"
 #else
 char eky[4 * NVS_KEY_SIZE + 1] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -233,7 +238,7 @@ uint32_t pt_get_partition_index(const bk_logic_partition_t* partition)
     return iRet;
 }
 
-static bool partition_is_encrypt(bk_logic_partition_t *partition_info)
+static bool partition_is_encrypt(const bk_logic_partition_t *partition_info)
 {
     uint8_t* buf = NULL;
     uint32_t partition_start, i, j;
@@ -484,6 +489,30 @@ static bk_err_t bk_flash_partition_write_internal(const bk_logic_partition_t *pa
         mbedtls_aes_xts_init(ectx);
 
 #if CONFIG_NVS_ENCRYPTION
+        nvs_sec_cfg_t cfg = {{0x72, 0x36}, {0x20, 0x24}};
+        ret = nvs_flash_read_cfg_by_partId(BK_PARTITION_NVS_KEY, &cfg);
+        if (ret == ESP_ERR_NVS_KEYS_NOT_INITIALIZED) {
+            BK_LOGI(TAG, "NVS key partition empty, generating keys");
+            const bk_logic_partition_t *key_part = bk_partition_find_first(
+                ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_NVS_KEYS, NVS_KEY_PARTITION_LABEL);
+            if (key_part == NULL) {
+                BK_LOGE(TAG, "CONFIG_NVS_ENCRYPTION is enabled, but no partition with subtype nvs_keys found in the partition table.");
+                ret = BK_ERR_FLASH_PARTITION_NOT_FOUND;
+                goto write_internal_exit;
+            }
+
+            ret = nvs_flash_generate_keys(key_part, &cfg);
+            if (ret != BK_OK) {
+                BK_LOGE(TAG, "Failed to generate keys: [0x%02X]", ret);
+                goto write_internal_exit;
+            }
+        } else if (ret != BK_OK) {
+            BK_LOGE(TAG, "Failed to read NVS security cfg: [0x%02X]", ret);
+            goto write_internal_exit;
+        }
+
+        os_memcpy(eky_hex, cfg.eky, NVS_KEY_SIZE);
+        os_memcpy(eky_hex + NVS_KEY_SIZE, cfg.tky, NVS_KEY_SIZE);
 #else
         uint32_t byteArrayLen = 0;
         toHexStream(eky, eky_hex, &byteArrayLen);
@@ -581,6 +610,7 @@ static bk_err_t bk_flash_partition_read_internal(const bk_logic_partition_t *par
     bk_flash_read_bytes(start_addr, out_buffer, buffer_len);
 
 #if (CONFIG_PARTITION_ENCRYPTION)
+    uint8_t *dest_hex = NULL;
     if (0 == partition_is_encrypt(partition_info)) {
         goto read_internal_exit;
     }
@@ -590,8 +620,7 @@ static bk_err_t bk_flash_partition_read_internal(const bk_logic_partition_t *par
     ret = BK_FAIL;
 
     mbedtls_aes_xts_context dctx[1];
-
-    uint8_t* dest_hex = os_malloc(buffer_len);
+    dest_hex = os_malloc(buffer_len);
     if (dest_hex == NULL) {
         FLASH_LOGW("%s malloc failed\r\n", __func__);
         ret = BK_ERR_NO_MEM;
@@ -602,6 +631,30 @@ static bk_err_t bk_flash_partition_read_internal(const bk_logic_partition_t *par
     mbedtls_aes_xts_init(dctx);
 
 #if CONFIG_NVS_ENCRYPTION
+    nvs_sec_cfg_t cfg = {{0x72, 0x36}, {0x20, 0x24}};
+    ret = nvs_flash_read_cfg_by_partId(BK_PARTITION_NVS_KEY, &cfg);
+    if (ret == ESP_ERR_NVS_KEYS_NOT_INITIALIZED) {
+        BK_LOGI(TAG, "NVS key partition empty, generating keys");
+        const bk_logic_partition_t *key_part = bk_partition_find_first(
+            ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_NVS_KEYS, NVS_KEY_PARTITION_LABEL);
+        if (key_part == NULL) {
+            BK_LOGE(TAG, "CONFIG_NVS_ENCRYPTION is enabled, but no partition with subtype nvs_keys found in the partition table.");
+            ret = BK_ERR_FLASH_PARTITION_NOT_FOUND;
+            goto read_internal_exit;
+        }
+
+        ret = nvs_flash_generate_keys(key_part, &cfg);
+        if (ret != BK_OK) {
+            BK_LOGE(TAG, "Failed to generate keys: [0x%02X]", ret);
+            goto read_internal_exit;
+        }
+    } else if (ret != BK_OK) {
+        BK_LOGE(TAG, "Failed to read NVS security cfg: [0x%02X]", ret);
+        goto read_internal_exit;
+    }
+
+    os_memcpy(eky_hex, cfg.eky, NVS_KEY_SIZE);
+    os_memcpy(eky_hex + NVS_KEY_SIZE, cfg.tky, NVS_KEY_SIZE);
 #else
     uint32_t byteArrayLen = 0;
     toHexStream(eky, eky_hex, &byteArrayLen);

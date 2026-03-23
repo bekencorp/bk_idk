@@ -19,6 +19,12 @@ menu "FLASH"
 		bool "Enable flash partition"
 		default n
 
+	config PARTITION_ENCRYPTION
+		bool "Enable flash partition encryption"
+		default n
+		help
+		  Enable MBEDTLS-AES-XTS encryption/decryption for selected partitions.
+
 	config FLASH_MB
 		bool "Enable flash mailbox channel"
 		depends on MAILBOX
