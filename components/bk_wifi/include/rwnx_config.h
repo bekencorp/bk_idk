@@ -70,7 +70,6 @@
 #define __DTCM_BSS
 #endif
 
-#if CONFIG_WIFI6
 #define CFG_MAC_VER_V21
 #if (CONFIG_SOC_BK7256XX)
 #define CFG_MDM_VER_V31
@@ -81,12 +80,7 @@
 #endif
 //#define CFG_IPC_VER_V11
 #define CFG_PLF_VER_V30
-#else
-#define CFG_MAC_VER_V10
-#define CFG_MDM_VER_V11
-//#define CFG_IPC_VER_V11
-#define CFG_PLF_VER_V20
-#endif
+
 
 /// A-MPDU TX fast retry support
 #define NX_AMPDU_TX_FAST_RETRY 1
@@ -437,6 +431,7 @@
   // Force Radio Measurement module
   #define NX_RM 0
 #else // !CFG_HE
+  #define CFG_MFP
   #define NX_HE 0
   #define NX_RM 0
 #endif // CFG_HE

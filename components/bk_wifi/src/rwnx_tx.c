@@ -818,7 +818,12 @@ void rwnx_start_xmit_mgmt(struct sk_buff *skb)
 	host = &txdesc->host;
 
 	mac_hdr = (struct ieee80211_mgmt *)skb->msdu_ptr;
+	#ifdef CFG_MFP
 	robust = mfp_is_robust_frame(mac_hdr->frame_control, *((uint8_t *)(mac_hdr + 1)));
+	#else
+	robust = false;
+	#endif
+
 
 	// setup hostdesc
 	host->flags = TXU_CNTRL_MGMT;

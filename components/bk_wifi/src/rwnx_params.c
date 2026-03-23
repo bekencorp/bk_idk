@@ -115,7 +115,6 @@ static const int mcs_map_to_rate[4][3] = {
 static int rwnx_check_fw_hw_feature(struct rwnx_hw *rwnx_hw,
 									struct wiphy *wiphy)
 {
-#if CONFIG_WIFI6
 	uint64_t sys_feat = rwnx_hw->version_cfm.features;
 	uint32_t mac_feat = rwnx_hw->version_cfm.version_machw_1;
 	uint32_t phy_feat = rwnx_hw->version_cfm.version_phy_1;
@@ -338,10 +337,7 @@ static int rwnx_check_fw_hw_feature(struct rwnx_hw *rwnx_hw,
 			  PRINT_RWNX_FEAT(MORE_TBD));
 #undef PRINT_RWNX_FEAT
 	return res;
-#else
 
-	return 0;
-#endif
 }
 
 static void rwnx_set_ppe_threshold(struct rwnx_hw *rwnx_hw,
