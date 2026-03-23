@@ -1379,14 +1379,12 @@ int sys_persist_check_crc(void)
                     f.write("""
     /* 计算CRC32 */
     /* Note: crc32 function from wpa_supplicant uses u32/u8 types, which are typically uint32_t/uint8_t */
-    SYS_PERSIST_CONFIG_LOG("CRC check: data_len=%u, aligned_size=0x%X\\n", crc_data_len, CONFIG_SYS_PERSIST_ALIGNED_SIZE);
     calculated_crc = (uint32_t)crc32((const uint8_t *)crc_data, (size_t)crc_data_len);
     
     /* 比较计算出的CRC和存储的CRC */
     if (calculated_crc == stored_crc) {
         return 0; /* CRC校验成功 */
     } else {
-        SYS_PERSIST_CONFIG_LOG("CRC check failed: stored=0x%08X, calculated=0x%08X, data_len=%u\\n", stored_crc, calculated_crc, crc_data_len);
         return -1; /* CRC校验失败 */
     }
 }
