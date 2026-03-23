@@ -900,7 +900,7 @@ int rw_msg_send_apm_start_req(u8 vif_index, u8 channel,
 	req->tim_len = 6;
 	req->bcn_int = BEACON_INTERVAL;
 
-	if (g_ap_param_ptr->cipher_suite > BK_SECURITY_TYPE_WEP) {
+	if (g_ap_param_ptr->cipher_suite > WIFI_SECURITY_WEP) {
 		req->flags = USE_PAIRWISE_KEY;
 		req->flags |= USE_PRIVACY;
 		req->flags |= CONTROL_PORT_HOST;

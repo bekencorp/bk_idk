@@ -56,7 +56,7 @@ uint32_t cfg_ap_is_open_system(void)
 
 	if ((NULL != g_ap_param_ptr)
 		&& (!cfg_is_all_zero_mac((u8 *)&g_ap_param_ptr->bssid))
-		&& (BK_SECURITY_TYPE_NONE == g_ap_param_ptr->cipher_suite))
+		&& (WIFI_SECURITY_NONE == g_ap_param_ptr->cipher_suite))
 		no_passcode_flag = 1;
 
 	return no_passcode_flag;

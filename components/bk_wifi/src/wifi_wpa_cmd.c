@@ -1094,11 +1094,11 @@ static int cmd_wlan_ap_set(char *cmd)
 			config.u.key_mgmt = key_mgmt;
 		}
 		if ((key_mgmt & (WPA_KEY_MGMT_SAE | WPA_KEY_MGMT_PSK)) == (WPA_KEY_MGMT_SAE | WPA_KEY_MGMT_PSK))
-			g_ap_param_ptr->cipher_suite = BK_SECURITY_TYPE_WPA3_WPA2_MIXED;
+			g_ap_param_ptr->cipher_suite = WIFI_SECURITY_WPA3_WPA2_MIXED;
 		else if (key_mgmt & WPA_KEY_MGMT_SAE)
-			g_ap_param_ptr->cipher_suite = BK_SECURITY_TYPE_WPA3_SAE;
+			g_ap_param_ptr->cipher_suite = WIFI_SECURITY_WPA3_SAE;
 		else if (key_mgmt & WPA_KEY_MGMT_PSK)
-			g_ap_param_ptr->cipher_suite = BK_SECURITY_TYPE_WPA2_AES;
+			g_ap_param_ptr->cipher_suite = WIFI_SECURITY_WPA2_AES;
 		else
 			g_ap_param_ptr->cipher_suite = 0;
 		//BK_LOGI(TAG, "key_mgmt: %d\n", g_ap_param_ptr->cipher_suite);
@@ -1382,7 +1382,7 @@ int cmd_wlan_ap_exec(char *cmd)
 		os_strcpy((char *)wNetConfig.wifi_ssid, "Wi-Fi");
 		os_strcpy((char *)wNetConfig.wifi_key, "12345678");
 		wNetConfig.channel = 6;
-		wNetConfig.security = BK_SECURITY_TYPE_WPA3_SAE;
+		wNetConfig.security = WIFI_SECURITY_WPA3_SAE;
 		os_strcpy((char *)wNetConfig.local_ip_addr, WLAN_DEFAULT_IP);
 		os_strcpy((char *)wNetConfig.net_mask, WLAN_DEFAULT_MASK);
 		os_strcpy((char *)wNetConfig.gateway_ip_addr, WLAN_DEFAULT_GW);

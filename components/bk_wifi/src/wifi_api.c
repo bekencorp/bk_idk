@@ -257,7 +257,7 @@ void demo_sta_adv_app_init(char *oob_ssid, char *connect_key)
 
 	//TODO should NOT use hard-coded BSSID and channel
 	hwaddr_aton("48:ee:0c:48:93:12", (u8 *)sta_config.bssid);
-	sta_config.security = BK_SECURITY_TYPE_WPA2_MIXED;
+	sta_config.security = WIFI_SECURITY_WPA2_MIXED;
 	sta_config.channel = 11;
 
 	BK_LOGI(TAG, "ssid:%s  key:%s\n", sta_config.ssid, sta_config.password);

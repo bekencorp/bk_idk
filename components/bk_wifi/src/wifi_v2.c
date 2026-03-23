@@ -196,7 +196,7 @@ void bk_wlan_dhcp_timeout(void)
 uint32_t bk_sta_cipher_is_open(void)
 {
 	BK_ASSERT(g_sta_param_ptr); /* ASSERT VERIFIED */
-	return (BK_SECURITY_TYPE_NONE == g_sta_param_ptr->cipher_suite);
+	return (WIFI_SECURITY_NONE == g_sta_param_ptr->cipher_suite);
 }
 
 uint8_t bk_wlan_ap_get_channel_config(void)
@@ -381,12 +381,12 @@ void bk_wlan_ap_init(network_InitTypeDef_st *inNetworkInitPara)
 		g_ap_param_ptr->key_len = os_strlen(inNetworkInitPara->wifi_key);
 		g_ap_param_ptr->hidden_ssid = inNetworkInitPara->hidden_ssid;
 		if (g_ap_param_ptr->key_len < 8)
-			g_ap_param_ptr->cipher_suite = BK_SECURITY_TYPE_NONE;
+			g_ap_param_ptr->cipher_suite = WIFI_SECURITY_NONE;
 		else {
 #if CONFIG_SOFTAP_WPA3
-			g_ap_param_ptr->cipher_suite = BK_SECURITY_TYPE_WPA3_WPA2_MIXED;
+			g_ap_param_ptr->cipher_suite = WIFI_SECURITY_WPA3_WPA2_MIXED;
 #else
-			g_ap_param_ptr->cipher_suite = BK_SECURITY_TYPE_WPA2_AES;
+			g_ap_param_ptr->cipher_suite = WIFI_SECURITY_WPA2_AES;
 #endif
 			os_memcpy(g_ap_param_ptr->key, inNetworkInitPara->wifi_key, g_ap_param_ptr->key_len);
 		}
@@ -2716,6 +2716,8 @@ static int wifi_sta_set_global_config(const wifi_sta_config_t *config)
 #ifdef CONFIG_STA_MINMUM_SECURITY
 	g_sta_param_ptr->sta_cipher_suite = config->security;
 #endif
+
+	g_sta_param_ptr->cipher_suite = config->security;
 	g_sta_param_ptr->key_len = os_strlen(config->password);
 	os_memcpy(g_sta_param_ptr->key, config->password, g_sta_param_ptr->key_len);
 	g_sta_param_ptr->key[g_sta_param_ptr->key_len] = 0;
@@ -2984,13 +2986,13 @@ bk_err_t bk_wifi_sta_get_config(wifi_sta_config_t *config)
 		return BK_ERR_NULL_PARAM;
 	}
 
-	os_memset(config, 0, sizeof(config));
+	os_memset(config, 0, sizeof(*config));
 
 	if (!wifi_sta_is_configured())
 		return BK_ERR_WIFI_STA_NOT_CONFIG;
 
 	os_memcpy(config->ssid, g_sta_param_ptr->ssid.array, g_sta_param_ptr->ssid.length);
-
+	config->ssid[g_sta_param_ptr->ssid.length] = 0;
 #if CONFIG_BSSID_CONNECT
 	os_memcpy(config->bssid, g_sta_param_ptr->fast_connect.bssid, sizeof(config->bssid));
 #endif
@@ -2998,20 +3000,35 @@ bk_err_t bk_wifi_sta_get_config(wifi_sta_config_t *config)
 	os_memcpy(config->password, g_sta_param_ptr->key, g_sta_param_ptr->key_len);
 	config->password[g_sta_param_ptr->key_len] = 0;
 
-#ifdef CONFIG_WIFI_FAST_CONNECT
-	os_memcpy(config->bssid, g_fci.bssid, WIFI_BSSID_LEN);
-	os_memcpy(config->psk, g_fci.psk, WIFI_PASSWORD_LEN);
-	os_memcpy(config->ip_addr, g_fci.ip_addr, 4);
-	os_memcpy(config->netmask, g_fci.netmask, 4);
-	os_memcpy(config->gw, g_fci.gw, 4);
-	os_memcpy(config->dns1, g_fci.dns1, 4);
-	os_memcpy(config->tk, g_fci.tk, 16);
-	config->channel = g_fci.channel;
-	config->pmf = g_fci.pmf;
-	config->security = g_fci.security;
+	// security may change if connected to AP
+	config->security = g_sta_param_ptr->cipher_suite;
+	config->channel = g_sta_param_ptr->fast_connect.chann;
+
+	config->is_user_fast_connect = !g_is_get_fci_from_flash;
+	config->is_not_support_auto_fci = !g_is_use_fci_from_flash;
+
+#if CONFIG_WIFI_FAST_CONNECT
+	if (!g_is_get_fci_from_flash) {
+		os_memcpy(config->bssid, g_fci.bssid, WIFI_BSSID_LEN);
+		os_memcpy(config->psk, g_fci.psk, WIFI_PASSWORD_LEN);
+		os_memcpy(config->ip_addr, g_fci.ip_addr, 4);
+		os_memcpy(config->netmask, g_fci.netmask, 4);
+		os_memcpy(config->gw, g_fci.gw, 4);
+		os_memcpy(config->dns1, g_fci.dns1, 4);
+		os_memcpy(config->tk, g_fci.tk, 16);
+		config->channel = g_fci.channel;
+		config->pmf = g_fci.pmf;
+		config->security = g_fci.security;
+	}
 #endif
 
-	//TODO get channel and security type
+#if CONFIG_STA_AUTO_RECONNECT
+	config->auto_reconnect_count = g_sta_param_ptr->auto_reconnect_count;
+	config->auto_reconnect_timeout = g_sta_param_ptr->auto_reconnect_timeout;
+	config->disable_auto_reconnect_after_disconnect =
+		g_sta_param_ptr->disable_auto_reconnect_after_disconnect;
+#endif
+
 	return BK_OK;
 }
 
@@ -3578,12 +3595,12 @@ static bk_err_t wifi_ap_set_config(const wifi_ap_config_t *ap_config)
 	g_ap_param_ptr->hidden_ssid = ap_config->hidden;
 	g_ap_param_ptr->bridge = ap_config->bridge;
 	if (g_ap_param_ptr->key_len < 8) {
-		g_ap_param_ptr->cipher_suite = BK_SECURITY_TYPE_NONE;
+		g_ap_param_ptr->cipher_suite = WIFI_SECURITY_NONE;
 	} else {
 #if CONFIG_SOFTAP_WPA3
-		g_ap_param_ptr->cipher_suite = BK_SECURITY_TYPE_WPA3_WPA2_MIXED;
+		g_ap_param_ptr->cipher_suite = WIFI_SECURITY_WPA3_WPA2_MIXED;
 #else
-		g_ap_param_ptr->cipher_suite = BK_SECURITY_TYPE_WPA2_AES;
+		g_ap_param_ptr->cipher_suite = WIFI_SECURITY_WPA2_AES;
 #endif
 		os_memset(g_ap_param_ptr->key, 0, sizeof(g_ap_param_ptr->key));
 		os_memcpy(g_ap_param_ptr->key, ap_config->password, g_ap_param_ptr->key_len);

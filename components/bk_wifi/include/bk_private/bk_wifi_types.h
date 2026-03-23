@@ -1162,23 +1162,6 @@ typedef enum
 	BK_P2P
 } wlanInterfaceTypedef;
 
-enum bk_wlan_sec_type_e
-{
-	BK_SECURITY_TYPE_NONE,        /**< Open system. */
-	BK_SECURITY_TYPE_WEP,         /**< Wired Equivalent Privacy. WEP security. */
-	BK_SECURITY_TYPE_WPA_TKIP,    /**< WPA /w TKIP */
-	BK_SECURITY_TYPE_WPA_AES,     /**< WPA /w AES */
-	BK_SECURITY_TYPE_WPA_MIXED,   /**< WPA /w AES or TKIP */
-	BK_SECURITY_TYPE_WPA2_TKIP,   /**< WPA2 /w TKIP */
-	BK_SECURITY_TYPE_WPA2_AES,    /**< WPA2 /w AES */
-	BK_SECURITY_TYPE_WPA2_MIXED,  /**< WPA2 /w AES or TKIP */
-	BK_SECURITY_TYPE_WPA3_SAE,    /**< WPA3 SAE */
-	BK_SECURITY_TYPE_WPA3_WPA2_MIXED, /**< WPA3 SAE or WPA2 AES */
-	BK_SECURITY_TYPE_EAP,         /**< EAP */
-	BK_SECURITY_TYPE_OWE,         /**< OWE */
-	BK_SECURITY_TYPE_AUTO,        /**< It is used when calling @ref bk_wlan_start_sta_adv, _BK_ read security type from scan result. */
-};
-
 enum
 {
 	WLAN_RX_BEACON,    /**< receive beacon packet */
