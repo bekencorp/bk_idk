@@ -19,6 +19,7 @@ OUTPUT_FORMAT("elf32-littlearm", "elf32-bigarm", "elf32-littlearm")
 
 __MSP_STACK_SIZE = (4 << 10);
 __MIN_HEAP_SIZE  = (40 << 10);
+PERSIST_MEM_AREA_SIZE = 4;
 REBOOT_TAG_AREA_SIZE = 4;
 
 #if CONFIG_CPU0_SRAM_BASE
@@ -492,6 +493,12 @@ SECTIONS
         KEEP(*(.keep.uninitialized))
         . = ALIGN(32);
         __uninitialized_end = .;
+    } > RAM
+
+    .PERSIST_MEM : ALIGN(4)
+    {
+        __persist_mem__ = .;
+        . += PERSIST_MEM_AREA_SIZE;
     } > RAM
 
     .REBOOT_TAG : ALIGN(4)

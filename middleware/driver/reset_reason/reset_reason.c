@@ -34,6 +34,24 @@ uint32_t bk_misc_get_reset_reason(void)
     return s_start_type;
 }
 
+void persist_memory_init(void)
+{
+	*((volatile uint32_t *)(PERSIST_MEMORY_ADDR)) = (uint32_t)CRASH_ILLEGAL_JUMP_VALUE;
+}
+
+uint32_t persist_memory_get(void)
+{
+	return (*((volatile uint32_t *)(PERSIST_MEMORY_ADDR)));
+}
+
+bool persist_memory_is_lost(void)
+{
+	if ((uint32_t)CRASH_ILLEGAL_JUMP_VALUE == persist_memory_get())
+		return false;
+	else
+		return true;
+}
+
 static char *misc_get_start_type_str(uint32_t start_type)
 {
 #if CONFIG_DISPLAY_START_TYPE_STR

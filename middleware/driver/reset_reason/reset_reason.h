@@ -24,18 +24,24 @@ extern "C" {
 #define REBOOT_TAG_REQ         (0xAA55AA55)   //4 bytes
 
 #if (CONFIG_SOC_BK7236N) || (CONFIG_SOC_BK7239XX)
-	extern char __reboot_tag__;
+	extern char __persist_mem__, __reboot_tag__;
 
 	#define START_TYPE_ADDR        (SOC_AON_PMU_REG_BASE + (0 << 2))
 	#define REBOOT_TAG_ADDR        ((uint32_t)&__reboot_tag__)
+	#define PERSIST_MEMORY_ADDR    ((uint32_t)&__persist_mem__)
 #elif (CONFIG_SOC_BK7236XX)
 	#define START_TYPE_ADDR        (SOC_AON_PMU_REG_BASE + (3 << 2))
 
 	/*REBOOT_TAG_ADDR For CPU0-APP set reset tag in nmi wdt reboot*/
 	#define REBOOT_TAG_ADDR        (0x20003FF8 + SOC_ADDR_OFFSET)
 	#define REBOOT_TAG_REQ         (0xAA55AA55)   //4 bytes
+	#define PERSIST_MEMORY_ADDR    (0x20003FFC + SOC_ADDR_OFFSET)
 #else
 	#define     START_TYPE_ADDR        (0x0080a080)
+	/* 1. For bk7231n/7236, persist memory lost after power on
+	 * 2. For other platform, persist memory lost after interrupt watchdog or power on
+	 * */
+	#define PERSIST_MEMORY_ADDR (0x0040001c)
 #endif
 
 #define CRASH_ILLEGAL_JUMP_VALUE      0xbedead00
@@ -123,6 +129,38 @@ extern uint32_t get_reboot_tag(void);
  *       vector table to SRAM or setting up the VTOR (Vector Table Offset Register).
  */
 extern void set_nmi_vector(void);
+
+/**
+ * @brief Initialize persistent memory area
+ * 
+ * This function initializes the persistent memory area with a default value
+ * (CRASH_ILLEGAL_JUMP_VALUE). The persistent memory area is used to store
+ * crash information that persists across reboots.
+ * 
+ * @note The persistent memory address is platform-specific and defined by PERSIST_MEMORY_ADDR.
+ */
+extern void persist_memory_init(void);
+
+/**
+ * @brief Get value from persistent memory area
+ * 
+ * This function reads the current value stored in the persistent memory area.
+ * The persistent memory can be used to store crash information or other data
+ * that needs to persist across reboots.
+ * 
+ * @return Current value stored in PERSIST_MEMORY_ADDR
+ */
+extern uint32_t persist_memory_get(void);
+
+/**
+ * @brief Check if persistent memory content is lost
+ * 
+ * This function checks whether the persistent memory content has been lost.
+ * The memory is considered lost if its value is not equal to CRASH_ILLEGAL_JUMP_VALUE.
+ * 
+ * @return true if persistent memory is lost, false otherwise
+ */
+extern bool persist_memory_is_lost(void);
 
 #ifdef __cplusplus
 }
