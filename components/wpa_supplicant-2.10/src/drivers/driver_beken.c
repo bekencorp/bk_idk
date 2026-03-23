@@ -1851,7 +1851,7 @@ int wpa_driver_associate(void *priv, struct wpa_driver_associate_params *params)
 		if (params->mode == IEEE80211_MODE_AP) {
 			nlmode = NL80211_IFTYPE_P2P_GO;
 			/*just for go*/
-			g_ap_param_ptr->cipher_suite = BK_SECURITY_TYPE_AUTO;
+			g_ap_param_ptr->cipher_suite = WIFI_SECURITY_AUTO;
 		} else {
 			nlmode = NL80211_IFTYPE_P2P_CLIENT;
 		}

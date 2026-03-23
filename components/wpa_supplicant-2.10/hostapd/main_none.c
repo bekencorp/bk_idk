@@ -141,7 +141,7 @@ struct hostapd_config *hostapd_config_read(const char *fname)
 	bss->ssid.ssid_set = 1;
 	bss->ignore_broadcast_ssid = g_ap_param_ptr->hidden_ssid;
 
-	if (g_ap_param_ptr->cipher_suite == BK_SECURITY_TYPE_WEP) {
+	if (g_ap_param_ptr->cipher_suite == WIFI_SECURITY_WEP) {
 #ifdef CONFIG_WEP_AP
 		bss->default_wep_key_len = 0;
 		bss->ssid.wep.keys_set = 1;
@@ -166,23 +166,23 @@ struct hostapd_config *hostapd_config_read(const char *fname)
 			}
 		}
 #endif
-	} else if (g_ap_param_ptr->cipher_suite == BK_SECURITY_TYPE_WPA_TKIP) {
+	} else if (g_ap_param_ptr->cipher_suite == WIFI_SECURITY_WPA_TKIP) {
 		bss->wpa = 1;
 		bss->wpa_pairwise = WPA_CIPHER_TKIP;
-	} else if (g_ap_param_ptr->cipher_suite == BK_SECURITY_TYPE_WPA2_AES) {
+	} else if (g_ap_param_ptr->cipher_suite == WIFI_SECURITY_WPA2_AES) {
 		bss->wpa = 2;
 		bss->wpa_pairwise = WPA_CIPHER_CCMP;
-	} else if (g_ap_param_ptr->cipher_suite == BK_SECURITY_TYPE_WPA2_MIXED) {
+	} else if (g_ap_param_ptr->cipher_suite == WIFI_SECURITY_WPA2_MIXED) {
 		bss->wpa = 2;
 		bss->wpa_pairwise = WPA_CIPHER_TKIP | WPA_CIPHER_CCMP;
-	} else if (g_ap_param_ptr->cipher_suite == BK_SECURITY_TYPE_WPA3_SAE ||
-		g_ap_param_ptr->cipher_suite == BK_SECURITY_TYPE_WPA3_WPA2_MIXED) {
+	} else if (g_ap_param_ptr->cipher_suite == WIFI_SECURITY_WPA3_SAE ||
+		g_ap_param_ptr->cipher_suite == WIFI_SECURITY_WPA3_WPA2_MIXED) {
 		bss->wpa = 2;
 		bss->wpa_pairwise = WPA_CIPHER_CCMP;
 	}
 
 	bss->wpa_key_mgmt = 0;
-	if (g_ap_param_ptr->cipher_suite > BK_SECURITY_TYPE_WEP) {
+	if (g_ap_param_ptr->cipher_suite > WIFI_SECURITY_WEP) {
 		const char *wpa_key = (char *)g_ap_param_ptr->key;
 		if (os_strlen(wpa_key) == 2 * PMK_LEN) {
 			WPA_LOGI("Use PSK instead of passphrase for softap\n");
@@ -262,13 +262,13 @@ struct hostapd_config *hostapd_config_read(const char *fname)
 	}
 #endif
 
-	//if (g_ap_param_ptr->cipher_suite >= BK_SECURITY_TYPE_WPA3_SAE) {
+	//if (g_ap_param_ptr->cipher_suite >= WIFI_SECURITY_WPA3_SAE) {
 	//	bss->wpa_key_mgmt = WPA_KEY_MGMT_SAE;;
 	//	bss->ieee80211w = MGMT_FRAME_PROTECTION_OPTIONAL;
 	//}
-	if (g_ap_param_ptr->cipher_suite == BK_SECURITY_TYPE_WPA3_SAE) {
+	if (g_ap_param_ptr->cipher_suite == WIFI_SECURITY_WPA3_SAE) {
 		bss->wpa_key_mgmt = WPA_KEY_MGMT_SAE;
-	} else if (g_ap_param_ptr->cipher_suite == BK_SECURITY_TYPE_WPA3_WPA2_MIXED) {
+	} else if (g_ap_param_ptr->cipher_suite == WIFI_SECURITY_WPA3_WPA2_MIXED) {
 		bss->wpa_key_mgmt |= WPA_KEY_MGMT_SAE;
 	}
 	//WPA_LOGI("%s: wpa_key_mgmt 0x%x, cipher_suite %d\n", __func__,

@@ -545,7 +545,7 @@ int get_security_type_from_ie(u8 *ie_start, int len, u16 caps)
 #endif
 
 	if ((caps & IEEE80211_CAP_PRIVACY) == 0)
-		return BK_SECURITY_TYPE_NONE;
+		return WIFI_SECURITY_NONE;
 
 	rsn_ie = get_ie(ie_start, len, WLAN_EID_RSN);
 	if (rsn_ie) {
@@ -556,21 +556,21 @@ int get_security_type_from_ie(u8 *ie_start, int len, u16 caps)
 					== (WPA_KEY_MGMT_SAE | WPA_KEY_MGMT_PSK)) ||
 					((key_mgmt & (WPA_KEY_MGMT_SAE | WPA_KEY_MGMT_PSK_SHA256))
 					== (WPA_KEY_MGMT_SAE | WPA_KEY_MGMT_PSK_SHA256))) {
-					return BK_SECURITY_TYPE_WPA3_WPA2_MIXED;;
+					return WIFI_SECURITY_WPA3_WPA2_MIXED;;
 				} else if ((key_mgmt & WPA_KEY_MGMT_SAE) == WPA_KEY_MGMT_SAE)
-					return BK_SECURITY_TYPE_WPA3_SAE;
+					return WIFI_SECURITY_WPA3_SAE;
 				else {
 					if ((pairwise_cipher & (WPA_CIPHER_CCMP | WPA_CIPHER_TKIP)) == (WPA_CIPHER_CCMP | WPA_CIPHER_TKIP))
-						return BK_SECURITY_TYPE_WPA2_MIXED;
+						return WIFI_SECURITY_WPA2_MIXED;
 					if ((pairwise_cipher & WPA_CIPHER_CCMP) == WPA_CIPHER_CCMP)
-						return BK_SECURITY_TYPE_WPA2_AES;
+						return WIFI_SECURITY_WPA2_AES;
 					if ((pairwise_cipher & WPA_CIPHER_TKIP) == WPA_CIPHER_TKIP)
-						return BK_SECURITY_TYPE_WPA2_TKIP;
+						return WIFI_SECURITY_WPA2_TKIP;
 				}
 			} else if (wpa_key_mgmt_wpa_ieee8021x(key_mgmt)) {
-				return BK_SECURITY_TYPE_EAP;
+				return WIFI_SECURITY_EAP;
 			} else if (key_mgmt == WPA_KEY_MGMT_OWE) {
-				return BK_SECURITY_TYPE_OWE;
+				return WIFI_SECURITY_OWE;
 			}
 		}
 	}
@@ -581,21 +581,21 @@ int get_security_type_from_ie(u8 *ie_start, int len, u16 caps)
 				&key_mgmt, &pairwise_cipher) == 0) {
 			if (wpa_key_mgmt_wpa_psk(key_mgmt)) {
 				if ((pairwise_cipher & (WPA_CIPHER_CCMP | WPA_CIPHER_TKIP))== (WPA_CIPHER_CCMP | WPA_CIPHER_TKIP))
-					return BK_SECURITY_TYPE_WPA_MIXED;
+					return WIFI_SECURITY_WPA_MIXED;
 				if ((pairwise_cipher & WPA_CIPHER_CCMP) == WPA_CIPHER_CCMP)
-					return BK_SECURITY_TYPE_WPA_AES;
+					return WIFI_SECURITY_WPA_AES;
 				if ((pairwise_cipher & WPA_CIPHER_TKIP) == WPA_CIPHER_TKIP)
-					return BK_SECURITY_TYPE_WPA_TKIP;
+					return WIFI_SECURITY_WPA_TKIP;
 			} else if (wpa_key_mgmt_wpa_ieee8021x(key_mgmt)) {
-				return BK_SECURITY_TYPE_EAP;
+				return WIFI_SECURITY_EAP;
 			}
 		}
 	}
 
 	if (!rsn_ie && !wpa_ie)
-		return BK_SECURITY_TYPE_WEP;
+		return WIFI_SECURITY_WEP;
 
-	return BK_SECURITY_TYPE_NONE;
+	return WIFI_SECURITY_NONE;
 }
 #endif
 

@@ -476,17 +476,17 @@ void wpas_notify_state_changed(struct wpa_supplicant *wpa_s,
 			if ((wpa_s->disconnect_reason == 0 || wpa_s->assoc_status_code == 1) &&
 				old_state == WPA_ASSOCIATING)
 			{
-				if (g_sta_param_ptr->cipher_suite == BK_SECURITY_TYPE_WPA3_WPA2_MIXED ||
-					g_sta_param_ptr->cipher_suite == BK_SECURITY_TYPE_WPA3_SAE)
+				if (g_sta_param_ptr->cipher_suite == WIFI_SECURITY_WPA3_WPA2_MIXED ||
+					g_sta_param_ptr->cipher_suite == WIFI_SECURITY_WPA3_SAE)
 				{
 					wpa_s->disconnect_reason = WIFI_REASON_WRONG_PASSWORD;
 				}
-				//else if(g_sta_param_ptr->cipher_suite >= BK_SECURITY_TYPE_WPA_TKIP &&
-				//	g_sta_param_ptr->cipher_suite <= BK_SECURITY_TYPE_WPA2_MIXED)
+				//else if(g_sta_param_ptr->cipher_suite >= WIFI_SECURITY_WPA_TKIP &&
+				//	g_sta_param_ptr->cipher_suite <= WIFI_SECURITY_WPA2_MIXED)
 				//{
 				//	wpa_s->disconnect_reason = WIFI_REASON_AUTH_FAIL;
 				//}
-				//else if(g_sta_param_ptr->cipher_suite == BK_SECURITY_TYPE_NONE)
+				//else if(g_sta_param_ptr->cipher_suite == WIFI_SECURITY_NONE)
 				//{
 				//	wpa_s->disconnect_reason = WIFI_REASON_AUTH_FAIL;
 				//}
@@ -496,25 +496,25 @@ void wpas_notify_state_changed(struct wpa_supplicant *wpa_s,
 		}
 #else
 #if 0
-		if ((g_sta_param_ptr->cipher_suite == BK_SECURITY_TYPE_WPA3_WPA2_MIXED ||
-			g_sta_param_ptr->cipher_suite == BK_SECURITY_TYPE_WPA3_SAE) &&
+		if ((g_sta_param_ptr->cipher_suite == WIFI_SECURITY_WPA3_WPA2_MIXED ||
+			g_sta_param_ptr->cipher_suite == WIFI_SECURITY_WPA3_SAE) &&
 			wpa_s->disconnect_reason == 0 && old_state == WPA_ASSOCIATING)
 			wpa_s->disconnect_reason = WIFI_REASON_WRONG_PASSWORD;
 #else
 		if ((wpa_s->disconnect_reason == 0 || wpa_s->assoc_status_code == 1) &&
 			old_state == WPA_ASSOCIATING)
 		{
-			if (g_sta_param_ptr->cipher_suite == BK_SECURITY_TYPE_WPA3_WPA2_MIXED ||
-				g_sta_param_ptr->cipher_suite == BK_SECURITY_TYPE_WPA3_SAE)
+			if (g_sta_param_ptr->cipher_suite == WIFI_SECURITY_WPA3_WPA2_MIXED ||
+				g_sta_param_ptr->cipher_suite == WIFI_SECURITY_WPA3_SAE)
 			{
 				wpa_s->disconnect_reason = WIFI_REASON_WRONG_PASSWORD;
 			}
-			//else if(g_sta_param_ptr->cipher_suite >= BK_SECURITY_TYPE_WPA_TKIP &&
-			//	g_sta_param_ptr->cipher_suite <= BK_SECURITY_TYPE_WPA2_MIXED)
+			//else if(g_sta_param_ptr->cipher_suite >= WIFI_SECURITY_WPA_TKIP &&
+			//	g_sta_param_ptr->cipher_suite <= WIFI_SECURITY_WPA2_MIXED)
 			//{
 			//	wpa_s->disconnect_reason = WIFI_REASON_AUTH_FAIL;
 			//}
-			//else if(g_sta_param_ptr->cipher_suite == BK_SECURITY_TYPE_NONE)
+			//else if(g_sta_param_ptr->cipher_suite == WIFI_SECURITY_NONE)
 			//{
 			//	wpa_s->disconnect_reason = WIFI_REASON_AUTH_FAIL;
 			//}

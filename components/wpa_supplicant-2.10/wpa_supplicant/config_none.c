@@ -134,7 +134,7 @@ int wpa_config_set_none(struct wpa_ssid *ssid)
 	ssid->key_mgmt = WPA_KEY_MGMT_NONE;
 	ssid->mem_only_psk = 0;
 	ssid->auth_alg = 0;
-	g_sta_param_ptr->cipher_suite = BK_SECURITY_TYPE_NONE;
+	g_sta_param_ptr->cipher_suite = WIFI_SECURITY_NONE;
 	ssid->wep_key[0][0] = 0;
 	ssid->wep_key_len[0] = 0;
 #ifdef CONFIG_IEEE80211W
@@ -152,7 +152,7 @@ int wpa_config_set_wep(struct wpa_ssid *ssid)
 
 	ret = set_wep_key(ssid);
 	if (!ret) {
-		g_sta_param_ptr->cipher_suite = BK_SECURITY_TYPE_WEP;
+		g_sta_param_ptr->cipher_suite = WIFI_SECURITY_WEP;
 	} else {
 		wifi_linkstate_reason_t info;
 		wifi_event_sta_disconnected_t sta_disconnected = {0};
