@@ -188,6 +188,11 @@ int net_dhcp_hostname_set(char *hostname)
 	return 0;
 }
 
+char *net_dhcp_hostname_get(void)
+{
+	return (char *)netif_get_hostname(&g_mlan.netif);
+}
+
 void net_ipv4stack_init(void)
 {
 	static bool tcpip_init_done = 0;
