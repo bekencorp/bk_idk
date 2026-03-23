@@ -1045,6 +1045,35 @@ uint32_t pwm_hal_get_tim_input_level(pwm_chan_t tim_id)
 
 uint32_t pwm_hal_get_capture_int_type(pwm_chan_t tim_id)
 {
+	switch (tim_id) {
+	case 0:
+		return pwm_ll_get_reg44_ch1eif();
+	case 1:
+		return pwm_ll_get_reg44_ch3eif();
+	case 2:
+		return pwm_ll_get_reg44_ch5eif();
+	case 3:
+		return pwm_ll_get_reg84_ch1eif();
+	case 4:
+		return pwm_ll_get_reg84_ch3eif();
+	case 5:
+		return pwm_ll_get_reg84_ch5eif();
+	case 6:
+		return pwm_ll_get_regc4_ch1eif();
+	case 7:
+		return pwm_ll_get_regc4_ch3eif();
+	case 8:
+		return pwm_ll_get_regc4_ch5eif();
+	case 9:
+		return pwm_ll_get_reg104_ch1eif();
+	case 10:
+		return pwm_ll_get_reg104_ch3eif();
+	case 11:
+		return pwm_ll_get_reg104_ch5eif();
+	default:
+		return 0;
+	}
+
 	return 0;
 }
 
@@ -1401,3 +1430,72 @@ void pwm_hal_sync_all_shadow(void)
 	pwm_ll_set_reg4_sync_all(1);
 }
 
+#if CONFIG_PWM_PM_CB_SUPPORT
+void pwm_hal_pm_backup(uint32_t chan, uint32_t *pm_backup, uint32_t reg_count)
+{
+	if (reg_count < PWM_PM_BACKUP_REG_NUM) {
+		return;
+	}
+
+	uint32_t group_id = chan / SOC_PWM_CHAN_NUM_PER_GROUP;
+
+	pm_backup[0] = pwm_ll_get_reg2_value();
+	pm_backup[1] = pwm_ll_get_reg4_value();
+	pm_backup[2] = REG_READ(SOC_PWM_REG_BASE + ((0x10 + chan) << 2));
+	pm_backup[3] = REG_READ(SOC_PWM_REG_BASE + ((0x43 + (group_id * 0x40)) << 2));
+	pm_backup[4] = REG_READ(SOC_PWM_REG_BASE + ((0x45 + (group_id * 0x40)) << 2));
+	pm_backup[5] = REG_READ(SOC_PWM_REG_BASE + ((0x46 + (group_id * 0x40)) << 2));
+	pm_backup[6] = REG_READ(SOC_PWM_REG_BASE + ((0x4a + (group_id * 0x40)) << 2));
+
+	pm_backup[7] = REG_READ(SOC_PWM_REG_BASE + ((0x4b + (group_id * 0x40)) << 2));
+	pm_backup[8] = REG_READ(SOC_PWM_REG_BASE + ((0x51 + (group_id * 0x40)) << 2));
+	pm_backup[9] = REG_READ(SOC_PWM_REG_BASE + ((0x52 + (group_id * 0x40)) << 2));
+	pm_backup[10] = REG_READ(SOC_PWM_REG_BASE + ((0x53 + (group_id * 0x40)) << 2));
+
+	pm_backup[11] = REG_READ(SOC_PWM_REG_BASE + ((0x4c + (group_id * 0x40)) << 2));
+	pm_backup[12] = REG_READ(SOC_PWM_REG_BASE + ((0x54 + (group_id * 0x40)) << 2));
+	pm_backup[13] = REG_READ(SOC_PWM_REG_BASE + ((0x55 + (group_id * 0x40)) << 2));
+	pm_backup[14] = REG_READ(SOC_PWM_REG_BASE + ((0x56 + (group_id * 0x40)) << 2));
+
+	pm_backup[15] = REG_READ(SOC_PWM_REG_BASE + ((0x4d + (group_id * 0x40)) << 2));
+	pm_backup[16] = REG_READ(SOC_PWM_REG_BASE + ((0x57 + (group_id * 0x40)) << 2));
+	pm_backup[17] = REG_READ(SOC_PWM_REG_BASE + ((0x58 + (group_id * 0x40)) << 2));
+	pm_backup[18] = REG_READ(SOC_PWM_REG_BASE + ((0x59 + (group_id * 0x40)) << 2));
+
+	pm_backup[19] = REG_READ(SOC_PWM_REG_BASE + ((0x5a + (group_id * 0x40)) << 2));
+}
+
+void pwm_hal_pm_restore(uint32_t chan, uint32_t *pm_backup, uint32_t reg_count)
+{
+	if (reg_count < PWM_PM_BACKUP_REG_NUM) {
+		return;
+	}
+
+	uint32_t group_id = chan / SOC_PWM_CHAN_NUM_PER_GROUP;
+
+	pwm_ll_set_reg2_value(pm_backup[0]);
+	pwm_ll_set_reg4_value(pm_backup[1]);
+	REG_WRITE(SOC_PWM_REG_BASE + ((0x10 + chan) << 2), pm_backup[2]);
+	REG_WRITE(SOC_PWM_REG_BASE + ((0x43 + (group_id * 0x40)) << 2), pm_backup[3]);
+	REG_WRITE(SOC_PWM_REG_BASE + ((0x45 + (group_id * 0x40)) << 2), pm_backup[4]);
+	REG_WRITE(SOC_PWM_REG_BASE + ((0x46 + (group_id * 0x40)) << 2), pm_backup[5]);
+	REG_WRITE(SOC_PWM_REG_BASE + ((0x4a + (group_id * 0x40)) << 2), pm_backup[6]);
+
+	REG_WRITE(SOC_PWM_REG_BASE + ((0x4b + (group_id * 0x40)) << 2), pm_backup[7]);
+	REG_WRITE(SOC_PWM_REG_BASE + ((0x51 + (group_id * 0x40)) << 2), pm_backup[8]);
+	REG_WRITE(SOC_PWM_REG_BASE + ((0x52 + (group_id * 0x40)) << 2), pm_backup[9]);
+	REG_WRITE(SOC_PWM_REG_BASE + ((0x53 + (group_id * 0x40)) << 2), pm_backup[10]);
+
+	REG_WRITE(SOC_PWM_REG_BASE + ((0x4c + (group_id * 0x40)) << 2), pm_backup[11]);
+	REG_WRITE(SOC_PWM_REG_BASE + ((0x54 + (group_id * 0x40)) << 2), pm_backup[12]);
+	REG_WRITE(SOC_PWM_REG_BASE + ((0x55 + (group_id * 0x40)) << 2), pm_backup[13]);
+	REG_WRITE(SOC_PWM_REG_BASE + ((0x56 + (group_id * 0x40)) << 2), pm_backup[14]);
+
+	REG_WRITE(SOC_PWM_REG_BASE + ((0x4d + (group_id * 0x40)) << 2), pm_backup[15]);
+	REG_WRITE(SOC_PWM_REG_BASE + ((0x57 + (group_id * 0x40)) << 2), pm_backup[16]);
+	REG_WRITE(SOC_PWM_REG_BASE + ((0x58 + (group_id * 0x40)) << 2), pm_backup[17]);
+	REG_WRITE(SOC_PWM_REG_BASE + ((0x59 + (group_id * 0x40)) << 2), pm_backup[18]);
+
+	REG_WRITE(SOC_PWM_REG_BASE + ((0x5a + (group_id * 0x40)) << 2), pm_backup[19]);
+}
+#endif
