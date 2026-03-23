@@ -380,3 +380,12 @@ int bk_feature_update_power_with_rssi(void) {
 	return 0;
 #endif
 }
+
+int bk_feature_wifi6_enable(void)
+{
+#ifdef CONFIG_WIFI6
+	return 1;
+#else
+	return 0;
+#endif
+}

@@ -487,3 +487,15 @@ int bk_feature_coex_enable(void);
  *
  */
 int bk_feature_update_power_with_rssi(void);
+
+/**
+ * @brief     Interface for customer to enable or disable wifi 6.
+ *
+ *
+ * @return
+ *    - 0: wifi 6 is disabled
+ *    - 1: wifi 6 is enabled
+ *
+ */
+int bk_feature_wifi6_enable(void);
+
