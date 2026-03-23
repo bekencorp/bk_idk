@@ -30,7 +30,7 @@
 
 enum tfm_plat_err_t tfm_plat_otp_init(void)
 {
-	OTP_LOGI(TAG, "init\r\n");
+	OTP_LOGD(TAG, "init\r\n");
 	return TFM_PLAT_ERR_SUCCESS;
 }
 

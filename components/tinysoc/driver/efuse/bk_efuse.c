@@ -99,5 +99,5 @@ bool efuse_is_secure_download_enabled(void)
 
 void dump_efuse(void)
 {
-	BK_LOGI(TAG, "efuse=%x\r\n", s_efuse_data);
+	BK_LOGD(TAG, "efuse=%x\r\n", s_efuse_data);
 }
