@@ -55,6 +55,8 @@ extern uint32_t sys_hal_vdddig_h_vol_get();
 extern void sys_hal_adjust_dpll(void);
 
 static void sys_hal_delay(volatile uint32_t times);
+__attribute__((section(".uninitialized"))) static uint32_t boot_ana_rtc_int_status = 0;
+__attribute__((section(".uninitialized"))) static uint32_t boot_ana_gpio_int_status = 0;
 
 /**  Platform Start **/
 /** Platform Misc Start **/
@@ -2662,6 +2664,39 @@ static void sys_hal_pwd_rosc()
 	}
 }
 
+static void sys_hal_get_boot_wakeup_int_status(void)
+{
+    uint32_t check_rtc_int_en = sys_ll_get_cpu0_int_32_63_en_cpu0_ana_rtc_int_en();
+    uint32_t check_gpio_int_en = sys_ll_get_cpu0_int_32_63_en_cpu0_ana_gpio_int_en();
+
+    if (check_rtc_int_en == 0) {
+        sys_ll_set_cpu0_int_32_63_en_cpu0_ana_rtc_int_en(1);
+    }
+    if (check_gpio_int_en == 0) {
+        sys_ll_set_cpu0_int_32_63_en_cpu0_ana_gpio_int_en(1);
+    }
+
+    boot_ana_rtc_int_status = sys_ll_get_cpu0_int_32_63_status_cpu0_ana_rtc_int_st();
+    boot_ana_gpio_int_status = sys_ll_get_cpu0_int_32_63_status_cpu0_ana_gpio_int_st();
+
+    if (check_rtc_int_en == 0) {
+        sys_ll_set_cpu0_int_32_63_en_cpu0_ana_rtc_int_en(0);
+    }
+    if (check_gpio_int_en == 0) {
+        sys_ll_set_cpu0_int_32_63_en_cpu0_ana_gpio_int_en(0);
+    }
+}
+
+uint32_t sys_hal_get_boot_ana_rtc_int_status(void)
+{
+	return boot_ana_rtc_int_status;
+}
+
+uint32_t sys_hal_get_boot_ana_gpio_int_status(void)
+{
+	return boot_ana_gpio_int_status;
+}
+
 //TODO the module owner can put the sys init to better place
 void sys_hal_early_init(void)
 {
@@ -2685,6 +2720,9 @@ void sys_hal_early_init(void)
 	sys_hal_analog_set(ANALOG_REG6, sys_ana->r6);
 	sys_hal_analog_set(ANALOG_REG7, sys_ana->r7);
 	sys_hal_analog_set(ANALOG_REG8, sys_ana->r8);
+
+	// keep the rtc int status before RTC_KEEP_TIME_SUPPORT restore the time
+	sys_hal_get_boot_wakeup_int_status();
 
 	/**
 	 * attention:

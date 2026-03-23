@@ -22,6 +22,7 @@
 #include <components/log.h>
 #include "aon_pmu_hal.h"
 #include "driver/gpio.h"
+#include "sys_hal.h"
 
 #define TAG "init"
 
@@ -168,6 +169,22 @@ uint32_t reset_reason_deep_sleep_check(void)
         return misc_value;
 
     misc_value = aon_pmu_hal_get_wakeup_source();
+
+#if (CONFIG_SOC_BK7236N) || (CONFIG_SOC_BK7239N)
+    /* FIXME: something wrong with the wakeup source,
+     * so we use the ana rtc/ana gpio int status to represent the wakeup source
+     */
+    if (misc_value == 0) {
+        if (sys_hal_get_boot_ana_rtc_int_status() == 1) {
+            misc_value = WAKEUP_SOURCE_RTC;
+        } else if (sys_hal_get_boot_ana_gpio_int_status() == 1) {
+            misc_value = WAKEUP_SOURCE_GPIO;
+        } else {
+            BK_LOGW(TAG, "Unknown wakeup source\r\n");
+        }
+    }
+#endif
+
     switch (misc_value)
     {
     case WAKEUP_SOURCE_GPIO:

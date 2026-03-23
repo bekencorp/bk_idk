@@ -3453,6 +3453,8 @@ void sys_hal_set_low_voltage_sleep_duration_us(uint64_t sleep_duration);
 uint64_t sys_hal_get_low_voltage_wakeup_time_us(void);
 void sys_hal_set_low_voltage_wakeup_time_us(uint64_t wakeup_time);
 uint32_t sys_hal_get_bootup_restore_time_us(void);
+uint32_t sys_hal_get_boot_ana_rtc_int_status(void);
+uint32_t sys_hal_get_boot_ana_gpio_int_status(void);
 #if CONFIG_GPIO_CLOCK_PIN_SUPPORT
 /**  System Clock Start **/
 void sys_hal_clk_pin_ana_open(clk_pin_ana_src_t src, clk_pin_div_t div, bool en);
