@@ -153,7 +153,8 @@ relall: $(rel_targets)
 
 $(cmake_supported_targets): common
 ifeq ($(filter $(BUILD_TARGET), menuconfig doc), $(BUILD_TARGET))
-	@$(ARMINO_TOOL) -B ./$(PROJECT_BUILD_DIR) -P ./$(PROJECT_DIR) $@
+	@$(MAKE) gen_sys_persist_config
+	@$(ARMINO_TOOL) -B $(PROJECT_BUILD_DIR) -P $(PROJECT_DIR) $@
 else
 	@$(ARMINO_TOOL_WRAPPER) $(ARMINO_DIR) $(PROJECT_DIR) $(PROJECT_BUILD_DIR) $@
 endif
