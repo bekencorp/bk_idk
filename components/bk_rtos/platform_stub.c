@@ -19,7 +19,9 @@
 #include <sys/stat.h>
 #include <sys/times.h>
 #include <sys/unistd.h>
-
+#include <ctype.h>
+#include <errno.h>
+#include <limits.h>
 
 #include <os/mem.h>
 
@@ -179,6 +181,80 @@ void __wrap___assert_func(const char *file, int line, const char *func, const ch
 {
 	os_printf("%s %d func %s expr %s\n", file, line, func, failedexpr);
 	BK_ASSERT(0); /* ASSERT VERIFIED */
+}
+
+unsigned long __wrap_strtoul (const char *nptr, char **endptr, int base)
+{
+    const char *s = nptr;
+    unsigned long result = 0;
+    unsigned long cutoff;
+    int cutlim;
+    int overflow = 0;
+    int any = 0;
+
+    if (!nptr)
+        return 0;
+    // Skip leading whitespace
+    while (isspace((unsigned char)*s)) {
+        s++;
+    }
+    // Handle optional sign
+    if (*s == '-') {
+        s++;
+    } else if (*s == '+') {
+        s++;
+    }
+    // Determine the base if it's 0
+    if (base == 0) {
+        if (*s == '0') {
+            if (tolower((unsigned char)s[1]) == 'x') {
+                base = 16;
+                s += 2;
+            } else {
+                base = 8;
+                s++;
+            }
+        } else {
+            base = 10;
+        }
+    } else if (base == 16 && *s == '0' && tolower((unsigned char)s[1]) == 'x') {
+        s += 2;
+    }
+    // Set cutoff values to handle overflow
+    cutoff = ULONG_MAX / (unsigned long)base;
+    cutlim = ULONG_MAX % (unsigned long)base;
+    // Convert the number
+    for (; *s; s++) {
+        int c = *s;
+        if (isdigit((unsigned char)c)) {
+            c -= '0';
+        } else if (isalpha((unsigned char)c)) {
+            c = tolower((unsigned char)c) - 'a' + 10;
+        } else {
+            break;
+        }
+        if (c >= base) {
+            break;
+        }
+        if (any < 0 || result > cutoff || (result == cutoff && c > cutlim)) {
+            overflow = 1;
+        } else {
+            any = 1;
+            result = result * base + c;
+        }
+    }
+    if (any == 0) {
+        s = nptr;
+    }
+    if (endptr != NULL) {
+        *endptr = (char *)(any ? s : nptr);
+    }
+    if (overflow) {
+        errno = ERANGE;
+        result = ULONG_MAX;
+    }
+
+    return result;
 }
 
 int64_t s_microseconds_offset = 0;
