@@ -88,6 +88,7 @@ struct rwnx_mod_params rwnx_mod_params = {
 	PARAM(rx_agg_num, 0),
 	PARAM(tx_ampdu_on, true),
 	PARAM(tx_agg_num, 0),
+	PARAM(tx_use_max_bw, false),
 	PARAM(amsdu_require_spp, false)
 };
 
@@ -849,6 +850,9 @@ void rwnx_udpate_capability(uint32_t capa_id, uint32_t capa_val)
 		case WIFI_CAPA_ID_RX_AMPDU_NUM:
 			rwnx_update_rx_ampdu_num_capa(capa_val);
 			break;
+		case WIFI_CAPA_ID_TX_USE_MAX_BW:
+			rwnx_update_tx_use_max_bw(capa_val);
+			break;
 		case WIFI_CAPA_ID_VHT_MCS:
 			rwnx_update_vht_mcs(capa_val);
 			break;
@@ -904,3 +908,14 @@ uint8_t rwnx_get_rx_ampdu_num(void)
 {
 	return (rwnx_mod_params.rx_agg_num);
 }
+
+bool rwnx_mod_param_get_use_2040()
+{
+	return rwnx_mod_params.use_2040;
+}
+
+bool rwnx_get_tx_use_max_bw(void)
+{
+    return rwnx_mod_params.tx_use_max_bw;
+}
+

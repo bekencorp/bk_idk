@@ -59,6 +59,7 @@ struct rwnx_mod_params {
 	bool rx_ampdu_on;
 	int  rx_agg_num;
 	bool tx_ampdu_on;
+	bool tx_use_max_bw;
 	uint32_t tx_agg_num;
 	bool amsdu_require_spp;
 };
@@ -114,6 +115,11 @@ __INLINE void rwnx_update_rx_ampdu_num_capa(uint32_t rx_ampdu_num)
 {
 	rwnx_mod_params.rx_agg_num = rx_ampdu_num;
 	RWNX_LOGI("update RX_AMPDU_NUM capa:%d\n", rx_ampdu_num);
+}
+__INLINE void rwnx_update_tx_use_max_bw(uint32_t use_max_bw)
+{
+	rwnx_mod_params.tx_use_max_bw = !!use_max_bw;
+	RWNX_LOGI("update use max bw:%d\n", !!use_max_bw);
 }
 __INLINE void rwnx_update_vht_mcs(uint32_t vht_mcs)
 {
