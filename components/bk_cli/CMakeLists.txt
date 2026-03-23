@@ -419,6 +419,10 @@ if (CONFIG_NVS_TEST)
 	list(APPEND srcs cli_nvs.c)
 endif()
 
+if (CONFIG_PARTITION_TEST)
+	list(APPEND srcs cli_partition.c)
+endif()
+
 if (CONFIG_LIN)
 	list(APPEND srcs cli_lin.c)
 endif()

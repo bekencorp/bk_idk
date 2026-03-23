@@ -1674,6 +1674,7 @@ static const cli_module_init_entry_t cli_platform_inits[] = {
 
 #if (CLI_CFG_GPIO == 1)
 	CLI_MODULE_INIT_ENTRY(cli_gpio_init),
+    CLI_MODULE_INIT_ENTRY(cli_gpio_api_init),
 #endif
 
 #if (CLI_CFG_OS == 1)
@@ -1682,10 +1683,7 @@ static const cli_module_init_entry_t cli_platform_inits[] = {
 
 #if (CLI_CFG_FLASH_TEST == 1)
 	CLI_MODULE_INIT_ENTRY(cli_flash_test_init),
-#endif
-
-#if (CLI_CFG_FLASH_TEST == 1)
-	CLI_MODULE_INIT_ENTRY(cli_flash_api_test_init),
+    CLI_MODULE_INIT_ENTRY(cli_flash_api_test_init),
 #endif
 
 #if (CLI_CFG_SDIO_HOST == 1)
@@ -1702,14 +1700,20 @@ static const cli_module_init_entry_t cli_platform_inits[] = {
 
 #if (CLI_CFG_UART == 1)
 	CLI_MODULE_INIT_ENTRY(cli_uart_init),
+    CLI_MODULE_INIT_ENTRY(cli_uart_api_init),
 #endif
 
 #if (CLI_CFG_SPI == 1)
 	CLI_MODULE_INIT_ENTRY(cli_spi_init),
+    CLI_MODULE_INIT_ENTRY(cli_spi_api_init),
 #endif
 
 #if (CONFIG_NVS_TEST)
 	CLI_MODULE_INIT_ENTRY(cli_nvs_init),
+#endif
+
+#if (CONFIG_PARTITION_TEST)
+	CLI_MODULE_INIT_ENTRY(cli_partition_init),
 #endif
 
 #if (CLI_CFG_QSPI == 1)
@@ -1722,6 +1726,7 @@ static const cli_module_init_entry_t cli_platform_inits[] = {
 
 #if (CLI_CFG_I2C == 1)
 	CLI_MODULE_INIT_ENTRY(cli_i2c_init),
+    CLI_MODULE_INIT_ENTRY(cli_i2c_api_init),
 #endif
 
 #if (CLI_CFG_JPEGENC == 1)
@@ -1731,6 +1736,7 @@ static const cli_module_init_entry_t cli_platform_inits[] = {
 #if (CLI_CFG_ADC == 1)
 #if CONFIG_SARADC_V1P2
 	CLI_MODULE_INIT_ENTRY(bk_sadc_register_cli_test_feature),
+    CLI_MODULE_INIT_ENTRY(cli_adc_api_init),
 #endif // CONFIG_SARADC_V1P2
 	CLI_MODULE_INIT_ENTRY(cli_adc_init),
 #endif

@@ -31,3 +31,5 @@ CONFIG_BAKP_POWER_DOMAIN_DISABLE=n
 
 #@ support BL2 upgrade, if you want to use this feature, the CONFIG_CACHE_ENABLE must be enabled
 CONFIG_BL2_UPGRADE_WITH_APP=n
+
+CONFIG_PARTITION_TEST=y

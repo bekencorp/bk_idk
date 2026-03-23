@@ -108,6 +108,7 @@ int cli_adc_init(void);
 int cli_sdmadc_init(void);
 int cli_spi_init(void);
 int cli_nvs_init(void);
+int cli_partition_init(void);
 int cli_spi_api_init(void);
 int cli_qspi_init(void);
 int cli_i2c_init(void);
