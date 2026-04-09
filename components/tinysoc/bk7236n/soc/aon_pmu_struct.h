@@ -21,14 +21,19 @@
 extern "C" {
 #endif
 
+#if CONFIG_GPIO_RETENTION_SUPPORT && CONFIG_AON_PMU_POR_TIMING_SUPPORT && !CONFIG_AON_PMU_POR_RTC_RESET
+#error "gpio retention and rtc no reset por timing shared reg0 bit[5:14]"
+#endif
 
 typedef volatile union {
 	struct {
 		uint32_t memchk_bps               :  1; /**<bit[0 : 0] */
 		uint32_t fast_boot                :  1; /**<bit[1 : 1] */
 		uint32_t dig_wake_en              :  1; /**<bit[2 : 2] */
-		uint32_t reserved_bit_3_12        : 10; /**<bit[3 :12] */
-		uint32_t saved_time               : 10; /**<bit[13 :22] */
+		uint32_t bl2_reboot_times         :  1; /**<bit[3 : 3] */
+		uint32_t app_boot_validate_pending :  1; /**<bit[4 : 4], 1 until app reaches bk_init OK; else BL2 full image validate */
+		uint32_t shared_bits              : 10; /**<bit[5 :14] */
+		uint32_t secboot_bootloader_address   :  8; /**<bit[15:22] */
 		uint32_t dlv_startup              :  1; /**<bit[23:23] */
 		uint32_t reset_reason             :  7; /**<bit[24:30] */
 		uint32_t gpio_sleep               :  1; /**<bit[31:31] */

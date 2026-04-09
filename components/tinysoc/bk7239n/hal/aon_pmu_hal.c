@@ -298,6 +298,53 @@ void aon_pmu_hal_set_reset_reason(uint32_t value)
 }
 #endif
 
+#define AON_PMU_HAL_R0_APP_BOOT_VALIDATE_PENDING_MASK (1u << 4u)
+
+static void aon_pmu_hal_r0_modify_app_boot_validate_pending(uint32_t *word, uint32_t value)
+{
+	if (value != 0u) {
+		*word |= AON_PMU_HAL_R0_APP_BOOT_VALIDATE_PENDING_MASK;
+	} else {
+		*word &= ~AON_PMU_HAL_R0_APP_BOOT_VALIDATE_PENDING_MASK;
+	}
+}
+
+uint32_t aon_pmu_hal_get_app_boot_validate_pending(void)
+{
+#if CONFIG_AON_PMU_REG0_REFACTOR_DEV
+	return (aon_pmu_ll_get_r7b() & AON_PMU_HAL_R0_APP_BOOT_VALIDATE_PENDING_MASK) ? 1u : 0u;
+#else
+	return (aon_pmu_ll_get_r0() & AON_PMU_HAL_R0_APP_BOOT_VALIDATE_PENDING_MASK) ? 1u : 0u;
+#endif
+}
+
+void aon_pmu_hal_set_app_boot_validate_pending(uint32_t value)
+{
+#if CONFIG_AON_PMU_REG0_REFACTOR_DEV
+	uint32_t r0_save;
+	uint32_t merged;
+
+	r0_save = aon_pmu_ll_get_r0();
+	aon_pmu_ll_set_r0(aon_pmu_ll_get_r7b());
+	merged = aon_pmu_ll_get_r0();
+	aon_pmu_hal_r0_modify_app_boot_validate_pending(&merged, value);
+	aon_pmu_ll_set_r0(merged);
+	aon_pmu_hal_r0_latch_to_r7b();
+	aon_pmu_ll_set_r0(r0_save);
+	merged = aon_pmu_ll_get_r0();
+	aon_pmu_hal_r0_modify_app_boot_validate_pending(&merged, value);
+	aon_pmu_ll_set_r0(merged);
+#else
+	uint32_t merged;
+
+	merged = aon_pmu_ll_get_r0();
+	aon_pmu_hal_r0_modify_app_boot_validate_pending(&merged, value);
+	aon_pmu_ll_set_r0(merged);
+	aon_pmu_ll_set_r25(0x424B55AA);
+	aon_pmu_ll_set_r25(0xBDB4AA55);
+#endif
+}
+
 void aon_pmu_hal_gpio_clksel_set(uint32_t value)
 {
 	aon_pmu_ll_set_r41_gpio_clksel(value);

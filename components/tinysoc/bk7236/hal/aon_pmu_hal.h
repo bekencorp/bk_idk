@@ -56,6 +56,8 @@ void aon_pmu_hal_restore_reset_reason(void);
 uint32_t aon_pmu_hal_get_reset_reason_from_sram(void);
 void aon_pmu_hal_test_all(void);
 void aon_pmu_struct_dump(uint32_t start, uint32_t end);
+uint32_t aon_pmu_hal_get_app_boot_validate_pending(void);
+void aon_pmu_hal_set_app_boot_validate_pending(uint32_t value);
 
 #ifdef __cplusplus
 }
