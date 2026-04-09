@@ -62,6 +62,11 @@ bk_err_t ow_ota_accept(const bk_ota_t *ota)
 		return BK_FAIL;
 	}
 	uint32_t offset = ota_confirm_phy_offset(ota->control_partition);
+	uint32_t value = 0;
+	bk_flash_read_bytes(offset, (uint8_t*)&value, 4);
+	if (value == 0xFFFFFFFF) {
+		return BK_OK;
+	}
 	uint8_t retry_cnt = 3;
 	while (retry_cnt--) {
 		/* Save and restore original protect status, only disable during erase. */
@@ -73,7 +78,6 @@ bk_err_t ow_ota_accept(const bk_ota_t *ota)
 			continue;
 		}
 
-		uint32_t value = 0;
 		bk_flash_read_bytes(offset, (uint8_t*)&value, 4);
 		if (value == 0xFFFFFFFF) {
 			return BK_OK;
