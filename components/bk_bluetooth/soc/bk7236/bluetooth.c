@@ -1263,7 +1263,7 @@ static void ble_enter_dut()
     sys_hal_analog_set(ANALOG_REG3, (analog_val & ~(1U << 9))); //ck_sel select high hystersis digital buffer
 
     analog_val = sys_hal_analog_get(ANALOG_REG7);
-    sys_hal_analog_set(ANALOG_REG7, ((analog_val & (~0x3C0)) | (0x3 << 6))); //vanaldosel set 3
+    sys_hal_analog_set(ANALOG_REG7, ((analog_val & (~0x3C0)) | (0x7 << 6))); //vanaldosel set 3
 
     analog_val = sys_hal_analog_get(ANALOG_REG8);
     sys_hal_analog_set(ANALOG_REG8, (analog_val & ~(1U << 9)));//spi_latch1v disable
