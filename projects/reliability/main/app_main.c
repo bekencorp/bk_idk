@@ -13,64 +13,43 @@
 // limitations under the License.
 
 /* System includes */
-#include "bk_private/bk_init.h"    /**< Beken system initialization */
-#include <components/system.h>      /**< System components */
-#include <os/os.h>                  /**< Operating system interface */
-#include "sys_ll.h"                 /**< System low-level functions */
-#include "modules/pm.h"             /**< Power management module */
+#include "bk_private/bk_init.h"
+#include <components/system.h>
+#include <os/os.h>
+#include "sys_ll.h"
+#include "modules/pm.h"
+#include "flash_test.h"
+#include "wifi_test.h"
+#include "statis.h"
+#include "cli_statis.h"
+#include "psram_test.h"
 
-/* External function declarations */
-extern void rtos_set_user_app_entry(beken_thread_function_t entry); /**< Set RTOS user application entry point */
-extern void flash_pressure_test_start(void);                        /**< Start Flash pressure test */
-extern void cli_resettable_wifi_start(void);                       /**< Start CLI resettable WiFi functionality */
-
-/**
- * @brief User application main function
- * 
- * This function is called after system initialization is complete, responsible for:
- * - Configure CPU frequency to 160MHz
- * - Set Flash clock frequency to 80MHz
- * - Start Flash pressure test
- * - Start CLI resettable WiFi functionality
- * 
- * @note This function runs in RTOS environment as the main entry point for user application
- */
 void user_app_main(void)
 {
-	/* Set CPU frequency to 120MHz */
 	bk_pm_module_vote_cpu_freq(PM_DEV_ID_DEFAULT, PM_CPU_FRQ_120M);
 
-	/* Configure Flash clock frequency to 80MHz */
-	sys_ll_set_cpu_clk_div_mode2_ckdiv_flash(0);  /* Set division factor to 0 */
-	sys_ll_set_cpu_clk_div_mode2_cksel_flash(2);  /* Select clock source: 0/1:40MHz, 2:80MHz, 3:120MHz */
+	statis_load_from_flash();
 
-	/* Start Flash pressure test */
-	flash_pressure_test_start();
-	
-	/* Start CLI resettable WiFi functionality */
-	cli_resettable_wifi_start();
+#if CONFIG_CLI && (CONFIG_WIFI_RELIABILITY_TEST || CONFIG_FLASH_RELIABILITY_TEST)
+	statis_cli_register_cmds();
+#endif
+
+#if CONFIG_FLASH_RELIABILITY_TEST
+	flash_reliability_test_start();
+#endif
+
+#if CONFIG_PSRAM_RELIABILITY_TEST
+	psram_reliability_test_start();
+#endif
+
+#if CONFIG_WIFI_RELIABILITY_TEST
+	wifi_reliability_start();
+#endif
 }
 
-/**
- * @brief Application main entry function
- * 
- * Main entry point during system startup, responsible for:
- * - Performance monitoring initialization (for BK7236 series chips)
- * - Set RTOS user application entry function (CPU0)
- * - Call system initialization function
- * 
- * @return int Always returns 0, indicating normal exit
- * 
- * @note This function is called during system startup, after basic initialization
- *       the user application will run through RTOS task scheduling mechanism
- */
 int main(void)
 {
-	/* Set RTOS user application entry function */
-	rtos_set_user_app_entry((beken_thread_function_t)user_app_main);
-
-	/* Execute system initialization */
 	bk_init();
-
+	user_app_main();
 	return 0;
 }

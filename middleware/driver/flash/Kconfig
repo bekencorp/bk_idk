@@ -92,5 +92,10 @@ menu "FLASH"
 		depends on FLASH
 		int "Select flash clk frequency"
 		default "40000000"
+
+	config FLASH_CBUS
+		depends on FLASH
+		bool "Enable flash cbus API"
+		default n
 endmenu
 

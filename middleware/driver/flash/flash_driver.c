@@ -1036,8 +1036,7 @@ __attribute__((section(".iram"))) void bk_flash_disable_cpu_data_wr(void)
     flash_hal_disable_cpu_data_wr(&s_flash.hal);
 }
 
-#if CONFIG_BK_OTA
-
+#if CONFIG_FLASH_CBUS
 #include "partitions.h"
 #include "CheckSumUtils.h"
 #if CONFIG_CACHE_ENABLE

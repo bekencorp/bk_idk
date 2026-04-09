@@ -289,12 +289,6 @@ if (CONFIG_PSRAM)
 		"psram/psram_driver.c"
 		)
 
-	if (CONFIG_PSRAM_PRESSURE_TEST)
-		list(APPEND srcs
-			psram/psram_reliability_test.c
-		)
-	endif()
-
 	if (CONFIG_PSRAM_XIP_STRESS_TEST)
 		list(APPEND srcs
 			psram/psram_xip_stress_test.c

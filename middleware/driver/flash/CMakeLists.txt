@@ -35,12 +35,6 @@ if (CONFIG_FLASH)
 		list(APPEND srcs flash/flash_svr_test.c)
 	endif()
 
-	if (CONFIG_FLASH_PRESSURE_TEST)
-		list(APPEND srcs
-			flash/flash_reliability_test.c
-		)
-	endif()
-
 	if (CONFIG_FLASH_RACE_TEST)
 		list(APPEND srcs flash/flash_thread_safety_test.c)
 	endif()

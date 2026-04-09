@@ -1,0 +1,39 @@
+menu "Project specific config"
+
+	config RELIABILITY_TEST
+		bool "Enable WiFi test"
+		default y
+
+	config WIFI_RELIABILITY_TEST
+		bool "Enable WiFi test"
+		default y
+
+	config WIFI_RELIABILITY_STA_SSID
+		string "STA SSID for WiFi reliability test"
+		default "wifi_reliability_test"
+		depends on WIFI_RELIABILITY_TEST
+
+	config WIFI_RELIABILITY_STA_PASSPHRASE
+		string "STA WPA passphrase for WiFi reliability test"
+		default "12345678"
+		depends on WIFI_RELIABILITY_TEST
+
+	config FLASH_RELIABILITY_TEST
+		bool "Enable Flash test"
+		default n
+
+	config WIFI_RELIABILITY_SAVE_INTERVAL
+		int "Save interval for WiFi reliability stats (in seconds)"
+		default 600
+		depends on WIFI_RELIABILITY_TEST
+
+	config PSRAM_RELIABILITY_TEST
+		bool "Enable PSRAM test"
+		default n
+
+	config WIFI_RELIABILITY_STA_SECURITY
+		int "STA Security type for WiFi reliability test"
+		default 3
+		depends on WIFI_RELIABILITY_TEST
+
+endmenu
