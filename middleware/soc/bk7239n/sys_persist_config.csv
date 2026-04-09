@@ -151,8 +151,11 @@ rf_config,672,8,name,rf_cfg,,,,
 ,694,1,test_mode_temp_optimize,0x0,,,,flag to optimize analog even in FCC/SRRC mode
 ,695,1,test_mode_fir_11b,0x32,,,,FIR of 11B in FCC/SRRC mode
 ,696,1,test_mode_fir_11g,0x50,,,,FIR of 11G in FCC/SRRC mode
-,697,1,ftpwr_cali_valid,0x0,,,,flag to use ftpwr as valid
-,698,102,reserved,0xff,,,,
+,697,1,test_mode_fir_11n,0x50,,,,FIR of 11N(MCS0~3) in FCC/SRRC mode
+,698,1,ftpwr_cali_valid,0x0,,,,flag to use ftpwr as valid
+,699,1,cali_per_temp_bias,0x14,,,,calibrate bias with temperature
+,700,1,cali_per_temp_rxadc,0xA,,,,calibrate rxADC with temperature
+,701,99,reserved,0xff,,,,
 tlv_base,800,8,name,tlv,,,,
 ,808,2,tlv_type,tlv_test1,,,,
 ,810,2,tlv_length,4,,,,

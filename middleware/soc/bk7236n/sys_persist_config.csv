@@ -33,11 +33,11 @@ trx_base,128,8,name,trx,,,,
 ,164,4,r7,0x5225C979,,,,
 ,168,4,r8,0xC8330FC0,,,,
 ,172,4,r9,0x3937F39F,,,,
-,176,4,r10,0x4E01FB40,,,,
-,180,4,r11,0xF7F08420,,,,
-,184,4,r12,0x8B35EFD3,,,,
+,176,4,r10,0x3EF9EB20,,,,
+,180,4,r11,0xF7F0DA74,,,,
+,184,4,r12,0x0B35EFD2,,,,
 ,188,4,r13,0x2FEF0872,,,,
-,192,4,r14,0x9F1FBB54,,,,
+,192,4,r14,0x9F993758,,,,
 ,196,4,r18,0xCED52788,,,,
 ,200,4,r19,0x81418980,,,,
 ,204,4,r20,0x4000007C,,,,
@@ -136,16 +136,19 @@ pm_base,544,8,name,pm,,,,
 ,577,1,vcorelsel,0x6,,,,
 ,578,94,reserved,0xff,,,,
 rf_config,672,8,name,rf_cfg,,,,
-,680,4,pwr_gain_base_11b,0x20FB7C00,,,,
-,684,4,pwr_gain_base_11g,0xA0FB7C00,,,,
-,688,4,pwr_gain_base_ble,0x20F94C00,,,,
+,680,4,pwr_gain_base_11b,0x20BB7C00,,,,
+,684,4,pwr_gain_base_11g,0xA0BB7C00,,,,
+,688,4,pwr_gain_base_ble,0x20B94C00,,,,
 ,692,2,pwr_shift_in_srrc,0xFFFF,,,,bit-flag(with channel mask) to use shift_tab_b etc. in SRRC mode
 ,694,1,test_mode_temp_optimize,0x0,,,,flag to optimize analog even in FCC/SRRC mode
 ,695,1,test_mode_fir_11b,0x32,,,,FIR of 11B in FCC/SRRC mode
 ,696,1,test_mode_fir_11g,0x32,,,,FIR of 11G and 11N(MCS4~9) in FCC/SRRC mode
 ,697,1,test_mode_fir_11n,0x50,,,,FIR of 11N(MCS0~3) in FCC/SRRC mode
 ,698,1,ftpwr_cali_valid,0x0,,,,flag to use ftpwr as valid
-,699,101,reserved,0xff,,,,
+,699,1,cali_per_temp_bias,0x14,,,,calibrate bias with temperature
+,700,1,cali_per_temp_rxadc,0x1E,,,,calibrate rxADC with temperature
+,701,1,flag_generic,0x1,,,,flag to use general setting
+,702,98,reserved,0xff,,,,
 tlv_base,800,8,name,tlv,,,,
 ,808,2,tlv_type,tlv_test1,,,,
 ,810,2,tlv_length,4,,,,

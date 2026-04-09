@@ -4,7 +4,7 @@
 #define CMTAG_FROM_FLASH                1
 #define CMTAG_FROM_CALI                 0
 
-#define DEFAULT_TXID_XTAL               (0x32)
+#define DEFAULT_TXID_XTAL               (0x4C)
 
 #define TXPWR_ELEM_INUSED               (0)
 #define TXPWR_ELEM_UNUSED               (1)
