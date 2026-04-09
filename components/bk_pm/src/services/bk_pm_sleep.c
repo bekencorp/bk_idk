@@ -121,6 +121,7 @@ uint64_t pm_normal_sleep_process()
 	/*stop wdt*/
 	bk_wdt_stop();
 	//close_wdt();
+	bk_flash_power_saving_enter();
 
 	/* Execute pre-sleep callbacks */
 	//bk_pm_pre_sleep_callback_execute();
@@ -130,6 +131,7 @@ uint64_t pm_normal_sleep_process()
 	/* Execute post-sleep (wakeup) callbacks */
 	//bk_pm_post_sleep_callback_execute();
 
+	bk_flash_power_saving_exit();
 	/*restore wdt*/
 	extern int wdt_init(void);
 	wdt_init();
