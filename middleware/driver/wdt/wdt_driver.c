@@ -244,6 +244,24 @@ bool bk_wdt_is_driver_inited()
 	return s_wdt_driver_is_init;
 }
 
+bk_err_t bk_wdt_timer_feed_stop(void)
+{
+	WDT_RETURN_ON_DRIVER_NOT_INIT();
+#if (CONFIG_SYS_CPU0)
+	bk_timer_stop(TIMER_ID2);
+#endif
+	return BK_OK;
+}
+
+bk_err_t bk_wdt_timer_feed_resume(void)
+{
+	WDT_RETURN_ON_DRIVER_NOT_INIT();
+#if (CONFIG_SYS_CPU0)
+	bk_timer_start(TIMER_ID2, WDT_BARK_TIME_MS, (timer_isr_t)bk_wdt_feed_handle);
+#endif
+	return BK_OK;
+}
+
 __IRAM_SEC void bk_wdt_feed_handle(void)
 {
 	GLOBAL_INT_DECLARATION();

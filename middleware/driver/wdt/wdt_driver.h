@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include <common/bk_include.h>
 #include <components/log.h>
 
 #define WDT_TAG "wdt"
@@ -25,3 +26,7 @@
 void close_wdt(void);
 void bk_wdt_force_feed(void);
 void bk_wdt_force_reboot(void);
+
+/* Internal test only: TIMER_ID2 periodic feed on CPU0; not part of public WDT API. */
+bk_err_t bk_wdt_timer_feed_stop(void);
+bk_err_t bk_wdt_timer_feed_resume(void);
