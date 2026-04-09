@@ -538,6 +538,7 @@ __attribute__((section(".itcm_sec_code"))) void sys_hal_enter_deep_sleep(void *p
 	uint32_t systick_ctrl_value = 0;
 	pm_lpo_src_e lpo_src        = PM_LPO_SRC_ROSC;
 	bk_err_t sleep_allowd       = BK_OK;
+	uint64_t deep_ps_expired_tick = 0;
 
 	portNVIC_INT_CTRL_REG |= portNVIC_SYSTICKCLR_BIT;
 	systick_ctrl_value = portNVIC_SYSTICK_CTRL_REG;
@@ -547,8 +548,9 @@ __attribute__((section(".itcm_sec_code"))) void sys_hal_enter_deep_sleep(void *p
 	int_state2 = sys_ll_get_cpu0_int_32_63_en_value();
 	sys_ll_set_cpu0_int_0_31_en_value(0x0);
 	sys_ll_set_cpu0_int_32_63_en_value(0x0);
-	extern bk_err_t ana_rtc_wakeup_config(void *args);
-	sleep_allowd = ana_rtc_wakeup_config(NULL);
+	extern bk_err_t ana_rtc_deep_ps_wakeup_check(uint64_t *p_expired_tick);
+	extern bk_err_t ana_rtc_deep_ps_wakeup_apply(uint64_t expired_tick);
+	sleep_allowd = ana_rtc_deep_ps_wakeup_check(&deep_ps_expired_tick);
 	__asm volatile( "nop" );
 	__asm volatile( "nop" );
 	__asm volatile( "nop" );
@@ -564,6 +566,20 @@ __attribute__((section(".itcm_sec_code"))) void sys_hal_enter_deep_sleep(void *p
 		sys_ll_set_cpu0_int_32_63_en_value(int_state2);
 		portNVIC_SYSTICK_CTRL_REG = systick_ctrl_value;
 		return;
+	}
+
+	/* If "deep_ps" alarm exists, *p_expired_tick is set and apply reprograms RTC compare.
+	 * If not, *p_expired_tick stays 0: keep existing HW RTC/timer compare registers (legacy path). */
+	if (deep_ps_expired_tick != 0)
+	{
+		sleep_allowd = ana_rtc_deep_ps_wakeup_apply(deep_ps_expired_tick);
+		if (sleep_allowd != BK_OK)
+		{
+			sys_ll_set_cpu0_int_0_31_en_value(int_state1);
+			sys_ll_set_cpu0_int_32_63_en_value(int_state2);
+			portNVIC_SYSTICK_CTRL_REG = systick_ctrl_value;
+			return;
+		}
 	}
 
 	sys_hal_mask_cpu0_int();

@@ -659,6 +659,80 @@ __IRAM_SEC bk_err_t ana_rtc_wakeup_config(void *args)
     return BK_OK;
 }
 
+__IRAM_SEC bk_err_t ana_rtc_deep_ps_wakeup_check(uint64_t *p_expired_tick)
+{
+    alarm_node_t *deep_ps_node = NULL, *node = NULL;
+
+    if (p_expired_tick == NULL)
+    {
+        return BK_ERR_PARAM;
+    }
+
+    uint32_t int_level = rtos_disable_int();
+
+    node = s_ana_rtc.alarm_head_p;
+    while (node)
+    {
+        // deep sleep rtc node name is "deep_ps"
+        if (strncmp((const char *)node->name, (const char *)"deep_ps", ALARM_NAME_MAX_LEN) == 0)
+        {
+            deep_ps_node = node;
+            break;
+        }
+        node = node->next;
+    }
+
+    if(deep_ps_node)
+    {
+        uint64_t current_tick;
+        uint64_t expired_tick;
+
+        expired_tick = deep_ps_node->expired_tick;
+        current_tick = ANA_RTC_CURRENT_TICK;
+
+        int64_t sleep_tick = (int64_t)expired_tick - (int64_t)current_tick;
+        if (sleep_tick < AON_RTC_MS_TICK_CNT) // close to 1ms
+        {
+            ANA_RTC_LOGE("deep_ps rtc sleep time is too short\r\n");
+            rtos_enable_int(int_level);
+            return BK_FAIL;
+        }
+        // force set deep ps rtc tick, ignore other alarm nodes in the alarm list
+        //ana_rtc_set_tick(expired_tick);
+        *p_expired_tick = deep_ps_node->expired_tick;
+        //ANA_RTC_LOGD("deep_ps rtc set tick:0x%x\r\n", (uint32_t)deep_ps_node->expired_tick);
+    }
+    else
+    {
+        rtos_enable_int(int_level);
+
+        /* No "deep_ps" node: do not change RTC compare; caller skips apply when *p_expired_tick==0. */
+        ANA_RTC_LOGW("deep_ps alarm not found, keep HW RTC compare as-is\r\n");
+        return ana_rtc_wakeup_config(NULL);
+    }
+    rtos_enable_int(int_level);
+    return BK_OK;
+}
+
+__IRAM_SEC bk_err_t ana_rtc_deep_ps_wakeup_apply(uint64_t expired_tick)
+{
+    uint32_t int_level = rtos_disable_int();
+    uint64_t current_tick = ANA_RTC_CURRENT_TICK;
+
+    int64_t sleep_tick = (int64_t)expired_tick - (int64_t)current_tick;
+    if (sleep_tick < AON_RTC_MS_TICK_CNT) // close to 1ms
+    {
+        ANA_RTC_LOGE("deep_ps rtc sleep time is too short\r\n");
+        rtos_enable_int(int_level);
+        return BK_FAIL;
+    }
+
+    ana_rtc_set_tick(expired_tick);
+    ANA_RTC_LOGD("deep_ps rtc set tick:0x%x\r\n", (uint32_t)expired_tick);
+    rtos_enable_int(int_level);
+    return BK_OK;
+}
+
 static bk_err_t ana_rtc_sw_init(void)
 {
     os_memset(&s_ana_rtc, 0, sizeof(s_ana_rtc));
