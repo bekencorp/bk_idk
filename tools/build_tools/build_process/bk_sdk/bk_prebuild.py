@@ -34,6 +34,7 @@ def install_configs(cfg_dir: Path, install_dir: Path, secure: int):
     logger.debug(f"install configs from: {cfg_dir}")
     logger.debug(f"to: {install_dir}")
     if not cfg_dir.exists():
+        logger.info(f"config dir not found, skip: {cfg_dir}")
         return
 
     if os.path.exists(f"{cfg_dir}/partitions.csv") and os.path.exists(
@@ -72,10 +73,39 @@ def install_configs(cfg_dir: Path, install_dir: Path, secure: int):
         copy_files(".csv", f"{cfg_dir}/regs", str(install_dir))
 
 
+def resolve_project_config_dir(soc: str, armino_dir: Path, project_dir: Path) -> Path:
+    armino_dir = armino_dir.resolve()
+    project_dir = project_dir.resolve()
+
+    candidates = [
+        project_dir / "config" / soc,
+        project_dir / "src" / "config" / soc,
+        armino_dir.parent / "src" / "config" / soc,
+    ]
+
+    env_project_path = os.getenv("ARMINO_PROJECT_PATH")
+    if env_project_path:
+        candidates.append(Path(env_project_path) / "config" / soc)
+
+    for cfg_dir in candidates:
+        cfg_dir_abs = cfg_dir.resolve()
+        if cfg_dir_abs.exists() and cfg_dir_abs.is_dir():
+            logger.info(f"resolved project config dir: {cfg_dir_abs}")
+            return cfg_dir_abs
+
+    # Keep original behavior as fallback so existing flows are not broken.
+    fallback = (project_dir / "config" / soc).resolve()
+    logger.warning(
+        "failed to resolve project config dir from known locations, "
+        f"fallback to: {fallback}"
+    )
+    return fallback
+
+
 def prebuild(soc, armino_dir, project_dir, build_dir, secure):
 
     middleware_soc_cfg_dir = armino_dir / "middleware/boards" / soc
-    project_config_dir = project_dir / "config" / soc
+    project_config_dir = resolve_project_config_dir(soc, armino_dir, project_dir)
 
     logger.info(f"soc={soc}")
     logger.info(f"project_dir={project_dir}")
@@ -125,4 +155,3 @@ if __name__ == "__main__":
         shutil.copy(os.path.join(args.build_dir, "partitions_gen.h"), partitions_dir)
         partition_hdr_file = os.path.join(args.armino_dir, "tools", "build_tools", "partitions.h")
         shutil.copy(partition_hdr_file, partitions_dir)
-

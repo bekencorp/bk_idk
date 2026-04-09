@@ -69,6 +69,10 @@ def copy_file(src, dst):
 		shutil.copy(f'{src}', f'{dst}')
 
 def pack(armino_soc, armino_path, build_path, project_dir):
+	armino_path = os.path.abspath(armino_path)
+	build_path = os.path.abspath(build_path)
+	project_dir = os.path.abspath(project_dir)
+
 	tools_dir = f'{armino_path}/tools/env_tools'
 	base_cfg_dir = f'{armino_path}/middleware/boards/{armino_soc}'
 	prefered_cfg_dir = f'{project_dir}/config'
