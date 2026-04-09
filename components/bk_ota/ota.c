@@ -11,6 +11,7 @@
 #include "ota_verify.h"
 #endif
 #include "partitions_gen.h"
+#include "aon_pmu_hal.h"
 
 #define TAG "ota"
 
@@ -300,6 +301,7 @@ void bk_ota_accept_image(void)
 		bk_ota_accept(xip);
 	}
 #endif
+	aon_pmu_hal_set_app_boot_validate_pending(0);
 #endif
 }
 
