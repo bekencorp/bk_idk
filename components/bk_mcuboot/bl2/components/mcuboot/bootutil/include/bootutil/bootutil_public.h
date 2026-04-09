@@ -309,6 +309,29 @@ int
 boot_image_load_header(const struct flash_area *fa_p,
                        struct image_header *hdr);
 
+
+bool bk_boot_check_ota_confirm(uint8_t index, uint32_t value);
+uint32_t bk_boot_ota_confirm_offset(uint8_t index);
+int bk_boot_erase_ota_confirm(uint8_t image_index);
+
+#define BOOT_FAIL_STAGE_ERASE         0x4552  /* 'ER' - Erase stage */
+#define BOOT_FAIL_STAGE_OTA_DECOMP    0x4F44  /* 'OD' - OTA Decompress stage */
+#define BOOT_FAIL_STAGE_APP_VERIFY    0x4156  /* 'AV' - App Verify stage */
+#define BOOT_FAIL_STAGE_OTA_VERIFY    0x4F56  /* 'OV' - OTA Verify stage */
+#define BOOT_FAIL_STAGE_CBUS_READ     0x4352  /* 'CR' - CBUS Read stage */
+#define BOOT_FAIL_STAGE_PUBKEY_VERIFY 0x5056  /* 'PV' - Public Key Verify stage */
+#define BOOT_FAIL_STAGE_APP_HDR       0x4148  /* 'AH' - App Header stage */
+#define BOOT_FAIL_STAGE_OTA_HDR       0x4F48  /* 'OH' - OTA Header stage */
+
+#if CONFIG_OTA_OVERWRITE && CONFIG_OTA_CONFIRM_UPDATE
+void bk_boot_write_ota_fail(uint16_t error_code);
+#endif
+
+#if CONFIG_DBUS_CHECK_CRC
+uint16_t calculate_crc16(const uint8_t *data, size_t length);
+bool check_crc(uint32_t vir_start, size_t size);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

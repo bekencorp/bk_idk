@@ -61,6 +61,9 @@ bk_err_t ow_ota_accept(const bk_ota_t *ota)
 	if (ota == NULL || ota->control_partition == NULL) {
 		return BK_FAIL;
 	}
+#if CONFIG_OTA_OVERWRITE && CONFIG_OTA_CONFIRM_UPDATE
+	(void)ota_control_backup_fail_stage_if_dirty(ota->control_partition);
+#endif
 	uint32_t offset = ota_confirm_phy_offset(ota->control_partition);
 	uint32_t value = 0;
 	bk_flash_read_bytes(offset, (uint8_t*)&value, 4);

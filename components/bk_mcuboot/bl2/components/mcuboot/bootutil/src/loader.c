@@ -1005,6 +1005,9 @@ boot_validate_slot(struct boot_loader_state *state, int slot,
         FIH_CALL(boot_image_check, fih_rc, state, hdr, fap, bs);
     }
     if (!boot_is_header_valid(hdr, fap) || FIH_NOT_EQ(fih_rc, FIH_SUCCESS)) {
+#if CONFIG_OTA_OVERWRITE && CONFIG_OTA_CONFIRM_UPDATE
+        bk_boot_write_ota_fail(BOOT_FAIL_STAGE_APP_HDR);
+#endif
 #if !defined(__BOOTSIM__)
         BOOT_LOG_ERR("Image in the %s slot is not valid!",
                      (slot == BOOT_PRIMARY_SLOT) ? "primary" : "secondary");
@@ -2444,6 +2447,9 @@ boot_get_slot_usage(struct boot_loader_state *state)
         /* Attempt to read an image header from each slot. */
         rc = boot_read_image_headers(state, false, NULL);
         if (rc != 0) {
+#if CONFIG_OTA_OVERWRITE && CONFIG_OTA_CONFIRM_UPDATE
+            bk_boot_write_ota_fail(BOOT_FAIL_STAGE_CBUS_READ);
+#endif
             BOOT_LOG_WRN("Failed reading image headers.");
             return rc;
         }
@@ -2457,6 +2463,13 @@ boot_get_slot_usage(struct boot_loader_state *state)
                 BOOT_LOG_IMAGE_INFO(slot, hdr);
             } else {
                 state->slot_usage[BOOT_CURR_IMG(state)].slot_available[slot] = false;
+#if CONFIG_OTA_OVERWRITE && CONFIG_OTA_CONFIRM_UPDATE
+                if (slot == 0) {
+                    bk_boot_write_ota_fail(BOOT_FAIL_STAGE_APP_HDR);
+                } else {
+                    bk_boot_write_ota_fail(BOOT_FAIL_STAGE_OTA_HDR);
+                }
+#endif
                 BOOT_LOG_INF("Image %d %s slot: Image not found",
                              BOOT_CURR_IMG(state),
                              (slot == BOOT_PRIMARY_SLOT)

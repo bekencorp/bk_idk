@@ -29,3 +29,7 @@ uint32_t ota_confirm_phy_offset(const bk_logic_partition_t *partition);
 
 bk_err_t ota_confirm(const bk_logic_partition_t *partition, uint32_t status);
 bk_err_t ota_cancel(const bk_logic_partition_t *partition);
+
+#if CONFIG_OTA_OVERWRITE && CONFIG_OTA_CONFIRM_UPDATE
+bk_err_t ota_control_backup_fail_stage_if_dirty(const bk_logic_partition_t *control_partition);
+#endif

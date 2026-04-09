@@ -11,6 +11,7 @@
 #include "flash_map_backend/flash_map_backend.h"
 #include "bootutil_priv.h"
 #include "bootutil/bootutil_log.h"
+#include "bootutil/bootutil_public.h"
 #include "Driver_Flash.h"
 #include "sys_driver.h"
 #include "bk_tfm_mpc.h"
@@ -130,6 +131,9 @@ int flash_area_read(const struct flash_area *area, uint32_t off, void *dst,
 #if CONFIG_DBUS_CHECK_CRC
         if (check_crc(fa_off + off,len) == false) {
             BOOT_LOG_ERR("addr = %#x,len=%#x,crc16 fail", fa_off + off, len);
+#if CONFIG_OTA_OVERWRITE && CONFIG_OTA_CONFIRM_UPDATE
+            bk_boot_write_ota_fail(BOOT_FAIL_STAGE_CBUS_READ);
+#endif
             return -1;
         }
 #endif

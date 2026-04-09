@@ -32,17 +32,18 @@ uint8_t *decompress_in_memory(uint8_t *src, uint8_t *dest, uint32_t src_len, dec
 
 			int ret = bk_lzma_decode(src, src_len, dest, uncomp_size);
 			if (ret) {
-				DEC_LOGE("lzma error code : %d \r\n", ret);
+				DEC_LOGE("lzma decompress failed, error code: %d \r\n", ret);
+				return NULL;
 			}
 
 			return dest;
 		}
 #endif
 			break;
-		
+
 		default:
 			DEC_LOGE("unknown decompressor !!! \r\n");
-			break;
+			return NULL;
 	}
 
 	return dest;

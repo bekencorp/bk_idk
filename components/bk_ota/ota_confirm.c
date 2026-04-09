@@ -2,8 +2,65 @@
 #include "driver/flash.h"
 #include "driver/flash_partition.h"
 #include "ota_confirm.h"
+#include "partitions_gen.h"
 
 #define TAG "ota"
+
+#if CONFIG_OTA_OVERWRITE && CONFIG_OTA_CONFIRM_UPDATE
+#define OTA_CTRL_FAIL_BACKUP_LEN    (36)
+
+#define OTA_CHECK_IS_ALL_FF(buf, start, end) \
+	({ \
+		int _ota_all_ff = 1; \
+		int _ota_i; \
+		for (_ota_i = (start); _ota_i < (end); _ota_i++) { \
+			if ((buf)[_ota_i] != 0xFF) { \
+				_ota_all_ff = 0; \
+				break; \
+			} \
+		} \
+		_ota_all_ff; \
+	})
+
+static bk_err_t ota_flash_backup_boot_fail_stage(uint32_t src_addr, uint8_t *data, uint32_t len)
+{
+	bk_err_t ret = BK_OK;
+#if defined(CONFIG_PUBLIC_KEY_PHY_PARTITION_OFFSET) && defined(CONFIG_PUBLIC_KEY_PHY_PARTITION_SIZE)
+	uint32_t dst_addr = CONFIG_PUBLIC_KEY_PHY_PARTITION_OFFSET + CONFIG_PUBLIC_KEY_PHY_PARTITION_SIZE - len;
+
+	BK_LOGD(TAG, "backup boot fail stage: 0x%x bytes from 0x%x to 0x%x\r\n", len, src_addr, dst_addr);
+	flash_protect_type_t protect = bk_flash_get_protect_type();
+	bk_flash_set_protect_type(FLASH_PROTECT_NONE);
+	ret = bk_flash_write_bytes(dst_addr, data, len);
+	bk_flash_set_protect_type(protect);
+#endif
+	return ret;
+
+}
+
+bk_err_t ota_control_backup_fail_stage_if_dirty(const bk_logic_partition_t *control_partition)
+{
+	if (control_partition == NULL) {
+		return BK_FAIL;
+	}
+
+	if (control_partition->partition_length < OTA_CTRL_FAIL_BACKUP_LEN) {
+		return BK_OK;
+	}
+
+	uint32_t ota_confirm_offset = ota_confirm_phy_offset(control_partition);
+	uint32_t ota_fail_flag_offset = ota_confirm_offset - 32;
+	uint8_t check_buf[OTA_CTRL_FAIL_BACKUP_LEN] = {0};
+
+	bk_flash_read_bytes(ota_fail_flag_offset, check_buf, OTA_CTRL_FAIL_BACKUP_LEN);
+
+	if (!OTA_CHECK_IS_ALL_FF(check_buf, 0, OTA_CTRL_FAIL_BACKUP_LEN)) {
+		return ota_flash_backup_boot_fail_stage(ota_fail_flag_offset, check_buf, OTA_CTRL_FAIL_BACKUP_LEN);
+	}
+
+	return BK_OK;
+}
+#endif /* CONFIG_OTA_OVERWRITE && CONFIG_OTA_CONFIRM_UPDATE */
 
 uint32_t ota_confirm_phy_offset(const bk_logic_partition_t *partition)
 {

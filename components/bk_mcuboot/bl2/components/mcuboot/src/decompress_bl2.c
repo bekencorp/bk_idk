@@ -5,6 +5,7 @@
 #include <string.h>
 #include "region_defs.h"
 #include "bootutil/bootutil_log.h"
+#include "bootutil/bootutil_public.h"
 #include "flash_map.h"
 #include "security.h"
 
@@ -36,6 +37,79 @@ static uint8_t s_decompressed_buf[COMPRESS_BLOCK_SIZE + 64];
 static uint8_t *s_compressed_buf = (uint8_t*)BL2_FREE_SRAM;
 static uint8_t *s_decompressed_buf = (uint8_t*)(BL2_FREE_SRAM + COMPRESS_BLOCK_SIZE + 128);
 #endif
+
+#define ERASE_VERIFY_BUFFER_SIZE (4 * 1024)
+#define ERASE_RETRY_COUNT        3
+
+/* Verify erased flash is all 0xFF; return 0 if pass, non-zero if fail */
+static int verify_erase(uint32_t offset, uint32_t size)
+{
+	static uint8_t verify_buf[ERASE_VERIFY_BUFFER_SIZE] = {0};
+	uint32_t remaining = size;
+	uint32_t current_offset = offset;
+	uint32_t verify_size;
+
+	while (remaining > 0) {
+		verify_size = (remaining > ERASE_VERIFY_BUFFER_SIZE) ?
+			ERASE_VERIFY_BUFFER_SIZE : remaining;
+
+		if (bk_flash_read_bytes(current_offset, verify_buf, verify_size) != BK_OK) {
+			BOOT_LOG_ERR("Failed to read flash at offset=0x%x, size=0x%x",
+				current_offset, verify_size);
+			return -1;
+		}
+
+		{
+			uint32_t i;
+
+			for (i = 0; i < verify_size; i++) {
+				if (verify_buf[i] != 0xFF) {
+					BOOT_LOG_ERR("Erase verification failed at offset=0x%x, byte[%u]=0x%02x",
+						current_offset + i, (unsigned)i, verify_buf[i]);
+					return -1;
+				}
+			}
+		}
+
+		current_offset += verify_size;
+		remaining -= verify_size;
+	}
+
+	return 0;
+}
+
+/* Erase with readback verify and retries; on total failure log, optional fail flag, WDT reboot */
+static int flash_area_erase_fast_with_verify(uint32_t erase_off, uint32_t len)
+{
+	int retry_count = 0;
+	int verify_result = -1;
+
+	for (retry_count = 0; retry_count < ERASE_RETRY_COUNT; retry_count++) {
+		flash_area_erase_fast(erase_off, len);
+
+		verify_result = verify_erase(erase_off, len);
+		if (verify_result == 0) {
+			if (retry_count > 0) {
+				BOOT_LOG_INF("Erase verification passed after %d retries, offset=0x%x, size=0x%x",
+					retry_count, erase_off, len);
+			}
+			return 0;
+		}
+
+		BOOT_LOG_ERR("Erase verification failed (attempt %d/%d), offset=0x%x, size=0x%x",
+			retry_count + 1, ERASE_RETRY_COUNT, erase_off, len);
+	}
+
+	BOOT_LOG_ERR("Flash erase verification failed after %d retries, triggering WDT reboot",
+		ERASE_RETRY_COUNT);
+	BOOT_LOG_ERR("Failed erase: offset=0x%x, size=0x%x", erase_off, len);
+#if CONFIG_OTA_OVERWRITE && CONFIG_OTA_CONFIRM_UPDATE
+	bk_boot_write_ota_fail(BOOT_FAIL_STAGE_ERASE);
+#endif
+	wdt_hal_force_reboot();
+
+	return -1;
+}
 
 #if CONFIG_DECOMPRESS_RESUME
 
@@ -140,11 +214,11 @@ static uint32_t resume_flash(uint32_t block_num)
 
 	if((restart_block_idx == 0) || (restart_block_idx == 0xffu) || (restart_block_idx > block_num)) {
 		BOOT_LOG_INF("Erasing primary and resume");
-		flash_area_erase_fast(primary_all_phy_offset, area_size);
+		flash_area_erase_fast_with_verify(primary_all_phy_offset, area_size);
 		/* Safeguard: never erase at 0 or below overwrite start (would erase bootloader) */
 		uint32_t resume_addr = get_resume_base_address();
 		if (resume_addr != 0 && resume_addr >= primary_all_phy_offset) {
-			flash_area_erase_fast(resume_addr, 4096);
+			flash_area_erase_fast_with_verify(resume_addr, 4096);
 		} else {
 			BOOT_LOG_ERR("resume addr 0x%x invalid, skip resume erase to protect bootloader", (unsigned)resume_addr);
 		}
@@ -165,7 +239,7 @@ static uint32_t resume_flash(uint32_t block_num)
 	}
 
 	BOOT_LOG_INF("Erasing primary off=0x%x, size=0x%x", restart_block_offset, erase_size);
-	flash_area_erase_fast(restart_block_offset, erase_size);
+	flash_area_erase_fast_with_verify(restart_block_offset, erase_size);
 	bk_flash_write_bytes(restart_block_offset, back_data, back_data_size);
 
 	return restart_block_idx;
@@ -222,7 +296,7 @@ boot_copy_region(struct boot_loader_state *state, const struct flash_area *fap_s
 #else
         restart_block_idx = 0;
         uint32_t area_size = fap_dst->fa_phy_size;
-        flash_area_erase_fast(primary_all_phy_offset, area_size);
+        flash_area_erase_fast_with_verify(primary_all_phy_offset, area_size);
 #endif
 
 	int rate_process = block_num / 5;
@@ -242,7 +316,18 @@ boot_copy_region(struct boot_loader_state *state, const struct flash_area *fap_s
 #endif
 		clean_buf();
 		flash_area_read(fap_src, off_src + bytes_copied, s_compressed_buf, block_list[block_idx]);
-		decompress_in_memory(s_compressed_buf, s_decompressed_buf, COMPRESS_BLOCK_SIZE, 0);
+		{
+			uint8_t *decomp_result = decompress_in_memory(s_compressed_buf, s_decompressed_buf, COMPRESS_BLOCK_SIZE, 0);
+
+			if (decomp_result == NULL) {
+				BOOT_LOG_ERR("OTA decompress failed at block %d", block_idx);
+#if CONFIG_OTA_OVERWRITE && CONFIG_OTA_CONFIRM_UPDATE
+				bk_boot_write_ota_fail(BOOT_FAIL_STAGE_OTA_DECOMP);
+#endif
+				bk_flash_set_protect_type(protect);
+				return -1;
+			}
+		}
 		bk_flash_write_cbus(vir_primary_all_start_address + COMPRESS_BLOCK_SIZE * block_idx, (s_decompressed_buf), COMPRESS_BLOCK_SIZE);
 
 #if CONFIG_DECOMPRESS_RESUME
@@ -263,7 +348,18 @@ boot_copy_region(struct boot_loader_state *state, const struct flash_area *fap_s
 	if (last_block_before_size > 0) {
 		clean_buf();
 		flash_area_read(fap_src, off_src + bytes_copied, s_compressed_buf, last_block_after_size);
-		decompress_in_memory(s_compressed_buf, s_decompressed_buf, last_block_before_size, 0);
+		{
+			uint8_t *decomp_result = decompress_in_memory(s_compressed_buf, s_decompressed_buf, last_block_before_size, 0);
+
+			if (decomp_result == NULL) {
+				BOOT_LOG_ERR("OTA decompress failed at last block");
+#if CONFIG_OTA_OVERWRITE && CONFIG_OTA_CONFIRM_UPDATE
+				bk_boot_write_ota_fail(BOOT_FAIL_STAGE_OTA_DECOMP);
+#endif
+				bk_flash_set_protect_type(protect);
+				return -1;
+			}
+		}
 
 		uint16_t write_size = (last_block_before_size + 31) / 32 * 32;
 		bk_flash_write_cbus(vir_primary_all_start_address + COMPRESS_BLOCK_SIZE * block_idx, s_decompressed_buf, write_size);
@@ -274,7 +370,7 @@ boot_copy_region(struct boot_loader_state *state, const struct flash_area *fap_s
 		uint32_t resume_addr = get_resume_base_address();
 		if (resume_addr != 0 && resume_addr >= primary_all_phy_offset) {
 			BOOT_LOG_INF("erasing resume");
-			flash_area_erase_fast(resume_addr, 4096);
+			flash_area_erase_fast_with_verify(resume_addr, 4096);
 		} else {
 			BOOT_LOG_ERR("resume addr 0x%x invalid, skip resume erase", (unsigned)resume_addr);
 		}

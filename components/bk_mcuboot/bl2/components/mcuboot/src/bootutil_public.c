@@ -389,7 +389,171 @@ bk_boot_erase_ota_confirm(uint8_t image_index)
     BOOT_LOG_ERR("erase ota confirm=%#x fail\r\n", check_value);
     return BK_FAIL;
 }
-#endif
+
+#if CONFIG_OTA_OVERWRITE && CONFIG_OTA_CONFIRM_UPDATE
+
+#define BOOT_FAIL_STAGE_ERASE         0x4552  /* 'ER' - Erase stage */
+#define BOOT_FAIL_STAGE_OTA_DECOMP    0x4F44  /* 'OD' - OTA Decompress stage */
+#define BOOT_FAIL_STAGE_APP_VERIFY    0x4156  /* 'AV' - App Verify stage */
+#define BOOT_FAIL_STAGE_OTA_VERIFY    0x4F56  /* 'OV' - OTA Verify stage */
+#define BOOT_FAIL_STAGE_CBUS_READ     0x4352  /* 'CR' - CBUS Read stage */
+#define BOOT_FAIL_STAGE_PUBKEY_VERIFY 0x5056  /* 'PV' - Public Key Verify stage */
+#define BOOT_FAIL_STAGE_APP_HDR       0x4148  /* 'AH' - App Header stage */
+#define BOOT_FAIL_STAGE_OTA_HDR       0x4F48  /* 'OH' - OTA Header stage */
+
+typedef enum {
+    BOOT_FAIL_STAGE_IDX_ERASE = 0,
+    BOOT_FAIL_STAGE_IDX_OTA_DECOMP,
+    BOOT_FAIL_STAGE_IDX_APP_VERIFY,
+    BOOT_FAIL_STAGE_IDX_OTA_VERIFY,
+    BOOT_FAIL_STAGE_IDX_CBUS_READ,
+    BOOT_FAIL_STAGE_IDX_PUBKEY_VERIFY,
+    BOOT_FAIL_STAGE_IDX_APP_HDR,
+    BOOT_FAIL_STAGE_IDX_OTA_HDR,
+    BOOT_FAIL_STAGE_IDX_MAX
+} boot_fail_stage_idx_t;
+
+typedef struct {
+    uint16_t error_code;
+    uint16_t error_count;
+} boot_fail_record_t;
+
+#define BOOT_FAIL_RECORD_SIZE        4
+#define BOOT_FAIL_TOTAL_SIZE         128
+#define BOOT_FAIL_START_OFFSET       8
+#define BOOT_FAIL_MAX_COUNT          16
+
+static const uint16_t boot_fail_count_seq[BOOT_FAIL_MAX_COUNT] = {
+    0xFFFF, 0xFFFE, 0xFFFC, 0xFFF8, 0xFFF0, 0xFFE0, 0xFFC0, 0xFF80,
+    0xFF00, 0xFE00, 0xFC00, 0xF800, 0xF000, 0xE000, 0xC000, 0x8000
+};
+
+static uint32_t
+bk_boot_overwrite_confirm_off(void)
+{
+    return (uint32_t)(CONFIG_OW_OTA_CONTROL_PHY_PARTITION_OFFSET
+                      + CONFIG_OW_OTA_CONTROL_PHY_PARTITION_SIZE - 4);
+}
+
+static uint32_t
+bk_boot_overwrite_app_fail_off(void)
+{
+    return (uint32_t)(CONFIG_OW_OTA_CONTROL_PHY_PARTITION_OFFSET
+                      + CONFIG_OW_OTA_CONTROL_PHY_PARTITION_SIZE - 8);
+}
+
+static uint16_t
+boot_fail_get_error_code(boot_fail_stage_idx_t stage_idx)
+{
+    switch (stage_idx) {
+    case BOOT_FAIL_STAGE_IDX_ERASE:
+        return BOOT_FAIL_STAGE_ERASE;
+    case BOOT_FAIL_STAGE_IDX_OTA_DECOMP:
+        return BOOT_FAIL_STAGE_OTA_DECOMP;
+    case BOOT_FAIL_STAGE_IDX_APP_VERIFY:
+        return BOOT_FAIL_STAGE_APP_VERIFY;
+    case BOOT_FAIL_STAGE_IDX_OTA_VERIFY:
+        return BOOT_FAIL_STAGE_OTA_VERIFY;
+    case BOOT_FAIL_STAGE_IDX_CBUS_READ:
+        return BOOT_FAIL_STAGE_CBUS_READ;
+    case BOOT_FAIL_STAGE_IDX_PUBKEY_VERIFY:
+        return BOOT_FAIL_STAGE_PUBKEY_VERIFY;
+    case BOOT_FAIL_STAGE_IDX_APP_HDR:
+        return BOOT_FAIL_STAGE_APP_HDR;
+    case BOOT_FAIL_STAGE_IDX_OTA_HDR:
+        return BOOT_FAIL_STAGE_OTA_HDR;
+    default:
+        return 0;
+    }
+}
+
+static boot_fail_stage_idx_t
+boot_fail_get_stage_idx_by_error(uint16_t error_code)
+{
+    boot_fail_stage_idx_t stage_idx = BOOT_FAIL_STAGE_IDX_MAX;
+
+    for (boot_fail_stage_idx_t idx = 0; idx < BOOT_FAIL_STAGE_IDX_MAX; idx++) {
+        if (boot_fail_get_error_code(idx) == error_code) {
+            stage_idx = idx;
+            break;
+        }
+    }
+
+    return stage_idx;
+}
+
+static uint16_t
+boot_fail_get_next_count(uint16_t current_count)
+{
+    for (int i = 0; i < BOOT_FAIL_MAX_COUNT - 1; i++) {
+        if (current_count == boot_fail_count_seq[i]) {
+            return boot_fail_count_seq[i + 1];
+        }
+    }
+
+    return 0x0000;
+}
+
+void
+bk_boot_write_ota_fail(uint16_t error_code)
+{
+    boot_fail_stage_idx_t stage_idx = boot_fail_get_stage_idx_by_error(error_code);
+
+    if (stage_idx >= BOOT_FAIL_STAGE_IDX_MAX) {
+        BOOT_LOG_ERR("Invalid error_code: 0x%04x", error_code);
+        return;
+    }
+
+    uint32_t base_off = bk_boot_overwrite_app_fail_off();
+    uint32_t record_off = base_off - (uint32_t)(stage_idx * BOOT_FAIL_RECORD_SIZE);
+
+    boot_fail_record_t record;
+    bk_flash_read_bytes(record_off, (uint8_t *)&record, sizeof(boot_fail_record_t));
+
+    if (record.error_count == 0x8000) {
+        BOOT_LOG_INF("Stage 0x%04x reached max count (15 times)", error_code);
+        return;
+    } else {
+        uint16_t next_count = boot_fail_get_next_count(record.error_count);
+        record.error_count = next_count;
+    }
+    record.error_code |= error_code;
+
+    int retry_count = 3;
+    bool write_success = false;
+
+    flash_protect_type_t protect = bk_flash_get_protect_type();
+    bk_flash_set_protect_type(FLASH_PROTECT_NONE);
+
+    for (int retry = 0; retry < retry_count; retry++) {
+        bk_flash_write_bytes(record_off, (uint8_t *)&record, sizeof(boot_fail_record_t));
+
+        boot_fail_record_t verify_record;
+        bk_flash_read_bytes(record_off, (uint8_t *)&verify_record, sizeof(boot_fail_record_t));
+
+        if (verify_record.error_code == record.error_code &&
+            verify_record.error_count == record.error_count) {
+            BOOT_LOG_ERR("Write record: stage=0x%04x, count=0x%04x, off=0x%x (retry=%d)",
+                         record.error_code, record.error_count, record_off, retry);
+            write_success = true;
+            break;
+        } else {
+            BOOT_LOG_ERR("Write fail record verify failed after %d retries: expected(0x%04x,0x%04x), got(0x%04x,0x%04x)",
+                         retry_count,
+                         record.error_code, record.error_count,
+                         verify_record.error_code, verify_record.error_count);
+        }
+    }
+
+    if (!write_success) {
+        BOOT_LOG_ERR("Failed to write fail record after %d attempts", retry_count);
+    }
+
+    bk_flash_set_protect_type(protect);
+}
+
+#endif /* CONFIG_OTA_OVERWRITE */
+#endif /* CONFIG_OTA_CONFIRM_UPDATE */
 
 
 int

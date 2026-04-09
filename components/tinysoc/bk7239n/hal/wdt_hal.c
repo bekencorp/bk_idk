@@ -70,3 +70,7 @@ void wdt_reboot(void)
 	while(1);
 }
 
+void wdt_hal_force_reboot(void)
+{
+	wdt_reboot();
+}

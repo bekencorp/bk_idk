@@ -40,6 +40,7 @@
 
 #include "mcuboot_config/mcuboot_config.h"
 #include "bootutil/bootutil_log.h"
+#include "bootutil/bootutil_public.h"
 
 #ifdef MCUBOOT_ENC_IMAGES
 #include "bootutil/enc_key.h"
@@ -57,7 +58,6 @@
 
 #include "bootutil_priv.h"
 #include "flash_partition.h"
-#include "bootutil/bootutil_public.h"
 #include "flash.h"
 
 #if CONFIG_BL2_SKIP_VALIDATE
@@ -712,6 +712,16 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
 
 out:
     if (rc) {
+#if CONFIG_OTA_OVERWRITE && CONFIG_OTA_CONFIRM_UPDATE
+        /* Record failure based on partition type */
+        if (fap->fa_id == 0) {
+            /* PRIMARY slot - App verify failure */
+            bk_boot_write_ota_fail(BOOT_FAIL_STAGE_APP_VERIFY);
+        } else if (fap->fa_id == 1) {
+            /* SECONDARY slot - OTA verify failure */
+            bk_boot_write_ota_fail(BOOT_FAIL_STAGE_OTA_VERIFY);
+        }
+#endif
         FIH_SET(fih_rc, FIH_FAILURE);
     }
 
