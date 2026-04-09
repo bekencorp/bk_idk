@@ -180,6 +180,32 @@ def gen_build_summary(output_info: str):
     summary.set_output_file_info(output_info)
     summary.gen_summary(sumary_file)
 
+def _read_flash_crc_enable_from_csv(csv_path: Path, default_value: bool = True) -> bool:
+    if not csv_path.exists():
+        logger.warning(f"auto_partitions.csv not found at {csv_path}, using default flash_crc_enable={default_value}")
+        return default_value
+
+    try:
+        csv_contents = csv_path.read_text()
+        lines = csv_contents.splitlines()
+        for line in lines:
+            line_content = line.strip()
+            if line_content.startswith("#") or len(line_content) == 0:
+                continue
+            if "FLASH_CRC_ENABLE" in line_content:
+                crc_value = line_content.split("=")[1].strip().upper()
+                if crc_value in ("TRUE", "1"):
+                    logger.info(f"Read FLASH_CRC_ENABLE=TRUE from {csv_path}")
+                    return True
+                if crc_value in ("FALSE", "0"):
+                    logger.info(f"Read FLASH_CRC_ENABLE=FALSE from {csv_path}")
+                    return False
+                logger.warning(f"Invalid FLASH_CRC_ENABLE value: {crc_value}, using default: {default_value}")
+                return default_value
+    except Exception as e:
+        logger.warning(f"Failed to read FLASH_CRC_ENABLE from {csv_path}: {e}, using default: {default_value}")
+    logger.info(f"FLASH_CRC_ENABLE not found in {csv_path}, using default: {default_value}")
+    return default_value
 
 def _read_flash_aes_enable_from_csv(csv_path: Path, default_value: bool = False) -> bool:
     if not csv_path.exists():
@@ -241,6 +267,7 @@ def gen_otp_efuse_from_auto_partition(output_dir: Path):
     # Re-read AES settings from auto_partitions.csv to ensure this process
     # sees the same configuration as auto_partition step.
     csv_path = curr_project.auto_partitions_table
+    flash_crc_enable = _read_flash_crc_enable_from_csv(csv_path)
     flash_aes_enable = _read_flash_aes_enable_from_csv(csv_path)
     flash_aes_key = _read_flash_aes_key_from_csv(csv_path)
 
@@ -256,7 +283,7 @@ def gen_otp_efuse_from_auto_partition(output_dir: Path):
         output_dir.mkdir(parents=True, exist_ok=True)
         os.chdir(output_dir)
         # pubkey_pem_file=None, secureboot_en=False, boot_ota=False
-        gen_otp_efuse_config_file(aes_type, flash_aes_key, None, False, False, "otp_efuse_config.json")
+        gen_otp_efuse_config_file(aes_type, flash_crc_enable, flash_aes_key, None, False, False, "otp_efuse_config.json")
         logger.info(f"Generated otp_efuse_config.json at {output_dir}")
     finally:
         os.chdir(prev_cwd)

@@ -25,7 +25,7 @@ def reverse_order(hex_str):
     return reverse_str
 
 
-def gen_otp_efuse_config_file(aes_type, flash_aes_key, pubkey_pem_file, secureboot_en, boot_ota, outfile):
+def gen_otp_efuse_config_file(aes_type, flash_crc_en, flash_aes_key, pubkey_pem_file, secureboot_en, boot_ota, outfile):
     f = open(outfile, 'w+')
     logging.debug(f'Create {outfile}')
 
@@ -44,11 +44,14 @@ def gen_otp_efuse_config_file(aes_type, flash_aes_key, pubkey_pem_file, securebo
             "secure_boot_clock_select":     "0,4,0",
             "random_delay_enable":          "0,5,0",
             "direct_jump_enable":           "0,6,0",
-            "boot_critical_error": "0,7,0",
+            "boot_critical_error":          "0,7,0",
+            "flash_ctrl_disable":           "1,1,1",
+			"cbus_disable":                 "2,3,1",
             "attack_nmi_enable":            "2,4,0",
             "spi_to_ahb_disable":           "2,5,0",
             "auto_reset_enable[0]":         "2,6,0",
             "auto_reset_enable[1]":         "2,7,0",
+            "flash_no_crc_enable":          "3,3,1",
             "flash_aes_enable":             "3,5,0",
             "spi_download_disable":         "3,6,0",
             "swd_disable":                  "3,7,0"
@@ -56,6 +59,11 @@ def gen_otp_efuse_config_file(aes_type, flash_aes_key, pubkey_pem_file, securebo
 
         "Security_Data":[]
     }
+
+    if flash_crc_en == False or flash_crc_en == 'false':
+        otp_efuse_config["Security_Ctrl"][0].update({"flash_no_crc_enable":"3,3,1"})
+    elif flash_crc_en == True or flash_crc_en == 'true':
+        otp_efuse_config["Security_Ctrl"][0].update({"flash_no_crc_enable":"3,3,0"})
 
     data = {}
 
@@ -96,7 +104,7 @@ def gen_otp_efuse_config_file(aes_type, flash_aes_key, pubkey_pem_file, securebo
         data["byte_len"] = "0x20"
         data["data"] = bl1_pk_hash
         data["data_type"] = "hex"
-        data["status"] = "true"
+        data["status"] = "false"
         otp_efuse_config["Security_Data"].append(data)
 
         data = data.copy()
@@ -108,7 +116,7 @@ def gen_otp_efuse_config_file(aes_type, flash_aes_key, pubkey_pem_file, securebo
         data["byte_len"] = "0x20"
         data["data"] = bl2_pk_hash
         data["data_type"] = "hex"
-        data["status"] = "true"
+        data["status"] = "false"
         otp_efuse_config["Security_Data"].append(data)
     elif  pubkey_pem_file != None and os.path.exists(pubkey_pem_file):
         h = Rotpk_hash(pubkey_pem_file, False)
@@ -125,6 +133,18 @@ def gen_otp_efuse_config_file(aes_type, flash_aes_key, pubkey_pem_file, securebo
         data["data_type"] = "hex"
         data["status"] = "true"
         otp_efuse_config["Security_Data"].append(data)
+
+    data = data.copy()
+    data["name"] = "LCS"
+    data["mode"] = "write"
+    data["permission"] = "WR" 
+    data["start_addr"] = "0x4B100568"
+    data["last_valid_addr"] = "0x4B10056C"
+    data["byte_len"] = "0x04"
+    data["data"] = "00000003"
+    data["data_type"] = "hex"
+    data["status"] = "false"
+    otp_efuse_config["Security_Data"].append(data)
 
     json_str = json.dumps(otp_efuse_config, indent=4)
     with open('otp_efuse_config.json', 'w',newline="\n") as file:
