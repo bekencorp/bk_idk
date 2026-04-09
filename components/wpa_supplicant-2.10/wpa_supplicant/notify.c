@@ -1496,7 +1496,7 @@ void wpas_notify_sae_password_mismatch(struct wpa_supplicant *wpa_s)
 	info.reason_code = WIFI_REASON_WRONG_PASSWORD;
 	info.state = WIFI_LINKSTATE_STA_DISCONNECTED;
 
-	wpa_printf(MSG_INFO, "%s: SaePasswordMismatch\n", __func__,);
+	wpa_printf(MSG_INFO, "%s: SaePasswordMismatch\n", __func__);
 
 	mhdr_set_station_status(info);
 #endif

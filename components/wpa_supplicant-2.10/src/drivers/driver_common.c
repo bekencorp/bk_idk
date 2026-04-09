@@ -29,7 +29,6 @@ void wpa_scan_results_free(struct wpa_scan_results *res)
 }
 
 
-#ifdef CONFIG_FULL_SUPPLICANT
 const char * event_to_string(enum wpa_event_type event)
 {
 #define E2S(n) case EVENT_ ## n: return #n
@@ -101,7 +100,6 @@ const char * event_to_string(enum wpa_event_type event)
 	return "UNKNOWN";
 #undef E2S
 }
-#endif
 
 
 const char * channel_width_to_string(enum chan_width width)
