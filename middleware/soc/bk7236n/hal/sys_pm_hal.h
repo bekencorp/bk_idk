@@ -18,6 +18,8 @@
 #include "sys_pm_hal_debug.h"
 #include "sys_pm_hal_ctrl.h"
 
+void sys_hal_deep_lv_fast_boot_vector_init(void);
+
 #define ROSC_PPM_NOMINAL 600
 
 //TODO may need to adjust the interrupt bits

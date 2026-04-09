@@ -2,5 +2,9 @@ menu "DEEP_LV"
 	config DEEP_LV
 		bool "Enable deep low voltage"
 		default n
+
+	config DEEP_LV_FAST_BOOT
+		bool "Enable deep lv fast boot"
+		default n
 endmenu
 

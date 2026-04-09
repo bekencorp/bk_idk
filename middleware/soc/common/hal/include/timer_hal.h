@@ -55,6 +55,7 @@ uint32_t timer_hal_get_count(timer_hal_t *hal, timer_id_t chan);
 uint32_t timer_hal_cal_end_count(timer_id_t chan, uint64_t time, uint32_t div, timer_value_unit_t unit_type);
 void timer_hal_us_init(void);
 void timer_hal_delay_us(uint32_t us);
+void timer_hal_us_init_iram(void);
 
 #if CFG_HAL_DEBUG_TIMER
 void timer_struct_dump(void);

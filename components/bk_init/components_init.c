@@ -37,6 +37,8 @@
 
 #include "reset_reason.h"
 
+#include "sys_pm_hal.h"
+
 #if CONFIG_EASY_FLASH && (!CONFIG_RTT)
 #include "easyflash.h"
 #include "bk_ef.h"
@@ -306,7 +308,6 @@ void __stack_chk_fail (void)
     BK_ASSERT(0);
 }
 
-
 int components_early_init(void)
 {
 #if CONFIG_RESET_REASON
@@ -323,6 +324,10 @@ int components_early_init(void)
 	random_init();
 
 	bk_stack_guard_setup();
+
+#if CONFIG_DEEP_LV_FAST_BOOT
+	sys_hal_deep_lv_fast_boot_vector_init();
+#endif
 
 	return BK_OK;
 }

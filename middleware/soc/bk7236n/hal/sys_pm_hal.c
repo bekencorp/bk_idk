@@ -51,6 +51,23 @@
 #include <os/mem.h>
 #include "sys_persist_config.h"
 
+#if CONFIG_DEEP_LV_FAST_BOOT
+extern uint32_t __MSPTop;
+void deep_lv_fast_boot(void);
+
+#define BK7236N_DEEP_LV_FAST_BOOT_MSP_ADDR   (0x2807FFF8u)
+#define BK7236N_DEEP_LV_FAST_BOOT_ENTRY_ADDR (0x2807FFFCu)
+
+void sys_hal_deep_lv_fast_boot_vector_init(void)
+{
+	volatile uint32_t *const fast_boot_msp = (volatile uint32_t *)BK7236N_DEEP_LV_FAST_BOOT_MSP_ADDR;
+	volatile uint32_t *const fast_boot_entry = (volatile uint32_t *)BK7236N_DEEP_LV_FAST_BOOT_ENTRY_ADDR;
+
+	*fast_boot_msp = (uint32_t)&__MSPTop;
+	*fast_boot_entry = (uint32_t)&deep_lv_fast_boot;
+}
+#endif
+
 #define portNVIC_SYSTICK_CTRL_REG             ( *( ( volatile uint32_t * ) 0xe000e010 ) )
 #define portNVIC_SYSTICK_LOAD_REG             ( *( ( volatile uint32_t * ) 0xe000e014 ) )
 #define portNVIC_SYSTICK_CURRENT_VALUE_REG    ( *( ( volatile uint32_t * ) 0xe000e018 ) )

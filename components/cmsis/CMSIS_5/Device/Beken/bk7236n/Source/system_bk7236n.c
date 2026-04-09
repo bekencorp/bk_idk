@@ -27,6 +27,10 @@
 #if CONFIG_DEEP_LV
 #include "deep_lv.h"
 #endif
+
+#include "sys_hal.h"
+#include "timer_hal.h"
+#include "wdt_hal.h"
 /*----------------------------------------------------------------------------
   Define clocks
  *----------------------------------------------------------------------------*/
@@ -124,5 +128,13 @@ __IRAM_SEC void SystemInit_iram (void)
 #endif
 }
 
-// eof
-
+extern uint32_t __STACK_LIMIT;
+__IRAM_SEC void deep_lv_fast_boot(void)
+{
+	__set_MSPLIM((uint32_t)(&__STACK_LIMIT));
+	wdt_hal_close();
+	timer_hal_us_init_iram();
+	sys_hal_enable_pll_iram();
+	sys_hal_enable_high_freq_iram();
+	SystemInit_iram();
+}

@@ -3462,6 +3462,10 @@ void sys_hal_clk_pin_dig_open(clk_pin_dig_src_t src, clk_pin_div_t div, bool en)
 /**  System Clock End **/
 #endif
 
+void sys_hal_enable_pll_iram(void);
+void sys_hal_enable_high_freq_iram(void);
+void sys_hal_set_deep_lv_boot_addr(uint32_t msp, uint32_t pc);
+
 #ifdef __cplusplus
 }
 #endif
