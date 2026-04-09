@@ -20,7 +20,7 @@
 
 void sys_hal_deep_lv_fast_boot_vector_init(void);
 
-#define ROSC_PPM_NOMINAL 600
+#define ROSC_PPM_NOMINAL 300
 
 //TODO may need to adjust the interrupt bits
 #define WS_WIFI_INT0    (BIT(29) | BIT(30) | BIT(31))
