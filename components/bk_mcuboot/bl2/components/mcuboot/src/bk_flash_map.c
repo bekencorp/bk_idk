@@ -74,7 +74,7 @@ int flash_map_init(void)
 	flash_map[slot_b].fa_size &= ~(0xFFF);
 	uint32_t primary_vir_start = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(flash_map[slot_a].fa_off));
 	uint32_t secondary_vir_start = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(flash_map[slot_b].fa_off));
-	flash_set_xip_offset(primary_vir_start, secondary_vir_start, flash_map[slot_a].fa_size);
+	flash_set_xip_offset(primary_vir_start, secondary_vir_start, flash_map[slot_a].fa_phy_size);
 #endif
 	return 0;
 }

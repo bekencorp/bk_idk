@@ -31,3 +31,5 @@ bk_err_t xip_ota_read_secondary_version(const bk_ota_t *ota);
 bk_err_t xip_ota_confirm(const bk_logic_partition_t *partition);
 bk_err_t xip_ota_cancel(const bk_logic_partition_t *partition);
 bk_err_t xip_ota_reboot(void);
+
+void xip_bl2_ota_get_pack_addrs(uint32_t *bl2_address, uint32_t *partition_address);

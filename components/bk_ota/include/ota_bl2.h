@@ -1,4 +1,4 @@
-// Copyright 2020-2021 Beken
+// Copyright 2020-2026 Beken
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,13 +14,9 @@
 
 #pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <stdint.h>
 
-void update_bl2(void);
-void check_bl2_version_and_update_if_needed(void);
+typedef void (*bl2_ota_get_pack_addrs_fn)(uint32_t *bl2_address, uint32_t *partition_address);
 
-#ifdef __cplusplus
-}
-#endif
+void bl2_ota_register_get_pack_addrs(bl2_ota_get_pack_addrs_fn fn);
+void bl2_ota_check(void);

@@ -147,27 +147,12 @@ class PartitionMerge(PartitionApp):
                 with open(p.bin().name(), 'rb') as pf:
                     f.write(pf.read())
             if _is_bl2_upgrade_with_app_enabled():
-                o = OTA('ota.csv')
-                bl2_version = o.get_bootloader_version()
-                parts = bl2_version.split('.')
-                version_nums = []
-                for p_ver in parts:
-                    if p_ver != '':
-                        version_nums.append(int(p_ver))
-                while len(version_nums) < 4:
-                    version_nums.append(0)
-                if len(version_nums) > 4:
-                    version_nums = version_nums[:4]
-                bl2_version_bytes = struct.pack('4B', *version_nums)
-
                 logging.debug(f'CONFIG_BL2_UPGRADE_WITH_APP=y found, append bl2.bin and partition.bin to the end of the merged bin')
                 with open('bl2.bin', 'rb') as bl2_src, open('partition.bin', 'rb') as partition_src:
                     file_len = f.tell()
                     new_bl2_offset = self.size().vir_code_size() - 80*1024
-                    logging.debug(f'virtual code size: {hex(self.size().vir_code_size())}')
-                    logging.debug(f'new_bl2_offset: {hex(new_bl2_offset)}')
                     if file_len >= new_bl2_offset:
-                        logging.error("oversize!")
+                        logging.error(f'oversize!!! failed to append bl2.bin and partition.bin to the end of the {bname}')
                         exit(1)
                     f.seek(new_bl2_offset)
                     f.write(bl2_src.read())
@@ -175,6 +160,7 @@ class PartitionMerge(PartitionApp):
                     pad = bytes([0xFF] * pad_size)
                     f.write(pad)
                     f.write(partition_src.read())
+                    logging.debug(f'success to append bl2.bin and partition.bin to the end of the {bname}')
 
             f.write(iv_major)
             f.write(iv_minor)

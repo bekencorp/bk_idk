@@ -6,6 +6,7 @@
 #include "modules/ota.h"
 #include "ota_ow.h"
 #include "ota_xip.h"
+#include "ota_bl2.h"
 #include "ota_common.h"
 #if CONFIG_OTA_BACKUP_PUBKEY
 #include "ota_verify.h"
@@ -337,6 +338,17 @@ bk_ota_t* bk_ota_get_ow_handle(void)
 
 	return s_ow_ota_handle;
 }
+
+#if CONFIG_BL2_UPGRADE_WITH_APP
+void bk_ota_register_bl2_pack_addrs(void)
+{
+#if CONFIG_OTA_OVERWRITE
+	bl2_ota_register_get_pack_addrs(ow_bl2_ota_get_pack_addrs);
+#elif CONFIG_DIRECT_XIP
+	bl2_ota_register_get_pack_addrs(xip_bl2_ota_get_pack_addrs);
+#endif
+}
+#endif
 
 bk_ota_t* bk_ota_addr_to_handle(uint32_t addr)
 {

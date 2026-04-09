@@ -9,6 +9,7 @@ if (CONFIG_BK_OTA)
 		ota_verify.c
 		ota_ow.c
 		ota_xip.c
+		ota_bl2.c
 		)
 endif()
 

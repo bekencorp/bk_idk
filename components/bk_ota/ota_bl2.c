@@ -1,41 +1,22 @@
-// Copyright 2020-2021 Beken
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-#include <stdio.h>
 #include <string.h>
-#include <common/bk_include.h>
-#include "partitions_gen.h"
-#include "partitions.h"
-#include "sdkconfig.h"
-#include <driver/otp.h>
+#include <stdint.h>
+#include "ota_bl2.h"
+#include "ota.h"
 #include <driver/flash.h>
-#include <components/system.h>
+#include "sdkconfig.h"
+#include "partitions_gen.h"
 
-#define TAG "UP_BL2"
+#define TAG "OTA_BL2"
+
 #define BUF_SIZE 4096
-#define CRC_BUF_SIZE ((BUF_SIZE >> 5) * 34)
-
 /* bl2 pack header definition, must be consistent with tools/env_tools/bksecure/scripts/pack_header.py
  * PACK_HEADER_FORMAT = "12s20s8sBB2xIIII4xIIII16x"
- * We only need magic and Size field here.
+ * We check magic/version and parse size field here.
  */
 #define BL2_PACK_HEADER_MAGIC      "pack_header"
 #define BL2_PACK_HEADER_MAGIC_LEN  11
 #define BL2_PACK_HEADER_SIZE       96
-/* Offset of first uint32 field (Offset) in header:
- * 12 (magic) + 20 (name) + 8 (version) + 1 (type) + 1 (subtype) + 2 (reserved) = 44
- */
+
 #define BL2_PACK_HEADER_U32_BASE_OFFSET  44
 /* At BL2_PACK_HEADER_U32_BASE_OFFSET:
  * uint32_t offset;
@@ -45,31 +26,23 @@
  */
 #define BL2_PACK_HEADER_SIZE_OFFSET (BL2_PACK_HEADER_U32_BASE_OFFSET + 4)
 
-extern bk_err_t bk_flash_write_bytes(uint32_t address, const uint8_t *user_buf, uint32_t size);
-extern bk_err_t bk_flash_read_bytes(uint32_t address, uint8_t *user_buf, uint32_t size);
-extern bk_err_t bk_flash_erase_fast(uint32_t erase_off, uint32_t len);
-extern void bk_flash_read_cbus(uint32_t address, void *user_buf, uint32_t size);
-extern void bk_flash_write_cbus(uint32_t address, const uint8_t *user_buf, uint32_t size);
-extern void bk_ota_accept_image(void);
-extern void bk_reboot(void);
 
 #if CONFIG_BL2_UPGRADE_WITH_APP
 static uint8_t buf[BUF_SIZE];
 static uint8_t bl2_first_part[512];
+static bl2_ota_get_pack_addrs_fn s_get_pack_addrs;
 #endif
 
-static void print_buf(uint8_t *buf, size_t size)
+void bl2_ota_register_get_pack_addrs(bl2_ota_get_pack_addrs_fn fn)
 {
-	bk_printf("\r\n");
-	for (int i = 0; i < size; i++) {
-		printf("%02x ", buf[i]);
-		if (i % 16 == 15)
-			bk_printf("\r\n");
-	}
-	bk_printf("\r\n");
+#if CONFIG_BL2_UPGRADE_WITH_APP
+	s_get_pack_addrs = fn;
+#else
+	(void)fn;
+#endif
 }
 
-static void bk_flash_rewrite_bl2(void)
+static void bl2_ota_rewrite_magic(void)
 {
 #if CONFIG_BL2_UPGRADE_WITH_APP
 	static const uint8_t version_bytes[] = CONFIG_BOOTLOADER_VERSION_BYTES;
@@ -93,8 +66,7 @@ static void bk_flash_rewrite_bl2(void)
 #endif
 }
 
-
-void update_bl2(void)
+static void bl2_ota_upgrade(void)
 {
 #if CONFIG_BL2_UPGRADE_WITH_APP
 	uint8_t ff[64];
@@ -109,15 +81,15 @@ void update_bl2(void)
 	uint32_t write_offset = 0;
 	int block_idx = 0;
 
-	bl2_address = CONFIG_OVERWRITE_VIRTUAL_CODE_SIZE +
-	              FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(CONFIG_OVERWRITE_PHY_PARTITION_OFFSET)) +
-	              0x1000 - 80 * 1024;
-	partition_address = CONFIG_OVERWRITE_VIRTUAL_CODE_SIZE +
-	                    FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(CONFIG_OVERWRITE_PHY_PARTITION_OFFSET)) +
-	                    0x1000 - 8 * 1024;
+	if (!s_get_pack_addrs) {
+		BK_LOGW(TAG, "bl2 pack addrs callback not registered\r\n");
+		return;
+	}
+	s_get_pack_addrs(&bl2_address, &partition_address);
 	bl2_data_addr = bl2_address + BL2_PACK_HEADER_SIZE;
 	partition_data_addr = partition_address + BL2_PACK_HEADER_SIZE;
-
+	BK_LOGI(TAG, "bl2_address: %x, partition_address: %x\r\n", bl2_address, partition_address);
+	BK_LOGI(TAG, "bl2_data_addr: %x, partition_data_addr: %x\r\n", bl2_data_addr, partition_data_addr);
 	bk_flash_read_cbus(bl2_data_addr, buf, BUF_SIZE);
 	memset(ff, 0xFF, 64);
 	if (memcmp(buf, ff, 64) == 0) {
@@ -135,10 +107,9 @@ void update_bl2(void)
 			bl2_real_size = CONFIG_BL2_PHY_PARTITION_SIZE;
 		}
 	} else {
-		/* No valid pack header, keep original behaviour: use full partition size */
-		BK_LOGW(TAG, "bl2 pack header magic mismatch, use partition size %u\r\n",
-		        CONFIG_BL2_PHY_PARTITION_SIZE);
-		bl2_real_size = CONFIG_BL2_PHY_PARTITION_SIZE;
+		/* No valid pack header */
+		BK_LOGW(TAG, "bl2 pack header magic, exit\r\n");
+		return;
 	}
 	BK_LOGI(TAG, "bl2_real_size from header: %u bytes\r\n", bl2_real_size);
 
@@ -162,10 +133,10 @@ void update_bl2(void)
 		block_idx++;
 	}
 
-	BK_LOGI(TAG, "write magic\r\n");
-	bk_flash_rewrite_bl2();
+	BK_LOGI(TAG, "rewrite bl2 magic\r\n");
+	bl2_ota_rewrite_magic();
 
-	BK_LOGI(TAG, "erase partition_table\r\n");
+	BK_LOGI(TAG, "erase partition table\r\n");
 	bk_flash_erase_fast(CONFIG_PARTITION_PHY_PARTITION_OFFSET, CONFIG_PARTITION_PHY_PARTITION_SIZE);
 
 	/* Parse partition pack header at partition_address and get real partition size */
@@ -179,10 +150,9 @@ void update_bl2(void)
 			partition_real_size = CONFIG_PARTITION_PHY_PARTITION_SIZE;
 		}
 	} else {
-		/* No valid pack header, keep original behaviour: use full partition size */
-		BK_LOGW(TAG, "partition pack header magic mismatch, use partition size %u\r\n",
-		        CONFIG_PARTITION_PHY_PARTITION_SIZE);
-		partition_real_size = CONFIG_PARTITION_PHY_PARTITION_SIZE;
+		/* No valid pack header */
+		BK_LOGW(TAG, "partition pack header magic mismatch, exit\r\n");
+		return;
 	}
 	BK_LOGI(TAG, "partition_real_size from header: %u bytes\r\n", partition_real_size);
 
@@ -206,7 +176,7 @@ void update_bl2(void)
 #endif
 }
 
-void check_bl2_version_and_update_if_needed(void)
+void bl2_ota_check(void)
 {
 #if CONFIG_BL2_UPGRADE_WITH_APP
 	uint8_t bootloader_version[4];
@@ -221,7 +191,7 @@ void check_bl2_version_and_update_if_needed(void)
 		&& bootloader_version[2] == expected_bl2_version[2]
 		&& bootloader_version[3] == expected_bl2_version[3])) {
 		BK_LOGI(TAG, "bl2 version mismatch, start to update\r\n");
-		update_bl2();
+		bl2_ota_upgrade();
 	}
 	else {
 		BK_LOGI(TAG, "bl2 version match, no need to update bl2\r\n");

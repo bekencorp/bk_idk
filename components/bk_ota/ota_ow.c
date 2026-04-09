@@ -104,6 +104,16 @@ bk_err_t ow_ota_reboot(void)
 	return BK_OK;
 }
 
+void ow_bl2_ota_get_pack_addrs(uint32_t *bl2_address, uint32_t *partition_address)
+{
+	*bl2_address = CONFIG_OVERWRITE_VIRTUAL_CODE_SIZE +
+	              FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(CONFIG_OVERWRITE_PHY_PARTITION_OFFSET)) +
+	              0x1000 - 80 * 1024;
+	*partition_address = CONFIG_OVERWRITE_VIRTUAL_CODE_SIZE +
+	                    FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(CONFIG_OVERWRITE_PHY_PARTITION_OFFSET)) +
+	                    0x1000 - 8 * 1024;
+}
+
 #if CONFIG_OTA_UPDATE_PUBKEY
 bk_err_t ota_verify_pubkey(const bk_logic_partition_t *app_partition,
     ota_verify_t *ota_verify, const uint8_t *ota_outer_pubkey, uint16_t ota_outer_pubkey_len)

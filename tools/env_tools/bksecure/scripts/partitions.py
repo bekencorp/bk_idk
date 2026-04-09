@@ -138,7 +138,7 @@ class Partitions:
         csv = Csv(bin_csv, True, bin_keys)
 
         bins = []
-        print(f'{csv.dic_list}')
+        logging.debug(f'bin.csv: {csv.dic_list}')
         for dic in csv.dic_list:
             if dic['Name'] == 'bl2.bin':
                 dic['Version'] = bl2_version

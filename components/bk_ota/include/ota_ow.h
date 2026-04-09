@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include <stdint.h>
+
 bk_err_t ow_ota_get_info(const bk_ota_t *ota, uint32_t *pad_offset, uint32_t *length);
 bk_err_t ow_ota_write_dbus(const bk_ota_t *ota, uint32_t off, const uint8_t *buf, uint32_t len);
 bk_err_t ow_ota_write_cbus(const bk_ota_t *ota, uint32_t off, const uint8_t *buf, uint32_t len);
@@ -30,3 +32,5 @@ bk_err_t ow_ota_read_primary_version(const bk_ota_t *ota);
 bk_err_t ow_ota_read_compress_version(const bk_ota_t *ota);
 
 bk_err_t ow_ota_reboot(void);
+
+void ow_bl2_ota_get_pack_addrs(uint32_t *bl2_address, uint32_t *partition_address);

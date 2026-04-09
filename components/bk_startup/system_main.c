@@ -30,7 +30,7 @@
 
 #include "boot.h"
 #if CONFIG_BL2_UPGRADE_WITH_APP
-#include "upgrade_bl2.h"
+#include "ota_bl2.h"
 #endif
 #if CONFIG_FREERTOS_TRACE
 #include "trcRecorder.h"
@@ -402,7 +402,7 @@ static void app_main_thread(void *arg)
 	main();
 
 #if CONFIG_BL2_UPGRADE_WITH_APP
-	check_bl2_version_and_update_if_needed();
+	bl2_ota_check();
 #endif
 #if CONFIG_MATTER_START && CONFIG_SUPPORT_MATTER
 #ifdef CONFIG_MATTER_EXAMPLE

@@ -428,4 +428,14 @@ bk_err_t xip_ota_reboot(void)
 	xip_ota_set_reboot_status();
 	return BK_OK;
 }
+
+void xip_bl2_ota_get_pack_addrs(uint32_t *bl2_address, uint32_t *partition_address)
+{
+	*bl2_address = CONFIG_XIP_A_VIRTUAL_CODE_SIZE +
+	               FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(CONFIG_XIP_A_PHY_PARTITION_OFFSET)) +
+	               0x1000 - 80 * 1024;
+	*partition_address = CONFIG_XIP_A_VIRTUAL_CODE_SIZE +
+	                     FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(CONFIG_XIP_A_PHY_PARTITION_OFFSET)) +
+	                     0x1000 - 8 * 1024;
+}
 #endif
