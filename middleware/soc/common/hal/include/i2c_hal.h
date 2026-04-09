@@ -80,6 +80,8 @@ bk_err_t i2c_hal_set_baud_rate(i2c_hal_t *hal, uint32_t baud_rate);
 bk_err_t i2c_hal_configure(i2c_hal_t *hal, const i2c_config_t *cfg);
 bk_err_t i2c_hal_start_common(i2c_hal_t *hal);
 bk_err_t i2c_hal_stop_common(i2c_hal_t *hal);
+bk_err_t i2c_hal_set_no_ack_mode(i2c_hal_t *hal, bool enable);
+bool i2c_hal_is_no_ack_mode_enabled(i2c_hal_t *hal);
 bk_err_t i2c_hal_set_write_int_mode(i2c_hal_t *hal, uint32_t data_size);
 bk_err_t i2c_hal_set_read_int_mode(i2c_hal_t *hal, uint32_t data_size);
 bk_err_t i2c_hal_soft_reset(i2c_hal_t *hal);

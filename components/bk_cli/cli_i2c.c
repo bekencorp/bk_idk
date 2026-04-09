@@ -386,6 +386,19 @@ static void cli_i2c_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
             return;
         }
         CLI_LOGI("i2c(%d) config clk_source succeed\r\n", i2c_id);
+    } else if (os_strcmp(argv[2], "no_ack_mode") == 0) {
+        CLI_RET_ON_INVALID_ARGC(argc, 4);
+        if (os_strcmp(argv[3], "enable") == 0){
+            BK_LOG_ON_ERR(bk_i2c_set_no_ack_mode(i2c_id, true));
+            CLI_LOGI("i2c(%d) set no_ack_mode enable\r\n", i2c_id);
+        } else if (os_strcmp(argv[3], "disable") == 0){
+            BK_LOG_ON_ERR(bk_i2c_set_no_ack_mode(i2c_id, false));
+            CLI_LOGI("i2c(%d) set no_ack_mode disable\r\n", i2c_id);
+        } else {
+            CLI_LOGI("i2c(%d) set no_ack_mode failed, only support enable/disable\r\n", i2c_id);
+            return;
+        }
+        CLI_LOGI("i2c(%d) config no_ack_mode succeed\r\n", i2c_id);
     } else {
         cli_i2c_help();
         return;
@@ -395,7 +408,7 @@ static void cli_i2c_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
 #define I2C_CMD_CNT (sizeof(s_i2c_commands) / sizeof(struct cli_command))
 static const struct cli_command s_i2c_commands[] = {
     {"i2c_driver", "i2c_driver {init|deinit}", cli_i2c_driver_cmd},
-    {"i2c", "i2c {id} {init|deinit|memory_write|memory_read|master_write|master_read|master_write_noaddr|master_read_noaddr|slave_write|slave_read|clk_select}", cli_i2c_cmd},
+    {"i2c", "i2c {id} {init|deinit|memory_write|memory_read|master_write|master_read|master_write_noaddr|master_read_noaddr|slave_write|slave_read|clk_select|no_ack_mode}", cli_i2c_cmd},
 };
 
 int cli_i2c_init(void)

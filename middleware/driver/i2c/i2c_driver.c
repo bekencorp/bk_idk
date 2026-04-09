@@ -771,6 +771,11 @@ static uint32_t i2c_is_timeout_limit_flag(i2c_id_t id)
     return cb_context->has_timeout_limit;
 }
 
+static bool i2c_is_no_ack_mode_enabled(i2c_id_t id)
+{
+    return i2c_hal_is_no_ack_mode_enabled(&s_i2c[id].hal);
+}
+
 /**
  * @brief Switch slave work mode based on HAL TX/RX mode
  *
@@ -1341,7 +1346,7 @@ bk_err_t bk_i2c_master_write(i2c_id_t id, uint32_t dev_addr, const uint8_t *data
         }
     }
 
-    if (i2c_drv_obj->err_code == BK_ERR_I2C_ACK_TIMEOUT) {
+    if (!i2c_is_no_ack_mode_enabled(id) && (i2c_drv_obj->err_code == BK_ERR_I2C_ACK_TIMEOUT)) {
         I2C_LOGW("I2C(%d) master_write no ack, err=%d\r\n", id, i2c_drv_obj->err_code);
         if (i2c_recover_bus(id) == BK_OK) {
             // Wait a bit more after recovery
@@ -1397,7 +1402,7 @@ bk_err_t bk_i2c_master_write_noaddr(i2c_id_t id, const uint8_t *data, uint32_t s
         }
     }
 
-    if (i2c_drv_obj->err_code == BK_ERR_I2C_ACK_TIMEOUT) {
+    if (!i2c_is_no_ack_mode_enabled(id) && (i2c_drv_obj->err_code == BK_ERR_I2C_ACK_TIMEOUT)) {
         I2C_LOGW("I2C(%d) master_write_noaddr no ack, err=%d\r\n", id, i2c_drv_obj->err_code);
         if (i2c_recover_bus(id) == BK_OK) {
             // Wait a bit more after recovery
@@ -1614,7 +1619,7 @@ bk_err_t bk_i2c_memory_write(i2c_id_t id, const i2c_mem_param_t *mem_param)
         }
     }
 
-    if (i2c_drv_obj->err_code == BK_ERR_I2C_ACK_TIMEOUT) {
+    if (!i2c_is_no_ack_mode_enabled(id) && (i2c_drv_obj->err_code == BK_ERR_I2C_ACK_TIMEOUT)) {
         I2C_LOGW("I2C(%d) memory_write no ack, err=%d\r\n", id, i2c_drv_obj->err_code);
         if (i2c_recover_bus(id) == BK_OK) {
             // Wait a bit more after recovery
@@ -1673,6 +1678,17 @@ bk_err_t bk_i2c_set_baud_rate(i2c_id_t id, uint32_t baud_rate)
     I2C_RETURN_ON_ID_NOT_INIT(id);
     I2C_PM_CHECK_RESTORE(id);
     i2c_hal_set_baud_rate(&s_i2c[id].hal, baud_rate);
+    return BK_OK;
+}
+
+//i2c version must be greater than or equal to 10002
+bk_err_t bk_i2c_set_no_ack_mode(i2c_id_t id, bool enable)
+{
+    I2C_RETURN_ON_NOT_INIT();
+    I2C_RETURN_ON_INVALID_ID(id);
+    I2C_RETURN_ON_ID_NOT_INIT(id);
+    I2C_PM_CHECK_RESTORE(id);
+    i2c_hal_set_no_ack_mode(&s_i2c[id].hal, enable);
     return BK_OK;
 }
 
@@ -1785,7 +1801,7 @@ static void  i2c0_isr_common(i2c_id_t id)
 
     switch (s_i2c[id].work_mode) {
     case I2C_MASTER_WRITE: {
-        if (!i2c_hal_is_rx_ack_triggered(hal, int_status)) {
+        if (!i2c_is_no_ack_mode_enabled(id) && !i2c_hal_is_rx_ack_triggered(hal, int_status)) {
             I2C_LOGW("i2c(%d) master_write get ack failed\r\n", id);
             i2c_transtate_set(id);
             i2c_master_stop(id);
@@ -1869,7 +1885,7 @@ static void i2c1_isr_common(i2c_id_t id)
     case I2C_MASTER_WRITE: {
         i2c_drv_obj->int_status &= ~I2C1_F_START;
         /* send stop if not receive ack */
-        if (!i2c_hal_is_rx_ack_triggered(hal, int_status)) {
+        if (!i2c_is_no_ack_mode_enabled(id) && !i2c_hal_is_rx_ack_triggered(hal, int_status)) {
             I2C_LOGW("i2c(%d) master_write get ack failed\r\n", id);
             i2c_transtate_set(id);
             i2c_master_stop(id);

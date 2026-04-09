@@ -247,6 +247,21 @@ bk_err_t bk_i2c_memory_read(i2c_id_t id, const i2c_mem_param_t *mem_param);
 bk_err_t bk_i2c_set_baud_rate(i2c_id_t id, uint32_t baud_rate);
 
 /**
+ * @brief     I2C set no ack mode
+ *
+ * @param id I2C id
+ * @param enable enable master write data without slave address no ack mode
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_I2C_NOT_INIT: I2C driver not init
+ *    - BK_ERR_I2C_INVALID_ID: I2C id number is invalid
+ *    - BK_ERR_I2C_ID_NOT_INIT: I2C id not init
+ *    - others: other errors.
+ */
+bk_err_t bk_i2c_set_no_ack_mode(i2c_id_t id, bool enable);
+
+/**
  * @brief     Set slave address when current role is i2c slave
  *
  * @param id I2C id

@@ -72,7 +72,9 @@ typedef volatile struct {
 			uint32_t tx_mode:       1;  /**< bit[13] */
 			uint32_t master:        1;  /**< bit[14] */
 			uint32_t busy:          1;  /**< bit[15] */
-			uint32_t reserved1:     16; /**< bit[16:31] */
+			uint32_t nack_en:       1;  /**< bit[16] */
+			uint32_t mst_sngl:      1;  /**< bit[17] */
+			uint32_t reserved1:     14; /**< bit[18:31] */
 		};
 		uint32_t v;
 	} sm_bus_status;

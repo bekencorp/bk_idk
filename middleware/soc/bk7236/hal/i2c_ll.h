@@ -113,9 +113,19 @@ static inline void i2c_ll_disable(i2c_hw_t *hw, i2c_id_t id)
 	}
 }
 
-static inline void i2c_ll_set_pin(i2c_hw_t *hw, i2c_id_t id)
+static inline void i2c_master_enable_no_ack(i2c_hw_t *hw, i2c_id_t id)
 {
 
+}
+
+static inline void i2c_master_disable_no_ack(i2c_hw_t *hw, i2c_id_t id)
+{
+
+}
+
+static inline bool i2c_ll_is_no_ack_enabled(i2c_hw_t *hw, i2c_id_t id)
+{
+	return false;
 }
 
 static inline void i2c_ll_set_idle_detect_threshold(i2c_hw_t *hw, i2c_id_t id, uint32_t threshold)

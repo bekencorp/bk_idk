@@ -121,6 +121,33 @@ static inline void i2c_ll_disable(i2c_hw_t *hw, i2c_id_t id)
 	}
 }
 
+static inline void i2c_master_enable_no_ack(i2c_hw_t *hw, i2c_id_t id)
+{
+	if (id == I2C_ID_0) {
+		hw->i2c0_hw->sm_bus_status.nack_en = 1;
+	} else {
+		hw->i2c1_hw->sm_bus_status.nack_en = 1;
+	}
+}
+
+static inline void i2c_master_disable_no_ack(i2c_hw_t *hw, i2c_id_t id)
+{
+	if (id == I2C_ID_0) {
+		hw->i2c0_hw->sm_bus_status.nack_en = 0;
+	} else {
+		hw->i2c1_hw->sm_bus_status.nack_en = 0;
+	}
+}
+
+static inline bool i2c_ll_is_no_ack_enabled(i2c_hw_t *hw, i2c_id_t id)
+{
+	if (id == I2C_ID_0) {
+		return !!(hw->i2c0_hw->sm_bus_status.nack_en);
+	} else {
+		return !!(hw->i2c1_hw->sm_bus_status.nack_en);
+	}
+}
+
 static inline void i2c_ll_set_pin(i2c_hw_t *hw, i2c_id_t id)
 {
 

@@ -81,6 +81,22 @@ bk_err_t i2c_hal_stop_common(i2c_hal_t *hal)
 	return BK_OK;
 }
 
+bk_err_t i2c_hal_set_no_ack_mode(i2c_hal_t *hal, bool enable)
+{
+	if (enable) {
+		i2c_master_enable_no_ack(&hal->hw, hal->id);
+	} else {
+		i2c_master_disable_no_ack(&hal->hw, hal->id);
+	}
+
+	return BK_OK;
+}
+
+bool i2c_hal_is_no_ack_mode_enabled(i2c_hal_t *hal)
+{
+	return i2c_ll_is_no_ack_enabled(&hal->hw, hal->id);
+}
+
 bk_err_t i2c_hal_set_write_int_mode(i2c_hal_t *hal, uint32_t data_size)
 {
 	if (data_size < 4) {
