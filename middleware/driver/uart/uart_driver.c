@@ -87,8 +87,6 @@ typedef struct
 	void *param;
 } uart_callback_t;
 
-#define CONFIG_UART_MIN_BAUD_RATE (UART_CLOCK / (0x1fff + 1))
-#define CONFIG_UART_MAX_BAUD_RATE (UART_CLOCK / (4 + 1))
 #ifndef CONFIG_PRINTF_BUF_SIZE
 #define CONFIG_PRINTF_BUF_SIZE    (128)
 #endif
@@ -1132,7 +1130,7 @@ static bk_err_t uart_tx_dma_init(uart_id_t id)
 		dma_cfg.src = dma_mem_port_config;
 		dma_cfg.mode = DMA_WORK_MODE_SINGLE;
 		dma_cfg.chan_prio = 0;	//UART speed is slow, so no need high priority
-		dma_cfg.dest_wr_intlv = 4;  
+		dma_cfg.dest_wr_intlv = 4;
 		BK_LOG_ON_ERR(bk_dma_init(dma_id, &dma_cfg));
 		bk_dma_set_dest_burst_len(dma_id, BURST_LEN_SINGLE);
 		bk_dma_set_src_burst_len(dma_id, BURST_LEN_SINGLE);

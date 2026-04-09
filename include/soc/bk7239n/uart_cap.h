@@ -20,6 +20,8 @@ extern "C" {
 
 #define SOC_UART_UNIT_NUM              1
 #define SOC_UART_ID_NUM_PER_UNIT       4
+#define CONFIG_UART_MIN_BAUD_RATE      (CONFIG_XTAL_FREQ / (0xffff + 1))
+#define CONFIG_UART_MAX_BAUD_RATE      (CONFIG_XTAL_FREQ / (4 + 1))
 
 #ifdef __cplusplus
 }

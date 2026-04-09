@@ -33,7 +33,7 @@ menu "SPI"
 		default n
 	config SPI
 		bool "SPI ENABLE"
-		default n
+		default y
 
 	config SPI_BYTE_INTERVAL
 		bool "SPI byte interval"
