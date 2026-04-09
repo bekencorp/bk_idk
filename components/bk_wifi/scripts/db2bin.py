@@ -2,7 +2,6 @@
 
 from io import BytesIO, open
 import struct
-import hashlib
 from dbparse import DBParser
 import sys
 
@@ -125,19 +124,18 @@ if len(sys.argv) > 3:
     # Load RSA only now so people can use this script
     # without having those libraries installed to verify
     # their SQL changes
-    from M2Crypto import RSA
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import padding
 
     # determine signature length
-    key = RSA.load_key(sys.argv[3])
-    hash = hashlib.sha1()
-    hash.update(output.getvalue())
-    sig = key.sign(hash.digest())
+    with open(sys.argv[3], 'rb') as key_file:
+        key = serialization.load_pem_private_key(key_file.read(),
+                                                 password=None)
+    sig = key.sign(output.getvalue(), padding.PKCS1v15(), hashes.SHA1())
     # write it to file
     siglen.set(len(sig))
     # sign again
-    hash = hashlib.sha1()
-    hash.update(output.getvalue())
-    sig = key.sign(hash.digest())
+    sig = key.sign(output.getvalue(), padding.PKCS1v15(), hashes.SHA1())
 
     output.write(sig)
 else:
