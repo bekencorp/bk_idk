@@ -72,7 +72,7 @@ menu "FLASH"
 
 	config FLASH_WRITE_STATUS_VOLATILE
 		bool "Enable write volatile status register"
-		default n
+		default y
 
 	config FLASH_PARTITION_CHECK_VALID
 		depends on FLASH

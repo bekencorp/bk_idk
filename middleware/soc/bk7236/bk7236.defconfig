@@ -940,6 +940,7 @@ CONFIG_PHY_LOG_ENABLE=n
 #
 #@ Enable Flash Size 4M
 CONFIG_FLASH_SIZE_4M=y
+CONFIG_FLASH_WRITE_STATUS_VOLATILE=n
 # end of User_driver
 
 #
