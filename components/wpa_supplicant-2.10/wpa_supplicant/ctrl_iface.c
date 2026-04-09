@@ -476,7 +476,7 @@ static int wpas_ctrl_scan(struct wpa_supplicant *wpa_s, wlan_sta_scan_param_t *p
 	scan_pending = eloop_is_timeout_registered(wpa_supplicant_scan, wpa_s, NULL);
 
 	if (!wpa_s->sched_scanning && !wpa_s->scanning &&
-		((wpa_s->wpa_state <= WPA_SCANNING) ||
+		((wpa_s->wpa_state < WPA_SCANNING) ||
 		 (wpa_s->wpa_state == WPA_COMPLETED)) && !scan_pending) {
 		if (params) {
 			ssid_count = params->num_ssids;

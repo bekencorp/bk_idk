@@ -3030,7 +3030,10 @@ void scan_only_handler(struct wpa_supplicant *wpa_s,
 	int manual_scan_use_id = 0;
 #endif
 	wpa_dbg(wpa_s, MSG_DEBUG, "Scan-only results received");
-	if (wpa_s->last_scan_req == MANUAL_SCAN_REQ &&
+	if (
+#ifndef BK_SUPPLICANT
+		wpa_s->last_scan_req == MANUAL_SCAN_REQ &&
+#endif
 	    wpa_s->manual_scan_use_id && wpa_s->own_scan_running) {
 		wpa_msg_ctrl(wpa_s, MSG_INFO, WPA_EVENT_SCAN_RESULTS "id=%u",
 			     wpa_s->manual_scan_id);
