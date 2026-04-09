@@ -24,10 +24,10 @@
 
 MEMORY
 {
-  FLASH (rx)  : ORIGIN = BL2_CODE_START, LENGTH = BL2_CODE_SIZE
-  RAM   (rwx) : ORIGIN = BL2_DATA_START, LENGTH = BL2_DATA_SIZE
-  IRAM (rwx)  : ORIGIN = BL2_IRAM_START, LENGTH = BL2_IRAM_SIZE
-
+  FLASH    (rx)  : ORIGIN = BL2_CODE_START, LENGTH = BL2_CODE_SIZE
+  RAM      (rwx) : ORIGIN = BL2_DATA_START, LENGTH = BL2_DATA_SIZE
+  IRAM     (rwx) : ORIGIN = BL2_IRAM_START, LENGTH = BL2_IRAM_SIZE
+  DLV_IRAM (rwx) : ORIGIN = BL2_DLV_IRAM_START, LENGTH = BL2_DLV_IRAM_SIZE
 }
 
 __heap_size__  = BL2_HEAP_SIZE;
@@ -48,7 +48,7 @@ SECTIONS
         __Vectors_Size = __Vectors_End - __Vectors;
         __end__ = .;
         *(.fix.reset_entry)
-        
+
         EXCLUDE_FILE
             (
             crc32.o system.o bl_tra_hcit.o bootloader.o bl_extflash.o bl_uart.o bl_spi.o bl_bk_hci_protocol.o
@@ -114,6 +114,10 @@ SECTIONS
         LONG (LOADADDR(.iram))
         LONG (ADDR(.iram))
         LONG (SIZEOF(.iram))
+
+        LONG (LOADADDR(.dlv_iram))
+        LONG (ADDR(.dlv_iram))
+        LONG (SIZEOF(.dlv_iram))
         __copy_table_end__ = .;
     } > FLASH
 
@@ -169,6 +173,15 @@ SECTIONS
         . = ALIGN(4);
         __iram_end__ = .;
     } > IRAM AT > FLASH
+
+    .dlv_iram :
+    {
+        . = ALIGN(4);
+        __dlv_iram_start__ = .;
+        *(.dlv_iram)
+        . = ALIGN(4);
+        __dlv_iram_end__ = .;
+    } > DLV_IRAM AT > FLASH
 
 
 /*

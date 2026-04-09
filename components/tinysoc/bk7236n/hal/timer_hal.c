@@ -131,3 +131,12 @@ void timer_hal_us_init(void)
 	SYS_REG_SET(0xc, 4, 4, 1);
 	SYS_REG_SET(8, 20, 20, 1);
 }
+
+__attribute__((section(".dlv_iram"))) void timer_hal_us_init_iram(void)
+{
+	TIMER0_REG_SET(2, 0, 0, 1);
+	REG_WRITE((SOC_TIMER0_REG_BASE + (4 << 2)), TIMER0_PERIOD);
+	TIMER0_REG_SET(7, 0, 0, 1);
+	SYS_REG_SET(0xc, 4, 4, 1);
+	SYS_REG_SET(8, 20, 20, 1);
+}

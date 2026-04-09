@@ -82,6 +82,9 @@ void sys_hal_nmi_wdt_set_clk_div(uint32_t value);
 void sys_hal_trng_disckg_set(uint32_t value);
 /**  Platform End **/
 
+void sys_hal_enable_pll_iram(void);
+void sys_hal_enable_high_freq_iram(void);
+
 #ifdef __cplusplus
 }
 #endif

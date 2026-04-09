@@ -48,7 +48,7 @@ void wdt_hal_force_feed(void)
 
 void nmi_wdt_set(uint32_t val)
 {
-	REG_WRITE(SOC_WDT_REG_BASE + 4 * 2, 0x3); 
+	REG_WRITE(SOC_WDT_REG_BASE + 4 * 2, 0x3);
 	REG_WRITE(SOC_WDT_REG_BASE + 4 * 4, 0x5A0000 | val);
 	REG_WRITE(SOC_WDT_REG_BASE + 4 * 4, 0xA50000 | val);
 }

@@ -519,3 +519,26 @@ void sys_hal_early_deinit(void)
 	sys_ll_set_ana_reg8_spi_latch1v(0);
 }
 /**  SCR End  */
+
+__attribute__((section(".dlv_iram"))) void sys_hal_enable_pll_iram(void)
+{
+	uint32_t ana_reg1_val = REG_READ(0x2807e400 + (1 << 2));  // restore sys0x41 from ram
+	uint32_t ana_reg5_val = sys_hal_analog_get(5);  // sys0x45 corresponds to ana_reg_5
+	sys_hal_analog_set(1, ana_reg1_val);
+
+	// 1. Enable PLL (set bit 5 of ana_reg_5)
+	ana_reg5_val |= (1 << 5);  // Set bit 5
+	sys_hal_analog_set(5, ana_reg5_val);
+
+	// 2. Synchronize ASIC
+	sys_ll_set_cpu_device_clk_enable_dplldiv_cken(1);
+}
+
+__attribute__((section(".dlv_iram"))) void sys_hal_enable_high_freq_iram(void)
+{
+	sys_ll_set_cpu_clk_div_mode2_ckdiv_flash(0x0);
+	sys_ll_set_cpu_clk_div_mode2_cksel_flash(0x2);//some flash ,such as : flash mid = 0xC86516 ,max freq is 104M
+
+	sys_ll_set_cpu_clk_div_mode1_clkdiv_core(3);
+	sys_ll_set_cpu_clk_div_mode1_cksel_core(1);
+}

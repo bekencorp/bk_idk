@@ -19,6 +19,10 @@
 #include "region_defs.h"
 #include "os/os.h"
 #include "cmsis_gcc.h"
+#include "sdkconfig.h"
+#include "partitions_gen.h"
+#include "sys_persist_config.h"
+#include "sys_hal.h"
 
 #define ENTRY_SECTION                    __attribute__((section(".fix.reset_entry")))
 #define SYSTEM_BASE_ADDR                 (0x44010000)
@@ -27,16 +31,35 @@
 #define GET_BIT_VAL(val, bit)            (((val) >> (bit)) & 1)
 #define SET_BIT_VAL(val, bit, new_val)   (((val) & (~(1 << (bit)))) | ((new_val) << (bit)))
 
+#define AON_PMU_BASE_ADDR                (0x44000000)
+#define AON_PMU_R7B_REG                  (*(volatile uint32_t *)(AON_PMU_BASE_ADDR + 0x7b * 4))
+#define DLV_STARTUP_BIT                  (1 << 23)
+
+#define SOC_FLASH_BASE_ADDR     (0x44030000)
+#define FLASH_OFFSET_BEGIN_REG  (*(volatile uint32_t *)(SOC_FLASH_BASE_ADDR + 0x16 * 4))
+#define FLASH_OFFSET_END_REG    (*(volatile uint32_t *)(SOC_FLASH_BASE_ADDR + 0x17 * 4))
+#define FLASH_ADDR_OFFSET_REG   (*(volatile uint32_t *)(SOC_FLASH_BASE_ADDR + 0x18 * 4))
+#define FLASH_CTRL_REG          (*(volatile uint32_t *)(SOC_FLASH_BASE_ADDR + 0x19 * 4))
+#define FLASH_OFFSET_EN_BIT     (0x1)
+
+#define FLASH_OP_CTRL_REG       (*(volatile uint32_t *)(SOC_FLASH_BASE_ADDR + 0x04 * 4))
+#define FLASH_DATA_RD_REG       (*(volatile uint32_t *)(SOC_FLASH_BASE_ADDR + 0x06 * 4))
+#define FLASH_OP_CMD_REG        (*(volatile uint32_t *)(SOC_FLASH_BASE_ADDR + 0x15 * 4))
+#define FLASH_OP_SW_BIT         (1u << 29)
+#define FLASH_BUSY_BIT          (1u << 31)
+#define FLASH_CMD_READ          (5u)
+
+#define SCB_VTOR_REG            (*(volatile uint32_t *)0xE000ED08)
+
+#define BL2_APP_VT_ADDR  \
+    (0x02000000 + CONFIG_PRIMARY_CPU0_APP_VIRTUAL_CODE_START + CONFIG_SYS_PERSIST_SIZE)
+
+#define BL2_DLV_STACK_TOP       (BL2_DLV_IRAM_START + BL2_DLV_IRAM_SIZE)
+
 extern uint32_t __INITIAL_SP;
 extern uint32_t __STACK_LIMIT;
 extern __NO_RETURN void __PROGRAM_START(void);
 extern void SystemInit(void);
-extern void sys_drv_early_init(void);
-extern void sys_hal_early_init_tfm(void);
-extern bk_err_t sys_hal_ctrl_vdddig_h_vol(uint32_t vol_value);
-extern void sys_hal_switch_freq(uint32_t cksel_core, uint32_t ckdiv_core, uint32_t ckdiv_cpu0);
-extern void sys_hal_flash_set_clk(uint32_t value);
-extern void sys_hal_flash_set_clk_div(uint32_t value);
 
 typedef void (*VECTOR_TABLE_Type)(void);
 
@@ -166,8 +189,89 @@ const VECTOR_TABLE_Type __VECTOR_IRAM[] __VECTOR_IRAM_ATTRIBUTE = {
     UART_InterruptHandler,                    /* Interrupt 4 */
 };
 
+__attribute__((section(".dlv_iram")))
+static uint32_t flash_spi_read_word_iram(uint32_t phy_addr)
+{
+    while (FLASH_OP_CTRL_REG & FLASH_BUSY_BIT) {;}
+
+    FLASH_OP_CMD_REG = (FLASH_CMD_READ << 24) | (phy_addr & 0x00FFFFFF);
+    FLASH_OP_CTRL_REG |= FLASH_OP_SW_BIT;
+
+    while (FLASH_OP_CTRL_REG & FLASH_BUSY_BIT) {;}
+
+    return FLASH_DATA_RD_REG;
+}
+
+__attribute__((section(".dlv_iram")))
+__attribute__((noinline))
+__attribute__((noreturn))
+static void bl2_deep_lv_boot(void)
+{
+    sys_hal_enable_high_freq_iram();
+
+#if CONFIG_DIRECT_XIP || CONFIG_MIXED_OTA
+    uint32_t slot_val =
+        flash_spi_read_word_iram(CONFIG_XIP_OTA_CONTROL_PHY_PARTITION_OFFSET);
+
+    FLASH_OFFSET_BEGIN_REG = CONFIG_APP_A_PHY_PARTITION_OFFSET;
+    FLASH_OFFSET_END_REG = CONFIG_APP_A_PHY_PARTITION_OFFSET +
+                           CONFIG_APP_A_PHY_PARTITION_SIZE;
+    FLASH_ADDR_OFFSET_REG = CONFIG_APP_B_PHY_PARTITION_OFFSET -
+                            CONFIG_APP_A_PHY_PARTITION_OFFSET;
+
+    if (slot_val != 0xFFFFFFFF) {
+        FLASH_CTRL_REG |= FLASH_OFFSET_EN_BIT;
+    } else {
+        FLASH_CTRL_REG &= ~FLASH_OFFSET_EN_BIT;
+    }
+#endif
+
+    volatile uint32_t *vt = (volatile uint32_t *)BL2_APP_VT_ADDR;
+    uint32_t app_msp = vt[0];
+    uint32_t app_reset = vt[1];
+
+    SCB_VTOR_REG = BL2_APP_VT_ADDR;
+
+    __asm__ volatile(
+        "msr    msplim, %[zero]         \n"
+        "msr    msp, %[msp]            \n"
+        "mov    r7, %[reset]            \n"
+        "movs   r0, #0                  \n"
+        "mov    r1, r0                  \n"
+        "mov    r2, r0                  \n"
+        "mov    r3, r0                  \n"
+        "mov    r4, r0                  \n"
+        "mov    r5, r0                  \n"
+        "mov    r6, r0                  \n"
+        "mov    r8, r0                  \n"
+        "mov    r9, r0                  \n"
+        "mov    r10, r0                 \n"
+        "mov    r11, r0                 \n"
+        "mov    r12, r0                 \n"
+        "mov    lr, r0                  \n"
+        "bx     r7                      \n"
+        :
+        : [reset] "r" (app_reset), [msp] "r" (app_msp), [zero] "r" (0)
+        : "memory"
+    );
+
+    while (1) {}
+}
+
 __NO_RETURN ENTRY_SECTION __attribute__((naked)) void Reset_Handler(void)
 {
+    if (AON_PMU_R7B_REG & DLV_STARTUP_BIT) {
+        __set_MSP(BL2_DLV_STACK_TOP);
+        __set_MSPLIM(BL2_DLV_IRAM_START);
+
+        wdt_hal_force_feed();
+        timer_hal_us_init_iram();
+        sys_hal_enable_pll_iram();
+
+        bl2_deep_lv_boot();
+    }
+
+    /* Normal boot path */
     __set_MSPLIM((uint32_t)(&__STACK_LIMIT));
 
     /* CMSIS System Initialization */
