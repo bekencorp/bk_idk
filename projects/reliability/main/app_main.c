@@ -41,6 +41,7 @@ static void user_app_vote_cpu_freq(void)
 		bk_pm_module_vote_cpu_freq(PM_DEV_ID_DEFAULT, PM_CPU_FRQ_120M);
 		break;
 	}
+	BK_RAW_LOGI("APP_MAIN", "Current CPU freq: %d MHz\r\n", CONFIG_RELIABILITY_CPU_FREQ_MHZ);
 }
 
 void user_app_main(void)

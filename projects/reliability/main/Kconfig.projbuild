@@ -38,7 +38,7 @@ menu "Project specific config"
 
 	config RELIABILITY_CPU_FREQ_MHZ
 		int "CPU frequency for reliability test (MHz)"
-		default 120
+		default 240
 		range 120 240
 		help
 		  Select 120/160/240 MHz for CPU frequency voting in reliability tests.

@@ -225,9 +225,12 @@ static void flash_reliability_worker_thread(beken_thread_arg_t arg)
 	FLASH_IO_TRACE_UP(15);
 	g_reliability_stats.flash.test_count++;
 
-        bk_flash_set_protect_type(FLASH_PROTECT_NONE);
+    bk_flash_set_protect_type(FLASH_PROTECT_NONE);
+	volatile uint32_t start_time = rtos_get_time();
 	flash_reliability_verify();
-        bk_flash_set_protect_type(FLASH_PROTECT_ALL);
+	volatile uint32_t end_time = rtos_get_time();
+	BK_RAW_LOGI(FLASH_REL_TAG, "tested time: %d us\r\n", end_time - start_time);
+    bk_flash_set_protect_type(FLASH_PROTECT_ALL);
 
 	statis_save_to_flash();
 	statis_print_all_results();
