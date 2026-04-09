@@ -14,11 +14,11 @@
 
 #include "driver/efuse.h"
 
-#define EFUSE_SECUREBOOT_ENABLED_BIT        (3)
+#define EFUSE_SECUREBOOT_ENABLED_BIT        (0)
+#define EFUSE_INFO_DISABLED_BIT             (1)
+#define EFUSE_ERR_DISABLED_BIT              (7)
+#define EFUSE_SECURE_DOWNLOAD_DISABLED_BIT  (12)
 #define EFUSE_SPE_DEBUG_DISABLED_BIT        (31)
-#define EFUSE_INFO_DISABLED_BIT             (8)
-#define EFUSE_ERR_DISABLED_BIT              (9)
-#define EFUSE_SECURE_DOWNLOAD_DISABLED_BIT  (10)
 
 #define  EFUSE_OF_OTP_VAL               *((volatile unsigned int *) (0x4B10043C))
 #define TAG "efuse"
