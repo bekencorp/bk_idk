@@ -57,6 +57,8 @@ uint32_t aon_pmu_hal_band_cal_get();
 void aon_pmu_hal_psram_iodrv_set(uint32_t io_drv);
 void aon_pmu_hal_r0_latch_to_r7b(void);
 uint32_t aon_pmu_hal_get_reset_reason(void);
+uint32_t aon_pmu_hal_get_app_boot_validate_pending(void);
+void aon_pmu_hal_set_app_boot_validate_pending(uint32_t value);
 #if CONFIG_AON_PMU_REG0_REFACTOR_DEV
 void aon_pmu_hal_set_reset_reason(uint32_t value, bool write_immediately);
 uint32_t aon_pmu_hal_get_gpio_sleep(void);

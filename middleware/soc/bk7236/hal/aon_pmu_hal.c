@@ -271,3 +271,13 @@ void aon_pmu_hal_gpio_retention_bitmap_set(uint32_t bitmap)
 	aon_pmu_ll_set_r25(0xBDB4AA55);
 }
 #endif
+
+uint32_t aon_pmu_hal_get_app_boot_validate_pending(void)
+{
+	return 0u;
+}
+
+void aon_pmu_hal_set_app_boot_validate_pending(uint32_t value)
+{
+	(void)value;
+}

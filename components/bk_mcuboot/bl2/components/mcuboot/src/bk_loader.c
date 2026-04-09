@@ -28,6 +28,7 @@
  */
 
 #include "ow_loader.h"
+#include "aon_pmu_hal.h"
 static struct boot_loader_state boot_data;
 
 void boot_state_clear(struct boot_loader_state *state)
@@ -53,6 +54,7 @@ bk_boot_go(struct boot_rsp *rsp)
 #if CONFIG_DIRECT_XIP || CONFIG_MIXED_OTA
     FIH_CALL(xip_boot_go, fih_rc, &boot_data, rsp);
 #endif
+    aon_pmu_hal_set_app_boot_validate_pending(1u);
     fill_rsp(&boot_data, rsp);
     FIH_RET(fih_rc);
 }

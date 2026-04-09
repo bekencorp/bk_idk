@@ -88,6 +88,21 @@ static inline uint32_t aon_pmu_ll_get_r7b_dig_wake_en(void) {
 	return r->dig_wake_en;
 }
 
+static inline void aon_pmu_ll_set_r0_app_boot_validate_pending(uint32_t v) {
+	aon_pmu_r0_t *r = (aon_pmu_r0_t*)(SOC_AON_PMU_REG_BASE + (0x0 << 2));
+	r->app_boot_validate_pending = v;
+}
+
+static inline uint32_t aon_pmu_ll_get_r0_app_boot_validate_pending(void) {
+	aon_pmu_r0_t *r = (aon_pmu_r0_t*)(SOC_AON_PMU_REG_BASE + (0x0 << 2));
+	return r->app_boot_validate_pending;
+}
+
+static inline uint32_t aon_pmu_ll_get_r7b_app_boot_validate_pending(void) {
+	aon_pmu_r0_t *r = (aon_pmu_r0_t*)(SOC_AON_PMU_REG_BASE + (0x7b << 2));
+	return r->app_boot_validate_pending;
+}
+
 static inline void aon_pmu_ll_set_r0_reset_reason(uint32_t v) {
 	aon_pmu_r0_t *r = (aon_pmu_r0_t*)(SOC_AON_PMU_REG_BASE + (0x0 << 2));
 	r->reset_reason = v;

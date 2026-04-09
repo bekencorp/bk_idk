@@ -328,6 +328,32 @@ void aon_pmu_hal_set_reset_reason(uint32_t value)
 }
 #endif
 
+uint32_t aon_pmu_hal_get_app_boot_validate_pending(void)
+{
+	return aon_pmu_ll_get_r7b_app_boot_validate_pending() ? 1u : 0u;
+}
+
+void aon_pmu_hal_set_app_boot_validate_pending(uint32_t value)
+{
+	uint32_t v = (value != 0u) ? 1u : 0u;
+
+#if CONFIG_AON_PMU_REG0_REFACTOR_DEV
+	{
+		uint32_t r0_save = aon_pmu_ll_get_r0();
+
+		aon_pmu_ll_set_r0(aon_pmu_ll_get_r7b());
+		aon_pmu_ll_set_r0_app_boot_validate_pending(v);
+		aon_pmu_hal_r0_latch_to_r7b();
+		aon_pmu_ll_set_r0(r0_save);
+		aon_pmu_ll_set_r0_app_boot_validate_pending(v);
+	}
+#else
+	aon_pmu_ll_set_r0_app_boot_validate_pending(v);
+	aon_pmu_ll_set_r25(0x424B55AA);
+	aon_pmu_ll_set_r25(0xBDB4AA55);
+#endif
+}
+
 void aon_pmu_hal_gpio_clksel_set(uint32_t value)
 {
 	aon_pmu_ll_set_r41_gpio_clksel(value);

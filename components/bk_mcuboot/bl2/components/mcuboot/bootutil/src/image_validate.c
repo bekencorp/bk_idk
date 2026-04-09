@@ -456,7 +456,12 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
     uint32_t reset_reason = aon_pmu_hal_get_reset_reason();
     bool ota_confirm_set = bk_boot_check_ota_confirm(image_index, OTA_CONFIRM);
     bool can_skip = (reset_reason == RESET_SOURCE_POWERON) && (!ota_confirm_set);
-    
+
+    if (aon_pmu_hal_get_app_boot_validate_pending() != 0u) {
+        can_skip = false;
+        BOOT_LOG_INF("app_boot_validate_pending, force validate");
+    }
+
 #if CONFIG_DIRECT_XIP
     int slot = flash_area_id_to_multi_image_slot(image_index, flash_area_get_id(fap));
     uint32_t xip_status = (slot >= 0) ? boot_read_xip_status(slot, XIP_IMAGE_OK_TYPE) : 0xFFFFFFFF;

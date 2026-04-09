@@ -35,7 +35,7 @@ static void aon_pmu_dump_r0(void)
 	SOC_LOGI("	fast_boot: %-8x\r\n", r->fast_boot);
 	SOC_LOGI("	dig_wake_en: %-8x\r\n", r->dig_wake_en);
 	SOC_LOGI("	bl2_reboot_times: %-8x\r\n", r->bl2_reboot_times);
-	SOC_LOGI("	reserved_bit_4: %-8x\r\n", r->reserved_bit_4);
+	SOC_LOGI("	app_boot_validate_pending: %-8x\r\n", r->app_boot_validate_pending);
 	SOC_LOGI("	shared_bits: %-8x\r\n", r->shared_bits);
 	SOC_LOGI("	secboot_bootloader_address: %-8x\r\n", r->secboot_bootloader_address);
 	SOC_LOGI("	dlv_startup: %-8x\r\n", r->dlv_startup);
@@ -188,7 +188,7 @@ static void aon_pmu_dump_r7a(void)
 	SOC_LOGI("	fast_boot: %-8x\r\n", r->fast_boot);
 	SOC_LOGI("	dig_wake_en: %-8x\r\n", r->dig_wake_en);
 	SOC_LOGI("	bl2_reboot_times: %-8x\r\n", r->bl2_reboot_times);
-	SOC_LOGI("	reserved_bit_4: %-8x\r\n", r->reserved_bit_4);
+	SOC_LOGI("	app_boot_validate_pending: %-8x\r\n", r->app_boot_validate_pending);
 	SOC_LOGI("	shared_bits: %-8x\r\n", r->shared_bits);
 	SOC_LOGI("	secboot_bootloader_address: %-8x\r\n", r->secboot_bootloader_address);
 	SOC_LOGI("	dlv_startup: %-8x\r\n", r->dlv_startup);
@@ -205,7 +205,7 @@ static void aon_pmu_dump_r7b(void)
 	SOC_LOGI("	fast_boot: %-8x\r\n", r->fast_boot);
 	SOC_LOGI("	dig_wake_en: %-8x\r\n", r->dig_wake_en);
 	SOC_LOGI("	bl2_reboot_times: %-8x\r\n", r->bl2_reboot_times);
-	SOC_LOGI("	reserved_bit_4: %-8x\r\n", r->reserved_bit_4);
+	SOC_LOGI("	app_boot_validate_pending: %-8x\r\n", r->app_boot_validate_pending);
 	SOC_LOGI("	shared_bits: %-8x\r\n", r->shared_bits);
 	SOC_LOGI("	secboot_bootloader_address: %-8x\r\n", r->secboot_bootloader_address);
 	SOC_LOGI("	dlv_startup: %-8x\r\n", r->dlv_startup);

@@ -31,7 +31,7 @@ typedef volatile union {
 		uint32_t fast_boot                :  1; /**<bit[1 : 1] */
 		uint32_t dig_wake_en              :  1; /**<bit[2 : 2] */
 		uint32_t bl2_reboot_times         :  1; /**<bit[3 : 3] */
-		uint32_t reserved_bit_4           :  1; /**<bit[4 : 4] */
+		uint32_t app_boot_validate_pending :  1; /**<bit[4 : 4], 1 until app reaches bk_init OK; else BL2 full image validate */
 		uint32_t shared_bits              : 10; /**<bit[5 :14] */
 		uint32_t secboot_bootloader_address   :  8; /**<bit[15:22] */
 		uint32_t dlv_startup              :  1; /**<bit[23:23] */
