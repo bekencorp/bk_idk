@@ -16,6 +16,8 @@
 #include <os/mem.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
+#include <stdint.h>
 #include "string.h"
 
 #include <driver/int.h>
@@ -54,6 +56,8 @@ static ana_rtc_callback_t s_ana_rtc_tick_isr = {NULL};
 static ana_rtc_nodes_memory_t *s_ana_rtc_nodes_p = NULL;
 
 static void aon_rtc_interrupt_disable(aon_rtc_id_t id);
+static void aon_rtc_register_deepsleep_cb(void);
+static void aon_rtc_compute_boot_timeofday(void);
 
 #define ANA_RTC_SAMPLE_SEL_MASK        (0x1)
 #define ANA_RTC_SAMPLE_POSITIVE_EDGE    (0x1)
@@ -61,7 +65,7 @@ static void aon_rtc_interrupt_disable(aon_rtc_id_t id);
 
 #define ANA_RTC_GET_SET_TIME_RTC_ID   (AON_RTC_ID_1)
 #define ANA_RTC_CURRENT_TICK        bk_aon_rtc_get_current_tick(ANA_RTC_GET_SET_TIME_RTC_ID)
-static int64_t s_boot_time_us       = 0; // timeofday value
+static uint64_t s_boot_time_us       = 0; // timeofday value
 
 #define ANA_RTC_OPS_SAFE_DELAY_US (125)
 static uint64_t s_ana_rtc_base_tick = 0; // use for rtc reset
@@ -126,11 +130,6 @@ __IRAM_SEC uint64_t bk_aon_rtc_get_current_tick_with_compensation(aon_rtc_id_t i
     return bk_aon_rtc_get_us();
 }
 #endif
-
-bk_err_t bk_rtc_get_deepsleep_duration_seconds(uint32_t *deepsleep_seconds)
-{
-    return BK_FAIL;
-}
 
 static void alarm_dump_node(alarm_node_t *node_p)
 {
@@ -758,6 +757,10 @@ static bk_err_t ana_rtc_sw_init(void)
     };
     bk_wakeup_register_cb(WAKEUP_SOURCE_INT_RTC, wkup_cfg, src_cfg);
 #endif
+#if CONFIG_AON_RTC_KEEP_TIME_SUPPORT
+	aon_rtc_register_deepsleep_cb();
+#endif
+
     return BK_OK;
 }
 
@@ -849,6 +852,9 @@ bk_err_t bk_aon_rtc_driver_init(void)
     {
         ana_rtc_sw_init();
         ana_rtc_hw_init();
+        #if CONFIG_AON_RTC_KEEP_TIME_SUPPORT
+        aon_rtc_compute_boot_timeofday();
+        #endif
         s_ana_rtc.inited = true;
     }
 
@@ -1081,6 +1087,288 @@ void bk_aon_rtc_dump(aon_rtc_id_t id)
     alarm_dump_list(s_ana_rtc.alarm_head_p);
 }
 
+#if CONFIG_AON_RTC_KEEP_TIME_SUPPORT
+#if CONFIG_EASY_FLASH
+#include "bk_ef.h"
+#endif
+static uint64_t s_rtc_keep_time_offset_us = 0;
+
+/* Serialize uint64_t to hex for env storage; full 64-bit, fixed width for stable parse */
+static int ana_rtc_u64_to_hex_buf(char *buf, size_t buflen, uint64_t v)
+{
+    return snprintf(buf, buflen, "%016llx", (unsigned long long)v);
+}
+
+static bool bk_rtc_get_deepsleep_reset_reason_flag(void)
+{
+    uint32_t reset_reason = bk_misc_get_reset_reason();
+    ANA_RTC_LOGD("reset_reason: %d\r\n", reset_reason);
+    /* Deep sleep exit reasons; SUPER_DEEP used on some SoC paths even for RTC wake */
+    if (reset_reason == RESET_SOURCE_DEEPPS_GPIO ||
+        reset_reason == RESET_SOURCE_DEEPPS_RTC ||
+        reset_reason == RESET_SOURCE_DEEPPS_TOUCH ||
+        reset_reason == RESET_SOURCE_DEEPPS_USB ||
+        reset_reason == RESET_SOURCE_SUPER_DEEP)
+    {
+        return true;
+    }
+    return false;
+}
+
+static bk_err_t aon_rtc_bake_boot_time_us(void)
+{
+#if CONFIG_EASY_FLASH
+    bool boot_time_us_need_save = true;
+    char *boot_time_us_value = bk_get_env("s_boot_time_us");
+
+    if (boot_time_us_value)
+    {
+        uint64_t temp = strtoull(boot_time_us_value, NULL, 16);
+
+        ANA_RTC_LOGD("%s temp s_boot_time_us 0x%llx\r\n", __func__, (unsigned long long)temp);
+        if (temp == s_boot_time_us)
+        {
+            boot_time_us_need_save = false;
+        }
+    }
+    if (boot_time_us_need_save)
+    {
+        char value[32];
+        os_memset(value, 0, sizeof(value));
+        int nw = ana_rtc_u64_to_hex_buf(value, sizeof(value), s_boot_time_us);
+
+        if (nw <= 0 || (size_t)nw >= sizeof(value))
+        {
+            ANA_RTC_LOGE("%s: fmt s_boot_time_us fail\r\n", __func__);
+            return BK_FAIL;
+        }
+        {
+            EfErrCode er = bk_set_env("s_boot_time_us", value);
+
+            ANA_RTC_LOGI("%s s_boot_time_us value:%s ret:%d\n", __func__, value, (int)er);
+            if (er != EF_NO_ERR)
+            {
+                return BK_FAIL;
+            }
+        }
+    }
+
+    if (bk_save_env() != EF_NO_ERR)
+    {
+        ANA_RTC_LOGE("%s: bk_save_env fail\r\n", __func__);
+        return BK_FAIL;
+    }
+    return BK_OK;
+#else
+    ANA_RTC_LOGW("%s: CONFIG_EASY_FLASH off, time not persisted\r\n", __func__);
+    return BK_FAIL;
+#endif
+}
+
+static bk_err_t aon_rtc_bake_entry_deepsleep_timeofday(void)
+{
+    ANA_RTC_LOGD("%s[+]\r\n", __func__);
+
+    uint64_t current_time_us = bk_aon_rtc_get_us();
+    ANA_RTC_LOGD("current_time_us=0x%llx\r\n", current_time_us);
+
+#if CONFIG_EASY_FLASH
+    char value[32];
+    os_memset(value, 0, sizeof(value));
+    {
+        int nw = ana_rtc_u64_to_hex_buf(value, sizeof(value), current_time_us);
+
+        if (nw <= 0 || (size_t)nw >= sizeof(value))
+        {
+            ANA_RTC_LOGE("%s: fmt rtc_ds_start_us fail\r\n", __func__);
+            return BK_FAIL;
+        }
+    }
+    {
+        EfErrCode er = bk_set_env("rtc_ds_start_us", value);
+
+        ANA_RTC_LOGI("%s rtc_ds_start_us value:%s ret:%d\n", __func__, value, (int)er);
+        if (er != EF_NO_ERR)
+        {
+            return BK_FAIL;
+        }
+    }
+
+    if (bk_save_env() != EF_NO_ERR)
+    {
+        ANA_RTC_LOGE("%s: bk_save_env fail\r\n", __func__);
+        return BK_FAIL;
+    }
+
+    // not save boot time, as boot time aready saved once call bk_rtc_settimeofday
+
+#else
+    ANA_RTC_LOGW("%s: CONFIG_EASY_FLASH off, time not persisted\r\n", __func__);
+    return BK_FAIL;
+#endif
+    return BK_OK;
+}
+
+static bk_err_t aon_rtc_get_deepsleep_start_time(uint64_t *deepsleep_start_time_us)
+{
+    ANA_RTC_LOGD("%s[+]\r\n", __func__);
+
+#if CONFIG_EASY_FLASH
+    char *value;
+    if(deepsleep_start_time_us)
+    {
+        value = bk_get_env("rtc_ds_start_us");
+        if(value)
+        {
+            *deepsleep_start_time_us = strtoull(value, NULL, 16);
+            ANA_RTC_LOGD("%s, value:%s\r\n", "rtc_ds_start_us", value);
+            return BK_OK;
+        }
+        else
+        {
+            ANA_RTC_LOGD("%s value is null\r\n", "rtc_ds_start_us");
+        }
+    }
+#else
+    ANA_RTC_LOGW("TODO:%s\n", __func__);
+#endif
+    return BK_FAIL;
+}
+
+static bk_err_t aon_rtc_get_boot_time_us(uint64_t *boot_time_us)
+{
+    ANA_RTC_LOGD("%s[+]\r\n", __func__);
+
+#if CONFIG_EASY_FLASH
+    char *value;
+    if(boot_time_us)
+    {
+        value = bk_get_env("s_boot_time_us");
+        if(value)
+        {
+            *boot_time_us = strtoull(value, NULL, 16);
+            ANA_RTC_LOGD("%s, value:%s\r\n","s_boot_time_us", value);
+            return BK_OK;
+        }
+        else
+        {
+            ANA_RTC_LOGD("%s s_boot_time_us value is null\r\n", __func__);
+        }
+    }
+#else
+    ANA_RTC_LOGW("TODO:%s\n", __func__);
+#endif
+    return BK_FAIL;
+}
+
+static void aon_rtc_compute_boot_timeofday(void)
+{
+    bk_err_t ret = BK_OK;
+    ANA_RTC_LOGD("%s[+]\r\n", __func__);
+
+    //deepsleep boot
+    if(bk_rtc_get_deepsleep_reset_reason_flag())
+    {
+        uint64_t current_time_us = bk_aon_rtc_get_us();
+        uint64_t deepsleep_start_time_us = 0;
+
+        ret = aon_rtc_get_deepsleep_start_time(&deepsleep_start_time_us);
+        if(ret != BK_OK)
+        {
+            deepsleep_start_time_us = 0;
+        }
+        ANA_RTC_LOGD("deepsleep_start_time_us=0x%llx\r\n", deepsleep_start_time_us);
+        ANA_RTC_LOGD("current_time_us=0x%llx\r\n", current_time_us);
+        if(current_time_us < deepsleep_start_time_us)
+        {
+            s_rtc_keep_time_offset_us = (uint64_t)(0) - deepsleep_start_time_us + current_time_us;
+        }
+        else
+        {
+            s_rtc_keep_time_offset_us = current_time_us - deepsleep_start_time_us;
+        }
+        ANA_RTC_LOGI("s_rtc_keep_time_offset_us=0x%llx\r\n", s_rtc_keep_time_offset_us);
+
+        uint64_t boot_time_us = 0;
+        ret = aon_rtc_get_boot_time_us(&boot_time_us);
+        if(ret == BK_OK)
+        {
+            s_boot_time_us = boot_time_us;
+            ANA_RTC_LOGI("s_boot_time_us=0x%llx\r\n", s_boot_time_us);
+        }
+        ANA_RTC_LOGD("deepsleep boot\r\n");
+    }
+    else
+    {
+        // other case, check the boot time from flash
+        // for power on, there has two cases:
+        // 1. power off long time, rtc was reset. load s_boot_time_us has no sense. still load as it no effect.
+        // 2. power off short time, rtc was not reset. s_boot_time_us is valid.
+        uint64_t boot_time_us = 0;
+        ret = aon_rtc_get_boot_time_us(&boot_time_us);
+        if(ret == BK_OK)
+        {
+            s_boot_time_us = boot_time_us;
+            ANA_RTC_LOGI("s_boot_time_us=0x%llx\r\n", s_boot_time_us);
+        }
+        s_rtc_keep_time_offset_us = 0;
+        ANA_RTC_LOGD("hot reboot\r\n");
+    }
+}
+
+static void bk_rtc_keep_time_enter_deepsleep(void)
+{
+    ANA_RTC_LOGD("[+]%s\r\n", __func__);
+
+    if (aon_rtc_bake_entry_deepsleep_timeofday() != BK_OK)
+    {
+        ANA_RTC_LOGE("%s: bake time to flash failed\r\n", __func__);
+    }
+
+    ANA_RTC_LOGD("[-]%s\r\n", __func__);
+}
+
+static void bk_rtc_keep_time_exit_deepsleep(void)
+{
+    ANA_RTC_LOGD("%s\r\n", __func__);
+}
+
+static void aon_rtc_register_deepsleep_cb(void)
+{
+    pm_cb_conf_t aon_rtc_enter_config = {
+            .cb = (pm_cb)bk_rtc_keep_time_enter_deepsleep,
+            .args = NULL
+            };
+    pm_cb_conf_t aon_rtc_exit_config = {
+            .cb = (pm_cb)bk_rtc_keep_time_exit_deepsleep,
+            .args = NULL
+            };
+    bk_pm_sleep_register_cb(PM_MODE_DEEP_SLEEP, PM_DEV_ID_RTC, &aon_rtc_enter_config, &aon_rtc_exit_config);
+}
+#endif //CONFIG_AON_RTC_KEEP_TIME_SUPPORT
+
+bk_err_t bk_rtc_get_deepsleep_duration_seconds(uint32_t *deepsleep_seconds)
+{
+#if CONFIG_AON_RTC_KEEP_TIME_SUPPORT
+    uint64_t sec64;
+
+    if (deepsleep_seconds == NULL)
+    {
+        return BK_ERR_NULL_PARAM;
+    }
+    sec64 = s_rtc_keep_time_offset_us / 1000000ULL;
+    if (sec64 > (uint64_t)UINT32_MAX)
+    {
+        return BK_FAIL;
+    }
+    *deepsleep_seconds = (uint32_t)sec64;
+    return BK_OK;
+#else
+    (void)deepsleep_seconds;
+#endif
+    return BK_FAIL;
+}
+
 bk_err_t bk_rtc_gettimeofday(struct timeval *tv, void *ptz)
 {
     (void)ptz;
@@ -1109,6 +1397,11 @@ bk_err_t bk_rtc_settimeofday(const struct timeval *tv, const struct timezone *tz
         uint64_t getCurTimeUs = bk_aon_rtc_get_us();
 
         s_boot_time_us = setTimeUs - getCurTimeUs;
+
+#if CONFIG_AON_RTC_KEEP_TIME_SUPPORT
+        aon_rtc_bake_boot_time_us();
+#endif
+
         ANA_RTC_LOGD("%s:sec=%d us=%d\n", __func__, tv->tv_sec, tv->tv_usec);
         ANA_RTC_LOGD("get us:h=0x%x,l=0x%x\n", getCurTimeUs >> 32, (uint32_t)getCurTimeUs);
     }
