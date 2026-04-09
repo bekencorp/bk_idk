@@ -18,12 +18,13 @@
 #include <driver/gpio.h>
 #include <driver/hal/hal_gpio_types.h>
 #include "gpio_driver.h"
+#include "gpio_driver_base.h"
 
 static void cli_gpio_help(void)
 {
 	CLI_LOGI("gpio_driver [init/deinit] \r\n");
 
-	CLI_LOGI("gpio    [set_config/input_pulldown/input_pullup////]    only in set_sonfig:[io_mode]    [pull mode] \r\n");
+	CLI_LOGI("gpio    [set_config/input_pulldown/input_pullup]    only in set_sonfig:[io_mode]    [pull mode] \r\n");
 	CLI_LOGI("gpio    [output/input]    [gpio_pin]    [pullup/pulldown] \r\n");
 	CLI_LOGI("gpio    [output_high/output_low/input_get]    [gpio_pin] \r\n");
 	CLI_LOGI("gpio_map    [sdio_map/spi_map]     [mode]\r\n");
@@ -35,6 +36,9 @@ static void cli_gpio_help(void)
 #endif
 #if CONFIG_GPIO_SIMULATE_UART_WRITE
 	CLI_LOGI("gpio_uart_write    [index][div(baud_rate=1Mbps/(1+div))][string(len < 8)]\r\n");
+#endif
+#if CONFIG_GPIO_ATE_TEST
+	CLI_LOGI("gpio_ate_test\r\n");
 #endif
 }
 
@@ -433,6 +437,13 @@ static void cli_gpio_dump_map_dev_cfg_cmd(char *pcWriteBuffer, int xWriteBufferL
 }
 #endif
 
+#if CONFIG_GPIO_ATE_TEST
+static void cli_gpio_ate_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	bk_gpio_ate_test();
+}
+#endif
+
 #define GPIO_CMD_CNT (sizeof(s_gpio_commands) / sizeof(struct cli_command))
 static const struct cli_command s_gpio_commands[] = {
 	{"gpio_int", "gpio_int    [index]     [inttype/start/stop]     [low/high_level/rising/falling edge]", cli_gpio_int_cmd},
@@ -449,7 +460,10 @@ static const struct cli_command s_gpio_commands[] = {
 	{"gpio_uart_write", "[index][div(baud_rate=1Mbps/(1+div))][string]", cli_gpio_simulate_uart_write_cmd},
 #endif
 #if CONFIG_GPIO_DUMP_MAP_DEV_DEBUG
-	{"gpio_dump_map_dev_cfg", "gpio_dump_map_dev_cfg", cli_gpio_dump_map_dev_cfg_cmd}
+	{"gpio_dump_map_dev_cfg", "gpio_dump_map_dev_cfg", cli_gpio_dump_map_dev_cfg_cmd},
+#endif
+#if CONFIG_GPIO_ATE_TEST
+	{"gpio_ate_test", "gpio_ate_test", cli_gpio_ate_test_cmd},
 #endif
 };
 

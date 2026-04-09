@@ -45,6 +45,7 @@ extern "C" {
 #define BK_ERR_GPIO_INVALID_ID		(BK_ERR_GPIO_BASE - 11) /**< gpio id is invalid */
 #define BK_ERR_GPIO_WAKESOURCE_OVER_MAX_CNT (BK_ERR_GPIO_BASE - 12) /**< too much GPIO is register to wakeup source */
 #define BK_ERR_ANA_GPIO_TYPE_NOT_SUPPORT (BK_ERR_GPIO_BASE - 13) /**< analog gpio wake source pin config is invalid>*/
+#define BK_ERR_GPIO_ATE_TEST_FAILED      (BK_ERR_GPIO_BASE - 14) /**< gpio ate test failed */
 
 /**
  * @brief GPIO interrupt service routine

@@ -89,7 +89,7 @@ menu "GPIO"
 	config GPIO_DUMP_MAP_DEV_DEBUG
 		bool "Enable GPIO MAP DEV DEBUG CODE"
 		default n
-		
+
 	config GPIO_API_TEST
 		depends on GPIO && DRIVER_TEST
 		bool "Enable gpio api test"
@@ -97,5 +97,10 @@ menu "GPIO"
 
 	config GPIO_CLOCK_PIN_SUPPORT
 		bool "Enable gpio clock pin test"
+		default n
+
+	config GPIO_ATE_TEST
+		depends on GPIO
+		bool "Enable gpio ate test"
 		default n
 endmenu

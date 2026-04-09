@@ -15,6 +15,7 @@
 #pragma once
 
 #include <components/log.h>
+#include "gpio_hal.h"
 
 typedef struct {
 	gpio_hal_t hal;
@@ -27,3 +28,6 @@ typedef struct {
 #define GPIO_LOGE(...) BK_LOGE(GPIO_TAG, ##__VA_ARGS__)
 #define GPIO_LOGD(...) BK_LOGD(GPIO_TAG, ##__VA_ARGS__)
 
+#if CONFIG_GPIO_ATE_TEST
+bk_err_t bk_gpio_ate_test(void);
+#endif

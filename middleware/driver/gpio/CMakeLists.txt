@@ -20,6 +20,10 @@ if (CONFIG_GPIO)
 		list(APPEND srcs gpio/gpio_test.c)
 	endif()
 
+	if (CONFIG_GPIO_ATE_TEST)
+		list(APPEND srcs gpio/gpio_ate_test.c)
+	endif()
+
 	set(incs ${incs} PARENT_SCOPE)
 	set(srcs ${srcs} PARENT_SCOPE)
 endif()

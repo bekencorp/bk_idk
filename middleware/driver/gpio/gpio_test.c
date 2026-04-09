@@ -20,6 +20,7 @@
 #include "gpio_driver.h"
 #include "aon_pmu_driver.h"
 #include <os/os.h>
+#include "gpio_driver_base.h"
 
 static void cli_gpio_help(void)
 {
@@ -453,7 +454,7 @@ static void cli_gpio_int_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
 #if CONFIG_SYS_CPU0
 
 static void gpio_toggle(uint32_t id, int iterations, uint32_t bit)
-{ 
+{
 	if (bit == 2)
 	{
 		for(int i = 0; i < iterations; i++)
@@ -476,7 +477,7 @@ static void gpio_toggle(uint32_t id, int iterations, uint32_t bit)
 	{
 		CLI_LOGI("Invalid value\r\n");
 	}
-	
+
 }
 
 static void cli_gpio_mulcore_isr_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
@@ -488,7 +489,7 @@ static void cli_gpio_mulcore_isr_cmd(char *pcWriteBuffer, int xWriteBufferLen, i
 
 	uint32_t cpu0_gpio_id = 0;
 	int iterations = 0;
-	uint32_t bit = 0; //to check pull mode 
+	uint32_t bit = 0; //to check pull mode
 
 	cpu0_gpio_id = os_strtoul(argv[1], NULL, 10);
 	iterations = os_strtoul(argv[2], NULL, 10);
@@ -522,7 +523,7 @@ uint32_t cpu1_set_gpio_id = 0;
 void cpu1_gpio_task(void *param)
 {
 	while(1)
-	{	
+	{
 		if (gpio_isr_flag)
 		{
 			gpio_isr_flag = 0;
@@ -601,6 +602,13 @@ static void cli_gpio_dump_map_dev_cfg_cmd(char *pcWriteBuffer, int xWriteBufferL
 }
 #endif
 
+#if CONFIG_GPIO_ATE_TEST
+static void cli_gpio_ate_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	bk_gpio_ate_test();
+}
+#endif
+
 #define GPIO_CMD_CNT (sizeof(s_gpio_commands) / sizeof(struct cli_command))
 DRV_CLI_CMD_EXPORT static const struct cli_command s_gpio_commands[] = {
 	{"gpio_int", "gpio_int    [index]     [inttype/start/stop]     [low_level/high_level/rising_edge/falling_edge]", cli_gpio_int_cmd},
@@ -627,6 +635,9 @@ DRV_CLI_CMD_EXPORT static const struct cli_command s_gpio_commands[] = {
 #endif
 #if CONFIG_GPIO_DUMP_MAP_DEV_DEBUG
 	{"gpio_dump_map_dev_cfg", "gpio_dump_map_dev_cfg", cli_gpio_dump_map_dev_cfg_cmd}
+#endif
+#if CONFIG_GPIO_ATE_TEST
+	{"gpio_ate_test", "gpio_ate_test", cli_gpio_ate_test_cmd}
 #endif
 };
 
