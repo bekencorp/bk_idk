@@ -393,6 +393,12 @@ tcp_close_shutdown(struct tcp_pcb *pcb, u8_t rst_on_unacked_data)
     }
   }
 
+  //Modified by tuya:
+  if ((pcb != NULL) && (pcb->state != LISTEN)) {
+      tcp_abort(pcb);
+      return ERR_OK;
+  }
+
   /* - states which free the pcb are handled here,
      - states which send FIN and change state are handled in tcp_close_shutdown_fin() */
   switch (pcb->state) {
