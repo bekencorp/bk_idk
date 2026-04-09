@@ -895,13 +895,11 @@ int wpa_send_assoc_req(struct prism2_hostapd_param *param, int len)
 		connect_param->port_ethtype = ETH_P_PAE;
 #endif
 
-#if NX_VERSION >= NX_VERSION_PACK(6, 22, 0, 0)
 	if (param->u.assoc_req.group_suite != WPA_CIPHER_NONE)
 		connect_param->flags |= USE_PRIVACY;
 
 	if (rwnx_mod_params.amsdu_require_spp)
 		connect_param->flags |= REQUIRE_SPP_AMSDU;
-#endif
 
 	connect_param->vif_idx = param->vif_idx;
 	connect_param->ssid.length = param->u.assoc_req.ssid_len;
