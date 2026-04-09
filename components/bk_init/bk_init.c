@@ -70,13 +70,13 @@ extern void bk_ota_confirm_update_partition(ota_confirm_flag ota_confirm_val);
 #endif
 #endif
 
-#if defined(CONFIG_WIFI_AT_ENABLE) && defined(CONFIG_WIFI_ENABLE) 
+#if defined(CONFIG_WIFI_AT_ENABLE) && defined(CONFIG_WIFI_ENABLE)
 #include "wifi_at.h"
 #endif
-#if defined(CONFIG_BT_AT_ENABLE) && defined(CONFIG_BT) 
+#if defined(CONFIG_BT_AT_ENABLE) && defined(CONFIG_BT)
 #include "bk_at_bluetooth.h"
 #endif
-#if defined(CONFIG_NETIF_AT_ENABLE) && defined(CONFIG_WIFI_ENABLE) 
+#if defined(CONFIG_NETIF_AT_ENABLE) && defined(CONFIG_WIFI_ENABLE)
 #include "bk_at_netif.h"
 
 
@@ -162,7 +162,7 @@ static int app_wifi_init(void)
 #if CONFIG_WIFI_AT_ENABLE
 	wifi_at_cmd_init();
 #endif
-#if CONFIG_NETIF_AT_ENABLE 
+#if CONFIG_NETIF_AT_ENABLE
 	netif_at_cmd_init();
 #endif
 
@@ -186,7 +186,7 @@ static int app_bt_init(void)
 	if (!ate_is_enabled())
 		bt_activate(NULL);
 #endif
-#if (CONFIG_BT_AT_ENABLE) 
+#if (CONFIG_BT_AT_ENABLE)
 	bt_at_cmd_init();
 #endif
 
@@ -310,6 +310,21 @@ int bk_cali_customer_init(void)
 }
 #endif
 
+#if CONFIG_BK_OTA
+static bool is_deep_sleep_wakeup(void)
+{
+	uint32_t reset_reason = bk_misc_get_reset_reason();
+
+	BK_LOGD(TAG, "reset_reason: %x\r\n", reset_reason);
+
+	return (reset_reason == RESET_SOURCE_DEEPPS_GPIO) ||
+			(reset_reason == RESET_SOURCE_DEEPPS_RTC) ||
+			(reset_reason == RESET_SOURCE_DEEPPS_USB) ||
+			(reset_reason == RESET_SOURCE_DEEPPS_TOUCH) ||
+			(reset_reason == RESET_SOURCE_SUPER_DEEP);
+}
+#endif
+
 int components_init(void);
 
 int bk_init(void)
@@ -324,8 +339,10 @@ int bk_init(void)
 #endif
 
 #if CONFIG_BK_OTA
-	bk_ota_accept_image();
-	bk_ota_cancel_update(0);
+	if (!is_deep_sleep_wakeup()) {
+		bk_ota_accept_image();
+		bk_ota_cancel_update(0);
+	}
 #endif
 
 #if CONFIG_SYS_CPU0
@@ -421,10 +438,10 @@ int bk_init(void)
 #endif //!(CONFIG_SYS_CPU1)
 
 	app_cli_init();
-#if CONFIG_AT 
+#if CONFIG_AT
 	extern int atsvr_app_init(void);
 	if(0 != atsvr_app_init())
-		return -1;	
+		return -1;
 #endif
 
 #if (CONFIG_VAULT_SUPPORT)
