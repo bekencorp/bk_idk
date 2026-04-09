@@ -12,7 +12,14 @@
 #ifndef PWM_CLOCK_SRC_XTAL
 #define PWM_CLOCK_SRC_XTAL 26000000
 #endif
-#define _PERIOD_2_FREQ(period)    ((period == 0) ? (0) : (PWM_CLOCK_SRC_XTAL / (period)))
+
+#if CONFIG_PWM_SCLK_80M
+#define PWM_CLOCK_SRC_FREQ 80000000
+#else
+#define PWM_CLOCK_SRC_FREQ PWM_CLOCK_SRC_XTAL
+#endif
+
+#define _PERIOD_2_FREQ(period)    ((period == 0) ? (0) : (PWM_CLOCK_SRC_FREQ / (period)))
 
 static void cli_pwm_help(void)
 {
@@ -302,7 +309,7 @@ static void cli_pwm_capture_cmd(char *pcWriteBuffer, int xWriteBufferLen, int ar
 }
 
 #define PWM_FREQ           (16000)
-static uint32_t s_period_cycle = PWM_CLOCK_SRC_XTAL / PWM_FREQ;
+static uint32_t s_period_cycle = PWM_CLOCK_SRC_FREQ / PWM_FREQ;
 
 static void pwm_init_and_start_all_chan_test(uint32_t period_cycle, uint32_t duty_cycle)
 {
@@ -474,7 +481,7 @@ static void cli_pwm_idle_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int 
 			return;
 		}
 		uint32_t freq = os_strtoul(argv[2], NULL, 10);
-		uint32_t period_cycle = PWM_CLOCK_SRC_XTAL / freq;
+		uint32_t period_cycle = PWM_CLOCK_SRC_FREQ / freq;
 		uint32_t duty_cycle = period_cycle * os_strtoul(argv[3], NULL, 10) / 100;
 
 		// duty_cycle should test: 0, period_cycle, 1, period_cycle - 1
@@ -502,7 +509,7 @@ static void cli_pwm_idle_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int 
 		config.chan1 = os_strtoul(argv[2], NULL, 10);
 		config.chan2 = os_strtoul(argv[3], NULL, 10);
 		uint32_t freq = os_strtoul(argv[4], NULL, 10);
-		uint32_t period_cycle = PWM_CLOCK_SRC_XTAL / freq;
+		uint32_t period_cycle = PWM_CLOCK_SRC_FREQ / freq;
 
 		config.period_cycle = period_cycle;
 		config.chan1_duty_cycle = period_cycle * os_strtoul(argv[5], NULL, 10) / 100;
@@ -520,7 +527,7 @@ static void cli_pwm_idle_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int 
 	} else if (os_strcmp(argv[1], "group_update") == 0) {
 		uint32_t start_group = os_strtoul(argv[2], NULL, 10);
 		uint32_t freq = os_strtoul(argv[3], NULL, 10);
-		uint32_t period_cycle = PWM_CLOCK_SRC_XTAL / freq;
+		uint32_t period_cycle = PWM_CLOCK_SRC_FREQ / freq;
 
 		pwm_group_config_t config = {0};
 

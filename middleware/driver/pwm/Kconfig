@@ -30,6 +30,11 @@ menu "PWM"
 		bool "PWM fade mode support"
 		default n
 
+	config PWM_SCLK_80M
+		depends on PWM
+		bool "Use 80MHz as PWM source clock (default: XTAL)"
+		default n
+
 	config PWM_TEST
 		depends on PWM && DRIVER_TEST
 		bool "Enable pwm test"

@@ -155,7 +155,11 @@ static void pwm_chan_init_gpio(pwm_chan_t sw_ch)
 static void pwm_chan_init_common(pwm_chan_t sw_ch)
 {
 	sys_drv_dev_clk_pwr_up(CLK_PWR_ID_PWM_1, CLK_PWR_CTRL_PWR_UP);
+#if CONFIG_PWM_SCLK_80M
+	sys_drv_pwm_select_clock(SYS_SEL_PWM0, PWM_SCLK_80M);
+#else
 	sys_drv_pwm_select_clock(SYS_SEL_PWM0, PWM_SCLK_XTAL);
+#endif
 	sys_drv_int_enable(PWM_INTERRUPT_CTRL_BIT);
 	pwm_chan_init_gpio(sw_ch);
 	s_pwm.chan_init_bits |= BIT(sw_ch);
