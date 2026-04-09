@@ -261,7 +261,7 @@ static void bl2_deep_lv_boot(void)
 static uint32_t memory_is_retention(void)
 {
 	return ((REG_READ(0x2807E400 + (16 << 2)) == 0x5A5A5A5A)
-		    || (REG_READ(0x2807E400 + (17 << 2)) == 0xA5A5A5A5));
+		    && (REG_READ(0x2807E400 + (17 << 2)) == 0xA5A5A5A5));
 }
 
 __NO_RETURN ENTRY_SECTION __attribute__((naked)) void Reset_Handler(void)
