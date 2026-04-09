@@ -37,6 +37,8 @@
 #include <modules/pm.h>
 #include <soc/soc.h>
 #include "sys_persist_config.h"
+#include "bootutil_priv.h"
+#include <driver/flash.h>
 #if CONFIG_BL2_WDT
 #include <driver/wdt_hal.h>
 #endif
@@ -74,9 +76,9 @@ static void do_boot(struct boot_rsp *rsp)
     struct boot_arm_vector_table *vt;
     int rc;
     uint32_t image_off;
-    
+
     if (rsp->br_hdr != NULL) {
-        /* Due to hardware limitation, always use primary slot (slot0) offset 
+        /* Due to hardware limitation, always use primary slot (slot0) offset
          * to calculate vector table address, regardless of which slot we're booting from
          * or which mode (XIP or overwrite) we're using.
          * The flash_set_excute_enable() call already sets the correct slot for execution.
@@ -95,14 +97,14 @@ static void do_boot(struct boot_rsp *rsp)
 
 #if CONFIG_FLASH_CRC_ENABLE
     // In CRC mode, use original calculation
-    vt = (struct boot_arm_vector_table *)(FLASH_BASE + 
+    vt = (struct boot_arm_vector_table *)(FLASH_BASE +
                     FLASH_PHY2VIRTUAL_CODE_START(image_off +
                                          rsp->br_hdr->ih_hdr_size / 32 * 34) + CONFIG_SYS_PERSIST_SIZE);
 #else
     // In no_crc mode, vector table is at image_off + hdr_size (1:1 mapping)
     vt = (struct boot_arm_vector_table *)(FLASH_BASE + image_off + rsp->br_hdr->ih_hdr_size + CONFIG_SYS_PERSIST_SIZE);
 #endif
-    
+
 #if MCUBOOT_LOG_LEVEL > MCUBOOT_LOG_LEVEL_OFF || TEST_BL2
 #if CONFIG_BL2_CLEAN_UART_ON_EXIT
     stdio_uninit();
@@ -124,24 +126,47 @@ extern uint32_t sys_is_running_from_deep_sleep(void);
 
 static void deep_sleep_reset(void)
 {
-    struct boot_arm_vector_table *vt;
+    struct boot_rsp rsp;
+    struct image_header fast_boot_hdr;
+    const struct flash_area *fap = NULL;
+    int rc;
 
-    if (sys_is_running_from_deep_sleep() && sys_is_enable_fast_boot() && (!sys_is_running_from_ota())) {
+    if (sys_is_running_from_deep_sleep() && sys_is_enable_fast_boot()) {
         BOOT_LOG_INF("deep sleep fastboot");
-        extern uint32_t get_flash_map_offset(uint32_t index);
-        uint32_t phy_offset  = get_flash_map_offset(0);
-        uint32_t virtual_off = FLASH_PHY2VIRTUAL(phy_offset);
-        vt = (struct boot_arm_vector_table *)(FLASH_DEVICE_BASE +
-                    FLASH_CEIL_ALIGN(virtual_off + HDR_SZ, CPU_VECTOR_ALIGN_SZ));
-#if CONFIG_DIRECT_XIP
-        uint32_t candidate_slot = 0;
-        uint32_t reg = aon_pmu_ll_get_r7b();
-        aon_pmu_ll_set_r0(reg);
-        candidate_slot = !!(reg & BIT(3));
-        extern void flash_set_excute_enable(int enable);
-        flash_set_excute_enable(candidate_slot);
+
+        memset(&rsp, 0, sizeof(rsp));
+
+        /*
+         * read image header directly from flash,
+         * skip BL2 signature verification for faster wake-up.
+         */
+#if CONFIG_DIRECT_XIP || CONFIG_MIXED_OTA
+        uint32_t running_slot = boot_read_running_slot();
+        flash_set_excute_enable(running_slot);
+
+        rc = flash_area_open(FLASH_AREA_XIP_A_ID, &fap);
+#else
+        rc = flash_area_open(FLASH_AREA_OVERWRITE_ID, &fap);
 #endif
-        boot_platform_quit(vt);
+        if (rc != 0) {
+            BOOT_LOG_ERR("fastboot: flash_area_open failed (%d)", rc);
+            return;
+        }
+
+        rc = flash_area_read(fap, 0, &fast_boot_hdr, sizeof(fast_boot_hdr));
+        flash_area_close(fap);
+        if (rc != 0) {
+            BOOT_LOG_ERR("fastboot: flash_area_read failed (%d)", rc);
+            return;
+        }
+
+        if (fast_boot_hdr.ih_magic != IMAGE_MAGIC) {
+            BOOT_LOG_ERR("fastboot: bad image magic 0x%x", fast_boot_hdr.ih_magic);
+            return;
+        }
+
+        rsp.br_hdr = &fast_boot_hdr;
+        do_boot(&rsp);
     }
 }
 #if CONFIG_RANDOM_AES_UPGRADE_BL2
@@ -203,7 +228,7 @@ int main(void)
     stdio_init();
 #endif
 #endif
-    
+
 #if (CONFIG_IOMX)
     hal_iomux_init();
     hal_iomux_uart_enable(IOMX_UART_TX);

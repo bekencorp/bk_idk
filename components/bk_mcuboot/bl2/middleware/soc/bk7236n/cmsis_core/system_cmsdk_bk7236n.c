@@ -17,22 +17,16 @@
 #include "core_star.h"
 #include "sdkconfig.h"
 #include "mpu.h"
+#include "aon_pmu_ll.h"
 
 #define SYSTEM_CLOCK     CONFIG_XTAL_FREQ
 #define PERIPHERAL_CLOCK CONFIG_XTAL_FREQ
 
-#define BK7236_PMU_BASE_ADDR        0x44000000
-#define DEEP_SLEEP_RESTART_BIT      (0x1 << 1)
-#define OTA_FINISH_RESTART_BIT      (0x1 << 2)
-#define BK7236_PMU_RESET_REASON_GET (*((volatile unsigned int *)(BK7236_PMU_BASE_ADDR + 0x0 * 4)))
-#define RUNNING_IS_FROM_DEEP_SLEEP  ((BK7236_PMU_RESET_REASON_GET & DEEP_SLEEP_RESTART_BIT) != 0)
-#define RUNNING_IS_FROM_OTA         ((BK7236_PMU_RESET_REASON_GET & OTA_FINISH_RESTART_BIT) != 0)
-
-#define EFUSE_REG2_MODULE           *((volatile unsigned long *)(0x44880000 + 0x2 * 4))
-#define EFUSE_REG4_CTRL             *((volatile unsigned long *)(0x44880000 + 0x4 * 4))
-#define EFUSE_REG5_DATA             *((volatile unsigned long *)(0x44880000 + 0x5 * 4))
-#define EFUSE_READ_IS_VALID         ((EFUSE_REG5_DATA & 0x100) >> 8)
-#define EFUSE_FAST_BOOT_DISABLE_BIT (1 << 2)
+#define SOC_MEM_CHECK_REG_BASE          (0x44890000)
+#define EFUSE_WORD                      *((volatile unsigned long *) (SOC_MEM_CHECK_REG_BASE + 0x40 * 4))
+#define EFUSE_WORD_CHECK(mask)          ((EFUSE_WORD & (mask)) ? (mask) : 0)
+#define OTP_EFUSE_BIT_CHECK(mask)       EFUSE_WORD_CHECK(mask)
+#define EFUSE_FAST_BOOT_DISABLE_BIT     (1 << 2)
 
 #if defined(__VTOR_PRESENT) && (__VTOR_PRESENT == 1U)
 #if CONFIG_BL2_DOWNLOAD
@@ -53,32 +47,22 @@ void SystemCoreClockUpdate(void)
 
 uint32_t sys_is_enable_fast_boot(void)
 {
-    volatile uint32_t loop_cnt = 0;
-    uint32_t efuse_data;
+    return !(OTP_EFUSE_BIT_CHECK(EFUSE_FAST_BOOT_DISABLE_BIT));
+}
 
-    EFUSE_REG2_MODULE = 0x03;
-    EFUSE_REG4_CTRL = 0x01;
-
-    while ((EFUSE_READ_IS_VALID == 0)) {
-        /* about 600ms */
-        if (loop_cnt++ > 1020000) {
-            return 0;
-        }
-    }
-
-    efuse_data = EFUSE_REG5_DATA;
-
-    return (!(efuse_data & EFUSE_FAST_BOOT_DISABLE_BIT));
+uint32_t sys_is_running_from_deep_lv(void)
+{
+    return (aon_pmu_ll_get_r7b_dlv_startup() != 0);
 }
 
 uint32_t sys_is_running_from_deep_sleep(void)
 {
-    return (RUNNING_IS_FROM_DEEP_SLEEP);
+    return (aon_pmu_ll_get_r7b_fast_boot() != 0);
 }
 
 uint32_t sys_is_running_from_ota(void)
 {
-    return (RUNNING_IS_FROM_OTA);
+    return 0;
 }
 
 /* System initialization function */
