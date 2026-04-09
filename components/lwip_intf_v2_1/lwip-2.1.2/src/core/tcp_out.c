@@ -1941,8 +1941,50 @@ tcp_output_fill_options(const struct tcp_pcb *pcb, struct pbuf *p, u8_t optflags
     /* 1 word for SACKs header (including 2xNOP), and 2 words for each SACK */
     sacks_len = 1 + num_sacks * 2;
     opts += sacks_len;
-  }else if(pcb && (pcb->ooq_seqno > pcb->rcv_nxt) && (pcb->ooq_flag == 1)) {
-    tcp_build_sack_option_no_ooq(pcb, opts);
+  }
+#else
+  LWIP_UNUSED_ARG(num_sacks);
+#endif
+
+#ifdef LWIP_HOOK_TCP_OUT_ADD_TCPOPTS
+  opts = LWIP_HOOK_TCP_OUT_ADD_TCPOPTS(p, tcphdr, pcb, opts);
+#endif
+
+  LWIP_UNUSED_ARG(pcb);
+  LWIP_UNUSED_ARG(sacks_len);
+  LWIP_ASSERT("options not filled", (u8_t *)opts == ((u8_t *)(tcphdr + 1)) + sacks_len * 4 + LWIP_TCP_OPT_LENGTH_SEGMENT(optflags, pcb));
+  LWIP_UNUSED_ARG(optflags); /* for LWIP_NOASSERT */
+  LWIP_UNUSED_ARG(opts); /* for LWIP_NOASSERT */
+}
+
+static void
+tcp_output_fill_options_empty_ack(const struct tcp_pcb *pcb, struct pbuf *p, u8_t optflags, u8_t num_sacks)
+{
+  struct tcp_hdr *tcphdr;
+  u32_t *opts;
+  u16_t sacks_len = 0;
+
+  LWIP_ASSERT("tcp_output_fill_options_empty_ack: invalid pbuf", p != NULL);
+
+  tcphdr = (struct tcp_hdr *)p->payload;
+  opts = (u32_t *)(void *)(tcphdr + 1);
+
+  /* NB. MSS and window scale options are only sent on SYNs, so ignore them here */
+
+#if LWIP_TCP_TIMESTAMPS
+  if (optflags & TF_SEG_OPTS_TS) {
+    tcp_build_timestamp_option(pcb, opts);
+    opts += 3;
+  }
+#endif
+
+#if LWIP_TCP_SACK_OUT
+  if (pcb && (num_sacks > 0)) {
+    tcp_build_sack_option(pcb, opts, num_sacks);
+    /* 1 word for SACKs header (including 2xNOP), and 2 words for each SACK */
+    sacks_len = 1 + num_sacks * 2;
+    opts += sacks_len;
+  }else if(pcb && TCP_SEQ_GT(pcb->ooq_seqno, pcb->rcv_nxt) && (pcb->ooq_flag == 1)) {
     /* 1 word for SACKs header (including 2xNOP), and 2 words for each SACK */
     sacks_len = 1 + 1 * 2;
     opts += sacks_len;
@@ -2110,7 +2152,7 @@ tcp_send_empty_ack(struct tcp_pcb *pcb)
     LWIP_DEBUGF(TCP_OUTPUT_DEBUG, ("tcp_output: (ACK) could not allocate pbuf\n"));
     return ERR_BUF;
   }
-  tcp_output_fill_options(pcb, p, optflags, num_sacks);
+  tcp_output_fill_options_empty_ack(pcb, p, optflags, num_sacks);
 #if LWIP_TCP_SACK_OUT
   pcb->ooq_flag = 0;
 #endif
