@@ -21,8 +21,8 @@
 extern "C" {
 #endif
 
-/* Starts background STA association + periodic temperature-bucket statistics sampling */
 void wifi_reliability_start(void);
+extern int get_current_temperature_code(void);
 
 #ifdef __cplusplus
 }

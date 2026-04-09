@@ -36,4 +36,16 @@ menu "Project specific config"
 		default 3
 		depends on WIFI_RELIABILITY_TEST
 
+	config RELIABILITY_CPU_FREQ_MHZ
+		int "CPU frequency for reliability test (MHz)"
+		default 120
+		range 120 240
+		help
+		  Select 120/160/240 MHz for CPU frequency voting in reliability tests.
+
+	config WIFI_RELIABILITY_SHOW_TEMP_INTERVAL
+		int "Show temperature interval for WiFi reliability test (in seconds)"
+		default 10
+		depends on WIFI_RELIABILITY_TEST
+
 endmenu

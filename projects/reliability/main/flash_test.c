@@ -225,16 +225,16 @@ static void flash_reliability_worker_thread(beken_thread_arg_t arg)
 	FLASH_IO_TRACE_UP(15);
 	g_reliability_stats.flash.test_count++;
 
-	bk_flash_set_protect_type(FLASH_PROTECT_NONE);
+        bk_flash_set_protect_type(FLASH_PROTECT_NONE);
 	flash_reliability_verify();
-	bk_flash_set_protect_type(FLASH_PROTECT_ALL);
+        bk_flash_set_protect_type(FLASH_PROTECT_ALL);
 
 	statis_save_to_flash();
 	statis_print_all_results();
 
 	s_flash_reliability_thread = NULL;
 	FLASH_IO_TRACE_DOWN(15);
-	rtos_delete_thread(NULL);
+    rtos_delete_thread(NULL);
 }
 
 void flash_reliability_test_start(void)

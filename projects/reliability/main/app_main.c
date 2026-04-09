@@ -24,11 +24,33 @@
 #include "cli_statis.h"
 #include "psram_test.h"
 
+static void user_app_vote_cpu_freq(void)
+{
+	switch (CONFIG_RELIABILITY_CPU_FREQ_MHZ) {
+	case 120:
+		bk_pm_module_vote_cpu_freq(PM_DEV_ID_DEFAULT, PM_CPU_FRQ_120M);
+		break;
+	case 160:
+		bk_pm_module_vote_cpu_freq(PM_DEV_ID_DEFAULT, PM_CPU_FRQ_160M);
+		break;
+	case 240:
+		bk_pm_module_vote_cpu_freq(PM_DEV_ID_DEFAULT, PM_CPU_FRQ_240M);
+		break;
+	default:
+		/* Fallback to 120M to keep the behavior deterministic. */
+		bk_pm_module_vote_cpu_freq(PM_DEV_ID_DEFAULT, PM_CPU_FRQ_120M);
+		break;
+	}
+}
+
 void user_app_main(void)
 {
-	bk_pm_module_vote_cpu_freq(PM_DEV_ID_DEFAULT, PM_CPU_FRQ_120M);
+	user_app_vote_cpu_freq();
 
 	statis_load_from_flash();
+
+	int current_temp_code = get_current_temperature_code();
+	BK_RAW_LOGI("APP_MAIN", "Current temperature code: %d\r\n", current_temp_code);
 
 #if CONFIG_CLI && (CONFIG_WIFI_RELIABILITY_TEST || CONFIG_FLASH_RELIABILITY_TEST)
 	statis_cli_register_cmds();

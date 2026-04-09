@@ -27,8 +27,6 @@
 
 #define WIFI_REL_TAG "wifi"
 
-extern int get_current_temperature_code(void);
-
 static beken_thread_t s_wifi_reliability_thread = NULL;
 static int s_cached_temperature_code;
 
@@ -197,6 +195,11 @@ static void wifi_reliability_sta_monitor_thread(beken_thread_arg_t arg)
 			statis_save_to_flash();
 			statis_print_all_results();
 		}
+
+		if (g_reliability_stats.wifi.total_test_time % CONFIG_WIFI_RELIABILITY_SHOW_TEMP_INTERVAL == 0) {
+			BK_RAW_LOGI(WIFI_REL_TAG, "Current temperature code: %d\r\n", s_cached_temperature_code);
+		}
+
 	}
 }
 

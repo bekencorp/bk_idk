@@ -571,6 +571,8 @@ int temp_detect_get_temperature(uint32_t *temperature)
 	}
 
 	*temperature = cur_temperature;
+#if !CONFIG_RELIABILITY_TEST
 	TEMPD_LOGI("get temperature %d\n", cur_temperature);
+#endif
 	return err;
 }
