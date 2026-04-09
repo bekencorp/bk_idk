@@ -919,3 +919,19 @@ bool rwnx_get_tx_use_max_bw(void)
     return rwnx_mod_params.tx_use_max_bw;
 }
 
+/**
+ ****************************************************************************************
+ * @brief Get beacon loss count
+ *
+ * @return Beacon loss count
+ ****************************************************************************************
+ */
+ #if CONFIG_MICROWAVE_POLICY
+ UINT32 rwnx_get_beacon_loss_count(void)
+ {
+	 if (bk_wifi_get_microwave_policy_en())
+		 return 600;
+	 else
+		 return 0;
+ }
+ #endif
