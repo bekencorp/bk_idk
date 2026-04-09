@@ -1248,6 +1248,22 @@ static void ble_enter_dut_set_vanaldosel(uint8_t value)
     analog_val = sys_hal_analog_get(ANALOG_REG8);
     sys_hal_analog_set(ANALOG_REG8, (analog_val & ~(1U << 9)));//spi_latch1v disable
 }
+
+static void ble_enter_dut_set_xtalh_ctune_wrapper(uint8_t value)
+{
+    uint32_t analog_val = sys_hal_analog_get(ANALOG_REG2);
+
+    analog_val &= ~(0xFF << 0);
+    analog_val |= (value << 0);
+    sys_hal_analog_set(ANALOG_REG2, analog_val);
+}
+
+static uint8_t ble_enter_dut_get_xtalh_ctune_wrapper(void)
+{
+    uint32_t analog_val = sys_hal_analog_get(ANALOG_REG2);
+
+    return (analog_val >> 0) & 0xFF;
+}
 #endif
 
 static void ble_enter_dut()
@@ -1532,6 +1548,8 @@ static struct bt_osi_funcs_t bt_osi_funcs =
     ._flush_dcache = flush_dcache_wrapper,
     #if CONFIG_SOC_BK7236N
     ._ble_enter_dut_set_vanaldosel = ble_enter_dut_set_vanaldosel,
+    ._ble_enter_dut_set_xtalh_ctune = ble_enter_dut_set_xtalh_ctune_wrapper,
+    ._ble_enter_dut_get_xtalh_ctune = ble_enter_dut_get_xtalh_ctune_wrapper,
     #endif
     ._ble_enter_dut = ble_enter_dut,
     ._ble_exit_dut = ble_exit_dut,

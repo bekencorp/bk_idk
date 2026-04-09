@@ -186,6 +186,8 @@ struct bt_osi_funcs_t
     void (*_flush_dcache)(void);
     #if CONFIG_SOC_BK7236N
     void (*_ble_enter_dut_set_vanaldosel)(uint8_t value);
+    void (*_ble_enter_dut_set_xtalh_ctune)(uint8_t value);
+    uint8_t (*_ble_enter_dut_get_xtalh_ctune)(void);
     #endif
     void (*_ble_enter_dut)(void);
     void (*_ble_exit_dut)(void);
