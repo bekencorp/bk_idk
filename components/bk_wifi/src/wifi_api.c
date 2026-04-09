@@ -21,6 +21,9 @@
  **/
 #define TAG "bk_wifi"
 
+static beken_semaphore_t wlan_scan_done_sema = 0;
+static beken_mutex_t demo_scan_mutex = 0;
+
 static int wlan_scan_done_handler(void *arg, event_module_t event_module,
 								  int event_id, void *_event_data)
 {
@@ -36,6 +39,8 @@ static int wlan_scan_done_handler(void *arg, event_module_t event_module,
 		bk_wifi_scan_free_result(&scan_result);
 	}
 
+	rtos_set_semaphore(&wlan_scan_done_sema);
+
 	return BK_OK;
 }
 
@@ -46,6 +51,21 @@ void demo_scan_app_init(void)
 
 void demo_scan_adv_app_init(uint8_t *oob_ssid)
 {
+	// Init scan mutex to avoid multiple scan task at the same time
+	if (!demo_scan_mutex) {
+		if (rtos_init_mutex(&demo_scan_mutex) != kNoErr)
+			BK_ASSERT(0);
+	}
+
+	// Init scan done semaphore
+	if (!wlan_scan_done_sema) {
+		if (rtos_init_semaphore(&wlan_scan_done_sema, 1) != kNoErr)
+			BK_ASSERT(0);
+	}
+
+	// Lock scan mutex to allow only one scan
+	rtos_lock_mutex(&demo_scan_mutex);
+
 	wifi_scan_config_t scan_config = {0};
 
 	bk_event_register_cb(EVENT_MOD_WIFI, EVENT_WIFI_SCAN_DONE,
@@ -54,9 +74,19 @@ void demo_scan_adv_app_init(uint8_t *oob_ssid)
 	if (oob_ssid) {
 		os_strncpy(scan_config.ssid, (char *)oob_ssid, WIFI_SSID_STR_LEN);
 		BK_LOG_ON_ERR(bk_wifi_scan_start(&scan_config));
-	} else
+	} else {
 		BK_LOG_ON_ERR(bk_wifi_scan_start(NULL));
+	}
+
+	// wait for scan done
+	if (rtos_get_semaphore(&wlan_scan_done_sema, 20000) != kNoErr) { // 20s
+		BK_LOGE(TAG, "wait for scan result timeout\n");
+	}
+
+	// Unlock scan mutex
+	rtos_unlock_mutex(&demo_scan_mutex);
 }
+
 #if CONFIG_BRIDGE
 extern uint8 bridge_is_enabled;
 int demo_bridge_softap_init(char *ap_ssid, char *ap_key, wifi_security_t security)
