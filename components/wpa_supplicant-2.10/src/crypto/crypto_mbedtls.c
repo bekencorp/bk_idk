@@ -1296,6 +1296,13 @@ struct crypto_ecdh {
 #define ECP_PRV_DER_MAX_BYTES   29 + 3 * MBEDTLS_ECP_MAX_BYTES
 #endif
 
+#define random_get_bytes(b, l) os_get_random((b), (l))
+
+static int crypto_ecdh_get_random(void *arg, unsigned char *output,
+                             size_t output_len)
+{
+	return random_get_bytes(output, output_len);
+}
 
 int crypto_rng_wrapper(void *ctx, unsigned char *buf, size_t len)
 {
@@ -2050,7 +2057,7 @@ int crypto_ecdh(struct crypto_key *key_own, struct crypto_key *key_peer,
 		goto fail;
 	}
 
-	if (mbedtls_ecdh_calc_secret(ctx, secret_len, secret, DPP_MAX_SHARED_SECRET_LEN, NULL, NULL) < 0) {
+	if (mbedtls_ecdh_calc_secret(ctx, secret_len, secret, DPP_MAX_SHARED_SECRET_LEN, crypto_ecdh_get_random, NULL) < 0) {
 		wpa_printf(MSG_ERROR, "failed to calculate secret\n");
 		goto fail;
 	}
@@ -2319,15 +2326,6 @@ int crypto_ec_write_pub_key(struct crypto_key *key, unsigned char **key_buf)
 	return len;
 }
 
-#define random_get_bytes(b, l) os_get_random((b), (l))
-
-static int crypto_ecdh_get_random(void *arg, unsigned char *output,
-                             size_t output_len)
-{
-	random_get_bytes(output, output_len);
-	return 0;
-}
-
 struct crypto_ecdh *crypto_ecdh_init(int group)
 {
 	struct crypto_ecdh *ecdh;
@@ -2505,7 +2503,7 @@ struct wpabuf *crypto_ecdh_set_peerkey(struct crypto_ecdh *ecdh, int inc_y,
 	// bignum_print("pr Public Z Key : ", &ecdh->ctx.Qp.Z);
 
 	if (mbedtls_ecdh_calc_secret(&ecdh->ctx, &res_len, res_buf, sizeof(res_buf),
-								 NULL, NULL) != 0) {
+								 crypto_ecdh_get_random, NULL) != 0) {
 		wpa_printf(MSG_ERROR, "OWE: Fail to calc secret");
 		goto clean;
 	}
