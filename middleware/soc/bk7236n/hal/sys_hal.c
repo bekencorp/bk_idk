@@ -161,7 +161,7 @@ __IRAM_SEC void sys_hal_module_power_ctrl(power_module_name_t module,power_modul
 			value |= (1 << module);
 		}
 		sys_ll_set_cpu_power_sleep_wakeup_value(value);
-		bk_delay_us(40);// V3 delay 200us, V4 delay 0us, V5 delay 40us
+		// bk_delay_us(40);// V2 delay 0us, V3 delay 40us, V4 delay 0us
     }else if(module == POWER_MODULE_NAME_TCM1_PGEN) {
 		if(power_state == POWER_MODULE_STATE_ON) {
 			/*TODO
