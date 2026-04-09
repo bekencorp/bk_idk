@@ -96,6 +96,10 @@ menu "Bk_Wifi"
 		bool "support config sleep mode"
 		default n
 
+	config WIFI_MONITOR
+		bool "support monitor mode"
+		default y
+
 	config WIFI_NON_STANDARD
 		bool "Enable WiFi Non Standard"
 		default n
