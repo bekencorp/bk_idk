@@ -258,9 +258,15 @@ static void bl2_deep_lv_boot(void)
     while (1) {}
 }
 
+static uint32_t memory_is_retention(void)
+{
+	return ((REG_READ(0x2807E400 + (16 << 2)) == 0x5A5A5A5A)
+		    || (REG_READ(0x2807E400 + (17 << 2)) == 0xA5A5A5A5));
+}
+
 __NO_RETURN ENTRY_SECTION __attribute__((naked)) void Reset_Handler(void)
 {
-    if (AON_PMU_R7B_REG & DLV_STARTUP_BIT) {
+    if ((AON_PMU_R7B_REG & DLV_STARTUP_BIT) && memory_is_retention()) {
         __set_MSP(BL2_DLV_STACK_TOP);
         __set_MSPLIM(BL2_DLV_IRAM_START);
 
