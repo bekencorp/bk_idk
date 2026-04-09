@@ -1,0 +1,16 @@
+# The bin size whose type is code occupies more space in flash,,,,,
+# The occupied space is: bin size*34/32(and 68K aligned), only when FLASH_CRC_ENABLE=TRUE,,,,
+# When FLASH_CRC_ENABLE=TRUE, the primary_bootloader size must be 64K aligned,,,,
+# FLASH_AES_ENABLE=TRUE, FLASH_AES_KEY is used to encrypt the partition data, only when FLASH_CRC_ENABLE=TRUE,,,
+FLASH_CAPACITY=4M
+FLASH_CRC_ENABLE=TRUE
+FLASH_AES_ENABLE=FALSE
+FLASH_AES_KEY=73c7bf397f2ad6bf4e7403a7b965dc5ce0645df039c2d69c814ffb403183fb18
+#Name,Offset,Size,Type,Read,Write
+primary_bootloader,,68k,code,TRUE,FALSE
+primary_cpu0_app,,2312k,code,TRUE,FALSE
+ota,,1564K,data,TRUE,TRUE
+usr_config,,136K,data,TRUE,TRUE
+easyflash,,8K,data,TRUE,TRUE
+sys_rf,0x3FE000,4k,data,TRUE,TRUE
+sys_net,0x3FF000,4k,data,TRUE,TRUE

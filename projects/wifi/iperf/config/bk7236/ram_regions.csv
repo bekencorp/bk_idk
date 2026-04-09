@@ -1,0 +1,5 @@
+# please read doc: https://docs.bekencorp.com/arminodoc/bk_idk/bk7258/zh_CN/v2.0.2/developer-guide/config_tools/bk_config_ram_regions.html
+# SRAM base addr is 0x28000000, capacity is 640K
+# PSRAM base addr is 0x60000000
+#Name,                   Type,     Offset,     Size
+CPU0_RAM,                SRAM, 0x28000000, 0x0A0000

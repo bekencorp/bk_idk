@@ -1,0 +1,24 @@
+#@ Enable Wifi Cli Enable
+CONFIG_WIFI_CLI_ENABLE=y
+#@ Disable WiFi STA power-save at init (see bk_init.c bk_wifi_sta_pm_disable)
+CONFIG_WIFI_PS_DISABLE=y
+#@ Enable Bluetooth
+CONFIG_BLUETOOTH=n
+CONFIG_BLE=n
+#@ Disable BT/BLE AT (stack off; avoids BT/BLE command paths in AT server)
+CONFIG_BT_AT_ENABLE=n
+CONFIG_BLE_AT_ENABLE=n
+#@ Enable Iperf Test
+CONFIG_IPERF_TEST=y
+#@ Enable Cli
+CONFIG_CLI=y
+#@ Enable Ntp Sync Rtc
+CONFIG_NTP_SYNC_RTC=n
+#@ When this option is enable, more memory will be consumed because
+CONFIG_MEM_DEBUG=n
+#@ FreeRTOS Trace
+CONFIG_FREERTOS_TRACE=n
+#@ Enable Cache
+CONFIG_CACHE_ENABLE=n
+CONFIG_DPD_CALI=n
+CONFIG_RELEASE_IRAM=n
