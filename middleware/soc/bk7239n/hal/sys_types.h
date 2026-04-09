@@ -149,9 +149,10 @@ extern "C" {
 #define PM_CHIP_ID_MASK                                  (0xFFFF0000)
 #define PM_CHIP_ID_MPW_V2                                (0x24400032)
 #define PM_CHIP_ID_MPW_V3                                (0x24700030)
-#define PM_CHIP_ID_MPW_V4                                (0x23A10810)
-#define PM_CHIP_ID_MPW_V5                                (0x22400030)
-#define PM_CHIP_ID_MP_A                                  (0x23640810)
+#define PM_CHIP_ID_MPW_V4A                               (0x24C00020)
+#define PM_CHIP_ID_MPW_V4B                               (0x24C00030)
+#define PM_CHIP_ID_MP_C                                  (0x25750920)
+#define PM_CHIP_ID_MP_D                                  (0x25750B20)
 
 #define PM_FREQUNCY_DIV_MAX                              (15)
 #define PM_FREQUNCY_DIV_BUS_MAX                          (1)

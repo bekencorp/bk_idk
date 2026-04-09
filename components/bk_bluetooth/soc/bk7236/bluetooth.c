@@ -1094,7 +1094,9 @@ static uint32_t get_chipid(uint32_t ver)
 
         default:
         case 4:
+            #if !CONFIG_SOC_BK7236N
             return PM_CHIP_ID_MPW_V4;
+            #endif
             break;
     }
 

@@ -1007,21 +1007,11 @@ const phy_os_variable_t g_phy_os_variable = {
     ._chip_version_c       = CHIP_VERSION_C,
     ._chip_version_default = CHIP_VERSION_DEFAULT,
 
-#if (CONFIG_SOC_BK7256XX)
-    ._pm_chip_id_high_pos       = PM_CHIP_ID_HIGH_POS,
-    ._pm_chip_id_high_value     = PM_CHIP_ID_HIGH_VALUE,
-#else
-
-#if (CONFIG_SOC_BK7239XX || CONFIG_SOC_BK7286XX)
-    ._pm_chip_id_mask     = PM_CHIP_ID_MASK,
-    ._pm_chip_id_mpw_v2   = PM_CHIP_ID_MPW_V2,
-    ._pm_chip_id_mpw_v3   = PM_CHIP_ID_MPW_V3,
-#else
+#if (CONFIG_SOC_BK7236XX) && (!CONFIG_SOC_BK7236N)
     ._pm_chip_id_mask     = PM_CHIP_ID_MASK,
     ._pm_chip_id_mpw_v2_3 = PM_CHIP_ID_MPW_V2_3,
     ._pm_chip_id_mpw_v4   = PM_CHIP_ID_MPW_V4,
     ._pm_chip_id_mp_A     = PM_CHIP_ID_MP_A,
-#endif
 #endif
 
     ._cmd_get_device_id       = CMD_GET_DEVICE_ID,

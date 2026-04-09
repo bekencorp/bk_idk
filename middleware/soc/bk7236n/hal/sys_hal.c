@@ -145,6 +145,7 @@ uint32_t sys_hal_flash_get_clk_div(void)
 __IRAM_SEC void sys_hal_module_power_ctrl(power_module_name_t module,power_module_state_t power_state)
 {
 	uint32_t value = 0;
+	uint32_t chip_id = aon_pmu_hal_get_chipid();
 
 #if CONFIG_TZ && !CONFIG_SPE
 	if (((module == POWER_MODULE_NAME_BAKP) || (module == POWER_MODULE_NAME_AHBP)) && (power_state == POWER_MODULE_STATE_OFF)) {
@@ -161,7 +162,14 @@ __IRAM_SEC void sys_hal_module_power_ctrl(power_module_name_t module,power_modul
 			value |= (1 << module);
 		}
 		sys_ll_set_cpu_power_sleep_wakeup_value(value);
-		// bk_delay_us(40);// V2 delay 0us, V3 delay 40us, V4 delay 0us
+		if((chip_id & PM_CHIP_ID_MASK) == (PM_CHIP_ID_MPW_V3 & PM_CHIP_ID_MASK))
+		{
+			bk_delay_us(40);
+		}
+		else
+		{
+			bk_delay_us(1);
+		}
     }else if(module == POWER_MODULE_NAME_TCM1_PGEN) {
 		if(power_state == POWER_MODULE_STATE_ON) {
 			/*TODO

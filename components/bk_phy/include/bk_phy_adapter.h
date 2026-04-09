@@ -230,21 +230,11 @@ typedef struct {
     uint32_t _chip_version_c;
     uint32_t _chip_version_default;
 
-#if (CONFIG_SOC_BK7256XX)
-    uint32_t _pm_chip_id_high_pos;
-    uint32_t _pm_chip_id_high_value;
-#else
-
-#if (CONFIG_SOC_BK7239XX)
-    uint32_t _pm_chip_id_mask;
-    uint32_t _pm_chip_id_mpw_v2;
-    uint32_t _pm_chip_id_mpw_v3;
-#else
+#if (CONFIG_SOC_BK7236XX) && (!CONFIG_SOC_BK7236N)
     uint32_t _pm_chip_id_mask;
     uint32_t _pm_chip_id_mpw_v2_3;
     uint32_t _pm_chip_id_mpw_v4;
     uint32_t _pm_chip_id_mp_A;
-#endif
 #endif
 
     uint32_t _cmd_get_device_id;
