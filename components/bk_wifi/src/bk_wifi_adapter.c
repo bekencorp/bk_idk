@@ -1546,11 +1546,6 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_variable_t g_wifi_os_variabl
 	#endif
 	._wifi_mac_short_retry = CONFIG_MAC_SHORT_RETRY,
 	._wifi_mac_long_retry = CONFIG_MAC_LONG_RETRY,
-	#if (CONFIG_BLUETOOTH_USE_MIN_POWER_MODE)
-	._ble_polar_enable = true,
-	#else
-	._ble_polar_enable = false,
-	#endif
 };
 
 Countryregulations country_regulation_table[] = {
