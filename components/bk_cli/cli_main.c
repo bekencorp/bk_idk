@@ -290,7 +290,7 @@ int handle_shell_input2(char *inbuf, int in_buf_size, char * outbuf, int out_buf
         unsigned limQ : 1;
         unsigned isD : 2;
     } stat;
-    char *argv[20];
+    char *argv[24];
     int argc = 0;
     int i = 0;
     const struct cli_command *command = NULL;
@@ -579,7 +579,7 @@ static int handle_input(char *inbuf)
         unsigned limQ : 1;
         unsigned isD : 2;
     } stat;
-    char *argv[20];
+    char *argv[24];
     int argc = 0;
     int i = 0;
     const struct cli_command *command = NULL;

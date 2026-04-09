@@ -882,7 +882,7 @@ static void evm_test(UINT32 rate, UINT32 frequency, UINT32 bandwidth, UINT32 mod
 
     rwnx_cal_en_extra_txpa();
     rf_module_vote_ctrl(RF_OPEN,RF_BY_TEMP_BIT);
-    rwnx_cal_set_txpwr_by_rate(evm_translate_tx_rate(rate), modul_format, 0, 0, bandwidth);
+    rwnx_cal_set_txpwr_by_rate(evm_translate_tx_rate(rate), modul_format, (UINT32)-1, 0, 0, bandwidth);
     UINT8 pwr_idx = rwnx_cal_get_pwr_idx();
     bk_printf("frequency=%d,rate=%d,pwr_idx=%d\r\n", frequency, rate, pwr_idx);
 
@@ -948,7 +948,7 @@ static void evm_single_test(UINT32 rate, UINT32 channel, UINT32 bandwidth)
     g_single_carrier = 1;
 
     rf_module_vote_ctrl(RF_OPEN,RF_BY_TEMP_BIT);
-    rwnx_cal_set_txpwr_by_rate(evm_translate_tx_rate(rate), 0, 0, 0, 0);
+    rwnx_cal_set_txpwr_by_rate(evm_translate_tx_rate(rate), 0, (UINT32)-1, 0, 0, 0);
     rf_module_vote_ctrl(RF_CLOSE,RF_BY_TEMP_BIT);;
     //evm_bypass_mac_set_txdelay(txdelay);
 
