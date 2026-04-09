@@ -596,6 +596,11 @@ bk_err_t bk_set_base_mac(const uint8_t *mac)
 		return BK_ERR_GROUP_MAC;
 	}
 
+	if (BK_IS_ZERO_MAC(mac)) {
+		BK_LOGE(TAG, "set failed, cann't be a all-zero address\r\n");
+		return BK_ERR_ZERO_MAC;
+	}
+
 	os_memcpy(s_base_mac, mac, BK_MAC_ADDR_LEN);
 
 #if (CONFIG_BASE_MAC_FROM_EFUSE)
