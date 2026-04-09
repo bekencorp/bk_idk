@@ -47,12 +47,22 @@ bk_err_t bk_https_ota_begin(https_ota_t* ota_config)
 		return BK_FAIL;
 	}
 	bk_err_t ret = BK_OK;
+
 	ota_config->client = bk_http_client_init(ota_config->http_config);
+	if (ota_config->client == NULL) {
+		return BK_ERR_NO_MEM;
+	}
 	bk_wifi_ota_dtim(1);
 
 	bk_http_client_set_method(ota_config->client, HTTP_METHOD_HEAD);
-	bk_http_client_open(ota_config->client, 0);
-	bk_http_client_fetch_headers(ota_config->client);
+	ret = bk_http_client_open(ota_config->client, 0);
+	if (ret != BK_OK) {
+		goto fail_cleanup_client;
+	}
+	if (bk_http_client_fetch_headers(ota_config->client) < 0) {
+		ret = BK_FAIL;
+		goto fail_cleanup_client;
+	}
 
 	ret = bk_http_check_response(ota_config->client);
 	if (ret != BK_OK) {
@@ -61,14 +71,23 @@ bk_err_t bk_https_ota_begin(https_ota_t* ota_config)
 		bk_http_client_close(ota_config->client);
 		bk_http_client_cleanup(ota_config->client);
 		ota_config->client = bk_http_client_init(ota_config->http_config);
+		if (ota_config->client == NULL) {
+			return BK_ERR_NO_MEM;
+		}
 		bk_http_client_set_method(ota_config->client, HTTP_METHOD_GET);
-		bk_http_client_open(ota_config->client, 0);
-		bk_http_client_fetch_headers(ota_config->client);
+		ret = bk_http_client_open(ota_config->client, 0);
+		if (ret != BK_OK) {
+			goto fail_cleanup_client;
+		}
+		if (bk_http_client_fetch_headers(ota_config->client) < 0) {
+			ret = BK_FAIL;
+			goto fail_cleanup_client;
+		}
 		ret = bk_http_check_response(ota_config->client);
 		if (ret != BK_OK) {
-			BK_LOGE(TAG, "GET request also failed, status: %d\r\n", 
+			BK_LOGE(TAG, "GET request also failed, status: %d\r\n",
 				ota_config->client->response ? ota_config->client->response->status_code : -1);
-			return ret;
+			goto fail_cleanup_client;
 		}
 	}
 
@@ -82,11 +101,29 @@ bk_err_t bk_https_ota_begin(https_ota_t* ota_config)
 	}
 	ota_config->state = HTTPS_OTA_READY;
 	return ret;
+
+fail_cleanup_client:
+	if (ota_config->client) {
+		bk_http_client_close(ota_config->client);
+		bk_http_client_cleanup(ota_config->client);
+		ota_config->client = NULL;
+	}
+	return ret;
 }
 
 bk_err_t bk_https_ota_progress_data(https_ota_t* ota_config)
 {
 	if (ota_config == NULL || ota_config->ota_parse == NULL) {
+		return BK_FAIL;
+	}
+	if (ota_config->client == NULL) {
+		BK_LOGE(TAG, "progress_data: http client is NULL\r\n");
+		ota_config->state = HTTPS_OTA_FAIL;
+		return BK_FAIL;
+	}
+	if (ota_config->client->state < HTTP_STATE_CONNECTED) {
+		BK_LOGE(TAG, "progress_data: client not connected, state=%d\r\n", ota_config->client->state);
+		ota_config->state = HTTPS_OTA_FAIL;
 		return BK_FAIL;
 	}
 	BK_LOGI(TAG, "progress start state=%d rx_len=%u phase=%d idx=%u off=%u wr_off=%u erase_off=%u percent=%u\r\n",
@@ -236,7 +273,10 @@ https_ota_state_t bk_https_ota_perform(https_ota_t* ota_config)
 	while(1) {
 		switch (ota_config->state) {
 			case HTTPS_OTA_INIT:
-				bk_https_ota_begin(ota_config);
+				if (bk_https_ota_begin(ota_config) != BK_OK) {
+					ota_config->state = HTTPS_OTA_FAIL;
+					goto end;
+				}
 				break;
 			case HTTPS_OTA_READY:
 			case HTTPS_OTA_PROGRESS_DATA:

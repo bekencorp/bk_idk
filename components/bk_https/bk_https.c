@@ -1319,6 +1319,12 @@ static bool redirection_required(int status_code)
 bk_err_t bk_http_check_response(bk_http_client_handle_t client)
 {
 	bk_err_t err = BK_FAIL;
+	
+	if (client->response->status_code < HttpStatus_Ok) {
+		BK_LOGE(TAG, "Invalid HTTP status: %d\r\n", client->response->status_code);
+		return BK_FAIL;
+	}
+
 	if (redirection_required(client->response->status_code)) {
 		err = bk_http_client_set_redirection(client);
 		if (err != BK_OK) {
