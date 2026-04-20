@@ -1,0 +1,6 @@
+# Python bytecode cache directories
+components/bk_wifi/scripts/__pycache__/
+tools/env_tools/bksecure/__pycache__/
+tools/env_tools/bksecure/scripts/__pycache__/
+tools/env_tools/bksecure/tools/mcuboot_tools/imgtool/__pycache__/
+tools/env_tools/bksecure/tools/mcuboot_tools/imgtool/keys/__pycache__/
