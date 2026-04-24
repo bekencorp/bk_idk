@@ -14,6 +14,19 @@
 struct wpa_tdls_peer;
 struct wpa_eapol_key;
 
+#if BK_SUPPLICANT
+struct wpa_sm_bk_2of4_pending {
+	u8 *kde_buf;
+	size_t kde_len;
+	struct wpa_eapol_key *key1_copy;
+	u16 ver;
+	u8 state; /* 0 = send 2/4, 1 = wait for msg 3/4 */
+	u8 tx_fail;
+	u8 msg3_miss;
+	u16 wait_ms;
+};
+#endif /* BK_SUPPLICANT */
+
 struct pasn_ft_r1kh {
 	u8 bssid[ETH_ALEN];
 	u8 r1kh_id[FT_R1KH_ID_LEN];
@@ -30,6 +43,9 @@ struct wpa_sm {
 	unsigned int msg_3_of_4_ok:1;
 	u8 snonce[WPA_NONCE_LEN];
 	u8 anonce[WPA_NONCE_LEN]; /* ANonce from the last 1/4 msg */
+#if BK_SUPPLICANT
+	struct wpa_sm_bk_2of4_pending *bk_2of4_pending;
+#endif /* BK_SUPPLICANT */
 	int renew_snonce;
 	u8 rx_replay_counter[WPA_REPLAY_COUNTER_LEN];
 	int rx_replay_counter_set;

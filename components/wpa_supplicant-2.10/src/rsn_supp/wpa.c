@@ -683,7 +683,104 @@ static int wpa_handle_ext_key_id(struct wpa_sm *sm,
 
 #if BK_SUPPLICANT
 #define RESEND_KEY_MAX 3
+#define BK_2OF4_MSG3_POLL_US 10000
+#define BK_2OF4_MSG3_WAIT_MS 120
+#define BK_2OF4_TX_RETRY_US 50000
+#define WPA_BK_2OF4_STATE_SEND 0
+#define WPA_BK_2OF4_STATE_WAIT_MSG3 1
+
+static void wpa_sm_bk_2of4_cancel(struct wpa_sm *sm);
+static void wpa_sm_bk_2of4_cb(void *eloop_ctx, void *timeout_ctx);
+
+static void wpa_sm_bk_2of4_cancel(struct wpa_sm *sm)
+{
+	struct wpa_sm_bk_2of4_pending *pending;
+
+	eloop_cancel_timeout(wpa_sm_bk_2of4_cb, sm, NULL);
+	pending = sm->bk_2of4_pending;
+	if (!pending)
+		return;
+	os_free(pending->kde_buf);
+	os_free(pending->key1_copy);
+	os_free(pending);
+	sm->bk_2of4_pending = NULL;
+}
+
+static void wpa_sm_bk_2of4_complete_ok(struct wpa_sm *sm)
+{
+	if (!sm->bk_2of4_pending)
+		return;
+	wpa_sm_bk_2of4_cancel(sm);
+}
+
+static void wpa_sm_bk_2of4_fail(struct wpa_sm *sm)
+{
+	wpa_sm_bk_2of4_cancel(sm);
+	wpa_sm_deauthenticate(sm, WLAN_REASON_UNSPECIFIED);
+}
+
+static void wpa_sm_bk_2of4_cb(void *eloop_ctx, void *timeout_ctx)
+{
+	struct wpa_sm *sm = eloop_ctx;
+	struct wpa_sm_bk_2of4_pending *pending;
+	int send_key2_result;
+
+	(void)timeout_ctx;
+	pending = sm->bk_2of4_pending;
+	if (!pending)
+		return;
+	if (wpa_sm_get_state(sm) != WPA_4WAY_HANDSHAKE) {
+		wpa_sm_bk_2of4_cancel(sm);
+		return;
+	}
+	if (sm->msg_3_of_4_ok) {
+		wpa_sm_bk_2of4_complete_ok(sm);
+		return;
+	}
+	if (pending->state == WPA_BK_2OF4_STATE_WAIT_MSG3) {
+		pending->wait_ms += 10;
+		if (pending->wait_ms < BK_2OF4_MSG3_WAIT_MS) {
+			eloop_register_timeout(0, BK_2OF4_MSG3_POLL_US,
+					       wpa_sm_bk_2of4_cb, sm, NULL);
+			return;
+		}
+		pending->msg3_miss++;
+		if (pending->msg3_miss >= RESEND_KEY_MAX) {
+			wpa_printf(MSG_WARNING,
+				   "WPA: BK 2/4 timed out waiting for msg 3/4");
+			wpa_sm_bk_2of4_fail(sm);
+			return;
+		}
+		pending->state = WPA_BK_2OF4_STATE_SEND;
+		pending->wait_ms = 0;
+	}
+	send_key2_result = wpa_supplicant_send_2_of_4(
+		sm, sm->bssid, pending->key1_copy, pending->ver, sm->snonce,
+		pending->kde_buf, pending->kde_len, &sm->tptk);
+	if (send_key2_result < 0) {
+		pending->tx_fail++;
+		wpa_printf(MSG_WARNING, "Sending EAPOL-Key 2/4 fail times:%d",
+			   pending->tx_fail);
+		if (pending->tx_fail >= RESEND_KEY_MAX) {
+#ifdef CONFIG_NO_STDOUT_DEBUG
+			WPA_LOGE("Sending EAPOL-Key 2/4 failed\n");
+#else
+			wpa_printf(MSG_WARNING, "Sending EAPOL-Key 2/4 failed");
 #endif
+			wpa_sm_bk_2of4_fail(sm);
+			return;
+		}
+		eloop_register_timeout(0, BK_2OF4_TX_RETRY_US,
+				       wpa_sm_bk_2of4_cb, sm, NULL);
+		return;
+	}
+	pending->tx_fail = 0;
+	pending->state = WPA_BK_2OF4_STATE_WAIT_MSG3;
+	pending->wait_ms = 0;
+	eloop_register_timeout(0, BK_2OF4_MSG3_POLL_US, wpa_sm_bk_2of4_cb,
+			       sm, NULL);
+}
+#endif /* BK_SUPPLICANT */
 
 static void wpa_supplicant_process_1_of_4(struct wpa_sm *sm,
 					  const unsigned char *src_addr,
@@ -696,10 +793,6 @@ static void wpa_supplicant_process_1_of_4(struct wpa_sm *sm,
 	int res;
 	u8 *kde, *kde_buf = NULL;
 	size_t kde_len;
-#if BK_SUPPLICANT
-	int i;
-	bool send_success;
-#endif
 
 	if (wpa_sm_get_network_ctx(sm) == NULL) {
 		wpa_msg(sm->ctx->msg_ctx, MSG_WARNING, "WPA: No SSID info "
@@ -849,32 +942,33 @@ static void wpa_supplicant_process_1_of_4(struct wpa_sm *sm,
 #endif /* CONFIG_DPP2 */
 
 #if BK_SUPPLICANT
-	/* send EAPOL-Key with retries */
-	int retry_times = RESEND_KEY_MAX;
-#ifdef CONFIG_WIFI_RETRY_CONFIG_SUPPORT
-	if (g_sta_param_ptr && g_sta_param_ptr->eapol_2_retry > 0) {
-		retry_times = g_sta_param_ptr->eapol_2_retry;
-	}
-#endif
-	send_success = false;
-	for (i = 0; i  < retry_times; i++) {
-		if (wpa_supplicant_send_2_of_4(sm, sm->bssid, key, ver, sm->snonce,
-				       kde, kde_len, ptk) >= 0) {
-			send_success = true;
-			break;
+	{
+		struct wpa_sm_bk_2of4_pending *key2_retry_pending;
+
+		wpa_sm_bk_2of4_cancel(sm);
+		key2_retry_pending = os_zalloc(sizeof(*key2_retry_pending));
+		if (!key2_retry_pending)
+			goto failed;
+		key2_retry_pending->key1_copy =
+			os_malloc(sizeof(struct wpa_eapol_key));
+		if (!key2_retry_pending->key1_copy) {
+			os_free(key2_retry_pending);
+			goto failed;
 		}
-		wpa_printf(MSG_WARNING, "Sending EAPOL-Key 2/4 fail times:%d", i + 1);
+		os_memcpy(key2_retry_pending->key1_copy, key,
+			  sizeof(struct wpa_eapol_key));
+		key2_retry_pending->kde_buf = kde_buf;
+		key2_retry_pending->kde_len = kde_len;
+		key2_retry_pending->ver = ver;
+		key2_retry_pending->state = WPA_BK_2OF4_STATE_SEND;
+		sm->bk_2of4_pending = key2_retry_pending;
+		kde_buf = NULL;
 
-		rtos_delay_milliseconds(50);
-	}
+		/* process_3_of_4 requires sm->anonce vs msg 3 key_nonce match */
+		os_memcpy(sm->anonce, key->key_nonce, WPA_NONCE_LEN);
 
-	if (!send_success) {
-#ifdef CONFIG_NO_STDOUT_DEBUG
-		WPA_LOGE("Sending EAPOL-Key 2/4 failed\n");
-#else
-		wpa_printf(MSG_WARNING, "Sending EAPOL-Key 2/4 failed");
-#endif
-		goto failed;
+		eloop_register_timeout(0, 0, wpa_sm_bk_2of4_cb, sm, NULL);
+		return;
 	}
 #else /* BK_SUPPLICANT */
 	if (wpa_supplicant_send_2_of_4(sm, sm->bssid, key, ver, sm->snonce,
@@ -3138,6 +3232,9 @@ void wpa_sm_deinit(struct wpa_sm *sm)
 	pmksa_cache_deinit(sm->pmksa);
 	eloop_cancel_timeout(wpa_sm_start_preauth, sm, NULL);
 	eloop_cancel_timeout(wpa_sm_rekey_ptk, sm, NULL);
+#if BK_SUPPLICANT
+	wpa_sm_bk_2of4_cancel(sm);
+#endif
 	os_free(sm->assoc_wpa_ie);
 	os_free(sm->assoc_rsnxe);
 	os_free(sm->ap_wpa_ie);
@@ -3261,6 +3358,9 @@ void wpa_sm_notify_disassoc(struct wpa_sm *sm)
 {
 	eloop_cancel_timeout(wpa_sm_start_preauth, sm, NULL);
 	eloop_cancel_timeout(wpa_sm_rekey_ptk, sm, NULL);
+#if BK_SUPPLICANT
+	wpa_sm_bk_2of4_cancel(sm);
+#endif
 	rsn_preauth_deinit(sm);
 	pmksa_cache_clear_current(sm);
 	if (wpa_sm_get_state(sm) == WPA_4WAY_HANDSHAKE)
