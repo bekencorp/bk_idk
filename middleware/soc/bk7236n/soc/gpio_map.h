@@ -121,8 +121,13 @@ extern "C" {
 #endif
 
 /* uart gpio pin map */
+#if CONFIG_UART_PRINT_PORT_ATE
+#define UART0_TX_PIN  GPIO_15
+#define UART0_RX_PIN  GPIO_16
+#else
 #define UART0_TX_PIN  GPIO_11
 #define UART0_RX_PIN  GPIO_10
+#endif
 #define UART0_CTS_PIN GPIO_12
 #define UART0_RTS_PIN GPIO_13
 
