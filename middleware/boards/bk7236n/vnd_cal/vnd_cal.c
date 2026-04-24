@@ -4,7 +4,11 @@
 #define CMTAG_FROM_FLASH                1
 #define CMTAG_FROM_CALI                 0
 
+#ifdef CONFIG_ATE_TEST
+#define DEFAULT_TXID_XTAL               (0x3A)
+#else
 #define DEFAULT_TXID_XTAL               (0x4C)
+#endif
 
 #define TXPWR_ELEM_INUSED               (0)
 #define TXPWR_ELEM_UNUSED               (1)
@@ -323,6 +327,23 @@ const PWR_REGS cfg_tab_bt[TPC_PAMAP_TAB_BT_LEN] = {
  * so, max TXPWR_CAL_2G_MAX channels for WIFI 2G/BLE calibration
  * so, max TXPWR_CAL_5G_MAX channels for WIFI 5G calibration
  */
+#ifdef CONFIG_ATE_TEST
+const TXPWR_CAL_ST gtxpwr_tab_def_b[TXPWR_CAL_2G_MAX] = {
+    INIT_TXPWR_VALUE(1, 60),  // ch1  inused
+    INIT_TXPWR_VALUE(13, 60),  // ch13  inused
+};
+
+const TXPWR_CAL_ST gtxpwr_tab_def_g[TXPWR_CAL_2G_MAX] = {
+    INIT_TXPWR_VALUE(1, 74),  // ch1  inused
+    INIT_TXPWR_VALUE(13, 74),  // ch13  inused
+};
+
+const TXPWR_CAL_ST gtxpwr_tab_def_ble[TXPWR_CAL_2G_MAX] = {
+    INIT_TXPWR_VALUE(1, 51),  // ch0 2402  inused
+    INIT_TXPWR_VALUE(20, 47),  // ch19 2440 inused
+    INIT_TXPWR_VALUE(40, 46),  // ch39 2480 inused
+};
+#else
 const TXPWR_CAL_ST gtxpwr_tab_def_b[TXPWR_CAL_2G_MAX] = {
     INIT_TXPWR_VALUE(1, 74),  // ch1  inused
     INIT_TXPWR_VALUE(13, 74),  // ch13  inused
@@ -338,6 +359,7 @@ const TXPWR_CAL_ST gtxpwr_tab_def_ble[TXPWR_CAL_2G_MAX] = {
     INIT_TXPWR_VALUE(20, 88),  // ch19 2440 inused
     INIT_TXPWR_VALUE(40, 87),  // ch39 2480 inused
 };
+#endif
 
 /****************************** temperature table  ****************************/
 const TMP_PWR_ST tmp_pwr_tab[TMP_PWR_TAB_LEN] = {
