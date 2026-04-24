@@ -248,27 +248,25 @@ bk_err_t core_mem_wr_all_test(void)
 
 bk_err_t core_cp_test(void)
 {
-    #define CPU_CLK_240_PASS             (BK_OK)
-    #define CPU_CLK_240_FAIL_160_PASS    (0x1)
-    #define CPU_CLK_240_FAIL_160_FAIL    (0x2)
+    #define CPU_CLK_160_PASS_240_PASS    (0x0)
+    #define CPU_CLK_160_FAIL             (0x1)
+    #define CPU_CLK_160_PASS_240_FAIL    (0x2)
 
     bk_err_t ret;
-    /* cpu_core_clock = 240MHz */
-    sys_hal_set_cpu_cp_test_config(1);
-    /* if cpu240M test pass, then no need to test cpu160M */
-    ret = core_mem_wr_all_test();
-    if (ret == BK_OK) {
-        return CPU_CLK_240_PASS;
-    }
     /* cpu_core_clock = 160MHz */
     sys_hal_set_cpu_cp_test_config(0);
-    /* if cpu240M test fail and cpu160M test pass, then return "0x55 CC 01" */
     ret = core_mem_wr_all_test();
-    if (ret == BK_OK) {
-        return CPU_CLK_240_FAIL_160_PASS;
+    if (ret != BK_OK) {
+        return CPU_CLK_160_FAIL;
     }
-    /* if cpu240M test fail and cpu160M test fail too, then return "0x55 CC 02" */
-    return CPU_CLK_240_FAIL_160_FAIL;
+    /* cpu_core_clock = 240MHz */
+    sys_hal_set_cpu_cp_test_config(1);
+    ret = core_mem_wr_all_test();
+    if (ret != BK_OK) {
+        return CPU_CLK_160_PASS_240_FAIL;
+    }
+
+    return CPU_CLK_160_PASS_240_PASS;
 }
 
 void uart_send_byte_for_ate(UINT8 data)
