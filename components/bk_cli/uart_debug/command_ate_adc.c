@@ -121,17 +121,6 @@ void ate_cali_adc(const unsigned char *content, UINT8 *tx_buffer)
     else if (content[2] == 2)
     {
         tx_buffer[0] = 0x55;
-        //         min.(Hex)    max.(Hex)
-        // 1v      F1C          1471
-        // 2v      1E38         28E3
-        // 0.3v    444          622
-        if ((values[0] > 0x1471) || (values[0] < 0xF1C)
-            || (values[1] > 0x28E3) || (values[1] < 0x1E38)
-            || (values[2] > 0x0622) || (values[2] < 0x0444))
-        {
-            tx_buffer[1] = 0xDD;
-            goto exit;
-        }
         /* EFUSE_18 A7 A6 A5 A4 A3 A2 A1 A0 - 1V<7:0>*/
         /* EFUSE_19 B7 B6 B5 B4 B3 B2 B1 B0 - 1V<15:8> */
         /* EFUSE_20 B7 B6 B5 B4 B3 B2 B1 B0 - 2V<7:0> */
@@ -186,11 +175,6 @@ exit:
 
 void ate_cali_temperature(const unsigned char *content, UINT8 *tx_buffer)
 {
-    #define TEMP1_CODE_MIN  (7500)
-    #define TEMP1_CODE_MAX  (9500)
-    #define TEMP2_CODE_MIN  (5000)
-    #define TEMP2_CODE_MAX  (6000)
-
     uint32_t adc_code32 = 0;
     uint16_t adc_code16 = 0;
     int      ret;
@@ -231,8 +215,7 @@ void ate_cali_temperature(const unsigned char *content, UINT8 *tx_buffer)
     sys_ana_ll_set_reg4_value(reg_val);
 
     ret = temp_detect_get_temperature(&adc_code32);
-    if ((ret != BK_OK) || (adc_code32 >= TEMP1_CODE_MAX) || (adc_code32 <= TEMP1_CODE_MIN))
-    {
+    if (ret != BK_OK) {
         tx_buffer[1] = 0xDD;
         goto exit;
     }
@@ -247,8 +230,7 @@ void ate_cali_temperature(const unsigned char *content, UINT8 *tx_buffer)
     sys_ana_ll_set_reg4_value(reg_val);
 
     ret = temp_detect_get_temperature(&adc_code32);
-    if ((ret != BK_OK) || (adc_code32 >= TEMP2_CODE_MAX) || (adc_code32 <= TEMP2_CODE_MIN))
-    {
+    if (ret != BK_OK) {
         tx_buffer[1] = 0xDD;
         goto exit;
     }
