@@ -2819,6 +2819,33 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 uart_send_bytes_for_ate(tx_buffer, 2);
                 break;
             }
+            case 0x48:
+            {
+                /* bl2 secure download disable */
+                int ret = 0;
+                tx_buffer[0] = 0x55;
+                UINT32 efuse_val;
+
+                ret = bk_otp_apb_read(OTP_EFUSE, (UINT8 *)&efuse_val, sizeof(efuse_val));
+                if (ret != BK_OK) {
+                    tx_buffer[1] = 0xCC;
+                    uart_send_bytes_for_ate(tx_buffer, 2);
+                    break;
+                }
+
+                // bl2_secure_download_disable = 1
+                efuse_val |= (0x1 << 10);
+
+                // "bk_otp_ahb_update" will do read-back check, so do not need to read back again here
+                ret = bk_otp_apb_update(OTP_EFUSE, (UINT8 *)&efuse_val, sizeof(efuse_val));
+                if (ret != BK_OK) {
+                    tx_buffer[1] = 0xCC;
+                } else {
+                    tx_buffer[1] = 0x33;
+                }
+                uart_send_bytes_for_ate(tx_buffer, 2);
+                break;
+            }
 #if 0
             case 0x50:
                 if ((cnt > 2) && ((unsigned char) content[2] < 80))
