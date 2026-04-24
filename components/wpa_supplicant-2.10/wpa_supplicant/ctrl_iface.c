@@ -69,7 +69,6 @@ static int wpa_ctrl_debug_info_dump(struct wpa_supplicant *wpas, uint32_t type);
 extern void wpa_driver_scan_timeout(void *eloop_ctx, void *timeout_ctx);
 extern uint32_t bk_lookup_ipaddr_wrapper(void *addr);
 extern void rwnx_regulatory_hint_11d(int freq, const u8 *country_ie, u8 country_ie_len);
-extern void regulatory_hint_disconnect(void);
 
 int __wpa_ctrl_request(wpa_ctrl_cmd_t cmd, void *data, int wait, uint16_t flags)
 {
@@ -2052,10 +2051,6 @@ int wpa_supplicant_handle_events(wpah_msg_t *msg)
 		struct sm_disconnect_ind *ind = (struct sm_disconnect_ind *)msg->argu;
 		union wpa_event_data data;
 		struct disassoc_info *info = (struct disassoc_info *)&data.disassoc_info;
-
-#if CONFIG_WIFI_REGDOMAIN
-		regulatory_hint_disconnect();
-#endif
 
 		os_memset(&data, 0, sizeof(data));
 		/*
