@@ -110,6 +110,10 @@ UINT32 device_id = 0;
 #define ATE_GPIO_DEV_UART1_RXD       10
 #define ATE_GPIO_DEV_UART1_TXD       11
 #endif
+#if CONFIG_SOC_BK7236N
+#define ATE_GPIO_EXT_FLASH_WP        12
+#define ATE_GPIO_EXT_FLASH_HOLD      13
+#endif
 #else
 #define SOC_SYSTEM_REG_BASE          (0x00800000)
 #define REG_SYS_CTRL_CHIP_ID_ADDR    (SOC_SYSTEM_REG_BASE + 0x0 * 4)
@@ -490,6 +494,10 @@ void gpio_voltage_output_high(void)
 	{
 		if(i == ATE_GPIO_DEV_UART1_RXD || i == ATE_GPIO_DEV_UART1_TXD)
 			continue;
+#if CONFIG_SOC_BK7236N
+		if(i == ATE_GPIO_EXT_FLASH_WP || i == ATE_GPIO_EXT_FLASH_HOLD)
+			continue;
+#endif
 		bk_gpio_set_value(i, 0x02000002);
 	}
 }
@@ -502,6 +510,10 @@ void gpio_voltage_output_low(void)
 	{
 		if(i == ATE_GPIO_DEV_UART1_RXD || i == ATE_GPIO_DEV_UART1_TXD)
 			continue;
+#if CONFIG_SOC_BK7236N
+		if(i == ATE_GPIO_EXT_FLASH_WP || i == ATE_GPIO_EXT_FLASH_HOLD)
+			continue;
+#endif
 		bk_gpio_set_value(i, 0x02000000);
 	}
 }
@@ -517,6 +529,10 @@ void gpio_voltage_input_high(void)
 	{
 		if(i == ATE_GPIO_DEV_UART1_RXD || i == ATE_GPIO_DEV_UART1_TXD)
 			continue;
+#if CONFIG_SOC_BK7236N
+		if(i == ATE_GPIO_EXT_FLASH_WP || i == ATE_GPIO_EXT_FLASH_HOLD)
+			continue;
+#endif
 		restore_reg[i] = bk_gpio_get_value(i);
 		// input enable, pull enable, pull = pulldown
 		bk_gpio_set_value(i, 0x01000020);
@@ -530,6 +546,10 @@ void gpio_voltage_input_high(void)
 	{
 		if(i == ATE_GPIO_DEV_UART1_RXD || i == ATE_GPIO_DEV_UART1_TXD) {
 			continue;
+#if CONFIG_SOC_BK7236N
+		} else if(i == ATE_GPIO_EXT_FLASH_WP || i == ATE_GPIO_EXT_FLASH_HOLD) {
+			continue;
+#endif
 		} else {
 			val = bk_gpio_get_value(i);
 			if(val & 0x1) {
@@ -548,6 +568,10 @@ void gpio_voltage_input_high(void)
 	{
 		if(i == ATE_GPIO_DEV_UART1_RXD || i == ATE_GPIO_DEV_UART1_TXD)
 			continue;
+#if CONFIG_SOC_BK7236N
+		if(i == ATE_GPIO_EXT_FLASH_WP || i == ATE_GPIO_EXT_FLASH_HOLD)
+			continue;
+#endif
 		bk_gpio_set_value(i, restore_reg[i]);
 	}
 	if (restore_reg) {
@@ -567,6 +591,10 @@ void gpio_voltage_input_low(void)
 	{
 		if(i == ATE_GPIO_DEV_UART1_RXD || i == ATE_GPIO_DEV_UART1_TXD)
 			continue;
+#if CONFIG_SOC_BK7236N
+		if(i == ATE_GPIO_EXT_FLASH_WP || i == ATE_GPIO_EXT_FLASH_HOLD)
+			continue;
+#endif
 		restore_reg[i] = bk_gpio_get_value(i);
 		// input enable, pull enable, pull = pullup
 		bk_gpio_set_value(i, 0x01000030);
@@ -580,6 +608,10 @@ void gpio_voltage_input_low(void)
 	{
 		if(i == ATE_GPIO_DEV_UART1_RXD || i == ATE_GPIO_DEV_UART1_TXD) {
 			continue;
+#if CONFIG_SOC_BK7236N
+		} else if(i == ATE_GPIO_EXT_FLASH_WP || i == ATE_GPIO_EXT_FLASH_HOLD) {
+			continue;
+#endif
 		} else {
 			val = bk_gpio_get_value(i);
 			if(val & 0x1) {
@@ -598,6 +630,10 @@ void gpio_voltage_input_low(void)
 	{
 		if(i == ATE_GPIO_DEV_UART1_RXD || i == ATE_GPIO_DEV_UART1_TXD)
 			continue;
+#if CONFIG_SOC_BK7236N
+		if(i == ATE_GPIO_EXT_FLASH_WP || i == ATE_GPIO_EXT_FLASH_HOLD)
+			continue;
+#endif
 		bk_gpio_set_value(i, restore_reg[i]);
 	}
 	if (restore_reg) {
