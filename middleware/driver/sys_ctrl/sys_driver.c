@@ -383,3 +383,18 @@ void sys_drv_set_cpu2_rxevt_sel(uint32 value) {
     sys_hal_set_cpu2_rxevt_sel(value);
 #endif 
 }
+
+void sys_drv_set_ioldo_bypass(uint32_t v)
+{
+#if (CONFIG_SOC_BK7239XX && CONFIG_ATE_TEST)
+    sys_hal_set_ana_reg_spi_latch1v(1);
+    if (v) {
+        sys_hal_set_ioldo_bypass(1);
+        sys_hal_set_ioldo_volt(6);
+    } else {
+        sys_hal_set_ioldo_bypass(0);
+        sys_hal_set_ioldo_volt(2);
+    }
+    sys_hal_set_ana_reg_spi_latch1v(0);
+#endif
+}

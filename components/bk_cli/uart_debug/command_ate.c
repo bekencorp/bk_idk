@@ -889,6 +889,9 @@ static void evm_test(UINT32 rate, UINT32 frequency, UINT32 bandwidth, UINT32 mod
     rf_module_vote_ctrl(RF_CLOSE,RF_BY_TEMP_BIT);
     //evm_bypass_mac_set_txdelay(txdelay);
 
+    // make sure ioldo bypassed before start tx
+    sys_drv_set_ioldo_bypass(1);
+
     evm_start_bypass_mac();
 
     bk7011_stop_tx_pattern();
@@ -2182,6 +2185,9 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                         // Measure the voltage of VDDRAM(vddram ldo)  [0x0]: sys_ana_0x44<29:28>=0x0
                         param &= ~(0x3 << 28);
                         sys_drv_analog_set(ANALOG_REG4, param);
+
+                        // make sure ioldo is not bypassed
+                        sys_drv_set_ioldo_bypass(0);
 
                         rf_module_vote_ctrl(RF_CLOSE,RF_BY_ATE_WIFI_BIT);
                         _phy_power_ctrl_wrapper(0);
