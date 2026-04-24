@@ -39,6 +39,11 @@
 
 #define SOC_FLASH_BASE_ADDR           0x02000000
 #define FLASH_LOGICAL_BASE_ADDR       SOC_FLASH_BASE_ADDR
+#if defined(CONFIG_NVS_PHY_PARTITION_OFFSET)
+#define FLASH_PROTECT_FREE_END_ADDR   (CONFIG_NVS_PHY_PARTITION_OFFSET - 1U)
+#else
+#define FLASH_PROTECT_FREE_END_ADDR   (FLASH_MAX_SIZE- 1U)
+#endif
 
 #if (CONFIG_TFM_FWU)
 #include "tfm_flash_nsc.h"
@@ -416,7 +421,22 @@ static bk_err_t bk_flash_partition_erase_internal(const bk_logic_partition_t *pa
     for (uint32_t i = start_sector; i <= end_sector; i++) {
         erase_addr = partition_info->partition_start_addr + (i << FLASH_SECTOR_SIZE_OFFSET);
 
+    #if CONFIG_FLASH_V1P1
+        GLOBAL_INT_DISABLE();
+    #endif
+
+        if (partition_info->partition_start_addr <= FLASH_PROTECT_FREE_END_ADDR){
+            bk_flash_set_protect_type(FLASH_PROTECT_NONE);
+        }
+
         bk_flash_erase_sector(erase_addr);
+
+        if (partition_info->partition_start_addr <= FLASH_PROTECT_FREE_END_ADDR){
+            bk_flash_set_protect_type(FLASH_PROTECT_ALL);
+        }
+    #if CONFIG_FLASH_V1P1
+        GLOBAL_INT_RESTORE();
+    #endif
     }
 
     return BK_OK;
@@ -543,6 +563,10 @@ static bk_err_t bk_flash_partition_write_internal(const bk_logic_partition_t *pa
 
     GLOBAL_INT_DISABLE();
 
+    if (partition_info->partition_start_addr <= FLASH_PROTECT_FREE_END_ADDR)
+    {
+        bk_flash_set_protect_type(FLASH_PROTECT_NONE);
+    }
     if ((offset + buffer_len) <= partition_info->partition_length) {
 #if (CONFIG_PARTITION_ENCRYPTION)
         bk_flash_write_bytes(start_addr, dest_hex, buffer_len);
@@ -551,6 +575,10 @@ static bk_err_t bk_flash_partition_write_internal(const bk_logic_partition_t *pa
 #endif
     }
 
+    if (partition_info->partition_start_addr <= FLASH_PROTECT_FREE_END_ADDR)
+    {
+        bk_flash_set_protect_type(FLASH_PROTECT_ALL);
+    }
     GLOBAL_INT_RESTORE();
 
 #if (CONFIG_PARTITION_ENCRYPTION)

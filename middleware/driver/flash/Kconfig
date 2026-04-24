@@ -15,6 +15,13 @@ menu "FLASH"
 		bool "Enable flash old api"
 		default n
 
+	config FLASH_V1P1
+		bool "Enable flash v1.1 implementation"
+		default n
+		help
+			Enable customer flash v1.1 style implementation.
+			When disabled, use the legacy flash implementation.
+
 	config SUPPORT_PARTITIONS_PARTITION
 		bool "Enable flash partition"
 		default n

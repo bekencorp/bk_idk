@@ -15,6 +15,7 @@
 #include <common/bk_include.h>
 #include <os/os.h>
 #include <driver/flash.h>
+#include <driver/flash_types.h>
 #include "flash_driver.h"
 // #include "mb_ipc_cmd.h"
 

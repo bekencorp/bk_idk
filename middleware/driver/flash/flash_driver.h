@@ -17,6 +17,9 @@
 #include <components/log.h>
 #include <driver/flash_types.h>
 
+#if CONFIG_FLASH_V1P1
+#include "v1_1/flash_driver.h"
+#else
 #define FLASH_TAG "flash"
 #define FLASH_LOGI(...) BK_LOGI(FLASH_TAG, ##__VA_ARGS__)
 #define FLASH_LOGW(...) BK_LOGW(FLASH_TAG, ##__VA_ARGS__)
@@ -69,3 +72,6 @@ typedef struct {
 	uint8_t quad_en_val; /**< When the QE pin is set to quad_en_val(1 or 0), the Quad IO2 and IO3 pins are enabled */
 	uint8_t coutinuous_read_mode_bits_val;
 } flash_config_t;
+
+
+#endif

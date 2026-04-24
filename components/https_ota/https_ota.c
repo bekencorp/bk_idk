@@ -1,6 +1,7 @@
 #include <string.h>
 #include "modules/https_ota.h"
 #include "modules/wifi.h"
+#include "driver/flash.h"
 
 #define TAG "HTTPS_OTA"
 
@@ -279,6 +280,7 @@ https_ota_state_t bk_https_ota_perform(https_ota_t* ota_config)
 				}
 				break;
 			case HTTPS_OTA_READY:
+				bk_flash_set_protect_type(FLASH_PROTECT_NONE);
 			case HTTPS_OTA_PROGRESS_DATA:
 				bk_https_ota_progress_data(ota_config);
 				break;
@@ -294,6 +296,7 @@ https_ota_state_t bk_https_ota_perform(https_ota_t* ota_config)
 
 end:
 	bk_https_ota_end(ota_config);
+	bk_flash_set_protect_type(FLASH_PROTECT_ALL);
 ret:
 	return ota_config->state;
 }

@@ -17,9 +17,14 @@ if (CONFIG_FLASH)
 	endif()
 
 	if (CONFIG_SYS_CPU0)
-		list(APPEND srcs
-			flash/flash_driver.c
-			flash/flash_driver_ext.c)
+		if (CONFIG_FLASH_V1P1)
+			list(APPEND srcs
+				flash/v1_1/flash_driver.c)
+		else()
+			list(APPEND srcs
+				flash/flash_driver.c
+				flash/flash_driver_ext.c)
+		endif()
 
 		if ((CONFIG_CPU_CNT GREATER 1))
 			list(APPEND srcs flash/flash_server.c)

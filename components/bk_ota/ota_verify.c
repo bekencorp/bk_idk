@@ -452,6 +452,7 @@ bk_err_t ota_update_back_pubkey_from_primary(const bk_logic_partition_t *app_par
 		OTA_LOGE(TAG, "read primary key fail, ret=%d\r\n",ret);
 		return ret;
 	}
+	bk_flash_set_protect_type(FLASH_PROTECT_NONE);
 
 	memset(ff_buf, 0xFF, 64);
 	bk_flash_read_bytes(phy_off, check_erase_buf, 64);
@@ -535,6 +536,7 @@ bk_err_t ota_update_back_pubkey_from_primary(const bk_logic_partition_t *app_par
 	}
 
 end:
+	bk_flash_set_protect_type(FLASH_PROTECT_ALL);
 	if (enc_buf != NULL) {
 		free(enc_buf);
 	}

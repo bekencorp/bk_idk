@@ -33,7 +33,6 @@ set(srcs
     ${TFM_BEKEN}/armino/driver/gpio/gpio_driver_base.c
     ${TFM_BEKEN}/armino/driver/gpio/gpio_driver.c
     ${TFM_BEKEN}/armino/driver/spinlock/amp_res_lock.c
-    ${TFM_BEKEN}/armino/driver/flash/flash_driver.c
     ${TFM_BEKEN}/armino/driver/timer/timer_driver.c
     ${TFM_BEKEN}/armino/driver/ppc/prro_driver.c
     ${TFM_BEKEN}/armino/driver/efuse/efuse_driver.c
@@ -54,6 +53,12 @@ set(srcs
     ./driver/hal/flash_ll.c
     ./driver/hal/efuse_hal.c
 )
+
+if(CONFIG_FLASH_V1P1)
+    list(APPEND srcs ${TFM_BEKEN}/armino/driver/flash/v1_1/flash_driver.c)
+else()
+    list(APPEND srcs ${TFM_BEKEN}/armino/driver/flash/flash_driver.c)
+endif()
 
 if(CONFIG_BUILD_TFM)
 set(s_srcs
