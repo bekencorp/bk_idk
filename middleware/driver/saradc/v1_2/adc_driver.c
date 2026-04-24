@@ -98,7 +98,7 @@ static bool adc_try_load_otp_cwt(uint32_t *otp_cwt_buf)
 #if CONFIG_SOC_BK7236XX && !CONFIG_SOC_BK7236N
     result = bk_otp_apb_read(OTP_GADC_CALIBRATION, data, otp_data_size);
 #else
-    result = bk_otp_ahb_read(OTP_GADC_CALIBRATION, data, otp_data_size);
+    result = bk_otp_ahb_read_backup(OTP_GADC_CALIBRATION, data, NULL);
 #endif
     if (result != BK_OK) {
         ADC_LOGW("read otp gadc calib failed:%d\r\n", result);
