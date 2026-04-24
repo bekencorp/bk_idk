@@ -458,7 +458,7 @@ void wifi_cali_rfpll_ate(void)
     } else {
         tx_buffer[1] = 0xCC;
     }
-    tx_buffer[2] = (err_mask & 0x0F);
+    tx_buffer[2] = (err_mask & 0xFF);
     tx_buffer[3] = (bandmin_wifi >> 8) & 0x00FF;
     tx_buffer[4] = bandmin_wifi & 0x00FF;
     tx_buffer[5] = (bandmax_wifi >> 8) & 0x00FF;
