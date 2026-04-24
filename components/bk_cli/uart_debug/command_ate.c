@@ -218,8 +218,7 @@ bk_err_t core_mem_wr_all_test(void)
     uint32_t smem4 = 0x28070FFF;
 
     ret = core_mem_wr_test(smem0);
-    if (ret == BK_OK) {
-    } else {
+    if (ret != BK_OK) {
         return BK_FAIL;
     }
 
@@ -615,52 +614,24 @@ void mpb_tx_mode_close_for_ate(void)
 	bk_wifi_set_mpb_ctrl(reg);
 }
 
+#define CONFIG_ATE_PWR_CAL_V1 1
+#define CONFIG_ATE_PWR_CAL_V2 2
+
 typedef struct {
-    UINT8 channel;
-    UINT8 pwr_idx;
-    UINT8 pwr_dBm_x10;
-} cal_point_t;
+    UINT32 position;
+    UINT8  pwr_idx;
+    UINT8  pwr_dBm_x10;
+} cal_point_fit_t;
 
-static cal_point_t g_2g_11b_cal_points[3] = {
-    {1, 0, 0},   // ch1
-    {7, 0, 0},   // ch7
-    {13, 0, 0}   // ch13
-};
-
-static cal_point_t g_2g_11g_cal_points[3] = {
-    {1, 0, 0},   // ch1
-    {7, 0, 0},   // ch7
-    {13, 0, 0}   // ch13
-};
-
-static cal_point_t g_5g_11a_cal_points[5] = {
-    {36, 0, 0},   // ch36
-    {64, 0, 0},   // ch64
-    {100, 0, 0},  // ch100
-    {132, 0, 0},  // ch132
-    {165, 0, 0}   // ch165
-};
-
-static int find_valid_cal_points(cal_point_t *cal_points, int num_points, cal_point_t *valid_points, int *num_valid)
+static UINT8 linear_interpolate(UINT32 x1, UINT8 y1, UINT32 x2, UINT8 y2, UINT32 x)
 {
-    int count = 0;
-    for (int i = 0; i < num_points; i++) {
-        if (cal_points[i].pwr_idx != 0 && cal_points[i].pwr_dBm_x10 != 0) {
-            valid_points[count] = cal_points[i];
-            count++;
-        }
-    }
-    *num_valid = count;
-    return count;
-}
+    if (x1 == x2) return y1;
+    if (x  == x1) return y1;
+    if (x  == x2) return y2;
 
-static UINT8 linear_interpolate(UINT8 x1, UINT8 y1, UINT8 x2, UINT8 y2, UINT8 x)
-{
-    if (x1 == x2) {
-        return y1;
-    }
-
-    INT32 result = y1 + ((INT32)(y2 - y1) * (INT32)(x - x1)) / (INT32)(x2 - x1);
+    INT32 half_round = ((INT32)(x2 - x1) + 1) / 2;
+    half_round = (y2 >= y1) ? half_round : -half_round;
+    INT32 result = (INT32)y1 + ((INT32)(y2 - y1) * (INT32)(x - x1) + half_round) / (INT32)(x2 - x1);
     if (result < 0) {
         bk_printf("Warning: linear_interpolate() result < 0, clamped to 0\n");
         return 0;
@@ -672,18 +643,14 @@ static UINT8 linear_interpolate(UINT8 x1, UINT8 y1, UINT8 x2, UINT8 y2, UINT8 x)
     return (UINT8)result;
 }
 
-static UINT8 fit_power_index_generic(UINT8 target_channel, UINT8 target_pwr_dBm_x10, cal_point_t *cal_points, int num_points)
+static UINT8 fit_power_index(UINT32 target_position, UINT8 target_pwr_dBm_x10,
+                             cal_point_fit_t *valid_points, int num_valid)
 {
-    cal_point_t valid_points[5];
-    int num_valid = 0;
-
-    find_valid_cal_points(cal_points, num_points, valid_points, &num_valid);
-
     if (num_valid == 0) {
         return 0;
     }
 
-    // Base values (idx and power) at target channel from calibration data
+    // Base values (idx and power) at target position from calibration data
     UINT8 base_idx;
     UINT8 base_dbm_x10;
 
@@ -692,34 +659,35 @@ static UINT8 fit_power_index_generic(UINT8 target_channel, UINT8 target_pwr_dBm_
         base_dbm_x10 = valid_points[0].pwr_dBm_x10;
     } else {
         // Clamp to edges if out of range, otherwise interpolate between neighbors
-        if (target_channel <= valid_points[0].channel) {
+        if (target_position <= valid_points[0].position) {
             base_idx = valid_points[0].pwr_idx;
             base_dbm_x10 = valid_points[0].pwr_dBm_x10;
-        } else if (target_channel >= valid_points[num_valid - 1].channel) {
+        } else if (target_position >= valid_points[num_valid - 1].position) {
             base_idx = valid_points[num_valid - 1].pwr_idx;
             base_dbm_x10 = valid_points[num_valid - 1].pwr_dBm_x10;
         } else {
-            cal_point_t left_point = valid_points[0];
-            cal_point_t right_point = valid_points[num_valid - 1];
+            cal_point_fit_t left_point = valid_points[0];
+            cal_point_fit_t right_point = valid_points[num_valid - 1];
             for (int i = 0; i < num_valid - 1; i++) {
-                if (target_channel >= valid_points[i].channel && target_channel <= valid_points[i + 1].channel) {
+                if (target_position >= valid_points[i].position && target_position <= valid_points[i + 1].position) {
                     left_point = valid_points[i];
                     right_point = valid_points[i + 1];
                     break;
                 }
             }
-            base_idx = linear_interpolate(left_point.channel, left_point.pwr_idx,
-                                          right_point.channel, right_point.pwr_idx,
-                                          target_channel);
-            base_dbm_x10 = linear_interpolate(left_point.channel, left_point.pwr_dBm_x10,
-                                              right_point.channel, right_point.pwr_dBm_x10,
-                                              target_channel);
+            base_idx     = linear_interpolate(left_point.position,  left_point.pwr_idx,
+                                              right_point.position, right_point.pwr_idx,
+                                              target_position);
+            base_dbm_x10 = linear_interpolate(left_point.position,  left_point.pwr_dBm_x10,
+                                              right_point.position, right_point.pwr_dBm_x10,
+                                              target_position);
         }
     }
 
     // Adjust index by target power difference: 10 (1.0dBm) -> idx delta 4
     INT32 delta_dbm_x10 = (INT32)target_pwr_dBm_x10 - (INT32)base_dbm_x10;
-    INT32 idx_adjust = (delta_dbm_x10 * 4) / 10;
+    INT32 round_offset = (delta_dbm_x10 >= 0) ? 5 : -5;
+    INT32 idx_adjust = (delta_dbm_x10 * 4 + round_offset) / 10;
     INT32 final_idx = (INT32)base_idx + idx_adjust;
 
     if (final_idx < 0) {
@@ -733,7 +701,51 @@ static UINT8 fit_power_index_generic(UINT8 target_channel, UINT8 target_pwr_dBm_
     return (UINT8)final_idx;
 }
 
-static void evm_test_save_pwr(UINT32 rate, UINT32 frequency, uint8_t pwr_dbm)
+#if (CONFIG_ATE_PHY_PWR_TBL_VERSION == CONFIG_ATE_PWR_CAL_V1)
+static cal_point_fit_t g_2g_11b_cal_points[3] = {
+    {1, 0, 0},
+    {7, 0, 0},
+    {13, 0, 0}
+};
+
+static cal_point_fit_t g_2g_11g_cal_points[3] = {
+    {1, 0, 0},
+    {7, 0, 0},
+    {13, 0, 0}
+};
+
+static cal_point_fit_t g_5g_11a_cal_points[5] = {
+    {36, 0, 0},
+    {64, 0, 0},
+    {100, 0, 0},
+    {132, 0, 0},
+    {165, 0, 0}
+};
+
+static int find_valid_cal_points_v1(cal_point_fit_t *cal_points, int num_points, cal_point_fit_t *valid_points, int *num_valid)
+{
+    int count = 0;
+    for (int i = 0; i < num_points; i++) {
+        if (cal_points[i].pwr_idx != 0 && cal_points[i].pwr_dBm_x10 != 0) {
+            valid_points[count] = cal_points[i];
+            count++;
+        }
+    }
+    *num_valid = count;
+    return count;
+}
+
+static UINT8 fit_power_index_v1(UINT8 target_channel, UINT8 target_pwr_dBm_x10, cal_point_fit_t *cal_points, int num_points)
+{
+    cal_point_fit_t valid_points[5] = {0};
+    int num_valid = 0;
+
+    find_valid_cal_points_v1(cal_points, num_points, valid_points, &num_valid);
+
+    return fit_power_index(target_channel, target_pwr_dBm_x10, valid_points, num_valid);
+}
+
+static void evm_test_save_pwr_v1(UINT32 rate, UINT32 frequency, uint8_t pwr_dbm)
 {
     uint8_t tx_buffer[3];
 
@@ -785,6 +797,292 @@ static void evm_test_save_pwr(UINT32 rate, UINT32 frequency, uint8_t pwr_dbm)
 
     uart_send_bytes_for_ate(tx_buffer, 3);
 }
+#endif
+
+#if (CONFIG_ATE_PHY_PWR_TBL_VERSION == CONFIG_ATE_PWR_CAL_V2)
+typedef struct {
+    UINT32 rate;
+    UINT8  mod;
+    UINT8  bandwidth;
+    UINT32 frequency;
+    UINT8  pwr_dBm_x10;
+    UINT8  pwr_idx;
+} cal_point_v2_t;
+
+typedef struct {
+    UINT32 rate         : 4;  // [3:0] Data Rate (encoded)
+    UINT32 mod          : 3;  // [6:4] Modulation format
+    UINT32 bandwidth    : 1;  // [7] Bandwidth: 0=20MHz, 1=40MHz
+    UINT32 channel      : 8;  // [15:8] Channel (converted from frequency)
+    UINT32 pwr_dBm_x10  : 8;  // [23:16] Power (dBm*10)
+    UINT32 pwr_idx      : 8;  // [31:24] Power Index
+} cal_point_v2_storage_t;
+
+
+#define PWR_OFFSET_11N_HT20_TO_11G        (1)   // 11n HT20 to 11g conversion: +0.1dB (pwr_dBm unit is dBm*10)
+#define PWR_OFFSET_11AX_HT20_TO_11G       (2)   // 11ax HT20 to 11g conversion: +0.2dB (pwr_dBm unit is dBm*10)
+#define IDX_OFFSET_HT40_TO_HT20           (0)   // HT40 to HT20 conversion offset: TBD (currently 0, for pwr_idx)
+
+#define POINT_CATEGORY_11B                (0)   // 11b
+#define POINT_CATEGORY_11G                (1)   // 11g
+#define POINT_CATEGORY_11A                (2)   // 11a
+#define POINT_CATEGORY_11N                (3)   // 11n
+#define POINT_CATEGORY_11AX               (4)   // 11ax
+#define POINT_CATEGORY_INVALID            (-1)  // invalid
+
+#define MAX_CAL_POINTS_V2                 (11)
+
+static UINT8 g_cal_points_v2_count = 0;
+static cal_point_v2_t g_cal_points_v2_original[MAX_CAL_POINTS_V2] = {0};
+static cal_point_v2_storage_t g_cal_points_v2_storage[MAX_CAL_POINTS_V2] = {0};
+
+extern UINT32 evm_frequency_to_channel_nearest(UINT32 frequency, wifi_band_t band);
+
+static UINT8 encode_rate_for_storage_v2(UINT32 rate)
+{
+    if (rate <= 54) {
+        switch (rate) {
+            case 1:  return 0x00;
+            case 2:  return 0x01;
+            case 5:  return 0x02;
+            case 11: return 0x03;
+            case 6:  return 0x04;
+            case 9:  return 0x05;
+            case 12: return 0x06;
+            case 18: return 0x07;
+            case 24: return 0x08;
+            case 36: return 0x09;
+            case 48: return 0x0A;
+            case 54: return 0x0B;
+            default: return rate & 0x0F;
+        }
+    } else if (rate >= 128 && rate <= 137) {
+        return (UINT8)(rate - 128);
+    } else {
+        return rate & 0x0F;
+    }
+}
+
+static void convert_original_to_storage_v2(cal_point_v2_t *original, cal_point_v2_storage_t *storage, wifi_band_t band)
+{
+    storage->rate        = encode_rate_for_storage_v2(original->rate);
+    storage->mod         = original->mod & 0x07;
+    storage->bandwidth   = original->bandwidth & 0x01;
+    storage->channel     = (UINT8)evm_frequency_to_channel_nearest(original->frequency, band);
+    storage->pwr_dBm_x10 = original->pwr_dBm_x10;
+    storage->pwr_idx     = original->pwr_idx;
+}
+
+// Determine point category: 0=11b, 1=11g, 2=11a, 3=11n, 4=11ax, -1=invalid
+static INT8 get_point_category(wifi_band_t band, UINT32 rate, UINT8 mod)
+{
+    // 11b: 2G, rate 1, 2, 5, 11, mod == 0 -> category 0
+    if ((band == IEEE80211_BAND_2GHZ) &&
+        (rate == 1 || rate == 2 || rate == 5 || rate == 11) &&
+        (mod == 0)) {
+        return POINT_CATEGORY_11B;
+    }
+
+    // 11g/11a: rate 6, 9, 12, 18, 24, 36, 48, 54, mod == 0
+    // 11g: 2G -> category 1
+    // 11a: 5G -> category 2
+    if ((rate == 6  || rate == 9  || rate == 12 || rate == 18 ||
+         rate == 24 || rate == 36 || rate == 48 || rate == 54) &&
+        (mod == 0)) {
+        if (band == IEEE80211_BAND_2GHZ) {
+            return POINT_CATEGORY_11G;
+        }
+        if (band == IEEE80211_BAND_5GHZ) {
+            return POINT_CATEGORY_11A;
+        }
+    }
+
+    // 11n: 2G or 5G, rate 128-135, mod == 2 -> category 3
+    // 11ax: 2G or 5G, rate 128-137, mod == 5 -> category 4
+    if ((band == IEEE80211_BAND_2GHZ) || (band == IEEE80211_BAND_5GHZ)) {
+        if ((rate >= 128 && rate <= 135) && (mod == 2)) {
+            return POINT_CATEGORY_11N;
+        }
+        if ((rate >= 128 && rate <= 137) && (mod == 5)) {
+            return POINT_CATEGORY_11AX;
+        }
+    }
+
+    return POINT_CATEGORY_INVALID;
+}
+
+static bool is_category_match(wifi_band_t band1, INT8 category1, wifi_band_t band2, INT8 category2)
+{
+    if (band1 != band2) {
+        return false;
+    }
+    if (category1 == category2) {
+        return true;
+    }
+    if (band1 == IEEE80211_BAND_2GHZ) {
+        bool cat1_in_set = (category1 == POINT_CATEGORY_11G || category1 == POINT_CATEGORY_11N || category1 == POINT_CATEGORY_11AX);
+        bool cat2_in_set = (category2 == POINT_CATEGORY_11G || category2 == POINT_CATEGORY_11N || category2 == POINT_CATEGORY_11AX);
+        return cat1_in_set && cat2_in_set;
+    }
+    if (band1 == IEEE80211_BAND_5GHZ) {
+        bool cat1_in_set = (category1 == POINT_CATEGORY_11A || category1 == POINT_CATEGORY_11N || category1 == POINT_CATEGORY_11AX);
+        bool cat2_in_set = (category2 == POINT_CATEGORY_11A || category2 == POINT_CATEGORY_11N || category2 == POINT_CATEGORY_11AX);
+        return cat1_in_set && cat2_in_set;
+    }
+    return false;
+}
+
+static void adjust_power_for_normalization(UINT8 *pwr_dBm_x10, INT8 category, bool is_normalize)
+{
+    INT32 offset = 0;
+    if (category == POINT_CATEGORY_11N) {
+        offset = is_normalize ? PWR_OFFSET_11N_HT20_TO_11G : -PWR_OFFSET_11N_HT20_TO_11G;
+    } else if (category == POINT_CATEGORY_11AX) {
+        offset = is_normalize ? PWR_OFFSET_11AX_HT20_TO_11G : -PWR_OFFSET_11AX_HT20_TO_11G;
+    } else {
+        return;
+    }
+    INT32 pwr = (INT32)(*pwr_dBm_x10) + offset;
+    if (pwr < 0) pwr = 0;
+    if (pwr > 255) pwr = 255;
+    *pwr_dBm_x10 = (UINT8)pwr;
+}
+
+static void evm_test_save_pwr_v2(UINT32 rate, UINT32 frequency, uint8_t pwr_dbm,
+                                 UINT8 bandwidth, UINT8 mod, wifi_band_t band)
+{
+    uint8_t tx_buffer[3];
+    UINT8 pwr_idx = rwnx_cal_get_pwr_idx();
+
+    if (g_cal_points_v2_count >= MAX_CAL_POINTS_V2) {
+        goto error;
+    }
+
+    if (!((frequency >= 2400 && frequency <= 2500) || (frequency >= 5180 && frequency <= 5885))) {
+        goto error;
+    }
+
+    INT8 new_category = get_point_category(band, rate, mod);
+    if (new_category == POINT_CATEGORY_INVALID) {
+        goto error;
+    }
+
+    for (UINT8 i = 0; i < g_cal_points_v2_count; i++) {
+        if (g_cal_points_v2_original[i].frequency == frequency) {
+            wifi_band_t existing_band = (frequency >= 2400 && frequency <= 2500) ?
+                                        IEEE80211_BAND_2GHZ : IEEE80211_BAND_5GHZ;
+            INT8 existing_category = get_point_category(existing_band,
+                                                        g_cal_points_v2_original[i].rate,
+                                                        g_cal_points_v2_original[i].mod);
+
+            if (is_category_match(existing_band, existing_category, band, new_category)) {
+                goto error;
+            }
+        }
+    }
+
+    g_cal_points_v2_original[g_cal_points_v2_count].frequency = frequency;
+    g_cal_points_v2_original[g_cal_points_v2_count].rate = rate;
+    g_cal_points_v2_original[g_cal_points_v2_count].mod = mod;
+    g_cal_points_v2_original[g_cal_points_v2_count].bandwidth = bandwidth;
+    g_cal_points_v2_original[g_cal_points_v2_count].pwr_idx = pwr_idx;
+    g_cal_points_v2_original[g_cal_points_v2_count].pwr_dBm_x10 = pwr_dbm;
+
+    convert_original_to_storage_v2(&g_cal_points_v2_original[g_cal_points_v2_count],
+                                   &g_cal_points_v2_storage[g_cal_points_v2_count],
+                                   band);
+
+    g_cal_points_v2_count++;
+
+    tx_buffer[0] = 0x55;
+    tx_buffer[1] = 0x33;
+    tx_buffer[2] = pwr_dbm;
+    uart_send_bytes_for_ate(tx_buffer, 3);
+    bk_printf("evm_test_save_pwr_v2: ok\r\n");
+    return;
+
+error:
+    tx_buffer[0] = 0x55;
+    tx_buffer[1] = 0xCC;
+    tx_buffer[2] = pwr_dbm;
+    uart_send_bytes_for_ate(tx_buffer, 3);
+    bk_printf("evm_test_save_pwr_v2: failed\r\n");
+}
+
+static int find_valid_cal_points_v2(wifi_band_t band, UINT32 rate, UINT8 mod,
+                                    cal_point_fit_t *valid_points,
+                                    INT8 *target_category)
+{
+    if (target_category == NULL) {
+        return 0;
+    }
+
+    *target_category = get_point_category(band, rate, mod);
+    if (*target_category == POINT_CATEGORY_INVALID) {
+        return 0;
+    }
+
+    int count = 0;
+    for (UINT8 i = 0; i < g_cal_points_v2_count; i++) {
+        if (g_cal_points_v2_original[i].bandwidth != PHY_CHNL_BW_20) {
+            continue;
+        }
+
+        wifi_band_t point_band = (g_cal_points_v2_original[i].frequency >= 2400 &&
+                                  g_cal_points_v2_original[i].frequency <= 2500) ?
+                                  IEEE80211_BAND_2GHZ : IEEE80211_BAND_5GHZ;
+        INT8 point_category = get_point_category(point_band,
+                                                 g_cal_points_v2_original[i].rate,
+                                                 g_cal_points_v2_original[i].mod);
+
+        if (is_category_match(point_band, point_category, band, *target_category)) {
+            valid_points[count].position    = g_cal_points_v2_original[i].frequency;
+            valid_points[count].pwr_idx     = g_cal_points_v2_original[i].pwr_idx;
+            valid_points[count].pwr_dBm_x10 = g_cal_points_v2_original[i].pwr_dBm_x10;
+            adjust_power_for_normalization(&valid_points[count].pwr_dBm_x10,
+                                           point_category,
+                                           true);
+            count++;
+        }
+    }
+
+    return count;
+}
+
+static void sort_cal_points_v2(cal_point_fit_t *points, int count)
+{
+    if (count <= 1) {
+        return;
+    }
+    for (int i = 0; i < count - 1; i++) {
+        for (int j = 0; j < count - i - 1; j++) {
+            if (points[j].position > points[j + 1].position) {
+                cal_point_fit_t temp = points[j];
+                points[j] = points[j + 1];
+                points[j + 1] = temp;
+            }
+        }
+    }
+}
+
+static UINT8 fit_power_index_v2(UINT32 target_frequency, UINT8 target_pwr_dBm_x10,
+                                wifi_band_t band, UINT32 rate, UINT8 mod)
+{
+    cal_point_fit_t valid_points[MAX_CAL_POINTS_V2] = {0};
+    INT8 rate_category;
+    int num_valid = find_valid_cal_points_v2(band, rate, mod, valid_points, &rate_category);
+    if (num_valid == 0) {
+        return 0;
+    }
+
+    sort_cal_points_v2(valid_points, num_valid);
+
+    adjust_power_for_normalization(&target_pwr_dBm_x10,
+                                   rate_category,
+                                   true);
+    return fit_power_index(target_frequency, target_pwr_dBm_x10, valid_points, num_valid);
+}
+#endif
 
 /**
  * rate        : reference to evm_translate_tx_rate
@@ -1057,7 +1355,7 @@ static void tx_verify_test_2442(void)
     phy_close_cca();
 
     ret = bk7011_set_sample_mac_out_for_ate(frame_len);
-    if(ret != 0)
+    if (ret != 0)
     {
         //os_printf("set sample fail %d\r\n", ret);
         TX_ENCRPYT_EN_PIN(0);
@@ -1065,7 +1363,7 @@ static void tx_verify_test_2442(void)
     }
 
     ret = evm_req_tx_for_ate(frame_len);
-    if(ret != 0)
+    if (ret != 0)
     {
         //os_printf("req tx fail %d\r\n", ret);
         bk7011_clear_sample_mac_out_for_ate();
@@ -2256,7 +2554,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                     UINT8 tbl_version = CONFIG_ATE_PHY_PWR_TBL_VERSION;
                     UINT8 ana_version = CONFIG_ATE_PHY_PWR_ANA_VERSION;
                     UINT32 pwr_tbl[12] = {0};
-
+#if (CONFIG_ATE_PHY_PWR_TBL_VERSION == CONFIG_ATE_PWR_CAL_V1)
                     pwr_tbl[0] = g_2g_11b_cal_points[0].pwr_idx << 24 | g_2g_11g_cal_points[0].pwr_idx << 16;
                     pwr_tbl[1] = g_2g_11b_cal_points[1].pwr_idx << 24 | g_2g_11g_cal_points[1].pwr_idx << 16;
                     pwr_tbl[2] = g_2g_11b_cal_points[2].pwr_idx << 24 | g_2g_11g_cal_points[2].pwr_idx << 16;
@@ -2268,6 +2566,9 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                     pwr_tbl[8] = g_5g_11a_cal_points[2].pwr_idx << 24 | g_5g_11a_cal_points[2].pwr_dBm_x10 << 16;
                     pwr_tbl[9] = g_5g_11a_cal_points[3].pwr_idx << 24 | g_5g_11a_cal_points[3].pwr_dBm_x10 << 16;
                     pwr_tbl[10] = g_5g_11a_cal_points[4].pwr_idx << 24 | g_5g_11a_cal_points[4].pwr_dBm_x10 << 16;
+#elif (CONFIG_ATE_PHY_PWR_TBL_VERSION == CONFIG_ATE_PWR_CAL_V2)
+                    os_memcpy(pwr_tbl, (uint8_t *)g_cal_points_v2_storage, sizeof(g_cal_points_v2_storage));
+#endif
                     pwr_tbl[11] = tbl_version | ana_version << 8;
 
                     // "bk_otp_ahb_update" will do read-back check, so do not need to read back again here
@@ -2636,70 +2937,6 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 break;
             }
 #endif
-            case 0x90:
-            /* 0x55 90 [tbl_idx] [vertion] [pwrtbl_dBm_x10] */
-            /* 0x55 90 01/02 01 01 BB BB BB GG GG GG AA AA AA AA AA */
-            {
-                int ret = 0;
-                UINT8 tbl_idx = content[2];
-                UINT8 tbl_version = content[3];
-                UINT8 ana_version = content[4];
-                UINT8 pwr_dBm_x10_11b_ch1 = content[5];
-                UINT8 pwr_dBm_x10_11b_ch7 = content[6];
-                UINT8 pwr_dBm_x10_11b_ch13 = content[7];
-                UINT8 pwr_dBm_x10_11g_ch1 = content[8];
-                UINT8 pwr_dBm_x10_11g_ch7 = content[9];
-                UINT8 pwr_dBm_x10_11g_ch13 = content[10];
-                UINT8 pwr_dBm_x10_11a_ch36 = content[11];
-                UINT8 pwr_dBm_x10_11a_ch64 = content[12];
-                UINT8 pwr_dBm_x10_11a_ch100 = content[13];
-                UINT8 pwr_dBm_x10_11a_ch132 = content[14];
-                UINT8 pwr_dBm_x10_11a_ch165 = content[15];
-
-                UINT8 pwr_idx_11b_ch1 = g_2g_11b_cal_points[0].pwr_idx;
-                UINT8 pwr_idx_11b_ch7 = g_2g_11b_cal_points[1].pwr_idx;
-                UINT8 pwr_idx_11b_ch13 = g_2g_11b_cal_points[2].pwr_idx;
-                UINT8 pwr_idx_11g_ch1 = g_2g_11g_cal_points[0].pwr_idx;
-                UINT8 pwr_idx_11g_ch7 = g_2g_11g_cal_points[1].pwr_idx;
-                UINT8 pwr_idx_11g_ch13 = g_2g_11g_cal_points[2].pwr_idx;
-                UINT8 pwr_idx_11a_ch36 = g_5g_11a_cal_points[0].pwr_idx;
-                UINT8 pwr_idx_11a_ch64 = g_5g_11a_cal_points[1].pwr_idx;
-                UINT8 pwr_idx_11a_ch100 = g_5g_11a_cal_points[2].pwr_idx;
-                UINT8 pwr_idx_11a_ch132 = g_5g_11a_cal_points[3].pwr_idx;
-                UINT8 pwr_idx_11a_ch165 = g_5g_11a_cal_points[4].pwr_idx;
-
-                UINT32 pwr_tbl[12] = {0};
-
-                pwr_tbl[0] = pwr_idx_11b_ch1 << 24 | pwr_idx_11g_ch1 << 16;
-                pwr_tbl[1] = pwr_idx_11b_ch7 << 24 | pwr_idx_11g_ch7 << 16;
-                pwr_tbl[2] = pwr_idx_11b_ch13 << 24 | pwr_idx_11g_ch13 << 16;
-                pwr_tbl[3] = pwr_dBm_x10_11b_ch1 << 24 | pwr_dBm_x10_11g_ch1 << 16;
-                pwr_tbl[4] = pwr_dBm_x10_11b_ch7 << 24 | pwr_dBm_x10_11g_ch7 << 16;
-                pwr_tbl[5] = pwr_dBm_x10_11b_ch13 << 24 | pwr_dBm_x10_11g_ch13 << 16;
-                pwr_tbl[6] = pwr_idx_11a_ch36 << 24 | pwr_dBm_x10_11a_ch36 << 16;
-                pwr_tbl[7] = pwr_idx_11a_ch64 << 24 | pwr_dBm_x10_11a_ch64 << 16;
-                pwr_tbl[8] = pwr_idx_11a_ch100 << 24 | pwr_dBm_x10_11a_ch100 << 16;
-                pwr_tbl[9] = pwr_idx_11a_ch132 << 24 | pwr_dBm_x10_11a_ch132 << 16;
-                pwr_tbl[10] = pwr_idx_11a_ch165 << 24 | pwr_dBm_x10_11a_ch165 << 16;
-                pwr_tbl[11] = tbl_version << 24 | ana_version << 16;
-
-                if (tbl_idx == 0x01) {
-                    ret = bk_otp_ahb_update(OTP_PHY_PWR1, (uint8_t *)pwr_tbl, sizeof(pwr_tbl));
-                } else {
-                    ret = bk_otp_ahb_update(OTP_PHY_PWR2, (uint8_t *)pwr_tbl, sizeof(pwr_tbl));
-                }
-
-                tx_buffer[0] = 0x55;
-                if (ret != BK_OK) {
-                    tx_buffer[0] = 0xCC;
-                } else {
-                    tx_buffer[0] = 0x33;
-                }
-
-                uart_send_bytes_for_ate(tx_buffer, 2);
-
-                break;
-            }
 
             case 0x99:
             {
@@ -2791,9 +3028,9 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 }
 
                 wifi_band_t band;
-                if ((frequency >= 2412) && (frequency <= 2484)) {
+                if ((frequency >= 2400) && (frequency <= 2500)) {
                     band = IEEE80211_BAND_2GHZ;
-                } else if ((frequency >= 5005) && (frequency <= 5885)) {
+                } else if ((frequency >= 5000) && (frequency <= 5885)) {
                     band = IEEE80211_BAND_5GHZ;
                 } else if ((frequency >= 5955) && (frequency <= 7115)) {
                     band = IEEE80211_BAND_6GHZ;
@@ -2828,26 +3065,38 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 if (function == FUNC_TX_SIGNAL) {
                     evm_test(rate_o, frequency, PHY_CHNL_BW_20, mod, pwr_dbm_x10, band);
                 } else if (function == FUNC_SAVE_TXPWR) {
-                    evm_test_save_pwr(rate_o, frequency, pwr_dbm_x10);
+#if (CONFIG_ATE_PHY_PWR_TBL_VERSION == CONFIG_ATE_PWR_CAL_V1)
+                    evm_test_save_pwr_v1(rate_o, frequency, pwr_dbm_x10);
+#elif (CONFIG_ATE_PHY_PWR_TBL_VERSION == CONFIG_ATE_PWR_CAL_V2)
+                    evm_test_save_pwr_v2(rate_o, frequency, pwr_dbm_x10, PHY_CHNL_BW_20, mod, band);
+#endif
                 } else if (function == FUNC_SET_TARGET_TXPWR) {
                     evm_test(rate_o, frequency, PHY_CHNL_BW_20, mod, pwr_dbm_x10, band);
+#if (CONFIG_ATE_PHY_PWR_TBL_VERSION == CONFIG_ATE_PWR_CAL_V1)
                     UINT32 pwr_idx = 0;
                     if (band == IEEE80211_BAND_2GHZ) {
                         UINT32 channel = evm_frequency_to_channel(frequency, band);
                         if (rate_o == 1 || rate_o == 2 || rate_o == 5 || rate_o == 11) {
-                            pwr_idx = fit_power_index_generic((UINT8)channel, pwr_dbm_x10, g_2g_11b_cal_points, 3);
+                            pwr_idx = fit_power_index_v1((UINT8)channel, pwr_dbm_x10, g_2g_11b_cal_points, 3);
                         } else {
-                            pwr_idx = fit_power_index_generic((UINT8)channel, pwr_dbm_x10, g_2g_11g_cal_points, 3);
+                            pwr_idx = fit_power_index_v1((UINT8)channel, pwr_dbm_x10, g_2g_11g_cal_points, 3);
                         }
                     } else if (band == IEEE80211_BAND_5GHZ) {
                         UINT32 channel = evm_frequency_to_channel(frequency, band);
-                        pwr_idx = fit_power_index_generic((UINT8)channel, pwr_dbm_x10, g_5g_11a_cal_points, 5);
+                        pwr_idx = fit_power_index_v1((UINT8)channel, pwr_dbm_x10, g_5g_11a_cal_points, 5);
                     } else {
                         pwr_idx = 0;
                     }
                     if (pwr_idx != 0) {
                         rwnx_cal_set_txpwr(pwr_idx, rate_o);
                     }
+#elif (CONFIG_ATE_PHY_PWR_TBL_VERSION == CONFIG_ATE_PWR_CAL_V2)
+                    UINT32 pwr_idx = 0;
+                    pwr_idx = fit_power_index_v2(frequency, pwr_dbm_x10, band, rate_o, mod);
+                    if (pwr_idx != 0) {
+                        rwnx_cal_set_txpwr(pwr_idx, rate_o);
+                    }
+#endif
                 }
                 break;
             }
@@ -2919,9 +3168,9 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 }
 
                 wifi_band_t band;
-                if ((frequency >= 2412) && (frequency <= 2484)) {
+                if ((frequency >= 2400) && (frequency <= 2500)) {
                     band = IEEE80211_BAND_2GHZ;
-                } else if ((frequency >= 5005) && (frequency <= 5885)) {
+                } else if ((frequency >= 5000) && (frequency <= 5885)) {
                     band = IEEE80211_BAND_5GHZ;
                 } else if ((frequency >= 5955) && (frequency <= 7115)) {
                     band = IEEE80211_BAND_6GHZ;
@@ -2940,22 +3189,43 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 if (function == FUNC_TX_SIGNAL) {
                     evm_test(rate_o, frequency, PHY_CHNL_BW_40, mod, pwr_dbm_x10, band);
                 } else if (function == FUNC_SAVE_TXPWR) {
-                    evm_test_save_pwr(rate_o, frequency, pwr_dbm_x10);
+#if (CONFIG_ATE_PHY_PWR_TBL_VERSION == CONFIG_ATE_PWR_CAL_V1)
+                    evm_test_save_pwr_v1(rate_o, frequency, pwr_dbm_x10);
+#elif (CONFIG_ATE_PHY_PWR_TBL_VERSION == CONFIG_ATE_PWR_CAL_V2)
+                    evm_test_save_pwr_v2(rate_o, frequency, pwr_dbm_x10, PHY_CHNL_BW_40, mod, band);
+#endif
                 } else if (function == FUNC_SET_TARGET_TXPWR) {
                     evm_test(rate_o, frequency, PHY_CHNL_BW_40, mod, pwr_dbm_x10, band);
+#if (CONFIG_ATE_PHY_PWR_TBL_VERSION == CONFIG_ATE_PWR_CAL_V1)
                     UINT32 pwr_idx = 0;
                     if (band == IEEE80211_BAND_2GHZ) {
                         UINT32 channel = evm_frequency_to_channel(frequency, band);
-                        pwr_idx = fit_power_index_generic((UINT8)channel, pwr_dbm_x10, g_2g_11g_cal_points, 3);
+                        pwr_idx = fit_power_index_v1((UINT8)channel, pwr_dbm_x10, g_2g_11g_cal_points, 3);
                     } else if (band == IEEE80211_BAND_5GHZ) {
                         UINT32 channel = evm_frequency_to_channel(frequency, band);
-                        pwr_idx = fit_power_index_generic((UINT8)channel, pwr_dbm_x10, g_5g_11a_cal_points, 5);
+                        pwr_idx = fit_power_index_v1((UINT8)channel, pwr_dbm_x10, g_5g_11a_cal_points, 5);
                     } else {
                         pwr_idx = 0;
                     }
                     if (pwr_idx != 0) {
                         rwnx_cal_set_txpwr(pwr_idx, rate_o);
                     }
+#elif (CONFIG_ATE_PHY_PWR_TBL_VERSION == CONFIG_ATE_PWR_CAL_V2)
+                    UINT32 pwr_idx = 0;
+                    // HT40: calculate HT20 power index first, then add HT40 offset
+                    UINT8 ht20_pwr_idx = fit_power_index_v2(frequency, pwr_dbm_x10, band, rate_o, mod);
+                    if (ht20_pwr_idx != 0) {
+                        INT32 ht40_offset = IDX_OFFSET_HT40_TO_HT20;
+                        INT32 final_pwr_idx = (INT32)ht20_pwr_idx + ht40_offset;
+                        if (final_pwr_idx < 0) {
+                            final_pwr_idx = 0;
+                        } else if (final_pwr_idx > 255) {
+                            final_pwr_idx = 255;
+                        }
+                        pwr_idx = (UINT8)final_pwr_idx;
+                        rwnx_cal_set_txpwr(pwr_idx, rate_o);
+                    }
+#endif
                 }
                 break;
             }
