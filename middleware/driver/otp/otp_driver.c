@@ -504,8 +504,8 @@ uint32_t bk_otp_partical_clean_check_customer(void) {
         return (SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_MEMORY_CHECK_VDDDIG));
     }
 
-    // "OTP_DEVICE_ID" will be writed in CP
-    check_result = bk_otp_ahb_read_and_check(OTP_DEVICE_ID, true);
+    // "OTP_DEVICE_ID" will be written in CP, no CRC for this region
+    check_result = bk_otp_ahb_read_and_check(OTP_DEVICE_ID, false);
     if (check_result == false) {
         bk_printf("addr=0x%x\n", SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_DEVICE_ID));
         return (SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_DEVICE_ID));
