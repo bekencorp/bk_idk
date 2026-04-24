@@ -1143,10 +1143,12 @@ void sys_hal_enter_low_voltage(void)
 	bk_flash_enter_deep_sleep();
 #endif
 
+#if !CONFIG_ATE_LV_WAKEUP_USE_RTC
 #if CONFIG_AON_PMU_REG0_REFACTOR_DEV
 	aon_pmu_hal_set_gpio_sleep(1, true);
 #else
 	sys_hal_gpio_state_switch(true);
+#endif
 #endif
 
 	volatile uint64_t before = bk_aon_rtc_get_us();
