@@ -308,6 +308,8 @@ static uint32_t otp2_hal_get_offset(uint32_t item) {
             return 0x584;
         case OTP_VDDDIG_BANDGAP_BACKUP:
             return 0x580;
+        case OTP_GADC_TEMPERATURE_BACKUP:
+            return 0x578;
         default:
             return 0;
     }
@@ -447,7 +449,7 @@ uint32_t bk_otp_partical_clean_check_customer(void) {
 
     OTP_ACTIVE(2);
     otp_start = otp2_hal_get_offset(OTP_RFCALI1) >> 2;  // ft_cali end
-    otp_end   = otp2_hal_get_offset(OTP_VDDDIG_BANDGAP_BACKUP) >> 2;  // cp_cali begin
+    otp_end   = otp2_hal_get_offset(OTP_GADC_TEMPERATURE_BACKUP) >> 2;  // cp_cali begin
     for (location = otp_start; location < otp_end; location++) {
         value = _otp2_read_otp(location);
         if (value != 0) {
@@ -457,6 +459,13 @@ uint32_t bk_otp_partical_clean_check_customer(void) {
         }
     }
     OTP_SLEEP();
+
+    // "OTP_GADC_TEMPERATURE_BACKUP" will be written in CP
+    check_result = bk_otp_ahb_read_and_check(OTP_GADC_TEMPERATURE_BACKUP, true);
+    if (check_result == false) {
+        bk_printf("addr=0x%x\n", SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_GADC_TEMPERATURE_BACKUP));
+        return (SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_GADC_TEMPERATURE_BACKUP));
+    }
 
     // "OTP_VDDDIG_BANDGAP_BACKUP" will be written in CP
     check_result = bk_otp_ahb_read_and_check(OTP_VDDDIG_BANDGAP_BACKUP, true);
@@ -493,7 +502,7 @@ uint32_t bk_otp_partical_clean_check_customer(void) {
         return (SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_GADC_CALIBRATION));
     }
 
-    // "OTP_GADC_TEMPERATURE" will be writed in CP
+    // "OTP_GADC_TEMPERATURE" will be written in CP
     check_result = bk_otp_ahb_read_and_check(OTP_GADC_TEMPERATURE, true);
     if (check_result == false) {
         bk_printf("addr=0x%x\n", SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_GADC_TEMPERATURE));
@@ -1509,6 +1518,13 @@ static bool otp_get_backup_cfg(otp2_id_t item, otp_backup_cfg_t *cfg)
         cfg->backup_item = OTP_VDDDIG_BANDGAP_BACKUP;
         cfg->alloc_len = 4;
         cfg->actual_len = 1;
+        break;
+    case OTP_GADC_TEMPERATURE:
+    case OTP_GADC_TEMPERATURE_BACKUP:
+        cfg->main_item = OTP_GADC_TEMPERATURE;
+        cfg->backup_item = OTP_GADC_TEMPERATURE_BACKUP;
+        cfg->alloc_len = 8;
+        cfg->actual_len = 4;
         break;
     default:
         return false;
