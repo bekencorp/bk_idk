@@ -389,8 +389,8 @@ const TXPWR_CAL_ST gtxpwr_tab_def_b[TXPWR_CAL_2G_MAX] = {
 
 const TXPWR_CAL_ST gtxpwr_tab_def_g[TXPWR_CAL_2G_MAX] = {
 #ifdef CONFIG_ATE_TEST
-    INIT_TXPWR_VALUE(1, 53),  // ch1  inused
-    INIT_TXPWR_VALUE(13, 53),  // ch13  inused
+    INIT_TXPWR_VALUE(1, 55),  // ch1  inused
+    INIT_TXPWR_VALUE(13, 55),  // ch13  inused
 #else
     INIT_TXPWR_VALUE(1, 80),  // ch1  inused
     INIT_TXPWR_VALUE(13, 80),  // ch13  inused
@@ -399,11 +399,11 @@ const TXPWR_CAL_ST gtxpwr_tab_def_g[TXPWR_CAL_2G_MAX] = {
 
 const TXPWR_CAL_ST gtxpwr_tab_def_strip_a[TXPWR_CAL_5G_MAX] = {
 #ifdef CONFIG_ATE_TEST
-    INIT_TXPWR_VALUE(36, 68),//ch36
-    INIT_TXPWR_VALUE(64, 55),
-    INIT_TXPWR_VALUE(100, 40),
-    INIT_TXPWR_VALUE(132, 41),
-    INIT_TXPWR_VALUE(165, 52),
+    INIT_TXPWR_VALUE(36, 64),//ch36
+    INIT_TXPWR_VALUE(64, 53),
+    INIT_TXPWR_VALUE(100, 42),
+    INIT_TXPWR_VALUE(132, 48),
+    INIT_TXPWR_VALUE(165, 60),
 #else
     INIT_TXPWR_VALUE(36, 80),//ch36
     INIT_TXPWR_VALUE(64, 80),
