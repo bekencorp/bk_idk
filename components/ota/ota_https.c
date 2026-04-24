@@ -16,7 +16,11 @@
 
 #define TAG "HTTPS_OTA"
 
+#if CONFIG_OTA_HTTP
 extern UINT8 ota_flag;
+#else
+static UINT8 ota_flag;
+#endif
 #ifdef CONFIG_HTTP_AB_PARTITION
 extern part_flag update_part_flag;
 #endif
@@ -125,7 +129,7 @@ bk_http_client_handle_t bk_https_client_flash_init(bk_http_input_t config)
 #if CONFIG_SYSTEM_CTRL
 	bk_wifi_ota_dtim(1);
 #endif
-#if HTTP_WR_TO_FLASH
+#if (HTTP_WR_TO_FLASH && CONFIG_HTTP)
 	if (!bk_http_ptr) {
 		BK_LOGE(TAG, "[OTA_HTTPS] ERROR: bk_http_ptr is NULL!\r\n");
 		return NULL;
@@ -146,7 +150,7 @@ bk_err_t bk_https_client_flash_deinit(bk_http_client_handle_t client)
 #if CONFIG_SYSTEM_CTRL
 	bk_wifi_ota_dtim(0);
 #endif
-#if HTTP_WR_TO_FLASH
+#if (HTTP_WR_TO_FLASH && CONFIG_HTTP)
 	http_flash_deinit();
 #endif
 	if(client)
@@ -190,13 +194,13 @@ bk_err_t https_ota_event_cb(bk_http_client_event_t *evt)
 	break;
     case HTTP_EVENT_ON_DATA:
 	//do something: evt->data, evt->data_len
-#if HTTP_WR_TO_FLASH
+#if (HTTP_WR_TO_FLASH && CONFIG_HTTP)
 	http_wr_to_flash((char *)evt->data,evt->data_len);
 #endif
 	BK_LOGD(TAG, "HTTP_EVENT_ON_DATA, length:%d\r\n", evt->data_len);
 	break;
     case HTTP_EVENT_ON_FINISH:
-#if HTTP_WR_TO_FLASH
+#if (HTTP_WR_TO_FLASH && CONFIG_HTTP)
 	http_flash_wr(bk_http_ptr->wr_buf, bk_http_ptr->wr_last_len);
 #endif
 	bk_https_client_flash_deinit(evt->client);

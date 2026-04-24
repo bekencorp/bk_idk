@@ -391,10 +391,18 @@ bk_err_t bk_ota_ow_deinit(void)
 bk_err_t bk_ota_update_public_key(bk_ota_t* ota)
 {
 	OTA_LOGD(TAG, "ota update public key\r\n");
-	if (ota && ota->ops.updatekey) {
-		return ota->ops.updatekey(ota->app_partition, ota->key_partition);
-	} else {
+	if (!ota) {
+		OTA_LOGE(TAG, "update pubkey: ota handle is NULL\r\n");
 		return BK_ERR_NOT_SUPPORT;
 	}
+	if (!ota->ops.updatekey) {
+		OTA_LOGE(TAG, "update pubkey: ops.updatekey unset (need CONFIG_OTA_BACKUP_PUBKEY=y)\r\n");
+		return BK_ERR_NOT_SUPPORT;
+	}
+	if (!ota->key_partition) {
+		OTA_LOGE(TAG, "update pubkey: no \"public_key\" partition\r\n");
+		return BK_FAIL;
+	}
+	return ota->ops.updatekey(ota->app_partition, ota->key_partition);
 }
 #endif

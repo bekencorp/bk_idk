@@ -438,6 +438,8 @@ bk_err_t ota_update_back_pubkey_from_primary(const bk_logic_partition_t *app_par
 				ret = BK_OK;
 				goto end;
 			}
+			free(back_key);
+			back_key = NULL;
 		}
 	}
 

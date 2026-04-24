@@ -128,6 +128,10 @@ static inline bool i2c_ll_is_no_ack_enabled(i2c_hw_t *hw, i2c_id_t id)
 	return false;
 }
 
+static inline void i2c_ll_set_pin(i2c_hw_t *hw, i2c_id_t id)
+{
+}
+
 static inline void i2c_ll_set_idle_detect_threshold(i2c_hw_t *hw, i2c_id_t id, uint32_t threshold)
 {
 	if (id == I2C_ID_0) {
@@ -476,6 +480,24 @@ static inline bool i2c_ll_is_rx_mode(i2c_hw_t *hw, i2c_id_t id)
 		return !(hw->i2c1_hw->sm_bus_status.tx_mode);
 	} else {
 		return !(hw->i2c0_hw->sm_bus_status.tx_mode);
+	}
+}
+
+static inline bool i2c_ll_is_master_mode(i2c_hw_t *hw, i2c_id_t id)
+{
+	if (id == I2C_ID_1) {
+		return !!(hw->i2c1_hw->sm_bus_status.master);
+	} else {
+		return !!(hw->i2c0_hw->sm_bus_status.master);
+	}
+}
+
+static inline bool i2c_ll_is_slave_mode(i2c_hw_t *hw, i2c_id_t id)
+{
+	if (id == I2C_ID_1) {
+		return !(hw->i2c1_hw->sm_bus_status.master);
+	} else {
+		return !(hw->i2c0_hw->sm_bus_status.master);
 	}
 }
 

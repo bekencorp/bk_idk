@@ -1,0 +1,12 @@
+Name,Type,SubType,Offset,Size,Flags
+bl2,app,,,72k,
+partition,data,partition,,4k,
+app,app,ow_active,,2408k,
+ota,app,ow_ota,,1404k,
+user_mfr,data,factory,,4k,encrypted
+ow_ota_control,data,ow_ota_control,,8k,
+public_key,data,,,4k,flash_encrypted
+sys_net,data,,,4k,
+user_File,data,,,56k,flash_encrypted
+nvs_key,data,nvs_key,,4k,flash_encrypted
+nvs,data,nvs,,128k,

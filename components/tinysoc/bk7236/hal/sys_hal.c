@@ -1019,14 +1019,37 @@ void sys_hal_spi_select_clock(spi_id_t num, spi_src_clk_t mode)
 	}
 }
 
-void sys_hal_qspi_clk_sel(uint32_t param)
+/* Aligned with middleware/soc/bk7236/hal/sys_hal.c for BL2 driver compatibility */
+void sys_hal_qspi_clk_sel(uint32_t id, uint32_t param)
 {
-	sys_ll_set_cpu_clk_div_mode2_cksel_qspi0(param);
+	switch (id) {
+	case 0: /* QSPI_ID_0 */
+		sys_ll_set_cpu_clk_div_mode2_cksel_qspi0(param);
+		break;
+#if (SOC_QSPI_UNIT_NUM > 1)
+	case 1: /* QSPI_ID_1 */
+		sys_ll_set_cpu_26m_wdt_clk_div_cksel_qspi1(param);
+		break;
+#endif
+	default:
+		break;
+	}
 }
 
-void sys_hal_qspi_set_src_clk_div(uint32_t value)
+void sys_hal_qspi_set_src_clk_div(uint32_t id, uint32_t value)
 {
-	sys_ll_set_cpu_clk_div_mode2_ckdiv_qspi0(value);
+	switch (id) {
+	case 0: /* QSPI_ID_0 */
+		sys_ll_set_cpu_clk_div_mode2_ckdiv_qspi0(value);
+		break;
+#if (SOC_QSPI_UNIT_NUM > 1)
+	case 1: /* QSPI_ID_1 */
+		sys_ll_set_cpu_26m_wdt_clk_div_ckdiv_qspi1(value);
+		break;
+#endif
+	default:
+		break;
+	}
 }
 
 #if 1	//tmp build
@@ -2915,6 +2938,10 @@ void sys_hal_enable_int(uint32_t int0, uint32_t int1)
 {
 	sys_ll_set_cpu0_int_0_31_en_value(int0);
 	sys_ll_set_cpu0_int_32_63_en_value(int1);
+}
+
+void sys_hal_early_deinit(void)
+{
 }
 
 void sys_hal_disable_int(uint32_t *int0, uint32_t *int1)

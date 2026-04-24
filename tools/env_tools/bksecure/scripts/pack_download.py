@@ -169,9 +169,10 @@ class PackDownload(Pack):
             if size_obj.offset() != 0:
                 return
 
-        #TODO: change magic wordk according to soc
-        magic = "BEKEN".encode() + b'\x00' * 3
-        logging.debug(f'Add magic code {magic} to {bname}')
+        # Use SOC-specific magic: BK7236 uses "BK7236", others use "BEKEN"
+        soc_type = get_soc_type()
+        magic = "BK7236".encode() + b'\x00' * 2 if soc_type == "BK7236" else "BEKEN".encode() + b'\x00' * 3
+        logging.debug(f'Add magic code {magic} to {bname} (SOC={soc_type})')
         with open(bname, 'r+b') as f:
             f.seek(0x100)
             f.write(magic)

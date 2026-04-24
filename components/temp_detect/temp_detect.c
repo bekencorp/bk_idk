@@ -183,6 +183,11 @@ static bk_err_t tempd_adc_get_raw_data(sdmadc_chan_t adc_chan)
 {
 	sdmadc_config_t config = {0};
 
+	if (!s_raw_temperature_data) {
+		TEMPD_LOGE("raw buffer not inited\n");
+		return BK_ERR_NULL_PARAM;
+	}
+
 	temp_sensor_enable();
 
 	int err = BK_OK;
@@ -221,6 +226,11 @@ static int tempd_adc_get_raw_data(adc_chan_t adc_chan)
 {
 	adc_config_t config = {0};
 	int err = BK_OK;
+
+	if (!s_raw_temperature_data) {
+		TEMPD_LOGE("raw buffer not inited\n");
+		return BK_ERR_NULL_PARAM;
+	}
 
 	BK_RETURN_ON_ERR(bk_adc_acquire());
 
@@ -438,6 +448,12 @@ exit:
 void temp_daemon_init(void)
 {
 	int err;
+
+	err = tempd_init_temperature_raw_data();
+	if (err != BK_OK) {
+		TEMPD_LOGE("temp raw data alloc failed, skip temp daemon\n");
+		return;
+	}
 
 	s_tempd.detect_threshold = ADC_TMEP_LSB_PER_10DEGREE * ADC_TMEP_10DEGREE_PER_DBPWR;
 	s_tempd.detect_interval = ADC_TMEP_DETECT_INTERVAL_INIT;

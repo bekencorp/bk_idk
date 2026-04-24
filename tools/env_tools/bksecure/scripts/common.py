@@ -95,7 +95,26 @@ def crc16(data : bytearray, offset , length):
                 crc = crc << 1
     return crc & 0xFFFF
 
+def _adjust_python3_shell_cmd(cmd):
+    if not cmd or not isinstance(cmd, str):
+        return cmd
+    lead_len = len(cmd) - len(cmd.lstrip(' \t'))
+    lead = cmd[:lead_len]
+    s = cmd[lead_len:]
+    parts = s.split(None, 1)
+    if len(parts) < 2 or parts[0].lower() != 'python3':
+        return cmd
+    rest = parts[1]
+    first_arg = rest.split(None, 1)[0].strip('\'"')
+    if first_arg.lower().endswith('.py'):
+        # Python tool (e.g. aes_xts.py): keep -aes 128|256 if present
+        return cmd
+    # Native tool (e.g. beken_aes): does not accept -aes; strip it from the shell line
+    rest = re.sub(r'\s+-aes\s+(?:128|256)(?=\s|$)', '', rest)
+    return lead + rest
+
 def run_cmd(cmd):
+    cmd = _adjust_python3_shell_cmd(cmd)
     p = subprocess.Popen(cmd, shell=True)
     ret = p.wait()
     if (ret):
@@ -103,6 +122,7 @@ def run_cmd(cmd):
         exit(1)
 
 def run_cmd_not_check_ret(cmd):
+    cmd = _adjust_python3_shell_cmd(cmd)
     p = subprocess.Popen(cmd, shell=True)
     p.wait()
 
