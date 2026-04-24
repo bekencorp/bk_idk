@@ -65,6 +65,12 @@ uint32_t sys_drv_cali_dpll_ate(void)
 {
 	UINT32 int_level = sys_drv_enter_critical();
 
+	// SYS.REG0<29:28>=0
+	UINT32 ana0_reg = sys_hal_analog_get(ANALOG_REG0);
+	UINT32 ana0_reg_bak = ana0_reg;  // backup reg0 value
+	ana0_reg &= ~(0x3 << 28);
+	sys_hal_analog_set(ANALOG_REG0, ana0_reg);
+
 	// DPLL power on
 	UINT32 ana5_reg = sys_hal_analog_get(ANALOG_REG5);
 	UINT32 ana5_reg_bak = ana5_reg;  // backup reg5 value
@@ -84,8 +90,6 @@ uint32_t sys_drv_cali_dpll_ate(void)
 	sys_hal_analog_set(ANALOG_REG1, ana1_reg);
 #else
 	// SYS.REG0<5>=0, SYS.REG0<6>=0
-	UINT32 ana0_reg = sys_hal_analog_get(ANALOG_REG0);
-	UINT32 ana0_reg_bak = ana0_reg;  // backup reg0 value
 	ana0_reg &= ~(0x3 << 5);
 	sys_hal_analog_set(ANALOG_REG0, ana0_reg);
 
@@ -116,9 +120,8 @@ uint32_t sys_drv_cali_dpll_ate(void)
 
 #if CONFIG_DPLL_UNLOCK_VERIFY_ENABLE
 			sys_hal_analog_set(ANALOG_REG1, ana1_reg_bak);
-#else
-			sys_hal_analog_set(ANALOG_REG0, ana0_reg_bak);
 #endif
+			sys_hal_analog_set(ANALOG_REG0, ana0_reg_bak);
 
 			return SYS_DRV_FAILURE;
 		}
@@ -131,9 +134,8 @@ uint32_t sys_drv_cali_dpll_ate(void)
 
 #if CONFIG_DPLL_UNLOCK_VERIFY_ENABLE
 	sys_hal_analog_set(ANALOG_REG1, ana1_reg_bak);
-#else
-	sys_hal_analog_set(ANALOG_REG0, ana0_reg_bak);
 #endif
+	sys_hal_analog_set(ANALOG_REG0, ana0_reg_bak);
 
 	return SYS_DRV_SUCCESS;
 }
