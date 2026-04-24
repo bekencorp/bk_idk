@@ -1490,7 +1490,7 @@ static void ate_read_otp(const uint8_t *content, int cnt, uint8_t *tx_buffer1)
         /* otp2 use ahb_read */
         if (content[3] == OTP_VDDDIG_BANDGAP) {
             length = 1;
-        } else if (content[3] == OTP_DIA) {
+        } else if ((content[3] == OTP_DIA) || (content[3] == OTP_DIA_BACKUP)) {
             // 2G PA(1 byte) + 5G PA(1 byte)
             length = 2;
         } else if (content[3] == OTP_GADC_CALIBRATION) {

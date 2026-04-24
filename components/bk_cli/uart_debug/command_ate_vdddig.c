@@ -267,10 +267,9 @@ int sctrl_set_dia_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buff
 {
     UINT8 dia[4] = {0};
 
-    tx_buffer[0] = 0x55;
     if (cnt < 3)
     {
-        if (bk_otp_ahb_read(OTP_DIA, dia, sizeof(dia)) == 0)
+        if (bk_otp_ahb_read_backup(OTP_DIA, dia, NULL) == BK_OK)
         {
             /* success */
             rwnx_cal_set_reg_mod_pa(0, dia[0]);
@@ -281,32 +280,59 @@ int sctrl_set_dia_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buff
         }
         else
         {
+            tx_buffer[0] = 0x55;
             tx_buffer[1] = 0xAA;
             uart_send_bytes_for_ate(tx_buffer, 2);
             return -1;
         }
     }
+
+    if (cnt > 4)
+    {
+        tx_buffer[0] = 0x55;
+        tx_buffer[1] = 0xCC;
+        uart_send_bytes_for_ate(tx_buffer, 2);
+        return -1;
+    }
+
     dia[0] = content[2];
     if (dia[0] > 0x1F)
     {
+        tx_buffer[0] = 0x55;
         tx_buffer[1] = 0xDD;
         uart_send_bytes_for_ate(tx_buffer, 2);
         return -1;
     }
 
-    // update otp will read back and check, so do not do it here
-    if (bk_otp_ahb_update(OTP_DIA, dia, sizeof(dia)) == 0)
+    if ((cnt == 4) && (content[3] != 1) && (content[3] != 2))
+    {
+        tx_buffer[0] = 0x55;
+        tx_buffer[1] = 0xCC;
+        uart_send_bytes_for_ate(tx_buffer, 2);
+        return -1;
+    }
+
+    bool write_backup = false;
+    uint8_t dia_read[4] = {0};
+
+    if ((cnt == 4) && (content[3] == 2))
+    {
+        write_backup = true;
+    }
+
+    if (bk_otp_ahb_update_backup(OTP_DIA, dia, write_backup, dia_read) == BK_OK)
     {
         /* success */
-        tx_buffer[1] = 0x33;
-        bk_otp_ahb_read(OTP_DIA, tx_buffer + 2, 1);
         rwnx_cal_dia_stop();
+        tx_buffer[0] = 0x55;
+        tx_buffer[1] = 0x33;
+        os_memcpy(tx_buffer + 2, dia_read, 1);
         uart_send_bytes_for_ate(tx_buffer, 3);
     }
     else
     {
+        tx_buffer[0] = 0x55;
         tx_buffer[1] = 0xCC;
-        rwnx_cal_dia_stop();
         uart_send_bytes_for_ate(tx_buffer, 2);
     }
 
@@ -318,13 +344,16 @@ int sctrl_set_dia_to_reg(const unsigned char *content, int cnt, UINT8 *tx_buffer
     UINT8 dia = 0;
 
     rwnx_cal_dia_start();
-    if (cnt > 2) {
+    if (cnt > 2)
+    {
         //set dia
         dia = content[2];
         tx_buffer[0] = 0xE;
         tx_buffer[1] = dia;
         rwnx_cal_set_reg_mod_pa(0, dia);
-    } else {
+    }
+    else
+    {
         tx_buffer[0] = 0x55;
         tx_buffer[1] = 0xCC;
     }
