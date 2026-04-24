@@ -192,6 +192,7 @@ const VECTOR_TABLE_Type __VECTOR_IRAM[] __VECTOR_IRAM_ATTRIBUTE = {
     UART_InterruptHandler,                    /* Interrupt 4 */
 };
 
+#if CONFIG_DIRECT_XIP || CONFIG_MIXED_OTA
 __attribute__((section(".dlv_iram")))
 static uint32_t flash_spi_read_word_iram(uint32_t phy_addr)
 {
@@ -204,6 +205,7 @@ static uint32_t flash_spi_read_word_iram(uint32_t phy_addr)
 
     return FLASH_DATA_RD_REG;
 }
+#endif
 
 __attribute__((section(".dlv_iram")))
 __attribute__((noinline))

@@ -340,8 +340,11 @@ int bk_init(void)
 
 #if CONFIG_BK_OTA
 	if (!is_deep_sleep_wakeup()) {
-		bk_ota_accept_image();
 		bk_ota_cancel_update(0);
+		bk_ota_accept_image();
+#if CONFIG_OTA_UPDATE_PUBKEY
+		bk_ota_update_pubkey_partition();
+#endif
 	}
 #endif
 

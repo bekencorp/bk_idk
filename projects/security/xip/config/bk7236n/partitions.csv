@@ -1,10 +1,12 @@
 Name,Type,SubType,Offset,Size,Flags
 bl2,app,,,72k,
 partition,data,partition,,4k,
-app_a,app,xip_a,,1908k,
-app_b,app,xip_b,,1908k,
-user_mfr,data,factory,,4k,encrypted
+app_a,app,xip_a,,1904k,
+app_b,app,xip_b,,1904k,
+reserved,data,,,4k,
+user_mfr,data,factory,0x3cc000,4k,encrypted
 xip_ota_control,data,xip_ota_control,,8k,
+public_key,data,,,4k,flash_encrypted
 sys_net,data,,,4k,
 user_File,data,,,56k,flash_encrypted
 nvs_key,data,nvs_key,,4k,flash_encrypted

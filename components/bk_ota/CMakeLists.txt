@@ -8,7 +8,9 @@ if (CONFIG_BK_OTA)
 		ota_confirm.c
 		ota_verify.c
 		ota_ow.c
+		ow_pubkey.c
 		ota_xip.c
+		xip_pubkey.c
 		ota_bl2.c
 		)
 endif()

@@ -44,13 +44,12 @@
 
 #if CONFIG_OTA_UPDATE_PUBKEY
 #include <mbedtls/sha256.h>
+#include "common_loader.h"
 #include "bootutil/crypto/ecdsa.h"
 
-// Type definitions and macros for TLV parsing
+// Type definitions for TLV parsing (TLV_TOTAL_SIZE / PUBKEY_MAX_LEN come from common_loader.h)
 typedef struct image_header image_header_t;
 typedef struct image_tlv image_tlv_t;
-#define TLV_TOTAL_SIZE 512
-#define MAX_PUBKEY_LEN 128
 
 static inline uint32_t addr_to_slot(uint32_t addr)  
 {
@@ -103,7 +102,7 @@ static int read_tlv_from_slot(uint32_t slot, uint32_t tlv_type, uint8_t* tlv_dat
         } else if (tlv.it_type == tlv_type) {
             // Found TLV
             offset += sizeof(image_tlv_t);
-            if (tlv.it_len > MAX_PUBKEY_LEN) {
+            if (tlv.it_len > PUBKEY_MAX_LEN) {
                 BOOT_LOG_ERR("TLV length too large: %d > %d", tlv.it_len, tlv_data_size);
                 return -1;
             }
@@ -127,6 +126,28 @@ static int read_tlv_from_slot(uint32_t slot, uint32_t tlv_type, uint8_t* tlv_dat
 static int read_pubkey_from_slot(uint32_t slot, uint8_t* pubkey, uint16_t* pubkey_size)
 {
     return read_tlv_from_slot(slot, IMAGE_TLV_CUSTOM_PUBKEY, pubkey, pubkey_size);
+}
+
+static int xip_get_pubkey(uint32_t running_slot, uint8_t *pubkey_buf, uint16_t *pubkey_len_inout)
+{
+	int ret;
+
+	if (!pubkey_buf || !pubkey_len_inout) {
+		return -1;
+	}
+
+#if CONFIG_OTA_UPDATE_PUBKEY
+    bk_err_t bkret = load_pubkey_from_flash_backup(pubkey_buf, pubkey_len_inout);
+    if (bkret == BK_OK) {
+        return 0;
+    }
+#endif
+
+	ret = read_pubkey_from_slot(running_slot, pubkey_buf, pubkey_len_inout);
+	if (ret != 0) {
+		BOOT_LOG_ERR("failed to read pubkey from %s", slot_str(running_slot));
+	}
+	return ret;
 }
 
 // Always use slot0 address, set XIP mode based on which slot we need to read
@@ -246,15 +267,14 @@ bk_find_key(uint8_t image_index, uint8_t *key, uint16_t key_len, uint32_t curren
     if (running_slot != verifying_slot) {
         BOOT_LOG_DBG("verifying pubkey of %s", slot_str(verifying_slot));
  
-        uint8_t running_slot_pubkey[MAX_PUBKEY_LEN];
-        uint16_t running_slot_pubkey_len = 0;
-        ret = read_pubkey_from_slot(running_slot, running_slot_pubkey, &running_slot_pubkey_len);
+        uint8_t running_slot_pubkey[PUBKEY_MAX_LEN];
+        uint16_t running_slot_pubkey_len = PUBKEY_MAX_LEN;
+        ret = xip_get_pubkey(running_slot, running_slot_pubkey, &running_slot_pubkey_len);
         if (ret != 0) {
-            BOOT_LOG_ERR("failed to read pubkey from %s", slot_str(running_slot));
             goto fail;
         }
 
-        uint8_t running_slot_root_pubkey[MAX_PUBKEY_LEN];
+        uint8_t running_slot_root_pubkey[PUBKEY_MAX_LEN];
         uint16_t running_slot_root_pubkey_len = 0;
         ret = read_root_pubkey_from_slot(running_slot, running_slot_root_pubkey, &running_slot_root_pubkey_len);
         if (ret == 0) {
@@ -263,11 +283,11 @@ bk_find_key(uint8_t image_index, uint8_t *key, uint16_t key_len, uint32_t curren
                 goto fail;
             }
         } else {
-            uint8_t verifying_slot_root_pubkey[MAX_PUBKEY_LEN];
+            uint8_t verifying_slot_root_pubkey[PUBKEY_MAX_LEN];
             uint16_t verifying_slot_root_pubkey_len = 0;
             ret = read_root_pubkey_from_slot(verifying_slot, verifying_slot_root_pubkey, &verifying_slot_root_pubkey_len);
             if (ret == 0) {
-                uint8_t signature[MAX_PUBKEY_LEN];
+                uint8_t signature[PUBKEY_MAX_LEN];
                 uint16_t signature_len = 0;
                 ret = read_signature_from_slot(verifying_slot, signature, &signature_len);
                 if (ret != 0) {

@@ -107,6 +107,7 @@ bk_err_t ota_verify_pubkey(const bk_logic_partition_t *app_partition,
     ota_verify_t *ota_verify, const uint8_t *ota_outer_pubkey, uint16_t ota_outer_pubkey_len);
 #endif
 bk_err_t ota_update_back_pubkey_from_primary(const bk_logic_partition_t *app_partition, const bk_logic_partition_t *key_partition);
+bk_err_t ota_read_pubkey(uint32_t addr, uint8_t *buf, uint32_t size);
 #if CONFIG_PSA_MBEDTLS
 int ota_mbedtls_ecdsa_verify(mbedtls_ecdsa_context *ctx,
 								uint8_t *pk, size_t pk_len,

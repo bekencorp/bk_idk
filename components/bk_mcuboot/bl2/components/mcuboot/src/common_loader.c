@@ -470,3 +470,119 @@ done:
     return rc;
 }
 #endif /* CONFIG_ANTI_ROLLBACK */
+
+#if CONFIG_OTA_UPDATE_PUBKEY
+void get_pubkey_info(uint32_t addr, uint8_t *buf, uint32_t size)
+{
+#if CONFIG_OTA_BACKUP_PUBKEY_ENCRYPT
+	bk_flash_read_cbus(addr, buf, size);
+#else
+	bk_flash_read_bytes(addr, buf, size);
+#endif
+}
+
+#if CONFIG_OTA_UPDATE_PUBKEY
+bk_err_t read_pubkey_from_backup(uint32_t phy_off,
+				 uint8_t *key_out,
+				 uint16_t max_len,
+				 uint16_t *key_len_out)
+{
+	uint16_t vir_length;
+	CRC8_Context crc8;
+	CRC8_Context check_crc;
+	uint16_t phy_length;
+	uint8_t *pubkey_buf = NULL;
+	uint32_t key_phy_base;
+	uint32_t pubkey_store_base;
+	uint32_t plain_key_off;
+
+	key_phy_base = CEIL_ALIGN_34(phy_off);
+	pubkey_store_base = FLASH_PHY2VIRTUAL(key_phy_base);
+	plain_key_off = pubkey_store_base + 3;
+
+	get_pubkey_info(pubkey_store_base, (uint8_t *)&vir_length, 2);
+	if (vir_length == 0 || vir_length > PUBKEY_MAX_LEN || vir_length > max_len) {
+		BOOT_LOG_ERR("backup pubkey bad length %#x\r\n", vir_length);
+		return BK_FAIL;
+	}
+
+	phy_length = vir_length;
+#if defined(CONFIG_PUBLIC_KEY_PHY_PARTITION_SIZE)
+	if ((uint32_t)phy_length + 3u > (uint32_t)CONFIG_PUBLIC_KEY_PHY_PARTITION_SIZE) {
+		BOOT_LOG_ERR("backup pubkey blob overflow vir_len=%x part_max=%x\r\n",
+			     vir_length, (unsigned)CONFIG_PUBLIC_KEY_PHY_PARTITION_SIZE);
+		return BK_FAIL;
+	}
+#endif
+
+	get_pubkey_info(pubkey_store_base + 2, (uint8_t *)&check_crc, 1);
+
+	pubkey_buf = (uint8_t *)malloc(phy_length);
+	if (!pubkey_buf) {
+		return BK_ERR_NO_MEM;
+	}
+
+	get_pubkey_info(pubkey_store_base + 3, pubkey_buf, phy_length);
+	CRC8_Init(&crc8);
+	CRC8_Update(&crc8, pubkey_buf, phy_length);
+
+	if (crc8.crc != check_crc.crc) {
+		BOOT_LOG_ERR("backup pubkey crc mismatch\r\n");
+		free(pubkey_buf);
+		return BK_FAIL;
+	}
+
+	free(pubkey_buf);
+
+	get_pubkey_info(plain_key_off, key_out, vir_length);
+
+	*key_len_out = vir_length;
+	return BK_OK;
+}
+
+int pubkey_backup_sector_header_empty(uint32_t phy_off)
+{
+	uint8_t buf[64];
+	uint8_t ff[64];
+
+	memset(ff, 0xFF, 64);
+	bk_flash_read_bytes(phy_off, buf, 64);
+	return (memcmp(buf, ff, 64) == 0) ? 1 : 0;
+}
+
+bk_err_t load_pubkey_from_flash_backup(uint8_t *pubkey_buf, uint16_t *pubkey_len_inout)
+{
+#if defined(CONFIG_PUBLIC_KEY_PHY_PARTITION_OFFSET) && defined(CONFIG_PUBLIC_KEY_PHY_PARTITION_SIZE)
+	uint32_t key_phy_base;
+	uint16_t out_len;
+	bk_err_t ret;
+
+	if (!pubkey_buf || !pubkey_len_inout) {
+		return BK_ERR_PARAM;
+	}
+
+	key_phy_base = CEIL_ALIGN_34(CONFIG_PUBLIC_KEY_PHY_PARTITION_OFFSET);
+
+	if (pubkey_backup_sector_header_empty(key_phy_base)) {
+		return BK_ERR_NOT_FOUND;
+	}
+
+	out_len = *pubkey_len_inout;
+	ret = read_pubkey_from_backup(key_phy_base, pubkey_buf, out_len, &out_len);
+
+	if (ret == BK_OK) {
+		*pubkey_len_inout = out_len;
+	}
+
+	return ret;
+#else
+	if (!pubkey_buf || !pubkey_len_inout) {
+		return BK_ERR_PARAM;
+	}
+
+	return BK_ERR_NOT_FOUND;
+#endif
+}
+#endif
+
+#endif /* CONFIG_OTA_UPDATE_PUBKEY */

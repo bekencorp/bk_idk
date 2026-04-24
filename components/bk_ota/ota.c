@@ -405,4 +405,22 @@ bk_err_t bk_ota_update_public_key(bk_ota_t* ota)
 	}
 	return ota->ops.updatekey(ota->app_partition, ota->key_partition);
 }
+
+void bk_ota_update_pubkey_partition(void)
+{
+#if CONFIG_OTA_OVERWRITE
+	bk_ota_t *ow = bk_ota_get_ow_handle();
+
+	if (ow) {
+		(void)bk_ota_update_public_key(ow);
+	}
+#endif
+#if CONFIG_DIRECT_XIP
+	bk_ota_t *xip = bk_ota_get_xip_handle();
+
+	if (xip) {
+		(void)bk_ota_update_public_key(xip);
+	}
+#endif
+}
 #endif

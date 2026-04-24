@@ -134,7 +134,7 @@ void ota_event_cb(https_ota_event_t evt)
 		BK_LOGE(TAG,"OTA ERROR CODE %d\r\n",*(int*)(evt.data));
 		break;
 	case HTTPS_OTA_SUCCESS_EVENT:
-#if CONFIG_OTA_UPDATE_PUBKEY && CONFIG_OTA_OVERWRITE
+#if CONFIG_OTA_UPDATE_PUBKEY
 		if (s_ota_config && s_ota_config->ota_parse && s_ota_config->ota_parse->ota_handle) {
 			if (bk_ota_update_public_key(s_ota_config->ota_parse->ota_handle) != BK_OK) {
 				BK_LOGE(TAG, "Back pubkey fail!\r\n");

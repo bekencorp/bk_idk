@@ -83,6 +83,7 @@ bk_err_t bk_ota_cancel_update(uint8_t erase_ota);
 #endif
 #if CONFIG_OTA_UPDATE_PUBKEY
 bk_err_t bk_ota_update_public_key(bk_ota_t* ota);
+void bk_ota_update_pubkey_partition(void);
 #endif
 #ifdef __cplusplus
 }

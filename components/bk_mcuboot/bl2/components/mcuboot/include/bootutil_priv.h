@@ -466,11 +466,9 @@ static inline const char* slot_str(uint32_t slot)
 	}
 }
 
-#if CONFIG_DIRECT_XIP
 int boot_read_running_slot(void);
 int boot_read_xip_status(uint8_t index, uint32_t type);
 void boot_write_xip_status(uint8_t index, uint32_t type, uint32_t status);
-#endif
 
 #ifdef __cplusplus
 }

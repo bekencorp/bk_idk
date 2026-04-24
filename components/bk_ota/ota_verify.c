@@ -426,6 +426,15 @@ static void ota_pubkey_flash_ops_init(void)
 #endif
 }
 
+bk_err_t ota_read_pubkey(uint32_t addr, uint8_t *buf, uint32_t size)
+{
+	ota_pubkey_flash_ops_init();
+	if (s_ota_pubkey_flash_read == NULL) {
+		return BK_FAIL;
+	}
+	return s_ota_pubkey_flash_read(addr, buf, size);
+}
+
 bk_err_t ota_update_back_pubkey_from_primary(const bk_logic_partition_t *app_partition, const bk_logic_partition_t *key_partition)
 {
 	if ((!app_partition) || (!key_partition)) {
@@ -433,15 +442,16 @@ bk_err_t ota_update_back_pubkey_from_primary(const bk_logic_partition_t *app_par
 		return BK_FAIL;
 	}
 
-	uint32_t phy_off = key_partition->partition_start_addr;
-	uint32_t vir_off = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(phy_off + 3)); 
+	uint32_t key_phy_base = CEIL_ALIGN_34(key_partition->partition_start_addr);
+	uint32_t pubkey_store_base = FLASH_PHY2VIRTUAL(key_phy_base);
+	uint32_t vir_off = pubkey_store_base + 3;
 	uint16_t vir_length;
 	uint8_t* back_key = NULL;
 	uint8_t primary_key[MAX_PUBKEY_LEN] = {0};
 	uint16_t primary_key_size = 0;
 	CRC8_Context crc8;
 	CRC8_Context check_crc;
-	uint8_t *enc_buf = NULL;
+	uint8_t *pubkey_buf = NULL;
 	uint8_t check_erase_buf[64];
 	uint8_t ff_buf[64];
 	bk_err_t ret = BK_OK;
@@ -455,62 +465,73 @@ bk_err_t ota_update_back_pubkey_from_primary(const bk_logic_partition_t *app_par
 	bk_flash_set_protect_type(FLASH_PROTECT_NONE);
 
 	memset(ff_buf, 0xFF, 64);
-	bk_flash_read_bytes(phy_off, check_erase_buf, 64);
+	bk_flash_read_bytes(key_phy_base, check_erase_buf, 64);
 	if (memcmp(check_erase_buf, ff_buf, 64) != 0) {
-		bk_flash_read_bytes(phy_off, (uint8_t *)&vir_length, 2);
-		bk_flash_read_bytes(phy_off + 2, (uint8_t *)&check_crc, 1);
-		uint16_t phy_length = VIR_LEN_TO_PHY_LEN(vir_length);
+		s_ota_pubkey_flash_read(pubkey_store_base, (uint8_t *)&vir_length, 2);
+		s_ota_pubkey_flash_read(pubkey_store_base + 2, (uint8_t *)&check_crc, 1);
+		if (vir_length > 0 && vir_length <= MAX_PUBKEY_LEN &&
+		    vir_length == primary_key_size) {
+			uint16_t phy_length = (vir_length);
 
-		enc_buf = (uint8_t*)malloc(phy_length);
-		if (!enc_buf) {
-			ret = BK_ERR_NO_MEM;
-			goto end;
-		}
-
-		bk_flash_read_bytes(phy_off + 3, enc_buf, phy_length);
-		CRC8_Init(&crc8);
-		CRC8_Update(&crc8, enc_buf, phy_length);
-		free(enc_buf);
-		enc_buf = NULL;
-
-		if (crc8.crc == check_crc.crc) {
-			back_key = (uint8_t *)malloc(vir_length);
-			if (!back_key) {
+			pubkey_buf = (uint8_t *)malloc(phy_length);
+			if (!pubkey_buf) {
 				ret = BK_ERR_NO_MEM;
 				goto end;
 			}
-			ret = s_ota_pubkey_flash_read(vir_off, back_key, vir_length);
-			if (ret != BK_OK) {
-				goto end;
+			s_ota_pubkey_flash_read(pubkey_store_base + 3, pubkey_buf, phy_length);
+			CRC8_Init(&crc8);
+			CRC8_Update(&crc8, pubkey_buf, phy_length);
+			free(pubkey_buf);
+			pubkey_buf = NULL;
+
+			if (crc8.crc == check_crc.crc) {
+				back_key = (uint8_t *)malloc(vir_length);
+				if (!back_key) {
+					ret = BK_ERR_NO_MEM;
+					goto end;
+				}
+				ret = s_ota_pubkey_flash_read(vir_off, back_key, vir_length);
+				if (ret != BK_OK) {
+					goto end;
+				}
+				if (memcmp(back_key, primary_key, primary_key_size) == 0) {
+					free(back_key);
+					back_key = NULL;
+					OTA_LOGI(TAG, "backup pubkey matches primary, skip update\r\n");
+					ret = BK_OK;
+					goto end;
+				}
+				free(back_key);
+				back_key = NULL;
 			}
-			if (memcmp(back_key, primary_key, primary_key_size) == 0) {
-				OTA_LOGI(TAG, "back pubkey is already exist and valid, skip update\r\n");
-				ret = BK_OK;
-				goto end;
-			}
-			free(back_key);
-			back_key = NULL;
 		}
 	}
 
-	bk_flash_erase_sector(phy_off);
-	uint16_t phy_key_size = VIR_LEN_TO_PHY_LEN(primary_key_size);
-	uint16_t vir_key_size = FLASH_PHY2VIRTUAL(phy_key_size); // vir_key_size - keysize = data 0
-	ret = s_ota_pubkey_flash_write(vir_off, primary_key, vir_key_size);
-	if (ret != BK_OK) {
-		goto end;
-	}
-	enc_buf = (uint8_t*)malloc(phy_key_size);
-	if (enc_buf == NULL) {
-		ret = BK_ERR_NO_MEM;
-		goto end;
-	}
+	bk_flash_erase_sector(key_phy_base);
+	uint16_t phy_key_size = (primary_key_size);
+	uint16_t vir_key_size = (phy_key_size); // vir_key_size - keysize = data 0
+	{
+		uint32_t blob_len = 3u + (uint32_t)vir_key_size;
+		uint8_t *combined = (uint8_t *)malloc(blob_len);
 
-	bk_flash_read_bytes(phy_off + 3, (uint8_t *)enc_buf, phy_key_size);
-	CRC8_Init(&crc8);
-	CRC8_Update(&crc8, enc_buf, phy_key_size);
-	bk_flash_write_bytes(phy_off + 2, (uint8_t *)&crc8, 1);
-	bk_flash_write_bytes(phy_off, (uint8_t *)&primary_key_size, 2);
+		if (!combined) {
+			ret = BK_ERR_NO_MEM;
+			goto end;
+		}
+		memset(combined + 3, 0xFF, vir_key_size);
+		memcpy(combined + 3, primary_key, primary_key_size);
+		CRC8_Init(&crc8);
+		CRC8_Update(&crc8, combined + 3, phy_key_size);
+		combined[0] = (uint8_t)(primary_key_size & 0xff);
+		combined[1] = (uint8_t)((primary_key_size >> 8) & 0xff);
+		combined[2] = crc8.crc;
+		ret = s_ota_pubkey_flash_write(pubkey_store_base, combined, blob_len);
+
+		free(combined);
+		if (ret != BK_OK) {
+			goto end;
+		}
+	}
 
 	// re-read to ensure update success
 	back_key = (uint8_t *)malloc(primary_key_size);
@@ -522,7 +543,7 @@ bk_err_t ota_update_back_pubkey_from_primary(const bk_logic_partition_t *app_par
 	if (ret != BK_OK) {
 		goto end;
 	}
-	bk_flash_read_bytes(phy_off + 2, (uint8_t *)&check_crc, 1);
+	s_ota_pubkey_flash_read(pubkey_store_base + 2, (uint8_t *)&check_crc, 1);
 
 	if ((crc8.crc == check_crc.crc) && (memcmp(back_key, primary_key, primary_key_size) == 0)) {
 		OTA_LOGI(TAG, "update backup pubkey ok\r\n");
@@ -537,8 +558,8 @@ bk_err_t ota_update_back_pubkey_from_primary(const bk_logic_partition_t *app_par
 
 end:
 	bk_flash_set_protect_type(FLASH_PROTECT_ALL);
-	if (enc_buf != NULL) {
-		free(enc_buf);
+	if (pubkey_buf != NULL) {
+		free(pubkey_buf);
 	}
 	if (back_key != NULL) {
 		free(back_key);

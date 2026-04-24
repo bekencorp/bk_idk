@@ -30,108 +30,146 @@
 #include <stdlib.h>
 #include <string.h>
 #include <common/bk_typedef.h>
+
+#include <driver/flash_partition.h>
+#include <driver/flash.h>
 #include "partitions_gen.h"
 #include "bootutil/bootutil_log.h"
 #include "bootutil_priv.h"
-#include "flash_partition.h"
 #include "bootutil/sign_key.h"
 #include "bootutil/crypto/sha.h"
 #include "security.h"
 #include "bootutil/image.h"
 #include "sdkconfig.h"
-
-typedef struct {
-	uint8_t crc;
-} CRC8_Context;
-
-static uint8_t UpdateCRC8(uint8_t crcIn, uint8_t byte)
-{
-	uint8_t crc = crcIn;
-	uint8_t i;
-
-	crc ^= byte;
-
-	for (i = 0; i < 8; i++) {
-		if (crc & 0x01) {
-			crc = (crc >> 1) ^ 0x8C;
-		} else {
-			crc >>= 1;
-		}
-	}
-	return crc;
-}
-
-static void CRC8_Init( CRC8_Context *inContext )
-{
-    inContext->crc = 0;
-}
-
-static void CRC8_Update( CRC8_Context *inContext, const void *inSrc, size_t inLen )
-{
-	const uint8_t *src = (const uint8_t *) inSrc;
-	const uint8_t *srcEnd = src + inLen;
-	while ( src < srcEnd ) {
-		inContext->crc = UpdateCRC8(inContext->crc, *src++);
-	}
-}
+#include "common_loader.h"
 
 extern unsigned int pub_key_len;
+
+#if CONFIG_OTA_UPDATE_PUBKEY
+static bk_err_t read_pubkey_from_primary(const bk_logic_partition_t *partition, uint8_t *pubkey,
+                                         uint16_t *pubkey_size)
+{
+    uint32_t key_len = 0;
+    struct image_header primary_hdr;
+    uint32_t fa_off = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(partition->partition_start_addr));
+    uint32_t tlv_begin;
+    uint32_t offset = 0;
+    struct image_tlv tlv;
+
+    bk_flash_read_cbus(fa_off, &primary_hdr, sizeof(primary_hdr));
+    tlv_begin = primary_hdr.ih_hdr_size + primary_hdr.ih_img_size;
+
+    while (offset < TLV_TOTAL_SIZE) {
+        bk_flash_read_cbus(fa_off + tlv_begin + offset, (void *)&tlv, sizeof(tlv));
+
+        if (tlv.it_type == IMAGE_TLV_PROT_INFO_MAGIC || tlv.it_type == IMAGE_TLV_INFO_MAGIC) {
+            offset += sizeof(struct image_tlv);
+        } else if (tlv.it_type != IMAGE_TLV_CUSTOM_PUBKEY) {
+            offset += (sizeof(struct image_tlv) + tlv.it_len);
+        } else {
+            offset += sizeof(struct image_tlv);
+            key_len = tlv.it_len;
+            break;
+        }
+    }
+
+    if (offset > TLV_TOTAL_SIZE || key_len > PUBKEY_MAX_LEN) {
+        return BK_FAIL;
+    }
+
+    bk_flash_read_cbus(fa_off + tlv_begin + offset, pubkey, key_len);
+
+    if (pubkey_size != NULL) {
+        *pubkey_size = (uint16_t)key_len;
+    }
+
+    return BK_OK;
+}
+
+static bk_err_t ow_get_pubkey(const bk_logic_partition_t *app_partition,
+                              uint8_t *pubkey_buf,
+                              uint16_t *pubkey_len_inout)
+{
+    if (!app_partition || !pubkey_buf || !pubkey_len_inout) {
+        return BK_ERR_PARAM;
+    }
+
+#if CONFIG_OTA_UPDATE_PUBKEY
+    bk_err_t ret = load_pubkey_from_flash_backup(pubkey_buf, pubkey_len_inout);
+    if (ret == BK_OK) {
+        return BK_OK;
+    }
+#endif
+
+    return read_pubkey_from_primary(app_partition, pubkey_buf, pubkey_len_inout);
+}
+
+int bk_read_pubkey_from_primary(uint8_t *pubkey, uint32_t key_size)
+{
+    bk_logic_partition_t app_partition;
+    uint16_t len_io;
+
+    if (!pubkey || key_size == 0) {
+        return -1;
+    }
+
+    memset(&app_partition, 0, sizeof(app_partition));
+    app_partition.partition_start_addr = partition_get_phy_offset(PARTITION_OVERWRITE);
+
+    len_io = 0;
+    if (read_pubkey_from_primary(&app_partition, pubkey, &len_io) != BK_OK) {
+        return -1;
+    }
+
+    if ((uint32_t)len_io > key_size) {
+        return -1;
+    }
+
+    return (int)len_io;
+}
+#endif
 
 int
 bk_find_key(uint8_t image_index, uint8_t *key, uint16_t key_len, uint32_t current_slot_addr)
 {
 #if CONFIG_OTA_UPDATE_PUBKEY
-    (void)current_slot_addr; // Not used in this code path
-    uint32_t phy_off = partition_get_phy_offset(PARTITION_PUBLIC_KEY);
-    uint32_t vir_off = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(phy_off + 3)); 
-    uint16_t vir_length;
-    uint8_t* check_key;
-    CRC8_Context crc8;
-    CRC8_Context check_crc;
+    uint8_t check_key[PUBKEY_MAX_LEN];
+    uint16_t pubkey_len_io;
+    bk_logic_partition_t app_partition;
+    bk_err_t ret;
     int fih_rc;
 
-    bk_flash_read_bytes(phy_off, (uint8_t *)&vir_length, 2); // vir_length = key_size
-    if (key_len != vir_length) {
-        BOOT_LOG_ERR("pubkey size mismatch: back=%#x, ota-outer=%#x", vir_length, key_len);
+    (void)image_index;
+    (void)current_slot_addr;
+
+    memset(&app_partition, 0, sizeof(app_partition));
+    app_partition.partition_start_addr = partition_get_phy_offset(PARTITION_OVERWRITE);
+
+    pubkey_len_io = PUBKEY_MAX_LEN;
+    ret = ow_get_pubkey(&app_partition, check_key, &pubkey_len_io);
+    if (ret != BK_OK) {
         return -1;
     }
 
-    bk_flash_read_bytes(phy_off + 2, (uint8_t*)&check_crc, 1);
-    uint16_t phy_length = VIR_LEN_TO_PHY_LEN(vir_length);
-    uint8_t *enc_buf = (uint8_t*)malloc(phy_length);
-    bk_flash_read_bytes(phy_off + 3, enc_buf, phy_length);
-    CRC8_Init(&crc8);
-    CRC8_Update(&crc8, enc_buf, phy_length);
-
-    if (crc8.crc != check_crc.crc) {
-        free(enc_buf);
-        BOOT_LOG_ERR("back pubkey corrupted, crc8 expected=%#x, actual=%#x", check_crc.crc, crc8.crc);
+    if (pubkey_len_io != key_len) {
+        BOOT_LOG_ERR("pubkey len mismatch primary=%#x outer=%#x", pubkey_len_io, key_len);
         return -1;
     }
 
-    check_key = (uint8_t *)malloc(key_len);
+    FIH_CALL(boot_fih_memequal, fih_rc, key, check_key, pubkey_len_io);
 
-#if CONFIG_OTA_BACKUP_PUBKEY_ENCRYPT
-    bk_flash_read_cbus(vir_off, check_key, key_len);
-#else
-    bk_flash_read_bytes(vir_off, check_key, key_len);
-#endif
-    
-    FIH_CALL(boot_fih_memequal, fih_rc, key, check_key, key_len);
-    
     if (FIH_EQ(fih_rc, FIH_SUCCESS)) {
         bootutil_keys[0].key = key;
         pub_key_len = key_len;
-        free(enc_buf);
-        free(check_key);
         return 0;
     }
+
+    BOOT_LOG_ERR("pubkey of back and OTA-outer not equal!");
+    return -1;
 #else
     bootutil_keys[0].key = key;
     pub_key_len = key_len;
     BOOT_LOG_DBG("pubkey verified");
     return 0;
 #endif
-    BOOT_LOG_ERR("pubkey of back and OTA-outer not equal!");
-    return -1;
 }

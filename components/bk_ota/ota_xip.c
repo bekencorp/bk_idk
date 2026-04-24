@@ -15,6 +15,7 @@
 #include "armstar.h"
 #include "core_star.h"
 #include "ota_verify.h"
+#include "xip_pubkey.h"
 
 #if (CONFIG_SUPPORT_MULTICORE)
 #include "state.h"
@@ -304,10 +305,10 @@ bk_err_t ota_verify_pubkey(const bk_logic_partition_t *app_partition,
 
 	uint8_t primary_new_pubkey[MAX_PUBKEY_LEN];
 	uint16_t primary_new_pubkey_len = MAX_PUBKEY_LEN;
-	ret = ota_read_tlv_from_partition(app_partition, IMAGE_TLV_CUSTOM,
-	                                   primary_new_pubkey, &primary_new_pubkey_len);
+	ret = xip_get_pubkey(app_partition, IMAGE_TLV_CUSTOM,
+			     primary_new_pubkey, &primary_new_pubkey_len);
 	if (ret != BK_OK) {
-		BK_LOGE(TAG, "failed to read new_pubkey from primary, ret=0x%x\r\n", ret);
+		BK_LOGE(TAG, "failed to read new_pubkey reference, ret=0x%x\r\n", ret);
 		return ret;
 	}
 

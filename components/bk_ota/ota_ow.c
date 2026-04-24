@@ -6,6 +6,7 @@
 #include "ota_common.h"
 #include "ota_verify.h"
 #include "ota_confirm.h"
+#include "ow_pubkey.h"
 #include "partitions_gen.h"
 
 #define TAG "ota"
@@ -120,18 +121,20 @@ bk_err_t ota_verify_pubkey(const bk_logic_partition_t *app_partition,
 {
 	(void)ota_verify;
 	uint8_t primary_pubkey[MAX_PUBKEY_LEN];
+	uint16_t primary_pubkey_len = MAX_PUBKEY_LEN;
 
 	if (ota_outer_pubkey_len > MAX_PUBKEY_LEN) {
 		return BK_ERR_OTA_VALIDATE_PUB_KEY_FAIL;
 	}
 
-	bk_err_t ret = read_pubkey_from_primary(app_partition, primary_pubkey, NULL);
+	bk_err_t ret = ow_get_pubkey(app_partition, primary_pubkey, &primary_pubkey_len);
 	if (ret != BK_OK) {
-		BK_LOGE(TAG, "primary read public key fail!\r\n");
+		BK_LOGE(TAG, "reference public key read fail!\r\n");
 		return ret;
 	}
 
-	if (memcmp(primary_pubkey, ota_outer_pubkey, ota_outer_pubkey_len) != 0) {
+	if (primary_pubkey_len != ota_outer_pubkey_len ||
+	    memcmp(primary_pubkey, ota_outer_pubkey, ota_outer_pubkey_len) != 0) {
 		BK_LOGE(TAG, "public key of OTA-outer and primary not equal!\r\n");
 		return BK_ERR_OTA_VALIDATE_PUB_KEY_FAIL;
 	}
