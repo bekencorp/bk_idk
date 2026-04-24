@@ -14,6 +14,7 @@
 #include <driver/gpio.h>
 #include <driver/efuse.h>
 #include <driver/psram.h>
+#include <driver/aon_rtc.h>
 #include <components/ate.h>
 
 #include "bk_phy.h"
@@ -1684,6 +1685,23 @@ static void ate_otp_rw_common(uint32_t otp_addr, const uint8_t *content, uint32_
 static void ate_pm_gpio_callback(gpio_id_t gpio_id)
 {
 	#if CONFIG_SYS_CPU0
+	(void)gpio_id;
+	bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_APP,0x0,100000000);
+	bk_ate_ctrl(1);
+	bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_CPU1, PM_POWER_MODULE_STATE_ON);
+	#if (CONFIG_CPU_CNT > 1)
+	extern void start_cpu1_core(void);
+	start_cpu1_core();
+	#endif
+	#endif
+}
+
+static void ate_pm_rtc_callback(aon_rtc_id_t id, uint8_t *name_p, void *param)
+{
+	#if CONFIG_SYS_CPU0
+	(void)id;
+	(void)name_p;
+	(void)param;
 	bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_APP,0x0,100000000);
 	bk_ate_ctrl(1);
 	bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_CPU1, PM_POWER_MODULE_STATE_ON);
@@ -1704,8 +1722,8 @@ int ate_enter_low_voltage()
 	.cb = (pm_cb)ate_pm_exit_lvsleep,
 	.args = NULL
 	};
-    	bk_ate_ctrl(0);
-    bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, PM_DEV_ID_DEFAULT, NULL, &exit_config);
+	bk_ate_ctrl(0);
+	bk_pm_sleep_register_cb(PM_MODE_LOW_VOLTAGE, PM_DEV_ID_DEFAULT, NULL, &exit_config);
 
 	bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_BTSP,0x1,100000000);
 	// bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_WIFIP_MAC,0x1,100000000);
@@ -1748,9 +1766,24 @@ int ate_enter_low_voltage()
 #else
 	bk_pm_lpo_src_set(PM_LPO_SRC_ROSC);
 #endif
+#if CONFIG_ATE_LV_WAKEUP_USE_RTC
+	#if (CONFIG_AON_RTC || CONFIG_ANA_RTC)
+	alarm_info_t low_valtage_alarm = {
+		"ate_lv",
+		200 * AON_RTC_MS_TICK_CNT,
+		1,
+		ate_pm_rtc_callback,
+		NULL
+	};
+	bk_alarm_unregister(AON_RTC_ID_1, low_valtage_alarm.name);
+	bk_alarm_register(AON_RTC_ID_1, &low_valtage_alarm);
+	#endif
+	bk_pm_wakeup_source_set(PM_WAKEUP_SOURCE_INT_RTC, NULL);
+#else
 	bk_gpio_register_isr(ATE_GPIO_ID, ate_pm_gpio_callback);
-	bk_gpio_register_wakeup_source(ATE_GPIO_ID,GPIO_INT_TYPE_HIGH_LEVEL);
+	bk_gpio_register_wakeup_source(ATE_GPIO_ID, GPIO_INT_TYPE_HIGH_LEVEL);
 	bk_pm_wakeup_source_set(PM_WAKEUP_SOURCE_INT_GPIO, NULL);
+#endif
 
 	bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_APP,0x1,100000000);
 #endif

@@ -13,6 +13,11 @@ menu "modules::uart_debug"
 		bool "Enable ATE Test"
 		default n
 
+	config ATE_LV_WAKEUP_USE_RTC
+		depends on ATE
+		bool "ATE low voltage wakeup via RTC"
+		default n
+
 	config ATE_PHY_PWR_TBL_VERSION
 		depends on ATE
 		int "Select PHY_PWR_TBL version"
