@@ -93,7 +93,7 @@ const uint8_t mpu_attrs[] = {
 };
 
 void mpu_register_regions(ARM_MPU_Region_t const *regions, uint32_t region_cnt);
-void mpu_register_attrs(uint8_t *attrs, uint32_t cnt);
+void mpu_register_attrs(const uint8_t *attrs, uint32_t cnt);
 
 void mpu_soc_cfg(void)
 {

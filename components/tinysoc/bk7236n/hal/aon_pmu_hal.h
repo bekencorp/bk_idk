@@ -15,6 +15,7 @@
 #pragma once
 
 #include <soc/soc.h>
+#include <stdbool.h>
 #include "aon_pmu_ll.h"
 #include "sys_types.h"
 
@@ -27,6 +28,7 @@ typedef struct {
 } aon_pmu_hal_t;
 
 bk_err_t aon_pmu_hal_init(void);
+uint32_t aon_pmu_hal_get_dpll_band(void);
 uint32_t aon_pmu_hal_get_wakeup_source_reg(void);
 uint32_t aon_pmu_hal_get_chipid(void);
 bool aon_pmu_hal_is_chipid_later_than_version_C(void);
@@ -54,6 +56,13 @@ void aon_pmu_hal_psram_iodrv_set(uint32_t io_drv);
 void aon_pmu_hal_back_and_clear_reset_reason(void);
 void aon_pmu_hal_restore_reset_reason(void);
 uint32_t aon_pmu_hal_get_reset_reason_from_sram(void);
+
+#if CONFIG_AON_PMU_REG0_REFACTOR_DEV
+uint32_t aon_pmu_hal_get_reset_reason(void);
+void aon_pmu_hal_set_reset_reason(uint32_t value, bool write_immediately);
+#else
+void aon_pmu_hal_set_reset_reason(uint32_t value);
+#endif
 void aon_pmu_hal_test_all(void);
 void aon_pmu_struct_dump(uint32_t start, uint32_t end);
 uint32_t aon_pmu_hal_get_app_boot_validate_pending(void);

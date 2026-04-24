@@ -19,6 +19,8 @@
 #include "driver/efuse.h"
 #include "bootutil/bootutil_log.h"
 #include "aon_pmu_ll.h"
+#include <driver/flash.h>
+#include <driver/wdt_hal.h>
 
 #define EFUSE_SECURBOOT_ADDR     0
 #define TAG "bl2_boot"
@@ -95,6 +97,9 @@ void boot_jump_to_next_image(uint32_t reset_handler_addr)
         "mov     lr,  r0                 \n"
         "bx      r7                      \n" /* Jump to Reset_handler */
     );
+    
+    for (;;) {
+    }
 }
 
 void boot_platform_enable_fault_interrupt(void)
@@ -109,8 +114,6 @@ void boot_platform_enable_fault_interrupt(void)
 /* bootloader platform-specific hw initialization */
 int32_t boot_platform_init(void)
 {
-    int32_t result;
-
     // aon_pmu_hal_back_and_clear_reset_reason();
 #if CONFIG_BL2_WDT
     close_wdt();

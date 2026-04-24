@@ -1,17 +1,24 @@
 #include <stdint.h>
+#include <stddef.h>
 #include <stdbool.h>
 #include "hal_jtag.h"
 
-int dubhe_driver_init( unsigned long);
+int dubhe_driver_init(unsigned long);
 void arm_ce_dbg_set(bool debug_en);
 void close_wdt(void);
+
+int arm_ce_get_otp_info(int type, void *output, size_t size, size_t offset);
+bool is_spe_debug_enabled(void);
+
+void hal_jtag_enable(void);
+void hal_jtag_disable(void);
 
 static bool allowed_debug(void)
 {
 	uint8_t lcs[4] = {0};
 	int ret;
 
-	ret = arm_ce_get_otp_info(6/*OTP_INFO_LIFE_CYCLE*/, (uint8_t *)lcs, 4, 0);
+	ret = arm_ce_get_otp_info(6/*OTP_INFO_LIFE_CYCLE*/, lcs, 4, 0);
 	if (0 != ret) {
 		return false;
 	}

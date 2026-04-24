@@ -18,27 +18,15 @@
 #include <stddef.h>
 #include "nv_otp_log.h"
 
-#define TAG "otp"
-#define OTP_LOGD BK_LOGD
-#define OTP_LOGI BK_LOGI
-#define OTP_LOGW BK_LOGW
-#define OTP_LOGE BK_LOGE
-#define OTP_LOG_RAW(...) 
+int mbedtls_get_otp_info(int type, void *output, size_t size, size_t offset);
+int mbedtls_set_otp_info(int type, const void *input, size_t ilen, size_t offset);
 
-#define OTP_ROTPK_ID             5
-#define OTP_SECURITY_COUNTER_ID  0
+#define TAG "otp"
+
 
 enum tfm_plat_err_t tfm_plat_otp_init(void)
 {
 	OTP_LOGD(TAG, "init\r\n");
-	return TFM_PLAT_ERR_SUCCESS;
-}
-
-static enum tfm_plat_err_t write_to_output(enum tfm_otp_element_id_t id,
-                                        uint32_t offset, size_t out_len,
-                                        uint8_t *out)
-{
-	OTP_LOGI(TAG, "write, id=%d, offset=%d out_len=%d\r\n", id, offset, out_len);
 	return TFM_PLAT_ERR_SUCCESS;
 }
 
@@ -73,13 +61,6 @@ enum tfm_plat_err_t tfm_plat_otp_read(enum tfm_otp_element_id_t id,
 }
 
 #if defined(OTP_WRITEABLE)
-static enum tfm_plat_err_t read_from_input(enum tfm_otp_element_id_t id,
-                                      uint32_t offset, size_t in_len,
-                                      const uint8_t *in)
-{
-	return TFM_PLAT_ERR_SUCCESS;
-}
-
 enum tfm_plat_err_t tfm_plat_otp_write(enum tfm_otp_element_id_t id,
                                        size_t in_len, const uint8_t *in)
 {

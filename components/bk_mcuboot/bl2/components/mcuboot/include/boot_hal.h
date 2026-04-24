@@ -12,12 +12,17 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "cmsis_compiler.h"
+#include "bootutil/fault_injection_hardening.h"
 
 /* Include header section */
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct boot_rsp;
+fih_ret bk_boot_go(struct boot_rsp *rsp);
+void boot_show_version(void);
 
 struct boot_arm_vector_table {
     uint32_t msp;

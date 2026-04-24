@@ -51,6 +51,8 @@
 #include "mcuboot_suites.h"
 #endif /* TEST_BL2 */
 #include "sys_hal.h"
+#include "bk_flash_map.h"
+#include "cache.h"
 
 /* Avoids the semihosting issue */
 #if defined (__ARMCC_VERSION) && (__ARMCC_VERSION >= 6010050)
@@ -74,7 +76,6 @@ extern void sys_hal_dpll_cpu_flash_time_early_init(void);
 static void do_boot(struct boot_rsp *rsp)
 {
     struct boot_arm_vector_table *vt;
-    int rc;
     uint32_t image_off;
 
     if (rsp->br_hdr != NULL) {

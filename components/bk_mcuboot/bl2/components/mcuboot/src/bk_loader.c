@@ -28,6 +28,7 @@
  */
 
 #include "ow_loader.h"
+#include "xip_loader.h"
 #include "aon_pmu_hal.h"
 static struct boot_loader_state boot_data;
 

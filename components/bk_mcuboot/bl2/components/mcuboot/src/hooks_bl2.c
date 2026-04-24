@@ -29,7 +29,7 @@
 
 #define BL2_HOOK_IMG_READ_DEBUG_LEN 0x100
 
-static void dump_image_header(struct image_header *hdr)
+static __attribute__((unused)) void dump_image_header(struct image_header *hdr)
 {
 	BL2_HOOK_LOGD(TAG, "magic=%x\r\n", hdr->ih_magic);
 	BL2_HOOK_LOGD(TAG, "load_addr=%x\r\n", hdr->ih_load_addr);
@@ -40,7 +40,7 @@ static void dump_image_header(struct image_header *hdr)
 	BL2_HOOK_LOGD(TAG, "pad=%x\r\n", hdr->_pad1);
 }
 
-static inline bool boot_u32_safe_add(uint32_t *dest, uint32_t a, uint32_t b)
+static inline __attribute__((unused)) bool boot_u32_safe_add(uint32_t *dest, uint32_t a, uint32_t b)
 {
 	if (a > UINT32_MAX - b) {
 		return false;
@@ -50,27 +50,27 @@ static inline bool boot_u32_safe_add(uint32_t *dest, uint32_t a, uint32_t b)
 	}
 }
 
-static bool
+static __attribute__((unused)) bool
 boot_is_header_valid(const struct image_header *hdr, const struct flash_area *fap)
 {
-    uint32_t size;
+	uint32_t size;
 
-    if (hdr->ih_magic != IMAGE_MAGIC) {
-        BL2_HOOK_LOGE(TAG, "invalid img magic: %x\r\n", hdr->ih_magic);
-        return false;
-    }   
+	if (hdr->ih_magic != IMAGE_MAGIC) {
+		BL2_HOOK_LOGE(TAG, "invalid img magic: %x\r\n", hdr->ih_magic);
+		return false;
+	}
 
-    if (!boot_u32_safe_add(&size, hdr->ih_img_size, hdr->ih_hdr_size)) {
-        BL2_HOOK_LOGE(TAG, "invalid size: size=%x, img_size=%d, hdr_size=%x\r\n", size, hdr->ih_img_size, hdr->ih_hdr_size);
-        return false;
-    }
+	if (!boot_u32_safe_add(&size, hdr->ih_img_size, hdr->ih_hdr_size)) {
+		BL2_HOOK_LOGE(TAG, "invalid size: size=%x, img_size=%d, hdr_size=%x\r\n", size, hdr->ih_img_size, hdr->ih_hdr_size);
+		return false;
+	}
 
-    if (size >= flash_area_get_size(fap)) {
-        BL2_HOOK_LOGE(TAG, "invalid size: size=%x, area_size=%x\r\n", size, fap->fa_size);
-        return false;
-    }   
+	if (size >= flash_area_get_size(fap)) {
+		BL2_HOOK_LOGE(TAG, "invalid size: size=%x, area_size=%x\r\n", size, fap->fa_size);
+		return false;
+	}
 
-    return true;
+	return true;
 }
 
 uint32_t boot_get_1st_instruction_physical_off(const struct flash_area *area)
@@ -146,6 +146,13 @@ fih_int boot_image_check_hook(int img_index, int slot)
 int boot_perform_update_hook(int img_index, struct image_header *img_head,
                              const struct flash_area *area)
 {
+#if BL2_HOOK_DEBUG
+	if (img_head != NULL && area != NULL) {
+		dump_image_header(img_head);
+		(void)boot_is_header_valid(img_head, area);
+	}
+#endif
+	(void)img_index;
 	return BOOT_HOOK_REGULAR;
 }
 

@@ -42,7 +42,8 @@ void *psa_memmove(void *dst, const void *src, size_t size)
 
 void *psa_memset(void *buffer, int c, size_t size)
 {
-	return spm_memset(buffer, c, size);
+	(void)memset(buffer, c, size);
+	return buffer;
 }
 
 int32_t psa_memcmp(const void *buffer1, const void *buffer2, size_t size)

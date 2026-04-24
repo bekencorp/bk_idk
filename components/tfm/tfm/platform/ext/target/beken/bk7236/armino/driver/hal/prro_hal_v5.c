@@ -35,33 +35,6 @@ bk_err_t prro_hal_init(void)
 	return BK_OK;
 }
 
-static uint32_t config_bits_to_reg_bits(prro_map_t *map, uint32_t map_idx_start, uint32_t map_idx_max, uint32_t config_bits)
-{
-	uint32_t valid_entry_in_map = map_idx_max - map_idx_start;
-	uint32_t reg_value = 0;
-	uint32_t reg_id = 0;
-
-	if (valid_entry_in_map > 32) {
-		PRRO_HAL_LOGE(TAG, "more than 32 entries\r\n");
-	}
-
-	for (uint32_t bit_idx = 0; bit_idx < valid_entry_in_map; bit_idx++) {
-		uint32_t map_idx = bit_idx + map_idx_start;
-
-		if (bit_idx == 0) {
-			reg_id = map[map_idx].reg;
-		} else if ((bit_idx != 0) && (reg_id != map[map_idx].reg)) { //All bits should in the same register
-			PRRO_HAL_LOGE(TAG, "bits not in the same reg\r\n");
-		}
-
-		if (config_bits & BIT(bit_idx)) {
-			reg_value |= BIT(bit_idx);
-		}
-	}
-
-	return reg_value;
-}
-
 bk_err_t prro_hal_set_privilege(prro_dev_t dev, prro_privilege_type_t privilege_type)
 {
 	PRRO_AP_MAP(ap_map);
@@ -173,8 +146,8 @@ prro_secure_type_t prro_hal_get_secure(prro_dev_t dev)
 bk_err_t prro_hal_set_gpios_secure(uint32_t group0_bits, uint32_t group1_bits)
 {
 	PRRO_HAL_LOGD(TAG, "set gpio 0~31 to %x, 32~64 to %x\r\n", group0_bits, group1_bits);
-	prro_ll_set_aon_gpio_nonsec0(group0_bits);
-	prro_ll_set_aon_gpio_nonsec1(group1_bits);
+	prro_ll_set_aonp_gpio_nsec0_aon_gpio_nsec0(group0_bits);
+	prro_ll_set_aonp_gpio_nsec1_aon_gpio_nsec1(group1_bits);
 	return BK_OK;
 }
 

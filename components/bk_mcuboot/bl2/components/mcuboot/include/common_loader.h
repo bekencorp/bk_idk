@@ -64,5 +64,6 @@ int boot_check_header_erased(struct boot_loader_state *state, int slot);
 int boot_erase_region(const struct flash_area *fap, uint32_t off, uint32_t sz);
 int boot_update_security_counter(uint8_t image_index, int slot, struct image_header *hdr);
 bool boot_is_header_valid(const struct image_header *hdr, const struct flash_area *fap);
+bool bk_skip_validate(void);
 
 #endif // COMMON_LOADER_H

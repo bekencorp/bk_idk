@@ -74,6 +74,10 @@ set(srcs
 
 target_compile_definitions(platform_bl2 PUBLIC CONFIG_TFM_SOC_PATH_V5)
 
+if(CRYPTO_HW_ACCELERATOR)
+	target_compile_definitions(platform_bl2 PRIVATE ARM_CE_DUBHE_OTP)
+endif()
+
 set(bl2_incs driver)
 target_include_directories(platform_bl2 PUBLIC ${incs} ${bl2_incs})
 target_sources(platform_bl2 PRIVATE ${srcs} ${bl2_srcs})

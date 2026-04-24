@@ -40,6 +40,7 @@ bk_err_t wdt_hal_init_wdt(wdt_hal_t *hal, uint32_t timeout);
 void wdt_hal_close(void);
 void wdt_hal_force_feed(void);
 void wdt_hal_force_reboot(void);
+void close_wdt(void);
 
 #define AON_WDT_PERIOD_VAL 0x1388  //0.6ms*5000=3000ms=3s
 

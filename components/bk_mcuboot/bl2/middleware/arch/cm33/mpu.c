@@ -22,7 +22,7 @@
 
 static ARM_MPU_Region_t const *s_mpu_regions;
 static uint32_t s_mpu_regions_cnt = 0;
-static uint8_t *s_mpu_attrs = NULL;
+static const uint8_t *s_mpu_attrs = NULL;
 static uint32_t s_mpu_attrs_cnt = 0;
 
 extern void mpu_soc_cfg(void);
@@ -36,7 +36,7 @@ void mpu_register_regions(ARM_MPU_Region_t const *regions, uint32_t region_cnt)
     s_mpu_regions_cnt = region_cnt;
 }
 
-void mpu_register_attrs(uint8_t *attrs, uint32_t cnt)
+void mpu_register_attrs(const uint8_t *attrs, uint32_t cnt)
 {
     BK_ASSERT(attrs);
     BK_ASSERT(cnt);

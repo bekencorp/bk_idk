@@ -280,7 +280,7 @@ int boot_read_image_header(struct boot_loader_state *state, int slot,
 int boot_copy_region(struct boot_loader_state *state,
                      const struct flash_area *fap_src,
                      const struct flash_area *fap_dst,
-                     uint32_t off_src, uint32_t off_dst);
+                     uint32_t off_src, uint32_t off_dst, uint32_t sz);
 int boot_erase_region(const struct flash_area *fap, uint32_t off, uint32_t sz);
 bool boot_status_is_reset(const struct boot_status *bs);
 
@@ -465,6 +465,12 @@ static inline const char* slot_str(uint32_t slot)
 		return "B";
 	}
 }
+
+#if CONFIG_DIRECT_XIP
+int boot_read_running_slot(void);
+int boot_read_xip_status(uint8_t index, uint32_t type);
+void boot_write_xip_status(uint8_t index, uint32_t type, uint32_t status);
+#endif
 
 #ifdef __cplusplus
 }

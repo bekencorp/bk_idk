@@ -387,17 +387,6 @@ uint32_t uart_get_clock_freq(void);
 
 #if (CHIP_BK7236N) || (CHIP_BK7239)
 
-#define REG_AND(r, data) do {\
-		uint32_t v = REG_READ((r));\
-		v &= (data);\
-		REG_WRITE((r), v);\
-	} while(0)
-
-#define REG_ANA_OR(r, data) do {\
-		uint32_t v = REG_READ((r));\
-		v |= (data);\
-		REG_WRITE((r), v);\
-	} while(0)
 
 #define BK3000_SYS_BASE_ADDR              0x44010000
 #define BK3000_UART_BASE_ADDR             0x44820000

@@ -54,7 +54,7 @@ static int boot_copy_image(struct boot_loader_state *state, struct boot_status *
     assert (rc == 0);
 
     BOOT_LOG_INF("Image %d copying the secondary slot to the primary slots", image_index);
-    rc = boot_copy_region(state, fap_secondary_slot, fap_primary_slot, 0, 0);
+    rc = boot_copy_region(state, fap_secondary_slot, fap_primary_slot, 0, 0, 0);
     if (rc != 0) {
         BOOT_LOG_ERR("Overwrite copy fail.");
         return rc;
@@ -131,7 +131,6 @@ boot_prepare_image_for_update(struct boot_loader_state *state,
 {
     int rc;
     struct image_header *hdr;
-    FIH_DECLARE(fih_rc, FIH_FAILURE);
 
     /* Attempt to read an image header from each slot. */
     rc = boot_read_image_headers(state, false, NULL);
@@ -161,7 +160,6 @@ overwrite_boot_go(struct boot_loader_state *state, struct boot_rsp *rsp)
     int rc = -1;
     FIH_DECLARE(fih_rc, FIH_FAILURE);
     int fa_id;
-    int image_index;
     bool has_upgrade;
     volatile int fih_cnt;
 
@@ -182,13 +180,13 @@ overwrite_boot_go(struct boot_loader_state *state, struct boot_rsp *rsp)
          * of this call.
          */
         for (slot = 0; slot < BOOT_NUM_SLOTS; slot++) {
-            fa_id = flash_area_id_from_multi_image_slot(image_index, slot);
+            fa_id = flash_area_id_from_multi_image_slot(BOOT_CURR_IMG(state), slot);
             rc = flash_area_open(fa_id, &BOOT_IMG_AREA(state, slot));
             assert(rc == 0);
 
             if (rc != 0) {
                 BOOT_LOG_ERR("Failed to open flash area ID %d (image %d slot %d): %d, "
-                             "cannot continue", fa_id, image_index, (int8_t)slot, rc);
+                             "cannot continue", fa_id, BOOT_CURR_IMG(state), (int8_t)slot, rc);
                 FIH_PANIC;
             }
         }

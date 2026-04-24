@@ -23,6 +23,9 @@
 #include "partitions_gen.h"
 #include "sys_persist_config.h"
 #include "sys_hal.h"
+#include <driver/wdt_hal.h>
+#include "sys_driver.h"
+#include "timer_hal.h"
 
 #define ENTRY_SECTION                    __attribute__((section(".fix.reset_entry")))
 #define SYSTEM_BASE_ADDR                 (0x44010000)

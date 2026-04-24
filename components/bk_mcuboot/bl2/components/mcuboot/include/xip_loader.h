@@ -32,4 +32,7 @@
 
 #include "common_loader.h"
 
+struct boot_rsp;
+fih_ret xip_boot_go(struct boot_loader_state *state, struct boot_rsp *rsp);
+
 #endif

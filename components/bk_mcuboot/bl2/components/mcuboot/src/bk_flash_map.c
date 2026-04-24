@@ -6,11 +6,16 @@
  */
 
 #include <stdbool.h>
+#include <stdint.h>
 #include "flash_map.h"
 
 #include "Driver_Flash.h"
 #include "flash_partition.h"
 #include "partitions_gen.h"
+
+#if defined(MCUBOOT_DIRECT_XIP) || defined(CONFIG_DIRECT_XIP)
+void flash_set_xip_offset(uint32_t primary_start, uint32_t secondary_start, uint32_t code_size);
+#endif
 
 /* When undefined FLASH_DEV_NAME_0 or FLASH_DEVICE_ID_0 , default */
 #if !defined(FLASH_DEV_NAME_0) || !defined(FLASH_DEVICE_ID_0)

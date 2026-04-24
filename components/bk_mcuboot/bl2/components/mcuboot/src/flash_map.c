@@ -5,8 +5,6 @@
  *
  */
 
-#include <stdbool.h>
-
 #include "flash_map.h"
 #include "flash_map_backend/flash_map_backend.h"
 #include "bootutil_priv.h"
@@ -17,66 +15,16 @@
 #include "bk_tfm_mpc.h"
 #include <components/log.h>
 #include "partitions_gen.h"
+#include <driver/flash.h>
+#include "cache.h"
+
+uint32_t flash_area_read_offset_enable(void);
 
 #define TAG "flash_map"
 #define FLASH_PROGRAM_UNIT    TFM_HAL_FLASH_PROGRAM_UNIT
 
-// Convert physical address to virtual address based on CRC mode
-static inline uint32_t phy_to_virtual_addr(uint32_t phy_addr)
-{
-    return FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(phy_addr));
-}
-
-static inline uint32_t virtual_to_physical_offset(uint32_t virtual_off)
-{
-    return FLASH_VIRTUAL2PHY(virtual_off);
-}
-
-/**
- * Return the greatest value not greater than `value` that is aligned to
- * `alignment`.
- */
-#define FLOOR_ALIGN(value, alignment) ((value) & ~((alignment) - 1))
-
-/**
- * Return the least value not less than `value` that is aligned to `alignment`.
- */
-#define CEILING_ALIGN(value, alignment) \
-                         (((value) + ((alignment) - 1)) & ~((alignment) - 1))
-
 extern const struct flash_area flash_map[];
 extern const int flash_map_entry_num;
-
-/* Valid entries for data item width */
-static const uint32_t data_width_byte[] = {
-    sizeof(uint8_t),
-    sizeof(uint16_t),
-    sizeof(uint32_t),
-};
-
-/*
- * Check the target address in the flash_area_xxx operation.
- */
-static bool is_range_valid(const struct flash_area *area,
-                           uint32_t off,
-                           uint32_t len)
-{
-    uint32_t size;
-
-    if (!area) {
-        return false;
-    }
-
-    if (!boot_u32_safe_add(&size, off, len)) {
-        return false;
-    }
-
-    if (area->fa_size < size) {
-        return false;
-    }
-
-    return true;
-}
 
 /*
  * `open` a flash area.  The `area` in this case is not the individual
@@ -174,8 +122,8 @@ uint32_t flash_write_bytes_dbus(uint32_t address, const uint8_t *user_buf, uint3
     SYS_LOCK_DECLARATION();
     SYS_LOCK();
 
-    uint32_t protect_type = bk_flash_get_protect_type();
-    bk_flash_set_protect_type(0);
+    flash_protect_type_t protect_type = bk_flash_get_protect_type();
+    bk_flash_set_protect_type(FLASH_PROTECT_NONE);
     bk_flash_write_bytes(address, user_buf, size);
     bk_flash_set_protect_type(protect_type);
     SYS_UNLOCK();
@@ -214,14 +162,14 @@ int flash_area_write(const struct flash_area *area, uint32_t off,
     uint32_t fa_off = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(partition_get_phy_offset(PARTITION_XIP_A)));
     uint32_t boundary = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(partition_get_phy_offset(PARTITION_NSPE)));
     uint32_t block_num = (FLASH_PHY2VIRTUAL(partition_get_phy_size(PARTITION_NSPE))) / (64*1024);
-    uint32_t write_addr;
-    uint32_t sec_off,nsec_off;
 
     bk_mpc_set_secure_attribute(MPC_DEV_FLASH,boundary,block_num,0); // turn NSPE to S,and resume
     enable_dcache(0);
-    write_addr = (fa_off+off);
-    write_addr |= 1 << 24;
-    // bk_flash_write_cbus(write_addr,src,len);
+    (void)area;
+    (void)fa_off;
+    (void)off;
+    (void)src;
+    (void)len;
     enable_dcache(1);
     bk_mpc_set_secure_attribute(MPC_DEV_FLASH,boundary,block_num,1);
 

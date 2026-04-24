@@ -3,6 +3,9 @@
 #include "flash_partition.h"
 #include <components/log.h>
 #include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
+#include <driver/flash.h>
 #define TAG "partition"
 
 typedef struct {
@@ -61,14 +64,13 @@ uint32_t partition_get_phy_size(uint32_t id)
 	return s_partition_config[id].phy_size;
 }
 
-extern bk_err_t bk_flash_read_bytes(uint32_t address, uint8_t *user_buf, uint32_t size);
 int partition_init(void)
 {
 	bk_flash_driver_init();
 	uint8_t* buf = (uint8_t*)malloc(PARTITION_ENTRY_LEN * sizeof(uint8_t));
-	if(buf == NULL){
+	if (buf == NULL) {
 		BK_LOGE(TAG, "memory malloc fails.\r\n");
-		return ;
+		return -1;
 	}
 
 	uint32_t i;

@@ -1,5 +1,7 @@
 #include <inttypes.h>
 #include <driver/flash.h>
+#include <os/mem.h>
+#include "bk_flash_map.h"
 #include "flash_partition.h"
 #include <stdlib.h>
 #include <string.h>
@@ -40,6 +42,8 @@ static uint8_t *s_decompressed_buf = (uint8_t*)(BL2_FREE_SRAM + COMPRESS_BLOCK_S
 
 #define ERASE_VERIFY_BUFFER_SIZE (4 * 1024)
 #define ERASE_RETRY_COUNT        3
+
+struct boot_loader_state;
 
 /* Verify erased flash is all 0xFF; return 0 if pass, non-zero if fail */
 static int verify_erase(uint32_t offset, uint32_t size)
@@ -144,11 +148,6 @@ static void CRC8_Update( CRC8_Context *inContext, const void *inSrc, size_t inLe
 	while ( src < srcEnd ) {
 		inContext->crc = UpdateCRC8(inContext->crc, *src++);
 	}
-}
-
-static void CRC8_Final( CRC8_Context *inContext, uint8_t *outResult )
-{
-	*outResult = inContext->crc & 0xffu;
 }
 
 static uint32_t get_resume_base_address(void)
@@ -280,9 +279,11 @@ int
 boot_copy_region(struct boot_loader_state *state, const struct flash_area *fap_src,
 	const struct flash_area *fap_dst, uint32_t off_src, uint32_t off_dst, uint32_t sz)
 {
+	(void)state;
+	(void)sz;
+	(void)off_dst;
 	uint32_t primary_all_vir_size = get_flash_map_size(FLASH_AREA_OVERWRITE_ID);
 	uint32_t primary_all_phy_offset = get_flash_map_offset(FLASH_AREA_OVERWRITE_ID);
-	uint32_t ota_phy_size = get_flash_map_phy_size(FLASH_AREA_OTA_ID);
 	uint32_t block_num = (primary_all_vir_size) / COMPRESS_BLOCK_SIZE;
 	uint16_t block_list[block_num + 2];
 	uint32_t bytes_copied = 0;

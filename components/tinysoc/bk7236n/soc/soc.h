@@ -25,7 +25,6 @@ extern "C" {
 #endif
 
 #define SOC_ICU_REG_BASE      (0xdead0add)
-#define SOC_PWM_REG_BASE      (0xdead0add)
 #define SOC_CALENDAR_REG_BASE (0xdead0add + 0x55 * 4)
 
 #define SOC_PSRAM_DATA_ADDR_SEC     (0x60000000)
@@ -50,6 +49,18 @@ extern "C" {
 #define REG_CLR_BIT(_r, _b)  ({\
 		(*(volatile uint32_t*)(_r) &= ~(_b));\
 	})
+
+#define REG_AND(r, data) do { \
+		uint32_t __soc_reg_v = REG_READ((r)); \
+		__soc_reg_v &= (data); \
+		REG_WRITE((r), __soc_reg_v); \
+	} while (0)
+
+#define REG_ANA_OR(r, data) do { \
+		uint32_t __soc_reg_v = REG_READ((r)); \
+		__soc_reg_v |= (data); \
+		REG_WRITE((r), __soc_reg_v); \
+	} while (0)
 
 #define REG_SET_BITS(_r, _b, _m) ({\
 		(*(volatile uint32_t*)(_r) = (*(volatile uint32_t*)(_r) & ~(_m)) | ((_b) & (_m)));\

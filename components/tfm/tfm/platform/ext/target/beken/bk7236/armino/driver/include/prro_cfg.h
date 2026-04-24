@@ -24,13 +24,13 @@ typedef struct {
 #define PRRO_INVALID_REG  (-1)
 
 #define PRRO_AP_MAP(ap_map) \
-	prro_map_t *ap_map = s_ap_map;
+	const prro_map_t *ap_map = s_ap_map;
 
 #define PRRO_AP_MAP_COUNT \
 	(sizeof(s_ap_map) / sizeof(s_ap_map[0]))
 
 #define PRRO_SEC_MAP(sec_map)\
-	prro_map_t *sec_map = s_sec_map;
+	const prro_map_t *sec_map = s_sec_map;
 
 #define PRRO_SEC_MAP_COUNT \
 	(sizeof(s_sec_map) / sizeof(s_sec_map[0]))

@@ -135,7 +135,6 @@ static const flash_config_t flash_config[] = {
 static flash_driver_t s_flash = {0};
 static bool s_flash_is_init = false;
 static beken_mutex_t s_flash_mutex = NULL;
-static PM_STATUS flash_ps_status;
 #if (CONFIG_SOC_BK7256XX)
 static uint32_t s_hold_low_speed_status = 0;
 #endif
@@ -209,11 +208,6 @@ void flash_restore_line_mode(void)
 {
 	if (FLASH_LINE_MODE_FOUR == bk_flash_get_line_mode())
 		bk_flash_set_line_mode(FLASH_LINE_MODE_FOUR);
-}
-
-static PM_STATUS flash_ps_get_status(UINT32 flag)
-{
-	return flash_ps_status;
 }
 
 static void flash_init_common(void)

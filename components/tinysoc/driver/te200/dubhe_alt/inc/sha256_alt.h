@@ -26,10 +26,22 @@ extern "C" {
 
 #if defined(MBEDTLS_SHA256_ALT)
 #include "dubhe_hash.h"
+#include <stddef.h>
 /*
  * \brief          SHA-1 context structure
  */
 typedef arm_ce_hash_context_t mbedtls_sha256_context;
+
+void dubhe_sha256_init(mbedtls_sha256_context *ctx);
+void dubhe_sha256_free(mbedtls_sha256_context *ctx);
+void dubhe_sha256_clone(mbedtls_sha256_context *dst,
+                        const mbedtls_sha256_context *src);
+int dubhe_sha256_starts_ret(mbedtls_sha256_context *ctx, int is224);
+int dubhe_sha256_update_ret(mbedtls_sha256_context *ctx,
+                            const unsigned char *input,
+                            size_t ilen);
+int dubhe_sha256_finish_ret(mbedtls_sha256_context *ctx,
+                            unsigned char output[32]);
 
 #define MBEDTLS_ERR_SHA256_HW_ACCEL_FAILED                -0x0037  /**< SHA-256 hardware accelerator failed */
 

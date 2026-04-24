@@ -45,8 +45,6 @@ if(NS)
 	PUBLIC
 		CONFIG_TFM_NS
 		DOMAIN_NS
-		__EN_ICACHE
-		__EN_DCACHE
 	)
 	
 	target_link_libraries(CMSIS_5_tfm_ns
@@ -110,12 +108,6 @@ set(platform_s_src
 
 target_include_directories(platform_s PUBLIC ${platform_s_inc})
 target_sources(platform_s PRIVATE ${platform_s_src})
-target_compile_definitions(platform_s
-	PRIVATE
-	__EN_ICACHE=1
-	__EN_DCACHE=1
-)
-
 target_sources(tfm_sprt
 	PRIVATE
 		# SLIH test Partition and FLIH test Partition access the timer as ARoT Partitions.
@@ -183,8 +175,6 @@ set(platform_bl2_src
 		-DCONFIG_ENABLE_MCUBOOT_BL2=1
 		-DCONFIG_FLASH_FAST_ERASE=1
 		-DCONFIG_BL2_REG_BASE=1
-		__EN_ICACHE
-		__EN_DCACHE
 	)
 
 if (CONFIG_BL2_VALIDATE_ENABLED_BY_EFUSE)

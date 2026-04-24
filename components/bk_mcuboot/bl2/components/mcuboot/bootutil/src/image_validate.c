@@ -59,6 +59,7 @@
 #include "bootutil_priv.h"
 #include "flash_partition.h"
 #include "flash.h"
+#include "cache.h"
 
 #if CONFIG_BL2_SKIP_VALIDATE
 #include "partitions_gen.h"
@@ -78,11 +79,8 @@ bootutil_img_hash(struct enc_key_data *enc_state, int image_index,
                   uint8_t *seed, int seed_len)
 {
     bootutil_sha_context sha_ctx;
-    uint32_t blk_sz;
     uint32_t size;
     uint16_t hdr_size;
-    uint32_t off;
-    int rc;
     int ret = 0;
     uint32_t blk_off;
     uint32_t tlv_off;
@@ -99,9 +97,6 @@ bootutil_img_hash(struct enc_key_data *enc_state, int image_index,
     (void)blk_off;
     (void)tlv_off;
 #ifdef MCUBOOT_RAM_LOAD
-    (void)blk_sz;
-    (void)off;
-    (void)rc;
     (void)fap;
     (void)tmp_buf;
     (void)tmp_buf_sz;
@@ -130,6 +125,10 @@ bootutil_img_hash(struct enc_key_data *enc_state, int image_index,
 
 #if CONFIG_OTA_OVERWRITE
     if( fap->fa_off == partition_get_phy_offset(PARTITION_OTA )) {
+        uint32_t blk_sz;
+        uint32_t off;
+        int rc;
+
         /* For OTA partition, CRC check is not applicable, proceed with SHA init */
         bootutil_sha_init(&sha_ctx);
         
@@ -186,7 +185,7 @@ bootutil_img_hash(struct enc_key_data *enc_state, int image_index,
             /* Return immediately without initializing SHA context */
             /* This prevents hardware SHA accelerator state pollution */
             ret = -1;
-            goto _restore_execute_enable;
+            goto cleanup_hash;
         } else {
             BOOT_LOG_INF("app crc16 right");
         }
@@ -209,12 +208,13 @@ bootutil_img_hash(struct enc_key_data *enc_state, int image_index,
                             size);
     }
     bootutil_sha_finish(&sha_ctx, hash_result);
-    
+
     bootutil_sha_drop(&sha_ctx);
 
-_restore_execute_enable:
+    goto cleanup_hash;
+
+cleanup_hash:
 #if CONFIG_DIRECT_XIP
-    // Restore XIP state if changed
     if (need_restore_execute_enable) {
         flash_set_excute_enable(execute_enable_saved);
     }
@@ -278,71 +278,6 @@ _restore_execute_enable:
  */
 #   define EXPECTED_KEY_TLV     IMAGE_TLV_CUSTOM_PUBKEY
 #   define KEY_BUF_SIZE         (91)
-#endif /* !MCUBOOT_HW_KEY */
-
-#if !defined(MCUBOOT_HW_KEY)
-static int
-bootutil_find_key(uint8_t *keyhash, uint8_t keyhash_len)
-{
-    bootutil_sha_context sha_ctx;
-    int i;
-    const struct bootutil_key *key;
-    uint8_t hash[IMAGE_HASH_SIZE];
-
-    if (keyhash_len > IMAGE_HASH_SIZE) {
-        return -1;
-    }
-
-    for (i = 0; i < bootutil_key_cnt; i++) {
-        key = &bootutil_keys[i];
-        bootutil_sha_init(&sha_ctx);
-        bootutil_sha_update(&sha_ctx, key->key, *key->len);
-        bootutil_sha_finish(&sha_ctx, hash);
-        if (!memcmp(hash, keyhash, keyhash_len)) {
-            bootutil_sha_drop(&sha_ctx);
-            return i;
-        }
-    }
-    bootutil_sha_drop(&sha_ctx);
-    return -1;
-}
-#else /* !MCUBOOT_HW_KEY */
-extern unsigned int pub_key_len;
-static int
-bootutil_find_key(uint8_t image_index, uint8_t *key, uint16_t key_len)
-{
-    bootutil_sha_context sha_ctx;
-    uint8_t hash[IMAGE_HASH_SIZE];
-    uint8_t key_hash[IMAGE_HASH_SIZE];
-    size_t key_hash_size = sizeof(key_hash);
-    int rc;
-    FIH_DECLARE(fih_rc, FIH_FAILURE);
-
-    bootutil_sha_init(&sha_ctx);
-    bootutil_sha_update(&sha_ctx, key, key_len);
-    bootutil_sha_finish(&sha_ctx, hash);
-    bootutil_sha_drop(&sha_ctx);
-
-    rc = boot_retrieve_public_key_hash(image_index, key_hash, &key_hash_size);
-    if (rc) {
-        return -1;
-    }
-
-    /* Adding hardening to avoid this potential attack:
-     *  - Image is signed with an arbitrary key and the corresponding public
-     *    key is added as a TLV field.
-     * - During public key validation (comparing against key-hash read from
-     *   HW) a fault is injected to accept the public key as valid one.
-     */
-    FIH_CALL(boot_fih_memequal, fih_rc, hash, key_hash, key_hash_size);
-    if (FIH_EQ(fih_rc, FIH_SUCCESS)) {
-        bootutil_keys[0].key = key;
-        pub_key_len = key_len;
-        return 0;
-    }
-
-    return -1;
-}
 #endif /* !MCUBOOT_HW_KEY */
 #endif /* !MCUBOOT_BUILTIN_KEY */
 #endif /* EXPECTED_SIG_TLV */
@@ -430,17 +365,6 @@ static const uint16_t allowed_unprot_tlvs[] = {
      IMAGE_TLV_ANY,
 };
 #endif
-
-static int
-bootutil_hash_hash(uint8_t *digest, uint32_t digest_sz, uint8_t *hash_result)
-{
-    bootutil_sha_context sha256_ctx;
-    bootutil_sha_init(&sha256_ctx);
-    bootutil_sha_update(&sha256_ctx, digest, digest_sz);
-    bootutil_sha_finish(&sha256_ctx, hash_result);
-    bootutil_sha_drop(&sha256_ctx);
-    return 0;
-}
 
 /*
  * Verify the integrity of the image.

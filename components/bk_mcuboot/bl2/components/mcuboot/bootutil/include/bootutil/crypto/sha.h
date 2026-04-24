@@ -54,7 +54,7 @@
 
 #include <mbedtls/sha256.h>
 #include <mbedtls/version.h>
-#if MBEDTLS_VERSION_NUMBER >= 0x03000000
+#if MBEDTLS_VERSION_NUMBER >= 0x03000000 && !defined(MBEDTLS_SHA256_ALT)
 #include <mbedtls/compat-2.x.h>
 #endif
 

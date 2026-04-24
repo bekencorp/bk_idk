@@ -69,13 +69,6 @@ endif()
 		)
 	endif()
 
-	if(CONFIG_BL2_UPDATE_WITH_PC)
-		target_compile_definitions(download
-			PUBLIC
-				CONFIG_BL2_UPDATE_WITH_PC
-		)
-	endif()
-
 	if (CONFIG_RANDOM_AES_UPGRADE_BL2 STREQUAL "y")
 		target_compile_definitions(download
 			PUBLIC

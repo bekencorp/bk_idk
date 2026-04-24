@@ -170,12 +170,6 @@ boot_xip_magic_off(uint8_t index)
 }
 
 static uint32_t
-boot_xip_copy_done_off(uint8_t index)
-{
-    return boot_xip_magic_off(index) - 8;
-}
-
-static uint32_t
 boot_xip_image_ok_off(uint8_t index)
 {
     return boot_xip_magic_off(index) - 16;
@@ -265,7 +259,7 @@ boot_read_xip_status(uint8_t index, uint32_t type)
     }
 
     uint32_t status = 0;
-    bk_flash_read_bytes(off, &status, 4);
+    bk_flash_read_bytes(off, (uint8_t *)&status, 4);
 
     if ((status != XIP_IMAGE_OK) &&
         (status != XIP_IMAGE_TEST_FIRST) &&
@@ -274,7 +268,7 @@ boot_read_xip_status(uint8_t index, uint32_t type)
         (status != XIP_IMAGE_UNKNOWN)) {
         uint32_t sector = off & (~(uint32_t)0xFFF);
         bk_flash_erase_sector(sector);
-        bk_flash_read_bytes(off, &status, 4);
+        bk_flash_read_bytes(off, (uint8_t *)&status, 4);
     }
 
     return status;
@@ -289,7 +283,7 @@ boot_write_xip_status(uint8_t index, uint32_t type, uint32_t status)
         BOOT_LOG_ERR("invalid write image ok offset, slot=%d", index);
         return;
     }
-    bk_flash_write_bytes(off, &status, 4);
+    bk_flash_write_bytes(off, (const uint8_t *)&status, 4);
     //TODO re-read the status to ensure the write is successful
 }
 
@@ -299,7 +293,7 @@ int boot_read_running_slot(void)
     uint32_t running_slot_value = 0;
     uint32_t running_slot = 0;
 
-    bk_flash_read_bytes(offset, &running_slot_value, 4);
+    bk_flash_read_bytes(offset, (uint8_t *)&running_slot_value, 4);
     if (running_slot_value == 0xFFFFFFFF) {
         return 0;
     } else {
@@ -356,7 +350,7 @@ bk_boot_check_ota_confirm(uint8_t index, uint32_t value)
 {
     uint32_t phy_off = bk_boot_ota_confirm_offset(index);
     uint32_t status;
-    bk_flash_read_bytes(phy_off, &status, 4);
+    bk_flash_read_bytes(phy_off, (uint8_t *)&status, 4);
 
     BOOT_LOG_INF("get image%d ota confirm=%#x",index, status);
     if (status == value) {
@@ -427,13 +421,6 @@ static const uint16_t boot_fail_count_seq[BOOT_FAIL_MAX_COUNT] = {
     0xFFFF, 0xFFFE, 0xFFFC, 0xFFF8, 0xFFF0, 0xFFE0, 0xFFC0, 0xFF80,
     0xFF00, 0xFE00, 0xFC00, 0xF800, 0xF000, 0xE000, 0xC000, 0x8000
 };
-
-static uint32_t
-bk_boot_overwrite_confirm_off(void)
-{
-    return (uint32_t)(CONFIG_OW_OTA_CONTROL_PHY_PARTITION_OFFSET
-                      + CONFIG_OW_OTA_CONTROL_PHY_PARTITION_SIZE - 4);
-}
 
 static uint32_t
 bk_boot_overwrite_app_fail_off(void)

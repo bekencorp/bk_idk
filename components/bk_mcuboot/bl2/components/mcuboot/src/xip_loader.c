@@ -29,6 +29,7 @@
 
 #include "xip_loader.h"
 #include "flash_driver.h"
+#include <driver/flash.h>
 #include "cache.h"
 #include "bootutil_priv.h"
 
@@ -49,6 +50,7 @@ static inline const char* image_ok_str(uint32_t image_ok)
 	}
 }
 
+#if CONFIG_ANTI_ROLLBACK
 static int
 boot_version_cmp(const struct image_version *ver1,
                  const struct image_version *ver2)
@@ -77,7 +79,6 @@ boot_version_cmp(const struct image_version *ver1,
     return 0;
 }
 
-#if CONFIG_ANTI_ROLLBACK
 static uint32_t
 find_slot_with_highest_version(struct boot_loader_state *state)
 {

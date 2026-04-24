@@ -305,6 +305,11 @@ void bk_flash_write_cbus(uint32_t address, const uint8_t *user_buf, uint32_t siz
 
 int bk_flash_set_dbus_security_region(uint32_t id, uint32_t start, uint32_t end, bool secure);
 
+uint32_t get_flash_map_offset(uint32_t index);
+uint32_t get_flash_map_size(uint32_t index);
+uint32_t get_flash_map_phy_size(uint32_t index);
+int flash_area_erase_fast(uint32_t erase_off, uint32_t len);
+
 #ifdef __cplusplus
 }
 #endif

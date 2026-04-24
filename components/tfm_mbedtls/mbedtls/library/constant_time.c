@@ -278,7 +278,7 @@ unsigned mbedtls_ct_uint_if( unsigned condition,
  *
  * \return  \c if1 if \p condition is nonzero, otherwise \c if0.
  * */
-static int mbedtls_ct_cond_select_sign( unsigned char condition,
+static __attribute__((unused)) int mbedtls_ct_cond_select_sign( unsigned char condition,
                                         int if1,
                                         int if0 )
 {

@@ -18,11 +18,11 @@
 #include "sdkconfig.h"
 #include "mpu.h"
 #include "aon_pmu_ll.h"
+#include "cache.h"
 
 #define SYSTEM_CLOCK     CONFIG_XTAL_FREQ
 #define PERIPHERAL_CLOCK CONFIG_XTAL_FREQ
 
-#define SOC_MEM_CHECK_REG_BASE          (0x44890000)
 #define EFUSE_WORD                      *((volatile unsigned long *) (SOC_MEM_CHECK_REG_BASE + 0x40 * 4))
 #define EFUSE_WORD_CHECK(mask)          ((EFUSE_WORD & (mask)) ? (mask) : 0)
 #define OTP_EFUSE_BIT_CHECK(mask)       EFUSE_WORD_CHECK(mask)

@@ -20,6 +20,9 @@
 #include "common/bk_err.h"
 #include "bk_tfm_log.h"
 #include "sys_driver.h"
+#if defined(CONFIG_BL2_WDT)
+#include <driver/wdt_hal.h>
+#endif
 
 #define TAG "cmsis_flash"
 
@@ -34,6 +37,7 @@
 #define ARG_UNUSED(arg)  ((void)arg)
 #endif
 
+#if (RTE_FLASH0)
 /* Driver version */
 #define ARM_FLASH_DRV_VERSION      ARM_DRIVER_VERSION_MAJOR_MINOR(1, 1)
 #define ARM_FLASH_DRV_ERASE_VALUE  0xFF
@@ -147,7 +151,6 @@ static int32_t is_flash_ready_to_write(const uint8_t *start_addr, uint32_t cnt)
     return rc;
 }
 
-#if (RTE_FLASH0)
 static ARM_FLASH_INFO ARM_FLASH0_DEV_DATA = {
     .sector_info  = NULL,                  /* Uniform sector layout */
     .sector_count = FLASH0_SIZE / FLASH0_SECTOR_SIZE,

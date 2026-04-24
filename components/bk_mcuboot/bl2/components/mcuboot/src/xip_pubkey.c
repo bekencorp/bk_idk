@@ -141,53 +141,6 @@ static int read_signature_from_slot(uint32_t slot, uint8_t* signature, uint16_t*
     return read_tlv_from_slot(slot, IMAGE_TLV_CUSTOM_PUBKEY_SIG, signature, signature_size);
 }
 
-static int check_slot_has_trust_chain(uint32_t slot_addr, bool *has_a1, bool *has_a2)
-{
-    image_header_t hdr;
-    uint32_t slot0_addr = partition_get_phy_offset(PARTITION_XIP_A);
-    uint32_t slot1_addr = partition_get_phy_offset(PARTITION_XIP_B);
-    uint32_t read_slot_addr = slot_addr;
-    uint32_t slot = 0;
-    bool need_restore_xip = false;
-    
-    // If slot1, use slot0 address and set XIP mode
-    if (slot_addr == slot1_addr) {
-        read_slot_addr = slot0_addr;
-        slot = 1;
-    }
-    
-    uint32_t fa_off = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(read_slot_addr));
-    bk_flash_read_cbus_xip(slot, fa_off, &hdr, sizeof(image_header_t));
-    
-    if (hdr.ih_magic != IMAGE_MAGIC) {
-        return -1;
-    }
-    
-    uint32_t tlv_begin = hdr.ih_hdr_size + hdr.ih_img_size;
-    uint32_t offset = 0;
-    image_tlv_t tlv;
-    *has_a1 = false;
-    *has_a2 = false;
-    
-    while(offset < TLV_TOTAL_SIZE) {
-        bk_flash_read_cbus_xip(slot, fa_off + tlv_begin + offset, (void *)&tlv, sizeof(image_tlv_t));
-        
-        if (tlv.it_type == IMAGE_TLV_PROT_INFO_MAGIC || tlv.it_type == IMAGE_TLV_INFO_MAGIC) {
-            offset += sizeof(image_tlv_t);
-        } else if (tlv.it_type == IMAGE_TLV_CUSTOM_ROOT_PUBKEY) {
-            *has_a1 = true;
-            offset += (sizeof(image_tlv_t) + tlv.it_len);
-        } else if (tlv.it_type == IMAGE_TLV_CUSTOM_PUBKEY_SIG) {
-            *has_a2 = true;
-            offset += (sizeof(image_tlv_t) + tlv.it_len);
-        } else {
-            offset += (sizeof(image_tlv_t) + tlv.it_len);
-        }
-    }
-    
-    return 0;
-}
-
 static int verify_signature_with_bootutil(const uint8_t *data, uint16_t data_len,
                                           const uint8_t *signature, uint16_t signature_len,
                                           const uint8_t *verify_pubkey, uint16_t verify_pubkey_len,
@@ -210,16 +163,16 @@ static int verify_signature_with_bootutil(const uint8_t *data, uint16_t data_len
     const uint8_t *saved_key = bootutil_keys[0].key;
     unsigned int *saved_len = bootutil_keys[0].len;
     
-    bootutil_keys[0].key = verify_pubkey;
+    bootutil_keys[0].key = (uint8_t *)(uintptr_t)verify_pubkey;
     pub_key_len = (unsigned int)verify_pubkey_len;
     bootutil_keys[0].len = &pub_key_len;
     
     FIH_CALL(bootutil_verify_sig, fih_rc,
              data_hash, sizeof(data_hash),
-             signature, signature_len, 0);
+             (uint8_t *)(uintptr_t)signature, signature_len, 0);
     
     // Restore bootutil_keys[0]
-    bootutil_keys[0].key = saved_key;
+    bootutil_keys[0].key = (uint8_t *)(uintptr_t)saved_key;
     pub_key_len = saved_pub_key_len;
     bootutil_keys[0].len = saved_len;
     
@@ -258,42 +211,6 @@ typedef struct {
 } image_tlv_info_t;
 #endif
 
-
-typedef struct {
-	uint8_t crc;
-} CRC8_Context;
-
-static uint8_t UpdateCRC8(uint8_t crcIn, uint8_t byte)
-{
-	uint8_t crc = crcIn;
-	uint8_t i;
-
-	crc ^= byte;
-
-	for (i = 0; i < 8; i++) {
-		if (crc & 0x01) {
-			crc = (crc >> 1) ^ 0x8C;
-		} else {
-			crc >>= 1;
-		}
-	}
-	return crc;
-}
-
-static void CRC8_Init( CRC8_Context *inContext )
-{
-    inContext->crc = 0;
-}
-
-static void CRC8_Update( CRC8_Context *inContext, const void *inSrc, size_t inLen )
-{
-	const uint8_t *src = (const uint8_t *) inSrc;
-	const uint8_t *srcEnd = src + inLen;
-	while ( src < srcEnd ) {
-		inContext->crc = UpdateCRC8(inContext->crc, *src++);
-	}
-}
-
 extern unsigned int pub_key_len;
 
 static bool key_is_equal(uint8_t *key1, uint16_t key1_len, uint8_t *key2, uint16_t key2_len)
@@ -318,7 +235,6 @@ bk_find_key(uint8_t image_index, uint8_t *key, uint16_t key_len, uint32_t curren
     uint32_t running_slot = boot_read_running_slot();
     uint32_t verifying_slot = addr_to_slot(current_slot_addr);
     int ret;
-    FIH_DECLARE(fih_rc, FIH_FAILURE);
 
     BOOT_LOG_DBG("verifying slot: %s, running slot: %s", slot_str(verifying_slot), slot_str(running_slot));
     ret = read_pubkey_from_slot(verifying_slot, key, &key_len);
