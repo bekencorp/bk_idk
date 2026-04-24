@@ -23,17 +23,29 @@
 
 uint32_t adc_hal_get_temp_code_dft_25degree(void)
 {
-    return 8505;
+    if (sys_hal_get_temp_mode_flag() == 0) {
+        return 8505;
+    } else {
+        return 5505;
+    }
 }
 
 uint32_t adc_hal_get_temp_code_dft_threshold(void)
 {
-    return 800;
+    if (sys_hal_get_temp_mode_flag() == 0) {
+        return 800;
+    } else {
+        return 520;
+    }
 }
 
 uint32_t adc_hal_get_temp_lsb_per_10degree(void)
 {
-    return 580;
+    if (sys_hal_get_temp_mode_flag() == 0) {
+        return 580;
+    } else {
+        return 332;
+    }
 }
 
 uint32_t adc_hal_get_1Volt_value(void)

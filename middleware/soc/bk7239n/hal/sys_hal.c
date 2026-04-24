@@ -1197,13 +1197,20 @@ __IRAM_SEC void sys_hal_en_tempdet(uint32_t value)
 
 void sys_hal_set_temp_mode(bool high_volt_mode)
 {
-    uint32_t reg_val = sys_ana_ll_get_reg4_value();
     if (high_volt_mode) {
-        reg_val &= ~(0x01);
+        sys_ana_ll_set_ana_reg4_temp_gsel(0);
     } else {
-        reg_val |= 0x01;
+        sys_ana_ll_set_ana_reg4_temp_gsel(1);
     }
-    sys_ana_ll_set_reg4_value(reg_val);
+}
+
+uint32_t sys_hal_get_temp_mode_flag(void)
+{
+    UINT32 ret = 0;
+
+    ret = sys_ana_ll_get_ana_reg4_temp_gsel();
+
+    return ret;
 }
 
 uint32_t sys_hal_mclk_mux_get(void)

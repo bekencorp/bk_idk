@@ -43,7 +43,7 @@
 #define ADC_TMEP_LSB_PER_10DEGREE                   (580)   // todo: check the value
 #else
 #define ADC_TEMP_CODE_DFT_25DEGREE                  (5505)  // todo: check the value
-#define ADC_TMEP_LSB_PER_10DEGREE                   (375)   // todo: check the value
+#define ADC_TMEP_LSB_PER_10DEGREE                   (332)   // 20260408,375->332,from Shuguang;
 #endif
 #define ADC_TEMP_VAL_MIN                            (10)
 #define ADC_TEMP_VAL_MAX                            (0x3FFF) //for ana_reg5_adc_div=1/3

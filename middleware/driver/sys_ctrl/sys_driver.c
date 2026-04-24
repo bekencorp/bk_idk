@@ -94,6 +94,17 @@ void sys_drv_set_temp_mode(bool high_volt_mode)
     sys_hal_set_temp_mode(high_volt_mode);
     sys_drv_exit_critical(int_level);
 }
+
+uint32_t sys_drv_get_temp_mode_flag(void)
+{
+	uint32_t ret = 0;
+	uint32_t int_level = sys_drv_enter_critical();
+
+	ret = sys_hal_get_temp_mode_flag();
+	sys_drv_exit_critical(int_level);
+
+	return ret;
+}
 /**  Platform End **/
 
 uint32_t sys_drv_get_cpu_storage_connect_op_select_flash_sel(void)

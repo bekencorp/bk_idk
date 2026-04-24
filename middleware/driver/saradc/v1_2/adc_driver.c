@@ -1115,11 +1115,11 @@ float temperature_calculate(UINT16 adc_val)
     #else
     if (cali_temp_val >= adc_val)
     {
-        practical_temperature = 25 + (cali_temp_val - adc_val) * 10 / cali_temp_step;
+        practical_temperature = 25 + ((cali_temp_val - adc_val) * 10 + (cali_temp_step / 2)) / cali_temp_step;
     }
     else
     {
-        practical_temperature = 25 - (adc_val - cali_temp_val) * 10 / cali_temp_step;
+        practical_temperature = 25 - ((adc_val - cali_temp_val) * 10 + (cali_temp_step / 2)) / cali_temp_step;
     }
     #endif
 
@@ -1210,6 +1210,11 @@ UINT32 saradc_set_calibrate_val(uint16_t *value, SARADC_MODE mode)
         dft_value = bk_adc_get_temp_code_dft_25degree();
         if ((dft_value <= *value + threshold) && (*value <= dft_value + threshold)) {
             data->sadc_cali_val[mode] = *value;
+        } else {
+            int32_t low_limit = (int32_t)dft_value - (int32_t)threshold;
+            int32_t high_limit = (int32_t)dft_value + (int32_t)threshold;
+            ADC_LOGW("temp code25 drop in=%u range=[%d,%d] dft=%u thr=%u\r\n",
+                     *value, low_limit, high_limit, dft_value, threshold);
         }
     } else {
         data->sadc_cali_val[mode] = *value;
