@@ -130,7 +130,7 @@ static bk_err_t bk_sensor_load_adc_cali_value(void)
     uint16_t vol_values[3];
     uint16_t temp_values[4];
     uint8_t data[72];
-    result = bk_otp_ahb_read(OTP_GADC_CALIBRATION, data, sizeof(data));
+    result = bk_otp_ahb_read_backup(OTP_GADC_CALIBRATION, data, NULL);
     if (result != BK_OK) {
         BK_LOGW(TAG, "read otp calibration data failed\r\n");
         goto LOAD_SDMADC;
