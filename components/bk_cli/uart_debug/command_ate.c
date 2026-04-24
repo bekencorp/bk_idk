@@ -146,6 +146,7 @@ extern UINT32 rs_test_for_mbp(UINT32 channel, wifi_band_t band, UINT32 mode);
 extern UINT32 evm_channel_to_frequency(UINT32 channel, wifi_band_t band);
 extern UINT32 rs_test_for_mbp_with_frequency(UINT32 frequency, wifi_band_t band, UINT32 mode);
 extern RF_MODE rwnx_cal_set_rfband(wifi_band_t rf_band, RF_MODE rf_mode);
+extern RF_MODE rwnx_cal_set_rfconfig(RF_MODE rf_mode);
 extern int bk_set_spectial_channel_for_ate(uint32_t frequency);
 extern void bk_revert_spectial_channel_for_ate(void);
 
@@ -340,7 +341,6 @@ void send_chip_id(void)
     tx_buffer[2] = (chip_id >> 8) & 0x00FF;
     tx_buffer[3] = chip_id & 0x00FF;
     uart_send_bytes_for_ate(tx_buffer, 4);
-
 }
 
 void send_flash_id(void)
@@ -1398,7 +1398,11 @@ static int per_test(uint32_t bandwidth, uint32_t frequency, uint32_t duration, u
     UINT32 stat_reset = 1;
     UINT8 tx_buffer[8] = {0};
 
+    #if CONFIG_SOC_BK7239XX
     rwnx_cal_set_rfband(band, rf_mode);
+    #elif CONFIG_SOC_BK7236N
+    rwnx_cal_set_rfconfig(rf_mode);
+    #endif
 
     ret = rs_test_for_mbp_with_frequency(frequency, band, bandwidth);
     if (ret)
@@ -2875,7 +2879,11 @@ int bkreg_run_command1(unsigned char *content, int cnt)
             {
                 /* BLE DUT */
                 evm_stop_bypass_mac();
+                #if CONFIG_SOC_BK7239XX
                 rwnx_cal_set_rfband(IEEE80211_BAND_2GHZ, RF_WIFI_WIFIPLL_MODE);
+                #elif CONFIG_SOC_BK7236N
+                rwnx_cal_set_rfconfig(RF_WIFI_WIFIPLL_MODE);
+                #endif
                 ble_dut_start(CONFIG_UART_PRINT_PORT);
                 break;
             }
