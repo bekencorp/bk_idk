@@ -49,9 +49,9 @@ float target_pwr_ax20 = 14.0; //2G4 N20 target power
 int8_t g_dif_g_n20 = 4;  //differ between g and n20
 int8_t g_dif_g_ax20 = 4; //differ between g and ax20
 int8_t g_dif_g_n40 = 2;  //differ between g and n40
-int8_t g_dif_g_ble_ch0 = 0;
-int8_t g_dif_g_ble_ch19 = 0;
-int8_t g_dif_g_ble_ch39 = 0;
+int8_t g_dif_g_ble_ch0 = -4;
+int8_t g_dif_g_ble_ch19 = -4;
+int8_t g_dif_g_ble_ch39 = -4;
 #else
 /**
  * target power of all format:
@@ -334,9 +334,9 @@ const TXPWR_CAL_ST gtxpwr_tab_def_g[TXPWR_CAL_2G_MAX] = {
 };
 
 const TXPWR_CAL_ST gtxpwr_tab_def_ble[TXPWR_CAL_2G_MAX] = {
-    INIT_TXPWR_VALUE(1, 51),  // ch0 2402  inused
-    INIT_TXPWR_VALUE(20, 47),  // ch19 2440 inused
-    INIT_TXPWR_VALUE(40, 46),  // ch39 2480 inused
+    INIT_TXPWR_VALUE(1, 90),  // ch0 2402  inused
+    INIT_TXPWR_VALUE(20, 88),  // ch19 2440 inused
+    INIT_TXPWR_VALUE(40, 87),  // ch39 2480 inused
 };
 
 /****************************** temperature table  ****************************/

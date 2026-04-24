@@ -347,29 +347,27 @@ uint32_t sys_hal_lp_vol_get()
 int32 sys_hal_rf_tx_vol_set(uint32_t value)
 {
 	sys_ll_set_ana_reg8_spi_latch1v(1);
-	// sys_ll_set_ana_reg7_t_vanaldosel(value);
+	sys_ana_ll_set_ana_reg7_vanaldosel(value);
 	sys_ll_set_ana_reg8_spi_latch1v(0);
 	return 0;
 }
 
 uint32_t sys_hal_rf_tx_vol_get()
 {
-	// return sys_ll_get_ana_reg7_t_vanaldosel();
-	return 0;
+	return sys_ana_ll_get_ana_reg7_vanaldosel();
 }
 
 int32 sys_hal_rf_rx_vol_set(uint32_t value)
 {
 	sys_ll_set_ana_reg8_spi_latch1v(1);
-	// sys_ll_set_ana_reg7_r_vanaldosel(value);
+	sys_ana_ll_set_ana_reg7_vanaldosel(value);
 	sys_ll_set_ana_reg8_spi_latch1v(0);
 	return 0;
 }
 
 uint32_t sys_hal_rf_rx_vol_get()
 {
-	// return sys_ll_get_ana_reg7_r_vanaldosel();
-	return 0;
+	return sys_ana_ll_get_ana_reg7_vanaldosel();
 }
 
 int32 sys_hal_bandgap_cali_set(uint32_t value)//increase or decrease the dvdddig voltage

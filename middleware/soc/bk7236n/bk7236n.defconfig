@@ -789,6 +789,11 @@ CONFIG_SDMADC=n
 CONFIG_VOLT_DETECT=y
 # end of sensor_detect
 
+# phy log switch
+#
+CONFIG_PHY_LOG_ENABLE=y
+#
+
 #
 # Tfm
 #
