@@ -483,6 +483,14 @@ macro(project project_name)
 
     target_link_libraries(${project_elf} ${build_components})
 
+    # properties_libs generates an analysis ELF (not a bootable image).
+    # Set a synthetic entry symbol from the generated dummy source to
+    # avoid ld warning about missing default "_start".
+    string(FIND "${CMAKE_SOURCE_DIR}" "properties_libs" _is_properties_libs_project)
+    if(NOT _is_properties_libs_project EQUAL -1)
+        target_link_libraries(${project_elf} "-Wl,-e,build_version")
+    endif()
+
     set(mapfile "${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}.map")
     if (CMAKE_HOST_WIN32)
         target_link_libraries(${project_elf} "-Wl,--cref -Wl,--print-memory-usage,--Map=${mapfile}")

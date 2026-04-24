@@ -396,6 +396,11 @@ void bk_flash_read_cbus(uint32_t address, void *user_buf, uint32_t size);
 void bk_flash_write_cbus(uint32_t address, const uint8_t *user_buf, uint32_t size);
 
 uint32_t flash_get_excute_enable();
+void flash_set_xip_offset(uint32_t primary_start, uint32_t secondary_start, uint32_t code_size);
+int flash_area_erase_fast(uint32_t erase_off, uint32_t len);
+uint32_t get_flash_map_offset(uint32_t index);
+uint32_t get_flash_map_size(uint32_t index);
+uint32_t get_flash_map_phy_size(uint32_t index);
 
 #ifdef __cplusplus
 }

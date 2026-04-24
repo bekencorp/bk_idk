@@ -48,9 +48,14 @@ def add_aes_to_all_bin(pack_dir: Path, pack_json: Path):
     with pack_json.open("r") as f:
         pack_data = json.load(f)
     
+    aes_enable = bool(pack_data.get("aes_enable", False))
     aes_key = pack_data.get("aes_key")
+    if not aes_enable:
+        logger.info("aes_enable is false in pack_json, skip AES encryption")
+        return
+
     if not aes_key:
-        logger.warning("aes_key not found or empty in pack_json when aes_enable is true, skip AES encryption")
+        logger.warning("aes_enable is true but aes_key not found or empty in pack_json, skip AES encryption")
         return
     
     aes_tool = get_flash_aes_tool()
@@ -79,10 +84,6 @@ def add_aes_to_all_bin(pack_dir: Path, pack_json: Path):
         shutil.copy2(bin_file, output_origin_bin)
         logger.debug(f"Backed up origin file to {output_origin_bin}")
         
-        if "aes_enable" not in pack_data or not pack_data["aes_enable"]:
-            logger.debug("aes_enable is false in pack_json, skip encryption")
-            continue
-
         logger.info(f"Encrypting {firmware} with start_addr={start_addr}")
         cmd = f'python3 {aes_tool} encrypt -infile {bin_file} -keywords {aes_key} -aes 128 -outfile {bin_file} -startaddress {start_addr}'
         run_cmd_not_check_ret(cmd)
