@@ -2561,6 +2561,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
             {
                 /* BLE DUT */
                 evm_stop_bypass_mac();
+                rwnx_cal_set_rfband(IEEE80211_BAND_2GHZ, RF_WIFI_WIFIPLL_MODE);
                 ble_dut_start(CONFIG_UART_PRINT_PORT);
                 break;
             }
