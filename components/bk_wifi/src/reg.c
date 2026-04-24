@@ -1637,6 +1637,192 @@ disable_chan:
 				   request_wiphy, rrule);
 }
 
+static const struct ieee80211_reg_rule *
+__regd_freq_reg_info(struct wiphy *wiphy, struct ieee80211_regdomain *regd,
+		u32 center_freq, u32 min_bw, int *ret)
+{
+	static const u32 bws[] = {0, 1, 2, 4, 5, 8, 10, 16, 20};
+	const struct ieee80211_reg_rule *reg_rule = NULL;
+	int i = ARRAY_SIZE(bws) - 1;
+	u32 bw;
+
+	for (bw = MHZ_TO_KHZ(bws[i]); bw >= min_bw; bw = MHZ_TO_KHZ(bws[i--])) {
+		reg_rule = freq_reg_info_regd(center_freq, regd, bw, ret);
+		if (reg_rule)
+			return reg_rule;
+	}
+
+	return reg_rule;
+}
+
+const struct ieee80211_reg_rule *regd_freq_reg_info(struct wiphy *wiphy, struct ieee80211_regdomain *regd,
+					       u32 center_freq, int *ret)
+{
+	u32 min_bw = center_freq < MHZ_TO_KHZ(1000) ? 1 : 20;
+
+	return __regd_freq_reg_info(wiphy, regd, center_freq, MHZ_TO_KHZ(min_bw), ret);
+}
+
+
+static bool __regd_chan_available(struct wiphy *wiphy, struct ieee80211_regdomain *regd, struct ieee80211_channel *chan)
+{
+	const u32 orig_chan_freq = ieee80211_channel_to_khz(chan);
+	// struct wiphy *request_wiphy = wiphy_idx_to_wiphy(last_request->wiphy_idx);
+	const struct ieee80211_reg_rule *rrule = NULL;
+	const struct ieee80211_reg_rule *rrule1 = NULL;
+	const struct ieee80211_reg_rule *rrule2 = NULL;
+	int ret;
+
+	rrule = regd_freq_reg_info(wiphy, regd, orig_chan_freq, &ret);
+	if (!rrule) {
+		int dummy1, dummy2;
+		/* check for adjacent match, therefore get rules for
+		 * chan - 20 MHz and chan + 20 MHz and test
+		 * if reg rules are adjacent
+		 */
+		rrule1 = regd_freq_reg_info(wiphy, regd,
+					   orig_chan_freq - MHZ_TO_KHZ(20), &dummy1);
+		rrule2 = regd_freq_reg_info(wiphy, regd,
+					   orig_chan_freq + MHZ_TO_KHZ(20), &dummy2);
+		if (rrule1 && rrule2) {
+			struct ieee80211_freq_range comb_range;
+
+			if (rrule1->freq_range.end_freq_khz !=
+				rrule2->freq_range.start_freq_khz) {
+				goto disable_chan;
+			}
+
+			comb_range.start_freq_khz =
+				rrule1->freq_range.start_freq_khz;
+			comb_range.end_freq_khz =
+				rrule2->freq_range.end_freq_khz;
+			comb_range.max_bandwidth_khz =
+				min_t(u32,
+					  rrule1->freq_range.max_bandwidth_khz,
+					  rrule2->freq_range.max_bandwidth_khz);
+
+			if (!cfg80211_does_bw_fit_range(&comb_range,
+							orig_chan_freq,
+							MHZ_TO_KHZ(20))) {
+				goto disable_chan;
+			}
+
+			return true;
+		}
+
+disable_chan:
+		/* We will disable all channels that do not match our
+		 * received regulatory rule unless the hint is coming
+		 * from a Country IE and the Country IE had no information
+		 * about a band. The IEEE 802.11 spec allows for an AP
+		 * to send only a subset of the regulatory rules allowed,
+		 * so an AP in the US that only supports 2.4 GHz may only send
+		 * a country IE with information for the 2.4 GHz band
+		 * while 5 GHz is still supported.
+		 */
+		if (ret == -ERANGE)
+			return true;
+
+		return false;
+	}
+
+	// Found reg rule
+	return true;
+}
+
+static struct ieee80211_regdomain *regdb_get_country(const struct fwdb_header *db,
+			       const struct fwdb_country *country)
+{
+	unsigned int ptr = be16_to_cpu(country->coll_ptr) << 2;
+	struct fwdb_collection *coll = (void *)((u8 *)db + ptr);
+	struct ieee80211_regdomain *regdom;
+	unsigned int i;
+	int size_of_regd = 0;
+
+	size_of_regd = sizeof(struct ieee80211_regdomain) +
+			((coll->n_rules + 1) * sizeof(struct ieee80211_reg_rule));
+
+	regdom = os_zalloc(size_of_regd);
+	if (!regdom)
+		return NULL;
+
+	regdom->n_reg_rules = coll->n_rules;
+	regdom->alpha2[0] = country->alpha2[0];
+	regdom->alpha2[1] = country->alpha2[1];
+	regdom->dfs_region = coll->dfs_region;
+
+	for (i = 0; i < regdom->n_reg_rules; i++) {
+		__be16 *rules_ptr = (void *)((u8 *)coll + round_up(coll->len, 2));
+		unsigned int rule_ptr = be16_to_cpu(rules_ptr[i]) << 2;
+		struct fwdb_rule *rule = (void *)((u8 *)db + rule_ptr);
+		struct ieee80211_reg_rule *rrule = &regdom->reg_rules[i];
+
+		rrule->freq_range.start_freq_khz = be32_to_cpu(rule->start);
+		rrule->freq_range.end_freq_khz = be32_to_cpu(rule->end);
+		rrule->freq_range.max_bandwidth_khz = be32_to_cpu(rule->max_bw);
+
+		rrule->power_rule.max_antenna_gain = 0;
+		rrule->power_rule.max_eirp = be16_to_cpu(rule->max_eirp);
+
+		rrule->flags = 0;
+		if (rule->flags & FWDB_FLAG_NO_OFDM)
+			rrule->flags |= NL80211_RRF_NO_OFDM;
+		if (rule->flags & FWDB_FLAG_NO_OUTDOOR)
+			rrule->flags |= NL80211_RRF_NO_OUTDOOR;
+		if (rule->flags & FWDB_FLAG_DFS)
+			rrule->flags |= NL80211_RRF_DFS;
+		if (rule->flags & FWDB_FLAG_NO_IR)
+			rrule->flags |= NL80211_RRF_NO_IR;
+		if (rule->flags & FWDB_FLAG_AUTO_BW)
+			rrule->flags |= NL80211_RRF_AUTO_BW;
+
+		rrule->dfs_cac_ms = 0;
+
+		/* handle optional data */
+		if (rule->len >= offsetofend(struct fwdb_rule, cac_timeout))
+			rrule->dfs_cac_ms =
+				1000 * be16_to_cpu(rule->cac_timeout);
+#if CONFIG_WIFI_REGDOMAIN_WMM
+		if (rule->len >= offsetofend(struct fwdb_rule, wmm_ptr))
+			set_wmm_rule(db, country, rule, rrule);
+#endif
+	}
+
+	return regdom;
+}
+
+bool regd_chan_available(int freq, const char *alpha2)
+{
+	struct wiphy *wiphy =&g_wiphy;
+	struct ieee80211_regdomain *regdom;
+	struct ieee80211_channel *chan = ieee80211_get_channel(wiphy, freq);
+	const struct fwdb_header *hdr = regdb;
+	const struct fwdb_country *country;
+	bool ret = false;
+
+	if (!chan) {
+		WIFI_LOGE("not support freq %d\n", freq);
+		return false;
+	}
+
+	country = &hdr->country[0];
+	while (country->coll_ptr) {
+		if (alpha2_equal(alpha2, (char *)country->alpha2)) {
+			regdom = regdb_get_country(regdb, country);
+			if (!regdom) {
+				WIFI_LOGE("OOM\n");
+				return false;
+			}
+			ret = __regd_chan_available(wiphy, regdom, chan);
+			os_free(regdom);
+			return ret;
+		}
+		country++;
+	}
+
+	return ret;
+}
+
 static void handle_band(struct wiphy *wiphy,
 			enum nl80211_reg_initiator initiator,
 			struct ieee80211_supported_band *sband)
