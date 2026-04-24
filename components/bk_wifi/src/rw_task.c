@@ -515,11 +515,14 @@ int bmsg_special_tx_sender(struct pbuf *p, uint32_t vif_idx)
 	msg.cb = NULL;
 	msg.param = NULL;
 
-	pbuf_ref(p);
+	if (p)
+		pbuf_ref(p);
+
 	ret = rtos_push_to_queue(&g_wifi_core.io_queue, &msg, 1 * SECONDS);
 	if (kNoErr != ret) {
 		RWNX_LOGW("bmsg_tx_sender failed, ret=%d\n", ret);
-		pbuf_ref(p);
+		if (p)
+			pbuf_free(p);
 	}
 
 	return ret;
