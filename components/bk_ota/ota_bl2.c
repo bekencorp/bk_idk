@@ -1,7 +1,7 @@
 #include <string.h>
 #include <stdint.h>
 #include "ota_bl2.h"
-#include "ota.h"
+#include "modules/ota.h"
 #include <driver/flash.h>
 #include "sdkconfig.h"
 #include "partitions_gen.h"

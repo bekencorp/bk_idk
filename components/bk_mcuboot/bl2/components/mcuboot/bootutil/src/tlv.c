@@ -33,7 +33,7 @@
  * @param prot true if TLV has to be stored in the protected area, false otherwise
  *
  * @returns 0 if the TLV iterator was successfully started
- *          -1 on errors
+ *          BOOT_TLV_BEGIN_ERR_* (negative) on errors; see bootutil/image.h
  */
 int
 bootutil_tlv_iter_begin(struct image_tlv_iter *it, const struct image_header *hdr,
@@ -43,29 +43,29 @@ bootutil_tlv_iter_begin(struct image_tlv_iter *it, const struct image_header *hd
     struct image_tlv_info info;
 
     if (it == NULL || hdr == NULL || fap == NULL) {
-        return -1;
+        return BOOT_TLV_BEGIN_ERR_INVAL;
     }
 
     off_ = BOOT_TLV_OFF(hdr);
     if (LOAD_IMAGE_DATA(hdr, fap, off_, &info, sizeof(info))) {
-        return -1;
+        return BOOT_TLV_BEGIN_ERR_LOAD_INFO;
     }
 
     if (info.it_magic == IMAGE_TLV_PROT_INFO_MAGIC) {
         if (hdr->ih_protect_tlv_size != info.it_tlv_tot) {
-            return -1;
+            return BOOT_TLV_BEGIN_ERR_PROT_SIZE;
         }
 
         if (LOAD_IMAGE_DATA(hdr, fap, off_ + info.it_tlv_tot,
                             &info, sizeof(info))) {
-            return -1;
+            return BOOT_TLV_BEGIN_ERR_LOAD_INFO2;
         }
     } else if (hdr->ih_protect_tlv_size != 0) {
-        return -1;
+        return BOOT_TLV_BEGIN_ERR_HDR_PROT;
     }
 
     if (info.it_magic != IMAGE_TLV_INFO_MAGIC) {
-        return -1;
+        return BOOT_TLV_BEGIN_ERR_BAD_MAGIC;
     }
 
     it->hdr = hdr;

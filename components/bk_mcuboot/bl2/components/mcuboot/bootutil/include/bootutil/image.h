@@ -173,6 +173,14 @@ struct image_tlv_iter {
     uint32_t tlv_end;
 };
 
+/* bootutil_tlv_iter_begin() negative error codes; 0 means success. */
+#define BOOT_TLV_BEGIN_ERR_INVAL          (-1) /* NULL iterator, header, or flash area */
+#define BOOT_TLV_BEGIN_ERR_LOAD_INFO      (-2) /* LOAD_IMAGE_DATA failed at BOOT_TLV_OFF */
+#define BOOT_TLV_BEGIN_ERR_PROT_SIZE      (-3) /* ih_protect_tlv_size != protected it_tlv_tot */
+#define BOOT_TLV_BEGIN_ERR_LOAD_INFO2     (-4) /* LOAD_IMAGE_DATA failed after protected TLV */
+#define BOOT_TLV_BEGIN_ERR_HDR_PROT       (-5) /* ih_protect_tlv_size != 0 but no PROT magic */
+#define BOOT_TLV_BEGIN_ERR_BAD_MAGIC      (-6) /* Missing IMAGE_TLV_INFO_MAGIC */
+
 int bootutil_tlv_iter_begin(struct image_tlv_iter *it,
                             const struct image_header *hdr,
                             const struct flash_area *fap, uint16_t type,

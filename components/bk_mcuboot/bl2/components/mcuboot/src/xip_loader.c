@@ -257,7 +257,6 @@ boot_load_and_validate_images(struct boot_loader_state *state)
         if (preferred_slot == NO_ACTIVE_SLOT) {
             BOOT_LOG_ERR("both A/B invalid");
             FIH_RET(FIH_FAILURE);
-            break;
         }
  
         slot_retry_count[preferred_slot]++;
