@@ -854,6 +854,29 @@ static void evm_test(UINT32 rate, UINT32 frequency, UINT32 bandwidth, UINT32 mod
     packet_len = 1;
     packet_len = packet_len * 100;
 
+    // 11AX packet_len is 200
+    if (modul_format == 5) {
+        if (rate == 137) {
+            packet_len = 3117;  // 11AX MCS9 packet_len
+        } else {
+            packet_len = 200;
+        }
+    }
+
+    if (rate == 54) {
+        packet_len = 429;  // 11a/g/n20 54Mbps packet_len
+    }
+
+    if (rate == 135) {
+        if (modul_format == 2) {
+            if (bandwidth == PHY_CHNL_BW_40) {
+                packet_len = 1077;  // 11n40 MCS7 packet_len
+            }
+        }
+    }
+
+    bk_printf("packet_len=%d\r\n", packet_len);
+
     evm_bypass_mac_set_rate_mformat(rate, modul_format);
     evm_set_bandwidth(bandwidth);
 
