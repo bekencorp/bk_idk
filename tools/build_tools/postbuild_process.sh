@@ -12,6 +12,9 @@ WRITE_PRODUCT_ID_SCRIPT="${ARMINO_DIR}/tools/build_tools/write_product_id.py"
 ALL_APP_BIN="${BUILD_DIR}/package/all-app.bin"
 # Read product_id from bootloader.bin file (read 16 bytes from 0x118 offset)
 BOOTLOADER_BIN="${ARMINO_DIR}/components/bk_libs/${ARMINO_SOC}/bootloader/normal_bootloader/bootloader.bin"
+if [ "${PROJECT_NAME:-}" = "ate_mini_code" ] || [ "${PROJECT:-}" = "ate_mini_code" ]; then
+	BOOTLOADER_BIN="${ARMINO_DIR}/components/bk_libs/${ARMINO_SOC}/bootloader/ate_bootloader/bootloader.bin"
+fi
 
 # Check if required files exist
 if [ ! -f "${WRITE_PRODUCT_ID_SCRIPT}" ]; then
@@ -25,8 +28,8 @@ fi
 
 # Check if bootloader.bin exists
 if [ ! -f "${BOOTLOADER_BIN}" ]; then
-    echo "Error: bootloader.bin not found at ${BOOTLOADER_BIN}"
-    exit 1
+	echo "Error: bootloader.bin not found at ${BOOTLOADER_BIN}"
+	exit 1
 fi
 
 PRODUCT_BYTES=$(dd if="${BOOTLOADER_BIN}" bs=1 skip=$((0x108)) count=16 2>/dev/null | xxd -p -c 16)
@@ -34,8 +37,8 @@ PRODUCT_BYTES=$(dd if="${BOOTLOADER_BIN}" bs=1 skip=$((0x108)) count=16 2>/dev/n
 PRODUCT_STRING=$(echo "${PRODUCT_BYTES:0:30}" | sed 's/../& /g' | xxd -r -p | tr -d '\0')
 
 if [ -z "${PRODUCT_STRING}" ]; then
-    echo "Product ID is empty in ${BOOTLOADER_BIN}"
-    exit 0
+	echo "Product ID is empty in ${BOOTLOADER_BIN}"
+	exit 0
 fi
 
 # Trim whitespace

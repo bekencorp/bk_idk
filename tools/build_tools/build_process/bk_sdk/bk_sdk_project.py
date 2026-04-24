@@ -95,7 +95,10 @@ class bk_sdk_project(bk_project):
             / self._project_info.soc_name
             / "bootloader"
         )
-        if self.is_ab_project:
+        # Check if this is an ATE project
+        if self._project_info.project_name == "ate_mini_code":
+            dirname = "ate_bootloader"
+        elif self.is_ab_project:
             dirname = "ab_bootloader"
         else:
             dirname = "normal_bootloader"
@@ -107,7 +110,10 @@ class bk_sdk_project(bk_project):
         bootloader_propertites_path = (
             self.sdk_path / "properties/modules/bootloader/aboot"
         )
-        if self.is_ab_project:
+        # Check if this is an ATE project
+        if self._project_info.project_name == "ate_mini_code":
+            dirname = "arm_bootloader_ate"
+        elif self.is_ab_project:
             dirname = "arm_bootloader_ab"
         else:
             dirname = "arm_bootloader"
