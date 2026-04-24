@@ -124,12 +124,21 @@ static uint32_t htol_test_working_days_delta = 0;
 static uint32_t htol_get_working_days(void)
 {
 	static struct timeval htol_test_start_time   = {0};
+	static uint32_t htol_test_start_days         = 0xffffffff;
 	static uint32_t htol_test_working_days_now   = 0;
 	static uint32_t htol_test_working_days_last  = 0;
 
 	bk_rtc_gettimeofday(&htol_test_start_time, 0);
 
 	htol_test_working_days_now   = htol_test_start_time.tv_sec / HTOL_SECEND_PER_DAY;
+
+	if (htol_test_start_days == 0xffffffff) {
+		htol_test_start_days = htol_test_working_days_now;
+		htol_test_working_days_now = 0;
+	} else {
+		htol_test_working_days_now -= htol_test_start_days;
+	}
+
 	htol_test_working_days_delta = htol_test_working_days_now - htol_test_working_days_last;
 	if (htol_test_working_days_delta >= 1) {
 		RF_TEST_LOGW("SIGNIFY HTOL TEST GO %d days\n", htol_test_working_days_now);

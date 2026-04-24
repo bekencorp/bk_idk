@@ -1,0 +1,7 @@
+menu "Project specific config"
+
+config HTOL_RELIABILITY_TEST
+	bool "Enable HTOL test"
+	default n
+
+endmenu

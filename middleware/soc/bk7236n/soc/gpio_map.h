@@ -255,18 +255,17 @@ struct {\
 #if CONFIG_GPIO_ATE_TEST
 #define GPIO_ATE_TEST_CONFIG \
 {\
-	{2, {GPIO_6, GPIO_8, 0xff}},\
-	{2, {GPIO_19, GPIO_16, 0xff}},\
-	{2, {GPIO_1, GPIO_7, 0xff}},\
-	{2, {GPIO_5, GPIO_3, 0xff}},\
-	{2, {GPIO_0, GPIO_20, 0xff}},\
-	{3, {GPIO_4, GPIO_9, GPIO_21}},\
+	{2, {GPIO_6,  GPIO_8,  0xff}},\
+	{2, {GPIO_19, GPIO_12, 0xff}},\
+	{2, {GPIO_1,  GPIO_7,  0xff}},\
+	{2, {GPIO_5,  GPIO_3,  0xff}},\
+	{3, {GPIO_4,  GPIO_9,  GPIO_21}},\
 }
 
 #define GPIO_ATE_TEST_LIST \
 {\
-	GPIO_0, GPIO_1, GPIO_3, GPIO_4, GPIO_5, GPIO_6, GPIO_7, GPIO_8, GPIO_9,\
-	GPIO_16, GPIO_19, GPIO_20, GPIO_21,\
+	GPIO_1, GPIO_3, GPIO_4, GPIO_5, GPIO_6, GPIO_7, GPIO_8, GPIO_9,\
+	GPIO_12, GPIO_19, GPIO_21,\
 }
 #endif /* CONFIG_GPIO_ATE_TEST */
 
