@@ -2788,7 +2788,7 @@ void  sys_hal_set_cpu_cp_test_config(uint32_t cfg_id)
 
 		// sram rate 3
 		sys_ll_set_cpu_power_sleep_wakeup_share_mem_clkgating_disable(0x1);
-		sys_ll_set_cpu_device_mem_ctrl3_ram_config(0x233);
+		sys_ll_set_cpu_device_mem_ctrl3_ram_config(0x223);
 		sys_ll_set_cpu_power_sleep_wakeup_share_mem_clkgating_disable(0x0);
 
 		break;
