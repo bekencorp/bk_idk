@@ -39,10 +39,10 @@
 #if (CONFIG_SOC_BK7239XX)|| (CONFIG_SOC_BK7236N)
 #define ADC_TEMP_BUFFER_SIZE                        (5+5)//(+5 for skip)
 #if CONFIG_TEMPERATURE_HIGH_VOLT
-#define ADC_TEMP_CODE_DFT_25DEGREE                  (8505)  // todo: check the value
+#define ADC_TEMP_CODE_DFT_25DEGREE                  (8468)  // 20260409,8505->8468,from Haogang;
 #define ADC_TMEP_LSB_PER_10DEGREE                   (580)   // todo: check the value
 #else
-#define ADC_TEMP_CODE_DFT_25DEGREE                  (5505)  // todo: check the value
+#define ADC_TEMP_CODE_DFT_25DEGREE                  (5325)  // 20260409,5505->5325,from Haogang;
 #define ADC_TMEP_LSB_PER_10DEGREE                   (332)   // 20260408,375->332,from Shuguang;
 #endif
 #define ADC_TEMP_VAL_MIN                            (10)

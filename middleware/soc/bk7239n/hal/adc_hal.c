@@ -24,9 +24,9 @@
 uint32_t adc_hal_get_temp_code_dft_25degree(void)
 {
     if (sys_hal_get_temp_mode_flag() == 0) {
-        return 8505;
+        return 8468;
     } else {
-        return 5505;
+        return 5325;
     }
 }
 

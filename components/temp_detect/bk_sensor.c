@@ -177,11 +177,12 @@ LOAD_TEMP:
 
 #if (CONFIG_SOC_BK7239XX || CONFIG_SOC_BK7236N)
     result = bk_otp_ahb_read(OTP_GADC_TEMPERATURE, (uint8_t *)&temp_values, sizeof(temp_values));
-    if ((result != BK_OK) || (temp_values[0] == 0) || (0xFFFF == temp_values[0]) || (temp_values[1] == 0) || (0xFFFF == temp_values[1])) {
+    if ((result != BK_OK) || (temp_values[0] == 0) || (0xFFFF == temp_values[0]) || (temp_values[1] == 0) || (0xFFFF == temp_values[1]))
 #else
     result = bk_otp_apb_read(OTP_GADC_TEMPERATURE, (uint8_t *)&temp_values, sizeof(temp_values));
-    if ((result != BK_OK) || (temp_values[0] == 0) || (0xFFFF == temp_values[0])) {
+    if ((result != BK_OK) || (temp_values[0] == 0) || (0xFFFF == temp_values[0]))
 #endif
+    {
         BK_LOGW(TAG, "uncali temp value:[%x]\r\n", temp_values[0]);
         goto FAILURE;
     }

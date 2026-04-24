@@ -921,6 +921,13 @@ bk_err_t bk_adc_driver_init(void)
     #endif
 
     adc_set_default_cali_val(&dev->data);
+#if (CONFIG_SOC_BK7239XX || CONFIG_SOC_BK7236N)
+#if CONFIG_TEMPERATURE_HIGH_VOLT
+    sys_drv_set_temp_mode(true);
+#else
+    sys_drv_set_temp_mode(false);
+#endif
+#endif
     bk_int_isr_register(INT_SRC_SARADC, adc_isr, NULL);
 
     #if CONFIG_SARADC_V1P2
