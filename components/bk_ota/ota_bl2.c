@@ -5,6 +5,9 @@
 #include <driver/flash.h>
 #include "sdkconfig.h"
 #include "partitions_gen.h"
+#if CONFIG_BL2_UPGRADE_WITH_APP
+#include <modules/bk_ota.h>
+#endif
 
 #define TAG "OTA_BL2"
 
@@ -191,6 +194,7 @@ void bl2_ota_check(void)
 		&& bootloader_version[2] == expected_bl2_version[2]
 		&& bootloader_version[3] == expected_bl2_version[3])) {
 		BK_LOGI(TAG, "bl2 version mismatch, start to update\r\n");
+		bk_ota_register_bl2_pack_addrs();
 		bl2_ota_upgrade();
 	}
 	else {

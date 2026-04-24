@@ -62,6 +62,10 @@ bk_ota_t* bk_ota_addr_to_handle(uint32_t addr);
 bk_err_t bk_ota_xip_deinit(void);
 bk_err_t bk_ota_ow_deinit(void);
 
+#if CONFIG_BL2_UPGRADE_WITH_APP
+void bk_ota_register_bl2_pack_addrs(void);
+#endif
+
 bk_err_t bk_ota_get_info(bk_ota_t* ota, uint32_t *pad_size, uint32_t* length);
 bk_err_t bk_ota_write(bk_ota_t* ota, uint32_t off, const uint8_t *buf, uint32_t len);
 bk_err_t bk_ota_read(bk_ota_t* ota, uint32_t off, uint8_t *buf, uint32_t len);
