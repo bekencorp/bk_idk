@@ -36,6 +36,7 @@
 #define LOGE(...) BK_LOGE(TAG, ##__VA_ARGS__)
 #define LOGD(...) BK_LOGD(TAG, ##__VA_ARGS__)
 #define PM_CLKSEL_CORE_480M                 (1)
+#define PM_CLKSEL_FLASH_40M                 (0x0)
 #define PM_CLKSEL_FLASH_80M                 (0x2)
 #define SYS_SWITCH_VDDDIG_VOL_DELAY_TIME    (4000)
 
@@ -2598,13 +2599,22 @@ static void sys_hal_dpll_cpu_flash_time_early_init(uint32_t chip_id)
 	}
 
 	/*default of MP flash 80M = 80/1*/
+	/* 40M for QFN40 */
+#if (CONFIG_ATE_TEST && (CONFIG_EXT_FLASH_CLK_FREQ == 40000000))
+	if(sys_ll_get_cpu_clk_div_mode2_cksel_flash() != PM_CLKSEL_FLASH_40M)
+#else
 	if(sys_ll_get_cpu_clk_div_mode2_cksel_flash() != PM_CLKSEL_FLASH_80M)
+#endif
 	{
 		if(sys_ll_get_cpu_clk_div_mode2_ckdiv_flash() != 0x0)// 80/1
 		{
 			sys_ll_set_cpu_clk_div_mode2_ckdiv_flash(0x0);
 		}
+#if (CONFIG_ATE_TEST && (CONFIG_EXT_FLASH_CLK_FREQ == 40000000))
+		sys_hal_flash_set_clk(PM_CLKSEL_FLASH_40M);
+#else
 		sys_hal_flash_set_clk(PM_CLKSEL_FLASH_80M);
+#endif
 	}
 
 	/* clk_divd 120MHz,
