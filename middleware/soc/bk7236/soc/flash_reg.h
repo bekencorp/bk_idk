@@ -26,6 +26,7 @@ extern "C" {
 #define CMD_WRSR_S8_S15      (0x31)
 #define CMD_WRSR_S16_S24     (0x11)
 
+#define FLASH_ADDR_REMAP(addr)     ((uint32_t)(addr) | (1UL << 24))
 #ifdef __cplusplus
 }
 #endif

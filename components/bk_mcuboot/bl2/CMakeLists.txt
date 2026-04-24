@@ -48,6 +48,13 @@ if(CONFIG_OTA_CONFIRM_UPDATE)
     )
 endif()
 
+if(CONFIG_OTA_BACKUP_PUBKEY_ENCRYPT)
+    target_compile_definitions(bl2
+        PUBLIC
+            CONFIG_OTA_BACKUP_PUBKEY_ENCRYPT
+    )
+endif()
+
 if(CONFIG_OTA_VERIFY_TRUST_CHAIN)
     target_compile_definitions(bl2
         PUBLIC

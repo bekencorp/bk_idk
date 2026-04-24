@@ -110,8 +110,13 @@ bk_find_key(uint8_t image_index, uint8_t *key, uint16_t key_len, uint32_t curren
     }
 
     check_key = (uint8_t *)malloc(key_len);
-    bk_flash_read_bytes(vir_off, check_key, key_len);
 
+#if CONFIG_OTA_BACKUP_PUBKEY_ENCRYPT
+    bk_flash_read_cbus(vir_off, check_key, key_len);
+#else
+    bk_flash_read_bytes(vir_off, check_key, key_len);
+#endif
+    
     FIH_CALL(boot_fih_memequal, fih_rc, key, check_key, key_len);
     
     if (FIH_EQ(fih_rc, FIH_SUCCESS)) {

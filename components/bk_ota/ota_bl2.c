@@ -5,9 +5,9 @@
 #include <driver/flash.h>
 #include "sdkconfig.h"
 #include "partitions_gen.h"
-#if CONFIG_BL2_UPGRADE_WITH_APP
+#include "flash_reg.h"
 #include <modules/bk_ota.h>
-#endif
+
 
 #define TAG "OTA_BL2"
 
@@ -28,6 +28,7 @@
  * uint32_t hdr_size;
  */
 #define BL2_PACK_HEADER_SIZE_OFFSET (BL2_PACK_HEADER_U32_BASE_OFFSET + 4)
+#define BL2_MAGIC_BYTES_LEN         8
 
 
 #if CONFIG_BL2_UPGRADE_WITH_APP
@@ -49,13 +50,12 @@ static void bl2_ota_rewrite_magic(void)
 {
 #if CONFIG_BL2_UPGRADE_WITH_APP
 	static const uint8_t version_bytes[] = CONFIG_BOOTLOADER_VERSION_BYTES;
+	uint8_t magic_bytes[BL2_MAGIC_BYTES_LEN] = {0};
+	size_t magic_len = strlen(CONFIG_OTA_MAGIC_BYTES);
+
+	memcpy(magic_bytes, CONFIG_OTA_MAGIC_BYTES, magic_len);
 	uint16_t data_offset = FLASH_VIRTUAL2PHY(0x100);
-	bl2_first_part[data_offset++] = 'B';
-	bl2_first_part[data_offset++] = 'E';
-	bl2_first_part[data_offset++] = 'K';
-	bl2_first_part[data_offset++] = 'E';
-	bl2_first_part[data_offset++] = 'N';
-	bl2_first_part[data_offset++] = '\0';
+	memcpy(&bl2_first_part[data_offset], magic_bytes, BL2_MAGIC_BYTES_LEN);
 	
 	data_offset = FLASH_VIRTUAL2PHY(0x120);
 	bl2_first_part[data_offset++] = version_bytes[0];
@@ -111,7 +111,7 @@ static void bl2_ota_upgrade(void)
 		}
 	} else {
 		/* No valid pack header */
-		BK_LOGW(TAG, "bl2 pack header magic, exit\r\n");
+		BK_LOGW(TAG, "no valid bl2 pack header, exit\r\n");
 		return;
 	}
 	BK_LOGI(TAG, "bl2_real_size from header: %u bytes\r\n", bl2_real_size);
@@ -129,8 +129,8 @@ static void bl2_ota_upgrade(void)
 
 		BK_LOGI(TAG, "write index: %d, size: %u\r\n", block_idx, chunk);
 		bk_flash_read_cbus(bl2_data_addr + write_offset, buf, chunk);
-		bk_flash_write_cbus(0 + write_offset, buf, chunk);
-
+		bk_flash_write_cbus(FLASH_ADDR_REMAP(write_offset), buf, chunk);
+		
 		write_offset += chunk;
 		remain -= chunk;
 		block_idx++;
@@ -154,7 +154,7 @@ static void bl2_ota_upgrade(void)
 		}
 	} else {
 		/* No valid pack header */
-		BK_LOGW(TAG, "partition pack header magic mismatch, exit\r\n");
+		BK_LOGW(TAG, "no valid partition pack header, exit\r\n");
 		return;
 	}
 	BK_LOGI(TAG, "partition_real_size from header: %u bytes\r\n", partition_real_size);

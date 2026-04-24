@@ -11,4 +11,12 @@ menu "OTA"
 		default n
 		help
 			enable new pack tool
+
+	config OTA_MAGIC_BYTES
+		string "Set flash magic bytes"
+		default "BEKEN"
+
+	config OTA_BACKUP_PUBKEY_ENCRYPT
+		bool "Enable backup pubkey encrypt"
+		default n
 endmenu

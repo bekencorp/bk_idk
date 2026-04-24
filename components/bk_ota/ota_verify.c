@@ -7,6 +7,7 @@
 #include "ota_verify.h"
 #include "ota_common.h"
 #include "partitions.h"
+#include "flash_reg.h"
 
 #define TAG "ota"
 
@@ -382,6 +383,49 @@ bk_err_t read_pubkey_from_primary(const bk_logic_partition_t *partition, uint8_t
 	return BK_OK;
 }
 
+typedef bk_err_t (*ota_pubkey_flash_read_fn_t)(uint32_t addr, uint8_t *buf, uint32_t size);
+typedef bk_err_t (*ota_pubkey_flash_write_fn_t)(uint32_t addr, const uint8_t *buf, uint32_t size);
+
+static ota_pubkey_flash_read_fn_t s_ota_pubkey_flash_read = NULL;
+static ota_pubkey_flash_write_fn_t s_ota_pubkey_flash_write = NULL;
+
+static bk_err_t ota_pubkey_flash_read_cbus(uint32_t addr, uint8_t *buf, uint32_t size)
+{
+	bk_flash_read_cbus(addr, buf, size);
+	return BK_OK;
+}
+
+static bk_err_t ota_pubkey_flash_read_bytes(uint32_t addr, uint8_t *buf, uint32_t size)
+{
+	return bk_flash_read_bytes(addr, buf, size);
+}
+
+static bk_err_t ota_pubkey_flash_write_cbus(uint32_t addr, const uint8_t *buf, uint32_t size)
+{
+	bk_flash_write_cbus(FLASH_ADDR_REMAP(addr), buf, size);
+	return BK_OK;
+}
+
+static bk_err_t ota_pubkey_flash_write_bytes(uint32_t addr, const uint8_t *buf, uint32_t size)
+{
+	return bk_flash_write_bytes(addr, buf, size);
+}
+
+static void ota_pubkey_flash_ops_init(void)
+{
+	if ((s_ota_pubkey_flash_read != NULL) && (s_ota_pubkey_flash_write != NULL)) {
+		return;
+	}
+
+#if CONFIG_OTA_BACKUP_PUBKEY_ENCRYPT
+	s_ota_pubkey_flash_read = ota_pubkey_flash_read_cbus;
+	s_ota_pubkey_flash_write = ota_pubkey_flash_write_cbus;
+#else
+	s_ota_pubkey_flash_read = ota_pubkey_flash_read_bytes;
+	s_ota_pubkey_flash_write = ota_pubkey_flash_write_bytes;
+#endif
+}
+
 bk_err_t ota_update_back_pubkey_from_primary(const bk_logic_partition_t *app_partition, const bk_logic_partition_t *key_partition)
 {
 	if ((!app_partition) || (!key_partition)) {
@@ -401,6 +445,7 @@ bk_err_t ota_update_back_pubkey_from_primary(const bk_logic_partition_t *app_par
 	uint8_t check_erase_buf[64];
 	uint8_t ff_buf[64];
 	bk_err_t ret = BK_OK;
+	ota_pubkey_flash_ops_init();
 
 	ret = read_pubkey_from_primary(app_partition, primary_key, &primary_key_size);
 	if (ret != BK_OK) {
@@ -433,8 +478,12 @@ bk_err_t ota_update_back_pubkey_from_primary(const bk_logic_partition_t *app_par
 				ret = BK_ERR_NO_MEM;
 				goto end;
 			}
-			bk_flash_read_bytes(vir_off, back_key, vir_length);
+			ret = s_ota_pubkey_flash_read(vir_off, back_key, vir_length);
+			if (ret != BK_OK) {
+				goto end;
+			}
 			if (memcmp(back_key, primary_key, primary_key_size) == 0) {
+				OTA_LOGI(TAG, "back pubkey is already exist and valid, skip update\r\n");
 				ret = BK_OK;
 				goto end;
 			}
@@ -446,8 +495,10 @@ bk_err_t ota_update_back_pubkey_from_primary(const bk_logic_partition_t *app_par
 	bk_flash_erase_sector(phy_off);
 	uint16_t phy_key_size = VIR_LEN_TO_PHY_LEN(primary_key_size);
 	uint16_t vir_key_size = FLASH_PHY2VIRTUAL(phy_key_size); // vir_key_size - keysize = data 0
-
-	bk_flash_write_bytes(vir_off, primary_key, vir_key_size);
+	ret = s_ota_pubkey_flash_write(vir_off, primary_key, vir_key_size);
+	if (ret != BK_OK) {
+		goto end;
+	}
 	enc_buf = (uint8_t*)malloc(phy_key_size);
 	if (enc_buf == NULL) {
 		ret = BK_ERR_NO_MEM;
@@ -466,15 +517,18 @@ bk_err_t ota_update_back_pubkey_from_primary(const bk_logic_partition_t *app_par
 		ret = BK_ERR_NO_MEM;
 		goto end;
 	}
-	bk_flash_read_bytes(vir_off, back_key, primary_key_size);
+	ret = s_ota_pubkey_flash_read(vir_off, back_key, primary_key_size);
+	if (ret != BK_OK) {
+		goto end;
+	}
 	bk_flash_read_bytes(phy_off + 2, (uint8_t *)&check_crc, 1);
 
 	if ((crc8.crc == check_crc.crc) && (memcmp(back_key, primary_key, primary_key_size) == 0)) {
-		OTA_LOGI(TAG, "update back pubkey ok\r\n");
+		OTA_LOGI(TAG, "update backup pubkey ok\r\n");
 		ret = BK_OK;
 	} else {
 		ret = BK_FAIL;
-		OTA_LOGE(TAG, "back pubkey failed\r\n");
+		OTA_LOGE(TAG, "backup pubkey failed\r\n");
 		OTA_LOGE(TAG, "crc = %#x,check crc = %#x",crc8.crc, check_crc.crc);
 		debug_print_buf("back_key", back_key, primary_key_size);
 		debug_print_buf("primary key", primary_key, primary_key_size);
