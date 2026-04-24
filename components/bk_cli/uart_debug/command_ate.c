@@ -2501,7 +2501,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                         param |= (0xB << 6);
                         sys_drv_analog_set(ANALOG_REG7, param);
 
-                        // Measure the voltage of VDDRAM(vddram ldo)  [0x0]: sys_ana_0x44<31>=0x0
+                        // Measure the voltage of VDDRAM(vddram ldo)  [0x0]: sys_ana_0x44<31>=0x1
                         param = sys_drv_analog_get(ANALOG_REG4);
                         param |= (0x1 << 31);
                         // Measure the voltage of VDDRAM(vddram ldo)  [0x0]: sys_ana_0x44<29:28>=0x0
