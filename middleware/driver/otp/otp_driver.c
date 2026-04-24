@@ -304,6 +304,8 @@ static uint32_t otp2_hal_get_offset(uint32_t item) {
             return 0x59C;
         case OTP_FACTORY_ID:
             return 0x588;
+        case OTP_DIA_BACKUP:
+            return 0x584;
         default:
             return 0;
     }
@@ -443,7 +445,7 @@ uint32_t bk_otp_partical_clean_check_customer(void) {
 
     OTP_ACTIVE(2);
     otp_start = otp2_hal_get_offset(OTP_RFCALI1) >> 2;  // ft_cali end
-    otp_end   = otp2_hal_get_offset(OTP_FACTORY_ID) >> 2;  // cp_cali begin
+    otp_end   = otp2_hal_get_offset(OTP_DIA_BACKUP) >> 2;  // cp_cali begin
     for (location = otp_start; location < otp_end; location++) {
         value = _otp2_read_otp(location);
         if (value != 0) {
@@ -453,6 +455,13 @@ uint32_t bk_otp_partical_clean_check_customer(void) {
         }
     }
     OTP_SLEEP();
+
+    // "OTP_DIA_BACKUP" will be written in CP
+    check_result = bk_otp_ahb_read_and_check(OTP_DIA_BACKUP, true);
+    if (check_result == false) {
+        bk_printf("addr=0x%x\n", SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_DIA_BACKUP));
+        return (SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_DIA_BACKUP));
+    }
 
     // "OTP_FACTORY_ID" will be writed in CP/FT
     check_result = bk_otp_ahb_read_and_check(OTP_FACTORY_ID, true);
@@ -489,7 +498,7 @@ uint32_t bk_otp_partical_clean_check_customer(void) {
         return (SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_VDDDIG_BANDGAP));
     }
 
-    // "OTP_DIA" will be writed in CP
+    // "OTP_DIA" will be written in CP
     check_result = bk_otp_ahb_read_and_check(OTP_DIA, true);
     if (check_result == false) {
         bk_printf("addr=0x%x\n", SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_DIA));
@@ -1466,3 +1475,183 @@ exit:
 	return fail_code;
 }
 #endif /*CONFIG_ATE_TEST*/
+
+#if CONFIG_OTP_BACKUP
+typedef struct {
+    otp2_id_t main_item;
+    otp2_id_t backup_item;
+    uint32_t alloc_len;
+    uint32_t actual_len;
+} otp_backup_cfg_t;
+
+static bool otp_get_backup_cfg(otp2_id_t item, otp_backup_cfg_t *cfg)
+{
+    switch (item) {
+    case OTP_DIA:
+    case OTP_DIA_BACKUP:
+        cfg->main_item = OTP_DIA;
+        cfg->backup_item = OTP_DIA_BACKUP;
+        cfg->alloc_len = 4;
+        cfg->actual_len = 1;
+        break;
+    default:
+        return false;
+    }
+
+    return true;
+}
+
+bk_err_t bk_otp_ahb_read_backup(otp2_id_t item, uint8_t *value, int *both_valid)
+{
+    bk_err_t ret = BK_OK;
+    otp_backup_cfg_t cfg;
+
+    if (!otp_get_backup_cfg(item, &cfg)) {
+        return BK_FAIL;
+    }
+
+    uint8_t *buf_main = (uint8_t *)os_malloc(cfg.alloc_len);
+    uint8_t *buf_backup = (uint8_t *)os_malloc(cfg.alloc_len);
+    if (!buf_main || !buf_backup) {
+        ret = BK_FAIL;
+        goto exit;
+    }
+
+    os_memset(buf_main, 0, cfg.alloc_len);
+    os_memset(buf_backup, 0, cfg.alloc_len);
+    bk_err_t ret_main = bk_otp_ahb_read(cfg.main_item, buf_main, cfg.actual_len);
+    bk_err_t ret_backup = bk_otp_ahb_read(cfg.backup_item, buf_backup, cfg.actual_len);
+
+    bool backup_not_empty = false;
+    bool main_not_empty = false;
+
+    for (uint32_t i = 0; i < cfg.actual_len; i++) {
+        if (buf_backup[i] != 0x00) {
+            backup_not_empty = true;
+            break;
+        }
+    }
+    for (uint32_t i = 0; i < cfg.actual_len; i++) {
+        if (buf_main[i] != 0x00) {
+            main_not_empty = true;
+            break;
+        }
+    }
+
+    if ((ret_backup == BK_OK) && backup_not_empty) {
+        os_memcpy(value, buf_backup, cfg.actual_len);
+        if (both_valid) {
+            *both_valid = (ret_main == BK_OK) && main_not_empty;
+        }
+    } else if ((ret_main == BK_OK) && main_not_empty) {
+        os_memcpy(value, buf_main, cfg.actual_len);
+        if (both_valid) {
+            *both_valid = 0;
+        }
+    } else if ((ret_main == BK_OK) || (ret_backup == BK_OK)) {
+        os_memset(value, 0, cfg.actual_len);
+        if (both_valid) {
+            *both_valid = 0;
+        }
+    } else {
+        ret = BK_FAIL;
+        goto exit;
+    }
+
+exit:
+    if (buf_main) {
+        os_free(buf_main);
+    }
+    if (buf_backup) {
+        os_free(buf_backup);
+    }
+    return ret;
+}
+
+bk_err_t bk_otp_ahb_update_backup(otp2_id_t item, uint8_t *value, bool write_backup, uint8_t *readback)
+{
+    bk_err_t ret = BK_FAIL;
+    otp_backup_cfg_t cfg;
+    otp2_id_t target_item;
+
+    if (!otp_get_backup_cfg(item, &cfg)) {
+        return BK_FAIL;
+    }
+
+    uint8_t *buf = (uint8_t *)os_malloc(cfg.alloc_len);
+    if (!buf) {
+        return BK_FAIL;
+    }
+
+    if (write_backup) {
+        uint8_t *main_buf = buf;
+        os_memset(main_buf, 0, cfg.alloc_len);
+        ret = bk_otp_ahb_read(cfg.main_item, main_buf, cfg.actual_len);
+
+        bool main_not_empty = false;
+        for (uint32_t i = 0; i < cfg.actual_len; i++) {
+            if (main_buf[i] != 0x00) {
+                main_not_empty = true;
+                break;
+            }
+        }
+
+        if ((ret == BK_OK) && main_not_empty) {
+            target_item = cfg.backup_item;
+        } else {
+            target_item = cfg.main_item;
+        }
+    } else {
+        target_item = cfg.main_item;
+    }
+
+    uint8_t *read_buf = buf;
+    os_memset(read_buf, 0, cfg.alloc_len);
+    ret = bk_otp_ahb_read(target_item, read_buf, cfg.actual_len);
+    if (ret != BK_OK) {
+        os_free(buf);
+        return BK_FAIL;
+    }
+
+    bool read_not_empty = false;
+    for (uint32_t i = 0; i < cfg.actual_len; i++) {
+        if (read_buf[i] != 0x00) {
+            read_not_empty = true;
+            break;
+        }
+    }
+
+    bool write_different = false;
+    if (os_memcmp(read_buf, value, cfg.actual_len) != 0) {
+        write_different = true;
+    }
+
+    if (read_not_empty && write_different) {
+        os_free(buf);
+        return BK_FAIL;
+    }
+
+    uint8_t *write_buf = buf;
+    os_memset(write_buf, 0, cfg.alloc_len);
+    os_memcpy(write_buf, value, cfg.actual_len);
+    ret = bk_otp_ahb_update(target_item, write_buf, cfg.alloc_len);
+    if (ret != BK_OK) {
+        os_free(buf);
+        return BK_FAIL;
+    }
+
+    os_memset(read_buf, 0, cfg.alloc_len);
+    ret = bk_otp_ahb_read(target_item, read_buf, cfg.actual_len);
+    if (ret != BK_OK) {
+        os_free(buf);
+        return BK_FAIL;
+    }
+
+    if (readback) {
+        os_memcpy(readback, read_buf, cfg.actual_len);
+    }
+
+    os_free(buf);
+    return BK_OK;
+}
+#endif /*CONFIG_OTP_BACKUP*/

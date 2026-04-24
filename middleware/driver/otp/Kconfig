@@ -23,9 +23,16 @@ menu "OTP"
 	config AON_ENCP
 		bool "Always enable encp"
 		default n
-	
+
 	config OTP_EFUSE_SUPPORT
 		bool "Enable otp to efuse"
 		default n
+
+	config OTP_BACKUP
+		bool "Enable OTP backup"
+		default n
+		depends on OTP
+		help
+			Use OTP backup slots for calibration data.
 
 endmenu
