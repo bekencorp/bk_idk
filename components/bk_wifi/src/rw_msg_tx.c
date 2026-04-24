@@ -920,17 +920,39 @@ int rw_msg_send_apm_start_req(u8 vif_index, u8 channel,
 	return rw_msg_send(req, 1, APM_START_CFM, cfm);
 }
 
-int rw_msg_send_channel_update_req(uint8_t channel) {
+int rw_msg_send_channel_update_req(int id, int bandwidth, int channel, int freq, int center_freq1, int center_freq2)
+{
 	struct mm_chan_ctxt_update_req *req = KE_MSG_ALLOC(MM_CHAN_CTXT_UPDATE_REQ,
 											TASK_MM, TASK_API, mm_chan_ctxt_update_req);
-	req->chan_index = 0;
-	req->chan.band = PHY_BAND_2G4;
+	req->chan_index = id;
+
+	if (freq >= 5925)
+		req->chan.band = IEEE80211_BAND_6GHZ;
+	else if (freq >= 4900)
+		req->chan.band = IEEE80211_BAND_5GHZ;
+	else
+		req->chan.band = IEEE80211_BAND_2GHZ;
+
 	req->chan.flags = 0;
-	req->chan.prim20_freq = req->chan.center1_freq = rw_ieee80211_get_centre_frequency(channel);
-	req->chan.center2_freq = 0;
-	req->chan.type = PHY_CHNL_BW_20;
-	ke_msg_send(req);
-	return 0;
+	req->chan.prim20_freq = freq;
+	req->chan.center1_freq = center_freq1;
+	req->chan.center2_freq = center_freq2;
+
+	switch (bandwidth) {
+	case 20:
+		req->chan.type = PHY_CHNL_BW_20;
+		break;
+	case 40:
+		req->chan.type = PHY_CHNL_BW_40;
+		break;
+	case 80:
+		req->chan.type = PHY_CHNL_BW_80;
+		break;
+	default:
+		req->chan.type = PHY_CHNL_BW_20;
+	}
+
+	return rw_msg_send(req, 1, MM_CHAN_CTXT_UPDATE_CFM, NULL);
 }
 
 int rw_msg_send_apm_stop_req(u8 vif_index)

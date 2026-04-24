@@ -1159,25 +1159,26 @@ int hostap_channel_switch(void *priv, struct csa_settings *settings)
 
 static int hostap_set_freq(void *priv, struct hostapd_freq_params *freq)
 {
-#ifdef CONFIG_ACS
-    rw_msg_send_channel_update_req(freq->channel);
-#else
     struct hostap_driver_data *drv = priv;
-    struct iwreq iwr;
+	void *vif = mac_vif_mgmt_get_entry(drv->vif_index);
+	struct mac_chan_op *chan = mac_vif_mgmt_get_chan(vif);
+	int ctxt_id = mac_vif_mgmt_get_chan_ctxt_id(vif);
 
-    os_memset(&iwr, 0, sizeof(iwr));
-    os_strlcpy(iwr.ifr_name, drv->iface, IFNAMSIZ);
-    iwr.u.freq.m = freq->channel;
-    iwr.u.freq.e = 0;
+	// only allow change bw
+	if (chan && ctxt_id != 0xFF &&
+		freq->freq == chan->prim20_freq &&
+		freq->bandwidth != (chan->type + 1) * 20) {
+		return rw_msg_send_channel_update_req(ctxt_id, freq->bandwidth,
+				freq->channel, freq->freq, freq->center_freq1, freq->center_freq2);
+	} else {
+		if (chan)
+			WPA_LOGD("%s: ctxt_id %d, freq %d/%d, bandwidth %d/%dMHz\n",
+				__func__, ctxt_id, freq->freq, chan->prim20_freq, freq->bandwidth, (chan->type + 1) * 20);
+		else
+			WPA_LOGD("%s: ctxt_id %d, freq %d, bandwidth %dMHz\n", __func__, ctxt_id, freq->freq, freq->bandwidth);
+	}
 
-    if (ioctl_inet(drv->ioctl_sock, drv->vif_index, SIOCSIWFREQ, (unsigned long)&iwr) < 0) {
-        wpa_printf(MSG_ERROR, "ioctl[SIOCSIWFREQ]: %s",
-                   strerror(errno));
-        return -1;
-    }
-#endif
-
-    return 0;
+	return 0;
 }
 
 static int hostap_sta_disassoc(void *priv, const u8 *own_addr, const u8 *addr,

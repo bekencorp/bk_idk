@@ -2521,6 +2521,8 @@ int8_t mac_vif_mgmt_get_u_sta_rssi(void *_vif);
 int8_t mac_vif_mgmt_get_u_sta_smooth_rssi(void *_vif);
 int max_mm_sec_key_nbr();
 int mac_vif_mgmt_get_used_cnt(void);
+struct mac_chan_op *mac_vif_mgmt_get_chan(void *_vif);
+int mac_vif_mgmt_get_chan_ctxt_id(void *_vif);
 #if (NX_P2P && BK_MAC)
 bool mac_vif_mgmt_p2p_can_rec_probe_req(void *_vif);
 bool mac_vif_mgmt_interface_is_configured_for_p2p(void *_vif);
