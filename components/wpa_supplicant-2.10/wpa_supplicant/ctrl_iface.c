@@ -65,6 +65,7 @@
 
 extern beken_thread_t wpas_thread_handle;
 extern bool site_survey_cc;
+extern int hostapd_handle_connection;
 static int wpa_ctrl_debug_info_dump(struct wpa_supplicant *wpas, uint32_t type);
 extern void wpa_driver_scan_timeout(void *eloop_ctx, void *timeout_ctx);
 extern uint32_t bk_lookup_ipaddr_wrapper(void *addr);
@@ -476,7 +477,7 @@ static int wpas_ctrl_scan(struct wpa_supplicant *wpa_s, wlan_sta_scan_param_t *p
 
 	if (!wpa_s->sched_scanning && !wpa_s->scanning &&
 		((wpa_s->wpa_state < WPA_SCANNING) ||
-		 (wpa_s->wpa_state == WPA_COMPLETED)) && !scan_pending) {
+		 (wpa_s->wpa_state == WPA_COMPLETED)) && !scan_pending && !hostapd_handle_connection) {
 		if (params) {
 			ssid_count = params->num_ssids;
 			ssid = os_realloc_array(ssid, ssid_count, sizeof(struct wpa_ssid_value));

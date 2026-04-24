@@ -6316,6 +6316,28 @@ static void notify_mgmt_frame(struct hostapd_data *hapd, const u8 *buf,
 	}
 }
 
+#if BK_SUPPLICANT
+int hostapd_handle_connection = 0;
+int rw_msg_send_scan_cancel_req(void *cfm);
+
+static void hostapd_delay_timer(void *eloop_ctx, void *timeout_ctx)
+{
+	hostapd_handle_connection = 0;
+}
+
+void delay_wpa_scan()
+{
+	// send ke msg to notify lmac to cancel current scan
+	uint8 cfm;
+
+	rw_msg_send_scan_cancel_req(&cfm);
+
+	hostapd_handle_connection = 1;
+
+	eloop_cancel_timeout(hostapd_delay_timer, NULL, NULL);
+	eloop_register_timeout(2, 0, hostapd_delay_timer, NULL,  NULL);
+}
+#endif
 
 /**
  * ieee802_11_mgmt - process incoming IEEE 802.11 management frames
@@ -6414,16 +6436,25 @@ int ieee802_11_mgmt(struct hostapd_data *hapd, const u8 *buf, size_t len,
 	case WLAN_FC_STYPE_AUTH:
 		wpa_printf(MSG_DEBUG, "mgmt::auth");
 		handle_auth(hapd, mgmt, len, ssi_signal, 0);
+#if BK_SUPPLICANT && CONFIG_DELAY_STA_SCAN_WHEN_CONCURRENT
+		delay_wpa_scan();
+#endif
 		ret = 1;
 		break;
 	case WLAN_FC_STYPE_ASSOC_REQ:
 		wpa_printf(MSG_DEBUG, "mgmt::assoc_req");
 		handle_assoc(hapd, mgmt, len, 0, ssi_signal);
 		ret = 1;
+#if BK_SUPPLICANT && CONFIG_DELAY_STA_SCAN_WHEN_CONCURRENT
+		delay_wpa_scan();
+#endif
 		break;
 	case WLAN_FC_STYPE_REASSOC_REQ:
 		wpa_printf(MSG_DEBUG, "mgmt::reassoc_req");
 		handle_assoc(hapd, mgmt, len, 1, ssi_signal);
+#if BK_SUPPLICANT && CONFIG_DELAY_STA_SCAN_WHEN_CONCURRENT
+		delay_wpa_scan();
+#endif
 		ret = 1;
 		break;
 	case WLAN_FC_STYPE_DISASSOC:

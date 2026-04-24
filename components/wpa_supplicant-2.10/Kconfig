@@ -326,4 +326,10 @@ menu "modules::wpa_supplicant-2.10"
 		bool "Enable Ap mode Sta Type Limit num"
 		default n
 
+	config DELAY_STA_SCAN_WHEN_CONCURRENT
+		bool "Delay STA scan when STA and AP concurrent"
+		default n
+		help
+			Optimize AP's connection experience by delay STA's scan procedure.
+
 endmenu
