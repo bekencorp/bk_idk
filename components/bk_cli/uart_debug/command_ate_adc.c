@@ -169,7 +169,11 @@ void ate_cali_adc(const unsigned char *content, int cnt, UINT8 *tx_buffer)
     }
     else if ((content[2] == 0x03) || (content[2] == 0x10) || (content[2] == 0x15) || (content[2] == 0x20))
     {
+        #if CONFIG_SOC_BK7239XX
         test_adc_for_ate(15, 3, 0x20, 0x20, 0, 0x07, 150, usData);
+        #elif CONFIG_SOC_BK7236N
+        test_adc_for_ate(2, 3, 0x20, 0x20, 0, 0x07, 150, usData);
+        #endif
         quicksort(usData,50,149);
 
         for (index = 80; index < 120; index++)
