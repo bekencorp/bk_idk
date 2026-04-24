@@ -1498,8 +1498,8 @@ static void ate_read_otp(const uint8_t *content, int cnt, uint8_t *tx_buffer1)
             length = 70;
         } else if (content[3] == OTP_DEVICE_ID) {
             // Note: "DEVICE_ID" = "UID"
-            // Batch_Num(2 bytes) + Wafer_ID(1 byte) + X(1 byte) + Y(1 byte)
-            length = 5;
+            // Batch_Num(2 bytes) + Wafer_ID(1 byte) + X(1 byte) + Y(1 byte) + Batch_Num_Ext(3 bytes)
+            length = 8;
         } else if (content[3] == OTP_MEMORY_CHECK_VDDDIG) {
             // No area for crc
             length = 4;
@@ -1990,7 +1990,6 @@ int sctrl_check_otp(const unsigned char *content, int cnt, UINT8 *tx_buffer)
 int set_device_id_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buffer)
 {
     uint8_t device_id_write[EFUSE_DEVICE_ID_BYTE_NUM] = {0};
-    uint8_t device_id_buf[8] = {0};
     uint8_t retry_times = 0;
     int ret = 0;
 
@@ -2011,7 +2010,7 @@ int set_device_id_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buff
         }
     }
 
-    if (cnt < 7) {
+    if (cnt < 2 + EFUSE_DEVICE_ID_BYTE_NUM) {
         /* return param num error */
         tx_buffer[1] = 0x77;
         tx_buffer[2] = 0x1;
@@ -2022,8 +2021,6 @@ int set_device_id_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buff
     for(int iIndex = 0; iIndex < EFUSE_DEVICE_ID_BYTE_NUM; iIndex++) {
         device_id_write[iIndex] = (uint8_t) (content[2 + iIndex] & 0xFF);
     }
-
-    os_memcpy(device_id_buf, device_id_write, EFUSE_DEVICE_ID_BYTE_NUM);
 
     /* sn2 is out of range */
     if((device_id_write[0] < EFUSE_DEVICE_ID_SN_MINIMUM) || (device_id_write[0] > EFUSE_DEVICE_ID_SN_MAXIMUM)) {
@@ -2049,8 +2046,32 @@ int set_device_id_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buff
         return BK_FAIL;
     }
 
+    /* sn5 is out of range */
+    if((device_id_write[5] < EFUSE_DEVICE_ID_SN_MINIMUM) || (device_id_write[5] > EFUSE_DEVICE_ID_SN_MAXIMUM)) {
+        tx_buffer[1] = 0x77;
+        tx_buffer[2] = 0xA;
+        uart_send_bytes_for_ate(tx_buffer, 3);
+        return BK_FAIL;
+    }
+
+    /*  sn4 is out of range */
+    if((device_id_write[6] < EFUSE_DEVICE_ID_SN_MINIMUM) || (device_id_write[6] > EFUSE_DEVICE_ID_SN_MAXIMUM)) {
+        tx_buffer[1] = 0x77;
+        tx_buffer[2] = 0xB;
+        uart_send_bytes_for_ate(tx_buffer, 3);
+        return BK_FAIL;
+    }
+
+    /* sn3 is out of range */
+    if((device_id_write[7] < EFUSE_DEVICE_ID_SN_MINIMUM) || (device_id_write[7] > EFUSE_DEVICE_ID_SN_MAXIMUM)) {
+        tx_buffer[1] = 0x77;
+        tx_buffer[2] = 0xC;
+        uart_send_bytes_for_ate(tx_buffer, 3);
+        return BK_FAIL;
+    }
+
     for (; retry_times < 3; retry_times++) {
-        ret = bk_otp_ahb_update(OTP_DEVICE_ID, device_id_buf, sizeof(device_id_buf));
+        ret = bk_otp_ahb_update(OTP_DEVICE_ID, device_id_write, sizeof(device_id_write));
         if (ret == BK_OK) {
             break;
         }
@@ -2077,7 +2098,7 @@ int set_device_id_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buff
         uart_send_bytes_for_ate(tx_buffer, 3 + EFUSE_DEVICE_ID_BYTE_NUM);
 
         return BK_FAIL;
-	}
+    }
 
     tx_buffer[1] = 0x88;
     bk_otp_ahb_read(OTP_DEVICE_ID, tx_buffer + 2, EFUSE_DEVICE_ID_BYTE_NUM);
