@@ -2,7 +2,7 @@
 #include <driver/hal/hal_gpio_types.h>
 
 #ifdef CONFIG_ATE_TEST
-#define DEFAULT_TXID_XTAL               (0x20)
+#define DEFAULT_TXID_XTAL               (0x24)
 #else
 #define DEFAULT_TXID_XTAL               (0x37)
 #endif
@@ -399,10 +399,11 @@ const TXPWR_CAL_ST gtxpwr_tab_def_g[TXPWR_CAL_2G_MAX] = {
 
 const TXPWR_CAL_ST gtxpwr_tab_def_strip_a[TXPWR_CAL_5G_MAX] = {
 #ifdef CONFIG_ATE_TEST
-    INIT_TXPWR_VALUE(36, 34),//ch36
-    INIT_TXPWR_VALUE(64, 34),
-    INIT_TXPWR_VALUE(100, 34),
-    INIT_TXPWR_VALUE(165, 34),
+    INIT_TXPWR_VALUE(36, 68),//ch36
+    INIT_TXPWR_VALUE(64, 55),
+    INIT_TXPWR_VALUE(100, 40),
+    INIT_TXPWR_VALUE(132, 41),
+    INIT_TXPWR_VALUE(165, 52),
 #else
     INIT_TXPWR_VALUE(36, 80),//ch36
     INIT_TXPWR_VALUE(64, 80),
