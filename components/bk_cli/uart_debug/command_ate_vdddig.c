@@ -317,10 +317,10 @@ int sctrl_set_dia_to_reg(const unsigned char *content, int cnt, UINT8 *tx_buffer
 {
     UINT8 dia = 0;
 
-	rwnx_cal_dia_start();
+    rwnx_cal_dia_start();
     if (cnt > 2) {
         //set dia
-		dia = content[2];
+        dia = content[2];
         tx_buffer[0] = 0xE;
         tx_buffer[1] = dia;
         rwnx_cal_set_reg_mod_pa(0, dia);
