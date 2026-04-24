@@ -20,6 +20,7 @@
 
 beken_thread_t idle_read_flash_handle = NULL;
 beken_thread_t idle_read_psram_handle = NULL;
+static volatile uint32_t idle_read_flash_count = 0;
 
 static bk_err_t test_flash_write(volatile uint32_t start_addr, uint32_t len)
 {
@@ -96,9 +97,11 @@ static bk_err_t test_flash_read_without_print(volatile uint32_t start_addr, uint
 	uint32_t length = len;
 	tmp = addr + length;
 
-	for (; addr < tmp; addr += 256) {
-		os_memset(buf, 0, 256);
-		bk_flash_read_bytes(addr, (uint8_t *)buf, 256);
+	while (1) {
+		for (addr = start_addr; addr < tmp; addr += 256) {
+			bk_flash_read_bytes(addr, (uint8_t *)buf, 256);
+			idle_read_flash_count++;
+		}
 	}
 
 	return kNoErr;
@@ -231,11 +234,20 @@ static bk_err_t test_flash_count_time(volatile uint32_t start_addr, uint32_t len
 }
 
 static void test_idle_read_flash(void *arg) {
-	while (1) {
-		test_flash_read_without_print(0x1000, 1000);
-		test_flash_read_without_print(0x100000, 1000);
-		test_flash_read_without_print(0x200000, 1000);
-		test_flash_read_without_print(0x300000, 0x1000);
+	#if CONFIG_INT_WDT
+	bk_wdt_stop();
+	#endif
+	#if (CONFIG_TASK_WDT)
+	bk_task_wdt_stop();
+	#endif
+	bk_logic_partition_t *ota_partition = bk_flash_partition_get_info(BK_PARTITION_OTA);
+	uint32_t flash_size = bk_flash_get_current_total_size();
+	if (ota_partition != NULL) {
+		uint32_t ota_start_addr = ota_partition->partition_start_addr;
+		uint32_t read_len = flash_size - ota_start_addr;
+		BK_DUMP_OUT("ota_start_addr = 0x%08X\n", ota_start_addr);
+		BK_DUMP_OUT("read_len = 0x%08X (%u bytes)\n", read_len, read_len);
+		test_flash_read_without_print(ota_start_addr, read_len);
 	}
 	rtos_delete_thread(&idle_read_flash_handle);
 }
@@ -326,25 +338,57 @@ static void flash_command_test(char *pcWriteBuffer, int xWriteBufferLen, int arg
 
 #if (CONFIG_SYSTEM_CTRL)
 	if (os_strcmp(argv[1], "config") == 0) {
-		uint32_t flash_src_clk = os_strtoul(argv[2], NULL, 10);
-		uint32_t flash_div_clk = os_strtoul(argv[3], NULL, 10);
-		uint32_t flash_line_mode = os_strtoul(argv[4], NULL, 10);
+		uint32_t target_clk_mhz = os_strtoul(argv[2], NULL, 10);
+		uint32_t flash_line_mode = os_strtoul(argv[3], NULL, 10);
+		uint32_t flash_src_clk = 0;
+		uint32_t flash_div_clk = 0;
+		bk_err_t config_ok = BK_OK;
 
-		if (FLASH_CLK_XTAL == flash_src_clk) {
+		switch (target_clk_mhz) {
+		case 13:
+			flash_src_clk = 0;  // XTAL 26M
+			flash_div_clk = 1;  // div 2
+			break;
+		case 26:
+			flash_src_clk = 0;  // XTAL 26M
+			flash_div_clk = 0;  // div 1
+			break;
+		case 40:
+			flash_src_clk = 2;  // 80M
+			flash_div_clk = 1;  // div 2
+			break;
+		case 60:
+			flash_src_clk = 3;  // 120M
+			flash_div_clk = 1;  // div 2
+			break;
+		case 80:
+			flash_src_clk = 2;  // 80M
+			flash_div_clk = 0;  // div 1
+			break;
+		case 120:
+			flash_src_clk = 3;  // 120M
+			flash_div_clk = 0;  // div 1
+			break;
+		default:
+			BK_DUMP_OUT("Error: Unsupported clock frequency %u MHz. Supported: 13, 26, 40, 60, 80, 120\n", target_clk_mhz);
+			config_ok = BK_FAIL;
+			break;
+		}
+
+		if (config_ok == BK_OK) {
+			sys_drv_flash_set_clk_div(flash_div_clk);
 			sys_drv_flash_cksel(flash_src_clk);
+			extern bk_err_t bk_flash_switch_line_mode(flash_line_mode_t line_mode);
+			if (flash_line_mode == 2) {
+				bk_flash_switch_line_mode(FLASH_LINE_MODE_TWO);
+				CLI_LOGI("switch to 2 line.\r\n");
+			} else {
+				bk_flash_switch_line_mode(FLASH_LINE_MODE_FOUR);
+				CLI_LOGI("switch to 4 line.\r\n");
+			}
+			BK_DUMP_OUT("Flash clock configured: %u MHz (src_clk=%u, div_clk=%u)\n", target_clk_mhz, flash_src_clk, flash_div_clk);
+			BK_DUMP_OUT("flash_line_mode = %u\n", flash_line_mode);
 		}
-
-		if((FLASH_CLK_XTAL != sys_drv_flash_get_clk_sel()) && (0 == flash_div_clk)) {
-			BK_DUMP_OUT("Config fail. Please set src clk as 26M, or set div larger than 0 firstly.\n");
-			return;
-		}
-
-		sys_drv_flash_set_clk_div(flash_div_clk);
-		sys_drv_flash_cksel(flash_src_clk);
-		bk_flash_set_line_mode(flash_line_mode);
-		BK_DUMP_OUT("flash_src_clk = %u. [0:/26M,  1:/480M,  2:/98M]\n", flash_src_clk);
-		BK_DUMP_OUT("flash_div_clk = %u. [0:/4,  1:/6,  2:/8,  3:/10]\n", flash_div_clk);
-		BK_DUMP_OUT("flash_line_mode = %u.  \n", flash_line_mode);
 
 		return;
 	}
@@ -395,9 +439,9 @@ static void flash_command_test(char *pcWriteBuffer, int xWriteBufferLen, int arg
 #endif
 #endif
 	if (os_strcmp(argv[1], "idle_read_start") == 0) {
-		uint32_t task_prio = os_strtoul(argv[2], NULL, 10);
-		BK_DUMP_OUT("idle_read_flash task start: task_prio = %u.\n", task_prio);
-		rtos_create_thread(&idle_read_flash_handle, task_prio,
+		idle_read_flash_count = 0;
+		rtos_create_thread(&idle_read_flash_handle,
+			4,
 			"idle_read_flash",
 			(beken_thread_function_t) test_idle_read_flash,
 			CONFIG_APP_MAIN_TASK_STACK_SIZE,
@@ -408,7 +452,7 @@ static void flash_command_test(char *pcWriteBuffer, int xWriteBufferLen, int arg
 		if (idle_read_flash_handle) {
 			rtos_delete_thread(&idle_read_flash_handle);
 			idle_read_flash_handle = NULL;
-			BK_DUMP_OUT("idle_read_flash task stop\n");
+			BK_DUMP_OUT("idle_read_flash task stop, count = %u\n", (unsigned int)idle_read_flash_count);
 		}
 		return;
 	}

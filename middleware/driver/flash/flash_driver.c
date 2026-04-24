@@ -503,6 +503,17 @@ bk_err_t bk_flash_set_line_mode(flash_line_mode_t line_mode)
     (void)line_mode;
 }
 
+bk_err_t bk_flash_switch_line_mode(flash_line_mode_t line_mode)
+{
+    if ((line_mode != FLASH_LINE_MODE_TWO) && (line_mode != FLASH_LINE_MODE_FOUR)) {
+        return BK_ERR_FLASH_INVALID_CLK_PARAM;
+    }
+
+    flash_line_mode_t old_line_mode = flash_set_line_mode(line_mode);
+    FLASH_LOGI("flash switch line mode: old=%d, new=%d\r\n", old_line_mode, line_mode);
+    return BK_OK;
+}
+
 bk_err_t flash_clear_rd_residual_data(flash_hal_t *hal)
 {
     uint32_t tmp_val;
