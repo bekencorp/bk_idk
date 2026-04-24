@@ -277,6 +277,10 @@ typedef struct {
     uint32_t _OTP_DIA;
     uint32_t _OTP_GADC_TEMPERATURE;
     uint32_t _OTP_RFCALI1;
+#if (CONFIG_SOC_BK7236N || CONFIG_SOC_BK7239N)
+    uint32_t _OTP_PHY_PWR1;
+    uint32_t _OTP_PHY_PWR2;
+#endif
 } phy_os_variable_t;
 
 /*******************************************************************************

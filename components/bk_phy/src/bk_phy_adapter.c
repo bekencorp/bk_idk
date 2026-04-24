@@ -1055,6 +1055,10 @@ const phy_os_variable_t g_phy_os_variable = {
     ._OTP_VDDDIG_BANDGAP     = OTP_VDDDIG_BANDGAP ,
     ._OTP_DIA                = OTP_DIA ,
     ._OTP_GADC_TEMPERATURE   = OTP_GADC_TEMPERATURE,
+#if (CONFIG_SOC_BK7236N || CONFIG_SOC_BK7239N)
+    ._OTP_PHY_PWR1           = OTP_PHY_PWR1,
+    ._OTP_PHY_PWR2           = OTP_PHY_PWR2,
+#endif
 #endif
 };
 
