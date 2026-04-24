@@ -182,9 +182,24 @@ static void rwnx_tx_confirm(void *param)
 		}
 #endif
 
-		// callback for mgmt frame tx
-		if (cb && skb->args)
-			cb(skb->args, !!(cfm->status & TX_STATUS_ACKNOWLEDGED));
+		// callback for mgmt/data frame tx:
+		// For EAPOL, some AP/BA combinations may not set ACK bit as expected
+		// in this driver path while frame is already transmitted (DONE set).
+		// Use DONE as tx success criterion for EAPOL to avoid false send failure.
+		if (cb && skb->args) {
+			bool success = !!(cfm->status & TX_STATUS_ACKNOWLEDGED);
+			uint16_t eth = PP_NTOHS(txdesc->host.ethertype);
+
+			if (eth == ETHTYPE_EAPOL) {
+				success = !!(cfm->status & TX_STATUS_DONE);
+				RWNX_LOGI("eapol_cfm: status=0x%x ack=%d done=%d -> success=%d\n",
+					  cfm->status,
+					  !!(cfm->status & TX_STATUS_ACKNOWLEDGED),
+					  !!(cfm->status & TX_STATUS_DONE),
+					  success ? 1 : 0);
+			}
+			cb(skb->args, success);
+		}
 
 		bk_null_printf("flush_desc: node %p, pbuf %p\n", skb, skb->p);
 
