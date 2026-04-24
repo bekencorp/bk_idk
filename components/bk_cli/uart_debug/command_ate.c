@@ -1503,7 +1503,7 @@ static void ate_read_otp(const uint8_t *content, int cnt, uint8_t *tx_buffer1)
         } else if (content[3] == OTP_MEMORY_CHECK_VDDDIG) {
             // No area for crc
             length = 4;
-        } else if (content[3] == OTP_GADC_TEMPERATURE) {
+        } else if ((content[3] == OTP_GADC_TEMPERATURE) || (content[3] == OTP_GADC_TEMPERATURE_BACKUP)) {
             // temp code1(2 bytes) + temp code2(2 bytes)
             length = 4;
         } else if (content[3] == OTP_PHY_PWR1) {
@@ -2349,7 +2349,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 /* 55 0B 02: write efuse 18,19,20,21 */
                 break;
             case 0x0C:       // SARADC temperature
-                ate_cali_temperature(content, tx_buffer);
+                ate_cali_temperature(content, cnt, tx_buffer);
                 break;
             case 0x14:      // PER_Min_2484: 55 14 [ms=50]
             {

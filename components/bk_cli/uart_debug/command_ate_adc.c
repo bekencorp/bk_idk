@@ -173,7 +173,7 @@ exit:
     return;
 }
 
-void ate_cali_temperature(const unsigned char *content, UINT8 *tx_buffer)
+void ate_cali_temperature(const unsigned char *content, int cnt, UINT8 *tx_buffer)
 {
     uint32_t adc_code32 = 0;
     uint16_t adc_code16 = 0;
@@ -186,27 +186,45 @@ void ate_cali_temperature(const unsigned char *content, UINT8 *tx_buffer)
     if (ret < 0)
     {
         /* vdddig not valid in efuse, return 55 BB */
+        tx_buffer[0] = 0x55;
         tx_buffer[1] = 0xBB;
-        goto exit;
+        uart_send_bytes_for_ate(tx_buffer, 2);
+        return;
     }
 
-    ret = bk_otp_ahb_read(OTP_GADC_TEMPERATURE, temp_result, sizeof(temp_result));
+    int both_valid = 0;
+    ret = bk_otp_ahb_read_backup(OTP_GADC_TEMPERATURE, temp_result, &both_valid);
     if (ret != BK_OK)
     {
+        tx_buffer[0] = 0x55;
         tx_buffer[1] = 0xAA;
-        goto exit;
+        uart_send_bytes_for_ate(tx_buffer, 2);
+        return;
     }
-    uint16_t otp_temp1 = 0;
-    uint16_t otp_temp2 = 0;
-    os_memcpy(&otp_temp1, temp_result, sizeof(otp_temp1));
-    os_memcpy(&otp_temp2, temp_result + 2, sizeof(otp_temp2));
+    uint16_t temp_high = 0;
+    uint16_t temp_low = 0;
+    os_memcpy(&temp_high, temp_result, sizeof(temp_high));
+    os_memcpy(&temp_low, temp_result + 2, sizeof(temp_low));
 
-    if ((otp_temp1 != 0) && (otp_temp1 != 0xFFFF) && (otp_temp2 != 0) && (otp_temp2 != 0xFFFF))
+    if ((temp_high != 0) && (temp_high != 0xFFFF) && (temp_low != 0) && (temp_low != 0xFFFF))
     {
-        tx_buffer[0] = 0x0E;
-        os_memcpy(&tx_buffer[1], temp_result, sizeof(uint16_t) * 2);
-        bk_printf("temp otp result = 0x%x%x%x%x\n", temp_result[0], temp_result[1], temp_result[2], temp_result[3]);
-        uart_send_bytes_for_ate(tx_buffer, 5);
+        if ((cnt == 2) || ((cnt == 3) && (content[2] == 1)) ||    // 55 0C or 55 0C 01: any valid
+            ((cnt == 3) && (content[2] == 2) && both_valid))      // 55 0C 02: both main and backup valid
+        {
+            tx_buffer[0] = 0x0E;
+            os_memcpy(&tx_buffer[1], temp_result, sizeof(uint16_t) * 2);
+            bk_printf("temp otp result = 0x%x%x%x%x\n", temp_result[0], temp_result[1], temp_result[2], temp_result[3]);
+            uart_send_bytes_for_ate(tx_buffer, 5);
+            return;
+        }
+    }
+
+    if (((cnt != 2) && (cnt != 3)) ||                              // cnt not 2 or 3
+        ((cnt == 3) && (content[2] != 1) && (content[2] != 2)))    // cnt==3: subcmd not 1 or 2
+    {
+        tx_buffer[0] = 0x55;
+        tx_buffer[1] = 0xCC;
+        uart_send_bytes_for_ate(tx_buffer, 2);
         return;
     }
 
@@ -215,9 +233,12 @@ void ate_cali_temperature(const unsigned char *content, UINT8 *tx_buffer)
     sys_ana_ll_set_reg4_value(reg_val);
 
     ret = temp_detect_get_temperature(&adc_code32);
-    if (ret != BK_OK) {
+    if (ret != BK_OK)
+    {
+        tx_buffer[0] = 0x55;
         tx_buffer[1] = 0xDD;
-        goto exit;
+        uart_send_bytes_for_ate(tx_buffer, 2);
+        return;
     }
     adc_code16 = adc_code32;
     bk_printf("temp code = %d, 0x%x\n", adc_code16, adc_code16);
@@ -230,9 +251,12 @@ void ate_cali_temperature(const unsigned char *content, UINT8 *tx_buffer)
     sys_ana_ll_set_reg4_value(reg_val);
 
     ret = temp_detect_get_temperature(&adc_code32);
-    if (ret != BK_OK) {
+    if (ret != BK_OK)
+    {
+        tx_buffer[0] = 0x55;
         tx_buffer[1] = 0xDD;
-        goto exit;
+        uart_send_bytes_for_ate(tx_buffer, 2);
+        return;
     }
     adc_code16 = adc_code32;
     bk_printf("temp code = %d, 0x%x\n", adc_code16, adc_code16);
@@ -240,25 +264,29 @@ void ate_cali_temperature(const unsigned char *content, UINT8 *tx_buffer)
     os_memcpy(temp_result + 2, &adc_code16, sizeof(adc_code16));
     bk_printf("temp result = 0x%x%x%x%x\n", temp_result[0], temp_result[1], temp_result[2], temp_result[3]);
 
-    // update otp will read back and check, so do not do it here
-    ret = bk_otp_ahb_update(OTP_GADC_TEMPERATURE, temp_result, sizeof(temp_result));
-    if (ret != BK_OK)
+    bool write_backup = false;
+    uint8_t temp_read[8] = {0};
+
+    if ((cnt == 3) && (content[2] == 2))
     {
-        tx_buffer[1] = 0xCC;
-        goto exit;
+        write_backup = true;
     }
 
-    // if run here, means update otp success and read back check success
-    tx_buffer[0] = 0x55;
-    tx_buffer[1] = 0x33;
-    bk_otp_ahb_read(OTP_GADC_TEMPERATURE, tx_buffer + 2, sizeof(uint16_t) * 2);
-    bk_printf("temp otp result = 0x%x%x%x%x\n", temp_result[0], temp_result[1], temp_result[2], temp_result[3]);
-    uart_send_bytes_for_ate(tx_buffer, 6);
-    return;
+    if (bk_otp_ahb_update_backup(OTP_GADC_TEMPERATURE, temp_result, write_backup, temp_read) == BK_OK)
+    {
+        /* success */
+        tx_buffer[0] = 0x55;
+        tx_buffer[1] = 0x33;
+        os_memcpy(tx_buffer + 2, temp_read, 4);
+        uart_send_bytes_for_ate(tx_buffer, 6);
+    }
+    else
+    {
+        tx_buffer[0] = 0x55;
+        tx_buffer[1] = 0xCC;
+        uart_send_bytes_for_ate(tx_buffer, 2);
+    }
 
-exit:
-    tx_buffer[0] = 0x55;
-    uart_send_bytes_for_ate(tx_buffer, 2);
     return;
 }
 #endif // CFG_ATE_TEST
