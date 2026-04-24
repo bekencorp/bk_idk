@@ -87,39 +87,6 @@ bk_err_t bk_i2c_init(i2c_id_t id, const i2c_config_t *cfg);
 bk_err_t bk_i2c_deinit(i2c_id_t id);
 
 /**
- * @brief     Init the GPIO simulated I2C
- *
- * This API init the GPIO simulated I2C:
- *  - Configure the GPIO pins for I2C based on id
- *  - Set the I2C clock rate based on baud_rate parameter
- *
- * @param id I2C id, used to select GPIO pins
- * @param cfg I2C parameter settings, baud_rate determines clock speed
- *
- * @attention 1. This is software simulated I2C using GPIO bit-banging
- * @attention 2. Supported baud rates: 100KHz, 200KHz, 400KHz
- *
- * @return
- *    - BK_OK: succeed
- *    - others: other errors.
- */
-bk_err_t bk_sim_i2c_init(i2c_id_t id, const i2c_config_t *cfg);
-
-/**
- * @brief     Deinit the GPIO simulated I2C
- *
- * This API deinit the GPIO simulated I2C:
- *   - Set SCL and SDA pins to low state
- *
- * @param id I2C id
- *
- * @return
- *    - BK_OK: succeed
- *    - others: other errors.
- */
-bk_err_t bk_sim_i2c_deinit(i2c_id_t id);
-
-/**
  * @brief     Write data to the I2C port from a given buffer and length,
  *            It shall only be called in I2C master mode.
  *

@@ -1078,7 +1078,6 @@ void bk_i2c_queue_callback(int id, beken_queue_t *queue, void *app_data)
     cb_context->app_data = app_data;
 }
 
-#if !CONFIG_SIM_I2C
 uint8_t bk_i2c_get_busstate (int id)
 {
     I2C_LOGD("bk_i2c_get_busstate[%d].\n",s_i2c[id].master_status);
@@ -1088,7 +1087,6 @@ uint8_t bk_i2c_get_busstate (int id)
         return 0;//busy
     }
 }
-#endif
 
 uint8_t bk_i2c_get_transstate ( int id )
 {
@@ -1262,7 +1260,6 @@ bk_err_t bk_i2c_deinit(i2c_id_t id)
     return BK_OK;
 }
 
-#if !CONFIG_SIM_I2C
 bk_err_t bk_i2c_master_write(i2c_id_t id, uint32_t dev_addr, const uint8_t *data, uint32_t size, uint32_t timeout_ms)
 {
     bk_err_t ret = BK_OK;
@@ -1463,7 +1460,6 @@ bk_err_t bk_i2c_master_read_noaddr(i2c_id_t id, uint8_t *data, uint32_t size, ui
 
     return i2c_drv_obj->err_code;
 }
-#endif
 
 bk_err_t bk_i2c_slave_write(i2c_id_t id, const uint8_t *data, uint32_t size, uint32_t timeout_ms)
 {
@@ -1539,7 +1535,6 @@ bk_err_t bk_i2c_slave_read(i2c_id_t id, uint8_t *data, uint32_t size, uint32_t t
     return BK_OK;
 }
 
-#if !CONFIG_SIM_I2C
 bk_err_t bk_i2c_memory_write(i2c_id_t id, const i2c_mem_param_t *mem_param)
 {
     bk_err_t ret = BK_OK;
@@ -1630,7 +1625,6 @@ bk_err_t bk_i2c_memory_read(i2c_id_t id, const i2c_mem_param_t *mem_param)
 
     return s_i2c[id].err_code;
 }
-#endif
 
 bk_err_t bk_i2c_set_baud_rate(i2c_id_t id, uint32_t baud_rate)
 {

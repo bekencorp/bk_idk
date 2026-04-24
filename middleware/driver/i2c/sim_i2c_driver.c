@@ -9,7 +9,7 @@
 
 #include <driver/gpio.h>
 #include <driver/int.h>
-#include <driver/i2c.h>
+#include <driver/sim_i2c.h>
 #include "clock_driver.h"
 #include "gpio_driver.h"
 #include "icu_driver.h"
@@ -51,12 +51,7 @@ static inline void I2cSetSdaInput(void)
 
 static inline void I2cSetSdaOutput(void)
 {
-#ifdef SIM_I2C_GPIO_API_EN
-	bk_gpio_disable_input(s_sim_i2c_sda);
-	bk_gpio_enable_output(s_sim_i2c_sda);
-#else
 	GPIO_UP(s_sim_i2c_sda);
-#endif
 }
 
 static inline void I2cSetSclInput(void)
@@ -67,56 +62,27 @@ static inline void I2cSetSclInput(void)
 
 static inline void I2cSetSclOutput(void)
 {
-#ifdef SIM_I2C_GPIO_API_EN
-	bk_gpio_disable_input(s_sim_i2c_scl);
-	bk_gpio_enable_output(s_sim_i2c_scl);
-#else
 	GPIO_UP(s_sim_i2c_scl);
-#endif
 }
 
 static inline void I2cSetSdaHigh(void)
 {
-#ifdef SIM_I2C_GPIO_API_EN
-	bk_gpio_disable_input(s_sim_i2c_sda);
-	bk_gpio_enable_output(s_sim_i2c_sda);
-	bk_gpio_set_output_high(s_sim_i2c_sda);
-#else
 	GPIO_UP(s_sim_i2c_sda);
-#endif
 }
 
 static inline void I2cSetSdaLow(void)
 {
-#ifdef SIM_I2C_GPIO_API_EN
-	bk_gpio_disable_input(s_sim_i2c_sda);
-	bk_gpio_enable_output(s_sim_i2c_sda);
-	bk_gpio_set_output_low(s_sim_i2c_sda);
-#else
 	GPIO_DOWN(s_sim_i2c_sda);
-#endif
 }
 
 static inline void I2cSetSclHigh(void)
 {
-#ifdef SIM_I2C_GPIO_API_EN
-	bk_gpio_disable_input(s_sim_i2c_scl);
-	bk_gpio_enable_output(s_sim_i2c_scl);
-	bk_gpio_set_output_high(s_sim_i2c_scl);
-#else
 	GPIO_UP(s_sim_i2c_scl);
-#endif
 }
 
 static inline void I2cSetSclLow(void)
 {
-#ifdef SIM_I2C_GPIO_API_EN
-	bk_gpio_disable_input(s_sim_i2c_scl);
-	bk_gpio_enable_output(s_sim_i2c_scl);
-	bk_gpio_set_output_low(s_sim_i2c_scl);
-#else
 	GPIO_DOWN(s_sim_i2c_scl);
-#endif
 }
 
 static inline uint8_t I2cReadSda(void)
@@ -124,7 +90,7 @@ static inline uint8_t I2cReadSda(void)
 	return (uint8_t)(bk_gpio_get_input(s_sim_i2c_sda));
 }
 
-void I2cDelay(uint32_t count)
+static void I2cDelay(uint32_t count)
 {
 	volatile uint32_t 	i;
 
@@ -161,7 +127,7 @@ static inline void I2cSclPulse_ack()
 	I2cDelay(SCL_DELAY);
 }
 
-void I2cStart(void)
+static void I2cStart(void)
 {
 	// Just to ensure SCL is in LOW state.
 //	I2cSetSclLow();
@@ -186,7 +152,7 @@ void I2cStart(void)
 	I2cDelay(SCL_DELAY);
 }
 
-void I2cStop(void)
+static void I2cStop(void)
 {
 	// Just to ensure SCL is in LOW state.
 	I2cSetSclLow();
@@ -239,7 +205,7 @@ static inline void I2cNoAck(void)
 	#define I2C_SPECIAL_DELAY()
 #endif
 
-void I2cInit( void )
+static void I2cInit( void )
 {
 	I2cSetSdaOutput();
 	I2cSetSclOutput();
@@ -247,7 +213,7 @@ void I2cInit( void )
 	I2cStop();
 }
 
-bool I2cWaitForAck(void)
+static bool I2cWaitForAck(void)
 {
 	bool	Ack;
 
@@ -274,7 +240,7 @@ bool I2cWaitForAck(void)
 	return Ack;
 }
 
-bool I2cSend(uint8_t I2cData)
+static bool I2cSend(uint8_t I2cData)
 {
 	uint8_t	Mask;
 
@@ -305,7 +271,7 @@ bool I2cSend(uint8_t I2cData)
 	return I2cWaitForAck();
 }
 
-uint8_t I2cReceive(bool LastOne)
+static uint8_t I2cReceive(bool LastOne)
 {
 	uint8_t		Mask;
 	uint8_t		I2cData = 0;
@@ -347,7 +313,7 @@ uint8_t I2cReceive(bool LastOne)
 	return I2cData;
 }
 
-bool I2cWriteNoAddr(const uint8_t *pBuff, uint32_t len)
+static bool I2cWriteNoAddr(const uint8_t *pBuff, uint32_t len)
 {
 	I2cStart();
 	while(len-- > 0)
@@ -363,7 +329,7 @@ bool I2cWriteNoAddr(const uint8_t *pBuff, uint32_t len)
 	return TRUE;
 }
 
-bool I2cReadNoAddr(uint8_t *pBuff, uint32_t len)
+static bool I2cReadNoAddr(uint8_t *pBuff, uint32_t len)
 {
 	if(len == 0)
 		return FALSE;
@@ -378,7 +344,7 @@ bool I2cReadNoAddr(uint8_t *pBuff, uint32_t len)
 	return TRUE;
 }
 
-bool I2cWrite(uint8_t Addr, const uint8_t * pBuff, uint32_t len)
+static bool I2cWrite(uint8_t Addr, const uint8_t * pBuff, uint32_t len)
 {
 	Addr <<= 1;
 
@@ -404,7 +370,7 @@ bool I2cWrite(uint8_t Addr, const uint8_t * pBuff, uint32_t len)
 	return TRUE;
 }
 
-bool I2cRead(uint8_t Addr, uint8_t * pBuff, uint32_t len)
+static bool I2cRead(uint8_t Addr, uint8_t * pBuff, uint32_t len)
 {
 	if(len == 0)
 		return FALSE;
@@ -430,7 +396,7 @@ bool I2cRead(uint8_t Addr, uint8_t * pBuff, uint32_t len)
 	return TRUE;
 }
 
-bool I2cMemWrite(i2c_id_t id, const i2c_mem_param_t *mem_param)
+static bool I2cMemWrite(i2c_id_t id, const i2c_mem_param_t *mem_param)
 {
 	uint32_t Addr;
 	uint32_t mem_addr;
@@ -482,7 +448,7 @@ bool I2cMemWrite(i2c_id_t id, const i2c_mem_param_t *mem_param)
 	return TRUE;
 }
 
-bool I2cMemRead(i2c_id_t id, const i2c_mem_param_t *mem_param)
+static bool I2cMemRead(i2c_id_t id, const i2c_mem_param_t *mem_param)
 {
 	uint32_t Addr;
 	uint32_t mem_addr;
@@ -539,18 +505,6 @@ bool I2cMemRead(i2c_id_t id, const i2c_mem_param_t *mem_param)
 	I2cStop();
 
 	return TRUE;
-}
-
-bk_err_t bk_i2c_memory_write(i2c_id_t id, const i2c_mem_param_t *mem_param)
-{
-	I2cMemWrite(id, mem_param);
-	return BK_OK;
-}
-
-bk_err_t bk_i2c_memory_read(i2c_id_t id, const i2c_mem_param_t *mem_param)
-{
-	I2cMemRead(id, mem_param);
-	return BK_OK;
 }
 
 bk_err_t bk_sim_i2c_init(i2c_id_t id, const i2c_config_t *cfg)
@@ -585,31 +539,50 @@ bk_err_t bk_sim_i2c_deinit(i2c_id_t id)
 	return BK_OK;
 }
 
-uint8_t bk_i2c_get_busstate(int id)
+bk_err_t bk_sim_i2c_master_write(i2c_id_t id, uint32_t dev_addr, const uint8_t *data, uint32_t size, uint32_t timeout_ms)
 {
-	return 1; //idle
-}
-
-bk_err_t bk_i2c_master_write(i2c_id_t id, uint32_t dev_addr, const uint8_t *data, uint32_t size, uint32_t timeout_ms)
-{
-	I2cWrite(dev_addr, data, size);
+	if (I2cWrite(dev_addr, data, size) == FALSE) {
+		return BK_ERR_I2C_ACK_TIMEOUT;
+	}
 	return BK_OK;
 }
 
-bk_err_t bk_i2c_master_read(i2c_id_t id, uint32_t dev_addr, uint8_t *data, uint32_t size, uint32_t timeout_ms)
+bk_err_t bk_sim_i2c_master_read(i2c_id_t id, uint32_t dev_addr, uint8_t *data, uint32_t size, uint32_t timeout_ms)
 {
-	I2cRead(dev_addr, data, size);
+	if (I2cRead(dev_addr, data, size) == FALSE) {
+		return BK_ERR_I2C_ACK_TIMEOUT;
+	}
 	return BK_OK;
 }
 
-bk_err_t bk_i2c_master_write_noaddr(i2c_id_t id, const uint8_t *data, uint32_t size, uint32_t timeout_ms)
+bk_err_t bk_sim_i2c_memory_write(i2c_id_t id, const i2c_mem_param_t *mem_param)
 {
-	I2cWriteNoAddr(data, size);
+	if (I2cMemWrite(id, mem_param) == FALSE) {
+		return BK_ERR_I2C_ACK_TIMEOUT;
+	}
 	return BK_OK;
 }
 
-bk_err_t bk_i2c_master_read_noaddr(i2c_id_t id, uint8_t *data, uint32_t size, uint32_t timeout_ms)
+bk_err_t bk_sim_i2c_memory_read(i2c_id_t id, const i2c_mem_param_t *mem_param)
 {
-	I2cReadNoAddr(data, size);
+	if (I2cMemRead(id, mem_param) == FALSE) {
+		return BK_ERR_I2C_ACK_TIMEOUT;
+	}
+	return BK_OK;
+}
+
+bk_err_t bk_sim_i2c_master_write_noaddr(i2c_id_t id, const uint8_t *data, uint32_t size, uint32_t timeout_ms)
+{
+	if (I2cWriteNoAddr(data, size) == FALSE) {
+		return BK_ERR_I2C_ACK_TIMEOUT;
+	}
+	return BK_OK;
+}
+
+bk_err_t bk_sim_i2c_master_read_noaddr(i2c_id_t id, uint8_t *data, uint32_t size, uint32_t timeout_ms)
+{
+	if (I2cReadNoAddr(data, size) == FALSE) {
+		return BK_ERR_I2C_ACK_TIMEOUT;
+	}
 	return BK_OK;
 }
