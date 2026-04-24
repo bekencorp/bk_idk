@@ -21,7 +21,7 @@
 
 void i2c_struct_dump(i2c_id_t id)
 {
-	i2c_typedef_t *hw = (i2c_typedef_t *)I2C_LL_REG_BASE(id);
+	i2c_hw_t *hw = (i2c_hw_t *)I2C_LL_REG_BASE(id);
 	SOC_LOGI("base=%x\r\n", (uint32_t)hw);
 
 	SOC_LOGI("  sm_bus_cfg=0x%x value=0x%x\n", &hw->sm_bus_cfg, hw->sm_bus_cfg.v);

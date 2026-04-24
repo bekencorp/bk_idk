@@ -368,32 +368,48 @@ static void pwm_update_all_chan_test(void)
 }
 
 #if CONFIG_PWM_PHASE_SHIFT
+#if CONFIG_PWM_V1PX
+#define PWM_CH_0        PWM_ID_1
+#define PWM_CH_1        PWM_ID_3
+#define PWM_CH_2        PWM_ID_4
+#define PWM_CH_3        PWM_ID_6
+#define PWM_CH_4        PWM_ID_8
+#define PWM_CH_5        PWM_ID_10
+#else
+#define PWM_CH_0        PWM_ID_0
+#define PWM_CH_1        PWM_ID_1
+#define PWM_CH_2        PWM_ID_2
+#define PWM_CH_3        PWM_ID_3
+#define PWM_CH_4        PWM_ID_4
+#define PWM_CH_5        PWM_ID_5
+#endif
+
 #define PHASE_SHIFT_CONFIG { \
 	.psc = 0, \
 	.chan_num = 6,\
 	.period_cycle = s_period_cycle, \
 	.duty_config[0] = { \
-		.chan = 0, \
+		.chan = PWM_CH_0, \
 		.duty_cycle = 0, \
 	}, \
 	.duty_config[1] = { \
-		.chan = 1, \
+		.chan = PWM_CH_1, \
  		.duty_cycle = 0, \
 	}, \
 	.duty_config[2] = { \
-		.chan = 2, \
+		.chan = PWM_CH_2, \
 		.duty_cycle = 0, \
 	}, \
 	.duty_config[3] = { \
-		.chan = 3, \
+		.chan = PWM_CH_3, \
 		.duty_cycle = 0, \
 	}, \
 	.duty_config[4] = { \
-		.chan = 4, \
+		.chan = PWM_CH_4, \
 		.duty_cycle = 0, \
 	}, \
 	.duty_config[5] = { \
-		.chan = 5, \
+		.chan = PWM_CH_5, \
 		.duty_cycle = 0, \
 	}, \
 } \
@@ -423,12 +439,12 @@ static int pwm_phase_shift_test(void)
 		os_printf("\r\n");
 	}
 
-	BK_LOG_ON_ERR(bk_pwm_phase_shift_set_duty(0, 0));
-	BK_LOG_ON_ERR(bk_pwm_phase_shift_set_duty(1, 0));
-	BK_LOG_ON_ERR(bk_pwm_phase_shift_set_duty(2, 0));
-	BK_LOG_ON_ERR(bk_pwm_phase_shift_set_duty(3, 0));
-	BK_LOG_ON_ERR(bk_pwm_phase_shift_set_duty(4, 0));
-	BK_LOG_ON_ERR(bk_pwm_phase_shift_set_duty(5, 0));
+	BK_LOG_ON_ERR(bk_pwm_phase_shift_set_duty(PWM_CH_0, 0));
+	BK_LOG_ON_ERR(bk_pwm_phase_shift_set_duty(PWM_CH_1, 0));
+	BK_LOG_ON_ERR(bk_pwm_phase_shift_set_duty(PWM_CH_2, 0));
+	BK_LOG_ON_ERR(bk_pwm_phase_shift_set_duty(PWM_CH_3, 0));
+	BK_LOG_ON_ERR(bk_pwm_phase_shift_set_duty(PWM_CH_4, 0));
+	BK_LOG_ON_ERR(bk_pwm_phase_shift_set_duty(PWM_CH_5, 0));
 	BK_LOG_ON_ERR(bk_pwm_phase_shift_update_duty());
 
 	CLI_LOGI("phase_shift test over\r\n");

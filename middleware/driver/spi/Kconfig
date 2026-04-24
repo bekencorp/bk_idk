@@ -39,5 +39,8 @@ menu "SPI"
 		bool "SPI byte interval"
 		default n
 
+	config SPI_RZ
+		bool "SPI RZ"
+		default y
 endmenu
 

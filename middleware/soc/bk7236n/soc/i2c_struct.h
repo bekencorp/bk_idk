@@ -99,11 +99,6 @@ typedef volatile struct {
 		};
 		uint32_t v;
 	} sm_bus_ex_cfg;
-} i2c_typedef_t;
-
-typedef struct {
-	i2c_typedef_t *i2c0_hw;
-	i2c_typedef_t *i2c1_hw;
 } i2c_hw_t;
 
 #ifdef __cplusplus

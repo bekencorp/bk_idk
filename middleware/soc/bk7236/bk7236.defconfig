@@ -1124,7 +1124,7 @@ CONFIG_SDIO_V2P0=y
 # SPI
 #
 #@ Enable SPI DMA
-CONFIG_SPI_DMA=n
+CONFIG_SPI_DMA=y
 #@ Enable SPI Statis
 CONFIG_SPI_STATIS=y
 #@ Support TX FIFO Write Ready

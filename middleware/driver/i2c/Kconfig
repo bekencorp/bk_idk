@@ -10,10 +10,6 @@ menu "I2C"
 		help
 		The value should be changed if need to change i2c id
 
-	config FM_I2C
-		bool "Enable FM I2C"
-		default y
-
 	config SIM_I2C
 		bool "Enable GPIO Simulate I2C"
 		default n

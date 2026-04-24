@@ -25,113 +25,103 @@
 #define TRUE 1
 #define FALSE 0
 
-#define SUPPORT_100K
+static gpio_id_t s_sim_i2c_sda = I2C1_LL_SDA_PIN;
+static gpio_id_t s_sim_i2c_scl = I2C1_LL_SCL_PIN;
 
-/* Disable this macro by default, as gpio api way would cost more time to switch output level */
-//#define SIM_I2C_GPIO_API_EN
+#define SIM_I2C_SCL_PIN(id)  ((id) == I2C_ID_0 ? I2C0_LL_SCL_PIN : I2C1_LL_SCL_PIN)
+#define SIM_I2C_SDA_PIN(id)  ((id) == I2C_ID_0 ? I2C0_LL_SDA_PIN : I2C1_LL_SDA_PIN)
 
-#define HWD_GPIO_I2C_SDA		GPIO_1
-#define HWD_GPIO_I2C_SCL		GPIO_0
+#define SIM_I2C_CLK_DELAY_100K   50
+#define SIM_I2C_CLK_DELAY_200K   20
+#define SIM_I2C_CLK_DELAY_400K   10
+#define SIM_I2C_CLK_DELAY_DEFAULT SIM_I2C_CLK_DELAY_100K
 
-/*****************************************************
- * These Macros could be used for RISCV 120Mhz.
- *****************************************************/
-#define CLK_DELAY_100K		25
-#define CLK_DELAY_400K		1
+static uint32_t s_scl_delay = SIM_I2C_CLK_DELAY_DEFAULT;
 
-#define I2C_MIN_DELAY			1
+#define I2C_MIN_DELAY  1
 
-#ifdef SUPPORT_100K
-#define SCL_DELAY				CLK_DELAY_100K
-#else
-#define SCL_DELAY				CLK_DELAY_400K
-#endif
-
-#define SCL_HALF_DELAY			((SCL_DELAY + 1) / 2)
-#define GPIO_OUTPUT_HIGH		0x2
-#define GPIO_OUTPUT_LOW			0x0
+#define SCL_DELAY       s_scl_delay
+#define SCL_HALF_DELAY  ((s_scl_delay + 1) / 2)
 
 static inline void I2cSetSdaInput(void)
 {
-	bk_gpio_disable_output(HWD_GPIO_I2C_SDA);
-	bk_gpio_enable_input(HWD_GPIO_I2C_SDA);
+	bk_gpio_disable_output(s_sim_i2c_sda);
+	bk_gpio_enable_input(s_sim_i2c_sda);
 }
 
 static inline void I2cSetSdaOutput(void)
 {
-/* Disable this macro by default, as gpio api way would cost more time to switch output level */
 #ifdef SIM_I2C_GPIO_API_EN
-	bk_gpio_disable_input(HWD_GPIO_I2C_SDA);
-	bk_gpio_enable_output(HWD_GPIO_I2C_SDA);
+	bk_gpio_disable_input(s_sim_i2c_sda);
+	bk_gpio_enable_output(s_sim_i2c_sda);
 #else
-	*((volatile unsigned long *) (SOC_AON_GPIO_REG_BASE+(HWD_GPIO_I2C_SDA)*4)) = GPIO_OUTPUT_HIGH;
+	GPIO_UP(s_sim_i2c_sda);
 #endif
 }
 
-static inline void I2cSetSclInput(void) // Is it needed when this is the master? SCL line INPUT?
+static inline void I2cSetSclInput(void)
 {
-	bk_gpio_disable_output(HWD_GPIO_I2C_SCL);
-	bk_gpio_enable_input(HWD_GPIO_I2C_SCL);
+	bk_gpio_disable_output(s_sim_i2c_scl);
+	bk_gpio_enable_input(s_sim_i2c_scl);
 }
 
 static inline void I2cSetSclOutput(void)
 {
 #ifdef SIM_I2C_GPIO_API_EN
-	bk_gpio_disable_input(HWD_GPIO_I2C_SCL);
-	bk_gpio_enable_output(HWD_GPIO_I2C_SCL);
+	bk_gpio_disable_input(s_sim_i2c_scl);
+	bk_gpio_enable_output(s_sim_i2c_scl);
 #else
-	*((volatile unsigned long *) (SOC_AON_GPIO_REG_BASE+(HWD_GPIO_I2C_SCL)*4)) = GPIO_OUTPUT_HIGH;
+	GPIO_UP(s_sim_i2c_scl);
 #endif
 }
 
 static inline void I2cSetSdaHigh(void)
 {
 #ifdef SIM_I2C_GPIO_API_EN
-	bk_gpio_disable_input(HWD_GPIO_I2C_SDA);
-	bk_gpio_enable_output(HWD_GPIO_I2C_SDA);
-	bk_gpio_set_output_high(HWD_GPIO_I2C_SDA);
+	bk_gpio_disable_input(s_sim_i2c_sda);
+	bk_gpio_enable_output(s_sim_i2c_sda);
+	bk_gpio_set_output_high(s_sim_i2c_sda);
 #else
-	*((volatile unsigned long *) (SOC_AON_GPIO_REG_BASE+(HWD_GPIO_I2C_SDA)*4)) = GPIO_OUTPUT_HIGH;
+	GPIO_UP(s_sim_i2c_sda);
 #endif
 }
 
 static inline void I2cSetSdaLow(void)
 {
 #ifdef SIM_I2C_GPIO_API_EN
-	bk_gpio_disable_input(HWD_GPIO_I2C_SDA);
-	bk_gpio_enable_output(HWD_GPIO_I2C_SDA);
-	bk_gpio_set_output_low(HWD_GPIO_I2C_SDA);
+	bk_gpio_disable_input(s_sim_i2c_sda);
+	bk_gpio_enable_output(s_sim_i2c_sda);
+	bk_gpio_set_output_low(s_sim_i2c_sda);
 #else
-	*((volatile unsigned long *) (SOC_AON_GPIO_REG_BASE+(HWD_GPIO_I2C_SDA)*4)) = GPIO_OUTPUT_LOW;
+	GPIO_DOWN(s_sim_i2c_sda);
 #endif
 }
 
 static inline void I2cSetSclHigh(void)
 {
 #ifdef SIM_I2C_GPIO_API_EN
-	bk_gpio_disable_input(HWD_GPIO_I2C_SCL);
-	bk_gpio_enable_output(HWD_GPIO_I2C_SCL);
-	bk_gpio_set_output_high(HWD_GPIO_I2C_SCL);
+	bk_gpio_disable_input(s_sim_i2c_scl);
+	bk_gpio_enable_output(s_sim_i2c_scl);
+	bk_gpio_set_output_high(s_sim_i2c_scl);
 #else
-	*((volatile unsigned long *) (SOC_AON_GPIO_REG_BASE+(HWD_GPIO_I2C_SCL)*4)) = GPIO_OUTPUT_HIGH;
+	GPIO_UP(s_sim_i2c_scl);
 #endif
 }
 
 static inline void I2cSetSclLow(void)
 {
 #ifdef SIM_I2C_GPIO_API_EN
-	bk_gpio_disable_input(HWD_GPIO_I2C_SCL);
-	bk_gpio_enable_output(HWD_GPIO_I2C_SCL);
-	bk_gpio_set_output_low(HWD_GPIO_I2C_SCL);
+	bk_gpio_disable_input(s_sim_i2c_scl);
+	bk_gpio_enable_output(s_sim_i2c_scl);
+	bk_gpio_set_output_low(s_sim_i2c_scl);
 #else
-	*((volatile unsigned long *) (SOC_AON_GPIO_REG_BASE+(HWD_GPIO_I2C_SCL)*4)) = GPIO_OUTPUT_LOW;
+	GPIO_DOWN(s_sim_i2c_scl);
 #endif
 }
 
-//This function should return 1 if the SDA is in high state, or 0 if it is in low state
 static inline uint8_t I2cReadSda(void)
 {
-	return (uint8_t)(bk_gpio_get_input(HWD_GPIO_I2C_SDA));
+	return (uint8_t)(bk_gpio_get_input(s_sim_i2c_sda));
 }
 
 void I2cDelay(uint32_t count)
@@ -161,7 +151,7 @@ static inline void I2cSclPulse()
 	I2cDelay(SCL_DELAY);
 }
 
-void I2cSclPulse_ack()
+static inline void I2cSclPulse_ack()
 {
 	I2cSetSclHigh();
 	I2cDelay(SCL_DELAY);
@@ -357,6 +347,37 @@ uint8_t I2cReceive(bool LastOne)
 	return I2cData;
 }
 
+bool I2cWriteNoAddr(const uint8_t *pBuff, uint32_t len)
+{
+	I2cStart();
+	while(len-- > 0)
+	{
+		if(I2cSend(*pBuff++) == FALSE)
+		{
+			I2cStop();
+			return FALSE;
+		}
+	}
+	I2cStop();
+
+	return TRUE;
+}
+
+bool I2cReadNoAddr(uint8_t *pBuff, uint32_t len)
+{
+	if(len == 0)
+		return FALSE;
+
+	I2cStart();
+	while(len > 0)
+	{
+		*pBuff++ = I2cReceive((--len) == 0);
+	}
+	I2cStop();
+
+	return TRUE;
+}
+
 bool I2cWrite(uint8_t Addr, const uint8_t * pBuff, uint32_t len)
 {
 	Addr <<= 1;
@@ -523,55 +544,72 @@ bool I2cMemRead(i2c_id_t id, const i2c_mem_param_t *mem_param)
 bk_err_t bk_i2c_memory_write(i2c_id_t id, const i2c_mem_param_t *mem_param)
 {
 	I2cMemWrite(id, mem_param);
-
 	return BK_OK;
 }
 
 bk_err_t bk_i2c_memory_read(i2c_id_t id, const i2c_mem_param_t *mem_param)
 {
 	I2cMemRead(id, mem_param);
-
 	return BK_OK;
 }
 
-bk_err_t bk_i2c_driver_init(void)
+bk_err_t bk_sim_i2c_init(i2c_id_t id, const i2c_config_t *cfg)
 {
-	return BK_OK;
-}
+	s_sim_i2c_sda = SIM_I2C_SDA_PIN(id);
+	s_sim_i2c_scl = SIM_I2C_SCL_PIN(id);
 
-bk_err_t bk_i2c_driver_deinit(void)
-{
-	return BK_OK;
-}
+	if (cfg && cfg->baud_rate) {
+		if (cfg->baud_rate <= 100000) {
+			s_scl_delay = SIM_I2C_CLK_DELAY_100K;
+		} else if (cfg->baud_rate <= 200000) {
+			s_scl_delay = SIM_I2C_CLK_DELAY_200K;
+		} else {
+			s_scl_delay = SIM_I2C_CLK_DELAY_400K;
+		}
+	} else {
+		s_scl_delay = SIM_I2C_CLK_DELAY_DEFAULT;
+	}
 
-bk_err_t bk_i2c_init(i2c_id_t id, const i2c_config_t *cfg)
-{
-	bk_gpio_pull_down(HWD_GPIO_I2C_SDA);
-	bk_gpio_pull_down(HWD_GPIO_I2C_SCL);
-	gpio_dev_unmap(HWD_GPIO_I2C_SDA);
-	gpio_dev_unmap(HWD_GPIO_I2C_SCL);
 	I2cInit();
 
 	return BK_OK;
 }
 
-bk_err_t bk_i2c_deinit(i2c_id_t id)
+bk_err_t bk_sim_i2c_deinit(i2c_id_t id)
 {
+	s_sim_i2c_sda = SIM_I2C_SDA_PIN(id);
+	s_sim_i2c_scl = SIM_I2C_SCL_PIN(id);
+
 	I2cSetSclLow();
 	I2cSetSdaLow();
 	return BK_OK;
 }
 
+uint8_t bk_i2c_get_busstate(int id)
+{
+	return 1; //idle
+}
+
 bk_err_t bk_i2c_master_write(i2c_id_t id, uint32_t dev_addr, const uint8_t *data, uint32_t size, uint32_t timeout_ms)
 {
 	I2cWrite(dev_addr, data, size);
-
 	return BK_OK;
 }
 
 bk_err_t bk_i2c_master_read(i2c_id_t id, uint32_t dev_addr, uint8_t *data, uint32_t size, uint32_t timeout_ms)
 {
 	I2cRead(dev_addr, data, size);
+	return BK_OK;
+}
 
+bk_err_t bk_i2c_master_write_noaddr(i2c_id_t id, const uint8_t *data, uint32_t size, uint32_t timeout_ms)
+{
+	I2cWriteNoAddr(data, size);
+	return BK_OK;
+}
+
+bk_err_t bk_i2c_master_read_noaddr(i2c_id_t id, uint8_t *data, uint32_t size, uint32_t timeout_ms)
+{
+	I2cReadNoAddr(data, size);
 	return BK_OK;
 }

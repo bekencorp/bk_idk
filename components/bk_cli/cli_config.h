@@ -213,13 +213,13 @@ extern "C" {
 #if (CONFIG_FATFS && (CONFIG_SYS_CPU0))
 #define CLI_FATFS          1
 #else
-    
+
 #if (CONFIG_FATFS && (CONFIG_JPEG_SW_ENCODER_TEST || CONFIG_H264_SW_DECODER_TEST))
 #define CLI_FATFS          1
 #else
 #define CLI_FATFS          0
 #endif
-    
+
 #endif
 
 #if (CONFIG_VFS_TEST && (CONFIG_SYS_CPU0))

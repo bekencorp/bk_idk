@@ -766,6 +766,24 @@ static void cli_spi_flash_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc
 	return;
 }
 
+#if CONFIG_SPI_RZ
+static void cli_spi_rz_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	if (argc < 2) {
+		cli_spi_help();
+		return;
+	}
+
+	uint32_t spi_id = os_strtoul(argv[1], NULL, 10);
+	CLI_LOGI("spi_led_cmd, spi_id:%d\r\n", spi_id);
+
+	extern int bk_spi_rz_demo(spi_id_t spi_id);
+	bk_spi_rz_demo(spi_id);
+
+	CLI_LOGI("bk_spi_led_self_test over\r\n");
+}
+#endif
+
 #define SPI_CMD_CNT (sizeof(s_spi_commands) / sizeof(struct cli_command))
 static const struct cli_command s_spi_commands[] = {
 	{"spi_driver", "spi_driver {init|deinit}", cli_spi_driver_cmd},
@@ -774,6 +792,9 @@ static const struct cli_command s_spi_commands[] = {
 	{"spi_int", "spi_int {id} {reg} {tx|rx}", cli_spi_int_cmd},
 	{"spi_data_test", "spi_data_test {id} {master|slave} {baud_rate|send}[...]", cli_spi_data_txrx_test_cmd},
 	{"spi_flash", "spi_flash {id} {readid|read|write|erase} {addr} {len}[...]", cli_spi_flash_cmd},
+#if CONFIG_SPI_RZ
+	{"spi_rz", "spi_rz {id}", cli_spi_rz_cmd},
+#endif
 };
 
 int cli_spi_init(void)

@@ -64,8 +64,6 @@ set(srcs
 	icu/interrupt_base.c
 	timer/timer_driver.c
 	wdt/wdt_driver.c
-	spi/spi_driver.c
-	spi/spi_statis.c
 	sys_ctrl/sys_ctrl.c
 	pmu/aon_pmu_driver.c
 	uart/uart_driver.c
@@ -116,6 +114,7 @@ endif()
 if (NOT CMAKE_BUILD_EARLY_EXPANSION)
 	add_subdirectory(flash)
 	add_subdirectory(pwm)
+	add_subdirectory(spi)
 	add_subdirectory(phy)
 	add_subdirectory(sdio)
 	add_subdirectory(rtc)
@@ -160,12 +159,10 @@ endif()
 endif()
 
 if (CONFIG_I2C)
-if (NOT CONFIG_SIM_I2C)
 	list(APPEND srcs
 		i2c/i2c_driver.c
 		i2c/i2c_statis.c
 	)
-endif()
 if (CONFIG_SIM_I2C)
 	list(APPEND srcs
 		i2c/sim_i2c_driver.c
@@ -265,12 +262,6 @@ if (CONFIG_QSPI)
 		"qspi/qspi_flash.c"
 		)
 endif() #if (CONFIG_QSPI)
-
-if (CONFIG_SPI_MST_FLASH)
-	list(APPEND srcs
-		"spi/spi_flash.c"
-		)
-endif() #if (CONFIG_SPI_MST_FLASH)
 
 if (CONFIG_QSPI AND CONFIG_LCD_QSPI)
 	list(APPEND srcs

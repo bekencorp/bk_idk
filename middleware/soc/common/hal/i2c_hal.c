@@ -28,7 +28,7 @@ bk_err_t i2c_hal_soft_reset(i2c_hal_t *hal)
 
 bk_err_t i2c_hal_init(i2c_hal_t *hal)
 {
-	i2c_ll_init(&hal->hw);
+	i2c_ll_init(&hal->hw, hal->id);
 	return BK_OK;
 }
 
