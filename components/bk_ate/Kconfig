@@ -19,7 +19,7 @@ menu "Bk_ate"
 			depends on ATE
 			bool "Enable Ate Test"
 			default n
-			
+
 		config ATE_CPU2_ADDRESS
 			hex "ATE_CPU2_ADDRESS"
 			default 0x2809FFF7

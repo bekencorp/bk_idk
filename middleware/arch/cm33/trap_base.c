@@ -543,7 +543,7 @@ void user_except_handler_ex(uint32_t reset_reason, uint32_t lr, uint32_t sp)
         cm_backtrace_fault(lr, sp);
         #endif
 
-        #if CONFIG_RELIABILITY_TEST
+        #if CONFIG_WIFI_RELIABILITY_TEST || CONFIG_FLASH_RELIABILITY_TEST
         void statis_save_to_flash(void);
         statis_save_to_flash();
         #endif

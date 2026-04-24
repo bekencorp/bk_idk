@@ -21,6 +21,10 @@ if (CONFIG_PSRAM_RELIABILITY_TEST)
 	list(APPEND srcs psram_test.c)
 endif()
 
+if (CONFIG_HTOL_RELIABILITY_TEST)
+	list(APPEND srcs htol_test.c)
+endif()
+
 set(main_priv_requires "")
 if (CONFIG_CLI AND (CONFIG_WIFI_RELIABILITY_TEST OR CONFIG_FLASH_RELIABILITY_TEST))
 	list(APPEND main_priv_requires bk_cli)

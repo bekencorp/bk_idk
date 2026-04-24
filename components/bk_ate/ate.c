@@ -26,6 +26,9 @@
 #define ATE_ENABLE_GPIO_LEVEL (0)
 
 static bool s_ate_enabled = false;
+#if CONFIG_HTOL_RELIABILITY_TEST
+static bool s_htol_enabled = false;
+#endif
 
 //NOTICE:Now we re-use the GPIO which is used by UART.
 static gpio_id_t ate_get_gpio_id(void)
@@ -59,9 +62,19 @@ static bk_err_t ate_gpio_init(void)
 			bk_set_printf_port(CONFIG_UART_ATE_PRINT_PORT);
 			#endif
 			s_ate_enabled = true;
+#if CONFIG_HTOL_RELIABILITY_TEST
+			s_htol_enabled = false;
+#endif
+		} else {
+#if CONFIG_HTOL_RELIABILITY_TEST
+			s_htol_enabled = true;
+#endif
 		}
 	}
 #if CONFIG_ATE_TEST
+	s_ate_enabled = true;
+#endif
+#if CONFIG_HTOL_RELIABILITY_TEST
 	s_ate_enabled = true;
 #endif
 	if(s_ate_enabled == true)
@@ -79,6 +92,13 @@ __IRAM_SEC  bool ate_is_enabled(void)
 {
 	return s_ate_enabled;
 }
+
+#if CONFIG_HTOL_RELIABILITY_TEST
+__IRAM_SEC  bool htol_is_enabled(void)
+{
+	return s_htol_enabled;
+}
+#endif
 
 bool cp_is_enabled(void)
 {

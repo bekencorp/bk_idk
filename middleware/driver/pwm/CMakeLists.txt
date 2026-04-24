@@ -12,7 +12,7 @@ if (CONFIG_PWM)
 	endif()
 
 	if (CONFIG_PWM_TEST)
-		# list(APPEND srcs pwm/pwm_test.c)
+		list(APPEND srcs pwm/pwm_test.c)
 	endif()
 
 	if (CONFIG_PWM_API_TEST)

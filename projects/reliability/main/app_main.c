@@ -23,6 +23,7 @@
 #include "statis.h"
 #include "cli_statis.h"
 #include "psram_test.h"
+#include "htol_test.h"
 
 static void user_app_vote_cpu_freq(void)
 {
@@ -48,7 +49,9 @@ void user_app_main(void)
 {
 	user_app_vote_cpu_freq();
 
+#if CONFIG_WIFI_RELIABILITY_TEST || CONFIG_FLASH_RELIABILITY_TEST
 	statis_load_from_flash();
+#endif
 
 	int current_temp_code = get_current_temperature_code();
 	BK_RAW_LOGI("APP_MAIN", "Current temperature code: %d\r\n", current_temp_code);
@@ -67,6 +70,10 @@ void user_app_main(void)
 
 #if CONFIG_WIFI_RELIABILITY_TEST
 	wifi_reliability_start();
+#endif
+
+#if CONFIG_HTOL_RELIABILITY_TEST
+	htol_reliability_test_start();
 #endif
 }
 

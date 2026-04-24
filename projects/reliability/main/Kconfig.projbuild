@@ -31,6 +31,10 @@ menu "Project specific config"
 		bool "Enable PSRAM test"
 		default n
 
+	config HTOL_RELIABILITY_TEST
+		bool "Enable HTOL test"
+		default n
+
 	config WIFI_RELIABILITY_STA_SECURITY
 		int "STA Security type for WiFi reliability test"
 		default 3

@@ -4,6 +4,10 @@ menu "PHY"
 		bool "Enable PTA"
 		default n
 
+	config PHY_TEST
+		bool "Enable PHY test"
+		default n
+
 	config ATE_TEST
 		bool "Enable ATE Test"
 		default n
