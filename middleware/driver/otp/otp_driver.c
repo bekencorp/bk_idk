@@ -408,6 +408,11 @@ uint32_t bk_otp_partical_clean_check_customer(void) {
     OTP_INIT_IF_UNINITIALIZED();
     OTP_ACTIVE(1);
 
+    if (otp_hal_read_tmlck(&s_otp.hal) != 0xF) {
+        OTP_SLEEP();
+        return BK_ERR_OTP_INIT_FAIL;
+    }
+
     // "OTP_MEMORY_CHECK_MARK" will be empty because of memcheck pass
     // "OTP_MEMORY_CHECK_MARK_EXTRA" will be empty because of memcheck pass
     // "OTP_EFUSE" will be not empty because of "flash_crc_mode" enable
