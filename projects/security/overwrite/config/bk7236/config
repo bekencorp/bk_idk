@@ -83,4 +83,5 @@ CONFIG_AON_RTC=y
 CONFIG_AON_RTC_64BIT=y
 
 CONFIG_GPIO_RETENTION_SUPPORT=y
+#@ support BL2 upgrade, if you want to use this feature, the CONFIG_CACHE_ENABLE must be enabled
 CONFIG_BL2_UPGRADE_WITH_APP=n
