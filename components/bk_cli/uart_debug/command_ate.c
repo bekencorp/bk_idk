@@ -2071,12 +2071,13 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 ate_enter_low_voltage();
                 break;
             }
-            #endif
+            #else
             case 0x16:      //low voltage
             {
                 ate_enter_low_voltage();
                 break;
             }
+            #endif
             case 0x17:      //deep sleep
             {
                 ate_enter_deep_sleep();
