@@ -197,9 +197,9 @@ typedef volatile union {
 typedef volatile union {
 	struct {
 		uint32_t cbcal                    :  5; /**<bit[0 : 4]*/
-		uint32_t band_cal                 : 11; /**<bit[5 :15]*/
-		uint32_t zcd_cal                  :  6; /**<bit[16:21]*/
-		uint32_t L                        : 10; /**<bit[22:31]*/
+		uint32_t band_cal                 :  8; /**<bit[5 :12]*/
+		uint32_t zcd_cal                  :  6; /**<bit[13:18]*/
+		uint32_t L                        : 13; /**<bit[19:31]*/
 	};
 	uint32_t v;
 } aon_pmu_r7e_t;
