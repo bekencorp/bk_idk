@@ -2136,6 +2136,9 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                         sys_drv_analog_set(ANALOG_REG8, ana_reg0x8_bak);
                         sys_drv_analog_set(ANALOG_REG4, ana_reg0x4_bak);
 
+                        extern int bandgap_init(void);
+                        bandgap_init();
+
                         rwnxl_wakeup();
                         _phy_power_ctrl_wrapper(1);
                         rf_module_vote_ctrl(RF_OPEN, RF_BY_ATE_WIFI_BIT);
