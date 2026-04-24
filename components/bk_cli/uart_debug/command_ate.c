@@ -2062,6 +2062,7 @@ int set_device_id_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buff
         device_id_write[iIndex] = (uint8_t) (content[2 + iIndex] & 0xFF);
     }
 
+#if !CONFIG_SOC_BK7236N
     /* sn2 is out of range */
     if((device_id_write[0] < EFUSE_DEVICE_ID_SN_MINIMUM) || (device_id_write[0] > EFUSE_DEVICE_ID_SN_MAXIMUM)) {
         tx_buffer[1] = 0x77;
@@ -2109,6 +2110,7 @@ int set_device_id_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_buff
         uart_send_bytes_for_ate(tx_buffer, 3);
         return BK_FAIL;
     }
+#endif
 
     for (; retry_times < 3; retry_times++) {
         ret = bk_otp_ahb_update(OTP_DEVICE_ID, device_id_write, sizeof(device_id_write));
