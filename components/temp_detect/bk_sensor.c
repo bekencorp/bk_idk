@@ -128,7 +128,7 @@ static bk_err_t bk_sensor_load_adc_cali_value(void)
     bk_err_t result;
 #if (CONFIG_SOC_BK7239XX || CONFIG_SOC_BK7236N)
     uint16_t vol_values[3];
-    uint16_t temp_values[2];
+    uint16_t temp_values[4];
     uint8_t data[72];
     result = bk_otp_ahb_read(OTP_GADC_CALIBRATION, data, sizeof(data));
     if (result != BK_OK) {
@@ -176,7 +176,7 @@ LOAD_TEMP:
 #endif
 
 #if (CONFIG_SOC_BK7239XX || CONFIG_SOC_BK7236N)
-    result = bk_otp_ahb_read(OTP_GADC_TEMPERATURE, (uint8_t *)&temp_values, sizeof(temp_values));
+    result = bk_otp_ahb_read_backup(OTP_GADC_TEMPERATURE, (uint8_t *)temp_values, NULL);
     if ((result != BK_OK) || (temp_values[0] == 0) || (0xFFFF == temp_values[0]) || (temp_values[1] == 0) || (0xFFFF == temp_values[1]))
 #else
     result = bk_otp_apb_read(OTP_GADC_TEMPERATURE, (uint8_t *)&temp_values, sizeof(temp_values));
