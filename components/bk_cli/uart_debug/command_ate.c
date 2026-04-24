@@ -3164,6 +3164,11 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                     UINT32 pwr_idx = 0;
                     pwr_idx = fit_power_index_v2(frequency, pwr_dbm_x10, band, rate_o, mod);
                     if (pwr_idx != 0) {
+#if CONFIG_SOC_BK7236N
+                        if ((rate_o >= 128) && (rate_o <= 137)) {
+                            rate_o = 54;
+                        }
+#endif
                         rwnx_cal_set_txpwr(pwr_idx, rate_o);
                     }
 #endif
@@ -3293,6 +3298,11 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                             final_pwr_idx = 255;
                         }
                         pwr_idx = (UINT8)final_pwr_idx;
+#if CONFIG_SOC_BK7236N
+                        if ((rate_o >= 128) && (rate_o <= 137)) {
+                            rate_o = 54;
+                        }
+#endif
                         rwnx_cal_set_txpwr(pwr_idx, rate_o);
                     }
 #endif
