@@ -2843,18 +2843,22 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 } else if (function == FUNC_SAVE_TXPWR) {
                     evm_test_save_pwr(rate_o, frequency, pwr_dbm_x10);
                 } else if (function == FUNC_SET_TARGET_TXPWR) {
-                    if (rate_o >= 128 && rate_o <= 137) {
-                        evm_test(rate_o, frequency, PHY_CHNL_BW_20, mod, pwr_dbm_x10, band);
-                        UINT32 pwr_idx = 0;
-                        if (band == IEEE80211_BAND_2GHZ) {
-                            UINT32 channel = evm_frequency_to_channel(frequency, band);
-                            pwr_idx = fit_power_index_generic((UINT8)channel, pwr_dbm_x10, g_2g_11g_cal_points, 3);
-                        } else if (band == IEEE80211_BAND_5GHZ) {
-                            UINT32 channel = evm_frequency_to_channel(frequency, band);
-                            pwr_idx = fit_power_index_generic((UINT8)channel, pwr_dbm_x10, g_5g_11a_cal_points, 5);
+                    evm_test(rate_o, frequency, PHY_CHNL_BW_20, mod, pwr_dbm_x10, band);
+                    UINT32 pwr_idx = 0;
+                    if (band == IEEE80211_BAND_2GHZ) {
+                        UINT32 channel = evm_frequency_to_channel(frequency, band);
+                        if (rate_o == 1 || rate_o == 2 || rate_o == 5 || rate_o == 11) {
+                            pwr_idx = fit_power_index_generic((UINT8)channel, pwr_dbm_x10, g_2g_11b_cal_points, 3);
                         } else {
-                            pwr_idx = 0;
+                            pwr_idx = fit_power_index_generic((UINT8)channel, pwr_dbm_x10, g_2g_11g_cal_points, 3);
                         }
+                    } else if (band == IEEE80211_BAND_5GHZ) {
+                        UINT32 channel = evm_frequency_to_channel(frequency, band);
+                        pwr_idx = fit_power_index_generic((UINT8)channel, pwr_dbm_x10, g_5g_11a_cal_points, 5);
+                    } else {
+                        pwr_idx = 0;
+                    }
+                    if (pwr_idx != 0) {
                         rwnx_cal_set_txpwr(pwr_idx, rate_o);
                     }
                 }
@@ -2951,18 +2955,18 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 } else if (function == FUNC_SAVE_TXPWR) {
                     evm_test_save_pwr(rate_o, frequency, pwr_dbm_x10);
                 } else if (function == FUNC_SET_TARGET_TXPWR) {
-                    if (rate_o >= 128 && rate_o <= 137) {
-                        evm_test(rate_o, frequency, PHY_CHNL_BW_40, mod, pwr_dbm_x10, band);
-                        UINT32 pwr_idx = 0;
-                        if (band == IEEE80211_BAND_2GHZ) {
-                            UINT32 channel = evm_frequency_to_channel(frequency, band);
-                            pwr_idx = fit_power_index_generic((UINT8)channel, pwr_dbm_x10, g_2g_11g_cal_points, 3);
-                        } else if (band == IEEE80211_BAND_5GHZ) {
-                            UINT32 channel = evm_frequency_to_channel(frequency, band);
-                            pwr_idx = fit_power_index_generic((UINT8)channel, pwr_dbm_x10, g_5g_11a_cal_points, 5);
-                        } else {
-                            pwr_idx = 0;
-                        }
+                    evm_test(rate_o, frequency, PHY_CHNL_BW_40, mod, pwr_dbm_x10, band);
+                    UINT32 pwr_idx = 0;
+                    if (band == IEEE80211_BAND_2GHZ) {
+                        UINT32 channel = evm_frequency_to_channel(frequency, band);
+                        pwr_idx = fit_power_index_generic((UINT8)channel, pwr_dbm_x10, g_2g_11g_cal_points, 3);
+                    } else if (band == IEEE80211_BAND_5GHZ) {
+                        UINT32 channel = evm_frequency_to_channel(frequency, band);
+                        pwr_idx = fit_power_index_generic((UINT8)channel, pwr_dbm_x10, g_5g_11a_cal_points, 5);
+                    } else {
+                        pwr_idx = 0;
+                    }
+                    if (pwr_idx != 0) {
                         rwnx_cal_set_txpwr(pwr_idx, rate_o);
                     }
                 }
