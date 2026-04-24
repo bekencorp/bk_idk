@@ -2831,15 +2831,6 @@ int bkreg_run_command1(unsigned char *content, int cnt)
 
             case 0x61:
                 cmd_save_memcheck_from_uart(content, cnt, tx_buffer);
-                // tx_buffer[0] = 0x55;
-                // data = cmd_save_memcheck();
-                // if (data < 0) {
-                //     tx_buffer[1] = 0xCC;
-                // } else {
-                //     /* success */
-                //     tx_buffer[1] = 0x33;
-                // }
-                // uart_send_bytes_for_ate(tx_buffer, 2);
                 break;
 
             case 0x62:

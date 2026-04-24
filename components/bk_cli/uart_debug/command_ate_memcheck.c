@@ -342,6 +342,14 @@ static int memcheck_check_data_pattern(memcheck_data_t *datas, uint8_t offset, u
         }
     }
 
+#if CONFIG_SOC_BK7236N
+    if ((strcmp(group_name, "wifi") == 0) && (non_empty_count > 2)) {
+        bk_printf("[memchk] %s %s error: too many non-empty values (%d), max=2\r\n",
+                  group_name, data_name, non_empty_count);
+        return -1;
+    }
+#endif
+
     return non_empty_count;
 }
 
@@ -364,6 +372,12 @@ static int memcheck_merge_group(char *group_name, uint8_t offset, uint8_t count,
     uint8_t used_count = 0;
     uint8_t data1_count = (uint8_t)data1_check_ret;
     uint8_t data2_count = (uint8_t)data2_check_ret;
+
+#if CONFIG_SOC_BK7236N
+    if (strcmp(group_name, "wifi") == 0) {
+        count = 2;
+    }
+#endif
 
     /* Step 1: copy all data2 values */
     if (data2_count > 0) {
