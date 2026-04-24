@@ -399,6 +399,9 @@ int sctrl_load_vdddig_from_efuse(void)
     }
 
     return 0;
+
+#undef VDDIG_MAX
+#undef VDDIG_MIN
 }
 
 int sctrl_set_vdddig_1voltage(void)

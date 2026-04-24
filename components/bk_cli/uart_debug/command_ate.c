@@ -266,6 +266,10 @@ bk_err_t core_cp_test(void)
     }
 
     return CPU_CLK_160_PASS_240_PASS;
+
+    #undef CPU_CLK_160_PASS_240_PASS
+    #undef CPU_CLK_160_FAIL
+    #undef CPU_CLK_160_PASS_240_FAIL
 }
 
 void uart_send_byte_for_ate(UINT8 data)
@@ -3266,6 +3270,9 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 per_test(PHY_CHNL_BW_40, frequency, duration, arg, band, rfmod);
                 break;
             }
+            #undef FUNC_TX_SIGNAL
+            #undef FUNC_SAVE_TXPWR
+            #undef FUNC_SET_TARGET_TXPWR
 
             default:
                 break;
