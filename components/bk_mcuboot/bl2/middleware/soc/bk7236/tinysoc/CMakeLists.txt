@@ -21,6 +21,8 @@ set(incs
 	${TINYSOC_PATH}/driver/nv_otp
 	${TINYSOC_PATH}/driver/platform_include
 	${TINYSOC_PATH}/include/
+	${TINYSOC_PATH}/include/driver
+	${TINYSOC_PATH}/interfaces/
 )
 
 set(srcs
@@ -65,6 +67,7 @@ set(srcs
 	${SOC_PATH}/hal/gpio_ll.c
 	${SOC_PATH}/hal/flash_ll.c
 	${SOC_PATH}/hal/efuse_hal.c
+	${SOC_PATH}/hal/wdt_hal.c
 )
 
 target_compile_definitions(platform_bl2 PUBLIC CONFIG_TFM_SOC_PATH_V5)
