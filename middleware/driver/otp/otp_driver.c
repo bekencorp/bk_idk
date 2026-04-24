@@ -298,10 +298,12 @@ static uint32_t otp2_hal_get_offset(uint32_t item) {
     switch (item) {
         case OTP_PHY_PWR1:
             return 0x0;
-		case OTP_RFCALI1:
+        case OTP_RFCALI1:
             return 0x60;
-		case OTP_GADC_CALIBRATION:
-            return 0x5A0;
+        case OTP_GADC_CALIBRATION:
+            return 0x59C;
+        case OTP_FACTORY_ID:
+            return 0x588;
         default:
             return 0;
     }
@@ -373,7 +375,7 @@ static bool bk_otp_ahb_read_and_check(otp2_id_t item, bool crc_en)
             if (read_buf[i] != 0x00) {
                 bk_printf("read success, this item be filled\n");
                 check_result = true;
-                break;
+                goto exit;
             }
         }
         bk_printf("check failed, this item is empty\n");
@@ -383,6 +385,7 @@ static bool bk_otp_ahb_read_and_check(otp2_id_t item, bool crc_en)
         check_result = false;
     }
 
+exit:
     if (read_buf != NULL) os_free(read_buf);
     return check_result;
 }
@@ -408,8 +411,8 @@ uint32_t bk_otp_partical_clean_check_customer(void) {
         if (value != 0) {
             OTP_SLEEP();
             // APB need add 0x400 offset
-            bk_printf("addr(0x%x)=0x%x\n", SOC_OTP_APB_BASE + 0x400 + location, value);
-            return SOC_OTP_APB_BASE + 0x400 + location;
+            bk_printf("addr(0x%x)=0x%x\n", SOC_OTP_APB_BASE + 0x400 + (location << 2), value);
+            return SOC_OTP_APB_BASE + 0x400 + (location << 2);
         }
     }
 
@@ -420,8 +423,8 @@ uint32_t bk_otp_partical_clean_check_customer(void) {
         if (value != 0) {
             OTP_SLEEP();
             // APB need add 0x400 offset
-            bk_printf("addr(0x%x)=0x%x\n", SOC_OTP_APB_BASE + 0x400 + location, value);
-            return SOC_OTP_APB_BASE + 0x400 + location;
+            bk_printf("addr(0x%x)=0x%x\n", SOC_OTP_APB_BASE + 0x400 + (location << 2), value);
+            return SOC_OTP_APB_BASE + 0x400 + (location << 2);
         }
     }
     OTP_SLEEP();
@@ -440,13 +443,13 @@ uint32_t bk_otp_partical_clean_check_customer(void) {
 
     OTP_ACTIVE(2);
     otp_start = otp2_hal_get_offset(OTP_RFCALI1) >> 2;  // ft_cali end
-    otp_end   = otp2_hal_get_offset(OTP_GADC_CALIBRATION) >> 2;  // cp_cali begin
+    otp_end   = otp2_hal_get_offset(OTP_FACTORY_ID) >> 2;  // cp_cali begin
     for (location = otp_start; location < otp_end; location++) {
         value = _otp2_read_otp(location);
         if (value != 0) {
             OTP_SLEEP();
-            bk_printf("addr(0x%x)=0x%x\n", SOC_OTP_AHB_BASE + location, value);
-            return SOC_OTP_AHB_BASE + location;
+            bk_printf("addr(0x%x)=0x%x\n", SOC_OTP_AHB_BASE + (location << 2), value);
+            return SOC_OTP_AHB_BASE + (location << 2);
         }
     }
     OTP_SLEEP();
@@ -454,49 +457,57 @@ uint32_t bk_otp_partical_clean_check_customer(void) {
     // "OTP_FACTORY_ID" will be writed in CP/FT
     check_result = bk_otp_ahb_read_and_check(OTP_FACTORY_ID, true);
     if (check_result == false) {
-        return (SOC_OTP_AHB_BASE + (otp2_hal_get_offset(OTP_FACTORY_ID) >> 2));
+        bk_printf("addr=0x%x\n", SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_FACTORY_ID));
+        return (SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_FACTORY_ID));
     }
 
     // "OTP_PRODUCT_ID" will be writed in CP/FT
     check_result = bk_otp_ahb_read_and_check(OTP_PRODUCT_ID, true);
     if (check_result == false) {
-        return (SOC_OTP_AHB_BASE + (otp2_hal_get_offset(OTP_PRODUCT_ID) >> 2));
+        bk_printf("addr=0x%x\n", SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_PRODUCT_ID));
+        return (SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_PRODUCT_ID));
     }
 
     // "OTP_GADC_CALIBRATION" will be writed in CP
     check_result = bk_otp_ahb_read_and_check(OTP_GADC_CALIBRATION, true);
     if (check_result == false) {
-        return (SOC_OTP_AHB_BASE + (otp2_hal_get_offset(OTP_GADC_CALIBRATION) >> 2));
+        bk_printf("addr=0x%x\n", SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_GADC_CALIBRATION));
+        return (SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_GADC_CALIBRATION));
     }
 
     // "OTP_GADC_TEMPERATURE" will be writed in CP
     check_result = bk_otp_ahb_read_and_check(OTP_GADC_TEMPERATURE, true);
     if (check_result == false) {
-        return (SOC_OTP_AHB_BASE + (otp2_hal_get_offset(OTP_GADC_TEMPERATURE) >> 2));
+        bk_printf("addr=0x%x\n", SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_GADC_TEMPERATURE));
+        return (SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_GADC_TEMPERATURE));
     }
 
     // "OTP_VDDDIG_BANDGAP" will be writed in CP
     check_result = bk_otp_ahb_read_and_check(OTP_VDDDIG_BANDGAP, true);
     if (check_result == false) {
-        return (SOC_OTP_AHB_BASE + (otp2_hal_get_offset(OTP_VDDDIG_BANDGAP) >> 2));
+        bk_printf("addr=0x%x\n", SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_VDDDIG_BANDGAP));
+        return (SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_VDDDIG_BANDGAP));
     }
 
     // "OTP_DIA" will be writed in CP
     check_result = bk_otp_ahb_read_and_check(OTP_DIA, true);
     if (check_result == false) {
-        return (SOC_OTP_AHB_BASE + (otp2_hal_get_offset(OTP_DIA) >> 2));
+        bk_printf("addr=0x%x\n", SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_DIA));
+        return (SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_DIA));
     }
 
     // "OTP_MEMORY_CHECK_VDDDIG" will be writed in CP
     check_result = bk_otp_ahb_read_and_check(OTP_MEMORY_CHECK_VDDDIG, false);
     if (check_result == false) {
-        return (SOC_OTP_AHB_BASE + (otp2_hal_get_offset(OTP_MEMORY_CHECK_VDDDIG) >> 2));
+        bk_printf("addr=0x%x\n", SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_MEMORY_CHECK_VDDDIG));
+        return (SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_MEMORY_CHECK_VDDDIG));
     }
 
     // "OTP_DEVICE_ID" will be writed in CP
     check_result = bk_otp_ahb_read_and_check(OTP_DEVICE_ID, true);
     if (check_result == false) {
-        return (SOC_OTP_AHB_BASE + (otp2_hal_get_offset(OTP_DEVICE_ID) >> 2));
+        bk_printf("addr=0x%x\n", SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_DEVICE_ID));
+        return (SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_DEVICE_ID));
     }
 
     OTP_ACTIVE(2);
@@ -506,8 +517,8 @@ uint32_t bk_otp_partical_clean_check_customer(void) {
         value = _otp2_read_otp(location);
         if (value != 0) {
             OTP_SLEEP();
-            bk_printf("addr(0x%x)=0x%x\n", SOC_OTP_AHB_BASE + location, value);
-            return SOC_OTP_AHB_BASE + location;
+            bk_printf("addr(0x%x)=0x%x\n", SOC_OTP_AHB_BASE + (location << 2), value);
+            return SOC_OTP_AHB_BASE + (location << 2);
         }
     }
 
