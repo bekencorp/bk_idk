@@ -297,8 +297,18 @@ static int memcheck_check_data_pattern(memcheck_data_t *datas, uint8_t offset, u
     /* Error1: flag should be 0 (bit15 must be 0 in input data) */
     /* Error2: there is a empty value in the middle of non-empty values */
     /* Error3: duplicate non-empty value */
+#if CONFIG_MEMCHECK_ADAPTER_FOR_QFN40
+    /* Error4: the last data item is not empty */
+#endif
 
     uint8_t non_empty_count = 0;
+
+#if CONFIG_MEMCHECK_ADAPTER_FOR_QFN40
+    if (datas[offset + count - 1].raw != 0) {
+        bk_printf("[memchk] %s %s error: the last data item is not empty\r\n", group_name, data_name);
+        return -1;
+    }
+#endif
 
     for (uint8_t idx = 0; idx < count; idx++) {
         memcheck_data_t *item = &datas[offset + idx];

@@ -22,4 +22,9 @@ menu "modules::uart_debug"
 		depends on ATE
 		int "Select PHY_PWR_ANA version"
 		default "0"
+
+	config MEMCHECK_ADAPTER_FOR_QFN40
+		depends on ATE
+		bool "Enable MEMCHECK Adapter to QFN40"
+		default n
 endmenu
