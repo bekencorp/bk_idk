@@ -449,7 +449,9 @@ void mhdr_connect_ind(void *msg, UINT32 len)
 	if (!ind->status_code) {
 		RWNX_LOGI("connect ok\n");
 		g_rwnx_hw.connected = true;
-
+#ifdef CONFIG_WIFI_REGDOMAIN
+		g_rwnx_hw.chan = ind->chan;
+#endif
 		bk7011_default_rxsens_setting();
 
 #if NX_VERSION > NX_VERSION_PACK(6, 22, 0, 0)

@@ -183,7 +183,9 @@ struct rwnx_hw {
 	struct hostapd_freq_params freq_params;
 
 	struct bk_work csa_work;
-
+#ifdef CONFIG_WIFI_REGDOMAIN
+	struct mac_chan_op chan;
+#endif
 #ifdef CONFIG_ACS_SUPPORT
 	struct channel_survey channel_surveys[SCAN_CHANNEL_MAX];
 #endif
