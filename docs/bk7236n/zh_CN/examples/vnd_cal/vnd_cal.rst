@@ -11,7 +11,7 @@ VND_CAL
 
 2、代码路径
 --------------------------
-    路径: ``\middleware\boards\bk7256(bk7235\bk7235m\bk7236\bk7258)\vnd_cal\vnd_cal.c``
+    路径: ``\middleware\boards\bk7256(bk7235\bk7235m\bk7236n\bk7258)\vnd_cal\vnd_cal.c``
 
 3、参数简介
 --------------------------

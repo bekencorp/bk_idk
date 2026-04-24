@@ -6,25 +6,25 @@ Memory and Performance
 Memory overview
 ----------------------------------------
 
-    The BK7236 chip has 8M(or 16M) psram, 640K sram as a whole, and the Cortex M33 core have independent 16k dtcm and 16k itcm
+    The BK7236N chip has 8M(or 16M) psram, 640K sram as a whole, and the Cortex M33 core have independent 16k dtcm and 16k itcm
 
 
 SRAM Overview
 ---------------------------------------
 
-    - The BK7236 chip is currently a single-core architecture; it has 640K sram.
+    - The BK7236N chip is currently a single-core architecture; it has 640K sram.
 
 PSRAM Overview
 ---------------------------------------
 
-    PSRAM provides enough memory space for different modules to use, the current BK7236 supports two types of PSRAM, their memory size is different,
+    PSRAM provides enough memory space for different modules to use, the current BK7236N supports two types of PSRAM, their memory size is different,
     respectively, 8Mbyte and 16Mbyte, using different macros to distinguish. There are four types of modules in multimedia that need to use PSRAM.
     Since PSRAM is also used as heap on different cpus, not all of the PSRAM space is used by multimedia, and the length and space need to be distinguished.
 
 1. PSRAM Type
 ----------------------------
 
-    The BK7236 supports two types of PSRAM, which are configured as follows:
+    The BK7236N supports two types of PSRAM, which are configured as follows:
 
     +--------------------+---------------+
     |        name        |  size(Mbyte)  |
@@ -66,10 +66,10 @@ PSRAM Overview
 	and that psram serves as the heap space from this address. By default, the starting address of PSRAM (0x60000000) through CONFIG_PSRAM_HEAP_CPU0_BASE_ADDER
 	is allocated for multimedia use, and the rest is allocated for Heap use. Use the macro CONFIG_PSRAM_HEAP_BASE Define PSRAM on the current kernel as the Heap start address,
 	and use CONFIG_PSRAM_HEAP_SIZE to define the space size. Different cores have different defined values, CONFIG_PSRAM_HEAP_CPU0_BASE_ADDER has the same value on different cores.
-	This should be consistent with the minimum value of CONFIG_PSRAM_HEAP_BASE on different cores, such as the default BK7236 project, CONFIG_PSRAM_HEAP_BASE=0x60700000 on CPU0,
+	This should be consistent with the minimum value of CONFIG_PSRAM_HEAP_BASE on different cores, such as the default BK7236N project, CONFIG_PSRAM_HEAP_BASE=0x60700000 on CPU0,
 	CONFIG_PSRAM_HEAP_BASE=0x60700000, CONFIG_PSRAM_HEAP_SIZE=0x80000, then CPU1 CONFIG_PSRAM_HEAP_BASE=0x60780000, CONFIG_PSRAM_HEAP_SIZE=0x80000,
 	PSRAM is not used as Heap by default on CPU2. So CONFIG_PSRAM_HEAP_CPU0_BASE_ADDER=0x60700000. Whether psram is required as heap on a kernel is
-	controlled by CONFIG_PSRAM_AS_SYS_MEMORY. BK7236 default project PSRAM function not open, user need according the chip have psram or not to open release psram function marco.
+	controlled by CONFIG_PSRAM_AS_SYS_MEMORY. BK7236N default project PSRAM function not open, user need according the chip have psram or not to open release psram function marco.
 
 3. PSRAM used for heap
 ------------------------
@@ -84,7 +84,7 @@ PSRAM Overview
         void *psram_malloc(size_t size);
         void  psram_free(void *p);
 
-     - The low-voltage function PARAM of the BK7236 chip will be powered off. If the psram memory used by the upper layer is not released, it will result in the inability to enter low voltage. You can print the current psram memory usage through the following interface::
+     - The low-voltage function PARAM of the BK7236N chip will be powered off. If the psram memory used by the upper layer is not released, it will result in the inability to enter low voltage. You can print the current psram memory usage through the following interface::
 
         void bk_psram_heap_get_used_state(void);
 

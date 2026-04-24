@@ -4,7 +4,7 @@ GPIO
 Beken chip supports abundant GPIO pins, some GPIOs can't be used by the application:
 
  - In most Beken chips, UART2 is enabled by default and GPIO 0 and GPIO 1 are used by UART2.
- - Some GPIOs may be used by specific peripheral device, the application can't use the GPIOs used by that device if the device is enabled by software. E.g. in BK7236, the SPI-1 can use GPIO 2/3/4/5, the application can't use GPIO 2/3/4/5 if SPI-1 is enabled by the software, the application can still use GPIO 2/3/4/5 if the SPI-1 is disabled by software.
+ - Some GPIOs may be used by specific peripheral device, the application can't use the GPIOs used by that device if the device is enabled by software. E.g. in BK7236N, the SPI-1 can use GPIO 2/3/4/5, the application can't use GPIO 2/3/4/5 if SPI-1 is enabled by the software, the application can still use GPIO 2/3/4/5 if the SPI-1 is disabled by software.
  - Some GPIO groups may be used by specific peripheral device, the application can't use that GPIO group if the device chooses that GPIO group and the device is enabled by software. E.g. SPI-3 can use GPIO 30/31/32/33 or GPIO GPIO 36/37/38/39, if the software enable the SPI-3 and configure it to use the first GPIO group (GPIO 30/31/32/33), the application can't use GPIO 30/31/32/33, but the application can still use 2nd GPIO group (GPIO 36/37/38/39) if they are not used by other devices. The application can use both group if SPI-3 is NOT enabled and other devices also don't use them.
 
 If the GPIOs are already used by the periperal devices, the GPIO API, such as cpp:func:`bk_gpio_set_config` will return GPIO_ERR_INTERNAL_USED.
@@ -41,21 +41,21 @@ GPIO MAP Config
 
 GPIO use guidance:
 ------------------
-  
-  1. Customers need to configure the **GPIO_DEFAULT_DEV_CONFIG** table according to their board configuration requirements.You can freely configure the **GPIO_DEFAULT_DEV_CONFIG** table 
-     according to the capabilities of each GPIO defined in the *GPIO_DEV_MAP* table. If you want to change the function of a GPIO while the program is running, you can use the gpio_dev_unmap() 
-     function to cancel the original mapping, and then use the gpio_dev_map() function to perform a new mapping. 
+
+  1. Customers need to configure the **GPIO_DEFAULT_DEV_CONFIG** table according to their board configuration requirements.You can freely configure the **GPIO_DEFAULT_DEV_CONFIG** table
+     according to the capabilities of each GPIO defined in the *GPIO_DEV_MAP* table. If you want to change the function of a GPIO while the program is running, you can use the gpio_dev_unmap()
+     function to cancel the original mapping, and then use the gpio_dev_map() function to perform a new mapping.
   2. When you want to **override** the **default GPIO_DEFAULT_DEV_CONFIG** in a customized way, you can follow the steps below:
-    
+
     - Open macro definition: Open the **CONFIG_USR_GPIO_CFG_EN** macro in your project configuration file to enable the custom GPIO configuration function.
     - Create the usr_gpio_cfg.h file: Create the usr_gpio_cfg.h header file in an appropriate location in your project and define your custom GPIO_DEFAULT_DEV_CONFIG in this file.
-      This configuration should contain the initialization settings and mappings for all GPIOs you want. For example, You can add usr_gpio_cfg.h header file to the 
+      This configuration should contain the initialization settings and mappings for all GPIOs you want. For example, You can add usr_gpio_cfg.h header file to the
       'bk_avdk_main_test\projects\lvgl\86box\config\bk7258'.
-      
-     It should be noted that the newly mapped function must have been defined in the GPIO_DEV_MAP table. During initialization, the chip will configure the GPIO status according to the 
+
+     It should be noted that the newly mapped function must have been defined in the GPIO_DEV_MAP table. During initialization, the chip will configure the GPIO status according to the
      GPIO_DEFAULT_DEV_CONFIG table.(**note**:Make sure to include the usr_gpio_cfg.h file in your code so that your custom GPIO configuration is used when compiling.)
-  
-  3. Low power state: Can be configured as input mode and output mode, and do not need to care about the GPIO during low power mode. If the corresponding GPIO (GPIO_LOW_POWER_DISCARD_IO_STATUS) 
+
+  3. Low power state: Can be configured as input mode and output mode, and do not need to care about the GPIO during low power mode. If the corresponding GPIO (GPIO_LOW_POWER_DISCARD_IO_STATUS)
      is not used during low power , the low power mode program will set the GPIO to a **high resistance state** to prevent leakage during low power mode.
   4. There are **two ways to configure** low power states:
 
@@ -63,18 +63,18 @@ GPIO use guidance:
     - Dynamic execution phase decision, use bk_gpio_register_lowpower_keep_status() function.
 
   5. When you need to **maintain the output status** of GPIO in low-power mode, you can configure the corresponding GPIO through the third method.
-  6. When entering low-power mode, multiple external GPIOs can be set as wake-up sources. If any GPIO has an interrupt signal, the chip can wake up from low-power mode. For example, you can set 
+  6. When entering low-power mode, multiple external GPIOs can be set as wake-up sources. If any GPIO has an interrupt signal, the chip can wake up from low-power mode. For example, you can set
      multiple wake-up sources in **GPIO_STATIC_WAKEUP_SOURCE_MAP**.
   7. When entering low power mode(Low voltage only), the status of GPIO will be backed up. After exiting, GPIO will be automatically restored to the state before entering low power mode.
      (**note**:After exiting from deep sleep mode, it is equivalent to a **soft restart**, and the GPIO status will not be automatically restored.)
-  
-   
+
+
 
 .. note::
-   
+
     - gpio_map.h must be configured.
-    - The GPIO pin operates from 1.8V to 3.3V, with a maximum of 0.6V for V\ :sub:`IL`\  and a minimum of 1.2V for V\ :sub:`IH`\  in 1.8V mode. 
-      With a maximum of 0.8V for V\ :sub:`IL`\ and a minimum of 2V for V\ :sub:`IH`\  in 3.3V mode. 
+    - The GPIO pin operates from 1.8V to 3.3V, with a maximum of 0.6V for V\ :sub:`IL`\  and a minimum of 1.2V for V\ :sub:`IH`\  in 1.8V mode.
+      With a maximum of 0.8V for V\ :sub:`IL`\ and a minimum of 2V for V\ :sub:`IH`\  in 3.3V mode.
     - The driving capacity of GPIO is shown in the table below:
         +-------+------+--------+--------+---------+
         |       | REG=2| REG=102| REG=202| REG=302 |
@@ -87,7 +87,7 @@ GPIO use guidance:
         +-------+------+--------+--------+---------+
         | P17   | 10.36| 19.45  | 32.26  | 38.6    |
         +-------+------+--------+--------+---------+
-         
+
                   - High level pull current
 
         +-------+------+--------+--------+---------+
@@ -104,9 +104,9 @@ GPIO use guidance:
 
                  - Low level-sink current
 
- 
 
-Example: 
+
+Example:
 
 Configure GPIO_0 to function [GPIO_DEV_I2C1_SCL] and GPIO_1 to function [GPIO_DEV_I2C1_SDA]:
 	+---------+-------------------------+-------------------+-----------------+------------------+-----------------+------------------------+---------------------------------+-----------------------+
@@ -116,7 +116,7 @@ Configure GPIO_0 to function [GPIO_DEV_I2C1_SCL] and GPIO_1 to function [GPIO_DE
 	+---------+-------------------------+-------------------+-----------------+------------------+-----------------+------------------------+---------------------------------+-----------------------+
 	| GPIO_1  | GPIO_SECOND_FUNC_ENABLE | GPIO_DEV_I2C1_SDA | GPIO_IO_DISABLE | GPIO_PULL_DISABLE| GPIO_INT_DISABLE| GPIO_INT_TYPE_LOW_LEVEL| GPIO_LOW_POWER_DISCARD_IO_STATUS| GPIO_DRIVER_CAPACITY_3|
 	+---------+-------------------------+-------------------+-----------------+------------------+-----------------+------------------------+---------------------------------+-----------------------+
-	 
+
 	 - PS:GPIO is turned off by default when the second function is used (io_mode is [GPIO_IO_DISABLE]). I2C needs more driving capability (driver_capacity is [GPIO_DRIVER_CAPACITY_3]).
 
 GPIO_0 is set to high resistance(Default state):
@@ -125,7 +125,7 @@ GPIO_0 is set to high resistance(Default state):
 	+=========+=========================+===================+=================+==================+=================+========================+=================================+=======================+
 	| GPIO_0  | GPIO_SECOND_FUNC_DISABLE| GPIO_DEV_INVALID  | GPIO_IO_DISABLE | GPIO_PULL_DISABLE| GPIO_INT_DISABLE| GPIO_INT_TYPE_LOW_LEVEL| GPIO_LOW_POWER_DISCARD_IO_STATUS| GPIO_DRIVER_CAPACITY_0|
 	+---------+-------------------------+-------------------+-----------------+------------------+-----------------+------------------------+---------------------------------+-----------------------+
-	  
+
 	  - PS:Disable all config
 
 GPIO_0 is set to input key and falling edge to trigger the interrupt:
@@ -134,7 +134,7 @@ GPIO_0 is set to input key and falling edge to trigger the interrupt:
 	+=========+=========================+=================+=================+================+================+==========================+==================================+=======================+
 	| GPIO_0  | GPIO_SECOND_FUNC_DISABLE| GPIO_DEV_INVALID|GPIO_INPUT_ENABLE| GPIO_PULL_UP_EN| GPIO_INT_ENABLE|GPIO_INT_TYPE_FALLING_EDGE| GPIO_LOW_POWER_DISCARD_IO_STATUS | GPIO_DRIVER_CAPACITY_0|
 	+---------+-------------------------+-----------------+-----------------+----------------+----------------+--------------------------+----------------------------------+-----------------------+
-	  
+
 	  - PS:Turn off the second function related. There are 4 interrupt trigger conditions:[GPIO_INT_TYPE_LOW_LEVEL],[GPIO_INT_TYPE_HIGH_LEVEL],[GPIO_INT_TYPE_RISING_EDGE],[GPIO_INT_TYPE_FALLING_EDGE].
 
 GPIO_0 acts as a low power wake-up source:
@@ -143,7 +143,7 @@ GPIO_0 acts as a low power wake-up source:
 	+=========+=========================+=================+=================+================+================+==========================+==================================+=======================+
 	| GPIO_0  | GPIO_SECOND_FUNC_DISABLE| GPIO_DEV_INVALID|GPIO_INPUT_ENABLE| GPIO_PULL_UP_EN| GPIO_INT_ENABLE|GPIO_INT_TYPE_FALLING_EDGE| GPIO_LOW_POWER_DISCARD_IO_STATUS | GPIO_DRIVER_CAPACITY_0|
 	+---------+-------------------------+-----------------+-----------------+----------------+----------------+--------------------------+----------------------------------+-----------------------+
-	  
+
 	  - PS:low_power_io_ctrl is [GPIO_LOW_POWER_KEEP_INPUT_STATUS], int_type is [GPIO_INT_TYPE_RISING_EDGE] or [GPIO_INT_TYPE_FALLING_EDGE];
 
 
@@ -152,45 +152,45 @@ GPIO API Status
 ------------------
 
 
-+----------------------------------------------+---------+------------+
-| API                                          | BK7236  | BK7236_cp1 |
-+==============================================+=========+============+
-| :cpp:func:`bk_gpio_driver_init`              | Y       | Y          |
-+----------------------------------------------+---------+------------+
-| :cpp:func:`bk_gpio_driver_deinit`            | Y       | Y          |
-+----------------------------------------------+---------+------------+
-| :cpp:func:`bk_gpio_enable_output`            | Y       | Y          |
-+----------------------------------------------+---------+------------+
-| :cpp:func:`bk_gpio_disable_output`           | Y       | Y          |
-+----------------------------------------------+---------+------------+
-| :cpp:func:`bk_gpio_enable_input`             | Y       | Y          |
-+----------------------------------------------+---------+------------+
-| :cpp:func:`bk_gpio_disable_input`            | Y       | Y          |
-+----------------------------------------------+---------+------------+
-| :cpp:func:`bk_gpio_enable_pull`              | Y       | Y          |
-+----------------------------------------------+---------+------------+
-| :cpp:func:`bk_gpio_disable_pull`             | Y       | Y          |
-+----------------------------------------------+---------+------------+
-| :cpp:func:`bk_gpio_pull_up`                  | Y       | Y          |
-+----------------------------------------------+---------+------------+
-| :cpp:func:`bk_gpio_pull_down`                | Y       | Y          |
-+----------------------------------------------+---------+------------+
-| :cpp:func:`bk_gpio_set_output_high`          | Y       | Y          |
-+----------------------------------------------+---------+------------+
-| :cpp:func:`bk_gpio_set_output_low`           | Y       | Y          |
-+----------------------------------------------+---------+------------+
-| :cpp:func:`bk_gpio_get_input`                | Y       | Y          |
-+----------------------------------------------+---------+------------+
-| :cpp:func:`bk_gpio_set_config`               | Y       | Y          |
-+----------------------------------------------+---------+------------+
-| :cpp:func:`bk_gpio_register_isr`             | Y       | Y          |
-+----------------------------------------------+---------+------------+
-| :cpp:func:`bk_gpio_enable_interrupt`         | Y       | Y          |
-+----------------------------------------------+---------+------------+
-| :cpp:func:`bk_gpio_disable_interrupt`        | Y       | Y          |
-+----------------------------------------------+---------+------------+
-| :cpp:func:`bk_gpio_set_interrupt_type`       | Y       | Y          |
-+----------------------------------------------+---------+------------+
++----------------------------------------------+---------+
+| API                                          | BK7236N |
++==============================================+=========+
+| :cpp:func:`bk_gpio_driver_init`              | Y       |
++----------------------------------------------+---------+
+| :cpp:func:`bk_gpio_driver_deinit`            | Y       |
++----------------------------------------------+---------+
+| :cpp:func:`bk_gpio_enable_output`            | Y       |
++----------------------------------------------+---------+
+| :cpp:func:`bk_gpio_disable_output`           | Y       |
++----------------------------------------------+---------+
+| :cpp:func:`bk_gpio_enable_input`             | Y       |
++----------------------------------------------+---------+
+| :cpp:func:`bk_gpio_disable_input`            | Y       |
++----------------------------------------------+---------+
+| :cpp:func:`bk_gpio_enable_pull`              | Y       |
++----------------------------------------------+---------+
+| :cpp:func:`bk_gpio_disable_pull`             | Y       |
++----------------------------------------------+---------+
+| :cpp:func:`bk_gpio_pull_up`                  | Y       |
++----------------------------------------------+---------+
+| :cpp:func:`bk_gpio_pull_down`                | Y       |
++----------------------------------------------+---------+
+| :cpp:func:`bk_gpio_set_output_high`          | Y       |
++----------------------------------------------+---------+
+| :cpp:func:`bk_gpio_set_output_low`           | Y       |
++----------------------------------------------+---------+
+| :cpp:func:`bk_gpio_get_input`                | Y       |
++----------------------------------------------+---------+
+| :cpp:func:`bk_gpio_set_config`               | Y       |
++----------------------------------------------+---------+
+| :cpp:func:`bk_gpio_register_isr`             | Y       |
++----------------------------------------------+---------+
+| :cpp:func:`bk_gpio_enable_interrupt`         | Y       |
++----------------------------------------------+---------+
+| :cpp:func:`bk_gpio_disable_interrupt`        | Y       |
++----------------------------------------------+---------+
+| :cpp:func:`bk_gpio_set_interrupt_type`       | Y       |
++----------------------------------------------+---------+
 
 
 Application Example

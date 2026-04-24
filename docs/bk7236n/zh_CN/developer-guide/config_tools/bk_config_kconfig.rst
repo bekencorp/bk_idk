@@ -20,8 +20,8 @@ Armino Kconfig 组织如下图所示：
                 - Kconfig
         - middleware/
             - soc/
-                - bk7236/
-                    - bk7236.defconfig
+                - bk7236n/
+                    - bk7236n.defconfig
                 - bk7258/
                     - bk7258.defconfig
         - projects/
@@ -29,7 +29,7 @@ Armino Kconfig 组织如下图所示：
                 - config/
                     - common/
                         - config
-                    - bk7236/
+                    - bk7236n/
                         - config
                     - bk7258/
                         - config
@@ -48,9 +48,9 @@ Armino Kconfig 组织如下图所示：
    - Kconfig.projbuild - 定义在组件或者工程目录下。
  - 配置修改文件:
 
-   - middleware/soc/bk7236.defconfig - Armino 提供的 BK7236 默认配置。
+   - middleware/soc/bk7236n.defconfig - Armino 提供的 BK7236N 默认配置。
    - my_projects/config/common/config - 工程中不同 BK72xx 共享的配置。
-   - my_projects/config/bk7236/config - 工程中 BK7236 专有配置。
+   - my_projects/config/bk7236n/config - 工程中 BK7236N 专有配置。
 
 .. important::
 
@@ -60,7 +60,7 @@ Armino Kconfig 组织如下图所示：
 .. note::
 
   Kconfig.projbuild 是针对 menuconfig 来设计的，当向 Kconfig.projbuild 中增加一项时，
-  会在 menuconfig 顶层菜单中显示该配置项。BK7236 不支持 menuconfig，因此 Kconfig.projbuild
+  会在 menuconfig 顶层菜单中显示该配置项。BK7236N 不支持 menuconfig，因此 Kconfig.projbuild
   与 Kconfig 作用相同。
 
 .. note::
@@ -69,12 +69,12 @@ Armino Kconfig 组织如下图所示：
 
 在 Armino 工程中，Kconfig 配置优先级为:
 
-  my_projects/config/bk7236/config > my_projects/config/common/config > bk7236.defconfig > 配置定义文件
+  my_projects/config/bk7236n/config > my_projects/config/common/config > bk7236n.defconfig > 配置定义文件
 
 menuconfig 支持
 -------------------------
 
-BK7236 Kconfig 配置不支持 menuconfig 配置。
+BK7236N Kconfig 配置不支持 menuconfig 配置。
 
 配置依赖
 -------------------------

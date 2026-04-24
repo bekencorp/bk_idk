@@ -6,7 +6,7 @@ SARADC
 概述
 ---------------
 
-    SARADC 目前最多支持 16 个 channel,在 BK7236中,channel 1-6,10,12-15为数字通道,其余为模拟通道,SARADC 精度默认为13bit,
+    SARADC 目前最多支持 16 个 channel,在 BK7236N中,channel 1-6,10,12-15为数字通道,其余为模拟通道,SARADC 精度默认为13bit,
     一般精度在 SARADC 驱动中不做动态调整。
 
 SARADC 模式类型：

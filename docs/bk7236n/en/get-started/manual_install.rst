@@ -18,7 +18,7 @@ Installation steps
 Tool Chain Installation
 ----------------------------------------------------------------
 
-Click `Donwload <https://dl.bekencorp.com/tools/toolchain/arm/gcc-arm-none-eabi-10.3-2021.10-x86_64-linux.tar.bz2>`_ to download the BK7236 toolchain.
+Click `Donwload <https://dl.bekencorp.com/tools/toolchain/arm/gcc-arm-none-eabi-10.3-2021.10-x86_64-linux.tar.bz2>`_ to download the BK7236N toolchain.
 
 After downloading the tool kit, decompress it to '/opt/'::
 
@@ -27,7 +27,7 @@ After downloading the tool kit, decompress it to '/opt/'::
 
 .. note::
 
-    Tool chain the default path is configured in the middleware/soc/bk7236/bk7236.defconfig, you can modify ``CONFIG_TOOLCHAIN_PATH`` to set to your owner toolchain path:
+    Tool chain the default path is configured in the middleware/soc/bk7236n/bk7236n.defconfig, you can modify ``CONFIG_TOOLCHAIN_PATH`` to set to your owner toolchain path:
 
         CONFIG_TOOLCHAIN_PATH="/opt/gcc-arm-none-eabi-10.3-2021.10/bin"
 
@@ -69,7 +69,7 @@ Document Compilation Dependent Library Installation
 
 .. note::
 
-    Usually you don't need to build the document youself. Click `Doc <https://docs.bekencorp.com/arminodoc/bk_idk/bk7236/zh_CN/v2.0.1/index.html>`_ you can get the latest Armino documents.
+    Usually you don't need to build the document youself. Click `Doc <https://docs.bekencorp.com/arminodoc/bk_idk/bk7236n/zh_CN/v2.0.1/index.html>`_ you can get the latest Armino documents.
 
 
 If you really need to build the documents, following python3 packages are required::

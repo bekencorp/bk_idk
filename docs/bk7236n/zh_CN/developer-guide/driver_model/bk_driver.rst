@@ -25,7 +25,7 @@
                   - uart_statis.c
                   - uart_statis.h
           - arch
-              - bk7236
+              - bk7236n
                   - soc
                       - uart_cap.h
                       - uart_reg.h

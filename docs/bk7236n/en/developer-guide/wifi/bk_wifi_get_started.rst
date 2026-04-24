@@ -12,8 +12,8 @@ AP/SoftAP
 -------------------------------------------------------
 AP example demo shows the process of setting up SoftAP based on BEKEN Wi-Fi module.
 
-- Compile command: ``make bk7236 PROJECT=examples/wifi/ap``
-- File path: ``build/ap/bk7236/all-app.bin``
+- Compile command: ``make bk7236n PROJECT=examples/wifi/ap``
+- File path: ``build/ap/bk7236n/all-app.bin``
 - Parameter configuratioin: ``projects/examples/wifi/ap/main/Kconfig.projbuild``
 
 ::
@@ -55,8 +55,8 @@ Scan
 -------------------------------------------------------
 Scam example demo describes the basic Wi-Fi scan process, including full-channel scan and specific SSID scan.
 
-- Compile command: ``make bk7236 PROJECT=examples/wifi/scan``
-- File path: ``build/scan/bk7236/all-app.bin``
+- Compile command: ``make bk7236n PROJECT=examples/wifi/scan``
+- File path: ``build/scan/bk7236n/all-app.bin``
 - Parameter configuratioin: ``projects/examples/wifi/scan/main/Kconfig.projbuild``
 
 ::
@@ -101,8 +101,8 @@ Sta_connect
 -------------------------------------------------------
 By configuring ssid and password in advance, sta_connect could achieve connect automatically after startup.
 
-- Compile command: ``make bk7236 PROJECT=examples/wifi/sta_connect``
-- File path: ``build/sta_connect/bk7236/all-app.bin``
+- Compile command: ``make bk7236n PROJECT=examples/wifi/sta_connect``
+- File path: ``build/sta_connect/bk7236n/all-app.bin``
 - Parameter configuratioin: ``projects/examples/wifi/sta_connect/main/Kconfig.projbuild``
 
 ::
@@ -126,5 +126,5 @@ By configuring ssid and password in advance, sta_connect could achieve connect a
     example:I(3618):STA connected to aclsemi       //connect successfully
     example:I(3658):STA got ip                     //obtain IP address
 
-.. note:: The client compile command should assign appropriate PROJECT and PROJECT_LIBS ``make bk7236 PROJECT=examples/wifi/sta_connect PROJECT_LIBS=bk7236_app``
+.. note:: The client compile command should assign appropriate PROJECT and PROJECT_LIBS ``make bk7236n PROJECT=examples/wifi/sta_connect PROJECT_LIBS=bk7236n_app``
 

@@ -10,7 +10,7 @@ Secure Engine
 Overview
 ---------------------
 
-BK7236 introduces TrustEngine as a secure component in the system. It provides the following features:
+BK7236N introduces TrustEngine as a secure component in the system. It provides the following features:
 
  - High security assurance. The crypto engine supports key ladders, lifecycle management and True Random Number Generator (TRNG) which enhance the system security.
  - High performance and low power for encryption/decryption operation. This is achieved by TrustEngine internal cryptography engines.
@@ -18,7 +18,7 @@ BK7236 introduces TrustEngine as a secure component in the system. It provides t
    LCS management and One-Time Programmable (OTP) access control, which can reduce the risk of sensitive information leakage
    to non-secure hosts.
 
-BK7236 is also integrated with the TrustEngine driver in BootROM, Bootloader, TF-M and Armino.
+BK7236N is also integrated with the TrustEngine driver in BootROM, Bootloader, TF-M and Armino.
 
 TrustEngine In the System
 ------------------------------------------
@@ -30,7 +30,7 @@ The position of TrustEngine in the system is shown in the figure below.
      :alt: 8
      :figclass: align-center
 
-In BK7236, TrustEngine is configured as a security host and a normal host, where:
+In BK7236N, TrustEngine is configured as a security host and a normal host, where:
 
   - Security host - mainly used for secure boot in BL1 and BL2, secure data encryption/decryption, signature/verification in TFM-S, etc.
   - Ordinary host - mainly used in the non-secure world, such as encryption/decryption, signature/verification, etc. in Wi-Fi, TCPIP communication and other applications.

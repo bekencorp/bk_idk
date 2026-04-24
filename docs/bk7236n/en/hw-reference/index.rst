@@ -6,4 +6,4 @@ chip reference manual
 .. toctree::
     :maxdepth: 3
 
-    BK7236 datasheet <http://docs.bekencorp.com/spec/BK7236/BK7236%C2%A0Datasheet.pdf>
+    BK7236N datasheet <http://docs.bekencorp.com/spec/BK7236N/BK7236N%C2%A0Datasheet.pdf>

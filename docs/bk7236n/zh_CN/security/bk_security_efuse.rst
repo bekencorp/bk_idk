@@ -8,9 +8,9 @@ EFUSE
 概述
 ------------------------
 
-EFUSE (Electrically Programming Efuse) 用于配置 BK7236 中与安全相关的特性，只能由 0 配置成 1，无法由 1 配置成 0。
+EFUSE (Electrically Programming Efuse) 用于配置 BK7236N 中与安全相关的特性，只能由 0 配置成 1，无法由 1 配置成 0。
 
-BK7236 EFUSE 共有 4x8 共 32 Bits, 在安全启动使能前，可以通过 :ref:`BKFIL<bk_tool_bkfil>` 配置，详情请参考 :ref:`EFUSE 配置 <bk_config_otp_efuse>`。
+BK7236N EFUSE 共有 4x8 共 32 Bits, 在安全启动使能前，可以通过 :ref:`BKFIL<bk_tool_bkfil>` 配置，详情请参考 :ref:`EFUSE 配置 <bk_config_otp_efuse>`。
 
 +-----------+-----------------------------+----------------------------------------------------------------------------------------------------------+
 | 位        | 名字                        | 描述                                                                                                     |
@@ -222,8 +222,8 @@ BIT(21) - spi to ahb disable
 
 BIT(21) 用于禁用 SPI 到 AHB 通道：
 
- - 0 - SPI 到 AHB 通道使能。此时，通过 SPI 接口可直接操作 BK7236 寄存器。
- - 1 - SPI 到 AHB 通道关闭。此时，无法通过 SPI 接口操作 BK7236 寄存器。
+ - 0 - SPI 到 AHB 通道使能。此时，通过 SPI 接口可直接操作 BK7236N 寄存器。
+ - 1 - SPI 到 AHB 通道关闭。此时，无法通过 SPI 接口操作 BK7236N 寄存器。
 
 需要注意，BIT(21) 与 :ref:`BIT(30) spi flash download disable<efuse_bit30>` 相互独立，需要分别配置。
 
@@ -266,7 +266,7 @@ BIT(31) - SWD 调试
 
 BIT(31) 用于控制 CPU 调试口的开关:
 
- - 0 - CPU 调试开启，BK7236 支持 SWD 调试。
+ - 0 - CPU 调试开启，BK7236N 支持 SWD 调试。
  - 1 - CPU 调试关闭。此时，必须通过 :ref:`安全调试 <security_secure_debug>` 才能使能 CPU 调试功能。
 
 .. important::

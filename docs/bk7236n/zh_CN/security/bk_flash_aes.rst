@@ -11,7 +11,7 @@ FLASH AES 加密与 CRC
     :alt: 8                                                                                           
     :figclass: align-center
 
-如上图所示，BK7236 FLASH 提供了两中访问接口：数据口与指令口：
+如上图所示，BK7236N FLASH 提供了两中访问接口：数据口与指令口：
 
  - 数据口访问，即访问者（一般指 CPU）直接通过 SPI 接口访问 FLASH，使用的是 FLASH 物理地址。
  - 指令口访问，访问者不直接访问 FLASH，而是经由 FLASH Controller 间接访问 FLASH。
@@ -56,5 +56,5 @@ FLASH AES 加密与 CRC
 
 .. important::
 
- BK7236 暂不支持自动生成随机 FLASH AES KEY，需要用户手动配置 AES KEY，为确保存放在
+ BK7236N 暂不支持自动生成随机 FLASH AES KEY，需要用户手动配置 AES KEY，为确保存放在
  FLASH 中指令安全，您需要妥善保管好您的 FLASH AES KEY。

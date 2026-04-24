@@ -20,8 +20,8 @@ The Armino Kconfig organization is shown in the following diagram:
                  -Kconfig
          - middleware/
              - soc/
-                 - bk7236/
-                     -bk7236.defconfig
+                 - bk7236n/
+                     -bk7236n.defconfig
                  - bk7258/
                      -bk7258.defconfig
          - projects/
@@ -29,7 +29,7 @@ The Armino Kconfig organization is shown in the following diagram:
                 - config/
                     - common/
                         - config
-                    - bk7236/
+                    - bk7236n/
                         - config
                     - bk7258/
                         - config
@@ -48,9 +48,9 @@ These files can be grouped into two categories:
     - Kconfig.projbuild - defined in the component or project directory.
   - Configuration modification file:
 
-    - middleware/soc/bk7236.defconfig - Default configuration of BK7236.
+    - middleware/soc/bk7236n.defconfig - Default configuration of BK7236N.
     - my_projects/config/common/config - configuration shared by different BK72xx in the project.
-    - my_projects/config/bk7236/config - BK7236 project configuration.
+    - my_projects/config/bk7236n/config - BK7236N project configuration.
 
 .. important::
 
@@ -59,7 +59,7 @@ These files can be grouped into two categories:
 
 .. note::
 
-   All the items defined in Kconfig.projbuild will be show in the top menu of menuconfig. BK7236 does not support menuconfig, so Kconfig.projbuild
+   All the items defined in Kconfig.projbuild will be show in the top menu of menuconfig. BK7236N does not support menuconfig, so Kconfig.projbuild
    works same as Kconfig.
 
 .. note::
@@ -68,7 +68,7 @@ These files can be grouped into two categories:
 
 In the Armino project, the priority of Kconfig configuration is::
 
- my_projects/config/bk7236/config > my_projects/config/common/config > bk7236.defconfig > configuration definition files
+ my_projects/config/bk7236n/config > my_projects/config/common/config > bk7236n.defconfig > configuration definition files
 
 Menuconfig Supporting
 ----------------------------------------------------------

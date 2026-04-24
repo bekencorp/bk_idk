@@ -69,12 +69,12 @@ Enter the SDK root directory and execute the following command to compile:
 
 macOS、Linux::
        
-    ./dbuild.sh make bk7236
+    ./dbuild.sh make bk7236n
   
 
 Windows::
 
-    ./dbuild.ps1 make bk7236
+    ./dbuild.ps1 make bk7236n
 
 
 .. note::

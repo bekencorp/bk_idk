@@ -22,7 +22,7 @@ UART (Universal Asynchronous Receiver and Transmitter) 通用异步接收器/发
  - RXD：用于接收数据，应连接到发送设备的 TXD 引脚上；
  - GND：为双方提供一个相同的参考电平。
 
-BK7236 支持 3 个 UART (DL_UART0、UART1 和 UART2)，Armino 默认使用 DL_UART0 打印日志，可通过 Kconfig 进行更改。
+BK7236N 支持 3 个 UART (DL_UART0、UART1 和 UART2)，Armino 默认使用 DL_UART0 打印日志，可通过 Kconfig 进行更改。
 
 .. note::
 

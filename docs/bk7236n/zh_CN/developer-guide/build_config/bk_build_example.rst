@@ -454,7 +454,7 @@ armino 加载 Kconfig 的顺序如下，对于同一配置项，后加载的值�
  - 项目根目录/config/common.config 中定义项目相关，目标通用的配置
  - 项目根目录/config/bkxxx.config 中定义的项目相关，特定目标的配置
 
-应用可以通过配置 “项目根目录/config/common.config“ 与 ”项目根目录/config/bkxxx.config” 来设置项目/目标相关的配置项，其中 bkxxx 为具体的 SoC，如 bk7236 等。
+应用可以通过配置 “项目根目录/config/common.config“ 与 ”项目根目录/config/bkxxx.config” 来设置项目/目标相关的配置项，其中 bkxxx 为具体的 SoC，如 bk7236n 等。
 
 - 示例代码路径:`<projects/examples/build_system/205_project_per_soc_config>`
 

@@ -7,7 +7,7 @@ AB partition location independent project description
 
 .. important::
   - if using the ab location independent upgrade capabilitues，need use the customization/config_ab project；
-  - adding the configuration in this directory of projects/customization/config_ab/config/bk7236/config;
+  - adding the configuration in this directory of projects/customization/config_ab/config/bk7236n/config;
 
 　Take the avdk project as an example the customization/config_ab is a project undef the project directory of avdk, which has been configured with a lot of media related  functions, as shown in Figure 1 ,rather than the project/customization/config_ab project of bk_idk。
 

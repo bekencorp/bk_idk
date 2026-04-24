@@ -6,4 +6,4 @@
 .. toctree::
     :maxdepth: 3
     
-    BK7236 技术规格书 <http://docs.bekencorp.com/spec/BK7236/BK7236%C2%A0Datasheet.pdf>
+    BK7236N 技术规格书 <http://docs.bekencorp.com/spec/BK7236N/BK7236N%C2%A0Datasheet.pdf>

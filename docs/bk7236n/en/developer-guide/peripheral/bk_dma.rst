@@ -22,7 +22,7 @@ A typical DMA implementation is usually shown in the figure below.
 
 CPU, DMA controller and DMA memory are connected through bus. A DMA controller can support multiple channels, and different channels can transmit simultaneously. Before data transmission between peripheral and memory, you need to select a channel and configure the corresponding parameters.
 
-BK7236 supports 2 DMA The controller and each controller 8 DMA channels. Although the six channels can work at the same time, there is only one bus, so there is actually only one channel that can transmit data on the bus at a specific time. When multiple different DMA channels have data transmission at the same time, DMA schedules the channels. DMA channel has two scheduling modes：
+BK7236N supports 2 DMA The controller and each controller 8 DMA channels. Although the six channels can work at the same time, there is only one bus, so there is actually only one channel that can transmit data on the bus at a specific time. When multiple different DMA channels have data transmission at the same time, DMA schedules the channels. DMA channel has two scheduling modes：
  
  - Poll scheduling, all channels have the same priority, and request scheduling first
  - Based on priority scheduling, the scheduling method and priority can be set through A.:cpp:func:bk_dma_init

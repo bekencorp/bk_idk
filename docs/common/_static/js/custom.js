@@ -2,19 +2,18 @@ var preUrl = ""
 var hostRoot = ""
 var asyncDone = false;
 var sdkList = [
-    
     {
-        "name" : "bk7236",
-        "lang" : [ "zh-cn" ],
+        "name" : "bk7236n",
+        "lang" : [ "zh-cn", "en" ],
         "version" : [
-            "latest"
+            "v2.2.1"
         ]
     },
     {
-        "name" : "bk7258",
-        "lang" : [ "zh-cn" ],
+        "name" : "bk7239n",
+        "lang" : [ "zh-cn", "en" ],
         "version" : [
-            "latest"
+            "v2.2.1"
         ]
     }
 ]

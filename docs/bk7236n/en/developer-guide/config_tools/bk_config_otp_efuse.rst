@@ -110,9 +110,9 @@ $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 The script is divided into four logical configuration areas:
 
   - User configuration area - configured by ``User_Operate_Enable`` and ``User_Operate``, user-defined OTP configuration is usually placed in this area, in the automatically generated configuration script, this area is empty.
-  - Security control area - configured by ``Security_Ctrl_Enable`` and ``Security_Ctrl``, which refers to EFUSE configuration in BK7236.
-  - Security data area - configured by ``Security_Data_Enable`` and ``Security_Data``, which refers to OTP configuration in BK7236.
-  - EFUSE field - configured by ``eFuse_Enable`` and ``eFuse``, this field is deprecated in BK7236.
+  - Security control area - configured by ``Security_Ctrl_Enable`` and ``Security_Ctrl``, which refers to EFUSE configuration in BK7236N.
+  - Security data area - configured by ``Security_Data_Enable`` and ``Security_Data``, which refers to OTP configuration in BK7236N.
+  - EFUSE field - configured by ``eFuse_Enable`` and ``eFuse``, this field is deprecated in BK7236N.
 
 
 
@@ -124,11 +124,11 @@ Global fields specifically refer to the first-level fields in the configuration 
   - ``User_Operate_Enable`` - true/false, indicating whether to deploy the data in User_Operate to the board through BKFIL.
   - ``Security_Ctrl_Enable`` - true/false, indicating whether to deploy the data in Security_Ctrl to the board through BKFIL.
   - ``Security_data_Enable`` - true/false, indicating whether to deploy the data in Security_data to the board through BKFIL.
-  - ``eFuse_Enable`` - Obsolete in BK7236.
+  - ``eFuse_Enable`` - Obsolete in BK7236N.
   - ``User_Operate`` - Userland configuration data.
   - ``Security_Ctrl`` - Security control area configuration data.
   - ``Security_data`` - Security data area configuration data.
-  - ``eFuse`` - Obsolete in BK7236.
+  - ``eFuse`` - Obsolete in BK7236N.
 
 .. note::
 

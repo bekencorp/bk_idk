@@ -10,7 +10,7 @@ FLASH AES Encryption
      :alt: 8
      :figclass: align-center
 
-As shown in the figure above, BK7236 FLASH provides two access interfaces: data port and command port:
+As shown in the figure above, BK7236N FLASH provides two access interfaces: data port and command port:
 
   - Data port access, that is, the visitor (generally refers to the CPU) directly accesses the FLASH through the SPI interface, using the FLASH physical address.
   - Command port access, the visitor does not directly access the FLASH, but indirectly accesses the FLASH through the FLASH Controller.
@@ -54,5 +54,5 @@ To use the FLASH AES encryption function, the following configurations are requi
 
 .. important::
 
-  BK7236 does not support automatic generation of random FLASH AES KEY at the moment, users need to manually configure AES KEY, in order to ensure storage in
+  BK7236N does not support automatic generation of random FLASH AES KEY at the moment, users need to manually configure AES KEY, in order to ensure storage in
   The commands in FLASH are safe, so you need to keep your FLASH AES KEY safe.

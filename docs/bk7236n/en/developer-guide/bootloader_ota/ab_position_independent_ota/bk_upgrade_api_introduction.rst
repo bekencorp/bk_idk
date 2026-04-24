@@ -25,7 +25,7 @@ AB partition location independent of upgrade interface
 
     void bk_ota_double_check_for_execution(void);
 
-- 4 In the current SDK version, the above (2,3) has been implemented (controlled by CONFIG_OTA_UPDATE_DEFAULT_PARTITION) to facilitate self-testing. Customer needs in the projects/customization/config_ab/config/bk7236/config) will shut CONFIG_OTA_UPDATE_DEFAULT_PARTITION the macro definition.
+- 4 In the current SDK version, the above (2,3) has been implemented (controlled by CONFIG_OTA_UPDATE_DEFAULT_PARTITION) to facilitate self-testing. Customer needs in the projects/customization/config_ab/config/bk7236n/config) will shut CONFIG_OTA_UPDATE_DEFAULT_PARTITION the macro definition.
 
 - After the app successfully downloads the image, the customer needs to return to the partition that needs to be temporarily executed; See Figure 1 below.
 

@@ -4,11 +4,11 @@ system debugging
 
 :link_to_translation:`zh_CN:[中文]`
 
-Armino platform BK7236 system debugging commands
+Armino platform BK7236N system debugging commands
 --------------------------------------------------
 
 
-  - The log of BK7236 CPU0 is output through the serial port DL_UART0 (default baud rate is 115200)
+  - The log of BK7236N CPU0 is output through the serial port DL_UART0 (default baud rate is 115200)
 
   - Due to memory buffer limitations, the number of bytes of each log data must be less than 128 bytes. Logs exceeding this size will be discarded by the shell module and a message !!some LOGs discarded!! will be output. If there are too many logs and there is no time to output them, causing log accumulation and the buffer is used up, this prompt string will also be output.
   - Enter the log command through the serial port to view the current log configuration
@@ -254,7 +254,7 @@ Armino platform BK7236 system debugging commands
 
 
 
-Armino platform BK7236 system jtag debugging
+Armino platform BK7236N system jtag debugging
 -----------------------------------------------
 
   - JLink environment integrates JLink gdb server + gdb tool through Eclipse
@@ -279,33 +279,33 @@ Armino platform BK7236 system jtag debugging
 
    .. figure:: ../../../../common/_static/bk7236_jlink_config.png
        :align: center
-       :alt: BK7236 JLink configuration
+       :alt: BK7236N JLink configuration
        :figclass: align-center
 
    .. figure:: ../../../../common/_static/bk7236_jlink_config2.png
        :align: center
-       :alt: BK7236 JLink configuration
+       :alt: BK7236N JLink configuration
        :figclass: align-center
 
    .. figure:: ../../../../common/_static/bk7236_jlink_config3.png
      :align: center
-     :alt: BK7236 JLink configuration
+     :alt: BK7236N JLink configuration
      :figclass: align-center
 
 
-  - The default jtag is connected to cpu0, and BK7236 has two Jtag ports (grou1/group2)
+  - The default jtag is connected to cpu0, and BK7236N has two Jtag ports (grou1/group2)
   - You can set jtag connection cpu0 through the setjtagmode cpu0 group1 command
   - You can set jtag to connect cpu1 through setjtagmode cpu1 group1
   - You can view the current jtag status through the jtagmode command
 
 
-Armino platform BK7236/BK7258 abnormal dump one-click recovery on-site tool
+Armino platform BK7236N/BK7258 abnormal dump one-click recovery on-site tool
 --------------------------------------------------------------------------------
 
   - Please refer to the usage documentation in the publishing tool:
     https://dl.bekencorp.com/tools/Debug_tool/BK7258-debug.zip
 
-  - BK7236/BK7258 dump tool FAQ:
+  - BK7236N/BK7258 dump tool FAQ:
 
     + The dump function of Release version is turned off by default and can be turned on through CONFIG_DUMP_ENABLE configuration
     + The principle of the Dump tool to restore the scene is that the script analyzes the log, parses out the contents of regs, itcm, dtcm, and sram, and then restores these contents to the qemu virtual machine through gdb

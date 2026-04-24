@@ -6,24 +6,24 @@
 内存概述
 --------------------------
 
-    BK7236芯片整体有8M(或16M) psram，640K sram，Cortex M33核有16k dtcm和16k itcm
+    BK7236N芯片整体有8M(或16M) psram，640K sram，Cortex M33核有16k dtcm和16k itcm
 
 SRAM概述
 -------------------------
 
-    - BK7236芯片当前为单核；有640K sram
+    - BK7236N芯片当前为单核；有640K sram
 
 
 PSRAM概述
 -------------------------
 
-    PSRAM提供足够的内存空间，供不同的模块使用，当前BK7236支持两种类型的PSRAM，它们的内存大小不同，分别为8Mbyte和16Mbyte，使用不同的宏进行区分。
+    PSRAM提供足够的内存空间，供不同的模块使用，当前BK7236N支持两种类型的PSRAM，它们的内存大小不同，分别为8Mbyte和16Mbyte，使用不同的宏进行区分。
     多媒体中定义了四种类型的模块需要使用PSRAM，由于PSRAM还会用来在不同的CPU上作为heap使用，所以并不是全部的PSRAM空间都被多媒体使用，长度和空间都是需要进行区分的。
 
 1、PSRAM的类型
 ----------------------------
 
-    BK7236支持两种类型的PSRAM，具体配置如下：
+    BK7236N支持两种类型的PSRAM，具体配置如下：
 
     +--------------------+---------------+
     |        name        |  size(Mbyte)  |
@@ -65,7 +65,7 @@ PSRAM概述
 	定义当前核上PSRAM作为Heap的起始地址，用CONFIG_PSRAM_HEAP_SIZE定义空间大小，不同的核上定义的值不一样，CONFIG_PSRAM_HEAP_CPU0_BASE_ADDER在不同的核上值是一样的。
 	应该与不同核上CONFIG_PSRAM_HEAP_BASE的最小值保持一致，比如默认BK7258的工程，CPU0上CONFIG_PSRAM_HEAP_BASE=0x60700000，CONFIG_PSRAM_HEAP_SIZE=0x80000，那么CPU1上
 	CONFIG_PSRAM_HEAP_BASE=0x60780000，CONFIG_PSRAM_HEAP_SIZE=0x80000，CPU2上默认PSRAM不作为Heap使用，所以CONFIG_PSRAM_HEAP_CPU0_BASE_ADDER=0x60700000。
-	某个核上是否需要将psram作为heap，是由CONFIG_PSRAM_AS_SYS_MEMORY控制。BK7236默认工程是没有打开psram，需要客户根据芯片是否封装PSRAM，来打开相应的功能宏。
+	某个核上是否需要将psram作为heap，是由CONFIG_PSRAM_AS_SYS_MEMORY控制。BK7236N默认工程是没有打开psram，需要客户根据芯片是否封装PSRAM，来打开相应的功能宏。
 
 3、PSRAM作为heap使用
 -----------------------
@@ -80,7 +80,7 @@ PSRAM概述
         void *psram_malloc(size_t size);
         void  psram_free(void *p);
 
- - BK7236芯片低压功能PSRAM会下电， 如果上层有使用的psram内存没有释放, 会导致无法进入低压, 可以通过如下接口打印当前psram内存使用情况::
+ - BK7236N芯片低压功能PSRAM会下电， 如果上层有使用的psram内存没有释放, 会导致无法进入低压, 可以通过如下接口打印当前psram内存使用情况::
 
         void bk_psram_heap_get_used_state(void);
 

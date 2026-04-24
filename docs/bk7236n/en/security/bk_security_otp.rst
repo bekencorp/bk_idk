@@ -8,7 +8,7 @@ OTP
 overview
 ------------------------------------
 
-The BK7236 on-chip OTP is based on PUF (Physical-Unclonable-Function) technology, which provides on-chip keys, secure storage and true random numbers for the system.
+The BK7236N on-chip OTP is based on PUF (Physical-Unclonable-Function) technology, which provides on-chip keys, secure storage and true random numbers for the system.
 OTP can be configured through :ref:`BKFIL<bk_tool_bkfil>`, please refer to :ref:`OTP Configuration <bk_config_otp_efuse>` for details.
 
 .. figure:: picture/otp_region.png
@@ -20,7 +20,7 @@ OTP mainly has three areas: OTP, PUF, and OTP2:
 
   - PUF - size 64x32 Bits (2KB):
  
-    - The first 1Kbits are UID (Unique Identification Numbers). When the PUF is registered, the UID is determined, and each board is unique. UID in PUF is used as :ref:`BK7236 unique ID<security_uid>`, random key, etc.
+    - The first 1Kbits are UID (Unique Identification Numbers). When the PUF is registered, the UID is determined, and each board is unique. UID in PUF is used as :ref:`BK7236N unique ID<security_uid>`, random key, etc.
     - The last 1Kbits is the entropy pool of random numbers, :ref:`Security Engine <security_enginee>` uses the entropy pool to generate true random numbers.
   - OTP - size 256x32 Bits (8KB), which mainly stores information related to system security. The :ref:`Security Engine <security_enginee>` OTP access API can be called in the code for indirect access, and it can be configured through the System APB interface through SPI.
   - OTP2 - Size 768x32 Bits (24KB). Mainly used by applications.

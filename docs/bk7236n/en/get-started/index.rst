@@ -13,7 +13,7 @@ This article demonstrates:
 Introduction
 --------------------------------------------------------
 
-BK7236 is a SoC that integrates the following features:
+BK7236N is a SoC that integrates the following features:
 
  - Wi-Fi 6 (2.4 GHz Band)
  - Bluetooth Low Energy 5.4
@@ -21,12 +21,12 @@ BK7236 is a SoC that integrates the following features:
  - Multiple peripherals
  - Built-in TrustEngine security hardware
 
-Powered by 22nm technology, BK7236 provides a robust, highly integrated platform, which helps
+Powered by 22nm technology, BK7236N provides a robust, highly integrated platform, which helps
 meet the continuous demands for efficient power usage, compact design, security, high performance,
 reliability and high security.
 
 Beken provides basic hardware and software resources to help application developers realize
-their ideas using BK7236 series hardware. The software development framework Armino is
+their ideas using BK7236N series hardware. The software development framework Armino is
 intended for development of Internet-of-Things (IoT) applications with Wi-Fi, Bluetooth, power
 management, security and other system features.
 
@@ -35,7 +35,7 @@ Preparation
 
 Hardware：
 
- - BK7236 Demo board( :ref:`Introduction to Development Board <bk7236>` )
+ - BK7236N Demo board( :ref:`Introduction to Development Board <bk7236n>` )
  - Serial port burning tool
  - PC
 
@@ -107,11 +107,11 @@ Configuration project
 We can also use the project configuration file for differentiated configuration::
 
     Project Profile Override Chip Profile Override Default Configuration
-    Example： bk7236/config >> bk7236.defconfig >> KConfig
+    Example： bk7236n/config >> bk7236n.defconfig >> KConfig
     + Example of project configuration file：
-        projects/app/config/bk7236/config
+        projects/app/config/bk7236n/config
     + Sample chip configuration file：
-        middleware/soc/bk7236/bk7236.defconfig
+        middleware/soc/bk7236n/bk7236n.defconfig
     + Sample KConfig configuration file：
         middleware/arch/cm33/Kconfig
         components/bk_cli/Kconfig
@@ -128,7 +128,7 @@ Burn Code
 ------------------------------------
 
 On the Windows platform, Armino currently supports UART burning.
-After the app project is compiled, generate all-app.bin in the build/app/bk7236 directory and burn it using this bin file. When burning the security project for the first time, it is necessary to first burn bootloader.bin, and then burn all-app.bin.
+After the app project is compiled, generate all-app.bin in the build/app/bk7236n directory and burn it using this bin file. When burning the security project for the first time, it is necessary to first burn bootloader.bin, and then burn all-app.bin.
 
 
 
@@ -171,4 +171,4 @@ Click :ref:`BKFIL <bk_tool_bkfil>` to learn more about BKFIL.
 Serial port Log and Command Line
 ------------------------------------
 
-Currently the BK7236 use the DL_UART0 as the Log output and Cli input; You can get the supported command list through the help command.
+Currently the BK7236N use the DL_UART0 as the Log output and Cli input; You can get the supported command list through the help command.

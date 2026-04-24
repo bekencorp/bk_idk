@@ -23,7 +23,7 @@ The above figure shows I2C hardware connection, in which：
  - SCL：Clock signal, which provides the clock for data transmission to synchronize data transmission
  - SDA：Used to transfer data.
 
-Beken The chip usually has two I2C controllers, and BK7236 supports three I2Cs (I2C0, I2C1, and I2C2).
+Beken The chip usually has two I2C controllers, and BK7236N supports three I2Cs (I2C0, I2C1, and I2C2).
 
 
 Use of I2C
@@ -34,7 +34,7 @@ bk_i2c_init() It mainly configures the clock frequency of I2C SCL. If it works i
 
 .. note::
 
-  For bk7236/bk7231n/bk7251, I2C_ID_1 (corresponding to I2C2 on address_mapping) shares GPIO with UART2, so when I2C_ID_1 is enabled, UART2 cannot be used.
+  For bk7236n/bk7231n/bk7251, I2C_ID_1 (corresponding to I2C2 on address_mapping) shares GPIO with UART2, so when I2C_ID_1 is enabled, UART2 cannot be used.
 
 
 Communication in I2C host mode

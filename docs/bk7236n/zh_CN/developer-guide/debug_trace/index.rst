@@ -3,11 +3,11 @@
 
 :link_to_translation:`en:[English]`
 
-Armino平台BK7236系统调试命令
+Armino平台BK7236N系统调试命令
 --------------------------------------
 
 
- - BK7236 CPU0的log通过串口DL_UART0输出(默认波特率为115200)
+ - BK7236N CPU0的log通过串口DL_UART0输出(默认波特率为115200)
 
  - 由于内存缓冲区的限制，每条log数据的字节数，要小于128字节。超过这个大小的log都会被shell 模块丢弃，并输出一条 !!some LOGs discarded!! 如果log数量太多，来不及输出导致log堆积，缓冲区用完，也会输出这条提示字符串。
  - 通过串口输入log命令查看当前log配置
@@ -252,7 +252,7 @@ Armino平台BK7236系统调试命令
     $wifi_diag: Wi-Fi HW diagnostics config
 
 
-Armino平台BK7236系统jtag调试
+Armino平台BK7236N系统jtag调试
 --------------------------------------
 
  - JLink环境通过Eclipse集成JLink gdb server + gdb 工具
@@ -277,33 +277,33 @@ Armino平台BK7236系统jtag调试
 
   .. figure:: ../../../../common/_static/bk7236_jlink_config.png
       :align: center
-      :alt: BK7236 JLink configuration
+      :alt: BK7236N JLink configuration
       :figclass: align-center
 
   .. figure:: ../../../../common/_static/bk7236_jlink_config2.png
       :align: center
-      :alt: BK7236 JLink configuration
+      :alt: BK7236N JLink configuration
       :figclass: align-center
 
   .. figure:: ../../../../common/_static/bk7236_jlink_config3.png
     :align: center
-    :alt: BK7236 JLink configuration
+    :alt: BK7236N JLink configuration
     :figclass: align-center
 
 
- - 默认jtag连接cpu0，BK7236有两个Jtag口(grou1/group2)
+ - 默认jtag连接cpu0，BK7236N有两个Jtag口(grou1/group2)
  - 可以通过setjtagmode cpu0 group1命令设置jtag连接cpu0
  - 可以通过setjtagmode cpu1 group1设置jtag连接cpu1
  - 可以通过jtagmode命令查看当前jtag状态
 
 
-Armino平台BK7236/BK7258 异常dump一键恢复现场工具
-------------------------------------------------
+Armino平台BK7236N/BK7258 异常dump一键恢复现场工具
+----------------------------------------------------------
 
  - 请参考发布工具中使用文档:
    https://dl.bekencorp.com/tools/Debug_tool/BK7258-debug.zip
 
- - BK7236/BK7258 dump工具常见问题:
+ - BK7236N/BK7258 dump工具常见问题:
 
    + 默认Release版本dump功能是关闭的, 可以通过CONFIG_DUMP_ENABLE配置打开
    + Dump工具恢复现场的原理是脚本通过分析log,解析出regs,itcm,dtcm,sram内容,然后通过gdb将这些内容恢复到qemu虚拟机中

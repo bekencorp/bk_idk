@@ -78,7 +78,7 @@ FWU是TF-M提供的镜像固件更新功能。它提供了一个标准的固件�
 
 6.1 FWU提供的接口
 ------------------------
-TFM提供强制函数与非强制函数，bk7236只用到了强制函数。
+TFM提供强制函数与非强制函数，bk7236n只用到了强制函数。
 
 6.1.1 psa_fwu_query
 ------------------------
@@ -106,7 +106,7 @@ TFM提供强制函数与非强制函数，bk7236只用到了强制函数。
 
 6.2.1 打开TF-M的FWU功能
 ------------------------
-在bk7236的配置文件中，打开TFM_PARTITION_FIRMWARE_UPDATE。由于FWU跟MCUBOOT共用一套flash接口，需要同时打开MCUBOOT_DATA_SHARING，并使能BL2。
+在bk7236n的配置文件中，打开TFM_PARTITION_FIRMWARE_UPDATE。由于FWU跟MCUBOOT共用一套flash接口，需要同时打开MCUBOOT_DATA_SHARING，并使能BL2。
 其他配置包括，MCUBOOT_IMAGE_NUMBER设置为1，PSA_FWU_MAX_BLOCK_SIZE设置为2048，fwu task的栈空间调大一些。
 
 6.2.2 打开FWU的NSPE调用接口
@@ -120,7 +120,7 @@ TFM提供强制函数与非强制函数，bk7236只用到了强制函数。
 
 7.1 增加TF-M的暂存区配置
 ------------------------
-由于TF-M默认只有一个暂存区，无法满足bk7236升级BL2的需求。增加TF-M中4个暂存区为：
+由于TF-M默认只有一个暂存区，无法满足bk7236n升级BL2的需求。增加TF-M中4个暂存区为：
 
 .. figure:: picture/code1.svg
     :align: center

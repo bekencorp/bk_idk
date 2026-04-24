@@ -12,7 +12,7 @@ basic concept
  - ``Project configuration`` - Specifically, the sdkconfig.h file generated in the build directory during the build process.
  - ``application`` - is an executable built by ARMINO. A project typically builds two applications : the project application (the main executable file, i.e. user-defined firmware) and the bootloader  (the project application that starts and initializes).
  - ``components`` -  is modular and self-contained code that is compiled into a static library (.a file) and linked into the application.
- - ``Target`` - Specifically refers to the hardware device that runs the built application, such as bk7236, bk7258 etc.
+ - ``Target`` - Specifically refers to the hardware device that runs the built application, such as bk7236n, bk7258 etc.
 
 Project example
 ---------------
@@ -24,13 +24,13 @@ Project example
         - include/
         - middleware/
             - arch/
-                - bk7236/
-                    - bk7236.defconfig
+                - bk7236n/
+                    - bk7236n.defconfig
                     - ...
         - projects/
             - my_project/
                 - config/
-                    - bk7236/config
+                    - bk7236n/config
                     - bk7258/config
                 - CMakeLists.txt
                 - Kconfig.projbuild

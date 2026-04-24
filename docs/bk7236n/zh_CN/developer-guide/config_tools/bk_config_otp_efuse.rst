@@ -111,9 +111,9 @@ $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 脚本分四个逻辑配置区：
 
  - 用户配置区 - 由 ``User_Operate_Enable`` 与 ``User_Operate`` 配置，用户定义的 OTP 配置通常放在这个区，在自动生成的配置脚本中，这个区为空。
- - 安全控制区 - 由 ``Security_Ctrl_Enable`` 与 ``Security_Ctrl`` 配置，在 BK7236 中指 EFUSE 配置。
- - 安全数据区 - 由 ``Security_Data_Enable`` 与 ``Security_Data`` 配置，在 BK7236 中指 OTP 配置。
- - EFUSE 区 - 由 ``eFuse_Enable`` 与 ``eFuse`` 配置，在 BK7236 中该字段已废弃。
+ - 安全控制区 - 由 ``Security_Ctrl_Enable`` 与 ``Security_Ctrl`` 配置，在 BK7236N 中指 EFUSE 配置。
+ - 安全数据区 - 由 ``Security_Data_Enable`` 与 ``Security_Data`` 配置，在 BK7236N 中指 OTP 配置。
+ - EFUSE 区 - 由 ``eFuse_Enable`` 与 ``eFuse`` 配置，在 BK7236N 中该字段已废弃。
 
 
 
@@ -125,11 +125,11 @@ $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
  - ``User_Operate_Enable`` - true/false，表示是否通过 BKFIL 部署 User_Operate 中的数据到板子上。
  - ``Security_Ctrl_Enable`` - true/false，表示是否通过 BKFIL 部署 Security_Ctrl 中的数据到板子上。
  - ``Security_data_Enable`` - true/false，表示是否通过 BKFIL 部署 Security_data 中的数据到板子上。
- - ``eFuse_Enable`` - BK7236 中已废弃。
+ - ``eFuse_Enable`` - BK7236N 中已废弃。
  - ``User_Operate`` - 用户区配置数据。
  - ``Security_Ctrl`` - 安全控制区配置数据。
  - ``Security_data`` - 安全数据区配置数据。
- - ``eFuse`` - BK7236 中已废弃。
+ - ``eFuse`` - BK7236N 中已废弃。
 
 .. note::
 

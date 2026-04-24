@@ -1,9 +1,9 @@
 :orphan:
 
-.. _bk7236:
+.. _bk7236n:
 
 
-BK7236
+BK7236N
 ===================
 
 :link_to_translation:`en:[English]`
@@ -16,15 +16,15 @@ BK7236
 
 .. figure:: ../../../common/_static/demo_board_7236.png
     :align: center
-    :alt: BK7236 Demo Board
+    :alt: BK7236N Demo Board
     :figclass: align-center
 
-    BK7236 Demo Board
+    BK7236N Demo Board
 
 
 .. figure:: ../../../common/_static/demo_board_7236_02.png
     :align: center
-    :alt: BK7236 Demo Board Back Side
+    :alt: BK7236N Demo Board Back Side
     :figclass: align-center
 
-    BK7236 Demo Board Back Side
+    BK7236N Demo Board Back Side

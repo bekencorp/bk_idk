@@ -67,12 +67,12 @@ Docker镜像获取
 
   macOS、Linux::
        
-      ./dbuild.sh make bk7236
+      ./dbuild.sh make bk7236n
   
 
   Windows::
 
-      ./dbuild.ps1 make bk7236
+      ./dbuild.ps1 make bk7236n
 
 
 .. note::
