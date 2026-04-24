@@ -38,4 +38,8 @@ menu "bk7236n"
 	config DPD_CALI
 		bool "Enable DPD Cali"
 		default n
+
+	config CUSTOMIZE_REDUCE_11G_TARGET_PWR_1DB
+		bool "Customize: reduce 11g target power by 1 dB"
+		default n
 endmenu
