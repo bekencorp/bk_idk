@@ -1488,7 +1488,7 @@ static void ate_read_otp(const uint8_t *content, int cnt, uint8_t *tx_buffer1)
         }
     } else if (content[2] == 0x02) {
         /* otp2 use ahb_read */
-        if (content[3] == OTP_VDDDIG_BANDGAP) {
+        if ((content[3] == OTP_VDDDIG_BANDGAP) || (content[3] == OTP_VDDDIG_BANDGAP_BACKUP)) {
             length = 1;
         } else if ((content[3] == OTP_DIA) || (content[3] == OTP_DIA_BACKUP)) {
             // 2G PA(1 byte) + 5G PA(1 byte)
@@ -2178,7 +2178,6 @@ int set_mac_address_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_bu
 int bkreg_run_command1(unsigned char *content, int cnt)
 {
     UINT8 tx_buffer[16];
-    UINT8 addr, data;
 
     if (cnt < 2)
         return -1;
@@ -2656,23 +2655,34 @@ int bkreg_run_command1(unsigned char *content, int cnt)
 #endif
             case 0x42:
             {
+                UINT8 addr;
+                UINT8 data[4] = {0};
+
                 if (cnt > 2)
                 {
                     addr = ((UINT8)content[2] & 0x1F);
-                    data = 0;
+                    data[0] = 0;
                     if (addr == 0x11)
                     {
-                        //BANDGAP in efuse for legacy
-                        bk_otp_ahb_read(OTP_VDDDIG_BANDGAP, &data, (uint32_t)sizeof(data));
-                        tx_buffer[0] = 0x0E;
-                        tx_buffer[1] = data;
-                        uart_send_bytes_for_ate(tx_buffer, 2);
+                        //BANDGAP in efuse for legacy, use similar scheme as DIA
+                        if (bk_otp_ahb_read_backup(OTP_VDDDIG_BANDGAP, data, NULL) == BK_OK)
+                        {
+                            tx_buffer[0] = 0x0E;
+                            tx_buffer[1] = data[0];
+                            uart_send_bytes_for_ate(tx_buffer, 2);
+                        }
+                        else
+                        {
+                            tx_buffer[0] = 0x55;
+                            tx_buffer[1] = 0xAA;
+                            uart_send_bytes_for_ate(tx_buffer, 2);
+                        }
                         break;
                     }
 #if CONFIG_EFUSE
-                    bk_efuse_read_byte(addr, &data);
+                    bk_efuse_read_byte(addr, data);
 #endif
-                    uart_send_bytes_for_ate(&data, 1);
+                    uart_send_bytes_for_ate(data, 1);
                 }
                 else
                 {
@@ -2681,8 +2691,8 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                     for (i=0; i<32; i++)
                     {
                         addr = i;
-                        data = 0;
-                        bk_efuse_read_byte(addr, &data);
+                        data[0] = 0;
+                        bk_efuse_read_byte(addr, data);
                     }
 #endif
                 }

@@ -139,15 +139,16 @@ int sctrl_convert_vdddig_from_user_to_reg(INT8 in_value, UINT32 *out_vdddig, INT
 int sctrl_load_vdddig_from_efuse(void)
 {
     bk_err_t result;
-    uint8_t new_bandgap = 0xFF;
+    uint8_t new_bandgap[4] = {0};
 
-    result = bk_otp_ahb_read(OTP_VDDDIG_BANDGAP, (uint8_t *)&new_bandgap, sizeof(new_bandgap));
-    if ((BK_OK != result) || (0x00 == new_bandgap) || (0xFF == new_bandgap))
+    new_bandgap[0] = 0xFF;
+    result = bk_otp_ahb_read_backup(OTP_VDDDIG_BANDGAP, new_bandgap, NULL);
+    if ((BK_OK != result) || (0x00 == new_bandgap[0]) || (0xFF == new_bandgap[0]))
     {
         return -1;
     }
 
-    sys_hal_set_bgcalm(new_bandgap);
+    sys_hal_set_bgcalm(new_bandgap[0]);
 
     return 0;
 }
@@ -192,12 +193,12 @@ int sctrl_set_bandgap_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_
 {
     UINT8 bandgap[4] = {0};
 
-    tx_buffer[0] = 0x55;
     if (cnt < 3)
     {
-        if (bk_otp_ahb_read(OTP_VDDDIG_BANDGAP, bandgap, sizeof(bandgap)) == 0)
+        if (bk_otp_ahb_read_backup(OTP_VDDDIG_BANDGAP, bandgap, NULL) == BK_OK)
         {
             /* success */
+            sys_hal_set_bgcalm(bandgap[0]);
             tx_buffer[0] = 0x0E;
             tx_buffer[1] = bandgap[0];
             uart_send_bytes_for_ate(tx_buffer, 2);
@@ -205,31 +206,58 @@ int sctrl_set_bandgap_to_efuse(const unsigned char *content, int cnt, UINT8 *tx_
         }
         else
         {
+            tx_buffer[0] = 0x55;
             tx_buffer[1] = 0xAA;
             uart_send_bytes_for_ate(tx_buffer, 2);
             return -1;
         }
     }
+
+    if (cnt > 4)
+    {
+        tx_buffer[0] = 0x55;
+        tx_buffer[1] = 0xCC;
+        uart_send_bytes_for_ate(tx_buffer, 2);
+        return -1;
+    }
     os_memset(bandgap, 0, sizeof(bandgap));
     bandgap[0] = content[2];
     if (bandgap[0] > BANDGAP_BGCAL_MANUAL_MASK)
     {
+        tx_buffer[0] = 0x55;
         tx_buffer[1] = 0xDD;
         uart_send_bytes_for_ate(tx_buffer, 2);
         return -1;
     }
 
-    // update otp will read back and check, so do not do it here
-    if (bk_otp_ahb_update(OTP_VDDDIG_BANDGAP, bandgap, sizeof(bandgap)) == 0)
+    if ((cnt == 4) && (content[3] != 1) && (content[3] != 2))
+    {
+        tx_buffer[0] = 0x55;
+        tx_buffer[1] = 0xCC;
+        uart_send_bytes_for_ate(tx_buffer, 2);
+        return -1;
+    }
+
+    bool write_backup = false;
+    uint8_t bandgap_read[4] = {0};
+
+    if ((cnt == 4) && (content[3] == 2))
+    {
+        write_backup = true;
+    }
+
+    if (bk_otp_ahb_update_backup(OTP_VDDDIG_BANDGAP, bandgap, write_backup, bandgap_read) == BK_OK)
     {
         /* success */
         sys_hal_set_bgcalm(bandgap[0]);
+        tx_buffer[0] = 0x55;
         tx_buffer[1] = 0x33;
-        bk_otp_ahb_read(OTP_VDDDIG_BANDGAP, tx_buffer + 2, 1);
+        os_memcpy(tx_buffer + 2, bandgap_read, 1);
         uart_send_bytes_for_ate(tx_buffer, 3);
     }
     else
     {
+        tx_buffer[0] = 0x55;
         tx_buffer[1] = 0xCC;
         uart_send_bytes_for_ate(tx_buffer, 2);
     }
@@ -241,17 +269,20 @@ int sctrl_set_bandgap_to_reg(const unsigned char *content, int cnt, UINT8 *tx_bu
 {
     UINT8 bandgap = 0;
 
-    if (cnt > 2) {
-		//set bandgap
-		bandgap = content[2];
-    } else {
-		bandgap = sys_hal_cali_bgcalm();
+    if (cnt > 2)
+    {
+        //set bandgap
+        bandgap = content[2];
+    }
+    else
+    {
+        bandgap = sys_hal_cali_bgcalm();
     }
 
     sys_hal_set_bgcalm(bandgap);
 
-	tx_buffer[0] = 0xE;
-	tx_buffer[1] = bandgap;
+    tx_buffer[0] = 0xE;
+    tx_buffer[1] = bandgap;
     uart_send_bytes_for_ate(tx_buffer, 2);
 
     return 0;
