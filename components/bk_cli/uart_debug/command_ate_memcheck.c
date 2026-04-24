@@ -227,6 +227,71 @@ typedef union {
  * UTILITY FUNCTIONS
  * ============================================================================ */
 
+bool bk_otp_memcheck_result_read_and_check(void)
+{
+    uint8_t *check_buffer = NULL;
+    uint8_t *check_extra_buffer = NULL;
+    uint8_t *check_vdddig_buffer = NULL;
+    uint8_t *total_buffer = NULL;
+    bool ret = false;
+
+    check_buffer = (uint8_t *)os_malloc(MEMCHECK_OTP_MARK_SIZE);
+    check_extra_buffer = (uint8_t *)os_malloc(MEMCHECK_OTP_EXTRA_SIZE);
+    check_vdddig_buffer = (uint8_t *)os_malloc(MEMCHECK_OTP_VDDDIG_SIZE);
+    if ((check_buffer == NULL) || (check_extra_buffer == NULL) || (check_vdddig_buffer == NULL)) {
+        bk_printf("[memchk] malloc check buffers failed\r\n");
+        goto cleanup;
+    }
+    memset(check_buffer, 0, MEMCHECK_OTP_MARK_SIZE);
+    memset(check_extra_buffer, 0, MEMCHECK_OTP_EXTRA_SIZE);
+    memset(check_vdddig_buffer, 0, MEMCHECK_OTP_VDDDIG_SIZE);
+
+    if (bk_otp_apb_read(OTP_MEMORY_CHECK_MARK, check_buffer, MEMCHECK_OTP_MARK_SIZE) != BK_OK) {
+        bk_printf("[memchk] read memcheck mark failed\r\n");
+        goto cleanup;
+    }
+    if (bk_otp_apb_read(OTP_MEMORY_CHECK_MARK_EXTRA, check_extra_buffer, MEMCHECK_OTP_EXTRA_SIZE) != BK_OK) {
+        bk_printf("[memchk] read memcheck extra failed\r\n");
+        goto cleanup;
+    }
+    if (bk_otp_ahb_read(OTP_MEMORY_CHECK_VDDDIG, check_vdddig_buffer, MEMCHECK_OTP_VDDDIG_SIZE) != BK_OK) {
+        bk_printf("[memchk] read memcheck vdddig failed\r\n");
+        goto cleanup;
+    }
+
+    total_buffer = (uint8_t *)os_malloc(MEMCHECK_OTP_TOTAL_SIZE);
+    if (total_buffer == NULL) {
+        bk_printf("[memchk] malloc total_buffer failed\r\n");
+        goto cleanup;
+    }
+    memcpy(total_buffer, check_buffer, MEMCHECK_OTP_MARK_SIZE);
+    memcpy(total_buffer + MEMCHECK_OTP_MARK_SIZE, check_extra_buffer, MEMCHECK_OTP_EXTRA_SIZE);
+    memcpy(total_buffer + MEMCHECK_OTP_MARK_SIZE + MEMCHECK_OTP_EXTRA_SIZE, check_vdddig_buffer, MEMCHECK_OTP_VDDDIG_SIZE);
+
+    extern uint8_t bk7011_crc8_poly0x31(uint8_t *buf, uint32_t length, uint8_t crc);
+    uint8_t crc_calc = bk7011_crc8_poly0x31(total_buffer, MEMCHECK_OTP_DATA_SIZE, 0);
+    uint8_t crc_stored = total_buffer[MEMCHECK_OTP_DATA_SIZE];
+    if (crc_calc != crc_stored) {
+        bk_printf("[memchk] memcheck crc8 error: calc=0x%02X stored=0x%02X\r\n", crc_calc, crc_stored);
+        goto cleanup;
+    }
+
+    bk_printf("[memchk] memcheck crc8 check passed\r\n");
+    ret = true;
+
+cleanup:
+    if (total_buffer)
+        os_free(total_buffer);
+    if (check_vdddig_buffer)
+        os_free(check_vdddig_buffer);
+    if (check_extra_buffer)
+        os_free(check_extra_buffer);
+    if (check_buffer)
+        os_free(check_buffer);
+
+    return ret;
+}
+
 static int memcheck_check_data_pattern(memcheck_data_t *datas, uint8_t offset, uint8_t count, char *data_name, char *group_name)
 {
     /* Error1: flag should be 0 (bit15 must be 0 in input data) */

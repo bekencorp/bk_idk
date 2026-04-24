@@ -496,8 +496,9 @@ uint32_t bk_otp_partical_clean_check_customer(void) {
         return (SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_DIA));
     }
 
-    // "OTP_MEMORY_CHECK_VDDDIG" will be writed in CP
-    check_result = bk_otp_ahb_read_and_check(OTP_MEMORY_CHECK_VDDDIG, false);
+    // "OTP_MEMORY_CHECK_MARK" + "OTP_MEMORY_CHECK_MARK_EXTRA" + "OTP_MEMORY_CHECK_VDDDIG" will be check together
+    extern bool bk_otp_memcheck_result_read_and_check(void);
+    check_result = bk_otp_memcheck_result_read_and_check();
     if (check_result == false) {
         bk_printf("addr=0x%x\n", SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_MEMORY_CHECK_VDDDIG));
         return (SOC_OTP_AHB_BASE + otp2_hal_get_offset(OTP_MEMORY_CHECK_VDDDIG));
