@@ -201,7 +201,6 @@ void ate_cali_temperature(const unsigned char *content, int cnt, UINT8 *tx_buffe
     uint32_t adc_code32 = 0;
     uint16_t adc_code16 = 0;
     int      ret;
-    uint32_t reg_val;
     uint8_t temp_result[8] = {0};
 
     /* try to load vdddiv from efuse before calibrate adc */
@@ -251,9 +250,7 @@ void ate_cali_temperature(const unsigned char *content, int cnt, UINT8 *tx_buffe
         return;
     }
 
-    reg_val = sys_ana_ll_get_reg4_value();
-    reg_val &= ~(0x01);
-    sys_ana_ll_set_reg4_value(reg_val);
+    sys_drv_set_temp_mode(true);
 
     ret = temp_detect_get_temperature(&adc_code32);
     if (ret != BK_OK)
@@ -269,9 +266,7 @@ void ate_cali_temperature(const unsigned char *content, int cnt, UINT8 *tx_buffe
     os_memset(temp_result, 0, sizeof(temp_result));
     os_memcpy(temp_result, &adc_code16, sizeof(adc_code16));
 
-    reg_val = sys_ana_ll_get_reg4_value();
-    reg_val |= 0x01;
-    sys_ana_ll_set_reg4_value(reg_val);
+    sys_drv_set_temp_mode(false);
 
     ret = temp_detect_get_temperature(&adc_code32);
     if (ret != BK_OK)
