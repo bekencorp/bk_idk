@@ -478,7 +478,7 @@ void sys_hal_early_init(void)
 	 * and don't forget disable it after that.
 	 */
 	sys_ll_set_ana_reg8_spi_latch1v(1);
-	sys_hal_analog_set(ANALOG_REG9, 0xB7553327);//tenglong20240805:2M buck for EVM
+	sys_hal_analog_set(ANALOG_REG9,  0xB55D9327);//tenglong20240805:2M buck for EVM
 	sys_hal_analog_set(ANALOG_REG10, 0xF7EEB89A);
 	sys_hal_analog_set(ANALOG_REG11, 0x00000000);
 	sys_hal_analog_set(ANALOG_REG12, 0x00100000);
