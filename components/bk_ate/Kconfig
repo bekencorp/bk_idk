@@ -20,6 +20,11 @@ menu "Bk_ate"
 			bool "Enable Ate Test"
 			default n
 
+		config ATE_BOOTLOADER_FLASH_CLK_40M
+			depends on ATE
+			bool "Enable ATE bootloader flash 40MHz"
+			default n
+
 		config ATE_CPU2_ADDRESS
 			hex "ATE_CPU2_ADDRESS"
 			default 0x2809FFF7
