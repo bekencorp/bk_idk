@@ -2775,6 +2775,61 @@ void sys_hal_set_scr_clk(uint32_t value)
 {
 }
 
+void sys_hal_set_cpu_cp_test_config(uint32_t cfg_id)
+{
+	uint32_t spi_latchlb;
+	uint32_t vorehsel;
+	switch (cfg_id) {
+	case 0:
+		//cpu clk 160MHz
+		sys_ll_set_cpu_clk_div_mode1_cksel_core(0x1);  // select DPLL480MHz
+		sys_ll_set_cpu_clk_div_mode1_clkdiv_core(0x2);  // DPLL480M/(1 + 2) = 160Mhz
+
+		// volt 0.755v
+		spi_latchlb = sys_ll_get_ana_reg8_value();
+		spi_latchlb |= (0x1 << 9);
+		sys_ll_set_ana_reg8_value(spi_latchlb);
+		vorehsel = sys_ll_get_ana_reg8_value();
+		vorehsel = (vorehsel & ~(0xF << 16)) | (0x7 << 16);
+		sys_ll_set_ana_reg8_value(vorehsel);
+		spi_latchlb = sys_ll_get_ana_reg8_value();
+		spi_latchlb &= ~(0x1 << 9);
+		sys_ll_set_ana_reg8_value(spi_latchlb);
+
+		// sram rate 3
+		sys_ll_set_cpu_power_sleep_wakeup_share_mem_clkgating_disable(0x1);
+		sys_ll_set_cpu_device_mem_ctrl3_ram_config(0x233);
+		sys_ll_set_cpu_power_sleep_wakeup_share_mem_clkgating_disable(0x0);
+
+		break;
+	case 1:
+		//cpu clk 240MHz
+		sys_ll_set_cpu_clk_div_mode1_cksel_core(0x1);  // select DPLL480MHz
+		sys_ll_set_cpu_clk_div_mode1_clkdiv_core(0x1);  // DPLL480M/(1 + 1) = 240Mhz
+
+		// volt 0.875v
+		spi_latchlb = sys_ll_get_ana_reg8_value();
+		spi_latchlb |= (0x1 << 9);
+		sys_ll_set_ana_reg8_value(spi_latchlb);
+		vorehsel = sys_ll_get_ana_reg8_value();
+		vorehsel = (vorehsel & ~(0xF << 16)) | (0xB << 16);
+		sys_ll_set_ana_reg8_value(vorehsel);
+		spi_latchlb = sys_ll_get_ana_reg8_value();
+		spi_latchlb &= ~(0x1 << 9);
+		sys_ll_set_ana_reg8_value(spi_latchlb);
+
+		// sram rate 1
+		sys_ll_set_cpu_power_sleep_wakeup_share_mem_clkgating_disable(0x1);
+		sys_ll_set_cpu_device_mem_ctrl3_ram_config(0x221);
+		sys_ll_set_cpu_power_sleep_wakeup_share_mem_clkgating_disable(0x0);
+
+		break;
+
+	default:
+		break;
+	}
+}
+
 #define FLASH_MAX_CLK    120    // 120MHz
 #define FLASH_80M_CLK    80    // 80MHz
 #define CPU_CLK_XTAL    40    // 40MHz
