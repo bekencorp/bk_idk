@@ -359,7 +359,7 @@ static uint8_t get_ble_pwr_idx_wrapper(uint8_t channel)
     return manual_cal_get_ble_pwr_idx(channel);
 }
 
-static void ble_cal_set_txpwr_wrapper(uint8_t idx)
+static void ble_cal_set_txpwr_wrapper(uint8_t idx, uint8_t type)
 {
     extern void ble_cal_set_txpwr(uint8_t idx);
     ble_cal_set_txpwr(idx);

@@ -132,7 +132,7 @@ struct bt_osi_funcs_t
     int (*_uart_write_byte)(uint8_t id, uint8_t data);
     void (*_register_ble_dump_hook)(void  *ble_func);
     uint8_t (*_get_ble_pwr_idx)(uint8_t channel);
-    void (*_ble_cal_set_txpwr)(uint8_t idx);
+    void (*_ble_cal_set_txpwr)(uint8_t idx, uint8_t type);
     void (*_ble_cal_recover_txpwr)(void);
     void (*_ble_cal_enter_txpwr)(void);
     int (*_gpio_dev_unmap)(uint32_t gpio_id);

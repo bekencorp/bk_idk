@@ -280,7 +280,7 @@ extern void demo_wifi_fast_connect(void);
 #include "fhost_msg.h"
 extern uint8_t tx_pwr_idx;
 extern uint8_t _get_ble_pwr_idx_wrapper(uint8_t channel);
-extern void _ble_cal_set_txpwr_wrapper(uint8_t idx);
+extern void _ble_cal_set_txpwr_wrapper(uint8_t idx, uint8_t signaling);
 extern int calibration_init(void);
 
 int bk_cali_customer_init(void)
@@ -303,7 +303,7 @@ int bk_cali_customer_init(void)
 
 #if !CONFIG_CUSTOMER_INIT_BLE
 	tx_pwr_idx = _get_ble_pwr_idx_wrapper(19);
-	_ble_cal_set_txpwr_wrapper(tx_pwr_idx);
+	_ble_cal_set_txpwr_wrapper(tx_pwr_idx, 0);
 #endif
 
 	return BK_OK;
