@@ -629,6 +629,15 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
             if (key_id == 0) {
                 BOOT_LOG_INF("pubkey ok!");
             }
+            else
+            {
+#if CONFIG_DIRECT_XIP
+                BOOT_LOG_ERR("pubkey not ok!");
+                rc = -1;
+                goto out;
+#endif
+            }
+            
 #endif /* !MCUBOOT_HW_KEY */
             /*
              * The key may not be found, which is acceptable.  There
