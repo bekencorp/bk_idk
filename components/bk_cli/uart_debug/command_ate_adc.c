@@ -56,7 +56,7 @@ void quicksort(UINT16 a[], int low, int high)
     }
 }
 
-void ate_cali_adc(const unsigned char *content, UINT8 *tx_buffer)
+void ate_cali_adc(const unsigned char *content, int cnt, UINT8 *tx_buffer)
 {
     UINT32 index;
     UINT32 sum = 0;
@@ -92,7 +92,7 @@ void ate_cali_adc(const unsigned char *content, UINT8 *tx_buffer)
     {
         tx_buffer[0] = 0x0E;
         os_memset(adc_cali, 0 , sizeof(adc_cali));
-        ret = bk_otp_ahb_read(OTP_GADC_CALIBRATION, adc_cali, sizeof(adc_cali));
+        ret = bk_otp_ahb_read_backup(OTP_GADC_CALIBRATION, adc_cali, NULL);
         if (ret != BK_OK)
         {
             tx_buffer[0] = 0x55;
@@ -120,7 +120,6 @@ void ate_cali_adc(const unsigned char *content, UINT8 *tx_buffer)
     }
     else if (content[2] == 2)
     {
-        tx_buffer[0] = 0x55;
         /* EFUSE_18 A7 A6 A5 A4 A3 A2 A1 A0 - 1V<7:0>*/
         /* EFUSE_19 B7 B6 B5 B4 B3 B2 B1 B0 - 1V<15:8> */
         /* EFUSE_20 B7 B6 B5 B4 B3 B2 B1 B0 - 2V<7:0> */
@@ -129,20 +128,44 @@ void ate_cali_adc(const unsigned char *content, UINT8 *tx_buffer)
         os_memset(adc_cali, 0, sizeof(adc_cali));
         os_memset(sadc_reg_0x07_0x16, 0, sizeof(sadc_reg_0x07_0x16));
 
-        for (int i = 0; i < 16; i++) {
+        for (int i = 0; i < 16; i++)
+        {
             sadc_reg_0x07_0x16[i] = REG_READ(SOC_SADC_REG_BASE + ((i + 7) << 2)) & 0x00FFFFFF;
         }
         os_memcpy(adc_cali, (uint8_t *)sadc_reg_0x07_0x16, sizeof(sadc_reg_0x07_0x16));
         os_memcpy(adc_cali + sizeof(sadc_reg_0x07_0x16), (uint8_t *)values, sizeof(values));
-        ret = bk_otp_ahb_update(OTP_GADC_CALIBRATION, adc_cali, sizeof(adc_cali));
-        if (ret != BK_OK)
+        if (((cnt != 3) && (cnt != 4)) ||
+            ((cnt == 4) && (content[3] != 1) && (content[3] != 2)))
         {
+            tx_buffer[0] = 0x55;
             tx_buffer[1] = 0xCC;
-            goto exit;
+            uart_send_bytes_for_ate(tx_buffer, 2);
+            return;
         }
-        tx_buffer[1] = 0x33;
-        sys_drv_set_ana_pwd_gadc_buf(0x0);
-        goto exit;
+
+        bool write_backup = false;
+
+        if ((cnt == 4) && (content[3] == 2))
+        {
+            write_backup = true;
+        }
+
+        if (bk_otp_ahb_update_backup(OTP_GADC_CALIBRATION, adc_cali, write_backup, NULL) == BK_OK)
+        {
+            /* success */
+            sys_drv_set_ana_pwd_gadc_buf(0x0);
+            tx_buffer[0] = 0x55;
+            tx_buffer[1] = 0x33;
+            uart_send_bytes_for_ate(tx_buffer, 2);
+        }
+        else
+        {
+            tx_buffer[0] = 0x55;
+            tx_buffer[1] = 0xCC;
+            uart_send_bytes_for_ate(tx_buffer, 2);
+        }
+
+        return;
     }
     else if ((content[2] == 0x03) || (content[2] == 0x10) || (content[2] == 0x15) || (content[2] == 0x20))
     {

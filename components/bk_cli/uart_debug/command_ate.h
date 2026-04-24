@@ -4,7 +4,7 @@
 #include <common/bk_include.h>
 
 extern void sctrl_cali_dpll(UINT8 flag);
-extern void ate_cali_adc(const unsigned char *content, UINT8 *tx_buffer);
+extern void ate_cali_adc(const unsigned char *content, int cnt, UINT8 *tx_buffer);
 extern void ate_cali_temperature(const unsigned char *content, int cnt, UINT8 *tx_buffer);
 extern int sctrl_check_dpll_unlock(UINT8 bandgap, UINT8 *tx_buffer);
 extern int sctrl_set_vdddig_1voltage(void);

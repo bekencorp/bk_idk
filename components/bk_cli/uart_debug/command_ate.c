@@ -1493,7 +1493,7 @@ static void ate_read_otp(const uint8_t *content, int cnt, uint8_t *tx_buffer1)
         } else if ((content[3] == OTP_DIA) || (content[3] == OTP_DIA_BACKUP)) {
             // 2G PA(1 byte) + 5G PA(1 byte)
             length = 2;
-        } else if (content[3] == OTP_GADC_CALIBRATION) {
+        } else if ((content[3] == OTP_GADC_CALIBRATION)  || (content[3] == OTP_GADC_CALIBRATION_BACKUP)) {
             // saradc_self_cali(16 * 4 bytes) + saradc_volt_cali(3 * 2 bytes)
             length = 70;
         } else if (content[3] == OTP_DEVICE_ID) {
@@ -2339,7 +2339,7 @@ int bkreg_run_command1(unsigned char *content, int cnt)
                 /* 55 0A 20: set 2Volt and read ADC3, return value */
                 /* 55 0A 15: set 1.5Volt and read ADC3, return value */
                 /* 55 0A 02: write efuse 18,19,20,21 */
-                ate_cali_adc(content, tx_buffer);
+                ate_cali_adc(content, cnt, tx_buffer);
                 break;
             case 0xB:
                 /* 55 0B 01 : read efuse 18,19,20,21 first, return value */
