@@ -258,6 +258,11 @@ bk_err_t bk_gpio_register_isr(gpio_id_t gpio_id, gpio_isr_t isr)
 	return bk_iomx_register_isr(gpio_id, isr);
 }
 
+bk_err_t bk_gpio_unregister_isr(gpio_id_t gpio_id)
+{
+	return bk_iomx_register_isr(gpio_id, NULL);
+}
+
 //This function just enable the select GPIO can report IRQ to CPU
 bk_err_t bk_gpio_enable_interrupt(gpio_id_t gpio_id)
 {
