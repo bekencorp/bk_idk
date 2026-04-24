@@ -123,20 +123,20 @@ default_bandgap:
 		sys_drv_set_bgcalm(old_bandgap - 6);
 	}
 #elif ((CONFIG_SOC_BK7236N) || (CONFIG_SOC_BK7239XX)) && (CONFIG_OTP) && (CONFIG_SYS_CPU0)
-	uint8_t new_bandgap;
+	uint8_t new_bandgap[4] = {0};
 	uint8_t old_bandgap;
 	bk_err_t result;
 
 	old_bandgap = (uint8_t)sys_drv_get_bgcalm();
 
-	result = bk_otp_ahb_read(OTP_VDDDIG_BANDGAP, &new_bandgap, sizeof(new_bandgap));
-	if ((result != BK_OK) || (new_bandgap == 0) || (new_bandgap > 0x3F)) {
+	result = bk_otp_ahb_read_backup(OTP_VDDDIG_BANDGAP, new_bandgap, NULL);
+	if ((result != BK_OK) || (new_bandgap[0] == 0) || (new_bandgap[0] > 0x3F)) {
 		return BK_OK;
 	}
 
-	BK_LOGI(TAG, "bandgap_calm_in_otp=0x%x\r\n", new_bandgap);
-	if (old_bandgap != new_bandgap) {
-		sys_drv_set_bgcalm(new_bandgap);
+	BK_LOGI(TAG, "bandgap_calm_in_otp=0x%x\r\n", new_bandgap[0]);
+	if (old_bandgap != new_bandgap[0]) {
+		sys_drv_set_bgcalm(new_bandgap[0]);
 	}
 #endif
 	return BK_OK;
