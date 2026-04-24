@@ -207,6 +207,15 @@ static int bk_otp_ahb_update_wrapper(uint32_t item, uint8_t* buf, uint32_t size)
 #endif
 }
 
+static int bk_otp_ahb_read_backup_wrapper(uint32_t item, uint8_t *buf, int *both_valid)
+{
+#if (CONFIG_SOC_BK7256XX) || (!CONFIG_OTP) || (!CONFIG_OTP_BACKUP)
+    return BK_FAIL;
+#else
+    return bk_otp_ahb_read_backup(item, buf, both_valid);
+#endif
+}
+
 static int bk_get_otp_ahb_rfcali_item_wrapper(void)
 {
 #if (CONFIG_SOC_BK7256XX) || (!CONFIG_OTP)
@@ -950,6 +959,7 @@ const phy_os_funcs_t g_phy_os_funcs = {
     ._bk_feature_save_rfcali_to_otp_enable = bk_feature_save_rfcali_to_otp_enable,
     ._bk_otp_ahb_read        = bk_otp_ahb_read_wrapper,
     ._bk_otp_ahb_update      = bk_otp_ahb_update_wrapper,
+    ._bk_otp_ahb_read_backup = bk_otp_ahb_read_backup_wrapper,
     ._bk_get_otp_ahb_rfcali_item = bk_get_otp_ahb_rfcali_item_wrapper,
 #if (CONFIG_SOC_BK7236XX)
     ._sys_ll_set_ana_reg8_violdosel = sys_ll_set_ana_reg8_violdosel_wrapper,

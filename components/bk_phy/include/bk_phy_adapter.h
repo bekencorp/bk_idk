@@ -187,6 +187,7 @@ typedef struct {
     int (*_bk_feature_save_rfcali_to_otp_enable)(void);
     int (*_bk_otp_ahb_read)(uint32_t item, uint8_t* buf, uint32_t size);
     int (*_bk_otp_ahb_update)(uint32_t item, uint8_t* buf, uint32_t size);
+    int (*_bk_otp_ahb_read_backup)(uint32_t item, uint8_t *buf, int *both_valid);
     int (*_bk_get_otp_ahb_rfcali_item)(void);
     void (*_sys_ll_set_ana_reg8_violdosel)(uint32_t value);
     void (*_sys_ll_set_ana_reg8_iocurlim)(uint32_t value);
