@@ -18,7 +18,7 @@ extern void bk_flash_bypass_otp_exit(flash_line_mode_t old_mode);
 
 #define ID_RETRY_MAX      (3)
 #define POLL_DELAY_US     (100)
-#define POLL_MAX_LOOP     (200)
+#define POLL_MAX_LOOP     (2000)
 #define FLASH_BYPASS_OTP_SR_CMD_MAX (4)
 
 typedef struct {

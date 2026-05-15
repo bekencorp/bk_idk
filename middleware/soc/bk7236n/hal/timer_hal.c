@@ -17,7 +17,11 @@
 #define TIMER0_REG_SET(reg_id, l, h, v) REG_SET((SOC_TIMER0_REG_BASE + ((reg_id) << 2)), (l), (h), (v))
 #define TIMER0_PERIOD 0xFFFFFFFF
 
+#if CONFIG_FLASH_BYPASS_OTP_V2
+__attribute__((section(".iram"))) static inline uint32_t timer_hal_get_timer0_cnt(void)
+#else
 __IRAM_SEC static inline uint32_t timer_hal_get_timer0_cnt(void)
+#endif
 {
 	volatile uint32_t int_level = 0;
 	uint32_t cnt = 0;
@@ -31,7 +35,11 @@ __IRAM_SEC static inline uint32_t timer_hal_get_timer0_cnt(void)
 	return cnt;
 }
 
+#if CONFIG_FLASH_BYPASS_OTP_V2
+__attribute__((section(".iram"))) static inline uint32_t timer_hal_diff(uint32_t begin, uint32_t end)
+#else
 __IRAM_SEC static inline uint32_t timer_hal_diff(uint32_t begin, uint32_t end)
+#endif
 {
 	if (end > begin) {
 		return end - begin;
@@ -65,7 +73,11 @@ void timer_hal_us_init(uint32_t us)
  *  100   |      106
  *  1000  |      1007
  */
+#if CONFIG_FLASH_BYPASS_OTP_V2
+__attribute__((section(".iram"))) void timer_hal_delay_us(uint32_t us)
+#else
 __IRAM_SEC void timer_hal_delay_us(uint32_t us)
+#endif
 {
 	uint32_t delay_cycle = TIMER_CLOCK_FREQ_XTAL / 1000 * us;
 
@@ -83,7 +95,11 @@ __IRAM_SEC void timer_hal_delay_us(uint32_t us)
 	} while (diff < delay_cycle);
 }
 
+#if CONFIG_FLASH_BYPASS_OTP_V2
+__attribute__((section(".iram"))) void timer_hal_us_init_iram(void)
+#else
 __IRAM_SEC void timer_hal_us_init_iram(void)
+#endif
 {
 	TIMER0_REG_SET(2, 0, 0, 1);
 	REG_WRITE((SOC_TIMER0_REG_BASE + (4 << 2)), TIMER0_PERIOD);

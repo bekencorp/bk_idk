@@ -20,7 +20,11 @@ void delay(INT32 num)
 	}
 }
 
+#if CONFIG_FLASH_BYPASS_OTP_V2
+__attribute__((section(".iram"))) void bk_delay_us(UINT32 us)
+#else
 __IRAM_SEC void bk_delay_us(UINT32 us)
+#endif
 {
 #if CONFIG_TIMER_US
 	bk_timer_delay_us(us);

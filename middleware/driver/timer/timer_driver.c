@@ -633,7 +633,11 @@ bk_err_t bk_timer_delay_with_callback(timer_id_t timer_id, uint64_t time_us, tim
 }
 
 #if CONFIG_TIMER_US
+#if CONFIG_FLASH_BYPASS_OTP_V2
+__attribute__((section(".iram"))) void bk_timer_delay_us(uint32_t us)
+#else
 __IRAM_SEC void bk_timer_delay_us(uint32_t us)
+#endif
 {
 	timer_hal_delay_us(us);
 }
