@@ -60,6 +60,8 @@ typedef struct {
 typedef struct {
 	netif_if_t netif_if;               /**< Netif interface ID */
 	char ip[NETIF_IP4_STR_LEN];        /**< Local IP address. */
+	char mask[NETIF_IP4_STR_LEN];      /**< Netmask. */
+	char gateway[NETIF_IP4_STR_LEN];   /**< Gateway IP address. */
 } netif_event_got_ip4_t;
 
 /**

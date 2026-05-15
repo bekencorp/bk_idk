@@ -161,11 +161,18 @@ typedef enum {
 	EVENT_WIFI_START,              /**< WiFi start event */
 	EVENT_WIFI_STOP,               /**< WiFi stop event */
 
+	EVENT_WIFI_AP_START,            /**< WiFi AP start event */
+	EVENT_WIFI_AP_STOP,             /**< WiFi AP stop event */
+
+	EVENT_WIFI_READY,              /**< WiFi ready event */
+
 	EVENT_WIFI_STA_CONNECTED,      /**< The BK STA is connected */
 	EVENT_WIFI_STA_DISCONNECTED,   /**< The BK STA is disconnected */
 
 	EVENT_WIFI_AP_CONNECTED,       /**< A STA is connected to the BK AP */
 	EVENT_WIFI_AP_DISCONNECTED,    /**< A STA is disconnected from the BK AP */
+
+	EVENT_WIFI_AP_STAIPASSIGNED,   /**< The BK AP STA IP assigned */
 
 	EVENT_WIFI_NETWORK_FOUND,      /**< The BK STA find target AP */
 	EVENT_WIFI_BEACON_HINT,        /**< Beacon found on NO_IR channel */
@@ -702,6 +709,7 @@ typedef struct {
 typedef struct {
 	uint32_t scan_id; /**< Scan ID */
 	uint32_t scan_use_time;/**< scan time. us */
+	uint32_t last_scan_req;/**< last scan request */
 } wifi_event_scan_done_t;
 
 typedef struct {
@@ -712,16 +720,25 @@ typedef struct {
 typedef struct {
 	char    ssid[WIFI_SSID_STR_LEN];      /**< SSID of connected AP */
 	uint8_t bssid[WIFI_BSSID_LEN];        /**< BSSID of connected AP*/
+	int freq;                         /**< frequency of connected AP*/
 } wifi_event_sta_connected_t;
 
 typedef struct {
 	int disconnect_reason;                /**< Disconnect reason of BK STA */
 	bool local_generated;                 /**< if disconnect is request by local */
+	char    ssid[WIFI_SSID_STR_LEN];      /**< SSID of disconnected AP */
+	uint8_t bssid[WIFI_BSSID_LEN];        /**< BSSID of disconnected AP*/
 } wifi_event_sta_disconnected_t;
 
 typedef struct {
 	uint8_t mac[WIFI_MAC_LEN];            /**< MAC of the STA connected to the BK AP */
+	uint32_t ipaddr;                      /**< IP address of the STA connected to the BK AP */
 } wifi_event_ap_connected_t;
+
+typedef struct {
+	uint8_t mac[WIFI_MAC_LEN];            /**< MAC of the STA connected to the BK AP */
+	uint32_t ipaddr;                      /**< IP address assigned to the STA (network order) */
+} wifi_event_ap_staipassigned_t;
 
 typedef struct {
 	uint8_t mac[WIFI_MAC_LEN];            /**< MAC of the STA disconnected from the BK AP */
