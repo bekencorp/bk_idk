@@ -4,6 +4,9 @@
 #include <driver/flash_partition.h>
 #include "sys_driver.h"
 #include "flash_bypass.h"
+#if CONFIG_FLASH_BYPASS_OTP_V2
+#include "flash_bypass_otp.h"
+#endif
 #include "flash.h"
 #include <driver/psram.h>
 #include "bk_misc.h"
@@ -568,56 +571,56 @@ static void flash_command_test(char *pcWriteBuffer, int xWriteBufferLen, int arg
 	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
 }
 
-#if CONFIG_FLASH_BYPASS_OTP_OPERATION
-static uint8_t str_transform_to_16hex(char str)
+#if (CONFIG_FLASH_BYPASS_OTP_OPERATION || CONFIG_FLASH_BYPASS_OTP_V2)
+static uint8_t hex_char_to_nibble(char c)
 {
-	if ((str >= '0') && (str <= '9')) {
-		return (str - '0');
-	}
-	if ((str >= 'a') && (str <= 'f')) {
-		return (str - 'a' + 10);
-	}
-	if ((str >= 'A') && (str <= 'F')) {
-		return (str - 'A' + 10);
-	}
-
+	if (c >= '0' && c <= '9')
+		return (uint8_t)(c - '0');
+	if (c >= 'a' && c <= 'f')
+		return (uint8_t)(c - 'a' + 10);
+	if (c >= 'A' && c <= 'F')
+		return (uint8_t)(c - 'A' + 10);
 	return 0;
 }
 
+static void hex_str_to_buf(const char *hex_str, uint8_t *buf, uint32_t len)
+{
+	for (uint32_t i = 0; i < len; i++)
+		buf[i] = (uint8_t)(hex_char_to_nibble(hex_str[i * 2]) * 16 + hex_char_to_nibble(hex_str[i * 2 + 1]));
+}
+#endif
+
+
+#if CONFIG_FLASH_BYPASS_OTP_OPERATION
 static void flash_bypass_command_test(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
-	char     *msg   = CLI_CMD_RSP_SUCCEED;
-	char     cmd    = 0;
-	int      ret    = 0;
-	uint8_t  idx    = 0;
-	uint32_t offset = 0;
-	uint32_t length = 0;
-	uint8_t  *buf = NULL;
+	char *msg = CLI_CMD_RSP_SUCCEED;
+	uint8_t *buf = NULL;
 	flash_bypass_otp_ctrl_t otp_op = {0};
 
 	if ((argc >= 6) && (os_strcmp(argv[1], "otp") == 0)) {
-		cmd     = argv[2][0];
-		idx     = os_strtoul(argv[3], NULL, 16);
-		offset  = os_strtoul(argv[4], NULL, 16);
-		length  = os_strtoul(argv[5], NULL, 16);
+		char cmd = argv[2][0];
+		uint8_t idx = (uint8_t)os_strtoul(argv[3], NULL, 16);
+		uint32_t offset = os_strtoul(argv[4], NULL, 16);
+		uint32_t length = os_strtoul(argv[5], NULL, 16);
+		int ret;
 		if (argc == 7) {
 			buf = (uint8_t *)os_malloc(length);
-			for (uint32_t i = 0; i < length; i++) {
-				buf[i] = str_transform_to_16hex(argv[6][i * 2]) * 16 + str_transform_to_16hex(argv[6][i * 2 + 1]);
-			}
+			if (buf)
+				hex_str_to_buf(argv[6], buf, length);
 		}
 
-		otp_op.otp_idx     = idx;
+		otp_op.otp_idx = idx;
 		otp_op.addr_offset = offset;
-		otp_op.read_len    = length;
-		otp_op.read_buf    = (uint8_t *)os_malloc(otp_op.read_len);
+		otp_op.read_len = length;
+		otp_op.read_buf = (uint8_t *)os_malloc(otp_op.read_len);
 		if (otp_op.read_buf == NULL) {
 			BK_DUMP_OUT("%s malloc err\r\n", __func__);
 			msg = CLI_CMD_RSP_ERROR;
 			goto flash_bypass_exit;
 		}
-		otp_op.write_len    = length;
-		otp_op.write_buf    = buf;
+		otp_op.write_len = length;
+		otp_op.write_buf = buf;
 
 		switch (cmd) {
 		// flash_bypass_test otp E 1 0 0
@@ -691,6 +694,145 @@ flash_bypass_exit:
 }
 #endif
 
+#if CONFIG_FLASH_BYPASS_OTP_V2
+static void flash_bypass_otp_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	extern uint32_t bk_flash_get_crc_err_num(void);
+	char *msg = CLI_CMD_RSP_ERROR;
+	bk_err_t ret = BK_OK;
+	flash_bypass_otp_err_t otp_ret = FLASH_BYPASS_OTP_OK;
+	uint8_t idx;
+	uint32_t offset, len;
+	uint32_t crc_err_num_before = bk_flash_get_crc_err_num();
+	uint32_t crc_err_num_after = crc_err_num_before;
+	uint8_t *buf = NULL;
+
+	if (argc < 3 || os_strcmp(argv[1], "otp") != 0) {
+		ret = BK_ERR_PARAM;
+		BK_DUMP_OUT("usage: otp test/R/W/E/L/RSR/WSR ...\r\n");
+		goto out;
+	}
+
+	if (os_strcmp(argv[2], "test") == 0) {
+		ret = flash_bypass_otp_test();
+		msg = (ret == BK_OK) ? CLI_CMD_RSP_SUCCEED : CLI_CMD_RSP_ERROR;
+		goto out;
+	}
+
+	if (argc >= 4 && os_strcmp(argv[2], "E") == 0) {
+		idx = (uint8_t)os_strtoul(argv[3], NULL, 16);
+		otp_ret = flash_bypass_otp_test_erase(idx);
+		msg = (otp_ret == FLASH_BYPASS_OTP_OK) ? CLI_CMD_RSP_SUCCEED : CLI_CMD_RSP_ERROR;
+		goto out;
+	}
+
+	if (argc >= 6 && os_strcmp(argv[2], "R") == 0) {
+		idx = (uint8_t)os_strtoul(argv[3], NULL, 16);
+		offset = os_strtoul(argv[4], NULL, 16);
+		len = os_strtoul(argv[5], NULL, 16);
+		if (len == 0 || len > 1024) {
+			ret = BK_ERR_PARAM;
+			BK_DUMP_OUT("len 1~1024\r\n");
+			goto out;
+		}
+		buf = (uint8_t *)os_malloc(len);
+		if (buf == NULL) {
+			ret = BK_ERR_NO_MEM;
+			BK_DUMP_OUT("malloc err\r\n");
+			goto out;
+		}
+		otp_ret = flash_bypass_otp_test_read(idx, offset, buf, len);
+		if (otp_ret == FLASH_BYPASS_OTP_OK) {
+			msg = CLI_CMD_RSP_SUCCEED;
+			for (uint32_t i = 0; i < len; i++) {
+				BK_DUMP_OUT("%02x ", buf[i]);
+				if ((i + 1) % 16 == 0)
+					BK_DUMP_OUT("\r\n");
+			}
+			if (len % 16 != 0)
+				BK_DUMP_OUT("\r\n");
+		}
+		goto out;
+	}
+
+	if (argc >= 7 && os_strcmp(argv[2], "W") == 0) {
+		idx = (uint8_t)os_strtoul(argv[3], NULL, 16);
+		offset = os_strtoul(argv[4], NULL, 16);
+		len = os_strtoul(argv[5], NULL, 16);
+		if (len == 0 || len > 1024) {
+			ret = BK_ERR_PARAM;
+			BK_DUMP_OUT("len 1~1024\r\n");
+			goto out;
+		}
+		if (os_strlen(argv[6]) < len * 2) {
+			ret = BK_ERR_PARAM;
+			BK_DUMP_OUT("hex len\r\n");
+			goto out;
+		}
+		buf = (uint8_t *)os_malloc(len);
+		if (buf == NULL) {
+			ret = BK_ERR_NO_MEM;
+			BK_DUMP_OUT("malloc err\r\n");
+			goto out;
+		}
+		hex_str_to_buf(argv[6], buf, len);
+		otp_ret = flash_bypass_otp_test_write(idx, offset, buf, len);
+		msg = (otp_ret == FLASH_BYPASS_OTP_OK) ? CLI_CMD_RSP_SUCCEED : CLI_CMD_RSP_ERROR;
+		goto out;
+	}
+
+	if (argc >= 4 && os_strcmp(argv[2], "L") == 0) {
+		idx = (uint8_t)os_strtoul(argv[3], NULL, 16);
+		otp_ret = flash_bypass_otp_test_set_lock(idx);
+		msg = (otp_ret == FLASH_BYPASS_OTP_OK) ? CLI_CMD_RSP_SUCCEED : CLI_CMD_RSP_ERROR;
+		goto out;
+	}
+
+	if (argc >= 4 && os_strcmp(argv[2], "C") == 0) {
+		bool locked = false;
+		idx = (uint8_t)os_strtoul(argv[3], NULL, 16);
+		otp_ret = flash_bypass_otp_test_is_lock(idx, &locked);
+		if (otp_ret == FLASH_BYPASS_OTP_OK) {
+			BK_DUMP_OUT("OTP%u lock: %s\r\n", idx, locked ? "LOCKED" : "UNLOCKED");
+			msg = CLI_CMD_RSP_SUCCEED;
+		} else {
+			msg = CLI_CMD_RSP_ERROR;
+		}
+		goto out;
+	}
+
+	if (os_strcmp(argv[2], "RSR") == 0) {
+		uint32_t sr_val = 0;
+		otp_ret = flash_bypass_otp_test_read_sr(&sr_val);
+		if (otp_ret == FLASH_BYPASS_OTP_OK) {
+			BK_DUMP_OUT("SR 0x%08lx\r\n", (unsigned long)sr_val);
+			msg = CLI_CMD_RSP_SUCCEED;
+		}
+		goto out;
+	}
+
+	if (argc >= 4 && os_strcmp(argv[2], "WSR") == 0) {
+		uint32_t sr_val = os_strtoul(argv[3], NULL, 0);
+		otp_ret = flash_bypass_otp_test_write_sr(sr_val);
+		msg = (otp_ret == FLASH_BYPASS_OTP_OK) ? CLI_CMD_RSP_SUCCEED : CLI_CMD_RSP_ERROR;
+		goto out;
+	}
+
+	ret = BK_ERR_PARAM;
+	BK_DUMP_OUT("usage: otp test/R/W/E/L/RSR/WSR ...\r\n");
+out:
+	if (otp_ret != FLASH_BYPASS_OTP_OK)
+		BK_DUMP_OUT("otp err code=%u\r\n", (uint32_t)otp_ret);
+	crc_err_num_after = bk_flash_get_crc_err_num();
+	BK_DUMP_OUT("flash crc err num before=%u after=%u\r\n",
+		(unsigned int)crc_err_num_before, (unsigned int)crc_err_num_after);
+	if (buf != NULL) {
+		os_free(buf);
+	}
+	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+}
+#endif
+
 static void partShow_Command(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
 	bk_partition_t i;
@@ -714,10 +856,12 @@ static const struct cli_command s_flash_commands[] = {
 	{"flash_test",   "flash_test <cmd(R/W/E/N)>", flash_command_test},
 #if CONFIG_FLASH_BYPASS_OTP_OPERATION
 	{"flash_bypass_test",   "flash_bypass_test otp R/W/E/L", flash_bypass_command_test},
+#elif CONFIG_FLASH_BYPASS_OTP_V2
+	{"flash_bypass_test",   "flash_bypass_test otp test/R/W/E/L/RSR/WSR ...", flash_bypass_otp_test_cmd},
 #endif
 
 #if CONFIG_FLASH_RACE_TEST
-{"flash_race_test", "Flash race test suite", cli_flash_race_test_cmd},
+	{"flash_race_test", "Flash race test suite", cli_flash_race_test_cmd},
 #endif
 };
 

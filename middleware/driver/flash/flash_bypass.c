@@ -25,31 +25,44 @@
 //#include <soc/bk7236/soc_debug.h>
 #include "flash_driver.h"
 #include "flash_hal.h"
+#include "sys_reg.h"
 
 #if  CONFIG_SOC_BK7236XX || (CONFIG_SOC_BK7239XX)
-#define SPI_R_0X2(_id)  (SPI_R_BASE(_id) + 2 * 0x04)
-__attribute__((section(".iram"))) int flash_bypass_op_write(uint8_t *op_code, uint8_t *tx_buf, uint32_t tx_len)
+static __attribute__((section(".iram"))) int flash_bypass_op_write_core(uint8_t *op_code, uint8_t *tx_buf1, uint32_t tx_len1, uint8_t *tx_buf2, uint32_t tx_len2)
 {
 	uint32_t reg;
 	uint32_t reg_0x2, reg_ctrl, reg_dat;
-	uint32_t reg_stat, reg_cfg;
+	uint32_t reg_cfg;
 	uint32_t int_status = 0;
 	int exceptional_flag = 0;
 	uint32_t reg_sys_clk_en_0xc, reg_sys_clk_sel_0xa;
+	uint32_t spi_int_en_saved = 0;
+	uint32_t spi_int_was_enabled = 0;
+	uint32_t spi_int_status_pre = 0;
+	uint32_t spi_int_busy_mask = SPI_STATUS_IRQ_BUSY_MASK;
 
 	int_status =  rtos_disable_int();
+	spi_int_en_saved = (uint32_t)sys_drv_int_disable(SPI_INTERRUPT_CTRL_BIT);
+	spi_int_was_enabled = spi_int_en_saved & SPI_INTERRUPT_CTRL_BIT;
+	spi_int_status_pre = REG_READ(SPI_R_INT_STATUS(0)) & spi_int_busy_mask;
+	if (spi_int_status_pre) {
+		if (spi_int_was_enabled) {
+			sys_drv_int_enable(SPI_INTERRUPT_CTRL_BIT);
+		}
+		rtos_enable_int(int_status);
+		return -5;
+	}
 
 	/*step 1, save spi register configuration*/
-	reg_0x2 = REG_READ(SPI_R_0X2(0));
+	reg_0x2 = REG_READ(SPI_R_GLOBAL_CTRL(0));
 	reg_ctrl = REG_READ(SPI_R_CTRL(0));
-	reg_stat = REG_READ(SPI_R_INT_STATUS(0));
 	reg_dat  = REG_READ(SPI_R_DATA(0));
 	reg_cfg  = REG_READ(SPI_R_CFG(0));
 
 	/*step 2, en software reset bit, bk7236/58 should enable this bit*/
-	reg = REG_READ(SPI_R_0X2(0));
-	reg |= (1 << 0);
-	REG_WRITE(SPI_R_0X2(0), reg);
+	reg = REG_READ(SPI_R_GLOBAL_CTRL(0));
+	reg |= SPI_F_SOFT_RESET;
+	REG_WRITE(SPI_R_GLOBAL_CTRL(0), reg);
 
 	/*step 3, config spi master*/
 	/*     3.1 clear spi fifo content*/
@@ -59,9 +72,9 @@ __attribute__((section(".iram"))) int flash_bypass_op_write(uint8_t *op_code, ui
 		reg = REG_READ(SPI_R_INT_STATUS(0));
 	}
 	/*     3.2 disable spi block, and backup */
-	reg_sys_clk_en_0xc = reg = REG_READ(SYS_R_ADD_X(0xc));
-	reg &= ~(1 << 1);
-	REG_WRITE(SYS_R_ADD_X(0xc), reg);
+	reg_sys_clk_en_0xc = reg = REG_READ(SYS_CPU_DEVICE_CLK_ENABLE_ADDR);
+	reg &= ~FLASH_BYPASS_SPI0_CKEN_BIT;
+	REG_WRITE(SYS_CPU_DEVICE_CLK_ENABLE_ADDR, reg);
 
 	/*     3.3 clear spi status*/
 	REG_WRITE(SPI_R_CTRL(0), 0);
@@ -85,17 +98,19 @@ __attribute__((section(".iram"))) int flash_bypass_op_write(uint8_t *op_code, ui
 
 	/*     3.5 set the spi master mode*/
 	// open clock, and backup
-	reg = REG_READ(SYS_R_ADD_X(0xc));
-	reg |= (1 << 1);
-	REG_WRITE(SYS_R_ADD_X(0xc), reg);
+	reg = REG_READ(SYS_CPU_DEVICE_CLK_ENABLE_ADDR);
+	reg |= FLASH_BYPASS_SPI0_CKEN_BIT;
+	REG_WRITE(SYS_CPU_DEVICE_CLK_ENABLE_ADDR, reg);
 
 	// select 26M
-	reg_sys_clk_sel_0xa = reg = REG_READ(SYS_R_ADD_X(0xa));
-	reg &= ~(1 << 4);
-	REG_WRITE(SYS_R_ADD_X(0xa), reg);
+	reg_sys_clk_sel_0xa = reg = REG_READ(SYS_CPU_26M_WDT_CLK_DIV_ADDR);
+	reg &= ~FLASH_BYPASS_SPI0_CLKSEL_MASK;
+	REG_WRITE(SYS_CPU_26M_WDT_CLK_DIV_ADDR, reg);
 
 	// set to spi config directly
-	reg = 0xC00100; // spien  msten  spi_clk=1---13M
+	reg = (((1U & SPI_F_CLK_DIV_M) << SPI_F_CLK_DIV_S) |
+	       (SPI_F_MASTER_EN) |
+	       (SPI_F_SPI_EN)); // spien  msten  spi_clk=1---13M
 	REG_WRITE(SPI_R_CTRL(0), reg);
 
 	/*step 4, gpio(14/15/16/17) are set as high-impedance state or input state */
@@ -105,9 +120,9 @@ __attribute__((section(".iram"))) int flash_bypass_op_write(uint8_t *op_code, ui
 	 *        fetch from flash space after this timepoint.
 	 */
 	//sys_drv_set_cpu_storage_connect_op_select_flash_sel(1);
-	reg = REG_READ(SYS_R_ADD_X(0x2));
-	reg |= (1 << 9);
-	REG_WRITE(SYS_R_ADD_X(0x2), reg);
+	reg = REG_READ(SYS_CPU_STORAGE_CONNECT_OP_SELECT_ADDR);
+	reg |= FLASH_BYPASS_FLASH_SEL_BIT;
+	REG_WRITE(SYS_CPU_STORAGE_CONNECT_OP_SELECT_ADDR, reg);
 
 	if(op_code != NULL)
 	{
@@ -151,9 +166,12 @@ __attribute__((section(".iram"))) int flash_bypass_op_write(uint8_t *op_code, ui
 		REG_WRITE(SPI_R_INT_STATUS(0), reg);
 	}
 
-	if((tx_len == 0) || (tx_buf == NULL))
-	{
+	uint32_t tx_len = tx_len1 + tx_len2;
+	if (tx_len == 0) {
 		exceptional_flag = 0;
+		goto wr_exceptional;
+	} else if (((tx_len1 > 0) && (tx_buf1 == NULL)) || ((tx_len2 > 0) && (tx_buf2 == NULL))) {
+		exceptional_flag = -4;
 		goto wr_exceptional;
 	}
 
@@ -178,8 +196,23 @@ __attribute__((section(".iram"))) int flash_bypass_op_write(uint8_t *op_code, ui
 				goto wr_exceptional;
 			}
 		} else {
+			uint8_t tx_byte;
 			wait = 0;
-			REG_WRITE(SPI_R_DATA(0), tx_buf[i]);
+			if (i < tx_len1) {
+				if (tx_buf1 == NULL) {
+					exceptional_flag = -4;
+					goto wr_exceptional;
+				}
+				tx_byte = tx_buf1[i];
+			} else {
+				uint32_t idx2 = i - tx_len1;
+				if (tx_buf2 == NULL) {
+					exceptional_flag = -4;
+					goto wr_exceptional;
+				}
+				tx_byte = tx_buf2[idx2];
+			}
+			REG_WRITE(SPI_R_DATA(0), tx_byte);
 			i++;
 		}
 	}
@@ -195,7 +228,7 @@ __attribute__((section(".iram"))) int flash_bypass_op_write(uint8_t *op_code, ui
 	reg = REG_READ(SPI_R_CFG(0));
 	reg &= ~(SPI_CFG_TRX_LEN_MASK << SPI_CFG_TX_TRAHS_LEN_POSI);
 	reg &= ~(SPI_CFG_TRX_LEN_MASK << SPI_CFG_RX_TRAHS_LEN_POSI);
-	reg &= (SPI_CFG_RX_EN | SPI_CFG_TX_EN | SPI_CFG_TX_FIN_INT_EN);
+	reg &= ~(SPI_CFG_RX_EN | SPI_CFG_TX_EN | SPI_CFG_TX_FIN_INT_EN);
 	REG_WRITE(SPI_R_CFG(0), reg);
 
 	// cler stat and fifo
@@ -209,24 +242,38 @@ __attribute__((section(".iram"))) int flash_bypass_op_write(uint8_t *op_code, ui
 	exceptional_flag = 0;
 
 wr_exceptional:
+	reg = 0;
+	REG_WRITE(SPI_R_CFG(0), reg);
+
+	// cler stat and fifo
+	reg = REG_READ(SPI_R_INT_STATUS(0));
+	while (reg & SPI_STATUS_RXFIFO_RD_READY) {
+		REG_READ(SPI_R_DATA(0));
+		reg = REG_READ(SPI_R_INT_STATUS(0));
+	}
+	reg = REG_READ(SPI_R_INT_STATUS(0));
+	REG_WRITE(SPI_R_INT_STATUS(0), reg);
+
 	/*step 8, switch flash interface to flash controller */
 	//sys_drv_set_cpu_storage_connect_op_select_flash_sel(0);
-	reg = REG_READ(SYS_R_ADD_X(0x2));
-	reg &= ~(1 << 9);
-	REG_WRITE(SYS_R_ADD_X(0x2), reg);
+	reg = REG_READ(SYS_CPU_STORAGE_CONNECT_OP_SELECT_ADDR);
+	reg &= ~FLASH_BYPASS_FLASH_SEL_BIT;
+	REG_WRITE(SYS_CPU_STORAGE_CONNECT_OP_SELECT_ADDR, reg);
 
 	// recover icu and powerdown bits for spi
-	REG_WRITE(SYS_R_ADD_X(0xc), reg_sys_clk_en_0xc);
-	REG_WRITE(SYS_R_ADD_X(0xa), reg_sys_clk_sel_0xa);
+	REG_WRITE(SYS_CPU_DEVICE_CLK_ENABLE_ADDR, reg_sys_clk_en_0xc);
+	REG_WRITE(SYS_CPU_26M_WDT_CLK_DIV_ADDR, reg_sys_clk_sel_0xa);
 
 	/*step 9, gpio(14/15/16/17) second function*/
 
 	/*step 10, restore spi register configuration*/
 	REG_WRITE(SPI_R_CTRL(0), reg_ctrl);
-	REG_WRITE(SPI_R_INT_STATUS(0), reg_stat);
 	REG_WRITE(SPI_R_DATA(0), reg_dat);
 	REG_WRITE(SPI_R_CFG(0), reg_cfg);
-	REG_WRITE(SPI_R_0X2(0), reg_0x2);
+	REG_WRITE(SPI_R_GLOBAL_CTRL(0), reg_0x2);
+	if (spi_int_was_enabled) {
+		sys_drv_int_enable(SPI_INTERRUPT_CTRL_BIT);
+	}
 
 	/*step 11, enable interrupt*/
 	rtos_enable_int(int_status);
@@ -234,29 +281,51 @@ wr_exceptional:
 	return exceptional_flag;
 }
 
-#if CONFIG_FLASH_BYPASS_OTP_OPERATION
+__attribute__((section(".iram"))) int flash_bypass_op_write(uint8_t *op_code, uint8_t *tx_buf, uint32_t tx_len)
+{
+	return flash_bypass_op_write_core(op_code, tx_buf, tx_len, NULL, 0);
+}
+
+__attribute__((section(".iram"))) int flash_bypass_op_write_combin(uint8_t *op_code, uint8_t *tx_buf1, uint32_t tx_len1, uint8_t *tx_buf2, uint32_t tx_len2)
+{
+	return flash_bypass_op_write_core(op_code, tx_buf1, tx_len1, tx_buf2, tx_len2);
+}
+
 __attribute__((section(".iram"))) int flash_bypass_op_read(uint8_t *tx_buf, uint32_t tx_len, uint8_t *rx_buf, uint32_t rx_len)
 {
 	uint32_t reg;
 	uint32_t reg_0x2, reg_ctrl, reg_dat;
-	uint32_t reg_stat, reg_cfg;
+	uint32_t reg_cfg;
 	uint32_t int_status = 0;
 	int exceptional_flag = 0;
 	uint32_t reg_sys_clk_en_0xc, reg_sys_clk_sel_0xa;
+	uint32_t spi_int_en_saved = 0;
+	uint32_t spi_int_was_enabled = 0;
+	uint32_t spi_int_status_pre = 0;
+	uint32_t spi_int_busy_mask = SPI_STATUS_IRQ_BUSY_MASK;
 
 	int_status =  rtos_disable_int();
+	spi_int_en_saved = (uint32_t)sys_drv_int_disable(SPI_INTERRUPT_CTRL_BIT);
+	spi_int_was_enabled = spi_int_en_saved & SPI_INTERRUPT_CTRL_BIT;
+	spi_int_status_pre = REG_READ(SPI_R_INT_STATUS(0)) & spi_int_busy_mask;
+	if (spi_int_status_pre) {
+		if (spi_int_was_enabled) {
+			sys_drv_int_enable(SPI_INTERRUPT_CTRL_BIT);
+		}
+		rtos_enable_int(int_status);
+		return -5;
+	}
 
 	/*step 1, save spi register configuration*/
-	reg_0x2 = REG_READ(SPI_R_0X2(0));
+	reg_0x2 = REG_READ(SPI_R_GLOBAL_CTRL(0));
 	reg_ctrl = REG_READ(SPI_R_CTRL(0));
-	reg_stat = REG_READ(SPI_R_INT_STATUS(0));
 	reg_dat  = REG_READ(SPI_R_DATA(0));
 	reg_cfg  = REG_READ(SPI_R_CFG(0));
 
 	/*step 2, en software reset bit, bk7236/58 should enable this bit*/
-	reg = REG_READ(SPI_R_0X2(0));
-	reg |= (1 << 0);
-	REG_WRITE(SPI_R_0X2(0), reg);
+	reg = REG_READ(SPI_R_GLOBAL_CTRL(0));
+	reg |= SPI_F_SOFT_RESET;
+	REG_WRITE(SPI_R_GLOBAL_CTRL(0), reg);
 
 	/*step 3, config spi master*/
 	/*     3.1 clear spi fifo content*/
@@ -266,9 +335,9 @@ __attribute__((section(".iram"))) int flash_bypass_op_read(uint8_t *tx_buf, uint
 		reg = REG_READ(SPI_R_INT_STATUS(0));
 	}
 	/*     3.2 disable spi block, and backup */
-	reg_sys_clk_en_0xc = reg = REG_READ(SYS_R_ADD_X(0xc));
-	reg &= ~(1 << 1);
-	REG_WRITE(SYS_R_ADD_X(0xc), reg);
+	reg_sys_clk_en_0xc = reg = REG_READ(SYS_CPU_DEVICE_CLK_ENABLE_ADDR);
+	reg &= ~FLASH_BYPASS_SPI0_CKEN_BIT;
+	REG_WRITE(SYS_CPU_DEVICE_CLK_ENABLE_ADDR, reg);
 
 	/*     3.3 clear spi status*/
 	REG_WRITE(SPI_R_CTRL(0), 0);
@@ -292,17 +361,19 @@ __attribute__((section(".iram"))) int flash_bypass_op_read(uint8_t *tx_buf, uint
 
 	/*     3.5 set the spi master mode*/
 	// open clock, and backup
-	reg = REG_READ(SYS_R_ADD_X(0xc));
-	reg |= (1 << 1);
-	REG_WRITE(SYS_R_ADD_X(0xc), reg);
+	reg = REG_READ(SYS_CPU_DEVICE_CLK_ENABLE_ADDR);
+	reg |= FLASH_BYPASS_SPI0_CKEN_BIT;
+	REG_WRITE(SYS_CPU_DEVICE_CLK_ENABLE_ADDR, reg);
 
 	// select 26M
-	reg_sys_clk_sel_0xa = reg = REG_READ(SYS_R_ADD_X(0xa));
-	reg &= ~(1 << 4);
-	REG_WRITE(SYS_R_ADD_X(0xa), reg);
+	reg_sys_clk_sel_0xa = reg = REG_READ(SYS_CPU_26M_WDT_CLK_DIV_ADDR);
+	reg &= ~FLASH_BYPASS_SPI0_CLKSEL_MASK;
+	REG_WRITE(SYS_CPU_26M_WDT_CLK_DIV_ADDR, reg);
 
 	// set to spi config directly
-	reg = 0xC00100; // spien  msten  spi_clk=1---13M
+	reg = (((1U & SPI_F_CLK_DIV_M) << SPI_F_CLK_DIV_S) |
+	       (SPI_F_MASTER_EN) |
+	       (SPI_F_SPI_EN)); // spien  msten  spi_clk=1---13M
 	REG_WRITE(SPI_R_CTRL(0), reg);
 
 	/*step 4, gpio(14/15/16/17) are set as high-impedance state or input state */
@@ -312,9 +383,9 @@ __attribute__((section(".iram"))) int flash_bypass_op_read(uint8_t *tx_buf, uint
 	 *        fetch from flash space after this timepoint.
 	 */
 	//sys_drv_set_cpu_storage_connect_op_select_flash_sel(1);
-	reg = REG_READ(SYS_R_ADD_X(0x2));
-	reg |= (1 << 9);
-	REG_WRITE(SYS_R_ADD_X(0x2), reg);
+	reg = REG_READ(SYS_CPU_STORAGE_CONNECT_OP_SELECT_ADDR);
+	reg |= FLASH_BYPASS_FLASH_SEL_BIT;
+	REG_WRITE(SYS_CPU_STORAGE_CONNECT_OP_SELECT_ADDR, reg);
 
 
 	if((tx_len == 0) || (tx_buf == NULL))
@@ -330,7 +401,7 @@ __attribute__((section(".iram"))) int flash_bypass_op_read(uint8_t *tx_buf, uint
 	reg &= ~(SPI_CFG_TRX_LEN_MASK << SPI_CFG_RX_TRAHS_LEN_POSI);
 	reg |= (((tx_len + rx_len) & SPI_CFG_TRX_LEN_MASK) << SPI_CFG_TX_TRAHS_LEN_POSI);
 	reg |= (((tx_len + rx_len) & SPI_CFG_TRX_LEN_MASK) << SPI_CFG_RX_TRAHS_LEN_POSI);
-	reg |= (SPI_CFG_TX_EN | SPI_CFG_RX_EN | SPI_CFG_TX_FIN_INT_EN);
+	reg |= (SPI_CFG_TX_EN | SPI_CFG_RX_EN | SPI_CFG_TX_FIN_INT_EN | SPI_CFG_RX_FIN_INT_EN);
 	REG_WRITE(SPI_R_CFG(0), reg);
 
 	/*      7.2:write tx fifo*/
@@ -398,7 +469,8 @@ __attribute__((section(".iram"))) int flash_bypass_op_read(uint8_t *tx_buf, uint
 		}
 	}
 
-	/*      7.3:waiting for TXFIFO_EMPTY interrupt*/
+	/*      7.3:wait read transfer done*/
+	// wait tx finish
 	while (1) {
 		reg = REG_READ(SPI_R_INT_STATUS(0));
 		if (reg & SPI_STATUS_TX_FINISH_INT)
@@ -414,6 +486,23 @@ __attribute__((section(".iram"))) int flash_bypass_op_read(uint8_t *tx_buf, uint
 		}
 	}
 
+	// wait rx finish
+	while (1) {
+		reg = REG_READ(SPI_R_INT_STATUS(0));
+		if (reg & SPI_STATUS_RX_FINISH_INT)
+			break;
+		else if ((reg & SPI_STATUS_RXFIFO_RD_READY)) {
+			if(tx_cnt < tx_len) {
+				REG_READ(SPI_R_DATA(0));
+				tx_cnt++;
+			} else if(rx_cnt < rx_len) {
+				rx_buf[rx_cnt] = REG_READ(SPI_R_DATA(0));
+				rx_cnt++;
+			}
+		}
+	}
+
+	// drain remaining rx fifo
 	wait = 0;
 	while(rx_cnt < rx_len) {
 		reg = REG_READ(SPI_R_INT_STATUS(0));
@@ -439,8 +528,8 @@ __attribute__((section(".iram"))) int flash_bypass_op_read(uint8_t *tx_buf, uint
 	/*      7.4:release cs*/
 	reg = REG_READ(SPI_R_CFG(0));
 	reg &= ~(SPI_CFG_TRX_LEN_MASK << SPI_CFG_TX_TRAHS_LEN_POSI);
-	// reg &= ~(SPI_CFG_TRX_LEN_MASK << SPI_CFG_RX_TRAHS_LEN_POSI);
-	reg &= (SPI_CFG_TX_EN | SPI_CFG_TX_FIN_INT_EN);
+	reg &= ~(SPI_CFG_TRX_LEN_MASK << SPI_CFG_RX_TRAHS_LEN_POSI);
+	reg &= ~(SPI_CFG_TX_EN | SPI_CFG_RX_EN | SPI_CFG_TX_FIN_INT_EN | SPI_CFG_RX_FIN_INT_EN);
 	REG_WRITE(SPI_R_CFG(0), reg);
 
 wr_exceptional:
@@ -458,22 +547,24 @@ wr_exceptional:
 
 	/*step 8, switch flash interface to flash controller */
 	//sys_drv_set_cpu_storage_connect_op_select_flash_sel(0);
-	reg = REG_READ(SYS_R_ADD_X(0x2));
-	reg &= ~(1 << 9);
-	REG_WRITE(SYS_R_ADD_X(0x2), reg);
+	reg = REG_READ(SYS_CPU_STORAGE_CONNECT_OP_SELECT_ADDR);
+	reg &= ~FLASH_BYPASS_FLASH_SEL_BIT;
+	REG_WRITE(SYS_CPU_STORAGE_CONNECT_OP_SELECT_ADDR, reg);
 
 	// recover icu and powerdown bits for spi
-	REG_WRITE(SYS_R_ADD_X(0xc), reg_sys_clk_en_0xc);
-	REG_WRITE(SYS_R_ADD_X(0xa), reg_sys_clk_sel_0xa);
+	REG_WRITE(SYS_CPU_DEVICE_CLK_ENABLE_ADDR, reg_sys_clk_en_0xc);
+	REG_WRITE(SYS_CPU_26M_WDT_CLK_DIV_ADDR, reg_sys_clk_sel_0xa);
 
 	/*step 9, gpio(14/15/16/17) second function*/
 
 	/*step 10, restore spi register configuration*/
 	REG_WRITE(SPI_R_CTRL(0), reg_ctrl);
-	REG_WRITE(SPI_R_INT_STATUS(0), reg_stat);
 	REG_WRITE(SPI_R_DATA(0), reg_dat);
 	REG_WRITE(SPI_R_CFG(0), reg_cfg);
-	REG_WRITE(SPI_R_0X2(0), reg_0x2);
+	REG_WRITE(SPI_R_GLOBAL_CTRL(0), reg_0x2);
+	if (spi_int_was_enabled) {
+		sys_drv_int_enable(SPI_INTERRUPT_CTRL_BIT);
+	}
 
 	/*step 11, enable interrupt*/
 	rtos_enable_int(int_status);
@@ -481,6 +572,7 @@ wr_exceptional:
 	return exceptional_flag;
 }
 
+#if CONFIG_FLASH_BYPASS_OTP_OPERATION
 extern void bk_delay_us(uint32 num);
 bool flash_bypass_op_read_buf_can_be_zero_flag = 0;
 bool flash_bypass_otp_test_flag = 0;

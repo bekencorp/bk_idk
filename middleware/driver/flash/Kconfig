@@ -92,6 +92,8 @@ menu "FLASH"
 		default n
 
 	config FLASH_BYPASS_OTP_OPERATION
+		depends on FLASH
+		depends on !RELEASE_IRAM
 		bool "Bypass flash to operate otp in flash"
 		default n
 
@@ -104,5 +106,15 @@ menu "FLASH"
 		depends on FLASH
 		bool "Enable flash cbus API"
 		default n
+
+	config FLASH_BYPASS_OTP_V2
+		depends on FLASH
+		depends on !FLASH_BYPASS_OTP_OPERATION
+		depends on !RELEASE_IRAM
+		bool "Flash bypass OTP (V2)"
+		default n
+		help
+			OTP bypass via flash_bypass_op_read/write in ITCM or IRAM.
+
 endmenu
 

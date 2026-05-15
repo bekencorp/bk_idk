@@ -19,6 +19,7 @@ extern "C" {
 #endif
 
 #include <components/log.h>
+#include "sys_reg.h"
 
 #define FLASH_BYPASS_TAG "flash_bypass"
 #define FLASH_BYPASS_LOGI(...) BK_LOGI(FLASH_BYPASS_TAG, ##__VA_ARGS__)
@@ -47,22 +48,36 @@ extern "C" {
 #define FLASH_CMD_EXIT_DEEP_PWR_DW      (0xAB)
 
 /*SYS regs define*/
-#define SYS_R_ADD_X(x)                  (0x44010000+((x)*4))
+#define FLASH_BYPASS_SPI0_CKEN_BIT      (SYS_CPU_DEVICE_CLK_ENABLE_SPI0_CKEN_MASK << SYS_CPU_DEVICE_CLK_ENABLE_SPI0_CKEN_POS)
+#define FLASH_BYPASS_SPI0_CLKSEL_MASK   (SYS_CPU_26M_WDT_CLK_DIV_CLKSEL_SPI0_MASK << SYS_CPU_26M_WDT_CLK_DIV_CLKSEL_SPI0_POS)
+#define FLASH_BYPASS_FLASH_SEL_BIT      (SYS_CPU_STORAGE_CONNECT_OP_SELECT_FLASH_SEL_MASK << SYS_CPU_STORAGE_CONNECT_OP_SELECT_FLASH_SEL_POS)
 
 /*SPI0 regs define*/
-#define SPI_CFG_TRX_LEN_MASK            (0xffffU)
-#define SPI_CFG_TX_TRAHS_LEN_POSI       (8)
-#define SPI_CFG_RX_TRAHS_LEN_POSI       (20)
-#define SPI_CFG_RX_FIN_INT_EN           (BIT(3))
-#define SPI_CFG_TX_FIN_INT_EN           (BIT(2))
-#define SPI_CFG_RX_EN                   (BIT(1))
-#define SPI_CFG_TX_EN                   (BIT(0))
-#define SPI_CFG_TX_EN_ONE_BYTE          (0x10D)
-#define SPI_CFG_TX_EN_TWO_BYTE          (0x20D)
-#define SPI_STATUS_TX_FINISH_INT        (BIT(13))
-#define SPI_STATUS_RX_FINISH_INT        (BIT(14))
-#define SPI_STATUS_TXFIFO_WR_READY      (BIT(1))
-#define SPI_STATUS_RXFIFO_RD_READY      (BIT(2))
+#define SPI_CFG_TRX_LEN_MASK            (SPI_F_TX_TRANS_LEN_M)
+#define SPI_CFG_TX_TRAHS_LEN_POSI       (SPI_F_TX_TRANS_LEN_S)
+#define SPI_CFG_RX_TRAHS_LEN_POSI       (SPI_F_RX_TRANS_LEN_S)
+#define SPI_CFG_RX_FIN_INT_EN           (SPI_F_RX_FIN_INT_EN)
+#define SPI_CFG_TX_FIN_INT_EN           (SPI_F_TX_FIN_INT_EN)
+#define SPI_CFG_RX_EN                   (SPI_F_RX_EN)
+#define SPI_CFG_TX_EN                   (SPI_F_TX_EN)
+#define SPI_CFG_TX_EN_ONE_BYTE          (((1) << SPI_CFG_TX_TRAHS_LEN_POSI) | SPI_CFG_RX_FIN_INT_EN | SPI_CFG_TX_FIN_INT_EN | SPI_CFG_TX_EN)
+#define SPI_CFG_TX_EN_TWO_BYTE          (((2) << SPI_CFG_TX_TRAHS_LEN_POSI) | SPI_CFG_RX_FIN_INT_EN | SPI_CFG_TX_FIN_INT_EN | SPI_CFG_TX_EN)
+#define SPI_STATUS_TXFIFO_INT           (SPI_F_TXFIFO_INT)
+#define SPI_STATUS_RXFIFO_INT           (SPI_F_RXFIFO_INT)
+#define SPI_STATUS_SLV_RELEASE_INT      (SPI_F_SLV_RELEASE_INT)
+#define SPI_STATUS_TXUDF                (SPI_F_TXUDF)
+#define SPI_STATUS_RXOVF                (SPI_F_RXOVF)
+#define SPI_STATUS_TX_FINISH_INT        (SPI_F_TX_FINISH_INT)
+#define SPI_STATUS_RX_FINISH_INT        (SPI_F_RX_FINISH_INT)
+#define SPI_STATUS_TXFIFO_WR_READY      (SPI_F_TXFIOF_WR_READY)
+#define SPI_STATUS_RXFIFO_RD_READY      (SPI_F_RX_FIOF_RD_READY)
+#define SPI_STATUS_IRQ_BUSY_MASK        (SPI_STATUS_TXFIFO_INT      | \
+                                         SPI_STATUS_RXFIFO_INT      | \
+                                         SPI_STATUS_SLV_RELEASE_INT | \
+                                         SPI_STATUS_TXUDF           | \
+                                         SPI_STATUS_RXOVF           | \
+                                         SPI_STATUS_TX_FINISH_INT   | \
+                                         SPI_STATUS_RX_FINISH_INT)
 
 #define FLASH_ID_GD25Q32C               (0xC84016)
 #define FLASH_ID_TH25Q64                (0xCD6017)
@@ -73,6 +88,14 @@ __attribute__((section(".itcm_sec_code"))) int flash_bypass_op_write(uint8_t *op
 #else
 __attribute__((section(".itcm_sec_code"))) void flash_bypass_quad_enable(void);
 __attribute__((section(".itcm_sec_code"))) void flash_bypass_quad_test(uint32_t quad_enable, uint32_t delay_cycle1, uint32_t delay_cycle2);
+#endif
+
+#if CONFIG_FLASH_BYPASS_OTP_V2
+/* These functions must be defined in ITCM or IRAM section.
+ * They are actually defined in flash_bypass.c with .iram section. */
+__attribute__((section(".iram"))) int flash_bypass_op_read(uint8_t *tx_buf, uint32_t tx_len, uint8_t *rx_buf, uint32_t rx_len);
+__attribute__((section(".iram"))) int flash_bypass_op_write(uint8_t *op_code, uint8_t *tx_buf, uint32_t tx_len);
+__attribute__((section(".iram"))) int flash_bypass_op_write_combin(uint8_t *op_code, uint8_t *tx_buf1, uint32_t tx_len1, uint8_t *tx_buf2, uint32_t tx_len2);
 #endif
 
 #if CONFIG_FLASH_BYPASS_OTP_OPERATION

@@ -6,6 +6,10 @@ if (CONFIG_FLASH)
 		flash/CheckSumUtils.c
 	)
 
+	if (CONFIG_FLASH_BYPASS_OTP_V2)
+		list(APPEND srcs flash/flash_bypass_otp.c)
+	endif()
+
 	if (CONFIG_SUPPORT_PARTITIONS_PARTITION)
 		list(APPEND srcs
 			flash/flash_partition_v1_1.c

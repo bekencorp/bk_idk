@@ -938,6 +938,20 @@ __IRAM_SEC bk_err_t bk_flash_power_saving_exit(void)
     return BK_OK;
 }
 
+#if CONFIG_FLASH_BYPASS_OTP_V2
+__attribute__((section(".iram"))) flash_line_mode_t bk_flash_bypass_otp_enter(void)
+{
+	/* Switch to 2-line mode before bypass OTP operations. */
+	return flash_set_line_mode(FLASH_LINE_MODE_TWO);
+}
+
+__attribute__((section(".iram"))) void bk_flash_bypass_otp_exit(flash_line_mode_t old_mode)
+{
+	/* Restore original line mode after bypass OTP operations. */
+	flash_set_line_mode(old_mode);
+}
+#endif /* CONFIG_FLASH_BYPASS_OTP_V2 */
+
 __attribute__((section(".iram"))) bk_err_t bk_flash_enter_deep_sleep(void)
 {
 #if CONFIG_SOC_BK7236XX
