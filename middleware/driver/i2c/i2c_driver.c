@@ -680,6 +680,16 @@ static bk_err_t i2c_recover_bus(i2c_id_t id)
 	s_i2c[id].master_status = 0;
 	rtos_exit_critical(int_level);
 
+	if (rtos_get_semaphore_count(&s_i2c[id].tx_sema) > 0) {
+		I2C_LOGW("I2C(%d) recover drain stale tx sema\r\n", id);
+		rtos_get_semaphore(&s_i2c[id].tx_sema, 0);
+	}
+
+	if (rtos_get_semaphore_count(&s_i2c[id].rx_sema) > 0) {
+		I2C_LOGW("I2C(%d) recover drain stale rx sema\r\n", id);
+		rtos_get_semaphore(&s_i2c[id].rx_sema, 0);
+	}
+
 	if (i == 10) {
 		I2C_LOGW("recover i2c bus failed\r\n");
 		return BK_ERR_I2C_BUS_BUSY_TIMEOUT;
