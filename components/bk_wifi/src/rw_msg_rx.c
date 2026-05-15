@@ -65,7 +65,6 @@ rw_event_handler rw_event_handlers[WIFI_LINKSTATE_MAX] = {0};
 
 beken_mutex_t sr_mutex;
 uint32_t mac_ie_he_capa_find(uint32_t buffer, uint16_t buflen, uint8_t *ie_len);
-extern void regulatory_hint_disconnect(void);
 
 wifi_rlk_base_info_t wifi_rlk_info = {0};
 /**
@@ -1825,24 +1824,21 @@ void rwnx_handle_recv_msg(struct ke_msg *rx_msg)
 		RWNX_LOGD("disconnect\n");
 
 #if defined(CONFIG_IEEE80211R) || defined(CONFIG_WNM)
-		if (!ind->reassoc)
+				if (!ind->reassoc)
 #endif
-		{
+				{
 #if NX_VERSION > NX_VERSION_PACK(6, 22, 0, 0)
-			rwnx_misc_disconnect_ind(ind);
+					rwnx_misc_disconnect_ind(ind);
 #endif
-			wpa_ctrl_event_copy(WPA_CTRL_EVENT_DISCONNECT_IND, ind, sizeof(*ind));
-#if CONFIG_WIFI_REGDOMAIN
-			regulatory_hint_disconnect();
-#endif
+					wpa_ctrl_event_copy(WPA_CTRL_EVENT_DISCONNECT_IND, ind, sizeof(*ind));
 
 #if (!CONFIG_SOC_BK7271)
-			extern UINT32 rwnx_sys_is_enable_hw_tpc(void);
-			if (rwnx_sys_is_enable_hw_tpc() == 0)
-				rwnx_cal_set_txpwr(20, 11);
+					extern UINT32 rwnx_sys_is_enable_hw_tpc(void);
+					if (rwnx_sys_is_enable_hw_tpc() == 0)
+						rwnx_cal_set_txpwr(20, 11);
 #endif
-		}
-		}	break;
+				}
+			}	break;
 
 	case SM_BEACON_LOSE_IND: {
 		/* when beacon loss, umac will start disconnect procedure, and another ke_msg will uploaded */

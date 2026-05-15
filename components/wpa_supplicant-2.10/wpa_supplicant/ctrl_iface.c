@@ -70,6 +70,7 @@ static int wpa_ctrl_debug_info_dump(struct wpa_supplicant *wpas, uint32_t type);
 extern void wpa_driver_scan_timeout(void *eloop_ctx, void *timeout_ctx);
 extern uint32_t bk_lookup_ipaddr_wrapper(void *addr);
 extern void rwnx_regulatory_hint_11d(int freq, const u8 *country_ie, u8 country_ie_len);
+extern void regulatory_hint_disconnect(void);
 
 int __wpa_ctrl_request(wpa_ctrl_cmd_t cmd, void *data, int wait, uint16_t flags)
 {
@@ -2040,7 +2041,7 @@ int wpa_supplicant_handle_events(wpah_msg_t *msg)
 		msg->cmd == WPA_CTRL_EVENT_DEL_STATION ||
 		msg->cmd == WPA_CTRL_EVENT_AP_SCAN_RESULTS)
 		CHECK_HAPD();
-	else
+	else if (msg->cmd != WPA_CTRL_EVENT_DISCONNECT_IND)
 		CHECK_WPA_S();
 
 	switch (msg->cmd) {
@@ -2063,20 +2064,25 @@ int wpa_supplicant_handle_events(wpah_msg_t *msg)
 #endif
 
 	case WPA_CTRL_EVENT_DISCONNECT_IND: {
-		struct sm_disconnect_ind *ind = (struct sm_disconnect_ind *)msg->argu;
-		union wpa_event_data data;
-		struct disassoc_info *info = (struct disassoc_info *)&data.disassoc_info;
+#if CONFIG_WIFI_REGDOMAIN
+		regulatory_hint_disconnect();
+#endif
+		if (wpa_s) {
+			struct sm_disconnect_ind *ind = (struct sm_disconnect_ind *)msg->argu;
+			union wpa_event_data data;
+			struct disassoc_info *info = (struct disassoc_info *)&data.disassoc_info;
 
-		os_memset(&data, 0, sizeof(data));
-		/*
-		 * FIXME: IP specified that reason code <= 1 are local generated, but AP still can send us
-		 * a reason code equals 1 which we cannot distinguish local generated or not
-		 */
-		info->locally_generated = !!((ind->reason_code <= 1) || ind->reason_code == WIFI_REASON_BEACON_LOST);
-		info->reason_code = ind->reason_code;
+			os_memset(&data, 0, sizeof(data));
+			/*
+			 * FIXME: IP specified that reason code <= 1 are local generated, but AP still can send us
+			 * a reason code equals 1 which we cannot distinguish local generated or not
+			 */
+			info->locally_generated = !!((ind->reason_code <= 1) || ind->reason_code == WIFI_REASON_BEACON_LOST);
+			info->reason_code = ind->reason_code;
 
-		// wpa_supplicant_event_sta(wpa_s, EVENT_DISASSOC, &data);
-		wpa_supplicant_event_sta(wpa_s, EVENT_DEAUTH, &data);
+			// wpa_supplicant_event_sta(wpa_s, EVENT_DISASSOC, &data);
+			wpa_supplicant_event_sta(wpa_s, EVENT_DEAUTH, &data);
+		}
 	}	break;
 
 	case WPA_CTRL_EVENT_AUTH_IND: {
