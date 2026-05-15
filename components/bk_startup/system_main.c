@@ -62,7 +62,11 @@ void rtos_user_app_preinit(void)
 void rtos_user_app_launch_over(void)
 {
 	int ret;
-
+	if(user_app_sema==NULL)
+	{
+		os_printf("user_app_sema is NULL");
+		return;
+	}
 	ret = rtos_set_semaphore(&user_app_sema);
 	if(ret < 0){
 		os_printf("set sema failed");
@@ -72,7 +76,11 @@ void rtos_user_app_launch_over(void)
 void rtos_user_app_waiting_for_launch(void)
 {
 	int ret;
-
+	if(user_app_sema==NULL)
+	{
+		os_printf("user_app_sema is NULL");
+		return;
+	}
 	ret = rtos_get_semaphore(&user_app_sema, BEKEN_WAIT_FOREVER);
 	if(ret < 0){
 		os_printf("get sema failed");
