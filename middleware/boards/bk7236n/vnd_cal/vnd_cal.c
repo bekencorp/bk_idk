@@ -42,7 +42,7 @@ float target_pwr_ble = 6.0; //2G4 BLE target power
 float target_pwr_11b = 18.0; //2G4 11B target power
 float target_pwr_11g = 15.0; //2G4 11G target power
 float target_pwr_n20 = 14.0; //2G4 N20 target power
-float target_pwr_n40 = 14.0; //2G4 N40 target power
+float target_pwr_n40 = 13.0; //2G4 N40 target power
 float target_pwr_ax20 = 14.0; //2G4 N20 target power
 
 /**
@@ -52,7 +52,7 @@ float target_pwr_ax20 = 14.0; //2G4 N20 target power
  */
 int8_t g_dif_g_n20 = 4;  //differ between g and n20
 int8_t g_dif_g_ax20 = 4; //differ between g and ax20
-int8_t g_dif_g_n40 = 2;  //differ between g and n40
+int8_t g_dif_g_n40 = 8;  //differ between g and n40
 int8_t g_dif_g_ble_ch0 = -14;
 int8_t g_dif_g_ble_ch19 = -14;
 int8_t g_dif_g_ble_ch39 = -14;
@@ -66,7 +66,7 @@ float target_pwr_ble = 6.0; //2G4 BLE target power
 float target_pwr_11b = 18.0; //2G4 11B target power
 float target_pwr_11g = 16.0; //2G4 11G target power
 float target_pwr_n20 = 15.0; //2G4 N20 target power
-float target_pwr_n40 = 15.0; //2G4 N40 target power
+float target_pwr_n40 = 14.0; //2G4 N40 target power
 float target_pwr_ax20 = 15.0; //2G4 N20 target power
 
 /**
@@ -76,7 +76,7 @@ float target_pwr_ax20 = 15.0; //2G4 N20 target power
  */
 int8_t g_dif_g_n20 = 4;  //differ between g and n20
 int8_t g_dif_g_ax20 = 4; //differ between g and ax20
-int8_t g_dif_g_n40 = 2;  //differ between g and n40
+int8_t g_dif_g_n40 = 8;  //differ between g and n40
 int8_t g_dif_g_ble_ch0 = 0;
 int8_t g_dif_g_ble_ch19 = 0;
 int8_t g_dif_g_ble_ch39 = 0;
