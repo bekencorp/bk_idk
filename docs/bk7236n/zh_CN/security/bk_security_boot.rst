@@ -29,10 +29,15 @@ BL1 启动流程
 
 上图描述了 BL1 对 BL2 验签的流程：
 
- - 1 - BL1 先从 FLASH 固定位置读取 manifest，manifest 放在 manifest 分区，
-   其中打包了 BL1 在验签时需要的所有信息，包括加签算法，image HASH 算法，image 版本，公钥等。BL1 先
-   读出安全启动公钥，计算出公钥 HASH，然后与固化在 OTP 中的公钥 HASH 进行对比，如果相同，则继续，否则，
-   验签失败。
+ - 1 - BL1 先从 FLASH 固定位置读取boot_flag信息，
+
+  * 如果 boot_flag 等于0或者1 时，表示后续需要从主分区primary_manifest 读取相应数据进行校验。 
+  * 如果 boot_flag 等于2，那么表示后续需要从恢复区recovery manifest 读取相应数据进行校验。
+  
+   两个分区的存储地址不同，且各自在打包时包含了BL1 在验签时需要的所有信息，包括加签算法，image HASH
+   算法，image 版本，公钥等。BL1 先读出安全启动公钥，计算出公钥HASH，然后与固化在 OTP 中的公钥 HASH
+   进行对比，如果相同，则继续，否则，验签失败。
+
  - 2 - BL1 使用第 1 步中验证合法的公钥对 manifest 进行验签。其中 manifest signature 是对除
    manifest signature 外 manifest 中所有信息的签名。如果验签通过，则继续；否则，验签失败。
  - 3 - BL1 使用 manifest 中指定的 HASH 算法（SHA256）对 bl2 计算 HASH，然后与 manifest
@@ -137,24 +142,21 @@ BL2 密钥通过 ./tools/env_tools/mcuboot_tools/imgtool.py 生成：
 
 这一步生成的公钥对需要配置到安全启动配置表与 OTP 中。
 
-**TODO: 描述将公钥集成到 MCUBOOT or 公钥 HASH 集成到 OTP 中的方法。**
+**描述将公钥集成到 MCUBOOT or 公钥 HASH 集成到 OTP 中的方法。**
 
 .. _bk_security_boot_flash_key:
 
 FLASH 密钥
 *********************************
 
-FLASH AES 密钥为 64 字节随机数，建议您通过 Armino 自带工具生成：
+FLASH AES 密钥为 32 字节固定密钥，建议您将密钥写入到该安全工程中security.csv 中，flash_aes_type类型为FIXED，
+flash_aes_key 字段后面是32字节用户输入的固定密钥，例如：
 
 .. code::
 
-  ./tools/env_tools/beken_packager/beken_aes genkey 64 -outfile key.txt
+  flash_aes_key,73c7bf397f2ad6bf4e7403a7b965dc5ce0645df039c2d69c814ffb403183fb18
 
-这一步生成的 FLASH AES KEY 需要配置到安全启动配置表与 OTP 中。
-
-.. important::
-
-  beken_aes 生成的是被加密过后的密钥，通过 BKFIL 进行烧录时会自动对密钥进行解密。
+这一步配置的 FLASH AES KEY 需要配置到安全启动配置表与 OTP 中。
 
 S2 - 配置分区表
 +++++++++++++++++++++++++++++++++++++
@@ -166,14 +168,14 @@ S3 - 安全配置
 
 在安全配置表 security.csv 中配置安全启动选项：
 
- - 将 ``secureboot`` 设置成 TRUE
- - 如果使能 FLASH AES 加密，则将 ``flash_aes_en`` 配置成 TRUE，
+ - 将 ``secureboot_en`` 设置成 TRUE
+ - 如果使能 FLASH AES 加密，则将 ``flash_aes_type`` 配置成 FIXED
    并将 :ref:`步骤 S1 <bk_security_boot_flash_key>` 中生成的 AES KEY 配置到 ``flash_aes_key``。
  - 将 :ref:`步骤 S1 <bk_security_boot_bl1_key>` 中生成的公/私钥文件配置到 ``root_pubkey`` 与 ``root_privkey``。
 
 详情请参考 :ref:`安全配置 <bk_config_security>`。
 
-S4 - 配置 OTP/EFUSE
+S4 - 配置 OTP
 +++++++++++++++++++++++++++++++++++++
 
 以 Armino 构建时生成的 otp_efuse_config.json 文件为基础，通过 BKFIL 将下述密钥部署到 OTP 中：

@@ -7,3 +7,4 @@ peripheral
    :maxdepth: 1
 
    SDIO <bk_sdio>
+   GPIO <gpio_cli>

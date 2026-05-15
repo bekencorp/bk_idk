@@ -10,7 +10,6 @@ User and Developer Guide
    构建 <build_config/index>
    配置与工具 <config_tools/index>
    低功耗与电源管理 <power_save/index>
-   内存与性能 <memory_perf/index>
    设备管理框架 <driver_model/index>
    外设与驱动 <peripheral/index>
    事件机制 <event/index>

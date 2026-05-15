@@ -9,6 +9,7 @@
    概述 <bk_config_overview>
    Kconfig 配置 <bk_config_kconfig>
    分区配置 <bk_config_partitions>
+   自动化分区配置 <bk_config_auto_partitions>
    安全配置 <bk_config_security>
    OTA 配置 <bk_config_ota>
    OTP/Efuse 配置 <bk_config_otp_efuse>

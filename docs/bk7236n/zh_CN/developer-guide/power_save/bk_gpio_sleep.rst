@@ -1,9 +1,9 @@
-设置GPIO作为唤醒源-系统进入深度,超深度睡眠以及低压睡眠配置说明
-================================================================
+设置GPIO作为唤醒源，系统进入深度睡眠和低压睡眠说明
+=======================================================
 
 
-GPIO-深度睡眠调用函数和调用顺序说明
---------------------------------------------
+设置GPIO作为唤醒源，系统进入深度睡眠调用函数和调用顺序说明
+--------------------------------------------------------------------
 - 1. bk_gpio_register_wakeup_source(GPIO_18,GPIO_INT_TYPE_FALLING_EDGE);
 
   a. 设置唤醒的GPIO id : GPIO18
@@ -14,8 +14,6 @@ GPIO-深度睡眠调用函数和调用顺序说明
 
     GPIO_INT_TYPE_FALLING_EDGE: 下降延唤醒;
     GPIO_INT_TYPE_RISING_EDGE: 上升延唤醒;
-    GPIO_INT_TYPE_LOW_LEVEL: 低电平唤醒;
-    GPIO_INT_TYPE_HIGH_LEVEL: 高电平唤醒;
 
 - 2. bk_pm_wakeup_source_set(PM_WAKEUP_SOURCE_INT_GPIO, NULL);
 
@@ -28,31 +26,8 @@ GPIO-深度睡眠调用函数和调用顺序说明
     (系统从深度睡眠唤醒后，可以通过调用 - bk_gpio_get_wakeup_gpio_id() - 函数接口获取当前时哪个GPIO ID唤醒系统)
 
 
-GPIO-超深度睡眠调用函数和调用顺序说明
---------------------------------------------
-- 1. bk_gpio_ana_register_wakeup_source(GPIO_12,GPIO_INT_TYPE_HIGH_LEVEL);
-
-  a. 设置唤醒的GPIO id: GPIO12
-
-    (与深度睡眠不同，超深度睡眠只支持GPIO0～15作为唤醒源，且可同时作唤醒源的GPIO个数为2个)
-
-  b. 设置GPIO唤醒模式:
-
-    GPIO_INT_TYPE_LOW_LEVEL: 低电平唤醒;
-
-    GPIO_INT_TYPE_HIGH_LEVEL: 高电平唤醒;
-
-    （超深度睡眠只支持两种唤醒模式，且同时作唤醒源的两个GPIO的唤醒模式需一致）
-
-- 2. bk_pm_sleep_mode_set(PM_MODE_SUPER_DEEP_SLEEP);
-
-    设置睡眠模式，进入超深度睡眠
-
-    (系统从超深度睡眠唤醒后，同样可以通过调用 - bk_gpio_get_wakeup_gpio_id() - 函数接口获取当前时哪个GPIO ID唤醒系统)
-
-
-GPIO-低压睡眠调用函数和调用顺序说明
---------------------------------------------
+设置GPIO作为唤醒源，系统进入低压睡眠调用函数和调用顺序说明
+--------------------------------------------------------------
 - 1. bk_gpio_register_wakeup_source(GPIO_18,GPIO_INT_TYPE_FALLING_EDGE);
 
   a.设置唤醒的GPIO id:GPIO18;
@@ -62,10 +37,6 @@ GPIO-低压睡眠调用函数和调用顺序说明
     GPIO_INT_TYPE_FALLING_EDGE: 下降延唤醒;
 
     GPIO_INT_TYPE_RISING_EDGE: 上升延唤醒;
-
-    GPIO_INT_TYPE_LOW_LEVEL: 低电平唤醒;
-
-    GPIO_INT_TYPE_HIGH_LEVEL: 低电平唤醒;
 
 - 2. bk_pm_wakeup_source_set(PM_WAKEUP_SOURCE_INT_GPIO, NULL);
 
@@ -79,13 +50,12 @@ GPIO-低压睡眠调用函数和调用顺序说明
 
     向系统中投应用程序的票。
 
-.. note::
+备注：
 
- - 1. BT和WIFI的票，BT和WIFI模块内部进入睡眠后自己投上，SDK内部做好，应用程序不用关注。应用程序需要做的事情是，进入低压和deepsleep休眠前，把上层业务关闭，再配置唤醒源，调用接口进入睡眠。
+ - 1. BT和WIFI的票，BT和WIFI模块内部进入睡眠后自己投上，SDK内部做好，应用程序不用关注
 
  - 2. 当系统中BT或WIFI模块没有上电时，系统会自动给这两个模块投上sleep的票。
 
- - 3. 追求最优功耗时，当系统开启音频，视频，LCD，CPU1，CPU2后，进入低压睡眠前需要把音频，视频，LCD，CPU1,CPU2先关闭，再进入睡眠。
 
 :link_to_translation:`en:[English]`
 

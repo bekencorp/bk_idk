@@ -47,6 +47,7 @@ INPUT = \
     ../../../include/modules/wifi_types.h \
     ../../../include/modules/wifi.h \
     ../../../include/os/os.h \
+    ../../../include/os/mem.h \
     ../../../include/components/event.h \
     ../../../include/posix/unistd.h \
     ../../../include/posix/utils.h \
@@ -96,54 +97,15 @@ INPUT = \
     ../../../include/driver/qspi_types.h \
     ../../../include/driver/hal/hal_qspi_types.h \
     ../../../include/driver/qspi_psram.h \
-    ../../../include/driver/mailbox.h \
-    ../../../include/driver/mailbox_types.h \
-    ../../../include/driver/hal/hal_mailbox_types.h \
     ../../../include/driver/i2c.h \
     ../../../include/driver/i2c_types.h \
     ../../../include/driver/hal/hal_i2c_types.h \
-    ../../../include/driver/touch.h \
-    ../../../include/driver/touch_types.h \
     ../../../include/driver/flash.h \
     ../../../include/driver/flash_types.h \
     ../../../include/driver/hal/hal_flash_types.h \
     ../../../include/driver/flash_partition.h \
-    ../../../include/driver/aud_adc.h \
-    ../../../include/driver/aud_adc_types.h \
-    ../../../include/driver/aud_dac.h \
-    ../../../include/driver/aud_dac_types.h \
-    ../../../include/driver/aud_dtmf.h \
-    ../../../include/driver/aud_dtmf_types.h \
-    ../../../include/driver/aud_dmic.h \
-    ../../../include/driver/aud_dmic_types.h \
-    ../../../include/driver/lcd.h \
-    ../../../include/driver/lcd_types.h \
-    ../../../include/driver/dma2d.h \
-    ../../../include/driver/dma2d_types.h \
-    ../../../include/driver/jpeg_dec.h \
-    ../../../include/driver/jpeg_dec_types.h \
-    ../../../include/driver/fft.h \
-    ../../../include/driver/fft_types.h \
     ../../../include/driver/i2s.h \
     ../../../include/driver/i2s_types.h \
-    ../../../include/driver/sbc.h \
-    ../../../include/driver/sbc_types.h \
-    ../../../include/driver/jpeg_enc.h \
-    ../../../include/driver/jpeg_enc_types.h \
-    ../../../include/driver/hal/hal_jpeg_types.h \
-    ../../../include/driver/dvp_camera.h \
-    ../../../include/driver/dvp_camera_types.h \
-    ../../../include/driver/uvc_camera.h \
-    ../../../include/driver/uvc_camera_types.h \
-    ../../../include/driver/media_types.h \
-    ../../../include/components/video_transfer.h \
-    ../../../include/components/video_types.h \
-    ../../../include/modules/jpeg_decode_sw.h \
-    ../../../include/modules/aec.h \
-    ../../../include/modules/g711.h \
-    ../../../include/modules/mp3dec.h \
-    ../../../include/driver/rott_driver.h \
-    ../../../include/driver/rott_types.h \
     ../../../include/modules/pm.h
 
 ## Get warnings for functions that have no documentation for their parameters or return value

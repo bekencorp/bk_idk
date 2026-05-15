@@ -17,7 +17,7 @@ BK7236N SoC 芯片支持以下功能:
 
  - 2.4G Wi-Fi 6
  - 低功耗蓝牙 5.4
- - ARMv8-M Star (M33F) MCU
+ - ARMv8-M STAR-MC1 MCU
  - 丰富的外设
  - 内置 TrustEngine 安全引擎
 
@@ -33,7 +33,7 @@ Armino 旨在协助用户快速开发物联网(IoT)应用，可满足用户对 W
 
 硬件：
 
- - BK7236N 开发板( :ref:`开发板简介 <bk7236n>` )；
+ - BK7236N 开发板；
  - 串口烧录工具；
  - PC；
 
@@ -47,17 +47,17 @@ Armino SDK 代码下载
     cd ~/armino
     git clone https://gitlab.bekencorp.com/armino/bk_idk.git
 
-	
+
 您也可从 github 上下载 Armino::
 
 	mkdir -p ~/armino
 	cd ~/armino
 	git clone https://github.com/bekencorp/bk_idk.git
 
- 
-然后切换到稳定分支Tag节点, 如v2.0.2.1::
 
-    git checkout -B your_branch_name v2.0.2.1
+然后切换到稳定分支Tag节点, 如v2.2.1.18::
+
+    git checkout -B your_branch_name v2.2.1.18
 
 
 .. warning::
@@ -67,7 +67,7 @@ Armino SDK 代码下载
  - 软链接失效问题:
 
    1. 下载代码前先配置git环境变量::
-      
+
         git config --global core.symlinks true
 
    2. 在管理员权限下执行git clone命令
@@ -129,7 +129,7 @@ BK7236N 默认工程为 projects/app，新建工程可参考 projects/app工程
 
 Armino 支持在 Windows/Linux 平台进行固件烧录, 烧录方法参考烧录工具中指导文档。
 以Windows 平台为例， Armino 目前支持 UART 烧录。
-app工程在编译完成后，在build/app/bk7236n目录下生成all-app.bin，使用此bin文件烧录即可。安全工程首次烧录时，需要先烧录bootloader.bin，再烧录all-app.bin。
+app工程在编译完成后，在build/app/bk7236n目录下生成all-app.bin，使用此bin文件烧录即可。
 
 
 
@@ -151,12 +151,12 @@ app工程在编译完成后，在build/app/bk7236n目录下生成all-app.bin，�
 
 烧录工具（BKFIL）获取：
 
-	https://dl.bekencorp.com/tools/flash/
-	在此目录下获取最新版本，如：BEKEN_BKFIL_V2.1.6.0_20231123.zip
+	https://dl.bekencorp.com/tools/bkfil/v4/gui/windows/
+	在此目录下获取最新版本，如：BKFIL_windows_4.1.1.260317095.zip
 
 BKFIL.exe 界面及相关配置如下图所示：
 
-.. figure:: ../../../common/_static/download_uart_bk7236.png
+.. figure:: ../../../common/_static/download_uart_bk7236n.png
     :align: center
     :alt: BKFIL GUI
     :figclass: align-center

@@ -12,7 +12,7 @@ Armino 社区由三部分组成:
 Github 社区
 -----------------------
 
-在 Armino Github Issue Forum: https://github.com/bekencorp/armino 上，您可以报告与特定 Armino 版本
+在 Armino Github Issue Forum: https://github.com/bekencorp/bk_idk 上，您可以报告与特定 Armino 版本
 相关的问题。
 
 技术论坛
@@ -24,7 +24,7 @@ Github 社区
 尊贵客户支持
 -----------------------
 
-如果您是博通集成的尊贵客户，您还可以通过尊贵客户通道寻求更快，更有效的支持: 
+如果您是博通集成的尊贵客户，您还可以通过尊贵客户通道寻求更快，更有效的支持:
 https://support.bekencorp.com/
 
 

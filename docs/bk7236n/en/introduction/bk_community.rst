@@ -12,7 +12,7 @@ The Armino community consists of three parts:
 Github Community
 -----------------------
 
-You can report issues related to specific Armino versions on the Armino Github Issue Forum: https://github.com/bekencorp/armino.
+You can report issues related to specific Armino versions on the Armino Github Issue Forum: https://github.com/bekencorp/bk_idk.
 
 Technology Forum
 -----------------------

@@ -7,7 +7,7 @@ Armino平台BK7236N系统调试命令
 --------------------------------------
 
 
- - BK7236N CPU0的log通过串口DL_UART0输出(默认波特率为115200)
+ - BK7236N 的log通过串口DL_UART0输出(默认波特率为115200)
 
  - 由于内存缓冲区的限制，每条log数据的字节数，要小于128字节。超过这个大小的log都会被shell 模块丢弃，并输出一条 !!some LOGs discarded!! 如果log数量太多，来不及输出导致log堆积，缓冲区用完，也会输出这条提示字符串。
  - 通过串口输入log命令查看当前log配置
@@ -26,7 +26,6 @@ Armino平台BK7236N系统调试命令
     help
     log: log [echo(0,1)] [level(0~5)] [sync(0,1)] [Whitelist(0,1)]
     debug: debug cmd [param] (ex:debug help)
-    cpu1: cpu1 cmd (ex:cpu1 help)
     loginfo: log statistics.
     modlog: modlog tag_name on/off
 
@@ -90,7 +89,7 @@ Armino平台BK7236N系统调试命令
     dma_memcopy_test: copy {count|in_number1|in_number2|out_number1|out_number2}
     dtm_master_test: dtm_master_test {start|stop}
     dtm_slave_test: dtm_slave_test {start|stop}
-    dvfs: dvfs [cksel_core] [ckdiv_core] [ckdiv_bus] [ckdiv_cpu0] [ckdiv_cpu1]
+    dvfs: dvfs [cksel_core] [ckdiv_core] [ckdiv_bus] [ckdiv_cpu0]
     dvfs_auto_test: dvfs_auto_test [period]
     efuse: efuse [-r addr] [-w addr data]
     efuse_driver: efuse_driver {init|deinit}
@@ -252,12 +251,12 @@ Armino平台BK7236N系统调试命令
     $wifi_diag: Wi-Fi HW diagnostics config
 
 
-Armino平台BK7236N系统jtag调试
+Armino平台BK7236N系统swd调试
 --------------------------------------
 
  - JLink环境通过Eclipse集成JLink gdb server + gdb 工具
 
- - Jlink和BK7258连线::
+ - Jlink和BK7236N连线::
 
     1# VTref  ---- VREF
     7# SWDIO  ---- SWDIO
@@ -297,25 +296,24 @@ Armino平台BK7236N系统jtag调试
  - 可以通过jtagmode命令查看当前jtag状态
 
 
-Armino平台BK7236N/BK7258 异常dump一键恢复现场工具
+Armino平台BK7236N 异常dump一键恢复现场工具
 ----------------------------------------------------------
 
  - 请参考发布工具中使用文档:
    https://dl.bekencorp.com/tools/Debug_tool/BK7258-debug.zip
 
- - BK7236N/BK7258 dump工具常见问题:
+ - BK7236N dump工具常见问题:
 
    + 默认Release版本dump功能是关闭的, 可以通过CONFIG_DUMP_ENABLE配置打开
-   + Dump工具恢复现场的原理是脚本通过分析log,解析出regs,itcm,dtcm,sram内容,然后通过gdb将这些内容恢复到qemu虚拟机中
+   + Dump工具恢复现场的原理是脚本通过分析log,解析出regs,itcm,dtcm,sram内容,然后通过gdb将这些内容恢复到cm33的qemu虚拟机中
    + Log文件的后缀支持txt, log, DAT
    + Log文件的编码当前只支持utf-8, 其他编码格式可用通过notepad++手动转换为utf-8编码格式
    + 如果工具目录下有多份Log, 或者Log中有多次Dump, 工具会分析最后一次Dump, 需要保证工具目录下只有一份Log, 且Log中只有一份dump
    + Dump工具可以自动去掉日志里规则的时间戳: [2024-02-03 14:35:13.375193], 如果遇到不规则的时间戳, 需要手动去除
    + Dump过程中如果出现2次异常, 常见的如检测内存越界时, 遇到Assert, 会多打印一次寄存器, 解析时需要删掉第二次寄存器打印
-   + Dump会将当前cpu的寄存器, itcm, dtcm, 以及640k sram全部dump出来
-   + Dump过程中如果遇到两个cpu同时dump, 需要将Log拆分成两份dump文件,分别用cpu0和cpu1的elf来恢复现场
-   + 每个cpu需要当前cpu的寄存器, itcm, dtcm, sram加上elf就可以恢复现场
-
+   + Dump会将当前cpu的寄存器, itcm, dtcm, 以及640k sram全部dump出来 
+   + cpu需要当前cpu的寄存器, itcm, dtcm, sram加上elf就可以恢复现场
+   
        寄存器格式::
 
         Current regs:
@@ -350,16 +348,6 @@ Armino平台BK7236N/BK7258 异常dump一键恢复现场工具
         42 CFSR x 0x82
         43 HFSR x 0x0
         MemFault              =========> 初步异常原因是内存访问异常
-
-      dtcm格式::
-
-        >>>>stack mem dump begin, stack_top=20000000, stack end=20004000
-        <<<<stack mem dump end. stack_top=20000000, stack end=20004000
-
-      itcm格式::
-
-        >>>>stack mem dump begin, stack_top=00000020, stack end=00004000
-        <<<<stack mem dump end. stack_top=00000020, stack end=00004000
 
       sram格式::
 

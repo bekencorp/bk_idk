@@ -16,7 +16,7 @@ This is the documentation for Beken Armino IDK(IoT Development Kit) Framework.
     Security <security/index>
     Supported OS <os/index>
     Supported Boards <boards/index>
-    Demos via CLI <examples/index>
+    Samples and Demos <examples/index>
     Development and Contribution Process <process/index>
     Document Center <https://docs.bekencorp.com/>
 

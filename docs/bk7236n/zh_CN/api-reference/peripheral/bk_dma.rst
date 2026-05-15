@@ -53,7 +53,7 @@ DMA Channel Number
 +----------------+---------+
 | Capability     | BK7236N |
 +================+=========+
-| Channel Number | 6       |
+| Channel Number | 8       |
 +----------------+---------+
 
 DMA API Reference

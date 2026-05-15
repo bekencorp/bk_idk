@@ -7,5 +7,6 @@ SYSTEM
     :maxdepth: 2
 
     OS <os>
+    MEM <mem>
     EVENT <bk_event>
     POSIX <posix/index>

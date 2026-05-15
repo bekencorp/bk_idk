@@ -81,17 +81,17 @@ Module Specific WiFi APIs:
  - :cpp:func:`bk_wifi_filter_set_config` - set filter configuration
  - :cpp:func:`bk_wifi_filter_register_cb` - register the filter callback function
 
-Compitability and Extension
+Compatibility and Extension
 ----------------------------------------
 
-The WiFi APIs are flexible, easy to be extended and backward compatible. For most of the WiFi configurations, we put some reserved fields in the config struct for future extendence. The API users need to make sure the reserved fields are initialized to 0, otherwise the compatibility may be broken as more fields are added.
+The WiFi APIs are flexible, easy to be extended and backward compatible. For most of the WiFi configurations, we put some reserved fields in the config struct for future extension. The API users need to make sure the reserved fields are initialized to 0, otherwise the compatibility may be broken as more fields are added.
 
 Programing Principle
 ----------------------------------------
 
 .. important::
   Here is some general principle for WiFi API users:
-   - Always init the reserved fields of config stuct to 0
+   - Always init the reserved fields of config struct to 0
    - Use BK_ERR_CHECK to check the return value of the WiFi API
    - If you are not sure how to use WiFi APIs, study the WiFi example code first
    - If you are not sure how to initialize some fields of config struct, use the default configuration macro to use the config first and then set application specific fields, e.g. use WIFI_DEFAULT_INIT_CONFIG() to init wifi_config_t first.

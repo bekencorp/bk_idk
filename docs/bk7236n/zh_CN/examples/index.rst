@@ -6,7 +6,7 @@
 .. toctree::
    :maxdepth: 1
 
-   命令 <cli/index>
+   蓝牙 <bluetooth/index>
    外设 <peripheral/index>
    平台 <platform/index>
    VND_CAL <vnd_cal/vnd_cal>

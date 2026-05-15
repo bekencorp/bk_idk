@@ -16,7 +16,7 @@
     安全 <security/index>
     OS 相关参考 <os/index>
     购买 BK7236N 开发板 <boards/index>
-    样例 CLI 演示 <examples/index>
+    用例指南 <examples/index>
     开发与贡献代码流程 <process/index>
     文档中心 <https://docs.bekencorp.com/>
 

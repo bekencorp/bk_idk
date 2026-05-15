@@ -59,7 +59,7 @@ SMP简介
 
  - Armino平台FreeRTOS SMP架构使用的是内核代码路径: components/os_source/freertos_smp
  - 当涉及到多处理器系统（Multiprocessor Systems）时，Symmetric Multiprocessing（SMP）是一种常见的架构。
- - BK7236NXX 支持 FreeRTOS SMP架构
+ - BK7236N 支持 FreeRTOS SMP架构
  - 以下是对SMP的基本概念、在FreeRTOS中实现SMP的目的和优势的简要介绍：
 
 Symmetric Multiprocessing（SMP）的基本概念：

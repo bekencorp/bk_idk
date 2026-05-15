@@ -64,16 +64,16 @@ bk7239n TIM 配置寄存器共有4个group，每个group为3个TIM的配置，�
 
 PWM 控制器 有两个时钟源可选：
 
- - clk_32K
+ - 80MHz
  - XTAL(40MHz)
 
-可通过 ``SYSTEM_REG0x8`` 配置。
+可通过 ``SYSTEM_REG0x8`` 配置。软件默认使用XTAL作为时钟源，若使用80MHz时钟源，可配置 ``CONFIG_PWM_SCLK_80M=y``。
 
 -----------
 PSC
 -----------
 
-预分频器，对输入时钟(clk_32K或XTAL)进行分频，输出CLK_CNT用来驱动计数器TIM计数。
+预分频器，对输入时钟(80MHz或XTAL)进行分频，输出CLK_CNT用来驱动计数器TIM计数。
 
 其中，group0 PSC的设置可通过 ``PWM_REG_0x4a`` 来配置，可实现1-256分频。
 

@@ -17,7 +17,7 @@ BK7236N is a SoC that integrates the following features:
 
  - Wi-Fi 6 (2.4 GHz Band)
  - Bluetooth Low Energy 5.4
- - ARMv8-M Star (M33F) MCU
+ - ARMv8-M STAR-MC1 MCU
  - Multiple peripherals
  - Built-in TrustEngine security hardware
 
@@ -35,7 +35,7 @@ Preparation
 
 Hardware：
 
- - BK7236N Demo board( :ref:`Introduction to Development Board <bk7236n>` )
+ - BK7236N Demo board
  - Serial port burning tool
  - PC
 
@@ -57,9 +57,9 @@ We also can download Armino from github::
 	git clone https://github.com/bekencorp/bk_idk.git
 
 
-Then switch to the stable branch Tag node, such as v2.0.2.1::
+Then switch to the stable branch Tag node, such as v2.2.1.18::
 
-    git checkout -B your_branch_name v2.0.2.1
+    git checkout -B your_branch_name v2.2.1.18
 
 .. warning::
 
@@ -68,7 +68,7 @@ Then switch to the stable branch Tag node, such as v2.0.2.1::
     - Symbolic link failure issue:
 
     1. Configure the Git environment variable before downloading the code::
-      
+
         git config --global core.symlinks true
 
     2. Execute the git clone command with administrator privileges.
@@ -83,7 +83,7 @@ Then switch to the stable branch Tag node, such as v2.0.2.1::
 
 .. note::
 
-    The code on GitHub lags behind that on GitLab. GitLab is only open to corporate users. Please contact the corresponding person to apply. 
+    The code on GitHub lags behind that on GitLab. GitLab is only open to corporate users. Please contact the corresponding person to apply.
 
 
 Environment Deployment and Compilation
@@ -128,7 +128,7 @@ Burn Code
 ------------------------------------
 
 On the Windows platform, Armino currently supports UART burning.
-After the app project is compiled, generate all-app.bin in the build/app/bk7236n directory and burn it using this bin file. When burning the security project for the first time, it is necessary to first burn bootloader.bin, and then burn all-app.bin.
+After the app project is compiled, generate all-app.bin in the build/bk7236n/app/package directory and burn it using this bin file.
 
 
 

@@ -1,4 +1,4 @@
-BT Cli
+BT Commands
 ===============
 
 :link_to_translation:`en:[English]`
@@ -14,7 +14,7 @@ BT Cli
 	路径: ``\components\bk_bluetooth\api\bk_at_bt.c``
 
 
-3. cli命令简介
+3. AT命令简介
 --------------------------
 支持的命令如下:
 

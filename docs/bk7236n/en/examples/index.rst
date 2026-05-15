@@ -6,5 +6,5 @@ Samples and Demos
 .. toctree::
    :maxdepth: 1
 
-   Command Line <cli/index>
+   bluetooth <bluetooth/index>
    peripheral <peripheral/index>

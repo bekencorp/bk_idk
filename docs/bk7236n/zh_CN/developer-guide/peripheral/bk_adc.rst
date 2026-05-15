@@ -6,7 +6,7 @@ SARADC
 概述
 ---------------
 
-    SARADC 目前最多支持 16 个 channel,在 BK7236N中,channel 1-6,10,12-15为数字通道,其余为模拟通道,SARADC 精度默认为13bit,
+    SARADC 目前最多支持 12 个 channel,在 BK7236N中,channel 1-6,10,12-15为数字通道,其余为模拟通道,SARADC 精度默认为13bit,
     一般精度在 SARADC 驱动中不做动态调整。
 
 SARADC 模式类型：
@@ -68,14 +68,10 @@ SARADC 获取数据流程：
 -----------------------------------------------------------------
 
  - ADC Driver Init  bk_adc_driver_init(): 通常来说初始化上电时会初始化ADC_Driver，所以一般不需要这一步。
- - ADC Acquire      bk_adc_acquire(): 加锁访问临界资源。
- - ADC Channel Init bk_adc_init(adc_channel): 打开电源、时钟源等，配置对应通道的GPIO
- - ADC Config       bk_adc_set_config(adc_config): 根据需求对ADC进行相关的配置
- - ADC Start        bk_adc_start(): 使能ADC模块
- - ADC Read         bk_adc_read()/bk_adc_read_raw(): 打开ADC中断使能，等待中断，硬件依据配置的 sample rate 进行采样，将每次采样数据存 Hardware Buffer，
+ - ADC Channel Init bk_adc_channel_init(adc_config): 打开电源、时钟源等，配置对应通道的GPIO，根据需求对ADC进行相关的配置
+ - ADC Read         bk_adc_channel_read()/bk_adc_channel_raw_read(): 打开ADC中断使能，等待中断，硬件依据配置的 sample rate 进行采样，将每次采样数据存 Hardware Buffer，
                                                     当采样 sample cnt 次之后，产生 ADC 中断，ADC 驱动将 ADC Hardware Buffer 中的数据搬到 ADC Software Buffer， 最后关闭ADC中断使能
- - ADC Deinit       bk_adc_deinit(adc_channel): 关闭ADC，解除相关配置。
- - ADC Release      bk_adc_release(): 释放临界资源
+ - ADC Deinit       bk_adc_channel_deinit(adc_channel): 关闭ADC，解除相关配置。
 
 
 

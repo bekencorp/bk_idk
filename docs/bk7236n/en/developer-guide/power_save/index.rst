@@ -13,5 +13,4 @@ power management
 	config 32k clock source description <bk_32k_source>
 	enter deepsleep or low voltage sleep mode,  using the GPIO wakeup source description <bk_gpio_sleep>
 	enter deepsleep or low voltage sleep mode,  using the RTC wakeup source description  <bk_rtc_sleep>
-	enter deepsleep or low voltage sleep mode,  using the TOUCH wakeup source description <bk_touch_sleep>
 	config wifi alive in low voltage sleep mode description <bk_wifi_alive>

@@ -4,7 +4,7 @@
 :link_to_translation:`en:[English]`
 
 
-All original source code in this repository is Copyright (C) 2021-2024 Beken. This source code is licensed under the Apache License 2.0 as described in the file LICENSE.
+All original source code in this repository is Copyright (C) 2021-2026 Beken. This source code is licensed under the Apache License 2.0 as described in the file LICENSE.
 
 Additional third party copyrighted code is included under the following licenses.
 

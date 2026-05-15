@@ -10,7 +10,6 @@ Peripheral
    EFUSE <bk_efuse>
    GPIO <bk_gpio>
    ICU <bk_interrupt>
-   Mailbox <bk_mailbox>
    PWM <bk_pwm>
    SARADC <bk_adc>
    SPI <bk_spi>

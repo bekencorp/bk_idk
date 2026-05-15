@@ -10,7 +10,7 @@ Setup Build Environment
 
       The Armino compilation environment requires Ubuntu 20.04 LTS version and above, CentOS 7 version or above, ArchLinux and Debian 11 version or above. This chapter will take Ubuntu 20.04 LTS version as an example to introduce the construction of the entire compilation environment.
 
-The compilation environment can be installed using an environment installation script or manual installation. It is recommended to use the installation script method. If there is no installation script in the SDK directory, 
+The compilation environment can be installed using an environment installation script or manual installation. It is recommended to use the installation script method. If there is no installation script in the SDK directory,
 you can follow the manual installation method.
 
 
@@ -49,7 +49,7 @@ The app project startup:
  - Common pheripheral drivers
  - Armino default Cli
 
-You can build other projects with PROJECT parameter, e.g. run "make bk7236n PROJECT=security/secureboot" 
-can build projects/security/secureboot etc.
+You can build other projects with PROJECT parameter, e.g. run "make bk7236n PROJECT=security/overwrite"
+can build projects/security/overwrite etc.
 
 For more compilation related commands, please refer to :ref:`link <bk_build_overview>`

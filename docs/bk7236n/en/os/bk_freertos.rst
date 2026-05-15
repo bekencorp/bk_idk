@@ -61,7 +61,7 @@ Introduction to SMP
 
   - The Armino platform FreeRTOS SMP architecture uses the kernel code path: components/os_source/freertos_smp
   - Symmetric Multiprocessing (SMP) is a common architecture when it comes to multiprocessor systems.
-  - BK7236NXX supports FreeRTOS SMP architecture
+  - BK7236N supports FreeRTOS SMP architecture
   - The following is a brief introduction to the basic concepts of SMP, the purpose and advantages of implementing SMP in FreeRTOS:
 
 Basic concepts of Symmetric Multiprocessing (SMP):
