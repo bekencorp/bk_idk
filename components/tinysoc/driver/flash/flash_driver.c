@@ -459,34 +459,42 @@ static bk_err_t flash_write_common(const uint8_t *buffer, uint32_t address, uint
 	uint32_t buf[FLASH_BUFFER_LEN];
 	uint8_t *pb = (uint8_t *)&buf[0];
 	uint32_t addr = address & (~FLASH_ADDRESS_MASK);
+	uint32_t perm_addr = address;
+	uint32_t perm_len = len;
 
 	FLASH_RETURN_ON_WRITE_ADDR_OUT_OF_RANGE(addr, len);
 
 	flash_protect_type_t protect_type = bk_flash_get_protect_type();
-	bk_err_t ret = BK_OK;
-	bk_flash_set_protect_type(FLASH_PROTECT_NONE);
+	bk_err_t ret = BK_FAIL;
 
-	while (len) {
-		os_memset(pb, 0xFF, FLASH_BYTES_CNT);
-		for (uint32_t i = address % FLASH_BYTES_CNT; i < FLASH_BYTES_CNT; i++) {
-			pb[i] = *buffer++;
-			address++;
-			len--;
-			if (len == 0) {
-				break;
+	if (bk_flash_partition_write_perm_check_by_addr(perm_addr, perm_len, FLASH_API_MAGIC_CODE) == BK_OK) {
+		bk_flash_set_protect_type(FLASH_PROTECT_NONE);
+
+		if (bk_flash_partition_write_perm_check_by_addr(perm_addr, perm_len, FLASH_API_MAGIC_CODE) == BK_OK) {
+			while (len) {
+				os_memset(pb, 0xFF, FLASH_BYTES_CNT);
+				for (uint32_t i = address % FLASH_BYTES_CNT; i < FLASH_BYTES_CNT; i++) {
+					pb[i] = *buffer++;
+					address++;
+					len--;
+					if (len == 0) {
+						break;
+					}
+				}
+
+				uint32_t int_level = rtos_disable_int();
+				flash_hal_wait_op_done(&s_flash.hal);
+
+				for (uint32_t i = 0; i < FLASH_BUFFER_LEN; i++) {
+					flash_hal_write_data(&s_flash.hal, buf[i]);
+				}
+				flash_hal_set_op_cmd_write(&s_flash.hal, addr);
+				rtos_enable_int(int_level);
+
+				addr += FLASH_BYTES_CNT;
 			}
+			ret = BK_OK;
 		}
-
-		uint32_t int_level = rtos_disable_int();
-		flash_hal_wait_op_done(&s_flash.hal);
-
-		for (uint32_t i = 0; i < FLASH_BUFFER_LEN; i++) {
-			flash_hal_write_data(&s_flash.hal, buf[i]);
-		}
-		flash_hal_set_op_cmd_write(&s_flash.hal, addr);
-		rtos_enable_int(int_level);
-
-		addr += FLASH_BYTES_CNT;
 	}
 	bk_flash_set_protect_type(protect_type);
 	return ret;
@@ -606,15 +614,36 @@ static bk_err_t flash_erase_block(uint32_t erase_addr, int type)
 	if (flash_is_area_write_disable(erase_addr)) {
 		return BK_ERR_FLASH_ADDR_OUT_OF_RANGE;
 	}
+
+	uint32_t erase_size = 0;
+
+	if (type == FLASH_OP_CMD_SE) {
+		erase_size = FLASH_SECTOR_SIZE;
+	} else if (type == FLASH_OP_CMD_BE1) {
+		erase_size = FLASH_BLOCK32_SIZE;
+	} else if (type == FLASH_OP_CMD_BE2) {
+		erase_size = FLASH_BLOCK_SIZE;
+	} else {
+		return BK_FAIL;
+	}
+
+	bk_err_t ret_val = BK_FAIL;
 	flash_protect_type_t protect_type = bk_flash_get_protect_type();
-	bk_flash_set_protect_type(FLASH_PROTECT_NONE);
-	uint32_t int_level = rtos_disable_int();
-	flash_hal_erase_block(&s_flash.hal, erase_addr, type);
-	rtos_enable_int(int_level);
+
+	if (bk_flash_partition_write_perm_check_by_addr(erase_addr, erase_size, FLASH_API_MAGIC_CODE) == BK_OK) {
+		bk_flash_set_protect_type(FLASH_PROTECT_NONE);
+
+		if (bk_flash_partition_write_perm_check_by_addr(erase_addr, erase_size, FLASH_API_MAGIC_CODE) == BK_OK) {
+			uint32_t int_level = rtos_disable_int();
+			flash_hal_erase_block(&s_flash.hal, erase_addr, type);
+			rtos_enable_int(int_level);
+			ret_val = BK_OK;
+		}
+	}
 	bk_flash_set_protect_type(protect_type);
 	flash_restore_line_mode();
 
-	return BK_OK;
+	return ret_val;
 }
 
 __attribute__((section(".itcm_sec_code"))) bk_err_t bk_flash_erase_sector(uint32_t address)
@@ -667,10 +696,10 @@ bk_err_t bk_flash_write_bytes(uint32_t address, const uint8_t *user_buf, uint32_
 		flash_restore_line_mode();
 		return BK_ERR_FLASH_ADDR_OUT_OF_RANGE;
 	}
-	flash_write_common(user_buf, address, size);
+	bk_err_t ret = flash_write_common(user_buf, address, size);
 	flash_restore_line_mode();
 
-	return BK_OK;
+	return ret;
 }
 
 #if !CONFIG_SECUREBOOT
@@ -776,13 +805,17 @@ void bk_flash_write_cbus(uint32_t address, const uint8_t *user_buf, uint32_t siz
 
 	status_reg = flash_hal_read_status_reg(&s_flash.hal, s_flash.flash_cfg->status_reg_size);
 	protect_type = flash_get_protect_type(status_reg);
-	flash_set_protect_type(FLASH_PROTECT_NONE);
 
-	bk_flash_cpu_write_enable();
-	flash_memcpy((char*)(0x02000000+address), (const char*)user_buf, size);
-	while(flash_hal_is_busy(&s_flash.hal));
+	if (bk_flash_partition_write_perm_check_by_addr(address, size, FLASH_API_MAGIC_CODE) == BK_OK) {
+		flash_set_protect_type(FLASH_PROTECT_NONE);
 
-	bk_flash_cpu_write_disable();
+		if (bk_flash_partition_write_perm_check_by_addr(address, size, FLASH_API_MAGIC_CODE) == BK_OK) {
+			bk_flash_cpu_write_enable();
+			flash_memcpy((char*)(0x02000000+address), (const char*)user_buf, size);
+			while (flash_hal_is_busy(&s_flash.hal));
+			bk_flash_cpu_write_disable();
+		}
+	}
 	flash_set_protect_type(protect_type);
 
 	flash_restore_line_mode();

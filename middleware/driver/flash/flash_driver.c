@@ -1239,15 +1239,20 @@ void bk_flash_write_cbus(uint32_t address, const uint8_t *user_buf, uint32_t siz
     cbus_flash_set_line_mode(2);
     uint32_t status_reg = flash_read_status_reg();
     flash_protect_type_t partition_type = flash_get_protect_type(status_reg);
-    flash_set_protect_type(FLASH_PROTECT_NONE);
 
+    if (bk_flash_partition_write_perm_check_by_addr(address, size, FLASH_API_MAGIC_CODE) == BK_OK) {
+        flash_set_protect_type(FLASH_PROTECT_NONE);
+
+        if (bk_flash_partition_write_perm_check_by_addr(address, size, FLASH_API_MAGIC_CODE) == BK_OK) {
 #if CONFIG_CACHE_ENABLE
-    enable_dcache(0);
+            enable_dcache(0);
 #endif
-    flash_write_cbus(address, user_buf, size);
+            flash_write_cbus(address, user_buf, size);
 #if CONFIG_CACHE_ENABLE
-    enable_dcache(1);
+            enable_dcache(1);
 #endif
+        }
+    }
     flash_set_protect_type(partition_type);
     cbus_flash_set_line_mode(line_mode);
     rtos_enable_int(int_status);

@@ -569,11 +569,6 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
              */
 #ifdef EXPECTED_SIG_TLV
         } else if (type == EXPECTED_SIG_TLV) {
-            /* Ignore this signature if it is out of bounds. */
-            if (key_id < 0 || key_id >= bootutil_key_cnt) {
-                key_id = -1;
-                continue;
-            }
             if (!EXPECTED_SIG_LEN(len) || len > sizeof(buf)) {
                 rc = -1;
                 goto out;
@@ -586,8 +581,11 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
                                                            buf, len, key_id);
 
             if (FIH_NOT_EQ(valid_signature, FIH_SUCCESS)) {
+#if CONFIG_DIRECT_XIP
                 FIH_SET(fih_rc, FIH_FAILURE);
                 BOOT_LOG_ERR("sig fail");
+                rc = -1;
+#endif
                 goto out;
             }
 

@@ -378,6 +378,14 @@ static bk_err_t flash_partition_offset_is_valid(const bk_logic_partition_t *part
     }
 #endif
 
+#if CONFIG_DIRECT_XIP
+#ifdef CONFIG_BL2_PHY_PARTITION_OFFSET
+    if (partition_info->partition_start_addr != CONFIG_BL2_PHY_PARTITION_OFFSET) {
+        return BK_OK;
+    }
+#endif
+#endif
+
     if ( (offset >= partition_info->partition_length)
         || (size > partition_info->partition_length)
         || (offset + size > partition_info->partition_length) ){
@@ -393,10 +401,13 @@ static bk_err_t flash_partition_offset_is_valid(const bk_logic_partition_t *part
  */
 static bk_err_t flash_partition_write_perm_check(const bk_logic_partition_t *partition_info)
 {
-/*TODO: temp code
-    if((partition_info->partition_options & PAR_OPT_WRITE_EN) == 0)
-        return BK_FAIL;
-*/
+#if CONFIG_DIRECT_XIP
+#ifdef CONFIG_BL2_PHY_PARTITION_OFFSET
+    if (partition_info->partition_start_addr != CONFIG_BL2_PHY_PARTITION_OFFSET) {
+        return BK_OK;
+    }
+#endif
+#endif
 
 #if CONFIG_OTA_POSITION_INDEPENDENT_AB
     return BK_OK;
@@ -900,37 +911,50 @@ bk_err_t bk_flash_partition_write_cbus(bk_partition_t partition, const uint8_t *
     return BK_OK;
 }
 
+/* xip_ota_write_cbus ORs (1<<24); partition table holds offsets without bit24 -- strip bit24 then match only. */
+static uint32_t flash_write_perm_phy_addr(uint32_t addr)
+{
+#if CONFIG_DIRECT_XIP
+    if (addr & (1UL << 24)) {
+        addr &= ~(1UL << 24);
+    }
+#endif
+    return addr;
+}
+
 bk_err_t bk_flash_partition_write_perm_check_by_addr(uint32_t addr, uint32_t size, uint32_t magic_code)
 {
-#if CONFIG_BK_OTA
-    //TODO
+#if CONFIG_BL2_UPGRADE_WITH_APP
     return BK_OK;
 #endif
 
 #if !CONFIG_FLASH_NO_PARTITION
-    if(magic_code != FLASH_API_MAGIC_CODE)
+    if (magic_code != FLASH_API_MAGIC_CODE) {
         return BK_FAIL;
+    }
 
 #if (!CONFIG_SPE) && CONFIG_TFM
     //TODO fix me by add permission in partitions.csv of secure project
     return BK_OK;
 #else
-    bk_logic_partition_t *partition_info = flash_partition_get_info_by_addr(addr);
+    uint32_t phy_addr = flash_write_perm_phy_addr(addr);
+    bk_logic_partition_t *partition_info = flash_partition_get_info_by_addr(phy_addr);
 
     if (NULL == partition_info) {
         return BK_FAIL;
     }
 
-    uint32_t   offset = addr - partition_info->partition_start_addr;
-    bk_err_t   ret_val = flash_partition_offset_is_valid(partition_info, offset, size);
-    if(ret_val != BK_OK)
+    uint32_t offset = phy_addr - partition_info->partition_start_addr;
+    bk_err_t ret_val = flash_partition_offset_is_valid(partition_info, offset, size);
+    if (ret_val != BK_OK) {
         return ret_val;
+    }
 
     return flash_partition_write_perm_check(partition_info);
 #endif
 #endif
 #if CONFIG_FLASH_NO_PARTITION
-return BK_OK;
+    return BK_OK;
 #endif
 }
 

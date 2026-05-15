@@ -40,6 +40,9 @@
 #define FLASH_ERASE_BLOCK_32K_MASK       0xFF8000
 #define FLASH_SECTOR_SIZE_MASK           0x000FFF
 #define FLASH_SECTOR_SIZE                0x1000 /* each sector has 4K bytes */
+#define FLASH_BLOCK32_SIZE               (0x8000)
+#define FLASH_BLOCK_SIZE                 (0x10000)
+#define FLASH_API_MAGIC_CODE             (0x12345678)
 #define FLASH_SECTOR_SIZE_OFFSET         12
 #define FLASH_PAGE_SIZE                  256 /* each page has 256 bytes */
 #define FLASH_DPLL_DIV_VALUE_TEN         3

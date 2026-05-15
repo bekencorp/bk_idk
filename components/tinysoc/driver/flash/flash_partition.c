@@ -113,3 +113,22 @@ void dump_partition(void)
             s_partition_config[k].phy_offset, s_partition_config[k].phy_size, s_partition_config[k].phy_flags);
 	}
 }
+
+bk_err_t bk_flash_partition_write_perm_check_by_addr(uint32_t addr, uint32_t size, uint32_t magic_code)
+{
+	(void)magic_code;
+
+#if CONFIG_BL2_UPGRADE_WITH_APP
+	return BK_OK;
+#endif
+
+	uint32_t bl2_start = (uint32_t)CONFIG_BL2_PHY_PARTITION_OFFSET;
+	uint32_t bl2_end = bl2_start + (uint32_t)CONFIG_BL2_PHY_PARTITION_SIZE;
+	uint64_t range_end = (uint64_t)addr + (uint64_t)size;
+
+	if (addr < bl2_end && range_end > (uint64_t)bl2_start) {
+		return BK_FAIL;
+	}
+
+	return BK_OK;
+}

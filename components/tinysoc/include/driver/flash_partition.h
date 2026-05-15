@@ -231,6 +231,7 @@ bk_err_t bk_flash_partition_read_by_name(const char *label, uint8_t *out_buffer,
 
 bk_err_t bk_flash_partition_read_enhanced(bk_partition_t partition, uint8_t *out_buffer, uint32_t offset, uint32_t buffer_len);
 bk_err_t bk_flash_partition_write_enhanced(bk_partition_t partition, const uint8_t *buffer, uint32_t offset, uint32_t buffer_len);
+bk_err_t bk_flash_partition_write_perm_check_by_addr(uint32_t addr, uint32_t size, uint32_t magic_code);
 bk_logic_partition_t * get_partition_info_by_name(const char *label);
 bk_logic_partition_t * get_partition_info(bk_partition_t partition);
 bk_logic_partition_t * bk_flash_partition_get_info_by_name(const char *label);
