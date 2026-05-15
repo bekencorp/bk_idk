@@ -7,6 +7,9 @@
 #if CONFIG_MISC_AT_ENABLE 
 #include "bk_system_at.h"
 #endif
+#if CONFIG_OTA_HTTP || (CONFIG_OTA_HTTPS && CONFIG_OTA_TEST)
+#include "ota_atsvr_ota.h"
+#endif
 
 
 _at_svr_ctrl_env_t _at_svr_env = {0};
@@ -119,6 +122,9 @@ void atsvr_extern_cmd_init(void)
 
 #if (CONFIG_MISC_AT_ENABLE) 
 	at_misc_cmd_init();
+#endif
+#if CONFIG_OTA_HTTP || (CONFIG_OTA_HTTPS && CONFIG_OTA_TEST)
+	ota_at_atsvr_init();
 #endif
 
 }

@@ -86,6 +86,15 @@ list(APPEND incs
 	)
 endif()
 
+if (CONFIG_OTA_HTTP OR (CONFIG_OTA_HTTPS AND CONFIG_OTA_TEST))
+	list(APPEND incs
+		${components}/at/include
+	)
+	list(APPEND srcs
+		"ota_atsvr_ota.c"
+	)
+endif()
+
 	list(APPEND srcs
 		"_at_server_port/atsvr_core.c"
 		"_at_server_port/atsvr_port.c"
@@ -96,4 +105,9 @@ endif()
 		)
 endif()
 
-armino_component_register(SRCS "${srcs}" INCLUDE_DIRS "${incs}" PRIV_REQUIRES bk_common)
+set(at_server_priv_req bk_common)
+if (CONFIG_AT AND (CONFIG_OTA_HTTP OR (CONFIG_OTA_HTTPS AND CONFIG_OTA_TEST)))
+	list(APPEND at_server_priv_req at)
+endif()
+
+armino_component_register(SRCS "${srcs}" INCLUDE_DIRS "${incs}" PRIV_REQUIRES ${at_server_priv_req})

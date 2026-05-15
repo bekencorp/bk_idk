@@ -1,6 +1,15 @@
 set(incs)
 set(srcs)
 
+if ((CONFIG_AT_CMD OR CONFIG_AT) AND (CONFIG_OTA_HTTP OR (CONFIG_OTA_HTTPS AND CONFIG_OTA_TEST)))
+	list(APPEND incs
+		include
+		)
+	list(APPEND srcs
+		"src/ota_at_command.c"
+        )
+endif()
+
 if (CONFIG_AT_CMD)
     list(APPEND incs
 		include
@@ -32,7 +41,16 @@ if (CONFIG_AT_CMD)
 
 endif()
 
+set(priv_req_list ali_mqtt bk_bluetooth bt lwip_intf_v2_1)
+if ((CONFIG_AT_CMD OR CONFIG_AT) AND (CONFIG_OTA_HTTP OR (CONFIG_OTA_HTTPS AND CONFIG_OTA_TEST)))
+	if (CONFIG_OTA_HTTP)
+		list(APPEND priv_req_list ota)
+	endif()
+	if (CONFIG_OTA_HTTPS AND CONFIG_OTA_TEST)
+		list(APPEND priv_req_list https_ota)
+	endif()
+endif()
+
 armino_component_register(SRCS "${srcs}" INCLUDE_DIRS "${incs}"
                         REQUIRES bk_common bk_log
-                        PRIV_REQUIRES ali_mqtt bk_bluetooth bt lwip_intf_v2_1)
-
+                        PRIV_REQUIRES ${priv_req_list})
