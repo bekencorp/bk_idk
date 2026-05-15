@@ -1,56 +1,54 @@
-config 32k clock source description
+32K Clock Source Configuration
 -----------------------------------------------
 
 :link_to_translation:`zh_CN:[中文]`
 
-32k clock source：
+32K clock sources:
 
-- rosc
+- ROSC32K
  
 Advantages and disadvantages:
-Low power consumption good，but the clock is relatively inaccurate，You can use it when you need the best power consumption。
+Low power consumption, but relatively poor clock accuracy. It is suitable when minimum power consumption is required.
 
 
-- external 26M division 32k
+- 32K derived from external crystal 40M division
 
-Advantages and disadvantages：
+Advantages and disadvantages:
 Good precision, but higher power consumption
 
 
-- external 32k
+- external crystal 32K
 
-Advantages and disadvantages：
-The precision is good, and the power consumption is lower than that of the external 26M division 32k clock
-
-
-so you can select different 32k source clock based on owner using scenarios
+Advantages and disadvantages:
+Good precision, and lower power consumption than 32K derived from external 40M division.
 
 
-switch 32k source clock interface instructions
+Therefore, different 32K clock sources can be selected based on usage scenarios.
+
+
+Switch 32K source clock interface description
 ----------------------------------------------
 
-enum type：
+Enum type:
 
-typedef enum
-{
+::
 
-	PM_LPO_SRC_DIVD, //32K from 26m
+    typedef enum
+    {
+        PM_LPO_SRC_DIVD, //32K from 40M
+        PM_LPO_SRC_X32K,    //extern 32k
+        PM_LPO_SRC_ROSC,    //32K from ROSC
+        PM_LPO_SRC_DEFAULT  //32K from ROSC
+    }pm_lpo_src_e;
 
-	PM_LPO_SRC_X32K,    //extern 32k
-
-	PM_LPO_SRC_ROSC,    //32K from ROSC
-	
-	PM_LPO_SRC_DEFAULT  //32K from ROSC
-
-}pm_lpo_src_e;
 +++++++++++++++++++++++++++++++++++++++++++++++
 
--  set and select 32k source ：
+- Set 32K clock source:
 
 bk_pm_lpo_src_set(pm_lpo_src_e lpo_src)
 
 
--  get the current 32k source:
+- Get current 32K clock source:
 
 pm_lpo_src_e bk_pm_lpo_src_get()
 

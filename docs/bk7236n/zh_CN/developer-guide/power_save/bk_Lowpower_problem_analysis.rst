@@ -51,6 +51,11 @@
    ::
 
     bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_APP,0x1,0x1);
+
+  pm_sleep_module_name_e枚举类型定义如下:
+
+  ::
+
     typedef enum
     {
         PM_SLEEP_MODULE_NAME_I2C1 = 0, // 0
@@ -65,7 +70,7 @@
         PM_SLEEP_MODULE_NAME_WIFIP_MAC,// 9
         PM_SLEEP_MODULE_NAME_WIFI_PHY, // 10
         PM_SLEEP_MODULE_NAME_TIMER_2,  // 11
-        PM_SLEEP_MODULE_NAME_APP,      // 12
+        PM_SLEEP_MODULE_NAME_APP,      // 12  //attention: the APP vote is for customer application using,other applications use the other votes
         PM_SLEEP_MODULE_NAME_OTP,      // 13
         PM_SLEEP_MODULE_NAME_I2S_1,    // 14
         PM_SLEEP_MODULE_NAME_USB_1,    // 15
@@ -75,7 +80,7 @@
         PM_SLEEP_MODULE_NAME_QSPI_2,   // 19
         PM_SLEEP_MODULE_NAME_SDIO,     // 20
         PM_SLEEP_MODULE_NAME_AUXS,     // 21
-        PM_SLEEP_MODULE_NAME_CPU,      // 22
+        PM_SLEEP_MODULE_NAME_LOG,      // 22
         PM_SLEEP_MODULE_NAME_AT,       // 23
         PM_SLEEP_MODULE_NAME_I2C2,     // 24
         PM_SLEEP_MODULE_NAME_UART2,    // 25
@@ -83,9 +88,11 @@
         PM_SLEEP_MODULE_NAME_WDG,      // 27
         PM_SLEEP_MODULE_NAME_TIMER_3,  // 28
         PM_SLEEP_MODULE_NAME_APP1,     // 29
-        PM_SLEEP_MODULE_NAME_APP2,     // 30
-        PM_SLEEP_MODULE_NAME_APP3,     // 31
-
+        PM_SLEEP_MODULE_NAME_CPU1,     // 30
+        PM_SLEEP_MODULE_NAME_ROSC_PROG,// 31
+        PM_SLEEP_MODULE_NAME_ROSC,     // 32
+        PM_SLEEP_MODULE_NAME_ENCP,     // 33
+        /*Attention: if you add vote ,the following[ #define PM_ENTER_LOW_VOL_MODULES_CONFIG] also need add the vote*/
         PM_SLEEP_MODULE_NAME_MAX
     }pm_sleep_module_name_e;
 
@@ -291,23 +298,23 @@ Bit7为VIDEO，则表示以上两个模块的票没有投上。
         bit0:mem1
         bit1:mem2
         bit2:mem3
-        bit3:encp
-        bit4:bakp
-        bit5:ahbp
-        bit6:audp
-        bit7:vidp
+        bit3:NA
+        bit4:bakp&encp
+        bit5:NA
+        bit6:NA
+        bit7:NA
         bit8:btsp
         bit9:wifi_mac
         bit10:wifi_phy
         bit11:mem0
         bit12:mem4
         bit13:ofdm
-        bit14:mem5
+        bit14:thread
         bit15:rom
 
   b)0x7d000272
   以上值的最后2bit表示32K时钟源,
-  0:表示26M时钟分下来的32k; 1:表示外部32k时钟; 2:表示内部的ROSC时钟
+  0:表示40M时钟分下来的32k; 1:表示外部32k时钟; 2:表示内部的ROSC时钟
 
     .. note::
 
@@ -402,8 +409,8 @@ Bit7为VIDEO，则表示以上两个模块的票没有投上。
 --------------------------------------------------------------
 
  - 1.进入深度睡眠后功耗偏高问题确认
-     - a.进入深度睡眠成功后，VDDDIG的电压为0v.电流在20uA左右.
-     - b.如果VDDDIG的电压为0v, 电流超过了25Ua则需要确认是否外围电路漏电。
+     - a.进入深度睡眠成功后，VDDDIG的电压为0v.电流在2uA以下.
+     - b.如果VDDDIG的电压为0v, 电流超过了2uA则需要确认是否外围电路漏电。
 
  - 2.进入低压后功耗偏高问题确认
      - a.通过pm_debug 8确认该关闭的模块都关闭了，功耗还偏高，则确认外围电路是否由漏电。通过万用表确认各个GPIO是否有高电平。

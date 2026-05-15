@@ -11,9 +11,10 @@
   b. 设置GPIO唤醒模式:
 
 ::
-
-    GPIO_INT_TYPE_FALLING_EDGE: 下降延唤醒;
-    GPIO_INT_TYPE_RISING_EDGE: 上升延唤醒;
+    GPIO_INT_TYPE_LOW_LEVEL: 低电平唤醒;
+    GPIO_INT_TYPE_HIGH_LEVEL: 高电平唤醒;
+    GPIO_INT_TYPE_RISING_EDGE: 上升沿唤醒;
+    GPIO_INT_TYPE_FALLING_EDGE: 下降沿唤醒;
 
 - 2. bk_pm_wakeup_source_set(PM_WAKEUP_SOURCE_INT_GPIO, NULL);
 
@@ -34,7 +35,10 @@
 
   b.设置GPIO唤醒模式:
 
-    GPIO_INT_TYPE_FALLING_EDGE: 下降延唤醒;
+    GPIO_INT_TYPE_LOW_LEVEL: 低电平唤醒;
+    GPIO_INT_TYPE_HIGH_LEVEL: 高电平唤醒;
+    GPIO_INT_TYPE_RISING_EDGE: 上升沿唤醒;
+    GPIO_INT_TYPE_FALLING_EDGE: 下降沿唤醒;
 
     GPIO_INT_TYPE_RISING_EDGE: 上升延唤醒;
 
@@ -52,9 +56,9 @@
 
 备注：
 
- - 1. BT和WIFI的票，BT和WIFI模块内部进入睡眠后自己投上，SDK内部做好，应用程序不用关注
+ - 1. BLE和WIFI的票，BLE和WIFI模块内部进入睡眠后自己投上，SDK内部做好，应用程序不用关注；
 
- - 2. 当系统中BT或WIFI模块没有上电时，系统会自动给这两个模块投上sleep的票。
+ - 2. 当系统中BLE或WIFI模块没有上电时，系统会自动给这两个模块投上sleep的票；
 
 
 :link_to_translation:`en:[English]`

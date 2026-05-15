@@ -1,4 +1,4 @@
-System state machine specification
+System state machine description
 =============================================
 
 :link_to_translation:`zh_CN:[中文]`
@@ -10,78 +10,104 @@ System state machine specification
 
 The system supports different sleep modes:
  - active
- - normal sleep
+ - cpu wfi
  - low voltage
  - deep sleep
- - super deep sleep
  - shut down
 
-Supported wake-up modes:
-
-       +------------------+--------+--------+---------+--------+--------+
-       | #sleep mode      | GPIO   | RTC    | WIFImac | BTdm   | TOUCH  |
-       +==================+========+========+=========+========+========+
-       | normal sleep     | Y      | Y      | Y       | Y      | Y      |
-       +------------------+--------+--------+---------+--------+--------+
-       | low voltage      | Y      | Y      | Y       | Y      | Y      |
-       +------------------+--------+--------+---------+--------+--------+
-       | deep sleep       | Y      | Y      | N       | N      | Y      |
-       +------------------+--------+--------+---------+--------+--------+
-       | super deep sleep | Y      | Y      | N       | N      | N      |
-       +------------------+--------+--------+---------+--------+--------+
-
-active(work)
+active (normal operation)
 --------------------------------------------
- - The CPU is in working and WIFI and BT can receive and send data.
+ - CPU is in active state, and WIFI/BLE can transmit and receive data normally.
 
 
-normal sleep(normal sleep)
-++++++++++++++++++++++++++++++++++++++++++++
- - When rtos does not have a task to deal with, the system enters the idle task, and the CPU enters the WFI sleep in the idle task. When there is any interruption, it can exit the wfi state and go to work.
-
-
-low voltage(low voltage sleep)
-++++++++++++++++++++++++++++++++++++++++++
- - low voltage sleep mode is a relatively more power save sleep mode.In the sleep mode the system only has a 32k clock,and only a part of hardware modules are working that except AON module work ,other hardware modules are suspended(not run)
-
-When it wakes up and exit from the low voltage sleep mode, the voltage of dvdddig is return to the work voltage(1.1v)。
- - when it is in the low voltage sleep mode，the (GPIO,RTC,Touch,WIFI,BT) wakeup source can let the system wake up from the low voltage sleep mode 。Attention：WIFI and BT according the usage scenario enter the low voltage sleep mode, which is special.
-
- - it select which 32k source(external 32k, rosc, external 26M division 32k) ,which according the usage scenario，please refer to :doc:`bk_clock`。
-
- - In order to achieve the optimal power consumption, the modules that are not needed, please close them before enter the low voltage,and then restore them when exit the low voltage.
-
-
-deep sleep(deep sleep)
-++++++++++++++++++++++++++++++++++++++++++
- - Deep sleep is a relatively more power-saving sleep mode。In the sleep mode the system only has a 32k clock,and only AON modules are working, other modules power off。
-
-when it wakes up，the system exit the deep sleep state，then the system reset。
- - In the deep sleep mode，the wakeup source(GPIO,RTC,Touch)can let the system exit the deep sleep mode。
-
- - The rosc is the default 32k source in the sleep mode。
-
-
-super deep sleep(super deep sleep)
-++++++++++++++++++++++++++++++++++++++++++
- - The difference from deepsleep is that in this mode, the AON power domain are also powered off, and only some analog areas have power; The digital wake-up source does not work and can only rely on analog GPIO or RTC wake-up.
-
-
-shut down(shut down)
+cpu wfi (cpu wfi)
 --------------------------------------------
- - all the chip is powered off
+ - When RTOS has no task to process, the system enters the IDLE task. In IDLE, CPU enters WFI sleep.
+   Any interrupt can wake up the system from WFI and return to active state.
 
 
-State machine switching instructions
+low voltage sleep (low voltage sleep)
+--------------------------------------------
+ - Low voltage sleep is a relatively power-saving mode. In this mode, only 32K clock is available.
+   Only AON and part of analog modules keep working. Other hardware modules are suspended or powered down under low voltage.
+
+ - In low voltage sleep mode, VDDDIG voltage is reduced.
+   If SRAM is not powered down, data stored in SRAM is retained and can still be used after wakeup.
+
+ - Conditions to enter low voltage:
+   - 1. RTOS has no task to process, and the system enters IDLE task.
+   - 2. Low voltage voting conditions are satisfied (BLE and WIFI enter sleep, APP vote is set, and all required low-voltage votes are set).
+
+ - After wakeup signal is triggered, the system exits low voltage state, and VDDDIG voltage returns to normal level.
+
+ - In low voltage state, wakeup sources (GPIO, RTC, WIFI, BLE) can wake up the system.
+   Note: WIFI/BLE low voltage entry is based on internal voting according to their own business scenarios (handled by SDK, no need for application attention).
+   Applications should close upper-layer services before entering low voltage.
+
+ - In this mode, 32K clock source can be selected according to scenario.
+   Refer to :doc:`bk_clock`.
+
+ - To achieve optimal power consumption, disable unnecessary modules before entering low voltage.
+   Re-enable them after exiting low voltage.
+
+
+deep sleep (deep sleep)
+--------------------------------------------
+ - Deep sleep is a sleep mode with complete wakeup capability and lowest power consumption.
+   In this mode, only 32K clock is available. Only AON and part of hardware modules keep working.
+   Other hardware circuit modules are powered down.
+
+ - After wakeup signal is triggered, the system exits deep sleep state and resets.
+
+ - In deep sleep state, wakeup sources (GPIO, RTC) can wake up the system.
+
+ - Default 32K clock source in this mode is ROSC 32K.
+
+ - Conditions to enter deep sleep:
+   - 1. RTOS has no task to process, and the system enters IDLE task.
+   - 2. Deep sleep voting conditions are satisfied (BLE and WIFI enter sleep, APP vote is set).
+
+
+shut down (shut down)
+--------------------------------------------
+ - Entire system is powered off.
+
+
+State machine switching description
 =============================================
- - The mcu will suspend(not run) in the low voltage and deep sleep sleep mode, it suggest WIFI,BT,audio,video enter sleep mode, then the mcu enter low voltage and deep sleep.
 
-In order to make sure the corrent sleep sequence, we use the voting mechanism.
+Low voltage sleep description
+--------------------------------------------
 
- - low voltage：The current system supports 32 tickets, and we will use the ticket for vote according the scenario. You don't need to pay much attention using the SDK, only focus on vote the APP ticket.
-	The tickets of BT and WIFI are according to themselves work process to vote,the user of the SDK not need pay attention.APP ticket can be voted according to their own usage scenarios.
-	(if you open the multi-meida(AUDP_FFT,AUDP_SBC,AUDP_AUDIO,AUDP_I2S,VIDP_JPEG_EN,VIDP_JPEG_DE,VIDP_DMA2D,VIDP_LCD), it need close them befor enter low voltage)
- - deep sleep：when user using the SDK set the deep sleep mode, the SDK function will let the BT and WIFI stop work(if BT and WIFI active)then the system enter deepsleep.
-	(if you open the multi-meida(AUDP_FFT,AUDP_SBC,AUDP_AUDIO,AUDP_I2S,VIDP_JPEG_EN,VIDP_JPEG_DE,VIDP_DMA2D,VIDP_LCD), it need close them befor enter deepsleep)
- - if there is no higher priority task than idle task, it will enter idle task to do "WFI" for normal sleep。if it meet the ticks of enter low voltage sleep mode, it will enter low voltage mode.
- 
+ - Low voltage sleep and deep sleep are system-level (whole-chip) sleep modes.
+   If the system enters low voltage/deep sleep while some modules are still running, abnormal module behavior may cause those modules to fail after wakeup.
+   To avoid this issue by mechanism, a voting mechanism is used before entering low voltage/deep sleep.
+
+ - Low voltage sleep: currently 64 votes are configured:
+   - 1. BLE and WIFI votes are set internally after BLE/WIFI enter sleep. This is handled by SDK and does not need application attention.
+   - 2. APP vote is provided for upper-layer application. Set this vote before sleep; after wakeup, if active work is needed for some time, clear this vote; set it again when sleep is needed.
+   - 3. Other votes are set by default.
+   - 4. For application developers, usually only APP vote needs attention.
+
+ - Conditions to enter low voltage:
+   - 1. RTOS has no task to process, and the system enters IDLE task.
+   - 2. Low voltage voting conditions are satisfied (BLE and WIFI enter sleep, APP and related votes are set).
+
+   If low voltage entry fails, refer to :doc:`bk_Lowpower_problem_analysis`.
+
+Deep sleep description
+-----------------------------------------------
+
+ - Deep sleep: currently 2 votes are configured: BLE and WIFI:
+   - 1. System restarts after wakeup from deep sleep.
+   - 2. BLE and WIFI votes are set internally after BLE/WIFI enter sleep. This is handled by SDK and does not need application attention.
+
+ - When RTOS has no task to process, the system automatically enters IDLE task and performs WFI.
+   If deep sleep conditions are satisfied (deep sleep votes are ready), the system enters deep sleep.
+
+ - Conditions to enter deep sleep:
+   - 1. RTOS has no task to process, and the system enters IDLE task.
+   - 2. Deep sleep voting conditions are satisfied (BLE and WIFI enter sleep).
+
+   If deep sleep entry fails, refer to :doc:`bk_Lowpower_problem_analysis`.
+

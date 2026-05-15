@@ -1,38 +1,73 @@
-config wifi alive in low voltage sleep mode description
-===============================================================
+Wi-Fi Low Voltage Keep-Alive Configuration
+=======================================================
 
 :link_to_translation:`zh_CN:[中文]`
 
-config wifi alive using functions and the sequence illustrate
-------------------------------------------------------------------
-- 1. after you config the net work using BT, you not need bt again, please close it, which can achieve more better power save
+Function call sequence for Wi-Fi low voltage keep-alive
+--------------------------------------------------------------
+- 1. If BLE is used for provisioning and no longer needed, BLE can be turned off to achieve lower power consumption;
 
-  bk_bluetooth_deinit();
-  close BT
+    bk_bluetooth_deinit();
 
-- 2.bk_wifi_send_listen_interval_req(10);
+    Turn off BLE
 
-    set DTIM10(wakeup interval:1s);  if set 1 means DTIM1(wakeup interval:100ms)
+- 2. bk_wifi_send_listen_interval_req(10);
+
+    Set listen interval to 10;
 
 - 3. bk_pm_sleep_mode_set(PM_MODE_LOW_VOLTAGE);
 
-    set sleep mode: low voltage
+    Set sleep mode and enter low voltage sleep.
 
-- 4. demo_sta_app_init("a", "b");
+- 4. demo_sta_app_init("ssid", password");
 
-    conncet the ap（a:ap name;b:ap password）
+    Connect to AP (ssid: AP name; password: AP password)
 
 - 5. bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_APP,0x1,0x0);
 
-    vote the app ticket
+    Vote APP ticket to the system.
 
-(comment：make sure the device connected the ap and get the ip address, then call the function: bk_pm_module_vote_sleep_ctrl(),otherwise it can not wakeup the device through the network)
+(Note: The device must connect to AP and obtain an IP address before calling bk_pm_module_vote_sleep_ctrl() to vote APP ticket, otherwise the mobile device cannot wake up the test device through network.)
 
 
-comment::
+Notes:
 
- - 1. BT and WIFI tickets，which will be voted by themselves when they enter sleep. it has done them in SDK, the application not care them.
+ - 1. BLE and WIFI tickets are voted by BLE and WIFI modules after entering sleep. This is handled inside SDK and applications do not need to care.
 
- - 2. when the WIFI and BT not power on, the system will auto vote their sleep tickets.
+ - 2. When BLE or WIFI modules are not powered on in the system, the system automatically votes sleep tickets for these two modules.
 
- - 3. before entering sleep, it need close audio,video,cpu1,cpu2 first（if application open them).
+Wi-Fi low voltage keep-alive reference data
+--------------------------------------------------------------
+With default configuration CONFIG_DPD_CALI=y, the table below lists reference keep-alive current data under different supply voltages and different Wi-Fi bands. Test conditions: DTIM=10, device connected to AP, BLE turned off, and low voltage sleep mode entered:
+
++----------------+-----------+----------------------+
+| Supply Voltage | WiFi Band | Typical Current Value|
++================+===========+======================+
+| 3.3V           | 2.4G      | about 118uA          |
++----------------+-----------+----------------------+
+| 3.3V           | 5G        | about 130uA          |
++----------------+-----------+----------------------+
+| 5V             | 2.4G      | about 115uA          |
++----------------+-----------+----------------------+
+| 5V             | 5G        | about 118uA          |
++----------------+-----------+----------------------+
+
+When CONFIG_DPD_CALI=n, code can run in RAM and lower limit power can be achieved. The following table shows limit power data measured under the same test conditions:
+
++----------------+-----------+----------------------+
+| Supply Voltage | WiFi Band | Minimum Current Value|
++================+===========+======================+
+| 3.3V           | 2.4G      | about 98uA           |
++----------------+-----------+----------------------+
+| 3.3V           | 5G        | about 96uA           |
++----------------+-----------+----------------------+
+| 5V             | 2.4G      | about 87uA           |
++----------------+-----------+----------------------+
+| 5V             | 5G        | about 85uA           |
++----------------+-----------+----------------------+
+
+.. note::
+   1. Minimum power test conditions are the same as standard test conditions: DTIM=10, device connected to AP, BLE turned off
+   2. When ``CONFIG_DPD_CALI=n`` is configured, key code runs in RAM, reducing power consumption caused by loading code from Flash during wakeup
+   3. Actual power consumption may vary slightly due to specific application scenarios, hardware versions, and environmental factors
+
