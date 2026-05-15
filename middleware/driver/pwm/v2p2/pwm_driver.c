@@ -148,19 +148,11 @@ static void pwm0_isr(void);
 
 static void pwm_chan_init_gpio(pwm_chan_t sw_ch)
 {
-	gpio_id_t pin;
-	gpio_dev_t dev;
-
 	if (sw_ch >= SOC_PWM_CHAN_NUM_MAX) {
 		return;
 	}
-	dev = s_pwm_pin_map[sw_ch].gpio_dev;
-	pin = bk_gpio_map_find_pin_by_dev(dev);
-	if (pin >= SOC_GPIO_NUM) {
-		pin = s_pwm_pin_map[sw_ch].gpio_id;
-	}
-	bk_gpio_map_dev_to_pin(pin, dev);
-	bk_gpio_pull_up(pin);
+	bk_gpio_map_dev_to_pin(s_pwm_pin_map[sw_ch].gpio_id, s_pwm_pin_map[sw_ch].gpio_dev);
+	bk_gpio_pull_up(s_pwm_pin_map[sw_ch].gpio_id);
 }
 
 static void pwm_chan_init_common(pwm_chan_t sw_ch)

@@ -47,6 +47,5 @@ bk_err_t bk_gpio_ate_test_start(void);
 bk_err_t bk_gpio_ate_test_show(void);
 #endif
 
-void gpio_map_table_init(void);
 bk_err_t bk_gpio_map_set_ram_map_table(gpio_id_t gpio_id, gpio_dev_t dev);
 bk_err_t bk_gpio_map_clear_ram_map_table(gpio_id_t gpio_id);

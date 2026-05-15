@@ -105,45 +105,26 @@ static bk_err_t sdio_init_gpio(void)
 {
 	const sdio_gpio_map_t sdio_gpio_map_table[] = SDIO_GPIO_MAP;
 
-	gpio_id_t clk = bk_gpio_map_dev_to_pin(sdio_gpio_map_table[SDIO_GPIO_CLK_INDEX].gpio_id, GPIO_DEV_SDIO_HOST_CLK);
-	gpio_id_t cmd = bk_gpio_map_dev_to_pin(sdio_gpio_map_table[SDIO_GPIO_CMD_INDEX].gpio_id, GPIO_DEV_SDIO_HOST_CMD);
-	gpio_id_t d0 = bk_gpio_map_dev_to_pin(sdio_gpio_map_table[SDIO_GPIO_DATA0_INDEX].gpio_id, GPIO_DEV_SDIO_HOST_DATA0);
-#if CONFIG_SDIO_4LINES_EN
-	gpio_id_t d1 = bk_gpio_map_dev_to_pin(sdio_gpio_map_table[SDIO_GPIO_DATA1_INDEX].gpio_id, GPIO_DEV_SDIO_HOST_DATA1);
-	gpio_id_t d2 = bk_gpio_map_dev_to_pin(sdio_gpio_map_table[SDIO_GPIO_DATA2_INDEX].gpio_id, GPIO_DEV_SDIO_HOST_DATA2);
-	gpio_id_t d3 = bk_gpio_map_dev_to_pin(sdio_gpio_map_table[SDIO_GPIO_DATA3_INDEX].gpio_id, GPIO_DEV_SDIO_HOST_DATA3);
-#endif
-
 #if CONFIG_SDIO_4LINES_EN
 	gpio_sdio_sel(GPIO_SDIO_MAP_MODE0);
 #else
 	gpio_sdio_one_line_sel(GPIO_SDIO_MAP_MODE0);
 #endif
 
-	bk_gpio_pull_up(clk);
-	bk_gpio_set_capacity(clk, 3);
-	bk_gpio_pull_up(cmd);
-	bk_gpio_set_capacity(cmd, 3);
-	bk_gpio_pull_up(d0);
-	bk_gpio_set_capacity(d0, 3);
+	for (uint32_t i = 0; i < SDIO_GPIO_PIN_NUMBER; i++) {
+		bk_gpio_map_dev_to_pin(sdio_gpio_map_table[i].gpio_id, sdio_gpio_map_table[i].dev);
+		bk_gpio_pull_up(sdio_gpio_map_table[i].gpio_id);
+		bk_gpio_set_capacity(sdio_gpio_map_table[i].gpio_id, 3);
+	}
 
 #if CONFIG_IO_MATRIX_VER2_0
-	bk_iomx_set_gpio_func(clk, FUNC_CODE_SDIO_CLK);
-	bk_iomx_set_gpio_func(cmd, FUNC_CODE_SDIO_CMD);
-	bk_iomx_set_gpio_func(d0, FUNC_CODE_SDIO_DATA_0);
-#endif
-
+	bk_iomx_set_gpio_func(sdio_gpio_map_table[0].gpio_id, FUNC_CODE_SDIO_CLK);
+	bk_iomx_set_gpio_func(sdio_gpio_map_table[1].gpio_id, FUNC_CODE_SDIO_CMD);
+	bk_iomx_set_gpio_func(sdio_gpio_map_table[2].gpio_id, FUNC_CODE_SDIO_DATA_0);
 #if CONFIG_SDIO_4LINES_EN
-	bk_gpio_pull_up(d1);
-	bk_gpio_set_capacity(d1, 3);
-	bk_gpio_pull_up(d2);
-	bk_gpio_set_capacity(d2, 3);
-	bk_gpio_pull_up(d3);
-	bk_gpio_set_capacity(d3, 3);
-#if CONFIG_IO_MATRIX_VER2_0
-	bk_iomx_set_gpio_func(d1, FUNC_CODE_SDIO_DATA_1);
-	bk_iomx_set_gpio_func(d2, FUNC_CODE_SDIO_DATA_2);
-	bk_iomx_set_gpio_func(d3, FUNC_CODE_SDIO_DATA_3);
+	bk_iomx_set_gpio_func(sdio_gpio_map_table[3].gpio_id, FUNC_CODE_SDIO_DATA_1);
+	bk_iomx_set_gpio_func(sdio_gpio_map_table[4].gpio_id, FUNC_CODE_SDIO_DATA_2);
+	bk_iomx_set_gpio_func(sdio_gpio_map_table[5].gpio_id, FUNC_CODE_SDIO_DATA_3);
 #endif
 #endif
 
@@ -1249,7 +1230,7 @@ static void sdio_host_isr(void)
 			if(s_sdio_host.dma_rx_en)
 				SDIO_HOST_LOGD("DMA read blk end\r\n");	//do nothing
 			else
-				rtos_set_semaphore(&s_sdio_host.rx_sema);			
+				rtos_set_semaphore(&s_sdio_host.rx_sema);
 #else
 			rtos_set_semaphore(&s_sdio_host.rx_sema);
 #endif

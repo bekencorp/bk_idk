@@ -127,10 +127,10 @@ typedef struct {
 } while(0)
 
 #define I2C_SET_PIN(id) do {\
-	gpio_id_t scl = bk_gpio_map_dev_to_pin(I2C##id##_LL_SCL_PIN, GPIO_DEV_I2C##id##_SCL);\
-	gpio_id_t sda = bk_gpio_map_dev_to_pin(I2C##id##_LL_SDA_PIN, GPIO_DEV_I2C##id##_SDA);\
-	bk_gpio_pull_up(scl);\
-	bk_gpio_pull_up(sda);\
+	bk_gpio_map_dev_to_pin(I2C##id##_LL_SCL_PIN, GPIO_DEV_I2C##id##_SCL);\
+	bk_gpio_map_dev_to_pin(I2C##id##_LL_SDA_PIN, GPIO_DEV_I2C##id##_SDA);\
+	bk_gpio_pull_up(I2C##id##_LL_SCL_PIN);\
+	bk_gpio_pull_up(I2C##id##_LL_SDA_PIN);\
 } while(0)
 
 #if CONFIG_SPE

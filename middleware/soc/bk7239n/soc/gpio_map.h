@@ -179,18 +179,11 @@ extern "C" {
 #define UART3_RX_PIN  GPIO_15
 
 /* sdio host */
-#if CONFIG_SDCARD_BUSWIDTH_4LINE
+#if CONFIG_SDIO_4LINES_EN
 #define SDIO_GPIO_PIN_NUMBER    6
 #else
 #define SDIO_GPIO_PIN_NUMBER    3
 #endif
-
-#define SDIO_GPIO_CLK_INDEX     0
-#define SDIO_GPIO_CMD_INDEX     1
-#define SDIO_GPIO_DATA0_INDEX   2
-#define SDIO_GPIO_DATA1_INDEX   3
-#define SDIO_GPIO_DATA2_INDEX   4
-#define SDIO_GPIO_DATA3_INDEX   5
 
 #define SDIO_GPIO_MAP \
 {\

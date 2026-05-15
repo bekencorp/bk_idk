@@ -300,8 +300,10 @@ static void uart_interrupt_disable(uart_id_t id)
 #endif
 
 #define UART_SET_PIN(id, dev_txd, dev_rxd) do {\
-	gpio_id_t tx = bk_gpio_map_dev_to_pin(uart_hal_get_tx_pin(id), (dev_txd));\
-	gpio_id_t rx = bk_gpio_map_dev_to_pin(uart_hal_get_rx_pin(id), (dev_rxd));\
+	gpio_id_t tx = uart_hal_get_tx_pin(id);\
+	gpio_id_t rx = uart_hal_get_rx_pin(id);\
+	bk_gpio_map_dev_to_pin(tx, (dev_txd));\
+	bk_gpio_map_dev_to_pin(rx, (dev_rxd));\
 	bk_gpio_pull_up(tx);\
 	bk_gpio_pull_up(rx);\
 } while(0)
@@ -317,8 +319,10 @@ static void uart_init_gpio(uart_id_t id)
 		UART_SET_PIN(id, GPIO_DEV_UART1_TXD, GPIO_DEV_UART1_RXD);
 #if CONFIG_UART1_FLOW_CTRL
 		{
-			gpio_id_t cts = bk_gpio_map_dev_to_pin(uart_hal_get_cts_pin(id), GPIO_DEV_UART1_CTS);
-			gpio_id_t rts = bk_gpio_map_dev_to_pin(uart_hal_get_rts_pin(id), GPIO_DEV_UART1_RTS);
+			gpio_id_t cts = uart_hal_get_cts_pin(id);
+			gpio_id_t rts = uart_hal_get_rts_pin(id);
+			bk_gpio_map_dev_to_pin(cts, GPIO_DEV_UART1_CTS);
+			bk_gpio_map_dev_to_pin(rts, GPIO_DEV_UART1_RTS);
 			bk_gpio_enable_output(cts);
 			bk_gpio_enable_input(rts);
 			bk_gpio_pull_down(cts);

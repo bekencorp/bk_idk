@@ -55,7 +55,7 @@ static void gpio_map_table_set_default_mappings(void)
 	}
 }
 
-void gpio_map_table_init(void)
+static void gpio_map_table_init(void)
 {
 	if (s_gpio_map_initialized) {
 		return;
@@ -70,6 +70,41 @@ void gpio_map_table_init(void)
 	s_gpio_map_initialized = true;
 	GPIO_LOGD("gpio map table initialized, RAM size: %d bytes\r\n",
 		   (int)(SOC_GPIO_NUM * sizeof(gpio_dev_t)));
+}
+
+static gpio_dev_t gpio_map_find_dev_by_pin(gpio_id_t gpio_id)
+{
+	if (!gpio_map_is_valid_id(gpio_id)) {
+		GPIO_LOGD("find_dev_by_pin: invalid gpio id %d\r\n", gpio_id);
+		return GPIO_DEV_INVALID;
+	}
+
+	if (!s_gpio_map_initialized) {
+		gpio_map_table_init();
+	}
+
+	return s_gpio_dev_map_ram[gpio_id];
+}
+
+static gpio_id_t gpio_map_find_pin_by_dev(gpio_dev_t dev)
+{
+	if (dev == GPIO_DEV_NONE || !gpio_map_is_valid_dev(dev)) {
+		GPIO_LOGD("find_pin_by_dev: invalid dev 0x%x\r\n", (unsigned int)dev);
+		return GPIO_NUM;
+	}
+
+	if (!s_gpio_map_initialized) {
+		gpio_map_table_init();
+	}
+
+	for (uint32_t i = 0; i < SOC_GPIO_NUM; i++) {
+		if (s_gpio_dev_map_ram[i] == dev) {
+			return (gpio_id_t)i;
+		}
+	}
+
+	GPIO_LOGD("find_pin_by_dev: dev 0x%x not in map\r\n", (unsigned int)dev);
+	return GPIO_NUM;
 }
 
 bk_err_t bk_gpio_map_set_ram_map_table(gpio_id_t gpio_id, gpio_dev_t dev)
@@ -97,41 +132,6 @@ bk_err_t bk_gpio_map_set_ram_map_table(gpio_id_t gpio_id, gpio_dev_t dev)
 	return BK_OK;
 }
 
-gpio_dev_t bk_gpio_map_find_dev_by_pin(gpio_id_t gpio_id)
-{
-	if (!gpio_map_is_valid_id(gpio_id)) {
-		GPIO_LOGD("find_dev_by_pin: invalid gpio id %d\r\n", gpio_id);
-		return GPIO_DEV_INVALID;
-	}
-
-	if (!s_gpio_map_initialized) {
-		gpio_map_table_init();
-	}
-
-	return s_gpio_dev_map_ram[gpio_id];
-}
-
-gpio_id_t bk_gpio_map_find_pin_by_dev(gpio_dev_t dev)
-{
-	if (dev == GPIO_DEV_NONE || !gpio_map_is_valid_dev(dev)) {
-		GPIO_LOGD("find_pin_by_dev: invalid dev 0x%x\r\n", (unsigned int)dev);
-		return GPIO_NUM;
-	}
-
-	if (!s_gpio_map_initialized) {
-		gpio_map_table_init();
-	}
-
-	for (uint32_t i = 0; i < SOC_GPIO_NUM; i++) {
-		if (s_gpio_dev_map_ram[i] == dev) {
-			return (gpio_id_t)i;
-		}
-	}
-
-	GPIO_LOGD("find_pin_by_dev: dev 0x%x not in map\r\n", (unsigned int)dev);
-	return GPIO_NUM;
-}
-
 bk_err_t bk_gpio_map_clear_ram_map_table(gpio_id_t gpio_id)
 {
 	if (!gpio_map_is_valid_id(gpio_id)) {
@@ -141,33 +141,41 @@ bk_err_t bk_gpio_map_clear_ram_map_table(gpio_id_t gpio_id)
 	return bk_gpio_map_set_ram_map_table(gpio_id, GPIO_DEV_NONE);
 }
 
-gpio_id_t bk_gpio_map_dev_to_pin(gpio_id_t default_pin, gpio_dev_t dev)
+bk_err_t bk_gpio_map_dev_to_pin(gpio_id_t gpio_id, gpio_dev_t dev)
 {
-	gpio_id_t old_pin, pin_to_use;
+	gpio_id_t old_pin;
 	bk_err_t ret;
+
+	if (!gpio_map_is_valid_id(gpio_id)) {
+		GPIO_LOGE("bk_gpio_map_dev_to_pin: invalid gpio id %d\r\n", gpio_id);
+		return BK_ERR_GPIO_INVALID_ID;
+	}
+	if (!gpio_map_is_valid_dev(dev)) {
+		GPIO_LOGE("bk_gpio_map_dev_to_pin: invalid dev 0x%x\r\n", (unsigned int)dev);
+		return BK_ERR_GPIO_SET_INVALID_FUNC_MODE;
+	}
 
 	if (!s_gpio_map_initialized)
 		gpio_map_table_init();
 
-	old_pin = bk_gpio_map_find_pin_by_dev(dev);
-	pin_to_use = (old_pin != GPIO_NUM && old_pin < SOC_GPIO_NUM) ? old_pin : default_pin;
-
-	if (old_pin != GPIO_NUM && old_pin < SOC_GPIO_NUM && old_pin != pin_to_use) {
+	/* If dev is already mapped to another pin, unmap it first */
+	old_pin = gpio_map_find_pin_by_dev(dev);
+	if (old_pin != GPIO_NUM && old_pin != gpio_id) {
 		ret = gpio_dev_unmap(old_pin);
 		if (ret != BK_OK) {
 			GPIO_LOGE("bk_gpio_map_dev_to_pin: unmap old pin %d for dev 0x%x failed, ret=%d\r\n",
 				  old_pin, (unsigned int)dev, ret);
-			return GPIO_NUM;
+			return ret;
 		}
 	}
 
-	ret = gpio_dev_map(pin_to_use, dev);
+	ret = gpio_dev_map(gpio_id, dev);
 	if (ret != BK_OK) {
 		GPIO_LOGE("bk_gpio_map_dev_to_pin: map pin %d for dev 0x%x failed, ret=%d\r\n",
-				  pin_to_use, (unsigned int)dev, ret);
-		return GPIO_NUM;
+				  gpio_id, (unsigned int)dev, ret);
+		return ret;
 	}
 
-	return pin_to_use;
+	return BK_OK;
 }
 
