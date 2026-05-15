@@ -34,16 +34,25 @@ static void cli_uart_help(void)
 
 static void cli_uart_driver_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
+	bk_err_t ret = BK_OK;
 	if (argc < 2) {
 		cli_uart_help();
 		return;
 	}
 
 	if (os_strcmp(argv[1], "init") == 0) {
-		BK_LOG_ON_ERR(bk_uart_driver_init());
+		ret = bk_uart_driver_init();
+		if (ret != BK_OK) {
+			CLI_LOGE("uart driver init failed, ret:-0x%x\n", -ret);
+			return;
+		}
 		CLI_LOGI("uart driver init\n");
 	} else if (os_strcmp(argv[1], "deinit") == 0) {
-		BK_LOG_ON_ERR(bk_uart_driver_deinit());
+		ret = bk_uart_driver_deinit();
+		if (ret != BK_OK) {
+			CLI_LOGE("uart driver deinit failed, ret:-0x%x\n", -ret);
+			return;
+		}
 		CLI_LOGI("uart driver deinit\n");
 	} else {
 		cli_uart_help();
@@ -54,6 +63,7 @@ static void cli_uart_driver_cmd(char *pcWriteBuffer, int xWriteBufferLen, int ar
 static void cli_uart_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
 	uint32_t uart_id;
+	bk_err_t ret = BK_OK;
 
 	if (argc < 2) {
 		cli_uart_help();
@@ -83,11 +93,23 @@ static void cli_uart_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, cha
 			config.tx_dma_en = os_strtoul(argv[10], NULL, 10);
 		}
 
-		BK_LOG_ON_ERR(bk_uart_init(uart_id, &config));
-		BK_LOG_ON_ERR(bk_uart_enable_rx_interrupt(uart_id));
+		ret = bk_uart_init(uart_id, &config);
+		if (ret != BK_OK) {
+			CLI_LOGE("uart init failed, uart_id=%d, ret:-0x%x\n", uart_id, -ret);
+			return;
+		}
+		ret = bk_uart_enable_rx_interrupt(uart_id);
+		if (ret != BK_OK) {
+			CLI_LOGE("uart enable rx interrupt failed, uart_id=%d, ret:-0x%x\n", uart_id, -ret);
+			return;
+		}
 		CLI_LOGI("uart init, uart_id=%d\n", uart_id);
 	} else if (os_strcmp(argv[2], "deinit") == 0) {
-		BK_LOG_ON_ERR(bk_uart_deinit(uart_id));
+		ret = bk_uart_deinit(uart_id);
+		if (ret != BK_OK) {
+			CLI_LOGE("uart deinit failed, uart_id=%d, ret:-0x%x\n", uart_id, -ret);
+			return;
+		}
 		CLI_LOGI("uart deinit, uart_id=%d\n", uart_id);
 	} else if (os_strcmp(argv[2], "write") == 0) {
 		uint32_t buf_len = os_strtoul(argv[3], NULL, 10);
@@ -100,11 +122,15 @@ static void cli_uart_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, cha
 		for (int i = 0; i < buf_len; i++) {
 			send_data[i] = i & 0xff;
 		}
-		BK_LOG_ON_ERR(bk_uart_write_bytes(uart_id, send_data, buf_len));
+		ret = bk_uart_write_bytes(uart_id, send_data, buf_len);
 		if (send_data) {
 			os_free(send_data);
 		}
 		send_data = NULL;
+		if (ret != BK_OK) {
+			CLI_LOGE("uart write failed, uart_id=%d, ret:-0x%x\n", uart_id, -ret);
+			return;
+		}
 		CLI_LOGI("uart write, uart_id=%d, data_len:%d\n", uart_id, buf_len);
 	} else if (os_strcmp(argv[2], "read") == 0) {
 		uint32_t buf_len = os_strtoul(argv[3], NULL, 10);
@@ -133,7 +159,11 @@ exit:
 		recv_data = NULL;
 	} else if (os_strcmp(argv[2], "write_string") == 0) {
 		char send_data[] = "beken uart write string test\r\n";
-		BK_LOG_ON_ERR(bk_uart_write_bytes(uart_id, send_data, os_strlen(send_data)));
+		ret = bk_uart_write_bytes(uart_id, send_data, os_strlen(send_data));
+		if (ret != BK_OK) {
+			CLI_LOGE("uart write string failed, uart_id=%d, ret:-0x%x\n", uart_id, -ret);
+			return;
+		}
 		CLI_LOGI("uart write string, uart_id=%d, data_len:%d\n", uart_id, os_strlen(send_data));
 	}
 #if CONFIG_UART_STATIS
@@ -154,6 +184,7 @@ exit:
 static void cli_uart_config_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
 	uint32_t uart_id;
+	bk_err_t ret = BK_OK;
 
 	if (argc < 4) {
 		cli_uart_help();
@@ -165,42 +196,74 @@ static void cli_uart_config_cmd(char *pcWriteBuffer, int xWriteBufferLen, int ar
 	if (os_strcmp(argv[2], "baud_rate") == 0) {
 		CLI_RET_ON_INVALID_ARGC(argc, 4);
 		uint32_t baud_rate = os_strtoul(argv[3], NULL, 10);
-		BK_LOG_ON_ERR(bk_uart_set_baud_rate(uart_id, baud_rate));
+		ret = bk_uart_set_baud_rate(uart_id, baud_rate);
+		if (ret != BK_OK) {
+			CLI_LOGE("uart(%d) set baud_rate failed, ret:-0x%x\n", uart_id, -ret);
+			return;
+		}
 		CLI_LOGI("uart(%d) config baud_rate:%d\n", uart_id, baud_rate);
 	} else if (os_strcmp(argv[2], "data_bits") == 0) {
 		CLI_RET_ON_INVALID_ARGC(argc, 4);
 		uint32_t data_bits = os_strtoul(argv[3], NULL, 10);
-		BK_LOG_ON_ERR(bk_uart_set_data_bits(uart_id, data_bits));
+		ret = bk_uart_set_data_bits(uart_id, data_bits);
+		if (ret != BK_OK) {
+			CLI_LOGE("uart(%d) set data_bits failed, ret:-0x%x\n", uart_id, -ret);
+			return;
+		}
 		CLI_LOGI("uart(%d) config data_bits:%d\n", uart_id, data_bits);
 	} else if (os_strcmp(argv[2], "stop_bits") == 0) {
 		CLI_RET_ON_INVALID_ARGC(argc, 4);
 		uint32_t stop_bits = os_strtoul(argv[3], NULL, 10);
-		BK_LOG_ON_ERR(bk_uart_set_stop_bits(uart_id, stop_bits));
+		ret = bk_uart_set_stop_bits(uart_id, stop_bits);
+		if (ret != BK_OK) {
+			CLI_LOGE("uart(%d) set stop_bits failed, ret:-0x%x\n", uart_id, -ret);
+			return;
+		}
 		CLI_LOGI("uart(%d) config stop_bits:%d\n", uart_id, stop_bits);
 	} else if (os_strcmp(argv[2], "parity") == 0) {
 		CLI_RET_ON_INVALID_ARGC(argc, 4);
 		uint32_t parity = os_strtoul(argv[3], NULL, 10);
-		BK_LOG_ON_ERR(bk_uart_set_parity(uart_id, parity));
+		ret = bk_uart_set_parity(uart_id, parity);
+		if (ret != BK_OK) {
+			CLI_LOGE("uart(%d) set parity failed, ret:-0x%x\n", uart_id, -ret);
+			return;
+		}
 		CLI_LOGI("uart(%d) config parity:%d\n", uart_id, parity);
 	} else if (os_strcmp(argv[2], "flow_ctrl") == 0) {
 		CLI_RET_ON_INVALID_ARGC(argc, 4);
 		uint32_t rx_threshold = os_strtoul(argv[3], NULL, 10);
-		BK_LOG_ON_ERR(bk_uart_set_hw_flow_ctrl(uart_id, rx_threshold));
+		ret = bk_uart_set_hw_flow_ctrl(uart_id, rx_threshold);
+		if (ret != BK_OK) {
+			CLI_LOGE("uart(%d) set flow_ctrl failed, ret:-0x%x\n", uart_id, -ret);
+			return;
+		}
 		CLI_LOGI("uart(%d) config flow_ctrl:%d\n", uart_id, rx_threshold);
 	} else if (os_strcmp(argv[2], "rx_thresh") == 0) {
 		CLI_RET_ON_INVALID_ARGC(argc, 4);
 		uint32_t rx_thresh = os_strtoul(argv[3], NULL, 10);
-		BK_LOG_ON_ERR(bk_uart_set_rx_full_threshold(uart_id, rx_thresh));
+		ret = bk_uart_set_rx_full_threshold(uart_id, rx_thresh);
+		if (ret != BK_OK) {
+			CLI_LOGE("uart(%d) set rx_thresh failed, ret:-0x%x\n", uart_id, -ret);
+			return;
+		}
 		CLI_LOGI("uart(%d) config rx_thresh:%d\n", uart_id, rx_thresh);
 	} else if (os_strcmp(argv[2], "tx_thresh") == 0) {
 		CLI_RET_ON_INVALID_ARGC(argc, 4);
 		uint32_t tx_thresh = os_strtoul(argv[3], NULL, 10);
-		BK_LOG_ON_ERR(bk_uart_set_tx_empty_threshold(uart_id, tx_thresh));
+		ret = bk_uart_set_tx_empty_threshold(uart_id, tx_thresh);
+		if (ret != BK_OK) {
+			CLI_LOGE("uart(%d) set tx_thresh failed, ret:-0x%x\n", uart_id, -ret);
+			return;
+		}
 		CLI_LOGI("uart(%d) config tx_thresh:%d\n", uart_id, tx_thresh);
 	} else if (os_strcmp(argv[2], "rx_timeout") == 0) {
 		CLI_RET_ON_INVALID_ARGC(argc, 4);
 		uint32_t timeout_thresh = os_strtoul(argv[3], NULL, 10);
-		BK_LOG_ON_ERR(bk_uart_set_rx_timeout(uart_id, timeout_thresh));
+		ret = bk_uart_set_rx_timeout(uart_id, timeout_thresh);
+		if (ret != BK_OK) {
+			CLI_LOGE("uart(%d) set rx_timeout failed, ret:-0x%x\n", uart_id, -ret);
+			return;
+		}
 		CLI_LOGI("uart(%d) config rx_timeout:%d\n", uart_id, timeout_thresh);
 	} else if (os_strcmp(argv[2], "clk_select") == 0) {
 		CLI_RET_ON_INVALID_ARGC(argc, 4);
@@ -237,6 +300,7 @@ static void cli_uart_tx_isr(uart_id_t id, void *param)
 static void cli_uart_int_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
 	uint32_t uart_id;
+	bk_err_t ret = BK_OK;
 
 	if (argc != 4) {
 		cli_uart_help();
@@ -248,27 +312,51 @@ static void cli_uart_int_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
 	if (os_strcmp(argv[2], "enable") == 0) {
 		if (os_strcmp(argv[3], "tx") == 0) {
 			bk_uart_set_enable_tx(uart_id, 1);
-			BK_LOG_ON_ERR(bk_uart_enable_tx_interrupt(uart_id));
+			ret = bk_uart_enable_tx_interrupt(uart_id);
+			if (ret != BK_OK) {
+				CLI_LOGE("uart id:%d enable tx interrupt failed, ret:-0x%x\n", uart_id, -ret);
+				return;
+			}
 			CLI_LOGI("uart id:%d enable tx interrupt\n", uart_id);
 		} else {
 			bk_uart_set_enable_rx(uart_id, 1);
-			BK_LOG_ON_ERR(bk_uart_enable_rx_interrupt(uart_id));
+			ret = bk_uart_enable_rx_interrupt(uart_id);
+			if (ret != BK_OK) {
+				CLI_LOGE("uart id:%d enable rx interrupt failed, ret:-0x%x\n", uart_id, -ret);
+				return;
+			}
 			CLI_LOGI("uart id:%d enable rx interrupt\n", uart_id);
 		}
 	} else if (os_strcmp(argv[2], "disable") == 0) {
 		if (os_strcmp(argv[3], "tx") == 0) {
-			BK_LOG_ON_ERR(bk_uart_disable_tx_interrupt(uart_id));
+			ret = bk_uart_disable_tx_interrupt(uart_id);
+			if (ret != BK_OK) {
+				CLI_LOGE("uart id:%d disable tx interrupt failed, ret:-0x%x\n", uart_id, -ret);
+				return;
+			}
 			CLI_LOGI("uart id:%d disable tx interrupt\n", uart_id);
 		} else {
-			BK_LOG_ON_ERR(bk_uart_disable_rx_interrupt(uart_id));
+			ret = bk_uart_disable_rx_interrupt(uart_id);
+			if (ret != BK_OK) {
+				CLI_LOGE("uart id:%d disable rx interrupt failed, ret:-0x%x\n", uart_id, -ret);
+				return;
+			}
 			CLI_LOGI("uart id:%d disable rx interrupt\n", uart_id);
 		}
 	} else if (os_strcmp(argv[2], "reg") == 0) {
 		if (os_strcmp(argv[3], "tx") == 0) {
-			BK_LOG_ON_ERR(bk_uart_register_tx_isr(uart_id, cli_uart_tx_isr, NULL));
+			ret = bk_uart_register_tx_isr(uart_id, cli_uart_tx_isr, NULL);
+			if (ret != BK_OK) {
+				CLI_LOGE("uart id:%d register tx isr failed, ret:-0x%x\n", uart_id, -ret);
+				return;
+			}
 			CLI_LOGI("uart id:%d register tx interrupt isr\n", uart_id);
 		} else {
-			BK_LOG_ON_ERR(bk_uart_register_rx_isr(uart_id, cli_uart_rx_isr, NULL));
+			ret = bk_uart_register_rx_isr(uart_id, cli_uart_rx_isr, NULL);
+			if (ret != BK_OK) {
+				CLI_LOGE("uart id:%d register rx isr failed, ret:-0x%x\n", uart_id, -ret);
+				return;
+			}
 			CLI_LOGI("uart id:%d register rx interrupt isr\n", uart_id);
 		}
 	} else {

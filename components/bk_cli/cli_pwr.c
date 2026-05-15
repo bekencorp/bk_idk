@@ -511,6 +511,8 @@ static void cli_pm_vote_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
 		;//do something
 	}
 	pm_printf_current_temperature();
+	os_printf("pm_vote set ok mode=%d vote=%d value=%d time=%d\r\n",
+			pm_sleep_mode, pm_vote, pm_vote_value, pm_sleep_time);
 }
 #if CONFIG_DEBUG_FIRMWARE
 static void cli_pm_vol(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
@@ -530,6 +532,7 @@ static void cli_pm_vol(char *pcWriteBuffer, int xWriteBufferLen, int argc, char 
 	}
 
 	bk_pm_lp_vol_set(pm_vol);
+	os_printf("pm_vol set ok %d\r\n", pm_vol);
 
 }
 static void cli_pm_clk(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
@@ -550,6 +553,7 @@ static void cli_pm_clk(char *pcWriteBuffer, int xWriteBufferLen, int argc, char 
 		return;
 	}
 	bk_pm_clock_ctrl(pm_module_id,pm_clk_state);
+	os_printf("pm_clk set ok module=%d state=%d\r\n", pm_module_id, pm_clk_state);
 
 }
 static void cli_pm_power(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
@@ -571,6 +575,7 @@ static void cli_pm_power(char *pcWriteBuffer, int xWriteBufferLen, int argc, cha
 	}
 
 	bk_pm_module_vote_power_ctrl(pm_module_id,pm_power_state);
+	os_printf("pm_power set ok module=%d state=%d\r\n", pm_module_id, pm_power_state);
 
 }
 static void cli_pm_freq(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
@@ -620,6 +625,7 @@ static void cli_pm_lpo(char *pcWriteBuffer, int xWriteBufferLen, int argc, char 
 	}
 
 	bk_pm_lpo_src_set(pm_lpo);
+	os_printf("pm_lpo set ok %d\r\n", pm_lpo);
 #endif
 }
 static void cli_pm_ctrl(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
@@ -639,6 +645,7 @@ static void cli_pm_ctrl(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
 	}
 
 	bk_pm_mcu_pm_ctrl(pm_ctrl);
+	os_printf("pm_ctrl set ok %d\r\n", pm_ctrl);
 
 }
 static void cli_pm_pwr_state(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
@@ -678,6 +685,7 @@ static void cli_pm_auto_vote(char *pcWriteBuffer, int xWriteBufferLen, int argc,
 		return;
 	}
 	bk_pm_module_vote_sleep_ctrl(PM_SLEEP_MODULE_NAME_APP,0x0,0x0);
+	os_printf("pm_auto_vote set ok %d\r\n", pm_ctrl);
 }
 
 #define CLI_DVFS_FREQUNCY_DIV_MAX      (15)
@@ -1218,6 +1226,7 @@ static void cli_pm_cp1_ctrl(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
 
 	cp1_ctrl   = os_strtoul(argv[1], NULL, 10);
 	bk_pm_cp1_auto_power_down_state_set(cp1_ctrl);
+	os_printf("pm_cp1_ctrl set ok %d\r\n", cp1_ctrl);
 #endif
 }
 static void cli_pm_boot_cp1(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
@@ -1233,6 +1242,7 @@ static void cli_pm_boot_cp1(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
 	module_name   = os_strtoul(argv[1], NULL, 10);
 	boot_cp1_state   = os_strtoul(argv[2], NULL, 10);
 	bk_pm_module_vote_boot_cp1_ctrl(module_name,boot_cp1_state);
+	os_printf("pm_boot_cp1 set ok module=%d state=%d\r\n", module_name, boot_cp1_state);
 #endif
 }
 #if (CONFIG_CPU_CNT > 2)
@@ -1249,6 +1259,7 @@ static void cli_pm_boot_cp2(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
 	module_name   = os_strtoul(argv[1], NULL, 10);
 	boot_cp2_state   = os_strtoul(argv[2], NULL, 10);
 	bk_pm_module_vote_boot_cp2_ctrl(module_name,boot_cp2_state);
+	os_printf("pm_boot_cp2 set ok module=%d state=%d\r\n", module_name, boot_cp2_state);
 #endif
 }
 #endif//CONFIG_CPU_CNT > 2
@@ -1267,6 +1278,7 @@ static void cli_pm_ldo(char *pcWriteBuffer, int xWriteBufferLen, int argc, char 
 	gpio_id               = os_strtoul(argv[2], NULL, 10);
 	gpio_output_state_e   = os_strtoul(argv[3], NULL, 10);
 	bk_pm_module_vote_ctrl_external_ldo(module_name,gpio_id,gpio_output_state_e);
+	os_printf("pm_ldo set ok module=%d gpio=%d state=%d\r\n", module_name, gpio_id, gpio_output_state_e);
 //#endif
 }
 static void cli_pm_psram(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
@@ -1283,6 +1295,7 @@ static void cli_pm_psram(char *pcWriteBuffer, int xWriteBufferLen, int argc, cha
 	module_name         = os_strtoul(argv[1], NULL, 10);
 	power_psram_state   = os_strtoul(argv[2], NULL, 10);
 	bk_pm_module_vote_psram_ctrl(module_name,power_psram_state);
+	os_printf("pm_psram set ok module=%d state=%d\r\n", module_name, power_psram_state);
 #endif
 #endif
 }
@@ -1524,6 +1537,7 @@ static void cli_pm_buck(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
 	flag = os_strtoul(argv[1], NULL, 10);
 
 	sys_hal_buck_switch(flag);
+	os_printf("pm_buck set ok %d\r\n", flag);
 }
 #endif
 #if CONFIG_SOC_BK7236XX
@@ -1569,6 +1583,7 @@ static void cli_pm_gpio(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
 
 	if(flag)
 		gpio_hal_switch_to_low_power_status(0xC00);
+	os_printf("pm_gpio set ok %d\r\n", flag);
 #endif
 }
 static void cli_pm_vcore(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
@@ -1585,6 +1600,7 @@ static void cli_pm_vcore(char *pcWriteBuffer, int xWriteBufferLen, int argc, cha
 	extern void sys_hal_v_core_h_sel(uint32_t value);
 
 	sys_hal_v_core_h_sel(value);
+	os_printf("pm_vcore set ok %d\r\n", value);
 #endif
 }
 #endif

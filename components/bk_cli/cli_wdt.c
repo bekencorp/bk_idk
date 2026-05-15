@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <os/os.h>
+#include <stdbool.h>
 #include "cli.h"
 #include <driver/wdt.h>
 #include "wdt_driver.h"
@@ -22,6 +23,16 @@
 #include "aon_pmu_driver.h"
 #include "sys_types.h"
 #endif
+
+static bool cli_wdt_log_ret(const char *op_name, bk_err_t ret)
+{
+	if (ret != BK_OK) {
+		CLI_LOGE("%s failed, ret=%d\n", op_name, ret);
+		return false;
+	}
+
+	return true;
+}
 
 static void cli_wdt_help(void)
 {
@@ -45,10 +56,16 @@ static void cli_wdt_driver_cmd(char *pcWriteBuffer, int xWriteBufferLen, int arg
 	}
 
 	if (os_strcmp(argv[1], "init") == 0) {
-		BK_LOG_ON_ERR(bk_wdt_driver_init());
+		bk_err_t ret = bk_wdt_driver_init();
+		if (!cli_wdt_log_ret("wdt driver init", ret)) {
+			return;
+		}
 		CLI_LOGI("wdt driver init\n");
 	} else if (os_strcmp(argv[1], "deinit") == 0) {
-		BK_LOG_ON_ERR(bk_wdt_driver_deinit());
+		bk_err_t ret = bk_wdt_driver_deinit();
+		if (!cli_wdt_log_ret("wdt driver deinit", ret)) {
+			return;
+		}
 		CLI_LOGI("wdt driver deinit\n");
 	} else {
 		cli_wdt_help();
@@ -64,20 +81,36 @@ static void cli_wdt_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
 	}
 
 	if (os_strcmp(argv[1], "start") == 0) {
+		if (argc < 3) {
+			CLI_LOGE("usage: wdt start <timeout>\n");
+			return;
+		}
 		uint32_t timeout = os_strtoul(argv[2], NULL, 10);
-		BK_LOG_ON_ERR(bk_wdt_start(timeout));
+		bk_err_t ret = bk_wdt_start(timeout);
+		if (!cli_wdt_log_ret("wdt start", ret)) {
+			return;
+		}
 		CLI_LOGI("wdt start, timeout=%d\n", timeout);
 	} else if (os_strcmp(argv[1], "stop") == 0) {
-		BK_LOG_ON_ERR(bk_wdt_stop());
+		bk_err_t ret = bk_wdt_stop();
+		if (!cli_wdt_log_ret("wdt stop", ret)) {
+			return;
+		}
 #if (CONFIG_TASK_WDT)
 		bk_task_wdt_stop();
 #endif
 		CLI_LOGI("wdt stop\n");
 	}else if (os_strcmp(argv[1], "feed") == 0) {
-		BK_LOG_ON_ERR(bk_wdt_feed());
+		bk_err_t ret = bk_wdt_feed();
+		if (!cli_wdt_log_ret("wdt feed", ret)) {
+			return;
+		}
 		CLI_LOGI("wdt feed\n");
 	}else if (os_strcmp(argv[1], "disable") == 0) {
-		bk_wdt_stop();
+		bk_err_t ret = bk_wdt_stop();
+		if (!cli_wdt_log_ret("wdt disable", ret)) {
+			return;
+		}
 #if (CONFIG_TASK_WDT)
 		bk_task_wdt_stop();
 #endif
@@ -99,14 +132,31 @@ static void cli_wdt_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
 				CLI_LOGE("clkdiv must be 0..3 (0:/2 1:/4 2:/8 3:/16)\n");
 				return;
 			}
+
+			/* Changing clkdiv while WDT is running can immediately shrink the
+			 * remaining timeout window and trigger a reset. Stop it first and
+			 * let the user restart with a suitable timeout after reconfiguring.
+			 */
+			(void)bk_wdt_stop();
+#if (CONFIG_TASK_WDT)
+			bk_task_wdt_stop();
+#endif
+
 			sys_hal_nmi_wdt_set_clk_div(v);
 			CLI_LOGI("nmi_wdt ckdiv_wdt=%u -> wdt_clk = LPO_16K / %u\n", v, 2u << v);
+			CLI_LOGI("wdt stopped before clkdiv change, run 'wdt start <timeout>' to restart\n");
 		}
 	} else if (os_strcmp(argv[1], "feed_stop") == 0) {
-		BK_LOG_ON_ERR(bk_wdt_timer_feed_stop());
+		bk_err_t ret = bk_wdt_timer_feed_stop();
+		if (!cli_wdt_log_ret("wdt feed_stop", ret)) {
+			return;
+		}
 		CLI_LOGI("WDT auto-feed timer stopped (will reset if wdt running and not fed)\n");
 	} else if (os_strcmp(argv[1], "feed_resume") == 0) {
-		BK_LOG_ON_ERR(bk_wdt_timer_feed_resume());
+		bk_err_t ret = bk_wdt_timer_feed_resume();
+		if (!cli_wdt_log_ret("wdt feed_resume", ret)) {
+			return;
+		}
 		CLI_LOGI("WDT auto-feed timer resumed\n");
 #if CONFIG_SYSTEM_CTRL
 	} else if (os_strcmp(argv[1], "pmu_r2") == 0) {

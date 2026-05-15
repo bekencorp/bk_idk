@@ -21,6 +21,7 @@
 #include <driver/i2c.h>
 #include <driver/gpio.h>
 #include "gpio_driver.h"
+#include <string.h>
 
 extern void print_help(const char *progname, void **argtable);
 extern void common_cmd_handler(int argc, char **argv, void **argtable, int argtable_size, void (*handler)(void **argtable));
@@ -34,6 +35,7 @@ extern void common_cmd_handler(int argc, char **argv, void **argtable, int argta
 
 static void cli_i2c_api_cmd_handler(void **argtable)
 {
+    bk_err_t ret = BK_OK;
     struct arg_lit *help = (struct arg_lit *)argtable[0];
     struct arg_str *driver = (struct arg_str *)argtable[1];
     struct arg_str *int_config = (struct arg_str *)argtable[2];
@@ -57,10 +59,18 @@ static void cli_i2c_api_cmd_handler(void **argtable)
     else if (driver->count > 0)
     {
         if (strcmp(driver->sval[0], "init") == 0) {
-            BK_LOG_ON_ERR(bk_i2c_driver_init());
+            ret = bk_i2c_driver_init();
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("I2C driver init failed, ret:-0x%x\r\n", -ret);
+                return;
+            }
             BK_DUMP_OUT("I2C driver initialized successfully\r\n");
         } else if (strcmp(driver->sval[0], "deinit") == 0) {
-            BK_LOG_ON_ERR(bk_i2c_driver_deinit());
+            ret = bk_i2c_driver_deinit();
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("I2C driver deinit failed, ret:-0x%x\r\n", -ret);
+                return;
+            }
             BK_DUMP_OUT("I2C driver deinitialized successfully\r\n");
         } else {
             BK_DUMP_OUT("Invalid parameter for init: %s\r\n", driver->sval[0]);
@@ -95,10 +105,18 @@ static void cli_i2c_api_cmd_handler(void **argtable)
                 BK_DUMP_OUT("I2C slave_addr: %d\r\n", i2c_cfg.slave_addr);
             }
 
-            BK_LOG_ON_ERR(bk_i2c_init(i2c_id, &i2c_cfg));
+            ret = bk_i2c_init(i2c_id, &i2c_cfg);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("i2c(%d) init failed, ret:-0x%x\n", i2c_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("i2c(%d) init\n", i2c_id);
         } else if (strcmp(int_config->sval[0], "deinit") == 0) {
-            BK_LOG_ON_ERR(bk_i2c_deinit(i2c_id));
+            ret = bk_i2c_deinit(i2c_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("i2c(%d) deinit failed, ret:-0x%x\n", i2c_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("i2c(%d) deinitialized  successfully\n", i2c_id);
         } else {
             BK_DUMP_OUT("Invalid parameter for i2c init_config: %s\r\n", int_config->sval[0]);
@@ -115,12 +133,20 @@ static void cli_i2c_api_cmd_handler(void **argtable)
                 data_buf[i] = i & 0xff;
             }
 
-            BK_LOG_ON_ERR(bk_i2c_master_write(i2c_id, I2C_SLAVE_ADDR, data_buf, 10, I2C_WRITE_WAIT_MAX_MS));
+            ret = bk_i2c_master_write(i2c_id, I2C_SLAVE_ADDR, data_buf, 10, I2C_WRITE_WAIT_MAX_MS);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("i2c master_write failed, ret:-0x%x\r\n", -ret);
+                return;
+            }
             BK_DUMP_OUT("I2C initialized successfully, i2c_id=%d\n", i2c_id);
             BK_DUMP_OUT("cli_test i2c master write succeed");
          } else if (strcmp(connect->sval[0], "master_read") == 0) {
             uint8_t data_buf[10] = {0};
-            BK_LOG_ON_ERR(bk_i2c_master_read(i2c_id, I2C_SLAVE_ADDR, data_buf, 10, I2C_READ_WAIT_MAX_MS));
+            ret = bk_i2c_master_read(i2c_id, I2C_SLAVE_ADDR, data_buf, 10, I2C_READ_WAIT_MAX_MS);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("i2c master_read failed, ret:-0x%x\r\n", -ret);
+                return;
+            }
 
             for (uint32_t i = 0; i < 10; i++) {
                 BK_DUMP_OUT("cli_test i2c master read 0x%x,\n", data_buf[i]);
@@ -134,11 +160,19 @@ static void cli_i2c_api_cmd_handler(void **argtable)
                 data_buf[i] = i & 0xff;
             }
 
-            BK_LOG_ON_ERR(bk_i2c_slave_write(i2c_id, data_buf, 10, BEKEN_NEVER_TIMEOUT));
+            ret = bk_i2c_slave_write(i2c_id, data_buf, 10, BEKEN_NEVER_TIMEOUT);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("i2c slave_write failed, ret:-0x%x\r\n", -ret);
+                return;
+            }
             BK_DUMP_OUT("cli_test i2c slave write succeed");
         } else if (strcmp(connect->sval[0], "slave_read") == 0) {
             uint8_t data_buf[10] = {0};
-            BK_LOG_ON_ERR(bk_i2c_slave_read(i2c_id, data_buf, 10, BEKEN_NEVER_TIMEOUT));
+            ret = bk_i2c_slave_read(i2c_id, data_buf, 10, BEKEN_NEVER_TIMEOUT);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("i2c slave_read failed, ret:-0x%x\r\n", -ret);
+                return;
+            }
 
             for (uint32_t i = 0; i < 10; i++) {
                 BK_DUMP_OUT("cli_test i2c_slave read 0x%x,\n", data_buf[i]);
@@ -152,7 +186,11 @@ static void cli_i2c_api_cmd_handler(void **argtable)
                 BK_DUMP_OUT("I2C slave_addr: %d\r\n", slave_addr);
             }
 
-            bk_i2c_set_slave_address(i2c_id, slave_addr);
+            ret = bk_i2c_set_slave_address(i2c_id, slave_addr);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("i2c set_slave_addr failed, ret:-0x%x\r\n", -ret);
+                return;
+            }
             BK_DUMP_OUT("i2c_slave set address 0x%x.\n", slave_addr);
     #endif
         } else if (strcmp(connect->sval[0], "memory_write") == 0) {
@@ -177,7 +215,14 @@ static void cli_i2c_api_cmd_handler(void **argtable)
             mem_param.data = data_buf;
             mem_param.data_size = buf_len;
             mem_param.timeout_ms = I2C_WRITE_WAIT_MAX_MS;
-            BK_LOG_ON_ERR(bk_i2c_memory_write(i2c_id, &mem_param));
+            ret = bk_i2c_memory_write(i2c_id, &mem_param);
+            if (ret != BK_OK) {
+                if (data_buf) {
+                    os_free(data_buf);
+                }
+                BK_DUMP_OUT("i2c memory_write failed, ret:-0x%x\r\n", -ret);
+                return;
+            }
 
             if (data_buf) {
                 os_free(data_buf);
@@ -202,7 +247,14 @@ static void cli_i2c_api_cmd_handler(void **argtable)
             mem_param.data = data_buf;
             mem_param.data_size = buf_len;
             mem_param.timeout_ms = I2C_WRITE_WAIT_MAX_MS;
-            BK_LOG_ON_ERR(bk_i2c_memory_read(i2c_id, &mem_param));
+            ret = bk_i2c_memory_read(i2c_id, &mem_param);
+            if (ret != BK_OK) {
+                if (data_buf) {
+                    os_free(data_buf);
+                }
+                BK_DUMP_OUT("i2c memory_read failed, ret:-0x%x\r\n", -ret);
+                return;
+            }
             for (uint32_t i = 0; i < buf_len; i++) {
                 BK_DUMP_OUT("i2c_read_buf[%d]=%x\r\n", i, data_buf[i]);
             }
@@ -220,12 +272,20 @@ static void cli_i2c_api_cmd_handler(void **argtable)
         if (strcmp(set->sval[0], "baud_rate") == 0) {
             uint32_t i2c_baud_rate = 400000;
             i2c_baud_rate = baud_rate->ival[0];
-            BK_LOG_ON_ERR(bk_i2c_set_baud_rate(i2c_id, i2c_baud_rate));
+            ret = bk_i2c_set_baud_rate(i2c_id, i2c_baud_rate);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("I2c (%d) set baud rate failed, ret:-0x%x\n", i2c_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("I2c (%d) set baud rate %d succeed\n", i2c_id, i2c_baud_rate);
         } else if (strcmp(set->sval[0], "slave_address") == 0) {
             uint16_t i2c_slave_addr = 0;
             i2c_slave_addr = (uint16_t)os_strtoul(addr->sval[0], NULL, 16);
-            BK_LOG_ON_ERR(bk_i2c_set_slave_address(i2c_id, i2c_slave_addr));
+            ret = bk_i2c_set_slave_address(i2c_id, i2c_slave_addr);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("I2c (%d) set slave address failed, ret:-0x%x\n", i2c_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("I2c (%d) set slave address 0x%x succeed\n", i2c_id, i2c_slave_addr);
         } else {
             BK_DUMP_OUT("Invalid parameter for i2c(%d) set config:%s\r\n", i2c_id, set->sval[0]);
@@ -236,23 +296,47 @@ static void cli_i2c_api_cmd_handler(void **argtable)
         uint32_t i2c_id = (uint32_t)os_strtoul(id->sval[0], NULL, 10);
 
         if (strcmp(function->sval[0], "en_inter") == 0) {
-            BK_LOG_ON_ERR(bk_i2c_enable_interrupt(i2c_id));
+            ret = bk_i2c_enable_interrupt(i2c_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("I2c (%d) enable interrupt failed, ret:-0x%x\n", i2c_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("I2c (%d) enable interrupt succeed\n", i2c_id);
         } else if (strcmp(function->sval[0], "dis_inter") == 0) {
-            BK_LOG_ON_ERR(bk_i2c_disable_interrupt(i2c_id));
+            ret = bk_i2c_disable_interrupt(i2c_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("I2c (%d) disable interrupt failed, ret:-0x%x\n", i2c_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("I2c (%d) disable interrupt succeed\n", i2c_id);
         } else if (strcmp(function->sval[0], "is_busy") == 0) {
-            BK_LOG_ON_ERR(bk_i2c_is_bus_busy(i2c_id));
+            ret = bk_i2c_is_bus_busy(i2c_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("Check i2c(%d) busy failed, ret:-0x%x\n", i2c_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("Check i2c(%d) busy succeed\n", i2c_id);
         } else if (strcmp(function->sval[0], "grt_cur") == 0) {
-            BK_LOG_ON_ERR(bk_i2c_get_cur_action(i2c_id));
+            ret = bk_i2c_get_cur_action(i2c_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("Get i2c(%d) current action failed, ret:-0x%x\n", i2c_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("Get i2c(%d) current action succeed\n", i2c_id);
         }
         else if (strcmp(function->sval[0], "get_bus") == 0) {
-            BK_LOG_ON_ERR(bk_i2c_get_busstate(i2c_id));
+            ret = bk_i2c_get_busstate(i2c_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("Get i2c(%d) bus state failed, ret:-0x%x\n", i2c_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("Init the SIM I2C (%d) succeed\n", i2c_id);
         } else if (strcmp(function->sval[0], "get_tran") == 0) {
-            BK_LOG_ON_ERR(bk_i2c_get_transstate(i2c_id));
+            ret = bk_i2c_get_transstate(i2c_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("Get i2c(%d) trans state failed, ret:-0x%x\n", i2c_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("Get i2c(%d) bus status idle or busy succeed\n", i2c_id);
         } else {
             BK_DUMP_OUT("Invalid parameter for i2c(%d) function config: %s\r\n", i2c_id, function->sval[0]);

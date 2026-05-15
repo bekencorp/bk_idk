@@ -22,6 +22,7 @@
 #include <driver/spi_types.h>
 #include <common/bk_include.h>
 #include <driver/dma.h>
+#include <string.h>
 
 extern void print_help(const char *progname, void **argtable);
 extern void common_cmd_handler(int argc, char **argv, void **argtable, int argtable_size, void (*handler)(void **argtable));
@@ -38,6 +39,7 @@ static void cli_spi_tx_isr(spi_id_t id, void *param)
 
 static void cli_spi_api_cmd_handler(void **argtable)
 {
+    bk_err_t ret = BK_OK;
     struct arg_lit *help = (struct arg_lit *)argtable[0];
     struct arg_str *driver = (struct arg_str *)argtable[1];
     struct arg_str *init_config = (struct arg_str *)argtable[2];
@@ -63,10 +65,18 @@ static void cli_spi_api_cmd_handler(void **argtable)
     else if (driver->count > 0)
     {
         if (strcmp(driver->sval[0], "init") == 0) {
-            BK_LOG_ON_ERR(bk_spi_driver_init());
+            ret = bk_spi_driver_init();
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("SPI driver init failed, ret:-0x%x\r\n", -ret);
+                return;
+            }
             BK_DUMP_OUT("SPI driver initialized successfully\r\n");
         } else if (strcmp(driver->sval[0], "deinit") == 0) {
-            BK_LOG_ON_ERR(bk_spi_driver_deinit());
+            ret = bk_spi_driver_deinit();
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("SPI driver deinit failed, ret:-0x%x\r\n", -ret);
+                return;
+            }
             BK_DUMP_OUT("SPI driver deinitialized successfully\r\n");
         } else {
             BK_DUMP_OUT("Invalid parameter for driver: %s\r\n", driver->sval[0]);
@@ -116,15 +126,20 @@ static void cli_spi_api_cmd_handler(void **argtable)
                 }
             }
             if (mode->count > 0) {
-                if (os_strtoul(mode->sval[0], NULL, 10) == 3){
+                uint32_t wire_mode_raw = os_strtoul(mode->sval[0], NULL, 10);
+                if (wire_mode_raw == 3){
                     config.wire_mode = SPI_3WIRE_MODE;
                 } else {
                     config.wire_mode = SPI_4WIRE_MODE;
                 }
-                BK_DUMP_OUT("Wire Mode: %d\r\n", mode->sval[0]);
+                BK_DUMP_OUT("Wire Mode: %d\r\n", wire_mode_raw);
             }
 
             if (baud_rate->count > 0) {
+                if (baud_rate->ival[0] < 0) {
+                    BK_DUMP_OUT("baud_rate(%d) not support\r\n", baud_rate->ival[0]);
+                    return;
+                }
                 config.baud_rate = baud_rate->ival[0];
                 BK_DUMP_OUT("Baud Rate: %d\r\n", baud_rate->ival[0]);
             }
@@ -157,12 +172,20 @@ static void cli_spi_api_cmd_handler(void **argtable)
                 config.spi_rx_dma_width = DMA_DATA_WIDTH_16BITS;
             }
         #endif
-            BK_LOG_ON_ERR(bk_spi_init(spi_id, &config));
+            ret = bk_spi_init(spi_id, &config);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("SPI init failed, spi_id=%d, ret:-0x%x\n", spi_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("SPI initialized, spi_id=%d\n", spi_id);
         }
 
          else if (strcmp(init_config->sval[0], "deinit") == 0){
-            BK_LOG_ON_ERR(bk_spi_deinit(spi_id));
+            ret = bk_spi_deinit(spi_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("SPI deinit failed, spi_id=%d, ret:-0x%x\n", spi_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("spi deinit, spi_id=%d\n", spi_id);
         } else {
             BK_DUMP_OUT("Invalid configuration parameter: %s\n", init_config->sval[0]);
@@ -192,7 +215,11 @@ static void cli_spi_api_cmd_handler(void **argtable)
                     return;
                 }
 
-                BK_LOG_ON_ERR(bk_spi_set_mode(spi_id, spi_mode));
+                ret = bk_spi_set_mode(spi_id, spi_mode);
+                if (ret != BK_OK) {
+                    BK_DUMP_OUT("SPI %d set mode failed, ret:-0x%x\n", spi_id, -ret);
+                    return;
+                }
                 BK_DUMP_OUT("SPI %d set mode succeed, mode=%d\n", spi_id, spi_mode);
             }
         }
@@ -210,7 +237,11 @@ static void cli_spi_api_cmd_handler(void **argtable)
                     return;
                 }
 
-                BK_LOG_ON_ERR(bk_spi_set_bit_width(spi_id, bit_width));
+                ret = bk_spi_set_bit_width(spi_id, bit_width);
+                if (ret != BK_OK) {
+                    BK_DUMP_OUT("SPI %d set bit width failed, ret:-0x%x\n", spi_id, -ret);
+                    return;
+                }
                 BK_DUMP_OUT("SPI %d set bit width succeed, bit_width=%d\n", spi_id, bit_width);
             }
         }
@@ -228,13 +259,26 @@ static void cli_spi_api_cmd_handler(void **argtable)
                     return;
                 }
 
-                BK_LOG_ON_ERR(bk_spi_set_wire_mode(spi_id, spi_mode));
+                ret = bk_spi_set_wire_mode(spi_id, spi_mode);
+                if (ret != BK_OK) {
+                    BK_DUMP_OUT("SPI %d set wire mode failed, ret:-0x%x\n", spi_id, -ret);
+                    return;
+                }
                 BK_DUMP_OUT("SPI %d set wire mode succeed, spi_wire_mode=%d\n", spi_id, spi_mode);
             }
         }
         else if (strcmp(set->sval[0], "baud") == 0) {
-            uint32_t baud_rate_val = baud_rate->ival[0];
-            BK_LOG_ON_ERR(bk_spi_set_baud_rate(spi_id, baud_rate_val));
+            int baud_rate_raw = baud_rate->ival[0];
+            if (baud_rate_raw < 0) {
+                BK_DUMP_OUT("baud_rate(%d) not support\r\n", baud_rate_raw);
+                return;
+            }
+            uint32_t baud_rate_val = (uint32_t)baud_rate_raw;
+            ret = bk_spi_set_baud_rate(spi_id, baud_rate_val);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("SPI id %d set baud_rate failed, ret:-0x%x,\n", spi_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("SPI id %d set baud_rate %d successfully,\n", spi_id, baud_rate_val);
         }
         else if (strcmp(set->sval[0], "bit_order") == 0) {
@@ -251,7 +295,11 @@ static void cli_spi_api_cmd_handler(void **argtable)
                     return;
                 }
 
-                BK_LOG_ON_ERR(bk_spi_set_bit_order(spi_id, bit_order));
+                ret = bk_spi_set_bit_order(spi_id, bit_order);
+                if (ret != BK_OK) {
+                    BK_DUMP_OUT("SPI %d set bit order failed, ret:-0x%x\n", spi_id, -ret);
+                    return;
+                }
                 BK_DUMP_OUT("SPI %d set bit order succeed, bit_order=%d\n", spi_id, bit_order);
             }
         }
@@ -264,27 +312,51 @@ static void cli_spi_api_cmd_handler(void **argtable)
         uint32_t spi_id = (uint32_t)os_strtoul(id->sval[0], NULL, 10);
 
         if (strcmp(spi_register->sval[0], "rx_isr") == 0) {
-            BK_LOG_ON_ERR(bk_spi_register_rx_isr(spi_id, cli_spi_rx_isr, NULL));
+            ret = bk_spi_register_rx_isr(spi_id, cli_spi_rx_isr, NULL);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("SPI ID: %d register rx isr failed, ret:-0x%x\n", spi_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("SPI ID: %d Registered RX interrupt ISR\n", spi_id);
         }
         else if (strcmp(spi_register->sval[0], "tx_finish") == 0) {
-            BK_LOG_ON_ERR(bk_spi_register_tx_finish_isr(spi_id, cli_spi_tx_isr, NULL));
+            ret = bk_spi_register_tx_finish_isr(spi_id, cli_spi_tx_isr, NULL);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("SPI ID: %d register tx finish isr failed, ret:-0x%x\n", spi_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("SPI ID: %d Registered TX finish interrupt ISR\n", spi_id);
         }
         else if (strcmp(spi_register->sval[0], "rx_finish") == 0) {
-            BK_LOG_ON_ERR(bk_spi_register_rx_finish_isr(spi_id, cli_spi_rx_isr, NULL));
+            ret = bk_spi_register_rx_finish_isr(spi_id, cli_spi_rx_isr, NULL);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("SPI ID: %d register rx finish isr failed, ret:-0x%x\n", spi_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("SPI ID: %d Registered RX finish interrupt ISR\n", spi_id);
         }
         else if (strcmp(spi_register->sval[0], "unrx_isr") == 0) {
-            BK_LOG_ON_ERR(bk_spi_unregister_rx_isr(spi_id));
+            ret = bk_spi_unregister_rx_isr(spi_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("SPI ID: %d unregister rx isr failed, ret:-0x%x\n", spi_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("SPI ID: %d Unregister the RX finish interrupt service routine\n", spi_id);
         }
         else if (strcmp(spi_register->sval[0], "unrx_finish") == 0) {
-            BK_LOG_ON_ERR(bk_spi_unregister_rx_finish_isr(spi_id));
+            ret = bk_spi_unregister_rx_finish_isr(spi_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("SPI ID: %d unregister rx finish isr failed, ret:-0x%x\n", spi_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("SPI ID: %d Unregister the TX finish interrupt service routine\n", spi_id);
         }
         else if (strcmp(spi_register->sval[0], "untx_finish") == 0) {
-            BK_LOG_ON_ERR(bk_spi_unregister_tx_finish_isr(spi_id));
+            ret = bk_spi_unregister_tx_finish_isr(spi_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("SPI ID: %d unregister tx finish isr failed, ret:-0x%x\n", spi_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("SPI ID: %d Send data to the SPI port from a given buffer and length in async mode\n", spi_id);
         }
         else {
@@ -304,11 +376,15 @@ static void cli_spi_api_cmd_handler(void **argtable)
             for (int i = 0; i < buf_len; i++) {
                 send_data[i] = i & 0xff;
             }
-            BK_LOG_ON_ERR(bk_spi_write_bytes(spi_id, send_data, buf_len));
+            ret = bk_spi_write_bytes(spi_id, send_data, buf_len);
             if (send_data) {
                 os_free(send_data);
             }
             send_data = NULL;
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("spi write bytes failed, spi_id=%d, ret:-0x%x\n", spi_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("spi write bytes, spi_id=%d, data_len=%d\n", spi_id, buf_len);
         } else if (strcmp(connect->sval[0], "read") == 0) {
             uint32_t buf_len = (uint32_t)os_strtoul(bits->sval[0], NULL, 10);
@@ -318,7 +394,15 @@ static void cli_spi_api_cmd_handler(void **argtable)
                 return;
             }
             os_memset(recv_data, 0xff, buf_len);
-            BK_LOG_ON_ERR(bk_spi_read_bytes(spi_id, recv_data, buf_len));
+            ret = bk_spi_read_bytes(spi_id, recv_data, buf_len);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("spi read failed, spi_id=%d, ret:-0x%x\n", spi_id, -ret);
+                if (recv_data) {
+                    os_free(recv_data);
+                }
+                recv_data = NULL;
+                return;
+            }
             BK_DUMP_OUT("spi read, spi_id=%d, size:%d\n", spi_id, buf_len);
             for (int i = 0; i < buf_len; i++) {
                 #if CONFIG_TASK_WDT
@@ -341,11 +425,15 @@ static void cli_spi_api_cmd_handler(void **argtable)
             for (int i = 0; i < buf_len; i++) {
                 send_data[i] = i & 0xff;
             }
-            BK_LOG_ON_ERR(bk_spi_write_bytes_async(spi_id, send_data, buf_len));
+            ret = bk_spi_write_bytes_async(spi_id, send_data, buf_len);
             if (send_data) {
                 os_free(send_data);
             }
             send_data = NULL;
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("spi write bytes async failed, spi_id=%d, ret:-0x%x\n", spi_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("spi write bytes async, spi_id=%d, data_len=%d\n", spi_id, buf_len);
         } else if (strcmp(connect->sval[0], "read_async") == 0) {
             uint32_t buf_len = (uint32_t)os_strtoul(bits->sval[0], NULL, 10);
@@ -355,7 +443,15 @@ static void cli_spi_api_cmd_handler(void **argtable)
                 return;
             }
             os_memset(recv_data, 0xff, buf_len);
-            BK_LOG_ON_ERR(bk_spi_read_bytes_async(spi_id, recv_data, buf_len));
+            ret = bk_spi_read_bytes_async(spi_id, recv_data, buf_len);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("spi read async failed, spi_id=%d, ret:-0x%x\n", spi_id, -ret);
+                if (recv_data) {
+                    os_free(recv_data);
+                }
+                recv_data = NULL;
+                return;
+            }
             BK_DUMP_OUT("spi read async, spi_id=%d, size:%d\n", spi_id, buf_len);
             for (int i = 0; i < buf_len; i++) {
                 #if CONFIG_TASK_WDT
@@ -447,9 +543,13 @@ static void cli_argspi_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, c
 
 #define CONFIG_STRUCT_FIELD_CNT   8
 #define ARG_ERR_REC_CNT           20
+static dma_id_t s_cli_spi_dma_tx_chan[SPI_ID_MAX];
+static dma_id_t s_cli_spi_dma_rx_chan[SPI_ID_MAX];
+static bool s_cli_spi_dma_chan_valid[SPI_ID_MAX];
 
 static void cli_spi_api_dma_handler(void **argtable)
 {
+    bk_err_t ret = BK_OK;
     struct arg_lit *help = (struct arg_lit *)argtable[0];
     struct arg_str *driver = (struct arg_str *)argtable[1];
     struct arg_str *bit_order = (struct arg_str *)argtable[2];
@@ -472,14 +572,21 @@ static void cli_spi_api_dma_handler(void **argtable)
     else if (driver->count > 0)
     {
         uint32_t spi_id = (uint32_t)os_strtoul(id->sval[0], NULL, 10);
+        if (spi_id >= SPI_ID_MAX) {
+            BK_DUMP_OUT("Invalid spi id: %d\r\n", spi_id);
+            return;
+        }
         if (strcmp(driver->sval[0], "init") == 0) {
             spi_config_t config = {0};
             os_memset(&config, 0, sizeof(spi_config_t));
             config.dma_mode = 1;
-            config.spi_tx_dma_chan = bk_dma_alloc(DMA_DEV_DTCM);
-            config.spi_rx_dma_chan = bk_dma_alloc(DMA_DEV_DTCM);
             config.spi_tx_dma_width = DMA_DATA_WIDTH_8BITS;
             config.spi_rx_dma_width = DMA_DATA_WIDTH_8BITS;
+            if (s_cli_spi_dma_chan_valid[spi_id]) {
+                bk_dma_free(DMA_DEV_GSPI0, s_cli_spi_dma_tx_chan[spi_id]);
+                bk_dma_free(DMA_DEV_GSPI0_RX, s_cli_spi_dma_rx_chan[spi_id]);
+                s_cli_spi_dma_chan_valid[spi_id] = false;
+            }
 
             if (role->count > 0) {
                 if (strcmp(role->sval[0], "master") == 0) {
@@ -521,7 +628,7 @@ static void cli_spi_api_dma_handler(void **argtable)
                 } else {
                     config.wire_mode = SPI_4WIRE_MODE;
                 }
-                BK_DUMP_OUT("Wire Mode: %d\r\n", mode->sval[0]);
+                BK_DUMP_OUT("Wire Mode: %d\r\n", config.wire_mode);
             }
 
             if (baud_rate->count > 0) {
@@ -545,7 +652,16 @@ static void cli_spi_api_dma_handler(void **argtable)
         #endif
 
             config.spi_tx_dma_chan = bk_dma_alloc(DMA_DEV_GSPI0);
+            if (config.spi_tx_dma_chan >= DMA_ID_MAX) {
+                BK_DUMP_OUT("SPI dma tx channel alloc failed\r\n");
+                return;
+            }
             config.spi_rx_dma_chan = bk_dma_alloc(DMA_DEV_GSPI0_RX);
+            if (config.spi_rx_dma_chan >= DMA_ID_MAX) {
+                BK_DUMP_OUT("SPI dma rx channel alloc failed\r\n");
+                bk_dma_free(DMA_DEV_GSPI0, config.spi_tx_dma_chan);
+                return;
+            }
             if (os_strtoul(bits->sval[0], NULL, 10) == 8) {
                 config.spi_tx_dma_width = DMA_DATA_WIDTH_8BITS;
                 config.spi_rx_dma_width = DMA_DATA_WIDTH_8BITS;
@@ -553,12 +669,34 @@ static void cli_spi_api_dma_handler(void **argtable)
                 config.spi_tx_dma_width = DMA_DATA_WIDTH_16BITS;
                 config.spi_rx_dma_width = DMA_DATA_WIDTH_16BITS;
             }
-            BK_LOG_ON_ERR(bk_spi_init(spi_id, &config));
+            ret = bk_spi_init(spi_id, &config);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("SPI dma init failed, spi_id=%d, ret:-0x%x\n", spi_id, -ret);
+                bk_dma_free(DMA_DEV_GSPI0, config.spi_tx_dma_chan);
+                bk_dma_free(DMA_DEV_GSPI0_RX, config.spi_rx_dma_chan);
+                return;
+            }
+            s_cli_spi_dma_tx_chan[spi_id] = config.spi_tx_dma_chan;
+            s_cli_spi_dma_rx_chan[spi_id] = config.spi_rx_dma_chan;
+            s_cli_spi_dma_chan_valid[spi_id] = true;
             BK_DUMP_OUT("SPI initialized, spi_id=%d\n", spi_id);
         } else if (strcmp(driver->sval[0], "deinit") == 0) {
-            BK_LOG_ON_ERR(bk_spi_deinit(spi_id));
+            ret = bk_spi_deinit(spi_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("SPI dma deinit failed, spi_id=%d, ret:-0x%x\n", spi_id, -ret);
+                return;
+            }
+            if (s_cli_spi_dma_chan_valid[spi_id]) {
+                bk_dma_free(DMA_DEV_GSPI0, s_cli_spi_dma_tx_chan[spi_id]);
+                bk_dma_free(DMA_DEV_GSPI0_RX, s_cli_spi_dma_rx_chan[spi_id]);
+                s_cli_spi_dma_chan_valid[spi_id] = false;
+            }
             BK_DUMP_OUT("spi deinit, spi_id=%d\n", spi_id);
         } else if (strcmp(driver->sval[0], "write") == 0) {
+            if (!s_cli_spi_dma_chan_valid[spi_id]) {
+                BK_DUMP_OUT("SPI dma not initialized, run init first, spi_id=%d\n", spi_id);
+                return;
+            }
             uint32_t buf_len = (uint32_t)os_strtoul(length->sval[0], NULL, 10);
             uint8_t *send_data = (uint8_t *)os_zalloc(buf_len);
             if (send_data == NULL) {
@@ -568,13 +706,21 @@ static void cli_spi_api_dma_handler(void **argtable)
             for (int i = 0; i < buf_len; i++) {
                 send_data[i] = i & 0xff;
             }
-            BK_LOG_ON_ERR(bk_spi_dma_write_bytes(spi_id, send_data, buf_len));
+            uint32_t write_cnt = bk_spi_dma_write_bytes(spi_id, send_data, buf_len);
             if (send_data) {
                 os_free(send_data);
             }
             send_data = NULL;
+            if (write_cnt != buf_len) {
+                BK_DUMP_OUT("spi dma send failed, spi_id=%d, write_cnt=%d, expect=%d\n", spi_id, write_cnt, buf_len);
+                return;
+            }
             BK_DUMP_OUT("spi dma send, spi_id=%d, data_len=%d\n", spi_id, buf_len);
         } else if (strcmp(driver->sval[0], "read") == 0) {
+            if (!s_cli_spi_dma_chan_valid[spi_id]) {
+                BK_DUMP_OUT("SPI dma not initialized, run init first, spi_id=%d\n", spi_id);
+                return;
+            }
             uint32_t buf_len = (uint32_t)os_strtoul(length->sval[0], NULL, 10);
             uint8_t *recv_data = (uint8_t *)os_malloc(buf_len);
             if (recv_data == NULL) {
@@ -582,7 +728,15 @@ static void cli_spi_api_dma_handler(void **argtable)
                 return;
             }
             os_memset(recv_data, 0xff, buf_len);
-            BK_LOG_ON_ERR(bk_spi_dma_read_bytes(spi_id, recv_data, buf_len));
+            uint32_t read_cnt = bk_spi_dma_read_bytes(spi_id, recv_data, buf_len);
+            if (read_cnt != buf_len) {
+                BK_DUMP_OUT("spi dma read failed, spi_id=%d, read_cnt=%d, expect=%d\n", spi_id, read_cnt, buf_len);
+                if (recv_data) {
+                    os_free(recv_data);
+                }
+                recv_data = NULL;
+                return;
+            }
             BK_DUMP_OUT("spi dma recv, spi_id=%d, data_len=%d\n", spi_id, buf_len);
             for (int i = 0; i < buf_len; i++) {
                 #if CONFIG_TASK_WDT
@@ -596,6 +750,10 @@ static void cli_spi_api_dma_handler(void **argtable)
             }
             recv_data = NULL;
         } else if (strcmp(driver->sval[0], "duplex") == 0) {
+            if (!s_cli_spi_dma_chan_valid[spi_id]) {
+                BK_DUMP_OUT("SPI dma not initialized, run init first, spi_id=%d\n", spi_id);
+                return;
+            }
             uint32_t buf_len = (uint32_t)os_strtoul(length->sval[0], NULL, 10);
             uint8_t *recv_data = (uint8_t *)os_malloc(buf_len);
             uint8_t *send_data = (uint8_t *)os_malloc(buf_len);
@@ -604,7 +762,18 @@ static void cli_spi_api_dma_handler(void **argtable)
                 send_data[i] = i & 0xff;
             }
             bk_spi_dma_duplex_init(spi_id);
-            BK_LOG_ON_ERR(bk_spi_dma_duplex_xfer(spi_id, send_data, buf_len, recv_data, buf_len));
+            ret = bk_spi_dma_duplex_xfer(spi_id, send_data, buf_len, recv_data, buf_len);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("spi dma duplex failed, spi_id=%d, ret:-0x%x\n", spi_id, -ret);
+                bk_spi_dma_duplex_deinit(spi_id);
+                if (recv_data) {
+                    os_free(recv_data);
+                }
+                if (send_data) {
+                    os_free(send_data);
+                }
+                return;
+            }
             for (int i = 0; i < buf_len; i++) {
                 #if CONFIG_TASK_WDT
                     extern void bk_task_wdt_feed(void);
@@ -613,6 +782,12 @@ static void cli_spi_api_dma_handler(void **argtable)
                 BK_DUMP_OUT("recv_buffer[%d]=0x%x\n", i, recv_data[i]);
             }
             bk_spi_dma_duplex_deinit(spi_id);
+            if (recv_data) {
+                os_free(recv_data);
+            }
+            if (send_data) {
+                os_free(send_data);
+            }
         } else {
             BK_DUMP_OUT("Invalid parameter for init: %s\r\n", driver->sval[0]);
         }

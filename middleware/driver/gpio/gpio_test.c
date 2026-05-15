@@ -48,6 +48,7 @@ static void cli_gpio_help(void)
 
 static void cli_gpio_driver_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
+	bk_err_t ret = BK_OK;
 	if (argc < 2)
 	{
 		cli_gpio_help();
@@ -55,10 +56,18 @@ static void cli_gpio_driver_cmd(char *pcWriteBuffer, int xWriteBufferLen, int ar
 	}
 
 	if (os_strcmp(argv[1], "init") == 0) {
-		BK_LOG_ON_ERR(bk_gpio_driver_init());
+		ret = bk_gpio_driver_init();
+		if (ret != BK_OK) {
+			CLI_LOGE("gpio driver init failed, ret:-0x%x\n", -ret);
+			return;
+		}
 		CLI_LOGI("gpio init\n");
 	} else if(os_strcmp(argv[1], "deinit") == 0) {
-		BK_LOG_ON_ERR(bk_gpio_driver_deinit());
+		ret = bk_gpio_driver_deinit();
+		if (ret != BK_OK) {
+			CLI_LOGE("gpio driver deinit failed, ret:-0x%x\n", -ret);
+			return;
+		}
 		CLI_LOGI("gpio deinit\n");
 	} else {
 		cli_gpio_help();
@@ -68,6 +77,7 @@ static void cli_gpio_driver_cmd(char *pcWriteBuffer, int xWriteBufferLen, int ar
 
 static void cli_gpio_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
+	bk_err_t ret = BK_OK;
 	if (argc < 2) {
 		cli_gpio_help();
 		return;
@@ -81,7 +91,11 @@ static void cli_gpio_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, cha
 
 		mode.io_mode = os_strtoul(argv[3], NULL, 10);
 		mode.pull_mode = os_strtoul(argv[4], NULL, 10);
-		BK_LOG_ON_ERR(bk_gpio_set_config(id, &mode));
+		ret = bk_gpio_set_config(id, &mode);
+		if (ret != BK_OK) {
+			CLI_LOGE("gpio set_config failed, id:%d ret:-0x%x\n", id, -ret);
+			return;
+		}
 
 		CLI_LOGI("gpio io(output/disable/input): %x ,  pull(disable/down/up) : %x\n", mode.io_mode, mode.pull_mode);
 	} else if (os_strcmp(argv[1], "output") == 0) {
@@ -89,17 +103,45 @@ static void cli_gpio_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, cha
 
 		id = os_strtoul(argv[2], NULL, 10);
 
-		BK_LOG_ON_ERR(bk_gpio_disable_input(id));
-		BK_LOG_ON_ERR(bk_gpio_enable_output(id));
+		ret = bk_gpio_disable_input(id);
+		if (ret != BK_OK) {
+			CLI_LOGE("gpio disable_input failed, id:%d ret:-0x%x\n", id, -ret);
+			return;
+		}
+		ret = bk_gpio_enable_output(id);
+		if (ret != BK_OK) {
+			CLI_LOGE("gpio enable_output failed, id:%d ret:-0x%x\n", id, -ret);
+			return;
+		}
 
 		if (os_strcmp(argv[3], "pull_up") == 0) {
-			BK_LOG_ON_ERR(bk_gpio_enable_pull(id));
-			BK_LOG_ON_ERR(bk_gpio_pull_up(id));
+			ret = bk_gpio_enable_pull(id);
+			if (ret != BK_OK) {
+				CLI_LOGE("gpio enable_pull failed, id:%d ret:-0x%x\n", id, -ret);
+				return;
+			}
+			ret = bk_gpio_pull_up(id);
+			if (ret != BK_OK) {
+				CLI_LOGE("gpio pull_up failed, id:%d ret:-0x%x\n", id, -ret);
+				return;
+			}
 		}else if (os_strcmp(argv[3], "pull_down") == 0) {
-			BK_LOG_ON_ERR(bk_gpio_enable_pull(id));
-			BK_LOG_ON_ERR(bk_gpio_pull_down(id));
+			ret = bk_gpio_enable_pull(id);
+			if (ret != BK_OK) {
+				CLI_LOGE("gpio enable_pull failed, id:%d ret:-0x%x\n", id, -ret);
+				return;
+			}
+			ret = bk_gpio_pull_down(id);
+			if (ret != BK_OK) {
+				CLI_LOGE("gpio pull_down failed, id:%d ret:-0x%x\n", id, -ret);
+				return;
+			}
 		} else {
-			BK_LOG_ON_ERR(bk_gpio_disable_pull(id));
+			ret = bk_gpio_disable_pull(id);
+			if (ret != BK_OK) {
+				CLI_LOGE("gpio disable_pull failed, id:%d ret:-0x%x\n", id, -ret);
+				return;
+			}
 		}
 
 		CLI_LOGI("gpio output test: %x \n", id);
@@ -108,17 +150,45 @@ static void cli_gpio_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, cha
 
 		id = os_strtoul(argv[2], NULL, 10);
 
-		BK_LOG_ON_ERR(bk_gpio_disable_output(id));
-		BK_LOG_ON_ERR(bk_gpio_enable_input(id));
+		ret = bk_gpio_disable_output(id);
+		if (ret != BK_OK) {
+			CLI_LOGE("gpio disable_output failed, id:%d ret:-0x%x\n", id, -ret);
+			return;
+		}
+		ret = bk_gpio_enable_input(id);
+		if (ret != BK_OK) {
+			CLI_LOGE("gpio enable_input failed, id:%d ret:-0x%x\n", id, -ret);
+			return;
+		}
 
 		if (os_strcmp(argv[3], "pull_up") == 0) {
-			BK_LOG_ON_ERR(bk_gpio_enable_pull(id));
-			BK_LOG_ON_ERR(bk_gpio_pull_up(id));
+			ret = bk_gpio_enable_pull(id);
+			if (ret != BK_OK) {
+				CLI_LOGE("gpio enable_pull failed, id:%d ret:-0x%x\n", id, -ret);
+				return;
+			}
+			ret = bk_gpio_pull_up(id);
+			if (ret != BK_OK) {
+				CLI_LOGE("gpio pull_up failed, id:%d ret:-0x%x\n", id, -ret);
+				return;
+			}
 		}else if (os_strcmp(argv[3], "pull_down") == 0) {
-			BK_LOG_ON_ERR(bk_gpio_enable_pull(id));
-			BK_LOG_ON_ERR(bk_gpio_pull_down(id));
+			ret = bk_gpio_enable_pull(id);
+			if (ret != BK_OK) {
+				CLI_LOGE("gpio enable_pull failed, id:%d ret:-0x%x\n", id, -ret);
+				return;
+			}
+			ret = bk_gpio_pull_down(id);
+			if (ret != BK_OK) {
+				CLI_LOGE("gpio pull_down failed, id:%d ret:-0x%x\n", id, -ret);
+				return;
+			}
 		} else {
-			BK_LOG_ON_ERR(bk_gpio_disable_pull(id));
+			ret = bk_gpio_disable_pull(id);
+			if (ret != BK_OK) {
+				CLI_LOGE("gpio disable_pull failed, id:%d ret:-0x%x\n", id, -ret);
+				return;
+			}
 		}
 
 		CLI_LOGI("gpio input test: %d \n", id);
@@ -127,7 +197,11 @@ static void cli_gpio_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, cha
 
 		id = os_strtoul(argv[2], NULL, 10);
 		// must set gpio mode before gpio output test
-		BK_LOG_ON_ERR(bk_gpio_set_output_high(id));
+		ret = bk_gpio_set_output_high(id);
+		if (ret != BK_OK) {
+			CLI_LOGE("gpio set_output_high failed, id:%d ret:-0x%x\n", id, -ret);
+			return;
+		}
 
 		CLI_LOGI("gpio output hgih\n");
 	}else if (os_strcmp(argv[1], "output_low") == 0) {
@@ -136,7 +210,11 @@ static void cli_gpio_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, cha
 		id = os_strtoul(argv[2], NULL, 10);
 
 		// must set gpio mode before gpio output test
-		BK_LOG_ON_ERR(bk_gpio_set_output_low(id));
+		ret = bk_gpio_set_output_low(id);
+		if (ret != BK_OK) {
+			CLI_LOGE("gpio set_output_low failed, id:%d ret:-0x%x\n", id, -ret);
+			return;
+		}
 
 		CLI_LOGI("gpio output low\n");
 	} else if (os_strcmp(argv[1], "input_get") == 0) {
@@ -283,6 +361,7 @@ static void cli_gpio_simulate_low_power_cmd(char *pcWriteBuffer, int xWriteBuffe
 #if CONFIG_GPIO_DYNAMIC_KPSTAT_SUPPORT
 static void cli_gpio_set_keep_status_config(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
+	bk_err_t ret = BK_OK;
 	if (argc < 2) {
 		cli_gpio_help();
 		return;
@@ -310,11 +389,19 @@ static void cli_gpio_set_keep_status_config(char *pcWriteBuffer, int xWriteBuffe
 
 
 	if(os_strcmp(argv[1], "register") == 0) {
+		ret = bk_gpio_register_lowpower_keep_status(gpio_id, &config);
+		if (ret != BK_OK) {
+			CLI_LOGE("kpsta register failed, id:%d ret:-0x%x\n", gpio_id, -ret);
+			return;
+		}
 		CLI_LOGI("cli_gpio_set_keep_status_config register gpio_id: %d\r\n", gpio_id);
-		bk_gpio_register_lowpower_keep_status(gpio_id, &config);
 	} else if(os_strcmp(argv[1], "unregister") == 0) {
+		ret = bk_gpio_unregister_lowpower_keep_status(gpio_id);
+		if (ret != BK_OK) {
+			CLI_LOGE("kpsta unregister failed, id:%d ret:-0x%x\n", gpio_id, -ret);
+			return;
+		}
 		CLI_LOGI("cli_gpio_set_keep_status_config unregister gpio_id: %d\r\n", gpio_id);
-		bk_gpio_unregister_lowpower_keep_status(gpio_id);
 	} else
 		return cli_gpio_help();
 }
@@ -389,6 +476,7 @@ static void cli_gpio_int_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
 {
 	uint32_t id;
 	gpio_config_t cfg = {0};
+	bk_err_t ret = BK_OK;
 
 	cfg.io_mode = GPIO_INPUT_ENABLE;
 	cfg.func_mode = GPIO_SECOND_FUNC_DISABLE;
@@ -413,21 +501,25 @@ static void cli_gpio_int_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
 		if (os_strcmp(argv[3], "low_level") == 0) {
 			int_type = GPIO_INT_TYPE_LOW_LEVEL;
 			cfg.pull_mode = GPIO_PULL_UP_EN;
-			bk_gpio_set_config(id, &cfg);
+			ret = bk_gpio_set_config(id, &cfg);
 		} else if (os_strcmp(argv[3], "high_level") == 0) {
 			int_type = GPIO_INT_TYPE_HIGH_LEVEL;
 			cfg.pull_mode = GPIO_PULL_DOWN_EN;
-			bk_gpio_set_config(id, &cfg);
+			ret = bk_gpio_set_config(id, &cfg);
 		}else if (os_strcmp(argv[3], "rising_edge") == 0) {
 			int_type = GPIO_INT_TYPE_RISING_EDGE;
 			cfg.pull_mode = GPIO_PULL_DOWN_EN;
-			bk_gpio_set_config(id, &cfg);
+			ret = bk_gpio_set_config(id, &cfg);
 		} else if (os_strcmp(argv[3], "falling_edge") == 0) {
 			int_type = GPIO_INT_TYPE_FALLING_EDGE;
 			cfg.pull_mode = GPIO_PULL_UP_EN;
-			bk_gpio_set_config(id, &cfg);
+			ret = bk_gpio_set_config(id, &cfg);
 		} else {
 			cli_gpio_help();
+			return;
+		}
+		if (ret != BK_OK) {
+			CLI_LOGE("gpio set_config failed, id:%d ret:-0x%x\n", id, -ret);
 			return;
 		}
 		
@@ -435,13 +527,25 @@ static void cli_gpio_int_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
 		bk_gpio_register_isr(id ,cli_gpio_int_isr);
 		#endif
 
-		BK_LOG_ON_ERR(bk_gpio_set_interrupt_type(id, int_type));
+		ret = bk_gpio_set_interrupt_type(id, int_type);
+		if (ret != BK_OK) {
+			CLI_LOGE("gpio[%d] set interrupt type failed, ret:-0x%x\n", id, -ret);
+			return;
+		}
 		CLI_LOGI("gpio[%d] set int type:%x\n", id, int_type);
 	} else if (os_strcmp(argv[2], "start") == 0) {
-		BK_LOG_ON_ERR(bk_gpio_enable_interrupt(id));
+		ret = bk_gpio_enable_interrupt(id);
+		if (ret != BK_OK) {
+			CLI_LOGE("gpio[%d] int start failed, ret:-0x%x\n", id, -ret);
+			return;
+		}
 		CLI_LOGI("gpio[%d] int start\r\n", id);
 	} else if (os_strcmp(argv[2], "stop") == 0) {
-		BK_LOG_ON_ERR(bk_gpio_disable_interrupt(id));
+		ret = bk_gpio_disable_interrupt(id);
+		if (ret != BK_OK) {
+			CLI_LOGE("gpio[%d] int stop failed, ret:-0x%x\n", id, -ret);
+			return;
+		}
 		CLI_LOGI("gpio[%d] int stop\r\n", id);
 	} else {
 		cli_gpio_help();

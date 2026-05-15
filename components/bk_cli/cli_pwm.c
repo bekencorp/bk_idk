@@ -33,7 +33,7 @@ static void cli_pwm_help(void)
 	CLI_LOGI("pwm_group {start|stop|deinit}\n");
 	CLI_LOGI("pwm_group config {group} {period} {chan1_duty} {chan2_duty}\n");
 	CLI_LOGI("pwm_int {chan} {reg|enable|disable}\n");
-	CLI_LOGI("pwm_capture {chan} {init}\nn");
+	CLI_LOGI("pwm_capture {chan} {init}\n");
 	CLI_LOGI("pwm_capture {chan} {start|stop|deinit}\n");
 	CLI_LOGI("pwm_idle_test {idle_start|idle_stop}\n");
 }
@@ -52,16 +52,28 @@ static void cli_pwm_carrier_cmd(char *pcWriteBuffer, int xWriteBufferLen, int ar
 
 static void cli_pwm_driver_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
+	bk_err_t ret = BK_OK;
+
 	if (argc < 2) {
 		cli_pwm_help();
 		return;
 	}
 
 	if (os_strcmp(argv[1], "init") == 0) {
-		BK_LOG_ON_ERR(bk_pwm_driver_init());
+		ret = bk_pwm_driver_init();
+		BK_LOG_ON_ERR(ret);
+		if (ret != BK_OK) {
+			CLI_LOGE("pwm driver init failed, ret=%#x\n", ret);
+			return;
+		}
 		CLI_LOGI("pwm init\n");
 	} else if (os_strcmp(argv[1], "deinit") == 0) {
-		BK_LOG_ON_ERR(bk_pwm_driver_deinit());
+		ret = bk_pwm_driver_deinit();
+		BK_LOG_ON_ERR(ret);
+		if (ret != BK_OK) {
+			CLI_LOGE("pwm driver deinit failed, ret=%#x\n", ret);
+			return;
+		}
 		CLI_LOGI("pwm deinit\n");
 	} else {
 		cli_pwm_help();
@@ -72,6 +84,7 @@ static void cli_pwm_driver_cmd(char *pcWriteBuffer, int xWriteBufferLen, int arg
 static void cli_pwm_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
 	uint32_t chan;
+	bk_err_t ret = BK_OK;
 
 	if (argc < 2) {
 		cli_pwm_help();
@@ -92,16 +105,37 @@ static void cli_pwm_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
 			config.duty3_cycle = os_strtoul(argv[6], NULL, 10);
 		config.psc = os_strtoul(argv[7], NULL, 10);
 
-		BK_LOG_ON_ERR(bk_pwm_init(chan, &config));
+		ret = bk_pwm_init(chan, &config);
+		BK_LOG_ON_ERR(ret);
+		if (ret != BK_OK) {
+			CLI_LOGE("pwm init failed, chan=%d period=%x duty=%x ret=%#x\n",
+				chan, config.period_cycle, config.duty_cycle, ret);
+			return;
+		}
 		CLI_LOGI("pwm init, chan=%d period=%x duty=%x\n", chan, config.period_cycle, config.duty_cycle);
 	} else if (os_strcmp(argv[2], "start") == 0) {
-		BK_LOG_ON_ERR(bk_pwm_start(chan));
+		ret = bk_pwm_start(chan);
+		BK_LOG_ON_ERR(ret);
+		if (ret != BK_OK) {
+			CLI_LOGE("pwm start failed, chan=%d ret=%#x\n", chan, ret);
+			return;
+		}
 		CLI_LOGI("pwm start, chan=%d\n", chan);
 	} else if (os_strcmp(argv[2], "stop") == 0) {
-		BK_LOG_ON_ERR(bk_pwm_stop(chan));
+		ret = bk_pwm_stop(chan);
+		BK_LOG_ON_ERR(ret);
+		if (ret != BK_OK) {
+			CLI_LOGE("pwm stop failed, chan=%d ret=%#x\n", chan, ret);
+			return;
+		}
 		CLI_LOGI("pwm stop, chan=%d\n", chan);
 	} else if (os_strcmp(argv[2], "deinit") == 0) {
-		BK_LOG_ON_ERR(bk_pwm_deinit(chan));
+		ret = bk_pwm_deinit(chan);
+		BK_LOG_ON_ERR(ret);
+		if (ret != BK_OK) {
+			CLI_LOGE("pwm deinit failed, chan=%d ret=%#x\n", chan, ret);
+			return;
+		}
 		CLI_LOGI("pwm deinit, chan=%d\n", chan);
 	} else if (os_strcmp(argv[2], "signal") == 0) {
 		if (argc != 4) {
@@ -110,9 +144,14 @@ static void cli_pwm_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
 		}
 
 		if (os_strcmp(argv[3], "low") == 0)
-			BK_LOG_ON_ERR(bk_pwm_set_init_signal_low(chan));
+			ret = bk_pwm_set_init_signal_low(chan);
 		else
-			BK_LOG_ON_ERR(bk_pwm_set_init_signal_high(chan));
+			ret = bk_pwm_set_init_signal_high(chan);
+		BK_LOG_ON_ERR(ret);
+		if (ret != BK_OK) {
+			CLI_LOGE("pwm set signal failed, chan=%d signal=%s ret=%#x\n", chan, argv[3], ret);
+			return;
+		}
 		CLI_LOGI("pwm set signal, chan=%d\n", chan);
 	} else if (os_strcmp(argv[2], "duty") == 0) {
 		pwm_period_duty_config_t config = {0};
@@ -127,7 +166,13 @@ static void cli_pwm_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
 			config.duty2_cycle = os_strtoul(argv[5], NULL, 10);
 		if (argc > 6)
 			config.duty3_cycle = os_strtoul(argv[6], NULL, 10);
-		BK_LOG_ON_ERR(bk_pwm_set_period_duty(chan, &config));
+		ret = bk_pwm_set_period_duty(chan, &config);
+		BK_LOG_ON_ERR(ret);
+		if (ret != BK_OK) {
+			CLI_LOGE("pwm duty failed, chan=%d period=%d t1=%d t2=%d t3=%d ret=%#x\n",
+				chan, config.period_cycle, config.duty_cycle, config.duty2_cycle, config.duty3_cycle, ret);
+			return;
+		}
 		CLI_LOGI("pwm duty, chan=%d period=%d t1=%d t2=%d t3=%d\n", chan, config.period_cycle,
 				 config.duty_cycle, config.duty2_cycle, config.duty3_cycle);
 	} else {
@@ -139,6 +184,7 @@ static void cli_pwm_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
 static void cli_pwm_group_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
 	uint32_t group;
+	bk_err_t ret = BK_OK;
 
 	if (argc < 2) {
 		cli_pwm_help();
@@ -160,18 +206,39 @@ static void cli_pwm_group_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc
 		config.period_cycle = os_strtoul(argv[4], NULL, 10);
 		config.chan1_duty_cycle = os_strtoul(argv[5], NULL, 10);
 		config.chan2_duty_cycle = os_strtoul(argv[6], NULL, 10);
-		BK_LOG_ON_ERR(bk_pwm_group_init(&config, &group));
+		ret = bk_pwm_group_init(&config, &group);
+		BK_LOG_ON_ERR(ret);
+		if (ret != BK_OK) {
+			CLI_LOGE("pwm group init failed, chan1=%d chan2=%d period=%x d1=%x d2=%x ret=%#x\n",
+				config.chan1, config.chan2, config.period_cycle, config.chan1_duty_cycle, config.chan2_duty_cycle, ret);
+			return;
+		}
 		CLI_LOGI("pwm init, group=%d chan1=%d chan2=%d period=%x d1=%x d2=%x\n",
 				 group, config.chan1, config.chan2, config.period_cycle,
 				 config.chan1_duty_cycle, config.chan2_duty_cycle);
 	} else if (os_strcmp(argv[1], "start") == 0) {
-		BK_LOG_ON_ERR(bk_pwm_group_start(group));
+		ret = bk_pwm_group_start(group);
+		BK_LOG_ON_ERR(ret);
+		if (ret != BK_OK) {
+			CLI_LOGE("pwm group start failed, group=%d ret=%#x\n", group, ret);
+			return;
+		}
 		CLI_LOGI("pwm start, group=%d\n", group);
 	} else if (os_strcmp(argv[1], "stop") == 0) {
-		BK_LOG_ON_ERR(bk_pwm_group_stop(group));
+		ret = bk_pwm_group_stop(group);
+		BK_LOG_ON_ERR(ret);
+		if (ret != BK_OK) {
+			CLI_LOGE("pwm group stop failed, group=%d ret=%#x\n", group, ret);
+			return;
+		}
 		CLI_LOGI("pwm stop, group=%d\n", group);
 	} else if (os_strcmp(argv[1], "deinit") == 0) {
-		BK_LOG_ON_ERR(bk_pwm_group_deinit(group));
+		ret = bk_pwm_group_deinit(group);
+		BK_LOG_ON_ERR(ret);
+		if (ret != BK_OK) {
+			CLI_LOGE("pwm group deinit failed, group=%d ret=%#x\n", group, ret);
+			return;
+		}
 		CLI_LOGI("pwm deinit, group=%d\n", group);
 	} else if (os_strcmp(argv[1], "config") == 0) {
 		pwm_group_config_t config = {0};
@@ -183,7 +250,13 @@ static void cli_pwm_group_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc
 		config.period_cycle = os_strtoul(argv[3], NULL, 10);
 		config.chan1_duty_cycle = os_strtoul(argv[4], NULL, 10);
 		config.chan2_duty_cycle = os_strtoul(argv[5], NULL, 10);
-		BK_LOG_ON_ERR(bk_pwm_group_set_config(group, &config));
+		ret = bk_pwm_group_set_config(group, &config);
+		BK_LOG_ON_ERR(ret);
+		if (ret != BK_OK) {
+			CLI_LOGE("pwm group config failed, group=%x period=%x chan1_duty=%x chan2_duty=%x ret=%#x\n",
+				group, config.period_cycle, config.chan1_duty_cycle, config.chan2_duty_cycle, ret);
+			return;
+		}
 		CLI_LOGI("pwm config, group=%x period=%x chan1_duty=%x chan2_duty=%x\n",
 				 group, config.period_cycle, config.chan1_duty_cycle, config.chan2_duty_cycle);
 	} else {
@@ -206,6 +279,7 @@ static void cli_pwm_capture_isr(pwm_chan_t chan)
 static void cli_pwm_int_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
 	uint32_t chan;
+	bk_err_t ret = BK_OK;
 
 	if (argc != 3) {
 		cli_pwm_help();
@@ -215,13 +289,28 @@ static void cli_pwm_int_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
 	chan = os_strtoul(argv[1], NULL, 10);
 
 	if (os_strcmp(argv[2], "reg") == 0) {
-		BK_LOG_ON_ERR(bk_pwm_register_isr(chan, cli_pwm_isr));
+		ret = bk_pwm_register_isr(chan, cli_pwm_isr);
+		BK_LOG_ON_ERR(ret);
+		if (ret != BK_OK) {
+			CLI_LOGE("pwm chan%d register interrupt isr failed, ret=%#x\n", chan, ret);
+			return;
+		}
 		CLI_LOGI("pwm chan%d register interrupt isr\n", chan);
 	} else if (os_strcmp(argv[2], "enable") == 0) {
-		BK_LOG_ON_ERR(bk_pwm_enable_interrupt(chan));
+		ret = bk_pwm_enable_interrupt(chan);
+		BK_LOG_ON_ERR(ret);
+		if (ret != BK_OK) {
+			CLI_LOGE("pwm chan%d enable interrupt failed, ret=%#x\n", chan, ret);
+			return;
+		}
 		CLI_LOGI("pwm chan%d enable interrupt\n", chan);
 	} else if (os_strcmp(argv[2], "disable") == 0) {
-		BK_LOG_ON_ERR(bk_pwm_disable_interrupt(chan));
+		ret = bk_pwm_disable_interrupt(chan);
+		BK_LOG_ON_ERR(ret);
+		if (ret != BK_OK) {
+			CLI_LOGE("pwm chan%d disable interrupt failed, ret=%#x\n", chan, ret);
+			return;
+		}
 		CLI_LOGI("pwm chan%d disable interrupt\n", chan);
 	} else {
 		cli_pwm_help();
@@ -232,6 +321,7 @@ static void cli_pwm_int_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, 
 static void cli_pwm_capture_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
 	uint32_t chan;
+	bk_err_t ret = BK_OK;
 
 	if (argc < 2) {
 		cli_pwm_help();
@@ -261,16 +351,36 @@ static void cli_pwm_capture_cmd(char *pcWriteBuffer, int xWriteBufferLen, int ar
 
 		config.pulse_count_threshold = os_strtoul(argv[5], NULL, 10);
 		config.isr = cli_pwm_capture_isr;
-		BK_LOG_ON_ERR(bk_pwm_capture_init(chan, &config));
+		ret = bk_pwm_capture_init(chan, &config);
+		BK_LOG_ON_ERR(ret);
+		if (ret != BK_OK) {
+			CLI_LOGE("pwm_capture init failed, chan=%d ret=%#x\n", chan, ret);
+			return;
+		}
 		CLI_LOGI("pwm_capture init, chan=%d\n", chan);
 	} else if (os_strcmp(argv[2], "start") == 0) {
-		BK_LOG_ON_ERR(bk_pwm_capture_start(chan));
+		ret = bk_pwm_capture_start(chan);
+		BK_LOG_ON_ERR(ret);
+		if (ret != BK_OK) {
+			CLI_LOGE("pwm_capture start failed, chan=%d ret=%#x\n", chan, ret);
+			return;
+		}
 		CLI_LOGI("pwm_capture start, chan=%d\n", chan);
 	} else if (os_strcmp(argv[2], "stop") == 0) {
-		BK_LOG_ON_ERR(bk_pwm_capture_stop(chan));
+		ret = bk_pwm_capture_stop(chan);
+		BK_LOG_ON_ERR(ret);
+		if (ret != BK_OK) {
+			CLI_LOGE("pwm_capture stop failed, chan=%d ret=%#x\n", chan, ret);
+			return;
+		}
 		CLI_LOGI("pwm_capture stop, chan=%d\n", chan);
 	} else if (os_strcmp(argv[2], "deinit") == 0) {
-		BK_LOG_ON_ERR(bk_pwm_capture_deinit(chan));
+		ret = bk_pwm_capture_deinit(chan);
+		BK_LOG_ON_ERR(ret);
+		if (ret != BK_OK) {
+			CLI_LOGE("pwm_capture deinit failed, chan=%d ret=%#x\n", chan, ret);
+			return;
+		}
 		CLI_LOGI("pwm_capture deinit, chan=%d\n", chan);
 	} else if (os_strcmp(argv[2], "get_value") == 0) {
 		CLI_LOGI("capture(%d), value=%x\n", chan, bk_pwm_capture_get_value(chan));
@@ -416,11 +526,29 @@ static void pwm_update_all_chan_test(void)
 
 static int pwm_phase_shift_test(void)
 {
+	bk_err_t ret = BK_OK;
 	pwm_phase_shift_config_t config = PHASE_SHIFT_CONFIG;
 
-	BK_LOG_ON_ERR(bk_pwm_driver_init());
-	BK_LOG_ON_ERR(bk_pwm_phase_shift_init(&config));
-	BK_LOG_ON_ERR(bk_pwm_phase_shift_start());
+	ret = bk_pwm_driver_init();
+	BK_LOG_ON_ERR(ret);
+	if (ret != BK_OK) {
+		CLI_LOGE("phase_shift driver init failed, ret=%#x\r\n", ret);
+		return ret;
+	}
+
+	ret = bk_pwm_phase_shift_init(&config);
+	BK_LOG_ON_ERR(ret);
+	if (ret != BK_OK) {
+		CLI_LOGE("phase_shift init failed, ret=%#x\r\n", ret);
+		return ret;
+	}
+
+	ret = bk_pwm_phase_shift_start();
+	BK_LOG_ON_ERR(ret);
+	if (ret != BK_OK) {
+		CLI_LOGE("phase_shift start failed, ret=%#x\r\n", ret);
+		return ret;
+	}
 
 	uint32_t rand_num = 0;
 	time_t time_num;
@@ -432,20 +560,47 @@ static int pwm_phase_shift_test(void)
 		for (int i = 0; i < config.chan_num; i++) {
 			rand_num = rand() % 11;
 			CLI_LOGI("phase_shift rand_num:%d\r\n", rand_num);
-			BK_LOG_ON_ERR(bk_pwm_phase_shift_set_duty(config.duty_config[i].chan, s_period_cycle * 0.1f * rand_num));
+			ret = bk_pwm_phase_shift_set_duty(config.duty_config[i].chan, s_period_cycle * 0.1f * rand_num);
+			BK_LOG_ON_ERR(ret);
+			if (ret != BK_OK) {
+				CLI_LOGE("phase_shift set duty failed, chan=%d ret=%#x\r\n", config.duty_config[i].chan, ret);
+				return ret;
+			}
 		}
-		BK_LOG_ON_ERR(bk_pwm_phase_shift_update_duty());
+		ret = bk_pwm_phase_shift_update_duty();
+		BK_LOG_ON_ERR(ret);
+		if (ret != BK_OK) {
+			CLI_LOGE("phase_shift update duty failed, ret=%#x\r\n", ret);
+			return ret;
+		}
 		rtos_delay_milliseconds(10);
 		os_printf("\r\n");
 	}
 
-	BK_LOG_ON_ERR(bk_pwm_phase_shift_set_duty(PWM_CH_0, 0));
-	BK_LOG_ON_ERR(bk_pwm_phase_shift_set_duty(PWM_CH_1, 0));
-	BK_LOG_ON_ERR(bk_pwm_phase_shift_set_duty(PWM_CH_2, 0));
-	BK_LOG_ON_ERR(bk_pwm_phase_shift_set_duty(PWM_CH_3, 0));
-	BK_LOG_ON_ERR(bk_pwm_phase_shift_set_duty(PWM_CH_4, 0));
-	BK_LOG_ON_ERR(bk_pwm_phase_shift_set_duty(PWM_CH_5, 0));
-	BK_LOG_ON_ERR(bk_pwm_phase_shift_update_duty());
+	ret = bk_pwm_phase_shift_set_duty(PWM_CH_0, 0);
+	BK_LOG_ON_ERR(ret);
+	if (ret != BK_OK) return ret;
+	ret = bk_pwm_phase_shift_set_duty(PWM_CH_1, 0);
+	BK_LOG_ON_ERR(ret);
+	if (ret != BK_OK) return ret;
+	ret = bk_pwm_phase_shift_set_duty(PWM_CH_2, 0);
+	BK_LOG_ON_ERR(ret);
+	if (ret != BK_OK) return ret;
+	ret = bk_pwm_phase_shift_set_duty(PWM_CH_3, 0);
+	BK_LOG_ON_ERR(ret);
+	if (ret != BK_OK) return ret;
+	ret = bk_pwm_phase_shift_set_duty(PWM_CH_4, 0);
+	BK_LOG_ON_ERR(ret);
+	if (ret != BK_OK) return ret;
+	ret = bk_pwm_phase_shift_set_duty(PWM_CH_5, 0);
+	BK_LOG_ON_ERR(ret);
+	if (ret != BK_OK) return ret;
+	ret = bk_pwm_phase_shift_update_duty();
+	BK_LOG_ON_ERR(ret);
+	if (ret != BK_OK) {
+		CLI_LOGE("phase_shift finalize update failed, ret=%#x\r\n", ret);
+		return ret;
+	}
 
 	CLI_LOGI("phase_shift test over\r\n");
 
@@ -484,6 +639,8 @@ static void cli_pwm_fade_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
 
 static void cli_pwm_idle_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
+	bk_err_t ret = BK_OK;
+
 	if (argc < 2) {
 		cli_pwm_help();
 		return;
@@ -519,7 +676,12 @@ static void cli_pwm_idle_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int 
 			cli_pwm_help();
 			return;
 		}
-		BK_LOG_ON_ERR(bk_pwm_driver_init());
+		ret = bk_pwm_driver_init();
+		BK_LOG_ON_ERR(ret);
+		if (ret != BK_OK) {
+			CLI_LOGE("pwm driver init failed in idle test, ret=%#x\n", ret);
+			return;
+		}
 		pwm_group_init_config_t config = {0};
 
 		config.chan1 = os_strtoul(argv[2], NULL, 10);
@@ -530,7 +692,14 @@ static void cli_pwm_idle_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int 
 		config.period_cycle = period_cycle;
 		config.chan1_duty_cycle = period_cycle * os_strtoul(argv[5], NULL, 10) / 100;
 		config.chan2_duty_cycle = period_cycle * os_strtoul(argv[6], NULL, 10) / 100;
-		BK_LOG_ON_ERR(bk_pwm_group_init(&config, &group));
+		ret = bk_pwm_group_init(&config, &group);
+		BK_LOG_ON_ERR(ret);
+		if (ret != BK_OK) {
+			CLI_LOGE("pwm idle group init failed, chan1=%d chan2=%d period=%d d1=%d d2=%d ret=%#x\n",
+				config.chan1, config.chan2, config.period_cycle,
+				config.chan1_duty_cycle, config.chan2_duty_cycle, ret);
+			return;
+		}
 
 		CLI_LOGI("pwm group=%d chan1=%d chan2=%d period=%d d1=%d d2=%d\n",
 				 group, config.chan1, config.chan2, config.period_cycle,
@@ -630,7 +799,12 @@ DRV_CLI_CMD_EXPORT static const struct cli_command s_pwm_commands[] = {
 
 int cli_pwm_init(void)
 {
-	BK_LOG_ON_ERR(bk_pwm_driver_init());
+	bk_err_t ret = bk_pwm_driver_init();
+	BK_LOG_ON_ERR(ret);
+	if (ret != BK_OK) {
+		CLI_LOGE("pwm driver init failed during cli init, ret=%#x\n", ret);
+		return ret;
+	}
 	return cli_register_commands(s_pwm_commands, PWM_CMD_CNT);
 }
 

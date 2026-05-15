@@ -58,11 +58,19 @@ static void cli_flash_api_cmd_handler(void **argtable)
     if (arg_init->count > 0)
     {
         if (strcmp(arg_init->sval[0], "init") == 0) {
-            BK_LOG_ON_ERR(bk_flash_driver_init());
-            BK_DUMP_OUT("Flash driver initialized successfully\r\n");
+            err = bk_flash_driver_init();
+            if (err == BK_OK) {
+                BK_DUMP_OUT("Flash driver initialized successfully\r\n");
+            } else {
+                BK_DUMP_OUT("Flash driver initialization failed, err = %x\r\n", err);
+            }
         } else if (strcmp(arg_init->sval[0], "deinit") == 0) {
-            BK_LOG_ON_ERR(bk_flash_driver_deinit());
-            BK_DUMP_OUT("Flash driver deinitialized successfully\r\n");
+            err = bk_flash_driver_deinit();
+            if (err == BK_OK) {
+                BK_DUMP_OUT("Flash driver deinitialized successfully\r\n");
+            } else {
+                BK_DUMP_OUT("Flash driver deinitialization failed, err = %x\r\n", err);
+            }
         } else {
             BK_DUMP_OUT("Invalid parameter for init: %s\r\n", arg_init->sval[0]);
         }
@@ -100,11 +108,19 @@ static void cli_flash_api_cmd_handler(void **argtable)
     if (arg_write_able->count > 0)
     {
         if (strcmp(arg_write_able->sval[0], "enable") == 0) {
-            BK_LOG_ON_ERR(bk_flash_write_enable());
-            BK_DUMP_OUT("Flash write enable successfully\r\n");
+            err = bk_flash_write_enable();
+            if (err == BK_OK) {
+                BK_DUMP_OUT("Flash write enable successfully\r\n");
+            } else {
+                BK_DUMP_OUT("Flash write enable failed, err = %x\r\n", err);
+            }
         } else if (strcmp(arg_write_able->sval[0], "disable") == 0) {
-            BK_LOG_ON_ERR(bk_flash_write_disable());
-            BK_DUMP_OUT("Flash write disable successfully\r\n");
+            err = bk_flash_write_disable();
+            if (err == BK_OK) {
+                BK_DUMP_OUT("Flash write disable successfully\r\n");
+            } else {
+                BK_DUMP_OUT("Flash write disable failed, err = %x\r\n", err);
+            }
         } else {
             BK_DUMP_OUT("Invalid parameter for write: %s\r\n", arg_write_able->sval[0]);
         }
@@ -115,14 +131,26 @@ static void cli_flash_api_cmd_handler(void **argtable)
     if (arg_deep_sleep_block->count > 0)
     {
         if (strcmp(arg_deep_sleep_block->sval[0], "erase") == 0) {
-            BK_LOG_ON_ERR(bk_flash_erase_block(block_addr));
-            BK_DUMP_OUT("Flash erase block successfully\r\n");
+            err = bk_flash_erase_block(block_addr);
+            if (err == BK_OK) {
+                BK_DUMP_OUT("Flash erase block successfully\r\n");
+            } else {
+                BK_DUMP_OUT("Flash erase block failed, err = %x\r\n", err);
+            }
         } else if (strcmp(arg_deep_sleep_block->sval[0], "enter") == 0) {
-            BK_LOG_ON_ERR(bk_flash_enter_deep_sleep());
-            BK_DUMP_OUT("Flash enter deep sleep successfully\r\n");
+            err = bk_flash_enter_deep_sleep();
+            if (err == BK_OK) {
+                BK_DUMP_OUT("Flash enter deep sleep successfully\r\n");
+            } else {
+                BK_DUMP_OUT("Flash enter deep sleep failed, err = %x\r\n", err);
+            }
         } else if (strcmp(arg_deep_sleep_block->sval[0], "exit") == 0) {
-            BK_LOG_ON_ERR(bk_flash_exit_deep_sleep());
-            BK_DUMP_OUT("Flash exit deep sleep successfully\r\n");
+            err = bk_flash_exit_deep_sleep();
+            if (err == BK_OK) {
+                BK_DUMP_OUT("Flash exit deep sleep successfully\r\n");
+            } else {
+                BK_DUMP_OUT("Flash exit deep sleep failed, err = %x\r\n", err);
+            }
         } else {
             BK_DUMP_OUT("Invalid parameter for write: %s\r\n", arg_deep_sleep_block->sval[0]);
         }

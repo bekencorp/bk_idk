@@ -255,8 +255,12 @@ static void cli_flash_import_cmd(char *pcWriteBuffer, int xWriteBufferLen, int a
 					break;
 				}
 			}
-			CLI_LOGI("flash lock erase success\r\n");
-			msg = CLI_CMD_RSP_SUCCEED;
+			if (ret == BK_OK) {
+				CLI_LOGI("flash lock erase success\r\n");
+				msg = CLI_CMD_RSP_SUCCEED;
+			} else {
+				msg = CLI_CMD_RSP_ERROR;
+			}
 		}
 	} else if (os_strcmp(argv[1], "lock_write") == 0) {
 		if (argc < 4) {
@@ -278,8 +282,12 @@ static void cli_flash_import_cmd(char *pcWriteBuffer, int xWriteBufferLen, int a
 					break;
 				}
 			}
-			CLI_LOGI("flash lock write success\r\n");
-			msg = CLI_CMD_RSP_SUCCEED;
+			if (ret == BK_OK) {
+				CLI_LOGI("flash lock write success\r\n");
+				msg = CLI_CMD_RSP_SUCCEED;
+			} else {
+				msg = CLI_CMD_RSP_ERROR;
+			}
 		}
 	} else {
 		cli_flash_help();

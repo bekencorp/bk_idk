@@ -20,6 +20,7 @@
 #include <driver/uart.h>
 #include <driver/trng.h>
 #include "uart_statis.h"
+#include <string.h>
 
 #define UART_ID_0 0
 #define UART_ID_1 1
@@ -41,6 +42,7 @@ static void cli_uart_tx_isr(uart_id_t id, void *param)
 
 static void cli_uart_api_cmd_handler(void **argtable)
 {
+    bk_err_t ret = BK_OK;
     struct arg_lit *help = (struct arg_lit *)argtable[0];
     struct arg_str *driver = (struct arg_str *)argtable[1];
     struct arg_str *init_config = (struct arg_str *)argtable[2];
@@ -68,7 +70,11 @@ static void cli_uart_api_cmd_handler(void **argtable)
     else if (driver->count > 0)
     {
         if (strcmp(driver->sval[0], "init") == 0) {
-            BK_LOG_ON_ERR(bk_uart_driver_init());
+            ret = bk_uart_driver_init();
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("UART driver init failed, ret:-0x%x\r\n", -ret);
+                return;
+            }
             BK_DUMP_OUT("UART driver initialized successfully\r\n");
         }  else {
             BK_DUMP_OUT("Invalid parameter for driver: %s\r\n", driver->sval[0]);
@@ -124,10 +130,18 @@ static void cli_uart_api_cmd_handler(void **argtable)
                 config.src_clk = os_strtoul(src_clk->sval[0], NULL, 10);
             }
 
-            BK_LOG_ON_ERR(bk_uart_init(uart_id, &config));
+            ret = bk_uart_init(uart_id, &config);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("UART init failed, uart_id=%d, ret:-0x%x\r\n", uart_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("UART initialized successfully, uart_id=%d\n", uart_id);
         } else if (strcmp(init_config->sval[0], "deinit") == 0) {
-            BK_LOG_ON_ERR(bk_uart_deinit(uart_id));
+            ret = bk_uart_deinit(uart_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("UART deinit failed, uart_id=%d, ret:-0x%x\r\n", uart_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("UART deinitialized successfully, uart_id=%d\n", uart_id);
         } else {
             BK_DUMP_OUT("Invalid configuration parameter: %s\n", init_config->sval[0]);
@@ -139,35 +153,67 @@ static void cli_uart_api_cmd_handler(void **argtable)
         uart_id_t uart_id = id->ival[0]; // Ensure the uart_id is fetched first
         if (strcmp(set->sval[0], "baud") == 0) {
             uint32_t baud_rate_val = baud_rate->ival[0];
-            BK_LOG_ON_ERR(bk_uart_set_baud_rate(uart_id, baud_rate_val));
+            ret = bk_uart_set_baud_rate(uart_id, baud_rate_val);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("UART id %d set baud_rate failed, ret:-0x%x,\n", uart_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("UART id %d set baud_rate %d successfully,\n", uart_id, baud_rate_val);
         } else if (strcmp(set->sval[0], "data_bits") == 0) {
             uart_data_bits_t data_bits_val = (uart_data_bits_t)bits->ival[0];
-            BK_LOG_ON_ERR(bk_uart_set_data_bits(uart_id, data_bits_val));
+            ret = bk_uart_set_data_bits(uart_id, data_bits_val);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("UART id %d set data_bits failed, ret:-0x%x,\n", uart_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("UART id %d set data_bits %d successfully,\n", uart_id, data_bits_val);
         } else if (strcmp(set->sval[0], "stop_bits") == 0) {
             uart_stop_bits_t stop_bits_val = (uart_stop_bits_t)os_strtoul(stop_bits->sval[0], NULL, 10);
-            BK_LOG_ON_ERR(bk_uart_set_stop_bits(uart_id, stop_bits_val));
+            ret = bk_uart_set_stop_bits(uart_id, stop_bits_val);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("UART id %d set stop_bits failed, ret:-0x%x,\n", uart_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("UART id %d set stop_bits %d successfully,\n", uart_id, stop_bits_val);
         } else if (strcmp(set->sval[0], "parity") == 0) {
             uart_parity_t parity_val = (uart_parity_t)os_strtoul(parity->sval[0], NULL, 10);
-            BK_LOG_ON_ERR(bk_uart_set_parity(uart_id, parity_val));
+            ret = bk_uart_set_parity(uart_id, parity_val);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("UART id %d set parity failed, ret:-0x%x,\n", uart_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("UART id %d set parity %d successfully,\n", uart_id, parity_val);
         } else if (strcmp(set->sval[0], "hw_flow") == 0 || strcmp(set->sval[0], "rx_full") == 0 || strcmp(set->sval[0], "tx_empty") == 0) {
             uint8_t threshold_val = (uint8_t)threshold->ival[0];
             if (strcmp(set->sval[0], "hw_flow") == 0) {
-                BK_LOG_ON_ERR(bk_uart_set_hw_flow_ctrl(uart_id, threshold_val));
+                ret = bk_uart_set_hw_flow_ctrl(uart_id, threshold_val);
+                if (ret != BK_OK) {
+                    BK_DUMP_OUT("UART id %d set hw_flow failed, ret:-0x%x,\n", uart_id, -ret);
+                    return;
+                }
                 BK_DUMP_OUT("UART id %d set rx_threshold %d successfully,\n", uart_id, threshold_val);
             } else if (strcmp(set->sval[0], "rx_full") == 0) {
-                BK_LOG_ON_ERR(bk_uart_set_rx_full_threshold(uart_id, threshold_val));
+                ret = bk_uart_set_rx_full_threshold(uart_id, threshold_val);
+                if (ret != BK_OK) {
+                    BK_DUMP_OUT("UART id %d set rx_full failed, ret:-0x%x,\n", uart_id, -ret);
+                    return;
+                }
                 BK_DUMP_OUT("UART id %d set rx_fifo_threshold %d successfully,\n", uart_id, threshold_val);
             } else if (strcmp(set->sval[0], "tx_empty") == 0) {
-                BK_LOG_ON_ERR(bk_uart_set_tx_empty_threshold(uart_id, threshold_val));
+                ret = bk_uart_set_tx_empty_threshold(uart_id, threshold_val);
+                if (ret != BK_OK) {
+                    BK_DUMP_OUT("UART id %d set tx_empty failed, ret:-0x%x,\n", uart_id, -ret);
+                    return;
+                }
                 BK_DUMP_OUT("UART id %d set tx_fifo_threshold %d successfully,\n", uart_id, threshold_val);
             }
         } else if (strcmp(set->sval[0], "rx_timeout") == 0) {
             uart_rx_stop_detect_time_t rx_timeout_val = (uart_rx_stop_detect_time_t)os_strtoul(src_clk->sval[0], NULL, 10);
-            BK_LOG_ON_ERR(bk_uart_set_rx_timeout(uart_id, rx_timeout_val));
+            ret = bk_uart_set_rx_timeout(uart_id, rx_timeout_val);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("UART id %d set rx_timeout failed, ret:-0x%x,\n", uart_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("UART id %d set rx_timeout %d successfully,\n", uart_id, rx_timeout_val);
         } else if (strcmp(set->sval[0], "enable_rx") == 0) {
             uint8_t uart_ext = (uint8_t)threshold->ival[0];
@@ -175,7 +221,11 @@ static void cli_uart_api_cmd_handler(void **argtable)
                 uart_ext = 1;
                 BK_DUMP_OUT("The max of uart_ext is 1\n", uart_id);
             }
-            BK_LOG_ON_ERR(bk_uart_set_enable_rx(uart_id, uart_ext));
+            ret = bk_uart_set_enable_rx(uart_id, uart_ext);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("UART id %d set enable_rx failed, ret:-0x%x,\n", uart_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("UART id %d set enable_tx %d successfully,\n", uart_id, uart_ext);
         } else if (strcmp(set->sval[0], "enable_tx") == 0) {
             uint8_t uart_ext = (uint8_t)threshold->ival[0];
@@ -183,7 +233,11 @@ static void cli_uart_api_cmd_handler(void **argtable)
                 uart_ext = 1;
                 BK_DUMP_OUT("The max of uart_ext is 1\n", uart_id);
             }
-            BK_LOG_ON_ERR(bk_uart_set_enable_tx(uart_id, uart_ext));
+            ret = bk_uart_set_enable_tx(uart_id, uart_ext);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("UART id %d set enable_tx failed, ret:-0x%x,\n", uart_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("UART id %d set enable_tx %d successfully,\n", uart_id, uart_ext);
         } else {
             BK_DUMP_OUT("UART %d invalid parameter for set %s failed,\n", uart_id, set->sval[0]);
@@ -193,46 +247,112 @@ static void cli_uart_api_cmd_handler(void **argtable)
     else if (able->count > 0) {
         uart_id_t uart_id = (uart_id_t)id->ival[0];
         if (strcmp(able->sval[0], "dis_hw") == 0) {
-            BK_LOG_ON_ERR(bk_uart_disable_hw_flow_ctrl(uart_id));
+            ret = bk_uart_disable_hw_flow_ctrl(uart_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("UART id %d disable_hw_flow_ctrl failed, ret:-0x%x,\n", uart_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("UART id %d set disable_hw_flow_ctrl successfully,\n", uart_id);
         } else if (strcmp(able->sval[0], "en_tx") == 0) {
-            BK_LOG_ON_ERR(bk_uart_enable_tx_interrupt(uart_id));
+            ret = bk_uart_enable_tx_interrupt(uart_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("UART id %d enable_tx_interrupt failed, ret:-0x%x,\n", uart_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("UART id %d set enable_tx_interrupt successfully,\n", uart_id);
         } else if (strcmp(able->sval[0], "dis_tx") == 0) {
-            BK_LOG_ON_ERR(bk_uart_disable_tx_interrupt(uart_id));
+            ret = bk_uart_disable_tx_interrupt(uart_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("UART id %d disable_tx_interrupt failed, ret:-0x%x,\n", uart_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("UART id %d set disable_tx_interrupt successfully,\n", uart_id);
         } else if (strcmp(able->sval[0], "en_rx") == 0) {
-            BK_LOG_ON_ERR(bk_uart_enable_rx_interrupt(uart_id));
+            ret = bk_uart_enable_rx_interrupt(uart_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("UART id %d enable_rx_interrupt failed, ret:-0x%x,\n", uart_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("UART id %d set enable_rx_interrupt successfully,\n", uart_id);
         } else if (strcmp(able->sval[0], "dis_rx") == 0) {
-            BK_LOG_ON_ERR(bk_uart_disable_rx_interrupt(uart_id));
+            ret = bk_uart_disable_rx_interrupt(uart_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("UART id %d disable_rx_interrupt failed, ret:-0x%x,\n", uart_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("UART id %d set disable_rx_interrupt successfully,\n", uart_id);
         } else if (strcmp(able->sval[0], "rx_isr") == 0) {
-            BK_LOG_ON_ERR(bk_uart_register_rx_isr(uart_id, cli_uart_rx_isr, NULL));
+            ret = bk_uart_register_rx_isr(uart_id, cli_uart_rx_isr, NULL);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("UART id %d register_rx_isr failed, ret:-0x%x,\n", uart_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("UART id %d set register_rx_isr successfully,\n", uart_id);
         } else if (strcmp(able->sval[0], "tx_isr") == 0) {
-            BK_LOG_ON_ERR(bk_uart_register_tx_isr(uart_id, cli_uart_tx_isr, NULL));
+            ret = bk_uart_register_tx_isr(uart_id, cli_uart_tx_isr, NULL);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("UART id %d register_tx_isr failed, ret:-0x%x,\n", uart_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("UART id %d set register_rx_isr successfully,\n", uart_id);
         } else if (strcmp(able->sval[0], "dis_txx") == 0) {
-            BK_LOG_ON_ERR(bk_uart_disable_tx(uart_id));
+            ret = bk_uart_disable_tx(uart_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("UART id %d disable_tx failed, ret:-0x%x,\n", uart_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("UART id %d uart disable rx successfully,\n", uart_id);
         } else if (strcmp(able->sval[0], "dis_rxx") == 0) {
-            BK_LOG_ON_ERR(bk_uart_disable_rx(uart_id));
+            ret = bk_uart_disable_rx(uart_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("UART id %d disable_rx failed, ret:-0x%x,\n", uart_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("UART id %d uart disable tx successfully,\n", uart_id);
         } else if (strcmp(able->sval[0], "en_sw") == 0) {
-            BK_LOG_ON_ERR(bk_uart_enable_sw_fifo(uart_id));
+            ret = bk_uart_enable_sw_fifo(uart_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("UART id %d enable_sw_fifo failed, ret:-0x%x,\n", uart_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("UART id %d enable sw fifo successfully,\n", uart_id);
         } else if (strcmp(able->sval[0], "dis_sw") == 0) {
-            BK_LOG_ON_ERR(bk_uart_disable_sw_fifo(uart_id));
+            ret = bk_uart_disable_sw_fifo(uart_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("UART id %d disable_sw_fifo failed, ret:-0x%x,\n", uart_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("UART id %d disable sw fifo successfully,\n", uart_id);
         } else if (strcmp(able->sval[0], "re_rx_isr") == 0) {
-            BK_LOG_ON_ERR(bk_uart_recover_rx_isr(uart_id));
+            ret = bk_uart_recover_rx_isr(uart_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("UART id %d recover_rx_isr failed, ret:-0x%x,\n", uart_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("UART id %d recover rx isr successfully,\n", uart_id);
         } else if (strcmp(able->sval[0], "tx_over") == 0) {
-            BK_LOG_ON_ERR(bk_uart_is_tx_over(uart_id));
-            BK_DUMP_OUT("UART id %d is tx over successfully,\n", uart_id);
+            bool tx_over = false;
+            const uint32_t max_wait_ms = 50;
+
+            for (uint32_t i = 0; i < max_wait_ms; i++) {
+                tx_over = bk_uart_is_tx_over(uart_id);
+                if (tx_over) {
+                    break;
+                }
+                rtos_delay_milliseconds(1);
+            }
+
+            if (tx_over) {
+                BK_DUMP_OUT("UART id %d tx_over success (waited <= %d ms),\n", uart_id, max_wait_ms);
+            } else {
+                BK_DUMP_OUT("UART id %d tx_over timeout after %d ms,\n", uart_id, max_wait_ms);
+            }
         } else if (strcmp(able->sval[0], "pm") == 0) {
-            BK_LOG_ON_ERR(bk_uart_pm_backup(uart_id));
+            ret = bk_uart_pm_backup(uart_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("UART id %d pm backup failed, ret:-0x%x,\n", uart_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("UART id %d pm backup successfully,\n", uart_id);
         } else {
             BK_DUMP_OUT("UART invalid parameter for  %s,\n",set->sval[0]);
@@ -252,11 +372,15 @@ static void cli_uart_api_cmd_handler(void **argtable)
             for (int i = 0; i < buf_len; i++) {
                 send_data[i] = i & 0xff;
             }
-            BK_LOG_ON_ERR(bk_uart_write_bytes(uart_id, send_data, buf_len));
+            ret = bk_uart_write_bytes(uart_id, send_data, buf_len);
             if (send_data) {
                 os_free(send_data);
             }
             send_data = NULL;
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("uart write failed, uart_id=%d, ret:-0x%x\n", uart_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("uart write succedd, uart_id=%d, data_len:%d\n", uart_id, buf_len);
         } else if (strcmp(connect->sval[0], "read") == 0) {
             uint32_t buf_len = (uint32_t)bits->ival[0];
@@ -271,12 +395,13 @@ static void cli_uart_api_cmd_handler(void **argtable)
                 goto exit;
             }
             int data_len = bk_uart_read_bytes(uart_id, recv_data, buf_len, time_out);
-            BK_DUMP_OUT("uart read succedd, uart_id=%d\n", uart_id);
             if (data_len < 0) {
                 BK_DUMP_OUT("uart read failed, ret:-0x%x\r\n", -data_len);
                 os_free(recv_data);
                 recv_data = NULL;
+                return;
             }
+            BK_DUMP_OUT("uart read succedd, uart_id=%d\n", uart_id);
             BK_DUMP_OUT("uart read, uart_id=%d, time_out:%x data_len:%d\n", uart_id, time_out, data_len);
             for (int i = 0; i < data_len; i++) {
                 BK_DUMP_OUT("recv_buffer[%d]=0x%x\n", i, recv_data[i]);

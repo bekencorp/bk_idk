@@ -328,11 +328,6 @@ bk_err_t bk_pwm_driver_init(void)
 	// bk_pwm_register_cli_test_feature();
 #endif
 
-#if CONFIG_PWM_API_TEST
-	int bk_pwm_register_cli_api_test_feature(void);
-	bk_pwm_register_cli_api_test_feature();
-#endif
-
 	return BK_OK;
 }
 

@@ -19,12 +19,14 @@
 #include <stdbool.h>
 #include <driver/gpio_types.h>
 #include <driver/gpio.h>
+#include <string.h>
 
 extern void print_help(const char *progname, void **argtable);
 extern void common_cmd_handler(int argc, char **argv, void **argtable, int argtable_size, void (*handler)(void **argtable));
 
 static void cli_gpio_api_cmd_handler(void **argtable)
 {
+    bk_err_t ret = BK_OK;
     struct arg_lit *help = (struct arg_lit *)argtable[0];
     struct arg_str *driver = (struct arg_str *)argtable[1];
     struct arg_str *id = (struct arg_str *)argtable[2];
@@ -52,10 +54,18 @@ static void cli_gpio_api_cmd_handler(void **argtable)
     else if (driver->count > 0)
     {
         if (strcmp(driver->sval[0], "init") == 0) {
-            BK_LOG_ON_ERR(bk_gpio_driver_init());
+            ret = bk_gpio_driver_init();
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("GPIO driver init failed, ret:-0x%x\r\n", -ret);
+                return;
+            }
             BK_DUMP_OUT("GPIO driver initialized successfully\r\n");
         } else if (strcmp(driver->sval[0], "deinit") == 0) {
-            BK_LOG_ON_ERR(bk_gpio_driver_deinit());
+            ret = bk_gpio_driver_deinit();
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("GPIO driver deinit failed, ret:-0x%x\r\n", -ret);
+                return;
+            }
             BK_DUMP_OUT("GPIO driver deinitialized successfully\r\n");
         } else {
             BK_DUMP_OUT("Invalid parameter for init: %s\r\n", driver->sval[0]);
@@ -67,22 +77,28 @@ static void cli_gpio_api_cmd_handler(void **argtable)
     {
         gpio_id_t gpio_id = (gpio_id_t)os_strtoul(id->sval[0], NULL, 10);
         if (strcmp(able->sval[0], "en_output") == 0) {
-            BK_LOG_ON_ERR(bk_gpio_enable_output(gpio_id));
+            ret = bk_gpio_enable_output(gpio_id);
+            if (ret != BK_OK) return;
             BK_DUMP_OUT("Enable GPIO %d output mode successfully\r\n", gpio_id);
         } else if (strcmp(able->sval[0], "dis_output") == 0) {
-            BK_LOG_ON_ERR(bk_gpio_disable_output(gpio_id));
+            ret = bk_gpio_disable_output(gpio_id);
+            if (ret != BK_OK) return;
             BK_DUMP_OUT("Disable GPIO %d output mode successfully\r\n", gpio_id);
         } else if (strcmp(able->sval[0], "en_input") == 0) {
-            BK_LOG_ON_ERR(bk_gpio_enable_input(gpio_id));
+            ret = bk_gpio_enable_input(gpio_id);
+            if (ret != BK_OK) return;
             BK_DUMP_OUT("Enable GPIO %d input mode successfully\r\n", gpio_id);
         } else if (strcmp(able->sval[0], "dis_input") == 0) {
-            BK_LOG_ON_ERR(bk_gpio_disable_input(gpio_id));
+            ret = bk_gpio_disable_input(gpio_id);
+            if (ret != BK_OK) return;
             BK_DUMP_OUT("Disable GPIO %d input mode successfully\r\n", gpio_id);
         } else if (strcmp(able->sval[0], "en_pull") == 0) {
-            BK_LOG_ON_ERR(bk_gpio_enable_pull(gpio_id));
+            ret = bk_gpio_enable_pull(gpio_id);
+            if (ret != BK_OK) return;
             BK_DUMP_OUT("Enable GPIO %d pull mode successfully\r\n", gpio_id);
         } else if (strcmp(able->sval[0], "dis_pull") == 0) {
-            BK_LOG_ON_ERR(bk_gpio_disable_pull(gpio_id));
+            ret = bk_gpio_disable_pull(gpio_id);
+            if (ret != BK_OK) return;
             BK_DUMP_OUT("Disable GPIO %d pull mode successfully\r\n", gpio_id);
         } else {
             BK_DUMP_OUT("Invalid parameter for able: %s\r\n", able->sval[0]);
@@ -94,10 +110,12 @@ static void cli_gpio_api_cmd_handler(void **argtable)
     {
         gpio_id_t gpio_id = (gpio_id_t)os_strtoul(id->sval[0], NULL, 10);
         if (strcmp(pull->sval[0], "up") == 0) {
-            BK_LOG_ON_ERR(bk_gpio_pull_up(gpio_id));
+            ret = bk_gpio_pull_up(gpio_id);
+            if (ret != BK_OK) return;
             BK_DUMP_OUT("Set GPIO %d as pull up mode successfully\r\n", gpio_id);
         } else if (strcmp(pull->sval[0], "down") == 0) {
-            BK_LOG_ON_ERR(bk_gpio_pull_down(gpio_id));
+            ret = bk_gpio_pull_down(gpio_id);
+            if (ret != BK_OK) return;
             BK_DUMP_OUT("Set GPIO %d as pull down mode successfully\r\n", gpio_id);
         } else {
             BK_DUMP_OUT("Invalid parameter for pull: %s\r\n", pull->sval[0]);
@@ -111,26 +129,33 @@ static void cli_gpio_api_cmd_handler(void **argtable)
         if (strcmp(set->sval[0], "value") == 0) {
             uint32_t gpio_value = os_strtoul(value->sval[0], NULL, 10);
             bk_gpio_set_value(gpio_id, gpio_value);
-            BK_DUMP_OUT("Direct set GPIO %d config value %d. successfully\r\n",gpio_id,gpio_value);
+            BK_DUMP_OUT("Direct set GPIO %d config value %d.\r\n",gpio_id,gpio_value);
         } else if (strcmp(set->sval[0], "config") == 0) {
             gpio_config_t mode;
             mode.io_mode = os_strtoul(io_mode->sval[0], NULL, 10);
             mode.pull_mode = os_strtoul(pull_mode->sval[0], NULL, 10);
-            BK_LOG_ON_ERR(bk_gpio_set_config(gpio_id, &mode));
+            ret = bk_gpio_set_config(gpio_id, &mode);
+            if (ret != BK_OK) return;
             BK_DUMP_OUT("gpio io(output/disable/input): %x ,  pull(disable/down/up) : %x\n", mode.io_mode, mode.pull_mode);
         } else if (strcmp(set->sval[0], "output_high") == 0) {
-            BK_LOG_ON_ERR(bk_gpio_set_output_high(gpio_id));
+            ret = bk_gpio_set_output_high(gpio_id);
+            if (ret != BK_OK) return;
             BK_DUMP_OUT("Set GPIO %d output high successfully\r\n",gpio_id);
         } else if (strcmp(set->sval[0], "output_low") == 0) {
-            BK_LOG_ON_ERR(bk_gpio_set_output_low(gpio_id));
+            ret = bk_gpio_set_output_low(gpio_id);
+            if (ret != BK_OK) return;
             BK_DUMP_OUT("Set GPIO %d output low successfully\r\n",gpio_id);
         } else if (strcmp(set->sval[0], "capacity") == 0) {
             uint32_t gpio_capacity = os_strtoul(capacity->sval[0], NULL, 10);
-            bk_gpio_set_capacity(gpio_id, gpio_capacity);
+            if (!bk_gpio_set_capacity(gpio_id, gpio_capacity)) {
+                BK_DUMP_OUT("Direct set GPIO %d config capacity %d failed\r\n", gpio_id, gpio_capacity);
+                return;
+            }
             BK_DUMP_OUT("Direct set GPIO %d config capacity %d. successfully\r\n", gpio_id, gpio_capacity);
         } else if (strcmp(set->sval[0], "type") == 0) {
             gpio_int_type_t  interrupt_type = os_strtoul(type->sval[0], NULL, 10);
-            BK_LOG_ON_ERR(bk_gpio_set_interrupt_type(gpio_id, interrupt_type));
+            ret = bk_gpio_set_interrupt_type(gpio_id, interrupt_type);
+            if (ret != BK_OK) return;
             BK_DUMP_OUT("Direct set GPIO %d intterrupt type mode %d successfully when use gpio intterrupt mode\r\n", gpio_id, interrupt_type);
         } else {
             BK_DUMP_OUT("Invalid parameter for set: %s\r\n", set->sval[0]);
@@ -159,13 +184,16 @@ static void cli_gpio_api_cmd_handler(void **argtable)
     {
         gpio_id_t gpio_id = (gpio_id_t)os_strtoul(id->sval[0], NULL, 10);
         if (strcmp(intterrupt->sval[0], "enable") == 0) {
-            BK_LOG_ON_ERR(bk_gpio_enable_interrupt(gpio_id));
+            ret = bk_gpio_enable_interrupt(gpio_id);
+            if (ret != BK_OK) return;
             BK_DUMP_OUT("Enable GPIO %d intterrupt successfully\r\n", gpio_id);
         } else if (strcmp(intterrupt->sval[0], "disable") == 0) {
-            BK_LOG_ON_ERR(bk_gpio_disable_interrupt(gpio_id));
+            ret = bk_gpio_disable_interrupt(gpio_id);
+            if (ret != BK_OK) return;
             BK_DUMP_OUT("Disable GPIO %d intterrupt successfully\r\n", gpio_id);
         } else if (strcmp(intterrupt->sval[0], "clear") == 0) {
-            BK_LOG_ON_ERR(bk_gpio_clear_interrupt(gpio_id));
+            ret = bk_gpio_clear_interrupt(gpio_id);
+            if (ret != BK_OK) return;
             BK_DUMP_OUT("Register the interrupt service routine for GPIO %d successfully\r\n", gpio_id);
         } else {
             BK_DUMP_OUT("Invalid parameter for intterrupt: %s\r\n", intterrupt->sval[0]);
@@ -182,10 +210,18 @@ static void cli_gpio_api_cmd_handler(void **argtable)
         gpio_id = (gpio_id_t)os_strtoul(id->sval[0], NULL, 10);
         gpio_mode = os_strtoul(func_mode->sval[0], NULL, 10);
         if (strcmp(wake_up->sval[0], "register") == 0) {
-            bk_gpio_register_wakeup_source(gpio_id, gpio_mode);
+            ret = bk_gpio_register_wakeup_source(gpio_id, gpio_mode);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("GPIO %d register wake up failed, ret:-0x%x\r\n", gpio_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("GPIO %d register wake up successfully\r\n", gpio_id);
         } else if (strcmp(wake_up->sval[0], "unregister") == 0) {
-            bk_gpio_unregister_wakeup_source(gpio_id);
+            ret = bk_gpio_unregister_wakeup_source(gpio_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("GPIO %d unregister wake up failed, ret:-0x%x\r\n", gpio_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("GPIO %d driver unregister wakeup successfully\r\n", gpio_id);
         } else if (strcmp(wake_up->sval[0], "get_id") == 0) {
             BK_DUMP_OUT("GET wakeup gpio id: %d\r\n", bk_gpio_get_wakeup_gpio_id());
@@ -210,11 +246,19 @@ static void cli_gpio_api_cmd_handler(void **argtable)
         config.pull_mode = os_strtoul(pull_mode->sval[0], NULL, 10);
         config.func_mode = os_strtoul(func_mode->sval[0], NULL, 10);
         if (strcmp(status->sval[0], "register") == 0) {
+            ret = bk_gpio_register_lowpower_keep_status(gpio_id, &config);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("cli_gpio_set_keep_status_config register gpio_id: %d failed, ret:-0x%x\r\n", gpio_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("cli_gpio_set_keep_status_config register gpio_id: %d\r\n", gpio_id);
-            bk_gpio_register_lowpower_keep_status(gpio_id, &config);
         } else if (strcmp(status->sval[0], "unregister") == 0) {
+            ret = bk_gpio_unregister_lowpower_keep_status(gpio_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("cli_gpio_set_keep_status_config unregister gpio_id: %d failed, ret:-0x%x\r\n", gpio_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("cli_gpio_set_keep_status_config unregister gpio_id: %d\r\n", gpio_id);
-            bk_gpio_unregister_lowpower_keep_status(gpio_id);
         } else {
             BK_DUMP_OUT("Invalid parameter for status: %s\r\n", status->sval[0]);
         }
@@ -231,10 +275,18 @@ static void cli_gpio_api_cmd_handler(void **argtable)
         gpio_id = (gpio_id_t)os_strtoul(id->sval[0], NULL, 10);
         gpio_output_state = os_strtoul(type->sval[0], NULL, 10);
         if (strcmp(retention->sval[0], "set") == 0) {
-            bk_gpio_retention_set(gpio_id, gpio_output_state);
+            ret = bk_gpio_retention_set(gpio_id, gpio_output_state);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("Set GPIO %d retention failed, ret:-0x%x\r\n", gpio_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("Set GPIO %d retention index and output_state(GPIO_OUTPUT_STATE_LOW/GPIO_OUTPUT_STATE_HIGH) %d successfully\r\n", gpio_id,gpio_output_state);
         } else if (strcmp(retention->sval[0], "clr") == 0) {
-            bk_gpio_retention_clr(gpio_id);
+            ret = bk_gpio_retention_clr(gpio_id);
+            if (ret != BK_OK) {
+                BK_DUMP_OUT("GPIO %d clear retention failed, ret:-0x%x\r\n", gpio_id, -ret);
+                return;
+            }
             BK_DUMP_OUT("GPIO %d clear the input GPIO retention index successfully\r\n", gpio_id);
         } else {
             BK_DUMP_OUT("Invalid parameter for retention: %s\r\n", retention->sval[0]);

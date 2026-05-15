@@ -1441,6 +1441,10 @@ extern int cli_easyflash_init(void);
 extern int cli_lfs_init(void);
 #endif
 
+#if (CLI_CFG_PWM == 1) && CONFIG_PWM_API_TEST
+extern int bk_pwm_register_cli_api_test_feature(void);
+#endif
+
 typedef int (*cli_module_init_fn)(void);
 
 typedef struct {
@@ -1771,6 +1775,9 @@ static const cli_module_init_entry_t cli_platform_inits[] = {
 
 #if (CLI_CFG_PWM == 1)
 	CLI_MODULE_INIT_ENTRY(cli_pwm_init),
+#if CONFIG_PWM_API_TEST
+	CLI_MODULE_INIT_ENTRY(bk_pwm_register_cli_api_test_feature),
+#endif
 #endif
 
 #if (CLI_CFG_EXCEPTION == 1)

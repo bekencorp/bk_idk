@@ -92,16 +92,25 @@ static void cli_i2c_help(void)
 
 static void cli_i2c_driver_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
+    bk_err_t ret = BK_OK;
     if (argc < 2) {
         cli_i2c_help();
         return;
     }
 
     if (os_strcmp(argv[1], "init") == 0) {
-        BK_LOG_ON_ERR(bk_i2c_driver_init());
+        ret = bk_i2c_driver_init();
+        if (ret != BK_OK) {
+            CLI_LOGE("i2c driver init failed, ret:-0x%x\n", -ret);
+            return;
+        }
         CLI_LOGI("i2c driver init\n");
     } else if (os_strcmp(argv[1], "deinit") == 0) {
-        BK_LOG_ON_ERR(bk_i2c_driver_deinit());
+        ret = bk_i2c_driver_deinit();
+        if (ret != BK_OK) {
+            CLI_LOGE("i2c driver deinit failed, ret:-0x%x\n", -ret);
+            return;
+        }
         CLI_LOGI("i2c driver deinit\n");
     } else {
         cli_i2c_help();
@@ -111,6 +120,7 @@ static void cli_i2c_driver_cmd(char *pcWriteBuffer, int xWriteBufferLen, int arg
 
 static void cli_i2c_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
+    bk_err_t ret = BK_OK;
     if (argc < 2) {
         cli_i2c_help();
         return;
@@ -131,31 +141,55 @@ static void cli_i2c_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
         i2c_cfg.addr_mode = I2C_ADDR_MODE_7BIT;
         i2c_cfg.slave_addr = I2C_SLAVE_ADDR;
 
-        BK_LOG_ON_ERR(bk_i2c_init(i2c_id, &i2c_cfg));
+        ret = bk_i2c_init(i2c_id, &i2c_cfg);
+        if (ret != BK_OK) {
+            CLI_LOGE("i2c(%d) init failed, ret:-0x%x\n", i2c_id, -ret);
+            return;
+        }
         CLI_LOGI("i2c(%d) init\n", i2c_id);
     } else if (os_strcmp(argv[2], "deinit") == 0) {
-        BK_LOG_ON_ERR(bk_i2c_deinit(i2c_id));
+        ret = bk_i2c_deinit(i2c_id);
+        if (ret != BK_OK) {
+            CLI_LOGE("i2c(%d) deinit failed, ret:-0x%x\n", i2c_id, -ret);
+            return;
+        }
         CLI_LOGI("i2c(%d) deinit\n", i2c_id);
     } else if (os_strcmp(argv[2], "master_write_noaddr") == 0) {
         uint8_t data_buf[10] = {0};
         i2c_fill_seq_buf(data_buf, 10, 0);
-        BK_LOG_ON_ERR(bk_i2c_master_write_noaddr(i2c_id, data_buf, 10, I2C_WRITE_WAIT_MAX_MS));
+        ret = bk_i2c_master_write_noaddr(i2c_id, data_buf, 10, I2C_WRITE_WAIT_MAX_MS);
+        if (ret != BK_OK) {
+            CLI_LOGE("i2c(%d) master_write_noaddr failed, ret:-0x%x\n", i2c_id, -ret);
+            return;
+        }
         for (uint32_t i = 0; i < 10; i++) {
             CLI_LOGI("cli_test i2c_master write_noaddr 0x%x,\n", data_buf[i]);
         }
     } else if (os_strcmp(argv[2], "master_write") == 0) {
         uint8_t data_buf[10] = {0};
         i2c_fill_seq_buf(data_buf, 10, 0);
-        BK_LOG_ON_ERR(bk_i2c_master_write(i2c_id, I2C_SLAVE_ADDR, data_buf, 10, I2C_WRITE_WAIT_MAX_MS));
+        ret = bk_i2c_master_write(i2c_id, I2C_SLAVE_ADDR, data_buf, 10, I2C_WRITE_WAIT_MAX_MS);
+        if (ret != BK_OK) {
+            CLI_LOGE("i2c(%d) master_write failed, ret:-0x%x\n", i2c_id, -ret);
+            return;
+        }
     } else if (os_strcmp(argv[2], "master_read_noaddr") == 0) {
         uint8_t data_buf[10] = {0};
-        BK_LOG_ON_ERR(bk_i2c_master_read_noaddr(i2c_id, data_buf, 10, I2C_READ_WAIT_MAX_MS));
+        ret = bk_i2c_master_read_noaddr(i2c_id, data_buf, 10, I2C_READ_WAIT_MAX_MS);
+        if (ret != BK_OK) {
+            CLI_LOGE("i2c(%d) master_read_noaddr failed, ret:-0x%x\n", i2c_id, -ret);
+            return;
+        }
         for (uint32_t i = 0; i < 10; i++) {
             CLI_LOGI("cli_test i2c_master read_noaddr 0x%x,\n", data_buf[i]);
         }
     } else if (os_strcmp(argv[2], "master_read") == 0) {
         uint8_t data_buf[10] = {0};
-        BK_LOG_ON_ERR(bk_i2c_master_read(i2c_id, I2C_SLAVE_ADDR, data_buf, 10, I2C_READ_WAIT_MAX_MS));
+        ret = bk_i2c_master_read(i2c_id, I2C_SLAVE_ADDR, data_buf, 10, I2C_READ_WAIT_MAX_MS);
+        if (ret != BK_OK) {
+            CLI_LOGE("i2c(%d) master_read failed, ret:-0x%x\n", i2c_id, -ret);
+            return;
+        }
         for (uint32_t i = 0; i < 10; i++) {
             CLI_LOGI("cli_test i2c_master read 0x%x,\n", data_buf[i]);
         }
@@ -164,16 +198,28 @@ static void cli_i2c_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
       else if (os_strcmp(argv[2], "slave_write") == 0) {
         uint8_t data_buf[10] = {0};
         i2c_fill_seq_buf(data_buf, 10, 0);
-        BK_LOG_ON_ERR(bk_i2c_slave_write(i2c_id, data_buf, 10, BEKEN_NEVER_TIMEOUT));
+        ret = bk_i2c_slave_write(i2c_id, data_buf, 10, BEKEN_NEVER_TIMEOUT);
+        if (ret != BK_OK) {
+            CLI_LOGE("i2c(%d) slave_write failed, ret:-0x%x\n", i2c_id, -ret);
+            return;
+        }
     } else if (os_strcmp(argv[2], "slave_read") == 0) {
         uint8_t data_buf[10] = {0};
-        BK_LOG_ON_ERR(bk_i2c_slave_read(i2c_id, data_buf, 10, BEKEN_NEVER_TIMEOUT));
+        ret = bk_i2c_slave_read(i2c_id, data_buf, 10, BEKEN_NEVER_TIMEOUT);
+        if (ret != BK_OK) {
+            CLI_LOGE("i2c(%d) slave_read failed, ret:-0x%x\n", i2c_id, -ret);
+            return;
+        }
         for (uint32_t i = 0; i < 10; i++) {
             CLI_LOGI("cli_test i2c_slave read 0x%x,\n", data_buf[i]);
         }
     } else if (os_strcmp(argv[2], "set_slave_addr") == 0) {
         uint32_t slave_addr = os_strtoul(argv[3], NULL, 16);
-        bk_i2c_set_slave_address(i2c_id, slave_addr);
+        ret = bk_i2c_set_slave_address(i2c_id, slave_addr);
+        if (ret != BK_OK) {
+            CLI_LOGE("i2c(%d) set_slave_addr failed, ret:-0x%x\n", i2c_id, -ret);
+            return;
+        }
         CLI_LOGI("i2c_slave set address 0x%x.\n", slave_addr);
     }
     #endif
@@ -195,7 +241,14 @@ static void cli_i2c_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
         mem_param.data = data_buf;
         mem_param.data_size = buf_len;
         mem_param.timeout_ms = I2C_WRITE_WAIT_MAX_MS;
-        BK_LOG_ON_ERR(bk_i2c_memory_write(i2c_id, &mem_param));
+        ret = bk_i2c_memory_write(i2c_id, &mem_param);
+        if (ret != BK_OK) {
+            if (data_buf) {
+                os_free(data_buf);
+            }
+            CLI_LOGE("i2c(%d) memory_write failed, ret:-0x%x\r\n", i2c_id, -ret);
+            return;
+        }
         if (data_buf) {
             os_free(data_buf);
             data_buf = NULL;
@@ -217,7 +270,14 @@ static void cli_i2c_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
         mem_param.data = data_buf;
         mem_param.data_size = buf_len;
         mem_param.timeout_ms = I2C_WRITE_WAIT_MAX_MS;
-        BK_LOG_ON_ERR(bk_i2c_memory_read(i2c_id, &mem_param));
+        ret = bk_i2c_memory_read(i2c_id, &mem_param);
+        if (ret != BK_OK) {
+            if (data_buf) {
+                os_free(data_buf);
+            }
+            CLI_LOGE("i2c(%d) memory_read failed, ret:-0x%x\r\n", i2c_id, -ret);
+            return;
+        }
         for (uint32_t i = 0; i < buf_len; i++) {
             CLI_LOGI("i2c_read_buf[%d]=%x\r\n", i, data_buf[i]);
         }
@@ -238,7 +298,11 @@ static void cli_i2c_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
         mem_param.data = &data;
         mem_param.data_size = buf_len;
         mem_param.timeout_ms = I2C_WRITE_WAIT_MAX_MS;
-        BK_LOG_ON_ERR(bk_i2c_memory_write(i2c_id, &mem_param));
+        ret = bk_i2c_memory_write(i2c_id, &mem_param);
+        if (ret != BK_OK) {
+            CLI_LOGE("i2c(%d) cam_write failed, ret:-0x%x\r\n", i2c_id, -ret);
+            return;
+        }
         CLI_LOGI("i2c(%d) cam_write buf_len:%d\r\n", i2c_id, buf_len);
     } else if (os_strcmp(argv[2], "cam_read") == 0) {
         uint32_t buf_len = 1;
@@ -252,7 +316,11 @@ static void cli_i2c_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
         mem_param.data = &data;
         mem_param.data_size = buf_len;
         mem_param.timeout_ms = I2C_WRITE_WAIT_MAX_MS;
-        BK_LOG_ON_ERR(bk_i2c_memory_read(i2c_id, &mem_param));
+        ret = bk_i2c_memory_read(i2c_id, &mem_param);
+        if (ret != BK_OK) {
+            CLI_LOGE("i2c(%d) cam_read failed, ret:-0x%x\r\n", i2c_id, -ret);
+            return;
+        }
         CLI_LOGI("i2c_read_buf = %x\r\n", data);
         CLI_LOGI("i2c_read_buf = %x\r\n", *(mem_param.data));
         CLI_LOGI("i2c(%d) cam_read buf_len:%d\r\n", i2c_id, buf_len);
@@ -277,7 +345,12 @@ static void cli_i2c_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
             mem_param_w.data = &(sensor_gc0328c_init_talbe_test1[i][1]);
             mem_param_w.data_size = buf_len;
             mem_param_w.timeout_ms = I2C_WRITE_WAIT_MAX_MS;
-            BK_LOG_ON_ERR(bk_i2c_memory_write(i2c_id, &mem_param_w));
+            ret = bk_i2c_memory_write(i2c_id, &mem_param_w);
+            if (ret != BK_OK) {
+                CLI_LOGE("i2c(%d) cam_test1 write failed, ret:-0x%x\r\n", i2c_id, -ret);
+                os_free(data_buf);
+                return;
+            }
 
             i2c_mem_param_t mem_param = {0};
             mem_param.dev_addr = dev_addr;
@@ -286,7 +359,12 @@ static void cli_i2c_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
             mem_param.data = data_buf + i;
             mem_param.data_size = buf_len;
             mem_param.timeout_ms = I2C_WRITE_WAIT_MAX_MS;
-            BK_LOG_ON_ERR(bk_i2c_memory_read(i2c_id, &mem_param));
+            ret = bk_i2c_memory_read(i2c_id, &mem_param);
+            if (ret != BK_OK) {
+                CLI_LOGE("i2c(%d) cam_test1 read failed, ret:-0x%x\r\n", i2c_id, -ret);
+                os_free(data_buf);
+                return;
+            }
             CLI_LOGI("i2c(%d) cam_read addr:0x%x, data:0x%x\r\n", i2c_id, sensor_gc0328c_init_talbe_test1[i][0], data_buf[i]);
             if(sensor_gc0328c_init_talbe_test1[i][1] != data_buf[i]) {
                 CLI_LOGE("i2c(%d) cam_read addr:0x%x, data=0x%x,  correct_data=0x%x.\r\n", i2c_id, sensor_gc0328c_init_talbe_test1[i][0], data_buf[i], sensor_gc0328c_init_talbe_test1[i][1]);
@@ -318,7 +396,12 @@ static void cli_i2c_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
             mem_param_w.data = &(test_data);
             mem_param_w.data_size = buf_len;
             mem_param_w.timeout_ms = I2C_WRITE_WAIT_MAX_MS;
-            BK_LOG_ON_ERR(bk_i2c_memory_write(i2c_id, &mem_param_w));
+            ret = bk_i2c_memory_write(i2c_id, &mem_param_w);
+            if (ret != BK_OK) {
+                CLI_LOGE("i2c(%d) cam_test write failed, ret:-0x%x\r\n", i2c_id, -ret);
+                os_free(data_buf);
+                return;
+            }
 
             i2c_mem_param_t mem_param = {0};
             mem_param.dev_addr = dev_addr;
@@ -327,7 +410,12 @@ static void cli_i2c_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
             mem_param.data = data_buf + i;
             mem_param.data_size = buf_len;
             mem_param.timeout_ms = I2C_WRITE_WAIT_MAX_MS;
-            BK_LOG_ON_ERR(bk_i2c_memory_read(i2c_id, &mem_param));
+            ret = bk_i2c_memory_read(i2c_id, &mem_param);
+            if (ret != BK_OK) {
+                CLI_LOGE("i2c(%d) cam_test read failed, ret:-0x%x\r\n", i2c_id, -ret);
+                os_free(data_buf);
+                return;
+            }
             CLI_LOGI("i2c(%d) cam_read addr:0x%x, data:0x%x\r\n", i2c_id, mem_addr, data_buf[i]);
             if(test_data != data_buf[i]) {
                 CLI_LOGE("i2c(%d) cam_read addr:0x%x, data=0x%x,  correct_data=0x%x.\r\n", i2c_id, mem_addr, data_buf[i], test_data);
@@ -358,7 +446,12 @@ static void cli_i2c_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
             mem_param.data = data_buf + i;
             mem_param.data_size = buf_len;
             mem_param.timeout_ms = I2C_WRITE_WAIT_MAX_MS;
-            BK_LOG_ON_ERR(bk_i2c_memory_read(i2c_id, &mem_param));
+            ret = bk_i2c_memory_read(i2c_id, &mem_param);
+            if (ret != BK_OK) {
+                CLI_LOGE("i2c(%d) cam_dump read failed, ret:-0x%x\r\n", i2c_id, -ret);
+                os_free(data_buf);
+                return;
+            }
             mem_addr++;
         }
         os_printf("\r\n");
@@ -389,10 +482,18 @@ static void cli_i2c_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
     } else if (os_strcmp(argv[2], "no_ack_mode") == 0) {
         CLI_RET_ON_INVALID_ARGC(argc, 4);
         if (os_strcmp(argv[3], "enable") == 0){
-            BK_LOG_ON_ERR(bk_i2c_set_no_ack_mode(i2c_id, true));
+        ret = bk_i2c_set_no_ack_mode(i2c_id, true);
+        if (ret != BK_OK) {
+            CLI_LOGE("i2c(%d) set no_ack_mode enable failed, ret:-0x%x\r\n", i2c_id, -ret);
+            return;
+        }
             CLI_LOGI("i2c(%d) set no_ack_mode enable\r\n", i2c_id);
         } else if (os_strcmp(argv[3], "disable") == 0){
-            BK_LOG_ON_ERR(bk_i2c_set_no_ack_mode(i2c_id, false));
+        ret = bk_i2c_set_no_ack_mode(i2c_id, false);
+        if (ret != BK_OK) {
+            CLI_LOGE("i2c(%d) set no_ack_mode disable failed, ret:-0x%x\r\n", i2c_id, -ret);
+            return;
+        }
             CLI_LOGI("i2c(%d) set no_ack_mode disable\r\n", i2c_id);
         } else {
             CLI_LOGI("i2c(%d) set no_ack_mode failed, only support enable/disable\r\n", i2c_id);

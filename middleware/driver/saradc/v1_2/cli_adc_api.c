@@ -24,15 +24,20 @@
 #include <driver/flash_partition.h>
 #include "adc_driver.h"
 #include "cli_section.h"
+#include <stdint.h>
 
 extern void print_help(const char *progname, void **argtable);
 extern void common_cmd_handler(int argc, char **argv, void **argtable, int argtable_size, void (*handler)(void **argtable));
 
 #define ARG_ERR_REC_CNT           20
 #define CONFIG_STRUCT_FIELD_CNT   10
+#define CLI_ADC_RAW_BUF_MAX       256
+
+static uint16_t s_cli_adc_raw_buf[CLI_ADC_RAW_BUF_MAX];
 
 static void cli_adc_api_driver_handler(void **argtable)
 {
+    bk_err_t err = BK_OK;
     struct arg_lit *help = (struct arg_lit *)argtable[0];
     struct arg_str *driver = (struct arg_str *)argtable[1];
 
@@ -44,11 +49,19 @@ static void cli_adc_api_driver_handler(void **argtable)
     else if (driver->count > 0)
     {
         if (strcmp(driver->sval[0], "init") == 0) {
-            BK_LOG_ON_ERR(bk_adc_driver_init());
-            BK_DUMP_OUT("ADC driver initialized successfully\r\n");
+            err = bk_adc_driver_init();
+            if (err == BK_OK) {
+                BK_DUMP_OUT("ADC driver initialized successfully\r\n");
+            } else {
+                BK_DUMP_OUT("ADC driver initialization failed, err = %x\r\n", err);
+            }
         } else if (strcmp(driver->sval[0], "deinit") == 0) {
-            BK_LOG_ON_ERR(bk_adc_driver_deinit());
-            BK_DUMP_OUT("ADC driver deinitialized successfully\r\n");
+            err = bk_adc_driver_deinit();
+            if (err == BK_OK) {
+                BK_DUMP_OUT("ADC driver deinitialized successfully\r\n");
+            } else {
+                BK_DUMP_OUT("ADC driver deinitialization failed, err = %x\r\n", err);
+            }
         } else {
             BK_DUMP_OUT("Invalid parameter for init: %s\r\n", driver->sval[0]);
         }
@@ -75,6 +88,7 @@ static void cli_argadc_driver_cmd(char *pcWriteBuffer, int xWriteBufferLen, int 
 
 static void cli_adc_api_channel_handler(void **argtable)
 {
+    bk_err_t err = BK_OK;
     adc_config_t adc_config = {0};
     struct arg_lit *help = (struct arg_lit *)argtable[0];
     struct arg_str *channel = (struct arg_str *)argtable[1];
@@ -120,8 +134,12 @@ static void cli_adc_api_channel_handler(void **argtable)
                 BK_DUMP_OUT("adc_config.saturate_mode:0x%x\n", adc_config.saturate_mode);
                 BK_DUMP_OUT("adc_config.vol_div:0x%x\n", adc_config.vol_div);
 
-                BK_LOG_ON_ERR(bk_adc_channel_init(&adc_config));
-                BK_DUMP_OUT("ADC channel init succeeded\n");
+                err = bk_adc_channel_init(&adc_config);
+                if (err == BK_OK) {
+                    BK_DUMP_OUT("ADC channel init succeeded\n");
+                } else {
+                    BK_DUMP_OUT("ADC channel init failed, err = %x\n", err);
+                }
             } else {
                 BK_DUMP_OUT("Not enough configuration parameters provided for channel init.\n");
             }
@@ -129,8 +147,12 @@ static void cli_adc_api_channel_handler(void **argtable)
         else if (strcmp(channel->sval[0], "deinit") == 0)
         {
             adc_chan_t channel_id = (adc_chan_t)os_strtoul(id->sval[0], NULL, 10);
-            BK_LOG_ON_ERR(bk_adc_channel_deinit(channel_id));
-            BK_DUMP_OUT("ADC channel %d deinitialized successfully\r\n",channel_id);
+            err = bk_adc_channel_deinit(channel_id);
+            if (err == BK_OK) {
+                BK_DUMP_OUT("ADC channel %d deinitialized successfully\r\n",channel_id);
+            } else {
+                BK_DUMP_OUT("ADC channel %d deinitialization failed, err = %x\r\n", channel_id, err);
+            }
         }
         else if (strcmp(channel->sval[0], "read") == 0)
         {
@@ -138,19 +160,37 @@ static void cli_adc_api_channel_handler(void **argtable)
             adc_chan_t channel_id = (adc_chan_t)os_strtoul(id->sval[0], NULL, 10);
             uint16_t value = (uint16_t)data->ival[0];
             uint32_t channel_timeout = (uint32_t)os_strtoul(timeout->sval[0], NULL, 10);
-            BK_LOG_ON_ERR(bk_adc_channel_read(channel_id, &value, channel_timeout));
-            BK_DUMP_OUT("ADC channel %d read over\r\n",channel_id);
+            err = bk_adc_channel_read(channel_id, &value, channel_timeout);
+            if (err == BK_OK) {
+                BK_DUMP_OUT("ADC channel %d read over\r\n",channel_id);
+            } else {
+                BK_DUMP_OUT("ADC channel %d read failed, err = %x\r\n", channel_id, err);
+            }
         }
         else if (strcmp(channel->sval[0], "raw_read") == 0)
         {
             uint16_t *channel_data;
             adc_chan_t channel_id = (adc_chan_t)os_strtoul(id->sval[0], NULL, 10);
-            channel_data = (uint16_t *)data->ival[0];
             uint32_t channel_timeout = (uint32_t)os_strtoul(timeout->sval[0], NULL, 10);
             uint32_t sample_cnt = (uint32_t)os_strtoul(cnt->sval[0], NULL, 10);
-            BK_LOG_ON_ERR(bk_adc_channel_raw_read(channel_id, channel_data, channel_timeout, sample_cnt));
 
-            BK_DUMP_OUT("ADC channel %d raw read succeed\r\n",channel_id);
+            if (sample_cnt == 0 || sample_cnt > CLI_ADC_RAW_BUF_MAX) {
+                BK_DUMP_OUT("raw_read: sample_cnt must be 1..%u\r\n", (unsigned)CLI_ADC_RAW_BUF_MAX);
+                return;
+            }
+
+            if (data->count > 0) {
+                channel_data = (uint16_t *)(uintptr_t)data->ival[0];
+            } else {
+                channel_data = s_cli_adc_raw_buf;
+            }
+
+            err = bk_adc_channel_raw_read(channel_id, channel_data, sample_cnt, channel_timeout);
+            if (err == BK_OK) {
+                BK_DUMP_OUT("ADC channel %d raw read succeed\r\n",channel_id);
+            } else {
+                BK_DUMP_OUT("ADC channel %d raw read failed, err = %x\r\n", channel_id, err);
+            }
         }
         else
         {
@@ -169,7 +209,7 @@ static void cli_argadc_channel_cmd(char *pcWriteBuffer, int xWriteBufferLen, int
     struct arg_str *channel = arg_str0("c", "channel", "<init/deinit/read/raw_read>", "Init or deinit adc channel and read value");
     struct arg_int *arg_config_detail = arg_intn(NULL, NULL, "<clk/sample_rate/adc_filter/steady_ctrl/is_using_cali/adc_mode/src_clk/channel_id/saturate_mode/vol_div>", 0, CONFIG_STRUCT_FIELD_CNT, "Configure the specified channel");
     struct arg_str *id = arg_str0("i", "id", "<id>", "Channel ID");
-    struct arg_int *data = arg_int0("d", "data", "<data>", "Store the average value of all sample values in ADC software buffers");
+    struct arg_int *data = arg_int0("d", "data", "<data>", "read: value field; raw_read: optional buffer address (decimal), omit to use internal buffer");
     struct arg_str *timeout = arg_str0("t", "timeout", "<timeout>", "ADC read semaphore timeout");
     struct arg_str *cnt = arg_str0("n", "sample_cnt", "<sample_cnt>", "ADC read raw data sample_cnt");
 
@@ -188,6 +228,7 @@ static void cli_adc_register_cb(uint32_t param)
 
 static void cli_adc_api_register_handler(void **argtable)
 {
+    bk_err_t err = BK_OK;
     struct arg_lit *help = (struct arg_lit *)argtable[0];
     struct arg_str *reg = (struct arg_str *)argtable[1];
     struct arg_str *size = (struct arg_str *)argtable[2];
@@ -202,8 +243,12 @@ static void cli_adc_api_register_handler(void **argtable)
     {
         if (strcmp(reg->sval[0], "register") == 0) {
             uint32_t reg_size = (uint32_t)os_strtoul(size->sval[0], NULL, 10);
-            BK_LOG_ON_ERR(bk_adc_register_isr_callback(cli_adc_register_cb, reg_size));
-            BK_DUMP_OUT("ADC register isr callback over\n");
+            err = bk_adc_register_isr_callback(cli_adc_register_cb, reg_size);
+            if (err == BK_OK) {
+                BK_DUMP_OUT("ADC register isr callback over\n");
+            } else {
+                BK_DUMP_OUT("ADC register isr callback failed, err = %x\n", err);
+            }
         } else {
             BK_DUMP_OUT("Invalid parameter for register: %s\r\n", reg->sval[0]);
         }
@@ -297,10 +342,10 @@ static void cli_argadc_calculate_cmd(char *pcWriteBuffer, int xWriteBufferLen, i
 
 #define ADC_API_CMD_CNT (sizeof(s_adc_api_commands) / sizeof(struct cli_command))
 DRV_CLI_CMD_EXPORT static const struct cli_command s_adc_api_commands[] = {
-    {"argadc_driver", "argadc_driver { help | driver }", cli_argadc_driver_cmd},
-    {"argadc_channel", "argadc_channel { help | channel }", cli_argadc_channel_cmd},
-    {"argadc_register", "argadc_register { help | register }", cli_argadc_register_cmd},
-    {"argadc_cal", "argadc_cal { help | data_calculate }", cli_argadc_calculate_cmd},
+    {"argadc_driver", "argadc_driver [-h] [-d init|deinit]", cli_argadc_driver_cmd},
+    {"argadc_channel", "argadc_channel [-h] [-c init|deinit|read|raw_read] [-i id] [-d data] [-t timeout] [-n sample_cnt] [config fields...]", cli_argadc_channel_cmd},
+    {"argadc_register", "argadc_register [-h] [-r register] [-s size]", cli_argadc_register_cmd},
+    {"argadc_cal", "argadc_cal [-h] [-c data]", cli_argadc_calculate_cmd},
 
 };
 

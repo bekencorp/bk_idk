@@ -57,17 +57,26 @@ static void cli_adc_register_cb(uint32_t param)
 
 static void cli_adc_driver_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
+    bk_err_t ret = BK_OK;
     if (argc < 2) {
         cli_adc_help();
         return;
     }
 
     if (os_strcmp(argv[1], "init") == 0) {
-        BK_LOG_ON_ERR(bk_adc_driver_init());
-        CLI_LOGI("adc driver init success\n");
+        ret = bk_adc_driver_init();
+        if (ret == BK_OK) {
+            CLI_LOGI("adc driver init success\n");
+        } else {
+            CLI_LOGE("adc driver init failed, ret:%d\n", ret);
+        }
     } else if (os_strcmp(argv[1], "deinit") == 0) {
-        BK_LOG_ON_ERR(bk_adc_driver_deinit());
-        CLI_LOGI("adc driver deinit success\n");
+        ret = bk_adc_driver_deinit();
+        if (ret == BK_OK) {
+            CLI_LOGI("adc driver deinit success\n");
+        } else {
+            CLI_LOGE("adc driver deinit failed, ret:%d\n", ret);
+        }
     } else {
         cli_adc_help();
         return;
@@ -81,6 +90,7 @@ static float cli_adc_read_multi_chan(void)
     UINT8 adc_chan_buff[12] = {0,1,2,3,4,5,6,10,12,13,14,15};
     UINT32 loop_num = 10;
     adc_config_t config = {0};
+    bk_err_t err = BK_OK;
 
     if(s_adc_reading_flag == 1)
     {
@@ -106,17 +116,28 @@ static float cli_adc_read_multi_chan(void)
     {
         config.chan = adc_chan_buff[i];
 
-        BK_LOG_ON_ERR(bk_adc_channel_init(&config));
+        err = bk_adc_channel_init(&config);
+        if (err != BK_OK) {
+            CLI_LOGE("adc channel init failed, chan=%d, ret:0x%x\r\n", config.chan, err);
+            break;
+        }
 
         for(UINT8 j = 0; j < loop_num; j++)
         {
-            BK_LOG_ON_ERR(bk_adc_channel_read(config.chan, &value, ADC_READ_SEMAPHORE_WAIT_TIME));
+            err = bk_adc_channel_read(config.chan, &value, ADC_READ_SEMAPHORE_WAIT_TIME);
+            if (err != BK_OK) {
+                CLI_LOGE("adc channel read failed, chan=%d, ret:0x%x\r\n", config.chan, err);
+                break;
+            }
 
             cali_value = bk_adc_data_calculate(value, config.chan);
             CLI_LOGI("volt:%d mv,chan=%d\n",(uint32_t)(cali_value*1000),config.chan);
         }
 
         bk_adc_channel_deinit(config.chan);
+        if (err != BK_OK) {
+            break;
+        }
     }
     sys_drv_set_ana_pwd_gadc_buf(0);
     s_adc_reading_flag = 0;
@@ -127,6 +148,7 @@ static float cli_adc_read_single_chan(UINT8 adc_chan, uint32_t clk)
 {
     uint16_t value   = 0;
     float cali_value = 0;
+    bk_err_t err = BK_OK;
 
     if(s_adc_reading_flag == 1)
     {
@@ -149,8 +171,22 @@ static float cli_adc_read_single_chan(UINT8 adc_chan, uint32_t clk)
         config.sample_rate = 0;
     }
 
-    BK_LOG_ON_ERR(bk_adc_channel_init(&config));
-    BK_LOG_ON_ERR(bk_adc_channel_read(adc_chan, &value, ADC_READ_SEMAPHORE_WAIT_TIME));
+    err = bk_adc_channel_init(&config);
+    if (err != BK_OK) {
+        CLI_LOGE("adc channel init failed, ret:0x%x\r\n", err);
+        sys_drv_set_ana_pwd_gadc_buf(0);
+        s_adc_reading_flag = 0;
+        return 0;
+    }
+
+    err = bk_adc_channel_read(adc_chan, &value, ADC_READ_SEMAPHORE_WAIT_TIME);
+    if (err != BK_OK) {
+        CLI_LOGE("adc channel read failed, ret:0x%x\r\n", err);
+        bk_adc_channel_deinit(adc_chan);
+        sys_drv_set_ana_pwd_gadc_buf(0);
+        s_adc_reading_flag = 0;
+        return 0;
+    }
 
     os_printf("adc_read_val:%x\r\n", value);
 
@@ -261,7 +297,14 @@ static void cli_sadc_multi_cmd(char *pcWriteBuffer, int xWriteBufferLen, int arg
         config.adc_filter = 0;
         config.sample_rate = 0;
 
-        BK_LOG_ON_ERR(bk_adc_channel_init(&config));
+        {
+            bk_err_t init_ret = bk_adc_channel_init(&config);
+            if (init_ret != BK_OK) {
+                CLI_LOGE("adc channel init failed, ret:0x%x\r\n", init_ret);
+                sys_drv_set_ana_pwd_gadc_buf(0);
+                return;
+            }
+        }
 
         return;
     } else if(os_strcmp(argv[1], "read") == 0) {
@@ -361,8 +404,8 @@ static void cli_adc_rate_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
         return;
     }
 
-    adc_chan = os_strtoul(argv[1], NULL, 10);
-    clk = os_strtoul(argv[2], NULL, 10);
+    adc_chan = os_strtoul(argv[1], NULL, 0);
+    clk = os_strtoul(argv[2], NULL, 0);
 
     CLI_LOGI("saradc_rate channel:%d clk:0x%x\r\n", adc_chan, clk);
 
@@ -377,6 +420,7 @@ static void cli_adc_cont_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
     uint32_t sample_rate  = 0x0;
     uint8_t  output_mode  = 0;  // ToDo: uart mode and sram mode
     uint32_t adc_clk_div  = 32;
+    bk_err_t ret          = BK_OK;
 
     if((arg_cnt > 1) && (os_strcmp(argv[0 + 1], "read") == 0)) {
         if(0 == s_adc_reading_flag) {
@@ -511,7 +555,17 @@ static void cli_adc_cont_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
     config.adc_filter = 0;
     config.sample_rate = sample_rate;
 
-    BK_LOG_ON_ERR(bk_adc_cont_start(&config, s_adc_channel_id, s_rd_data_buf, s_user_rd_cnt));
+    ret = bk_adc_cont_start(&config, s_adc_channel_id, s_rd_data_buf, s_user_rd_cnt);
+    if (ret != BK_OK) {
+        CLI_LOGE("bk_adc_cont_start failed, ret:0x%x\r\n", ret);
+        s_adc_reading_flag = 0;
+        sys_drv_set_ana_pwd_gadc_buf(0);
+        if (NULL != s_sram_buf) {
+            os_free(s_sram_buf);
+            s_sram_buf = NULL;
+        }
+        s_rd_data_buf = NULL;
+    }
 
     return;
 }
@@ -519,6 +573,7 @@ static void cli_adc_cont_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
 static void cli_adc_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
     uint32_t adc_chan;
+    bk_err_t ret = BK_OK;
 
     if (argc < 2) {
         cli_adc_help();
@@ -534,7 +589,7 @@ static void cli_adc_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
         config.chan = adc_chan;
         config.adc_mode = os_strtoul(argv[3], NULL, 10);
         config.src_clk = os_strtoul(argv[4], NULL, 10);
-        config.clk = os_strtoul(argv[5], NULL, 10);
+        config.clk = os_strtoul(argv[5], NULL, 0);
         config.saturate_mode = os_strtoul(argv[6], NULL, 10);
         config.steady_ctrl= 7;
         config.adc_filter = 0;
@@ -542,12 +597,20 @@ static void cli_adc_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
             config.sample_rate = os_strtoul(argv[7], NULL, 10);
         }
 
-        BK_LOG_ON_ERR(bk_adc_channel_init(&config));
+        ret = bk_adc_channel_init(&config);
+        if (ret != BK_OK) {
+            CLI_LOGE("adc channel init failed, ret:0x%x\r\n", ret);
+            return;
+        }
         CLI_LOGI("adc init test:adc_channel:%x, adc_mode:%x,src_clk:%x,adc_clk:%x, saturate_mode:%x, sample_rate:%x",
                  adc_chan, config.adc_mode, config.src_clk, config.clk, config.saturate_mode, config.sample_rate);
     } else if (os_strcmp(argv[2], "deinit") == 0) {
-        BK_LOG_ON_ERR(bk_adc_channel_deinit(adc_chan));
-        CLI_LOGI("adc deinit test");
+        ret = bk_adc_channel_deinit(adc_chan);
+        if (ret == BK_OK) {
+            CLI_LOGI("adc deinit test");
+        } else {
+            CLI_LOGE("adc deinit failed, ret:0x%x\r\n", ret);
+        }
     } else if (os_strcmp(argv[2], "start") == 0) {
         CLI_LOGI("start adc test\n");
     } else if (os_strcmp(argv[2], "stop") == 0) {
@@ -556,7 +619,11 @@ static void cli_adc_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
         uint16_t value = 0;
         float cali_value = 0;
 
-        BK_LOG_ON_ERR(bk_adc_channel_read(adc_chan, &value, ADC_READ_SEMAPHORE_WAIT_TIME));
+        ret = bk_adc_channel_read(adc_chan, &value, ADC_READ_SEMAPHORE_WAIT_TIME);
+        if (ret != BK_OK) {
+            CLI_LOGE("adc channel read failed, ret:0x%x\r\n", ret);
+            return;
+        }
         cali_value = saradc_calculate(value);
         CLI_LOGI("adc value:%d mv\n", (uint32_t)(cali_value * 1000));
     } else if (os_strcmp(argv[2], "read") == 0) {
@@ -595,12 +662,20 @@ static void cli_adc_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
         uint16_t data = 0;
         bk_err_t bk_adc_single_read(uint16_t* data);
 
-        bk_adc_single_read(&data);
+        ret = bk_adc_single_read(&data);
+        if (ret != BK_OK) {
+            CLI_LOGE("adc single read failed, ret:0x%x\r\n", ret);
+            return;
+        }
         CLI_LOGI("adc single step mode: adc value is 0x%x\n", data);
     } else if (os_strcmp(argv[2], "reg_cb") == 0) {
         uint32_t size = os_strtoul(argv[3], NULL, 10);
-        BK_LOG_ON_ERR(bk_adc_register_isr_callback(cli_adc_register_cb, size));
-        CLI_LOGI("adc isr cb register\r\n");
+        ret = bk_adc_register_isr_callback(cli_adc_register_cb, size);
+        if (ret == BK_OK) {
+            CLI_LOGI("adc isr cb register\r\n");
+        } else {
+            CLI_LOGE("adc isr cb register failed, ret:0x%x\r\n", ret);
+        }
     }
     else if (0 == os_strcmp(argv[2], "saradc_val_read"))
     {
@@ -616,8 +691,8 @@ static void cli_adc_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
     }
     else if(0 == os_strcmp(argv[2], "use_sample_set_saradc_val"))
     {
-        uint16_t sample_value= 0;
-        uint8_t ret;
+        uint16_t sample_value = 0;
+        uint8_t cal_ret;
         SARADC_MODE saradc_cal_mode;
 
         adc_config_t config = {0};
@@ -627,7 +702,7 @@ static void cli_adc_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
 
         config.adc_mode = os_strtoul(argv[3], NULL, 10);
         config.src_clk = os_strtoul(argv[4], NULL, 10);
-        config.clk = os_strtoul(argv[5], NULL, 10);
+        config.clk = os_strtoul(argv[5], NULL, 0);
         config.saturate_mode = os_strtoul(argv[6], NULL, 10);
         config.steady_ctrl= 7;
         config.adc_filter = 0;
@@ -635,7 +710,12 @@ static void cli_adc_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
         {
             config.sample_rate = os_strtoul(argv[7], NULL, 10);
         }
-        BK_LOG_ON_ERR(bk_adc_channel_init(&config));
+
+        ret = bk_adc_channel_init(&config);
+        if (ret != BK_OK) {
+            CLI_LOGE("adc channel init failed, ret:0x%x\r\n", ret);
+            return;
+        }
         CLI_LOGI("adc init test:adc_channel:%x, adc_mode:%x,src_clk:%x,adc_clk:%x, saturate_mode:%x, sample_rate:%x",
                  adc_chan, config.adc_mode, config.src_clk, config.clk, config.saturate_mode, config.sample_rate);
 
@@ -650,21 +730,38 @@ static void cli_adc_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
         else
         {
             os_printf("invalid parameter\r\n");
+            bk_adc_channel_deinit(adc_chan);
             return;
         }
 
         CLI_LOGI("start adc test\n");
 
-        BK_LOG_ON_ERR(bk_adc_channel_read(adc_chan, &sample_value, ADC_READ_SEMAPHORE_WAIT_TIME));
+        ret = bk_adc_channel_read(adc_chan, &sample_value, ADC_READ_SEMAPHORE_WAIT_TIME);
+        if (ret != BK_OK) {
+            CLI_LOGE("adc channel read failed, ret:0x%x\r\n", ret);
+            bk_adc_channel_deinit(adc_chan);
+            return;
+        }
 
-        ret = saradc_set_calibrate_val(&sample_value, saradc_cal_mode);
-        if(ret == SARADC_FAILURE)
-        {
+        cal_ret = saradc_set_calibrate_val(&sample_value, saradc_cal_mode);
+        if (cal_ret == SARADC_FAILURE) {
             os_printf("saradc_set_calibrate_val fail\r\n");
+            bk_adc_channel_deinit(adc_chan);
+            return;
         }
         os_printf("saradc_set_calibrate_val success\r\n");
-        os_printf("mode:[%s] value:[%d]\r\n", (saradc_cal_mode ? "high" : "low"), sample_value);
-        //BK_LOG_ON_ERR(bk_adc_stop());
+        {
+            const char *cal_mode_str = "?";
+            if (saradc_cal_mode == SARADC_CALIBRATE_LOW) {
+                cal_mode_str = "low";
+            } else if (saradc_cal_mode == SARADC_CALIBRATE_HIGH) {
+                cal_mode_str = "high";
+            } else if (saradc_cal_mode == SARADC_CALIBRATE_EXT_LOW) {
+                cal_mode_str = "ext_low";
+            }
+            os_printf("mode:[%s] value:[%d]\r\n", cal_mode_str, sample_value);
+        }
+        bk_adc_channel_deinit(adc_chan);
     }
     else if(os_strcmp(argv[2], "single_adc_example") == 0)
     {
@@ -675,7 +772,11 @@ static void cli_adc_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
         cli_adc_read_multi_chan();
     } else if (os_strcmp(argv[2], "calib_mode") == 0) {
         #if CONFIG_SARADC_V1P2
-        bk_adc_enter_calib_mode();
+        ret = bk_adc_enter_calib_mode();
+        if (ret != BK_OK) {
+            CLI_LOGE("bk_adc_enter_calib_mode failed, ret:0x%x\r\n", ret);
+            return;
+        }
         #endif // CONFIG_SARADC_V1P2
     } else
     {
