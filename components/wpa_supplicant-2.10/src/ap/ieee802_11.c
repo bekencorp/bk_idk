@@ -55,7 +55,9 @@
 #include "fils_hlp.h"
 #include "dpp_hostapd.h"
 #include "gas_query_ap.h"
-
+#if CONFIG_WIFI_AP_HW_MODE
+#include "modules/wifi_types.h"
+#endif
 
 #ifdef CONFIG_FILS_AP
 static struct wpabuf *
@@ -307,7 +309,7 @@ u16 hostapd_own_capab_info(struct hostapd_data *hapd)
 	if (privacy)
 		capab |= WLAN_CAPABILITY_PRIVACY;
 
-#ifndef BK_SUPPLICANT
+#if !defined(BK_SUPPLICANT) || defined(CONFIG_WIFI_AP_HW_MODE)
 	if (hapd->iface->current_mode &&
 	    hapd->iface->current_mode->mode == HOSTAPD_MODE_IEEE80211G &&
 	    hapd->iface->num_sta_no_short_slot_time == 0)

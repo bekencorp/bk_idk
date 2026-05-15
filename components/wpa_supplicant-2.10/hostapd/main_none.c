@@ -33,6 +33,14 @@ struct hapd_interfaces g_hapd_interfaces;
 
 const char *bss_iface = "wlan0";
 
+#if CONFIG_WIFI_AP_HW_MODE
+#if CONFIG_WIFI6 && (!CONFIG_SOC_BK7236N) && (!CONFIG_SOC_BK7239XX)
+#define AP_VHT_CAPAB_LDPC VHT_CAP_RXLDPC
+#else
+#define AP_VHT_CAPAB_LDPC 0
+#endif
+#endif
+
 extern int ap_channel_switch(struct hostapd_iface *ap_iface, int new_freq);
 
 struct hapd_interfaces *hostapd_ctrl_get_interfaces()
@@ -93,39 +101,60 @@ struct hostapd_config *hostapd_config_read(const char *fname)
 						| HT_CAP_INFO_MAX_AMSDU_SIZE;
 #endif
 
-#if CONFIG_WIFI_AP_HW_MODE
-	switch (g_ap_param_ptr->hw_mode) {
-	default:
-		/* fall through, select first supported hw mode */
-#if CONFIG_AP_HT_IE
-	case BK_HW_MODE_BGN:
-		conf->hw_mode = HOSTAPD_MODE_IEEE80211G;
-		conf->ieee80211n = 1;
-		conf->ieee80211ac = 0;
-		conf->ieee80211ax = 0;
-		break;
-#endif
-	case BK_HW_MODE_BG:
-		conf->hw_mode = HOSTAPD_MODE_IEEE80211G;
-		conf->ieee80211n = 0;
-		conf->ieee80211ac = 0;
-		conf->ieee80211ax = 0;
-		break;
-	case BK_HW_MODE_B:
-		conf->hw_mode = HOSTAPD_MODE_IEEE80211B;
-		conf->ieee80211n = 0;
-		conf->ieee80211ac = 0;
-		conf->ieee80211ax = 0;
-		break;
-	}
-#endif
-
 #if CONFIG_AP_VHT
 	conf->ieee80211ac = 1;
 #endif
 
 #if CONFIG_AP_HE
 	conf->ieee80211ax = 1;
+#endif
+
+#if CONFIG_WIFI_AP_HW_MODE
+	conf->ap_hw_mode = g_ap_param_ptr->hw_mode;
+	switch (g_ap_param_ptr->hw_mode) {
+		case WIFI_AP_HW_MODE_B:
+			conf->hw_mode = HOSTAPD_MODE_IEEE80211B;
+			break;
+		case WIFI_AP_HW_MODE_B_G:
+		case WIFI_AP_HW_MODE_B_G_N:
+		case WIFI_AP_HW_MODE_B_G_N_AX:
+			conf->hw_mode = HOSTAPD_MODE_IEEE80211G;
+			break;
+		case WIFI_AP_HW_MODE_A:
+		case WIFI_AP_HW_MODE_A_N:
+		case WIFI_AP_HW_MODE_A_N_AC:
+		case WIFI_AP_HW_MODE_A_N_AC_AX:
+			conf->hw_mode = HOSTAPD_MODE_IEEE80211A;
+			break;
+		default:
+			break;
+	}
+	if (g_ap_param_ptr->hw_mode & AP_HW_MODE_N) {
+		conf->ieee80211n = 1;
+		conf->ht_capab = HT_CAP_INFO_SMPS_DISABLED | HT_CAP_INFO_SHORT_GI20MHZ
+							| HT_CAP_INFO_TX_STBC
+							| HT_CAP_INFO_RX_STBC_1
+							| HT_CAP_INFO_MAX_AMSDU_SIZE;
+	} else {
+		conf->ieee80211n = 0;
+		conf->ht_capab = 0;
+	}
+	if (g_ap_param_ptr->hw_mode & AP_HW_MODE_AC) {
+		conf->ieee80211ac = 1;
+		conf->vht_capab = AP_VHT_CAPAB_LDPC | VHT_CAP_SU_BEAMFORMEE_CAPABLE
+						| (3 << VHT_CAP_BEAMFORMEE_STS_OFFSET)
+						| VHT_CAP_MU_BEAMFORMEE_CAPABLE
+						| VHT_CAP_MAX_A_MPDU_LENGTH_EXPONENT_3;
+	} else {
+		conf->ieee80211ac = 0;
+		conf->vht_capab = 0;
+	}
+
+	if (g_ap_param_ptr->hw_mode & AP_HW_MODE_AX) {
+		conf->ieee80211ax = 1;
+	} else {
+		conf->ieee80211ax = 0;
+	}
 #endif
 
 #if CONFIG_UAPSD

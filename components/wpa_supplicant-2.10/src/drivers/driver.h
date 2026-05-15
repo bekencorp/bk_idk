@@ -288,7 +288,7 @@ struct hostapd_hw_modes {
 
 	unsigned int flags; /* HOSTAPD_MODE_FLAG_* */
 
-#ifdef CONFIG_IEEE80211AX
+#if defined (CONFIG_IEEE80211AX) || defined (CONFIG_WIFI_AP_HW_MODE)
 	/**
 	 * he_capab - HE (IEEE 802.11ax) capabilities
 	 */

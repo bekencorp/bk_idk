@@ -3539,6 +3539,72 @@ bk_err_t wifi_ap_validate_config(const wifi_ap_config_t *ap_config)
 {
 	if (!ap_config)
 		return BK_ERR_NULL_PARAM;
+
+#if CONFIG_WIFI_AP_HW_MODE
+	{
+		uint8_t hw_mode = ap_config->hw_mode;
+		const uint8_t valid_mask = AP_HW_MODE_B | AP_HW_MODE_G | AP_HW_MODE_N |
+					   AP_HW_MODE_A | AP_HW_MODE_AC | AP_HW_MODE_AX;
+		const uint8_t bg_mask = AP_HW_MODE_B | AP_HW_MODE_G;
+		const uint8_t band_mask = bg_mask | AP_HW_MODE_A;
+		const bool is_24g_mode = (hw_mode & bg_mask) != 0;
+		const bool is_5g_mode = (hw_mode & AP_HW_MODE_A) != 0;
+
+		if (hw_mode == 0 || (hw_mode & ~valid_mask)) {
+			WIFI_LOGE("[%s]invalid hw_mode 0x%x\n", __FUNCTION__, hw_mode);
+			return BK_ERR_PARAM;
+		}
+
+		/* 5G(A) cannot be mixed with 2.4G(B/G) mode bits. */
+		if (is_5g_mode && (hw_mode & bg_mask)) {
+			WIFI_LOGE("[%s]invalid mixed band hw_mode 0x%x\n", __FUNCTION__, hw_mode);
+			return BK_ERR_PARAM;
+		}
+
+		if (!(hw_mode & band_mask)) {
+			WIFI_LOGE("[%s]hw_mode without base band 0x%x\n", __FUNCTION__, hw_mode);
+			return BK_ERR_PARAM;
+		}
+
+		/* AC requires A + N on this stack. */
+		if ((hw_mode & AP_HW_MODE_AC) &&
+		    ((hw_mode & (AP_HW_MODE_A | AP_HW_MODE_N)) != (AP_HW_MODE_A | AP_HW_MODE_N))) {
+			WIFI_LOGE("[%s]invalid ac hw_mode 0x%x\n", __FUNCTION__, hw_mode);
+			return BK_ERR_PARAM;
+		}
+
+		if ((hw_mode & AP_HW_MODE_AX) && !(hw_mode & AP_HW_MODE_N)) {
+			WIFI_LOGE("[%s]invalid ax hw_mode 0x%x\n", __FUNCTION__, hw_mode);
+			return BK_ERR_PARAM;
+		}
+
+#if !CONFIG_WIFI_BAND_5G
+		if (is_5g_mode) {
+			WIFI_LOGE("[%s]5g hw_mode 0x%x is unsupported on this build\n",
+				  __FUNCTION__, hw_mode);
+			return BK_ERR_PARAM;
+		}
+#endif
+
+		if (ap_config->channel != 0) {
+			uint8_t ch = ap_config->channel;
+
+			if (is_24g_mode && (ch < 1 || ch > 14)) {
+				WIFI_LOGE("[%s]2.4g hw_mode 0x%x mismatches configured channel %u\n",
+					  __FUNCTION__, hw_mode, ch);
+				return BK_ERR_PARAM;
+			}
+#if CONFIG_SOC_BK7239XX || CONFIG_SOC_BK7286XX
+			if (is_5g_mode && (ch < 36 || ch > 177)) {
+				WIFI_LOGE("[%s]5g hw_mode 0x%x mismatches configured channel %u\n",
+					  __FUNCTION__, hw_mode, ch);
+				return BK_ERR_PARAM;
+			}
+#endif
+		}
+	}
+#endif
+
 #if (CONFIG_SOC_BK7239XX) && CONFIG_WIFI_BAND_5G
 	if (!ate_is_enabled() && ap_config->channel >= 36 && ap_config->channel <= 177) {
 
@@ -3618,6 +3684,9 @@ static bk_err_t wifi_ap_set_config(const wifi_ap_config_t *ap_config)
 	//TODO why need this???
 	bk_wlan_set_coexist_at_init_phase(CONFIG_ROLE_AP);
 
+#if CONFIG_WIFI_AP_HW_MODE
+	g_ap_param_ptr->hw_mode = ap_config->hw_mode;
+#endif
 	g_ap_param_ptr->ssid.length = MIN(SSID_MAX_LEN, os_strlen(ap_config->ssid));
 	os_memcpy(g_ap_param_ptr->ssid.array, ap_config->ssid, g_ap_param_ptr->ssid.length);
 	g_ap_param_ptr->key_len = os_strlen(ap_config->password);
@@ -3689,6 +3758,9 @@ bk_err_t bk_wifi_ap_get_config(wifi_ap_config_t *ap_config)
 	os_memcpy(ap_config->password, g_ap_param_ptr->key, g_ap_param_ptr->key_len);
 	ap_config->channel = g_ap_param_ptr->chann;
 	ap_config->security = g_ap_param_ptr->cipher_suite;
+	#if CONFIG_WIFI_AP_HW_MODE
+	ap_config->hw_mode = g_ap_param_ptr->hw_mode;
+	#endif
 
 	return BK_OK;
 }

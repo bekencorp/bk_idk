@@ -20,7 +20,7 @@
 #include "dfs.h"
 
 
-#ifdef CONFIG_IEEE80211AC
+#if defined(CONFIG_IEEE80211AC) || defined(CONFIG_WIFI_AP_HW_MODE)
 u8 * hostapd_eid_vht_capabilities(struct hostapd_data *hapd, u8 *eid, u32 nsts)
 {
 	struct ieee80211_vht_capabilities *cap;

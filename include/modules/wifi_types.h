@@ -544,10 +544,33 @@ typedef struct {
 	wifi_scan_ap_info_t *aps;          /**< The APs found by scan */
 } wifi_scan_result_t;
 
+#if CONFIG_WIFI_AP_HW_MODE
+enum wifi_ap_hw_mode_t {
+	AP_HW_MODE_B  = (1 << 0),
+	AP_HW_MODE_G  = (1 << 1),
+	AP_HW_MODE_N  = (1 << 2),
+	AP_HW_MODE_A  = (1 << 3),
+	AP_HW_MODE_AC = (1 << 4),
+	AP_HW_MODE_AX = (1 << 5),
+};
+
+#define WIFI_AP_HW_MODE_B         (AP_HW_MODE_B)
+#define WIFI_AP_HW_MODE_B_G       (AP_HW_MODE_B | AP_HW_MODE_G)
+#define WIFI_AP_HW_MODE_B_G_N     (AP_HW_MODE_B | AP_HW_MODE_G | AP_HW_MODE_N)
+#define WIFI_AP_HW_MODE_B_G_N_AX  (AP_HW_MODE_B | AP_HW_MODE_G | AP_HW_MODE_N | AP_HW_MODE_AX)
+#define WIFI_AP_HW_MODE_A         (AP_HW_MODE_A)
+#define WIFI_AP_HW_MODE_A_N       (AP_HW_MODE_A | AP_HW_MODE_N)
+#define WIFI_AP_HW_MODE_A_N_AC    (AP_HW_MODE_A | AP_HW_MODE_N | AP_HW_MODE_AC)
+#define WIFI_AP_HW_MODE_A_N_AC_AX (AP_HW_MODE_A | AP_HW_MODE_N | AP_HW_MODE_AC | AP_HW_MODE_AX)
+#endif
+
 typedef struct {
 	char ssid[WIFI_SSID_STR_LEN];      /**< The SSID of BK AP */
 	char password[WIFI_PASSWORD_LEN];  /**< Password of BK AP, ignored in an open system.*/
 	uint8_t channel;                   /**< The channel of BK AP, 0 indicates default TODO */
+#if CONFIG_WIFI_AP_HW_MODE
+	uint8_t hw_mode;                   /**< Hardware mode of BK AP, default value TODO */
+#endif
 	wifi_security_t security;          /**< Security type of BK AP, default value TODO */
 	uint8_t hidden: 1;                 /**< Whether the BK AP is hidden */
 	uint8_t acs: 1;                    /**< Whether Auto Channel Selection is enabled */

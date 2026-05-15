@@ -207,6 +207,12 @@ int demo_softap_app_init(char *ap_ssid, char *ap_key, char *ap_channel, bool hid
 		}
 		ap_config.channel = channel;
 	}
+#if CONFIG_WIFI_AP_HW_MODE
+	if (ap_config.channel >= 36)
+		ap_config.hw_mode = WIFI_AP_HW_MODE_A_N_AC_AX;
+	else
+		ap_config.hw_mode = WIFI_AP_HW_MODE_B_G_N_AX;
+#endif
 
 	ap_config.hidden = hidden;
 

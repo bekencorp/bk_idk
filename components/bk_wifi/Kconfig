@@ -179,6 +179,10 @@ menu "Bk_Wifi"
 		bool "Enable AP PS"
 		default n
 
+	config WIFI_AP_HW_MODE
+		bool "support config ap hardware mode"
+		default n
+
 	config AP_TX_TIM
 		bool "Enable ap tx tim in connection"
 		default n

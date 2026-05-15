@@ -983,7 +983,7 @@ typedef struct ap_param {
 	uint8_t mcs_set[16];
 #endif
 #if CONFIG_WIFI_AP_HW_MODE
-	int hw_mode;
+	uint8_t hw_mode;
 #endif
 	u8 max_statype_num[4];
 	u8 max_con;

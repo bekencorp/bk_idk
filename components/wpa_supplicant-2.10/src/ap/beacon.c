@@ -1628,7 +1628,7 @@ int ieee802_11_build_ap_params(struct hostapd_data *hapd,
 	}
 #endif /* CONFIG_FST_AP */
 
-#ifdef CONFIG_IEEE80211AC
+#if defined(CONFIG_IEEE80211AC) || defined(CONFIG_WIFI_AP_HW_MODE)
 	if (hapd->iconf->ieee80211ac && !hapd->conf->disable_11ac &&
 	    !is_6ghz_op_class(hapd->iconf->op_class)) {
 		tailpos = hostapd_eid_vht_capabilities(hapd, tailpos, 0);
@@ -1651,7 +1651,7 @@ int ieee802_11_build_ap_params(struct hostapd_data *hapd,
 #endif
 	tailpos = hostapd_get_rsnxe(hapd, tailpos, tailend - tailpos);
 
-#ifdef CONFIG_IEEE80211AX
+#if defined(CONFIG_IEEE80211AX) || defined(CONFIG_WIFI_AP_HW_MODE)
 	if (hapd->iconf->ieee80211ax && !hapd->conf->disable_11ax) {
 		tailpos = hostapd_eid_he_capab(hapd, tailpos,
 					       IEEE80211_MODE_AP);

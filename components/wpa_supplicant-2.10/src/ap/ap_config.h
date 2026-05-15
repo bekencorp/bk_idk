@@ -744,7 +744,7 @@ struct hostapd_bss_config {
 #ifdef CONFIG_FULL_HOSTAPD
 	u8 radio_measurements[RRM_CAPABILITIES_IE_LEN];
 #endif
-#ifdef CONFIG_IEEE80211AC
+#if defined (CONFIG_IEEE80211AC) || defined (CONFIG_WIFI_AP_HW_MODE)
 	int vendor_vht;
 	int use_sta_nsts;
 #endif
@@ -1006,6 +1006,9 @@ struct hostapd_config {
 	int acs_exclude_dfs;
 	u8 min_tx_power;
 	enum hostapd_hw_mode hw_mode; /* HOSTAPD_MODE_IEEE80211A, .. */
+#if CONFIG_WIFI_AP_HW_MODE
+	uint8_t ap_hw_mode;
+#endif
 	int acs_exclude_6ghz_non_psc;
 	enum {
 		LONG_PREAMBLE = 0,
@@ -1115,7 +1118,7 @@ struct hostapd_config {
 #endif
 
 	int ieee80211ax;
-#ifdef CONFIG_IEEE80211AX
+#if defined (CONFIG_IEEE80211AX) || defined (CONFIG_WIFI_AP_HW_MODE)
 	struct he_phy_capabilities_info he_phy_capab;
 	struct he_operation he_op;
 	struct ieee80211_he_mu_edca_parameter_set he_mu_edca;

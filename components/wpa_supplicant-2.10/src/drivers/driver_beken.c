@@ -1199,117 +1199,6 @@ static int hostap_sta_disassoc(void *priv, const u8 *own_addr, const u8 *addr,
                              sizeof(mgmt.u.disassoc), 0, 0, NULL, 0, 0, 0);
 }
 
-
-#if CONFIG_WIFI_AP_HW_MODE
-/* support multiple hw modes: B and G(N,AX) */
-static struct hostapd_hw_modes *hostap_get_hw_feature_data(void *priv,
-		u16 *num_modes, u16 *flags, u8 *dfs)
-{
-	struct hostapd_hw_modes *modes;
-	struct hostapd_hw_modes *mode;
-	int i, clen, rlen;
-	const short chan2freq[14] = {
-		2412, 2417, 2422, 2427, 2432, 2437, 2442,
-		2447, 2452, 2457, 2462, 2467, 2472, 2484
-	};
-
-	/* two hw modes: b & g(n,ax) */
-	modes = os_zalloc(sizeof(struct hostapd_hw_modes) * 2);
-	if (!modes)
-		return NULL;
-
-	*num_modes = 2;
-	*flags = 0;
-	*dfs = 0;
-
-	// 11B
-	mode = modes;
-	mode->num_channels = 14;
-	mode->mode = HOSTAPD_MODE_IEEE80211B;
-	mode->num_rates = 4;
-
-	clen = mode->num_channels * sizeof(struct hostapd_channel_data);
-	rlen = mode->num_rates * sizeof(int);
-
-	mode->channels = os_zalloc(clen);
-	mode->rates = os_zalloc(rlen);
-	if (!mode->channels || !mode->rates)
-		goto fail;
-
-	/* channels */
-	for (i = 0; i < 14; i++) {
-		mode->channels[i].chan = i + 1;
-		mode->channels[i].freq = chan2freq[i];
-		mode->channels[i].allowed_bw = HOSTAPD_CHAN_WIDTH_20;
-	}
-
-	/* 11b rates */
-	mode->rates[0] = 10;
-	mode->rates[1] = 20;
-	mode->rates[2] = 55;
-	mode->rates[3] = 110;
-
-	/* 11G/N/AX */
-	mode++;
-	mode->num_channels = 14;
-	mode->mode = HOSTAPD_MODE_IEEE80211G;
-	mode->num_rates = 12;
-
-	clen = mode->num_channels * sizeof(struct hostapd_channel_data);
-	rlen = mode->num_rates * sizeof(int);
-
-	mode->channels = os_zalloc(clen);
-	mode->rates = os_zalloc(rlen);
-	if (!mode->channels || !mode->rates)
-		goto fail;
-
-	/* channels */
-	for (i = 0; i < 14; i++) {
-		mode->channels[i].chan = i + 1;
-		mode->channels[i].freq = chan2freq[i];
-		mode->channels[i].allowed_bw = HOSTAPD_CHAN_WIDTH_20;
-	}
-
-	/* rates */
-	mode->rates[0] = 10;
-	mode->rates[1] = 20;
-	mode->rates[2] = 55;
-	mode->rates[3] = 110;
-	mode->rates[4] = 60;
-	mode->rates[5] = 90;
-	mode->rates[6] = 120;
-	mode->rates[7] = 180;
-	mode->rates[8] = 240;
-	mode->rates[9] = 360;
-	mode->rates[10] = 480;
-	mode->rates[11] = 540;
-
-	/* HT capa */
-#if CONFIG_AP_HT_IE
-	mode->mcs_set[0] = 0xff;
-	mode->a_mpdu_params = 0;
-	mode->ht_capab = HT_CAP_INFO_SHORT_GI20MHZ
-					 | HT_CAP_INFO_TX_STBC
-					 | HT_CAP_INFO_RX_STBC_1
-					 | HT_CAP_INFO_MAX_AMSDU_SIZE;
-#endif // CONFIG_AP_HT_IE
-
-	return modes;
-
-fail:
-	/* free allocated data */
-	for (mode = modes, i = 0; i < 2; i++, mode++) {
-		if (mode->channels)
-			os_free(mode->channels);
-		if (mode->rates)
-			os_free(mode->rates);
-	}
-	os_free(modes);
-
-	return NULL;
-}
-
-#else /* CONFIG_WIFI_AP_HW_MODE */
 static struct hostapd_hw_modes *hostap_get_hw_feature_data(void *priv,
 				u16 *num_modes, u16 *flags, u8 *dfs)
 {
@@ -1321,7 +1210,7 @@ static struct hostapd_hw_modes *hostap_get_hw_feature_data(void *priv,
 		2447, 2452, 2457, 2462, 2467, 2472, 2484
 	};
 
-#if CONFIG_AP_HE
+#if CONFIG_AP_HE || CONFIG_WIFI_AP_HW_MODE
 	// FIXME: BK7236, fix hardcoded
 	struct he_capabilities *he_capab;
 	u8 he_mac_cap[HE_MAX_MAC_CAPAB_SIZE] = { 0x02, 0x00, 0x02, 0x00, 0x00, 0x00 };
@@ -1336,9 +1225,17 @@ static struct hostapd_hw_modes *hostap_get_hw_feature_data(void *priv,
 #endif
 
 #if CONFIG_WIFI_BAND_5G || CONFIG_WIFI_BAND_6G
+#if CONFIG_WIFI_AP_HW_MODE
+    *num_modes = 3;     // for 11A, 11G and 11B
+#else
 	*num_modes = 2;     // for 11A and 11G/11B
+#endif
+#else
+#if CONFIG_WIFI_AP_HW_MODE
+	*num_modes = 2;     // for 11G and 11B
 #else
 	*num_modes = 1;     // for 11G/11B
+#endif
 #endif
 
 	modes = os_zalloc(sizeof(struct hostapd_hw_modes) * (*num_modes));
@@ -1350,9 +1247,32 @@ static struct hostapd_hw_modes *hostap_get_hw_feature_data(void *priv,
 	*flags = 0;
 	*dfs = 0;
 
-	// 11B or 11G
+	// 11B
 	mode = modes;
 	mode->num_channels = ARRAY_SIZE(chan2freq);
+#if CONFIG_WIFI_AP_HW_MODE
+	mode->mode = HOSTAPD_MODE_IEEE80211B;
+	mode->num_rates = 4;
+	clen = mode->num_channels * sizeof(struct hostapd_channel_data);
+	rlen = mode->num_rates * sizeof(int);
+	mode->channels = os_zalloc(clen);
+	mode->rates = os_zalloc(rlen);
+	if (!mode->channels || !mode->rates)
+		goto fail;
+
+	for (i = 0; i < ARRAY_SIZE(chan2freq); i++) {
+		mode->channels[i].chan = i + 1;
+		mode->channels[i].freq = chan2freq[i];
+		mode->channels[i].allowed_bw = HOSTAPD_CHAN_WIDTH_20;
+	}
+	mode->rates[0] = 10;
+	mode->rates[1] = 20;
+	mode->rates[2] = 55;
+	mode->rates[3] = 110;
+
+	mode++; // 11G
+	mode->num_channels = ARRAY_SIZE(chan2freq);
+#endif
 
 #if CFG_SUPPORT_80211G
 	mode->mode = HOSTAPD_MODE_IEEE80211G;
@@ -1392,7 +1312,7 @@ static struct hostapd_hw_modes *hostap_get_hw_feature_data(void *priv,
 	mode->rates[11] = 540;
 #endif
 
-#if CONFIG_AP_HT_IE
+#if CONFIG_AP_HT_IE || CONFIG_WIFI_AP_HW_MODE
 	mode->mcs_set[0] = 0xff;
 	mode->a_mpdu_params = 0;
 	mode->ht_capab = HT_CAP_INFO_SHORT_GI20MHZ |
@@ -1405,7 +1325,7 @@ static struct hostapd_hw_modes *hostap_get_hw_feature_data(void *priv,
 	// TODO: BK7236, set vht cap
 #endif
 
-#if CONFIG_AP_HE
+#if CONFIG_AP_HE || CONFIG_WIFI_AP_HW_MODE
 	// TODO: BK7236
 	he_capab = &mode->he_capab[IEEE80211_MODE_AP];  // TODO: only set for softap
 	he_capab->he_supported = 1;
@@ -1451,7 +1371,7 @@ static struct hostapd_hw_modes *hostap_get_hw_feature_data(void *priv,
 	mode->rates[7] = 540;
 
 	/* HT capa */
-#if CONFIG_AP_HT_IE
+#if CONFIG_AP_HT_IE || CONFIG_WIFI_AP_HW_MODE
 	mode->mcs_set[0] = 0xff;
 	mode->a_mpdu_params = 0;
 	mode->ht_capab = HT_CAP_INFO_SHORT_GI20MHZ |
@@ -1460,11 +1380,11 @@ static struct hostapd_hw_modes *hostap_get_hw_feature_data(void *priv,
 					 HT_CAP_INFO_MAX_AMSDU_SIZE;
 #endif // CONFIG_AP_HT_IE
 
-#if CONFIG_AP_VHT
+#if CONFIG_AP_VHT || CONFIG_WIFI_AP_HW_MODE
 	mode->vht_capab = g_wiphy.bands[IEEE80211_BAND_5GHZ]->vht_cap.cap;
 #endif
 
-#if CONFIG_AP_HE
+#if CONFIG_AP_HE || CONFIG_WIFI_AP_HW_MODE
 	he_capab = &mode->he_capab[IEEE80211_MODE_AP];  // TODO: only set for softap
 	he_capab->he_supported = 1;
 	memcpy(he_capab->mac_cap, he_mac_cap, HE_MAX_MAC_CAPAB_SIZE);
@@ -1479,7 +1399,7 @@ static struct hostapd_hw_modes *hostap_get_hw_feature_data(void *priv,
 
 fail:
 	/* free allocated data */
-	for (mode = modes, i = 0; i < 2; i++, mode++) {
+	for (mode = modes, i = 0; i < *num_modes; i++, mode++) {
 		if (mode->channels)
 			os_free(mode->channels);
 		if (mode->rates)
@@ -1489,7 +1409,6 @@ fail:
 
 	return NULL;
 }
-#endif /* CONFIG_WIFI_AP_HW_MODE */
 
 int hostap_set_ap(void *priv, struct wpa_driver_ap_params *params)
 {

@@ -19,7 +19,7 @@
 #include "ieee802_11.h"
 #include "dfs.h"
 
-#ifdef CONFIG_IEEE80211AX
+#if defined (CONFIG_IEEE80211AX) || defined (CONFIG_WIFI_AP_HW_MODE)
 
 static u8 ieee80211_he_ppet_size(u8 ppe_thres_hdr, const u8 *phy_cap_info)
 {
