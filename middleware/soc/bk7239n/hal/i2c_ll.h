@@ -27,8 +27,9 @@
 extern "C" {
 #endif
 
-#define I2C0_LL_SCL_PIN    GPIO_20
-#define I2C0_LL_SDA_PIN    GPIO_21
+//bk7239nl not recommend use GPIO_20 and GPIO_21 as their proximity to RF components may affect RF performance
+#define I2C0_LL_SCL_PIN    GPIO_18
+#define I2C0_LL_SDA_PIN    GPIO_19 //bk7239n d board can not use GPIO_21 as UART
 
 #define I2C1_LL_SCL_PIN    GPIO_0
 #define I2C1_LL_SDA_PIN    GPIO_1
