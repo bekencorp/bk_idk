@@ -76,6 +76,13 @@ if(CONFIG_VALIDATE_IMAGE)
     )
 endif()
 
+if(CONFIG_FLASH_WRITE_STATUS_VOLATILE)
+    target_compile_definitions(bl2
+        PUBLIC
+            CONFIG_FLASH_WRITE_STATUS_VOLATILE
+    )
+endif()
+
 add_convert_to_bin_target(bl2)
 
 install(DIRECTORY ${CMAKE_BINARY_DIR}/bin/ DESTINATION ${TFM_INSTALL_PATH}/outputs)

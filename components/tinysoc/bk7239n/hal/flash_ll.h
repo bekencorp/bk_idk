@@ -327,6 +327,14 @@ static inline void flash_ll_set_volatile_status_write(flash_hw_t *hw)
 	hw->flash_ctrl.susres_cmd_sel = 0x0;
 }
 
+static inline void flash_ll_clear_volatile_status_write(flash_hw_t *hw)
+{
+	while (flash_ll_is_busy(hw));
+	hw->flash_ctrl.susres_cmd_reg = 0x00;
+	hw->flash_ctrl.susres_cmd_sel = 0x0;
+	while (flash_ll_is_busy(hw));
+}
+
 #ifdef __cplusplus
 }
 #endif

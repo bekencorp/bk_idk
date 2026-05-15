@@ -326,8 +326,16 @@ static void flash_set_protect_type(flash_protect_type_t type)
 		flash_set_protect_cfg(&status_reg, protect_cfg);
 		flash_set_cmp_cfg(&status_reg, cmp_cfg);
 
+#if CONFIG_FLASH_WRITE_STATUS_VOLATILE
+		flash_hal_set_volatile_status_write(&s_flash.hal);
+#endif
+
 		FLASH_LOGD("write status reg:%x, status_reg_size:%d\r\n", status_reg, s_flash.flash_cfg->status_reg_size);
 		flash_hal_write_status_reg(&s_flash.hal, s_flash.flash_cfg->status_reg_size, status_reg);
+
+#if CONFIG_FLASH_WRITE_STATUS_VOLATILE
+		flash_hal_clear_volatile_status_write(&s_flash.hal);
+#endif
 	}
 }
 
