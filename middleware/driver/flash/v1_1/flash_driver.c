@@ -1535,7 +1535,7 @@ bk_err_t bk_flash_clk_switch(uint32_t flash_speed_type, uint32_t modules)
 			if (0 == s_hold_low_speed_status) {
 				chip_id = bk_get_hardware_chip_id_version();
 				//chipC version with GD flash switch to 80M for peformance
-				if ((chip_id == CHIP_VERSION_C) && ((s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_GD)) {
+				if ((chip_id == CHIP_VERSION_C) && ((s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_GD) || (s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_TH) {
 					bk_flash_set_clk(FLASH_CLK_DPLL, FLASH_DPLL_DIV_VALUE_SIX);
 				} else {
 					bk_flash_set_clk(FLASH_CLK_DPLL, FLASH_DPLL_DIV_VALUE_TEN);
