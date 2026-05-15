@@ -3895,13 +3895,24 @@ lwip_ioctl(int s, long cmd, void *argp)
 #if LWIP_SIOCOUTQ
       /* Get size of used */
     case SIOCOUTQ:
-      if (!argp)
+      if (!argp) {
+        sock_set_errno(sock, EINVAL);
+        done_socket(sock);
         return -1;
-      if(sock->conn == NULL)
+      }
+      if(sock->conn == NULL) {
+        sock_set_errno(sock, EINVAL);
+        done_socket(sock);
         return -1;
-      if(sock->conn->pcb.tcp == NULL)
+      }
+      if(sock->conn->pcb.tcp == NULL) {
+        sock_set_errno(sock, EINVAL);
+        done_socket(sock);
         return -1;
+      }
       *((int *)argp) =  tcp_seg_get_used_size(sock->conn->pcb.tcp);
+      sock_set_errno(sock, 0);
+      done_socket(sock);
       return 0;
 #endif /* LWIP_SIOCOUTQ */
     default:
