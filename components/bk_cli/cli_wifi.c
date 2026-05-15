@@ -5,12 +5,14 @@
 #include <../../lwip_intf_v2_1/lwip-2.1.2/port/net.h>
 #endif
 #include "lwip/ip4.h"
+#include "lwip/inet.h"
 #include "bk_private/bk_wifi.h"
 #include "bk_wifi_private.h"
 #include "bk_cli.h"
 #include "cli.h"
 #include <components/event.h>
 #include <components/netif.h>
+#include <modules/wifi_types.h>
 #include "bk_wifi.h"
 #include "bk_wifi_types.h"
 #include "getopt_r.h"
@@ -24,6 +26,10 @@
 #include "netif/bridgeif.h"
 #include "lwip/netifapi.h"
 #include "lwip/inet.h"
+#endif
+
+#if CONFIG_DHCP_DEBUG
+#include <../../lwip_intf_v2_1/dhcpd/dhcp-priv.h>
 #endif
 
 #if CONFIG_ENABLE_WIFI_DEFAULT_CONNECT
@@ -1704,6 +1710,7 @@ int cli_netif_event_cb(void *arg, event_module_t event_module,
 		got_ip = (netif_event_got_ip4_t *)event_data;
 		CLI_LOGI("%s got ip%d:%s\n", got_ip->netif_if == NETIF_IF_STA ? "BK STA" : "unknown netif",
 			event_id== EVENT_NETIF_GOT_IP4 ? 4 : 6, got_ip->ip);
+		CLI_LOGI("mask: %s, gateway: %s\n", got_ip->mask, got_ip->gateway);
 		break;
 	default:
 		CLI_LOGI("rx event <%d %d>\n", event_module, event_id);
@@ -1749,6 +1756,14 @@ int cli_wifi_event_cb(void *arg, event_module_t event_module,
 		ap_connected = (wifi_event_ap_connected_t *)event_data;
 		CLI_LOGI(BK_MAC_FORMAT" connected to BK AP\n", BK_MAC_STR(ap_connected->mac));
 		break;
+
+	case EVENT_WIFI_AP_STAIPASSIGNED: {
+		wifi_event_ap_staipassigned_t *sta_ip = (wifi_event_ap_staipassigned_t *)event_data;
+		struct in_addr ip;
+		ip.s_addr = sta_ip->ipaddr;
+		CLI_LOGI(BK_MAC_FORMAT" ip assigned %s\n", BK_MAC_STR(sta_ip->mac), inet_ntoa(ip));
+		break;
+	}
 
 	case EVENT_WIFI_AP_DISCONNECTED:
 		ap_disconnected = (wifi_event_ap_disconnected_t *)event_data;
@@ -1897,6 +1912,90 @@ error:
 	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
 	return;
 }
+
+#if CONFIG_DHCP_DEBUG
+static void cli_wifi_dhcpd_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	int ret = 0;
+	char *msg = NULL;
+
+	if (argc < 2) {
+		CLI_LOGI("Usage:\n");
+		CLI_LOGI("  dhcpd on|off\n");
+		CLI_LOGI("  dhcpd lease <seconds>\n");
+		CLI_LOGI("  dhcpd lease_get\n");
+		CLI_LOGI("  dhcpd pool <start_ip> <end_ip>\n");
+		CLI_LOGI("  dhcpd pool_get\n");
+		goto error;
+	}
+
+	if (os_strcmp(argv[1], "on") == 0) {
+		ret = dhcp_server_start(net_get_uap_handle());
+		CLI_LOGI("dhcpd on: %s\n", ret ? "fail" : "ok");
+	} else if (os_strcmp(argv[1], "off") == 0) {
+		dhcp_server_stop();
+		CLI_LOGI("dhcpd off: ok\n");
+	} else if (os_strcmp(argv[1], "lease") == 0) {
+		if (argc < 3) {
+			CLI_LOGI("Usage: dhcpd lease <seconds>\n");
+			goto error;
+		}
+		uint32_t sec = os_strtoul(argv[2], NULL, 10);
+		ret = dhcp_server_lease_timeout(sec);
+		CLI_LOGI("dhcpd lease set %u: %s\n", sec, ret ? "fail" : "ok");
+	} else if (os_strcmp(argv[1], "lease_get") == 0) {
+		uint32_t sec = dhcp_server_get_lease_timeout();
+		CLI_LOGI("dhcpd lease: %u\n", sec);
+	} else if (os_strcmp(argv[1], "pool") == 0) {
+		if (argc < 4) {
+			CLI_LOGI("Usage: dhcpd pool <start_ip> <end_ip>\n");
+			goto error;
+		}
+		struct in_addr s = {0};
+		struct in_addr e = {0};
+		if (!inet_aton(argv[2], &s) || !inet_aton(argv[3], &e)) {
+			CLI_LOGI("invalid ip\n");
+			goto error;
+		}
+		uint32_t start_ip = s.s_addr; /* network byte order */
+		uint32_t end_ip = e.s_addr;   /* network byte order */
+		ret = dhcp_server_set_ip_pool(start_ip, end_ip);
+		if (ret == 0) {
+			CLI_LOGI("dhcpd pool set %s-%s: ok\n", argv[2], argv[3]);
+		} else {
+			CLI_LOGI("dhcpd pool set fail, ret=%d\n", ret);
+		}
+	} else if (os_strcmp(argv[1], "pool_get") == 0) {
+		uint32_t start_ip = 0, end_ip = 0;
+		struct in_addr ip;
+		dhcp_server_get_ip_pool(&start_ip, &end_ip);
+		if (start_ip == 0 && end_ip == 0) {
+			CLI_LOGI("dhcpd not ready\n");
+			goto error;
+		}
+		ip.s_addr = start_ip;
+		char s_ip[16] = {0};
+		os_strncpy(s_ip, inet_ntoa(ip), sizeof(s_ip) - 1);
+		ip.s_addr = end_ip;
+		char e_ip[16] = {0};
+		os_strncpy(e_ip, inet_ntoa(ip), sizeof(e_ip) - 1);
+		CLI_LOGI("dhcpd pool: %s - %s\n", s_ip, e_ip);
+	} else {
+		CLI_LOGI("unknown subcmd\n");
+		goto error;
+	}
+
+	if (!ret) {
+		msg = WIFI_CMD_RSP_SUCCEED;
+		os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+		return;
+	}
+
+error:
+	msg = WIFI_CMD_RSP_ERROR;
+	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+}
+#endif /* CONFIG_DHCP_DEBUG */
 
 #if CONFIG_WIFI_CLI_RAW_LINK_ENABLE
 void cli_rlk_cfg_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
@@ -2753,6 +2852,9 @@ static const struct cli_command s_wifi_commands[] = {
 	{"scan", "scan [ssid]", cli_wifi_scan_cmd},
 	{"ap", "ap ssid [password] [channel[1:14]]", cli_wifi_ap_cmd},
 	{"sta", "sta ssid [password][bssid][channel]", cli_wifi_sta_cmd}, //TODO support connect speicific BSSID
+#if CONFIG_DHCP_DEBUG
+	{"dhcpd", "dhcpd {on|off|lease|lease_get|pool|pool_get}", cli_wifi_dhcpd_cmd},
+#endif
 #if CONFIG_WIFI_REGDOMAIN
 	{"regd", "get|set <alpha2>", cli_wifi_regd_cmd},
 #endif
@@ -2832,6 +2934,12 @@ int cli_wifi_init(void)
 {
 	BK_LOG_ON_ERR(bk_event_register_cb(EVENT_MOD_WIFI, EVENT_ID_ALL, cli_wifi_event_cb, NULL));
 	BK_LOG_ON_ERR(bk_event_register_cb(EVENT_MOD_NETIF, EVENT_ID_ALL, cli_netif_event_cb, NULL));
+	extern bool bk_get_wifi_is_inited(void);
+	if (bk_get_wifi_is_inited())
+	{
+		BK_LOG_ON_ERR(bk_event_post(EVENT_MOD_WIFI, EVENT_WIFI_READY,
+			NULL, 0, BEKEN_NEVER_TIMEOUT));
+	}
 	return cli_register_commands(s_wifi_commands, WIFI_CMD_CNT);
 }
 
