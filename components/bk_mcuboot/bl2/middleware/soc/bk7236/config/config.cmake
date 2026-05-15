@@ -24,6 +24,8 @@ set(ITS_NUM_ASSETS                   "20"        CACHE STRING    "The maximum nu
 set(BL2_HEADER_SIZE  0x1000 CACHE STRING "Header size")
 set(BL2_TRAILER_SIZE 0x1000 CACHE STRING "Trailer size")
 
+set(MCUBOOT_SIGNATURE_TYPE "EC256" CACHE STRING "Algorithm to use for signature validation" FORCE)
+
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 	add_definitions(-DCONFIG_BUILD_DEBUG)
 endif()

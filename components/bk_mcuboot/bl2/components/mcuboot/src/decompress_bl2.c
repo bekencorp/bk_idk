@@ -107,9 +107,7 @@ static int flash_area_erase_fast_with_verify(uint32_t erase_off, uint32_t len)
 	BOOT_LOG_ERR("Flash erase verification failed after %d retries, triggering WDT reboot",
 		ERASE_RETRY_COUNT);
 	BOOT_LOG_ERR("Failed erase: offset=0x%x, size=0x%x", erase_off, len);
-#if CONFIG_OTA_OVERWRITE && CONFIG_OTA_CONFIRM_UPDATE
 	bk_boot_write_ota_fail(BOOT_FAIL_STAGE_ERASE);
-#endif
 	wdt_hal_force_reboot();
 
 	return -1;
@@ -322,9 +320,7 @@ boot_copy_region(struct boot_loader_state *state, const struct flash_area *fap_s
 
 			if (decomp_result == NULL) {
 				BOOT_LOG_ERR("OTA decompress failed at block %d", block_idx);
-#if CONFIG_OTA_OVERWRITE && CONFIG_OTA_CONFIRM_UPDATE
 				bk_boot_write_ota_fail(BOOT_FAIL_STAGE_OTA_DECOMP);
-#endif
 				bk_flash_set_protect_type(protect);
 				return -1;
 			}
@@ -354,9 +350,7 @@ boot_copy_region(struct boot_loader_state *state, const struct flash_area *fap_s
 
 			if (decomp_result == NULL) {
 				BOOT_LOG_ERR("OTA decompress failed at last block");
-#if CONFIG_OTA_OVERWRITE && CONFIG_OTA_CONFIRM_UPDATE
 				bk_boot_write_ota_fail(BOOT_FAIL_STAGE_OTA_DECOMP);
-#endif
 				bk_flash_set_protect_type(protect);
 				return -1;
 			}

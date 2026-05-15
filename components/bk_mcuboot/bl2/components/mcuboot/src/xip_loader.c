@@ -180,7 +180,7 @@ find_slot_via_ota_confirm_and_image_state(struct boot_loader_state *state, bool 
     if (ota_confirm_set) {
         if (aon_pmu_hal_get_app_boot_validate_pending() == 0u) {
             preferred_slot = xip_get_peer_slot(running_slot);
-                BOOT_LOG_INF("1validate image not enabled, OTA confirm set, try to use %s",
+                BOOT_LOG_INF("validate image not enabled, OTA confirm set, try to use %s",
                             slot_str(preferred_slot));
         }
     } 
@@ -257,7 +257,6 @@ boot_get_slot_usage(struct boot_loader_state *state)
 
         if (boot_is_header_valid(hdr, BOOT_IMG_AREA(state, slot))) {
             state->slot_usage[BOOT_CURR_IMG(state)].slot_available[slot] = true;
-            state->slot_usage[BOOT_CURR_IMG(state)].slot_state[slot] = FIRST_TEST;
             BOOT_LOG_IMAGE_INFO(slot, hdr);
         } else {
             state->slot_usage[BOOT_CURR_IMG(state)].slot_available[slot] = false;
@@ -287,6 +286,9 @@ boot_load_and_validate_images(struct boot_loader_state *state)
     }
 
     while (retry_count < 6) {
+#if CONFIG_BL2_WDT
+        wdt_hal_force_feed();
+#endif
         retry_count++;
 
         /* Go over all the slots and try to load one */

@@ -274,44 +274,33 @@ bk_find_key(uint8_t image_index, uint8_t *key, uint16_t key_len, uint32_t curren
             goto fail;
         }
 
-        uint8_t running_slot_root_pubkey[PUBKEY_MAX_LEN];
-        uint16_t running_slot_root_pubkey_len = 0;
-        ret = read_root_pubkey_from_slot(running_slot, running_slot_root_pubkey, &running_slot_root_pubkey_len);
+        uint8_t verifying_slot_root_pubkey[PUBKEY_MAX_LEN];
+        uint16_t verifying_slot_root_pubkey_len = 0;
+        ret = read_root_pubkey_from_slot(verifying_slot, verifying_slot_root_pubkey, &verifying_slot_root_pubkey_len);
         if (ret == 0) {
-            if (!key_is_equal(key, key_len, running_slot_pubkey, running_slot_pubkey_len)) {
-                BOOT_LOG_ERR("%s pubkey mismatch with %s", slot_str(verifying_slot), slot_str(running_slot));
+            uint8_t signature[PUBKEY_MAX_LEN];
+            uint16_t signature_len = 0;
+            ret = read_signature_from_slot(verifying_slot, signature, &signature_len);
+            if (ret != 0) {
+                goto fail;
+            }
+
+            if (!key_is_equal(verifying_slot_root_pubkey, verifying_slot_root_pubkey_len, running_slot_pubkey, running_slot_pubkey_len)) {
+                BOOT_LOG_ERR("%s root pubkey mismatch with %s", slot_str(verifying_slot), slot_str(running_slot));
+                goto fail;
+            }
+
+            ret = verify_signature_with_bootutil(key, key_len,
+                                                 signature, signature_len,
+                                                 running_slot_pubkey, running_slot_pubkey_len,
+                                                 slot_str(verifying_slot));
+            if (ret != 0) {
                 goto fail;
             }
         } else {
-            uint8_t verifying_slot_root_pubkey[PUBKEY_MAX_LEN];
-            uint16_t verifying_slot_root_pubkey_len = 0;
-            ret = read_root_pubkey_from_slot(verifying_slot, verifying_slot_root_pubkey, &verifying_slot_root_pubkey_len);
-            if (ret == 0) {
-                uint8_t signature[PUBKEY_MAX_LEN];
-                uint16_t signature_len = 0;
-                ret = read_signature_from_slot(verifying_slot, signature, &signature_len);
-                if (ret != 0) {
-                    goto fail;
-                }
-
-                if (!key_is_equal(verifying_slot_root_pubkey, verifying_slot_root_pubkey_len, running_slot_pubkey, running_slot_pubkey_len)) {
-                    BOOT_LOG_ERR("%s root pubkey mismatch with %s", slot_str(verifying_slot), slot_str(running_slot));
-                    goto fail;
-                }
-                
-                ret = verify_signature_with_bootutil(key, key_len,
-                                                     signature, signature_len,
-                                                     running_slot_pubkey, running_slot_pubkey_len,
-                                                     slot_str(verifying_slot));
-                if (ret != 0) {
-                    goto fail;
-                }
-            }
-            else{
-                if (!key_is_equal(key, key_len, running_slot_pubkey, running_slot_pubkey_len)) {
-                    BOOT_LOG_ERR("%s pubkey mismatch with %s", slot_str(verifying_slot), slot_str(running_slot));
-                    goto fail;
-                }
+            if (!key_is_equal(key, key_len, running_slot_pubkey, running_slot_pubkey_len)) {
+                BOOT_LOG_ERR("%s pubkey mismatch with %s", slot_str(verifying_slot), slot_str(running_slot));
+                goto fail;
             }
         }
     }

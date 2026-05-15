@@ -39,6 +39,7 @@
 #include "bootutil/fault_injection_hardening.h"
 
 #include "mcuboot_config/mcuboot_config.h"
+#include "security.h"
 #include "bootutil/bootutil_log.h"
 #include "bootutil/bootutil_public.h"
 
@@ -376,7 +377,6 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
                       uint8_t *tmp_buf, uint32_t tmp_buf_sz, uint8_t *seed,
                       int seed_len, uint8_t *out_hash)
 {
-
 #if CONFIG_VALIDATE_IMAGE
 #if CONFIG_BL2_SKIP_VALIDATE
     uint32_t reset_reason = aon_pmu_hal_get_reset_reason();
@@ -524,19 +524,6 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
             image_hash_valid = 1;
             BOOT_LOG_INF("hash ok!");
 
-#if CONFIG_BL2_SKIP_VALIDATE
-            if (image_hash_valid == 1 && (
-#if CONFIG_OTA_OVERWRITE
-                fap->fa_id == 0
-#elif CONFIG_DIRECT_XIP
-                (fap->fa_id == 2 || fap->fa_id == 3)
-#endif
-            )) {
-                /* Do not clear OTA confirm here, it will be cleared after XIP switching */
-                return 0;
-            }
-#endif
-
 #ifdef EXPECTED_KEY_TLV
         } else if (type == EXPECTED_KEY_TLV) {
             /*
@@ -564,7 +551,7 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
 #endif
             }
             
-#endif /* !MCUBOOT_HW_KEY */
+#endif /* EXPECTED_KEY_TLV */
             /*
              * The key may not be found, which is acceptable.  There
              * can be multiple signatures, each preceded by a key.
@@ -586,7 +573,27 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
             }
             FIH_CALL(bootutil_verify_sig, valid_signature, hash, sizeof(hash),
                                                            buf, len, key_id);
-            BOOT_LOG_INF("verify signature %d", valid_signature);
+
+            if (FIH_NOT_EQ(valid_signature, FIH_SUCCESS)) {
+                FIH_SET(fih_rc, FIH_FAILURE);
+                BOOT_LOG_ERR("sig fail");
+                goto out;
+            }
+
+            BOOT_LOG_INF("sig ok");
+
+#if CONFIG_BL2_SKIP_VALIDATE
+            if (FIH_EQ(valid_signature, FIH_SUCCESS) && image_hash_valid == 1 && (
+#if CONFIG_OTA_OVERWRITE
+                fap->fa_id == 0
+#elif CONFIG_DIRECT_XIP
+                (fap->fa_id == 2 || fap->fa_id == 3)
+#endif
+            )) {
+                return 0;
+            }
+#endif
+
             key_id = -1;
 #endif /* EXPECTED_SIG_TLV */
 #ifdef MCUBOOT_HW_ROLLBACK_PROT
@@ -647,7 +654,6 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
 
 out:
     if (rc) {
-#if CONFIG_OTA_OVERWRITE && CONFIG_OTA_CONFIRM_UPDATE
         /* Record failure based on partition type */
         if (fap->fa_id == 0) {
             /* PRIMARY slot - App verify failure */
@@ -656,7 +662,6 @@ out:
             /* SECONDARY slot - OTA verify failure */
             bk_boot_write_ota_fail(BOOT_FAIL_STAGE_OTA_VERIFY);
         }
-#endif
         FIH_SET(fih_rc, FIH_FAILURE);
     }
     FIH_RET(fih_rc);

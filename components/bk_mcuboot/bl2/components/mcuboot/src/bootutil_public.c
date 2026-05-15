@@ -384,7 +384,7 @@ bk_boot_erase_ota_confirm(uint8_t image_index)
     return BK_FAIL;
 }
 
-#if CONFIG_OTA_OVERWRITE && CONFIG_OTA_CONFIRM_UPDATE
+#if (CONFIG_OTA_OVERWRITE || CONFIG_DIRECT_XIP) && CONFIG_OTA_CONFIRM_UPDATE
 
 #define BOOT_FAIL_STAGE_ERASE         0x4552  /* 'ER' - Erase stage */
 #define BOOT_FAIL_STAGE_OTA_DECOMP    0x4F44  /* 'OD' - OTA Decompress stage */
@@ -425,8 +425,15 @@ static const uint16_t boot_fail_count_seq[BOOT_FAIL_MAX_COUNT] = {
 static uint32_t
 bk_boot_overwrite_app_fail_off(void)
 {
+#if CONFIG_OTA_OVERWRITE
     return (uint32_t)(CONFIG_OW_OTA_CONTROL_PHY_PARTITION_OFFSET
                       + CONFIG_OW_OTA_CONTROL_PHY_PARTITION_SIZE - 8);
+#elif CONFIG_DIRECT_XIP
+    return (uint32_t)(CONFIG_XIP_OTA_CONTROL_PHY_PARTITION_OFFSET
+                      + CONFIG_XIP_OTA_CONTROL_PHY_PARTITION_SIZE - 8);
+#else
+    return 0;
+#endif
 }
 
 static uint16_t
@@ -481,9 +488,12 @@ boot_fail_get_next_count(uint16_t current_count)
     return 0x0000;
 }
 
+#endif /* (CONFIG_OTA_OVERWRITE || CONFIG_DIRECT_XIP) && CONFIG_OTA_CONFIRM_UPDATE */
+
 void
 bk_boot_write_ota_fail(uint16_t error_code)
 {
+#if (CONFIG_OTA_OVERWRITE || CONFIG_DIRECT_XIP) && CONFIG_OTA_CONFIRM_UPDATE
     boot_fail_stage_idx_t stage_idx = boot_fail_get_stage_idx_by_error(error_code);
 
     if (stage_idx >= BOOT_FAIL_STAGE_IDX_MAX) {
@@ -537,9 +547,11 @@ bk_boot_write_ota_fail(uint16_t error_code)
     }
 
     bk_flash_set_protect_type(protect);
+#else
+    (void)error_code;
+#endif
 }
 
-#endif /* CONFIG_OTA_OVERWRITE */
 #endif /* CONFIG_OTA_CONFIRM_UPDATE */
 
 

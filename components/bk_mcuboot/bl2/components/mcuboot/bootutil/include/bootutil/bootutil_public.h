@@ -323,9 +323,7 @@ int bk_boot_erase_ota_confirm(uint8_t image_index);
 #define BOOT_FAIL_STAGE_APP_HDR       0x4148  /* 'AH' - App Header stage */
 #define BOOT_FAIL_STAGE_OTA_HDR       0x4F48  /* 'OH' - OTA Header stage */
 
-#if CONFIG_OTA_OVERWRITE && CONFIG_OTA_CONFIRM_UPDATE
 void bk_boot_write_ota_fail(uint16_t error_code);
-#endif
 
 #if CONFIG_DBUS_CHECK_CRC
 uint16_t calculate_crc16(const uint8_t *data, size_t length);

@@ -153,14 +153,6 @@ union boot_img_magic_t
     uint8_t val[16];
 };
 
-typedef enum
-{
-    FIRST_TEST,
-    SECOND_TEST,
-    FINAL_TEST,
-    FAIL_TEST,
-} validate_state;
-
 extern const union boot_img_magic_t boot_img_magic;
 
 #define BOOT_IMG_MAGIC  (boot_img_magic.val)
@@ -242,7 +234,6 @@ struct boot_loader_state {
         /* Index of the slot chosen to be loaded */
         uint32_t active_slot;
         bool slot_available[BOOT_NUM_SLOTS];
-        validate_state slot_state[BOOT_NUM_SLOTS];
     } slot_usage[2];
 };
 

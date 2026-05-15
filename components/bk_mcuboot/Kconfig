@@ -49,6 +49,10 @@ menu "BL2"
 			bool "Bl2 skip validate"
 			default n
 
+		config VALIDATE_IMAGE
+			bool "Enable image hash/signature validation in BL2"
+			default y
+
 		config BL2_VALIDATE_ENABLED_BY_EFUSE
 			bool "BL2 validate is enabled by eFuse"
 			default n

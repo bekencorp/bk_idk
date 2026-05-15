@@ -122,8 +122,8 @@ boot_data_is_set_to(uint8_t val, void *data, size_t len)
     return true;
 }
 
-int
-boot_check_header_erased(struct boot_loader_state *state, int slot)
+static bool
+boot_is_slot_header_erased(struct boot_loader_state *state, int slot)
 {
     const struct flash_area *fap;
     struct image_header *hdr;
@@ -134,18 +134,14 @@ boot_check_header_erased(struct boot_loader_state *state, int slot)
     area_id = flash_area_id_from_multi_image_slot(BOOT_CURR_IMG(state), slot);
     rc = flash_area_open(area_id, &fap);
     if (rc != 0) {
-        return -1;
+        return false;
     }
 
     erased_val = flash_area_erased_val(fap);
     flash_area_close(fap);
 
     hdr = boot_img_hdr(state, slot);
-    if (!boot_data_is_set_to(erased_val, &hdr->ih_magic, sizeof(hdr->ih_magic))) {
-        return -1;
-    }
-
-    return 0;
+    return boot_data_is_set_to(erased_val, &hdr->ih_magic, sizeof(hdr->ih_magic));
 }
 
 int
@@ -241,7 +237,7 @@ boot_validate_slot(struct boot_loader_state *state, int slot,
     }
 
     hdr = boot_img_hdr(state, slot);
-    if (boot_check_header_erased(state, slot) == 0 ||
+    if (boot_is_slot_header_erased(state, slot) ||
         (hdr->ih_flags & IMAGE_F_NON_BOOTABLE)) {
         /* No bootable image in slot; continue booting from the primary slot. */
         fih_rc = FIH_NO_BOOTABLE_IMAGE;
