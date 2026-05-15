@@ -12,6 +12,6 @@ def run_cmd(cmd):
         logging.error(f'failed to run "{cmd}"')
         exit(1)
 
-def build_server_process(project):
+def build_server_process(project, soc='bk7236n'):
     run_cmd(f'make clean')
-    run_cmd(f'make bk7236n PROJECT={project} APP_VERSION="vvvvvvvvvvvvvvvvvvvvvvvv1.0"')
+    run_cmd(f'make {soc} PROJECT={project} APP_VERSION="vvvvvvvvvvvvvvvvvvvvvvvv1.0"')

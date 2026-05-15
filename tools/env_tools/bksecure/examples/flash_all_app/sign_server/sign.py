@@ -32,8 +32,32 @@ def run_cmd(cmd):
         logging.error(f'failed to run "{cmd}"')
         exit(1)
 
+def normalize_pubkey_to_hex(pubkey_or_path):
+    if not isinstance(pubkey_or_path, str):
+        return pubkey_or_path
+
+    if not os.path.isfile(pubkey_or_path):
+        return pubkey_or_path
+
+    try:
+        with open(pubkey_or_path, 'rt') as pem_file:
+            pem_data = pem_file.read()
+        from cryptography.hazmat.primitives import serialization
+        public_key = serialization.load_pem_public_key(pem_data.encode())
+        der_data = public_key.public_bytes(
+            encoding=serialization.Encoding.DER,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+        logging.debug(f'Converted pubkey file {pubkey_or_path} to hex: {der_data.hex()}')
+        return der_data.hex()
+    except Exception as e:
+        logging.warning(f'Failed to convert pubkey file {pubkey_or_path} to hex, keep original value: {e}')
+        return pubkey_or_path
+
 def sign_server_process(tool_path, ota_type, app_version, app_security_counter, ota_version, ota_security_counter, privkey, pubkey, replace_key_en, new_privkey, new_pubkey, app_slot_size, ota_slot_size, bl1_secureboot_en, bl2_load_addr, debug_opt=''):
     debug_opt=''
+    pubkey = normalize_pubkey_to_hex(pubkey)
+    new_pubkey = normalize_pubkey_to_hex(new_pubkey)
     
     # Generate primary_all.bin from app.bin in OTA before signing
     if os.path.exists('app.bin'):
@@ -42,15 +66,18 @@ def sign_server_process(tool_path, ota_type, app_version, app_security_counter, 
         try:
             # Import Partitions from scripts package (relative imports will work now)
             from scripts.partitions import Partitions
-                
+            from scripts.ota import OTA
             # Check if partitions.csv and ota.csv exist, if not, try to copy from pack_server/immutable
             pack_server_immutable = '../pack_server/immutable'
             if not os.path.exists('partitions.csv') and os.path.exists(f'{pack_server_immutable}/partitions.csv'):
                 shutil.copy(f'{pack_server_immutable}/partitions.csv', 'partitions.csv')
-                logging.info('Copied partitions.csv from pack_server/immutable')
+                logging.debug('Copied partitions.csv from pack_server/immutable')
             if not os.path.exists('ota.csv') and os.path.exists(f'{pack_server_immutable}/ota.csv'):
                 shutil.copy(f'{pack_server_immutable}/ota.csv', 'ota.csv')
-                logging.info('Copied ota.csv from pack_server/immutable')
+                logging.debug('Copied ota.csv from pack_server/immutable')
+            if not os.path.exists('bin.csv') and os.path.exists(f'{pack_server_immutable}/bin.csv'):
+                shutil.copy(f'{pack_server_immutable}/bin.csv', 'bin.csv')
+                logging.debug('Copied bin.csv from pack_server/immutable')
             
             # Create Partitions object and generate primary_all.bin
             if os.path.exists('partitions.csv'):
@@ -58,6 +85,10 @@ def sign_server_process(tool_path, ota_type, app_version, app_security_counter, 
                 p = Partitions('partitions.csv', None, None)
                 # Set ota_type explicitly since we know it from the parameter
                 p._ota_type = ota_type
+                if app_version is None:
+                    o = OTA('ota.csv')
+                    app_version = o.get_version()
+                    logging.debug(f'app_version is not specified, use {app_version} from ota.csv')
                 p.gen_primary_all_bin_for_bl2_signing('primary_all', app_version)
                 logging.info('Generated primary_all.bin from app.bin')
             else:

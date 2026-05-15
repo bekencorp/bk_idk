@@ -8,12 +8,20 @@ import click
 import json
 import struct
 
-from version import get_version, version
-from scripts.pack import Pack
-from scripts.pack_all import PackAll
-from scripts.pack_json import PackJson
-from scripts.gen_code import gen_code
-from scripts.steps import *
+try:
+    from .version import get_version, version
+    from .scripts.pack import Pack
+    from .scripts.pack_all import PackAll
+    from .scripts.pack_json import PackJson
+    from .scripts.gen_code import gen_code
+    from .scripts.steps import *
+except ImportError:
+    from version import get_version, version
+    from scripts.pack import Pack
+    from scripts.pack_all import PackAll
+    from scripts.pack_json import PackJson
+    from scripts.gen_code import gen_code
+    from scripts.steps import *
 
 def set_debug(debug):
     if debug:
@@ -240,7 +248,6 @@ def sign_from_ota_sig_command(ota_bin_sig, debug):
 @click.option("--debug", is_flag=True, help="Enable debug")
 @click.option("--flash_aes_type", type=click.Choice(['NONE', 'FIXED', 'RANDOM']), default='FIXED', required=True, help="The flash AES type.")
 @click.option("--flash_aes_key", type=str, required=False, default=None, help="configuration flash aes key")
-@click.option("--flash_crc_en", type=click.Choice(['True', 'False', 'true', 'false']), required=False, default=None, help="Enable flash CRC (True/False). If not specified, read from security.csv or default to True")
 @click.option("--bl1_secureboot_en", is_flag=True, default=False, help="Indicate whether enable BL1 secure boot")
 @click.option("--ota_type", type=click.Choice(['XIP', 'OVERWRITE']), help="OTA strategy")
 @click.option("--ota_security_counter", type=int, help="APP security counter")
@@ -248,16 +255,13 @@ def sign_from_ota_sig_command(ota_bin_sig, debug):
 @click.option("--ota_encrypt", is_flag=True, default=False, help="Indicate whether ota.bin is encrypted")
 @click.option("--pubkey_pem", type=str, default='root_ec256_pubkey.pem', help="BL2 public key PEM file")
 @click.option("--privkey_pem", type=str, default='root_ec256_privkey.pem', help="BL2 private key PEM file")
-@click.option("--bl2_version", type=str, required=True, default=None, help="configuration bl2 version")
-@click.option("--app_version", type=str, required=True, default=None, help="configuration app version")
-def pack_command(debug, flash_aes_type, flash_aes_key, flash_crc_en, bl1_secureboot_en, ota_type, ota_security_counter, ota_encrypt, boot_ota, bl2_version, app_version, pubkey_pem, privkey_pem):
+@click.option("--bl2_version", type=str, required=False, default=None, help="configuration bl2 version")
+@click.option("--app_version", type=str, required=False, default=None, help="configuration app version")
+@click.option("--soc_type", type=click.Choice(['bk7236', 'bk7236n']), default='bk7236n', help="SoC model")
+def pack_command(debug, soc_type, flash_aes_type, flash_aes_key, bl1_secureboot_en, ota_type, ota_security_counter, ota_encrypt, boot_ota, bl2_version, app_version, pubkey_pem, privkey_pem):
     """Pack download bin"""
     set_debug(debug)
-    # Convert flash_crc_en string to boolean if provided
-    flash_crc_en_bool = None
-    if flash_crc_en is not None:
-        flash_crc_en_bool = flash_crc_en.lower() == 'true'
-    steps_pack(flash_aes_type, flash_aes_key, flash_crc_en_bool, bl1_secureboot_en, ota_type, ota_security_counter, ota_encrypt, boot_ota, bl2_version, app_version, pubkey_pem, privkey_pem)
+    steps_pack(soc_type, flash_aes_type, flash_aes_key, bl1_secureboot_en, ota_type, ota_security_counter, ota_encrypt, boot_ota, bl2_version, app_version, pubkey_pem, privkey_pem)
 
 @steps.command("pack_csv")
 @click.option("--debug", is_flag=True, help="Enable debug")

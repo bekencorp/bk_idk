@@ -449,7 +449,7 @@ class Partitions:
         self._version_overrides[partition_name] = version
         logging.debug(f'Set version override for partition {partition_name}: {version}')
 
-    def pack_bin(self, pack_json, pubkey_pem, privkey_pem, aes_type, aes_key, security_counter, ota_aes_en, boot_ota=False, ci_test=False, app_version=None, bl2_version=None):
+    def pack_bin(self, pack_json, soc_type, pubkey_pem, privkey_pem, aes_type, aes_key, security_counter, ota_aes_en, boot_ota=False, ci_test=False, app_version=None, bl2_version=None):
         """Pack bins for Pack Server (after Build and Sign servers)
         
         This method implements the Pack Server functionality in the three-server architecture:
@@ -468,8 +468,6 @@ class Partitions:
             boot_ota: Whether to enable boot OTA
             ci_test: Whether this is a CI test build
         """
-        logging.info(f'pack_bin, aes_type={aes_type}, aes_key={aes_key}, security_counter={security_counter}, ota_aes_en={ota_aes_en}, boot_ota={boot_ota}, ci_test={ci_test}')
-
         # Get bl1_secureboot_en and ota_type from security.csv if available
         self._bl1_secureboot_en = self.__get_bl1_secureboot_en()
         self._ota_type = self.__get_ota_type()
@@ -501,6 +499,7 @@ class Partitions:
         
         # PackJson handles: all-app.bin, ota.bin, bootloader.bin, bootloader_ota.bin, etc.
         flash_crc_en = self._flash_crc_en
+        os.environ['ARMINO_SOC'] = soc_type.upper()
         # If pubkey is a hex string (not a file path), convert to .pem file in current directory
         if isinstance(pubkey_pem, str) and not os.path.isfile(pubkey_pem):
             s = pubkey_pem.strip()
@@ -509,10 +508,10 @@ class Partitions:
                 b64 = base64.b64encode(der).decode('ascii')
                 pem_lines = '\n'.join(b64[i:i + 64] for i in range(0, len(b64), 64))
                 pem_content = '-----BEGIN PUBLIC KEY-----\n' + pem_lines + '\n-----END PUBLIC KEY-----\n'
-                pubkey_pem_path = os.path.join(os.getcwd(), 'pubkey.pem')
+                pubkey_pem_path = os.path.join(os.getcwd(), 'generated_pubkey.pem')
                 with open(pubkey_pem_path, 'w') as f:
                     f.write(pem_content)
-                pubkey_pem = 'pubkey.pem'
+                pubkey_pem = 'generated_pubkey.pem'
         pack.pack(pack_json, pubkey_pem, privkey_pem, aes_key, flash_crc_en, None, aes_type)
         
         # Call gen methods for compatibility (they are no-ops, actual work done by PackJson)

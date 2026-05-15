@@ -1,29 +1,60 @@
 import os
 
-from setuptools import setup, find_packages
+from setuptools import setup
 
-# Read the long description from README if available
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+SOURCE_ROOT = os.path.join(BASE_DIR, 'bksecure')
+
+README_MD = os.path.join(SOURCE_ROOT, 'README.md')
+VERSION_PY = os.path.join(SOURCE_ROOT, 'version.py')
+TOOLS_DIR = os.path.join(SOURCE_ROOT, 'tools')
+
+def read_version(version_file):
+    version = '1.0.0.6'
+    if not os.path.exists(version_file):
+        return version
+    with open(version_file, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith('VERSION') and '=' in line:
+                value = line.split('=', 1)[1].strip().strip("'").strip('"')
+                if value:
+                    version = value
+                break
+    return version
+
 long_description = ''
-if os.path.exists('README.md'):
-    with open('README.md', encoding='utf-8') as f:
+if os.path.exists(README_MD):
+    with open(README_MD, encoding='utf-8') as f:
         long_description = f.read()
 
+tool_files = []
+for root, _, files in os.walk(TOOLS_DIR):
+    for file_name in files:
+        abs_path = os.path.join(root, file_name)
+        rel_path = os.path.relpath(abs_path, TOOLS_DIR)
+        tool_files.append(rel_path)
+
 setup(
-    name='beken_utils',
-    version='0.1.0',
+    name='bksecure',
+    version=read_version(VERSION_PY),
     author='beken',
-    author_email='your@email.com',
-    description='beken_utils tools.',
+    author_email='',
+    license="MIT",
+    description='bksecure tools.',
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://gitlab.bekencorp.com/armino/customer/signify/bk_tools',
-    packages=find_packages(exclude=["tests*", "examples*", "build*", "dist*"]),
-    include_package_data=True,
-    package_data={
-    'tools': ['*', '*/*', '*/*/*', '*/*/*/*'], 
+    packages=['bksecure', 'bksecure.scripts', 'bksecure.tools'],
+    package_dir={
+        'bksecure': 'bksecure',
+        'bksecure.scripts': 'bksecure/scripts',
+        'bksecure.tools': 'bksecure/tools',
     },
-    # If main.py and version.py are top-level modules, include them:
-    py_modules=['main', 'version'],
+    include_package_data=False,
+    package_data={
+        'bksecure.tools': tool_files,
+    },
     install_requires=[
         'cbor==1.0.0',
         'cbor2==5.6.4',
@@ -42,8 +73,7 @@ setup(
     python_requires='>=3.6',
     entry_points={
         'console_scripts': [
-            # This will install a `beken_utils` command that invokes the CLI in main.py
-            'beken_utils=main:cli',
+            'bksecure=bksecure.main:cli',
         ],
     },
 )

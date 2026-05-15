@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import click
 
-VERSION = '1.0.0.3'
+VERSION = '1.0.0.6'
 
 def get_version():
     """returns the version of the tool."""

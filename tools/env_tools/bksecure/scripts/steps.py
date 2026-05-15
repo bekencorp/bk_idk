@@ -181,7 +181,8 @@ def sign_from_ota_sig(ota_bin_sig):
     bl2_sign('sign_from_sig', s.img_sign_key_type, s.img_sign_privkey, s.img_sign_pubkey_bytes, ota_bin_sig, 'compress.bin', pheader.m2(), pheader.version(), pheader.security_counter(), 'ota_signed.bin', 'ota_hash.json')
 
 #Step7 - pack download bin
-def steps_pack(aes_key_type=None, aes_key=None, flash_crc_en=None, bl1_secureboot_en=False, ota_type='XIP', ota_security_counter=0, ota_encrypt='FALSE', boot_ota=False, bl2_version='1.0.0', app_version='1.0.0', pubkey_pem=None, privkey_pem=None):
+def steps_pack(soc_type, aes_key_type=None, aes_key=None, bl1_secureboot_en=False, ota_type='OVERWRITE', ota_security_counter=0, ota_encrypt='FALSE', boot_ota=False, bl2_version=None, app_version=None, pubkey_pem='root_ec256_pubkey.pem', privkey_pem='root_ec256_privkey.pem'):
+    logging.debug(f'steps_pack, soc_type={soc_type}, aes_key_type={aes_key_type}, aes_key={aes_key}, bl1_secureboot_en={bl1_secureboot_en}, ota_type={ota_type}, ota_security_counter={ota_security_counter}, ota_encrypt={ota_encrypt}, boot_ota={boot_ota}, bl2_version={bl2_version}, app_version={app_version}, pubkey_pem={pubkey_pem}, privkey_pem={privkey_pem}')
     s = None
     if aes_key_type != None:
         flash_aes_type = aes_key_type
@@ -193,15 +194,6 @@ def steps_pack(aes_key_type=None, aes_key=None, flash_crc_en=None, bl1_secureboo
     else:
         flash_aes_type = 'NONE'
         flash_aes_key = ''
-
-    # Determine flash_crc_en: use parameter if provided, otherwise from security.csv, otherwise default to True
-    if flash_crc_en is None:
-        if s is not None:
-            flash_crc_en = s.flash_crc_en
-        else:
-            flash_crc_en = True
-
-    logging.info(f'steps_pack, bl1_secureboot_en={bl1_secureboot_en}, ota_type={ota_type}, ota_security_counter={ota_security_counter}, ota_encrypt={ota_encrypt}, flash_crc_en={flash_crc_en}')
 
     p = Partitions('partitions.csv', 'bin.csv', 'pack.json')
     if bl2_version:
@@ -218,7 +210,7 @@ def steps_pack(aes_key_type=None, aes_key=None, flash_crc_en=None, bl1_secureboo
             p.set_version_override('overwrite', app_version_clean)
         logging.info(f'Set APP version override: {app_version_clean} (from parameter, overriding bin.csv)')
 
-    p.pack_bin('pack.json', pubkey_pem, privkey_pem, flash_aes_type, flash_aes_key, ota_security_counter, ota_encrypt, boot_ota, False)
+    p.pack_bin('pack.json', soc_type, pubkey_pem, privkey_pem, flash_aes_type, flash_aes_key, ota_security_counter, ota_encrypt, boot_ota, False)
     p.install_bin()
 
 def steps_pack_csv():

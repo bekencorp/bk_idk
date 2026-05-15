@@ -30,6 +30,9 @@ class Security(dict):
         self.csv = Csv(csv_file, False, security_keys)
         self.parse_csv()
 
+    def is_flash_crc_enabled(self):
+        return (self.flash_crc_en == True)
+
     def is_flash_aes_fixed(self):
         return (self.flash_aes_type.upper() == 'FIXED')
 
@@ -39,13 +42,10 @@ class Security(dict):
     def get_public_bytes_from_pubkeyfile(self, pubkey_file):
         if pubkey_file == None:
             return
-        
-        # Resolve file path
-        if os.path.isabs(pubkey_file):
-            # Absolute path: check directly
-            if not os.path.exists(pubkey_file):
-                logging.error(f'Absolute path pubkey file not found: {pubkey_file}')
-                return
+
+        if not os.path.exists(pubkey_file):
+            logging.warning(f'Public key file not found, skip loading key bytes: {pubkey_file}')
+            return None
 
         with open(pubkey_file, 'rt') as pem_file:
             first_line = pem_file.readline().strip()
