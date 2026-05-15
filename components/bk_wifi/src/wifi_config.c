@@ -26,6 +26,9 @@ general_param_t *g_wlan_general_param = NULL;
 ap_param_t *g_ap_param_ptr = NULL;
 sta_param_t *g_sta_param_ptr = NULL;
 bool bk_microwave_policy_en = false;
+#if CONFIG_WIFI_BAND_POLICY
+wifi_band_policy_t g_wifi_band_policy = WIFI_BAND_POLICY_BI_BAND;
+#endif
 wifi_mac_config_t g_wifi_mac_config = {
 	WIFI_CFG_DFT_RAW_TX_AC,
 	WIFI_CFG_DFT_RAW_TX_AC_TIMEOUT_MS,

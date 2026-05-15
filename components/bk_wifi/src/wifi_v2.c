@@ -106,6 +106,9 @@ extern void* mac_vif_tx_stats_get(uint8_t vif_idx);
 extern uint8_t vif_mgmt_get_sta_vif_index();
 extern uint8_t vif_mgmt_get_softap_vif_index();
 extern bool bk_microwave_policy_en;
+#if CONFIG_WIFI_BAND_POLICY
+extern wifi_band_policy_t g_wifi_band_policy;
+#endif
 /**
  * wifi_sec_type_string - Get the security name as a text string
  * @state: security
@@ -151,6 +154,57 @@ const char *wifi_sec_type_string(wifi_security_t security)
 	}
 }
 
+#if CONFIG_WIFI_BAND_POLICY
+static bool wifi_is_2g_channel(uint8_t channel)
+{
+	return channel >= 1 && channel <= 14;
+}
+
+static bool wifi_is_5g_channel(uint8_t channel)
+{
+#if CONFIG_SOC_BK7239XX || CONFIG_SOC_BK7286XX
+	return channel >= 36 && channel <= 177;
+#else
+	return false;
+#endif
+}
+static bool wifi_band_policy_allows_channel(uint8_t channel)
+{
+	wifi_band_policy_t policy = g_wifi_band_policy;
+
+	if (channel == 0 || policy == WIFI_BAND_POLICY_BI_BAND)
+		return true;
+
+	if (policy == WIFI_BAND_POLICY_2G_ONLY)
+		return wifi_is_2g_channel(channel);
+
+	if (policy == WIFI_BAND_POLICY_5G_ONLY)
+		return wifi_is_5g_channel(channel);
+
+	return false;
+}
+static bool wifi_band_policy_allows_hw_mode(uint8_t hw_mode)
+{
+#if CONFIG_WIFI_AP_HW_MODE
+	const bool has_24g = (hw_mode & (AP_HW_MODE_B | AP_HW_MODE_G)) != 0;
+	const bool has_5g = (hw_mode & AP_HW_MODE_A) != 0;
+#else
+	const bool has_24g = false;
+	const bool has_5g = false;
+#endif
+
+	switch (g_wifi_band_policy) {
+	case WIFI_BAND_POLICY_2G_ONLY:
+		return !has_5g;
+	case WIFI_BAND_POLICY_5G_ONLY:
+		return !has_24g;
+	case WIFI_BAND_POLICY_BI_BAND:
+		return true;
+	default:
+		return false;
+	}
+}
+#endif // CONFIG_WIFI_BAND_POLICY
 
 /**
  * TODO
@@ -2250,8 +2304,12 @@ bk_err_t bk_wifi_sta_start(void)
 	}
 #endif
 
-	if (wifi_sta_is_started()) {
-		WIFI_LOGI("sta already started, ignored!\n");
+	if (wifi_sta_is_started() && wifi_sta_is_connected()) {
+		WIFI_LOGI("sta already started and connected, ignored!\n");
+		return BK_OK;
+	} else if (wifi_sta_is_started()) {
+		WIFI_LOGI("sta already started but not connected, trigger connect\n");
+		bk_wifi_sta_connect();
 		return BK_OK;
 	}
 
@@ -2605,6 +2663,19 @@ bk_err_t bk_wifi_scan_start(const wifi_scan_config_t *config)
 	if (config ) {
 		ssid_len = MIN(WLAN_SSID_MAX_LEN, os_strlen((char *)config->ssid));
 		scan_param.scan_cc = !!(config->flag & SCAN_TYPE_CC);
+#if CONFIG_WIFI_BAND_POLICY
+		if (config->chan_cnt > WIFI_2BAND_MAX_CHAN_NUM) {
+			WIFI_LOGE("[%s]invalid chan_cnt=%u\n", __FUNCTION__, config->chan_cnt);
+			return BK_ERR_PARAM;
+		}
+		for (int i = 0; i < config->chan_cnt; i++) {
+			if (!wifi_band_policy_allows_channel(config->chan_nb[i])) {
+				WIFI_LOGE("[%s]policy=%d reject scan channel=%u\n",
+					  __FUNCTION__, bk_wifi_get_band_policy(), config->chan_nb[i]);
+				return BK_ERR_PARAM;
+			}
+		}
+#endif
 
 		if((0 != config->scan_type) ||(0 != config->chan_cnt) ||(0 != config->duration)) {
 			scan_param_env.set_param = 1;
@@ -2712,6 +2783,20 @@ static int wifi_sta_validate_config(const wifi_sta_config_t *config)
 	{
 		g_is_use_fci_from_flash = true;
 	}
+#if CONFIG_WIFI_BAND_POLICY
+	if (config->channel != 0 && !wifi_band_policy_allows_channel(config->channel)) {
+		WIFI_LOGE("[%s]policy=%d reject sta channel=%u\n",
+			  __FUNCTION__, bk_wifi_get_band_policy(), config->channel);
+		return BK_ERR_PARAM;
+	}
+
+	if (g_is_get_fci_from_flash && g_is_use_fci_from_flash &&
+		g_fci.channel != 0 && !wifi_band_policy_allows_channel(g_fci.channel)) {
+		WIFI_LOGE("[%s]policy=%d reject fast_connect channel=%u\n",
+			  __FUNCTION__, bk_wifi_get_band_policy(), g_fci.channel);
+		return BK_ERR_PARAM;
+	}
+#endif
 	//TODO more check
 	return BK_OK;
 }
@@ -3294,6 +3379,14 @@ bk_err_t bk_wifi_sta_connect(void)
 		WIFI_LOGD("sta connect fail, sta not start\n");
 		return BK_ERR_WIFI_STA_NOT_STARTED;
 	}
+#if CONFIG_WIFI_BAND_POLICY
+	if (g_sta_param_ptr->fast_connect_set &&
+		!wifi_band_policy_allows_channel(g_sta_param_ptr->fast_connect.chann)) {
+		WIFI_LOGE("[%s]policy=%d reject connect channel=%u\n",
+			  __FUNCTION__, bk_wifi_get_band_policy(), g_sta_param_ptr->fast_connect.chann);
+		return BK_ERR_PARAM;
+	}
+#endif
 
 #if CONFIG_STA_AUTO_RECONNECT
 	/*
@@ -3392,6 +3485,13 @@ bk_err_t bk_wifi_scan_get_result(wifi_scan_result_t *scan_result)
 	}
 
 	for (int i = 0; i < ap_list.ApNum; i++) {
+#if CONFIG_WIFI_BAND_POLICY
+		if (!wifi_band_policy_allows_channel(ap_list.ApList[i].channel)) {
+			WIFI_LOGD("scan get result, policy=%d skip chan %d\n",
+				  bk_wifi_get_band_policy(), ap_list.ApList[i].channel);
+			continue;
+		}
+#endif
 		if ((1 == scan_param_dump_env.set_param) && (0 != scan_param_dump_env.chan_cnt)
 			&& (rw_ieee80211_get_scan_default_chan_num() > scan_param_dump_env.chan_cnt)) {
 			for (j = 0; j < scan_param_dump_env.chan_cnt; j++) {
@@ -3563,6 +3663,13 @@ bk_err_t wifi_ap_validate_config(const wifi_ap_config_t *ap_config)
 		const uint8_t band_mask = bg_mask | AP_HW_MODE_A;
 		const bool is_24g_mode = (hw_mode & bg_mask) != 0;
 		const bool is_5g_mode = (hw_mode & AP_HW_MODE_A) != 0;
+#if CONFIG_WIFI_BAND_POLICY
+		if (!wifi_band_policy_allows_hw_mode(hw_mode)) {
+			WIFI_LOGE("[%s]policy=%d reject hw_mode=0x%x\n",
+				  __FUNCTION__, bk_wifi_get_band_policy(), hw_mode);
+			return BK_ERR_PARAM;
+		}
+#endif
 
 		if (hw_mode == 0 || (hw_mode & ~valid_mask)) {
 			WIFI_LOGE("[%s]invalid hw_mode 0x%x\n", __FUNCTION__, hw_mode);
@@ -3669,6 +3776,15 @@ static bk_err_t wifi_ap_set_config(const wifi_ap_config_t *ap_config)
 		if (sta_channel)
 			ap_channel = sta_channel;
 	}
+
+#if CONFIG_WIFI_BAND_POLICY && CONFIG_WIFI_BAND_5G
+#if CONFIG_SOC_BK7239XX || CONFIG_SOC_BK7286XX
+	/* 5G-only: channel 0 maps to 2.4G default elsewhere; STA coexist may pick 2.4G too. */
+	if (g_wifi_band_policy == WIFI_BAND_POLICY_5G_ONLY &&
+	    (ap_channel == 0 || !wifi_is_5g_channel(ap_channel)))
+		ap_channel = 36;
+#endif
+#endif
 
 	//TODO
 	if ((ap_channel >= 1 && ap_channel <= 14)
@@ -4784,7 +4900,66 @@ FUNC_1PARAM_PTR bk_wifi_get_ap_power_cb(void)
 {
 	return ap_power_cb;
 }
+#if CONFIG_WIFI_BAND_POLICY
+bk_err_t bk_wifi_set_band_policy(wifi_band_policy_t policy)
+{
+	if (policy != WIFI_BAND_POLICY_2G_ONLY &&
+		policy != WIFI_BAND_POLICY_5G_ONLY &&
+		policy != WIFI_BAND_POLICY_BI_BAND) {
+		WIFI_LOGE("[%s]invalid band policy %d\n", __FUNCTION__, policy);
+		return BK_ERR_PARAM;
+	}
 
+#if !CONFIG_WIFI_BAND_5G
+	if (policy == WIFI_BAND_POLICY_5G_ONLY) {
+		WIFI_LOGE("[%s]5g_only is not supported on this build\n", __FUNCTION__);
+		return BK_ERR_PARAM;
+	}
+#endif
+
+	g_wifi_band_policy = policy;
+	WIFI_LOGI("[%s]set band policy=%d\n", __FUNCTION__, policy);
+
+	/*
+	 * If STA is already connected on a channel that is forbidden by new policy,
+	 * disconnect immediately so runtime policy takes effect on current link.
+	 */
+	if (wifi_sta_is_connected()) {
+		uint8_t sta_channel = bk_wlan_sta_get_channel();
+		if (sta_channel && !wifi_band_policy_allows_channel(sta_channel)) {
+			WIFI_LOGI("[%s]disconnect STA due to band policy=%d, sta_channel=%u\n",
+				  __FUNCTION__, policy, sta_channel);
+			bk_wifi_sta_disconnect();
+		}
+	}
+
+	if (g_fci.channel && !wifi_band_policy_allows_channel(g_fci.channel)) {
+		WIFI_LOGI("[%s]clear fast_connect channel=%u due to band policy=%d\n",
+			  __FUNCTION__, g_fci.channel, policy);
+		os_memset(&g_fci, 0, sizeof(g_fci));
+	}
+
+	/*
+	 * Keep AP behavior consistent with STA: if AP is running on a channel that
+	 * does not satisfy the new policy, stop AP immediately.
+	 */
+	if (wifi_ap_is_started()) {
+		uint8_t ap_channel = bk_wlan_ap_get_channel_config();
+		if (ap_channel && !wifi_band_policy_allows_channel(ap_channel)) {
+			WIFI_LOGI("[%s]stop AP due to band policy=%d, ap_channel=%u\n",
+				  __FUNCTION__, policy, ap_channel);
+			bk_wifi_ap_stop();
+		}
+	}
+
+	return BK_OK;
+}
+
+wifi_band_policy_t bk_wifi_get_band_policy(void)
+{
+	return g_wifi_band_policy;
+}
+#endif
 void bk_wifi_set_microwave_policy_en(bool enable)
 {
 	bk_microwave_policy_en = enable;
@@ -5016,6 +5191,13 @@ void bk_wifi_set_ap_channel(uint8_t channel)
 
 	if (0 == bk_wlan_has_role(VIF_AP))
 		return;
+
+#if CONFIG_WIFI_BAND_POLICY
+	if (!wifi_band_policy_allows_channel(channel)) {
+		WIFI_LOGI("policy=%d rejects channel=%u\n", bk_wifi_get_band_policy(), channel);
+		return;
+	}
+#endif
 
 	if (((channel < 1) || (channel > 14))
 #if CONFIG_SOC_BK7239XX

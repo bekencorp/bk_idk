@@ -328,6 +328,28 @@ bk_err_t bk_wifi_scan_start(const wifi_scan_config_t *scan_config);
  */
 bk_err_t bk_wifi_scan_get_result(wifi_scan_result_t *scan_result);
 
+#if CONFIG_WIFI_BAND_POLICY
+/**
+ * @brief     Set runtime Wi-Fi band policy.
+ *
+ * @param     policy
+ *            - WIFI_BAND_POLICY_2G_ONLY: only 2.4G channels are allowed.
+ *            - WIFI_BAND_POLICY_5G_ONLY: only 5G channels are allowed.
+ *            - WIFI_BAND_POLICY_BI_BAND: both 2.4G and 5G channels are allowed.
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_PARAM: invalid policy value
+ */
+bk_err_t bk_wifi_set_band_policy(wifi_band_policy_t policy);
+
+/**
+ * @brief     Get current runtime Wi-Fi band policy.
+ *
+ * @return Current band policy.
+ */
+wifi_band_policy_t bk_wifi_get_band_policy(void);
+#endif
 /**
  * @brief     Dump the scan result
  *

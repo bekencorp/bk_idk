@@ -183,6 +183,13 @@ menu "Bk_Wifi"
 		bool "support config ap hardware mode"
 		default n
 
+	config WIFI_BAND_POLICY
+		depends on WIFI_ENABLE
+		bool "Enable runtime band policy"
+		default n
+		help
+			Enable runtime policy control for 2.4G/5G/dual-band.
+
 	config AP_TX_TIM
 		bool "Enable ap tx tim in connection"
 		default n

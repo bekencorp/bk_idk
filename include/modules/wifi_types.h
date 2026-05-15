@@ -150,6 +150,14 @@ typedef enum {
 	IEEE80211_NUM_BANDS
 } wifi_band_t;
 
+#if CONFIG_WIFI_BAND_POLICY
+typedef enum {
+	WIFI_BAND_POLICY_2G_ONLY = 0,
+	WIFI_BAND_POLICY_5G_ONLY = 1,
+	WIFI_BAND_POLICY_BI_BAND = 2,
+} wifi_band_policy_t;
+#endif
+
 /**
  * @brief WiFi public event type
  */

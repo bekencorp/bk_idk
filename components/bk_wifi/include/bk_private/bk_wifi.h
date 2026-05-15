@@ -654,6 +654,10 @@ bool chan_need_disabled(struct ieee80211_channel *channel);
 
 void bk_wifi_set_microwave_policy_en(bool enable);
 bool bk_wifi_get_microwave_policy_en(void);
+#if CONFIG_WIFI_BAND_POLICY
+bk_err_t bk_wifi_set_band_policy(wifi_band_policy_t policy);
+wifi_band_policy_t bk_wifi_get_band_policy(void);
+#endif
 
 //Optimize it
 __attribute__((weak)) uint32_t cfg_ap_is_open_system(void);

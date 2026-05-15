@@ -207,6 +207,11 @@ int demo_softap_app_init(char *ap_ssid, char *ap_key, char *ap_channel, bool hid
 		}
 		ap_config.channel = channel;
 	}
+#if CONFIG_WIFI_BAND_POLICY && CONFIG_WIFI_BAND_5G
+	/* Align with wifi_ap_set_config: channel 0 otherwise becomes 2.4G default. */
+	if (bk_wifi_get_band_policy() == WIFI_BAND_POLICY_5G_ONLY && ap_config.channel == 0)
+		ap_config.channel = 36;
+#endif
 #if CONFIG_WIFI_AP_HW_MODE
 	if (ap_config.channel >= 36)
 		ap_config.hw_mode = WIFI_AP_HW_MODE_A_N_AC_AX;

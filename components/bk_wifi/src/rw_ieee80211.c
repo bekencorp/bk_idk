@@ -787,6 +787,9 @@ int* rw_select_5g_channels_by_regulatory_domain(int *selected_channels_size)
 UINT8 rw_ieee80211_init_scan_chan(void *request)
 {
 	struct scanu_start_req * req = (struct scanu_start_req *)request;
+#if CONFIG_WIFI_BAND_POLICY
+	wifi_band_policy_t policy = bk_wifi_get_band_policy();
+#endif
 
 #if CONFIG_WIFI_REGDOMAIN
 	struct wiphy *wiphy = &g_wiphy;
@@ -797,6 +800,13 @@ UINT8 rw_ieee80211_init_scan_chan(void *request)
 
 	// Iterate all bands and channels
 	for (int band = IEEE80211_BAND_2GHZ; band < IEEE80211_NUM_BANDS; band++) {
+#if CONFIG_WIFI_BAND_POLICY
+		if (policy == WIFI_BAND_POLICY_2G_ONLY && band == IEEE80211_BAND_5GHZ)
+			continue;
+		if (policy == WIFI_BAND_POLICY_5G_ONLY && band == IEEE80211_BAND_2GHZ)
+			continue;
+#endif
+
 		if (!wiphy->bands[band])
 			continue;
 		num_chan = wiphy->bands[band]->n_channels;
@@ -832,6 +842,11 @@ UINT8 rw_ieee80211_init_scan_chan(void *request)
 		num_chan_2g = g_wiphy.bands[IEEE80211_BAND_2GHZ]->n_channels;
 	}
 
+#if CONFIG_WIFI_BAND_POLICY
+	if (policy == WIFI_BAND_POLICY_5G_ONLY)
+		num_chan_2g = 0;
+#endif
+
 	for (i = 0; i < num_chan_2g; i ++) {
 		req->chan[i].band = IEEE80211_BAND_2GHZ;
 		req->chan[i].flags = 0;
@@ -860,7 +875,11 @@ UINT8 rw_ieee80211_init_scan_chan(void *request)
 			BK_ASSERT(req->chan[i + num_chan_2g].freq);
 		}
 		num_chan_5g = g_wiphy.bands[IEEE80211_BAND_5GHZ]->n_channels;
+#if CONFIG_WIFI_BAND_POLICY
+	} else if (policy != WIFI_BAND_POLICY_2G_ONLY) {
+#else
 	} else {
+#endif
 		int selected_channels_size = 0;
 		int *selected_channels_5g = rw_select_5g_channels_by_regulatory_domain(&selected_channels_size);
 
@@ -940,6 +959,9 @@ UINT8 rw_ieee80211_is_scan_rst_in_countrycode(uint8_t chan)
 
 UINT8 rw_ieee80211_get_scan_default_chan_num(void)
 {
+#if CONFIG_WIFI_BAND_POLICY
+	wifi_band_policy_t policy = bk_wifi_get_band_policy();
+#endif
 #if CONFIG_WIFI_REGDOMAIN
 	struct wiphy *wiphy = &g_wiphy;
 	struct ieee80211_channel *channel;
@@ -949,6 +971,13 @@ UINT8 rw_ieee80211_get_scan_default_chan_num(void)
 
 	// Iterate all bands and channels
 	for (int band = IEEE80211_BAND_2GHZ; band < IEEE80211_NUM_BANDS; band++) {
+#if CONFIG_WIFI_BAND_POLICY
+		if (policy == WIFI_BAND_POLICY_2G_ONLY && band == IEEE80211_BAND_5GHZ)
+			continue;
+		if (policy == WIFI_BAND_POLICY_5G_ONLY && band == IEEE80211_BAND_2GHZ)
+			continue;
+#endif
+
 		if (!wiphy->bands[band])
 			continue;
 		num_chan = wiphy->bands[band]->n_channels;
@@ -978,11 +1007,26 @@ UINT8 rw_ieee80211_get_scan_default_chan_num(void)
 		num_chan_2g = g_wiphy.bands[IEEE80211_BAND_2GHZ]->n_channels;
 	}
 
-#if CONFIG_WIFI_BAND_5G
-	int selected_channels_size = 0;
-	rw_select_5g_channels_by_regulatory_domain(&selected_channels_size);
+#if CONFIG_WIFI_BAND_POLICY
+	if (policy == WIFI_BAND_POLICY_5G_ONLY)
+		num_chan_2g = 0;
+#endif
 
-	num_chan_5g = selected_channels_size;
+#if CONFIG_WIFI_BAND_5G
+#if CONFIG_WIFI_BAND_POLICY
+	if (policy != WIFI_BAND_POLICY_2G_ONLY) {
+		int selected_channels_size = 0;
+		rw_select_5g_channels_by_regulatory_domain(&selected_channels_size);
+
+		num_chan_5g = selected_channels_size;
+	}
+#else
+	{
+		int selected_channels_size = 0;
+		rw_select_5g_channels_by_regulatory_domain(&selected_channels_size);
+		num_chan_5g = selected_channels_size;
+	}
+#endif
 #endif
 
 	chan_num = num_chan_2g + num_chan_5g;
