@@ -419,28 +419,36 @@ const AUTO_PWR_CALI_CONTEXT auto_pwr =
 UINT32 g_cmtag_flag  = CMTAG_FROM_CALI;
 
 /****************************** power shift table  ****************************/
-#if CFG_SUPPORT_LOW_MAX_CURRENT//Max default work current<250mA@3.3V
-const INT16 shift_tab_b[4] = {0, 0, 0, 0}; // 11M base,5.5M,2M,1M
-const INT16 shift_tab_g[8] = {0, 2, 4, 4, 4, 4, 4, 4}; // 54M base -  6M
-const INT16 shift_tab_n[1] = {0}; // for MCS7
-#else
 const INT16 shift_tab_b[4] = {0, 0, 0, 0}; // 11M base,5.5M,2M,1M
 // 54M base -                 54M,48M,36M,24M,18M,12M,9M,6M
 const INT16 shift_tab_g[8] = {0,  2,  2,  2,  3,  3,  4, 4/*4*/}; // 54M base -  12M,9M,6M//do
 const INT16 shift_tab_n20[10] = {-6,  -6,  0,  2,  2,  2,  3,  3,  4, 5/*4*/}; // n20 mcs9 mcs8 mcs7(base) -  mcs0,
 const INT16 shift_tab_ax20[10] = {-6,  -6,  0,  2,  2,  2,  3,  3,  4, 5/*4*/}; // n20 mcs9 mcs8 mcs7(base) -  mcs0,
 const INT16 shift_tab_n40[10] = {-10,  -6,  0,  0,  0,  0,  0,  0,  0, 0/*4*/}; // n40 mcs9 mcs8 mcs7(base) -  mcs0,
-#endif
 
-const INT16 shift_tab_b_fcc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // ch1~ch14
-const INT16 shift_tab_g_fcc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // ch1~ch14
-const INT16 shift_tab_n20_fcc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // ch1~ch14
-const INT16 shift_tab_n40_fcc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // ch1~ch14
+//FCC mode power shift: shift_tab_x_fcc + shift_tab_x
+const INT16 shift_tab_b_fcc[4] = {0, 0, 0, 0}; // 11M base,5.5M,2M,1M
+// 54M base -                 54M,48M,36M,24M,18M,12M,9M,6M
+const INT16 shift_tab_g_fcc[8] = {0,  0,  0,  0,  0,  0,  0, 0}; // 54M base -  12M,9M,6M
+const INT16 shift_tab_n20_fcc[10] = {0,  0,  0,  0,  0,  0,  0,  0,  0, 0}; // n20 mcs9 mcs8 mcs7(base) -  mcs0,
+const INT16 shift_tab_ax20_fcc[10] = {0,  0,  0,  0,  0,  0,  0,  0,  0, 0}; // n20 mcs9 mcs8 mcs7(base) -  mcs0,
+const INT16 shift_tab_n40_fcc[10] = {0,  0,  0,  0,  0,  0,  0,  0,  0, 0}; // n20 mcs9 mcs8 mcs7(base) -  mcs0,
 
-const INT16 shift_tab_b_srrc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -12, -20, 0}; // ch1~ch14
-const INT16 shift_tab_g_srrc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -12, -24, 0}; // ch1~ch14
-const INT16 shift_tab_n20_srrc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -12, -24, 0}; // ch1~ch14
-const INT16 shift_tab_n40_srrc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -12, -24, 0}; // ch1~ch14
+//SRRC mode on channel 12 power shift: shift_tab_x_srrc_ch12 + shift_tab_x
+const INT16 shift_tab_b_srrc_ch12[4] = {-12, -12, -12, -12}; // 11M base,5.5M,2M,1M
+// 54M base -                 54M,48M,36M,24M,18M,12M,9M,6M
+const INT16 shift_tab_g_srrc_ch12[8] = {-12,  -12,  -12,  -12,  -12,  -12,  -12, -12}; // 54M base -  12M,9M,6M//do
+const INT16 shift_tab_n20_srrc_ch12[10] = {-12,  -12,  -12,  -12,  -12,  -12,  -12,  -12,  -12, -12}; // n20 mcs9 mcs8 mcs7(base) -  mcs0
+const INT16 shift_tab_ax20_srrc_ch12[10] = {-12,  -12,  -12,  -12,  -12,  -12,  -12,  -12,  -12, -12}; // ax20 mcs9 mcs8 mcs7(base) -  mcs0
+const INT16 shift_tab_n40_srrc_ch12[10] = {-12,  -12,  -12,  -12,  -12,  -12,  -12,  -12,  -12, -12}; // n40 mcs9 mcs8 mcs7(base) -  mcs0
+
+//SRRC mode on channel 13 power shift: shift_tab_x_srrc_ch13 + shift_tab_x
+const INT16 shift_tab_b_srrc_ch13[4] = {-20, -20, -20, -20}; // 11M base,5.5M,2M,1M
+// 54M base -                 54M,48M,36M,24M,18M,12M,9M,6M
+const INT16 shift_tab_g_srrc_ch13[8] = {-24,  -24,  -24,  -24,  -24,  -24,  -24, -24}; // 54M base -  12M,9M,6M//do
+const INT16 shift_tab_n20_srrc_ch13[10] = {-24,  -24,  -24,  -24,  -24,  -24,  -24, -24,  -24, -24}; // n20 mcs9 mcs8 mcs7(base) -  mcs0
+const INT16 shift_tab_ax20_srrc_ch13[10] = {-24,  -24,  -24,  -24,  -24,  -24,  -24, -24,  -24, -24}; // ax20 mcs9 mcs8 mcs7(base) -  mcs0
+const INT16 shift_tab_n40_srrc_ch13[10] = {-24,  -24,  -24,  -24,  -24,  -24,  -24, -24,  -24, -24}; // n40 mcs9 mcs8 mcs7(base) -  mcs0
 
 void vnd_cal_overlay(void)
 {
