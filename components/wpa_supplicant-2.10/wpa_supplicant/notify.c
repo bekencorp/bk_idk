@@ -338,6 +338,8 @@ void wpas_notify_connected(struct wpa_supplicant *wpa_s)
 			os_memcpy(&sta_connected.ssid, wpa_s->current_ssid->ssid,
 					MIN(wpa_s->current_ssid->ssid_len, wpa_s->current_ssid->ssid_len));
 			os_memcpy(&sta_connected.bssid, wpa_s->current_ssid->bssid, ETH_ALEN);
+		}
+		if (wpa_s->current_bss) {
 			sta_connected.freq = wpa_s->current_bss->freq;
 		}
 		BK_LOG_ON_ERR(bk_event_post(EVENT_MOD_WIFI, EVENT_WIFI_STA_CONNECTED,
