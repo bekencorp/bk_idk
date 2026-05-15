@@ -240,13 +240,15 @@ void bk_https_start_download(beken_thread_arg_t arg)
 	state = bk_https_ota_perform(s_ota_config);
 
 	if (state == HTTPS_OTA_FINISH) {
-		bk_err_t verify_ret = BK_FAIL;
+		bk_err_t verify_ret = BK_OK;
 		bk_err_t confirm_ret = BK_FAIL;
 		if (s_ota_config && s_ota_config->ota_parse && s_ota_config->ota_parse->ota_handle) {
+#if CONFIG_VALIDATE_IMAGE || CONFIG_VALIDATE_DURING_DOWNLOADING || CONFIG_OTA_UPDATE_PUBKEY
 			verify_ret = bk_ota_verify(s_ota_config->ota_parse->ota_handle, s_ota_config->ota_parse->ota_verify);
 			if (s_ota_config->ota_parse) {
 				s_ota_config->ota_parse->ota_verify = NULL;
 			}
+#endif
 			if (verify_ret == BK_OK) {
 				confirm_ret = bk_ota_confirm(s_ota_config->ota_parse->ota_handle);
 			} else {
