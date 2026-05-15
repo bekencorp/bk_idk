@@ -201,7 +201,7 @@ static void bk_printf_raw_port(int block_mode, int level, const char *fmt, va_li
 
 void bk_printf(const char *fmt, ...)
 {
-    int level = 0; // BK_LOG_INFO;
+    int level = BK_LOG_ERROR; // BK_LOG_INFO;
     va_list args;
 
     if(!printf_is_init())
@@ -212,6 +212,9 @@ void bk_printf(const char *fmt, ...)
 
 #if CONFIG_SHELL_ASYNCLOG
     if( !shell_level_check_valid(level) )  /* check here instead of in shell_log_out to reduce API instructions. */
+        return;
+#else
+    if (level > BK_LOG_LEVEL)
         return;
 #endif
 
