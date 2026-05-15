@@ -496,26 +496,5 @@ void sys_hal_early_init(void)
 
 void sys_hal_early_deinit(void)
 {
-	sys_hal_dpll_cpu_flash_time_deinit();
-
-	sys_hal_analog_set(ANALOG_REG0, 0x9219D00);
-	sys_hal_analog_set(ANALOG_REG1, 0xC02E3A00);
-	sys_hal_analog_set(ANALOG_REG2, 0x7E003430);
-	sys_hal_analog_set(ANALOG_REG3, 0xC4500A88);
-	sys_hal_analog_set(ANALOG_REG4, 0x1A7F0);
-	sys_hal_analog_set(ANALOG_REG5, 0x8407A340);
-	sys_hal_analog_set(ANALOG_REG6, 0x80088200);
-	sys_hal_analog_set(ANALOG_REG7, 0x57E62726);
-	sys_hal_analog_set(ANALOG_REG8, 0xF87C70E4);
-
-	sys_ll_set_ana_reg8_spi_latch1v(1);
-	sys_hal_analog_set(ANALOG_REG9, 0x8255C3A7);//tenglong20240805:2M buck for EVM
-	sys_hal_analog_set(ANALOG_REG10, 0xF47AB0FA);
-	sys_hal_analog_set(ANALOG_REG11, 0x00000000);
-	sys_hal_analog_set(ANALOG_REG12, 0x00100000);
-	sys_hal_analog_set(ANALOG_REG13, 0x00080000);
-	sys_hal_analog_set(ANALOG_REG14, 0x00A80008);
-	sys_hal_analog_set(ANALOG_REG15, 0x528809F6);
-	sys_ll_set_ana_reg8_spi_latch1v(0);
 }
 /**  SCR End  */
