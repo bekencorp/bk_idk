@@ -10,6 +10,18 @@ if ((CONFIG_AT_CMD OR CONFIG_AT) AND (CONFIG_OTA_HTTP OR (CONFIG_OTA_HTTPS AND C
         )
 endif()
 
+if ((CONFIG_AT_CMD OR CONFIG_AT) AND CONFIG_OTA_HTTP)
+	list(APPEND incs
+		include
+		)
+	list(APPEND srcs
+		"src/http_at_command.c"
+        )
+	if (CONFIG_HTTP)
+		list(APPEND priv_req_list http)
+	endif()
+endif()
+
 if (CONFIG_AT_CMD)
     list(APPEND incs
 		include
@@ -48,6 +60,9 @@ if ((CONFIG_AT_CMD OR CONFIG_AT) AND (CONFIG_OTA_HTTP OR (CONFIG_OTA_HTTPS AND C
 	endif()
 	if (CONFIG_OTA_HTTPS AND CONFIG_OTA_TEST)
 		list(APPEND priv_req_list https_ota)
+	endif()
+	if (CONFIG_OTA_HTTP AND CONFIG_WIFI_ENABLE)
+		list(APPEND priv_req_list bk_wifi)
 	endif()
 endif()
 

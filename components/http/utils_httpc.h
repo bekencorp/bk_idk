@@ -144,6 +144,15 @@ extern int httpclient_common(httpclient_t *client,
 							 uint32_t timeout_ms,
 							 httpclient_data_t *client_data);
 
+/**
+ * @brief Send HTTP HEAD and read response headers until end-of-headers; parse Content-Length.
+ * @param url http:// URL only.
+ * @param timeout_ms Overall timeout for connect and header read.
+ * @param out_len Parsed Content-Length on success.
+ * @return 0 on success, -1 on failure.
+ */
+int httpclient_get_content_length_by_url(const char *url, uint32_t timeout_ms, uint32_t *out_len);
+
 void ble_sleep_cb(uint8_t is_sleeping, uint32_t slp_period);
 #ifdef CONFIG_HTTP_OTA_WITH_BLE
 typedef void (*ble_sleep_state_cb)(uint8_t is_sleeping, uint32_t slp_period);

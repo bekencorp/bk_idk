@@ -165,6 +165,20 @@ void _atsvr_cmd_rsp_ok(_atsvr_env_t *env)
 	return;
 }
 
+void _atsvr_cmd_rsp_passthrough(_atsvr_env_t *env)
+{
+	(void)env;
+#if (CONFIG_UART_PRINT_PORT == AT_UART_PORT_CFG)
+#if CONFIG_SHELL_ASYNCLOG
+	shell_cmd_ind_out(ATSVR_CMD_RSP_ENTER_PASSTHROUGH);
+#else
+	os_printf("%s", ATSVR_CMD_RSP_ENTER_PASSTHROUGH);
+#endif
+#else
+	atsvr_cmd_ind_out(ATSVR_CMD_RSP_ENTER_PASSTHROUGH);
+#endif
+}
+
 
 void _atsvr_cmd_rsp_error(_atsvr_env_t *env)
 {
@@ -718,7 +732,7 @@ int _atsvr_input_msg_analysis_handler(_atsvr_env_t *env,char *msg,unsigned int m
 
 
 int _atsvr_def_config(_atsvr_env_t *env)
-{
+{
 
 	if(env == NULL)
 	{

@@ -12,6 +12,7 @@ extern int atsvr_register_commands(const struct _atsvr_command *commands,int num
 
 extern void atsvr_notice_ready(void);
 extern void atsvr_cmd_rsp_ok(void);
+extern void atsvr_cmd_rsp_passthrough(void);
 extern void atsvr_cmd_rsp_error(void);
 //extern void atsvr_cmd_analysis_notice_error(void);
 extern void atsvr_output_msg(char *msg);
@@ -25,6 +26,10 @@ extern void at_server_init(void);
 
 extern void atsvr_cmd_init(void);
 extern void atsvr_extern_cmd_init(void);
+
+/* During passthrough (e.g. AT+HTTPSCERT/AT+HTTPCPOST), pause the main UART parser
+ * so only the passthrough worker thread reads the UART stream. */
+extern void atsvr_set_uart_rx_passthrough_lock(int lock);
 
 extern void *at_malloc(unsigned int size);
 extern void at_free(void *p);

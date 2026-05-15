@@ -81,6 +81,10 @@
 #define ATSVR_CMD_RSP_ERROR                 "\r\nCMDRSP:ERROR\r\n"
 #endif
 
+#ifndef ATSVR_CMD_RSP_ENTER_PASSTHROUGH
+#define ATSVR_CMD_RSP_ENTER_PASSTHROUGH     "\r\n>"
+#endif
+
 #ifndef ATSVR_CMDMSG_ERROR_RSP
 #define ATSVR_CMDMSG_ERROR_RSP              "\r\nCMDRSP:ERROR\r\n"
 #endif

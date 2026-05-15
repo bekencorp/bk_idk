@@ -3,6 +3,7 @@
  */
 #include <string.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <common/bk_include.h>
 #include "utils_timer.h"
 #include "lite-log.h"
@@ -1386,6 +1387,120 @@ int httpclient_common(httpclient_t *client, const char *url, int port, const cha
 int utils_get_response_code(httpclient_t *client)
 {
 	return client->response_code;
+}
+
+static int httpclient_parse_status_content_length(const char *hdr, int hdr_len, uint32_t *out_len)
+{
+	int code = 0;
+	const char *cl;
+	const char *cl_end;
+
+	if (!hdr || hdr_len < 12 || !out_len)
+		return -1;
+
+	if (sscanf(hdr, "HTTP/%*d.%*d %d", &code) != 1 || code != 200)
+		return -1;
+
+	cl = os_strstr(hdr, "Content-Length:");
+	if (!cl)
+		cl = os_strstr(hdr, "content-length:");
+	if (!cl)
+		return -1;
+
+	cl += 15;
+	while (*cl == ' ' || *cl == '\t')
+		cl++;
+
+	cl_end = os_strstr(cl, "\r\n");
+	if (!cl_end)
+		cl_end = hdr + hdr_len;
+
+	if (cl >= cl_end)
+		return -1;
+
+	*out_len = (uint32_t)os_strtoul((char *)cl, NULL, 10);
+	return 0;
+}
+
+int httpclient_get_content_length_by_url(const char *url, uint32_t timeout_ms, uint32_t *out_len)
+{
+	httpclient_t client;
+	httpclient_data_t client_data;
+	char *host = NULL;
+	char *path = NULL;
+	char scheme[8] = {0};
+	int url_port = 0;
+	int ret = -1;
+	int hdr_total;
+	char hdrbuf[HTTPCLIENT_CHUNK_SIZE];
+	iotx_time_t timer;
+	int chunk;
+
+	if (!url || !out_len)
+		return -1;
+	*out_len = 0;
+
+	os_memset(&client, 0, sizeof(client));
+	os_memset(&client_data, 0, sizeof(client_data));
+
+	host = (char *)os_zalloc(HTTPCLIENT_MAX_HOST_LEN);
+	path = (char *)os_zalloc(HTTPCLIENT_MAX_URL_LEN);
+	if (!host || !path)
+		goto cleanup;
+
+	if (httpclient_parse_url(url, scheme, sizeof(scheme), host, HTTPCLIENT_MAX_HOST_LEN, &url_port, path,
+				 HTTPCLIENT_MAX_URL_LEN) != SUCCESS_RETURN)
+		goto cleanup;
+
+	if (os_strcmp(scheme, "http") != 0)
+		goto cleanup;
+
+	if (url_port == 0)
+		url_port = 80;
+
+	iotx_net_init(&client.net, host, url_port, NULL);
+	if (httpclient_connect(&client) != SUCCESS_RETURN)
+		goto cleanup;
+
+	client.header = "Accept: */*\r\n";
+
+	if (httpclient_send_request(&client, url, HTTPCLIENT_HEAD, &client_data) != SUCCESS_RETURN) {
+		httpclient_close(&client);
+		goto cleanup;
+	}
+
+	iotx_time_init(&timer);
+	utils_time_countdown_ms(&timer, timeout_ms);
+	hdr_total = 0;
+	while (hdr_total < (int)sizeof(hdrbuf) - 1) {
+		chunk = 0;
+		if (httpclient_recv(&client, hdrbuf + hdr_total, 1, (int)sizeof(hdrbuf) - 1 - hdr_total, &chunk,
+				     iotx_time_left(&timer)) != 0)
+			break;
+		if (chunk <= 0)
+			break;
+		hdr_total += chunk;
+		hdrbuf[hdr_total] = '\0';
+		if (os_strstr(hdrbuf, "\r\n\r\n"))
+			break;
+	}
+
+	httpclient_close(&client);
+
+	if (hdr_total <= 0)
+		goto cleanup;
+
+	if (httpclient_parse_status_content_length(hdrbuf, hdr_total, out_len) != 0)
+		goto cleanup;
+
+	ret = 0;
+
+cleanup:
+	if (host)
+		os_free(host);
+	if (path)
+		os_free(path);
+	return ret;
 }
 
 iotx_err_t iotx_post(

@@ -95,6 +95,15 @@ if (CONFIG_OTA_HTTP OR (CONFIG_OTA_HTTPS AND CONFIG_OTA_TEST))
 	)
 endif()
 
+if (CONFIG_OTA_HTTP)
+	list(APPEND incs
+		${components}/at/include
+	)
+	list(APPEND srcs
+		"http_atsvr_http.c"
+	)
+endif()
+
 	list(APPEND srcs
 		"_at_server_port/atsvr_core.c"
 		"_at_server_port/atsvr_port.c"

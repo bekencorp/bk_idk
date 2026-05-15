@@ -10,6 +10,9 @@
 #if CONFIG_OTA_HTTP || (CONFIG_OTA_HTTPS && CONFIG_OTA_TEST)
 #include "ota_atsvr_ota.h"
 #endif
+#if CONFIG_OTA_HTTP
+#include "http_atsvr_http.h"
+#endif
 
 
 _at_svr_ctrl_env_t _at_svr_env = {0};
@@ -53,6 +56,11 @@ void atsvr_cmd_rsp_ok(void)
 	set_atsvr_work_state(ATSVR_WK_IDLE);
 }
 
+void atsvr_cmd_rsp_passthrough(void)
+{
+	_atsvr_cmd_rsp_passthrough(&_at_svr_env);
+}
+
 void atsvr_cmd_rsp_error(void)
 {
 	_atsvr_cmd_rsp_error(&_at_svr_env);
@@ -70,6 +78,15 @@ void atsvr_cmd_analysis_notice_error(void)
 void atsvr_output_msg(char *msg)
 {
 	_atsvr_output_msg(msg);
+}
+
+/* Protect passthrough sessions (AT+HTTPSCERT/AT+HTTPCPOST) from racing with
+ * the main UART line parser in at_task.c. */
+volatile int g_atsvr_uart_rx_passthrough_lock = 0;
+
+void atsvr_set_uart_rx_passthrough_lock(int lock)
+{
+	g_atsvr_uart_rx_passthrough_lock = lock ? 1 : 0;
 }
 
 
@@ -125,6 +142,9 @@ void atsvr_extern_cmd_init(void)
 #endif
 #if CONFIG_OTA_HTTP || (CONFIG_OTA_HTTPS && CONFIG_OTA_TEST)
 	ota_at_atsvr_init();
+#endif
+#if CONFIG_OTA_HTTP
+	http_at_atsvr_init();
 #endif
 
 }

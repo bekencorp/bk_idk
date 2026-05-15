@@ -432,6 +432,14 @@ static void rx_ind_process(void)
 	}
 #endif
 
+	/* Prevent UART RX concurrent reads during passthrough.
+	 * The main UART line parser can race with our passthrough worker thread
+	 * reading raw bytes, corrupting the UART stream and causing crashes. */
+	extern volatile int g_atsvr_uart_rx_passthrough_lock;
+	if (g_atsvr_uart_rx_passthrough_lock) {
+		return;
+	}
+
 
 	while(bTRUE)
 	{
@@ -439,7 +447,7 @@ static void rx_ind_process(void)
 
 		read_cnt = cmd_dev->dev_drv->read(cmd_dev, rx_temp_buff, buf_len);
 #if CONFIG_SYS_CPU1
-		memcpy(cmd_line_buf.cmd_buff,cmd_line_buf.rx_buff,read_cnt);
+		memcpy(cmd_line_buf.cmd_buff, cmd_line_buf.rx_buff, read_cnt);
 		cmd_line_buf.cmd_data_len = read_cnt;
 		cmd_line_buf.cur_cmd_type = CMD_TYPE_TEXT;
 		cmd_rx_done = 1;
