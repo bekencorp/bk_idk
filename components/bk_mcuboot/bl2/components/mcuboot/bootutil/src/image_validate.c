@@ -521,13 +521,19 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
 #endif
 
             if (FIH_NOT_EQ(fih_rc, FIH_SUCCESS)) {
-                FIH_SET(fih_rc, FIH_FAILURE);
-                BOOT_LOG_ERR("TLV hash verification failed!");
+                BOOT_LOG_INF("slot %d hash fail", fap->fa_id);
                 goto out;
             }
 
             image_hash_valid = 1;
             BOOT_LOG_INF("hash ok!");
+
+#if CONFIG_BL2_SKIP_VALIDATE
+            if (image_hash_valid == 1 && fap->fa_id == 0) {
+                FIH_RET(FIH_SUCCESS);
+                return 0;
+            }
+#endif
 
 #if CONFIG_VALIDATE_IMAGE_HASH_ONLY
             if (image_hash_valid == 1) {
@@ -569,6 +575,11 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
              */
 #ifdef EXPECTED_SIG_TLV
         } else if (type == EXPECTED_SIG_TLV) {
+            /* Ignore this signature if it is out of bounds. */
+            if (key_id < 0 || key_id >= bootutil_key_cnt) {
+                key_id = -1;
+                continue;
+            }
             if (!EXPECTED_SIG_LEN(len) || len > sizeof(buf)) {
                 rc = -1;
                 goto out;
@@ -578,25 +589,8 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
                 goto out;
             }
             FIH_CALL(bootutil_verify_sig, valid_signature, hash, sizeof(hash),
-                                                           buf, len, key_id);
-
-            if (FIH_NOT_EQ(valid_signature, FIH_SUCCESS)) {
-#if CONFIG_DIRECT_XIP
-                FIH_SET(fih_rc, FIH_FAILURE);
-                BOOT_LOG_ERR("sig fail");
-                rc = -1;
-#endif
-                goto out;
-            }
-
-            BOOT_LOG_INF("sig ok");
-
-#if CONFIG_BL2_SKIP_VALIDATE
-            if (FIH_EQ(valid_signature, FIH_SUCCESS) && image_hash_valid == 1) {
-                return 0;
-            }
-#endif
-
+                     buf, len, key_id);
+            BOOT_LOG_INF("slot %d sig result %d", fap->fa_id, valid_signature);
             key_id = -1;
 #endif /* EXPECTED_SIG_TLV */
 #ifdef MCUBOOT_HW_ROLLBACK_PROT
@@ -646,7 +640,8 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
         goto out;
     }
 #ifdef EXPECTED_SIG_TLV
-    FIH_SET(fih_rc, valid_signature);
+    FIH_SET(fih_rc, fih_ret_encode_zero_equality(
+                         FIH_NOT_EQ(valid_signature, FIH_SUCCESS)));
 #endif
 #ifdef MCUBOOT_HW_ROLLBACK_PROT
     if (FIH_NOT_EQ(security_counter_valid, FIH_SUCCESS)) {
