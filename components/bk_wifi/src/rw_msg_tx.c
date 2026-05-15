@@ -1705,7 +1705,7 @@ int rw_msg_send_listen_interval_req(uint8_t vif_idx, uint8_t interval)
 	return rw_msg_send(req, 1, MM_SET_LISTEN_INTERVAL_CFM, NULL);
 }
 
-int rw_msg_send_wireless_mode_req(uint8_t wireless_mode)
+int rw_msg_send_wireless_mode_req(uint8_t wireless_mode_24g, uint8_t wireless_mode_5g)
 {
 	struct me_set_wireless_mode_req *req;
 	req = ke_msg_alloc(ME_SET_WIRELESS_MODE_REQ, TASK_ME, TASK_API,
@@ -1713,7 +1713,8 @@ int rw_msg_send_wireless_mode_req(uint8_t wireless_mode)
 	if (!req)
 		return -ENOMEM;
 
-	req->wireless_mode = wireless_mode;
+	req->wireless_mode_24g = wireless_mode_24g;
+	req->wireless_mode_5g = wireless_mode_5g;
 
 	return rw_msg_send(req, 0, 0, NULL);
 }

@@ -667,8 +667,11 @@ void bk_wlan_sta_init(network_InitTypeDef_st *inNetworkInitPara)
 				  g_sta_param_ptr->ssid.length);
 
 #ifdef CONFIG_WIFI_WIRELESS_MODE_SUPPORT
-		if (!g_sta_param_ptr->wireless_mode) {
-			g_sta_param_ptr->wireless_mode = WIFI_WIRELESS_MODE_BGN;
+		if (!g_sta_param_ptr->wireless_mode_24g) {
+			g_sta_param_ptr->wireless_mode_24g = WIFI_WIRELESS_MODE_BGNAX;
+		}
+		if (!g_sta_param_ptr->wireless_mode_5g) {
+			g_sta_param_ptr->wireless_mode_5g = WIFI_WIRELESS_MODE_ANACAX;
 		}
 #endif
 
@@ -2928,6 +2931,24 @@ static int wifi_sta_get_global_config(wifi_sta_config_t *sta_config)
 	return BK_OK;
 }
 
+#if CONFIG_WIFI_WIRELESS_MODE_SUPPORT
+static bool wifi_sta_mode_24g_is_valid(uint8_t mode_24g)
+{
+	return mode_24g == WIFI_WIRELESS_MODE_B ||
+	       mode_24g == WIFI_WIRELESS_MODE_BG ||
+	       mode_24g == WIFI_WIRELESS_MODE_BGN ||
+	       mode_24g == WIFI_WIRELESS_MODE_BGNAX;
+}
+
+static bool wifi_sta_mode_5g_is_valid(uint8_t mode_5g)
+{
+	return mode_5g == WIFI_WIRELESS_MODE_A ||
+	       mode_5g == WIFI_WIRELESS_MODE_AN ||
+	       mode_5g == WIFI_WIRELESS_MODE_ANAC ||
+	       mode_5g == WIFI_WIRELESS_MODE_ANACAX;
+}
+#endif
+
 static bool bssid_is_initialized(const uint8_t *bssid)
 {
 	for (int i = 0; i < WIFI_BSSID_LEN; i++) {
@@ -3158,20 +3179,19 @@ bk_err_t bk_wifi_sta_get_config(wifi_sta_config_t *config)
 	return BK_OK;
 }
 
-#ifdef CONFIG_WIFI_WIRELESS_MODE_SUPPORT
-void bk_wlan_sta_set_wireless_mode(uint8_t wireless_mode)
+#if CONFIG_WIFI_WIRELESS_MODE_SUPPORT
+void bk_wlan_sta_set_wireless_mode(uint8_t mode_24g, uint8_t mode_5g)
 {
-	if (wireless_mode == 0 || wireless_mode > 3) {
-		WIFI_LOGE("invalid wireless_mode!\n");
+
+	if (!wifi_sta_mode_24g_is_valid(mode_24g) || !wifi_sta_mode_5g_is_valid(mode_5g)) {
+		WIFI_LOGE("invalid wireless_mode, 24g:%u 5g:%u\n", mode_24g, mode_5g);
 		return;
 	}
-	g_sta_param_ptr->wireless_mode = wireless_mode;
-	if (g_sta_param_ptr->wireless_mode != WIFI_WIRELESS_MODE_BGN) {
-		rw_ieee80211_set_ht_cap(0);
-	} else {
-		rw_ieee80211_set_ht_cap(1);
-	}
-	rw_msg_send_wireless_mode_req(wireless_mode);
+
+	g_sta_param_ptr->wireless_mode_24g = mode_24g;
+	g_sta_param_ptr->wireless_mode_5g = mode_5g;
+
+	rw_msg_send_wireless_mode_req(g_sta_param_ptr->wireless_mode_24g, g_sta_param_ptr->wireless_mode_5g);
 }
 #endif
 

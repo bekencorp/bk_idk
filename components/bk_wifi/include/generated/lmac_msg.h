@@ -2680,6 +2680,16 @@ enum
     #endif
 };
 uint8_t me_env_get_capa_flags();
+#if BK_MAC
+/**
+ ****************************************************************************************
+ * @brief Set local ERP/HT/VHT/HE capability flags from configured wireless mode.
+ *
+ * @param[in] wireless_mode  One of @ref WIFI_WIRELESS_MODE_* (see me.h defines).
+ ****************************************************************************************
+ */
+void me_apply_wireless_mode_local_capa(uint8_t wireless_mode);
+#endif
 bool me_is_connect_with_instrument(void);
 /// Messages that are logically related to the task.
 enum
@@ -3026,8 +3036,10 @@ struct me_data_path_flushed_ind
 /// Structure containing the parameters of the @ref ME_SET_WIRELESS_MODE_REQ message.
 struct me_set_wireless_mode_req
 {
-    /// wireless mode
-    uint8_t wireless_mode;
+    /// 2.4G wireless mode
+    uint8_t wireless_mode_24g;
+    /// 5G wireless mode
+    uint8_t wireless_mode_5g;
 };
 
 /// Structure containing the parameters of the @ref ME_STA_ARP_UPDATE_IND message.
