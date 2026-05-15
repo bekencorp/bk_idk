@@ -8,4 +8,3 @@ Drive development framework
 
    Drive Tiering <bk_driver>
    Develop Spec  <bk_driver_spec>
-   Driving Model <bk_driver_model>

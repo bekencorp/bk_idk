@@ -13,67 +13,95 @@ EFUSE (Electrically Programming Efuse) is used to configure safety-related featu
 BK7236N EFUSE has a total of 4x8 and a total of 32 Bits. Before secure boot is enabled, it can be configured through :ref:`BKFIL<bk_tool_bkfil>`. For details, please refer to :ref:`EFUSE configuration <bk_config_otp_efuse>`.
 
 +-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
-| Bit   | Name                         | description                                                                                                           |
+| Bit   | Name                         | Description                                                                                                           |
 +=======+==============================+=======================================================================================================================+
-| 0     | security boot enable         | 0: Disable secure boot. 1: Enable Secure Boot.                                                                        |
+| 0     | secure_boot                  | 0: Secure boot not force-enabled; 1: Force-enable secure boot.                                                        |
 +-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
-| 1     | security boot debug mode     | 0: Enable secure boot debug information. 1: Disable secure boot debug information.                                    |
+| 1     | secure_boot_debug_disable    | 0: Enable secure boot debug information; 1: Disable secure boot debug information.                                    |
 +-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
-| 2     | fast boot disable            | 0: enable fast boot; 1: disable fast boot.                                                                            |
+| 2     | fast_boot_disable            | 0: Enable fast boot; 1: Disable fast boot.                                                                            |
 +-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
-| 3     | boot mode                    | 0: traditional download mode; 1: secure boot mode.                                                                    |
+| 3     | download_disable             | 0: Download mode enabled; 1: Download mode disabled, enable secure boot mode.                                         |
 +-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
-| 4     | security boot clock select   | 0: use XTAL clock for secure boot; 1: enable PLL for secure boot.                                                     |
+| 4     | pll_enable                   | 0: Use XTAL clock for secure boot; 1: Enable PLL for secure boot.                                                     |
 +-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
-| 5     | random delay enable          | 0: Disable random delay; 1: Enable random delay.                                                                      |
+| 5     | fih_delay_enable             | 0: Disable random delay; 1: Enable random delay (FIH delay).                                                          |
 +-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
-| 6     | direct jump enable           | 0: disable direct jump of secure boot; 1: enable direct jump of secure boot.                                          |
+| 6     | power_on_fastboot_disable    | 0: Skip signature verification on power-on; 1: Do not skip signature verification on power-on.                        |
 +-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
-| 7     | security boot critical error | 0: Enable critical error printing during secure boot; 1: Disable critical error printing during secure boot.          |
+| 7     | critical_err_disable         | 0: Enable critical error printing during secure boot; 1: Disable critical error printing during secure boot.          |
 +-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
-| 8~19  | reserved                     | Reserved                                                                                                              |
+| 8     | reserved                     | Reserved.                                                                                                             |
 +-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
-| 20    | attack_nmi_enable            | 0: No NMI is generated when an injection attack is detected; 1: NMI is generated when an injection attack is detected.|
+| 9     | flash_ctrl_access_disable    | 0: Allow flash control register access via HCI; 1: Disable flash control register access via HCI.                     |
 +-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
-| 21    | spi_to_ahb_disable           | 0: SPI to AHB channel is not disabled; 1: SPI to AHB channel is disabled.                                             |
+| 10    | deep_lv_fast_boot_disable    | 0: Enable deep LV fast boot to RAM; 1: Disable deep LV fast boot to RAM.                                              |
 +-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
-| 22    | auto_reset_enable[0]         | Temperature and voltage abnormal reset                                                                                |
+| 11    | long_version_length          | 0: BL1 security counter occupies 4 bytes; 1: BL1 security counter occupies 68 bytes.                                  |
 +-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
-| 23    | auto_reset_enable[1]         | Temperature and voltage abnormal reset                                                                                |
+| 12    | secure_download              | 0: Secure download disabled; 1: Secure download enabled.                                                              |
 +-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
-| 24~28 | reserved                     | Reserved                                                                                                              |
+| 13    | bkfil_channel_ctrl[0]        | Bits 13/14/15 combined: 1/7 - BKFIL channel disabled, 0/2/3/4/5/6 - BKFIL channel enabled.                            |
 +-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
-| 29    | flash aes enable             | 0: FLASH AES encryption is disabled; 1: FLASH AES encryption is enabled.                                              |
+| 14    | bkfil_channel_ctrl[1]        | Bits 13/14/15 combined: 1/7 - BKFIL channel disabled, 0/2/3/4/5/6 - BKFIL channel enabled.                            |
 +-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
-| 30    | spi_dld_disable              | 0: SPI download enabled; 1: SPI download disabled.                                                                    |
+| 15    | bkfil_channel_ctrl[2]        | Bits 13/14/15 combined: 1/7 - BKFIL channel disabled, 0/2/3/4/5/6 - BKFIL channel enabled.                            |
 +-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
-| 31    | swd_disable                  | 0: enable CPU SWD; 1: disable CPU SWD.                                                                                |
+| 16    | legacy_boot_high_freq_disable| 0: Legacy download high-frequency enabled; 1: Legacy download high-frequency disabled.                                |
++-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
+| 17    | cpu_120m_enable              | 0: CPU 80M; 1: CPU 120M.                                                                                              |
++-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
+| 18    | flash_high_freq_enable       | 0: Flash XTAL 40M; 1: Flash 80M.                                                                                      |
++-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
+| 19    | cbus_disable                 | 0: CBUS port enabled; 1: CBUS port disabled.                                                                          |
++-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
+| 20    | attack_nmi_enable            | 0: No NMI generated when injection attack is detected; 1: NMI generated when injection attack is detected.            |
++-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
+| 21    | spi_to_ahb_disable           | 0: SPI to AHB channel not disabled; 1: SPI to AHB channel disabled.                                                   |
++-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
+| 22    | auto_reset_enable[0]         | Temperature and voltage abnormal reset control bit 0.                                                                 |
++-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
+| 23    | auto_reset_enable[1]         | Temperature and voltage abnormal reset control bit 1.                                                                 |
++-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
+| 24    | memchk_bps_enable            | 0: Execute memchk on cold boot; 1: Skip memchk on cold boot.                                                          |
++-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
+| 25    | debug_hw_disable             | 0: Hardware debug (JTAG) not disabled; 1: Hardware debug (JTAG) disabled.                                             |
++-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
+| 26    | shanhai_clk_gating_enable    | 0: clk_gating not enabled; 1: clk_gating enabled.                                                                     |
++-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
+| 27    | flash_no_crc                 | 0: CRC mode; 1: No CRC mode.                                                                                          |
++-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
+| 28    | flash_aes_mode               | 0: FLASH AES-XTS-128 mode; 1: FLASH AES-XTS-256 mode.                                                                 |
++-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
+| 29    | flash_aes_enable             | 0: FLASH AES encryption disabled; 1: FLASH AES encryption enabled.                                                    |
++-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
+| 30    | spi_download_disable         | 0: SPI download enabled; 1: SPI download disabled.                                                                    |
++-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
+| 31    | jtag_disable                 | 0: Enable CPU SWD; 1: Disable CPU SWD.                                                                                |
 +-------+------------------------------+-----------------------------------------------------------------------------------------------------------------------+
 
 .. _efuse_bit0:
 
-BIT(0) - security boot enable
+BIT(0) - secure_boot
 ++++++++++++++++++++++++++++++++++++++++++++++++
 
 Two bits of EFUSE are related to secure boot enable:
 
-  - :ref:`BIT(3)<efuse_bit3>` - boot mode is used to set the boot mode. 0 means traditional download mode, and the version can be downloaded through UART at this time; 1 means safe boot mode,
-    After setting to secure boot mode, you need to set :ref:`BIT(3)<efuse_bit3>` to 1 to enable secure boot.
-  - :ref:`BIT(0)<efuse_bit0>` - Enable Secure Boot. Only valid when :ref:`BIT(3)<efuse_bit3>` is set to 1 (secure boot mode), indicating whether to enable secure boot.
+  - :ref:`BIT(3)<efuse_bit3>` - download_disable is used to disable download mode. 0 means download mode enabled, versions can be downloaded through UART; 1 means download mode disabled, entering secure boot mode.
+  - :ref:`BIT(0)<efuse_bit0>` - Force-enable secure boot. Only valid when :ref:`BIT(3)<efuse_bit3>` is set to 1 (secure boot mode), indicating whether to force-enable secure boot.
 
-When :ref:`BIT(0)<efuse_bit0>` is set to 0, it means that the secure boot is not enabled. At this time, BL1 considers the public key in IMAGE to be legal, that is, it will not use the public key in IMAGE and the one in OTP.
-:ref:`BL1 ROTPK HASH<otp_bl1_rotpk_hash>` for comparison, only for IMAGE integrity verification. At this time, even if the public key HASH system is not configured in OTP, the system can still start.
+When :ref:`BIT(0)<efuse_bit0>` is set to 0, it means that the secure boot is not force-enabled. At this time, BL1 considers the public key in IMAGE to be legal, that is, it will not use the public key in IMAGE and the one in OTP :ref:`BL1 ROTPK HASH<otp_bl1_rotpk_hash>` for comparison, only for IMAGE integrity verification. At this time, even if the public key HASH is not configured in OTP, the system can still start.
 
-When :ref:`BIT(0)<efuse_bit0>` is set to 1, it means secure boot is enabled, and :ref:`BL1 ROTPK HASH<otp_bl1_rotpk_hash>` must be configured in OTP, otherwise the boot will fail.
+When :ref:`BIT(0)<efuse_bit0>` is set to 1, it means secure boot is force-enabled, and :ref:`BL1 ROTPK HASH<otp_bl1_rotpk_hash>` must be configured in OTP, otherwise the boot will fail.
 
 .. note::
 
-   Once Secure Boot is enabled, it cannot be downloaded and configured through BKFIL! Therefore, this BIT(3) should be enabled last after deploying all other OTP/EFUSE configurations.
+   Once secure boot is enabled, it cannot be downloaded and configured through BKFIL! Therefore, BIT(3) should be enabled last after deploying all other OTP/EFUSE configurations.
    When using :ref:`config scripts <bk_config_otp_efuse_scripts>` for deployment, please make sure that all OTP/EFUSE items that need to be configured are included in the configuration scripts.
 
 .. _efuse_bit1:
 
-BIT(1) - security boot debug mode
+BIT(1) - secure_boot_debug_disable
 ++++++++++++++++++++++++++++++++++++++++++++++++
 
 BL1 defines two levels of debugging information for users to locate problems:
@@ -146,10 +174,13 @@ When Fast Boot is turned off, it will do a complete safe boot similar to power-o
 
 .. _efuse_bit3:
 
-BIT(3) - boot mode
+BIT(3) - download_disable
 ++++++++++++++++++++++++++++++++++++++++++++++++
 
-It is used to configure the startup mode, please refer to :ref:`BIT(0)<efuse_bit0>`.
+Used to disable download mode and enable secure boot:
+
+ - 0 - Download mode enabled, supports traditional download.
+ - 1 - Download mode disabled, enables secure boot mode.
 
 .. _efuse_bit4:
 
@@ -179,21 +210,17 @@ BIT(5) is used to control the random delay of the shutdown judgment statement in
 
 .. _efuse_bit6:
 
-BIT(6) - Direct Jump
+BIT(6) - power_on_fastboot_disable
 ++++++++++++++++++++++++++++++++++++++++++++++++
 
-BIT(6) is used to configure the way of jumping to Bootloader after BL1 signature verification is completed:
+BIT(6) is used to configure whether BL1 skips the signature verification process:
 
-  - 0 means an indirect jump. When using an indirect jump, BL1 does not jump directly to BL2 after the signature verification, but jumps to an intermediate BIN first, and then jumps to BL2 from the intermediate BIN.
-  - 1 means jump directly. When using direct jump, BL1 jumps directly to BL2 after the signature verification is completed.
-
-.. note::
-
-   When using indirect jump, the intermediate BIN will also be included in BL2 for signature verification, so it is safe.
+  - 0 - On every power-on boot, directly enter the fast signature verification process.
+  - 1 - In any secure boot scenario, complete signature verification is required.
 
 .. _efuse_bit7:
 
-BIT(7) - security boot critical error
+BIT(7) - critical_err_disable
 ++++++++++++++++++++++++++++++++++++++++++++++++
 
 See :ref:`BIT(1)<efuse_bit1>`. .
@@ -230,7 +257,7 @@ It should be noted that BIT(21) and :ref:`BIT(30) spi flash download disable<efu
 
 .. _efuse_bit29:
 
-BIT(29) - flash aes enable
+BIT(29) - flash_aes_enable
 ++++++++++++++++++++++++++++++++++++++++++++++++
 
 BIT(29) is used to enable FLASH AES encryption:
@@ -240,7 +267,7 @@ BIT(29) is used to enable FLASH AES encryption:
 
 .. _efuse_bit30:
 
-BIT(30) - spi download disable
+BIT(30) - spi_download_disable
 ++++++++++++++++++++++++++++++++++++++++++++++++
 
 Disable SPI download function:
@@ -258,7 +285,7 @@ It should be noted that BIT(30) and :ref:`BIT(21) spi to ahb disable<efuse_bit21
 
 .. _efuse_bit31:
 
-BIT(31) - SWD debug
+BIT(31) - jtag_disable
 ++++++++++++++++++++++++++++++++++++++++++++++++
 
 BIT(31) is used to control the switch of CPU debug port:

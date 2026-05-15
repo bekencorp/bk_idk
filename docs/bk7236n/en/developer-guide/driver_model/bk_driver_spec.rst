@@ -7,21 +7,23 @@ API Specification
 Header file
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-Each peripheral driver has three API related header files：
+Each peripheral driver has three API-related header files. Using UART as an example:
 
- - ``bk_api_xxx.h`` Define the API of xxx peripherals.
- - ``bk_api_xxx_types.h`` Define the public data types and macros of xxx peripherals. External components and driver layers can be directly accessed, while HAL layer and SOC layer cannot be accessed.
- - ``xxx_types.h`` Define the public data types and macros of xxx peripherals. External components, driver layer, HAL layer and SOC layer can all be accessed.
+ - ``include/driver/xxx.h`` defines the API of the xxx peripheral. For example, ``include/driver/uart.h``.
+ - ``include/driver/xxx_types.h`` defines the driver-layer public data types and macros of the xxx peripheral (error codes, ISR function-pointer types, etc.). External components and the driver layer can access this header directly; the HAL and SOC layers must not. For example, ``include/driver/uart_types.h``.
+ - ``include/driver/hal/hal_xxx_types.h`` defines the HAL-layer public data types and macros of the xxx peripheral (device id enums, configuration structs, clock / rate-related constants, etc.). External components, the driver layer, the HAL layer, and the SOC layer can all access it. For example, ``include/driver/hal/hal_uart_types.h``.
 
-The interface, data type and macro in the API header file should be stable, abstract and independent of the specific hardware.
+In terms of inclusion: ``xxx.h`` includes ``xxx_types.h``, and ``xxx_types.h`` includes ``hal/hal_xxx_types.h``.
+
+The interfaces, data types, and macros in the API header should be stable, abstract, and independent of any specific hardware.
 
 .. note::
 
-  ``xxx_types.h`` The internal data type should not be included, but should be placed in the internal header file:
-  
-   - If it is a private data type of the driver layer, it will be placed in ``xxx_driver.h``.
-   - If it is a HAL layer private data type, put it in ``xxx_Hal.h``.
-   - If it is a SOC layer private data type, it will be placed in ``xxx_ll.h``.
+  ``xxx_types.h`` and ``hal/hal_xxx_types.h`` must not contain internal data types; place those in the internal headers instead:
+
+   - For driver-layer-private data types, use ``xxx_driver.h``.
+   - For HAL-layer-private data types, use ``xxx_hal.h``.
+   - For SOC-layer-private data types, use ``xxx_ll.h``.
 
 
 Device ID starts from 0

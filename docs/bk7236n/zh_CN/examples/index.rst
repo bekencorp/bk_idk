@@ -7,6 +7,8 @@
    :maxdepth: 1
 
    蓝牙 <bluetooth/index>
+   Wi-Fi <wifi/index>
+   低功耗 <pm/pm_cli>
    外设 <peripheral/index>
    平台 <platform/index>
-   VND_CAL <vnd_cal/vnd_cal>
+   RF <rf/index>

@@ -8,7 +8,7 @@ Peripheral
 
    DMA <bk_dma>
    EFUSE <bk_efuse>
-   GPIO <bk_gpio>
+   IOMUX <bk_gpio>
    ICU <bk_interrupt>
    PWM <bk_pwm>
    SARADC <bk_adc>

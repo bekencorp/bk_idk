@@ -15,3 +15,5 @@
    UART <bk_uart>
    WDT <bk_wdt>
    I2C <bk_i2c>
+   IOMUX <bk_iomux>
+   RTC <bk_rtc>
