@@ -510,9 +510,10 @@ __attribute__((section(".iram"))) int flash_bypass_op_read(uint8_t *tx_buf, uint
 			if(tx_cnt < tx_len) {
 				REG_READ(SPI_R_DATA(0));
 				tx_cnt++;
+			} else {
+				rx_buf[rx_cnt] = REG_READ(SPI_R_DATA(0));
+				rx_cnt++;
 			}
-			rx_buf[rx_cnt] = REG_READ(SPI_R_DATA(0));
-			rx_cnt++;
 
 			wait = 0;
 		} else {

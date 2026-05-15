@@ -9,6 +9,7 @@
 #include "driver/flash.h"
 #include "flash_bypass.h"
 #include "flash_bypass_otp.h"
+#include "sys_driver.h"
 
 #if CONFIG_FLASH_BYPASS_OTP_V2
 
@@ -58,9 +59,33 @@ static const flash_bypass_otp_config_t s_flash_bypass_otp_configs[] = {
 static uint32_t s_cached_flash_id = 0;
 static flash_bypass_otp_config_t s_cached_config = {0};
 static bool s_cached_config_valid = false;
-static flash_bypass_otp_err_t flash_bypass_otp_read_sr(uint32_t *sr_value);
 static flash_bypass_otp_err_t flash_bypass_otp_wait_wel(void);
 static flash_bypass_otp_err_t flash_bypass_otp_wait_wip(void);
+
+typedef struct {
+    uint32_t int_status;
+    uint32_t spi_int_was_enabled;
+} flash_bypass_otp_irq_guard_t;
+
+static __attribute__((section(".iram"))) flash_bypass_otp_irq_guard_t flash_bypass_otp_irq_guard_enter(void)
+{
+    flash_bypass_otp_irq_guard_t guard = {0};
+    uint32_t spi_int_en_saved = 0;
+
+    guard.int_status = rtos_disable_int();
+    spi_int_en_saved = (uint32_t)sys_drv_int_disable(SPI_INTERRUPT_CTRL_BIT);
+    guard.spi_int_was_enabled = spi_int_en_saved & SPI_INTERRUPT_CTRL_BIT;
+
+    return guard;
+}
+
+static __attribute__((section(".iram"))) void flash_bypass_otp_irq_guard_exit(const flash_bypass_otp_irq_guard_t *guard)
+{
+    if (guard->spi_int_was_enabled) {
+        sys_drv_int_enable(SPI_INTERRUPT_CTRL_BIT);
+    }
+    rtos_enable_int(guard->int_status);
+}
 
 static __attribute__((section(".iram"))) void flash_bypass_otp_read_flash_id(void)
 {
@@ -74,7 +99,7 @@ static __attribute__((section(".iram"))) void flash_bypass_otp_read_flash_id(voi
     uint8_t rx_buf[3] = {0};
 
     for (int retry = 0; retry < ID_RETRY_MAX; retry++) {
-        if (flash_bypass_op_read(tx_buf, sizeof(tx_buf), rx_buf, sizeof(rx_buf)) < 0) {
+        if (flash_bypass_op_read(tx_buf, sizeof(tx_buf), rx_buf, sizeof(rx_buf)) != sizeof(rx_buf)) {
             continue;
         }
 
@@ -158,15 +183,19 @@ static __attribute__((section(".iram"))) uint8_t flash_bypass_otp_get_sr_valid_c
 
 static __attribute__((section(".iram"))) flash_bypass_otp_err_t flash_bypass_otp_read_sr(uint32_t *sr_value)
 {
+    flash_bypass_otp_irq_guard_t guard = flash_bypass_otp_irq_guard_enter();
+    flash_bypass_otp_err_t ret = FLASH_BYPASS_OTP_OK;
     if (sr_value == NULL) {
-        return FLASH_BYPASS_OTP_ERR_PARAM;
+        ret = FLASH_BYPASS_OTP_ERR_PARAM;
+        goto exit;
     }
 
     const flash_bypass_otp_config_t *cfg = flash_bypass_otp_get_config();
     uint8_t read_count = flash_bypass_otp_get_sr_valid_cmd_count(cfg->sr_config.cmd_read);
     uint8_t sr_bytes = cfg->sr_config.sr_bytes;
     if (sr_bytes != read_count) {
-        return FLASH_BYPASS_OTP_ERR_SR_READ_FAIL;
+        ret = FLASH_BYPASS_OTP_ERR_SR_READ_FAIL;
+        goto exit;
     }
 
     uint32_t value = 0;
@@ -174,8 +203,9 @@ static __attribute__((section(".iram"))) flash_bypass_otp_err_t flash_bypass_otp
         uint8_t tx_buf[1] = {cfg->sr_config.cmd_read[i]};
         uint8_t rx_buf[1] = {0};
 
-        if (flash_bypass_op_read(tx_buf, sizeof(tx_buf), rx_buf, sizeof(rx_buf)) < 0) {
-            return FLASH_BYPASS_OTP_ERR_SR_READ_FAIL;
+        if (flash_bypass_op_read(tx_buf, sizeof(tx_buf), rx_buf, sizeof(rx_buf)) != sizeof(rx_buf)) {
+            ret = FLASH_BYPASS_OTP_ERR_SR_READ_FAIL;
+            goto exit;
         }
 
         uint32_t shift = (uint32_t)i * 8U;
@@ -183,11 +213,14 @@ static __attribute__((section(".iram"))) flash_bypass_otp_err_t flash_bypass_otp
     }
 
     *sr_value = value;
-    return FLASH_BYPASS_OTP_OK;
+exit:
+    flash_bypass_otp_irq_guard_exit(&guard);
+    return ret;
 }
 
 static __attribute__((section(".iram"))) flash_bypass_otp_err_t flash_bypass_otp_write_sr(uint32_t sr_value)
 {
+    flash_bypass_otp_irq_guard_t guard = flash_bypass_otp_irq_guard_enter();
     const flash_bypass_otp_config_t *cfg = flash_bypass_otp_get_config();
     uint8_t write_count = flash_bypass_otp_get_sr_valid_cmd_count(cfg->sr_config.cmd_write);
     uint8_t sr_bytes = cfg->sr_config.sr_bytes;
@@ -204,28 +237,31 @@ static __attribute__((section(".iram"))) flash_bypass_otp_err_t flash_bypass_otp
         }
 
         if (flash_bypass_op_write(&wr_en, NULL, 0) < 0) {
-            return FLASH_BYPASS_OTP_ERR_SR_WRITE_FAIL;
+            ret = FLASH_BYPASS_OTP_ERR_SR_WRITE_FAIL;
+            goto exit;
         }
 
         ret = flash_bypass_otp_wait_wel();
         if (ret != FLASH_BYPASS_OTP_OK) {
-            return ret;
+            goto exit;
         }
 
         if (flash_bypass_op_write(NULL, tx_buf, sr_bytes + 1) < 0) {
-            return FLASH_BYPASS_OTP_ERR_SR_WRITE_FAIL;
+            ret = FLASH_BYPASS_OTP_ERR_SR_WRITE_FAIL;
+            goto exit;
         }
 
         ret = flash_bypass_otp_wait_wip();
         if (ret != FLASH_BYPASS_OTP_OK) {
-            return ret;
+            goto exit;
         }
 
-        return FLASH_BYPASS_OTP_OK;
+        goto exit;
     }
 
     if (write_count != sr_bytes) {
-        return FLASH_BYPASS_OTP_ERR_SR_WRITE_FAIL;
+        ret = FLASH_BYPASS_OTP_ERR_SR_WRITE_FAIL;
+        goto exit;
     }
 
     for (uint8_t i = 0; i < write_count; i++) {
@@ -236,25 +272,29 @@ static __attribute__((section(".iram"))) flash_bypass_otp_err_t flash_bypass_otp
         };
 
         if (flash_bypass_op_write(&wr_en, NULL, 0) < 0) {
-            return FLASH_BYPASS_OTP_ERR_SR_WRITE_FAIL;
+            ret = FLASH_BYPASS_OTP_ERR_SR_WRITE_FAIL;
+            goto exit;
         }
 
         ret = flash_bypass_otp_wait_wel();
         if (ret != FLASH_BYPASS_OTP_OK) {
-            return ret;
+            goto exit;
         }
 
         if (flash_bypass_op_write(NULL, tx_buf, 2) < 0) {
-            return FLASH_BYPASS_OTP_ERR_SR_WRITE_FAIL;
+            ret = FLASH_BYPASS_OTP_ERR_SR_WRITE_FAIL;
+            goto exit;
         }
 
         ret = flash_bypass_otp_wait_wip();
         if (ret != FLASH_BYPASS_OTP_OK) {
-            return ret;
+            goto exit;
         }
     }
 
-    return FLASH_BYPASS_OTP_OK;
+exit:
+    flash_bypass_otp_irq_guard_exit(&guard);
+    return ret;
 }
 
 static __attribute__((section(".iram"))) flash_bypass_otp_err_t flash_bypass_otp_wait_wip(void)
@@ -317,43 +357,52 @@ static __attribute__((section(".iram"))) uint8_t flash_bypass_otp_get_lock_bit_p
 
 static __attribute__((section(".iram"))) flash_bypass_otp_err_t flash_bypass_otp_get_lock(uint8_t otp_idx, bool *locked)
 {
+    flash_bypass_otp_irq_guard_t guard = flash_bypass_otp_irq_guard_enter();
+    flash_bypass_otp_err_t ret = FLASH_BYPASS_OTP_OK;
     if (locked == NULL) {
-        return FLASH_BYPASS_OTP_ERR_PARAM;
+        ret = FLASH_BYPASS_OTP_ERR_PARAM;
+        goto exit;
     }
 
-    flash_bypass_otp_err_t ret = flash_bypass_otp_check_range(otp_idx, 0, 0, true);
+    ret = flash_bypass_otp_check_range(otp_idx, 0, 0, true);
     if (ret != FLASH_BYPASS_OTP_OK) {
-        return ret;
+        goto exit;
     }
 
     uint32_t sr_value = 0;
     ret = flash_bypass_otp_read_sr(&sr_value);
     if (ret != FLASH_BYPASS_OTP_OK) {
-        return ret;
+        goto exit;
     }
 
     uint8_t lock_bit = flash_bypass_otp_get_lock_bit_pos(otp_idx);
     uint32_t lock_mask = 1U << lock_bit;
     *locked = ((sr_value & lock_mask) != 0U);
 
-    return FLASH_BYPASS_OTP_OK;
+exit:
+    flash_bypass_otp_irq_guard_exit(&guard);
+    return ret;
 }
 
 static __attribute__((section(".iram"))) flash_bypass_otp_err_t flash_bypass_otp_set_lock(uint8_t otp_idx)
 {
+    flash_bypass_otp_irq_guard_t guard = flash_bypass_otp_irq_guard_enter();
     flash_bypass_otp_err_t ret = flash_bypass_otp_check_range(otp_idx, 0, 0, true);
     if (ret != FLASH_BYPASS_OTP_OK) {
+        flash_bypass_otp_irq_guard_exit(&guard);
         return ret;
     }
 
     ret = flash_bypass_otp_wait_wip();
     if (ret != FLASH_BYPASS_OTP_OK) {
+        flash_bypass_otp_irq_guard_exit(&guard);
         return ret;
     }
 
     uint32_t sr_value = 0;
     ret = flash_bypass_otp_read_sr(&sr_value);
     if (ret != FLASH_BYPASS_OTP_OK) {
+        flash_bypass_otp_irq_guard_exit(&guard);
         return ret;
     }
 
@@ -362,19 +411,23 @@ static __attribute__((section(".iram"))) flash_bypass_otp_err_t flash_bypass_otp
 
     ret = flash_bypass_otp_write_sr(sr_value);
     if (ret != FLASH_BYPASS_OTP_OK) {
+        flash_bypass_otp_irq_guard_exit(&guard);
         return ret;
     }
 
     bool locked = false;
     ret = flash_bypass_otp_get_lock(otp_idx, &locked);
     if (ret != FLASH_BYPASS_OTP_OK) {
+        flash_bypass_otp_irq_guard_exit(&guard);
         return ret;
     }
 
     if (!locked) {
+        flash_bypass_otp_irq_guard_exit(&guard);
         return FLASH_BYPASS_OTP_ERR_LOCK_SET_FAIL;
     }
 
+    flash_bypass_otp_irq_guard_exit(&guard);
     return FLASH_BYPASS_OTP_OK;
 }
 
@@ -387,7 +440,7 @@ static __attribute__((section(".iram"))) uint32_t flash_bypass_otp_calc_full_add
 
 static __attribute__((section(".iram"))) flash_bypass_otp_err_t flash_bypass_otp_read(uint8_t otp_idx, uint32_t addr_offset, uint8_t *buf, uint32_t len)
 {
-    uint32_t int_status = rtos_disable_int();
+    flash_bypass_otp_irq_guard_t guard = flash_bypass_otp_irq_guard_enter();
     flash_bypass_otp_err_t ret = FLASH_BYPASS_OTP_OK;
 
     if (buf == NULL) {
@@ -410,19 +463,19 @@ static __attribute__((section(".iram"))) flash_bypass_otp_err_t flash_bypass_otp
     tx_buf[3] = (uint8_t)otp_addr;
     tx_buf[4] = 0x00;
 
-    if (flash_bypass_op_read(tx_buf, sizeof(tx_buf), buf, len) < 0) {
+    if (flash_bypass_op_read(tx_buf, sizeof(tx_buf), buf, len) != len) {
         ret = FLASH_BYPASS_OTP_ERR_DATA_READ_FAIL;
         goto exit;
     }
 
 exit:
-    rtos_enable_int(int_status);
+    flash_bypass_otp_irq_guard_exit(&guard);
     return ret;
 }
 
 static __attribute__((section(".iram"))) flash_bypass_otp_err_t flash_bypass_otp_erase(uint8_t otp_idx)
 {
-    uint32_t int_status = rtos_disable_int();
+    flash_bypass_otp_irq_guard_t guard = flash_bypass_otp_irq_guard_enter();
     flash_bypass_otp_err_t ret = FLASH_BYPASS_OTP_OK;
     const flash_bypass_otp_config_t *cfg = flash_bypass_otp_get_config();
 
@@ -461,13 +514,13 @@ static __attribute__((section(".iram"))) flash_bypass_otp_err_t flash_bypass_otp
 
     ret = flash_bypass_otp_wait_wip();
 exit:
-    rtos_enable_int(int_status);
+    flash_bypass_otp_irq_guard_exit(&guard);
     return ret;
 }
 
 static __attribute__((section(".iram"))) flash_bypass_otp_err_t flash_bypass_otp_write_single(uint8_t otp_idx, uint32_t addr_offset, uint8_t *buf, uint32_t len)
 {
-    uint32_t int_status = rtos_disable_int();
+    flash_bypass_otp_irq_guard_t guard = flash_bypass_otp_irq_guard_enter();
     flash_bypass_otp_err_t ret = FLASH_BYPASS_OTP_OK;
 
     if (buf == NULL) {
@@ -512,13 +565,13 @@ static __attribute__((section(".iram"))) flash_bypass_otp_err_t flash_bypass_otp
 
     ret = flash_bypass_otp_wait_wip();
 exit:
-    rtos_enable_int(int_status);
+    flash_bypass_otp_irq_guard_exit(&guard);
     return ret;
 }
 
 static __attribute__((section(".iram"))) flash_bypass_otp_err_t flash_bypass_otp_write(uint8_t otp_idx, uint32_t addr_offset, uint8_t *buf, uint32_t len)
 {
-    uint32_t int_status = rtos_disable_int();
+    flash_bypass_otp_irq_guard_t guard = flash_bypass_otp_irq_guard_enter();
     flash_bypass_otp_err_t ret = FLASH_BYPASS_OTP_OK;
 
     if (buf == NULL) {
@@ -554,7 +607,7 @@ static __attribute__((section(".iram"))) flash_bypass_otp_err_t flash_bypass_otp
     }
 
 exit:
-    rtos_enable_int(int_status);
+    flash_bypass_otp_irq_guard_exit(&guard);
     return ret;
 }
 

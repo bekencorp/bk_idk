@@ -741,6 +741,7 @@ static void flash_bypass_otp_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, 
 			BK_DUMP_OUT("malloc err\r\n");
 			goto out;
 		}
+		os_memset(buf, 0, len);
 		otp_ret = flash_bypass_otp_test_read(idx, offset, buf, len);
 		if (otp_ret == FLASH_BYPASS_OTP_OK) {
 			msg = CLI_CMD_RSP_SUCCEED;
@@ -775,6 +776,7 @@ static void flash_bypass_otp_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, 
 			BK_DUMP_OUT("malloc err\r\n");
 			goto out;
 		}
+		os_memset(buf, 0, len);
 		hex_str_to_buf(argv[6], buf, len);
 		otp_ret = flash_bypass_otp_test_write(idx, offset, buf, len);
 		msg = (otp_ret == FLASH_BYPASS_OTP_OK) ? CLI_CMD_RSP_SUCCEED : CLI_CMD_RSP_ERROR;
