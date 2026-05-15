@@ -1278,8 +1278,11 @@ static void ble_enter_dut()
     analog_val = sys_hal_analog_get(ANALOG_REG3);
     sys_hal_analog_set(ANALOG_REG3, (analog_val & ~(1U << 9))); //ck_sel select high hystersis digital buffer
 
-    analog_val = sys_hal_analog_get(ANALOG_REG7);
-    sys_hal_analog_set(ANALOG_REG7, ((analog_val & (~0x3C0)) | (0x7 << 6))); //vanaldosel set 3
+    // analog_val = sys_hal_analog_get(ANALOG_REG7);
+    // sys_hal_analog_set(ANALOG_REG7, ((analog_val & (~0x3C0)) | (0x7 << 6))); //vanaldosel set 3
+
+    analog_val = sys_hal_analog_get(ANALOG_REG0);
+    sys_hal_analog_set(ANALOG_REG0, ((analog_val & (~0x18)) | (0x3 << 3)));
 
     analog_val = sys_hal_analog_get(ANALOG_REG8);
     sys_hal_analog_set(ANALOG_REG8, (analog_val & ~(1U << 9)));//spi_latch1v disable
@@ -1298,8 +1301,11 @@ static void ble_exit_dut()
     analog_val = sys_hal_analog_get(ANALOG_REG3);
     sys_hal_analog_set(ANALOG_REG3, (analog_val | (1U << 9))); //ck_sel select high gain digital buffer
 
-    analog_val = sys_hal_analog_get(ANALOG_REG7);
-    sys_hal_analog_set(ANALOG_REG7, ((analog_val & (~0x3C0)) | (0xF << 6))); //vanaldosel set F
+    // analog_val = sys_hal_analog_get(ANALOG_REG7);
+    // sys_hal_analog_set(ANALOG_REG7, ((analog_val & (~0x3C0)) | (0xF << 6))); //vanaldosel set F
+
+    analog_val = sys_hal_analog_get(ANALOG_REG0);
+    sys_hal_analog_set(ANALOG_REG0, (analog_val & (~0x18)));
 
     analog_val = sys_hal_analog_get(ANALOG_REG8);
     sys_hal_analog_set(ANALOG_REG8, (analog_val & ~(1U << 9)));//spi_latch1v disable
