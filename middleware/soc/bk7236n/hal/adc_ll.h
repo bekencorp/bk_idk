@@ -26,6 +26,7 @@ extern "C" {
 #endif
 
 #define ADC_LL_REG_BASE   SOC_SADC_REG_BASE
+#define ANALOG_CHANNEL 0x0B81
 
 //reg reg0:
 static inline void adc_ll_set_reg0_value(uint32_t v) {
@@ -691,6 +692,36 @@ static inline uint32_t adc_ll_get_reg19_int_state(void) {
 	adc_reg19_t *r = (adc_reg19_t*)(SOC_SADC_REG_BASE + (0x19 << 2));
 	return r->int_state;
 }
+
+static inline bool adc_ll_is_analog_channel(adc_hw_t *hw, int id)
+{
+	//channel	function
+	//ADC0	Vbat
+	//ADC1	GPIO25
+	//ADC2	GPIO24
+	//ADC3	GPIO23
+	//ADC4	GPIO28
+	//ADC5	GPIO22
+	//ADC6	GPIO21
+	//ADC7	vtemp
+	//ADC8	tssio
+	//ADC9	touch
+	//ADC10	GPIO8
+	//ADC11	vpeak_lo
+	//ADC12	GPIO0
+	//ADC13	GPIO1
+	//ADC14	GPIO12
+	//ADC15	GPIO13
+	//analog channel map: B00001011 10000001 = 0x0B81
+	return (ANALOG_CHANNEL & (1 << id));
+}
+
+static inline bool adc_ll_is_digital_channel(adc_hw_t *hw, int id)
+{
+	//digital channel map: B11110100 01111110 = 0x0B81
+	return ((~ANALOG_CHANNEL) & (1 << id));
+}
+
 #ifdef __cplusplus
 }
 #endif

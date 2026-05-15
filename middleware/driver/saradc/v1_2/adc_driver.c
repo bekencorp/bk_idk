@@ -134,25 +134,11 @@ static void adc_flush(struct sadc_device *dev)
 
 static bk_err_t adc_init_gpio(struct sadc_device *dev, adc_chan_t chan)
 {
-    #if CONFIG_SARADC_V1P1
     if (adc_hal_is_analog_channel(&dev->hal, chan))
         return BK_OK;
-    #endif // CONFIG_SARADC_V1P1
 
     adc_gpio_map_t adc_map_table[] = ADC_DEV_MAP;
     adc_gpio_map_t *adc_map = &adc_map_table[chan];
-
-    #if CONFIG_SARADC_V1P2
-    /*TODO Fixme:wangzhilei*/
-    if (adc_hal_is_analog_channel(&dev->hal, chan)) {
-        gpio_dev_unmap(adc_map->gpio_id);
-        bk_gpio_disable_pull(adc_map->gpio_id);
-        bk_gpio_disable_input(adc_map->gpio_id);
-        bk_gpio_disable_output(adc_map->gpio_id);
-
-        return BK_OK;
-    }
-    #endif // CONFIG_SARADC_V1P2
 
     uint32_t map_item_cnt = sizeof(adc_map_table) / sizeof(adc_map_table[0]);
     if(((uint32_t)chan >= map_item_cnt)
