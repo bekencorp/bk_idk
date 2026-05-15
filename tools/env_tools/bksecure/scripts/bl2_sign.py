@@ -20,10 +20,23 @@ def bl2_sign(action_type, key_type, privkey_pem_file, pubkey_pem_file, signature
     logging.debug(f'bin={bin_file}, sign_outfile={sign_outfile} hash_outfile={hash_outfile} partition_size={partition_size}')
     logging.debug(f'root_pubkey_tlv={root_pubkey_tlv}, signature_tlv={signature_tlv}')
 
-    if action_type == 'sign' and privkey_pem_file != None:
-        key_opt = f'-k {privkey_pem_file}'
+    valid_privkey = None
+    if isinstance(privkey_pem_file, str):
+        privkey_pem_file = privkey_pem_file.strip()
+    if privkey_pem_file:
+        if isinstance(privkey_pem_file, str) and os.path.exists(privkey_pem_file):
+            valid_privkey = privkey_pem_file
+        elif not isinstance(privkey_pem_file, str):
+            valid_privkey = privkey_pem_file
+        else:
+            logging.warning(f'ignore missing private key file: {privkey_pem_file}')
+
+    if action_type == 'sign' and valid_privkey is not None:
+        key_opt = f'-k {valid_privkey}'
     else:
-        key_opt = f''
+        if action_type == 'sign':
+            logging.warning('private key is empty or missing, continue sign flow without -k')
+        key_opt = ''
 
     if action_type == 'hash':
         hash_outfile_opt = f'--hash_outfile {hash_outfile}'
@@ -35,6 +48,15 @@ def bl2_sign(action_type, key_type, privkey_pem_file, pubkey_pem_file, signature
     else:
         signature_opt = ''
 
+    valid_pubkey_pem_file = None
+    if isinstance(pubkey_pem_file, str):
+        pubkey_pem_file = pubkey_pem_file.strip()
+        if pubkey_pem_file and pubkey_pem_file.endswith('pem'):
+            if os.path.exists(pubkey_pem_file):
+                valid_pubkey_pem_file = pubkey_pem_file
+            else:
+                logging.warning(f'ignore missing public key file: {pubkey_pem_file}')
+    
     script_dir = get_script_dir()
     bl2_signing_tool_dir = f'{script_dir}/../tools/mcuboot_tools/imgtool.py'
     
@@ -60,9 +82,9 @@ def bl2_sign(action_type, key_type, privkey_pem_file, pubkey_pem_file, signature
         signature_value = signature_tlv.hex()
         custom_tlv_opts += f' --custom-tlv 0xa2 0x{signature_value}'
     
-    if type(pubkey_pem_file) == str and pubkey_pem_file.endswith("pem"):
+    if valid_pubkey_pem_file is not None:
         logging.debug("pubkey is pem file")
-        cmd = f'{bl2_signing_tool_dir} sign {key_opt} --public-key-format hash --max-align 8 --align 1 --version {version} --security-counter {security_counter}{custom_tlv_opts} --pad-header --header-size 0x1000 --slot-size {partition_size} --pad --boot-record SPE --endian little --encrypt-keylen 128 {bin_file} {sign_outfile} --action_type {action_type} {signature_opt} --pubkeyfile {pubkey_pem_file} {hash_outfile_opt} &> sign.txt'
+        cmd = f'{bl2_signing_tool_dir} sign {key_opt} --public-key-format hash --max-align 8 --align 1 --version {version} --security-counter {security_counter}{custom_tlv_opts} --pad-header --header-size 0x1000 --slot-size {partition_size} --pad --boot-record SPE --endian little --encrypt-keylen 128 {bin_file} {sign_outfile} --action_type {action_type} {signature_opt} --pubkeyfile {valid_pubkey_pem_file} {hash_outfile_opt} &> sign.txt'
     elif pubkey_pem_file != None:
         cmd = f'{bl2_signing_tool_dir} sign {key_opt} --public-key-format hash --max-align 8 --align 1 --version {version} --security-counter {security_counter}{custom_tlv_opts} --pad-header --header-size 0x1000 --slot-size {partition_size} --pad --boot-record SPE --endian little --encrypt-keylen 128 {bin_file} {sign_outfile} --action_type {action_type} {signature_opt} {hash_outfile_opt}'
     else:

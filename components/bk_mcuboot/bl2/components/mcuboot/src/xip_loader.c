@@ -31,6 +31,7 @@
 #include "flash_driver.h"
 #include <driver/flash.h>
 #include "cache.h"
+#include "aon_pmu_hal.h"
 #include "bootutil_priv.h"
 
 static inline const char* image_ok_str(uint32_t image_ok)
@@ -119,10 +120,11 @@ static inline uint32_t xip_get_peer_slot(uint32_t slot)
 static uint32_t
 find_slot_via_ota_confirm_and_image_state(struct boot_loader_state *state, bool ota_confirm_set, uint8_t *slot_retry_count)
 {
+    uint32_t preferred_slot = 0;
+#if CONFIG_VALIDATE_IMAGE
     uint32_t invalid_slot_num = 0;
 
     uint32_t running_slot = boot_read_running_slot();
-    uint32_t preferred_slot = 0;
 
     BOOT_LOG_INF("running slot %s", slot_str(running_slot));
 #if CONFIG_OTA_CONFIRM_UPDATE
@@ -170,7 +172,47 @@ find_slot_via_ota_confirm_and_image_state(struct boot_loader_state *state, bool 
     if (invalid_slot_num >= BOOT_NUM_SLOTS) {
         return NO_ACTIVE_SLOT;
     }
+#else
+    uint32_t running_slot = boot_read_running_slot();
 
+    preferred_slot = running_slot;
+#if CONFIG_OTA_CONFIRM_UPDATE
+    if (ota_confirm_set) {
+        if (aon_pmu_hal_get_app_boot_validate_pending() == 0u) {
+            preferred_slot = xip_get_peer_slot(running_slot);
+                BOOT_LOG_INF("1validate image not enabled, OTA confirm set, try to use %s",
+                            slot_str(preferred_slot));
+        }
+    } 
+#endif
+    if (aon_pmu_hal_get_app_boot_validate_pending() != 0u) {
+        preferred_slot = xip_get_peer_slot(preferred_slot);
+        BOOT_LOG_INF("validate image not enabled, pending set, try to use %s",
+                     slot_str(preferred_slot));
+    } else {
+        BOOT_LOG_INF("validate image not enabled, try to use %s", slot_str(preferred_slot));
+    }
+
+    if ((state->slot_usage[BOOT_CURR_IMG(state)].slot_available[preferred_slot] == false) ||
+        (slot_retry_count[preferred_slot] >= 3)) {
+        uint32_t peer_slot = xip_get_peer_slot(preferred_slot);
+        BOOT_LOG_INF("%s retry=%d, hdr_valid=%d, switch to peer slot",
+                     slot_str(preferred_slot),
+                     slot_retry_count[preferred_slot],
+                     state->slot_usage[BOOT_CURR_IMG(state)].slot_available[preferred_slot]);
+
+        if ((state->slot_usage[BOOT_CURR_IMG(state)].slot_available[peer_slot] == false) ||
+            (slot_retry_count[peer_slot] >= 3)) {
+            BOOT_LOG_INF("both A/B retry=%d, hdr_valid=%d",
+                         slot_retry_count[peer_slot],
+                         state->slot_usage[BOOT_CURR_IMG(state)].slot_available[peer_slot]);
+            return NO_ACTIVE_SLOT;
+        }
+
+        preferred_slot = peer_slot;
+        BOOT_LOG_INF("fallback to %s", slot_str(preferred_slot));
+    }
+#endif
     return preferred_slot;
 }
 #endif

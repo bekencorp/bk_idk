@@ -338,16 +338,6 @@ int bk_init(void)
 	BK_LOGI(TAG, "APP Version: %s\n", APP_VERSION);
 #endif
 
-#if CONFIG_BK_OTA
-	if (!is_deep_sleep_wakeup()) {
-		bk_ota_cancel_update(0);
-		bk_ota_accept_image();
-#if CONFIG_OTA_UPDATE_PUBKEY
-		bk_ota_update_pubkey_partition();
-#endif
-	}
-#endif
-
 #if CONFIG_SYS_CPU0
 	bk_pm_module_vote_cpu_freq(PM_DEV_ID_DEFAULT,PM_CPU_FRQ_120M);
 #endif
@@ -529,6 +519,15 @@ extern int mp_do_startup(int heap_len);
 #if (CONFIG_PSRAM)
 	bk_psram_id_auto_detect();
 #endif
-
+	
+#if CONFIG_BK_OTA
+	if (!is_deep_sleep_wakeup()) {
+		bk_ota_cancel_update(0);
+		bk_ota_accept_image();
+	#if CONFIG_OTA_UPDATE_PUBKEY
+		bk_ota_update_pubkey_partition();
+	#endif
+	}
+#endif
 	return 0;
 }

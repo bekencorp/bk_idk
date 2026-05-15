@@ -66,6 +66,7 @@ target_compile_definitions(bootutil
 		$<$<BOOL:${CONFIG_DECOMPRESS_RESUME}>:CONFIG_DECOMPRESS_RESUME>
 		$<$<BOOL:${CONFIG_BL2_WDT}>:CONFIG_BL2_WDT>
 		$<$<BOOL:${CONFIG_OTA_UPDATE_PUBKEY}>:CONFIG_OTA_UPDATE_PUBKEY>
+		$<$<BOOL:${CONFIG_VALIDATE_IMAGE}>:CONFIG_VALIDATE_IMAGE>
 )
 
 target_include_directories(mcuboot_config

@@ -376,6 +376,8 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
                       uint8_t *tmp_buf, uint32_t tmp_buf_sz, uint8_t *seed,
                       int seed_len, uint8_t *out_hash)
 {
+
+#if CONFIG_VALIDATE_IMAGE
 #if CONFIG_BL2_SKIP_VALIDATE
     uint32_t reset_reason = aon_pmu_hal_get_reset_reason();
     bool ota_confirm_set = bk_boot_check_ota_confirm(image_index, OTA_CONFIRM);
@@ -657,6 +659,18 @@ out:
 #endif
         FIH_SET(fih_rc, FIH_FAILURE);
     }
-
     FIH_RET(fih_rc);
+#else
+    /* Validation disabled: keep boot flow alive and return success. */
+    (void)enc_state;
+    (void)image_index;
+    (void)hdr;
+    (void)fap;
+    (void)tmp_buf;
+    (void)tmp_buf_sz;
+    (void)seed;
+    (void)seed_len;
+    (void)out_hash;
+    FIH_RET(FIH_SUCCESS);
+#endif
 }
