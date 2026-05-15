@@ -378,11 +378,14 @@ void bk_wifi_scan_free_result(wifi_scan_result_t *scan_result);
 /**
  * @brief Set the wireless mode for the WLAN station
  *
- * @param wireless_mode The desired wireless mode to be configured
+ * @param mode_24g The desired 2.4G wireless mode, one of
+ *                 WIFI_STA_HW_MODE_B/B_G/B_G_N/B_G_N_AX
+ * @param mode_5g  The desired 5G wireless mode, one of
+ *                 WIFI_STA_HW_MODE_A/A_N/A_N_AC/A_N_AC_AX
  *
- * @note This API is used to configure the wireless mode (e.g., 802.11b/g/n) for the station interface.
+ * @note This API configures both 2.4G and 5G station wireless modes.
  */
-void bk_wlan_sta_set_wireless_mode(uint8_t wireless_mode);
+void bk_wlan_sta_set_wireless_mode(uint8_t mode_24g, uint8_t mode_5g);
 
 /**
  * @brief Set the retry configuration for the WLAN station

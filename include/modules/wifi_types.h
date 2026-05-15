@@ -579,6 +579,26 @@ enum wifi_ap_hw_mode_t {
 #define WIFI_AP_HW_MODE_A_N_AC_AX (AP_HW_MODE_A | AP_HW_MODE_N | AP_HW_MODE_AC | AP_HW_MODE_AX)
 #endif
 
+#if CONFIG_WIFI_WIRELESS_MODE_SUPPORT
+enum wifi_sta_hw_mode_t {
+	STA_HW_MODE_B  = (1 << 0),
+	STA_HW_MODE_G  = (1 << 1),
+	STA_HW_MODE_N  = (1 << 2),
+	STA_HW_MODE_A  = (1 << 3),
+	STA_HW_MODE_AC = (1 << 4),
+	STA_HW_MODE_AX = (1 << 5),
+};
+
+#define WIFI_WIRELESS_MODE_B      (STA_HW_MODE_B)
+#define WIFI_WIRELESS_MODE_BG     (STA_HW_MODE_B | STA_HW_MODE_G)
+#define WIFI_WIRELESS_MODE_BGN    (STA_HW_MODE_B | STA_HW_MODE_G | STA_HW_MODE_N)
+#define WIFI_WIRELESS_MODE_BGNAX  (STA_HW_MODE_B | STA_HW_MODE_G | STA_HW_MODE_N | STA_HW_MODE_AX)
+#define WIFI_WIRELESS_MODE_A      (STA_HW_MODE_A)
+#define WIFI_WIRELESS_MODE_AN     (STA_HW_MODE_A | STA_HW_MODE_N)
+#define WIFI_WIRELESS_MODE_ANAC   (STA_HW_MODE_A | STA_HW_MODE_N | STA_HW_MODE_AC)
+#define WIFI_WIRELESS_MODE_ANACAX (STA_HW_MODE_A | STA_HW_MODE_N | STA_HW_MODE_AC | STA_HW_MODE_AX)
+#endif
+
 typedef struct {
 	char ssid[WIFI_SSID_STR_LEN];      /**< The SSID of BK AP */
 	char password[WIFI_PASSWORD_LEN];  /**< Password of BK AP, ignored in an open system.*/
