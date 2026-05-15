@@ -57,5 +57,29 @@ int dhcp_server_init(void *intrfc_handle);
 void dhcp_server(void* data);
 int dhcp_send_halt(void);
 int dhcp_free_allocations(void);
+int dhcp_server_start(void *intrfc_handle);
+void dhcp_server_stop(void);
+int dhcp_server_lease_timeout(uint32_t val);
+uint32_t dhcp_server_get_lease_timeout(void);
+
+#ifdef CONFIG_DHCP_POOL
+/**
+ * @brief Configure SoftAP DHCP address pool (inclusive).
+ *
+ * @param start_ip Pool start IPv4 address (network byte order)
+ * @param end_ip   Pool end IPv4 address (network byte order)
+ *
+ * @return 0 on success, negative errno on failure
+ */
+int dhcp_server_set_ip_pool(uint32_t start_ip, uint32_t end_ip);
+
+/**
+ * @brief Get SoftAP DHCP address pool (inclusive).
+ *
+ * @param start_ip Pool start IPv4 address (network byte order)
+ * @param end_ip   Pool end IPv4 address (network byte order)
+ */
+void dhcp_server_get_ip_pool(uint32_t *start_ip, uint32_t *end_ip);
+#endif
 
 #endif

@@ -13,7 +13,12 @@ int dhcp_server_start(void *intrfc_handle)
 
 	dhcp_enable_nack_dns_server();
 
-	if (dhcpd_running || dhcp_server_init(intrfc_handle)) {
+	if (dhcpd_running) {
+		LWIP_LOGI("DHCP server already running\r\n");
+		return -1;
+	}
+
+	if (dhcp_server_init(intrfc_handle)) {
 		return -1;
 	}
 

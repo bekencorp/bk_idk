@@ -73,6 +73,16 @@ menu "Lwip_intf_v2_1"
 			bool "Enable DHCP"
 			default y
 
+		config DHCP_POOL
+			depends on DHCP
+			bool "Enable DHCP_POOL"
+			default n
+
+		config DHCP_DEBUG
+			depends on DHCP_POOL
+			bool "Enable DHCP_DEBUG"
+			default n
+
 		config DHCP_ONGOING_OPTIM
 			bool "Enable DHCP_ONGOING_OPTIM"
 			default n

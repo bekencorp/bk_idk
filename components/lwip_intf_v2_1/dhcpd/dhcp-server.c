@@ -9,6 +9,8 @@
 #include "lwip/sockets.h"
 #include "opt.h"
 #include "net.h"
+#include "components/event.h"
+#include "modules/wifi_types.h"
 
 #define os_mem_alloc os_malloc
 #define os_mem_free  os_free
@@ -18,6 +20,12 @@
 #define CLIENT_IP_NOT_FOUND              0x00000000
 
 uint32_t dhcp_address_timeout = DEFAULT_DHCP_ADDRESS_TIMEOUT;
+
+#ifdef CONFIG_DHCP_POOL
+static uint32_t dhcp_pool_start_host;
+static uint32_t dhcp_pool_end_host;
+static volatile bool dhcp_pool_update_pending;
+#endif
 static beken_mutex_t dhcpd_mutex;
 static int (*dhcp_nack_dns_server_handler)(char *msg, int len,
 					   struct sockaddr_in *fromaddr);
@@ -38,6 +46,13 @@ static bool ac_add(uint8_t *chaddr, uint32_t client_ip);
 static uint32_t ac_lookup_mac(uint8_t *chaddr);
 static uint8_t *ac_lookup_ip(uint32_t client_ip);
 static bool ac_not_full();
+#ifdef CONFIG_DHCP_POOL
+static bool ac_update_mac(uint8_t *chaddr, uint32_t client_ip);
+static void ac_prune_out_of_pool(void);
+static bool dhcp_pool_range_in_subnet(uint32_t host_start, uint32_t host_end);
+static void dhcp_get_effective_pool_range(uint32_t *host_start, uint32_t *host_end);
+static bool dhcp_host_ip_in_pool(uint32_t host_ip);
+#endif
 
 static bool ac_add(uint8_t *chaddr, uint32_t client_ip)
 {
@@ -61,6 +76,25 @@ static bool ac_add(uint8_t *chaddr, uint32_t client_ip)
 	}
 	return -1;
 }
+
+#ifdef CONFIG_DHCP_POOL
+static bool ac_update_mac(uint8_t *chaddr, uint32_t client_ip)
+{
+	int i;
+	for (i = 0; i < dhcps.count_clients && i < MAC_IP_CACHE_SIZE; i++) {
+		if ((dhcps.ip_mac_mapping[i].client_mac[0] == chaddr[0]) &&
+		    (dhcps.ip_mac_mapping[i].client_mac[1] == chaddr[1]) &&
+		    (dhcps.ip_mac_mapping[i].client_mac[2] == chaddr[2]) &&
+		    (dhcps.ip_mac_mapping[i].client_mac[3] == chaddr[3]) &&
+		    (dhcps.ip_mac_mapping[i].client_mac[4] == chaddr[4]) &&
+		    (dhcps.ip_mac_mapping[i].client_mac[5] == chaddr[5])) {
+			dhcps.ip_mac_mapping[i].client_ip = client_ip;
+			return true;
+		}
+	}
+	return false;
+}
+#endif
 
 static uint32_t ac_lookup_mac(uint8_t *chaddr)
 {
@@ -133,6 +167,163 @@ int dhcp_server_lease_timeout(uint32_t val)
 	}
 }
 
+uint32_t dhcp_server_get_lease_timeout(void)
+{
+	return dhcp_address_timeout;
+}
+
+#ifdef CONFIG_DHCP_POOL
+int dhcp_server_set_ip_pool(uint32_t start_ip, uint32_t end_ip)
+{
+	/* Allow clearing the configuration by setting both to 0 */
+	if (start_ip == 0 && end_ip == 0) {
+		dhcp_pool_start_host = 0;
+		dhcp_pool_end_host = 0;
+		return 0;
+	}
+
+	if (start_ip == 0 || end_ip == 0)
+		return -EINVAL;
+
+	/* Convert from network order input to host order storage */
+	uint32_t start_host = ntohl(start_ip);
+	uint32_t end_host = ntohl(end_ip);
+
+	if (start_host > end_host)
+		return -EINVAL;
+
+	if (!dhcp_pool_range_in_subnet(start_host, end_host))
+		return -EINVAL;
+
+	if (dhcps.msg && dhcps.my_ip != 0 && dhcps.netmask != 0) {
+		uint32_t host_netmask = ntohl(dhcps.netmask);
+		uint32_t host_base = ntohl(dhcps.my_ip) & host_netmask;
+		uint32_t host_hostmask = ~host_netmask;
+		uint32_t assignable_start = start_host;
+		uint32_t assignable_end = end_host;
+
+		if (host_hostmask < 3)
+			return -EINVAL;
+
+		uint32_t usable_start = host_base | 1;
+		uint32_t usable_end = host_base | (host_hostmask - 1);
+
+		if (assignable_start < usable_start)
+			assignable_start = usable_start;
+		if (assignable_end > usable_end)
+			assignable_end = usable_end;
+
+		if (assignable_start > assignable_end)
+			return -EINVAL;
+
+		if (assignable_start == assignable_end &&
+		    assignable_start == ntohl(dhcps.my_ip))
+			return -EINVAL;
+	}
+
+	/* Store only; subnet validation is done when server is running
+	 * (dhcps.my_ip/netmask are available then).
+	 */
+	dhcp_pool_start_host = start_host;
+	dhcp_pool_end_host = end_host;
+
+	if (dhcps.msg)
+		dhcp_pool_update_pending = true;
+
+	return 0;
+}
+
+void dhcp_server_get_ip_pool(uint32_t *start_ip, uint32_t *end_ip)
+{
+	uint32_t host_start = 0;
+	uint32_t host_end = 0;
+
+	dhcp_get_effective_pool_range(&host_start, &host_end);
+
+	if (start_ip)
+		*start_ip = host_start ? htonl(host_start) : 0;
+	if (end_ip)
+		*end_ip = host_end ? htonl(host_end) : 0;
+}
+
+static bool dhcp_pool_range_in_subnet(uint32_t host_start, uint32_t host_end)
+{
+	if (!dhcps.msg || dhcps.my_ip == 0 || dhcps.netmask == 0)
+		return true; /* validate later when the interface is ready */
+
+	uint32_t host_netmask = ntohl(dhcps.netmask);
+	uint32_t host_base = ntohl(dhcps.my_ip) & host_netmask;
+
+	return ((host_start & host_netmask) == host_base) &&
+	       ((host_end & host_netmask) == host_base);
+}
+
+static void dhcp_get_effective_pool_range(uint32_t *host_start, uint32_t *host_end)
+{
+	if (host_start)
+		*host_start = 0;
+	if (host_end)
+		*host_end = 0;
+
+	/* Not initialized: dhcp_server_init() not done or interface IP/mask not ready */
+	if (!dhcps.msg || dhcps.my_ip == 0 || dhcps.netmask == 0)
+		return;
+
+	uint32_t host_netmask = ntohl(dhcps.netmask);
+	uint32_t host_base = ntohl(dhcps.my_ip) & host_netmask;
+	uint32_t host_hostmask = ~host_netmask;
+
+	/* If explicitly configured and within current subnet, use it. */
+	if (dhcp_pool_start_host && dhcp_pool_end_host &&
+	    ((dhcp_pool_start_host & host_netmask) == host_base) &&
+	    ((dhcp_pool_end_host & host_netmask) == host_base)) {
+		if (host_start)
+			*host_start = dhcp_pool_start_host;
+		if (host_end)
+			*host_end = dhcp_pool_end_host;
+		return;
+	}
+
+	if (host_hostmask < 3)
+		return;
+
+	uint32_t usable_start = host_base | 1;
+	uint32_t usable_end = host_base | (host_hostmask - 1);
+
+	if (host_start)
+		*host_start = usable_start;
+	if (host_end)
+		*host_end = usable_end;
+}
+
+static bool dhcp_host_ip_in_pool(uint32_t host_ip)
+{
+	uint32_t host_start = 0, host_end = 0;
+	dhcp_get_effective_pool_range(&host_start, &host_end);
+	if (host_start == 0 && host_end == 0)
+		return true; /* no effective pool restriction */
+	return host_ip >= host_start && host_ip <= host_end;
+}
+
+static void ac_prune_out_of_pool(void)
+{
+	int i;
+	int w = 0;
+
+	for (i = 0; i < dhcps.count_clients && i < MAC_IP_CACHE_SIZE; i++) {
+		uint32_t host_ip = ntohl(dhcps.ip_mac_mapping[i].client_ip);
+		if (!dhcp_host_ip_in_pool(host_ip))
+			continue;
+
+		if (w != i)
+			dhcps.ip_mac_mapping[w] = dhcps.ip_mac_mapping[i];
+		w++;
+	}
+
+	dhcps.count_clients = w;
+}
+#endif
+
 /* calculate the address to give out to the next DHCP DISCOVER request
  *
  * DHCP clients will be assigned addresses in sequence in the subnet's address space.
@@ -144,27 +335,71 @@ static unsigned int next_yiaddr()
 #endif
 	uint32_t new_ip;
 	struct bootp_header *hdr = (struct bootp_header *)dhcps.msg;
+#ifdef CONFIG_DHCP_POOL
+	uint32_t host_start, host_end;
+	uint32_t attempts, host_candidate;
+#endif
 
 	/* if device requesting for ip address is already registered,
 	 * if yes, assign previous ip address to it
 	 */
 	new_ip = ac_lookup_mac(hdr->chaddr);
+#ifdef CONFIG_DHCP_POOL
+	if (new_ip != CLIENT_IP_NOT_FOUND) {
+		/* After pool reconfiguration, do not reuse cached IP outside pool. */
+		if (!dhcp_host_ip_in_pool(ntohl(new_ip)))
+			new_ip = CLIENT_IP_NOT_FOUND;
+	}
 	if (new_ip == (CLIENT_IP_NOT_FOUND)) {
-		/* next IP address in the subnet */
-		dhcps.current_ip = ntohl(dhcps.my_ip & dhcps.netmask) |
-			((dhcps.current_ip + 1) & ntohl(~dhcps.netmask));
-		while (!ac_valid_ip(dhcps.current_ip)) {
-			dhcps.current_ip = ntohl(dhcps.my_ip & dhcps.netmask) |
-				((dhcps.current_ip + 1) &
-				 ntohl(~dhcps.netmask));
+		dhcp_get_effective_pool_range(&host_start, &host_end);
+		if (host_start == 0 && host_end == 0)
+			return 0;
+
+		/* Make sure current_ip starts within the pool window. */
+		if (dhcps.current_ip < host_start || dhcps.current_ip > host_end)
+			dhcps.current_ip = host_start - 1;
+
+		attempts = host_end - host_start + 1;
+		for (; attempts > 0; attempts--) {
+			host_candidate = dhcps.current_ip + 1;
+			if (host_candidate > host_end)
+				host_candidate = host_start;
+
+			dhcps.current_ip = host_candidate;
+			if (ac_valid_ip(dhcps.current_ip))
+				break;
+		}
+
+		if (!attempts) {
+			/* Pool exhausted */
+			return 0;
 		}
 
 		new_ip = htonl(dhcps.current_ip);
 
-		if (ac_add(hdr->chaddr, new_ip) !=
-		    0)
-			dhcp_w("No space to store new mapping..\r\n");
+		if (!ac_update_mac(hdr->chaddr, new_ip)) {
+			if (ac_add(hdr->chaddr, new_ip) != 0)
+				dhcp_w("No space to store new mapping..\r\n");
+		}
 	}
+#else
+if (new_ip == (CLIENT_IP_NOT_FOUND)) {
+	/* next IP address in the subnet */
+	dhcps.current_ip = ntohl(dhcps.my_ip & dhcps.netmask) |
+		((dhcps.current_ip + 1) & ntohl(~dhcps.netmask));
+	while (!ac_valid_ip(dhcps.current_ip)) {
+		dhcps.current_ip = ntohl(dhcps.my_ip & dhcps.netmask) |
+			((dhcps.current_ip + 1) &
+			 ntohl(~dhcps.netmask));
+	}
+
+	new_ip = htonl(dhcps.current_ip);
+
+	if (ac_add(hdr->chaddr, new_ip) !=
+		0)
+		dhcp_w("No space to store new mapping..\r\n");
+}
+#endif
 
 #ifdef CONFIG_DHCP_SERVER_DEBUG
 	ip.s_addr = new_ip;
@@ -429,13 +664,23 @@ static int process_dhcp_message(char *msg, int len)
 				new_ip = ac_lookup_mac(hdr->chaddr);
 				if (new_ip != (CLIENT_IP_NOT_FOUND)) {
 					/* if new_ip is equal to requested ip */
+#ifdef CONFIG_DHCP_POOL
+					if (new_ip == dhcps.client_ip &&
+					    dhcp_host_ip_in_pool(ntohl(new_ip))) {
+#else
 					if (new_ip == dhcps.client_ip) {
+#endif
 						got_ip = 1;
 					} else {
 						got_ip = 0;
 					}
+#ifdef CONFIG_DHCP_POOL
+				} else if (ac_valid_ip(ntohl(dhcps.client_ip)) &&
+					   dhcp_host_ip_in_pool(ntohl(dhcps.client_ip))) {
+#else
 				} else if (ac_valid_ip
-					   (ntohl(dhcps.client_ip))) {
+							(ntohl(dhcps.client_ip))) {
+#endif
 					/* When client requests with an IP
 					 * address that is within subnet range
 					 * and not assigned to any other client,
@@ -444,6 +689,17 @@ static int process_dhcp_message(char *msg, int len)
 					 * And if IP-MAC cache is not full then
 					 * adds this entry in cache.
 					 */
+#ifdef CONFIG_DHCP_POOL
+					/* Update existing mapping for this MAC if present; otherwise add. */
+					if (!ac_update_mac(hdr->chaddr, dhcps.client_ip)) {
+						if (ac_not_full()) {
+							ac_add(hdr->chaddr, dhcps.client_ip);
+						} else {
+							dhcp_w("No space to store new \r\n"
+							       "mapping..\r\n");
+						}
+					}
+#else
 					if (ac_not_full()) {
 						ac_add(hdr->chaddr,
 						       dhcps.client_ip);
@@ -451,6 +707,7 @@ static int process_dhcp_message(char *msg, int len)
 						dhcp_w("No space to store new \r\n"
 						       "mapping..\r\n");
 					}
+#endif
 					got_ip = 1;
 				}
 			}
@@ -513,6 +770,16 @@ static int process_dhcp_message(char *msg, int len)
         
 		if (response_type == DHCP_MESSAGE_ACK)
 		{
+			if (dst_ip != 0) {
+				wifi_event_ap_staipassigned_t event_data = {0};
+				os_memcpy(event_data.mac, hdr->chaddr, WIFI_MAC_LEN);
+				event_data.ipaddr = dst_ip;
+				BK_LOG_ON_ERR(bk_event_post(EVENT_MOD_WIFI,
+							    EVENT_WIFI_AP_STAIPASSIGNED,
+							    &event_data,
+							    sizeof(event_data),
+							    BEKEN_NEVER_TIMEOUT));
+			}
 			send_gratuitous_arp(dhcps.my_ip);
 		}
 		return 0;
@@ -570,6 +837,13 @@ void dhcp_server(void* data)
 	rtos_lock_mutex(&dhcpd_mutex);
 
 	while (1) {
+#ifdef CONFIG_DHCP_POOL
+		if (dhcp_pool_update_pending) {
+			ac_prune_out_of_pool();
+			dhcp_pool_update_pending = false;
+		}
+#endif
+
 		FD_ZERO(&rfds);
 		FD_SET(dhcps.sock, &rfds);
 		max_sock = dhcps.sock;
