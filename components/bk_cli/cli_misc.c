@@ -104,6 +104,11 @@ void get_version(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv
 	CLI_LOGI("get_version\r\n");
 	//os_printf("firmware version : %s", BEKEN_SDK_REV);
 	CLI_LOGI("firmware version : %s\r\n", build_version);
+#ifdef APP_VERSION
+	if (os_strcmp(APP_VERSION, "NULL") != 0) {
+		CLI_LOGI("APP VERSION: %s\r\n", APP_VERSION);
+	}
+#endif
 	CLI_LOGI("chip id : %x \r\n", sys_drv_get_chip_id());
 	CLI_LOGI("soc: %s\n", CONFIG_SOC_STR);
 }

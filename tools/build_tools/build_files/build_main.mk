@@ -25,13 +25,6 @@ export ARMINO_SOC_LIB := $(findstring $(MAKECMDGOALS), $(properties_lib_targets)
 export CMD_TARGET := $(MAKECMDGOALS)
 export BUILD_TARGET := $(findstring $(MAKECMDGOALS), $(cmake_supported_targets))
 
-ifeq ("$(APP_VERSION)", "")
-	export APP_VERSION := unknow
-else
-	export APP_VERSION := $(APP_VERSION)
-endif
-
-
 ifeq ("$(PROJECT)", "")
 	ifneq ("$(INTERNAL)", "")
 		export PROJECT := $(INTERNAL)
@@ -72,6 +65,17 @@ endif
 
 export ARMINO_SOC_NAME ?= $(ARMINO_SOC)
 export PROJECT_NAME := $(notdir $(PROJECT_DIR))
+
+OTA_CONFIG_FILE := $(wildcard $(PROJECT_DIR)/config/$(ARMINO_SOC_NAME)/ota.csv)
+APP_VERSION_FROM_OTA := $(strip $(shell if [ -n "$(OTA_CONFIG_FILE)" ]; then awk -F',' 'BEGIN{IGNORECASE=1} $$1 ~ /^[[:space:]]*app_version[[:space:]]*$$/ {gsub(/^[[:space:]]+|[[:space:]]+$$/,"",$$2); print $$2; exit}' "$(OTA_CONFIG_FILE)"; fi))
+ifeq ("$(OTA_CONFIG_FILE)", "")
+	export APP_VERSION := NULL
+else ifeq ("$(APP_VERSION_FROM_OTA)", "")
+	export APP_VERSION := unknown
+else
+	export APP_VERSION := $(APP_VERSION_FROM_OTA)
+endif
+
 ifdef BUILD_DIR
 	export PROJECT_BUILD_DIR := $(abspath $(BUILD_DIR)/$(ARMINO_SOC_NAME)/$(PROJECT_NAME))
 else
