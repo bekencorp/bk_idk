@@ -86,6 +86,26 @@ void sys_hal_usb_analog_phy_en(bool en)
 
 /** Platform PWM End **/
 
+void sys_hal_set_ana_reg_spi_latch1v(uint32_t v)
+{
+    sys_ll_set_ana_reg9_spi_latch1v(v);
+}
+
+uint32_t sys_hal_get_ioldo_bypass(void)
+{
+    return sys_ll_get_ana_reg10_iobyapssen();
+}
+
+void sys_hal_set_ioldo_bypass(uint32_t v)
+{
+    sys_ll_set_ana_reg10_iobyapssen(v);
+}
+
+void sys_hal_set_ioldo_volt(uint32_t v)
+{
+    sys_ll_set_ana_reg8_violdosel(v);
+}
+
 void sys_hal_flash_set_dco(void)
 {
 	sys_ll_set_cpu_clk_div_mode2_cksel_flash(FLASH_CLK_DPLL);

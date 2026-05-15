@@ -85,6 +85,11 @@ void sys_hal_set_ana_reg_spi_latch1v(uint32_t v)
     sys_ana_ll_set_ana_reg8_spi_latch1v(v);
 }
 
+uint32_t sys_hal_get_ioldo_bypass(void)
+{
+    return sys_ana_ll_get_ana_reg7_bypassen();
+}
+
 void sys_hal_set_ioldo_bypass(uint32_t v)
 {
 	sys_ana_ll_set_ana_reg7_bypassen(v);

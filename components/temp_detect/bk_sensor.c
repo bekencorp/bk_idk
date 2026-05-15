@@ -18,6 +18,7 @@
 #include "sdmadc/sdmadc_driver.h"
 #include <driver/rosc_32k.h>
 #include <modules/pm.h>
+#include <components/ate.h>
 
 #include "sys_driver.h"
 
@@ -26,6 +27,8 @@
 
 #define TEMPD_MAX_CALLBACK_NUM            2
 #define VOLTD_MAX_CALLBACK_NUM            2
+
+extern void sys_drv_set_iobypassen(uint32_t v);
 
 #if (CONFIG_TEMP_DETECT || CONFIG_VOLT_DETECT)
 typedef struct {
@@ -587,6 +590,33 @@ bk_err_t bk_sensor_unregister_voltage_callback(bk_sensor_callback callback)
 
 static bk_err_t bk_sensor_default_voltage_callback(uint16_t adc_code, float volt_code, float volt_last)
 {
+    float ioldo_thres_low;
+    float ioldo_thres_high;
+
+#if (CONFIG_SOC_BK7239XX || CONFIG_SOC_BK7236N)
+    ioldo_thres_low  = 3.50;
+    ioldo_thres_high = 3.60;
+#elif (CONFIG_SOC_BK7236XX)
+    ioldo_thres_low  = 3.50;
+    ioldo_thres_high = 3.50;
+    //shuguang20240909: ATE mode iobypasss 1,violdosel 2 when volt < 3.5V;iobypasss 0,violdosel 4 when volt >= 3.5V
+    if (!ate_is_enabled()) {
+        return BK_OK;
+    }
+#else
+    ioldo_thres_low  = 3.50;
+    ioldo_thres_high = 3.50;
+#endif
+
+    //g_sensor_info.voltage not update at present, use voltage[0] and voltage[1] to judge
+    if (!isnan(g_sensor_info.voltage[0]) && (g_sensor_info.voltage[0] < ioldo_thres_low)
+    && !isnan(g_sensor_info.voltage[1]) && (g_sensor_info.voltage[1] < ioldo_thres_low)
+    && (volt_code < ioldo_thres_low)) {
+        sys_drv_set_iobypassen(1);
+    } else if ((volt_code >= ioldo_thres_high)) {
+        sys_drv_set_iobypassen(0);
+    }
+
     return BK_OK;
 }
 

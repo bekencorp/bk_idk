@@ -521,7 +521,11 @@ static uint32_t bk_misc_get_reset_reason_wrapper(void)
     return bk_misc_get_reset_reason();
 }
 
-static void sys_drv_set_iobyapssen(uint32_t v) {
+uint32_t sys_drv_get_iobypassen(void) {
+    return sys_hal_get_ioldo_bypass();
+}
+
+void sys_drv_set_iobypassen(uint32_t v) {
 #if (CONFIG_SOC_BK7236N) || (CONFIG_SOC_BK7239XX)
     sys_hal_set_ana_reg_spi_latch1v(1);
     if (v) {
@@ -535,30 +539,16 @@ static void sys_drv_set_iobyapssen(uint32_t v) {
     sys_hal_set_ana_reg_spi_latch1v(0);
 #elif (CONFIG_SOC_BK7259)
 #elif (CONFIG_SOC_BK7236XX)
-	sys_ll_set_ana_reg9_spi_latch1v(1);
-	if (v) {
-		sys_ll_set_ana_reg10_iobyapssen(1);
-	} else {
-		//shuguang20240718: use default current limit
-		sys_ll_set_ana_reg10_iobyapssen(0);
-	}
-	sys_ll_set_ana_reg9_spi_latch1v(0);
-#endif
-}
-
-static void sys_ll_set_ana_reg8_violdosel_wrapper(uint32_t flag) {
-#if (CONFIG_SOC_BK7236N) || (CONFIG_SOC_BK7239XX)
-	//TODO: fix me when bk7236n bring up
-#elif (CONFIG_SOC_BK7259)
-#elif (CONFIG_SOC_BK7236XX)
-	sys_ll_set_ana_reg9_spi_latch1v(1);
-	if (flag) {
-		sys_ll_set_ana_reg8_violdosel(2);
-	} else {
-		//shuguang20240718: use default current limit
-		sys_ll_set_ana_reg8_violdosel(4);
-	}
-	sys_ll_set_ana_reg9_spi_latch1v(0);
+    sys_hal_set_ana_reg_spi_latch1v(1);
+    if (v) {
+        sys_hal_set_ioldo_volt(2);
+        sys_hal_set_ioldo_bypass(1);
+    } else {
+        //shuguang20240718: use default current limit
+        sys_hal_set_ioldo_bypass(0);
+        sys_hal_set_ioldo_volt(4);
+    }
+    sys_hal_set_ana_reg_spi_latch1v(0);
 #endif
 }
 
@@ -820,29 +810,17 @@ const phy_os_funcs_t g_phy_os_funcs = {
     ._aon_pmu_drv_band_cal_get         = aon_pmu_drv_band_cal_get,
     ._aon_pmu_drv_get_adc_cal          = aon_pmu_drv_get_adc_cal,
 
-#if (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX) || (CONFIG_SOC_BK7286XX)
     ._aon_pmu_hal_get_chipid           = aon_pmu_hal_get_chipid,
 
     ._sys_drv_set_pwd_anabuf_lownoise  = sys_drv_set_pwd_anabuf_lownoise,
     ._sys_drv_rfband                  = sys_drv_rfband,
     ._sys_drv_rf_ctrl                 = sys_drv_rf_ctrl,
-#if (CONFIG_SOC_BK7236N) || (CONFIG_SOC_BK7239XX)
-    //TODO: fix me when bk7236n bring up
-    ._sys_ll_get_ana_reg5_adc_div     = NULL,
-    ._sys_ll_set_ana_reg9_vcorehsel   = NULL,
-    ._sys_drv_set_spi_latch1v         = NULL,
-    ._sys_ll_set_ana_reg11_aldosel    = NULL,
-#else
-    ._sys_ll_get_ana_reg5_adc_div     = sys_ll_get_ana_reg5_adc_div,
-    ._sys_ll_set_ana_reg9_vcorehsel   = sys_ll_set_ana_reg9_vcorehsel,
-    ._sys_drv_set_spi_latch1v         = sys_ll_set_ana_reg9_spi_latch1v,
-    ._sys_ll_set_ana_reg11_aldosel    = sys_ll_set_ana_reg11_aldosel,
-#endif
 
-    ._sys_drv_set_iobyapssen          = sys_drv_set_iobyapssen,
+    ._sys_drv_set_spi_latch1v         = sys_hal_set_ana_reg_spi_latch1v,
+    ._sys_drv_get_iobypassen          = sys_drv_get_iobypassen,
+    ._sys_drv_set_iobypassen          = sys_drv_set_iobypassen,
     ._sys_drv_set_ana_ioldo_lp        = sys_drv_set_ana_ioldo_lp,
     ._sys_drv_optim_dpd_tx            = sys_drv_optim_dpd_tx,
-#endif
 
     ._sys_drv_cali_bias               = sys_drv_cali_bias,
     ._sys_drv_cali_dpll               = sys_drv_cali_dpll,
@@ -905,38 +883,10 @@ const phy_os_funcs_t g_phy_os_funcs = {
     ._rtos_unlock_mutex       = rtos_unlock_mutex_wrapper,
     ._rtos_is_critical_section = rtos_is_critical_section_wrapper,
 
-#if (CONFIG_SOC_BK7256XX)
-    ////for bk7256
-    ._riscv_get_mtimer = riscv_get_mtimer,
-
-    ._sys_drv_set_ana_vctrl_sysldo    = sys_drv_set_ana_vctrl_sysldo,
-    ._sys_drv_analog_reg3_set         = sys_drv_analog_reg3_set,
-    ._sys_drv_analog_reg2_set         = sys_drv_analog_reg2_set,
-    ._sys_drv_flash_cksel             = sys_drv_flash_cksel,
-    ._sys_drv_set_ana_scal_en         = sys_drv_set_ana_scal_en,
-    ._sys_drv_set_ana_gadc_buf_ictrl  = sys_drv_set_ana_gadc_buf_ictrl,
-    ._sys_drv_set_ana_gadc_cmp_ictrl  = sys_drv_set_ana_gadc_cmp_ictrl,
-    ._sys_drv_set_ana_vtempsel        = sys_drv_set_ana_vtempsel,
-    ._sys_drv_set_ana_vref_sel        = sys_drv_set_ana_vref_sel,
-    ._sys_drv_set_ana_vhsel_ldodig    = sys_drv_set_ana_vhsel_ldodig,
-    ._sys_drv_set_ana_pwd_gadc_buf    = sys_drv_set_ana_pwd_gadc_buf,
-#endif
     ._sys_drv_set_bgcalm              = sys_drv_set_bgcalm,
     ._sys_drv_get_bgcalm              = sys_drv_get_bgcalm,
     ._sys_drv_set_vdd_value           = sys_drv_set_vdd_value,
     ._sys_drv_get_vdd_value           = sys_drv_get_vdd_value,
-
-#if (CONFIG_SOC_BK7256XX)
-    ._aon_pmu_hal_get_reg0x7c  = aon_pmu_hal_get_reg0x7c,
-    ._aon_pmu_get_device_id    = aon_pmu_get_device_id,
-
-    ._gpio_dev_unmap     = phy_gpio_dev_unmap_wrapper,
-    ._gpio_dev_map_txen  = gpio_dev_map_txen,
-    ._bk_gpio_pull_down  = phy_bk_gpio_pull_down_wrapper,
-
-    ._bk_get_hardware_chip_id_version  = bk_get_hardware_chip_id_version_wrapper,
-    ._bk_efuse_read_byte               = bk_efuse_read_byte,
-#endif
 
     /* For SARADC */
     ._bk_set_g_saradc_flag   = bk_set_g_saradc_flag,
@@ -961,18 +911,6 @@ const phy_os_funcs_t g_phy_os_funcs = {
     ._bk_otp_ahb_update      = bk_otp_ahb_update_wrapper,
     ._bk_otp_ahb_read_backup = bk_otp_ahb_read_backup_wrapper,
     ._bk_get_otp_ahb_rfcali_item = bk_get_otp_ahb_rfcali_item_wrapper,
-#if (CONFIG_SOC_BK7236XX)
-    ._sys_ll_set_ana_reg8_violdosel = sys_ll_set_ana_reg8_violdosel_wrapper,
-#if (CONFIG_SOC_BK7236N) || (CONFIG_SOC_BK7239XX)
-    //TODO: fix me when bk7236n bring up
-    ._sys_ll_set_ana_reg8_iocurlim = NULL,
-#else
-    ._sys_ll_set_ana_reg8_iocurlim = sys_ll_set_ana_reg8_iocurlim,
-#endif
-#else
-    ._sys_ll_set_ana_reg8_violdosel = NULL,
-    ._sys_ll_set_ana_reg8_iocurlim = NULL,
-#endif
     ._bk_feature_phy_log_enable = bk_feature_phy_log_enable,
     ._bk_feature_wifi6_enable = bk_feature_wifi6_enable,
 };

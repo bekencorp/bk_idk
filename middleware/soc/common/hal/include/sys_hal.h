@@ -561,6 +561,7 @@ uint32 sys_hal_get_bts_sleep_exit_req();
 #endif
 
 void sys_hal_set_ana_reg_spi_latch1v(uint32_t v);
+uint32_t sys_hal_get_ioldo_bypass(void);
 void sys_hal_set_ioldo_bypass(uint32_t v);
 void sys_hal_set_ioldo_volt(uint32_t v);
 void sys_hal_set_analdo_volt(uint32_t v);

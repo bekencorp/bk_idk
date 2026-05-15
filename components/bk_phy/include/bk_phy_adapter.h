@@ -67,8 +67,8 @@ typedef struct {
     void (*_sys_drv_rf_ctrl)(uint8_t role);
     void (*_sys_ll_set_ana_reg9_vcorehsel)(uint32_t value);
     void (*_sys_drv_set_spi_latch1v)(uint32_t value);
-    void (*_sys_drv_set_iobyapssen)(uint32_t value);
-    void (*_sys_ll_set_ana_reg11_aldosel)(uint32_t value);
+    uint32_t (*_sys_drv_get_iobypassen)(void);
+    void (*_sys_drv_set_iobypassen)(uint32_t value);
 
     void (*_sys_drv_optim_dpd_tx)(uint32_t vbias);
 
@@ -137,35 +137,10 @@ typedef struct {
     bk_err_t (*_rtos_unlock_mutex)(void** mutex);
     bool     (*_rtos_is_critical_section)(void);
 
-////for bk7256
-    uint64 (*_riscv_get_mtimer)(void);
-
-    void (*_sys_drv_set_ana_vctrl_sysldo)(uint32_t value);
-    uint32_t (*_sys_drv_analog_reg3_set)(uint32_t value);
-    uint32_t (*_sys_drv_analog_reg2_set)(uint32_t value);
-    void (*_sys_drv_flash_cksel)(uint32_t value);
-    void (*_sys_drv_set_ana_scal_en)(uint32_t value);
-    void (*_sys_drv_set_ana_gadc_buf_ictrl)(uint32_t value);
-    void (*_sys_drv_set_ana_gadc_cmp_ictrl)(uint32_t value);
-    void (*_sys_drv_set_ana_vtempsel)(uint32_t value);
-    void (*_sys_drv_set_ana_vref_sel)(uint32_t value);
-    void (*_sys_drv_set_ana_vhsel_ldodig)(uint32_t value);
-    void (*_sys_drv_set_ana_pwd_gadc_buf)(uint32_t value);
     uint32_t (*_sys_drv_set_bgcalm)(uint32_t value);
     uint32_t (*_sys_drv_get_bgcalm)(void);
     uint32_t (*_sys_drv_set_vdd_value)(uint32_t value);
     uint32_t (*_sys_drv_get_vdd_value)(void);
-
-
-    uint32_t (*_aon_pmu_hal_get_reg0x7c)(void);
-    uint32_t (*_aon_pmu_get_device_id)(void);
-
-    int (*_gpio_dev_unmap)(uint32_t gpio_id);
-    int (*_gpio_dev_map_txen)(uint32_t gpio_id);
-    int (*_bk_gpio_pull_down)(uint32_t gpio_id);
-
-    uint32_t (*_bk_get_hardware_chip_id_version)(void);
-    int (*_bk_efuse_read_byte)(uint8_t addr, uint8_t *data);
 
     /* For SARADC */
     void (*_bk_set_g_saradc_flag)(UINT8 flag);
@@ -189,8 +164,6 @@ typedef struct {
     int (*_bk_otp_ahb_update)(uint32_t item, uint8_t* buf, uint32_t size);
     int (*_bk_otp_ahb_read_backup)(uint32_t item, uint8_t *buf, int *both_valid);
     int (*_bk_get_otp_ahb_rfcali_item)(void);
-    void (*_sys_ll_set_ana_reg8_violdosel)(uint32_t value);
-    void (*_sys_ll_set_ana_reg8_iocurlim)(uint32_t value);
     int(*_bk_feature_phy_log_enable)(void);
     int(*_bk_feature_wifi6_enable)(void);
 } phy_os_funcs_t;
