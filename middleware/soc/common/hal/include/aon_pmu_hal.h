@@ -61,6 +61,7 @@ uint32_t aon_pmu_hal_get_app_boot_validate_pending(void);
 void aon_pmu_hal_set_app_boot_validate_pending(uint32_t value);
 #if CONFIG_AON_PMU_REG0_REFACTOR_DEV
 void aon_pmu_hal_set_reset_reason(uint32_t value, bool write_immediately);
+void aon_pmu_hal_set_fast_boot(uint32_t value, bool write_immediately);
 uint32_t aon_pmu_hal_get_gpio_sleep(void);
 void aon_pmu_hal_set_gpio_sleep(uint32_t value, bool write_immediately);
 uint32_t aon_pmu_hal_get_gpio_retention_bitmap(bool read_history);

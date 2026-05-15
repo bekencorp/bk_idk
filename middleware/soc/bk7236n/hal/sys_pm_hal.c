@@ -1238,7 +1238,7 @@ void sys_hal_enter_low_voltage(void)
 	sys_ll_set_ana_reg8_lvsleep_wkrst(1);
 	sys_ll_set_ana_reg8_spi_latch1v(0);
 /*-----------reset wakeup source  end --------------*/
-	aon_pmu_ll_set_r0_fast_boot(0); // set fast boot flag to 0
+	aon_pmu_hal_set_fast_boot(0, true); // set fast boot flag to 0
 #if !CONFIG_DEEP_LV
 /*---------------at least delay 190us-----------------*/
 	volatile uint64_t current_tick  = 0;

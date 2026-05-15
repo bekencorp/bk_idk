@@ -228,6 +228,21 @@ __IRAM_SEC void aon_pmu_hal_set_dlv_startup(uint32_t value)
 	aon_pmu_ll_set_r0_dlv_startup(value);
 }
 
+__IRAM_SEC void aon_pmu_hal_set_fast_boot(uint32_t value, bool write_immediately)
+{
+	if (write_immediately) {
+		uint32_t r0 = aon_pmu_ll_get_r0();
+		uint32_t r7b = aon_pmu_ll_get_r7b();
+		aon_pmu_ll_set_r0(r7b);
+		aon_pmu_ll_set_r0_fast_boot(value);
+		aon_pmu_hal_r0_latch_to_r7b();
+		aon_pmu_ll_set_r0(r0);
+		aon_pmu_ll_set_r0_fast_boot(value);
+	} else {
+		aon_pmu_ll_set_r0_fast_boot(value);
+	}
+}
+
 uint32_t aon_pmu_hal_get_reset_reason(void)
 {
 	return aon_pmu_ll_get_r7b_reset_reason();
