@@ -19,4 +19,11 @@ menu "Https_ota"
 	config VALIDATE_IMAGE
 		bool "global signature verification switch"
 		default y
+	
+	config VALIDATE_IMAGE_HASH_ONLY
+		bool "Validate image hash only (skip pubkey and signature TLV)"
+		default n
+		help
+			When enabled, BL2 and application OTA stop after SHA TLV matches
+			the computed digest; pubkey and signature TLVs are not verified.
 endmenu

@@ -76,6 +76,13 @@ if(CONFIG_VALIDATE_IMAGE)
     )
 endif()
 
+if(CONFIG_VALIDATE_IMAGE_HASH_ONLY)
+    target_compile_definitions(bl2
+        PUBLIC
+            CONFIG_VALIDATE_IMAGE_HASH_ONLY
+    )
+endif()
+
 if(CONFIG_FLASH_WRITE_STATUS_VOLATILE)
     target_compile_definitions(bl2
         PUBLIC

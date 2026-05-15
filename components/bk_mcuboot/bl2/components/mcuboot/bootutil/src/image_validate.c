@@ -283,6 +283,11 @@ cleanup_hash:
 #endif /* !MCUBOOT_BUILTIN_KEY */
 #endif /* EXPECTED_SIG_TLV */
 
+#if CONFIG_VALIDATE_IMAGE_HASH_ONLY
+#undef EXPECTED_SIG_TLV
+#undef EXPECTED_KEY_TLV
+#endif
+
 /**
  * Reads the value of an image's security counter.
  *
@@ -524,6 +529,12 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
             image_hash_valid = 1;
             BOOT_LOG_INF("hash ok!");
 
+#if CONFIG_VALIDATE_IMAGE_HASH_ONLY
+            if (image_hash_valid == 1) {
+                return 0;
+            }
+#endif
+
 #ifdef EXPECTED_KEY_TLV
         } else if (type == EXPECTED_KEY_TLV) {
             /*
@@ -583,13 +594,7 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
             BOOT_LOG_INF("sig ok");
 
 #if CONFIG_BL2_SKIP_VALIDATE
-            if (FIH_EQ(valid_signature, FIH_SUCCESS) && image_hash_valid == 1 && (
-#if CONFIG_OTA_OVERWRITE
-                fap->fa_id == 0
-#elif CONFIG_DIRECT_XIP
-                (fap->fa_id == 2 || fap->fa_id == 3)
-#endif
-            )) {
+            if (FIH_EQ(valid_signature, FIH_SUCCESS) && image_hash_valid == 1) {
                 return 0;
             }
 #endif

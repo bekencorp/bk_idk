@@ -656,6 +656,12 @@ static bk_err_t ota_verify_handle_tlv(const bk_logic_partition_t *partition, ota
 			}
 			image_hash_valid = true;
 			BK_LOGI(TAG, "image hash ok\r\n");
+#if CONFIG_VALIDATE_IMAGE_HASH_ONLY
+			if (image_hash_valid) {
+				BK_LOGI(TAG, "image hash ok, skip verify\r\n");
+				return BK_OK;
+			}
+#endif
 		} else if(tlv.it_type == IMAGE_TLV_CUSTOM) {
 			memcpy(pubkey, value, tlv.it_len);
 			end = pubkey + tlv.it_len;
