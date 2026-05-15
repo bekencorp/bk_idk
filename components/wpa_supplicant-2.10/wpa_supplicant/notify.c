@@ -338,6 +338,7 @@ void wpas_notify_connected(struct wpa_supplicant *wpa_s)
 			os_memcpy(&sta_connected.ssid, wpa_s->current_ssid->ssid,
 					MIN(wpa_s->current_ssid->ssid_len, wpa_s->current_ssid->ssid_len));
 			os_memcpy(&sta_connected.bssid, wpa_s->current_ssid->bssid, ETH_ALEN);
+			sta_connected.freq = wpa_s->current_bss->freq;
 		}
 		BK_LOG_ON_ERR(bk_event_post(EVENT_MOD_WIFI, EVENT_WIFI_STA_CONNECTED,
 					&sta_connected, sizeof(sta_connected), BEKEN_NEVER_TIMEOUT));
@@ -397,6 +398,11 @@ void wpas_notify_disconnected(struct wpa_supplicant *wpa_s)
 		if (!wpa_s->reconnect)
 #endif
 		{
+			if (wpa_s->current_ssid && wpa_s->current_ssid->ssid) {
+				os_memcpy(&sta_disconnected.ssid, wpa_s->current_ssid->ssid,
+						MIN(wpa_s->current_ssid->ssid_len, wpa_s->current_ssid->ssid_len));
+				os_memcpy(&sta_disconnected.bssid, wpa_s->current_ssid->bssid, ETH_ALEN);
+			}
 			sta_disconnected.local_generated = local_generated;
 			sta_disconnected.disconnect_reason = state.reason_code;
 			BK_LOG_ON_ERR(bk_event_post(EVENT_MOD_WIFI, EVENT_WIFI_STA_DISCONNECTED,
@@ -541,7 +547,7 @@ void wpas_notify_psk_mismatch(struct wpa_supplicant *wpa_s, u16 reason_code,
 	mhdr_set_station_status(info);
 }
 
-void hapd_notify_sta_connected(struct hostapd_data *hapd, const u8 *mac)
+void hapd_notify_sta_connected(struct hostapd_data *hapd, const u8 *mac, uint32_t ipaddr)
 {
 	wifi_event_ap_connected_t ap_connected = {0};
 #if !CONFIG_DISABLE_DEPRECIATED_WIFI_API
@@ -558,6 +564,7 @@ void hapd_notify_sta_connected(struct hostapd_data *hapd, const u8 *mac)
 #endif
 
 	os_memcpy(ap_connected.mac, mac, ETH_ALEN);
+	ap_connected.ipaddr = ipaddr;
 	BK_LOG_ON_ERR(bk_event_post(EVENT_MOD_WIFI, EVENT_WIFI_AP_CONNECTED,
 				&ap_connected, sizeof(ap_connected), BEKEN_NEVER_TIMEOUT));
 }
@@ -793,6 +800,7 @@ void wpas_notify_scan_results(struct wpa_supplicant *wpa_s, int scan_id)
 	if (scan_id != 0) {
 		event_data.scan_id = scan_id;
 		event_data.scan_use_time = wpa_s->scan_use_time.sec*1000000 + wpa_s->scan_use_time.usec;
+		event_data.last_scan_req = wpa_s->last_scan_req;
 		bk_event_post(EVENT_MOD_WIFI, EVENT_WIFI_SCAN_DONE, &event_data,
 				sizeof(event_data), BEKEN_NEVER_TIMEOUT);
 	}

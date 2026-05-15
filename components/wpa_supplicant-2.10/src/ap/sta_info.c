@@ -1342,7 +1342,7 @@ void ap_sta_set_authorized(struct hostapd_data *hapd, struct sta_info *sta,
 
 #ifdef BK_SUPPLICANT
 	if (!!authorized)
-		hapd_notify_sta_connected(hapd, sta->addr);
+		hapd_notify_sta_connected(hapd, sta->addr, sta->ipaddr);
 	else
 		hapd_notify_sta_disconnected(hapd, sta->addr);
 #endif
