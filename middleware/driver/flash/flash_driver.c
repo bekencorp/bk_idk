@@ -1066,6 +1066,47 @@ bk_err_t bk_flash_erase_fast(uint32_t erase_off, uint32_t len)
     return BK_OK;
 }
 
+#if CONFIG_FLASH_IMPORT_TEST
+flash_protect_type_t flash_import_get_protect(void)
+{
+	flash_line_mode_t old_line_mode = flash_set_line_mode(FLASH_LINE_MODE_TWO);
+	uint32_t status_reg = flash_read_status_reg();
+	flash_set_line_mode(old_line_mode);
+
+	return flash_get_protect_type(status_reg);
+}
+
+void flash_import_set_protect(flash_protect_type_t protect)
+{
+	flash_line_mode_t old_line_mode = flash_set_line_mode(FLASH_LINE_MODE_TWO);
+	flash_set_protect_type(protect);
+	flash_set_line_mode(old_line_mode);
+}
+
+flash_line_mode_t flash_import_set_line_mode(flash_line_mode_t line_mode)
+{
+	return flash_set_line_mode(line_mode);
+}
+
+bk_err_t flash_import_write_bytes(const uint8_t *buffer, uint32_t address, uint32_t len)
+{
+	return flash_write_common(buffer, address, len);
+}
+
+bk_err_t flash_import_erase_4k(uint32_t address)
+{
+	if (!s_flash_is_init) {
+		return BK_ERR_FLASH_NOT_INIT;
+	}
+
+	if ((address >= s_flash.flash_cfg->flash_size) || (address & (FLASH_SECTOR_SIZE - 1))) {
+		return BK_ERR_FLASH_ADDR_OUT_OF_RANGE;
+	}
+
+	return flash_erase_block(address, FLASH_OP_CMD_SE);
+}
+#endif
+
 #if CONFIG_DIRECT_XIP
 uint32_t flash_get_excute_enable(void)
 {

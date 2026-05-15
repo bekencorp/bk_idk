@@ -34,7 +34,9 @@ static void cli_flash_help(void)
 	CLI_LOGI("flash mutex_test [task_priority]\n");
 	CLI_LOGI("flash_partition show\n");
 	CLI_LOGI("flash_erase_test ble\n");
+#if !CONFIG_FLASH_IMPORT_TEST
 	CLI_LOGI("flash_import {set_clock|lock_erase|lock_write} [cpu_clk|start_addr] [flash_clk|len]\n");
+#endif
 }
 
 extern bk_err_t bk_flash_power_saving_enter(void);
@@ -167,6 +169,7 @@ static void cli_flash_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, ch
 	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
 }
 
+#if !CONFIG_FLASH_IMPORT_TEST
 extern void sys_hal_set_cpu_clk(uint32_t cpu_clk);
 extern void sys_hal_set_flash_clk(uint32_t flash_clk);
 extern bk_err_t flash_write_common(const uint8_t *buffer, uint32_t address, uint32_t len);
@@ -190,7 +193,7 @@ bk_err_t bk_switch_test_clock(uint32_t cpu_clk, uint32_t flash_clk)
 
 bk_err_t bk_flash_lock_write(uint32_t address, const uint8_t *user_buf, uint32_t size)
 {
-	bk_err_t    ret_val = BK_FAIL;
+	bk_err_t ret_val = BK_FAIL;
 	flash_line_mode_t old_line_mode = flash_set_line_mode(FLASH_LINE_MODE_TWO);
 	flash_protect_type_t partition_type = FLASH_PROTECT_ALL;
 
@@ -204,7 +207,7 @@ bk_err_t bk_flash_lock_write(uint32_t address, const uint8_t *user_buf, uint32_t
 
 bk_err_t bk_flash_lock_erase(uint32_t address, int cmd)
 {
-	bk_err_t    ret_val = BK_FAIL;
+	bk_err_t ret_val = BK_FAIL;
 	flash_line_mode_t old_line_mode = flash_set_line_mode(FLASH_LINE_MODE_TWO);
 	flash_protect_type_t partition_type = FLASH_PROTECT_ALL;
 
@@ -215,7 +218,6 @@ bk_err_t bk_flash_lock_erase(uint32_t address, int cmd)
 
 	return ret_val;
 }
-
 
 static void cli_flash_import_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
@@ -296,6 +298,7 @@ static void cli_flash_import_cmd(char *pcWriteBuffer, int xWriteBufferLen, int a
 
 	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
 }
+#endif
 
 #if CONFIG_TFM_FLASH_NSC
 static void cli_flash_cmd_s(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
@@ -574,7 +577,9 @@ static void cli_flash_erase_test_with_ble(char *pcWriteBuffer, int xWriteBufferL
 #define FLASH_CMD_CNT (sizeof(s_flash_commands) / sizeof(struct cli_command))
 static const struct cli_command s_flash_commands[] = {
 	{"flash", "flash {erase|read|write} [start_addr] [len]", cli_flash_cmd},
+#if !CONFIG_FLASH_IMPORT_TEST
 	{"flash_import", "flash_import {set_clock|lock_erase|lock_write} [cpu_clk|start_addr] [flash_clk|len]", cli_flash_import_cmd},
+#endif
 #if CONFIG_TFM_FLASH_NSC
 	{"flash_s", "flash {erase|read|write} [start_addr] [len]", cli_flash_cmd_s},
 #endif

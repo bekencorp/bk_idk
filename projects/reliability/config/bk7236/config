@@ -1,0 +1,38 @@
+# Overwrite ARMINO Configuration here
+#@ Enable Override Flash Partition
+CONFIG_OVERRIDE_FLASH_PARTITION=y
+## Enable platform OTP test cases to exercise hardware security features.
+#@ Enable OTP Test
+CONFIG_OTP_TEST=y
+CONFIG_USE_CONV_UTF8=y
+
+## Disable the built-in watchdogs during early development to avoid resets.
+CONFIG_INT_WDT=n
+#@ Enable Task Watchdog
+CONFIG_TASK_WDT=n
+#@ Enable NMI Watchdog
+CONFIG_NMI_WDT_EN=n
+CONFIG_GPIO_DEFAULT_SET_SUPPORT=n
+
+CONFIG_WIFI_RELIABILITY_TEST=n
+CONFIG_FLASH_RELIABILITY_TEST=n
+CONFIG_CM_BACKTRACE=n
+CONFIG_INT_WDT=n
+CONFIG_TASK_WDT=n
+CONFIG_FLASH_CBUS=n
+CONFIG_RELIABILITY_CPU_FREQ_MHZ=160
+CONFIG_RELIABILITY_VOTE_PM_320_FOR_CPU_FREQ_160=y
+
+#
+# HTOL
+#
+CONFIG_HTOL_RELIABILITY_TEST=n
+CONFIG_PHY_TEST=n
+CONFIG_PWM_TEST=n
+# end of HTOL
+
+#
+# FLASH IMPORT
+#
+CONFIG_FLASH_IMPORT_TEST=y
+

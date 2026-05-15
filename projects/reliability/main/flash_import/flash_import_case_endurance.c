@@ -1,0 +1,625 @@
+// Copyright 2020-2025 Beken
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include <os/os.h>
+#include <os/mem.h>
+#include <stdbool.h>
+#include <driver/gpio.h>
+#include <driver/flash.h>
+#include <driver/flash_partition.h>
+#include "sys_driver.h"
+#include "flash_import_internal.h"
+#include "crc32.h"
+
+#define FLASH_IMPORT_ENDURANCE_STATS_BACKUP_SIZE    (4096U)
+#define FLASH_IMPORT_ENDURANCE_STATS_MAIN_SIZE      (4096U)
+#define FLASH_IMPORT_ENDURANCE_TEST_REGION_SIZE     (4096U)
+#define FLASH_IMPORT_ENDURANCE_ERASE_SECTOR_SIZE    (4096U)
+#define FLASH_IMPORT_ENDURANCE_MAIN_OFFSET          (FLASH_IMPORT_ENDURANCE_STATS_BACKUP_SIZE)
+#define FLASH_IMPORT_ENDURANCE_DATA_OFFSET          (FLASH_IMPORT_ENDURANCE_STATS_BACKUP_SIZE + \
+                                                     FLASH_IMPORT_ENDURANCE_STATS_MAIN_SIZE)
+#define FLASH_IMPORT_ENDURANCE_LAYOUT_BYTES         (FLASH_IMPORT_ENDURANCE_STATS_BACKUP_SIZE + \
+                                                     FLASH_IMPORT_ENDURANCE_STATS_MAIN_SIZE + \
+                                                     FLASH_IMPORT_ENDURANCE_TEST_REGION_SIZE)
+#define FLASH_IMPORT_ENDURANCE_MAIN_SAVE_INTERVAL   (10U)
+#define FLASH_IMPORT_ENDURANCE_BACKUP_SAVE_INTERVAL (100U)
+#define FLASH_IMPORT_ENDURANCE_LOG_INTERVAL         (100U)
+#define FLASH_IMPORT_ENDURANCE_CRC_INVALID          (0xFFFFFFFFU)
+#define FLASH_IMPORT_ENDURANCE_CLOCK_80M            (80000000U)
+
+#if CONFIG_SOC_BK7236
+#define FLASH_IMPORT_ENDURANCE_PART_NAME "ota"
+#define FLASH_IMPORT_ENDURANCE_PART_ID   BK_PARTITION_OTA
+#else
+#define FLASH_IMPORT_ENDURANCE_PART_NAME "flash_test"
+#define FLASH_IMPORT_ENDURANCE_PART_ID   BK_PARTITION_FLASH_TEST
+#endif
+
+typedef struct {
+    uint32_t data_total_cnt;
+    uint32_t total_erase_error_cnt;
+    uint32_t total_write_error_cnt;
+    uint32_t data_erase_error_cnt;
+    uint32_t data_write_error_cnt;
+    uint32_t data_erase_op_cnt;
+    uint32_t data_write_op_cnt;
+    uint32_t main_erase_op_cnt;
+    uint32_t main_write_op_cnt;
+    uint32_t main_erase_error_cnt;
+    uint32_t main_write_error_cnt;
+    uint32_t backup_erase_op_cnt;
+    uint32_t backup_write_op_cnt;
+    uint32_t backup_erase_error_cnt;
+    uint32_t backup_write_error_cnt;
+    uint32_t global_protect_cnt;
+    uint32_t global_unprotect_cnt;
+    uint32_t crc;
+} flash_import_endurance_stats_t;
+
+typedef enum {
+    FLASH_IMPORT_ENDURANCE_SAVE_SCHEDULED,
+    FLASH_IMPORT_ENDURANCE_SAVE_BOTH,
+} flash_import_endurance_save_policy_t;
+
+#define FLASH_IMPORT_END_GPIO_PROTECT_ALL_PIN  GPIO_14
+#define FLASH_IMPORT_END_GPIO_PROTECT_NONE_PIN GPIO_15
+#define FLASH_IMPORT_END_GPIO_ERASE_PIN        GPIO_16
+#define FLASH_IMPORT_END_GPIO_WRITE_PIN        GPIO_17
+#if CONFIG_SOC_BK7236
+#define FLASH_IMPORT_END_GPIO_READ_PIN         GPIO_18
+#else
+#define FLASH_IMPORT_END_GPIO_READ_PIN         GPIO_20
+#endif
+
+#define FLASH_IMPORT_END_GPIO_PROTECT_ALL_UP()    ((void)bk_gpio_set_output_high(FLASH_IMPORT_END_GPIO_PROTECT_ALL_PIN))
+#define FLASH_IMPORT_END_GPIO_PROTECT_ALL_DOWN()  ((void)bk_gpio_set_output_low(FLASH_IMPORT_END_GPIO_PROTECT_ALL_PIN))
+#define FLASH_IMPORT_END_GPIO_PROTECT_NONE_UP()   ((void)bk_gpio_set_output_high(FLASH_IMPORT_END_GPIO_PROTECT_NONE_PIN))
+#define FLASH_IMPORT_END_GPIO_PROTECT_NONE_DOWN() ((void)bk_gpio_set_output_low(FLASH_IMPORT_END_GPIO_PROTECT_NONE_PIN))
+#define FLASH_IMPORT_END_GPIO_ERASE_UP()          ((void)bk_gpio_set_output_high(FLASH_IMPORT_END_GPIO_ERASE_PIN))
+#define FLASH_IMPORT_END_GPIO_ERASE_DOWN()        ((void)bk_gpio_set_output_low(FLASH_IMPORT_END_GPIO_ERASE_PIN))
+#define FLASH_IMPORT_END_GPIO_WRITE_UP()          ((void)bk_gpio_set_output_high(FLASH_IMPORT_END_GPIO_WRITE_PIN))
+#define FLASH_IMPORT_END_GPIO_WRITE_DOWN()        ((void)bk_gpio_set_output_low(FLASH_IMPORT_END_GPIO_WRITE_PIN))
+#define FLASH_IMPORT_END_GPIO_READ_UP()           ((void)bk_gpio_set_output_high(FLASH_IMPORT_END_GPIO_READ_PIN))
+#define FLASH_IMPORT_END_GPIO_READ_DOWN()         ((void)bk_gpio_set_output_low(FLASH_IMPORT_END_GPIO_READ_PIN))
+
+static const gpio_id_t s_endurance_gpio_pins[] = {
+    FLASH_IMPORT_END_GPIO_PROTECT_ALL_PIN,
+    FLASH_IMPORT_END_GPIO_PROTECT_NONE_PIN,
+    FLASH_IMPORT_END_GPIO_ERASE_PIN,
+    FLASH_IMPORT_END_GPIO_WRITE_PIN,
+    FLASH_IMPORT_END_GPIO_READ_PIN,
+};
+
+static beken_thread_t s_endurance_task_handle = NULL;
+static bool s_endurance_stop_requested = false;
+static uint32_t s_endurance_stats_backup_addr = 0;
+static uint32_t s_endurance_stats_main_addr = 0;
+static uint32_t s_endurance_data_addr = 0;
+static flash_import_endurance_stats_t s_endurance_stats = {0};
+static uint32_t s_endurance_saved_flash_cksel = 0;
+static uint32_t s_endurance_saved_flash_ckdiv = 0;
+static flash_protect_type_t s_endurance_saved_protect_type = FLASH_PROTECT_ALL;
+static uint8_t *s_endurance_read_buf = NULL;
+static uint8_t *s_endurance_write_buf = NULL;
+
+static void flash_import_endurance_read(uint32_t addr, uint8_t *buf, uint32_t size)
+{
+    FLASH_IMPORT_END_GPIO_READ_UP();
+    (void)bk_flash_read_bytes(addr, buf, size);
+    FLASH_IMPORT_END_GPIO_READ_DOWN();
+}
+
+static void flash_import_endurance_unprotect(void)
+{
+    s_endurance_stats.global_unprotect_cnt++;
+    FLASH_IMPORT_END_GPIO_PROTECT_NONE_UP();
+    flash_import_set_protect(FLASH_PROTECT_NONE);
+    FLASH_IMPORT_END_GPIO_PROTECT_NONE_DOWN();
+}
+
+static void flash_import_endurance_protect(void)
+{
+    s_endurance_stats.global_protect_cnt++;
+    FLASH_IMPORT_END_GPIO_PROTECT_ALL_UP();
+    flash_import_set_protect(FLASH_PROTECT_ALL);
+    FLASH_IMPORT_END_GPIO_PROTECT_ALL_DOWN();
+}
+
+static bk_err_t flash_import_endurance_erase(uint32_t addr)
+{
+    bool erase_verify_failed = false;
+    flash_line_mode_t old_line_mode = FLASH_LINE_MODE_TWO;
+
+    old_line_mode = flash_import_set_line_mode(FLASH_LINE_MODE_TWO);
+    flash_import_endurance_unprotect();
+    FLASH_IMPORT_END_GPIO_ERASE_UP();
+    (void)flash_import_erase_4k(addr);
+    FLASH_IMPORT_END_GPIO_ERASE_DOWN();
+    if (addr == s_endurance_stats_main_addr) {
+        s_endurance_stats.main_erase_op_cnt++;
+    } else if (addr == s_endurance_stats_backup_addr) {
+        s_endurance_stats.backup_erase_op_cnt++;
+    } else {
+        s_endurance_stats.data_erase_op_cnt++;
+    }
+    flash_import_endurance_protect();
+    (void)flash_import_set_line_mode(old_line_mode);
+
+    flash_import_endurance_read(addr, s_endurance_read_buf, FLASH_IMPORT_ENDURANCE_ERASE_SECTOR_SIZE);
+    for (uint32_t i = 0; i < FLASH_IMPORT_ENDURANCE_ERASE_SECTOR_SIZE; i++) {
+        if (s_endurance_read_buf[i] != 0xFFU) {
+            erase_verify_failed = true;
+            break;
+        }
+    }
+
+    if (erase_verify_failed) {
+        if (addr == s_endurance_stats_main_addr) {
+            s_endurance_stats.main_erase_error_cnt++;
+        } else if (addr == s_endurance_stats_backup_addr) {
+            s_endurance_stats.backup_erase_error_cnt++;
+        } else {
+            s_endurance_stats.data_erase_error_cnt++;
+        }
+        return BK_FAIL;
+    }
+
+    return BK_OK;
+}
+
+static bk_err_t flash_import_endurance_write(uint32_t addr, const uint8_t *buf, uint32_t size)
+{
+    flash_line_mode_t old_line_mode = FLASH_LINE_MODE_TWO;
+
+    old_line_mode = flash_import_set_line_mode(FLASH_LINE_MODE_TWO);
+    flash_import_endurance_unprotect();
+    FLASH_IMPORT_END_GPIO_WRITE_UP();
+    (void)flash_import_write_bytes(buf, addr, size);
+    FLASH_IMPORT_END_GPIO_WRITE_DOWN();
+    if (addr == s_endurance_stats_main_addr) {
+        s_endurance_stats.main_write_op_cnt++;
+    } else if (addr == s_endurance_stats_backup_addr) {
+        s_endurance_stats.backup_write_op_cnt++;
+    } else {
+        s_endurance_stats.data_write_op_cnt++;
+    }
+    flash_import_endurance_protect();
+    (void)flash_import_set_line_mode(old_line_mode);
+
+    flash_import_endurance_read(addr, s_endurance_read_buf, size);
+    if (os_memcmp(s_endurance_read_buf, buf, size) != 0) {
+        if (addr == s_endurance_stats_main_addr) {
+            s_endurance_stats.main_write_error_cnt++;
+        } else if (addr == s_endurance_stats_backup_addr) {
+            s_endurance_stats.backup_write_error_cnt++;
+        } else {
+            s_endurance_stats.data_write_error_cnt++;
+        }
+        return BK_FAIL;
+    }
+    return BK_OK;
+}
+
+static void flash_import_endurance_gpio_init(void)
+{
+    uint32_t i = 0;
+
+    for (i = 0; i < (sizeof(s_endurance_gpio_pins) / sizeof(s_endurance_gpio_pins[0])); i++) {
+        (void)bk_gpio_enable_output(s_endurance_gpio_pins[i]);
+        (void)bk_gpio_set_output_low(s_endurance_gpio_pins[i]);
+    }
+}
+
+static bk_err_t flash_import_endurance_prepare_layout(void)
+{
+    const bk_logic_partition_t *part = NULL;
+
+    part = bk_flash_partition_get_info(FLASH_IMPORT_ENDURANCE_PART_ID);
+    if (part == NULL) {
+        part = bk_flash_partition_get_info_by_name(FLASH_IMPORT_ENDURANCE_PART_NAME);
+    }
+    if (part == NULL || part->partition_length < FLASH_IMPORT_ENDURANCE_LAYOUT_BYTES) {
+        os_printf("endurance: %s invalid\r\n", FLASH_IMPORT_ENDURANCE_PART_NAME);
+        return BK_FAIL;
+    }
+
+    if ((part->partition_start_addr & 0xFFFU) != 0U) {
+        os_printf("endurance: partition align err\r\n");
+        return BK_FAIL;
+    }
+
+    s_endurance_stats_backup_addr = part->partition_start_addr;
+    s_endurance_stats_main_addr = part->partition_start_addr + FLASH_IMPORT_ENDURANCE_MAIN_OFFSET;
+    s_endurance_data_addr = part->partition_start_addr + FLASH_IMPORT_ENDURANCE_DATA_OFFSET;
+    return BK_OK;
+}
+
+static bk_err_t flash_import_endurance_restore_history_state(void)
+{
+    static bool first_restore_attempt = true;
+    flash_import_endurance_stats_t main_stats = {0};
+    flash_import_endurance_stats_t backup_stats = {0};
+    uint32_t crc = 0;
+    bool main_valid = false;
+    bool backup_valid = false;
+
+    (void)s_endurance_data_addr;
+
+    flash_import_endurance_read(s_endurance_stats_main_addr, (uint8_t *)&main_stats, sizeof(main_stats));
+    crc = crc32_calc(0, &main_stats, sizeof(main_stats) - sizeof(main_stats.crc));
+    if ((main_stats.crc != FLASH_IMPORT_ENDURANCE_CRC_INVALID) && (crc == main_stats.crc)) {
+        main_valid = true;
+    }
+
+    flash_import_endurance_read(s_endurance_stats_backup_addr, (uint8_t *)&backup_stats, sizeof(backup_stats));
+    crc = crc32_calc(0, &backup_stats, sizeof(backup_stats) - sizeof(backup_stats.crc));
+    if ((backup_stats.crc != FLASH_IMPORT_ENDURANCE_CRC_INVALID) && (crc == backup_stats.crc)) {
+        backup_valid = true;
+    }
+
+    if (!main_valid && !backup_valid && !first_restore_attempt) {
+        return BK_FAIL;
+    }
+
+    if (main_valid) {
+        os_memcpy(&s_endurance_stats, &main_stats, sizeof(s_endurance_stats));
+    } else if (backup_valid) {
+        os_memcpy(&s_endurance_stats, &backup_stats, sizeof(s_endurance_stats));
+    } else {
+        first_restore_attempt = false;
+        if (flash_import_endurance_erase(s_endurance_stats_main_addr) != BK_OK) {
+            os_printf("endurance main erase verify err %x\r\n", s_endurance_stats_main_addr);
+        }
+        if (flash_import_endurance_erase(s_endurance_stats_backup_addr) != BK_OK) {
+            os_printf("endurance backup erase verify err %x\r\n", s_endurance_stats_backup_addr);
+        }
+        os_memset(&s_endurance_stats, 0, sizeof(s_endurance_stats));
+    }
+
+    return BK_OK;
+}
+
+static bk_err_t flash_import_endurance_test_region_init(void)
+{
+    bk_err_t ret = BK_OK;
+
+    ret = flash_import_endurance_prepare_layout();
+    if (ret != BK_OK) {
+        return ret;
+    }
+
+    ret = flash_import_endurance_restore_history_state();
+    if (ret != BK_OK) {
+        return ret;
+    }
+
+    return BK_OK;
+}
+
+static bk_err_t flash_import_endurance_buffers_init(void)
+{
+    s_endurance_read_buf = (uint8_t *)os_malloc(FLASH_IMPORT_ENDURANCE_TEST_REGION_SIZE);
+    if (s_endurance_read_buf == NULL) {
+        os_printf("endurance buf alloc fail\r\n");
+        return BK_FAIL;
+    }
+
+    s_endurance_write_buf = (uint8_t *)os_malloc(FLASH_IMPORT_ENDURANCE_TEST_REGION_SIZE);
+    if (s_endurance_write_buf == NULL) {
+        os_printf("endurance write buf alloc fail\r\n");
+        return BK_FAIL;
+    }
+
+    return BK_OK;
+}
+
+static void flash_import_endurance_buffers_deinit(void)
+{
+    if (s_endurance_read_buf != NULL) {
+        os_free(s_endurance_read_buf);
+        s_endurance_read_buf = NULL;
+    }
+
+    if (s_endurance_write_buf != NULL) {
+        os_free(s_endurance_write_buf);
+        s_endurance_write_buf = NULL;
+    }
+}
+
+static bk_err_t flash_import_endurance_init(void)
+{
+    bk_err_t ret = BK_OK;
+
+    flash_import_endurance_gpio_init();
+
+    ret = flash_import_endurance_buffers_init();
+    if (ret != BK_OK) {
+        return ret;
+    }
+
+    ret = flash_import_endurance_test_region_init();
+    if (ret != BK_OK) {
+        return ret;
+    }
+
+    return BK_OK;
+}
+
+static void flash_import_endurance_save_context(void)
+{
+    s_endurance_saved_flash_cksel = sys_drv_flash_get_clk_sel();
+    s_endurance_saved_flash_ckdiv = sys_drv_flash_get_clk_div();
+    s_endurance_saved_protect_type = flash_import_get_protect();
+}
+
+static void flash_import_endurance_update_crc(void)
+{
+    s_endurance_stats.crc = crc32_calc(0,
+                                       &s_endurance_stats,
+                                       sizeof(s_endurance_stats) - sizeof(s_endurance_stats.crc));
+}
+
+static void flash_import_endurance_update_total_error_cnt(void)
+{
+    s_endurance_stats.total_erase_error_cnt = s_endurance_stats.data_erase_error_cnt
+                                            + s_endurance_stats.main_erase_error_cnt
+                                            + s_endurance_stats.backup_erase_error_cnt;
+    s_endurance_stats.total_write_error_cnt = s_endurance_stats.data_write_error_cnt
+                                            + s_endurance_stats.main_write_error_cnt
+                                            + s_endurance_stats.backup_write_error_cnt;
+}
+
+static void flash_import_endurance_save_stats_region(uint32_t addr)
+{
+    flash_import_endurance_stats_t stats_snapshot = {0};
+
+    if (flash_import_endurance_erase(addr) != BK_OK) {
+        os_printf("endurance stats erase verify err %x\r\n", addr);
+    }
+    flash_import_endurance_update_total_error_cnt();
+    flash_import_endurance_update_crc();
+    os_memcpy(&stats_snapshot, &s_endurance_stats, sizeof(stats_snapshot));
+    if (flash_import_endurance_write(addr, (uint8_t *)&stats_snapshot, sizeof(stats_snapshot)) != BK_OK) {
+        os_printf("endurance stats write verify err %x\r\n", addr);
+    }
+}
+
+static void flash_import_endurance_save_stats(flash_import_endurance_save_policy_t policy)
+{
+    switch (policy) {
+    case FLASH_IMPORT_ENDURANCE_SAVE_BOTH:
+        flash_import_endurance_save_stats_region(s_endurance_stats_main_addr);
+        flash_import_endurance_save_stats_region(s_endurance_stats_backup_addr);
+        return;
+    case FLASH_IMPORT_ENDURANCE_SAVE_SCHEDULED:
+        break;
+    }
+
+    if ((s_endurance_stats.data_total_cnt % FLASH_IMPORT_ENDURANCE_MAIN_SAVE_INTERVAL) == 0U) {
+        flash_import_endurance_save_stats_region(s_endurance_stats_main_addr);
+    }
+    if ((s_endurance_stats.data_total_cnt % FLASH_IMPORT_ENDURANCE_BACKUP_SAVE_INTERVAL) == 0U) {
+        flash_import_endurance_save_stats_region(s_endurance_stats_backup_addr);
+    }
+}
+
+static void flash_import_endurance_fill_write_pattern(uint32_t loop_count)
+{
+    uint32_t i = 0;
+
+    for (i = 0; i < FLASH_IMPORT_ENDURANCE_TEST_REGION_SIZE; i++) {
+        s_endurance_write_buf[i] = (uint8_t)((i + loop_count) & 0xFFU);
+    }
+}
+
+static bk_err_t flash_import_endurance_erase_verify(uint32_t addr)
+{
+    if (flash_import_endurance_erase(addr) != BK_OK) {
+        os_printf("Endurance test: erase verify err 0x%x\r\n", addr);
+        return BK_FAIL;
+    }
+    return BK_OK;
+}
+
+static bk_err_t flash_import_endurance_write_verify(uint32_t addr, uint32_t loop_count)
+{
+    flash_import_endurance_fill_write_pattern(loop_count);
+    if (flash_import_endurance_write(addr, s_endurance_write_buf, FLASH_IMPORT_ENDURANCE_TEST_REGION_SIZE) != BK_OK) {
+        os_printf("Endurance test: write verify err 0x%x\r\n", addr);
+        return BK_FAIL;
+    }
+    return BK_OK;
+}
+
+static void flash_import_endurance_set_clock(uint32_t clock_hz)
+{
+    switch (clock_hz) {
+    case FLASH_IMPORT_ENDURANCE_CLOCK_80M:
+    default:
+#if CONFIG_SOC_BK7236
+        if ((1U != sys_drv_flash_get_clk_sel()) || (1U != sys_drv_flash_get_clk_div())) {
+            sys_drv_flash_set_clk_div(1U);
+            sys_drv_flash_cksel(1U);
+        }
+#else
+        if ((2U != sys_drv_flash_get_clk_sel()) || (0U != sys_drv_flash_get_clk_div())) {
+            sys_drv_flash_set_clk_div(0U);
+            sys_drv_flash_cksel(2U);
+        }
+#endif
+        break;
+    }
+}
+
+static void flash_import_endurance_restore_context(void)
+{
+    sys_drv_flash_set_clk_div(s_endurance_saved_flash_ckdiv);
+    sys_drv_flash_cksel(s_endurance_saved_flash_cksel);
+    flash_import_set_protect(s_endurance_saved_protect_type);
+}
+
+static void flash_import_endurance_show_stats_region(const char *name, uint32_t addr)
+{
+    flash_import_endurance_stats_t stats = {0};
+    uint32_t crc = 0;
+
+    flash_import_endurance_read(addr, (uint8_t *)&stats, sizeof(stats));
+    crc = crc32_calc(0, &stats, sizeof(stats) - sizeof(stats.crc));
+
+    os_printf("%s:\r\n", name);
+    os_printf("  data_total_cnt: %d\r\n", (int32_t)stats.data_total_cnt);
+    os_printf("  data_erase_error_cnt: %d\r\n", (int32_t)stats.data_erase_error_cnt);
+    os_printf("  data_write_error_cnt: %d\r\n", (int32_t)stats.data_write_error_cnt);
+    os_printf("  data_erase_op_cnt: %d\r\n", (int32_t)stats.data_erase_op_cnt);
+    os_printf("  data_write_op_cnt: %d\r\n", (int32_t)stats.data_write_op_cnt);
+    os_printf("  main_erase_op_cnt: %d\r\n", (int32_t)stats.main_erase_op_cnt);
+    os_printf("  main_write_op_cnt: %d\r\n", (int32_t)stats.main_write_op_cnt);
+    os_printf("  main_erase_error_cnt: %d\r\n", (int32_t)stats.main_erase_error_cnt);
+    os_printf("  main_write_error_cnt: %d\r\n", (int32_t)stats.main_write_error_cnt);
+    os_printf("  backup_erase_op_cnt: %d\r\n", (int32_t)stats.backup_erase_op_cnt);
+    os_printf("  backup_write_op_cnt: %d\r\n", (int32_t)stats.backup_write_op_cnt);
+    os_printf("  backup_erase_error_cnt: %d\r\n", (int32_t)stats.backup_erase_error_cnt);
+    os_printf("  backup_write_error_cnt: %d\r\n", (int32_t)stats.backup_write_error_cnt);
+    os_printf("  global_protect_cnt: %d\r\n", (int32_t)stats.global_protect_cnt);
+    os_printf("  global_unprotect_cnt: %d\r\n", (int32_t)stats.global_unprotect_cnt);
+    os_printf("  current crc: %x - calc:%x\r\n", stats.crc, crc);
+
+    if (stats.crc == FLASH_IMPORT_ENDURANCE_CRC_INVALID) {
+        os_printf("  status: not initialized\r\n");
+    } else if (crc != stats.crc) {
+        os_printf("  status: crc error\r\n");
+    } else {
+        os_printf("  status: valid\r\n");
+    }
+}
+
+static void flash_import_endurance_deinit(void)
+{
+    uint32_t i = 0;
+
+    for (i = 0; i < (sizeof(s_endurance_gpio_pins) / sizeof(s_endurance_gpio_pins[0])); i++) {
+        (void)bk_gpio_set_output_low(s_endurance_gpio_pins[i]);
+    }
+
+    flash_import_endurance_buffers_deinit();
+}
+
+static void flash_import_endurance_main_loop(void)
+{
+    uint32_t loop_count = 0;
+
+    flash_import_endurance_set_clock(FLASH_IMPORT_ENDURANCE_CLOCK_80M);
+
+    while (1) {
+        loop_count++;
+        (void)flash_import_endurance_erase_verify(s_endurance_data_addr);
+        (void)flash_import_endurance_write_verify(s_endurance_data_addr, loop_count);
+
+        if (s_endurance_stop_requested) {
+            flash_import_endurance_save_stats(FLASH_IMPORT_ENDURANCE_SAVE_BOTH);
+            break;
+        }
+
+        s_endurance_stats.data_total_cnt++;
+        flash_import_endurance_save_stats(FLASH_IMPORT_ENDURANCE_SAVE_SCHEDULED);
+
+        if ((loop_count % FLASH_IMPORT_ENDURANCE_LOG_INTERVAL) == 0U) {
+            os_printf("Endurance test: loop %u, total_count: %u, erase_errors: %u, write_errors: %u\r\n",
+                      loop_count,
+                      s_endurance_stats.data_total_cnt,
+                      s_endurance_stats.data_erase_error_cnt,
+                      s_endurance_stats.data_write_error_cnt);
+        }
+    }
+
+    os_printf("Endurance test stopped. Final stats: total_count: %u, erase_errors: %u, write_errors: %u\r\n",
+              s_endurance_stats.data_total_cnt,
+              s_endurance_stats.data_erase_error_cnt,
+              s_endurance_stats.data_write_error_cnt);
+}
+
+static void flash_import_endurance_exit_thread(void)
+{
+    s_endurance_task_handle = NULL;
+    rtos_delete_thread(NULL);
+}
+
+static void flash_import_endurance_thread(beken_thread_arg_t arg)
+{
+    (void)arg;
+
+    if (flash_import_endurance_init() != BK_OK) {
+        goto exit;
+    }
+
+    flash_import_endurance_save_context();
+
+    flash_import_endurance_main_loop();
+
+    flash_import_endurance_restore_context();
+
+exit:
+    flash_import_endurance_deinit();
+    flash_import_endurance_exit_thread();
+}
+
+void flash_import_case_endurance_start(void)
+{
+    bk_err_t ret = BK_OK;
+
+    if (s_endurance_task_handle != NULL) {
+        return;
+    }
+
+    s_endurance_stop_requested = false;
+    ret = rtos_create_thread(&s_endurance_task_handle,
+                             4,
+                             "flash_import_endurance",
+                             (beken_thread_function_t)flash_import_endurance_thread,
+                             4096,
+                             (beken_thread_arg_t)NULL);
+    if (ret != BK_OK) {
+        os_printf("Create endurance thread failed: %d\r\n", ret);
+        return;
+    }
+}
+
+void flash_import_case_endurance_stop(void)
+{
+    if (s_endurance_task_handle != NULL) {
+        os_printf("Requesting endurance test to stop...\r\n");
+        s_endurance_stop_requested = true;
+    } else {
+        os_printf("Endurance test is not running\r\n");
+    }
+}
+
+void flash_import_case_endurance_show(void)
+{
+    if (flash_import_endurance_prepare_layout() != BK_OK) {
+        return;
+    }
+
+    os_printf("\r\nBuild_info:%s_%s\r\n", __DATE__, __TIME__);
+    os_printf("flash id:%lx\r\n", bk_flash_get_id());
+    os_printf("endurance part:%s\r\n", FLASH_IMPORT_ENDURANCE_PART_NAME);
+    os_printf("stats main:0x%08x backup:0x%08x data:0x%08x\r\n",
+              s_endurance_stats_main_addr,
+              s_endurance_stats_backup_addr,
+              s_endurance_data_addr);
+    os_printf("endurance task: %s\r\n",
+              (s_endurance_task_handle != NULL) ? "running" : "stopped");
+    flash_import_endurance_show_stats_region("main stats", s_endurance_stats_main_addr);
+    flash_import_endurance_show_stats_region("backup stats", s_endurance_stats_backup_addr);
+}

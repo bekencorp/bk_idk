@@ -15,6 +15,7 @@
 /* System includes */
 #include "bk_private/bk_init.h"
 #include <components/system.h>
+#include <components/sensor.h>
 #include <os/os.h>
 #include "sys_ll.h"
 #include "modules/pm.h"
@@ -22,6 +23,7 @@
 #include "wifi_test.h"
 #include "statis.h"
 #include "cli_statis.h"
+#include "flash_import/cli_flash_import.h"
 #include "psram_test.h"
 #include "htol_test.h"
 
@@ -32,7 +34,11 @@ static void user_app_vote_cpu_freq(void)
 		bk_pm_module_vote_cpu_freq(PM_DEV_ID_DEFAULT, PM_CPU_FRQ_120M);
 		break;
 	case 160:
+#if CONFIG_RELIABILITY_VOTE_PM_320_FOR_CPU_FREQ_160
+		bk_pm_module_vote_cpu_freq(PM_DEV_ID_DEFAULT, PM_CPU_FRQ_320M);
+#else
 		bk_pm_module_vote_cpu_freq(PM_DEV_ID_DEFAULT, PM_CPU_FRQ_160M);
+#endif
 		break;
 	case 240:
 		bk_pm_module_vote_cpu_freq(PM_DEV_ID_DEFAULT, PM_CPU_FRQ_240M);
@@ -45,6 +51,32 @@ static void user_app_vote_cpu_freq(void)
 	BK_RAW_LOGI("APP_MAIN", "Current CPU freq: %d MHz\r\n", CONFIG_RELIABILITY_CPU_FREQ_MHZ);
 }
 
+static int user_app_get_temperature_code(void)
+{
+	float temperature = 0;
+	int ret = BK_OK;
+	int retry = 0;
+
+	for (retry = 0; retry < 40; retry++) {
+		ret = bk_sensor_get_current_temperature(&temperature);
+		if (ret == BK_OK) {
+			return (int)temperature;
+		}
+
+		if (ret == BK_ERR_NOT_INIT) {
+			(void)bk_sensor_init();
+			(void)bk_sensor_start();
+		} else if (ret != BK_ERR_TRY_AGAIN) {
+			break;
+		}
+
+		rtos_delay_milliseconds(50);
+	}
+
+	BK_RAW_LOGI("APP_MAIN", "temp read fail:%d\r\n", ret);
+	return 0;
+}
+
 void user_app_main(void)
 {
 	user_app_vote_cpu_freq();
@@ -53,11 +85,15 @@ void user_app_main(void)
 	statis_load_from_flash();
 #endif
 
-	int current_temp_code = get_current_temperature_code();
+	int current_temp_code = user_app_get_temperature_code();
 	BK_RAW_LOGI("APP_MAIN", "Current temperature code: %d\r\n", current_temp_code);
 
 #if CONFIG_CLI && (CONFIG_WIFI_RELIABILITY_TEST || CONFIG_FLASH_RELIABILITY_TEST)
 	statis_cli_register_cmds();
+#endif
+
+#if CONFIG_CLI && CONFIG_FLASH_IMPORT_TEST
+	flash_import_cli_register_cmds();
 #endif
 
 #if CONFIG_FLASH_RELIABILITY_TEST

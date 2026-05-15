@@ -22,6 +22,10 @@ menu "Project specific config"
 		bool "Enable Flash test"
 		default n
 
+	config FLASH_IMPORT_TEST
+		bool "Enable Flash import test"
+		default n
+
 	config WIFI_RELIABILITY_SAVE_INTERVAL
 		int "Save interval for WiFi reliability stats (in seconds)"
 		default 600
@@ -46,6 +50,12 @@ menu "Project specific config"
 		range 120 240
 		help
 		  Select 120/160/240 MHz for CPU frequency voting in reliability tests.
+
+	config RELIABILITY_VOTE_PM_320_FOR_CPU_FREQ_160
+		bool "Use PM_CPU_FRQ_320M vote when RELIABILITY_CPU_FREQ_MHZ is 160"
+		default n
+		help
+		  Enables platforms where nominal 160 MHz is selected via PM_CPU_FRQ_320M.
 
 	config WIFI_RELIABILITY_SHOW_TEMP_INTERVAL
 		int "Show temperature interval for WiFi reliability test (in seconds)"
