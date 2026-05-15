@@ -609,8 +609,11 @@ static bk_err_t bk_sensor_default_voltage_callback(uint16_t adc_code, float volt
 #endif
 
     //g_sensor_info.voltage not update at present, use voltage[0] and voltage[1] to judge
-    if (!isnan(g_sensor_info.voltage[0]) && (g_sensor_info.voltage[0] < ioldo_thres_low)
-    && !isnan(g_sensor_info.voltage[1]) && (g_sensor_info.voltage[1] < ioldo_thres_low)
+    //1. enable iobypass if low volt first time
+    //2. disable iobypass if high volt ASAP
+    //3. enable iobypass if low volt 3 times
+    if ((isnan(g_sensor_info.voltage[0]) || (g_sensor_info.voltage[0] < ioldo_thres_low))
+    && (isnan(g_sensor_info.voltage[1]) || (g_sensor_info.voltage[1] < ioldo_thres_low))
     && (volt_code < ioldo_thres_low)) {
         sys_drv_set_iobypassen(1);
     } else if ((volt_code >= ioldo_thres_high)) {
