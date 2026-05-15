@@ -1767,8 +1767,21 @@ int wpa_supplicant_ctrl_iface_receive(wpah_msg_t *msg)
 		break;
 	case WPA_CTRL_CMD_AP_GET:
 		break;
-	case WPA_CTRL_CMD_AP_STA_NUM:
-		break;
+	case WPA_CTRL_CMD_AP_STA_NUM: {
+		int *num = (int *)msg->argu;
+		struct hostapd_data *hapd;
+
+		res = -1;
+		CHECK_HAPD();
+
+		if (!num || !interfaces->iface[0] || !interfaces->iface[0]->bss)
+			break;
+
+		hapd = interfaces->iface[0]->bss[0];
+		*num = hapd ? hapd->num_sta : 0;
+		res = 0;
+	}	break;
+
 	case WPA_CTRL_CMD_AP_STA_INFO: {
 		wlan_ap_stas_t *stas = (wlan_ap_stas_t *)msg->argu;
 		extern char *dhcp_lookup_mac(uint8_t *addr);
