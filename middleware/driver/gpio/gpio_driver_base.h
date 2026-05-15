@@ -30,4 +30,7 @@ typedef struct {
 
 #if CONFIG_GPIO_ATE_TEST
 bk_err_t bk_gpio_ate_test(void);
+bk_err_t bk_gpio_ate_test_config(int pair_argc, char **pair_argv);
+bk_err_t bk_gpio_ate_test_start(void);
+bk_err_t bk_gpio_ate_test_show(void);
 #endif

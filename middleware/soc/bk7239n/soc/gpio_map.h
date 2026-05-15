@@ -308,12 +308,6 @@ struct {\
 	{2, {GPIO_17, GPIO_18, 0xff}},\
 	{2, {GPIO_19, GPIO_20, 0xff}},\
 }
-
-#define GPIO_ATE_TEST_LIST \
-{\
-	GPIO_0,  GPIO_1,  GPIO_4,  GPIO_5,  GPIO_6,  GPIO_7, \
-	GPIO_12, GPIO_13, GPIO_14, GPIO_15, GPIO_16, GPIO_17, GPIO_18, GPIO_19, GPIO_20, GPIO_22,\
-}
 #endif /* CONFIG_GPIO_ATE_TEST */
 
 #ifdef __cplusplus

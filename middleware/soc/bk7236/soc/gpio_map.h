@@ -491,12 +491,6 @@ struct {\
 	{2, {GPIO_0, GPIO_41, 0xff}},\
 	{3, {GPIO_34, GPIO_9, GPIO_40}},\
 }
-
-#define GPIO_ATE_TEST_LIST \
-{\
-	GPIO_0, GPIO_1, GPIO_8, GPIO_9, GPIO_16, GPIO_19, GPIO_24, GPIO_28, GPIO_32,\
-	GPIO_34, GPIO_36, GPIO_40, GPIO_41,\
-}
 #endif /* CONFIG_GPIO_ATE_TEST */
 
 #ifdef __cplusplus

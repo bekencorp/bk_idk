@@ -440,7 +440,24 @@ static void cli_gpio_dump_map_dev_cfg_cmd(char *pcWriteBuffer, int xWriteBufferL
 #if CONFIG_GPIO_ATE_TEST
 static void cli_gpio_ate_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
-	bk_gpio_ate_test();
+	if (argc == 1) {
+		bk_gpio_ate_test();
+		return;
+	}
+
+	if (os_strcmp(argv[1], "config") == 0) {
+		if (argc < 3) {
+			BK_LOG_RAW("usage: gpio_ate_test config g0_g1 [g2_g3 ...]\r\n");
+			return;
+		}
+		(void)bk_gpio_ate_test_config(argc - 2, &argv[2]);
+	} else if (os_strcmp(argv[1], "start") == 0) {
+		(void)bk_gpio_ate_test_start();
+	} else if (os_strcmp(argv[1], "show") == 0) {
+		(void)bk_gpio_ate_test_show();
+	} else {
+		BK_LOG_RAW("gpio_ate_test [config/start/show]\r\n");
+	}
 }
 #endif
 
@@ -463,7 +480,7 @@ static const struct cli_command s_gpio_commands[] = {
 	{"gpio_dump_map_dev_cfg", "gpio_dump_map_dev_cfg", cli_gpio_dump_map_dev_cfg_cmd},
 #endif
 #if CONFIG_GPIO_ATE_TEST
-	{"gpio_ate_test", "gpio_ate_test", cli_gpio_ate_test_cmd},
+	{"gpio_ate_test", "gpio_ate_test [config/start/show]", cli_gpio_ate_test_cmd},
 #endif
 };
 
