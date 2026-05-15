@@ -26,6 +26,7 @@
 #include <driver/int.h>
 #include "sys_driver.h"
 #include "gpio_driver.h"
+#include "gpio_map.h"
 #include <driver/gpio.h>
 #if CONFIG_PWM_PM_CB_SUPPORT
 #include <modules/pm.h>
@@ -135,7 +136,7 @@ typedef enum {
 static bool s_pwm_driver_is_init = false;
 static pwm_driver_t s_pwm = {0};
 static pwm_isr_t s_pwm_isr[SOC_PWM_CHAN_NUM_MAX] = {NULL};
-static const pwm_gpio_map_t s_pwm_pin_id_map[SOC_PWM_CHAN_NUM_MAX] = GPIO_PWM_MAP_TABLE;
+static const pwm_gpio_map_t s_pwm_pin_map[SOC_PWM_CHAN_NUM_MAX] = GPIO_PWM_MAP_TABLE;
 static uint8_t s_pwm_mode = 0;
 #if CONFIG_PWM_PHASE_SHIFT
 static pwm_chan_t s_phase_shift_multi_hw_ch = {0};
@@ -147,9 +148,19 @@ static void pwm0_isr(void);
 
 static void pwm_chan_init_gpio(pwm_chan_t sw_ch)
 {
-	gpio_dev_unmap(s_pwm_pin_id_map[sw_ch].gpio_id);
-	gpio_dev_map(s_pwm_pin_id_map[sw_ch].gpio_id, s_pwm_pin_id_map[sw_ch].gpio_dev);
-	bk_gpio_pull_up(s_pwm_pin_id_map[sw_ch].gpio_id);
+	gpio_id_t pin;
+	gpio_dev_t dev;
+
+	if (sw_ch >= SOC_PWM_CHAN_NUM_MAX) {
+		return;
+	}
+	dev = s_pwm_pin_map[sw_ch].gpio_dev;
+	pin = bk_gpio_map_find_pin_by_dev(dev);
+	if (pin >= SOC_GPIO_NUM) {
+		pin = s_pwm_pin_map[sw_ch].gpio_id;
+	}
+	bk_gpio_map_dev_to_pin(pin, dev);
+	bk_gpio_pull_up(pin);
 }
 
 static void pwm_chan_init_common(pwm_chan_t sw_ch)

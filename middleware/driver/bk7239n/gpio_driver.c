@@ -15,11 +15,16 @@
 #include <common/bk_include.h>
 #include <driver/gpio.h>
 #include <driver/io_matrix.h>
+#include <driver/io_matrix_types.h>
+#include <driver/hal/hal_io_matrix_types.h>
+#include "gpio_driver_base.h"
 #include "gpio_driver.h"
 #include "gpio_adapter.h"
 #include "aon_pmu_hal.h"
 #include "gpio_hal.h"
 #include <string.h>
+#include <soc/soc.h>
+#include "gpio_map.h"
 
 #define GPIO_REG_DEFAULT_VALUE      0x0
 #define GPIO_RETURN_ON_INVALID_PERIAL_MODE(mode, mode_max) do {\
@@ -41,16 +46,45 @@ static uint32_t s_gpio_retention_pm_map[GPIO_RETENTION_MAP_SIZE] = GPIO_RETENTIO
 
 bk_err_t gpio_dev_map(gpio_id_t gpio_id, gpio_dev_t dev)
 {
-	// Temp use for peri dev, remove later!
-	gpio_dev_unprotect_map(gpio_id, dev);
+	bk_err_t ret;
 
-	return BK_OK;
+	if (gpio_id >= SOC_GPIO_NUM) {
+		GPIO_LOGD("gpio_dev_map: invalid gpio id: %d\r\n", gpio_id);
+		return BK_ERR_GPIO_INVALID_ID;
+	}
+
+	ret = bk_gpio_map_set_ram_map_table(gpio_id, dev);
+	if (ret != BK_OK) {
+		GPIO_LOGD("gpio_map_set failed: gpio=%d, dev=0x%x, ret=%d\r\n", gpio_id, dev, ret);
+	}
+
+	ret = gpio_dev_unprotect_map(gpio_id, dev);
+
+	return ret;
 }
 
 bk_err_t gpio_dev_unmap(gpio_id_t gpio_id)
 {
-	// Temp use for peri dev, remove later!
-	gpio_dev_unprotect_unmap(gpio_id);
+	bk_err_t ret;
+	bk_err_t map_clear_ret;
+
+	if (gpio_id >= SOC_GPIO_NUM) {
+		return BK_ERR_GPIO_INVALID_ID;
+	}
+
+	map_clear_ret = bk_gpio_map_clear_ram_map_table(gpio_id);
+	if (map_clear_ret != BK_OK) {
+		GPIO_LOGD("gpio_map_clear failed: gpio=%d, ret=%d (continuing with HW unmap)\r\n", gpio_id, map_clear_ret);
+	}
+
+	ret = gpio_dev_unprotect_unmap(gpio_id);
+	if (ret != BK_OK) {
+		return ret;
+	}
+
+	if (map_clear_ret != BK_OK) {
+		GPIO_LOGD("gpio_dev_unmap: RAM table clear failed but HW unmap succeeded for gpio=%d\r\n", gpio_id);
+	}
 
 	return BK_OK;
 }
@@ -58,11 +92,18 @@ bk_err_t gpio_dev_unmap(gpio_id_t gpio_id)
 /* Here doesn't check the GPIO id is whether used by another CPU-CORE, but checked current CPU-CORE */
 bk_err_t gpio_dev_unprotect_map(gpio_id_t gpio_id, gpio_dev_t dev)
 {
-	GPIO_LOGI("%s:id=%d, dev=%d\r\n", __func__, gpio_id, dev);
+	bk_err_t ret;
+
+	GPIO_LOGI("%s:id=%d, dev=0x%x\r\n", __func__, gpio_id, dev);
+
+	/* First unmap: clear previous hardware mapping */
+	ret = gpio_dev_unprotect_unmap(gpio_id);
+	if (ret != BK_OK) {
+		GPIO_LOGE("gpio_dev_unprotect_unmap failed: gpio=%d, ret=%d\r\n", gpio_id, ret);
+		return ret;
+	}
 
 	IOMX_CODE_T code = contert_gpio_dev_to_iomx_code(dev);
-
-	bk_iomx_set_value(gpio_id, GPIO_REG_DEFAULT_VALUE);
 
 	return bk_iomx_set_gpio_func(gpio_id, code);
 }
@@ -70,6 +111,8 @@ bk_err_t gpio_dev_unprotect_map(gpio_id_t gpio_id, gpio_dev_t dev)
 /* Here doesn't check the GPIO id is whether used by another CPU-CORE */
 bk_err_t gpio_dev_unprotect_unmap(gpio_id_t gpio_id)
 {
+	bk_iomx_set_gpio_func(gpio_id, FUNC_CODE_OUTPUT);
+	
 	bk_iomx_set_value(gpio_id, GPIO_REG_DEFAULT_VALUE);
 
 	return BK_OK;

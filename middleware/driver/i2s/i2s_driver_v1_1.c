@@ -827,47 +827,31 @@ static void i2s_init_gpio(i2s_gpio_group_id_t id)
 {
     switch (id) {
         case I2S_GPIO_GROUP_0:
-            gpio_dev_unmap(GPIO_6);
-            gpio_dev_map(GPIO_6, GPIO_DEV_I2S1_CLK);
-            gpio_dev_unmap(GPIO_7);
-            gpio_dev_map(GPIO_7, GPIO_DEV_I2S1_SYNC);
-            gpio_dev_unmap(GPIO_8);
-            gpio_dev_map(GPIO_8, GPIO_DEV_I2S1_DIN);
-            gpio_dev_unmap(GPIO_9);
-            gpio_dev_map(GPIO_9, GPIO_DEV_I2S1_DOUT);
+            bk_gpio_map_dev_to_pin(GPIO_6, GPIO_DEV_I2S1_CLK);
+            bk_gpio_map_dev_to_pin(GPIO_7, GPIO_DEV_I2S1_SYNC);
+            bk_gpio_map_dev_to_pin(GPIO_8, GPIO_DEV_I2S1_DIN);
+            bk_gpio_map_dev_to_pin(GPIO_9, GPIO_DEV_I2S1_DOUT);
 #if (CONFIG_SOC_BK7236N || CONFIG_SOC_BK7239N)
-            gpio_dev_unmap(GPIO_12);
-            gpio_dev_map(GPIO_12, GPIO_DEV_I2S1_MCLK);
+            bk_gpio_map_dev_to_pin(GPIO_12, GPIO_DEV_I2S1_MCLK);
 #else
-            gpio_dev_unmap(GPIO_28);
-            gpio_dev_map(GPIO_28, GPIO_DEV_I2S1_MCLK);
+            bk_gpio_map_dev_to_pin(GPIO_28, GPIO_DEV_I2S1_MCLK);
 #endif
             break;
 
         case I2S_GPIO_GROUP_1:
-            gpio_dev_unmap(GPIO_40);
-            gpio_dev_map(GPIO_40, GPIO_DEV_I2S2_CLK);
-            gpio_dev_unmap(GPIO_41);
-            gpio_dev_map(GPIO_41, GPIO_DEV_I2S2_SYNC);
-            gpio_dev_unmap(GPIO_42);
-            gpio_dev_map(GPIO_42, GPIO_DEV_I2S2_DIN);
-            gpio_dev_unmap(GPIO_43);
-            gpio_dev_map(GPIO_43, GPIO_DEV_I2S2_DOUT);
-            gpio_dev_unmap(GPIO_28);
-            gpio_dev_map(GPIO_28, GPIO_DEV_I2S1_MCLK);
+            bk_gpio_map_dev_to_pin(GPIO_40, GPIO_DEV_I2S2_CLK);
+            bk_gpio_map_dev_to_pin(GPIO_41, GPIO_DEV_I2S2_SYNC);
+            bk_gpio_map_dev_to_pin(GPIO_42, GPIO_DEV_I2S2_DIN);
+            bk_gpio_map_dev_to_pin(GPIO_43, GPIO_DEV_I2S2_DOUT);
+            bk_gpio_map_dev_to_pin(GPIO_28, GPIO_DEV_I2S1_MCLK);
             break;
 
         case I2S_GPIO_GROUP_2:
-            gpio_dev_unmap(GPIO_44);
-            gpio_dev_map(GPIO_44, GPIO_DEV_I2S3_CLK);
-            gpio_dev_unmap(GPIO_45);
-            gpio_dev_map(GPIO_45, GPIO_DEV_I2S3_SYNC);
-            gpio_dev_unmap(GPIO_46);
-            gpio_dev_map(GPIO_46, GPIO_DEV_I2S3_DIN);
-            gpio_dev_unmap(GPIO_47);
-            gpio_dev_map(GPIO_47, GPIO_DEV_I2S3_DOUT);
-            gpio_dev_unmap(GPIO_28);
-            gpio_dev_map(GPIO_28, GPIO_DEV_I2S1_MCLK);
+            bk_gpio_map_dev_to_pin(GPIO_44, GPIO_DEV_I2S3_CLK);
+            bk_gpio_map_dev_to_pin(GPIO_45, GPIO_DEV_I2S3_SYNC);
+            bk_gpio_map_dev_to_pin(GPIO_46, GPIO_DEV_I2S3_DIN);
+            bk_gpio_map_dev_to_pin(GPIO_47, GPIO_DEV_I2S3_DOUT);
+            bk_gpio_map_dev_to_pin(GPIO_28, GPIO_DEV_I2S1_MCLK);
             break;
 
         default:

@@ -546,6 +546,62 @@ bk_err_t bk_gpio_retention_clr(gpio_id_t gpio_id);
 bk_err_t bk_gpio_clk_pin_ctrl(gpio_clk_pin_src_t src, gpio_clk_pin_port_t port, gpio_clk_pin_op_t opt);
 #endif
 
+/**
+ * @brief GPIO Map Table API
+ * @defgroup bk_api_gpio_map GPIO Map Table API group
+ * @{
+ */
+
+/**
+ * @brief     Set GPIO to device mapping in RAM map table
+ *
+ * @param gpio_id GPIO pin ID (must be < SOC_GPIO_NUM)
+ * @param dev Device type (must not be GPIO_DEV_INVALID; GPIO_DEV_NONE is allowed)
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_GPIO_INVALID_ID: gpio_id or dev invalid
+ */
+bk_err_t bk_gpio_map_set_ram_map_table(gpio_id_t gpio_id, gpio_dev_t dev);
+
+/**
+ * @brief     Find device type by GPIO pin ID
+ *
+ * @param gpio_id GPIO pin ID (invalid id returns GPIO_DEV_INVALID)
+ * @return Device type at that pin, or GPIO_DEV_INVALID if gpio_id invalid or not mapped
+ */
+gpio_dev_t bk_gpio_map_find_dev_by_pin(gpio_id_t gpio_id);
+
+/**
+ * @brief     Find GPIO pin ID by device type
+ *
+ * @param dev Device type (GPIO_DEV_NONE/GPIO_DEV_INVALID return GPIO_NUM)
+ * @return GPIO pin ID, or GPIO_NUM if not found or dev invalid
+ */
+gpio_id_t bk_gpio_map_find_pin_by_dev(gpio_dev_t dev);
+
+/**
+ * @brief     Clear GPIO to device mapping in RAM map table
+ *
+ * @param gpio_id GPIO pin ID (must be < SOC_GPIO_NUM)
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_GPIO_INVALID_ID: gpio_id invalid
+ */
+bk_err_t bk_gpio_map_clear_ram_map_table(gpio_id_t gpio_id);
+
+/**
+ * @brief     Map a device to a GPIO pin (use pin already in map if set, else default_pin)
+ *
+ * @param default_pin Default GPIO pin when dev is not yet in map (must be < SOC_GPIO_NUM)
+ * @param dev         Device type (must not be GPIO_DEV_INVALID)
+ * @return GPIO pin ID actually used (returns default_pin on error to ensure valid pin)
+ */
+gpio_id_t bk_gpio_map_dev_to_pin(gpio_id_t default_pin, gpio_dev_t dev);
+
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 }
 #endif

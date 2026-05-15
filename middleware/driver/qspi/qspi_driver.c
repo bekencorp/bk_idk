@@ -19,6 +19,7 @@
 #include "bk_sys_ctrl.h"
 #include "clock_driver.h"
 #include "gpio_driver.h"
+#include "gpio_driver_base.h"
 #include "power_driver.h"
 #include "qspi_driver.h"
 #include "qspi_statis.h"
@@ -57,29 +58,23 @@ static qspi_callback_t s_qspi_rx_isr = {NULL};
 
 
 #define QSPI_SET_PIN(id) do {\
-	gpio_dev_unmap(QSPI##id##_LL_CSN_PIN);\
-	gpio_dev_unmap(QSPI##id##_LL_CLK_PIN);\
-	gpio_dev_unmap(QSPI##id##_LL_IO0_PIN);\
-	gpio_dev_unmap(QSPI##id##_LL_IO1_PIN);\
-	gpio_dev_unmap(QSPI##id##_LL_IO2_PIN);\
-	gpio_dev_unmap(QSPI##id##_LL_IO3_PIN);\
-	gpio_dev_map(QSPI##id##_LL_CSN_PIN, GPIO_DEV_QSPI##id##_CSN);\
-	gpio_dev_map(QSPI##id##_LL_CLK_PIN, GPIO_DEV_QSPI##id##_CLK);\
-	gpio_dev_map(QSPI##id##_LL_IO0_PIN, GPIO_DEV_QSPI##id##_IO0);\
-	gpio_dev_map(QSPI##id##_LL_IO1_PIN, GPIO_DEV_QSPI##id##_IO1);\
-	gpio_dev_map(QSPI##id##_LL_IO2_PIN, GPIO_DEV_QSPI##id##_IO2);\
-	gpio_dev_map(QSPI##id##_LL_IO3_PIN, GPIO_DEV_QSPI##id##_IO3);\
-	bk_gpio_pull_up(QSPI##id##_LL_CSN_PIN);\
-	bk_gpio_pull_up(QSPI##id##_LL_IO0_PIN);\
-	bk_gpio_pull_up(QSPI##id##_LL_IO1_PIN);\
-	bk_gpio_pull_up(QSPI##id##_LL_IO2_PIN);\
-	bk_gpio_pull_up(QSPI##id##_LL_IO3_PIN);\
-	bk_gpio_set_capacity(QSPI##id##_LL_CSN_PIN, 3);\
-	bk_gpio_set_capacity(QSPI##id##_LL_CLK_PIN, 3);\
-	bk_gpio_set_capacity(QSPI##id##_LL_IO0_PIN, 3);\
-	bk_gpio_set_capacity(QSPI##id##_LL_IO1_PIN, 3);\
-	bk_gpio_set_capacity(QSPI##id##_LL_IO2_PIN, 3);\
-	bk_gpio_set_capacity(QSPI##id##_LL_IO3_PIN, 3);\
+	gpio_id_t csn = bk_gpio_map_dev_to_pin(QSPI##id##_LL_CSN_PIN, GPIO_DEV_QSPI##id##_CSN);\
+	gpio_id_t clk = bk_gpio_map_dev_to_pin(QSPI##id##_LL_CLK_PIN, GPIO_DEV_QSPI##id##_CLK);\
+	gpio_id_t io0 = bk_gpio_map_dev_to_pin(QSPI##id##_LL_IO0_PIN, GPIO_DEV_QSPI##id##_IO0);\
+	gpio_id_t io1 = bk_gpio_map_dev_to_pin(QSPI##id##_LL_IO1_PIN, GPIO_DEV_QSPI##id##_IO1);\
+	gpio_id_t io2 = bk_gpio_map_dev_to_pin(QSPI##id##_LL_IO2_PIN, GPIO_DEV_QSPI##id##_IO2);\
+	gpio_id_t io3 = bk_gpio_map_dev_to_pin(QSPI##id##_LL_IO3_PIN, GPIO_DEV_QSPI##id##_IO3);\
+	bk_gpio_pull_up(csn);\
+	bk_gpio_pull_up(io0);\
+	bk_gpio_pull_up(io1);\
+	bk_gpio_pull_up(io2);\
+	bk_gpio_pull_up(io3);\
+	bk_gpio_set_capacity(csn, 3);\
+	bk_gpio_set_capacity(clk, 3);\
+	bk_gpio_set_capacity(io0, 3);\
+	bk_gpio_set_capacity(io1, 3);\
+	bk_gpio_set_capacity(io2, 3);\
+	bk_gpio_set_capacity(io3, 3);\
 } while(0)
 
 

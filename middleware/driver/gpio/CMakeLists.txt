@@ -1,5 +1,6 @@
 if (CONFIG_GPIO)
 	list(APPEND incs gpio)
+	list(APPEND srcs gpio/gpio.c)
 	if (CONFIG_AON_GPIO)
 		list(APPEND srcs gpio/gpio_driver_base.c)
 

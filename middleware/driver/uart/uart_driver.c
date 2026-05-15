@@ -20,6 +20,7 @@
 #include <driver/uart.h>
 #include "bk_uart.h"
 #include "gpio_driver.h"
+#include "gpio_driver_base.h"
 #include <driver/gpio.h>
 #include "bk_fifo.h"
 #include <os/os.h>
@@ -298,140 +299,62 @@ static void uart_interrupt_disable(uart_id_t id)
 }
 #endif
 
+#define UART_SET_PIN(id, dev_txd, dev_rxd) do {\
+	gpio_id_t tx = bk_gpio_map_dev_to_pin(uart_hal_get_tx_pin(id), (dev_txd));\
+	gpio_id_t rx = bk_gpio_map_dev_to_pin(uart_hal_get_rx_pin(id), (dev_rxd));\
+	bk_gpio_pull_up(tx);\
+	bk_gpio_pull_up(rx);\
+} while(0)
+
 static void uart_init_gpio(uart_id_t id)
 {
-	switch (id)
-	{
-		case UART_ID_0:
-		{
+	switch (id) {
+	case UART_ID_0:
 #if CONFIG_UART_PRINT_PORT_ATE
-			bk_gpio_set_value(GPIO_10, 0);
-			bk_gpio_set_value(GPIO_11, 0);
+		bk_gpio_set_value(GPIO_10, 0);
+		bk_gpio_set_value(GPIO_11, 0);
 #endif
-			gpio_dev_unmap(uart_hal_get_tx_pin(id));
-			gpio_dev_unmap(uart_hal_get_rx_pin(id));
-			gpio_dev_map(uart_hal_get_tx_pin(id), GPIO_DEV_UART1_TXD);
-			gpio_dev_map(uart_hal_get_rx_pin(id), GPIO_DEV_UART1_RXD);
-			bk_gpio_pull_up(uart_hal_get_tx_pin(id));
-			bk_gpio_pull_up(uart_hal_get_rx_pin(id));
+		UART_SET_PIN(id, GPIO_DEV_UART1_TXD, GPIO_DEV_UART1_RXD);
 #if CONFIG_UART1_FLOW_CTRL
-			//NOTICE:BEKEN ASIC CTS PIN really function is RTS.
-			gpio_dev_map(uart_hal_get_cts_pin(id), GPIO_DEV_UART1_CTS);
-			bk_gpio_enable_output(uart_hal_get_cts_pin(id));
-			bk_gpio_pull_down(uart_hal_get_cts_pin(id));
-
-			gpio_dev_map(uart_hal_get_rts_pin(id), GPIO_DEV_UART1_RTS);
-			bk_gpio_enable_input(uart_hal_get_rts_pin(id));
-			bk_gpio_pull_down(uart_hal_get_rts_pin(id));
+		{
+			gpio_id_t cts = bk_gpio_map_dev_to_pin(uart_hal_get_cts_pin(id), GPIO_DEV_UART1_CTS);
+			gpio_id_t rts = bk_gpio_map_dev_to_pin(uart_hal_get_rts_pin(id), GPIO_DEV_UART1_RTS);
+			bk_gpio_enable_output(cts);
+			bk_gpio_enable_input(rts);
+			bk_gpio_pull_down(cts);
+			bk_gpio_pull_down(rts);
 			bk_uart_set_hw_flow_ctrl(id, UART1_FLOW_CTRL_CNT);
-#endif
-			break;
-		}
-		case UART_ID_1:
-		{
-			gpio_dev_unmap(uart_hal_get_tx_pin(id));
-			gpio_dev_unmap(uart_hal_get_rx_pin(id));
-			gpio_dev_map(uart_hal_get_tx_pin(id), GPIO_DEV_UART2_TXD);
-			gpio_dev_map(uart_hal_get_rx_pin(id), GPIO_DEV_UART2_RXD);
-			bk_gpio_pull_up(uart_hal_get_tx_pin(id));
-			bk_gpio_pull_up(uart_hal_get_rx_pin(id));
-			break;
-		}
-		case UART_ID_2:
-		{
-			gpio_dev_unmap(uart_hal_get_tx_pin(id));
-			gpio_dev_unmap(uart_hal_get_rx_pin(id));
-			gpio_dev_map(uart_hal_get_tx_pin(id), GPIO_DEV_UART3_TXD);
-			gpio_dev_map(uart_hal_get_rx_pin(id), GPIO_DEV_UART3_RXD);
-			bk_gpio_pull_up(uart_hal_get_tx_pin(id));
-			bk_gpio_pull_up(uart_hal_get_rx_pin(id));
-			break;
-		}
-#if (SOC_UART_ID_NUM_PER_UNIT  >= 4)
-		case UART_ID_3:
-		{
-			gpio_dev_unmap(uart_hal_get_tx_pin(id));
-			gpio_dev_unmap(uart_hal_get_rx_pin(id));
-			gpio_dev_map(uart_hal_get_tx_pin(id), GPIO_DEV_UART4_TXD);
-			gpio_dev_map(uart_hal_get_rx_pin(id), GPIO_DEV_UART4_RXD);
-			bk_gpio_pull_up(uart_hal_get_tx_pin(id));
-			bk_gpio_pull_up(uart_hal_get_rx_pin(id));
-			break;
 		}
 #endif
-		default:
-			break;
+		break;
+	case UART_ID_1:
+		UART_SET_PIN(id, GPIO_DEV_UART2_TXD, GPIO_DEV_UART2_RXD);
+		break;
+	case UART_ID_2:
+		UART_SET_PIN(id, GPIO_DEV_UART3_TXD, GPIO_DEV_UART3_RXD);
+		break;
+#if (SOC_UART_ID_NUM_PER_UNIT >= 4)
+	case UART_ID_3:
+		UART_SET_PIN(id, GPIO_DEV_UART4_TXD, GPIO_DEV_UART4_RXD);
+		break;
+#endif
+	default:
+		break;
 	}
 }
 
 static void uart_deinit_tx_gpio(uart_id_t id)
 {
-	switch (id)
-	{
-		case UART_ID_0:
-		{
-			gpio_dev_unmap(uart_hal_get_tx_pin(id));
-			bk_gpio_pull_up(uart_hal_get_tx_pin(id));
-			break;
-		}
-		case UART_ID_1:
-		{
-			gpio_dev_unmap(uart_hal_get_tx_pin(id));
-			bk_gpio_pull_up(uart_hal_get_tx_pin(id));
-			break;
-		}
-		case UART_ID_2:
-		{
-			gpio_dev_unmap(uart_hal_get_tx_pin(id));
-			bk_gpio_pull_up(uart_hal_get_tx_pin(id));
-			break;
-		}
-#if (SOC_UART_ID_NUM_PER_UNIT  >= 4)
-		case UART_ID_3:
-		{
-			gpio_dev_unmap(uart_hal_get_tx_pin(id));
-			bk_gpio_pull_up(uart_hal_get_tx_pin(id));
-			break;
-		}
-#endif
-		default:
-			break;
-	}
+	gpio_id_t tx = uart_hal_get_tx_pin(id);
+	gpio_dev_unmap(tx);
+	bk_gpio_pull_up(tx);
 }
 
 static void uart_deinit_rx_gpio(uart_id_t id)
 {
-	switch (id)
-	{
-		case UART_ID_0:
-		{
-			gpio_dev_unmap(uart_hal_get_rx_pin(id));
-			bk_gpio_pull_up(uart_hal_get_rx_pin(id));
-			break;
-		}
-		case UART_ID_1:
-		{
-			gpio_dev_unmap(uart_hal_get_rx_pin(id));
-			bk_gpio_pull_up(uart_hal_get_rx_pin(id));
-			break;
-		}
-		case UART_ID_2:
-		{
-			gpio_dev_unmap(uart_hal_get_rx_pin(id));
-			bk_gpio_pull_up(uart_hal_get_rx_pin(id));
-			break;
-		}
-#if (SOC_UART_ID_NUM_PER_UNIT  >= 4)
-		case UART_ID_3:
-		{
-			gpio_dev_unmap(uart_hal_get_rx_pin(id));
-			bk_gpio_pull_up(uart_hal_get_rx_pin(id));
-			break;
-		}
-#endif
-		default:
-			break;
-	}
+	gpio_id_t rx = uart_hal_get_rx_pin(id);
+	gpio_dev_unmap(rx);
+	bk_gpio_pull_up(rx);
 }
 
 static bk_err_t uart_id_init_kfifo(uart_id_t id)

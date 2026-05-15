@@ -19,6 +19,7 @@
 #include "clock_driver.h"
 #include "dma_hal.h"
 #include "gpio_driver.h"
+#include "gpio_driver_base.h"
 #include "icu_driver.h"
 #include <common/bk_include.h>
 #include <os/mem.h>
@@ -121,20 +122,16 @@ static spi_dma_info_t s_spi_dma_info = {0};
 #endif
 
 #define SPI_SET_PIN(id) do {\
-        gpio_dev_unmap(SPI##id##_LL_CSN_PIN);\
-        gpio_dev_unmap(SPI##id##_LL_SCK_PIN);\
-        gpio_dev_unmap(SPI##id##_LL_MOSI_PIN);\
-        gpio_dev_unmap(SPI##id##_LL_MISO_PIN);\
-        gpio_dev_map(SPI##id##_LL_CSN_PIN, GPIO_DEV_SPI##id##_CSN);\
-        gpio_dev_map(SPI##id##_LL_SCK_PIN, GPIO_DEV_SPI##id##_SCK);\
-        gpio_dev_map(SPI##id##_LL_MOSI_PIN, GPIO_DEV_SPI##id##_MOSI);\
-        gpio_dev_map(SPI##id##_LL_MISO_PIN, GPIO_DEV_SPI##id##_MISO);\
-        bk_gpio_pull_up(SPI##id##_LL_CSN_PIN);\
-        bk_gpio_pull_up(SPI##id##_LL_SCK_PIN);\
-        bk_gpio_set_capacity(SPI##id##_LL_CSN_PIN, 3);\
-        bk_gpio_set_capacity(SPI##id##_LL_SCK_PIN, 3);\
-        bk_gpio_set_capacity(SPI##id##_LL_MOSI_PIN, 3);\
-        bk_gpio_set_capacity(SPI##id##_LL_MISO_PIN, 3);\
+        gpio_id_t csn = bk_gpio_map_dev_to_pin(SPI##id##_LL_CSN_PIN, GPIO_DEV_SPI##id##_CSN);\
+        gpio_id_t sck = bk_gpio_map_dev_to_pin(SPI##id##_LL_SCK_PIN, GPIO_DEV_SPI##id##_SCK);\
+        gpio_id_t mosi = bk_gpio_map_dev_to_pin(SPI##id##_LL_MOSI_PIN, GPIO_DEV_SPI##id##_MOSI);\
+        gpio_id_t miso = bk_gpio_map_dev_to_pin(SPI##id##_LL_MISO_PIN, GPIO_DEV_SPI##id##_MISO);\
+        bk_gpio_pull_up(csn);\
+        bk_gpio_pull_up(sck);\
+        bk_gpio_set_capacity(csn, 3);\
+        bk_gpio_set_capacity(sck, 3);\
+        bk_gpio_set_capacity(mosi, 3);\
+        bk_gpio_set_capacity(miso, 3);\
 } while(0)
 
 static spi_driver_t s_spi[SOC_SPI_UNIT_NUM] = {
