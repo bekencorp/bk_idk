@@ -125,6 +125,7 @@ extern "C" {
 #define ICU_PRI_JPEG_ENCODER                     (20)
 
 #define IQR_PRI_DEFAULT                          (6)
+#define IQR_PRI_HIGH                             (2)
 
 #ifdef __cplusplus
 }
