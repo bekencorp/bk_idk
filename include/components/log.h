@@ -54,7 +54,7 @@ extern "C" {
 #endif
 
 #if (BK_LOG_LEVEL >= BK_LOG_ERROR)
-#define BK_LOGE( tag, format, ... )         _BK_LOG_PRINTF(BK_LOG_ERROR, tag, format,  ##__VA_ARGS__)
+#define BK_LOGE( tag, format, ... )         _BK_LOG_PRINTF(BK_LOG_ERROR, (char *)tag, format,  ##__VA_ARGS__)
 #define BK_RAW_LOGE( tag, format, ... )     _BK_RAW_PRINTF(BK_LOG_ERROR, tag, format,  ##__VA_ARGS__)
 #else
 #define BK_LOGE(tag, format, ...)           (void)(format, ##__VA_ARGS__)
