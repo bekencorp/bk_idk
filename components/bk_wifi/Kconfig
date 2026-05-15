@@ -394,7 +394,8 @@ menu "Bk_Wifi"
 
 	config USE_P2P_PS
 		bool "Enable Use P2P PS"
-		default n
+		depends on P2P
+		default y
 
 	config AP_PROBEREQ_CB
 		bool "Enable AP Probereq Cb"

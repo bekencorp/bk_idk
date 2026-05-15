@@ -1492,12 +1492,12 @@ static inline int rwnx_rx_traffic_req_ind(struct ke_msg *msg)
 	return 0;
 }
 
-#if CONFIG_WIFI_P2P
+#if CONFIG_P2P
 static int rwnx_rx_p2p_vif_ps_change_ind(struct ke_msg *msg)
 {
 	int vif_idx  = ((struct mm_p2p_vif_ps_change_ind *)msg->param)->vif_index;
 	int ps_state = ((struct mm_p2p_vif_ps_change_ind *)msg->param)->ps_state;
-	struct vif_info_tag *vif_entry = NULL;
+	void *vif_entry = NULL;
 	GLOBAL_INT_DECLARATION();
 
 	// RWNX_DBG(RWNX_FN_ENTRY_STR);
@@ -1505,9 +1505,9 @@ static int rwnx_rx_p2p_vif_ps_change_ind(struct ke_msg *msg)
 	GLOBAL_INT_DISABLE();
 
 	if (vif_idx != INVALID_VIF_IDX)
-		vif_entry = &vif_info_tab[vif_idx];
+		vif_entry = mac_vif_mgmt_get_entry(vif_idx);
 
-	if (!vif_entry || !vif_entry->active) {
+	if (!vif_entry || !mac_vif_mgmt_get_active(vif_entry)) {
 		GLOBAL_INT_RESTORE();
 		return 0;
 	}
@@ -1520,6 +1520,8 @@ static int rwnx_rx_p2p_vif_ps_change_ind(struct ke_msg *msg)
 		rwnx_txq_vif_stop(vif_entry, RWNX_TXQ_STOP_VIF_PS);
 	}
 	GLOBAL_INT_RESTORE();
+
+	return 0;
 }
 #endif
 
