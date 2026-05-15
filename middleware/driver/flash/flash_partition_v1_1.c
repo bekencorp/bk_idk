@@ -318,7 +318,9 @@ static bool bk_partition_build_context(bk_partition_t partition, struct bk_parti
 
     ctx->start_addr = ctx->partition_info->partition_start_addr;
     ctx->length = ctx->partition_info->partition_length;
+#if CONFIG_PARTITION_ENCRYPTION
     ctx->need_encrypt = partition_is_encrypt(ctx->partition_info);
+#endif
 
     return true;
 }
