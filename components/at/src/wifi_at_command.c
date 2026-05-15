@@ -130,7 +130,7 @@ int at_wifi_staconn_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
 		}
 	}
 	if (oob_ssid_tp) {
-		demo_sta_app_init((char *)oob_ssid_tp, password);
+		demo_sta_app_init((char *)oob_ssid_tp, password, NULL, NULL);
 #if CONFIG_USE_CONV_UTF8
 		os_free(oob_ssid_tp);
 #endif
@@ -233,7 +233,7 @@ int at_wifi_ap_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **ar
 	oob_ssid_softap = (char *)conv_utf8((uint8_t *)ap_ssid);
 #endif
 	if (oob_ssid_softap) {
-		err = demo_softap_app_init((char *)oob_ssid_softap, ap_key, ap_channel);
+		err = demo_softap_app_init((char *)oob_ssid_softap, ap_key, ap_channel, false);
 #if CONFIG_USE_CONV_UTF8
 		os_free(oob_ssid_softap);
 #endif

@@ -852,7 +852,7 @@ static bk_err_t gatt_db_boarding_gatt_char_handler(uint8_t conn_handle, GATT_DB_
                     s_boarding_password_len = params->value.len;
                     os_printf("Boarding write PASS:%s, %d, %d\r\n", s_boarding_password, s_boarding_password_len, params->value.actual_len);
 #if CONFIG_WIFI_ENABLE
-                    demo_sta_app_init((char *)s_boarding_ssid, (char *)s_boarding_password);
+                    demo_sta_app_init((char *)s_boarding_ssid, (char *)s_boarding_password, NULL, NULL);
 #endif
                 }
                 else if (handle->char_id == boarding_env.chara_ssid_handle)

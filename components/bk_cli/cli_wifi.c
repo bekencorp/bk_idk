@@ -13,6 +13,7 @@
 #include <components/netif.h>
 #include "bk_wifi.h"
 #include "bk_wifi_types.h"
+#include "getopt_r.h"
 #if CONFIG_WIFI_CLI_RAW_LINK_ENABLE
 #include <modules/raw_link.h>
 #endif
@@ -176,16 +177,16 @@ void demo_wifi_fast_connect(void)
 						(uint8_t *)&info, sizeof(BK_FAST_CONNECT_T));
 	CLI_LOGD("%s, flag:%x\r\n", __func__, info.flag);
 	if (info.flag == 0x71l) {
-		demo_sta_app_init((char *)info.sta_ssid, (char *)info.sta_pwd);
+		demo_sta_app_init((char *)info.sta_ssid, (char *)info.sta_pwd, NULL, NULL);
 #if 0
 		bk_event_register_cb(EVENT_MOD_NETIF, EVENT_NETIF_GOT_IP4,
 								demo_tcp_send, &info_t);
 #endif
 	} else if (info.flag == 0x72l) {
-		demo_softap_app_init((char *)info.ap_ssid, (char *)info.ap_pwd, NULL);
+		demo_softap_app_init((char *)info.ap_ssid, (char *)info.ap_pwd, NULL, false);
 	} else if (info.flag == 0x73l) {
-		demo_sta_app_init((char *)info.sta_ssid, (char *)info.sta_pwd);
-		demo_softap_app_init((char *)info.ap_ssid, (char *)info.ap_pwd, NULL);
+		demo_sta_app_init((char *)info.sta_ssid, (char *)info.sta_pwd, NULL, NULL);
+		demo_softap_app_init((char *)info.ap_ssid, (char *)info.ap_pwd, NULL, false);
 	}
 }
 #endif
@@ -225,53 +226,67 @@ void cli_wifi_ap_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **
 		return;
 	}
 #endif
-#if CONFIG_ENABLE_WIFI_DEFAULT_CONNECT
-	if (wifi_cli_find_id(argc, argv, "-w") > 0 ||
-		wifi_cli_find_id(argc, argv, "-e") > 0) {
-		if (argc == 3)
-			ap_ssid = argv[2];
-		else if (argc == 4) {
-			ap_ssid = argv[2];
-			if (os_strlen(argv[3]) <= 2)
-				ap_channel = argv[3];
-			else
-				ap_key = argv[3];
-		} else if (argc == 5) {
-			ap_ssid = argv[2];
-			ap_key = argv[3];
-			ap_channel = argv[4];
+	bool hidden = false;
+	bool option_w __maybe_unused = false;
+	bool option_e __maybe_unused = false;
+	struct getopt_state state = { .report_errors = true };
+	int opt;
+
+	while ((opt = getopt_r(argc, argv, "c:eHhw", &state)) != -1) {
+		switch (opt) {
+		case 'c':
+			ap_channel = state.optarg;
+			break;
+		case 'e':
+			option_e = true;
+			break;
+		case 'H':
+			hidden = true;
+			break;
+		case 'w':
+			option_w = true;
+			break;
+		case 'h':
+			goto usage;
+			break;
+		case '?':
+			os_printf("uknown%c\n", state.optopt);
+			break;
+		}
+	}
+
+	if (state.optind < argc) {
+		ap_ssid = argv[state.optind];
+		state.optind++;
+
+		// If has next argument, assume it is password
+		if (state.optind < argc) {
+			ap_key = argv[state.optind];
+			state.optind++;
+
+			// Check if has more argument
+			if (state.optind < argc)
+				CLI_LOGE("more argument %s\n", argv[state.optind]);
 		}
 	} else {
-#endif
-		if (argc == 2)
-			ap_ssid = argv[1];
-		else if (argc == 3) {
-			ap_ssid = argv[1];
-			if (os_strlen(argv[2]) <= 2)
-				ap_channel = argv[2];
-			else
-				ap_key = argv[2];
-		} else if (argc == 4) {
-			ap_ssid = argv[1];
-			ap_key = argv[2];
-			ap_channel = argv[3];
-		}else{
-			CLI_LOGI("Invalid parameters\n");
-			return;
-		}
-#if CONFIG_ENABLE_WIFI_DEFAULT_CONNECT
+usage:
+		CLI_LOGI("invalid argc number\n");
+		CLI_LOGI("Usage: %s <ssid> [passphrase] [-e] [-c <channel>] [-H] [-w] [-h]\n", argv[0]);
+		CLI_LOGI("    -c: specify AP's channel\n");
+		CLI_LOGI("    -H: set hidden AP\n");
+		goto exit;
 	}
-#endif
+
 	char *oob_ssid_softap = ap_ssid;
 #if CONFIG_USE_CONV_UTF8
 	oob_ssid_softap = (char *)conv_utf8((uint8_t *)ap_ssid);
 #endif
 	if (oob_ssid_softap) {
-		ret = demo_softap_app_init((char *)oob_ssid_softap, ap_key, ap_channel);
+		ret = demo_softap_app_init((char *)oob_ssid_softap, ap_key, ap_channel, hidden);
 #if CONFIG_ENABLE_WIFI_DEFAULT_CONNECT
 		bk_event_unregister_cb(EVENT_MOD_WIFI, EVENT_WIFI_STA_CONNECTED,
 								fast_connect_cb);
-		if (wifi_cli_find_id(argc, argv, "-w") > 0) {
+		if (option_w) {
 			bk_logic_partition_t *pt = bk_flash_partition_get_info(BK_PARTITION_USR_CONFIG);
 
 			bk_flash_read_bytes(pt->partition_start_addr + pt->partition_length -4096,
@@ -283,7 +298,7 @@ void cli_wifi_ap_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **
 			os_strcpy((char *)info_t.ap_ssid, (char *)ap_ssid);
 			os_strcpy((char *)info_t.ap_pwd, ap_key);
 			fast_connect_cb(NULL, 0, 0, NULL);
-		} else if (wifi_cli_find_id(argc, argv, "-e") > 0) {
+		} else if (option_e) {
 			bk_logic_partition_t *pt = bk_flash_partition_get_info(BK_PARTITION_USR_CONFIG);
 
 			bk_flash_read_bytes(pt->partition_start_addr + pt->partition_length -4096,
@@ -301,84 +316,14 @@ void cli_wifi_ap_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **
 #if CONFIG_USE_CONV_UTF8
 		os_free(oob_ssid_softap);
 #endif
-
 	}
-	if(ret == 0)
+
+exit:
+	if (ret == 0)
 		msg = WIFI_CMD_RSP_SUCCEED;
 	else
 		msg = WIFI_CMD_RSP_ERROR;
 	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
-}
-
-void cli_wifi_hidden_ap_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
-{
-	wifi_ap_config_t ap_config = WIFI_DEFAULT_AP_CONFIG();
-	netif_ip4_config_t ip4_config = {0};
-	int len;
-	char *ap_ssid = NULL;
-	char *ap_key = "";
-	char *ap_channel = NULL;
-	int ret = 0;
-	char *msg = NULL;
-
-	if (argc == 2)
-			ap_ssid = argv[1];
-	else if (argc == 3) {
-		ap_ssid = argv[1];
-		if (os_strlen(argv[2]) <= 2)
-			ap_channel = argv[2];
-		else
-			ap_key = argv[2];
-	} else if (argc == 4) {
-		ap_ssid = argv[1];
-		ap_key = argv[2];
-		ap_channel = argv[3];
-	}else{
-		CLI_LOGI("Invalid parameters\n");
-		return;
-	}
-
-	if (ap_ssid) {
-		len = os_strlen(ap_ssid);
-		if (32 < len) {
-			CLI_LOGE("ssid name more than 32 Bytes\r\n");
-			return;
-		}
-
-		os_strcpy(ip4_config.ip, WLAN_DEFAULT_IP);
-		os_strcpy(ip4_config.mask, WLAN_DEFAULT_MASK);
-		os_strcpy(ip4_config.gateway, WLAN_DEFAULT_GW);
-		os_strcpy(ip4_config.dns, WLAN_DEFAULT_GW);
-		ret = bk_netif_set_ip4_config(NETIF_IF_AP, &ip4_config);
-
-		os_strcpy(ap_config.ssid, ap_ssid);
-		os_strcpy(ap_config.password, ap_key);
-
-		if (ap_channel) {
-			int channel;
-			char *end;
-
-			channel = strtol(ap_channel, &end, 0);
-			if (*end) {
-				CLI_LOGE("Invalid number '%s'", ap_channel);
-				return;
-			}
-			ap_config.channel = channel;
-		}
-
-		CLI_LOGI("ssid:%s  key:%s\r\n", ap_config.ssid, ap_config.password);
-		ap_config.hidden = true;
-		ret = bk_wifi_ap_set_config(&ap_config);
-		ret = bk_wifi_ap_start();
-	}
-
-
-	if(ret == 0)
-		msg = WIFI_CMD_RSP_SUCCEED;
-	else
-		msg = WIFI_CMD_RSP_ERROR;
-	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
-
 }
 
 void cli_wifi_test_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
@@ -952,91 +897,94 @@ void cli_wifi_sta_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char *
 {
 	char *ssid = NULL;
 	char *password = "";
-#ifdef CONFIG_CONNECT_THROUGH_PSK_OR_SAE_PASSWORD
-	u8 *psk = 0;
-#endif
+	uint8_t *psk __maybe_unused = 0;
 	char *msg = NULL;
 	int ret;
+	struct getopt_state state = { .report_errors = true };
+	int opt;
+	char *freq_list_str __maybe_unused = NULL;
+	char *bssid_str __maybe_unused = NULL;
+	bool option_w __maybe_unused = false;
+	bool option_e __maybe_unused = false;
 
-	if ((argc < 2) || (argc > 6)) {
+	static struct option long_options[] = {
+		{ "bssid",	   required_argument, 0, 'b' }, // use 'b' as short argument
+		{ "freq_list", required_argument, 0, 'f' }, // use 'f' as short argument
+		{ "psk",	   required_argument, 0, 'p' }, // use 'f' as short argument
+		{ 0,		   0,				  0, 0	 }
+	};
+
+	while ((opt = getopt_long_r(argc, argv, "b:ef:hp:w", long_options, &state)) != -1) {
+		switch (opt) {
+		case 'b':
+			bssid_str = state.optarg;
+			break;
+		case 'e':
+			option_e = true;
+			break;
+		case 'f':
+			freq_list_str = state.optarg;
+			break;
+		case 'p':
+			psk = (uint8_t *)state.optarg;
+			break;
+		case 'w':
+			option_w = true;
+			break;
+		case 'h':
+			goto usage;
+			break;
+		case '?':
+			os_printf("uknown%c\n", state.optopt);
+			break;
+		}
+	}
+
+	if (state.optind < argc) {
+		ssid = argv[state.optind];
+		state.optind++;
+
+		// If has next argument, assume it is password
+		if (state.optind < argc) {
+			password = argv[state.optind];
+			state.optind++;
+
+			// Check if has more argument
+			if (state.optind < argc)
+				CLI_LOGE("more argument %s\n", argv[state.optind]);
+		}
+	} else {
 		CLI_LOGI("invalid argc number\n");
-		goto error;
+		goto usage;
 	}
 
 	int err = rtos_init_semaphore(&wifi_cmd_sema, 1);
-	if (err != kNoErr) {
+
+	if (err != kNoErr)
 		goto error;
-	}
 
 #ifdef CONFIG_BSSID_CONNECT
-	uint8_t bssid[6] = {0};
-	if (os_strcmp(argv[1], "bssid") == 0) {
-		if(argc >= 3) {
-			hexstr2bin_cli(argv[2], bssid, 6);
-		}
-		if(argc >= 4) {
-			password = argv[3];
-		}
+	uint8_t bssid[6] = { 0 };
+	if (bssid_str) {
+		hexstr2bin_cli(bssid_str, bssid, 6);
 		demo_sta_bssid_app_init(bssid, password);
-		if (wifi_cmd_sema != NULL)
-		{
+		if (wifi_cmd_sema != NULL) {
 			err = rtos_get_semaphore(&wifi_cmd_sema, 10000);
-			if (err != kNoErr)
-			{
+			if (err != kNoErr) {
 				goto error;
-			}
-			else
-			{
-				if (wifi_cmd_status == 1)
-				{
+			} else {
+				if (wifi_cmd_status == 1) {
 					msg = WIFI_EVT_GOT_IP;
 					os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
 					rtos_deinit_semaphore(&wifi_cmd_sema);
 					wifi_cmd_status = 0;
 					return;
-				}
-				else
-				{
+				} else {
 					goto error;
 				}
 			}
 		}
-
 	}
-#endif
-
-#if CONFIG_ENABLE_WIFI_DEFAULT_CONNECT
-	if (wifi_cli_find_id(argc, argv, "-w") > 0 ||
-		wifi_cli_find_id(argc, argv, "-e") > 0) {
-		if (argc >= 2)
-			ssid = argv[2];
-
-		if (argc >= 3)
-			password = argv[3];
-	} else {
-#endif
-		if (argc >= 2)
-			ssid = argv[1];
-
-		if (argc >= 3)
-			password = argv[2];
-
-#ifdef CONFIG_CONNECT_THROUGH_PSK_OR_SAE_PASSWORD
-		if (argc >= 4) {
-			psk = (u8 *)argv[2];
-			password = argv[3];
-		}
-#endif
-#if CONFIG_ENABLE_WIFI_DEFAULT_CONNECT
-	}
-#endif
-
-#if 0 //TODO support BSSID/Channel configuration
-	if (argc >= 4)
-		bssid = argv[3];
-
-	if (argc >= 5)
-		channel = argv[4];
 #endif
 
 	char *oob_ssid_tp = ssid;
@@ -1045,19 +993,15 @@ void cli_wifi_sta_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char *
 #endif
 
 	if (oob_ssid_tp) {
-#ifdef CONFIG_CONNECT_THROUGH_PSK_OR_SAE_PASSWORD
-	ret = demo_sta_app_init((char *)oob_ssid_tp, psk, password);
-#else
-	ret = demo_sta_app_init((char *)oob_ssid_tp, password);
-#endif
-	if (ret == -1)
-		goto error;
+		ret = demo_sta_app_init((char *)oob_ssid_tp, password, psk, freq_list_str);
+		if (ret == -1)
+			goto error;
 
 #if CONFIG_ENABLE_WIFI_DEFAULT_CONNECT
-		if (wifi_cli_find_id(argc, argv, "-w") > 0) {
+		if (option_w) {
 			bk_logic_partition_t *pt = bk_flash_partition_get_info(BK_PARTITION_USR_CONFIG);
-			bk_flash_read_bytes(pt->partition_start_addr + pt->partition_length -4096,
-						(uint8_t *)&info_t, sizeof(BK_FAST_CONNECT_T));
+			bk_flash_read_bytes(pt->partition_start_addr + pt->partition_length - 4096,
+								(uint8_t *)&info_t, sizeof(BK_FAST_CONNECT_T));
 			if ((info_t.flag & 0xf0l) == 0x70l)
 				info_t.flag |= 0x1l;
 			else
@@ -1065,17 +1009,17 @@ void cli_wifi_sta_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char *
 			os_strcpy((char *)info_t.sta_ssid, (char *)oob_ssid_tp);
 			os_strcpy((char *)info_t.sta_pwd, password);
 			bk_event_register_cb(EVENT_MOD_WIFI, EVENT_WIFI_STA_CONNECTED,
-									fast_connect_cb, &info_t);
-		} else if (wifi_cli_find_id(argc, argv, "-e") > 0) {
+								 fast_connect_cb, &info_t);
+		} else if (option_e) {
 			bk_logic_partition_t *pt = bk_flash_partition_get_info(BK_PARTITION_USR_CONFIG);
 
-			bk_flash_read_bytes(pt->partition_start_addr + pt->partition_length -4096,
-						(uint8_t *)&info_t, sizeof(BK_FAST_CONNECT_T));
+			bk_flash_read_bytes(pt->partition_start_addr + pt->partition_length - 4096,
+								(uint8_t *)&info_t, sizeof(BK_FAST_CONNECT_T));
 			if (info_t.flag == 0x71l || info_t.flag == 0x73l) {
 				info_t.flag &= ~0x1l;
 				bk_flash_set_protect_type(FLASH_PROTECT_NONE);
-				bk_flash_write_bytes(pt->partition_start_addr + pt->partition_length -4096,
-									(uint8_t *)&info_t, sizeof(BK_FAST_CONNECT_T));
+				bk_flash_write_bytes(pt->partition_start_addr + pt->partition_length - 4096,
+									 (uint8_t *)&info_t, sizeof(BK_FAST_CONNECT_T));
 				bk_flash_set_protect_type(FLASH_UNPROTECT_LAST_BLOCK);
 			}
 		}
@@ -1085,25 +1029,18 @@ void cli_wifi_sta_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char *
 #endif
 
 #if !CONFIG_SOC_BK7236XX && (!CONFIG_SOC_BK7239XX) && (!CONFIG_SOC_BK7286XX)
-		if (wifi_cmd_sema != NULL)
-		{
+		if (wifi_cmd_sema != NULL) {
 			err = rtos_get_semaphore(&wifi_cmd_sema, 10000);
-			if (err != kNoErr)
-			{
+			if (err != kNoErr) {
 				goto error;
-			}
-			else
-			{
-				if (wifi_cmd_status == 1)
-				{
+			} else {
+				if (wifi_cmd_status == 1) {
 					msg = WIFI_EVT_GOT_IP;
 					os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
 					rtos_deinit_semaphore(&wifi_cmd_sema);
 					wifi_cmd_status = 0;
 					return;
-				}
-				else
-				{
+				} else {
 					goto error;
 				}
 			}
@@ -1114,6 +1051,14 @@ void cli_wifi_sta_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char *
 		goto error;
 	}
 
+	goto exit;
+
+usage:
+	CLI_LOGI("Usage: %s <ssid> [passphrase] [-b <bssid>] [-f <freq_list>] [-p <psk>] [-h]\n", argv[0]);
+	CLI_LOGI("  -b: specify AP's bssid\n");
+	CLI_LOGI("  -f: specify freq_list to connect, seperated by semicomma, for example, -f 2412;5180\n");
+	CLI_LOGI("  -p: specify psk to connect\n");
+	CLI_LOGI("  -h: help\n");
 	goto exit;
 
 error:
@@ -2480,7 +2425,7 @@ void bk_bridge_start_by_ssid(char *bridge_ssid, char *ext_ssid, char *key) {
 	os_memset(br_pwd, 0, WIFI_PASSWORD_LEN);
 	os_strncpy(br_ssid, bridge_ssid, WIFI_SSID_STR_LEN);
 	os_strncpy(br_pwd, key, WIFI_PASSWORD_LEN);
-	demo_sta_app_init(ext_ssid, key);
+	demo_sta_app_init(ext_ssid, key, NULL, NULL);
 }
 
 void bk_bridge_start_by_bssid(char *bridge_ssid, uint8_t *ext_bssid, char *key) {
@@ -2807,7 +2752,6 @@ void cli_wifi_csi_cmd(char * pcWriteBuffer, int xWriteBufferLen, int argc, char 
 static const struct cli_command s_wifi_commands[] = {
 	{"scan", "scan [ssid]", cli_wifi_scan_cmd},
 	{"ap", "ap ssid [password] [channel[1:14]]", cli_wifi_ap_cmd},
-	{"start_hidden_softap", "start_hidden_softap ssid [password] [channel[1:14]]", cli_wifi_hidden_ap_cmd},
 	{"sta", "sta ssid [password][bssid][channel]", cli_wifi_sta_cmd}, //TODO support connect speicific BSSID
 #if CONFIG_WIFI_REGDOMAIN
 	{"regd", "get|set <alpha2>", cli_wifi_regd_cmd},

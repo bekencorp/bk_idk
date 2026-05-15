@@ -63,7 +63,7 @@ static bk_err_t at_wlan_status_callback(void *arg, event_module_t event_module,
 	wifi_event_ap_disconnected_t *ap_disconnected;
 	wifi_event_ap_connected_t *ap_connected;
 	wifi_event_scan_done_t *scan_done;
-    
+
 	BK_LOGD(TAG,"[AT:WLAN],callback_event(%x)\r\n",event_id);
 	if(!penv->atsvr_mode)
 		return BK_OK;
@@ -82,12 +82,12 @@ static bk_err_t at_wlan_status_callback(void *arg, event_module_t event_module,
 			sta_connected = (wifi_event_sta_connected_t*)event_data;
 			atsvr_event_sender(at_tag,AT_WLAN_STA_CONNECTED,sizeof(wifi_event_sta_connected_t),sta_connected,true);
 			break;
-		case EVENT_WIFI_STA_DISCONNECTED:		
+		case EVENT_WIFI_STA_DISCONNECTED:
 			sta_disconnected = (wifi_event_sta_disconnected_t*)event_data;
 			at_wlan_stat.disconenct_reason = sta_disconnected->disconnect_reason;
 			at_wlan_stat.local_generated = sta_disconnected->local_generated;
 			if ((at_wlan_cfg.at_wlan_scan_sema!=NULL)&&(penv->atsvr_mode == true)&&(at_wlan_stat.disconenct_reason==0))
-				break;	
+				break;
 			atsvr_event_sender(at_tag,AT_WLAN_STA_DISCONNECT,0,NULL,false);
 			if(at_wlan_stat.station_status==AT_WLAN_STATION_UP)
 			{
@@ -125,7 +125,7 @@ static bk_err_t at_wlan_netif_event_cb(void *arg, event_module_t event_module,
 		return BK_OK;
 	else{
 		switch (event_id) {
-		case EVENT_NETIF_GOT_IP4:		
+		case EVENT_NETIF_GOT_IP4:
 			atsvr_event_sender("wifi",AT_WLAN_STA_GOT_IP,0,NULL,false);
 
 			break;
@@ -159,7 +159,7 @@ static void wlan_at_init(void)
 int at_wlan_event_handler(atsvr_msg_t *msg)
 {
 	int ret = ATSVR_OK;
-	int event = msg->addition_infor;	
+	int event = msg->addition_infor;
 	BK_LOGD(TAG,"event:%d\r\n",event);
 	char resultbuf[200];
 	wifi_event_sta_connected_t *scmsg_param;
@@ -171,7 +171,7 @@ int at_wlan_event_handler(atsvr_msg_t *msg)
 		ATSVR_SIZEOF_OUTPUT_STRRING(AT_WLAN_EVT_SCAN_DONE);
 		break;
 	case AT_WLAN_STA_DISCONNECT:
-		
+
 		snprintf(resultbuf,sizeof(resultbuf),"\r\n"AT_WLAN_EVT_DISCONNECTED"EVT:DISCONNECT REASON:%s(REASON CODE:%d)\r\nlocal generated:%s\r\n\r\n",
 			at_wlan_error_code_string((wifi_err_reason_t)at_wlan_stat.disconenct_reason),at_wlan_stat.disconenct_reason,at_wlan_stat.local_generated==1?"yes":"no");
 		ATSVR_SIZEOF_OUTPUT_STRRING(resultbuf);
@@ -182,7 +182,7 @@ int at_wlan_event_handler(atsvr_msg_t *msg)
 			scmsg_param->ssid);
 		ATSVR_SIZEOF_OUTPUT_STRRING(resultbuf);
 		break;
-	case AT_WLAN_STA_GOT_IP:	
+	case AT_WLAN_STA_GOT_IP:
 		bk_netif_get_ip4_config(NETIF_IF_STA,&ip_param);
 		memcpy(&at_wlan_stat.static_ip,&ip_param.ip,16);
 		snprintf(resultbuf,sizeof(resultbuf),"\r\n"AT_WLAN_EVT_GOT_IP"sta got ip:%s\r\n\r\n",at_wlan_stat.static_ip);
@@ -274,7 +274,7 @@ static int at_wlan_get_station_mac(int sync,int argc, char **argv)
 	uint8_t sta_mac[BK_MAC_ADDR_LEN] = {0};
 	uint8_t ap_mac[BK_MAC_ADDR_LEN] = {0};
 	int     ret4 = 0;
-	
+
 	if (argc == 0) {
 		bk_get_mac(base_mac, MAC_TYPE_BASE);
 		bk_wifi_sta_get_mac(sta_mac);
@@ -350,27 +350,27 @@ int at_wlan_station_start(int sync, int argc, char **argv)
 	int err = kNoErr;
 	char *ssid = NULL;
 	char *password = "";
-	
+
 	if ((argc < 1) || (argc > 4)) {
 		os_printf("invalid argc number\n");
 		err = kParamErr;
 		goto error;
 	}
-	
+
 	if (argc >= 1)
 		ssid = argv[0];
-	
+
 	if (argc >= 2)
 		password = argv[1];
-	
+
 #if 0 //TODO support BSSID/Channel configuration
 	if (argc >= 3)
 		bssid = argv[2];
-	
+
 	if (argc >= 4)
 		channel = argv[3];
 #endif
-	
+
 	char *oob_ssid_tp = ssid;
 #if CONFIG_USE_CONV_UTF8
 	oob_ssid_tp = (char *)conv_utf8((uint8_t *)ssid);
@@ -380,7 +380,7 @@ int at_wlan_station_start(int sync, int argc, char **argv)
 		goto error;
 	}
 	if (oob_ssid_tp) {
-		demo_sta_app_init((char *)oob_ssid_tp, password);
+		demo_sta_app_init((char *)oob_ssid_tp, password, NULL, NULL);
 #if CONFIG_USE_CONV_UTF8
 		os_free(oob_ssid_tp);
 #endif
@@ -399,7 +399,7 @@ int at_wlan_station_start(int sync, int argc, char **argv)
 		{
 			atsvr_cmd_rsp_ok();
 			rtos_deinit_semaphore(&at_wlan_cfg.sta_protection);
-			return 0;			
+			return 0;
 		}
 	}
 
@@ -587,7 +587,7 @@ static int at_wlan_get_station_status(int sync, int argc, char **argv)
 	int err = kNoErr;
 	char resultbuf[200];
 	char* tag = NULL;
-	if (argc == 0) 
+	if (argc == 0)
 	{
 
 	wifi_link_status_t link_status = {0};
@@ -596,10 +596,10 @@ static int at_wlan_get_station_status(int sync, int argc, char **argv)
 	char ssid[33] = {0};
 #if CONFIG_WIFI4
 	snprintf(resultbuf,sizeof(resultbuf), "sta: %d, ap: %d, b/g/n\r\n",wifi_netif_sta_is_got_ip(),uap_ip_is_start());
-	atsvr_output_msg(resultbuf);	
+	atsvr_output_msg(resultbuf);
 #else
 	snprintf(resultbuf,sizeof(resultbuf), "sta: %d, ap: %d, b/g/n\r\n",wifi_netif_sta_is_got_ip(),uap_ip_is_start());
-	atsvr_output_msg(resultbuf);	
+	atsvr_output_msg(resultbuf);
 #endif
 	if (sta_ip_is_start()) {
 		os_memset(&link_status, 0x0, sizeof(link_status));
@@ -611,7 +611,7 @@ static int at_wlan_get_station_status(int sync, int argc, char **argv)
 												link_status.channel, wifi_sec_type_string(link_status.security), link_status.password);
 		atsvr_output_msg(resultbuf);
 	}
-	if (uap_ip_is_start()) 
+	if (uap_ip_is_start())
 	{
 		os_memset(&ap_info, 0x0, sizeof(ap_info));
 		BK_RETURN_ON_ERR(bk_wifi_ap_get_config(&ap_info));
@@ -625,7 +625,7 @@ static int at_wlan_get_station_status(int sync, int argc, char **argv)
 		//		ap_ip4_info.ip, ap_ip4_info.gateway, ap_ip4_info.mask, ap_ip4_info.dns);
 		snprintf(resultbuf,sizeof(resultbuf), "EVT:ap_ip=%s,ap_gate=%s,ap_mask=%s,ap_dns=%s\r\n",
 				ap_ip4_info.ip, ap_ip4_info.gateway, ap_ip4_info.mask, ap_ip4_info.dns);
-		atsvr_output_msg(resultbuf);	
+		atsvr_output_msg(resultbuf);
 	}
 		atsvr_cmd_rsp_ok();
 	}
@@ -646,7 +646,7 @@ static int at_wlan_get_station_status(int sync, int argc, char **argv)
 		}
 
 		else if (os_strcmp(argv[0], "AP") == 0) {
-			if (uap_ip_is_start()){				
+			if (uap_ip_is_start()){
 				snprintf(resultbuf,sizeof(resultbuf), "%s:%s\r\n","CMDRSP:","AP_WIFI_START");
 				atsvr_output_msg(resultbuf);
 				atsvr_cmd_rsp_ok();
@@ -740,7 +740,7 @@ static int at_wlan_get_station_status(int sync, int argc, char **argv)
 					atsvr_output_msg(resultbuf);
 
 				}
-				else if (os_strcmp(argv[1], "SECURITY") == 0) {				
+				else if (os_strcmp(argv[1], "SECURITY") == 0) {
 					snprintf(resultbuf,sizeof(resultbuf), "%s:%s_%s:%s\r\n","CMDRSP",tag,"security",wifi_sec_type_string(ap_info.security));
 					atsvr_output_msg(resultbuf);
 
@@ -812,7 +812,7 @@ static int at_wlan_scan_done_handler(void *arg, event_module_t event_module,
 
 
 static int at_wlan_scan_start(wifi_scan_config_t *scan_config,AT_WLAN_SCAN_ATTR_T scan_attr,int notice_val)
-{	
+{
 	int err;
 	wifi_scan_result_t scan_result = {0};
 	if(at_wlan_cfg.at_wlan_scan_sema == NULL ) {
@@ -842,8 +842,8 @@ static int at_wlan_scan_start(wifi_scan_config_t *scan_config,AT_WLAN_SCAN_ATTR_
 					BK_LOGE(TAG,"scan time exceeded!\r\n");
 				}
 			}
-			BK_LOGD(TAG,"atsvr scan get semaphore !\r\n");	
-			bk_wifi_scan_get_result(&scan_result); 
+			BK_LOGD(TAG,"atsvr scan get semaphore !\r\n");
+			bk_wifi_scan_get_result(&scan_result);
 			BK_LOG_ON_ERR(bk_wifi_scan_dump_result(&scan_result));
     		bk_wifi_scan_free_result(&scan_result);
 		}
@@ -1018,7 +1018,7 @@ static int at_wlan_softap_start(int sync, int argc, char **argv)
 	oob_ssid_softap = (char *)conv_utf8((uint8_t *)ap_ssid);
 #endif
 	if (oob_ssid_softap) {
-		err = demo_softap_app_init((char *)oob_ssid_softap, ap_key, ap_channel);
+		err = demo_softap_app_init((char *)oob_ssid_softap, ap_key, ap_channel, false);
 #if CONFIG_USE_CONV_UTF8
 		os_free(oob_ssid_softap);
 #endif
@@ -1158,7 +1158,7 @@ static int at_wlan_wifi_ping_start_cmd(int sync,int argc, char **argv)
 		os_printf("Please input: ping <host address>\n");
 		goto error;
 	}
-	
+
 	if (argc > 1)
 		cnt = os_strtoul(argv[1], NULL, 10);
 	if (argc > 2)
@@ -1185,9 +1185,9 @@ static int at_wlan_wifi_ping_stop_cmd(int sync,int argc, char **argv)
     ping_stop();
 
     atsvr_cmd_rsp_ok();
-  
+
     return 0;
-  
+
 error:
     atsvr_cmd_rsp_error();
     return -1;
@@ -1207,7 +1207,7 @@ static int at_wlan_wifi_close_coex_csa_cmd(int sync,int argc, char **argv)
 	if ((close_csa == 1) || (close_csa == 0))
 	{
 		err = bk_wifi_set_csa_coexist_mode_flag(!!close_csa);
-		if(err == kNoErr) 
+		if(err == kNoErr)
 		{
 			atsvr_cmd_rsp_ok();
 			return err;
@@ -1262,14 +1262,14 @@ static int at_wlan_atw_cmd(int sync,int argc, char **argv)
 		atsvr_output_msg(resultbuf);
 		os_memset(resultbuf,0,200);
 		n = 0;
-		
-		n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "PASSWORD=>%s\r\n",link_status.password);											
+
+		n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "PASSWORD=>%s\r\n",link_status.password);
 		atsvr_output_msg(resultbuf);
 		os_memset(resultbuf,0,200);
-		n = 0;		
-	
-		bk_wifi_sta_get_mac(sta_mac);	
-		err = bk_netif_get_ip4_config(NETIF_IF_STA, &sta_ip4_info);	
+		n = 0;
+
+		bk_wifi_sta_get_mac(sta_mac);
+		err = bk_netif_get_ip4_config(NETIF_IF_STA, &sta_ip4_info);
 		if(err != kNoErr) {
 			os_printf("get ip fail!\n");
 			err = kGeneralErr;
@@ -1289,7 +1289,7 @@ static int at_wlan_atw_cmd(int sync,int argc, char **argv)
 														BK_MAC_STR(sta_mac),sta_ip4_info.ip, sta_ip4_info.gateway,sta_ip4_info.mask);
 		atsvr_output_msg(resultbuf);
 		os_memset(resultbuf,0,200);
-		n = 0;	
+		n = 0;
 
 		n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "DNS1=>%s\r\nDNS2=>%s\r\n\r\n",
 														sta_ip4_info.dns,(tmp==NULL)?"0.0.0.0":inet_ntoa(sta_addr_info.ipv4.dns2));
@@ -1315,14 +1315,14 @@ static int at_wlan_atw_cmd(int sync,int argc, char **argv)
 														link_status.ssid,link_status.channel, wifi_sec_type_string(link_status.security));
 		atsvr_output_msg(resultbuf);
 		os_memset(resultbuf,0,200);
-		n = 0;	
-	
-		n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "PASSWORD=>%s\r\n",ap_info.password);											
+		n = 0;
+
+		n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "PASSWORD=>%s\r\n",ap_info.password);
 		atsvr_output_msg(resultbuf);
 		os_memset(resultbuf,0,200);
-		n = 0;		
+		n = 0;
 
-		bk_wifi_ap_get_mac(ap_mac);	
+		bk_wifi_ap_get_mac(ap_mac);
 		err = bk_netif_get_ip4_config(NETIF_IF_AP, &ap_ip4_info);
 		if(err != kNoErr) {
 			os_printf("get ip fail!\n");
@@ -1337,17 +1337,17 @@ static int at_wlan_atw_cmd(int sync,int argc, char **argv)
 
 		atsvr_output_msg(resultbuf);
 		os_memset(resultbuf,0,200);
-		n = 0;	
+		n = 0;
 
 		n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "\r\nAssociated Client List: \r\n");
 		n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "======================================================\r\n");
 		n = snprintf(resultbuf+n,sizeof(resultbuf) - n, "\r\nClient Num:%d\r\n\n\n",at_wlan_stat.hpad_sta_cnt);
-		
+
 		atsvr_output_msg(resultbuf);
 	}
-	atsvr_cmd_rsp_ok();	
+	atsvr_cmd_rsp_ok();
 	return 0;
-#endif	
+#endif
 error:
 	atsvr_cmd_rsp_error();
 	return err;

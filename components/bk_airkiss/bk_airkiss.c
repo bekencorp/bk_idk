@@ -151,7 +151,7 @@ static void bk_airkiss_wifi_connect(airkiss_result_t *airkiss_result)
 	BK_AIRKISS_PRT("wifi_connect_req %s, %s\n", airkiss_result->ssid, airkiss_result->pwd);
 	BK_AIRKISS_PRT("wifi_connect_req %d, %d\n", airkiss_result->ssid_length, airkiss_result->pwd_length);
 
-	demo_sta_app_init(airkiss_result->ssid, airkiss_result->pwd);
+	demo_sta_app_init(airkiss_result->ssid, airkiss_result->pwd, NULL, NULL);
 }
 
 void bk_airkiss_start_udp_boardcast(u8 random_data)

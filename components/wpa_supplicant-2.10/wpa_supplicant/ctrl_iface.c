@@ -872,6 +872,20 @@ int wpa_supplicant_ctrl_iface_set_network(struct wpa_supplicant *wpa_s, wlan_sta
 #endif
 		break;
 
+	case WLAN_STA_FIELD_FREQ_LIST: {
+		int len = int_array_len(config->u.freq_list);
+		if (ssid->freq_list) {
+			os_free(ssid->freq_list);
+			ssid->freq_list = NULL;
+		}
+		if (len) {
+			ssid->freq_list = os_calloc(len + 1, sizeof(int));
+			if (ssid->freq_list)
+				for (int i = 0; i < len; i++)
+					ssid->freq_list[i] = config->u.freq_list[i];
+		}
+	}	break;
+
 	case WLAN_STA_FIELD_DEBUG_LEVEL:
 		wpa_debug_level = config->u.debug_level;
 		break;

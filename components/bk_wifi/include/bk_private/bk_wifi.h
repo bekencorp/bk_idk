@@ -375,7 +375,7 @@ int wlan_sta_enable_ssid_blacklist(void);
 int wlan_sta_disable_ssid_blacklist(void);
 int wlan_p2p_find(void);
 int wlan_p2p_cancel(void);
-int wlan_dhcp_done_ind(u8 vif_idx);
+int wlan_dhcp_done_ind(uint8_t vif_idx);
 
 int http_ota_download(const char *uri);
 int bmsg_tx_raw_sender(uint8_t *payload, uint16_t length);
@@ -484,12 +484,8 @@ int demo_bridge_softap_init(char *ap_ssid, char *ap_key, wifi_security_t securit
 
 void demo_scan_app_init(void);
 void demo_scan_adv_app_init(uint8_t *oob_ssid);
-int demo_softap_app_init(char *ap_ssid, char *ap_key, char *ap_channel);
-#ifdef CONFIG_CONNECT_THROUGH_PSK_OR_SAE_PASSWORD
-int demo_sta_app_init(char *oob_ssid, u8 *psk, char *connect_key);
-#else
-int demo_sta_app_init(char *oob_ssid, char *connect_key);
-#endif
+int demo_softap_app_init(char *ap_ssid, char *ap_key, char *ap_channel, bool hidden);
+int demo_sta_app_init(char *oob_ssid, char *connect_key, uint8_t *psk, char *freq_list);
 void demo_sta_bssid_app_init(uint8_t *bssid, char *connect_key);
 void demo_sta_adv_app_init(char *oob_ssid,char *connect_key);
 void demo_wlan_app_init(VIF_ADDCFG_PTR cfg);
@@ -503,7 +499,7 @@ void demo_wifi_mem_apply_init(uint8_t module, uint8_t value);
 void mhdr_set_station_status(wifi_linkstate_reason_t info);
 wifi_linkstate_reason_t mhdr_get_station_status(void);
 void rwm_mgmt_set_vif_netif(uint8_t *mac, void *netif);
-int rw_msg_send_arp_msg(u8 vif_idx);
+int rw_msg_send_arp_msg(uint8_t vif_idx);
 
 /* bk_net_param */
 UINT32 test_get_whole_tbl(UINT8 *ptr);
@@ -603,7 +599,7 @@ int wlan_ap_disable(void);
 int wlan_ap_sta_num(int *num);
 int wlan_ap_sta_info(wlan_ap_stas_t *stas);
 int wlan_ap_set_beacon_vsie(wlan_ap_vsie_t *vsie);
-int wlan_dhcp_done_ind(u8 vif_idx);
+int wlan_dhcp_done_ind(uint8_t vif_idx);
 #if CONFIG_P2P
 int wlan_p2p_listen(void);
 int wlan_p2p_stop_find(void);

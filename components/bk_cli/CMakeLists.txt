@@ -32,6 +32,7 @@ list(APPEND srcs
 	cli_spi.c
 	cli_spi_api.c
 	cli_exception.c
+	getopt_r.c
 	)
 
 if (CONFIG_SOC_BK7236XX OR CONFIG_SOC_BK7239XX)

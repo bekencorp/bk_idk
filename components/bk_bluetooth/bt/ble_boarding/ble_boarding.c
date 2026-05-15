@@ -166,7 +166,7 @@ static void ble_boarding_operation_handle(uint16_t opcode, uint16_t length, uint
         case BOARDING_OP_STATION_START:
         {
 #if CONFIG_WIFI_ENABLE
-            demo_sta_app_init((char *)ble_boarding_info->ssid_value, (char *)ble_boarding_info->password_value);
+            demo_sta_app_init((char *)ble_boarding_info->ssid_value, (char *)ble_boarding_info->password_value, NULL, NULL);
 #endif
         }
         break;

@@ -479,6 +479,7 @@ typedef struct {
 	bool disable_auto_reconnect_after_disconnect;  /**< disable auto reconnect if deauth/disassoc by AP when in connected state */
 
 	struct bk_vise *vsies[NUM_WIFI_VENDOR_ELEM_FRAMES];
+	int freq_list[WIFI_2BAND_MAX_CHAN_NUM + 1]; /**< optional zero-terminated array of frequencies in megahertz (MHz) to allow for selecting the BSS */
 	uint8_t reserved[32];              /**< reserved, **must set to 0** */
 #ifdef CONFIG_CONNECT_THROUGH_PSK_OR_SAE_PASSWORD
 	uint8_t psk[65];

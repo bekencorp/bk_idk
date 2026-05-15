@@ -150,7 +150,8 @@ int demo_bridge_softap_init(char *ap_ssid, char *ap_key, wifi_security_t securit
 	return BK_OK;
 }
 #endif
-int demo_softap_app_init(char *ap_ssid, char *ap_key, char *ap_channel)
+
+int demo_softap_app_init(char *ap_ssid, char *ap_key, char *ap_channel, bool hidden)
 {
 	wifi_ap_config_t ap_config = {0};//WIFI_DEFAULT_AP_CONFIG();
 	netif_ip4_config_t ip4_config = {0};
@@ -207,6 +208,8 @@ int demo_softap_app_init(char *ap_ssid, char *ap_key, char *ap_channel)
 		ap_config.channel = channel;
 	}
 
+	ap_config.hidden = hidden;
+
 	BK_LOGI(TAG, "ssid:%s  key:%s\n", ap_config.ssid, ap_config.password);
 	BK_RETURN_ON_ERR(bk_wifi_ap_set_config(&ap_config));
 	BK_RETURN_ON_ERR(bk_wifi_ap_start());
@@ -226,11 +229,27 @@ void demo_sta_bssid_app_init(uint8_t *oob_bssid, char *connect_key)
 	BK_LOG_ON_ERR(bk_wifi_sta_start());
 }
 
-#ifdef CONFIG_CONNECT_THROUGH_PSK_OR_SAE_PASSWORD
-int demo_sta_app_init(char *oob_ssid, u8* psk, char *connect_key)
-#else
-int demo_sta_app_init(char *oob_ssid, char *connect_key)
-#endif
+static int *demo_sta_parse_int_array(int *freqs, char *value)
+{
+	size_t used = 0;
+	const char *pos;
+
+	pos = value;
+	while (pos) {
+		while (*pos == ';') pos++;
+		freqs[used] = atoi(pos);
+		if (freqs[used] == 0)
+			break;
+		used++;
+		if (used >= WIFI_2BAND_MAX_CHAN_NUM)
+			return freqs;
+		pos = os_strchr(pos + 1, ';');
+	}
+
+	return freqs;
+}
+
+int demo_sta_app_init(char *oob_ssid, char *connect_key, uint8_t *psk, char *freq_list)
 {
 	wifi_sta_config_t sta_config = {0};
 	int len;
@@ -266,6 +285,7 @@ int demo_sta_app_init(char *oob_ssid, char *connect_key)
 	sta_config.security = WIFI_SECURITY_NONE;
 #endif
 	BK_LOGI(TAG, "ssid:%s key:%s\n", sta_config.ssid, sta_config.password);
+	demo_sta_parse_int_array(sta_config.freq_list, freq_list);
 	BK_LOG_ON_ERR(bk_wifi_sta_set_config(&sta_config));
 	BK_LOG_ON_ERR(bk_wifi_sta_start());
 	return BK_OK;
@@ -286,7 +306,7 @@ void demo_sta_adv_app_init(char *oob_ssid, char *connect_key)
 	os_strcpy(sta_config.password, connect_key);
 
 	//TODO should NOT use hard-coded BSSID and channel
-	hwaddr_aton("48:ee:0c:48:93:12", (u8 *)sta_config.bssid);
+	hwaddr_aton("48:ee:0c:48:93:12", (uint8_t *)sta_config.bssid);
 	sta_config.security = WIFI_SECURITY_WPA2_MIXED;
 	sta_config.channel = 11;
 
@@ -304,15 +324,11 @@ void demo_wlan_app_init(VIF_ADDCFG_PTR cfg)
 			demo_sta_adv_app_init(cfg->ssid, cfg->key);
 			return;
 		} else {
-#ifdef CONFIG_CONNECT_THROUGH_PSK_OR_SAE_PASSWORD
-			demo_sta_app_init(cfg->ssid, NULL, cfg->key);
-#else
-			demo_sta_app_init(cfg->ssid, cfg->key);
-#endif
+			demo_sta_app_init(cfg->ssid, cfg->key, NULL, NULL);
 			BK_LOGI(TAG, "ssid:%s key:%s\n", network_cfg.wifi_ssid, network_cfg.wifi_key);
 		}
 	} else if (cfg->wlan_role == BK_SOFT_AP) {
-		demo_softap_app_init(cfg->ssid, cfg->key, NULL);
+		demo_softap_app_init(cfg->ssid, cfg->key, NULL, false);
 		BK_LOGI(TAG, "ssid:%s  key:%s\n", network_cfg.wifi_ssid, network_cfg.wifi_key);
 	}
 }
@@ -410,11 +426,7 @@ int wifi_demo(int argc, char **argv)
 		}
 
 		if (oob_ssid)
-#ifdef CONFIG_CONNECT_THROUGH_PSK_OR_SAE_PASSWORD
-			demo_sta_app_init(oob_ssid, NULL, connect_key);
-#else
-			demo_sta_app_init(oob_ssid, connect_key);
-#endif
+			demo_sta_app_init(oob_ssid, connect_key, NULL, NULL);
 
 		return 0;
 	}
@@ -452,7 +464,7 @@ int wifi_demo(int argc, char **argv)
 		}
 
 		if (oob_ssid)
-			demo_softap_app_init(oob_ssid, connect_key, NULL);
+			demo_softap_app_init(oob_ssid, connect_key, NULL, false);
 		return 0;
 	}
 

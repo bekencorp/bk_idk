@@ -89,6 +89,7 @@ wifi_monitor_cb_t wifi_monitor_get_cb(void);
 wifi_monitor_cb_t rxu_cntrl_get_monitor_cb(void);
 int wifi_monitor_set_enabled(bool enabled);
 bool wifi_monitor_is_enabled(void);
+int wlan_sta_set_freq_list(int *freq_list);
 
 int wifi_filter_set_config(const wifi_filter_config_t *filter_config);
 int wifi_filter_get_config(wifi_filter_config_t *filter_config);
@@ -726,6 +727,12 @@ bk_err_t bk_wlan_start_sta(network_InitTypeDef_st *inNetworkInitPara)
 		return kGeneralErr;
 	}
 
+	/* make sure zero-terminated freq list */
+	if (g_sta_param_ptr->freq_list[WIFI_2BAND_MAX_CHAN_NUM] != 0)
+		g_sta_param_ptr->freq_list[WIFI_2BAND_MAX_CHAN_NUM] = 0;
+
+	wlan_sta_set_freq_list(g_sta_param_ptr->freq_list);
+
 	/* set network parameters: ssid, passphase */
 	wlan_sta_set((uint8_t *)inNetworkInitPara->wifi_ssid, os_strlen(inNetworkInitPara->wifi_ssid), (uint8_t *)inNetworkInitPara->wifi_key);
 
@@ -990,6 +997,19 @@ int wlan_sta_set(const uint8_t *ssid, uint8_t ssid_len, const uint8_t *psk)
 	/* scan_ssid: 1 */
 	config.field = WLAN_STA_FIELD_SCAN_SSID;
 	config.u.scan_ssid = ssid && ssid_len;
+	BK_RETURN_ON_ERR(wpa_ctrl_request(WPA_CTRL_CMD_STA_SET, &config));
+
+	return BK_OK;
+}
+
+int wlan_sta_set_freq_list(int *freq_list)
+{
+	wlan_sta_config_t config;
+	os_memset(&config, 0, sizeof(config));
+
+	/* freq_list */
+	config.field = WLAN_STA_FIELD_FREQ_LIST;
+	os_memcpy(config.u.freq_list, freq_list, sizeof(config.u.freq_list));
 	BK_RETURN_ON_ERR(wpa_ctrl_request(WPA_CTRL_CMD_STA_SET, &config));
 
 	return BK_OK;
@@ -2258,6 +2278,11 @@ bk_err_t bk_wifi_sta_start(void)
 	}
 // #endif
 
+	/* make sure zero-terminated freq list */
+	if (sta_config.freq_list[WIFI_2BAND_MAX_CHAN_NUM] != 0)
+		sta_config.freq_list[WIFI_2BAND_MAX_CHAN_NUM] = 0;
+	wlan_sta_set_freq_list(sta_config.freq_list);
+
 	/* set network parameters: ssid, passphase */
 	wlan_sta_set((uint8_t *)sta_config.ssid, os_strlen(sta_config.ssid), (uint8_t *)sta_config.password);
 
@@ -2734,6 +2759,7 @@ static int wifi_sta_set_global_config(const wifi_sta_config_t *config)
 			os_memcpy(g_sta_param_ptr->vsies[i], config->vsies[i], sizeof(struct bk_vise));
 	}
 #endif
+	os_memcpy(g_sta_param_ptr->freq_list, config->freq_list, sizeof(g_sta_param_ptr->freq_list));
 
 #if CONFIG_WPA2_ENTERPRISE
 	os_strlcpy(g_sta_param_ptr->eap, config->eap, sizeof(g_sta_param_ptr->eap));
@@ -2786,6 +2812,7 @@ static int wifi_sta_get_global_config(wifi_sta_config_t *sta_config)
 	}
 #endif
 
+	os_memcpy(sta_config->freq_list, g_sta_param_ptr->freq_list, sizeof(sta_config->freq_list));
 #if CONFIG_WPA2_ENTERPRISE
 	os_strlcpy(sta_config->eap, g_sta_param_ptr->eap, sizeof(sta_config->eap));
 	os_strlcpy(sta_config->identity, g_sta_param_ptr->identity, sizeof(sta_config->identity));
@@ -2855,6 +2882,8 @@ static int wifi_sta_set_wpa_config(const wifi_sta_config_t *config)
 #endif
 	wpa_psk_request(g_sta_param_ptr->ssid.array, g_sta_param_ptr->ssid.length,
 						(char *)g_sta_param_ptr->key, NULL, 0);
+
+	wlan_sta_set_freq_list((int *)config->freq_list);
 
 	wlan_sta_set((uint8_t *)config->ssid, os_strlen(config->ssid), (uint8_t *)config->password);
 

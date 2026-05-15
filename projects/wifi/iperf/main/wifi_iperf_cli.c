@@ -115,7 +115,7 @@ void wifi_iperf_ap_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char 
 	}
 
 	if (ap_ssid) {
-		ret = demo_softap_app_init(ap_ssid, ap_key, ap_channel);
+		ret = demo_softap_app_init(ap_ssid, ap_key, ap_channel, false);
 	}
 	if(ret == 0)
 		msg = WIFI_IPERF_CMD_RSP_SUCCEED;
@@ -129,9 +129,7 @@ void wifi_iperf_sta_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
 {
 	char *ssid = NULL;
 	char *password = "";
-#ifdef CONFIG_CONNECT_THROUGH_PSK_OR_SAE_PASSWORD
-	u8 *psk = 0;
-#endif
+	u8 *psk __maybe_unused = 0;
 	char *msg = NULL;
 	int ret;
 
@@ -209,13 +207,9 @@ void wifi_iperf_sta_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
 #endif
 
 	if (oob_ssid_tp) {
-#ifdef CONFIG_CONNECT_THROUGH_PSK_OR_SAE_PASSWORD
-	ret = demo_sta_app_init((char *)oob_ssid_tp, psk, password);
-#else
-	ret = demo_sta_app_init((char *)oob_ssid_tp, password);
-#endif
-	if (ret == -1)
-		goto error;
+		ret = demo_sta_app_init((char *)oob_ssid_tp, password, psk, NULL);
+		if (ret == -1)
+			goto error;
 
 #if CONFIG_USE_CONV_UTF8
 		os_free(oob_ssid_tp);

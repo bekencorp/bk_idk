@@ -119,6 +119,7 @@ typedef enum wlan_sta_field {
 	WLAN_STA_FIELD_PRIVATE_KEY,
 	WLAN_STA_FIELD_PRIVATE_KEY_PASSWD,
 	WLAN_STA_FIELD_PHASE1,
+	WLAN_STA_FIELD_FREQ_LIST,
 
 	/* for debug */
 	WLAN_STA_FIELD_DEBUG_LEVEL,
@@ -226,6 +227,8 @@ typedef struct wlan_sta_config {
 
 
 		int sae_groups[16];
+
+		int freq_list[WIFI_2BAND_MAX_CHAN_NUM + 1];
 
 		int ieee80211w;
 
@@ -1015,6 +1018,7 @@ typedef struct sta_param {
 #endif
 
 	struct bk_vise *vsies[NUM_WIFI_VENDOR_ELEM_FRAMES];
+	int freq_list[WIFI_2BAND_MAX_CHAN_NUM + 1]; /**< optional zero-terminated array of frequencies in megahertz (MHz) to allow for selecting the BSS */
 
 #if CONFIG_COMPONENTS_WPA2_ENTERPRISE
 	/* starts of WPA2-Enterprise/WPA3-Enterprise EAP-TLS configuration */

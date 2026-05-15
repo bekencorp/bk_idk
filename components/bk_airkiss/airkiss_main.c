@@ -468,7 +468,7 @@ void airkiss_main(void *arg)
 				airkiss_connected_to_bssid, NULL);
 
 		// connect to this bssid
-		demo_sta_app_init(ak_result.ssid, ak_result.pwd);
+		demo_sta_app_init(ak_result.ssid, ak_result.pwd, NULL, NULL);
 
 		// wait for connect to bssid
 		con_time = AIRKISS_CONNECT_TIMER;

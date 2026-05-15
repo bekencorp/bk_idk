@@ -894,7 +894,7 @@ static void cli_main(uint32_t data)
         strcpy(prompt,"\r\n$ ");
 
 #if CONFIG_RF_OTA_TEST
-    demo_sta_app_init("CMW-AP", "12345678");
+    demo_sta_app_init("CMW-AP", "12345678", NULL, NULL);
 #endif /* CONFIG_RF_OTA_TEST*/
 
     bk_uart_enable_rx_interrupt(bk_get_printf_port());
