@@ -859,8 +859,9 @@ bk_err_t bk_spi_read_bytes(spi_id_t id, void *data, uint32_t size)
 
         int_level = spi_enter_critical();
         if(s_spi[id].rx_offset < s_spi[id].rx_size){
-                SPI_LOGE("[SPI%d] bk_spi_read_bytes failed: rx incomplete! rx_offset(%d) < rx_size(%d), missing %d bytes\r\n", 
+                SPI_LOGE("[SPI%d] bk_spi_read_bytes failed: rx incomplete! rx_offset(%d) < rx_size(%d), missing %d bytes\r\n",
                          id, s_spi[id].rx_offset, s_spi[id].rx_size, s_spi[id].rx_size - s_spi[id].rx_offset);
+                bk_spi_clr_rx(id);
                 spi_exit_critical(int_level);
                 return BK_FAIL;
         }
@@ -1238,6 +1239,7 @@ static void spi_isr_common(spi_id_t id)
                 SPI_STATIS_INC(spi_statis->rx_finish_isr_cnt);
                 SPI_LOGD("rx fifo finish int triggered\r\n");
                 if (s_spi[id].rx_size && s_spi[id].rx_buf) {
+                        rd_offset = s_spi[id].rx_offset;
                         while (spi_hal_read_byte(hal, &rd_data) == BK_OK) {
                                 if (rd_offset < s_spi[id].rx_size) {
                                         if(s_spi[id].hal.hw->ctrl.bit_width == SPI_BIT_WIDTH_8BITS) {
@@ -1325,23 +1327,24 @@ static void spi_isr_common(spi_id_t id)
                 SPI_LOGW("tx underflow int triggered\r\n");
         }
 
-        if (spi_hal_is_slave_release_int_triggered(hal, int_status)) {
-                SPI_STATIS_INC(spi_statis->slave_release_isr_cnt);
-                SPI_LOGD("slave cs up int triggered\r\n");
-                if (spi_hal_is_slave(hal)) {
-                        if (s_spi[id].is_tx_blocked) {
-                                rtos_set_semaphore(&s_spi[id].tx_sema);
-                                s_spi[id].is_tx_blocked = false;
-                        }
-                        if (s_spi_tx_finish_isr[id].callback) {
-                                s_spi_tx_finish_isr[id].callback(id, s_spi_tx_finish_isr[id].param);
-                        }
-                }
-                if (s_spi[id].is_rx_blocked) {
-                        rtos_set_semaphore(&s_spi[id].rx_sema);
-                        s_spi[id].is_rx_blocked = false;
-                }
+    if (spi_hal_is_slave_release_int_triggered(hal, int_status)) {
+        SPI_STATIS_INC(spi_statis->slave_release_isr_cnt);
+        SPI_LOGD("slave cs up int triggered\r\n");
+        if (spi_hal_is_slave(hal)) {
+            if (s_spi[id].is_tx_blocked) {
+                rtos_set_semaphore(&s_spi[id].tx_sema);
+                s_spi[id].is_tx_blocked = false;
+            }
+            if (s_spi_tx_finish_isr[id].callback) {
+                s_spi_tx_finish_isr[id].callback(id, s_spi_tx_finish_isr[id].param);
+            }
+
+            if (s_spi[id].is_rx_blocked && s_spi[id].rx_offset > 0) {
+                rtos_set_semaphore(&s_spi[id].rx_sema);
+                s_spi[id].is_rx_blocked = false;
+            }
         }
+    }
 }
 
 static void spi_isr(void)
