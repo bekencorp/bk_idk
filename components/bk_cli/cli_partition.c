@@ -36,7 +36,7 @@ static void cli_partition_cmd_handler(void **argtable)
 	bk_err_t err;
     if (erase->count > 0) {
 		err = bk_flash_partition_erase_by_name((const char* )arg_parti_name->sval[0],(uint32_t)arg_offset->ival[0],(uint32_t)arg_size->ival[0]);
-		CLI_LOGI(err ? "Erase partition fail, err = %x\r\n" : "Erase partition pass\r\n", err);
+		CLI_LOGI(err != BK_OK ? "Erase partition fail, err = %08x\r\n" : "Erase partition pass\r\n", (uint32_t)err);
     }
 	else if (read->count > 0)
 	{
@@ -59,7 +59,7 @@ static void cli_partition_cmd_handler(void **argtable)
 		} else {
 			err = BK_ERR_NO_MEM;
 		}
-		CLI_LOGI(err ? "Read partition fail, err = %x\r\n" : "Read partition pass\r\n", err);
+		CLI_LOGI(err != BK_OK ? "Read partition fail, err = %08x\r\n" : "Read partition pass\r\n", (uint32_t)err);
 	}
 	else if (write->count > 0)
 	{
@@ -72,7 +72,7 @@ static void cli_partition_cmd_handler(void **argtable)
 		}
 
 		err = bk_flash_partition_write_by_name((const char* )arg_parti_name->sval[0], (uint8_t *)data_to_write, (uint32_t)arg_offset->ival[0], data_len);
-		CLI_LOGI(err ? "Write partition fail, err = %x\r\n" : "Write partition pass\r\n", err);
+		CLI_LOGI(err != BK_OK ? "Write partition fail, err = %08x\r\n" : "Write partition pass\r\n", (uint32_t)err);
 	}
 	else
 	{
@@ -85,7 +85,7 @@ static void cli_partition_erase_cmd_handler(void **argtable)
 {
     struct arg_str *arg_parti_name 		= (struct arg_str *)argtable[1];
 	bk_err_t err = bk_flash_partition_erase_all((const char* )arg_parti_name->sval[0]);
-	CLI_LOGI(err ? "Erase all partition fail, err = %x\r\n" : "Erase all partition pass\r\n", err);
+	CLI_LOGI(err != BK_OK ? "Erase all partition fail, err = %08x\r\n" : "Erase all partition pass\r\n", (uint32_t)err);
 }
 
 static void cli_partition_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)

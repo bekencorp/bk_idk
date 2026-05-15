@@ -376,6 +376,20 @@ static bk_err_t flash_partition_addr_check(const bk_logic_partition_t *partition
         return BK_ERR_FLASH_ADDR_OUT_OF_RANGE;
     }
 
+    {
+        uint32_t flash_sz = bk_flash_get_current_total_size();
+
+        if (flash_sz != 0) {
+            uint64_t span_end = (uint64_t)partition_info->partition_start_addr
+                + (uint64_t)offset + (uint64_t)size;
+
+            if (span_end > (uint64_t)flash_sz) {
+                return BK_ERR_FLASH_ADDR_OUT_OF_RANGE;
+            }
+        }
+    }
+
+
     return BK_OK;
 }
 
@@ -421,6 +435,8 @@ static bk_err_t bk_flash_partition_erase_internal(const bk_logic_partition_t *pa
     end_sector = (offset + size - 1) >> FLASH_SECTOR_SIZE_OFFSET;
 
     for (uint32_t i = start_sector; i <= end_sector; i++) {
+        bk_err_t ret;
+
         erase_addr = partition_info->partition_start_addr + (i << FLASH_SECTOR_SIZE_OFFSET);
 
     #if CONFIG_FLASH_V1P1
@@ -431,7 +447,7 @@ static bk_err_t bk_flash_partition_erase_internal(const bk_logic_partition_t *pa
             bk_flash_set_protect_type(FLASH_PROTECT_NONE);
         }
 
-        bk_flash_erase_sector(erase_addr);
+        ret = bk_flash_erase_sector(erase_addr);
 
         if (partition_info->partition_start_addr <= FLASH_PROTECT_FREE_END_ADDR){
             bk_flash_set_protect_type(FLASH_PROTECT_ALL);
@@ -439,7 +455,12 @@ static bk_err_t bk_flash_partition_erase_internal(const bk_logic_partition_t *pa
     #if CONFIG_FLASH_V1P1
         GLOBAL_INT_RESTORE();
     #endif
+
+        if (ret != BK_OK) {
+            return ret;
+        }
     }
+
 
     return BK_OK;
 }
