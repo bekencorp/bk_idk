@@ -1442,7 +1442,7 @@ CONFIG_CPU_DEFAULT_FREQ_60M=y
 CONFIG_DCO_CLK_ENABLE=n
 #@ enable vbspbuflp1v
 CONFIG_VBSPBUFLP1V_ENABLE=y
-CONFIG_LV_FLASH_ENTER_LP_ENABLE=y
+CONFIG_LV_FLASH_ENTER_LP_ENABLE=n
 #@ enable calibrate rc32k by software
 CONFIG_ROSC_CALIB_SW=y
 #@ enable rosc compensation for rtc tick
