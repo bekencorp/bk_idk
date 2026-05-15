@@ -183,6 +183,8 @@ struct rwnx_hw {
 	struct hostapd_freq_params freq_params;
 
 	struct bk_work csa_work;
+	// DHCP Timeout work
+	struct bk_work dhcp_to_work;
 #ifdef CONFIG_WIFI_REGDOMAIN
 	struct mac_chan_op chan;
 #endif

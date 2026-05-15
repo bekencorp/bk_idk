@@ -26,6 +26,8 @@
 #include "bk_wifi_types.h"
 #include "common/bk_err.h"
 #include "bk_wifi_prop_private.h"
+#include "bk_workqueue.h"
+#include "rwnx_defs.h"
 
 #define WIFI_INVALID_VIFID 0xff
 
@@ -159,7 +161,7 @@ void wifi_netif_notify_sta_dhcp_timeout(void)
 
 void wifi_netif_notify_sta_disconnect(void)
 {
-	bk_wlan_dhcp_timeout();
+	bk_work_sched(&g_rwnx_hw.dhcp_to_work);
 }
 
 bool wifi_netif_sta_is_connected(void)

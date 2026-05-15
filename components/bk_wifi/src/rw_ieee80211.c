@@ -331,6 +331,11 @@ static void rwnx_csa_finish(void *arg)
 	}
 }
 
+static void rwnx_dhcp_to_work(void *arg)
+{
+	bk_wlan_dhcp_timeout();
+}
+
 extern void rwnxl_register_connector(RW_CONNECTOR_T *intf);
 #ifdef CONFIG_COEX
 void bmsg_rf_to_wifi_end_sender(uint8_t arg);
@@ -407,6 +412,7 @@ UINT32 rw_ieee80211_init(void)
 #endif
 
 	bk_work_init(&rwnx_hw->csa_work, rwnx_csa_finish, rwnx_hw);
+	bk_work_init(&rwnx_hw->dhcp_to_work, rwnx_dhcp_to_work, rwnx_hw);
 
 	wiphy->bands[IEEE80211_BAND_2GHZ] = &rwnx_band_2GHz;
 	wiphy->bands[IEEE80211_BAND_5GHZ] = &rwnx_band_5GHz;
