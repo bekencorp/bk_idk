@@ -8,6 +8,44 @@
 #include <driver/flash.h>
 #define TAG "partition"
 
+static uint32_t s_crc32_table[256];
+static uint8_t s_crc32_table_ready;
+
+static void partition_crc32_make_table(void)
+{
+	unsigned int i;
+
+	if (s_crc32_table_ready) {
+		return;
+	}
+	for (i = 0; i < 256; i++) {
+		uint32_t c = (uint32_t)i;
+		int bit;
+
+		for (bit = 0; bit < 8; bit++) {
+			if (c & 1u) {
+				c = (c >> 1) ^ 0xEDB88320u;
+			} else {
+				c = c >> 1;
+			}
+		}
+		s_crc32_table[i] = c;
+	}
+	s_crc32_table_ready = 1;
+}
+
+static uint32_t partition_table_crc32(const uint8_t *buf, uint32_t len)
+{
+	uint32_t crc = 0xffffffffu;
+	uint32_t i;
+
+	partition_crc32_make_table();
+	for (i = 0; i < len; i++) {
+		crc = (crc >> 8) ^ s_crc32_table[(crc ^ buf[i]) & 0xff];
+	}
+	return crc ^ 0xffffffffu;
+}
+
 typedef struct {
 	uint32_t phy_offset;
 	uint32_t phy_size;
@@ -67,26 +105,75 @@ uint32_t partition_get_phy_size(uint32_t id)
 int partition_init(void)
 {
 	bk_flash_driver_init();
-	uint8_t* buf = (uint8_t*)malloc(PARTITION_ENTRY_LEN * sizeof(uint8_t));
+	uint8_t *buf = (uint8_t *)malloc(PARTITION_ENTRY_LEN * sizeof(uint8_t));
+	uint8_t *payload_buf = NULL;
+	uint8_t crc_footer[PARTITION_CRC_FOOTER_LEN];
+
+	uint32_t i;
+	uint32_t entry_count = (uint32_t)BK_PARTITIONS_TABLE_SIZE;
+
+	if (entry_count > PARTITION_AMOUNT) {
+		BK_LOGE(TAG, "BK_PARTITIONS_TABLE_SIZE %u > PARTITION_AMOUNT\r\n",
+			(unsigned int)entry_count);
+		free(buf);
+		return -1;
+	}
+
+	uint32_t payload_len = 0;
+	uint32_t calc_crc = 0;
+	uint32_t stored_crc = 0;
+
+	char name[PARTITION_NAME_LEN + 1];
+
+	uint32_t slot_base = PARTITION_PARTITION_PHY_OFFSET;
+	uint32_t partition_start = slot_base + PARTITION_PPC_OFFSET;
+
 	if (buf == NULL) {
 		BK_LOGE(TAG, "memory malloc fails.\r\n");
 		return -1;
 	}
 
-	uint32_t i;
-	char name[PARTITION_NAME_LEN + 1];
+	payload_len = PARTITION_PPC_OFFSET + entry_count * PARTITION_ENTRY_LEN;
 
-	uint32_t partition_start = PARTITION_PARTITION_PHY_OFFSET + PARTITION_PPC_OFFSET;
-	// uint32_t partition_start = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(PARTITION_PARTITION_PHY_OFFSET + PARTITION_PPC_OFFSET));
-	for(i=0;i<PARTITION_AMOUNT;++i){
-		bk_flash_read_bytes(partition_start + PARTITION_ENTRY_LEN*i, buf, PARTITION_ENTRY_LEN);
-		if(is_alpha(buf[0]) == 0){
-			break;
-		} 
+	payload_buf = (uint8_t *)malloc(payload_len);
+	if (payload_buf == NULL) {
+		BK_LOGE(TAG, "payload malloc fails.\r\n");
+		free(buf);
+		return -1;
+	}
+
+	bk_flash_read_bytes(slot_base, payload_buf, payload_len);
+	calc_crc = partition_table_crc32(payload_buf, payload_len);
+
+	bk_flash_read_bytes(slot_base + payload_len, crc_footer, PARTITION_CRC_FOOTER_LEN);
+	stored_crc = (uint32_t)crc_footer[0]
+		| ((uint32_t)crc_footer[1] << 8)
+		| ((uint32_t)crc_footer[2] << 16)
+		| ((uint32_t)crc_footer[3] << 24);
+
+	if (calc_crc != stored_crc) {
+		BK_LOGE(TAG, "partition table CRC mismatch: calc=0x%08x stored=0x%08x\r\n",
+			(unsigned int)calc_crc, (unsigned int)stored_crc);
+		free(payload_buf);
+		free(buf);
+		return -1;
+	}
+
+	free(payload_buf);
+	payload_buf = NULL;
+
+	for (i = 0; i < entry_count; i++) {
+		bk_flash_read_bytes(partition_start + PARTITION_ENTRY_LEN * i, buf, PARTITION_ENTRY_LEN);
+		if (is_alpha(buf[0]) == 0) {
+			BK_LOGE(TAG, "partition entry %u invalid first byte 0x%02x\r\n",
+				(unsigned int)i, (unsigned int)buf[0]);
+			free(buf);
+			return -1;
+		}
 
 		int j;
-		for(j=0; j<PARTITION_NAME_LEN; ++j){
-			if(buf[j] == 0xFF){
+		for (j = 0; j < PARTITION_NAME_LEN; ++j) {
+			if (buf[j] == 0xFF) {
 				break;
 			}
 			name[j] = buf[j];
@@ -94,7 +181,7 @@ int partition_init(void)
 		name[j] = '\0';
 
 		for (int k = 0; k < PARTITION_CNT; k++) {
-			if(strcmp(s_partition_name[k],name) == 0){
+			if (strcmp(s_partition_name[k], name) == 0) {
 				s_partition_config[k].phy_offset = piece_address(buf, PARTITION_OFFSET_OFFSET);
 				s_partition_config[k].phy_size = piece_address(buf, PARTITION_SIZE_OFFSET);
 				s_partition_config[k].phy_flags = short_address(buf, PARTITION_FLAGS_OFFSET);

@@ -235,7 +235,10 @@ int main(void)
     hal_iomux_uart_enable(IOMX_UART_TX);
 #endif
 
-    partition_init();
+    if (partition_init() != 0) {
+        BOOT_LOG_ERR("partition_init failed (partition table CRC or flash read)");
+        FIH_PANIC;
+    }
     flash_map_init();
     deep_sleep_reset();
     boot_show_version();

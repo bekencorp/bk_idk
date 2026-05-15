@@ -32,6 +32,7 @@ enum {
 #define PARTITION_OFFSET_OFFSET          22
 #define PARTITION_SIZE_OFFSET            26
 #define PARTITION_FLAGS_OFFSET           30
+#define PARTITION_CRC_FOOTER_LEN         4
 
 #ifndef FLASH_PHY2VIRTUAL
 #define FLASH_PHY2VIRTUAL(phy_addr)      ((((phy_addr) / 34) << 5) + ((phy_addr) % 34))

@@ -6,6 +6,7 @@ import logging
 import struct
 
 from .common import *
+from .crc import make_crc32_table, pack_crc32
 from .partition import Partition
 from .bin import Bin
 
@@ -52,7 +53,11 @@ class PartitionPartition(Partition):
                 flags = struct.pack(">H",(p.flags().flags()))
                 f.write(flags)
 
-        with open('partition.bin','wb') as f,open('partition_raw.bin','rb') as f_src:
-            f.write(f_src.read())
+        with open('partition_raw.bin', 'rb') as f_src:
+            payload = f_src.read()
+        make_crc32_table()
+        crc = (pack_crc32(0xFFFFFFFF, payload) ^ 0xFFFFFFFF) & 0xFFFFFFFF
+        with open('partition.bin', 'wb') as f:
+            f.write(payload)
+            f.write(struct.pack('<I', crc))
             f.flush()
-            f.close()
