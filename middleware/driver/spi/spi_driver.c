@@ -1010,28 +1010,43 @@ bk_err_t bk_spi_dma_duplex_xfer(spi_id_t id, const void *tx_data, uint32_t tx_si
         s_current_spi_dma_rd_id = id;
         uint8_t *tx_buf = (uint8_t *)tx_data;
         while(len > 0) {
+                uint32_t chunk_size = (len < SPI_MAX_LENGTH) ? len : SPI_MAX_LENGTH;
+                uint32_t frame_size = (s_spi[id].hal.hw->ctrl.bit_width == SPI_BIT_WIDTH_16BITS) ? 2 : 1;
+                uint32_t fifo_prefill = (chunk_size > (48 * frame_size)) ? (48 * frame_size) : chunk_size;
+
                 if(rx_data) {
+                        s_spi[id].rx_buf = (uint8_t *)rx_data + offset;
+                        if (s_spi[id].hal.hw->ctrl.bit_width == SPI_BIT_WIDTH_8BITS) {
+                                s_spi[id].rx_size = chunk_size;
+                        } else {
+                                s_spi[id].rx_size = chunk_size >> 1;
+                        }
+                        s_spi[id].rx_offset = 0;
                         s_spi[id].is_rx_blocked = true;
                         spi_hal_clear_rx_fifo(&s_spi[id].hal);
-                        spi_hal_set_rx_trans_len(&s_spi[id].hal, rx_size);
-                        bk_dma_set_dest_start_addr(s_spi[id].spi_rx_dma_chan,((uint32_t)rx_data + offset));
-                        bk_dma_set_transfer_len(s_spi[id].spi_rx_dma_chan,rx_size);
+                        spi_hal_set_rx_trans_len(&s_spi[id].hal, chunk_size);
+                        bk_dma_set_dest_start_addr(s_spi[id].spi_rx_dma_chan, ((uint32_t)rx_data + offset));
+                        bk_dma_set_transfer_len(s_spi[id].spi_rx_dma_chan, chunk_size);
                 }
 
                 if(tx_data) {
                         s_spi[id].is_tx_blocked = true;
                         spi_hal_clear_tx_fifo(&s_spi[id].hal);
-                        uint32_t data;
+                        uint16_t *tx_data16 = (uint16_t *)((uint8_t *)tx_data + offset);
 
-                        for (int i = 0; i < (tx_size > 48 ? 48 : tx_size); i++) {
-                                data = (uint32_t)tx_buf[i];
+                        for (uint32_t i = 0; i < fifo_prefill; i += frame_size) {
+                                uint32_t data;
+                                if (frame_size == 1) {
+                                        data = (uint32_t)tx_buf[offset + i];
+                                } else {
+                                        data = (uint32_t)tx_data16[i >> 1];
+                                }
                                 BK_WHILE (!spi_hal_is_tx_fifo_wr_ready(&s_spi[id].hal));
-                                spi_hal_write_byte(&s_spi[id].hal,data);
+                                spi_hal_write_byte(&s_spi[id].hal, data);
                         }
-                        offset = tx_size > 48 ? 48 : tx_size;
-                        spi_hal_set_tx_trans_len(&s_spi[id].hal, tx_size);
-                        bk_dma_set_src_start_addr(s_spi[id].spi_tx_dma_chan,((uint32_t)tx_data + offset));
-                        bk_dma_set_transfer_len(s_spi[id].spi_tx_dma_chan,tx_size);
+                        spi_hal_set_tx_trans_len(&s_spi[id].hal, chunk_size);
+                        bk_dma_set_src_start_addr(s_spi[id].spi_tx_dma_chan, ((uint32_t)tx_data + offset + fifo_prefill));
+                        bk_dma_set_transfer_len(s_spi[id].spi_tx_dma_chan, chunk_size - fifo_prefill);
                 }
                 uint32_t int_level = spi_enter_critical();
                 spi_duplex_tx_rx_enable(id);
@@ -1050,8 +1065,8 @@ bk_err_t bk_spi_dma_duplex_xfer(spi_id_t id, const void *tx_data, uint32_t tx_si
                 dma_wait_to_idle(s_spi[id].spi_rx_dma_chan);
                 spi_exit_critical(int_level);
 
-                len = rx_size > 0 ? (len-rx_size) : (len-tx_size);
-                offset += rx_size > 0 ? (rx_size) : (tx_size);
+                len -= chunk_size;
+                offset += chunk_size;
         }
 
         return BK_OK;
@@ -1360,4 +1375,3 @@ static void spi3_isr(void)
 }
 
 #endif
-
