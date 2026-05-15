@@ -19,6 +19,7 @@
 #include "gpio_hal.h"
 #include "gpio_driver_base.h"
 #include "sys_types.h"
+#include <driver/flash_types.h>
 #include <driver/aon_rtc.h>
 #include <driver/hal/hal_spi_types.h>
 #include <driver/hal/hal_qspi_types.h>
@@ -3034,6 +3035,42 @@ void sys_hal_set_flash_clk(uint32_t flash_clk)
 			flash_div = 3;
 		}
 		sys_ll_set_cpu_clk_div_mode2_ckdiv_flash(flash_div);
+	}
+}
+
+void sys_hal_set_flash_clk_freq(uint32_t flash_clk_freq)
+{
+	uint32_t flash_src_clk = 0xFFFFFFFF;
+	uint32_t flash_div_clk = 0xFFFFFFFF;
+
+	switch (flash_clk_freq) {
+	case FLASH_CLK_FREQ_26M_HZ:
+		flash_src_clk = 0;  // XTAL26M
+		flash_div_clk = 0;  // div invalid
+		break;
+	case FLASH_CLK_FREQ_48M_HZ:
+		flash_src_clk = 1;  // 480M
+		flash_div_clk = 3;  // div 10
+		break;
+	case FLASH_CLK_FREQ_60M_HZ:
+		flash_src_clk = 1;  // 480M
+		flash_div_clk = 2;  // div 8
+		break;
+	case FLASH_CLK_FREQ_80M_HZ:
+		flash_src_clk = 1;  // 480M
+		flash_div_clk = 1;  // div 6
+		break;
+	case FLASH_CLK_FREQ_120M_HZ:
+		flash_src_clk = 1;  // 480M
+		flash_div_clk = 0;  // div 4
+		break;
+	default:
+		return;
+	}
+
+	if ((flash_src_clk != sys_ll_get_cpu_clk_div_mode2_cksel_flash()) || (flash_div_clk != sys_ll_get_cpu_clk_div_mode2_ckdiv_flash())) {
+		sys_ll_set_cpu_clk_div_mode2_ckdiv_flash(flash_div_clk);
+		sys_ll_set_cpu_clk_div_mode2_cksel_flash(flash_src_clk);
 	}
 }
 

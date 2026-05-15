@@ -3415,6 +3415,7 @@ void sys_hal_enter_low_analog(void);
 void sys_hal_exit_low_analog(void);
 void sys_hal_set_7816_int_en(uint32_t value);
 void sys_hal_set_scr_clk(uint32_t value);
+void sys_hal_set_flash_clk_freq(uint32_t flash_clk_freq);
 
 void sys_hal_set_ana_reg5_pwd_rosc_spi(uint32_t value);
 #if CONFIG_ANA_RTC || CONFIG_ANA_GPIO

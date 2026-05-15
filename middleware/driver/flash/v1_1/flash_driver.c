@@ -1489,6 +1489,30 @@ bk_err_t bk_flash_set_clk_dco(void)
 	return BK_OK;
 }
 
+bk_err_t bk_flash_set_clk_freq(uint32_t flash_clk_freq)
+{
+	switch (flash_clk_freq) {
+	case FLASH_CLK_FREQ_26M_HZ:
+	case FLASH_CLK_FREQ_48M_HZ:
+	case FLASH_CLK_FREQ_40M_HZ:
+	case FLASH_CLK_FREQ_60M_HZ:
+	case FLASH_CLK_FREQ_80M_HZ:
+	case FLASH_CLK_FREQ_120M_HZ:
+		break;
+	default:
+		FLASH_LOGW("clk error:invalid freq %u\r\n", flash_clk_freq);
+		return BK_ERR_FLASH_INVALID_CLK_PARAM;
+	}
+
+	uint32_t int_level = flash_enter_critical();
+	flash_ps_suspend(NORMAL_PS);
+	sys_drv_flash_set_clk_freq(flash_clk_freq);
+	flash_ps_resume(NORMAL_PS);
+	flash_exit_critical(int_level);
+
+	return BK_OK;
+}
+
 #if (CONFIG_SOC_BK7256XX)
 bk_err_t bk_flash_set_clk(flash_clk_src_t flash_src_clk, uint8_t flash_dpll_div)
 {

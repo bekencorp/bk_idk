@@ -243,6 +243,9 @@ static void test_idle_read_flash(void *arg) {
 	#if (CONFIG_TASK_WDT)
 	bk_task_wdt_stop();
 	#endif
+#if CONFIG_SOC_BK7236
+	bk_pm_module_vote_cpu_freq(PM_DEV_ID_DEFAULT, PM_CPU_FRQ_120M);
+#endif
 	bk_logic_partition_t *ota_partition = bk_flash_partition_get_info(BK_PARTITION_OTA);
 	uint32_t flash_size = bk_flash_get_current_total_size();
 	if (ota_partition != NULL) {
@@ -343,44 +346,30 @@ static void flash_command_test(char *pcWriteBuffer, int xWriteBufferLen, int arg
 	if (os_strcmp(argv[1], "config") == 0) {
 		uint32_t target_clk_mhz = os_strtoul(argv[2], NULL, 10);
 		uint32_t flash_line_mode = os_strtoul(argv[3], NULL, 10);
-		uint32_t flash_src_clk = 0;
-		uint32_t flash_div_clk = 0;
+		uint32_t target_clk_hz = 0;
 		bk_err_t config_ok = BK_OK;
 
 		switch (target_clk_mhz) {
-		case 13:
-			flash_src_clk = 0;  // XTAL 26M
-			flash_div_clk = 1;  // div 2
-			break;
 		case 26:
-			flash_src_clk = 0;  // XTAL 26M
-			flash_div_clk = 0;  // div 1
-			break;
-		case 40:
-			flash_src_clk = 2;  // 80M
-			flash_div_clk = 1;  // div 2
+			target_clk_hz = FLASH_CLK_FREQ_26M_HZ;
 			break;
 		case 60:
-			flash_src_clk = 3;  // 120M
-			flash_div_clk = 1;  // div 2
+			target_clk_hz = FLASH_CLK_FREQ_60M_HZ;
 			break;
 		case 80:
-			flash_src_clk = 2;  // 80M
-			flash_div_clk = 0;  // div 1
+			target_clk_hz = FLASH_CLK_FREQ_80M_HZ;
 			break;
 		case 120:
-			flash_src_clk = 3;  // 120M
-			flash_div_clk = 0;  // div 1
+			target_clk_hz = FLASH_CLK_FREQ_120M_HZ;
 			break;
 		default:
-			BK_DUMP_OUT("Error: Unsupported clock frequency %u MHz. Supported: 13, 26, 40, 60, 80, 120\n", target_clk_mhz);
+			BK_DUMP_OUT("Error: Unsupported clock frequency %u MHz. Supported: 26, 60, 80, 120\n", target_clk_mhz);
 			config_ok = BK_FAIL;
 			break;
 		}
 
 		if (config_ok == BK_OK) {
-			sys_drv_flash_set_clk_div(flash_div_clk);
-			sys_drv_flash_cksel(flash_src_clk);
+			bk_flash_set_clk_freq(target_clk_hz);
 			extern bk_err_t bk_flash_switch_line_mode(flash_line_mode_t line_mode);
 			if (flash_line_mode == 2) {
 				bk_flash_switch_line_mode(FLASH_LINE_MODE_TWO);
@@ -389,7 +378,7 @@ static void flash_command_test(char *pcWriteBuffer, int xWriteBufferLen, int arg
 				bk_flash_switch_line_mode(FLASH_LINE_MODE_FOUR);
 				CLI_LOGI("switch to 4 line.\r\n");
 			}
-			BK_DUMP_OUT("Flash clock configured: %u MHz (src_clk=%u, div_clk=%u)\n", target_clk_mhz, flash_src_clk, flash_div_clk);
+			BK_DUMP_OUT("Flash clock configured: %u MHz\n", target_clk_mhz);
 			BK_DUMP_OUT("flash_line_mode = %u\n", flash_line_mode);
 		}
 

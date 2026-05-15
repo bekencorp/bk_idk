@@ -850,6 +850,28 @@ bk_err_t bk_flash_set_clk_dco(void)
     return BK_OK;
 }
 
+bk_err_t bk_flash_set_clk_freq(uint32_t flash_clk_freq)
+{
+    switch (flash_clk_freq) {
+    case FLASH_CLK_FREQ_26M_HZ:
+    case FLASH_CLK_FREQ_48M_HZ:
+    case FLASH_CLK_FREQ_40M_HZ:
+    case FLASH_CLK_FREQ_60M_HZ:
+    case FLASH_CLK_FREQ_80M_HZ:
+    case FLASH_CLK_FREQ_120M_HZ:
+        break;
+    default:
+        FLASH_LOGW("clk error:invalid freq %u\r\n", flash_clk_freq);
+        return BK_ERR_FLASH_INVALID_CLK_PARAM;
+    }
+
+    flash_lock();
+    sys_drv_flash_set_clk_freq(flash_clk_freq);
+    flash_unlock();
+
+    return BK_OK;
+}
+
 #if CONFIG_FLASH_TEST
 bk_err_t bk_flash_write_enable(void)
 {

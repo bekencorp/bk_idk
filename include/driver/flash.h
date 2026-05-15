@@ -97,6 +97,18 @@ bk_err_t bk_flash_set_clk_dpll(void);
 bk_err_t bk_flash_set_clk_dco(void);
 
 /**
+ * @brief     Set flash clock frequency (Hz)
+ *
+ * @param flash_clk_freq flash clock in Hz
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_FLASH_INVALID_CLK_PARAM: flash clock parameter is invalid
+ *    - others: other errors.
+ */
+bk_err_t bk_flash_set_clk_freq(uint32_t flash_clk_freq);
+
+/**
  * @brief     Enable flash write
  *
  * @return

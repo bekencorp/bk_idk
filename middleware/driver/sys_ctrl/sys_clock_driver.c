@@ -287,6 +287,15 @@ uint32_t sys_drv_flash_get_clk_div(void)
 	return sys_hal_flash_get_clk_div();
 }
 
+void sys_drv_flash_set_clk_freq(uint32_t flash_clk_freq)
+{
+	uint32_t int_level = sys_drv_enter_critical();
+
+	sys_hal_set_flash_clk_freq(flash_clk_freq);
+
+	sys_drv_exit_critical(int_level);
+}
+
 //sys_ctrl CMD: CMD_QSPI_CLK_SEL
 void sys_drv_qspi_clk_sel(uint32_t id, uint32_t param)
 {

@@ -89,6 +89,7 @@ void sys_drv_flash_cksel(uint32_t value);
 void sys_drv_flash_set_clk_div(uint32_t value);
 uint32_t sys_drv_flash_get_clk_sel(void);
 uint32_t sys_drv_flash_get_clk_div(void);
+void sys_drv_flash_set_clk_freq(uint32_t flash_clk_freq);
 void sys_drv_set_qspi_vddram_voltage(uint32_t param);
 void sys_drv_set_qspi_io_voltage(uint32_t param);
 void sys_drv_qspi_clk_sel(uint32_t id, uint32_t param);

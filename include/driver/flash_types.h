@@ -38,6 +38,16 @@ typedef enum
 
 typedef enum
 {
+	FLASH_CLK_FREQ_26M_HZ = 26000000,
+	FLASH_CLK_FREQ_48M_HZ = 48000000,
+	FLASH_CLK_FREQ_40M_HZ = 40000000,
+	FLASH_CLK_FREQ_60M_HZ = 60000000,
+	FLASH_CLK_FREQ_80M_HZ = 80000000,
+	FLASH_CLK_FREQ_120M_HZ = 120000000,
+} flash_clk_freq_e;
+
+typedef enum
+{
 	FLASH_PROTECT_NONE = 0,     /**< flash protect type none */
 #if CONFIG_FLASH_V1P1
 	FLASH_PROTECT_APP,          /**< flash protect type app area */
