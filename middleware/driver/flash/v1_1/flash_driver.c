@@ -1694,7 +1694,7 @@ __attribute__((section(".iram"))) bk_err_t bk_flash_enter_deep_sleep(void)
 	//if (FLASH_LINE_MODE_FOUR == bk_flash_get_line_mode())
 	//	bk_flash_set_line_mode(FLASH_LINE_MODE_TWO);
 
-	ret = flash_bypass_op_write(&op_code, NULL, 0);
+	ret = flash_bypass_op_write_iram(&op_code, NULL, 0);
 	if(ret == 0)// success
 	{
 		// delay T_dp: 3us
@@ -1716,7 +1716,7 @@ __attribute__((section(".iram"))) bk_err_t bk_flash_exit_deep_sleep(void)
 	//if (FLASH_LINE_MODE_FOUR == bk_flash_get_line_mode())
 	//	bk_flash_set_line_mode(FLASH_LINE_MODE_TWO);
 
-	ret = flash_bypass_op_write(&op_code, NULL, 0);
+	ret = flash_bypass_op_write_iram(&op_code, NULL, 0);
 	if(ret == 0)// success
 	{
 		// delay T_res1: 20us

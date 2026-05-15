@@ -84,7 +84,8 @@ extern "C" {
 #define QE_RETRY_TIMES                  (10)
 
 #if CONFIG_SOC_BK7236XX
-__attribute__((section(".itcm_sec_code"))) int flash_bypass_op_write(uint8_t *op_code, uint8_t *tx_buf, uint32_t tx_len);
+__attribute__((section(".iram"))) int flash_bypass_op_write(uint8_t *op_code, uint8_t *tx_buf, uint32_t tx_len);
+__attribute__((section(".iram"))) int flash_bypass_op_write_iram(uint8_t *op_code, uint8_t *tx_buf, uint32_t tx_len);
 #else
 __attribute__((section(".itcm_sec_code"))) void flash_bypass_quad_enable(void);
 __attribute__((section(".itcm_sec_code"))) void flash_bypass_quad_test(uint32_t quad_enable, uint32_t delay_cycle1, uint32_t delay_cycle2);

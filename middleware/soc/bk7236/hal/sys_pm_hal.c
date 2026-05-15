@@ -979,13 +979,13 @@ __attribute__((section(".itcm_sec_code"))) void sys_hal_enter_low_voltage(void)
 	// violdosel = sys_ll_get_ana_reg8_violdosel();
 	// sys_ll_set_ana_reg8_violdosel(PM_LOW_VOL_VIO_LDO_SEL); //0x0:2.9V vio voltage
 	/*aon voltage*/
-	#if CONFIG_LV_FLASH_ENTER_LP_ENABLE
-	bk_flash_enter_deep_sleep();
-	#endif
 	valoldosel = sys_ll_get_ana_reg8_valoldosel();
 	sys_ll_set_ana_reg8_valoldosel(PM_LOW_VOL_AON_LDO_SEL); //0x4:0.8V aon voltage
 	sys_hal_disable_spi_latch();
 
+	#if CONFIG_LV_FLASH_ENTER_LP_ENABLE
+	bk_flash_enter_deep_sleep();
+	#endif
 /*----enter low voltage sleep-------*/
 	arch_deep_sleep();
 #if CONFIG_OTA_POSITION_INDEPENDENT_AB
