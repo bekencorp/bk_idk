@@ -129,6 +129,8 @@ void wifi_netif_notify_sta_got_ip(enum ip_ver ver)
 
 	bk_netif_get_ip4_config(NETIF_IF_STA,&ip_param);
 	os_memcpy(&event_data.ip, &ip_param.ip, NETIF_IP4_STR_LEN);
+	os_memcpy(&event_data.mask, &ip_param.mask, NETIF_IP4_STR_LEN);
+	os_memcpy(&event_data.gateway, &ip_param.gateway, NETIF_IP4_STR_LEN);
 
 	if (ver == IP4)
 		BK_LOG_ON_ERR(bk_event_post(EVENT_MOD_NETIF, EVENT_NETIF_GOT_IP4,

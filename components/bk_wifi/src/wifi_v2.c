@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <components/event.h>
 #include <common/bk_typedef.h>
 #include "wpa_ctrl.h"
 //#include <os/mem.h>
@@ -1750,6 +1751,9 @@ bk_err_t bk_wifi_init(const wifi_init_config_t *config)
 		WIFI_LOGI("wifi already init, reinit anyway!\n");
 
 	ret = wifi_init(config);
+	if (ret != BK_OK) {
+		return ret;
+	}
 
 	//TODO set the init flag according to the return value!
 	wifi_set_state_bit(WIFI_INIT_BIT);
@@ -1763,6 +1767,14 @@ bk_err_t bk_wifi_init(const wifi_init_config_t *config)
 		WIFI_LOGI("register wifi pm low voltage cb fail!\n");
 
 	return BK_OK;
+}
+
+bool bk_get_wifi_is_inited(void)
+{
+	if (s_wifi_state_bits & WIFI_INIT_BIT) {
+		return true;
+	}
+	return false;
 }
 
 //TODO
@@ -3532,6 +3544,8 @@ bk_err_t bk_wifi_ap_start(void)
 
 	WIFI_LOGI("ap started\n");
 	wifi_set_state_bit(WIFI_AP_STARTED_BIT);
+	BK_LOG_ON_ERR(bk_event_post(EVENT_MOD_WIFI, EVENT_WIFI_AP_START,
+		NULL, 0, BEKEN_NEVER_TIMEOUT));
 	return BK_OK;
 }
 
@@ -3800,6 +3814,8 @@ bk_err_t bk_wifi_ap_stop(void)
 
 	WIFI_LOGI("ap stopped\n");
 	wifi_clear_state_bit(WIFI_AP_STARTED_BIT);
+	BK_LOG_ON_ERR(bk_event_post(EVENT_MOD_WIFI, EVENT_WIFI_AP_STOP,
+		NULL, 0, BEKEN_NEVER_TIMEOUT));
 	return BK_OK;
 }
 
