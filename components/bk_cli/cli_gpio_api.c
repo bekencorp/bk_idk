@@ -147,11 +147,12 @@ static void cli_gpio_api_cmd_handler(void **argtable)
             BK_DUMP_OUT("Set GPIO %d output low successfully\r\n",gpio_id);
         } else if (strcmp(set->sval[0], "capacity") == 0) {
             uint32_t gpio_capacity = os_strtoul(capacity->sval[0], NULL, 10);
-            if (!bk_gpio_set_capacity(gpio_id, gpio_capacity)) {
-                BK_DUMP_OUT("Direct set GPIO %d config capacity %d failed\r\n", gpio_id, gpio_capacity);
+            bool set_ok = bk_gpio_set_capacity(gpio_id, gpio_capacity);
+            if (set_ok != gpio_capacity) {
+                BK_DUMP_OUT("Set GPIO %d capacity to %d failed\r\n", gpio_id, gpio_capacity);
                 return;
             }
-            BK_DUMP_OUT("Direct set GPIO %d config capacity %d. successfully\r\n", gpio_id, gpio_capacity);
+            BK_DUMP_OUT("Set GPIO %d capacity to %d successfully\r\n", gpio_id, gpio_capacity);
         } else if (strcmp(set->sval[0], "type") == 0) {
             gpio_int_type_t  interrupt_type = os_strtoul(type->sval[0], NULL, 10);
             ret = bk_gpio_set_interrupt_type(gpio_id, interrupt_type);

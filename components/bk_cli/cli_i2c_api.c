@@ -310,34 +310,18 @@ static void cli_i2c_api_cmd_handler(void **argtable)
             }
             BK_DUMP_OUT("I2c (%d) disable interrupt succeed\n", i2c_id);
         } else if (strcmp(function->sval[0], "is_busy") == 0) {
-            ret = bk_i2c_is_bus_busy(i2c_id);
-            if (ret != BK_OK) {
-                BK_DUMP_OUT("Check i2c(%d) busy failed, ret:-0x%x\n", i2c_id, -ret);
-                return;
-            }
-            BK_DUMP_OUT("Check i2c(%d) busy succeed\n", i2c_id);
+            bool busy = bk_i2c_is_bus_busy(i2c_id);
+            BK_DUMP_OUT("I2c (%d) is %s\n", i2c_id, busy ? "busy" : "not busy");
         } else if (strcmp(function->sval[0], "grt_cur") == 0) {
-            ret = bk_i2c_get_cur_action(i2c_id);
-            if (ret != BK_OK) {
-                BK_DUMP_OUT("Get i2c(%d) current action failed, ret:-0x%x\n", i2c_id, -ret);
-                return;
-            }
-            BK_DUMP_OUT("Get i2c(%d) current action succeed\n", i2c_id);
+            uint32_t action = bk_i2c_get_cur_action(i2c_id);
+            BK_DUMP_OUT("I2c (%d) current action (master_status): %u\n", i2c_id, action);
         }
         else if (strcmp(function->sval[0], "get_bus") == 0) {
-            ret = bk_i2c_get_busstate(i2c_id);
-            if (ret != BK_OK) {
-                BK_DUMP_OUT("Get i2c(%d) bus state failed, ret:-0x%x\n", i2c_id, -ret);
-                return;
-            }
-            BK_DUMP_OUT("Init the SIM I2C (%d) succeed\n", i2c_id);
+            uint8_t bus_st = bk_i2c_get_busstate(i2c_id);
+            BK_DUMP_OUT("I2c (%d) bus state: %s\n", i2c_id, bus_st ? "idle" : "busy");
         } else if (strcmp(function->sval[0], "get_tran") == 0) {
-            ret = bk_i2c_get_transstate(i2c_id);
-            if (ret != BK_OK) {
-                BK_DUMP_OUT("Get i2c(%d) trans state failed, ret:-0x%x\n", i2c_id, -ret);
-                return;
-            }
-            BK_DUMP_OUT("Get i2c(%d) bus status idle or busy succeed\n", i2c_id);
+            uint8_t tran_st = bk_i2c_get_transstate(i2c_id);
+            BK_DUMP_OUT("I2c (%d) trans state: %s\n", i2c_id, tran_st ? "ok" : "fail");
         } else {
             BK_DUMP_OUT("Invalid parameter for i2c(%d) function config: %s\r\n", i2c_id, function->sval[0]);
         }

@@ -25,6 +25,9 @@ static void cli_spi_help(void)
 	CLI_LOGI("spi {id} {init} [mode] [bit_width] [bit_width] [cpol] [cpha] [wire_mode] [baud_rate] [bit_order]\r\n");
 	CLI_LOGI("spi {id} {deinit} \r\n");
 	CLI_LOGI("spi {id} {write} [buf_len]\r\n");
+#if CONFIG_SPI_DMA
+	CLI_LOGI("spi {id} {dma_write/dma_read/dma_duplex} [buf_len]\r\n");
+#endif
 	CLI_LOGI("spi_data_test {id} {master|slave} {baud_rate} {start|stop} {uart2|uart3} {exchange}\r\n");
 	CLI_LOGI("spi_data_test {id} {master|slave} {send} {buf_len}\r\n");
 	CLI_LOGI("spi_flash {id} {readid|erase|read|write} {addr} {len}\r\n");
@@ -223,13 +226,13 @@ transmit_exit:
 		for (int i = 0; i < buf_len; i++) {
 			send_data[i] = i & 0xff;
 		}
-		ret = bk_spi_dma_write_bytes(spi_id, send_data, buf_len);
+		uint32_t xfer_len = bk_spi_dma_write_bytes(spi_id, send_data, buf_len);
 		if (send_data) {
 			os_free(send_data);
 		}
 		send_data = NULL;
-		if (ret != BK_OK) {
-			CLI_LOGE("spi dma write failed, spi_id=%d, ret:-0x%x\n", spi_id, -ret);
+		if (xfer_len != buf_len) {
+			CLI_LOGE("spi dma write failed, spi_id=%d, xfer_len=%u, expected=%u\n", spi_id, xfer_len, buf_len);
 			return;
 		}
 		CLI_LOGI("spi dma send, spi_id=%d, data_len=%d\n", spi_id, buf_len);
@@ -241,9 +244,9 @@ transmit_exit:
 			return;
 		}
 		os_memset(recv_data, 0xff, buf_len);
-		ret = bk_spi_dma_read_bytes(spi_id, recv_data, buf_len);
-		if (ret != BK_OK) {
-			CLI_LOGE("spi dma read failed, spi_id=%d, ret:-0x%x\n", spi_id, -ret);
+		uint32_t xfer_len = bk_spi_dma_read_bytes(spi_id, recv_data, buf_len);
+		if (xfer_len != buf_len) {
+			CLI_LOGE("spi dma read failed, spi_id=%d, xfer_len=%u, expected=%u\n", spi_id, xfer_len, buf_len);
 			if (recv_data) {
 				os_free(recv_data);
 			}
