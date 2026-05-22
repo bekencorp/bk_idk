@@ -537,6 +537,7 @@ enum {
 
 typedef struct {
 	char ssid[WIFI_SSID_STR_LEN];     /**< SSID to be scaned */
+	uint8_t bssid[WIFI_BSSID_LEN];     /**< BSSID to be scaned */
 	u8 scan_type;     /**< 0: active scan; 1: passive scan*/
 	u8 chan_cnt;     /**< scan channel cnt*/
 	u8 flag;

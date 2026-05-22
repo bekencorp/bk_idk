@@ -271,6 +271,9 @@ int wpa_supplicant_ctrl_iface_scan_results(
 	int index = 0;
 	size_t ssid_len = 0;
 	u8 *ssid = NULL;
+	#if BK_SUPPLICANT
+	u8 *bssid = NULL;
+	#endif
 
 	results->ApNum = 0;
 	results->ApList = 0;
@@ -280,6 +283,12 @@ int wpa_supplicant_ctrl_iface_scan_results(
 		ssid = wpa_s->ssids_from_scan_req->ssid;
 		ssid_len = wpa_s->ssids_from_scan_req->ssid_len;
 	}
+	#if BK_SUPPLICANT
+	/* filter specified BSSID */
+	if (wpa_s->bssid_from_scan_req) {
+		bssid = wpa_s->bssid_from_scan_req;
+	}
+	#endif
 
 	dl_list_for_each(bss, &wpa_s->bss_id, struct wpa_bss, list_id) {
 #if CONFIG_WIFI_REGDOMAIN
@@ -291,9 +300,16 @@ int wpa_supplicant_ctrl_iface_scan_results(
 			continue;
 #endif
 
+		#if BK_SUPPLICANT
+		/* if no ssid and no bssid specified, or match the specified ssid, or match the specified bssid */
+		if ((!ssid && !bssid) ||
+			(ssid && bss->ssid_len == ssid_len && !os_memcmp(ssid, bss->ssid, bss->ssid_len)) ||
+			(bssid && !os_memcmp(bssid, bss->bssid, ETH_ALEN))) {
+		#else
 		/* if no ssid specified, or match the specified ssid */
 		if (!ssid ||
 			(bss->ssid_len == ssid_len && !os_memcmp(ssid, bss->ssid, bss->ssid_len))) {
+		#endif
 			/* bss has updated in scan*/
 			if (bss->last_update_idx == wpa_s->bss_update_idx)
 				bss_num++;
@@ -315,9 +331,16 @@ int wpa_supplicant_ctrl_iface_scan_results(
 			continue;
 #endif
 
+		#if BK_SUPPLICANT
+		/* if no ssid and no bssid specified, or match the specified ssid, or match the specified bssid */
+		if ((!ssid && !bssid) ||
+			(ssid && bss->ssid_len == ssid_len && !os_memcmp(ssid, bss->ssid, bss->ssid_len)) ||
+			(bssid && !os_memcmp(bssid, bss->bssid, ETH_ALEN))) {
+		#else
 		/* if no ssid specified, or match the specified ssid */
 		if (!ssid ||
 			(bss->ssid_len == ssid_len && !os_memcmp(ssid, bss->ssid, bss->ssid_len))) {
+		#endif
 			if (bss->last_update_idx != wpa_s->bss_update_idx)
 				continue;
 			os_memcpy(results->ApList[index].ssid, bss->ssid, bss->ssid_len);
@@ -355,6 +378,9 @@ static int wpas_ctrl_scan(struct wpa_supplicant *wpa_s, wlan_sta_scan_param_t *p
 				 struct wpa_scan_results *scan_res);
 	int *manual_scan_freqs = NULL;
 	struct wpa_ssid_value *ssid = NULL;
+	#if BK_SUPPLICANT
+	uint8_t *bssid = NULL;
+	#endif
 	unsigned int ssid_count = 0;
 	int ret = 0;
 	bool scan_pending;
@@ -495,6 +521,16 @@ static int wpas_ctrl_scan(struct wpa_supplicant *wpa_s, wlan_sta_scan_param_t *p
 						  ssid[i].ssid,
 						  ssid[i].ssid_len);
 			}
+			#if BK_SUPPLICANT
+			if (!BK_IS_ZERO_MAC(params->bssid)) {
+				bssid = (uint8_t *)os_malloc(WIFI_BSSID_LEN * sizeof(uint8_t));
+				if (bssid == NULL) {
+					ret = WPA_ERR_NO_MEM;
+					goto done;
+				}
+				os_memcpy(bssid, params->bssid, WIFI_BSSID_LEN);
+			}
+			#endif
 		} else {
 			/* do wildcard scan */
 			ssid_count = 1;
@@ -513,6 +549,11 @@ static int wpas_ctrl_scan(struct wpa_supplicant *wpa_s, wlan_sta_scan_param_t *p
 		} else {
 			wpa_s->ssids_from_scan_req = NULL;
 		}
+		#if BK_SUPPLICANT
+		os_free(wpa_s->bssid_from_scan_req);
+		wpa_s->bssid_from_scan_req = bssid;
+		bssid = NULL;
+		#endif
 
 		if (scan_only)
 			scan_res_handler = scan_only_handler;
@@ -575,6 +616,9 @@ static int wpas_ctrl_scan(struct wpa_supplicant *wpa_s, wlan_sta_scan_param_t *p
 done:
 	os_free(manual_scan_freqs);
 	os_free(ssid);
+	#if BK_SUPPLICANT
+	os_free(bssid);
+	#endif
 
 	return ret;
 }

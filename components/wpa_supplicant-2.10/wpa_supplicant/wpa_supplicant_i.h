@@ -987,6 +987,9 @@ struct wpa_supplicant {
 
 	struct wpa_ssid_value *ssids_from_scan_req;
 	unsigned int num_ssids_from_scan_req;
+	#if BK_SUPPLICANT
+	uint8_t *bssid_from_scan_req;
+	#endif
 	int *last_scan_freqs;
 	unsigned int num_last_scan_freqs;
 	unsigned int suitable_network;

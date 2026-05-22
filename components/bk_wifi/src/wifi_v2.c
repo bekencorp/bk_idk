@@ -2693,15 +2693,20 @@ bk_err_t bk_wifi_scan_start(const wifi_scan_config_t *config)
 		}
 	}
 
-	if (0 == ssid_len) {
+	if (ssid_len != 0 || (config && !BK_IS_ZERO_MAC(config->bssid))) {
+		if (config && !BK_IS_ZERO_MAC(config->bssid)) {
+			os_memcpy(scan_param.bssid, config->bssid, WIFI_BSSID_LEN);
+		}
+		if (ssid_len != 0) {
+			WIFI_LOGI("scan %s\n", config->ssid);
+			scan_param.num_ssids = 1;
+			scan_param.ssids[0].ssid_len = MIN(WLAN_SSID_MAX_LEN, os_strlen((char *)config->ssid));
+			os_memcpy(scan_param.ssids[0].ssid, config->ssid, scan_param.ssids[0].ssid_len);
+		}
+	} else {
 		WIFI_LOGI("scan all APs\n");
 		scan_param.num_ssids = 1;
 		scan_param.ssids[0].ssid_len = 0;
-	} else {
-		WIFI_LOGI("scan %s\n", config->ssid);
-		scan_param.num_ssids = 1;
-		scan_param.ssids[0].ssid_len = MIN(WLAN_SSID_MAX_LEN, os_strlen((char *)config->ssid));
-		os_memcpy(scan_param.ssids[0].ssid, config->ssid, scan_param.ssids[0].ssid_len);
 	}
 	ret = wlan_sta_scan(&scan_param);
 

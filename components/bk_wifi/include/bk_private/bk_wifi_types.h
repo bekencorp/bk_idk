@@ -281,6 +281,7 @@ typedef struct wlan_sta_scan_param {
 	uint8_t scan_ssid;    /* Scan SSID of configured network with Probe Requests */
 	uint8_t num_ssids;
 	wlan_ssid_t ssids[WLAN_SCAN_SSID_MAX];
+	uint8_t bssid[WIFI_BSSID_LEN];
 	uint32_t id;
 } wlan_sta_scan_param_t;
 

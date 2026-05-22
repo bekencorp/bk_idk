@@ -939,6 +939,17 @@ static int wpa_set_ssids_from_scan_req(struct wpa_supplicant *wpa_s,
 	return 1;
 }
 
+#if BK_SUPPLICANT
+static int wpa_set_bssid_from_scan_req(struct wpa_supplicant *wpa_s,
+				       struct wpa_driver_scan_params *params)
+{
+	if (wpa_s->bssid_from_scan_req == NULL)
+		return 0;
+
+	params->bssid = wpa_s->bssid_from_scan_req;
+	return 1;
+}
+#endif
 
 void wpa_supplicant_scan(void *eloop_ctx, void *timeout_ctx)
 {
@@ -950,6 +961,9 @@ void wpa_supplicant_scan(void *eloop_ctx, void *timeout_ctx)
 	struct wpa_driver_scan_params *scan_params;
 	size_t max_ssids;
 	int connect_without_scan = 0;
+	#if BK_SUPPLICANT
+	bool ssid_bssid_set = false;
+	#endif
 #ifdef CONFIG_P2P
 	int p2p_in_prog;
 #endif
@@ -1087,8 +1101,25 @@ void wpa_supplicant_scan(void *eloop_ctx, void *timeout_ctx)
 	    wpa_set_ssids_from_scan_req(wpa_s, &params, max_ssids)) {
 		WPA_LOGI("use ssids from scan command\n");
 		wpa_printf(MSG_DEBUG, "Use specific SSIDs from SCAN command");
+		#if BK_SUPPLICANT
+		ssid_bssid_set = true;
+		#else
 		goto ssid_list_set;
+		#endif
 	}
+
+	#if BK_SUPPLICANT
+	if (wpa_s->last_scan_req == MANUAL_SCAN_REQ) {
+		if (wpa_set_bssid_from_scan_req(wpa_s, &params)) {
+			ssid_bssid_set = true;
+			WPA_LOGI("use bssid from scan command\n");
+			wpa_printf(MSG_DEBUG, "Use specific bssid from SCAN command");
+		}
+		if (ssid_bssid_set) {
+			goto ssid_list_set;
+		}
+	}
+	#endif
 
 #ifdef CONFIG_P2P
 	if ((wpa_s->p2p_in_provisioning || wpa_s->show_group_started) &&

@@ -7412,6 +7412,9 @@ static void wpa_supplicant_deinit_iface(struct wpa_supplicant *wpa_s,
 	}
 
 	os_free(wpa_s->ssids_from_scan_req);
+	#if BK_SUPPLICANT
+	os_free(wpa_s->bssid_from_scan_req);
+	#endif
 	os_free(wpa_s->last_scan_freqs);
 
 	os_free(wpa_s);
