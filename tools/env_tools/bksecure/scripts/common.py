@@ -172,6 +172,19 @@ def is_flash_crc_enabled():
     logging.debug('Using default flash_crc_en=TRUE (CRC mode)')
     return True
 
+def is_bl1_secureboot_enabled():
+    """Whether BL1 secure boot is enabled (from security.csv, pack-time only)."""
+    try:
+        from .security import Security
+        if os.path.exists('security.csv'):
+            s = Security('security.csv')
+            logging.debug(f'Read bl1_secureboot_en={s.bl1_secureboot_en} from security.csv')
+            return s.bl1_secureboot_en
+    except Exception as e:
+        logging.debug(f'Failed to read bl1_secureboot_en from security.csv: {e}')
+    logging.debug('Using default bl1_secureboot_en=FALSE')
+    return False
+
 def clear_dir(directory):
     for filename in os.listdir(directory):
         file_path = os.path.join(directory, filename)
