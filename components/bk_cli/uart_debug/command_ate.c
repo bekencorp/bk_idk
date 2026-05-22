@@ -1966,6 +1966,7 @@ static void psram_function_test(void)
 		}
 	}
 
+#if (CONFIG_PSRAM_HEAP_SIZE >= 0x800000)
 	base_addr = 0x60500000;
 	for (uint32_t i = 0; i < word_len; i++) {
 		write_data(base_addr + i * 4, 0x55555555 + i);
@@ -2013,6 +2014,7 @@ static void psram_function_test(void)
 			goto exit;
 		}
 	}
+#endif
 
 exit:
 	if (flag_error) {
