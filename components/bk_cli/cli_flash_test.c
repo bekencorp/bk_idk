@@ -92,6 +92,17 @@ static bk_err_t test_flash_read(volatile uint32_t start_addr, uint32_t len)
 	return kNoErr;
 }
 
+#define IDLE_READ_FLASH_PAUSE_EVERY_N_READS  1024
+#define IDLE_READ_FLASH_PAUSE_MS             1
+
+static void idle_read_flash_pause_if_needed(void)
+{
+	if ((idle_read_flash_count % IDLE_READ_FLASH_PAUSE_EVERY_N_READS) != 0) {
+		return;
+	}
+	rtos_delay_milliseconds(IDLE_READ_FLASH_PAUSE_MS);
+}
+
 static bk_err_t test_flash_read_without_print(volatile uint32_t start_addr, uint32_t len)
 {
 	uint32_t tmp;
@@ -104,6 +115,7 @@ static bk_err_t test_flash_read_without_print(volatile uint32_t start_addr, uint
 		for (addr = start_addr; addr < tmp; addr += 256) {
 			bk_flash_read_bytes(addr, (uint8_t *)buf, 256);
 			idle_read_flash_count++;
+			idle_read_flash_pause_if_needed();
 		}
 	}
 
