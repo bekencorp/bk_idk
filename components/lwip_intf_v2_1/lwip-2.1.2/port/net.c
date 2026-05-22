@@ -316,9 +316,8 @@ static void wm_netif_status_callback(struct netif *n)
 #if IP_NAPT
 				sta_dns = dns_getserver(0);
 #endif
-				if (0) {
 #ifdef CONFIG_WIFI_ENABLE
-				} else if (n == &g_mlan.netif) {
+				if (n == &g_mlan.netif) {
 #if !CONFIG_DISABLE_DEPRECIATED_WIFI_API
 					wifi_netif_call_status_cb_when_sta_got_ip();
 #endif
@@ -347,14 +346,15 @@ static void wm_netif_status_callback(struct netif *n)
 					if (sta_connected_func)
 						(*sta_connected_func)();
 #endif
-				}
+				} else
 #endif // CONFIG_WIFI_ENABLE
 #ifdef CONFIG_ETH
-			} else if (n == &g_mlan.netif) {
+			if (n == &g_mlan.netif) {
 				// Ethernet DHCP handler, clear ps prevent
 				// TODO: ETH, DHCP, IPv6, RA, DHCPv6 handler
+            } else
 #endif
-			} else {
+			{
 				// dhcp fail
 #ifdef CONFIG_WIFI_ENABLE
 #if !CONFIG_DISABLE_DEPRECIATED_WIFI_API
@@ -362,6 +362,7 @@ static void wm_netif_status_callback(struct netif *n)
 					wifi_netif_call_status_cb_when_sta_dhcp_timeout();
 #endif
 #endif // CONFIG_WIFI_ENABLE
+            }
 			}
 		}
 	} else {

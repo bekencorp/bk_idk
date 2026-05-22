@@ -779,12 +779,12 @@ const phy_os_funcs_t g_phy_os_funcs = {
     ._evm_set_ke_evt_mac_bit   = evm_set_ke_evt_mac_bit,
 
     ._tx_evm_set_chan_ctxt_pop = tx_evm_set_chan_ctxt_pop,
-
-    ._save_info_item = save_info_item,
-    ._get_info_item  = get_info_item ,
 #else
     ._nv_phy_reg_set_hook = NULL,
 #endif
+
+    ._save_info_item = save_info_item,
+    ._get_info_item  = get_info_item ,
 
     ////
     ._delay                    = delay,

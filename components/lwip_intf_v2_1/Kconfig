@@ -37,7 +37,7 @@ menu "Lwip_intf_v2_1"
 		default n
 
 	config LWIP
-		depends on WIFI_ENABLE || ETH
+		depends on WIFI_ENABLE || ETH || PSA_MBEDTLS
 		bool "Enable LWIP"
 		default y
 	config IP_FORWARD_ALLOW_TX_ON_RX_NETIF
