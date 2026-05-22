@@ -169,16 +169,10 @@ class PackDownload(Pack):
             if size_obj.offset() != 0:
                 return
 
-        secure_boot = is_bl1_secureboot_enabled()
-        if secure_boot:
-            magic = "BK.SB".encode() + b'\x00' * 3
-        else:
-            soc_type = get_soc_type()
-            if soc_type == "BK7236":
-                magic = "BK7236".encode() + b'\x00' * 2
-            else:
-                magic = "BEKEN".encode() + b'\x00' * 3
-        logging.debug(f'Add magic code {magic} to {bname} (secure_boot={secure_boot})')
+        # Use SOC-specific magic: BK7236 uses "BK7236", others use "BEKEN"
+        soc_type = get_soc_type()
+        magic = "BK7236".encode() + b'\x00' * 2 if soc_type == "BK7236" else "BEKEN".encode() + b'\x00' * 3
+        logging.debug(f'Add magic code {magic} to {bname} (SOC={soc_type})')
         with open(bname, 'r+b') as f:
             f.seek(0x100)
             f.write(magic)
