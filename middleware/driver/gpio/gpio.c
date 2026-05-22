@@ -144,6 +144,7 @@ bk_err_t bk_gpio_map_clear_ram_map_table(gpio_id_t gpio_id)
 bk_err_t bk_gpio_map_dev_to_pin(gpio_id_t gpio_id, gpio_dev_t dev)
 {
 	gpio_id_t old_pin;
+	gpio_dev_t old_dev;
 	bk_err_t ret;
 
 	if (!gpio_map_is_valid_id(gpio_id)) {
@@ -165,6 +166,17 @@ bk_err_t bk_gpio_map_dev_to_pin(gpio_id_t gpio_id, gpio_dev_t dev)
 		if (ret != BK_OK) {
 			GPIO_LOGE("bk_gpio_map_dev_to_pin: unmap old pin %d for dev 0x%x failed, ret=%d\r\n",
 				  old_pin, (unsigned int)dev, ret);
+			return ret;
+		}
+	}
+
+	/* If target pin is already mapped to a different dev, unmap it first */
+	old_dev = gpio_map_find_dev_by_pin(gpio_id);
+	if (gpio_map_is_valid_dev(old_dev) && old_dev != GPIO_DEV_NONE && old_dev != dev) {
+		ret = gpio_dev_unmap(gpio_id);
+		if (ret != BK_OK) {
+			GPIO_LOGE("bk_gpio_map_dev_to_pin: unmap old dev 0x%x from pin %d failed, ret=%d\r\n",
+				  (unsigned int)old_dev, gpio_id, ret);
 			return ret;
 		}
 	}
