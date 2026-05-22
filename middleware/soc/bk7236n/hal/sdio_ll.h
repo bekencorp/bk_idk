@@ -112,6 +112,15 @@ static inline void sdio_host_ll_set_bus_width(sdio_hw_t *hw, sdio_host_bus_width
 	}
 }
 
+static inline void sdio_host_ll_set_sample_edge(sdio_hw_t *hw, uint32_t edge)
+{
+	if (edge == 1) {
+		hw->sd_fifo_threshold.samp_sel = 1;
+	} else {
+		hw->sd_fifo_threshold.samp_sel = 0;
+	}
+}
+
 static inline void sdio_host_ll_set_send_cmd_argument(sdio_hw_t *hw, uint32_t cmd_argument)
 {
 	hw->cmd_argument = cmd_argument;

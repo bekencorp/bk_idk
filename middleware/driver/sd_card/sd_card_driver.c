@@ -18,12 +18,14 @@
 #include "sd_card_driver.h"
 #include <driver/gpio.h>
 #include "gpio_driver.h"
-
+bk_err_t bk_sdio_host_continious_read_blks_fifo(uint8_t *read_data, uint32_t blk_cnt);
 #if CONFIG_SDIO_V2P0
 #include "sys_driver.h"
 
 //TODO:These private API should move to private header file.
 extern void bk_sdio_host_reset_sd_state(void);
+extern void bk_sdio_host_set_bus_width(sdio_host_bus_width_t bus_width);
+extern void bk_sdio_host_set_sample_edge(uint32_t edge);
 extern void bk_sdio_clk_gate_config(uint32_t enable);
 extern void bk_sdio_tx_fifo_clk_gate_config(uint32_t enable);
 extern void bk_sdio_clock_en(uint32_t enable);
@@ -106,6 +108,7 @@ static volatile sd_card_sw_status_t s_sdcard_sw_status;
 #endif
 static bool s_sd_card_is_init = false;
 static sd_card_obj_t s_sd_card_obj = {0};
+static uint8_t s_is_emmc_flag = 0;
 
 #if CONFIG_SDCARD_CHECK_INSERTION_EN
 static bool sd_card_get_insert_status(void)
@@ -127,7 +130,7 @@ static uint32 sd_card_get_cmd_timeout_param(void)
 	uint32 timeout_param;
 	switch (s_sd_card_obj.clock_freq) {
 #if CONFIG_SDIO_V2P0
-	case SDIO_HOST_CLK_100K:
+	case SDIO_HOST_CLK_XTAL_312K:
 		timeout_param = CMD_TIMEOUT_100K;
 		break;
 #else
@@ -135,11 +138,23 @@ static uint32 sd_card_get_cmd_timeout_param(void)
 		timeout_param = CMD_TIMEOUT_200K;
 		break;
 #endif
+#if CONFIG_SDIO_V2P0
+	case SDIO_HOST_CLK_XTAL_13M:
+#else
 	case SDIO_HOST_CLK_6_5M:
-		timeout_param = CMD_TIMEOUT_6_5_M;
-		break;
-	case SDIO_HOST_CLK_13M:
+#endif
 		timeout_param = CMD_TIMEOUT_13M;
+		break;
+	#if CONFIG_SDIO_V2P0
+	case SDIO_HOST_CLK_XTAL_20M:
+	#else
+	case SDIO_HOST_CLK_13M:
+	#endif
+#if CONFIG_SDIO_V2P0
+		timeout_param = CMD_TIMEOUT_20M;
+#else
+		timeout_param = CMD_TIMEOUT_13M;
+#endif
 		break;
 
 #if CONFIG_SDIO_V2P0	//hasn't 26M
@@ -156,7 +171,7 @@ static uint32 sd_card_get_cmd_timeout_param(void)
 		break;
 
 	default:
-		timeout_param = CMD_TIMEOUT_13M;
+		timeout_param = CMD_TIMEOUT_20M;
 		break;
 #else
 	case SDIO_HOST_CLK_26M:
@@ -173,7 +188,7 @@ static uint32 sd_card_get_data_timeout_param(void)
 	uint32 timeout_param;
 	switch (s_sd_card_obj.clock_freq) {
 #if CONFIG_SDIO_V2P0
-	case SDIO_HOST_CLK_100K:
+	case SDIO_HOST_CLK_XTAL_312K:
 		timeout_param = DATA_TIMEOUT_100K;
 		break;
 #else
@@ -181,11 +196,23 @@ static uint32 sd_card_get_data_timeout_param(void)
 		timeout_param = DATA_TIMEOUT_200K;
 		break;
 #endif
+#if CONFIG_SDIO_V2P0
+	case SDIO_HOST_CLK_XTAL_13M:
+#else
 	case SDIO_HOST_CLK_6_5M:
-		timeout_param = DATA_TIMEOUT_6_5_M;
-		break;
-	case SDIO_HOST_CLK_13M:
+#endif
 		timeout_param = DATA_TIMEOUT_13M;
+		break;
+	#if CONFIG_SDIO_V2P0
+	case SDIO_HOST_CLK_XTAL_20M:
+	#else
+	case SDIO_HOST_CLK_13M:
+	#endif
+#if CONFIG_SDIO_V2P0
+		timeout_param = DATA_TIMEOUT_20M;
+#else
+		timeout_param = DATA_TIMEOUT_13M;
+#endif
 		break;
 #if CONFIG_SDIO_V2P0	//hasn't 26M
 	case SDIO_HOST_CLK_20M:
@@ -201,7 +228,7 @@ static uint32 sd_card_get_data_timeout_param(void)
 		break;
 
 	default:
-		timeout_param = DATA_TIMEOUT_13M;
+		timeout_param = DATA_TIMEOUT_20M;
 		break;
 #else
 	case SDIO_HOST_CLK_26M:
@@ -438,6 +465,7 @@ static bk_err_t sd_card_cmd_select_deselect_card(uint32_t addr)
 	cmd_cfg.wait_rsp_timeout = sd_card_get_cmd_timeout_param();
 	cmd_cfg.crc_check = true;
 
+	retry_cnt = 3;
 	while(retry_cnt)
 	{
 		retry_cnt--;
@@ -446,6 +474,11 @@ static bk_err_t sd_card_cmd_select_deselect_card(uint32_t addr)
 		error_state = bk_sdio_host_wait_cmd_response(cmd_cfg.cmd_index);
 		if (error_state == BK_OK)
 			break;
+		if(addr == 0)
+		{
+			error_state = BK_OK;
+			break;
+		}
 	}
 	if (error_state != BK_OK) {
 		SD_CARD_LOGW("CMD7 SELECT_DESELECT_CARD err:-%x\r\n", -error_state);
@@ -502,6 +535,45 @@ static bk_err_t sd_card_cmd_set_bus_width(bool four_lines)
 	return error_state;
 }
 
+static int emmc_card_send_status(uint32_t argument);//CMD6
+static bk_err_t emmc_card_set_bus_width(bool four_lines)
+{
+	bk_err_t error_state = 0;
+	sdio_host_cmd_cfg_t cmd_cfg = {0};
+
+	cmd_cfg.cmd_index = 6;
+	if(four_lines)
+	{
+		cmd_cfg.argument = 0x03B70100;//0x03B70200;//0x03b90100;
+	}
+	else
+	{
+		cmd_cfg.argument = 0x03B70000;
+	}
+	cmd_cfg.response = SDIO_HOST_CMD_RSP_SHORT;
+	cmd_cfg.wait_rsp_timeout = sd_card_get_cmd_timeout_param();
+	cmd_cfg.crc_check = true;
+
+	SD_CARD_LOGI("cmd_cfg.argument:%08X\r\n", cmd_cfg.argument);
+
+	bk_sdio_host_send_command(&cmd_cfg);
+	error_state = bk_sdio_host_wait_cmd_response(cmd_cfg.cmd_index);
+	if (error_state != BK_OK) {
+		SD_CARD_LOGW("CMD6 SET_BUS_WIDTH err:-%x\r\n", -error_state);
+		return error_state;
+	}
+	bk_sdio_host_set_bus_width(four_lines ? SDIO_HOST_BUS_WIDTH_4LINE : SDIO_HOST_BUS_WIDTH_1LINE);
+	SD_CARD_LOGI("sdio host send CMD6(SET_BUS_WIDTH) = %d\r\n", four_lines);
+
+	bk_err_t bk_sdcard_wait_busy_to_idle(uint32_t max_time);
+	error_state = bk_sdcard_wait_busy_to_idle(1000);
+
+	if (error_state != BK_OK) {
+		SD_CARD_LOGW("%s,emmc_card_send_status err:-%x\r\n",__func__, -error_state);
+		return error_state;
+	}
+	return error_state;
+}
 /* CMD16 */
 static bk_err_t sd_card_cmd_set_block_len(uint32_t block_size)
 {
@@ -514,14 +586,21 @@ static bk_err_t sd_card_cmd_set_block_len(uint32_t block_size)
 	cmd_cfg.wait_rsp_timeout = sd_card_get_cmd_timeout_param();
 	cmd_cfg.crc_check = true;
 
-	bk_sdio_host_send_command(&cmd_cfg);
-	error_state = bk_sdio_host_wait_cmd_response(cmd_cfg.cmd_index);
-	if (error_state != BK_OK) {
-		SD_CARD_LOGW("CMD16 SET_BLOCK_LEN err:-%x\r\n", -error_state);
-		return error_state;
-	}
-	SD_CARD_LOGD("sdio host send CMD16(SET_BLOCK_LEN) ok, set_block_len:%d\r\n", block_size);
+	uint32_t retry_cnt = SD_CARD_MAX_CMD_TRIAL_COUNT;
 
+	while(retry_cnt)
+	{
+		retry_cnt--;
+
+		bk_sdio_host_send_command(&cmd_cfg);
+		error_state = bk_sdio_host_wait_cmd_response(cmd_cfg.cmd_index);
+		if (error_state == BK_OK)
+			break;
+	}
+	if((error_state != BK_OK))
+	{
+		SD_CARD_LOGW("CMD16 SET_BLOCK_LEN err:-%x\r\n", -error_state);
+	}
 	return error_state;
 }
 
@@ -591,6 +670,12 @@ static bk_err_t sd_card_cmd_read_multiple_block(uint32 addr)
 	bk_err_t error_state = BK_OK;
 	sdio_host_cmd_cfg_t cmd_cfg = {0};
 	uint32_t retry_cnt = SD_CARD_MAX_CMD_TRIAL_COUNT;
+
+#if CONFIG_SDIO_V2P0
+	bk_sdio_clk_gate_config(0);
+
+	bk_sdio_tx_fifo_clk_gate_config(0);
+#endif
 
 	cmd_cfg.cmd_index = SD_CMD_READ_MULTIPLE_BLOCK;
 	cmd_cfg.argument = addr;
@@ -831,19 +916,74 @@ static bk_err_t sd_card_cmd_send_status(uint32_t argument, uint32_t *card_status
 	return error_state;
 }
 
+static int emmc_card_send_op_cond(void)
+{
+	bk_err_t error_state = 0;
+	sdio_host_cmd_cfg_t cmd_cfg = {0};
+	uint32_t retry_cnt = SD_CARD_MAX_CMD_TRIAL_COUNT;
+	uint32_t rsp_arg = 0;
+
+	cmd_cfg.cmd_index = 1;
+	cmd_cfg.argument = 0x40ff8000;
+	cmd_cfg.response = SDIO_HOST_CMD_RSP_SHORT;
+	cmd_cfg.wait_rsp_timeout = sd_card_get_cmd_timeout_param();
+	cmd_cfg.crc_check = false;
+
+cmd1_loop:
+	retry_cnt = SD_CARD_MAX_CMD_TRIAL_COUNT;
+	while(retry_cnt)
+	{
+		retry_cnt--;
+		bk_sdio_host_send_command(&cmd_cfg);
+		error_state = bk_sdio_host_wait_cmd_response(cmd_cfg.cmd_index);
+		if (error_state == BK_OK)
+			break;
+		rtos_delay_milliseconds(10);
+	}
+	if((error_state != BK_OK))
+	{
+		SD_CARD_LOGW("%s,0x%x\r\n", __func__,-error_state);
+		return error_state;
+	}
+
+	rsp_arg = bk_sdio_host_get_cmd_rsp_argument(SDIO_HOST_RSP0);
+	if((rsp_arg >> 31 & 0x01))
+	{
+		SD_CARD_LOGI("card ready R3:%08x\r\n",rsp_arg);
+		return 0;
+	}
+	else if(0 == (rsp_arg >> 31 & 0x01))
+	{
+		SD_CARD_LOGD("card busy R3:%08x\r\n",rsp_arg);
+		goto cmd1_loop;
+		return  -1;
+	}
+
+	return error_state;
+}
+
 static bk_err_t sd_card_power_on(void)
 {
 	bk_err_t error_state;
 	uint32_t count = 0, valid_volt = 0;
 	uint32_t response = 0;
 
-	bk_printf("sd_card_power_on\r\n");
 	/* CMD0: GO_IDLE_STATE */
 	error_state = sd_card_cmd_go_idle_state();
 	if (error_state != BK_OK) {
 		return error_state;
 	}
     rtos_delay_milliseconds(50);
+
+	s_is_emmc_flag = 0;
+
+	error_state =  emmc_card_send_op_cond();
+	if (error_state == BK_OK)
+	{
+		s_is_emmc_flag = 1;
+		SD_CARD_LOGI("%s,is EMMC CARD\r\n",__func__);
+		return error_state;
+	}
 
 	/* CMD8: SEND_IF_COND: Command available on V2.0 cards */
 	error_state = sd_card_cmd_send_if_cond();
@@ -857,13 +997,12 @@ static bk_err_t sd_card_power_on(void)
 		/* SEND CMD55 APP_CMD with RCA as 0 */
 		error_state = sd_card_cmd_app_cmd(0);
 		if (error_state != BK_OK) {
-			bk_printf("unsupported feature\r\n");
+			SD_CARD_LOGW("unsupported feature\r\n");
 			return BK_ERR_SDIO_HOST_UNSUPPORTED_FEATURE;
 		}
 	}
 
 	while ((count < SD_CARD_MAX_VOLT_TRIAL_COUNT) && (valid_volt == 0)) {
-		bk_printf("sd_card_cmd_app_cmd:%d\r\n");
 		/* Send CMD55 APP_CMD with RCA as 0 */
 		error_state = sd_card_cmd_app_cmd(0);
 		if (error_state != BK_OK) {
@@ -908,6 +1047,101 @@ static bk_err_t sd_card_power_on(void)
 	return BK_OK;
 }
 
+static uint32_t g_emmc_block_cnt = 0;
+
+#define SD_CMD_SEND_EXT_CSD	8
+static uint8_t ext_csd_data[516] = {0};
+static bk_err_t sd_card_cmd_send_ext_csd(void)
+{
+	sdio_host_data_config_t data_config = {0};
+
+	//before read data, reset it
+	bk_sdio_host_reset_sd_state();
+
+	data_config.data_timeout = sd_card_get_data_timeout_param();
+	data_config.data_len = SD_BLOCK_SIZE * 1;
+	data_config.data_block_size = SD_BLOCK_SIZE;
+	data_config.data_dir = SDIO_HOST_DATA_DIR_RD;
+
+	bk_sdio_host_config_data(&data_config);
+	bk_sdio_host_set_bus_width(SDIO_HOST_BUS_WIDTH_1LINE);
+
+	bk_err_t error_state = BK_OK;
+	sdio_host_cmd_cfg_t cmd_cfg = {0};
+	uint32_t retry_cnt = SD_CARD_MAX_CMD_TRIAL_COUNT;
+
+	cmd_cfg.cmd_index = SD_CMD_SEND_EXT_CSD;
+	cmd_cfg.argument = 0;
+	cmd_cfg.response = SDIO_HOST_CMD_RSP_LONG;
+	cmd_cfg.wait_rsp_timeout = sd_card_get_cmd_timeout_param();
+	cmd_cfg.crc_check = false;
+
+	while(retry_cnt)
+	{
+		retry_cnt--;
+
+		bk_sdio_host_send_command(&cmd_cfg);
+		error_state = bk_sdio_host_wait_cmd_response(cmd_cfg.cmd_index);
+		if (error_state == BK_OK)
+			break;
+	}
+
+	if (error_state != BK_OK) {
+		SD_CARD_LOGW("EMMC CMD8 SEND_EXT_CSD err:-%x\r\n", -error_state);
+		return error_state;
+	}
+	SD_CARD_LOGI("sdio host send EMMC CMD8(SEND_EXT_CSD) ok\r\n");
+
+	rtos_delay_milliseconds(2);
+
+	uint32_t read_data = 0, index = 0;
+	uint32_t rd_cnt = 0;
+	while (bk_sdio_host_wait_receive_data() == BK_OK) {
+
+		if(rd_cnt>=128)
+			break;
+		do {
+			/* Read data from SDIO Rx fifo */
+			rd_cnt++;
+			error_state = bk_sdio_host_read_fifo(&read_data);
+			if(error_state == BK_OK)
+			{
+				ext_csd_data[index++] = read_data & 0xff;
+				ext_csd_data[index++] = (read_data >> 8) & 0xff;
+				ext_csd_data[index++] = (read_data >> 16) & 0xff;
+				ext_csd_data[index++] = (read_data >> 24) & 0xff;
+				SD_CARD_LOGD("read_data:0x%08x, rd_cnt:%d\r\n", read_data, rd_cnt);
+			}
+			else
+			{
+				SD_CARD_LOGW("read data fail from FIFO\r\n");
+				break;
+			}
+		} while ((index % SD_BLOCK_SIZE) != 0);
+	}
+
+	uint32_t blocks = (ext_csd_data[215] << 24) | (ext_csd_data[214] << 16) | (ext_csd_data[213] << 8) | (ext_csd_data[212] << 0);
+	g_emmc_block_cnt = blocks;
+	uint32_t high_cap = ext_csd_data[196] & 0x02;
+	if(high_cap)
+	{
+		s_sd_card_obj.sd_card.card_type = SD_CARD_TYPE_SDHC_SDXC;
+	}
+	else
+	{
+		s_sd_card_obj.sd_card.card_type = SD_CARD_TYPE_SDSC;
+	}
+
+	return error_state;
+}
+static inline void sdio_host_set_sample_edge(int edge)
+{
+	if (edge == 1) {
+		bk_sdio_host_set_sample_edge(1);
+	} else {
+		bk_sdio_host_set_sample_edge(0);
+	}
+}
 static bk_err_t sd_card_init_card(void)
 {
 	bk_err_t error_state = BK_OK;
@@ -963,14 +1197,27 @@ static bk_err_t sd_card_init_card(void)
 		return error_state;
 	}
 	rtos_delay_milliseconds(2);
-
+	if (s_is_emmc_flag)
+	{
+		error_state = sd_card_cmd_send_ext_csd();
+		if (error_state != BK_OK) {
+			return error_state;
+		}
+#if CONFIG_SDCARD_BUSWIDTH_4LINE
+		error_state = emmc_card_set_bus_width(true);
+#else
+		error_state = emmc_card_set_bus_width(false);
+#endif
+	}
+	else
+	{
 	/* Set sdcard buswidth four lines or one line */
 #if CONFIG_SDCARD_BUSWIDTH_4LINE
 	error_state = sd_card_cmd_set_bus_width(true);
 #else
 	error_state = sd_card_cmd_set_bus_width(false);
 #endif
-
+	}
 #if (CONFIG_SDCARD_BUSWIDTH_4LINE != CONFIG_SDIO_4LINES_EN)
 #error "CONFIG_SDCARD_BUSWIDTH_4LINE != CONFIG_SDIO_4LINES_EN"
 #endif
@@ -985,6 +1232,12 @@ static bk_err_t sd_card_init_card(void)
 		return error_state;
 	}
 
+	/*fix repeat emmc mount/unmout happend mount issue*/
+	if (s_is_emmc_flag)
+	{
+		sdio_host_set_sample_edge(1);//set to rising edge
+		bk_sdio_host_reset_sd_state();
+	}
 	rtos_delay_milliseconds(2);
 	/* improve sdio clock freq for sd card data transfer mode */
 #if CONFIG_SDIO_V2P0
@@ -1051,7 +1304,7 @@ bk_err_t bk_sd_card_init(void)
 	}
 
 #if CONFIG_SDIO_V2P0
-	sdio_cfg.clock_freq = SDIO_HOST_CLK_100K;
+	sdio_cfg.clock_freq = SDIO_HOST_CLK_XTAL_312K;
 #else
 	sdio_cfg.clock_freq = CONFIG_SDIO_HOST_DEFAULT_CLOCK_FREQ;
 #endif
@@ -1065,10 +1318,6 @@ bk_err_t bk_sd_card_init(void)
 	sdio_cfg.dma_rx_en = 1;
 #endif
 	s_sd_card_obj.clock_freq = sdio_cfg.clock_freq;
-
-#if CONFIG_SDIO_V2P0
-	bk_sdio_clk_gate_config(1);
-#endif
 
 #if CONFIG_SDCARD_OPS_TRACE_EN
 	s_sdcard_sw_status.init = 2;
@@ -1249,37 +1498,62 @@ bk_err_t bk_sdcard_wait_busy_to_idle(uint32_t max_time)
 {
 	uint32_t retry_cnt = 0;
 	bk_err_t error_state = BK_OK;
-
-	/*
-	 * WORKAROUND:
-	 * Some special sdcard maybe at busy status after CMD12(previous round write stop),
-	 * so it can't response the next cmd,F.E:CMD18 which reads multi-block data.
-	 * BK7256XX chip can't retry with CMD18, if it sends CMD18,BK7256 sdio
-	 * will start to read data from data-lines to the sdio FIFO but the data is 0.
-	 */
+	int wait_cnt = max_time / 2 ; //2us unit
 	while(1)
 	{
 		retry_cnt++;
-#if CONFIG_SDCARD_BUSWIDTH_4LINE
-		error_state = sd_card_cmd_set_bus_width(true);
-#else
-		error_state = sd_card_cmd_set_bus_width(false);
-#endif
-		if(error_state == BK_OK)
+		unsigned int idle_flag = ((*((volatile unsigned int *)(0x458d0000 + 0x1a*4))) & (0x1 << 21)) >> 21;
+		if(idle_flag == 1)
 		{
 			break;
 		}
-		else if (retry_cnt > (max_time/4)) 	//TODO:4 should be match with SDIO_CMD_WAIT_TIME
+		else if (retry_cnt > wait_cnt) 	//TODO:4 should be match with SDIO_CMD_WAIT_TIME
 		{
 			SD_CARD_LOGW("ACMD6 check SDCARD busy timeout%d\r\n", max_time);
-			return error_state;
+			error_state = BK_FAIL;
+			break;
 		}
+		rtos_delay_milliseconds(2);
 	}
-
 	return error_state;
 }
 #endif
 
+static int emmc_card_send_status(uint32_t argument)//CMD13
+{
+	bk_err_t error_state = 0;
+	sdio_host_cmd_cfg_t cmd_cfg = {0};
+	uint32_t retry_cnt = SD_CARD_MAX_CMD_TRIAL_COUNT;
+	uint32_t rsp_arg = 0;
+
+	cmd_cfg.cmd_index = SD_CMD_SEND_STATUS;
+	cmd_cfg.argument = argument;
+	cmd_cfg.response = SDIO_HOST_CMD_RSP_SHORT;
+	cmd_cfg.wait_rsp_timeout = sd_card_get_cmd_timeout_param();
+	cmd_cfg.crc_check = true;
+
+	retry_cnt = SD_CARD_MAX_CMD_TRIAL_COUNT;
+	while(retry_cnt)
+	{
+		retry_cnt--;
+		bk_sdio_host_send_command(&cmd_cfg);
+		error_state = bk_sdio_host_wait_cmd_response(cmd_cfg.cmd_index);
+		if (error_state != BK_OK)
+			break;
+
+		rsp_arg = bk_sdio_host_get_cmd_rsp_argument(SDIO_HOST_RSP0);
+		//os_printf("rsp_arg=0x%x\r\n",rsp_arg);
+		if(rsp_arg >> 8 & 0x01)
+		{
+			error_state = BK_OK;
+			break;
+		}
+		rtos_delay_milliseconds(2);
+		error_state = BK_FAIL;
+	}
+	//os_printf("error_state=%d,retry_cnt=%d\r\n",error_state,retry_cnt);
+	return error_state;
+}
 #if CONFIG_SDIO_V2P0
 /**
  * @brief - Some sd-cards stop command takes too much time(30ms or more), we'd better reduce stop command
@@ -1434,18 +1708,25 @@ static sdcard_rw_state_t sd_card_check_continious_rw(sdcard_rw_ops_t ops, uint32
 
 bk_err_t bk_sd_card_rw_sync(void)
 {
-	sd_card_check_continious_rw(SDCARD_OPS_SYNC_RW, 0, 0);
-	return BK_OK;
+    if(s_mutex_sdcard)
+	 rtos_lock_mutex(&s_mutex_sdcard);
+
+    sd_card_check_continious_rw(SDCARD_OPS_SYNC_RW, 0, 0);
+
+    if(s_mutex_sdcard)
+         rtos_unlock_mutex(&s_mutex_sdcard);
+
+    return BK_OK;
 }
 
 bk_err_t bk_sd_card_write_blocks(const uint8_t *data, uint32_t block_addr, uint32_t block_num)
 {
-	//BK_RETURN_ON_NULL(data);
+	BK_RETURN_ON_NULL(data);
 
 	bk_err_t error_state = BK_OK;
 	uint32_t addr = block_addr;
 	sdio_host_data_config_t data_config = {0};
-
+	sdcard_rw_state_t rw_state = 0;
 	SD_CARD_LOGD("write[+]:tx data=0x%08x,block_addr=%08d,block_cnt=%08d\r\n", data, block_addr, block_num);
 
 #if (CONFIG_SDCARD_DEBUG_SUPPORT)
@@ -1472,17 +1753,20 @@ bk_err_t bk_sd_card_write_blocks(const uint8_t *data, uint32_t block_addr, uint3
 	}
 
 	sys_drv_dev_clk_pwr_up(CLK_PWR_ID_SDIO, true);
-	if(sd_card_check_continious_rw(SDCARD_OPS_WRITE, block_addr, block_num) != SDCARD_RW_STATE_WRITING)
+
+	rw_state = sd_card_check_continious_rw(SDCARD_OPS_WRITE, block_addr, block_num);
+
+	if(rw_state != SDCARD_RW_STATE_WRITING)
 	{
-		error_state = bk_sdcard_wait_busy_to_idle(1000);
+		if (s_sd_card_obj.sd_card.card_type != SD_CARD_TYPE_SDHC_SDXC) {
+			addr *= 512;
+		}
+
+		error_state = emmc_card_send_status(((uint32_t)(s_sd_card_obj.sd_card.relative_card_addr << 16)));
 		if (error_state != BK_OK) {
 			SD_CARD_LOGW("****sdcard is busy\r\n");
 			rtos_unlock_mutex(&s_mutex_sdcard);
 			return error_state;
-		}
-
-		if (s_sd_card_obj.sd_card.card_type != SD_CARD_TYPE_SDHC_SDXC) {
-			addr *= 512;
 		}
 
 #if CONFIG_SDCARD_OPS_TRACE_EN
@@ -1532,6 +1816,7 @@ bk_err_t bk_sd_card_read_blocks(uint8_t *data, uint32_t block_addr, uint32_t blo
 	bk_err_t error_state = BK_OK;
 	uint32_t addr = block_addr;
 	sdio_host_data_config_t data_config = {0};
+	sdcard_rw_state_t rw_state = 0;
 
 	if(s_mutex_sdcard) {
 		rtos_lock_mutex(&s_mutex_sdcard);
@@ -1555,19 +1840,23 @@ bk_err_t bk_sd_card_read_blocks(uint8_t *data, uint32_t block_addr, uint32_t blo
 	SD_CARD_LOGD("read[+]:rx data=0x%x,block_addr=0x%x,block_cnt=%d\r\n", data, block_addr, block_num);
 
 	sys_drv_dev_clk_pwr_up(CLK_PWR_ID_SDIO, true);
-
 	//check and do (send/no-send) multi-read CMD
-	if(sd_card_check_continious_rw(SDCARD_OPS_READ, block_addr, block_num) != SDCARD_RW_STATE_READING)
+	rw_state = sd_card_check_continious_rw(SDCARD_OPS_READ, block_addr, block_num);
+	if(rw_state != SDCARD_RW_STATE_READING)
 	{
-		extern void bk_sdio_host_discard_previous_receive_data_sema(void);
-
-		error_state = bk_sdcard_wait_busy_to_idle(1000);
+	/* Check card busy status after read data command.
+	 * Two methods available:
+	 * 1. Send CMD13 (SEND_STATUS) to query card status - more reliable but slower
+	 * 2. Poll register bit (idle_flag) - faster but may be less accurate on some cards
+	 */
+		error_state = emmc_card_send_status(((uint32_t)(s_sd_card_obj.sd_card.relative_card_addr << 16)));
 		if (error_state != BK_OK) {
 			SD_CARD_LOGW("****sdcard is busy\r\n");
 			rtos_unlock_mutex(&s_mutex_sdcard);
 			return error_state;
 		}
 
+		extern void bk_sdio_host_discard_previous_receive_data_sema(void);
 		//before read data, reset it
 		bk_sdio_host_reset_sd_state();
 
@@ -1607,6 +1896,9 @@ bk_err_t bk_sd_card_read_blocks(uint8_t *data, uint32_t block_addr, uint32_t blo
 		data_config.data_len = SD_BLOCK_SIZE * block_num;
 
 	//read data from SDIO to buffer
+	if(rw_state == SDCARD_RW_STATE_READING)
+		error_state = bk_sdio_host_continious_read_blks_fifo(data, block_num);
+	else
 	error_state = bk_sdio_host_read_blks_fifo(data, block_num);
 
 #if CONFIG_SDCARD_OPS_TRACE_EN
@@ -1761,6 +2053,10 @@ bk_err_t bk_sd_card_get_card_info(sd_card_info_t *card_info)
 /* size unit: sector counts,default sector size is 512 bytes */
 uint32_t bk_sd_card_get_card_size(void)
 {
+	if (s_is_emmc_flag)
+	{
+		return g_emmc_block_cnt;
+	}
 	sd_card_csd_t *csd_p = (sd_card_csd_t *)&s_sd_card_obj.csd;
 	uint32_t ver = 0, size = 0;
 
@@ -1780,9 +2076,8 @@ uint32_t bk_sd_card_get_card_size(void)
 			if(read_bl_len > 9)	//default:read_bl_len == 9;
 			{
 				block_len = 1 << read_bl_len;
-				size = block_nr * block_len;
-				SD_CARD_LOGW("card ver=%d.0,block_len=%d, block_nr= %d, total_size = %d.\r\n", ver, block_len, block_nr, size);
-				size = size / (SD_BLOCK_SIZE);  // retutn sector for fatfs using, fatfs default SD_BLOCK_SIZE is 512
+				size = block_nr * (read_bl_len - 9);
+				SD_CARD_LOGW("card ver=%d.0,block_len=%d != 512bytes\r\n", ver, block_len);
 			}
 
 			break;
@@ -1827,37 +2122,3 @@ sd_card_state_t bk_sd_card_get_card_state(void)
 
 	return card_state;
 }
-
-#if (CONFIG_USBD_MSC && CONFIG_USB_DEVICE)
-static uint32_t s_sd_card_owner = 0;
-bk_err_t bk_sd_card_vote_owner(sd_card_owner_t owner)
-{
-	uint32_t int_level = 0;
-
-	if(s_sd_card_owner)
-	{
-		SD_CARD_LOGE("it's owned by %x\r\n", s_sd_card_owner);
-		return BK_FAIL;
-	}
-
-	int_level = rtos_disable_int();
-	s_sd_card_owner |= 1 << owner;
-	rtos_enable_int(int_level);
-
-	return BK_OK;
-}
-
-void bk_sd_card_clear_owner(sd_card_owner_t owner)
-{
-	uint32_t int_level = 0;
-	int_level = rtos_disable_int();
-	s_sd_card_owner &= ~(1 << owner);
-	rtos_enable_int(int_level);
-}
-
-uint32_t bk_sd_card_get_owner()
-{
-	return s_sd_card_owner;
-}
-#endif
-

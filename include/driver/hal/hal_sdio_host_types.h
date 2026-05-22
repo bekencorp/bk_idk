@@ -24,22 +24,17 @@ typedef uint8_t sdio_host_unit_t; /**< sdio host uint id */
 
 #if (CONFIG_SDIO_V2P0)
 typedef enum {
-	SDIO_HOST_CLK_13M = 0,    /**< 26M/2 division of clock frequency */
-	SDIO_HOST_CLK_6_5M = 1,    /**< 26M/4 division of clock frequency */
-	SDIO_HOST_CLK_4_3M = 2,    /**< 26M/6 division of clock frequency */
-	SDIO_HOST_CLK_3_2M = 3,    /**< 26M/8 division of clock frequency */
-	SDIO_HOST_CLK_2_6M = 4,    /**< 26M/10 division of clock frequency */
-	SDIO_HOST_CLK_2_2M = 5,    /**< 26M/12 division of clock frequency */
-	SDIO_HOST_CLK_1_6M = 6,     /**< 26M/16 division of clock frequency */
-	SDIO_HOST_CLK_100K = 7,     /**< 26M/256 division of clock frequency */
+	SDIO_HOST_CLK_XTAL_20M = 1,	 /**< approximately 40M/2 division of crystal clock frequency */
+	SDIO_HOST_CLK_XTAL_13M = 2,	 /**< approximately 40M/3 division of crystal clock frequency */
+	SDIO_HOST_CLK_XTAL_312K = 3,	 /**< approximately 40M/128 division of crystal clock frequency */
 
-	//SDIO_HOST_CLK_160M = 8,   /**< 320M/2 division of clock frequency */	//NOT supports this speed now.
-	SDIO_HOST_CLK_80M = 9,     /**< 320M/4 division of clock frequency */
-	SDIO_HOST_CLK_53M = 10,     /**< 320M/6 division of clock frequency */
-	SDIO_HOST_CLK_40M = 11,     /**< 320M/8 division of clock frequency */
-	SDIO_HOST_CLK_32M = 12,     /**< 320M/10 division of clock frequency */
-	SDIO_HOST_CLK_27M = 13,     /**< 320M/12 division of clock frequency */
-	SDIO_HOST_CLK_20M = 14,     /**< 320M/16 division of clock frequency */
+	SDIO_HOST_CLK_60M = 8,	 /**< 60M/1 division of clock frequency */
+	SDIO_HOST_CLK_30M = 9,	 /**< 60M/2 division of clock frequency */
+	SDIO_HOST_CLK_20M = 10,	 /**< 60M/3 division of clock frequency */
+
+	SDIO_HOST_CLK_80M = 12,	 /**< 80M/1 division of clock frequency */
+	SDIO_HOST_CLK_40M = 13,	 /**< 80M/2 division of clock frequency */
+
 } sdio_host_clock_freq_t;
 #else
 typedef enum {

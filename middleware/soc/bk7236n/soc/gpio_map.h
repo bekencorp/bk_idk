@@ -179,6 +179,13 @@ extern "C" {
 #define SDIO_GPIO_PIN_NUMBER    3
 #endif
 
+#define SDIO_GPIO_CLK_INDEX     0
+#define SDIO_GPIO_CMD_INDEX     1
+#define SDIO_GPIO_DATA0_INDEX   2
+#define SDIO_GPIO_DATA1_INDEX   3
+#define SDIO_GPIO_DATA2_INDEX   4
+#define SDIO_GPIO_DATA3_INDEX   5
+
 #define SDIO_GPIO_MAP \
 {\
 	{GPIO_7, GPIO_DEV_SDIO_HOST_CLK},\

@@ -15,7 +15,6 @@
 #define TEST_MP3_FILE_NAME      "/Panama_Matteo.mp3"
 #define TEST_TXT_FILE_NAME      "/test1.txt"
 #define TEST_DUMP_FILE_NAME      "/dump1.txt"
-#define TEST_TXT_FILE_NAME1     "/中文名字可以有多长？想多长就多长，不信你咬我，信我请我吃饭.txt"
 #define TEST_PERF_FILE_NAME     "/perf_test.bin"
 
 void bk_mem_dump_ex(const char *title, unsigned char *data, uint32_t data_len);
@@ -328,6 +327,7 @@ void test_fatfs_append_write(DISK_NUMBER number, char *filename, char *content, 
 {
     char cFileName[FF_MAX_LFN];
     FIL file;
+	FIL verify_file;
     FRESULT fr;
 
     FATFS_LOGI("\r\n----- test_fatfs %d start -----\r\n", number);
@@ -371,6 +371,59 @@ void test_fatfs_append_write(DISK_NUMBER number, char *filename, char *content, 
         {
             FATFS_LOGI("f_close OK\r\n");
         }
+
+		fr = f_open(&verify_file, cFileName, FA_OPEN_EXISTING | FA_READ);
+		if (fr != FR_OK)
+		{
+			FATFS_LOGI("verify: f_open failed fr = %d\r\n", fr);
+		}
+		else
+		{
+			UINT file_size = f_size(&verify_file);
+			UINT verify_len = len;
+			if (verify_len > file_size)
+				verify_len = file_size;
+
+			fr = f_lseek(&verify_file, file_size - verify_len);
+			if (fr != FR_OK)
+			{
+				FATFS_LOGI("verify: f_lseek failed fr = %d\r\n", fr);
+			}
+			else
+			{
+				unsigned char verify_buf[64] = {0};
+				UINT rd = 0;
+
+				if (verify_len > sizeof(verify_buf))
+					verify_len = sizeof(verify_buf);
+
+				fr = f_read(&verify_file, verify_buf, verify_len, &rd);
+				if (fr != FR_OK || rd != verify_len)
+				{
+					FATFS_LOGI("verify: f_read failed fr = %d, rd = %d\r\n", fr, rd);
+				}
+				else
+				{
+					int diff = 0;
+					for (UINT i = 0; i < verify_len; i++)
+					{
+						if ((unsigned char)content[i] != verify_buf[i])
+						{
+							diff = 1;
+							FATFS_LOGI("verify: diff at %d, wr=0x%02x, rd=0x%02x\r\n",
+									   i, (unsigned char)content[i], verify_buf[i]);
+							break;
+						}
+					}
+					if (!diff)
+					{
+						FATFS_LOGI("verify: OK, len=%d\r\n", verify_len);
+					}
+				}
+			}
+
+			f_close(&verify_file);
+		}
     }
     else
     {
@@ -453,7 +506,8 @@ void test_fatfs_auto_test(DISK_NUMBER number, char *filename, uint32_t len, uint
 	FIL file;
 	FRESULT fr;
 	char cFileName[FF_MAX_LFN];
-	uint8_t *content_p = (uint8_t *)start_addr;
+	uint8_t *content_p = NULL;
+	uint8_t *pattern_p = NULL;
 	unsigned int uiTemp = 0;
 	uint8_t *buf_p = 0;
 	uint32_t packet_cnt = 0, bytes_cnt = 0;
@@ -463,13 +517,29 @@ void test_fatfs_auto_test(DISK_NUMBER number, char *filename, uint32_t len, uint
 	FATFS_LOGD("\r\n----- %s %d start -----\r\n", __func__, number);
 	FATFS_LOGD("file_name=%s,len=%d,test_cnt=%d \r\n", filename, len, test_count);
 
+	len = len < TEST_FATFS_MAX_FILE_LEN? len : TEST_FATFS_MAX_FILE_LEN;
+
+	if (start_addr == 0) {
+		pattern_p = os_malloc(len);
+		if (pattern_p == NULL) {
+			FATFS_LOGE("malloc pattern fail, len=%d\r\n", len);
+			return;
+		}
+		for (i = 0; i < len; i++) {
+			pattern_p[i] = (uint8_t)(i & 0xff);
+		}
+		content_p = pattern_p;
+		FATFS_LOGD("use ram pattern buffer, len=%d\r\n", len);
+	} else {
+		content_p = (uint8_t *)start_addr;
+	}
+
 	if(filename)
 		sprintf(cFileName, "%d:/%s", number, filename);
 	else
 		sprintf(cFileName, "%d:%s", number, TEST_TXT_FILE_NAME);
 	FATFS_LOGD("f_open \"%s\"\r\n", cFileName);
 
-	len = len < TEST_FATFS_MAX_FILE_LEN? len : TEST_FATFS_MAX_FILE_LEN;
 	packet_cnt = len / TEST_FATFS_PACKET_LEN;
 	bytes_cnt = len % TEST_FATFS_PACKET_LEN;
 
@@ -477,6 +547,9 @@ void test_fatfs_auto_test(DISK_NUMBER number, char *filename, uint32_t len, uint
 	if (buf_p == NULL)
 	{
 		FATFS_LOGE("malloc fail \r\n");
+		if (pattern_p) {
+			os_free(pattern_p);
+		}
 		return;
 	}
 
@@ -618,6 +691,10 @@ void test_fatfs_auto_test(DISK_NUMBER number, char *filename, uint32_t len, uint
 	FATFS_LOGI("auto test succ \r\n");
 
 exit:
+	if (pattern_p) {
+		os_free(pattern_p);
+		pattern_p = NULL;
+	}
 	os_free(buf_p);
 	buf_p = NULL;
 }

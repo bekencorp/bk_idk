@@ -97,7 +97,7 @@ typedef struct {
 
 static sdio_host_driver_t s_sdio_host = {0};
 static bool s_sdio_host_driver_is_init = false;
-static bool s_sdio_host_data_crc_error = false;
+
 static void sdio_host_isr(void);
 void bk_sdio_clock_en(uint32_t enable);
 
@@ -460,16 +460,17 @@ bk_err_t bk_sdio_host_init(const sdio_host_config_t *config)
 #endif
 
 #if (CONFIG_SDIO_V2P0)
-	bk_sdio_host_set_clock_freq(config->clock_freq);
+
 	sdio_host_hal_reset_config_to_default(&s_sdio_host.hal);
 
 	sdio_host_init_common();
+	bk_sdio_host_set_clock_freq(config->clock_freq);
 #else
-	sdio_host_hal_set_clk_freq(&s_sdio_host.hal, config->clock_freq);
 	sdio_host_init_common();
 
 	/* reset sdio host register */
 	sdio_host_hal_reset_config_to_default(&s_sdio_host.hal);
+	sdio_host_hal_set_clk_freq(&s_sdio_host.hal, config->clock_freq);
 #endif
 
 #if CONFIG_SDIO_GDMA_EN
@@ -553,6 +554,18 @@ void bk_sdio_host_reset_sd_state(void)
 {
 	SDIO_PM_CHECK_RESTORE(0);
 	sdio_host_hal_reset_sd_state(&s_sdio_host.hal);
+}
+
+void bk_sdio_host_set_bus_width(sdio_host_bus_width_t bus_width)
+{
+	SDIO_PM_CHECK_RESTORE(0);
+	sdio_host_hal_set_bus_width(&s_sdio_host.hal, bus_width);
+}
+
+void bk_sdio_host_set_sample_edge(uint32_t edge)
+{
+	SDIO_PM_CHECK_RESTORE(0);
+	sdio_host_hal_set_sample_edge(&s_sdio_host.hal, edge);
 }
 
 /*
@@ -930,16 +943,11 @@ bk_err_t bk_sdio_host_wait_receive_data(void)
 	error_state = rtos_get_semaphore(&(s_sdio_host.rx_sema), SDIO_MAX_RX_WAIT_TIME);
 	if(error_state != BK_OK)
 	{
+		uint32_t int_status = sdio_host_hal_get_interrupt_status(&s_sdio_host.hal);
+		/* clear data related interrupt status to avoid sticky bits */
+		sdio_host_hal_clear_data_interrupt_status(&s_sdio_host.hal, int_status);
 		SDIO_HOST_LOGI("rx fail\r\n");
 	}
-
-	if(s_sdio_host_data_crc_error == true) {
-		error_state = BK_ERR_SDIO_HOST_DATA_CRC_FAIL;
-		s_sdio_host_data_crc_error = false;
-		SDIO_HOST_LOGI("func %s, line %d, return crc error.\r\n", __func__, __LINE__);
-	}
-
-
 
 	return error_state;
 }
@@ -1102,12 +1110,93 @@ static bk_err_t sdio_host_cpu_read_blks_fifo(uint8_t *data, uint32_t blk_cnt)
 #endif
 	}
 
+	if(error_state)
+	{
+		SDIO_HOST_LOGE("read data fail,rx real cnt=%d,request cnt=%d,error_state=%d\r\n", index, data_size, error_state);
+		return error_state;
+	}
+
 	//CRC fail or some of block timeout and so on
 	if (index != data_size)
 	{
 		error_state = BK_ERR_SDIO_HOST_DATA_CRC_FAIL;
 		SDIO_HOST_LOGE("func %s, read data fail,rx real cnt=%d,request cnt=%d, error_state=%d\r\n", __func__, index, data_size, error_state);
 
+	}
+
+	return error_state;
+}
+
+static bk_err_t sdio_host_cpu_continious_read_blks_fifo(uint8_t *data, uint32_t blk_cnt)
+{
+	bk_err_t error_state = BK_OK;
+	uint32_t read_data = 0, index = 0;
+	uint32_t data_size = blk_cnt * 512;
+
+	//first block://previous read doesn't finish, first block no-needs to wait
+	do {
+		/* Read data from SDIO Rx fifo */
+		error_state = bk_sdio_host_read_fifo(&read_data);
+		if(error_state == BK_OK)
+		{
+			data[index++] = read_data & 0xff;
+			data[index++] = (read_data >> 8) & 0xff;
+			data[index++] = (read_data >> 16) & 0xff;
+			data[index++] = (read_data >> 24) & 0xff;
+			//SDIO_HOST_LOGD("read_data:%x, index:%d\r\n", read_data, index);
+		}
+		else
+		{
+			SDIO_HOST_LOGW("Read FIFO fail,index=%d\r\n", index);
+			break;
+		}
+	} while ((index % SDIO_BLOCK_SIZE) != 0);
+
+	if((blk_cnt > 1) && (error_state == BK_OK))
+	{
+		//read data from SDIO to buffer
+		while (bk_sdio_host_wait_receive_data() == BK_OK) {
+			do {
+				/* Read data from SDIO Rx fifo */
+				error_state = bk_sdio_host_read_fifo(&read_data);
+				if(error_state == BK_OK)
+				{
+					data[index++] = read_data & 0xff;
+					data[index++] = (read_data >> 8) & 0xff;
+					data[index++] = (read_data >> 16) & 0xff;
+					data[index++] = (read_data >> 24) & 0xff;
+					//SDIO_HOST_LOGD("read_data:%x, index:%d\r\n", read_data, index);
+				}
+				else
+				{
+					SDIO_HOST_LOGW("Read FIFO fail,index=%d\r\n", index);
+					break;
+				}
+			} while ((index % SDIO_BLOCK_SIZE) != 0);
+
+			if (index >= data_size) {
+				SDIO_HOST_LOGD("rx data finish bytes:%d\r\n", index);
+				break;
+			}
+
+	//maybe some files in SDCARD and read it takes too much time, then cause WDT timeout
+#if (CONFIG_TASK_WDT)
+			bk_task_wdt_feed();
+#endif
+		}
+	}
+
+	if(error_state)
+	{
+		SDIO_HOST_LOGE("read data fail,rx real cnt=%d,request cnt=%d,error_state=%d\r\n", index, data_size, error_state);
+		return error_state;
+	}
+
+	//CRC fail or some of block timeout and so on
+	if (index != data_size)
+	{
+		error_state = BK_ERR_SDIO_HOST_DATA_CRC_FAIL;
+		SDIO_HOST_LOGE("read data fail,rx real cnt=%d,request cnt=%d\r\n", index, data_size);
 	}
 
 	return error_state;
@@ -1128,6 +1217,20 @@ bk_err_t bk_sdio_host_read_blks_fifo(uint8_t *read_data, uint32_t blk_cnt)
 #endif
 }
 
+bk_err_t bk_sdio_host_continious_read_blks_fifo(uint8_t *read_data, uint32_t blk_cnt)
+{
+#if CONFIG_SDIO_GDMA_EN
+	if(s_sdio_host.dma_rx_en)
+	{
+		uint32_t data_size = blk_cnt * 512;
+		return sdio_dma_read_fifo(read_data, data_size);
+	}
+	else
+		return sdio_host_cpu_continious_read_blks_fifo(read_data, blk_cnt);
+#else
+	return sdio_host_cpu_continious_read_blks_fifo(read_data, blk_cnt);
+#endif
+}
 #if (CONFIG_SDIO_V2P0)
 static void sdio_host_isr(void)
 {
@@ -1194,20 +1297,20 @@ static void sdio_host_isr(void)
 			sdio_host_hal_disable_tx_fifo_empty_mask(hal);
 			rtos_set_semaphore(&s_sdio_host.tx_sema);
 		}
-#endif
-		//TODO:check write status
-		if (sdio_host_hal_get_wr_status(&s_sdio_host.hal) != 2) {
-			for (int sts_index = 0; sts_index < SDIO_GET_WR_STS_MAX_COUNT; sts_index++ ) {
-				if (sdio_host_hal_get_wr_status(&s_sdio_host.hal) == 2) {
-					SDIO_HOST_LOGD("wr_status ok, i = %d.\r\n", sts_index);
-					break;
-				}
-				if(sts_index == (SDIO_GET_WR_STS_MAX_COUNT - 1) ) {
-					SDIO_HOST_LOGE("write data error, wr_status = 0x%x!!!\r\n", sdio_host_hal_get_wr_status(&s_sdio_host.hal));
-				}
-			}
+		/* Small/single-block writes can race against the DMA-finish ISR that
+		 * enables tx_fifo_empty_mask: the FIFO can drain before the mask
+		 * becomes effective, so fifo_empty_int will never fire. Fall back to
+		 * releasing the semaphore on data_write_end once all bytes are already
+		 * in the FIFO (DMA done).
+		 */
+		else if (sdio_host_hal_is_data_write_end_int_triggered(hal, int_status)
+				 && (s_sdio_host.tx_total_len > 0)
+				 && (s_sdio_host.tx_transfered_len >= s_sdio_host.tx_total_len))
+		{
+			sdio_host_hal_disable_tx_fifo_empty_mask(hal);
+			rtos_set_semaphore(&s_sdio_host.tx_sema);
 		}
-
+#endif
 		{
 			SDIO_HOST_LOGD("write blk end\r\n");
 #if CONFIG_SDIO_GDMA_EN
@@ -1215,7 +1318,6 @@ static void sdio_host_isr(void)
 			rtos_set_semaphore(&s_sdio_host.tx_sema);
 #endif
 		}
-
 		sdio_host_hal_clear_write_data_interrupt_status(hal, int_status);
 	}
 	//RX(host read) DATA
@@ -1227,13 +1329,13 @@ static void sdio_host_isr(void)
 		if(sdio_host_hal_is_data_crc_ok_int_triggered(hal, int_status)) //CRC OK
 		{
 #if CONFIG_SDIO_GDMA_EN
-			if(s_sdio_host.dma_rx_en)
-				SDIO_HOST_LOGD("DMA read blk end\r\n");	//do nothing
-			else
-				rtos_set_semaphore(&s_sdio_host.rx_sema);
-#else
-			rtos_set_semaphore(&s_sdio_host.rx_sema);
+			if (s_sdio_host.dma_rx_en && s_sdio_host.rx_total_len) {
+				SDIO_HOST_LOGD("DMA read blk end, int_status=0x%x\r\n", int_status);
+			} else
 #endif
+			{
+				rtos_set_semaphore(&s_sdio_host.rx_sema);
+			}
 			sdio_host_hal_clear_read_data_interrupt_status(hal, int_status);
 		}
 		else if(sdio_host_hal_is_data_crc_fail_int_triggered(hal, int_status))	//CRC Fail
@@ -1245,16 +1347,16 @@ static void sdio_host_isr(void)
 			bk_sdio_host_reset_sd_state();
 
 			//TODO:If the data is really CRC fail, should notify APP the data received is error.
-			SDIO_HOST_LOGE("TODO:read data crc error!!!\r\n");
+			SDIO_HOST_LOGI("read data crc error\r\n");
 #if 1	//just not set sema cause rx data timeout, which cause rx fail.
-			s_sdio_host_data_crc_error = true;
 			rtos_set_semaphore(&s_sdio_host.rx_sema);
 
 #endif
+			/* clear sticky read-related interrupt bits */
+			sdio_host_hal_clear_read_data_interrupt_status(hal, int_status);
 		}
 		else if(sdio_host_hal_is_data_timeout_int_triggered(hal, int_status))	//timeout
 		{
-			SDIO_HOST_LOGE("TODO:read data timeout error!!!\r\n");
 			sdio_host_hal_clear_read_data_timeout_interrupt_status(hal, int_status);
 		}
 		/*

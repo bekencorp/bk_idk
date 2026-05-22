@@ -32,6 +32,7 @@ typedef struct {
 #define sdio_host_hal_reset_config_to_default(hal) sdio_host_ll_reset_config_to_default((hal)->hw)
 #define sdio_host_hal_set_clk_freq(hal, clk_freq) sdio_host_ll_set_clk_freq((hal)->hw, clk_freq)
 #define sdio_host_hal_set_bus_width(hal, bus_width) sdio_host_ll_set_bus_width((hal)->hw, bus_width)
+#define sdio_host_hal_set_sample_edge(hal, edge) sdio_host_ll_set_sample_edge((hal)->hw, edge)
 #define sdio_host_hal_set_cmd_index(hal, cmd_index) sdio_host_ll_set_cmd_index((hal)->hw, cmd_index)
 #define sdio_host_hal_set_send_cmd_argument(hal, cmd_argument) sdio_host_ll_set_send_cmd_argument((hal)->hw, cmd_argument)
 #define sdio_host_hal_set_cmd_rsp_timeout(hal, rsp_timeout) sdio_host_ll_set_cmd_rsp_timeout((hal)->hw, rsp_timeout)

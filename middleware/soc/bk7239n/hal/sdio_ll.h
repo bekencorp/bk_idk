@@ -94,13 +94,8 @@ static inline void sdio_host_ll_set_clk_div(sdio_hw_t *hw, uint32_t clk_div)
 
 static inline void sdio_host_ll_set_clk_freq(sdio_hw_t *hw, sdio_host_clock_freq_t clk_freq)
 {
-	uint32_t clk_div;
-
-	/*TODO wangzhilei: cksel_sdio sys reg0x09[17:16], ckdiv_sdio sys reg0x09[15:14]*/
-	clk_div = (uint32_t)clk_freq & 0x03;
-
 	//temp code, will be switch to sdcard_driver.c
-	*((volatile unsigned long *) (0x44010000+0x9*4)) = (((*((volatile unsigned long *) (0x44010000+0x9*4))) & (~0x3C000)) | ((clk_div) << 14));
+	*((volatile unsigned long *) (0x44010000+0x9*4)) = (((*((volatile unsigned long *) (0x44010000+0x9*4))) & (~0x3C000)) | ((clk_freq) << 14));
 }
 
 static inline void sdio_host_ll_set_bus_width(sdio_hw_t *hw, sdio_host_bus_width_t bus_width)
@@ -109,6 +104,15 @@ static inline void sdio_host_ll_set_bus_width(sdio_hw_t *hw, sdio_host_bus_width
 		hw->sd_data_ctrl.sd_data_bus = 1;
 	} else {
 		hw->sd_data_ctrl.sd_data_bus = 0;
+	}
+}
+
+static inline void sdio_host_ll_set_sample_edge(sdio_hw_t *hw, uint32_t edge)
+{
+	if (edge == 1) {
+		hw->sd_fifo_threshold.samp_sel = 1;
+	} else {
+		hw->sd_fifo_threshold.samp_sel = 0;
 	}
 }
 
