@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
-import logging
-from abc import ABC, abstractmethod
+from abc import ABC
 
 class Pack(ABC):
 
@@ -9,6 +8,8 @@ class Pack(ABC):
         self._bins = bins
         self._outfile = outfile
 
-    @abstractmethod
-    def pack(self, *args):
+    def sign(self, img_sign_pubkey=None, img_sign_privkey=None, **kwargs):
+        pass
+
+    def pack(self, flash_aes_key=None, flash_crc_en=True, data_aes_key=None, flash_aes_type=None):
         pass

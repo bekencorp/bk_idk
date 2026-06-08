@@ -235,7 +235,7 @@ class PackDownload(Pack):
                 f.write(buf)
                 offset += len(buf)
 
-    def pack(self, img_sign_pubkey=None, img_sign_privkey=None, flash_aes_key=None, flash_crc_en=True, data_aes_key=None, flash_aes_type=None):
+    def pack(self, flash_aes_key=None, flash_crc_en=True, data_aes_key=None, flash_aes_type=None):
         img_num = len(self._bins)
         if (img_num == 0):
             return

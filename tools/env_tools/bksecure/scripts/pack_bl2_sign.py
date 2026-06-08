@@ -14,8 +14,7 @@ from .pubkey import Pubkey
 from .bl2_sign import bl2_sign, bl2_sign_hash
 from .gen_security import Security
 from .gen_ota import OTA
-from .steps import install_configs
-from .common import get_config_paths, get_key_files_from_security_csv
+from cryptography.hazmat.primitives import serialization
 
 def verify_key_pair_match(privkey_path, pubkey_path):
     """Verify that private key and public key are a matching pair using openssl"""
@@ -43,133 +42,115 @@ def verify_key_pair_match(privkey_path, pubkey_path):
         return False
 
 
+def _prefer(explicit, fallback):
+    """Prefer caller-provided value; when None, use value from security.csv / CSV helpers."""
+    return explicit if explicit is not None else fallback
+
+
+def _new_pubkey_bytes(new_pubkey_pem, security):
+    if new_pubkey_pem is not None:
+        return Pubkey(new_pubkey_pem).key_bytes()
+    if security is not None and security.new_img_sign_pubkey_bytes is not None:
+        return security.new_img_sign_pubkey_bytes
+    raise ValueError("new_img_sign_pubkey: pass new_pubkey_pem or configure new_img_sign_pubkey in security.csv")
+
+
+def _coerce_cli_bool_none(value):
+    """Map CLI/subprocess strings to bool or None. Avoids bool('False') == True."""
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        t = value.strip().lower()
+        if t in ('none', 'null', ''):
+            return None
+        if t in ('true', '1', 'yes'):
+            return True
+        if t in ('false', '0', 'no'):
+            return False
+        logging.warning('Unrecognized bool-like string %r; treating as None', value)
+        return None
+    if isinstance(value, int) and not isinstance(value, bool):
+        if value == 1:
+            return True
+        if value == 0:
+            return False
+    logging.warning('Unrecognized value for bool-like arg type=%s repr=%r; treating as None', type(value).__name__, value)
+    return None
+
+def _get_public_bytes_from_pubkeyfile(pubkey_file):
+        if pubkey_file == None:
+            return
+
+        if not os.path.exists(pubkey_file):
+            logging.warning(f'Public key file not found, skip loading key bytes: {pubkey_file}')
+            return None
+
+        with open(pubkey_file, 'rt') as pem_file:
+            first_line = pem_file.readline().strip()
+            if first_line != "-----BEGIN PUBLIC KEY-----":
+                return
+            pem_file.seek(0)
+            pem_file_data = pem_file.read()
+
+        try:
+            public_key = serialization.load_pem_public_key(pem_file_data.encode())
+
+            der_data = public_key.public_bytes(
+                encoding=serialization.Encoding.DER,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo)
+            return der_data
+        except Exception as e:
+            logging.error(f'failed to load PEM public key {e}')
+            exit(1)
+
 class PackBl2sign(Pack):
 
-    def pack(self, img_sign_pubkey=None, img_sign_privkey=None, flash_aes_key=None, flash_crc_en=True, data_aes_key=None):
+    def sign(self, img_sign_pubkey=None, img_sign_privkey=None, ota_type=None, security_counter=None, replace_key_en=None, new_pubkey_pem=None, new_privkey_pem=None, **kwargs):
+        logging.debug(f'PackBl2sign: img_sign_pubkey={img_sign_pubkey}, img_sign_privkey={img_sign_privkey}, ota_type={ota_type}, security_counter={security_counter}, replace_key_en={replace_key_en}, new_privkey_pem={new_privkey_pem}, new_pubkey_pem={new_pubkey_pem}')
         l = len(self._bins)
         if l != 1:
             logging.error(f'Bin number should be 1, actual={l}')
             exit(1)
-
-        # Ensure config files are copied to current directory before proceeding
-        # This is needed because PackBl2sign might be called from different paths
-        cwd = os.getcwd()
         
-        # Dynamically determine which key files are needed from security.csv
-        # If security.csv exists, read key file names from it; otherwise, we'll copy configs
-        security_csv_exists = os.path.exists('security.csv')
-        key_files_dict = {}
-        update_img_sign_key_en = False
-        
-        if security_csv_exists:
-            # Extract key file names and update_img_sign_key_en from security.csv
-            key_files_dict, update_img_sign_key_en = get_key_files_from_security_csv('security.csv')
-        
-        # Get list of key files to check
-        key_files_to_check = [f for f in key_files_dict.values() if f]
-        
-        # Check if required key files exist
-        missing_key_files = [f for f in key_files_to_check if not os.path.exists(f)]
-        
-        # If security.csv doesn't exist or key files are missing, try to copy config files
-        if not security_csv_exists or missing_key_files:
-            # Dynamically discover config paths
-            config_paths = get_config_paths(current_dir=cwd)
-            
-            for cfg_dir in config_paths:
-                if os.path.exists(cfg_dir):
-                    install_configs(cfg_dir, cwd)
-                    # Don't break, try all paths to ensure all files are copied
-        
-        # After copying, verify all required key files exist
-        # If update_img_sign_key_en is TRUE, all 4 key files must exist
-        if update_img_sign_key_en:
-            required_fields = ['img_sign_pubkey', 'img_sign_privkey', 'new_img_sign_pubkey', 'new_img_sign_privkey']
-            missing_required_files = []
-            
-            for field in required_fields:
-                if field not in key_files_dict or not key_files_dict[field]:
-                    missing_required_files.append(f"{field} (not specified in security.csv)")
-                elif not os.path.exists(key_files_dict[field]):
-                    missing_required_files.append(f"{key_files_dict[field]} (specified as {field})")
-            
-            if missing_required_files:
-                error_msg = f"ERROR: update_img_sign_key_en=TRUE requires all 4 key files, but the following are missing:\n"
-                for missing in missing_required_files:
-                    error_msg += f"  - {missing}\n"
-                error_msg += f"Current directory: {cwd}\n"
-                error_msg += f"Please ensure all key files are present in the config directory."
-                logging.error(error_msg)
-                print(error_msg)
-                exit(1)
-
-        ph = PackHeader(self._bins[0])
-        name = ph.name()
-        infile = f'_{name}.bin'
-
-        root_pubkey_tlv = None
-        signature_tlv = None
         signing_privkey = img_sign_privkey
-        pubkey_for_custom = None
-        
-        try:
-            s = Security('security.csv')
-            o = OTA('ota.csv')
-            ota_type = o.get_strategy().upper()
-            
-            if s.update_img_sign_key_en and ota_type == 'XIP':
-                if not os.path.exists(s.new_img_sign_privkey):
-                    raise ValueError(f"new_img_sign_privkey file not found: {s.new_img_sign_privkey}")
-                signing_privkey = s.new_img_sign_privkey
-                
-                if not os.path.exists(s.img_sign_privkey):
-                    raise ValueError(f"img_sign_privkey file not found: {s.img_sign_privkey}")
-                resolved_root_privkey = s.img_sign_privkey
-                
-                if s.new_img_sign_pubkey_bytes is None:
-                    raise ValueError(f"new_img_sign_pubkey_bytes is None")
-                
-                if s.img_sign_pubkey_bytes is None:
-                    raise ValueError(f"img_sign_pubkey_bytes is None")
-                
-                pubkey_for_custom = s.new_img_sign_pubkey_bytes
-                root_pubkey_tlv = s.img_sign_pubkey_bytes
-                
-                bl2_sign_hash(resolved_root_privkey, s.new_img_sign_pubkey_bytes.hex(), 'new_pubkey_sig.json')
-                
+        signing_pubkey = img_sign_pubkey
+        signing_pubkey_bytes = _get_public_bytes_from_pubkeyfile(img_sign_pubkey)
+        signature_tlv = None
+        root_pubkey_tlv = None
+
+        replace_key_en = _coerce_cli_bool_none(replace_key_en)
+        if replace_key_en:
+            if not os.path.exists(new_pubkey_pem) or not os.path.exists(new_privkey_pem):
+                raise ValueError(f"new_pubkey_pem or new_privkey_pem not found")
+
+            signing_privkey = new_privkey_pem
+            signing_pubkey = new_pubkey_pem
+            if(ota_type == 'XIP'): 
+                root_pubkey_tlv =  _get_public_bytes_from_pubkeyfile(img_sign_pubkey)
+                bl2_sign_hash(img_sign_privkey, signing_pubkey_bytes.hex(), 'new_pubkey_sig.json')
                 with open('new_pubkey_sig.json', 'r') as f:
                     sig_data = json.load(f)
                     if isinstance(sig_data, str):
                         sig_data = json.loads(sig_data)
                     if 'signature' not in sig_data:
                         raise ValueError(f"Invalid signature JSON format: {sig_data}")
-                    
                     if isinstance(sig_data['signature'], str):
                         sig_der_hex = sig_data['signature']
                         signature_tlv = bytes.fromhex(sig_der_hex)
                     else:
                         raise ValueError(f"Invalid signature format: expected string, got {type(sig_data['signature'])}")
-            elif s.update_img_sign_key_en and ota_type == 'OVERWRITE':
-                if not os.path.exists(s.new_img_sign_privkey):
-                    raise ValueError(f"new_img_sign_privkey file not found: {s.new_img_sign_privkey}")
-                signing_privkey = s.new_img_sign_privkey
-                if s.new_img_sign_pubkey_bytes is None:
-                    raise ValueError(f"new_img_sign_pubkey_bytes is None")
-                pubkey_for_custom = s.new_img_sign_pubkey_bytes
-            else:
-                pk = Pubkey(img_sign_pubkey)
-                pubkey_for_custom = pk.key_bytes()
-        except Exception as e:
-            logging.debug(f"Failed to load security/ota config: {e}, continuing without trust chain")
-            if pubkey_for_custom is None:
-                pk = Pubkey(img_sign_pubkey)
-                pubkey_for_custom = pk.key_bytes()
-            root_pubkey_tlv = None
-            signature_tlv = None
+        
+        signing_pubkey_bytes = _get_public_bytes_from_pubkeyfile(signing_pubkey)
 
-        bl2_sign('sign', 'ec256', signing_privkey, pubkey_for_custom, None, infile, ph.size().sign_size(), ph.version(), ph.security_counter(), self._outfile, None, root_pubkey_tlv=root_pubkey_tlv, signature_tlv=signature_tlv)
+
+        ph = PackHeader(self._bins[0])
+        name = ph.name()
+        infile = f'_{name}.bin'
+
+        bl2_sign('sign', 'ec256', signing_privkey, signing_pubkey_bytes, None, infile, ph.size().sign_size(), ph.version(), security_counter, self._outfile, None, root_pubkey_tlv=root_pubkey_tlv, signature_tlv=signature_tlv)
 
         p = PackHeader()
-        t = ph.type()
         p.create_header(self._outfile, ph.version(), ph.name(), ph.type().type(),
             ph.type().subtype(), ph.size().offset(), ph.size().size(), ph.flags().flags(), 0, ph.m1(), ph.m2(), ph.m3(), ph.m4())

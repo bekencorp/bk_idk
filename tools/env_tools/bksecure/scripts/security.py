@@ -69,6 +69,16 @@ class Security(dict):
         return self.anti_rollback
 
     def parse_csv(self):
+
+        self.img_sign_key_type = None
+        self.img_sign_pubkey = None
+        self.img_sign_privkey = None
+        self.img_sign_pubkey_bytes = None
+        self.update_img_sign_key_en = False
+        self.new_img_sign_pubkey = None
+        self.new_img_sign_privkey = None
+        self.new_img_sign_pubkey_bytes = None
+
         self.bl1_secureboot_en = parse_bool(self.csv.dic['bl1_secureboot_en'])
         self.flash_crc_en = parse_bool(self.csv.dic['flash_crc_en'])
         self.flash_aes_type = self.csv.dic['flash_aes_type'].upper()
@@ -88,11 +98,6 @@ class Security(dict):
             self.img_sign_privkey = self.csv.dic['img_sign_privkey']
             self.img_sign_pubkey_bytes = self.get_public_bytes_from_pubkeyfile(self.img_sign_pubkey)
             logging.debug(f"key from security.csv privkey {self.img_sign_privkey} pubkey {self.img_sign_pubkey} pubkeybytes {self.img_sign_pubkey_bytes}")
-        else:
-            self.img_sign_key_type = None
-            self.img_sign_pubkey = None
-            self.img_sign_privkey = None
-            self.img_sign_pubkey_bytes = None
 
         if "update_img_sign_key_en" in self.csv.dic:
             self.update_img_sign_key_en = parse_bool(self.csv.dic['update_img_sign_key_en'])
@@ -100,8 +105,6 @@ class Security(dict):
                 self.new_img_sign_pubkey = self.csv.dic['new_img_sign_pubkey']
                 self.new_img_sign_pubkey_bytes = self.get_public_bytes_from_pubkeyfile(self.new_img_sign_pubkey)
                 self.new_img_sign_privkey = self.csv.dic['new_img_sign_privkey']
-        else:
-            self.update_img_sign_key_en = False
 
         if self.bl1_secureboot_en == True:
             if (self.img_sign_key_type != '') and (self.img_sign_key_type != 'ec256') and (self.img_sign_key_type != 'rsa2048') and (self.img_sign_key_type != 'rsa3072'):

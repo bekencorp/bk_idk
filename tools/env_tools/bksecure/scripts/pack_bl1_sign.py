@@ -9,23 +9,19 @@ from .pack_header import PackHeader
 from .bl1_sign import bl1_sign
 
 class PackBl1sign(Pack):
-    def pack(self, img_sign_pubkey=None, img_sign_privkey=None, flash_aes_key=None, flash_crc_en=True, data_aes_key=None):
-        logging.debug(f'PackManifest: bins={self._bins}, out={self._outfile},flash_aes_key={flash_aes_key} data_aes_key={data_aes_key}')
-        logging.debug(f'img_sign_privkey={img_sign_privkey}')
-        l = len(self._bins)
-        if l != 1:
-            logging.error(f'Bin number should be 1, actual={l}')
+    def sign(self, img_sign_pubkey=None, img_sign_privkey=None, **kwargs):
+        logging.debug(f'PackBl1sign sign: bins={self._bins}, out={self._outfile}, img_sign_privkey={img_sign_privkey}')
+        if len(self._bins) != 1:
+            logging.error(f'Bin number should be 1, actual={len(self._bins)}')
             exit(1)
-        
-        ph = PackHeader("bl2.bin")
-        name = ph.name()
-        infile = f'_bl2.bin'
 
+        ph = PackHeader("bl2.bin")
+        infile = '_bl2.bin'
         static_addr_int = 0x02000000 + ph.size().vir_code_offset()
-        static_addr = f'0x%08x' %(static_addr_int)
+        static_addr = f'0x%08x' % (static_addr_int)
         load_addr = static_addr
 
-        if (img_sign_privkey != None):
+        if img_sign_privkey is not None:
             bl1_sign('sign', 'ec256', img_sign_privkey, img_sign_pubkey, None, infile, static_addr, load_addr, self._outfile)
         else:
             # Pack Server scenario: if img_sign_privkey is None, check if signed manifest already exists
@@ -37,9 +33,8 @@ class PackBl1sign(Pack):
             else:
                 logging.warning(f'Pack Server: img_sign_privkey is None and primary_manifest.bin not found, creating NoManifest')
                 with open(self._outfile, "wb") as f:
-                    text = "NoManifest".encode()
-                    f.write(text)
-
+                    f.write("NoManifest".encode())
+        
         pack_manifest = f'pack_{self._outfile}'
         ph = PackHeader(pack_manifest)
         p = PackHeader()

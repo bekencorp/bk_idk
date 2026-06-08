@@ -180,27 +180,32 @@ def sign_from_ota_sig(ota_bin_sig):
     s = Security('security.csv')
     bl2_sign('sign_from_sig', s.img_sign_key_type, s.img_sign_privkey, s.img_sign_pubkey_bytes, ota_bin_sig, 'compress.bin', pheader.m2(), pheader.version(), pheader.security_counter(), 'ota_signed.bin', 'ota_hash.json')
 
-#Step7 - pack download bin
-def steps_pack(soc_type, aes_key_type=None, aes_key=None, bl1_secureboot_en=False, ota_type='OVERWRITE', ota_security_counter=0, ota_encrypt='FALSE', boot_ota=False, bl2_version=None, app_version=None, pubkey_pem='root_ec256_pubkey.pem', privkey_pem='root_ec256_privkey.pem'):
-    logging.debug(f'steps_pack, soc_type={soc_type}, aes_key_type={aes_key_type}, aes_key={aes_key}, bl1_secureboot_en={bl1_secureboot_en}, ota_type={ota_type}, ota_security_counter={ota_security_counter}, ota_encrypt={ota_encrypt}, boot_ota={boot_ota}, bl2_version={bl2_version}, app_version={app_version}, pubkey_pem={pubkey_pem}, privkey_pem={privkey_pem}')
-    s = None
-    if aes_key_type != None:
-        flash_aes_type = aes_key_type
-        flash_aes_key = aes_key
-    elif os.path.exists('security.csv'):
-        s = Security('security.csv')
-        flash_aes_key = s.flash_aes_key 
-        flash_aes_type = s.flash_aes_type
-    else:
-        flash_aes_type = 'NONE'
-        flash_aes_key = ''
-
-    p = Partitions('partitions.csv', 'bin.csv', 'pack.json')
+#Step7 - generate signed bin
+def steps_sign(pubkey_pem, privkey_pem, ota_type=None, bl2_version=None, app_version=None, security_counter=None, replace_key_en=None, new_privkey_pem=None, new_pubkey_pem=None):
+    if pubkey_pem is None or privkey_pem is None:
+        logging.error('pubkey_pem or privkey_pem is not specified')
+        exit(1)
+    # If pubkey is a hex string (not a file path), convert to .pem file in current directory
+    if isinstance(pubkey_pem, str) and not os.path.isfile(pubkey_pem):
+        s = pubkey_pem.strip()
+        if len(s) >= 64 and len(s) % 2 == 0 and all(c in '0123456789abcdefABCDEF' for c in s):
+            der = bytes.fromhex(s)
+            b64 = base64.b64encode(der).decode('ascii')
+            pem_lines = '\n'.join(b64[i:i + 64] for i in range(0, len(b64), 64))
+            pem_content = '-----BEGIN PUBLIC KEY-----\n' + pem_lines + '\n-----END PUBLIC KEY-----\n'
+            pubkey_pem_path = os.path.join(os.getcwd(), 'generated_pubkey.pem')
+            with open(pubkey_pem_path, 'w') as f:
+                f.write(pem_content)
+            pubkey_pem = 'generated_pubkey.pem'
+    
+    p = Partitions('partitions.csv', None,'pack.json')
+    # Set version override for BL2 if provided
     if bl2_version:
         # Remove 'v' prefix if present (e.g., 'v1.0.3' -> '1.0.3')
         bl2_version_clean = bl2_version.lstrip('vV')
         p.set_version_override('bl2', bl2_version_clean)
         logging.info(f'Set BL2 version override: {bl2_version_clean} (from parameter, overriding bin.csv)')
+    # Set version override for APP if provided
     if app_version:
         # Remove 'v' prefix if present (e.g., 'v0.0.3' -> '0.0.3')
         app_version_clean = app_version.lstrip('vV')
@@ -210,7 +215,26 @@ def steps_pack(soc_type, aes_key_type=None, aes_key=None, bl1_secureboot_en=Fals
             p.set_version_override('overwrite', app_version_clean)
         logging.info(f'Set APP version override: {app_version_clean} (from parameter, overriding bin.csv)')
 
-    p.pack_bin('pack.json', soc_type, pubkey_pem, privkey_pem, flash_aes_type, flash_aes_key, ota_security_counter, ota_encrypt, boot_ota, False)
+    p.sign_bin(
+        pubkey_pem, privkey_pem,
+        ota_type=ota_type, security_counter=security_counter,
+        replace_key_en=replace_key_en, new_privkey_pem=new_privkey_pem, new_pubkey_pem=new_pubkey_pem,
+    )
+
+#Step8 - pack download bin
+def steps_pack(soc_type, aes_key_type=None, aes_key=None, ota_type='OVERWRITE', security_counter=None):
+    logging.debug(f'steps_pack, soc_type={soc_type}, aes_key_type={aes_key_type}, aes_key={aes_key}, ota_type={ota_type}, security_counter={security_counter}')
+    s = None
+    if aes_key_type != None:
+        flash_aes_type = aes_key_type
+        flash_aes_key = aes_key
+    else:
+        flash_aes_type = 'NONE'
+        flash_aes_key = ''
+
+    p = Partitions('partitions.csv', None, 'pack.json')
+    p.postbuild_process(flash_aes_en=False, flash_aes_key=flash_aes_key, img_sign_key=None, flash_crc_en=False, flash_aes_type=flash_aes_type)
+    p.pack_bin(soc_type, flash_aes_type, flash_aes_key)
     p.install_bin()
 
 def steps_pack_csv():

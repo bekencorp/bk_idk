@@ -244,24 +244,38 @@ def sign_from_ota_sig_command(ota_bin_sig, debug):
     set_debug(debug)
     sign_from_ota_sig(ota_bin_sig)
 
-@steps.command("pack")
+@steps.command("sign")
 @click.option("--debug", is_flag=True, help="Enable debug")
-@click.option("--flash_aes_type", type=click.Choice(['NONE', 'FIXED', 'RANDOM']), default='FIXED', required=True, help="The flash AES type.")
-@click.option("--flash_aes_key", type=str, required=False, default=None, help="configuration flash aes key")
-@click.option("--bl1_secureboot_en", is_flag=True, default=False, help="Indicate whether enable BL1 secure boot")
+@click.option("--pubkey_pem", type=str, required=False, default='img_sign_pubkey', help="public key PEM file")
+@click.option("--privkey_pem", type=str, required=False, default='img_sign_privkey', help="private key PEM file")
 @click.option("--ota_type", type=click.Choice(['XIP', 'OVERWRITE']), help="OTA strategy")
-@click.option("--ota_security_counter", type=int, help="APP security counter")
-@click.option("--boot_ota", is_flag=True, default=False, help="Indicate whether support bootloader OTA")
-@click.option("--ota_encrypt", is_flag=True, default=False, help="Indicate whether ota.bin is encrypted")
-@click.option("--pubkey_pem", type=str, default='root_ec256_pubkey.pem', help="BL2 public key PEM file")
-@click.option("--privkey_pem", type=str, default='root_ec256_privkey.pem', help="BL2 private key PEM file")
 @click.option("--bl2_version", type=str, required=False, default=None, help="configuration bl2 version")
 @click.option("--app_version", type=str, required=False, default=None, help="configuration app version")
+@click.option("--security_counter", type=int, required=False, default=None, help="configuration security counter")
+@click.option("--replace_key_en", type=str, required=False, default=False, help="Enable key replacement; omit to follow security.csv update_img_sign_key_en")
+@click.option("--new_pubkey_pem", type=str, required=False, default=None, help="New BL2 public key PEM file")
+@click.option("--new_privkey_pem", type=str, required=False, default=None, help="New BL2 private key PEM file")
+def sign_command(debug, pubkey_pem, privkey_pem, ota_type, bl2_version, app_version, security_counter, replace_key_en, new_pubkey_pem, new_privkey_pem):
+    """Sign binaries"""
+    set_debug(debug)
+    steps_sign(
+        pubkey_pem, privkey_pem,
+        ota_type=ota_type, bl2_version=bl2_version, app_version=app_version, security_counter=security_counter,
+        replace_key_en=replace_key_en, new_pubkey_pem=new_pubkey_pem, new_privkey_pem=new_privkey_pem
+    )
+
+@steps.command("pack")
+@click.option("--debug", is_flag=True, help="Enable debug")
 @click.option("--soc_type", type=click.Choice(['bk7236', 'bk7236n']), default='bk7236n', help="SoC model")
-def pack_command(debug, soc_type, flash_aes_type, flash_aes_key, bl1_secureboot_en, ota_type, ota_security_counter, ota_encrypt, boot_ota, bl2_version, app_version, pubkey_pem, privkey_pem):
+@click.option("--flash_aes_type", type=click.Choice(['NONE', 'FIXED', 'RANDOM']), default='FIXED', required=True, help="The flash AES type.")
+@click.option("--flash_aes_key", type=str, required=False, default=None, help="configuration flash aes key")
+@click.option("--ota_type", type=click.Choice(['XIP', 'OVERWRITE']), help="OTA strategy")
+@click.option("--ota_security_counter", type=int, required=False, default=None, help="configuration security counter")
+def pack_command(debug, soc_type, flash_aes_type, flash_aes_key, ota_type, ota_security_counter):
     """Pack download bin"""
     set_debug(debug)
-    steps_pack(soc_type, flash_aes_type, flash_aes_key, bl1_secureboot_en, ota_type, ota_security_counter, ota_encrypt, boot_ota, bl2_version, app_version, pubkey_pem, privkey_pem)
+    gen_otp_efuse_config_file(flash_aes_type, False, flash_aes_key, None, False, False, "otp_efuse_config.json")
+    steps_pack(soc_type, flash_aes_type, flash_aes_key, ota_type, ota_security_counter)
 
 @steps.command("pack_csv")
 @click.option("--debug", is_flag=True, help="Enable debug")

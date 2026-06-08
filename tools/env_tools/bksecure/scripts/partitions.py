@@ -25,6 +25,7 @@ from .partition_nvs import PartitionNvs
 from .gen_license import *
 from .bin import Bin
 from .ota import OTA
+from .pack_json import PackJson
 
 OTA_CONFIRM = 0xA16D8FB0
 
@@ -128,11 +129,15 @@ class Partitions:
         
     def __parse_bin_csv(self, bin_csv):
         logging.debug(f'Partitions: __parse_bin_csv')
-        o = OTA('ota.csv')
-        app_version = o.get_version()
-        bl2_version = o.get_bootloader_version()
         if bin_csv == None:
             return []
+
+        app_version = None
+        bl2_version = None
+        if os.path.exists('ota.csv'):
+            o = OTA('ota.csv')
+            app_version = o.get_version()
+            bl2_version = o.get_bootloader_version()
 
         bin_keys = ['Name', 'Type', 'Partition', 'Version', 'Security_counter']
         csv = Csv(bin_csv, True, bin_keys)
@@ -140,10 +145,10 @@ class Partitions:
         bins = []
         logging.debug(f'bin.csv: {csv.dic_list}')
         for dic in csv.dic_list:
-            if dic['Name'] == 'bl2.bin':
-                dic['Version'] = bl2_version
-            elif dic['Name'] == 'cpu0_app.bin':
+            if app_version is not None and dic['Name'] == 'cpu0_app.bin':
                 dic['Version'] = app_version
+            elif bl2_version is not None and dic['Name'] == 'bl2.bin':
+                dic['Version'] = bl2_version
             b = Bin(dic['Name'], dic['Type'], dic['Partition'], dic['Version'], dic['Security_counter'])
             bins.append(b)
 
@@ -449,7 +454,18 @@ class Partitions:
         self._version_overrides[partition_name] = version
         logging.debug(f'Set version override for partition {partition_name}: {version}')
 
-    def pack_bin(self, pack_json, soc_type, pubkey_pem, privkey_pem, aes_type, aes_key, security_counter, ota_aes_en, boot_ota=False, ci_test=False, app_version=None, bl2_version=None):
+    def sign_bin(self, pubkey_pem, privkey_pem, ota_type=None, security_counter=None, replace_key_en=None, new_privkey_pem=None, new_pubkey_pem=None):
+        # Ensure all bin files have pack headers before signing
+        # logging.debug('Adding pack headers to bin files for signing')
+        self.__ensure_pack_headers_for_pack_json(self._pack_json)
+        
+        pack = PackJson()
+        pack.sign(pubkey_pem, privkey_pem,
+            ota_type=ota_type, security_counter=security_counter,
+            replace_key_en=replace_key_en, new_privkey_pem=new_privkey_pem, new_pubkey_pem=new_pubkey_pem,
+        )
+
+    def pack_bin(self, soc_type, aes_type, aes_key):
         """Pack bins for Pack Server (after Build and Sign servers)
         
         This method implements the Pack Server functionality in the three-server architecture:
@@ -459,69 +475,38 @@ class Partitions:
         
         Args:
             pack_json: Path to pack.json file
-            pubkey_pem: Path to public key PEM
-            privkey_pem: Path to private key PEM
+            soc_type: SoC type ('bk7236', 'bk7236n')
             aes_type: AES encryption type ('FIXED', 'RANDOM', or 'NONE')
             aes_key: AES encryption key
-            security_counter: Security counter for OTA
-            ota_aes_en: Whether to enable AES encryption for OTA
-            boot_ota: Whether to enable boot OTA
-            ci_test: Whether this is a CI test build
         """
         # Get bl1_secureboot_en and ota_type from security.csv if available
         self._bl1_secureboot_en = self.__get_bl1_secureboot_en()
         self._ota_type = self.__get_ota_type()
-        self._boot_ota = boot_ota
 
         self.parse_and_validate_partitions_after_build()
-        self.parse_and_validate_pack_json(pack_json)
+        self.parse_and_validate_pack_json(self._pack_json)
         
         # Process partitions: handle encryption, CRC, etc. (similar to bksecure_mfr)
         # These operations work on raw bin files from Sign Server (no pack header needed)
-        self.process_bl1_control(aes_type, aes_key, boot_ota)
+        self.process_bl1_control(aes_type, aes_key, False)
         self.process_manifest()
         self.process_partition_partition(aes_type)
         self.process_boot_flag(aes_type)
         self.process_nvs(aes_type, aes_key)
         self.process_encrypted(aes_type, aes_key)
         self.process_app_aes_crc(aes_type, aes_key)
-        
-        # Before calling PackJson.pack(), ensure all bin files have pack headers
-        # Pack Server receives signed binaries from Sign Server (may not have pack headers)
-        # PackDownload expects files with pack headers, so we need to add them first
-        logging.debug('Adding pack headers to bin files for PackDownload')
-        self.__ensure_pack_headers_for_pack_json(pack_json, aes_type, aes_key)
-        
+
+        os.environ['ARMINO_SOC'] = soc_type.upper()
         # Use PackJson to handle the actual packing (all-app.bin, ota.bin, bootloader.bin, etc.)
         # This is the Pack Server functionality: encrypt, pack, generate final download files
-        from .pack_json import PackJson
         pack = PackJson()
+        pack.exclude_ota_packers()
+        # PackJson handles: all-app.bin, bootloader.bin, etc. (ota.bin/raw_ota.bin from sign host)
+        flash_crc_en = False
         
-        # PackJson handles: all-app.bin, ota.bin, bootloader.bin, bootloader_ota.bin, etc.
-        flash_crc_en = self._flash_crc_en
-        os.environ['ARMINO_SOC'] = soc_type.upper()
-        # If pubkey is a hex string (not a file path), convert to .pem file in current directory
-        if isinstance(pubkey_pem, str) and not os.path.isfile(pubkey_pem):
-            s = pubkey_pem.strip()
-            if len(s) >= 64 and len(s) % 2 == 0 and all(c in '0123456789abcdefABCDEF' for c in s):
-                der = bytes.fromhex(s)
-                b64 = base64.b64encode(der).decode('ascii')
-                pem_lines = '\n'.join(b64[i:i + 64] for i in range(0, len(b64), 64))
-                pem_content = '-----BEGIN PUBLIC KEY-----\n' + pem_lines + '\n-----END PUBLIC KEY-----\n'
-                pubkey_pem_path = os.path.join(os.getcwd(), 'generated_pubkey.pem')
-                with open(pubkey_pem_path, 'w') as f:
-                    f.write(pem_content)
-                pubkey_pem = 'generated_pubkey.pem'
-        pack.pack(pack_json, pubkey_pem, privkey_pem, aes_key, flash_crc_en, None, aes_type)
+        pack.pack(aes_key, flash_crc_en, None, aes_type)
         
-        # Call gen methods for compatibility (they are no-ops, actual work done by PackJson)
-        self.gen_all_apps_bin(aes_type)  # all_apps depends on nvs/encrypted/app etc
-        self.gen_ota_bin(ota_aes_en, aes_key, security_counter, ci_test)
-        self.gen_bootloader_ota_bin(aes_type)
-        if (self._bl1_secureboot_en == True):
-            self.gen_provisioning_bin(aes_type)
-
-    def __ensure_pack_headers_for_pack_json(self, pack_json, aes_type, aes_key):
+    def __ensure_pack_headers_for_pack_json(self, pack_json):
         """Ensure all bin files referenced in pack.json have pack headers
         
         Pack Server receives signed binaries from Sign Server which may not have pack headers.
@@ -910,38 +895,6 @@ class Partitions:
                     # Read bin file if partition_buf not available
                     with open(p.bin().name(), 'rb') as f:
                         p.partition_buf = bytearray(f.read())
-
-    def gen_all_apps_bin(self, aes_type):
-        """Generate all-app.bin - handled by PackJson in pack() method"""
-        logging.debug('gen_all_apps_bin: will be handled by PackJson')
-        # The actual packing is done by PackJson.pack() method
-        # This method is called for compatibility with bksecure_mfr interface
-        pass
-
-    def gen_ota_bin(self, ota_aes_en, aes_key, security_counter, ci_test):
-        """Generate ota.bin - handled by PackJson in pack() method"""
-        logging.debug(f'gen_ota_bin: will be handled by PackJson (ota_aes_en={ota_aes_en}, security_counter={security_counter}, ci_test={ci_test})')
-        # The actual OTA packing is done by PackJson.pack() method
-        # This method is called for compatibility with bksecure_mfr interface
-        pass
-
-    def gen_bootloader_ota_bin(self, aes_type):
-        """Generate bootloader_ota.bin - handled by PackJson in pack() method"""
-        if self._boot_ota == False:
-            return
-        logging.debug('gen_bootloader_ota_bin: will be handled by PackJson')
-        # The actual packing is done by PackJson.pack() method
-        # This method is called for compatibility with bksecure_mfr interface
-        pass
-
-    def gen_provisioning_bin(self, aes_type):
-        """Generate provisioning bin - handled by PackJson in pack() method"""
-        if self._bl1_secureboot_en == False:
-            return
-        logging.debug('gen_provisioning_bin: will be handled by PackJson')
-        # The actual packing is done by PackJson.pack() method
-        # This method is called for compatibility with bksecure_mfr interface
-        pass
 
     def install_bin(self):
         """Install generated bins to install directory"""

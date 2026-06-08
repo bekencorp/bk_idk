@@ -15,7 +15,7 @@ class PackUserMfr(Pack):
     def __init__(self, bins=None, outfile=None):
         super().__init__(bins, outfile)
 
-    def pack(self, img_sign_pubkey=None, img_sign_privkey=None, flash_aes_key=None, flash_crc_en=True, data_aes_key=None):
+    def pack(self, flash_aes_key=None, flash_crc_en=True, data_aes_key=None, flash_aes_type=None):
         logging.debug(f'PackUserMfr({self._outfile}): bins={self._bins}, flash_aes_key={flash_aes_key} data_aes_key={data_aes_key}')
         
         if not self._bins or len(self._bins) == 0:

@@ -6,7 +6,7 @@ from .pack import Pack
 from .pack_header import PackHeader
 
 class StepsPackHeader(Pack):
-    def pack(self, img_sign_pubkey=None, img_sign_privkey=None, flash_aes_key=None, flash_crc_en=True, data_aes_key=None):
+    def pack(self, flash_aes_key=None, flash_crc_en=True, data_aes_key=None, flash_aes_type=None):
         pack_manifest = self._bins[0]
         ph = PackHeader(pack_manifest)
         p = PackHeader()

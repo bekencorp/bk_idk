@@ -16,22 +16,42 @@ from .pack_bl2_download import PackBl2Download
 from .pack_nvs import PackNvs
 from .steps_pack_header import StepsPackHeader
 from .pack_user_mfr import PackUserMfr
-from .partitions import Partitions
 
 class PackJson(Pack):
 
-    def __init__(self):
+    def __init__(self, pack_json='pack.json'):
         self._packs = []
+        self._pack_json = pack_json
+        self.__create_pack(self._pack_json)
 
-    def pack(self, pack_json='pack.json', img_sign_pubkey=None, img_sign_privkey=None, flash_aes_key=None, flash_crc_en=True, data_aes_key=None, flash_aes_type=None):
-        logging.info(f'Pack: json={pack_json}, flash_aes_type={flash_aes_type}, flash_crc_en={flash_crc_en}')
+    def sign(
+        self, img_sign_pubkey=None, img_sign_privkey=None,
+        ota_type=None, security_counter=None, replace_key_en=None,
+        new_privkey_pem=None, new_pubkey_pem=None,
+    ):
+        logging.info(f'Sign: img_sign_pubkey={img_sign_pubkey}, img_sign_privkey={img_sign_privkey}')
+        self.__sign(
+            img_sign_pubkey, img_sign_privkey,
+            ota_type=ota_type, security_counter=security_counter,
+            replace_key_en=replace_key_en, new_privkey_pem=new_privkey_pem, new_pubkey_pem=new_pubkey_pem,
+        )
+
+    def exclude_ota_packers(self):
+        """Drop PackOta / PackRawOta (ota.bin, raw_ota.bin) from the pack pipeline."""
+        before = len(self._packs)
+        self._packs = [p for p in self._packs if not isinstance(p, (PackOta, PackRawOta))]
+        removed = before - len(self._packs)
+        if removed:
+            logging.debug(f'PackJson: excluded {removed} OTA packer(s) (PackOta/PackRawOta)')
+
+    def pack(self, flash_aes_key=None, flash_crc_en=True, data_aes_key=None, flash_aes_type=None):
+        logging.info(f'Pack: json={self._pack_json}, flash_aes_type={flash_aes_type}, flash_crc_en={flash_crc_en}')
         # Ensure nvs_key.bin and nvs.bin are generated before processing ==========
         # Reference: xnf_connect_1226/tools/env_tools/beken_utils/scripts/partition.py process_partition_nvs_key() and process_partition_nvs()
         # Check if USER_MFR_AES action or nvs.bin is needed, if so, ensure nvs_key.bin and nvs.bin are generated first
         # Get flash_aes_type from security.csv if it exists
-        self.__ensure_nvs_bins_generated(pack_json, flash_aes_type, flash_aes_key, flash_crc_en)
-        self.__create_pack(pack_json)
-        self.__pack(img_sign_pubkey, img_sign_privkey, flash_aes_key, flash_crc_en, data_aes_key, flash_aes_type)
+        self.__ensure_nvs_bins_generated(self._pack_json, flash_aes_type, flash_aes_key, flash_crc_en)
+        self.__pack(flash_aes_key, flash_crc_en, data_aes_key, flash_aes_type)
         
     def __ensure_nvs_bins_generated(self, pack_json, flash_aes_type=None, flash_aes_key=None, flash_crc_en=True):
         """Ensure nvs_key.bin, nvs_key_pack.bin and nvs.bin are generated before processing"""
@@ -65,6 +85,7 @@ class PackJson(Pack):
         if has_user_mfr_aes or needs_nvs_bin or needs_nvs_key_pack:
             if os.path.exists('partitions.csv'):
                 try:
+                    from .partitions import Partitions
                     # Create Partitions object (this will parse partitions.csv and create PartitionNvsKey/PartitionNvs if they exist)
                     p = Partitions('partitions.csv', None, None)
                     # Call postbuild_process to generate nvs_key.bin, nvs_key_pack.bin and nvs.bin
@@ -115,24 +136,30 @@ class PackJson(Pack):
 
             self._packs.append(p) 
 
-    def __pack(self, img_sign_pubkey=None, img_sign_privkey=None, flash_aes_key=None, flash_crc_en=True, data_aes_key=None, flash_aes_type=None):
+    def __sign(
+        self, img_sign_pubkey=None, img_sign_privkey=None, ota_type=None,
+        security_counter=None, replace_key_en=None, new_privkey_pem=None, new_pubkey_pem=None,
+    ):
         for p in self._packs:
             pack_type = type(p).__name__
             outfile = getattr(p, '_outfile', 'N/A')
             bins = getattr(p, '_bins', [])
-            logging.info(f'Pack: {outfile} ({pack_type})')
-            logging.debug(f'Pack: bins={bins}')
-            
-            # Pass flash_aes_type to pack methods that support it
+            if hasattr(p, 'sign'):
+                logging.debug(f'sign step, infile: {bins}, outfile: {outfile}, pack_type: {pack_type}')
+                p.sign(
+                    img_sign_pubkey, img_sign_privkey,
+                    ota_type=ota_type, security_counter=security_counter,
+                    replace_key_en=replace_key_en, new_privkey_pem=new_privkey_pem, new_pubkey_pem=new_pubkey_pem,
+                )
+
+    def __pack(self, flash_aes_key=None, flash_crc_en=True, data_aes_key=None, flash_aes_type=None):
+        for p in self._packs:
+            pack_type = type(p).__name__
+            outfile = getattr(p, '_outfile', 'N/A')
+            bins = getattr(p, '_bins', [])
             if hasattr(p, 'pack'):
-                import inspect
-                sig = inspect.signature(p.pack)
-                supports_flash_aes_type = 'flash_aes_type' in sig.parameters
-                
-                if supports_flash_aes_type:
-                    p.pack(img_sign_pubkey, img_sign_privkey, flash_aes_key, flash_crc_en, data_aes_key, flash_aes_type)
-                else:
-                    p.pack(img_sign_pubkey, img_sign_privkey, flash_aes_key, flash_crc_en, data_aes_key)
+                logging.debug(f'pack step, infile: {bins}, outfile: {outfile}, pack_type: {pack_type}')
+                p.pack(flash_aes_key, flash_crc_en, data_aes_key, flash_aes_type)
 
     def copy_file(self, file_name, dst):
         if os.path.exists(file_name):
