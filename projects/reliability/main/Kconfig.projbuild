@@ -26,6 +26,11 @@ menu "Project specific config"
 		bool "Enable Flash import test"
 		default n
 
+	config FLASH_IMPORT_TEST_WITH_CBUS
+		bool "Enable Flash import test with CBUS"
+		default n
+		depends on FLASH_IMPORT_TEST && FLASH_CBUS
+
 	config WIFI_RELIABILITY_SAVE_INTERVAL
 		int "Save interval for WiFi reliability stats (in seconds)"
 		default 600

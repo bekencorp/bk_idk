@@ -27,10 +27,15 @@
 #define FLASH_IMPORT_ENDURANCE_TEST_REGION_SIZE     (4096U)
 #define FLASH_IMPORT_ENDURANCE_ERASE_SECTOR_SIZE    (4096U)
 #define FLASH_IMPORT_ENDURANCE_MAIN_OFFSET          (FLASH_IMPORT_ENDURANCE_STATS_BACKUP_SIZE)
+
+#if CONFIG_FLASH_IMPORT_TEST_WITH_CBUS
+#define FLASH_IMPORT_ENDURANCE_DATA_OFFSET          (0x11000U)
+#else
 #define FLASH_IMPORT_ENDURANCE_DATA_OFFSET          (FLASH_IMPORT_ENDURANCE_STATS_BACKUP_SIZE + \
                                                      FLASH_IMPORT_ENDURANCE_STATS_MAIN_SIZE)
-#define FLASH_IMPORT_ENDURANCE_LAYOUT_BYTES         (FLASH_IMPORT_ENDURANCE_STATS_BACKUP_SIZE + \
-                                                     FLASH_IMPORT_ENDURANCE_STATS_MAIN_SIZE + \
+#endif
+
+#define FLASH_IMPORT_ENDURANCE_LAYOUT_BYTES         (FLASH_IMPORT_ENDURANCE_DATA_OFFSET + \
                                                      FLASH_IMPORT_ENDURANCE_TEST_REGION_SIZE)
 #define FLASH_IMPORT_ENDURANCE_MAIN_SAVE_INTERVAL   (10U)
 #define FLASH_IMPORT_ENDURANCE_BACKUP_SAVE_INTERVAL (100U)
@@ -134,7 +139,7 @@ static uint8_t *s_endurance_write_buf = NULL;
 static void flash_import_endurance_read(uint32_t addr, uint8_t *buf, uint32_t size)
 {
     FLASH_IMPORT_END_GPIO_READ_UP();
-    (void)bk_flash_read_bytes(addr, buf, size);
+    flash_import_read_bytes(buf, addr, size);
     FLASH_IMPORT_END_GPIO_READ_DOWN();
 }
 
@@ -229,6 +234,35 @@ static bk_err_t flash_import_endurance_write(uint32_t addr, const uint8_t *buf, 
     return BK_OK;
 }
 
+#if CONFIG_FLASH_IMPORT_TEST_WITH_CBUS
+__attribute__((section(".iram"))) static bk_err_t flash_import_endurance_write_cbus(uint32_t addr, const uint8_t *buf, uint32_t size)
+{
+    uint32_t int_status = 0;
+    uint32_t cbus_addr = FLASH_PHY2VIRTUAL(addr);
+
+    int_status = rtos_disable_int();
+    (void)flash_import_set_line_mode(FLASH_LINE_MODE_TWO);
+    flash_import_endurance_unprotect();
+    FLASH_IMPORT_END_GPIO_WRITE_UP();
+    (void)flash_import_write_cbus(buf, cbus_addr | (1UL << 24), size);
+    FLASH_IMPORT_END_GPIO_WRITE_DOWN();
+    s_endurance_stats.data_write_op_cnt++;
+    FLASH_IMPORT_END_GPIO_READ_UP();
+    (void)flash_import_read_cbus(s_endurance_read_buf, cbus_addr, size);
+    FLASH_IMPORT_END_GPIO_READ_DOWN();
+    flash_import_endurance_protect();
+    (void)flash_import_set_line_mode(FLASH_LINE_MODE_FOUR);
+    rtos_enable_int(int_status);
+
+    if (os_memcmp(s_endurance_read_buf, buf, size) != 0) {
+        s_endurance_stats.data_write_error_cnt++;
+        return BK_FAIL;
+    }
+
+    return BK_OK;
+}
+#endif
+
 static void flash_import_endurance_gpio_init(void)
 {
     const gpio_id_t *pins = (const gpio_id_t *)&s_endurance_gpio_cfg;
@@ -272,8 +306,6 @@ static bk_err_t flash_import_endurance_restore_history_state(void)
     uint32_t crc = 0;
     bool main_valid = false;
     bool backup_valid = false;
-
-    (void)s_endurance_data_addr;
 
     flash_import_endurance_read(s_endurance_stats_main_addr, (uint8_t *)&main_stats, sizeof(main_stats));
     crc = crc32_calc(0, &main_stats, sizeof(main_stats) - sizeof(main_stats.crc));
@@ -338,6 +370,12 @@ static bk_err_t flash_import_endurance_buffers_init(void)
     if (s_endurance_write_buf == NULL) {
         os_printf("endurance write buf alloc fail\r\n");
         return BK_FAIL;
+    }
+
+    for (uint32_t i = 0; i < FLASH_IMPORT_ENDURANCE_TEST_REGION_SIZE; i++) {
+        uint8_t group_val = (uint8_t)((i / 16U));
+
+        s_endurance_write_buf[i] = group_val;
     }
 
     return BK_OK;
@@ -433,28 +471,41 @@ static void flash_import_endurance_save_stats(flash_import_endurance_save_policy
     }
 }
 
-static void flash_import_endurance_fill_write_pattern(uint32_t loop_count)
-{
-    uint32_t i = 0;
-
-    for (i = 0; i < FLASH_IMPORT_ENDURANCE_TEST_REGION_SIZE; i++) {
-        s_endurance_write_buf[i] = (uint8_t)((i + loop_count) & 0xFFU);
-    }
-}
-
 static bk_err_t flash_import_endurance_erase_verify(uint32_t addr)
 {
     if (flash_import_endurance_erase(addr) != BK_OK) {
         os_printf("Endurance test: erase verify err 0x%x\r\n", addr);
         return BK_FAIL;
     }
+
+#if CONFIG_FLASH_IMPORT_TEST_WITH_CBUS
+    uint32_t cbus_addr = FLASH_PHY2VIRTUAL(addr);
+    uint32_t phy_end_addr = FLASH_VIRTUAL2PHY(cbus_addr + FLASH_IMPORT_ENDURANCE_TEST_REGION_SIZE);
+    uint32_t phy_len = phy_end_addr - addr;
+    uint32_t next_sector_addr = (phy_end_addr - 1U) & ~(FLASH_IMPORT_ENDURANCE_ERASE_SECTOR_SIZE - 1U);
+
+    if ((phy_len > FLASH_IMPORT_ENDURANCE_ERASE_SECTOR_SIZE)
+        && (phy_len < (FLASH_IMPORT_ENDURANCE_ERASE_SECTOR_SIZE * 2U))) {
+        if (flash_import_endurance_erase(next_sector_addr) != BK_OK) {
+            os_printf("Endurance test: erase verify err 0x%x\r\n", next_sector_addr);
+            return BK_FAIL;
+        }
+    }
+#endif
+
     return BK_OK;
 }
 
-static bk_err_t flash_import_endurance_write_verify(uint32_t addr, uint32_t loop_count)
+static bk_err_t flash_import_endurance_write_verify(uint32_t addr)
 {
-    flash_import_endurance_fill_write_pattern(loop_count);
-    if (flash_import_endurance_write(addr, s_endurance_write_buf, FLASH_IMPORT_ENDURANCE_TEST_REGION_SIZE) != BK_OK) {
+    bk_err_t ret = BK_OK;
+#if CONFIG_FLASH_IMPORT_TEST_WITH_CBUS
+    ret = flash_import_endurance_write_cbus(addr, s_endurance_write_buf, FLASH_IMPORT_ENDURANCE_TEST_REGION_SIZE);
+#else
+    ret = flash_import_endurance_write(addr, s_endurance_write_buf, FLASH_IMPORT_ENDURANCE_TEST_REGION_SIZE);
+#endif
+
+    if (ret != BK_OK) {
         os_printf("Endurance test: write verify err 0x%x\r\n", addr);
         return BK_FAIL;
     }
@@ -544,7 +595,7 @@ static void flash_import_endurance_main_loop(void)
     while (1) {
         loop_count++;
         (void)flash_import_endurance_erase_verify(s_endurance_data_addr);
-        (void)flash_import_endurance_write_verify(s_endurance_data_addr, loop_count);
+        (void)flash_import_endurance_write_verify(s_endurance_data_addr);
 
         if (s_endurance_stop_requested) {
             flash_import_endurance_save_stats(FLASH_IMPORT_ENDURANCE_SAVE_BOTH);
