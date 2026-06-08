@@ -4328,6 +4328,23 @@ bk_err_t bk_wifi_get_default_ac(uint32_t *ac)
 	return BK_OK;
 }
 
+bk_err_t bk_wifi_set_scan_5g_first(bool enable)
+{
+	g_wifi_mac_config.scan_5g_first = enable;
+
+	return BK_OK;
+}
+
+bk_err_t bk_wifi_get_scan_5g_first(bool *enable)
+{
+	if (!enable)
+		return BK_ERR_NULL_PARAM;
+
+	*enable = g_wifi_mac_config.scan_5g_first;
+
+	return BK_OK;
+}
+
 bk_err_t bk_wifi_get_tx_raw_ac(uint8_t *ac)
 {
 	if (!ac)

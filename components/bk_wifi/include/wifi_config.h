@@ -29,6 +29,8 @@ extern "C" {
 #define WIFI_CFG_MGMT_RTY_NUM					0x0704
 // default AC
 #define WIFI_CFG_DEFAULT_AC					0x0
+// default scan 5G first
+#define WIFI_CFG_DFT_SCAN_5G_FIRST			false
 
 typedef struct wifi_mac_config {
 	// raw tx interface AC
@@ -53,6 +55,8 @@ typedef struct wifi_mac_config {
 	bool ani_en;
 	//default ac
 	uint32_t def_ac;
+	// whether to prioritize 5G channels when scanning
+	bool scan_5g_first;
 } wifi_mac_config_t;
 
 extern wifi_mac_config_t g_wifi_mac_config;
