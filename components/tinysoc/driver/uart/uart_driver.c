@@ -190,6 +190,7 @@ static void uart_init_gpio(uart_id_t id)
 			gpio_dev_unmap(uart_hal_get_rx_pin(id));
 			gpio_dev_map(uart_hal_get_tx_pin(id), GPIO_DEV_UART1_TXD);
 			gpio_dev_map(uart_hal_get_rx_pin(id), GPIO_DEV_UART1_RXD);
+
 			bk_gpio_pull_up(uart_hal_get_tx_pin(id));
 			bk_gpio_pull_up(uart_hal_get_rx_pin(id));
 #if CONFIG_UART0_FLOW_CTRL
@@ -741,7 +742,7 @@ bk_err_t bk_uart_init(uart_id_t id, const uart_config_t *config)
 	UART_RETURN_ON_INVALID_ID(id);
 	UART_RETURN_ON_BAUD_RATE_NOT_SUPPORT(config->baud_rate);
 
-#if CONFIG_SOC_BK7236XX
+#if CONFIG_SOC_BK7236XX || CONFIG_SOC_BK7239XX
 	uart_isr_register_functions(id);
 	s_uart[id].hal.id = id;
 	uart_hal_init(&s_uart[id].hal);

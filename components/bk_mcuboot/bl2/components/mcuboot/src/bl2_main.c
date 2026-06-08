@@ -200,7 +200,11 @@ int main(void)
     extern void hal_secure_debug(void);
     hal_secure_debug();
 #endif
-
+#if (CONFIG_IOMX)
+    hal_iomux_init();
+    hal_iomux_uart_enable(IOMX_UART_TX);
+    hal_iomux_uart_enable(IOMX_UART_RX);
+#endif
 #if CONFIG_DOWNLOAD_LOG
     stdio_init();
 #endif
@@ -230,10 +234,6 @@ int main(void)
 #endif
 #endif
 
-#if (CONFIG_IOMX)
-    hal_iomux_init();
-    hal_iomux_uart_enable(IOMX_UART_TX);
-#endif
 
     if (partition_init() != 0) {
         BOOT_LOG_ERR("partition_init failed (partition table CRC or flash read)");

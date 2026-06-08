@@ -73,7 +73,7 @@ set(srcs
 	${SOC_PATH}/hal/hal_high_freq.c
 )
 
-target_compile_definitions(platform_bl2 PUBLIC CONFIG_TFM_SOC_PATH_V5)
+target_compile_definitions(platform_bl2 PUBLIC CONFIG_TFM_SOC_PATH_V5 CONFIG_IOMX=1)
 
 if(CRYPTO_HW_ACCELERATOR)
 	target_compile_definitions(platform_bl2 PRIVATE ARM_CE_DUBHE_OTP)
