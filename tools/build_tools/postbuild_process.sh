@@ -47,45 +47,60 @@ PRODUCT_STRING=$(echo "${PRODUCT_STRING}" | xargs)
 SPID=$(echo -n "${PRODUCT_STRING}" | tr -d '\0' | sed 's/[[:space:]]*$//' | xargs)
 echo "Writing product ID to ${ALL_APP_BIN}..."
 
+# Read FLASH_CRC_ENABLE from auto_partitions.csv (non-secure build, same as bk_build_package.py)
+read_crc_mode_from_auto_partitions() {
+	local csv="$1"
+	local line val
+
+	[ -f "${csv}" ] || return 1
+	while IFS= read -r line || [ -n "${line}" ]; do
+		line=$(echo "${line}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+		[ -z "${line}" ] && continue
+		case "${line}" in
+			\#*) continue ;;
+		esac
+		case "${line}" in
+			*FLASH_CRC_ENABLE*)
+				val=$(echo "${line}" | cut -d'=' -f2- | tr -d '[:space:]' | tr '[:lower:]' '[:upper:]')
+				case "${val}" in
+					FALSE|0) CRC_MODE="NO_CRC" ;;
+					TRUE|1) CRC_MODE="CRC" ;;
+				esac
+				return 0
+				;;
+		esac
+	done < "${csv}"
+	return 1
+}
+
 # Copy all-app.bin and rename it with spid and timestamp
 if [ -f "${ALL_APP_BIN}" ] && [ -n "${SPID}" ] && [ "${SPID}" != "0" ]; then
-	# Detect CRC mode by checking for magic strings at specific offsets
-	# Check for magic strings at 0x100 (no_crc) or 0x110 (crc)
-	# Define magic strings array for easy maintenance
-	MAGIC_STRINGS=("BEKEN" "BK.SB" "BK7236")
+	SECURITY_CSV=""
+	if [ -f "${BUILD_DIR}/package/security.csv" ]; then
+		SECURITY_CSV="${BUILD_DIR}/package/security.csv"
+	elif [ -n "${PROJECT_DIR:-}" ] && [ -f "${PROJECT_DIR}/config/${ARMINO_SOC}/security.csv" ]; then
+		SECURITY_CSV="${PROJECT_DIR}/config/${ARMINO_SOC}/security.csv"
+	fi
 
-	CRC_MODE="NO_CRC"
-	if [ -f "${ALL_APP_BIN}" ]; then
-		# Read bytes at offset 0x100 and 0x110 using xxd to avoid null byte issues
-		# xxd -p: plain hexdump, -l6: read 6 bytes, -s256: skip to offset 0x100 (0x100 = 256)
-		MAGIC_100_HEX=$(xxd -p -l6 -s256 "${ALL_APP_BIN}" 2>/dev/null | tr -d '\n')
-		MAGIC_110_HEX=$(xxd -p -l6 -s272 "${ALL_APP_BIN}" 2>/dev/null | tr -d '\n')
+	AUTO_PARTITIONS_CSV=""
+	if [ -n "${PROJECT_DIR:-}" ] && [ -f "${PROJECT_DIR}/config/${ARMINO_SOC}/auto_partitions.csv" ]; then
+		AUTO_PARTITIONS_CSV="${PROJECT_DIR}/config/${ARMINO_SOC}/auto_partitions.csv"
+	fi
 
-		# Convert hex to ASCII for comparison
-		MAGIC_100_ASCII=$(echo "${MAGIC_100_HEX}" | xxd -r -p 2>/dev/null | tr -d '\0')
-		MAGIC_110_ASCII=$(echo "${MAGIC_110_HEX}" | xxd -r -p 2>/dev/null | tr -d '\0')
-
-		# Check for magic strings at 0x100 (no_crc mode)
-		FOUND_AT_100=0
-		if [ -n "${MAGIC_100_ASCII}" ]; then
-			for magic in "${MAGIC_STRINGS[@]}"; do
-				if echo -n "${MAGIC_100_ASCII}" | grep -qF "${magic}" 2>/dev/null; then
-					CRC_MODE="NO_CRC"
-					FOUND_AT_100=1
-					break
-				fi
-			done
+	# Secure: flash_crc_en in security.csv.
+	# Non-secure: FLASH_CRC_ENABLE in auto_partitions.csv.
+	# Default: CRC.
+	CRC_MODE="CRC"
+	FLASH_CRC_VALUE=""
+	if [ -n "${SECURITY_CSV}" ]; then
+		FLASH_CRC_VALUE=$(grep '^flash_crc_en,' "${SECURITY_CSV}" 2>/dev/null | cut -d',' -f2 | tr -d '[:space:]' | tr '[:lower:]' '[:upper:]')
+	fi
+	if [ -n "${FLASH_CRC_VALUE}" ]; then
+		if [ "${FLASH_CRC_VALUE}" = "FALSE" ]; then
+			CRC_MODE="NO_CRC"
 		fi
-
-		# Check for magic strings at 0x110 (crc mode) - only if not found at 0x100
-		if [ "${FOUND_AT_100}" -eq 0 ] && [ -n "${MAGIC_110_ASCII}" ]; then
-			for magic in "${MAGIC_STRINGS[@]}"; do
-				if echo -n "${MAGIC_110_ASCII}" | grep -qF "${magic}" 2>/dev/null; then
-					CRC_MODE="CRC"
-					break
-				fi
-			done
-		fi
+	elif [ -n "${AUTO_PARTITIONS_CSV}" ]; then
+		read_crc_mode_from_auto_partitions "${AUTO_PARTITIONS_CSV}" || true
 	fi
 
 	TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
