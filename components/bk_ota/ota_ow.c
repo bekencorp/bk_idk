@@ -53,7 +53,36 @@ bk_err_t ow_ota_confirm(const bk_logic_partition_t *control_partition)
 bk_err_t ow_ota_cancel(const bk_logic_partition_t *control_partition)
 {
 	OTA_LOGD(TAG, "ow cancel\r\n");
-	return bk_flash_erase_fast(control_partition->partition_start_addr, control_partition->partition_length);
+	if (control_partition == NULL) {
+		return BK_FAIL;
+	}
+
+	/* Cancel only needs to clear the OTA confirm flag. */
+	uint32_t offset = ota_confirm_phy_offset(control_partition);
+	uint32_t value = 0;
+	bk_flash_read_bytes(offset, (uint8_t*)&value, 4);
+	if (value == 0xFFFFFFFF) {
+		return BK_OK;
+	}
+
+	uint8_t retry_cnt = 3;
+	while (retry_cnt--) {
+		/* Save and restore original protect status, only disable during erase. */
+		flash_protect_type_t protect = bk_flash_get_protect_type();
+		bk_flash_set_protect_type(FLASH_PROTECT_NONE);
+		bk_err_t ret = bk_flash_erase_sector(offset);
+		bk_flash_set_protect_type(protect);
+		if (ret != BK_OK) {
+			continue;
+		}
+
+		bk_flash_read_bytes(offset, (uint8_t*)&value, 4);
+		if (value == 0xFFFFFFFF) {
+			return BK_OK;
+		}
+	}
+
+	return BK_FAIL;
 }
 
 bk_err_t ow_ota_accept(const bk_ota_t *ota)
