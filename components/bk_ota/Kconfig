@@ -5,6 +5,16 @@ menu "OTA"
 		help
 			enable new OTA
 
+	config OTA_STATUS_CONFIRM
+		bool "OTA status confirm by application only (bk_init never touches)"
+		depends on BK_OTA
+		default n
+		help
+			When enabled, bk_init() will NEVER call OTA status confirm APIs:
+			bk_ota_cancel_update(), bk_ota_accept_image(), or
+			bk_ota_update_pubkey_partition(). Application must invoke them.
+			When disabled (default), bk_init performs OTA status confirm on boot.
+
 	#TODO fix me, delete this config after OTA refactor completed
 	config BK_OTA_NEW_PACK_TOOL
 		bool "Enable new pack tool"

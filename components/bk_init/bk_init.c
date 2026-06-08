@@ -310,7 +310,7 @@ int bk_cali_customer_init(void)
 }
 #endif
 
-#if CONFIG_BK_OTA
+#if CONFIG_BK_OTA && !CONFIG_OTA_STATUS_CONFIRM
 static bool is_deep_sleep_wakeup(void)
 {
 	uint32_t reset_reason = bk_misc_get_reset_reason();
@@ -520,7 +520,7 @@ extern int mp_do_startup(int heap_len);
 	bk_psram_id_auto_detect();
 #endif
 	
-#if CONFIG_BK_OTA
+#if CONFIG_BK_OTA && !CONFIG_OTA_STATUS_CONFIRM
 	if (!is_deep_sleep_wakeup()) {
 		bk_ota_cancel_update(0);
 		bk_ota_accept_image();
