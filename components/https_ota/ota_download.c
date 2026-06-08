@@ -172,6 +172,7 @@ static void ota_download_write_flash(ota_download_t* ota_parse, uint8_t **data, 
 	bk_ota_get_info(ota_parse->ota_handle, &recover_len, &erase_size);
 
 	if (ota_parse->entire_flash_erase == false && ota_parse->erase_offset <= ota_parse->write_offset && ota_parse->erase_offset < erase_size) {
+		bk_wdt_feed_all();
 		if (recover_len != 0) {
 			uint8_t recover[34];
 			memset(recover, 0xFF, 34);
@@ -190,12 +191,14 @@ static void ota_download_write_flash(ota_download_t* ota_parse, uint8_t **data, 
 		data_idx += copy_len;
 		ota_parse->wr_last_len += copy_len;
 		if(ota_parse->wr_last_len >= http_flash_wr_buf_max) {
+			bk_wdt_feed_all();
 			bk_ota_write(ota_parse->ota_handle, ota_parse->write_offset, (const void *)ota_parse->wr_buf, http_flash_wr_buf_max);
 			ota_parse->write_offset += http_flash_wr_buf_max;
 			ota_parse->wr_last_len = 0;
 		}
 	}
 	if (need_flush == true) {
+		bk_wdt_feed_all();
 		bk_ota_write(ota_parse->ota_handle, ota_parse->write_offset, (const void *)ota_parse->wr_buf, ota_parse->wr_last_len); //TODO check wr_last_en for TFM
 		ota_parse->wr_last_len = 0;
 		ota_parse->write_offset += ota_parse->wr_last_len;
@@ -208,15 +211,8 @@ static bk_err_t ota_download_handle_image(ota_download_t* ota_parse, uint8_t **d
 	uint32_t image_crc;
 	bk_err_t ret = BK_OK;
 
-#if (CONFIG_TASK_WDT)
-	extern void bk_task_wdt_feed(void);
-	bk_task_wdt_feed();
-#endif
-#if (CONFIG_INT_WDT)
-	bk_wdt_feed();
-#endif
-
 	do {
+		bk_wdt_feed_all();
 		if (ota_parse->offset == 0) {
 			BK_LOGI(TAG, "downloading OTA image%d, expected data len=%x...\r\n", ota_parse->index, ota_parse->ota_image_header[ota_parse->index].image_len);
 			ota_parse->ota_handle = bk_ota_addr_to_handle(ota_parse->ota_image_header[ota_parse->index].flash_offset);
@@ -225,7 +221,9 @@ static bk_err_t ota_download_handle_image(ota_download_t* ota_parse, uint8_t **d
 				return BK_ERR_OTA_HDR_MAGIC;
 			}
 			if (ota_parse->entire_flash_erase == true) {
+				bk_wdt_feed_all();
 				bk_ota_erase(ota_parse->ota_handle);
+				bk_wdt_feed_all();
 			}
 
 			ota_parse->percent = 0;
@@ -269,7 +267,9 @@ static bk_err_t ota_download_handle_image(ota_download_t* ota_parse, uint8_t **d
 			}
 #if CONFIG_VALIDATE_DURING_DOWNLOADING || CONFIG_VALIDATE_IMAGE
 			if (ret == BK_OK) {
+				bk_wdt_feed_all();
 				ret = ota_verify_image(ota_parse->ota_handle->app_partition, ota_parse->ota_verify);
+				bk_wdt_feed_all();
 				if (ret != BK_OK) {
 					ota_verify_deinit(ota_parse->ota_verify);
 					ota_parse->ota_verify = NULL;

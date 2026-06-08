@@ -4,6 +4,7 @@
 #endif
 #include "bk_pm_internal_api.h"
 #include <driver/pwr_clk.h>
+#include <driver/wdt.h>
 
 #define TAG "os"
 
@@ -299,6 +300,9 @@ void vPortSuppressTicksAndSleep( TickType_t xExpectedIdleTime )
 			pm_suspend(xModifiableIdleTime);
 #else
 			bk_pm_suppress_ticks_and_sleep(xModifiableIdleTime);
+#endif
+#if CONFIG_TASK_WDT
+			bk_task_wdt_feed();
 #endif
 		}
 

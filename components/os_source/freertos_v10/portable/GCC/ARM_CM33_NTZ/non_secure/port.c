@@ -1312,7 +1312,6 @@ BaseType_t xPortIsInsideInterrupt( void )
 void vApplicationIdleHook( void )
 {
 #if (CONFIG_TASK_WDT)
-    extern void bk_task_wdt_feed(void);
     bk_task_wdt_feed();
 #endif
 }

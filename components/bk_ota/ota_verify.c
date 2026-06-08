@@ -8,6 +8,7 @@
 #include "ota_common.h"
 #include "partitions.h"
 #include "flash_reg.h"
+#include <driver/wdt.h>
 
 #define TAG "ota"
 
@@ -455,6 +456,7 @@ bk_err_t ota_update_back_pubkey_from_primary(const bk_logic_partition_t *app_par
 	uint8_t check_erase_buf[64];
 	uint8_t ff_buf[64];
 	bk_err_t ret = BK_OK;
+	bk_wdt_feed_all();
 	ota_pubkey_flash_ops_init();
 
 	ret = read_pubkey_from_primary(app_partition, primary_key, &primary_key_size);
@@ -604,6 +606,7 @@ static bk_err_t ota_verify_handle_tlv(const bk_logic_partition_t *partition, ota
 	}
 
 	while(tlv_off < tlv_pro_info.it_tlv_tot + tlv_info.it_tlv_tot) {
+		bk_wdt_feed_all();
 		if(tlv_off == tlv_pro_info.it_tlv_tot){
 			tlv_off += sizeof(image_tlv_info_t);
 		}

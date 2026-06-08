@@ -3,6 +3,7 @@
 #include "modules/bk_ota.h"
 #include "driver/flash.h"
 #include "driver/flash_partition.h"
+#include <driver/wdt.h>
 #if CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
 #include "esp_crt_bundle.h"
 #endif
@@ -244,7 +245,9 @@ void bk_https_start_download(beken_thread_arg_t arg)
 		bk_err_t confirm_ret = BK_FAIL;
 		if (s_ota_config && s_ota_config->ota_parse && s_ota_config->ota_parse->ota_handle) {
 #if CONFIG_VALIDATE_IMAGE || CONFIG_VALIDATE_DURING_DOWNLOADING || CONFIG_OTA_UPDATE_PUBKEY
+			bk_wdt_feed_all();
 			verify_ret = bk_ota_verify(s_ota_config->ota_parse->ota_handle, s_ota_config->ota_parse->ota_verify);
+			bk_wdt_feed_all();
 			if (s_ota_config->ota_parse) {
 				s_ota_config->ota_parse->ota_verify = NULL;
 			}

@@ -239,6 +239,16 @@ __IRAM_SEC void bk_task_wdt_timeout_check(void)
 
 #endif
 
+void bk_wdt_feed_all(void)
+{
+#if (CONFIG_TASK_WDT)
+	bk_task_wdt_feed();
+#endif
+#if (CONFIG_INT_WDT)
+	bk_wdt_feed();
+#endif
+}
+
 bool bk_wdt_is_driver_inited()
 {
 	return s_wdt_driver_is_init;

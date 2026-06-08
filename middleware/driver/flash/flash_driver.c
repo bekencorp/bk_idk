@@ -16,6 +16,7 @@
 #include <components/ate.h>
 #include <os/mem.h>
 #include <driver/flash.h>
+#include <driver/wdt.h>
 #include <os/os.h>
 #include "flash_driver.h"
 #include "flash_hal.h"
@@ -1135,6 +1136,7 @@ bk_err_t bk_flash_erase_fast(uint32_t erase_off, uint32_t len)
     int erase_remain = len;
 
     while (erase_remain > 0) {
+        bk_wdt_feed_all();
         if ((erase_remain >= KB(64)) && is_64k_aligned(erase_off)) {
             FLASH_LOGD("64k erase: off=%x remain=%x\r\n", erase_off, erase_remain);
             bk_flash_erase_block(erase_off);
