@@ -17,6 +17,12 @@
 #include <inttypes.h>
 #include <time.h>
 #include "partitions.h"
+#ifndef BK_PARTITION_FACTORY
+#error "partitions_gen.h: factory partition (data/factory) is required for nvs_test"
+#endif
+#ifndef BK_PARTITION_NVS
+#error "partitions_gen.h: nvs partition is required for nvs_test"
+#endif
 #include "nvs.h"
 #include "nvs_flash.h"
 #include <components/log.h>
@@ -982,84 +988,84 @@ bk_err_t nvs_flash_partition_test_various_op(void)
 	int32_t v1;
 	TEST_NVS(nvs_get_i32(handle_1, "foo", &v1));
 
-    NVS_PRINTF_TITLE("read -- [BK_PARTITION_USER_MFR]");
+    NVS_PRINTF_TITLE("read -- [BK_PARTITION_FACTORY]");
 	uint8_t buffer[100] = {0};
-	bk_flash_partition_read(BK_PARTITION_USER_MFR, buffer, 0, 64);
+	bk_flash_partition_read(BK_PARTITION_FACTORY, buffer, 0, 64);
     NVS_PRINTF(buffer,64);
 
 
-    NVS_PRINTF_TITLE("read_by_name --- [user_mfr]");
+    NVS_PRINTF_TITLE("read_by_name --- [BK_PARTITION_FACTORY_NAME]");
     memset(buffer,0,64);
-    bk_flash_partition_read_by_name("user_mfr", buffer, 0, 64);
+    bk_flash_partition_read_by_name(BK_PARTITION_FACTORY_NAME, buffer, 0, 64);
     NVS_PRINTF(buffer,64);
 
-    NVS_PRINTF_TITLE("read_by_name --- [user_mfr] not aligned with 32Byte");
+    NVS_PRINTF_TITLE("read_by_name --- [BK_PARTITION_FACTORY_NAME] not aligned with 32Byte");
     memset(buffer,0,64);
-    bk_flash_partition_read_by_name("user_mfr", buffer, 2, 8);
+    bk_flash_partition_read_by_name(BK_PARTITION_FACTORY_NAME, buffer, 2, 8);
     NVS_PRINTF(buffer,8);
 
-    NVS_PRINTF_TITLE("read_by_name --- [user_mfr] not aligned with 32Byte");
+    NVS_PRINTF_TITLE("read_by_name --- [BK_PARTITION_FACTORY_NAME] not aligned with 32Byte");
     memset(buffer,0,64);
-    bk_flash_partition_read_by_name("user_mfr", buffer, 33, 8);
+    bk_flash_partition_read_by_name(BK_PARTITION_FACTORY_NAME, buffer, 33, 8);
     NVS_PRINTF(buffer,8);
 
-    NVS_PRINTF_TITLE("read_by_name --- [user_mfr] not aligned with 32Byte");
+    NVS_PRINTF_TITLE("read_by_name --- [BK_PARTITION_FACTORY_NAME] not aligned with 32Byte");
     memset(buffer,0,64);
-    bk_flash_partition_read_by_name("user_mfr", buffer, 33, 33);
+    bk_flash_partition_read_by_name(BK_PARTITION_FACTORY_NAME, buffer, 33, 33);
     NVS_PRINTF(buffer,33);
 
-    NVS_PRINTF_TITLE("read_by_name --- [nvs]");
+    NVS_PRINTF_TITLE("read_by_name --- [BK_PARTITION_NVS_NAME]");
     memset(buffer,0,64);
-    bk_flash_partition_read_by_name("nvs", buffer, 0, 64);
+    bk_flash_partition_read_by_name(BK_PARTITION_NVS_NAME, buffer, 0, 64);
     NVS_PRINTF(buffer,64);
 
     NVS_PRINTF_TITLE("erase_all nvs");
-    bk_flash_partition_erase_all("nvs");
+    bk_flash_partition_erase_all(BK_PARTITION_NVS_NAME);
     memset(buffer,0,64);
-    bk_flash_partition_read_by_name("nvs", buffer, 0, 64);
+    bk_flash_partition_read_by_name(BK_PARTITION_NVS_NAME, buffer, 0, 64);
     NVS_PRINTF(buffer,64);
 
     NVS_PRINTF_TITLE("write nvs");
-    bk_flash_partition_write_by_name("nvs", test_hex, 0, 64);
+    bk_flash_partition_write_by_name(BK_PARTITION_NVS_NAME, test_hex, 0, 64);
     memset(buffer,0,64);
-    bk_flash_partition_read_by_name("nvs", buffer, 0, 64);
+    bk_flash_partition_read_by_name(BK_PARTITION_NVS_NAME, buffer, 0, 64);
     NVS_PRINTF(buffer,64);
 
     NVS_PRINTF_TITLE("erase_32Byte nvs");
-    bk_flash_partition_erase_by_name("nvs",0,32);
+    bk_flash_partition_erase_by_name(BK_PARTITION_NVS_NAME,0,32);
     memset(buffer,0,64);
-    bk_flash_partition_read_by_name("nvs", buffer, 0, 64);
+    bk_flash_partition_read_by_name(BK_PARTITION_NVS_NAME, buffer, 0, 64);
     NVS_PRINTF(buffer,64);
 
-    NVS_PRINTF_TITLE("erase user_mfr");
-    bk_flash_partition_erase_by_name("user_mfr",0,32);
-    bk_flash_partition_write_by_name("user_mfr", test_hex, 0, 64);
+    NVS_PRINTF_TITLE("erase factory partition");
+    bk_flash_partition_erase_by_name(BK_PARTITION_FACTORY_NAME,0,32);
+    bk_flash_partition_write_by_name(BK_PARTITION_FACTORY_NAME, test_hex, 0, 64);
     memset(buffer,0,64);
-    bk_flash_partition_read_by_name("user_mfr", buffer, 0, 64);
+    bk_flash_partition_read_by_name(BK_PARTITION_FACTORY_NAME, buffer, 0, 64);
     NVS_PRINTF(buffer,64);
 
-    NVS_PRINTF_TITLE("read 32B user_mfr");
+    NVS_PRINTF_TITLE("read 32B factory partition");
     memset(buffer,0,64);
-    bk_flash_partition_read_by_name("user_mfr", buffer, 32, 32);
+    bk_flash_partition_read_by_name(BK_PARTITION_FACTORY_NAME, buffer, 32, 32);
     NVS_PRINTF(buffer,32);
 
-    NVS_PRINTF_TITLE("read 64B user_mfr");
+    NVS_PRINTF_TITLE("read 64B factory partition");
     memset(buffer,0,64);
-    bk_flash_partition_read_by_name("user_mfr", buffer, 32, 64);
+    bk_flash_partition_read_by_name(BK_PARTITION_FACTORY_NAME, buffer, 32, 64);
     NVS_PRINTF(buffer,64);
 
-    NVS_PRINTF_TITLE("erase user_mfr");
-    bk_flash_partition_erase_by_name("user_mfr",0,32);
-    bk_flash_partition_write_by_name("user_mfr", test_hex, 32, 32);
+    NVS_PRINTF_TITLE("erase factory partition");
+    bk_flash_partition_erase_by_name(BK_PARTITION_FACTORY_NAME,0,32);
+    bk_flash_partition_write_by_name(BK_PARTITION_FACTORY_NAME, test_hex, 32, 32);
     memset(buffer,0,64);
-    bk_flash_partition_read_by_name("user_mfr", buffer, 0, 64);
+    bk_flash_partition_read_by_name(BK_PARTITION_FACTORY_NAME, buffer, 0, 64);
     NVS_PRINTF(buffer,64);
 
-    NVS_PRINTF_TITLE("erase user_mfr");
-    bk_flash_partition_erase_by_name("user_mfr",0,32);
-    bk_flash_partition_write_by_name("user_mfr", &test_hex[32], 32, 32);
+    NVS_PRINTF_TITLE("erase factory partition");
+    bk_flash_partition_erase_by_name(BK_PARTITION_FACTORY_NAME,0,32);
+    bk_flash_partition_write_by_name(BK_PARTITION_FACTORY_NAME, &test_hex[32], 32, 32);
     memset(buffer,0,64);
-    bk_flash_partition_read_by_name("user_mfr", buffer, 0, 64);
+    bk_flash_partition_read_by_name(BK_PARTITION_FACTORY_NAME, buffer, 0, 64);
     NVS_PRINTF(buffer,64);
 
 

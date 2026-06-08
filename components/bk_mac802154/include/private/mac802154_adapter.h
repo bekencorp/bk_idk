@@ -75,4 +75,7 @@ int mac802154_osi_init(void *osi_funcs);
 uint8_t mac802154_mac_init(void);
 void mac802154_mac_deinit(void);
 
+void mac802154_mac_tx(bool enable, uint8_t channel, uint32_t tx_cnt, void *tx_callback);
+void mac802154_mac_rx(bool enable, uint8_t channel);
+
 #endif

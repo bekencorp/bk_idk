@@ -39,4 +39,28 @@ void mac802154_deinit(void)
 }
 
 
+bk_err_t mac802154_tx(bool enable, uint8_t channel, uint32_t tx_cnt, void *tx_callback)
+{
+    if (enable && ((channel < 11) || (channel > 26)))
+    {
+        return BK_ERR_PARAM;
+    }
+
+    mac802154_mac_tx(enable, channel, tx_cnt, tx_callback);
+
+    return BK_OK;
+}
+
+bk_err_t mac802154_rx(bool enable, uint8_t channel)
+{
+    if (enable && ((channel < 11) || (channel > 26)))
+    {
+        return BK_ERR_PARAM;
+    }
+
+    mac802154_mac_rx(enable, channel);
+
+    return BK_OK;
+}
+
 

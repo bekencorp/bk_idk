@@ -420,6 +420,12 @@ CONFIG_I2C_DIRECT_DRIVE_MODE=y
 # end of I2C
 
 #
+# LEDC
+#
+# CONFIG_LEDC is not set
+# end of LEDC
+
+#
 # AUDIO
 #
 # CONFIG_AUDIO is not set
@@ -479,6 +485,7 @@ CONFIG_SARADC_V1P1=y
 #
 CONFIG_FLASH=y
 # CONFIG_FLASH_QUAD_ENABLE is not set
+# CONFIG_FLASH_PAGE_WRITE_ENABLE is not set
 # CONFIG_FLASH_SRC_CLK_60M is not set
 # CONFIG_FLASH_ORIGIN_API is not set
 # CONFIG_FLASH_V1P1 is not set
