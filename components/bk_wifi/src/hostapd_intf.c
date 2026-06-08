@@ -38,6 +38,26 @@
 #include "pbuf.h"
 #include "bk_feature.h"
 
+#include "rw_ieee80211.h"
+
+#if CONFIG_WIFI_STA_SAME_SSID_BAND_PREF || CFG_P2P || CFG_WLAN_FAST_CONNECT_WITHOUT_SCAN
+static void hitf_fill_sta_connect_chan(struct mac_chan_def *chan, int freq)
+{
+	if (freq <= 0)
+		return;
+
+	if (freq >= 5925)
+		chan->band = IEEE80211_BAND_6GHZ;
+	else if (freq >= 4900)
+		chan->band = IEEE80211_BAND_5GHZ;
+	else
+		chan->band = IEEE80211_BAND_2GHZ;
+	chan->freq = freq;
+	chan->flags = 0;
+	chan->tx_power = VIF_UNDEF_POWER;
+}
+#endif
+
 #ifdef CONFIG_SME
 extern int sa_station_send_associate_cmd(ASSOC_PARAM_T *assoc_param);
 #else
@@ -698,6 +718,8 @@ int wpa_get_scan_rst(struct prism2_hostapd_param *param, int len)
 #if CONFIG_MINIMUM_SCAN_RESULTS
 		scan_rst_ptr->freq = rw_ieee80211_get_centre_frequency(scan_rst_ptr->channel);
 		scan_rst_ptr->ie_len = ie_len;
+		if (scan_rst_ptr->level < 0)
+			scan_rst_ptr->flags |= WPA_SCAN_LEVEL_DBM;
 		results->res[results->num++] = scan_rst_ptr;
 
 #if CONFIG_BSSID_CONNECT
@@ -729,6 +751,8 @@ int wpa_get_scan_rst(struct prism2_hostapd_param *param, int len)
 		os_memcpy(r->bssid, scan_rst_ptr->bssid, ETH_ALEN);
 		r->level = scan_rst_ptr->level;
 		r->freq = rw_ieee80211_get_centre_frequency(scan_rst_ptr->channel);
+		if (r->level < 0)
+			r->flags |= WPA_SCAN_LEVEL_DBM;
 		r->beacon_int = scan_rst_ptr->beacon_int;
 		r->caps = scan_rst_ptr->caps;
 		r->tsf = WPA_GET_BE64(scan_rst_ptr->tsf);
@@ -849,6 +873,9 @@ int wpa_send_assoc_req(struct prism2_hostapd_param *param, int len)
 	}
 
 	assoc_param->auth_type = param->u.assoc_req.auth_alg;
+#if CONFIG_WIFI_STA_SAME_SSID_BAND_PREF || CFG_P2P || CFG_WLAN_FAST_CONNECT_WITHOUT_SCAN
+	hitf_fill_sta_connect_chan(&assoc_param->chan, param->u.assoc_req.freq);
+#endif
 	ret = sa_station_send_associate_cmd(assoc_param);
 
 	os_free(assoc_param);
@@ -917,15 +944,13 @@ int wpa_send_assoc_req(struct prism2_hostapd_param *param, int len)
 #endif
 
 	connect_param->auth_type = param->u.assoc_req.auth_alg;
-#if CFG_P2P || CFG_WLAN_FAST_CONNECT_WITHOUT_SCAN
-	if (param->u.assoc_req.freq >= 5925) {
-		connect_param->chan.band = IEEE80211_BAND_6GHZ;
-	} else if (param->u.assoc_req.freq >= 4900) {
-		connect_param->chan.band = IEEE80211_BAND_5GHZ;
-	} else {
-		connect_param->chan.band = IEEE80211_BAND_2GHZ;
-	}
-	connect_param->chan.freq = param->u.assoc_req.freq;
+#if CONFIG_WIFI_STA_SAME_SSID_BAND_PREF || CFG_P2P || CFG_WLAN_FAST_CONNECT_WITHOUT_SCAN
+	hitf_fill_sta_connect_chan(&connect_param->chan, param->u.assoc_req.freq);
+#if CONFIG_WIFI_STA_SAME_SSID_BAND_PREF
+	if (connect_param->chan.freq)
+		BK_LOGI(TAG, "sta connect chan freq=%d bssid=" MACSTR "\n",
+			connect_param->chan.freq, MAC2STR(param->u.assoc_req.bssid));
+#endif
 #endif
 	ret = sa_station_send_associate_cmd(connect_param);
 

@@ -1818,7 +1818,7 @@ struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 
 	if (disallowed_ssid(wpa_s, match_ssid, match_ssid_len)) {
 		if (debug_print)
-			wpa_dbg(wpa_s, MSG_DEBUG, "   skip - SSID disallowed");
+			wpa_dbg(wpa_s, MSG_DEBUG, "   skip - SSID disallowed");  
 		return NULL;
 	}
 #endif
@@ -1828,7 +1828,7 @@ struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 			wpa_dbg(wpa_s, MSG_DEBUG, "   skip - channel disabled");
 		return NULL;
 	}
-
+	
 	for (ssid = group; ssid; ssid = only_first_ssid ? NULL : ssid->pnext) {
 		if (wpa_scan_res_ok(wpa_s, ssid, match_ssid, match_ssid_len,
 				    bss, bssid_ignore_count, debug_print))
@@ -1838,6 +1838,101 @@ struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 	/* No matching configuration found */
 	return NULL;
 }
+
+#if CONFIG_WIFI_STA_SAME_SSID_BAND_PREF
+/*
+ * Same SSID on 2.4 GHz / 5 GHz: pick best candidate per band by RSSI,
+ * then apply policy from bk_wifi_sta_get_same_ssid_band_pref() (Beken STA).
+ */
+/* Compare RF strength for same-SSID policy (RSSI / level in dBm). */
+static int bss_rssi_cmp(const struct wpa_bss *lhs_bss,
+			const struct wpa_bss *rhs_bss)
+{
+	if (!lhs_bss || !rhs_bss)
+		return 0;
+
+	/*
+	 * Beken scan path often leaves WPA_BSS_LEVEL_DBM unset; level is still
+	 * in dBm (negative). Without this, cmp returns 0 and signal_first always
+	 * falls through to 5 GHz.
+	 */
+	if (!(lhs_bss->flags & WPA_BSS_LEVEL_INVALID) &&
+	    !(rhs_bss->flags & WPA_BSS_LEVEL_INVALID) &&
+	    lhs_bss->level < 0 && rhs_bss->level < 0)
+		return lhs_bss->level - rhs_bss->level;
+
+	return 0;
+}
+
+static void bss_pick_better(struct wpa_bss **best, struct wpa_ssid **best_ssid,
+			    struct wpa_bss *cand, struct wpa_ssid *cand_ssid)
+{
+	if (!cand)
+		return;
+	if (!*best || bss_rssi_cmp(cand, *best) > 0) {
+		*best = cand;
+		*best_ssid = cand_ssid;
+	}
+}
+
+static struct wpa_bss *
+wpas_pick_bss_same_ssid_policy(struct wpa_supplicant *wpa_s,
+			       struct wpa_bss *bss_5ghz,
+			       struct wpa_ssid *ssid_5ghz,
+			       struct wpa_bss *bss_24ghz,
+			       struct wpa_ssid *ssid_24ghz,
+			       struct wpa_ssid **selected_ssid)
+{
+	bool prefer_5ghz_only = true;
+
+#if BK_SUPPLICANT
+	{
+		wifi_sta_same_ssid_band_pref_t pref;
+
+		if (bk_wifi_sta_get_same_ssid_band_pref(&pref) == BK_OK)
+			prefer_5ghz_only =
+				(pref == WIFI_STA_SAME_SSID_PREF_5GHZ);
+	}
+#endif
+
+	if (bss_5ghz && !bss_24ghz) {
+		*selected_ssid = ssid_5ghz;
+		return bss_5ghz;
+	}
+	if (!bss_5ghz && bss_24ghz) {
+		*selected_ssid = ssid_24ghz;
+		return bss_24ghz;
+	}
+	if (!bss_5ghz)
+		return NULL;
+
+	if (prefer_5ghz_only) {
+		wpa_printf(MSG_INFO,
+			   "same SSID: pref=5g_first, pick 5G " MACSTR " freq=%d level=%d",
+			   MAC2STR(bss_5ghz->bssid), bss_5ghz->freq, bss_5ghz->level);
+		*selected_ssid = ssid_5ghz;
+		return bss_5ghz;
+	}
+
+	if (bss_rssi_cmp(bss_24ghz, bss_5ghz) > 0) {
+		wpa_printf(MSG_INFO,
+			   "same SSID: pref=signal_first, pick 2.4G " MACSTR
+			   " freq=%d level=%d (5G " MACSTR " level=%d)",
+			   MAC2STR(bss_24ghz->bssid), bss_24ghz->freq, bss_24ghz->level,
+			   MAC2STR(bss_5ghz->bssid), bss_5ghz->level);
+		*selected_ssid = ssid_24ghz;
+		return bss_24ghz;
+	}
+
+	wpa_printf(MSG_INFO,
+		   "same SSID: pref=signal_first, pick 5G " MACSTR
+		   " freq=%d level=%d (2.4G " MACSTR " level=%d)",
+		   MAC2STR(bss_5ghz->bssid), bss_5ghz->freq, bss_5ghz->level,
+		   MAC2STR(bss_24ghz->bssid), bss_24ghz->level);
+	*selected_ssid = ssid_5ghz;
+	return bss_5ghz;
+}
+#endif /* CONFIG_WIFI_STA_SAME_SSID_BAND_PREF */
 
 
 static struct wpa_bss *
@@ -1874,7 +1969,8 @@ wpa_supplicant_select_bss(struct wpa_supplicant *wpa_s,
 		wpa_dbg(wpa_s, MSG_DEBUG, "Selecting BSS from priority group %d",
 			group->priority);
 
-	// Prioritize 5G band BSS selection with fallback to 2G on auth failure
+#if CONFIG_WIFI_STA_SAME_SSID_BAND_PREF
+	/* Best per band, then policy: 5 GHz only vs stronger signal (STA API). */
 	struct wpa_bss *selected_5g = NULL;
 	struct wpa_ssid *selected_5g_ssid = NULL;
 	struct wpa_bss *selected_2g = NULL;
@@ -1909,38 +2005,67 @@ wpa_supplicant_select_bss(struct wpa_supplicant *wpa_s,
 		if (!*selected_ssid)
 			continue;
 
-		// Prioritize 5G band (freq > 5000)
-		if (bss->freq > 5000 && !selected_5g) {
-			selected_5g = bss;
-			selected_5g_ssid = *selected_ssid;
-		} else if (bss->freq <= 5000 && !selected_2g) {
-			selected_2g = bss;
-			selected_2g_ssid = *selected_ssid;
-		}
+		/* Track best 5 GHz / 2.4 GHz match by RSSI */
+		if (bss->freq > 5000)
+			bss_pick_better(&selected_5g, &selected_5g_ssid, bss,
+					*selected_ssid);
+		else if (bss->freq <= 5000)
+			bss_pick_better(&selected_2g, &selected_2g_ssid, bss,
+					*selected_ssid);
 	}
 
-	// Return 5G BSS if found, otherwise return 2G BSS
-	if (selected_5g) {
-		*selected_ssid = selected_5g_ssid;
-		wpa_dbg(wpa_s, MSG_DEBUG, "   selected %sBSS " MACSTR
-			" ssid='%s' freq=%d",
-			selected_5g == wpa_s->current_bss ? "current " : "",
-			MAC2STR(selected_5g->bssid),
-			wpa_ssid_txt(selected_5g->ssid, selected_5g->ssid_len),
-			selected_5g->freq);
-		return selected_5g;
-	} else if (selected_2g) {
-		*selected_ssid = selected_2g_ssid;
-		wpa_dbg(wpa_s, MSG_DEBUG, "   selected %sBSS " MACSTR
-			" ssid='%s' freq=%d",
-			selected_2g == wpa_s->current_bss ? "current " : "",
-			MAC2STR(selected_2g->bssid),
-			wpa_ssid_txt(selected_2g->ssid, selected_2g->ssid_len),
-			selected_2g->freq);
-		return selected_2g;
+	{
+		struct wpa_bss *picked = wpas_pick_bss_same_ssid_policy(
+			wpa_s, selected_5g, selected_5g_ssid,
+			selected_2g, selected_2g_ssid, selected_ssid);
+
+		if (picked) {
+			wpa_dbg(wpa_s, MSG_DEBUG, "   selected %sBSS " MACSTR
+				" ssid='%s' freq=%d level=%d snr=%d",
+				picked == wpa_s->current_bss ? "current " : "",
+				MAC2STR(picked->bssid),
+				wpa_ssid_txt(picked->ssid, picked->ssid_len),
+				picked->freq, picked->level, picked->snr);
+		}
+		return picked;
+	}
+#else
+	for (i = 0; i < wpa_s->last_scan_res_used; i++) {
+		struct wpa_bss *bss = wpa_s->last_scan_res[i];
+
+#ifdef CONFIG_STA_MINMIMUM_SECURITY
+		int ap_security = get_security_type_from_ie(bss->ies, bss->ie_len, bss->caps);
+		int sta_security = g_sta_param_ptr->sta_cipher_suite;
+
+		if (((sta_security == WIFI_SECURITY_WPA3_WPA2_MIXED) && (ap_security < WIFI_SECURITY_WPA2_TKIP)) ||
+			((sta_security == WIFI_SECURITY_WPA2_MIXED) && (ap_security < WIFI_SECURITY_WPA2_TKIP)) ||
+			((sta_security == WIFI_SECURITY_WPA_MIXED) && (ap_security < WIFI_SECURITY_WPA_TKIP)) ||
+			((sta_security != WIFI_SECURITY_AUTO) && (!sta_security_mixed(sta_security)) && (ap_security < sta_security))) {
+			wpa_dbg(wpa_s, MSG_DEBUG,
+				"	skip - minimum security not match");
+
+			wpa_bssid_ignore_add(wpa_s, bss->bssid);
+			wpa_s->bssid_ignore_security = true;
+
+			continue;
+		}
+#endif
+
+		wpa_s->owe_transition_select = 1;
+		*selected_ssid = wpa_scan_res_match(wpa_s, i, bss, group,
+						    only_first_ssid, 1);
+		wpa_s->owe_transition_select = 0;
+		if (!*selected_ssid)
+			continue;
+		wpa_dbg(wpa_s, MSG_DEBUG, "   selected BSS " MACSTR
+			" ssid='%s'",
+			MAC2STR(bss->bssid),
+			wpa_ssid_txt(bss->ssid, bss->ssid_len));
+		return bss;
 	}
 
 	return NULL;
+#endif /* CONFIG_WIFI_STA_SAME_SSID_BAND_PREF */
 }
 
 

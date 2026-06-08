@@ -42,6 +42,9 @@ wifi_mac_config_t g_wifi_mac_config = {
 	false,
 	WIFI_CFG_DEFAULT_AC,
 	WIFI_CFG_DFT_SCAN_5G_FIRST,
+#if CONFIG_WIFI_STA_SAME_SSID_BAND_PREF
+	WIFI_CFG_DFT_STA_SAME_SSID_BAND_PREF,
+#endif
 };
 
 //TODO config it via menuconfig

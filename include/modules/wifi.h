@@ -1105,6 +1105,31 @@ bk_err_t bk_wifi_set_scan_5g_first(bool enable);
  */
 bk_err_t bk_wifi_get_scan_5g_first(bool *enable);
 
+#if CONFIG_WIFI_STA_SAME_SSID_BAND_PREF
+/**
+ * @brief STA: same SSID on 2.4G/5G — prefer the BSS with stronger signal
+ *        (SNR when valid, else RSSI). Interface A in product spec.
+ *
+ * @return BK_OK on success
+ */
+bk_err_t bk_wifi_sta_set_same_ssid_pref_stronger_signal(void);
+
+/**
+ * @brief STA: same SSID on 2.4G/5G — always use 5 GHz when a matching
+ *        5 GHz BSS exists, even if 2.4 GHz RSSI is higher. Interface B.
+ *
+ * @return BK_OK on success
+ */
+bk_err_t bk_wifi_sta_set_same_ssid_pref_5ghz(void);
+
+/**
+ * @brief Read current same-SSID dual-band preference for STA.
+ *
+ * @param pref non-NULL output
+ * @return BK_OK, or BK_ERR_NULL_PARAM if pref is NULL
+ */
+bk_err_t bk_wifi_sta_get_same_ssid_band_pref(wifi_sta_same_ssid_band_pref_t *pref);
+#endif
 
 /**
   * @brief     get tx raw ac info

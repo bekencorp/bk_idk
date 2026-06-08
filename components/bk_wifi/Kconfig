@@ -43,6 +43,14 @@ menu "Bk_Wifi"
 		help
 			Enable WiFi 5G Band.
 
+	config WIFI_STA_SAME_SSID_BAND_PREF
+		depends on WIFI_ENABLE && WIFI_BAND_5G
+		bool "Enable STA same-SSID 2.4G/5G preference"
+		default n
+		help
+			When the same SSID exists on 2.4 GHz and 5 GHz, allow STA to
+			prefer 5 GHz only or the band with stronger RSSI.
+
 	config WIFI_BAND_6G
 		depends on WIFI_ENABLE
 		bool "Enable 6G Band"

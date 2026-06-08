@@ -689,6 +689,68 @@ error:
 	return;
 }
 
+#if CONFIG_WIFI_STA_SAME_SSID_BAND_PREF
+void cli_wifi_sta_same_ssid_pref_cmd(char *pcWriteBuffer, int xWriteBufferLen,
+				     int argc, char **argv)
+{
+	int ret = BK_OK;
+	char *msg = NULL;
+	wifi_sta_same_ssid_band_pref_t pref;
+
+	if (argc == 1) {
+		ret = bk_wifi_sta_get_same_ssid_band_pref(&pref);
+		if (ret != BK_OK) {
+			CLI_LOGI("get sta_ssid_pref failed, ret=%d\n", ret);
+			goto error;
+		}
+		CLI_LOGI("sta_ssid_pref: %d (%s)\n", (int)pref,
+			 pref == WIFI_STA_SAME_SSID_PREF_5GHZ ?
+			 "5g_first" : "signal_first");
+	} else if (argc == 2) {
+		const char *arg = argv[1];
+
+		if (os_strcmp(arg, "0") == 0 ||
+		    os_strcmp(arg, "rssi") == 0 ||
+		    os_strcmp(arg, "signal") == 0) {
+			ret = bk_wifi_sta_set_same_ssid_pref_stronger_signal();
+			if (ret != BK_OK) {
+				CLI_LOGI("set sta_ssid_pref signal_first failed, ret=%d\n",
+					 ret);
+				goto error;
+			}
+			CLI_LOGI("sta_ssid_pref: signal_first (SNR/RSSI between bands)\n");
+		} else if (os_strcmp(arg, "1") == 0 ||
+			   os_strcmp(arg, "5g") == 0) {
+			ret = bk_wifi_sta_set_same_ssid_pref_5ghz();
+			if (ret != BK_OK) {
+				CLI_LOGI("set sta_ssid_pref 5g_first failed, ret=%d\n",
+					 ret);
+				goto error;
+			}
+			CLI_LOGI("sta_ssid_pref: 5g_first (use 5 GHz if any match)\n");
+		} else {
+			CLI_LOGI("Usage: sta_ssid_pref [0|rssi|signal|1|5g]\n");
+			CLI_LOGI("  (no arg)  show current\n");
+			CLI_LOGI("  0|rssi|signal  prefer stronger RF when same SSID on 2.4G/5G\n");
+			CLI_LOGI("  1|5g           prefer 5 GHz whenever a 5 GHz BSS matches\n");
+			goto error;
+		}
+	} else {
+		CLI_LOGI("Usage: sta_ssid_pref [0|rssi|signal|1|5g]\n");
+		goto error;
+	}
+
+	msg = WIFI_CMD_RSP_SUCCEED;
+	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+	return;
+
+error:
+	msg = WIFI_CMD_RSP_ERROR;
+	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+	return;
+}
+#endif /* CONFIG_WIFI_STA_SAME_SSID_BAND_PREF */
+
 void cli_wifi_set_interval_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
 	uint8_t interval = 0;
@@ -2918,6 +2980,9 @@ static const struct cli_command s_wifi_commands[] = {
 	{"sleep_mode", "set sleep_mode", cli_wifi_set_sleep_mode_cmd},
 #endif
 	{"scan_5g_first", "scan_5g_first [0|1]", cli_wifi_scan_5g_first_cmd},
+#if CONFIG_WIFI_STA_SAME_SSID_BAND_PREF
+	{"sta_ssid_pref", "sta_ssid_pref [0|rssi|signal|1|5g] same SSID 2.4G/5G policy", cli_wifi_sta_same_ssid_pref_cmd},
+#endif
 	{"set_interval", "set listen interval}", cli_wifi_set_interval_cmd},
 	{"set_arp_rate", "set arp rate}", cli_wifi_set_arp_rate_cmd},
 	{"bcn_loss_intv", "bcn_loss_intv interval repeat_num}", cli_wifi_bcn_loss_intv_cmd},

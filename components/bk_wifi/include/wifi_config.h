@@ -1,6 +1,8 @@
 #ifndef _WIFI_CONFIG_H_
 #define _WIFI_CONFIG_H_
 
+#include <modules/wifi_types.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -31,6 +33,10 @@ extern "C" {
 #define WIFI_CFG_DEFAULT_AC					0x0
 // default scan 5G first
 #define WIFI_CFG_DFT_SCAN_5G_FIRST			false
+#if CONFIG_WIFI_STA_SAME_SSID_BAND_PREF
+// default same-SSID dual-band STA preference (5 GHz only when 5 GHz present)
+#define WIFI_CFG_DFT_STA_SAME_SSID_BAND_PREF		WIFI_STA_SAME_SSID_PREF_5GHZ
+#endif
 
 typedef struct wifi_mac_config {
 	// raw tx interface AC
@@ -57,6 +63,10 @@ typedef struct wifi_mac_config {
 	uint32_t def_ac;
 	// whether to prioritize 5G channels when scanning
 	bool scan_5g_first;
+#if CONFIG_WIFI_STA_SAME_SSID_BAND_PREF
+	// same SSID on 2.4G/5G: stronger signal vs 5G-only preference
+	wifi_sta_same_ssid_band_pref_t sta_same_ssid_band_pref;
+#endif
 } wifi_mac_config_t;
 
 extern wifi_mac_config_t g_wifi_mac_config;

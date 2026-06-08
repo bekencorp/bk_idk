@@ -2308,7 +2308,9 @@ bk_err_t bk_wifi_sta_start(void)
 #endif
 
 	if (wifi_sta_is_started() && wifi_sta_is_connected()) {
-		WIFI_LOGI("sta already started and connected, ignored!\n");
+		WIFI_LOGI("sta already connected, reconnect for new config/policy\n");
+		bk_wifi_sta_disconnect();
+		bk_wifi_sta_connect();
 		return BK_OK;
 	} else if (wifi_sta_is_started()) {
 		WIFI_LOGI("sta already started but not connected, trigger connect\n");
@@ -4344,6 +4346,30 @@ bk_err_t bk_wifi_get_scan_5g_first(bool *enable)
 
 	return BK_OK;
 }
+
+#if CONFIG_WIFI_STA_SAME_SSID_BAND_PREF
+bk_err_t bk_wifi_sta_set_same_ssid_pref_stronger_signal(void)
+{
+	g_wifi_mac_config.sta_same_ssid_band_pref =
+		WIFI_STA_SAME_SSID_PREF_STRONGER_SIGNAL;
+	return BK_OK;
+}
+
+bk_err_t bk_wifi_sta_set_same_ssid_pref_5ghz(void)
+{
+	g_wifi_mac_config.sta_same_ssid_band_pref =
+		WIFI_STA_SAME_SSID_PREF_5GHZ;
+	return BK_OK;
+}
+
+bk_err_t bk_wifi_sta_get_same_ssid_band_pref(wifi_sta_same_ssid_band_pref_t *pref)
+{
+	if (!pref)
+		return BK_ERR_NULL_PARAM;
+	*pref = g_wifi_mac_config.sta_same_ssid_band_pref;
+	return BK_OK;
+}
+#endif /* CONFIG_WIFI_STA_SAME_SSID_BAND_PREF */
 
 bk_err_t bk_wifi_get_tx_raw_ac(uint8_t *ac)
 {

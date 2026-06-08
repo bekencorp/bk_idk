@@ -158,6 +158,22 @@ typedef enum {
 } wifi_band_policy_t;
 #endif
 
+#if CONFIG_WIFI_STA_SAME_SSID_BAND_PREF
+/**
+ * @brief STA policy when the same SSID is seen on 2.4 GHz and 5 GHz.
+ *
+ * @WIFI_STA_SAME_SSID_PREF_STRONGER_SIGNAL Prefer the BSS with better RF
+ *     metric (SNR when valid for both, else RSSI) among matching BSSes.
+ * @WIFI_STA_SAME_SSID_PREF_5GHZ If any matching 5 GHz BSS exists, always
+ *     select the best 5 GHz candidate; do not fall back to 2.4 GHz for
+ *     stronger signal alone.
+ */
+typedef enum {
+	WIFI_STA_SAME_SSID_PREF_STRONGER_SIGNAL = 0,
+	WIFI_STA_SAME_SSID_PREF_5GHZ = 1,
+} wifi_sta_same_ssid_band_pref_t;
+#endif
+
 /**
  * @brief WiFi public event type
  */

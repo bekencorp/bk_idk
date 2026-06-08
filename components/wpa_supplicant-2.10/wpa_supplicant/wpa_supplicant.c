@@ -8114,6 +8114,16 @@ void wpas_connection_failed(struct wpa_supplicant *wpa_s, const u8 *bssid)
 	int timeout;
 	int count;
 	int *freqs = NULL;
+#if BK_SUPPLICANT && CONFIG_WIFI_STA_SAME_SSID_BAND_PREF
+	wifi_sta_same_ssid_band_pref_t band_pref = WIFI_STA_SAME_SSID_PREF_5GHZ;
+	bool prefer_5ghz_only = false;
+	struct wpa_bss *fail_bss = NULL;
+
+	if (bk_wifi_sta_get_same_ssid_band_pref(&band_pref) == BK_OK)
+		prefer_5ghz_only = (band_pref == WIFI_STA_SAME_SSID_PREF_5GHZ);
+	if (bssid)
+		fail_bss = wpa_bss_get_bssid(wpa_s, bssid);
+#endif /* BK_SUPPLICANT && CONFIG_WIFI_STA_SAME_SSID_BAND_PREF */
 
 	wpas_connect_work_done(wpa_s);
 
@@ -8144,6 +8154,22 @@ void wpas_connection_failed(struct wpa_supplicant *wpa_s, const u8 *bssid)
 	 * attempt if there could be other APs that could accept association.
 	 */
 	count = wpa_bssid_ignore_add(wpa_s, bssid);
+#if BK_SUPPLICANT && CONFIG_WIFI_STA_SAME_SSID_BAND_PREF
+	/*
+	 * Default wpas behavior after auth fail: ignore failed BSSID and scan
+	 * only other channels in the same ESS (often 2.4G only). That breaks
+	 * sta_ssid_pref 5g_first when 5G SAE times out intermittently.
+	 */
+	if (prefer_5ghz_only && fail_bss && fail_bss->freq > 5000) {
+		wpa_bssid_ignore_del(wpa_s, bssid);
+		os_free(wpa_s->next_scan_freqs);
+		wpa_s->next_scan_freqs = NULL;
+		wpa_printf(MSG_INFO,
+			   "5g_first: 5G auth failed on " MACSTR
+			   ", full scan retry (no 2.4G-only failover scan)",
+			   MAC2STR(bssid));
+	} else
+#endif /* BK_SUPPLICANT && CONFIG_WIFI_STA_SAME_SSID_BAND_PREF */
 	if (count == 1 && wpa_s->current_bss) {
 		/*
 		 * This BSS was not in the ignore list before. If there is

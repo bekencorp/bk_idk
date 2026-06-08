@@ -1838,7 +1838,9 @@ int wpa_driver_associate(void *priv, struct wpa_driver_associate_params *params)
 		}
 		param->u.assoc_req.mfp = params->mgmt_frame_protection;
 		param->u.assoc_req.bcn_len = params->bcn_len;
-#if defined(CONFIG_P2P) || CONFIG_WLAN_FAST_CONNECT_WITHOUT_SCAN
+#if (BK_SUPPLICANT && CONFIG_WIFI_STA_SAME_SSID_BAND_PREF) || \
+	defined(CONFIG_P2P) || CONFIG_WLAN_FAST_CONNECT_WITHOUT_SCAN
+		/* Pass wpa_supplicant selected BSS channel to firmware (see hostapd_intf). */
 		param->u.assoc_req.freq = params->freq_hint;
 #endif
 		//WPA_LOGI("%s: bcn_len %d\n", __func__, params->bcn_len);
