@@ -10,6 +10,8 @@ from .crc import make_crc32_table, pack_crc32
 from .partition import Partition
 from .bin import Bin
 
+PARTITION_NAME_LEN = 32
+
 class PartitionPartition(Partition):
 
     def __init__(self, idx=None, field_dic=None, mini_offset=None, partitions=None):
@@ -34,8 +36,13 @@ class PartitionPartition(Partition):
 
             for p in self._partitions:
                 name = p.name().encode('utf-8')
-                if len(name) < 20:
-                    name += bytes([0xFF] * (20 - len(name)))
+                if len(name) > PARTITION_NAME_LEN:
+                    logging.warning(
+                        'partition name truncated to %d bytes: %r',
+                        PARTITION_NAME_LEN, p.name())
+                    name = name[:PARTITION_NAME_LEN]
+                elif len(name) < PARTITION_NAME_LEN:
+                    name += bytes([0xFF] * (PARTITION_NAME_LEN - len(name)))
                 f.write(name)
 
                 _type = struct.pack(">B",(p.type().type()))

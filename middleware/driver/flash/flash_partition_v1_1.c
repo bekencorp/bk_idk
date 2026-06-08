@@ -76,11 +76,11 @@ uint32_t flash_partition_get_index(const bk_logic_partition_t *partition_ptr);
 
 #define PARTITION_PARTITION_PHY_OFFSET   CONFIG_PARTITION_PHY_PARTITION_OFFSET
 #define PARTITION_PPC_OFFSET             0x400
-#define PARTITION_NAME_LEN               20
-#define PARTITION_ENTRY_LEN              32
-#define PARTITION_OFFSET_OFFSET          22
-#define PARTITION_SIZE_OFFSET            26
-#define PARTITION_FLAGS_OFFSET           30
+#define PARTITION_NAME_LEN               32
+#define PARTITION_ENTRY_LEN              44
+#define PARTITION_OFFSET_OFFSET          34
+#define PARTITION_SIZE_OFFSET            38
+#define PARTITION_FLAGS_OFFSET           42
 static struct {
     char name[PARTITION_NAME_LEN + 1];
     uint32_t phy_flags;
