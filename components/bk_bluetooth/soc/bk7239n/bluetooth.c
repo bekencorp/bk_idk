@@ -1133,6 +1133,7 @@ static void set_rfconfig_rf_mode(uint8_t mode)
     os_printf("%s need todo\r\n");
 }
 
+static int s_bt_rtc_wakeup_set = 0;
 static void bt_lp_rtc_set(uint32_t tick, void *callback)
 {
     alarm_info_t low_valtage_alarm = {
@@ -1145,12 +1146,19 @@ static void bt_lp_rtc_set(uint32_t tick, void *callback)
     //force unregister previous if doesn't finish.
     bk_alarm_unregister(AON_RTC_ID_1, low_valtage_alarm.name);
     bk_alarm_register(AON_RTC_ID_1, &low_valtage_alarm);
-    bk_pm_wakeup_source_set(PM_WAKEUP_SOURCE_INT_RTC, NULL);
+    if (!s_bt_rtc_wakeup_set) {
+        bk_pm_wakeup_source_set(PM_WAKEUP_SOURCE_INT_RTC, NULL);
+        s_bt_rtc_wakeup_set = true;
+    }
 }
 
 static void bt_lp_rtc_clear(void)
 {
     bk_alarm_unregister(AON_RTC_ID_1, (uint8_t *)PM_BT_LP_RTC_ALARM_NAME);
+    if (s_bt_rtc_wakeup_set) {
+        bk_pm_wakeup_source_clear(PM_WAKEUP_SOURCE_INT_RTC);
+        s_bt_rtc_wakeup_set = false;
+    }
 }
 
 static void bt_delay_us(uint32_t us)

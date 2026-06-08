@@ -628,13 +628,22 @@ __attribute__((section(".itcm_sec_code"))) void sys_hal_enter_deep_sleep(void *p
 	sys_hal_disable_hf_clock();
 	sys_ana_ll_set_ana_reg5_en_cb(0);
 
-	if((lpo_src == PM_LPO_SRC_ROSC)||(lpo_src == PM_LPO_SRC_DIVD))
+	if ((bk_pm_wakeup_source_get() & (0x1 << PM_WAKEUP_SOURCE_INT_RTC)) &&
+		((lpo_src == PM_LPO_SRC_ROSC)||(lpo_src == PM_LPO_SRC_DIVD)))
 	{
 		sys_hal_power_on_and_select_rosc(lpo_src);
 		// levelshift latch for rc32k (keep current freq)
 		sys_ana_ll_set_ana_reg4_spilatchb_rc32k(0);
 		// spi_byp32pwd must be set to 1
 		sys_ana_ll_set_ana_reg9_spi_byp32pwd(1);
+	}
+	else
+	{
+		/* power down rosc */
+		sys_ana_ll_set_ana_reg9_spi_byp32pwd(0);
+		sys_ana_ll_set_ana_reg4_spilatchb_rc32k(1);
+		sys_ana_ll_set_ana_reg5_pwd_rosc_spi(1);
+		sys_ana_ll_set_ana_reg4_spilatchb_rc32k(0);
 	}
 
 	;//sys_ll_set_ana_reg8_valoldosel(PM_LOW_VOL_AON_LDO_SEL); //0x4:0.8V aon voltage

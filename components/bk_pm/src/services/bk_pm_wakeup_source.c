@@ -28,6 +28,8 @@
 
 /*=====================VARIABLE SECTION START=================*/
 static uint32_t s_pm_wakeup_source                          = 0;
+// TODO: add other wakeup source
+static uint32_t s_pm_wakeup_source_int_rtc_ref              = 0;
 static pm_wakeup_source_e s_pm_exit_low_vol_wakeup_source   = PM_WAKEUP_SOURCE_INT_NONE;
 static pm_wakeup_source_e s_pm_exit_deepsleep_wakeup_source = PM_WAKEUP_SOURCE_INT_NONE;
 
@@ -45,20 +47,14 @@ bk_err_t bk_pm_wakeup_source_set(pm_wakeup_source_e wakeup_source, void *source_
 	GLOBAL_INT_DECLARATION();
 	GLOBAL_INT_DISABLE();
 	s_pm_wakeup_source |= 0x1 << wakeup_source;
-	if (source_param == NULL)
-	{
-#if CONFIG_WAKEUP
-		bk_wakeup_driver_source_set(wakeup_source);
-#endif
-		GLOBAL_INT_RESTORE();
-		return BK_OK;
-	}
+
 	switch (wakeup_source)
 	{
 	case PM_WAKEUP_SOURCE_INT_GPIO:
 		break;
 
 	case PM_WAKEUP_SOURCE_INT_RTC:
+		s_pm_wakeup_source_int_rtc_ref++;
 		break;
 
 	case PM_WAKEUP_SOURCE_INT_SYSTEM_WAKE: // wifi/bt
@@ -68,7 +64,10 @@ bk_err_t bk_pm_wakeup_source_set(pm_wakeup_source_e wakeup_source, void *source_
 		break;
 
 	case PM_WAKEUP_SOURCE_INT_TOUCHED:
-		os_memcpy(&s_touch_wakeup_param, (touch_wakeup_param_t *)source_param, sizeof(touch_wakeup_param_t));
+		if(source_param != NULL)
+		{
+			os_memcpy(&s_touch_wakeup_param, (touch_wakeup_param_t *)source_param, sizeof(touch_wakeup_param_t));
+		}
 		break;
 
 	default:
@@ -81,6 +80,39 @@ bk_err_t bk_pm_wakeup_source_set(pm_wakeup_source_e wakeup_source, void *source_
 pm_wakeup_source_e bk_pm_wakeup_source_get(void)
 {
 	return s_pm_wakeup_source;
+}
+
+void bk_pm_wakeup_source_clear(pm_wakeup_source_e wakeup_source)
+{
+	GLOBAL_INT_DECLARATION();
+	GLOBAL_INT_DISABLE();
+
+	switch (wakeup_source)
+	{
+	case PM_WAKEUP_SOURCE_INT_GPIO:
+		break;
+
+	case PM_WAKEUP_SOURCE_INT_RTC:
+		s_pm_wakeup_source_int_rtc_ref--;
+		if(s_pm_wakeup_source_int_rtc_ref == 0)
+		{
+			s_pm_wakeup_source &= ~(0x1 << PM_WAKEUP_SOURCE_INT_RTC);
+		}
+		break;
+
+	case PM_WAKEUP_SOURCE_INT_SYSTEM_WAKE: // wifi/bt
+		break;
+
+	case PM_WAKEUP_SOURCE_INT_USBPLUG:
+		break;
+
+	case PM_WAKEUP_SOURCE_INT_TOUCHED:
+		break;
+
+	default:
+		break;
+	}
+	GLOBAL_INT_RESTORE();
 }
 
 void pm_touched_wakeup_low_voltage()

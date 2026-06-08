@@ -751,6 +751,7 @@ bk_err_t bk_pm_light_sleep_unregister_cb(bool enter_cb, bool exit_cb)
 /*=========================WIFI ALARM START========================*/
 #define PM_WIFI_RTC_ALARM_NAME "wifi"
 
+static int s_wifi_rtc_wakeup_set = 0;
 void bk_pm_wifi_rtc_set(uint32_t tick, void *callback)
 {
 	alarm_info_t low_valtage_alarm = {
@@ -763,12 +764,19 @@ void bk_pm_wifi_rtc_set(uint32_t tick, void *callback)
 	//force unregister previous if doesn't finish.
 	bk_alarm_unregister(AON_RTC_ID_1, low_valtage_alarm.name);
 	bk_alarm_register(AON_RTC_ID_1, &low_valtage_alarm);
-	bk_pm_wakeup_source_set(PM_WAKEUP_SOURCE_INT_RTC, NULL);
+	if (!s_wifi_rtc_wakeup_set) {
+		bk_pm_wakeup_source_set(PM_WAKEUP_SOURCE_INT_RTC, NULL);
+		s_wifi_rtc_wakeup_set = true;
+	}
 }
 
 void bk_pm_wifi_rtc_clear(void)
 {
 	bk_alarm_unregister(AON_RTC_ID_1, (uint8_t *)PM_WIFI_RTC_ALARM_NAME);
+	if (s_wifi_rtc_wakeup_set) {
+		bk_pm_wakeup_source_clear(PM_WAKEUP_SOURCE_INT_RTC);
+		s_wifi_rtc_wakeup_set = false;
+	}
 }
 /*=========================WIFI ALARM END========================*/
 

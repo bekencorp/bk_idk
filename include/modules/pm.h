@@ -1513,6 +1513,32 @@ bk_err_t bk_pm_sleep_mode_set(pm_sleep_mode_e sleep_mode);
 bk_err_t bk_pm_wakeup_source_set(pm_wakeup_source_e wakeup_source, void* source_param);
 
 /**
+ * @brief get wakeup source
+ *
+ * get wakeup source
+ *
+ * @attention
+ * - This API is used to get wakeup source
+ *
+ * @param
+ * -void
+ * @return
+ * - wakeup source(0x0:WAKEUP SOURCE OF GPIO;0x1:WAKEUP SOURCE OF RTC;0x2:WAKEUP SOURCE OF WIFI OR BT;0x4:WAKEUP SOURCE OF TOUCHED;0x5:NONE WAKEUP_SOURCE)
+ */
+pm_wakeup_source_e bk_pm_wakeup_source_get(void);
+
+/**
+ * @brief clear wakeup source
+ *
+ * clear wakeup source
+ *
+ * @attention
+ * - This API is used to clear wakeup source
+ *
+ */
+void bk_pm_wakeup_source_clear(pm_wakeup_source_e wakeup_source);
+
+/**
  * @brief module vote sleep ctrl
  *
  * other module tell pm module, they have entered sleep.(eg.wifi or bt enter sleep,then call the function ,tell pm it have entered sleep)
