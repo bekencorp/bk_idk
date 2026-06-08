@@ -929,12 +929,17 @@ bk_err_t bk_flash_partition_write_cbus(bk_partition_t partition, const uint8_t *
     return BK_OK;
 }
 
-/* xip_ota_write_cbus ORs (1<<24); partition table holds offsets without bit24 -- strip bit24 then match only. */
+/* bit24: map perm check to peer XIP slot (see xip_ota_write_cbus) */
 static uint32_t flash_write_perm_phy_addr(uint32_t addr)
 {
 #if CONFIG_DIRECT_XIP
     if (addr & (1UL << 24)) {
-        addr &= ~(1UL << 24);
+        uint32_t virt = addr & ~(1UL << 24);
+        uint32_t phy = FLASH_VIRTUAL2PHY(virt);
+        uint32_t a_base = CEIL_ALIGN_34(CONFIG_XIP_A_PHY_PARTITION_OFFSET);
+        uint32_t slot_off = (phy >= a_base) ? (phy - a_base) : 0;
+
+        return CEIL_ALIGN_34(CONFIG_XIP_A_PHY_PARTITION_OFFSET) + slot_off;
     }
 #endif
     return addr;
