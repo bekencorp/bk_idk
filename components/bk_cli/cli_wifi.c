@@ -646,6 +646,49 @@ error:
 	return;
 }
 
+void cli_wifi_scan_5g_first_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	bool enable = false;
+	int ret = BK_OK;
+	char *msg = NULL;
+
+	if (argc == 1) {
+		ret = bk_wifi_get_scan_5g_first(&enable);
+		if (ret == BK_OK) {
+			CLI_LOGI("scan_5g_first: %d\n", enable ? 1 : 0);
+		} else {
+			CLI_LOGI("get scan_5g_first failed, ret=%d\n", ret);
+			goto error;
+		}
+	} else if (argc == 2) {
+		int value = os_strtoul(argv[1], NULL, 10);
+		if (value != 0 && value != 1) {
+			CLI_LOGI("Usage: scan_5g_first [0|1]\n");
+			goto error;
+		}
+
+		ret = bk_wifi_set_scan_5g_first(value ? true : false);
+		if (ret != BK_OK) {
+			CLI_LOGI("set scan_5g_first failed, ret=%d\n", ret);
+			goto error;
+		}
+
+		CLI_LOGI("scan_5g_first set to: %d\n", value);
+	} else {
+		CLI_LOGI("Usage: scan_5g_first [0|1]\n");
+		goto error;
+	}
+
+	msg = WIFI_CMD_RSP_SUCCEED;
+	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+	return;
+
+error:
+	msg = WIFI_CMD_RSP_ERROR;
+	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+	return;
+}
+
 void cli_wifi_set_interval_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
 	uint8_t interval = 0;
@@ -2874,6 +2917,7 @@ static const struct cli_command s_wifi_commands[] = {
 #if CONFIG_WIFI_SLEEP_MODE_SUPPORT
 	{"sleep_mode", "set sleep_mode", cli_wifi_set_sleep_mode_cmd},
 #endif
+	{"scan_5g_first", "scan_5g_first [0|1]", cli_wifi_scan_5g_first_cmd},
 	{"set_interval", "set listen interval}", cli_wifi_set_interval_cmd},
 	{"set_arp_rate", "set arp rate}", cli_wifi_set_arp_rate_cmd},
 	{"bcn_loss_intv", "bcn_loss_intv interval repeat_num}", cli_wifi_bcn_loss_intv_cmd},

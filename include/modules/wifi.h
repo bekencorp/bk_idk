@@ -1082,6 +1082,29 @@ bk_err_t bk_wifi_set_default_ac(uint32_t ac);
   */
 bk_err_t bk_wifi_get_default_ac(uint32_t *ac);
 
+/**
+ * @brief Enable/disable prioritizing 5G channels during station scan.
+ *
+ * @param enable true to scan 5G channels first, false to keep normal order.
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: other errors
+ */
+bk_err_t bk_wifi_set_scan_5g_first(bool enable);
+
+/**
+ * @brief Get current 5G-first scan configuration.
+ *
+ * @param enable output flag, true means scan 5G channels first.
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_NULL_PARAM: parameter is NULL
+ *    - others: other errors
+ */
+bk_err_t bk_wifi_get_scan_5g_first(bool *enable);
+
 
 /**
   * @brief     get tx raw ac info

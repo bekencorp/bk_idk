@@ -797,6 +797,36 @@ static void wpa_setband_scan_freqs(struct wpa_supplicant *wpa_s,
 }
 
 
+static void wpas_reorder_scan_freqs_5g_first(struct wpa_driver_scan_params *params)
+{
+	int i, write_idx;
+	int *reordered;
+	int len = int_array_len(params->freqs);
+
+	if (!params->freqs || len <= 1)
+		return;
+
+	reordered = os_malloc((len + 1) * sizeof(int));
+	if (!reordered)
+		return;
+
+	write_idx = 0;
+	for (i = 0; i < len; i++) {
+		if (IS_5GHZ(params->freqs[i]))
+			reordered[write_idx++] = params->freqs[i];
+	}
+
+	for (i = 0; i < len; i++) {
+		if (!IS_5GHZ(params->freqs[i]))
+			reordered[write_idx++] = params->freqs[i];
+	}
+
+	reordered[write_idx] = 0;
+	os_free(params->freqs);
+	params->freqs = reordered;
+}
+
+
 static void wpa_add_scan_ssid(struct wpa_supplicant *wpa_s,
 			      struct wpa_driver_scan_params *params,
 			      size_t max_ssids, const u8 *ssid, size_t ssid_len)
@@ -1354,6 +1384,26 @@ ssid_list_set:
 		os_free(wpa_s->next_scan_freqs);
 	wpa_s->next_scan_freqs = NULL;
 	wpa_setband_scan_freqs(wpa_s, &params);
+#if BK_SUPPLICANT
+	{
+		bool scan_5g_first = false;
+		if (wpa_s->last_scan_req != MANUAL_SCAN_REQ &&
+		    bk_wifi_get_scan_5g_first(&scan_5g_first) == BK_OK &&
+		    scan_5g_first) {
+			if (!params.freqs) {
+				/*
+				 * For full scan request (params.freqs == NULL), build
+				 * an explicit frequency list to enforce scan order.
+				 */
+				wpa_add_scan_freqs_list(wpa_s, HOSTAPD_MODE_IEEE80211A,
+							&params, false);
+				wpa_add_scan_freqs_list(wpa_s, HOSTAPD_MODE_IEEE80211G,
+							&params, false);
+			}
+			wpas_reorder_scan_freqs_5g_first(&params);
+		}
+	}
+#endif
 
 #ifdef CONFIG_FULL_SUPPLICANT
 	/* See if user specified frequencies. If so, scan only those. */
