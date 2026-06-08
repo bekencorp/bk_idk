@@ -11,6 +11,7 @@ endif()
 
 if (CONFIG_FLASH_IMPORT_TEST)
 	list(APPEND srcs flash_import/flash_import_case_endurance.c)
+	list(APPEND srcs flash_import/flash_import_case_zero_read.c)
 	if (CONFIG_CLI)
 		list(APPEND srcs flash_import/cli_flash_import.c)
 	endif()

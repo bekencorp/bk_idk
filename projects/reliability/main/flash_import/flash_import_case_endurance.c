@@ -41,7 +41,6 @@
 #define FLASH_IMPORT_ENDURANCE_BACKUP_SAVE_INTERVAL (100U)
 #define FLASH_IMPORT_ENDURANCE_LOG_INTERVAL         (100U)
 #define FLASH_IMPORT_ENDURANCE_CRC_INVALID          (0xFFFFFFFFU)
-#define FLASH_IMPORT_ENDURANCE_CLOCK_80M            (80000000U)
 
 #define FLASH_IMPORT_ENDURANCE_PART_NAME "flash_test"
 #define FLASH_IMPORT_ENDURANCE_PART_ID   BK_PARTITION_FLASH_TEST
@@ -512,26 +511,6 @@ static bk_err_t flash_import_endurance_write_verify(uint32_t addr)
     return BK_OK;
 }
 
-static void flash_import_endurance_set_clock(uint32_t clock_hz)
-{
-    switch (clock_hz) {
-    case FLASH_IMPORT_ENDURANCE_CLOCK_80M:
-    default:
-#if CONFIG_SOC_BK7236
-        if ((1U != sys_drv_flash_get_clk_sel()) || (1U != sys_drv_flash_get_clk_div())) {
-            sys_drv_flash_set_clk_div(1U);
-            sys_drv_flash_cksel(1U);
-        }
-#else
-        if ((2U != sys_drv_flash_get_clk_sel()) || (0U != sys_drv_flash_get_clk_div())) {
-            sys_drv_flash_set_clk_div(0U);
-            sys_drv_flash_cksel(2U);
-        }
-#endif
-        break;
-    }
-}
-
 static void flash_import_endurance_restore_context(void)
 {
     sys_drv_flash_set_clk_div(s_endurance_saved_flash_ckdiv);
@@ -590,7 +569,10 @@ static void flash_import_endurance_main_loop(void)
 {
     uint32_t loop_count = 0;
 
-    flash_import_endurance_set_clock(FLASH_IMPORT_ENDURANCE_CLOCK_80M);
+    if (bk_flash_set_clk_freq(FLASH_CLK_FREQ_80M_HZ) != BK_OK) {
+        os_printf("endurance set clk 80M fail\r\n");
+        return;
+    }
 
     while (1) {
         loop_count++;

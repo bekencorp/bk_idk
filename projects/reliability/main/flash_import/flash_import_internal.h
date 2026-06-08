@@ -20,15 +20,20 @@
 #include "security.h"
 #endif
 
-void flash_import_case_endurance_start(void);
-void flash_import_case_endurance_stop(void);
-void flash_import_case_endurance_show(void);
-
 flash_protect_type_t flash_import_get_protect(void);
 flash_line_mode_t flash_import_set_line_mode(flash_line_mode_t line_mode);
 void flash_import_set_protect(flash_protect_type_t protect);
 bk_err_t flash_import_read_bytes(uint8_t *buffer, uint32_t address, uint32_t len);
 bk_err_t flash_import_write_bytes(const uint8_t *buffer, uint32_t address, uint32_t len);
 bk_err_t flash_import_erase_4k(uint32_t address);
+#if CONFIG_FLASH_CBUS
 bk_err_t flash_import_write_cbus(const uint8_t *buffer, uint32_t address, uint32_t len);
 bk_err_t flash_import_read_cbus(uint8_t *buffer, uint32_t address, uint32_t len);
+#endif
+
+void flash_import_case_endurance_start(void);
+void flash_import_case_endurance_stop(void);
+void flash_import_case_endurance_show(void);
+void flash_import_case_zero_read_start(void);
+void flash_import_case_zero_read_stop(void);
+void flash_import_case_zero_read_show(void);

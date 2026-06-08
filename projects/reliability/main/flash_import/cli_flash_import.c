@@ -25,49 +25,117 @@
 
 #define FLASH_IMPORT_CLI_TAG "flash_import_cli"
 
+struct flash_import_subcmd {
+	const char *name;
+	const char *usage;
+	int (*handler)(int argc, char **argv);
+};
+
+static int flash_import_zero_read_cmd(int argc, char **argv)
+{
+	if (argc < 1) {
+		return -1;
+	}
+
+	if (strcmp(argv[0], "start") == 0) {
+		flash_import_case_zero_read_start();
+		return 0;
+	}
+
+	if (strcmp(argv[0], "stop") == 0) {
+		flash_import_case_zero_read_stop();
+		return 0;
+	}
+
+	if (strcmp(argv[0], "show") == 0) {
+		flash_import_case_zero_read_show();
+		return 0;
+	}
+
+	return -1;
+}
+
+static int flash_import_endurance_cmd(int argc, char **argv)
+{
+	if (argc < 1) {
+		return -1;
+	}
+
+	if (strcmp(argv[0], "start") == 0) {
+		flash_import_case_endurance_start();
+		return 0;
+	}
+
+	if (strcmp(argv[0], "stop") == 0) {
+		flash_import_case_endurance_stop();
+		return 0;
+	}
+
+	if (strcmp(argv[0], "show") == 0) {
+		flash_import_case_endurance_show();
+		return 0;
+	}
+
+	return -1;
+}
+
+static const struct flash_import_subcmd s_flash_import_subcmds[] = {
+	{ "endurance", "usage: flash_import endurance {start|stop|show}", flash_import_endurance_cmd },
+	{ "zero_read", "usage: flash_import zero_read {start|stop|show}", flash_import_zero_read_cmd },
+};
+
+#define FLASH_IMPORT_SUBCMD_CNT (sizeof(s_flash_import_subcmds) / sizeof(s_flash_import_subcmds[0]))
+
 static void flash_import_cli_show_usage(void)
 {
-	BK_RAW_LOGI(FLASH_IMPORT_CLI_TAG, "usage: flash_import endurance {start|stop|show}\r\n");
+	uint32_t i = 0;
+
+	for (i = 0; i < FLASH_IMPORT_SUBCMD_CNT; i++) {
+		BK_RAW_LOGI(FLASH_IMPORT_CLI_TAG, "%s\r\n", s_flash_import_subcmds[i].usage);
+	}
 }
 
 static void cli_flash_import_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
+	uint32_t i = 0;
+	int ret = -1;
+
 	(void)pcWriteBuffer;
 	(void)xWriteBufferLen;
 
-	if (argc == 2) {
-		if (strcmp(argv[1], "endurance") == 0) {
-			goto usage;
-		}
+	if (argc < 3) {
+		goto usage;
 	}
 
-	if (argc == 3) {
-		if (strcmp(argv[1], "endurance") == 0) {
-			if (strcmp(argv[2], "start") == 0) {
-				flash_import_case_endurance_start();
-			} else if (strcmp(argv[2], "stop") == 0) {
-				flash_import_case_endurance_stop();
-			} else if (strcmp(argv[2], "show") == 0) {
-				flash_import_case_endurance_show();
-			} else {
-				goto usage;
-			}
+	for (i = 0; i < FLASH_IMPORT_SUBCMD_CNT; i++) {
+		if (strcmp(argv[1], s_flash_import_subcmds[i].name) != 0) {
+			continue;
+		}
+
+		ret = s_flash_import_subcmds[i].handler(argc - 2, &argv[2]);
+		if (ret == 0) {
 			return;
 		}
+
+		goto usage;
 	}
 
 usage:
 	flash_import_cli_show_usage();
 }
 
-#define FLASH_IMPORT_CLI_CMD_CNT (sizeof(s_flash_import_cli_commands) / sizeof(s_flash_import_cli_commands[0]))
-static const struct cli_command s_flash_import_cli_commands[] = {
-	{ "flash_import", "flash_import endurance", cli_flash_import_cmd },
+#define FLASH_IMPORT_CLI_CMD_CNT (sizeof(s_flash_import_clis) / sizeof(s_flash_import_clis[0]))
+static const struct cli_command s_flash_import_clis[] = {
+	{ "flash_import", "flash_import subcommands", cli_flash_import_cmd },
 };
 
 void flash_import_cli_register_cmds(void)
 {
-	(void)cli_register_commands(s_flash_import_cli_commands, FLASH_IMPORT_CLI_CMD_CNT);
+	bk_err_t ret = cli_register_commands(s_flash_import_clis, FLASH_IMPORT_CLI_CMD_CNT);
+
+	if (ret != BK_OK) {
+		BK_RAW_LOGI(FLASH_IMPORT_CLI_TAG, "flash_import cli reg fail:%d\r\n", ret);
+	}
 }
 
 #endif /* CONFIG_CLI */
