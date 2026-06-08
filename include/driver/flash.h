@@ -138,6 +138,34 @@ bk_err_t bk_flash_write_disable(void);
 bk_err_t bk_flash_set_protect_type(flash_protect_type_t type);
 
 /**
+ * @brief     Fully disable flash hardware write protection
+ *
+ * Unlike bk_flash_set_protect_type(FLASH_PROTECT_NONE), this API writes
+ * FLASH_PROTECT_NONE to the flash status register directly and does not use
+ * the internal protect reference count (which only relaxes to APP protect).
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: other errors.
+ */
+bk_err_t bk_flash_set_protect_none_full(void);
+
+/**
+ * @brief     Set flash protect type directly on hardware
+ *
+ * Unlike bk_flash_set_protect_type(), this API does not use the internal
+ * protect reference count. Use with bk_flash_set_protect_none_full() to
+ * save/restore the hardware protect state.
+ *
+ * @param type flash protect type
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: other errors.
+ */
+bk_err_t bk_flash_set_protect_type_full(flash_protect_type_t type);
+
+/**
  * @brief     Get flash protect type
  *
  * @return the flash protect type

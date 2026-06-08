@@ -410,6 +410,7 @@ static bk_err_t flash_write_common_32b(const uint8_t *buffer, uint32_t address, 
 
         uint32_t int_level = flash_enter_critical();
         flash_hal_wait_op_done(&s_flash.hal);
+        flash_hal_write_enable(&s_flash.hal);
 
         for (uint32_t i = 0; i < FLASH_BUFFER_LEN; i++) {
             flash_hal_write_data(&s_flash.hal, buf[i]);
@@ -500,6 +501,8 @@ bk_err_t flash_erase_block(uint32_t address, int type)
 {
     uint32_t int_level = flash_enter_critical();
 
+    flash_hal_wait_op_done(&s_flash.hal);
+    flash_hal_write_enable(&s_flash.hal);
     flash_hal_erase_block(&s_flash.hal, address, type);
 
     flash_exit_critical(int_level);
@@ -989,6 +992,17 @@ flash_protect_type_t bk_flash_get_protect_type(void)
 
 bk_err_t bk_flash_set_protect_type(flash_protect_type_t type)
 {
+    return BK_OK;
+}
+
+bk_err_t bk_flash_set_protect_none_full(void)
+{
+    return BK_OK;
+}
+
+bk_err_t bk_flash_set_protect_type_full(flash_protect_type_t type)
+{
+    (void)type;
     return BK_OK;
 }
 

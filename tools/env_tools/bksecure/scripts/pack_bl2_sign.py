@@ -116,7 +116,6 @@ class PackBl2sign(Pack):
         
         signing_privkey = img_sign_privkey
         signing_pubkey = img_sign_pubkey
-        signing_pubkey_bytes = _get_public_bytes_from_pubkeyfile(img_sign_pubkey)
         signature_tlv = None
         root_pubkey_tlv = None
 
@@ -127,9 +126,10 @@ class PackBl2sign(Pack):
 
             signing_privkey = new_privkey_pem
             signing_pubkey = new_pubkey_pem
-            if(ota_type == 'XIP'): 
-                root_pubkey_tlv =  _get_public_bytes_from_pubkeyfile(img_sign_pubkey)
-                bl2_sign_hash(img_sign_privkey, signing_pubkey_bytes.hex(), 'new_pubkey_sig.json')
+            if ota_type == 'XIP':
+                new_pubkey_bytes = _get_public_bytes_from_pubkeyfile(new_pubkey_pem)
+                root_pubkey_tlv = _get_public_bytes_from_pubkeyfile(img_sign_pubkey)
+                bl2_sign_hash(img_sign_privkey, new_pubkey_bytes.hex(), 'new_pubkey_sig.json')
                 with open('new_pubkey_sig.json', 'r') as f:
                     sig_data = json.load(f)
                     if isinstance(sig_data, str):

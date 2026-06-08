@@ -124,7 +124,12 @@ static const flash_config_t flash_config[] = {
 #else
 	{0xC86517,	 1, 			  FLASH_SIZE_8M, FLASH_LINE_MODE_TWO, 0,		2,			  0x1F, 		0x1F,		 0x00,		   0x0E,		 0x00E, 			   0,			 0, 		  0xA0, 						 0x01}, //gd_25Q32E
 #endif
-	{0xCD6016,   2,               FLASH_SIZE_4M, FLASH_LINE_MODE_FOUR, 14,      2,            0x1F,         0x1F,        0x00,         0x0E,         0x1F,                 9,            1,           0xA0,                          0x01}, //th_25q32ub
+#if CONFIG_FLASH_QUAD_ENABLE
+	{0xCD6016,   2,               FLASH_SIZE_4M, FLASH_LINE_MODE_FOUR, 14,      2,            0x1F,         0x1F,        0x00,         0x0E,         0x1F,                 9,            1,           0xA0,                          0x02}, //th_25q32ub
+#else
+	{0xCD6016,   1,               FLASH_SIZE_4M, FLASH_LINE_MODE_TWO, 0,        2,            0x1F,         0x1F,        0x00,         0x0E,         0x1F,                 0,            0,           0xA0,                          0x01}, //th_25q32ub
+#endif
+	
 #if CONFIG_FLASH_QUAD_ENABLE
 	{0xCD6017,   3,               FLASH_SIZE_8M, FLASH_LINE_MODE_FOUR, 14,      2,            0x1F,         0x1F,        0x00,         0x0E,         0x00E,                9,            1,           0xA0,                          0x02}, //th_25q64ha
 #else
@@ -489,6 +494,7 @@ static bk_err_t flash_write_common(const uint8_t *buffer, uint32_t address, uint
 
 				uint32_t int_level = rtos_disable_int();
 				flash_hal_wait_op_done(&s_flash.hal);
+				flash_hal_write_enable(&s_flash.hal);
 
 				for (uint32_t i = 0; i < FLASH_BUFFER_LEN; i++) {
 					flash_hal_write_data(&s_flash.hal, buf[i]);
@@ -640,6 +646,8 @@ static bk_err_t flash_erase_block(uint32_t erase_addr, int type)
 
 		if (bk_flash_partition_write_perm_check_by_addr(erase_addr, erase_size, FLASH_API_MAGIC_CODE) == BK_OK) {
 			uint32_t int_level = rtos_disable_int();
+			flash_hal_wait_op_done(&s_flash.hal);
+			flash_hal_write_enable(&s_flash.hal);
 			flash_hal_erase_block(&s_flash.hal, erase_addr, type);
 			rtos_enable_int(int_level);
 			ret_val = BK_OK;

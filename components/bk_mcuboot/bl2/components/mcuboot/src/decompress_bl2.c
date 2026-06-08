@@ -89,8 +89,10 @@ static int flash_area_erase_fast_with_verify(uint32_t erase_off, uint32_t len)
 	int verify_result = -1;
 
 	for (retry_count = 0; retry_count < ERASE_RETRY_COUNT; retry_count++) {
+#if CONFIG_BL2_WDT
+		wdt_hal_force_feed();
+#endif
 		flash_area_erase_fast(erase_off, len);
-
 		verify_result = verify_erase(erase_off, len);
 		if (verify_result == 0) {
 			if (retry_count > 0) {

@@ -157,6 +157,8 @@ uint16_t bk_flash_read_status_reg(void);
 bk_err_t bk_flash_write_status_reg(uint16_t status_reg_data);
 flash_protect_type_t bk_flash_get_protect_type(void);
 bk_err_t bk_flash_set_protect_type(flash_protect_type_t type);
+bk_err_t bk_flash_set_protect_none_full(void);
+bk_err_t bk_flash_set_protect_type_full(flash_protect_type_t type);
 bk_err_t bk_flash_erase_32k(uint32_t address);
 extern bk_err_t mb_flash_op_prepare(void);
 extern bk_err_t mb_flash_op_finish(void);
@@ -1651,6 +1653,30 @@ bk_err_t bk_flash_set_protect_type(flash_protect_type_t type)
 		flash_protected();
 	}
 
+	flash_ps_resume(NORMAL_PS);
+	flash_exit_critical(int_level);
+
+	return BK_OK;
+}
+
+bk_err_t bk_flash_set_protect_none_full(void)
+{
+	uint32_t int_level = flash_enter_critical();
+
+	flash_ps_suspend(NORMAL_PS);
+	flash_set_protect_type(FLASH_PROTECT_NONE);
+	flash_ps_resume(NORMAL_PS);
+	flash_exit_critical(int_level);
+
+	return BK_OK;
+}
+
+bk_err_t bk_flash_set_protect_type_full(flash_protect_type_t type)
+{
+	uint32_t int_level = flash_enter_critical();
+
+	flash_ps_suspend(NORMAL_PS);
+	flash_set_protect_type(type);
 	flash_ps_resume(NORMAL_PS);
 	flash_exit_critical(int_level);
 

@@ -195,6 +195,18 @@ void bl2_ota_check(void)
 		&& bootloader_version[3] == expected_bl2_version[3])) {
 		BK_LOGI(TAG, "bl2 version mismatch, start to update\r\n");
 		bk_ota_register_bl2_pack_addrs();
+#if CONFIG_SOC_BK7236
+		flash_protect_type_t protect_type;
+		protect_type = bk_flash_get_protect_type();
+		bk_flash_set_protect_none_full();
+#endif
+
+		bl2_ota_upgrade();
+
+#if CONFIG_SOC_BK7236
+		bk_flash_set_protect_type_full(protect_type);
+#endif
+
 		bl2_ota_upgrade();
 	}
 	else {

@@ -211,9 +211,9 @@ bk_err_t bk_flash_partition_write_perm_check_by_addr(uint32_t addr, uint32_t siz
 
 	uint32_t bl2_start = (uint32_t)CONFIG_BL2_VIRTUAL_CODE_START;
 	uint32_t bl2_end = bl2_start + (uint32_t)CONFIG_BL2_VIRTUAL_PARTITION_SIZE;
-	uint64_t range_end = (uint64_t)addr + (uint64_t)size;
+	uint32_t range_end = (uint32_t)addr + (uint32_t)size;
 
-	if (addr < bl2_end && range_end > (uint64_t)bl2_start) {
+	if (addr < bl2_end && range_end > bl2_start) {
 		return BK_FAIL;
 	}
 
