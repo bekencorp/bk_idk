@@ -97,6 +97,16 @@ __attribute__((section(".itcm_sec_code"))) bk_err_t bk_wdt_stop(void);
 bk_err_t bk_wdt_feed(void);
 
 /**
+ * @brief     Feed the task WDT
+ */
+void bk_task_wdt_feed(void);
+
+/**
+ * @brief     Feed both task WDT and interrupt WDT when enabled
+ */
+void bk_wdt_feed_all(void);
+
+/**
  * @brief   Get feed watchdog time
  *
  * @return
