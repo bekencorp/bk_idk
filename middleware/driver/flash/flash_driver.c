@@ -389,7 +389,7 @@ static void flash_read_word_common(uint32_t *buffer, uint32_t address, uint32_t 
     }
 }
 
-bk_err_t flash_write_common(const uint8_t *buffer, uint32_t address, uint32_t len)
+static bk_err_t flash_write_common_32b(const uint8_t *buffer, uint32_t address, uint32_t len)
 {
     uint32_t buf[FLASH_BUFFER_LEN];
     uint8_t *pb = (uint8_t *)&buf[0];
@@ -420,6 +420,80 @@ bk_err_t flash_write_common(const uint8_t *buffer, uint32_t address, uint32_t le
         addr += FLASH_BYTES_CNT;
     }
     return BK_OK;
+}
+
+#if CONFIG_FLASH_PAGE_WRITE_ENABLE
+static bk_err_t flash_write_common_page_write(const uint8_t *buffer, uint32_t address, uint32_t len)
+{
+    bk_err_t ret = BK_OK;
+    uint32_t cnt;
+    uint32_t mod;
+    uint32_t i;
+    uint32_t j;
+
+    FLASH_RETURN_ON_WRITE_ADDR_OUT_OF_RANGE(address, len);
+
+    if (len == 0U) {
+        return BK_OK;
+    }
+
+    if (address % FLASH_PAGE_SIZE) {
+        cnt = FLASH_PAGE_SIZE - (address % FLASH_PAGE_SIZE);
+        if (cnt > len) {
+            cnt = len;
+        }
+        ret = flash_write_common_32b(buffer, address, cnt);
+        if (ret != BK_OK) {
+            return ret;
+        }
+        len -= cnt;
+        address += cnt;
+        buffer += cnt;
+    }
+
+    cnt = len / FLASH_PAGE_SIZE;
+    mod = len % FLASH_PAGE_SIZE;
+
+    if (cnt > 0U) {
+        flash_hal_wait_op_done(&s_flash.hal);
+        flash_hal_set_pw_write(&s_flash.hal, 1U);
+
+        for (i = 0U; i < cnt; i++) {
+            uint32_t int_level = flash_enter_critical();
+
+            flash_hal_wait_op_done(&s_flash.hal);
+            flash_hal_set_page_write_mem_addr_clr(&s_flash.hal, 1U);
+            for (j = 0U; j < FLASH_PAGE_SIZE; j++) {
+                flash_hal_set_page_write_mem_data(&s_flash.hal, buffer[j]);
+            }
+            flash_hal_set_op_cmd_write(&s_flash.hal, address);
+            flash_hal_wait_op_done(&s_flash.hal);
+            flash_exit_critical(int_level);
+
+            buffer += FLASH_PAGE_SIZE;
+            address += FLASH_PAGE_SIZE;
+        }
+
+        flash_hal_set_pw_write(&s_flash.hal, 0U);
+    }
+
+    if (mod > 0U) {
+        ret = flash_write_common_32b(buffer, address, mod);
+    }
+
+    return ret;
+}
+#endif
+
+bk_err_t flash_write_common(const uint8_t *buffer, uint32_t address, uint32_t len)
+{
+#if CONFIG_FLASH_PAGE_WRITE_ENABLE
+    if ((s_flash.flash_id == FLASH_ID_P25Q64SU) && (len > FLASH_PAGE_SIZE)) {
+        return flash_write_common_page_write(buffer, address, len);
+    }
+#endif
+
+    return flash_write_common_32b(buffer, address, len);
 }
 
 bk_err_t flash_erase_block(uint32_t address, int type)

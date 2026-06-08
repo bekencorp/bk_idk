@@ -7,6 +7,11 @@ menu "FLASH"
 		bool "Enable flash quad enable"
 		default n
 
+	config FLASH_PAGE_WRITE_ENABLE
+		depends on FLASH
+		bool "Enable flash page write function"
+		default n
+
 	config FLASH_SRC_CLK_60M
 		bool "Enable flash source clock 60M"
 		default n

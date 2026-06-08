@@ -246,6 +246,21 @@ static inline void flash_ll_write_data(flash_hw_t *hw, uint32_t data)
 	hw->data_sw_flash = data;
 }
 
+static inline void flash_ll_set_pw_write(flash_hw_t *hw, uint32_t enable)
+{
+	hw->state.pw_write = enable & 0x1U;
+}
+
+static inline void flash_ll_set_page_write_mem_addr_clr(flash_hw_t *hw, uint32_t clr)
+{
+	hw->page_ctrl.mem_addr_clr = clr & 0x1U;
+}
+
+static inline void flash_ll_set_page_write_mem_data(flash_hw_t *hw, uint8_t data)
+{
+	hw->page_ctrl.mem_data = data;
+}
+
 static inline void flash_ll_set_clk(flash_hw_t *hw, uint8_t clk_cfg)
 {
 	hw->config.clk_cfg = clk_cfg;
