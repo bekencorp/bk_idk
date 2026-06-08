@@ -19,9 +19,40 @@
 extern"C" {
 #endif
 
+#include <stdbool.h>
 #include "mac802154_types.h"
 
 bk_err_t mac802154_init(void);
+
+/**
+ * @brief  Transmit a frame on the IEEE 802.15.4 radio
+ *
+ * This function is used to transmit a frame on the IEEE 802.15.4 radio.
+ *
+ * @param enable Whether to enable the transmission, if enable is false, it will exit the transmission/continuous transmission mode.
+ * @param channel The channel to transmit. channel range is 11~26. The channel should be the same as the channel used for receiving.
+ * @param tx_cnt The number of times to transmit
+ * @param tx_callback The callback function to be called when the transmission is complete
+ *
+ * @return
+ *   - BK_OK: succeed
+ *   - BK_ERR_PARAM: invalid channel
+ */
+bk_err_t mac802154_tx(bool enable, uint8_t channel, uint32_t tx_cnt, void *tx_callback);
+
+/**
+ * @brief  Receive a frame on the IEEE 802.15.4 radio
+ *
+ * This function is used to receive a frame on the IEEE 802.15.4 radio.
+ *
+ * @param enable Whether to enable the reception, if enable is false, it will exit the reception/continuous reception mode.
+ * @param channel The channel to receive. channel range is 11~26. The channel should be the same as the channel used for transmission.
+ *
+ * @return
+ *   - BK_OK: succeed
+ *   - BK_ERR_PARAM: invalid channel
+ */
+bk_err_t mac802154_rx(bool enable, uint8_t channel);
 
 
 #ifdef __cplusplus
