@@ -1222,6 +1222,7 @@ __attribute__((section(".iram"))) void bk_flash_disable_cpu_data_wr(void)
 
 #if CONFIG_FLASH_CBUS
 #include "partitions.h"
+#include "security.h"
 #include "CheckSumUtils.h"
 #if CONFIG_CACHE_ENABLE
 #include "cache.h"
@@ -1336,10 +1337,12 @@ void bk_flash_write_cbus(uint32_t address, const uint8_t *user_buf, uint32_t siz
     uint32_t status_reg = flash_read_status_reg();
     flash_protect_type_t partition_type = flash_get_protect_type(status_reg);
 
-    if (bk_flash_partition_write_perm_check_by_addr(address, size, FLASH_API_MAGIC_CODE) == BK_OK) {
+    uint32_t phy_addr = FLASH_VIRTUAL2PHY(address & ~(1UL << 24));
+
+    if (bk_flash_partition_write_perm_check_by_addr(phy_addr, size, FLASH_API_MAGIC_CODE) == BK_OK) {
         flash_set_protect_type(FLASH_PROTECT_NONE);
 
-        if (bk_flash_partition_write_perm_check_by_addr(address, size, FLASH_API_MAGIC_CODE) == BK_OK) {
+        if (bk_flash_partition_write_perm_check_by_addr(phy_addr, size, FLASH_API_MAGIC_CODE) == BK_OK) {
 #if CONFIG_CACHE_ENABLE
             enable_dcache(0);
 #endif
