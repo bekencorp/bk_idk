@@ -201,7 +201,7 @@ __NO_RETURN ENTRY_SECTION __attribute__((naked)) void Reset_Handler(void)
   	// sys_hal_early_init_tfm();
 	sys_drv_early_init();
 	sys_hal_flash_set_clk(0x1);
-	sys_hal_flash_set_clk_div(0x0);
+	sys_hal_flash_set_clk_div(0x1);
 	sys_hal_ctrl_vdddig_h_vol(0xD);
 	sys_hal_switch_freq(0x3, 0x0, 0x0);
 
