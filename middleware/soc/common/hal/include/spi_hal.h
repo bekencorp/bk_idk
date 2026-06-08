@@ -39,6 +39,8 @@ typedef struct {
 #define spi_hal_set_role_slave(hal) spi_ll_set_role_slave((hal)->hw)
 #define spi_hal_is_master(hal) spi_ll_is_role_master((hal)->hw)
 #define spi_hal_is_slave(hal) spi_ll_is_role_slave((hal)->hw)
+#define spi_hal_set_tx_fifo_int_level(hal, level) spi_ll_set_tx_fifo_int_level((hal)->hw, level)
+#define spi_hal_set_rx_fifo_int_level(hal, level) spi_ll_set_rx_fifo_int_level((hal)->hw, level)
 #define spi_hal_get_tx_fifo_int_level(hal) spi_ll_get_tx_fifo_int_level((hal)->hw)
 #define spi_hal_get_rx_fifo_int_level(hal) spi_ll_get_rx_fifo_int_level((hal)->hw)
 #define spi_hal_set_byte_interval(hal, val) spi_ll_set_byte_interval((hal)->hw, val)

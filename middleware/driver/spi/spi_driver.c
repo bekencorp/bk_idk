@@ -52,6 +52,7 @@ typedef struct {
         bool is_tx_blocked;
         bool is_sw_tx_finished;
         bool is_rx_blocked;
+        bool tx_use_fifo_int;
         beken_semaphore_t tx_sema;
         beken_semaphore_t rx_sema;
         dma_id_t spi_tx_dma_chan;
@@ -103,6 +104,8 @@ static spi_dma_info_t s_spi_dma_info = {0};
                 return BK_ERR_SPI_INVALID_ID;\
         }\
 } while(0)
+
+#define SPI_SHIFT_REG_DRAIN_US  350
 
 #if CONFIG_SPE
 #define SPI_CHECK_SECURE(id) do {\
@@ -396,15 +399,25 @@ static uint32_t spi_id_read_bytes_common(spi_id_t id)
 #if CONFIG_SPI_DMA
 static void spi_dma_tx_finish_handler(dma_id_t id)
 {
-        SPI_LOGD("[%s] spi_id:%d\r\n", __func__, s_current_spi_dma_wr_id);
+        spi_id_t spi_id = s_current_spi_dma_wr_id;
+        SPI_LOGD("[%s] spi_id:%d\r\n", __func__, spi_id);
 
-        if (s_spi_tx_finish_isr[s_current_spi_dma_wr_id].callback) {
-                s_spi_tx_finish_isr[s_current_spi_dma_wr_id].callback(s_current_spi_dma_wr_id,s_spi_tx_finish_isr[s_current_spi_dma_wr_id].param);
+        if (s_spi_tx_finish_isr[spi_id].callback) {
+                s_spi_tx_finish_isr[spi_id].callback(spi_id, s_spi_tx_finish_isr[spi_id].param);
         }
-        if (s_spi[s_current_spi_dma_wr_id].is_tx_blocked) {
-                if(g_is_master_role) {
-                        rtos_set_semaphore(&s_spi[s_current_spi_dma_wr_id].tx_sema);
-                        s_spi[s_current_spi_dma_wr_id].is_tx_blocked = false;
+
+        if (s_spi[spi_id].is_tx_blocked && g_is_master_role) {
+                if (s_spi[spi_id].tx_use_fifo_int) {
+                        spi_hal_enable_tx_fifo_int(&s_spi[spi_id].hal);
+                        if (spi_hal_is_tx_fifo_int_triggered(&s_spi[spi_id].hal)) {
+                                spi_hal_disable_tx_fifo_int(&s_spi[spi_id].hal);
+                                s_spi[spi_id].tx_use_fifo_int = false;
+                                s_spi[spi_id].is_tx_blocked = false;
+                                rtos_set_semaphore(&s_spi[spi_id].tx_sema);
+                        }
+                } else {
+                        s_spi[spi_id].is_tx_blocked = false;
+                        rtos_set_semaphore(&s_spi[spi_id].tx_sema);
                 }
         }
 }
@@ -1187,8 +1200,14 @@ uint32_t bk_spi_dma_write_bytes(spi_id_t id, const void *data, uint32_t size)
                 s_spi[id].is_tx_blocked = true;
                 s_current_spi_dma_wr_id = id;
                 spi_hal_clear_tx_fifo(&s_spi[id].hal);
-                //set spi trans_len as 0, to increase max trans_len from 4096(spi max length) to 65536(dma max length).
                 spi_hal_set_tx_trans_len(&s_spi[id].hal, 0);
+
+                bool is_master = spi_hal_is_master(&s_spi[id].hal);
+                if (is_master) {
+                        s_spi[id].tx_use_fifo_int = true;
+                        spi_hal_set_tx_fifo_int_level(&s_spi[id].hal, SPI_FIFO_INT_LEVEL_1);
+                }
+
                 spi_hal_enable_tx(&s_spi[id].hal);
                 bk_dma_write(s_spi[id].spi_tx_dma_chan, (uint8_t *)data + buf_offset, tx_len);
 
@@ -1200,27 +1219,17 @@ uint32_t bk_spi_dma_write_bytes(spi_id_t id, const void *data, uint32_t size)
                 spi_exit_critical(int_level);
 
                 rtos_get_semaphore(&s_spi[id].tx_sema, BEKEN_NEVER_TIMEOUT);
+
                 int_level = spi_enter_critical();
-                //wait spi last fifo data transfer finish
-                spi_hal_enable_tx_fifo_int(&s_spi[id].hal);
-                for (int i = 0; i <= 500; i++) {
-                        bk_delay_us(1);
-                        SPI_LOGD("index = %d, id=%d, tx_fifo_int_status = %d\n", i, id, spi_hal_is_tx_fifo_int_triggered(&s_spi[id].hal));
-                        if(spi_hal_is_tx_fifo_int_triggered(&s_spi[id].hal)) {
-                                bk_delay_us(1);
-                                break;
-                        }
-                        if(i == 500)
-                                SPI_LOGE("wait tx fifo empty timeout.\n");
+
+                if (is_master) {
+                        bk_delay_us(SPI_SHIFT_REG_DRAIN_US);
                 }
 
-                //wait additional time to ensure all data in FIFO and shift register are sent out
-                 bk_delay_us(48);
-
                 spi_hal_disable_tx_fifo_int(&s_spi[id].hal);
-                spi_hal_clear_tx_fifo_int_status(&s_spi[id].hal);
                 spi_hal_disable_tx(&s_spi[id].hal);
                 bk_dma_stop(s_spi[id].spi_tx_dma_chan);
+                s_spi[id].tx_use_fifo_int = false;
                 spi_exit_critical(int_level);
                 left_len -= tx_len;
                 buf_offset += tx_len;
@@ -1360,33 +1369,12 @@ static void spi_isr_common(spi_id_t id)
         if (spi_hal_is_tx_fifo_int_triggered_with_status(hal, int_status)) {
                 SPI_STATIS_INC(spi_statis->tx_fifo_isr_cnt);
                 SPI_LOGD("tx fifo int triggered\r\n");
-#if !CONFIG_SPI_SUPPORT_TX_FIFO_WR_READY
-                if ((!s_spi[id].is_sw_tx_finished) &&
-                                s_spi[id].tx_size &&
-                                s_spi[id].tx_buf) {
-                        spi_id_write_bytes_common(id);
-                        s_spi[id].is_sw_tx_finished = true;
-                }
-                for (int i = 0; (i < s_spi[id].rx_size) && s_spi[id].rx_buf; i++) {
-                        /* bk7251 need spi_hal_write_byte when read byte,
-                         * bk7251 master read data will not work without this operation */
-                        if (spi_hal_is_master(hal)) {
-                                spi_hal_write_byte(hal, 0xff);
-                        }
-                        if (spi_hal_read_byte(hal, &rd_data) == BK_OK) {
-                                SPI_LOGD("tx fifo int read byte\r\n");
-                                if (rd_offset < s_spi[id].rx_size) {
-                                        s_spi[id].rx_buf[rd_offset++] = rd_data;
-                                }
-                        } else {
-                                break;
-                        }
-                }
-                s_spi[id].rx_offset = rd_offset;
-                if (s_spi[id].is_sw_tx_finished) {
+                if (s_spi[id].tx_use_fifo_int && s_spi[id].is_tx_blocked) {
                         spi_hal_disable_tx_fifo_int(hal);
+                        s_spi[id].tx_use_fifo_int = false;
+                        s_spi[id].is_tx_blocked = false;
+                        rtos_set_semaphore(&s_spi[id].tx_sema);
                 }
-#endif
         }
 
         if (spi_hal_is_tx_finish_int_triggered(hal, int_status) &&
@@ -1395,8 +1383,8 @@ static void spi_isr_common(spi_id_t id)
                 SPI_LOGD("tx finish int triggered\r\n");
                 if (spi_hal_is_master(hal)) {
                         if (s_spi[id].is_tx_blocked) {
-                                rtos_set_semaphore(&s_spi[id].tx_sema);
                                 s_spi[id].is_tx_blocked = false;
+                                rtos_set_semaphore(&s_spi[id].tx_sema);
                         }
                         if (s_spi_tx_finish_isr[id].callback) {
                                 s_spi_tx_finish_isr[id].callback(id, s_spi_tx_finish_isr[id].param);
