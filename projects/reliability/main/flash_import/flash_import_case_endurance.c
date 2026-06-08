@@ -67,34 +67,57 @@ typedef enum {
     FLASH_IMPORT_ENDURANCE_SAVE_BOTH,
 } flash_import_endurance_save_policy_t;
 
-#define FLASH_IMPORT_END_GPIO_PROTECT_ALL_PIN  GPIO_14
-#define FLASH_IMPORT_END_GPIO_PROTECT_NONE_PIN GPIO_15
-#define FLASH_IMPORT_END_GPIO_ERASE_PIN        GPIO_16
-#define FLASH_IMPORT_END_GPIO_WRITE_PIN        GPIO_17
+typedef struct {
+    gpio_id_t protect_all;
+    gpio_id_t protect_none;
+    gpio_id_t erase;
+    gpio_id_t write;
+    gpio_id_t read;
+} flash_import_endurance_gpio_cfg_t;
+
 #if CONFIG_SOC_BK7236
-#define FLASH_IMPORT_END_GPIO_READ_PIN         GPIO_18
-#else
-#define FLASH_IMPORT_END_GPIO_READ_PIN         GPIO_20
+static const flash_import_endurance_gpio_cfg_t s_endurance_gpio_cfg = {
+    .protect_all  = GPIO_14,
+    .protect_none = GPIO_15,
+    .erase        = GPIO_16,
+    .write        = GPIO_17,
+    .read         = GPIO_18,
+};
+#elif CONFIG_SOC_BK7236N
+static const flash_import_endurance_gpio_cfg_t s_endurance_gpio_cfg = {
+    .protect_all  = GPIO_14,
+    .protect_none = GPIO_15,
+    .erase        = GPIO_16,
+    .write        = GPIO_17,
+    .read         = GPIO_20,
+};
+#elif CONFIG_SOC_BK7239N
+static const flash_import_endurance_gpio_cfg_t s_endurance_gpio_cfg = {
+    .protect_all  = GPIO_4,
+    .protect_none = GPIO_5,
+    .erase        = GPIO_15,
+    .write        = GPIO_16,
+    .read         = GPIO_17,
+};
 #endif
 
-#define FLASH_IMPORT_END_GPIO_PROTECT_ALL_UP()    ((void)bk_gpio_set_output_high(FLASH_IMPORT_END_GPIO_PROTECT_ALL_PIN))
-#define FLASH_IMPORT_END_GPIO_PROTECT_ALL_DOWN()  ((void)bk_gpio_set_output_low(FLASH_IMPORT_END_GPIO_PROTECT_ALL_PIN))
-#define FLASH_IMPORT_END_GPIO_PROTECT_NONE_UP()   ((void)bk_gpio_set_output_high(FLASH_IMPORT_END_GPIO_PROTECT_NONE_PIN))
-#define FLASH_IMPORT_END_GPIO_PROTECT_NONE_DOWN() ((void)bk_gpio_set_output_low(FLASH_IMPORT_END_GPIO_PROTECT_NONE_PIN))
-#define FLASH_IMPORT_END_GPIO_ERASE_UP()          ((void)bk_gpio_set_output_high(FLASH_IMPORT_END_GPIO_ERASE_PIN))
-#define FLASH_IMPORT_END_GPIO_ERASE_DOWN()        ((void)bk_gpio_set_output_low(FLASH_IMPORT_END_GPIO_ERASE_PIN))
-#define FLASH_IMPORT_END_GPIO_WRITE_UP()          ((void)bk_gpio_set_output_high(FLASH_IMPORT_END_GPIO_WRITE_PIN))
-#define FLASH_IMPORT_END_GPIO_WRITE_DOWN()        ((void)bk_gpio_set_output_low(FLASH_IMPORT_END_GPIO_WRITE_PIN))
-#define FLASH_IMPORT_END_GPIO_READ_UP()           ((void)bk_gpio_set_output_high(FLASH_IMPORT_END_GPIO_READ_PIN))
-#define FLASH_IMPORT_END_GPIO_READ_DOWN()         ((void)bk_gpio_set_output_low(FLASH_IMPORT_END_GPIO_READ_PIN))
+#define FLASH_IMPORT_END_GPIO_PROTECT_ALL_PIN       (s_endurance_gpio_cfg.protect_all)
+#define FLASH_IMPORT_END_GPIO_PROTECT_NONE_PIN      (s_endurance_gpio_cfg.protect_none)
+#define FLASH_IMPORT_END_GPIO_ERASE_PIN             (s_endurance_gpio_cfg.erase)
+#define FLASH_IMPORT_END_GPIO_WRITE_PIN             (s_endurance_gpio_cfg.write)
+#define FLASH_IMPORT_END_GPIO_READ_PIN              (s_endurance_gpio_cfg.read)
+#define FLASH_IMPORT_END_GPIO_PIN_CNT               (sizeof(s_endurance_gpio_cfg) / sizeof(gpio_id_t))
 
-static const gpio_id_t s_endurance_gpio_pins[] = {
-    FLASH_IMPORT_END_GPIO_PROTECT_ALL_PIN,
-    FLASH_IMPORT_END_GPIO_PROTECT_NONE_PIN,
-    FLASH_IMPORT_END_GPIO_ERASE_PIN,
-    FLASH_IMPORT_END_GPIO_WRITE_PIN,
-    FLASH_IMPORT_END_GPIO_READ_PIN,
-};
+#define FLASH_IMPORT_END_GPIO_PROTECT_ALL_UP()      ((void)bk_gpio_set_output_high(FLASH_IMPORT_END_GPIO_PROTECT_ALL_PIN))
+#define FLASH_IMPORT_END_GPIO_PROTECT_ALL_DOWN()    ((void)bk_gpio_set_output_low(FLASH_IMPORT_END_GPIO_PROTECT_ALL_PIN))
+#define FLASH_IMPORT_END_GPIO_PROTECT_NONE_UP()     ((void)bk_gpio_set_output_high(FLASH_IMPORT_END_GPIO_PROTECT_NONE_PIN))
+#define FLASH_IMPORT_END_GPIO_PROTECT_NONE_DOWN()   ((void)bk_gpio_set_output_low(FLASH_IMPORT_END_GPIO_PROTECT_NONE_PIN))
+#define FLASH_IMPORT_END_GPIO_ERASE_UP()            ((void)bk_gpio_set_output_high(FLASH_IMPORT_END_GPIO_ERASE_PIN))
+#define FLASH_IMPORT_END_GPIO_ERASE_DOWN()          ((void)bk_gpio_set_output_low(FLASH_IMPORT_END_GPIO_ERASE_PIN))
+#define FLASH_IMPORT_END_GPIO_WRITE_UP()            ((void)bk_gpio_set_output_high(FLASH_IMPORT_END_GPIO_WRITE_PIN))
+#define FLASH_IMPORT_END_GPIO_WRITE_DOWN()          ((void)bk_gpio_set_output_low(FLASH_IMPORT_END_GPIO_WRITE_PIN))
+#define FLASH_IMPORT_END_GPIO_READ_UP()             ((void)bk_gpio_set_output_high(FLASH_IMPORT_END_GPIO_READ_PIN))
+#define FLASH_IMPORT_END_GPIO_READ_DOWN()           ((void)bk_gpio_set_output_low(FLASH_IMPORT_END_GPIO_READ_PIN))
 
 static beken_thread_t s_endurance_task_handle = NULL;
 static bool s_endurance_stop_requested = false;
@@ -208,11 +231,12 @@ static bk_err_t flash_import_endurance_write(uint32_t addr, const uint8_t *buf, 
 
 static void flash_import_endurance_gpio_init(void)
 {
+    const gpio_id_t *pins = (const gpio_id_t *)&s_endurance_gpio_cfg;
     uint32_t i = 0;
 
-    for (i = 0; i < (sizeof(s_endurance_gpio_pins) / sizeof(s_endurance_gpio_pins[0])); i++) {
-        (void)bk_gpio_enable_output(s_endurance_gpio_pins[i]);
-        (void)bk_gpio_set_output_low(s_endurance_gpio_pins[i]);
+    for (i = 0; i < FLASH_IMPORT_END_GPIO_PIN_CNT; i++) {
+        (void)bk_gpio_enable_output(pins[i]);
+        (void)bk_gpio_set_output_low(pins[i]);
     }
 }
 
@@ -501,10 +525,11 @@ static void flash_import_endurance_show_stats_region(const char *name, uint32_t 
 
 static void flash_import_endurance_deinit(void)
 {
+    const gpio_id_t *pins = (const gpio_id_t *)&s_endurance_gpio_cfg;
     uint32_t i = 0;
 
-    for (i = 0; i < (sizeof(s_endurance_gpio_pins) / sizeof(s_endurance_gpio_pins[0])); i++) {
-        (void)bk_gpio_set_output_low(s_endurance_gpio_pins[i]);
+    for (i = 0; i < FLASH_IMPORT_END_GPIO_PIN_CNT; i++) {
+        (void)bk_gpio_set_output_low(pins[i]);
     }
 
     flash_import_endurance_buffers_deinit();
