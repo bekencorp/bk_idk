@@ -53,9 +53,9 @@ float target_pwr_ax20 = 14.0; //2G4 N20 target power
 int8_t g_dif_g_n20 = 4;  //differ between g and n20
 int8_t g_dif_g_ax20 = 4; //differ between g and ax20
 int8_t g_dif_g_n40 = 8;  //differ between g and n40
-int8_t g_dif_g_ble_ch0 = -14;
-int8_t g_dif_g_ble_ch19 = -14;
-int8_t g_dif_g_ble_ch39 = -14;
+int8_t g_dif_g_ble_ch0 = 4;
+int8_t g_dif_g_ble_ch19 = 4;
+int8_t g_dif_g_ble_ch39 = 4;
 #else
 /**
  * target power of all format:
@@ -77,9 +77,9 @@ float target_pwr_ax20 = 15.0; //2G4 N20 target power
 int8_t g_dif_g_n20 = 4;  //differ between g and n20
 int8_t g_dif_g_ax20 = 4; //differ between g and ax20
 int8_t g_dif_g_n40 = 8;  //differ between g and n40
-int8_t g_dif_g_ble_ch0 = 0;
-int8_t g_dif_g_ble_ch19 = 0;
-int8_t g_dif_g_ble_ch39 = 0;
+int8_t g_dif_g_ble_ch0 = 18;
+int8_t g_dif_g_ble_ch19 = 18;
+int8_t g_dif_g_ble_ch39 = 18;
 #endif
 
 /**
