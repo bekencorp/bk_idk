@@ -37,3 +37,4 @@ void flash_import_case_endurance_show(void);
 void flash_import_case_zero_read_start(void);
 void flash_import_case_zero_read_stop(void);
 void flash_import_case_zero_read_show(void);
+void flash_import_case_driver_run(void);

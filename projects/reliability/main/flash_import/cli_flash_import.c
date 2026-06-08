@@ -79,9 +79,18 @@ static int flash_import_endurance_cmd(int argc, char **argv)
 	return -1;
 }
 
+static int flash_import_driver_cmd(int argc, char **argv)
+{
+	(void)argc;
+	(void)argv;
+	flash_import_case_driver_run();
+	return 0;
+}
+
 static const struct flash_import_subcmd s_flash_import_subcmds[] = {
 	{ "endurance", "usage: flash_import endurance {start|stop|show}", flash_import_endurance_cmd },
 	{ "zero_read", "usage: flash_import zero_read {start|stop|show}", flash_import_zero_read_cmd },
+	{ "driver", "usage: flash_import driver", flash_import_driver_cmd },
 };
 
 #define FLASH_IMPORT_SUBCMD_CNT (sizeof(s_flash_import_subcmds) / sizeof(s_flash_import_subcmds[0]))
@@ -103,13 +112,21 @@ static void cli_flash_import_cmd(char *pcWriteBuffer, int xWriteBufferLen, int a
 	(void)pcWriteBuffer;
 	(void)xWriteBufferLen;
 
-	if (argc < 3) {
+	if (argc < 2) {
 		goto usage;
 	}
 
 	for (i = 0; i < FLASH_IMPORT_SUBCMD_CNT; i++) {
 		if (strcmp(argv[1], s_flash_import_subcmds[i].name) != 0) {
 			continue;
+		}
+
+		if (strcmp(argv[1], "driver") == 0) {
+			if (argc != 2) {
+				goto usage;
+			}
+		} else if (argc < 3) {
+			goto usage;
 		}
 
 		ret = s_flash_import_subcmds[i].handler(argc - 2, &argv[2]);

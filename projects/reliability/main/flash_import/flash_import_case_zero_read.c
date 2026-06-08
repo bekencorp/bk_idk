@@ -29,21 +29,28 @@ typedef struct {
     uint32_t cmp_err_cnt;
 } flash_import_zero_read_stats_t;
 
+typedef struct {
+    uint32_t             flash_cksel;
+    uint32_t             flash_ckdiv;
+    flash_line_mode_t    line_mode;
+    flash_protect_type_t protect_type;
+} flash_import_zero_read_context_t;
+
 static beken_thread_t s_zero_read_task_handle = NULL;
 static bool s_zero_read_stop_requested = false;
 static flash_import_zero_read_stats_t s_zero_read_stats = {0};
+static flash_import_zero_read_context_t s_zero_read_saved_ctx = {
+    .line_mode = FLASH_LINE_MODE_TWO,
+    .protect_type = FLASH_PROTECT_ALL,
+};
 static uint8_t *s_zero_read_baseline_buf = NULL;
 static uint8_t *s_zero_read_read_buf = NULL;
-static flash_line_mode_t s_zero_read_saved_line_mode = FLASH_LINE_MODE_TWO;
-static flash_protect_type_t s_zero_read_saved_protect_type = FLASH_PROTECT_ALL;
-static uint32_t s_zero_read_saved_flash_cksel = 0;
-static uint32_t s_zero_read_saved_flash_ckdiv = 0;
 
 static void flash_import_zero_read_save_context(void)
 {
-    s_zero_read_saved_flash_cksel = sys_drv_flash_get_clk_sel();
-    s_zero_read_saved_flash_ckdiv = sys_drv_flash_get_clk_div();
-    s_zero_read_saved_protect_type = flash_import_get_protect();
+    s_zero_read_saved_ctx.flash_cksel = sys_drv_flash_get_clk_sel();
+    s_zero_read_saved_ctx.flash_ckdiv = sys_drv_flash_get_clk_div();
+    s_zero_read_saved_ctx.protect_type = flash_import_get_protect();
 }
 
 static bk_err_t flash_import_zero_read_prepare(void)
@@ -60,7 +67,7 @@ static bk_err_t flash_import_zero_read_prepare(void)
         return BK_FAIL;
     }
 
-    s_zero_read_saved_line_mode = flash_import_set_line_mode(FLASH_LINE_MODE_FOUR);
+    s_zero_read_saved_ctx.line_mode = flash_import_set_line_mode(FLASH_LINE_MODE_FOUR);
     flash_import_set_protect(FLASH_PROTECT_ALL);
 
     bk_err_t ret = flash_import_read_bytes(s_zero_read_baseline_buf,
@@ -129,10 +136,10 @@ static void flash_import_zero_read_main_loop(void)
 
 static void flash_import_zero_read_restore_context(void)
 {
-    sys_drv_flash_set_clk_div(s_zero_read_saved_flash_ckdiv);
-    sys_drv_flash_cksel(s_zero_read_saved_flash_cksel);
-    (void)flash_import_set_line_mode(s_zero_read_saved_line_mode);
-    flash_import_set_protect(s_zero_read_saved_protect_type);
+    sys_drv_flash_set_clk_div(s_zero_read_saved_ctx.flash_ckdiv);
+    sys_drv_flash_cksel(s_zero_read_saved_ctx.flash_cksel);
+    (void)flash_import_set_line_mode(s_zero_read_saved_ctx.line_mode);
+    flash_import_set_protect(s_zero_read_saved_ctx.protect_type);
 }
 
 static void flash_import_zero_read_deinit(void)

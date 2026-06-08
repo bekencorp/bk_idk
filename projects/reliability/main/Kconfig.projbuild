@@ -62,6 +62,14 @@ menu "Project specific config"
 		help
 		  Enables platforms where nominal 160 MHz is selected via PM_CPU_FRQ_320M.
 
+	config FLASH_IMPORT_DRIVER_LOW_FLASH_CLK_48M
+		bool "Use 48 MHz as lowest flash clock in import driver sweep"
+		default n
+		depends on FLASH_IMPORT_TEST
+		help
+		  If enabled, driver test sweeps 48/60/80/120 MHz.
+		  Otherwise sweeps 40/60/80/120 MHz.
+
 	config WIFI_RELIABILITY_SHOW_TEMP_INTERVAL
 		int "Show temperature interval for WiFi reliability test (in seconds)"
 		default 10

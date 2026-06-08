@@ -129,11 +129,18 @@ static uint32_t s_endurance_stats_backup_addr = 0;
 static uint32_t s_endurance_stats_main_addr = 0;
 static uint32_t s_endurance_data_addr = 0;
 static flash_import_endurance_stats_t s_endurance_stats = {0};
-static uint32_t s_endurance_saved_flash_cksel = 0;
-static uint32_t s_endurance_saved_flash_ckdiv = 0;
-static flash_protect_type_t s_endurance_saved_protect_type = FLASH_PROTECT_ALL;
 static uint8_t *s_endurance_read_buf = NULL;
 static uint8_t *s_endurance_write_buf = NULL;
+
+typedef struct {
+    uint32_t             flash_cksel;
+    uint32_t             flash_ckdiv;
+    flash_protect_type_t protect_type;
+} flash_import_endurance_context_t;
+
+static flash_import_endurance_context_t s_endurance_saved_ctx = {
+    .protect_type = FLASH_PROTECT_ALL,
+};
 
 static void flash_import_endurance_read(uint32_t addr, uint8_t *buf, uint32_t size)
 {
@@ -414,9 +421,9 @@ static bk_err_t flash_import_endurance_init(void)
 
 static void flash_import_endurance_save_context(void)
 {
-    s_endurance_saved_flash_cksel = sys_drv_flash_get_clk_sel();
-    s_endurance_saved_flash_ckdiv = sys_drv_flash_get_clk_div();
-    s_endurance_saved_protect_type = flash_import_get_protect();
+    s_endurance_saved_ctx.flash_cksel = sys_drv_flash_get_clk_sel();
+    s_endurance_saved_ctx.flash_ckdiv = sys_drv_flash_get_clk_div();
+    s_endurance_saved_ctx.protect_type = flash_import_get_protect();
 }
 
 static void flash_import_endurance_update_crc(void)
@@ -513,9 +520,9 @@ static bk_err_t flash_import_endurance_write_verify(uint32_t addr)
 
 static void flash_import_endurance_restore_context(void)
 {
-    sys_drv_flash_set_clk_div(s_endurance_saved_flash_ckdiv);
-    sys_drv_flash_cksel(s_endurance_saved_flash_cksel);
-    flash_import_set_protect(s_endurance_saved_protect_type);
+    sys_drv_flash_set_clk_div(s_endurance_saved_ctx.flash_ckdiv);
+    sys_drv_flash_cksel(s_endurance_saved_ctx.flash_cksel);
+    flash_import_set_protect(s_endurance_saved_ctx.protect_type);
 }
 
 static void flash_import_endurance_show_stats_region(const char *name, uint32_t addr)
