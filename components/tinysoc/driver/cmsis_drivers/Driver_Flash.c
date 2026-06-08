@@ -411,13 +411,13 @@ int flash_area_erase_fast(uint32_t erase_off, uint32_t len)
 	SYS_LOCK();
     bk_flash_set_protect_type(0);
 	while (erase_remain > 0) {
+#if CONFIG_BL2_WDT
+		BL2_WDT_FEED();
+#endif
 		if ((erase_remain >= KB(64)) && is_64k_aligned(erase_off)) {
 			BK_TFM_FLASH_LOGI(TAG, "64k erase: off=%x remain=%x\r\n", erase_off, erase_remain);
 			bk_flash_erase_block_64k(erase_off);
 			erase_size = KB(64);
-#if CONFIG_BL2_WDT
-            wdt_hal_force_feed();
-#endif
 		} else if ((erase_remain >= KB(32)) && is_32k_aligned(erase_off)) {
 			BK_TFM_FLASH_LOGI(TAG, "32k erase: off=%x remain=%x\r\n", erase_off, erase_remain);
 			bk_flash_erase_block_32k(erase_off);

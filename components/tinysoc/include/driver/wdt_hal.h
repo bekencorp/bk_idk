@@ -42,7 +42,21 @@ void wdt_hal_force_feed(void);
 void wdt_hal_force_reboot(void);
 void close_wdt(void);
 
+#if defined(SOC_AON_WDT_REG_BASE)
+void aon_wdt_feed(void);
+void nmi_wdt_stop(void);
+#define BL2_WDT_FEED() aon_wdt_feed()
+#else
+#define BL2_WDT_FEED() wdt_hal_force_feed()
+#endif
+
+#if defined(CONFIG_BL2_WDT)
+#if defined(CONFIG_BL2_WDT_PERIOD) && (CONFIG_BL2_WDT_PERIOD > 1)
+#define AON_WDT_PERIOD_VAL CONFIG_BL2_WDT_PERIOD
+#else
 #define AON_WDT_PERIOD_VAL 0x1388  //0.6ms*5000=3000ms=3s
+#endif
+#endif
 
 #if CFG_HAL_DEBUG_WDT
 void wdt_struct_dump(void);

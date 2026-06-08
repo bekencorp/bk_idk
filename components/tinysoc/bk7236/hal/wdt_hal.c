@@ -15,6 +15,7 @@
 #include "wdt_hal.h"
 #include "wdt_ll.h"
 #include "aon_pmu_hal.h"
+#include <soc/soc.h>
 #include <components/system.h>
 
 bk_err_t wdt_hal_init(wdt_hal_t *hal)
@@ -48,6 +49,22 @@ void wdt_hal_force_feed(void)
 	REG_WRITE(SOC_WDT_REG_BASE + 4 * 4, 0xA5FFF0);
 }
 
+void aon_wdt_set(uint32_t val)
+{
+	REG_WRITE(SOC_AON_WDT_REG_BASE, 0x5A0000 | val);
+	REG_WRITE(SOC_AON_WDT_REG_BASE, 0xA50000 | val);
+}
+
+void aon_wdt_feed(void)
+{
+	aon_wdt_set(AON_WDT_PERIOD_VAL);
+}
+
+void aon_wdt_stop(void)
+{
+	aon_wdt_set(0);
+}
+
 void nmi_wdt_set(uint32_t val)
 {
 	REG_WRITE(SOC_WDT_REG_BASE + 4 * 2, 0x3);
@@ -63,12 +80,13 @@ void nmi_wdt_stop(void)
 void wdt_stop(void)
 {
 	nmi_wdt_stop();
+	aon_wdt_stop();
 }
 
 void wdt_reboot(void)
 {
 	aon_pmu_hal_set_reset_reason(RESET_SOURCE_BOOTLOADER_REBOOT, true);
-	nmi_wdt_set(0x30);
+	aon_wdt_set(0x30);
 	while(1);
 }
 

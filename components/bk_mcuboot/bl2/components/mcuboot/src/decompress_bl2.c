@@ -54,6 +54,9 @@ static int verify_erase(uint32_t offset, uint32_t size)
 	uint32_t verify_size;
 
 	while (remaining > 0) {
+#if CONFIG_BL2_WDT
+		BL2_WDT_FEED();
+#endif
 		verify_size = (remaining > ERASE_VERIFY_BUFFER_SIZE) ?
 			ERASE_VERIFY_BUFFER_SIZE : remaining;
 
@@ -90,7 +93,7 @@ static int flash_area_erase_fast_with_verify(uint32_t erase_off, uint32_t len)
 
 	for (retry_count = 0; retry_count < ERASE_RETRY_COUNT; retry_count++) {
 #if CONFIG_BL2_WDT
-		wdt_hal_force_feed();
+		BL2_WDT_FEED();
 #endif
 		flash_area_erase_fast(erase_off, len);
 		verify_result = verify_erase(erase_off, len);
@@ -221,9 +224,6 @@ static uint32_t resume_flash(uint32_t block_num)
 		} else {
 			BOOT_LOG_ERR("resume addr 0x%x invalid, skip resume erase to protect bootloader", (unsigned)resume_addr);
 		}
-#if CONFIG_BL2_WDT
-		wdt_hal_force_feed();
-#endif
 		restart_block_idx = 0;
 		return restart_block_idx;
 	}
@@ -313,7 +313,7 @@ boot_copy_region(struct boot_loader_state *state, const struct flash_area *fap_s
 
 	for (block_idx = restart_block_idx; block_idx < block_num; block_idx++){
 #if CONFIG_BL2_WDT
-		wdt_hal_force_feed();
+		BL2_WDT_FEED();
 #endif
 		clean_buf();
 		flash_area_read(fap_src, off_src + bytes_copied, s_compressed_buf, block_list[block_idx]);

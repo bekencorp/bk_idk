@@ -219,8 +219,11 @@ int main(void)
     download_main();
 #endif
 
+#if defined(SOC_AON_WDT_REG_BASE)
+    nmi_wdt_stop();
+#endif
 #if CONFIG_BL2_WDT
-    wdt_hal_force_feed();
+    BL2_WDT_FEED();
 #endif
 
     /* Initialise the mbedtls static memory allocator so that mbedtls allocates
@@ -268,6 +271,9 @@ int main(void)
         FIH_PANIC;
     }
     sys_hal_early_deinit();
+#if CONFIG_BL2_WDT && defined(SOC_AON_WDT_REG_BASE)
+    aon_wdt_feed();
+#endif
     do_boot(&rsp);
 
     BOOT_LOG_ERR("Never should get here");
