@@ -434,6 +434,13 @@ const INT16 shift_tab_n20_fcc[10] = {0,  0,  0,  0,  0,  0,  0,  0,  0, 0}; // n
 const INT16 shift_tab_ax20_fcc[10] = {0,  0,  0,  0,  0,  0,  0,  0,  0, 0}; // n20 mcs9 mcs8 mcs7(base) -  mcs0,
 const INT16 shift_tab_n40_fcc[10] = {0,  0,  0,  0,  0,  0,  0,  0,  0, 0}; // n20 mcs9 mcs8 mcs7(base) -  mcs0,
 
+/* SRRC mode per-rate power shift for ch1~11 and ch14, ch12/ch13 use shift_tab_x_srrc_ch12/ch13 */
+const INT16 shift_tab_b_srrc[4] = {0, 0, 0, 0}; /* 11M base,5.5M,2M,1M */
+const INT16 shift_tab_g_srrc[8] = {0, 0, 0, 0, 0, 0, 0, 0}; /* 54M base,48M,36M,24M,18M,12M,9M,6M */
+const INT16 shift_tab_n20_srrc[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; /* n20 mcs9 mcs8 mcs7(base) - mcs0 */
+const INT16 shift_tab_ax20_srrc[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; /* ax20 mcs9 mcs8 mcs7(base) - mcs0 */
+const INT16 shift_tab_n40_srrc[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; /* n40 mcs9 mcs8 mcs7(base) - mcs0 */
+
 //SRRC mode on channel 12 power shift: shift_tab_x_srrc_ch12 + shift_tab_x
 const INT16 shift_tab_b_srrc_ch12[4] = {-12, -12, -12, -12}; // 11M base,5.5M,2M,1M
 // 54M base -                 54M,48M,36M,24M,18M,12M,9M,6M
