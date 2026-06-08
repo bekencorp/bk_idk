@@ -175,6 +175,13 @@ static void cli_pm_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char 
 	pm_param1      = os_strtoul(argv[6], NULL, 10);
 	pm_param2      = os_strtoul(argv[7], NULL, 10);
 	pm_param3      = os_strtoul(argv[8], NULL, 10);
+
+#ifdef CONFIG_SOC_BK7236
+	if (pm_sleep_mode == PM_MODE_SUPER_DEEP_SLEEP) {
+		os_printf("pm mode %u is not supported on bk7236\r\n", pm_sleep_mode);
+		return;
+	}
+#endif // CONFIG_SOC_BK7236
 	
 	os_printf("cli_pm_cmd %d %d %d %d %d %d %d!!! \r\n",
 				pm_sleep_mode,
