@@ -31,9 +31,9 @@ def set_debug(debug):
         stream_handler.setLevel(logging.DEBUG)
     else:
         logging.basicConfig()
-        logging.getLogger().setLevel(logging.INFO)
+        logging.getLogger().setLevel(logging.WARNING)
         stream_handler = logging.StreamHandler(sys.stdout)
-        stream_handler.setLevel(logging.INFO)
+        stream_handler.setLevel(logging.WARNING)
 
 @click.group()
 @click.version_option(version=get_version())
@@ -274,7 +274,6 @@ def sign_command(debug, pubkey_pem, privkey_pem, ota_type, bl2_version, app_vers
 def pack_command(debug, soc_type, flash_aes_type, flash_aes_key, ota_type, ota_security_counter):
     """Pack download bin"""
     set_debug(debug)
-    gen_otp_efuse_config_file(flash_aes_type, False, flash_aes_key, None, False, False, "otp_efuse_config.json")
     steps_pack(soc_type, flash_aes_type, flash_aes_key, ota_type, ota_security_counter)
 
 @steps.command("pack_csv")

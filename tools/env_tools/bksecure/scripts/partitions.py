@@ -496,7 +496,6 @@ class Partitions:
         self.process_encrypted(aes_type, aes_key)
         self.process_app_aes_crc(aes_type, aes_key)
 
-        os.environ['ARMINO_SOC'] = soc_type.upper()
         # Use PackJson to handle the actual packing (all-app.bin, ota.bin, bootloader.bin, etc.)
         # This is the Pack Server functionality: encrypt, pack, generate final download files
         pack = PackJson()
@@ -917,7 +916,20 @@ class Partitions:
             'nvs.bin',
             'nvs_key.bin'
         ]
-        
+
+        pack_json = self._pack_json if self._pack_json else 'pack.json'
+        if hasattr(self, '_pack_json_data') and self._pack_json_data:
+            pack_data = self._pack_json_data
+        elif os.path.exists(pack_json):
+            with open(pack_json, 'r') as f:
+                pack_data = json.load(f)
+        else:
+            pack_data = None
+        if pack_data:
+            for file_name in pack_data:
+                if file_name not in files_to_install:
+                    files_to_install.append(file_name)
+
         for file_name in files_to_install:
             if os.path.exists(file_name):
                 shutil.copy(file_name, f'{install_dir}/{file_name}')

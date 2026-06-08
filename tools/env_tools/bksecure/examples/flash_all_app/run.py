@@ -265,7 +265,7 @@ def main():
     os.makedirs(f'{pack_path}/_tmp', exist_ok=True)
     copy_files(f'{pack_path}/immutable', f'{pack_path}/_tmp')
     os.chdir(f'{pack_path}/_tmp')
-    # exit(1)
+
     pack_server_process(tool_path, args.soc_type, args.flash_aes_type, args.flash_aes_key, args.ota_type, args.security_counter, debug_opt)
     log_step_end('Pack Server', 'OK')
     # Pack Server End

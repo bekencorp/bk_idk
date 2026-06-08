@@ -17,7 +17,9 @@ from .compress import *
 from .gen_ppc import *
 from .pk_hash import *
 from .partitions import *
+from .partitions_legacy import Partitions_Legacy
 from .common import copy_files as copy_all_files, get_config_paths
+from .gen_otp import gen_otp_efuse_config_file
 
 def copy_files_by_postfix(postfix, src_dir, dst_dir):
     """Copy files with specific postfix from src_dir to dst_dir"""
@@ -221,20 +223,72 @@ def steps_sign(pubkey_pem, privkey_pem, ota_type=None, bl2_version=None, app_ver
         replace_key_en=replace_key_en, new_privkey_pem=new_privkey_pem, new_pubkey_pem=new_pubkey_pem,
     )
 
+def is_pack_json_legacy(pack_json='pack.json'):
+    """Return True if pack.json uses legacy all-app.bin format (partition name list)."""
+    if not os.path.exists(pack_json):
+        return False
+    try:
+        with open(pack_json, 'r') as f:
+            data = json.load(f)
+    except (json.JSONDecodeError, OSError) as e:
+        logging.debug(f'is_pack_json_legacy: failed to read {pack_json}: {e}')
+        return False
+
+    all_app = data.get('all-app.bin')
+    if all_app is None:
+        return False
+
+    # Legacy: "all-app.bin": ["bl2", "partition", ...]
+    if isinstance(all_app, list):
+        return True
+
+    # Non-legacy: "all-app.bin": {"bin": [...], "action": "PACK_BL1_DOWNLOAD_BIN"}
+    if isinstance(all_app, dict) and 'bin' in all_app and 'action' in all_app:
+        return False
+
+    return False
+
+def read_bl2_version():
+    bl2_version = None
+    if os.path.exists('bl2.bin'):
+        with open('bl2.bin', 'rb') as f:
+            f.seek(0x120)
+            ver_bytes = f.read(4)
+        if len(ver_bytes) == 4 and any(ver_bytes):
+            numbers = list(ver_bytes)
+            while len(numbers) > 1 and numbers[-1] == 0:
+                numbers.pop()
+            bl2_version = '.'.join(str(n) for n in numbers)
+            logging.debug(f'read bl2 version from bl2.bin @0x120: {bl2_version}')
+    return bl2_version
+
 #Step8 - pack download bin
 def steps_pack(soc_type, aes_key_type=None, aes_key=None, ota_type='OVERWRITE', security_counter=None):
     logging.debug(f'steps_pack, soc_type={soc_type}, aes_key_type={aes_key_type}, aes_key={aes_key}, ota_type={ota_type}, security_counter={security_counter}')
-    s = None
+    
+    os.environ['ARMINO_SOC'] = soc_type.upper()
+    
     if aes_key_type != None:
         flash_aes_type = aes_key_type
         flash_aes_key = aes_key
     else:
         flash_aes_type = 'NONE'
         flash_aes_key = ''
+    
+    is_legacy = is_pack_json_legacy('pack.json')
+    flash_crc_en = False
+    if is_legacy:
+        flash_crc_en = True
+        bl2_version = read_bl2_version()
+        if os.path.exists('app_signed.bin'):
+            shutil.copy('app_signed.bin', 'primary_all_signed.bin')
+        p = Partitions_Legacy('partitions.csv', ota_type, False, False, bl2_version)
+        p.pack_bin('pack.json', flash_aes_type, flash_aes_key, security_counter, 'FALSE', False, False)
+    else:
+        p = Partitions('partitions.csv', None, 'pack.json')
+        p.postbuild_process(flash_aes_en=False, flash_aes_key=flash_aes_key, img_sign_key=None, flash_crc_en=flash_crc_en, flash_aes_type=flash_aes_type)
+        p.pack_bin(soc_type, flash_aes_type, flash_aes_key)
 
-    p = Partitions('partitions.csv', None, 'pack.json')
-    p.postbuild_process(flash_aes_en=False, flash_aes_key=flash_aes_key, img_sign_key=None, flash_crc_en=False, flash_aes_type=flash_aes_type)
-    p.pack_bin(soc_type, flash_aes_type, flash_aes_key)
     p.install_bin()
 
 def steps_pack_csv():
