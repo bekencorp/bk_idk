@@ -880,7 +880,7 @@ float bk_adc_data_calculate(UINT16 adc_val, UINT8 adc_chan)
     if(adc_chan == 0)
     {
 #if (CONFIG_SOC_BK7236XX)
-        adc_val = adc_val*10/3;
+        adc_val = adc_val*5/3;
         cali_value = saradc_calculate(adc_val);
 #else
         adc_val = adc_val*5/3;

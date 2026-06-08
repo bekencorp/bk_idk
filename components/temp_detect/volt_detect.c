@@ -427,6 +427,9 @@ int volt_single_get_current_voltage(UINT32 *volt_value)
 		}
 
         *volt_value = _volt_detect_calculate_voltage(s_raw_voltage_data);
+		if (ADC_VOLT_SENSER_CHANNEL == 0) {
+			*volt_value = *volt_value * 2;
+		}
         if ((ADC_TEMP_VAL_MIN < *volt_value)/* && (*volt_value < ADC_TEMP_VAL_MAX)*/) {
             break;
         }
