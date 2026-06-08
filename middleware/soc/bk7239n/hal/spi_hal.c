@@ -218,7 +218,11 @@ bk_err_t spi_hal_duplex_config(spi_hal_t *hal)
 	spi_ll_disable_rx_overflow_int(hal->hw);
 	spi_ll_disable_tx_fifo_int(hal->hw);
 	spi_ll_disable_rx_fifo_int(hal->hw);
-	spi_ll_enable_slave_release_int(hal->hw);
+	if (spi_ll_get_wire_mode(hal->hw) == SPI_4WIRE_MODE) {
+		spi_ll_enable_slave_release_int(hal->hw);
+	} else {
+		spi_ll_disable_slave_release_int(hal->hw);
+	}
 	spi_ll_disable_tx(hal->hw);
 	spi_ll_disable_rx(hal->hw);
 	spi_ll_enable_tx_finish_int(hal->hw);

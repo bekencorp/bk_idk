@@ -213,6 +213,11 @@ static inline void spi_ll_set_wire_mode(spi_hw_t *hw, spi_wire_mode_t wire_mode)
 	hw->ctrl.wire3_en = wire_mode;
 }
 
+static inline uint32_t spi_ll_get_wire_mode(spi_hw_t *hw)
+{
+	return hw->ctrl.wire3_en;
+}
+
 static inline void spi_ll_set_bit_width(spi_hw_t *hw, spi_bit_width_t bit_width)
 {
 	hw->ctrl.bit_width = bit_width;

@@ -213,6 +213,11 @@ static inline void spi_ll_set_wire_mode(spi_hw_t *hw, spi_wire_mode_t wire_mode)
 	hw->ctrl.wire3_en = wire_mode;
 }
 
+static inline uint32_t spi_ll_get_wire_mode(spi_hw_t *hw)
+{
+	return hw->ctrl.wire3_en;
+}
+
 static inline void spi_ll_set_bit_width(spi_hw_t *hw, spi_bit_width_t bit_width)
 {
 	hw->ctrl.bit_width = bit_width;
@@ -312,6 +317,11 @@ static inline void spi_ll_set_rx_trans_len(spi_hw_t *hw, uint32_t len)
 		len = len / 2;
 	}
 	hw->cfg.rx_trans_len = len & SPI_F_RX_TRANS_LEN_M;
+}
+
+static inline void spi_ll_set_miso_o_fbsel(spi_hw_t *hw)
+{
+	hw->cfg.miso_o_fbsel = 1;
 }
 
 static inline void spi_ll_enable_tx_rx(spi_hw_t *hw)

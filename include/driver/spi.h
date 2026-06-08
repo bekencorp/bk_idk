@@ -406,6 +406,54 @@ bk_err_t bk_spi_dma_duplex_deinit(spi_id_t id);
  */
 bk_err_t bk_spi_dma_duplex_xfer(spi_id_t id, const void *tx_data, uint32_t tx_size, void *rx_data, uint32_t rx_size);
 
+/**
+ * @brief     Prepare SPI DMA duplex transfer (non-blocking)
+ *
+ * Pre-fills TX FIFO, configures DMA channels, sets trans_len to unlimited.
+ * Call bk_spi_dma_duplex_start() to begin the actual transfer.
+ *
+ * @param id SPI id
+ * @param tx_data TX buffer (header + payload), or NULL if no TX
+ * @param tx_size TX data length in bytes
+ * @param rx_data RX buffer, or NULL if no RX
+ * @param rx_size RX buffer size in bytes
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: other errors.
+ */
+bk_err_t bk_spi_dma_duplex_prepare(spi_id_t id, const void *tx_data, uint32_t tx_size,
+                                    void *rx_data, uint32_t rx_size);
+
+/**
+ * @brief     Start a prepared SPI DMA duplex transfer
+ *
+ * Starts TX/RX DMA and enables SPI TX+RX. The transfer runs until
+ * externally aborted via bk_spi_dma_duplex_abort().
+ *
+ * @param id SPI id
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: other errors.
+ */
+bk_err_t bk_spi_dma_duplex_start(spi_id_t id);
+
+/**
+ * @brief     Abort an in-progress SPI DMA duplex transfer
+ *
+ * Stops DMA, disables SPI TX/RX, and reports actual bytes received.
+ *
+ * @param id SPI id
+ * @param rx_buf_size the rx_size passed to bk_spi_dma_duplex_prepare()
+ * @param actual_rx_len pointer to receive actual bytes transferred (can be NULL)
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - others: other errors.
+ */
+bk_err_t bk_spi_dma_duplex_abort(spi_id_t id, uint32_t rx_buf_size, uint32_t *actual_rx_len);
+
 #endif
 #ifdef __cplusplus
 }

@@ -1070,6 +1070,100 @@ bk_err_t bk_spi_dma_duplex_xfer(spi_id_t id, const void *tx_data, uint32_t tx_si
         return BK_OK;
 }
 
+bk_err_t bk_spi_dma_duplex_prepare(spi_id_t id, const void *tx_data, uint32_t tx_size,
+                                    void *rx_data, uint32_t rx_size)
+{
+        SPI_RETURN_ON_NOT_INIT();
+        SPI_RETURN_ON_ID_NOT_INIT(id);
+        SPI_RETURN_ON_INVALID_ID(id);
+
+        uint32_t frame_size = (s_spi[id].hal.hw->ctrl.bit_width == SPI_BIT_WIDTH_16BITS) ? 2 : 1;
+
+        if (tx_data && tx_size > 0) {
+                uint32_t fifo_prefill = (tx_size > (48 * frame_size)) ? (48 * frame_size) : tx_size;
+                uint8_t *tx_buf = (uint8_t *)tx_data;
+
+                spi_hal_clear_tx_fifo(&s_spi[id].hal);
+
+                for (uint32_t i = 0; i < fifo_prefill; i += frame_size) {
+                        uint32_t data;
+                        if (frame_size == 1) {
+                                data = (uint32_t)tx_buf[i];
+                        } else {
+                                data = (uint32_t)(((uint16_t *)tx_buf)[i >> 1]);
+                        }
+                        BK_WHILE (!spi_hal_is_tx_fifo_wr_ready(&s_spi[id].hal));
+                        spi_hal_write_byte(&s_spi[id].hal, data);
+                }
+
+                spi_hal_set_tx_trans_len(&s_spi[id].hal, tx_size);
+
+                bk_dma_stop(s_spi[id].spi_tx_dma_chan);
+                if (tx_size > fifo_prefill) {
+                        bk_dma_set_src_start_addr(s_spi[id].spi_tx_dma_chan,
+                                                  (uint32_t)tx_data + fifo_prefill);
+                        bk_dma_set_transfer_len(s_spi[id].spi_tx_dma_chan,
+                                                tx_size - fifo_prefill);
+                } else {
+                        bk_dma_set_transfer_len(s_spi[id].spi_tx_dma_chan, 0);
+                }
+        }
+
+        if (rx_data && rx_size > 0) {
+                spi_hal_clear_rx_fifo(&s_spi[id].hal);
+                spi_hal_set_rx_trans_len(&s_spi[id].hal, rx_size);
+
+                bk_dma_stop(s_spi[id].spi_rx_dma_chan);
+                bk_dma_set_dest_start_addr(s_spi[id].spi_rx_dma_chan, (uint32_t)rx_data);
+                bk_dma_set_transfer_len(s_spi[id].spi_rx_dma_chan, rx_size);
+        }
+
+        return BK_OK;
+}
+
+bk_err_t bk_spi_dma_duplex_start(spi_id_t id)
+{
+        SPI_RETURN_ON_NOT_INIT();
+        SPI_RETURN_ON_ID_NOT_INIT(id);
+        SPI_RETURN_ON_INVALID_ID(id);
+
+        uint32_t int_level = spi_enter_critical();
+        bk_dma_start(s_spi[id].spi_rx_dma_chan);
+        bk_dma_start(s_spi[id].spi_tx_dma_chan);
+        spi_hal_enable_tx(&s_spi[id].hal);
+        spi_hal_enable_rx(&s_spi[id].hal);
+        spi_exit_critical(int_level);
+
+        return BK_OK;
+}
+
+bk_err_t bk_spi_dma_duplex_abort(spi_id_t id, uint32_t rx_buf_size, uint32_t *actual_rx_len)
+{
+        SPI_RETURN_ON_NOT_INIT();
+        SPI_RETURN_ON_ID_NOT_INIT(id);
+        SPI_RETURN_ON_INVALID_ID(id);
+
+        uint32_t int_level = spi_enter_critical();
+
+        spi_hal_disable_tx(&s_spi[id].hal);
+        spi_hal_disable_rx(&s_spi[id].hal);
+        spi_hal_disable_tx_fifo_int(&s_spi[id].hal);
+        spi_hal_disable_rx_fifo_int(&s_spi[id].hal);
+
+        uint32_t rx_remain = bk_dma_get_remain_len(s_spi[id].spi_rx_dma_chan);
+
+        bk_dma_stop(s_spi[id].spi_tx_dma_chan);
+        bk_dma_stop(s_spi[id].spi_rx_dma_chan);
+
+        spi_exit_critical(int_level);
+
+        if (actual_rx_len) {
+                *actual_rx_len = rx_buf_size - rx_remain;
+        }
+
+        return BK_OK;
+}
+
 uint32_t bk_spi_dma_write_bytes(spi_id_t id, const void *data, uint32_t size)
 {
         BK_RETURN_ON_NULL(data);
@@ -1250,12 +1344,6 @@ static void spi_isr_common(spi_id_t id)
                 }
 
                 if (s_spi[id].is_rx_blocked) {
-                        if (0 == s_spi[id].rx_offset) {
-                                SPI_LOGW("rx finish int triggered but rx_offset is 0\r\n");
-                        }
-                        if (s_spi[id].rx_offset < s_spi[id].rx_size) {
-                                SPI_LOGE("rx finish int triggered but rx_offset(%d) < rx_size(%d)\r\n", s_spi[id].rx_offset, s_spi[id].rx_size);
-                        }
                         rtos_set_semaphore(&s_spi[id].rx_sema);
                         s_spi[id].is_rx_blocked = false;
                 }
@@ -1315,7 +1403,7 @@ static void spi_isr_common(spi_id_t id)
                         }
                         bk_spi_clr_tx(id);
                 } else {
-                        SPI_LOGW("tx finish int triggered, but current mode is spi_slave\r\n");
+                        SPI_LOGD("tx finish int triggered, but current mode is spi_slave\r\n");
                 }
         }
 
