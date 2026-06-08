@@ -1630,6 +1630,8 @@ int wpa_supplicant_req_scan(struct wpa_supplicant *wpa_s, int sec, int usec)
 					if (cur.state == WIFI_LINKSTATE_STA_DISCONNECTED &&
 					    cur.reason_code == WIFI_REASON_WRONG_PASSWORD) {
 						WPA_LOGI("%s: skip auto-reconnect status update for wrong password\n", __func__);
+						// post event
+						wpas_notify_disconnected(wpa_s);
 						return WPA_OK;
 					}
 				}
