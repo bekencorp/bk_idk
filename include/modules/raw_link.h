@@ -761,6 +761,8 @@ bk_err_t bk_rlk_use_ext_feature(bool enable);
 
 bk_err_t bk_rlk_use_esp_now_filter(bool enable);
 
+bk_err_t bk_rlk_use_legacy_rlk_header(bool enable);
+
 bk_err_t bk_rlk_set_sync_enabled(bool enable);
 
 bk_err_t bk_rlk_register_sync_cb(bk_rlk_sync_cb_t cb);
