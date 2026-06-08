@@ -220,9 +220,9 @@ const VECTOR_TABLE_Type __VECTOR_TABLE[] __VECTOR_TABLE_ATTRIBUTE = {
   0,                                        /* 45 Reserved */
   0,                                        /* 46 Reserved */
   0,                                        /* 47 Reserved */
-  /* BK7236 legacy download mode requires that the flash offset 0x100 is 'BK7236'.*/
+  /* BK7236N legacy download mode requires that the flash offset 0x100 is 'BK7236N'.*/
   (void (*)(void))0x32374B42,
-  (void (*)(void))0x00003633,
+  (void (*)(void))0x004E3633,
   OTP_Handler,                              /* 50 OTP_Handler */
   DPLL_UNLOCK_Handler,                      /* 51 DPLL_UNLOCK_Handler */
   0,                                        /* 52 Reserved */

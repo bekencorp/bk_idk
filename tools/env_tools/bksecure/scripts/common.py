@@ -17,6 +17,8 @@ IMG_HDR_LEN = 32
 BL2_HDR_SZ = 0x1000
 BL2_TAIL_SZ = 0x1000
 CPU_VECTOR_ALIGN_SZ = 512
+APP_BIN_MAGIC_OFFSET = 0x1160
+APP_BIN_MAGIC_BK7236N = b'BK7236N'
 
 def ceil_align(value, alignment):
     return (((value + alignment - 1) // alignment) * alignment)
@@ -144,6 +146,23 @@ def parse_bool(v):
         return True
     return False
 
+def _read_pack_app_bin_magic():
+    """Read chip magic from xip_a.bin or overwrite.bin at APP_BIN_MAGIC_OFFSET."""
+    for bin_name in ('xip_a.bin', 'overwrite.bin'):
+        if not os.path.isfile(bin_name):
+            continue
+        try:
+            with open(bin_name, 'rb') as f:
+                f.seek(APP_BIN_MAGIC_OFFSET)
+                magic = f.read(len(APP_BIN_MAGIC_BK7236N))
+            logging.debug(
+                f'Read app bin magic from {bin_name} @0x{APP_BIN_MAGIC_OFFSET:x}: {magic!r}'
+            )
+            return magic
+        except OSError as e:
+            logging.debug(f'Failed to read magic from {bin_name}: {e}')
+    return None
+
 def is_flash_crc_enabled():
     """Check if flash_crc_en is enabled by reading security.csv using Security class
     Returns True if flash_crc_en is True (crc mode), False if flash_crc_en is False (no_crc mode)
@@ -167,9 +186,12 @@ def is_flash_crc_enabled():
             return flash_crc_en
     except Exception as e:
         logging.debug(f'Failed to read flash_crc_en from config: {e}')
-    
-    # Default to True (CRC mode) if not found
-    logging.debug('Using default flash_crc_en=TRUE (CRC mode)')
+
+    magic = _read_pack_app_bin_magic()
+    if magic == APP_BIN_MAGIC_BK7236N:
+        logging.debug('App bin magic is BK7236N, flash_crc_en=False')
+        return False
+    logging.debug('App bin magic is not BK7236N, flash_crc_en=True')
     return True
 
 def clear_dir(directory):
