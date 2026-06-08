@@ -1068,6 +1068,11 @@ bk_err_t bk_flash_erase_fast(uint32_t erase_off, uint32_t len)
 }
 
 #if CONFIG_FLASH_IMPORT_TEST
+bk_err_t flash_import_read_bytes(uint8_t *buffer, uint32_t address, uint32_t len)
+{
+	return bk_flash_read_bytes(address, buffer, len);
+}
+
 flash_protect_type_t flash_import_get_protect(void)
 {
 	flash_line_mode_t old_line_mode = flash_set_line_mode(FLASH_LINE_MODE_TWO);
@@ -1264,6 +1269,22 @@ void bk_flash_read_cbus(uint32_t address, void *user_buf, uint32_t size)
 {
     flash_memcpy((char*)user_buf, (const char*)(0x02000000+address),size);
 }
+
+#if CONFIG_FLASH_IMPORT_TEST
+__attribute__((section(".iram")))
+bk_err_t flash_import_write_cbus(const uint8_t *buffer, uint32_t address, uint32_t len)
+{
+    flash_write_cbus(address, buffer, len);
+    return BK_OK;
+}
+
+__attribute__((section(".iram")))
+bk_err_t flash_import_read_cbus(uint8_t *buffer, uint32_t address, uint32_t len)
+{
+    bk_flash_read_cbus(address, buffer, len);
+    return BK_OK;
+}
+#endif
 
 #if CONFIG_DIRECT_XIP
 __attribute__((section(".iram")))
