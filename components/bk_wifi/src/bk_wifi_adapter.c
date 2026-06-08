@@ -1654,6 +1654,7 @@ Countryregulations country_regulation_table[] = {
     {"MD", COUNTRY_MD, PW_LMT_REGU_ETSI    },
     {"ME", COUNTRY_ME, PW_LMT_REGU_ETSI    },
     {"MF", COUNTRY_MF, PW_LMT_REGU_ETSI    },
+    {"MG", COUNTRY_MG, PW_LMT_REGU_ETSI    },
     {"MH", COUNTRY_MH, PW_LMT_REGU_FCC     },
     {"MK", COUNTRY_MK, PW_LMT_REGU_ETSI    },
     {"MN", COUNTRY_MN, PW_LMT_REGU_ETSI     },
