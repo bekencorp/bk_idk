@@ -58,22 +58,20 @@ class PackUserMfr(Pack):
         
         # ========== MODIFICATION START: Add pack header to user_mfr_aes.bin ==========
         # Reference: partition_nvs.py and partition_nvs_key.py - add pack header for PackDownload
-        self.__add_pack_header_to_user_mfr_aes(encrypted_bin)
+        partition_name = os.path.splitext(os.path.basename(user_mfr_bin))[0]
+        self.__add_pack_header_to_user_mfr_aes(encrypted_bin, partition_name)
         # ========== MODIFICATION END ==========
         
         logging.info(f'PackUserMfr: encrypted {user_mfr_bin} -> {encrypted_bin}')
     
-    def __add_pack_header_to_user_mfr_aes(self, encrypted_bin):
+    def __add_pack_header_to_user_mfr_aes(self, encrypted_bin, partition_name):
         """Add pack header to user_mfr_aes.bin so it can be parsed by PackDownload"""
         from .pack_header import PackHeader
-        from .parse_csv import Csv
         
         if not os.path.exists(encrypted_bin):
             logging.warning(f'PackUserMfr: {encrypted_bin} not exists, cannot add pack header')
             return
         
-        # Get user_mfr partition information from partitions.csv
-        partition_name = 'user_mfr'
         partition_type = 1  # data type
         partition_subtype = 17  # factory subtype (from partition_type.py)
         partition_offset = 0
@@ -99,9 +97,14 @@ class PackUserMfr(Pack):
                         f'offset=0x{partition_offset:x}, size=0x{partition_size:x}, flags=0x{partition_flags:x}'
                     )
                 else:
-                    logging.warning(f'PackUserMfr: partition {partition_name} not found in partitions.csv, using defaults')
+                    logging.error(f'PackUserMfr: partition "{partition_name}" not found in partitions.csv')
+                    exit(1)
             except Exception as e:
-                logging.warning(f'PackUserMfr: failed to resolve partition from partitions.csv: {e}, using defaults')
+                logging.error(f'PackUserMfr: failed to resolve partition from partitions.csv: {e}')
+                exit(1)
+        else:
+            logging.error('PackUserMfr: partitions.csv not found')
+            exit(1)
         # ========== MODIFICATION END ==========
         
         # Create pack header for user_mfr_aes.bin

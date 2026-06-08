@@ -22,6 +22,7 @@ from .partition_padding import PartitionPadding
 from .partition_app_padding import PartitionAppPadding
 from .partition_nvs_key import PartitionNvsKey
 from .partition_nvs import PartitionNvs
+from .partition_type import SUBTYPE_FACTORY
 from .gen_license import *
 from .bin import Bin
 from .ota import OTA
@@ -361,12 +362,20 @@ class Partitions:
         
         macros = ''
         partition_ids = ''
+        factory_alias = ''
         id = 0
         struct_array = f"#define BK_FLASH_PARTITIONS_MAP {{ \\\r\n"
         for p in self._partitions:
             macros += p.gen_code() + '\r\n'
             name = p.name()
-            partition_ids += f"#define BK_PARTITION_{name.upper().replace(' ', '_')} {id}\r\n"
+            part_macro = name.upper().replace(' ', '_')
+            partition_ids += f"#define BK_PARTITION_{part_macro} {id}\r\n"
+            partition_ids += f"#define BK_PARTITION_{part_macro}_NAME \"{name}\"\r\n"
+            if p.type().subtype() == SUBTYPE_FACTORY:
+                factory_alias = (
+                    f"#define BK_PARTITION_FACTORY                BK_PARTITION_{part_macro}\r\n"
+                    f"#define BK_PARTITION_FACTORY_NAME           BK_PARTITION_{part_macro}_NAME\r\n"
+                )
             id += 1
             struct_array +=  f"    {{BK_FLASH_EMBEDDED, \"{name}\""
             name = name.upper()
@@ -380,6 +389,8 @@ class Partitions:
         f.write(struct_array)
         f.write('\r\n')
         f.write(partition_ids)
+        if factory_alias:
+            f.write(factory_alias)
         f.write(f"#define BK_PARTITIONS_TABLE_SIZE {id}\r\n")
         f.flush()
         f.close()
@@ -528,17 +539,21 @@ class Partitions:
         
         # Collect all bin files that need pack headers
         bins_needing_headers = set()
+        mfr_aes_input_bins = set()
         for k in pack_data:
             bins = pack_data[k].get('bin', [])
             for bin_name in bins:
                 bins_needing_headers.add(bin_name)
+            if pack_data[k].get('action', '') == 'USER_MFR_AES':
+                for bin_name in bins:
+                    mfr_aes_input_bins.add(bin_name)
                 
         logging.debug(f'Bins needing pack headers: {bins_needing_headers}')
         logging.debug(f'Bins need override version: {self._version_overrides}')
         # For each bin file, check and add pack header if needed
         for bin_name in bins_needing_headers:
-            if bin_name == 'user_mfr.bin':
-                logging.debug('Skip adding pack header to user_mfr.bin (handled by USER_MFR_AES flow)')
+            if bin_name in mfr_aes_input_bins:
+                logging.debug('Skip adding pack header to %s (handled by USER_MFR_AES flow)', bin_name)
                 continue
 
             if not os.path.exists(bin_name):
