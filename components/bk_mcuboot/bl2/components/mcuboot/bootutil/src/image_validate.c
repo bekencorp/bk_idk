@@ -166,7 +166,7 @@ bootutil_img_hash(struct enc_key_data *enc_state, int image_index,
         if(fap->fa_off == sec_addr){
             // For slot1, use slot0 address and set XIP mode
             addr = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(pri_addr));
-            crc_check_addr = addr;
+            crc_check_addr = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(sec_addr));
             execute_enable_saved = flash_get_excute_enable();
             flash_set_excute_enable(1);
             need_restore_execute_enable = true;
@@ -203,7 +203,7 @@ bootutil_img_hash(struct enc_key_data *enc_state, int image_index,
         if (seed && (seed_len > 0)) {
             bootutil_sha_update(&sha_ctx, seed, seed_len);
         }
-        uint32_t hash_calc_addr = crc_check_addr + FLASH_BASE_ADDRESS;
+        uint32_t hash_calc_addr = addr + FLASH_BASE_ADDRESS;
         bootutil_sha_update(&sha_ctx,
                             (void*)hash_calc_addr,
                             size);
