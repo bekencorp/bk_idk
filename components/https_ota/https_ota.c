@@ -271,6 +271,8 @@ bk_err_t bk_https_ota_set_erase_method(https_ota_t* ota_config, bool is_entire_f
 
 https_ota_state_t bk_https_ota_perform(https_ota_t* ota_config)
 {
+	bool flash_unprotected = false;
+
 	while(1) {
 		switch (ota_config->state) {
 			case HTTPS_OTA_INIT:
@@ -281,6 +283,7 @@ https_ota_state_t bk_https_ota_perform(https_ota_t* ota_config)
 				break;
 			case HTTPS_OTA_READY:
 				bk_flash_set_protect_type(FLASH_PROTECT_NONE);
+				flash_unprotected = true;
 			case HTTPS_OTA_PROGRESS_DATA:
 				bk_https_ota_progress_data(ota_config);
 				break;
@@ -296,7 +299,9 @@ https_ota_state_t bk_https_ota_perform(https_ota_t* ota_config)
 
 end:
 	bk_https_ota_end(ota_config);
-	bk_flash_set_protect_type(FLASH_PROTECT_ALL);
+	if (flash_unprotected) {
+		bk_flash_set_protect_type(FLASH_PROTECT_ALL);
+	}
 ret:
 	return ota_config->state;
 }
