@@ -629,15 +629,17 @@ const INT16 shift_tab_ax20_5g[10] = {-8,  -4,  0,  2,  2,  2,  3,  3,  4, 4}; //
 const INT16 shift_tab_n40_5g[10] = {-8,  -4,  0,  2,  2,  2,  3,  3,  4, 4}; // n40 mcs9 mcs8 mcs7(base) -  mcs0,
 #endif
 
-const INT16 shift_tab_b_fcc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // ch1~ch14
-const INT16 shift_tab_g_fcc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // ch1~ch14
-const INT16 shift_tab_n20_fcc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // ch1~ch14
-const INT16 shift_tab_n40_fcc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // ch1~ch14
+const INT16 shift_tab_b_fcc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -4, 0, 0, 0}; // ch1~ch14
+const INT16 shift_tab_g_fcc[WLAN_2_4_G_CHANNEL_NUM] = {-8, 0, 0, 0, 0, 0, 0, 0, 0, 0, -10, 0, 0, 0}; // ch1~ch14
+const INT16 shift_tab_n20_fcc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -4, 0, 0, 0}; // ch1~ch14
+const INT16 shift_tab_ax20_fcc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -6, 0, 0, 0}; // ch1~ch14
+const INT16 shift_tab_n40_fcc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, -4, 0, 0, 0, 0, 0, -16, 0, 0, 0, 0, 0}; // ch1~ch14
 
 const INT16 shift_tab_b_srrc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -12, -20, 0}; // ch1~ch14
-const INT16 shift_tab_g_srrc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -12, -24, 0}; // ch1~ch14
-const INT16 shift_tab_n20_srrc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -12, -24, 0}; // ch1~ch14
-const INT16 shift_tab_n40_srrc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -12, -24, 0}; // ch1~ch14
+const INT16 shift_tab_g_srrc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -12, -52, 0}; // ch1~ch14
+const INT16 shift_tab_n20_srrc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -12, -50, 0}; // ch1~ch14
+const INT16 shift_tab_ax20_srrc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -12, -46, 0}; // ch1~ch14
+const INT16 shift_tab_n40_srrc[WLAN_2_4_G_CHANNEL_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -40, -12, -24, 0}; // ch1~ch14
 
 void vnd_cal_overlay(void)
 {

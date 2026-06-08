@@ -152,8 +152,8 @@ rf_config,672,8,name,rf_cfg,,,,
 ,700,2,pwr_shift_in_srrc,0xFFFF,,,,bit-flag(with channel mask) to use shift_tab_b etc. in SRRC mode
 ,702,1,test_mode_temp_optimize,0x0,,,,flag to optimize analog even in FCC/SRRC mode
 ,703,1,test_mode_fir_11b,0x32,,,,FIR of 11B in FCC/SRRC mode
-,704,1,test_mode_fir_11g,0x50,,,,FIR of 11G in FCC/SRRC mode
-,705,1,test_mode_fir_11n,0x50,,,,FIR of 11N(MCS0~3) in FCC/SRRC mode
+,704,1,test_mode_fir_11g,0x32,,,,FIR of 11G in FCC/SRRC mode
+,705,1,test_mode_fir_11n,0x32,,,,FIR of 11N(MCS0~3) in FCC/SRRC mode
 ,706,1,ftpwr_cali_valid,0x0,,,,flag to use ftpwr as valid
 ,707,1,cali_per_temp_bias,0x14,,,,calibrate bias with temperature
 ,708,1,cali_per_temp_rxadc,0xA,,,,calibrate rxADC with temperature
