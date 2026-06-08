@@ -16,6 +16,7 @@ typedef struct tmp_pwr_st {
     int8_t p_index_delta;
     int8_t p_index_delta_g;
     int8_t p_index_delta_ble;
+    int8_t p_index_delta_thread;
     int16_t xtal_c_dlta;
 } TMP_PWR_ST, *TMP_PWR_PTR;
 
