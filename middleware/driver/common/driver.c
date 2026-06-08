@@ -32,6 +32,7 @@
 #include <driver/adc.h>
 #include <driver/spi.h>
 #include <driver/i2c.h>
+#include <driver/ledc.h>
 #include <driver/aon_rtc.h>
 #include <modules/pm.h>
 #include <driver/psram.h>
@@ -332,6 +333,10 @@ int driver_init(void) {
 
 #if CONFIG_I2C
 	bk_i2c_driver_init();
+#endif
+
+#if CONFIG_LEDC
+	bk_ledc_driver_init();
 #endif
 
 #if CONFIG_QSPI

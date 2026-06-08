@@ -116,6 +116,12 @@ if (CONFIG_I2C)
 	)
 endif()
 
+if (CONFIG_LEDC)
+	list(APPEND srcs
+		cli_ledc.c
+	)
+endif()
+
 
 if (CONFIG_FLASH)
 	list(APPEND srcs

@@ -1,0 +1,5 @@
+menu "LEDC"
+	config LEDC
+		bool "Enable LEDC (RGB/WS2812)"
+		default n
+endmenu

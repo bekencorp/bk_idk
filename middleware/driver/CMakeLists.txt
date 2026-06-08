@@ -171,6 +171,12 @@ if (CONFIG_SIM_I2C)
 endif()
 endif()  #if (CONFIG_I2C)
 
+if (CONFIG_LEDC)
+	list(APPEND srcs
+		ledc/ledc_driver.c
+	)
+endif()
+
 if (CONFIG_SUPPORT_IRDA)
 	list(APPEND srcs
 		irda/irda.c

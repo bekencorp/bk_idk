@@ -1733,6 +1733,10 @@ static const cli_module_init_entry_t cli_platform_inits[] = {
     CLI_MODULE_INIT_ENTRY(cli_i2c_api_init),
 #endif
 
+#if (CLI_CFG_LEDC == 1)
+	CLI_MODULE_INIT_ENTRY(cli_ledc_init),
+#endif
+
 #if (CLI_CFG_JPEGENC == 1)
 	CLI_MODULE_INIT_ENTRY(cli_jpeg_init),
 #endif

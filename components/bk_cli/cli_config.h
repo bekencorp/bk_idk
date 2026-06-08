@@ -159,6 +159,12 @@ extern "C" {
 #define CLI_CFG_I2C         0
 #endif
 
+#if (CONFIG_LEDC && (CONFIG_SYS_CPU0))
+#define CLI_CFG_LEDC        1
+#else
+#define CLI_CFG_LEDC        0
+#endif
+
 #if (CONFIG_QSPI && (CONFIG_SYS_CPU0))
 #define CLI_CFG_QSPI        1
 #else

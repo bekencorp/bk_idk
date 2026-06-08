@@ -944,6 +944,12 @@ CONFIG_SDIO_V2P0=y
 # end of SDIO
 
 #
+#LEDC
+#
+CONFIG_LEDC=y
+# end of LEDC
+
+#
 # SPI
 #
 CONFIG_SPI_DMA=y

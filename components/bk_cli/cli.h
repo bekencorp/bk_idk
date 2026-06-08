@@ -113,6 +113,7 @@ int cli_spi_api_init(void);
 int cli_qspi_init(void);
 int cli_i2c_init(void);
 int cli_i2c_api_init(void);
+int cli_ledc_init(void);
 int cli_aon_rtc_init(void);
 int cli_sd_init(void);
 int cli_fatfs_init(void);

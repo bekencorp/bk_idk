@@ -13,6 +13,12 @@ set(srcs
 	hal/uart_hal.c
 	)
 
+if(CONFIG_LEDC)
+	list(APPEND srcs
+		hal/ledc_hal.c
+	)
+endif()
+
 if (CONFIG_AON_GPIO)
 	list(APPEND srcs
 		hal/gpio_hal.c
