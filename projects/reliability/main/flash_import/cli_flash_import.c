@@ -29,6 +29,8 @@ struct flash_import_subcmd {
 	const char *name;
 	const char *usage;
 	int (*handler)(int argc, char **argv);
+	uint8_t subargc_min;
+	uint8_t subargc_max;
 };
 
 static int flash_import_zero_read_cmd(int argc, char **argv)
@@ -88,9 +90,9 @@ static int flash_import_driver_cmd(int argc, char **argv)
 }
 
 static const struct flash_import_subcmd s_flash_import_subcmds[] = {
-	{ "endurance", "usage: flash_import endurance {start|stop|show}", flash_import_endurance_cmd },
-	{ "zero_read", "usage: flash_import zero_read {start|stop|show}", flash_import_zero_read_cmd },
-	{ "driver", "usage: flash_import driver", flash_import_driver_cmd },
+	{ "endurance", "usage: flash_import endurance {start|stop|show}", flash_import_endurance_cmd, 1, 1 },
+	{ "zero_read", "usage: flash_import zero_read {start|stop|show}", flash_import_zero_read_cmd, 1, 1 },
+	{ "driver", "usage: flash_import driver", flash_import_driver_cmd, 0, 0 },
 };
 
 #define FLASH_IMPORT_SUBCMD_CNT (sizeof(s_flash_import_subcmds) / sizeof(s_flash_import_subcmds[0]))
@@ -117,19 +119,18 @@ static void cli_flash_import_cmd(char *pcWriteBuffer, int xWriteBufferLen, int a
 	}
 
 	for (i = 0; i < FLASH_IMPORT_SUBCMD_CNT; i++) {
-		if (strcmp(argv[1], s_flash_import_subcmds[i].name) != 0) {
+		const struct flash_import_subcmd *subcmd = &s_flash_import_subcmds[i];
+		int subargc = argc - 2;
+
+		if (strcmp(argv[1], subcmd->name) != 0) {
 			continue;
 		}
 
-		if (strcmp(argv[1], "driver") == 0) {
-			if (argc != 2) {
-				goto usage;
-			}
-		} else if (argc < 3) {
+		if (subargc < (int)subcmd->subargc_min || subargc > (int)subcmd->subargc_max) {
 			goto usage;
 		}
 
-		ret = s_flash_import_subcmds[i].handler(argc - 2, &argv[2]);
+		ret = subcmd->handler(subargc, &argv[2]);
 		if (ret == 0) {
 			return;
 		}

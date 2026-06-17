@@ -91,8 +91,10 @@ static __attribute__((section(".iram"))) void flash_bypass_otp_irq_guard_exit(co
 
 static __attribute__((section(".iram"))) void flash_bypass_otp_read_flash_id(void)
 {
+    flash_bypass_otp_irq_guard_t guard = flash_bypass_otp_irq_guard_enter();
+
     if (s_cached_flash_id) {
-        return;
+        goto exit;
     }
 
     size_t count = sizeof(s_flash_bypass_otp_configs) / sizeof(s_flash_bypass_otp_configs[0]);
@@ -110,9 +112,12 @@ static __attribute__((section(".iram"))) void flash_bypass_otp_read_flash_id(voi
                       ((uint32_t)rx_buf[2]);
         if (id != 0) {
             s_cached_flash_id = id;
-            return;
+            break;
         }
     }
+
+exit:
+    flash_bypass_otp_irq_guard_exit(&guard);
 }
 
 static __attribute__((section(".iram"))) uint32_t flash_bypass_otp_get_flash_id(void)
@@ -621,159 +626,118 @@ bk_err_t flash_bypass_otp_test(void)
     bk_err_t ret = BK_OK;
     uint8_t *read_buf = NULL;
     uint8_t *write_buf = NULL;
-
-    const flash_bypass_otp_config_t *cfg = flash_bypass_otp_get_config();
-    if (cfg == NULL) {
-        FLASH_BYPASS_OTP_LOGE("get_config failed\r\n");
-        ret = BK_FAIL;
-        goto cleanup;
-    }
+    const flash_bypass_otp_config_t *cfg = NULL;
+    uint32_t blocks_tested = 0;
+    uint32_t blocks_skipped_locked = 0;
 
     uint32_t flash_id = flash_bypass_otp_get_flash_id();
-    FLASH_BYPASS_OTP_LOGI("Flash ID: 0x%06X\r\n", flash_id);
-    FLASH_BYPASS_OTP_LOGI("OTP blocks: %d, block_size: %d, max_write_len: %d\r\n",
-                cfg->otp_blocks, cfg->otp_block_size, cfg->max_write_len);
-
-    if (flash_id == 0) {
-        FLASH_BYPASS_OTP_LOGE("get_flash_id failed\r\n");
+    size_t cfg_idx;
+    for (cfg_idx = 0; cfg_idx < sizeof(s_flash_bypass_otp_configs) / sizeof(s_flash_bypass_otp_configs[0]) - 1; cfg_idx++) {
+        if (s_flash_bypass_otp_configs[cfg_idx].flash_id == flash_id) {
+            break;
+        }
+    }
+    if (cfg_idx == sizeof(s_flash_bypass_otp_configs) / sizeof(s_flash_bypass_otp_configs[0]) - 1) {
+        FLASH_BYPASS_OTP_LOGE("unsupported flash id: 0x%06X\r\n", flash_id);
         ret = BK_FAIL;
         goto cleanup;
     }
 
+    cfg = flash_bypass_otp_get_config();
+
+    read_buf = (uint8_t *)os_malloc(cfg->otp_block_size);
+    write_buf = (uint8_t *)os_malloc(cfg->otp_block_size);
+    if (!read_buf || !write_buf) {
+        FLASH_BYPASS_OTP_LOGE("malloc failed\r\n");
+        ret = BK_ERR_NO_MEM;
+        goto cleanup;
+    }
+    for (uint32_t i = 0; i < cfg->otp_block_size; i++) {
+        write_buf[i] = (uint8_t)(i & 0xFF);
+    }
+
+    uint32_t test_cases[] = {
+        16,
+        cfg->max_write_len,
+        cfg->otp_block_size
+    };
+    uint32_t test_case_count = sizeof(test_cases) / sizeof(test_cases[0]);
+
     for (uint8_t otp_idx = cfg->otp_idx_min; otp_idx <= cfg->otp_idx_max; otp_idx++) {
-        FLASH_BYPASS_OTP_LOGI("----- Testing OTP block %d -----\r\n", otp_idx);
-
         bool locked = false;
-        ret = flash_bypass_otp_get_lock(otp_idx, &locked);
-        if (ret == BK_OK) {
-            FLASH_BYPASS_OTP_LOGI("OTP%d lock status: %s\r\n", otp_idx, locked ? "LOCKED" : "UNLOCKED");
-            if (locked) {
-                FLASH_BYPASS_OTP_LOGW("OTP%d is locked, skip test\r\n", otp_idx);
-                continue;
-            }
-        }
-
-        read_buf = (uint8_t *)os_malloc(cfg->otp_block_size);
-        write_buf = (uint8_t *)os_malloc(cfg->otp_block_size);
-        if (!read_buf || !write_buf) {
-            FLASH_BYPASS_OTP_LOGE("malloc failed\r\n");
-            ret = BK_ERR_NO_MEM;
+        flash_bypass_otp_err_t lock_ret = flash_bypass_otp_get_lock(otp_idx, &locked);
+        if (lock_ret != FLASH_BYPASS_OTP_OK) {
+            FLASH_BYPASS_OTP_LOGE("OTP%d get lock failed: ret=%d\r\n", otp_idx, lock_ret);
+            ret = BK_FAIL;
             goto cleanup;
         }
-
-        os_memset(read_buf, 0xFF, cfg->otp_block_size);
-        os_memset(write_buf, 0xFF, cfg->otp_block_size);
-
-        ret = flash_bypass_otp_read(otp_idx, 0, read_buf, cfg->otp_block_size);
-        if (ret != FLASH_BYPASS_OTP_OK) {
-            FLASH_BYPASS_OTP_LOGE("OTP%d read before erase failed: ret=%d\r\n", otp_idx, ret);
-            os_free(read_buf);
-            os_free(write_buf);
-            read_buf = NULL;
-            write_buf = NULL;
+        if (locked) {
+            FLASH_BYPASS_OTP_LOGW("OTP%d is locked, skip test\r\n", otp_idx);
+            blocks_skipped_locked++;
             continue;
         }
 
-        FLASH_BYPASS_OTP_LOGI("OTP%d erase test\r\n", otp_idx);
-        ret = flash_bypass_otp_erase(otp_idx);
-        if (ret != BK_OK) {
-            FLASH_BYPASS_OTP_LOGE("OTP%d erase failed: ret=%d\r\n", otp_idx, ret);
-            os_free(read_buf);
-            os_free(write_buf);
-            read_buf = NULL;
-            write_buf = NULL;
-            continue;
-        }
+        for (uint32_t case_idx = 0; case_idx < test_case_count; case_idx++) {
+            uint32_t chunk_len = test_cases[case_idx];
 
-        ret = flash_bypass_otp_read(otp_idx, 0, read_buf, cfg->otp_block_size);
-        if (ret != FLASH_BYPASS_OTP_OK) {
-            FLASH_BYPASS_OTP_LOGE("OTP%d read after erase failed: ret=%d\r\n", otp_idx, ret);
-            os_free(read_buf);
-            os_free(write_buf);
-            read_buf = NULL;
-            write_buf = NULL;
-            continue;
-        }
-
-        // Check if OTP block was already written (contains non-0xFF data)
-        bool has_data = false;
-        for (uint32_t i = 0; i < cfg->otp_block_size; i++) {
-            if (read_buf[i] != 0xFF) {
-                has_data = true;
-                break;
-            }
-        }
-
-        if (has_data) {
-            FLASH_BYPASS_OTP_LOGW("OTP%d contains data before erase, first 16 bytes: \r\n", otp_idx);
-            for (uint32_t i = 0; i < 16 && i < cfg->otp_block_size; i++) {
-                BK_DUMP_OUT("%02X ", read_buf[i]);
-            }
-            BK_DUMP_OUT("\r\n");
-        }
-
-        for (uint32_t i = 0; i < cfg->otp_block_size; i++) {
-            if (read_buf[i] != 0xFF) {
-                FLASH_BYPASS_OTP_LOGE("OTP%d erase verify failed at offset %d: expected=0xFF got=0x%02X\r\n", otp_idx, i, read_buf[i]);
+            flash_bypass_otp_err_t otp_ret = flash_bypass_otp_erase(otp_idx);
+            if (otp_ret != FLASH_BYPASS_OTP_OK) {
+                FLASH_BYPASS_OTP_LOGE("OTP%d chunk_len=%u erase failed: ret=%d\r\n",
+                                      otp_idx, chunk_len, otp_ret);
                 ret = BK_FAIL;
                 goto cleanup;
             }
-        }
-        FLASH_BYPASS_OTP_LOGI("OTP%d erase verify OK\r\n", otp_idx);
 
-        uint32_t test_cases[] = {
-            16,
-            cfg->max_write_len,
-            cfg->otp_block_size
-        };
-        uint32_t test_case_count = sizeof(test_cases) / sizeof(test_cases[0]);
-
-        for (uint32_t case_idx = 0; case_idx < test_case_count; case_idx++) {
-            uint32_t write_len = test_cases[case_idx];
-            if (write_len > cfg->otp_block_size) {
-                continue;
+            otp_ret = flash_bypass_otp_read(otp_idx, 0, read_buf, cfg->otp_block_size);
+            if (otp_ret != FLASH_BYPASS_OTP_OK) {
+                FLASH_BYPASS_OTP_LOGE("OTP%d chunk_len=%u read after erase failed: ret=%d\r\n",
+                                      otp_idx, chunk_len, otp_ret);
+                ret = BK_FAIL;
+                goto cleanup;
             }
 
-            FLASH_BYPASS_OTP_LOGI("OTP%d write test: len=%d\r\n", otp_idx, write_len);
-
-            for (uint32_t i = 0; i < write_len; i++) {
-                write_buf[i] = (uint8_t)(i & 0xFF);
-            }
-
-            ret = flash_bypass_otp_write(otp_idx, 0, write_buf, write_len);
-            if (ret != BK_OK) {
-                FLASH_BYPASS_OTP_LOGE("OTP%d write len=%d failed: ret=%d\r\n", otp_idx, write_len, ret);
-                continue;
-            }
-
-            os_memset(read_buf, 0, write_len);
-            ret = flash_bypass_otp_read(otp_idx, 0, read_buf, write_len);
-            if (ret != FLASH_BYPASS_OTP_OK) {
-                FLASH_BYPASS_OTP_LOGE("OTP%d read after write len=%d failed: ret=%d\r\n", otp_idx, write_len, ret);
-                continue;
-            }
-
-            bool verify_ok = true;
-            for (uint32_t i = 0; i < write_len; i++) {
-                if (read_buf[i] != write_buf[i]) {
-                    FLASH_BYPASS_OTP_LOGE("OTP%d verify failed at offset %d: expected=0x%02X got=0x%02X\r\n",
-                                otp_idx, i, write_buf[i], read_buf[i]);
-                    verify_ok = false;
-                    break;
+            for (uint32_t i = 0; i < cfg->otp_block_size; i++) {
+                if (read_buf[i] != 0xFF) {
+                    FLASH_BYPASS_OTP_LOGE("OTP%d chunk_len=%u erase verify failed at offset %u: expected=0xFF got=0x%02X\r\n",
+                                          otp_idx, chunk_len, i, read_buf[i]);
+                    ret = BK_FAIL;
+                    goto cleanup;
                 }
             }
 
-            if (verify_ok) {
-                FLASH_BYPASS_OTP_LOGI("OTP%d write/read len=%d verify OK\r\n", otp_idx, write_len);
-            } else {
-                FLASH_BYPASS_OTP_LOGE("OTP%d write/read len=%d verify FAILED\r\n", otp_idx, write_len);
+            for (uint32_t offset = 0; offset < cfg->otp_block_size; offset += chunk_len) {
+                uint32_t len = cfg->otp_block_size - offset;
+                if (len > chunk_len) {
+                    len = chunk_len;
+                }
+                otp_ret = flash_bypass_otp_write(otp_idx, offset, write_buf + offset, len);
+                if (otp_ret != FLASH_BYPASS_OTP_OK) {
+                    FLASH_BYPASS_OTP_LOGE("OTP%d chunk_len=%u write failed: offset=%u len=%u ret=%d\r\n",
+                                          otp_idx, chunk_len, offset, len, otp_ret);
+                    ret = BK_FAIL;
+                    goto cleanup;
+                }
+            }
+
+            otp_ret = flash_bypass_otp_read(otp_idx, 0, read_buf, cfg->otp_block_size);
+            if (otp_ret != FLASH_BYPASS_OTP_OK) {
+                FLASH_BYPASS_OTP_LOGE("OTP%d chunk_len=%u read after write failed: ret=%d\r\n",
+                                      otp_idx, chunk_len, otp_ret);
+                ret = BK_FAIL;
+                goto cleanup;
+            }
+
+            for (uint32_t i = 0; i < cfg->otp_block_size; i++) {
+                if (read_buf[i] != write_buf[i]) {
+                    FLASH_BYPASS_OTP_LOGE("OTP%d chunk_len=%u verify failed at offset %u: expected=0x%02X got=0x%02X\r\n",
+                                          otp_idx, chunk_len, i, write_buf[i], read_buf[i]);
+                    ret = BK_FAIL;
+                    goto cleanup;
+                }
             }
         }
 
-        os_free(read_buf);
-        os_free(write_buf);
-        read_buf = NULL;
-        write_buf = NULL;
+        blocks_tested++;
     }
 
 cleanup:
@@ -790,7 +754,13 @@ cleanup:
         write_buf = NULL;
     }
 
-    FLASH_BYPASS_OTP_LOGI("===== OTP Test End =====\r\n");
+    if (ret == BK_OK && cfg != NULL) {
+        FLASH_BYPASS_OTP_LOGI("===== OTP Test PASS =====\r\n");
+        FLASH_BYPASS_OTP_LOGI("tested %u block(s), skipped locked %u\r\n",
+                              blocks_tested, blocks_skipped_locked);
+    } else {
+        FLASH_BYPASS_OTP_LOGE("===== OTP Test FAIL (ret=%d) =====\r\n", ret);
+    }
     return ret;
 }
 
