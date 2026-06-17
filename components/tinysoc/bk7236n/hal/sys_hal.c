@@ -442,16 +442,6 @@ static void sys_hal_dpll_cpu_flash_time_early_init(uint32_t chip_id)
 	}
 }
 
-static void sys_hal_dpll_cpu_flash_time_deinit()
-{
-	//set cpu clk and flash clk to default value 0
-	sys_hal_mclk_mux_set(0);
-	sys_hal_mclk_div_set(0);
-	sys_hal_flash_set_clk(0);
-	sys_ll_set_cpu_clk_div_mode2_ckdiv_flash(0);
-
-}
-
 //TODO the module owner can put the sys init to better place
 void sys_hal_early_init(void)
 {

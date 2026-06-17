@@ -157,7 +157,6 @@ bootutil_img_hash(struct enc_key_data *enc_state, int image_index,
 #endif /* CONFIG_OTA_OVERWRITE */
     {
         uint32_t addr = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(fap->fa_off));
-        uint32_t crc_check_addr = addr;  // Address for CRC check
 
 #if CONFIG_DIRECT_XIP
         uint32_t sec_addr = partition_get_phy_offset(PARTITION_XIP_B);
@@ -166,16 +165,20 @@ bootutil_img_hash(struct enc_key_data *enc_state, int image_index,
         if(fap->fa_off == sec_addr){
             // For slot1, use slot0 address and set XIP mode
             addr = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(pri_addr));
-            crc_check_addr = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(sec_addr));
             execute_enable_saved = flash_get_excute_enable();
             flash_set_excute_enable(1);
             need_restore_execute_enable = true;
         } else if(fap->fa_off == pri_addr){
             addr = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(pri_addr));
-            crc_check_addr = addr;
         }
 #endif
 #ifdef CONFIG_DBUS_CHECK_CRC
+        uint32_t crc_check_addr = addr;
+#if CONFIG_DIRECT_XIP
+        if(fap->fa_off == sec_addr){
+            crc_check_addr = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(sec_addr));
+        }
+#endif
         /* CRITICAL: Perform CRC check BEFORE initializing SHA context */
         /* This prevents hardware SHA accelerator state pollution if CRC fails */
         /* Hardware SHA accelerators may allocate resources during init, which can */

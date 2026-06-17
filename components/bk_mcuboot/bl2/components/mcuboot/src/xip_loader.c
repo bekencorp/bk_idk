@@ -33,6 +33,7 @@
 #include "cache.h"
 #include "aon_pmu_hal.h"
 #include "bootutil_priv.h"
+#include <driver/wdt_hal.h>
 
 static inline const char* image_ok_str(uint32_t image_ok)
 {
