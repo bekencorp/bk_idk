@@ -16,6 +16,7 @@
 #include "STAR_SE.h"
 #include "core_star.h"
 #include "sdkconfig.h"
+#include "common/bk_assert.h"
 
 #define MPU_MAX_NUM_REGIONS     (8UL)                   /* 支持的最大区域数量 */
 #define MPU_MAX_NUM_ATTRS       (8UL)                   /* 支持的最大区域数量 */

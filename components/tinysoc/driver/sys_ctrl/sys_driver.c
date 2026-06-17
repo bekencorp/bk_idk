@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "sys_hal.h"
 #include "sys_driver.h"
 #include "sys_driver_common.h"
 

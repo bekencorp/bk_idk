@@ -16,27 +16,6 @@
 #include "efuse_ll.h"
 #include <driver/hal/hal_efuse_types.h>
 
-static int efuse_hal_check_can_write(uint8_t old_byte, uint8_t new_byte)
-{
-	if (new_byte == old_byte) {
-		/* no need to read */
-		return -1;
-	}
-
-	for (int i = 0; i < 8; i++) {
-		uint8_t old_bit = ((old_byte >> i) & 0x01);
-		uint8_t new_bit = ((new_byte >> i) & 0x01);
-
-		if ((old_bit) && (!new_bit)) {
-			/* can not change old from 1 to 0 */
-			HAL_LOGW("[efuse] cannot change bit[%d] from 1 to 0\r\n", i);
-			return -2;
-		}
-	}
-
-	return 0;
-}
-
 bk_err_t efuse_hal_init(efuse_hal_t *hal)
 {
 	hal->hw = (efuse_hw_t *)EFUSE_LL_REG_BASE(hal->id);
@@ -44,12 +23,11 @@ bk_err_t efuse_hal_init(efuse_hal_t *hal)
 	return BK_OK;
 }
 
-/* 1. check if can write
- * 2. enable efuse vdd2.5v
- * 3. set dir, addr, data, enable
- * 4. wait for operate finished
- * 5. disable efuse vdd2.5v
- * 6. check if write success
+/* 1. enable efuse vdd2.5v
+ * 2. set dir, addr, data, enable
+ * 3. wait for operate finished
+ * 4. disable efuse vdd2.5v
+ * 5. check if write success
  */
 bk_err_t efuse_hal_write(efuse_hal_t *hal, uint8_t addr, uint8_t wr_data)
 {
@@ -61,16 +39,6 @@ bk_err_t efuse_hal_write(efuse_hal_t *hal, uint8_t addr, uint8_t wr_data)
 	if(ret != BK_OK){
 		return BK_ERR_EFUSE_READ_FAIL;
 	}
-
-#if 0
-	ret = efuse_hal_check_can_write(read_data, wr_data);
-	if (ret == -1) {
-		return BK_OK;
-	}
-	if (ret == -2) {
-		return BK_ERR_EFUSE_CANNOT_WRTIE;
-	}
-#endif
 
 	efuse_ll_enable_vdd25(hal->hw);
 

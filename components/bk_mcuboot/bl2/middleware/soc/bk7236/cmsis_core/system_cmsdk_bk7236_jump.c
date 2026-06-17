@@ -18,7 +18,6 @@
 #include "sdkconfig.h"
 #include "mpu.h"
 #include "region.h"
-#include "cmsis.h"
 
 #define  SYSTEM_CLOCK     CONFIG_XTAL_FREQ
 #define  PERIPHERAL_CLOCK CONFIG_XTAL_FREQ

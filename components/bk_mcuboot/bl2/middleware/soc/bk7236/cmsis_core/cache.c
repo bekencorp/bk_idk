@@ -16,6 +16,7 @@
 #include "STAR_SE.h"
 #include "core_star.h"
 #include "sdkconfig.h"
+#include "mpu.h"
 
 
 void sram_dcache_map(void)
