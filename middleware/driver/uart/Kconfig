@@ -14,6 +14,10 @@ menu "UART"
 		bool "Enable UART3"
 		default n
 
+	config UART4_FLOW_CTRL
+		bool "Uart4 Flow Ctrl"
+		default n
+
 	config UART_PRINT_PORT
 		int "Config Uart Print Port"
 		range 0 2

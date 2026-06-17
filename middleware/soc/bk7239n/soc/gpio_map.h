@@ -177,6 +177,8 @@ extern "C" {
 
 #define UART3_TX_PIN  GPIO_14
 #define UART3_RX_PIN  GPIO_15
+#define UART3_CTS_PIN GPIO_20
+#define UART3_RTS_PIN GPIO_22
 
 /* sdio host */
 #if CONFIG_SDIO_4LINES_EN

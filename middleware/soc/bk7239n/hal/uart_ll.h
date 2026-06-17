@@ -30,8 +30,6 @@ extern "C" {
 #define CASE_PARITY(parity) case UART_PARITY_##parity: return UART_V_PARITY_##parity
 #define CASE_D() default: return 0
 
-#define UART1_FLOW_CTRL_CNT  0xCC
-
 static inline void uart_ll_set_int_enable_status(uart_hw_t *hw, uart_id_t id, uint32_t value)
 {
 	hw->int_enable.v = value;
@@ -107,6 +105,8 @@ static inline gpio_id_t uart_ll_get_cts_pin(uart_id_t id)
 	switch (id) {
 	case UART_ID_0:
 		return UART0_CTS_PIN;
+	case UART_ID_3:
+		return UART3_CTS_PIN;
 	default:
 		return SOC_GPIO_NUM;
 	}
@@ -117,6 +117,8 @@ static inline gpio_id_t uart_ll_get_rts_pin(uart_id_t id)
 	switch (id) {
 	case UART_ID_0:
 		return UART0_RTS_PIN;
+	case UART_ID_3:
+		return UART3_RTS_PIN;
 	default:
 		return SOC_GPIO_NUM;
 	}

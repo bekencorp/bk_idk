@@ -323,11 +323,10 @@ static void uart_init_gpio(uart_id_t id)
 			gpio_id_t rts = uart_hal_get_rts_pin(id);
 			bk_gpio_map_dev_to_pin(cts, GPIO_DEV_UART1_CTS);
 			bk_gpio_map_dev_to_pin(rts, GPIO_DEV_UART1_RTS);
-			bk_gpio_enable_output(cts);
-			bk_gpio_enable_input(rts);
+			//bk_gpio_enable_output(cts);
+			//bk_gpio_enable_input(rts);
 			bk_gpio_pull_down(cts);
 			bk_gpio_pull_down(rts);
-			bk_uart_set_hw_flow_ctrl(id, UART1_FLOW_CTRL_CNT);
 		}
 #endif
 		break;
@@ -340,6 +339,18 @@ static void uart_init_gpio(uart_id_t id)
 #if (SOC_UART_ID_NUM_PER_UNIT >= 4)
 	case UART_ID_3:
 		UART_SET_PIN(id, GPIO_DEV_UART4_TXD, GPIO_DEV_UART4_RXD);
+#if CONFIG_UART4_FLOW_CTRL
+		{
+			gpio_id_t cts = uart_hal_get_cts_pin(id);
+			gpio_id_t rts = uart_hal_get_rts_pin(id);
+			bk_gpio_map_dev_to_pin(cts, GPIO_DEV_UART4_CTS);
+			bk_gpio_map_dev_to_pin(rts, GPIO_DEV_UART4_RTS);
+			//bk_gpio_enable_output(cts);
+			//bk_gpio_enable_input(rts);
+			bk_gpio_pull_down(cts);
+			bk_gpio_pull_down(rts);
+		}
+#endif
 		break;
 #endif
 	default:
