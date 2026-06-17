@@ -182,6 +182,7 @@ typedef struct {
 	void (*_bk_feature_csi_out_cb)(void *data);
 	int (*_bk_feature_tcp_protect_enable)(void);
 	int (*_bk_feature_regd_updated_by_scan_enable)(void);
+	int (*_bk_wifi_get_scan_policy)(void);
 	bk_err_t (*_bk_feature_bcn_miss_cb)(void);
 	int (*_bk_feature_null_frame_with_sn_enable)(void);
 	int (*_bk_feature_config_add_chan_ctxt)(void);

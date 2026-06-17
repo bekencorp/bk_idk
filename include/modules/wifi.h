@@ -350,6 +350,27 @@ bk_err_t bk_wifi_set_band_policy(wifi_band_policy_t policy);
  */
 wifi_band_policy_t bk_wifi_get_band_policy(void);
 #endif
+
+/**
+ * @brief     Set runtime Wi-Fi scan policy.
+ *
+ * @param     policy
+ *            - WIFI_FAST_SCAN: abort scan once the target SSID is found.
+ *            - WIFI_ALL_CHANNEL_SCAN: scan all requested channels.
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_PARAM: invalid policy value
+ */
+bk_err_t bk_wifi_set_scan_policy(wifi_scan_policy_t policy);
+
+/**
+ * @brief     Get current runtime Wi-Fi scan policy.
+ *
+ * @return Current scan policy.
+ */
+wifi_scan_policy_t bk_wifi_get_scan_policy(void);
+
 /**
  * @brief     Dump the scan result
  *

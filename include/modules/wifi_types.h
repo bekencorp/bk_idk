@@ -158,6 +158,17 @@ typedef enum {
 } wifi_band_policy_t;
 #endif
 
+/**
+ * @brief Wi-Fi scan policy.
+ *
+ * @WIFI_FAST_SCAN Abort scan once the target SSID is found.
+ * @WIFI_ALL_CHANNEL_SCAN Scan all requested channels even after the target SSID is found.
+ */
+typedef enum {
+	WIFI_FAST_SCAN = 0,
+	WIFI_ALL_CHANNEL_SCAN = 1,
+} wifi_scan_policy_t;
+
 #if CONFIG_WIFI_STA_SAME_SSID_BAND_PREF
 /**
  * @brief STA policy when the same SSID is seen on 2.4 GHz and 5 GHz.

@@ -658,6 +658,8 @@ bool bk_wifi_get_microwave_policy_en(void);
 bk_err_t bk_wifi_set_band_policy(wifi_band_policy_t policy);
 wifi_band_policy_t bk_wifi_get_band_policy(void);
 #endif
+bk_err_t bk_wifi_set_scan_policy(wifi_scan_policy_t policy);
+wifi_scan_policy_t bk_wifi_get_scan_policy(void);
 
 //Optimize it
 __attribute__((weak)) uint32_t cfg_ap_is_open_system(void);

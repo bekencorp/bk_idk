@@ -578,6 +578,11 @@ static int bk_feature_regd_updated_by_scan_wrapper(void)
 #endif
 }
 
+static int bk_wifi_get_scan_policy_wrapper(void)
+{
+	return bk_wifi_get_scan_policy();
+}
+
 static bk_err_t bk_feature_bcn_miss_cb_wrapper(void)
 {
     return bk_wifi_bcn_miss_cb();
@@ -1349,6 +1354,7 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._bk_feature_bcn_miss_cb = bk_feature_bcn_miss_cb_wrapper,
 	._bk_feature_tcp_protect_enable = bk_feature_tcp_protect_enable_wrapper,
 	._bk_feature_regd_updated_by_scan_enable = bk_feature_regd_updated_by_scan_wrapper,
+	._bk_wifi_get_scan_policy = bk_wifi_get_scan_policy_wrapper,
 	._bk_feature_null_frame_with_sn_enable = bk_feature_wifi_null_frame_with_sn,
 	._bk_feature_config_add_chan_ctxt = bk_feature_config_add_chan_ctxt_wrapper,
 	._bk_wifi_get_vendor_ie_cb_internal = bk_wifi_get_vendor_ie_cb_internal_wrapper,

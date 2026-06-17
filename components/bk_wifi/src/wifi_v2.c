@@ -109,6 +109,7 @@ extern bool bk_microwave_policy_en;
 #if CONFIG_WIFI_BAND_POLICY
 extern wifi_band_policy_t g_wifi_band_policy;
 #endif
+extern wifi_scan_policy_t g_wifi_scan_policy;
 /**
  * wifi_sec_type_string - Get the security name as a text string
  * @state: security
@@ -5028,6 +5029,24 @@ wifi_band_policy_t bk_wifi_get_band_policy(void)
 	return g_wifi_band_policy;
 }
 #endif
+
+bk_err_t bk_wifi_set_scan_policy(wifi_scan_policy_t policy)
+{
+	if (policy != WIFI_FAST_SCAN && policy != WIFI_ALL_CHANNEL_SCAN) {
+		WIFI_LOGE("[%s]invalid scan policy %d\n", __FUNCTION__, policy);
+		return BK_ERR_PARAM;
+	}
+
+	g_wifi_scan_policy = policy;
+	WIFI_LOGI("[%s]set scan policy=%d\n", __FUNCTION__, policy);
+	return BK_OK;
+}
+
+wifi_scan_policy_t bk_wifi_get_scan_policy(void)
+{
+	return g_wifi_scan_policy;
+}
+
 void bk_wifi_set_microwave_policy_en(bool enable)
 {
 	bk_microwave_policy_en = enable;

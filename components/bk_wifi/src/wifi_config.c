@@ -29,6 +29,7 @@ bool bk_microwave_policy_en = false;
 #if CONFIG_WIFI_BAND_POLICY
 wifi_band_policy_t g_wifi_band_policy = WIFI_BAND_POLICY_BI_BAND;
 #endif
+wifi_scan_policy_t g_wifi_scan_policy = WIFI_ALL_CHANNEL_SCAN;
 wifi_mac_config_t g_wifi_mac_config = {
 	WIFI_CFG_DFT_RAW_TX_AC,
 	WIFI_CFG_DFT_RAW_TX_AC_TIMEOUT_MS,

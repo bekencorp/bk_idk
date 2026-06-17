@@ -689,6 +689,54 @@ error:
 	return;
 }
 
+void cli_wifi_scan_policy_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	int ret = BK_OK;
+	char *msg = NULL;
+	wifi_scan_policy_t policy;
+
+	if (argc == 1) {
+		policy = bk_wifi_get_scan_policy();
+		CLI_LOGI("scan_policy: %d (%s)\n", (int)policy,
+			 policy == WIFI_FAST_SCAN ? "fast" : "all_channel");
+	} else if (argc == 2) {
+		const char *arg = argv[1];
+
+		if (os_strcmp(arg, "0") == 0 || os_strcmp(arg, "fast") == 0) {
+			policy = WIFI_FAST_SCAN;
+		} else if (os_strcmp(arg, "1") == 0 || os_strcmp(arg, "all") == 0) {
+			policy = WIFI_ALL_CHANNEL_SCAN;
+		} else {
+			CLI_LOGI("Usage: scan_policy [0|fast|1|all]\n");
+			CLI_LOGI("  (no arg)     show current scan policy\n");
+			CLI_LOGI("  0|fast       abort scan once target SSID is found\n");
+			CLI_LOGI("  1|all        scan all requested channels\n");
+			goto error;
+		}
+
+		ret = bk_wifi_set_scan_policy(policy);
+		if (ret != BK_OK) {
+			CLI_LOGI("set scan_policy failed, ret=%d\n", ret);
+			goto error;
+		}
+
+		CLI_LOGI("scan_policy set to: %d (%s)\n", (int)policy,
+			 policy == WIFI_FAST_SCAN ? "fast" : "all_channel");
+	} else {
+		CLI_LOGI("Usage: scan_policy [0|fast|1|all]\n");
+		goto error;
+	}
+
+	msg = WIFI_CMD_RSP_SUCCEED;
+	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+	return;
+
+error:
+	msg = WIFI_CMD_RSP_ERROR;
+	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+	return;
+}
+
 #if CONFIG_WIFI_STA_SAME_SSID_BAND_PREF
 void cli_wifi_sta_same_ssid_pref_cmd(char *pcWriteBuffer, int xWriteBufferLen,
 				     int argc, char **argv)
@@ -2980,6 +3028,7 @@ static const struct cli_command s_wifi_commands[] = {
 	{"sleep_mode", "set sleep_mode", cli_wifi_set_sleep_mode_cmd},
 #endif
 	{"scan_5g_first", "scan_5g_first [0|1]", cli_wifi_scan_5g_first_cmd},
+	{"scan_policy", "scan_policy [0|fast|1|all] Wi-Fi scan mode", cli_wifi_scan_policy_cmd},
 #if CONFIG_WIFI_STA_SAME_SSID_BAND_PREF
 	{"sta_ssid_pref", "sta_ssid_pref [0|rssi|signal|1|5g] same SSID 2.4G/5G policy", cli_wifi_sta_same_ssid_pref_cmd},
 #endif
