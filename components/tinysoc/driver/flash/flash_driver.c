@@ -493,6 +493,9 @@ static bk_err_t flash_write_common(const uint8_t *buffer, uint32_t address, uint
 				}
 
 				uint32_t int_level = rtos_disable_int();
+#if CONFIG_FLASH_QUAD_ENABLE
+				flash_switch_to_line_mode_two();
+#endif
 				flash_hal_wait_op_done(&s_flash.hal);
 				flash_hal_write_enable(&s_flash.hal);
 
@@ -646,6 +649,9 @@ static bk_err_t flash_erase_block(uint32_t erase_addr, int type)
 
 		if (bk_flash_partition_write_perm_check_by_addr(erase_addr, erase_size, FLASH_API_MAGIC_CODE) == BK_OK) {
 			uint32_t int_level = rtos_disable_int();
+#if CONFIG_FLASH_QUAD_ENABLE
+			flash_switch_to_line_mode_two();
+#endif
 			flash_hal_wait_op_done(&s_flash.hal);
 			flash_hal_write_enable(&s_flash.hal);
 			flash_hal_erase_block(&s_flash.hal, erase_addr, type);
