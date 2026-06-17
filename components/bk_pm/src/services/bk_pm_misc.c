@@ -175,7 +175,7 @@ void pm_printf_current_temperature(void)
 	float temp;
 
 	bk_sensor_get_current_temperature(&temp);
-	BK_LOGD(NULL, "current chip temperature about %.2f\r\n",temp);
+	BK_LOGI(NULL, "current chip temperature about %.2f\r\n",temp);
 #endif
 }
 #if CONFIG_ADAPT_NEW_RTOS_ENABLE
