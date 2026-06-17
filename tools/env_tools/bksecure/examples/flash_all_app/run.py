@@ -211,7 +211,7 @@ def main():
     # Sign Server Start
     log_step_start('Sign Server', f'OTA Type: {args.ota_type}, App Version: {args.app_version}')
     os.chdir(sign_path)
-    sign_server_process(tool_path, args.pubkey, args.privkey, args.ota_type, args.bl2_version, args.app_version, args.security_counter, args.replace_key_en, args.new_privkey, args.new_pubkey, debug_opt)
+    sign_server_process(tool_path, args.soc_type, args.pubkey, args.privkey, args.ota_type, args.bl2_version, args.app_version, args.security_counter, args.replace_key_en, args.new_privkey, args.new_pubkey, debug_opt)
     log_step_end('Sign Server', 'OK')
     # Sign Server End
 
@@ -220,7 +220,6 @@ def main():
     if args.ota_type == 'XIP':
 
         pack_server_optional_files = [
-            (f'{idk_path}/build/{args.soc_type}/xip/package/nvs_key.bin', f'{pack_path}/immutable', 'nvs_key.bin'),
             (f'{sign_path}/pack_cmd_list.txt', f'{pack_path}/immutable', 'pack_cmd_list.txt'),
             ]
 
@@ -236,7 +235,6 @@ def main():
     elif args.ota_type == 'OVERWRITE':
 
         pack_server_optional_files = [
-            (f'{idk_path}/build/{args.soc_type}/overwrite/package/nvs_key.bin', f'{pack_path}/immutable', 'nvs_key.bin'),
             (f'{sign_path}/pack_cmd_list.txt', f'{pack_path}/immutable', 'pack_cmd_list.txt'),
             ]
 

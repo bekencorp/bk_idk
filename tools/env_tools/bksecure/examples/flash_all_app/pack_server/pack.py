@@ -26,7 +26,7 @@ def run_cmd(cmd):
         exit(1)
 
 def pack_server_process(tool_path, soc_type, flash_aes_type, flash_aes_key, ota_type, security_counter, debug_opt=''):
-
+    
     cmd = f'{tool_path}/main.py steps pack --soc_type {soc_type} --flash_aes_type {flash_aes_type} --flash_aes_key {flash_aes_key} --ota_type {ota_type} --ota_security_counter {security_counter} {debug_opt}'
     save_cmd('steps pack', cmd)
     run_cmd(cmd)

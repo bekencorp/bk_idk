@@ -17,8 +17,6 @@ IMG_HDR_LEN = 32
 BL2_HDR_SZ = 0x1000
 BL2_TAIL_SZ = 0x1000
 CPU_VECTOR_ALIGN_SZ = 512
-APP_BIN_MAGIC_OFFSET = 0x1160
-APP_BIN_MAGIC_BK7236N = b'BK7236N'
 
 def ceil_align(value, alignment):
     return (((value + alignment - 1) // alignment) * alignment)
@@ -187,12 +185,12 @@ def is_flash_crc_enabled():
     except Exception as e:
         logging.debug(f'Failed to read flash_crc_en from config: {e}')
 
-    magic = _read_pack_app_bin_magic()
-    if magic == APP_BIN_MAGIC_BK7236N:
-        logging.debug('App bin magic is BK7236N, flash_crc_en=False')
+    if get_soc_type() == 'BK7236':
+        logging.debug('SOC type is BK7236, flash_crc_en=True')
+        return True
+    else:
+        logging.debug('SOC type is not BK7236, flash_crc_en=False')
         return False
-    logging.debug('App bin magic is not BK7236N, flash_crc_en=True')
-    return True
 
 def clear_dir(directory):
     for filename in os.listdir(directory):

@@ -208,10 +208,11 @@ def sign_from_ota_sig(ota_bin_sig):
     bl2_sign('sign_from_sig', s.img_sign_key_type, s.img_sign_privkey, s.img_sign_pubkey_bytes, ota_bin_sig, 'compress.bin', pheader.m2(), pheader.version(), pheader.security_counter(), 'ota_signed.bin', 'ota_hash.json')
 
 #Step7 - generate signed bin
-def steps_sign(pubkey_pem, privkey_pem, ota_type=None, bl2_version=None, app_version=None, security_counter=None, replace_key_en=None, new_privkey_pem=None, new_pubkey_pem=None):
+def steps_sign(soc_type, pubkey_pem, privkey_pem, ota_type=None, bl2_version=None, app_version=None, security_counter=None, replace_key_en=None, new_privkey_pem=None, new_pubkey_pem=None):
     if pubkey_pem is None or privkey_pem is None:
         logging.error('pubkey_pem or privkey_pem is not specified')
         exit(1)
+    os.environ['ARMINO_SOC'] = soc_type.upper()
     # If pubkey is a hex string (not a file path), convert to .pem file in current directory
     if isinstance(pubkey_pem, str) and not os.path.isfile(pubkey_pem):
         s = pubkey_pem.strip()
@@ -265,7 +266,12 @@ def read_bl2_version():
 #Step8 - pack download bin
 def steps_pack(soc_type, aes_key_type=None, aes_key=None, ota_type='OVERWRITE', security_counter=None):
     logging.debug(f'steps_pack, soc_type={soc_type}, aes_key_type={aes_key_type}, aes_key={aes_key}, ota_type={ota_type}, security_counter={security_counter}')
-    
+    os.environ['ARMINO_SOC'] = soc_type.upper()
+    if soc_type == 'bk7236':
+        flash_crc_en = True
+    else:
+        flash_crc_en = False
+
     if aes_key_type != None:
         flash_aes_type = aes_key_type
         flash_aes_key = aes_key
@@ -274,20 +280,18 @@ def steps_pack(soc_type, aes_key_type=None, aes_key=None, ota_type='OVERWRITE', 
         flash_aes_key = ''
     
     is_legacy = is_pack_json_legacy('pack.json')
-    flash_crc_en = False
     if is_legacy:
-        flash_crc_en = True
-        os.environ['ARMINO_SOC'] = 'BK7236'
         bl2_version = read_bl2_version()
         if os.path.exists('app_signed.bin'):
             shutil.copy('app_signed.bin', 'primary_all_signed.bin')
         p = Partitions_Legacy('partitions.csv', ota_type, False, False, bl2_version)
         p.pack_bin('pack.json', flash_aes_type, flash_aes_key, security_counter, 'FALSE', False, False)
     else:
-        os.environ['ARMINO_SOC'] = 'BK7236N'
         p = Partitions('partitions.csv', None, 'pack.json')
         p.postbuild_process(flash_aes_en=False, flash_aes_key=flash_aes_key, img_sign_key=None, flash_crc_en=flash_crc_en, flash_aes_type=flash_aes_type)
-        p.pack_bin(soc_type, flash_aes_type, flash_aes_key)
+        pack = PackJson()
+        pack.exclude_ota_packers()
+        pack.pack(flash_aes_key, flash_crc_en, None, flash_aes_type)
 
     p.install_bin()
 
@@ -313,3 +317,4 @@ def steps_pack_csv():
     gen_otp_efuse_config_file(s.flash_aes_type, s.flash_crc_en, s.flash_aes_key, s.img_sign_pubkey, s.bl1_secureboot_en, False, 'otp_efuse_config.json')
     pack.install_bin()
     insert_pk_hash('bootloader.bin', s.img_sign_pubkey)
+

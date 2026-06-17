@@ -471,6 +471,7 @@ class Partitions:
         self.__ensure_pack_headers_for_pack_json(self._pack_json)
         
         pack = PackJson()
+        pack.exclude_ota_packers()
         pack.sign(pubkey_pem, privkey_pem,
             ota_type=ota_type, security_counter=security_counter,
             replace_key_en=replace_key_en, new_privkey_pem=new_privkey_pem, new_pubkey_pem=new_pubkey_pem,

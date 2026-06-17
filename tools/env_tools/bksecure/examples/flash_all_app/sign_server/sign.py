@@ -54,7 +54,7 @@ def normalize_pubkey_to_hex(pubkey_or_path):
         logging.warning(f'Failed to convert pubkey file {pubkey_or_path} to hex, keep original value: {e}')
         return pubkey_or_path
 
-def sign_server_process(tool_path, pubkey_pem, privkey_pem, ota_type, bl2_version, app_version, security_counter, replace_key_en, new_privkey, new_pubkey, debug_opt=''):
+def sign_server_process(tool_path, soc_type, pubkey_pem, privkey_pem, ota_type, bl2_version, app_version, security_counter, replace_key_en, new_privkey, new_pubkey, debug_opt=''):
     
     app_version_opt = ''
     if app_version is not None:
@@ -64,6 +64,6 @@ def sign_server_process(tool_path, pubkey_pem, privkey_pem, ota_type, bl2_versio
     if bl2_version is not None:
         bl2_version_opt = f' --bl2_version {bl2_version}'
     
-    cmd = f'{tool_path}/main.py steps sign --pubkey_pem {pubkey_pem} --privkey_pem {privkey_pem} --ota_type {ota_type}{bl2_version_opt}{app_version_opt} --security_counter {security_counter} --replace_key_en {replace_key_en} --new_privkey_pem {new_privkey} --new_pubkey_pem {new_pubkey} {debug_opt}'
+    cmd = f'{tool_path}/main.py steps sign --soc_type {soc_type} --pubkey_pem {pubkey_pem} --privkey_pem {privkey_pem} --ota_type {ota_type}{bl2_version_opt}{app_version_opt} --security_counter {security_counter} --replace_key_en {replace_key_en} --new_privkey_pem {new_privkey} --new_pubkey_pem {new_pubkey} {debug_opt}'
     save_cmd('Sign server start', cmd)
     run_cmd(cmd)

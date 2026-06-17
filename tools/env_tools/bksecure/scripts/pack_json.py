@@ -44,6 +44,14 @@ class PackJson(Pack):
         if removed:
             logging.debug(f'PackJson: excluded {removed} OTA packer(s) (PackOta/PackRawOta)')
 
+    def only_ota_packers(self):
+        """Keep only PackOta / PackRawOta (ota.bin, raw_ota.bin) in the pack pipeline."""
+        before = len(self._packs)
+        self._packs = [p for p in self._packs if isinstance(p, (PackOta, PackRawOta))]
+        removed = before - len(self._packs)
+        if removed:
+            logging.debug(f'PackJson: kept only OTA packer(s), removed {removed} non-OTA packer(s)')
+
     def pack(self, flash_aes_key=None, flash_crc_en=True, data_aes_key=None, flash_aes_type=None):
         logging.info(f'Pack: json={self._pack_json}, flash_aes_type={flash_aes_type}, flash_crc_en={flash_crc_en}')
         # Ensure nvs_key.bin and nvs.bin are generated before processing ==========
@@ -53,6 +61,10 @@ class PackJson(Pack):
         self.__ensure_nvs_bins_generated(self._pack_json, flash_aes_type, flash_aes_key, flash_crc_en)
         self.__pack(flash_aes_key, flash_crc_en, data_aes_key, flash_aes_type)
         
+    def pack_ota_bin_only(self, flash_aes_key=None, flash_crc_en=True, data_aes_key=None, flash_aes_type=None):
+        logging.info(f'Pack OTA bin only: json={self._pack_json}, flash_aes_type={flash_aes_type}, flash_crc_en={flash_crc_en}')
+        self.__pack(flash_aes_key, flash_crc_en, data_aes_key, flash_aes_type)
+
     def __ensure_nvs_bins_generated(self, pack_json, flash_aes_type=None, flash_aes_key=None, flash_crc_en=True):
         """Ensure nvs_key.bin, nvs_key_pack.bin and nvs.bin are generated before processing"""
         if not os.path.exists(pack_json):
