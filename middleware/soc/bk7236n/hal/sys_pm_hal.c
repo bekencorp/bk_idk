@@ -551,6 +551,7 @@ void sys_hal_gpio_state_switch(bool lock)
 
 __attribute__((section(".itcm_sec_code"))) void sys_hal_enter_deep_sleep(void *param)
 {
+#if CONFIG_PM_DEEP_SLEEP
 	volatile uint32_t int_state1, int_state2;
 	uint32_t systick_ctrl_value = 0;
 	pm_lpo_src_e lpo_src        = PM_LPO_SRC_ROSC;
@@ -671,13 +672,14 @@ __attribute__((section(".itcm_sec_code"))) void sys_hal_enter_deep_sleep(void *p
 	sys_ll_set_cpu_power_sleep_wakeup_cpu0_subpwdm_en(1);
 
 	aon_pmu_ll_set_r0_fast_boot(1); // set fast boot flag to 1
-	
+
 #if CONFIG_AON_PMU_REG0_REFACTOR_DEV
 	aon_pmu_hal_r0_latch_to_r7b();
 #endif
 
 	/*-----enter deep sleep-------*/
 	arch_deep_sleep();
+#endif
 }
 
 static inline void sys_hal_set_low_voltage(volatile uint32_t *ana_r0, volatile uint32_t *ana_r3, volatile uint32_t *ana_r7, volatile uint32_t *ana_r8, volatile uint32_t *ana_r9, volatile uint32_t *ana_r10)
@@ -891,7 +893,7 @@ void sys_hal_regs_save(void)
 	}
 	// Used to check if memory (contents) have changed.
 	REG_WRITE(0x2807E400 + (16 << 2), 0x5A5A5A5A);
-	REG_WRITE(0x2807E400 + (17 << 2), 0xA5A5A5A5);	
+	REG_WRITE(0x2807E400 + (17 << 2), 0xA5A5A5A5);
 
 }
 
@@ -1002,8 +1004,7 @@ void sys_drv_wakeup_source_rtc_clear(void)
 
 void sys_hal_enter_low_voltage(void)
 {
-	//TODO: fix it when bring up pm
-#if 1
+#if CONFIG_PM_LOW_VOLTAGE
 	volatile uint32_t int_state1, int_state2;
 	volatile uint8_t cksel_core = 0, clkdiv_core = 0, clkdiv_bus = 0;
 	volatile uint8_t cksel_flash = 0, clkdiv_flash = 0;
@@ -1293,6 +1294,7 @@ void sys_hal_enter_cpu_wfi()
 
 void sys_hal_enter_normal_sleep(uint32_t peri_clk)
 {
+#if CONFIG_PM_NORMAL_SLEEP
 	volatile uint32_t clken_peri = 0;
 	volatile uint8_t cksel_core = 0, clkdiv_core = 0;
 	volatile uint8_t cksel_flash = 0, clkdiv_flash = 0;
@@ -1396,6 +1398,7 @@ void sys_hal_enter_normal_sleep(uint32_t peri_clk)
 
 	sys_ll_set_cpu_device_clk_enable_value(clken_peri);
 	// os_printf("%x %x\r\n", sys_ll_get_cpu0_int_0_31_status_value(), sys_ll_get_cpu0_int_32_63_status_value());
+#endif
 }
 
 void sys_hal_enter_normal_wakeup()

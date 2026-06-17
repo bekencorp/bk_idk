@@ -7,6 +7,18 @@ menu "PM"
 		bool "indicate the current cpu running as pm client core, otherwise running as pm server core"
 		default n
 
+	config PM_NORMAL_SLEEP
+		bool "Enable normal sleep"
+		default y
+
+	config PM_LOW_VOLTAGE
+		bool "Enable low voltage sleep"
+		default y
+
+	config PM_DEEP_SLEEP
+		bool "Enable deep sleep"
+		default y
+
 	config PM_SUPER_DEEP_SLEEP
 		bool "Enable super deep sleep"
 		default n

@@ -536,6 +536,13 @@ SECTIONS
         *(*ts2.bss.*)
 #endif
 
+#if CONFIG_CACHE_ENABLE
+        . = ALIGN(4);
+        _nocache_start = .;
+        *(.sram_nocache*)
+        _nocache_end = .;
+#endif
+
         . = ALIGN(4);
         _bss_end = .;
     } > RAM

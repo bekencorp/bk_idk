@@ -250,20 +250,6 @@ int sys_hal_rosc_calibration(uint32_t rosc_cali_mode, uint32_t cali_interval)
 
 int sys_hal_rosc_test_mode(bool enabled)
 {
-	// if (enabled) {
-	// 	sys_ll_set_ana_reg4_ck_tst_enbale(1);
-	// 	sys_ll_set_ana_reg4_cktst_sel(0);
-	// 	sys_ll_set_ana_reg5_rosc_tsten(1);
-	// 	sys_ll_set_ana_reg6_cal_mode(1);
-
-	// 	REG_WRITE((SOC_AON_GPIO_REG_BASE + (24 << 2)), 0x40);
-	// } else {
-	// 	sys_ll_set_ana_reg4_ck_tst_enbale(0);
-	// 	sys_ll_set_ana_reg4_cktst_sel(0);
-	// 	sys_ll_set_ana_reg5_rosc_tsten(0);
-	// 	sys_ll_set_ana_reg6_cal_mode(0);
-	// 	sys_ll_set_ana_reg6_calib_auto(0);
-	// }
 	return BK_OK;
 }
 
@@ -669,64 +655,6 @@ __IRAM_SEC int32 sys_hal_int_group2_enable(uint32 param)
 
 	return 0;
 }
-
-#if CONFIG_SOC_BK7236_SMP_TEMP
-int32 sys_hal_core_int_group1_disable(uint32 core_id, uint32 param)
-{
-	uint32 reg = 0;
-	uint32 value = 0;
-
-	if(CPU0_CORE_ID == core_id){
-		reg = sys_ll_get_cpu0_int_0_31_en_value();
-		value = reg;
-		reg &= ~(param);
-		sys_ll_set_cpu0_int_0_31_en_value(reg);
-	}
-
-	return value;
-}
-
-int32 sys_hal_core_int_group1_enable(uint32 core_id, uint32 param)
-{
-	uint32 reg = 0;
-
-	if(CPU0_CORE_ID == core_id){
-		reg = sys_ll_get_cpu0_int_0_31_en_value();
-		reg |= (param);
-		sys_ll_set_cpu0_int_0_31_en_value(reg);
-	}
-
-	return 0;
-}
-
-int32 sys_hal_core_int_group2_disable(uint32 core_id, uint32 param)
-{
-	uint32 reg = 0;
-	uint32 value = 0;
-
-	if(CPU0_CORE_ID == core_id){
-		reg = sys_ll_get_cpu0_int_32_63_en_value();
-		value = reg;
-		reg &= ~(param);
-		sys_ll_set_cpu0_int_32_63_en_value(reg);
-	}
-
-	return value;
-}
-
-int32 sys_hal_core_int_group2_enable(uint32 core_id, uint32 param)
-{
-	uint32 reg = 0;
-
-	if(CPU0_CORE_ID == core_id){
-		reg = sys_ll_get_cpu0_int_32_63_en_value();
-		reg |= (param);
-		sys_ll_set_cpu0_int_32_63_en_value(reg);
-	}
-
-	return 0;
-}
-#endif
 
 int32 sys_hal_fiq_disable(uint32 param)
 {

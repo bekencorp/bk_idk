@@ -101,6 +101,7 @@ uint64_t pm_cpu_wfi_process()
 
 uint64_t pm_normal_sleep_process()
 {
+#if CONFIG_PM_NORMAL_SLEEP
 	GLOBAL_INT_DECLARATION();
 	uint64_t sleep_tick         = 0ULL;
 	GLOBAL_INT_DISABLE();
@@ -156,10 +157,14 @@ uint64_t pm_normal_sleep_process()
 	GLOBAL_INT_RESTORE();
 
 	return sleep_tick;
+#else
+	return 0ULL;
+#endif
 }
 
 uint64_t pm_low_voltage_process()
 {
+#if CONFIG_PM_LOW_VOLTAGE
 	GLOBAL_INT_DECLARATION();
 	uint64_t sleep_tick         = 0ULL;
 
@@ -215,10 +220,14 @@ uint64_t pm_low_voltage_process()
 		LOGI("low voltage int open after 0x%x 0x%x \r\n", /*int_mie,*/ irq_level, bk_pm_lp_vol_get());
 
 	return sleep_tick;
+#else
+	return 0ULL;
+#endif
 }
 
 void pm_deep_sleep_prepare()
 {
+#if CONFIG_PM_DEEP_SLEEP
 	for (uint8_t i = 0; i < PM_SLEEP_CB_IND_PRI_1; i++)
 	{
 		if (s_pm_deepsleep_enter_cb_conf[i].cfg.cb != NULL)
@@ -226,10 +235,12 @@ void pm_deep_sleep_prepare()
 			s_pm_deepsleep_enter_cb_conf[i].cfg.cb(0, s_pm_deepsleep_enter_cb_conf[i].cfg.args);
 		}
 	}
+#endif
 }
 
 uint64_t pm_deep_sleep_process()
 {
+#if CONFIG_PM_DEEP_SLEEP
 	uint64_t sleep_tick         = 0ULL;
 	GLOBAL_INT_DECLARATION();
 	GLOBAL_INT_DISABLE();
@@ -283,7 +294,10 @@ uint64_t pm_deep_sleep_process()
 	#endif
 
 	GLOBAL_INT_RESTORE();
-	return sleep_tick;	
+	return sleep_tick;
+#else
+	return 0ULL;
+#endif
 }
 
 #if CONFIG_PM_SUPER_DEEP_SLEEP
