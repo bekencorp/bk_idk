@@ -1186,8 +1186,9 @@ bk_err_t bk_flash_driver_init(void)
 #endif
 
 #if (CONFIG_SOC_BK7236XX)
-	if(((s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_GD) ||
-	   ((s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_TH)) {
+	if(((s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_GD)
+	||((s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_TH)
+	|| ((s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_PUYA)) {
 		if((1 != sys_drv_flash_get_clk_sel()) || (1 != sys_drv_flash_get_clk_div())) {
 			sys_drv_flash_set_clk_div(1); // dpll div 6 = 80M
 			sys_drv_flash_cksel(1);
@@ -1566,7 +1567,9 @@ bk_err_t bk_flash_clk_switch(uint32_t flash_speed_type, uint32_t modules)
 			if (0 == s_hold_low_speed_status) {
 				chip_id = bk_get_hardware_chip_id_version();
 				//chipC version with GD flash switch to 80M for peformance
-				if ((chip_id == CHIP_VERSION_C) && ((s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_GD) || (s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_TH) {
+				if ((chip_id == CHIP_VERSION_C) && ((s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_GD)
+				|| ((s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_TH)
+				|| ((s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_PUYA)) {
 					bk_flash_set_clk(FLASH_CLK_DPLL, FLASH_DPLL_DIV_VALUE_SIX);
 				} else {
 					bk_flash_set_clk(FLASH_CLK_DPLL, FLASH_DPLL_DIV_VALUE_TEN);

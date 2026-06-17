@@ -696,7 +696,9 @@ bk_err_t bk_flash_driver_init(void)
     }
     #endif
     #else
-    if((s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_GD || (s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_TH) {
+    if((s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_GD
+    || (s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_TH
+    || (s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_PUYA) {
         if((2 != sys_drv_flash_get_clk_sel()) || (0 != sys_drv_flash_get_clk_div())) {
             sys_drv_flash_set_clk_div(0); // 80M div 1 = 80M
             sys_drv_flash_cksel(2);
@@ -709,7 +711,9 @@ bk_err_t bk_flash_driver_init(void)
     }
     #endif
     #else
-    if((s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_GD || (s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_TH) {
+    if((s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_GD
+    || (s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_TH
+    || (s_flash.flash_id >> FLASH_ManuFacID_POSI) == FLASH_ManuFacID_PUYA) {
         if((1 != sys_drv_flash_get_clk_sel()) || (1 != sys_drv_flash_get_clk_div())) {
             #if (CONFIG_FLASH_CLK_120M)
             sys_drv_flash_set_clk_div(0); // dpll div 4 = 120M
