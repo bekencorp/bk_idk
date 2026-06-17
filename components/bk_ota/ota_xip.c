@@ -425,7 +425,6 @@ bk_err_t xip_ota_reboot(void)
 {
 	OTA_LOGD(TAG, "xip reboot\r\n");
 	xip_ota_reboot_prepare();
-	// aon_pmu_hal_set_xip_ota_finish(1);
 	xip_ota_set_reboot_status();
 	return BK_OK;
 }
