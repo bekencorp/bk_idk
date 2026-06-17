@@ -947,6 +947,25 @@ static int at_wlan_scan_cmd(int sync,int argc, char **argv)
 	}
 }
 
+static int at_wlan_set_listen_interval(int sync,int argc, char **argv)
+{
+	if(argc != 1){
+		atsvr_cmd_rsp_error();
+		return -1;
+	}
+
+	uint8_t listen_interval = os_strtoul(argv[0], NULL, 10);
+
+	if(bk_wifi_send_listen_interval_req(listen_interval) == BK_OK){
+		BK_LOGI(TAG,"listen interval is %d\r\n",listen_interval);
+		atsvr_cmd_rsp_ok();
+		return 0;
+	}else{
+		atsvr_cmd_rsp_error();
+		return -1;
+	}
+}
+
 static int at_wlan_get_listen_interval(int sync,int argc, char **argv)
 {
 	u8 listen_interval = 0;
@@ -1369,6 +1388,8 @@ const struct _atsvr_command wifi_cmds_table[] = {
 					at_wlan_get_station_status,false,0,0,NULL,false),
 	ATSVR_CMD_HADLER("AT+WIFISCAN","AT+WIFISCAN=SET_SSID,SSID,TYPE,DURATION,CNT,NUMBER",at_wlan_scan_cmd_query,at_wlan_scan_cmd,
 					false,AT_WLAN_SCAN_TIMEOUT_MS,true,NULL,false),
+	ATSVR_CMD_HADLER("AT+SETINTERVAL","AT+SETINTERVAL=listen_interval",NULL,
+		at_wlan_set_listen_interval,false,0,0,NULL,false),
 	ATSVR_CMD_HADLER("AT+GETINTERVAL","AT+GETINTERVAL",NULL,
 					at_wlan_get_listen_interval,false,0,0,NULL,false),
 	ATSVR_CMD_HADLER("AT+GETMODE","AT+GETMODE",NULL,
