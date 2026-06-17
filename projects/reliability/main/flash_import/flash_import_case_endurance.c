@@ -40,6 +40,8 @@
 #define FLASH_IMPORT_ENDURANCE_MAIN_SAVE_INTERVAL   (10U)
 #define FLASH_IMPORT_ENDURANCE_BACKUP_SAVE_INTERVAL (100U)
 #define FLASH_IMPORT_ENDURANCE_LOG_INTERVAL         (100U)
+#define FLASH_IMPORT_ENDURANCE_LOOP_LIMIT           (100000U)
+#define FLASH_IMPORT_ENDURANCE_READ_LOG_INTERVAL    (100000U)
 #define FLASH_IMPORT_ENDURANCE_CRC_INVALID          (0xFFFFFFFFU)
 
 #define FLASH_IMPORT_ENDURANCE_PART_NAME "flash_test"
@@ -129,6 +131,8 @@ static uint32_t s_endurance_stats_backup_addr = 0;
 static uint32_t s_endurance_stats_main_addr = 0;
 static uint32_t s_endurance_data_addr = 0;
 static flash_import_endurance_stats_t s_endurance_stats = {0};
+static uint32_t s_endurance_read_op_cnt = 0;
+static uint32_t s_endurance_read_error_cnt = 0;
 static uint8_t *s_endurance_read_buf = NULL;
 static uint8_t *s_endurance_write_buf = NULL;
 
@@ -378,12 +382,6 @@ static bk_err_t flash_import_endurance_buffers_init(void)
         return BK_FAIL;
     }
 
-    for (uint32_t i = 0; i < FLASH_IMPORT_ENDURANCE_TEST_REGION_SIZE; i++) {
-        uint8_t group_val = (uint8_t)((i / 16U));
-
-        s_endurance_write_buf[i] = group_val;
-    }
-
     return BK_OK;
 }
 
@@ -572,41 +570,120 @@ static void flash_import_endurance_deinit(void)
     flash_import_endurance_buffers_deinit();
 }
 
-static void flash_import_endurance_main_loop(void)
+static void flash_import_endurance_fill_write_buf(uint32_t loop_count)
 {
-    uint32_t loop_count = 0;
+    uint8_t loop_byte = (uint8_t)(loop_count & 0xFFU);
+    uint8_t loop_byte_hi = (uint8_t)((loop_count >> 8) & 0xFFU);
 
-    if (bk_flash_set_clk_freq(FLASH_CLK_FREQ_80M_HZ) != BK_OK) {
-        os_printf("endurance set clk 80M fail\r\n");
-        return;
+    for (uint32_t i = 0; i < FLASH_IMPORT_ENDURANCE_TEST_REGION_SIZE; i++) {
+        uint8_t group_val = (uint8_t)((i / 16U) + loop_byte);
+
+        s_endurance_write_buf[i] = group_val ^ loop_byte_hi;
+    }
+}
+
+static void flash_import_endurance_prepare_read_only_region(void)
+{
+    for (uint32_t i = 0; i < FLASH_IMPORT_ENDURANCE_TEST_REGION_SIZE; i++) {
+        uint8_t group_val = (uint8_t)((i / 16U));
+
+        s_endurance_write_buf[i] = group_val;
     }
 
-    while (1) {
-        loop_count++;
+    (void)flash_import_endurance_erase_verify(s_endurance_data_addr);
+    (void)flash_import_endurance_write_verify(s_endurance_data_addr);
+}
+
+static bk_err_t flash_import_endurance_read_verify_data_region(void)
+{
+    (void)flash_import_read_bytes(s_endurance_read_buf,
+                                   s_endurance_data_addr,
+                                   FLASH_IMPORT_ENDURANCE_TEST_REGION_SIZE);
+    s_endurance_read_op_cnt++;
+    if (os_memcmp(s_endurance_read_buf, s_endurance_write_buf, FLASH_IMPORT_ENDURANCE_TEST_REGION_SIZE) != 0) {
+        return BK_FAIL;
+    }
+
+    return BK_OK;
+}
+
+static void flash_import_endurance_print_combined_stats(void)
+{
+    os_printf("Endurance test: total_count %u, erase_errors %u, write_errors %u, reads %u, read_errors %u\r\n",
+              s_endurance_stats.data_total_cnt,
+              s_endurance_stats.data_erase_error_cnt,
+              s_endurance_stats.data_write_error_cnt,
+              s_endurance_read_op_cnt,
+              s_endurance_read_error_cnt);
+}
+
+static bool flash_import_endurance_erase_write_loop(void)
+{
+    uint32_t session_loop = 0;
+
+    while (session_loop < FLASH_IMPORT_ENDURANCE_LOOP_LIMIT) {
+        session_loop++;
+        flash_import_endurance_fill_write_buf(s_endurance_stats.data_total_cnt + 1U);
         (void)flash_import_endurance_erase_verify(s_endurance_data_addr);
         (void)flash_import_endurance_write_verify(s_endurance_data_addr);
 
         if (s_endurance_stop_requested) {
             flash_import_endurance_save_stats(FLASH_IMPORT_ENDURANCE_SAVE_BOTH);
-            break;
+            return false;
         }
 
         s_endurance_stats.data_total_cnt++;
         flash_import_endurance_save_stats(FLASH_IMPORT_ENDURANCE_SAVE_SCHEDULED);
 
-        if ((loop_count % FLASH_IMPORT_ENDURANCE_LOG_INTERVAL) == 0U) {
-            os_printf("Endurance test: loop %u, total_count: %u, erase_errors: %u, write_errors: %u\r\n",
-                      loop_count,
+        if ((session_loop % FLASH_IMPORT_ENDURANCE_LOG_INTERVAL) == 0U) {
+            os_printf("Endurance test: session_loop %u, total_count: %u, erase_errors: %u, write_errors: %u\r\n",
+                      session_loop,
                       s_endurance_stats.data_total_cnt,
                       s_endurance_stats.data_erase_error_cnt,
                       s_endurance_stats.data_write_error_cnt);
         }
     }
 
-    os_printf("Endurance test stopped. Final stats: total_count: %u, erase_errors: %u, write_errors: %u\r\n",
-              s_endurance_stats.data_total_cnt,
-              s_endurance_stats.data_erase_error_cnt,
-              s_endurance_stats.data_write_error_cnt);
+    flash_import_endurance_save_stats(FLASH_IMPORT_ENDURANCE_SAVE_BOTH);
+    os_printf("Endurance test: entering read-only phase\r\n");
+    return true;
+}
+
+static void flash_import_endurance_read_only_loop(void)
+{
+    flash_import_endurance_prepare_read_only_region();
+
+    while (1) {
+        if (s_endurance_stop_requested) {
+            break;
+        }
+
+        if (flash_import_endurance_read_verify_data_region() != BK_OK) {
+            s_endurance_read_error_cnt++;
+        }
+
+        if ((s_endurance_read_op_cnt % FLASH_IMPORT_ENDURANCE_READ_LOG_INTERVAL) == 0U) {
+            flash_import_endurance_print_combined_stats();
+        }
+    }
+}
+
+static void flash_import_endurance_main_loop(void)
+{
+    bool session_complete = false;
+
+    if (bk_flash_set_clk_freq(FLASH_CLK_FREQ_80M_HZ) != BK_OK) {
+        os_printf("endurance set clk 80M fail\r\n");
+        return;
+    }
+
+    session_complete = flash_import_endurance_erase_write_loop();
+
+    if (!s_endurance_stop_requested && session_complete) {
+        flash_import_endurance_read_only_loop();
+    }
+
+    flash_import_endurance_print_combined_stats();
 }
 
 static void flash_import_endurance_exit_thread(void)
