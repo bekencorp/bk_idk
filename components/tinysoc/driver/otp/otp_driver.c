@@ -175,40 +175,9 @@ static void _otp_write_otp(uint32_t location,uint32_t value)
 	otp_hal_write_otp(&s_otp.hal,location,value);
 }
 
-static uint32_t otp_read_status()
-{
-	return otp_hal_read_status(&s_otp.hal);
-}
-
-static uint32_t otp_get_failcnt()
-{
-	return otp_hal_get_failcnt(&s_otp.hal);
-}
-
 uint32_t otp_read_otp2_permission(uint32_t location)
 {
 	return otp_hal_read_otp2_permission(&s_otp.hal,location);
-}
-
-static void otp_set_lck_mask(uint32_t location)
-{
-	otp_hal_enable_mask_lck(&s_otp.hal);
-}
-static uint32_t otp_read_otp_mask(uint32_t location)
-{
-	return otp_hal_read_otp_mask(&s_otp.hal,location);
-}
-static void otp_zeroize_otp(uint32_t location)
-{
-	otp_hal_zeroize_otp(&s_otp.hal,location);
-}
-static void otp_zeroize_puf(uint32_t location)
-{
-	otp_hal_zeroize_puf(&s_otp.hal,location);
-}
-static uint32_t otp_get_otp_zeroized_flag(uint32_t location)
-{
-	return otp_hal_read_otp_zeroized_flag(&s_otp.hal,location);
 }
 
 static bool otp_check_crc8(uint8_t* buf, size_t buflen)

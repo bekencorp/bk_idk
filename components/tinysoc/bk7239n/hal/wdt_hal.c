@@ -14,6 +14,7 @@
 
 #include "wdt_hal.h"
 #include "wdt_ll.h"
+#include "aon_pmu_hal.h"
 
 bk_err_t wdt_hal_init(wdt_hal_t *hal)
 {

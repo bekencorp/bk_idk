@@ -25,7 +25,6 @@ extern "C" {
 #endif
 
 #define SOC_ICU_REG_BASE      (0xdead0add)
-#define SOC_PWM_REG_BASE      (0xdead0add)
 #define SOC_CALENDAR_REG_BASE (0xdead0add + 0x55 * 4)
 
 #define SOC_PSRAM_DATA_ADDR_SEC     (0x60000000)

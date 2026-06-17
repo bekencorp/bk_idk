@@ -173,6 +173,7 @@ void sys_hal_trng_disckg_set(uint32_t value);
 /**  Platform End **/
 
 void sys_hal_early_init(void);
+void sys_hal_early_deinit(void);
 void sys_hal_enable_pll_iram(void);
 void sys_hal_enable_high_freq_iram(void);
 

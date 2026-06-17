@@ -103,10 +103,6 @@ inline uint32_t aon_pmu_ll_get_r7b_ota_finish(void) {
 	return r->ota_finish;
 }
 
-inline void aon_pmu_ll_set_r0_xip_ota_finish(uint32_t v) {
-	aon_pmu_r0_t *r = (aon_pmu_r0_t*)(SOC_AON_PMU_REG_BASE + (0x0 << 2));
-	r->xip_ota_finish = v;
-}
 
 inline uint32_t aon_pmu_ll_get_r0_xip_ota_finish(void) {
 	aon_pmu_r0_t *r = (aon_pmu_r0_t*)(SOC_AON_PMU_REG_BASE + (0x0 << 2));

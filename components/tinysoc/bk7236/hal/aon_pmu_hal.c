@@ -60,12 +60,6 @@ uint32_t aon_pmu_hal_get_ota_finish(void)
         return aon_pmu_ll_get_r7b_ota_finish();
 }
 
-void aon_pmu_hal_set_xip_ota_finish(uint32_t value)
-{
-        aon_pmu_ll_set_r0_xip_ota_finish(value);
-        aon_pmu_ll_set_r25(0x424B55AA);
-        aon_pmu_ll_set_r25(0xBDB4AA55);
-}
 
 uint32_t aon_pmu_hal_get_xip_ota_finish(void)
 {
