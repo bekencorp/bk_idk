@@ -17,6 +17,7 @@
 #include "core_star.h"
 #include "sdkconfig.h"
 #include "mpu.h"
+#include "cache.h"
 
 #define  SYSTEM_CLOCK     CONFIG_XTAL_FREQ
 #define  PERIPHERAL_CLOCK CONFIG_XTAL_FREQ
