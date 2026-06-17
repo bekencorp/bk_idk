@@ -290,13 +290,9 @@ static int psram_hal_APS6408L_init(uint32_t *id)
 static int psram_hal_W955D8MKY_5J_init(uint32_t *id)
 {
     uint32_t val = 0;
-    uint32_t io_drv = 0; /*range [0, 3]*/
 
-    #if (CONFIG_SOC_BK7236XX)
-        psram_hal_set_mode_value(PSRAM_MODE8);// mode 8
-    #endif
+    psram_hal_set_mode_value(PSRAM_MODE8);// mode 8
 
-	#if (CONFIG_SOC_BK7236N)
     /*
      * Reg5 settings for PSRAM timing/driving adjustments (0x484):
      *  - bits [2:0]   (0x3) = DQS0 input delay, 0.3ns/step
@@ -305,27 +301,19 @@ static int psram_hal_W955D8MKY_5J_init(uint32_t *id)
      *  - bits [14:12] (0x0) = SCK output delay, 0.3ns/step
      */
     psram_hal_set_reg5_value(0x6c3);
-#else
-    psram_hal_set_reg5_value(0x292);
-#endif
 
     psram_hal_set_cmd_reset();
     psram_delay(500);
 
     val = psram_hal_cmd_read(0x01000000);
-    (VOID *)val;
-
-    val = 0x1C8F | (io_drv << 4);
-
-#if (CONFIG_SOC_BK7236XX)
-    #if (CONFIG_SOC_BK7236N)
     psram_hal_cmd_write(0x01000000, 0x8f14);
-    #else
-    psram_hal_cmd_write(0x01000000, 0x1c8f);
-    #endif
-#endif
-    psram_hal_cmd_read(0x01000000);
+    val = psram_hal_cmd_read(0x01000000);
+    if (val == 0)
+    {
+        return -1;
+    }
 
+    *id = PSRAM_W955D8MKY_5J_ID;
     return 0;
 }
 
@@ -384,41 +372,42 @@ uint32_t psram_hal_config_init(uint32_t id)
     {
         if (id == PSRAM_APS6408L_ID)
         {
-            psram_hal_APS6408L_init(&type);
-            return type;
+            ret = psram_hal_APS6408L_init(&type);
         }
         else if (id == PSRAM_APS128XXO_OB9_ID)
         {
-            psram_hal_APS128XXO_OB9_init(&type);
-            return type;
+            ret = psram_hal_APS128XXO_OB9_init(&type);
         }
-        else //id == PSRAM_W955D8MKY_5J_ID
+        else
         {
-            psram_hal_W955D8MKY_5J_init(&type);
-            return type;
+            ret = psram_hal_W955D8MKY_5J_init(&type);
         }
+
+        return (ret == 0) ? type : 0;
     }
-    else
+
+    type = PSRAM_APS6408L_ID;
+    ret = psram_hal_APS6408L_init(&type);
+    if (ret == 0)
     {
-        type = PSRAM_APS6408L_ID;
-        ret = psram_hal_APS6408L_init(&type);
-        if (ret == 0)
-        {
-            return type;
-        }
-
-        type = PSRAM_APS128XXO_OB9_ID;
-        ret = psram_hal_APS128XXO_OB9_init(&type);
-        if (ret == 0)
-        {
-            return type;
-        }
-
-        type = PSRAM_W955D8MKY_5J_ID;
-        ret = psram_hal_W955D8MKY_5J_init(&type);
-
         return type;
     }
+
+    type = PSRAM_APS128XXO_OB9_ID;
+    ret = psram_hal_APS128XXO_OB9_init(&type);
+    if (ret == 0)
+    {
+        return type;
+    }
+
+    type = PSRAM_W955D8MKY_5J_ID;
+    ret = psram_hal_W955D8MKY_5J_init(&type);
+    if (ret == 0)
+    {
+        return type;
+    }
+
+    return 0;
 }
 
 // config 1: psram power and clk config, need wait clk stable
