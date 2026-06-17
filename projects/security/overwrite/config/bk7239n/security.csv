@@ -1,6 +1,7 @@
 Field,Value
 bl1_secureboot_en,TRUE
-flash_crc_en,TRUE
+maintenance_mode_en,FALSE
+flash_crc_en,FALSE
 flash_aes_type,FIXED
 flash_aes_key,73c7bf397f2ad6bf4e7403a7b965dc5ce0645df039c2d69c814ffb403183fb18
 img_sign_key_type,ec256

@@ -29,7 +29,19 @@
  */
 #define BL2_PACK_HEADER_SIZE_OFFSET (BL2_PACK_HEADER_U32_BASE_OFFSET + 4)
 #define BL2_MAGIC_BYTES_LEN         8
+#define BL2_MAGIC_VIRT_OFFSET       0x100
+#define BL2_FLASH_MAGIC_BK_SB       "BK.SB"
+#define BL2_FLASH_MAGIC_BK_SB_LEN   6
+#define BL2_FLASH_MAGIC_BEKEN       "BEKEN"
+#define BL2_FLASH_MAGIC_BEKEN_LEN   5
+#define BL2_FLASH_MAGIC_BK7236      "BK7236"
+#define BL2_FLASH_MAGIC_BK7236_LEN  6
 
+typedef struct {
+	uint8_t magic[BL2_MAGIC_BYTES_LEN];
+	uint32_t virt_offset;
+	size_t magic_len;
+} bl2_ota_magic_info_t;
 
 #if CONFIG_BL2_UPGRADE_WITH_APP
 static uint8_t buf[BUF_SIZE];
@@ -46,17 +58,62 @@ void bl2_ota_register_get_pack_addrs(bl2_ota_get_pack_addrs_fn fn)
 #endif
 }
 
-static void bl2_ota_rewrite_magic(void)
+static int bl2_ota_match_magic_at(const uint8_t *flash_head, uint32_t virt_offset,
+                                    bl2_ota_magic_info_t *info)
+{
+#if CONFIG_BL2_UPGRADE_WITH_APP
+	const uint8_t *base = flash_head + FLASH_VIRTUAL2PHY(virt_offset);
+	const char *matched = NULL;
+	size_t matched_len = 0;
+
+	if (memcmp(base, BL2_FLASH_MAGIC_BK_SB, BL2_FLASH_MAGIC_BK_SB_LEN) == 0) {
+		matched = BL2_FLASH_MAGIC_BK_SB;
+		matched_len = BL2_FLASH_MAGIC_BK_SB_LEN;
+	} else if (memcmp(base, BL2_FLASH_MAGIC_BEKEN, BL2_FLASH_MAGIC_BEKEN_LEN) == 0) {
+		matched = BL2_FLASH_MAGIC_BEKEN;
+		matched_len = BL2_FLASH_MAGIC_BEKEN_LEN;
+	} else if (memcmp(base, BL2_FLASH_MAGIC_BK7236, BL2_FLASH_MAGIC_BK7236_LEN) == 0) {
+		matched = BL2_FLASH_MAGIC_BK7236;
+		matched_len = BL2_FLASH_MAGIC_BK7236_LEN;
+	}
+
+	if (matched != NULL) {
+		memset(info->magic, 0, BL2_MAGIC_BYTES_LEN);
+		memcpy(info->magic, matched, matched_len);
+		info->virt_offset = virt_offset;
+		info->magic_len = matched_len;
+		BK_LOGI(TAG, "magic matched at 0x%x: %s\r\n", virt_offset, matched);
+		return 0;
+	}
+#endif
+	return -1;
+}
+
+static int bl2_ota_detect_magic(const uint8_t *flash_head, bl2_ota_magic_info_t *info)
+{
+#if CONFIG_BL2_UPGRADE_WITH_APP
+	if (bl2_ota_match_magic_at(flash_head, BL2_MAGIC_VIRT_OFFSET, info) == 0) {
+		return 0;
+	}
+
+	BK_LOGW(TAG, "magic not found at 0x%x, use default %s\r\n",
+	        BL2_MAGIC_VIRT_OFFSET, BL2_FLASH_MAGIC_BEKEN);
+	memset(info->magic, 0, BL2_MAGIC_BYTES_LEN);
+	memcpy(info->magic, BL2_FLASH_MAGIC_BEKEN, BL2_FLASH_MAGIC_BEKEN_LEN);
+	info->virt_offset = BL2_MAGIC_VIRT_OFFSET;
+	info->magic_len = BL2_FLASH_MAGIC_BEKEN_LEN;
+#endif
+	return -1;
+}
+
+static void bl2_ota_rewrite_magic(const bl2_ota_magic_info_t *info)
 {
 #if CONFIG_BL2_UPGRADE_WITH_APP
 	static const uint8_t version_bytes[] = CONFIG_BOOTLOADER_VERSION_BYTES;
-	uint8_t magic_bytes[BL2_MAGIC_BYTES_LEN] = {0};
-	size_t magic_len = strlen(CONFIG_OTA_MAGIC_BYTES);
+	uint16_t data_offset;
 
-	memcpy(magic_bytes, CONFIG_OTA_MAGIC_BYTES, magic_len);
-	uint16_t data_offset = FLASH_VIRTUAL2PHY(0x100);
-	memcpy(&bl2_first_part[data_offset], magic_bytes, BL2_MAGIC_BYTES_LEN);
-	
+	memcpy(&bl2_first_part[FLASH_VIRTUAL2PHY(info->virt_offset)], info->magic, BL2_MAGIC_BYTES_LEN);
+
 	data_offset = FLASH_VIRTUAL2PHY(0x120);
 	bl2_first_part[data_offset++] = version_bytes[0];
 	bl2_first_part[data_offset++] = version_bytes[1];
@@ -74,6 +131,7 @@ static void bl2_ota_upgrade(void)
 #if CONFIG_BL2_UPGRADE_WITH_APP
 	uint8_t ff[64];
 	uint8_t header_buf[BL2_PACK_HEADER_SIZE];
+	bl2_ota_magic_info_t magic_info;
 	uint32_t bl2_real_size = 0;
 	uint32_t partition_real_size = 0;
 	uint32_t bl2_address = 0;
@@ -117,6 +175,7 @@ static void bl2_ota_upgrade(void)
 	BK_LOGI(TAG, "bl2_real_size from header: %u bytes\r\n", bl2_real_size);
 
 	bk_flash_read_bytes(0, bl2_first_part, FLASH_VIRTUAL2PHY(0x140));
+	bl2_ota_detect_magic(bl2_first_part, &magic_info);
 	BK_LOGI(TAG, "start erasing bl2\r\n");
 	bk_flash_erase_fast(CONFIG_BL2_PHY_PARTITION_OFFSET, CONFIG_BL2_PHY_PARTITION_SIZE);
 
@@ -129,7 +188,7 @@ static void bl2_ota_upgrade(void)
 
 		BK_LOGI(TAG, "write index: %d, size: %u\r\n", block_idx, chunk);
 		bk_flash_read_cbus(bl2_data_addr + write_offset, buf, chunk);
-		bk_flash_write_cbus(FLASH_ADDR_REMAP(write_offset), buf, chunk);
+		bk_flash_write_cbus(FLASH_ADDR_REMAP(CONFIG_BL2_PHY_PARTITION_OFFSET + write_offset), buf, chunk);
 		
 		write_offset += chunk;
 		remain -= chunk;
@@ -137,7 +196,7 @@ static void bl2_ota_upgrade(void)
 	}
 
 	BK_LOGI(TAG, "rewrite bl2 magic\r\n");
-	bl2_ota_rewrite_magic();
+	bl2_ota_rewrite_magic(&magic_info);
 
 	BK_LOGI(TAG, "erase partition table\r\n");
 	bk_flash_erase_fast(CONFIG_PARTITION_PHY_PARTITION_OFFSET, CONFIG_PARTITION_PHY_PARTITION_SIZE);

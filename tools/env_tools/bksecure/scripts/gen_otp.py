@@ -104,7 +104,7 @@ def gen_otp_efuse_config_file(aes_type, flash_crc_en, flash_aes_key, pubkey_pem_
         data["byte_len"] = "0x20"
         data["data"] = bl1_pk_hash
         data["data_type"] = "hex"
-        data["status"] = "false"
+        data["status"] = "true"
         otp_efuse_config["Security_Data"].append(data)
 
         data = data.copy()

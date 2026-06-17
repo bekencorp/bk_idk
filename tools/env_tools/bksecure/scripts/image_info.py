@@ -7,6 +7,7 @@ import struct
 class Image:
     FILE_HEAD_MAGIC0 = "BKDLV10."
     FILE_HEAD_MAGIC1 = "BL1DLV10"
+    FILE_HEAD_MAGIC2 = "BL1DLV30"
     FILE_OTA_HEAD_MAGIC = "BK723658"
 
     def __init__(self, file_path):
@@ -132,9 +133,10 @@ class Image:
        # magic_str = magic.decode('utf-8')
         MAGIC0 = bytes([ord(char) for char in self.FILE_HEAD_MAGIC0])
         MAGIC1 = bytes([ord(char) for char in self.FILE_HEAD_MAGIC1])
+        MAGIC2 = bytes([ord(char) for char in self.FILE_HEAD_MAGIC2])
         OTA_MAGIC = bytes([ord(char) for char in self.FILE_OTA_HEAD_MAGIC])
 
-        if magic == MAGIC0 or magic == MAGIC1:
+        if magic == MAGIC0 or magic == MAGIC1 or magic == MAGIC2:
             self.parse_all_image(self.file_path)
         elif magic == OTA_MAGIC:
             self.parse_ota_image(self.file_path)

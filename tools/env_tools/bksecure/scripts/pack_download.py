@@ -9,6 +9,7 @@ from .pack import Pack
 from .pack_header import PackHeader
 from .common import *
 from .crc import pack_crc32
+from .security import Security
 from .size import Size
 
 DOWNLOAD_GLOBAL_HDR_LEN = 32
@@ -18,7 +19,15 @@ class PackDownload(Pack):
 
     def __init__(self, bins=None, outfile=None):
         super().__init__(bins, outfile)
-        self._magic = 'BL1DLV10'
+        if os.path.exists('security.csv'):
+            s = Security('security.csv')
+            self.bl1_secureboot_en = s.bl1_secureboot_en
+            self.maintenance_mode_en = s.maintenance_mode_en
+        else:
+            logging.warning('security.csv not found, use defaults for pack download')
+            self.bl1_secureboot_en = False
+            self.maintenance_mode_en = False
+        self._magic = 'BL1DLV30' if self.maintenance_mode_en else 'BL1DLV10'
 
     def __gen_download_global_hdr(self, img_num, img_hdrs, version):
 
@@ -169,10 +178,15 @@ class PackDownload(Pack):
             if size_obj.offset() != 0:
                 return
 
-        # Use SOC-specific magic: BK7236 uses "BK7236", others use "BEKEN"
         soc_type = get_soc_type()
-        magic = "BK7236".encode() + b'\x00' * 2 if soc_type == "BK7236" else "BEKEN".encode() + b'\x00' * 3
-        logging.debug(f'Add magic code {magic} to {bname} (SOC={soc_type})')
+        if self.bl1_secureboot_en:
+            magic = "BK.SB".encode() + b'\x00' * 3
+        else:
+            if soc_type == "BK7236":
+                magic = "BK7236".encode() + b'\x00' * 2
+            else:
+                magic = "BEKEN".encode() + b'\x00' * 3
+        logging.debug(f'Add magic code {magic} to {bname} (secure_boot={self.bl1_secureboot_en}) (SOC={soc_type})')
         with open(bname, 'r+b') as f:
             f.seek(0x100)
             f.write(magic)
@@ -203,7 +217,7 @@ class PackDownload(Pack):
             if pheader.type().is_merge():
                 pad_size = size_obj.hdr_pad_size() if hasattr(size_obj, "hdr_pad_size") else 0
             else:
-                if flash_crc_en:
+                if flash_crc_en or self.bl1_secureboot_en:
                     pad_size = (size_obj.phy_code_offset() - size_obj.offset()) if hasattr(size_obj, "phy_code_offset") else 0
                 else:
                     pad_size = size_obj.offset()

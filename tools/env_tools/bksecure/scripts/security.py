@@ -9,6 +9,7 @@ from cryptography.hazmat.primitives import serialization
 
 security_keys = [
     'bl1_secureboot_en',
+    'maintenance_mode_en',
     'flash_crc_en',
     'flash_aes_type',
     'flash_aes_key',
@@ -80,6 +81,7 @@ class Security(dict):
         self.new_img_sign_pubkey_bytes = None
 
         self.bl1_secureboot_en = parse_bool(self.csv.dic['bl1_secureboot_en'])
+        self.maintenance_mode_en = parse_bool(self.csv.dic['maintenance_mode_en'])
         self.flash_crc_en = parse_bool(self.csv.dic['flash_crc_en'])
         self.flash_aes_type = self.csv.dic['flash_aes_type'].upper()
 

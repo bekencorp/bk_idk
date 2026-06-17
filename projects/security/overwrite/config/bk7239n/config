@@ -32,8 +32,9 @@ CONFIG_CPU0_SPE_RAM_SIZE=0x80000
 CONFIG_FLASH_SIZE_4M=n
 #@ enable security firmware / no-security firmware
 CONFIG_SECURITY_FIRMWARE=y
-#@ Enable Cache
-CONFIG_CACHE_ENABLE=n
+CONFIG_DBUS_CHECK_CRC=n
+CONFIG_OTA_BACKUP_PUBKEY=y
+CONFIG_DECOMPRESS_RESUME=y
 
 #@ Enable security engine cli
 CONFIG_TRUSTENGINE_TEST=y
@@ -60,7 +61,7 @@ CONFIG_BL2_WDT_PERIOD=0x1F40
 #@ Enable flash partition operation by name
 CONFIG_PARTITION_OP_BY_NAME=y
 #@ enable https ota
-CONFIG_OTA_HTTPS=n
+CONFIG_OTA_HTTPS=y
 CONFIG_OTA_HTTP=n
 #@ Enable TFM build
 CONFIG_BUILD_TFM=n
@@ -82,3 +83,4 @@ CONFIG_BAKP_POWER_DOMAIN_DISABLE=n
 
 #@ support BL2 upgrade, if you want to use this feature, the CONFIG_CACHE_ENABLE must be enabled
 CONFIG_BL2_UPGRADE_WITH_APP=n
+CONFIG_CACHE_ENABLE=y
