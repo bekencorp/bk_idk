@@ -144,11 +144,14 @@ rf_config,672,8,name,rf_cfg,,,,
 ,695,1,test_mode_fir_11b,0x32,,,,FIR of 11B in FCC/SRRC mode
 ,696,1,test_mode_fir_11g,0x32,,,,FIR of 11G and 11N(MCS4~9) in FCC/SRRC mode
 ,697,1,test_mode_fir_11n,0x50,,,,FIR of 11N(MCS0~3) in FCC/SRRC mode
-,698,1,ftpwr_cali_valid,0x0,,,,flag to use ftpwr as valid
-,699,1,cali_per_temp_bias,0x14,,,,calibrate bias with temperature
-,700,1,cali_per_temp_rxadc,0x1E,,,,calibrate rxADC with temperature
-,701,1,flag_generic,0x1,,,,flag to use general setting
-,702,98,reserved,0xff,,,,
+,698,1,test_mode_shift_11b,0x0,,,,power shift(0.25dB/1LSB) of 11B in FCC/SRRC mode
+,699,1,test_mode_shift_11g,0x6,,,,power shift(0.25dB/1LSB) of 11G and 11N(MCS4~9) in FCC/SRRC mode
+,700,1,test_mode_shift_11n,0x0,,,,power shift(0.25dB/1LSB) of 11N(MCS0~3) in FCC/SRRC mode
+,701,1,ftpwr_cali_valid,0x0,,,,flag to use ftpwr as valid
+,702,1,cali_per_temp_bias,0x14,,,,calibrate bias with temperature
+,703,1,cali_per_temp_rxadc,0x1E,,,,calibrate rxADC with temperature
+,704,1,flag_generic,0x1,,,,flag to use general setting
+,705,95,reserved,0xff,,,,
 tlv_base,800,8,name,tlv,,,,
 ,808,2,tlv_type,tlv_test1,,,,
 ,810,2,tlv_length,4,,,,

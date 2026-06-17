@@ -106,7 +106,7 @@ rc_base,288,8,name,rcbeken,,,,
 ,468,4,r50,0x80808080,,,,
 ,472,4,r51,0x00200000,,,,
 ,476,4,r52,0x022F0012,,,,
-,480,4,r53,0x007E3012,,,,
+,480,4,r53,0x007D3012,,,,
 ,484,4,r54,0x007F0012,,,,
 ,488,4,r55,0x027F7F12,,,,
 ,492,4,r56,0x00000000,,,,
@@ -154,10 +154,13 @@ rf_config,672,8,name,rf_cfg,,,,
 ,703,1,test_mode_fir_11b,0x32,,,,FIR of 11B in FCC/SRRC mode
 ,704,1,test_mode_fir_11g,0x32,,,,FIR of 11G in FCC/SRRC mode
 ,705,1,test_mode_fir_11n,0x32,,,,FIR of 11N(MCS0~3) in FCC/SRRC mode
-,706,1,ftpwr_cali_valid,0x0,,,,flag to use ftpwr as valid
-,707,1,cali_per_temp_bias,0x14,,,,calibrate bias with temperature
-,708,1,cali_per_temp_rxadc,0xA,,,,calibrate rxADC with temperature
-,709,91,reserved,0xff,,,,
+,706,1,test_mode_shift_11b,0x4,,,,power shift(0.25dB/1LSB) of 11B in FCC/SRRC mode
+,707,1,test_mode_shift_11g,0x4,,,,power shift(0.25dB/1LSB) of 11G and 11N(MCS4~9) in FCC/SRRC mode
+,708,1,test_mode_shift_11n,0x0,,,,power shift(0.25dB/1LSB) of 11N(MCS0~3) in FCC/SRRC mode
+,709,1,ftpwr_cali_valid,0x0,,,,flag to use ftpwr as valid
+,710,1,cali_per_temp_bias,0x14,,,,calibrate bias with temperature
+,711,1,cali_per_temp_rxadc,0xA,,,,calibrate rxADC with temperature
+,712,88,reserved,0xff,,,,
 tlv_base,800,8,name,tlv,,,,
 ,808,2,tlv_type,tlv_test1,,,,
 ,810,2,tlv_length,4,,,,
