@@ -89,10 +89,35 @@ static int flash_import_driver_cmd(int argc, char **argv)
 	return 0;
 }
 
+static int flash_import_loop_cmd(int argc, char **argv)
+{
+	if (argc < 1) {
+		return -1;
+	}
+
+	if (strcmp(argv[0], "start") == 0) {
+		flash_import_case_loop_start();
+		return 0;
+	}
+
+	if (strcmp(argv[0], "stop") == 0) {
+		flash_import_case_loop_stop();
+		return 0;
+	}
+
+	if (strcmp(argv[0], "show") == 0) {
+		flash_import_case_loop_show();
+		return 0;
+	}
+
+	return -1;
+}
+
 static const struct flash_import_subcmd s_flash_import_subcmds[] = {
 	{ "endurance", "usage: flash_import endurance {start|stop|show}", flash_import_endurance_cmd, 1, 1 },
 	{ "zero_read", "usage: flash_import zero_read {start|stop|show}", flash_import_zero_read_cmd, 1, 1 },
-	{ "driver", "usage: flash_import driver", flash_import_driver_cmd, 0, 0 },
+	{ "loop",      "usage: flash_import loop {start|stop|show}",      flash_import_loop_cmd,      1, 1 },
+	{ "driver",    "usage: flash_import driver",                      flash_import_driver_cmd,    0, 0 },
 };
 
 #define FLASH_IMPORT_SUBCMD_CNT (sizeof(s_flash_import_subcmds) / sizeof(s_flash_import_subcmds[0]))

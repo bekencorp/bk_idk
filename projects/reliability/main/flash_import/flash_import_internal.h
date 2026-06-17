@@ -15,6 +15,16 @@
 #pragma once
 
 #include <driver/flash.h>
+#include <driver/flash_partition.h>
+
+#define FLASH_IMPORT_SECTOR_SIZE          (4096U)
+
+#define FLASH_IMPORT_APP_PART_ID          BK_PARTITION_APPLICATION
+#define FLASH_IMPORT_APP_PART_NAME        "primary_cpu0_app"
+#define FLASH_IMPORT_APP_PART_ALIAS       "application"
+
+#define FLASH_IMPORT_FLASH_TEST_PART_ID   BK_PARTITION_FLASH_TEST
+#define FLASH_IMPORT_FLASH_TEST_PART_NAME "flash_test"
 
 #if CONFIG_FLASH_CBUS
 #include "security.h"
@@ -38,3 +48,6 @@ void flash_import_case_zero_read_start(void);
 void flash_import_case_zero_read_stop(void);
 void flash_import_case_zero_read_show(void);
 void flash_import_case_driver_run(void);
+void flash_import_case_loop_start(void);
+void flash_import_case_loop_stop(void);
+void flash_import_case_loop_show(void);

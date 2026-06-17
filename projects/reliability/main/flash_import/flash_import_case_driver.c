@@ -22,10 +22,6 @@
 #include "sdkconfig.h"
 #include "flash_import_internal.h"
 
-#define FLASH_IMPORT_DRIVER_SECTOR_SIZE     (4096U)
-#define FLASH_IMPORT_DRIVER_PART_APP_ID     BK_PARTITION_APPLICATION
-#define FLASH_IMPORT_DRIVER_PART_APP_NAME   "primary_cpu0_app"
-#define FLASH_IMPORT_DRIVER_PART_APP_ALIAS  "application"
 #define FLASH_IMPORT_DRIVER_LOG_INTERVAL    (160U)
 
 typedef struct {
@@ -196,12 +192,12 @@ static bk_err_t flash_import_driver_verify_read(uint32_t addr, const uint8_t *ex
 {
     bk_err_t ret = BK_OK;
 
-    ret = flash_import_driver_read_core(addr, s_driver_buf, FLASH_IMPORT_DRIVER_SECTOR_SIZE,
+    ret = flash_import_driver_read_core(addr, s_driver_buf, FLASH_IMPORT_SECTOR_SIZE,
                                         read_line, read_op_us);
     if (ret != BK_OK) {
         return ret;
     }
-    if (os_memcmp(s_driver_buf, expect, FLASH_IMPORT_DRIVER_SECTOR_SIZE) != 0) {
+    if (os_memcmp(s_driver_buf, expect, FLASH_IMPORT_SECTOR_SIZE) != 0) {
         return BK_FAIL;
     }
     return BK_OK;
@@ -217,16 +213,16 @@ static bk_err_t flash_import_driver_test_sector_phase(uint32_t addr, flash_line_
         s_driver_result.erase_err_cnt++;
         return BK_FAIL;
     }
-    flash_import_driver_fill_erase_pattern(s_driver_pattern_buf, FLASH_IMPORT_DRIVER_SECTOR_SIZE);
+    flash_import_driver_fill_erase_pattern(s_driver_pattern_buf, FLASH_IMPORT_SECTOR_SIZE);
     if (flash_import_driver_verify_read(addr, s_driver_pattern_buf, read_line, NULL) != BK_OK) {
         s_driver_result.erase_verify_err_cnt++;
         return BK_FAIL;
     }
 
-    flash_import_driver_fill_write_pattern(s_driver_pattern_buf, FLASH_IMPORT_DRIVER_SECTOR_SIZE, addr);
+    flash_import_driver_fill_write_pattern(s_driver_pattern_buf, FLASH_IMPORT_SECTOR_SIZE, addr);
 
     flash_import_driver_set_protect(FLASH_PROTECT_ALL);
-    if (flash_import_driver_write(addr, s_driver_pattern_buf, FLASH_IMPORT_DRIVER_SECTOR_SIZE) != BK_OK) {
+    if (flash_import_driver_write(addr, s_driver_pattern_buf, FLASH_IMPORT_SECTOR_SIZE) != BK_OK) {
         s_driver_result.write_fail_miss_cnt++;
         ret = BK_FAIL;
     }
@@ -236,7 +232,7 @@ static bk_err_t flash_import_driver_test_sector_phase(uint32_t addr, flash_line_
     }
 
     flash_import_driver_set_protect(FLASH_PROTECT_NONE);
-    if (flash_import_driver_write(addr, s_driver_pattern_buf, FLASH_IMPORT_DRIVER_SECTOR_SIZE) != BK_OK) {
+    if (flash_import_driver_write(addr, s_driver_pattern_buf, FLASH_IMPORT_SECTOR_SIZE) != BK_OK) {
         s_driver_result.write_err_cnt++;
         return BK_FAIL;
     }
@@ -251,7 +247,7 @@ static bk_err_t flash_import_driver_test_sector_phase(uint32_t addr, flash_line_
         return BK_FAIL;
     }
 
-    flash_import_driver_fill_erase_pattern(s_driver_pattern_buf, FLASH_IMPORT_DRIVER_SECTOR_SIZE);
+    flash_import_driver_fill_erase_pattern(s_driver_pattern_buf, FLASH_IMPORT_SECTOR_SIZE);
     flash_import_driver_set_protect(FLASH_PROTECT_ALL);
     if (flash_import_driver_erase(addr) != BK_OK) {
         s_driver_result.erase_fail_miss_cnt++;
@@ -270,12 +266,12 @@ static bk_err_t flash_import_driver_get_test_range(void)
     const bk_logic_partition_t *app_part = NULL;
     uint32_t app_end = 0;
 
-    app_part = bk_flash_partition_get_info(FLASH_IMPORT_DRIVER_PART_APP_ID);
+    app_part = bk_flash_partition_get_info(FLASH_IMPORT_APP_PART_ID);
     if (app_part == NULL) {
-        app_part = bk_flash_partition_get_info_by_name(FLASH_IMPORT_DRIVER_PART_APP_NAME);
+        app_part = bk_flash_partition_get_info_by_name(FLASH_IMPORT_APP_PART_NAME);
     }
     if (app_part == NULL) {
-        app_part = bk_flash_partition_get_info_by_name(FLASH_IMPORT_DRIVER_PART_APP_ALIAS);
+        app_part = bk_flash_partition_get_info_by_name(FLASH_IMPORT_APP_PART_ALIAS);
     }
     if (app_part == NULL) {
         os_printf("driver: app partition lookup fail\r\n");
@@ -283,8 +279,8 @@ static bk_err_t flash_import_driver_get_test_range(void)
     }
 
     app_end = app_part->partition_start_addr + app_part->partition_length;
-    s_driver_test_start_addr = (app_end + FLASH_IMPORT_DRIVER_SECTOR_SIZE - 1U)
-                               & ~(FLASH_IMPORT_DRIVER_SECTOR_SIZE - 1U);
+    s_driver_test_start_addr = (app_end + FLASH_IMPORT_SECTOR_SIZE - 1U)
+                               & ~(FLASH_IMPORT_SECTOR_SIZE - 1U);
     s_driver_test_end_addr = bk_flash_get_current_total_size();
     if (s_driver_test_start_addr >= s_driver_test_end_addr) {
         os_printf("driver: invalid range start:0x%x end:0x%x\r\n", s_driver_test_start_addr, s_driver_test_end_addr);
@@ -295,13 +291,13 @@ static bk_err_t flash_import_driver_get_test_range(void)
 
 static bk_err_t flash_import_driver_buffers_init(void)
 {
-    s_driver_buf = (uint8_t *)os_malloc(FLASH_IMPORT_DRIVER_SECTOR_SIZE);
+    s_driver_buf = (uint8_t *)os_malloc(FLASH_IMPORT_SECTOR_SIZE);
     if (s_driver_buf == NULL) {
         os_printf("driver: buf alloc fail\r\n");
         return BK_FAIL;
     }
 
-    s_driver_pattern_buf = (uint8_t *)os_malloc(FLASH_IMPORT_DRIVER_SECTOR_SIZE);
+    s_driver_pattern_buf = (uint8_t *)os_malloc(FLASH_IMPORT_SECTOR_SIZE);
     if (s_driver_pattern_buf == NULL) {
         os_printf("driver: pattern buf alloc fail\r\n");
         return BK_FAIL;
@@ -329,11 +325,11 @@ static bk_err_t flash_import_driver_test_region_init(void)
     uint32_t scrub_cnt = 0;
 
     flash_import_driver_set_protect(FLASH_PROTECT_NONE);
-    flash_import_driver_fill_erase_pattern(s_driver_pattern_buf, FLASH_IMPORT_DRIVER_SECTOR_SIZE);
+    flash_import_driver_fill_erase_pattern(s_driver_pattern_buf, FLASH_IMPORT_SECTOR_SIZE);
 
-    for (addr = s_driver_test_start_addr; addr < s_driver_test_end_addr; addr += FLASH_IMPORT_DRIVER_SECTOR_SIZE) {
-        flash_import_driver_read_with_line(addr, s_driver_buf, FLASH_IMPORT_DRIVER_SECTOR_SIZE, FLASH_LINE_MODE_FOUR);
-        if (os_memcmp(s_driver_buf, s_driver_pattern_buf, FLASH_IMPORT_DRIVER_SECTOR_SIZE) == 0) {
+    for (addr = s_driver_test_start_addr; addr < s_driver_test_end_addr; addr += FLASH_IMPORT_SECTOR_SIZE) {
+        flash_import_driver_read_with_line(addr, s_driver_buf, FLASH_IMPORT_SECTOR_SIZE, FLASH_LINE_MODE_FOUR);
+        if (os_memcmp(s_driver_buf, s_driver_pattern_buf, FLASH_IMPORT_SECTOR_SIZE) == 0) {
             continue;
         }
 
@@ -417,7 +413,7 @@ static void flash_import_driver_run_sector_loop(void)
 {
     uint32_t addr = 0;
 
-    for (addr = s_driver_test_start_addr; addr < s_driver_test_end_addr; addr += FLASH_IMPORT_DRIVER_SECTOR_SIZE) {
+    for (addr = s_driver_test_start_addr; addr < s_driver_test_end_addr; addr += FLASH_IMPORT_SECTOR_SIZE) {
         os_memset(&s_driver_sector_timing, 0, sizeof(s_driver_sector_timing));
         s_driver_result.sector_cnt++;
         if (flash_import_driver_test_sector_phase(addr, FLASH_LINE_MODE_TWO) != BK_OK) {
