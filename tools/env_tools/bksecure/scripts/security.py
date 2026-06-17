@@ -81,7 +81,10 @@ class Security(dict):
         self.new_img_sign_pubkey_bytes = None
 
         self.bl1_secureboot_en = parse_bool(self.csv.dic['bl1_secureboot_en'])
-        self.maintenance_mode_en = parse_bool(self.csv.dic['maintenance_mode_en'])
+        if "maintenance_mode_en" in self.csv.dic:
+            self.maintenance_mode_en = parse_bool(self.csv.dic['maintenance_mode_en'])
+        else:
+            self.maintenance_mode_en = False
         self.flash_crc_en = parse_bool(self.csv.dic['flash_crc_en'])
         self.flash_aes_type = self.csv.dic['flash_aes_type'].upper()
 
