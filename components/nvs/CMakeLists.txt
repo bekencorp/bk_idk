@@ -23,13 +23,23 @@ list(APPEND srcs
 	"src/nvs_encrypted_partition.cpp"
 	"src/nvs_types.cpp"
 	"src/nvs_platform.cpp"
-	"src/nvs_test.c"
-	"src/nvs_thread_safety_test.c"
 	"port/rom_crc.cpp"
 	"port/platform.cpp"
 	"port/locks.c"
 	"port/nvs_sec_provider.c"
 )
+
+if (CONFIG_NVS_TEST)
+	list(APPEND srcs
+		"src/nvs_test.c"
+	)
+endif()
+
+if (CONFIG_SUPPORT_NVS_THREAD_SAFETY_TEST)
+	list(APPEND srcs
+		"src/nvs_thread_safety_test.c"
+	)
+endif()
 endif()
 
 armino_component_register(SRCS "${srcs}"
