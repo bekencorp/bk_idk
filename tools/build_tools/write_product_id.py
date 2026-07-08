@@ -45,6 +45,7 @@ import argparse
 
 # Global verbose flag
 _verbose = False
+DEFAULT_SPID_OFFSET_IN_BOOT = 8
 
 def log(*args, **kwargs):
     """Print function wrapper - only prints if verbose mode is enabled"""
@@ -133,6 +134,10 @@ def detect_crc_mode(bin_data):
     
     return None  # Cannot detect
 
+def parse_int_value(value):
+    """Parse integer string in decimal or hex format."""
+    return int(value.strip(), 0)
+
 def ascii_to_bytes(ascii_str, length=15):
     """Convert ASCII string to bytes array with padding
     
@@ -159,7 +164,7 @@ def ascii_to_bytes(ascii_str, length=15):
     # Remaining bytes are already 0 (default value of bytearray)
     return bytes(id_bytes)
 
-def write_product_id_to_bin(bin_file, product_id, offset=None, backup=False, use_crc=None):
+def write_product_id_to_bin(bin_file, product_id, offset=None, backup=False, use_crc=None, spid_offset_in_boot=None):
     """Write product ID to binary file at specified offset
     
     Args:
@@ -171,6 +176,8 @@ def write_product_id_to_bin(bin_file, product_id, offset=None, backup=False, use
                  None:  Auto-detect by checking magic strings at 0x100 (no_crc) or 0x110 (crc)
                  True:  Write 16 bytes (15-byte ID + 1-byte CRC) to 0x118
                  False: Write 15 bytes (15-byte ID only) to 0x108
+        spid_offset_in_boot: SPID offset relative to boot base address.
+                             If None, uses default value 8.
     """
     if not os.path.exists(bin_file):
         raise FileNotFoundError(f"Binary file not found: {bin_file}")
@@ -200,7 +207,10 @@ def write_product_id_to_bin(bin_file, product_id, offset=None, backup=False, use
     
     # Auto-select offset based on CRC option if not specified
     if offset is None:
-        offset = 0x11A if use_crc else 0x10A
+        spid_offset = DEFAULT_SPID_OFFSET_IN_BOOT if spid_offset_in_boot is None else spid_offset_in_boot
+        base_offset = 0x110 if use_crc else 0x100
+        offset = base_offset + spid_offset
+        log(f"SPID offset in boot: 0x{spid_offset:X} (base 0x{base_offset:X} -> final 0x{offset:X})")
     
     # Convert ASCII string to 15 bytes
     id_bytes = ascii_to_bytes(product_id, 15)
@@ -321,6 +331,9 @@ Backup:
                         help='Path to product_id.txt file to read product ID from')
     parser.add_argument('--offset', type=str, default=None,
                         help='Offset address in binary file (default: auto-select based on CRC option)')
+    parser.add_argument('--spid-offset-in-boot', type=str, default=None,
+                        help='SPID offset relative to boot base address '
+                             '(default: 8)')
     
     # CRC mode options (mutually exclusive)
     crc_group = parser.add_mutually_exclusive_group()
@@ -358,12 +371,17 @@ Backup:
     offset = None
     if args.offset is not None:
         try:
-            if args.offset.startswith('0x') or args.offset.startswith('0X'):
-                offset = int(args.offset, 16)
-            else:
-                offset = int(args.offset)
+            offset = parse_int_value(args.offset)
         except ValueError:
             log_error(f"Error: Invalid offset value '{args.offset}'")
+            return 1
+
+    spid_offset_in_boot = None
+    if args.spid_offset_in_boot is not None:
+        try:
+            spid_offset_in_boot = parse_int_value(args.spid_offset_in_boot)
+        except ValueError:
+            log_error(f"Error: Invalid --spid-offset-in-boot value '{args.spid_offset_in_boot}'")
             return 1
     
     # Determine CRC mode
@@ -380,7 +398,8 @@ Backup:
             product_id,
             offset=offset,
             backup=args.backup,
-            use_crc=use_crc
+            use_crc=use_crc,
+            spid_offset_in_boot=spid_offset_in_boot
         )
         return 0
     except Exception as e:

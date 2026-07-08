@@ -78,6 +78,33 @@ NORMAL_BOOTLOADER_BIN="${ARMINO_DIR}/components/bk_libs/${ARMINO_SOC}/bootloader
 AB_BOOTLOADER_BIN="${ARMINO_DIR}/components/bk_libs/${ARMINO_SOC}/bootloader/ab_bootloader/bootloader.bin"
 ATE_BOOTLOADER_BIN="${ARMINO_DIR}/components/bk_libs/${ARMINO_SOC}/bootloader/ate_bootloader/bootloader.bin"
 SDKCONFIG_H="${PROPERTIES_LIB_BUILD_DIR}/sdkconfig"
+
+SPID_OFFSET_IN_BOOT_DEFAULT=8
+SPID_OFFSET_IN_BOOT="${SPID_OFFSET_IN_BOOT_DEFAULT}"
+PROJECT_CONFIG_FILE=""
+if [ -n "${PROJECT_DIR:-}" ]; then
+    if [ "${PROJECT_DIR#/}" != "${PROJECT_DIR}" ]; then
+        PROJECT_CONFIG_FILE="${PROJECT_DIR}/config/${ARMINO_SOC}/config"
+    else
+        PROJECT_CONFIG_FILE="${ARMINO_DIR}/${PROJECT_DIR}/config/${ARMINO_SOC}/config"
+    fi
+fi
+if [ -n "${PROJECT_CONFIG_FILE}" ] && [ -f "${PROJECT_CONFIG_FILE}" ]; then
+    CONFIG_SPID_OFFSET_RAW=$(grep '^CONFIG_SPID_OFFSET_IN_BOOT=' "${PROJECT_CONFIG_FILE}" | cut -d '=' -f 2 | tr -d '[:space:]' | tail -n 1)
+    if [ -n "${CONFIG_SPID_OFFSET_RAW}" ]; then
+        if PARSED_SPID_OFFSET=$(python3 -c 'import sys; print(int(sys.argv[1], 0))' "${CONFIG_SPID_OFFSET_RAW}" 2>/dev/null); then
+            if [ "${PARSED_SPID_OFFSET}" = "8" ] || [ "${PARSED_SPID_OFFSET}" = "10" ]; then
+                SPID_OFFSET_IN_BOOT="${PARSED_SPID_OFFSET}"
+            else
+                echo "Error: CONFIG_SPID_OFFSET_IN_BOOT='${CONFIG_SPID_OFFSET_RAW}' is unsupported, only 0x8 or 0xA is allowed"
+                exit 1
+            fi
+        else
+            echo "Error: Invalid CONFIG_SPID_OFFSET_IN_BOOT='${CONFIG_SPID_OFFSET_RAW}' in ${PROJECT_CONFIG_FILE}"
+            exit 1
+        fi
+    fi
+fi
 # not to build properties repeatedly when verify.
 if [ -n "${BK_JENKINS_ID:-}" ]; then
 	if [ -d "$PROPERTIES_LIB_BUILD_DIR" ]; then
@@ -127,7 +154,7 @@ if [ "${need_build_properties_lib}" == "1" ]; then
 		if [ -n "${PRODUCT_STRING}" ]; then
 			if [ -f "${NORMAL_BOOTLOADER_BIN}" ]; then
 				echo "Writing product ID to ${NORMAL_BOOTLOADER_BIN}..."
-				python3 "${WRITE_PRODUCT_ID_SCRIPT}" "${NORMAL_BOOTLOADER_BIN}" "${PRODUCT_STRING}"
+				python3 "${WRITE_PRODUCT_ID_SCRIPT}" "${NORMAL_BOOTLOADER_BIN}" "${PRODUCT_STRING}" --spid-offset-in-boot "${SPID_OFFSET_IN_BOOT}"
 				if [ $? -eq 0 ]; then
 					echo "Product ID write to normal bootloader completed successfully"
 				else
@@ -137,7 +164,7 @@ if [ "${need_build_properties_lib}" == "1" ]; then
 			
 			if [ -f "${AB_BOOTLOADER_BIN}" ]; then
 				echo "Writing product ID to ${AB_BOOTLOADER_BIN}..."
-				python3 "${WRITE_PRODUCT_ID_SCRIPT}" "${AB_BOOTLOADER_BIN}" "${PRODUCT_STRING}"
+				python3 "${WRITE_PRODUCT_ID_SCRIPT}" "${AB_BOOTLOADER_BIN}" "${PRODUCT_STRING}" --spid-offset-in-boot "${SPID_OFFSET_IN_BOOT}"
 				if [ $? -eq 0 ]; then
 					echo "Product ID write to AB bootloader completed successfully"
 				else
@@ -147,7 +174,7 @@ if [ "${need_build_properties_lib}" == "1" ]; then
 
 			if [ -f "${ATE_BOOTLOADER_BIN}" ]; then
 				echo "Writing product ID to ${ATE_BOOTLOADER_BIN}..."
-				python3 "${WRITE_PRODUCT_ID_SCRIPT}" "${ATE_BOOTLOADER_BIN}" "${PRODUCT_STRING}"
+				python3 "${WRITE_PRODUCT_ID_SCRIPT}" "${ATE_BOOTLOADER_BIN}" "${PRODUCT_STRING}" --spid-offset-in-boot "${SPID_OFFSET_IN_BOOT}"
 				if [ $? -eq 0 ]; then
 					echo "Product ID write to ATE bootloader completed successfully"
 				else

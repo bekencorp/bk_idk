@@ -29,6 +29,30 @@ menu "BK_system"
 			default 0
 	endmenu
 
+    menu "Product ID Config"
+        choice SPID_OFFSET_IN_BOOT_CHOICE
+            prompt "SPID offset in boot"
+            default SPID_OFFSET_IN_BOOT_0X8
+
+            config SPID_OFFSET_IN_BOOT_0X8
+                bool "0x8"
+
+            config SPID_OFFSET_IN_BOOT_0XA
+                bool "0xA"
+        endchoice
+
+        config SPID_OFFSET_IN_BOOT
+            hex
+            default 0x8 if SPID_OFFSET_IN_BOOT_0X8
+            default 0xA if SPID_OFFSET_IN_BOOT_0XA
+            help
+                Offset of product ID field relative to boot base address.
+                Final write address is:
+                - CRC mode:    0x110 + CONFIG_SPID_OFFSET_IN_BOOT
+                - NO_CRC mode: 0x100 + CONFIG_SPID_OFFSET_IN_BOOT
+                Only 0x8 and 0xA are supported.
+    endmenu
+
 	menu "Print Config"
 		choice SYSTEM_PRINT_DEVICE
 			prompt "System print device"
