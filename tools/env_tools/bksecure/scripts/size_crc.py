@@ -52,8 +52,8 @@ class SizeCrc(Size):
         self._phy_code_size = self._phy_size - (self._phy_code_offset - self._phy_offset)
         self._vir_code_size = phy2virtual(self._phy_code_size)
 
-        #TODO double check it, may need to align last sub-partition to 4K also
-        self._vir_sign_size = floor_align(self._vir_size, 4096)
+        # BL2 slot padding uses full partition phy size (bk_flash_map.c), not hdr/tail-trimmed phy_size
+        self._vir_sign_size = floor_align(phy2virtual(self.size()), 4096)
 
     def phy_offset(self):
         return self._phy_offset
