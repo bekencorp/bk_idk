@@ -48,6 +48,9 @@ extern UINT32 manual_cal_fitting_txpwr_tab(void);
 extern uint8_t if_ble_sleep(void);
 extern uint8_t is_xvr_reg_backup(uint32_t addr);
 extern uint8_t is_btdm_reg_backup(uint32_t addr);
+extern void agcmem_latch(int latch);
+
+#define SOC_REG_MASK_20BITS (0xFFFFF000)
 
 #if CONFIG_UART_DEBUG
 /* find command table entry for a command */
@@ -464,7 +467,13 @@ static int bkreg_run_command_implement(const char *content, int cnt)
 			}
 #endif
 
-			if(rx_param->addr)
+            if ((rx_param->addr & SOC_REG_MASK_20BITS) == SOC_AGCMEM_REG_BASE)
+            {
+                agcmem_latch(1);
+                REG_WRITE(rx_param->addr, rx_param->value);
+                agcmem_latch(0);
+            }
+            else if (rx_param->addr)
 				REG_WRITE(rx_param->addr, rx_param->value);
 			else
 				CLI_PRT("ERR add=0x%x,value=%d\n", rx_param->addr, rx_param->value);
@@ -572,6 +581,12 @@ static int bkreg_run_command_implement(const char *content, int cnt)
 					tx_param->value = read_btdm_reg_backup(rx_param->addr);
 				}
 #endif
+                else if ((rx_param->addr & SOC_REG_MASK_20BITS) == SOC_AGCMEM_REG_BASE)
+                {
+                    agcmem_latch(1);
+                    tx_param->value = REG_READ(rx_param->addr);
+                    agcmem_latch(0);
+                }
 				else
 					tx_param->value = REG_READ(rx_param->addr);
 			}
