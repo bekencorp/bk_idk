@@ -33,3 +33,7 @@ bk_err_t xip_ota_cancel(const bk_logic_partition_t *partition);
 bk_err_t xip_ota_reboot(void);
 
 void xip_bl2_ota_get_pack_addrs(uint32_t *bl2_address, uint32_t *partition_address);
+
+#if CONFIG_OTA_ENCRYPTED && CONFIG_DIRECT_XIP
+bool xip_ota_encrypted_download(const void *verify_ctx, uint32_t stream_off, uint8_t **data, uint32_t *len);
+#endif

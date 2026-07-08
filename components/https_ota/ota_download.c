@@ -190,6 +190,16 @@ static int ota_download_parse_image_header(ota_download_t* ota_parse, uint8_t **
 
 static void ota_download_write_flash(ota_download_t* ota_parse, uint8_t **data, uint32_t len, bool need_flush)
 {
+#if CONFIG_OTA_ENCRYPTED && CONFIG_DIRECT_XIP
+	uint8_t *flash_data = *data;
+
+	if (ota_parse->ota_handle != NULL && ota_parse->ota_handle->ops.ota_encrypted_download != NULL) {
+		if (!ota_parse->ota_handle->ops.ota_encrypted_download(ota_parse->ota_verify, ota_parse->offset, &flash_data, &len)) {
+			return;
+		}
+		data = &flash_data;
+	}
+#endif
 	uint32_t copy_len;
 	uint32_t data_idx = 0;
 	uint32_t http_flash_wr_buf_max = OTA_FLASH_WR_BUF_MAX;

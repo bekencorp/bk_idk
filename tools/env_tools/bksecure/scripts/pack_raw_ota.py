@@ -90,8 +90,24 @@ class PackRawOta(Pack):
             logging.error(f'Inner signed image not found: {inner_signed_file}')
             exit(1)
         if pheader.type().is_merge_overwrite() == False:
-            shutil.copy2(inner_signed_file, OTA_SIGNED_BIN)
-            logging.debug(f'PackRawOta: copied {inner_signed_file} -> {OTA_SIGNED_BIN}')
+            if self.ota_encrypt_en:
+                if not os.path.exists(img_sign_pubkey) or not os.path.exists(img_sign_privkey):
+                    logging.error('img_sign_pubkey and img_sign_privkey are required for encrypted OTA')
+                    exit(1)
+                sign_input = self.__encrypt_ota_image_with_aes_xts(
+                    pheader, inner_signed_file, self.flash_aes_key, self.flash_crc_en,
+                    body_offset=0, out_ext='_enc.bin')
+                pk = Pubkey(img_sign_pubkey)
+                ota_outer_sign_size = ceil_align(os.path.getsize(sign_input) + BL2_HDR_SZ + BL2_TAIL_SZ, FLASH_SECTOR_SZ)
+                bl2_sign(
+                    'sign', 'ec256', img_sign_privkey, pk.key_bytes(), None,
+                    sign_input, ota_outer_sign_size, pheader.version(), pheader.security_counter(),
+                    OTA_SIGNED_BIN, None, pad_to_slot=False,
+                )
+                logging.debug(f'PackRawOta: encrypted {inner_signed_file} then signed with dynamic outer slot {ota_outer_sign_size:#x} -> {OTA_SIGNED_BIN}')
+            else:
+                shutil.copy2(inner_signed_file, OTA_SIGNED_BIN)
+                logging.debug(f'PackRawOta: copied {inner_signed_file} -> {OTA_SIGNED_BIN}')
         else:
             if not os.path.exists(img_sign_pubkey) or not os.path.exists(img_sign_privkey):
                 logging.error(f'img_sign_pubkey and img_sign_privkey are required for merge overwrite')

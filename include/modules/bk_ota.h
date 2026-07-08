@@ -42,6 +42,9 @@ typedef struct {
 #if CONFIG_OTA_UPDATE_PUBKEY
 	bk_err_t (*updatekey)(const bk_logic_partition_t *app_partition, const bk_logic_partition_t *key_partition);
 #endif
+#if CONFIG_OTA_ENCRYPTED && CONFIG_DIRECT_XIP
+	bool (*ota_encrypted_download)(const void *verify_ctx, uint32_t stream_off, uint8_t **data, uint32_t *len);
+#endif
 	bk_err_t (*reboot)(void);
 } bk_ota_ops_t;
 

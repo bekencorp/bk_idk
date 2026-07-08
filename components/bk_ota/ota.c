@@ -46,11 +46,11 @@ static bk_ota_t* bk_ota_init(const char* app_partition_name, const char* ota_par
 	}
 
 	uint32_t partition_type = bk_flash_partition_get_type(ota->control_partition);
-	uint32_t partition_options = bk_flash_partition_get_type(ota->control_partition);
 
 	//TODO auto generate macro in partitions_gen.h to save code size!
 	if (partition_type == PARTITION_SUBTYPE_OW_OTA_CONTROL) {
 #if CONFIG_OTA_OVERWRITE
+		uint32_t partition_options = bk_flash_partition_get_options(ota->control_partition);
 		OTA_LOGD(TAG, "init ow\r\n");
 		if (partition_options & PARTITION_FLAGS_OTA_WRITE_CBUS) {
 		} else {
@@ -74,17 +74,14 @@ static bk_ota_t* bk_ota_init(const char* app_partition_name, const char* ota_par
 	} else if (partition_type == PARTITION_SUBTYPE_XIP_OTA_CONTROL) {
 #if CONFIG_DIRECT_XIP
 		OTA_LOGD(TAG, "init xip\r\n");
-		if (partition_options & PARTITION_FLAGS_OTA_WRITE_CBUS) {
-		} else {
-			ota->ops.info = xip_ota_get_info;
-			ota->ops.write = xip_ota_write_cbus;
-		}
-
-		if (partition_options & PARTITION_FLAGS_OTA_READ_CBUS) {
-			ota->ops.read = xip_ota_read_cbus;
-		} else {
-			ota->ops.read = xip_ota_read_dbus;
-		}
+		ota->ops.info = xip_ota_get_info;
+#if CONFIG_OTA_ENCRYPTED
+		ota->ops.write = xip_ota_write_dbus;
+		ota->ops.ota_encrypted_download = xip_ota_encrypted_download;
+#else
+		ota->ops.write = xip_ota_write_cbus;
+#endif
+		ota->ops.read = xip_ota_read_dbus;
 
 		ota->ops.erase = xip_ota_erase;
 		ota->ops.erase_sector = xip_ota_erase_sector;

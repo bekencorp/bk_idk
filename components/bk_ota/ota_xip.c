@@ -438,4 +438,44 @@ void xip_bl2_ota_get_pack_addrs(uint32_t *bl2_address, uint32_t *partition_addre
 	                     FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(CONFIG_XIP_A_PHY_PARTITION_OFFSET)) +
 	                     0x1000 - 8 * 1024;
 }
+
+#if CONFIG_OTA_ENCRYPTED && CONFIG_DIRECT_XIP
+bool xip_ota_encrypted_download(const void *verify_ctx, uint32_t stream_off,
+	uint8_t **data, uint32_t *len)
+{
+	const ota_verify_t *ota_verify = (const ota_verify_t *)verify_ctx;
+	uint32_t payload_begin;
+	uint32_t payload_end;
+	uint32_t copy_start;
+	uint32_t copy_end;
+	uint32_t stream_len = *len;
+	uint32_t skip;
+	uint32_t copy_len;
+
+	if (ota_verify == NULL || ota_verify->validate_offset < sizeof(image_header_t)) {
+		return false;
+	}
+
+	payload_begin = ota_verify->hdr.ih_hdr_size;
+	payload_end = payload_begin + ota_verify->hdr.ih_img_size;
+
+	copy_start = stream_off;
+	copy_end = stream_off + stream_len;
+	if (copy_start < payload_begin) {
+		copy_start = payload_begin;
+	}
+	if (copy_end > payload_end) {
+		copy_end = payload_end;
+	}
+	if (copy_start >= copy_end) {
+		return false;
+	}
+
+	skip = copy_start - stream_off;
+	copy_len = copy_end - copy_start;
+	*data = *data + skip;
+	*len = copy_len;
+	return true;
+}
+#endif
 #endif
