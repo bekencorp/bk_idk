@@ -210,13 +210,9 @@ static void flash_import_sleep_buffer_deinit(void)
     }
 }
 
-static bk_err_t flash_import_sleep_load_result(uint8_t *buf)
+static bk_err_t flash_import_sleep_load_result(void)
 {
     bk_err_t ret = BK_OK;
-
-    if (buf == NULL) {
-        return BK_FAIL;
-    }
 
     ret = flash_import_sleep_get_test_range();
     if (ret != BK_OK) {
@@ -227,7 +223,7 @@ static bk_err_t flash_import_sleep_load_result(uint8_t *buf)
         return ret;
     }
 
-    return flash_import_sleep_read(s_sleep_result_addr, buf, FLASH_IMPORT_SECTOR_SIZE);
+    return flash_import_sleep_read(s_sleep_result_addr, s_sleep_buf, FLASH_IMPORT_SECTOR_SIZE);
 }
 
 static bk_err_t flash_import_sleep_result_restore(sleep_result_t *result)
@@ -235,7 +231,7 @@ static bk_err_t flash_import_sleep_result_restore(sleep_result_t *result)
     bool found = false;
     bk_err_t ret = BK_OK;
 
-    ret = flash_import_sleep_load_result(s_sleep_buf);
+    ret = flash_import_sleep_load_result();
     if (ret != BK_OK) {
         return ret;
     }
@@ -279,7 +275,7 @@ static bk_err_t flash_import_sleep_result_save(sleep_result_t *result)
     uint32_t next_idx = 0;
     bk_err_t ret = BK_OK;
 
-    ret = flash_import_sleep_load_result(s_sleep_buf);
+    ret = flash_import_sleep_load_result();
     if (ret != BK_OK) {
         return ret;
     }
