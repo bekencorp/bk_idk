@@ -38,19 +38,11 @@ class PackJson(Pack):
 
     def exclude_ota_packers(self):
         """Drop PackOta / PackRawOta (ota.bin, raw_ota.bin) from the pack pipeline."""
-        before = len(self._packs)
         self._packs = [p for p in self._packs if not isinstance(p, (PackOta, PackRawOta))]
-        removed = before - len(self._packs)
-        if removed:
-            logging.debug(f'PackJson: excluded {removed} OTA packer(s) (PackOta/PackRawOta)')
 
     def only_ota_packers(self):
         """Keep only PackOta / PackRawOta (ota.bin, raw_ota.bin) in the pack pipeline."""
-        before = len(self._packs)
         self._packs = [p for p in self._packs if isinstance(p, (PackOta, PackRawOta))]
-        removed = before - len(self._packs)
-        if removed:
-            logging.debug(f'PackJson: kept only OTA packer(s), removed {removed} non-OTA packer(s)')
 
     def pack(self, flash_aes_key=None, flash_crc_en=True, data_aes_key=None, flash_aes_type=None):
         logging.info(f'Pack: json={self._pack_json}, flash_aes_type={flash_aes_type}, flash_crc_en={flash_crc_en}')
@@ -61,8 +53,9 @@ class PackJson(Pack):
         self.__ensure_nvs_bins_generated(self._pack_json, flash_aes_type, flash_aes_key, flash_crc_en)
         self.__pack(flash_aes_key, flash_crc_en, data_aes_key, flash_aes_type)
         
-    def pack_ota_bin_only(self, flash_aes_key=None, flash_crc_en=True, data_aes_key=None, flash_aes_type=None):
-        logging.info(f'Pack OTA bin only: json={self._pack_json}, flash_aes_type={flash_aes_type}, flash_crc_en={flash_crc_en}')
+    def pack_ota_bin_only(self, flash_aes_key=None, flash_crc_en=True, data_aes_key=None, flash_aes_type=None, img_sign_pubkey=None, img_sign_privkey=None):
+        logging.info(f'Pack OTA bin only: json={self._pack_json}, flash_aes_type={flash_aes_type}, flash_crc_en={flash_crc_en}, img_sign_pubkey={img_sign_pubkey}, img_sign_privkey={img_sign_privkey}')
+        self.__sign(img_sign_pubkey, img_sign_privkey)
         self.__pack(flash_aes_key, flash_crc_en, data_aes_key, flash_aes_type)
 
     def __ensure_nvs_bins_generated(self, pack_json, flash_aes_type=None, flash_aes_key=None, flash_crc_en=True):
@@ -159,7 +152,7 @@ class PackJson(Pack):
             if hasattr(p, 'sign'):
                 logging.debug(f'sign step, infile: {bins}, outfile: {outfile}, pack_type: {pack_type}')
                 p.sign(
-                    img_sign_pubkey, img_sign_privkey,
+                    img_sign_pubkey=img_sign_pubkey, img_sign_privkey=img_sign_privkey,
                     ota_type=ota_type, security_counter=security_counter,
                     replace_key_en=replace_key_en, new_privkey_pem=new_privkey_pem, new_pubkey_pem=new_pubkey_pem,
                 )
@@ -185,3 +178,4 @@ class PackJson(Pack):
         self.copy_file('ota.bin', install_dir)
         self.copy_file('bootloader.bin', install_dir)
         self.copy_file('otp_efuse_config.json', install_dir)
+        self.copy_file('pack_cmd_list.txt', install_dir)

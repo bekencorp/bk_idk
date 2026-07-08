@@ -268,8 +268,8 @@ def sign_command(debug, soc_type, pubkey_pem, privkey_pem, ota_type, bl2_version
 
 @steps.command("pack")
 @click.option("--debug", is_flag=True, help="Enable debug")
-@click.option("--soc_type", type=click.Choice(['bk7236', 'bk7236n']), default='bk7236n', help="SoC model")
-@click.option("--flash_aes_type", type=click.Choice(['NONE', 'FIXED', 'RANDOM']), default='FIXED', required=True, help="The flash AES type.")
+@click.option("--soc_type", type=click.Choice(['bk7236', 'bk7236n', 'bk3437']), default='bk7236n', help="SoC model")
+@click.option("--flash_aes_type", type=click.Choice(['NONE', 'FIXED', 'RANDOM']), default='NONE', required=False, help="The flash AES type.")
 @click.option("--flash_aes_key", type=str, required=False, default=None, help="configuration flash aes key")
 @click.option("--ota_type", type=click.Choice(['XIP', 'OVERWRITE']), help="OTA strategy")
 @click.option("--ota_security_counter", type=int, required=False, default=1, help="configuration security counter")
@@ -284,6 +284,18 @@ def pack_csv_command(debug):
     """Pack download bin according to CSV file"""
     set_debug(debug)
     steps_pack_csv()
+
+@steps.command("gen_ota_bin")
+@click.option("--debug", is_flag=True, help="Enable debug")
+@click.option("--soc_type", type=click.Choice(['bk7236', 'bk7236n']), default='bk7236n', help="SoC model")
+@click.option("--flash_aes_type", type=click.Choice(['NONE', 'FIXED', 'RANDOM']), default='NONE', required=False, help="The flash AES type.")
+@click.option("--flash_aes_key", type=str, required=False, default=None, help="configuration flash aes key")
+@click.option("--pubkey_pem", type=str, required=False, default='img_sign_pubkey', help="public key PEM file")
+@click.option("--privkey_pem", type=str, required=False, default='img_sign_privkey', help="private key PEM file")
+def gen_ota_bin_command(debug, soc_type, flash_aes_type, flash_aes_key, pubkey_pem, privkey_pem):
+    """Generate OTA binary"""
+    set_debug(debug)
+    steps_gen_ota_bin(soc_type, flash_aes_type, flash_aes_key, pubkey_pem, privkey_pem)
 
 if __name__ == '__main__':
     logging.basicConfig()

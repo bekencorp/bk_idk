@@ -20,6 +20,7 @@ from .partitions import *
 from .partitions_legacy import Partitions_Legacy
 from .common import copy_files as copy_all_files, get_config_paths
 from .gen_otp import gen_otp_efuse_config_file
+from .insert_mfr import insert_mfr
 
 def copy_files_by_postfix(postfix, src_dir, dst_dir):
     """Copy files with specific postfix from src_dir to dst_dir"""
@@ -266,34 +267,37 @@ def read_bl2_version():
 #Step8 - pack download bin
 def steps_pack(soc_type, aes_key_type=None, aes_key=None, ota_type='OVERWRITE', security_counter=None):
     logging.debug(f'steps_pack, soc_type={soc_type}, aes_key_type={aes_key_type}, aes_key={aes_key}, ota_type={ota_type}, security_counter={security_counter}')
-    os.environ['ARMINO_SOC'] = soc_type.upper()
-    if soc_type == 'bk7236':
-        flash_crc_en = True
-    else:
-        flash_crc_en = False
+    if soc_type == 'bk7236' or soc_type == 'bk7236n':
+        os.environ['ARMINO_SOC'] = soc_type.upper()
+        if soc_type == 'bk7236':
+            flash_crc_en = True
+        else:
+            flash_crc_en = False
 
-    if aes_key_type != None:
-        flash_aes_type = aes_key_type
-        flash_aes_key = aes_key
-    else:
-        flash_aes_type = 'NONE'
-        flash_aes_key = ''
-    
-    is_legacy = is_pack_json_legacy('pack.json')
-    if is_legacy:
-        bl2_version = read_bl2_version()
-        if os.path.exists('app_signed.bin'):
-            shutil.copy('app_signed.bin', 'primary_all_signed.bin')
-        p = Partitions_Legacy('partitions.csv', ota_type, False, False, bl2_version)
-        p.pack_bin('pack.json', flash_aes_type, flash_aes_key, security_counter, 'FALSE', False, False)
-    else:
-        p = Partitions('partitions.csv', None, 'pack.json')
-        p.postbuild_process(flash_aes_en=False, flash_aes_key=flash_aes_key, img_sign_key=None, flash_crc_en=flash_crc_en, flash_aes_type=flash_aes_type)
-        pack = PackJson()
-        pack.exclude_ota_packers()
-        pack.pack(flash_aes_key, flash_crc_en, None, flash_aes_type)
-
-    p.install_bin()
+        if aes_key_type != None:
+            flash_aes_type = aes_key_type
+            flash_aes_key = aes_key
+        else:
+            flash_aes_type = 'NONE'
+            flash_aes_key = ''
+        
+        is_legacy = is_pack_json_legacy('pack.json')
+        if is_legacy:
+            bl2_version = read_bl2_version()
+            if os.path.exists('app_signed.bin'):
+                shutil.copy('app_signed.bin', 'primary_all_signed.bin')
+            p = Partitions_Legacy('partitions.csv', ota_type, False, False, bl2_version)
+            p.pack_bin('pack.json', flash_aes_type, flash_aes_key, security_counter, 'FALSE', False, False)
+        else:
+            p = Partitions('partitions.csv', None, 'pack.json')
+            p.postbuild_process(flash_aes_en=False, flash_aes_key=flash_aes_key, img_sign_key=None, flash_crc_en=flash_crc_en, flash_aes_type=flash_aes_type)
+            pack = PackJson()
+            pack.exclude_ota_packers()
+            pack.pack(flash_aes_key, flash_crc_en, None, flash_aes_type)
+        p.install_bin()
+        
+    elif soc_type == 'bk3437':
+        insert_mfr('primary_all_signed.bin', 'partitions.csv', 'mfr.bin')
 
 def steps_pack_csv():
     logging.debug(f'steps pack csv')
@@ -318,3 +322,12 @@ def steps_pack_csv():
     pack.install_bin()
     insert_pk_hash('bootloader.bin', s.img_sign_pubkey)
 
+def steps_gen_ota_bin(soc_type, flash_aes_type, flash_aes_key, pubkey_pem, privkey_pem):
+    logging.debug(f'steps_gen_ota_bin, soc_type={soc_type}, flash_aes_type={flash_aes_type}, flash_aes_key={flash_aes_key}, pubkey_pem={pubkey_pem}, privkey_pem={privkey_pem}')
+    flash_crc_en = False
+    if soc_type == 'bk7236':
+        flash_crc_en = True
+    pack = PackJson('pack.json')
+    pack.only_ota_packers()
+    pack.pack_ota_bin_only(flash_aes_key, flash_crc_en, None, flash_aes_type, pubkey_pem, privkey_pem)
+    pack.install_bin()

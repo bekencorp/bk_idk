@@ -93,6 +93,9 @@ class PackRawOta(Pack):
             shutil.copy2(inner_signed_file, OTA_SIGNED_BIN)
             logging.debug(f'PackRawOta: copied {inner_signed_file} -> {OTA_SIGNED_BIN}')
         else:
+            if not os.path.exists(img_sign_pubkey) or not os.path.exists(img_sign_privkey):
+                logging.error(f'img_sign_pubkey and img_sign_privkey are required for merge overwrite')
+                exit(1)
             compressed_file = inner_signed_file[:-4] + '_compress.bin'
             compress_bin(inner_signed_file, compressed_file)
 

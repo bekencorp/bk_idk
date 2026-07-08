@@ -3,36 +3,36 @@
 # The app.bin file will be copied to sign_server directory, and primary_all.bin will be generated from it.
 
 # example 1: OVERWRITE
-python3 -B run.py \
-  --soc_type bk7236n \
-  --flash_aes_type FIXED \
-  --flash_aes_key 73c7bf397f2ad6bf4e7403a7b965dc5ce0645df039c2d69c814ffb403183fb18 \
-  --ota_type OVERWRITE \
-  --bl2_version 1.2.0 \
-  --app_version 1.6.0 \
-  --security_counter 5 \
-  --project security/overwrite \
-  --log-level debug \
-  --build \
-  --clean
+# python3 -B run.py \
+#   --soc_type bk7236n \
+#   --flash_aes_type FIXED \
+#   --flash_aes_key 73c7bf397f2ad6bf4e7403a7b965dc5ce0645df039c2d69c814ffb403183fb18 \
+#   --ota_type OVERWRITE \
+#   --bl2_version 1.2.0 \
+#   --app_version 1.6.0 \
+#   --security_counter 5 \
+#   --project security/overwrite \
+#   --log-level debug \
+#   --build \
+#   --clean
 
 # security/xip, OTA XIP, BL1 secure boot disabled, flash AES enabled.
 # Note: In XIP mode, sign_server will automatically generate primary_all.bin from app.bin before signing.
 # The app.bin file will be copied to sign_server directory, and primary_all.bin will be generated from it.
 
 # example 2: XIP
-# python3 -B run.py \
-#   --soc_type bk7236n \
-#   --flash_aes_type FIXED \
-#   --flash_aes_key 73c7bf397f2ad6bf4e7403a7b965dc5ce0645df039c2d69c814ffb403183fb18 \
-#   --ota_type XIP \
-#   --bl2_version 1.2.0 \
-#   --app_version 1.6.0 \
-#   --security_counter 5 \
-#   --project security/xip \
-#   --log-level debug \
-#   --build \
-#   --clean
+python3 -B run.py \
+  --soc_type bk7236n \
+  --flash_aes_type FIXED \
+  --flash_aes_key 73c7bf397f2ad6bf4e7403a7b965dc5ce0645df039c2d69c814ffb403183fb18 \
+  --ota_type XIP \
+  --bl2_version 1.2.0 \
+  --app_version 1.6.0 \
+  --security_counter 5 \
+  --project security/xip \
+  --log-level debug \
+  --build \
+  --clean
 
 #======================================================================================================
 # run.py Parameter Reference (see argparse in run.py main())
