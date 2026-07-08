@@ -17,6 +17,7 @@
 #if CONFIG_CLI
 
 #include "flash_import_internal.h"
+#include "sdkconfig.h"
 
 #include <string.h>
 
@@ -113,11 +114,35 @@ static int flash_import_loop_cmd(int argc, char **argv)
 	return -1;
 }
 
+#if CONFIG_FLASH_IMPORT_SLEEP_TEST
+static int flash_import_lvsleep_cmd(int argc, char **argv)
+{
+	(void)argc;
+	(void)argv;
+
+	flash_import_case_sleep_run(false);
+	return 0;
+}
+
+static int flash_import_deepsleep_cmd(int argc, char **argv)
+{
+	(void)argc;
+	(void)argv;
+
+	flash_import_case_sleep_run(true);
+	return 0;
+}
+#endif
+
 static const struct flash_import_subcmd s_flash_import_subcmds[] = {
-	{ "endurance", "usage: flash_import endurance {start|stop|show}", flash_import_endurance_cmd, 1, 1 },
-	{ "zero_read", "usage: flash_import zero_read {start|stop|show}", flash_import_zero_read_cmd, 1, 1 },
-	{ "loop",      "usage: flash_import loop {start|stop|show}",      flash_import_loop_cmd,      1, 1 },
-	{ "driver",    "usage: flash_import driver",                      flash_import_driver_cmd,    0, 0 },
+	{ "endurance",  "usage: flash_import endurance {start|stop|show}",  flash_import_endurance_cmd,  1, 1 },
+	{ "zero_read",  "usage: flash_import zero_read {start|stop|show}",  flash_import_zero_read_cmd,  1, 1 },
+	{ "loop",       "usage: flash_import loop {start|stop|show}",       flash_import_loop_cmd,       1, 1 },
+#if CONFIG_FLASH_IMPORT_SLEEP_TEST
+	{ "lvsleep",    "usage: flash_import lvsleep",                      flash_import_lvsleep_cmd,    0, 0 },
+	{ "deepsleep",  "usage: flash_import deepsleep",                    flash_import_deepsleep_cmd,  0, 0 },
+#endif
+	{ "driver",     "usage: flash_import driver",                       flash_import_driver_cmd,     0, 0 },
 };
 
 #define FLASH_IMPORT_SUBCMD_CNT (sizeof(s_flash_import_subcmds) / sizeof(s_flash_import_subcmds[0]))

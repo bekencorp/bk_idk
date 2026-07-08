@@ -16,7 +16,6 @@
 #include <os/mem.h>
 #include <driver/flash.h>
 #include <driver/flash_partition.h>
-#include "sys_driver.h"
 #include "flash_import_internal.h"
 
 #define FLASH_IMPORT_LOOP_LOG_INTERVAL    (100U)
@@ -32,41 +31,15 @@ typedef struct {
     uint32_t write_p2_err_cnt;
 } flash_import_loop_stats_t;
 
-typedef struct {
-    uint32_t             flash_cksel;
-    uint32_t             flash_ckdiv;
-    flash_line_mode_t    line_mode;
-    flash_protect_type_t protect_type;
-} flash_import_loop_context_t;
-
 static beken_thread_t s_loop_task_handle = NULL;
 static bool s_loop_stop_requested = false;
 static bool s_loop_context_saved = false;
 static uint32_t s_loop_test_start_addr = 0;
 static uint32_t s_loop_test_end_addr = 0;
 static flash_import_loop_stats_t s_loop_stats = {0};
-static flash_import_loop_context_t s_loop_saved_ctx = {
-    .line_mode = FLASH_LINE_MODE_TWO,
-    .protect_type = FLASH_PROTECT_ALL,
-};
+static flash_import_context_t s_loop_saved_ctx = FLASH_IMPORT_CONTEXT_INITIALIZER;
 static uint8_t *s_loop_buf = NULL;
 static uint8_t *s_loop_expect_buf = NULL;
-
-static void flash_import_loop_save_context(void)
-{
-    s_loop_saved_ctx.flash_cksel = sys_drv_flash_get_clk_sel();
-    s_loop_saved_ctx.flash_ckdiv = sys_drv_flash_get_clk_div();
-    s_loop_saved_ctx.line_mode = bk_flash_get_line_mode();
-    s_loop_saved_ctx.protect_type = flash_import_get_protect();
-}
-
-static void flash_import_loop_restore_context(void)
-{
-    sys_drv_flash_set_clk_div(s_loop_saved_ctx.flash_ckdiv);
-    sys_drv_flash_cksel(s_loop_saved_ctx.flash_cksel);
-    (void)flash_import_set_line_mode(s_loop_saved_ctx.line_mode);
-    flash_import_set_protect(s_loop_saved_ctx.protect_type);
-}
 
 static bk_err_t flash_import_loop_get_test_range(void)
 {
@@ -249,6 +222,9 @@ static bk_err_t flash_import_loop_init(void)
 {
     bk_err_t ret = BK_OK;
 
+    flash_import_context_save(&s_loop_saved_ctx);
+    s_loop_context_saved = true;
+
     ret = flash_import_loop_get_test_range();
     if (ret != BK_OK) {
         return ret;
@@ -264,15 +240,13 @@ static bk_err_t flash_import_loop_init(void)
         return ret;
     }
 
-    flash_import_loop_save_context();
-    s_loop_context_saved = true;
     return BK_OK;
 }
 
 static void flash_import_loop_deinit(void)
 {
     if (s_loop_context_saved) {
-        flash_import_loop_restore_context();
+        flash_import_context_restore(&s_loop_saved_ctx);
         s_loop_context_saved = false;
     }
 

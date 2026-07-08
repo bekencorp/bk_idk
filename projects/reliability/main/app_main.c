@@ -24,6 +24,7 @@
 #include "statis.h"
 #include "cli_statis.h"
 #include "flash_import/cli_flash_import.h"
+#include "flash_import/flash_import_internal.h"
 #include "psram_test.h"
 #include "htol_test.h"
 
@@ -90,6 +91,10 @@ void user_app_main(void)
 
 #if CONFIG_CLI && (CONFIG_WIFI_RELIABILITY_TEST || CONFIG_FLASH_RELIABILITY_TEST)
 	statis_cli_register_cmds();
+#endif
+
+#if CONFIG_FLASH_IMPORT_SLEEP_TEST
+	flash_import_case_sleep_resume();
 #endif
 
 #if CONFIG_CLI && CONFIG_FLASH_IMPORT_TEST

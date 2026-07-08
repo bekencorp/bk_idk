@@ -17,7 +17,6 @@
 #include <driver/aon_rtc.h>
 #include <driver/flash.h>
 #include <driver/flash_partition.h>
-#include "sys_driver.h"
 #include "modules/pm.h"
 #include "sdkconfig.h"
 #include "flash_import_internal.h"
@@ -36,23 +35,16 @@ typedef struct {
 } flash_import_driver_result_t;
 
 typedef struct {
-    uint32_t             flash_cksel;
-    uint32_t             flash_ckdiv;
-    flash_line_mode_t    line_mode;
-    flash_protect_type_t protect_type;
-} flash_import_driver_context_t;
-
-typedef struct {
     uint32_t read_2line_us;
     uint32_t read_4line_us;
 } flash_import_driver_sector_timing_t;
 
 static beken_thread_t s_driver_task_handle = NULL;
 static flash_import_driver_result_t s_driver_result = {0};
-static flash_import_driver_context_t s_driver_saved_ctx = {0};
+static flash_import_context_t s_driver_saved_ctx = FLASH_IMPORT_CONTEXT_INITIALIZER;
 static uint32_t s_driver_test_start_addr = 0;
 static uint32_t s_driver_test_end_addr = 0;
-static bool s_driver_inited = false;
+static bool s_driver_context_saved = false;
 static uint8_t *s_driver_buf = NULL;
 static uint8_t *s_driver_pattern_buf = NULL;
 static flash_import_driver_sector_timing_t s_driver_sector_timing = {0};
@@ -75,22 +67,6 @@ static uint32_t flash_import_driver_flash_clk_count(void)
 static uint32_t flash_import_driver_time_delta_us(uint64_t start_us, uint64_t end_us)
 {
     return (uint32_t)(end_us - start_us);
-}
-
-static void flash_import_driver_save_context(void)
-{
-    s_driver_saved_ctx.flash_cksel = sys_drv_flash_get_clk_sel();
-    s_driver_saved_ctx.flash_ckdiv = sys_drv_flash_get_clk_div();
-    s_driver_saved_ctx.line_mode = bk_flash_get_line_mode();
-    s_driver_saved_ctx.protect_type = flash_import_get_protect();
-}
-
-static void flash_import_driver_restore_context(void)
-{
-    sys_drv_flash_set_clk_div(s_driver_saved_ctx.flash_ckdiv);
-    sys_drv_flash_cksel(s_driver_saved_ctx.flash_cksel);
-    (void)flash_import_set_line_mode(s_driver_saved_ctx.line_mode);
-    flash_import_set_protect(s_driver_saved_ctx.protect_type);
 }
 
 static void flash_import_driver_set_line_mode(flash_line_mode_t line_mode)
@@ -353,47 +329,43 @@ static bk_err_t flash_import_driver_init(void)
 {
     bk_err_t ret = BK_OK;
 
-    flash_import_driver_save_context();
+    flash_import_context_save(&s_driver_saved_ctx);
+    s_driver_context_saved = true;
 
     ret = flash_import_driver_buffers_init();
     if (ret != BK_OK) {
-        goto exit;
+        return ret;
     }
 
     ret = flash_import_driver_get_test_range();
     if (ret != BK_OK) {
-        goto exit;
+        return ret;
     }
 
     ret = flash_import_driver_setup_clock();
     if (ret != BK_OK) {
-        goto exit;
+        return ret;
     }
 
     ret = flash_import_driver_set_flash_clk_hz(FLASH_CLK_FREQ_80M_HZ);
     if (ret != BK_OK) {
         os_printf("driver: set flash clk 80M for scrub fail\r\n");
-        goto exit;
+        return BK_FAIL;
     }
 
     ret = flash_import_driver_test_region_init();
     if (ret != BK_OK) {
-        goto exit;
+        return ret;
     }
 
-    s_driver_inited = true;
     return BK_OK;
-
-exit:
-    flash_import_driver_restore_context();
-    return BK_FAIL;
 }
 
 static void flash_import_driver_deinit(void)
 {
-    if (s_driver_inited) {
-        flash_import_driver_restore_context();
-        s_driver_inited = false;
+    if (s_driver_context_saved) {
+        flash_import_context_restore(&s_driver_saved_ctx);
+        s_driver_context_saved = false;
     }
 
     if (s_driver_buf != NULL) {

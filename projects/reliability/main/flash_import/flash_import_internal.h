@@ -14,10 +14,12 @@
 
 #pragma once
 
+#include <stdbool.h>
 #include <driver/flash.h>
 #include <driver/flash_partition.h>
 
 #define FLASH_IMPORT_SECTOR_SIZE          (4096U)
+#define FLASH_IMPORT_PAGE_SIZE            (256U)
 
 #define FLASH_IMPORT_APP_PART_ID          BK_PARTITION_APPLICATION
 #define FLASH_IMPORT_APP_PART_NAME        "primary_cpu0_app"
@@ -30,9 +32,41 @@
 #include "security.h"
 #endif
 
+#include "sys_driver.h"
+
 flash_protect_type_t flash_import_get_protect(void);
 flash_line_mode_t flash_import_set_line_mode(flash_line_mode_t line_mode);
 void flash_import_set_protect(flash_protect_type_t protect);
+
+typedef struct {
+    uint32_t             flash_cksel;
+    uint32_t             flash_ckdiv;
+    flash_line_mode_t    line_mode;
+    flash_protect_type_t protect_type;
+} flash_import_context_t;
+
+#define FLASH_IMPORT_CONTEXT_INITIALIZER \
+    {                                    \
+        .line_mode = FLASH_LINE_MODE_TWO, \
+        .protect_type = FLASH_PROTECT_ALL, \
+    }
+
+static inline void flash_import_context_save(flash_import_context_t *ctx)
+{
+    ctx->flash_cksel = sys_drv_flash_get_clk_sel();
+    ctx->flash_ckdiv = sys_drv_flash_get_clk_div();
+    ctx->line_mode = bk_flash_get_line_mode();
+    ctx->protect_type = flash_import_get_protect();
+}
+
+static inline void flash_import_context_restore(const flash_import_context_t *ctx)
+{
+    sys_drv_flash_set_clk_div(ctx->flash_ckdiv);
+    sys_drv_flash_cksel(ctx->flash_cksel);
+    (void)flash_import_set_line_mode(ctx->line_mode);
+    flash_import_set_protect(ctx->protect_type);
+}
+
 bk_err_t flash_import_read_bytes(uint8_t *buffer, uint32_t address, uint32_t len);
 bk_err_t flash_import_write_bytes(const uint8_t *buffer, uint32_t address, uint32_t len);
 bk_err_t flash_import_erase_4k(uint32_t address);
@@ -51,3 +85,7 @@ void flash_import_case_driver_run(void);
 void flash_import_case_loop_start(void);
 void flash_import_case_loop_stop(void);
 void flash_import_case_loop_show(void);
+#if CONFIG_FLASH_IMPORT_SLEEP_TEST
+void flash_import_case_sleep_run(bool is_deep);
+bk_err_t flash_import_case_sleep_resume(void);
+#endif

@@ -18,7 +18,6 @@
 #include <driver/gpio.h>
 #include <driver/flash.h>
 #include <driver/flash_partition.h>
-#include "sys_driver.h"
 #include "flash_import_internal.h"
 #include "crc32.h"
 
@@ -128,15 +127,8 @@ static uint32_t s_endurance_read_error_cnt = 0;
 static uint8_t *s_endurance_read_buf = NULL;
 static uint8_t *s_endurance_write_buf = NULL;
 
-typedef struct {
-    uint32_t             flash_cksel;
-    uint32_t             flash_ckdiv;
-    flash_protect_type_t protect_type;
-} flash_import_endurance_context_t;
-
-static flash_import_endurance_context_t s_endurance_saved_ctx = {
-    .protect_type = FLASH_PROTECT_ALL,
-};
+static flash_import_context_t s_endurance_saved_ctx = FLASH_IMPORT_CONTEXT_INITIALIZER;
+static bool s_endurance_context_saved = false;
 
 static void flash_import_endurance_read(uint32_t addr, uint8_t *buf, uint32_t size)
 {
@@ -241,9 +233,10 @@ __attribute__((section(".iram"))) static bk_err_t flash_import_endurance_write_c
 {
     uint32_t int_status = 0;
     uint32_t cbus_addr = FLASH_PHY2VIRTUAL(addr);
+    flash_line_mode_t old_line_mode = FLASH_LINE_MODE_TWO;
 
     int_status = rtos_disable_int();
-    (void)flash_import_set_line_mode(FLASH_LINE_MODE_TWO);
+    old_line_mode = flash_import_set_line_mode(FLASH_LINE_MODE_TWO);
     flash_import_endurance_unprotect();
     FLASH_IMPORT_END_GPIO_WRITE_UP();
     (void)flash_import_write_cbus(buf, cbus_addr | (1UL << 24), size);
@@ -253,7 +246,7 @@ __attribute__((section(".iram"))) static bk_err_t flash_import_endurance_write_c
     (void)flash_import_read_cbus(s_endurance_read_buf, cbus_addr, size);
     FLASH_IMPORT_END_GPIO_READ_DOWN();
     flash_import_endurance_protect();
-    (void)flash_import_set_line_mode(FLASH_LINE_MODE_FOUR);
+    (void)flash_import_set_line_mode(old_line_mode);
     rtos_enable_int(int_status);
 
     if (os_memcmp(s_endurance_read_buf, buf, size) != 0) {
@@ -394,6 +387,8 @@ static bk_err_t flash_import_endurance_init(void)
 {
     bk_err_t ret = BK_OK;
 
+    flash_import_context_save(&s_endurance_saved_ctx);
+    s_endurance_context_saved = true;
     flash_import_endurance_gpio_init();
 
     ret = flash_import_endurance_buffers_init();
@@ -406,14 +401,12 @@ static bk_err_t flash_import_endurance_init(void)
         return ret;
     }
 
-    return BK_OK;
-}
+    if (bk_flash_set_clk_freq(FLASH_CLK_FREQ_80M_HZ) != BK_OK) {
+        os_printf("endurance set clk 80M fail\r\n");
+        return BK_FAIL;
+    }
 
-static void flash_import_endurance_save_context(void)
-{
-    s_endurance_saved_ctx.flash_cksel = sys_drv_flash_get_clk_sel();
-    s_endurance_saved_ctx.flash_ckdiv = sys_drv_flash_get_clk_div();
-    s_endurance_saved_ctx.protect_type = flash_import_get_protect();
+    return BK_OK;
 }
 
 static void flash_import_endurance_update_crc(void)
@@ -508,13 +501,6 @@ static bk_err_t flash_import_endurance_write_verify(uint32_t addr)
     return BK_OK;
 }
 
-static void flash_import_endurance_restore_context(void)
-{
-    sys_drv_flash_set_clk_div(s_endurance_saved_ctx.flash_ckdiv);
-    sys_drv_flash_cksel(s_endurance_saved_ctx.flash_cksel);
-    flash_import_set_protect(s_endurance_saved_ctx.protect_type);
-}
-
 static void flash_import_endurance_show_stats_region(const char *name, uint32_t addr)
 {
     flash_import_endurance_stats_t stats = {0};
@@ -555,11 +541,18 @@ static void flash_import_endurance_deinit(void)
     const gpio_id_t *pins = (const gpio_id_t *)&s_endurance_gpio_cfg;
     uint32_t i = 0;
 
+    if (s_endurance_context_saved) {
+        flash_import_context_restore(&s_endurance_saved_ctx);
+        s_endurance_context_saved = false;
+    }
+
     for (i = 0; i < FLASH_IMPORT_END_GPIO_PIN_CNT; i++) {
         (void)bk_gpio_set_output_low(pins[i]);
     }
 
     flash_import_endurance_buffers_deinit();
+    s_endurance_task_handle = NULL;
+    rtos_delete_thread(NULL);
 }
 
 static void flash_import_endurance_fill_write_buf(uint32_t loop_count)
@@ -664,11 +657,6 @@ static void flash_import_endurance_main_loop(void)
 {
     bool session_complete = false;
 
-    if (bk_flash_set_clk_freq(FLASH_CLK_FREQ_80M_HZ) != BK_OK) {
-        os_printf("endurance set clk 80M fail\r\n");
-        return;
-    }
-
     session_complete = flash_import_endurance_erase_write_loop();
 
     if (!s_endurance_stop_requested && session_complete) {
@@ -678,29 +666,15 @@ static void flash_import_endurance_main_loop(void)
     flash_import_endurance_print_combined_stats();
 }
 
-static void flash_import_endurance_exit_thread(void)
-{
-    s_endurance_task_handle = NULL;
-    rtos_delete_thread(NULL);
-}
-
 static void flash_import_endurance_thread(beken_thread_arg_t arg)
 {
     (void)arg;
 
-    if (flash_import_endurance_init() != BK_OK) {
-        goto exit;
+    if (flash_import_endurance_init() == BK_OK) {
+        flash_import_endurance_main_loop();
     }
 
-    flash_import_endurance_save_context();
-
-    flash_import_endurance_main_loop();
-
-    flash_import_endurance_restore_context();
-
-exit:
     flash_import_endurance_deinit();
-    flash_import_endurance_exit_thread();
 }
 
 void flash_import_case_endurance_start(void)

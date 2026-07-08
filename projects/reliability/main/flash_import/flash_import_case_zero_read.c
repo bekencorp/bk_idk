@@ -15,7 +15,6 @@
 #include <os/os.h>
 #include <os/mem.h>
 #include <stdint.h>
-#include "sys_driver.h"
 #include "flash_import_internal.h"
 
 #define FLASH_IMPORT_ZERO_READ_ADDR         (0x0U)
@@ -29,32 +28,26 @@ typedef struct {
     uint32_t cmp_err_cnt;
 } flash_import_zero_read_stats_t;
 
-typedef struct {
-    uint32_t             flash_cksel;
-    uint32_t             flash_ckdiv;
-    flash_line_mode_t    line_mode;
-    flash_protect_type_t protect_type;
-} flash_import_zero_read_context_t;
-
 static beken_thread_t s_zero_read_task_handle = NULL;
 static bool s_zero_read_stop_requested = false;
+static bool s_zero_read_context_saved = false;
 static flash_import_zero_read_stats_t s_zero_read_stats = {0};
-static flash_import_zero_read_context_t s_zero_read_saved_ctx = {
-    .line_mode = FLASH_LINE_MODE_TWO,
-    .protect_type = FLASH_PROTECT_ALL,
-};
+static flash_import_context_t s_zero_read_saved_ctx = FLASH_IMPORT_CONTEXT_INITIALIZER;
 static uint8_t *s_zero_read_baseline_buf = NULL;
 static uint8_t *s_zero_read_read_buf = NULL;
 
-static void flash_import_zero_read_save_context(void)
+static bk_err_t flash_import_zero_read_init(void)
 {
-    s_zero_read_saved_ctx.flash_cksel = sys_drv_flash_get_clk_sel();
-    s_zero_read_saved_ctx.flash_ckdiv = sys_drv_flash_get_clk_div();
-    s_zero_read_saved_ctx.protect_type = flash_import_get_protect();
-}
+    bk_err_t ret = BK_OK;
 
-static bk_err_t flash_import_zero_read_prepare(void)
-{
+    flash_import_context_save(&s_zero_read_saved_ctx);
+    s_zero_read_context_saved = true;
+
+    if (bk_flash_set_clk_freq(FLASH_CLK_FREQ_80M_HZ) != BK_OK) {
+        os_printf("zero_read set clk 80M fail\r\n");
+        return BK_FAIL;
+    }
+
     s_zero_read_baseline_buf = (uint8_t *)os_malloc(FLASH_IMPORT_ZERO_READ_SIZE);
     if (s_zero_read_baseline_buf == NULL) {
         os_printf("zero_read baseline buf alloc fail\r\n");
@@ -70,12 +63,12 @@ static bk_err_t flash_import_zero_read_prepare(void)
     s_zero_read_saved_ctx.line_mode = flash_import_set_line_mode(FLASH_LINE_MODE_FOUR);
     flash_import_set_protect(FLASH_PROTECT_ALL);
 
-    bk_err_t ret = flash_import_read_bytes(s_zero_read_baseline_buf,
-                                           FLASH_IMPORT_ZERO_READ_ADDR,
-                                           FLASH_IMPORT_ZERO_READ_SIZE);
+    ret = flash_import_read_bytes(s_zero_read_baseline_buf,
+                                  FLASH_IMPORT_ZERO_READ_ADDR,
+                                  FLASH_IMPORT_ZERO_READ_SIZE);
     if (ret != BK_OK) {
         os_printf("zero_read baseline read fail:%d\r\n", ret);
-        return BK_FAIL;
+        return ret;
     }
 
     return BK_OK;
@@ -83,15 +76,6 @@ static bk_err_t flash_import_zero_read_prepare(void)
 
 static void flash_import_zero_read_main_loop(void)
 {
-    if (bk_flash_set_clk_freq(FLASH_CLK_FREQ_80M_HZ) != BK_OK) {
-        os_printf("zero_read set clk 80M fail\r\n");
-        return;
-    }
-
-    if (flash_import_zero_read_prepare() != BK_OK) {
-        return;
-    }
-
     while (1) {
         if (s_zero_read_stop_requested) {
             break;
@@ -134,16 +118,13 @@ static void flash_import_zero_read_main_loop(void)
               s_zero_read_stats.cmp_err_cnt);
 }
 
-static void flash_import_zero_read_restore_context(void)
-{
-    sys_drv_flash_set_clk_div(s_zero_read_saved_ctx.flash_ckdiv);
-    sys_drv_flash_cksel(s_zero_read_saved_ctx.flash_cksel);
-    (void)flash_import_set_line_mode(s_zero_read_saved_ctx.line_mode);
-    flash_import_set_protect(s_zero_read_saved_ctx.protect_type);
-}
-
 static void flash_import_zero_read_deinit(void)
 {
+    if (s_zero_read_context_saved) {
+        flash_import_context_restore(&s_zero_read_saved_ctx);
+        s_zero_read_context_saved = false;
+    }
+
     if (s_zero_read_baseline_buf != NULL) {
         os_free(s_zero_read_baseline_buf);
         s_zero_read_baseline_buf = NULL;
@@ -153,10 +134,7 @@ static void flash_import_zero_read_deinit(void)
         os_free(s_zero_read_read_buf);
         s_zero_read_read_buf = NULL;
     }
-}
 
-static void flash_import_zero_read_exit_thread(void)
-{
     s_zero_read_task_handle = NULL;
     rtos_delete_thread(NULL);
 }
@@ -164,11 +142,12 @@ static void flash_import_zero_read_exit_thread(void)
 static void flash_import_zero_read_thread(beken_thread_arg_t arg)
 {
     (void)arg;
-    flash_import_zero_read_save_context();
-    flash_import_zero_read_main_loop();
-    flash_import_zero_read_restore_context();
+
+    if (flash_import_zero_read_init() == BK_OK) {
+        flash_import_zero_read_main_loop();
+    }
+
     flash_import_zero_read_deinit();
-    flash_import_zero_read_exit_thread();
 }
 
 void flash_import_case_zero_read_start(void)
