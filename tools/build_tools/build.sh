@@ -76,6 +76,7 @@ WRITE_PRODUCT_ID_SCRIPT="${ARMINO_DIR}/tools/build_tools/write_product_id.py"
 PRODUCT_ID_FILE="${ARMINO_DIR}/properties/soc/${ARMINO_SOC}/spid.txt"
 NORMAL_BOOTLOADER_BIN="${ARMINO_DIR}/components/bk_libs/${ARMINO_SOC}/bootloader/normal_bootloader/bootloader.bin"
 AB_BOOTLOADER_BIN="${ARMINO_DIR}/components/bk_libs/${ARMINO_SOC}/bootloader/ab_bootloader/bootloader.bin"
+ATE_BOOTLOADER_BIN="${ARMINO_DIR}/components/bk_libs/${ARMINO_SOC}/bootloader/ate_bootloader/bootloader.bin"
 SDKCONFIG_H="${PROPERTIES_LIB_BUILD_DIR}/sdkconfig"
 # not to build properties repeatedly when verify.
 if [ -n "${BK_JENKINS_ID:-}" ]; then
@@ -141,6 +142,16 @@ if [ "${need_build_properties_lib}" == "1" ]; then
 					echo "Product ID write to AB bootloader completed successfully"
 				else
 					echo "Warning: Product ID write to AB bootloader failed, continuing build"
+				fi
+			fi
+
+			if [ -f "${ATE_BOOTLOADER_BIN}" ]; then
+				echo "Writing product ID to ${ATE_BOOTLOADER_BIN}..."
+				python3 "${WRITE_PRODUCT_ID_SCRIPT}" "${ATE_BOOTLOADER_BIN}" "${PRODUCT_STRING}"
+				if [ $? -eq 0 ]; then
+					echo "Product ID write to ATE bootloader completed successfully"
+				else
+					echo "Warning: Product ID write to ATE bootloader failed, continuing build"
 				fi
 			fi
 		fi

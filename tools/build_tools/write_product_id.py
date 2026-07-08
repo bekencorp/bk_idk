@@ -200,7 +200,7 @@ def write_product_id_to_bin(bin_file, product_id, offset=None, backup=False, use
     
     # Auto-select offset based on CRC option if not specified
     if offset is None:
-        offset = 0x118 if use_crc else 0x108
+        offset = 0x11A if use_crc else 0x10A
     
     # Convert ASCII string to 15 bytes
     id_bytes = ascii_to_bytes(product_id, 15)
