@@ -34,16 +34,16 @@
                                     user_config_partition
     0x3da000                                                                    0x3db000
         |------------------- 3072_B -------------------|---------- 1024_B ----------|
-                    "save reset num and type"                "save working time"
+                    "save working time"                    "save reset num and type"
         |------------------------------- 4096_Byte --------------   ----------------|
 */
-#define HTOL_RESET_RECORD_OFFSET    (0)
-#define HTOL_RESET_RECORD_LENGTH    (3 * 1024)
+#define HTOL_RESET_RECORD_OFFSET    (3 * 1024)
+#define HTOL_RESET_RECORD_LENGTH    (1 * 1024)
 
 #define HTOL_SECEND_PER_DAY         (60 * 60 * 24)
 
-#define HTOL_WORKDAY_RECORD_OFFSET  (3 * 1024)
-#define HTOL_WORKDAY_RECORD_LENGTH  (1 * 1024)
+#define HTOL_WORKDAY_RECORD_OFFSET  (0)
+#define HTOL_WORKDAY_RECORD_LENGTH  (3 * 1024)
 
 #define HTOL_TRX_11B_TARGET_POWER   (20.0)
 
