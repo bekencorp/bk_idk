@@ -96,10 +96,7 @@ __DRAM_SEC static const flash_config_t flash_config[] = {
 
 static flash_driver_t s_flash = {0};
 static bool s_flash_is_init = false;
-
-#if CONFIG_FLASH_WRITE_32B_WITH_READ_BACK
 static bool s_is_puya_flash = false;
-#endif
 
 extern bk_err_t mb_flash_ipc_init(void);
 extern bk_err_t mb_flash_op_prepare(void);
@@ -395,24 +392,32 @@ static void flash_read_word_common(uint32_t *buffer, uint32_t address, uint32_t 
     }
 }
 
+static bk_err_t flash_32b_write_program(const uint8_t *buf, uint32_t addr)
+{
+    const uint32_t *wbuf = (const uint32_t *)buf;
+    uint32_t int_level = flash_enter_critical();
+
+    flash_hal_wait_op_done(&s_flash.hal);
+    flash_hal_write_enable(&s_flash.hal);
+    for (uint32_t i = 0; i < FLASH_BUFFER_LEN; i++) {
+        flash_hal_write_data(&s_flash.hal, wbuf[i]);
+    }
+    flash_hal_set_op_cmd_write(&s_flash.hal, addr);
+    flash_exit_critical(int_level);
+
+    return BK_OK;
+}
+
 static bk_err_t flash_write_common_32b(const uint8_t *buffer, uint32_t address, uint32_t len)
 {
     uint32_t buf[FLASH_BUFFER_LEN];
     uint8_t *pb = (uint8_t *)&buf[0];
     uint32_t addr = address & (~FLASH_ADDRESS_MASK);
 
-    FLASH_RETURN_ON_WRITE_ADDR_OUT_OF_RANGE(addr, len);
+    FLASH_RETURN_ON_WRITE_ADDR_OUT_OF_RANGE(address, len);
 
     while (len) {
-#if CONFIG_FLASH_WRITE_32B_WITH_READ_BACK
-        if (s_is_puya_flash) {
-            flash_read_common(pb, addr, FLASH_BYTES_CNT);
-        } else {
-            os_memset(pb, 0xFF, FLASH_BYTES_CNT);
-        }
-#else
         os_memset(pb, 0xFF, FLASH_BYTES_CNT);
-#endif
         for (uint32_t i = address % FLASH_BYTES_CNT; i < FLASH_BYTES_CNT; i++) {
             pb[i] = *buffer++;
             address++;
@@ -422,15 +427,7 @@ static bk_err_t flash_write_common_32b(const uint8_t *buffer, uint32_t address, 
             }
         }
 
-        uint32_t int_level = flash_enter_critical();
-        flash_hal_wait_op_done(&s_flash.hal);
-        flash_hal_write_enable(&s_flash.hal);
-
-        for (uint32_t i = 0; i < FLASH_BUFFER_LEN; i++) {
-            flash_hal_write_data(&s_flash.hal, buf[i]);
-        }
-        flash_hal_set_op_cmd_write(&s_flash.hal, addr);
-        flash_exit_critical(int_level);
+        flash_32b_write_program(pb, addr);
 
         addr += FLASH_BYTES_CNT;
     }
@@ -438,73 +435,150 @@ static bk_err_t flash_write_common_32b(const uint8_t *buffer, uint32_t address, 
 }
 
 #if CONFIG_FLASH_PAGE_WRITE_ENABLE
-static bk_err_t flash_write_common_page_write(const uint8_t *buffer, uint32_t address, uint32_t len)
+static bk_err_t flash_page_write_program(const uint8_t *buf, uint32_t addr)
 {
-    bk_err_t ret = BK_OK;
-    uint32_t cnt;
-    uint32_t mod;
-    uint32_t i;
-    uint32_t j;
+    flash_hal_wait_op_done(&s_flash.hal);
+    flash_hal_set_pw_write(&s_flash.hal, 1U);
 
-    FLASH_RETURN_ON_WRITE_ADDR_OUT_OF_RANGE(address, len);
+    uint32_t int_level = flash_enter_critical();
+    flash_hal_wait_op_done(&s_flash.hal);
+    flash_hal_set_page_write_mem_addr_clr(&s_flash.hal, 1U);
+    for (uint32_t i = 0; i < FLASH_PAGE_SIZE; i++) {
+        flash_hal_set_page_write_mem_data(&s_flash.hal, buf[i]);
+    }
+    flash_hal_set_op_cmd_write(&s_flash.hal, addr);
+    flash_hal_wait_op_done(&s_flash.hal);
+    flash_exit_critical(int_level);
 
-    if (len == 0U) {
-        return BK_OK;
+    flash_hal_set_pw_write(&s_flash.hal, 0U);
+    return BK_OK;
+}
+#endif
+
+#if CONFIG_FLASH_WRITE_SOFT_ERASE_OPTIM_ENABLE
+#define FLASH_PAGE_WRITE_MIN_LEN             4U
+#define FLASH_PAGE_LAST_32B_OFF              (FLASH_PAGE_SIZE - FLASH_BYTES_CNT)
+
+static bk_err_t flash_page_write_empty_check(const uint8_t *page_buf, uint32_t check_off, uint32_t check_len)
+{
+    for (uint32_t i = 0; i < check_len; i++) {
+        if (page_buf[check_off + i] != 0xFFU) {
+            return BK_FAIL;
+        }
     }
 
-    if (address % FLASH_PAGE_SIZE) {
-        cnt = FLASH_PAGE_SIZE - (address % FLASH_PAGE_SIZE);
-        if (cnt > len) {
-            cnt = len;
+    return BK_OK;
+}
+
+static void flash_page_write_merge(uint8_t *page_buf, uint32_t page_off, const uint8_t *buffer, uint32_t merge_len)
+{
+    for (uint32_t i = 0; i < merge_len; i++) {
+        page_buf[page_off + i] &= buffer[i];
+    }
+}
+
+static bk_err_t flash_page_write_with_32b(const uint8_t *page_buf, uint32_t page_addr, uint32_t page_off, uint32_t write_len)
+{
+    uint32_t end_off = page_off + write_len;
+    uint32_t cur_off = page_off;
+
+    while (cur_off < end_off) {
+        uint32_t write_off = cur_off;
+
+        if ((write_off + FLASH_BYTES_CNT) > FLASH_PAGE_SIZE) {
+            write_off = FLASH_PAGE_LAST_32B_OFF;
         }
-        ret = flash_write_common_32b(buffer, address, cnt);
+        bk_err_t ret = flash_32b_write_program(&page_buf[write_off], page_addr + write_off);
         if (ret != BK_OK) {
             return ret;
         }
-        len -= cnt;
-        address += cnt;
-        buffer += cnt;
+        if (write_off == FLASH_PAGE_LAST_32B_OFF) {
+            break;
+        }
+        cur_off = write_off + FLASH_BYTES_CNT;
     }
 
-    cnt = len / FLASH_PAGE_SIZE;
-    mod = len % FLASH_PAGE_SIZE;
+    return BK_OK;
+}
 
-    if (cnt > 0U) {
-        flash_hal_wait_op_done(&s_flash.hal);
-        flash_hal_set_pw_write(&s_flash.hal, 1U);
+static bk_err_t flash_write_soft_erase_optim(const uint8_t *buffer, uint32_t address, uint32_t len)
+{
+    uint8_t check_buf[FLASH_PAGE_SIZE];
+    uint8_t expect_buf[FLASH_PAGE_SIZE];
+    uint32_t remain = len;
+    bk_err_t ret;
 
-        for (i = 0U; i < cnt; i++) {
-            uint32_t int_level = flash_enter_critical();
+    FLASH_RETURN_ON_WRITE_ADDR_OUT_OF_RANGE(address, len);
 
-            flash_hal_wait_op_done(&s_flash.hal);
-            flash_hal_set_page_write_mem_addr_clr(&s_flash.hal, 1U);
-            for (j = 0U; j < FLASH_PAGE_SIZE; j++) {
-                flash_hal_set_page_write_mem_data(&s_flash.hal, buffer[j]);
-            }
-            flash_hal_set_op_cmd_write(&s_flash.hal, address);
-            flash_hal_wait_op_done(&s_flash.hal);
-            flash_exit_critical(int_level);
+    if (len < FLASH_PAGE_WRITE_MIN_LEN) {
+        FLASH_LOGW("write error:len %u < %u\r\n", len, FLASH_PAGE_WRITE_MIN_LEN);
+        return BK_FAIL;
+    }
 
-            buffer += FLASH_PAGE_SIZE;
-            address += FLASH_PAGE_SIZE;
+    while (remain > 0U) {
+        uint32_t page_addr = address & ~(FLASH_PAGE_SIZE - 1U);
+        uint32_t page_off = address - page_addr;
+        uint32_t chunk_len = FLASH_PAGE_SIZE - page_off;
+
+        if (chunk_len > remain) {
+            chunk_len = remain;
         }
 
-        flash_hal_set_pw_write(&s_flash.hal, 0U);
+        bool use_page_program = false;
+
+        if ((page_off == 0U) && (chunk_len == FLASH_PAGE_SIZE)) {
+            use_page_program = true;
+        }
+
+        uint32_t check_off = page_off;
+        uint32_t check_len = chunk_len;
+
+        if (use_page_program) {
+            check_off = 0U;
+            check_len = FLASH_PAGE_SIZE;
+        }
+
+        os_memset(expect_buf, 0, FLASH_PAGE_SIZE);
+        flash_read_common(expect_buf, page_addr, FLASH_PAGE_SIZE);
+        ret = flash_page_write_empty_check(expect_buf, check_off, check_len);
+        if (ret != BK_OK) {
+            FLASH_LOGW("write error:not erased, addr:0x%x len:0x%x\r\n",
+                page_addr + check_off, check_len);
+            return ret;
+        }
+
+        flash_page_write_merge(expect_buf, page_off, buffer, chunk_len);
+
+        if (use_page_program) {
+            ret = flash_page_write_program(expect_buf, page_addr);
+        } else {
+            ret = flash_page_write_with_32b(expect_buf, page_addr, page_off, chunk_len);
+        }
+        if (ret != BK_OK) {
+            return ret;
+        }
+
+        os_memset(check_buf, 0, FLASH_PAGE_SIZE);
+        flash_read_common(check_buf, page_addr, FLASH_PAGE_SIZE);
+        if (os_memcmp(check_buf, expect_buf, FLASH_PAGE_SIZE) != 0) {
+            FLASH_LOGW("flash page:0x%x verify fail\r\n", page_addr);
+            return BK_FAIL;
+        }
+
+        buffer += chunk_len;
+        address += chunk_len;
+        remain -= chunk_len;
     }
 
-    if (mod > 0U) {
-        ret = flash_write_common_32b(buffer, address, mod);
-    }
-
-    return ret;
+    return BK_OK;
 }
 #endif
 
 bk_err_t flash_write_common(const uint8_t *buffer, uint32_t address, uint32_t len)
 {
-#if CONFIG_FLASH_PAGE_WRITE_ENABLE
-    if ((s_flash.flash_id == FLASH_ID_P25Q64SU) && (len > FLASH_PAGE_SIZE)) {
-        return flash_write_common_page_write(buffer, address, len);
+#if CONFIG_FLASH_WRITE_SOFT_ERASE_OPTIM_ENABLE
+    if (s_is_puya_flash) {
+        return flash_write_soft_erase_optim(buffer, address, len);
     }
 #endif
 
@@ -672,9 +746,7 @@ bk_err_t bk_flash_driver_init(void)
     s_flash.flash_id = flash_get_id();
     FLASH_LOGI("ID=0x%X\r\n", s_flash.flash_id);
 
-#if CONFIG_FLASH_WRITE_32B_WITH_READ_BACK
     s_is_puya_flash = (s_flash.flash_id == FLASH_ID_P25Q64SU);
-#endif
 
     flash_get_current_config();
 
@@ -788,6 +860,10 @@ static bk_err_t flash_erase_no_lock(uint32_t address, int cmd)
         erase_size = FLASH_BLOCK32_SIZE;
     else if(cmd == FLASH_OP_CMD_BE2)
         erase_size = FLASH_BLOCK_SIZE;
+#if CONFIG_FLASH_BYPASS_PAGE_ERASE
+    else if(cmd == FLASH_P25Q64SU_PAGE_ERASE)
+        erase_size = FLASH_PAGE_SIZE;
+#endif
     else
         return BK_FAIL;
 
@@ -808,8 +884,16 @@ static bk_err_t flash_erase_no_lock(uint32_t address, int cmd)
     {
         flash_set_protect_type(FLASH_PROTECT_NONE);
 
-        if(bk_flash_partition_write_perm_check_by_addr(erase_addr, erase_size, FLASH_API_MAGIC_CODE) == BK_OK)
-            ret_val = flash_erase_block(address, cmd);
+        if(bk_flash_partition_write_perm_check_by_addr(erase_addr, erase_size, FLASH_API_MAGIC_CODE) == BK_OK) {
+#if CONFIG_FLASH_BYPASS_PAGE_ERASE
+            if (cmd == FLASH_P25Q64SU_PAGE_ERASE) {
+                if (s_is_puya_flash) {
+                    ret_val = flash_bypass_page_erase(erase_addr);
+                }
+            } else
+#endif
+                ret_val = flash_erase_block(address, cmd);
+        }
     }
 
     flash_set_protect_type(partition_type);
@@ -817,6 +901,22 @@ static bk_err_t flash_erase_no_lock(uint32_t address, int cmd)
 
     return ret_val;
 }
+
+#if CONFIG_FLASH_BYPASS_PAGE_ERASE
+bk_err_t bk_flash_erase_page(uint32_t address)
+{
+    if (address >= s_flash.flash_cfg->flash_size) {
+        FLASH_LOGW("page erase error:invalid address 0x%x\r\n", address);
+        return BK_ERR_FLASH_ADDR_OUT_OF_RANGE;
+    }
+
+    flash_lock();
+    bk_err_t ret_val = flash_erase_no_lock(address, FLASH_P25Q64SU_PAGE_ERASE);
+    flash_unlock();
+
+    return ret_val;
+}
+#endif
 
 bk_err_t bk_flash_erase_sector(uint32_t address)
 {

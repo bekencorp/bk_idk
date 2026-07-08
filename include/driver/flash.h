@@ -190,6 +190,20 @@ uint16_t bk_flash_read_status_reg(void);
  */
 bk_err_t bk_flash_write_status_reg(uint16_t status_reg_data);
 
+#if CONFIG_FLASH_BYPASS_PAGE_ERASE
+/**
+ * @brief     Erase a page of flash via bypass path
+ *
+ * @param address flash address
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_FLASH_ADDR_OUT_OF_RANGE: flash address is out of range
+ *    - others: other errors.
+ */
+__attribute__((section(".itcm_sec_code"))) bk_err_t bk_flash_erase_page(uint32_t address);
+#endif
+
 /**
  * @brief     Erase a sector of flash, use flash command 0x20
  *

@@ -41,11 +41,17 @@ extern "C" {
 /*Write Status Register*/
 #define FLASH_CMD_WR_SR                 (0x31)
 
+/*Read Status Register*/
+#define FLASH_CMD_RD_SR                 (0x05)
+
 /*Others*/
 #define FLASH_CMD_QUAD_IO_FAST_READ     (0xEB)
 #define FLASH_GD25Q32C_SR_QUAD_EN       (0x2)
 #define FLASH_CMD_ENTER_DEEP_PWR_DW     (0xB9)
 #define FLASH_CMD_EXIT_DEEP_PWR_DW      (0xAB)
+#define FLASH_SR_WIP_MASK               (0x01)
+#define FLASH_P25Q64SU_PAGE_ERASE       (0x81)
+#define FLASH_DUMMY_BYTE                (0)
 
 /*SYS regs define*/
 #define FLASH_BYPASS_SPI0_CKEN_BIT      (SYS_CPU_DEVICE_CLK_ENABLE_SPI0_CKEN_MASK << SYS_CPU_DEVICE_CLK_ENABLE_SPI0_CKEN_POS)
@@ -97,6 +103,10 @@ __attribute__((section(".itcm_sec_code"))) void flash_bypass_quad_test(uint32_t 
 __attribute__((section(".iram"))) int flash_bypass_op_read(uint8_t *tx_buf, uint32_t tx_len, uint8_t *rx_buf, uint32_t rx_len);
 __attribute__((section(".iram"))) int flash_bypass_op_write(uint8_t *op_code, uint8_t *tx_buf, uint32_t tx_len);
 __attribute__((section(".iram"))) int flash_bypass_op_write_combin(uint8_t *op_code, uint8_t *tx_buf1, uint32_t tx_len1, uint8_t *tx_buf2, uint32_t tx_len2);
+#endif
+
+#if CONFIG_FLASH_BYPASS_PAGE_ERASE
+__attribute__((section(".iram"))) bk_err_t flash_bypass_page_erase(uint32_t address);
 #endif
 
 #if CONFIG_FLASH_BYPASS_OTP_OPERATION

@@ -775,6 +775,86 @@ wr_exceptional:
 	return exceptional_flag;
 }
 
+#if CONFIG_FLASH_BYPASS_PAGE_ERASE
+static __attribute__((section(".iram"))) bk_err_t flash_bypass_wait_wip_clear(void)
+{
+	uint32_t int_status;
+	uint32_t spi_int_en_saved;
+	uint32_t spi_int_was_enabled;
+	uint8_t cmd = FLASH_CMD_RD_SR;
+	uint8_t sr = 0;
+	bk_err_t ret = BK_FAIL;
+
+	int_status = rtos_disable_int();
+	spi_int_en_saved = (uint32_t)sys_drv_int_disable(SPI_INTERRUPT_CTRL_BIT);
+	spi_int_was_enabled = spi_int_en_saved & SPI_INTERRUPT_CTRL_BIT;
+
+	for (int i = 0; i < 2000; i++) {
+		if (flash_bypass_op_read(&cmd, 1, &sr, 1) != 1) {
+			for (volatile int j = 0; j < 500; j++) {
+			}
+			continue;
+		}
+
+		if ((sr & FLASH_SR_WIP_MASK) == 0) {
+			ret = BK_OK;
+			break;
+		}
+		for (volatile int j = 0; j < 500; j++) {
+		}
+	}
+
+	if (spi_int_was_enabled) {
+		sys_drv_int_enable(SPI_INTERRUPT_CTRL_BIT);
+	}
+	rtos_enable_int(int_status);
+	return ret;
+}
+
+__attribute__((section(".iram"))) bk_err_t flash_bypass_page_erase(uint32_t address)
+{
+#define FLASH_P25Q64SU_PAGE_ADDR_HIGH(page)     ((uint8_t)((page) >> 8))
+#define FLASH_P25Q64SU_PAGE_ADDR_LOW(page)      ((uint8_t)(page))
+
+	uint32_t int_status;
+	uint32_t spi_int_en_saved;
+	uint32_t spi_int_was_enabled;
+	bk_err_t ret = BK_OK;
+	uint8_t wren = FLASH_CMD_WR_EN_SR;
+	uint32_t page = address >> 8;
+	uint8_t tx_buf[4] = {
+		FLASH_P25Q64SU_PAGE_ERASE,
+		FLASH_P25Q64SU_PAGE_ADDR_HIGH(page),
+		FLASH_P25Q64SU_PAGE_ADDR_LOW(page),
+		FLASH_DUMMY_BYTE,
+	};
+
+	int_status = rtos_disable_int();
+	spi_int_en_saved = (uint32_t)sys_drv_int_disable(SPI_INTERRUPT_CTRL_BIT);
+	spi_int_was_enabled = spi_int_en_saved & SPI_INTERRUPT_CTRL_BIT;
+
+	if (flash_bypass_wait_wip_clear() != BK_OK) {
+		ret = BK_FAIL;
+		goto exit;
+	}
+	if (flash_bypass_op_write(&wren, tx_buf, sizeof(tx_buf)) < 0) {
+		ret = BK_FAIL;
+		goto exit;
+	}
+	if (flash_bypass_wait_wip_clear() != BK_OK) {
+		ret = BK_FAIL;
+	}
+exit:
+	if (spi_int_was_enabled) {
+		sys_drv_int_enable(SPI_INTERRUPT_CTRL_BIT);
+	}
+	rtos_enable_int(int_status);
+#undef FLASH_P25Q64SU_PAGE_ADDR_HIGH
+#undef FLASH_P25Q64SU_PAGE_ADDR_LOW
+	return ret;
+}
+#endif
+
 #if CONFIG_FLASH_BYPASS_OTP_OPERATION
 extern void bk_delay_us(uint32 num);
 bool flash_bypass_op_read_buf_can_be_zero_flag = 0;

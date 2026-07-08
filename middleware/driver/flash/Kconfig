@@ -12,14 +12,15 @@ menu "FLASH"
 		bool "Enable flash page write function"
 		default n
 
-	config FLASH_WRITE_32B_WITH_READ_BACK
+	config FLASH_WRITE_SOFT_ERASE_OPTIM_ENABLE
 		depends on FLASH
-		bool "Enable 32-byte flash write with read-back"
+		bool "Enable flash write soft erase optimization"
 		default n
-		help
-		  For P25Q64SU (0x856017), read existing flash data before each
-		  32-byte program write. Flash ID is detected once at init.
-		  Other flash models keep the legacy 0xFF fill behavior.
+
+	config FLASH_BYPASS_PAGE_ERASE
+		depends on FLASH
+		bool "Flash bypass page erase"
+		default n
 
 	config FLASH_SRC_CLK_60M
 		bool "Enable flash source clock 60M"
