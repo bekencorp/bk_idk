@@ -13,6 +13,7 @@ from .size import Size
 from .size_cbus import SizeCbus
 from .bin import Bin
 from .ota import OTA
+from .crc import pack_crc32
 
 def _is_bl2_upgrade_with_app_enabled():
     """Check CONFIG_BL2_UPGRADE_WITH_APP in sdkconfig using a relative path.
@@ -131,7 +132,7 @@ class PartitionMerge(PartitionApp):
         iv_minor = struct.pack('B', int(parts[1]))
         iv_revision = struct.pack('<H', int(parts[2]))
 
-        chip = struct.pack('<6s','BK7236'.encode('utf-8')) #TODO chip-independent
+        chip = struct.pack('<8s', get_soc_type().encode('utf-8'))
         with open(bname, 'wb+') as f:
             idx = -1
             for p in self._partitions:
@@ -166,3 +167,12 @@ class PartitionMerge(PartitionApp):
             f.write(iv_minor)
             f.write(iv_revision)
             f.write(chip)
+
+            # CRC32 over all preceding data (image body + version/chip footer),
+            # appended as little-endian 4 bytes at the very end.
+            f.flush()
+            f.seek(0)
+            all_data = f.read()
+            crc32_num = struct.pack('<I', pack_crc32(0xffffffff, all_data))
+            f.seek(0, os.SEEK_END)
+            f.write(crc32_num)

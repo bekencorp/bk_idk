@@ -243,6 +243,8 @@ def main():
             (f'{sign_path}/partitions.csv', f'{pack_path}/immutable', 'partitions.csv'),
             (f'{sign_path}/bl2.bin', f'{pack_path}/immutable', 'bl2.bin'),
             (f'{sign_path}/app_signed.bin', f'{pack_path}/immutable', 'app_signed.bin'),
+            (f'{sign_path}/{args.privkey}', f'{pack_path}/immutable', args.privkey),
+            (f'{sign_path}/{args.pubkey}', f'{pack_path}/immutable', args.pubkey),
             (f'{idk_path}/build/{args.soc_type}/overwrite/package/nvs.csv', f'{pack_path}/immutable', 'nvs.csv'),
             (f'{idk_path}/build/{args.soc_type}/overwrite/package/user_mfr.bin', f'{pack_path}/immutable', 'user_mfr.bin'),
         ]

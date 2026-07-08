@@ -4,6 +4,13 @@ import io
 import os
 import struct
 
+try:
+    from .crc import pack_crc32
+    from .pack_header import PACK_HEADER_SIZE, PACK_HEADER_MAGIC
+except ImportError:
+    from crc import pack_crc32
+    from pack_header import PACK_HEADER_SIZE, PACK_HEADER_MAGIC
+
 class Image:
     FILE_HEAD_MAGIC0 = "BKDLV10."
     FILE_HEAD_MAGIC1 = "BL1DLV10"
@@ -112,16 +119,49 @@ class Image:
             iv_revision = struct.unpack('<H', f.read(2))[0]
             print(f'app_version:{iv_major}.{iv_minor}.{iv_revision}\r\n')
 
-    def parse_normal_image(self, file_path):
-        with open(self.file_path, 'rb') as f:
-            f.seek(-6, 2)
-            chip = (struct.unpack('<6s',f.read(6))[0]).decode('utf-8')
-            f.seek(-10, 2)
+    def verify_crc(self, file_path=None):
+        """Verify the trailing 4-byte CRC32 of a normal image.
+
+        The last 4 bytes of the file store a little-endian CRC32 computed
+        (with pack_crc32, init=0xffffffff) over the image body (the
+        version/chip footer included, the trailing CRC excluded).
+
+        If the file still carries a pack_header at the front, the header is
+        automatically skipped so the CRC is computed over the same body as
+        when it was generated (no extra '_'-prefixed file is created).
+
+        Returns a tuple (ok, crc_stored, crc_calc).
+        """
+        path = file_path or self.file_path
+        with open(path, 'rb') as f:
+            data = f.read()
+
+        # Skip the pack_header at the front if present.
+        magic = PACK_HEADER_MAGIC.encode('utf-8')
+        offset = PACK_HEADER_SIZE if data[:len(magic)] == magic else 0
+
+        if len(data) < offset + 4:
+            raise ValueError(f'file too small to contain CRC: {path}')
+
+        crc_stored = struct.unpack('<I', data[-4:])[0]
+        crc_calc = pack_crc32(0xffffffff, data[offset:-4])
+        result = (crc_calc == crc_stored)
+        print(f'crc32 check: 0x{crc_stored:08x} (calc 0x{crc_calc:08x}) -> {"OK" if result else "MISMATCH"}')
+        return result, crc_stored, crc_calc
+
+    def parse_normal_image(self, file_path=None):
+        # Footer layout (16 bytes, at the very end of the file):
+        #   iv_major(1) + iv_minor(1) + iv_revision(2) + chip(8) + crc32(4)
+        path = file_path or self.file_path
+        with open(path, 'rb') as f:
+            f.seek(-16, 2)
             iv_major = struct.unpack('B', f.read(1))[0]
             iv_minor = struct.unpack('B', f.read(1))[0]
             iv_revision = struct.unpack('<H', f.read(2))[0]
-            print(f'chip: {chip}')
-            print(f'app_version: {iv_major}.{iv_minor}.{iv_revision}\r\n')
+            chip = struct.unpack('<8s', f.read(8))[0].rstrip(b'\x00').decode('utf-8')
+
+        print(f'chip: {chip}')
+        print(f'app_version: {iv_major}.{iv_minor}.{iv_revision}')
 
     def image_info(self):
         print(f"File size: {self.get_file_size(self.file_path)} (bytes)")
@@ -145,6 +185,12 @@ class Image:
         else:
             self.parse_normal_image(self.file_path)
 
-def mage_info_processing(loadfile):
+def image_info_check(loadfile):
     image = Image(loadfile)
     image.image_info()
+
+def image_crc_check(loadfile):
+    image = Image(loadfile)
+    image.parse_normal_image()
+    result = image.verify_crc()       # result = (ok, crc_stored, crc_calc)
+    return result[0]                     # result[0]=ok, result[1]=crc_stored, result[2]=crc_calc

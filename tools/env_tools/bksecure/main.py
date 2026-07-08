@@ -15,6 +15,7 @@ try:
     from .scripts.pack_json import PackJson
     from .scripts.gen_code import gen_code
     from .scripts.steps import *
+    from .scripts.image_info import image_info_check, image_crc_check
 except ImportError:
     from version import get_version, version
     from scripts.pack import Pack
@@ -22,6 +23,7 @@ except ImportError:
     from scripts.pack_json import PackJson
     from scripts.gen_code import gen_code
     from scripts.steps import *
+    from scripts.image_info import image_info_check, image_crc_check
 
 def set_debug(debug):
     if debug:
@@ -56,10 +58,18 @@ def pack():
 @cli.command("image_info")
 @click.option("--loadfile", type=click.Path(exists=True, dir_okay=False), required=False, default='all-app.bin', help="Binary file to be checked.")
 @click.option("--debug", is_flag=True, help="Enable debug")
-def mage_info_command(loadfile, debug):
+def image_info_command(loadfile, debug):
     """print image information"""
     set_debug(debug)
-    mage_info_processing(loadfile)
+    image_info_check(loadfile)
+
+@cli.command("image_check")
+@click.option("--loadfile", type=click.Path(exists=True, dir_okay=False), required=False, default='all-app.bin', help="Binary file to be checked.")
+@click.option("--debug", is_flag=True, help="Enable debug")
+def image_check_command(loadfile, debug):
+    """check image CRC"""
+    set_debug(debug)
+    image_crc_check(loadfile)
 
 @gen.command("partition")
 @click.option("--partition_csv", type=click.Path(exists=True, dir_okay=False), required=False, default='partitions.csv', help="partition CSV file.")
