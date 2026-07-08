@@ -2,6 +2,7 @@
 #include <string.h>
 #include <components/system.h>
 #include "partitions.h"
+#include "partitions_gen.h"
 #include "modules/ota_download.h"
 #include <driver/wdt.h>
 #include <components/log.h>
@@ -15,8 +16,33 @@
 
 #define TAG "ota"
 
-#define OTA_MAGIC_WORD "\x42\x4B\x37\x32\x33\x36\x35\x38"
+#define OTA_MAGIC_WORD         "\x42\x4B\x37\x32\x33\x36\x35\x38" /* BK723658 */
+#define OTA_ENCRYPT_MAGIC_WORD "\x4F\x54\x41\x20\x45\x4E\x43\x20" /* OTA ENC  */
 #define OTA_FLASH_WR_BUF_MAX 4096
+
+static bk_err_t ota_download_check_magic(const uint8_t *hdr)
+{
+#if CONFIG_OTA_ENCRYPTED
+	if (memcmp(OTA_ENCRYPT_MAGIC_WORD, hdr, 8) == 0) {
+		return BK_OK;
+	}
+	if (memcmp(OTA_MAGIC_WORD, hdr, 8) == 0) {
+		BK_LOGE(TAG, "ota package not encrypted\r\n");
+		return BK_ERR_OTA_HDR_MAGIC;
+	}
+#else
+	if (memcmp(OTA_MAGIC_WORD, hdr, 8) == 0) {
+		return BK_OK;
+	}
+	if (memcmp(OTA_ENCRYPT_MAGIC_WORD, hdr, 8) == 0) {
+		BK_LOGE(TAG, "ota package encrypted\r\n");
+		return BK_ERR_OTA_HDR_MAGIC;
+	}
+#endif
+	BK_LOGE(TAG, "magic error (got %.8s, expect %s)\r\n",
+		hdr, CONFIG_OTA_ENCRYPTED ? OTA_ENCRYPT_MAGIC_WORD : OTA_MAGIC_WORD);
+	return BK_ERR_OTA_HDR_MAGIC;
+}
 
 ota_download_t* bk_ota_download_init()
 {
@@ -65,6 +91,7 @@ bk_err_t bk_ota_download_deinit(ota_download_t* ota_parse)
 
 static bk_err_t ota_download_parse_header(ota_download_t* ota_parse, uint8_t **data, int *len)
 {
+	bk_err_t ret;
 	uint32_t data_len, offset;
 	uint8_t *tmp;
 
@@ -84,10 +111,9 @@ static bk_err_t ota_download_parse_header(ota_download_t* ota_parse, uint8_t **d
 		memcpy(tmp + ota_parse->offset, *data, data_len);
 		*data += data_len;
 		*len -= data_len;
-		//check global header magic code!
-		if(memcmp(OTA_MAGIC_WORD,tmp,8) != 0){
-			BK_LOGE(TAG, "magic error\r\n");
-			return BK_ERR_OTA_HDR_MAGIC;
+		ret = ota_download_check_magic(tmp);
+		if (ret != BK_OK) {
+			return ret;
 		}
 
 		/*calculate global header crc*/

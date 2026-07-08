@@ -293,6 +293,14 @@ class Partitions:
             line = f'#define %-45s %d\r\n' %(macro_name, 0)
             f.write(line)
 
+        ota_cfg = OTA('ota.csv')
+        macro_name = f'CONFIG_OTA_ENCRYPTED'
+        if ota_cfg.get_encrypt():
+            line = f'#define %-45s %d\r\n' %(macro_name, 1)
+        else:
+            line = f'#define %-45s %d\r\n' %(macro_name, 0)
+        f.write(line)
+
         macro_name = f'OTA_CONFIRM'
         line = f'#define %-45s 0x%x\r\n' %(macro_name, OTA_CONFIRM)
         f.write(line)

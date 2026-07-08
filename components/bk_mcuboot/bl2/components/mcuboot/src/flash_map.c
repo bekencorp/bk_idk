@@ -23,6 +23,78 @@ uint32_t flash_area_read_offset_enable(void);
 #define TAG "flash_map"
 #define FLASH_PROGRAM_UNIT    TFM_HAL_FLASH_PROGRAM_UNIT
 
+#if CONFIG_OTA_ENCRYPTED
+/*
+ * OTA slot layout on flash:
+ *   [0, ih_hdr_size)              mcuboot header, dbus plaintext
+ *   [ih_hdr_size, ih_hdr_size+ih_img_size)  compressed payload, cbus decrypt
+ *   [ih_hdr_size+ih_img_size, end)          TLV trailer, dbus plaintext
+ */
+static int flash_area_read_ota_encrypted(const struct flash_area *area, uint32_t off,
+                                         void *dst, uint32_t len)
+{
+    uint32_t phy_base = area->fa_off;
+    uint32_t vir_base = FLASH_PHY2VIRTUAL(CEIL_ALIGN_34(phy_base));
+    uint32_t hdr_size = 0U;
+    uint32_t tlv_off = 0U;
+    uint8_t *out = dst;
+
+    while (len > 0U) {
+        uint32_t boundary;
+        int encrypted;
+
+        if (hdr_size == 0U) {
+            struct image_header hdr;
+
+            bk_flash_read_bytes(area->fa_off, &hdr, sizeof(hdr));
+            if (hdr.ih_magic != IMAGE_MAGIC) {
+                return -1;
+            }
+            hdr_size = hdr.ih_hdr_size;
+            tlv_off = hdr.ih_hdr_size + hdr.ih_img_size;
+        }
+
+        if (off < hdr_size) {
+            /* plaintext header */
+            encrypted = 0;
+            boundary = hdr_size;
+        } else if (off >= tlv_off) {
+            /* plaintext TLV trailer */
+            encrypted = 0;
+            boundary = off + len;
+        } else {
+            /* encrypted payload */
+            encrypted = 1;
+            boundary = tlv_off;
+        }
+
+        uint32_t chunk = boundary - off;
+        if (chunk > len) {
+            chunk = len;
+        }
+
+        if (encrypted) {
+#if CONFIG_DBUS_CHECK_CRC
+            if (check_crc(vir_base + off, chunk) == false) {
+                BOOT_LOG_ERR("addr = %#x,len=%#x,crc16 fail", vir_base + off, chunk);
+                bk_boot_write_ota_fail(BOOT_FAIL_STAGE_CBUS_READ);
+                return -1;
+            }
+#endif
+            bk_flash_read_cbus(vir_base + off, out, chunk);
+        } else {
+            bk_flash_read_bytes(phy_base + off, out, chunk);
+        }
+
+        off += chunk;
+        out += chunk;
+        len -= chunk;
+    }
+
+    return 0;
+}
+#endif
+
 extern const struct flash_area flash_map[];
 extern const int flash_map_entry_num;
 
@@ -86,7 +158,11 @@ int flash_area_read(const struct flash_area *area, uint32_t off, void *dst,
         bk_flash_read_cbus(fa_off + off,dst,len);
         return 0;
     } else if(area->fa_id == 1){
-        bk_flash_read_bytes(fa_off + off,dst,len);
+#if CONFIG_OTA_ENCRYPTED
+        return flash_area_read_ota_encrypted(area, off, dst, len);
+#else
+        bk_flash_read_bytes(fa_off + off, dst, len);
+#endif
         return 0;
     }
 #endif

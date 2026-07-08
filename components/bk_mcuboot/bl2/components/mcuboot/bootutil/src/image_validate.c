@@ -144,7 +144,7 @@ bootutil_img_hash(struct enc_key_data *enc_state, int image_index,
             if (blk_sz > tmp_buf_sz) {
                 blk_sz = tmp_buf_sz;
             }
-            rc = flash_area_read(fap, off, tmp_buf, blk_sz);
+            rc = bk_flash_read_bytes(fap->fa_off + off, tmp_buf, blk_sz);
             if (rc) {
                 bootutil_sha_drop(&sha_ctx);
                 return rc;

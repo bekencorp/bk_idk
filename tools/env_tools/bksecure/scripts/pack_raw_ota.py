@@ -6,6 +6,8 @@ import shutil
 import struct
 
 from .common import *
+from .security import Security
+from .ota import OTA
 
 OTA_SIGNED_BIN = 'ota_signed.bin'
 from .pack import Pack
@@ -24,9 +26,27 @@ OTA_IMG_FLAG_OW =  (1<<16)
 OTA_IMG_FLAG_XIP = (1<<17)
 
 class PackRawOta(Pack):
+
+    def __init__(self, bins=None, outfile=None):
+        super().__init__(bins, outfile)
+        if os.path.exists('ota.csv'):
+            o = OTA('ota.csv')
+            self.ota_encrypt_en = o.get_encrypt()
+        else:
+            logging.warning('ota.csv not found, disable OTA image encryption')
+            self.ota_encrypt_en = False
+        if os.path.exists('security.csv'):
+            s = Security('security.csv')
+            self.flash_crc_en = s.flash_crc_en
+            self.flash_aes_key = s.flash_aes_key if s.is_flash_aes_fixed() else None
+        else:
+            logging.warning('security.csv not found, use defaults for pack raw ota')
+            self.flash_crc_en = True
+            self.flash_aes_key = None
+        self._ota_magic = 'OTA ENC ' if self.ota_encrypt_en else 'BK723658'
+
     def __gen_ota_global_hdr(self, img_num, img_hdr_list, global_security_counter):
-        magic = "BK723658".encode()
-        magic = struct.pack('8s', magic)
+        magic = struct.pack('8s', self._ota_magic.encode())
         global_security_counter = struct.pack('<I', global_security_counter)
         hdr_len = struct.pack('<H', OTA_GLOBAL_HDR_LEN)
         img_num = struct.pack('<H', img_num)
@@ -76,13 +96,19 @@ class PackRawOta(Pack):
             compressed_file = inner_signed_file[:-4] + '_compress.bin'
             compress_bin(inner_signed_file, compressed_file)
 
+            sign_input = compressed_file
+            if self.ota_encrypt_en:
+                sign_input = self.__encrypt_ota_image_with_aes_xts(
+                    pheader, compressed_file, self.flash_aes_key, self.flash_crc_en,
+                    out_ext='_enc.bin')
+
             ota_sign_size = pheader.m2()
             ota_partition_offset = pheader.m1()
             logging.debug(f'OTA outer sign offset={ota_partition_offset}, size={ota_sign_size}')
             pk = Pubkey(img_sign_pubkey)
             bl2_sign(
                 'sign', 'ec256', img_sign_privkey, pk.key_bytes(), None,
-                compressed_file, ota_sign_size, pheader.version(), pheader.security_counter(),
+                sign_input, ota_sign_size, pheader.version(), pheader.security_counter(),
                 OTA_SIGNED_BIN, None,
             )
         return OTA_SIGNED_BIN
@@ -97,29 +123,43 @@ class PackRawOta(Pack):
         else:
             return ph.size().offset()
 
-    def __encrypt_and_add_crc(self, ph, bname, flash_aes_key, flash_crc_en):
-        if (ph.flags().ota_write_cbus() == False) and (ph.flags().ota_read_cbus() == True):
-            aes_bin_name = bname[:-4] + '_aes.bin'
-            if flash_aes_key != None:
-                aes_tool = get_flash_aes_tool()
-                if flash_crc_en:
-                    start_address = hex(phy2virtual(ota_partition.phy_partition_offset))
-                else:
-                    start_address = hex(ota_partition.phy_partition_offset)
-                cmd = f'python3 {aes_tool} encrypt -infile {ota_sign_bin} -keywords {self.aes_key}  -aes {128} -outfile {aes_bin_name} -startaddress {start_address}'
-                run_cmd_not_check_ret(cmd)
-            else:
-                aes_bin_name = bname
-
-            if flash_crc_en == True:
-                crc_bin_name = aes_bin_name[:-4] + '_crc.bin'
-                crc(aes_bin_name, crc_bin_name)
-            else:
-                crc_bin_name = aes_bin_name
-
-            return crc_bin_name
+    def __get_encrypt_start_address(self, ph, flash_crc_en):
+        if ph.type().is_merge_overwrite():
+            offset = ph.m1()
+        elif ph.type().is_merge():
+            offset = ph.size().phy_offset()
         else:
-            return bname
+            offset = ph.size().offset()
+        if flash_crc_en:
+            return hex(phy2virtual(offset))
+        return hex(offset)
+
+    def __get_aes_mode(self, flash_aes_key):
+        key_len = len(flash_aes_key) // 2
+        if key_len == 32:
+            return '128'
+        if key_len == 64:
+            return '256'
+        logging.error(f'invalid flash aes key length: {key_len} bytes')
+        exit(1)
+
+    def __encrypt_ota_image_with_aes_xts(self, ph, bname, flash_aes_key, flash_crc_en,
+                                         body_offset=BL2_HDR_SZ, out_ext='_aes.bin'):
+        if flash_aes_key is None:
+            logging.error('ota_image_encrypt_en is TRUE but flash_aes_key is missing')
+            exit(1)
+
+        aes_bin_name = bname[:-4] + out_ext
+        aes_tool = get_flash_aes_tool()
+        start_address = hex(int(self.__get_encrypt_start_address(ph, flash_crc_en), 0) + body_offset)
+        aes_mode = self.__get_aes_mode(flash_aes_key)
+        cmd = (
+            f'python3 {aes_tool} encrypt -infile {bname} -keywords {flash_aes_key} '
+            f'-aes {aes_mode} -outfile {aes_bin_name} -startaddress {start_address}'
+        )
+        logging.info(f'OTA image encrypt: {cmd}')
+        run_cmd(cmd)
+        return aes_bin_name
 
     def __get_img_flags(self, ph):
         if ph.type().is_merge_overwrite():
@@ -154,8 +194,7 @@ class PackRawOta(Pack):
             )
             exit(1)
 
-        crc_img_file = self.__encrypt_and_add_crc(ph, ota_sign_file, flash_aes_key, flash_crc_en)
-        img_buf = self.__get_img_buf(crc_img_file)
+        img_buf = self.__get_img_buf(ota_sign_file)
         flash_offset = self.__get_img_flash_offset(ph)
         img_flags = self.__get_img_flags(ph)
         img_hdr = self.__gen_ota_img_hdr(ph.name(), img_offset=img_offset, 
@@ -171,3 +210,4 @@ class PackRawOta(Pack):
         with open(self._outfile, 'w+b') as f:
             for buf in self._img_bufs:
                 f.write(buf)
+                

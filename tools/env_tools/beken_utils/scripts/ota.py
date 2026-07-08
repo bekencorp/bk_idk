@@ -7,7 +7,7 @@ from .parse_csv import *
 
 ota_keys = [
     'strategy',
-    'encrypt'
+    'encrypt',
     'app_security_counter',
     'app_version'
 ]

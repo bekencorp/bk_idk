@@ -51,9 +51,4 @@ class PartitionApp(Partition):
             macro_name = f'CONFIG_PRIMARY_{self._bin.type()}_VIRTUAL_CODE_SIZE'
             lines += f'#define %-45s 0x%x\r\n' %(macro_name, self.size().vir_code_size())
 
-        if self.type().is_merge_xip_a() and (self.flags().ota_write_cbus() == False) and self.flags().ota_read_cbus():
-            macro_name = f'CONFIG_OTA_ENCRYPTED'
-            lines += f'\r\n#define %-45s 0x%x\r\n' %(macro_name, 1)
-
-
         return lines
