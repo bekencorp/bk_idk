@@ -97,6 +97,10 @@ __DRAM_SEC static const flash_config_t flash_config[] = {
 static flash_driver_t s_flash = {0};
 static bool s_flash_is_init = false;
 
+#if CONFIG_FLASH_WRITE_32B_WITH_READ_BACK
+static bool s_is_puya_flash = false;
+#endif
+
 extern bk_err_t mb_flash_ipc_init(void);
 extern bk_err_t mb_flash_op_prepare(void);
 extern bk_err_t mb_flash_op_finish(void);
@@ -400,7 +404,15 @@ static bk_err_t flash_write_common_32b(const uint8_t *buffer, uint32_t address, 
     FLASH_RETURN_ON_WRITE_ADDR_OUT_OF_RANGE(addr, len);
 
     while (len) {
+#if CONFIG_FLASH_WRITE_32B_WITH_READ_BACK
+        if (s_is_puya_flash) {
+            flash_read_common(pb, addr, FLASH_BYTES_CNT);
+        } else {
+            os_memset(pb, 0xFF, FLASH_BYTES_CNT);
+        }
+#else
         os_memset(pb, 0xFF, FLASH_BYTES_CNT);
+#endif
         for (uint32_t i = address % FLASH_BYTES_CNT; i < FLASH_BYTES_CNT; i++) {
             pb[i] = *buffer++;
             address++;
@@ -659,6 +671,10 @@ bk_err_t bk_flash_driver_init(void)
 
     s_flash.flash_id = flash_get_id();
     FLASH_LOGI("ID=0x%X\r\n", s_flash.flash_id);
+
+#if CONFIG_FLASH_WRITE_32B_WITH_READ_BACK
+    s_is_puya_flash = (s_flash.flash_id == FLASH_ID_P25Q64SU);
+#endif
 
     flash_get_current_config();
 
