@@ -81,7 +81,7 @@ __DRAM_SEC static const flash_config_t flash_config[] = {
     {0xC84016,   FLASH_SIZE_4M,   3,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x00E,                9,            1,           0xA0,                         }, //gd_25q32c
     {0xC86018,   FLASH_SIZE_16M,  2,             FLASH_LINE_MODE_FOUR,   0,        2,            0x0F,         0x0F,        0x00,         0x00E,                9,            1,           0xA0,                         }, //gd_25lq128e
     {0xC86515,   FLASH_SIZE_2M,   2,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x101,                9,            1,           0xA0,                         }, //gd_25w16e
-    {0xC86516,   FLASH_SIZE_4M,   2,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x1F,                 9,            1,           0xA0,                         }, //gd_25wq32e
+    {0xC86516,   FLASH_SIZE_4M,   2,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x09,         0x1F,                 9,            1,           0xA0,                         }, //gd_25wq32e
     {0xEF4016,   FLASH_SIZE_4M,   2,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x101,                9,            1,           0xA0,                         }, //w_25q32(bfj)
     {0x204118,   FLASH_SIZE_16M,  2,             FLASH_LINE_MODE_FOUR,   0,        2,            0x0F,         0x0F,        0x00,         0x00E,                9,            1,           0xA0,                         }, //xm_25qu128c
     {0x204017,   FLASH_SIZE_8M,   2,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x101,                9,            1,           0xA0,                         }, //xmc_25qh64d
@@ -89,7 +89,7 @@ __DRAM_SEC static const flash_config_t flash_config[] = {
     {0xC22315,   FLASH_SIZE_2M,   1,             FLASH_LINE_MODE_FOUR,   0,        2,            0x0F,         0x0F,        0x00,         0x00E,                6,            1,           0xA5,                         }, //mx_25v16b
     {0xEB6015,   FLASH_SIZE_2M,   2,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x101,                9,            1,           0xA0,                         }, //zg_th25q16b
     {0xC86517,   FLASH_SIZE_8M,   2,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x00E,                9,            1,           0xA0,                         }, //gd_25Q32E
-    {0xCD6016,   FLASH_SIZE_4M,   2,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x1F,                 9,            1,           0xA0,                         }, //th_25q32ub
+    {0xCD6016,   FLASH_SIZE_4M,   2,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x09,         0x1F,                 9,            1,           0xA0,                         }, //th_25q32ub
     {0xCD6017,   FLASH_SIZE_8M,   3,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x00E,                9,            1,           0xA0,                         }, //th_25q64ha
     {0x856017,   FLASH_SIZE_8M,   2,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x1F,                 9,            1,           0xA0,                         }, //p_25q64su
     {0xCD7017,   FLASH_SIZE_8M,   2,             FLASH_LINE_MODE_FOUR,   14,       2,            0x1F,         0x1F,        0x00,         0x1F,                 9,            1,           0xA0,                         }, //th_25q64ub
@@ -214,7 +214,11 @@ static uint32_t flash_get_protect_cfg(flash_protect_type_t type)
 {
     switch (type) {
     case FLASH_PROTECT_NONE:
+#if CONFIG_BL2_UPGRADE_WITH_APP
+        return 0;
+#else
         return FLASH_GET_PROTECT_CFG(s_flash.flash_cfg->protect_none);
+#endif
     case FLASH_PROTECT_ALL:
         return FLASH_GET_PROTECT_CFG(s_flash.flash_cfg->protect_all);
     case FLASH_UNPROTECT_LAST_BLOCK:
