@@ -45,6 +45,8 @@
 
 static beken_thread_function_t s_user_app_entry = NULL;
 beken_semaphore_t user_app_sema = NULL;
+static volatile uint8_t s_user_app_launch_ready = 0;
+static volatile uint32_t s_user_app_waiter_cnt = 0;
 
 void rtos_set_user_app_entry(beken_thread_function_t entry)
 {
@@ -53,7 +55,12 @@ void rtos_set_user_app_entry(beken_thread_function_t entry)
 
 void rtos_user_app_preinit(void)
 {
-    int ret = rtos_init_semaphore(&user_app_sema, 1);
+	s_user_app_launch_ready = 0;
+	s_user_app_waiter_cnt = 0;
+
+	/* maxCount must be >= max concurrent waiters of rtos_user_app_waiting_for_launch().
+ 	 * Currently 3 call sites in ty app; use 8 to leave headroom for future callers. */
+	int ret = rtos_init_semaphore(&user_app_sema, 8);
 	if(ret < 0){
 		os_printf("init queue failed");
 	}
@@ -62,33 +69,63 @@ void rtos_user_app_preinit(void)
 void rtos_user_app_launch_over(void)
 {
 	int ret;
+	uint32_t waiter_cnt = 0;
+
 	if(user_app_sema==NULL)
 	{
 		os_printf("user_app_sema is NULL");
 		return;
 	}
-	ret = rtos_set_semaphore(&user_app_sema);
-	if(ret < 0){
-		os_printf("set sema failed");
+
+	GLOBAL_INT_DECLARATION();
+	GLOBAL_INT_DISABLE();
+	if (s_user_app_launch_ready) {
+		GLOBAL_INT_RESTORE();
+		return;
+	}
+	s_user_app_launch_ready = 1;
+	waiter_cnt = s_user_app_waiter_cnt;
+	GLOBAL_INT_RESTORE();
+
+	for (uint32_t i = 0; i < waiter_cnt; i++) {
+		ret = rtos_set_semaphore(&user_app_sema);
+		if(ret < 0){
+			os_printf("set sema failed");
+			break;
+		}
 	}
 }
 
 void rtos_user_app_waiting_for_launch(void)
 {
 	int ret;
+	GLOBAL_INT_DECLARATION();
 	if(user_app_sema==NULL)
 	{
 		os_printf("user_app_sema is NULL");
 		return;
 	}
+
+	GLOBAL_INT_DISABLE();
+	if (s_user_app_launch_ready) {
+		GLOBAL_INT_RESTORE();
+		return;
+	}
+	s_user_app_waiter_cnt++;
+	GLOBAL_INT_RESTORE();
+
 	ret = rtos_get_semaphore(&user_app_sema, BEKEN_WAIT_FOREVER);
+
+	GLOBAL_INT_DISABLE();
+	if (s_user_app_waiter_cnt > 0) {
+		s_user_app_waiter_cnt--;
+	}
+	GLOBAL_INT_RESTORE();
+
 	if(ret < 0){
 		os_printf("get sema failed");
 	}
 
-#if CONFIG_SAVE_BOOT_TIME_POINT
-	save_mtime_point(CPU_APP_ENTRY_TIME);
-#endif
 }
 
 
@@ -339,6 +376,11 @@ void bk_set_jtag_mode(uint32_t cpu_id, uint32_t group_id) {
 static void user_app_thread( void *arg )
 {
 	rtos_user_app_waiting_for_launch();
+
+#if CONFIG_SAVE_BOOT_TIME_POINT
+	save_mtime_point(CPU_APP_ENTRY_TIME);
+#endif
+
 	/* add your user_main*/
 	BK_LOGI(NULL, "user app entry(0x%0x)\r\n", s_user_app_entry);
 	if(NULL != s_user_app_entry) {
