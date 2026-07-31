@@ -1303,6 +1303,21 @@ pm_cpu_freq_e bk_pm_current_max_cpu_freq_get(void);
  */
 bk_err_t bk_pm_module_vote_cpu_freq(pm_dev_id_e module,pm_cpu_freq_e cpu_freq);
 /**
+ * @brief vote cpu frequency by hz
+ *
+ * select the cpu frequency by Hz value
+ *
+ * @attention
+ * - This API maps Hz value to pm cpu frequency enum and then votes
+ *
+ * @param
+ * -module:module id;cpu_freq_hz:cpu frequency hz(60000000/80000000/120000000/160000000/240000000/320000000/480000000)
+ * @return
+ *  - BK_OK: succeed
+ *  - others: other errors.
+ */
+bk_err_t bk_pm_module_vote_cpu_freq_by_hz(pm_dev_id_e module, uint32_t cpu_freq_hz);
+/**
  * @brief clock ctrl
  *
  * enable or disable dev clock

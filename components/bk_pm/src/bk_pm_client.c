@@ -200,6 +200,39 @@ bk_err_t bk_pm_module_vote_cpu_freq(pm_dev_id_e module, pm_cpu_freq_e cpu_freq)
 	return BK_OK;
 }
 
+bk_err_t bk_pm_module_vote_cpu_freq_by_hz(pm_dev_id_e module, uint32_t cpu_freq_hz)
+{
+    pm_cpu_freq_e cpu_freq = PM_CPU_FRQ_DEFAULT;
+
+    switch (cpu_freq_hz) {
+        case 60000000:
+            cpu_freq = PM_CPU_FRQ_60M;
+            break;
+        case 80000000:
+            cpu_freq = PM_CPU_FRQ_80M;
+            break;
+        case 120000000:
+            cpu_freq = PM_CPU_FRQ_120M;
+            break;
+        case 160000000:
+            cpu_freq = PM_CPU_FRQ_160M;
+            break;
+        case 240000000:
+            cpu_freq = PM_CPU_FRQ_240M;
+            break;
+        case 320000000:
+            cpu_freq = PM_CPU_FRQ_320M;
+            break;
+        case 480000000:
+            cpu_freq = PM_CPU_FRQ_480M;
+            break;
+        default:
+            break;
+    }
+
+    return bk_pm_module_vote_cpu_freq(module, cpu_freq);
+}
+
 bk_err_t bk_pm_module_vote_psram_ctrl(pm_power_psram_module_name_e module,pm_power_module_state_e power_state)
 {
 #if CONFIG_MAILBOX
