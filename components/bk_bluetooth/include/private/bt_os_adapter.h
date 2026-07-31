@@ -206,6 +206,7 @@ struct bt_osi_funcs_t
     int (*_bk_feature_dsss_only_enable)(void);
     void (*_coex_bt_request)(uint32_t event,uint8_t mode,uint32_t duration);
     void (*_coex_bt_release)(uint32_t event);
+    uint32_t (*_bt_rf_pll_ctrl_coex_judge)(uint8_t operation, uint8_t rf_path, uint8_t rf_pll, uint8_t priority, uint32_t task_type, bool is_save_when_failed, uint32_t time_length_us, bool position_can_adjust);
 };
 
 int bt_os_adapter_init(void *osi_funcs);

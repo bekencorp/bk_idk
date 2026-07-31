@@ -428,3 +428,13 @@ int bk_feature_update_power_with_rssi(void);
  */
 int bk_feature_wifi6_enable(void);
 
+/**
+ * @brief     Interface for customer to enable or disable rf coex judge.
+ *
+ *
+ * @return
+ *    - 0: rf coex judge is disabled
+ *    - 1: rf coex judge is enabled
+ *
+ */
+int bk_feature_rf_coex_judge(void);

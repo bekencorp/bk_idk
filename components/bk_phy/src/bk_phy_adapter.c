@@ -754,6 +754,11 @@ bool rtos_is_critical_section_wrapper(void)
     return rtos_local_irq_disabled() || rtos_is_in_interrupt_context();
 }
 
+static int bk_feature_rf_coex_judge_enable(void)
+{
+    return bk_feature_rf_coex_judge();
+}
+
 extern uint64 riscv_get_mtimer(void);
 
 const phy_os_funcs_t g_phy_os_funcs = {
@@ -913,6 +918,7 @@ const phy_os_funcs_t g_phy_os_funcs = {
     ._bk_get_otp_ahb_rfcali_item = bk_get_otp_ahb_rfcali_item_wrapper,
     ._bk_feature_phy_log_enable = bk_feature_phy_log_enable,
     ._bk_feature_wifi6_enable = bk_feature_wifi6_enable,
+    ._bk_feature_rf_coex_judge_enable = bk_feature_rf_coex_judge_enable,
 };
 
 const phy_os_variable_t g_phy_os_variable = {

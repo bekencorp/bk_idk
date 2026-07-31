@@ -1197,6 +1197,19 @@ void bluetooth_lowvol_exit_callback(void)
     bluetooth_lowvol_exit_cb_internal();
 }
 
+static uint32_t bt_rf_pll_ctrl_coex_judge_wrapper(uint8_t operation, uint8_t rf_path, uint8_t rf_pll, uint8_t priority, uint32_t task_type, bool is_save_when_failed, uint32_t time_length_us, bool position_can_adjust)
+{
+    #if CONFIG_RF_COEX_JUDGE
+    RF_PLL_CTRL_RESULT_T ret =  rf_pll_ctrl_coex_judge(MODULE_TYPE_BLE_BT, operation, rf_path, rf_pll, priority, task_type, is_save_when_failed, time_length_us, position_can_adjust);
+    if (ret.result != RF_ARBIT_RESULT_SUCCESS  && task_type != RF_TASK_TYPE_BLE_FREE_ALL)
+    {
+        BK_LOGE(NULL, "ble pll failed, result: %d %d %d %d\n", ret.result, ret.recommend_time_us, operation, task_type);
+    }
+    return (uint32_t)ret.result;
+    #else
+    return 0;
+    #endif
+}
 //warning: bt_osi_funcs must be data section, otherwise a2dp_source_pcm and a2dp_source_decode will trig watchdog !!!!!!!!
 static struct bt_osi_funcs_t bt_osi_funcs =
 {
@@ -1316,6 +1329,7 @@ static struct bt_osi_funcs_t bt_osi_funcs =
     ._get_isocnt_samp       = get_isocnt_samp,
     ._bt_delay_us           = bt_delay_us,
     ._bk_feature_dsss_only_enable = bk_feature_wifi_dsss_only,
+    ._bt_rf_pll_ctrl_coex_judge = bt_rf_pll_ctrl_coex_judge_wrapper,
 };
 
 int bk_bt_os_adapter_init(void)

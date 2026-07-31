@@ -86,4 +86,16 @@ menu "Bk_ble"
 		bool "Support generic service 1800 and 1801"
 		depends on BLE
 		default y
+
+	choice BLUETOOTH_RF_MODE
+		prompt "Select Bluetooth RF Mode"
+		default BLUETOOTH_RF_MODE_IQ_HIGH_PLL
+
+		config BLUETOOTH_RF_MODE_POLAR
+			bool "Polar Mode"
+		config BLUETOOTH_RF_MODE_IQ_HIGH_PLL
+			bool "IQ Mode Wifi PLL"
+		config BLUETOOTH_RF_MODE_IQ_LOW_PLL
+			bool "IQ Mode BT PLL"
+	endchoice
 endmenu

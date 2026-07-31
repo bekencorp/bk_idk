@@ -320,7 +320,38 @@ static void bk_pm_wifi_rtc_clear_wrapper(void)
 
 static void wifi_vote_rf_ctrl_wrapper(uint8_t cmd)
 {
+    #if CONFIG_RF_COEX_JUDGE
+    if (cmd == RF_OPEN)
+    {
+        (void)rf_pll_ctrl_coex_judge(MODULE_TYPE_WIFI,
+                                    RF_OPERATION_APPLY,
+                                    RF_PATH_WIFI_IQ,
+                                    ate_is_enabled() ? RF_PLL_HIGH : RF_PLL_LOW,
+                                    RF_PRIORITY_WIFI_NORMAL,
+                                    RF_TASK_TYPE_WIFI_INIT,
+                                    true,
+                                    0,
+                                    false);
+    }
+    else if (cmd == RF_CLOSE)
+    {
+        (void)rf_pll_ctrl_coex_judge(MODULE_TYPE_WIFI,
+                                    RF_OPERATION_FREE,
+                                    RF_PATH_WIFI_IQ,
+                                    RF_PLL_LOW,
+                                    RF_PRIORITY_WIFI_NORMAL,
+                                    RF_TASK_TYPE_WIFI_FREE_ALL,
+                                    false,
+                                    0,
+                                    false);
+    }
+    else
+    {
+        BK_LOGE(TAG, "wifi_vote_rf_ctrl_wrapper invalid cmd:%u\r\n", cmd);
+    }
+    #else
     rf_module_vote_ctrl(cmd,RF_BY_WIFI_BIT);
+    #endif
 }
 
 static void wifi_phy_clk_open_wrapper(uint8_t is_wifi)
@@ -1227,6 +1258,60 @@ static UINT32 bk_feature_update_power_with_rssi_wrapper(void)
     return bk_feature_update_power_with_rssi();
 }
 
+static int bk_feature_rf_coex_judge_wrapper(void)
+{
+    return bk_feature_rf_coex_judge();
+}
+
+static uint32_t rf_pll_ctrl_coex_judge_wrapper(uint32_t operation, uint32_t rf_pll, uint32_t priority,
+                                                uint32_t task_type, bool is_save, uint32_t time_us,
+                                                bool position_can_adjust)
+{
+    #if CONFIG_RF_COEX_JUDGE
+    RF_PLL_CTRL_RESULT_T ret =  rf_pll_ctrl_coex_judge(MODULE_TYPE_WIFI, operation, RF_PATH_WIFI_IQ, (enum RF_PLL_E)rf_pll,
+                                            (enum RF_PRIORITY_E)priority, (enum RF_TASK_TYPE_E)task_type,
+                                            is_save, time_us, position_can_adjust);
+
+    return (uint32_t)ret.result;
+    #else
+    return 0;
+    #endif
+}
+
+bool rf_has_thread_rf_request_wrapper(void)
+{
+    #if CONFIG_RF_COEX_JUDGE
+    return rf_cntrl_has_thread_rf_request();
+    #else
+    return 0;
+    #endif
+}
+
+static uint32_t get_current_rf_pll_wrapper(void)
+{
+    #if CONFIG_RF_COEX_JUDGE
+    return get_current_rf_pll();
+    #else
+    return 0;
+    #endif
+}
+
+static uint8_t bk_wifi_get_coex_mode_wrapper(void)
+{
+    #if CONFIG_RF_COEX_JUDGE
+    return bk_wifi_get_coex_mode();
+    #else
+    return 0;
+    #endif
+}
+
+static void bk_reg_reset_rf_reg_wrapper(void)
+{
+    #if CONFIG_RF_COEX_JUDGE
+    bk_reg_reset_rf_reg();
+    #endif
+}
+
 __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._version = BK_WIFI_OS_ADAPTER_VERSION,
 	._manual_cal_rfcali        = manual_cal_rfcali_status,
@@ -1489,6 +1574,12 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._coex_wifi_request = coex_wifi_request_wrapper,
 	._coex_wifi_release = coex_wifi_release_wrapper,
 	._coex_wifi_event_get = coex_wifi_event_get_wrapper,
+	._bk_feature_rf_coex_judge_enable = bk_feature_rf_coex_judge_wrapper,
+	._rf_pll_ctrl_coex_judge = rf_pll_ctrl_coex_judge_wrapper,
+	._rf_has_thread_rf_request = rf_has_thread_rf_request_wrapper,
+	._get_current_rf_pll = get_current_rf_pll_wrapper,
+	._bk_wifi_get_coex_mode = bk_wifi_get_coex_mode_wrapper,
+	._bk_reg_reset_rf_reg = bk_reg_reset_rf_reg_wrapper,
 };
 
 __attribute__((section(".dtcm_sec_data "))) wifi_os_variable_t g_wifi_os_variable = {
@@ -1563,6 +1654,33 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_variable_t g_wifi_os_variabl
 	#endif
 	._wifi_mac_short_retry = CONFIG_MAC_SHORT_RETRY,
 	._wifi_mac_long_retry = CONFIG_MAC_LONG_RETRY,
+	#if CONFIG_RF_COEX_JUDGE
+	._RF_OPERATION_APPLY = RF_OPERATION_APPLY,
+	._RF_OPERATION_FREE = RF_OPERATION_FREE,
+	._RF_PRIORITY_WIFI_HIGH = RF_PRIORITY_WIFI_HIGH,
+	._RF_PRIORITY_WIFI_NORMAL = RF_PRIORITY_WIFI_NORMAL,
+	._RF_TASK_TYPE_WIFI_BEGIN = RF_TASK_TYPE_WIFI_BEGIN,
+	._RF_TASK_TYPE_WIFI_INIT = RF_TASK_TYPE_WIFI_INIT,
+	._RF_TASK_TYPE_WIFI_PLL_CHANGE = RF_TASK_TYPE_WIFI_PLL_CHANGE,
+	._RF_TASK_TYPE_WIFI_FREE_ALL = RF_TASK_TYPE_WIFI_FREE_ALL,
+	._RF_TASK_TYPE_WIFI_SCAN = RF_TASK_TYPE_WIFI_SCAN,
+	._RF_TASK_TYPE_WIFI_AUTH = RF_TASK_TYPE_WIFI_AUTH,
+	._RF_TASK_TYPE_WIFI_ASSOC = RF_TASK_TYPE_WIFI_ASSOC,
+	._RF_TASK_TYPE_WIFI_EAPOL = RF_TASK_TYPE_WIFI_EAPOL,
+	._RF_TASK_TYPE_WIFI_DHCP = RF_TASK_TYPE_WIFI_DHCP,
+	._RF_TASK_TYPE_WIFI_BEACON = RF_TASK_TYPE_WIFI_BEACON,
+	._RF_TASK_TYPE_WIFI_DATA = RF_TASK_TYPE_WIFI_DATA,
+	._RF_TASK_TYPE_WIFI_CONNECT = RF_TASK_TYPE_WIFI_CONNECT,
+	._RF_TASK_TYPE_WIFI_DISCONNECT = RF_TASK_TYPE_WIFI_DISCONNECT,
+	._RF_TASK_TYPE_WIFI_AP = RF_TASK_TYPE_WIFI_AP,
+	._RF_TASK_TYPE_WIFI_END = RF_TASK_TYPE_WIFI_END,
+	._RF_PLL_LOW = RF_PLL_LOW,
+	._RF_PLL_HIGH = RF_PLL_HIGH,
+	._RF_ARBIT_RESULT_SUCCESS = RF_ARBIT_RESULT_SUCCESS,
+	._RF_ARBIT_RESULT_CONFLICT = RF_ARBIT_RESULT_CONFLICT,
+	._RF_ARBIT_RESULT_ERROR = RF_ARBIT_RESULT_ERROR,
+	._RF_ARBIT_RESULT_MAX = RF_ARBIT_RESULT_MAX,
+	#endif
 };
 
 Countryregulations country_regulation_table[] = {

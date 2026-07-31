@@ -4,7 +4,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-
+#define RF_MODE_POLAR 0
+#define RF_MODE_IQ_HIGH_PLL 1
+#define RF_MODE_IQ_LOW_PLL 2
 typedef struct
 {
     uint8_t _is_gatt_discovery_auto;                //only valid when use single ble host.
@@ -21,4 +23,6 @@ typedef struct
     uint8_t _support_sleep_phy_switch;
     uint8_t _support_lowpower_sleep;
     uint8_t _support_generic_svc;
+    uint8_t _rf_mode;
+    uint8_t _rf_coex_judge_enable;
 } bt_feature_struct_t;

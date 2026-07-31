@@ -51,6 +51,7 @@ extern "C" {
 #define BK_ERR_WIFI_DRIVER_DEL_VIF      (BK_ERR_WIFI_BASE - 12) /**< WiFi driver failed to delete WiFi virtual interface */
 #define BK_ERR_WIFI_DRIVER_AP_START     (BK_ERR_WIFI_BASE - 13) /**< WiFi driver failed to start BK AP */
 #define BK_ERR_WIFI_CHAN_NUMBER         (BK_ERR_WIFI_BASE - 14) /**< Invalid channel number */
+#define BK_ERR_WIFI_THREAD_INITIALIZED  (BK_ERR_WIFI_BASE - 15) /**< Thread is initialized, call bk_wifi_thread_init() to initialize the thread */
 
 #define WIFI_MIN_CHAN_NUM    1      /**< Minimum supported channel number */
 #define WIFI_MAX_CHAN_NUM    14     /**< Maximum supported channel number */

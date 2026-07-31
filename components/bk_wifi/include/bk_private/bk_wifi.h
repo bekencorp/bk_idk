@@ -664,6 +664,9 @@ wifi_scan_policy_t bk_wifi_get_scan_policy(void);
 //Optimize it
 __attribute__((weak)) uint32_t cfg_ap_is_open_system(void);
 uint8_t bk_wifi_get_ps_status();
+#if CONFIG_RF_COEX_JUDGE
+uint8_t bk_wifi_get_coex_mode(void);
+#endif
 
 #ifdef __cplusplus
 }

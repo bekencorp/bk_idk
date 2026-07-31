@@ -64,9 +64,16 @@ list(APPEND srcs
 )
 endif()
 
+set(bk_wifi_priv_requires bk_common wpa_supplicant-2.10 mbedtls lwip_intf_v2_1 uart_debug bk_phy bk_bluetooth)
+if(CONFIG_OPENTHREAD)
+	# Public API headers (<openthread/...>) live here; PRIV_REQUIRES alone may not add -I for this component.
+	list(APPEND incs ${CMAKE_CURRENT_LIST_DIR}/../openthread/openthread/include)
+	list(APPEND bk_wifi_priv_requires openthread)
+endif()
+
 armino_component_register(SRCS "${srcs}"
     INCLUDE_DIRS "${incs}"
-    PRIV_REQUIRES bk_common wpa_supplicant-2.10 mbedtls lwip_intf_v2_1 uart_debug bk_phy bk_bluetooth
+    PRIV_REQUIRES ${bk_wifi_priv_requires}
     REQUIRES bk_netif)
 
 

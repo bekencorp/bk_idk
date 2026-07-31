@@ -72,5 +72,7 @@ UINT8 manual_get_epa_flag(void);
 UINT32 rxsens_start_flag_get(void);
 UINT32 tx_evm_mode_get(void);
 
-
+#if CONFIG_RF_COEX_JUDGE
+void bk_reg_reset_rf_reg(void);
+#endif
 #endif

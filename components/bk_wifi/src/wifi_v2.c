@@ -69,7 +69,12 @@
 #include "bk_ef.h"
 #endif
 #endif
-
+#if CONFIG_RF_COEX_JUDGE && CONFIG_OPENTHREAD
+#include <openthread/thread.h>
+/* bk_openthread.cpp */
+otInstance *bk_ot_get_single_instance(void);
+extern void bk_ieee802154_rf_init(bool enable);
+#endif
 __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t *g_wifi_funcs = NULL;
 __attribute__((section(".dtcm_sec_data "))) wifi_os_variable_t *g_wifi_vars = NULL;
 extern struct scan_cfg_scan_param_tag scan_param_env;
@@ -1768,7 +1773,11 @@ static int wifi_deepsleep_enter_cb(uint64_t expected_time_ms, void *args)
 	bk_wifi_prepare_deepsleep();
 	bk_wifi_sta_stop();
 
+	#if CONFIG_RF_COEX_JUDGE
+	rf_pll_ctrl_coex_judge(MODULE_TYPE_WIFI, RF_OPERATION_FREE, RF_PATH_WIFI_IQ, RF_PLL_LOW, RF_PRIORITY_WIFI_NORMAL, RF_TASK_TYPE_WIFI_FREE_ALL, false, 0, false);
+	#else
 	rf_module_vote_ctrl(RF_CLOSE,RF_BY_WIFI_BIT);
+	#endif
 	bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_PHY_WIFI, PM_POWER_MODULE_STATE_OFF);
 	bk_pm_module_vote_power_ctrl(PM_POWER_MODULE_NAME_WIFIP_MAC, PM_POWER_MODULE_STATE_OFF);
 
@@ -3617,10 +3626,28 @@ void bk_wifi_scan_free_result(wifi_scan_result_t *scan_result)
 #if CONFIG_BRIDGE
 extern uint8 bridge_is_enabled;
 #endif
-
+#if CONFIG_RF_COEX_JUDGE && CONFIG_OPENTHREAD
+bool bk_wifi_is_ap_stop_thread = false;
+#endif
 bk_err_t bk_wifi_ap_start(void)
 {
 	WIFI_LOGD("ap starting\n");
+
+	#if CONFIG_RF_COEX_JUDGE && CONFIG_OPENTHREAD
+	// lg thread not support with ap together
+	if (rf_cntrl_has_thread_rf_request()) {
+		otInstance *ot_inst = bk_ot_get_single_instance();
+		if (ot_inst) {
+			WIFI_LOGW("ap start: disable thread\n");
+			bk_ieee802154_rf_init(false);
+			(void)otThreadSetEnabled(ot_inst, false);
+		}
+		bk_wifi_is_ap_stop_thread = true;
+	}
+	else{
+		bk_wifi_is_ap_stop_thread = false;
+	}
+	#endif
 
 	if(g_wifi_enable_flag == false)
 	{
@@ -3930,6 +3957,18 @@ bk_err_t bk_wifi_ap_stop(void)
 		WIFI_LOGD("ap stop: already stopped\n");
 		return BK_OK;
 	}
+
+	#if CONFIG_RF_COEX_JUDGE && CONFIG_OPENTHREAD
+	if (bk_wifi_is_ap_stop_thread) {
+		otInstance *ot_inst = bk_ot_get_single_instance();
+		if (ot_inst) {
+			WIFI_LOGW("ap stop: enable thread\n");
+			bk_ieee802154_rf_init(true);
+			(void)otThreadSetEnabled(ot_inst, true);
+		}
+		bk_wifi_is_ap_stop_thread = false;
+	}
+	#endif
 
 	//TODO why this??
 #if CONFIG_AP_IDLE
@@ -5569,3 +5608,21 @@ uint8_t* bk_wifi_encrypt_string(const uint8_t *original_str, int original_len)
 	return encrypted_str;
 }
 #endif //CONFIG_ENCRYPT_WIFI_INFO
+
+#if CONFIG_RF_COEX_JUDGE
+uint8_t g_wifi_coex_mode = 2;
+bk_err_t bk_wifi_set_coex_mode(uint8_t mode)
+{
+	if(mode > 2)
+	{
+		return BK_ERR_PARAM;
+	}
+	g_wifi_coex_mode = mode;
+	return BK_OK;
+}
+
+uint8_t bk_wifi_get_coex_mode(void)
+{
+	return g_wifi_coex_mode;
+}
+#endif

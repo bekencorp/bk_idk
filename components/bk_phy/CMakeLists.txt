@@ -5,9 +5,18 @@ list(APPEND srcs
 	src/bk_rf_adapter.c
 	src/bk_phy_api.c
 )
+
+set(bk_phy_priv_requires bk_common bk_bluetooth temp_detect)
+if (CONFIG_MAC802154_ENABLE)
+    list(APPEND bk_phy_priv_requires bk_mac802154)
+    # bk_mac802154 PRIV_REQUIRES bk_phy (cycle); include dirs may not propagate.
+    # lw_mac802154_interface.h lives under bk_mac802154/include/private.
+    list(APPEND incs "${CMAKE_CURRENT_LIST_DIR}/../bk_mac802154/include/private")
+endif()
+
 armino_component_register(SRCS "${srcs}"
     INCLUDE_DIRS "${incs}"
-    PRIV_REQUIRES bk_common bk_bluetooth
+    PRIV_REQUIRES ${bk_phy_priv_requires}
     )
 
 

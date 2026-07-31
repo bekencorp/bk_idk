@@ -341,3 +341,12 @@ int bk_feature_wifi6_enable(void)
 	return 0;
 #endif
 }
+
+int bk_feature_rf_coex_judge(void)
+{
+#if (CONFIG_RF_COEX_JUDGE)
+	return 1;
+#else
+	return 0;
+#endif
+}

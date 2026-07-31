@@ -19,6 +19,12 @@ typedef struct {
     void (*_sys_drv_set_ana_reg12_dpfms)(uint32_t value);
     bk_err_t (*_bk_pm_module_vote_power_ctrl)(unsigned int module, uint32_t power_state);
     void (*_sys_hal_low_analog_set)(uint32_t en);
+    /** Thread -> WiFi/BLE: stop 802.15.4 TX/RX/ED (bk_rf_adapter.c, MAC802154). */
+    void (*_thread_rf_coex_leave_for_wifi_ble)(void);
+    /** WiFi/BLE -> Thread: RX stop then RX start (bk_rf_adapter.c, MAC802154). */
+    void (*_thread_rf_coex_rx_start_on_enter_thread)(void);
+    uint8_t (*_sys_hal_rf_ctrl_type_get)(void);
+    int (*_bk_feature_rf_coex_judge_enable)(void);
 } rf_control_funcs_t;
 extern const rf_control_funcs_t g_rf_control_funcs;
 

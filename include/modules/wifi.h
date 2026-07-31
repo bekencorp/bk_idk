@@ -1915,6 +1915,16 @@ bk_err_t bk_wifi_csi_receive_mode_req(wifi_csi_receive_mode_config_t *config);
  */
  bk_err_t bk_wifi_enable(void);
 
+ /**
+ * @brief  This API could be used to change Wi-Fi coex mode.
+ *
+ * @param mode coex mode. 0:balance ,1:thread prio, 2:wifi prio
+ *
+ * @return
+ *    - BK_OK: succeed
+ *    - BK_ERR_PARAM: invalid mode
+ */
+bk_err_t bk_wifi_set_coex_mode(uint8_t mode);
 #ifdef __cplusplus
 }
 #endif

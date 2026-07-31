@@ -13,4 +13,8 @@ menu "Bk_Phy"
 		int "Number of Group for DPD Cali"
 		default 8
 
+	config RF_COEX_JUDGE
+		bool "Enable rf coex judge with wifi ble thread temp"
+		default n
+
 endmenu

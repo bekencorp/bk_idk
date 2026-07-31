@@ -556,10 +556,10 @@ IOMX_CODE_T contert_gpio_dev_to_iomx_code(gpio_dev_t dev)
 		func_code = FUNC_CODE_WIFI_ACTIVE;
 		break;
 	case GPIO_DEV_WIFI_TX_EN:
-		func_code = FUNC_CODE_WIFI_RX_EN;
+		func_code = FUNC_CODE_WIFI_TX_EN;
 		break;
 	case GPIO_DEV_WIFI_RX_EN:
-		func_code = FUNC_CODE_WIFI_TX_EN;
+		func_code = FUNC_CODE_WIFI_RX_EN;
 		break;
 
 	default:

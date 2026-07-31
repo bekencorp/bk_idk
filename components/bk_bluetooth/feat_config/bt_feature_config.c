@@ -49,6 +49,28 @@ int bk_bt_feature_init(void)
     s_bt_feature_struct._support_generic_svc = 1;
 #endif
 
+#if CONFIG_RF_COEX_JUDGE
+    extern bool ate_is_enabled(void);
+    if (!ate_is_enabled())
+    {
+    #if CONFIG_BLUETOOTH_RF_MODE_POLAR
+        s_bt_feature_struct._rf_mode = RF_MODE_POLAR;
+    #elif CONFIG_BLUETOOTH_RF_MODE_IQ_HIGH_PLL
+        s_bt_feature_struct._rf_mode = RF_MODE_IQ_HIGH_PLL;
+    #elif CONFIG_BLUETOOTH_RF_MODE_IQ_LOW_PLL
+        s_bt_feature_struct._rf_mode = RF_MODE_IQ_LOW_PLL;
+    #else
+        s_bt_feature_struct._rf_mode = RF_MODE_IQ_HIGH_PLL;
+    #endif
+    }
+    else
+    {
+        s_bt_feature_struct._rf_mode = RF_MODE_IQ_HIGH_PLL;
+    }
+
+    s_bt_feature_struct._rf_coex_judge_enable = 1;
+#endif
+
     extern int bt_feature_adapter_init(void *arg);
 
     if (bt_feature_adapter_init((void *)&s_bt_feature_struct) != 0)

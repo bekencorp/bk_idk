@@ -316,6 +316,10 @@ SECTIONS
         *(.iram)
         *(.interrupt)
 
+        __rf_pll_ctrl_start__ = .;
+        KEEP(*(*.rf_pll_ctrl_iram*))
+        __rf_pll_ctrl_end__ = .;
+
 #if (CONFIG_SPE && !CONFIG_RELEASE_IRAM)
         /* Re-add files that were excluded from FLASH .text section above.
          * These files are placed in IRAM for better performance.

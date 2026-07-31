@@ -166,6 +166,7 @@ typedef struct {
     int (*_bk_get_otp_ahb_rfcali_item)(void);
     int(*_bk_feature_phy_log_enable)(void);
     int(*_bk_feature_wifi6_enable)(void);
+    int (*_bk_feature_rf_coex_judge_enable)(void);
 } phy_os_funcs_t;
 
 

@@ -308,6 +308,12 @@ typedef struct {
 	void (*_coex_wifi_request)(uint32_t event,uint8_t mode,uint32_t duration);
 	void (*_coex_wifi_release)(uint32_t event);
 	uint32_t (*_coex_wifi_event_get)(void);
+	int (*_bk_feature_rf_coex_judge_enable)(void);
+	uint32_t (*_rf_pll_ctrl_coex_judge)(uint32_t operation, uint32_t rf_pll, uint32_t priority, uint32_t task_type, bool is_save, uint32_t time_us, bool position_can_adjust);
+	bool (*_rf_has_thread_rf_request)(void);
+	uint32_t (*_get_current_rf_pll)(void);
+	uint8_t (*_bk_wifi_get_coex_mode)(void);
+	void (*_bk_reg_reset_rf_reg)(void);
 } wifi_os_funcs_t;
 extern wifi_os_funcs_t g_wifi_os_funcs;
 
@@ -386,6 +392,31 @@ typedef struct {
 	bool _improve_he_tb_enable;
 	uint8_t _wifi_mac_short_retry;
 	uint8_t _wifi_mac_long_retry;
+	uint8_t _RF_OPERATION_APPLY;
+	uint8_t _RF_OPERATION_FREE;
+	uint8_t _RF_PRIORITY_WIFI_HIGH;
+	uint8_t _RF_PRIORITY_WIFI_NORMAL;
+	uint8_t _RF_TASK_TYPE_WIFI_BEGIN;
+	uint8_t _RF_TASK_TYPE_WIFI_INIT;
+	uint8_t _RF_TASK_TYPE_WIFI_PLL_CHANGE;
+	uint8_t _RF_TASK_TYPE_WIFI_FREE_ALL;
+	uint8_t _RF_TASK_TYPE_WIFI_SCAN;
+	uint8_t _RF_TASK_TYPE_WIFI_AUTH;
+	uint8_t _RF_TASK_TYPE_WIFI_ASSOC;
+	uint8_t _RF_TASK_TYPE_WIFI_EAPOL;
+	uint8_t _RF_TASK_TYPE_WIFI_DHCP;
+	uint8_t _RF_TASK_TYPE_WIFI_BEACON;
+	uint8_t _RF_TASK_TYPE_WIFI_DATA;
+	uint8_t _RF_TASK_TYPE_WIFI_CONNECT;
+	uint8_t _RF_TASK_TYPE_WIFI_DISCONNECT;
+	uint8_t _RF_TASK_TYPE_WIFI_AP;
+	uint8_t _RF_TASK_TYPE_WIFI_END;
+	uint8_t _RF_PLL_LOW;
+	uint8_t _RF_PLL_HIGH;
+	uint8_t _RF_ARBIT_RESULT_SUCCESS;
+	uint8_t _RF_ARBIT_RESULT_CONFLICT;
+	uint8_t _RF_ARBIT_RESULT_ERROR;
+	uint8_t _RF_ARBIT_RESULT_MAX;
 } wifi_os_variable_t;
 extern wifi_os_variable_t g_wifi_os_variable;
 
