@@ -60,6 +60,8 @@
 #include "bk_private/bk_wifi.h"
 #include "wpa_psk_cache.h"
 #include "bk_feature.h"
+#include "bk_rw.h"
+#include "rwnx_params.h"
 #endif
 
 #define MAX_OWE_TRANSITION_BSS_SELECT_COUNT 5
@@ -2830,6 +2832,31 @@ int wpas_select_network_from_last_scan(struct wpa_supplicant *wpa_s,
 			wpa_supplicant_deauthenticate(
 				wpa_s, WLAN_REASON_DEAUTH_LEAVING);
 		}
+
+		#if BK_SUPPLICANT
+		#if (CONFIG_SOC_BK7236N) || (CONFIG_SOC_BK7239XX)
+		extern bool ate_is_enabled(void);
+		extern struct rwnx_mod_params rwnx_mod_params;
+		const u8 *ext_he_capabilities = get_ie_ext(selected->ies, selected->ie_len, WLAN_EID_EXT_HE_CAPABILITIES);
+		if (ate_is_enabled()) {
+			if (ext_he_capabilities) {
+				if (rwnx_mod_params.use_2040) {
+					wpa_s->reset_b40_flag = true;
+					bk_wifi_capa_config(WIFI_CAPA_ID_B40_EN, 0);
+					rwnx_handle_dynparams();
+					rw_msg_send_me_config_req();
+				}
+			} else {
+				if (rwnx_mod_params.use_2040 == 0 && wpa_s->reset_b40_flag) {
+					wpa_s->reset_b40_flag = false;
+					bk_wifi_capa_config(WIFI_CAPA_ID_B40_EN, 1);
+					rwnx_handle_dynparams();
+					rw_msg_send_me_config_req();
+				}
+			}
+		}
+		#endif
+		#endif
 
 		if (wpa_supplicant_connect(wpa_s, selected, ssid) < 0) {
 			wpa_dbg(wpa_s, MSG_DEBUG, "Connect failed");

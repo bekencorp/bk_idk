@@ -989,6 +989,7 @@ struct wpa_supplicant {
 	unsigned int num_ssids_from_scan_req;
 	#if BK_SUPPLICANT
 	uint8_t *bssid_from_scan_req;
+	bool reset_b40_flag;
 	#endif
 	int *last_scan_freqs;
 	unsigned int num_last_scan_freqs;

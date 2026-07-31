@@ -450,6 +450,7 @@ static void rwnx_set_ht_capa(struct rwnx_hw *rwnx_hw, struct wiphy *wiphy)
 		band_2GHz->ht_cap.cap |= IEEE80211_HT_CAP_SUP_WIDTH_20_40;
 		band_2GHz->ht_cap.mcs.rx_highest = cpu_to_le16(135 * nss);
 	} else {
+		band_2GHz->ht_cap.cap &= ~IEEE80211_HT_CAP_SUP_WIDTH_20_40;
 		band_2GHz->ht_cap.mcs.rx_highest = cpu_to_le16(65 * nss);
 	}
 	if (nss > 1)
@@ -464,8 +465,10 @@ static void rwnx_set_ht_capa(struct rwnx_hw *rwnx_hw, struct wiphy *wiphy)
 		if (rwnx_hw->mod_params->use_2040) {
 			band_2GHz->ht_cap.cap |= IEEE80211_HT_CAP_SGI_40;
 			band_2GHz->ht_cap.mcs.rx_highest = cpu_to_le16(150 * nss);
-		} else
+		} else {
+			band_2GHz->ht_cap.cap &= ~IEEE80211_HT_CAP_SGI_40;
 			band_2GHz->ht_cap.mcs.rx_highest = cpu_to_le16(72 * nss);
+		}
 	}
 	if (rwnx_hw->mod_params->gf_rx_on)
 		band_2GHz->ht_cap.cap |= IEEE80211_HT_CAP_GRN_FLD;
