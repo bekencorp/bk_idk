@@ -10,7 +10,8 @@ FLASH_AES_KEY=73c7bf397f2ad6bf4e7403a7b965dc5ce0645df039c2d69c814ffb403183fb18
 primary_bootloader,,68k,code,TRUE,FALSE
 primary_cpu0_app,,2312k,code,TRUE,FALSE
 ota,,1564K,data,TRUE,TRUE
-usr_config,,136K,data,TRUE,TRUE
+usr_config,,128K,data,TRUE,TRUE
+easyflash_b,,8K,data,TRUE,TRUE
 easyflash,,8K,data,TRUE,TRUE
 sys_rf,0x3FE000,4k,data,TRUE,TRUE
 sys_net,0x3FF000,4k,data,TRUE,TRUE
