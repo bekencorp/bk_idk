@@ -2318,9 +2318,13 @@ bk_err_t bk_wifi_sta_start(void)
 #endif
 
 	if (wifi_sta_is_started() && wifi_sta_is_connected()) {
+#if CONFIG_WIFI_STA_SAME_SSID_BAND_PREF
 		WIFI_LOGI("sta already connected, reconnect for new config/policy\n");
 		bk_wifi_sta_disconnect();
 		bk_wifi_sta_connect();
+#else
+		WIFI_LOGI("sta already connected, ignored!\n");
+#endif
 		return BK_OK;
 	} else if (wifi_sta_is_started()) {
 		WIFI_LOGI("sta already started but not connected, trigger connect\n");
