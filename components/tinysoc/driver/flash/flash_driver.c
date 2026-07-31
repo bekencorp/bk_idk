@@ -104,9 +104,9 @@ static const flash_config_t flash_config[] = {
 #endif
 	{0xC86515,   2,               FLASH_SIZE_2M, FLASH_LINE_MODE_TWO, 14,       2,            0x1F,         0x1F,        0x00,         0x0D,         0x101,                9,            1,           0xA0,                          0x01}, //gd_25w16e
 #if CONFIG_FLASH_QUAD_ENABLE
-	{0xC86516,   2,               FLASH_SIZE_4M, FLASH_LINE_MODE_FOUR, 14,      2,            0x1F,         0x1F,        0x00,         0x0E,         0x1F,                 9,            1,           0xA0,                          0x02}, //gd_25wq32e
+	{0xC86516,   2,               FLASH_SIZE_4M, FLASH_LINE_MODE_FOUR, 14,      2,            0x1F,         0x1F,        0x09,         0x0E,         0x1F,                 9,            1,           0xA0,                          0x02}, //gd_25wq32e
 #else
-	{0xC86516,   1,               FLASH_SIZE_4M, FLASH_LINE_MODE_TWO, 0,        2,            0x1F,         0x1F,        0x00,         0x0E,         0x1F,                 0,            0,           0xA0,                          0x01}, //gd_25wq32e
+	{0xC86516,   1,               FLASH_SIZE_4M, FLASH_LINE_MODE_TWO, 0,        2,            0x1F,         0x1F,        0x09,         0x0E,         0x1F,                 0,            0,           0xA0,                          0x01}, //gd_25wq32e
 #endif
 	{0xEF4016,   2,               FLASH_SIZE_4M, FLASH_LINE_MODE_TWO, 14,       2,            0x1F,         0x1F,        0x00,         0x00,         0x101,                9,            1,           0xA0,                          0x01}, //w_25q32(bfj)
 #if CONFIG_FLASH_QUAD_ENABLE
@@ -128,9 +128,9 @@ static const flash_config_t flash_config[] = {
 	{0xC86517,	 1, 			  FLASH_SIZE_8M, FLASH_LINE_MODE_TWO, 0,		2,			  0x1F, 		0x1F,		 0x00,		   0x0E,		 0x00E, 			   0,			 0, 		  0xA0, 						 0x01}, //gd_25Q32E
 #endif
 #if CONFIG_FLASH_QUAD_ENABLE
-	{0xCD6016,   2,               FLASH_SIZE_4M, FLASH_LINE_MODE_FOUR, 14,      2,            0x1F,         0x1F,        0x00,         0x0E,         0x1F,                 9,            1,           0xA0,                          0x02}, //th_25q32ub
+	{0xCD6016,   2,               FLASH_SIZE_4M, FLASH_LINE_MODE_FOUR, 14,      2,            0x1F,         0x1F,        0x09,         0x0E,         0x1F,                 9,            1,           0xA0,                          0x02}, //th_25q32ub
 #else
-	{0xCD6016,   1,               FLASH_SIZE_4M, FLASH_LINE_MODE_TWO, 0,        2,            0x1F,         0x1F,        0x00,         0x0E,         0x1F,                 0,            0,           0xA0,                          0x01}, //th_25q32ub
+	{0xCD6016,   1,               FLASH_SIZE_4M, FLASH_LINE_MODE_TWO, 0,        2,            0x1F,         0x1F,        0x09,         0x0E,         0x1F,                 0,            0,           0xA0,                          0x01}, //th_25q32ub
 #endif
 	
 #if CONFIG_FLASH_QUAD_ENABLE
