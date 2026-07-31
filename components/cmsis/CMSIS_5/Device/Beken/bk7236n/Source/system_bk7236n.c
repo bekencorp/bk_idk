@@ -131,19 +131,10 @@ __IRAM_SEC void SystemInit_iram (void)
 extern uint32_t __STACK_LIMIT;
 __IRAM_SEC void deep_lv_fast_boot(void)
 {
-	void Reset_Handler(void);
-	uint32_t memory_is_retention(void);
-	if(memory_is_retention())
-	{
-		__set_MSPLIM((uint32_t)(&__STACK_LIMIT));
-		wdt_hal_close();
-		timer_hal_us_init_iram();
-		sys_hal_enable_pll_iram();
-		sys_hal_enable_high_freq_iram();
-		SystemInit_iram();
-	}
-	else
-	{
-		Reset_Handler();
-	}
+	__set_MSPLIM((uint32_t)(&__STACK_LIMIT));
+	wdt_hal_close();
+	timer_hal_us_init_iram();
+	sys_hal_enable_pll_iram();
+	sys_hal_enable_high_freq_iram();
+	SystemInit_iram();
 }

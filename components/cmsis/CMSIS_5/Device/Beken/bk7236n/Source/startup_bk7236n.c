@@ -387,19 +387,13 @@ static uint32_t relocate_vector_table(void)
     return vtor_addr;
 }
 
-uint32_t memory_is_retention(void)
-{
-	return ((REG_READ(0x2807E400 + (16 << 2)) == 0x5A5A5A5A)
-			&& (REG_READ(0x2807E400 + (17 << 2)) == 0xA5A5A5A5));
-}
-
 /*----------------------------------------------------------------------------
   Reset Handler called on controller reset
  *----------------------------------------------------------------------------*/
 __NO_RETURN ENTRY_SECTION void Reset_Handler(void)
 {
     #if CONFIG_DEEP_LV
-    if (dlv_is_startup() && memory_is_retention()) {
+    if (dlv_is_startup()) {
         __set_MSPLIM((uint32_t)(&__STACK_LIMIT));
         /* CMSIS System Initialization */
         SystemInit_iram();

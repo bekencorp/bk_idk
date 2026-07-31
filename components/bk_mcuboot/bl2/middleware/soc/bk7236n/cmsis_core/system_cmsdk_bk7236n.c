@@ -52,7 +52,7 @@ uint32_t sys_is_enable_fast_boot(void)
 
 uint32_t sys_is_running_from_deep_lv(void)
 {
-    return (aon_pmu_ll_get_r7b_dlv_startup() != 0);
+    return (aon_pmu_ll_get_r0_dlv_startup() != 0);
 }
 
 uint32_t sys_is_running_from_deep_sleep(void)
