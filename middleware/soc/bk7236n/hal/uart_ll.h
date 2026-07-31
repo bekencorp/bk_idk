@@ -39,6 +39,7 @@ static inline void uart_ll_set_int_enable_status(uart_hw_t *hw, uart_id_t id, ui
 
 static inline void uart_ll_soft_reset(uart_hw_t *hw)
 {
+	hw->global_ctrl.soft_reset = 0;
 	hw->global_ctrl.soft_reset = 1;
 }
 
