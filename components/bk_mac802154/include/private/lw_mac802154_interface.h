@@ -26,6 +26,7 @@
 #define MACL_ISR_RX_ACK                     0x0F
 #define MACL_ISR_RX_SFD                     0x10
 #define MACL_ISR_TX_SFD                     0x11
+#define MACL_ISR_RX_ABORT                   0x12
 
 #define MAC_ADATA_OFFSET_PL                 0x00
 #define MAC_ENCRYPTION_BLOCK_SIZE           0x10
@@ -548,4 +549,15 @@ void lw_mac802154_int_rx_tx_sfd_matched_en(void);
  */
 void lw_mac802154_lw_macl_set_auto_tx_ack(uint8_t enable);
 
+#if CONFIG_RF_COEX_JUDGE
+/**
+ * @brief Enable MAC802154 diagnostics signal output via platform layer.
+ * @param diag_no Diagnostics index.
+ */
+void lw_mac802154_diag_debug_mac802154(uint16_t diag_no);
+uint8_t lw_mac802154_lw_macl_is_tx_ongoing_pl(void);
+uint8_t lw_mac802154_lw_macl_is_rx_ongoing_pl(void);
+uint16_t lw_mac802154_read_register_rx_abort_status(void);
+int8_t lw_mac802154_ll_handle_get_ed_scan_rssi(void);
+#endif
 #endif

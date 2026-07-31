@@ -26,3 +26,8 @@ endif()
 
 armino_component_register(SRCS "${srcs}" INCLUDE_DIRS "${incs}" PRIV_REQUIRES bk_phy)
 
+if (CONFIG_MAC802154_ENABLE)
+    set(lib_name libmac802154.a)
+    add_prebuilt_library(${lib_name} "${ARMINO_PATH}/components/bk_libs/${ARMINO_SOC}/libs/${lib_name}")
+    target_link_libraries(${COMPONENT_LIB} INTERFACE ${lib_name})
+endif()

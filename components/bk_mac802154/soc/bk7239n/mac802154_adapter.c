@@ -21,6 +21,7 @@
 #include <modules/pm.h>
 #include <components/system.h>
 #include "sys_driver.h"
+#include "bk_feature.h"
 #include "mac802154_adapter.h"
 #include "bk_rf_internal.h"
 
@@ -227,13 +228,44 @@ static void thread_power_ctrl(uint8_t en)
         //Power UP thread and PHY
         bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_THREAD,PM_POWER_MODULE_STATE_ON);
         bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_PHY_THREAD,PM_POWER_MODULE_STATE_ON);
+        #if !(CONFIG_RF_COEX_JUDGE)
         //Switch High Power PLL
         rf_pll_ctrl(0, RF_WIFIPLL_HOLD_BY_THREAD_BIT);
+        #endif
     } else {
         bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_THREAD,PM_POWER_MODULE_STATE_OFF);
         bk_pm_module_vote_power_ctrl(PM_POWER_SUB_MODULE_NAME_PHY_THREAD,PM_POWER_MODULE_STATE_OFF);
+        #if !(CONFIG_RF_COEX_JUDGE)
         rf_pll_ctrl(1, RF_WIFIPLL_HOLD_BY_THREAD_BIT);
+        #endif
     }
+}
+
+static void thread_rf_and_module_vote_ctrl(bool en)
+{
+    #if CONFIG_RF_COEX_JUDGE
+    if(en == true)
+    {
+        RF_PLL_CTRL_RESULT_T rlt = rf_pll_ctrl_coex_judge(MODULE_TYPE_THREAD, RF_OPERATION_APPLY, RF_PATH_THREAD_IQ, RF_PLL_LOW, RF_PRIORITY_THREAD_HIGH, RF_TASK_TYPE_THREAD_INIT, true, 0, false);
+        if(rlt.result != RF_ARBIT_RESULT_SUCCESS)
+        {
+            os_printf("[Error]%s:%d failed to get rf\n", __func__, __LINE__);
+        }
+    }
+    else
+    {
+        RF_PLL_CTRL_RESULT_T rlt = rf_pll_ctrl_coex_judge(MODULE_TYPE_THREAD, RF_OPERATION_FREE, RF_PATH_THREAD_IQ, RF_PLL_LOW, RF_PRIORITY_THREAD_HIGH, RF_TASK_TYPE_THREAD_INIT, true, 0, false);
+        if(rlt.result != RF_ARBIT_RESULT_SUCCESS)
+        {
+            os_printf("[Error]%s:%d failed to get rf\n", __func__, __LINE__);
+        }
+    }
+    #endif
+}
+
+int thread_rf_coex_judge_enable_wrapper(void)
+{
+    return bk_feature_rf_coex_judge();
 }
 
 static int32_t os_memcmp_wrapper(const void *s, const void *s1, uint32_t n)
@@ -306,6 +338,8 @@ struct mac802154_osi_funcs_t g_mac802154_os_funcs = {
     ._drv_thread_rf_ctrl= drv_thread_rf_ctrl_wrapper,
     ._vote_rf_ctrl   = vote_rf_ctrl,
     ._thread_power_ctrl  = thread_power_ctrl,
+    ._thread_rf_and_module_vote_ctrl = thread_rf_and_module_vote_ctrl,
+    ._thread_rf_coex_judge_enable = thread_rf_coex_judge_enable_wrapper,
 
     ._os_memcmp      = os_memcmp_wrapper,
     ._os_memset      = os_memset_wrapper,

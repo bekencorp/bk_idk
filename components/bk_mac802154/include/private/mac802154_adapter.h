@@ -17,6 +17,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <common/bk_err.h>
 
 struct mac802154_osi_funcs_t {
     uint32_t _version;
@@ -61,6 +62,8 @@ struct mac802154_osi_funcs_t {
     void (*_drv_thread_rf_ctrl)(bool en);
     void (*_vote_rf_ctrl)(uint8_t cmd);
     void (*_thread_power_ctrl)(uint8_t en);
+    void (*_thread_rf_and_module_vote_ctrl)(bool en);
+    int (*_thread_rf_coex_judge_enable)(void);
 
     int32_t (*_os_memcmp)(const void *s, const void *s1, uint32_t n);
     void *(*_os_memset)(void *b, int c, uint32_t len);
@@ -75,7 +78,13 @@ int mac802154_osi_init(void *osi_funcs);
 uint8_t mac802154_mac_init(void);
 void mac802154_mac_deinit(void);
 
+#if CONFIG_RF_COEX_JUDGE
+bk_err_t mac802154_mac_tx(bool enable, uint8_t channel, uint8_t tx_cnt, uint8_t pass_cnt_thre);
+bk_err_t mac802154_mac_rx(bool enable, uint8_t channel);
+bk_err_t mac802154_mac_dut(bool enable, uint8_t dut_mode, uint8_t rx_channel, uint8_t tx_channel, void *dut_cb);
+#else
 void mac802154_mac_tx(bool enable, uint8_t channel, uint32_t tx_cnt, void *tx_callback);
 void mac802154_mac_rx(bool enable, uint8_t channel);
+#endif
 
 #endif

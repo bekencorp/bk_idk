@@ -14,6 +14,7 @@
 #include <os/mem.h>
 #include <os/os.h>
 #include "mac802154_adapter.h"
+#include "lw_mac802154_interface.h"
 
 extern struct mac802154_osi_funcs_t g_mac802154_os_funcs;
 
@@ -38,6 +39,42 @@ void mac802154_deinit(void)
     //TODO
 }
 
+#if CONFIG_RF_COEX_JUDGE
+void mac802154_diag_debug_send_to_internal(uint16_t diag_no)
+{
+    lw_mac802154_diag_debug_mac802154(diag_no);
+}
+
+bk_err_t mac802154_tx(bool enable, uint8_t channel, uint8_t tx_cnt, uint8_t pass_cnt_thre)
+{
+    if (enable && ((channel < 11) || (channel > 26)))
+    {
+        return BK_ERR_PARAM;
+    }
+
+    return mac802154_mac_tx(enable, channel, tx_cnt, pass_cnt_thre);
+}
+
+bk_err_t mac802154_rx(bool enable, uint8_t channel)
+{
+    if (enable && ((channel < 11) || (channel > 26)))
+    {
+        return BK_ERR_PARAM;
+    }
+
+    return mac802154_mac_rx(enable, channel);
+}
+
+bk_err_t mac802154_dut(bool enable, uint8_t dut_mode, uint8_t rx_channel, uint8_t tx_channel, void *dut_cb)
+{
+    if (enable && ((rx_channel < 11) || (rx_channel > 26) || (tx_channel < 11) || (tx_channel > 26)))
+    {
+        return BK_ERR_PARAM;
+    }
+
+    return mac802154_mac_dut(enable, dut_mode, rx_channel, tx_channel, dut_cb);
+}
+#else
 
 bk_err_t mac802154_tx(bool enable, uint8_t channel, uint32_t tx_cnt, void *tx_callback)
 {
@@ -62,5 +99,5 @@ bk_err_t mac802154_rx(bool enable, uint8_t channel)
 
     return BK_OK;
 }
-
+#endif
 
