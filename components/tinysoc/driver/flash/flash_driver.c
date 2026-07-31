@@ -724,6 +724,93 @@ static bk_err_t flash_page_write_program(const uint8_t *buf, uint32_t addr)
 	return BK_OK;
 }
 
+#if CONFIG_OTA_DBUS_WRITE
+
+static struct {
+	bool pg_cached;
+	uint32_t pg_addr;
+	uint8_t pg_buf[FLASH_PAGE_SIZE];
+} s_ota_dbus_pg;
+
+static void ota_dbus_page_flush(void)
+{
+	if (!s_ota_dbus_pg.pg_cached) {
+		return;
+	}
+	if (flash_page_write_program(s_ota_dbus_pg.pg_buf, s_ota_dbus_pg.pg_addr) != BK_OK) {
+		FLASH_LOGE("puya page program failed, addr=0x%x\r\n", s_ota_dbus_pg.pg_addr);
+	}
+	s_ota_dbus_pg.pg_cached = false;
+}
+
+static void dbus_page_merge_buf(uint32_t phy_addr, const uint8_t *data, uint32_t len)
+{
+	while (len > 0U) {
+		uint32_t page_addr = phy_addr & ~(FLASH_PAGE_SIZE - 1U);
+		uint32_t page_off = phy_addr & (FLASH_PAGE_SIZE - 1U);
+		uint32_t page_remain = FLASH_PAGE_SIZE - page_off;
+
+		if (page_remain > len) {
+			page_remain = len;
+		}
+
+		if (!s_ota_dbus_pg.pg_cached || s_ota_dbus_pg.pg_addr != page_addr) {
+			ota_dbus_page_flush();
+			s_ota_dbus_pg.pg_addr = page_addr;
+			/* OTA target is erased before write; skip read, use 0xFF baseline for merge */
+			os_memset(s_ota_dbus_pg.pg_buf, 0xFF, FLASH_PAGE_SIZE);
+			s_ota_dbus_pg.pg_cached = true;
+		}
+
+		for (uint32_t i = 0; i < page_remain; i++) {
+			s_ota_dbus_pg.pg_buf[page_off + i] &= data[i];
+		}
+
+		phy_addr += page_remain;
+		data += page_remain;
+		len -= page_remain;
+
+		if (page_off + page_remain == FLASH_PAGE_SIZE) {
+			ota_dbus_page_flush();
+		}
+	}
+}
+
+static bk_err_t write_flash_with_dbus_page(uint32_t phy_addr, const uint8_t *data, uint32_t phy_len)
+{
+	uint32_t wr_phy = phy_addr;
+	flash_protect_type_t protect_type;
+	bk_err_t ret = BK_OK;
+
+	if (data == NULL || phy_len == 0U || (phy_len % 34U) != 0U) {
+		return BK_ERR_PARAM;
+	}
+
+	FLASH_RETURN_ON_DRIVER_NOT_INIT();
+	FLASH_RETURN_ON_WRITE_ADDR_OUT_OF_RANGE(phy_addr, phy_len);
+
+	protect_type = bk_flash_get_protect_type();
+	bk_flash_set_protect_type(FLASH_PROTECT_NONE);
+	flash_switch_to_line_mode_two();
+
+	s_ota_dbus_pg.pg_cached = false;
+	for (uint32_t off = 0; off < phy_len; off += 34U) {
+#if CONFIG_BL2_WDT
+		if ((off & 0x1FFFU) == 0U) {
+			BL2_WDT_FEED();
+		}
+#endif
+		dbus_page_merge_buf(wr_phy, data + off, 34U);
+		wr_phy += 34U;
+	}
+	ota_dbus_page_flush();
+
+	bk_flash_set_protect_type(protect_type);
+	flash_restore_line_mode();
+	return ret;
+}
+#endif
+
 #endif
 
 #if CONFIG_FLASH_WRITE_SOFT_ERASE_OPTIM_ENABLE
@@ -974,6 +1061,13 @@ bk_err_t bk_flash_write_bytes(uint32_t address, const uint8_t *user_buf, uint32_
 	if (flash_is_area_write_disable(address)) {
 		return BK_ERR_FLASH_ADDR_OUT_OF_RANGE;
 	}
+
+#if CONFIG_OTA_DBUS_WRITE && CONFIG_FLASH_PAGE_WRITE_ENABLE
+	/* Puya: 256B page program, source is 34B units with CRC in payload */
+	if (s_flash.flash_id == FLASH_ID_P25Q64SU && (size % 34U) == 0U) {
+		return write_flash_with_dbus_page(address, user_buf, size);
+	}
+#endif
 
 #if CONFIG_BL2_WDT
 	if (s_flash.flash_id == FLASH_ID_P25Q64SU && size > FLASH_SECTOR_SIZE) {
