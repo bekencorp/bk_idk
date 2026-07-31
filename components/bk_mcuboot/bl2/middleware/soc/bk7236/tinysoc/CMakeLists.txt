@@ -37,7 +37,7 @@ set(srcs
 	${TINYSOC_PATH}/driver/gpio/gpio_driver_base.c
 	${TINYSOC_PATH}/driver/gpio/gpio_driver.c
 	${TINYSOC_PATH}/driver/spinlock/amp_res_lock.c
-	${TINYSOC_PATH}/driver/flash/flash_driver.c
+	${TINYSOC_PATH}/driver/flash/v1_1/flash_driver.c
 	${TINYSOC_PATH}/driver/flash/flash_partition.c
 	${TINYSOC_PATH}/driver/timer/timer_driver.c
 	${TINYSOC_PATH}/driver/ppc/prro_driver.c

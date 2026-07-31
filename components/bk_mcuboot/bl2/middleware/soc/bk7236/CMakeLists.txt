@@ -92,7 +92,7 @@ if(MCUBOOT_UPGRADE_STRATEGY STREQUAL OVERWRITE_ONLY)
 		${IDK_PATH}/components/compress/decompress.c
 		${IDK_PATH}/components/compress/lzma.c
 		${IDK_PATH}/components/compress/lzma1900/LzmaDec.c
-		${TINYSOC_PATH}/driver/flash/flash_driver.c
+		${TINYSOC_PATH}/driver/flash/v1_1/flash_driver.c
 	)
 
 	list(APPEND platform_bl2_inc
@@ -108,7 +108,7 @@ target_sources(bk_mcuboot_config INTERFACE
 	${IDK_PATH}/components/compress/decompress.c
 	${IDK_PATH}/components/compress/lzma.c
 	${IDK_PATH}/components/compress/lzma1900/LzmaDec.c
-	${TINYSOC_PATH}/driver/flash/flash_driver.c
+	${TINYSOC_PATH}/driver/flash/v1_1/flash_driver.c
 )
 target_include_directories(bk_mcuboot_config INTERFACE
 	${BL2_COMPONENTS_PATH}/bl2/include
