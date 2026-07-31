@@ -42,4 +42,12 @@ menu "bk7236n"
 	config CUSTOMIZE_REDUCE_11G_TARGET_PWR_1DB
 		bool "Customize: reduce 11g target power by 1 dB"
 		default n
+
+	config CUSTOMIZE_TY
+		bool "Enable customize ty define"
+		default n
+
+	config CUSTOMIZE_TY_BOARD
+		bool "Enable customize ty's board define"
+		default n
 endmenu
