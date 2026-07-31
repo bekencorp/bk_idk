@@ -20,7 +20,7 @@ Overview
 There are three ways to configure OTP/EFUSE:
 
   - Configure via :ref:`JSON scripts <bk_config_otp_efuse_scripts>` using :ref:`BKFIL <bk_tool_bkfil>`, which is the recommended configuration. This should be used especially when deploying in batches.
-    :ref: `UART download <efuse_bit3>` was disabled before it was available.
+    Available before :ref:`UART download <efuse_bit3>` is disabled.
   - Configuration via SPI interface via HID Download Tool, available before :ref:`SPI to AHB, EFUSE BIT21 <efuse_bit21>` disabled. This is generally only used when BKFIL cannot be deployed.
   - Configuration via CLI commands. This is usually used when BKFIL is disabled, or both BKFIL and HID Download Tool are disabled.
 
@@ -44,75 +44,86 @@ $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 .. code::
 
-  {
-     "User_Operate_Enable": "false",
-     "Security_Ctrl_Enable": "false",
-     "Security_data_Enable": "true",
-     "eFuse_Enable": "false",
+ {
+    "User_Operate_Enable": "false",
+    "Security_Ctrl_Enable": "true",
+    "Security_Data_Enable": "true",
+    "User_Operate": [],
+    "Security_Ctrl": [
+        {
+            "secure_boot_enable": "0,0,1",
+            "secure_boot_debug_disable": "0,1,0",
+            "fast_boot_disable": "0,2,0",
+            "boot_mode": "0,3,1",
+            "secure_boot_clock_select": "0,4,0",
+            "random_delay_enable": "0,5,0",
+            "direct_jump_enable": "0,6,1",
+            "boot_critical_error": "0,7,0",
+            "flash_ctrl_disable": "1,1,1",
+            "cbus_disable": "2,3,1",
+            "attack_nmi_enable": "2,4,0",
+            "spi_to_ahb_disable": "2,5,0",
+            "auto_reset_enable[0]": "2,6,0",
+            "auto_reset_enable[1]": "2,7,0",
+            "flash_no_crc_enable": "3,3,1",
+            "flash_aes_enable": "3,5,1",
+            "spi_download_disable": "3,6,0",
+            "swd_disable": "3,7,0"
+        }
+    ],
+    "Security_Data": [
+        {
+            "name": "flash_aes_key",
+            "mode": "write",
+            "permission": "WR",
+            "start_addr": "0x4B100440",
+            "last_valid_addr": "0x4B100460",
+            "byte_len": "0x20",
+            "data": "73c7bf397f2ad6bf4e7403a7b965dc5ce0645df039c2d69c814ffb403183fb18",
+            "data_type": "hex",
+            "status": "true"
+        },
+        {
+            "name": "bl1_rotpk_hash",
+            "mode": "write",
+            "permission": "WR",
+            "start_addr": "0x4B100528",
+            "last_valid_addr": "0x4B100548",
+            "byte_len": "0x20",
+            "data": "2af1f2236872981bdf2f17975fb3029fad171de61741a383ef2c621fd5f5cf62",
+            "data_type": "hex",
+            "status": "true"
+        },
+        {
+            "name": "bl2_rotpk_hash",
+            "mode": "write",
+            "permission": "WR",
+            "start_addr": "0x4B100548",
+            "last_valid_addr": "0x4B100568",
+            "byte_len": "0x20",
+            "data": "ca68e9b3e991433ca9a6a2d6a74fc9dd5ccf559a4ae179537bde2772e0393ccf",
+            "data_type": "hex",
+            "status": "false"
+        },
+        {
+            "name": "LCS",
+            "mode": "write",
+            "permission": "WR",
+            "start_addr": "0x4B100568",
+            "last_valid_addr": "0x4B10056C",
+            "byte_len": "0x04",
+            "data": "00000003",
+            "data_type": "hex",
+            "status": "false"
+        }
+    ]
+ }
 
-     "User_Operate": [],
-
-     "Security_Ctrl": [
-         {
-             "secure_boot_enable": "0,0,1",
-             "secure_boot_debug_disable": "0,3,1",
-             "fast_boot_disable": "0,2,0",
-             "boot_mode": "0,3,0",
-             "secure_boot_clock_select": "0,4,1",
-             "random_delay_enable": "0,5,0",
-             "direct_jump_enable": "0,6,0",
-             "security_boot_critical_error": "0,7,0",
-             "attack_nmi_enable": "2,4,0",
-             "spi_to_ahb_disable": "2,5,0",
-             "auto_reset_enable[0]": "2,6,0",
-             "auto_reset_enable[1]": "2,7,0",
-             "flash_aes_enable": "3,5,0",
-             "spi_download_disable": "3,6,0",
-             "swd_disable": "3,7,0",
-             "enable_flash_aes": "3,5,0"
-         }
-     ],
-
-     "Security_data": [
-         {
-             "name": "flash_aes_key",
-             "mode": "write",
-             "permission": "WR",
-             "start_addr": "0x4B1000460",
-             "byte_len": "0x20",
-             "data": "3183fb18814ffb4039c2d69ce0645df0b965dc5c4e7403a77f2ad6bf73c7bf39",
-             "data_type": "hex",
-             "status": "false"
-         },
-         {
-             "name": "bl1_rotpk_hash",
-             "mode": "write",
-             "permission": "WR",
-             "start_addr": "0x4B100528",
-             "byte_len": "0x20",
-             "data": "2af1f2236872981bdf2f17975fb3029fad171de61741a383ef2c621fd5f5cf62",
-             "data_type": "hex",
-             "status": "false"
-         },
-         {
-             "name": "bl2_rotpk_hash",
-             "mode": "write",
-             "permission": "WR",
-             "start_addr": "0x4B100548",
-             "byte_len": "0x20",
-             "data": "ca68e9b3e991433ca9a6a2d6a74fc9dd5ccf559a4ae179537bde2772e0393ccf",
-             "data_type": "hex",
-             "status": "false"
-         }
-     ]
-  }
-
-The script is divided into four logical configuration areas:
+The script is divided into three logical configuration areas:
 
   - User configuration area - configured by ``User_Operate_Enable`` and ``User_Operate``, user-defined OTP configuration is usually placed in this area, in the automatically generated configuration script, this area is empty.
   - Security control area - configured by ``Security_Ctrl_Enable`` and ``Security_Ctrl``, which refers to EFUSE configuration in BK7239.
   - Security data area - configured by ``Security_Data_Enable`` and ``Security_Data``, which refers to OTP configuration in BK7239.
-  - EFUSE field - configured by ``eFuse_Enable`` and ``eFuse``, this field is deprecated in BK7239.
 
 
 
@@ -124,11 +135,9 @@ Global fields specifically refer to the first-level fields in the configuration 
   - ``User_Operate_Enable`` - true/false, indicating whether to deploy the data in User_Operate to the board through BKFIL.
   - ``Security_Ctrl_Enable`` - true/false, indicating whether to deploy the data in Security_Ctrl to the board through BKFIL.
   - ``Security_data_Enable`` - true/false, indicating whether to deploy the data in Security_data to the board through BKFIL.
-  - ``eFuse_Enable`` - Obsolete in BK7239.
   - ``User_Operate`` - Userland configuration data.
   - ``Security_Ctrl`` - Security control area configuration data.
   - ``Security_data`` - Security data area configuration data.
-  - ``eFuse`` - Obsolete in BK7239.
 
 .. note::
 
@@ -188,8 +197,8 @@ Use HID Download Tool configuration when SPI to AHB is not disabled.
 
 .. important::
 
-   The premise of HID Download Tool is that :ref:`SPI to AHB, EFUSE BIT21<efuse_bit29>` is not set to 1, so when using HID Download Tool for configuration,
-   :ref: `SPI to AHB, EFUSE BIT21<efuse_bit29>` should be configured last.
+   The premise of HID Download Tool is that :ref:`SPI to AHB, EFUSE BIT21<efuse_bit21>` is not set to 1, so when using HID Download Tool for configuration,
+   :ref:`SPI to AHB, EFUSE BIT21<efuse_bit21>` should be configured last.
 
 HID Download Tool Version
 ++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -205,6 +214,17 @@ HID Download Tool reads and writes in units of four bytes, and the operation int
      :align: center
      :alt: 8
      :figclass: align-center
+
+Application Scenario Example
+++++++++++++++++++++++++++++++++++++++++++++++++++
+
+A possible scenario for using HID Download Tool is as follows:
+
+ - Secure boot is enabled and a BL2 that does not support secure download is flashed, but the :ref:`SPI to AHB, EFUSE BIT21<efuse_bit21>` interface is not disabled.
+ - After confirming that the secure boot version upgrade works correctly, disable :ref:`Secure boot debug EFUSE BIT1<efuse_bit1>`/:ref:`Secure boot critical error, EFUSE BIT7<efuse_bit7>` and
+   :ref:`SPI download EFUSE BIT30<efuse_bit30>` via HID Download Tool.
+ - Finally disable :ref:`SPI to AHB, EFUSE BIT21<efuse_bit21>` via HID Download Tool.
+
 
 Configure OTP/EFUSE via CLI
 --------------------------------------------------

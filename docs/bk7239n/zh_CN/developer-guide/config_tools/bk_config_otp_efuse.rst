@@ -47,73 +47,84 @@ $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
  {
     "User_Operate_Enable": "false",
-    "Security_Ctrl_Enable": "false",
-    "Security_data_Enable": "true",
-    "eFuse_Enable": "false",
-
+    "Security_Ctrl_Enable": "true",
+    "Security_Data_Enable": "true",
     "User_Operate": [],
-
     "Security_Ctrl": [
         {
             "secure_boot_enable": "0,0,1",
-            "secure_boot_debug_disable": "0,3,1",
+            "secure_boot_debug_disable": "0,1,0",
             "fast_boot_disable": "0,2,0",
-            "boot_mode": "0,3,0",
-            "secure_boot_clock_select": "0,4,1",
+            "boot_mode": "0,3,1",
+            "secure_boot_clock_select": "0,4,0",
             "random_delay_enable": "0,5,0",
-            "direct_jump_enable": "0,6,0",
-            "security_boot_critical_error": "0,7,0",
+            "direct_jump_enable": "0,6,1",
+            "boot_critical_error": "0,7,0",
+            "flash_ctrl_disable": "1,1,1",
+            "cbus_disable": "2,3,1",
             "attack_nmi_enable": "2,4,0",
             "spi_to_ahb_disable": "2,5,0",
             "auto_reset_enable[0]": "2,6,0",
             "auto_reset_enable[1]": "2,7,0",
-            "flash_aes_enable": "3,5,0",
+            "flash_no_crc_enable": "3,3,1",
+            "flash_aes_enable": "3,5,1",
             "spi_download_disable": "3,6,0",
-            "swd_disable": "3,7,0",
-            "enable_flash_aes": "3,5,0"
+            "swd_disable": "3,7,0"
         }
     ],
-
-    "Security_data": [
+    "Security_Data": [
         {
             "name": "flash_aes_key",
             "mode": "write",
             "permission": "WR",
-            "start_addr": "0x4B1000460",
+            "start_addr": "0x4B100440",
+            "last_valid_addr": "0x4B100460",
             "byte_len": "0x20",
-            "data": "3183fb18814ffb4039c2d69ce0645df0b965dc5c4e7403a77f2ad6bf73c7bf39",
+            "data": "73c7bf397f2ad6bf4e7403a7b965dc5ce0645df039c2d69c814ffb403183fb18",
             "data_type": "hex",
-            "status": "false"
+            "status": "true"
         },
         {
             "name": "bl1_rotpk_hash",
             "mode": "write",
             "permission": "WR",
             "start_addr": "0x4B100528",
+            "last_valid_addr": "0x4B100548",
             "byte_len": "0x20",
             "data": "2af1f2236872981bdf2f17975fb3029fad171de61741a383ef2c621fd5f5cf62",
             "data_type": "hex",
-            "status": "false"
+            "status": "true"
         },
         {
             "name": "bl2_rotpk_hash",
             "mode": "write",
             "permission": "WR",
             "start_addr": "0x4B100548",
+            "last_valid_addr": "0x4B100568",
             "byte_len": "0x20",
             "data": "ca68e9b3e991433ca9a6a2d6a74fc9dd5ccf559a4ae179537bde2772e0393ccf",
+            "data_type": "hex",
+            "status": "false"
+        },
+        {
+            "name": "LCS",
+            "mode": "write",
+            "permission": "WR",
+            "start_addr": "0x4B100568",
+            "last_valid_addr": "0x4B10056C",
+            "byte_len": "0x04",
+            "data": "00000003",
             "data_type": "hex",
             "status": "false"
         }
     ]
  }
 
-脚本分四个逻辑配置区：
+脚本分三个逻辑配置区：
 
  - 用户配置区 - 由 ``User_Operate_Enable`` 与 ``User_Operate`` 配置，用户定义的 OTP 配置通常放在这个区，在自动生成的配置脚本中，这个区为空。
  - 安全控制区 - 由 ``Security_Ctrl_Enable`` 与 ``Security_Ctrl`` 配置，在 BK7239 中指 EFUSE 配置。
  - 安全数据区 - 由 ``Security_Data_Enable`` 与 ``Security_Data`` 配置，在 BK7239 中指 OTP 配置。
- - EFUSE 区 - 由 ``eFuse_Enable`` 与 ``eFuse`` 配置，在 BK7239 中该字段已废弃。
 
 
 
@@ -125,11 +136,9 @@ $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
  - ``User_Operate_Enable`` - true/false，表示是否通过 BKFIL 部署 User_Operate 中的数据到板子上。
  - ``Security_Ctrl_Enable`` - true/false，表示是否通过 BKFIL 部署 Security_Ctrl 中的数据到板子上。
  - ``Security_data_Enable`` - true/false，表示是否通过 BKFIL 部署 Security_data 中的数据到板子上。
- - ``eFuse_Enable`` - BK7239 中已废弃。
  - ``User_Operate`` - 用户区配置数据。
  - ``Security_Ctrl`` - 安全控制区配置数据。
  - ``Security_data`` - 安全数据区配置数据。
- - ``eFuse`` - BK7239 中已废弃。
 
 .. note::
 
@@ -190,8 +199,8 @@ SPI to AHB 未被禁用时使用 HID Download Tool 配置。
 
 .. important::
 
-  HID Download Tool 使用的前提是 :ref:`SPI to AHB，EFUSE BIT21<efuse_bit29>` 未置 1，因此，使用 HID Download Tool 进行配置时，
-  :ref:`SPI to AHB，EFUSE BIT21<efuse_bit29>` 应该最后配置。
+  HID Download Tool 使用的前提是 :ref:`SPI to AHB，EFUSE BIT21<efuse_bit21>` 未置 1，因此，使用 HID Download Tool 进行配置时，
+  :ref:`SPI to AHB，EFUSE BIT21<efuse_bit21>` 应该最后配置。
 
 HID Download Tool 版本
 +++++++++++++++++++++++++++++++++++++++++++++++++
@@ -213,10 +222,10 @@ HID Download Tool 按四字节为单位进行读写，操作界面如下图所�
 
 使用 HID Download Tool 一个可能场景如下:
 
- - 使能了安全启动，同时烧录了不支持安全下载的 BL2，但 :ref:`SPI to AHB, EFUSE BIT30<efuse_bit30>` 接口未禁用。
+ - 使能了安全启动，同时烧录了不支持安全下载的 BL2，但 :ref:`SPI to AHB, EFUSE BIT21<efuse_bit21>` 接口未禁用。
  - 当确认安全启动版本升级功能无误之后，将通过 HID Download Tool 将 :ref:`Secure boot debug EFUSE BIT1<efuse_bit1>`/:ref:`Secure boot critical error, EFUSE BIT7<efuse_bit7>` 以及
    :ref:`SPI 下载 EFUSE BIT30<efuse_bit30>` 禁用。
- - 通过 HID Download Tool 最后禁用 :ref:`SPI to AHB, EFUSE BIT30<efuse_bit30>`。
+ - 通过 HID Download Tool 最后禁用 :ref:`SPI to AHB, EFUSE BIT21<efuse_bit21>`。
 
 
 通过 CLI 配置 OTP/EFUSE
