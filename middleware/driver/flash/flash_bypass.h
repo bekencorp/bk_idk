@@ -50,6 +50,7 @@ extern "C" {
 #define FLASH_CMD_ENTER_DEEP_PWR_DW     (0xB9)
 #define FLASH_CMD_EXIT_DEEP_PWR_DW      (0xAB)
 #define FLASH_SR_WIP_MASK               (0x01)
+#define FLASH_CMD_READ_UID              (0x4B)
 #define FLASH_P25Q64SU_PAGE_ERASE       (0x81)
 #define FLASH_DUMMY_BYTE                (0)
 
@@ -107,6 +108,10 @@ __attribute__((section(".iram"))) int flash_bypass_op_write_combin(uint8_t *op_c
 
 #if CONFIG_FLASH_BYPASS_PAGE_ERASE
 __attribute__((section(".iram"))) bk_err_t flash_bypass_page_erase(uint32_t address);
+#endif
+
+#if CONFIG_FLASH_BYPASS_READ_UID
+__attribute__((section(".iram"))) bk_err_t flash_bypass_read_uid(uint8_t *buf, uint32_t len);
 #endif
 
 #if CONFIG_FLASH_BYPASS_OTP_OPERATION

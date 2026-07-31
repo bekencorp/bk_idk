@@ -855,6 +855,56 @@ exit:
 }
 #endif
 
+#if CONFIG_FLASH_BYPASS_READ_UID
+__attribute__((section(".iram"))) bk_err_t flash_bypass_read_uid(uint8_t *buf, uint32_t len)
+{
+#define FLASH_BYPASS_UID_MAX_LEN                (16)
+	uint32_t int_status;
+	uint32_t spi_int_en_saved;
+	uint32_t spi_int_was_enabled;
+	uint8_t tx_buf[5] = {
+		FLASH_CMD_READ_UID,
+		FLASH_DUMMY_BYTE,
+		FLASH_DUMMY_BYTE,
+		FLASH_DUMMY_BYTE,
+		FLASH_DUMMY_BYTE,
+	};
+	uint8_t rx_buf[FLASH_BYPASS_UID_MAX_LEN] = {0};
+	uint32_t read_len;
+	int ret;
+	bk_err_t err_ret = BK_FAIL;
+
+	if (buf == NULL || len == 0) {
+		return BK_ERR_PARAM;
+	}
+
+	read_len = len;
+	if (read_len > FLASH_BYPASS_UID_MAX_LEN) {
+		read_len = FLASH_BYPASS_UID_MAX_LEN;
+	}
+
+	int_status = rtos_disable_int();
+	spi_int_en_saved = (uint32_t)sys_drv_int_disable(SPI_INTERRUPT_CTRL_BIT);
+	spi_int_was_enabled = spi_int_en_saved & SPI_INTERRUPT_CTRL_BIT;
+
+	ret = flash_bypass_op_read(tx_buf, sizeof(tx_buf), rx_buf, read_len);
+	if (ret != (int)read_len) {
+		goto exit;
+	}
+
+	os_memcpy(buf, rx_buf, read_len);
+	err_ret = BK_OK;
+
+exit:
+	if (spi_int_was_enabled) {
+		sys_drv_int_enable(SPI_INTERRUPT_CTRL_BIT);
+	}
+	rtos_enable_int(int_status);
+#undef FLASH_BYPASS_UID_MAX_LEN
+	return err_ret;
+}
+#endif
+
 #if CONFIG_FLASH_BYPASS_OTP_OPERATION
 extern void bk_delay_us(uint32 num);
 bool flash_bypass_op_read_buf_can_be_zero_flag = 0;

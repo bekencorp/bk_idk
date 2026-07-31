@@ -855,6 +855,66 @@ out:
 }
 #endif
 
+#if CONFIG_FLASH_BYPASS_READ_UID
+static void flash_bypass_read_uid_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	char *msg = CLI_CMD_RSP_ERROR;
+	bk_err_t ret = BK_OK;
+	uint32_t len;
+	uint8_t *buf = NULL;
+
+	if (argc < 3 || os_strcmp(argv[1], "uid") != 0) {
+		ret = BK_ERR_PARAM;
+		BK_DUMP_OUT("usage: uid <len>\r\n");
+		goto out;
+	}
+
+	len = os_strtoul(argv[2], NULL, 16);
+	if (len == 0 || len > 16) {
+		ret = BK_ERR_PARAM;
+		BK_DUMP_OUT("len 1~16\r\n");
+		goto out;
+	}
+
+	buf = (uint8_t *)os_malloc(len);
+	if (buf == NULL) {
+		ret = BK_ERR_NO_MEM;
+		BK_DUMP_OUT("malloc err\r\n");
+		goto out;
+	}
+	os_memset(buf, 0, len);
+
+	extern bk_err_t bk_flash_switch_line_mode(flash_line_mode_t line_mode);
+
+	if (bk_flash_get_line_mode() == FLASH_LINE_MODE_FOUR) {
+		bk_flash_switch_line_mode(FLASH_LINE_MODE_TWO);
+	}
+
+	ret = flash_bypass_read_uid(buf, len);
+
+	if (bk_flash_get_line_mode() == FLASH_LINE_MODE_FOUR) {
+		bk_flash_switch_line_mode(FLASH_LINE_MODE_FOUR);
+	}
+
+	if (ret == BK_OK) {
+		msg = CLI_CMD_RSP_SUCCEED;
+		for (uint32_t i = 0; i < len; i++) {
+			BK_DUMP_OUT("%02x ", buf[i]);
+			if ((i + 1) % 16 == 0)
+				BK_DUMP_OUT("\r\n");
+		}
+		if (len % 16 != 0)
+			BK_DUMP_OUT("\r\n");
+	}
+
+out:
+	if (buf != NULL) {
+		os_free(buf);
+	}
+	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+}
+#endif
+
 static void partShow_Command(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
 	bk_partition_t i;
@@ -880,6 +940,8 @@ static const struct cli_command s_flash_commands[] = {
 	{"flash_bypass_test",   "flash_bypass_test otp R/W/E/L", flash_bypass_command_test},
 #elif CONFIG_FLASH_BYPASS_OTP_V2
 	{"flash_bypass_test",   "flash_bypass_test otp test/R/W/E/L/RSR/WSR ...", flash_bypass_otp_test_cmd},
+#elif CONFIG_FLASH_BYPASS_READ_UID
+	{"flash_bypass_test",   "flash_bypass_test uid <len>", flash_bypass_read_uid_cmd},
 #endif
 
 #if CONFIG_FLASH_RACE_TEST

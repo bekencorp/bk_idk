@@ -22,6 +22,11 @@ menu "FLASH"
 		bool "Flash bypass page erase"
 		default n
 
+	config FLASH_BYPASS_READ_UID
+		depends on FLASH
+		bool "Flash bypass read UID"
+		default n
+
 	config FLASH_SRC_CLK_60M
 		bool "Enable flash source clock 60M"
 		default n
