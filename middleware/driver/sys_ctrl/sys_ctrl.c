@@ -1482,6 +1482,7 @@ static int sctrl_read_efuse(void *param)
 	return ret;
 }
 
+#if CONFIG_EFUSE_ALLOW_WRITE
 static int check_efuse_can_write(UINT8 new_byte, UINT8 old_byte)
 {
 	if (new_byte == old_byte) {
@@ -1564,7 +1565,7 @@ static int sctrl_write_efuse(void *param)
 wr_exit:
 	return ret;
 }
-
+#endif
 
 #endif // (!CONFIG_SOC_BK7231)
 
@@ -2266,7 +2267,11 @@ UINT32 sctrl_ctrl(UINT32 cmd, void *param)
 		break;
 
 	case CMD_EFUSE_WRITE_BYTE:
+#if CONFIG_EFUSE_ALLOW_WRITE
 		ret = sctrl_write_efuse(param);
+#else
+		ret = -1;
+#endif
 		break;
 
 	case CMD_EFUSE_READ_BYTE:

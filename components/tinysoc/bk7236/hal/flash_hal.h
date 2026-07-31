@@ -53,6 +53,7 @@ typedef struct {
 #define flash_hal_write_data(hal, data) flash_ll_write_data((hal)->hw, data)
 #define flash_hal_write_enable(hal) flash_ll_write_enable((hal)->hw)
 #define flash_hal_write_disable(hal) flash_ll_write_disable((hal)->hw)
+#define flash_hal_set_wp_value(hal, value) flash_ll_set_wp_value((hal)->hw, (value))
 #define flash_hal_set_offset_begin(hal, data) flash_ll_set_offset_begin((hal)->hw, data)
 #define flash_hal_set_offset_end(hal, data) flash_ll_set_offset_end((hal)->hw, data)
 #define flash_hal_set_addr_offset(hal, data) flash_ll_set_addr_offset((hal)->hw, data)

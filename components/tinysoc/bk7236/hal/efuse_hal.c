@@ -31,6 +31,7 @@ bk_err_t efuse_hal_init(efuse_hal_t *hal)
  */
 bk_err_t efuse_hal_write(efuse_hal_t *hal, uint8_t addr, uint8_t wr_data)
 {
+#if CONFIG_EFUSE_ALLOW_WRITE
 	/* read before write, ensure this byte and this bit no wrote */
 	int ret;
 	uint8_t read_data = 0;
@@ -61,6 +62,9 @@ bk_err_t efuse_hal_write(efuse_hal_t *hal, uint8_t addr, uint8_t wr_data)
 	}
 
 	return BK_OK;
+#else
+	return BK_ERR_EFUSE_CANNOT_WRTIE;
+#endif
 }
 
 /* 1. set addr & direction=read

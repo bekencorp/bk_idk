@@ -82,7 +82,13 @@ bk_err_t bk_efuse_write_byte(uint8_t addr, uint8_t data)
 	EFUSE_RETURN_ON_DRIVER_NOT_INIT();
 	EFUSE_RETURN_ON_ADDR_OUT_OF_RANGE(addr);
 
+#if CONFIG_EFUSE_ALLOW_WRITE
 	return efuse_hal_write(&s_efuse.hal, addr, data);
+#else
+	EFUSE_LOGW("efuse write disabled, skip addr=0x%02x data=0x%02x\r\n",
+		(uint32_t)addr, (uint32_t)data);
+	return BK_ERR_EFUSE_CANNOT_WRTIE;
+#endif
 }
 
 bk_err_t bk_efuse_read_byte(uint8_t addr, uint8_t *data)

@@ -90,6 +90,13 @@ if(CONFIG_FLASH_WRITE_STATUS_VOLATILE)
     )
 endif()
 
+if(CONFIG_EFUSE_ALLOW_WRITE)
+    target_compile_definitions(platform_bl2
+        PUBLIC
+            CONFIG_EFUSE_ALLOW_WRITE
+    )
+endif()
+
 add_convert_to_bin_target(bl2)
 
 install(DIRECTORY ${CMAKE_BINARY_DIR}/bin/ DESTINATION ${TFM_INSTALL_PATH}/outputs)

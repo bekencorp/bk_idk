@@ -50,6 +50,8 @@
 #define FLASH_API_MAGIC_CODE             (0x12345678)
 #define FLASH_MAX_CLK                        120   // 120MHz
 #define CPU_CLK_DPLL                         480   // 480MHz
+#define FLASH_SR_SRP0_BIT          (1U << 7)  /* SR1.S7 */
+#define FLASH_SR_SRP1_BIT          (1U << 8)  /* SR2.S8 */
 typedef struct {
 	uint32_t flash_id;
 	uint8_t status_reg_size; /**< the byte count of status register */

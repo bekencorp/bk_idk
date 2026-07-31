@@ -49,6 +49,8 @@
 #define FLASH_DPLL_DIV_VALUE_SIX         1
 #define FLASH_ManuFacID_POSI             (16)
 #define FLASH_ManuFacID_GD               (0xC8)
+#define FLASH_SR_SRP0_BIT          (1U << 7)  /* SR1.S7 */
+#define FLASH_SR_SRP1_BIT          (1U << 8)  /* SR2.S8 */
 
 #ifndef CEIL_ALIGN_34
 #define CEIL_ALIGN_34(addr)           (((addr) + 34 - 1) / 34 * 34)

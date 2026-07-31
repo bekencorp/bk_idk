@@ -308,20 +308,25 @@ void flash_set_protect_type(flash_protect_type_t type)
 
 static void flash_set_qe(void)
 {
-    uint32_t status_reg = s_flash.flash_status_reg_val;
+    uint32_t status_reg = flash_read_status_reg();
 
-    #if CONFIG_FLASH_SUPPORT_MULTI_PE
-    status_reg = flash_read_status_reg();
-    #endif
-    if (((status_reg >> s_flash.flash_cfg->quad_en_post) & 0x01) == s_flash.flash_cfg->quad_en_val) {
+    if (status_reg & (s_flash.flash_cfg->quad_en_val << s_flash.flash_cfg->quad_en_post)) {
         return;
     }
 
-    if (1 == s_flash.flash_cfg->quad_en_val)
-        status_reg |= (1 << s_flash.flash_cfg->quad_en_post);
-    else
-        status_reg &= ~(1 << s_flash.flash_cfg->quad_en_post);
+    status_reg |= s_flash.flash_cfg->quad_en_val << s_flash.flash_cfg->quad_en_post;
+    flash_write_status_reg(status_reg);
+}
 
+static void flash_clear_qe(void)
+{
+    uint32_t status_reg = flash_read_status_reg();
+
+    if (!(status_reg & (s_flash.flash_cfg->quad_en_val << s_flash.flash_cfg->quad_en_post))) {
+        return;
+    }
+
+    status_reg &= ~(s_flash.flash_cfg->quad_en_val << s_flash.flash_cfg->quad_en_post);
     flash_write_status_reg(status_reg);
 }
 
@@ -632,11 +637,16 @@ __IRAM_SEC flash_line_mode_t flash_set_line_mode(flash_line_mode_t line_mode)
     if (FLASH_LINE_MODE_FOUR == new_line_mode)
     {
         flash_hal_set_quad_m_value(&s_flash.hal, s_flash.flash_cfg->coutinuous_read_mode_bits_val);
-        flash_set_qe();
+        if (s_flash.flash_cfg != NULL && (1 == s_flash.flash_cfg->quad_en_val)) {
+            flash_set_qe();
+        }
         flash_hal_set_mode(&s_flash.hal, FLASH_MODE_QUAD);  // enter QPI mode.
     }
     else
     {
+        if (s_flash.flash_cfg != NULL && (1 == s_flash.flash_cfg->quad_en_val)) {
+            flash_clear_qe();
+        }
         flash_hal_set_mode(&s_flash.hal, FLASH_MODE_DUAL);
     }
 
@@ -714,6 +724,68 @@ clear_out:
     return BK_OK;
 }
 
+static void flash_switch_to_line_mode_two(void)
+{
+	if (FLASH_LINE_MODE_FOUR == bk_flash_get_line_mode()) {
+		flash_set_line_mode(FLASH_LINE_MODE_TWO);
+	}
+}
+
+static void flash_restore_line_mode(void)
+{
+	if (FLASH_LINE_MODE_FOUR == bk_flash_get_line_mode()) {
+		flash_set_line_mode(FLASH_LINE_MODE_FOUR);
+	}
+}
+
+static bool flash_is_hw_sr_protect_active(uint32_t status_reg)
+{
+    return (status_reg & FLASH_SR_SRP0_BIT) && !(status_reg & FLASH_SR_SRP1_BIT);
+}
+
+static void flash_apply_hw_sr_protect(void)
+{
+	uint32_t status_reg;
+	uint8_t sr_width = s_flash.flash_cfg->status_reg_size;
+
+	if (sr_width < 2) {
+		return;
+	}
+
+	flash_switch_to_line_mode_two();
+
+	flash_hal_wait_op_done(&s_flash.hal);
+	status_reg = flash_hal_read_status_reg(&s_flash.hal, sr_width);
+
+	if (status_reg & FLASH_SR_SRP1_BIT) {
+		FLASH_LOGW("flash sr locked (SRP1=1), skip hw_sr_protect\r\n");
+		goto restore_line_mode;
+	}
+
+	/* Hardware protect per datasheet: SRP1=0, SRP0=1, WP#=0 */
+	if (flash_is_hw_sr_protect_active(status_reg)) {
+		flash_hal_set_wp_value(&s_flash.hal, 0);
+		goto restore_line_mode;
+	}
+
+	status_reg |= FLASH_SR_SRP0_BIT;
+	status_reg &= ~FLASH_SR_SRP1_BIT;
+
+	flash_hal_set_wp_value(&s_flash.hal, 1);
+	flash_hal_write_enable(&s_flash.hal);
+
+	flash_write_status_reg(status_reg);
+
+	status_reg = flash_hal_read_status_reg(&s_flash.hal, sr_width);
+	if (!flash_is_hw_sr_protect_active(status_reg)) {
+		FLASH_LOGW("flash hw_sr_protect verify failed, sr=0x%x\r\n", status_reg);
+		goto restore_line_mode;
+	}
+
+restore_line_mode:
+    flash_restore_line_mode();
+}
+
 bk_err_t bk_flash_driver_init(void)
 {
     flash_hal_t *hal_ptr;
@@ -759,6 +831,8 @@ bk_err_t bk_flash_driver_init(void)
     flash_set_line_mode(s_flash.flash_cfg->line_mode);
 
     flash_hal_set_default_clk(hal_ptr);
+
+    flash_apply_hw_sr_protect();
 
 #if (CONFIG_SOC_BK7236XX) || (CONFIG_SOC_BK7239XX)
     #if (CONFIG_SOC_BK7236N) || (CONFIG_SOC_BK7239XX)
@@ -1384,10 +1458,13 @@ void cbus_flash_set_line_mode(flash_line_mode_t line_mode)
     flash_hal_clear_qwfr(&s_flash.hal);
     flash_enable_line_mode_switch(true);
     if (FLASH_LINE_MODE_TWO == line_mode) {
+        if (s_flash.flash_cfg != NULL && (1 == s_flash.flash_cfg->quad_en_val)) {
+            flash_clear_qe();
+        }
         flash_hal_set_dual_mode(&s_flash.hal);
     } else if (FLASH_LINE_MODE_FOUR == line_mode) {
         flash_hal_set_quad_m_value(&s_flash.hal, s_flash.flash_cfg->coutinuous_read_mode_bits_val);
-        if (1 == s_flash.flash_cfg->quad_en_val) {
+        if (s_flash.flash_cfg != NULL && (1 == s_flash.flash_cfg->quad_en_val)) {
             flash_set_qe();
         }
         flash_set_qwfr();

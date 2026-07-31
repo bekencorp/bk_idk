@@ -2,4 +2,8 @@ menu "EFUSE"
 	config EFUSE
 		bool "Enable efuse"
 		default y
+
+	config EFUSE_ALLOW_WRITE
+		bool "Allow efuse hardware write"
+		default n
 endmenu

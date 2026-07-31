@@ -16,6 +16,14 @@
 #include "efuse_ll.h"
 #include <driver/hal/hal_efuse_types.h>
 
+bk_err_t efuse_hal_init(efuse_hal_t *hal)
+{
+	hal->hw = (efuse_hw_t *)EFUSE_LL_REG_BASE(hal->id);
+	efuse_ll_init(hal->hw);
+	return BK_OK;
+}
+
+#if CONFIG_EFUSE_ALLOW_WRITE
 static int efuse_hal_check_can_write(uint8_t old_byte, uint8_t new_byte)
 {
 	if (new_byte == old_byte) {
@@ -36,13 +44,7 @@ static int efuse_hal_check_can_write(uint8_t old_byte, uint8_t new_byte)
 
 	return 0;
 }
-
-bk_err_t efuse_hal_init(efuse_hal_t *hal)
-{
-	hal->hw = (efuse_hw_t *)EFUSE_LL_REG_BASE(hal->id);
-	efuse_ll_init(hal->hw);
-	return BK_OK;
-}
+#endif
 
 /* 1. check if can write
  * 2. enable efuse vdd2.5v
@@ -53,6 +55,7 @@ bk_err_t efuse_hal_init(efuse_hal_t *hal)
  */
 bk_err_t efuse_hal_write(efuse_hal_t *hal, uint8_t addr, uint8_t wr_data)
 {
+#if CONFIG_EFUSE_ALLOW_WRITE
 	/* read before write, ensure this byte and this bit no wrote */
 	int ret;
 	uint8_t read_data = 0;
@@ -91,6 +94,9 @@ bk_err_t efuse_hal_write(efuse_hal_t *hal, uint8_t addr, uint8_t wr_data)
 	}
 
 	return BK_OK;
+#else
+	return BK_ERR_EFUSE_CANNOT_WRTIE;
+#endif
 }
 
 /* 1. set addr & direction=read

@@ -60,6 +60,7 @@ typedef struct {
 #define flash_hal_set_volatile_status_write(hal) flash_ll_set_volatile_status_write((hal)->hw)
 #define flash_hal_clear_volatile_status_write(hal) flash_ll_clear_volatile_status_write((hal)->hw)
 #define flash_hal_read_data_sw_flash_sel(hal) flash_ll_read_data_sw_flash_sel((hal)->hw)
+#define flash_hal_set_wp_value(hal, value) flash_ll_set_wp_value((hal)->hw, (value))
 
 bk_err_t flash_hal_init(flash_hal_t *hal);
 uint16_t flash_hal_get_protect_value(flash_hal_t *hal, uint8_t status_reg_size,
