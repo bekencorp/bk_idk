@@ -145,7 +145,7 @@ if [ -f "${ALL_APP_BIN}" ] && [ -n "${SPID}" ] && [ "${SPID}" != "0" ]; then
 fi
 
 # Call write_product_id.py with PRODUCT_STRING as product_id parameter
-python3 "${WRITE_PRODUCT_ID_SCRIPT}" "${ALL_APP_BIN}" "${PRODUCT_STRING}" --spid-offset-in-boot "${SPID_OFFSET_IN_BOOT}"
+python3 -B "${WRITE_PRODUCT_ID_SCRIPT}" "${ALL_APP_BIN}" "${PRODUCT_STRING}" --spid-offset-in-boot "${SPID_OFFSET_IN_BOOT}"
 
 if [ $? -eq 0 ]; then
 	echo "Product ID write operation completed successfully"

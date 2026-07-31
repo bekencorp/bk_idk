@@ -73,7 +73,7 @@ fi
 PROPERTIES_LIB_BUILD_DIR=${SDK_BUILD_DIR}/properties_libs/${ARMINO_SOC}
 PROPERTIES_LIB_DIR=${PROPERTIES_PROJECT_DIR}
 WRITE_PRODUCT_ID_SCRIPT="${ARMINO_DIR}/tools/build_tools/write_product_id.py"
-PRODUCT_ID_FILE="${ARMINO_DIR}/properties/soc/${ARMINO_SOC}/spid.txt"
+PRODUCT_ID_FILE="${ARMINO_DIR}/properties/soc/spid.txt"
 NORMAL_BOOTLOADER_BIN="${ARMINO_DIR}/components/bk_libs/${ARMINO_SOC}/bootloader/normal_bootloader/bootloader.bin"
 AB_BOOTLOADER_BIN="${ARMINO_DIR}/components/bk_libs/${ARMINO_SOC}/bootloader/ab_bootloader/bootloader.bin"
 ATE_BOOTLOADER_BIN="${ARMINO_DIR}/components/bk_libs/${ARMINO_SOC}/bootloader/ate_bootloader/bootloader.bin"
@@ -136,7 +136,7 @@ if [ "${need_build_properties_lib}" == "1" ]; then
 	${ARMINO_DIR}/tools/build_tools/copy_internal_libs.sh ${ARMINO_SOC} ${ARMINO_DIR} ${PROPERTIES_LIB_BUILD_DIR} ${PROJECT}
 
 	if [ -f "${PRODUCT_ID_FILE}" ] && [ -f "${WRITE_PRODUCT_ID_SCRIPT}" ]; then
-		PRODUCT_STRING=$(cat "${PRODUCT_ID_FILE}")
+		PRODUCT_STRING=$(tr -d '\r\n' < "${PRODUCT_ID_FILE}")
 		PRODUCT_STRING=$(echo "${PRODUCT_STRING}" | xargs)
 
 		# Parse CONFIG_PRODUCT_STRING from sdkconfig
@@ -154,7 +154,7 @@ if [ "${need_build_properties_lib}" == "1" ]; then
 		if [ -n "${PRODUCT_STRING}" ]; then
 			if [ -f "${NORMAL_BOOTLOADER_BIN}" ]; then
 				echo "Writing product ID to ${NORMAL_BOOTLOADER_BIN}..."
-				python3 "${WRITE_PRODUCT_ID_SCRIPT}" "${NORMAL_BOOTLOADER_BIN}" "${PRODUCT_STRING}" --spid-offset-in-boot "${SPID_OFFSET_IN_BOOT}"
+				python3 -B "${WRITE_PRODUCT_ID_SCRIPT}" "${NORMAL_BOOTLOADER_BIN}" "${PRODUCT_STRING}" --spid-offset-in-boot "${SPID_OFFSET_IN_BOOT}"
 				if [ $? -eq 0 ]; then
 					echo "Product ID write to normal bootloader completed successfully"
 				else
@@ -164,7 +164,7 @@ if [ "${need_build_properties_lib}" == "1" ]; then
 			
 			if [ -f "${AB_BOOTLOADER_BIN}" ]; then
 				echo "Writing product ID to ${AB_BOOTLOADER_BIN}..."
-				python3 "${WRITE_PRODUCT_ID_SCRIPT}" "${AB_BOOTLOADER_BIN}" "${PRODUCT_STRING}" --spid-offset-in-boot "${SPID_OFFSET_IN_BOOT}"
+				python3 -B "${WRITE_PRODUCT_ID_SCRIPT}" "${AB_BOOTLOADER_BIN}" "${PRODUCT_STRING}" --spid-offset-in-boot "${SPID_OFFSET_IN_BOOT}"
 				if [ $? -eq 0 ]; then
 					echo "Product ID write to AB bootloader completed successfully"
 				else
@@ -174,7 +174,7 @@ if [ "${need_build_properties_lib}" == "1" ]; then
 
 			if [ -f "${ATE_BOOTLOADER_BIN}" ]; then
 				echo "Writing product ID to ${ATE_BOOTLOADER_BIN}..."
-				python3 "${WRITE_PRODUCT_ID_SCRIPT}" "${ATE_BOOTLOADER_BIN}" "${PRODUCT_STRING}" --spid-offset-in-boot "${SPID_OFFSET_IN_BOOT}"
+				python3 -B "${WRITE_PRODUCT_ID_SCRIPT}" "${ATE_BOOTLOADER_BIN}" "${PRODUCT_STRING}" --spid-offset-in-boot "${SPID_OFFSET_IN_BOOT}"
 				if [ $? -eq 0 ]; then
 					echo "Product ID write to ATE bootloader completed successfully"
 				else
@@ -182,6 +182,11 @@ if [ "${need_build_properties_lib}" == "1" ]; then
 				fi
 			fi
 		fi
+	else
+		echo "Error: missing required SPID config/script file"
+		echo "  PRODUCT_ID_FILE=${PRODUCT_ID_FILE}"
+		echo "  WRITE_PRODUCT_ID_SCRIPT=${WRITE_PRODUCT_ID_SCRIPT}"
+		exit 1
 	fi
 
 fi

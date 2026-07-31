@@ -43,6 +43,10 @@ import sys
 import os
 import argparse
 
+sys.dont_write_bytecode = True
+
+from spid_resolve import get_spid_list_path, resolve_spid
+
 # Global verbose flag
 _verbose = False
 DEFAULT_SPID_OFFSET_IN_BOOT = 8
@@ -77,6 +81,36 @@ def read_product_id_from_file(product_id_file):
         return "0"
     
     return product_id
+
+
+def resolve_product_id_from_vendor(soc_name, spid_txt_path, spid_list_path=None):
+    """Resolve product ID from vendor config and SOC mapping table."""
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    soc_name_lower = soc_name.strip().lower()
+    effective_spid_list = (
+        os.path.abspath(spid_list_path)
+        if spid_list_path
+        else get_spid_list_path(repo_root, soc_name_lower)
+    )
+
+    resolved = resolve_spid(
+        soc_name=soc_name,
+        spid_txt_path=os.path.abspath(spid_txt_path),
+        spid_list_path=effective_spid_list,
+    )
+    selected = resolved.selected_entry
+
+    if resolved.fallback_used:
+        log_error(
+            f"Warning: vendor '{resolved.requested_vendor_name}' is undefined for SOC {soc_name_lower}, "
+            f"fallback to non-buck default '{selected.vendor_name}' ({selected.spid_value_raw})"
+        )
+    else:
+        log(
+            f"Vendor '{resolved.requested_vendor_name}' resolved as '{selected.vendor_name}' "
+            f"({selected.spid_value_raw})"
+        )
+    return selected.spid_value_raw
 
 def calculate_crc8(data):
     """Calculate CRC8 for the given data
@@ -329,6 +363,12 @@ Backup:
                         help='Product ID (ASCII string, max 15 characters). If not provided, must use --product-id-file')
     parser.add_argument('--product-id-file', type=str, default=None,
                         help='Path to product_id.txt file to read product ID from')
+    parser.add_argument('--soc', type=str, default=None,
+                        help='SOC name for vendor-based SPID resolving (e.g., bk7239n)')
+    parser.add_argument('--spid-txt', type=str, default=None,
+                        help='Path to vendor config spid.txt (e.g., properties/soc/spid.txt)')
+    parser.add_argument('--spid-list', type=str, default=None,
+                        help='Optional explicit path to per-SOC spid_list.csv')
     parser.add_argument('--offset', type=str, default=None,
                         help='Offset address in binary file (default: auto-select based on CRC option)')
     parser.add_argument('--spid-offset-in-boot', type=str, default=None,
@@ -353,13 +393,22 @@ Backup:
     global _verbose
     _verbose = args.verbose
     
-    # Get product ID from argument or product_id.txt file
+    # Get product ID from vendor mapping, raw argument, or product_id.txt file
     product_id = args.product_id
-    if product_id is None:
-        if args.product_id_file is None:
-            log_error("Error: Either provide product_id as argument or use --product-id-file")
+    if args.soc and args.spid_txt:
+        try:
+            product_id = resolve_product_id_from_vendor(args.soc, args.spid_txt, args.spid_list)
+            log(f"Product ID resolved from vendor mapping: '{product_id}'")
+        except Exception as e:
+            log_error(f"Error resolving vendor SPID: {e}")
             return 1
-        
+    elif product_id is None:
+        if args.product_id_file is None:
+            log_error(
+                "Error: provide product_id, --product-id-file, or (--soc and --spid-txt)"
+            )
+            return 1
+
         try:
             product_id = read_product_id_from_file(args.product_id_file)
             log(f"Product ID read from {args.product_id_file}: '{product_id}'")
