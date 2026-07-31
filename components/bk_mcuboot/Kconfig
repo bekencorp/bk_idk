@@ -97,6 +97,10 @@ menu "BL2"
 			bool "decompress resume"
 			default y
 
+		config OTA_DBUS_WRITE
+			bool "BL2 overwrite decompress use dbus write when flash not encrypted"
+			default n
+			
 		config BL2_UPGRADE_WITH_APP
 		bool "Enable BL2 upgrade with application"
 		default n

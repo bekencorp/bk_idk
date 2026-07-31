@@ -327,7 +327,11 @@ boot_copy_region(struct boot_loader_state *state, const struct flash_area *fap_s
 				return -1;
 			}
 		}
+#if CONFIG_OTA_DBUS_WRITE
+		bk_flash_write_bytes(FLASH_VIRTUAL2PHY(vir_primary_all_start_address + COMPRESS_BLOCK_SIZE * block_idx), s_decompressed_buf, FLASH_VIRTUAL2PHY(COMPRESS_BLOCK_SIZE));
+#else
 		bk_flash_write_cbus(vir_primary_all_start_address + COMPRESS_BLOCK_SIZE * block_idx, (s_decompressed_buf), COMPRESS_BLOCK_SIZE);
+#endif
 
 #if CONFIG_DECOMPRESS_RESUME
 		back_flash(restart_block_idx);
@@ -359,7 +363,11 @@ boot_copy_region(struct boot_loader_state *state, const struct flash_area *fap_s
 		}
 
 		uint16_t write_size = (last_block_before_size + 31) / 32 * 32;
+#if CONFIG_OTA_DBUS_WRITE
+		bk_flash_write_bytes(FLASH_VIRTUAL2PHY(vir_primary_all_start_address + COMPRESS_BLOCK_SIZE * block_idx), s_decompressed_buf, FLASH_VIRTUAL2PHY(write_size));
+#else
 		bk_flash_write_cbus(vir_primary_all_start_address + COMPRESS_BLOCK_SIZE * block_idx, s_decompressed_buf, write_size);
+#endif
 	}
 
 #if CONFIG_DECOMPRESS_RESUME
