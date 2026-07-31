@@ -421,16 +421,18 @@ static int memcheck_merge_group(char *group_name, uint8_t offset, uint8_t count,
     }
 #endif
 
-    /* Step 1: copy all data2 values */
-    if (data2_count > 0) {
-        memcpy(&out[offset], &data2[offset], data2_count * sizeof(memcheck_data_t));
+    /* Step 1: copy all data2 values in memory order */
+    for (uint8_t i = 0; i < data2_count; i++) {
+        uint8_t data_idx = (uint8_t)(i ^ 1U);
+        out[offset + i] = data2[offset + data_idx];
     }
     used_count = data2_count;
     bk_printf("[memchk] %s data2=%d used=%d\r\n", group_name, data2_check_ret, used_count);
 
     /* Step 2: add unique data1 values not in data2 */
     for (uint8_t i = 0; i < data1_count; i++) {
-        uint16_t data1_value = data1[offset + i].raw;
+        uint8_t data_idx = (uint8_t)(i ^ 1U);
+        uint16_t data1_value = data1[offset + data_idx].raw;
         bool is_duplicate = false;
 
         for (uint8_t j = 0; j < used_count; j++) {
