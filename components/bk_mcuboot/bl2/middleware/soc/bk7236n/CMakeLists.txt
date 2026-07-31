@@ -11,6 +11,12 @@ set(platform_bl2_src
 		cmsis_core/mpu_cfg.c
 )
 
+if(CONFIG_DEEP_LV)
+	list(APPEND platform_bl2_src
+		${IDK_PATH}/middleware/driver/deep_lv/deep_lv_reserve.c
+	)
+endif()
+
 target_compile_definitions(platform_bl2
 	PUBLIC
 		-DMCUBOOT_IMAGE_ACCESS_HOOKS=1
@@ -38,6 +44,7 @@ set(platform_bl2_inc
 	PRIVATE
 		.
 		${PLATFORM_DIR}/..
+		${IDK_PATH}/middleware/driver/deep_lv
 		${BL2_COMPONENTS_PATH}/native_drivers
 		${BL2_COMPONENTS_PATH}/bk_mcuboot/
 		${BL2_COMPONENTS_PATH}/bk_mcuboot/include

@@ -26,6 +26,7 @@
 
 #if CONFIG_DEEP_LV
 #include "deep_lv.h"
+#include "deep_lv_reserve.h"
 #endif
 
 #include "sys_hal.h"
@@ -128,13 +129,15 @@ __IRAM_SEC void SystemInit_iram (void)
 #endif
 }
 
+#if CONFIG_DEEP_LV_FAST_BOOT
 extern uint32_t __STACK_LIMIT;
-__IRAM_SEC void deep_lv_fast_boot(void)
+void deep_lv_fast_boot(void)
 {
 	void Reset_Handler(void);
 	uint32_t memory_is_retention(void);
 	if(memory_is_retention())
 	{
+		sys_hal_mem_check_bad_point_value_restore();
 		__set_MSPLIM((uint32_t)(&__STACK_LIMIT));
 		wdt_hal_close();
 		timer_hal_us_init_iram();
@@ -147,3 +150,4 @@ __IRAM_SEC void deep_lv_fast_boot(void)
 		Reset_Handler();
 	}
 }
+#endif

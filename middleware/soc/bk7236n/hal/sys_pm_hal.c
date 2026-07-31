@@ -52,19 +52,15 @@
 #include "sys_persist_config.h"
 
 #if CONFIG_DEEP_LV_FAST_BOOT
+#include "deep_lv_reserve.h"
+
 extern uint32_t __MSPTop;
 void deep_lv_fast_boot(void);
 
-#define BK7236N_DEEP_LV_FAST_BOOT_MSP_ADDR   (0x2807FFF8u)
-#define BK7236N_DEEP_LV_FAST_BOOT_ENTRY_ADDR (0x2807FFFCu)
-
 void sys_hal_deep_lv_fast_boot_vector_init(void)
 {
-	volatile uint32_t *const fast_boot_msp = (volatile uint32_t *)BK7236N_DEEP_LV_FAST_BOOT_MSP_ADDR;
-	volatile uint32_t *const fast_boot_entry = (volatile uint32_t *)BK7236N_DEEP_LV_FAST_BOOT_ENTRY_ADDR;
-
-	*fast_boot_msp = (uint32_t)&__MSPTop;
-	*fast_boot_entry = (uint32_t)&deep_lv_fast_boot;
+	g_deep_lv_reserve.app_msp_addr = (uint32_t)&__MSPTop;
+	g_deep_lv_reserve.app_entry_addr = (uint32_t)&deep_lv_fast_boot;
 }
 #endif
 
@@ -846,8 +842,7 @@ static inline void flash_ab_info_restore(flash_ab_reg_t *p_flash_ab_reg)
 #endif
 
 #if CONFIG_DEEP_LV
-static uint32_t s_sys_saved_regs[12] = {0};
-static uint32_t s_sys_ana_regs[16] = {0};
+#include "deep_lv_reserve.h"
 
 static void _deep_lv_enter_(void)
 {
@@ -877,50 +872,46 @@ void sys_hal_deep_lv_enter(void)
 
 void sys_hal_regs_save(void)
 {
-	s_sys_saved_regs[0] = sys_ll_get_cpu_clk_div_mode1_value(); // reg_0x8
-	s_sys_saved_regs[1] = sys_ll_get_cpu_clk_div_mode2_value(); // reg_0x9
-	s_sys_saved_regs[2] = sys_ll_get_cpu_26m_wdt_clk_div_value(); // reg_0xa
-	s_sys_saved_regs[3] = sys_ll_get_cpu_anaspi_freq_value(); // reg_0xb
-	s_sys_saved_regs[4] = sys_ll_get_cpu_device_clk_enable_value(); // reg_0xc
-	s_sys_saved_regs[5] = sys_ll_get_cpu_device_mem_ctrl2_value(); // reg_0xf
-	s_sys_saved_regs[6] = sys_ll_get_cpu_power_sleep_wakeup_value(); // reg_0x10
-	s_sys_saved_regs[7] = sys_ll_get_cpu0_lv_sleep_cfg_value(); // reg_0x11
-	s_sys_saved_regs[8] = sys_ll_get_cpu_device_mem_ctrl3_value(); // reg_0x12
-	s_sys_saved_regs[9] = sys_ll_get_cpu0_int_0_31_en_value(); // reg_0x20
-	s_sys_saved_regs[10] = sys_ll_get_cpu0_int_32_63_en_value(); // reg_0x21
+	g_deep_lv_reserve.dig_regs[0] = sys_ll_get_cpu_clk_div_mode1_value(); // reg_0x8
+	g_deep_lv_reserve.dig_regs[1] = sys_ll_get_cpu_clk_div_mode2_value(); // reg_0x9
+	g_deep_lv_reserve.dig_regs[2] = sys_ll_get_cpu_26m_wdt_clk_div_value(); // reg_0xa
+	g_deep_lv_reserve.dig_regs[3] = sys_ll_get_cpu_anaspi_freq_value(); // reg_0xb
+	g_deep_lv_reserve.dig_regs[4] = sys_ll_get_cpu_device_clk_enable_value(); // reg_0xc
+	g_deep_lv_reserve.dig_regs[5] = sys_ll_get_cpu_device_mem_ctrl2_value(); // reg_0xf
+	g_deep_lv_reserve.dig_regs[6] = sys_ll_get_cpu_power_sleep_wakeup_value(); // reg_0x10
+	g_deep_lv_reserve.dig_regs[7] = sys_ll_get_cpu0_lv_sleep_cfg_value(); // reg_0x11
+	g_deep_lv_reserve.dig_regs[8] = sys_ll_get_cpu_device_mem_ctrl3_value(); // reg_0x12
+	g_deep_lv_reserve.dig_regs[9] = sys_ll_get_cpu0_int_0_31_en_value(); // reg_0x20
+	g_deep_lv_reserve.dig_regs[10] = sys_ll_get_cpu0_int_32_63_en_value(); // reg_0x21
 
-	for (uint32_t i = 0; i < 16; i++) {
-		s_sys_ana_regs[i] = sys_hal_analog_get_iram(ANALOG_REG0 + i);
-		REG_WRITE(0x2807E400 + (i << 2), s_sys_ana_regs[i]);//save analog regs to bootloader stack
+	for (uint32_t i = 0; i < SYS_ANA_REGS_AREA_NUM; i++) {
+		g_deep_lv_reserve.ana_regs[i] = sys_hal_analog_get_iram(ANALOG_REG0 + i);
 	}
-	// Used to check if memory (contents) have changed.
-	REG_WRITE(0x2807E400 + (16 << 2), 0x5A5A5A5A);
-	REG_WRITE(0x2807E400 + (17 << 2), 0xA5A5A5A5);
 
 }
 
 void sys_hal_regs_restore(void)
 {
-	s_sys_saved_regs[0] |= (0x1 << 4);
-	s_sys_saved_regs[0] |= (0x3 << 0);
-	sys_ll_set_cpu_clk_div_mode1_value(s_sys_saved_regs[0]); // reg_0x8
-//	sys_ll_set_cpu_clk_div_mode2_value(s_sys_saved_regs[1]); // reg_0x9
-	sys_ll_set_cpu_26m_wdt_clk_div_value(s_sys_saved_regs[2]); // reg_0xa
-	sys_ll_set_cpu_anaspi_freq_value(s_sys_saved_regs[3]); // reg_0xb
-	sys_ll_set_cpu_device_clk_enable_value(s_sys_saved_regs[4]); // reg_0xc
-	sys_ll_set_cpu_device_mem_ctrl2_value(s_sys_saved_regs[5]); // reg_0xf
-	sys_ll_set_cpu_power_sleep_wakeup_value(s_sys_saved_regs[6]); // reg_0x10
-	sys_ll_set_cpu0_lv_sleep_cfg_value(s_sys_saved_regs[7]); // reg_0x11
-	sys_ll_set_cpu_device_mem_ctrl3_value(s_sys_saved_regs[8]); // reg_0x12
-	sys_ll_set_cpu0_int_0_31_en_value(s_sys_saved_regs[9]); // reg_0x20
-	sys_ll_set_cpu0_int_32_63_en_value(s_sys_saved_regs[10]); // reg_0x21
+	g_deep_lv_reserve.dig_regs[0] |= (0x1 << 4);
+	g_deep_lv_reserve.dig_regs[0] |= (0x3 << 0);
+	sys_ll_set_cpu_clk_div_mode1_value(g_deep_lv_reserve.dig_regs[0]); // reg_0x8
+//	sys_ll_set_cpu_clk_div_mode2_value(g_deep_lv_reserve.dig_regs[1]); // reg_0x9
+	sys_ll_set_cpu_26m_wdt_clk_div_value(g_deep_lv_reserve.dig_regs[2]); // reg_0xa
+	sys_ll_set_cpu_anaspi_freq_value(g_deep_lv_reserve.dig_regs[3]); // reg_0xb
+	sys_ll_set_cpu_device_clk_enable_value(g_deep_lv_reserve.dig_regs[4]); // reg_0xc
+	sys_ll_set_cpu_device_mem_ctrl2_value(g_deep_lv_reserve.dig_regs[5]); // reg_0xf
+	sys_ll_set_cpu_power_sleep_wakeup_value(g_deep_lv_reserve.dig_regs[6]); // reg_0x10
+	sys_ll_set_cpu0_lv_sleep_cfg_value(g_deep_lv_reserve.dig_regs[7]); // reg_0x11
+	sys_ll_set_cpu_device_mem_ctrl3_value(g_deep_lv_reserve.dig_regs[8]); // reg_0x12
+	sys_ll_set_cpu0_int_0_31_en_value(g_deep_lv_reserve.dig_regs[9]); // reg_0x20
+	sys_ll_set_cpu0_int_32_63_en_value(g_deep_lv_reserve.dig_regs[10]); // reg_0x21
 
 	sys_ll_set_ana_reg8_spi_latch1v(1);
 	/* restore analog regs */
 	for (uint32_t i = 0; i < 9; i++) {
 		if(( i == 0)||( i == 5)||( i == 7)||( i == 8))
 			continue;
-		sys_hal_analog_set_iram(ANALOG_REG0 + i, s_sys_ana_regs[i]);
+		sys_hal_analog_set_iram(ANALOG_REG0 + i, g_deep_lv_reserve.ana_regs[i]);
 	}
 	/**
 	 * attention:
@@ -928,7 +919,7 @@ void sys_hal_regs_restore(void)
 	 * and don't forget disable it after that.
 	 */
 	for (uint32_t i = 9; i < 16; i++) {
-		sys_hal_analog_set_iram(ANALOG_REG0 + i, s_sys_ana_regs[i]);
+		sys_hal_analog_set_iram(ANALOG_REG0 + i, g_deep_lv_reserve.ana_regs[i]);
 	}
 	sys_ll_set_ana_reg8_spi_latch1v(0);
 }
@@ -1172,6 +1163,7 @@ void sys_hal_enter_low_voltage(void)
 	sys_hal_deep_lv_enter();
 	__NOP();
 	if (dlv_is_startup_iram()) {
+		sys_hal_mem_check_bad_point_value_save();
 		arch_deep_sleep();
 	}
 	bootup_restore_time_us = bootloader_to_wfi_time_cost_us();
@@ -1710,5 +1702,9 @@ void sys_hal_low_power_hardware_init()
 
 	/*rtc on bk7236N and bk7239n requires spi_timerwken*/
 	sys_hal_set_ana_reg9_spi_timerwken(1);
+
+	#if CONFIG_DEEP_LV
+	sys_hal_mem_check_bad_point_addr_get();
+	#endif
 
 }

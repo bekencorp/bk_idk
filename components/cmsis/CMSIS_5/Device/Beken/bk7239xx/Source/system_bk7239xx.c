@@ -26,7 +26,12 @@
 
 #if CONFIG_DEEP_LV
 #include "deep_lv.h"
+#include "deep_lv_reserve.h"
 #endif
+
+#include "sys_hal.h"
+#include "timer_hal.h"
+#include "wdt_hal.h"
 /*----------------------------------------------------------------------------
   Define clocks
  *----------------------------------------------------------------------------*/
@@ -124,5 +129,27 @@ __IRAM_SEC void SystemInit_iram (void)
 #endif
 }
 
+#if CONFIG_DEEP_LV_FAST_BOOT
+extern uint32_t __STACK_LIMIT;
+void deep_lv_fast_boot(void)
+{
+	void Reset_Handler(void);
+	uint32_t memory_is_retention(void);
+	if(memory_is_retention())
+	{
+		sys_hal_mem_check_bad_point_value_restore();
+		__set_MSPLIM((uint32_t)(&__STACK_LIMIT));
+		wdt_hal_close();
+		timer_hal_us_init_iram();
+		sys_hal_enable_pll_iram();
+		sys_hal_enable_high_freq_iram();
+		SystemInit_iram();
+	}
+	else
+	{
+		Reset_Handler();
+	}
+}
+#endif
 // eof
 

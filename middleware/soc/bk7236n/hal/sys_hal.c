@@ -28,6 +28,9 @@
 #include "bk_misc.h"
 #include "driver/qspi.h"
 #include "sys_persist_config.h"
+#if CONFIG_DEEP_LV
+#include "deep_lv_reserve.h"
+#endif
 
 #if CONFIG_SOC_BK7236_SMP_TEMP
 #include "cpu_id.h"
@@ -2856,9 +2859,10 @@ void sys_hal_set_cpu_clk(uint32_t cpu_clk)
 	}
 }
 
+#if CONFIG_DEEP_LV
 __IRAM_SEC void sys_hal_enable_pll_iram(void)
 {
-	uint32_t ana_reg1_val = REG_READ(0x2807e400 + (1 << 2));  // restore sys0x41 from ram
+	uint32_t ana_reg1_val = g_deep_lv_reserve.ana_regs[1];  // restore sys0x41 from deep_lv_reserve
 	uint32_t ana_reg5_val = sys_hal_analog_get(5);  // sys0x45 corresponds to ana_reg_5
 	sys_hal_analog_set(1, ana_reg1_val);
 
@@ -2878,5 +2882,15 @@ __IRAM_SEC void sys_hal_enable_high_freq_iram(void)
 	sys_ll_set_cpu_clk_div_mode1_clkdiv_core(3);
 	sys_ll_set_cpu_clk_div_mode1_cksel_core(1);
 }
+#else
+__IRAM_SEC void sys_hal_enable_pll_iram(void)
+{
+	
+}
 
+__IRAM_SEC void sys_hal_enable_high_freq_iram(void)
+{
+	
+}
+#endif
 /**  SCR End  */

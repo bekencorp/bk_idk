@@ -53,6 +53,7 @@
 
 #if CONFIG_DEEP_LV
 #include "deep_lv.h"
+#include "deep_lv_reserve.h"
 #endif
 
 #if CONFIG_SUPPORT_PSRAM_XIP
@@ -387,11 +388,12 @@ static uint32_t relocate_vector_table(void)
     return vtor_addr;
 }
 
+#if CONFIG_DEEP_LV
 uint32_t memory_is_retention(void)
 {
-	return ((REG_READ(0x2807E400 + (16 << 2)) == 0x5A5A5A5A)
-			&& (REG_READ(0x2807E400 + (17 << 2)) == 0xA5A5A5A5));
+    return (g_deep_lv_reserve.magic == DEEP_LV_RESERVE_MAGIC);
 }
+#endif
 
 /*----------------------------------------------------------------------------
   Reset Handler called on controller reset

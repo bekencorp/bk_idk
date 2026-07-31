@@ -27,6 +27,9 @@
 #include <gpio_driver.h>
 #include "bk_misc.h"
 #include "sys_persist_config.h"
+#if CONFIG_DEEP_LV
+#include "deep_lv_reserve.h"
+#endif
 
 #if CONFIG_SOC_BK7239N_SMP_TEMP
 #include "cpu_id.h"
@@ -2917,3 +2920,39 @@ void sys_hal_set_cpu_clk(uint32_t cpu_clk)
 		sys_hal_switch_cpu_bus_freq(PM_CPU_FRQ_240M);
 	}
 }
+
+#if CONFIG_DEEP_LV
+__IRAM_SEC void sys_hal_enable_pll_iram(void)
+{
+	uint32_t ana_reg1_val = g_deep_lv_reserve.ana_regs[1];  // restore sys0x41 from deep_lv_reserve
+	uint32_t ana_reg5_val = sys_hal_analog_get(5);  // sys0x45 corresponds to ana_reg_5
+	sys_hal_analog_set(1, ana_reg1_val);
+
+	// 1. Enable PLL (set bit 5 of ana_reg_5)
+	ana_reg5_val |= (1 << 5);  // Set bit 5
+	sys_hal_analog_set(5, ana_reg5_val);
+
+	// 2. Synchronize ASIC
+	sys_ll_set_cpu_device_clk_enable_dplldiv_cken(1);
+}
+
+__IRAM_SEC void sys_hal_enable_high_freq_iram(void)
+{
+	sys_ll_set_cpu_clk_div_mode2_ckdiv_flash(0x0);
+	sys_ll_set_cpu_clk_div_mode2_cksel_flash(0x2);//some flash ,such as : flash mid = 0xC86516 ,max freq is 104M
+
+	sys_ll_set_cpu_clk_div_mode1_clkdiv_core(3);
+	sys_ll_set_cpu_clk_div_mode1_cksel_core(1);
+}
+#else
+__IRAM_SEC void sys_hal_enable_pll_iram(void)
+{
+
+}
+
+__IRAM_SEC void sys_hal_enable_high_freq_iram(void)
+{
+
+}
+#endif
+/**  SCR End  */

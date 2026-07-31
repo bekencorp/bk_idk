@@ -26,6 +26,9 @@
 #include <driver/wdt_hal.h>
 #include "sys_driver.h"
 #include "timer_hal.h"
+#if CONFIG_DEEP_LV
+#include "deep_lv_reserve.h"
+#endif
 
 #define ENTRY_SECTION                    __attribute__((section(".fix.reset_entry")))
 #define SYSTEM_BASE_ADDR                 (0x44010000)
@@ -263,24 +266,27 @@ static void bl2_deep_lv_boot(void)
     while (1) {}
 }
 
+#if CONFIG_DEEP_LV
 static uint32_t memory_is_retention(void)
 {
-	return ((REG_READ(0x2807E400 + (16 << 2)) == 0x5A5A5A5A)
-		    && (REG_READ(0x2807E400 + (17 << 2)) == 0xA5A5A5A5));
+    return (g_deep_lv_reserve.magic == DEEP_LV_RESERVE_MAGIC);
 }
+#endif
 
 __NO_RETURN ENTRY_SECTION __attribute__((naked)) void Reset_Handler(void)
 {
+#if CONFIG_DEEP_LV
     if ((AON_PMU_R7B_REG & DLV_STARTUP_BIT) && memory_is_retention()) {
         __set_MSP(BL2_DLV_STACK_TOP);
         __set_MSPLIM(BL2_DLV_IRAM_START);
-
+        sys_hal_mem_check_bad_point_value_restore();
         wdt_hal_force_feed();
         timer_hal_us_init_iram();
         sys_hal_enable_pll_iram();
 
         bl2_deep_lv_boot();
     }
+#endif
 
     /* Normal boot path */
     __set_MSPLIM((uint32_t)(&__STACK_LIMIT));

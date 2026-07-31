@@ -47,6 +47,7 @@
 #include "arch_interrupt.h"
 #if CONFIG_DEEP_LV
 #include "deep_lv.h"
+#include "deep_lv_reserve.h"
 #endif
 
 #define TAG "arch"
@@ -366,6 +367,13 @@ static inline void boot_mem_check(void)
 		}
 	}
 }
+
+#if CONFIG_DEEP_LV
+uint32_t memory_is_retention(void)
+{
+    return (g_deep_lv_reserve.magic == DEEP_LV_RESERVE_MAGIC);
+}
+#endif
 
 /*----------------------------------------------------------------------------
   Reset Handler called on controller reset
