@@ -294,14 +294,30 @@ cleanup:
 
 static int memcheck_check_data_pattern(memcheck_data_t *datas, uint8_t offset, uint8_t count, char *data_name, char *group_name)
 {
-    /* Error1: flag should be 0 (bit15 must be 0 in input data) */
-    /* Error2: there is a empty value in the middle of non-empty values */
+    /* Error1: valid bit and address field mismatch */
+    /* Error2: valid entries must be contiguous from addr0 (not UART rx index order) */
     /* Error3: duplicate non-empty value */
 #if CONFIG_MEMCHECK_ADAPTER_FOR_QFN40
     /* Error4: the last data item is not empty */
 #endif
 
-    uint8_t non_empty_count = 0;
+    uint8_t valid_bit;
+
+    if (strcmp(group_name, "smem0") == 0 || strcmp(group_name, "smem1") == 0) {
+        valid_bit = 14;
+    } else if (strcmp(group_name, "cpu0_0") == 0 || strcmp(group_name, "wifi") == 0) {
+        valid_bit = 13;
+    } else if (strcmp(group_name, "cpu0_1") == 0) {
+        valid_bit = 11;
+    } else if (strcmp(group_name, "encp") == 0 || strcmp(group_name, "psram") == 0) {
+        valid_bit = 12;
+    } else {
+        valid_bit = 15;
+    }
+
+    uint16_t valid_mask = (uint16_t)(1U << valid_bit);
+    uint16_t addr_mask = (uint16_t)(valid_mask - 1);
+    uint16_t check_mask = (uint16_t)(valid_mask | addr_mask);
 
 #if CONFIG_MEMCHECK_ADAPTER_FOR_QFN40
     if (datas[offset + count - 1].raw != 0) {
@@ -312,30 +328,56 @@ static int memcheck_check_data_pattern(memcheck_data_t *datas, uint8_t offset, u
 
     for (uint8_t idx = 0; idx < count; idx++) {
         memcheck_data_t *item = &datas[offset + idx];
+        uint16_t addr = item->raw & addr_mask;
 
-        // except smem2, smem3, smem4
-        if (item->bits.flag != 0
-            && strcmp(group_name, "smem2") != 0
-            && strcmp(group_name, "smem3") != 0
-            && strcmp(group_name, "smem4") != 0) {
-            bk_printf("[memchk] %s %s error: flag bit should be 0 (value=0x%04X) at index %d\r\n",
+        if ((item->raw & ~check_mask) != 0) {
+            bk_printf("[memchk] %s %s error: reserved bits set (value=0x%04X) at index %d\r\n",
                       group_name, data_name, item->raw, idx);
             return -1;
         }
 
-        if (item->raw != 0) {
-            if (non_empty_count != idx) {
-                bk_printf("[memchk] %s %s error: there is a empty value in the middle of non-empty values\r\n",
-                          group_name, data_name);
+        if ((item->raw & valid_mask) != 0) {
+            if (addr == 0) {
+                bk_printf("[memchk] %s %s error: valid bit set but address is empty (value=0x%04X) at index %d\r\n",
+                          group_name, data_name, item->raw, idx);
                 return -1;
             }
 
-            for (uint8_t i = 0; i < non_empty_count; i++) {
-                if (datas[offset + i].raw == item->raw) {
+            if (strcmp(group_name, "smem4") == 0) {
+                uint32_t ram_addr = (uint32_t)addr << 2;
+
+                if (ram_addr >= 0x1EA00U && ram_addr <= 0x1EBFFU) {
+                    bk_printf("[memchk] %s %s error: address in forbidden region (value=0x%04X, ram=0x%08X) at index %d\r\n",
+                              group_name, data_name, item->raw, ram_addr, idx);
+                    return -1;
+                }
+            }
+
+            for (uint8_t i = 0; i < idx; i++) {
+                if (((datas[offset + i].raw & valid_mask) != 0) && (datas[offset + i].raw == item->raw)) {
                     bk_printf("[memchk] %s %s error: duplicate non-empty value 0x%04X at index %d and %d\r\n",
                               group_name, data_name, item->raw, i, idx);
                     return -1;
                 }
+            }
+        } else if (addr != 0) {
+            bk_printf("[memchk] %s %s error: valid bit clear but address is non-zero (value=0x%04X) at index %d\r\n",
+                      group_name, data_name, item->raw, idx);
+            return -1;
+        }
+    }
+
+    uint8_t non_empty_count = 0;
+    for (uint8_t mem_idx = 0; mem_idx < count; mem_idx++) {
+        /* UART packs each 16-bit slot as big-endian 32-bit: mem[0,1,2,3] -> uart[1,0,3,2] */
+        uint8_t data_idx = (uint8_t)(mem_idx ^ 1U);
+        memcheck_data_t *item = &datas[offset + data_idx];
+
+        if ((item->raw & valid_mask) != 0) {
+            if (mem_idx != non_empty_count) {
+                bk_printf("[memchk] %s %s error: there is a empty value in the middle of non-empty values\r\n",
+                          group_name, data_name);
+                return -1;
             }
 
             non_empty_count++;
