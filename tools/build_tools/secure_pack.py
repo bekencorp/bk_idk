@@ -68,7 +68,7 @@ def copy_file(src, dst):
 	if os.path.exists(f'{src}') == True:
 		shutil.copy(f'{src}', f'{dst}')
 
-def pack(armino_soc, armino_path, build_path, project_dir):
+def pack(armino_soc, armino_path, build_path, project_dir, debug=False):
 	armino_path = os.path.abspath(armino_path)
 	build_path = os.path.abspath(build_path)
 	project_dir = os.path.abspath(project_dir)
@@ -76,11 +76,13 @@ def pack(armino_soc, armino_path, build_path, project_dir):
 	tools_dir = f'{armino_path}/tools/env_tools'
 	base_cfg_dir = f'{armino_path}/middleware/boards/{armino_soc}'
 	prefered_cfg_dir = f'{project_dir}/config'
-	debug = True
 
 	if (debug):
 		logging.basicConfig()
 		logging.getLogger().setLevel(logging.DEBUG)
+	else:
+		logging.basicConfig()
+		logging.getLogger().setLevel(logging.INFO)
 
 	logging.debug(f'tools_dir={tools_dir}')
 	logging.debug(f'base_cfg_dir={base_cfg_dir}')
@@ -127,7 +129,7 @@ def pack(armino_soc, armino_path, build_path, project_dir):
 		logging.debug(f'Copy BL2 bin to {_BUILD_DIR}')
 		copy_files('.bin', BL2_BIN_DIR, _BUILD_DIR)
 	
-	run_cmd(f'{BKSECURE} pack all --debug')
+	run_cmd(f'{BKSECURE} pack all {debug_option}')
 
 	'''
 	logging.debug(f'copy binaries')
@@ -169,8 +171,9 @@ if __name__ == '__main__':
 	armino_path = sys.argv[2]
 	build_path = sys.argv[3]
 	project_dir = sys.argv[4]
+	debug = len(sys.argv) > 5 and sys.argv[5] == '--debug'
 	print(f'=================================================================armino_soc={armino_soc}')
 	print(f'armino_path={armino_path}')
 	print(f'build_path={build_path}')
 	print(f'project_dir={project_dir}')
-	pack(armino_soc, armino_path, build_path, project_dir)
+	pack(armino_soc, armino_path, build_path, project_dir, debug)

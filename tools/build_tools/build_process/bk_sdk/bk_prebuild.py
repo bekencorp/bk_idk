@@ -102,7 +102,7 @@ def resolve_project_config_dir(soc: str, armino_dir: Path, project_dir: Path) ->
     return fallback
 
 
-def prebuild(soc, armino_dir, project_dir, build_dir, secure):
+def prebuild(soc, armino_dir, project_dir, build_dir, secure, debug=False):
 
     middleware_soc_cfg_dir = armino_dir / "middleware/boards" / soc
     project_config_dir = resolve_project_config_dir(soc, armino_dir, project_dir)
@@ -130,7 +130,8 @@ def prebuild(soc, armino_dir, project_dir, build_dir, secure):
     install_configs(middleware_soc_cfg_dir, build_dir, secure)
     install_configs(project_config_dir, build_dir, secure)
     logger.debug("partition pre-processing")
-    ret = os.system(f"python3 {bk_utils_script} gen all --debug")
+    debug_option = " --debug" if debug else ""
+    ret = os.system(f"python3 {bk_utils_script} gen all {debug_option}")
     if ret != 0:
         raise RuntimeError(f"run {bk_utils_script} fail")
 
@@ -143,11 +144,12 @@ if __name__ == "__main__":
     parser.add_argument('--project_dir', type=Path, help='The project dir')
     parser.add_argument('--build_dir', type=Path, help='The build dir')
     parser.add_argument('--secure', type=int, help='Whether it is a secure build')
+    parser.add_argument('--debug', action='store_true', help='Enable debug logging')
     args = parser.parse_args()
 
     sys.path.append(str(Path(__file__).parent.parent))
     os.chdir(os.getenv("ARMINO_PATH", "."))
-    prebuild(args.soc, args.armino_dir, args.project_dir, args.build_dir, args.secure)
+    prebuild(args.soc, args.armino_dir, args.project_dir, args.build_dir, args.secure, args.debug)
 
     if args.secure == 1:
         partitions_dir = os.path.join(args.build_dir, '..',  "partitions")

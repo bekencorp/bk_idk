@@ -95,7 +95,14 @@ endif
 export COMPILER_TOOLCHAIN_PATH := $(COMPILER_TOOLCHAIN_PATH)
 -include $(PROJECT_DIR)/pj_config.mk
 
-.PHONY: all_targets
+.PHONY: all_targets debug
+
+ifneq ($(filter debug,$(MAKECMDGOALS)),)
+BUILD_DEBUG := --debug
+endif
+
+debug:
+	@:
 
 help:
 	@echo ""
@@ -207,7 +214,7 @@ gen_sys_persist_config: $(sys_persist_config_script)
 
 security_prebuild: $(security_prebuild_script) gen_sys_persist_config
 	@mkdir -p $(SECURITY_PREBUILD_DIR)
-	@python3 $(security_prebuild_script) --soc $(ARMINO_SOC_NAME) --project_dir $(PROJECT_DIR) --armino_dir $(ARMINO_DIR) --build_dir $(SECURITY_PREBUILD_DIR) --secure $(is_secure_build)
+	@python3 $(security_prebuild_script) --soc $(ARMINO_SOC_NAME) --project_dir $(PROJECT_DIR) --armino_dir $(ARMINO_DIR) --build_dir $(SECURITY_PREBUILD_DIR) --secure $(is_secure_build) $(BUILD_DEBUG)
 
 nonsecure_prebuild: print_partitions security_prebuild
 
@@ -237,7 +244,7 @@ $(ARMINO_SOC_NAME)_s_cp0: security_prebuild
 
 secure_package_script := $(ARMINO_DIR)/tools/build_tools/secure_pack.py
 secure_package: $(secure_package_script) secure_pack_sys_persist_config $(ARMINO_SOC_NAME)_s_cp0 ${PRE_BUILD_TARGET}
-	@python3 $(secure_package_script) $(ARMINO_SOC_NAME) $(ARMINO_DIR) $(PROJECT_BUILD_DIR) $(PROJECT_DIR)
+	@python3 $(secure_package_script) $(ARMINO_SOC_NAME) $(ARMINO_DIR) $(PROJECT_BUILD_DIR) $(PROJECT_DIR) $(BUILD_DEBUG)
 
 nonsecure_build: nonsecure_package
 secure_build: secure_package

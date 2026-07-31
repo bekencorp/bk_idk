@@ -330,5 +330,7 @@ def steps_gen_ota_bin(soc_type, flash_aes_type, flash_aes_key, pubkey_pem, privk
         flash_crc_en = True
     pack = PackJson('pack.json')
     pack.only_ota_packers()
+    logging.info(f"generating ota bin ...")
     pack.pack_ota_bin_only(flash_aes_key, flash_crc_en, None, flash_aes_type, pubkey_pem, privkey_pem)
     pack.install_bin()
+    logging.info(f"generate ota bin done")

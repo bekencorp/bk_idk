@@ -34,7 +34,6 @@ class PackRawOta(Pack):
             self.ota_encrypt_en = o.get_encrypt()
             self.ota_flash_crc_en = o.get_flash_crc_en()
         else:
-            logging.warning('ota.csv not found, disable OTA image encryption')
             self.ota_encrypt_en = False
             self.ota_flash_crc_en = False
         if os.path.exists('security.csv'):
@@ -42,7 +41,6 @@ class PackRawOta(Pack):
             self.flash_crc_en = s.flash_crc_en
             self.flash_aes_key = s.flash_aes_key if s.is_flash_aes_fixed() else None
         else:
-            logging.warning('security.csv not found, use defaults for pack raw ota')
             self.flash_crc_en = True
             self.flash_aes_key = None
         self._ota_magic = 'OTA ENC ' if self.ota_encrypt_en else 'BK723658'

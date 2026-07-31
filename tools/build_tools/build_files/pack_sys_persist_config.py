@@ -41,29 +41,29 @@ def pack_sys_persist_config(
     sys_persist_config_bin = sys_persist_config_path / "sys_persist_config_4k.bin"
     
     if not sys_persist_config_bin.exists():
-        logger.info(f"sys_persist_config_4k.bin 不存在于 {sys_persist_config_bin}，跳过插入操作")
+        logger.warning(f"sys_persist_config_4k.bin not found at {sys_persist_config_bin}, skip insertion")
         return True
     
     # 构建 app.bin 路径
     app_bin_path = project_build_path / armino_soc / "app.bin"
     
     if not app_bin_path.exists():
-        logger.warning(f"app.bin 不存在于 {app_bin_path}，无法插入 sys_persist_config_4k.bin")
+        logger.warning(f"app.bin not found at {app_bin_path}, cannot insert sys_persist_config_4k.bin")
         return False
     
     try:
         # 读取 sys_persist_config_4k.bin 内容
-        logger.info(f"读取 {sys_persist_config_bin}")
+        logger.debug(f"Reading {sys_persist_config_bin}")
         with sys_persist_config_bin.open("rb") as f:
             sys_persist_data = f.read()
         
         # 读取 app.bin 内容
-        logger.info(f"读取 {app_bin_path}")
+        logger.debug(f"Reading {app_bin_path}")
         with app_bin_path.open("rb") as f:
             app_bin_data = f.read()
         
         # 将 sys_persist_config_4k.bin 插入到 app.bin 头部
-        logger.info(f"将 sys_persist_config_4k.bin 插入到 {app_bin_path} 头部")
+        logger.debug(f"Inserting sys_persist_config_4k.bin at the head of {app_bin_path}")
         with app_bin_path.open("wb") as f:
             # 先写入 sys_persist_config_4k.bin 的内容
             f.write(sys_persist_data)
@@ -75,14 +75,14 @@ def pack_sys_persist_config(
         sys_persist_size = len(sys_persist_data)
         original_app_size = len(app_bin_data)
         
-        logger.info(f"成功插入 {sys_persist_size} 字节到 app.bin 头部")
-        logger.info(f"原 app.bin 大小: {original_app_size} 字节")
-        logger.info(f"app.bin 总大小: {app_bin_size} 字节")
+        logger.debug(f"Successfully inserted {sys_persist_size} bytes at the head of app.bin")
+        logger.debug(f"Original app.bin size: {original_app_size} bytes")
+        logger.debug(f"Total app.bin size: {app_bin_size} bytes")
         
         return True
         
     except Exception as e:
-        logger.error(f"插入 sys_persist_config_4k.bin 到 app.bin 头部时出错: {e}")
+        logger.error(f"Failed to insert sys_persist_config_4k.bin at the head of app.bin: {e}")
         return False
 
 
