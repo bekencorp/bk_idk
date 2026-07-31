@@ -115,7 +115,7 @@ static inline void flash_ll_write_status_reg(flash_hw_t *hw, uint8_t sr_width, u
 		if (sr_width == 1) {
 			flash_ll_set_op_cmd(hw, FLASH_OP_CMD_WRSR);
 		} else if (sr_width == 2) {
-			if(FLASH_ID_GD25Q32C == flash_ll_get_id(hw)) {
+			if(FLASH_ID_GD25Q32C == flash_ll_get_id(hw) || FLASH_ID_P25Q64SU == flash_ll_get_id(hw)) {
 				flash_ll_set_op_cmd(hw, FLASH_OP_CMD_WRSR);
 				flash_ll_wait_op_done(hw);
 
@@ -128,7 +128,16 @@ static inline void flash_ll_write_status_reg(flash_hw_t *hw, uint8_t sr_width, u
 				flash_ll_set_op_cmd(hw, FLASH_OP_CMD_WRSR);
 				flash_ll_wait_op_done(hw);
 
-				flash_ll_deinit_wrsr_cmd(hw);
+				if (flash_ll_get_id(hw) == FLASH_ID_P25Q64SU) {
+					while (flash_ll_is_busy(hw));
+					hw->config.wrsr_data = (sr_data >> LEN_WRSR_S8_S15);
+					flash_ll_init_wrsr_cmd(hw, CMD_WRSR_S16_S24);
+					flash_ll_set_op_cmd(hw, FLASH_OP_CMD_WRSR);
+					while (flash_ll_is_busy(hw));
+					hw->cmd_cfg.v = 0;
+				} else {
+					flash_ll_deinit_wrsr_cmd(hw);
+				}
 			} else {
 				flash_ll_set_op_cmd(hw, FLASH_OP_CMD_WRSR2);
 			}
@@ -243,6 +252,21 @@ static inline void flash_ll_set_op_cmd_write(flash_hw_t *hw, uint32_t write_addr
 static inline void flash_ll_write_data(flash_hw_t *hw, uint32_t data)
 {
 	hw->data_sw_flash = data;
+}
+
+static inline void flash_ll_set_pw_write(flash_hw_t *hw, uint32_t enable)
+{
+	hw->state.pw_write = enable & 0x1U;
+}
+
+static inline void flash_ll_set_page_write_mem_addr_clr(flash_hw_t *hw, uint32_t clr)
+{
+	hw->page_ctrl.mem_addr_clr = clr & 0x1U;
+}
+
+static inline void flash_ll_set_page_write_mem_data(flash_hw_t *hw, uint8_t data)
+{
+	hw->page_ctrl.mem_data = data;
 }
 
 static inline void flash_ll_set_clk(flash_hw_t *hw, uint8_t clk_cfg)

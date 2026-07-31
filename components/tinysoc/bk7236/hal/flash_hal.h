@@ -60,6 +60,9 @@ typedef struct {
 #define flash_hal_set_offset_enable(hal, data) flash_ll_set_offset_enable((hal)->hw, data)
 #define flash_hal_read_offset_enable(hal) flash_ll_read_offset_enable((hal)->hw)
 #define flash_hal_set_volatile_status_write(hal) flash_ll_set_volatile_status_write((hal)->hw)
+#define flash_hal_set_pw_write(hal, enable) flash_ll_set_pw_write((hal)->hw, enable)
+#define flash_hal_set_page_write_mem_addr_clr(hal, clr) flash_ll_set_page_write_mem_addr_clr((hal)->hw, clr)
+#define flash_hal_set_page_write_mem_data(hal, data) flash_ll_set_page_write_mem_data((hal)->hw, data)
 
 #define flash_hal_set_dbus_region(hal, id, start, end, secure) flash_ll_set_dbus_region((hal)->hw, (id), (start), (end), (secure))
 
