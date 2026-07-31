@@ -18,6 +18,9 @@
 #if CONFIG_FLASH_RACE_TEST
 #include "flash_thread_safety_test.h"
 #endif
+#if CONFIG_FLASH_UT_TEST
+#include "flash_ut_test.h"
+#endif
 
 #define  TICK_PER_US    26
 
@@ -353,6 +356,22 @@ static void flash_command_test(char *pcWriteBuffer, int xWriteBufferLen, int arg
 	char cmd = 0;
 	uint32_t len = 0;
 	uint32_t addr = 0;
+
+#if CONFIG_FLASH_UT_TEST
+	if (argc >= 2 && os_strcmp(argv[1], "ut") == 0) {
+		bk_err_t ret = flash_driver_test();
+
+		if (ret == BK_OK) {
+			BK_DUMP_OUT("flash_driver_test pass\r\n");
+			msg = CLI_CMD_RSP_SUCCEED;
+		} else {
+			BK_DUMP_OUT("flash_driver_test fail, err=0x%x\r\n", ret);
+			msg = CLI_CMD_RSP_ERROR;
+		}
+		os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+		return;
+	}
+#endif
 
 #if (CONFIG_SYSTEM_CTRL)
 	if (os_strcmp(argv[1], "config") == 0) {
@@ -856,7 +875,7 @@ static void partShow_Command(char *pcWriteBuffer, int xWriteBufferLen, int argc,
 #define FLASH_CMD_CNT (sizeof(s_flash_commands) / sizeof(struct cli_command))
 static const struct cli_command s_flash_commands[] = {
 	{"fmap_test",    "flash_test memory map",      partShow_Command},
-	{"flash_test",   "flash_test <cmd(R/W/E/N)>", flash_command_test},
+	{"flash_test",   "flash_test <cmd(R/W/E/N/ut)>", flash_command_test},
 #if CONFIG_FLASH_BYPASS_OTP_OPERATION
 	{"flash_bypass_test",   "flash_bypass_test otp R/W/E/L", flash_bypass_command_test},
 #elif CONFIG_FLASH_BYPASS_OTP_V2

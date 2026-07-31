@@ -13,6 +13,7 @@
 #include <components/event.h>
 #include <components/netif.h>
 #include <modules/wifi_types.h>
+#include <modules/wifi.h>
 #include "bk_wifi.h"
 #include "bk_wifi_types.h"
 #include "getopt_r.h"

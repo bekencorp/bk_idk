@@ -1,0 +1,260 @@
+# WiFi ST cases — schema v2 (multi-adapter lab framework)
+#
+# Dual-board default: requires uart + dual_board
+# Configure ports via agent.env:
+#   FLASH_PORT_AP=COM15
+#   FLASH_PORT_STA=COM21
+#
+# Optional instruments (skipped when lab profile lacks capability):
+#   sniffer_wifi, sniffer_ble, logic_analyzer, ppk
+
+schema_version: 2
+components_name: bk_wifi
+
+# ST discovery + build profile (git diff walks up to this cli.yaml)
+st:
+  chip: bk7239n
+  project: app
+
+port_number: 2
+port0_role: AP
+port1_role: STA
+default_requires: [uart, dual_board]
+
+cases:
+  - case_name: wifi_softap_sta_connect
+    case_type: functional
+    requires: [uart, dual_board]
+    steps:
+      - type: cli
+        command: stop sta
+        port_role: AP
+        delay_millisecond: 100
+        timeout: 3000
+        expected: CMDRSP:OK
+      - type: cli
+        command: stop ap
+        port_role: AP
+        delay_millisecond: 100
+        timeout: 3000
+        expected: CMDRSP:OK
+      - type: cli
+        command: wifi enable
+        port_role: AP
+        delay_millisecond: 200
+        timeout: 3000
+        expected: CMDRSP:OK
+      - type: cli
+        command: ap bk_st_wifi TestPass123 -c 6
+        port_role: AP
+        delay_millisecond: 500
+        timeout: 8000
+        expected: CMDRSP:OK
+      - type: cli
+        command: state
+        port_role: AP
+        delay_millisecond: 300
+        timeout: 5000
+        expected: "softap: ssid=bk_st_wifi"
+      - type: cli
+        command: stop sta
+        port_role: STA
+        delay_millisecond: 100
+        timeout: 3000
+        expected: CMDRSP:OK
+      - type: cli
+        command: stop ap
+        port_role: STA
+        delay_millisecond: 100
+        timeout: 3000
+        expected: CMDRSP:OK
+      - type: cli
+        command: wifi enable
+        port_role: STA
+        delay_millisecond: 200
+        timeout: 3000
+        expected: CMDRSP:OK
+      - type: cli
+        command: sta bk_st_wifi TestPass123
+        port_role: STA
+        delay_millisecond: 1000
+        timeout: 25000
+        expected: BK STA connected
+      - type: cli
+        command: state
+        port_role: STA
+        delay_millisecond: 500
+        timeout: 8000
+        expected: ssid=bk_st_wifi
+
+  - case_name: wifi_sta_got_ip
+    case_type: functional
+    requires: [uart, dual_board]
+    steps:
+      - type: cli
+        command: stop sta
+        port_role: STA
+        delay_millisecond: 200
+        timeout: 5000
+        expected: CMDRSP:OK
+      - type: cli
+        command: sta bk_st_wifi TestPass123
+        port_role: STA
+        delay_millisecond: 1000
+        timeout: 30000
+        expected: "got ip4:"
+      - type: cli
+        command: state
+        port_role: STA
+        delay_millisecond: 500
+        timeout: 8000
+        expected: CMDRSP:OK
+
+  # Fixed 10s TCP iperf; host step renders time-throughput curve from UART mirror log.
+  - case_name: wifi_iperf_tcp_throughput
+    case_type: performance
+    requires: [uart, dual_board]
+    steps:
+      - type: cli
+        command: iperf --stop
+        port_role: STA
+        delay_millisecond: 300
+        timeout: 5000
+      - type: cli
+        command: iperf --stop
+        port_role: AP
+        delay_millisecond: 300
+        timeout: 5000
+      - type: cli
+        command: stop sta
+        port_role: STA
+        delay_millisecond: 200
+        timeout: 5000
+        expected: CMDRSP:OK
+      - type: cli
+        command: stop ap
+        port_role: AP
+        delay_millisecond: 200
+        timeout: 5000
+        expected: CMDRSP:OK
+      - type: cli
+        command: wifi enable
+        port_role: AP
+        delay_millisecond: 200
+        timeout: 5000
+        expected: CMDRSP:OK
+      - type: cli
+        command: ap bk_st_wifi TestPass123 -c 6
+        port_role: AP
+        delay_millisecond: 500
+        timeout: 8000
+        expected: CMDRSP:OK
+      - type: cli
+        command: rc media 1
+        port_role: AP
+        delay_millisecond: 200
+        timeout: 5000
+        expected: CMDRSP:OK
+      - type: cli
+        command: wifi enable
+        port_role: STA
+        delay_millisecond: 200
+        timeout: 5000
+        expected: CMDRSP:OK
+      - type: cli
+        command: sta bk_st_wifi TestPass123
+        port_role: STA
+        delay_millisecond: 1000
+        timeout: 35000
+        expected: got ip4:192.168.188.
+      - type: cli
+        command: ps close
+        port_role: STA
+        delay_millisecond: 200
+        timeout: 5000
+        expected: CMDRSP:OK
+      - type: cli
+        command: rc media 1
+        port_role: STA
+        delay_millisecond: 200
+        timeout: 5000
+        expected: CMDRSP:OK
+      - type: cli
+        command: ping 192.168.188.1
+        port_role: STA
+        delay_millisecond: 300
+        timeout: 12000
+        expected: bytes from 192.168.188.1
+      - type: cli
+        command: iperf -s
+        port_role: AP
+        delay_millisecond: 1200
+        timeout: 5000
+      - type: cli
+        command: iperf -c 192.168.188.1 -t 10
+        port_role: STA
+        delay_millisecond: 500
+        timeout: 20000
+        expected: sec bandwidth
+      - type: host
+        tool: tools/st_iperf_curve.py
+        args:
+          - --duration
+          - "10"
+          - --min-samples
+          - "9"
+        timeout: 60000
+        expected: CURVE_OK
+      - type: cli
+        command: iperf --stop
+        port_role: STA
+        delay_millisecond: 200
+        timeout: 3000
+      - type: cli
+        command: iperf --stop
+        port_role: AP
+        delay_millisecond: 200
+        timeout: 3000
+
+  - case_name: wifi_connect_cleanup
+    case_type: functional
+    requires: [uart, dual_board]
+    steps:
+      - type: cli
+        command: stop sta
+        port_role: STA
+        delay_millisecond: 200
+        timeout: 5000
+        expected: CMDRSP:OK
+      - type: cli
+        command: stop ap
+        port_role: AP
+        delay_millisecond: 200
+        timeout: 5000
+        expected: CMDRSP:OK
+
+  # Requires sniffer_wifi in lab profile — auto-skipped on UART-only benches
+  - case_name: wifi_sniffer_assoc_optional
+    case_type: functional
+    requires: [uart, dual_board, sniffer_wifi]
+    steps:
+      - type: sniffer_wifi
+        action: capture
+        channel: 6
+        duration_ms: 8000
+        expect_min_frames: 1
+        timeout: 20000
+        expected: DEVICE_OK
+      - type: cli
+        command: sta bk_st_wifi TestPass123
+        port_role: STA
+        delay_millisecond: 1000
+        timeout: 25000
+        expected: BK STA connected
+      - type: sniffer_wifi
+        action: analyze
+        filter: assoc
+        duration_ms: 1000
+        expect_min_frames: 1
+        timeout: 15000
+        expected: instrument

@@ -58,6 +58,13 @@ menu "FLASH"
 		bool "Enable flash test"
 		default y
 
+	config FLASH_UT_TEST
+		depends on FLASH_TEST
+		bool "Enable flash driver unit test"
+		default y
+		help
+		  Enable flash_ut_test.c preset unit tests (flash_driver_test).
+
 	config FLASH_RACE_TEST
 		depends on FLASH_TEST
 		bool "Enable flash race test"

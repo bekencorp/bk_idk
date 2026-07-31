@@ -1,0 +1,224 @@
+# Flash ST cases — schema v2 (multi-adapter lab framework)
+# Default lab: single-board UART (FLASH_PORT / FLASH_PORT_AP)
+#
+# Step types: cli | host | tool | sniffer_* | logic_analyzer | ppk | uart_watch
+
+schema_version: 2
+components_name: flash
+
+# ST discovery + build profile (git diff walks up to this cli.yaml)
+st:
+  chip: bk7239n
+  project: app
+
+port_number: 1
+port0_role: AP
+default_requires: [uart]
+
+cases:
+  - case_name: flash_ut_preset_test
+    case_type: functional
+    requires: [uart]
+    steps:
+      - type: cli
+        command: flash_test ut
+        port_role: AP
+        delay_millisecond: 100
+        timeout: 90000
+        expected: flash_driver_test pass
+      - type: host
+        tool: flash_ut_api_check.py
+        timeout: 30000
+        expected: api_coverage=100
+
+  - case_name: flash_write_single_page
+    case_type: functional
+    requires: [uart]
+    steps:
+      - type: cli
+        command: argflash -i init
+        port_role: AP
+        delay_millisecond: 100
+        timeout: 3000
+        expected: Flash driver initialized successfully
+      - type: cli
+        command: argflash_protect -p set -m none
+        port_role: AP
+        delay_millisecond: 50
+        timeout: 3000
+        expected: Flash protect type mode is none succeeded
+      - type: cli
+        command: argflash -e -a 0x300000 -s 256
+        port_role: AP
+        delay_millisecond: 200
+        timeout: 5000
+        expected: Erase flash succeeded
+      - type: cli
+        command: argflash -w -a 0x300000 -s 256
+        port_role: AP
+        delay_millisecond: 200
+        timeout: 5000
+        expected: Write flash succeeded
+
+  - case_name: flash_write_1k_after_erase
+    case_type: functional
+    requires: [uart]
+    steps:
+      - type: cli
+        command: argflash -i init
+        port_role: AP
+        delay_millisecond: 100
+        timeout: 3000
+        expected: Flash driver initialized successfully
+      - type: cli
+        command: argflash_protect -p set -m none
+        port_role: AP
+        delay_millisecond: 50
+        timeout: 3000
+        expected: Flash protect type mode is none succeeded
+      - type: cli
+        command: argflash -e -a 0x300000 -s 1024
+        port_role: AP
+        delay_millisecond: 500
+        timeout: 10000
+        expected: Erase flash succeeded
+      - type: cli
+        command: argflash -w -a 0x300000 -s 1024
+        port_role: AP
+        delay_millisecond: 500
+        timeout: 10000
+        expected: Write flash succeeded
+
+  - case_name: flash_write_with_write_enable
+    case_type: functional
+    requires: [uart]
+    steps:
+      - type: cli
+        command: argflash -i init
+        port_role: AP
+        delay_millisecond: 100
+        timeout: 3000
+        expected: Flash driver initialized successfully
+      - type: cli
+        command: argflash -v enable
+        port_role: AP
+        delay_millisecond: 50
+        timeout: 3000
+        expected: Flash write enable successfully
+      - type: cli
+        command: argflash_protect -p set -m none
+        port_role: AP
+        delay_millisecond: 50
+        timeout: 3000
+        expected: Flash protect type mode is none succeeded
+      - type: cli
+        command: argflash -e -a 0x301000 -s 256
+        port_role: AP
+        delay_millisecond: 200
+        timeout: 5000
+        expected: Erase flash succeeded
+      - type: cli
+        command: argflash -w -a 0x301000 -s 256
+        port_role: AP
+        delay_millisecond: 200
+        timeout: 5000
+        expected: Write flash succeeded
+
+  - case_name: flash_write_then_read_verify
+    case_type: functional
+    requires: [uart]
+    steps:
+      - type: cli
+        command: argflash -i init
+        port_role: AP
+        delay_millisecond: 100
+        timeout: 3000
+        expected: Flash driver initialized successfully
+      - type: cli
+        command: argflash_protect -p set -m none
+        port_role: AP
+        delay_millisecond: 50
+        timeout: 3000
+        expected: Flash protect type mode is none succeeded
+      - type: cli
+        command: argflash -e -a 0x302000 -s 256
+        port_role: AP
+        delay_millisecond: 200
+        timeout: 5000
+        expected: Erase flash succeeded
+      - type: cli
+        command: argflash -w -a 0x302000 -s 256
+        port_role: AP
+        delay_millisecond: 200
+        timeout: 5000
+        expected: Write flash succeeded
+      - type: cli
+        command: argflash -r -a 0x302000 -s 256
+        port_role: AP
+        delay_millisecond: 300
+        timeout: 5000
+        expected: Read flash succeeded
+
+  - case_name: flash_write_reliability_region_4k
+    case_type: reliability
+    requires: [uart]
+    steps:
+      - type: cli
+        command: argflash -i init
+        port_role: AP
+        delay_millisecond: 100
+        timeout: 3000
+        expected: Flash driver initialized successfully
+      - type: cli
+        command: argflash_protect -p set -m none
+        port_role: AP
+        delay_millisecond: 50
+        timeout: 3000
+        expected: Flash protect type mode is none succeeded
+      - type: cli
+        command: argflash -e -a 0x300000 -s 4096
+        port_role: AP
+        delay_millisecond: 1000
+        timeout: 15000
+        expected: Erase flash succeeded
+      - type: cli
+        command: argflash -w -a 0x300000 -s 4096
+        port_role: AP
+        delay_millisecond: 1000
+        timeout: 15000
+        expected: Write flash succeeded
+      - type: cli
+        command: argflash -r -a 0x300000 -s 4096
+        port_role: AP
+        delay_millisecond: 500
+        timeout: 10000
+        expected: Read flash succeeded
+
+  - case_name: flash_write_second_page_offset
+    case_type: functional
+    requires: [uart]
+    steps:
+      - type: cli
+        command: argflash -i init
+        port_role: AP
+        delay_millisecond: 100
+        timeout: 3000
+        expected: Flash driver initialized successfully
+      - type: cli
+        command: argflash_protect -p set -m none
+        port_role: AP
+        delay_millisecond: 50
+        timeout: 3000
+        expected: Flash protect type mode is none succeeded
+      - type: cli
+        command: argflash -e -a 0x300100 -s 256
+        port_role: AP
+        delay_millisecond: 200
+        timeout: 5000
+        expected: Erase flash succeeded
+      - type: cli
+        command: argflash -w -a 0x300100 -s 256
+        port_role: AP
+        delay_millisecond: 200
+        timeout: 5000
+        expected: Write flash succeeded
