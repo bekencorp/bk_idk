@@ -89,10 +89,6 @@ uint32_t sys_drv_cali_dpll_ate(void)
 	ana1_reg |= (0x1 << 1);
 	sys_hal_analog_set(ANALOG_REG1, ana1_reg);
 #else
-	// SYS.REG0<5>=0, SYS.REG0<6>=0
-	ana0_reg &= ~(0x3 << 5);
-	sys_hal_analog_set(ANALOG_REG0, ana0_reg);
-
 	// SYS.REG0<31>=1
 	ana0_reg &= ~(0x1 << 31);
 	ana0_reg |= (0x1 << 31);
@@ -100,6 +96,10 @@ uint32_t sys_drv_cali_dpll_ate(void)
 
 	// SYS.REG0<31>=0
 	ana0_reg &= ~(0x1 << 31);
+	sys_hal_analog_set(ANALOG_REG0, ana0_reg);
+
+	// SYS.REG0<5>=0, SYS.REG0<6>=0
+	ana0_reg &= ~(0x3 << 5);
 	sys_hal_analog_set(ANALOG_REG0, ana0_reg);
 #endif
 
