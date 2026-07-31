@@ -32,9 +32,11 @@ class PackRawOta(Pack):
         if os.path.exists('ota.csv'):
             o = OTA('ota.csv')
             self.ota_encrypt_en = o.get_encrypt()
+            self.ota_flash_crc_en = o.get_flash_crc_en()
         else:
             logging.warning('ota.csv not found, disable OTA image encryption')
             self.ota_encrypt_en = False
+            self.ota_flash_crc_en = False
         if os.path.exists('security.csv'):
             s = Security('security.csv')
             self.flash_crc_en = s.flash_crc_en
@@ -113,7 +115,7 @@ class PackRawOta(Pack):
                 logging.error(f'img_sign_pubkey and img_sign_privkey are required for merge overwrite')
                 exit(1)
             compressed_file = inner_signed_file[:-4] + '_compress.bin'
-            compress_bin(inner_signed_file, compressed_file)
+            compress_bin(inner_signed_file, compressed_file, self.ota_flash_crc_en)
 
             sign_input = compressed_file
             if self.ota_encrypt_en:

@@ -62,6 +62,11 @@ class OTA(list):
         else:
             return "0.0.0"
 
+    def get_flash_crc_en(self):
+        if self.__is__exist__item__('flash_crc_en'):
+            return (self.csv.dic['flash_crc_en'].upper() == 'TRUE')
+        return False
+
     def is_overwrite(self):
         if(self.csv.dic['strategy'].upper() == 'OVERWRITE'):
             return True

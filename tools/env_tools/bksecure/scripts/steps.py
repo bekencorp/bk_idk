@@ -194,7 +194,8 @@ def sign_from_app_sig(bl2_sig_s, bl2_sig_r, app_sig):
 def get_ota_bin_hash():
     pheader = PackHeader('overwrite.bin')
     s = Security('security.csv')
-    compress_bin('app_signed.bin', 'compress.bin')
+    o = OTA('ota.csv')
+    compress_bin('app_signed.bin', 'compress.bin', o.get_flash_crc_en())
     bl2_sign('hash', s.img_sign_key_type, s.img_sign_privkey, s.img_sign_pubkey_bytes, None, 'compress.bin', pheader.m2(), pheader.version(), pheader.security_counter(), 'ota_signed.bin', 'ota_hash.json')
 
 #Step5 - generate signature from ota bin hash, do it in server has private key

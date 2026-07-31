@@ -1,13 +1,30 @@
 #!/usr/bin/env python3
 import logging
 import math
+import os
 import struct
+import tempfile
 
 from .common import *
 
 COMPRESS_BLOCK_SZ = 0x10000
 
-def compress_bin(infile, outfile):
+def _logical_chunk_to_crc(chunk):
+    from .flash_crc import crc
+    fd_in, path_in = tempfile.mkstemp()
+    fd_out, path_out = tempfile.mkstemp()
+    os.close(fd_out)
+    try:
+        with os.fdopen(fd_in, 'wb') as f:
+            f.write(chunk)
+        crc(path_in, path_out)
+        with open(path_out, 'rb') as f:
+            return f.read()
+    finally:
+        os.unlink(path_in)
+        os.unlink(path_out)
+
+def compress_bin(infile, outfile, flash_crc_en=False):
     compress_size_list = []
     compress_temp_in = 'temp_before_compress'
     compress_temp_out = 'temp_after_compress'
@@ -29,6 +46,8 @@ def compress_bin(infile, outfile):
             if not chunk:
                 file_in.close()
                 break
+            if flash_crc_en:
+                chunk = _logical_chunk_to_crc(chunk)
             file_in.seek(0)
             file_in.write(chunk)
             file_in.close()

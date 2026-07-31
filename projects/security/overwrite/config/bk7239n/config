@@ -84,3 +84,6 @@ CONFIG_BAKP_POWER_DOMAIN_DISABLE=n
 #@ support BL2 upgrade, if you want to use this feature, the CONFIG_CACHE_ENABLE must be enabled
 CONFIG_BL2_UPGRADE_WITH_APP=n
 CONFIG_CACHE_ENABLE=y
+
+#@ BL2 overwrite OTA: write decompressed payload via dbus when flash is not encrypted; set ota.csv flash_crc_en=TRUE (when security.csv flash_crc_en=TRUE)
+CONFIG_OTA_DBUS_WRITE=n
