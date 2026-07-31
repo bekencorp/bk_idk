@@ -41,6 +41,13 @@ target_link_options(bl2
         $<$<C_COMPILER_ID:IAR>:--map\;${CMAKE_BINARY_DIR}/bin/bl2.map>
 )
 
+if(CONFIG_CPU_FREQ_HZ)
+    target_compile_definitions(bl2
+        PUBLIC
+            CONFIG_CPU_FREQ_HZ=${CONFIG_CPU_FREQ_HZ}
+    )
+endif()
+
 if(CONFIG_OTA_CONFIRM_UPDATE)
     target_compile_definitions(bl2
         PUBLIC

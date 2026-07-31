@@ -45,6 +45,7 @@ target_compile_definitions(platform_bl2
 		$<$<BOOL:${PLATFORM_DEFAULT_NV_COUNTERS}>:PLATFORM_DEFAULT_NV_COUNTERS>
 		$<$<BOOL:${PLATFORM_DEFAULT_OTP_WRITEABLE}>:OTP_WRITEABLE>
 		$<$<BOOL:${CONFIG_MPU}>:CONFIG_MPU>
+		$<$<BOOL:${CONFIG_CPU_FREQ_HZ}>:CONFIG_CPU_FREQ_HZ=${CONFIG_CPU_FREQ_HZ}>
 )
 
 target_compile_definitions(platform_region_defs
