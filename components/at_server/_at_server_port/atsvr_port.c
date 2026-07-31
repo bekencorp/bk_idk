@@ -194,8 +194,10 @@ static void atsvr_handle_input_proxy(beken_thread_arg_t arg)
 #endif
     rtos_set_semaphore(&wait_atsvr_handle_semaphore);
 
-    rtos_delete_thread(NULL);
-
+    /* Wait for parent task to delete this thread. */
+    while (1) {
+        rtos_delay_milliseconds(100);
+    }
 }
 
 
@@ -223,6 +225,11 @@ int atsvr_handle_shell_input(char *inbuf, int in_buf_size, char * outbuf, int ou
 
     penv->atsvr_mode = true;
 
+    if (atsvr_handle_thread_handle != NULL) {
+        rtos_delete_thread(&atsvr_handle_thread_handle);
+        atsvr_handle_thread_handle = NULL;
+    }
+
     rtos_init_semaphore(&wait_atsvr_handle_semaphore,1);
     ret = rtos_create_thread(&atsvr_handle_thread_handle,
                              4,
@@ -232,6 +239,7 @@ int atsvr_handle_shell_input(char *inbuf, int in_buf_size, char * outbuf, int ou
                              (beken_thread_arg_t)(&cmd_par));
     if (ret != kNoErr) {
       ATSVRLOGE("Error: Failed to create atsvr_handle_thread_handle thread: %d\r\n",ret);
+      rtos_deinit_semaphore(&wait_atsvr_handle_semaphore);
       BK_ASSERT(0);
     }
 
@@ -240,6 +248,10 @@ int atsvr_handle_shell_input(char *inbuf, int in_buf_size, char * outbuf, int ou
     if(err){
       ATSVRLOGE("get wait_atsvr_handle_semaphore fail\r\n");
     }
+
+    rtos_delete_thread(&atsvr_handle_thread_handle);
+    atsvr_handle_thread_handle = NULL;
+
     rtos_deinit_semaphore(&wait_atsvr_handle_semaphore);
 
     return 0;
