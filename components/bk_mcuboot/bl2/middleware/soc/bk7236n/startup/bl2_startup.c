@@ -35,7 +35,7 @@
 #define SET_BIT_VAL(val, bit, new_val)   (((val) & (~(1 << (bit)))) | ((new_val) << (bit)))
 
 #define AON_PMU_BASE_ADDR                (0x44000000)
-#define AON_PMU_R0_REG                   (*(volatile uint32_t *)(AON_PMU_BASE_ADDR + 0x0 * 4))
+#define AON_PMU_R7B_REG                  (*(volatile uint32_t *)(AON_PMU_BASE_ADDR + 0x7b * 4))
 #define DLV_STARTUP_BIT                  (1 << 23)
 
 #define SOC_FLASH_BASE_ADDR     (0x44030000)
@@ -263,9 +263,15 @@ static void bl2_deep_lv_boot(void)
     while (1) {}
 }
 
+static uint32_t memory_is_retention(void)
+{
+	return ((REG_READ(0x2807E400 + (16 << 2)) == 0x5A5A5A5A)
+		    && (REG_READ(0x2807E400 + (17 << 2)) == 0xA5A5A5A5));
+}
+
 __NO_RETURN ENTRY_SECTION __attribute__((naked)) void Reset_Handler(void)
 {
-    if (AON_PMU_R0_REG & DLV_STARTUP_BIT) {
+    if ((AON_PMU_R7B_REG & DLV_STARTUP_BIT) && memory_is_retention()) {
         __set_MSP(BL2_DLV_STACK_TOP);
         __set_MSPLIM(BL2_DLV_IRAM_START);
 

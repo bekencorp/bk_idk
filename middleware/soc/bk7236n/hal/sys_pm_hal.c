@@ -891,6 +891,10 @@ void sys_hal_regs_save(void)
 		s_sys_ana_regs[i] = sys_hal_analog_get_iram(ANALOG_REG0 + i);
 		REG_WRITE(0x2807E400 + (i << 2), s_sys_ana_regs[i]);//save analog regs to bootloader stack
 	}
+	// Used to check if memory (contents) have changed.
+	REG_WRITE(0x2807E400 + (16 << 2), 0x5A5A5A5A);
+	REG_WRITE(0x2807E400 + (17 << 2), 0xA5A5A5A5);
+
 }
 
 void sys_hal_regs_restore(void)

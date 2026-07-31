@@ -209,12 +209,12 @@ __IRAM_SEC void aon_pmu_hal_r0_latch_to_r7b(void)
 #if CONFIG_AON_PMU_REG0_REFACTOR_DEV
 uint32_t aon_pmu_hal_get_dlv_startup(void)
 {
-	return aon_pmu_ll_get_r0_dlv_startup();
+	return aon_pmu_ll_get_r7b_dlv_startup();
 }
 
 __IRAM_SEC uint32_t aon_pmu_hal_get_dlv_startup_iram(void)
 {
-	return aon_pmu_ll_get_r0_dlv_startup();
+	return aon_pmu_ll_get_r7b_dlv_startup();
 }
 
 __IRAM_SEC void aon_pmu_hal_set_dlv_startup(uint32_t value)
@@ -311,12 +311,14 @@ void aon_pmu_hal_gpio_retention_bitmap_set(uint32_t bitmap)
 #else
 uint32_t aon_pmu_hal_get_dlv_startup(void)
 {
-	return aon_pmu_ll_get_r0_dlv_startup();
+	uint32_t val = aon_pmu_ll_get_r7b();
+	return (val & BIT(23)) >> 23;
 }
 
 __IRAM_SEC uint32_t aon_pmu_hal_get_dlv_startup_iram(void)
 {
-	return aon_pmu_ll_get_r0_dlv_startup();
+	uint32_t val = aon_pmu_ll_get_r7b();
+	return (val & BIT(23)) >> 23;
 }
 
 __IRAM_SEC void aon_pmu_hal_set_dlv_startup(uint32_t value)
