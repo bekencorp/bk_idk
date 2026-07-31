@@ -102,7 +102,7 @@ bk_err_t ota_verify_receive_data(ota_verify_t* ota_verify, const void* data, int
 bk_err_t ota_verify_image(const bk_logic_partition_t *partition, ota_verify_t* ota_verify);
 bk_err_t read_pubkey_from_primary(const bk_logic_partition_t *partition, uint8_t* pubkey, uint16_t* pubkey_size);
 void ota_verify_deinit(ota_verify_t* ota_verify);
-#if CONFIG_OTA_UPDATE_PUBKEY
+#if CONFIG_OTA_VERIFY_PUBKEY
 bk_err_t ota_verify_pubkey(const bk_logic_partition_t *app_partition,
     ota_verify_t *ota_verify, const uint8_t *ota_outer_pubkey, uint16_t ota_outer_pubkey_len);
 #endif

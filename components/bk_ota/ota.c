@@ -34,9 +34,7 @@ static bk_ota_t* bk_ota_init(const char* app_partition_name, const char* ota_par
 	ota->app_partition = bk_flash_partition_get_info_by_name(app_partition_name);
 	ota->ota_partition = bk_flash_partition_get_info_by_name(ota_partition_name);
 	ota->control_partition = bk_flash_partition_get_info_by_name(control_partition_name);
-#if CONFIG_OTA_UPDATE_PUBKEY
 	ota->key_partition = bk_flash_partition_get_info_by_name("public_key");
-#endif
 
 	if ((!ota->app_partition) || (!ota->ota_partition) || (!ota->control_partition)) {
 		OTA_LOGD(TAG, "invalid ota partition: app=%s ota=%s control=%s\r\n", 
@@ -384,7 +382,6 @@ bk_err_t bk_ota_ow_deinit(void)
 	return BK_OK;
 }
 
-#if CONFIG_OTA_UPDATE_PUBKEY
 bk_err_t bk_ota_update_public_key(bk_ota_t* ota)
 {
 	OTA_LOGD(TAG, "ota update public key\r\n");
@@ -420,4 +417,3 @@ void bk_ota_update_pubkey_partition(void)
 	}
 #endif
 }
-#endif

@@ -144,7 +144,6 @@ void ow_bl2_ota_get_pack_addrs(uint32_t *bl2_address, uint32_t *partition_addres
 	                    0x1000 - 8 * 1024;
 }
 
-#if CONFIG_OTA_UPDATE_PUBKEY
 bk_err_t ota_verify_pubkey(const bk_logic_partition_t *app_partition,
     ota_verify_t *ota_verify, const uint8_t *ota_outer_pubkey, uint16_t ota_outer_pubkey_len)
 {
@@ -169,5 +168,4 @@ bk_err_t ota_verify_pubkey(const bk_logic_partition_t *app_partition,
 	}
 	return BK_OK;
 }
-#endif
 #endif

@@ -63,7 +63,6 @@ bk_err_t common_ota_confirm(const bk_logic_partition_t *partition, uint32_t stat
 	return BK_FAIL;
 }
 
-#if CONFIG_OTA_UPDATE_PUBKEY
 static bk_err_t read_pubkey_from_backup(uint32_t phy_off,
 					uint8_t *key_out,
 					uint16_t max_len,
@@ -166,5 +165,3 @@ bk_err_t load_pubkey_from_flash_backup(uint8_t *pubkey_buf, uint16_t *pubkey_len
 	return BK_ERR_NOT_FOUND;
 #endif
 }
-
-#endif /* CONFIG_OTA_UPDATE_PUBKEY */

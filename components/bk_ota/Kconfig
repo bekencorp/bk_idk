@@ -29,4 +29,15 @@ menu "OTA"
 	config OTA_BACKUP_PUBKEY_ENCRYPT
 		bool "Enable backup pubkey encrypt"
 		default n
+
+	config OTA_VERIFY_PUBKEY
+		bool "Verify OTA public key during image validation"
+		depends on BK_OTA
+		default y
+
+	config OTP_BL2_PUBKEY_HASH
+		bool "Verify OTA public key against OTP BL2 pubkey hash"
+		depends on BK_OTA && PSA_MBEDTLS && !OTA_VERIFY_PUBKEY
+		default n
+
 endmenu

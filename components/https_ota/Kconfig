@@ -8,7 +8,6 @@ menu "Https_ota"
 		default n
 
 	config OTA_BACKUP_PUBKEY
-		depends on OTA_UPDATE_PUBKEY
 		bool "backup public key in flash partition"
 		default n
 

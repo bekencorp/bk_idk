@@ -55,17 +55,17 @@ if(CONFIG_OTA_BACKUP_PUBKEY_ENCRYPT)
     )
 endif()
 
-if(CONFIG_OTA_VERIFY_TRUST_CHAIN)
-    target_compile_definitions(bl2
-        PUBLIC
-            CONFIG_OTA_VERIFY_TRUST_CHAIN
-    )
-endif()
-
 if(CONFIG_OTA_UPDATE_PUBKEY)
     target_compile_definitions(bl2
         PUBLIC
             CONFIG_OTA_UPDATE_PUBKEY
+    )
+endif()
+
+if(CONFIG_OTA_VERIFY_PUBKEY)
+    target_compile_definitions(bl2
+        PUBLIC
+            CONFIG_OTA_VERIFY_PUBKEY
     )
 endif()
 

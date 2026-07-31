@@ -42,7 +42,7 @@
 #include "driver/flash.h"
 #include "cache.h"
 
-#if CONFIG_OTA_UPDATE_PUBKEY
+#if CONFIG_OTA_VERIFY_PUBKEY
 #include <mbedtls/sha256.h>
 #include "common_loader.h"
 #include "bootutil/crypto/ecdsa.h"
@@ -252,7 +252,7 @@ static bool key_is_equal(uint8_t *key1, uint16_t key1_len, uint8_t *key2, uint16
 int
 bk_find_key(uint8_t image_index, uint8_t *key, uint16_t key_len, uint32_t current_slot_addr)
 {
-#if CONFIG_OTA_UPDATE_PUBKEY
+#if CONFIG_OTA_VERIFY_PUBKEY
     uint32_t running_slot = boot_read_running_slot();
     uint32_t verifying_slot = addr_to_slot(current_slot_addr);
     int ret;
@@ -297,6 +297,12 @@ bk_find_key(uint8_t image_index, uint8_t *key, uint16_t key_len, uint32_t curren
             if (ret != 0) {
                 goto fail;
             }
+#if !CONFIG_OTA_UPDATE_PUBKEY
+            if (!key_is_equal(key, key_len, verifying_slot_root_pubkey, verifying_slot_root_pubkey_len)) {
+                BOOT_LOG_ERR("pubkey rotation disabled: %s new/root pubkey differ", slot_str(verifying_slot));
+                goto fail;
+            }
+#endif
         } else {
             if (!key_is_equal(key, key_len, running_slot_pubkey, running_slot_pubkey_len)) {
                 BOOT_LOG_ERR("%s pubkey mismatch with %s", slot_str(verifying_slot), slot_str(running_slot));

@@ -26,6 +26,6 @@
 bk_err_t common_ota_partition_check(const bk_logic_partition_t *partition, uint32_t off, const uint8_t *buf, uint32_t len);
 bk_err_t common_ota_confirm(const bk_logic_partition_t *partition, uint32_t status);
 bool pubkey_backup_sector_header_empty(uint32_t phy_off);
-#if CONFIG_OTA_UPDATE_PUBKEY
+#if CONFIG_OTA_VERIFY_PUBKEY
 bk_err_t load_pubkey_from_flash_backup(uint8_t *pubkey_buf, uint16_t *pubkey_len_inout);
 #endif

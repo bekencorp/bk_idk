@@ -250,7 +250,7 @@ bk_err_t ota_verify_pubkey(const bk_logic_partition_t *app_partition,
 		ret = ota_read_tlv_from_data(ota_verify->tlv_total, TLV_TOTAL_SIZE, IMAGE_TLV_CUSTOM_PUBKEY_SIG,
 		                              pubkey_sig, &pubkey_sig_len);
 		if (ret == BK_OK) {
-			BK_LOGI(TAG, "update pubkey");
+			BK_LOGI(TAG, "verify pubkey");
 
 			if (root_pubkey_tlv_len > MAX_PUBKEY_LEN) {
 				BK_LOGE(TAG, "invalid root_pubkey TLV length\r\n");
@@ -298,6 +298,13 @@ bk_err_t ota_verify_pubkey(const bk_logic_partition_t *app_partition,
 				return ret;
 			}
 
+#endif
+#if !CONFIG_OTA_UPDATE_PUBKEY
+			if (new_pubkey_len != root_pubkey_tlv_len ||
+			    memcmp(new_pubkey, root_pubkey_tlv, new_pubkey_len) != 0) {
+				BK_LOGE(TAG, "pubkey rotation disabled: OTA new/root pubkey differ\r\n");
+				return BK_ERR_OTA_VALIDATE_PUB_KEY_FAIL;
+			}
 #endif
 			return BK_OK;
 		}

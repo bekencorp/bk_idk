@@ -39,9 +39,7 @@ typedef struct {
 	bk_err_t (*confirm)(const bk_logic_partition_t *partition);
 	bk_err_t (*cancel)(const bk_logic_partition_t *partition);
 
-#if CONFIG_OTA_UPDATE_PUBKEY
 	bk_err_t (*updatekey)(const bk_logic_partition_t *app_partition, const bk_logic_partition_t *key_partition);
-#endif
 #if CONFIG_OTA_ENCRYPTED && CONFIG_DIRECT_XIP
 	bool (*ota_encrypted_download)(const void *verify_ctx, uint32_t stream_off, uint8_t **data, uint32_t *len);
 #endif
@@ -54,9 +52,7 @@ typedef struct bk_ota_s {
 	const bk_logic_partition_t* app_partition;
 	const bk_logic_partition_t* ota_partition;
 	const bk_logic_partition_t* control_partition;
-#if CONFIG_OTA_UPDATE_PUBKEY
 	const bk_logic_partition_t* key_partition;
-#endif
 } bk_ota_t;
 
 bk_ota_t* bk_ota_get_xip_handle(void);
@@ -84,10 +80,8 @@ void bk_ota_accept_image(void);
 bk_err_t bk_ota_confirm_update(void);
 bk_err_t bk_ota_cancel_update(uint8_t erase_ota);
 #endif
-#if CONFIG_OTA_UPDATE_PUBKEY
 bk_err_t bk_ota_update_public_key(bk_ota_t* ota);
 void bk_ota_update_pubkey_partition(void);
-#endif
 #ifdef __cplusplus
 }
 #endif

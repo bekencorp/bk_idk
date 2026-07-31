@@ -26,7 +26,7 @@ bk_err_t xip_get_pubkey(const bk_logic_partition_t *app_partition,
 		return BK_ERR_PARAM;
 	}
 
-#if CONFIG_OTA_UPDATE_PUBKEY
+#if CONFIG_OTA_VERIFY_PUBKEY
 	bk_err_t bkret = load_pubkey_from_flash_backup(pubkey_buf, pubkey_len_inout);
 
 	if (bkret == BK_OK) {
