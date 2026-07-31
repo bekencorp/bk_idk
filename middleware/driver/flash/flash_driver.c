@@ -16,6 +16,8 @@
 #include <components/ate.h>
 #include <os/mem.h>
 #include <driver/flash.h>
+#include <driver/efuse.h>
+#include <driver/otp.h>
 #include <driver/wdt.h>
 #include <os/os.h>
 #include "flash_driver.h"
@@ -787,6 +789,44 @@ restore_line_mode:
     flash_restore_line_mode();
 }
 
+static void flash_dump_efuse_spid_info(void)
+{
+    bk_err_t ret = BK_OK;
+
+#if CONFIG_EFUSE
+    uint8_t efuse_id[8] = {0};
+    for (uint8_t i = 0; i < sizeof(efuse_id); i++) {
+        ret = bk_efuse_read_byte(EFUSE_ADDR_BYTE24 + i, &efuse_id[i]);
+        if (ret != BK_OK) {
+            FLASH_LOGW("read efuse[0x%02X] failed: %d\r\n", EFUSE_ADDR_BYTE24 + i, ret);
+            return;
+        }
+    }
+    FLASH_LOGI("efuse_id: %02X%02X%02X%02X%02X%02X%02X%02X\r\n",
+               efuse_id[0], efuse_id[1], efuse_id[2], efuse_id[3],
+               efuse_id[4], efuse_id[5], efuse_id[6], efuse_id[7]);
+#endif
+
+#if CONFIG_OTP
+#ifdef OTP_PRODUCT_ID
+    uint8_t product_id[16] = {0};
+    ret = bk_otp_ahb_read(OTP_PRODUCT_ID, product_id, sizeof(product_id));
+    if (ret != BK_OK) {
+        FLASH_LOGW("read OTP_PRODUCT_ID failed: %d\r\n", ret);
+        return;
+    }
+    FLASH_LOGI("product_id: %02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X\r\n",
+               product_id[0], product_id[1], product_id[2], product_id[3],
+               product_id[4], product_id[5], product_id[6], product_id[7],
+               product_id[8], product_id[9], product_id[10], product_id[11],
+               product_id[12], product_id[13], product_id[14], product_id[15]);
+#else
+    FLASH_LOGI("OTP_PRODUCT_ID is not set\r\n");
+#endif
+#endif
+    (void)ret;
+}
+
 bk_err_t bk_flash_driver_init(void)
 {
     flash_hal_t *hal_ptr;
@@ -903,6 +943,8 @@ bk_err_t bk_flash_driver_init(void)
      * the data will no be read correctly for hw fifo pointer is wrong.
      */
     flash_clear_rd_residual_data(hal_ptr);
+
+    flash_dump_efuse_spid_info();
 
     s_flash_is_init = true;
 
