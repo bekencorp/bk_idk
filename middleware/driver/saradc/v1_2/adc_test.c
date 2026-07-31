@@ -32,7 +32,7 @@ static void cli_adc_help(void)
     CLI_LOGI("adc_test [channel] [init/deinit/start/stop/dump_statis/get_value/single_step_mode_read\n");
     CLI_LOGI("  Examples: sadc 3 get_value, sadc 3 dump_statis, sadc 3 single_step_mode_read\n");
     CLI_LOGI("adc_test [channel] [config] [mode] [src_clk] [adc_clk] [sature_mode] [sampl_rate]\n");
-    CLI_LOGI("  Example: sadc 3 config 3 1 0x30e035 4 0\n");
+    CLI_LOGI("  Example: sadc 3 config 3 1 0x1E13D 4 0\n");
     CLI_LOGI("adc_test [channel] [read/reg_cb] [size] [time_out]\n");
     CLI_LOGI("  Examples: sadc 3 read 16 1000, sadc 3 reg_cb 4\n");
     CLI_LOGI("adc_test [channel] [single_adc_example/multi_adc_example]\n");
@@ -45,7 +45,7 @@ static void cli_adc_help(void)
     CLI_LOGI("sadc_multi config/read [chan id]\n");
     CLI_LOGI("  Examples: sadc_multi config chan 3, sadc_multi read chan 3\n");
     CLI_LOGI("sadc_rate [chan val] [clk val]\n");
-    CLI_LOGI("  Example: sadc_rate 2 0x30e035\n");
+    CLI_LOGI("  Example: sadc_rate 2 0x1E13D\n");
     CLI_LOGI("adc_api_test [set_mode/get_mode/set_clk/set_sample_rate/set_channel/set_filter/"
              "set_steady_time/set_sample_cnt/set_saturate\n");
 }
@@ -101,7 +101,7 @@ static float cli_adc_read_multi_chan(void)
     config.chan = 0;
     config.adc_mode = 3;
     config.src_clk = 1;
-    config.clk = 0x30e035;
+    config.clk = 0x1E13D;
     config.saturate_mode = 4;
     config.steady_ctrl= 7;
     config.adc_filter = 0;
@@ -291,7 +291,7 @@ static void cli_sadc_multi_cmd(char *pcWriteBuffer, int xWriteBufferLen, int arg
         config.chan = channel_id;
         config.adc_mode = ADC_CONTINUOUS_MODE;
         config.src_clk = SARADC_SCLKV_XTAL;
-        config.clk = SOC_ADC_XTAL_CLK/2/(adc_clk_div + 1);
+        config.clk = SOC_ADC_XTAL_CLK/2/(adc_clk_div + 1)/26;
         config.saturate_mode = SARADC_SATURATE_MODE_3;
         config.steady_ctrl= SARADC_STEADY_TIME;
         config.adc_filter = 0;
@@ -549,7 +549,7 @@ static void cli_adc_cont_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
     config.chan = s_adc_channel_id;
     config.adc_mode = ADC_CONTINUOUS_MODE;
     config.src_clk = SARADC_SCLKV_XTAL;
-    config.clk = SOC_ADC_XTAL_CLK/2/(adc_clk_div + 1);;
+    config.clk = SOC_ADC_XTAL_CLK/2/(adc_clk_div + 1)/26;
     config.saturate_mode = SARADC_SATURATE_MODE_3;
     config.steady_ctrl= SARADC_STEADY_TIME;
     config.adc_filter = 0;
@@ -765,7 +765,7 @@ static void cli_adc_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char
     }
     else if(os_strcmp(argv[2], "single_adc_example") == 0)
     {
-        cli_adc_read_single_chan(adc_chan, 0x30e035);
+        cli_adc_read_single_chan(adc_chan, 0x1E13D);
     }
     else if(os_strcmp(argv[2], "multi_adc_example") == 0)
     {

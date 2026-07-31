@@ -16,4 +16,5 @@
 
 #define SOC_ADC_SAMPLE_CNT_MAX     32
 #define SOC_ADC_XTAL_CLK           ADC_SRC_40M_CLK
+#define SOC_ADC_MAX_CLK           (SOC_ADC_XTAL_CLK / 26)
 

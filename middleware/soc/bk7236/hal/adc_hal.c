@@ -64,25 +64,16 @@ bk_err_t adc_hal_set_clk(adc_hal_t *hal, adc_src_clk_t src_clk, uint32_t adc_clk
 {
 	uint32_t pre_div = 0;
 
-	if (src_clk == ADC_SCLK_32M) {
-		adc_ll_enable_32m_clk(hal->hw);
-		pre_div = ADC_SRC_32M_CLK/2/adc_clk -1;
-	} else {
-		adc_ll_disable_32m_clk(hal->hw);
-	}
-
-	if (src_clk == ADC_SCLK_XTAL_26M) {
+	if (src_clk && (adc_clk > SOC_ADC_MAX_CLK)) {
+		pre_div = 0;
+	} else if (src_clk == ADC_SCLK_XTAL_26M) {
 		clk_set_saradc_clk_26m();
-		pre_div = ADC_SRC_26M_CLK/2/adc_clk -1;
-	} else if (src_clk == ADC_SCLK_DCO) {
-		clk_disable_saradc_audio_pll();
+		pre_div = ADC_SRC_26M_CLK/2/adc_clk/16 -1;
+	}  else if (src_clk == ADC_SCLK_APLL) {
 		clk_set_saradc_clk_dco();
-		pre_div = ADC_SRC_DCO_CLK/2/adc_clk -1;
-	} else if (src_clk == ADC_SCLK_DPLL) {
-		clk_set_saradc_clk_dco();
-		clk_enable_saradc_audio_pll();
-		pre_div = ADC_SRC_DPLL_CLK/2/adc_clk -1;
-	}
+		/* adc_clk = clk_src / ((adc_sclk_div + 1) * 2) / 16 */
+		pre_div = ADC_SRC_APLL_CLK/2/adc_clk/16 -1;
+	}  
 
 	adc_ll_set_pre_div(hal->hw, pre_div);
 

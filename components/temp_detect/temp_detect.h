@@ -84,8 +84,9 @@
 #define ADC_XTAL_DIST_INTIAL_VAL                    (70)
 
 #if (CONFIG_SOC_BK7236N) || (CONFIG_SOC_BK7239XX)
-/*pre_div = (40MHz / 2 / TEMP_DETEC_ADC_CLK - 1)*/
-#define TEMP_DETEC_ADC_CLK	                    0x30e035 //div 5 //1250000 //div=15
+/* adc_sclk_div = clk_src / (2 * TEMP_DETEC_ADC_CLK) / 26 - 1
+ * 40MHz XTAL, 0x1E13D(123197Hz) -> adc_sclk_div = 5 (SAR clk 40MHz/12) */
+#define TEMP_DETEC_ADC_CLK	                    0x1E13D
 #define TEMP_DETEC_ADC_SAMPLE_RATE	            0
 #elif (CONFIG_SOC_BK7236XX)
 #define TEMP_DETEC_ADC_CLK	                    203125

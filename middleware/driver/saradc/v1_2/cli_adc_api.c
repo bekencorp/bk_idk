@@ -296,7 +296,7 @@ static void cli_adc_api_calculate_handler(void **argtable)
             config.chan = 0;
             config.adc_mode = 3;
             config.src_clk = 1;
-            config.clk = 0x30e035;
+            config.clk = 0x1E13D;
             config.saturate_mode = 4;
             config.steady_ctrl= 7;
             config.adc_filter = 0;

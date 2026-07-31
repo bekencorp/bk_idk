@@ -39,7 +39,7 @@ extern "C" {
 #define ADC_SRC_DPLL_CLK	240000000
 #define ADC_SRC_26M_CLK		26000000
 #define ADC_SRC_40M_CLK		40000000
-#define ADC_SRC_32M_CLK		32000000
+#define ADC_SRC_APLL_CLK	98000000
 
 #define ADC_FIFO_LEVEL_MAX         32
 
@@ -65,7 +65,7 @@ typedef enum {
 #endif
 
 	ADC_SCLK_DPLL, /**< ADC source clock dpll */
-	ADC_SCLK_32M, /**< ADC source clock 32M */
+	ADC_SCLK_APLL, /**< ADC source clock apll */
 	ADC_SCLK_NONE, /**< ADC has not such source clock*/
 } adc_src_clk_t;
 

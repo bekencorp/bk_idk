@@ -339,11 +339,11 @@ bk_err_t adc_hal_set_clk(adc_hal_t *hal, adc_src_clk_t src_clk, uint32_t adc_clk
 		return BK_ERR_ADC_DPLL_NOT_SUPPORTED;
 	}
 
-	if (clk_src && (adc_clk > (clk_src / 2))) {
+	if (clk_src && (adc_clk > SOC_ADC_MAX_CLK)) {
 		pre_div = 0;
 	} else if (clk_src && adc_clk) {
-		/* adc_clk = clk_src / (adc_sclk_div * 2) */
-		pre_div = clk_src / (2 * adc_clk);
+		/* adc_clk = clk_src / ((adc_sclk_div + 1) * 2) / 26 */
+		pre_div = clk_src / (2 * adc_clk) / 26 - 1;
 	}
 
 	adc_ll_set_reg4_adc_sclk_div(pre_div);

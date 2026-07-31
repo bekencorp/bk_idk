@@ -600,8 +600,9 @@ static bk_err_t bk_cal_saradc_start(int32_t adc_channel, int32_t adc_clk, int32_
 
 	config.chan          = adc_channel;
 	config.adc_mode      = ADC_CONTINUOUS_MODE;
-	config.clk           = adc_clk;
-
+	config.clk           = adc_clk/16;
+	/* HAL applies an extra /16 in adc_hal_set_clk; PHY passes a SAR-clock
+	 * value (Hz), so divide by 16 here to keep the resulting divider valid. */
 	config.src_clk       = ADC_SCLK_XTAL_26M;
 
 	config.saturate_mode = ADC_SATURATE_MODE_3;
@@ -624,7 +625,9 @@ static bk_err_t bk_cal_saradc_start(int32_t adc_channel, int32_t adc_clk, int32_
 #else
 	config.chan          = adc_channel;
 	config.adc_mode      = ADC_CONTINUOUS_MODE;
-	config.clk           = adc_clk;
+	/* HAL applies an extra /26 in adc_hal_set_clk; PHY passes a SAR-clock
+	 * value (Hz), so divide by 26 here to keep the resulting divider valid. */
+	config.clk           = adc_clk / 26;
 	config.src_clk       = ADC_SCLK_XTAL;
 	config.saturate_mode = ADC_SATURATE_MODE_3;
 	config.sample_rate   = 0;

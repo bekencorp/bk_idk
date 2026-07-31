@@ -22,4 +22,5 @@
 #define SOC_ADC_CHAN_MIN           1
 #define SOC_ADC_CHAN_MAX           6
 #define SOC_ADC_SAMPLE_CNT_MAX     32
-
+#define SOC_ADC_APLL_CLK           ADC_SRC_APLL_CLK
+#define SOC_ADC_MAX_CLK           (SOC_ADC_APLL_CLK / 16)
