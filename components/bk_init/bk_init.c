@@ -339,7 +339,7 @@ int bk_init(void)
 #endif
 
 #if CONFIG_SYS_CPU0
-	bk_pm_module_vote_cpu_freq(PM_DEV_ID_DEFAULT,PM_CPU_FRQ_120M);
+	bk_pm_module_vote_cpu_freq(PM_DEV_ID_DEFAULT,PM_CPU_FRQ_240M);
 #endif
 
 #ifdef CONFIG_VND_CAL
