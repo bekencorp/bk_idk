@@ -43,7 +43,6 @@ typedef struct {
 typedef struct {
 	uint32_t chan_init_bits;
 	uint32_t chan_init_signal_level;
-	uint32_t group_chan_init_level;
 #if CONFIG_PWM_PHASE_SHIFT
 	volatile uint32_t phase_shift_chan_init_level;
 #endif
@@ -75,6 +74,16 @@ typedef struct {
 	pwm_chan_t sw_ch;
 	pwm_chan_t tim_cap_ch;
 } pwm_capture_tim_map_t;
+
+typedef struct {
+	pwm_chan_t chan1;
+	pwm_chan_t chan2;
+	uint32_t period;
+	uint32_t chan1_duty;
+	uint32_t chan2_duty;
+	uint32_t dead_cycle;
+	uint32_t psc;
+} pwm_group_duty_req_t;
 
 typedef enum {
 	PWM_SINGLE_CHAN_MODE = (1 << 0),
@@ -180,6 +189,109 @@ static void pwm_chan_deinit_common(pwm_chan_t sw_ch)
 	s_pwm.chan_init_bits &= ~BIT(sw_ch);
 }
 
+static bk_err_t pwm_init_with_phase(pwm_chan_t sw_ch, const pwm_init_config_t *config)
+{
+	PWM_RETURN_ON_NOT_INIT();
+	BK_RETURN_ON_NULL(config);
+	PWM_RETURN_ON_INVALID_CHAN(sw_ch);
+
+	pwm_period_duty_config_t pwm_config = {0};
+	pwm_tim_map_t tim_map[] = PWM_CHAN_DEFAULT_TIM_MAP;
+	bk_err_t ret = BK_OK;
+
+	if ((config->duty_cycle > config->period_cycle) ||
+		(config->duty2_cycle > config->period_cycle) ||
+		(config->duty3_cycle > config->period_cycle)) {
+		PWM_LOGE("invalid duty cycle!\r\n");
+		return BK_ERR_PWM_PERIOD_DUTY;
+	}
+
+	pwm_chan_init_common(sw_ch);
+	pwm_hal_chan_alloc_io(sw_ch, tim_map[sw_ch].tim_ch);
+	pwm_hal_set_polarity(sw_ch, PWM_POLARITY_POSITIVE);
+	pwm_hal_set_ocm(sw_ch, 1);
+	pwm_hal_set_ocpe(sw_ch, 1);
+	pwm_hal_set_arpe(sw_ch, 1);
+	pwm_hal_set_ocmpe(sw_ch, 1);
+
+	/* duty ratio is 0% */
+	if (config->duty_cycle == 0 &&
+		config->duty2_cycle == 0 &&
+		config->duty3_cycle == 0) {
+		pwm_config.period_cycle = config->period_cycle;
+		pwm_config.duty_cycle = 0;
+		pwm_config.duty2_cycle = 0;
+		pwm_config.duty3_cycle = 0;
+		pwm_config.psc = config->psc;
+		pwm_hal_set_init_level(sw_ch, 0);
+		pwm_hal_set_chan_config(sw_ch, &pwm_config);
+		return BK_OK;
+	}
+
+	/* duty ratio is 100% */
+	if (config->duty_cycle == config->period_cycle &&
+		config->duty2_cycle == 0 &&
+		config->duty3_cycle == 0) {
+		pwm_config.period_cycle = config->period_cycle;
+		pwm_config.duty_cycle = 0;
+		pwm_config.duty2_cycle = 0;
+		pwm_config.duty3_cycle = 0;
+		pwm_config.psc = config->psc;
+		pwm_hal_set_init_level(sw_ch, 1);
+		pwm_hal_set_chan_config(sw_ch, &pwm_config);
+		return BK_OK;
+	}
+
+	pwm_config.period_cycle = config->period_cycle;
+	pwm_config.duty_cycle = config->duty_cycle;
+	pwm_config.duty2_cycle = config->duty2_cycle;
+	pwm_config.duty3_cycle = config->duty3_cycle;;
+	pwm_config.psc = config->psc;
+	ret = pwm_hal_set_chan_config(sw_ch, &pwm_config);
+
+	PWM_LOGI("pwm init, period:%d, d1=%d, d2=%d, d3=%d\r\n", config->period_cycle, config->duty_cycle, config->duty2_cycle, config->duty3_cycle);
+
+	return ret;
+}
+
+static bk_err_t pwm_set_period_duty_with_phase(pwm_chan_t sw_ch, pwm_period_duty_config_t *config)
+{
+	BK_RETURN_ON_NULL(config);
+	PWM_RETURN_ON_INVALID_CHAN(sw_ch);
+
+	if ((config->duty_cycle > config->period_cycle) ||
+		(config->duty2_cycle > config->period_cycle) ||
+		(config->duty3_cycle > config->period_cycle)) {
+		PWM_LOGE("invalid duty cycle!\r\n");
+		return BK_ERR_PWM_PERIOD_DUTY;
+	}
+
+	bk_err_t ret = BK_OK;
+
+	/* duty ratio is 0% */
+	if (config->duty_cycle == 0 &&
+		config->duty2_cycle == 0 &&
+		config->duty3_cycle == 0) {
+		pwm_hal_set_init_level(sw_ch, 0);
+		pwm_hal_set_chan_config(sw_ch, config);
+		return BK_OK;
+	}
+
+	/* duty ratio is 100% */
+	if (config->duty_cycle == config->period_cycle &&
+		config->duty2_cycle == 0 &&
+		config->duty3_cycle == 0) {
+		config->duty_cycle = 0;
+		pwm_hal_set_init_level(sw_ch, 1);
+		pwm_hal_set_chan_config(sw_ch, config);
+		return BK_OK;
+	}
+
+	ret = pwm_hal_set_chan_config(sw_ch, config);
+
+	return ret;
+}
+
 static inline bool pwm_driver_duty_is_valid(uint32_t period, uint32_t duty1, uint32_t duty2,
 										uint32_t duty3)
 {
@@ -227,6 +339,15 @@ static pwm_group_t pwm_group_find_channel(pwm_chan_t sw_ch)
 	return PWM_GROUP_ID_INVALID;
 }
 
+static bool pwm_group_is_existed(pwm_group_t group)
+{
+	if (group >= SOC_PWM_TIM_NUM) {
+		return false;
+	}
+
+	return (s_pwm.groups[group].is_valid == true);
+}
+
 static pwm_group_t pwm_group_add(pwm_chan_t chan1, pwm_chan_t chan2)
 {
 	for (uint32_t i = 0; i < SOC_PWM_TIM_NUM; i++) {
@@ -239,6 +360,18 @@ static pwm_group_t pwm_group_add(pwm_chan_t chan1, pwm_chan_t chan2)
 	}
 
 	return PWM_GROUP_ID_INVALID;
+}
+
+static void pwm_group_delete(pwm_group_t group)
+{
+	if (group >= SOC_PWM_TIM_NUM) {
+		PWM_LOGE("pwm group delete error!\r\n");
+		return;
+	}
+
+	s_pwm.groups[group].is_valid = false;
+	s_pwm.groups[group].chan1 = 0;
+	s_pwm.groups[group].chan2 = 0;
 }
 
 static bk_err_t pwm_group_validate_param(pwm_chan_t sw_ch1,
@@ -268,6 +401,21 @@ static bk_err_t pwm_group_validate_param(pwm_chan_t sw_ch1,
 	if (period_cycle < (chan1_duty_cycle + chan2_duty_cycle))
 		return BK_ERR_PWM_GROUP_DUTY;
 
+	return BK_OK;
+}
+
+static bk_err_t pwm_group_calc_dead_cycle(uint32_t period,
+										  uint32_t ch1_duty,
+										  uint32_t ch2_duty,
+										  uint32_t *dead_cycle)
+{
+	uint32_t dead = 0;
+
+	if (ch1_duty != 0 && ch2_duty != 0) {
+		dead = (period - ch1_duty - ch2_duty) >> 1;
+	}
+
+	*dead_cycle = dead;
 	return BK_OK;
 }
 
@@ -568,14 +716,73 @@ bk_err_t bk_pwm_disable_interrupt(pwm_chan_t chan)
 	return BK_OK;
 }
 
+static void pwm_group_calc_chan1_duty_config(const pwm_group_duty_req_t *req,
+	pwm_period_duty_config_t *out)
+{
+	os_memset(out, 0, sizeof(pwm_period_duty_config_t));
+	out->period_cycle = req->period;
+	out->psc = req->psc;
+
+	if (req->chan1_duty == 0) {
+		return;                            /* 0% duty: all cycles stay zero */
+	}
+	if (req->chan1_duty == req->period) {
+		out->duty_cycle = req->period;     /* 100% duty */
+		return;
+	}
+	out->duty_cycle = req->chan1_duty;
+	out->duty2_cycle = req->period;
+	pwm_hal_set_init_level(req->chan1, 1);
+}
+
+static void pwm_group_calc_chan2_duty_config(const pwm_group_duty_req_t *req,
+	pwm_period_duty_config_t *out)
+{
+	os_memset(out, 0, sizeof(pwm_period_duty_config_t));
+	out->period_cycle = req->period;
+	out->psc = req->psc;
+
+	if (req->chan2_duty == 0) {
+		return;                            /* 0% duty: all cycles stay zero */
+	}
+	if (req->chan2_duty == req->period) {
+		out->duty_cycle = req->period;     /* 100% duty */
+		return;
+	}
+	if (req->chan1_duty == 0) {
+		out->duty_cycle = req->period - req->chan2_duty;
+		out->duty2_cycle = req->period;
+	} else {
+		out->duty_cycle = req->chan1_duty + req->dead_cycle;
+		out->duty2_cycle = out->duty_cycle + req->chan2_duty;
+	}
+	pwm_hal_set_init_level(req->chan2, 0);
+}
+
+static void pwm_group_duty_to_init_config(const pwm_period_duty_config_t *duty_config,
+	pwm_init_config_t *out)
+{
+	os_memset(out, 0, sizeof(pwm_init_config_t));
+	out->period_cycle = duty_config->period_cycle;
+	out->duty_cycle = duty_config->duty_cycle;
+	out->duty2_cycle = duty_config->duty2_cycle;
+	out->duty3_cycle = duty_config->duty3_cycle;
+	out->psc = duty_config->psc;
+}
+
 bk_err_t bk_pwm_group_init(const pwm_group_init_config_t *config, pwm_group_t *group)
 {
+	bk_err_t ret;
+	pwm_group_t group_id;
+	uint32_t dead_cycle = 0;
+	pwm_period_duty_config_t duty_config = {0};
+	pwm_init_config_t pwm_init_config = {0};
+
 	BK_RETURN_ON_NULL(config);
 	BK_RETURN_ON_NULL(group);
 	PWM_PM_CHECK_RESTORE(config->chan1);
 	PWM_PM_CHECK_RESTORE(config->chan2);
 
-	int ret = BK_OK;
 	*group = PWM_GROUP_ID_INVALID;
 	ret = pwm_group_validate_param(config->chan1, config->chan2, config->period_cycle,
 								   config->chan1_duty_cycle, config->chan2_duty_cycle);
@@ -583,62 +790,61 @@ bk_err_t bk_pwm_group_init(const pwm_group_init_config_t *config, pwm_group_t *g
 		return ret;
 	}
 
-	/* alloc free TIM */
-	pwm_group_t group_id = pwm_group_add(config->chan1, config->chan2);
-	pwm_group_tim_map_t group_tim_map[] = PWM_GROUP_DEFAULT_TIM_MAP;
-	uint32_t dead_cycle = (config->period_cycle - config->chan1_duty_cycle - config->chan2_duty_cycle) >> 1;
-	pwm_period_duty_config_t pwm_config = {0};
+	group_id = pwm_group_add(config->chan1, config->chan2);
+	if (group_id == PWM_GROUP_ID_INVALID) {
+		return BK_ERR_PWM_GROUP_NOT_EXIST;
+	}
 
-	pwm_chan_init_common(config->chan1);
-	pwm_chan_init_common(config->chan2);
-	pwm_hal_chan_alloc_io(config->chan1, group_tim_map[group_id].tim_ch_p);
-	pwm_hal_chan_alloc_io(config->chan2, group_tim_map[group_id].tim_ch_n);
-	pwm_hal_set_ocm(group_id, 1);
-	pwm_hal_set_ocpe(group_id, 1);
-	pwm_hal_set_arpe(group_id, 1);
-	pwm_hal_set_ocmpe(group_id, 1);
-
-	if ((config->chan1_duty_cycle == 0) && (config->chan2_duty_cycle == config->period_cycle)) {
-		pwm_config.psc = config->psc;
-		pwm_config.period_cycle = config->period_cycle;
-		pwm_config.duty_cycle = 0;
-		pwm_config.duty2_cycle = 0;
-		pwm_hal_set_init_level(group_id, 0);
-		pwm_hal_set_group_config(&pwm_config, group_id, 0);
-		*group = group_id;
-		s_pwm.group_chan_init_level &= ~BIT(group_id);
+	ret = pwm_group_calc_dead_cycle(config->period_cycle,
+		config->chan1_duty_cycle,
+		config->chan2_duty_cycle,
+		&dead_cycle);
+	if (ret != BK_OK) {
+		pwm_group_delete(group_id);
 		return ret;
 	}
 
-	if ((config->chan1_duty_cycle == config->period_cycle) && (config->chan2_duty_cycle == 0)) {
-		pwm_config.psc = config->psc;
-		pwm_config.period_cycle = config->period_cycle;
-		pwm_config.duty_cycle = 0;
-		pwm_config.duty2_cycle = 0;
-		pwm_hal_set_init_level(group_id, 1);
-		pwm_hal_set_group_config(&pwm_config, group_id, 0);
-		s_pwm.group_chan_init_level |= BIT(group_id);
-		*group = group_id;
+	pwm_group_duty_req_t req = {
+		.chan1 = config->chan1,
+		.chan2 = config->chan2,
+		.period = config->period_cycle,
+		.chan1_duty = config->chan1_duty_cycle,
+		.chan2_duty = config->chan2_duty_cycle,
+		.dead_cycle = dead_cycle,
+		.psc = config->psc,
+	};
+
+	pwm_group_calc_chan1_duty_config(&req, &duty_config);
+	pwm_group_duty_to_init_config(&duty_config, &pwm_init_config);
+	ret = pwm_init_with_phase(config->chan1, &pwm_init_config);
+	if (ret != BK_OK) {
+		pwm_group_delete(group_id);
 		return ret;
 	}
 
-	pwm_config.psc = config->psc;
-	pwm_config.period_cycle = config->period_cycle;
-	pwm_config.duty_cycle = config->chan2_duty_cycle + dead_cycle;
-	pwm_config.duty2_cycle = config->period_cycle;
-	pwm_hal_set_init_level(group_id, 0);
-	pwm_hal_set_group_config(&pwm_config, group_id, dead_cycle);
+	pwm_group_calc_chan2_duty_config(&req, &duty_config);
+	pwm_group_duty_to_init_config(&duty_config, &pwm_init_config);
+	ret = pwm_init_with_phase(config->chan2, &pwm_init_config);
+	if (ret != BK_OK) {
+		pwm_group_delete(group_id);
+		return ret;
+	}
+
 	*group = group_id;
-	s_pwm.group_chan_init_level &= ~BIT(group_id);
-	PWM_LOGI("group(%d) period=%d chan1_duty=%d chan2_duty=%d, dead_cycle=%d\n",
-			  group_id, config->period_cycle, config->chan1_duty_cycle, config->chan2_duty_cycle, dead_cycle);
-
-	return ret;
+	return BK_OK;
 }
 
 bk_err_t bk_pwm_group_deinit(pwm_group_t group)
 {
+	if (!pwm_group_is_existed(group))
+		return BK_ERR_PWM_GROUP_NOT_EXIST;
+
+	PWM_LOGI("group(%d) deinit\r\n", group);
+
 	bk_pwm_group_stop(group);
+	uint32_t multi_ch = BIT(s_pwm.groups[group].chan1) | BIT(s_pwm.groups[group].chan2);
+	pwm_hal_set_multi_chan_tim_enable(multi_ch, 0);
+	pwm_group_delete(group);
 
 	return BK_OK;
 }
@@ -649,46 +855,50 @@ bk_err_t bk_pwm_group_set_config(pwm_group_t group, const pwm_group_config_t *co
 	PWM_PM_CHECK_RESTORE(s_pwm.groups[group].chan1);
 	PWM_PM_CHECK_RESTORE(s_pwm.groups[group].chan2);
 
-	uint32_t dead_cycle = (config->period_cycle - config->chan1_duty_cycle - config->chan2_duty_cycle) >> 1;
-	pwm_period_duty_config_t pwm_config = {0};
+	bk_err_t ret = BK_OK;
+	uint32_t dead_cycle = 0;
+	pwm_period_duty_config_t duty_config = {0};
+	pwm_chan_t chan1 = s_pwm.groups[group].chan1;
+	pwm_chan_t chan2 = s_pwm.groups[group].chan2;
 
-	if ((config->chan1_duty_cycle == 0) && (config->chan2_duty_cycle == config->period_cycle)) {
-		pwm_config.psc = config->psc;
-		pwm_config.period_cycle = config->period_cycle;
-		pwm_config.duty_cycle = 0;
-		pwm_config.duty2_cycle = 0;
-		pwm_hal_set_init_level(group, 0);
-		pwm_hal_set_group_config(&pwm_config, group, 0);
-		s_pwm.group_chan_init_level &= ~BIT(group);
-		return BK_OK;
+	if (config->period_cycle == 0 || config->period_cycle < (config->chan1_duty_cycle + config->chan2_duty_cycle)) {
+		PWM_LOGE("invalid period_cycle or duty_cycle: period_cycle=%d, chan1_duty_cycle=%d, chan2_duty_cycle=%d\r\n",
+			config->period_cycle,
+			config->chan1_duty_cycle,
+			config->chan2_duty_cycle);
+		return BK_ERR_PWM_GROUP_DUTY;
 	}
 
-	if ((config->chan1_duty_cycle == config->period_cycle) && (config->chan2_duty_cycle == 0)) {
-		pwm_config.psc = config->psc;
-		pwm_config.period_cycle = config->period_cycle;
-		pwm_config.duty_cycle = 0;
-		pwm_config.duty2_cycle = 0;
-		pwm_hal_set_init_level(group, 1);
-		pwm_hal_set_group_config(&pwm_config, group, 0);
-		s_pwm.group_chan_init_level |= BIT(group);
-		return BK_OK;
+	ret = pwm_group_calc_dead_cycle(config->period_cycle,
+		config->chan1_duty_cycle,
+		config->chan2_duty_cycle,
+		&dead_cycle);
+	if (ret != BK_OK) {
+		return ret;
 	}
 
-	if (s_pwm.group_chan_init_level & BIT(group)) {
-		pwm_config.psc = config->psc;
-		pwm_config.period_cycle = config->period_cycle;
-		pwm_config.duty_cycle = config->chan1_duty_cycle + dead_cycle;
-		pwm_config.duty2_cycle = config->period_cycle;
-	} else {
-		pwm_config.psc = config->psc;
-		pwm_config.period_cycle = config->period_cycle;
-		pwm_config.duty_cycle = config->chan2_duty_cycle + dead_cycle;
-		pwm_config.duty2_cycle = config->period_cycle;
-	}
-	pwm_hal_set_group_config(&pwm_config, group, dead_cycle);
+	pwm_hal_set_sync_all_enable(1);
 
-	PWM_LOGI("group(%d) period=%d chan1_duty=%d chan2_duty=%d, dead_cycle=%d\n",
-			group, config->period_cycle, config->chan1_duty_cycle, config->chan2_duty_cycle, dead_cycle);
+	pwm_group_duty_req_t req = {
+		.chan1 = chan1,
+		.chan2 = chan2,
+		.period = config->period_cycle,
+		.chan1_duty = config->chan1_duty_cycle,
+		.chan2_duty = config->chan2_duty_cycle,
+		.dead_cycle = dead_cycle,
+		.psc = config->psc,
+	};
+
+	pwm_group_calc_chan1_duty_config(&req, &duty_config);
+	pwm_set_period_duty_with_phase(chan1, &duty_config);
+
+	pwm_group_calc_chan2_duty_config(&req, &duty_config);
+	pwm_set_period_duty_with_phase(chan2, &duty_config);
+
+	uint32_t int_level = rtos_disable_int();
+	pwm_hal_sync_all_shadow();
+	pwm_hal_set_sync_all_enable(0);
+	rtos_enable_int(int_level);
 
 	return BK_OK;
 }
@@ -698,7 +908,10 @@ bk_err_t bk_pwm_group_start(pwm_group_t group)
 	PWM_PM_CHECK_RESTORE(s_pwm.groups[group].chan1);
 	PWM_PM_CHECK_RESTORE(s_pwm.groups[group].chan2);
 
-	pwm_hal_set_single_chan_tim_enable(group, 1);
+	pwm_hal_set_single_chan_enable(s_pwm.groups[group].chan1, 1);
+	pwm_hal_set_single_chan_enable(s_pwm.groups[group].chan2, 1);
+	uint32_t multi_ch = BIT(s_pwm.groups[group].chan1) | BIT(s_pwm.groups[group].chan2);
+	pwm_hal_set_multi_chan_tim_enable(multi_ch, 1);
 	PWM_LOGI("group(%d) start\r\n", group);
 
 	return BK_OK;
@@ -709,7 +922,8 @@ bk_err_t bk_pwm_group_stop(pwm_group_t group)
 	PWM_PM_CHECK_RESTORE(s_pwm.groups[group].chan1);
 	PWM_PM_CHECK_RESTORE(s_pwm.groups[group].chan2);
 
-	pwm_hal_set_single_chan_tim_enable(group, 0);
+	pwm_hal_set_single_chan_enable(s_pwm.groups[group].chan1, 0);
+	pwm_hal_set_single_chan_enable(s_pwm.groups[group].chan2, 0);
 	PWM_LOGI("group(%d) stop\r\n", group);
 
 	return BK_OK;
@@ -911,107 +1125,6 @@ static uint32_t pwm_phase_shift_find_first_valid_index(const pwm_phase_shift_con
 		}
 	}
 	return 0xff;
-}
-
-static bk_err_t pwm_init_with_phase(pwm_chan_t sw_ch, const pwm_init_config_t *config)
-{
-	PWM_RETURN_ON_NOT_INIT();
-	BK_RETURN_ON_NULL(config);
-	PWM_RETURN_ON_INVALID_CHAN(sw_ch);
-
-	pwm_period_duty_config_t pwm_config = {0};
-	pwm_tim_map_t tim_map[] = PWM_CHAN_DEFAULT_TIM_MAP;
-	bk_err_t ret = BK_OK;
-
-	if ((config->duty_cycle > config->period_cycle) ||
-		(config->duty2_cycle > config->period_cycle) ||
-		(config->duty3_cycle > config->period_cycle)) {
-		PWM_LOGE("invalid duty cycle!\r\n");
-		return BK_ERR_PWM_PERIOD_DUTY;
-	}
-
-	pwm_chan_init_common(sw_ch);
-	pwm_hal_chan_alloc_io(sw_ch, tim_map[sw_ch].tim_ch);
-	pwm_hal_set_polarity(sw_ch, PWM_POLARITY_POSITIVE);
-	pwm_hal_set_ocm(sw_ch, 1);
-	pwm_hal_set_ocpe(sw_ch, 1);
-	pwm_hal_set_arpe(sw_ch, 1);
-	pwm_hal_set_ocmpe(sw_ch, 1);
-
-	/* duty ratio is 0% */
-	if (config->duty_cycle == 0 &&
-		config->duty2_cycle == 0 &&
-		config->duty3_cycle == 0) {
-		pwm_config.period_cycle = config->period_cycle;
-		pwm_config.duty_cycle = 0;
-		pwm_config.duty2_cycle = 0;
-		pwm_config.duty3_cycle = 0;
-		pwm_config.psc = config->psc;
-		pwm_hal_set_init_level(sw_ch, 0);
-		pwm_hal_set_chan_config(sw_ch, &pwm_config);
-		return BK_OK;
-	}
-
-	/* duty ratio is 100% */
-	if (config->duty_cycle == config->period_cycle &&
-		config->duty2_cycle == 0 &&
-		config->duty3_cycle == 0) {
-		pwm_config.period_cycle = config->period_cycle;
-		pwm_config.duty_cycle = 0;
-		pwm_config.duty2_cycle = 0;
-		pwm_config.duty3_cycle = 0;
-		pwm_config.psc = config->psc;
-		pwm_hal_set_init_level(sw_ch, 1);
-		pwm_hal_set_chan_config(sw_ch, &pwm_config);
-		return BK_OK;
-	}
-
-	pwm_config.period_cycle = config->period_cycle;
-	pwm_config.duty_cycle = config->duty_cycle;
-	pwm_config.duty2_cycle = config->duty2_cycle;
-	pwm_config.duty3_cycle = config->duty3_cycle;;
-	pwm_config.psc = config->psc;
-	ret = pwm_hal_set_chan_config(sw_ch, &pwm_config);
-
-	return ret;
-}
-
-static bk_err_t pwm_set_period_duty_with_phase(pwm_chan_t sw_ch, pwm_period_duty_config_t *config)
-{
-	BK_RETURN_ON_NULL(config);
-	PWM_RETURN_ON_INVALID_CHAN(sw_ch);
-
-	if ((config->duty_cycle > config->period_cycle) ||
-		(config->duty2_cycle > config->period_cycle) ||
-		(config->duty3_cycle > config->period_cycle)) {
-		PWM_LOGE("invalid duty cycle!\r\n");
-		return BK_ERR_PWM_PERIOD_DUTY;
-	}
-
-	bk_err_t ret = BK_OK;
-
-	/* duty ratio is 0% */
-	if (config->duty_cycle == 0 &&
-		config->duty2_cycle == 0 &&
-		config->duty3_cycle == 0) {
-		pwm_hal_set_init_level(sw_ch, 0);
-		pwm_hal_set_chan_config(sw_ch, config);
-		return BK_OK;
-	}
-
-	/* duty ratio is 100% */
-	if (config->duty_cycle == config->period_cycle &&
-		config->duty2_cycle == 0 &&
-		config->duty3_cycle == 0) {
-		config->duty_cycle = 0;
-		pwm_hal_set_init_level(sw_ch, 1);
-		pwm_hal_set_chan_config(sw_ch, config);
-		return BK_OK;
-	}
-
-	ret = pwm_hal_set_chan_config(sw_ch, config);
-
-	return ret;
 }
 
 static void pwm_phase_shift_set_duty(void)
@@ -1345,4 +1458,3 @@ static void pwm0_isr(void)
 	PWM_LOGD("%s\n", __func__);
 	pwm_isr_common(0);
 }
-

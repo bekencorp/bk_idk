@@ -138,10 +138,11 @@ bk_err_t pwm_hal_set_single_chan_tim_enable(pwm_chan_t sw_ch, uint32_t value)
 bk_err_t pwm_hal_set_multi_chan_tim_enable(uint32_t multi_ch, uint32_t value)
 {
 	uint32_t reg_val = pwm_ll_get_reg4_value();
-	for (uint32_t i = 0; i < SOC_PWM_TIM_NUM; i++) {
-		if (multi_ch & BIT(i)) {
-			reg_val |= BIT(i);
-		}
+
+	if (value) {
+		reg_val |= multi_ch;
+	} else {
+		reg_val &= ~multi_ch;
 	}
 	pwm_ll_set_reg4_value(reg_val);
 
