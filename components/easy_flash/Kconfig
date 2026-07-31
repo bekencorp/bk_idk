@@ -9,6 +9,11 @@ menu "Easy_flash"
 		bool "Enable Easy Flash Test"
 		default n
 
+	config EASY_FLASH_ENV_BACKUP_ENABLE
+		depends on EASY_FLASH
+		bool "Enable Easy Flash ENV backup partition"
+		default n
+
 	menu "Modify Easy Flash Config"
 		depends on EASY_FLASH
 

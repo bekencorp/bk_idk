@@ -28,6 +28,9 @@
 
 #include <string.h>
 #include <easyflash.h>
+#if CONFIG_EASY_FLASH_ENV_BACKUP_ENABLE
+#include <os/mem.h>
+#endif
 
 #if defined(EF_USING_ENV) && !defined(EF_ENV_USING_LEGACY_MODE)
 
@@ -1732,6 +1735,257 @@ static bool check_and_recovery_env_cb(env_node_obj_t env, void *arg1, void *arg2
     return false;
 }
 
+#if CONFIG_EASY_FLASH_ENV_BACKUP_ENABLE
+static bool backup_area_structurally_ok(uint32_t base_addr)
+{
+    size_t sec_idx;
+    struct sector_meta_data sector;
+
+    for (sec_idx = 0; sec_idx < SECTOR_NUM; sec_idx++) {
+        read_sector_meta_data(base_addr + sec_idx * SECTOR_SIZE, &sector, false);
+        if (sector.check_ok) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool backup_sector_hdr_ok(uint32_t sec_addr)
+{
+    struct sector_meta_data sector;
+
+    read_sector_meta_data(sec_addr, &sector, false);
+    return sector.check_ok;
+}
+
+static bool backup_find_valid_env_crc(uint32_t area_base, const char *name, uint8_t name_len, uint32_t *crc32)
+{
+    size_t sec_idx;
+    uint32_t sec_addr;
+    struct sector_meta_data sector;
+    struct env_node_obj env;
+    struct env_hdr_data env_hdr;
+
+    for (sec_idx = 0; sec_idx < SECTOR_NUM; sec_idx++) {
+        sec_addr = area_base + sec_idx * SECTOR_SIZE;
+        read_sector_meta_data(sec_addr, &sector, false);
+        if (!sector.check_ok) {
+            continue;
+        }
+        if (sector.status.store != SECTOR_STORE_USING && sector.status.store != SECTOR_STORE_FULL) {
+            continue;
+        }
+        env.addr.start = FAILED_ADDR;
+        while ((env.addr.start = get_next_env_addr(&sector, &env)) != FAILED_ADDR) {
+            read_env(&env);
+            if (env.crc_is_ok && env.status == ENV_WRITE && env.name_len == name_len
+                    && !strncmp(env.name, name, name_len)) {
+                ef_port_read(env.addr.start, (uint32_t *)&env_hdr, sizeof(struct env_hdr_data));
+                if (crc32) {
+                    *crc32 = env_hdr.crc32;
+                }
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+static bool backup_sector_differ(uint32_t pri_sec, uint32_t bak_sec, uint8_t *pri_buf, uint8_t *bak_buf)
+{
+    ef_port_read(pri_sec, (uint32_t *)pri_buf, SECTOR_SIZE);
+    ef_port_read(bak_sec, (uint32_t *)bak_buf, SECTOR_SIZE);
+    return memcmp(pri_buf, bak_buf, SECTOR_SIZE) != 0;
+}
+
+static bool backup_sectors_differ(uint32_t pri_base, uint32_t bak_base, uint8_t *pri_buf, uint8_t *bak_buf)
+{
+    size_t sec_idx;
+
+    for (sec_idx = 0; sec_idx < SECTOR_NUM; sec_idx++) {
+        if (backup_sector_differ(pri_base + sec_idx * SECTOR_SIZE,
+                bak_base + sec_idx * SECTOR_SIZE, pri_buf, bak_buf)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool backup_has_backup_only_valid_keys(uint32_t pri_base, uint32_t bak_base)
+{
+    size_t sec_idx;
+    uint32_t sec_addr;
+    struct sector_meta_data sector;
+    struct env_node_obj env;
+
+    for (sec_idx = 0; sec_idx < SECTOR_NUM; sec_idx++) {
+        sec_addr = bak_base + sec_idx * SECTOR_SIZE;
+        read_sector_meta_data(sec_addr, &sector, false);
+        if (!sector.check_ok) {
+            continue;
+        }
+        if (sector.status.store != SECTOR_STORE_USING && sector.status.store != SECTOR_STORE_FULL) {
+            continue;
+        }
+        env.addr.start = FAILED_ADDR;
+        while ((env.addr.start = get_next_env_addr(&sector, &env)) != FAILED_ADDR) {
+            read_env(&env);
+            if (!env.crc_is_ok || env.status != ENV_WRITE) {
+                continue;
+            }
+            if (!backup_find_valid_env_crc(pri_base, env.name, env.name_len, NULL)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+static bool backup_sector_need_bak_to_pri(uint32_t pri_base, uint32_t bak_sec)
+{
+    struct sector_meta_data sector;
+    struct env_node_obj env;
+
+    read_sector_meta_data(bak_sec, &sector, false);
+    if (!sector.check_ok) {
+        return false;
+    }
+    if (sector.status.store != SECTOR_STORE_USING && sector.status.store != SECTOR_STORE_FULL) {
+        return false;
+    }
+    env.addr.start = FAILED_ADDR;
+    while ((env.addr.start = get_next_env_addr(&sector, &env)) != FAILED_ADDR) {
+        read_env(&env);
+        if (env.crc_is_ok && env.status == ENV_WRITE) {
+            if (!backup_find_valid_env_crc(pri_base, env.name, env.name_len, NULL)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+static bool backup_need_sync(uint32_t pri_base, uint32_t bak_base, bool pri_ok, bool bak_ok,
+        uint8_t *pri_buf, uint8_t *bak_buf)
+{
+    if (!pri_ok && !bak_ok) {
+        return false;
+    }
+
+    if (backup_has_backup_only_valid_keys(pri_base, bak_base)) {
+        return true;
+    }
+
+    return backup_sectors_differ(pri_base, bak_base, pri_buf, bak_buf);
+}
+
+static EfErrCode backup_copy_sector(uint32_t src_addr, uint32_t dst_addr, uint8_t *sec_buf)
+{
+    ef_port_read(src_addr, (uint32_t *)sec_buf, SECTOR_SIZE);
+    if (ef_port_erase(dst_addr, SECTOR_SIZE) != EF_NO_ERR) {
+        return EF_ERASE_ERR;
+    }
+    if (ef_port_write(dst_addr, (uint32_t *)sec_buf, SECTOR_SIZE) != EF_NO_ERR) {
+        return EF_WRITE_ERR;
+    }
+
+    return EF_NO_ERR;
+}
+
+static EfErrCode backup_sync_sectors(uint32_t pri_base, uint32_t bak_base, uint8_t *pri_buf, uint8_t *bak_buf)
+{
+    size_t sec_idx;
+    EfErrCode result = EF_NO_ERR;
+    uint32_t src_addr, dst_addr, pri_sec, bak_sec;
+    bool pri_hdr_ok, bak_hdr_ok, bak_to_pri;
+
+    for (sec_idx = 0; sec_idx < SECTOR_NUM; sec_idx++) {
+        pri_sec = pri_base + sec_idx * SECTOR_SIZE;
+        bak_sec = bak_base + sec_idx * SECTOR_SIZE;
+
+        if (!backup_sector_differ(pri_sec, bak_sec, pri_buf, bak_buf)) {
+            continue;
+        }
+
+        pri_hdr_ok = backup_sector_hdr_ok(pri_sec);
+        bak_hdr_ok = backup_sector_hdr_ok(bak_sec);
+
+        if (!pri_hdr_ok && bak_hdr_ok) {
+            bak_to_pri = true;
+        } else if (pri_hdr_ok && !bak_hdr_ok) {
+            bak_to_pri = false;
+        } else if (pri_hdr_ok && bak_hdr_ok) {
+            bak_to_pri = backup_sector_need_bak_to_pri(pri_base, bak_sec);
+        } else {
+            continue;
+        }
+
+        if (bak_to_pri) {
+            src_addr = bak_sec;
+            dst_addr = pri_sec;
+        } else {
+            src_addr = pri_sec;
+            dst_addr = bak_sec;
+        }
+
+        result = backup_copy_sector(src_addr, dst_addr, pri_buf);
+        if (result != EF_NO_ERR) {
+            EF_INFO("Error: ENV backup sector sync failed at 0x%08X -> 0x%08X.\n", src_addr, dst_addr);
+            break;
+        }
+
+        EF_DEBUG("ENV backup synced sector 0x%08X -> 0x%08X.\n", src_addr, dst_addr);
+    }
+
+    return result;
+}
+
+EfErrCode ef_backup_sync_on_boot(void)
+{
+    uint32_t bak_base;
+    bool pri_ok, bak_ok;
+    uint8_t *pri_buf = NULL;
+    uint8_t *bak_buf = NULL;
+    EfErrCode result = EF_NO_ERR;
+
+    bak_base = ef_port_get_backup_start_addr();
+    if (bak_base == 0xFFFFFFFF) {
+        return EF_NO_ERR;
+    }
+
+    pri_buf = (uint8_t *)os_zalloc(SECTOR_SIZE);
+    bak_buf = (uint8_t *)os_zalloc(SECTOR_SIZE);
+    if (pri_buf == NULL || bak_buf == NULL) {
+        EF_INFO("Warning: ENV backup sync buffer alloc failed.\n");
+        result = EF_ENV_INIT_FAILED;
+        goto __exit;
+    }
+
+    pri_ok = backup_area_structurally_ok(env_start_addr);
+    bak_ok = backup_area_structurally_ok(bak_base);
+
+    if (!backup_need_sync(env_start_addr, bak_base, pri_ok, bak_ok, pri_buf, bak_buf)) {
+        EF_DEBUG("ENV backup already aligned.\n");
+        goto __exit;
+    }
+
+    ef_port_dual_write_set(false);
+    result = backup_sync_sectors(env_start_addr, bak_base, pri_buf, bak_buf);
+    ef_port_dual_write_set(true);
+
+__exit:
+    os_free(pri_buf);
+    os_free(bak_buf);
+
+    return result;
+}
+#endif
+
 /**
  * Check and load the flash ENV meta data.
  *
@@ -1816,6 +2070,13 @@ EfErrCode ef_env_init(ef_env const *default_env, size_t default_env_size) {
     default_env_set_size = default_env_size;
 
     EF_DEBUG("ENV start address is 0x%08X, size is %d bytes.\n", env_start_addr, ENV_AREA_SIZE);
+
+#if CONFIG_EASY_FLASH_ENV_BACKUP_ENABLE
+    result = ef_backup_sync_on_boot();
+    if (result != EF_NO_ERR) {
+        EF_INFO("Warning: ENV backup sync on boot failed.\n");
+    }
+#endif
 
     result = ef_load_env();
 

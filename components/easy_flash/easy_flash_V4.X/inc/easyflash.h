@@ -52,6 +52,9 @@ EfErrCode ef_set_env_blob(const char *key, const void *value_buf, size_t buf_len
 
 /* ef_env.c, ef_env_legacy_wl.c and ef_env_legacy.c */
 EfErrCode ef_load_env(void);
+#if CONFIG_EASY_FLASH_ENV_BACKUP_ENABLE
+EfErrCode ef_backup_sync_on_boot(void);
+#endif
 void ef_print_env(void);
 char *ef_get_env(const char *key);
 EfErrCode ef_set_env(const char *key, const char *value);
@@ -94,6 +97,10 @@ uint32_t ef_calc_crc32(uint32_t crc, const void *buf, size_t size);
 EfErrCode ef_port_read(uint32_t addr, uint32_t *buf, size_t size);
 EfErrCode ef_port_erase(uint32_t addr, size_t size);
 EfErrCode ef_port_write(uint32_t addr, const uint32_t *buf, size_t size);
+#if CONFIG_EASY_FLASH_ENV_BACKUP_ENABLE
+uint32_t ef_port_get_backup_start_addr(void);
+void ef_port_dual_write_set(bool enable);
+#endif
 void ef_port_env_lock(void);
 void ef_port_env_unlock(void);
 void ef_log_debug(const char *file, const long line, const char *format, ...);

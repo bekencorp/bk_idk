@@ -45,9 +45,44 @@ static const ef_env default_env_set[] = {
 
 static beken_semaphore_t env_cache_lock = NULL;
 uint32_t g_ef_start_addr = 0xFFFFFFFF;
+#if CONFIG_EASY_FLASH_ENV_BACKUP_ENABLE
+static uint32_t s_ef_backup_start_addr = 0xFFFFFFFF;
+static bool s_ef_dual_write_enabled = true;
+
+static bool ef_backup_enabled(void)
+{
+	return s_ef_backup_start_addr != 0xFFFFFFFF;
+}
+
+uint32_t ef_port_get_backup_start_addr(void)
+{
+	return s_ef_backup_start_addr;
+}
+
+void ef_port_dual_write_set(bool enable)
+{
+	s_ef_dual_write_enabled = enable;
+}
+
+static uint32_t ef_backup_mirror_addr(uint32_t addr)
+{
+	if (!ef_backup_enabled()) {
+		return 0;
+	}
+
+	if (addr < g_ef_start_addr || addr >= g_ef_start_addr + ENV_AREA_SIZE) {
+		return 0;
+	}
+
+	return s_ef_backup_start_addr + (addr - g_ef_start_addr);
+}
+#endif
 
 void ef_check_config(void) {
 	bk_logic_partition_t *partition_info = NULL;
+#if CONFIG_EASY_FLASH_ENV_BACKUP_ENABLE
+	const bk_logic_partition_t *backup_info = NULL;
+#endif
 
 	partition_info = bk_flash_partition_get_info(BK_PARTITION_EASYFLASH);
 	BK_ASSERT(NULL != partition_info);
@@ -64,6 +99,14 @@ void ef_check_config(void) {
 				 partition_info->partition_length, ENV_AREA_SIZE);
 		BK_ASSERT(0);
 	}
+
+#if CONFIG_EASY_FLASH_ENV_BACKUP_ENABLE
+	backup_info = bk_flash_partition_get_info_by_name("easyflash_b");
+	if (backup_info != NULL && backup_info->partition_start_addr != 0
+		&& backup_info->partition_length >= ENV_AREA_SIZE) {
+		s_ef_backup_start_addr = backup_info->partition_start_addr;
+	}
+#endif
 }
 
 
@@ -163,11 +206,21 @@ static int bk_erase(uint32_t addr, size_t size)
 EfErrCode ef_port_erase(uint32_t addr, size_t size)
 {
 	EfErrCode result = EF_NO_ERR;
+#if CONFIG_EASY_FLASH_ENV_BACKUP_ENABLE
+	uint32_t backup_addr = 0;
+#endif
 
 	/* make sure the start address is a multiple of FLASH_ERASE_MIN_SIZE */
 	EF_ASSERT(addr % EF_ERASE_MIN_SIZE == 0);
 
 	bk_erase(addr, size);
+
+#if CONFIG_EASY_FLASH_ENV_BACKUP_ENABLE
+	backup_addr = ef_backup_mirror_addr(addr);
+	if (s_ef_dual_write_enabled && backup_addr != 0) {
+		bk_erase(backup_addr, size);
+	}
+#endif
 
 	return result;
 }
@@ -187,6 +240,9 @@ EfErrCode ef_port_write(uint32_t addr, const uint32_t *buf, size_t size)
 {
 	flash_protect_type_t protect_type;
 	EfErrCode result = EF_NO_ERR;
+#if CONFIG_EASY_FLASH_ENV_BACKUP_ENABLE
+	uint32_t backup_addr = 0;
+#endif
 
 	EF_ASSERT(size % 4 == 0);
 
@@ -196,6 +252,14 @@ EfErrCode ef_port_write(uint32_t addr, const uint32_t *buf, size_t size)
 	}
 
 	bk_flash_write_bytes(addr, (const uint8_t *)buf, size);
+
+#if CONFIG_EASY_FLASH_ENV_BACKUP_ENABLE
+	backup_addr = ef_backup_mirror_addr(addr);
+	if (s_ef_dual_write_enabled && backup_addr != 0) {
+		bk_flash_write_bytes(backup_addr, (const uint8_t *)buf, size);
+	}
+#endif
+
 	bk_flash_set_protect_type(protect_type);
 
 	return result;
