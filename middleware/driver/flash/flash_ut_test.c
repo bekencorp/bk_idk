@@ -16,6 +16,7 @@
 #include <string.h>
 
 #include <components/log.h>
+#include <os/os.h>
 #include <driver/flash.h>
 #include <driver/flash_partition.h>
 #include <partitions.h>
@@ -23,6 +24,33 @@
 #include "flash_ut_test.h"
 
 #define TAG "flash_ut"
+
+/*
+ * Log output is asynchronous: the CPU races through all sub-tests within the
+ * same tick while the UART FIFO drains slowly, so a reset loses whatever is
+ * still buffered and the last printed line does NOT mark the crash site. This
+ * delay lets the log task flush the stage header to UART before the sub-test
+ * runs, so a reset pinpoints exactly which stage was executing.
+ */
+#define FLASH_UT_STAGE_FLUSH_MS 30
+
+/*
+ * XIP-unsafe stages. On an XIP build the CPU fetches code directly from this
+ * same flash, so reconfiguring the flash controller (2/4 line switch, clock
+ * change) or putting the flash into deep power-down / power-saving resets the
+ * board mid-fetch. Keep these off for the simple-case run; set to 1 only for a
+ * non-XIP build (code running from RAM) or once the ops run from RAM with
+ * interrupts masked and XIP suspended.
+ */
+#define FLASH_UT_ENABLE_XIP_UNSAFE 0
+
+/*
+ * Partition-name dependent stages. These require a named "easyflash" partition
+ * that does not exist in the bk7236n/xip partition table (app_a/app_b/user_mfr/
+ * nvs/...), so bk_flash_partition_get_info_by_name("easyflash") returns NULL.
+ * Disabled for now; set to 1 on a layout that actually defines that partition.
+ */
+#define FLASH_UT_ENABLE_EASYFLASH_PART 0
 
 #define FLASHUT_LOGI(...) BK_LOGI(TAG, ##__VA_ARGS__)
 #define FLASHUT_LOGE(...) BK_LOGE(TAG, ##__VA_ARGS__)
@@ -156,6 +184,7 @@ static bk_err_t flash_ut_test_identity_and_config(void)
 	return BK_OK;
 }
 
+static bk_err_t flash_ut_test_clock_and_line_mode(void) __attribute__((unused));
 static bk_err_t flash_ut_test_clock_and_line_mode(void)
 {
 	flash_ut_count_api("bk_flash_set_line_mode");
@@ -390,6 +419,7 @@ static bk_err_t flash_ut_test_invalid_address(void)
 	return BK_OK;
 }
 
+static bk_err_t flash_ut_test_deep_sleep_and_power_saving(void) __attribute__((unused));
 static bk_err_t flash_ut_test_deep_sleep_and_power_saving(void)
 {
 	uint8_t buf[4];
@@ -501,6 +531,7 @@ static bk_err_t flash_ut_test_partition_info(void)
 	return BK_OK;
 }
 
+static bk_err_t flash_ut_test_partition_rw(void) __attribute__((unused));
 static bk_err_t flash_ut_test_partition_rw(void)
 {
 	const bk_logic_partition_t *partition;
@@ -548,6 +579,7 @@ static bk_err_t flash_ut_test_partition_rw(void)
 	return BK_OK;
 }
 
+static bk_err_t flash_ut_test_partition_erase_all(void) __attribute__((unused));
 static bk_err_t flash_ut_test_partition_erase_all(void)
 {
 	flash_ut_count_api("bk_flash_partition_erase_all");
@@ -571,6 +603,23 @@ static void flash_ut_print_coverage(void)
 	}
 }
 
+/*
+ * Run one sub-test stage: print its name, wait for the UART log to drain, then
+ * execute it. If the board resets inside the stage, its header is guaranteed to
+ * be on the wire already, so the last stage line in the log is the crash site.
+ */
+#define FLASH_UT_RUN_STAGE(fn) \
+	do { \
+		FLASHUT_LOGI(#fn " ...\r\n"); \
+		rtos_delay_milliseconds(FLASH_UT_STAGE_FLUSH_MS); \
+		err = (fn)(); \
+		if (err != BK_OK) { \
+			return err; \
+		} \
+		FLASHUT_LOGI(#fn " ok\r\n"); \
+		rtos_delay_milliseconds(FLASH_UT_STAGE_FLUSH_MS); \
+	} while (0)
+
 bk_err_t flash_driver_test(void)
 {
 	bk_err_t err = BK_OK;
@@ -580,100 +629,39 @@ bk_err_t flash_driver_test(void)
 
 	FLASHUT_LOGI("flash_driver_test start\r\n");
 
-	FLASHUT_LOGI("flash_ut_test_driver_init\r\n");
-	err = flash_ut_test_driver_init();
-	if (err != BK_OK) {
-		return err;
-	}
+	FLASH_UT_RUN_STAGE(flash_ut_test_driver_init);
+	FLASH_UT_RUN_STAGE(flash_ut_test_identity_and_config);
 
-	FLASHUT_LOGI("flash_ut_test_identity_and_config\r\n");
-	err = flash_ut_test_identity_and_config();
-	if (err != BK_OK) {
-		return err;
-	}
-
-	FLASHUT_LOGI("flash_ut_test_clock_and_line_mode\r\n");
-	err = flash_ut_test_clock_and_line_mode();
-	if (err != BK_OK) {
-		return err;
-	}
+	/* XIP-unsafe: line-mode / flash-clock reconfig (see macro comment). */
+#if FLASH_UT_ENABLE_XIP_UNSAFE
+	FLASH_UT_RUN_STAGE(flash_ut_test_clock_and_line_mode);
+#endif
 
 #if CONFIG_SYS_CPU0
-	FLASHUT_LOGI("flash_ut_test_protect_and_status\r\n");
-	err = flash_ut_test_protect_and_status();
-	if (err != BK_OK) {
-		return err;
-	}
-
-	FLASHUT_LOGI("flash_ut_test_erase_read\r\n");
-	err = flash_ut_test_erase_read();
-	if (err != BK_OK) {
-		return err;
-	}
-
-	FLASHUT_LOGI("flash_ut_test_write_read\r\n");
-	err = flash_ut_test_write_read();
-	if (err != BK_OK) {
-		return err;
-	}
-
-	FLASHUT_LOGI("flash_ut_test_read_word\r\n");
-	err = flash_ut_test_read_word();
-	if (err != BK_OK) {
-		return err;
-	}
-
-	FLASHUT_LOGI("flash_ut_test_unaligned_read_write\r\n");
-	err = flash_ut_test_unaligned_read_write();
-	if (err != BK_OK) {
-		return err;
-	}
-
-	FLASHUT_LOGI("flash_ut_test_erase_variants\r\n");
-	err = flash_ut_test_erase_variants();
-	if (err != BK_OK) {
-		return err;
-	}
-
-	FLASHUT_LOGI("flash_ut_test_invalid_address\r\n");
-	err = flash_ut_test_invalid_address();
-	if (err != BK_OK) {
-		return err;
-	}
-
-	FLASHUT_LOGI("flash_ut_test_deep_sleep_and_power_saving\r\n");
-	err = flash_ut_test_deep_sleep_and_power_saving();
-	if (err != BK_OK) {
-		return err;
-	}
+	FLASH_UT_RUN_STAGE(flash_ut_test_protect_and_status);
+	FLASH_UT_RUN_STAGE(flash_ut_test_erase_read);
+	FLASH_UT_RUN_STAGE(flash_ut_test_write_read);
+	FLASH_UT_RUN_STAGE(flash_ut_test_read_word);
+	FLASH_UT_RUN_STAGE(flash_ut_test_unaligned_read_write);
+	FLASH_UT_RUN_STAGE(flash_ut_test_erase_variants);
+	FLASH_UT_RUN_STAGE(flash_ut_test_invalid_address);
+	/* XIP-unsafe: flash deep power-down / power-saving (see macro comment). */
+#if FLASH_UT_ENABLE_XIP_UNSAFE
+	FLASH_UT_RUN_STAGE(flash_ut_test_deep_sleep_and_power_saving);
+#endif
 #else
 	FLASHUT_LOGI("skip erase/write tests on non-CPU0\r\n");
 #endif
 
-	FLASHUT_LOGI("flash_ut_test_callbacks_and_status\r\n");
-	err = flash_ut_test_callbacks_and_status();
-	if (err != BK_OK) {
-		return err;
-	}
-
-	FLASHUT_LOGI("flash_ut_test_partition_info\r\n");
-	err = flash_ut_test_partition_info();
-	if (err != BK_OK) {
-		return err;
-	}
+	FLASH_UT_RUN_STAGE(flash_ut_test_callbacks_and_status);
+	FLASH_UT_RUN_STAGE(flash_ut_test_partition_info);
 
 #if CONFIG_SYS_CPU0
-	FLASHUT_LOGI("flash_ut_test_partition_rw\r\n");
-	err = flash_ut_test_partition_rw();
-	if (err != BK_OK) {
-		return err;
-	}
-
-	FLASHUT_LOGI("flash_ut_test_partition_erase_all\r\n");
-	err = flash_ut_test_partition_erase_all();
-	if (err != BK_OK) {
-		return err;
-	}
+	/* XIP-safe but needs an "easyflash" partition absent here (see macro). */
+#if FLASH_UT_ENABLE_EASYFLASH_PART
+	FLASH_UT_RUN_STAGE(flash_ut_test_partition_rw);
+	FLASH_UT_RUN_STAGE(flash_ut_test_partition_erase_all);
+#endif
 #endif
 
 	flash_ut_print_coverage();
