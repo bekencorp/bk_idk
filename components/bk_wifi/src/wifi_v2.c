@@ -30,6 +30,81 @@
 #include <common/sys_config.h>
 //#include <components/system.h>
 #include "wifi_config.h"
+
+/* SoftAP+BLE coex: SoftAP alone only reports wifi-open → TDD demand stays LOW and
+ * BLE adv can starve beacon / TCP SYN-ACK (TX TOT every ~2s on AC1).
+ * Default ON: force SAP high TDD demand while SoftAP is up (BLE stays enabled).
+ * Build with -DWIFI_AP_COEX_FORCE_HIGH_TRAFFIC=0 to disable for A/B. */
+#ifndef WIFI_AP_COEX_FORCE_HIGH_TRAFFIC
+#define WIFI_AP_COEX_FORCE_HIGH_TRAFFIC 1
+#endif
+
+/* Optional safety net (ms): auto fall back SoftAP coex demand to LOW even if
+ * bk_wifi_ap_stop() is never reached.
+ * IMPORTANT: the timeout is counted from bk_wifi_ap_start(), i.e. it also spans
+ * the time the user spends selecting the Wi-Fi / typing the password before the
+ * phone even joins the softAP. A too-small value re-opens the very starvation
+ * bug this fixes, so it is DISABLED (0) by default and the forced-high is scoped
+ * strictly to ap_start()/ap_stop() (Tuya netcfg reliably calls ap_stop when it
+ * ends). Only set it >0 (>= the whole Tuya netcfg timeout, e.g. 300000) if you
+ * run softAPs that may never be stopped and must protect BLE from a leak. */
+#ifndef WIFI_AP_COEX_FORCE_HIGH_MS
+#define WIFI_AP_COEX_FORCE_HIGH_MS 0
+#endif
+
+#if WIFI_AP_COEX_FORCE_HIGH_TRAFFIC
+/* Values mirrored from properties/modules/bk_coex/wifi_intf/if_coex_to_wifi.h
+ * (kept local to avoid a cross-component header dependency; keep in sync). */
+#define WIFI_COEX_SAP_IDX           1  /* COEX_WIFI_SAP_IDX */
+#define WIFI_COEX_TRAFFIC_LVL_NULL  0  /* COEX_WIFI_TRAFFIC_LVL_NULL */
+#define WIFI_COEX_TRAFFIC_LVL_HIGH  2  /* COEX_WIFI_TRAFFIC_LVL_HIGH */
+
+extern void coex_dump_wifi_tdd_state(const char *tag);
+extern void coex_ictw_report_wifi_traffic(uint16_t cntx_id, uint8_t level_idx);
+
+#if WIFI_AP_COEX_FORCE_HIGH_MS > 0
+#include <os/os.h>
+static beken2_timer_t s_ap_coex_high_timer;
+
+static void wifi_ap_coex_high_timeout(void *larg, void *rarg)
+{
+	(void)larg;
+	(void)rarg;
+	/* safety-net window elapsed: release RF back to BLE */
+	coex_ictw_report_wifi_traffic(WIFI_COEX_SAP_IDX, WIFI_COEX_TRAFFIC_LVL_NULL);
+	coex_dump_wifi_tdd_state("ap_coex_high_timeout");
+}
+
+static void wifi_ap_coex_high_timer_stop(void)
+{
+	if (rtos_is_oneshot_timer_init(&s_ap_coex_high_timer)) {
+		rtos_stop_oneshot_timer(&s_ap_coex_high_timer);
+		rtos_deinit_oneshot_timer(&s_ap_coex_high_timer);
+	}
+}
+#endif /* WIFI_AP_COEX_FORCE_HIGH_MS > 0 */
+
+static void wifi_ap_coex_force_high_apply(void)
+{
+	coex_ictw_report_wifi_traffic(WIFI_COEX_SAP_IDX, WIFI_COEX_TRAFFIC_LVL_HIGH);
+	coex_dump_wifi_tdd_state("ap_start_force_high");
+#if WIFI_AP_COEX_FORCE_HIGH_MS > 0
+	wifi_ap_coex_high_timer_stop();
+	if (rtos_init_oneshot_timer(&s_ap_coex_high_timer, WIFI_AP_COEX_FORCE_HIGH_MS,
+				    wifi_ap_coex_high_timeout, NULL, NULL) == BK_OK)
+		rtos_start_oneshot_timer(&s_ap_coex_high_timer);
+#endif
+}
+
+static void wifi_ap_coex_force_high_release(void)
+{
+#if WIFI_AP_COEX_FORCE_HIGH_MS > 0
+	wifi_ap_coex_high_timer_stop();
+#endif
+	coex_ictw_report_wifi_traffic(WIFI_COEX_SAP_IDX, WIFI_COEX_TRAFFIC_LVL_NULL);
+	coex_dump_wifi_tdd_state("ap_stop");
+}
+#endif /* WIFI_AP_COEX_FORCE_HIGH_TRAFFIC */
 #ifdef CONFIG_P2P
 #include "rw_tx_buffering.h"
 #include "fhost_msg.h"
@@ -3718,6 +3793,15 @@ bk_err_t bk_wifi_ap_start(void)
 
 	WIFI_LOGI("ap started\n");
 	wifi_set_state_bit(WIFI_AP_STARTED_BIT);
+	
+	/*
+	 * SoftAP alone only reports wifi-open -> TDD demand stays LOW and BLE may
+	 * starve beacon / TCP. Force SAP high traffic while AP is up (A/B:
+	 * -DWIFI_AP_COEX_FORCE_HIGH_TRAFFIC=0).
+	 */
+#if WIFI_AP_COEX_FORCE_HIGH_TRAFFIC
+	wifi_ap_coex_force_high_apply();
+#endif
 	BK_LOG_ON_ERR(bk_event_post(EVENT_MOD_WIFI, EVENT_WIFI_AP_START,
 		NULL, 0, BEKEN_NEVER_TIMEOUT));
 	return BK_OK;
@@ -3999,6 +4083,13 @@ bk_err_t bk_wifi_ap_stop(void)
 	rtos_delay_milliseconds(10);
 	mm_hw_ap_disable();
 	rtos_delay_milliseconds(10);
+
+	/* Release SoftAP coex HIGH once teardown has begun (after mm_hw_ap_disable),
+	 * so a later wlan_ap_disable() failure cannot leave the bit stuck. */
+#if WIFI_AP_COEX_FORCE_HIGH_TRAFFIC
+	wifi_ap_coex_force_high_release();
+#endif
+
 	if(wlan_ap_disable()) {
 		WIFI_LOGE("ap disable fail!\n");
 		return BK_FAIL;

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <common/bk_include.h>
+#include <os/os.h>
 //#include <os/mem.h>
 //#include <os/str.h>
 #include "rwnx_config.h"
@@ -59,6 +60,14 @@ beken_thread_t app_thread_handle;
 beken_semaphore_t app_sema = NULL;
 WIFI_CORE_T g_wifi_core = { 0 };
 volatile int32_t bmsg_rx_count = 0;
+
+/*
+ * DEBUG (off by default): wifi core thread processes tx/rx/scan serially; a
+ * long-held handler stalls SoftAP TCP. Enable with -DWIFI_CORE_BUSY_WARN_MS=200.
+ */
+#ifndef WIFI_CORE_BUSY_WARN_MS
+#define WIFI_CORE_BUSY_WARN_MS 0
+#endif
 
 #if (CONFIG_SOC_BK7271)
 void bmsg_null_sender(void) __SECTION(".itcm");
@@ -897,8 +906,16 @@ static void core_thread_main(void *arg)
 	bk_err_t ret;
 	BUS_MSG_T msg;
 
+#if WIFI_CORE_BUSY_WARN_MS > 0
+	uint32_t _busy_t0;
+#endif
+
 	while (1) {
 		ret = rtos_pop_from_queue(&g_wifi_core.io_queue, &msg, BEKEN_WAIT_FOREVER);
+
+#if WIFI_CORE_BUSY_WARN_MS > 0
+		_busy_t0 = rtos_get_time();
+#endif
 
 		////check if mac need wakeup and pwr update
 		mac_wakeup_and_pwr_update(msg);
@@ -1015,6 +1032,17 @@ static void core_thread_main(void *arg)
 
 			ke_evt_core_scheduler();
 		}
+
+#if WIFI_CORE_BUSY_WARN_MS > 0
+		{
+			uint32_t _busy_dt = rtos_get_time() - _busy_t0;
+			if (_busy_dt >= WIFI_CORE_BUSY_WARN_MS) {
+				RWNX_LOGI("core busy: msg_type=%d cost=%ums\r\n",
+					(int)msg.type, (unsigned int)_busy_dt);
+			}
+		}
+#endif /* WIFI_CORE_BUSY_WARN_MS > 0 */
+
 		////check if mac need sleep
 		mac_sleep_check();
 	}
@@ -1031,9 +1059,15 @@ static void core_thread_main(void *arg)
 #if CONFIG_STA_PS
 	uint8_t ps_flag = 0;
 #endif
+#if WIFI_CORE_BUSY_WARN_MS > 0
+	uint32_t _busy_t0;
+#endif
 
 	while (1) {
 		ret = rtos_pop_from_queue(&g_wifi_core.io_queue, &msg, BEKEN_WAIT_FOREVER);
+#if WIFI_CORE_BUSY_WARN_MS > 0
+		_busy_t0 = rtos_get_time();
+#endif
 		if (kNoErr == ret) {
 			switch (msg.type) {
 #if CONFIG_STA_PS
@@ -1121,6 +1155,16 @@ static void core_thread_main(void *arg)
 			else
 				ke_skip = 0;
 		}
+
+#if WIFI_CORE_BUSY_WARN_MS > 0
+		{
+			uint32_t _busy_dt = rtos_get_time() - _busy_t0;
+			if (_busy_dt >= WIFI_CORE_BUSY_WARN_MS) {
+				RWNX_LOGI("core busy: msg_type=%d cost=%ums\r\n",
+					(int)msg.type, (unsigned int)_busy_dt);
+			}
+		}
+#endif /* WIFI_CORE_BUSY_WARN_MS > 0 */
 
 #if CONFIG_STA_PS
 		if (ps_flag == 1) {
