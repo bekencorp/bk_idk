@@ -20,6 +20,10 @@ from env_tools.bksecure.scripts.gen_otp import gen_otp_efuse_config_file
 
 logger = logging.getLogger(Path(__file__).name)
 
+def phy2virtual(addr: int, flash_crc_enable: bool) -> int:
+    if flash_crc_enable:
+        return ((addr % 34) + (addr // 34) * 32)
+    return addr
 
 def set_logging():
     log_format = "[%(name)s|%(levelname)s] %(message)s"
@@ -59,6 +63,7 @@ def add_aes_to_all_bin(pack_dir: Path, pack_json: Path):
         return
     
     aes_tool = get_flash_aes_tool()
+    flash_crc_enable = bool(pack_data.get("crc_enable", True))
     
     if "section" not in pack_data:
         logger.warning("section not found in pack_json, skip AES encryption")
@@ -83,9 +88,10 @@ def add_aes_to_all_bin(pack_dir: Path, pack_json: Path):
         output_origin_bin = bin_file.parent / f"origin_{bin_file.stem}{bin_file.suffix}"
         shutil.copy2(bin_file, output_origin_bin)
         logger.debug(f"Backed up origin file to {output_origin_bin}")
-        
-        logger.info(f"Encrypting {firmware} with start_addr={start_addr}")
-        cmd = f'python3 {aes_tool} encrypt -infile {bin_file} -keywords {aes_key} -aes 128 -outfile {bin_file} -startaddress {start_addr}'
+        phys_addr = int(start_addr, 16)
+        aes_start_addr = f"0x{phy2virtual(phys_addr, flash_crc_enable):08x}"
+        logger.info(f"Encrypting {firmware} with start_addr={aes_start_addr}")
+        cmd = f'python3 {aes_tool} encrypt -infile {bin_file} -keywords {aes_key} -aes 128 -outfile {bin_file} -startaddress {aes_start_addr}'
         run_cmd_not_check_ret(cmd)
 
         if firmware == "bootloader.bin" and bin_file.exists():
