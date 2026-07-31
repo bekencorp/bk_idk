@@ -238,10 +238,6 @@ int driver_early_init(void)
 	bk_otp_driver_init();
 #endif
 
-	return 0;
-}
-
-int driver_init(void) {
 	sys_drv_init();
 
 	bk_gpio_driver_init();
@@ -250,9 +246,15 @@ int driver_init(void) {
 	//ATE uses UART TX PIN as the detect ATE mode pin,
 	//so it should be called after GPIO init and before UART init.
 	//or caused ATE can't work or UART can't work
-#if CONFIG_ATE
+	#if CONFIG_ATE
 	bk_ate_init();
-#endif
+	#endif
+	
+
+	return 0;
+}
+
+int driver_init(void) {
 
 	//Important notice!
 	//Before UART is initialized, any call of BK_LOG_RAW/os_print/BK_LOGx may
