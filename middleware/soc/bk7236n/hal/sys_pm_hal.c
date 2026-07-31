@@ -661,6 +661,9 @@ __attribute__((section(".itcm_sec_code"))) void sys_hal_enter_deep_sleep(void *p
 		sys_ll_set_ana_reg5_spilatchb_rc32k(0);
 	}
 
+	if(sys_ll_get_ana_reg7_vporsel() == 1) {
+		sys_ll_set_ana_reg7_vporsel(0);
+	}
 	sys_hal_disable_spi_latch();
 
 #if CONFIG_AON_PMU_REG0_REFACTOR_DEV

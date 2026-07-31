@@ -2734,7 +2734,9 @@ void sys_hal_early_init(void)
 	sys_hal_analog_set(ANALOG_REG4, sys_ana->r4);
 	sys_hal_analog_set(ANALOG_REG5, sys_ana->r5);
 	sys_hal_analog_set(ANALOG_REG6, sys_ana->r6);
-	sys_hal_analog_set(ANALOG_REG7, sys_ana->r7);
+	//make sure vporsel and vbatdetsel keep the same as bootloader/bootrom
+	val = sys_hal_analog_get(ANALOG_REG7);
+	sys_hal_analog_set(ANALOG_REG7, (val & ((0x1 << 3) | (0x3 << 16))) | (sys_ana->r7 & ~((0x1 << 3) | (0x3 << 16))));
 	sys_hal_analog_set(ANALOG_REG8, sys_ana->r8);
 
 	// keep the rtc int status before RTC_KEEP_TIME_SUPPORT restore the time

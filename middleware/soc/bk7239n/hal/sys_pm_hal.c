@@ -646,6 +646,9 @@ __attribute__((section(".itcm_sec_code"))) void sys_hal_enter_deep_sleep(void *p
 		sys_ana_ll_set_ana_reg4_spilatchb_rc32k(0);
 	}
 
+	if(sys_ana_ll_get_ana_reg7_vporsel() == 1) {
+		sys_ana_ll_set_ana_reg7_vporsel(0);
+	}
 	;//sys_ll_set_ana_reg8_valoldosel(PM_LOW_VOL_AON_LDO_SEL); //0x4:0.8V aon voltage
 	sys_hal_disable_spi_latch();
 
