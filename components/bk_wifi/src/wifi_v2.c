@@ -3172,7 +3172,7 @@ bk_err_t bk_wifi_sta_get_config(wifi_sta_config_t *config)
 	config->is_not_support_auto_fci = !g_is_use_fci_from_flash;
 
 #if CONFIG_WIFI_FAST_CONNECT
-	if (!g_is_get_fci_from_flash) {
+	if (!g_is_get_fci_from_flash || !g_is_use_fci_from_flash) {
 		os_memcpy(config->bssid, g_fci.bssid, WIFI_BSSID_LEN);
 		os_memcpy(config->psk, g_fci.psk, WIFI_PASSWORD_LEN);
 		os_memcpy(config->ip_addr, g_fci.ip_addr, 4);
@@ -3183,6 +3183,21 @@ bk_err_t bk_wifi_sta_get_config(wifi_sta_config_t *config)
 		config->channel = g_fci.channel;
 		config->pmf = g_fci.pmf;
 		config->security = g_fci.security;
+	}
+	else {
+		struct wlan_fast_connect_info fci;
+		os_memset(&fci, 0, sizeof(fci));
+		wlan_read_fast_connect_info(&fci);
+		os_memcpy(config->bssid, fci.bssid, WIFI_BSSID_LEN);
+		os_memcpy(config->psk, fci.psk, WIFI_PASSWORD_LEN);
+		os_memcpy(config->ip_addr, fci.ip_addr, 4);
+		os_memcpy(config->netmask, fci.netmask, 4);
+		os_memcpy(config->gw, fci.gw, 4);
+		os_memcpy(config->dns1, fci.dns1, 4);
+		os_memcpy(config->tk, fci.tk, 16);
+		config->channel = fci.channel;
+		config->pmf = fci.pmf;
+		config->security = fci.security;
 	}
 #endif
 
