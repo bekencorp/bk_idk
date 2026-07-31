@@ -69,6 +69,7 @@ typedef struct {
 	void (*_sys_set_use_abs_power)(UINT32 use);
 	void (*_evm_via_mac_continue)(void);
 	void (*_evm_via_mac_evt)(INT32 dummy);
+	UINT32 (*_evm_via_mac_is_start)(void);
 	INT32 (*_rwnx_cal_save_trx_rcbekn_reg_val)(void);
 	void (*_rc_drv_set_agc_manual_en)(uint32_t value);
 	void (*_rc_drv_set_rf_macbypass)(uint32_t value);
@@ -79,6 +80,7 @@ typedef struct {
 	void (*_bk7011_max_rxsens_setting)(void);
 	void (*_bk7011_default_rxsens_setting)(void);
 	UINT32 (*_tx_evm_rate_get)(void);
+	UINT32 (*_tx_evm_length_get)(void);
 	UINT32 (*_tx_evm_pwr_idx_get)(void);
 	UINT32 (*_tx_evm_modul_format_get)(void);
 	UINT32 (*_tx_evm_guard_i_tpye_get)(void);

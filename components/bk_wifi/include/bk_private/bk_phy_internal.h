@@ -35,6 +35,7 @@ void tpc_set_media_pwr_level(UINT8 level);
 UINT8 tpc_get_media_pwr_level(void);
 void evm_via_mac_continue(void);
 void evm_via_mac_evt(int dummy);
+UINT32 evm_via_mac_is_start(void);
 
 int do_evm(void *cmdtp, int flag, int argc, char *const argv[]);
 int do_rx_sensitivity(void *cmdtp, int flag, int argc, char *const argv[]);
@@ -62,6 +63,7 @@ INT32 rwnx_cal_load_trx_rcbekn_reg_val(void);
 void bk7011_max_rxsens_setting(void);
 void bk7011_default_rxsens_setting(void);
 UINT32 tx_evm_rate_get(void);
+UINT32 tx_evm_length_get(void);
 UINT32 tx_evm_pwr_idx_get(void);
 UINT32 tx_evm_modul_format_get(void);
 UINT32 tx_evm_guard_i_tpye_get(void);

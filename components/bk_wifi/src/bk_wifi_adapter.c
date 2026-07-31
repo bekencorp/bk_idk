@@ -1239,6 +1239,7 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._sys_set_use_abs_power    = rwnx_sys_set_use_abs_power_wrapper,
 	._evm_via_mac_continue     = evm_via_mac_continue,
 	._evm_via_mac_evt          = evm_via_mac_evt,
+	._evm_via_mac_is_start     = evm_via_mac_is_start,
 	._rwnx_cal_save_trx_rcbekn_reg_val = rwnx_cal_save_trx_rcbekn_reg_val,
 	._rc_drv_set_agc_manual_en = rc_drv_set_agc_manual_en,
 #if (CONFIG_SOC_BK7239XX)
@@ -1250,6 +1251,7 @@ __attribute__((section(".dtcm_sec_data "))) wifi_os_funcs_t g_wifi_os_funcs = {
 	._bk7011_max_rxsens_setting = bk7011_max_rxsens_setting,
 	._bk7011_default_rxsens_setting = bk7011_default_rxsens_setting,
 	._tx_evm_rate_get = tx_evm_rate_get,
+	._tx_evm_length_get = tx_evm_length_get,
 	._tx_evm_pwr_idx_get = tx_evm_pwr_idx_get,
 	._tx_evm_modul_format_get = tx_evm_modul_format_get,
 	._tx_evm_guard_i_tpye_get = tx_evm_guard_i_tpye_get,
