@@ -195,6 +195,7 @@ const VECTOR_TABLE_Type __VECTOR_IRAM[] __VECTOR_IRAM_ATTRIBUTE = {
     UART_InterruptHandler,                    /* Interrupt 4 */
 };
 
+#if CONFIG_DEEP_LV
 #if CONFIG_DIRECT_XIP || CONFIG_MIXED_OTA
 __attribute__((section(".dlv_iram")))
 static uint32_t flash_spi_read_word_iram(uint32_t phy_addr)
@@ -266,7 +267,6 @@ static void bl2_deep_lv_boot(void)
     while (1) {}
 }
 
-#if CONFIG_DEEP_LV
 static uint32_t memory_is_retention(void)
 {
     return (g_deep_lv_reserve.magic == DEEP_LV_RESERVE_MAGIC);
