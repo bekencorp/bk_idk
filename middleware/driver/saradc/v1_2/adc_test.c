@@ -38,9 +38,9 @@ static void cli_adc_help(void)
     CLI_LOGI("adc_test [channel] [single_adc_example/multi_adc_example]\n");
     CLI_LOGI("  Examples: sadc 3 single_adc_example, sadc 0 multi_adc_example\n");
     CLI_LOGI("adc_test [channel] [saradc_val_read/use_sample_set_saradc_val ...]\n");
-    CLI_LOGI("  Examples: sadc 3 saradc_val_read, sadc 4 use_sample_set_saradc_val 3 1 0x200000 4 0 low\n");
+    CLI_LOGI("  Examples: sadc 3 saradc_val_read, sadc 4 use_sample_set_saradc_val 3 1 0x1E13D 4 0 low\n");
     CLI_LOGI("sadc_cont start/read/stop [num val] [chan val] [div val] [sam_rate val] [mode val]\n");
-    CLI_LOGI("  Examples: sadc_cont start num 1024 chan 3 div 32 sam_rate 0 mode 1\n");
+    CLI_LOGI("  Examples: sadc_cont start num 1024 chan 3 div 5 sam_rate 0 mode 1\n");
     CLI_LOGI("           sadc_cont read, sadc_cont stop\n");
     CLI_LOGI("sadc_multi config/read [chan id]\n");
     CLI_LOGI("  Examples: sadc_multi config chan 3, sadc_multi read chan 3\n");
@@ -269,7 +269,7 @@ static bk_err_t _adc_cont_read(uint8_t chan_id, uint16_t *data, uint32_t count)
 static void cli_sadc_multi_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
     uint32_t channel_id = 0;
-    uint32_t adc_clk_div  = 32;
+    uint32_t adc_clk_div  = 5;
 
     if(4 != argc) {
         CLI_LOGI("sadc parameters count exception\r\n");
@@ -419,7 +419,7 @@ static void cli_adc_cont_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
     uint32_t param_in_cnt = 0;
     uint32_t sample_rate  = 0x0;
     uint8_t  output_mode  = 0;  // ToDo: uart mode and sram mode
-    uint32_t adc_clk_div  = 32;
+    uint32_t adc_clk_div  = 5;
     bk_err_t ret          = BK_OK;
 
     if((arg_cnt > 1) && (os_strcmp(argv[0 + 1], "read") == 0)) {
@@ -466,7 +466,7 @@ static void cli_adc_cont_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc,
         s_adc_channel_id  = 3;
         output_mode  = 0;  // ToDo: uart mode and sram mode
         sample_rate  = 0x0;
-        adc_clk_div  = 32;
+        adc_clk_div  = 5;
         s_stdout_mode  = 0;
     }
 
