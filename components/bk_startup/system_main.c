@@ -482,6 +482,26 @@ void start_app_main_thread(void)
 		(beken_thread_arg_t)0);
 }
 
+
+#if CONFIG_USING_CPP
+extern void *__init_array_start;
+extern void *__init_array_end;
+
+void __libc_init_array(void) {
+    void **ctor;
+
+    ctor = &__init_array_start;
+    while (ctor != &__init_array_end) {
+        void (*func)(void);
+
+        func = (void ( *)(void))(*(UINT32 *)ctor);
+
+        func();
+        ctor++;
+    }
+}
+#endif
+
 void entry_main(void)
 {
 #if CONFIG_SAVE_BOOT_TIME_POINT
@@ -491,7 +511,9 @@ void entry_main(void)
 	rtos_init();
 
 #if CONFIG_GCOV
-	__gcov_call_constructors();
+    __gcov_call_constructors();
+#elif CONFIG_USING_CPP
+    __libc_init_array();
 #endif
 
 #if (CONFIG_ATE_TEST)
