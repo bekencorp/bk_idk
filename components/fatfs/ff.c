@@ -3059,6 +3059,7 @@ FRESULT find_volume (	/* FR_OK(0): successful, !=0: any error occurred */
 	int vol;
 	DSTATUS stat;
 	DWORD bsect, fasize, tsect, sysect, nclst, szbfat, br[4];
+	QWORD fat_sectors, root_sectors, layout_sectors;
 	WORD nrsv;
 	FATFS *fs;
 	UINT i;
@@ -3185,7 +3186,10 @@ FRESULT find_volume (	/* FR_OK(0): successful, !=0: any error occurred */
 
 		fs->n_fats = fs->win[BPB_NumFATs];				/* Number of FATs */
 		if (fs->n_fats != 1 && fs->n_fats != 2) return FR_NO_FILESYSTEM;	/* (Must be 1 or 2) */
-		fasize *= fs->n_fats;							/* Number of sectors for FAT area */
+		if (fasize == 0) return FR_NO_FILESYSTEM;
+		fat_sectors = (QWORD)fasize * fs->n_fats;
+		if (fat_sectors > 0xFFFFFFFFULL) return FR_NO_FILESYSTEM;
+		fasize = (DWORD)fat_sectors;						/* Number of sectors for FAT area */
 
 		fs->csize = fs->win[BPB_SecPerClus];			/* Cluster size */
 		if (fs->csize == 0 || (fs->csize & (fs->csize - 1))) return FR_NO_FILESYSTEM;	/* (Must be power of 2) */
@@ -3195,13 +3199,16 @@ FRESULT find_volume (	/* FR_OK(0): successful, !=0: any error occurred */
 
 		tsect = ld_word(fs->win + BPB_TotSec16);		/* Number of sectors on the volume */
 		if (tsect == 0) tsect = ld_dword(fs->win + BPB_TotSec32);
+		if ((QWORD)bsect + tsect > 0x100000000ULL) return FR_NO_FILESYSTEM;
 
 		nrsv = ld_word(fs->win + BPB_RsvdSecCnt);		/* Number of reserved sectors */
 		if (nrsv == 0) return FR_NO_FILESYSTEM;			/* (Must not be 0) */
 
 		/* Determine the FAT sub type */
-		sysect = nrsv + fasize + fs->n_rootdir / (SS(fs) / SZDIRE);	/* RSV + FAT + DIR */
-		if (tsect < sysect) return FR_NO_FILESYSTEM;	/* (Invalid volume size) */
+		root_sectors = fs->n_rootdir / (SS(fs) / SZDIRE);
+		layout_sectors = (QWORD)nrsv + fat_sectors + root_sectors;	/* RSV + FAT + DIR */
+		if (layout_sectors > tsect || layout_sectors > 0xFFFFFFFFULL) return FR_NO_FILESYSTEM;
+		sysect = (DWORD)layout_sectors;
 		nclst = (tsect - sysect) / fs->csize;			/* Number of clusters */
 		if (nclst == 0) return FR_NO_FILESYSTEM;		/* (Invalid volume size) */
 		fmt = 0;
@@ -4067,7 +4074,7 @@ FRESULT f_getcwd (
 /* Seek File Read/Write Pointer                                          */
 /*-----------------------------------------------------------------------*/
 
-FRESULT f_lseek (
+static FRESULT f_lseek_internal (
 	FIL* fp,		/* Pointer to the file object */
 	FSIZE_t ofs		/* File pointer from top of file */
 )
@@ -4220,6 +4227,54 @@ FRESULT f_lseek (
 
 	LEAVE_FF(fs, res);
 }
+
+#if !FF_FS_READONLY
+/*
+ * Extend a file with zero-filled data before exposing the new file size.
+ * FatFs normally leaves the area between the old and new EOF undefined.
+ */
+FRESULT f_lseek (
+	FIL* fp,		/* Pointer to the file object */
+	FSIZE_t ofs		/* File pointer from top of file */
+)
+{
+	FRESULT res;
+	FSIZE_t old_size;
+	FSIZE_t remain;
+	static const BYTE zeros[FF_MAX_SS] = { 0 };
+
+	if (fp == NULL) return FR_INVALID_OBJECT;
+	old_size = fp->obj.objsize;
+	if (ofs <= old_size || (fp->flag & FA_WRITE) == 0) {
+		return f_lseek_internal(fp, ofs);
+	}
+
+	/* Move to the old EOF before writing the zero-filled extension. */
+	res = f_lseek_internal(fp, old_size);
+	if (res != FR_OK) return res;
+
+	remain = ofs - old_size;
+	while (remain != 0) {
+		UINT chunk = (remain > sizeof(zeros)) ? (UINT)sizeof(zeros) : (UINT)remain;
+		UINT written = 0;
+
+		res = f_write(fp, zeros, chunk, &written);
+		if (res != FR_OK) return res;
+		if (written != chunk) return FR_DISK_ERR;
+		remain -= written;
+	}
+
+	return f_lseek_internal(fp, ofs);
+}
+#else
+FRESULT f_lseek (
+	FIL* fp,		/* Pointer to the file object */
+	FSIZE_t ofs		/* File pointer from top of file */
+)
+{
+	return f_lseek_internal(fp, ofs);
+}
+#endif /* !FF_FS_READONLY */
 
 
 
