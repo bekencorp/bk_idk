@@ -387,9 +387,12 @@ icmp6_send_response_with_addrs_and_netif(struct pbuf *p, u8_t code, u32_t data, 
 {
   struct pbuf *q;
   struct icmp6_hdr *icmp6hdr;
+  u16_t datalen;
+  err_t err;
 
-  /* ICMPv6 header + IPv6 header + data */
-  q = pbuf_alloc(PBUF_IP, sizeof(struct icmp6_hdr) + IP6_HLEN + LWIP_ICMP6_DATASIZE,
+  /* ICMPv6 header + as much of the original packet as possible */
+  datalen = LWIP_MIN(p->tot_len, (u16_t)(IP6_HLEN + LWIP_ICMP6_DATASIZE));
+  q = pbuf_alloc(PBUF_IP, sizeof(struct icmp6_hdr) + datalen,
                  PBUF_RAM);
   if (q == NULL) {
     LWIP_DEBUGF(ICMP_DEBUG, ("icmp_time_exceeded: failed to allocate pbuf for ICMPv6 packet.\n"));
@@ -397,16 +400,20 @@ icmp6_send_response_with_addrs_and_netif(struct pbuf *p, u8_t code, u32_t data, 
     return;
   }
   LWIP_ASSERT("check that first pbuf can hold icmp 6message",
-             (q->len >= (sizeof(struct icmp6_hdr) + IP6_HLEN + LWIP_ICMP6_DATASIZE)));
+             (q->len >= (sizeof(struct icmp6_hdr) + datalen)));
 
   icmp6hdr = (struct icmp6_hdr *)q->payload;
   icmp6hdr->type = type;
   icmp6hdr->code = code;
   icmp6hdr->data = lwip_htonl(data);
 
-  /* copy fields from original packet */
-  SMEMCPY((u8_t *)q->payload + sizeof(struct icmp6_hdr), (u8_t *)p->payload,
-          IP6_HLEN + LWIP_ICMP6_DATASIZE);
+  /* copy fields from original packet, which may be a chain of pbufs */
+  err = pbuf_copy_partial_pbuf(q, p, datalen, sizeof(struct icmp6_hdr));
+  if (err != ERR_OK) {
+    pbuf_free(q);
+    ICMP6_STATS_INC(icmp6.err);
+    return;
+  }
 
   /* calculate checksum */
   icmp6hdr->chksum = 0;

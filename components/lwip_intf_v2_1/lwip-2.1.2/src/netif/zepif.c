@@ -178,8 +178,6 @@ zepif_linkoutput(struct netif *netif, struct pbuf *p)
   if (p->tot_len > ZEP_MAX_DATA_LEN) {
     return ERR_VAL;
   }
-  LWIP_ASSERT("TODO: support chained pbufs", p->next == NULL);
-
   state = (struct zepif_state *)netif->state;
   LWIP_ASSERT("state->pcb != NULL", state->pcb != NULL);
 
@@ -201,7 +199,7 @@ zepif_linkoutput(struct netif *netif, struct pbuf *p)
   state->seqno++;
   zep->len = (u8_t)p->tot_len;
 
-  err = pbuf_take_at(q, p->payload, p->tot_len, sizeof(struct zep_hdr));
+  err = pbuf_copy_partial_pbuf(q, p, p->tot_len, sizeof(struct zep_hdr));
   if (err == ERR_OK) {
 #if ZEPIF_LOOPBACK
     zepif_udp_recv(netif, state->pcb, pbuf_clone(PBUF_RAW, PBUF_RAM, q), NULL, 0);
