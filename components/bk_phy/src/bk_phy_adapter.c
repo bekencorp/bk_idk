@@ -480,6 +480,15 @@ static bool get_ble_polar_mode()
 #endif
 }
 
+static bool ft_txpwr_cal_is_enabled(void)
+{
+#if CONFIG_FT_TXPWR_CAL
+    return true;
+#else
+    return false;
+#endif
+}
+
 void * mpb_reg_api_wrapper(void)
 {
 #if CONFIG_WIFI_ENABLE
@@ -806,6 +815,7 @@ const phy_os_funcs_t g_phy_os_funcs = {
     ._bk_feature_temp_detect_enable    = bk_feature_temp_detect_enable,
 
     ._ate_is_enabled                   = ate_is_enabled,
+    ._ft_txpwr_cal_is_enabled          = ft_txpwr_cal_is_enabled,
     ._volt_single_get_current_voltage  = volt_single_get_current_voltage,
     ._bk_adc_data_calculate            = bk_adc_data_calculate,
 

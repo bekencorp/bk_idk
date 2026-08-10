@@ -48,6 +48,7 @@ typedef struct {
     int (*_bk_feature_temp_detect_enable)(void);
 
     bool (*_ate_is_enabled)(void);
+    bool (*_ft_txpwr_cal_is_enabled)(void);
     int (*_volt_single_get_current_voltage)(UINT32 *volt_value);
     float (*_bk_adc_data_calculate)(uint16_t adc_val, uint8_t adc_chan);
 

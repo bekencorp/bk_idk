@@ -9,6 +9,12 @@ menu "Bk_Phy"
 		bool "Enable DPD Cali"
 		default n
 
+	config FT_TXPWR_CAL
+		bool "Enable FT TX power calibration from OTP"
+		default y
+		help
+			Read FT power calibration from OTP_PHY_PWR1/OTP_PHY_PWR2.
+
 	config DPD_CALI_GROUP
 		int "Number of Group for DPD Cali"
 		default 8
