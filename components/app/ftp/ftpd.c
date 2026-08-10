@@ -472,7 +472,11 @@ static void send_next_directory(struct ftpd_datastate *fsd, struct tcp_pcb *pcb,
 
 		if (fsd->vfs_dirent) {
 			if (shortlist) {
-				len = sprintf(buffer, "%s\r\n", fsd->vfs_dirent->name);
+				len = snprintf(buffer, sizeof(buffer), "%s\r\n", fsd->vfs_dirent->name);
+				if (len < 0 || (size_t)len >= sizeof(buffer)) {
+					fsd->vfs_dirent = NULL;
+					continue;
+				}
 				if (sfifo_space(&fsd->fifo) < len) {
 					send_data(pcb, fsd);
 					return;
@@ -492,9 +496,13 @@ static void send_next_directory(struct ftpd_datastate *fsd, struct tcp_pcb *pcb,
 				vfs_stat(fsd->msgfs->vfs, fsd->vfs_dirent->name, &st);
 				s_time = gmtime(&st.st_mtime);
 				if (s_time->tm_year == current_year)
-					len = sprintf(buffer, "-rw-rw-rw-   1 user     ftp  %11ld %s %02i %02i:%02i %s\r\n", st.st_size, month_table[s_time->tm_mon], s_time->tm_mday, s_time->tm_hour, s_time->tm_min, fsd->vfs_dirent->name);
+					len = snprintf(buffer, sizeof(buffer), "-rw-rw-rw-   1 user     ftp  %11ld %s %02i %02i:%02i %s\r\n", st.st_size, month_table[s_time->tm_mon], s_time->tm_mday, s_time->tm_hour, s_time->tm_min, fsd->vfs_dirent->name);
 				else
-					len = sprintf(buffer, "-rw-rw-rw-   1 user     ftp  %11ld %s %02i %5i %s\r\n", st.st_size, month_table[s_time->tm_mon], s_time->tm_mday, s_time->tm_year + 1900, fsd->vfs_dirent->name);
+					len = snprintf(buffer, sizeof(buffer), "-rw-rw-rw-   1 user     ftp  %11ld %s %02i %5i %s\r\n", st.st_size, month_table[s_time->tm_mon], s_time->tm_mday, s_time->tm_year + 1900, fsd->vfs_dirent->name);
+				if (len < 0 || (size_t)len >= sizeof(buffer)) {
+					fsd->vfs_dirent = NULL;
+					continue;
+				}
 				if (VFS_ISDIR(st.st_mode))
 					buffer[0] = 'd';
 				if (sfifo_space(&fsd->fifo) < len) {

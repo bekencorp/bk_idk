@@ -49,10 +49,15 @@ int vfs_read(void *buffer, int dummy, int len, vfs_file_t *file)
 vfs_dirent_t *vfs_readdir(vfs_dir_t *dir)
 {
 	FILINFO fi;
+	size_t len;
 	FRESULT r = f_readdir(dir, &fi);
 	if (r != FR_OK) return NULL;
 	if (fi.fname[0] == 0) return NULL;
-	memcpy(dir_ent.name, fi.fname, sizeof(fi.fname));
+
+	len = strnlen(fi.fname, sizeof(fi.fname));
+	if (len >= sizeof(dir_ent.name)) return NULL;
+	memcpy(dir_ent.name, fi.fname, len);
+	dir_ent.name[len] = '\0';
 	return &dir_ent;
 }
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2013, Philipp Tölke
+/* Copyright (c) 2013, Philipp Tï¿½lke
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -46,7 +46,7 @@ typedef struct {
 	time_t st_mtime;
 } vfs_stat_t;
 typedef struct {
-	char name[13];
+	char name[FF_MAX_LFN + 1];
 } vfs_dirent_t;
 typedef FIL vfs_t;
 
