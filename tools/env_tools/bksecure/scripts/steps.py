@@ -319,7 +319,7 @@ def steps_pack_csv():
     from .pack_json import PackJson
     pack = PackJson()
     pack.pack('steps_pack.json', s.img_sign_pubkey, None, s.flash_aes_key, s.flash_crc_en, None, s.flash_aes_type)
-    gen_otp_efuse_config_file(s.flash_aes_type, s.flash_crc_en, s.flash_aes_key, s.img_sign_pubkey, s.bl1_secureboot_en, False, 'otp_efuse_config.json')
+    gen_otp_efuse_config_file(s.flash_aes_type, s.flash_crc_en, s.flash_aes_key, s.img_sign_pubkey, s.bl1_secureboot_en, False, 'otp_efuse_config.json', soc_type=get_soc_type())
     pack.install_bin()
     insert_pk_hash('bootloader.bin', s.img_sign_pubkey)
 

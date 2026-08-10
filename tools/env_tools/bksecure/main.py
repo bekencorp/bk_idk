@@ -136,12 +136,13 @@ def gen_ota_command(otp_csv, outfile, debug):
 @click.option("--flash_aes_key", type=str, required=False, default=None, help="flash AES key.")
 @click.option("--pubkey_pem_file", type=click.Path(exists=False, dir_okay=False), required=False, default='root_ec256_pubkey.pem', help="PEM secure boot public key file.")
 @click.option("--secure_boot", is_flag=True, help="Enable secure boot")
+@click.option("--soc_type", type=click.Choice(['bk7236', 'bk7236n', 'bk7239n', 'bk7311']), default=None, help="SoC model. Default: read from ARMINO_SOC env.")
 @click.option("--outfile", type=str, required=False, default='otp_efuse_config.json', help="Output file")
 @click.option("--debug", is_flag=True, help="Enable debug")
-def gen_otp_efuse_command(flash_aes_type, flash_crc_en, flash_aes_key, pubkey_pem_file, secure_boot, outfile, debug):
+def gen_otp_efuse_command(flash_aes_type, flash_crc_en, flash_aes_key, pubkey_pem_file, secure_boot, soc_type, outfile, debug):
     """gen otp_efuse_config.json from security csv files."""
     set_debug(debug)
-    gen_otp_efuse_config_file(flash_aes_type, flash_crc_en, flash_aes_key, pubkey_pem_file, secure_boot, False, outfile)
+    gen_otp_efuse_config_file(flash_aes_type, flash_crc_en, flash_aes_key, pubkey_pem_file, secure_boot, False, outfile, soc_type=soc_type)
 
 @gen.command("all")
 @click.option("--debug", is_flag=True, help="Enable debug")
