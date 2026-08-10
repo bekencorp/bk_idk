@@ -31,4 +31,9 @@ menu "NVS"
     config NVS_DEBUG_STORAGE
         bool "Enable nvs debug storage"
         default n
+
+	config USING_CPP
+		bool "Enable the initialization of the constructor of the global C++ class object"
+		default n
+	
 endmenu
