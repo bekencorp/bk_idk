@@ -461,8 +461,8 @@ SECTIONS
         . = ALIGN(4);
         __data_start__ = .;
 
-#ifdef CONFIG_GCOV
-        /* added in template for gcov: */
+#if (CONFIG_USING_CPP || CONFIG_GCOV)
+        /* added in template for gcov or C++ code: */
         PROVIDE_HIDDEN (__init_array_start = .);
         KEEP (*(SORT(.init_array.*)))
         KEEP (*(.init_array*))
