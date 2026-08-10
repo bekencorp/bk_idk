@@ -138,7 +138,7 @@ function(__build_set_default_build_specifications)
                                     "-Wl, --gc-sections"
                                     )
 
-    list(APPEND cxx_compile_options "-std=gnu++11"
+    list(APPEND cxx_compile_options "-std=gnu++17"
                                     "-nostdlib"
                                      )
 
