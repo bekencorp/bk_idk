@@ -88,6 +88,9 @@ void flash_import_case_loop_show(void);
 void flash_import_case_pd_start(uint32_t mode);
 void flash_import_case_pd_stop(void);
 void flash_import_case_pd_show(void);
+void flash_import_case_soft_erase_start(void);
+void flash_import_case_soft_erase_stop(void);
+void flash_import_case_soft_erase_show(void);
 #if CONFIG_FLASH_IMPORT_SLEEP_TEST
 void flash_import_case_sleep_run(bool is_deep);
 bk_err_t flash_import_case_sleep_resume(void);
