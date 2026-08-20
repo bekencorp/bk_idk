@@ -13,40 +13,8 @@
 // limitations under the License.
 
 #include "../../../bk_mcuboot/bl2/components/download/bl_bk_reg.h"
-#include "../../../../include/driver/hal_high_freq.h"
-
-
-#define HAL_EFUSE_SECURE_BOOT_DEBUG_DISABLE_BIT      (1<<1)
-#define HAL_EFUSE_FAST_BOOT_DISABLE_BIT              (1<<2)
-#define HAL_EFUSE_SECURE_BOOT_SUPPORTED_BIT          (1<<3)
-#define HAL_EFUSE_PLL_ENABLE_BIT                     (1<<4)
-#define HAL_EFUSE_FIH_DELAY_ENABLE_BIT               (1<<5)
-#define HAL_EFUSE_POWER_ON_FASTBOOT_DISABLE_BIT      (1<<6)
-#define HAL_EFUSE_CRITICAL_ERR_DISABLE_BIT           (1<<7)
-#define HAL_EFUSE_LONG_VERSION_LENGTH_BIT            (1<<11)
-#define HAL_EFUSE_SECURE_DOWNLOAD_BIT                (1<<12)
-#define HAL_EFUSE_BKFIL_CHANNEL_CONTROL_OFFSET       13
-#define HAL_EFUSE_BKFIL_CHANNEL_CONTROL_MASK         0x7
-
-#define HAL_EFUSE_DISABLE_LEGACYBOOT_HIGH_FREQ_BIT   (1<<16)
-#define HAL_EFUSE_SET_CPU_120M_BIT                   (1<<17)
-#define HAL_EFUSE_SET_FLASH_HIGH_FREQ_BIT            (1<<18)
-#define HAL_EFUSE_GPIO_FLASH_DISABLE_BIT             (1<<19)
-#define HAL_EFUSE_ATTACK_NMI_ENABLE_BIT              (1<<20)
-#define HAL_EFUSE_SPI_TO_AHB_DISABLE_BIT             (1<<21)
-#define HAL_EFUSE_AUTO_RESET_ENABLE_0_BIT            (1<<22)
-#define HAL_EFUSE_AUTO_RESET_ENABLE_1_BIT            (1<<23)
-#define HAL_EFUSE_MEMCHK_BPS_ENABLE_BIT              (1<<24)
-#define HAL_EFUSE_DEBUG_HW_DISABLE_BIT               (1<<25)
-#define HAL_EFUSE_SHANHAI_CLK_GATING_ENABLE_BIT      (1<<26)
-#define HAL_EFUSE_FLASH_NO_CRC_BIT                   (1<<27)
-#define HAL_EFUSE_FLASH_AES_MODE_BIT                 (1<<28)
-#define HAL_EFUSE_FLASH_AES_ENABLE_BIT               (1<<29)
-#define HAL_EFUSE_SPI_DOWNLOAD_DISABLE_BIT           (1<<30)
-#define HAL_EFUSE_JTAG_DISABLE_BIT                   (1<<31)
-
-
-#define OTP_EFUSE_WORD0                        *((volatile unsigned long *) (SOC_MEM_CHECK_REG_BASE + 0x40*4))
+#include "efuse/hal_efuse.h"
+#include <driver/hal_high_freq.h>
 
 #define addSYSTEM_Reg0x2                       *((volatile unsigned long *) (SOC_SYSTEM_REG_BASE+0x2*4))
 #define addSYSTEM_Reg0x4                       *((volatile unsigned long *) (SOC_SYSTEM_REG_BASE+0x4*4))
@@ -65,6 +33,8 @@
 #define addSYSTEM_Reg0x40                      *((volatile unsigned long *) (SOC_SYSTEM_REG_BASE+0x40*4))
 #define addSYSTEM_Reg0x45                      *((volatile unsigned long *) (SOC_SYSTEM_REG_BASE+0x45*4))
 #define addSYSTEM_Reg0x46                      *((volatile unsigned long *) (SOC_SYSTEM_REG_BASE+0x46*4))
+#define addSYSTEM_Reg0xb                       *((volatile unsigned long *) (SOC_SYSTEM_REG_BASE+0xb*4))
+#define set_SYSTEM_Reg0xb_anaspi_freq(val)   addSYSTEM_Reg0xb = ((addSYSTEM_Reg0xb & (~0x3F)) | ((val) & 0x3F))
 
 
 
@@ -170,6 +140,37 @@ void hal_enable_pll(void)
 
 void hal_disable_pll(void)
 {
+}
+
+void hal_set_por_detect(uint32_t vbatdetsel)
+{
+	uint32_t reg47_val = 0x57E62726;
+	uint32_t reg48_val = 0xF87C70E4;
+
+	// anaspi_freq: 0 = fastest, 7 = slowest; use fastest for analog register access
+	set_SYSTEM_Reg0xb_anaspi_freq(0);
+	hal_loop_delay(100);
+
+	// 1. Apply vbatdetsel to reg0x47[17:16] on top of the default value
+	reg47_val &= ~(0x3 << 16);
+	reg47_val |= ((vbatdetsel & 0x3) << 16);
+	ana_reg_write(7, reg47_val);
+
+	// 2. Enable vporsel (set bit3 of reg0x47) after [17:16] written
+	reg47_val |= (1 << 3);
+	ana_reg_write(7, reg47_val);
+
+	// 3. spilatch: pulse bit9 of reg0x48 (clear, then write 1 then 0 to latch)
+	reg48_val |= (1 << 9);
+	ana_reg_write(8, reg48_val);
+	reg48_val &= ~(1 << 9);
+	ana_reg_write(8, reg48_val);
+
+	// 4. Delay after spilatch,delay 200us
+	hal_loop_delay(1000);
+
+	// Restore anaspi_freq to 7 (slowest)
+	set_SYSTEM_Reg0xb_anaspi_freq(7);
 }
 
 void hal_set_spi_clock(spi_clock_t clock)

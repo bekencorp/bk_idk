@@ -47,6 +47,7 @@ void hal_set_spi_clock(spi_clock_t clock);
 void hal_set_flash_clock(flash_clock_t clock);
 void spi_hal_set_baud_rate(void);
 void change_uart_high_baudrate(uint32_t baudrate);
+void hal_set_por_detect(uint32_t vbatdetsel);
 
 #ifdef __cplusplus
 }

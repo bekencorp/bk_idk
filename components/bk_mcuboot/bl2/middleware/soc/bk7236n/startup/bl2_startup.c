@@ -26,6 +26,9 @@
 #include <driver/wdt_hal.h>
 #include "sys_driver.h"
 #include "timer_hal.h"
+#include "efuse/hal_efuse.h"
+
+extern void hal_set_por_detect(uint32_t vbatdetsel);
 #if CONFIG_DEEP_LV
 #include "deep_lv_reserve.h"
 #endif
@@ -275,6 +278,10 @@ static uint32_t memory_is_retention(void)
 
 __NO_RETURN ENTRY_SECTION __attribute__((naked)) void Reset_Handler(void)
 {
+	if (hal_efuse_is_por_detect_enabled()) {
+		hal_set_por_detect(hal_efuse_get_vbatdetsel());
+	}
+
 #if CONFIG_DEEP_LV
     if ((AON_PMU_R7B_REG & DLV_STARTUP_BIT) && memory_is_retention()) {
         __set_MSP(BL2_DLV_STACK_TOP);

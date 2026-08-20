@@ -21,6 +21,9 @@
 #include "os/os.h"
 #include "cmsis_gcc.h"
 
+#include "efuse/hal_efuse.h"
+#include <driver/hal_high_freq.h>
+
 #define ENTRY_SECTION  __attribute__((section(".fix.reset_entry")))
 #define SYSTEM_BASE_ADDR                 (0x44010000)
 #define OTP_APB_BASE_ADDRESSS            (0x4b100000)
@@ -169,6 +172,10 @@ const VECTOR_TABLE_Type __VECTOR_IRAM[] __VECTOR_IRAM_ATTRIBUTE = {
 
 __NO_RETURN ENTRY_SECTION __attribute__((naked)) void Reset_Handler(void)
 {
+    if (hal_efuse_is_por_detect_enabled()) {
+        hal_set_por_detect(hal_efuse_get_vbatdetsel());
+    }
+
     __set_MSPLIM((uint32_t)(&__STACK_LIMIT));
 
 	/* CMSIS System Initialization */

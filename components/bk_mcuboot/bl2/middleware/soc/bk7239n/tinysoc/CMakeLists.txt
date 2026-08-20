@@ -23,6 +23,7 @@ set(incs
 	${TINYSOC_PATH}/include/
 	${TINYSOC_PATH}/include/driver/
 	${TINYSOC_PATH}/interfaces/
+	${IDK_PATH}/include
 )
 set(srcs
 	${TINYSOC_PATH}/driver/port/os_port.c
