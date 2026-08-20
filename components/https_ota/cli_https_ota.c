@@ -1,4 +1,5 @@
 #include "https_ota.h"
+#include "https_ota_private.h"
 #include "cli.h"
 #include "modules/bk_ota.h"
 #include "driver/flash.h"
@@ -251,26 +252,29 @@ void bk_https_start_download(beken_thread_arg_t arg)
 			if (s_ota_config->ota_parse) {
 				s_ota_config->ota_parse->ota_verify = NULL;
 			}
+			if (verify_ret != BK_OK) {
+				BK_LOGE(TAG, "HTTPS OTA verify fail\r\n");
+				bk_https_ota_notify_error(s_ota_config, verify_ret);
+			}
 #endif
 			if (verify_ret == BK_OK) {
 				confirm_ret = bk_ota_confirm(s_ota_config->ota_parse->ota_handle);
-			} else {
-				BK_LOGE(TAG, "HTTPS OTA verify fail, verify=0x%x\r\n", verify_ret);
+				if (confirm_ret == BK_OK) {
+					ota_ok = true;
+					if (s_ota_config->ota_event_handler) {
+						https_ota_event_t success_evt = {
+							.event_id = HTTPS_OTA_SUCCESS_EVENT,
+							.data = NULL,
+							.data_len = 0,
+						};
+						s_ota_config->ota_event_handler(success_evt);
+					}
+					BK_LOGI(TAG, "HTTPS OTA SUCCESS");
+				} else {
+					BK_LOGE(TAG, "HTTPS OTA confirm fail\r\n");
+					bk_https_ota_notify_error(s_ota_config, confirm_ret);
+				}
 			}
-		}
-		if (confirm_ret == BK_OK) {
-			ota_ok = true;
-			if (s_ota_config && s_ota_config->ota_event_handler) {
-				https_ota_event_t success_evt = {
-					.event_id = HTTPS_OTA_SUCCESS_EVENT,
-					.data = NULL,
-					.data_len = 0,
-				};
-				s_ota_config->ota_event_handler(success_evt);
-			}
-			BK_LOGI(TAG, "HTTPS OTA SUCCESS");
-		} else {
-			BK_LOGE(TAG, "HTTPS OTA confirm fail, confirm=0x%x\r\n", confirm_ret);
 		}
 	} else {
 		BK_LOGE(TAG, "HTTPS OTA perform fail, state=%d\r\n", state);

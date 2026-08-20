@@ -1,9 +1,25 @@
 #include <string.h>
 #include "modules/https_ota.h"
+#include "https_ota_private.h"
 #include "modules/wifi.h"
 #include "driver/flash.h"
 
 #define TAG "HTTPS_OTA"
+
+bk_err_t bk_https_ota_notify_error(https_ota_t *ota_config, bk_err_t err)
+{
+	if (ota_config == NULL || ota_config->ota_event_handler == NULL) {
+		return BK_FAIL;
+	}
+
+	https_ota_event_t err_evt = {
+		.event_id = HTTPS_OTA_ERROR_EVENT,
+		.data = &err,
+		.data_len = sizeof(bk_err_t),
+	};
+	ota_config->ota_event_handler(err_evt);
+	return BK_OK;
+}
 
 bk_err_t bk_https_ota_init(https_ota_t* ota_config)
 {
@@ -120,11 +136,13 @@ bk_err_t bk_https_ota_progress_data(https_ota_t* ota_config)
 	if (ota_config->client == NULL) {
 		BK_LOGE(TAG, "progress_data: http client is NULL\r\n");
 		ota_config->state = HTTPS_OTA_FAIL;
+		bk_https_ota_notify_error(ota_config, BK_FAIL);
 		return BK_FAIL;
 	}
 	if (ota_config->client->state < HTTP_STATE_CONNECTED) {
 		BK_LOGE(TAG, "progress_data: client not connected, state=%d\r\n", ota_config->client->state);
 		ota_config->state = HTTPS_OTA_FAIL;
+		bk_https_ota_notify_error(ota_config, BK_FAIL);
 		return BK_FAIL;
 	}
 	BK_LOGI(TAG, "progress start state=%d rx_len=%u phase=%d idx=%u off=%u wr_off=%u erase_off=%u percent=%u\r\n",
@@ -160,12 +178,16 @@ bk_err_t bk_https_ota_progress_data(https_ota_t* ota_config)
 	bk_http_client_request_send(ota_config->client, post_len);
 	if ((err = bk_http_check_response(ota_config->client)) != BK_OK) {
 		BK_LOGE(TAG, "Error response\r\n");
-		return err;
+		ota_config->state = HTTPS_OTA_FAIL;
+		bk_https_ota_notify_error(ota_config, err);
+		return BK_FAIL;
 	}
 
 	read_buf = (char*)os_malloc(read_buf_len * (sizeof(char)));
 	if (read_buf == NULL) {
-		return BK_ERR_NO_MEM;
+		ota_config->state = HTTPS_OTA_FAIL;
+		bk_https_ota_notify_error(ota_config, BK_ERR_NO_MEM);
+		return BK_FAIL;
 	}
 	while (ota_config->state == HTTPS_OTA_PROGRESS_DATA) {
 		data_read = bk_http_client_read(ota_config->client, read_buf, read_buf_len);
@@ -188,7 +210,8 @@ bk_err_t bk_https_ota_progress_data(https_ota_t* ota_config)
 					ota_config->ota_parse->write_offset,
 					ota_config->ota_parse->erase_offset,
 					ota_config->ota_parse->percent);
-			if (bk_ota_download_parse_data(ota_config->ota_parse, read_buf, data_read) != BK_OK) {
+			err = bk_ota_download_parse_data(ota_config->ota_parse, read_buf, data_read);
+			if (err != BK_OK) {
 				BK_LOGE(TAG, "ota download parse data fail. phase=%d idx=%u img_off=%u wr_off=%u erase_off=%u percent=%u total_rx=%u\r\n",
 						ota_config->ota_parse->phase,
 						ota_config->ota_parse->index,
@@ -218,6 +241,7 @@ bk_err_t bk_https_ota_progress_data(https_ota_t* ota_config)
 fail:
 	ota_config->state = HTTPS_OTA_FAIL;
 	os_free(read_buf);
+	bk_https_ota_notify_error(ota_config, err);
 	return BK_FAIL;
 }
 
@@ -276,9 +300,13 @@ https_ota_state_t bk_https_ota_perform(https_ota_t* ota_config)
 	while(1) {
 		switch (ota_config->state) {
 			case HTTPS_OTA_INIT:
-				if (bk_https_ota_begin(ota_config) != BK_OK) {
-					ota_config->state = HTTPS_OTA_FAIL;
-					goto end;
+				{
+					bk_err_t begin_ret = bk_https_ota_begin(ota_config);
+					if (begin_ret != BK_OK) {
+						ota_config->state = HTTPS_OTA_FAIL;
+						bk_https_ota_notify_error(ota_config, begin_ret);
+						goto end;
+					}
 				}
 				break;
 			case HTTPS_OTA_READY:
