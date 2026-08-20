@@ -290,7 +290,7 @@ def gen_otp_efuse_from_auto_partition(output_dir: Path):
         output_dir.mkdir(parents=True, exist_ok=True)
         os.chdir(output_dir)
         # pubkey_pem_file=None, secureboot_en=False, boot_ota=False
-        gen_otp_efuse_config_file(aes_type, flash_crc_enable, flash_aes_key, None, False, False, "otp_efuse_config.json")
+        gen_otp_efuse_config_file(aes_type, flash_crc_enable, flash_aes_key, None, False, False, "otp_efuse_config.json", soc_type=curr_project.soc_name)
         logger.info(f"Generated otp_efuse_config.json at {output_dir}")
     finally:
         os.chdir(prev_cwd)
