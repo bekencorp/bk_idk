@@ -25,6 +25,8 @@
 #include "mac802154_adapter.h"
 #include "bk_rf_internal.h"
 
+extern bool ate_is_enabled(void);
+
 static bk_err_t init_queue_wrapper(void **queue, const char *name, uint32_t message_size, uint32_t number_of_messages)
 {
     return rtos_init_queue(queue, name, message_size, number_of_messages);
@@ -203,7 +205,6 @@ static void interrupt_ctrl_wrapper(bool en)
 
 static bool ate_is_enabled_wrapper(void)
 {
-    extern bool ate_is_enabled(void);
     return ate_is_enabled();
 }
 
@@ -241,12 +242,19 @@ static void thread_power_ctrl(uint8_t en)
     }
 }
 
-static void thread_rf_and_module_vote_ctrl(bool en)
+static void thread_rf_and_module_vote_ctrl(bool en, uint8_t rf_pll)
 {
     #if CONFIG_RF_COEX_JUDGE
+    RF_PLL_CTRL_RESULT_T rlt = {0};
     if(en == true)
     {
-        RF_PLL_CTRL_RESULT_T rlt = rf_pll_ctrl_coex_judge(MODULE_TYPE_THREAD, RF_OPERATION_APPLY, RF_PATH_THREAD_IQ, RF_PLL_LOW, RF_PRIORITY_THREAD_HIGH, RF_TASK_TYPE_THREAD_INIT, true, 0, false);
+        //free wifi pll when ate is enabled
+        if(ate_is_enabled())
+        {
+            rlt = rf_pll_ctrl_coex_judge(MODULE_TYPE_WIFI, RF_OPERATION_FREE, RF_PATH_WIFI_IQ, RF_PLL_HIGH, RF_PRIORITY_WIFI_NORMAL, RF_TASK_TYPE_WIFI_FREE_ALL, true, 0, false);
+        }
+        //apply thread pll
+        rlt = rf_pll_ctrl_coex_judge(MODULE_TYPE_THREAD, RF_OPERATION_APPLY, RF_PATH_THREAD_IQ, (enum RF_PLL_E)rf_pll, RF_PRIORITY_THREAD_HIGH, RF_TASK_TYPE_THREAD_INIT, true, 0, false);
         if(rlt.result != RF_ARBIT_RESULT_SUCCESS)
         {
             os_printf("[Error]%s:%d failed to get rf\n", __func__, __LINE__);
@@ -254,10 +262,20 @@ static void thread_rf_and_module_vote_ctrl(bool en)
     }
     else
     {
-        RF_PLL_CTRL_RESULT_T rlt = rf_pll_ctrl_coex_judge(MODULE_TYPE_THREAD, RF_OPERATION_FREE, RF_PATH_THREAD_IQ, RF_PLL_LOW, RF_PRIORITY_THREAD_HIGH, RF_TASK_TYPE_THREAD_INIT, true, 0, false);
+        //free thread pll
+        rlt = rf_pll_ctrl_coex_judge(MODULE_TYPE_THREAD, RF_OPERATION_FREE, RF_PATH_THREAD_IQ, RF_PLL_HIGH, RF_PRIORITY_THREAD_HIGH, RF_TASK_TYPE_THREAD_FREE_ALL, true, 0, false);
         if(rlt.result != RF_ARBIT_RESULT_SUCCESS)
         {
             os_printf("[Error]%s:%d failed to get rf\n", __func__, __LINE__);
+        }
+        //apply wifi pll when ate is enabled
+        if(ate_is_enabled())
+        {
+            rlt = rf_pll_ctrl_coex_judge(MODULE_TYPE_WIFI, RF_OPERATION_APPLY, RF_PATH_WIFI_IQ, RF_PLL_HIGH, RF_PRIORITY_WIFI_NORMAL, RF_TASK_TYPE_WIFI_INIT, true, 0, false);
+            if(rlt.result != RF_ARBIT_RESULT_SUCCESS)
+            {
+                os_printf("[Error]%s:%d failed to get rf\n", __func__, __LINE__);
+            }
         }
     }
     #endif

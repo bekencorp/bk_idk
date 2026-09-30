@@ -44,6 +44,7 @@ void mac802154_diag_debug_send_to_internal(uint16_t diag_no)
 {
     lw_mac802154_diag_debug_mac802154(diag_no);
 }
+#endif
 
 bk_err_t mac802154_tx(bool enable, uint8_t channel, uint8_t tx_cnt, uint8_t pass_cnt_thre)
 {
@@ -74,30 +75,4 @@ bk_err_t mac802154_dut(bool enable, uint8_t dut_mode, uint8_t rx_channel, uint8_
 
     return mac802154_mac_dut(enable, dut_mode, rx_channel, tx_channel, dut_cb);
 }
-#else
-
-bk_err_t mac802154_tx(bool enable, uint8_t channel, uint32_t tx_cnt, void *tx_callback)
-{
-    if (enable && ((channel < 11) || (channel > 26)))
-    {
-        return BK_ERR_PARAM;
-    }
-
-    mac802154_mac_tx(enable, channel, tx_cnt, tx_callback);
-
-    return BK_OK;
-}
-
-bk_err_t mac802154_rx(bool enable, uint8_t channel)
-{
-    if (enable && ((channel < 11) || (channel > 26)))
-    {
-        return BK_ERR_PARAM;
-    }
-
-    mac802154_mac_rx(enable, channel);
-
-    return BK_OK;
-}
-#endif
 
