@@ -4,7 +4,7 @@ partition,data,partition,,4k,
 app_a,app,xip_a,,1908k,
 app_b,app,xip_b,,1908k,
 xip_ota_control,data,xip_ota_control,,8k,
-usr_config,data,,,136k,
+usr_config,data,,,136k,dbus_read|dbus_write
 easyflash,data,,,8k,
 sys_rf,data,,0x3FE000,4k,
 sys_net,data,,,4k,
