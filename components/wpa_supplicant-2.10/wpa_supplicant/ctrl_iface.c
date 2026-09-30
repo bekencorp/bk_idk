@@ -2267,10 +2267,10 @@ int wpa_supplicant_handle_events(wpah_msg_t *msg)
 				// handle dot11d
 				const uint8_t *country_ie = get_ie(data.assoc_info.resp_ies,
 						data.assoc_info.resp_ies_len, WLAN_EID_COUNTRY);
-				if (!country_ie)
+				if (!country_ie && wpa_s->current_bss)
 					country_ie = wpa_bss_get_ie(wpa_s->current_bss, WLAN_EID_COUNTRY);
 				if (country_ie)
-					rwnx_regulatory_hint_11d(wpa_s->current_bss->freq, country_ie + 2, *(country_ie + 1));
+					rwnx_regulatory_hint_11d(data.assoc_info.freq, country_ie + 2, *(country_ie + 1));
 #endif
 
 			} else {
