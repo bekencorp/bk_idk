@@ -150,6 +150,11 @@ static const flash_config_t flash_config[] = {
 #else
 	{0x0B7517,   2,               FLASH_SIZE_8M, FLASH_LINE_MODE_TWO,0,         2,            0x1F,         0x1F,        0x00,         0x0E,          0x1F,                0,            0,           0xA0,                          0x01}, //xtd_25w64a
 #endif
+#if CONFIG_FLASH_QUAD_ENABLE
+	{0x852017,   2,               FLASH_SIZE_8M, FLASH_LINE_MODE_FOUR,14,       2,            0x1F,         0x1F,        0x00,         0x0E,          0x1F,                9,            1,           0xA0,                          0x02}, //py_25q64he
+#else
+	{0x852017,   2,               FLASH_SIZE_8M, FLASH_LINE_MODE_TWO,0,         2,            0x1F,         0x1F,        0x00,         0x0E,          0x1F,                0,            0,           0xA0,                          0x01}, //py_25q64he
+#endif
 	{0x000000,   2,               FLASH_SIZE_4M, FLASH_LINE_MODE_TWO, 0,        2,            0x1F,         0x00,        0x00,         0x00,         0x000,                0,            0,           0x00,                          0x01}, //default
 };
 
