@@ -100,6 +100,40 @@ extern int hapd_intf_add_vif(struct prism2_hostapd_param *param, int len);
 extern int eloop_get_signal_count(void);
 void wpa_driver_scan_timeout(void *eloop_ctx, void *timeout_ctx);
 
+#define WPA_DRIVER_SCAN_WAIT_RETRIES 50
+
+static void wpa_driver_cancel_and_wait_scan_complete(struct hostap_driver_data *drv)
+{
+	int retries = 0;
+
+	if (ke_state_get(TASK_SCANU) == SCANU_SCANNING) {
+		if (drv->wpa_s && drv->wpa_s->last_scan_req == MANUAL_SCAN_REQ) {
+			WPA_LOGI("manual scan in progress, wait scan complete before deinit\r\n");
+		} else {
+			uint8_t cfm = 0;
+			int ret;
+
+			WPA_LOGI("cancel ongoing scan before deinit\r\n");
+			ret = rw_msg_send_scan_cancel_req(&cfm);
+			if (ret)
+				WPA_LOGW("cancel scan failed, ret=%d\r\n", ret);
+		}
+	}
+
+	/* Wait for the firmware scan state to settle before removing the vif. */
+	while (ke_state_get(TASK_SCANU) == SCANU_SCANNING) {
+		rtos_delay_milliseconds(100);
+		if ((retries % 10) == 0)
+			WPA_LOGI("wait scan complete\r\n");
+		if (retries++ > WPA_DRIVER_SCAN_WAIT_RETRIES) {
+			WPA_LOGW("wait scan complete timeout\r\n");
+			break;
+		}
+	}
+
+	WPA_LOGI("scanu completed\r\n");
+}
+
 static void handle_data(struct hostap_driver_data *drv, u8 *buf, size_t len,
                         u16 stype)
 {
@@ -1050,21 +1084,12 @@ static void *hostap_init(struct hostapd_data *hapd,
 static void hostap_driver_deinit(void *priv)
 {
     struct hostap_driver_data *drv = priv;
-    int retries = 0;
 
     (void) hostap_set_iface_flags(drv, 0);
     (void) hostap_ioctl_prism2param(drv, PRISM2_PARAM_HOSTAPD, 0);
     (void) hostap_ioctl_prism2param(drv, PRISM2_PARAM_HOSTAPD_STA, 0);
 
-	// Wait scan complete
-	/* wait hw cleanup complete */
-	while (ke_state_get(TASK_SCANU) == SCANU_SCANNING) {
-		rtos_delay_milliseconds(100);
-		WPA_LOGI("wait scan complete\r\n");
-		if (retries++ > 50)
-			break;
-	}
-	WPA_LOGI("scanu completed\r\n");
+	wpa_driver_cancel_and_wait_scan_complete(drv);
 
 	if(wpa_driver_hostap_stop_apm(drv))
 		WPA_LOGE("Could not stop apm vif: %d\n", drv->vif_index);
@@ -1557,20 +1582,12 @@ static void *wpa_driver_init(void *ctx, const char *ifname)
 static void wpa_driver_deinit(void *priv)
 {
     struct hostap_driver_data *drv = priv;
-	int retries = 0;
 
     (void) hostap_set_iface_flags(drv, 0);
     (void) hostap_ioctl_prism2param(drv, PRISM2_PARAM_HOSTAPD, 0);
     (void) hostap_ioctl_prism2param(drv, PRISM2_PARAM_HOSTAPD_STA, 0);
 
-	/* wait hw cleanup complete */
-	while (ke_state_get(TASK_SCANU) == SCANU_SCANNING) {
-		rtos_delay_milliseconds(100);
-		WPA_LOGI("wait scan complete\r\n");
-		if (retries++ > 50)
-			break;
-	}
-	WPA_LOGI("scanu completed\r\n");
+	wpa_driver_cancel_and_wait_scan_complete(drv);
     eloop_cancel_timeout(wpa_driver_scan_timeout, drv->wpa_s, NULL);
 
     if(wpa_driver_hostap_deinit_vif(drv))
