@@ -645,16 +645,11 @@ __IRAM_SEC flash_line_mode_t flash_set_line_mode(flash_line_mode_t line_mode)
     if (FLASH_LINE_MODE_FOUR == new_line_mode)
     {
         flash_hal_set_quad_m_value(&s_flash.hal, s_flash.flash_cfg->coutinuous_read_mode_bits_val);
-        if (s_flash.flash_cfg != NULL && (1 == s_flash.flash_cfg->quad_en_val)) {
-            flash_set_qe();
-        }
-        flash_hal_set_mode(&s_flash.hal, FLASH_MODE_QUAD);  // enter QPI mode.
+        flash_set_qe();
+        flash_hal_set_mode(&s_flash.hal, FLASH_MODE_QUAD);
     }
     else
     {
-        if (s_flash.flash_cfg != NULL && (1 == s_flash.flash_cfg->quad_en_val)) {
-            flash_clear_qe();
-        }
         flash_hal_set_mode(&s_flash.hal, FLASH_MODE_DUAL);
     }
 
