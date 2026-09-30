@@ -485,7 +485,7 @@ void download_main(void)
 #if CONFIG_RANDOM_AES_UPGRADE_BL2
     get_pc();
 #endif
-#if (CONFIG_IOMX)
+#if (CONFIG_SUPPORT_IO_MATRIX)
 #else
     sys_hal_dpll_cpu_flash_time_early_init();
 #endif

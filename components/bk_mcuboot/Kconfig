@@ -22,6 +22,13 @@ menu "BL2"
 			help
 				Set BL2 log level: OFF/ERROR/WARNING/INFO/DEBUG
 
+		config BL2_UART_PRINT_PORT
+			int "BL2 UART print port"
+			range 0 1
+			default 0
+			help
+				0: UART0, 1: UART1.
+
 		config BL2_DOWNLOAD
 			bool "Enable BL2 download"
 			default n

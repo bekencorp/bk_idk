@@ -43,7 +43,7 @@
 #include <driver/wdt_hal.h>
 #endif
 
-#if (CONFIG_IOMX)
+#if (CONFIG_SUPPORT_IO_MATRIX)
 #include "iomx_ll.h"
 #endif
 
@@ -200,10 +200,9 @@ int main(void)
     extern void hal_secure_debug(void);
     hal_secure_debug();
 #endif
-#if (CONFIG_IOMX)
+#if (CONFIG_SUPPORT_IO_MATRIX)
     hal_iomux_init();
-    hal_iomux_uart_enable(IOMX_UART_TX);
-    hal_iomux_uart_enable(IOMX_UART_RX);
+    hal_iomux_bl2_uart_init(CONFIG_BL2_UART_PRINT_PORT);
 #endif
 #if CONFIG_DOWNLOAD_LOG
     stdio_init();

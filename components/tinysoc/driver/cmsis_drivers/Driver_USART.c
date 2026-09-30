@@ -313,7 +313,6 @@ static int32_t USART1_Initialize(ARM_USART_SignalEvent_t cb_event)
 
 static int32_t USART1_Uninitialize(void)
 {
-    bk_uart_driver_deinit();
     return ARM_DRIVER_OK;
 }
 

@@ -123,6 +123,5 @@
 
 #define CONFIG_SYS_CPU0 1
 #define CONFIG_CPU_CNT  1
-#define CONFIG_IOMX     1
 // eof
 

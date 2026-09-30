@@ -22,8 +22,13 @@
 #include "tfm_plat_defs.h"
 #include "arm_uart_drv.h"
 
+#if (CONFIG_BL2_UART_PRINT_PORT == 1)
+#define TFM_DRIVER_STDIO    Driver_USART1
+#define NS_DRIVER_STDIO     Driver_USART1
+#else
 #define TFM_DRIVER_STDIO    Driver_USART0
 #define NS_DRIVER_STDIO     Driver_USART0
+#endif
 
 /**
  * \brief Store the addresses of memory regions
