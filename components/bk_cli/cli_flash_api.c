@@ -264,10 +264,10 @@ static void cli_flash_api_cmd_handler(void **argtable)
         }
 
         bk_flash_set_protect_type(FLASH_PROTECT_NONE);
-        for (uint32_t i = 0; i < len; i += FLASH_PAGE_SIZE) {
-            err = bk_flash_write_bytes(start_addr, buf, FLASH_PAGE_SIZE);
+        for (uint32_t addr = start_addr; addr < (start_addr + len); addr += FLASH_PAGE_SIZE) {
+            err = bk_flash_write_bytes(addr, buf, FLASH_PAGE_SIZE);
             if (err != BK_OK) {
-                BK_DUMP_OUT("Write failed at address 0x%x, err = %x\r\n", start_addr, err);
+                BK_DUMP_OUT("Write failed at address 0x%x, err = %x\r\n", addr, err);
                 break;
             }
         }
