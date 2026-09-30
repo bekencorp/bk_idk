@@ -87,7 +87,7 @@ typedef struct {
 	UINT32 (*_tx_evm_bandwidth_get)(void);
 	UINT32 (*_tx_evm_mode_get)(void);
 	UINT32 (*_rwnx_setting_for_single_rate)(INT32 rate, INT32 format);
-	void (*_delay05us)(INT32 num);
+	void (*_bk_wifi_set_dpd_valid)(INT32 num);
 	void (*_rwnx_cal_recover_rf_setting)(void);
 	void (*_rwnx_cal_recover_wifi_setting)(void);
 	void (*_rwnx_cal_set_40M_setting)(void);
