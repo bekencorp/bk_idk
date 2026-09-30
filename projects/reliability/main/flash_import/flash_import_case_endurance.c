@@ -19,11 +19,12 @@
 #include <driver/flash.h>
 #include <driver/flash_partition.h>
 #include "flash_import_internal.h"
+#include "flash_reg.h"
 #include "crc32.h"
 
 #define FLASH_IMPORT_ENDURANCE_MAIN_OFFSET          (FLASH_IMPORT_SECTOR_SIZE)
 
-#if CONFIG_FLASH_IMPORT_TEST_WITH_CBUS
+#if CONFIG_FLASH_CRC_ENABLE && CONFIG_FLASH_IMPORT_TEST_WITH_CBUS
 #define FLASH_IMPORT_ENDURANCE_DATA_OFFSET          (0x11000U)
 #else
 #define FLASH_IMPORT_ENDURANCE_DATA_OFFSET          (FLASH_IMPORT_SECTOR_SIZE * 2U)
@@ -232,14 +233,18 @@ static bk_err_t flash_import_endurance_write(uint32_t addr, const uint8_t *buf, 
 __attribute__((section(".iram"))) static bk_err_t flash_import_endurance_write_cbus(uint32_t addr, const uint8_t *buf, uint32_t size)
 {
     uint32_t int_status = 0;
+#if CONFIG_FLASH_CRC_ENABLE
     uint32_t cbus_addr = FLASH_PHY2VIRTUAL(addr);
+#else
+    uint32_t cbus_addr = addr;
+#endif
     flash_line_mode_t old_line_mode = FLASH_LINE_MODE_TWO;
 
     int_status = rtos_disable_int();
     old_line_mode = flash_import_set_line_mode(FLASH_LINE_MODE_TWO);
     flash_import_endurance_unprotect();
     FLASH_IMPORT_END_GPIO_WRITE_UP();
-    (void)flash_import_write_cbus(buf, cbus_addr | (1UL << 24), size);
+    (void)flash_import_write_cbus(buf, FLASH_ADDR_REMAP(cbus_addr), size);
     FLASH_IMPORT_END_GPIO_WRITE_DOWN();
     s_endurance_stats.data_write_op_cnt++;
     FLASH_IMPORT_END_GPIO_READ_UP();
@@ -467,7 +472,7 @@ static bk_err_t flash_import_endurance_erase_verify(uint32_t addr)
         return BK_FAIL;
     }
 
-#if CONFIG_FLASH_IMPORT_TEST_WITH_CBUS
+#if CONFIG_FLASH_CRC_ENABLE && CONFIG_FLASH_IMPORT_TEST_WITH_CBUS
     uint32_t cbus_addr = FLASH_PHY2VIRTUAL(addr);
     uint32_t phy_end_addr = FLASH_VIRTUAL2PHY(cbus_addr + FLASH_IMPORT_SECTOR_SIZE);
     uint32_t phy_len = phy_end_addr - addr;
