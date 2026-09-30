@@ -104,6 +104,19 @@ if(CONFIG_EFUSE_ALLOW_WRITE)
     )
 endif()
 
+if(CONFIG_SUPPORT_IO_MATRIX)
+    target_compile_definitions(platform_bl2
+        PUBLIC
+            CONFIG_SUPPORT_IO_MATRIX
+    )
+    if(TARGET download)
+        target_compile_definitions(download
+            PUBLIC
+                CONFIG_SUPPORT_IO_MATRIX
+        )
+    endif()
+endif()
+
 add_convert_to_bin_target(bl2)
 
 install(DIRECTORY ${CMAKE_BINARY_DIR}/bin/ DESTINATION ${TFM_INSTALL_PATH}/outputs)
