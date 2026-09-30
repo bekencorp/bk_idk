@@ -34,6 +34,11 @@
 #define NORMAL_MAGIC_VALUE               0x44415254u /* "DART" */
 #define RESET_SOURCE_POWERON             0x0u
 #define RESET_SOURCE_REBOOT              0x1u
+#define RESET_SOURCE_DEEPPS_GPIO         0x3u
+#define RESET_SOURCE_DEEPPS_RTC          0x4u
+#define RESET_SOURCE_DEEPPS_USB          0x5u
+#define RESET_SOURCE_DEEPPS_TOUCH        0x6u
+#define RESET_SOURCE_SUPER_DEEP          0xfu
 #define GET_BIT_VAL(val, bit)            ((val >> bit) & 1)
 #define SET_BIT_VAL(val, bit, new_val)   ((val & (~ (1 << bit)))|(new_val << bit))
 
@@ -191,6 +196,18 @@ static uint32_t reset_reason_is_software_reboot(uint32_t reason)
 	return (reason == RESET_SOURCE_REBOOT);
 }
 
+static uint32_t reset_reason_is_deep_sleep_wakeup(uint32_t reason)
+{
+	/* SRAM normal_magic may be lost during deep sleep.  Depending on the
+	 * wakeup path, the AON PMU may expose either the super-deep marker or the
+	 * decoded deep-sleep wakeup reason in R7B. */
+	return (reason == RESET_SOURCE_SUPER_DEEP) ||
+	       (reason == RESET_SOURCE_DEEPPS_GPIO) ||
+	       (reason == RESET_SOURCE_DEEPPS_RTC) ||
+	       (reason == RESET_SOURCE_DEEPPS_USB) ||
+	       (reason == RESET_SOURCE_DEEPPS_TOUCH);
+}
+
 static void bootloader_set_reset_reason(uint32_t reason)
 {
 	uint32_t r0 = aon_pmu_ll_get_r0();
@@ -215,7 +232,8 @@ __NO_RETURN ENTRY_SECTION __attribute__((naked)) void Reset_Handler(void)
 
 		if ((reset_reason != RESET_SOURCE_POWERON) &&
 		    !normal_magic_is_valid() &&
-		    !reset_reason_is_software_reboot(reset_reason)) {
+		    !reset_reason_is_software_reboot(reset_reason) &&
+		    !reset_reason_is_deep_sleep_wakeup(reset_reason)) {
 			bootloader_set_reset_reason(RESET_SOURCE_POWERON);
 		}
 		normal_magic_set();
