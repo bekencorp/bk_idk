@@ -40,14 +40,20 @@ __CPU0_APP_RAM_SIZE = CONFIG_CPU0_SPE_RAM_SIZE;
 __CPU0_APP_RAM_SIZE = 0x80000 - CONFIG_CPU0_SPE_RAM_SIZE;
 #endif
 
-#if  CONFIG_DEEP_LV
+#define SMEM_TOP_ADDR              (SOC_SRAM0_DATA_BASE + SOC_SRAM_TOTAL_SIZE)
+#if CONFIG_DEEP_LV
 #define BOOTLOADER_IRAM_SIZE       0x1000    /* 4K for bootloader iram*/
 #define BOOTROM_STACK_SIZE         0x400     /* 1K for Bootrom stack*/
 #define DEEP_LV_RESERVE_SIZE       0x200     /* 512 bytes reserved for deep-lv */
-#define SMEM_TOP_ADDR              0x28080000
 #define MEM_CHECK_BAD_POINT_ADDR   (SMEM_TOP_ADDR - BOOTROM_STACK_SIZE - BOOTLOADER_IRAM_SIZE - DEEP_LV_RESERVE_SIZE)
 __CPU0_APP_RAM_SIZE -= (BOOTLOADER_IRAM_SIZE + BOOTROM_STACK_SIZE);
+#else
+/* Keep last 8 bytes of SRAM for BL2/app normal_magic (SMEM_TOP_ADDR - 4).
+ * Without this, MSP sits on SRAM top and overwrites magic after jump to app.
+ */
+#define NORMAL_MAGIC_RESERVE_SIZE  0x8
 #endif
+
 /*****************************************************************************
 The follow four shared memory address area mapping to the same physical memory
     0x08000000 ~ 0x080a0000  ---- instruction area, recommend put sram code
@@ -562,20 +568,23 @@ SECTIONS
     {
         . = ALIGN(8);
         _heap_start = .;
+
 #if CONFIG_DEEP_LV
         . = . + (ORIGIN(RAM) + LENGTH(RAM) - _msp_total_size - _heap_start - DEEP_LV_RESERVE_SIZE - 8); /* 16 bytes for boundary protection */
 #else
-        . = . + (ORIGIN(RAM) + LENGTH(RAM) - _msp_total_size - _heap_start - 8); /* 16 bytes for boundary protection */
+        . = . + (ORIGIN(RAM) + LENGTH(RAM) - _msp_total_size - _heap_start - NORMAL_MAGIC_RESERVE_SIZE - 8); /* 16 bytes for boundary protection */
 #endif
+
         . = ALIGN(8);
         _heap_end = .;
     } > RAM
 
 /*multiple cores require independent stack spaces*/
+
 #if CONFIG_DEEP_LV
     .stack (ORIGIN(RAM) + LENGTH(RAM) - DEEP_LV_RESERVE_SIZE - __MSP_STACK_SIZE) (COPY) :
 #else
-    .stack (ORIGIN(RAM) + LENGTH(RAM) - __MSP_STACK_SIZE) (COPY) :
+    .stack (ORIGIN(RAM) + LENGTH(RAM) - NORMAL_MAGIC_RESERVE_SIZE - __MSP_STACK_SIZE) (COPY) :
 #endif
     {
         . = ALIGN(8);
@@ -597,6 +606,7 @@ SECTIONS
         PROVIDE(__deep_lv_reserve_end = .);
     } > RAM
 #endif
+
 
     .video.cache.data :
     {
@@ -697,10 +707,11 @@ SECTIONS
 
     /* Set stack top to end of RAM, and stack limit move down by
      * size of stack_dummy section */
+
 #if CONFIG_DEEP_LV
     __MSPTop = ORIGIN(RAM) + LENGTH(RAM) - DEEP_LV_RESERVE_SIZE;
 #else
-    __MSPTop = ORIGIN(RAM) + LENGTH(RAM);
+    __MSPTop = ORIGIN(RAM) + LENGTH(RAM) - NORMAL_MAGIC_RESERVE_SIZE;
 #endif
     __MSPLimit = __MSPTop - __MSP_STACK_SIZE;
 
@@ -708,12 +719,13 @@ SECTIONS
 #if CONFIG_DEEP_LV
     ASSERT(((ORIGIN(RAM) + LENGTH(RAM) - DEEP_LV_RESERVE_SIZE) > (_heap_start + __MSP_STACK_SIZE + 8)), "Stack overflowed with bss")
 #else
-    ASSERT(((ORIGIN(RAM) + LENGTH(RAM)) > (_heap_start + __MSP_STACK_SIZE + 8)), "Stack overflowed with bss")
+    ASSERT(((ORIGIN(RAM) + LENGTH(RAM) - NORMAL_MAGIC_RESERVE_SIZE) > (_heap_start + __MSP_STACK_SIZE + 8)), "Stack overflowed with bss")
 #endif
     ASSERT(((_heap_end - _heap_start) >= __MIN_HEAP_SIZE), "Heap smaller than minimize size 40K!!!")
 #if CONFIG_DEEP_LV
     ASSERT((__deep_lv_reserve_end - __deep_lv_reserve_start) <= DEEP_LV_RESERVE_SIZE, "deep lv reserve area overflow!!!")
 #endif
+
 }
 //eof
 

@@ -23,6 +23,8 @@ __MSP_STACK_SIZE = (4 << 10);
 __MIN_HEAP_SIZE  = (90 << 10);
 __MPU_PROTECT_SIZE = 0x0;
 __SWAP_SIZE = (0);
+#define NORMAL_MAGIC_RESERVE_SIZE 0x8
+#define SMEM_TOP_ADDR             (SOC_SRAM0_DATA_BASE + SOC_SRAM_TOTAL_SIZE)
 
 #if CONFIG_CPU0_SRAM_BASE
 __CPU0_APP_RAM_BASE = CONFIG_CPU0_SRAM_BASE;
@@ -495,12 +497,12 @@ SECTIONS
     {
         . = ALIGN(8);
         _heap_start = .;
-        . = . + (ORIGIN(RAM) + LENGTH(RAM) - _msp_total_size - _heap_start - 8); /* 16 bytes for boundary protection */
+        . = . + (ORIGIN(RAM) + LENGTH(RAM) - _msp_total_size - _heap_start - NORMAL_MAGIC_RESERVE_SIZE - 8); /* 16 bytes for boundary protection */
         . = ALIGN(8);
         _heap_end = .;
     } > RAM
 
-    .stack (ORIGIN(RAM) + LENGTH(RAM) - __MSP_STACK_SIZE) (COPY) :
+    .stack (ORIGIN(RAM) + LENGTH(RAM) - NORMAL_MAGIC_RESERVE_SIZE - __MSP_STACK_SIZE) (COPY) :
     {
         . = ALIGN(8);
         _sstack = .;
@@ -577,12 +579,11 @@ SECTIONS
 
     /* Set stack top to end of RAM, and stack limit move down by
      * size of stack_dummy section */
-    __MSPTop = ORIGIN(RAM) + LENGTH(RAM);
+    __MSPTop = ORIGIN(RAM) + LENGTH(RAM) - NORMAL_MAGIC_RESERVE_SIZE;
     __MSPLimit = __MSPTop - __MSP_STACK_SIZE;
 
     ASSERT((s_flash_end < ORIGIN(FLASH) + LENGTH(FLASH)), "flash space overflow!!!")
-    ASSERT(((ORIGIN(RAM) + LENGTH(RAM)) > (_heap_start + __MSP_STACK_SIZE + 8)), "Stack overflowed with bss")
+    ASSERT(((ORIGIN(RAM) + LENGTH(RAM) - NORMAL_MAGIC_RESERVE_SIZE) > (_heap_start + __MSP_STACK_SIZE + 8)), "Stack overflowed with bss")
     ASSERT(((_heap_end - _heap_start) >= __MIN_HEAP_SIZE), "Heap smaller than minimize size 90K!!!")
 }
 //eof
-

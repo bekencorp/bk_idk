@@ -39,8 +39,8 @@
 #define MAX_DUMP_SYS_MEM_COUNT       (8)
 #define SOC_DTCM_DATA_SIZE           (0x4000)
 #define SOC_ITCM_DATA_SIZE           (0x4000)
-#define SOC_SRAM_TOTAL_SIZE          (CONFIG_CPU0_SPE_RAM_SIZE)
-#define SOC_SRAM_DATA_END            (SOC_SRAM0_DATA_BASE + SOC_SRAM_TOTAL_SIZE)
+#define CPU0_SPE_SRAM_SIZE           (CONFIG_CPU0_SPE_RAM_SIZE)
+#define SOC_SRAM_DATA_END            (SOC_SRAM0_DATA_BASE + CPU0_SPE_SRAM_SIZE)
 
 typedef struct sys_mem_info
 {

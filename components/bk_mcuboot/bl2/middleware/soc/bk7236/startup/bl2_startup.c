@@ -20,11 +20,17 @@
 #include "region_defs.h"
 #include "os/os.h"
 #include "cmsis_gcc.h"
+#include "aon_pmu_ll.h"
+#include <stdio.h>
 
 #define ENTRY_SECTION  __attribute__((section(".fix.reset_entry")))
 #define SYSTEM_BASE_ADDR                 (0x44010000)
 #define OTP_APB_BASE_ADDRESSS            (0x4b100000)
 #define MEM_CHECK_BASE_ADDRESSS          (0x44890000)
+#define NORMAL_MAGIC_ADDR                (0x280A0000u - 4u)
+#define NORMAL_MAGIC_VALUE               0x44415254u /* "DART" */
+#define RESET_SOURCE_POWERON             0x0u
+#define RESET_SOURCE_REBOOT              0x1u
 #define GET_BIT_VAL(val, bit)            ((val >> bit) & 1)
 #define SET_BIT_VAL(val, bit, new_val)   ((val & (~ (1 << bit)))|(new_val << bit))
 
@@ -186,8 +192,47 @@ void boot_mem_check(void)
 	}
 }
 
+static uint32_t normal_magic_is_valid(void)
+{
+	return (*(volatile uint32_t *)NORMAL_MAGIC_ADDR == NORMAL_MAGIC_VALUE);
+}
+
+static void normal_magic_set(void)
+{
+	*(volatile uint32_t *)NORMAL_MAGIC_ADDR = NORMAL_MAGIC_VALUE;
+}
+
+static uint32_t reset_reason_is_software_reboot(uint32_t reason)
+{
+	return (reason == RESET_SOURCE_REBOOT);
+}
+
+static void bootloader_set_reset_reason(uint32_t reason)
+{
+	uint32_t r0 = aon_pmu_ll_get_r0();
+	uint32_t r7b = aon_pmu_ll_get_r7b();
+
+	aon_pmu_ll_set_r0(r7b);
+	aon_pmu_ll_set_r0_reset_reason(reason);
+	aon_pmu_ll_set_r25(0x424B55AA);
+	aon_pmu_ll_set_r25(0xBDB4AA55);
+	aon_pmu_ll_set_r0(r0);
+	aon_pmu_ll_set_r0_reset_reason(reason);
+}
+
 __NO_RETURN ENTRY_SECTION __attribute__((naked)) void Reset_Handler(void)
 {
+	{
+		uint32_t reset_reason = aon_pmu_ll_get_r7b_reset_reason();
+
+		if ((reset_reason != RESET_SOURCE_POWERON) &&
+		    !normal_magic_is_valid() &&
+		    !reset_reason_is_software_reboot(reset_reason)) {
+			bootloader_set_reset_reason(RESET_SOURCE_POWERON);
+		}
+		normal_magic_set();
+	}
+
   	STARTUP_PERF(12);
 
 	/*Memory check vddig*/

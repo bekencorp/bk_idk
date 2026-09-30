@@ -27,6 +27,8 @@
 #include "sys_driver.h"
 #include "timer_hal.h"
 #include "efuse/hal_efuse.h"
+#include "aon_pmu_ll.h"
+#include <stdio.h>
 
 extern void hal_set_por_detect(uint32_t vbatdetsel);
 #if CONFIG_DEEP_LV
@@ -43,6 +45,10 @@ extern void hal_set_por_detect(uint32_t vbatdetsel);
 #define AON_PMU_BASE_ADDR                (0x44000000)
 #define AON_PMU_R7B_REG                  (*(volatile uint32_t *)(AON_PMU_BASE_ADDR + 0x7b * 4))
 #define DLV_STARTUP_BIT                  (1 << 23)
+#define NORMAL_MAGIC_ADDR                (0x28080000u - 4u)
+#define NORMAL_MAGIC_VALUE               0x44415254u /* "DART" */
+#define RESET_SOURCE_POWERON             0x0u
+#define RESET_SOURCE_REBOOT              0x1u
 
 #define SOC_FLASH_BASE_ADDR     (0x44030000)
 #define FLASH_OFFSET_BEGIN_REG  (*(volatile uint32_t *)(SOC_FLASH_BASE_ADDR + 0x16 * 4))
@@ -276,11 +282,50 @@ static uint32_t memory_is_retention(void)
 }
 #endif
 
+static uint32_t normal_magic_is_valid(void)
+{
+    return (*(volatile uint32_t *)NORMAL_MAGIC_ADDR == NORMAL_MAGIC_VALUE);
+}
+
+static void normal_magic_set(void)
+{
+    *(volatile uint32_t *)NORMAL_MAGIC_ADDR = NORMAL_MAGIC_VALUE;
+}
+
+static uint32_t reset_reason_is_software_reboot(uint32_t reason)
+{
+    return (reason == RESET_SOURCE_REBOOT);
+}
+
+static void bootloader_set_reset_reason(uint32_t reason)
+{
+    uint32_t r0 = aon_pmu_ll_get_r0();
+    uint32_t r7b = aon_pmu_ll_get_r7b();
+
+    aon_pmu_ll_set_r0(r7b);
+    aon_pmu_ll_set_r0_reset_reason(reason);
+    aon_pmu_ll_set_r25(0x424B55AA);
+    aon_pmu_ll_set_r25(0xBDB4AA55);
+    aon_pmu_ll_set_r0(r0);
+    aon_pmu_ll_set_r0_reset_reason(reason);
+}
+
 __NO_RETURN ENTRY_SECTION __attribute__((naked)) void Reset_Handler(void)
 {
 	if (hal_efuse_is_por_detect_enabled()) {
 		hal_set_por_detect(hal_efuse_get_vbatdetsel());
 	}
+
+    {
+        uint32_t reset_reason = aon_pmu_ll_get_r7b_reset_reason();
+
+        if ((reset_reason != RESET_SOURCE_POWERON) &&
+            !normal_magic_is_valid() &&
+            !reset_reason_is_software_reboot(reset_reason)) {
+            bootloader_set_reset_reason(RESET_SOURCE_POWERON);
+        }
+        normal_magic_set();
+    }
 
 #if CONFIG_DEEP_LV
     if ((AON_PMU_R7B_REG & DLV_STARTUP_BIT) && memory_is_retention()) {
