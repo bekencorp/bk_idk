@@ -51,6 +51,13 @@ static void cli_psram_help(void)
 }
 
 #define PSRAM_TEST_LEN               (1024 * 4)
+#if (CONFIG_PSRAM_APS6408L_O)
+#define PSRAM_RW_TEST_LEN            (1024 * 1024 * 8)
+#elif (CONFIG_PSRAM_W955D8MKY_5J)
+#define PSRAM_RW_TEST_LEN            (1024 * 1024 * 4)
+#else
+#define PSRAM_RW_TEST_LEN            (1024 * 1024 * 16)
+#endif
 beken_thread_t  psram_thread_hdl = NULL;
 
 typedef struct {
@@ -126,7 +133,7 @@ static void psram_cpu_write_test(void)
 		#endif
 	}
 
-	uint32_t test_len = 1024 * 1024 * 8;
+	uint32_t test_len = PSRAM_RW_TEST_LEN;
 
 	CLI_LOGD("begin write %08x-%08x test\r\n", base_addr, base_addr + test_len);
 
@@ -249,7 +256,7 @@ static void psram_dma_write_test(void)
 		#endif
 	}
 
-	uint32_t test_len = 1024 * 1024 * 8;
+	uint32_t test_len = PSRAM_RW_TEST_LEN;
 
 	CLI_LOGI("begin write %08x-%08x test\r\n", base_addr, base_addr + test_len);
 
@@ -321,7 +328,7 @@ static void psram_write_continue_test(void)
 		#endif
 	}
 
-	uint32_t test_len = 1024 * 1024 * 8;
+	uint32_t test_len = PSRAM_RW_TEST_LEN;
 
 	CLI_LOGI("begin write %08x-%08x test\r\n", base_addr, base_addr + test_len);
 	timer0 = bk_get_current_timer();
@@ -558,7 +565,6 @@ static void cli_psram_cmd_handle(char *pcWriteBuffer, int xWriteBufferLen, int a
 	if (os_strcmp(argv[1], "start") == 0)
 	{
 		bk_psram_init();
-		bk_pm_module_vote_cpu_freq(PM_DEV_ID_DEFAULT, PM_CPU_FRQ_240M);
 
 		psram_debug = (psram_debug_t *)os_malloc(sizeof(psram_debug_t));
 
