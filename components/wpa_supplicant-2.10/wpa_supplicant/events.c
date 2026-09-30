@@ -2876,6 +2876,19 @@ int wpas_select_network_from_last_scan(struct wpa_supplicant *wpa_s,
 		wpa_dbg(wpa_s, MSG_DEBUG, "No suitable network found");
 #if BK_SUPPLICANT
 		WPA_LOGI("No suitable network found\r\n");
+		{
+			wifi_linkstate_reason_t linkinfo = mhdr_get_station_status();
+
+			if (linkinfo.state == WIFI_LINKSTATE_STA_DISCONNECTED &&
+				linkinfo.reason_code == WIFI_REASON_WRONG_PASSWORD) {
+				wifi_event_sta_disconnected_t sta_disconnected = {0};
+
+				sta_disconnected.disconnect_reason = linkinfo.reason_code;
+				sta_disconnected.local_generated = true;
+				BK_LOG_ON_ERR(bk_event_post(EVENT_MOD_WIFI, EVENT_WIFI_STA_DISCONNECTED,
+							&sta_disconnected, sizeof(sta_disconnected), BEKEN_NEVER_TIMEOUT));
+			}
+		}
 
 #if CONFIG_BSSID_CONNECT
 		/* if set bssid info, and cannot find suitable network info, clear bssid info */

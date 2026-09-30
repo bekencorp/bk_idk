@@ -155,18 +155,11 @@ int wpa_config_set_wep(struct wpa_ssid *ssid)
 		g_sta_param_ptr->cipher_suite = WIFI_SECURITY_WEP;
 	} else {
 		wifi_linkstate_reason_t info;
-		wifi_event_sta_disconnected_t sta_disconnected = {0};
 
 		/* set mac status */
 		info.state = WIFI_LINKSTATE_STA_DISCONNECTED;
 		info.reason_code= WIFI_REASON_WRONG_PASSWORD;
 		mhdr_set_station_status(info);
-
-		/* post event */
-		sta_disconnected.disconnect_reason = info.reason_code;
-		sta_disconnected.local_generated = true;
-		BK_LOG_ON_ERR(bk_event_post(EVENT_MOD_WIFI, EVENT_WIFI_STA_DISCONNECTED,
-						&sta_disconnected, sizeof(sta_disconnected), BEKEN_NEVER_TIMEOUT));
 	}
 
 	return 0;
@@ -218,18 +211,11 @@ int wpa_config_set_wpa(struct wpa_bss *bss, struct wpa_ssid *ssid, struct wpa_ie
 		}
 	} else {
 		wifi_linkstate_reason_t info;
-		wifi_event_sta_disconnected_t sta_disconnected = {0};
 
 		/* set mac status */
 		info.state = WIFI_LINKSTATE_STA_DISCONNECTED;
 		info.reason_code = WIFI_REASON_WRONG_PASSWORD;
 		mhdr_set_station_status(info);
-
-		/* post event */
-		sta_disconnected.disconnect_reason = info.reason_code;
-		sta_disconnected.local_generated = true;
-		BK_LOG_ON_ERR(bk_event_post(EVENT_MOD_WIFI, EVENT_WIFI_STA_DISCONNECTED,
-					  &sta_disconnected, sizeof(sta_disconnected), BEKEN_NEVER_TIMEOUT));
 	}
 
 	return ret;

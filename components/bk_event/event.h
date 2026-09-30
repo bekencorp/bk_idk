@@ -35,7 +35,7 @@ extern "C" {
 #endif
 
 #ifndef CFG_EVENT_TASK_PRIORITY
-#define EVENT_TASK_PRIORITY   8
+#define EVENT_TASK_PRIORITY   5
 #else
 #define EVENT_TASK_PRIORITY   CFG_EVENT_TASK_PRIORITY
 #endif
