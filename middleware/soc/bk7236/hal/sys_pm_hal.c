@@ -31,6 +31,7 @@
 #include <driver/pwr_clk.h>
 #include "driver/flash.h"
 #include "bk_pm_internal_api.h"
+#include "partitions_gen.h"
 
 #if CONFIG_INT_WDT
 #include <driver/wdt.h>
@@ -61,8 +62,8 @@
 #define PM_LOW_VOL_AON_LDO_SEL                (2)       // 0.7V
 #define PM_LOW_VOL_VIO_LDO_SEL                (0)       // 2.9V
 
-#if CONFIG_OTA_POSITION_INDEPENDENT_AB
-#define FLASH_BASE_ADDRESS                    (0x44030000)
+#if CONFIG_OTA_POSITION_INDEPENDENT_AB || CONFIG_DIRECT_XIP
+#define FLASH_BASE_ADDRESS                    SOC_FLASH_REG_BASE
 #define FLASH_OFFSET_ADDR_BEGIN               (0x16)
 #define FLASH_OFFSET_ADDR_END                 (0x17)
 #define FLASH_ADDR_OFFSET                     (0x18)
@@ -805,7 +806,7 @@ static inline void sys_hal_lv_restore_buck(void)
 	}
 }
 
-#if CONFIG_OTA_POSITION_INDEPENDENT_AB
+#if CONFIG_OTA_POSITION_INDEPENDENT_AB || CONFIG_DIRECT_XIP
 //when enter lowvoltage need backup related flash information.
 static inline void flash_ab_info_backup(flash_ab_reg_t *p_flash_ab_reg)
 {
@@ -850,7 +851,7 @@ __attribute__((section(".itcm_sec_code"))) void sys_hal_enter_low_voltage(void)
 	uint32_t psram_state           = 0;
 	uint32_t chip_id               = 0;
 	pm_lpo_src_e lpo_src           = PM_LPO_SRC_ROSC;
-#if CONFIG_OTA_POSITION_INDEPENDENT_AB
+#if CONFIG_OTA_POSITION_INDEPENDENT_AB || CONFIG_DIRECT_XIP
 	flash_ab_reg_t  ab_flash_reg   = {0};
 #endif
 	portNVIC_INT_CTRL_REG |= portNVIC_SYSTICKCLR_BIT;
@@ -896,7 +897,7 @@ __attribute__((section(".itcm_sec_code"))) void sys_hal_enter_low_voltage(void)
 	#endif
 #endif
 
-#if CONFIG_OTA_POSITION_INDEPENDENT_AB
+#if CONFIG_OTA_POSITION_INDEPENDENT_AB || CONFIG_DIRECT_XIP
 	flash_ab_info_backup(&ab_flash_reg);
 #endif
 
@@ -988,7 +989,7 @@ __attribute__((section(".itcm_sec_code"))) void sys_hal_enter_low_voltage(void)
 	#endif
 /*----enter low voltage sleep-------*/
 	arch_deep_sleep();
-#if CONFIG_OTA_POSITION_INDEPENDENT_AB
+#if CONFIG_OTA_POSITION_INDEPENDENT_AB || CONFIG_DIRECT_XIP
 	flash_ab_info_restore(&ab_flash_reg);
 #endif
 	#if CONFIG_LV_FLASH_ENTER_LP_ENABLE
