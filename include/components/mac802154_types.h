@@ -15,3 +15,6 @@
 #pragma once
 
 #include <common/bk_err.h>
+
+#define MAC802154_DUT_MODE_RX_ONLY   1
+#define MAC802154_DUT_MODE_RX_AND_TX   2
