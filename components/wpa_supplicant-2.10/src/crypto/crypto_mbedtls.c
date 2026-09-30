@@ -23,6 +23,9 @@
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/md.h"
 #include "mbedtls/aes.h"
+#if BK_SUPPLICANT
+#include "mbedtls/cipher.h"
+#endif
 #include "mbedtls/bignum.h"
 #include "mbedtls/pkcs5.h"
 #include "mbedtls/cmac.h"
@@ -2545,15 +2548,31 @@ static int crypto_init_cipher_ctx(mbedtls_cipher_context_t *ctx,
 		return -1;
 	}
 
-	if (mbedtls_cipher_setkey(ctx, key, cipher_info->MBEDTLS_PRIVATE(key_bitlen),
+#if BK_SUPPLICANT
+#if defined(MBEDTLS_CIPHER_MODE_WITH_PADDING)
+	/*
+	 * TLS record layer applies its own CBC padding; disable mbedTLS
+	 * PKCS7 padding to avoid an extra block in cipher_finish().
+	 */
+	if (mbedtls_cipher_get_cipher_mode(ctx) == MBEDTLS_MODE_CBC) {
+		ret = mbedtls_cipher_set_padding_mode(ctx, MBEDTLS_PADDING_NONE);
+		if (ret != 0) {
+			wpa_printf(MSG_ERROR, "mbedtls_cipher_set_padding_mode returned error");
+			return -1;
+		}
+	}
+#endif
+
+	if (mbedtls_cipher_setkey(ctx, key, mbedtls_cipher_get_key_bitlen(ctx),
 				 operation) != 0) {
 		wpa_printf(MSG_ERROR, "mbedtls_cipher_setkey returned error");
 		return -1;
 	}
-	if (mbedtls_cipher_set_iv(ctx, iv, cipher_info->MBEDTLS_PRIVATE(iv_size)) != 0) {
+	if (mbedtls_cipher_set_iv(ctx, iv, mbedtls_cipher_get_iv_size(ctx)) != 0) {
 		wpa_printf(MSG_ERROR, "mbedtls_cipher_set_iv returned error");
 		return -1;
 	}
+#endif
 	if (mbedtls_cipher_reset(ctx) != 0) {
 		wpa_printf(MSG_ERROR, "mbedtls_cipher_reset() returned error");
 		return -1;

@@ -944,10 +944,17 @@ int wpa_supplicant_ctrl_iface_set_network(struct wpa_supplicant *wpa_s, wlan_sta
 		wpa_config_parse_eap(NULL, ssid, 0, config->u.eap);
 		break;
 
+#if BK_SUPPLICANT
 	case WLAN_STA_FIELD_IDENTITY:
-		ssid->eap.identity_len = os_strlen(config->u.ca_cert);
-		ssid->eap.identity = (u8 *)dup_binstr(config->u.ca_cert, ssid->eap.identity_len);
+		ssid->eap.identity_len = os_strlen(config->u.identity);
+		ssid->eap.identity = (u8 *)dup_binstr(config->u.identity, ssid->eap.identity_len);
 		break;
+
+	case WLAN_STA_FIELD_PASSWORD:
+		ssid->eap.password_len = os_strlen(config->u.password);
+		ssid->eap.password = (u8 *)dup_binstr(config->u.password, ssid->eap.password_len);
+		break;
+#endif
 
 	case WLAN_STA_FIELD_CA_CERT:
 		ssid->eap.ca_cert = os_strdup(config->u.ca_cert);

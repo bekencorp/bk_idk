@@ -1339,7 +1339,7 @@ void cli_wifi_ap_vsie_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, ch
 }
 #endif
 
-#if CONFIG_COMPONENTS_WPA2_ENTERPRISE
+#if CONFIG_WPA2_ENTERPRISE
 /**
  * cli command: sta_eap <ssid>, connect to EAP-TLS AP.
  *
@@ -1349,7 +1349,7 @@ void cli_wifi_ap_vsie_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, ch
  * These certificates and private key may be registered to system via `register_xfile'
  * function.
  */
-void cli_wifi_sta_eap_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+void cli_wifi_sta_eap_tls_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
 {
 	char *ssid = NULL;
 	char *ca = "cacert.pem";
@@ -1422,6 +1422,94 @@ void cli_wifi_sta_eap_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, ch
 		return;
 	}
 	else {
+		goto error;
+	}
+
+error:
+	msg = WIFI_CMD_RSP_ERROR;
+	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+	return;
+}
+
+void cli_wifi_sta_eap_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	char *eap_type = NULL;
+	char *ssid = NULL;
+	char *identity = NULL;
+	char *password = NULL;
+	char *ca = "cacert.pem";
+	int ret = 0;
+	int err = 0;
+	char *msg = NULL;
+
+	if (argc != 5) {
+		CLI_LOGI("usage: sta_eap_tunnel {peap|ttls} ssid identity password\n");
+		goto error;
+	}
+
+	eap_type = argv[1];
+	ssid = argv[2];
+	identity = argv[3];
+	password = argv[4];
+
+	char *oob_ssid_tp = ssid;
+#if CONFIG_USE_CONV_UTF8
+	oob_ssid_tp = (char *)conv_utf8((uint8_t *)ssid);
+#endif
+
+	if (oob_ssid_tp) {
+		int len;
+		wifi_sta_config_t *sta_config;
+
+		len = os_strlen((char *)oob_ssid_tp);
+		if (WLAN_SSID_MAX_LEN < len) {
+			CLI_LOGI("ssid name more than 32 Bytes\n");
+			goto error;
+		}
+
+		sta_config = os_zalloc(sizeof(*sta_config));
+		if (!sta_config) {
+			CLI_LOGI("Cannot alloc STA config\n");
+			goto error;
+		}
+
+		os_strlcpy(sta_config->ssid, oob_ssid_tp, sizeof(sta_config->ssid));
+		os_strlcpy(sta_config->identity, identity, sizeof(sta_config->identity));
+		os_strlcpy(sta_config->password, password, sizeof(sta_config->password));
+		if (!os_strcasecmp(eap_type, "peap")) {
+			os_strlcpy(sta_config->eap, "PEAP", sizeof(sta_config->eap));
+		} else if (!os_strcasecmp(eap_type, "ttls")) {
+			os_strlcpy(sta_config->eap, "TTLS", sizeof(sta_config->eap));
+		} else {
+			CLI_LOGI("invalid eap type, use peap or ttls\n");
+			os_free(sta_config);
+#if CONFIG_USE_CONV_UTF8
+			os_free(oob_ssid_tp);
+#endif
+			goto error;
+		}
+		os_strlcpy(sta_config->ca, ca, sizeof(sta_config->ca));
+
+		CLI_LOGI("ssid:%s identity:%s, password:%s\n", sta_config->ssid, sta_config->identity, sta_config->password);
+		CLI_LOGI("eap:%s ca:%s\n", sta_config->eap, sta_config->ca);
+		ret = bk_wifi_sta_set_config(sta_config);
+		err = bk_wifi_sta_start();
+
+		os_free(sta_config);
+
+#if CONFIG_USE_CONV_UTF8
+		os_free(oob_ssid_tp);
+#endif
+	} else {
+		CLI_LOGI("not buf for utf8\r\n");
+		goto error;
+	}
+
+	if (!ret && !err) {
+		msg = WIFI_CMD_RSP_SUCCEED;
+		os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+		return;
+	} else {
 		goto error;
 	}
 
@@ -3017,8 +3105,9 @@ static const struct cli_command s_wifi_commands[] = {
 	{"net", "net {sta/ap} ... - wifi net config", cli_wifi_net_cmd},
 #endif
 
-#if CONFIG_COMPONENTS_WPA2_ENTERPRISE
-	{"sta_eap", "sta_eap ssid password [identity] [client_cert] [private_key]", cli_wifi_sta_eap_cmd},
+#if CONFIG_WPA2_ENTERPRISE
+	//{"sta_eap_tls", "sta_eap_tls ssid [identity]", cli_wifi_sta_eap_tls_cmd},
+	{"sta_eap", "sta_eap {peap|ttls} ssid identity password", cli_wifi_sta_eap_cmd},
 #endif
 	{"stop", "stop {sta|ap}", cli_wifi_stop_cmd},
 	{"wifi", "enable/disable", cli_wifi_test_cmd},

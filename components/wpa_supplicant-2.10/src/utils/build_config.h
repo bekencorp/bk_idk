@@ -71,7 +71,7 @@
 //#define CONFIG_IEEE80211W   1
 
 /* Integrated EAP server */
-//#define CONFIG_EAP    1
+#define CONFIG_EAP    1
 /* EAP Re-authentication Protocol (ERP) in integrated EAP server */
 //#define CONFIG_ERP    1
 /* EAP-MD5 for the integrated EAP server */
@@ -79,13 +79,13 @@
 /* EAP-TLS for the integrated EAP server */
 #define CONFIG_EAP_TLS   1
 /* EAP-MSCHAPv2 for the integrated EAP server */
-//#define CONFIG_EAP_MSCHAPV2   1
+#define CONFIG_EAP_MSCHAPV2   1
 /* EAP-PEAP for the integrated EAP server */
-//#define CONFIG_EAP_PEAP    1
+#define CONFIG_EAP_PEAP    1
 /* EAP-GTC for the integrated EAP server */
 //#define CONFIG_EAP_GTC    1
 /* EAP-TTLS for the integrated EAP server */
-//#define CONFIG_EAP_TTLS   1
+#define CONFIG_EAP_TTLS   1
 /* EAP-SIM for the integrated EAP server */
 //#define CONFIG_EAP_SIM   1
 /* EAP-AKA for the integrated EAP server */
@@ -208,7 +208,7 @@
  *  gnutls = GnuTLS
  *  internal = Internal TLSv1 implementation (experimental)
  *  none = Empty template */
-//#define CONFIG_TLS  openssl
+#define CONFIG_TLS  internal
 
 /* TLS-based EAP methods require at least TLS v1.0. Newer version of TLS (v1.1)
  *  can be enabled to get a stronger construction of messages when block ciphers
@@ -217,7 +217,7 @@
 
 /* TLS-based EAP methods require at least TLS v1.0. Newer version of TLS (v1.2)
  *  can be enabled to enable use of stronger crypto algorithms. */
-//#define CONFIG_TLSV12  1
+#define CONFIG_TLSV12  1
 
 /* If CONFIG_TLS=internal is used, additional library and include paths are
  *  needed for LibTomMath. Alternatively, an integrated, minimal version of
@@ -322,16 +322,18 @@
 #define CONFIG_INTERNAL_SHA512
 
 #if CONFIG_WPA2_ENTERPRISE
-#define EAP_TLS
-//#define EAP_MSCHAPv2
-//#define EAP_PEAP
-//#define EAP_TTLS
+//#define EAP_TLS
+#define EAP_MSCHAPv2
+#define EAP_PEAP
+#define EAP_TTLS
 //#define EAP_GTC
 //#define EAP_OTP
 //#define EAP_LEAP
 //#define EAP_TNC
 //#define _CRT_SECURE_NO_DEPRECATE
 #define CONFIG_TLS_INTERNAL_CLIENT
+/* the ca.pem and client private-key.pem is hard-coded */
+#define IEEE8021X_EAPOL_DEMO
 #endif
 
 #if CONFIG_WPA3_ENTERPRISE

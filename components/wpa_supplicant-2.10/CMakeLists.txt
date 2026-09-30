@@ -20,6 +20,12 @@ if (CONFIG_P2P)
 		"src/eap_peer"
 		)
 endif()
+if (CONFIG_WPA2_ENTERPRISE)
+	list(APPEND incs
+		"src/eap_common"
+		"src/eap_peer"
+		)
+endif()
 
 	set(srcs
 		"bk_patch/ddrv.c"
@@ -104,8 +110,37 @@ endif()
 		"src/crypto/sha384-prf.c"
 		"src/crypto/sha512-prf.c"
 		"src/crypto/sha512-kdf.c"
-		"src/crypto/tls_none.c"
 		)
+
+	if (CONFIG_WPA2_ENTERPRISE)
+		list(APPEND srcs
+			"src/crypto/tls_internal.c"
+			"src/crypto/crypto_internal-rsa.c"
+			"src/crypto/sha1-tlsprf.c"
+			"src/crypto/sha256-tlsprf.c"
+			"src/crypto/ms_funcs.c"
+			"src/crypto/md4-internal.c"
+			"src/tls/tlsv1_common.c"
+			"src/tls/tlsv1_client.c"
+			"src/tls/tlsv1_client_read.c"
+			"src/tls/tlsv1_client_write.c"
+			"src/tls/tlsv1_client_ocsp.c"
+			"src/tls/tlsv1_cred.c"
+			"src/tls/tlsv1_record.c"
+			"src/tls/x509v3.c"
+			"src/tls/asn1.c"
+			"src/tls/rsa.c"
+			"src/tls/pkcs1.c"
+			"src/tls/pkcs5.c"
+			"src/tls/pkcs8.c"
+			"src/tls/bignum.c"
+			"src/utils/xfile.c"
+			)
+	else()
+		list(APPEND srcs
+			"src/crypto/tls_none.c"
+			)
+	endif()
 
 	if (CONFIG_PSA_MBEDTLS)
 		list(REMOVE_ITEM srcs
@@ -153,6 +188,25 @@ endif()
 		)
 		endif()
 	endif()
+
+if (CONFIG_WPA2_ENTERPRISE)
+	list(APPEND srcs
+		"src/rsn_supp/preauth.c"
+		"src/eap_peer/eap.c"
+		"src/eap_peer/eap_methods.c"
+		"src/eap_peer/eap_tls.c"
+		"src/eap_peer/eap_tls_common.c"
+		"src/eap_peer/eap_peap.c"
+		"src/eap_peer/eap_mschapv2.c"
+		"src/eap_peer/mschapv2.c"
+		"src/eap_peer/eap_ttls.c"
+		"src/eap_common/eap_common.c"
+		"src/eap_common/chap.c"
+		"src/eap_common/eap_peap_common.c"
+		"src/eapol_supp/eapol_supp_sm.c"
+		"wpa_supplicant/eap_register.c"
+		)
+endif()
 
 if (CONFIG_P2P)
 	list(APPEND srcs

@@ -2450,6 +2450,10 @@ bk_err_t bk_wifi_sta_start(void)
 	/* set network parameters: ssid, passphase */
 	wlan_sta_set((uint8_t *)sta_config.ssid, os_strlen(sta_config.ssid), (uint8_t *)sta_config.password);
 
+	#if CONFIG_WPA2_ENTERPRISE
+	wifi_sta_set_wpa_config(&sta_config);
+	#endif
+
 	/*
 	 * let wpa_psk_cal thread to caculate psk.
 	 * XXX: If you know psk value, fill last two parameters of `wpa_psk_request()'.
@@ -3137,6 +3141,12 @@ static int wifi_sta_set_wpa_config(const wifi_sta_config_t *config)
 	if (config->identity[0]) {
 		os_strcpy(wpa_config.u.identity, config->identity);
 		wpa_config.field = WLAN_STA_FIELD_IDENTITY;
+		wpa_ctrl_request(WPA_CTRL_CMD_STA_SET, &wpa_config);
+	}
+
+	if (config->password[0]) {
+		os_strcpy(wpa_config.u.password, config->password);
+		wpa_config.field = WLAN_STA_FIELD_PASSWORD;
 		wpa_ctrl_request(WPA_CTRL_CMD_STA_SET, &wpa_config);
 	}
 

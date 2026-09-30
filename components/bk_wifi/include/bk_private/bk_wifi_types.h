@@ -111,6 +111,7 @@ typedef enum wlan_sta_field {
 	WLAN_STA_FIELD_OCV,
 	WLAN_STA_FIELD_EAP,
 	WLAN_STA_FIELD_IDENTITY,
+	WLAN_STA_FIELD_PASSWORD,
 	WLAN_STA_FIELD_CA_CERT,
 	WLAN_STA_FIELD_CLIENT_CERT,
 	WLAN_STA_FIELD_PRIVATE_KEY,
@@ -237,6 +238,7 @@ typedef struct wlan_sta_config {
 		/* EAP related */
 		char eap[64];
 		char identity[64];
+		char password[64];
 		char ca_cert[64];
 		char client_cert[64];
 		char private_key[64];
@@ -1019,7 +1021,7 @@ typedef struct sta_param {
 	struct bk_vise *vsies[NUM_WIFI_VENDOR_ELEM_FRAMES];
 	int freq_list[WIFI_2BAND_MAX_CHAN_NUM + 1]; /**< optional zero-terminated array of frequencies in megahertz (MHz) to allow for selecting the BSS */
 
-#if CONFIG_COMPONENTS_WPA2_ENTERPRISE
+#if CONFIG_WPA2_ENTERPRISE
 	/* starts of WPA2-Enterprise/WPA3-Enterprise EAP-TLS configuration */
 	char eap[16];					   /**< phase1 authType: TLS/TTLS/SIM */
 	char identity[32];				   /**< user identity */

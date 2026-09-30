@@ -530,7 +530,7 @@ typedef struct {
 	bool psk_calculated;
 #endif
 
-#if CONFIG_INCLUDE_WPA2_ENTERPRISE
+#if CONFIG_WPA2_ENTERPRISE
 	/* starts of WPA2-Enterprise/WPA3-Enterprise configuration */
 	char eap[16];                      /**< phase1 authType: TLS/TTLS/SIM */
 	char identity[32];                 /**< user identity */

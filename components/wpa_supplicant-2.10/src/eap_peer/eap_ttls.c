@@ -73,7 +73,7 @@ static void * eap_ttls_init(struct eap_sm *sm)
 	struct eap_ttls_data *data;
 	struct eap_peer_config *config = eap_get_config(sm);
 	int selected_non_eap;
-	char *selected;
+	__maybe_unused char *selected;
 
 	data = os_zalloc(sizeof(*data));
 	if (data == NULL)

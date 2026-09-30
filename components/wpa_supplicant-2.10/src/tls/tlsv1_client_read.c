@@ -46,7 +46,7 @@ static int tls_process_server_hello_extensions(struct tlsv1_client *conn,
 	wpa_hexdump(MSG_MSGDUMP, "TLSv1: ServerHello extensions",
 		    pos, len);
 	while (pos < end) {
-		u16 ext, elen;
+		__maybe_unused u16 ext, elen;
 
 		if (end - pos < 4) {
 			wpa_printf(MSG_INFO, "TLSv1: Truncated ServerHello extension header");

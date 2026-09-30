@@ -398,7 +398,7 @@ static struct wpabuf * eap_mschapv2_success(struct eap_sm *sm,
 static int eap_mschapv2_failure_txt(struct eap_sm *sm,
 				    struct eap_mschapv2_data *data, char *txt)
 {
-	char *pos, *msg = "";
+	__maybe_unused char *pos, *msg = "";
 	int retry = 1;
 	struct eap_peer_config *config = eap_get_config(sm);
 
