@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 """
 Product ID Writer for Binary Files
-Write product ID to binary file with CRC auto-detection
+Write product ID relative to boot magic_word
 
 Usage:
-    # Auto-detect CRC mode (checks for magic strings, no backup by default)
+    # Locate magic_word then write SPID at magic + spid_offset_in_boot
     python3 write_product_id.py app.bin T7QH4050
     
     # Read from product_id.txt file
@@ -14,28 +14,28 @@ Usage:
     # Write all zeros (clear product ID) - for non-target SOCs
     python3 write_product_id.py app.bin 0
     
-    # Explicitly with CRC: Write 16 bytes to 0x118
+    # Explicitly with product-ID CRC8: Write 16 bytes
     python3 write_product_id.py app.bin T7QH4050 --crc
     
-    # Explicitly without CRC: Write 15 bytes to 0x108
+    # Explicitly without product-ID CRC8: Write 15 bytes
     python3 write_product_id.py app.bin T7QH4050 --no-crc
     
     # With backup enabled
     python3 write_product_id.py app.bin T7QH4050 --backup
     
-    # Custom offset
+    # Custom absolute offset
     python3 write_product_id.py app.bin T7QH4050 --offset 0x200
 
-Auto-detection:
-    - Detects "BEKEN", "BK.SB", or "BK7236" at 0x100 → no_crc mode
-    - Detects "BEKEN", "BK.SB", or "BK7236" at 0x110 → crc mode
-    - If none found, skips write operation
+Magic-based positioning:
+    - Search for "BEKEN", "BK.SB", or "BK7236" in the binary
+    - SPID write address = magic_offset + CONFIG_SPID_OFFSET_IN_BOOT (default 8)
+    - Works for both secure/non-secure and crc/no_crc layouts (no fixed 0x100/0x110)
 
 Special values:
     - Product ID "0" or empty string → writes all zeros (15 bytes of 0x00)
 
 Default behavior:
-    - Auto-detect CRC mode
+    - Locate via magic_word; write 16 bytes (15-byte ID + 1-byte CRC8)
     - No backup (use --backup to enable)
 """
 
@@ -139,35 +139,37 @@ def calculate_crc8(data):
     
     return crc
 
-def detect_crc_mode(bin_data):
-    """Auto-detect CRC mode by checking for magic strings at specific offsets
-    
-    Check for "BEKEN", "BK.SB", or "BK7236" at:
-    - 0x100: Indicates no_crc mode
-    - 0x110: Indicates crc mode
-    
+MAGIC_STRINGS = (b'BEKEN', b'BK.SB', b'BK7236')
+
+
+def find_magic_offset(bin_data):
+    """Find boot magic_word offset used as SPID positioning base.
+
+    Secure/non-secure and crc/no_crc images may place magic at different
+    absolute offsets (e.g. after download headers/padding). SPID is always
+    written at magic_offset + spid_offset_in_boot.
+
     Args:
         bin_data: Binary file data (bytes or bytearray)
-    
-    Returns:
-        True if CRC mode detected, False if no_crc mode detected, None if cannot detect
-    """
-    magic_strings = [b'BEKEN', b'BK.SB', b'BK7236']
-    
-    # Check for no_crc mode (magic string at 0x100)
-    if len(bin_data) >= 0x100 + 6:  # Need at least 6 bytes for "BK7236"
-        for magic in magic_strings:
-            if bin_data[0x100:0x100 + len(magic)] == magic:
-                return False  # no_crc mode
-    
-    # Check for crc mode (magic string at 0x110)
-    if len(bin_data) >= 0x110 + 6:  # Need at least 6 bytes for "BK7236"
-        for magic in magic_strings:
-            if bin_data[0x110:0x110 + len(magic)] == magic:
-                return True  # crc mode
-    
-    return None  # Cannot detect
 
+    Returns:
+        Absolute offset of magic_word, or None if not found
+    """
+    # Prefer common locations first for typical bootloader/app images
+    for candidate in (0x100, 0x110):
+        if len(bin_data) < candidate + 6:
+            continue
+        for magic in MAGIC_STRINGS:
+            if bin_data[candidate:candidate + len(magic)] == magic:
+                return candidate
+
+    # Fallback: scan whole image (secure all-app.bin may shift magic)
+    for magic in MAGIC_STRINGS:
+        offset = bin_data.find(magic)
+        if offset >= 0:
+            return offset
+
+    return None
 def parse_int_value(value):
     """Parse integer string in decimal or hex format."""
     return int(value.strip(), 0)
@@ -204,13 +206,14 @@ def write_product_id_to_bin(bin_file, product_id, offset=None, backup=False, use
     Args:
         bin_file: Path to binary file
         product_id: Product ID string (ASCII format)
-        offset: Offset address in binary file (if None, auto-select based on use_crc)
+        offset: Absolute offset in binary file. If None, locate magic_word and use
+                magic_offset + spid_offset_in_boot.
         backup: Create backup file before modification (default False)
-        use_crc: Include CRC byte (None for auto-detect, True for CRC, False for no CRC)
-                 None:  Auto-detect by checking magic strings at 0x100 (no_crc) or 0x110 (crc)
-                 True:  Write 16 bytes (15-byte ID + 1-byte CRC) to 0x118
-                 False: Write 15 bytes (15-byte ID only) to 0x108
-        spid_offset_in_boot: SPID offset relative to boot base address.
+        use_crc: Include product-ID CRC8 byte
+                 None:  Always write 16 bytes (15-byte ID + 1-byte CRC8)
+                 True:  Write 16 bytes (15-byte ID + 1-byte CRC8)
+                 False: Write 15 bytes (15-byte ID only)
+        spid_offset_in_boot: SPID offset relative to magic_word.
                              If None, uses default value 8.
     """
     if not os.path.exists(bin_file):
@@ -224,27 +227,23 @@ def write_product_id_to_bin(bin_file, product_id, offset=None, backup=False, use
     log(f"Binary file: {bin_file}")
     log(f"File size: {file_size} bytes (0x{file_size:X})")
     
-    # Auto-detect CRC mode if not specified
-    if use_crc is None:
-        detected_mode = detect_crc_mode(bin_data)
-        if detected_mode is None:
-            log(f"No magic strings detected at 0x100 or 0x110.")
+    # Auto-select offset from magic_word if not specified
+    if offset is None:
+        magic_offset = find_magic_offset(bin_data)
+        if magic_offset is None:
+            log(f"No magic strings ({', '.join(m.decode() for m in MAGIC_STRINGS)}) detected.")
             log(f"Skipping product ID write operation.")
             return  # Exit without doing anything
-        use_crc = detected_mode
-        log(f"CRC mode: Auto-detected as {'Enabled' if use_crc else 'Disabled'} "
-            f"(magic string found at 0x{'110' if use_crc else '100'})")
-    else:
-        log(f"CRC mode: {'Enabled' if use_crc else 'Disabled'} (manually specified)")
-    
-    log(f"Data size: {'16 bytes (15-byte ID + 1-byte CRC)' if use_crc else '15 bytes (ID only)'}")
-    
-    # Auto-select offset based on CRC option if not specified
-    if offset is None:
         spid_offset = DEFAULT_SPID_OFFSET_IN_BOOT if spid_offset_in_boot is None else spid_offset_in_boot
-        base_offset = 0x110 if use_crc else 0x100
-        offset = base_offset + spid_offset
-        log(f"SPID offset in boot: 0x{spid_offset:X} (base 0x{base_offset:X} -> final 0x{offset:X})")
+        offset = magic_offset + spid_offset
+        log(f"Magic found at 0x{magic_offset:X}, SPID offset in boot: 0x{spid_offset:X} "
+            f"-> final 0x{offset:X}")
+    
+    # Product-ID CRC8: default on (do not couple to flash crc/no_crc layout)
+    if use_crc is None:
+        use_crc = True
+    log(f"Product ID CRC8: {'Enabled' if use_crc else 'Disabled'}")
+    log(f"Data size: {'16 bytes (15-byte ID + 1-byte CRC)' if use_crc else '15 bytes (ID only)'}")
     
     # Convert ASCII string to 15 bytes
     id_bytes = ascii_to_bytes(product_id, 15)
@@ -312,11 +311,11 @@ def write_product_id_to_bin(bin_file, product_id, offset=None, backup=False, use
 def main():
     """Main function"""
     parser = argparse.ArgumentParser(
-        description='Write product ID to binary file with optional CRC (auto-detect by default)',
+        description='Write product ID relative to boot magic_word',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Auto-detect CRC mode (checks for magic strings at 0x100 or 0x110)
+  # Locate magic_word, write SPID at magic + default offset 8
   %(prog)s app.bin T7QH4050
   
   # Read from product_id.txt file
@@ -325,33 +324,33 @@ Examples:
   # Write all zeros (clear product ID) - for non-target SOCs
   %(prog)s app.bin 0
   
-  # Explicitly enable CRC (16 bytes to 0x118)
+  # Explicitly enable product-ID CRC8 (16 bytes)
   %(prog)s app.bin T7QH4050 --crc
   
-  # Explicitly disable CRC (15 bytes to 0x108)
+  # Explicitly disable product-ID CRC8 (15 bytes)
   %(prog)s app.bin T7QH4050 --no-crc
   
   # Create backup before modification
   %(prog)s app.bin T7QH4050 --backup
   
-  # Custom offset with auto-detect
+  # Custom absolute offset
   %(prog)s app.bin T7QH4050 --offset 0x200
   
-  # Custom offset without CRC, with backup
+  # Custom absolute offset without product-ID CRC8, with backup
   %(prog)s app.bin ABC123 --offset 0x150 --no-crc --backup
 
-Auto-detection:
-  - Checks for "BEKEN", "BK.SB", or "BK7236" at 0x100 → no_crc mode
-  - Checks for "BEKEN", "BK.SB", or "BK7236" at 0x110 → crc mode
-  - If none found, skips write operation
+Magic-based positioning:
+  - Search for "BEKEN", "BK.SB", or "BK7236"
+  - Write address = magic_offset + --spid-offset-in-boot (default 8)
+  - Independent of flash crc/no_crc layout
 
 Special values:
   - Product ID "0" or empty string → writes all zeros (15 bytes of 0x00)
   - Used automatically for non-target SOCs
 
-Address mapping:
-  With CRC (--crc):       0x118 - 0x127 (16 bytes: 15-byte ID + 1-byte CRC)
-  Without CRC (--no-crc): 0x108 - 0x116 (15 bytes: ID only)
+Data format:
+  Default / --crc: 16 bytes (15-byte ID + 1-byte CRC8)
+  --no-crc:        15 bytes (ID only)
   
 Backup:
   Default: No backup (use --backup to enable)
@@ -370,17 +369,17 @@ Backup:
     parser.add_argument('--spid-list', type=str, default=None,
                         help='Optional explicit path to per-SOC spid_list.csv')
     parser.add_argument('--offset', type=str, default=None,
-                        help='Offset address in binary file (default: auto-select based on CRC option)')
+                        help='Absolute offset in binary file (default: magic_offset + spid_offset_in_boot)')
     parser.add_argument('--spid-offset-in-boot', type=str, default=None,
-                        help='SPID offset relative to boot base address '
+                        help='SPID offset relative to magic_word '
                              '(default: 8)')
     
-    # CRC mode options (mutually exclusive)
+    # Product-ID CRC8 options (mutually exclusive; unrelated to flash crc layout)
     crc_group = parser.add_mutually_exclusive_group()
     crc_group.add_argument('--crc', action='store_true',
-                          help='Explicitly enable CRC (write 16 bytes to 0x118)')
+                          help='Explicitly enable product-ID CRC8 (write 16 bytes)')
     crc_group.add_argument('--no-crc', action='store_true',
-                          help='Explicitly disable CRC (write 15 bytes to 0x108)')
+                          help='Explicitly disable product-ID CRC8 (write 15 bytes)')
     
     parser.add_argument('--backup', action='store_true',
                         help='Create backup file before modification (default: no backup)')
@@ -433,13 +432,13 @@ Backup:
             log_error(f"Error: Invalid --spid-offset-in-boot value '{args.spid_offset_in_boot}'")
             return 1
     
-    # Determine CRC mode
+    # Determine product-ID CRC8 mode (default: enabled)
     if args.crc:
         use_crc = True
     elif args.no_crc:
         use_crc = False
     else:
-        use_crc = None  # Auto-detect
+        use_crc = None
     
     try:
         write_product_id_to_bin(

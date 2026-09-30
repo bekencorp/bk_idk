@@ -4,6 +4,7 @@ import logging
 import os
 import shutil
 import struct
+import sys
 
 from .pack import Pack
 from .pack_header import PackHeader
@@ -14,6 +15,7 @@ from .size import Size
 
 DOWNLOAD_GLOBAL_HDR_LEN = 32
 DOWNLOAD_IMG_HDR_LEN = 32
+DEFAULT_SPID_OFFSET_IN_BOOT = 8
 
 class PackDownload(Pack):
 
@@ -166,7 +168,66 @@ class PackDownload(Pack):
         logging.debug(f'add crc, in={bname}, out={crc_bname}')
         return crc_bname
 
-    def __add_magic(self, bname, pheader, flash_crc_en):
+    def __get_armino_root(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        return os.path.abspath(os.path.join(script_dir, '..', '..', '..', '..'))
+
+    def __get_spid_offset_in_boot(self):
+        """Read CONFIG_SPID_OFFSET_IN_BOOT from project config; default 8."""
+        spid_offset = DEFAULT_SPID_OFFSET_IN_BOOT
+        for cfg_dir in get_config_paths(self.__get_armino_root()):
+            cfg_file = os.path.join(cfg_dir, 'config')
+            if not os.path.isfile(cfg_file):
+                continue
+            try:
+                with open(cfg_file, 'r') as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line.startswith('CONFIG_SPID_OFFSET_IN_BOOT='):
+                            continue
+                        raw = line.split('=', 1)[1].strip()
+                        parsed = int(raw, 0)
+                        if parsed in (8, 10):
+                            return parsed
+                        logging.warning(
+                            f'Unsupported CONFIG_SPID_OFFSET_IN_BOOT={raw} in {cfg_file}, '
+                            f'use default {DEFAULT_SPID_OFFSET_IN_BOOT}'
+                        )
+                        return DEFAULT_SPID_OFFSET_IN_BOOT
+            except Exception as e:
+                logging.debug(f'Failed to parse SPID offset from {cfg_file}: {e}')
+        return spid_offset
+
+    def __get_product_id_string(self):
+        """Resolve product ID the same way non-secure build.sh does via spid.txt."""
+        armino_root = self.__get_armino_root()
+        spid_txt = os.path.join(armino_root, 'properties', 'soc', 'spid.txt')
+        if not os.path.exists(spid_txt):
+            logging.warning(f'{spid_txt} not found, skip SPID write')
+            return None
+
+        build_tools = os.path.join(armino_root, 'tools', 'build_tools')
+        if build_tools not in sys.path:
+            sys.path.insert(0, build_tools)
+
+        try:
+            from write_product_id import resolve_product_id_from_vendor
+            product_id = resolve_product_id_from_vendor(get_soc_type(), spid_txt)
+            if product_id is not None and product_id != '':
+                return product_id
+        except Exception as e:
+            logging.debug(f'Vendor SPID resolve failed, fallback to raw spid.txt: {e}')
+
+        try:
+            with open(spid_txt, 'r') as f:
+                product_id = f.read().strip()
+        except Exception as e:
+            logging.warning(f'Failed to read {spid_txt}: {e}')
+            return None
+
+        return product_id if product_id else '0'
+
+    def __add_magic_spid(self, bname, pheader, flash_crc_en):
         if not pheader.type().is_app():
             return
 
@@ -187,9 +248,32 @@ class PackDownload(Pack):
             else:
                 magic = "BEKEN".encode() + b'\x00' * 3
         logging.debug(f'Add magic code {magic} to {bname} (secure_boot={self.bl1_secureboot_en}) (SOC={soc_type})')
+
+        # Magic/SPID are written before flash CRC, so addresses are fixed:
+        # magic @ 0x100, SPID @ 0x100 + CONFIG_SPID_OFFSET_IN_BOOT
+        spid_offset = self.__get_spid_offset_in_boot()
+        product_id = self.__get_product_id_string()
+        spid_data = None
+        if product_id is not None:
+            build_tools = os.path.join(self.__get_armino_root(), 'tools', 'build_tools')
+            if build_tools not in sys.path:
+                sys.path.insert(0, build_tools)
+            try:
+                from write_product_id import ascii_to_bytes, calculate_crc8
+                id_bytes = ascii_to_bytes(product_id, 15)
+                spid_data = id_bytes + bytes([calculate_crc8(id_bytes)])
+            except Exception as e:
+                logging.warning(f'Failed to prepare SPID for {bname}: {e}')
+
         with open(bname, 'r+b') as f:
             f.seek(0x100)
             f.write(magic)
+            if spid_data is not None:
+                f.seek(0x100 + spid_offset)
+                f.write(spid_data)
+                logging.debug(
+                    f'Add SPID "{product_id}" to {bname} at 0x{0x100 + spid_offset:X}'
+                )
 
     def __add_version(self, bname, pheader, flash_crc_en):
         if not pheader.type().is_app():
@@ -290,9 +374,9 @@ class PackDownload(Pack):
             phy_code_offset = size_obj.phy_code_offset() if hasattr(size_obj, "phy_code_offset") else 0
             logging.debug(f'bin={b}, type={ph.type().type()}, offset=0x{size_obj.offset():x}, size=0x{size_obj.size():x}, flash_crc_en={flash_crc_en}')
 
-            # Only app add magic & version
+            # Only app add magic/spid & version
             if ph.type().is_app():
-                self.__add_magic(outfile, ph, flash_crc_en)
+                self.__add_magic_spid(outfile, ph, flash_crc_en)
                 self.__add_version(outfile, ph, flash_crc_en)
 
             outfile = self.__add_crc(outfile, ph, flash_crc_en)
