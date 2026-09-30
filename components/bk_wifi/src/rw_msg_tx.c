@@ -125,7 +125,10 @@ int rw_msg_send(const void *msg_params, int reqcfm, uint16_t reqid, void *cfm)
 		err = RWNX_ERR_IOCTL_SEND;
 		goto failed_or_timeout;
 	} else if (reqcfm) {
-		ret = rtos_get_semaphore(&tx_msg->semaphore, 5 * MICROSECONDS);
+		if ((reqid == SM_DISCONNECT_CFM) || (reqid == SM_CONNECT_CFM))
+    		ret = rtos_get_semaphore(&tx_msg->semaphore, 30 * MICROSECONDS);
+		else
+    		ret = rtos_get_semaphore(&tx_msg->semaphore, 5 * MICROSECONDS);
 		if (0 != ret) {
 			RWNX_LOGI("%s timeout for %d\n", __FUNCTION__, reqid);
 			BK_ASSERT(0); /* ASSERT VERIFIED */
