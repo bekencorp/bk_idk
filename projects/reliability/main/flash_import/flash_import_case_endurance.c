@@ -584,11 +584,20 @@ static void flash_import_endurance_prepare_read_only_region(void)
     (void)flash_import_endurance_write_verify(s_endurance_data_addr);
 }
 
+static void flash_import_endurance_read_data_region(uint8_t *buf, uint32_t addr, uint32_t size)
+{
+#if CONFIG_FLASH_IMPORT_TEST_WITH_CBUS && !CONFIG_FLASH_CRC_ENABLE && CONFIG_FLASH_AES_ENABLE
+    (void)flash_import_read_cbus(buf, addr, size);
+#else
+    (void)flash_import_read_bytes(buf, addr, size);
+#endif
+}
+
 static bk_err_t flash_import_endurance_read_verify_data_region(void)
 {
-    (void)flash_import_read_bytes(s_endurance_read_buf,
-                                   s_endurance_data_addr,
-                                   FLASH_IMPORT_SECTOR_SIZE);
+    flash_import_endurance_read_data_region(s_endurance_read_buf,
+                                            s_endurance_data_addr,
+                                            FLASH_IMPORT_SECTOR_SIZE);
     s_endurance_read_op_cnt++;
     if (os_memcmp(s_endurance_read_buf, s_endurance_write_buf, FLASH_IMPORT_SECTOR_SIZE) != 0) {
         return BK_FAIL;
