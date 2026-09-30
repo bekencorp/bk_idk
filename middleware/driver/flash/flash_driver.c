@@ -812,7 +812,7 @@ static void flash_dump_efuse_spid_info(void)
 #endif
 
 #if CONFIG_OTP
-#ifdef OTP_PRODUCT_ID
+#ifdef CONFIG_PRODUCT_ID
     uint8_t product_id[16] = {0};
     ret = bk_otp_ahb_read(OTP_PRODUCT_ID, product_id, sizeof(product_id));
     if (ret != BK_OK) {
@@ -825,7 +825,7 @@ static void flash_dump_efuse_spid_info(void)
                product_id[8], product_id[9], product_id[10], product_id[11],
                product_id[12], product_id[13], product_id[14], product_id[15]);
 #else
-    FLASH_LOGI("OTP_PRODUCT_ID is not set\r\n");
+    FLASH_LOGI("CONFIG_PRODUCT_ID is not set\r\n");
 #endif
 #endif
     (void)ret;
