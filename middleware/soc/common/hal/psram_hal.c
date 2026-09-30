@@ -298,13 +298,13 @@ static int psram_hal_W955D8MKY_5J_init(uint32_t *id)
      *  - bits [11:9]  (0x3) = DATA output drive current, 4mA/step
      *  - bits [14:12] (0x0) = SCK output delay, 0.3ns/step
      */
-    psram_hal_set_reg5_value(0x292);
+    psram_hal_set_reg5_value(0x285);
 
     psram_hal_set_cmd_reset();
     psram_delay(500);
 
 	psram_hal_cmd_read(0x01000000);
-    psram_hal_cmd_write(0x01000000, 0x1c8f);
+    psram_hal_cmd_write(0x01000000, 0x8f14);
     psram_hal_cmd_read(0x01000000);
 
     *id = PSRAM_W955D8MKY_5J_ID;
