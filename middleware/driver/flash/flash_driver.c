@@ -1608,7 +1608,13 @@ void bk_flash_read_cbus(uint32_t address, void *user_buf, uint32_t size)
 __attribute__((section(".iram")))
 bk_err_t flash_import_write_cbus(const uint8_t *buffer, uint32_t address, uint32_t len)
 {
+#if CONFIG_CACHE_ENABLE
+    enable_dcache(0);
+#endif
     flash_write_cbus(address, buffer, len);
+#if CONFIG_CACHE_ENABLE
+    enable_dcache(1);
+#endif
     return BK_OK;
 }
 
