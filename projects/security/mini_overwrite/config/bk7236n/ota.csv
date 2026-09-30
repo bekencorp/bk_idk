@@ -1,0 +1,7 @@
+Field,Value
+strategy,OVERWRITE
+encrypt,FALSE
+anti_rollback,FALSE
+app_security_counter,1
+app_version,1.0.0
+bootloader_version,1.0.0

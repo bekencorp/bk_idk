@@ -1,0 +1,38 @@
+{
+    "bootloader.bin":
+    {
+        "bin": ["bl2.bin"],
+        "action": "PACK_BL1_DOWNLOAD_BIN"
+    },
+
+    "app_signed.bin":
+    {
+        "bin": ["overwrite.bin"],
+        "action": "BL2_SIGN"
+    },
+
+    "user_mfr_aes.bin":
+    {
+        "bin": ["user_mfr.bin"],
+        "action": "USER_MFR_AES"
+    },
+
+    "all-app.bin":
+    {
+        "bin": ["bl2.bin", "partition.bin", "app_signed.bin", "user_mfr_aes.bin", "nvs.bin", "nvs_key_pack.bin"],
+        "action": "PACK_BL1_DOWNLOAD_BIN"
+    },
+
+    "ota.bin":
+    {
+        "bin": ["app_signed.bin"],
+        "action": "PACK_OTA_BIN"
+    },
+
+    "raw_ota.bin":
+    {
+        "bin": ["app_signed.bin"],
+        "action": "PACK_RAW_OTA_BIN"
+    }
+
+}
