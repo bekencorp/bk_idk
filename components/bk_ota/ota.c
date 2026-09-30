@@ -19,6 +19,30 @@
 static bk_ota_t* s_xip_ota_handle = NULL;
 static bk_ota_t* s_ow_ota_handle = NULL;
 
+#if CONFIG_OTA_OVERWRITE
+static void bk_ota_bind_ow_ops(bk_ota_t *ota, uint32_t partition_options)
+{
+	if (partition_options & PARTITION_FLAGS_OTA_WRITE_CBUS) {
+	} else {
+		ota->ops.info = ow_ota_get_info;
+		ota->ops.write = ow_ota_write_dbus;
+	}
+
+	if (partition_options & PARTITION_FLAGS_OTA_READ_CBUS) {
+	} else {
+		ota->ops.read = ow_ota_read_dbus;
+	}
+
+	ota->ops.erase = ow_ota_erase;
+	ota->ops.erase_sector = ow_ota_erase_sector;
+	ota->ops.confirm = ow_ota_confirm;
+	ota->ops.verify = ow_ota_verify;
+	ota->ops.cancel = ow_ota_cancel;
+	ota->ops.accept = ow_ota_accept;
+	ota->ops.reboot = ow_ota_reboot;
+}
+#endif
+
 static bk_ota_t* bk_ota_init(const char* app_partition_name, const char* ota_partition_name, const char* control_partition_name)
 {
 	bk_ota_t *ota = (bk_ota_t*)os_malloc(sizeof(bk_ota_t));
@@ -36,6 +60,27 @@ static bk_ota_t* bk_ota_init(const char* app_partition_name, const char* ota_par
 	ota->control_partition = bk_flash_partition_get_info_by_name(control_partition_name);
 	ota->key_partition = bk_flash_partition_get_info_by_name("public_key");
 
+#if CONFIG_OTA_OVERWRITE
+	if ((!ota->app_partition) || (!ota->ota_partition)) {
+		OTA_LOGD(TAG, "invalid ota partition: app=%s ota=%s\r\n",
+			app_partition_name, ota_partition_name);
+		os_free(ota);
+		return NULL;
+	}
+
+	if (bk_flash_partition_get_type(ota->ota_partition) != PARTITION_SUBTYPE_OW_OTA) {
+		OTA_LOGE(TAG, "invalid ow ota partition subtype\r\n");
+		os_free(ota);
+		return NULL;
+	}
+
+	bk_ota_bind_ow_ops(ota, bk_flash_partition_get_options(ota->ota_partition));
+#if CONFIG_OTA_BACKUP_PUBKEY
+	ota->ops.updatekey = ota_update_back_pubkey_from_primary;
+#endif
+	return ota;
+#endif
+
 	if ((!ota->app_partition) || (!ota->ota_partition) || (!ota->control_partition)) {
 		OTA_LOGD(TAG, "invalid ota partition: app=%s ota=%s control=%s\r\n", 
 			app_partition_name, ota_partition_name, control_partition_name);
@@ -50,24 +95,7 @@ static bk_ota_t* bk_ota_init(const char* app_partition_name, const char* ota_par
 #if CONFIG_OTA_OVERWRITE
 		uint32_t partition_options = bk_flash_partition_get_options(ota->control_partition);
 		OTA_LOGD(TAG, "init ow\r\n");
-		if (partition_options & PARTITION_FLAGS_OTA_WRITE_CBUS) {
-		} else {
-			ota->ops.info = ow_ota_get_info;
-			ota->ops.write = ow_ota_write_dbus;
-		}
-
-		if (partition_options & PARTITION_FLAGS_OTA_READ_CBUS) {
-		} else {
-			ota->ops.read = ow_ota_read_dbus;
-		}
-
-		ota->ops.erase = ow_ota_erase;
-		ota->ops.erase_sector = ow_ota_erase_sector;
-		ota->ops.confirm = ow_ota_confirm;
-		ota->ops.verify = ow_ota_verify;
-		ota->ops.cancel = ow_ota_cancel;
-		ota->ops.accept = ow_ota_accept;
-		ota->ops.reboot = ow_ota_reboot;
+		bk_ota_bind_ow_ops(ota, partition_options);
 #endif
 	} else if (partition_type == PARTITION_SUBTYPE_XIP_OTA_CONTROL) {
 #if CONFIG_DIRECT_XIP
@@ -175,22 +203,32 @@ bk_err_t bk_ota_confirm(bk_ota_t* ota)
 		OTA_LOGE(TAG, "bk_ota_confirm: ota is NULL\r\n");
 		return BK_ERR_NOT_SUPPORT;
 	}
+	if (ota->control_partition == NULL) {
+#if CONFIG_OTA_OVERWRITE
+		OTA_LOGD(TAG, "no ota control partition, skip confirm\r\n");
+		return BK_OK;
+#else
+		OTA_LOGE(TAG, "bk_ota_confirm: control_partition is NULL\r\n");
+		return BK_FAIL;
+#endif
+	}
 	if (ota->ops.confirm == NULL) {
 		OTA_LOGE(TAG, "bk_ota_confirm: ops.confirm is NULL\r\n");
 		return BK_ERR_NOT_SUPPORT;
-	}
-	if (ota->control_partition == NULL) {
-		OTA_LOGE(TAG, "bk_ota_confirm: control_partition is NULL\r\n");
-		return BK_FAIL;
 	}
 	OTA_LOGD(TAG, "bk_ota_confirm: calling ops.confirm for partition %s\r\n", 
 		ota->control_partition->partition_description ? ota->control_partition->partition_description : "NULL");
 	return ota->ops.confirm(ota->control_partition);
 }
 
-bk_err_t bk_ota_cancel(bk_ota_t* ota)
+	bk_err_t bk_ota_cancel(bk_ota_t* ota)
 {
 	OTA_LOGD(TAG, "cancel\r\n");
+#if CONFIG_OTA_OVERWRITE
+	if (ota && ota->control_partition == NULL && ota->ota_partition != NULL) {
+		return ow_ota_invalidate_ota_header(ota);
+	}
+#endif
 	if (ota && ota->ops.cancel) {
 		return ota->ops.cancel(ota->control_partition);
 	} else {
@@ -249,7 +287,9 @@ bk_err_t bk_ota_confirm_update(void)
 
 	return ret;
 }
+#endif
 
+#if CONFIG_OTA_CONFIRM_UPDATE
 bk_err_t bk_ota_cancel_update(uint8_t erase_ota)
 {
 	bk_err_t ret = BK_ERR_NOT_SUPPORT;

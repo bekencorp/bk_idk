@@ -44,6 +44,43 @@ bk_err_t ow_ota_erase_sector(const bk_ota_t *ota, uint32_t off)
 	return bk_flash_erase_sector(ota->ota_partition->partition_start_addr + off);
 }
 
+bk_err_t ow_ota_invalidate_ota_header(const bk_ota_t *ota)
+{
+	uint32_t offset;
+	uint32_t check_value = 0;
+	uint8_t retry_cnt = 3;
+
+	if (ota == NULL || ota->ota_partition == NULL) {
+		return BK_FAIL;
+	}
+
+	offset = ota->ota_partition->partition_start_addr;
+	bk_flash_read_bytes(offset, (uint8_t *)&check_value, 4);
+	if (check_value == 0xFFFFFFFF) {
+		return BK_OK;
+	}
+
+	while (retry_cnt--) {
+		flash_protect_type_t protect = bk_flash_get_protect_type();
+		bk_err_t ret;
+
+		bk_flash_set_protect_type(FLASH_PROTECT_NONE);
+		ret = bk_flash_erase_sector(offset);
+		bk_flash_set_protect_type(protect);
+		if (ret != BK_OK) {
+			continue;
+		}
+
+		bk_flash_read_bytes(offset, (uint8_t *)&check_value, 4);
+		if (check_value == 0xFFFFFFFF) {
+			OTA_LOGD(TAG, "ow invalidate ota header at %#x\r\n", offset);
+			return BK_OK;
+		}
+	}
+
+	return BK_FAIL;
+}
+
 bk_err_t ow_ota_confirm(const bk_logic_partition_t *control_partition)
 {
 	OTA_LOGD(TAG, "ow confirm\r\n");
@@ -88,8 +125,11 @@ bk_err_t ow_ota_cancel(const bk_logic_partition_t *control_partition)
 bk_err_t ow_ota_accept(const bk_ota_t *ota)
 {
 	OTA_LOGD(TAG, "ow accept, erase confirm\r\n");
-	if (ota == NULL || ota->control_partition == NULL) {
+	if (ota == NULL || ota->ota_partition == NULL) {
 		return BK_FAIL;
+	}
+	if (ota->control_partition == NULL) {
+		return ow_ota_invalidate_ota_header(ota);
 	}
 #if CONFIG_OTA_OVERWRITE && CONFIG_OTA_CONFIRM_UPDATE
 	(void)ota_control_backup_fail_stage_if_dirty(ota->control_partition);

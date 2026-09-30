@@ -26,6 +26,7 @@ bk_err_t ow_ota_erase_sector(const bk_ota_t *ota, uint32_t off);
 bk_err_t ow_ota_verify(const bk_ota_t *ota, void* metadata);
 bk_err_t ow_ota_confirm(const bk_logic_partition_t *partition);
 bk_err_t ow_ota_cancel(const bk_logic_partition_t *control_partition);
+bk_err_t ow_ota_invalidate_ota_header(const bk_ota_t *ota);
 bk_err_t ow_ota_accept(const bk_ota_t *ota);
 
 bk_err_t ow_ota_read_primary_version(const bk_ota_t *ota);
