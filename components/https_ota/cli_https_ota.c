@@ -349,6 +349,10 @@ void ota_steps_Command(char *pcWriteBuffer, int xWriteBufferLen, int argc, char 
 	} else if (os_strcmp(argv[1], "end") == 0) {
 		bk_https_ota_end(s_ota_config);
 	} else if (os_strcmp(argv[1], "confirm") == 0) {
+#if !CONFIG_OTA_CONFIRM_UPDATE
+		BK_LOGI(TAG, "OTA confirm is not supported\r\n");
+		return;
+#endif
 		if (argc < 3) {
 			BK_LOGE(TAG, "Usage: ota confirm <current/ow/xip>\r\n");
 			BK_LOGE(TAG, "  current - confirm current OTA upgrade\r\n");
