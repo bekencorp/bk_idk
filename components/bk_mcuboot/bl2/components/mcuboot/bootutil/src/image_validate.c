@@ -388,7 +388,17 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
 #if CONFIG_VALIDATE_IMAGE
 #if CONFIG_BL2_SKIP_VALIDATE
     uint32_t reset_reason = aon_pmu_hal_get_reset_reason();
-    bool ota_confirm_set = bk_boot_check_ota_confirm(image_index, OTA_CONFIRM);
+    bool ota_confirm_set;
+#if CONFIG_OTA_OVERWRITE
+    if (partition_get_phy_size(PARTITION_OW_OTA_CONTROL) == 0) {
+        ota_confirm_set = bk_boot_check_ota_header(image_index);
+    }
+    else {
+        ota_confirm_set = bk_boot_check_ota_confirm(image_index, OTA_CONFIRM);
+    }
+#else
+    ota_confirm_set = bk_boot_check_ota_confirm(image_index, OTA_CONFIRM);
+#endif
     bool can_skip = (reset_reason == RESET_SOURCE_POWERON) && (!ota_confirm_set);
 
     if (aon_pmu_hal_get_app_boot_validate_pending() != 0u) {

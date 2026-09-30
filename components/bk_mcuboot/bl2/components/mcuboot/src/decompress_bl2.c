@@ -158,12 +158,20 @@ static uint32_t get_resume_base_address(void)
 	return partition_get_phy_offset(PARTITION_OW_OTA_CONTROL);
 }
 
+static bool has_resume_area(void)
+{
+	return partition_get_phy_size(PARTITION_OW_OTA_CONTROL) >= 4096;
+}
 
 static uint8_t read_resume_block(uint32_t back_address, uint8_t* resume_data, size_t resume_data_size)
 {
 	resume_block_t resume_block[2];
 	CRC8_Context crc_8;
 	uint8_t idx = 0;
+
+	if (!has_resume_area()) {
+		return 0;
+	}
 
 	memset(resume_block, 0xFF, sizeof(resume_block));
 
@@ -199,13 +207,23 @@ static uint8_t write_resume_block(uint8_t idx, uint32_t back_address, uint8_t* r
 	CRC8_Update(&crc_8, resume_block.data, sizeof(resume_block.data));
 	resume_block.index = idx;
 	resume_block.crc8 = crc_8;
+	if (!has_resume_area()) {
+		return BK_OK;
+	}
 	bk_flash_write_bytes(back_address + idx * sizeof(resume_block), (uint8_t*)&resume_block, sizeof(resume_block));
+	return BK_OK;
 }
 
 static uint32_t resume_flash(uint32_t block_num)
 {
 	uint32_t primary_all_phy_offset = get_flash_map_offset(FLASH_AREA_OVERWRITE_ID);
 	uint32_t area_size = get_flash_map_phy_size(FLASH_AREA_OVERWRITE_ID);
+
+	if (!has_resume_area()) {
+		BOOT_LOG_INF("Erasing primary and resume");
+		flash_area_erase_fast_with_verify(primary_all_phy_offset, area_size);
+		return 0;
+	}
 
 	uint32_t back_address = get_resume_base_address();
 	uint32_t back_data_size = CEIL_ALIGN_34(primary_all_phy_offset) - primary_all_phy_offset;
@@ -246,6 +264,9 @@ static uint32_t resume_flash(uint32_t block_num)
 
 static void back_flash(uint32_t restart_block_idx)
 {
+	if (!has_resume_area()) {
+		return;
+	}
 	uint32_t primary_all_phy_offset = get_flash_map_offset(FLASH_AREA_OVERWRITE_ID);
 
 	uint32_t back_address = get_resume_base_address();
@@ -373,7 +394,7 @@ boot_copy_region(struct boot_loader_state *state, const struct flash_area *fap_s
 #if CONFIG_DECOMPRESS_RESUME
 	{
 		uint32_t resume_addr = get_resume_base_address();
-		if (resume_addr != 0 && resume_addr >= primary_all_phy_offset) {
+		if (has_resume_area() && resume_addr != 0 && resume_addr >= primary_all_phy_offset) {
 			BOOT_LOG_INF("erasing resume");
 			flash_area_erase_fast_with_verify(resume_addr, 4096);
 		} else {

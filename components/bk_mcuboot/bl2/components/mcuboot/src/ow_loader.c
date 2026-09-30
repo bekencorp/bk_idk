@@ -95,11 +95,19 @@ boot_validated_swap_type(struct boot_loader_state *state,
     FIH_DECLARE(fih_rc, FIH_FAILURE);
 
 #if CONFIG_OTA_CONFIRM_UPDATE
-    if ((bk_boot_check_ota_confirm(0, OTA_CONFIRM))) {
-        BOOT_LOG_INF("confirm set");
+    if (partition_get_phy_size(PARTITION_OW_OTA_CONTROL)) {
+        if (bk_boot_check_ota_confirm(0, OTA_CONFIRM)) {
+            BOOT_LOG_INF("confirm set");
+            swap_type = BOOT_SWAP_TYPE_TEST;
+        } else {
+            BOOT_LOG_INF("confirm unset");
+            swap_type = BOOT_SWAP_TYPE_NONE;
+        }
+    } else if (bk_boot_check_ota_header(0)) {
+        BOOT_LOG_INF("ota header valid");
         swap_type = BOOT_SWAP_TYPE_TEST;
     } else {
-        BOOT_LOG_INF("confirm unset");
+        BOOT_LOG_INF("ota header invalid");
         swap_type = BOOT_SWAP_TYPE_NONE;
     }
 #else

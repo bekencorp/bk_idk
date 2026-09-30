@@ -310,17 +310,28 @@ bk_boot_ota_confirm_offset(uint8_t image_index)
 {
 #if CONFIG_MIXED_OTA
     if (image_index == 0) {
-        return CONFIG_OW_OTA_CONTROL_PHY_PARTITION_OFFSET + CONFIG_OW_OTA_CONTROL_PHY_PARTITION_SIZE - 4;
+        return partition_get_phy_offset(PARTITION_OW_OTA_CONTROL) +
+               partition_get_phy_size(PARTITION_OW_OTA_CONTROL) - 4;
     } else {
-        return CONFIG_XIP_OTA_CONTROL_PHY_PARTITION_OFFSET + CONFIG_XIP_OTA_CONTROL_PHY_PARTITION_SIZE - 4;
+        return partition_get_phy_offset(PARTITION_XIP_OTA_CONTROL) +
+               partition_get_phy_size(PARTITION_XIP_OTA_CONTROL) - 4;
     }
 #endif
 #if CONFIG_OTA_OVERWRITE
-    return CONFIG_OW_OTA_CONTROL_PHY_PARTITION_OFFSET + CONFIG_OW_OTA_CONTROL_PHY_PARTITION_SIZE - 4;
+    if (partition_get_phy_size(PARTITION_OW_OTA_CONTROL) == 0) {
+        return 0;
+    }
+    return partition_get_phy_offset(PARTITION_OW_OTA_CONTROL) +
+           partition_get_phy_size(PARTITION_OW_OTA_CONTROL) - 4;
 #endif
 #if CONFIG_DIRECT_XIP
-    return CONFIG_XIP_OTA_CONTROL_PHY_PARTITION_OFFSET + CONFIG_XIP_OTA_CONTROL_PHY_PARTITION_SIZE - 4;
+    if (partition_get_phy_size(PARTITION_XIP_OTA_CONTROL) == 0) {
+        return 0;
+    }
+    return partition_get_phy_offset(PARTITION_XIP_OTA_CONTROL) +
+           partition_get_phy_size(PARTITION_XIP_OTA_CONTROL) - 4;
 #endif
+    return 0;
 }
 
 bk_err_t 
@@ -329,6 +340,9 @@ bk_boot_write_ota_confirm(uint8_t image_index, uint32_t status)
     uint8_t retry_cnt = 3;
     uint32_t check_value = 0;
     uint32_t offset = bk_boot_ota_confirm_offset(image_index);
+    if (offset == 0) {
+        return BK_FAIL;
+    }
     bk_flash_read_bytes(offset, (uint8_t*)&check_value, 4);
     if (check_value == status) {
         return BK_OK;
@@ -349,6 +363,9 @@ bool
 bk_boot_check_ota_confirm(uint8_t index, uint32_t value)
 {
     uint32_t phy_off = bk_boot_ota_confirm_offset(index);
+    if (phy_off == 0) {
+        return false;
+    }
     uint32_t status;
     bk_flash_read_bytes(phy_off, (uint8_t *)&status, 4);
 
@@ -367,6 +384,9 @@ bk_boot_erase_ota_confirm(uint8_t image_index)
     uint32_t check_value;
     uint32_t ff = 0xFFFFFFFF;
     uint32_t phy_off = bk_boot_ota_confirm_offset(image_index);
+    if (phy_off == 0) {
+        return BK_FAIL;
+    }
     bk_flash_read_bytes(phy_off, (uint8_t*)&check_value, 4);
     if (check_value == ff) {
         return 0;
@@ -382,6 +402,36 @@ bk_boot_erase_ota_confirm(uint8_t image_index)
     }
     BOOT_LOG_ERR("erase ota confirm=%#x fail\r\n", check_value);
     return BK_FAIL;
+}
+
+#endif /* CONFIG_OTA_CONFIRM_UPDATE */
+
+bool
+bk_boot_check_ota_header(uint8_t index)
+{
+    const struct flash_area *fap;
+    struct image_header hdr;
+    int rc;
+
+    if (index != 0) {
+        return false;
+    }
+
+    rc = flash_area_open(FLASH_AREA_IMAGE_SECONDARY(index), &fap);
+    if (rc != 0) {
+        BOOT_LOG_INF("get image%d ota header: open fail", index);
+        return false;
+    }
+
+    rc = boot_image_load_header(fap, &hdr);
+    flash_area_close(fap);
+    if (rc != 0) {
+        BOOT_LOG_INF("get image%d ota header: invalid", index);
+        return false;
+    }
+
+    BOOT_LOG_INF("get image%d ota header valid", index);
+    return true;
 }
 
 #if (CONFIG_OTA_OVERWRITE || CONFIG_DIRECT_XIP) && CONFIG_OTA_CONFIRM_UPDATE
@@ -426,11 +476,17 @@ static uint32_t
 bk_boot_overwrite_app_fail_off(void)
 {
 #if CONFIG_OTA_OVERWRITE
-    return (uint32_t)(CONFIG_OW_OTA_CONTROL_PHY_PARTITION_OFFSET
-                      + CONFIG_OW_OTA_CONTROL_PHY_PARTITION_SIZE - 8);
+    if (partition_get_phy_size(PARTITION_OW_OTA_CONTROL) == 0) {
+        return 0;
+    }
+    return (uint32_t)(partition_get_phy_offset(PARTITION_OW_OTA_CONTROL) +
+                      partition_get_phy_size(PARTITION_OW_OTA_CONTROL) - 8);
 #elif CONFIG_DIRECT_XIP
-    return (uint32_t)(CONFIG_XIP_OTA_CONTROL_PHY_PARTITION_OFFSET
-                      + CONFIG_XIP_OTA_CONTROL_PHY_PARTITION_SIZE - 8);
+    if (partition_get_phy_size(PARTITION_XIP_OTA_CONTROL) == 0) {
+        return 0;
+    }
+    return (uint32_t)(partition_get_phy_offset(PARTITION_XIP_OTA_CONTROL) +
+                      partition_get_phy_size(PARTITION_XIP_OTA_CONTROL) - 8);
 #else
     return 0;
 #endif
@@ -502,6 +558,9 @@ bk_boot_write_ota_fail(uint16_t error_code)
     }
 
     uint32_t base_off = bk_boot_overwrite_app_fail_off();
+    if (base_off == 0) {
+        return;
+    }
     uint32_t record_off = base_off - (uint32_t)(stage_idx * BOOT_FAIL_RECORD_SIZE);
 
     boot_fail_record_t record;
@@ -551,9 +610,6 @@ bk_boot_write_ota_fail(uint16_t error_code)
     (void)error_code;
 #endif
 }
-
-#endif /* CONFIG_OTA_CONFIRM_UPDATE */
-
 
 int
 boot_read_swap_state(const struct flash_area *fap,

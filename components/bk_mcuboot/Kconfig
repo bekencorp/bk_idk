@@ -109,7 +109,8 @@ menu "BL2"
 			default n
 			
 		config BL2_UPGRADE_WITH_APP
-		bool "Enable BL2 upgrade with application"
-		default n
+			bool "Enable BL2 upgrade with application"
+			default n
+		
 	endmenu
 endmenu
