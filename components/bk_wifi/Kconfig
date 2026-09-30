@@ -625,4 +625,16 @@ menu "Bk_Wifi"
 		bool "Enable Microwave Policy"
 		default n
 
+	config FIXED_KEEPALIVE
+		bool "Enable keepalive null with fixed peiord"
+		default n
+
+	config FIXED_KEEPALIVE_PERIOD
+		depends on FIXED_KEEPALIVE
+		int "Set keepalive null period"
+		range 0 180
+		default 30
+		help
+			Period of keepalive
+
 endmenu

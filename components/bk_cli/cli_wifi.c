@@ -16,6 +16,7 @@
 #include <modules/wifi.h>
 #include "bk_wifi.h"
 #include "bk_wifi_types.h"
+#include "bk_feature.h"
 #include "getopt_r.h"
 #if CONFIG_WIFI_CLI_RAW_LINK_ENABLE
 #include <modules/raw_link.h>
@@ -830,6 +831,41 @@ error:
 	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
 	return;
 }
+
+#if CONFIG_FIXED_KEEPALIVE
+void cli_wifi_keepalive_period_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
+{
+	char *msg = NULL;
+
+	if (argc == 1) {
+		CLI_LOGI("keepalive_period=%d s\r\n", bk_feature_get_fixed_keepalive_period());
+		msg = WIFI_CMD_RSP_SUCCEED;
+		os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+		return;
+	}
+
+	if (argc != 2) {
+		CLI_LOGI("usage: keepalive_period [0~180]\r\n");
+		goto error;
+	}
+
+	int period = (int)os_strtoul(argv[1], NULL, 10);
+	if (bk_feature_set_fixed_keepalive_period(period)) {
+		CLI_LOGI("invalid keepalive_period %d, range 0~180\r\n", period);
+		goto error;
+	}
+
+	CLI_LOGI("set keepalive_period=%d s\r\n", bk_feature_get_fixed_keepalive_period());
+	msg = WIFI_CMD_RSP_SUCCEED;
+	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+	return;
+
+error:
+	msg = WIFI_CMD_RSP_ERROR;
+	os_memcpy(pcWriteBuffer, msg, os_strlen(msg));
+	return;
+}
+#endif
 
 #if CONFIG_WIFI_SLEEP_MODE_SUPPORT
 void cli_wifi_set_sleep_mode_cmd(char *pcWriteBuffer, int xWriteBufferLen, int argc, char **argv)
@@ -3123,6 +3159,9 @@ static const struct cli_command s_wifi_commands[] = {
 	{"sta_ssid_pref", "sta_ssid_pref [0|rssi|signal|1|5g] same SSID 2.4G/5G policy", cli_wifi_sta_same_ssid_pref_cmd},
 #endif
 	{"set_interval", "set listen interval}", cli_wifi_set_interval_cmd},
+#if CONFIG_FIXED_KEEPALIVE
+	{"keepalive_period", "keepalive_period [0~180] - get/set fixed keepalive period(s)", cli_wifi_keepalive_period_cmd},
+#endif
 	{"set_arp_rate", "set arp rate}", cli_wifi_set_arp_rate_cmd},
 	{"bcn_loss_intv", "bcn_loss_intv interval repeat_num}", cli_wifi_bcn_loss_intv_cmd},
 	{"bcn_loss_time", "bcn_loss_time wait_cnt wake_cnt}", cli_wifi_set_bcn_loss_time_cmd},

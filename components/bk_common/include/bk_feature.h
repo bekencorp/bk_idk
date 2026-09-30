@@ -83,6 +83,39 @@ int bk_feature_get_cpu_id(void);
 int bk_feature_get_cpu_cnt(void);
 
 /**
+ * @brief     Interface for customer to Enable/Disable Fixed Keepalive
+ *
+ *
+ * @return
+ *    - 0: Disable Fixed Keepalive
+ *    - 1: Enable Fixed Keepalive
+ *
+ */
+int bk_feature_fixed_keepalive_enable(void);
+
+/**
+ * @brief     Interface for customer to get Fixed Keepalive period
+ *
+ *
+ * @return
+ *    - Fixed Keepalive period
+ *
+ */
+int bk_feature_get_fixed_keepalive_period(void);
+
+/**
+ * @brief     Set Fixed Keepalive period at runtime (unit: second)
+ *
+ * @param period  0: disable sending; 1~180: period in seconds
+ *
+ * @return
+ *    - 0: success
+ *    - -1: invalid period
+ *
+ */
+int bk_feature_set_fixed_keepalive_period(int period);
+
+/**
  * @brief     Interface for customer to Enable/Disable Auto Gratuitous ARP
  *
  *

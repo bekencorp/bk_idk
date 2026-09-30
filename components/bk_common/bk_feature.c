@@ -1,6 +1,9 @@
 #include "bk_feature.h"
 #include "sdkconfig.h"
 
+#if CONFIG_FIXED_KEEPALIVE
+int keepalive_period = -1;
+#endif
 
 int bk_feature_temp_detect_enable(void) {
 #if CONFIG_TEMP_DETECT
@@ -28,6 +31,39 @@ int bk_feature_get_cpu_cnt(void) {
     return CONFIG_CPU_CNT;
 #else
     return 1;
+#endif
+}
+
+int bk_feature_fixed_keepalive_enable(void) {
+#if CONFIG_FIXED_KEEPALIVE
+	return 1;
+#else
+	return 0;
+#endif
+}
+
+int bk_feature_get_fixed_keepalive_period(void) {
+#if CONFIG_FIXED_KEEPALIVE
+	if(keepalive_period >= 0) {
+		return keepalive_period;
+	} else {
+		return CONFIG_FIXED_KEEPALIVE_PERIOD;
+	}
+#else
+	return 0;
+#endif
+}
+
+int bk_feature_set_fixed_keepalive_period(int period) {
+#if CONFIG_FIXED_KEEPALIVE
+	if ((period < 0) || (period > 180)) {
+		return -1;
+	}
+	keepalive_period = period;
+	return 0;
+#else
+	(void)period;
+	return -1;
 #endif
 }
 
