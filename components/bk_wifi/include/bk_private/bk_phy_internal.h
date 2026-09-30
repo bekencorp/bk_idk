@@ -47,7 +47,7 @@ void rc_drv_set_rf_macbypass(uint32_t value);
 void rc_drv_set_rx_mode_enrxsw(uint32_t value);
 uint32_t rc_drv_get_rx_mode_enrxsw();
 UINT32 rwnx_tpc_get_pwridx_by_rate(UINT32 rate, UINT32 format, UINT32 print_log);
-UINT32 rwnx_setting_for_single_rate(INT32 rate);
+UINT32 rwnx_setting_for_single_rate(INT32 rate, INT32 format);
 void delay05us(INT32 num);
 void rwnx_cal_recover_rf_setting(void);
 void rwnx_cal_recover_wifi_setting(void);
