@@ -261,6 +261,9 @@ if (CONFIG_TRNG_SUPPORT)
 endif() #if (CONFIG_TRNG_SUPPORT)
 
 if (CONFIG_QSPI)
+	list(APPEND incs
+		qspi
+	)
 	list(APPEND srcs
 		"qspi/qspi_driver.c"
 		"qspi/qspi_statis.c"

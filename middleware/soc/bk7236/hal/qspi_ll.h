@@ -381,9 +381,12 @@ static inline void qspi_ll_direct_read(qspi_id_t id, uint32_t base_addr, void *d
 	}
 }
 
-static inline void qspi_ll_io_write(qspi_hw_t *hw, const void *data, uint32_t data_len)
+static inline void qspi_ll_io_write(qspi_hw_t *hw, const void *data, uint32_t data_len,
+				    bool resume)
 {
 	uint32_t fifo_num = 0;
+
+	(void)resume;
 
 	if(0 == (data_len % 4)) {
 		fifo_num = data_len / 4;
@@ -396,9 +399,13 @@ static inline void qspi_ll_io_write(qspi_hw_t *hw, const void *data, uint32_t da
 	}
 }
 
-static inline void qspi_ll_io_read(qspi_hw_t *hw, void *data, uint32_t data_len)
+static inline void qspi_ll_io_read(qspi_hw_t *hw, void *data, uint32_t data_len,
+				   bool resume, bool keep_clk)
 {
 	uint32_t size  = 0;
+
+	(void)resume;
+	(void)keep_clk;
 
 	if(0 == (data_len % 4))	{
 		size = data_len / 4;

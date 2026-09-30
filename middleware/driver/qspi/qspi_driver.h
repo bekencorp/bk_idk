@@ -21,3 +21,11 @@
 #define QSPI_LOGW(...) BK_LOGW(QSPI_TAG, ##__VA_ARGS__)
 #define QSPI_LOGE(...) BK_LOGE(QSPI_TAG, ##__VA_ARGS__)
 #define QSPI_LOGD(...) BK_LOGD(QSPI_TAG, ##__VA_ARGS__)
+
+bk_err_t bk_qspi_force_cs_low(qspi_id_t id, bool enable);
+bk_err_t bk_qspi_disable_cmd_sck_mode(qspi_id_t id, bool enable);
+bk_err_t bk_qspi_command_no_disable(qspi_id_t id, const qspi_cmd_t *cmd);
+bk_err_t bk_qspi_read_keep(qspi_id_t id, void *data, uint32_t size,
+			   bool resume, bool keep_clk);
+bk_err_t bk_qspi_write_keep(qspi_id_t id, const void *data, uint32_t size,
+			    bool resume);

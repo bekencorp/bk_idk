@@ -55,6 +55,11 @@ bk_err_t qspi_hal_init(qspi_hal_t *hal);
 bool qspi_hal_is_cur_sw_op_write_data(void);
 bool qspi_hal_is_cur_sw_op_read_data(void);
 bk_err_t qspi_hal_command(qspi_hal_t *hal, const qspi_cmd_t *cmd);
+bk_err_t qspi_hal_command_no_disable(qspi_hal_t *hal, const qspi_cmd_t *cmd);
+bk_err_t qspi_hal_io_read_keep(qspi_hal_t *hal, void *data, uint32_t size,
+			       bool resume, bool keep_clk);
+bk_err_t qspi_hal_io_write_keep(qspi_hal_t *hal, const void *data, uint32_t size,
+				bool resume);
 bk_err_t qspi_hal_direct_write(qspi_id_t id, uint32_t base_addr, const void *data, uint32_t size);
 bk_err_t qspi_hal_direct_read(qspi_id_t id, uint32_t base_addr, void *data, uint32_t size);
 bk_err_t qspi_hal_io_write(qspi_hal_t *hal, const void *data, uint32_t size);
@@ -88,7 +93,7 @@ bk_err_t qspi_hal_force_spi_cs_low_disable(qspi_hal_t *hal);
 bk_err_t qspi_hal_disable_cmd_sck_enable(qspi_hal_t *hal);
 bk_err_t qspi_hal_disable_cmd_sck_disable(qspi_hal_t *hal);
 
-#if (CONFIG_SOC_BK7236XX)
+#if (CONFIG_SOC_BK7236XX || CONFIG_SOC_BK7239XX)
 bk_err_t qspi_hal_enable_soft_reset(qspi_hal_t *hal);
 bk_err_t qspi_hal_disable_soft_reset(qspi_hal_t *hal);
 bk_err_t qspi_hal_io_cpu_mem_select(qspi_hal_t *hal, uint32_t cmd_value);

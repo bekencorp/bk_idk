@@ -41,6 +41,8 @@ extern "C" {
 #define FAST_READ_QUAD         0xEB
 #define FAST_READ              0x0B
 #define READ_CMD               0x03
+#define RESET_ENABLE_CMD       0x66
+#define RESET_CMD              0x99
 
 #define FLASH_READ_ID_CMD          0x9F
 #define FLASH_WR_S0_S7_CMD         0x1
@@ -375,7 +377,8 @@ static inline void qspi_ll_direct_read(qspi_id_t id, uint32_t base_addr, void *d
 	}
 }
 
-static inline void qspi_ll_io_write(qspi_hw_t *hw, const void *data, uint32_t data_len)
+static inline void qspi_ll_io_write(qspi_hw_t *hw, const void *data, uint32_t data_len,
+				    bool resume)
 {
 	uint32_t fifo_num = 0;
 
@@ -386,10 +389,10 @@ static inline void qspi_ll_io_write(qspi_hw_t *hw, const void *data, uint32_t da
 	}
 
 	hw->rst_cfg.fifo_io_wr = 1;
-	hw->rst_cfg.clk_man_en = 1;
-	hw->rst_cfg.clk_man_sel = 0;
-	extern void delay_ms(UINT32 ms);
-	delay_ms(1);
+	if (!resume) {
+		hw->rst_cfg.clk_man_en = 1;
+		hw->rst_cfg.clk_man_sel = 0;
+	}
 
 	for(uint32_t i = 0; i < fifo_num; i++) {
 		*((uint32_t *)(hw->fifo_data) + i) = *((uint32_t *)data + i);
@@ -398,11 +401,10 @@ static inline void qspi_ll_io_write(qspi_hw_t *hw, const void *data, uint32_t da
 	hw->rst_cfg.fifo_io_wr = 0;
 	hw->rst_cfg.clk_man_en = 1;
 	hw->rst_cfg.clk_man_sel = 1;
-	extern void delay_ms(UINT32 ms);
-	delay_ms(1);
 }
 
-static inline void qspi_ll_io_read(qspi_hw_t *hw, void *data, uint32_t data_len)
+static inline void qspi_ll_io_read(qspi_hw_t *hw, void *data, uint32_t data_len,
+				   bool resume, bool keep_clk)
 {
 	uint32_t size  = 0;
 
@@ -413,18 +415,21 @@ static inline void qspi_ll_io_read(qspi_hw_t *hw, void *data, uint32_t data_len)
 	}
 
 	hw->rst_cfg.fifo_io_wr = 0;
-	hw->rst_cfg.clk_man_en = 1;
-	hw->rst_cfg.clk_man_sel = 0;
-	extern void delay_ms(UINT32 ms);
-	delay_ms(1);
+	if (!resume) {
+		hw->rst_cfg.clk_man_en = 1;
+		hw->rst_cfg.clk_man_sel = 0;
+	}
 
 	for(uint32_t i = 0; i < size; i++) {
 		*((uint32_t *)data + i) = *((uint32_t *)(hw->fifo_data) + i);
 	}
 
-	hw->rst_cfg.clk_man_en = 0;
-	extern void delay_ms(UINT32 ms);
-	delay_ms(1);
+	if (keep_clk) {
+		hw->rst_cfg.clk_man_en = 1;
+		hw->rst_cfg.clk_man_sel = 1;
+	} else {
+		hw->rst_cfg.clk_man_en = 0;
+	}
 }
 
 static inline void qspi_ll_init_flash_command(qspi_hw_t *hw, const qspi_cmd_t *cmd)
@@ -520,6 +525,8 @@ static inline void qspi_ll_init_flash_command(qspi_hw_t *hw, const qspi_cmd_t *c
 
 static inline void qspi_ll_init_psram_command(qspi_hw_t *hw, const qspi_cmd_t *cmd)
 {
+	uint32_t addr_h, addr_m, addr_l;
+
 	if (MEMORY_MAPPED_MODE == cmd->work_mode) {
 		if (QSPI_WRITE == cmd->op) {
 			hw->cmd_a_l.v = 0;
@@ -570,9 +577,27 @@ static inline void qspi_ll_init_psram_command(qspi_hw_t *hw, const qspi_cmd_t *c
 				hw->cmd_c_cfg1.v = 0xc;
 			} else if (EXIT_QUAD_MODE_CMD == cmd->cmd) {
 				hw->cmd_c_cfg1.v = 0xe;
+			} else if (RESET_ENABLE_CMD == cmd->cmd || RESET_CMD == cmd->cmd) {
+				hw->cmd_c_cfg1.v = 0xc;
+			} else if (WRITE_CMD == cmd->cmd || QUAD_WRITE_CMD == cmd->cmd) {
+				addr_h = (cmd->addr & 0xff0000) >> 16;
+				addr_m = (cmd->addr & 0x00ff00) >> 8;
+				addr_l = cmd->addr & 0x0000ff;
+				hw->cmd_c_h.v &= (~(QSPI_F_CMD2_M << QSPI_F_CMD2_S));
+				hw->cmd_c_h.v |= ((addr_h & QSPI_F_CMD2_M) << QSPI_F_CMD2_S);
+				hw->cmd_c_h.v &= (~(QSPI_F_CMD3_M << QSPI_F_CMD3_S));
+				hw->cmd_c_h.v |= ((addr_m & QSPI_F_CMD3_M) << QSPI_F_CMD3_S);
+				hw->cmd_c_h.v &= (~(QSPI_F_CMD4_M << QSPI_F_CMD4_S));
+				hw->cmd_c_h.v |= ((addr_l & QSPI_F_CMD4_M) << QSPI_F_CMD4_S);
+				if (QUAD_WRITE_CMD == cmd->cmd) {
+					hw->cmd_c_cfg1.v = 0x3aa;
+				} else {
+					hw->cmd_c_cfg1.v = 0x300;
+				}
 			}
 
 			hw->cmd_c_cfg2.data_line = cmd->wire_mode;
+			hw->cmd_c_cfg2.data_len = cmd->data_len;
 			hw->cmd_c_cfg2.dummy_clock = cmd->dummy_cycle;
 			if (cmd->dummy_cycle) {
 				hw->cmd_c_cfg2.dummy_mode = 4;
@@ -585,7 +610,27 @@ static inline void qspi_ll_init_psram_command(qspi_hw_t *hw, const qspi_cmd_t *c
 		} else {
 			hw->cmd_d_l.v = 0;
 			hw->cmd_d_h.cmd1 = cmd->cmd;
-			hw->cmd_d_cfg1.v = 0xc;
+
+			if (READ_ID_CMD == cmd->cmd || READ_CMD == cmd->cmd ||
+			    FAST_READ == cmd->cmd || FAST_READ_QUAD == cmd->cmd) {
+				addr_h = (cmd->addr & 0xff0000) >> 16;
+				addr_m = (cmd->addr & 0x00ff00) >> 8;
+				addr_l = cmd->addr & 0x0000ff;
+				hw->cmd_d_h.v &= (~(QSPI_F_CMD2_M << QSPI_F_CMD2_S));
+				hw->cmd_d_h.v |= ((addr_h & QSPI_F_CMD2_M) << QSPI_F_CMD2_S);
+				hw->cmd_d_h.v &= (~(QSPI_F_CMD3_M << QSPI_F_CMD3_S));
+				hw->cmd_d_h.v |= ((addr_m & QSPI_F_CMD3_M) << QSPI_F_CMD3_S);
+				hw->cmd_d_h.v &= (~(QSPI_F_CMD4_M << QSPI_F_CMD4_S));
+				hw->cmd_d_h.v |= ((addr_l & QSPI_F_CMD4_M) << QSPI_F_CMD4_S);
+				if (QSPI_4WIRE == cmd->wire_mode && FAST_READ_QUAD == cmd->cmd) {
+					hw->cmd_d_cfg1.v = 0xea8;
+				} else {
+					hw->cmd_d_cfg1.v = 0x300;
+				}
+			} else {
+				hw->cmd_d_cfg1.v = 0xc;
+			}
+
 			hw->cmd_d_cfg2.data_line = cmd->wire_mode;
 			hw->cmd_d_cfg2.dummy_clock = cmd->dummy_cycle;
 			if (cmd->dummy_cycle) {

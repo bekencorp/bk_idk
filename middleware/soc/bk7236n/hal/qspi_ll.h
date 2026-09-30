@@ -375,7 +375,8 @@ static inline void qspi_ll_direct_read(qspi_id_t id, uint32_t base_addr, void *d
 	}
 }
 
-static inline void qspi_ll_io_write(qspi_hw_t *hw, const void *data, uint32_t data_len)
+static inline void qspi_ll_io_write(qspi_hw_t *hw, const void *data, uint32_t data_len,
+				    bool resume)
 {
 	uint32_t fifo_num = 0;
 
@@ -386,10 +387,10 @@ static inline void qspi_ll_io_write(qspi_hw_t *hw, const void *data, uint32_t da
 	}
 
 	hw->rst_cfg.fifo_io_wr = 1;
-	hw->rst_cfg.clk_man_en = 1;
-	hw->rst_cfg.clk_man_sel = 0;
-	extern void delay_ms(UINT32 ms);
-	delay_ms(1);
+	if (!resume) {
+		hw->rst_cfg.clk_man_en = 1;
+		hw->rst_cfg.clk_man_sel = 0;
+	}
 
 	for(uint32_t i = 0; i < fifo_num; i++) {
 		*((uint32_t *)(hw->fifo_data) + i) = *((uint32_t *)data + i);
@@ -398,11 +399,10 @@ static inline void qspi_ll_io_write(qspi_hw_t *hw, const void *data, uint32_t da
 	hw->rst_cfg.fifo_io_wr = 0;
 	hw->rst_cfg.clk_man_en = 1;
 	hw->rst_cfg.clk_man_sel = 1;
-	extern void delay_ms(UINT32 ms);
-	delay_ms(1);
 }
 
-static inline void qspi_ll_io_read(qspi_hw_t *hw, void *data, uint32_t data_len)
+static inline void qspi_ll_io_read(qspi_hw_t *hw, void *data, uint32_t data_len,
+				   bool resume, bool keep_clk)
 {
 	uint32_t size  = 0;
 
@@ -413,18 +413,21 @@ static inline void qspi_ll_io_read(qspi_hw_t *hw, void *data, uint32_t data_len)
 	}
 
 	hw->rst_cfg.fifo_io_wr = 0;
-	hw->rst_cfg.clk_man_en = 1;
-	hw->rst_cfg.clk_man_sel = 0;
-	extern void delay_ms(UINT32 ms);
-	delay_ms(1);
+	if (!resume) {
+		hw->rst_cfg.clk_man_en = 1;
+		hw->rst_cfg.clk_man_sel = 0;
+	}
 
 	for(uint32_t i = 0; i < size; i++) {
 		*((uint32_t *)data + i) = *((uint32_t *)(hw->fifo_data) + i);
 	}
 
-	hw->rst_cfg.clk_man_en = 0;
-	extern void delay_ms(UINT32 ms);
-	delay_ms(1);
+	if (keep_clk) {
+		hw->rst_cfg.clk_man_en = 1;
+		hw->rst_cfg.clk_man_sel = 1;
+	} else {
+		hw->rst_cfg.clk_man_en = 0;
+	}
 }
 
 static inline void qspi_ll_init_flash_command(qspi_hw_t *hw, const qspi_cmd_t *cmd)

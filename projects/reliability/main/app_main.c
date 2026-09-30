@@ -82,7 +82,7 @@ void user_app_main(void)
 {
 	user_app_vote_cpu_freq();
 
-#if CONFIG_WIFI_RELIABILITY_TEST || CONFIG_FLASH_RELIABILITY_TEST
+#if CONFIG_WIFI_RELIABILITY_TEST || CONFIG_FLASH_RELIABILITY_TEST || CONFIG_PSRAM_RELIABILITY_TEST
 	statis_load_from_flash();
 #endif
 

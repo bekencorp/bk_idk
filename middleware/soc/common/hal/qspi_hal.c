@@ -44,6 +44,30 @@ bk_err_t qspi_hal_command(qspi_hal_t *hal, const qspi_cmd_t *cmd)
 	return BK_OK;
 }
 
+bk_err_t qspi_hal_command_no_disable(qspi_hal_t *hal, const qspi_cmd_t *cmd)
+{
+	qspi_ll_enable(hal->hw);
+	s_current_sw_op = cmd->op;
+	qspi_ll_init_command(hal->hw, cmd);
+	return BK_OK;
+}
+
+bk_err_t qspi_hal_io_read_keep(qspi_hal_t *hal, void *data, uint32_t size,
+			       bool resume, bool keep_clk)
+{
+	qspi_ll_enable(hal->hw);
+	qspi_ll_io_read(hal->hw, data, size, resume, keep_clk);
+	return BK_OK;
+}
+
+bk_err_t qspi_hal_io_write_keep(qspi_hal_t *hal, const void *data, uint32_t size,
+				bool resume)
+{
+	qspi_ll_enable(hal->hw);
+	qspi_ll_io_write(hal->hw, data, size, resume);
+	return BK_OK;
+}
+
 bk_err_t qspi_hal_direct_write(qspi_id_t id, uint32_t base_addr, const void *data, uint32_t size)
 {
 	qspi_ll_direct_write(id, base_addr, data, size);
@@ -58,13 +82,13 @@ bk_err_t qspi_hal_direct_read(qspi_id_t id, uint32_t base_addr, void *data, uint
 
 bk_err_t qspi_hal_io_write(qspi_hal_t *hal, const void *data, uint32_t size)
 {
-	qspi_ll_io_write(hal->hw, data, size);
+	qspi_ll_io_write(hal->hw, data, size, false);
 	return BK_OK;
 }
 
 bk_err_t qspi_hal_io_read(qspi_hal_t *hal, void *data, uint32_t size)
 {
-	qspi_ll_io_read(hal->hw, data, size);
+	qspi_ll_io_read(hal->hw, data, size, false, false);
 	return BK_OK;
 }
 
@@ -231,7 +255,7 @@ bk_err_t qspi_hal_disable_cmd_sck_disable(qspi_hal_t *hal)
 	return BK_OK;
 }
 
-#if (CONFIG_SOC_BK7236XX)
+#if (CONFIG_SOC_BK7236XX || CONFIG_SOC_BK7239XX)
 bk_err_t qspi_hal_enable_soft_reset(qspi_hal_t *hal)
 {
     qspi_ll_enable_soft_reset(hal->hw);

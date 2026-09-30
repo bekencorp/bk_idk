@@ -309,6 +309,57 @@ bk_err_t bk_qspi_read(qspi_id_t id, void *data, uint32_t size)
 	return BK_OK;
 }
 
+bk_err_t bk_qspi_force_cs_low(qspi_id_t id, bool enable)
+{
+	QSPI_RETURN_ON_ID_NOT_INIT(id);
+
+	if (enable) {
+		qspi_hal_init_common(&s_qspi[id].hal);
+		qspi_hal_force_spi_cs_low_enable(&s_qspi[id].hal);
+	} else {
+		qspi_hal_force_spi_cs_low_disable(&s_qspi[id].hal);
+		qspi_hal_deinit_common(&s_qspi[id].hal);
+	}
+
+	return BK_OK;
+}
+
+bk_err_t bk_qspi_disable_cmd_sck_mode(qspi_id_t id, bool enable)
+{
+	QSPI_RETURN_ON_ID_NOT_INIT(id);
+
+	if (enable) {
+		qspi_hal_disable_cmd_sck_enable(&s_qspi[id].hal);
+	} else {
+		qspi_hal_disable_cmd_sck_disable(&s_qspi[id].hal);
+	}
+
+	return BK_OK;
+}
+
+bk_err_t bk_qspi_command_no_disable(qspi_id_t id, const qspi_cmd_t *cmd)
+{
+	BK_RETURN_ON_NULL(cmd);
+	QSPI_RETURN_ON_ID_NOT_INIT(id);
+	return qspi_hal_command_no_disable(&s_qspi[id].hal, cmd);
+}
+
+bk_err_t bk_qspi_read_keep(qspi_id_t id, void *data, uint32_t size,
+			   bool resume, bool keep_clk)
+{
+	BK_RETURN_ON_NULL(data);
+	QSPI_RETURN_ON_ID_NOT_INIT(id);
+	return qspi_hal_io_read_keep(&s_qspi[id].hal, data, size, resume, keep_clk);
+}
+
+bk_err_t bk_qspi_write_keep(qspi_id_t id, const void *data, uint32_t size,
+			    bool resume)
+{
+	BK_RETURN_ON_NULL(data);
+	QSPI_RETURN_ON_ID_NOT_INIT(id);
+	return qspi_hal_io_write_keep(&s_qspi[id].hal, data, size, resume);
+}
+
 bk_err_t bk_qspi_register_tx_isr(qspi_isr_t isr, void *param)
 {
 	uint32_t int_level = rtos_enter_critical();
