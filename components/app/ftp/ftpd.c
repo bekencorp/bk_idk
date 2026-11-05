@@ -657,6 +657,38 @@ static err_t ftpd_dataaccept(void *arg, struct tcp_pcb *pcb, err_t err)
 	return ERR_OK;
 }
 
+/* Empty configured or supplied credentials never match (fail closed). */
+static int ftpd_cred_ok(const char *got, const char *expect)
+{
+	if (expect == NULL || expect[0] == '\0')
+		return 0;
+	if (got == NULL || got[0] == '\0')
+		return 0;
+	return strcmp(got, expect) == 0;
+}
+
+/* FTPD_IDLE and transfer states are reached only after a successful PASS. */
+static int ftpd_logged_in(const struct ftpd_msgstate *fsm)
+{
+	switch (fsm->state) {
+	case FTPD_USER:
+	case FTPD_PASS:
+	case FTPD_QUIT:
+		return 0;
+	default:
+		return 1;
+	}
+}
+
+static int ftpd_cmd_allowed(const struct ftpd_msgstate *fsm, const char *cmd)
+{
+	if (ftpd_logged_in(fsm))
+		return 1;
+	if (!strcmp(cmd, "USER") || !strcmp(cmd, "PASS") || !strcmp(cmd, "QUIT"))
+		return 1;
+	return 0;
+}
+
 static int open_dataconnection(struct tcp_pcb *pcb, struct ftpd_msgstate *fsm)
 {
 	if (fsm->passive)
@@ -689,22 +721,25 @@ static int open_dataconnection(struct tcp_pcb *pcb, struct ftpd_msgstate *fsm)
 
 static void cmd_user(const char *arg, struct tcp_pcb *pcb, struct ftpd_msgstate *fsm)
 {
-	send_msg(pcb, fsm, msg331);
+	/* A new USER drops any previous login. */
+	fsm->state = FTPD_USER;
+	if (!ftpd_cred_ok(arg, CONFIG_FTPD_USERNAME)) {
+		send_msg(pcb, fsm, msg530);
+		return;
+	}
 	fsm->state = FTPD_PASS;
-	/*
-	   send_msg(pcb, fs, msgLoginFailed);
-	   fs->state = FTPD_QUIT;
-	 */
+	send_msg(pcb, fsm, msg331);
 }
 
 static void cmd_pass(const char *arg, struct tcp_pcb *pcb, struct ftpd_msgstate *fsm)
 {
-	send_msg(pcb, fsm, msg230);
+	if (fsm->state != FTPD_PASS || !ftpd_cred_ok(arg, CONFIG_FTPD_PASSWORD)) {
+		fsm->state = FTPD_USER;
+		send_msg(pcb, fsm, msg530);
+		return;
+	}
 	fsm->state = FTPD_IDLE;
-	/*
-	   send_msg(pcb, fs, msgLoginFailed);
-	   fs->state = FTPD_QUIT;
-	 */
+	send_msg(pcb, fsm, msg230);
 }
 
 static void cmd_port(const char *arg, struct tcp_pcb *pcb, struct ftpd_msgstate *fsm)
@@ -1251,10 +1286,12 @@ static err_t ftpd_msgrecv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t 
 			else
 				pt = &text[strlen(cmd) + 1];
 
-			if (ftpd_cmd->func)
-				ftpd_cmd->func(pt, pcb, fsm);
-			else
+			if (!ftpd_cmd->func)
 				send_msg(pcb, fsm, msg502);
+			else if (!ftpd_cmd_allowed(fsm, cmd))
+				send_msg(pcb, fsm, msg530);
+			else
+				ftpd_cmd->func(pt, pcb, fsm);
 
 			os_free(text);
 		}
@@ -1308,7 +1345,7 @@ static err_t ftpd_msgaccept(void *arg, struct tcp_pcb *pcb, err_t err)
 
 	/* Initialize the structure. */
 	sfifo_init(&fsm->fifo, 2000);
-	fsm->state = FTPD_IDLE;
+	fsm->state = FTPD_USER;
 	fsm->vfs = vfs_openfs();
 	if (!fsm->vfs) {
 		os_free(fsm);

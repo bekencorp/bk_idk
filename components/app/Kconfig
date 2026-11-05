@@ -9,6 +9,24 @@ menu "App"
 		bool "Enable Ftpd Upgrade"
 		default n
 
+	config FTPD_USERNAME
+		depends on FTPD_UPGRADE
+		string "FTP server username"
+		default ""
+		help
+			Username required by the FTP server. Login is rejected
+			with 530 when this or the password is empty or does not
+			match.
+
+	config FTPD_PASSWORD
+		depends on FTPD_UPGRADE
+		string "FTP server password"
+		default ""
+		help
+			Password required by the FTP server. Login is rejected
+			with 530 when this or the username is empty or does not
+			match.
+
 	config OTA_HTTP
 		depends on WIFI_ENABLE
 		bool "Enable Ota Http"
